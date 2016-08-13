@@ -1,0 +1,21 @@
+SRCDIR = Sources
+SHAREDLIB = libCgRPC.so
+
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+        SHAREDLIBPATH = /usr/lib
+endif
+ifeq ($(UNAME_S),Darwin)
+        SHAREDLIBPATH = /usr/local/lib
+endif
+
+gRPC_Core: $(SRCDIR)/byte_buffer.c $(SRCDIR)/call.c $(SRCDIR)/client.c $(SRCDIR)/completion_queue.c $(SRCDIR)/handler.c $(SRCDIR)/internal.c $(SRCDIR)/metadata.c $(SRCDIR)/mutex.c $(SRCDIR)/observers.c $(SRCDIR)/server.c
+	clang -I../../../../include -shared -fPIC -o $(SHAREDLIB) $(SRCDIR)/byte_buffer.c $(SRCDIR)/call.c $(SRCDIR)/client.c $(SRCDIR)/completion_queue.c $(SRCDIR)/handler.c $(SRCDIR)/internal.c $(SRCDIR)/metadata.c $(SRCDIR)/mutex.c $(SRCDIR)/observers.c $(SRCDIR)/server.c -lgrpc -L../../../../libs/opt
+	cp $(SHAREDLIB) $(SHAREDLIBPATH)
+	git init ; git add . ; git commit -m "Commit" ; git tag 1.0.0
+
+clean:
+	-rm -f $(SHAREDLIB)
+	-rm -f $(SHAREDLIBPATH)/$(SHAREDLIB)
+	-rm -rf .git
+
