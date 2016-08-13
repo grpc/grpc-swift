@@ -240,27 +240,27 @@
 			buildActionMask = 2147483647;
 			files = (
 				D3AC86AE1D5BEBBE0042B341 /* byte_buffer.c in Sources */,
+				D3AC86AF1D5BEBBE0042B341 /* call.c in Sources */,
+				D3AC86B01D5BEBBE0042B341 /* client.c in Sources */,
+				D3AC86B11D5BEBBE0042B341 /* completion_queue.c in Sources */,
+				D3AC86B21D5BEBBE0042B341 /* handler.c in Sources */,
+				D3AC86B31D5BEBBE0042B341 /* internal.c in Sources */,
+				D3AC86B51D5BEBBE0042B341 /* metadata.c in Sources */,
+				D3AC86B61D5BEBBE0042B341 /* mutex.c in Sources */,
+				D3AC86B71D5BEBBE0042B341 /* observers.c in Sources */,
+				D3AC86B81D5BEBBE0042B341 /* server.c in Sources */,
 				D3AC86C81D5BEBE00042B341 /* CompletionQueue.swift in Sources */,
 				D3AC86C61D5BEBE00042B341 /* Call.swift in Sources */,
-				D3AC86B11D5BEBBE0042B341 /* completion_queue.c in Sources */,
-				D3AC86B31D5BEBBE0042B341 /* internal.c in Sources */,
 				D3AC86CB1D5BEBE00042B341 /* Metadata.swift in Sources */,
 				D310E3C71D5D8CD8002D48D0 /* Writable.swift in Sources */,
 				D3AC86C91D5BEBE00042B341 /* gRPC.swift in Sources */,
 				D3AC86CA1D5BEBE00042B341 /* Handler.swift in Sources */,
 				D3AC86CD1D5BEBE00042B341 /* Operation.swift in Sources */,
-				D3AC86B71D5BEBBE0042B341 /* observers.c in Sources */,
 				D310E3C21D5D8B89002D48D0 /* Writer.swift in Sources */,
 				D32F10121D5CEE880071B7C1 /* CallResponse.swift in Sources */,
 				D3AC86CE1D5BEBE00042B341 /* Server.swift in Sources */,
-				D3AC86B61D5BEBBE0042B341 /* mutex.c in Sources */,
 				D3AC86C71D5BEBE00042B341 /* Client.swift in Sources */,
 				D3AC86C51D5BEBE00042B341 /* ByteBuffer.swift in Sources */,
-				D3AC86B21D5BEBBE0042B341 /* handler.c in Sources */,
-				D3AC86AF1D5BEBBE0042B341 /* call.c in Sources */,
-				D3AC86B51D5BEBBE0042B341 /* metadata.c in Sources */,
-				D3AC86B81D5BEBBE0042B341 /* server.c in Sources */,
-				D3AC86B01D5BEBBE0042B341 /* client.c in Sources */,
 				D3AC86CC1D5BEBE00042B341 /* Mutex.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -373,11 +373,11 @@
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				FRAMEWORK_VERSION = A;
-				HEADER_SEARCH_PATHS = ../../include;
+				HEADER_SEARCH_PATHS = third_party/grpc/include;
 				INFOPLIST_FILE = gRPC/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
-				LIBRARY_SEARCH_PATHS = ../../libs/opt;
+				LIBRARY_SEARCH_PATHS = third_party/grpc/libs/opt;
 				PRODUCT_BUNDLE_IDENTIFIER = com.google.gRPC;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -398,11 +398,11 @@
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				FRAMEWORK_VERSION = A;
-				HEADER_SEARCH_PATHS = ../../include;
+				HEADER_SEARCH_PATHS = third_party/grpc/include;
 				INFOPLIST_FILE = gRPC/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
-				LIBRARY_SEARCH_PATHS = ../../libs/opt;
+				LIBRARY_SEARCH_PATHS = third_party/grpc/libs/opt;
 				PRODUCT_BUNDLE_IDENTIFIER = com.google.gRPC;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;

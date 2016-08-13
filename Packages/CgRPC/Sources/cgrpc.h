@@ -39,24 +39,24 @@
 
 #ifndef cgrpc_internal_h
 // all domain types are opaque pointers
-#define cgrpc_byte_buffer                      void
-#define cgrpc_call                             void
-#define cgrpc_client                           void
-#define cgrpc_completion_queue                 void
-#define cgrpc_handler                          void
-#define cgrpc_metadata                         void
-#define cgrpc_metadata_array                   void
-#define cgrpc_mutex                            void
-#define cgrpc_observer                         void
-#define cgrpc_observer_send_initial_metadata   void
-#define cgrpc_observer_send_message            void
-#define cgrpc_observer_send_close_from_client  void
-#define cgrpc_observer_send_status_from_server void
-#define cgrpc_observer_recv_initial_metadata   void
-#define cgrpc_observer_recv_message            void
-#define cgrpc_observer_recv_status_on_client   void
-#define cgrpc_observer_recv_close_on_server    void
-#define cgrpc_server                           void
+typedef void cgrpc_byte_buffer;
+typedef void cgrpc_call;
+typedef void cgrpc_client;
+typedef void cgrpc_completion_queue;
+typedef void cgrpc_handler;
+typedef void cgrpc_metadata;
+typedef void cgrpc_metadata_array;
+typedef void cgrpc_mutex;
+typedef void cgrpc_observer;
+typedef void cgrpc_observer_send_initial_metadata;
+typedef void cgrpc_observer_send_message;
+typedef void cgrpc_observer_send_close_from_client;
+typedef void cgrpc_observer_send_status_from_server;
+typedef void cgrpc_observer_recv_initial_metadata;
+typedef void cgrpc_observer_recv_message;
+typedef void cgrpc_observer_recv_status_on_client;
+typedef void cgrpc_observer_recv_close_on_server;
+typedef void cgrpc_server;
 
 /** Result of a grpc call. If the caller satisfies the prerequisites of a
  particular operation, the grpc_call_error returned will be GRPC_CALL_OK.
