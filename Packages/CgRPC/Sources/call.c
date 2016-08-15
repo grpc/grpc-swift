@@ -58,19 +58,7 @@ grpc_call_error cgrpc_call_perform(cgrpc_call *call, long tag) {
   grpc_call_error error = grpc_call_start_batch(call->call,
                                                 call->ops,
                                                 call->ops_count,
-                                                //cgrpc_create_tag(tag),
-                                                (^(bool success){
-    if (!success) {
-      if (call) {
-        printf("tag %ld\n", tag);
-      } else {
-        return;
-      }
-    } else {
-      printf("OK tag %ld\n", tag);
-
-    }
-  }),
+                                                cgrpc_create_tag(tag),
                                                 NULL);
   return error;
 }

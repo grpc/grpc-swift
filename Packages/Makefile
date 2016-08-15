@@ -1,5 +1,5 @@
 
-all: 	
+demo: 	
 	cd CgRPC; make clean; make; cd ..
 	cd gRPC; make clean; make; cd ..
 	cd Server; make clean; make; make; make install; cd ..
