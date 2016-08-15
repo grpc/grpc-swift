@@ -10,7 +10,7 @@ ifeq ($(UNAME_S),Darwin)
 endif
 
 gRPC_Core: $(SRCDIR)/byte_buffer.c $(SRCDIR)/call.c $(SRCDIR)/client.c $(SRCDIR)/completion_queue.c $(SRCDIR)/handler.c $(SRCDIR)/internal.c $(SRCDIR)/metadata.c $(SRCDIR)/mutex.c $(SRCDIR)/observers.c $(SRCDIR)/server.c
-	clang -I../../../../include -shared -fPIC -o $(SHAREDLIB) $(SRCDIR)/byte_buffer.c $(SRCDIR)/call.c $(SRCDIR)/client.c $(SRCDIR)/completion_queue.c $(SRCDIR)/handler.c $(SRCDIR)/internal.c $(SRCDIR)/metadata.c $(SRCDIR)/mutex.c $(SRCDIR)/observers.c $(SRCDIR)/server.c -lgrpc -L../../../../libs/opt
+	clang -I../../third_party/grpc/include -shared -fPIC -o $(SHAREDLIB) $(SRCDIR)/byte_buffer.c $(SRCDIR)/call.c $(SRCDIR)/client.c $(SRCDIR)/completion_queue.c $(SRCDIR)/handler.c $(SRCDIR)/internal.c $(SRCDIR)/metadata.c $(SRCDIR)/mutex.c $(SRCDIR)/observers.c $(SRCDIR)/server.c -lgrpc -L../../third_party/grpc/libs/opt
 	cp $(SHAREDLIB) $(SHAREDLIBPATH)
 	git init ; git add . ; git commit -m "Commit" ; git tag 1.0.0
 
