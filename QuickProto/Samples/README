@@ -1,0 +1,3 @@
+
+# use this to compile protos
+protoc sample.proto -osample.out --go_out=:.
