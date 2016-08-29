@@ -38,7 +38,7 @@
 public class Server {
 
   /// Pointer to underlying C representation
-  var s: UnsafeMutablePointer<Void>!
+  var s: UnsafeMutableRawPointer!
 
   /// Completion queue used for server operations
   var completionQueue: CompletionQueue

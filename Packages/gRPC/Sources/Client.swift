@@ -38,7 +38,7 @@
 public class Client {
 
   /// Pointer to underlying C representation
-  var c: UnsafeMutablePointer<Void>!
+  var c: UnsafeMutableRawPointer!
 
   /// Completion queue for client call operations
   var completionQueue: CompletionQueue

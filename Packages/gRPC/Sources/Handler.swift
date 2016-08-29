@@ -38,7 +38,7 @@ import Foundation // for String.Encoding
 /// A gRPC request handler
 public class Handler {
   /// Pointer to underlying C representation
-  var h: UnsafeMutablePointer<Void>!
+  var h: UnsafeMutableRawPointer!
 
   /// Completion queue for handler response operations
   var completionQueue: CompletionQueue
@@ -49,7 +49,7 @@ public class Handler {
   /// Initializes a Handler
   ///
   /// - Parameter h: the underlying C representation
-  init(h:UnsafeMutablePointer<Void>!) {
+  init(h:UnsafeMutableRawPointer!) {
     self.h = h;
     self.requestMetadata = Metadata()
     self.completionQueue = CompletionQueue(cq:cgrpc_handler_get_completion_queue(h))

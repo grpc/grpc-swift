@@ -38,12 +38,12 @@
 public class CompletionQueue {
 
   /// Pointer to underlying C representation
-  var cq : UnsafeMutablePointer<Void>!
+  var cq : UnsafeMutableRawPointer!
 
   /// Initializes a CompletionQueue
   ///
   /// - Parameter cq: the underlying C representation
-  init(cq: UnsafeMutablePointer<Void>) {
+  init(cq: UnsafeMutableRawPointer) {
     self.cq = cq // NOT OWNED, so we don't dealloc it
   }
 

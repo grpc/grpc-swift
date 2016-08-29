@@ -49,9 +49,9 @@ public struct MetadataPair {
 public class Metadata {
 
   /// Pointer to underlying C representation
-  var array: UnsafeMutablePointer<Void>
+  var array: UnsafeMutableRawPointer
 
-  init(array: UnsafeMutablePointer<Void>) {
+  init(array: UnsafeMutableRawPointer) {
     self.array = array
   }
 

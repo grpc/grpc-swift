@@ -39,12 +39,12 @@ import Foundation // for String.Encoding
 public class ByteBuffer {
 
   /// Pointer to underlying C representation
-  var b: UnsafeMutablePointer<Void>
+  var b: UnsafeMutableRawPointer
 
   /// Initializes a ByteBuffer
   ///
   /// - Parameter b: the underlying C representation
-  init(b: UnsafeMutablePointer<Void>) {
+  init(b: UnsafeMutableRawPointer) {
     self.b = b
   }
 

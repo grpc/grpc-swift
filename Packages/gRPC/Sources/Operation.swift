@@ -39,12 +39,12 @@ import Foundation // for String.Encoding
 public class Operation {
 
   /// Pointer to underlying C representation
-  var observer: UnsafeMutablePointer<Void>
+  var observer: UnsafeMutableRawPointer
 
   /// Initializes an Operation Observer
   ///
   /// - Parameter observer: the underlying C representation
-  private init(observer: UnsafeMutablePointer<Void>) {
+  init(observer: UnsafeMutableRawPointer) {
     self.observer = observer
   }
 

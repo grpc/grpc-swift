@@ -36,7 +36,7 @@
 
 /// Singleton class that provides a mutex for synchronizing calls to cgrpc_call_perform()
 private class CallLock {
-  private var mutex : Mutex
+  var mutex : Mutex
   init() {
     mutex = Mutex()
   }
@@ -47,7 +47,7 @@ private class CallLock {
 public class Call {
 
   /// Pointer to underlying C representation
-  private var call : UnsafeMutablePointer<Void>!
+  private var call : UnsafeMutableRawPointer!
 
   /// True if this instance is responsible for deleting the underlying C representation
   private var owned : Bool
@@ -56,13 +56,13 @@ public class Call {
   ///
   /// - Parameter call: the underlying C representation
   /// - Parameter owned: true if this instance is responsible for deleting the underlying call
-  init(call: UnsafeMutablePointer<Void>, owned: Bool) {
+  init(call: UnsafeMutableRawPointer, owned: Bool) {
     self.call = call
     self.owned = owned
   }
 
   // coming soon
-  init(call: UnsafeMutablePointer<Void>,
+  init(call: UnsafeMutableRawPointer,
        requestsWriter: Writer,
        responsesWritable: Writable) {
     self.call = call
