@@ -30,14 +30,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-#import <Cocoa/Cocoa.h>
+import AppKit
 
-//! Project version number for QuickProto.
-FOUNDATION_EXPORT double QuickProtoVersionNumber;
+class StickyNoteView : NSView {
 
-//! Project version string for QuickProto.
-FOUNDATION_EXPORT const unsigned char QuickProtoVersionString[];
+  override func draw(_ dirtyRect: NSRect) {
+    NSColor.gray.set()
+    NSRectFill(dirtyRect)
+  }
 
-// In this header, you should import all the public headers of your framework using statements like #import <QuickProto/PublicHeader.h>
-
-
+}

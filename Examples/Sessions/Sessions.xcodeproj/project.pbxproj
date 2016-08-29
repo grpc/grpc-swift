@@ -16,6 +16,20 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		D35C9F821D74AF8E000443CD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D35C9F7D1D74AF8E000443CD /* QuickProto.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = D35C9F341D74A1C0000443CD;
+			remoteInfo = QuickProto;
+		};
+		D35C9F841D74AF8E000443CD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D35C9F7D1D74AF8E000443CD /* QuickProto.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = D35C9F691D74A4AB000443CD;
+			remoteInfo = QuickDemo;
+		};
 		D386CA7B1D56894D0053605C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = D386CA771D56894D0053605C /* gRPC.xcodeproj */;
@@ -40,6 +54,7 @@
 		D30D73611D565E4400F90CCB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D30D73641D565E4400F90CCB /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		D30D73661D565E4400F90CCB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D35C9F7D1D74AF8E000443CD /* QuickProto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = QuickProto.xcodeproj; path = ../../QuickProto/QuickProto.xcodeproj; sourceTree = "<group>"; };
 		D386CA771D56894D0053605C /* gRPC.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = gRPC.xcodeproj; path = ../../gRPC.xcodeproj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -58,6 +73,7 @@
 		D30D734E1D565E4400F90CCB = {
 			isa = PBXGroup;
 			children = (
+				D35C9F7D1D74AF8E000443CD /* QuickProto.xcodeproj */,
 				D386CA771D56894D0053605C /* gRPC.xcodeproj */,
 				D30D73591D565E4400F90CCB /* Sessions */,
 				D30D73581D565E4400F90CCB /* Products */,
@@ -83,6 +99,15 @@
 				D30D73661D565E4400F90CCB /* Info.plist */,
 			);
 			path = Sessions;
+			sourceTree = "<group>";
+		};
+		D35C9F7E1D74AF8E000443CD /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D35C9F831D74AF8E000443CD /* QuickProto.framework */,
+				D35C9F851D74AF8E000443CD /* QuickDemo */,
+			);
+			name = Products;
 			sourceTree = "<group>";
 		};
 		D386CA781D56894D0053605C /* Products */ = {
@@ -148,6 +173,10 @@
 					ProductGroup = D386CA781D56894D0053605C /* Products */;
 					ProjectRef = D386CA771D56894D0053605C /* gRPC.xcodeproj */;
 				},
+				{
+					ProductGroup = D35C9F7E1D74AF8E000443CD /* Products */;
+					ProjectRef = D35C9F7D1D74AF8E000443CD /* QuickProto.xcodeproj */;
+				},
 			);
 			projectRoot = "";
 			targets = (
@@ -157,6 +186,20 @@
 /* End PBXProject section */
 
 /* Begin PBXReferenceProxy section */
+		D35C9F831D74AF8E000443CD /* QuickProto.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = QuickProto.framework;
+			remoteRef = D35C9F821D74AF8E000443CD /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		D35C9F851D74AF8E000443CD /* QuickDemo */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = QuickDemo;
+			remoteRef = D35C9F841D74AF8E000443CD /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		D386CA7C1D56894D0053605C /* gRPC.framework */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.framework;

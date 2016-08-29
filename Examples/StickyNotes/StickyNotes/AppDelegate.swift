@@ -30,14 +30,22 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-#import <Cocoa/Cocoa.h>
+import Cocoa
 
-//! Project version number for QuickProto.
-FOUNDATION_EXPORT double QuickProtoVersionNumber;
+@NSApplicationMain
+class AppDelegate: NSObject, NSApplicationDelegate {
 
-//! Project version string for QuickProto.
-FOUNDATION_EXPORT const unsigned char QuickProtoVersionString[];
+  @IBOutlet weak var window: NSWindow!
 
-// In this header, you should import all the public headers of your framework using statements like #import <QuickProto/PublicHeader.h>
 
+  func applicationDidFinishLaunching(_ aNotification: Notification) {
+    // Insert code here to initialize your application
+  }
+
+  func applicationWillTerminate(_ aNotification: Notification) {
+    // Insert code here to tear down your application
+  }
+
+
+}
 
