@@ -32,6 +32,7 @@
  */
 import Foundation
 
+/// The "type" of a protocol buffer field
 public enum FieldType: Int {
   case DOUBLE         = 1
   case FLOAT          = 2

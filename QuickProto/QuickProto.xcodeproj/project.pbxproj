@@ -33,6 +33,7 @@
 		D35C9F791D74A4BA000443CD /* MessageDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DCB48A1D6F4C7A00C6A8AE /* MessageDescriptor.swift */; };
 		D35C9F7A1D74A4BA000443CD /* MessageReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DCB48E1D6F4D0100C6A8AE /* MessageReader.swift */; };
 		D35C9F7B1D74A4BA000443CD /* NSMutableData+Proto.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DCB49D1D6FCF6000C6A8AE /* NSMutableData+Proto.swift */; };
+		D3930CBE1D74E9DC00F1A9BE /* WireType.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3930CBD1D74E9DC00F1A9BE /* WireType.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -54,6 +55,7 @@
 		D35C9F371D74A1C0000443CD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D35C9F691D74A4AB000443CD /* QuickDemo */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = QuickDemo; sourceTree = BUILT_PRODUCTS_DIR; };
 		D35C9F6B1D74A4AB000443CD /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		D3930CBD1D74E9DC00F1A9BE /* WireType.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WireType.swift; sourceTree = "<group>"; };
 		D3DCB4861D6F4C6400C6A8AE /* Message.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
 		D3DCB4881D6F4C6E00C6A8AE /* Field.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Field.swift; sourceTree = "<group>"; };
 		D3DCB48A1D6F4C7A00C6A8AE /* MessageDescriptor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MessageDescriptor.swift; sourceTree = "<group>"; };
@@ -136,6 +138,7 @@
 				D3DCB48A1D6F4C7A00C6A8AE /* MessageDescriptor.swift */,
 				D3DCB48E1D6F4D0100C6A8AE /* MessageReader.swift */,
 				D3DCB49D1D6FCF6000C6A8AE /* NSMutableData+Proto.swift */,
+				D3930CBD1D74E9DC00F1A9BE /* WireType.swift */,
 			);
 			path = QuickProto;
 			sourceTree = "<group>";
@@ -246,6 +249,7 @@
 			files = (
 				D35C9F3C1D74A1DC000443CD /* _FileDescriptor.swift in Sources */,
 				D35C9F3D1D74A1DC000443CD /* CodeBuilder.swift in Sources */,
+				D3930CBE1D74E9DC00F1A9BE /* WireType.swift in Sources */,
 				D35C9F3E1D74A1DC000443CD /* Field.swift in Sources */,
 				D35C9F3F1D74A1DC000443CD /* FieldDescriptor.swift in Sources */,
 				D35C9F401D74A1DC000443CD /* FieldLabel.swift in Sources */,
@@ -457,6 +461,7 @@
 				D35C9F6E1D74A4AB000443CD /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		D3D1C8551D6D15D9002F1B53 /* Build configuration list for PBXProject "QuickProto" */ = {
 			isa = XCConfigurationList;

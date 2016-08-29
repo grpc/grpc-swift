@@ -32,7 +32,7 @@
  */
 import Foundation
 
-// Describes a field in a message
+/// A description of a field in a protocol buffer message
 public class FieldDescriptor {
   var type : FieldType
   var label : FieldLabel
@@ -58,26 +58,26 @@ public class FieldDescriptor {
     label = FieldLabel(rawValue:message.oneField(name:"label")!.integer())!
   }
 
-  func wireType() -> Int {
+  func wireType() -> WireType {
     switch type {
-    case FieldType.DOUBLE   : return 1
-    case FieldType.FLOAT    : return 5
-    case FieldType.INT64    : return 0
-    case FieldType.UINT64   : return 0
-    case FieldType.INT32    : return 0
-    case FieldType.FIXED64  : return 1
-    case FieldType.FIXED32  : return 5
-    case FieldType.BOOL     : return 0
-    case FieldType.STRING   : return 2
-    case FieldType.GROUP    : return 3
-    case FieldType.MESSAGE  : return 2
-    case FieldType.BYTES    : return 2
-    case FieldType.UINT32   : return 0
-    case FieldType.ENUM     : return 0
-    case FieldType.SFIXED32 : return 5
-    case FieldType.SFIXED64 : return 1
-    case FieldType.SINT32   : return 0
-    case FieldType.SINT64   : return 0
+    case FieldType.DOUBLE   : return WireType.FIXED64
+    case FieldType.FLOAT    : return WireType.FIXED32
+    case FieldType.INT64    : return WireType.VARINT
+    case FieldType.UINT64   : return WireType.VARINT
+    case FieldType.INT32    : return WireType.VARINT
+    case FieldType.FIXED64  : return WireType.FIXED64
+    case FieldType.FIXED32  : return WireType.FIXED32
+    case FieldType.BOOL     : return WireType.VARINT
+    case FieldType.STRING   : return WireType.LENGTH_DELIMITED
+    case FieldType.GROUP    : return WireType.START_GROUP
+    case FieldType.MESSAGE  : return WireType.LENGTH_DELIMITED
+    case FieldType.BYTES    : return WireType.LENGTH_DELIMITED
+    case FieldType.UINT32   : return WireType.VARINT
+    case FieldType.ENUM     : return WireType.VARINT
+    case FieldType.SFIXED32 : return WireType.FIXED32
+    case FieldType.SFIXED64 : return WireType.FIXED64
+    case FieldType.SINT32   : return WireType.VARINT
+    case FieldType.SINT64   : return WireType.VARINT
     }
   }
 }

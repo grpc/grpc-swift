@@ -41,20 +41,20 @@ public class CodeBuilder {
     return code
   }
 
+  /// the initializer builds a code representation from a message
   public init(_ message: Message) {
-    // build the code representation
     code = ""
     code += "import Foundation\n"
     code += "\n"
     code += "var _FileDescriptor : [[String:Any]] = [\n"
     message.forEachField(path:["file","message_type"]) {(field) in
-      printProtoDescription(field:field)
+      generateProtoDescription(field:field)
     }
     code += "];\n"
   }
 
-  // print code for a dictionary literal describing a proto
-  private func printProtoDescription(field: Field) {
+  /// generate code for a dictionary literal describing a proto
+  private func generateProtoDescription(field: Field) {
     field.message().forEachField(path:["name"]) {(field) in
       code += "  [\"name\": \"\(field.string())\",\n"
       code += "   \"fields\": [\n"
@@ -86,7 +86,7 @@ public class CodeBuilder {
     }
     code += "    ]],\n"
     field.message().forEachField(path:["nested_type"]) {(field) in
-      printProtoDescription(field:field)
+      generateProtoDescription(field:field)
     }
   }
 }

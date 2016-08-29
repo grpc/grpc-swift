@@ -32,6 +32,7 @@
  */
 import Foundation
 
+// Extensions that support serialization of protocol buffers
 extension NSMutableData {
 
   func appendVarint(_ value: Int) {

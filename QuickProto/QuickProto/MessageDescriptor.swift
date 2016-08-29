@@ -32,7 +32,7 @@
  */
 import Foundation
 
-// Describes a message
+/// A description of a protocol buffer message
 public class MessageDescriptor {
   var name: String = ""
   var fieldDescriptors: [FieldDescriptor] = []
@@ -67,6 +67,7 @@ public class MessageDescriptor {
     }
   }
 
+  /// lookup the field descriptor for a specified tag
   func fieldDescriptor(tag: Int) -> FieldDescriptor? {
     for fieldDescriptor in fieldDescriptors {
       if (fieldDescriptor.tag == tag) {

@@ -32,14 +32,17 @@
  */
 import Foundation
 
+/// zigzag-encode 32-bit integers
 func zigzag(_ n:Int32) -> (Int32) {
   return (n << 1) ^ (n >> 31)
 }
 
+/// zigzag-encode 64-bit integers
 func zigzag(_ n:Int64) -> (Int64) {
   return (n << 1) ^ (n >> 63)
 }
 
+/// A representation of a protocol buffer message that can be used to read and build protobufs
 public class Message {
   var descriptor: MessageDescriptor
   var fields: [Field]
@@ -49,6 +52,7 @@ public class Message {
     self.fields = fields
   }
 
+  /// add a field and perform the specified action
   public func addField(name: String, action:((Field) -> Void)) {
     // look up the field descriptor
     for fieldDescriptor in descriptor.fieldDescriptors {
@@ -62,6 +66,7 @@ public class Message {
     }
   }
 
+  /// get one field with the specified name
   public func oneField(name: String) -> Field? {
     for field in fields {
       if field.name() == name {
@@ -71,6 +76,7 @@ public class Message {
     return nil
   }
 
+  /// perform an action on one field with the specified name
   public func forOneField(name: String, action:((Field) -> Void)) {
     for field in fields {
       if field.name() == name {
@@ -80,6 +86,7 @@ public class Message {
     }
   }
 
+  /// perform an action on each field with the specified name
   public func forEachField(name:String, action:(Field) -> (Void)) {
     for field in fields {
       if field.name() == name {
@@ -88,6 +95,7 @@ public class Message {
     }
   }
 
+  /// perform an action on each field following the specified path of field names
   public func forEachField(path:[String], action:(Field) -> (Void)) {
     for field in fields {
       if field.name() == path[0] {
@@ -102,16 +110,18 @@ public class Message {
     }
   }
 
+  /// display a message for testing and debugging
   public func display() {
     for field in fields {
       field.display(indent:"")
     }
   }
 
-  public func serialize() -> (NSMutableData) {
+  /// generate the serialized protocol buffer representation of a message
+  public func serialize() -> (NSData) {
     let data = NSMutableData()
     for field in fields {
-      data.appendVarint(field.tag() << 3 + field.wireType())
+      data.appendVarint(field.tag() << 3 + field.wireType().rawValue)
 
       switch field.type() {
       case FieldType.DOUBLE:
@@ -147,7 +157,7 @@ public class Message {
       case FieldType.UINT32:
         data.appendVarint(field.integer())
       case FieldType.ENUM:
-        assert(false)
+        assert(false) // TODO
       case FieldType.SFIXED32:
         data.appendInt32(field.integer())
       case FieldType.SFIXED64:

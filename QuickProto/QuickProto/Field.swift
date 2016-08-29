@@ -32,6 +32,7 @@
  */
 import Foundation
 
+/// A representation of a protocol buffer field that can be used to read and build protobufs
 public class Field {
   private var descriptor: FieldDescriptor
   private var value: Any!
@@ -45,6 +46,7 @@ public class Field {
     self.descriptor = descriptor
   }
 
+  /// display a field for testing and debugging
   func display(indent: String) {
     let type = self.descriptor.type
 
@@ -61,24 +63,19 @@ public class Field {
     if let value = value as? Int {
       line += "\(value)"
       print(line)
-    }
-    else if let value = value as? Int32 {
+    } else if let value = value as? Int32 {
       line += "\(value)"
       print(line)
-    }
-    else if let value = value as? Int64 {
+    } else if let value = value as? Int64 {
       line += "\(value)"
       print(line)
-    }
-    else if let value = value as? Bool {
+    } else if let value = value as? Bool {
       line += "\(value)"
       print(line)
-    }
-    else if let value = value as? String {
+    } else if let value = value as? String {
       line += "\(value)"
       print(line)
-    }
-    else if let message = value as? Message {
+    } else if let message = value as? Message {
       line += " {"
       print(line)
       for field in message.fields {
@@ -108,7 +105,7 @@ public class Field {
     return descriptor.tag
   }
 
-  public func wireType() -> Int {
+  public func wireType() -> WireType {
     return descriptor.wireType()
   }
 

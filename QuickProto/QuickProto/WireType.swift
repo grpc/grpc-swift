@@ -32,32 +32,12 @@
  */
 import Foundation
 
-/// A collection of descriptors that were read from a compiled .proto file
-class FileDescriptor {
-  var messageDescriptors : [MessageDescriptor] = []
-
-  // the base FileDescriptor is the FileDescriptor for FileDescriptor
-  init() {
-    for description in _FileDescriptor {
-      messageDescriptors.append(MessageDescriptor(description:description))
-    }
-  }
-
-  // creates a FileDescriptor from a FileDescriptor proto
-  init(message:Message) {
-    message.forEachField(path:["message_type"]) { (field) in
-      let messageDescriptor = MessageDescriptor(message: field.message())
-      messageDescriptors.append(messageDescriptor)
-    }
-  }
-
-  // finds and returns a descriptor for a specified message
-  func messageDescriptor(name: String) -> MessageDescriptor? {
-    for messageDescriptor in messageDescriptors {
-      if messageDescriptor.name == name {
-        return messageDescriptor
-      }
-    }
-    return nil
-  }
+/// The "wire type" of a protocol buffer field
+public enum WireType: Int {
+  case VARINT = 0
+  case FIXED64 = 1
+  case LENGTH_DELIMITED = 2
+  case START_GROUP = 3
+  case END_GROUP = 4
+  case FIXED32 = 5
 }

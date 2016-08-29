@@ -32,6 +32,7 @@
  */
 import Foundation
 
+/// A collection of descriptors that were read from a group of one or more compiled .proto files
 public class FileDescriptorSet {
   var fileDescriptors : [FileDescriptor] = []
 

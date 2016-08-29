@@ -30,6 +30,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
+
+// GENERATED CODE
+
 import Foundation
 
 var _FileDescriptor : [[String:Any]] = [

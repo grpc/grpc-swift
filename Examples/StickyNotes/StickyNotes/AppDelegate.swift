@@ -40,6 +40,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   @IBOutlet weak var window: NSWindow!
 
   func applicationDidFinishLaunching(_ aNotification: Notification) {
+    gRPC.initialize()
     startServer(address:"localhost:8081")
   }
 
@@ -51,7 +52,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     if let fileDescriptorSetProto =
       NSData(contentsOfFile:Bundle.main.path(forResource: "stickynote", ofType: "out")!) {
-      // load a FileDescriptorSet that includes a descriptor for the message to be created
+      // load a FileDescriptorSet that includes a descriptor for the messages we create and read
       let fileDescriptorSet = FileDescriptorSet(proto:fileDescriptorSetProto)
 
       DispatchQueue.global().async {
@@ -120,11 +121,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                               NSRectFill(rect)
                               NSColor.black.set()
                               let string = NSString(string:message)
-                              var s = CGFloat(300.0)
-                              let trialFont = NSFont.userFont(ofSize:s)!
+                              let trialS = CGFloat(300.0)
+                              let trialFont = NSFont.userFont(ofSize:trialS)!
                               let trialAttributes = [NSFontAttributeName: trialFont]
                               let trialSize = string.size(withAttributes: trialAttributes)
-                              s = s * 300 / trialSize.width;
+                              let s = trialS * 300 / trialSize.width;
                               let font = NSFont.userFont(ofSize:s)!
                               let attributes = [NSFontAttributeName: font]
                               let size = string.size(withAttributes: attributes)

@@ -32,7 +32,7 @@
  */
 import Foundation
 
-// Reads a protocol buffer
+// A reader for protocol buffers. Used internally.
 class MessageReader {
   var fileDescriptorSet: FileDescriptorSet
   var messageName: String
@@ -102,7 +102,6 @@ class MessageReader {
     cursor += 4
     return result
   }
-
 
   private func nextVarint() -> (Int) {
     var sum : Int = 0

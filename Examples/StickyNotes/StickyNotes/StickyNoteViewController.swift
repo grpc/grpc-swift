@@ -31,17 +31,12 @@
  *
  */
 import AppKit
-
 import gRPC
 import QuickProto
 
 class StickyNoteViewController : NSViewController, NSTextFieldDelegate {
   @IBOutlet weak var messageField: NSTextField!
   @IBOutlet weak var imageView: NSImageView!
-
-  override func viewDidLoad() {
-    gRPC.initialize()
-  }
 
   @IBAction func messageReturnPressed(sender: NSTextField) {
     callServer(address:"localhost:8081")
@@ -94,7 +89,6 @@ class StickyNoteViewController : NSViewController, NSTextFieldDelegate {
         self.log("Received status: \(response.status) " + response.statusDetails)
         if let responsemessage = response.message {
           let data = responsemessage.data()
-          // re-read it
           if let message = fileDescriptorSet.readMessage(name:"StickyNoteResponse",
                                                          proto:data) {
             message.forOneField(name:"image") {(field) in

@@ -85,7 +85,7 @@ const void *cgrpc_byte_buffer_as_data(cgrpc_byte_buffer *bb, size_t *length) {
   }
   gpr_slice slice = grpc_byte_buffer_reader_readall(&reader);
   *length = (size_t) GPR_SLICE_LENGTH(slice);
-  const void *result = malloc(*length);
+  void *result = malloc(*length);
   memcpy(result, GPR_SLICE_START_PTR(slice), *length);
   gpr_slice_unref(slice);
   grpc_byte_buffer_reader_destroy(&reader);
