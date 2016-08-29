@@ -120,16 +120,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                               NSRectFill(rect)
                               NSColor.black.set()
                               let string = NSString(string:message)
-                              // TODO: size and center string
-                              // let attributes = [NSFontAttributeName: NSFont.userFont(ofSize:40)]
-                              // string.size(withAttributes: attributes)
-                              string.draw(in: rect, withAttributes: [:])
+                              var s = CGFloat(300.0)
+                              let trialFont = NSFont.userFont(ofSize:s)!
+                              let trialAttributes = [NSFontAttributeName: trialFont]
+                              let trialSize = string.size(withAttributes: trialAttributes)
+                              s = s * 300 / trialSize.width;
+                              let font = NSFont.userFont(ofSize:s)!
+                              let attributes = [NSFontAttributeName: font]
+                              let size = string.size(withAttributes: attributes)
+                              let x = rect.origin.x + 0.5*(rect.size.width - size.width)
+                              let y = rect.origin.y + 0.5*(rect.size.height - size.height)
+                              let r = NSMakeRect(x, y, size.width, size.height)
+                              string.draw(in: r, withAttributes:attributes)
                               return true})
-
     let imgData: Data! = image.tiffRepresentation!
     let bitmap: NSBitmapImageRep! = NSBitmapImageRep(data: imgData)
-    let pngCoverImage = bitmap!.representation(using:NSBitmapImageFileType.PNG, properties:[:])
-    return NSData(data:pngCoverImage!)
+    let pngImage = bitmap!.representation(using:NSBitmapImageFileType.PNG, properties:[:])
+    return NSData(data:pngImage!)
   }
 }
 
