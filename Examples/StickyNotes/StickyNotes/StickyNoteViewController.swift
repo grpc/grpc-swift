@@ -45,7 +45,7 @@ class StickyNoteViewController : NSViewController, NSTextFieldDelegate {
 
   @IBAction func messageReturnPressed(sender: NSTextField) {
     log("return pressed")
-    callServer(address:"localhost:8080")
+    callServer(address:"localhost:8081")
   }
 
   func log(_ message: String) {
