@@ -35,13 +35,13 @@ import CgRPC
 import gRPC
 import QuickProto
 
-gRPC.initialize()
-let fileDescriptorSetProto = NSData(contentsOfFile:"echo.out")
-let fileDescriptorSet = FileDescriptorSet(proto:fileDescriptorSetProto!)
-
 let address = "localhost:8080"
 
-do {
+if let fileDescriptorSetProto = NSData(contentsOfFile:"echo.out") {
+  let fileDescriptorSet = FileDescriptorSet(proto:fileDescriptorSetProto)
+
+  gRPC.initialize()
+
   print("Server Starting")
   print("GRPC version " + gRPC.version())
 

@@ -35,36 +35,36 @@ import CgRPC
 import gRPC
 import QuickProto
 
-gRPC.initialize()
-let fileDescriptorSetProto = NSData(contentsOfFile:"echo.out")
-let fileDescriptorSet = FileDescriptorSet(proto:fileDescriptorSetProto!)
-
 let address = "localhost:8080"
 
-if let requestMessage = fileDescriptorSet.createMessage(name:"EchoRequest") {
-  requestMessage.addField(name:"text", value:"hello, swifty!")
+gRPC.initialize()
 
-  let requestHost = "foo.test.google.fr"
-  let requestMethod = "/echo.Echo/Get"
-  let requestBuffer = ByteBuffer(data:requestMessage.serialize())
-  let requestMetadata = Metadata()
+if let fileDescriptorSetProto = NSData(contentsOfFile:"echo.out") {
+  let fileDescriptorSet = FileDescriptorSet(proto:fileDescriptorSetProto)
+  if let requestMessage = fileDescriptorSet.createMessage(name:"EchoRequest") {
+    requestMessage.addField(name:"text", value:"hello, swifty!")
 
-  let client = Client(address:address)
-  let response = client.performRequest(host:requestHost,
-                                       method:requestMethod,
-                                       message:requestBuffer,
-                                       metadata:requestMetadata)
+    let requestHost = "foo.test.google.fr"
+    let requestMethod = "/echo.Echo/Get"
+    let requestBuffer = ByteBuffer(data:requestMessage.serialize())
+    let requestMetadata = Metadata()
 
-  print("Received status: \(response.status) " + response.statusDetails)
+    let client = Client(address:address)
+    let response = client.performRequest(host:requestHost,
+                                         method:requestMethod,
+                                         message:requestBuffer,
+                                         metadata:requestMetadata)
 
-  if let responseBuffer = response.message,
-    let responseMessage = fileDescriptorSet.readMessage(name:"EchoResponse",
-                                                        proto:responseBuffer.data()) {
-    responseMessage.forOneField(name:"text") {(field) in
-      print(field.string())
+    print("Received status: \(response.status) " + response.statusDetails)
+
+    if let responseBuffer = response.message,
+      let responseMessage = fileDescriptorSet.readMessage(name:"EchoResponse",
+                                                          proto:responseBuffer.data()) {
+      responseMessage.forOneField(name:"text") {(field) in
+        print(field.string())
+      }
+    } else {
+      print("No message received. gRPC Status \(response.status) " + response.statusDetails)
     }
-  } else {
-	print("No message received. gRPC Status \(response.status) " + response.statusDetails)
   }
 }
-
