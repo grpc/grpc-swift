@@ -1,4 +1,4 @@
-TARGET=Server
+TARGET=EchoServer
 all:
 	swift build
 

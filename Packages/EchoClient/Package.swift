@@ -32,8 +32,9 @@
  */
 import PackageDescription
 let package = Package (
-    name: "Server",
+    name: "EchoClient",
     dependencies: [
+        .Package(url: "../CgRPC", majorVersion:1),
         .Package(url: "../gRPC", majorVersion:1),
         .Package(url: "../QuickProto", majorVersion:1),
     ]

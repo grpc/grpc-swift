@@ -5,8 +5,10 @@ demo:
 	cd Server; make clean; make; make; make install; cd ..
 	cd Client; make clean; make; make; make install; cd ..
 	cd QuickProto; make clean; make; make; make install; cd ..
-	Server/Server &
-	Client/Client 
+	cd EchoServer; make clean; make; make; make install; cd ..
+	cd EchoClient; make clean; make; make; make install; cd ..
+	EchoServer/EchoServer &
+	EchoClient/EchoClient 
 
 clean:  
 	cd CgRPC; make clean; cd ..
@@ -14,3 +16,5 @@ clean:
 	cd Server; make clean; cd ..
 	cd Client; make clean; cd ..
 	cd QuickProto; make clean; cd ..
+	cd EchoServer; make clean; cd ..
+	cd EchoClient; make clean; cd ..

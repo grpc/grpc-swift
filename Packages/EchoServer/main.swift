@@ -30,15 +30,20 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
+import Foundation
+import CgRPC
 import gRPC
+import QuickProto
 
 gRPC.initialize()
 let fileDescriptorSetProto = NSData(contentsOfFile:"echo.out")
-let fileDescriptorSet = FileDescriptorSet(proto:fileDescriptorSetProto)
+let fileDescriptorSet = FileDescriptorSet(proto:fileDescriptorSetProto!)
+
+let address = "localhost:8080"
 
 do {
-  self.log("Server Starting")
-  self.log("GRPC version " + gRPC.version())
+  print("Server Starting")
+  print("GRPC version " + gRPC.version())
 
   let server = gRPC.Server(address:address)
   server.start()
@@ -46,11 +51,11 @@ do {
   while(true) {
     let (callError, completionType, requestHandler) = server.getNextRequest(timeout:1.0)
     if (callError != GRPC_CALL_OK) {
-      self.log("Call error \(callError)")
-      self.log("------------------------------")
+      print("Call error \(callError)")
+      print("------------------------------")
     } else if (completionType == GRPC_OP_COMPLETE) {
       if let requestHandler = requestHandler {
-        self.log("Received request to " + requestHandler.host()
+        print("Received request to " + requestHandler.host()
           + " calling " + requestHandler.method()
           + " from " + requestHandler.caller())
 

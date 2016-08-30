@@ -30,14 +30,19 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
+import Foundation
+import CgRPC
 import gRPC
+import QuickProto
 
 gRPC.initialize()
 let fileDescriptorSetProto = NSData(contentsOfFile:"echo.out")
-let fileDescriptorSet = FileDescriptorSet(proto:fileDescriptorSetProto)
+let fileDescriptorSet = FileDescriptorSet(proto:fileDescriptorSetProto!)
+
+let address = "localhost:8080"
 
 if let requestMessage = fileDescriptorSet.createMessage(name:"EchoRequest") {
-  requestMessage.addField(name:"text", value:"hello")
+  requestMessage.addField(name:"text", value:"hello, swifty!")
 
   let requestHost = "foo.test.google.fr"
   let requestMethod = "/echo.Echo/Get"
