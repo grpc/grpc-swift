@@ -51,12 +51,14 @@ public class FileDescriptorSet {
     }
   }
 
+#if !SWIFT_PACKAGE
   convenience public init(filename:String) {
     let path = Bundle.main.resourcePath!.appending("/").appending(filename)
     let fileDescriptorSetProto = NSData(contentsOfFile:path)
     assert(fileDescriptorSetProto != nil) // the file to be loaded must be in the resource bundle
     self.init(proto:fileDescriptorSetProto!)
   }
+#endif
 
   init(message:Message) {
     message.forEachField(path:["file"]) { (field) in
