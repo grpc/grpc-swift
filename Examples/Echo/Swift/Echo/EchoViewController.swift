@@ -54,31 +54,37 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   func callServer(address:String) {
     let fileDescriptorSet = FileDescriptorSet(filename:"echo.out")
 
-    // build the message
-    if let requestMessage = fileDescriptorSet.createMessage(name:"EchoRequest") {
-      requestMessage.addField(name:"text", value:self.messageField.stringValue)
+    DispatchQueue.global().async {
+      // build the message
+      if let requestMessage = fileDescriptorSet.createMessage(name:"EchoRequest") {
+        requestMessage.addField(name:"text", value:self.messageField.stringValue)
 
-      let requestHost = "foo.test.google.fr"
-      let requestMethod = "/echo.Echo/Get"
-      let requestBuffer = ByteBuffer(data:requestMessage.serialize())
-      let requestMetadata = Metadata()
+        let requestHost = "foo.test.google.fr"
+        let requestMethod = "/echo.Echo/Get"
+        let requestBuffer = ByteBuffer(data:requestMessage.serialize())
+        let requestMetadata = Metadata()
 
-      let client = Client(address:address)
-      let response = client.performRequest(host:requestHost,
-                                           method:requestMethod,
-                                           message:requestBuffer,
-                                           metadata:requestMetadata)
+        let client = Client(address:address)
+        let response = client.performRequest(host:requestHost,
+                                             method:requestMethod,
+                                             message:requestBuffer,
+                                             metadata:requestMetadata)
 
-      self.log("Received status: \(response.status) " + response.statusDetails)
+        self.log("Received status: \(response.status) " + response.statusDetails)
 
-      if let responseBuffer = response.message,
-        let responseMessage = fileDescriptorSet.readMessage(name:"EchoResponse",
-                                                            proto:responseBuffer.data()) {
-        responseMessage.forOneField(name:"text") {(field) in
-          self.outputField.stringValue = field.string()
+        if let responseBuffer = response.message,
+          let responseMessage = fileDescriptorSet.readMessage(name:"EchoResponse",
+                                                              proto:responseBuffer.data()) {
+          responseMessage.forOneField(name:"text") {(field) in
+            DispatchQueue.main.async {
+              self.outputField.stringValue = field.string()
+            }
+          }
+        } else {
+          DispatchQueue.main.async {
+            self.outputField.stringValue = "No message received. gRPC Status \(response.status) " + response.statusDetails
+          }
         }
-      } else {
-        self.outputField.stringValue = "No message received. gRPC Status \(response.status) " + response.statusDetails
       }
     }
   }
