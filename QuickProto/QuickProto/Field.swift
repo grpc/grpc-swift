@@ -35,7 +35,7 @@ import Foundation
 /// A representation of a protocol buffer field that can be used to read and build protobufs
 public class Field {
   private var descriptor: FieldDescriptor
-  private var value: Any!
+  var value: Any!
 
   init(descriptor: FieldDescriptor, value: Any) {
     self.descriptor = descriptor

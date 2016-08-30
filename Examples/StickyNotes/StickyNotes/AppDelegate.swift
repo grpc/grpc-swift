@@ -49,70 +49,63 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   }
 
   func startServer(address:String) {
+    let fileDescriptorSet = FileDescriptorSet(filename:"stickynote.out")
 
-    if let fileDescriptorSetProto =
-      NSData(contentsOfFile:Bundle.main.path(forResource: "stickynote", ofType: "out")!) {
-      // load a FileDescriptorSet that includes a descriptor for the messages we create and read
-      let fileDescriptorSet = FileDescriptorSet(proto:fileDescriptorSetProto)
+    DispatchQueue.global().async {
+      self.log("Server Starting")
+      self.log("GRPC version " + gRPC.version())
 
-      DispatchQueue.global().async {
-        self.log("Server Starting")
-        self.log("GRPC version " + gRPC.version())
+      let server = gRPC.Server(address:address)
+      server.start()
 
-        let server = gRPC.Server(address:address)
-        server.start()
+      while(true) {
+        let (callError, completionType, requestHandler) = server.getNextRequest(timeout:1.0)
+        if (callError != GRPC_CALL_OK) {
+          self.log("Call error \(callError)")
+          self.log("------------------------------")
+        } else if (completionType == GRPC_OP_COMPLETE) {
+          if let requestHandler = requestHandler {
+            self.log("Received request to " + requestHandler.host()
+              + " calling " + requestHandler.method()
+              + " from " + requestHandler.caller())
+            let initialMetadata = requestHandler.requestMetadata
+            for i in 0..<initialMetadata.count() {
+              self.log("Received initial metadata -> " + initialMetadata.key(index:i) + ":" + initialMetadata.value(index:i))
+            }
 
-        var requestCount = 0
-        while(true) {
-          let (callError, completionType, requestHandler) = server.getNextRequest(timeout:1.0)
-          if (callError != GRPC_CALL_OK) {
-            self.log("\(requestCount): Call error \(callError)")
-            self.log("------------------------------")
-          } else if (completionType == GRPC_OP_COMPLETE) {
-            if let requestHandler = requestHandler {
-              requestCount += 1
-              self.log("\(requestCount): Received request " + requestHandler.host() + " " + requestHandler.method() + " from " + requestHandler.caller())
-              let initialMetadata = requestHandler.requestMetadata
-              for i in 0..<initialMetadata.count() {
-                self.log("\(requestCount): Received initial metadata -> " + initialMetadata.key(index:i) + ":" + initialMetadata.value(index:i))
-              }
+            let initialMetadataToSend = Metadata(pairs:[MetadataPair(key:"a", value:"Apple"),
+                                                        MetadataPair(key:"b", value:"Banana"),
+                                                        MetadataPair(key:"c", value:"Cherry")])
+            let (_, _, requestBuffer) = requestHandler.receiveMessage(initialMetadata:initialMetadataToSend)
+            if let requestBuffer = requestBuffer,
+              let requestMessage = fileDescriptorSet.readMessage(name:"StickyNoteRequest",
+                                                                 proto:requestBuffer.data()) {
 
-              let initialMetadataToSend = Metadata()
-              initialMetadataToSend.add(key:"a", value:"Apple")
-              initialMetadataToSend.add(key:"b", value:"Banana")
-              initialMetadataToSend.add(key:"c", value:"Cherry")
-              let (_, _, message) = requestHandler.receiveMessage(initialMetadata:initialMetadataToSend)
-              if let message = message {
-                self.log("\(requestCount): Received message: \(message.data())")
-                let requestMessage = fileDescriptorSet.readMessage(name:"StickyNoteRequest", proto:message.data())
+              requestMessage.forOneField(name:"message") {(field) in
+                let imageData = self.drawImage(message: field.string())
 
-                requestMessage?.forOneField(name:"message") {(field) in
-                  let imageData = self.drawImage(message: field.string())
+                let replyMessage = fileDescriptorSet.createMessage(name:"StickyNoteResponse")!
+                replyMessage.addField(name:"image", value:imageData)
 
-                  // construct an internal representation of the message
-                  let replyMessage = fileDescriptorSet.createMessage(name:"StickyNoteResponse")!
-                  replyMessage.addField(name:"image") {(field) in field.setData(imageData)}
+                let trailingMetadataToSend = Metadata(pairs:[MetadataPair(key:"0", value:"zero"),
+                                                             MetadataPair(key:"1", value:"one"),
+                                                             MetadataPair(key:"2", value:"two")])
 
-                  let trailingMetadataToSend = Metadata()
-                  trailingMetadataToSend.add(key:"0", value:"zero")
-                  trailingMetadataToSend.add(key:"1", value:"one")
-                  trailingMetadataToSend.add(key:"2", value:"two")
-                  let (_, _) = requestHandler.sendResponse(message:ByteBuffer(data:replyMessage.serialize()),
-                                                           trailingMetadata:trailingMetadataToSend)
-                  self.log("------------------------------")
-                }
+                let (_, _) = requestHandler.sendResponse(message:ByteBuffer(data:replyMessage.serialize()),
+                                                         trailingMetadata:trailingMetadataToSend)
               }
             }
-          } else if (completionType == GRPC_QUEUE_TIMEOUT) {
-            // everything is fine
-          } else if (completionType == GRPC_QUEUE_SHUTDOWN) {
-            // we should stop
           }
+        } else if (completionType == GRPC_QUEUE_TIMEOUT) {
+          // everything is fine
+        } else if (completionType == GRPC_QUEUE_SHUTDOWN) {
+          // we should stop
         }
       }
     }
   }
 
+  /// draw a stickynote
   func drawImage(message: String) -> NSData {
     let image = NSImage.init(size: NSSize.init(width: 400, height: 400),
                              flipped: false,

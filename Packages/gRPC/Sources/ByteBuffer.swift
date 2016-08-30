@@ -62,7 +62,6 @@ public class ByteBuffer {
     self.b = cgrpc_byte_buffer_create_with_data(data.bytes, data.length)
   }
 
-
   deinit {
     cgrpc_byte_buffer_destroy(b);
   }
@@ -75,7 +74,6 @@ public class ByteBuffer {
                   encoding:String.Encoding.utf8)!
   }
 
-
   /// Gets raw data from the contents of the ByteBuffer
   ///
   /// - Returns: data formed from the ByteBuffer contents
@@ -84,5 +82,4 @@ public class ByteBuffer {
     let bytes = cgrpc_byte_buffer_as_data(b, &length)
     return NSData(bytes:bytes, length: length)
   }
-
 }

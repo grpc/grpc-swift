@@ -66,6 +66,21 @@ public class Message {
     }
   }
 
+
+  /// add a field and set it to the specified value
+  public func addField(name: String, value: Any) {
+    // look up the field descriptor
+    for fieldDescriptor in descriptor.fieldDescriptors {
+      if (fieldDescriptor.name == name) {
+        // create a field with that descriptor
+        let field = Field(descriptor:fieldDescriptor)
+        // add it to self.fields
+        self.fields.append(field)
+        field.value = value
+      }
+    }
+  }
+
   /// get one field with the specified name
   public func oneField(name: String) -> Field? {
     for field in fields {

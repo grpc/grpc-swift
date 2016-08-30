@@ -42,69 +42,59 @@ class StickyNoteViewController : NSViewController, NSTextFieldDelegate {
     callServer(address:"localhost:8081")
   }
 
+  override func viewDidLoad() {
+    gRPC.initialize()
+  }
+
   func log(_ message: String) {
     print(message)
   }
 
   func callServer(address:String) {
-    if let fileDescriptorSetProto =
-      NSData(contentsOfFile:Bundle.main.path(forResource: "stickynote", ofType: "out")!) {
-      // load a FileDescriptorSet that includes a descriptor for the message to be created
-      let fileDescriptorSet = FileDescriptorSet(proto:fileDescriptorSetProto)
+    let fileDescriptorSet = FileDescriptorSet(filename:"stickynote.out")
 
-      // construct an internal representation of the message
-      if let message = fileDescriptorSet.createMessage(name:"StickyNoteRequest") {
-        message.addField(name:"message") {(field) in field.setString(self.messageField.stringValue)}
-        message.display()
+    // build the message
+    if let requestMessage = fileDescriptorSet.createMessage(name:"StickyNoteRequest") {
+      requestMessage.addField(name:"message", value:self.messageField.stringValue)
 
-        // write the message as a protocol buffer
-        let data = message.serialize()
-        data.write(toFile: "SampleRequest.out", atomically: false)
+      let requestHost = "foo.test.google.fr"
+      let requestMethod = "/messagepb.StickyNote/Get"
+      let requestBuffer = ByteBuffer(data:requestMessage.serialize())
+      let requestMetadata = Metadata(pairs:[MetadataPair(key:"x", value:"xylophone"),
+                                            MetadataPair(key:"y", value:"yu"),
+                                            MetadataPair(key:"z", value:"zither")])
 
-        self.log("Client Starting")
-        self.log("GRPC version " + gRPC.version())
+      let client = Client(address:address)
+      let response = client.performRequest(host:requestHost,
+                                           method:requestMethod,
+                                           message:requestBuffer,
+                                           metadata:requestMetadata)
 
-        let host = "foo.test.google.fr"
-        let message = gRPC.ByteBuffer(data:data)
+      if let initialMetadata = response.initialMetadata {
+        for j in 0..<initialMetadata.count() {
+          self.log("Received initial metadata -> "
+            + initialMetadata.key(index:j) + " : "
+            + initialMetadata.value(index:j))
+        }
+      }
 
-        let i = 1
-        let c = gRPC.Client(address:address)
-        let method = "/messagepb.StickyNote/Get"
+      self.log("Received status: \(response.status) " + response.statusDetails)
 
-        let metadata = Metadata(pairs:[MetadataPair(key:"x", value:"xylophone"),
-                                       MetadataPair(key:"y", value:"yu"),
-                                       MetadataPair(key:"z", value:"zither")])
-
-        let response = c.performRequest(host:host,
-                                        method:method,
-                                        message:message,
-                                        metadata:metadata)
-
-        if let initialMetadata = response.initialMetadata {
-          for j in 0..<initialMetadata.count() {
-            self.log("\(i): Received initial metadata -> " + initialMetadata.key(index:j) + " : " + initialMetadata.value(index:j))
+      if let responseBuffer = response.message,
+        let responseMessage = fileDescriptorSet.readMessage(name:"StickyNoteResponse",
+                                                            proto:responseBuffer.data()) {
+        responseMessage.forOneField(name:"image") {(field) in
+          if let image = NSImage(data: field.data() as Data) {
+            self.imageView.image = image
           }
         }
+      }
 
-        self.log("Received status: \(response.status) " + response.statusDetails)
-        if let responsemessage = response.message {
-          let data = responsemessage.data()
-          if let message = fileDescriptorSet.readMessage(name:"StickyNoteResponse",
-                                                         proto:data) {
-            message.forOneField(name:"image") {(field) in
-              let data = field.data()
-              if let image = NSImage(data: data as Data) {
-                self.imageView.image = image
-              }
-            }
-          }
-          if let trailingMetadata = response.trailingMetadata {
-            for j in 0..<trailingMetadata.count() {
-              self.log("\(i): Received trailing metadata -> " + trailingMetadata.key(index:j) + " : " + trailingMetadata.value(index:j))
-            }
-          }
-          self.log("------------------------------")
-          self.log("Client Stopped")
+      if let trailingMetadata = response.trailingMetadata {
+        for j in 0..<trailingMetadata.count() {
+          self.log("Received trailing metadata -> "
+            + trailingMetadata.key(index:j) + " : "
+            + trailingMetadata.value(index:j))
         }
       }
     }
