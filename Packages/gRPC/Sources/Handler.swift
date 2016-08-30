@@ -131,7 +131,7 @@ public class Handler {
                            trailingMetadata: Metadata) -> (grpc_call_error, grpc_completion_type) {
     let operation_receiveCloseOnServer = Operation_ReceiveCloseOnServer();
     let operation_sendStatusFromServer = Operation_SendStatusFromServer(status:0,
-                                                                        statusDetails:"wxyz",
+                                                                        statusDetails:"OK",
                                                                         metadata:trailingMetadata)
     let operation_sendMessage = Operation_SendMessage(message:message)
 
