@@ -1,0 +1,8 @@
+#!/bin/sh
+# 
+# Use this script to create a self-signed certificate (ssl.crt) and key file (ssl.key)
+# Replace "example.com" with the host name you'd like for your certificate.
+# 
+openssl genrsa -out ssl.key 2048
+openssl req -new -key ssl.key -out ssl.csr -subj "/CN=example.com"
+openssl x509 -req -days 365 -in ssl.csr -signkey ssl.key -out ssl.crt
