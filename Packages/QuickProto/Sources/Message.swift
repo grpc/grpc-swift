@@ -164,11 +164,11 @@ public class Message {
       case FieldType.MESSAGE:
         let messageData = field.message().serialize()
         data.appendVarint(messageData.length)
-        data.append(messageData as Data)
+        data.append(messageData.bytes, length: messageData.length)
       case FieldType.BYTES:
         let messageData = field.data()
         data.appendVarint(messageData.length)
-        data.append(messageData as Data)
+        data.append(messageData.bytes, length: messageData.length)
       case FieldType.UINT32:
         data.appendVarint(field.integer())
       case FieldType.ENUM:
