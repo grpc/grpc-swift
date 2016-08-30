@@ -30,7 +30,6 @@ import (
 
 const (
 	useSSL         = false
-	host           = "localhost"
 	defaultMessage = "hello"
 )
 
@@ -38,6 +37,7 @@ func main() {
 
 	var stream = flag.Int("s", 0, "send multiple messages by streaming")
 	var message = flag.String("m", defaultMessage, "the message to send")
+	var address = flag.String("a", "", "address of the echo server to use")
 
 	flag.Parse()
 
@@ -45,9 +45,15 @@ func main() {
 	var conn *grpc.ClientConn
 	var err error
 	if !useSSL {
-		conn, err = grpc.Dial("localhost:8080", grpc.WithInsecure())
+		if *address == "" {
+			*address = "localhost:8080"
+		}
+		conn, err = grpc.Dial(*address, grpc.WithInsecure())
 	} else {
-		conn, err = grpc.Dial("localhost:443",
+		if *address == "" {
+			*address = "localhost:443"
+		}
+		conn, err = grpc.Dial(*address,
 			grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
 				// remove the following line if the server certificate is signed by a certificate authority
 				InsecureSkipVerify: true,
@@ -71,7 +77,7 @@ func send_one_message(c pb.EchoClient, message string) {
 	// Contact the server and print out its response.
 	response, err := c.Get(context.Background(), &pb.EchoRequest{Text: message})
 	if err != nil {
-		log.Fatalf("could not create sticky: %v", err)
+		log.Fatalf("could not receive echo: %v", err)
 	}
 	log.Printf("Received: %s", response.Text)
 }
@@ -91,7 +97,7 @@ func send_many_messages(c pb.EchoClient, message string, count int) {
 				return
 			}
 			if err != nil {
-				log.Fatalf("Failed to receive a note : %v", err)
+				log.Fatalf("Failed to receive an echo : %v", err)
 			}
 			count = count + 1
 			log.Printf("Received: %s", in.Text)
@@ -101,7 +107,7 @@ func send_many_messages(c pb.EchoClient, message string, count int) {
 		var note pb.EchoRequest
 		note.Text = fmt.Sprintf("%s %d", message, i)
 		if err := stream.Send(&note); err != nil {
-			log.Fatalf("Failed to send a note: %v", err)
+			log.Fatalf("Failed to send a message: %v", err)
 		}
 	}
 	stream.CloseSend()

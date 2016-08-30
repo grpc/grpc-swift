@@ -8,32 +8,20 @@
 
 /* Begin PBXBuildFile section */
 		D35C9F381D74A1C0000443CD /* QuickProto.h in Headers */ = {isa = PBXBuildFile; fileRef = D35C9F361D74A1C0000443CD /* QuickProto.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		D35C9F3C1D74A1DC000443CD /* _FileDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C9F2D1D74A14B000443CD /* _FileDescriptor.swift */; };
-		D35C9F3D1D74A1DC000443CD /* CodeBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DCB4901D6F54EC00C6A8AE /* CodeBuilder.swift */; };
-		D35C9F3E1D74A1DC000443CD /* Field.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DCB4881D6F4C6E00C6A8AE /* Field.swift */; };
-		D35C9F3F1D74A1DC000443CD /* FieldDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DCB48C1D6F4C8600C6A8AE /* FieldDescriptor.swift */; };
-		D35C9F401D74A1DC000443CD /* FieldLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DCB49B1D6FB2AA00C6A8AE /* FieldLabel.swift */; };
-		D35C9F411D74A1DC000443CD /* FieldType.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DCB4991D6FAFED00C6A8AE /* FieldType.swift */; };
-		D35C9F421D74A1DC000443CD /* FileDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DCB4951D6F957E00C6A8AE /* FileDescriptor.swift */; };
-		D35C9F431D74A1DC000443CD /* FileDescriptorSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DCB4971D6F958900C6A8AE /* FileDescriptorSet.swift */; };
-		D35C9F441D74A1DC000443CD /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DCB4861D6F4C6400C6A8AE /* Message.swift */; };
-		D35C9F451D74A1DC000443CD /* MessageDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DCB48A1D6F4C7A00C6A8AE /* MessageDescriptor.swift */; };
-		D35C9F461D74A1DC000443CD /* MessageReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DCB48E1D6F4D0100C6A8AE /* MessageReader.swift */; };
-		D35C9F471D74A1DC000443CD /* NSMutableData+Proto.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DCB49D1D6FCF6000C6A8AE /* NSMutableData+Proto.swift */; };
 		D35C9F6C1D74A4AB000443CD /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C9F6B1D74A4AB000443CD /* main.swift */; };
-		D35C9F701D74A4BA000443CD /* _FileDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C9F2D1D74A14B000443CD /* _FileDescriptor.swift */; };
-		D35C9F711D74A4BA000443CD /* CodeBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DCB4901D6F54EC00C6A8AE /* CodeBuilder.swift */; };
-		D35C9F721D74A4BA000443CD /* Field.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DCB4881D6F4C6E00C6A8AE /* Field.swift */; };
-		D35C9F731D74A4BA000443CD /* FieldDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DCB48C1D6F4C8600C6A8AE /* FieldDescriptor.swift */; };
-		D35C9F741D74A4BA000443CD /* FieldLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DCB49B1D6FB2AA00C6A8AE /* FieldLabel.swift */; };
-		D35C9F751D74A4BA000443CD /* FieldType.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DCB4991D6FAFED00C6A8AE /* FieldType.swift */; };
-		D35C9F761D74A4BA000443CD /* FileDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DCB4951D6F957E00C6A8AE /* FileDescriptor.swift */; };
-		D35C9F771D74A4BA000443CD /* FileDescriptorSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DCB4971D6F958900C6A8AE /* FileDescriptorSet.swift */; };
-		D35C9F781D74A4BA000443CD /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DCB4861D6F4C6400C6A8AE /* Message.swift */; };
-		D35C9F791D74A4BA000443CD /* MessageDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DCB48A1D6F4C7A00C6A8AE /* MessageDescriptor.swift */; };
-		D35C9F7A1D74A4BA000443CD /* MessageReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DCB48E1D6F4D0100C6A8AE /* MessageReader.swift */; };
-		D35C9F7B1D74A4BA000443CD /* NSMutableData+Proto.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3DCB49D1D6FCF6000C6A8AE /* NSMutableData+Proto.swift */; };
-		D3930CBE1D74E9DC00F1A9BE /* WireType.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3930CBD1D74E9DC00F1A9BE /* WireType.swift */; };
+		D3A2C8261D75FC2200E5DFAB /* _FileDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8191D75FC2200E5DFAB /* _FileDescriptor.swift */; };
+		D3A2C8271D75FC2200E5DFAB /* CodeBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81A1D75FC2200E5DFAB /* CodeBuilder.swift */; };
+		D3A2C8281D75FC2200E5DFAB /* Field.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81B1D75FC2200E5DFAB /* Field.swift */; };
+		D3A2C8291D75FC2200E5DFAB /* FieldDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81C1D75FC2200E5DFAB /* FieldDescriptor.swift */; };
+		D3A2C82A1D75FC2200E5DFAB /* FieldLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81D1D75FC2200E5DFAB /* FieldLabel.swift */; };
+		D3A2C82B1D75FC2200E5DFAB /* FieldType.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81E1D75FC2200E5DFAB /* FieldType.swift */; };
+		D3A2C82C1D75FC2200E5DFAB /* FileDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81F1D75FC2200E5DFAB /* FileDescriptor.swift */; };
+		D3A2C82D1D75FC2200E5DFAB /* FileDescriptorSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8201D75FC2200E5DFAB /* FileDescriptorSet.swift */; };
+		D3A2C82E1D75FC2200E5DFAB /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8211D75FC2200E5DFAB /* Message.swift */; };
+		D3A2C82F1D75FC2200E5DFAB /* MessageDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8221D75FC2200E5DFAB /* MessageDescriptor.swift */; };
+		D3A2C8301D75FC2200E5DFAB /* MessageReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8231D75FC2200E5DFAB /* MessageReader.swift */; };
+		D3A2C8311D75FC2200E5DFAB /* NSMutableData+Proto.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8241D75FC2200E5DFAB /* NSMutableData+Proto.swift */; };
+		D3A2C8321D75FC2200E5DFAB /* WireType.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8251D75FC2200E5DFAB /* WireType.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -49,24 +37,24 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		D35C9F2D1D74A14B000443CD /* _FileDescriptor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = _FileDescriptor.swift; sourceTree = "<group>"; };
 		D35C9F341D74A1C0000443CD /* QuickProto.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = QuickProto.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D35C9F361D74A1C0000443CD /* QuickProto.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = QuickProto.h; sourceTree = "<group>"; };
 		D35C9F371D74A1C0000443CD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D35C9F691D74A4AB000443CD /* QuickDemo */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = QuickDemo; sourceTree = BUILT_PRODUCTS_DIR; };
 		D35C9F6B1D74A4AB000443CD /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
-		D3930CBD1D74E9DC00F1A9BE /* WireType.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WireType.swift; sourceTree = "<group>"; };
-		D3DCB4861D6F4C6400C6A8AE /* Message.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
-		D3DCB4881D6F4C6E00C6A8AE /* Field.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Field.swift; sourceTree = "<group>"; };
-		D3DCB48A1D6F4C7A00C6A8AE /* MessageDescriptor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MessageDescriptor.swift; sourceTree = "<group>"; };
-		D3DCB48C1D6F4C8600C6A8AE /* FieldDescriptor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FieldDescriptor.swift; sourceTree = "<group>"; };
-		D3DCB48E1D6F4D0100C6A8AE /* MessageReader.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MessageReader.swift; sourceTree = "<group>"; };
-		D3DCB4901D6F54EC00C6A8AE /* CodeBuilder.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CodeBuilder.swift; sourceTree = "<group>"; };
-		D3DCB4951D6F957E00C6A8AE /* FileDescriptor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileDescriptor.swift; sourceTree = "<group>"; };
-		D3DCB4971D6F958900C6A8AE /* FileDescriptorSet.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileDescriptorSet.swift; sourceTree = "<group>"; };
-		D3DCB4991D6FAFED00C6A8AE /* FieldType.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FieldType.swift; sourceTree = "<group>"; };
-		D3DCB49B1D6FB2AA00C6A8AE /* FieldLabel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FieldLabel.swift; sourceTree = "<group>"; };
-		D3DCB49D1D6FCF6000C6A8AE /* NSMutableData+Proto.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "NSMutableData+Proto.swift"; sourceTree = "<group>"; };
+		D3A2C8191D75FC2200E5DFAB /* _FileDescriptor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = _FileDescriptor.swift; path = ../Packages/QuickProto/Sources/_FileDescriptor.swift; sourceTree = "<group>"; };
+		D3A2C81A1D75FC2200E5DFAB /* CodeBuilder.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CodeBuilder.swift; path = ../Packages/QuickProto/Sources/CodeBuilder.swift; sourceTree = "<group>"; };
+		D3A2C81B1D75FC2200E5DFAB /* Field.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Field.swift; path = ../Packages/QuickProto/Sources/Field.swift; sourceTree = "<group>"; };
+		D3A2C81C1D75FC2200E5DFAB /* FieldDescriptor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = FieldDescriptor.swift; path = ../Packages/QuickProto/Sources/FieldDescriptor.swift; sourceTree = "<group>"; };
+		D3A2C81D1D75FC2200E5DFAB /* FieldLabel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = FieldLabel.swift; path = ../Packages/QuickProto/Sources/FieldLabel.swift; sourceTree = "<group>"; };
+		D3A2C81E1D75FC2200E5DFAB /* FieldType.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = FieldType.swift; path = ../Packages/QuickProto/Sources/FieldType.swift; sourceTree = "<group>"; };
+		D3A2C81F1D75FC2200E5DFAB /* FileDescriptor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = FileDescriptor.swift; path = ../Packages/QuickProto/Sources/FileDescriptor.swift; sourceTree = "<group>"; };
+		D3A2C8201D75FC2200E5DFAB /* FileDescriptorSet.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = FileDescriptorSet.swift; path = ../Packages/QuickProto/Sources/FileDescriptorSet.swift; sourceTree = "<group>"; };
+		D3A2C8211D75FC2200E5DFAB /* Message.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Message.swift; path = ../Packages/QuickProto/Sources/Message.swift; sourceTree = "<group>"; };
+		D3A2C8221D75FC2200E5DFAB /* MessageDescriptor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = MessageDescriptor.swift; path = ../Packages/QuickProto/Sources/MessageDescriptor.swift; sourceTree = "<group>"; };
+		D3A2C8231D75FC2200E5DFAB /* MessageReader.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = MessageReader.swift; path = ../Packages/QuickProto/Sources/MessageReader.swift; sourceTree = "<group>"; };
+		D3A2C8241D75FC2200E5DFAB /* NSMutableData+Proto.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = "NSMutableData+Proto.swift"; path = "../Packages/QuickProto/Sources/NSMutableData+Proto.swift"; sourceTree = "<group>"; };
+		D3A2C8251D75FC2200E5DFAB /* WireType.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = WireType.swift; path = ../Packages/QuickProto/Sources/WireType.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -104,10 +92,30 @@
 			path = QuickDemo;
 			sourceTree = "<group>";
 		};
+		D3A2C8331D75FC2900E5DFAB /* QuickProto/Sources */ = {
+			isa = PBXGroup;
+			children = (
+				D3A2C8191D75FC2200E5DFAB /* _FileDescriptor.swift */,
+				D3A2C81A1D75FC2200E5DFAB /* CodeBuilder.swift */,
+				D3A2C81B1D75FC2200E5DFAB /* Field.swift */,
+				D3A2C81C1D75FC2200E5DFAB /* FieldDescriptor.swift */,
+				D3A2C81D1D75FC2200E5DFAB /* FieldLabel.swift */,
+				D3A2C81E1D75FC2200E5DFAB /* FieldType.swift */,
+				D3A2C81F1D75FC2200E5DFAB /* FileDescriptor.swift */,
+				D3A2C8201D75FC2200E5DFAB /* FileDescriptorSet.swift */,
+				D3A2C8211D75FC2200E5DFAB /* Message.swift */,
+				D3A2C8221D75FC2200E5DFAB /* MessageDescriptor.swift */,
+				D3A2C8231D75FC2200E5DFAB /* MessageReader.swift */,
+				D3A2C8241D75FC2200E5DFAB /* NSMutableData+Proto.swift */,
+				D3A2C8251D75FC2200E5DFAB /* WireType.swift */,
+			);
+			name = QuickProto/Sources;
+			sourceTree = "<group>";
+		};
 		D3D1C8511D6D15D9002F1B53 = {
 			isa = PBXGroup;
 			children = (
-				D3D1C85C1D6D15D9002F1B53 /* QuickProto */,
+				D3A2C8331D75FC2900E5DFAB /* QuickProto/Sources */,
 				D35C9F351D74A1C0000443CD /* QuickProto */,
 				D35C9F6A1D74A4AB000443CD /* QuickDemo */,
 				D3D1C85B1D6D15D9002F1B53 /* Products */,
@@ -121,26 +129,6 @@
 				D35C9F691D74A4AB000443CD /* QuickDemo */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		D3D1C85C1D6D15D9002F1B53 /* QuickProto */ = {
-			isa = PBXGroup;
-			children = (
-				D35C9F2D1D74A14B000443CD /* _FileDescriptor.swift */,
-				D3DCB4901D6F54EC00C6A8AE /* CodeBuilder.swift */,
-				D3DCB4881D6F4C6E00C6A8AE /* Field.swift */,
-				D3DCB48C1D6F4C8600C6A8AE /* FieldDescriptor.swift */,
-				D3DCB49B1D6FB2AA00C6A8AE /* FieldLabel.swift */,
-				D3DCB4991D6FAFED00C6A8AE /* FieldType.swift */,
-				D3DCB4951D6F957E00C6A8AE /* FileDescriptor.swift */,
-				D3DCB4971D6F958900C6A8AE /* FileDescriptorSet.swift */,
-				D3DCB4861D6F4C6400C6A8AE /* Message.swift */,
-				D3DCB48A1D6F4C7A00C6A8AE /* MessageDescriptor.swift */,
-				D3DCB48E1D6F4D0100C6A8AE /* MessageReader.swift */,
-				D3DCB49D1D6FCF6000C6A8AE /* NSMutableData+Proto.swift */,
-				D3930CBD1D74E9DC00F1A9BE /* WireType.swift */,
-			);
-			path = QuickProto;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -205,6 +193,7 @@
 					D35C9F331D74A1C0000443CD = {
 						CreatedOnToolsVersion = 8.0;
 						DevelopmentTeam = EQHXZ8M8AV;
+						LastSwiftMigration = 0800;
 						ProvisioningStyle = Automatic;
 					};
 					D35C9F681D74A4AB000443CD = {
@@ -247,19 +236,19 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D35C9F3C1D74A1DC000443CD /* _FileDescriptor.swift in Sources */,
-				D35C9F3D1D74A1DC000443CD /* CodeBuilder.swift in Sources */,
-				D3930CBE1D74E9DC00F1A9BE /* WireType.swift in Sources */,
-				D35C9F3E1D74A1DC000443CD /* Field.swift in Sources */,
-				D35C9F3F1D74A1DC000443CD /* FieldDescriptor.swift in Sources */,
-				D35C9F401D74A1DC000443CD /* FieldLabel.swift in Sources */,
-				D35C9F411D74A1DC000443CD /* FieldType.swift in Sources */,
-				D35C9F421D74A1DC000443CD /* FileDescriptor.swift in Sources */,
-				D35C9F431D74A1DC000443CD /* FileDescriptorSet.swift in Sources */,
-				D35C9F441D74A1DC000443CD /* Message.swift in Sources */,
-				D35C9F451D74A1DC000443CD /* MessageDescriptor.swift in Sources */,
-				D35C9F461D74A1DC000443CD /* MessageReader.swift in Sources */,
-				D35C9F471D74A1DC000443CD /* NSMutableData+Proto.swift in Sources */,
+				D3A2C82A1D75FC2200E5DFAB /* FieldLabel.swift in Sources */,
+				D3A2C8301D75FC2200E5DFAB /* MessageReader.swift in Sources */,
+				D3A2C8321D75FC2200E5DFAB /* WireType.swift in Sources */,
+				D3A2C8271D75FC2200E5DFAB /* CodeBuilder.swift in Sources */,
+				D3A2C82B1D75FC2200E5DFAB /* FieldType.swift in Sources */,
+				D3A2C82E1D75FC2200E5DFAB /* Message.swift in Sources */,
+				D3A2C82C1D75FC2200E5DFAB /* FileDescriptor.swift in Sources */,
+				D3A2C8261D75FC2200E5DFAB /* _FileDescriptor.swift in Sources */,
+				D3A2C82D1D75FC2200E5DFAB /* FileDescriptorSet.swift in Sources */,
+				D3A2C8311D75FC2200E5DFAB /* NSMutableData+Proto.swift in Sources */,
+				D3A2C8281D75FC2200E5DFAB /* Field.swift in Sources */,
+				D3A2C82F1D75FC2200E5DFAB /* MessageDescriptor.swift in Sources */,
+				D3A2C8291D75FC2200E5DFAB /* FieldDescriptor.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -267,18 +256,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D35C9F701D74A4BA000443CD /* _FileDescriptor.swift in Sources */,
-				D35C9F711D74A4BA000443CD /* CodeBuilder.swift in Sources */,
-				D35C9F721D74A4BA000443CD /* Field.swift in Sources */,
-				D35C9F731D74A4BA000443CD /* FieldDescriptor.swift in Sources */,
-				D35C9F741D74A4BA000443CD /* FieldLabel.swift in Sources */,
-				D35C9F751D74A4BA000443CD /* FieldType.swift in Sources */,
-				D35C9F761D74A4BA000443CD /* FileDescriptor.swift in Sources */,
-				D35C9F771D74A4BA000443CD /* FileDescriptorSet.swift in Sources */,
-				D35C9F781D74A4BA000443CD /* Message.swift in Sources */,
-				D35C9F791D74A4BA000443CD /* MessageDescriptor.swift in Sources */,
-				D35C9F7A1D74A4BA000443CD /* MessageReader.swift in Sources */,
-				D35C9F7B1D74A4BA000443CD /* NSMutableData+Proto.swift in Sources */,
 				D35C9F6C1D74A4AB000443CD /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -289,6 +266,7 @@
 		D35C9F3A1D74A1C0000443CD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "";
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -305,6 +283,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 3.0;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
@@ -314,6 +293,7 @@
 		D35C9F3B1D74A1C0000443CD /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "";
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
