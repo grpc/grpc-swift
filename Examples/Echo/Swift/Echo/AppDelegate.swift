@@ -76,7 +76,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
               requestMessage.forOneField(name:"text") {(field) in
 
-                let replyMessage = fileDescriptorSet.createMessage(name:"EchoRequest")!
+                let replyMessage = fileDescriptorSet.createMessage(name:"EchoResponse")!
                 replyMessage.addField(name:"text", value:field.string())
 
                 let (_, _) = requestHandler.sendResponse(message:ByteBuffer(data:replyMessage.serialize()),
