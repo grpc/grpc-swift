@@ -44,7 +44,6 @@ public class FileDescriptorSet {
     let baseFileDescriptorSet = FileDescriptorSet()
     if let descriptorMessage = baseFileDescriptorSet.readMessage(name:"FileDescriptorSet",
                                                                  proto:proto) {
-      descriptorMessage.display()
       descriptorMessage.forEachField(path:["file"]) { (field) in
         let fileDescriptor = FileDescriptor(message: field.message())
         fileDescriptors.append(fileDescriptor)
