@@ -10,6 +10,9 @@
 		D310E3C21D5D8B89002D48D0 /* Writer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D310E3C11D5D8B89002D48D0 /* Writer.swift */; };
 		D310E3C71D5D8CD8002D48D0 /* Writable.swift in Sources */ = {isa = PBXBuildFile; fileRef = D310E3C61D5D8CD8002D48D0 /* Writable.swift */; };
 		D32F10121D5CEE880071B7C1 /* CallResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = D32F10111D5CEE880071B7C1 /* CallResponse.swift */; };
+		D34B4BB81D7B2C9B00B8B5E2 /* OperationGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = D34B4BB71D7B2C9B00B8B5E2 /* OperationGroup.swift */; };
+		D34B4BBA1D7B2CB200B8B5E2 /* operations.c in Sources */ = {isa = PBXBuildFile; fileRef = D34B4BB91D7B2CB200B8B5E2 /* operations.c */; };
+		D37DD0281D7D09CB009AEB74 /* event.c in Sources */ = {isa = PBXBuildFile; fileRef = D37DD0271D7D09CB009AEB74 /* event.c */; };
 		D3AC86AE1D5BEBBE0042B341 /* byte_buffer.c in Sources */ = {isa = PBXBuildFile; fileRef = D3AC86A21D5BEBBE0042B341 /* byte_buffer.c */; };
 		D3AC86AF1D5BEBBE0042B341 /* call.c in Sources */ = {isa = PBXBuildFile; fileRef = D3AC86A31D5BEBBE0042B341 /* call.c */; };
 		D3AC86B01D5BEBBE0042B341 /* client.c in Sources */ = {isa = PBXBuildFile; fileRef = D3AC86A41D5BEBBE0042B341 /* client.c */; };
@@ -40,6 +43,9 @@
 		D310E3C11D5D8B89002D48D0 /* Writer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Writer.swift; path = Packages/gRPC/Sources/Writer.swift; sourceTree = "<group>"; };
 		D310E3C61D5D8CD8002D48D0 /* Writable.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Writable.swift; path = Packages/gRPC/Sources/Writable.swift; sourceTree = "<group>"; };
 		D32F10111D5CEE880071B7C1 /* CallResponse.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CallResponse.swift; path = Packages/gRPC/Sources/CallResponse.swift; sourceTree = "<group>"; };
+		D34B4BB71D7B2C9B00B8B5E2 /* OperationGroup.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = OperationGroup.swift; path = Packages/gRPC/Sources/OperationGroup.swift; sourceTree = "<group>"; };
+		D34B4BB91D7B2CB200B8B5E2 /* operations.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = operations.c; path = Packages/CgRPC/Sources/operations.c; sourceTree = "<group>"; };
+		D37DD0271D7D09CB009AEB74 /* event.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = event.c; path = Packages/CgRPC/Sources/event.c; sourceTree = "<group>"; };
 		D3AC86A21D5BEBBE0042B341 /* byte_buffer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = byte_buffer.c; path = Packages/CgRPC/Sources/byte_buffer.c; sourceTree = "<group>"; };
 		D3AC86A31D5BEBBE0042B341 /* call.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = call.c; path = Packages/CgRPC/Sources/call.c; sourceTree = "<group>"; };
 		D3AC86A41D5BEBBE0042B341 /* client.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = client.c; path = Packages/CgRPC/Sources/client.c; sourceTree = "<group>"; };
@@ -85,16 +91,18 @@
 			children = (
 				D3AC86A21D5BEBBE0042B341 /* byte_buffer.c */,
 				D3AC86A31D5BEBBE0042B341 /* call.c */,
+				D3AC86AD1D5BEBBE0042B341 /* cgrpc.h */,
 				D3AC86A41D5BEBBE0042B341 /* client.c */,
 				D3AC86A51D5BEBBE0042B341 /* completion_queue.c */,
+				D37DD0271D7D09CB009AEB74 /* event.c */,
 				D3AC86A61D5BEBBE0042B341 /* handler.c */,
 				D3AC86A71D5BEBBE0042B341 /* internal.c */,
 				D3AC86A81D5BEBBE0042B341 /* internal.h */,
 				D3AC86A91D5BEBBE0042B341 /* metadata.c */,
 				D3AC86AA1D5BEBBE0042B341 /* mutex.c */,
 				D3AC86AB1D5BEBBE0042B341 /* observers.c */,
+				D34B4BB91D7B2CB200B8B5E2 /* operations.c */,
 				D3AC86AC1D5BEBBE0042B341 /* server.c */,
-				D3AC86AD1D5BEBBE0042B341 /* cgrpc.h */,
 			);
 			name = CgRPC/Sources;
 			sourceTree = "<group>";
@@ -102,7 +110,6 @@
 		D3AC86CF1D5BEBEA0042B341 /* gRPC/Sources */ = {
 			isa = PBXGroup;
 			children = (
-				D310E3C61D5D8CD8002D48D0 /* Writable.swift */,
 				D3AC86BB1D5BEBE00042B341 /* ByteBuffer.swift */,
 				D3AC86BC1D5BEBE00042B341 /* Call.swift */,
 				D32F10111D5CEE880071B7C1 /* CallResponse.swift */,
@@ -113,7 +120,9 @@
 				D3AC86C11D5BEBE00042B341 /* Metadata.swift */,
 				D3AC86C21D5BEBE00042B341 /* Mutex.swift */,
 				D3AC86C31D5BEBE00042B341 /* Operation.swift */,
+				D34B4BB71D7B2C9B00B8B5E2 /* OperationGroup.swift */,
 				D3AC86C41D5BEBE00042B341 /* Server.swift */,
+				D310E3C61D5D8CD8002D48D0 /* Writable.swift */,
 				D310E3C11D5D8B89002D48D0 /* Writer.swift */,
 			);
 			name = gRPC/Sources;
@@ -240,6 +249,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D3AC86AE1D5BEBBE0042B341 /* byte_buffer.c in Sources */,
+				D34B4BBA1D7B2CB200B8B5E2 /* operations.c in Sources */,
 				D3AC86AF1D5BEBBE0042B341 /* call.c in Sources */,
 				D3AC86B01D5BEBBE0042B341 /* client.c in Sources */,
 				D3AC86B11D5BEBBE0042B341 /* completion_queue.c in Sources */,
@@ -254,9 +264,11 @@
 				D3AC86CB1D5BEBE00042B341 /* Metadata.swift in Sources */,
 				D310E3C71D5D8CD8002D48D0 /* Writable.swift in Sources */,
 				D3AC86C91D5BEBE00042B341 /* gRPC.swift in Sources */,
+				D34B4BB81D7B2C9B00B8B5E2 /* OperationGroup.swift in Sources */,
 				D3AC86CA1D5BEBE00042B341 /* Handler.swift in Sources */,
 				D3AC86CD1D5BEBE00042B341 /* Operation.swift in Sources */,
 				D310E3C21D5D8B89002D48D0 /* Writer.swift in Sources */,
+				D37DD0281D7D09CB009AEB74 /* event.c in Sources */,
 				D32F10121D5CEE880071B7C1 /* CallResponse.swift in Sources */,
 				D3AC86CE1D5BEBE00042B341 /* Server.swift in Sources */,
 				D3AC86C71D5BEBE00042B341 /* Client.swift in Sources */,

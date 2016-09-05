@@ -40,6 +40,9 @@ public class CompletionQueue {
   /// Pointer to underlying C representation
   var cq : UnsafeMutableRawPointer!
 
+  /// Operation groups that are awaiting completion, keyed by tag
+  public var operationGroups : [Int64 : OperationGroup] = [:]
+
   /// Initializes a CompletionQueue
   ///
   /// - Parameter cq: the underlying C representation
@@ -51,7 +54,31 @@ public class CompletionQueue {
   ///
   /// - Parameter timeout: a timeout value in seconds
   /// - Returns: a grpc_completion_type code indicating the result of waiting
-  func waitForCompletion(timeout: Double) -> grpc_completion_type {
+  public func waitForCompletion(timeout: Double) -> grpc_event {
     return cgrpc_completion_queue_get_next_event(cq, timeout);
+  }
+
+  public func run() {
+    DispatchQueue.global().async {
+      while (true) {
+        let event = cgrpc_completion_queue_get_next_event(self.cq, -1.0)
+        switch (event.type) {
+        case GRPC_OP_COMPLETE:
+          let tag = cgrpc_event_tag(event)
+          if let operations = self.operationGroups[tag] {
+            operations.completion(event)
+            self.operationGroups[tag] = nil
+          }
+          continue
+        case GRPC_QUEUE_SHUTDOWN:
+          // grpc_completion_queue_destroy(unmanagedQueue);
+          break
+        case GRPC_QUEUE_TIMEOUT:
+          continue
+        default:
+          continue
+        }
+      }
+    }
   }
 }

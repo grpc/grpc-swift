@@ -40,9 +40,12 @@
 
 typedef struct {
   grpc_call *call; // owned
+} cgrpc_call;
+
+typedef struct {
   grpc_op *ops; // owned
   int ops_count;
-} cgrpc_call;
+} cgrpc_operations;
 
 typedef struct {
   grpc_channel *client; // owned

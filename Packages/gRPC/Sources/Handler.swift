@@ -95,7 +95,7 @@ public class Handler {
   func requestCall(tag: Int) -> grpc_call_error {
     return cgrpc_handler_request_call(h, requestMetadata.array, tag)
   }
-
+/*
   /// Receive the message sent with a call
   ///
   /// - Returns: a tuple containing status codes and a message (if available)
@@ -104,23 +104,21 @@ public class Handler {
     let operation_sendInitialMetadata = Operation_SendInitialMetadata(metadata:initialMetadata);
     let operation_receiveMessage = Operation_ReceiveMessage()
 
-    let operations: [Operation] = [
+    let operations = Operations(operations:[
       operation_sendInitialMetadata,
       operation_receiveMessage
-    ]
+    ]) {(call_error, event) in
+
+      if (event.type == GRPC_OP_COMPLETE) {
+        return (GRPC_CALL_OK, GRPC_OP_COMPLETE, operation_receiveMessage.message())
+      } else {
+        return (GRPC_CALL_OK, event.type, nil)
+      }
+
+    }
 
     let call = self.call()
-    let call_error = call.performOperations(operations:operations, tag:222)
-    if call_error != GRPC_CALL_OK {
-      return (call_error, GRPC_OP_COMPLETE, nil)
-    }
-
-    let call_status = completionQueue.waitForCompletion(timeout:5.0)
-    if (call_status == GRPC_OP_COMPLETE) {
-      return (GRPC_CALL_OK, GRPC_OP_COMPLETE, operation_receiveMessage.message())
-    } else {
-      return (GRPC_CALL_OK, call_status, nil)
-    }
+    let call_error = call.performOperations(operations:operations, tag:222, completionQueue:completionQueue)
   }
 
   /// Sends the response to a request
@@ -135,18 +133,19 @@ public class Handler {
                                                                         metadata:trailingMetadata)
     let operation_sendMessage = Operation_SendMessage(message:message)
 
-    let operations: [Operation] = [
+    let operations = Operations(operations:[
       operation_receiveCloseOnServer,
       operation_sendStatusFromServer,
       operation_sendMessage
-    ]
+    ])
 
     let call = self.call()
     let call_error = call.performOperations(operations:operations, tag:333)
     if call_error != GRPC_CALL_OK {
       return (call_error, GRPC_OP_COMPLETE)
     }
-    let call_status = completionQueue.waitForCompletion(timeout:5.0)
-    return (GRPC_CALL_OK, call_status)
+    let event = completionQueue.waitForCompletion(timeout:5.0)
+    return (GRPC_CALL_OK, event.type)
   }
+ */
 }

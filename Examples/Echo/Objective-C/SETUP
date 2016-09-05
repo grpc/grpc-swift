@@ -1,0 +1,12 @@
+#!/bin/sh
+
+echo "Installing Cocoapod dependencies"
+pod install
+
+echo "Opening the project workspace in Xcode"
+open stickynotes.xcworkspace
+
+echo "Now press the run button!"
+echo "Be sure that your server is running."
+
+

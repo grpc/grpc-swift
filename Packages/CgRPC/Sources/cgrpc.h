@@ -56,6 +56,7 @@ typedef void cgrpc_observer_recv_initial_metadata;
 typedef void cgrpc_observer_recv_message;
 typedef void cgrpc_observer_recv_status_on_client;
 typedef void cgrpc_observer_recv_close_on_server;
+typedef void cgrpc_operations;
 typedef void cgrpc_server;
 
 /** Result of a grpc call. If the caller satisfies the prerequisites of a
@@ -107,6 +108,17 @@ typedef enum grpc_completion_type {
   GRPC_OP_COMPLETE
 } grpc_completion_type;
 
+typedef struct grpc_event {
+  /** The type of the completion. */
+  grpc_completion_type type;
+  /** non-zero if the operation was successful, 0 upon failure.
+   Only GRPC_OP_COMPLETE can succeed or fail. */
+  int success;
+  /** The tag passed to grpc_call_start_batch etc to start this operation.
+   Only GRPC_OP_COMPLETE has a tag. */
+  void *tag;
+} grpc_event;
+
 #endif
 
 // directly expose a few grpc library functions
@@ -118,9 +130,9 @@ const char *grpc_version_string();
 cgrpc_client *cgrpc_client_create(const char *address);
 void cgrpc_client_destroy(cgrpc_client *client);
 cgrpc_call *cgrpc_client_create_call(cgrpc_client *client,
-                                   const char *method,
-                                   const char *host,
-                                   double timeout);
+                                     const char *method,
+                                     const char *host,
+                                     double timeout);
 cgrpc_completion_queue *cgrpc_client_completion_queue(cgrpc_client *client);
 
 // server support
@@ -130,8 +142,8 @@ void cgrpc_server_start(cgrpc_server *s);
 cgrpc_completion_queue *cgrpc_server_get_completion_queue(cgrpc_server *s);
 
 // completion queues
-grpc_completion_type cgrpc_completion_queue_get_next_event(cgrpc_completion_queue *cq,
-                                                              double timeout);
+grpc_event cgrpc_completion_queue_get_next_event(cgrpc_completion_queue *cq,
+                                                 double timeout);
 void cgrpc_completion_queue_drain(cgrpc_completion_queue *cq);
 
 // server request handlers
@@ -141,20 +153,23 @@ cgrpc_call *cgrpc_handler_get_call(cgrpc_handler *h);
 cgrpc_completion_queue *cgrpc_handler_get_completion_queue(cgrpc_handler *h);
 
 grpc_call_error cgrpc_handler_request_call(cgrpc_handler *h,
-                                              cgrpc_metadata_array *metadata,
-                                              long tag);
-grpc_completion_type cgrpc_handler_wait_for_request(cgrpc_handler *h,
-                                                       cgrpc_metadata_array *metadata,
-                                                       double timeout);
+                                           cgrpc_metadata_array *metadata,
+                                           long tag);
+grpc_event cgrpc_handler_wait_for_request(cgrpc_handler *h,
+                                          cgrpc_metadata_array *metadata,
+                                          double timeout);
 const char *cgrpc_handler_host(cgrpc_handler *h);
 const char *cgrpc_handler_method(cgrpc_handler *h);
 const char *cgrpc_handler_call_peer(cgrpc_handler *h);
 
 // call support
 void cgrpc_call_destroy(cgrpc_call *call);
-void cgrpc_call_reserve_space_for_operations(cgrpc_call *call, int max_operations);
-void cgrpc_call_add_operation(cgrpc_call *call, cgrpc_observer *observer);
-grpc_call_error cgrpc_call_perform(cgrpc_call *call, long tag);
+grpc_call_error cgrpc_call_perform(cgrpc_call *call, cgrpc_operations *operations, int64_t tag);
+
+// operations
+cgrpc_operations *cgrpc_operations_create();
+void cgrpc_operations_reserve_space_for_operations(cgrpc_operations *call, int max_operations);
+void cgrpc_operations_add_operation(cgrpc_operations *call, cgrpc_observer *observer);
 
 // metadata support
 cgrpc_metadata_array *cgrpc_metadata_array_create();
@@ -178,6 +193,9 @@ cgrpc_byte_buffer *cgrpc_byte_buffer_create_with_data(const void *source, size_t
 const char *cgrpc_byte_buffer_as_string(cgrpc_byte_buffer *bb);
 const void *cgrpc_byte_buffer_as_data(cgrpc_byte_buffer *bb, size_t *length);
 
+// event support
+int64_t cgrpc_event_tag(grpc_event ev);
+
 // observers
 
 // constructors
@@ -198,7 +216,7 @@ void cgrpc_observer_destroy(cgrpc_observer *observer);
 
 // GRPC_OP_SEND_MESSAGE
 void cgrpc_observer_send_message_set_message(cgrpc_observer_send_message *observer,
-                                            cgrpc_byte_buffer *message);
+                                             cgrpc_byte_buffer *message);
 
 // GRPC_OP_SEND_CLOSE_FROM_CLIENT
 // -- no special handlers --

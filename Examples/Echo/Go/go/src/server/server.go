@@ -15,6 +15,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -40,6 +41,7 @@ var echoServer EchoServer
 func (s *EchoServer) Get(ctx context.Context, r *pb.EchoRequest) (*pb.EchoResponse, error) {
 	response := &pb.EchoResponse{}
 	response.Text = r.Text
+	fmt.Printf("Get received: %s\n", r.Text)
 	return response, nil
 }
 
@@ -57,6 +59,8 @@ func (s *EchoServer) Update(stream pb.Echo_UpdateServer) error {
 
 		response := &pb.EchoResponse{}
 		response.Text = in.Text
+
+		fmt.Printf("Update received: %s\n", in.Text)
 
 		if err := stream.Send(response); err != nil {
 			return err

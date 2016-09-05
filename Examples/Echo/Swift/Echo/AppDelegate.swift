@@ -41,16 +41,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
   func applicationDidFinishLaunching(_ aNotification: Notification) {
     gRPC.initialize()
-    startServer(address:"localhost:8081")
+   // startServer(address:"localhost:8081")
   }
 
   func log(_ message: String) {
     print(message)
   }
-
+/*
   func startServer(address:String) {
     let fileDescriptorSet = FileDescriptorSet(filename:"echo.out")
-
     DispatchQueue.global().async {
       self.log("Server Starting")
       self.log("GRPC version " + gRPC.version())
@@ -92,5 +91,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       }
     }
   }
+ */
 }
 

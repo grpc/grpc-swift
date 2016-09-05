@@ -69,11 +69,11 @@ public class Server {
     if (call_error != GRPC_CALL_OK) {
       return (call_error, GRPC_OP_COMPLETE, nil)
     } else {
-      let completion_type = self.completionQueue.waitForCompletion(timeout:timeout)
-      if (completion_type == GRPC_OP_COMPLETE) {
+      let event = self.completionQueue.waitForCompletion(timeout:timeout)
+      if (event.type == GRPC_OP_COMPLETE) {
         return (GRPC_CALL_OK, GRPC_OP_COMPLETE, handler)
       } else {
-        return (GRPC_CALL_OK, completion_type, nil)
+        return (GRPC_CALL_OK, event.type, nil)
       }
     }
   }

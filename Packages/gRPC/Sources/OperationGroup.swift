@@ -30,22 +30,47 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-#include "internal.h"
-#include "cgrpc.h"
+#if SWIFT_PACKAGE
+  import CgRPC
+#endif
 
-#include <stdio.h>
+/// A collection of gRPC operations
+public class OperationGroup {
 
-grpc_event cgrpc_completion_queue_get_next_event(grpc_completion_queue *cq, double timeout) {
-  gpr_timespec deadline = cgrpc_deadline_in_seconds_from_now(timeout);
-  if (timeout < 0) {
-    deadline = gpr_inf_future(GPR_CLOCK_REALTIME);
+  static var nextTag : Int64 = 1
+
+  var call : Call
+
+  public var tag : Int64
+
+  /// Pointer to underlying C representation
+  var operations : UnsafeMutableRawPointer!
+
+  var operationsArray : [Operation]?
+
+  var completion : ((grpc_event) -> Void)
+
+  /// Initializes a Operations representation
+  ///
+  /// - Parameter operations: an array of operations
+  public init(call: Call,
+              operations: [Operation],
+              completion: ((grpc_event) -> Void)) {
+    self.call = call
+    self.operationsArray = operations
+    self.operations = cgrpc_operations_create()
+    cgrpc_operations_reserve_space_for_operations(self.operations, Int32(operations.count))
+    for operation in operations {
+      cgrpc_operations_add_operation(self.operations, operation.observer)
+    }
+    self.completion = completion
+
+    self.tag = OperationGroup.nextTag
+    OperationGroup.nextTag += 1
   }
-  return grpc_completion_queue_next(cq, deadline, NULL);
+
+  deinit {
+    
+  }
 }
 
-void cgrpc_completion_queue_drain(grpc_completion_queue *cq) {
-  grpc_event ev;
-  do {
-    ev = grpc_completion_queue_next(cq, cgrpc_deadline_in_seconds_from_now(5), NULL);
-  } while (ev.type != GRPC_QUEUE_SHUTDOWN);
-}

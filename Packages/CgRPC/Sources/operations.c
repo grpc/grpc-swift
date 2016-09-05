@@ -33,19 +33,22 @@
 #include "internal.h"
 #include "cgrpc.h"
 
-#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
 
-grpc_event cgrpc_completion_queue_get_next_event(grpc_completion_queue *cq, double timeout) {
-  gpr_timespec deadline = cgrpc_deadline_in_seconds_from_now(timeout);
-  if (timeout < 0) {
-    deadline = gpr_inf_future(GPR_CLOCK_REALTIME);
-  }
-  return grpc_completion_queue_next(cq, deadline, NULL);
+cgrpc_operations *cgrpc_operations_create() {
+  return (cgrpc_operations *) malloc(sizeof (cgrpc_operations));
 }
 
-void cgrpc_completion_queue_drain(grpc_completion_queue *cq) {
-  grpc_event ev;
-  do {
-    ev = grpc_completion_queue_next(cq, cgrpc_deadline_in_seconds_from_now(5), NULL);
-  } while (ev.type != GRPC_QUEUE_SHUTDOWN);
+void cgrpc_operations_reserve_space_for_operations(cgrpc_operations *operations, int max_operations) {
+  operations->ops = (grpc_op *) malloc(max_operations * sizeof(grpc_op));
+  memset(operations->ops, 0, max_operations * sizeof(grpc_op));
+  operations->ops_count = 0;
+}
+
+void cgrpc_operations_add_operation(cgrpc_operations *operations, cgrpc_observer *observer) {
+  grpc_op *op = &(operations->ops[operations->ops_count]);
+  cgrpc_observer_apply(observer, op);
+  operations->ops_count++;
 }

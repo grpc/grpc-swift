@@ -84,8 +84,8 @@ cgrpc_completion_queue *cgrpc_handler_get_completion_queue(cgrpc_handler *h) {
 }
 
 grpc_call_error cgrpc_handler_request_call(cgrpc_handler *h,
-                                              cgrpc_metadata_array *metadata,
-                                              long tag) {
+                                           cgrpc_metadata_array *metadata,
+                                           long tag) {
   return grpc_server_request_call(h->server->server,
                                   &(h->server_call),
                                   &(h->call_details),
@@ -96,9 +96,9 @@ grpc_call_error cgrpc_handler_request_call(cgrpc_handler *h,
 }
 
 
-grpc_completion_type cgrpc_handler_wait_for_request(cgrpc_handler *h,
-                                                       cgrpc_metadata_array *metadata,
-                                                       double timeout) {
+grpc_event cgrpc_handler_wait_for_request(cgrpc_handler *h,
+                                          cgrpc_metadata_array *metadata,
+                                          double timeout) {
   void *tag101 = cgrpc_create_tag(101);
   grpc_call_error error = grpc_server_request_call(h->server->server,
                                                    &(h->server_call),

@@ -85,15 +85,14 @@ public class Call {
   /// - Parameter operations: array of operations to be performed
   /// - Parameter tag: integer tag that will be attached to these operations
   /// - Returns: the result of initiating the call
-  func performOperations(operations: [Operation], tag: Int) -> grpc_call_error {
-    cgrpc_call_reserve_space_for_operations(call, Int32(operations.count))
-    for operation in operations {
-      cgrpc_call_add_operation(call, operation.observer)
-    }
-    let mutex = CallLock.sharedInstance.mutex
-    mutex.lock()
-    let error = cgrpc_call_perform(call, tag)
-    mutex.unlock()
-    return error
+  public func performOperations(operations: OperationGroup,
+                                tag: Int64,
+                                completionQueue: CompletionQueue)
+    -> grpc_call_error {
+      let mutex = CallLock.sharedInstance.mutex
+      mutex.lock()
+      let error = cgrpc_call_perform(call, operations.operations, tag)
+      mutex.unlock()
+      return error
   }
 }

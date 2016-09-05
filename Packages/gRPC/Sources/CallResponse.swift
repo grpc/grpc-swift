@@ -62,7 +62,7 @@ public class CallResponse {
   /// Initializes a response when error != GRPC_CALL_OK
   ///
   /// - Parameter error: an error code from when the call was performed
-  init(error: grpc_call_error) {
+  public init(error: grpc_call_error) {
     self.error = error
     self.completion = GRPC_OP_COMPLETE
     self.status = 0
@@ -72,7 +72,7 @@ public class CallResponse {
   /// Initializes a response when completion != GRPC_OP_COMPLETE
   ///
   /// - Parameter completion: a code indicating the result of waiting for the call to complete
-  init(completion: grpc_completion_type) {
+  public init(completion: grpc_completion_type) {
     self.error = GRPC_CALL_OK
     self.completion = completion
     self.status = 0
@@ -86,11 +86,11 @@ public class CallResponse {
   /// - Parameter message: a buffer containing results returned from the server
   /// - Parameter initialMetadata: initial metadata returned by the server
   /// - Parameter trailingMetadata: trailing metadata returned by the server
-  init(status:Int,
-       statusDetails:String,
-       message:ByteBuffer?,
-       initialMetadata:Metadata?,
-       trailingMetadata:Metadata?) {
+  public init(status:Int,
+              statusDetails:String,
+              message:ByteBuffer?,
+              initialMetadata:Metadata?,
+              trailingMetadata:Metadata?) {
     self.error = GRPC_CALL_OK
     self.completion = GRPC_OP_COMPLETE
     self.status = status

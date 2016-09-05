@@ -33,19 +33,6 @@
 #include "internal.h"
 #include "cgrpc.h"
 
-#include <stdio.h>
-
-grpc_event cgrpc_completion_queue_get_next_event(grpc_completion_queue *cq, double timeout) {
-  gpr_timespec deadline = cgrpc_deadline_in_seconds_from_now(timeout);
-  if (timeout < 0) {
-    deadline = gpr_inf_future(GPR_CLOCK_REALTIME);
-  }
-  return grpc_completion_queue_next(cq, deadline, NULL);
-}
-
-void cgrpc_completion_queue_drain(grpc_completion_queue *cq) {
-  grpc_event ev;
-  do {
-    ev = grpc_completion_queue_next(cq, cgrpc_deadline_in_seconds_from_now(5), NULL);
-  } while (ev.type != GRPC_QUEUE_SHUTDOWN);
+int64_t cgrpc_event_tag(grpc_event ev) {
+  return (int64_t) ev.tag;
 }

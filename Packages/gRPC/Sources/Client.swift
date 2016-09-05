@@ -41,7 +41,7 @@ public class Client {
   var c: UnsafeMutableRawPointer!
 
   /// Completion queue for client call operations
-  var completionQueue: CompletionQueue
+  public var completionQueue: CompletionQueue
 
   /// Initializes a gRPC client
   ///
@@ -61,7 +61,7 @@ public class Client {
   /// - Parameter method: the gRPC method name for the call
   /// - Parameter timeout: a timeout value in seconds
   /// - Returns: a Call object that can be used to make the request
-  func createCall(host:String, method:String, timeout:Double) -> Call {
+  public func createCall(host:String, method:String, timeout:Double) -> Call {
     let call = cgrpc_client_create_call(c, method, host, timeout)!
     return Call(call:call, owned:true)
   }
@@ -76,7 +76,9 @@ public class Client {
   public func performRequest(host: String,
                              method: String,
                              message: ByteBuffer,
-                             metadata: Metadata) -> CallResponse  {
+                             metadata: Metadata,
+                             completion: ((CallResponse) -> Void)) -> Call   {
+    let call = createCall(host:host, method:method, timeout:600.0)
 
     let operation_sendInitialMetadata = Operation_SendInitialMetadata(metadata:metadata);
     let operation_sendMessage = Operation_SendMessage(message:message)
@@ -85,31 +87,35 @@ public class Client {
     let operation_receiveStatusOnClient = Operation_ReceiveStatusOnClient()
     let operation_receiveMessage = Operation_ReceiveMessage()
 
-    let operations: [Operation] = [
-      operation_sendInitialMetadata,
-      operation_sendMessage,
-      operation_sendCloseFromClient,
-      operation_receiveInitialMetadata,
-      operation_receiveStatusOnClient,
-      operation_receiveMessage
-    ]
-
-    let call = createCall(host:host, method:method, timeout:5.0)
-    let call_error = call.performOperations(operations:operations, tag:111)
-    if call_error != GRPC_CALL_OK {
-      return CallResponse(error: call_error)
+    let group = OperationGroup(call:call,
+                               operations:[operation_sendInitialMetadata,
+                                           operation_sendMessage,
+                                           operation_sendCloseFromClient,
+                                           operation_receiveInitialMetadata,
+                                           operation_receiveStatusOnClient,
+                                           operation_receiveMessage])
+    { (event) in
+      if (event.type == GRPC_OP_COMPLETE) {
+        let response = CallResponse(status:operation_receiveStatusOnClient.status(),
+                                    statusDetails:operation_receiveStatusOnClient.statusDetails(),
+                                    message:operation_receiveMessage.message(),
+                                    initialMetadata:operation_receiveInitialMetadata.metadata(),
+                                    trailingMetadata:operation_receiveStatusOnClient.metadata())
+        completion(response)
+      } else {
+        completion(CallResponse(completion: event.type))
+      }
     }
+    let call_error = self.perform(call: call, operations: group)
+    print ("call error = \(call_error)")
+    print("calling \(completionQueue.cq)")
+    return call
+  }
 
-    let call_status = completionQueue.waitForCompletion(timeout:5.0)
-    if (call_status == GRPC_OP_COMPLETE) {
-      let response = CallResponse(status:operation_receiveStatusOnClient.status(),
-                                  statusDetails:operation_receiveStatusOnClient.statusDetails(),
-                                  message:operation_receiveMessage.message(),
-                                  initialMetadata:operation_receiveInitialMetadata.metadata(),
-                                  trailingMetadata:operation_receiveStatusOnClient.metadata())
-      return response
-    } else {
-      return CallResponse(completion: call_status)
-    }
+  public func perform(call: Call, operations: OperationGroup) -> grpc_call_error {
+    self.completionQueue.operationGroups[operations.tag] = operations
+    return call.performOperations(operations:operations,
+                                  tag:operations.tag,
+                                  completionQueue: self.completionQueue)
   }
 }
