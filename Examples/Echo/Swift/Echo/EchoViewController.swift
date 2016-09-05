@@ -38,6 +38,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   @IBOutlet weak var messageField: NSTextField!
   @IBOutlet weak var outputField: NSTextField!
   @IBOutlet weak var addressField: NSTextField!
+  @IBOutlet weak var streamingButton: NSButton!
 
   private var streaming = false
   var client: Client?
@@ -57,6 +58,15 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     }
   }
 
+  @IBAction func buttonValueChanged(sender: NSButton) {
+    print("button value changed \(sender)")
+    if (streaming && (sender.intValue == 0)) {
+      print ("stop streaming")
+      self.sendClose()
+    }
+
+  }
+
   override func viewDidLoad() {
     gRPC.initialize()
   }
@@ -74,12 +84,10 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   func callServer(address:String) {
     gRPC.initialize()
 
-    if client == nil {
+    if (self.streamingButton.intValue == 0) {
       client = Client(address:address)
       self.client!.completionQueue.run()
-    }
 
-    if false {
       DispatchQueue.global().async {
         // build the message
         if let requestMessage = self.fileDescriptorSet.createMessage(name:"EchoRequest") {
@@ -117,9 +125,13 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     }
     else {
       if (!streaming) {
+        client = Client(address:address)
+        self.client!.completionQueue.run()
+
         call = client?.createCall(host: "foo.test.google.fr",
                                   method: "/echo.Echo/Update",
                                   timeout: 600.0)
+
         self.sendInitialMetadata()
         self.receiveInitialMetadata()
         self.receiveStatus()
@@ -212,6 +224,19 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
           self.receiveMessage()
         }
       }
+    }
+    let call_error = client!.perform(call:call!, operations:operations)
+    if call_error != GRPC_CALL_OK {
+      print("call error \(call_error)")
+    }
+  }
+
+  func sendClose() {
+    let operation_sendCloseFromClient = Operation_SendCloseFromClient()
+    let operations = OperationGroup(call:call!, operations:[operation_sendCloseFromClient])
+    { (event) in
+      print("send close call status \(event.type) \(event.tag)")
+      self.streaming = false
     }
     let call_error = client!.perform(call:call!, operations:operations)
     if call_error != GRPC_CALL_OK {

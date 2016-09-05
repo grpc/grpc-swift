@@ -41,13 +41,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
   func applicationDidFinishLaunching(_ aNotification: Notification) {
     gRPC.initialize()
-   // startServer(address:"localhost:8081")
+    //startServer(address:"localhost:8081")
   }
 
   func log(_ message: String) {
     print(message)
   }
-/*
+
   func startServer(address:String) {
     let fileDescriptorSet = FileDescriptorSet(filename:"echo.out")
     DispatchQueue.global().async {
@@ -68,18 +68,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
               + " calling " + requestHandler.method()
               + " from " + requestHandler.caller())
 
-            let (_, _, requestBuffer) = requestHandler.receiveMessage(initialMetadata:Metadata())
-            if let requestBuffer = requestBuffer,
-              let requestMessage = fileDescriptorSet.readMessage(name:"EchoRequest",
-                                                                 proto:requestBuffer.data()) {
-
-              requestMessage.forOneField(name:"text") {(field) in
-
-                let replyMessage = fileDescriptorSet.createMessage(name:"EchoResponse")!
-                replyMessage.addField(name:"text", value:field.string())
-
-                let (_, _) = requestHandler.sendResponse(message:ByteBuffer(data:replyMessage.serialize()),
-                                                         trailingMetadata:Metadata())
+            requestHandler.receiveMessage(initialMetadata:Metadata())
+            {(requestBuffer) in
+              if let requestBuffer = requestBuffer,
+                let requestMessage = fileDescriptorSet.readMessage(name:"EchoRequest",
+                                                                   proto:requestBuffer.data()) {
+                requestMessage.forOneField(name:"text") {(field) in
+                  let replyMessage = fileDescriptorSet.createMessage(name:"EchoResponse")!
+                  let text = "echo " + field.string()
+                  replyMessage.addField(name:"text", value:text)
+                  requestHandler.sendResponse(message:ByteBuffer(data:replyMessage.serialize()),
+                                              trailingMetadata:Metadata())
+                }
               }
             }
           }
@@ -91,6 +91,5 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       }
     }
   }
- */
 }
 

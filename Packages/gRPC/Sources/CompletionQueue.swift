@@ -60,7 +60,8 @@ public class CompletionQueue {
 
   public func run() {
     DispatchQueue.global().async {
-      while (true) {
+      var running = true
+      while (running) {
         let event = cgrpc_completion_queue_get_next_event(self.cq, -1.0)
         switch (event.type) {
         case GRPC_OP_COMPLETE:
@@ -69,16 +70,17 @@ public class CompletionQueue {
             operations.completion(event)
             self.operationGroups[tag] = nil
           }
-          continue
+          break
         case GRPC_QUEUE_SHUTDOWN:
-          // grpc_completion_queue_destroy(unmanagedQueue);
+          running = false
           break
         case GRPC_QUEUE_TIMEOUT:
-          continue
+          break
         default:
-          continue
+          break
         }
       }
+      print("exiting completion queue loop")
     }
   }
 }

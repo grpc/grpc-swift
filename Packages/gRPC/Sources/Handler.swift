@@ -90,35 +90,35 @@ public class Handler {
   /// Request a call for the handler
   ///
   /// Fills the handler properties with information about the received request
-  /// 
+  ///
   /// - Returns: a grpc_call_error indicating the result of requesting the call
   func requestCall(tag: Int) -> grpc_call_error {
     return cgrpc_handler_request_call(h, requestMetadata.array, tag)
   }
-/*
+
   /// Receive the message sent with a call
   ///
   /// - Returns: a tuple containing status codes and a message (if available)
-  public func receiveMessage(initialMetadata: Metadata) -> (grpc_call_error, grpc_completion_type, ByteBuffer?) {
-
+  public func receiveMessage(initialMetadata: Metadata,
+                             completion:((ByteBuffer?) -> Void)) -> Void {
+    let call = self.call()
     let operation_sendInitialMetadata = Operation_SendInitialMetadata(metadata:initialMetadata);
     let operation_receiveMessage = Operation_ReceiveMessage()
-
-    let operations = Operations(operations:[
-      operation_sendInitialMetadata,
-      operation_receiveMessage
-    ]) {(call_error, event) in
-
+    let operations = OperationGroup(
+      call:call,
+      operations:[
+        operation_sendInitialMetadata,
+        operation_receiveMessage])
+    {(event) in
       if (event.type == GRPC_OP_COMPLETE) {
-        return (GRPC_CALL_OK, GRPC_OP_COMPLETE, operation_receiveMessage.message())
+        completion(operation_receiveMessage.message())
       } else {
-        return (GRPC_CALL_OK, event.type, nil)
+        completion(nil)
       }
-
     }
 
-    let call = self.call()
-    let call_error = call.performOperations(operations:operations, tag:222, completionQueue:completionQueue)
+    self.completionQueue.operationGroups[operations.tag] = operations
+    _ = call.performOperations(operations:operations, tag:operations.tag, completionQueue: self.completionQueue)
   }
 
   /// Sends the response to a request
@@ -126,26 +126,23 @@ public class Handler {
   /// - Parameter message: the message to send
   /// - Returns: a tuple containing status codes
   public func sendResponse(message: ByteBuffer,
-                           trailingMetadata: Metadata) -> (grpc_call_error, grpc_completion_type) {
+                           trailingMetadata: Metadata) -> Void {
+    let call = self.call()
     let operation_receiveCloseOnServer = Operation_ReceiveCloseOnServer();
     let operation_sendStatusFromServer = Operation_SendStatusFromServer(status:0,
                                                                         statusDetails:"OK",
                                                                         metadata:trailingMetadata)
     let operation_sendMessage = Operation_SendMessage(message:message)
-
-    let operations = Operations(operations:[
-      operation_receiveCloseOnServer,
-      operation_sendStatusFromServer,
-      operation_sendMessage
-    ])
-
-    let call = self.call()
-    let call_error = call.performOperations(operations:operations, tag:333)
-    if call_error != GRPC_CALL_OK {
-      return (call_error, GRPC_OP_COMPLETE)
+    let operations = OperationGroup(
+      call:call,
+      operations:[
+        operation_receiveCloseOnServer,
+        operation_sendStatusFromServer,
+        operation_sendMessage])
+    {(call_error) in
+      print("server response complete")
     }
-    let event = completionQueue.waitForCompletion(timeout:5.0)
-    return (GRPC_CALL_OK, event.type)
+    self.completionQueue.operationGroups[operations.tag] = operations
+    _ = call.performOperations(operations:operations, tag:operations.tag, completionQueue: self.completionQueue)
   }
- */
 }

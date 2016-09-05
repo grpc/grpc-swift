@@ -108,7 +108,6 @@ public class Client {
     }
     let call_error = self.perform(call: call, operations: group)
     print ("call error = \(call_error)")
-    print("calling \(completionQueue.cq)")
     return call
   }
 
