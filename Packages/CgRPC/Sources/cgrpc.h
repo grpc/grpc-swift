@@ -145,6 +145,7 @@ cgrpc_completion_queue *cgrpc_server_get_completion_queue(cgrpc_server *s);
 grpc_event cgrpc_completion_queue_get_next_event(cgrpc_completion_queue *cq,
                                                  double timeout);
 void cgrpc_completion_queue_drain(cgrpc_completion_queue *cq);
+void cgrpc_completion_queue_shutdown(cgrpc_completion_queue *cq);
 
 // server request handlers
 cgrpc_handler *cgrpc_handler_create_with_server(cgrpc_server *server);

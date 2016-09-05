@@ -37,6 +37,8 @@
 /// A gRPC Completion Queue
 public class CompletionQueue {
 
+  var name : String!
+
   /// Pointer to underlying C representation
   var cq : UnsafeMutableRawPointer!
 
@@ -58,7 +60,7 @@ public class CompletionQueue {
     return cgrpc_completion_queue_get_next_event(cq, timeout);
   }
 
-  public func run() {
+  public func run(completion:@escaping () -> Void) {
     DispatchQueue.global().async {
       var running = true
       while (running) {
@@ -80,7 +82,10 @@ public class CompletionQueue {
           break
         }
       }
-      print("exiting completion queue loop")
+      DispatchQueue.main.async {
+        print("exiting completion queue loop " + self.name)
+        completion()
+      }
     }
   }
 }

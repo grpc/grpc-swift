@@ -41,7 +41,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
   func applicationDidFinishLaunching(_ aNotification: Notification) {
     gRPC.initialize()
-    //startServer(address:"localhost:8081")
+    startServer(address:"localhost:8081")
   }
 
   func log(_ message: String) {
@@ -58,7 +58,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       server.start()
 
       while(true) {
-        let (callError, completionType, requestHandler) = server.getNextRequest(timeout:1.0)
+        let (callError, completionType, requestHandler) = server.getNextRequest(timeout:600.0)
         if (callError != GRPC_CALL_OK) {
           self.log("Call error \(callError)")
           self.log("------------------------------")

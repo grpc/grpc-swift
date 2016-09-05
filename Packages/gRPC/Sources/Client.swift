@@ -49,6 +49,7 @@ public class Client {
   public init(address: String) {
     c = cgrpc_client_create(address)
     completionQueue = CompletionQueue(cq:cgrpc_client_completion_queue(c))
+    completionQueue.name = "Client"
   }
 
   deinit {

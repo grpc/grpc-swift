@@ -43,12 +43,17 @@ public class Server {
   /// Completion queue used for server operations
   var completionQueue: CompletionQueue
 
+  /// Active handlers
+  var handlers : NSMutableSet!
+
   /// Initializes a Server
   ///
   /// - Parameter address: the address where the server will listen
   public init(address:String) {
     s = cgrpc_server_create(address)
     completionQueue = CompletionQueue(cq:cgrpc_server_get_completion_queue(s))
+    completionQueue.name = "Server " + address
+    handlers = NSMutableSet()
   }
 
   deinit {
@@ -71,6 +76,12 @@ public class Server {
     } else {
       let event = self.completionQueue.waitForCompletion(timeout:timeout)
       if (event.type == GRPC_OP_COMPLETE) {
+
+        handler.completionQueue.run() {
+          self.handlers.remove(handler)
+        }
+        self.handlers.add(handler)
+
         return (GRPC_CALL_OK, GRPC_OP_COMPLETE, handler)
       } else {
         return (GRPC_CALL_OK, event.type, nil)

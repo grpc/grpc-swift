@@ -41,7 +41,7 @@ public class Handler {
   var h: UnsafeMutableRawPointer!
 
   /// Completion queue for handler response operations
-  var completionQueue: CompletionQueue
+  public var completionQueue: CompletionQueue
 
   /// Metadata received with the request
   public var requestMetadata: Metadata
@@ -53,6 +53,7 @@ public class Handler {
     self.h = h;
     self.requestMetadata = Metadata()
     self.completionQueue = CompletionQueue(cq:cgrpc_handler_get_completion_queue(h))
+    self.completionQueue.name = "Handler"
   }
 
   deinit {
@@ -141,8 +142,15 @@ public class Handler {
         operation_sendMessage])
     {(call_error) in
       print("server response complete")
+      print("finished with handler \(self)")
+      self.shutdown()
     }
     self.completionQueue.operationGroups[operations.tag] = operations
     _ = call.performOperations(operations:operations, tag:operations.tag, completionQueue: self.completionQueue)
+  }
+
+
+  func shutdown() {
+    cgrpc_completion_queue_shutdown(completionQueue.cq)
   }
 }

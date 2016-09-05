@@ -49,3 +49,8 @@ void cgrpc_completion_queue_drain(grpc_completion_queue *cq) {
     ev = grpc_completion_queue_next(cq, cgrpc_deadline_in_seconds_from_now(5), NULL);
   } while (ev.type != GRPC_QUEUE_SHUTDOWN);
 }
+
+void cgrpc_completion_queue_shutdown(cgrpc_completion_queue *cq) {
+  grpc_completion_queue_shutdown(cq);
+}
+

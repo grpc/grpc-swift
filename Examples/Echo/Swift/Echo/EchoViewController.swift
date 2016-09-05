@@ -86,7 +86,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
 
     if (self.streamingButton.intValue == 0) {
       client = Client(address:address)
-      self.client!.completionQueue.run()
+      self.client!.completionQueue.run() {}
 
       DispatchQueue.global().async {
         // build the message
@@ -126,7 +126,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     else {
       if (!streaming) {
         client = Client(address:address)
-        self.client!.completionQueue.run()
+        self.client!.completionQueue.run() {}
 
         call = client?.createCall(host: "foo.test.google.fr",
                                   method: "/echo.Echo/Update",
