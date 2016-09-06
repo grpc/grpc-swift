@@ -96,6 +96,7 @@ public class Client {
                                            operation_receiveStatusOnClient,
                                            operation_receiveMessage])
     { (event) in
+      print("client nonstreaming call complete")
       if (event.type == GRPC_OP_COMPLETE) {
         let response = CallResponse(status:operation_receiveStatusOnClient.status(),
                                     statusDetails:operation_receiveStatusOnClient.statusDetails(),

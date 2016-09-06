@@ -104,7 +104,6 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
                                           metadata:requestMetadata)
           { (response) in
             self.log("Received status: \(response.status) " + response.statusDetails)
-
             if let responseBuffer = response.message,
               let responseMessage = self.fileDescriptorSet.readMessage(
                 name:"EchoResponse",
@@ -149,13 +148,13 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     let operation_sendInitialMetadata = Operation_SendInitialMetadata(metadata:metadata);
     let operations = OperationGroup(call:call!, operations:[operation_sendInitialMetadata])
     { (event) in
+      print("client sendInitialMetadata complete with status \(event.type) \(event.tag)")
       if (event.type == GRPC_OP_COMPLETE) {
         print("call status \(event.type) \(event.tag)")
       } else {
         return
       }
     }
-
     let call_error = client!.perform(call:call!, operations:operations)
     if call_error != GRPC_CALL_OK {
       print("call error: \(call_error)")
@@ -166,7 +165,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     let operation_receiveInitialMetadata = Operation_ReceiveInitialMetadata()
     let operations = OperationGroup(call:call!, operations:[operation_receiveInitialMetadata])
     { (event) in
-      print("receive initial metadata status \(event.type) \(event.tag)")
+      print("client receiveInitialMetadata complete with status \(event.type) \(event.tag)")
       let initialMetadata = operation_receiveInitialMetadata.metadata()
       for j in 0..<initialMetadata.count() {
         print("Received initial metadata -> " + initialMetadata.key(index:j) + " : " + initialMetadata.value(index:j))
@@ -186,7 +185,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     let operation_sendMessage = Operation_SendMessage(message:messageBuffer)
     let operations = OperationGroup(call:call!, operations:[operation_sendMessage])
     { (event) in
-      print("send message call status \(event.type) \(event.tag)")
+      print("client sendMessage complete with status \(event.type) \(event.tag)")
     }
     let call_error = client!.perform(call:call!, operations:operations)
     if call_error != GRPC_CALL_OK {
@@ -199,7 +198,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     let operations = OperationGroup(call:call!,
                                     operations:[operation_receiveStatus])
     { (event) in
-      print("receive status call status \(event.type) \(event.tag)")
+      print("client receiveStatus complete with status \(event.type) \(event.tag)")
       print("status = \(operation_receiveStatus.status()), \(operation_receiveStatus.statusDetails())")
     }
     let call_error = client!.perform(call:call!, operations:operations)
@@ -212,7 +211,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     let operation_receiveMessage = Operation_ReceiveMessage()
     let operations = OperationGroup(call:call!, operations:[operation_receiveMessage])
     { (event) in
-      print("call status \(event.type) \(event.tag)")
+      print("client receiveMessage complete with status \(event.type) \(event.tag)")
       if let messageBuffer = operation_receiveMessage.message() {
         let responseMessage = self.fileDescriptorSet.readMessage(
           name:"EchoResponse",
@@ -235,7 +234,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     let operation_sendCloseFromClient = Operation_SendCloseFromClient()
     let operations = OperationGroup(call:call!, operations:[operation_sendCloseFromClient])
     { (event) in
-      print("send close call status \(event.type) \(event.tag)")
+      print("client sendClose complete with status \(event.type) \(event.tag)")
       self.streaming = false
     }
     let call_error = client!.perform(call:call!, operations:operations)

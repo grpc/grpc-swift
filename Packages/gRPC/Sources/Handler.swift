@@ -150,7 +150,97 @@ public class Handler {
   }
 
 
-  func shutdown() {
+  public func shutdown() {
     cgrpc_completion_queue_shutdown(completionQueue.cq)
   }
+
+
+  public func sendMetadata(initialMetadata: Metadata,
+                           completion:(() -> Void)) {
+    let call = self.call()
+    let operation_sendInitialMetadata = Operation_SendInitialMetadata(metadata:initialMetadata);
+    let operations = OperationGroup(call:call, operations:[operation_sendInitialMetadata])
+    {(event) in
+      if (event.type == GRPC_OP_COMPLETE) {
+        print("server sendMetadata complete")
+        completion()
+      } else {
+        completion()
+      }
+    }
+    self.completionQueue.operationGroups[operations.tag] = operations
+    _ = call.performOperations(operations:operations, tag:operations.tag, completionQueue: self.completionQueue)
+  }
+
+  /// Receive the message sent with a call
+  ///
+  /// - Returns: a tuple containing status codes and a message (if available)
+  public func receiveMessage(completion:((ByteBuffer?) -> Void)) -> Void {
+    let call = self.call()
+    let operation_receiveMessage = Operation_ReceiveMessage()
+    let operations = OperationGroup(call:call, operations:[operation_receiveMessage])
+    {(event) in
+      if (event.type == GRPC_OP_COMPLETE) {
+        print("server receiveMessage complete")
+        if let message = operation_receiveMessage.message() {
+          completion(message)
+        } else {
+          completion(nil)
+        }
+      } else {
+        completion(nil)
+      }
+    }
+    self.completionQueue.operationGroups[operations.tag] = operations
+    let call_error = call.performOperations(operations:operations, tag:operations.tag, completionQueue: self.completionQueue)
+    print("perform receiveMessage \(call_error)")
+  }
+
+  /// Sends the response to a request
+  ///
+  /// - Parameter message: the message to send
+  /// - Returns: a tuple containing status codes
+  public func sendResponse(message: ByteBuffer,
+                           completion: @escaping () -> Void) -> Void {
+    let call = self.call()
+    let operation_sendMessage = Operation_SendMessage(message:message)
+    let operations = OperationGroup(call:call, operations:[operation_sendMessage])
+    {(event) in
+      print("server sendResponse complete")
+      completion()
+    }
+    self.completionQueue.operationGroups[operations.tag] = operations
+    _ = call.performOperations(operations:operations, tag:operations.tag, completionQueue: self.completionQueue)
+  }
+
+  public func receiveClose(completion: @escaping () -> Void) -> Void {
+    let call = self.call()
+    let operation_receiveClose = Operation_ReceiveCloseOnServer()
+    let operations = OperationGroup(call:call, operations:[operation_receiveClose])
+    {(event) in
+      print("server receiveClose complete")
+      completion()
+    }
+    self.completionQueue.operationGroups[operations.tag] = operations
+    let call_error = call.performOperations(operations:operations, tag:operations.tag, completionQueue: self.completionQueue)
+    print("perform receiveClose \(call_error)")
+  }
+
+  public func sendStatus(trailingMetadata: Metadata,
+                         completion:(() -> Void)) -> Void {
+    let call = self.call()
+    let operation_sendStatusFromServer = Operation_SendStatusFromServer(status:0,
+                                                                        statusDetails:"OK",
+                                                                        metadata:trailingMetadata)
+    let operations = OperationGroup(call:call, operations:[operation_sendStatusFromServer])
+    {(event) in
+      print("server sendStatus complete")
+      completion()
+    }
+    self.completionQueue.operationGroups[operations.tag] = operations
+    _ = call.performOperations(operations:operations, tag:operations.tag, completionQueue: self.completionQueue)
+  }
+
+  
+
 }

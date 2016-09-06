@@ -65,6 +65,25 @@ public class Server {
     cgrpc_server_start(s);
   }
 
+  public func run(handler: @escaping (Handler) -> Void) {
+    self.start()
+    DispatchQueue.global().async {
+      while(true) {
+        let (callError, completionType, requestHandler) =
+          self.getNextRequest(timeout:600.0)
+        if (callError != GRPC_CALL_OK) {
+          print("Call error \(callError)")
+        } else if (completionType == GRPC_OP_COMPLETE) {
+          handler(requestHandler!)
+        } else if (completionType == GRPC_QUEUE_TIMEOUT) {
+          // everything is fine
+        } else if (completionType == GRPC_QUEUE_SHUTDOWN) {
+          break
+        }
+      }
+    }
+  }
+
   /// Gets the next request sent to the server
   ///
   /// - Returns: a tuple containing the results of waiting and a possible Handler for the request
@@ -76,12 +95,10 @@ public class Server {
     } else {
       let event = self.completionQueue.waitForCompletion(timeout:timeout)
       if (event.type == GRPC_OP_COMPLETE) {
-
         handler.completionQueue.run() {
           self.handlers.remove(handler)
         }
         self.handlers.add(handler)
-
         return (GRPC_CALL_OK, GRPC_OP_COMPLETE, handler)
       } else {
         return (GRPC_CALL_OK, event.type, nil)

@@ -44,52 +44,80 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     startServer(address:"localhost:8081")
   }
 
-  func log(_ message: String) {
-    print(message)
-  }
-
   func startServer(address:String) {
     let fileDescriptorSet = FileDescriptorSet(filename:"echo.out")
-    DispatchQueue.global().async {
-      self.log("Server Starting")
-      self.log("GRPC version " + gRPC.version())
+    print("Server Starting")
+    print("GRPC version " + gRPC.version())
 
-      let server = gRPC.Server(address:address)
-      server.start()
+    let server = gRPC.Server(address:address)
 
-      while(true) {
-        let (callError, completionType, requestHandler) = server.getNextRequest(timeout:600.0)
-        if (callError != GRPC_CALL_OK) {
-          self.log("Call error \(callError)")
-          self.log("------------------------------")
-        } else if (completionType == GRPC_OP_COMPLETE) {
-          if let requestHandler = requestHandler {
-            self.log("Received request to " + requestHandler.host()
-              + " calling " + requestHandler.method()
-              + " from " + requestHandler.caller())
+    server.run {(requestHandler) in
+      print("Received request to " + requestHandler.host()
+        + " calling " + requestHandler.method()
+        + " from " + requestHandler.caller())
 
-            requestHandler.receiveMessage(initialMetadata:Metadata())
-            {(requestBuffer) in
-              if let requestBuffer = requestBuffer,
-                let requestMessage = fileDescriptorSet.readMessage(name:"EchoRequest",
-                                                                   proto:requestBuffer.data()) {
-                requestMessage.forOneField(name:"text") {(field) in
-                  let replyMessage = fileDescriptorSet.createMessage(name:"EchoResponse")!
-                  let text = "echo " + field.string()
-                  replyMessage.addField(name:"text", value:text)
-                  requestHandler.sendResponse(message:ByteBuffer(data:replyMessage.serialize()),
-                                              trailingMetadata:Metadata())
-                }
-              }
+      if (requestHandler.method() == "/echo.Echo/Get") {
+        requestHandler.receiveMessage(initialMetadata:Metadata())
+        {(requestBuffer) in
+          if let requestBuffer = requestBuffer,
+            let requestMessage =
+            fileDescriptorSet.readMessage(name:"EchoRequest",
+                                          proto:requestBuffer.data()) {
+            requestMessage.forOneField(name:"text") {(field) in
+              let replyMessage = fileDescriptorSet.createMessage(name:"EchoResponse")!
+              let text = "echo " + field.string()
+              replyMessage.addField(name:"text", value:text)
+              requestHandler.sendResponse(message:ByteBuffer(data:replyMessage.serialize()),
+                                          trailingMetadata:Metadata())
             }
           }
-        } else if (completionType == GRPC_QUEUE_TIMEOUT) {
-          // everything is fine
-        } else if (completionType == GRPC_QUEUE_SHUTDOWN) {
-          // we should stop
         }
+      }
+
+      if (requestHandler.method() == "/echo.Echo/Update") {
+        requestHandler.sendMetadata(
+          initialMetadata: Metadata(),
+          completion: {
+            self.handleMessage(
+              fileDescriptorSet: fileDescriptorSet,
+              requestHandler: requestHandler)
+            requestHandler.receiveClose() {
+              requestHandler.sendStatus(trailingMetadata: Metadata(), completion: {
+                print("status sent")
+                requestHandler.shutdown()
+              })
+            }
+          }
+        )
+
       }
     }
   }
-}
 
+  func handleMessage(fileDescriptorSet: FileDescriptorSet,
+                     requestHandler: Handler) {
+    requestHandler.receiveMessage()
+      {(requestBuffer) in
+        if let requestBuffer = requestBuffer,
+          let requestMessage =
+          fileDescriptorSet.readMessage(name:"EchoRequest",
+                                        proto:requestBuffer.data()) {
+          requestMessage.forOneField(name:"text") {(field) in
+            let replyMessage = fileDescriptorSet.createMessage(name:"EchoResponse")!
+            let text = "echo " + field.string()
+            replyMessage.addField(name:"text", value:text)
+            requestHandler.sendResponse(
+            message:ByteBuffer(data:replyMessage.serialize())) {
+              self.handleMessage(fileDescriptorSet:fileDescriptorSet, requestHandler:requestHandler)
+            }
+          }
+        } else {
+          // an empty message means close the connection
+          requestHandler.sendStatus(trailingMetadata: Metadata(), completion: {
+            print("status sent")
+            requestHandler.shutdown()
+          })
+        }
+    }
+  }
+}
