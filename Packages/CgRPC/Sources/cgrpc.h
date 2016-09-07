@@ -156,9 +156,6 @@ cgrpc_completion_queue *cgrpc_handler_get_completion_queue(cgrpc_handler *h);
 grpc_call_error cgrpc_handler_request_call(cgrpc_handler *h,
                                            cgrpc_metadata_array *metadata,
                                            long tag);
-grpc_event cgrpc_handler_wait_for_request(cgrpc_handler *h,
-                                          cgrpc_metadata_array *metadata,
-                                          double timeout);
 const char *cgrpc_handler_host(cgrpc_handler *h);
 const char *cgrpc_handler_method(cgrpc_handler *h);
 const char *cgrpc_handler_call_peer(cgrpc_handler *h);

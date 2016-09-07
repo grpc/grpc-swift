@@ -58,6 +58,13 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     }
   }
 
+  @IBAction func addressReturnPressed(sender: NSTextField) {
+    if (streaming) {
+      print ("stop streaming")
+      self.sendClose()
+    }
+  }
+
   @IBAction func buttonValueChanged(sender: NSButton) {
     print("button value changed \(sender)")
     if (streaming && (sender.intValue == 0)) {
@@ -85,8 +92,8 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     gRPC.initialize()
 
     if (self.streamingButton.intValue == 0) {
+      // NONSTREAMING
       client = Client(address:address)
-      self.client!.completionQueue.run() {}
 
       DispatchQueue.global().async {
         // build the message
@@ -123,9 +130,10 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
       }
     }
     else {
+      // NONSTREAMING
+
       if (!streaming) {
         client = Client(address:address)
-        self.client!.completionQueue.run() {}
 
         call = client?.createCall(host: "foo.test.google.fr",
                                   method: "/echo.Echo/Update",
@@ -134,7 +142,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         self.sendInitialMetadata()
         self.receiveInitialMetadata()
         self.receiveStatus()
-        self.receiveMessage()
+        self.receiveMessage() // this should take a block in which we specify what to do
         streaming = true
       }
       self.sendMessage()
@@ -243,5 +251,3 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     }
   }
 }
-
-

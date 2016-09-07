@@ -85,7 +85,9 @@ public class Handler {
   ///
   /// - Returns: a Call object that can be used to respond to the request
   func call() -> Call {
-    return Call(call: cgrpc_handler_get_call(h), owned:false)
+    return Call(call: cgrpc_handler_get_call(h),
+                owned: false,
+                completionQueue: self.completionQueue)
   }
 
   /// Request a call for the handler

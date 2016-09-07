@@ -49,7 +49,8 @@ public class Client {
   public init(address: String) {
     c = cgrpc_client_create(address)
     completionQueue = CompletionQueue(cq:cgrpc_client_completion_queue(c))
-    completionQueue.name = "Client"
+    completionQueue.name = "Client" // only for debugging
+    self.completionQueue.run() {} // start a loop that watches the queue
   }
 
   deinit {
@@ -64,7 +65,7 @@ public class Client {
   /// - Returns: a Call object that can be used to make the request
   public func createCall(host:String, method:String, timeout:Double) -> Call {
     let call = cgrpc_client_create_call(c, method, host, timeout)!
-    return Call(call:call, owned:true)
+    return Call(call:call, owned:true, completionQueue:self.completionQueue)
   }
 
   /// Performs a nonstreaming gRPC API call

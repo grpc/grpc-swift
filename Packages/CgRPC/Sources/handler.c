@@ -96,23 +96,3 @@ grpc_call_error cgrpc_handler_request_call(cgrpc_handler *h,
 }
 
 
-grpc_event cgrpc_handler_wait_for_request(cgrpc_handler *h,
-                                          cgrpc_metadata_array *metadata,
-                                          double timeout) {
-  void *tag101 = cgrpc_create_tag(101);
-  grpc_call_error error = grpc_server_request_call(h->server->server,
-                                                   &(h->server_call),
-                                                   &(h->call_details),
-                                                   metadata,
-                                                   h->completion_queue,
-                                                   h->server->completion_queue,
-                                                   tag101);
-  assert(error == GRPC_CALL_OK);
-
-  // wait for a request
-  return cgrpc_completion_queue_get_next_event(h->server->completion_queue, timeout);
-}
-
-
-
-

@@ -56,6 +56,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         + " calling " + requestHandler.method()
         + " from " + requestHandler.caller())
 
+      // NONSTREAMING
       if (requestHandler.method() == "/echo.Echo/Get") {
         requestHandler.receiveMessage(initialMetadata:Metadata())
         {(requestBuffer) in
@@ -65,8 +66,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                                           proto:requestBuffer.data()) {
             requestMessage.forOneField(name:"text") {(field) in
               let replyMessage = fileDescriptorSet.createMessage(name:"EchoResponse")!
-              let text = "Swift nonstreaming echo " + field.string()
-              replyMessage.addField(name:"text", value:text)
+              replyMessage.addField(name:"text", value:"Swift nonstreaming echo " + field.string())
               requestHandler.sendResponse(message:ByteBuffer(data:replyMessage.serialize()),
                                           trailingMetadata:Metadata())
             }
@@ -74,13 +74,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
       }
 
+      // STREAMING
       if (requestHandler.method() == "/echo.Echo/Update") {
         requestHandler.sendMetadata(
           initialMetadata: Metadata(),
           completion: {
+
             self.handleMessage(
               fileDescriptorSet: fileDescriptorSet,
               requestHandler: requestHandler)
+
+            // we seem to never get this, but I'm told it's what we're supposed to do
             requestHandler.receiveClose() {
               requestHandler.sendStatus(trailingMetadata: Metadata(), completion: {
                 print("status sent")
@@ -99,20 +103,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     requestHandler.receiveMessage()
       {(requestBuffer) in
         if let requestBuffer = requestBuffer,
-          let requestMessage =
-          fileDescriptorSet.readMessage(name:"EchoRequest",
-                                        proto:requestBuffer.data()) {
+          let requestMessage = fileDescriptorSet.readMessage(name:"EchoRequest",
+                                                             proto:requestBuffer.data()) {
           requestMessage.forOneField(name:"text") {(field) in
             let replyMessage = fileDescriptorSet.createMessage(name:"EchoResponse")!
-            let text = "Swift streaming echo " + field.string()
-            replyMessage.addField(name:"text", value:text)
-            requestHandler.sendResponse(
-            message:ByteBuffer(data:replyMessage.serialize())) {
+            replyMessage.addField(name:"text", value:"Swift streaming echo " + field.string())
+            requestHandler.sendResponse(message:ByteBuffer(data:replyMessage.serialize())) {
+              // after we've sent our response, prepare to handle another message
               self.handleMessage(fileDescriptorSet:fileDescriptorSet, requestHandler:requestHandler)
             }
           }
         } else {
-          // an empty message means close the connection
+          // if we get an empty message (nil buffer), we close the connection
           requestHandler.sendStatus(trailingMetadata: Metadata(), completion: {
             print("status sent")
             requestHandler.shutdown()

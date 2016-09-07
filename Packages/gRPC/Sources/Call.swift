@@ -49,6 +49,9 @@ public class Call {
   /// Pointer to underlying C representation
   private var call : UnsafeMutableRawPointer!
 
+  /// Completion queue used for call
+  private var completionQueue: CompletionQueue
+
   /// True if this instance is responsible for deleting the underlying C representation
   private var owned : Bool
 
@@ -56,17 +59,10 @@ public class Call {
   ///
   /// - Parameter call: the underlying C representation
   /// - Parameter owned: true if this instance is responsible for deleting the underlying call
-  init(call: UnsafeMutableRawPointer, owned: Bool) {
+  init(call: UnsafeMutableRawPointer, owned: Bool, completionQueue: CompletionQueue) {
     self.call = call
     self.owned = owned
-  }
-
-  // coming soon
-  init(call: UnsafeMutableRawPointer,
-       requestsWriter: Writer,
-       responsesWritable: Writable) {
-    self.call = call
-    self.owned = true
+    self.completionQueue = completionQueue
   }
 
   deinit {
