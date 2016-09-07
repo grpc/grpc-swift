@@ -41,8 +41,8 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   @IBOutlet weak var streamingButton: NSButton!
 
   private var streaming = false
-  var client: Client?
-  var call: Call?
+  var client: Client!
+  var call: Call!
   var fileDescriptorSet : FileDescriptorSet
 
   required init?(coder:NSCoder) {
@@ -93,55 +93,48 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
 
     if (self.streamingButton.intValue == 0) {
       // NONSTREAMING
-      client = Client(address:address)
 
-      DispatchQueue.global().async {
-        // build the message
-        if let requestMessage = self.fileDescriptorSet.createMessage(name:"EchoRequest") {
-          requestMessage.addField(name:"text", value:self.messageField.stringValue)
+      // build the message
+      if let requestMessage = self.fileDescriptorSet.createMessage(name:"EchoRequest") {
+        requestMessage.addField(name:"text", value:self.messageField.stringValue)
+        let requestHost = "foo.test.google.fr"
+        let requestMethod = "/echo.Echo/Get"
+        let requestMetadata = Metadata()
 
-          let requestHost = "foo.test.google.fr"
-          let requestMethod = "/echo.Echo/Get"
-          let requestBuffer = ByteBuffer(data:requestMessage.serialize())
-          let requestMetadata = Metadata()
-
-          _ = self.client!.performRequest(host:requestHost,
-                                          method:requestMethod,
-                                          message:requestBuffer,
-                                          metadata:requestMetadata)
-          { (response) in
-            self.log("Received status: \(response.status) " + response.statusDetails)
-            if let responseBuffer = response.message,
-              let responseMessage = self.fileDescriptorSet.readMessage(
-                name:"EchoResponse",
-                proto:responseBuffer.data()) {
-              responseMessage.forOneField(name:"text") {(field) in
-                DispatchQueue.main.async {
-                  self.outputField.stringValue = field.string()
-                }
-              }
-            } else {
+        client = Client(address:address)
+        call = self.client.createCall(host: requestHost, method: requestMethod, timeout: 30.0)
+        call.performNonStreamingCall(messageData: requestMessage.serialize(),
+                                     metadata: requestMetadata)
+        { (response) in
+          self.log("Received status: \(response.status) " + response.statusDetails)
+          if let responseBuffer = response.message,
+            let responseMessage = self.fileDescriptorSet.readMessage(
+              name:"EchoResponse",
+              proto:responseBuffer.data()) {
+            responseMessage.forOneField(name:"text") {(field) in
               DispatchQueue.main.async {
-                self.outputField.stringValue = "No message received. gRPC Status \(response.status) " + response.statusDetails
+                self.outputField.stringValue = field.string()
               }
+            }
+          } else {
+            DispatchQueue.main.async {
+              self.outputField.stringValue = "No message received. gRPC Status \(response.status) " + response.statusDetails
             }
           }
         }
       }
     }
     else {
-      // NONSTREAMING
-
+      // STREAMING
       if (!streaming) {
         client = Client(address:address)
-
         call = client?.createCall(host: "foo.test.google.fr",
                                   method: "/echo.Echo/Update",
                                   timeout: 600.0)
-
-        self.sendInitialMetadata()
-        self.receiveInitialMetadata()
-        self.receiveStatus()
+        let metadata = Metadata(
+          pairs:[MetadataPair(key:"x-goog-api-key", value:"YOUR_API_KEY"),
+                 MetadataPair(key:"x-ios-bundle-identifier", value:Bundle.main.bundleIdentifier!)])
+        call.start(metadata:metadata)
         self.receiveMessage() // this should take a block in which we specify what to do
         streaming = true
       }
@@ -149,105 +142,30 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     }
   }
 
-  func sendInitialMetadata() {
-    let metadata = Metadata(
-      pairs:[MetadataPair(key:"x-goog-api-key", value:"YOUR_API_KEY"),
-             MetadataPair(key:"x-ios-bundle-identifier", value:Bundle.main.bundleIdentifier!)])
-    let operation_sendInitialMetadata = Operation_SendInitialMetadata(metadata:metadata);
-    let operations = OperationGroup(call:call!, operations:[operation_sendInitialMetadata])
-    { (event) in
-      print("client sendInitialMetadata complete with status \(event.type) \(event.tag)")
-      if (event.type == GRPC_OP_COMPLETE) {
-        print("call status \(event.type) \(event.tag)")
-      } else {
-        return
-      }
-    }
-    let call_error = client!.perform(call:call!, operations:operations)
-    if call_error != GRPC_CALL_OK {
-      print("call error: \(call_error)")
-    }
-  }
-
-  func receiveInitialMetadata() {
-    let operation_receiveInitialMetadata = Operation_ReceiveInitialMetadata()
-    let operations = OperationGroup(call:call!, operations:[operation_receiveInitialMetadata])
-    { (event) in
-      print("client receiveInitialMetadata complete with status \(event.type) \(event.tag)")
-      let initialMetadata = operation_receiveInitialMetadata.metadata()
-      for j in 0..<initialMetadata.count() {
-        print("Received initial metadata -> " + initialMetadata.key(index:j) + " : " + initialMetadata.value(index:j))
-      }
-    }
-    let call_error = client!.perform(call:call!, operations:operations)
-    if call_error != GRPC_CALL_OK {
-      print("call error \(call_error)")
-    }
-  }
-
   func sendMessage() {
     let requestMessage = self.fileDescriptorSet.createMessage(name:"EchoRequest")!
     requestMessage.addField(name:"text", value:self.messageField.stringValue)
     let messageData = requestMessage.serialize()
-    let messageBuffer = ByteBuffer(data:messageData)
-    let operation_sendMessage = Operation_SendMessage(message:messageBuffer)
-    let operations = OperationGroup(call:call!, operations:[operation_sendMessage])
-    { (event) in
-      print("client sendMessage complete with status \(event.type) \(event.tag)")
-    }
-    let call_error = client!.perform(call:call!, operations:operations)
-    if call_error != GRPC_CALL_OK {
-      print("call error \(call_error)")
-    }
-  }
-
-  func receiveStatus() {
-    let operation_receiveStatus = Operation_ReceiveStatusOnClient()
-    let operations = OperationGroup(call:call!,
-                                    operations:[operation_receiveStatus])
-    { (event) in
-      print("client receiveStatus complete with status \(event.type) \(event.tag)")
-      print("status = \(operation_receiveStatus.status()), \(operation_receiveStatus.statusDetails())")
-    }
-    let call_error = client!.perform(call:call!, operations:operations)
-    if call_error != GRPC_CALL_OK {
-      print("call error \(call_error)")
-    }
+    call.sendMessage(data:messageData)
   }
 
   func receiveMessage() {
-    let operation_receiveMessage = Operation_ReceiveMessage()
-    let operations = OperationGroup(call:call!, operations:[operation_receiveMessage])
-    { (event) in
-      print("client receiveMessage complete with status \(event.type) \(event.tag)")
-      if let messageBuffer = operation_receiveMessage.message() {
-        let responseMessage = self.fileDescriptorSet.readMessage(
-          name:"EchoResponse",
-          proto:messageBuffer.data())!
-        responseMessage.forOneField(name:"text") {(field) in
-          DispatchQueue.main.async {
-            self.outputField.stringValue = field.string()
-          }
-          self.receiveMessage()
+    call.receiveMessage() {(data) in
+      let responseMessage = self.fileDescriptorSet.readMessage(
+        name:"EchoResponse",
+        proto:data)!
+      responseMessage.forOneField(name:"text") {(field) in
+        DispatchQueue.main.async {
+          self.outputField.stringValue = field.string()
         }
+        self.receiveMessage()
       }
-    }
-    let call_error = client!.perform(call:call!, operations:operations)
-    if call_error != GRPC_CALL_OK {
-      print("call error \(call_error)")
     }
   }
 
   func sendClose() {
-    let operation_sendCloseFromClient = Operation_SendCloseFromClient()
-    let operations = OperationGroup(call:call!, operations:[operation_sendCloseFromClient])
-    { (event) in
-      print("client sendClose complete with status \(event.type) \(event.tag)")
+    call.close() {
       self.streaming = false
-    }
-    let call_error = client!.perform(call:call!, operations:operations)
-    if call_error != GRPC_CALL_OK {
-      print("call error \(call_error)")
     }
   }
 }

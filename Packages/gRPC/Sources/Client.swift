@@ -50,7 +50,7 @@ public class Client {
     c = cgrpc_client_create(address)
     completionQueue = CompletionQueue(cq:cgrpc_client_completion_queue(c))
     completionQueue.name = "Client" // only for debugging
-    self.completionQueue.run() {} // start a loop that watches the queue
+    self.completionQueue.run() {} // start a loop that watches the client's completion queue
   }
 
   deinit {
@@ -66,58 +66,5 @@ public class Client {
   public func createCall(host:String, method:String, timeout:Double) -> Call {
     let call = cgrpc_client_create_call(c, method, host, timeout)!
     return Call(call:call, owned:true, completionQueue:self.completionQueue)
-  }
-
-  /// Performs a nonstreaming gRPC API call
-  ///
-  /// - Parameter host: the gRPC host name for the call
-  /// - Parameter method: the gRPC method name for the call
-  /// - Parameter message: a ByteBuffer containing the message to send
-  /// - Parameter metadata: metadata to send with the call
-  /// - Returns: a CallResponse object containing results of the call
-  public func performRequest(host: String,
-                             method: String,
-                             message: ByteBuffer,
-                             metadata: Metadata,
-                             completion: ((CallResponse) -> Void)) -> Call   {
-    let call = createCall(host:host, method:method, timeout:600.0)
-
-    let operation_sendInitialMetadata = Operation_SendInitialMetadata(metadata:metadata);
-    let operation_sendMessage = Operation_SendMessage(message:message)
-    let operation_sendCloseFromClient = Operation_SendCloseFromClient()
-    let operation_receiveInitialMetadata = Operation_ReceiveInitialMetadata()
-    let operation_receiveStatusOnClient = Operation_ReceiveStatusOnClient()
-    let operation_receiveMessage = Operation_ReceiveMessage()
-
-    let group = OperationGroup(call:call,
-                               operations:[operation_sendInitialMetadata,
-                                           operation_sendMessage,
-                                           operation_sendCloseFromClient,
-                                           operation_receiveInitialMetadata,
-                                           operation_receiveStatusOnClient,
-                                           operation_receiveMessage])
-    { (event) in
-      print("client nonstreaming call complete")
-      if (event.type == GRPC_OP_COMPLETE) {
-        let response = CallResponse(status:operation_receiveStatusOnClient.status(),
-                                    statusDetails:operation_receiveStatusOnClient.statusDetails(),
-                                    message:operation_receiveMessage.message(),
-                                    initialMetadata:operation_receiveInitialMetadata.metadata(),
-                                    trailingMetadata:operation_receiveStatusOnClient.metadata())
-        completion(response)
-      } else {
-        completion(CallResponse(completion: event.type))
-      }
-    }
-    let call_error = self.perform(call: call, operations: group)
-    print ("call error = \(call_error)")
-    return call
-  }
-
-  public func perform(call: Call, operations: OperationGroup) -> grpc_call_error {
-    self.completionQueue.operationGroups[operations.tag] = operations
-    return call.performOperations(operations:operations,
-                                  tag:operations.tag,
-                                  completionQueue: self.completionQueue)
   }
 }

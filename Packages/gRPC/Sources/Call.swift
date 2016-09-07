@@ -71,11 +71,6 @@ public class Call {
     }
   }
 
-  // coming soon
-  func start() {
-
-  }
-
   /// Initiate performance of a call without waiting for completion
   ///
   /// - Parameter operations: array of operations to be performed
@@ -90,5 +85,152 @@ public class Call {
       let error = cgrpc_call_perform(call, operations.operations, tag)
       mutex.unlock()
       return error
+  }
+
+
+  /// Performs a nonstreaming gRPC API call
+  ///
+  /// - Parameter host: the gRPC host name for the call
+  /// - Parameter method: the gRPC method name for the call
+  /// - Parameter message: a ByteBuffer containing the message to send
+  /// - Parameter metadata: metadata to send with the call
+  /// - Returns: a CallResponse object containing results of the call
+  public func performNonStreamingCall(messageData: NSData,
+                                      metadata: Metadata,
+                                      completion: ((CallResponse) -> Void)) -> Void   {
+
+    let messageBuffer = ByteBuffer(data:messageData)
+
+    let operation_sendInitialMetadata = Operation_SendInitialMetadata(metadata:metadata);
+    let operation_sendMessage = Operation_SendMessage(message:messageBuffer)
+    let operation_sendCloseFromClient = Operation_SendCloseFromClient()
+    let operation_receiveInitialMetadata = Operation_ReceiveInitialMetadata()
+    let operation_receiveStatusOnClient = Operation_ReceiveStatusOnClient()
+    let operation_receiveMessage = Operation_ReceiveMessage()
+
+    let group = OperationGroup(call:self,
+                               operations:[operation_sendInitialMetadata,
+                                           operation_sendMessage,
+                                           operation_sendCloseFromClient,
+                                           operation_receiveInitialMetadata,
+                                           operation_receiveStatusOnClient,
+                                           operation_receiveMessage])
+    { (event) in
+      print("client nonstreaming call complete")
+      if (event.type == GRPC_OP_COMPLETE) {
+        let response = CallResponse(status:operation_receiveStatusOnClient.status(),
+                                    statusDetails:operation_receiveStatusOnClient.statusDetails(),
+                                    message:operation_receiveMessage.message(),
+                                    initialMetadata:operation_receiveInitialMetadata.metadata(),
+                                    trailingMetadata:operation_receiveStatusOnClient.metadata())
+        completion(response)
+      } else {
+        completion(CallResponse(completion: event.type))
+      }
+    }
+    let call_error = self.perform(call: self, operations: group)
+    print ("call error = \(call_error)")
+  }
+
+  public func perform(call: Call, operations: OperationGroup) -> grpc_call_error {
+    self.completionQueue.operationGroups[operations.tag] = operations
+    return call.performOperations(operations:operations,
+                                  tag:operations.tag,
+                                  completionQueue: self.completionQueue)
+  }
+
+  public func sendMessage(data: NSData) {
+    let messageBuffer = ByteBuffer(data:data)
+    let operation_sendMessage = Operation_SendMessage(message:messageBuffer)
+    let operations = OperationGroup(call:self, operations:[operation_sendMessage])
+    { (event) in
+      print("client sendMessage complete with status \(event.type) \(event.tag)")
+    }
+    let call_error = self.perform(call:self, operations:operations)
+    if call_error != GRPC_CALL_OK {
+      print("call error \(call_error)")
+    }
+  }
+
+  public func receiveMessage(callback:((NSData!) -> Void)) -> Void {
+    let operation_receiveMessage = Operation_ReceiveMessage()
+    let operations = OperationGroup(call:self, operations:[operation_receiveMessage])
+    { (event) in
+      print("client receiveMessage complete with status \(event.type) \(event.tag)")
+      if let messageBuffer = operation_receiveMessage.message() {
+        callback(messageBuffer.data())
+      }
+    }
+    let call_error = self.perform(call:self, operations:operations)
+    if call_error != GRPC_CALL_OK {
+      print("call error \(call_error)")
+    }
+  }
+
+  // start a streaming connection
+  public func start(metadata: Metadata) {
+    self.sendInitialMetadata(metadata: metadata)
+    self.receiveInitialMetadata()
+    self.receiveStatus()
+  }
+
+  private func sendInitialMetadata(metadata: Metadata) {
+    let operation_sendInitialMetadata = Operation_SendInitialMetadata(metadata:metadata);
+    let operations = OperationGroup(call:self, operations:[operation_sendInitialMetadata])
+    { (event) in
+      print("client sendInitialMetadata complete with status \(event.type) \(event.tag)")
+      if (event.type == GRPC_OP_COMPLETE) {
+        print("call status \(event.type) \(event.tag)")
+      } else {
+        return
+      }
+    }
+    let call_error = self.perform(call:self, operations:operations)
+    if call_error != GRPC_CALL_OK {
+      print("call error: \(call_error)")
+    }
+  }
+
+  private func receiveInitialMetadata() {
+    let operation_receiveInitialMetadata = Operation_ReceiveInitialMetadata()
+    let operations = OperationGroup(call:self, operations:[operation_receiveInitialMetadata])
+    { (event) in
+      print("client receiveInitialMetadata complete with status \(event.type) \(event.tag)")
+      let initialMetadata = operation_receiveInitialMetadata.metadata()
+      for j in 0..<initialMetadata.count() {
+        print("Received initial metadata -> " + initialMetadata.key(index:j) + " : " + initialMetadata.value(index:j))
+      }
+    }
+    let call_error = self.perform(call:self, operations:operations)
+    if call_error != GRPC_CALL_OK {
+      print("call error \(call_error)")
+    }
+  }
+
+  private func receiveStatus() {
+    let operation_receiveStatus = Operation_ReceiveStatusOnClient()
+    let operations = OperationGroup(call:self,
+                                    operations:[operation_receiveStatus])
+    { (event) in
+      print("client receiveStatus complete with status \(event.type) \(event.tag)")
+      print("status = \(operation_receiveStatus.status()), \(operation_receiveStatus.statusDetails())")
+    }
+    let call_error = self.perform(call:self, operations:operations)
+    if call_error != GRPC_CALL_OK {
+      print("call error \(call_error)")
+    }
+  }
+
+  public func close(completion:(() -> Void)) {
+    let operation_sendCloseFromClient = Operation_SendCloseFromClient()
+    let operations = OperationGroup(call:self, operations:[operation_sendCloseFromClient])
+    { (event) in
+      print("client sendClose complete with status \(event.type) \(event.tag)")
+      completion()
+    }
+    let call_error = self.perform(call:self, operations:operations)
+    if call_error != GRPC_CALL_OK {
+      print("call error \(call_error)")
+    }
   }
 }

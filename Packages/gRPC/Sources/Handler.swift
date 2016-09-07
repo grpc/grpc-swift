@@ -243,6 +243,5 @@ public class Handler {
     _ = call.performOperations(operations:operations, tag:operations.tag, completionQueue: self.completionQueue)
   }
 
-  
 
 }
