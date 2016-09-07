@@ -65,7 +65,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                                           proto:requestBuffer.data()) {
             requestMessage.forOneField(name:"text") {(field) in
               let replyMessage = fileDescriptorSet.createMessage(name:"EchoResponse")!
-              let text = "echo " + field.string()
+              let text = "Swift nonstreaming echo " + field.string()
               replyMessage.addField(name:"text", value:text)
               requestHandler.sendResponse(message:ByteBuffer(data:replyMessage.serialize()),
                                           trailingMetadata:Metadata())
@@ -104,7 +104,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                                         proto:requestBuffer.data()) {
           requestMessage.forOneField(name:"text") {(field) in
             let replyMessage = fileDescriptorSet.createMessage(name:"EchoResponse")!
-            let text = "echo " + field.string()
+            let text = "Swift streaming echo " + field.string()
             replyMessage.addField(name:"text", value:text)
             requestHandler.sendResponse(
             message:ByteBuffer(data:replyMessage.serialize())) {

@@ -40,7 +40,7 @@ var echoServer EchoServer
 // [START get]
 func (s *EchoServer) Get(ctx context.Context, r *pb.EchoRequest) (*pb.EchoResponse, error) {
 	response := &pb.EchoResponse{}
-	response.Text = r.Text
+	response.Text = "Go nonstreaming echo " + r.Text
 	fmt.Printf("Get received: %s\n", r.Text)
 	return response, nil
 }
@@ -58,7 +58,7 @@ func (s *EchoServer) Update(stream pb.Echo_UpdateServer) error {
 		}
 
 		response := &pb.EchoResponse{}
-		response.Text = in.Text
+		response.Text = "Go streaming echo " + in.Text
 
 		fmt.Printf("Update received: %s\n", in.Text)
 
