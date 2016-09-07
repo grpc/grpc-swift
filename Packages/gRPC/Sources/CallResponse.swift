@@ -51,7 +51,7 @@ public class CallResponse {
   public var statusDetails: String
 
   /// Message returned by server
-  public var message: ByteBuffer?
+  public var messageData: NSData?
 
   /// Initial metadata returned by server
   public var initialMetadata: Metadata?
@@ -95,7 +95,7 @@ public class CallResponse {
     self.completion = GRPC_OP_COMPLETE
     self.status = status
     self.statusDetails = statusDetails
-    self.message = message
+    self.messageData = message!.data()
     self.initialMetadata = initialMetadata
     self.trailingMetadata = trailingMetadata
   }

@@ -102,15 +102,14 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         let requestMetadata = Metadata()
 
         client = Client(address:address)
-        call = self.client.createCall(host: requestHost, method: requestMethod, timeout: 30.0)
+        call = client.createCall(host: requestHost, method: requestMethod, timeout: 30.0)
         call.performNonStreamingCall(messageData: requestMessage.serialize(),
                                      metadata: requestMetadata)
         { (response) in
           self.log("Received status: \(response.status) " + response.statusDetails)
-          if let responseBuffer = response.message,
-            let responseMessage = self.fileDescriptorSet.readMessage(
-              name:"EchoResponse",
-              proto:responseBuffer.data()) {
+          if let messageData = response.messageData,
+            let responseMessage = self.fileDescriptorSet.readMessage(name:"EchoResponse",
+                                                                     proto:messageData) {
             responseMessage.forOneField(name:"text") {(field) in
               DispatchQueue.main.async {
                 self.outputField.stringValue = field.string()
@@ -128,9 +127,9 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
       // STREAMING
       if (!streaming) {
         client = Client(address:address)
-        call = client?.createCall(host: "foo.test.google.fr",
-                                  method: "/echo.Echo/Update",
-                                  timeout: 600.0)
+        call = client.createCall(host: "foo.test.google.fr",
+                                 method: "/echo.Echo/Update",
+                                 timeout: 600.0)
         let metadata = Metadata(
           pairs:[MetadataPair(key:"x-goog-api-key", value:"YOUR_API_KEY"),
                  MetadataPair(key:"x-ios-bundle-identifier", value:Bundle.main.bundleIdentifier!)])
@@ -162,7 +161,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
       }
     }
   }
-
+  
   func sendClose() {
     call.close() {
       self.streaming = false
