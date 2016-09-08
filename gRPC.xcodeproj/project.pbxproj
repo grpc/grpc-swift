@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		D310E3C21D5D8B89002D48D0 /* Writer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D310E3C11D5D8B89002D48D0 /* Writer.swift */; };
-		D310E3C71D5D8CD8002D48D0 /* Writable.swift in Sources */ = {isa = PBXBuildFile; fileRef = D310E3C61D5D8CD8002D48D0 /* Writable.swift */; };
 		D32F10121D5CEE880071B7C1 /* CallResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = D32F10111D5CEE880071B7C1 /* CallResponse.swift */; };
 		D34B4BB81D7B2C9B00B8B5E2 /* OperationGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = D34B4BB71D7B2C9B00B8B5E2 /* OperationGroup.swift */; };
 		D34B4BBA1D7B2CB200B8B5E2 /* operations.c in Sources */ = {isa = PBXBuildFile; fileRef = D34B4BB91D7B2CB200B8B5E2 /* operations.c */; };
@@ -40,8 +38,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		D310E3C11D5D8B89002D48D0 /* Writer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Writer.swift; path = Packages/gRPC/Sources/Writer.swift; sourceTree = "<group>"; };
-		D310E3C61D5D8CD8002D48D0 /* Writable.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Writable.swift; path = Packages/gRPC/Sources/Writable.swift; sourceTree = "<group>"; };
 		D32F10111D5CEE880071B7C1 /* CallResponse.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CallResponse.swift; path = Packages/gRPC/Sources/CallResponse.swift; sourceTree = "<group>"; };
 		D34B4BB71D7B2C9B00B8B5E2 /* OperationGroup.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = OperationGroup.swift; path = Packages/gRPC/Sources/OperationGroup.swift; sourceTree = "<group>"; };
 		D34B4BB91D7B2CB200B8B5E2 /* operations.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = operations.c; path = Packages/CgRPC/Sources/operations.c; sourceTree = "<group>"; };
@@ -122,8 +118,6 @@
 				D3AC86C31D5BEBE00042B341 /* Operation.swift */,
 				D34B4BB71D7B2C9B00B8B5E2 /* OperationGroup.swift */,
 				D3AC86C41D5BEBE00042B341 /* Server.swift */,
-				D310E3C61D5D8CD8002D48D0 /* Writable.swift */,
-				D310E3C11D5D8B89002D48D0 /* Writer.swift */,
 			);
 			name = gRPC/Sources;
 			sourceTree = "<group>";
@@ -262,12 +256,10 @@
 				D3AC86C81D5BEBE00042B341 /* CompletionQueue.swift in Sources */,
 				D3AC86C61D5BEBE00042B341 /* Call.swift in Sources */,
 				D3AC86CB1D5BEBE00042B341 /* Metadata.swift in Sources */,
-				D310E3C71D5D8CD8002D48D0 /* Writable.swift in Sources */,
 				D3AC86C91D5BEBE00042B341 /* gRPC.swift in Sources */,
 				D34B4BB81D7B2C9B00B8B5E2 /* OperationGroup.swift in Sources */,
 				D3AC86CA1D5BEBE00042B341 /* Handler.swift in Sources */,
 				D3AC86CD1D5BEBE00042B341 /* Operation.swift in Sources */,
-				D310E3C21D5D8B89002D48D0 /* Writer.swift in Sources */,
 				D37DD0281D7D09CB009AEB74 /* event.c in Sources */,
 				D32F10121D5CEE880071B7C1 /* CallResponse.swift in Sources */,
 				D3AC86CE1D5BEBE00042B341 /* Server.swift in Sources */,

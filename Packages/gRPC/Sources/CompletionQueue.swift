@@ -60,6 +60,7 @@ public class CompletionQueue {
     return cgrpc_completion_queue_get_next_event(cq, timeout);
   }
 
+  /// Run a completion queue
   public func run(completion:@escaping () -> Void) {
     DispatchQueue.global().async {
       var running = true

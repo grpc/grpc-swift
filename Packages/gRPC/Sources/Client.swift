@@ -62,7 +62,7 @@ public class Client {
   /// - Parameter host: the gRPC host name for the call
   /// - Parameter method: the gRPC method name for the call
   /// - Parameter timeout: a timeout value in seconds
-  /// - Returns: a Call object that can be used to make the request
+  /// - Returns: a Call object that can be used to perform the request
   public func createCall(host:String, method:String, timeout:Double) -> Call {
     let call = cgrpc_client_create_call(c, method, host, timeout)!
     return Call(call:call, owned:true, completionQueue:self.completionQueue)

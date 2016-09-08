@@ -76,7 +76,7 @@ public class Call {
   /// - Parameter operations: array of operations to be performed
   /// - Parameter tag: integer tag that will be attached to these operations
   /// - Returns: the result of initiating the call
-  public func performOperations(operations: OperationGroup,
+  func performOperations(operations: OperationGroup,
                                 tag: Int64,
                                 completionQueue: CompletionQueue)
     -> grpc_call_error {
@@ -90,8 +90,6 @@ public class Call {
 
   /// Performs a nonstreaming gRPC API call
   ///
-  /// - Parameter host: the gRPC host name for the call
-  /// - Parameter method: the gRPC method name for the call
   /// - Parameter message: a ByteBuffer containing the message to send
   /// - Parameter metadata: metadata to send with the call
   /// - Returns: a CallResponse object containing results of the call
@@ -132,13 +130,22 @@ public class Call {
     print ("call error = \(call_error)")
   }
 
-  public func perform(call: Call, operations: OperationGroup) -> grpc_call_error {
+  // perform a group of operations (used internally)
+  private func perform(call: Call, operations: OperationGroup) -> grpc_call_error {
     self.completionQueue.operationGroups[operations.tag] = operations
     return call.performOperations(operations:operations,
                                   tag:operations.tag,
                                   completionQueue: self.completionQueue)
   }
 
+  // start a streaming connection
+  public func start(metadata: Metadata) {
+    self.sendInitialMetadata(metadata: metadata)
+    self.receiveInitialMetadata()
+    self.receiveStatus()
+  }
+
+  // send a message over a streaming connection
   public func sendMessage(data: NSData) {
     let messageBuffer = ByteBuffer(data:data)
     let operation_sendMessage = Operation_SendMessage(message:messageBuffer)
@@ -152,6 +159,7 @@ public class Call {
     }
   }
 
+  // receive a message over a streaming connection
   public func receiveMessage(callback:((NSData!) -> Void)) -> Void {
     let operation_receiveMessage = Operation_ReceiveMessage()
     let operations = OperationGroup(call:self, operations:[operation_receiveMessage])
@@ -167,13 +175,7 @@ public class Call {
     }
   }
 
-  // start a streaming connection
-  public func start(metadata: Metadata) {
-    self.sendInitialMetadata(metadata: metadata)
-    self.receiveInitialMetadata()
-    self.receiveStatus()
-  }
-
+  // send initial metadata over a streaming connection
   private func sendInitialMetadata(metadata: Metadata) {
     let operation_sendInitialMetadata = Operation_SendInitialMetadata(metadata:metadata);
     let operations = OperationGroup(call:self, operations:[operation_sendInitialMetadata])
@@ -191,6 +193,7 @@ public class Call {
     }
   }
 
+  // receive initial metadata from a streaming connection
   private func receiveInitialMetadata() {
     let operation_receiveInitialMetadata = Operation_ReceiveInitialMetadata()
     let operations = OperationGroup(call:self, operations:[operation_receiveInitialMetadata])
@@ -207,6 +210,7 @@ public class Call {
     }
   }
 
+  // receive status from a streaming connection
   private func receiveStatus() {
     let operation_receiveStatus = Operation_ReceiveStatusOnClient()
     let operations = OperationGroup(call:self,
@@ -221,6 +225,7 @@ public class Call {
     }
   }
 
+  // close a streaming connection
   public func close(completion:(() -> Void)) {
     let operation_sendCloseFromClient = Operation_SendCloseFromClient()
     let operations = OperationGroup(call:self, operations:[operation_sendCloseFromClient])

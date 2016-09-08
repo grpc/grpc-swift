@@ -151,12 +151,12 @@ public class Handler {
     _ = call.performOperations(operations:operations, tag:operations.tag, completionQueue: self.completionQueue)
   }
 
-
+  /// shutdown the handler's completion queue
   public func shutdown() {
     cgrpc_completion_queue_shutdown(completionQueue.cq)
   }
 
-
+  /// Send initial metadata in response to a connection
   public func sendMetadata(initialMetadata: Metadata,
                            completion:(() -> Void)) {
     let call = self.call()
@@ -215,6 +215,7 @@ public class Handler {
     _ = call.performOperations(operations:operations, tag:operations.tag, completionQueue: self.completionQueue)
   }
 
+  /// Recognize when the client has closed a request
   public func receiveClose(completion: @escaping () -> Void) -> Void {
     let call = self.call()
     let operation_receiveClose = Operation_ReceiveCloseOnServer()
@@ -228,6 +229,7 @@ public class Handler {
     print("perform receiveClose \(call_error)")
   }
 
+  /// Send final status to the client
   public func sendStatus(trailingMetadata: Metadata,
                          completion:(() -> Void)) -> Void {
     let call = self.call()
@@ -242,6 +244,4 @@ public class Handler {
     self.completionQueue.operationGroups[operations.tag] = operations
     _ = call.performOperations(operations:operations, tag:operations.tag, completionQueue: self.completionQueue)
   }
-
-
 }

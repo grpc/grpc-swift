@@ -34,20 +34,34 @@
   import CgRPC
 #endif
 
+/// Singleton class that provides a mutex for synchronizing tag generation
+private class OperationGroupTagLock {
+  var mutex : Mutex
+  init() {
+    mutex = Mutex()
+  }
+  static let sharedInstance = OperationGroupTagLock()
+}
+
 /// A collection of gRPC operations
 public class OperationGroup {
 
+  /// Used to generate unique tags for OperationGroups
   static var nextTag : Int64 = 1
 
+  /// Automatically-assigned tag that is used with the completion queue.
+  public var tag : Int64
+
+  /// The call associated with the operation group. Retained while the operations are running.
   var call : Call
 
-  public var tag : Int64
+  /// An array of operation objects that are passed into the initializer
+  var operationsArray : [Operation]?
 
   /// Pointer to underlying C representation
   var operations : UnsafeMutableRawPointer!
 
-  var operationsArray : [Operation]?
-
+  /// Completion handler that is called when the group completes
   var completion : ((grpc_event) -> Void)
 
   /// Initializes a Operations representation
@@ -65,12 +79,11 @@ public class OperationGroup {
     }
     self.completion = completion
 
+    let mutex = OperationGroupTagLock.sharedInstance.mutex
+    mutex.lock()
     self.tag = OperationGroup.nextTag
     OperationGroup.nextTag += 1
-  }
-
-  deinit {
-    
+    mutex.unlock()
   }
 }
 

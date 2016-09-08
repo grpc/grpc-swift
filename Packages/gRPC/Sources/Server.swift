@@ -60,13 +60,9 @@ public class Server {
     cgrpc_server_destroy(s)
   }
 
-  /// Starts the server
-  public func start() {
-    cgrpc_server_start(s);
-  }
-
+  /// Run the server
   public func run(handler: @escaping (Handler) -> Void) {
-    self.start()
+    cgrpc_server_start(s);
     DispatchQueue.global().async {
       while(true) {
         let (callError, completionType, requestHandler) =
@@ -87,7 +83,7 @@ public class Server {
   /// Gets the next request sent to the server
   ///
   /// - Returns: a tuple containing the results of waiting and a possible Handler for the request
-  public func getNextRequest(timeout: Double) -> (grpc_call_error, grpc_completion_type, Handler?) {
+  private func getNextRequest(timeout: Double) -> (grpc_call_error, grpc_completion_type, Handler?) {
     let handler = Handler(h:cgrpc_handler_create_with_server(s))
     let call_error = handler.requestCall(tag:101)
     if (call_error != GRPC_CALL_OK) {
