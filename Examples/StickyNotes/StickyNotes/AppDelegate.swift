@@ -32,105 +32,20 @@
  */
 import Cocoa
 import gRPC
-import QuickProto
 
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate {
 
   @IBOutlet weak var window: NSWindow!
 
+  var stickyServer: StickyServer!
+
   func applicationDidFinishLaunching(_ aNotification: Notification) {
     gRPC.initialize()
-    startServer(address:"localhost:8081")
+    
+    self.stickyServer = StickyServer(address:"localhost:8085")
+    stickyServer.start()
   }
 
-  func log(_ message: String) {
-    print(message)
-  }
-
-  func startServer(address:String) {
-    let fileDescriptorSet = FileDescriptorSet(filename:"stickynote.out")
-
-    DispatchQueue.global().async {
-      self.log("Server Starting")
-      self.log("GRPC version " + gRPC.version())
-
-      let server = gRPC.Server(address:address)
-      server.start()
-
-      while(true) {
-        let (callError, completionType, requestHandler) = server.getNextRequest(timeout:1.0)
-        if (callError != GRPC_CALL_OK) {
-          self.log("Call error \(callError)")
-          self.log("------------------------------")
-        } else if (completionType == GRPC_OP_COMPLETE) {
-          if let requestHandler = requestHandler {
-            self.log("Received request to " + requestHandler.host()
-              + " calling " + requestHandler.method()
-              + " from " + requestHandler.caller())
-            let initialMetadata = requestHandler.requestMetadata
-            for i in 0..<initialMetadata.count() {
-              self.log("Received initial metadata -> " + initialMetadata.key(index:i) + ":" + initialMetadata.value(index:i))
-            }
-
-            let initialMetadataToSend = Metadata(pairs:[MetadataPair(key:"a", value:"Apple"),
-                                                        MetadataPair(key:"b", value:"Banana"),
-                                                        MetadataPair(key:"c", value:"Cherry")])
-            let (_, _, requestBuffer) = requestHandler.receiveMessage(initialMetadata:initialMetadataToSend)
-            if let requestBuffer = requestBuffer,
-              let requestMessage = fileDescriptorSet.readMessage(name:"StickyNoteRequest",
-                                                                 proto:requestBuffer.data()) {
-
-              requestMessage.forOneField(name:"message") {(field) in
-                let imageData = self.drawImage(message: field.string())
-
-                let replyMessage = fileDescriptorSet.createMessage(name:"StickyNoteResponse")!
-                replyMessage.addField(name:"image", value:imageData)
-
-                let trailingMetadataToSend = Metadata(pairs:[MetadataPair(key:"0", value:"zero"),
-                                                             MetadataPair(key:"1", value:"one"),
-                                                             MetadataPair(key:"2", value:"two")])
-
-                let (_, _) = requestHandler.sendResponse(message:ByteBuffer(data:replyMessage.serialize()),
-                                                         trailingMetadata:trailingMetadataToSend)
-              }
-            }
-          }
-        } else if (completionType == GRPC_QUEUE_TIMEOUT) {
-          // everything is fine
-        } else if (completionType == GRPC_QUEUE_SHUTDOWN) {
-          // we should stop
-        }
-      }
-    }
-  }
-
-  /// draw a stickynote
-  func drawImage(message: String) -> NSData {
-    let image = NSImage.init(size: NSSize.init(width: 400, height: 400),
-                             flipped: false,
-                             drawingHandler: { (rect) -> Bool in
-                              NSColor.yellow.set()
-                              NSRectFill(rect)
-                              NSColor.black.set()
-                              let string = NSString(string:message)
-                              let trialS = CGFloat(300.0)
-                              let trialFont = NSFont.userFont(ofSize:trialS)!
-                              let trialAttributes = [NSFontAttributeName: trialFont]
-                              let trialSize = string.size(withAttributes: trialAttributes)
-                              let s = trialS * 300 / trialSize.width;
-                              let font = NSFont.userFont(ofSize:s)!
-                              let attributes = [NSFontAttributeName: font]
-                              let size = string.size(withAttributes: attributes)
-                              let x = rect.origin.x + 0.5*(rect.size.width - size.width)
-                              let y = rect.origin.y + 0.5*(rect.size.height - size.height)
-                              let r = NSMakeRect(x, y, size.width, size.height)
-                              string.draw(in: r, withAttributes:attributes)
-                              return true})
-    let imgData: Data! = image.tiffRepresentation!
-    let bitmap: NSBitmapImageRep! = NSBitmapImageRep(data: imgData)
-    let pngImage = bitmap!.representation(using:NSBitmapImageFileType.PNG, properties:[:])
-    return NSData(data:pngImage!)
-  }
 }
 

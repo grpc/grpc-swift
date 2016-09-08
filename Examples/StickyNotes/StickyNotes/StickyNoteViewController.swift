@@ -38,12 +38,24 @@ class StickyNoteViewController : NSViewController, NSTextFieldDelegate {
   @IBOutlet weak var messageField: NSTextField!
   @IBOutlet weak var imageView: NSImageView!
 
+  var client: Client!
+
+  var enabled = false
+
   @IBAction func messageReturnPressed(sender: NSTextField) {
-    callServer(address:"localhost:8081")
+    if enabled {
+      callServer(address:"localhost:8085")
+    }
   }
 
   override func viewDidLoad() {
     gRPC.initialize()
+  }
+
+  override func viewDidAppear() {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+      self.enabled = true
+    }
   }
 
   func log(_ message: String) {
@@ -53,50 +65,56 @@ class StickyNoteViewController : NSViewController, NSTextFieldDelegate {
   func callServer(address:String) {
     let fileDescriptorSet = FileDescriptorSet(filename:"stickynote.out")
 
+    let text = self.messageField.stringValue
+    
     // build the message
     if let requestMessage = fileDescriptorSet.createMessage(name:"StickyNoteRequest") {
-      requestMessage.addField(name:"message", value:self.messageField.stringValue)
+      requestMessage.addField(name:"message", value:text)
 
       let requestHost = "foo.test.google.fr"
       let requestMethod = "/messagepb.StickyNote/Get"
-      let requestBuffer = ByteBuffer(data:requestMessage.serialize())
       let requestMetadata = Metadata(pairs:[MetadataPair(key:"x", value:"xylophone"),
                                             MetadataPair(key:"y", value:"yu"),
                                             MetadataPair(key:"z", value:"zither")])
 
-      let client = Client(address:address)
-      let response = client.performRequest(host:requestHost,
-                                           method:requestMethod,
-                                           message:requestBuffer,
-                                           metadata:requestMetadata)
+      client = Client(address:address)
+      let call = client.createCall(host: requestHost, method: requestMethod, timeout: 600)
+      call.performNonStreamingCall(messageData: requestMessage.serialize(),
+                                   metadata: requestMetadata,
+                                   completion:
+        { (response) in
 
-      if let initialMetadata = response.initialMetadata {
-        for j in 0..<initialMetadata.count() {
-          self.log("Received initial metadata -> "
-            + initialMetadata.key(index:j) + " : "
-            + initialMetadata.value(index:j))
-        }
-      }
+          if let initialMetadata = response.initialMetadata {
+            for j in 0..<initialMetadata.count() {
+              self.log("Received initial metadata -> "
+                + initialMetadata.key(index:j) + " : "
+                + initialMetadata.value(index:j))
+            }
+          }
 
-      self.log("Received status: \(response.status) " + response.statusDetails)
+          self.log("Received status: \(response.status) " + response.statusDetails)
 
-      if let responseBuffer = response.message,
-        let responseMessage = fileDescriptorSet.readMessage(name:"StickyNoteResponse",
-                                                            proto:responseBuffer.data()) {
-        responseMessage.forOneField(name:"image") {(field) in
-          if let image = NSImage(data: field.data() as Data) {
-            self.imageView.image = image
+          if let responseData = response.messageData,
+            let responseMessage = fileDescriptorSet.readMessage(name:"StickyNoteResponse",
+                                                                proto:responseData) {
+            responseMessage.forOneField(name:"image") {(field) in
+              if let image = NSImage(data: field.data() as Data) {
+                DispatchQueue.main.async {
+                  self.imageView.image = image
+                }
+              }
+            }
+          }
+
+          if let trailingMetadata = response.trailingMetadata {
+            for j in 0..<trailingMetadata.count() {
+              self.log("Received trailing metadata -> "
+                + trailingMetadata.key(index:j) + " : "
+                + trailingMetadata.value(index:j))
+            }
           }
         }
-      }
-
-      if let trailingMetadata = response.trailingMetadata {
-        for j in 0..<trailingMetadata.count() {
-          self.log("Received trailing metadata -> "
-            + trailingMetadata.key(index:j) + " : "
-            + trailingMetadata.value(index:j))
-        }
-      }
+      )
     }
   }
 }

@@ -95,7 +95,9 @@ public class CallResponse {
     self.completion = GRPC_OP_COMPLETE
     self.status = status
     self.statusDetails = statusDetails
-    self.messageData = message!.data()
+    if let message = message {
+      self.messageData = message.data()
+    }
     self.initialMetadata = initialMetadata
     self.trailingMetadata = trailingMetadata
   }

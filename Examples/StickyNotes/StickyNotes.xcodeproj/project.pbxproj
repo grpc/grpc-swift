@@ -15,6 +15,7 @@
 		D3A0EAB41D74B851008F687D /* gRPC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D35C9FC61D74B097000443CD /* gRPC.framework */; };
 		D3A0EAB51D74B851008F687D /* QuickProto.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D35C9FBE1D74B08C000443CD /* QuickProto.framework */; };
 		D3A0EABD1D74BABC008F687D /* stickynote.out in Resources */ = {isa = PBXBuildFile; fileRef = D3A0EABC1D74BABC008F687D /* stickynote.out */; };
+		D3A682F91D81D601009E3E9E /* StickyServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A682F81D81D601009E3E9E /* StickyServer.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -66,6 +67,7 @@
 		D35C9FC71D74B0C1000443CD /* StickyNoteViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StickyNoteViewController.swift; sourceTree = "<group>"; };
 		D35C9FD01D74B3BD000443CD /* StickyNoteView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StickyNoteView.swift; sourceTree = "<group>"; };
 		D3A0EABC1D74BABC008F687D /* stickynote.out */ = {isa = PBXFileReference; lastKnownFileType = file; path = stickynote.out; sourceTree = "<group>"; };
+		D3A682F81D81D601009E3E9E /* StickyServer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StickyServer.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -109,6 +111,7 @@
 				D35C9FB21D74B079000443CD /* Info.plist */,
 				D35C9FC71D74B0C1000443CD /* StickyNoteViewController.swift */,
 				D35C9FD01D74B3BD000443CD /* StickyNoteView.swift */,
+				D3A682F81D81D601009E3E9E /* StickyServer.swift */,
 			);
 			path = StickyNotes;
 			sourceTree = "<group>";
@@ -242,6 +245,7 @@
 				D35C9FD11D74B3BD000443CD /* StickyNoteView.swift in Sources */,
 				D35C9FC81D74B0C1000443CD /* StickyNoteViewController.swift in Sources */,
 				D35C9FAC1D74B079000443CD /* AppDelegate.swift in Sources */,
+				D3A682F91D81D601009E3E9E /* StickyServer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

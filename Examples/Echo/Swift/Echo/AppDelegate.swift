@@ -32,7 +32,6 @@
  */
 import Cocoa
 import gRPC
-import QuickProto
 
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate {
