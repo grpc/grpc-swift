@@ -39,87 +39,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
   @IBOutlet weak var window: NSWindow!
 
+  var echoServer: EchoServer!
+
   func applicationDidFinishLaunching(_ aNotification: Notification) {
     gRPC.initialize()
-    startServer(address:"localhost:8081")
-  }
 
-  func startServer(address:String) {
-    let fileDescriptorSet = FileDescriptorSet(filename:"echo.out")
-    print("Server Starting")
-    print("GRPC version " + gRPC.version())
-
-    let server = gRPC.Server(address:address)
-
-    server.run {(requestHandler) in
-      print("Received request to " + requestHandler.host()
-        + " calling " + requestHandler.method()
-        + " from " + requestHandler.caller())
-
-      // NONSTREAMING
-      if (requestHandler.method() == "/echo.Echo/Get") {
-        requestHandler.receiveMessage(initialMetadata:Metadata())
-        {(requestBuffer) in
-          if let requestBuffer = requestBuffer,
-            let requestMessage =
-            fileDescriptorSet.readMessage(name:"EchoRequest",
-                                          proto:requestBuffer.data()) {
-            requestMessage.forOneField(name:"text") {(field) in
-              let replyMessage = fileDescriptorSet.createMessage(name:"EchoResponse")!
-              replyMessage.addField(name:"text", value:"Swift nonstreaming echo " + field.string())
-              requestHandler.sendResponse(message:ByteBuffer(data:replyMessage.serialize()),
-                                          trailingMetadata:Metadata())
-            }
-          }
-        }
-      }
-
-      // STREAMING
-      if (requestHandler.method() == "/echo.Echo/Update") {
-        requestHandler.sendMetadata(
-          initialMetadata: Metadata(),
-          completion: {
-
-            self.handleMessage(
-              fileDescriptorSet: fileDescriptorSet,
-              requestHandler: requestHandler)
-
-            // we seem to never get this, but I'm told it's what we're supposed to do
-            requestHandler.receiveClose() {
-              requestHandler.sendStatus(trailingMetadata: Metadata(), completion: {
-                print("status sent")
-                requestHandler.shutdown()
-              })
-            }
-          }
-        )
-
-      }
-    }
-  }
-
-  func handleMessage(fileDescriptorSet: FileDescriptorSet,
-                     requestHandler: Handler) {
-    requestHandler.receiveMessage()
-      {(requestBuffer) in
-        if let requestBuffer = requestBuffer,
-          let requestMessage = fileDescriptorSet.readMessage(name:"EchoRequest",
-                                                             proto:requestBuffer.data()) {
-          requestMessage.forOneField(name:"text") {(field) in
-            let replyMessage = fileDescriptorSet.createMessage(name:"EchoResponse")!
-            replyMessage.addField(name:"text", value:"Swift streaming echo " + field.string())
-            requestHandler.sendResponse(message:ByteBuffer(data:replyMessage.serialize())) {
-              // after we've sent our response, prepare to handle another message
-              self.handleMessage(fileDescriptorSet:fileDescriptorSet, requestHandler:requestHandler)
-            }
-          }
-        } else {
-          // if we get an empty message (nil buffer), we close the connection
-          requestHandler.sendStatus(trailingMetadata: Metadata(), completion: {
-            print("status sent")
-            requestHandler.shutdown()
-          })
-        }
-    }
+    self.echoServer = EchoServer(address:"localhost:8081")
+    echoServer.start()
   }
 }
