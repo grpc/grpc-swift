@@ -46,6 +46,9 @@ public class Server {
   /// Active handlers
   var handlers : NSMutableSet!
 
+  /// Optional callback when server stops serving
+  private var onCompletion: (() -> Void)!
+
   /// Initializes a Server
   ///
   /// - Parameter address: the address where the server will listen
@@ -61,23 +64,51 @@ public class Server {
   }
 
   /// Run the server
-  public func run(handler: @escaping (Handler) -> Void) {
+  public func run(handlerFunction: @escaping (Handler) -> Void) {
     cgrpc_server_start(s);
     DispatchQueue.global().async {
-      while(true) {
-        let (callError, completionType, requestHandler) =
-          self.getNextRequest(timeout:600.0)
-        if (callError != GRPC_CALL_OK) {
-          print("Call error \(callError)")
-        } else if (completionType == GRPC_OP_COMPLETE) {
-          handler(requestHandler!)
-        } else if (completionType == GRPC_QUEUE_TIMEOUT) {
-          // everything is fine
-        } else if (completionType == GRPC_QUEUE_SHUTDOWN) {
+      var running = true
+      while(running) {
+        let handler = Handler(h:cgrpc_handler_create_with_server(self.s))
+        let call_error = handler.requestCall(tag:101)
+        if (call_error != GRPC_CALL_OK) {
+          // not good, let's break
           break
         }
+        // blocks
+        let event = self.completionQueue.waitForCompletion(timeout:600)
+        if (event.type == GRPC_OP_COMPLETE) {
+          if cgrpc_event_tag(event) == 101 {
+            // run the handler and remove it when it finishes
+            if event.success != 0 {
+              self.handlers.add(handler)
+              handler.completionQueue.run() {
+                // on completion
+                self.handlers.remove(handler)
+              }
+              handlerFunction(handler)
+            }
+          } else if cgrpc_event_tag(event) == 0 {
+            running = false // exit the loop
+          }
+        } else if (event.type == GRPC_QUEUE_TIMEOUT) {
+          // everything is fine
+        } else if (event.type == GRPC_QUEUE_SHUTDOWN) {
+          running = false
+        }
+      }
+      if let onCompletion = self.onCompletion {
+        onCompletion()
       }
     }
+  }
+
+  public func stop() {
+    cgrpc_server_stop(s)
+  }
+
+  public func onCompletion(completion:(() -> Void)) -> Void {
+    onCompletion = completion
   }
 
   /// Gets the next request sent to the server

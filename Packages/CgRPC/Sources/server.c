@@ -48,6 +48,12 @@ cgrpc_server *cgrpc_server_create(const char *address) {
   return server;
 }
 
+void cgrpc_server_stop(cgrpc_server *server) {
+  grpc_server_shutdown_and_notify(server->server,
+                                  server->completion_queue,
+                                  cgrpc_create_tag(0));
+}
+
 void cgrpc_server_destroy(cgrpc_server *server) {
   grpc_server_shutdown_and_notify(server->server,
                                   server->completion_queue,

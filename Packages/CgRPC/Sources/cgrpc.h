@@ -137,6 +137,7 @@ cgrpc_completion_queue *cgrpc_client_completion_queue(cgrpc_client *client);
 
 // server support
 cgrpc_server *cgrpc_server_create(const char *address);
+void cgrpc_server_stop(cgrpc_server *server);
 void cgrpc_server_destroy(cgrpc_server *s);
 void cgrpc_server_start(cgrpc_server *s);
 cgrpc_completion_queue *cgrpc_server_get_completion_queue(cgrpc_server *s);
