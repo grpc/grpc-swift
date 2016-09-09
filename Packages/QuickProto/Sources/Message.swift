@@ -164,13 +164,15 @@ public class Message {
       case FieldType.MESSAGE:
         let messageData = field.message().serialize()
         data.appendVarint(messageData.count)
-        messageData.withUnsafeBytes({ (bytes) -> Void in
+        messageData.withUnsafeBytes({ (bytes) in
           data.append(bytes, length: messageData.count)
         })
       case FieldType.BYTES:
         let messageData = field.data()
-        data.appendVarint(messageData.length)
-        data.append(messageData.bytes, length: messageData.length)
+        data.appendVarint(messageData.count)
+        messageData.withUnsafeBytes({ (bytes) in
+          data.append(bytes, length: messageData.count)
+        })
       case FieldType.UINT32:
         data.appendVarint(field.integer())
       case FieldType.ENUM:

@@ -88,7 +88,7 @@ public class Field {
     } else if let value = value as? Float {
       line += "\(value)"
       print(line)
-    } else if let value = value as? NSData {
+    } else if let value = value as? Data {
       line += "\(value)"
       print(line)
     } else {
@@ -117,8 +117,8 @@ public class Field {
     return value as! Message
   }
 
-  public func data() -> NSData {
-    return value as! NSData
+  public func data() -> Data {
+    return value as! Data
   }
 
   public func string() -> String {
@@ -149,7 +149,7 @@ public class Field {
     self.value = value
   }
 
-  public func setData(_ value:NSData) {
+  public func setData(_ value:Data) {
     self.value = value
   }
 

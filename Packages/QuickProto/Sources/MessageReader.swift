@@ -36,18 +36,18 @@ import Foundation
 class MessageReader {
   var fileDescriptorSet: FileDescriptorSet
   var messageName: String
-  var data : NSData
+  var data : Data
   var cursor : Int = 0
 
   init(_ fileDescriptorSet: FileDescriptorSet, messageName: String, data: Data) {
     self.fileDescriptorSet = fileDescriptorSet
     self.messageName = messageName
-    self.data = data as NSData
+    self.data = data
   }
 
   func readMessage() -> Message? {
     if let descriptor = fileDescriptorSet.messageDescriptor(name: messageName) {
-      return readMessage(range: NSRange(location: 0, length:data.length),
+      return readMessage(range: NSRange(location: 0, length:data.count),
                          descriptor:descriptor)
     } else {
       return nil
@@ -56,49 +56,49 @@ class MessageReader {
 
   private func nextUInt8() -> (UInt8) {
     var result: UInt8 = 0
-    data.getBytes(&result, range:NSRange(location:cursor, length:1))
+    data.copyBytes(to: &result, from:cursor..<cursor+1)
     cursor += 1
     return result
   }
 
   private func nextUInt32() -> (UInt32) {
     var result: UInt32 = 0
-    data.getBytes(&result, range:NSRange(location:cursor, length:4))
+    _ = data.copyBytes(to: UnsafeMutableBufferPointer(start: &result, count: 1), from:cursor..<cursor+4)
     cursor += 4
     return result
   }
 
   private func nextUInt64() -> (UInt64) {
     var result: UInt64 = 0
-    data.getBytes(&result, range:NSRange(location:cursor, length:8))
+    _ = data.copyBytes(to: UnsafeMutableBufferPointer(start: &result, count: 1), from:cursor..<cursor+8)
     cursor += 8
     return result
   }
 
   private func nextInt32() -> (Int32) {
     var result: Int32 = 0
-    data.getBytes(&result, range:NSRange(location:cursor, length:4))
+    _ = data.copyBytes(to: UnsafeMutableBufferPointer(start: &result, count: 1), from:cursor..<cursor+4)
     cursor += 4
     return result
   }
 
   private func nextInt64() -> (Int64) {
     var result: Int64 = 0
-    data.getBytes(&result, range:NSRange(location:cursor, length:8))
+    _ = data.copyBytes(to: UnsafeMutableBufferPointer(start: &result, count: 1), from:cursor..<cursor+8)
     cursor += 8
     return result
   }
 
   private func nextDouble() -> (Double) {
     var result: Double = 0
-    data.getBytes(&result, range:NSRange(location:cursor, length:8))
+    _ = data.copyBytes(to: UnsafeMutableBufferPointer(start: &result, count: 1), from:cursor..<cursor+8)
     cursor += 8
     return result
   }
 
   private func nextFloat() -> (Float) {
     var result: Float = 0
-    data.getBytes(&result, range:NSRange(location:cursor, length:4))
+    _ = data.copyBytes(to: UnsafeMutableBufferPointer(start: &result, count: 1), from:cursor..<cursor+4)
     cursor += 4
     return result
   }
@@ -118,16 +118,16 @@ class MessageReader {
 
   private func nextString(length: Int) -> (String) {
     var buffer = [UInt8](repeating: 0, count: length)
-    data.getBytes(&buffer, range:NSRange(location:cursor, length:length))
+    data.copyBytes(to: &buffer, from:cursor..<cursor+length)
     self.cursor = self.cursor + length
     return String(bytes: buffer, encoding:String.Encoding.utf8)!
   }
 
-  private func nextData(length: Int) -> (NSData) {
+  private func nextData(length: Int) -> (Data) {
     var buffer = [UInt8](repeating: 0, count: length)
-    data.getBytes(&buffer, range:NSRange(location:cursor, length:length))
+    data.copyBytes(to: &buffer, from:cursor..<cursor+length)
     self.cursor = self.cursor + length
-    return NSData(bytes: &buffer, length: length)
+    return Data(bytes: &buffer, count: length)
   }
 
   private func readMessage(range: NSRange, descriptor : MessageDescriptor) -> Message {

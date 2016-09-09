@@ -68,7 +68,6 @@ public class FileDescriptorSet {
   }
 
   func messageDescriptor(name: String) -> MessageDescriptor? {
-
     let parts = name.components(separatedBy: ".")
     let messageName = parts.last!
 
