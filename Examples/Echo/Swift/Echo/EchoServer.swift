@@ -73,14 +73,14 @@ class EchoServer {
   func handleMessage(fileDescriptorSet: FileDescriptorSet,
                      requestHandler: Handler) {
     requestHandler.receiveMessage()
-      {(requestBuffer) in
-        if let requestBuffer = requestBuffer,
+      {(requestData) in
+        if let requestData = requestData,
           let requestMessage = fileDescriptorSet.readMessage(name:"EchoRequest",
-                                                             proto:requestBuffer.data()) {
+                                                             proto:requestData) {
           requestMessage.forOneField(name:"text") {(field) in
             let replyMessage = fileDescriptorSet.createMessage(name:"EchoResponse")!
             replyMessage.addField(name:"text", value:"Swift streaming echo " + field.string())
-            requestHandler.sendResponse(message:ByteBuffer(data:replyMessage.serialize())) {
+            requestHandler.sendResponse(message:replyMessage.serialize()) {
               // after we've sent our response, prepare to handle another message
               self.handleMessage(fileDescriptorSet:fileDescriptorSet, requestHandler:requestHandler)
             }

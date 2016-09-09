@@ -177,7 +177,7 @@ public class Handler {
   /// Receive the message sent with a call
   ///
   /// - Returns: a tuple containing status codes and a message (if available)
-  public func receiveMessage(completion:((ByteBuffer?) -> Void)) -> Void {
+  public func receiveMessage(completion:((Data?) -> Void)) -> Void {
     let call = self.call()
     let operation_receiveMessage = Operation_ReceiveMessage()
     let operations = OperationGroup(call:call, operations:[operation_receiveMessage])
@@ -185,7 +185,7 @@ public class Handler {
       if (event.type == GRPC_OP_COMPLETE) {
         print("server receiveMessage complete")
         if let message = operation_receiveMessage.message() {
-          completion(message)
+          completion(message.data())
         } else {
           completion(nil)
         }
@@ -202,10 +202,10 @@ public class Handler {
   ///
   /// - Parameter message: the message to send
   /// - Returns: a tuple containing status codes
-  public func sendResponse(message: ByteBuffer,
+  public func sendResponse(message: Data,
                            completion: @escaping () -> Void) -> Void {
     let call = self.call()
-    let operation_sendMessage = Operation_SendMessage(message:message)
+    let operation_sendMessage = Operation_SendMessage(message:ByteBuffer(data:message))
     let operations = OperationGroup(call:call, operations:[operation_sendMessage])
     {(event) in
       print("server sendResponse complete")
