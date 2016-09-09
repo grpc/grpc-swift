@@ -44,7 +44,7 @@ private class OperationGroupTagLock {
 }
 
 /// A collection of gRPC operations
-public class OperationGroup {
+class OperationGroup {
 
   /// Used to generate unique tags for OperationGroups
   static var nextTag : Int64 = 1
@@ -67,9 +67,9 @@ public class OperationGroup {
   /// Initializes a Operations representation
   ///
   /// - Parameter operations: an array of operations
-  public init(call: Call,
-              operations: [Operation],
-              completion: ((grpc_event) -> Void)) {
+  init(call: Call,
+       operations: [Operation],
+       completion: ((grpc_event) -> Void)) {
     self.call = call
     self.operationsArray = operations
     self.operations = cgrpc_operations_create()

@@ -36,7 +36,7 @@
 import Foundation // for String.Encoding
 
 /// Abstract representation of gRPC Operations
-public class Operation {
+class Operation {
 
   /// Pointer to underlying C representation
   var observer: UnsafeMutableRawPointer
@@ -54,48 +54,48 @@ public class Operation {
 }
 
 /// SendInitialMetadata operation
-public class Operation_SendInitialMetadata : Operation {
+class Operation_SendInitialMetadata : Operation {
 
   /// Initializes an Operation Observer
   ///
   /// - Parameter metadata: the initial metadata to send
-  public init(metadata:Metadata) {
+  init(metadata:Metadata) {
     super.init(observer:cgrpc_observer_create_send_initial_metadata(metadata.array))
   }
 }
 
 /// SendMessage operation
-public class Operation_SendMessage : Operation {
+class Operation_SendMessage : Operation {
 
   /// Initializes an Operation Observer
   ///
   /// - Parameter message: the message to send
-  public init(message:ByteBuffer) {
+  init(message:ByteBuffer) {
     super.init(observer:cgrpc_observer_create_send_message())
     cgrpc_observer_send_message_set_message(observer, message.b);
   }
 }
 
 /// SendCloseFromClient operation
-public class Operation_SendCloseFromClient : Operation {
+class Operation_SendCloseFromClient : Operation {
 
   /// Initializes an Operation Observer
-  public init() {
+  init() {
     super.init(observer:cgrpc_observer_create_send_close_from_client())
   }
 }
 
 /// SendStatusFrom Server operation
-public class Operation_SendStatusFromServer : Operation {
+class Operation_SendStatusFromServer : Operation {
 
   /// Initializes an Operation Observer
   ///
   /// - Parameter status: the status code to send with the response
   /// - Parameter statusDetails: the status message to send with the response
   /// - Parameter metadata: the trailing metadata to send with the response
-  public init(status:Int,
-              statusDetails:String,
-              metadata:Metadata) {
+  init(status:Int,
+       statusDetails:String,
+       metadata:Metadata) {
     super.init(observer:cgrpc_observer_create_send_status_from_server(metadata.array))
     cgrpc_observer_send_status_from_server_set_status(observer, Int32(status));
     cgrpc_observer_send_status_from_server_set_status_details(observer, statusDetails);
@@ -103,33 +103,33 @@ public class Operation_SendStatusFromServer : Operation {
 }
 
 /// ReceiveInitialMetadata operation
-public class Operation_ReceiveInitialMetadata : Operation {
+class Operation_ReceiveInitialMetadata : Operation {
 
   /// Initializes an Operation Observer
-  public init() {
+  init() {
     super.init(observer:cgrpc_observer_create_recv_initial_metadata())
   }
 
   /// Gets the initial metadata that was received
   ///
   /// - Returns: metadata
-  public func metadata() -> Metadata {
+  func metadata() -> Metadata {
     return Metadata(array:cgrpc_observer_recv_initial_metadata_get_metadata(observer));
   }
 }
 
 /// ReceiveMessage operation
-public class Operation_ReceiveMessage : Operation {
+class Operation_ReceiveMessage : Operation {
 
   /// Initializes an Operation Observer
-  public init() {
+  init() {
     super.init(observer:cgrpc_observer_create_recv_message())
   }
 
   /// Gets the message that was received
   ///
   /// - Returns: message
-  public func message() -> ByteBuffer? {
+  func message() -> ByteBuffer? {
     if let b = cgrpc_observer_recv_message_get_message(observer) {
       return ByteBuffer(b:b)
     } else {
@@ -139,41 +139,41 @@ public class Operation_ReceiveMessage : Operation {
 }
 
 /// ReceiveStatusOnClient operation
-public class Operation_ReceiveStatusOnClient : Operation {
+class Operation_ReceiveStatusOnClient : Operation {
 
   /// Initializes an Operation Observer
-  public init() {
+  init() {
     super.init(observer:cgrpc_observer_create_recv_status_on_client())
   }
 
   /// Gets the trailing metadata that was received
   ///
   /// - Returns: metadata
-  public func metadata() -> Metadata {
+  func metadata() -> Metadata {
     return Metadata(array:cgrpc_observer_recv_status_on_client_get_metadata(observer));
   }
 
   /// Gets the status code that was received
   ///
   /// - Returns: status code
-  public func status() -> Int {
+  func status() -> Int {
     return cgrpc_observer_recv_status_on_client_get_status(observer);
   }
 
   /// Gets the status message that was received
   ///
   /// - Returns: status message
-  public func statusDetails() -> String {
+  func statusDetails() -> String {
     return String(cString:cgrpc_observer_recv_status_on_client_get_status_details(observer),
                   encoding:String.Encoding.utf8)!
   }
 }
 
 /// ReceiveCloseOnServer operation
-public class Operation_ReceiveCloseOnServer : Operation {
+class Operation_ReceiveCloseOnServer : Operation {
 
   /// Initializes an Operation Observer
-  public init() {
+  init() {
     super.init(observer:cgrpc_observer_create_recv_close_on_server())
   }
 }

@@ -86,11 +86,11 @@ public class CallResponse {
   /// - Parameter message: a buffer containing results returned from the server
   /// - Parameter initialMetadata: initial metadata returned by the server
   /// - Parameter trailingMetadata: trailing metadata returned by the server
-  public init(status:Int,
-              statusDetails:String,
-              message:ByteBuffer?,
-              initialMetadata:Metadata?,
-              trailingMetadata:Metadata?) {
+  init(status:Int,
+       statusDetails:String,
+       message:ByteBuffer?,
+       initialMetadata:Metadata?,
+       trailingMetadata:Metadata?) {
     self.error = GRPC_CALL_OK
     self.completion = GRPC_OP_COMPLETE
     self.status = status

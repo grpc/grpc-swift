@@ -43,7 +43,7 @@ public class CompletionQueue {
   var cq : UnsafeMutableRawPointer!
 
   /// Operation groups that are awaiting completion, keyed by tag
-  public var operationGroups : [Int64 : OperationGroup] = [:]
+  var operationGroups : [Int64 : OperationGroup] = [:]
 
   /// Initializes a CompletionQueue
   ///
