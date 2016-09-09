@@ -51,14 +51,14 @@ class ByteBuffer {
   /// Initializes a ByteBuffer
   ///
   /// - Parameter string: a string to store in the buffer
-  public init(string: String) {
+  init(string: String) {
     self.b = cgrpc_byte_buffer_create_with_string(string)
   }
 
   /// Initializes a ByteBuffer
   ///
   /// - Parameter data: data to store in the buffer
-  public init(data: Data) {
+  init(data: Data) {
     data.withUnsafeBytes { (bytes) in
       self.b = cgrpc_byte_buffer_create_with_data(bytes, data.count)
     }
@@ -71,7 +71,7 @@ class ByteBuffer {
   /// Gets a string from the contents of the ByteBuffer
   ///
   /// - Returns: a string formed from the ByteBuffer contents
-  public func string() -> String {
+  func string() -> String {
     return String(cString:cgrpc_byte_buffer_as_string(b),
                   encoding:String.Encoding.utf8)!
   }
@@ -79,7 +79,7 @@ class ByteBuffer {
   /// Gets raw data from the contents of the ByteBuffer
   ///
   /// - Returns: data formed from the ByteBuffer contents
-  public func data() -> Data {
+  func data() -> Data {
     var length : Int = 0
     let bytes = cgrpc_byte_buffer_as_data(b, &length)
     return Data(bytes:bytes!, count: length)

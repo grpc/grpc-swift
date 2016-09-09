@@ -41,7 +41,7 @@ public class Client {
   var c: UnsafeMutableRawPointer!
 
   /// Completion queue for client call operations
-  public var completionQueue: CompletionQueue
+  private var completionQueue: CompletionQueue
 
   /// Initializes a gRPC client
   ///

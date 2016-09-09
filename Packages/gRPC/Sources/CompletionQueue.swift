@@ -35,7 +35,7 @@
 #endif
 
 /// A gRPC Completion Queue
-public class CompletionQueue {
+class CompletionQueue {
 
   var name : String!
 

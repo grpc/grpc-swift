@@ -41,7 +41,7 @@ public class Handler {
   var h: UnsafeMutableRawPointer!
 
   /// Completion queue for handler response operations
-  public var completionQueue: CompletionQueue
+  var completionQueue: CompletionQueue
 
   /// Metadata received with the request
   public var requestMetadata: Metadata

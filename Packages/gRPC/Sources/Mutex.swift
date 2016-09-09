@@ -35,6 +35,7 @@
 #endif
 
 /// A general-purpose Mutex used to synchronize gRPC operations
+/// but it can be used anywhere
 public class Mutex {
 
   /// Pointer to underlying C representation

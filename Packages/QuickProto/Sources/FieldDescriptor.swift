@@ -33,7 +33,7 @@
 import Foundation
 
 /// A description of a field in a protocol buffer message
-public class FieldDescriptor {
+class FieldDescriptor {
   var type : FieldType
   var label : FieldLabel
   var name : String = ""

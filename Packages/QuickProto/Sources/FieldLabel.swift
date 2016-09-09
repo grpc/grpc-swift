@@ -33,7 +33,7 @@
 import Foundation
 
 /// The "label" of a protocol buffer field
-public enum FieldLabel: Int {
+enum FieldLabel: Int {
   case OPTIONAL      = 1
   case REQUIRED      = 2
   case REPEATED      = 3

@@ -168,5 +168,4 @@ public class Field {
   public func setBool(_ value:Bool) {
     self.value = value
   }
-
 }

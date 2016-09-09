@@ -50,7 +50,7 @@ class OperationGroup {
   static var nextTag : Int64 = 1
 
   /// Automatically-assigned tag that is used with the completion queue.
-  public var tag : Int64
+  var tag : Int64
 
   /// The call associated with the operation group. Retained while the operations are running.
   var call : Call
