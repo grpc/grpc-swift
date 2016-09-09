@@ -103,7 +103,7 @@ public class Handler {
   ///
   /// - Returns: a tuple containing status codes and a message (if available)
   public func receiveMessage(initialMetadata: Metadata,
-                             completion:((ByteBuffer?) -> Void)) -> Void {
+                             completion:((Data?) -> Void)) -> Void {
     let call = self.call()
     let operation_sendInitialMetadata = Operation_SendInitialMetadata(metadata:initialMetadata);
     let operation_receiveMessage = Operation_ReceiveMessage()
@@ -114,12 +114,11 @@ public class Handler {
         operation_receiveMessage])
     {(event) in
       if (event.type == GRPC_OP_COMPLETE) {
-        completion(operation_receiveMessage.message())
+        completion(operation_receiveMessage.message()!.data())
       } else {
         completion(nil)
       }
     }
-
     self.completionQueue.operationGroups[operations.tag] = operations
     _ = call.performOperations(operations:operations, tag:operations.tag, completionQueue: self.completionQueue)
   }
@@ -128,14 +127,15 @@ public class Handler {
   ///
   /// - Parameter message: the message to send
   /// - Returns: a tuple containing status codes
-  public func sendResponse(message: ByteBuffer,
+  public func sendResponse(message: Data,
                            trailingMetadata: Metadata) -> Void {
     let call = self.call()
     let operation_receiveCloseOnServer = Operation_ReceiveCloseOnServer();
     let operation_sendStatusFromServer = Operation_SendStatusFromServer(status:0,
                                                                         statusDetails:"OK",
                                                                         metadata:trailingMetadata)
-    let operation_sendMessage = Operation_SendMessage(message:message)
+    let messageBuffer = ByteBuffer(data:message)
+    let operation_sendMessage = Operation_SendMessage(message:messageBuffer)
     let operations = OperationGroup(
       call:call,
       operations:[

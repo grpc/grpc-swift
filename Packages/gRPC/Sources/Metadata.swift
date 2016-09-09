@@ -36,10 +36,10 @@
 import Foundation // for String.Encoding
 
 /// An item of metadata
-public struct MetadataPair {
-  public var key: String
-  public var value: String
-  public init(key:String, value:String) {
+private struct MetadataPair {
+  var key: String
+  var value: String
+  init(key:String, value:String) {
     self.key = key
     self.value = value
   }
@@ -59,10 +59,23 @@ public class Metadata {
     self.array = cgrpc_metadata_array_create();
   }
 
-  public init(pairs: [MetadataPair]) {
-    self.array = cgrpc_metadata_array_create();
+  public init(_ pairs: [[String:String]]) {
+    array = cgrpc_metadata_array_create();
     for pair in pairs {
-      self.add(key:pair.key, value:pair.value)
+      for key in pair.keys {
+        if let value = pair[key] {
+          add(key:key, value:value)
+        }
+      }
+    }
+  }
+
+  public init(_ pairs: [String:String]) {
+    array = cgrpc_metadata_array_create();
+    for key in pairs.keys {
+      if let value = pairs[key] {
+        add(key:key, value:value)
+      }
     }
   }
 

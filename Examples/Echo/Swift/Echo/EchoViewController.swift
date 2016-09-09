@@ -130,9 +130,8 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         call = client.createCall(host: "foo.test.google.fr",
                                  method: "/echo.Echo/Update",
                                  timeout: 600.0)
-        let metadata = Metadata(
-          pairs:[MetadataPair(key:"x-goog-api-key", value:"YOUR_API_KEY"),
-                 MetadataPair(key:"x-ios-bundle-identifier", value:Bundle.main.bundleIdentifier!)])
+        let metadata = Metadata(["x-goog-api-key":"YOUR_API_KEY",
+                                 "x-ios-bundle-identifier":Bundle.main.bundleIdentifier!])
         call.start(metadata:metadata)
         self.receiveMessage() // this should take a block in which we specify what to do
         streaming = true
@@ -161,7 +160,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
       }
     }
   }
-  
+
   func sendClose() {
     call.close() {
       self.streaming = false

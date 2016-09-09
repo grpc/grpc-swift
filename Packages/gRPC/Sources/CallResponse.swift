@@ -51,7 +51,7 @@ public class CallResponse {
   public var statusDetails: String
 
   /// Message returned by server
-  public var messageData: NSData?
+  public var messageData: Data?
 
   /// Initial metadata returned by server
   public var initialMetadata: Metadata?

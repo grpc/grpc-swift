@@ -65,9 +65,7 @@ class Document: NSDocument {
   // http://stackoverflow.com/questions/24062437/cannot-form-weak-reference-to-instance-of-class-nstextview
 
   var client : Client!
-
   var server : Server!
-
   var running: Bool // all accesses to this should be synchronized
 
   override init() {
@@ -85,14 +83,6 @@ class Document: NSDocument {
     return "Document"
   }
 
-  override func data(ofType typeName: String) throws -> Data {
-    throw NSError(domain: NSOSStatusErrorDomain, code: unimpErr, userInfo: nil)
-  }
-
-  override func read(from data: Data, ofType typeName: String) throws {
-    throw NSError(domain: NSOSStatusErrorDomain, code: unimpErr, userInfo: nil)
-  }
-
   func log(_ line:String) {
     DispatchQueue.main.async {
       if let view = self.textView {
@@ -106,9 +96,9 @@ class Document: NSDocument {
       updateInterfaceBeforeStarting()
       let address = hostField.stringValue + ":" + portField.stringValue
       if (connectionSelector.selectedSegment == 0) {
-        startClient(address:address)
+        runClient(address:address)
       } else {
-        startServer(address:address)
+        runServer(address:address)
       }
     } else {
       stop()
@@ -159,76 +149,29 @@ class Document: NSDocument {
     }
   }
 
-  func startServer(address:String) {
-    self.log("Server Starting")
-    self.log("GRPC version " + gRPC.version())
-    self.setIsRunning(true)
-
-    self.server = gRPC.Server(address:address)
-    var requestCount = 0
-
-    self.server.run() {(requestHandler) in
-      requestCount += 1
-      self.log("\(requestCount): Received request " + requestHandler.host()
-        + " " + requestHandler.method()
-        + " from " + requestHandler.caller())
-      let initialMetadata = requestHandler.requestMetadata
-      for i in 0..<initialMetadata.count() {
-        self.log("\(requestCount): Received initial metadata -> " + initialMetadata.key(index:i) + ":" + initialMetadata.value(index:i))
-      }
-
-      let initialMetadataToSend = Metadata()
-      initialMetadataToSend.add(key:"a", value:"Apple")
-      initialMetadataToSend.add(key:"b", value:"Banana")
-      initialMetadataToSend.add(key:"c", value:"Cherry")
-      requestHandler.receiveMessage(initialMetadata:initialMetadataToSend) {(messageBuffer) in
-        let messageData = messageBuffer!.data()
-        let messageString = String(data: messageData as Data, encoding:String.Encoding.utf8)
-        self.log("\(requestCount): Received message: " + messageString!)
-      }
-      if requestHandler.method() == "/quit" {
-        self.stop()
-      }
-      let replyMessage = "thank you very much!"
-      let trailingMetadataToSend = Metadata()
-      trailingMetadataToSend.add(key:"0", value:"zero")
-      trailingMetadataToSend.add(key:"1", value:"one")
-      trailingMetadataToSend.add(key:"2", value:"two")
-      requestHandler.sendResponse(message:ByteBuffer(string:replyMessage),
-                                  trailingMetadata:trailingMetadataToSend)
-      self.log("------------------------------")
-    }
-
-    self.server.onCompletion() {
-      self.log("Server Stopped")
-      self.updateInterfaceAfterStopping()
-    }
-  }
-
-
-  func startClient(address:String) {
+  func runClient(address:String) {
     DispatchQueue.global().async {
       self.log("Client Starting")
       self.log("GRPC version " + gRPC.version())
-      self.setIsRunning(true)
-
-      let host = "foo.test.google.fr"
-      let message = gRPC.ByteBuffer(string:"hello gRPC server!")
 
       self.client = gRPC.Client(address:address)
+      let host = "foo.test.google.fr"
+      let messageData = "hello, server!".data(using: .utf8)
+
       let steps = 10
+      self.setIsRunning(true)
       for i in 1...steps {
         if !self.isRunning() {
           break
         }
         let method = (i < steps) ? "/hello" : "/quit"
-
-        let metadata = Metadata(pairs:[MetadataPair(key:"x", value:"xylophone"),
-                                       MetadataPair(key:"y", value:"yu"),
-                                       MetadataPair(key:"z", value:"zither")])
-
         let call = self.client.createCall(host: host, method: method, timeout: 30)
-        call.performNonStreamingCall(messageData: message.data(),
+
+        let metadata = Metadata([["x": "xylophone"],
+                                 ["y": "yu"],
+                                 ["z": "zither"]])
+
+        call.performNonStreamingCall(messageData: messageData!,
                                      metadata: metadata)
         {(response) in
 
@@ -252,10 +195,62 @@ class Document: NSDocument {
           self.log("------------------------------")
 
         }
-        
         sleep(1)
       }
       self.log("Client Stopped")
+      self.updateInterfaceAfterStopping()
+    }
+  }
+
+  func runServer(address:String) {
+    self.log("Server Starting")
+    self.log("GRPC version " + gRPC.version())
+    self.setIsRunning(true)
+
+    self.server = gRPC.Server(address:address)
+    var requestCount = 0
+
+    self.server.run() {(requestHandler) in
+
+      requestCount += 1
+
+      self.log("\(requestCount): Received request " + requestHandler.host()
+        + " " + requestHandler.method()
+        + " from " + requestHandler.caller())
+
+      let initialMetadata = requestHandler.requestMetadata
+
+      for i in 0..<initialMetadata.count() {
+        self.log("\(requestCount): Received initial metadata -> " + initialMetadata.key(index:i) + ":" + initialMetadata.value(index:i))
+      }
+
+      let initialMetadataToSend = Metadata([["a": "Apple"],
+                                            ["b": "Banana"],
+                                            ["c": "Cherry"]])
+      requestHandler.receiveMessage(initialMetadata:initialMetadataToSend)
+      {(messageData) in
+        let messageString = String(data: messageData!, encoding:String.Encoding.utf8)
+        self.log("\(requestCount): Received message: " + messageString!)
+      }
+
+      if requestHandler.method() == "/quit" {
+        self.stop()
+      }
+
+      let replyMessage = "thank you very much!"
+
+      let trailingMetadataToSend = Metadata([["0": "zero"],
+                                             ["1": "one"],
+                                             ["2": "two"]])
+
+      requestHandler.sendResponse(message:replyMessage.data(using: String.Encoding.utf8)!,
+                                  trailingMetadata:trailingMetadataToSend)
+
+      self.log("------------------------------")
+    }
+
+    self.server.onCompletion() {
+      self.log("Server Stopped")
       self.updateInterfaceAfterStopping()
     }
   }

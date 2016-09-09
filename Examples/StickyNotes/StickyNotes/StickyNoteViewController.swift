@@ -66,16 +66,16 @@ class StickyNoteViewController : NSViewController, NSTextFieldDelegate {
     let fileDescriptorSet = FileDescriptorSet(filename:"stickynote.out")
 
     let text = self.messageField.stringValue
-    
+
     // build the message
     if let requestMessage = fileDescriptorSet.createMessage(name:"StickyNoteRequest") {
       requestMessage.addField(name:"message", value:text)
 
       let requestHost = "foo.test.google.fr"
       let requestMethod = "/messagepb.StickyNote/Get"
-      let requestMetadata = Metadata(pairs:[MetadataPair(key:"x", value:"xylophone"),
-                                            MetadataPair(key:"y", value:"yu"),
-                                            MetadataPair(key:"z", value:"zither")])
+      let requestMetadata = Metadata([["x":"xylophone"],
+                                      ["y":"yu"],
+                                      ["z":"zither"]])
 
       client = Client(address:address)
       let call = client.createCall(host: requestHost, method: requestMethod, timeout: 600)

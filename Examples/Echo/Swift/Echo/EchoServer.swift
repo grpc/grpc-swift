@@ -32,15 +32,15 @@ class EchoServer {
       // NONSTREAMING
       if (requestHandler.method() == "/echo.Echo/Get") {
         requestHandler.receiveMessage(initialMetadata:Metadata())
-        {(requestBuffer) in
-          if let requestBuffer = requestBuffer,
+        {(requestData) in
+          if let requestData = requestData,
             let requestMessage =
             fileDescriptorSet.readMessage(name:"EchoRequest",
-                                          proto:requestBuffer.data()) {
+                                          proto:requestData) {
             requestMessage.forOneField(name:"text") {(field) in
               let replyMessage = fileDescriptorSet.createMessage(name:"EchoResponse")!
               replyMessage.addField(name:"text", value:"Swift nonstreaming echo " + field.string())
-              requestHandler.sendResponse(message:ByteBuffer(data:replyMessage.serialize()),
+              requestHandler.sendResponse(message:replyMessage.serialize(),
                                           trailingMetadata:Metadata())
             }
           }

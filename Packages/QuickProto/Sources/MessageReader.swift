@@ -39,10 +39,10 @@ class MessageReader {
   var data : NSData
   var cursor : Int = 0
 
-  init(_ fileDescriptorSet: FileDescriptorSet, messageName: String, data: NSData) {
+  init(_ fileDescriptorSet: FileDescriptorSet, messageName: String, data: Data) {
     self.fileDescriptorSet = fileDescriptorSet
     self.messageName = messageName
-    self.data = data
+    self.data = data as NSData
   }
 
   func readMessage() -> Message? {

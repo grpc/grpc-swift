@@ -40,7 +40,7 @@ public class FileDescriptorSet {
     fileDescriptors.append(FileDescriptor())
   }
 
-  public init(proto:NSData) {
+  public init(proto:Data) {
     let baseFileDescriptorSet = FileDescriptorSet()
     if let descriptorMessage = baseFileDescriptorSet.readMessage(name:"FileDescriptorSet",
                                                                  proto:proto) {
@@ -56,7 +56,7 @@ public class FileDescriptorSet {
     let path = Bundle.main.resourcePath!.appending("/").appending(filename)
     let fileDescriptorSetProto = NSData(contentsOfFile:path)
     assert(fileDescriptorSetProto != nil) // the file to be loaded must be in the resource bundle
-    self.init(proto:fileDescriptorSetProto!)
+    self.init(proto:fileDescriptorSetProto! as Data)
   }
 #endif
 
@@ -88,7 +88,7 @@ public class FileDescriptorSet {
     }
   }
 
-  public func readMessage(name:String, proto:NSData) -> Message? {
+  public func readMessage(name:String, proto:Data) -> Message? {
     let descriptorReader = MessageReader(self,
                                          messageName:name,
                                          data:proto)

@@ -39,7 +39,7 @@ import Foundation // for String.Encoding
 public class ByteBuffer {
 
   /// Pointer to underlying C representation
-  var b: UnsafeMutableRawPointer
+  var b: UnsafeMutableRawPointer!
 
   /// Initializes a ByteBuffer
   ///
@@ -58,8 +58,10 @@ public class ByteBuffer {
   /// Initializes a ByteBuffer
   ///
   /// - Parameter data: data to store in the buffer
-  public init(data: NSData) {
-    self.b = cgrpc_byte_buffer_create_with_data(data.bytes, data.length)
+  public init(data: Data) {
+    data.withUnsafeBytes { (bytes) in
+      self.b = cgrpc_byte_buffer_create_with_data(bytes, data.count)
+    }
   }
 
   deinit {
@@ -77,9 +79,9 @@ public class ByteBuffer {
   /// Gets raw data from the contents of the ByteBuffer
   ///
   /// - Returns: data formed from the ByteBuffer contents
-  public func data() -> NSData {
+  public func data() -> Data {
     var length : Int = 0
     let bytes = cgrpc_byte_buffer_as_data(b, &length)
-    return NSData(bytes:bytes, length: length)
+    return Data(bytes:bytes!, count: length)
   }
 }

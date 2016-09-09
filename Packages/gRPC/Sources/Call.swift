@@ -93,7 +93,7 @@ public class Call {
   /// - Parameter message: a ByteBuffer containing the message to send
   /// - Parameter metadata: metadata to send with the call
   /// - Returns: a CallResponse object containing results of the call
-  public func performNonStreamingCall(messageData: NSData,
+  public func performNonStreamingCall(messageData: Data,
                                       metadata: Metadata,
                                       completion: ((CallResponse) -> Void)) -> Void   {
 
@@ -146,7 +146,7 @@ public class Call {
   }
 
   // send a message over a streaming connection
-  public func sendMessage(data: NSData) {
+  public func sendMessage(data: Data) {
     let messageBuffer = ByteBuffer(data:data)
     let operation_sendMessage = Operation_SendMessage(message:messageBuffer)
     let operations = OperationGroup(call:self, operations:[operation_sendMessage])
@@ -160,7 +160,7 @@ public class Call {
   }
 
   // receive a message over a streaming connection
-  public func receiveMessage(callback:((NSData!) -> Void)) -> Void {
+  public func receiveMessage(callback:((Data!) -> Void)) -> Void {
     let operation_receiveMessage = Operation_ReceiveMessage()
     let operations = OperationGroup(call:self, operations:[operation_receiveMessage])
     { (event) in
