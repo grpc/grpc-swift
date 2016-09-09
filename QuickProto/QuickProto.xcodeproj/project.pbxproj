@@ -7,6 +7,19 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D33465771D828C6B00C8D159 /* _FileDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8191D75FC2200E5DFAB /* _FileDescriptor.swift */; };
+		D33465781D828C6B00C8D159 /* CodeBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81A1D75FC2200E5DFAB /* CodeBuilder.swift */; };
+		D33465791D828C6B00C8D159 /* Field.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81B1D75FC2200E5DFAB /* Field.swift */; };
+		D334657A1D828C6B00C8D159 /* FieldDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81C1D75FC2200E5DFAB /* FieldDescriptor.swift */; };
+		D334657B1D828C6B00C8D159 /* FieldLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81D1D75FC2200E5DFAB /* FieldLabel.swift */; };
+		D334657C1D828C6B00C8D159 /* FieldType.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81E1D75FC2200E5DFAB /* FieldType.swift */; };
+		D334657D1D828C6B00C8D159 /* FileDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81F1D75FC2200E5DFAB /* FileDescriptor.swift */; };
+		D334657E1D828C6B00C8D159 /* FileDescriptorSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8201D75FC2200E5DFAB /* FileDescriptorSet.swift */; };
+		D334657F1D828C6B00C8D159 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8211D75FC2200E5DFAB /* Message.swift */; };
+		D33465801D828C6B00C8D159 /* MessageDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8221D75FC2200E5DFAB /* MessageDescriptor.swift */; };
+		D33465811D828C6B00C8D159 /* MessageReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8231D75FC2200E5DFAB /* MessageReader.swift */; };
+		D33465821D828C6B00C8D159 /* NSMutableData+Proto.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8241D75FC2200E5DFAB /* NSMutableData+Proto.swift */; };
+		D33465831D828C6B00C8D159 /* WireType.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8251D75FC2200E5DFAB /* WireType.swift */; };
 		D35C9F381D74A1C0000443CD /* QuickProto.h in Headers */ = {isa = PBXBuildFile; fileRef = D35C9F361D74A1C0000443CD /* QuickProto.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		D35C9F6C1D74A4AB000443CD /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C9F6B1D74A4AB000443CD /* main.swift */; };
 		D3A2C8261D75FC2200E5DFAB /* _FileDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8191D75FC2200E5DFAB /* _FileDescriptor.swift */; };
@@ -256,6 +269,19 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D33465771D828C6B00C8D159 /* _FileDescriptor.swift in Sources */,
+				D33465781D828C6B00C8D159 /* CodeBuilder.swift in Sources */,
+				D33465791D828C6B00C8D159 /* Field.swift in Sources */,
+				D334657A1D828C6B00C8D159 /* FieldDescriptor.swift in Sources */,
+				D334657B1D828C6B00C8D159 /* FieldLabel.swift in Sources */,
+				D334657C1D828C6B00C8D159 /* FieldType.swift in Sources */,
+				D334657D1D828C6B00C8D159 /* FileDescriptor.swift in Sources */,
+				D334657E1D828C6B00C8D159 /* FileDescriptorSet.swift in Sources */,
+				D334657F1D828C6B00C8D159 /* Message.swift in Sources */,
+				D33465801D828C6B00C8D159 /* MessageDescriptor.swift in Sources */,
+				D33465811D828C6B00C8D159 /* MessageReader.swift in Sources */,
+				D33465821D828C6B00C8D159 /* NSMutableData+Proto.swift in Sources */,
+				D33465831D828C6B00C8D159 /* WireType.swift in Sources */,
 				D35C9F6C1D74A4AB000443CD /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

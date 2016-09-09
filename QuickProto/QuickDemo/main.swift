@@ -71,7 +71,7 @@ whereami()
 func regenerate() {
   if let descriptorProto = NSData(contentsOfFile:"Samples/descriptor.out") {
     if let descriptorMessage = FileDescriptorSet().readMessage(name:"FileDescriptorSet",
-                                                               proto:descriptorProto) {
+                                                               proto:descriptorProto as Data) {
       let builder = CodeBuilder(descriptorMessage)
       do {
         try builder.string().write(toFile:"_FileDescriptor.swift",
@@ -89,12 +89,12 @@ regenerate()
 func stickynote_reader() {
   if let fileDescriptorSetProto = NSData(contentsOfFile:"Samples/stickynote.out") {
     // load a FileDescriptorSet that includes a descriptor for the message to be read
-    let fileDescriptorSet = FileDescriptorSet(proto:fileDescriptorSetProto)
+    let fileDescriptorSet = FileDescriptorSet(proto:fileDescriptorSetProto as Data)
 
     // load a proto with the specified message descriptor
     if let messageProto = NSData(contentsOfFile: "Samples/StickyNoteRequest.bin") {
       if let message = fileDescriptorSet.readMessage(name:"StickyNoteRequest",
-                                                     proto:messageProto) {
+                                                     proto:messageProto as Data) {
 
         // display the message
         message.display()
@@ -108,12 +108,12 @@ stickynote_reader()
 func sample_reader() {
   if let fileDescriptorSetProto = NSData(contentsOfFile:"Samples/sample.out") {
     // load a FileDescriptorSet that includes a descriptor for the message to be read
-    let fileDescriptorSet = FileDescriptorSet(proto:fileDescriptorSetProto)
+    let fileDescriptorSet = FileDescriptorSet(proto:fileDescriptorSetProto as Data)
 
     // load a proto with the specified message descriptor
     if let messageProto = NSData(contentsOfFile:"Samples/SampleMessage.bin") {
       if let message = fileDescriptorSet.readMessage(name:"SampleMessage",
-                                                     proto:messageProto) {
+                                                     proto:messageProto as Data) {
 
         // display the message
         message.display()
@@ -127,7 +127,7 @@ sample_reader()
 func sample_writer() {
   if let fileDescriptorSetProto = NSData(contentsOfFile:"Samples/sample.out") {
     // load a FileDescriptorSet that includes a descriptor for the message to be created
-    let fileDescriptorSet = FileDescriptorSet(proto:fileDescriptorSetProto)
+    let fileDescriptorSet = FileDescriptorSet(proto:fileDescriptorSetProto as Data)
 
     // construct an internal representation of the message
     if let message = fileDescriptorSet.createMessage(name:"SampleMessage") {
@@ -154,7 +154,7 @@ func sample_writer() {
       }
       message.addField(name:"data") {(field) in
         let data = "ABCDEFG 123".data(using: .utf8)!
-        field.setData(NSData(data: data))
+        field.setData(data)
       }
       message.addField(name:"ui32") {(field) in field.setInt(123456)}
       message.addField(name:"sf32") {(field) in field.setInt(123456)}
@@ -165,13 +165,14 @@ func sample_writer() {
 
       // write the message as a protocol buffer
       let data = message.serialize()
-      data.write(toFile: "SampleRequest.out", atomically: false)
+      NSData(data:data).write(toFile: "SampleRequest.out", atomically: false)
 
       // re-read it
       if let message = fileDescriptorSet.readMessage(name:"SampleMessage",
                                                      proto:data) {
 
         // display the message
+        print("REDISPLAY")
         message.display()
         message.forOneField(name:"text") {(field) in print(field.string())}
       }
