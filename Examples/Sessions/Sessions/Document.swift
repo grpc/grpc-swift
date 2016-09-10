@@ -177,19 +177,24 @@ class Document: NSDocument {
 
           if let initialMetadata = response.initialMetadata {
             for j in 0..<initialMetadata.count() {
-              self.log("\(i): Received initial metadata -> " + initialMetadata.key(index:j) + " : " + initialMetadata.value(index:j))
+              self.log("\(i): Received initial metadata -> " + initialMetadata.key(index:j)
+                + " : " + initialMetadata.value(index:j))
             }
           }
 
           self.log("\(i): Received status: \(response.status) " + response.statusDetails)
+          if response.status != 0 {
+            self.setIsRunning(false)
+          }
           if let messageData = response.messageData {
-            let messageString = String(data: messageData as Data, encoding:String.Encoding.utf8)
+            let messageString = String(data: messageData as Data, encoding: .utf8)
             self.log("\(i): Received message: " + messageString!)
           }
 
           if let trailingMetadata = response.trailingMetadata {
             for j in 0..<trailingMetadata.count() {
-              self.log("\(i): Received trailing metadata -> " + trailingMetadata.key(index:j) + " : " + trailingMetadata.value(index:j))
+              self.log("\(i): Received trailing metadata -> " + trailingMetadata.key(index:j)
+                + " : " + trailingMetadata.value(index:j))
             }
           }
           self.log("------------------------------")
@@ -221,7 +226,8 @@ class Document: NSDocument {
       let initialMetadata = requestHandler.requestMetadata
 
       for i in 0..<initialMetadata.count() {
-        self.log("\(requestCount): Received initial metadata -> " + initialMetadata.key(index:i) + ":" + initialMetadata.value(index:i))
+        self.log("\(requestCount): Received initial metadata -> " + initialMetadata.key(index:i)
+          + ":" + initialMetadata.value(index:i))
       }
 
       let initialMetadataToSend = Metadata([["a": "Apple"],
@@ -229,7 +235,7 @@ class Document: NSDocument {
                                             ["c": "Cherry"]])
       requestHandler.receiveMessage(initialMetadata:initialMetadataToSend)
       {(messageData) in
-        let messageString = String(data: messageData!, encoding:String.Encoding.utf8)
+        let messageString = String(data: messageData!, encoding: .utf8)
         self.log("\(requestCount): Received message: " + messageString!)
       }
 
@@ -237,13 +243,13 @@ class Document: NSDocument {
         self.stop()
       }
 
-      let replyMessage = "thank you very much!"
+      let replyMessage = "hello, client!"
 
       let trailingMetadataToSend = Metadata([["0": "zero"],
                                              ["1": "one"],
                                              ["2": "two"]])
 
-      requestHandler.sendResponse(message:replyMessage.data(using: String.Encoding.utf8)!,
+      requestHandler.sendResponse(message:replyMessage.data(using: .utf8)!,
                                   trailingMetadata:trailingMetadataToSend)
 
       self.log("------------------------------")
