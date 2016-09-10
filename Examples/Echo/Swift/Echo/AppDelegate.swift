@@ -31,7 +31,6 @@
  *
  */
 import Cocoa
-import gRPC
 
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -41,8 +40,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   var echoServer: EchoServer!
 
   func applicationDidFinishLaunching(_ aNotification: Notification) {
-    gRPC.initialize()
-
     self.echoServer = EchoServer(address:"localhost:8081")
     echoServer.start()
   }

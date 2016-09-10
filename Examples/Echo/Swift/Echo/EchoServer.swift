@@ -14,6 +14,7 @@ class EchoServer {
   private var address: String
 
   init(address:String) {
+    gRPC.initialize()
     self.address = address
   }
 

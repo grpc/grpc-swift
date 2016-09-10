@@ -31,7 +31,6 @@
  *
  */
 import Cocoa
-import gRPC
 
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -41,8 +40,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   var stickyServer: StickyServer!
 
   func applicationDidFinishLaunching(_ aNotification: Notification) {
-    gRPC.initialize()
-    
     self.stickyServer = StickyServer(address:"localhost:8085")
     stickyServer.start()
   }

@@ -42,7 +42,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   }
 
   func applicationWillTerminate(_ aNotification: Notification) {
-    // Currently we don't call shutdown() because we can't be sure that
+    // We don't call shutdown() here because we can't be sure that
     // any running server queues will have stopped by the time this is
     // called. If one is still running after we call shutdown(), the
     // program will crash.
