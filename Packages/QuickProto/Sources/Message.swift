@@ -81,6 +81,10 @@ public class Message {
     }
   }
 
+  public func fieldCount() -> Int {
+    return fields.count
+  }
+
   /// get one field with the specified name
   public func oneField(name: String) -> Field? {
     for field in fields {

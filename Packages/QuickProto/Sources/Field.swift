@@ -126,11 +126,25 @@ public class Field {
   }
 
   public func integer() -> Int {
-    return value as! Int
+    if let value = value as? Int {
+      return value
+    } else if let value = value as? Int32 {
+      return Int(value)
+    } else if let value = value as? Int64 {
+      return Int(value)
+    } else {
+      return 0
+    }
   }
 
   public func bool() -> Bool {
-    return value as! Bool
+    if let value = value as? Bool {
+      return value
+    } else if let value = value as? Int {
+      return value != 0
+    } else {
+      return false
+    }
   }
   
   public func double() -> Double {

@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/golang/protobuf/proto"
 	"io/ioutil"
-	pb "messagepb"
+	pb "sample"
 )
 
 func main() {
