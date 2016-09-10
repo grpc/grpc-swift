@@ -84,7 +84,6 @@ class CompletionQueue {
         }
       }
       DispatchQueue.main.async {
-        print("exiting completion queue loop " + self.name)
         completion()
       }
     }

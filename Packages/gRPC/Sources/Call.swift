@@ -114,7 +114,6 @@ public class Call {
                                            operation_receiveStatusOnClient,
                                            operation_receiveMessage])
     { (event) in
-      print("client nonstreaming call complete")
       if (event.type == GRPC_OP_COMPLETE) {
         let response = CallResponse(status:operation_receiveStatusOnClient.status(),
                                     statusDetails:operation_receiveStatusOnClient.statusDetails(),
@@ -127,7 +126,9 @@ public class Call {
       }
     }
     let call_error = self.perform(call: self, operations: group)
-    print ("call error = \(call_error)")
+    if call_error != GRPC_CALL_OK {
+      print ("call error = \(call_error)")
+    }
   }
 
   // perform a group of operations (used internally)

@@ -60,18 +60,14 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
 
   @IBAction func addressReturnPressed(sender: NSTextField) {
     if (streaming) {
-      print ("stop streaming")
       self.sendClose()
     }
   }
 
   @IBAction func buttonValueChanged(sender: NSButton) {
-    print("button value changed \(sender)")
     if (streaming && (sender.intValue == 0)) {
-      print ("stop streaming")
       self.sendClose()
     }
-
   }
 
   override func viewDidLoad() {
@@ -84,29 +80,26 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     }
   }
 
-  func log(_ message: String) {
-    print(message)
-  }
-
   func callServer(address:String) {
-    gRPC.initialize()
+    let requestHost = "foo.test.google.fr"
+    let requestMetadata = Metadata(["x-goog-api-key":"YOUR_API_KEY",
+                                    "x-ios-bundle-identifier":Bundle.main.bundleIdentifier!])
 
     if (self.streamingButton.intValue == 0) {
       // NONSTREAMING
-
-      // build the message
       if let requestMessage = self.fileDescriptorSet.createMessage("EchoRequest") {
         requestMessage.addField("text", value:self.messageField.stringValue)
-        let requestHost = "foo.test.google.fr"
-        let requestMethod = "/echo.Echo/Get"
-        let requestMetadata = Metadata()
+        let requestMessageData = requestMessage.serialize()
 
         client = Client(address:address)
-        call = client.createCall(host: requestHost, method: requestMethod, timeout: 30.0)
-        call.performNonStreamingCall(messageData: requestMessage.serialize(),
+        call = client.createCall(host: requestHost,
+                                 method: "/echo.Echo/Get",
+                                 timeout: 30.0)
+
+        call.performNonStreamingCall(messageData: requestMessageData,
                                      metadata: requestMetadata)
         { (response) in
-          self.log("Received status: \(response.status) " + response.statusDetails)
+          print("Received status: \(response.status) " + response.statusDetails)
           if let messageData = response.messageData,
             let responseMessage = self.fileDescriptorSet.readMessage("EchoResponse",
                                                                      data:messageData) {
@@ -117,7 +110,8 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
             }
           } else {
             DispatchQueue.main.async {
-              self.outputField.stringValue = "No message received. gRPC Status \(response.status) " + response.statusDetails
+              self.outputField.stringValue = "No message received. gRPC Status \(response.status) "
+                + response.statusDetails
             }
           }
         }
@@ -127,13 +121,12 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
       // STREAMING
       if (!streaming) {
         client = Client(address:address)
-        call = client.createCall(host: "foo.test.google.fr",
+        call = client.createCall(host: requestHost,
                                  method: "/echo.Echo/Update",
-                                 timeout: 600.0)
-        let metadata = Metadata(["x-goog-api-key":"YOUR_API_KEY",
-                                 "x-ios-bundle-identifier":Bundle.main.bundleIdentifier!])
-        call.start(metadata:metadata)
-        self.receiveMessage() // this should take a block in which we specify what to do
+                                 timeout: 30.0)
+
+        call.start(metadata:requestMetadata)
+        self.receiveMessage()
         streaming = true
       }
       self.sendMessage()
@@ -149,7 +142,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
 
   func receiveMessage() {
     call.receiveMessage() {(data) in
-      let responseMessage = self.fileDescriptorSet.readMessage( "EchoResponse", data:data)!
+      let responseMessage = self.fileDescriptorSet.readMessage("EchoResponse", data:data)!
       responseMessage.forOneField("text") {(field) in
         DispatchQueue.main.async {
           self.outputField.stringValue = field.string()

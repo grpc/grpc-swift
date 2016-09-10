@@ -143,8 +143,6 @@ public class Handler {
         operation_sendStatusFromServer,
         operation_sendMessage])
     {(call_error) in
-      print("server response complete")
-      print("finished with handler \(self)")
       self.shutdown()
     }
     self.completionQueue.operationGroups[operations.tag] = operations
@@ -164,7 +162,6 @@ public class Handler {
     let operations = OperationGroup(call:call, operations:[operation_sendInitialMetadata])
     {(event) in
       if (event.type == GRPC_OP_COMPLETE) {
-        print("server sendMetadata complete")
         completion()
       } else {
         completion()
