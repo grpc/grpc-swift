@@ -68,8 +68,8 @@ class StickyNoteViewController : NSViewController, NSTextFieldDelegate {
     let text = self.messageField.stringValue
 
     // build the message
-    if let requestMessage = fileDescriptorSet.createMessage(name:"StickyNoteRequest") {
-      requestMessage.addField(name:"message", value:text)
+    if let requestMessage = fileDescriptorSet.createMessage("StickyNoteRequest") {
+      requestMessage.addField("message", value:text)
 
       let requestHost = "foo.test.google.fr"
       let requestMethod = "/messagepb.StickyNote/Get"
@@ -95,9 +95,9 @@ class StickyNoteViewController : NSViewController, NSTextFieldDelegate {
           self.log("Received status: \(response.status) " + response.statusDetails)
 
           if let responseData = response.messageData,
-            let responseMessage = fileDescriptorSet.readMessage(name:"StickyNoteResponse",
-                                                                proto:responseData) {
-            responseMessage.forOneField(name:"image") {(field) in
+            let responseMessage = fileDescriptorSet.readMessage("StickyNoteResponse",
+                                                                data: responseData) {
+            responseMessage.forOneField("image") {(field) in
               if let image = NSImage(data: field.data() as Data) {
                 DispatchQueue.main.async {
                   self.imageView.image = image

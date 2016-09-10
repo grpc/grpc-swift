@@ -40,11 +40,11 @@ public class FileDescriptorSet {
     fileDescriptors.append(FileDescriptor())
   }
 
-  public init(proto:Data) {
+  public init(data:Data) {
     let baseFileDescriptorSet = FileDescriptorSet()
-    if let descriptorMessage = baseFileDescriptorSet.readMessage(name:"FileDescriptorSet",
-                                                                 proto:proto) {
-      descriptorMessage.forEachField(path:["file"]) { (field) in
+    if let descriptorMessage = baseFileDescriptorSet.readMessage("FileDescriptorSet",
+                                                                 data:data) {
+      descriptorMessage.forEachField("file") { (field) in
         let fileDescriptor = FileDescriptor(message: field.message())
         fileDescriptors.append(fileDescriptor)
       }
@@ -56,12 +56,12 @@ public class FileDescriptorSet {
     let path = Bundle.main.resourcePath!.appending("/").appending(filename)
     let fileDescriptorSetProto = NSData(contentsOfFile:path)
     assert(fileDescriptorSetProto != nil) // the file to be loaded must be in the resource bundle
-    self.init(proto:fileDescriptorSetProto! as Data)
+    self.init(data:fileDescriptorSetProto! as Data)
   }
 #endif
 
   init(message:Message) {
-    message.forEachField(path:["file"]) { (field) in
+    message.forEachField("file") { (field) in
       let fileDescriptor = FileDescriptor(message: field.message())
       fileDescriptors.append(fileDescriptor)
     }
@@ -79,7 +79,7 @@ public class FileDescriptorSet {
     return nil
   }
 
-  public func createMessage(name: String) -> Message! {
+  public func createMessage(_ name: String) -> Message! {
     if let messageDescriptor = self.messageDescriptor(name: name) {
       return Message(descriptor:messageDescriptor, fields:[])
     } else {
@@ -87,10 +87,10 @@ public class FileDescriptorSet {
     }
   }
 
-  public func readMessage(name:String, proto:Data) -> Message? {
+  public func readMessage(_ name:String, data:Data) -> Message? {
     let descriptorReader = MessageReader(self,
                                          messageName:name,
-                                         data:proto)
+                                         data:data)
     let descriptorMessage = descriptorReader.readMessage()
     return descriptorMessage
   }

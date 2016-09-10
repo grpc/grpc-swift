@@ -7,19 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		D33465771D828C6B00C8D159 /* _FileDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8191D75FC2200E5DFAB /* _FileDescriptor.swift */; };
-		D33465781D828C6B00C8D159 /* CodeBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81A1D75FC2200E5DFAB /* CodeBuilder.swift */; };
-		D33465791D828C6B00C8D159 /* Field.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81B1D75FC2200E5DFAB /* Field.swift */; };
-		D334657A1D828C6B00C8D159 /* FieldDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81C1D75FC2200E5DFAB /* FieldDescriptor.swift */; };
-		D334657B1D828C6B00C8D159 /* FieldLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81D1D75FC2200E5DFAB /* FieldLabel.swift */; };
-		D334657C1D828C6B00C8D159 /* FieldType.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81E1D75FC2200E5DFAB /* FieldType.swift */; };
-		D334657D1D828C6B00C8D159 /* FileDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81F1D75FC2200E5DFAB /* FileDescriptor.swift */; };
-		D334657E1D828C6B00C8D159 /* FileDescriptorSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8201D75FC2200E5DFAB /* FileDescriptorSet.swift */; };
-		D334657F1D828C6B00C8D159 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8211D75FC2200E5DFAB /* Message.swift */; };
-		D33465801D828C6B00C8D159 /* MessageDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8221D75FC2200E5DFAB /* MessageDescriptor.swift */; };
-		D33465811D828C6B00C8D159 /* MessageReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8231D75FC2200E5DFAB /* MessageReader.swift */; };
-		D33465821D828C6B00C8D159 /* NSMutableData+Proto.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8241D75FC2200E5DFAB /* NSMutableData+Proto.swift */; };
-		D33465831D828C6B00C8D159 /* WireType.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8251D75FC2200E5DFAB /* WireType.swift */; };
 		D35BEA331D8397CC00BB9230 /* _FileDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8191D75FC2200E5DFAB /* _FileDescriptor.swift */; };
 		D35BEA341D8397CC00BB9230 /* CodeBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81A1D75FC2200E5DFAB /* CodeBuilder.swift */; };
 		D35BEA351D8397CC00BB9230 /* Field.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81B1D75FC2200E5DFAB /* Field.swift */; };
@@ -80,18 +67,6 @@
 		};
 /* End PBXContainerItemProxy section */
 
-/* Begin PBXCopyFilesBuildPhase section */
-		D35C9F671D74A4AB000443CD /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = /usr/share/man/man1/;
-			dstSubfolderSpec = 0;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 1;
-		};
-/* End PBXCopyFilesBuildPhase section */
-
 /* Begin PBXFileReference section */
 		D35BEA401D83B10100BB9230 /* SampleMessage.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; name = SampleMessage.bin; path = Samples/sample/SampleMessage.bin; sourceTree = SOURCE_ROOT; };
 		D35BEA421D83B10F00BB9230 /* sample.out */ = {isa = PBXFileReference; lastKnownFileType = file; name = sample.out; path = Samples/sample/sample.out; sourceTree = SOURCE_ROOT; };
@@ -104,7 +79,6 @@
 		D35C9F341D74A1C0000443CD /* QuickProto.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = QuickProto.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D35C9F361D74A1C0000443CD /* QuickProto.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = QuickProto.h; sourceTree = "<group>"; };
 		D35C9F371D74A1C0000443CD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		D35C9F691D74A4AB000443CD /* QuickDemo */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = QuickDemo; sourceTree = BUILT_PRODUCTS_DIR; };
 		D3A2C8191D75FC2200E5DFAB /* _FileDescriptor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = _FileDescriptor.swift; path = ../Packages/QuickProto/Sources/_FileDescriptor.swift; sourceTree = "<group>"; };
 		D3A2C81A1D75FC2200E5DFAB /* CodeBuilder.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CodeBuilder.swift; path = ../Packages/QuickProto/Sources/CodeBuilder.swift; sourceTree = "<group>"; };
 		D3A2C81B1D75FC2200E5DFAB /* Field.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Field.swift; path = ../Packages/QuickProto/Sources/Field.swift; sourceTree = "<group>"; };
@@ -132,13 +106,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		D35C9F301D74A1C0000443CD /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		D35C9F661D74A4AB000443CD /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -212,7 +179,6 @@
 			isa = PBXGroup;
 			children = (
 				D35C9F341D74A1C0000443CD /* QuickProto.framework */,
-				D35C9F691D74A4AB000443CD /* QuickDemo */,
 				D3D6924C1D8380D800813DEC /* QuickProtoTests.xctest */,
 				D35BEA481D83B9AB00BB9230 /* QuickProtoGen.app */,
 			);
@@ -279,23 +245,6 @@
 			productReference = D35C9F341D74A1C0000443CD /* QuickProto.framework */;
 			productType = "com.apple.product-type.framework";
 		};
-		D35C9F681D74A4AB000443CD /* QuickDemo */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = D35C9F6F1D74A4AB000443CD /* Build configuration list for PBXNativeTarget "QuickDemo" */;
-			buildPhases = (
-				D35C9F651D74A4AB000443CD /* Sources */,
-				D35C9F661D74A4AB000443CD /* Frameworks */,
-				D35C9F671D74A4AB000443CD /* CopyFiles */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = QuickDemo;
-			productName = QuickDemo;
-			productReference = D35C9F691D74A4AB000443CD /* QuickDemo */;
-			productType = "com.apple.product-type.tool";
-		};
 		D3D6924B1D8380D800813DEC /* QuickProtoTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = D3D692561D8380D800813DEC /* Build configuration list for PBXNativeTarget "QuickProtoTests" */;
@@ -335,11 +284,6 @@
 						LastSwiftMigration = 0800;
 						ProvisioningStyle = Automatic;
 					};
-					D35C9F681D74A4AB000443CD = {
-						CreatedOnToolsVersion = 8.0;
-						DevelopmentTeam = EQHXZ8M8AV;
-						ProvisioningStyle = Automatic;
-					};
 					D3D6924B1D8380D800813DEC = {
 						CreatedOnToolsVersion = 8.0;
 						DevelopmentTeam = EQHXZ8M8AV;
@@ -361,7 +305,6 @@
 			projectRoot = "";
 			targets = (
 				D35C9F331D74A1C0000443CD /* QuickProto */,
-				D35C9F681D74A4AB000443CD /* QuickDemo */,
 				D3D6924B1D8380D800813DEC /* QuickProtoTests */,
 				D35BEA471D83B9AB00BB9230 /* QuickProtoGen */,
 			);
@@ -436,26 +379,6 @@
 				D3A2C8281D75FC2200E5DFAB /* Field.swift in Sources */,
 				D3A2C82F1D75FC2200E5DFAB /* MessageDescriptor.swift in Sources */,
 				D3A2C8291D75FC2200E5DFAB /* FieldDescriptor.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		D35C9F651D74A4AB000443CD /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				D33465771D828C6B00C8D159 /* _FileDescriptor.swift in Sources */,
-				D33465781D828C6B00C8D159 /* CodeBuilder.swift in Sources */,
-				D33465791D828C6B00C8D159 /* Field.swift in Sources */,
-				D334657A1D828C6B00C8D159 /* FieldDescriptor.swift in Sources */,
-				D334657B1D828C6B00C8D159 /* FieldLabel.swift in Sources */,
-				D334657C1D828C6B00C8D159 /* FieldType.swift in Sources */,
-				D334657D1D828C6B00C8D159 /* FileDescriptor.swift in Sources */,
-				D334657E1D828C6B00C8D159 /* FileDescriptorSet.swift in Sources */,
-				D334657F1D828C6B00C8D159 /* Message.swift in Sources */,
-				D33465801D828C6B00C8D159 /* MessageDescriptor.swift in Sources */,
-				D33465811D828C6B00C8D159 /* MessageReader.swift in Sources */,
-				D33465821D828C6B00C8D159 /* NSMutableData+Proto.swift in Sources */,
-				D33465831D828C6B00C8D159 /* WireType.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -585,24 +508,6 @@
 			};
 			name = Release;
 		};
-		D35C9F6D1D74A4AB000443CD /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				DEVELOPMENT_TEAM = EQHXZ8M8AV;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 3.0;
-			};
-			name = Debug;
-		};
-		D35C9F6E1D74A4AB000443CD /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				DEVELOPMENT_TEAM = EQHXZ8M8AV;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 3.0;
-			};
-			name = Release;
-		};
 		D3D1C85F1D6D15D9002F1B53 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -729,21 +634,13 @@
 				D35BEA541D83B9AB00BB9230 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		D35C9F391D74A1C0000443CD /* Build configuration list for PBXNativeTarget "QuickProto" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				D35C9F3A1D74A1C0000443CD /* Debug */,
 				D35C9F3B1D74A1C0000443CD /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		D35C9F6F1D74A4AB000443CD /* Build configuration list for PBXNativeTarget "QuickDemo" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				D35C9F6D1D74A4AB000443CD /* Debug */,
-				D35C9F6E1D74A4AB000443CD /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

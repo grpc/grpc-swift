@@ -49,13 +49,13 @@ class FieldDescriptor {
   }
 
   init(message: Message) {
-    name = message.oneField(name:"name")!.string()
-    type = FieldType(rawValue:message.oneField(name:"type")!.integer())!
-    tag = message.oneField(name:"number")!.integer()
-    if let field = message.oneField(name:"type_name") {
+    name = message.oneField("name")!.string()
+    type = FieldType(rawValue:message.oneField("type")!.integer())!
+    tag = message.oneField("number")!.integer()
+    if let field = message.oneField("type_name") {
       type_name = field.string()
     }
-    label = FieldLabel(rawValue:message.oneField(name:"label")!.integer())!
+    label = FieldLabel(rawValue:message.oneField("label")!.integer())!
   }
 
   func wireType() -> WireType {

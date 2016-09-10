@@ -45,7 +45,7 @@ class FileDescriptor {
 
   // creates a FileDescriptor from a FileDescriptor proto
   init(message:Message) {
-    message.forEachField(path:["message_type"]) { (field) in
+    message.forEachField(["message_type"]) { (field) in
       let messageDescriptor = MessageDescriptor(message: field.message())
       messageDescriptors.append(messageDescriptor)
     }

@@ -38,10 +38,10 @@ public class MessageDescriptor {
   var fieldDescriptors: [FieldDescriptor] = []
 
   init(message:Message) { // the message should be a DescriptorProto (descriptor.proto)
-    if let field = message.oneField(name:"name") {
+    if let field = message.oneField("name") {
       name = field.string()
     }
-    message.forEachField(name:"field") {(field) in
+    message.forEachField("field") {(field) in
       let fieldDescriptor = FieldDescriptor(message:field.message())
       fieldDescriptors.append(fieldDescriptor)
     }

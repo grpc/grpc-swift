@@ -53,7 +53,7 @@ public class Message {
   }
 
   /// add a field and perform the specified action
-  public func addField(name: String, action:((Field) -> Void)) {
+  public func addField(_ name: String, action:((Field) -> Void)) {
     // look up the field descriptor
     for fieldDescriptor in descriptor.fieldDescriptors {
       if (fieldDescriptor.name == name) {
@@ -68,7 +68,7 @@ public class Message {
 
 
   /// add a field and set it to the specified value
-  public func addField(name: String, value: Any) {
+  public func addField(_ name: String, value: Any) {
     // look up the field descriptor
     for fieldDescriptor in descriptor.fieldDescriptors {
       if (fieldDescriptor.name == name) {
@@ -86,7 +86,7 @@ public class Message {
   }
 
   /// get one field with the specified name
-  public func oneField(name: String) -> Field? {
+  public func oneField(_ name: String) -> Field? {
     for field in fields {
       if field.name() == name {
         return field
@@ -96,7 +96,7 @@ public class Message {
   }
 
   /// perform an action on one field with the specified name
-  public func forOneField(name: String, action:((Field) -> Void)) {
+  public func forOneField(_ name: String, action:((Field) -> Void)) {
     for field in fields {
       if field.name() == name {
         action(field)
@@ -106,7 +106,7 @@ public class Message {
   }
 
   /// perform an action on each field with the specified name
-  public func forEachField(name:String, action:(Field) -> (Void)) {
+  public func forEachField(_ name:String, action:(Field) -> (Void)) {
     for field in fields {
       if field.name() == name {
         action(field)
@@ -115,7 +115,7 @@ public class Message {
   }
 
   /// perform an action on each field following the specified path of field names
-  public func forEachField(path:[String], action:(Field) -> (Void)) {
+  public func forEachField(_ path:[String], action:(Field) -> (Void)) {
     for field in fields {
       if field.name() == path[0] {
         if path.count == 1 {
@@ -123,7 +123,7 @@ public class Message {
         } else {
           var subpath = path
           subpath.removeFirst()
-          field.message().forEachField(path:subpath, action:action)
+          field.message().forEachField(subpath, action:action)
         }
       }
     }

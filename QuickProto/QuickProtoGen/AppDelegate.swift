@@ -47,8 +47,8 @@ let path = "/tmp/_FileDescriptor.swift"
 func regenerate() {
   let descriptorProtoURL = Bundle.main.url(forResource: "descriptor", withExtension: "out")
   let descriptorProtoData = try! Data(contentsOf: descriptorProtoURL!)
-  let descriptorMessage = FileDescriptorSet().readMessage(name:"FileDescriptorSet",
-                                                          proto:descriptorProtoData)!
+  let descriptorMessage = FileDescriptorSet().readMessage("FileDescriptorSet",
+                                                          data:descriptorProtoData)!
   let builder = CodeBuilder(descriptorMessage)
   try! builder.string().write(toFile:path,
                               atomically:false,

@@ -95,8 +95,8 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
       // NONSTREAMING
 
       // build the message
-      if let requestMessage = self.fileDescriptorSet.createMessage(name:"EchoRequest") {
-        requestMessage.addField(name:"text", value:self.messageField.stringValue)
+      if let requestMessage = self.fileDescriptorSet.createMessage("EchoRequest") {
+        requestMessage.addField("text", value:self.messageField.stringValue)
         let requestHost = "foo.test.google.fr"
         let requestMethod = "/echo.Echo/Get"
         let requestMetadata = Metadata()
@@ -108,9 +108,9 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         { (response) in
           self.log("Received status: \(response.status) " + response.statusDetails)
           if let messageData = response.messageData,
-            let responseMessage = self.fileDescriptorSet.readMessage(name:"EchoResponse",
-                                                                     proto:messageData) {
-            responseMessage.forOneField(name:"text") {(field) in
+            let responseMessage = self.fileDescriptorSet.readMessage("EchoResponse",
+                                                                     data:messageData) {
+            responseMessage.forOneField("text") {(field) in
               DispatchQueue.main.async {
                 self.outputField.stringValue = field.string()
               }
@@ -141,18 +141,16 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   }
 
   func sendMessage() {
-    let requestMessage = self.fileDescriptorSet.createMessage(name:"EchoRequest")!
-    requestMessage.addField(name:"text", value:self.messageField.stringValue)
+    let requestMessage = self.fileDescriptorSet.createMessage("EchoRequest")!
+    requestMessage.addField("text", value:self.messageField.stringValue)
     let messageData = requestMessage.serialize()
     call.sendMessage(data:messageData)
   }
 
   func receiveMessage() {
     call.receiveMessage() {(data) in
-      let responseMessage = self.fileDescriptorSet.readMessage(
-        name:"EchoResponse",
-        proto:data)!
-      responseMessage.forOneField(name:"text") {(field) in
+      let responseMessage = self.fileDescriptorSet.readMessage( "EchoResponse", data:data)!
+      responseMessage.forOneField("text") {(field) in
         DispatchQueue.main.async {
           self.outputField.stringValue = field.string()
         }

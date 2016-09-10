@@ -71,13 +71,12 @@ class StickyServer {
           {(requestData) in
             if let requestData = requestData,
               let requestMessage =
-              fileDescriptorSet.readMessage(name:"StickyNoteRequest",
-                                            proto:requestData) {
-              requestMessage.forOneField(name:"message") {(field) in
+              fileDescriptorSet.readMessage("StickyNoteRequest", data: requestData) {
+              requestMessage.forOneField("message") {(field) in
                 let imageData = self.drawImage(message: field.string())
 
-                let replyMessage = fileDescriptorSet.createMessage(name:"StickyNoteResponse")!
-                replyMessage.addField(name:"image", value:imageData)
+                let replyMessage = fileDescriptorSet.createMessage("StickyNoteResponse")!
+                replyMessage.addField("image", value:imageData)
                 requestHandler.sendResponse(message:replyMessage.serialize(),
                                             trailingMetadata:Metadata())
               }

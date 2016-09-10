@@ -47,7 +47,7 @@ public class CodeBuilder {
     code += "import Foundation\n"
     code += "\n"
     code += "var _FileDescriptor : [[String:Any]] = [\n"
-    message.forEachField(path:["file","message_type"]) {(field) in
+    message.forEachField(["file","message_type"]) {(field) in
       generateProtoDescription(field:field)
     }
     code += "];\n"
@@ -55,11 +55,11 @@ public class CodeBuilder {
 
   /// generate code for a dictionary literal describing a proto
   private func generateProtoDescription(field: Field) {
-    field.message().forEachField(path:["name"]) {(field) in
+    field.message().forEachField("name") {(field) in
       code += "  [\"name\": \"\(field.string())\",\n"
       code += "   \"fields\": [\n"
     }
-    field.message().forEachField(path:["field"]) {(field) in
+    field.message().forEachField("field") {(field) in
       var name : String?
       var number : Int?
       var type : Int = 0
@@ -85,7 +85,7 @@ public class CodeBuilder {
       }
     }
     code += "    ]],\n"
-    field.message().forEachField(path:["nested_type"]) {(field) in
+    field.message().forEachField("nested_type") {(field) in
       generateProtoDescription(field:field)
     }
   }

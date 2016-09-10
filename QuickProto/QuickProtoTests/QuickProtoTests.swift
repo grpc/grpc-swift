@@ -41,28 +41,28 @@ class QuickProtoTests: XCTestCase {
     if let sampleProtoURL = sampleProtoURL, let sampleMessageURL = sampleMessageURL {
 
       let sampleProtoData = try! Data(contentsOf: sampleProtoURL)
-      let fileDescriptorSet = FileDescriptorSet(proto:sampleProtoData as Data)
+      let fileDescriptorSet = FileDescriptorSet(data:sampleProtoData as Data)
 
       let sampleMessageData = try! Data(contentsOf: sampleMessageURL)
-      if let message = fileDescriptorSet.readMessage(name:"SampleMessage", proto:sampleMessageData) {
+      if let message = fileDescriptorSet.readMessage("SampleMessage", data:sampleMessageData) {
         XCTAssert(message.fieldCount() == 15)
-        XCTAssert(message.oneField(name:"d")!.double() == 1.23)
-        XCTAssert(message.oneField(name:"f")!.float() == 4.56)
-        XCTAssert(message.oneField(name:"i64")!.integer() == 1234567)
-        XCTAssert(message.oneField(name:"ui64")!.integer() == 1234567)
-        XCTAssert(message.oneField(name:"i32")!.integer() == 1234)
-        XCTAssert(message.oneField(name:"b")!.bool() == true)
-        XCTAssert(message.oneField(name:"text")!.string() == "Hello, world!")
-        XCTAssert(message.oneField(name:"ui32")!.integer() == 1234)
-        XCTAssert(message.oneField(name:"sf32")!.integer() == 1234)
-        XCTAssert(message.oneField(name:"sf64")!.integer() == 1234567)
-        XCTAssert(message.oneField(name:"si32")!.integer() == 1234)
-        XCTAssert(message.oneField(name:"si64")!.integer() == 1234567)
-        let inner = message.oneField(name:"message")!.message()
-        XCTAssert(inner.oneField(name:"text")!.string() == "ABCDEFG")
-        // XCTAssert(inner.oneField(name:"b")!.bool() == false)
-        XCTAssert(inner.oneField(name:"si32")!.integer() == -1234)
-        XCTAssert(inner.oneField(name:"si64")!.integer() == -1234567)
+        XCTAssert(message.oneField("d")!.double() == 1.23)
+        XCTAssert(message.oneField("f")!.float() == 4.56)
+        XCTAssert(message.oneField("i64")!.integer() == 1234567)
+        XCTAssert(message.oneField("ui64")!.integer() == 1234567)
+        XCTAssert(message.oneField("i32")!.integer() == 1234)
+        XCTAssert(message.oneField("b")!.bool() == true)
+        XCTAssert(message.oneField("text")!.string() == "Hello, world!")
+        XCTAssert(message.oneField("ui32")!.integer() == 1234)
+        XCTAssert(message.oneField("sf32")!.integer() == 1234)
+        XCTAssert(message.oneField("sf64")!.integer() == 1234567)
+        XCTAssert(message.oneField("si32")!.integer() == 1234)
+        XCTAssert(message.oneField("si64")!.integer() == 1234567)
+        let inner = message.oneField("message")!.message()
+        XCTAssert(inner.oneField("text")!.string() == "ABCDEFG")
+        // XCTAssert(inner.oneField("b")!.bool() == false)
+        XCTAssert(inner.oneField("si32")!.integer() == -1234)
+        XCTAssert(inner.oneField("si64")!.integer() == -1234567)
       }
     } else {
       XCTAssert(false)
@@ -74,71 +74,71 @@ class QuickProtoTests: XCTestCase {
     let sampleProtoURL = myBundle.url(forResource: "sample", withExtension: "out")
     if let sampleProtoURL = sampleProtoURL {
       let sampleProtoData = try! Data(contentsOf: sampleProtoURL)
-      let fileDescriptorSet = FileDescriptorSet(proto:sampleProtoData as Data)
+      let fileDescriptorSet = FileDescriptorSet(data:sampleProtoData)
       // construct an internal representation of a message
-      let message = fileDescriptorSet.createMessage(name:"SampleMessage")
+      let message = fileDescriptorSet.createMessage("SampleMessage")
       XCTAssert(message != nil)
       if let message = message {
-        message.addField(name:"d") {(field) in field.setDouble(-12.34)}
-        message.addField(name:"f") {(field) in field.setFloat(-56.78)}
-        message.addField(name:"i64") {(field) in field.setInt(123)}
-        message.addField(name:"ui64") {(field) in field.setInt(123456)}
-        message.addField(name:"i32") {(field) in field.setInt(123)}
-        message.addField(name:"f64") {(field) in field.setInt(123)}
-        message.addField(name:"f32") {(field) in field.setInt(123)}
-        message.addField(name:"b") {(field) in field.setBool(true)}
-        message.addField(name:"text") {(field) in field.setString("hello, world")}
-        message.addField(name:"message") {(field) in
-          let innerMessage = fileDescriptorSet.createMessage(name:"SampleMessage")!
-          innerMessage.addField(name:"text") {(field) in field.setString("inner message")}
-          innerMessage.addField(name:"i32") {(field) in field.setInt(54321)}
-          innerMessage.addField(name:"message") {(field) in
-            let innermostMessage = fileDescriptorSet.createMessage(name:"SampleMessage")!
-            innermostMessage.addField(name:"text") {(field) in field.setString("innermost message")}
-            innermostMessage.addField(name:"i32") {(field) in field.setInt(12345)}
+        message.addField("d") {(field) in field.setDouble(-12.34)}
+        message.addField("f") {(field) in field.setFloat(-56.78)}
+        message.addField("i64") {(field) in field.setInt(123)}
+        message.addField("ui64") {(field) in field.setInt(123456)}
+        message.addField("i32") {(field) in field.setInt(123)}
+        message.addField("f64") {(field) in field.setInt(123)}
+        message.addField("f32") {(field) in field.setInt(123)}
+        message.addField("b") {(field) in field.setBool(true)}
+        message.addField("text") {(field) in field.setString("hello, world")}
+        message.addField("message") {(field) in
+          let innerMessage = fileDescriptorSet.createMessage("SampleMessage")!
+          innerMessage.addField("text") {(field) in field.setString("inner message")}
+          innerMessage.addField("i32") {(field) in field.setInt(54321)}
+          innerMessage.addField("message") {(field) in
+            let innermostMessage = fileDescriptorSet.createMessage("SampleMessage")!
+            innermostMessage.addField("text") {(field) in field.setString("innermost message")}
+            innermostMessage.addField("i32") {(field) in field.setInt(12345)}
             field.setMessage(innermostMessage)
           }
           field.setMessage(innerMessage)
         }
-        message.addField(name:"data") {(field) in
+        message.addField("data") {(field) in
           let data = "ABCDEFG 123".data(using: .utf8)!
           field.setData(data)
         }
-        message.addField(name:"ui32") {(field) in field.setInt(123456)}
-        message.addField(name:"sf32") {(field) in field.setInt(123456)}
-        message.addField(name:"sf64") {(field) in field.setInt(123456)}
-        message.addField(name:"si32") {(field) in field.setInt(-123)}
-        message.addField(name:"si64") {(field) in field.setInt(-123)}
+        message.addField("ui32") {(field) in field.setInt(123456)}
+        message.addField("sf32") {(field) in field.setInt(123456)}
+        message.addField("sf64") {(field) in field.setInt(123456)}
+        message.addField("si32") {(field) in field.setInt(-123)}
+        message.addField("si64") {(field) in field.setInt(-123)}
 
         // serialize the message as a binary protocol buffer
         let data = message.serialize()
 
         // re-read it and check fields
-        let message2 = fileDescriptorSet.readMessage(name:"SampleMessage", proto:data)!
-        XCTAssert(message2.oneField(name:"d")!.double() == -12.34)
-        XCTAssert(message2.oneField(name:"f")!.float() == -56.78)
-        XCTAssert(message2.oneField(name:"i64")!.integer() == 123)
-        XCTAssert(message2.oneField(name:"ui64")!.integer() == 123456)
-        XCTAssert(message2.oneField(name:"i32")!.integer() == 123)
-        XCTAssert(message2.oneField(name:"f64")!.integer() == 123)
-        XCTAssert(message2.oneField(name:"f32")!.integer() == 123)
-        XCTAssert(message2.oneField(name:"b")!.bool() == true)
-        XCTAssert(message2.oneField(name:"text")!.string() == "hello, world")
-        XCTAssert(message2.oneField(name:"ui32")!.integer() == 123456)
-        XCTAssert(message2.oneField(name:"sf32")!.integer() == 123456)
-        XCTAssert(message2.oneField(name:"sf64")!.integer() == 123456)
-        XCTAssert(message2.oneField(name:"si32")!.integer() == -123)
-        XCTAssert(message2.oneField(name:"si64")!.integer() == -123)
+        let message2 = fileDescriptorSet.readMessage("SampleMessage", data:data)!
+        XCTAssert(message2.oneField("d")!.double() == -12.34)
+        XCTAssert(message2.oneField("f")!.float() == -56.78)
+        XCTAssert(message2.oneField("i64")!.integer() == 123)
+        XCTAssert(message2.oneField("ui64")!.integer() == 123456)
+        XCTAssert(message2.oneField("i32")!.integer() == 123)
+        XCTAssert(message2.oneField("f64")!.integer() == 123)
+        XCTAssert(message2.oneField("f32")!.integer() == 123)
+        XCTAssert(message2.oneField("b")!.bool() == true)
+        XCTAssert(message2.oneField("text")!.string() == "hello, world")
+        XCTAssert(message2.oneField("ui32")!.integer() == 123456)
+        XCTAssert(message2.oneField("sf32")!.integer() == 123456)
+        XCTAssert(message2.oneField("sf64")!.integer() == 123456)
+        XCTAssert(message2.oneField("si32")!.integer() == -123)
+        XCTAssert(message2.oneField("si64")!.integer() == -123)
 
-        let inner2 = message2.oneField(name:"message")!.message()
-        XCTAssert(inner2.oneField(name:"text")!.string() == "inner message")
-        XCTAssert(inner2.oneField(name:"i32")!.integer() == 54321)
+        let inner2 = message2.oneField("message")!.message()
+        XCTAssert(inner2.oneField("text")!.string() == "inner message")
+        XCTAssert(inner2.oneField("i32")!.integer() == 54321)
 
-        let inner3 = inner2.oneField(name:"message")!.message()
-        XCTAssert(inner3.oneField(name:"text")!.string() == "innermost message")
-        XCTAssert(inner3.oneField(name:"i32")!.integer() == 12345)
+        let inner3 = inner2.oneField("message")!.message()
+        XCTAssert(inner3.oneField("text")!.string() == "innermost message")
+        XCTAssert(inner3.oneField("i32")!.integer() == 12345)
 
-        let data2 = message2.oneField(name:"data")!.data()
+        let data2 = message2.oneField("data")!.data()
         XCTAssert( String(data: data2, encoding:.utf8) == "ABCDEFG 123")
       }
     }

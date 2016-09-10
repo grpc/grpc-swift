@@ -35,11 +35,10 @@ class EchoServer {
         {(requestData) in
           if let requestData = requestData,
             let requestMessage =
-            fileDescriptorSet.readMessage(name:"EchoRequest",
-                                          proto:requestData) {
-            requestMessage.forOneField(name:"text") {(field) in
-              let replyMessage = fileDescriptorSet.createMessage(name:"EchoResponse")!
-              replyMessage.addField(name:"text", value:"Swift nonstreaming echo " + field.string())
+            fileDescriptorSet.readMessage("EchoRequest", data: requestData) {
+            requestMessage.forOneField("text") {(field) in
+              let replyMessage = fileDescriptorSet.createMessage("EchoResponse")!
+              replyMessage.addField("text", value:"Swift nonstreaming echo " + field.string())
               requestHandler.sendResponse(message:replyMessage.serialize(),
                                           trailingMetadata:Metadata())
             }
@@ -75,11 +74,10 @@ class EchoServer {
     requestHandler.receiveMessage()
       {(requestData) in
         if let requestData = requestData,
-          let requestMessage = fileDescriptorSet.readMessage(name:"EchoRequest",
-                                                             proto:requestData) {
-          requestMessage.forOneField(name:"text") {(field) in
-            let replyMessage = fileDescriptorSet.createMessage(name:"EchoResponse")!
-            replyMessage.addField(name:"text", value:"Swift streaming echo " + field.string())
+          let requestMessage = fileDescriptorSet.readMessage("EchoRequest", data:requestData) {
+          requestMessage.forOneField("text") {(field) in
+            let replyMessage = fileDescriptorSet.createMessage("EchoResponse")!
+            replyMessage.addField("text", value:"Swift streaming echo " + field.string())
             requestHandler.sendResponse(message:replyMessage.serialize()) {
               // after we've sent our response, prepare to handle another message
               self.handleMessage(fileDescriptorSet:fileDescriptorSet, requestHandler:requestHandler)
