@@ -77,7 +77,7 @@ class StickyServer {
 
                 let replyMessage = fileDescriptorSet.createMessage("StickyNoteResponse")!
                 replyMessage.addField("image", value:imageData)
-                requestHandler.sendResponse(message:replyMessage.serialize(),
+                requestHandler.sendResponse(message:replyMessage.data(),
                                             trailingMetadata:Metadata())
               }
             }

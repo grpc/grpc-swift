@@ -111,7 +111,7 @@ class QuickProtoTests: XCTestCase {
         message.addField("si64") {(field) in field.setInt(-123)}
 
         // serialize the message as a binary protocol buffer
-        let data = message.serialize()
+        let data = message.data()
 
         // re-read it and check fields
         let message2 = fileDescriptorSet.readMessage("SampleMessage", data:data)!

@@ -79,7 +79,7 @@ class StickyNoteViewController : NSViewController, NSTextFieldDelegate {
 
       client = Client(address:address)
       let call = client.createCall(host: requestHost, method: requestMethod, timeout: 600)
-      call.performNonStreamingCall(messageData: requestMessage.serialize(),
+      call.performNonStreamingCall(messageData: requestMessage.data(),
                                    metadata: requestMetadata,
                                    completion:
         { (response) in

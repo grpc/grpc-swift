@@ -39,7 +39,7 @@ class EchoServer {
             requestMessage.forOneField("text") {(field) in
               let replyMessage = fileDescriptorSet.createMessage("EchoResponse")!
               replyMessage.addField("text", value:"Swift nonstreaming echo " + field.string())
-              requestHandler.sendResponse(message:replyMessage.serialize(),
+              requestHandler.sendResponse(message:replyMessage.data(),
                                           trailingMetadata:Metadata())
             }
           }
@@ -78,7 +78,7 @@ class EchoServer {
           requestMessage.forOneField("text") {(field) in
             let replyMessage = fileDescriptorSet.createMessage("EchoResponse")!
             replyMessage.addField("text", value:"Swift streaming echo " + field.string())
-            requestHandler.sendResponse(message:replyMessage.serialize()) {
+            requestHandler.sendResponse(message:replyMessage.data()) {
               // after we've sent our response, prepare to handle another message
               self.handleMessage(fileDescriptorSet:fileDescriptorSet, requestHandler:requestHandler)
             }

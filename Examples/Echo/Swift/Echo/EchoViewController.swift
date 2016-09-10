@@ -89,7 +89,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
       // NONSTREAMING
       if let requestMessage = self.fileDescriptorSet.createMessage("EchoRequest") {
         requestMessage.addField("text", value:self.messageField.stringValue)
-        let requestMessageData = requestMessage.serialize()
+        let requestMessageData = requestMessage.data()
 
         client = Client(address:address)
         call = client.createCall(host: requestHost,
@@ -136,7 +136,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   func sendMessage() {
     let requestMessage = self.fileDescriptorSet.createMessage("EchoRequest")!
     requestMessage.addField("text", value:self.messageField.stringValue)
-    let messageData = requestMessage.serialize()
+    let messageData = requestMessage.data()
     call.sendMessage(data:messageData)
   }
 

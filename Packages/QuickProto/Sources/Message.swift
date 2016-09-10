@@ -136,8 +136,8 @@ public class Message {
     }
   }
 
-  /// generate the serialized protocol buffer representation of a message
-  public func serialize() -> (Data) {
+  /// generate the binary protocol buffer representation of a message
+  public func data() -> (Data) {
     let data = NSMutableData()
     for field in fields {
       data.appendVarint(field.tag() << 3 + field.wireType().rawValue)
@@ -166,7 +166,7 @@ public class Message {
       case FieldType.GROUP:
         assert(false)
       case FieldType.MESSAGE:
-        let messageData = field.message().serialize()
+        let messageData = field.message().data()
         data.appendVarint(messageData.count)
         messageData.withUnsafeBytes({ (bytes) in
           data.append(bytes, length: messageData.count)
