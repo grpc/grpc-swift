@@ -15,6 +15,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -24,10 +25,6 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-)
-
-const (
-	useSSL = false
 )
 
 // [START echoserver]
@@ -71,10 +68,14 @@ func (s *EchoServer) Update(stream pb.Echo_UpdateServer) error {
 
 // [START main]
 func main() {
+	var useTLS = flag.Bool("tls", false, "Use tls for connections.")
+
+	flag.Parse()
+
 	var err error
 	var lis net.Listener
 	var grpcServer *grpc.Server
-	if !useSSL {
+	if !*useTLS {
 		lis, err = net.Listen("tcp", ":8080")
 		if err != nil {
 			log.Fatalf("failed to listen: %v", err)

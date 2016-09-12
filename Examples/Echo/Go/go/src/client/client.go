@@ -29,7 +29,6 @@ import (
 )
 
 const (
-	useSSL         = false
 	defaultMessage = "hello"
 )
 
@@ -38,13 +37,14 @@ func main() {
 	var stream = flag.Int("s", 0, "send multiple messages by streaming")
 	var message = flag.String("m", defaultMessage, "the message to send")
 	var address = flag.String("a", "", "address of the echo server to use")
+	var useTLS = flag.Bool("tls", false, "Use tls for connections.")
 
 	flag.Parse()
 
 	// Set up a connection to the server.
 	var conn *grpc.ClientConn
 	var err error
-	if !useSSL {
+	if !*useTLS {
 		if *address == "" {
 			*address = "localhost:8080"
 		}
