@@ -41,7 +41,7 @@ class SpeechRecognitionService {
       client = Client(address:HOST, certificates: nil, host: nil)
       call = client.createCall(host: HOST,
                                method: "/google.cloud.speech.v1beta1.Speech/StreamingRecognize",
-                               timeout: 10.0)
+                               timeout: 60.0)
 
       let metadata = Metadata(["x-goog-api-key":API_KEY,
                                "x-ios-bundle-identifier":Bundle.main.bundleIdentifier!])
