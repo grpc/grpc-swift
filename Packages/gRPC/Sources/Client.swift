@@ -53,6 +53,24 @@ public class Client {
     self.completionQueue.run() {} // start a loop that watches the client's completion queue
   }
 
+  /// Initializes a gRPC client
+  ///
+  /// - Parameter address: the address of the server to be called
+  public init(address: String, certificates: String?) {
+    if certificates == nil {
+      let bundle = Bundle(for: Client.self)
+      let url = bundle.url(forResource: "roots", withExtension: "pem")!
+      let data = try! Data(contentsOf: url)
+      let s = String(data: data, encoding: .ascii)
+      c = cgrpc_client_create_secure(address, s)
+    } else {
+      c = cgrpc_client_create_secure(address, certificates)
+    }
+    completionQueue = CompletionQueue(cq:cgrpc_client_completion_queue(c))
+    completionQueue.name = "Client" // only for debugging
+    self.completionQueue.run() {} // start a loop that watches the client's completion queue
+  }
+
   deinit {
     cgrpc_client_destroy(c)
   }

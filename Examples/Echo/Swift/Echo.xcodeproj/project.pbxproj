@@ -12,12 +12,27 @@
 		D35C9FAE1D74B079000443CD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D35C9FAD1D74B079000443CD /* Assets.xcassets */; };
 		D35C9FB11D74B079000443CD /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D35C9FAF1D74B079000443CD /* MainMenu.xib */; };
 		D35C9FC81D74B0C1000443CD /* EchoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C9FC71D74B0C1000443CD /* EchoViewController.swift */; };
+		D3BFE28C1D87A45D00A648D8 /* ssl.crt in Resources */ = {isa = PBXBuildFile; fileRef = D3BFE28B1D87A45D00A648D8 /* ssl.crt */; };
 		D3D2EA381D75FB4A002EF89C /* echo.out in Resources */ = {isa = PBXBuildFile; fileRef = D3D2EA371D75FB4A002EF89C /* echo.out */; };
 		D3D2EA4C1D75FB7F002EF89C /* gRPC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D3D2EA3E1D75FB56002EF89C /* gRPC.framework */; };
 		D3D2EA4D1D75FB7F002EF89C /* QuickProto.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D3D2EA451D75FB60002EF89C /* QuickProto.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		D3BFE28F1D87A45D00A648D8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D3D2EA3F1D75FB60002EF89C /* QuickProto.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = D3D6924C1D8380D800813DEC;
+			remoteInfo = QuickProtoTests;
+		};
+		D3BFE2911D87A45D00A648D8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D3D2EA3F1D75FB60002EF89C /* QuickProto.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = D35BEA481D83B9AB00BB9230;
+			remoteInfo = QuickProtoGen;
+		};
 		D3D2EA3D1D75FB56002EF89C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = D3D2EA391D75FB56002EF89C /* gRPC.xcodeproj */;
@@ -31,13 +46,6 @@
 			proxyType = 2;
 			remoteGlobalIDString = D35C9F341D74A1C0000443CD;
 			remoteInfo = QuickProto;
-		};
-		D3D2EA461D75FB60002EF89C /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D3D2EA3F1D75FB60002EF89C /* QuickProto.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = D35C9F691D74A4AB000443CD;
-			remoteInfo = QuickDemo;
 		};
 		D3D2EA481D75FB70002EF89C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -63,6 +71,7 @@
 		D35C9FB01D74B079000443CD /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		D35C9FB21D74B079000443CD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D35C9FC71D74B0C1000443CD /* EchoViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EchoViewController.swift; sourceTree = "<group>"; };
+		D3BFE28B1D87A45D00A648D8 /* ssl.crt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ssl.crt; sourceTree = "<group>"; };
 		D3D2EA371D75FB4A002EF89C /* echo.out */ = {isa = PBXFileReference; lastKnownFileType = file; path = echo.out; sourceTree = "<group>"; };
 		D3D2EA391D75FB56002EF89C /* gRPC.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = gRPC.xcodeproj; path = ../../../gRPC.xcodeproj; sourceTree = "<group>"; };
 		D3D2EA3F1D75FB60002EF89C /* QuickProto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = QuickProto.xcodeproj; path = ../../../QuickProto/QuickProto.xcodeproj; sourceTree = "<group>"; };
@@ -103,6 +112,7 @@
 		D35C9FAA1D74B079000443CD /* Echo */ = {
 			isa = PBXGroup;
 			children = (
+				D3BFE28B1D87A45D00A648D8 /* ssl.crt */,
 				D35C9FAB1D74B079000443CD /* AppDelegate.swift */,
 				D35C9FAD1D74B079000443CD /* Assets.xcassets */,
 				D35C9FAF1D74B079000443CD /* MainMenu.xib */,
@@ -125,7 +135,8 @@
 			isa = PBXGroup;
 			children = (
 				D3D2EA451D75FB60002EF89C /* QuickProto.framework */,
-				D3D2EA471D75FB60002EF89C /* QuickDemo */,
+				D3BFE2901D87A45D00A648D8 /* QuickProtoTests.xctest */,
+				D3BFE2921D87A45D00A648D8 /* QuickProtoGen.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -198,6 +209,20 @@
 /* End PBXProject section */
 
 /* Begin PBXReferenceProxy section */
+		D3BFE2901D87A45D00A648D8 /* QuickProtoTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = QuickProtoTests.xctest;
+			remoteRef = D3BFE28F1D87A45D00A648D8 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		D3BFE2921D87A45D00A648D8 /* QuickProtoGen.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = QuickProtoGen.app;
+			remoteRef = D3BFE2911D87A45D00A648D8 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		D3D2EA3E1D75FB56002EF89C /* gRPC.framework */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.framework;
@@ -212,13 +237,6 @@
 			remoteRef = D3D2EA441D75FB60002EF89C /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		D3D2EA471D75FB60002EF89C /* QuickDemo */ = {
-			isa = PBXReferenceProxy;
-			fileType = "compiled.mach-o.executable";
-			path = QuickDemo;
-			remoteRef = D3D2EA461D75FB60002EF89C /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
 /* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
@@ -226,6 +244,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D3BFE28C1D87A45D00A648D8 /* ssl.crt in Resources */,
 				D3D2EA381D75FB4A002EF89C /* echo.out in Resources */,
 				D35C9FAE1D74B079000443CD /* Assets.xcassets in Resources */,
 				D35C9FB11D74B079000443CD /* MainMenu.xib in Resources */,

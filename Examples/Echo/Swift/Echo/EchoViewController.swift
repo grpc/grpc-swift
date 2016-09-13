@@ -81,7 +81,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   }
 
   func callServer(address:String) {
-    let requestHost = "foo.test.google.fr"
+    let requestHost = "example.com"
     let requestMetadata = Metadata(["x-goog-api-key":"YOUR_API_KEY",
                                     "x-ios-bundle-identifier":Bundle.main.bundleIdentifier!])
 
@@ -91,7 +91,9 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         requestMessage.addField("text", value:self.messageField.stringValue)
         let requestMessageData = requestMessage.data()
 
-        client = Client(address:address)
+        let certificateURL = Bundle.main.url(forResource: "ssl", withExtension: "crt")!
+        let certificates = try! String(contentsOf: certificateURL)
+        client = Client(address:address, certificates:certificates)
         call = client.createCall(host: requestHost,
                                  method: "/echo.Echo/Get",
                                  timeout: 30.0)

@@ -32,6 +32,7 @@
  */
 #include "internal.h"
 #include "cgrpc.h"
+#include <grpc/support/string_util.h>
 
 #include <assert.h>
 #include <stdio.h>
@@ -47,6 +48,32 @@ cgrpc_client *cgrpc_client_create(const char *address) {
   c->completion_queue = grpc_completion_queue_create(NULL);
   return c;
 }
+
+cgrpc_client *cgrpc_client_create_secure(const char *address, const char *pem_root_certs) {
+  cgrpc_client *c = (cgrpc_client *) malloc(sizeof (cgrpc_client));
+  // create the client
+
+  int argCount = 2;
+  grpc_channel_args *channelArgs = gpr_malloc(sizeof(grpc_channel_args));
+  channelArgs->num_args = argCount;
+  channelArgs->args = gpr_malloc(argCount * sizeof(grpc_arg));
+
+  grpc_arg *arg = &channelArgs->args[0];
+  arg->type = GRPC_ARG_STRING;
+  arg->key = gpr_strdup("grpc.primary_user_agent");
+  arg->value.string = gpr_strdup("grpc-swift/0.0.1");
+
+  arg = &channelArgs->args[1];
+  arg->type = GRPC_ARG_STRING;
+  arg->key = gpr_strdup("grpc.ssl_target_name_override");
+  arg->value.string = gpr_strdup("example.com");
+
+  grpc_channel_credentials *creds = grpc_ssl_credentials_create(pem_root_certs, NULL, NULL);
+  c->client = grpc_secure_channel_create(creds, address, channelArgs, NULL);
+  c->completion_queue = grpc_completion_queue_create(NULL);
+  return c;
+}
+
 
 void cgrpc_client_destroy(cgrpc_client *c) {
   grpc_channel_destroy(c->client);
