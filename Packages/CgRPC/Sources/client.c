@@ -49,7 +49,9 @@ cgrpc_client *cgrpc_client_create(const char *address) {
   return c;
 }
 
-cgrpc_client *cgrpc_client_create_secure(const char *address, const char *pem_root_certs) {
+cgrpc_client *cgrpc_client_create_secure(const char *address,
+                                         const char *pem_root_certs,
+                                         const char *host) {
   cgrpc_client *c = (cgrpc_client *) malloc(sizeof (cgrpc_client));
   // create the client
 
@@ -66,7 +68,7 @@ cgrpc_client *cgrpc_client_create_secure(const char *address, const char *pem_ro
   arg = &channelArgs->args[1];
   arg->type = GRPC_ARG_STRING;
   arg->key = gpr_strdup("grpc.ssl_target_name_override");
-  arg->value.string = gpr_strdup("example.com");
+  arg->value.string = gpr_strdup(host);
 
   grpc_channel_credentials *creds = grpc_ssl_credentials_create(pem_root_certs, NULL, NULL);
   c->client = grpc_secure_channel_create(creds, address, channelArgs, NULL);

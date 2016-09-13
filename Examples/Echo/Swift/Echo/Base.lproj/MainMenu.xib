@@ -154,12 +154,24 @@
                             <action selector="buttonValueChangedWithSender:" target="8aG-cq-jvr" id="hJq-8b-Uoe"/>
                         </connections>
                     </button>
+                    <button fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="1Ls-ri-Jup">
+                        <rect key="frame" x="170" y="21" width="46" height="18"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                        <buttonCell key="cell" type="check" title="TLS" bezelStyle="regularSquare" imagePosition="left" inset="2" id="2hc-58-S2L">
+                            <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                            <font key="font" metaFont="system"/>
+                        </buttonCell>
+                        <connections>
+                            <action selector="buttonValueChangedWithSender:" target="8aG-cq-jvr" id="Y0Q-PO-XLx"/>
+                        </connections>
+                    </button>
                 </subviews>
             </view>
             <point key="canvasLocation" x="139" y="-275.5"/>
         </window>
         <viewController id="8aG-cq-jvr" customClass="EchoViewController" customModule="Echo" customModuleProvider="target">
             <connections>
+                <outlet property="TLSButton" destination="1Ls-ri-Jup" id="jan-Vv-OVl"/>
                 <outlet property="addressField" destination="jnU-RF-9F0" id="8vy-f1-cgl"/>
                 <outlet property="messageField" destination="DcE-8I-pH3" id="G2X-oh-frG"/>
                 <outlet property="outputField" destination="EyU-Iq-sai" id="9O7-AA-RS0"/>

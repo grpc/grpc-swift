@@ -128,7 +128,9 @@ const char *grpc_version_string();
 
 // client support
 cgrpc_client *cgrpc_client_create(const char *address);
-cgrpc_client *cgrpc_client_create_secure(const char *address, const char *pem_root_certs);
+cgrpc_client *cgrpc_client_create_secure(const char *address,
+                                         const char *pem_root_certs,
+                                         const char *host);
 
 void cgrpc_client_destroy(cgrpc_client *client);
 cgrpc_call *cgrpc_client_create_call(cgrpc_client *client,

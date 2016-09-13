@@ -56,15 +56,15 @@ public class Client {
   /// Initializes a gRPC client
   ///
   /// - Parameter address: the address of the server to be called
-  public init(address: String, certificates: String?) {
+  public init(address: String, certificates: String?, host: String?) {
     if certificates == nil {
       let bundle = Bundle(for: Client.self)
       let url = bundle.url(forResource: "roots", withExtension: "pem")!
       let data = try! Data(contentsOf: url)
       let s = String(data: data, encoding: .ascii)
-      c = cgrpc_client_create_secure(address, s)
+      c = cgrpc_client_create_secure(address, s, host)
     } else {
-      c = cgrpc_client_create_secure(address, certificates)
+      c = cgrpc_client_create_secure(address, certificates, host)
     }
     completionQueue = CompletionQueue(cq:cgrpc_client_completion_queue(c))
     completionQueue.name = "Client" // only for debugging

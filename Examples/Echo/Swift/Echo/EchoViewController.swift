@@ -39,6 +39,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   @IBOutlet weak var outputField: NSTextField!
   @IBOutlet weak var addressField: NSTextField!
   @IBOutlet weak var streamingButton: NSButton!
+  @IBOutlet weak var TLSButton: NSButton!
 
   private var streaming = false
   var client: Client!
@@ -80,6 +81,16 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     }
   }
 
+  func createClient(address: String, host: String) {
+    if (TLSButton.intValue == 0) {
+      client = Client(address:address)
+    } else {
+      let certificateURL = Bundle.main.url(forResource: "ssl", withExtension: "crt")!
+      let certificates = try! String(contentsOf: certificateURL)
+      client = Client(address:address, certificates:certificates, host:host)
+    }
+  }
+
   func callServer(address:String) {
     let requestHost = "example.com"
     let requestMetadata = Metadata(["x-goog-api-key":"YOUR_API_KEY",
@@ -90,14 +101,10 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
       if let requestMessage = self.fileDescriptorSet.createMessage("EchoRequest") {
         requestMessage.addField("text", value:self.messageField.stringValue)
         let requestMessageData = requestMessage.data()
-
-        let certificateURL = Bundle.main.url(forResource: "ssl", withExtension: "crt")!
-        let certificates = try! String(contentsOf: certificateURL)
-        client = Client(address:address, certificates:certificates)
+        createClient(address:address, host:requestHost)
         call = client.createCall(host: requestHost,
                                  method: "/echo.Echo/Get",
                                  timeout: 30.0)
-
         call.performNonStreamingCall(messageData: requestMessageData,
                                      metadata: requestMetadata)
         { (response) in
@@ -122,11 +129,10 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     else {
       // STREAMING
       if (!streaming) {
-        client = Client(address:address)
+        createClient(address:address, host:requestHost)
         call = client.createCall(host: requestHost,
                                  method: "/echo.Echo/Update",
                                  timeout: 30.0)
-
         call.start(metadata:requestMetadata)
         self.receiveMessage()
         streaming = true
