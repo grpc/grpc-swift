@@ -1,0 +1,599 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		2C450CC6320CA9890051ABAF /* Pods_Speech.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C0B7F558BD8BC89862C8C277 /* Pods_Speech.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		D31E0EB81D778A56006A50AB /* SpeechRecognitionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D31E0EB71D778A56006A50AB /* SpeechRecognitionService.swift */; };
+		D31E0EBA1D77AA2F006A50AB /* AudioController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D31E0EB91D77AA2F006A50AB /* AudioController.swift */; };
+		D31E0EE91D78C679006A50AB /* grpc.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D31E0EE71D78C679006A50AB /* grpc.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		D31E0EEA1D78C679006A50AB /* openssl.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D31E0EE81D78C679006A50AB /* openssl.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		D33465A61D82985700C8D159 /* _FileDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33465991D82985700C8D159 /* _FileDescriptor.swift */; };
+		D33465A71D82985700C8D159 /* CodeBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D334659A1D82985700C8D159 /* CodeBuilder.swift */; };
+		D33465A81D82985700C8D159 /* Field.swift in Sources */ = {isa = PBXBuildFile; fileRef = D334659B1D82985700C8D159 /* Field.swift */; };
+		D33465A91D82985700C8D159 /* FieldDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D334659C1D82985700C8D159 /* FieldDescriptor.swift */; };
+		D33465AA1D82985700C8D159 /* FieldLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D334659D1D82985700C8D159 /* FieldLabel.swift */; };
+		D33465AB1D82985700C8D159 /* FieldType.swift in Sources */ = {isa = PBXBuildFile; fileRef = D334659E1D82985700C8D159 /* FieldType.swift */; };
+		D33465AC1D82985700C8D159 /* FileDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D334659F1D82985700C8D159 /* FileDescriptor.swift */; };
+		D33465AD1D82985700C8D159 /* FileDescriptorSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33465A01D82985700C8D159 /* FileDescriptorSet.swift */; };
+		D33465AE1D82985700C8D159 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33465A11D82985700C8D159 /* Message.swift */; };
+		D33465AF1D82985700C8D159 /* MessageDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33465A21D82985700C8D159 /* MessageDescriptor.swift */; };
+		D33465B01D82985700C8D159 /* MessageReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33465A31D82985700C8D159 /* MessageReader.swift */; };
+		D33465B11D82985700C8D159 /* NSMutableData+Proto.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33465A41D82985700C8D159 /* NSMutableData+Proto.swift */; };
+		D33465B21D82985700C8D159 /* WireType.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33465A51D82985700C8D159 /* WireType.swift */; };
+		D33465C21D82987700C8D159 /* byte_buffer.c in Sources */ = {isa = PBXBuildFile; fileRef = D33465B41D82987700C8D159 /* byte_buffer.c */; };
+		D33465C31D82987700C8D159 /* call.c in Sources */ = {isa = PBXBuildFile; fileRef = D33465B51D82987700C8D159 /* call.c */; };
+		D33465C41D82987700C8D159 /* client.c in Sources */ = {isa = PBXBuildFile; fileRef = D33465B71D82987700C8D159 /* client.c */; };
+		D33465C51D82987700C8D159 /* completion_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = D33465B81D82987700C8D159 /* completion_queue.c */; };
+		D33465C61D82987700C8D159 /* event.c in Sources */ = {isa = PBXBuildFile; fileRef = D33465B91D82987700C8D159 /* event.c */; };
+		D33465C71D82987700C8D159 /* handler.c in Sources */ = {isa = PBXBuildFile; fileRef = D33465BA1D82987700C8D159 /* handler.c */; };
+		D33465C81D82987700C8D159 /* internal.c in Sources */ = {isa = PBXBuildFile; fileRef = D33465BB1D82987700C8D159 /* internal.c */; };
+		D33465C91D82987700C8D159 /* metadata.c in Sources */ = {isa = PBXBuildFile; fileRef = D33465BD1D82987700C8D159 /* metadata.c */; };
+		D33465CA1D82987700C8D159 /* mutex.c in Sources */ = {isa = PBXBuildFile; fileRef = D33465BE1D82987700C8D159 /* mutex.c */; };
+		D33465CB1D82987700C8D159 /* observers.c in Sources */ = {isa = PBXBuildFile; fileRef = D33465BF1D82987700C8D159 /* observers.c */; };
+		D33465CC1D82987700C8D159 /* operations.c in Sources */ = {isa = PBXBuildFile; fileRef = D33465C01D82987700C8D159 /* operations.c */; };
+		D33465CD1D82987700C8D159 /* server.c in Sources */ = {isa = PBXBuildFile; fileRef = D33465C11D82987700C8D159 /* server.c */; };
+		D33465DB1D82989900C8D159 /* ByteBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33465CF1D82989900C8D159 /* ByteBuffer.swift */; };
+		D33465DC1D82989900C8D159 /* Call.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33465D01D82989900C8D159 /* Call.swift */; };
+		D33465DD1D82989900C8D159 /* CallResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33465D11D82989900C8D159 /* CallResponse.swift */; };
+		D33465DE1D82989900C8D159 /* Client.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33465D21D82989900C8D159 /* Client.swift */; };
+		D33465DF1D82989900C8D159 /* CompletionQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33465D31D82989900C8D159 /* CompletionQueue.swift */; };
+		D33465E01D82989900C8D159 /* gRPC.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33465D41D82989900C8D159 /* gRPC.swift */; };
+		D33465E11D82989900C8D159 /* Handler.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33465D51D82989900C8D159 /* Handler.swift */; };
+		D33465E21D82989900C8D159 /* Metadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33465D61D82989900C8D159 /* Metadata.swift */; };
+		D33465E31D82989900C8D159 /* Mutex.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33465D71D82989900C8D159 /* Mutex.swift */; };
+		D33465E41D82989900C8D159 /* Operation.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33465D81D82989900C8D159 /* Operation.swift */; };
+		D33465E51D82989900C8D159 /* OperationGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33465D91D82989900C8D159 /* OperationGroup.swift */; };
+		D33465E61D82989900C8D159 /* Server.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33465DA1D82989900C8D159 /* Server.swift */; };
+		D34C17D91C948F5800D69BCA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D34C17D81C948F5800D69BCA /* Assets.xcassets */; };
+		D34C17DC1C948F5800D69BCA /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D34C17DA1C948F5800D69BCA /* LaunchScreen.storyboard */; };
+		D392D9861C94937D002F5132 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D392D9851C94937D002F5132 /* Main.storyboard */; };
+		D3A99D751D792F3F0005A7D6 /* speech.out in Resources */ = {isa = PBXBuildFile; fileRef = D3A99D741D792F3F0005A7D6 /* speech.out */; };
+		D3E34EA11D77541D00EF755D /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3E34EA01D77541D00EF755D /* AppDelegate.swift */; };
+		D3E34EA51D7757CC00EF755D /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3E34EA41D7757CC00EF755D /* ViewController.swift */; };
+		D3E4F79B1D88815C0082D17D /* roots.pem in Resources */ = {isa = PBXBuildFile; fileRef = D3E4F79A1D88815C0082D17D /* roots.pem */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		54C3D1E96C8C43AB14662311 /* libPods.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPods.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		5E83ACE29B0D0DF0085BA8F2 /* Pods-Speech.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Speech.release.xcconfig"; path = "Pods/Target Support Files/Pods-Speech/Pods-Speech.release.xcconfig"; sourceTree = "<group>"; };
+		6C682F8DD9C94E41979FE816 /* Pods.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.release.xcconfig; path = "Pods/Target Support Files/Pods/Pods.release.xcconfig"; sourceTree = "<group>"; };
+		C0B7F558BD8BC89862C8C277 /* Pods_Speech.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Speech.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		C2D2368DBC8898A52FE6113B /* Pods-Speech.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Speech.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Speech/Pods-Speech.debug.xcconfig"; sourceTree = "<group>"; };
+		D31E0EB71D778A56006A50AB /* SpeechRecognitionService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SpeechRecognitionService.swift; sourceTree = "<group>"; };
+		D31E0EB91D77AA2F006A50AB /* AudioController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AudioController.swift; sourceTree = "<group>"; };
+		D31E0EE71D78C679006A50AB /* grpc.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = grpc.framework; path = "../../../../../../Library/Developer/Xcode/DerivedData/Speech-erhyocopsowxtieeafxbpmpeffrg/Build/Products/Debug-iphonesimulator/gRPC-Core/grpc.framework"; sourceTree = "<group>"; };
+		D31E0EE81D78C679006A50AB /* openssl.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = openssl.framework; path = "../../../../../../Library/Developer/Xcode/DerivedData/Speech-erhyocopsowxtieeafxbpmpeffrg/Build/Products/Debug-iphonesimulator/BoringSSL/openssl.framework"; sourceTree = "<group>"; };
+		D33465991D82985700C8D159 /* _FileDescriptor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = _FileDescriptor.swift; path = ../../Packages/QuickProto/Sources/_FileDescriptor.swift; sourceTree = "<group>"; };
+		D334659A1D82985700C8D159 /* CodeBuilder.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CodeBuilder.swift; path = ../../Packages/QuickProto/Sources/CodeBuilder.swift; sourceTree = "<group>"; };
+		D334659B1D82985700C8D159 /* Field.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Field.swift; path = ../../Packages/QuickProto/Sources/Field.swift; sourceTree = "<group>"; };
+		D334659C1D82985700C8D159 /* FieldDescriptor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = FieldDescriptor.swift; path = ../../Packages/QuickProto/Sources/FieldDescriptor.swift; sourceTree = "<group>"; };
+		D334659D1D82985700C8D159 /* FieldLabel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = FieldLabel.swift; path = ../../Packages/QuickProto/Sources/FieldLabel.swift; sourceTree = "<group>"; };
+		D334659E1D82985700C8D159 /* FieldType.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = FieldType.swift; path = ../../Packages/QuickProto/Sources/FieldType.swift; sourceTree = "<group>"; };
+		D334659F1D82985700C8D159 /* FileDescriptor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = FileDescriptor.swift; path = ../../Packages/QuickProto/Sources/FileDescriptor.swift; sourceTree = "<group>"; };
+		D33465A01D82985700C8D159 /* FileDescriptorSet.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = FileDescriptorSet.swift; path = ../../Packages/QuickProto/Sources/FileDescriptorSet.swift; sourceTree = "<group>"; };
+		D33465A11D82985700C8D159 /* Message.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Message.swift; path = ../../Packages/QuickProto/Sources/Message.swift; sourceTree = "<group>"; };
+		D33465A21D82985700C8D159 /* MessageDescriptor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = MessageDescriptor.swift; path = ../../Packages/QuickProto/Sources/MessageDescriptor.swift; sourceTree = "<group>"; };
+		D33465A31D82985700C8D159 /* MessageReader.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = MessageReader.swift; path = ../../Packages/QuickProto/Sources/MessageReader.swift; sourceTree = "<group>"; };
+		D33465A41D82985700C8D159 /* NSMutableData+Proto.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = "NSMutableData+Proto.swift"; path = "../../Packages/QuickProto/Sources/NSMutableData+Proto.swift"; sourceTree = "<group>"; };
+		D33465A51D82985700C8D159 /* WireType.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = WireType.swift; path = ../../Packages/QuickProto/Sources/WireType.swift; sourceTree = "<group>"; };
+		D33465B41D82987700C8D159 /* byte_buffer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = byte_buffer.c; path = ../../Packages/CgRPC/Sources/byte_buffer.c; sourceTree = "<group>"; };
+		D33465B51D82987700C8D159 /* call.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = call.c; path = ../../Packages/CgRPC/Sources/call.c; sourceTree = "<group>"; };
+		D33465B61D82987700C8D159 /* cgrpc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = cgrpc.h; path = ../../Packages/CgRPC/Sources/cgrpc.h; sourceTree = "<group>"; };
+		D33465B71D82987700C8D159 /* client.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = client.c; path = ../../Packages/CgRPC/Sources/client.c; sourceTree = "<group>"; };
+		D33465B81D82987700C8D159 /* completion_queue.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = completion_queue.c; path = ../../Packages/CgRPC/Sources/completion_queue.c; sourceTree = "<group>"; };
+		D33465B91D82987700C8D159 /* event.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = event.c; path = ../../Packages/CgRPC/Sources/event.c; sourceTree = "<group>"; };
+		D33465BA1D82987700C8D159 /* handler.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = handler.c; path = ../../Packages/CgRPC/Sources/handler.c; sourceTree = "<group>"; };
+		D33465BB1D82987700C8D159 /* internal.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = internal.c; path = ../../Packages/CgRPC/Sources/internal.c; sourceTree = "<group>"; };
+		D33465BC1D82987700C8D159 /* internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = internal.h; path = ../../Packages/CgRPC/Sources/internal.h; sourceTree = "<group>"; };
+		D33465BD1D82987700C8D159 /* metadata.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = metadata.c; path = ../../Packages/CgRPC/Sources/metadata.c; sourceTree = "<group>"; };
+		D33465BE1D82987700C8D159 /* mutex.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mutex.c; path = ../../Packages/CgRPC/Sources/mutex.c; sourceTree = "<group>"; };
+		D33465BF1D82987700C8D159 /* observers.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = observers.c; path = ../../Packages/CgRPC/Sources/observers.c; sourceTree = "<group>"; };
+		D33465C01D82987700C8D159 /* operations.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = operations.c; path = ../../Packages/CgRPC/Sources/operations.c; sourceTree = "<group>"; };
+		D33465C11D82987700C8D159 /* server.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = server.c; path = ../../Packages/CgRPC/Sources/server.c; sourceTree = "<group>"; };
+		D33465CF1D82989900C8D159 /* ByteBuffer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ByteBuffer.swift; path = ../../Packages/gRPC/Sources/ByteBuffer.swift; sourceTree = "<group>"; };
+		D33465D01D82989900C8D159 /* Call.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Call.swift; path = ../../Packages/gRPC/Sources/Call.swift; sourceTree = "<group>"; };
+		D33465D11D82989900C8D159 /* CallResponse.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CallResponse.swift; path = ../../Packages/gRPC/Sources/CallResponse.swift; sourceTree = "<group>"; };
+		D33465D21D82989900C8D159 /* Client.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Client.swift; path = ../../Packages/gRPC/Sources/Client.swift; sourceTree = "<group>"; };
+		D33465D31D82989900C8D159 /* CompletionQueue.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CompletionQueue.swift; path = ../../Packages/gRPC/Sources/CompletionQueue.swift; sourceTree = "<group>"; };
+		D33465D41D82989900C8D159 /* gRPC.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = gRPC.swift; path = ../../Packages/gRPC/Sources/gRPC.swift; sourceTree = "<group>"; };
+		D33465D51D82989900C8D159 /* Handler.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Handler.swift; path = ../../Packages/gRPC/Sources/Handler.swift; sourceTree = "<group>"; };
+		D33465D61D82989900C8D159 /* Metadata.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Metadata.swift; path = ../../Packages/gRPC/Sources/Metadata.swift; sourceTree = "<group>"; };
+		D33465D71D82989900C8D159 /* Mutex.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Mutex.swift; path = ../../Packages/gRPC/Sources/Mutex.swift; sourceTree = "<group>"; };
+		D33465D81D82989900C8D159 /* Operation.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Operation.swift; path = ../../Packages/gRPC/Sources/Operation.swift; sourceTree = "<group>"; };
+		D33465D91D82989900C8D159 /* OperationGroup.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = OperationGroup.swift; path = ../../Packages/gRPC/Sources/OperationGroup.swift; sourceTree = "<group>"; };
+		D33465DA1D82989900C8D159 /* Server.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Server.swift; path = ../../Packages/gRPC/Sources/Server.swift; sourceTree = "<group>"; };
+		D34C17C91C948F5700D69BCA /* Speech.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Speech.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D34C17D81C948F5800D69BCA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		D34C17DB1C948F5800D69BCA /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		D34C17DD1C948F5800D69BCA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D392D9851C94937D002F5132 /* Main.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = Main.storyboard; sourceTree = "<group>"; };
+		D3A99D741D792F3F0005A7D6 /* speech.out */ = {isa = PBXFileReference; lastKnownFileType = file; path = speech.out; sourceTree = "<group>"; };
+		D3E34E9F1D77541C00EF755D /* Speech-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Speech-Bridging-Header.h"; sourceTree = "<group>"; };
+		D3E34EA01D77541D00EF755D /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		D3E34EA41D7757CC00EF755D /* ViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		D3E4F79A1D88815C0082D17D /* roots.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = roots.pem; sourceTree = "<group>"; };
+		F3215BCD5D87DFF7F2965B8A /* Pods.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.debug.xcconfig; path = "Pods/Target Support Files/Pods/Pods.debug.xcconfig"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D34C17C61C948F5700D69BCA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D31E0EE91D78C679006A50AB /* grpc.framework in Frameworks */,
+				D31E0EEA1D78C679006A50AB /* openssl.framework in Frameworks */,
+				2C450CC6320CA9890051ABAF /* Pods_Speech.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		32C6BA1B2FA20A9904F13B95 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				D31E0EE71D78C679006A50AB /* grpc.framework */,
+				D31E0EE81D78C679006A50AB /* openssl.framework */,
+				54C3D1E96C8C43AB14662311 /* libPods.a */,
+				C0B7F558BD8BC89862C8C277 /* Pods_Speech.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		D33465B31D82986000C8D159 /* QuickProto/Sources */ = {
+			isa = PBXGroup;
+			children = (
+				D33465991D82985700C8D159 /* _FileDescriptor.swift */,
+				D334659A1D82985700C8D159 /* CodeBuilder.swift */,
+				D334659B1D82985700C8D159 /* Field.swift */,
+				D334659C1D82985700C8D159 /* FieldDescriptor.swift */,
+				D334659D1D82985700C8D159 /* FieldLabel.swift */,
+				D334659E1D82985700C8D159 /* FieldType.swift */,
+				D334659F1D82985700C8D159 /* FileDescriptor.swift */,
+				D33465A01D82985700C8D159 /* FileDescriptorSet.swift */,
+				D33465A11D82985700C8D159 /* Message.swift */,
+				D33465A21D82985700C8D159 /* MessageDescriptor.swift */,
+				D33465A31D82985700C8D159 /* MessageReader.swift */,
+				D33465A41D82985700C8D159 /* NSMutableData+Proto.swift */,
+				D33465A51D82985700C8D159 /* WireType.swift */,
+			);
+			name = QuickProto/Sources;
+			sourceTree = "<group>";
+		};
+		D33465CE1D82988000C8D159 /* CgRPC/Sources */ = {
+			isa = PBXGroup;
+			children = (
+				D33465B41D82987700C8D159 /* byte_buffer.c */,
+				D33465B51D82987700C8D159 /* call.c */,
+				D33465B61D82987700C8D159 /* cgrpc.h */,
+				D33465B71D82987700C8D159 /* client.c */,
+				D33465B81D82987700C8D159 /* completion_queue.c */,
+				D33465B91D82987700C8D159 /* event.c */,
+				D33465BA1D82987700C8D159 /* handler.c */,
+				D33465BB1D82987700C8D159 /* internal.c */,
+				D33465BC1D82987700C8D159 /* internal.h */,
+				D33465BD1D82987700C8D159 /* metadata.c */,
+				D33465BE1D82987700C8D159 /* mutex.c */,
+				D33465BF1D82987700C8D159 /* observers.c */,
+				D33465C01D82987700C8D159 /* operations.c */,
+				D33465C11D82987700C8D159 /* server.c */,
+			);
+			name = CgRPC/Sources;
+			sourceTree = "<group>";
+		};
+		D33465E71D8298A200C8D159 /* gRPC/Sources */ = {
+			isa = PBXGroup;
+			children = (
+				D33465CF1D82989900C8D159 /* ByteBuffer.swift */,
+				D33465D01D82989900C8D159 /* Call.swift */,
+				D33465D11D82989900C8D159 /* CallResponse.swift */,
+				D33465D21D82989900C8D159 /* Client.swift */,
+				D33465D31D82989900C8D159 /* CompletionQueue.swift */,
+				D33465D41D82989900C8D159 /* gRPC.swift */,
+				D33465D51D82989900C8D159 /* Handler.swift */,
+				D33465D61D82989900C8D159 /* Metadata.swift */,
+				D33465D71D82989900C8D159 /* Mutex.swift */,
+				D33465D81D82989900C8D159 /* Operation.swift */,
+				D33465D91D82989900C8D159 /* OperationGroup.swift */,
+				D33465DA1D82989900C8D159 /* Server.swift */,
+			);
+			name = gRPC/Sources;
+			sourceTree = "<group>";
+		};
+		D34C17C01C948F5700D69BCA = {
+			isa = PBXGroup;
+			children = (
+				D33465E71D8298A200C8D159 /* gRPC/Sources */,
+				D33465CE1D82988000C8D159 /* CgRPC/Sources */,
+				D33465B31D82986000C8D159 /* QuickProto/Sources */,
+				D3A99D741D792F3F0005A7D6 /* speech.out */,
+				D34C17CB1C948F5700D69BCA /* Speech */,
+				D34C17CA1C948F5700D69BCA /* Products */,
+				F657FA334EB8D9ABF1ACF569 /* Pods */,
+				32C6BA1B2FA20A9904F13B95 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		D34C17CA1C948F5700D69BCA /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D34C17C91C948F5700D69BCA /* Speech.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D34C17CB1C948F5700D69BCA /* Speech */ = {
+			isa = PBXGroup;
+			children = (
+				D3E4F79A1D88815C0082D17D /* roots.pem */,
+				D3E34EA01D77541D00EF755D /* AppDelegate.swift */,
+				D34C17D81C948F5800D69BCA /* Assets.xcassets */,
+				D31E0EB91D77AA2F006A50AB /* AudioController.swift */,
+				D34C17DD1C948F5800D69BCA /* Info.plist */,
+				D34C17DA1C948F5800D69BCA /* LaunchScreen.storyboard */,
+				D392D9851C94937D002F5132 /* Main.storyboard */,
+				D3E34E9F1D77541C00EF755D /* Speech-Bridging-Header.h */,
+				D31E0EB71D778A56006A50AB /* SpeechRecognitionService.swift */,
+				D34C17CC1C948F5700D69BCA /* Supporting Files */,
+				D3E34EA41D7757CC00EF755D /* ViewController.swift */,
+			);
+			path = Speech;
+			sourceTree = "<group>";
+		};
+		D34C17CC1C948F5700D69BCA /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		F657FA334EB8D9ABF1ACF569 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				F3215BCD5D87DFF7F2965B8A /* Pods.debug.xcconfig */,
+				6C682F8DD9C94E41979FE816 /* Pods.release.xcconfig */,
+				C2D2368DBC8898A52FE6113B /* Pods-Speech.debug.xcconfig */,
+				5E83ACE29B0D0DF0085BA8F2 /* Pods-Speech.release.xcconfig */,
+			);
+			name = Pods;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		D34C17C81C948F5700D69BCA /* Speech */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D34C17E01C948F5800D69BCA /* Build configuration list for PBXNativeTarget "Speech" */;
+			buildPhases = (
+				D7376F491EC06AD174E07DB4 /* 📦 Check Pods Manifest.lock */,
+				D34C17C51C948F5700D69BCA /* Sources */,
+				D34C17C61C948F5700D69BCA /* Frameworks */,
+				D34C17C71C948F5700D69BCA /* Resources */,
+				A6C1304F9E6165DD748FC67B /* 📦 Embed Pods Frameworks */,
+				D8EE167099E5A7E524284D70 /* 📦 Copy Pods Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Speech;
+			productName = Speech;
+			productReference = D34C17C91C948F5700D69BCA /* Speech.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		D34C17C11C948F5700D69BCA /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0800;
+				ORGANIZATIONNAME = Google;
+				TargetAttributes = {
+					D34C17C81C948F5700D69BCA = {
+						CreatedOnToolsVersion = 7.2;
+						LastSwiftMigration = 0800;
+					};
+				};
+			};
+			buildConfigurationList = D34C17C41C948F5700D69BCA /* Build configuration list for PBXProject "Speech" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = D34C17C01C948F5700D69BCA;
+			productRefGroup = D34C17CA1C948F5700D69BCA /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D34C17C81C948F5700D69BCA /* Speech */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		D34C17C71C948F5700D69BCA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D392D9861C94937D002F5132 /* Main.storyboard in Resources */,
+				D3E4F79B1D88815C0082D17D /* roots.pem in Resources */,
+				D34C17DC1C948F5800D69BCA /* LaunchScreen.storyboard in Resources */,
+				D3A99D751D792F3F0005A7D6 /* speech.out in Resources */,
+				D34C17D91C948F5800D69BCA /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		A6C1304F9E6165DD748FC67B /* 📦 Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "📦 Embed Pods Frameworks";
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/grpc.framework",
+				"$(DERIVED_FILE_DIR)/openssl.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-Speech/Pods-Speech-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		D7376F491EC06AD174E07DB4 /* 📦 Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "📦 Check Pods Manifest.lock";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_ROOT}/../Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [[ $? != 0 ]] ; then\n    cat << EOM\nerror: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\nEOM\n    exit 1\nfi\n";
+			showEnvVarsInLog = 0;
+		};
+		D8EE167099E5A7E524284D70 /* 📦 Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "📦 Copy Pods Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-Speech/Pods-Speech-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D34C17C51C948F5700D69BCA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D33465E01D82989900C8D159 /* gRPC.swift in Sources */,
+				D33465A71D82985700C8D159 /* CodeBuilder.swift in Sources */,
+				D33465AD1D82985700C8D159 /* FileDescriptorSet.swift in Sources */,
+				D33465DC1D82989900C8D159 /* Call.swift in Sources */,
+				D33465AC1D82985700C8D159 /* FileDescriptor.swift in Sources */,
+				D33465CB1D82987700C8D159 /* observers.c in Sources */,
+				D33465E11D82989900C8D159 /* Handler.swift in Sources */,
+				D33465B01D82985700C8D159 /* MessageReader.swift in Sources */,
+				D31E0EBA1D77AA2F006A50AB /* AudioController.swift in Sources */,
+				D33465A61D82985700C8D159 /* _FileDescriptor.swift in Sources */,
+				D33465C51D82987700C8D159 /* completion_queue.c in Sources */,
+				D33465AA1D82985700C8D159 /* FieldLabel.swift in Sources */,
+				D33465C81D82987700C8D159 /* internal.c in Sources */,
+				D33465E21D82989900C8D159 /* Metadata.swift in Sources */,
+				D33465A91D82985700C8D159 /* FieldDescriptor.swift in Sources */,
+				D33465C91D82987700C8D159 /* metadata.c in Sources */,
+				D33465C41D82987700C8D159 /* client.c in Sources */,
+				D33465DB1D82989900C8D159 /* ByteBuffer.swift in Sources */,
+				D33465B11D82985700C8D159 /* NSMutableData+Proto.swift in Sources */,
+				D31E0EB81D778A56006A50AB /* SpeechRecognitionService.swift in Sources */,
+				D33465C31D82987700C8D159 /* call.c in Sources */,
+				D33465AB1D82985700C8D159 /* FieldType.swift in Sources */,
+				D33465B21D82985700C8D159 /* WireType.swift in Sources */,
+				D33465E41D82989900C8D159 /* Operation.swift in Sources */,
+				D33465CD1D82987700C8D159 /* server.c in Sources */,
+				D33465CA1D82987700C8D159 /* mutex.c in Sources */,
+				D33465AE1D82985700C8D159 /* Message.swift in Sources */,
+				D33465DF1D82989900C8D159 /* CompletionQueue.swift in Sources */,
+				D33465E31D82989900C8D159 /* Mutex.swift in Sources */,
+				D3E34EA51D7757CC00EF755D /* ViewController.swift in Sources */,
+				D33465DD1D82989900C8D159 /* CallResponse.swift in Sources */,
+				D33465CC1D82987700C8D159 /* operations.c in Sources */,
+				D33465DE1D82989900C8D159 /* Client.swift in Sources */,
+				D33465A81D82985700C8D159 /* Field.swift in Sources */,
+				D33465C71D82987700C8D159 /* handler.c in Sources */,
+				D33465AF1D82985700C8D159 /* MessageDescriptor.swift in Sources */,
+				D3E34EA11D77541D00EF755D /* AppDelegate.swift in Sources */,
+				D33465E51D82989900C8D159 /* OperationGroup.swift in Sources */,
+				D33465C61D82987700C8D159 /* event.c in Sources */,
+				D33465C21D82987700C8D159 /* byte_buffer.c in Sources */,
+				D33465E61D82989900C8D159 /* Server.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		D34C17DA1C948F5800D69BCA /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				D34C17DB1C948F5800D69BCA /* Base */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		D34C17DE1C948F5800D69BCA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.2;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D34C17DF1C948F5800D69BCA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.2;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		D34C17E11C948F5800D69BCA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = C2D2368DBC8898A52FE6113B /* Pods-Speech.debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				"HEADER_SEARCH_PATHS[arch=*]" = (
+					"$(inherited)",
+					"\"${PODS_ROOT}/Headers/Public\"",
+					"\"${PODS_ROOT}/Headers/Public/!ProtoCompiler\"",
+					"\"${PODS_ROOT}/Headers/Public/!ProtoCompiler-gRPCPlugin\"",
+					"\"${PODS_ROOT}/gRPC-Core/include\"",
+				);
+				INFOPLIST_FILE = Speech/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.google.speech-grpc-streaming";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "Speech/Speech-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 3.0;
+			};
+			name = Debug;
+		};
+		D34C17E21C948F5800D69BCA /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5E83ACE29B0D0DF0085BA8F2 /* Pods-Speech.release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				INFOPLIST_FILE = Speech/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.google.speech-grpc-streaming";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "Speech/Speech-Bridging-Header.h";
+				SWIFT_VERSION = 3.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		D34C17C41C948F5700D69BCA /* Build configuration list for PBXProject "Speech" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D34C17DE1C948F5800D69BCA /* Debug */,
+				D34C17DF1C948F5800D69BCA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D34C17E01C948F5800D69BCA /* Build configuration list for PBXNativeTarget "Speech" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D34C17E11C948F5800D69BCA /* Debug */,
+				D34C17E21C948F5800D69BCA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = D34C17C11C948F5700D69BCA /* Project object */;
+}

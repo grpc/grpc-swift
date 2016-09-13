@@ -33,6 +33,7 @@
 #if SWIFT_PACKAGE
   import CgRPC
 #endif
+import Foundation
 
 /// Singleton class that provides a mutex for synchronizing calls to cgrpc_call_perform()
 private class CallLock {

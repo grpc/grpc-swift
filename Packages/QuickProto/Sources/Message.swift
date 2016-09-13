@@ -180,7 +180,7 @@ public class Message {
       case FieldType.UINT32:
         data.appendVarint(field.integer())
       case FieldType.ENUM:
-        assert(false) // TODO
+        data.appendVarint(field.integer())
       case FieldType.SFIXED32:
         data.appendInt32(field.integer())
       case FieldType.SFIXED64:

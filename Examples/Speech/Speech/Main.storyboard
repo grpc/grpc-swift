@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="11198.2" systemVersion="15G31" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="BYZ-38-t0r">
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="11161"/>
+        <capability name="Constraints to layout margins" minToolsVersion="6.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <!--View Controller-->
+        <scene sceneID="tne-QT-ifu">
+            <objects>
+                <viewController id="BYZ-38-t0r" customClass="ViewController" customModule="Speech" sceneMemberID="viewController">
+                    <layoutGuides>
+                        <viewControllerLayoutGuide type="top" id="y3c-jy-aDJ"/>
+                        <viewControllerLayoutGuide type="bottom" id="wfy-db-euE"/>
+                    </layoutGuides>
+                    <view key="view" contentMode="scaleToFill" id="8bC-Xf-vdC">
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <button opaque="NO" contentMode="scaleToFill" misplaced="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="aJY-83-MIx">
+                                <frame key="frameInset" minX="200" minY="70" width="200" height="60"/>
+                                <color key="backgroundColor" red="0.75" green="0.75" blue="0.75" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="60" id="Ob5-s4-nYg"/>
+                                    <constraint firstAttribute="height" constant="30" id="QTK-6F-b35"/>
+                                    <constraint firstAttribute="width" constant="200" id="aXK-qO-hb0"/>
+                                </constraints>
+                                <state key="normal" title="Start Streaming"/>
+                                <variation key="default">
+                                    <mask key="constraints">
+                                        <exclude reference="QTK-6F-b35"/>
+                                    </mask>
+                                </variation>
+                                <connections>
+                                    <action selector="recordAudio:" destination="BYZ-38-t0r" eventType="touchUpInside" id="3jT-bC-3nM"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" contentMode="scaleToFill" misplaced="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="wgH-jh-Nuq">
+                                <frame key="frameInset" minX="200" minY="180" width="200" height="60"/>
+                                <color key="backgroundColor" red="0.75" green="0.75" blue="0.75" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="30" id="6lu-81-t2K"/>
+                                    <constraint firstAttribute="width" constant="200" id="8b8-bw-kQK"/>
+                                    <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="60" id="kpU-Gc-YS7"/>
+                                </constraints>
+                                <state key="normal" title="Stop Streaming"/>
+                                <variation key="default">
+                                    <mask key="constraints">
+                                        <exclude reference="6lu-81-t2K"/>
+                                    </mask>
+                                </variation>
+                                <connections>
+                                    <action selector="stopAudio:" destination="BYZ-38-t0r" eventType="touchUpInside" id="TWm-My-dhj"/>
+                                </connections>
+                            </button>
+                            <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" misplaced="YES" editable="NO" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="vtY-SX-V3c">
+                                <frame key="frameInset" minX="20" minY="290" width="560" height="310"/>
+                                <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <string key="text">Lorem ipsum dolor sit er elit lamet, consectetaur cillium adipisicing pecu, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Nam liber te conscient to factor tum poen legum odioque civiuda.</string>
+                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
+                            </textView>
+                        </subviews>
+                        <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <constraints>
+                            <constraint firstItem="vtY-SX-V3c" firstAttribute="top" secondItem="wgH-jh-Nuq" secondAttribute="bottom" constant="50" id="BNf-SR-fGy"/>
+                            <constraint firstItem="vtY-SX-V3c" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leadingMargin" id="Gyx-9P-zrc"/>
+                            <constraint firstItem="wfy-db-euE" firstAttribute="top" secondItem="vtY-SX-V3c" secondAttribute="bottom" id="Qq3-q5-MGO"/>
+                            <constraint firstItem="wgH-jh-Nuq" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="bjq-My-Edw"/>
+                            <constraint firstItem="aJY-83-MIx" firstAttribute="top" secondItem="y3c-jy-aDJ" secondAttribute="bottom" constant="50" id="d2d-EP-JYj"/>
+                            <constraint firstItem="wgH-jh-Nuq" firstAttribute="centerX" secondItem="aJY-83-MIx" secondAttribute="centerX" id="hZX-d6-ANs"/>
+                            <constraint firstItem="wgH-jh-Nuq" firstAttribute="top" secondItem="aJY-83-MIx" secondAttribute="bottom" constant="50" id="kIe-ML-fFZ"/>
+                            <constraint firstItem="aJY-83-MIx" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="ntQ-pz-44R"/>
+                            <constraint firstAttribute="trailingMargin" secondItem="vtY-SX-V3c" secondAttribute="trailing" id="oW1-J1-PO7"/>
+                        </constraints>
+                        <variation key="default">
+                            <mask key="constraints">
+                                <exclude reference="hZX-d6-ANs"/>
+                            </mask>
+                        </variation>
+                    </view>
+                    <connections>
+                        <outlet property="textView" destination="vtY-SX-V3c" id="aym-NZ-3gu"/>
+                        <outlet property="view" destination="8bC-Xf-vdC" id="I19-bM-Qp4"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="301" y="275"/>
+        </scene>
+    </scenes>
+</document>

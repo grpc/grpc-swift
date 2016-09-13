@@ -33,6 +33,7 @@
 #if SWIFT_PACKAGE
   import CgRPC
 #endif
+import Foundation
 
 /// A gRPC Client
 public class Client {
