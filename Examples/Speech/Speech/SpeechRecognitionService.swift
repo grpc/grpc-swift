@@ -41,31 +41,26 @@ class SpeechRecognitionService {
       // if we aren't already streaming, set up a gRPC connection
       call = client.createCall(host: HOST,
                                method: "/google.cloud.speech.v1beta1.Speech/StreamingRecognize",
-                               timeout: 60.0)
+                               timeout: 120.0)
 
       let metadata = Metadata(["x-goog-api-key":API_KEY,
                                "x-ios-bundle-identifier":Bundle.main.bundleIdentifier!])
       call.start(metadata:metadata)
 
       let recognitionConfig = fileDescriptorSet.createMessage("RecognitionConfig")!
-      recognitionConfig.addField("encoding") {(field) in field.setInt(1)} // LINEAR16
-      recognitionConfig.addField("sample_rate") {(field) in field.setInt(self.sampleRate)}
-      recognitionConfig.addField("language_code") {(field) in field.setString("en-US")}
-      recognitionConfig.addField("max_alternatives") {(field) in field.setInt(30)}
+      recognitionConfig.addField("encoding", value: 1)
+      recognitionConfig.addField("sample_rate", value: self.sampleRate)
+      recognitionConfig.addField("language_code", value: "en-US")
+      recognitionConfig.addField("max_alternatives", value: 30)
 
       let streamingRecognitionConfig = fileDescriptorSet.createMessage("StreamingRecognitionConfig")!
-      streamingRecognitionConfig.addField("config") {
-        (field) in field.setMessage(recognitionConfig)}
-      streamingRecognitionConfig.addField("single_utterance") {
-        (field) in field.setBool(false)}
-      streamingRecognitionConfig.addField("interim_results") {
-        (field) in field.setBool(true)}
+      streamingRecognitionConfig.addField("config", value: recognitionConfig)
+      streamingRecognitionConfig.addField("single_utterance", value: false)
+      streamingRecognitionConfig.addField("interim_results", value: true)
 
       let streamingRecognizeRequest = fileDescriptorSet.createMessage("StreamingRecognizeRequest")!
-      streamingRecognizeRequest.addField("streaming_config")
-      {(field) in field.setMessage (streamingRecognitionConfig)}
+      streamingRecognizeRequest.addField("streaming_config", value:streamingRecognitionConfig)
 
-      streamingRecognizeRequest.display()
       let messageData = streamingRecognizeRequest.data()
       call.sendMessage(data:messageData)
       streaming = true
@@ -74,12 +69,9 @@ class SpeechRecognitionService {
     }
 
     let streamingRecognizeRequest = fileDescriptorSet.createMessage("StreamingRecognizeRequest")!
-    streamingRecognizeRequest.addField("audio_content") {(field) in
-      field.setData(audioData as Data)
-    }
+    streamingRecognizeRequest.addField("audio_content", value: audioData)
     let messageData = streamingRecognizeRequest.data()
     call.sendMessage(data:messageData)
-
   }
 
   func receiveMessage() {
@@ -88,7 +80,17 @@ class SpeechRecognitionService {
         if let responseMessage = self.fileDescriptorSet.readMessage(
           "StreamingRecognizeResponse",
           data:data) {
-          responseMessage.display()
+          responseMessage.forEachField("results") {(field) in
+            field.message().forOneField("is_final") { (field2) in
+              field.message().forOneField("alternatives") { (field) in
+                let alternativeMessage = field.message()
+                if let transcript = alternativeMessage.oneField("transcript") {
+                  let text = transcript.string()
+                  print(text)
+                }
+              }
+            }
+          }
         }
       }
       self.receiveMessage()
@@ -100,14 +102,11 @@ class SpeechRecognitionService {
       return
     }
     streaming = false
-    call.close {
-
-    }
+    call.close {}
   }
-
+  
   func isStreaming() -> Bool {
     return streaming
   }
-  
 }
 
