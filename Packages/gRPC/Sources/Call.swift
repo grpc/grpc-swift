@@ -170,14 +170,13 @@ public class Call {
     let operations = OperationGroup(call:self, operations:[operation_sendMessage])
     { (event) in
       DispatchQueue.main.async {
-        print("client sendMessage complete with status \(event.type) \(event.tag)")
-        if self.pendingMessages.count > 0 {
-          let nextMessage = self.pendingMessages.first!
-          self.pendingMessages.removeFirst()
-          self.sendWithoutBlocking(data: nextMessage)
-        } else {
-          self.writing = false
-        }
+      if self.pendingMessages.count > 0 {
+        let nextMessage = self.pendingMessages.first!
+        self.pendingMessages.removeFirst()
+        self.sendWithoutBlocking(data: nextMessage)
+      } else {
+        self.writing = false
+      }
       }
     }
     let call_error = self.perform(call:self, operations:operations)
@@ -192,7 +191,6 @@ public class Call {
     let operation_receiveMessage = Operation_ReceiveMessage()
     let operations = OperationGroup(call:self, operations:[operation_receiveMessage])
     { (event) in
-      print("client receiveMessage complete with status \(event.type) \(event.tag)")
       if let messageBuffer = operation_receiveMessage.message() {
         callback(messageBuffer.data())
       }
@@ -208,7 +206,6 @@ public class Call {
     let operation_sendInitialMetadata = Operation_SendInitialMetadata(metadata:metadata);
     let operations = OperationGroup(call:self, operations:[operation_sendInitialMetadata])
     { (event) in
-      print("client sendInitialMetadata complete with status \(event.type) \(event.tag)")
       if (event.type == GRPC_OP_COMPLETE) {
         print("call status \(event.type) \(event.tag)")
       } else {
@@ -226,7 +223,6 @@ public class Call {
     let operation_receiveInitialMetadata = Operation_ReceiveInitialMetadata()
     let operations = OperationGroup(call:self, operations:[operation_receiveInitialMetadata])
     { (event) in
-      print("client receiveInitialMetadata complete with status \(event.type) \(event.tag)")
       let initialMetadata = operation_receiveInitialMetadata.metadata()
       for j in 0..<initialMetadata.count() {
         print("Received initial metadata -> " + initialMetadata.key(index:j) + " : " + initialMetadata.value(index:j))
@@ -244,7 +240,6 @@ public class Call {
     let operations = OperationGroup(call:self,
                                     operations:[operation_receiveStatus])
     { (event) in
-      print("client receiveStatus complete with status \(event.type) \(event.tag)")
       print("status = \(operation_receiveStatus.status()), \(operation_receiveStatus.statusDetails())")
     }
     let call_error = self.perform(call:self, operations:operations)
@@ -258,7 +253,6 @@ public class Call {
     let operation_sendCloseFromClient = Operation_SendCloseFromClient()
     let operations = OperationGroup(call:self, operations:[operation_sendCloseFromClient])
     { (event) in
-      print("client sendClose complete with status \(event.type) \(event.tag)")
       completion()
     }
     let call_error = self.perform(call:self, operations:operations)

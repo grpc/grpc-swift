@@ -32,13 +32,13 @@ class SpeechRecognitionService {
 
   private init() {
     fileDescriptorSet = FileDescriptorSet(filename: "speech.out")
+    client = Client(address:HOST, certificates: nil, host: nil)
   }
 
   func streamAudioData(_ audioData: NSData, completion: SpeechRecognitionCompletionHandler) {
 
     if (!streaming) {
       // if we aren't already streaming, set up a gRPC connection
-      client = Client(address:HOST, certificates: nil, host: nil)
       call = client.createCall(host: HOST,
                                method: "/google.cloud.speech.v1beta1.Speech/StreamingRecognize",
                                timeout: 60.0)
@@ -54,9 +54,12 @@ class SpeechRecognitionService {
       recognitionConfig.addField("max_alternatives") {(field) in field.setInt(30)}
 
       let streamingRecognitionConfig = fileDescriptorSet.createMessage("StreamingRecognitionConfig")!
-      streamingRecognitionConfig.addField("config") {(field) in field.setMessage(recognitionConfig)}
-      streamingRecognitionConfig.addField("single_utterance") {(field) in field.setBool(false)}
-      streamingRecognitionConfig.addField("interim_results") {(field) in field.setBool(true)}
+      streamingRecognitionConfig.addField("config") {
+        (field) in field.setMessage(recognitionConfig)}
+      streamingRecognitionConfig.addField("single_utterance") {
+        (field) in field.setBool(false)}
+      streamingRecognitionConfig.addField("interim_results") {
+        (field) in field.setBool(true)}
 
       let streamingRecognizeRequest = fileDescriptorSet.createMessage("StreamingRecognizeRequest")!
       streamingRecognizeRequest.addField("streaming_config")
@@ -96,10 +99,12 @@ class SpeechRecognitionService {
     if (!streaming) {
       return
     }
-    // writer.finishWithError(nil)
     streaming = false
+    call.close {
+
+    }
   }
-  
+
   func isStreaming() -> Bool {
     return streaming
   }
