@@ -41,6 +41,9 @@ class ByteBuffer {
   /// Pointer to underlying C representation
   var b: UnsafeMutableRawPointer!
 
+  /// The provider of data in the buffer (if needed) to ensure that it is retained.
+  private var source : Any?
+
   /// Initializes a ByteBuffer
   ///
   /// - Parameter b: the underlying C representation
@@ -53,6 +56,7 @@ class ByteBuffer {
   /// - Parameter string: a string to store in the buffer
   init(string: String) {
     self.b = cgrpc_byte_buffer_create_with_string(string)
+    self.source = string
   }
 
   /// Initializes a ByteBuffer
@@ -62,6 +66,7 @@ class ByteBuffer {
     data.withUnsafeBytes { (bytes) in
       self.b = cgrpc_byte_buffer_create_with_data(bytes, data.count)
     }
+    self.source = data
   }
 
   deinit {

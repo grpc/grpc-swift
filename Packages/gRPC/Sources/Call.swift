@@ -56,6 +56,9 @@ public class Call {
   /// True if this instance is responsible for deleting the underlying C representation
   private var owned : Bool
 
+  private var pendingMessages : Array<Data>
+  private var writing : Bool
+
   /// Initializes a Call representation
   ///
   /// - Parameter call: the underlying C representation
@@ -64,6 +67,8 @@ public class Call {
     self.call = call
     self.owned = owned
     self.completionQueue = completionQueue
+    self.pendingMessages = []
+    self.writing = false
   }
 
   deinit {
@@ -78,8 +83,8 @@ public class Call {
   /// - Parameter tag: integer tag that will be attached to these operations
   /// - Returns: the result of initiating the call
   func performOperations(operations: OperationGroup,
-                                tag: Int64,
-                                completionQueue: CompletionQueue)
+                         tag: Int64,
+                         completionQueue: CompletionQueue)
     -> grpc_call_error {
       let mutex = CallLock.sharedInstance.mutex
       mutex.lock()
@@ -149,17 +154,38 @@ public class Call {
 
   // send a message over a streaming connection
   public func sendMessage(data: Data) {
+    DispatchQueue.main.async {
+      if self.writing {
+        self.pendingMessages.append(data)
+      } else {
+        self.writing = true
+        self.sendWithoutBlocking(data: data)
+      }
+    }
+  }
+
+  private func sendWithoutBlocking(data: Data) {
     let messageBuffer = ByteBuffer(data:data)
     let operation_sendMessage = Operation_SendMessage(message:messageBuffer)
     let operations = OperationGroup(call:self, operations:[operation_sendMessage])
     { (event) in
-      print("client sendMessage complete with status \(event.type) \(event.tag)")
+      DispatchQueue.main.async {
+        print("client sendMessage complete with status \(event.type) \(event.tag)")
+        if self.pendingMessages.count > 0 {
+          let nextMessage = self.pendingMessages.first!
+          self.pendingMessages.removeFirst()
+          self.sendWithoutBlocking(data: nextMessage)
+        } else {
+          self.writing = false
+        }
+      }
     }
     let call_error = self.perform(call:self, operations:operations)
     if call_error != GRPC_CALL_OK {
       print("call error \(call_error)")
     }
   }
+
 
   // receive a message over a streaming connection
   public func receiveMessage(callback:((Data!) -> Void)) -> Void {
