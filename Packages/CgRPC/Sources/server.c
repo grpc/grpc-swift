@@ -48,6 +48,30 @@ cgrpc_server *cgrpc_server_create(const char *address) {
   return server;
 }
 
+cgrpc_server *cgrpc_server_create_secure(const char *address,
+                                         const char *private_key,
+                                         const char *cert_chain) {
+  cgrpc_server *server = (cgrpc_server *) malloc(sizeof (cgrpc_server));
+  server->server = grpc_server_create(NULL, NULL);
+  server->completion_queue = grpc_completion_queue_create(NULL);
+  grpc_server_register_completion_queue(server->server, server->completion_queue, NULL);
+
+  grpc_ssl_pem_key_cert_pair server_credentials;
+  server_credentials.private_key = private_key;
+  server_credentials.cert_chain = cert_chain;
+
+  grpc_server_credentials *credentials = grpc_ssl_server_credentials_create
+  (NULL,
+   &server_credentials,
+   1,
+   0,
+   NULL);
+  
+  // prepare the server to listen
+  server->port = grpc_server_add_secure_http2_port(server->server, address, credentials);
+  return server;
+}
+
 void cgrpc_server_stop(cgrpc_server *server) {
   grpc_server_shutdown_and_notify(server->server,
                                   server->completion_queue,

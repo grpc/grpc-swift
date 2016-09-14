@@ -60,6 +60,13 @@ public class Server {
     handlers = NSMutableSet()
   }
 
+  public init(address:String, key:String, certs:String) {
+    s = cgrpc_server_create_secure(address, key, certs)
+    completionQueue = CompletionQueue(cq:cgrpc_server_get_completion_queue(s))
+    completionQueue.name = "Server " + address
+    handlers = NSMutableSet()
+  }
+
   deinit {
     cgrpc_server_destroy(s)
   }
