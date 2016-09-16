@@ -103,7 +103,7 @@ public class Handler {
   ///
   /// - Returns: a tuple containing status codes and a message (if available)
   public func receiveMessage(initialMetadata: Metadata,
-                             completion:((Data?) -> Void)) -> Void {
+                             completion:@escaping ((Data?) -> Void)) -> Void {
     let call = self.call()
     let operation_sendInitialMetadata = Operation_SendInitialMetadata(metadata:initialMetadata);
     let operation_receiveMessage = Operation_ReceiveMessage()
@@ -156,7 +156,7 @@ public class Handler {
 
   /// Send initial metadata in response to a connection
   public func sendMetadata(initialMetadata: Metadata,
-                           completion:(() -> Void)) {
+                           completion:@escaping (() -> Void)) {
     let call = self.call()
     let operation_sendInitialMetadata = Operation_SendInitialMetadata(metadata:initialMetadata);
     let operations = OperationGroup(call:call, operations:[operation_sendInitialMetadata])
@@ -174,7 +174,7 @@ public class Handler {
   /// Receive the message sent with a call
   ///
   /// - Returns: a tuple containing status codes and a message (if available)
-  public func receiveMessage(completion:((Data?) -> Void)) -> Void {
+  public func receiveMessage(completion:(@escaping (Data?) -> Void)) -> Void {
     let call = self.call()
     let operation_receiveMessage = Operation_ReceiveMessage()
     let operations = OperationGroup(call:call, operations:[operation_receiveMessage])
@@ -228,7 +228,7 @@ public class Handler {
 
   /// Send final status to the client
   public func sendStatus(trailingMetadata: Metadata,
-                         completion:(() -> Void)) -> Void {
+                         completion:@escaping (() -> Void)) -> Void {
     let call = self.call()
     let operation_sendStatusFromServer = Operation_SendStatusFromServer(status:0,
                                                                         statusDetails:"OK",

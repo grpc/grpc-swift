@@ -69,7 +69,7 @@ class OperationGroup {
   /// - Parameter operations: an array of operations
   init(call: Call,
        operations: [Operation],
-       completion: ((grpc_event) -> Void)) {
+       completion: @escaping ((grpc_event) -> Void)) {
     self.call = call
     self.operationsArray = operations
     self.operations = cgrpc_operations_create()

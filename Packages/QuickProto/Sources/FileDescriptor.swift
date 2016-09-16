@@ -49,6 +49,10 @@ class FileDescriptor {
       let messageDescriptor = MessageDescriptor(message: field.message())
       messageDescriptors.append(messageDescriptor)
     }
+    message.forEachField(["nested_type"]) { (field) in
+      let messageDescriptor = MessageDescriptor(message: field.message())
+      messageDescriptors.append(messageDescriptor)
+    }
   }
 
   // finds and returns a descriptor for a specified message

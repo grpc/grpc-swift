@@ -115,7 +115,7 @@ public class Server {
     cgrpc_server_stop(s)
   }
 
-  public func onCompletion(completion:(() -> Void)) -> Void {
+  public func onCompletion(completion:@escaping (() -> Void)) -> Void {
     onCompletion = completion
   }
 

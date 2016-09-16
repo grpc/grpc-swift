@@ -44,6 +44,7 @@ public class FileDescriptorSet {
     let baseFileDescriptorSet = FileDescriptorSet()
     if let descriptorMessage = baseFileDescriptorSet.readMessage("FileDescriptorSet",
                                                                  data:data) {
+      descriptorMessage.display()
       descriptorMessage.forEachField("file") { (field) in
         let fileDescriptor = FileDescriptor(message: field.message())
         fileDescriptors.append(fileDescriptor)

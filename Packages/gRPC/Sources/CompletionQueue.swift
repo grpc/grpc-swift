@@ -71,6 +71,9 @@ class CompletionQueue {
         case GRPC_OP_COMPLETE:
           let tag = cgrpc_event_tag(event)
           if let operations = self.operationGroups[tag] {
+
+            print("[\(self.name)] event success=\(event.success)")
+
             operations.completion(event)
             self.operationGroups[tag] = nil
           }

@@ -7,6 +7,24 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D3275BF71D8B22DC00CDE67D /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3275BF61D8B22DC00CDE67D /* AppDelegate.swift */; };
+		D3275BF91D8B22DC00CDE67D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D3275BF81D8B22DC00CDE67D /* Assets.xcassets */; };
+		D3275BFC1D8B22DC00CDE67D /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D3275BFA1D8B22DC00CDE67D /* MainMenu.xib */; };
+		D3275C011D8B22E900CDE67D /* _FileDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8191D75FC2200E5DFAB /* _FileDescriptor.swift */; };
+		D3275C021D8B22E900CDE67D /* CodeBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81A1D75FC2200E5DFAB /* CodeBuilder.swift */; };
+		D3275C031D8B22E900CDE67D /* Field.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81B1D75FC2200E5DFAB /* Field.swift */; };
+		D3275C041D8B22E900CDE67D /* FieldDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81C1D75FC2200E5DFAB /* FieldDescriptor.swift */; };
+		D3275C051D8B22E900CDE67D /* FieldLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81D1D75FC2200E5DFAB /* FieldLabel.swift */; };
+		D3275C061D8B22E900CDE67D /* FieldType.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81E1D75FC2200E5DFAB /* FieldType.swift */; };
+		D3275C071D8B22E900CDE67D /* FileDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81F1D75FC2200E5DFAB /* FileDescriptor.swift */; };
+		D3275C081D8B22E900CDE67D /* FileDescriptorSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8201D75FC2200E5DFAB /* FileDescriptorSet.swift */; };
+		D3275C091D8B22E900CDE67D /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8211D75FC2200E5DFAB /* Message.swift */; };
+		D3275C0A1D8B22E900CDE67D /* MessageDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8221D75FC2200E5DFAB /* MessageDescriptor.swift */; };
+		D3275C0B1D8B22E900CDE67D /* MessageReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8231D75FC2200E5DFAB /* MessageReader.swift */; };
+		D3275C0C1D8B22E900CDE67D /* NSMutableData+Proto.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8241D75FC2200E5DFAB /* NSMutableData+Proto.swift */; };
+		D3275C0D1D8B22E900CDE67D /* WireType.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8251D75FC2200E5DFAB /* WireType.swift */; };
+		D3275C111D8B24CB00CDE67D /* maps.out in Resources */ = {isa = PBXBuildFile; fileRef = D3275C101D8B24CB00CDE67D /* maps.out */; };
+		D3275C131D8B24DB00CDE67D /* maptest.bin in Resources */ = {isa = PBXBuildFile; fileRef = D3275C121D8B24DB00CDE67D /* maptest.bin */; };
 		D35BEA331D8397CC00BB9230 /* _FileDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8191D75FC2200E5DFAB /* _FileDescriptor.swift */; };
 		D35BEA341D8397CC00BB9230 /* CodeBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81A1D75FC2200E5DFAB /* CodeBuilder.swift */; };
 		D35BEA351D8397CC00BB9230 /* Field.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81B1D75FC2200E5DFAB /* Field.swift */; };
@@ -68,6 +86,13 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		D3275BF41D8B22DC00CDE67D /* QuickProtoApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = QuickProtoApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D3275BF61D8B22DC00CDE67D /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		D3275BF81D8B22DC00CDE67D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		D3275BFB1D8B22DC00CDE67D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
+		D3275BFD1D8B22DC00CDE67D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D3275C101D8B24CB00CDE67D /* maps.out */ = {isa = PBXFileReference; lastKnownFileType = file; path = maps.out; sourceTree = "<group>"; };
+		D3275C121D8B24DB00CDE67D /* maptest.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = maptest.bin; sourceTree = "<group>"; };
 		D35BEA401D83B10100BB9230 /* SampleMessage.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; name = SampleMessage.bin; path = Samples/sample/SampleMessage.bin; sourceTree = SOURCE_ROOT; };
 		D35BEA421D83B10F00BB9230 /* sample.out */ = {isa = PBXFileReference; lastKnownFileType = file; name = sample.out; path = Samples/sample/sample.out; sourceTree = SOURCE_ROOT; };
 		D35BEA481D83B9AB00BB9230 /* QuickProtoGen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = QuickProtoGen.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -98,6 +123,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		D3275BF11D8B22DC00CDE67D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		D35BEA451D83B9AB00BB9230 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -123,6 +155,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		D3275BF51D8B22DC00CDE67D /* QuickProtoApp */ = {
+			isa = PBXGroup;
+			children = (
+				D3275C121D8B24DB00CDE67D /* maptest.bin */,
+				D3275C101D8B24CB00CDE67D /* maps.out */,
+				D3275BF61D8B22DC00CDE67D /* AppDelegate.swift */,
+				D3275BF81D8B22DC00CDE67D /* Assets.xcassets */,
+				D3275BFA1D8B22DC00CDE67D /* MainMenu.xib */,
+				D3275BFD1D8B22DC00CDE67D /* Info.plist */,
+			);
+			path = QuickProtoApp;
+			sourceTree = "<group>";
+		};
 		D35BEA491D83B9AB00BB9230 /* QuickProtoGen */ = {
 			isa = PBXGroup;
 			children = (
@@ -171,6 +216,7 @@
 				D35C9F351D74A1C0000443CD /* QuickProto */,
 				D3D6924D1D8380D800813DEC /* QuickProtoTests */,
 				D35BEA491D83B9AB00BB9230 /* QuickProtoGen */,
+				D3275BF51D8B22DC00CDE67D /* QuickProtoApp */,
 				D3D1C85B1D6D15D9002F1B53 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -181,6 +227,7 @@
 				D35C9F341D74A1C0000443CD /* QuickProto.framework */,
 				D3D6924C1D8380D800813DEC /* QuickProtoTests.xctest */,
 				D35BEA481D83B9AB00BB9230 /* QuickProtoGen.app */,
+				D3275BF41D8B22DC00CDE67D /* QuickProtoApp.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -210,6 +257,23 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
+		D3275BF31D8B22DC00CDE67D /* QuickProtoApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D3275C001D8B22DC00CDE67D /* Build configuration list for PBXNativeTarget "QuickProtoApp" */;
+			buildPhases = (
+				D3275BF01D8B22DC00CDE67D /* Sources */,
+				D3275BF11D8B22DC00CDE67D /* Frameworks */,
+				D3275BF21D8B22DC00CDE67D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = QuickProtoApp;
+			productName = QuickProtoApp;
+			productReference = D3275BF41D8B22DC00CDE67D /* QuickProtoApp.app */;
+			productType = "com.apple.product-type.application";
+		};
 		D35BEA471D83B9AB00BB9230 /* QuickProtoGen */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = D35BEA521D83B9AB00BB9230 /* Build configuration list for PBXNativeTarget "QuickProtoGen" */;
@@ -273,6 +337,11 @@
 				LastUpgradeCheck = 0800;
 				ORGANIZATIONNAME = Google;
 				TargetAttributes = {
+					D3275BF31D8B22DC00CDE67D = {
+						CreatedOnToolsVersion = 8.0;
+						DevelopmentTeam = EQHXZ8M8AV;
+						ProvisioningStyle = Automatic;
+					};
 					D35BEA471D83B9AB00BB9230 = {
 						CreatedOnToolsVersion = 8.0;
 						DevelopmentTeam = EQHXZ8M8AV;
@@ -307,11 +376,23 @@
 				D35C9F331D74A1C0000443CD /* QuickProto */,
 				D3D6924B1D8380D800813DEC /* QuickProtoTests */,
 				D35BEA471D83B9AB00BB9230 /* QuickProtoGen */,
+				D3275BF31D8B22DC00CDE67D /* QuickProtoApp */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		D3275BF21D8B22DC00CDE67D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D3275C131D8B24DB00CDE67D /* maptest.bin in Resources */,
+				D3275C111D8B24CB00CDE67D /* maps.out in Resources */,
+				D3275BF91D8B22DC00CDE67D /* Assets.xcassets in Resources */,
+				D3275BFC1D8B22DC00CDE67D /* MainMenu.xib in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		D35BEA461D83B9AB00BB9230 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -341,6 +422,27 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		D3275BF01D8B22DC00CDE67D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D3275C011D8B22E900CDE67D /* _FileDescriptor.swift in Sources */,
+				D3275C021D8B22E900CDE67D /* CodeBuilder.swift in Sources */,
+				D3275C031D8B22E900CDE67D /* Field.swift in Sources */,
+				D3275C041D8B22E900CDE67D /* FieldDescriptor.swift in Sources */,
+				D3275C051D8B22E900CDE67D /* FieldLabel.swift in Sources */,
+				D3275C061D8B22E900CDE67D /* FieldType.swift in Sources */,
+				D3275C071D8B22E900CDE67D /* FileDescriptor.swift in Sources */,
+				D3275C081D8B22E900CDE67D /* FileDescriptorSet.swift in Sources */,
+				D3275C091D8B22E900CDE67D /* Message.swift in Sources */,
+				D3275C0A1D8B22E900CDE67D /* MessageDescriptor.swift in Sources */,
+				D3275C0B1D8B22E900CDE67D /* MessageReader.swift in Sources */,
+				D3275C0C1D8B22E900CDE67D /* NSMutableData+Proto.swift in Sources */,
+				D3275C0D1D8B22E900CDE67D /* WireType.swift in Sources */,
+				D3275BF71D8B22DC00CDE67D /* AppDelegate.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		D35BEA441D83B9AB00BB9230 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -414,6 +516,14 @@
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
+		D3275BFA1D8B22DC00CDE67D /* MainMenu.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				D3275BFB1D8B22DC00CDE67D /* Base */,
+			);
+			name = MainMenu.xib;
+			sourceTree = "<group>";
+		};
 		D35BEA4E1D83B9AB00BB9230 /* MainMenu.xib */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -425,6 +535,36 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		D3275BFE1D8B22DC00CDE67D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = EQHXZ8M8AV;
+				INFOPLIST_FILE = QuickProtoApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.google.QuickProtoApp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_VERSION = 3.0;
+			};
+			name = Debug;
+		};
+		D3275BFF1D8B22DC00CDE67D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = EQHXZ8M8AV;
+				INFOPLIST_FILE = QuickProtoApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.google.QuickProtoApp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+				SWIFT_VERSION = 3.0;
+			};
+			name = Release;
+		};
 		D35BEA531D83B9AB00BB9230 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -627,6 +767,14 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		D3275C001D8B22DC00CDE67D /* Build configuration list for PBXNativeTarget "QuickProtoApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D3275BFE1D8B22DC00CDE67D /* Debug */,
+				D3275BFF1D8B22DC00CDE67D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
 		D35BEA521D83B9AB00BB9230 /* Build configuration list for PBXNativeTarget "QuickProtoGen" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

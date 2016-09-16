@@ -56,7 +56,10 @@ public class Call {
   /// True if this instance is responsible for deleting the underlying C representation
   private var owned : Bool
 
+  /// A queue of pending messages to send over the call
   private var pendingMessages : Array<Data>
+
+  /// True if a message write operation is underway
   private var writing : Bool
 
   /// Initializes a Call representation
@@ -101,7 +104,7 @@ public class Call {
   /// - Returns: a CallResponse object containing results of the call
   public func performNonStreamingCall(messageData: Data,
                                       metadata: Metadata,
-                                      completion: ((CallResponse) -> Void)) -> Void   {
+                                      completion: @escaping ((CallResponse) -> Void)) -> Void   {
 
     let messageBuffer = ByteBuffer(data:messageData)
 
@@ -187,7 +190,7 @@ public class Call {
 
 
   // receive a message over a streaming connection
-  public func receiveMessage(callback:((Data!) -> Void)) -> Void {
+  public func receiveMessage(callback:@escaping ((Data!) -> Void)) -> Void {
     let operation_receiveMessage = Operation_ReceiveMessage()
     let operations = OperationGroup(call:self, operations:[operation_receiveMessage])
     { (event) in
@@ -249,7 +252,7 @@ public class Call {
   }
 
   // close a streaming connection
-  public func close(completion:(() -> Void)) {
+  public func close(completion:@escaping (() -> Void)) {
     let operation_sendCloseFromClient = Operation_SendCloseFromClient()
     let operations = OperationGroup(call:self, operations:[operation_sendCloseFromClient])
     { (event) in
