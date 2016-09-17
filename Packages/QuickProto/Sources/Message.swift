@@ -143,51 +143,51 @@ public class Message {
       data.appendVarint(field.tag() << 3 + field.wireType().rawValue)
 
       switch field.type() {
-      case FieldType.DOUBLE:
+      case .double:
         data.appendDouble(field.double())
-      case FieldType.FLOAT:
+      case .float:
         data.appendFloat(field.float())
-      case FieldType.INT64:
+      case .int64:
         data.appendVarint(field.integer())
-      case FieldType.UINT64:
+      case .uint64:
         data.appendVarint(field.integer())
-      case FieldType.INT32:
+      case .int32:
         data.appendVarint(field.integer())
-      case FieldType.FIXED64:
+      case .fixed64:
         data.appendInt64(field.integer())
-      case FieldType.FIXED32:
+      case .fixed32:
         data.appendInt32(field.integer())
-      case FieldType.BOOL:
+      case .bool:
         data.appendVarint(field.bool() ? 1 : 0)
-      case FieldType.STRING:
+      case .string:
         var buf = [UInt8](field.string().utf8)
         data.appendVarint(buf.count)
         data.append(&buf, length: buf.count)
-      case FieldType.GROUP:
+      case .group:
         assert(false)
-      case FieldType.MESSAGE:
+      case .message:
         let messageData = field.message().data()
         data.appendVarint(messageData.count)
         messageData.withUnsafeBytes({ (bytes) in
           data.append(bytes, length: messageData.count)
         })
-      case FieldType.BYTES:
+      case .bytes:
         let messageData = field.data()
         data.appendVarint(messageData.count)
         messageData.withUnsafeBytes({ (bytes) in
           data.append(bytes, length: messageData.count)
         })
-      case FieldType.UINT32:
+      case .uint32:
         data.appendVarint(field.integer())
-      case FieldType.ENUM:
+      case .enumeration:
         data.appendVarint(field.integer())
-      case FieldType.SFIXED32:
+      case .sfixed32:
         data.appendInt32(field.integer())
-      case FieldType.SFIXED64:
+      case .sfixed64:
         data.appendInt64(field.integer())
-      case FieldType.SINT32:
+      case .sint32:
         data.appendVarint(Int(zigzag(Int32(field.integer()))))
-      case FieldType.SINT64:
+      case .sint64:
         data.appendVarint(Int(zigzag(Int64(field.integer()))))
       }
     }

@@ -60,24 +60,24 @@ class FieldDescriptor {
 
   func wireType() -> WireType {
     switch type {
-    case FieldType.DOUBLE   : return WireType.FIXED64
-    case FieldType.FLOAT    : return WireType.FIXED32
-    case FieldType.INT64    : return WireType.VARINT
-    case FieldType.UINT64   : return WireType.VARINT
-    case FieldType.INT32    : return WireType.VARINT
-    case FieldType.FIXED64  : return WireType.FIXED64
-    case FieldType.FIXED32  : return WireType.FIXED32
-    case FieldType.BOOL     : return WireType.VARINT
-    case FieldType.STRING   : return WireType.LENGTH_DELIMITED
-    case FieldType.GROUP    : return WireType.START_GROUP
-    case FieldType.MESSAGE  : return WireType.LENGTH_DELIMITED
-    case FieldType.BYTES    : return WireType.LENGTH_DELIMITED
-    case FieldType.UINT32   : return WireType.VARINT
-    case FieldType.ENUM     : return WireType.VARINT
-    case FieldType.SFIXED32 : return WireType.FIXED32
-    case FieldType.SFIXED64 : return WireType.FIXED64
-    case FieldType.SINT32   : return WireType.VARINT
-    case FieldType.SINT64   : return WireType.VARINT
+    case .double:      return .fixed64
+    case .float:       return .fixed32
+    case .int64:       return .varint
+    case .uint64:      return .varint
+    case .int32:       return .varint
+    case .fixed64:     return .fixed64
+    case .fixed32:     return .fixed32
+    case .bool:        return .varint
+    case .string:      return .lengthDelimited
+    case .group:       return .startGroup
+    case .message:     return .lengthDelimited
+    case .bytes:       return .lengthDelimited
+    case .uint32:      return .varint
+    case .enumeration: return .varint
+    case .sfixed32:    return .fixed32
+    case .sfixed64:    return .fixed64
+    case .sint32:      return .varint
+    case .sint64:      return .varint
     }
   }
 }

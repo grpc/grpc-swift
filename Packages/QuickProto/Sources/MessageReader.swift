@@ -136,14 +136,14 @@ class MessageReader {
     while (cursor < range.location + range.length) {
       let s = self.nextVarint()
       let tag = s >> 3
-      let wiretype = s & 0x07
+      let wiretype = WireType(rawValue:s & 0x07)!
       let field = descriptor.fieldDescriptor(tag:tag)
 
       switch (wiretype) {
-      case 0: // varint
+      case .varint:
         var value = self.nextVarint()
         if let field = field {
-          if ((field.type == FieldType.SINT32) || (field.type == FieldType.SINT64)) {
+          if ((field.type == .sint32) || (field.type == .sint64)) {
             // zigzag decoding
             let sign = value & 0x01
             value = value >> 1
@@ -158,10 +158,10 @@ class MessageReader {
           ))
         }
 
-      case 1: // 64-bit
+      case .fixed64:
 
         if let field = field {
-          if field.type == FieldType.DOUBLE {
+          if field.type == .double {
             let value = self.nextDouble()
             fields.append(
               Field(
@@ -176,18 +176,18 @@ class MessageReader {
           }
         }
 
-      case 2: // length-delimited
+      case .lengthDelimited: // length-delimited
         let length = self.nextVarint()
         if let field = field {
           switch (field.type) {
-          case FieldType.STRING:
+          case .string:
             let value = self.nextString(length: length)
             fields.append(
               Field(
                 descriptor: field,
                 value: value))
 
-          case FieldType.BYTES:
+          case .bytes:
             let value = self.nextData(length: length)
             fields.append(
               Field(
@@ -212,15 +212,15 @@ class MessageReader {
           cursor += length
         }
 
-      case 3: // start group
+      case .startGroup:
         break
 
-      case 4: // end group
+      case .endGroup:
         break
 
-      case 5: // 32-bit
+      case .fixed32:
         if let field = field {
-          if field.type == FieldType.FLOAT {
+          if field.type == .float {
             let value = self.nextFloat()
             fields.append(
               Field(
@@ -234,8 +234,6 @@ class MessageReader {
                 value: value))
           }
         }
-
-      default: continue
       }
     }
     return Message(descriptor:descriptor, fields:fields)

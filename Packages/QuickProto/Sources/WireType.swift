@@ -34,10 +34,10 @@ import Foundation
 
 /// The "wire type" of a protocol buffer field
 public enum WireType: Int {
-  case VARINT = 0
-  case FIXED64 = 1
-  case LENGTH_DELIMITED = 2
-  case START_GROUP = 3
-  case END_GROUP = 4
-  case FIXED32 = 5
+  case varint = 0
+  case fixed64 = 1
+  case lengthDelimited = 2
+  case startGroup = 3
+  case endGroup = 4
+  case fixed32 = 5
 }

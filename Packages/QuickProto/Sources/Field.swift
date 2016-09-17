@@ -53,7 +53,7 @@ public class Field {
     var line = indent
     line += String(describing:self.descriptor.label) + " "
     line += String(describing:type)
-    if ((type == FieldType.MESSAGE) || (type == FieldType.ENUM)) {
+    if ((type == .message) || (type == .enumeration)) {
       line += ":" + self.descriptor.type_name
     }
     line += " "
