@@ -41,10 +41,10 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   @IBOutlet weak var streamingButton: NSButton!
   @IBOutlet weak var TLSButton: NSButton!
 
-  private var streaming = false
-  var client: Client!
-  var call: Call!
-  var fileDescriptorSet : FileDescriptorSet
+  private var fileDescriptorSet : FileDescriptorSet
+  private var client: Client?
+  private var call: Call?
+  private var nowStreaming = false
 
   required init?(coder:NSCoder) {
     fileDescriptorSet = FileDescriptorSet(filename: "echo.out")
@@ -60,13 +60,13 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   }
 
   @IBAction func addressReturnPressed(sender: NSTextField) {
-    if (streaming) {
+    if (nowStreaming) {
       self.sendClose()
     }
   }
 
   @IBAction func buttonValueChanged(sender: NSButton) {
-    if (streaming && (sender.intValue == 0)) {
+    if (nowStreaming && (sender.intValue == 0)) {
       self.sendClose()
     }
   }
@@ -76,6 +76,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   }
 
   override func viewDidAppear() {
+    // prevent the UI from trying to send messages until gRPC is initialized
     DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
       self.enabled = true
     }
@@ -102,9 +103,15 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         requestMessage.addField("text", value:self.messageField.stringValue)
         let requestMessageData = requestMessage.data()
         createClient(address:address, host:requestHost)
+        guard let client = client else {
+          return
+        }
         call = client.createCall(host: requestHost,
                                  method: "/echo.Echo/Get",
                                  timeout: 30.0)
+        guard let call = call else {
+          return
+        }
         _ = call.performNonStreamingCall(messageData: requestMessageData,
                                          metadata: requestMetadata)
         { (status, statusDetails, messageData, initialMetadata, trailingMetadata) in
@@ -127,14 +134,20 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     }
     else {
       // STREAMING
-      if (!streaming) {
+      if (!nowStreaming) {
         createClient(address:address, host:requestHost)
+        guard let client = client else {
+          return
+        }
         call = client.createCall(host: requestHost,
                                  method: "/echo.Echo/Update",
                                  timeout: 30.0)
+        guard let call = call else {
+          return
+        }
         _ = call.start(metadata:requestMetadata)
         self.receiveMessage()
-        streaming = true
+        nowStreaming = true
       }
       self.sendMessage()
     }
@@ -144,12 +157,20 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     let requestMessage = self.fileDescriptorSet.createMessage("EchoRequest")!
     requestMessage.addField("text", value:self.messageField.stringValue)
     let messageData = requestMessage.data()
-    call.sendMessage(data:messageData)
+    if let call = call {
+      call.sendMessage(data:messageData)
+    }
   }
 
   func receiveMessage() {
+    guard let call = call else {
+      return
+    }
     _ = call.receiveMessage() {(data) in
-      let responseMessage = self.fileDescriptorSet.readMessage("EchoResponse", data:data)!
+      guard let responseMessage = self.fileDescriptorSet.readMessage("EchoResponse", data:data)
+        else {
+          return // this stops receiving
+      }
       responseMessage.forOneField("text") {(field) in
         DispatchQueue.main.async {
           self.outputField.stringValue = field.string()
@@ -160,8 +181,11 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   }
 
   func sendClose() {
+    guard let call = call else {
+      return
+    }
     _ = call.close() {
-      self.streaming = false
+      self.nowStreaming = false
     }
   }
 }
