@@ -73,8 +73,11 @@ class CompletionQueue {
           if let operations = self.operationGroups[tag] {
 
             print("[\(self.name)] event success=\(event.success)")
-
-            operations.completion(event)
+            if event.success == 0 {
+              print("something bad happened")
+            } else {
+              operations.completion(event.success == 1)
+            }
             self.operationGroups[tag] = nil
           }
           break

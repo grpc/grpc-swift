@@ -38,7 +38,7 @@ import Foundation
 /// Singleton class that provides a mutex for synchronizing calls to cgrpc_call_perform()
 private class CallLock {
   var mutex : Mutex
-  init() {
+  private init() {
     mutex = Mutex()
   }
   static let sharedInstance = CallLock()
@@ -122,8 +122,8 @@ public class Call {
                                            operation_receiveInitialMetadata,
                                            operation_receiveStatusOnClient,
                                            operation_receiveMessage])
-    { (event) in
-      if (event.type == GRPC_OP_COMPLETE) {
+    { (success) in
+      if success {
         let response = CallResponse(status:operation_receiveStatusOnClient.status(),
                                     statusDetails:operation_receiveStatusOnClient.statusDetails(),
                                     message:operation_receiveMessage.message(),
@@ -131,7 +131,7 @@ public class Call {
                                     trailingMetadata:operation_receiveStatusOnClient.metadata())
         completion(response)
       } else {
-        completion(CallResponse(completion: event.type))
+        completion(CallResponse())
       }
     }
     let call_error = self.perform(call: self, operations: group)
@@ -172,6 +172,10 @@ public class Call {
     let operation_sendMessage = Operation_SendMessage(message:messageBuffer)
     let operations = OperationGroup(call:self, operations:[operation_sendMessage])
     { (event) in
+
+      // if the event failed, shut down
+
+
       DispatchQueue.main.async {
       if self.pendingMessages.count > 0 {
         let nextMessage = self.pendingMessages.first!
@@ -208,9 +212,9 @@ public class Call {
   private func sendInitialMetadata(metadata: Metadata) {
     let operation_sendInitialMetadata = Operation_SendInitialMetadata(metadata:metadata);
     let operations = OperationGroup(call:self, operations:[operation_sendInitialMetadata])
-    { (event) in
-      if (event.type == GRPC_OP_COMPLETE) {
-        print("call status \(event.type) \(event.tag)")
+    { (success) in
+      if (success) {
+        print("call successful")
       } else {
         return
       }

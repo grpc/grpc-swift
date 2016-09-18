@@ -13,12 +13,14 @@ parsing protocol buffers with no generated code.
 
 Code is provided for both gRPC clients and servers,
 and it can be built either with Xcode or the Swift Package Manager.
-The Xcode build is demonstrated with [Sessions](Examples/Sessions), 
-a sample Mac app that can be used to create and run multiple
-concurrent servers and clients. 
+The Xcode build is demonstrated with [Echo](Examples/Echo), 
+a sample Mac app that can be used to run echo clients and
+servers with streaming and nonstreaming interfaces over secure (TLS)
+and insecure channels.
 
-Other examples include [StickyNotes](Examples/StickyNotes) and 
-[Echo](Examples/Echo).
+Other examples include [Sessions](Examples/Sessions), 
+[StickyNotes](Examples/StickyNotes), and 
+[Speech](Examples/Speech).
 
 Swift Package Manager builds are demonstrated on Linux using 
 the instructions in the [Packages](Packages) directory.

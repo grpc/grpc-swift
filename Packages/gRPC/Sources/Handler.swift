@@ -112,8 +112,8 @@ public class Handler {
       operations:[
         operation_sendInitialMetadata,
         operation_receiveMessage])
-    {(event) in
-      if (event.type == GRPC_OP_COMPLETE) {
+    {(success) in
+      if (success) {
         completion(operation_receiveMessage.message()!.data())
       } else {
         completion(nil)
@@ -160,8 +160,8 @@ public class Handler {
     let call = self.call()
     let operation_sendInitialMetadata = Operation_SendInitialMetadata(metadata:initialMetadata);
     let operations = OperationGroup(call:call, operations:[operation_sendInitialMetadata])
-    {(event) in
-      if (event.type == GRPC_OP_COMPLETE) {
+    {(success) in
+      if (success) {
         completion()
       } else {
         completion()
@@ -178,8 +178,8 @@ public class Handler {
     let call = self.call()
     let operation_receiveMessage = Operation_ReceiveMessage()
     let operations = OperationGroup(call:call, operations:[operation_receiveMessage])
-    {(event) in
-      if (event.type == GRPC_OP_COMPLETE) {
+    {(success) in
+      if (success) {
         print("server receiveMessage complete")
         if let message = operation_receiveMessage.message() {
           completion(message.data())

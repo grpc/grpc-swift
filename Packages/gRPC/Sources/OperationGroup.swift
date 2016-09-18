@@ -37,7 +37,7 @@
 /// Singleton class that provides a mutex for synchronizing tag generation
 private class OperationGroupTagLock {
   var mutex : Mutex
-  init() {
+  private init() {
     mutex = Mutex()
   }
   static let sharedInstance = OperationGroupTagLock()
@@ -62,14 +62,14 @@ class OperationGroup {
   var operations : UnsafeMutableRawPointer!
 
   /// Completion handler that is called when the group completes
-  var completion : ((grpc_event) -> Void)
+  var completion : ((Bool) -> Void)
 
   /// Initializes a Operations representation
   ///
   /// - Parameter operations: an array of operations
   init(call: Call,
        operations: [Operation],
-       completion: @escaping ((grpc_event) -> Void)) {
+       completion: @escaping ((Bool) -> Void)) {
     self.call = call
     self.operationsArray = operations
     self.operations = cgrpc_operations_create()
@@ -78,7 +78,6 @@ class OperationGroup {
       cgrpc_operations_add_operation(self.operations, operation.observer)
     }
     self.completion = completion
-
     let mutex = OperationGroupTagLock.sharedInstance.mutex
     mutex.lock()
     self.tag = OperationGroup.nextTag

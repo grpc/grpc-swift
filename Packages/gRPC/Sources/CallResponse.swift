@@ -79,6 +79,15 @@ public class CallResponse {
     self.statusDetails = ""
   }
 
+
+  public init() {
+    self.error = GRPC_CALL_ERROR
+    self.completion = GRPC_OP_COMPLETE
+    self.status = 0
+    self.statusDetails = ""
+  }
+
+
   /// Initializes a response when error == GRPC_CALL_OK and completion == GRPC_OP_COMPLETE
   ///
   /// - Parameter status: a status code returned from the server
