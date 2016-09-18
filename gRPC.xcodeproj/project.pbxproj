@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		D31C3E401D863E9C008676EF /* roots.pem in Resources */ = {isa = PBXBuildFile; fileRef = D31C3E3F1D863E9C008676EF /* roots.pem */; };
-		D32F10121D5CEE880071B7C1 /* CallResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = D32F10111D5CEE880071B7C1 /* CallResponse.swift */; };
 		D34B4BB81D7B2C9B00B8B5E2 /* OperationGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = D34B4BB71D7B2C9B00B8B5E2 /* OperationGroup.swift */; };
 		D34B4BBA1D7B2CB200B8B5E2 /* operations.c in Sources */ = {isa = PBXBuildFile; fileRef = D34B4BB91D7B2CB200B8B5E2 /* operations.c */; };
 		D37DD0281D7D09CB009AEB74 /* event.c in Sources */ = {isa = PBXBuildFile; fileRef = D37DD0271D7D09CB009AEB74 /* event.c */; };
@@ -40,7 +39,6 @@
 
 /* Begin PBXFileReference section */
 		D31C3E3F1D863E9C008676EF /* roots.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = roots.pem; sourceTree = "<group>"; };
-		D32F10111D5CEE880071B7C1 /* CallResponse.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CallResponse.swift; path = Packages/gRPC/Sources/CallResponse.swift; sourceTree = "<group>"; };
 		D34B4BB71D7B2C9B00B8B5E2 /* OperationGroup.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = OperationGroup.swift; path = Packages/gRPC/Sources/OperationGroup.swift; sourceTree = "<group>"; };
 		D34B4BB91D7B2CB200B8B5E2 /* operations.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = operations.c; path = Packages/CgRPC/Sources/operations.c; sourceTree = "<group>"; };
 		D37DD0271D7D09CB009AEB74 /* event.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = event.c; path = Packages/CgRPC/Sources/event.c; sourceTree = "<group>"; };
@@ -110,7 +108,6 @@
 			children = (
 				D3AC86BB1D5BEBE00042B341 /* ByteBuffer.swift */,
 				D3AC86BC1D5BEBE00042B341 /* Call.swift */,
-				D32F10111D5CEE880071B7C1 /* CallResponse.swift */,
 				D3AC86BD1D5BEBE00042B341 /* Client.swift */,
 				D3AC86BE1D5BEBE00042B341 /* CompletionQueue.swift */,
 				D3AC86BF1D5BEBE00042B341 /* gRPC.swift */,
@@ -265,7 +262,6 @@
 				D3AC86CA1D5BEBE00042B341 /* Handler.swift in Sources */,
 				D3AC86CD1D5BEBE00042B341 /* Operation.swift in Sources */,
 				D37DD0281D7D09CB009AEB74 /* event.c in Sources */,
-				D32F10121D5CEE880071B7C1 /* CallResponse.swift in Sources */,
 				D3AC86CE1D5BEBE00042B341 /* Server.swift in Sources */,
 				D3AC86C71D5BEBE00042B341 /* Client.swift in Sources */,
 				D3AC86C51D5BEBE00042B341 /* ByteBuffer.swift in Sources */,

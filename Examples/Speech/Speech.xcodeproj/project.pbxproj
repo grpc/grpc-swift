@@ -39,7 +39,6 @@
 		D33465CD1D82987700C8D159 /* server.c in Sources */ = {isa = PBXBuildFile; fileRef = D33465C11D82987700C8D159 /* server.c */; };
 		D33465DB1D82989900C8D159 /* ByteBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33465CF1D82989900C8D159 /* ByteBuffer.swift */; };
 		D33465DC1D82989900C8D159 /* Call.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33465D01D82989900C8D159 /* Call.swift */; };
-		D33465DD1D82989900C8D159 /* CallResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33465D11D82989900C8D159 /* CallResponse.swift */; };
 		D33465DE1D82989900C8D159 /* Client.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33465D21D82989900C8D159 /* Client.swift */; };
 		D33465DF1D82989900C8D159 /* CompletionQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33465D31D82989900C8D159 /* CompletionQueue.swift */; };
 		D33465E01D82989900C8D159 /* gRPC.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33465D41D82989900C8D159 /* gRPC.swift */; };
@@ -97,7 +96,6 @@
 		D33465C11D82987700C8D159 /* server.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = server.c; path = ../../Packages/CgRPC/Sources/server.c; sourceTree = "<group>"; };
 		D33465CF1D82989900C8D159 /* ByteBuffer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ByteBuffer.swift; path = ../../Packages/gRPC/Sources/ByteBuffer.swift; sourceTree = "<group>"; };
 		D33465D01D82989900C8D159 /* Call.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Call.swift; path = ../../Packages/gRPC/Sources/Call.swift; sourceTree = "<group>"; };
-		D33465D11D82989900C8D159 /* CallResponse.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CallResponse.swift; path = ../../Packages/gRPC/Sources/CallResponse.swift; sourceTree = "<group>"; };
 		D33465D21D82989900C8D159 /* Client.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Client.swift; path = ../../Packages/gRPC/Sources/Client.swift; sourceTree = "<group>"; };
 		D33465D31D82989900C8D159 /* CompletionQueue.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CompletionQueue.swift; path = ../../Packages/gRPC/Sources/CompletionQueue.swift; sourceTree = "<group>"; };
 		D33465D41D82989900C8D159 /* gRPC.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = gRPC.swift; path = ../../Packages/gRPC/Sources/gRPC.swift; sourceTree = "<group>"; };
@@ -191,7 +189,6 @@
 			children = (
 				D33465CF1D82989900C8D159 /* ByteBuffer.swift */,
 				D33465D01D82989900C8D159 /* Call.swift */,
-				D33465D11D82989900C8D159 /* CallResponse.swift */,
 				D33465D21D82989900C8D159 /* Client.swift */,
 				D33465D31D82989900C8D159 /* CompletionQueue.swift */,
 				D33465D41D82989900C8D159 /* gRPC.swift */,
@@ -419,7 +416,6 @@
 				D33465DF1D82989900C8D159 /* CompletionQueue.swift in Sources */,
 				D33465E31D82989900C8D159 /* Mutex.swift in Sources */,
 				D3E34EA51D7757CC00EF755D /* ViewController.swift in Sources */,
-				D33465DD1D82989900C8D159 /* CallResponse.swift in Sources */,
 				D33465CC1D82987700C8D159 /* operations.c in Sources */,
 				D33465DE1D82989900C8D159 /* Client.swift in Sources */,
 				D33465A81D82985700C8D159 /* Field.swift in Sources */,

@@ -46,7 +46,7 @@ class SpeechRecognitionService {
       if let call = call {
         let metadata = Metadata(["x-goog-api-key":API_KEY,
                                  "x-ios-bundle-identifier":Bundle.main.bundleIdentifier!])
-        call.start(metadata:metadata)
+        _ = call.start(metadata:metadata)
 
         let recognitionConfig = fileDescriptorSet.createMessage("RecognitionConfig")!
         recognitionConfig.addField("encoding", value: 1)
@@ -80,7 +80,7 @@ class SpeechRecognitionService {
 
   func receiveMessage() {
     if let call = call {
-      call.receiveMessage() {(data) in
+      _ = call.receiveMessage() {(data) in
         if let data = data {
           if let responseMessage =
             self.fileDescriptorSet.readMessage("StreamingRecognizeResponse", data:data) {
@@ -107,7 +107,7 @@ class SpeechRecognitionService {
     }
     nowStreaming = false
     if let call = call {
-      call.close {}
+      _ = call.close {}
     }
   }
   

@@ -105,11 +105,11 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         call = client.createCall(host: requestHost,
                                  method: "/echo.Echo/Get",
                                  timeout: 30.0)
-        call.performNonStreamingCall(messageData: requestMessageData,
-                                     metadata: requestMetadata)
-        { (response) in
-          print("Received status: \(response.status) " + response.statusDetails)
-          if let messageData = response.messageData,
+        _ = call.performNonStreamingCall(messageData: requestMessageData,
+                                         metadata: requestMetadata)
+        { (status, statusDetails, messageData, initialMetadata, trailingMetadata) in
+          print("Received status: \(status): \(statusDetails)")
+          if let messageData = messageData,
             let responseMessage = self.fileDescriptorSet.readMessage("EchoResponse",
                                                                      data:messageData) {
             responseMessage.forOneField("text") {(field) in
@@ -119,8 +119,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
             }
           } else {
             DispatchQueue.main.async {
-              self.outputField.stringValue = "No message received. gRPC Status \(response.status) "
-                + response.statusDetails
+              self.outputField.stringValue = "No message received. gRPC Status \(status): \(statusDetails)"
             }
           }
         }
@@ -133,7 +132,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         call = client.createCall(host: requestHost,
                                  method: "/echo.Echo/Update",
                                  timeout: 30.0)
-        call.start(metadata:requestMetadata)
+        _ = call.start(metadata:requestMetadata)
         self.receiveMessage()
         streaming = true
       }
@@ -149,7 +148,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   }
 
   func receiveMessage() {
-    call.receiveMessage() {(data) in
+    _ = call.receiveMessage() {(data) in
       let responseMessage = self.fileDescriptorSet.readMessage("EchoResponse", data:data)!
       responseMessage.forOneField("text") {(field) in
         DispatchQueue.main.async {
@@ -161,7 +160,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   }
 
   func sendClose() {
-    call.close() {
+    _ = call.close() {
       self.streaming = false
     }
   }

@@ -171,27 +171,27 @@ class Document: NSDocument {
                                  ["y": "yu"],
                                  ["z": "zither"]])
 
-        call.performNonStreamingCall(messageData: messageData!,
-                                     metadata: metadata)
-        {(response) in
+        _ = call.performNonStreamingCall(messageData: messageData!,
+                                         metadata: metadata)
+        {(status, statusDetails, messageData, initialMetadata, trailingMetadata) in
 
-          if let initialMetadata = response.initialMetadata {
+          if let initialMetadata = initialMetadata {
             for j in 0..<initialMetadata.count() {
               self.log("\(i): Received initial metadata -> " + initialMetadata.key(index:j)
                 + " : " + initialMetadata.value(index:j))
             }
           }
 
-          self.log("\(i): Received status: \(response.status) " + response.statusDetails)
-          if response.status != 0 {
+          self.log("\(i): Received status: \(status) \(statusDetails)")
+          if status != 0 {
             self.setIsRunning(false)
           }
-          if let messageData = response.messageData {
+          if let messageData = messageData {
             let messageString = String(data: messageData as Data, encoding: .utf8)
             self.log("\(i): Received message: " + messageString!)
           }
 
-          if let trailingMetadata = response.trailingMetadata {
+          if let trailingMetadata = trailingMetadata {
             for j in 0..<trailingMetadata.count() {
               self.log("\(i): Received trailing metadata -> " + trailingMetadata.key(index:j)
                 + " : " + trailingMetadata.value(index:j))
@@ -254,7 +254,7 @@ class Document: NSDocument {
 
       self.log("------------------------------")
     }
-
+    
     self.server.onCompletion() {
       self.log("Server Stopped")
       self.updateInterfaceAfterStopping()
