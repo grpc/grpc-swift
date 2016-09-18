@@ -36,6 +36,7 @@ import Foundation
 public class MessageDescriptor {
   var name: String = ""
   var fieldDescriptors: [FieldDescriptor] = []
+  var nestedTypes: [MessageDescriptor] = []
 
   init(message:Message) { // the message should be a DescriptorProto (descriptor.proto)
     if let field = message.oneField("name") {
@@ -44,6 +45,10 @@ public class MessageDescriptor {
     message.forEachField("field") {(field) in
       let fieldDescriptor = FieldDescriptor(message:field.message())
       fieldDescriptors.append(fieldDescriptor)
+    }
+    message.forEachField("nested_type") {(field) in
+      let nestedType = MessageDescriptor(message:field.message())
+      nestedTypes.append(nestedType)
     }
   }
 
