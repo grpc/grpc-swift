@@ -37,18 +37,28 @@ public class MessageDescriptor {
   var name: String = ""
   var fieldDescriptors: [FieldDescriptor] = []
   var nestedTypes: [MessageDescriptor] = []
+  var optionMapEntry : Bool = false
 
-  init(message:Message) { // the message should be a DescriptorProto (descriptor.proto)
+  // creates a MessageDescriptor from a DescriptorProto (descriptor.proto)
+  init(message:Message) {
     if let field = message.oneField("name") {
       name = field.string()
     }
-    message.forEachField("field") {(field) in
+    message.forEachField("field") { (field) in
       let fieldDescriptor = FieldDescriptor(message:field.message())
       fieldDescriptors.append(fieldDescriptor)
     }
-    message.forEachField("nested_type") {(field) in
+    message.forEachField("nested_type") { (field) in
       let nestedType = MessageDescriptor(message:field.message())
       nestedTypes.append(nestedType)
+    }
+    message.forEachField("options") { (field) in
+      let options = field.message()
+      options.forOneField("map_entry") { (field) in
+        if field.bool() {
+          optionMapEntry = true
+        }
+      }
     }
   }
 

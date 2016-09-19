@@ -69,11 +69,8 @@ public class FileDescriptorSet {
   }
 
   func messageDescriptor(name: String) -> MessageDescriptor? {
-    let parts = name.components(separatedBy: ".")
-    let messageName = parts.last!
-
     for fileDescriptor in fileDescriptors {
-      if let messageDescriptor = fileDescriptor.messageDescriptor(name:messageName) {
+      if let messageDescriptor = fileDescriptor.messageDescriptor(name:name) {
         return messageDescriptor
       }
     }

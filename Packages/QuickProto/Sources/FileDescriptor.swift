@@ -32,9 +32,22 @@
  */
 import Foundation
 
+extension String {
+  func stripPrefix(_ prefix: String) -> String {
+    if self.hasPrefix(prefix) {
+      return self.replacingOccurrences(of: prefix, with: "")
+    } else {
+      return self
+    }
+  }
+}
+
 /// A collection of descriptors that were read from a compiled .proto file
 class FileDescriptor {
   var messageDescriptors : [MessageDescriptor] = []
+  var name : String = ""
+  var package : String = ""
+  var syntax : String = ""
 
   // the base FileDescriptor is the FileDescriptor for FileDescriptor
   init() {
@@ -49,20 +62,31 @@ class FileDescriptor {
       let messageDescriptor = MessageDescriptor(message: field.message())
       messageDescriptors.append(messageDescriptor)
     }
+    message.forOneField("name") { (field) in
+      name = field.string()
+    }
+    message.forOneField("package") { (field) in
+      package = field.string()
+    }
+    message.forOneField("syntax") { (field) in
+      syntax = field.string()
+    }
   }
 
   // finds and returns a descriptor for a specified message
   func messageDescriptor(name: String) -> MessageDescriptor? {
+    // search message descriptors for the desired message
+    let messageName = name.stripPrefix("." + self.package + ".")
     for messageDescriptor in messageDescriptors {
-      if messageDescriptor.name == name {
+      if messageDescriptor.name == messageName {
         return messageDescriptor
       } else {
+        let messageName = messageName.stripPrefix(messageDescriptor.name + ".")
         for nestedMessageDescriptor in messageDescriptor.nestedTypes {
-          if nestedMessageDescriptor.name == name {
+          if nestedMessageDescriptor.name == messageName {
             return nestedMessageDescriptor
           }
         }
-
       }
     }
     return nil
