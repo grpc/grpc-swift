@@ -1,0 +1,307 @@
+type: com.google.api.codegen.ConfigProto
+language_settings:
+  java:
+    package_name: com.google.cloud.logging.spi.v2
+  python:
+    package_name: google.cloud.gapic.logging.v2
+  go:
+    package_name: cloud.google.com/go/logging/apiv2
+  csharp:
+    package_name: Google.Logging.V2
+  ruby:
+    package_name: Google::Cloud::Logging::V2
+  php:
+    package_name: Google\Cloud\Logging\V2
+  nodejs:
+    package_name: "@google-cloud/logging"
+interfaces:
+- name: google.logging.v2.ConfigServiceV2
+  collections:
+  - name_pattern: projects/{project}
+    entity_name: parent
+  - name_pattern: projects/{project}/sinks/{sink}
+    entity_name: sink
+  retry_codes_def:
+  - name: idempotent
+    retry_codes:
+    - UNAVAILABLE
+    - DEADLINE_EXCEEDED
+  - name: non_idempotent
+    retry_codes: []
+  retry_params_def:
+  - name: default
+    initial_retry_delay_millis: 100
+    retry_delay_multiplier: 1.2
+    max_retry_delay_millis: 1000
+    initial_rpc_timeout_millis: 2000
+    rpc_timeout_multiplier: 1.5
+    max_rpc_timeout_millis: 30000
+    total_timeout_millis: 45000
+  methods:
+  - name: ListSinks
+    flattening:
+      groups:
+      - parameters:
+        - parent
+    required_fields:
+    - parent
+    request_object_method: true
+    page_streaming:
+      request:
+        token_field: page_token
+        page_size_field: page_size
+      response:
+        token_field: next_page_token
+        resources_field: sinks
+    retry_codes_name: idempotent
+    retry_params_name: default
+    timeout_millis: 30000
+    field_name_patterns:
+      parent: parent
+  - name: GetSink
+    flattening:
+      groups:
+      - parameters:
+        - sink_name
+    required_fields:
+    - sink_name
+    request_object_method: false
+    retry_codes_name: idempotent
+    retry_params_name: default
+    timeout_millis: 30000
+    field_name_patterns:
+      sink_name: sink
+  - name: CreateSink
+    flattening:
+      groups:
+      - parameters:
+        - parent
+        - sink
+    required_fields:
+    - parent
+    - sink
+    request_object_method: true
+    retry_codes_name: non_idempotent
+    retry_params_name: default
+    timeout_millis: 30000
+    field_name_patterns:
+      parent: parent
+  - name: UpdateSink
+    flattening:
+      groups:
+      - parameters:
+        - sink_name
+        - sink
+    required_fields:
+    - sink_name
+    - sink
+    request_object_method: true
+    retry_codes_name: non_idempotent
+    retry_params_name: default
+    timeout_millis: 30000
+    field_name_patterns:
+      sink_name: sink
+  - name: DeleteSink
+    flattening:
+      groups:
+      - parameters:
+        - sink_name
+    required_fields:
+    - sink_name
+    request_object_method: false
+    retry_codes_name: idempotent
+    retry_params_name: default
+    timeout_millis: 30000
+    field_name_patterns:
+      sink_name: sink
+- name: google.logging.v2.MetricsServiceV2
+  collections:
+  - name_pattern: projects/{project}
+    entity_name: parent
+  - name_pattern: projects/{project}/metrics/{metric}
+    entity_name: metric
+  retry_codes_def:
+  - name: idempotent
+    retry_codes:
+    - UNAVAILABLE
+    - DEADLINE_EXCEEDED
+  - name: non_idempotent
+    retry_codes: []
+  retry_params_def:
+  - name: default
+    initial_retry_delay_millis: 100
+    retry_delay_multiplier: 1.2
+    max_retry_delay_millis: 1000
+    initial_rpc_timeout_millis: 2000
+    rpc_timeout_multiplier: 1.5
+    max_rpc_timeout_millis: 30000
+    total_timeout_millis: 45000
+  methods:
+  - name: ListLogMetrics
+    flattening:
+      groups:
+      - parameters:
+        - parent
+    required_fields:
+    - parent
+    request_object_method: true
+    page_streaming:
+      request:
+        token_field: page_token
+        page_size_field: page_size
+      response:
+        token_field: next_page_token
+        resources_field: metrics
+    retry_codes_name: idempotent
+    retry_params_name: default
+    timeout_millis: 30000
+    field_name_patterns:
+      parent: parent
+  - name: GetLogMetric
+    flattening:
+      groups:
+      - parameters:
+        - metric_name
+    required_fields:
+    - metric_name
+    request_object_method: false
+    retry_codes_name: idempotent
+    retry_params_name: default
+    timeout_millis: 30000
+    field_name_patterns:
+      metric_name: metric
+  - name: CreateLogMetric
+    flattening:
+      groups:
+      - parameters:
+        - parent
+        - metric
+    required_fields:
+    - parent
+    - metric
+    request_object_method: true
+    retry_codes_name: non_idempotent
+    retry_params_name: default
+    timeout_millis: 30000
+    field_name_patterns:
+      parent: parent
+  - name: UpdateLogMetric
+    flattening:
+      groups:
+      - parameters:
+        - metric_name
+        - metric
+    required_fields:
+    - metric_name
+    - metric
+    request_object_method: true
+    retry_codes_name: non_idempotent
+    retry_params_name: default
+    timeout_millis: 30000
+    field_name_patterns:
+      metric_name: metric
+  - name: DeleteLogMetric
+    flattening:
+      groups:
+      - parameters:
+        - metric_name
+    required_fields:
+    - metric_name
+    request_object_method: false
+    retry_codes_name: idempotent
+    retry_params_name: default
+    timeout_millis: 30000
+    field_name_patterns:
+      metric_name: metric
+- name: google.logging.v2.LoggingServiceV2
+  collections:
+  - name_pattern: projects/{project}
+    entity_name: parent
+  - name_pattern: projects/{project}/logs/{log}
+    entity_name: log
+  retry_codes_def:
+  - name: idempotent
+    retry_codes:
+    - UNAVAILABLE
+    - DEADLINE_EXCEEDED
+  - name: non_idempotent
+    retry_codes: []
+  retry_params_def:
+  - name: default
+    initial_retry_delay_millis: 100
+    retry_delay_multiplier: 1.2
+    max_retry_delay_millis: 1000
+    initial_rpc_timeout_millis: 2000
+    rpc_timeout_multiplier: 1.5
+    max_rpc_timeout_millis: 30000
+    total_timeout_millis: 45000
+  - name: list
+    initial_retry_delay_millis: 100
+    retry_delay_multiplier: 1.2
+    max_retry_delay_millis: 1000
+    initial_rpc_timeout_millis: 7000
+    rpc_timeout_multiplier: 1.5
+    max_rpc_timeout_millis: 30000
+    total_timeout_millis: 45000
+  methods:
+  - name: DeleteLog
+    flattening:
+      groups:
+      - parameters:
+        - log_name
+    required_fields:
+    - log_name
+    request_object_method: false
+    retry_codes_name: idempotent
+    retry_params_name: default
+    timeout_millis: 30000
+    field_name_patterns:
+      log_name: log
+  - name: WriteLogEntries
+    flattening:
+      groups:
+      - parameters:
+        - log_name
+        - resource
+        - labels
+        - entries
+    required_fields:
+    - entries
+    request_object_method: true
+    retry_codes_name: non_idempotent
+    retry_params_name: default
+    timeout_millis: 30000
+    field_name_patterns:
+      log_name: log
+  - name: ListLogEntries
+    flattening:
+      groups:
+      - parameters:
+        - project_ids
+        - filter
+        - order_by
+    required_fields:
+    - project_ids
+    request_object_method: true
+    page_streaming:
+      request:
+        page_size_field: page_size
+        token_field: page_token
+      response:
+        token_field: next_page_token
+        resources_field: entries
+    retry_codes_name: idempotent
+    retry_params_name: list
+    timeout_millis: 30000
+  - name: ListMonitoredResourceDescriptors
+    request_object_method: true
+    page_streaming:
+      request:
+        page_size_field: page_size
+        token_field: page_token
+      response:
+        token_field: next_page_token
+        resources_field: resource_descriptors
+    retry_codes_name: idempotent
+    retry_params_name: default
+    timeout_millis: 30000

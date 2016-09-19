@@ -1,0 +1,11 @@
+#!/bin/sh
+
+echo "Compile the protocol buffers"
+protoc \
+	google/datastore/v1/*.proto \
+	google/api/*.proto \
+	google/protobuf/*.proto \
+	google/type/*.proto \
+	google/rpc/*.proto \
+	-o descriptors.out
+

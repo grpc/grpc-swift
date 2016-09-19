@@ -1,0 +1,447 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		D35C9FAC1D74B079000443CD /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C9FAB1D74B079000443CD /* AppDelegate.swift */; };
+		D35C9FAE1D74B079000443CD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D35C9FAD1D74B079000443CD /* Assets.xcassets */; };
+		D35C9FB11D74B079000443CD /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D35C9FAF1D74B079000443CD /* MainMenu.xib */; };
+		D35C9FC81D74B0C1000443CD /* DatastoreViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C9FC71D74B0C1000443CD /* DatastoreViewController.swift */; };
+		D3B8C1CA1D906C16003FF8F8 /* gRPC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D3B8C1B61D906BDF003FF8F8 /* gRPC.framework */; };
+		D3B8C1CB1D906C16003FF8F8 /* QuickProto.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D3B8C1BF1D906BEB003FF8F8 /* QuickProto.framework */; };
+		D3B8C1CD1D9074B0003FF8F8 /* roots.pem in Resources */ = {isa = PBXBuildFile; fileRef = D3B8C1CC1D9074B0003FF8F8 /* roots.pem */; };
+		D3D2EA381D75FB4A002EF89C /* descriptors.out in Resources */ = {isa = PBXBuildFile; fileRef = D3D2EA371D75FB4A002EF89C /* descriptors.out */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		D3B8C1B51D906BDF003FF8F8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D3B8C1B11D906BDF003FF8F8 /* gRPC.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = D3BD37331D5126380005E698;
+			remoteInfo = gRPC;
+		};
+		D3B8C1BE1D906BEB003FF8F8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D3B8C1B71D906BEA003FF8F8 /* QuickProto.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = D35C9F341D74A1C0000443CD;
+			remoteInfo = QuickProto;
+		};
+		D3B8C1C01D906BEB003FF8F8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D3B8C1B71D906BEA003FF8F8 /* QuickProto.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = D3D6924C1D8380D800813DEC;
+			remoteInfo = QuickProtoTests;
+		};
+		D3B8C1C21D906BEB003FF8F8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D3B8C1B71D906BEA003FF8F8 /* QuickProto.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = D35BEA481D83B9AB00BB9230;
+			remoteInfo = QuickProtoGen;
+		};
+		D3B8C1C41D906BEB003FF8F8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D3B8C1B71D906BEA003FF8F8 /* QuickProto.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = D3275BF41D8B22DC00CDE67D;
+			remoteInfo = QuickProtoApp;
+		};
+		D3B8C1C61D906C07003FF8F8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D3B8C1B71D906BEA003FF8F8 /* QuickProto.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = D35C9F331D74A1C0000443CD;
+			remoteInfo = QuickProto;
+		};
+		D3B8C1C81D906C0B003FF8F8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D3B8C1B11D906BDF003FF8F8 /* gRPC.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = D3BD37321D5126380005E698;
+			remoteInfo = gRPC;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		D35C9FA81D74B079000443CD /* Datastore.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Datastore.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D35C9FAB1D74B079000443CD /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		D35C9FAD1D74B079000443CD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		D35C9FB01D74B079000443CD /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
+		D35C9FB21D74B079000443CD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D35C9FC71D74B0C1000443CD /* DatastoreViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DatastoreViewController.swift; sourceTree = "<group>"; };
+		D3B8C1B11D906BDF003FF8F8 /* gRPC.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = gRPC.xcodeproj; path = ../../gRPC.xcodeproj; sourceTree = "<group>"; };
+		D3B8C1B71D906BEA003FF8F8 /* QuickProto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = QuickProto.xcodeproj; path = ../../QuickProto/QuickProto.xcodeproj; sourceTree = "<group>"; };
+		D3B8C1CC1D9074B0003FF8F8 /* roots.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = roots.pem; sourceTree = "<group>"; };
+		D3D2EA371D75FB4A002EF89C /* descriptors.out */ = {isa = PBXFileReference; lastKnownFileType = file; path = descriptors.out; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D35C9FA51D74B079000443CD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D3B8C1CA1D906C16003FF8F8 /* gRPC.framework in Frameworks */,
+				D3B8C1CB1D906C16003FF8F8 /* QuickProto.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		D35C9F9F1D74B079000443CD = {
+			isa = PBXGroup;
+			children = (
+				D3B8C1B71D906BEA003FF8F8 /* QuickProto.xcodeproj */,
+				D3B8C1B11D906BDF003FF8F8 /* gRPC.xcodeproj */,
+				D3D2EA371D75FB4A002EF89C /* descriptors.out */,
+				D35C9FAA1D74B079000443CD /* Datastore */,
+				D35C9FA91D74B079000443CD /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		D35C9FA91D74B079000443CD /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D35C9FA81D74B079000443CD /* Datastore.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D35C9FAA1D74B079000443CD /* Datastore */ = {
+			isa = PBXGroup;
+			children = (
+				D3B8C1CC1D9074B0003FF8F8 /* roots.pem */,
+				D35C9FAB1D74B079000443CD /* AppDelegate.swift */,
+				D35C9FAD1D74B079000443CD /* Assets.xcassets */,
+				D35C9FAF1D74B079000443CD /* MainMenu.xib */,
+				D35C9FB21D74B079000443CD /* Info.plist */,
+				D35C9FC71D74B0C1000443CD /* DatastoreViewController.swift */,
+			);
+			path = Datastore;
+			sourceTree = "<group>";
+		};
+		D3B8C1B21D906BDF003FF8F8 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D3B8C1B61D906BDF003FF8F8 /* gRPC.framework */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D3B8C1B81D906BEA003FF8F8 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D3B8C1BF1D906BEB003FF8F8 /* QuickProto.framework */,
+				D3B8C1C11D906BEB003FF8F8 /* QuickProtoTests.xctest */,
+				D3B8C1C31D906BEB003FF8F8 /* QuickProtoGen.app */,
+				D3B8C1C51D906BEB003FF8F8 /* QuickProtoApp.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		D35C9FA71D74B079000443CD /* Datastore */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D35C9FB51D74B079000443CD /* Build configuration list for PBXNativeTarget "Datastore" */;
+			buildPhases = (
+				D35C9FA41D74B079000443CD /* Sources */,
+				D35C9FA51D74B079000443CD /* Frameworks */,
+				D35C9FA61D74B079000443CD /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D3B8C1C91D906C0B003FF8F8 /* PBXTargetDependency */,
+				D3B8C1C71D906C07003FF8F8 /* PBXTargetDependency */,
+			);
+			name = Datastore;
+			productName = Datastore;
+			productReference = D35C9FA81D74B079000443CD /* Datastore.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		D35C9FA01D74B079000443CD /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 0800;
+				LastUpgradeCheck = 0800;
+				ORGANIZATIONNAME = Google;
+				TargetAttributes = {
+					D35C9FA71D74B079000443CD = {
+						CreatedOnToolsVersion = 8.0;
+						DevelopmentTeam = EQHXZ8M8AV;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = D35C9FA31D74B079000443CD /* Build configuration list for PBXProject "Datastore" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = D35C9F9F1D74B079000443CD;
+			productRefGroup = D35C9FA91D74B079000443CD /* Products */;
+			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = D3B8C1B21D906BDF003FF8F8 /* Products */;
+					ProjectRef = D3B8C1B11D906BDF003FF8F8 /* gRPC.xcodeproj */;
+				},
+				{
+					ProductGroup = D3B8C1B81D906BEA003FF8F8 /* Products */;
+					ProjectRef = D3B8C1B71D906BEA003FF8F8 /* QuickProto.xcodeproj */;
+				},
+			);
+			projectRoot = "";
+			targets = (
+				D35C9FA71D74B079000443CD /* Datastore */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXReferenceProxy section */
+		D3B8C1B61D906BDF003FF8F8 /* gRPC.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = gRPC.framework;
+			remoteRef = D3B8C1B51D906BDF003FF8F8 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		D3B8C1BF1D906BEB003FF8F8 /* QuickProto.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = QuickProto.framework;
+			remoteRef = D3B8C1BE1D906BEB003FF8F8 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		D3B8C1C11D906BEB003FF8F8 /* QuickProtoTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = QuickProtoTests.xctest;
+			remoteRef = D3B8C1C01D906BEB003FF8F8 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		D3B8C1C31D906BEB003FF8F8 /* QuickProtoGen.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = QuickProtoGen.app;
+			remoteRef = D3B8C1C21D906BEB003FF8F8 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		D3B8C1C51D906BEB003FF8F8 /* QuickProtoApp.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = QuickProtoApp.app;
+			remoteRef = D3B8C1C41D906BEB003FF8F8 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXReferenceProxy section */
+
+/* Begin PBXResourcesBuildPhase section */
+		D35C9FA61D74B079000443CD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D3B8C1CD1D9074B0003FF8F8 /* roots.pem in Resources */,
+				D3D2EA381D75FB4A002EF89C /* descriptors.out in Resources */,
+				D35C9FAE1D74B079000443CD /* Assets.xcassets in Resources */,
+				D35C9FB11D74B079000443CD /* MainMenu.xib in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D35C9FA41D74B079000443CD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D35C9FC81D74B0C1000443CD /* DatastoreViewController.swift in Sources */,
+				D35C9FAC1D74B079000443CD /* AppDelegate.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		D3B8C1C71D906C07003FF8F8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = QuickProto;
+			targetProxy = D3B8C1C61D906C07003FF8F8 /* PBXContainerItemProxy */;
+		};
+		D3B8C1C91D906C0B003FF8F8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = gRPC;
+			targetProxy = D3B8C1C81D906C0B003FF8F8 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		D35C9FAF1D74B079000443CD /* MainMenu.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				D35C9FB01D74B079000443CD /* Base */,
+			);
+			name = MainMenu.xib;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		D35C9FB31D74B079000443CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		D35C9FB41D74B079000443CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+			};
+			name = Release;
+		};
+		D35C9FB61D74B079000443CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = EQHXZ8M8AV;
+				INFOPLIST_FILE = Datastore/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.google.Datastore;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 3.0;
+			};
+			name = Debug;
+		};
+		D35C9FB71D74B079000443CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = EQHXZ8M8AV;
+				INFOPLIST_FILE = Datastore/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.google.Datastore;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 3.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		D35C9FA31D74B079000443CD /* Build configuration list for PBXProject "Datastore" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D35C9FB31D74B079000443CD /* Debug */,
+				D35C9FB41D74B079000443CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D35C9FB51D74B079000443CD /* Build configuration list for PBXNativeTarget "Datastore" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D35C9FB61D74B079000443CD /* Debug */,
+				D35C9FB71D74B079000443CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = D35C9FA01D74B079000443CD /* Project object */;
+}
