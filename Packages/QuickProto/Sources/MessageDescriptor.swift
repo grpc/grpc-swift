@@ -62,6 +62,7 @@ public class MessageDescriptor {
     }
   }
 
+  // internal initializer
   init(description:[String:Any]) {
     let name = (description["name"] as? String)!
     self.name = name
@@ -73,16 +74,17 @@ public class MessageDescriptor {
       }
       let parts = typeName.components(separatedBy: ".")
       typeName = parts.last!
-      self.fieldDescriptors.append(FieldDescriptor(type: fieldDescription["type"] as! Int,
-                                                   name: fieldDescription["name"] as! String,
-                                                   tag: fieldDescription["number"] as! Int,
-                                                   type_name: typeName,
-                                                   label: fieldDescription["label"] as! Int
+      self.fieldDescriptors.append(
+        FieldDescriptor(type: fieldDescription["type"] as! Int,
+                        name: fieldDescription["name"] as! String,
+                        tag: fieldDescription["number"] as! Int,
+                        type_name: typeName,
+                        label: fieldDescription["label"] as! Int
       ))
     }
   }
 
-  /// lookup the field descriptor for a specified tag
+  /// look up the field descriptor for a specified tag
   func fieldDescriptor(tag: Int) -> FieldDescriptor? {
     for fieldDescriptor in fieldDescriptors {
       if (fieldDescriptor.tag == tag) {

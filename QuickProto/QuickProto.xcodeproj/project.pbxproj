@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D3105CDE1D905995004489EA /* maps.out in Resources */ = {isa = PBXBuildFile; fileRef = D3105CDD1D905995004489EA /* maps.out */; };
+		D3105CE01D9059A5004489EA /* maptest.bin in Resources */ = {isa = PBXBuildFile; fileRef = D3105CDF1D9059A5004489EA /* maptest.bin */; };
 		D3275BF71D8B22DC00CDE67D /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3275BF61D8B22DC00CDE67D /* AppDelegate.swift */; };
 		D3275BF91D8B22DC00CDE67D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D3275BF81D8B22DC00CDE67D /* Assets.xcassets */; };
 		D3275BFC1D8B22DC00CDE67D /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D3275BFA1D8B22DC00CDE67D /* MainMenu.xib */; };
@@ -23,8 +25,6 @@
 		D3275C0B1D8B22E900CDE67D /* MessageReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8231D75FC2200E5DFAB /* MessageReader.swift */; };
 		D3275C0C1D8B22E900CDE67D /* NSMutableData+Proto.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8241D75FC2200E5DFAB /* NSMutableData+Proto.swift */; };
 		D3275C0D1D8B22E900CDE67D /* WireType.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8251D75FC2200E5DFAB /* WireType.swift */; };
-		D3275C111D8B24CB00CDE67D /* maps.out in Resources */ = {isa = PBXBuildFile; fileRef = D3275C101D8B24CB00CDE67D /* maps.out */; };
-		D3275C131D8B24DB00CDE67D /* maptest.bin in Resources */ = {isa = PBXBuildFile; fileRef = D3275C121D8B24DB00CDE67D /* maptest.bin */; };
 		D35BEA331D8397CC00BB9230 /* _FileDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C8191D75FC2200E5DFAB /* _FileDescriptor.swift */; };
 		D35BEA341D8397CC00BB9230 /* CodeBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81A1D75FC2200E5DFAB /* CodeBuilder.swift */; };
 		D35BEA351D8397CC00BB9230 /* Field.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A2C81B1D75FC2200E5DFAB /* Field.swift */; };
@@ -86,13 +86,13 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		D3105CDD1D905995004489EA /* maps.out */ = {isa = PBXFileReference; lastKnownFileType = file; path = maps.out; sourceTree = "<group>"; };
+		D3105CDF1D9059A5004489EA /* maptest.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = maptest.bin; sourceTree = "<group>"; };
 		D3275BF41D8B22DC00CDE67D /* QuickProtoApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = QuickProtoApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D3275BF61D8B22DC00CDE67D /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		D3275BF81D8B22DC00CDE67D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D3275BFB1D8B22DC00CDE67D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		D3275BFD1D8B22DC00CDE67D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		D3275C101D8B24CB00CDE67D /* maps.out */ = {isa = PBXFileReference; lastKnownFileType = file; path = maps.out; sourceTree = "<group>"; };
-		D3275C121D8B24DB00CDE67D /* maptest.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = maptest.bin; sourceTree = "<group>"; };
 		D35BEA401D83B10100BB9230 /* SampleMessage.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; name = SampleMessage.bin; path = Samples/sample/SampleMessage.bin; sourceTree = SOURCE_ROOT; };
 		D35BEA421D83B10F00BB9230 /* sample.out */ = {isa = PBXFileReference; lastKnownFileType = file; name = sample.out; path = Samples/sample/sample.out; sourceTree = SOURCE_ROOT; };
 		D35BEA481D83B9AB00BB9230 /* QuickProtoGen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = QuickProtoGen.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -158,8 +158,8 @@
 		D3275BF51D8B22DC00CDE67D /* QuickProtoApp */ = {
 			isa = PBXGroup;
 			children = (
-				D3275C121D8B24DB00CDE67D /* maptest.bin */,
-				D3275C101D8B24CB00CDE67D /* maps.out */,
+				D3105CDF1D9059A5004489EA /* maptest.bin */,
+				D3105CDD1D905995004489EA /* maps.out */,
 				D3275BF61D8B22DC00CDE67D /* AppDelegate.swift */,
 				D3275BF81D8B22DC00CDE67D /* Assets.xcassets */,
 				D3275BFA1D8B22DC00CDE67D /* MainMenu.xib */,
@@ -386,8 +386,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D3275C131D8B24DB00CDE67D /* maptest.bin in Resources */,
-				D3275C111D8B24CB00CDE67D /* maps.out in Resources */,
+				D3105CE01D9059A5004489EA /* maptest.bin in Resources */,
+				D3105CDE1D905995004489EA /* maps.out in Resources */,
 				D3275BF91D8B22DC00CDE67D /* Assets.xcassets in Resources */,
 				D3275BFC1D8B22DC00CDE67D /* MainMenu.xib in Resources */,
 			);
@@ -774,6 +774,7 @@
 				D3275BFF1D8B22DC00CDE67D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		D35BEA521D83B9AB00BB9230 /* Build configuration list for PBXNativeTarget "QuickProtoGen" */ = {
 			isa = XCConfigurationList;
