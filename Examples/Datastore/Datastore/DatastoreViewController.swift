@@ -40,7 +40,6 @@ class DatastoreViewController : NSViewController, NSTextFieldDelegate {
   @IBOutlet weak var messageField: NSTextField!
   @IBOutlet weak var outputField: NSTextField!
 
-
   private var fileDescriptorSet : FileDescriptorSet
   private var client: Client?
   private var call: Call?
@@ -96,7 +95,13 @@ class DatastoreViewController : NSViewController, NSTextFieldDelegate {
     if let requestMessage = self.fileDescriptorSet.createMessage("RunQueryRequest") {
       requestMessage.addField("project_id", value:"hello-86")
       let gqlQuery = self.fileDescriptorSet.createMessage("GqlQuery")
-      gqlQuery?.addField("query_string", value:"select * from Person")
+
+      var query = self.messageField.stringValue
+      if query == "" {
+        query = "select * from Person"
+      }
+
+      gqlQuery?.addField("query_string", value:query)
       requestMessage.addField("gql_query", value:gqlQuery)
       let requestMessageData = requestMessage.data()
 

@@ -36,7 +36,6 @@ import WebKit
 class WebViewWindowController : NSWindowController {
   @IBOutlet var webView : WebView!
   var url : URL?
-
   var completion: ((String) -> Void)?
 
   override func awakeFromNib() {
@@ -46,40 +45,31 @@ class WebViewWindowController : NSWindowController {
       self.webView.mainFrame.load(URLRequest(url:url))
     }
   }
-
 }
 
 extension WebViewWindowController : WebResourceLoadDelegate {
-
   func webView(_ sender: WebView!,
                resource identifier: Any!,
                willSend request: URLRequest!,
                redirectResponse: URLResponse!,
                from dataSource: WebDataSource!) -> URLRequest! {
-
-    print(request)
-
-    if (request.url!.absoluteString.hasPrefix("http://localhost")) {
-
-      print("incoming \(request.url!.absoluteString)")
-      let keyVals = request.url!.getKeyVals()!
-      let code = keyVals["code"]!
-
-      print("Got it! \(code)")
-
-      if let completion = completion {
-        completion(code)
+    if let url = request.url {
+      if (url.absoluteString.hasPrefix("http://localhost")) {
+        if let parameters = url.getKeyValues(),
+          let code = parameters["code"],
+          let completion = completion {
+          completion(code)
+        }
+        window!.close()
+        return nil
       }
-      window!.close()
-      return nil
     }
-
     return request
   }
 }
 
 extension URL {
-  func getKeyVals() -> Dictionary<String, String>? {
+  func getKeyValues() -> Dictionary<String, String>? {
     var results = [String:String]()
     let keyValues = self.query?.components(separatedBy: "&")
     if keyValues!.count > 0 {
