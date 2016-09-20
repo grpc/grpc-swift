@@ -11,6 +11,9 @@
 		D35C9FAE1D74B079000443CD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D35C9FAD1D74B079000443CD /* Assets.xcassets */; };
 		D35C9FB11D74B079000443CD /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D35C9FAF1D74B079000443CD /* MainMenu.xib */; };
 		D35C9FC81D74B0C1000443CD /* DatastoreViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C9FC71D74B0C1000443CD /* DatastoreViewController.swift */; };
+		D37BB8411D90A60300BFAF0D /* OAuthClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D37BB8401D90A60300BFAF0D /* OAuthClient.swift */; };
+		D37BB8461D90ADAC00BFAF0D /* WebViewWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = D37BB8451D90ADAC00BFAF0D /* WebViewWindow.xib */; };
+		D37BB8481D90ADE300BFAF0D /* WebViewWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D37BB8471D90ADE300BFAF0D /* WebViewWindowController.swift */; };
 		D3B8C1CA1D906C16003FF8F8 /* gRPC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D3B8C1B61D906BDF003FF8F8 /* gRPC.framework */; };
 		D3B8C1CB1D906C16003FF8F8 /* QuickProto.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D3B8C1BF1D906BEB003FF8F8 /* QuickProto.framework */; };
 		D3B8C1CD1D9074B0003FF8F8 /* roots.pem in Resources */ = {isa = PBXBuildFile; fileRef = D3B8C1CC1D9074B0003FF8F8 /* roots.pem */; };
@@ -76,6 +79,9 @@
 		D35C9FB01D74B079000443CD /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		D35C9FB21D74B079000443CD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D35C9FC71D74B0C1000443CD /* DatastoreViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DatastoreViewController.swift; sourceTree = "<group>"; };
+		D37BB8401D90A60300BFAF0D /* OAuthClient.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = OAuthClient.swift; sourceTree = "<group>"; };
+		D37BB8451D90ADAC00BFAF0D /* WebViewWindow.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = WebViewWindow.xib; sourceTree = "<group>"; };
+		D37BB8471D90ADE300BFAF0D /* WebViewWindowController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WebViewWindowController.swift; sourceTree = "<group>"; };
 		D3B8C1B11D906BDF003FF8F8 /* gRPC.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = gRPC.xcodeproj; path = ../../gRPC.xcodeproj; sourceTree = "<group>"; };
 		D3B8C1B71D906BEA003FF8F8 /* QuickProto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = QuickProto.xcodeproj; path = ../../QuickProto/QuickProto.xcodeproj; sourceTree = "<group>"; };
 		D3B8C1CC1D9074B0003FF8F8 /* roots.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = roots.pem; sourceTree = "<group>"; };
@@ -123,6 +129,9 @@
 				D35C9FAF1D74B079000443CD /* MainMenu.xib */,
 				D35C9FB21D74B079000443CD /* Info.plist */,
 				D35C9FC71D74B0C1000443CD /* DatastoreViewController.swift */,
+				D37BB8401D90A60300BFAF0D /* OAuthClient.swift */,
+				D37BB8451D90ADAC00BFAF0D /* WebViewWindow.xib */,
+				D37BB8471D90ADE300BFAF0D /* WebViewWindowController.swift */,
 			);
 			path = Datastore;
 			sourceTree = "<group>";
@@ -260,6 +269,7 @@
 				D3D2EA381D75FB4A002EF89C /* descriptors.out in Resources */,
 				D35C9FAE1D74B079000443CD /* Assets.xcassets in Resources */,
 				D35C9FB11D74B079000443CD /* MainMenu.xib in Resources */,
+				D37BB8461D90ADAC00BFAF0D /* WebViewWindow.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -270,6 +280,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D37BB8411D90A60300BFAF0D /* OAuthClient.swift in Sources */,
+				D37BB8481D90ADE300BFAF0D /* WebViewWindowController.swift in Sources */,
 				D35C9FC81D74B0C1000443CD /* DatastoreViewController.swift in Sources */,
 				D35C9FAC1D74B079000443CD /* AppDelegate.swift in Sources */,
 			);

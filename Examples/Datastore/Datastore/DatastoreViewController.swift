@@ -34,8 +34,7 @@ import AppKit
 import gRPC
 import QuickProto
 
-let APIKey = "AIzaSyDBqO88sO7iXScpFzmP7nOdamVYi7Y2Lbs"
-let Host = "datastore.googleapis.com"
+let Host = "datastore.googleapis.com:443"
 
 class DatastoreViewController : NSViewController, NSTextFieldDelegate {
   @IBOutlet weak var messageField: NSTextField!
@@ -46,12 +45,15 @@ class DatastoreViewController : NSViewController, NSTextFieldDelegate {
   private var client: Client?
   private var call: Call?
 
+  private var webViewWindowController : WebViewWindowController!
+
   required init?(coder:NSCoder) {
     fileDescriptorSet = FileDescriptorSet(filename: "descriptors.out")
     super.init(coder:coder)
   }
 
   var enabled = false
+  var authClient : OAuthClient!
 
   @IBAction func messageReturnPressed(sender: NSTextField) {
     if enabled {
@@ -59,14 +61,18 @@ class DatastoreViewController : NSViewController, NSTextFieldDelegate {
     }
   }
 
-  @IBAction func addressReturnPressed(sender: NSTextField) {
-  }
-
-  @IBAction func buttonValueChanged(sender: NSButton) {
-  }
-
   override func viewDidLoad() {
     gRPC.initialize()
+
+    authClient = OAuthClient()
+    let url = authClient.authCodeURL(state:"123")!
+
+    webViewWindowController = WebViewWindowController(windowNibName:"WebViewWindow")
+    webViewWindowController.url = url
+    webViewWindowController.completion = { (code) in
+      self.authClient.exchangeCode(code:code)
+    }
+    webViewWindowController.loadWindow()
   }
 
   override func viewDidAppear() {
@@ -82,10 +88,11 @@ class DatastoreViewController : NSViewController, NSTextFieldDelegate {
 
   func callServer(address:String) {
     let requestHost = Host
-    let requestMetadata = Metadata(["x-goog-api-key":APIKey,
-                                    "x-ios-bundle-identifier":Bundle.main.bundleIdentifier!])
 
-    // NONSTREAMING
+    let authorization = "Bearer " + authClient.token!
+
+    let requestMetadata = Metadata(["authorization":authorization])
+
     if let requestMessage = self.fileDescriptorSet.createMessage("RunQueryRequest") {
       requestMessage.addField("project_id", value:"hello-86")
       let gqlQuery = self.fileDescriptorSet.createMessage("GqlQuery")
@@ -125,7 +132,7 @@ class DatastoreViewController : NSViewController, NSTextFieldDelegate {
           }
         }
       }
-
+      
     }
   }
 }
