@@ -28,3 +28,11 @@ the instructions in the [Packages](Packages) directory.
 by the addition of Grand Central Dispatch APIs for streaming
 API support; they will be fixed when threading-related 
 incompatibilities between Linux and Darwin are resolved).
+
+## Can't find something?
+
+It was harder to get the Swift package manager to deal with 
+code in outside directories than to point Xcode at them, so
+you'll find the code for gRPC, CgRPC, and QuickProto in the
+Sources directory associated with each package.
+
