@@ -15,4 +15,6 @@ the address field in the Echo window.
 When the Go server and Mac app are running on the same machine,
 both clients can be used to connect to both servers.
 
+Also, for comparison, the Objective-C directory contains an iOS
+client that connects to gRPC echo servers.
 

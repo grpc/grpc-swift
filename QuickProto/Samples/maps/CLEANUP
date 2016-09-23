@@ -1,0 +1,12 @@
+#/bin/sh
+
+echo "Removing compiled files"
+rm -rf writer go/bin go/pkg
+
+echo "Removing downloaded dependencies" 
+rm -rf go/src/github.com/ go/src/golang.org/ go/src/google.golang.org/
+
+echo "Removing generated files"
+rm -rf go/src/sample/sample.pb.go
+
+

@@ -52,8 +52,8 @@ class OAuthClient {
   public var token : String? = nil
 
   init () {
-    clientID = "885917370891-n3r74v6miibn2969estdofr68ggqa1sn.apps.googleusercontent.com"
-    clientSecret = "_JDxU8iGdHYfeeER9AAEaHbn"
+    clientID = "YOUR_CLIENT_ID"
+    clientSecret = "YOUR_CLIENT_SECRET"
     redirectURIs = ["http://localhost"]
     authURI  = "https://accounts.google.com/o/oauth2/auth"
     tokenURI = "https://accounts.google.com/o/oauth2/token"
