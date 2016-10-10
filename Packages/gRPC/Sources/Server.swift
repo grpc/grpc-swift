@@ -84,7 +84,7 @@ public class Server {
           break
         }
         // blocks
-        let event = self.completionQueue.waitForCompletion(timeout:600)
+        let event = self.completionQueue.wait(timeout:600)
         if (event.type == .complete) {
           if event.tag == 101 {
             // run the handler and remove it when it finishes
@@ -128,7 +128,7 @@ public class Server {
     if (call_error != .ok) {
       return (call_error, .complete, nil)
     } else {
-      let event = self.completionQueue.waitForCompletion(timeout:timeout)
+      let event = self.completionQueue.wait(timeout:timeout)
       if (event.type == .complete) {
         handler.completionQueue.run() {
           self.handlers.remove(handler)

@@ -55,7 +55,7 @@ public enum CompletionType {
   }
 }
 
-public struct CompletionEvent {
+public struct CompletionQueueEvent {
   public var type: CompletionType
   public var success: Int32
   public var tag: Int64
@@ -89,9 +89,9 @@ class CompletionQueue {
   ///
   /// - Parameter timeout: a timeout value in seconds
   /// - Returns: a grpc_completion_type code indicating the result of waiting
-  public func waitForCompletion(timeout: Double) -> CompletionEvent {
+  public func wait(timeout: Double) -> CompletionQueueEvent {
     let event = cgrpc_completion_queue_get_next_event(underlyingCompletionQueue, timeout);
-    return CompletionEvent(event)
+    return CompletionQueueEvent(event)
   }
 
   /// Run a completion queue
