@@ -38,7 +38,7 @@ import Foundation // for String.Encoding
 /// A gRPC request handler
 public class Handler {
   /// Pointer to underlying C representation
-  var underlyingHandler: UnsafeMutableRawPointer!
+  private var underlyingHandler: UnsafeMutableRawPointer!
 
   /// Completion queue for handler response operations
   var completionQueue: CompletionQueue
@@ -150,7 +150,7 @@ public class Handler {
 
   /// shutdown the handler's completion queue
   public func shutdown() {
-    cgrpc_completion_queue_shutdown(completionQueue.underlyingCompletionQueue)
+    completionQueue.shutdown()
   }
 
   /// Send initial metadata in response to a connection

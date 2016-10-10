@@ -39,7 +39,7 @@ import Foundation
 public class Client {
 
   /// Pointer to underlying C representation
-  var underlyingClient: UnsafeMutableRawPointer!
+  private var underlyingClient: UnsafeMutableRawPointer!
 
   /// Completion queue for client call operations
   private var completionQueue: CompletionQueue

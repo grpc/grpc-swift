@@ -73,7 +73,7 @@ class CompletionQueue {
   var name : String!
 
   /// Pointer to underlying C representation
-  var underlyingCompletionQueue : UnsafeMutableRawPointer!
+  private var underlyingCompletionQueue : UnsafeMutableRawPointer!
 
   /// Operation groups that are awaiting completion, keyed by tag
   var operationGroups : [Int64 : OperationGroup] = [:]
@@ -128,4 +128,10 @@ class CompletionQueue {
       }
     }
   }
+
+  /// Shutdown a completion queue
+  public func shutdown() -> Void {
+    cgrpc_completion_queue_shutdown(underlyingCompletionQueue)
+  }
+
 }
