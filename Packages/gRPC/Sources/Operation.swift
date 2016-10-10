@@ -72,7 +72,7 @@ class Operation_SendMessage : Operation {
   /// - Parameter message: the message to send
   init(message:ByteBuffer) {
     super.init(observer:cgrpc_observer_create_send_message())
-    cgrpc_observer_send_message_set_message(observer, message.b);
+    cgrpc_observer_send_message_set_message(observer, message.internalByteBuffer);
   }
 }
 
@@ -131,7 +131,7 @@ class Operation_ReceiveMessage : Operation {
   /// - Returns: message
   func message() -> ByteBuffer? {
     if let b = cgrpc_observer_recv_message_get_message(observer) {
-      return ByteBuffer(b:b)
+      return ByteBuffer(underlyingByteBuffer:b)
     } else {
       return nil
     }

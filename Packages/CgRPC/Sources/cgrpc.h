@@ -194,10 +194,8 @@ void cgrpc_mutex_unlock(cgrpc_mutex *mu);
 
 // byte buffer support
 void cgrpc_byte_buffer_destroy(cgrpc_byte_buffer *bb);
-cgrpc_byte_buffer *cgrpc_byte_buffer_create_with_string(const char *string);
-cgrpc_byte_buffer *cgrpc_byte_buffer_create_with_data(const void *source, size_t len);
-const char *cgrpc_byte_buffer_as_string(cgrpc_byte_buffer *bb);
-const void *cgrpc_byte_buffer_as_data(cgrpc_byte_buffer *bb, size_t *length);
+cgrpc_byte_buffer *cgrpc_byte_buffer_create_by_copying_data(const void *source, size_t len);
+const void *cgrpc_byte_buffer_copy_data(cgrpc_byte_buffer *bb, size_t *length);
 
 // event support
 int64_t cgrpc_event_tag(grpc_event ev);

@@ -36,57 +36,42 @@
 import Foundation // for String.Encoding
 
 /// Representation of raw data that may be sent and received using gRPC
-class ByteBuffer {
+public class ByteBuffer {
 
   /// Pointer to underlying C representation
-  var b: UnsafeMutableRawPointer!
+  internal var internalByteBuffer: UnsafeMutableRawPointer!
 
-  /// The provider of data in the buffer (if needed) to ensure that it is retained.
-  private var source : Any?
-
-  /// Initializes a ByteBuffer
+  /// Creates a ByteBuffer from an underlying C representation.
+  /// The ByteBuffer takes ownership of the passed-in representation.
   ///
-  /// - Parameter b: the underlying C representation
-  init(b: UnsafeMutableRawPointer) {
-    self.b = b
+  /// - Parameter underlyingByteBuffer: the underlying C representation
+  internal init(underlyingByteBuffer: UnsafeMutableRawPointer) {
+    self.internalByteBuffer = underlyingByteBuffer
   }
 
-  /// Initializes a ByteBuffer
+  /// Creates a byte buffer that contains a copy of the contents of `data`
   ///
-  /// - Parameter string: a string to store in the buffer
-  init(string: String) {
-    self.b = cgrpc_byte_buffer_create_with_string(string)
-    self.source = string
-  }
-
-  /// Initializes a ByteBuffer
-  ///
-  /// - Parameter data: data to store in the buffer
-  init(data: Data) {
+  /// - Parameter data: the data to store in the buffer
+  public init(data: Data) {
     data.withUnsafeBytes { (bytes) in
-      self.b = cgrpc_byte_buffer_create_with_data(bytes, data.count)
+      self.internalByteBuffer = cgrpc_byte_buffer_create_by_copying_data(bytes, data.count)
     }
-    self.source = data
   }
 
   deinit {
-    cgrpc_byte_buffer_destroy(b);
+    cgrpc_byte_buffer_destroy(internalByteBuffer);
   }
 
-  /// Gets a string from the contents of the ByteBuffer
-  ///
-  /// - Returns: a string formed from the ByteBuffer contents
-  func string() -> String {
-    return String(cString:cgrpc_byte_buffer_as_string(b),
-                  encoding:String.Encoding.utf8)!
-  }
-
-  /// Gets raw data from the contents of the ByteBuffer
+  /// Gets data from the contents of the ByteBuffer
   ///
   /// - Returns: data formed from the ByteBuffer contents
-  func data() -> Data {
+  public func data() -> Data? {
     var length : Int = 0
-    let bytes = cgrpc_byte_buffer_as_data(b, &length)
-    return Data(bytes:bytes!, count: length)
+    guard let bytes = cgrpc_byte_buffer_copy_data(internalByteBuffer, &length) else {
+      return nil
+    }
+    return Data(bytesNoCopy: UnsafeMutableRawPointer(mutating: bytes),
+                count: length,
+                deallocator: .free)
   }
 }
