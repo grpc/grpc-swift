@@ -38,7 +38,7 @@ import Foundation // for String.Encoding
 /// A gRPC request handler
 public class Handler {
   /// Pointer to underlying C representation
-  var h: UnsafeMutableRawPointer!
+  var underlyingHandler: UnsafeMutableRawPointer!
 
   /// Completion queue for handler response operations
   var completionQueue: CompletionQueue
@@ -49,43 +49,43 @@ public class Handler {
   /// Initializes a Handler
   ///
   /// - Parameter h: the underlying C representation
-  init(h:UnsafeMutableRawPointer!) {
-    self.h = h;
+  init(underlyingHandler:UnsafeMutableRawPointer!) {
+    self.underlyingHandler = underlyingHandler;
     self.requestMetadata = Metadata()
-    self.completionQueue = CompletionQueue(cq:cgrpc_handler_get_completion_queue(h))
+    self.completionQueue = CompletionQueue(underlyingCompletionQueue:cgrpc_handler_get_completion_queue(underlyingHandler))
     self.completionQueue.name = "Handler"
   }
 
   deinit {
-    cgrpc_handler_destroy(self.h)
+    cgrpc_handler_destroy(self.underlyingHandler)
   }
 
   /// Gets the host name sent with the request
   ///
   /// - Returns: the host name sent with the request
   public func host() -> String {
-    return String(cString:cgrpc_handler_host(h), encoding:String.Encoding.utf8)!;
+    return String(cString:cgrpc_handler_host(underlyingHandler), encoding:String.Encoding.utf8)!;
   }
 
   /// Gets the method name sent with the request
   ///
   /// - Returns: the method name sent with the request
   public func method() -> String {
-    return String(cString:cgrpc_handler_method(h), encoding:String.Encoding.utf8)!;
+    return String(cString:cgrpc_handler_method(underlyingHandler), encoding:String.Encoding.utf8)!;
   }
 
   /// Gets the caller identity associated with the request
   ///
   /// - Returns: a string representing the caller address
   public func caller() -> String {
-    return String(cString:cgrpc_handler_call_peer(h), encoding:String.Encoding.utf8)!;
+    return String(cString:cgrpc_handler_call_peer(underlyingHandler), encoding:String.Encoding.utf8)!;
   }
 
   /// Creates a call object associated with the handler
   ///
   /// - Returns: a Call object that can be used to respond to the request
   func call() -> Call {
-    return Call(call: cgrpc_handler_get_call(h),
+    return Call(call: cgrpc_handler_get_call(underlyingHandler),
                 owned: false,
                 completionQueue: self.completionQueue)
   }
@@ -96,7 +96,7 @@ public class Handler {
   ///
   /// - Returns: a grpc_call_error indicating the result of requesting the call
   func requestCall(tag: Int) -> grpc_call_error {
-    return cgrpc_handler_request_call(h, requestMetadata.array, tag)
+    return cgrpc_handler_request_call(underlyingHandler, requestMetadata.array, tag)
   }
 
   /// Receive the message sent with a call
@@ -151,7 +151,7 @@ public class Handler {
 
   /// shutdown the handler's completion queue
   public func shutdown() {
-    cgrpc_completion_queue_shutdown(completionQueue.cq)
+    cgrpc_completion_queue_shutdown(completionQueue.underlyingCompletionQueue)
   }
 
   /// Send initial metadata in response to a connection

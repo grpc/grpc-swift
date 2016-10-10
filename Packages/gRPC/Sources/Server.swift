@@ -39,7 +39,7 @@ import Foundation
 public class Server {
 
   /// Pointer to underlying C representation
-  var s: UnsafeMutableRawPointer!
+  var underlyingServer: UnsafeMutableRawPointer!
 
   /// Completion queue used for server operations
   var completionQueue: CompletionQueue
@@ -54,30 +54,30 @@ public class Server {
   ///
   /// - Parameter address: the address where the server will listen
   public init(address:String) {
-    s = cgrpc_server_create(address)
-    completionQueue = CompletionQueue(cq:cgrpc_server_get_completion_queue(s))
+    underlyingServer = cgrpc_server_create(address)
+    completionQueue = CompletionQueue(underlyingCompletionQueue:cgrpc_server_get_completion_queue(underlyingServer))
     completionQueue.name = "Server " + address
     handlers = NSMutableSet()
   }
 
   public init(address:String, key:String, certs:String) {
-    s = cgrpc_server_create_secure(address, key, certs)
-    completionQueue = CompletionQueue(cq:cgrpc_server_get_completion_queue(s))
+    underlyingServer = cgrpc_server_create_secure(address, key, certs)
+    completionQueue = CompletionQueue(underlyingCompletionQueue:cgrpc_server_get_completion_queue(underlyingServer))
     completionQueue.name = "Server " + address
     handlers = NSMutableSet()
   }
 
   deinit {
-    cgrpc_server_destroy(s)
+    cgrpc_server_destroy(underlyingServer)
   }
 
   /// Run the server
   public func run(handlerFunction: @escaping (Handler) -> Void) {
-    cgrpc_server_start(s);
+    cgrpc_server_start(underlyingServer);
     DispatchQueue.global().async {
       var running = true
       while(running) {
-        let handler = Handler(h:cgrpc_handler_create_with_server(self.s))
+        let handler = Handler(underlyingHandler:cgrpc_handler_create_with_server(self.underlyingServer))
         let call_error = handler.requestCall(tag:101)
         if (call_error != GRPC_CALL_OK) {
           // not good, let's break
@@ -112,7 +112,7 @@ public class Server {
   }
 
   public func stop() {
-    cgrpc_server_stop(s)
+    cgrpc_server_stop(underlyingServer)
   }
 
   public func onCompletion(completion:@escaping (() -> Void)) -> Void {
@@ -123,7 +123,7 @@ public class Server {
   ///
   /// - Returns: a tuple containing the results of waiting and a possible Handler for the request
   private func getNextRequest(timeout: Double) -> (grpc_call_error, grpc_completion_type, Handler?) {
-    let handler = Handler(h:cgrpc_handler_create_with_server(s))
+    let handler = Handler(underlyingHandler:cgrpc_handler_create_with_server(underlyingServer))
     let call_error = handler.requestCall(tag:101)
     if (call_error != GRPC_CALL_OK) {
       return (call_error, GRPC_OP_COMPLETE, nil)

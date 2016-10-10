@@ -51,7 +51,7 @@ public typealias SendMessageCompletion = (grpc_call_error) -> Void
 public class Call {
 
   /// Pointer to underlying C representation
-  private var call : UnsafeMutableRawPointer!
+  private var underlyingCall : UnsafeMutableRawPointer!
 
   /// Completion queue used for call
   private var completionQueue: CompletionQueue
@@ -70,7 +70,7 @@ public class Call {
   /// - Parameter call: the underlying C representation
   /// - Parameter owned: true if this instance is responsible for deleting the underlying call
   init(call: UnsafeMutableRawPointer, owned: Bool, completionQueue: CompletionQueue) {
-    self.call = call
+    self.underlyingCall = call
     self.owned = owned
     self.completionQueue = completionQueue
     self.pendingMessages = []
@@ -79,7 +79,7 @@ public class Call {
 
   deinit {
     if (owned) {
-      cgrpc_call_destroy(call)
+      cgrpc_call_destroy(underlyingCall)
     }
   }
 
@@ -94,7 +94,7 @@ public class Call {
     -> grpc_call_error {
       let mutex = CallLock.sharedInstance.mutex
       mutex.lock()
-      let error = cgrpc_call_perform(call, operations.operations, tag)
+      let error = cgrpc_call_perform(underlyingCall, operations.operations, tag)
       mutex.unlock()
       return error
   }

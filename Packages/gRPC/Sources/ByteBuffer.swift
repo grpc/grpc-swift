@@ -39,14 +39,14 @@ import Foundation // for String.Encoding
 public class ByteBuffer {
 
   /// Pointer to underlying C representation
-  internal var internalByteBuffer: UnsafeMutableRawPointer!
+  internal var underlyingByteBuffer: UnsafeMutableRawPointer!
 
   /// Creates a ByteBuffer from an underlying C representation.
   /// The ByteBuffer takes ownership of the passed-in representation.
   ///
   /// - Parameter underlyingByteBuffer: the underlying C representation
   internal init(underlyingByteBuffer: UnsafeMutableRawPointer) {
-    self.internalByteBuffer = underlyingByteBuffer
+    self.underlyingByteBuffer = underlyingByteBuffer
   }
 
   /// Creates a byte buffer that contains a copy of the contents of `data`
@@ -54,12 +54,12 @@ public class ByteBuffer {
   /// - Parameter data: the data to store in the buffer
   public init(data: Data) {
     data.withUnsafeBytes { (bytes) in
-      self.internalByteBuffer = cgrpc_byte_buffer_create_by_copying_data(bytes, data.count)
+      self.underlyingByteBuffer = cgrpc_byte_buffer_create_by_copying_data(bytes, data.count)
     }
   }
 
   deinit {
-    cgrpc_byte_buffer_destroy(internalByteBuffer);
+    cgrpc_byte_buffer_destroy(underlyingByteBuffer);
   }
 
   /// Gets data from the contents of the ByteBuffer
@@ -67,7 +67,7 @@ public class ByteBuffer {
   /// - Returns: data formed from the ByteBuffer contents
   public func data() -> Data? {
     var length : Int = 0
-    guard let bytes = cgrpc_byte_buffer_copy_data(internalByteBuffer, &length) else {
+    guard let bytes = cgrpc_byte_buffer_copy_data(underlyingByteBuffer, &length) else {
       return nil
     }
     return Data(bytesNoCopy: UnsafeMutableRawPointer(mutating: bytes),

@@ -39,15 +39,15 @@
 public class Mutex {
 
   /// Pointer to underlying C representation
-  private var mu: UnsafeMutableRawPointer!
+  private var underlyingMutex: UnsafeMutableRawPointer!
 
   /// Initializes a Mutex
   public init() {
-    mu = cgrpc_mutex_create();
+    underlyingMutex = cgrpc_mutex_create();
   }
 
   deinit {
-    cgrpc_mutex_destroy(mu);
+    cgrpc_mutex_destroy(underlyingMutex);
   }
 
   /// Locks a Mutex
@@ -58,13 +58,13 @@ public class Mutex {
   ///
   /// May block indefinitely or crash if the calling thread has a lock on the Mutex.
   public func lock() {
-    cgrpc_mutex_lock(mu);
+    cgrpc_mutex_lock(underlyingMutex);
   }
 
   /// Unlocks a Mutex
   ///
   /// Releases an exclusive lock on the Mutex held by the calling thread.
   public func unlock() {
-    cgrpc_mutex_unlock(mu);
+    cgrpc_mutex_unlock(underlyingMutex);
   }
 }

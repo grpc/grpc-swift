@@ -39,7 +39,7 @@ import Foundation
 public class Client {
 
   /// Pointer to underlying C representation
-  var c: UnsafeMutableRawPointer!
+  var underlyingClient: UnsafeMutableRawPointer!
 
   /// Completion queue for client call operations
   private var completionQueue: CompletionQueue
@@ -48,8 +48,8 @@ public class Client {
   ///
   /// - Parameter address: the address of the server to be called
   public init(address: String) {
-    c = cgrpc_client_create(address)
-    completionQueue = CompletionQueue(cq:cgrpc_client_completion_queue(c))
+    underlyingClient = cgrpc_client_create(address)
+    completionQueue = CompletionQueue(underlyingCompletionQueue:cgrpc_client_completion_queue(underlyingClient))
     completionQueue.name = "Client" // only for debugging
     self.completionQueue.run() {} // start a loop that watches the client's completion queue
   }
@@ -63,17 +63,17 @@ public class Client {
       let url = bundle.url(forResource: "roots", withExtension: "pem")!
       let data = try! Data(contentsOf: url)
       let s = String(data: data, encoding: .ascii)
-      c = cgrpc_client_create_secure(address, s, host)
+      underlyingClient = cgrpc_client_create_secure(address, s, host)
     } else {
-      c = cgrpc_client_create_secure(address, certificates, host)
+      underlyingClient = cgrpc_client_create_secure(address, certificates, host)
     }
-    completionQueue = CompletionQueue(cq:cgrpc_client_completion_queue(c))
+    completionQueue = CompletionQueue(underlyingCompletionQueue:cgrpc_client_completion_queue(underlyingClient))
     completionQueue.name = "Client" // only for debugging
     self.completionQueue.run() {} // start a loop that watches the client's completion queue
   }
 
   deinit {
-    cgrpc_client_destroy(c)
+    cgrpc_client_destroy(underlyingClient)
   }
 
   /// Constructs a Call object to make a gRPC API call
@@ -83,7 +83,7 @@ public class Client {
   /// - Parameter timeout: a timeout value in seconds
   /// - Returns: a Call object that can be used to perform the request
   public func createCall(host:String, method:String, timeout:Double) -> Call {
-    let call = cgrpc_client_create_call(c, method, host, timeout)!
+    let call = cgrpc_client_create_call(underlyingClient, method, host, timeout)!
     return Call(call:call, owned:true, completionQueue:self.completionQueue)
   }
 }
