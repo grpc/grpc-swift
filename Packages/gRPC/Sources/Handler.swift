@@ -46,6 +46,9 @@ public class Handler {
   /// Metadata received with the request
   public var requestMetadata: Metadata
 
+  /// A Call object that can be used to respond to the request
+  var call: Call!
+
   /// Initializes a Handler
   ///
   /// - Parameter h: the underlying C representation
@@ -81,16 +84,7 @@ public class Handler {
     return String(cString:cgrpc_handler_call_peer(underlyingHandler), encoding:String.Encoding.utf8)!;
   }
 
-  /// Creates a call object associated with the handler
-  ///
-  /// - Returns: a Call object that can be used to respond to the request
-  func call() -> Call {
-    return Call(call: cgrpc_handler_get_call(underlyingHandler),
-                owned: false,
-                completionQueue: self.completionQueue)
-  }
-
-  /// Request a call for the handler
+  /// Requests a call for the handler
   ///
   /// Fills the handler properties with information about the received request
   ///
@@ -100,12 +94,19 @@ public class Handler {
     return CallError.callError(grpcCallError: error)
   }
 
+  /// Prepares the handler's call object for response handling
+  ///
+  func prepareCall() -> Void {
+    self.call = Call(call: cgrpc_handler_get_call(underlyingHandler),
+                     owned: false,
+                     completionQueue: self.completionQueue)
+  }
+
   /// Receive the message sent with a call
   ///
   /// - Returns: a tuple containing status codes and a message (if available)
   public func receiveMessage(initialMetadata: Metadata,
                              completion:@escaping ((Data?) -> Void)) -> Void {
-    let call = self.call()
     let operation_sendInitialMetadata = Operation_SendInitialMetadata(metadata:initialMetadata);
     let operation_receiveMessage = Operation_ReceiveMessage()
     let operations = OperationGroup(
@@ -130,7 +131,6 @@ public class Handler {
   /// - Returns: a tuple containing status codes
   public func sendResponse(message: Data,
                            trailingMetadata: Metadata) -> Void {
-    let call = self.call()
     let operation_receiveCloseOnServer = Operation_ReceiveCloseOnServer();
     let operation_sendStatusFromServer = Operation_SendStatusFromServer(status:0,
                                                                         statusDetails:"OK",
@@ -158,7 +158,6 @@ public class Handler {
   /// Send initial metadata in response to a connection
   public func sendMetadata(initialMetadata: Metadata,
                            completion:@escaping (() -> Void)) {
-    let call = self.call()
     let operation_sendInitialMetadata = Operation_SendInitialMetadata(metadata:initialMetadata);
     let operations = OperationGroup(call:call, operations:[operation_sendInitialMetadata])
     {(success) in
@@ -176,7 +175,6 @@ public class Handler {
   ///
   /// - Returns: a tuple containing status codes and a message (if available)
   public func receiveMessage(completion:(@escaping (Data?) -> Void)) -> Void {
-    let call = self.call()
     let operation_receiveMessage = Operation_ReceiveMessage()
     let operations = OperationGroup(call:call, operations:[operation_receiveMessage])
     {(success) in
@@ -202,7 +200,6 @@ public class Handler {
   /// - Returns: a tuple containing status codes
   public func sendResponse(message: Data,
                            completion: @escaping () -> Void) -> Void {
-    let call = self.call()
     let operation_sendMessage = Operation_SendMessage(message:ByteBuffer(data:message))
     let operations = OperationGroup(call:call, operations:[operation_sendMessage])
     {(event) in
@@ -215,7 +212,6 @@ public class Handler {
 
   /// Recognize when the client has closed a request
   public func receiveClose(completion: @escaping () -> Void) -> Void {
-    let call = self.call()
     let operation_receiveClose = Operation_ReceiveCloseOnServer()
     let operations = OperationGroup(call:call, operations:[operation_receiveClose])
     {(event) in
@@ -230,7 +226,6 @@ public class Handler {
   /// Send final status to the client
   public func sendStatus(trailingMetadata: Metadata,
                          completion:@escaping (() -> Void)) -> Void {
-    let call = self.call()
     let operation_sendStatusFromServer = Operation_SendStatusFromServer(status:0,
                                                                         statusDetails:"OK",
                                                                         metadata:trailingMetadata)

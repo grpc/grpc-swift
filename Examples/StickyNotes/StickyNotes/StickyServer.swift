@@ -75,7 +75,7 @@ class StickyServer {
               requestMessage.forOneField("message") {(field) in
                 let imageData = self.drawImage(message: field.string())
 
-                let replyMessage = fileDescriptorSet.createMessage("StickyNoteResponse")!
+                let replyMessage = fileDescriptorSet.makeMessage("StickyNoteResponse")!
                 replyMessage.addField("image", value:imageData)
                 requestHandler.sendResponse(message:replyMessage.data(),
                                             trailingMetadata:Metadata())

@@ -77,7 +77,7 @@ public class FileDescriptorSet {
     return nil
   }
 
-  public func createMessage(_ name: String) -> Message! {
+  public func makeMessage(_ name: String) -> Message! {
     if let messageDescriptor = self.messageDescriptor(name: name) {
       return Message(descriptor:messageDescriptor, fields:[])
     } else {

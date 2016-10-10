@@ -165,7 +165,7 @@ class Document: NSDocument {
           break
         }
         let method = (i < steps) ? "/hello" : "/quit"
-        let call = self.client.createCall(host: host, method: method, timeout: 30)
+        let call = self.client.makeCall(host: host, method: method, timeout: 30)
 
         let metadata = Metadata([["x": "xylophone"],
                                  ["y": "yu"],

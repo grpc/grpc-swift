@@ -76,7 +76,7 @@ class QuickProtoTests: XCTestCase {
       let sampleProtoData = try! Data(contentsOf: sampleProtoURL)
       let fileDescriptorSet = FileDescriptorSet(data:sampleProtoData)
       // construct an internal representation of a message
-      let message = fileDescriptorSet.createMessage("SampleMessage")
+      let message = fileDescriptorSet.makeMessage("SampleMessage")
       XCTAssert(message != nil)
       if let message = message {
         message.addField("d") {(field) in field.setDouble(-12.34)}
@@ -89,11 +89,11 @@ class QuickProtoTests: XCTestCase {
         message.addField("b") {(field) in field.setBool(true)}
         message.addField("text") {(field) in field.setString("hello, world")}
         message.addField("message") {(field) in
-          let innerMessage = fileDescriptorSet.createMessage("SampleMessage")!
+          let innerMessage = fileDescriptorSet.makeMessage("SampleMessage")!
           innerMessage.addField("text") {(field) in field.setString("inner message")}
           innerMessage.addField("i32") {(field) in field.setInt(54321)}
           innerMessage.addField("message") {(field) in
-            let innermostMessage = fileDescriptorSet.createMessage("SampleMessage")!
+            let innermostMessage = fileDescriptorSet.makeMessage("SampleMessage")!
             innermostMessage.addField("text") {(field) in field.setString("innermost message")}
             innermostMessage.addField("i32") {(field) in field.setInt(12345)}
             field.setMessage(innermostMessage)

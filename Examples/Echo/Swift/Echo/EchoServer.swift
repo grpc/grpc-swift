@@ -70,7 +70,7 @@ class EchoServer {
             let requestMessage =
             fileDescriptorSet.readMessage("EchoRequest", data: requestData) {
             requestMessage.forOneField("text") {(field) in
-              let replyMessage = fileDescriptorSet.createMessage("EchoResponse")!
+              let replyMessage = fileDescriptorSet.makeMessage("EchoResponse")!
               replyMessage.addField("text", value:"Swift nonstreaming echo " + field.string())
               requestHandler.sendResponse(message:replyMessage.data(),
                                           trailingMetadata:Metadata())
@@ -109,7 +109,7 @@ class EchoServer {
         if let requestData = requestData,
           let requestMessage = fileDescriptorSet.readMessage("EchoRequest", data:requestData) {
           requestMessage.forOneField("text") {(field) in
-            let replyMessage = fileDescriptorSet.createMessage("EchoResponse")!
+            let replyMessage = fileDescriptorSet.makeMessage("EchoResponse")!
             replyMessage.addField("text", value:"Swift streaming echo " + field.string())
             requestHandler.sendResponse(message:replyMessage.data()) {
               // after we've sent our response, prepare to handle another message

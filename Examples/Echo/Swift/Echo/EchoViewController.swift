@@ -82,7 +82,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     }
   }
 
-  func createClient(address: String, host: String) {
+  func prepareClient(address: String, host: String) {
     if (TLSButton.intValue == 0) {
       client = Client(address:address)
     } else {
@@ -99,16 +99,16 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
 
     if (self.streamingButton.intValue == 0) {
       // NONSTREAMING
-      if let requestMessage = self.fileDescriptorSet.createMessage("EchoRequest") {
+      if let requestMessage = self.fileDescriptorSet.makeMessage("EchoRequest") {
         requestMessage.addField("text", value:self.messageField.stringValue)
         let requestMessageData = requestMessage.data()
-        createClient(address:address, host:requestHost)
+        prepareClient(address:address, host:requestHost)
         guard let client = client else {
           return
         }
-        call = client.createCall(host: requestHost,
-                                 method: "/echo.Echo/Get",
-                                 timeout: 30.0)
+        call = client.makeCall(host: requestHost,
+                               method: "/echo.Echo/Get",
+                               timeout: 30.0)
         guard let call = call else {
           return
         }
@@ -135,13 +135,13 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     else {
       // STREAMING
       if (!nowStreaming) {
-        createClient(address:address, host:requestHost)
+        prepareClient(address:address, host:requestHost)
         guard let client = client else {
           return
         }
-        call = client.createCall(host: requestHost,
-                                 method: "/echo.Echo/Update",
-                                 timeout: 30.0)
+        call = client.makeCall(host: requestHost,
+                               method: "/echo.Echo/Update",
+                               timeout: 30.0)
         guard let call = call else {
           return
         }
@@ -154,7 +154,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   }
 
   func sendMessage() {
-    let requestMessage = self.fileDescriptorSet.createMessage("EchoRequest")!
+    let requestMessage = self.fileDescriptorSet.makeMessage("EchoRequest")!
     requestMessage.addField("text", value:self.messageField.stringValue)
     let messageData = requestMessage.data()
     if let call = call {

@@ -92,9 +92,9 @@ class DatastoreViewController : NSViewController, NSTextFieldDelegate {
 
     let requestMetadata = Metadata(["authorization":authorization])
 
-    if let requestMessage = self.fileDescriptorSet.createMessage("RunQueryRequest") {
+    if let requestMessage = self.fileDescriptorSet.makeMessage("RunQueryRequest") {
       requestMessage.addField("project_id", value:"hello-86")
-      let gqlQuery = self.fileDescriptorSet.createMessage("GqlQuery")
+      let gqlQuery = self.fileDescriptorSet.makeMessage("GqlQuery")
 
       var query = self.messageField.stringValue
       if query == "" {
@@ -112,7 +112,7 @@ class DatastoreViewController : NSViewController, NSTextFieldDelegate {
       guard let client = client else {
         return
       }
-      call = client.createCall(host: requestHost,
+      call = client.makeCall(host: requestHost,
                                method: "/google.datastore.v1.Datastore/RunQuery",
                                timeout: 30.0)
       guard let call = call else {

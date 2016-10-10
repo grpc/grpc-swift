@@ -68,7 +68,7 @@ class StickyNoteViewController : NSViewController, NSTextFieldDelegate {
     let text = self.messageField.stringValue
 
     // build the message
-    if let requestMessage = fileDescriptorSet.createMessage("StickyNoteRequest") {
+    if let requestMessage = fileDescriptorSet.makeMessage("StickyNoteRequest") {
       requestMessage.addField("message", value:text)
 
       let requestHost = "foo.test.google.fr"
@@ -78,7 +78,7 @@ class StickyNoteViewController : NSViewController, NSTextFieldDelegate {
                                       ["z":"zither"]])
 
       client = Client(address:address)
-      let call = client.createCall(host: requestHost, method: requestMethod, timeout: 600)
+      let call = client.makeCall(host: requestHost, method: requestMethod, timeout: 600)
       _ = call.performNonStreamingCall(messageData: requestMessage.data(),
                                        metadata: requestMetadata,
                                        completion:
