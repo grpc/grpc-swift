@@ -47,7 +47,29 @@ public class Handler {
   public var requestMetadata: Metadata
 
   /// A Call object that can be used to respond to the request
-  var call: Call!
+  lazy var call: Call = {
+    return Call(call: cgrpc_handler_get_call(self.underlyingHandler),
+                owned: false,
+                completionQueue: self.completionQueue)
+    }()
+
+  /// The host name sent with the request
+  public lazy var host: String = {
+    return String(cString:cgrpc_handler_host(self.underlyingHandler),
+                  encoding:.utf8)!;
+  }()
+
+  /// The method name sent with the request
+  public lazy var method: String = {
+    return String(cString:cgrpc_handler_method(self.underlyingHandler),
+                  encoding:.utf8)!;
+  }()
+
+  /// The caller address associated with the request
+  public lazy var caller: String = {
+    return String(cString:cgrpc_handler_call_peer(self.underlyingHandler),
+                  encoding:.utf8)!;
+  }()
 
   /// Initializes a Handler
   ///
@@ -55,33 +77,13 @@ public class Handler {
   init(underlyingHandler:UnsafeMutableRawPointer!) {
     self.underlyingHandler = underlyingHandler;
     self.requestMetadata = Metadata()
-    self.completionQueue = CompletionQueue(underlyingCompletionQueue:cgrpc_handler_get_completion_queue(underlyingHandler))
+    self.completionQueue = CompletionQueue(
+      underlyingCompletionQueue:cgrpc_handler_get_completion_queue(underlyingHandler))
     self.completionQueue.name = "Handler"
   }
 
   deinit {
     cgrpc_handler_destroy(self.underlyingHandler)
-  }
-
-  /// Gets the host name sent with the request
-  ///
-  /// - Returns: the host name sent with the request
-  public func host() -> String {
-    return String(cString:cgrpc_handler_host(underlyingHandler), encoding:String.Encoding.utf8)!;
-  }
-
-  /// Gets the method name sent with the request
-  ///
-  /// - Returns: the method name sent with the request
-  public func method() -> String {
-    return String(cString:cgrpc_handler_method(underlyingHandler), encoding:String.Encoding.utf8)!;
-  }
-
-  /// Gets the caller identity associated with the request
-  ///
-  /// - Returns: a string representing the caller address
-  public func caller() -> String {
-    return String(cString:cgrpc_handler_call_peer(underlyingHandler), encoding:String.Encoding.utf8)!;
   }
 
   /// Requests a call for the handler
@@ -92,14 +94,6 @@ public class Handler {
   func requestCall(tag: Int) -> CallError {
     let error = cgrpc_handler_request_call(underlyingHandler, requestMetadata.array, tag)
     return CallError.callError(grpcCallError: error)
-  }
-
-  /// Prepares the handler's call object for response handling
-  ///
-  func prepareCall() -> Void {
-    self.call = Call(call: cgrpc_handler_get_call(underlyingHandler),
-                     owned: false,
-                     completionQueue: self.completionQueue)
   }
 
   /// Receive the message sent with a call
@@ -122,7 +116,9 @@ public class Handler {
       }
     }
     self.completionQueue.operationGroups[operations.tag] = operations
-    _ = call.performOperations(operations:operations, tag:operations.tag, completionQueue: self.completionQueue)
+    _ = call.performOperations(operations:operations,
+                               tag:operations.tag,
+                               completionQueue: self.completionQueue)
   }
 
   /// Sends the response to a request
@@ -147,7 +143,9 @@ public class Handler {
       self.shutdown()
     }
     self.completionQueue.operationGroups[operations.tag] = operations
-    _ = call.performOperations(operations:operations, tag:operations.tag, completionQueue: self.completionQueue)
+    _ = call.performOperations(operations:operations,
+                               tag:operations.tag,
+                               completionQueue: self.completionQueue)
   }
 
   /// shutdown the handler's completion queue
@@ -168,7 +166,9 @@ public class Handler {
       }
     }
     self.completionQueue.operationGroups[operations.tag] = operations
-    _ = call.performOperations(operations:operations, tag:operations.tag, completionQueue: self.completionQueue)
+    _ = call.performOperations(operations:operations,
+                               tag:operations.tag,
+                               completionQueue: self.completionQueue)
   }
 
   /// Receive the message sent with a call
@@ -190,7 +190,9 @@ public class Handler {
       }
     }
     self.completionQueue.operationGroups[operations.tag] = operations
-    let call_error = call.performOperations(operations:operations, tag:operations.tag, completionQueue: self.completionQueue)
+    let call_error = call.performOperations(operations:operations,
+                                            tag:operations.tag,
+                                            completionQueue: self.completionQueue)
     print("perform receiveMessage \(call_error)")
   }
 
@@ -207,7 +209,9 @@ public class Handler {
       completion()
     }
     self.completionQueue.operationGroups[operations.tag] = operations
-    _ = call.performOperations(operations:operations, tag:operations.tag, completionQueue: self.completionQueue)
+    _ = call.performOperations(operations:operations,
+                               tag:operations.tag,
+                               completionQueue: self.completionQueue)
   }
 
   /// Recognize when the client has closed a request
@@ -219,7 +223,9 @@ public class Handler {
       completion()
     }
     self.completionQueue.operationGroups[operations.tag] = operations
-    let call_error = call.performOperations(operations:operations, tag:operations.tag, completionQueue: self.completionQueue)
+    let call_error = call.performOperations(operations:operations,
+                                            tag:operations.tag,
+                                            completionQueue: self.completionQueue)
     print("perform receiveClose \(call_error)")
   }
 
@@ -235,6 +241,8 @@ public class Handler {
       completion()
     }
     self.completionQueue.operationGroups[operations.tag] = operations
-    _ = call.performOperations(operations:operations, tag:operations.tag, completionQueue: self.completionQueue)
+    _ = call.performOperations(operations:operations,
+                               tag:operations.tag,
+                               completionQueue: self.completionQueue)
   }
 }

@@ -57,16 +57,16 @@ class StickyServer {
       let server = gRPC.Server(address:self.address)
       server.run {(requestHandler) in
 
-        self.log("Received request to " + requestHandler.host()
-          + " calling " + requestHandler.method()
-          + " from " + requestHandler.caller())
+        self.log("Received request to " + requestHandler.host
+          + " calling " + requestHandler.method
+          + " from " + requestHandler.caller)
         let initialMetadata = requestHandler.requestMetadata
         for i in 0..<initialMetadata.count() {
           self.log("Received initial metadata -> " + initialMetadata.key(index:i)
             + ":" + initialMetadata.value(index:i))
         }
 
-        if (requestHandler.method() == "/messagepb.StickyNote/Get") {
+        if (requestHandler.method == "/messagepb.StickyNote/Get") {
           requestHandler.receiveMessage(initialMetadata:Metadata())
           {(requestData) in
             if let requestData = requestData,

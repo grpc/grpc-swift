@@ -58,12 +58,12 @@ class EchoServer {
     print("GRPC version " + gRPC.version())
 
      server.run {(requestHandler) in
-      print("Received request to " + requestHandler.host()
-        + " calling " + requestHandler.method()
-        + " from " + requestHandler.caller())
+      print("Received request to " + requestHandler.host
+        + " calling " + requestHandler.method
+        + " from " + requestHandler.caller)
 
       // NONSTREAMING
-      if (requestHandler.method() == "/echo.Echo/Get") {
+      if (requestHandler.method == "/echo.Echo/Get") {
         requestHandler.receiveMessage(initialMetadata:Metadata())
         {(requestData) in
           if let requestData = requestData,
@@ -80,7 +80,7 @@ class EchoServer {
       }
 
       // STREAMING
-      if (requestHandler.method() == "/echo.Echo/Update") {
+      if (requestHandler.method == "/echo.Echo/Update") {
         requestHandler.sendMetadata(
           initialMetadata: Metadata(),
           completion: {

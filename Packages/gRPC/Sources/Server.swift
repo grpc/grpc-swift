@@ -87,7 +87,6 @@ public class Server {
         let event = self.completionQueue.waitForCompletion(timeout:600)
         if (event.type == .complete) {
           if event.tag == 101 {
-            handler.prepareCall()
             // run the handler and remove it when it finishes
             if event.success != 0 {
               self.handlers.add(handler)
@@ -134,7 +133,6 @@ public class Server {
         handler.completionQueue.run() {
           self.handlers.remove(handler)
         }
-        handler.prepareCall()
         self.handlers.add(handler)
         return (.ok, .complete, handler)
       } else {

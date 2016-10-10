@@ -219,9 +219,9 @@ class Document: NSDocument {
 
       requestCount += 1
 
-      self.log("\(requestCount): Received request " + requestHandler.host()
-        + " " + requestHandler.method()
-        + " from " + requestHandler.caller())
+      self.log("\(requestCount): Received request " + requestHandler.host
+        + " " + requestHandler.method
+        + " from " + requestHandler.caller)
 
       let initialMetadata = requestHandler.requestMetadata
 
@@ -239,7 +239,7 @@ class Document: NSDocument {
         self.log("\(requestCount): Received message: " + messageString!)
       }
 
-      if requestHandler.method() == "/quit" {
+      if requestHandler.method == "/quit" {
         self.stop()
       }
 
