@@ -35,6 +35,38 @@
 #endif
 import Foundation
 
+public enum CompletionType {
+  case queueShutdown
+  case queueTimeout
+  case complete
+  case unknown
+
+  static func completionType(grpcCompletionType value: grpc_completion_type) -> CompletionType {
+    switch(value) {
+    case GRPC_QUEUE_SHUTDOWN:
+      return .queueShutdown
+    case GRPC_QUEUE_TIMEOUT:
+      return .queueTimeout
+    case GRPC_OP_COMPLETE:
+      return .complete
+    default:
+      return .unknown
+    }
+  }
+}
+
+public struct CompletionEvent {
+  public var type: CompletionType
+  public var success: Int32
+  public var tag: Int64
+
+  init(_ event: grpc_event) {
+    type = CompletionType.completionType(grpcCompletionType: event.type)
+    success = event.success
+    tag = cgrpc_event_tag(event)
+  }
+}
+
 /// A gRPC Completion Queue
 class CompletionQueue {
 
@@ -57,8 +89,9 @@ class CompletionQueue {
   ///
   /// - Parameter timeout: a timeout value in seconds
   /// - Returns: a grpc_completion_type code indicating the result of waiting
-  public func waitForCompletion(timeout: Double) -> grpc_event {
-    return cgrpc_completion_queue_get_next_event(underlyingCompletionQueue, timeout);
+  public func waitForCompletion(timeout: Double) -> CompletionEvent {
+    let event = cgrpc_completion_queue_get_next_event(underlyingCompletionQueue, timeout);
+    return CompletionEvent(event)
   }
 
   /// Run a completion queue

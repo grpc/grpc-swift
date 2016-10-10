@@ -94,9 +94,10 @@ public class Handler {
   ///
   /// Fills the handler properties with information about the received request
   ///
-  /// - Returns: a grpc_call_error indicating the result of requesting the call
-  func requestCall(tag: Int) -> grpc_call_error {
-    return cgrpc_handler_request_call(underlyingHandler, requestMetadata.array, tag)
+  /// - Returns: a CallError indicating the result of requesting the call
+  func requestCall(tag: Int) -> CallError {
+    let error = cgrpc_handler_request_call(underlyingHandler, requestMetadata.array, tag)
+    return CallError.callError(grpcCallError: error)
   }
 
   /// Receive the message sent with a call

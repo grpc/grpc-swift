@@ -79,14 +79,14 @@ public class Server {
       while(running) {
         let handler = Handler(underlyingHandler:cgrpc_handler_create_with_server(self.underlyingServer))
         let call_error = handler.requestCall(tag:101)
-        if (call_error != GRPC_CALL_OK) {
+        if (call_error != .ok) {
           // not good, let's break
           break
         }
         // blocks
         let event = self.completionQueue.waitForCompletion(timeout:600)
-        if (event.type == GRPC_OP_COMPLETE) {
-          if cgrpc_event_tag(event) == 101 {
+        if (event.type == .complete) {
+          if event.tag == 101 {
             // run the handler and remove it when it finishes
             if event.success != 0 {
               self.handlers.add(handler)
@@ -96,12 +96,12 @@ public class Server {
               }
               handlerFunction(handler)
             }
-          } else if cgrpc_event_tag(event) == 0 {
+          } else if event.tag == 0 {
             running = false // exit the loop
           }
-        } else if (event.type == GRPC_QUEUE_TIMEOUT) {
+        } else if (event.type == .queueTimeout) {
           // everything is fine
-        } else if (event.type == GRPC_QUEUE_SHUTDOWN) {
+        } else if (event.type == .queueShutdown) {
           running = false
         }
       }
@@ -122,21 +122,21 @@ public class Server {
   /// Gets the next request sent to the server
   ///
   /// - Returns: a tuple containing the results of waiting and a possible Handler for the request
-  private func getNextRequest(timeout: Double) -> (grpc_call_error, grpc_completion_type, Handler?) {
+  private func getNextRequest(timeout: Double) -> (CallError, CompletionType, Handler?) {
     let handler = Handler(underlyingHandler:cgrpc_handler_create_with_server(underlyingServer))
     let call_error = handler.requestCall(tag:101)
-    if (call_error != GRPC_CALL_OK) {
-      return (call_error, GRPC_OP_COMPLETE, nil)
+    if (call_error != .ok) {
+      return (call_error, .complete, nil)
     } else {
       let event = self.completionQueue.waitForCompletion(timeout:timeout)
-      if (event.type == GRPC_OP_COMPLETE) {
+      if (event.type == .complete) {
         handler.completionQueue.run() {
           self.handlers.remove(handler)
         }
         self.handlers.add(handler)
-        return (GRPC_CALL_OK, GRPC_OP_COMPLETE, handler)
+        return (.ok, .complete, handler)
       } else {
-        return (GRPC_CALL_OK, event.type, nil)
+        return (.ok, event.type, nil)
       }
     }
   }
