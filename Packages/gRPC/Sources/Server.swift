@@ -122,7 +122,7 @@ public class Server {
   /// Gets the next request sent to the server
   ///
   /// - Returns: a tuple containing the results of waiting and a possible Handler for the request
-  private func getNextRequest(timeout: Double) -> (CallError, CompletionType, Handler?) {
+  private func getNextRequest(timeout: TimeInterval) -> (CallError, CompletionType, Handler?) {
     let handler = Handler(underlyingHandler:cgrpc_handler_create_with_server(underlyingServer))
     let call_error = handler.requestCall(tag:101)
     if (call_error != .ok) {

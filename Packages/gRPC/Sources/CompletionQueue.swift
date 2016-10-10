@@ -91,7 +91,7 @@ internal class CompletionQueue {
   ///
   /// - Parameter timeout: a timeout value in seconds
   /// - Returns: a grpc_completion_type code indicating the result of waiting
-  internal func wait(timeout: Double) -> CompletionQueueEvent {
+  internal func wait(timeout: TimeInterval) -> CompletionQueueEvent {
     let event = cgrpc_completion_queue_get_next_event(underlyingCompletionQueue, timeout);
     return CompletionQueueEvent(event)
   }
