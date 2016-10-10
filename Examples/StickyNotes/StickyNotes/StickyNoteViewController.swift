@@ -82,9 +82,9 @@ class StickyNoteViewController : NSViewController, NSTextFieldDelegate {
       _ = call.performNonStreamingCall(messageData: requestMessage.data(),
                                        metadata: requestMetadata,
                                        completion:
-        { (status, statusDetails, messageData, initialMetadata, trailingMetadata) in
+        { (callResult) in
 
-          if let initialMetadata = initialMetadata {
+          if let initialMetadata = callResult.initialMetadata {
             for j in 0..<initialMetadata.count() {
               self.log("Received initial metadata -> "
                 + initialMetadata.key(index:j) + " : "
@@ -92,9 +92,9 @@ class StickyNoteViewController : NSViewController, NSTextFieldDelegate {
             }
           }
 
-          self.log("Received status: \(status) \(statusDetails)")
+          self.log("Received status: \(callResult.statusCode) \(callResult.statusMessage)")
 
-          if let responseData = messageData,
+          if let responseData = callResult.resultData,
             let responseMessage = fileDescriptorSet.readMessage("StickyNoteResponse",
                                                                 data: responseData) {
             responseMessage.forOneField("image") {(field) in
@@ -106,7 +106,7 @@ class StickyNoteViewController : NSViewController, NSTextFieldDelegate {
             }
           }
 
-          if let trailingMetadata = trailingMetadata {
+          if let trailingMetadata = callResult.trailingMetadata {
             for j in 0..<trailingMetadata.count() {
               self.log("Received trailing metadata -> "
                 + trailingMetadata.key(index:j) + " : "

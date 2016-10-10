@@ -114,9 +114,9 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         }
         _ = call.performNonStreamingCall(messageData: requestMessageData,
                                          metadata: requestMetadata)
-        { (status, statusDetails, messageData, initialMetadata, trailingMetadata) in
-          print("Received status: \(status): \(statusDetails)")
-          if let messageData = messageData,
+        { (callResult) in
+          print("Received status: \(callResult.statusCode): \(callResult.statusMessage)")
+          if let messageData = callResult.resultData,
             let responseMessage = self.fileDescriptorSet.readMessage("EchoResponse",
                                                                      data:messageData) {
             responseMessage.forOneField("text") {(field) in
@@ -126,7 +126,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
             }
           } else {
             DispatchQueue.main.async {
-              self.outputField.stringValue = "No message received. gRPC Status \(status): \(statusDetails)"
+              self.outputField.stringValue = "No message received. gRPC Status \(callResult.statusCode): \(callResult.statusMessage)"
             }
           }
         }

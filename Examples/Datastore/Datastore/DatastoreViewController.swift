@@ -120,9 +120,9 @@ class DatastoreViewController : NSViewController, NSTextFieldDelegate {
       }
       _ = call.performNonStreamingCall(messageData: requestMessageData,
                                        metadata: requestMetadata)
-      { (status, statusDetails, messageData, initialMetadata, trailingMetadata) in
-        print("Received status: \(status): \(statusDetails)")
-        if let messageData = messageData,
+      { (callResult) in
+        print("Received status: \(callResult.statusCode): \(callResult.statusMessage)")
+        if let messageData = callResult.resultData,
           let responseMessage = self.fileDescriptorSet.readMessage("RunQueryResponse",
                                                                    data:messageData) {
           responseMessage.display()
@@ -133,7 +133,7 @@ class DatastoreViewController : NSViewController, NSTextFieldDelegate {
           }
         } else {
           DispatchQueue.main.async {
-            self.outputField.stringValue = "No message received. gRPC Status \(status): \(statusDetails)"
+            self.outputField.stringValue = "No message received. gRPC Status \(callResult.statusCode): \(callResult.statusMessage)"
           }
         }
       }

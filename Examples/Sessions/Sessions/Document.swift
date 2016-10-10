@@ -173,17 +173,17 @@ class Document: NSDocument {
 
         _ = call.performNonStreamingCall(messageData: messageData!,
                                          metadata: metadata)
-        {(status, statusDetails, messageData, initialMetadata, trailingMetadata) in
+        {(callResult) in
 
-          if let initialMetadata = initialMetadata {
+          if let initialMetadata = callResult.initialMetadata {
             for j in 0..<initialMetadata.count() {
               self.log("\(i): Received initial metadata -> " + initialMetadata.key(index:j)
                 + " : " + initialMetadata.value(index:j))
             }
           }
 
-          self.log("\(i): Received status: \(status) \(statusDetails)")
-          if status != 0 {
+          self.log("\(i): Received status: \(callResult.statusCode) \(callResult.statusMessage)")
+          if callResult.statusCode != 0 {
             self.setIsRunning(false)
           }
           if let messageData = messageData {
@@ -191,7 +191,7 @@ class Document: NSDocument {
             self.log("\(i): Received message: " + messageString!)
           }
 
-          if let trailingMetadata = trailingMetadata {
+          if let trailingMetadata = callResult.trailingMetadata {
             for j in 0..<trailingMetadata.count() {
               self.log("\(i): Received trailing metadata -> " + trailingMetadata.key(index:j)
                 + " : " + trailingMetadata.value(index:j))

@@ -44,7 +44,15 @@ private class CallLock {
   static let sharedInstance = CallLock()
 }
 
-public typealias CallCompletion = (Int, String?, Data?, Metadata?, Metadata?) -> Void
+public struct CallResult {
+  public var statusCode : Int
+  public var statusMessage : String?
+  public var resultData : Data?
+  public var initialMetadata : Metadata?
+  public var trailingMetadata : Metadata?
+}
+
+public typealias CallCompletion = (CallResult) -> Void
 public typealias SendMessageCompletion = (grpc_call_error) -> Void
 
 /// A gRPC API call
@@ -127,13 +135,17 @@ public class Call {
                                completion:
       {(success) in
         if success {
-          completion(operation_receiveStatusOnClient.status(),
-                     operation_receiveStatusOnClient.statusDetails(),
-                     operation_receiveMessage.message()?.data(),
-                     operation_receiveInitialMetadata.metadata(),
-                     operation_receiveStatusOnClient.metadata())
+          completion(CallResult(statusCode:operation_receiveStatusOnClient.status(),
+                                statusMessage:operation_receiveStatusOnClient.statusDetails(),
+                                resultData:operation_receiveMessage.message()?.data(),
+                                initialMetadata:operation_receiveInitialMetadata.metadata(),
+                                trailingMetadata:operation_receiveStatusOnClient.metadata()))
         } else {
-          completion(0, nil, nil, nil, nil)
+          completion(CallResult(statusCode:0,
+                                statusMessage:nil,
+                                resultData:nil,
+                                initialMetadata:nil,
+                                trailingMetadata:nil))
         }
     })
 
