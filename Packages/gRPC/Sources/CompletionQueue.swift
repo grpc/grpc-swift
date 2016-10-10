@@ -35,7 +35,7 @@
 #endif
 import Foundation
 
-public enum CompletionType {
+internal enum CompletionType {
   case queueShutdown
   case queueTimeout
   case complete
@@ -55,10 +55,10 @@ public enum CompletionType {
   }
 }
 
-public struct CompletionQueueEvent {
-  public var type: CompletionType
-  public var success: Int32
-  public var tag: Int64
+internal struct CompletionQueueEvent {
+  internal var type: CompletionType
+  internal var success: Int32
+  internal var tag: Int64
 
   init(_ event: grpc_event) {
     type = CompletionType.completionType(grpcCompletionType: event.type)
@@ -68,34 +68,36 @@ public struct CompletionQueueEvent {
 }
 
 /// A gRPC Completion Queue
-class CompletionQueue {
+internal class CompletionQueue {
 
-  var name : String!
+  /// Optional user-provided name for the queue
+  internal var name : String!
 
   /// Pointer to underlying C representation
   private var underlyingCompletionQueue : UnsafeMutableRawPointer!
 
   /// Operation groups that are awaiting completion, keyed by tag
-  var operationGroups : [Int64 : OperationGroup] = [:]
+  internal var operationGroups : [Int64 : OperationGroup] = [:]
 
   /// Initializes a CompletionQueue
   ///
   /// - Parameter cq: the underlying C representation
   init(underlyingCompletionQueue: UnsafeMutableRawPointer) {
-    self.underlyingCompletionQueue = underlyingCompletionQueue // NOT OWNED, so we don't dealloc it
+    // NOT OWNED, so we don't dealloc it in a deinit
+    self.underlyingCompletionQueue = underlyingCompletionQueue
   }
 
   /// Waits for an event to complete
   ///
   /// - Parameter timeout: a timeout value in seconds
   /// - Returns: a grpc_completion_type code indicating the result of waiting
-  public func wait(timeout: Double) -> CompletionQueueEvent {
+  internal func wait(timeout: Double) -> CompletionQueueEvent {
     let event = cgrpc_completion_queue_get_next_event(underlyingCompletionQueue, timeout);
     return CompletionQueueEvent(event)
   }
 
   /// Run a completion queue
-  public func run(completion:@escaping () -> Void) {
+  internal func run(completion:@escaping () -> Void) {
     DispatchQueue.global().async {
       var running = true
       while (running) {
@@ -130,8 +132,7 @@ class CompletionQueue {
   }
 
   /// Shutdown a completion queue
-  public func shutdown() -> Void {
+  internal func shutdown() -> Void {
     cgrpc_completion_queue_shutdown(underlyingCompletionQueue)
   }
-
 }
