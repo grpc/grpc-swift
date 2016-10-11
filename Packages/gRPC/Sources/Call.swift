@@ -132,8 +132,8 @@ public class Call {
   ///
   /// - Parameter call: the underlying C representation
   /// - Parameter owned: true if this instance is responsible for deleting the underlying call
-  init(call: UnsafeMutableRawPointer, owned: Bool, completionQueue: CompletionQueue) {
-    self.underlyingCall = call
+  init(underlyingCall: UnsafeMutableRawPointer, owned: Bool, completionQueue: CompletionQueue) {
+    self.underlyingCall = underlyingCall
     self.owned = owned
     self.completionQueue = completionQueue
     self.pendingMessages = []
@@ -157,7 +157,7 @@ public class Call {
       completionQueue.operationGroups[operations.tag] = operations
       let mutex = CallLock.sharedInstance.mutex
       mutex.lock()
-      let error = cgrpc_call_perform(underlyingCall, operations.operations, operations.tag)
+      let error = cgrpc_call_perform(underlyingCall, operations.underlyingOperations, operations.tag)
       mutex.unlock()
       return CallError.callError(grpcCallError:error)
   }

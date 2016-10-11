@@ -59,7 +59,7 @@ class OperationGroup {
   var operationsArray : [Operation]?
 
   /// Pointer to underlying C representation
-  var operations : UnsafeMutableRawPointer!
+  var underlyingOperations : UnsafeMutableRawPointer!
 
   /// Completion handler that is called when the group completes
   var completion : ((Bool) -> Void)
@@ -72,10 +72,10 @@ class OperationGroup {
        completion: @escaping ((Bool) -> Void)) {
     self.call = call
     self.operationsArray = operations
-    self.operations = cgrpc_operations_create()
-    cgrpc_operations_reserve_space_for_operations(self.operations, Int32(operations.count))
+    self.underlyingOperations = cgrpc_operations_create()
+    cgrpc_operations_reserve_space_for_operations(self.underlyingOperations, Int32(operations.count))
     for operation in operations {
-      cgrpc_operations_add_operation(self.operations, operation.observer)
+      cgrpc_operations_add_operation(self.underlyingOperations, operation.underlyingObserver)
     }
     self.completion = completion
     let mutex = OperationGroupTagLock.sharedInstance.mutex

@@ -48,7 +48,7 @@ public class Handler {
 
   /// A Call object that can be used to respond to the request
   lazy var call: Call = {
-    return Call(call: cgrpc_handler_get_call(self.underlyingHandler),
+    return Call(underlyingCall: cgrpc_handler_get_call(self.underlyingHandler),
                 owned: false,
                 completionQueue: self.completionQueue)
     }()
@@ -92,7 +92,7 @@ public class Handler {
   ///
   /// - Returns: a CallError indicating the result of requesting the call
   func requestCall(tag: Int) -> CallError {
-    let error = cgrpc_handler_request_call(underlyingHandler, requestMetadata.array, tag)
+    let error = cgrpc_handler_request_call(underlyingHandler, requestMetadata.underlyingArray, tag)
     return CallError.callError(grpcCallError: error)
   }
 

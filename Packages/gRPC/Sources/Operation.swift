@@ -39,17 +39,17 @@ import Foundation // for String.Encoding
 class Operation {
 
   /// Pointer to underlying C representation
-  var observer: UnsafeMutableRawPointer
+  var underlyingObserver: UnsafeMutableRawPointer
 
   /// Initializes an Operation Observer
   ///
   /// - Parameter observer: the underlying C representation
-  init(observer: UnsafeMutableRawPointer) {
-    self.observer = observer
+  init(underlyingObserver: UnsafeMutableRawPointer) {
+    self.underlyingObserver = underlyingObserver
   }
 
   deinit {
-    cgrpc_observer_destroy(observer);
+    cgrpc_observer_destroy(underlyingObserver);
   }
 }
 
@@ -60,7 +60,7 @@ class Operation_SendInitialMetadata : Operation {
   ///
   /// - Parameter metadata: the initial metadata to send
   init(metadata:Metadata) {
-    super.init(observer:cgrpc_observer_create_send_initial_metadata(metadata.array))
+    super.init(underlyingObserver:cgrpc_observer_create_send_initial_metadata(metadata.underlyingArray))
   }
 }
 
@@ -71,8 +71,8 @@ class Operation_SendMessage : Operation {
   ///
   /// - Parameter message: the message to send
   init(message:ByteBuffer) {
-    super.init(observer:cgrpc_observer_create_send_message())
-    cgrpc_observer_send_message_set_message(observer, message.underlyingByteBuffer);
+    super.init(underlyingObserver:cgrpc_observer_create_send_message())
+    cgrpc_observer_send_message_set_message(underlyingObserver, message.underlyingByteBuffer);
   }
 }
 
@@ -81,7 +81,7 @@ class Operation_SendCloseFromClient : Operation {
 
   /// Initializes an Operation Observer
   init() {
-    super.init(observer:cgrpc_observer_create_send_close_from_client())
+    super.init(underlyingObserver:cgrpc_observer_create_send_close_from_client())
   }
 }
 
@@ -96,9 +96,9 @@ class Operation_SendStatusFromServer : Operation {
   init(status:Int,
        statusDetails:String,
        metadata:Metadata) {
-    super.init(observer:cgrpc_observer_create_send_status_from_server(metadata.array))
-    cgrpc_observer_send_status_from_server_set_status(observer, Int32(status));
-    cgrpc_observer_send_status_from_server_set_status_details(observer, statusDetails);
+    super.init(underlyingObserver:cgrpc_observer_create_send_status_from_server(metadata.underlyingArray))
+    cgrpc_observer_send_status_from_server_set_status(underlyingObserver, Int32(status));
+    cgrpc_observer_send_status_from_server_set_status_details(underlyingObserver, statusDetails);
   }
 }
 
@@ -107,14 +107,14 @@ class Operation_ReceiveInitialMetadata : Operation {
 
   /// Initializes an Operation Observer
   init() {
-    super.init(observer:cgrpc_observer_create_recv_initial_metadata())
+    super.init(underlyingObserver:cgrpc_observer_create_recv_initial_metadata())
   }
 
   /// Gets the initial metadata that was received
   ///
   /// - Returns: metadata
   func metadata() -> Metadata {
-    return Metadata(array:cgrpc_observer_recv_initial_metadata_get_metadata(observer));
+    return Metadata(underlyingArray:cgrpc_observer_recv_initial_metadata_get_metadata(underlyingObserver));
   }
 }
 
@@ -123,14 +123,14 @@ class Operation_ReceiveMessage : Operation {
 
   /// Initializes an Operation Observer
   init() {
-    super.init(observer:cgrpc_observer_create_recv_message())
+    super.init(underlyingObserver:cgrpc_observer_create_recv_message())
   }
 
   /// Gets the message that was received
   ///
   /// - Returns: message
   func message() -> ByteBuffer? {
-    if let b = cgrpc_observer_recv_message_get_message(observer) {
+    if let b = cgrpc_observer_recv_message_get_message(underlyingObserver) {
       return ByteBuffer(underlyingByteBuffer:b)
     } else {
       return nil
@@ -143,28 +143,28 @@ class Operation_ReceiveStatusOnClient : Operation {
 
   /// Initializes an Operation Observer
   init() {
-    super.init(observer:cgrpc_observer_create_recv_status_on_client())
+    super.init(underlyingObserver:cgrpc_observer_create_recv_status_on_client())
   }
 
   /// Gets the trailing metadata that was received
   ///
   /// - Returns: metadata
   func metadata() -> Metadata {
-    return Metadata(array:cgrpc_observer_recv_status_on_client_get_metadata(observer));
+    return Metadata(underlyingArray:cgrpc_observer_recv_status_on_client_get_metadata(underlyingObserver));
   }
 
   /// Gets the status code that was received
   ///
   /// - Returns: status code
   func status() -> Int {
-    return cgrpc_observer_recv_status_on_client_get_status(observer);
+    return cgrpc_observer_recv_status_on_client_get_status(underlyingObserver);
   }
 
   /// Gets the status message that was received
   ///
   /// - Returns: status message
   func statusDetails() -> String {
-    return String(cString:cgrpc_observer_recv_status_on_client_get_status_details(observer),
+    return String(cString:cgrpc_observer_recv_status_on_client_get_status_details(underlyingObserver),
                   encoding:String.Encoding.utf8)!
   }
 }
@@ -174,6 +174,6 @@ class Operation_ReceiveCloseOnServer : Operation {
 
   /// Initializes an Operation Observer
   init() {
-    super.init(observer:cgrpc_observer_create_recv_close_on_server())
+    super.init(underlyingObserver:cgrpc_observer_create_recv_close_on_server())
   }
 }

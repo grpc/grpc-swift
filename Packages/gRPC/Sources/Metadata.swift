@@ -49,18 +49,18 @@ private struct MetadataPair {
 public class Metadata {
 
   /// Pointer to underlying C representation
-  var array: UnsafeMutableRawPointer
+  var underlyingArray: UnsafeMutableRawPointer
 
-  init(array: UnsafeMutableRawPointer) {
-    self.array = array
+  init(underlyingArray: UnsafeMutableRawPointer) {
+    self.underlyingArray = underlyingArray
   }
 
   public init() {
-    self.array = cgrpc_metadata_array_create();
+    self.underlyingArray = cgrpc_metadata_array_create();
   }
 
   public init(_ pairs: [[String:String]]) {
-    array = cgrpc_metadata_array_create();
+    underlyingArray = cgrpc_metadata_array_create();
     for pair in pairs {
       for key in pair.keys {
         if let value = pair[key] {
@@ -71,7 +71,7 @@ public class Metadata {
   }
 
   public init(_ pairs: [String:String]) {
-    array = cgrpc_metadata_array_create();
+    underlyingArray = cgrpc_metadata_array_create();
     for key in pairs.keys {
       if let value = pairs[key] {
         add(key:key, value:value)
@@ -80,24 +80,24 @@ public class Metadata {
   }
 
   deinit {
-    cgrpc_metadata_array_destroy(array);
+    cgrpc_metadata_array_destroy(underlyingArray);
   }
 
   public func count() -> Int {
-    return cgrpc_metadata_array_get_count(array);
+    return cgrpc_metadata_array_get_count(underlyingArray);
   }
 
   public func key(index: Int) -> (String) {
-    return String(cString:cgrpc_metadata_array_get_key_at_index(array, index),
+    return String(cString:cgrpc_metadata_array_get_key_at_index(underlyingArray, index),
                   encoding:String.Encoding.utf8)!;
   }
 
   public func value(index: Int) -> (String) {
-    return String(cString:cgrpc_metadata_array_get_value_at_index(array, index),
+    return String(cString:cgrpc_metadata_array_get_value_at_index(underlyingArray, index),
                   encoding:String.Encoding.utf8)!;
   }
 
   public func add(key:String, value:String) {
-    cgrpc_metadata_array_append_metadata(array, key, value)
+    cgrpc_metadata_array_append_metadata(underlyingArray, key, value)
   }
 }
