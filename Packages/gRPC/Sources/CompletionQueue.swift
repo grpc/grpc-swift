@@ -74,7 +74,7 @@ internal class CompletionQueue {
   internal var name : String!
 
   /// Pointer to underlying C representation
-  private var underlyingCompletionQueue : UnsafeMutableRawPointer!
+  private var underlyingCompletionQueue : UnsafeMutableRawPointer
 
   /// Operation groups that are awaiting completion, keyed by tag
   internal var operationGroups : [Int64 : OperationGroup] = [:]

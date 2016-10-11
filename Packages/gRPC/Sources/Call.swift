@@ -114,7 +114,7 @@ public typealias SendMessageCompletion = (CallError) -> Void
 public class Call {
 
   /// Pointer to underlying C representation
-  private var underlyingCall : UnsafeMutableRawPointer!
+  private var underlyingCall : UnsafeMutableRawPointer
 
   /// Completion queue used for call
   private var completionQueue: CompletionQueue

@@ -59,7 +59,7 @@ class OperationGroup {
   var operationsArray : [Operation]?
 
   /// Pointer to underlying C representation
-  var underlyingOperations : UnsafeMutableRawPointer!
+  var underlyingOperations : UnsafeMutableRawPointer
 
   /// Completion handler that is called when the group completes
   var completion : ((Bool) -> Void)

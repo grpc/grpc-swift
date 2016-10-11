@@ -39,7 +39,7 @@
 public class Mutex {
 
   /// Pointer to underlying C representation
-  private var underlyingMutex: UnsafeMutableRawPointer!
+  private var underlyingMutex: UnsafeMutableRawPointer
 
   /// Initializes a Mutex
   public init() {

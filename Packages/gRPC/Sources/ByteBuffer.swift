@@ -54,7 +54,7 @@ public class ByteBuffer {
   /// - Parameter data: the data to store in the buffer
   public init(data: Data) {
     data.withUnsafeBytes { (bytes) in
-      self.underlyingByteBuffer = cgrpc_byte_buffer_create_by_copying_data(bytes, data.count)
+      underlyingByteBuffer = cgrpc_byte_buffer_create_by_copying_data(bytes, data.count)
     }
   }
 

@@ -39,7 +39,7 @@ import Foundation
 public class Server {
 
   /// Pointer to underlying C representation
-  private var underlyingServer: UnsafeMutableRawPointer!
+  private var underlyingServer: UnsafeMutableRawPointer
 
   /// Completion queue used for server operations
   var completionQueue: CompletionQueue
