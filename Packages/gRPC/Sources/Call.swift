@@ -239,18 +239,19 @@ public class Call {
     let messageBuffer = ByteBuffer(data:data)
     let operation_sendMessage = Operation_SendMessage(message:messageBuffer)
     let operations = OperationGroup(call:self, operations:[operation_sendMessage])
-    { (event) in
-
-      // TODO: if the event failed, shut down
-
-      DispatchQueue.main.async {
-        if self.pendingMessages.count > 0 {
-          let nextMessage = self.pendingMessages.first!
-          self.pendingMessages.removeFirst()
-          _ = self.sendWithoutBlocking(data: nextMessage)
-        } else {
-          self.writing = false
+    {(success) in
+      if success {
+        DispatchQueue.main.async {
+          if self.pendingMessages.count > 0 {
+            let nextMessage = self.pendingMessages.first!
+            self.pendingMessages.removeFirst()
+            _ = self.sendWithoutBlocking(data: nextMessage)
+          } else {
+            self.writing = false
+          }
         }
+      } else {
+        // TODO: if the event failed, shut down
       }
     }
     return self.perform(operations)
@@ -261,9 +262,11 @@ public class Call {
   public func receiveMessage(callback:@escaping ((Data!) -> Void)) -> CallError {
     let operation_receiveMessage = Operation_ReceiveMessage()
     let operations = OperationGroup(call:self, operations:[operation_receiveMessage])
-    { (event) in
-      if let messageBuffer = operation_receiveMessage.message() {
-        callback(messageBuffer.data())
+    {(success) in
+      if success {
+        if let messageBuffer = operation_receiveMessage.message() {
+          callback(messageBuffer.data())
+        }
       }
     }
     return self.perform(operations)
@@ -273,8 +276,8 @@ public class Call {
   private func sendInitialMetadata(metadata: Metadata) -> CallError {
     let operation_sendInitialMetadata = Operation_SendInitialMetadata(metadata:metadata);
     let operations = OperationGroup(call:self, operations:[operation_sendInitialMetadata])
-    { (success) in
-      if (success) {
+    {(success) in
+      if success {
         print("call successful")
       } else {
         return
@@ -287,10 +290,12 @@ public class Call {
   private func receiveInitialMetadata() -> CallError {
     let operation_receiveInitialMetadata = Operation_ReceiveInitialMetadata()
     let operations = OperationGroup(call:self, operations:[operation_receiveInitialMetadata])
-    { (event) in
-      let initialMetadata = operation_receiveInitialMetadata.metadata()
-      for j in 0..<initialMetadata.count() {
-        print("Received initial metadata -> " + initialMetadata.key(index:j) + " : " + initialMetadata.value(index:j))
+    {(success) in
+      if success {
+        let initialMetadata = operation_receiveInitialMetadata.metadata()
+        for j in 0..<initialMetadata.count() {
+          print("Received initial metadata -> " + initialMetadata.key(index:j) + " : " + initialMetadata.value(index:j))
+        }
       }
     }
     return self.perform(operations)
@@ -301,8 +306,10 @@ public class Call {
     let operation_receiveStatus = Operation_ReceiveStatusOnClient()
     let operations = OperationGroup(call:self,
                                     operations:[operation_receiveStatus])
-    { (event) in
-      print("status = \(operation_receiveStatus.status()), \(operation_receiveStatus.statusDetails())")
+    {(success) in
+      if success {
+        print("status = \(operation_receiveStatus.status()), \(operation_receiveStatus.statusDetails())")
+      }
     }
     return self.perform(operations)
   }
@@ -311,8 +318,10 @@ public class Call {
   public func close(completion:@escaping (() -> Void)) -> CallError {
     let operation_sendCloseFromClient = Operation_SendCloseFromClient()
     let operations = OperationGroup(call:self, operations:[operation_sendCloseFromClient])
-    { (event) in
-      completion()
+    {(success) in
+      if success {
+        completion()
+      }
     }
     return self.perform(operations)
   }

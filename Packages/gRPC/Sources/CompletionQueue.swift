@@ -71,7 +71,7 @@ internal struct CompletionQueueEvent {
 internal class CompletionQueue {
 
   /// Optional user-provided name for the queue
-  internal var name : String!
+  internal var name : String?
 
   /// Pointer to underlying C representation
   private var underlyingCompletionQueue : UnsafeMutableRawPointer
@@ -83,11 +83,11 @@ internal class CompletionQueue {
   ///
   /// - Parameter cq: the underlying C representation
   init(underlyingCompletionQueue: UnsafeMutableRawPointer) {
-    // NOT OWNED, so we don't dealloc it in a deinit
+    // The underlying completion queue NOT OWNED by this class, so we don't dealloc it in a deinit
     self.underlyingCompletionQueue = underlyingCompletionQueue
   }
 
-  /// Waits for an event to complete
+  /// Waits for an operation group to complete
   ///
   /// - Parameter timeout: a timeout value in seconds
   /// - Returns: a grpc_completion_type code indicating the result of waiting
@@ -96,8 +96,10 @@ internal class CompletionQueue {
     return CompletionQueueEvent(event)
   }
 
-  /// Run a completion queue
-  internal func run(completion:@escaping () -> Void) {
+  /// Runs a completion queue and call a completion handler when finished
+  ///
+  /// - Parameter: a completion handler that is called when the queue stops running
+  internal func runToCompletion(_ completion:@escaping () -> Void) {
     DispatchQueue.global().async {
       var running = true
       while (running) {
@@ -105,15 +107,9 @@ internal class CompletionQueue {
         switch (event.type) {
         case GRPC_OP_COMPLETE:
           let tag = cgrpc_event_tag(event)
-          if let operations = self.operationGroups[tag] {
-
-            print("[\(self.name)] event success=\(event.success)")
-            if event.success == 0 {
-              print("something bad happened")
-            } else {
-              // call the operation group completion handler
-              operations.completion(event.success == 1)
-            }
+          if let operationGroup = self.operationGroups[tag] {
+            // call the operation group completion handler
+            operationGroup.completion(event.success == 1)
             self.operationGroups[tag] = nil
           }
           break
@@ -127,13 +123,18 @@ internal class CompletionQueue {
         }
       }
       DispatchQueue.main.async {
-        // call the queue completion handler
+        // when the queue stops running, call the queue completion handler
         completion()
       }
     }
   }
 
-  /// Shutdown a completion queue
+  /// Runs a completion queue
+  internal func run() -> Void {
+    self.runToCompletion() {}
+  }
+
+  /// Shuts down a completion queue
   internal func shutdown() -> Void {
     cgrpc_completion_queue_shutdown(underlyingCompletionQueue)
   }

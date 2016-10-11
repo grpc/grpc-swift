@@ -51,7 +51,7 @@ public class Client {
     underlyingClient = cgrpc_client_create(address)
     completionQueue = CompletionQueue(underlyingCompletionQueue:cgrpc_client_completion_queue(underlyingClient))
     completionQueue.name = "Client" // only for debugging
-    self.completionQueue.run() {} // start a loop that watches the client's completion queue
+    self.completionQueue.run() // start a loop that watches the client's completion queue
   }
 
   /// Initializes a gRPC client
@@ -69,7 +69,7 @@ public class Client {
     }
     completionQueue = CompletionQueue(underlyingCompletionQueue:cgrpc_client_completion_queue(underlyingClient))
     completionQueue.name = "Client" // only for debugging
-    self.completionQueue.run() {} // start a loop that watches the client's completion queue
+    self.completionQueue.run() // start a loop that watches the client's completion queue
   }
 
   deinit {

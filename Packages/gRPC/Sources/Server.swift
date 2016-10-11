@@ -83,15 +83,14 @@ public class Server {
           // not good, let's break
           break
         }
-        // blocks
+        // block while waiting for an incoming request
         let event = self.completionQueue.wait(timeout:600)
         if (event.type == .complete) {
           if event.tag == 101 {
             // run the handler and remove it when it finishes
             if event.success != 0 {
               self.handlers.add(handler)
-              handler.completionQueue.run() {
-                // on completion
+              handler.completionQueue.runToCompletion() {
                 self.handlers.remove(handler)
               }
               handlerFunction(handler)
@@ -130,7 +129,7 @@ public class Server {
     } else {
       let event = self.completionQueue.wait(timeout:timeout)
       if (event.type == .complete) {
-        handler.completionQueue.run() {
+        handler.completionQueue.runToCompletion() {
           self.handlers.remove(handler)
         }
         self.handlers.add(handler)
