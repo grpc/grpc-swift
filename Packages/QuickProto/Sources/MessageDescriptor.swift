@@ -54,7 +54,7 @@ public class MessageDescriptor {
     }
     message.forEachField("options") { (field) in
       let options = field.message()
-      options.forOneField("map_entry") { (field) in
+      try! options.forOneField("map_entry") { (field) in
         if field.bool() {
           optionMapEntry = true
         }

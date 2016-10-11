@@ -62,13 +62,13 @@ class FileDescriptor {
       let messageDescriptor = MessageDescriptor(message: field.message())
       messageDescriptors.append(messageDescriptor)
     }
-    message.forOneField("name") { (field) in
+    try! message.forOneField("name") { (field) in
       name = field.string()
     }
-    message.forOneField("package") { (field) in
+    try! message.forOneField("package") { (field) in
       package = field.string()
     }
-    message.forOneField("syntax") { (field) in
+    try! message.forOneField("syntax") { (field) in
       syntax = field.string()
     }
   }

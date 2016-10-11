@@ -96,10 +96,10 @@ public class Message {
   }
 
   /// perform an action on one field with the specified name
-  public func forOneField(_ name: String, action:((Field) -> Void)) {
+  public func forOneField(_ name: String, action:((Field) throws -> Void)) throws {
     for field in fields {
       if field.name() == name {
-        action(field)
+        try action(field)
         break
       }
     }

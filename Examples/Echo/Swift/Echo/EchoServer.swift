@@ -64,61 +64,75 @@ class EchoServer {
 
       // NONSTREAMING
       if (requestHandler.method == "/echo.Echo/Get") {
-        _ = requestHandler.receiveMessage(initialMetadata:Metadata())
-        {(requestData) in
-          if let requestData = requestData,
-            let requestMessage =
-            fileDescriptorSet.readMessage("EchoRequest", data: requestData) {
-            requestMessage.forOneField("text") {(field) in
-              let replyMessage = fileDescriptorSet.makeMessage("EchoResponse")!
-              replyMessage.addField("text", value:"Swift nonstreaming echo " + field.string())
-              _ = requestHandler.sendResponse(message:replyMessage.data(),
-                                              trailingMetadata:Metadata())
+
+        do {
+          try requestHandler.receiveMessage(initialMetadata:Metadata())
+          {(requestData) in
+            if let requestData = requestData,
+              let requestMessage =
+              fileDescriptorSet.readMessage("EchoRequest", data: requestData) {
+              try requestMessage.forOneField("text") {(field) in
+                let replyMessage = fileDescriptorSet.makeMessage("EchoResponse")!
+                replyMessage.addField("text", value:"Swift nonstreaming echo " + field.string())
+
+                do {
+                  try requestHandler.sendResponse(message:replyMessage.data(),
+                                                  trailingMetadata:Metadata())
+                } catch (let callError) {
+
+                }
+              }
             }
           }
+        } catch (let callError) {
+
         }
       }
 
       // STREAMING
       if (requestHandler.method == "/echo.Echo/Update") {
-        _ = requestHandler.sendMetadata(
-          initialMetadata: Metadata(),
-          completion: {
+        do {
+          try requestHandler.sendMetadata(
+            initialMetadata: Metadata(),
+            completion: {
 
-            self.handleMessage(
-              fileDescriptorSet: fileDescriptorSet,
-              requestHandler: requestHandler)
+              try self.handleMessage(
+                fileDescriptorSet: fileDescriptorSet,
+                requestHandler: requestHandler)
 
-            // we seem to never get this, but I'm told it's what we're supposed to do
-            _ = requestHandler.receiveClose() {
-              _ = requestHandler.sendStatus(trailingMetadata: Metadata(), completion: {
-                print("status sent")
-                requestHandler.shutdown()
-              })
+              // we seem to never get this, but I'm told it's what we're supposed to do
+              try requestHandler.receiveClose() {
+                try requestHandler.sendStatus(trailingMetadata: Metadata(), completion: {
+                  print("status sent")
+                  requestHandler.shutdown()
+                })
+              }
             }
-          }
-        )
+          )
+        } catch (let callError) {
+
+        }
       }
     }
   }
 
   func handleMessage(fileDescriptorSet: FileDescriptorSet,
-                     requestHandler: Handler) {
-    _ = requestHandler.receiveMessage()
+                     requestHandler: Handler) throws -> Void {
+    try requestHandler.receiveMessage()
       {(requestData) in
         if let requestData = requestData,
           let requestMessage = fileDescriptorSet.readMessage("EchoRequest", data:requestData) {
-          requestMessage.forOneField("text") {(field) in
+          try requestMessage.forOneField("text") {(field) in
             let replyMessage = fileDescriptorSet.makeMessage("EchoResponse")!
             replyMessage.addField("text", value:"Swift streaming echo " + field.string())
-            _ = requestHandler.sendResponse(message:replyMessage.data()) {
+            try requestHandler.sendResponse(message:replyMessage.data()) {
               // after we've sent our response, prepare to handle another message
-              self.handleMessage(fileDescriptorSet:fileDescriptorSet, requestHandler:requestHandler)
+              try self.handleMessage(fileDescriptorSet:fileDescriptorSet, requestHandler:requestHandler)
             }
           }
         } else {
           // if we get an empty message (nil buffer), we close the connection
-          _ = requestHandler.sendStatus(trailingMetadata: Metadata(), completion: {
+          try requestHandler.sendStatus(trailingMetadata: Metadata(), completion: {
             print("status sent")
             requestHandler.shutdown()
           })

@@ -109,7 +109,11 @@ internal class CompletionQueue {
           let tag = cgrpc_event_tag(event)
           if let operationGroup = self.operationGroups[tag] {
             // call the operation group completion handler
-            operationGroup.completion(event.success == 1)
+            do {
+              try operationGroup.completion(event.success == 1)
+            } catch (let callError) {
+
+            }
             self.operationGroups[tag] = nil
           }
           break

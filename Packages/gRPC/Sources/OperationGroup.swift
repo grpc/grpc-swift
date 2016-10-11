@@ -62,14 +62,14 @@ class OperationGroup {
   var underlyingOperations : UnsafeMutableRawPointer
 
   /// Completion handler that is called when the group completes
-  var completion : ((Bool) -> Void)
+  var completion : ((Bool) throws -> Void)
 
-  /// Initializes a Operations representation
+  /// Initializes an OperationGroup representation
   ///
   /// - Parameter operations: an array of operations
   init(call: Call,
        operations: [Operation],
-       completion: @escaping ((Bool) -> Void)) {
+       completion: @escaping ((Bool) throws -> Void)) {
     self.call = call
     self.operationsArray = operations
     self.underlyingOperations = cgrpc_operations_create()

@@ -55,7 +55,11 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
 
   @IBAction func messageReturnPressed(sender: NSTextField) {
     if enabled {
-      callServer(address:addressField.stringValue)
+      do {
+        try callServer(address:addressField.stringValue)
+      } catch (let callError) {
+
+      }
     }
   }
 
@@ -92,7 +96,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     }
   }
 
-  func callServer(address:String) {
+  func callServer(address:String) throws -> Void {
     let requestHost = "example.com"
     let requestMetadata = Metadata(["x-goog-api-key":"YOUR_API_KEY",
                                     "x-ios-bundle-identifier":Bundle.main.bundleIdentifier!])
@@ -112,14 +116,14 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         guard let call = call else {
           return
         }
-        _ = call.performNonStreamingCall(messageData: requestMessageData,
+        try call.performNonStreamingCall(messageData: requestMessageData,
                                          metadata: requestMetadata)
         { (callResult) in
           print("Received status: \(callResult.statusCode): \(callResult.statusMessage)")
           if let messageData = callResult.resultData,
             let responseMessage = self.fileDescriptorSet.readMessage("EchoResponse",
                                                                      data:messageData) {
-            responseMessage.forOneField("text") {(field) in
+            try responseMessage.forOneField("text") {(field) in
               DispatchQueue.main.async {
                 self.outputField.stringValue = field.string()
               }
@@ -145,7 +149,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         guard let call = call else {
           return
         }
-        _ = call.start(metadata:requestMetadata)
+        try call.start(metadata:requestMetadata)
         self.receiveMessage()
         nowStreaming = true
       }
@@ -166,17 +170,21 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     guard let call = call else {
       return
     }
-    _ = call.receiveMessage() {(data) in
-      guard let responseMessage = self.fileDescriptorSet.readMessage("EchoResponse", data:data)
-        else {
-          return // this stops receiving
-      }
-      responseMessage.forOneField("text") {(field) in
-        DispatchQueue.main.async {
-          self.outputField.stringValue = field.string()
+    do {
+      try call.receiveMessage() {(data) in
+        guard let responseMessage = self.fileDescriptorSet.readMessage("EchoResponse", data:data)
+          else {
+            return // this stops receiving
         }
-        self.receiveMessage()
+        try responseMessage.forOneField("text") {(field) in
+          DispatchQueue.main.async {
+            self.outputField.stringValue = field.string()
+          }
+          self.receiveMessage()
+        }
       }
+    } catch (let callError) {
+
     }
   }
 
@@ -184,8 +192,12 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     guard let call = call else {
       return
     }
-    _ = call.close() {
-      self.nowStreaming = false
+    do {
+      try call.close() {
+        self.nowStreaming = false
+      }
+    } catch (let callError) {
+      
     }
   }
 }
