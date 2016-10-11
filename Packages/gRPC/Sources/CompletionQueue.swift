@@ -111,6 +111,7 @@ internal class CompletionQueue {
             if event.success == 0 {
               print("something bad happened")
             } else {
+              // call the operation group completion handler
               operations.completion(event.success == 1)
             }
             self.operationGroups[tag] = nil
@@ -126,6 +127,7 @@ internal class CompletionQueue {
         }
       }
       DispatchQueue.main.async {
+        // call the queue completion handler
         completion()
       }
     }

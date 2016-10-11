@@ -149,15 +149,15 @@ public class Call {
   /// Initiate performance of a call without waiting for completion
   ///
   /// - Parameter operations: array of operations to be performed
-  /// - Parameter tag: integer tag that will be attached to these operations
+  /// - Parameter completionQueue: completion queue used to wait for completion
   /// - Returns: the result of initiating the call
   func performOperations(operations: OperationGroup,
-                         tag: Int64,
                          completionQueue: CompletionQueue)
     -> CallError {
+      completionQueue.operationGroups[operations.tag] = operations
       let mutex = CallLock.sharedInstance.mutex
       mutex.lock()
-      let error = cgrpc_call_perform(underlyingCall, operations.operations, tag)
+      let error = cgrpc_call_perform(underlyingCall, operations.operations, operations.tag)
       mutex.unlock()
       return CallError.callError(grpcCallError:error)
   }
@@ -209,9 +209,7 @@ public class Call {
 
   // perform a group of operations (used internally)
   private func perform(operations: OperationGroup) -> CallError {
-    self.completionQueue.operationGroups[operations.tag] = operations
     return performOperations(operations:operations,
-                             tag:operations.tag,
                              completionQueue: self.completionQueue)
   }
 

@@ -115,9 +115,7 @@ public class Handler {
         completion(nil)
       }
     }
-    self.completionQueue.operationGroups[operations.tag] = operations
     _ = call.performOperations(operations:operations,
-                               tag:operations.tag,
                                completionQueue: self.completionQueue)
   }
 
@@ -142,9 +140,7 @@ public class Handler {
     {(call_error) in
       self.shutdown()
     }
-    self.completionQueue.operationGroups[operations.tag] = operations
     _ = call.performOperations(operations:operations,
-                               tag:operations.tag,
                                completionQueue: self.completionQueue)
   }
 
@@ -165,9 +161,7 @@ public class Handler {
         completion()
       }
     }
-    self.completionQueue.operationGroups[operations.tag] = operations
     _ = call.performOperations(operations:operations,
-                               tag:operations.tag,
                                completionQueue: self.completionQueue)
   }
 
@@ -189,9 +183,8 @@ public class Handler {
         completion(nil)
       }
     }
-    self.completionQueue.operationGroups[operations.tag] = operations
+
     let call_error = call.performOperations(operations:operations,
-                                            tag:operations.tag,
                                             completionQueue: self.completionQueue)
     print("perform receiveMessage \(call_error)")
   }
@@ -208,9 +201,7 @@ public class Handler {
       print("server sendResponse complete")
       completion()
     }
-    self.completionQueue.operationGroups[operations.tag] = operations
     _ = call.performOperations(operations:operations,
-                               tag:operations.tag,
                                completionQueue: self.completionQueue)
   }
 
@@ -222,9 +213,7 @@ public class Handler {
       print("server receiveClose complete")
       completion()
     }
-    self.completionQueue.operationGroups[operations.tag] = operations
     let call_error = call.performOperations(operations:operations,
-                                            tag:operations.tag,
                                             completionQueue: self.completionQueue)
     print("perform receiveClose \(call_error)")
   }
@@ -240,9 +229,7 @@ public class Handler {
       print("server sendStatus complete")
       completion()
     }
-    self.completionQueue.operationGroups[operations.tag] = operations
     _ = call.performOperations(operations:operations,
-                               tag:operations.tag,
                                completionQueue: self.completionQueue)
   }
 }
