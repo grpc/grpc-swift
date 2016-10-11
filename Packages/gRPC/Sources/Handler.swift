@@ -115,8 +115,7 @@ public class Handler {
         completion(nil)
       }
     }
-    _ = call.performOperations(operations:operations,
-                               completionQueue: self.completionQueue)
+    _ = call.perform(operations)
   }
 
   /// Sends the response to a request
@@ -140,8 +139,7 @@ public class Handler {
     {(call_error) in
       self.shutdown()
     }
-    _ = call.performOperations(operations:operations,
-                               completionQueue: self.completionQueue)
+    _ = call.perform(operations)
   }
 
   /// shutdown the handler's completion queue
@@ -161,8 +159,7 @@ public class Handler {
         completion()
       }
     }
-    _ = call.performOperations(operations:operations,
-                               completionQueue: self.completionQueue)
+    _ = call.perform(operations)
   }
 
   /// Receive the message sent with a call
@@ -184,8 +181,7 @@ public class Handler {
       }
     }
 
-    let call_error = call.performOperations(operations:operations,
-                                            completionQueue: self.completionQueue)
+    let call_error = call.perform(operations)
     print("perform receiveMessage \(call_error)")
   }
 
@@ -201,8 +197,7 @@ public class Handler {
       print("server sendResponse complete")
       completion()
     }
-    _ = call.performOperations(operations:operations,
-                               completionQueue: self.completionQueue)
+    _ = call.perform(operations)
   }
 
   /// Recognize when the client has closed a request
@@ -213,8 +208,7 @@ public class Handler {
       print("server receiveClose complete")
       completion()
     }
-    let call_error = call.performOperations(operations:operations,
-                                            completionQueue: self.completionQueue)
+    let call_error = call.perform(operations)
     print("perform receiveClose \(call_error)")
   }
 
@@ -229,7 +223,6 @@ public class Handler {
       print("server sendStatus complete")
       completion()
     }
-    _ = call.performOperations(operations:operations,
-                               completionQueue: self.completionQueue)
+    _ = call.perform(operations)
   }
 }

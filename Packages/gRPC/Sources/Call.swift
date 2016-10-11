@@ -146,13 +146,11 @@ public class Call {
     }
   }
 
-  /// Initiate performance of a call without waiting for completion
+  /// Initiate performance of a group of operations without waiting for completion
   ///
-  /// - Parameter operations: array of operations to be performed
-  /// - Parameter completionQueue: completion queue used to wait for completion
+  /// - Parameter operations: group of operations to be performed
   /// - Returns: the result of initiating the call
-  func performOperations(operations: OperationGroup,
-                         completionQueue: CompletionQueue)
+  func perform(_ operations: OperationGroup)
     -> CallError {
       completionQueue.operationGroups[operations.tag] = operations
       let mutex = CallLock.sharedInstance.mutex
@@ -180,14 +178,14 @@ public class Call {
     let operation_receiveStatusOnClient = Operation_ReceiveStatusOnClient()
     let operation_receiveMessage = Operation_ReceiveMessage()
 
-    let group = OperationGroup(call:self,
-                               operations:[operation_sendInitialMetadata,
-                                           operation_sendMessage,
-                                           operation_sendCloseFromClient,
-                                           operation_receiveInitialMetadata,
-                                           operation_receiveStatusOnClient,
-                                           operation_receiveMessage],
-                               completion:
+    let operations = OperationGroup(call:self,
+                                    operations:[operation_sendInitialMetadata,
+                                                operation_sendMessage,
+                                                operation_sendCloseFromClient,
+                                                operation_receiveInitialMetadata,
+                                                operation_receiveStatusOnClient,
+                                                operation_receiveMessage],
+                                    completion:
       {(success) in
         if success {
           completion(CallResult(statusCode:operation_receiveStatusOnClient.status(),
@@ -204,13 +202,7 @@ public class Call {
         }
     })
 
-    return self.perform(operations: group)
-  }
-
-  // perform a group of operations (used internally)
-  private func perform(operations: OperationGroup) -> CallError {
-    return performOperations(operations:operations,
-                             completionQueue: self.completionQueue)
+    return self.perform(operations)
   }
 
   // start a streaming connection
@@ -261,7 +253,7 @@ public class Call {
         }
       }
     }
-    return self.perform(operations:operations)
+    return self.perform(operations)
   }
 
 
@@ -274,7 +266,7 @@ public class Call {
         callback(messageBuffer.data())
       }
     }
-    return self.perform(operations:operations)
+    return self.perform(operations)
   }
 
   // send initial metadata over a streaming connection
@@ -288,7 +280,7 @@ public class Call {
         return
       }
     }
-    return self.perform(operations:operations)
+    return self.perform(operations)
   }
 
   // receive initial metadata from a streaming connection
@@ -301,7 +293,7 @@ public class Call {
         print("Received initial metadata -> " + initialMetadata.key(index:j) + " : " + initialMetadata.value(index:j))
       }
     }
-    return self.perform(operations:operations)
+    return self.perform(operations)
   }
 
   // receive status from a streaming connection
@@ -312,7 +304,7 @@ public class Call {
     { (event) in
       print("status = \(operation_receiveStatus.status()), \(operation_receiveStatus.statusDetails())")
     }
-    return self.perform(operations:operations)
+    return self.perform(operations)
   }
 
   // close a streaming connection
@@ -322,6 +314,6 @@ public class Call {
     { (event) in
       completion()
     }
-    return self.perform(operations:operations)
+    return self.perform(operations)
   }
 }
