@@ -41,17 +41,17 @@ public class Handler {
   private var underlyingHandler: UnsafeMutableRawPointer
 
   /// Completion queue for handler response operations
-  var completionQueue: CompletionQueue
+  internal var completionQueue: CompletionQueue
 
   /// Metadata received with the request
   public var requestMetadata: Metadata
 
   /// A Call object that can be used to respond to the request
-  lazy var call: Call = {
+  internal lazy var call: Call = {
     return Call(underlyingCall: cgrpc_handler_get_call(self.underlyingHandler),
                 owned: false,
                 completionQueue: self.completionQueue)
-    }()
+  }()
 
   /// The host name sent with the request
   public lazy var host: String = {
@@ -73,13 +73,13 @@ public class Handler {
 
   /// Initializes a Handler
   ///
-  /// - Parameter h: the underlying C representation
-  init(underlyingHandler:UnsafeMutableRawPointer) {
-    self.underlyingHandler = underlyingHandler;
-    self.requestMetadata = Metadata()
-    self.completionQueue = CompletionQueue(
+  /// - Parameter underlyingServer: the underlying C representation of the associated server
+  init(underlyingServer:UnsafeMutableRawPointer) {
+    underlyingHandler = cgrpc_handler_create_with_server(underlyingServer)
+    requestMetadata = Metadata()
+    completionQueue = CompletionQueue(
       underlyingCompletionQueue:cgrpc_handler_get_completion_queue(underlyingHandler))
-    self.completionQueue.name = "Handler"
+    completionQueue.name = "Handler"
   }
 
   deinit {

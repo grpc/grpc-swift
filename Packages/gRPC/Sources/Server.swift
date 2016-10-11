@@ -77,7 +77,7 @@ public class Server {
     DispatchQueue.global().async {
       var running = true
       while(running) {
-        let handler = Handler(underlyingHandler:cgrpc_handler_create_with_server(self.underlyingServer))
+        let handler = Handler(underlyingServer:self.underlyingServer)
         let call_error = handler.requestCall(tag:101)
         if (call_error != .ok) {
           // not good, let's break
@@ -123,7 +123,7 @@ public class Server {
   ///
   /// - Returns: a tuple containing the results of waiting and a possible Handler for the request
   private func getNextRequest(timeout: TimeInterval) -> (CallError, CompletionType, Handler?) {
-    let handler = Handler(underlyingHandler:cgrpc_handler_create_with_server(underlyingServer))
+    let handler = Handler(underlyingServer:self.underlyingServer)
     let call_error = handler.requestCall(tag:101)
     if (call_error != .ok) {
       return (call_error, .complete, nil)
