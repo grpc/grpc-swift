@@ -109,20 +109,18 @@ internal class OperationGroup {
     self.call = call
     self.operations = operations
     self.completion = completion
-    // set tag
+    // set tag to a unique value (per execution)
     let mutex = OperationGroupTagLock.sharedInstance.mutex
     mutex.lock()
     self.tag = OperationGroup.nextTag
     OperationGroup.nextTag += 1
     mutex.unlock()
-    // create observers
-    for operation in operations {
-      self.underlyingObservers.append(self.underlyingObserverForOperation(operation: operation))
-    }
-    // create operations
+    // create underlying observers and operations
     self.underlyingOperations = cgrpc_operations_create()
     cgrpc_operations_reserve_space_for_operations(self.underlyingOperations, Int32(operations.count))
-    for underlyingObserver in underlyingObservers {
+    for operation in operations {
+      let underlyingObserver = self.underlyingObserverForOperation(operation: operation)
+      self.underlyingObservers.append(underlyingObserver)
       cgrpc_operations_add_operation(self.underlyingOperations, underlyingObserver)
     }
   }
@@ -154,7 +152,7 @@ internal class OperationGroup {
     return nil
   }
 
-  /// Gets the initial metadata that was received
+  /// Gets initial metadata that was received
   ///
   /// - Returns: metadata
   internal func receivedInitialMetadata() -> Metadata? {
@@ -169,7 +167,7 @@ internal class OperationGroup {
     return nil
   }
 
-  /// Gets the status code that was received
+  /// Gets a status code that was received
   ///
   /// - Returns: status code
   internal func receivedStatusCode() -> Int? {
@@ -184,7 +182,7 @@ internal class OperationGroup {
     return nil
   }
 
-  /// Gets the status message that was received
+  /// Gets a status message that was received
   ///
   /// - Returns: status message
   internal func receivedStatusMessage() -> String? {
@@ -200,7 +198,7 @@ internal class OperationGroup {
     return nil
   }
 
-  /// Gets the trailing metadata that was received
+  /// Gets trailing metadata that was received
   ///
   /// - Returns: metadata
   internal func receivedTrailingMetadata() -> Metadata? {
