@@ -37,57 +37,64 @@ class SpeechRecognitionService {
 
   func streamAudioData(_ audioData: NSData, completion: SpeechRecognitionCompletionHandler) {
 
-    if (!nowStreaming) {
-      // if we aren't already streaming, set up a gRPC connection
-      call = client.createCall(host: HOST,
+    do {
+
+      if (!nowStreaming) {
+        // if we aren't already streaming, set up a gRPC connection
+        call = client.makeCall(host: HOST,
                                method: "/google.cloud.speech.v1beta1.Speech/StreamingRecognize",
                                timeout: 120.0)
 
+        if let call = call {
+          let metadata = Metadata(["x-goog-api-key":API_KEY,
+                                   "x-ios-bundle-identifier":Bundle.main.bundleIdentifier!])
+          try call.start(metadata:metadata)
+
+          let recognitionConfig = fileDescriptorSet.makeMessage("RecognitionConfig")!
+          recognitionConfig.addField("encoding", value: 1)
+          recognitionConfig.addField("sample_rate", value: self.sampleRate)
+          recognitionConfig.addField("language_code", value: "en-US")
+          recognitionConfig.addField("max_alternatives", value: 30)
+
+          let streamingRecognitionConfig = fileDescriptorSet.makeMessage("StreamingRecognitionConfig")!
+          streamingRecognitionConfig.addField("config", value: recognitionConfig)
+          streamingRecognitionConfig.addField("single_utterance", value: false)
+          streamingRecognitionConfig.addField("interim_results", value: true)
+
+          let streamingRecognizeRequest = fileDescriptorSet.makeMessage("StreamingRecognizeRequest")!
+          streamingRecognizeRequest.addField("streaming_config", value:streamingRecognitionConfig)
+
+          let messageData = streamingRecognizeRequest.data()
+          call.sendMessage(data:messageData)
+          nowStreaming = true
+
+          self.receiveMessage()
+        }
+      }
+
       if let call = call {
-        let metadata = Metadata(["x-goog-api-key":API_KEY,
-                                 "x-ios-bundle-identifier":Bundle.main.bundleIdentifier!])
-        _ = call.start(metadata:metadata)
-
-        let recognitionConfig = fileDescriptorSet.createMessage("RecognitionConfig")!
-        recognitionConfig.addField("encoding", value: 1)
-        recognitionConfig.addField("sample_rate", value: self.sampleRate)
-        recognitionConfig.addField("language_code", value: "en-US")
-        recognitionConfig.addField("max_alternatives", value: 30)
-
-        let streamingRecognitionConfig = fileDescriptorSet.createMessage("StreamingRecognitionConfig")!
-        streamingRecognitionConfig.addField("config", value: recognitionConfig)
-        streamingRecognitionConfig.addField("single_utterance", value: false)
-        streamingRecognitionConfig.addField("interim_results", value: true)
-
-        let streamingRecognizeRequest = fileDescriptorSet.createMessage("StreamingRecognizeRequest")!
-        streamingRecognizeRequest.addField("streaming_config", value:streamingRecognitionConfig)
-
+        let streamingRecognizeRequest = fileDescriptorSet.makeMessage("StreamingRecognizeRequest")!
+        streamingRecognizeRequest.addField("audio_content", value: audioData)
         let messageData = streamingRecognizeRequest.data()
         call.sendMessage(data:messageData)
-        nowStreaming = true
-
-        self.receiveMessage()
       }
-    }
 
-    if let call = call {
-      let streamingRecognizeRequest = fileDescriptorSet.createMessage("StreamingRecognizeRequest")!
-      streamingRecognizeRequest.addField("audio_content", value: audioData)
-      let messageData = streamingRecognizeRequest.data()
-      call.sendMessage(data:messageData)
+    } catch (let error) {
+      print("Call error: \(error)")
     }
   }
 
   func receiveMessage() {
-    if let call = call {
-      _ = call.receiveMessage() {(data) in
-        if let data = data {
-          if let responseMessage =
-            self.fileDescriptorSet.readMessage("StreamingRecognizeResponse", data:data) {
-            responseMessage.forEachField("results") {(field) in
-              field.message().forOneField("is_final") {(field2) in
-                field.message().forOneField("alternatives") {(field3) in
-                  let alternativeMessage = field3.message()
+    do {
+      if let call = call {
+        try call.receiveMessage() {(data) in
+          if let data = data {
+            if let responseMessage =
+              self.fileDescriptorSet.readMessage("StreamingRecognizeResponse", data:data) {
+              responseMessage.forEachField("results") {(field) in
+                if let _ = field.message().oneField("is_final"),
+                  let alternativesField = field.message().oneField("alternatives") {
+                  let alternativeMessage = alternativesField.message()
                   if let transcript = alternativeMessage.oneField("transcript") {
                     print(transcript.string())
                   }
@@ -98,6 +105,8 @@ class SpeechRecognitionService {
         }
         self.receiveMessage()
       }
+    } catch (let error) {
+      print("Receive error: \(error)")
     }
   }
 
@@ -107,7 +116,11 @@ class SpeechRecognitionService {
     }
     nowStreaming = false
     if let call = call {
-      _ = call.close {}
+      do {
+        try call.close {}
+      } catch (let error) {
+        print("call error \(error)")
+      }
     }
   }
   

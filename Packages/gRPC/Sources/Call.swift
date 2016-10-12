@@ -107,10 +107,6 @@ public struct CallResult {
   public var trailingMetadata : Metadata?
 }
 
-public typealias CallCompletion = (CallResult) throws -> Void
-
-public typealias SendMessageCompletion = () -> Void
-
 /// A gRPC API call
 public class Call {
 
@@ -169,33 +165,34 @@ public class Call {
   /// - Parameter callback: a blocko to call with a CallResponse object containing call results
   public func performNonStreamingCall(message: Data,
                                       metadata: Metadata,
-                                      completion: @escaping CallCompletion) throws -> Void {
-    let messageBuffer = ByteBuffer(data:message)
-    let operations = OperationGroup(call:self,
-                                    operations:[.sendInitialMetadata(metadata),
-                                                .sendMessage(messageBuffer),
-                                                .sendCloseFromClient,
-                                                .receiveInitialMetadata,
-                                                .receiveStatusOnClient,
-                                                .receiveMessage],
-                                    completion:
-      {(operationGroup) in
-        if operationGroup.success {
-          try completion(CallResult(statusCode:operationGroup.receivedStatusCode()!,
-                                    statusMessage:operationGroup.receivedStatusMessage(),
-                                    resultData:operationGroup.receivedMessage()?.data(),
-                                    initialMetadata:operationGroup.receivedInitialMetadata(),
-                                    trailingMetadata:operationGroup.receivedTrailingMetadata()))
-        } else {
-          try completion(CallResult(statusCode:0,
-                                    statusMessage:nil,
-                                    resultData:nil,
-                                    initialMetadata:nil,
-                                    trailingMetadata:nil))
-        }
-    })
+                                      completion: @escaping (CallResult) throws -> Void)
+    throws -> Void {
+      let messageBuffer = ByteBuffer(data:message)
+      let operations = OperationGroup(call:self,
+                                      operations:[.sendInitialMetadata(metadata),
+                                                  .sendMessage(messageBuffer),
+                                                  .sendCloseFromClient,
+                                                  .receiveInitialMetadata,
+                                                  .receiveStatusOnClient,
+                                                  .receiveMessage],
+                                      completion:
+        {(operationGroup) in
+          if operationGroup.success {
+            try completion(CallResult(statusCode:operationGroup.receivedStatusCode()!,
+                                      statusMessage:operationGroup.receivedStatusMessage(),
+                                      resultData:operationGroup.receivedMessage()?.data(),
+                                      initialMetadata:operationGroup.receivedInitialMetadata(),
+                                      trailingMetadata:operationGroup.receivedTrailingMetadata()))
+          } else {
+            try completion(CallResult(statusCode:0,
+                                      statusMessage:nil,
+                                      resultData:nil,
+                                      initialMetadata:nil,
+                                      trailingMetadata:nil))
+          }
+      })
 
-    try self.perform(operations)
+      try self.perform(operations)
   }
 
   // start a streaming connection
@@ -206,18 +203,15 @@ public class Call {
   }
 
   // send a message over a streaming connection
-  public func sendMessage(data: Data,
-                          callback:@escaping SendMessageCompletion = {() in })
+  public func sendMessage(data: Data)
     -> Void {
       DispatchQueue.main.async {
         if self.writing {
           self.pendingMessages.append(data) // TODO: return something if we can't accept another message
-          callback()
         } else {
           self.writing = true
           do {
             try self.sendWithoutBlocking(data: data)
-            callback()
           } catch (let callError) {
             print("grpc error: \(callError)")
           }
