@@ -69,18 +69,12 @@ class EchoServer {
           try requestHandler.receiveMessage(initialMetadata:Metadata())
           {(requestData) in
             if let requestData = requestData,
-              let requestMessage =
-              fileDescriptorSet.readMessage("EchoRequest", data: requestData) {
+              let requestMessage = fileDescriptorSet.readMessage("EchoRequest", data:requestData) {
               try requestMessage.forOneField("text") {(field) in
                 let replyMessage = fileDescriptorSet.makeMessage("EchoResponse")!
                 replyMessage.addField("text", value:"Swift nonstreaming echo " + field.string())
-
-                do {
-                  try requestHandler.sendResponse(message:replyMessage.data(),
-                                                  trailingMetadata:Metadata())
-                } catch (let callError) {
-
-                }
+                try requestHandler.sendResponse(message:replyMessage.data(),
+                                                trailingMetadata:Metadata())
               }
             }
           }

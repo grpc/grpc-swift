@@ -171,35 +171,38 @@ class Document: NSDocument {
                                  ["y": "yu"],
                                  ["z": "zither"]])
 
-        _ = call.performNonStreamingCall(messageData: messageData!,
-                                         metadata: metadata)
-        {(callResult) in
+        do {
+          try call.performNonStreamingCall(messageData: messageData!,
+                                           metadata: metadata)
+          {(callResult) in
 
-          if let initialMetadata = callResult.initialMetadata {
-            for j in 0..<initialMetadata.count() {
-              self.log("\(i): Received initial metadata -> " + initialMetadata.key(index:j)
-                + " : " + initialMetadata.value(index:j))
+            if let initialMetadata = callResult.initialMetadata {
+              for j in 0..<initialMetadata.count() {
+                self.log("\(i): Received initial metadata -> " + initialMetadata.key(index:j)
+                  + " : " + initialMetadata.value(index:j))
+              }
+            }
+
+            self.log("\(i): Received status: \(callResult.statusCode) \(callResult.statusMessage)")
+            if callResult.statusCode != 0 {
+              self.setIsRunning(false)
+            }
+            if let messageData = messageData {
+              let messageString = String(data: messageData as Data, encoding: .utf8)
+              self.log("\(i): Received message: " + messageString!)
+            }
+
+            if let trailingMetadata = callResult.trailingMetadata {
+              for j in 0..<trailingMetadata.count() {
+                self.log("\(i): Received trailing metadata -> " + trailingMetadata.key(index:j)
+                  + " : " + trailingMetadata.value(index:j))
+              }
             }
           }
-
-          self.log("\(i): Received status: \(callResult.statusCode) \(callResult.statusMessage)")
-          if callResult.statusCode != 0 {
-            self.setIsRunning(false)
-          }
-          if let messageData = messageData {
-            let messageString = String(data: messageData as Data, encoding: .utf8)
-            self.log("\(i): Received message: " + messageString!)
-          }
-
-          if let trailingMetadata = callResult.trailingMetadata {
-            for j in 0..<trailingMetadata.count() {
-              self.log("\(i): Received trailing metadata -> " + trailingMetadata.key(index:j)
-                + " : " + trailingMetadata.value(index:j))
-            }
-          }
-          self.log("------------------------------")
+        } catch (let callError) {
 
         }
+        self.log("------------------------------")
         sleep(1)
       }
       self.log("Client Stopped")
@@ -217,42 +220,46 @@ class Document: NSDocument {
 
     self.server.run() {(requestHandler) in
 
-      requestCount += 1
+      do {
+        requestCount += 1
 
-      self.log("\(requestCount): Received request " + requestHandler.host
-        + " " + requestHandler.method
-        + " from " + requestHandler.caller)
+        self.log("\(requestCount): Received request " + requestHandler.host
+          + " " + requestHandler.method
+          + " from " + requestHandler.caller)
 
-      let initialMetadata = requestHandler.requestMetadata
+        let initialMetadata = requestHandler.requestMetadata
 
-      for i in 0..<initialMetadata.count() {
-        self.log("\(requestCount): Received initial metadata -> " + initialMetadata.key(index:i)
-          + ":" + initialMetadata.value(index:i))
+        for i in 0..<initialMetadata.count() {
+          self.log("\(requestCount): Received initial metadata -> " + initialMetadata.key(index:i)
+            + ":" + initialMetadata.value(index:i))
+        }
+
+        let initialMetadataToSend = Metadata([["a": "Apple"],
+                                              ["b": "Banana"],
+                                              ["c": "Cherry"]])
+        try requestHandler.receiveMessage(initialMetadata:initialMetadataToSend)
+        {(messageData) in
+          let messageString = String(data: messageData!, encoding: .utf8)
+          self.log("\(requestCount): Received message: " + messageString!)
+        }
+
+        if requestHandler.method == "/quit" {
+          self.stop()
+        }
+
+        let replyMessage = "hello, client!"
+
+        let trailingMetadataToSend = Metadata([["0": "zero"],
+                                               ["1": "one"],
+                                               ["2": "two"]])
+
+        try requestHandler.sendResponse(message:replyMessage.data(using: .utf8)!,
+                                        trailingMetadata:trailingMetadataToSend)
+
+        self.log("------------------------------")
+      } catch (let callError) {
+        
       }
-
-      let initialMetadataToSend = Metadata([["a": "Apple"],
-                                            ["b": "Banana"],
-                                            ["c": "Cherry"]])
-      requestHandler.receiveMessage(initialMetadata:initialMetadataToSend)
-      {(messageData) in
-        let messageString = String(data: messageData!, encoding: .utf8)
-        self.log("\(requestCount): Received message: " + messageString!)
-      }
-
-      if requestHandler.method == "/quit" {
-        self.stop()
-      }
-
-      let replyMessage = "hello, client!"
-
-      let trailingMetadataToSend = Metadata([["0": "zero"],
-                                             ["1": "one"],
-                                             ["2": "two"]])
-
-      requestHandler.sendResponse(message:replyMessage.data(using: .utf8)!,
-                                  trailingMetadata:trailingMetadataToSend)
-
-      self.log("------------------------------")
     }
     
     self.server.onCompletion() {

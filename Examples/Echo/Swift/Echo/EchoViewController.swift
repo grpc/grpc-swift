@@ -55,23 +55,25 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
 
   @IBAction func messageReturnPressed(sender: NSTextField) {
     if enabled {
-      do {
-        try callServer(address:addressField.stringValue)
-      } catch (let callError) {
-
+      if let error = try? callServer(address:addressField.stringValue) {
+        print(error)
       }
     }
   }
 
   @IBAction func addressReturnPressed(sender: NSTextField) {
     if (nowStreaming) {
-      self.sendClose()
+      if let error = try? self.sendClose() {
+        print(error)
+      }
     }
   }
 
   @IBAction func buttonValueChanged(sender: NSButton) {
     if (nowStreaming && (sender.intValue == 0)) {
-      self.sendClose()
+      if let error = try? self.sendClose() {
+        print(error)
+      }
     }
   }
 
@@ -150,7 +152,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
           return
         }
         try call.start(metadata:requestMetadata)
-        self.receiveMessage()
+        try self.receiveMessage()
         nowStreaming = true
       }
       self.sendMessage()
@@ -166,38 +168,30 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     }
   }
 
-  func receiveMessage() {
+  func receiveMessage() throws -> Void {
     guard let call = call else {
       return
     }
-    do {
-      try call.receiveMessage() {(data) in
-        guard let responseMessage = self.fileDescriptorSet.readMessage("EchoResponse", data:data)
-          else {
-            return // this stops receiving
-        }
-        try responseMessage.forOneField("text") {(field) in
-          DispatchQueue.main.async {
-            self.outputField.stringValue = field.string()
-          }
-          self.receiveMessage()
-        }
+    try call.receiveMessage() {(data) in
+      guard let responseMessage = self.fileDescriptorSet.readMessage("EchoResponse", data:data)
+        else {
+          return // this stops receiving
       }
-    } catch (let callError) {
-
+      try responseMessage.forOneField("text") {(field) in
+        DispatchQueue.main.async {
+          self.outputField.stringValue = field.string()
+        }
+        try self.receiveMessage()
+      }
     }
   }
 
-  func sendClose() {
+  func sendClose() throws {
     guard let call = call else {
       return
     }
-    do {
-      try call.close() {
-        self.nowStreaming = false
-      }
-    } catch (let callError) {
-      
+    try call.close() {
+      self.nowStreaming = false
     }
   }
 }
