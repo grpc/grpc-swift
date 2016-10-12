@@ -35,13 +35,14 @@
 #endif
 import Foundation
 
+/// A type indicating the kind of event returned by the completion queue
 internal enum CompletionType {
   case queueShutdown
   case queueTimeout
   case complete
   case unknown
 
-  static func completionType(grpcCompletionType value: grpc_completion_type) -> CompletionType {
+  fileprivate static func completionType(_ value: grpc_completion_type) -> CompletionType {
     switch(value) {
     case GRPC_QUEUE_SHUTDOWN:
       return .queueShutdown
@@ -55,13 +56,14 @@ internal enum CompletionType {
   }
 }
 
+/// An event that is returned by the completion queue
 internal struct CompletionQueueEvent {
   internal var type: CompletionType
   internal var success: Int32
   internal var tag: Int64
 
-  init(_ event: grpc_event) {
-    type = CompletionType.completionType(grpcCompletionType: event.type)
+  internal init(_ event: grpc_event) {
+    type = CompletionType.completionType(event.type)
     success = event.success
     tag = cgrpc_event_tag(event)
   }
@@ -77,13 +79,13 @@ internal class CompletionQueue {
   private var underlyingCompletionQueue : UnsafeMutableRawPointer
 
   /// Operation groups that are awaiting completion, keyed by tag
-  internal var operationGroups : [Int64 : OperationGroup] = [:]
+  private var operationGroups : [Int64 : OperationGroup] = [:]
 
   /// Initializes a CompletionQueue
   ///
   /// - Parameter cq: the underlying C representation
   init(underlyingCompletionQueue: UnsafeMutableRawPointer) {
-    // The underlying completion queue NOT OWNED by this class, so we don't dealloc it in a deinit
+    // The underlying completion queue is NOT OWNED by this class, so we don't dealloc it in a deinit
     self.underlyingCompletionQueue = underlyingCompletionQueue
   }
 
@@ -94,6 +96,13 @@ internal class CompletionQueue {
   internal func wait(timeout: TimeInterval) -> CompletionQueueEvent {
     let event = cgrpc_completion_queue_get_next_event(underlyingCompletionQueue, timeout);
     return CompletionQueueEvent(event)
+  }
+
+  /// Register an operation group for handling upon completion
+  ///
+  /// - Parameter operationGroup: the operation group to handle
+  internal func register(_ operationGroup:OperationGroup) -> Void {
+    operationGroups[operationGroup.tag] = operationGroup
   }
 
   /// Runs a completion queue and call a completion handler when finished

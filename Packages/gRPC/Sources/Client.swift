@@ -83,7 +83,7 @@ public class Client {
   /// - Parameter timeout: a timeout value in seconds
   /// - Returns: a Call object that can be used to perform the request
   public func makeCall(host:String, method:String, timeout:TimeInterval) -> Call {
-    let call = cgrpc_client_create_call(underlyingClient, method, host, timeout)!
-    return Call(underlyingCall:call, owned:true, completionQueue:self.completionQueue)
+    let underlyingCall = cgrpc_client_create_call(underlyingClient, method, host, timeout)!
+    return Call(underlyingCall:underlyingCall, owned:true, completionQueue:self.completionQueue)
   }
 }
