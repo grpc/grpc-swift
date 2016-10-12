@@ -51,7 +51,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     super.init(coder:coder)
   }
 
-  var enabled = false
+  private var enabled = false
 
   @IBAction func messageReturnPressed(sender: NSTextField) {
     if enabled {
@@ -120,7 +120,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         }
         try call.performNonStreamingCall(messageData: requestMessageData,
                                          metadata: requestMetadata)
-        { (callResult) in
+        {(callResult) in
           print("Received status: \(callResult.statusCode): \(callResult.statusMessage)")
           if let messageData = callResult.resultData,
             let responseMessage = self.fileDescriptorSet.readMessage("EchoResponse",

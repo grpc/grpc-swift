@@ -64,10 +64,8 @@ class EchoServer {
 
       // NONSTREAMING
       if (requestHandler.method == "/echo.Echo/Get") {
-
         do {
-          try requestHandler.receiveMessage(initialMetadata:Metadata())
-          {(requestData) in
+          try requestHandler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
             if let requestData = requestData,
               let requestMessage = fileDescriptorSet.readMessage("EchoRequest", data:requestData) {
               try requestMessage.forOneField("text") {(field) in
@@ -79,58 +77,50 @@ class EchoServer {
             }
           }
         } catch (let callError) {
-
+          print("grpc error: \(callError)")
         }
       }
 
       // STREAMING
       if (requestHandler.method == "/echo.Echo/Update") {
         do {
-          try requestHandler.sendMetadata(
-            initialMetadata: Metadata(),
-            completion: {
-
-              try self.handleMessage(
-                fileDescriptorSet: fileDescriptorSet,
-                requestHandler: requestHandler)
-
-              // we seem to never get this, but I'm told it's what we're supposed to do
-              try requestHandler.receiveClose() {
-                try requestHandler.sendStatus(trailingMetadata: Metadata(), completion: {
-                  print("status sent")
-                  requestHandler.shutdown()
-                })
+          try requestHandler.sendMetadata(initialMetadata:Metadata()) {
+            // wait for messages and handle them
+            try self.receiveMessage(fileDescriptorSet:fileDescriptorSet,
+                                    requestHandler:requestHandler)
+            // concurrently wait for a close message
+            try requestHandler.receiveClose() {
+              try requestHandler.sendStatus(trailingMetadata: Metadata()) {
+                requestHandler.shutdown()
               }
             }
-          )
+          }
         } catch (let callError) {
-
+          print("grpc error: \(callError)")
         }
       }
     }
   }
 
-  func handleMessage(fileDescriptorSet: FileDescriptorSet,
-                     requestHandler: Handler) throws -> Void {
-    try requestHandler.receiveMessage()
-      {(requestData) in
-        if let requestData = requestData,
-          let requestMessage = fileDescriptorSet.readMessage("EchoRequest", data:requestData) {
+  func receiveMessage(fileDescriptorSet: FileDescriptorSet, requestHandler: Handler) throws -> Void {
+    try requestHandler.receiveMessage() {(requestData) in
+      if let requestData = requestData {
+        if let requestMessage = fileDescriptorSet.readMessage("EchoRequest", data:requestData) {
           try requestMessage.forOneField("text") {(field) in
             let replyMessage = fileDescriptorSet.makeMessage("EchoResponse")!
             replyMessage.addField("text", value:"Swift streaming echo " + field.string())
             try requestHandler.sendResponse(message:replyMessage.data()) {
               // after we've sent our response, prepare to handle another message
-              try self.handleMessage(fileDescriptorSet:fileDescriptorSet, requestHandler:requestHandler)
+              try self.receiveMessage(fileDescriptorSet:fileDescriptorSet, requestHandler:requestHandler)
             }
           }
-        } else {
-          // if we get an empty message (nil buffer), we close the connection
-          try requestHandler.sendStatus(trailingMetadata: Metadata(), completion: {
-            print("status sent")
-            requestHandler.shutdown()
-          })
         }
+      } else {
+        // if we get an empty message (requestData == nil), we close the connection
+        try requestHandler.sendStatus(trailingMetadata: Metadata(), completion: {
+          requestHandler.shutdown()
+        })
+      }
     }
   }
 }

@@ -228,7 +228,7 @@ public class Call {
             try self.sendWithoutBlocking(data: data)
             callback()
           } catch (let callError) {
-
+            print("grpc error: \(callError)")
           }
         }
       }
@@ -247,7 +247,7 @@ public class Call {
             do {
               try self.sendWithoutBlocking(data: nextMessage)
             } catch (let callError) {
-
+              print("grpc error: \(callError)")
             }
           } else {
             self.writing = false
