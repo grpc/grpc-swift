@@ -72,6 +72,8 @@ class EchoServer {
                 let replyMessage = fileDescriptorSet.makeMessage("EchoResponse")!
                 replyMessage.addField("text", value:"Swift nonstreaming echo " + field.string())
                 try requestHandler.sendResponse(message:replyMessage.data(),
+                                                statusCode: 0,
+                                                statusMessage: "OK",
                                                 trailingMetadata:Metadata())
               }
             }
@@ -90,7 +92,10 @@ class EchoServer {
                                     requestHandler:requestHandler)
             // concurrently wait for a close message
             try requestHandler.receiveClose() {
-              try requestHandler.sendStatus(trailingMetadata: Metadata()) {
+              try requestHandler.sendStatus(statusCode: 0,
+                                            statusMessage:"OK",
+                                            trailingMetadata: Metadata())
+              {
                 requestHandler.shutdown()
               }
             }
@@ -117,9 +122,12 @@ class EchoServer {
         }
       } else {
         // if we get an empty message (requestData == nil), we close the connection
-        try requestHandler.sendStatus(trailingMetadata: Metadata(), completion: {
+        try requestHandler.sendStatus(statusCode: 0,
+                                      statusMessage: "OK",
+                                      trailingMetadata: Metadata())
+        {
           requestHandler.shutdown()
-        })
+        }
       }
     }
   }

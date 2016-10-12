@@ -172,7 +172,7 @@ class Document: NSDocument {
                                  ["z": "zither"]])
 
         do {
-          try call.performNonStreamingCall(messageData: messageData!,
+          try call.performNonStreamingCall(message: messageData!,
                                            metadata: metadata)
           {(callResult) in
 
@@ -187,7 +187,7 @@ class Document: NSDocument {
             if callResult.statusCode != 0 {
               self.setIsRunning(false)
             }
-            if let messageData = messageData {
+            if let messageData = callResult.resultData {
               let messageString = String(data: messageData as Data, encoding: .utf8)
               self.log("\(i): Received message: " + messageString!)
             }
@@ -200,7 +200,7 @@ class Document: NSDocument {
             }
           }
         } catch (let callError) {
-
+          Swift.print("call error \(callError)")
         }
         self.log("------------------------------")
         sleep(1)
@@ -228,7 +228,6 @@ class Document: NSDocument {
           + " from " + requestHandler.caller)
 
         let initialMetadata = requestHandler.requestMetadata
-
         for i in 0..<initialMetadata.count() {
           self.log("\(requestCount): Received initial metadata -> " + initialMetadata.key(index:i)
             + ":" + initialMetadata.value(index:i))
@@ -248,17 +247,17 @@ class Document: NSDocument {
         }
 
         let replyMessage = "hello, client!"
-
         let trailingMetadataToSend = Metadata([["0": "zero"],
                                                ["1": "one"],
                                                ["2": "two"]])
-
         try requestHandler.sendResponse(message:replyMessage.data(using: .utf8)!,
+                                        statusCode:0,
+                                        statusMessage:"OK",
                                         trailingMetadata:trailingMetadataToSend)
 
         self.log("------------------------------")
       } catch (let callError) {
-        
+        Swift.print("call error \(callError)")
       }
     }
     

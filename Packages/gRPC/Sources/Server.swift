@@ -77,30 +77,31 @@ public class Server {
     DispatchQueue.global().async {
       var running = true
       while(running) {
-        let handler = Handler(underlyingServer:self.underlyingServer)
-        let call_error = handler.requestCall(tag:101)
-        if (call_error != .ok) {
-          // not good, let's break
-          break
-        }
-        // block while waiting for an incoming request
-        let event = self.completionQueue.wait(timeout:600)
-        if (event.type == .complete) {
-          if event.tag == 101 {
-            // run the handler and remove it when it finishes
-            if event.success != 0 {
-              self.handlers.add(handler)
-              handler.completionQueue.runToCompletion() {
-                self.handlers.remove(handler)
+        do {
+          let handler = Handler(underlyingServer:self.underlyingServer)
+          try handler.requestCall(tag:101)
+          // block while waiting for an incoming request
+          let event = self.completionQueue.wait(timeout:600)
+          if (event.type == .complete) {
+            if event.tag == 101 {
+              // run the handler and remove it when it finishes
+              if event.success != 0 {
+                self.handlers.add(handler)
+                handler.completionQueue.runToCompletion() {
+                  self.handlers.remove(handler)
+                }
+                handlerFunction(handler)
               }
-              handlerFunction(handler)
+            } else if event.tag == 0 {
+              running = false // exit the loop
             }
-          } else if event.tag == 0 {
-            running = false // exit the loop
+          } else if (event.type == .queueTimeout) {
+            // everything is fine
+          } else if (event.type == .queueShutdown) {
+            running = false
           }
-        } else if (event.type == .queueTimeout) {
-          // everything is fine
-        } else if (event.type == .queueShutdown) {
+        } catch (let callError) {
+          print("server call error: \(callError)")
           running = false
         }
       }
@@ -116,27 +117,5 @@ public class Server {
 
   public func onCompletion(completion:@escaping (() -> Void)) -> Void {
     onCompletion = completion
-  }
-
-  /// Gets the next request sent to the server
-  ///
-  /// - Returns: a tuple containing the results of waiting and a possible Handler for the request
-  private func getNextRequest(timeout: TimeInterval) -> (CallError, CompletionType, Handler?) {
-    let handler = Handler(underlyingServer:self.underlyingServer)
-    let call_error = handler.requestCall(tag:101)
-    if (call_error != .ok) {
-      return (call_error, .complete, nil)
-    } else {
-      let event = self.completionQueue.wait(timeout:timeout)
-      if (event.type == .complete) {
-        handler.completionQueue.runToCompletion() {
-          self.handlers.remove(handler)
-        }
-        self.handlers.add(handler)
-        return (.ok, .complete, handler)
-      } else {
-        return (.ok, event.type, nil)
-      }
-    }
   }
 }

@@ -164,13 +164,13 @@ public class Call {
 
   /// Performs a nonstreaming gRPC API call
   ///
-  /// - Parameter message: a ByteBuffer containing the message to send
+  /// - Parameter message: data containing the message to send
   /// - Parameter metadata: metadata to send with the call
-  /// - Returns: a CallResponse object containing results of the call
-  public func performNonStreamingCall(messageData: Data,
+  /// - Parameter callback: a blocko to call with a CallResponse object containing call results
+  public func performNonStreamingCall(message: Data,
                                       metadata: Metadata,
                                       completion: @escaping CallCompletion) throws -> Void {
-    let messageBuffer = ByteBuffer(data:messageData)
+    let messageBuffer = ByteBuffer(data:message)
     let operations = OperationGroup(call:self,
                                     operations:[.sendInitialMetadata(metadata),
                                                 .sendMessage(messageBuffer),

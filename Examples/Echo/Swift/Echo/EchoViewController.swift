@@ -118,7 +118,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         guard let call = call else {
           return
         }
-        try call.performNonStreamingCall(messageData: requestMessageData,
+        try call.performNonStreamingCall(message: requestMessageData,
                                          metadata: requestMetadata)
         {(callResult) in
           print("Received status: \(callResult.statusCode): \(callResult.statusMessage)")
