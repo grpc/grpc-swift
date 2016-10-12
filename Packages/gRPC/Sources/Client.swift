@@ -44,6 +44,9 @@ public class Client {
   /// Completion queue for client call operations
   private var completionQueue: CompletionQueue
 
+  /// Timeout for client requests
+  public var timeout: TimeInterval = 600.0
+
   /// Initializes a gRPC client
   ///
   /// - Parameter address: the address of the server to be called
@@ -82,7 +85,7 @@ public class Client {
   /// - Parameter method: the gRPC method name for the call
   /// - Parameter timeout: a timeout value in seconds
   /// - Returns: a Call object that can be used to perform the request
-  public func makeCall(host:String, method:String, timeout:TimeInterval) -> Call {
+  public func makeCall(host:String, method:String) -> Call {
     let underlyingCall = cgrpc_client_create_call(underlyingClient, method, host, timeout)!
     return Call(underlyingCall:underlyingCall, owned:true, completionQueue:self.completionQueue)
   }

@@ -79,7 +79,7 @@ class StickyNoteViewController : NSViewController, NSTextFieldDelegate {
                                         ["z":"zither"]])
 
         client = Client(address:address)
-        let call = client.makeCall(host: requestHost, method: requestMethod, timeout: 600)
+        let call = client.makeCall(host: requestHost, method: requestMethod)
         try call.performNonStreamingCall(message: requestMessage.data(),
                                          metadata: requestMetadata,
                                          completion:

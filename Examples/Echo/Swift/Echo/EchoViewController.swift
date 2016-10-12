@@ -112,9 +112,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         guard let client = client else {
           return
         }
-        call = client.makeCall(host: requestHost,
-                               method: "/echo.Echo/Get",
-                               timeout: 30.0)
+        call = client.makeCall(host: requestHost, method: "/echo.Echo/Get")
         guard let call = call else {
           return
         }
@@ -145,9 +143,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         guard let client = client else {
           return
         }
-        call = client.makeCall(host: requestHost,
-                               method: "/echo.Echo/Update",
-                               timeout: 30.0)
+        call = client.makeCall(host: requestHost, method: "/echo.Echo/Update")
         guard let call = call else {
           return
         }
