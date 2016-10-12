@@ -63,58 +63,62 @@ class StickyNoteViewController : NSViewController, NSTextFieldDelegate {
   }
 
   func callServer(address:String) {
-    let fileDescriptorSet = FileDescriptorSet(filename:"stickynote.out")
+    do {
+      let fileDescriptorSet = FileDescriptorSet(filename:"stickynote.out")
 
-    let text = self.messageField.stringValue
+      let text = self.messageField.stringValue
 
-    // build the message
-    if let requestMessage = fileDescriptorSet.makeMessage("StickyNoteRequest") {
-      requestMessage.addField("message", value:text)
+      // build the message
+      if let requestMessage = fileDescriptorSet.makeMessage("StickyNoteRequest") {
+        requestMessage.addField("message", value:text)
 
-      let requestHost = "foo.test.google.fr"
-      let requestMethod = "/messagepb.StickyNote/Get"
-      let requestMetadata = Metadata([["x":"xylophone"],
-                                      ["y":"yu"],
-                                      ["z":"zither"]])
+        let requestHost = "foo.test.google.fr"
+        let requestMethod = "/messagepb.StickyNote/Get"
+        let requestMetadata = Metadata([["x":"xylophone"],
+                                        ["y":"yu"],
+                                        ["z":"zither"]])
 
-      client = Client(address:address)
-      let call = client.makeCall(host: requestHost, method: requestMethod, timeout: 600)
-      _ = call.performNonStreamingCall(messageData: requestMessage.data(),
-                                       metadata: requestMetadata,
-                                       completion:
-        { (callResult) in
+        client = Client(address:address)
+        let call = client.makeCall(host: requestHost, method: requestMethod, timeout: 600)
+        try call.performNonStreamingCall(message: requestMessage.data(),
+                                         metadata: requestMetadata,
+                                         completion:
+          { (callResult) in
 
-          if let initialMetadata = callResult.initialMetadata {
-            for j in 0..<initialMetadata.count() {
-              self.log("Received initial metadata -> "
-                + initialMetadata.key(index:j) + " : "
-                + initialMetadata.value(index:j))
+            if let initialMetadata = callResult.initialMetadata {
+              for j in 0..<initialMetadata.count() {
+                self.log("Received initial metadata -> "
+                  + initialMetadata.key(index:j) + " : "
+                  + initialMetadata.value(index:j))
+              }
             }
-          }
 
-          self.log("Received status: \(callResult.statusCode) \(callResult.statusMessage)")
+            self.log("Received status: \(callResult.statusCode) \(callResult.statusMessage)")
 
-          if let responseData = callResult.resultData,
-            let responseMessage = fileDescriptorSet.readMessage("StickyNoteResponse",
-                                                                data: responseData) {
-            responseMessage.forOneField("image") {(field) in
-              if let image = NSImage(data: field.data() as Data) {
-                DispatchQueue.main.async {
-                  self.imageView.image = image
+            if let responseData = callResult.resultData,
+              let responseMessage = fileDescriptorSet.readMessage("StickyNoteResponse",
+                                                                  data: responseData) {
+              try responseMessage.forOneField("image") {(field) in
+                if let image = NSImage(data: field.data() as Data) {
+                  DispatchQueue.main.async {
+                    self.imageView.image = image
+                  }
                 }
               }
             }
-          }
 
-          if let trailingMetadata = callResult.trailingMetadata {
-            for j in 0..<trailingMetadata.count() {
-              self.log("Received trailing metadata -> "
-                + trailingMetadata.key(index:j) + " : "
-                + trailingMetadata.value(index:j))
+            if let trailingMetadata = callResult.trailingMetadata {
+              for j in 0..<trailingMetadata.count() {
+                self.log("Received trailing metadata -> "
+                  + trailingMetadata.key(index:j) + " : "
+                  + trailingMetadata.value(index:j))
+              }
             }
           }
-        }
-      )
+        )
+      }
+    } catch (let error) {
+      print("Error calling server: \(error)")
     }
   }
 }

@@ -60,28 +60,35 @@ class StickyServer {
         self.log("Received request to " + requestHandler.host
           + " calling " + requestHandler.method
           + " from " + requestHandler.caller)
-        let initialMetadata = requestHandler.requestMetadata
-        for i in 0..<initialMetadata.count() {
-          self.log("Received initial metadata -> " + initialMetadata.key(index:i)
-            + ":" + initialMetadata.value(index:i))
-        }
 
-        if (requestHandler.method == "/messagepb.StickyNote/Get") {
-          requestHandler.receiveMessage(initialMetadata:Metadata())
-          {(requestData) in
-            if let requestData = requestData,
-              let requestMessage =
-              fileDescriptorSet.readMessage("StickyNoteRequest", data: requestData) {
-              requestMessage.forOneField("message") {(field) in
-                let imageData = self.drawImage(message: field.string())
+        do {
+          let initialMetadata = requestHandler.requestMetadata
+          for i in 0..<initialMetadata.count() {
+            self.log("Received initial metadata -> " + initialMetadata.key(index:i)
+              + ":" + initialMetadata.value(index:i))
+          }
 
-                let replyMessage = fileDescriptorSet.makeMessage("StickyNoteResponse")!
-                replyMessage.addField("image", value:imageData)
-                requestHandler.sendResponse(message:replyMessage.data(),
-                                            trailingMetadata:Metadata())
+          if (requestHandler.method == "/messagepb.StickyNote/Get") {
+            try requestHandler.receiveMessage(initialMetadata:Metadata())
+            {(requestData) in
+              if let requestData = requestData,
+                let requestMessage =
+                fileDescriptorSet.readMessage("StickyNoteRequest", data: requestData) {
+                try requestMessage.forOneField("message") {(field) in
+                  let imageData = self.drawImage(message: field.string())
+
+                  let replyMessage = fileDescriptorSet.makeMessage("StickyNoteResponse")!
+                  replyMessage.addField("image", value:imageData)
+                  try requestHandler.sendResponse(message:replyMessage.data(),
+                                                  statusCode:0,
+                                                  statusMessage:"OK",
+                                                  trailingMetadata:Metadata())
+                }
               }
             }
           }
+        } catch (let error) {
+          print("server error: \(error)")
         }
       }
     }
