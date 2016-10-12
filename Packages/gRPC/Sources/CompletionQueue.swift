@@ -119,7 +119,8 @@ internal class CompletionQueue {
           if let operationGroup = self.operationGroups[tag] {
             // call the operation group completion handler
             do {
-              try operationGroup.completion(event.success == 1)
+              operationGroup.success = (event.success == 1)
+              try operationGroup.completion(operationGroup)
             } catch (let callError) {
               print("grpc error: \(callError)")
             }

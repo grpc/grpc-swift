@@ -41,6 +41,11 @@ cgrpc_operations *cgrpc_operations_create() {
   return (cgrpc_operations *) malloc(sizeof (cgrpc_operations));
 }
 
+void cgrpc_operations_destroy(cgrpc_operations *operations) {
+  free(operations->ops);
+  free(operations);
+}
+
 void cgrpc_operations_reserve_space_for_operations(cgrpc_operations *operations, int max_operations) {
   operations->ops = (grpc_op *) malloc(max_operations * sizeof(grpc_op));
   memset(operations->ops, 0, max_operations * sizeof(grpc_op));

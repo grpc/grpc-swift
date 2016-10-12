@@ -101,16 +101,14 @@ public class Handler {
   /// - Returns: a tuple containing status codes and a message (if available)
   public func receiveMessage(initialMetadata: Metadata,
                              completion:@escaping ((Data?) throws -> Void)) throws -> Void {
-    let operation_sendInitialMetadata = Operation_SendInitialMetadata(metadata:initialMetadata);
-    let operation_receiveMessage = Operation_ReceiveMessage()
     let operations = OperationGroup(
       call:call,
       operations:[
-        operation_sendInitialMetadata,
-        operation_receiveMessage])
-    {(success) in
-      if (success) {
-        try completion(operation_receiveMessage.message()!.data())
+        .sendInitialMetadata(initialMetadata),
+        .receiveMessage])
+    {(operationGroup) in
+      if operationGroup.success {
+        try completion(operationGroup.receivedMessage()?.data())
       } else {
         try completion(nil)
       }
@@ -124,20 +122,15 @@ public class Handler {
   /// - Returns: a tuple containing status codes
   public func sendResponse(message: Data,
                            trailingMetadata: Metadata) throws -> Void {
-    let operation_receiveCloseOnServer = Operation_ReceiveCloseOnServer();
-    let operation_sendStatusFromServer = Operation_SendStatusFromServer(status:0,
-                                                                        statusDetails:"OK",
-                                                                        metadata:trailingMetadata)
     let messageBuffer = ByteBuffer(data:message)
-    let operation_sendMessage = Operation_SendMessage(message:messageBuffer)
     let operations = OperationGroup(
       call:call,
       operations:[
-        operation_receiveCloseOnServer,
-        operation_sendStatusFromServer,
-        operation_sendMessage])
-    {(success) in
-      if success {
+        .receiveCloseOnServer,
+        .sendStatusFromServer(0, "OK", trailingMetadata),
+        .sendMessage(messageBuffer)])
+    {(operationGroup) in
+      if operationGroup.success {
         self.shutdown()
       }
     }
@@ -152,10 +145,10 @@ public class Handler {
   /// Send initial metadata in response to a connection
   public func sendMetadata(initialMetadata: Metadata,
                            completion:@escaping (() throws -> Void)) throws -> Void {
-    let operation_sendInitialMetadata = Operation_SendInitialMetadata(metadata:initialMetadata);
-    let operations = OperationGroup(call:call, operations:[operation_sendInitialMetadata])
-    {(success) in
-      if success {
+    let operations = OperationGroup(call:call,
+                                    operations:[.sendInitialMetadata(initialMetadata)])
+    {(operationGroup) in
+      if operationGroup.success {
         try completion()
       } else {
         try completion()
@@ -168,12 +161,10 @@ public class Handler {
   ///
   /// - Returns: a tuple containing status codes and a message (if available)
   public func receiveMessage(completion:(@escaping (Data?) throws -> Void)) throws -> Void {
-    let operation_receiveMessage = Operation_ReceiveMessage()
-    let operations = OperationGroup(call:call, operations:[operation_receiveMessage])
-    {(success) in
-      if success {
-        print("server receiveMessage complete")
-        if let message = operation_receiveMessage.message() {
+    let operations = OperationGroup(call:call, operations:[.receiveMessage])
+    {(operationGroup) in
+      if operationGroup.success {
+        if let message = operationGroup.receivedMessage() {
           try completion(message.data())
         } else {
           try completion(nil)
@@ -191,10 +182,10 @@ public class Handler {
   /// - Returns: a tuple containing status codes
   public func sendResponse(message: Data,
                            completion: @escaping () throws -> Void) throws -> Void {
-    let operation_sendMessage = Operation_SendMessage(message:ByteBuffer(data:message))
-    let operations = OperationGroup(call:call, operations:[operation_sendMessage])
-    {(success) in
-      if success {
+    let operations = OperationGroup(call:call,
+                                    operations:[.sendMessage(ByteBuffer(data:message))])
+    {(operationGroup) in
+      if operationGroup.success {
         try completion()
       }
     }
@@ -203,10 +194,10 @@ public class Handler {
 
   /// Recognize when the client has closed a request
   public func receiveClose(completion: @escaping () throws -> Void) throws -> Void {
-    let operation_receiveClose = Operation_ReceiveCloseOnServer()
-    let operations = OperationGroup(call:call, operations:[operation_receiveClose])
-    {(success) in
-      if success {
+    let operations = OperationGroup(call:call,
+                                    operations:[.receiveCloseOnServer])
+    {(operationGroup) in
+      if operationGroup.success {
         try completion()
       }
     }
@@ -216,12 +207,10 @@ public class Handler {
   /// Send final status to the client
   public func sendStatus(trailingMetadata: Metadata,
                          completion:@escaping (() -> Void)) throws -> Void {
-    let operation_sendStatusFromServer = Operation_SendStatusFromServer(status:0,
-                                                                        statusDetails:"OK",
-                                                                        metadata:trailingMetadata)
-    let operations = OperationGroup(call:call, operations:[operation_sendStatusFromServer])
-    {(success) in
-      if success {
+    let operations = OperationGroup(call:call,
+                                    operations:[.sendStatusFromServer(0, "OK", trailingMetadata)])
+    {(operationGroup) in
+      if operationGroup.success {
         completion()
       }
     }

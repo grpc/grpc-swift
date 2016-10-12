@@ -44,45 +44,175 @@ private class OperationGroupTagLock {
 }
 
 /// A collection of gRPC operations
-class OperationGroup {
+internal class OperationGroup {
 
   /// Used to generate unique tags for OperationGroups
-  static var nextTag : Int64 = 1
+  private static var nextTag : Int64 = 1
 
-  /// Automatically-assigned tag that is used with the completion queue.
-  var tag : Int64
+  /// Automatically-assigned tag that is used by the completion queue that watches this group.
+  internal var tag : Int64
 
   /// The call associated with the operation group. Retained while the operations are running.
-  var call : Call
+  private var call : Call
 
-  /// An array of operation objects that are passed into the initializer
-  var operationsArray : [Operation]?
+  /// An array of operation objects that are passed into the initializer.
+  private var operations : [Operation]
+
+  /// An array of observers used to watch the operation
+  private var underlyingObservers : [UnsafeMutableRawPointer] = []
 
   /// Pointer to underlying C representation
-  var underlyingOperations : UnsafeMutableRawPointer
+  internal var underlyingOperations : UnsafeMutableRawPointer?
 
   /// Completion handler that is called when the group completes
-  var completion : ((Bool) throws -> Void)
+  internal var completion : ((OperationGroup) throws -> Void)
+
+  /// Indicates that the OperationGroup completed successfully
+  internal var success : Bool = false
+
+  /// Creates the underlying observer needed to run an operation
+  ///
+  /// - Parameter: operation: the operation to observe
+  /// - Returns: the observer
+  private func underlyingObserverForOperation(operation: Operation) -> UnsafeMutableRawPointer {
+    var underlyingObserver : UnsafeMutableRawPointer
+    switch operation {
+    case .sendInitialMetadata(let metadata):
+      underlyingObserver = cgrpc_observer_create_send_initial_metadata(metadata.underlyingArray)!
+    case .sendMessage(let message):
+      underlyingObserver = cgrpc_observer_create_send_message()!
+      cgrpc_observer_send_message_set_message(underlyingObserver, message.underlyingByteBuffer)
+    case .sendCloseFromClient:
+      underlyingObserver = cgrpc_observer_create_send_close_from_client()!
+    case .sendStatusFromServer(let statusCode, let statusMessage, let metadata):
+      underlyingObserver = cgrpc_observer_create_send_status_from_server(metadata.underlyingArray)!
+      cgrpc_observer_send_status_from_server_set_status(underlyingObserver, Int32(statusCode))
+      cgrpc_observer_send_status_from_server_set_status_details(underlyingObserver, statusMessage)
+    case .receiveInitialMetadata:
+      underlyingObserver = cgrpc_observer_create_recv_initial_metadata()!
+    case .receiveMessage:
+      underlyingObserver = cgrpc_observer_create_recv_message()!
+    case .receiveStatusOnClient:
+      underlyingObserver = cgrpc_observer_create_recv_status_on_client()!
+    case .receiveCloseOnServer:
+      underlyingObserver = cgrpc_observer_create_recv_close_on_server()!
+    }
+    return underlyingObserver
+  }
 
   /// Initializes an OperationGroup representation
   ///
   /// - Parameter operations: an array of operations
   init(call: Call,
        operations: [Operation],
-       completion: @escaping ((Bool) throws -> Void)) {
+       completion: @escaping ((OperationGroup) throws -> Void)) {
     self.call = call
-    self.operationsArray = operations
-    self.underlyingOperations = cgrpc_operations_create()
-    cgrpc_operations_reserve_space_for_operations(self.underlyingOperations, Int32(operations.count))
-    for operation in operations {
-      cgrpc_operations_add_operation(self.underlyingOperations, operation.underlyingObserver)
-    }
+    self.operations = operations
     self.completion = completion
+    // set tag
     let mutex = OperationGroupTagLock.sharedInstance.mutex
     mutex.lock()
     self.tag = OperationGroup.nextTag
     OperationGroup.nextTag += 1
     mutex.unlock()
+    // create observers
+    for operation in operations {
+      self.underlyingObservers.append(self.underlyingObserverForOperation(operation: operation))
+    }
+    // create operations
+    self.underlyingOperations = cgrpc_operations_create()
+    cgrpc_operations_reserve_space_for_operations(self.underlyingOperations, Int32(operations.count))
+    for underlyingObserver in underlyingObservers {
+      cgrpc_operations_add_operation(self.underlyingOperations, underlyingObserver)
+    }
+  }
+
+  deinit {
+    for underlyingObserver in underlyingObservers {
+      cgrpc_observer_destroy(underlyingObserver);
+    }
+    cgrpc_operations_destroy(underlyingOperations);
+  }
+
+  /// WARNING: The following assumes that at most one operation of each type is in the group.
+  
+  /// Gets the message that was received
+  ///
+  /// - Returns: message
+  internal func receivedMessage() -> ByteBuffer? {
+    for (i, operation) in operations.enumerated() {
+      switch (operation) {
+      case .receiveMessage:
+        if let b = cgrpc_observer_recv_message_get_message(underlyingObservers[i]) {
+          return ByteBuffer(underlyingByteBuffer:b)
+        } else {
+          return nil
+        }
+      default: continue
+      }
+    }
+    return nil
+  }
+
+  /// Gets the initial metadata that was received
+  ///
+  /// - Returns: metadata
+  internal func receivedInitialMetadata() -> Metadata? {
+    for (i, operation) in operations.enumerated() {
+      switch (operation) {
+      case .receiveInitialMetadata:
+        return Metadata(underlyingArray:cgrpc_observer_recv_initial_metadata_get_metadata(underlyingObservers[i]));
+      default:
+        continue
+      }
+    }
+    return nil
+  }
+
+  /// Gets the status code that was received
+  ///
+  /// - Returns: status code
+  internal func receivedStatusCode() -> Int? {
+    for (i, operation) in operations.enumerated() {
+      switch (operation) {
+      case .receiveStatusOnClient:
+        return cgrpc_observer_recv_status_on_client_get_status(underlyingObservers[i])
+      default:
+        continue
+      }
+    }
+    return nil
+  }
+
+  /// Gets the status message that was received
+  ///
+  /// - Returns: status message
+  internal func receivedStatusMessage() -> String? {
+    for (i, operation) in operations.enumerated() {
+      switch (operation) {
+      case .receiveStatusOnClient:
+        return String(cString:cgrpc_observer_recv_status_on_client_get_status_details(underlyingObservers[i]),
+                      encoding:String.Encoding.utf8)!
+      default:
+        continue
+      }
+    }
+    return nil
+  }
+
+  /// Gets the trailing metadata that was received
+  ///
+  /// - Returns: metadata
+  internal func receivedTrailingMetadata() -> Metadata? {
+    for (i, operation) in operations.enumerated() {
+      switch (operation) {
+      case .receiveStatusOnClient:
+        return Metadata(underlyingArray:cgrpc_observer_recv_status_on_client_get_metadata(underlyingObservers[i]));
+      default:
+        continue
+      }
+    }
+    return nil
   }
 }
 

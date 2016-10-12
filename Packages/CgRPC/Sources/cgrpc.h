@@ -174,6 +174,7 @@ grpc_call_error cgrpc_call_perform(cgrpc_call *call, cgrpc_operations *operation
 
 // operations
 cgrpc_operations *cgrpc_operations_create();
+void cgrpc_operations_destroy(cgrpc_operations *operations);
 void cgrpc_operations_reserve_space_for_operations(cgrpc_operations *call, int max_operations);
 void cgrpc_operations_add_operation(cgrpc_operations *call, cgrpc_observer *observer);
 

@@ -170,31 +170,22 @@ public class Call {
   public func performNonStreamingCall(messageData: Data,
                                       metadata: Metadata,
                                       completion: @escaping CallCompletion) throws -> Void {
-
     let messageBuffer = ByteBuffer(data:messageData)
-
-    let operation_sendInitialMetadata = Operation_SendInitialMetadata(metadata:metadata);
-    let operation_sendMessage = Operation_SendMessage(message:messageBuffer)
-    let operation_sendCloseFromClient = Operation_SendCloseFromClient()
-    let operation_receiveInitialMetadata = Operation_ReceiveInitialMetadata()
-    let operation_receiveStatusOnClient = Operation_ReceiveStatusOnClient()
-    let operation_receiveMessage = Operation_ReceiveMessage()
-
     let operations = OperationGroup(call:self,
-                                    operations:[operation_sendInitialMetadata,
-                                                operation_sendMessage,
-                                                operation_sendCloseFromClient,
-                                                operation_receiveInitialMetadata,
-                                                operation_receiveStatusOnClient,
-                                                operation_receiveMessage],
+                                    operations:[.sendInitialMetadata(metadata),
+                                                .sendMessage(messageBuffer),
+                                                .sendCloseFromClient,
+                                                .receiveInitialMetadata,
+                                                .receiveStatusOnClient,
+                                                .receiveMessage],
                                     completion:
-      {(success) in
-        if success {
-          try completion(CallResult(statusCode:operation_receiveStatusOnClient.status(),
-                                    statusMessage:operation_receiveStatusOnClient.statusDetails(),
-                                    resultData:operation_receiveMessage.message()?.data(),
-                                    initialMetadata:operation_receiveInitialMetadata.metadata(),
-                                    trailingMetadata:operation_receiveStatusOnClient.metadata()))
+      {(operationGroup) in
+        if operationGroup.success {
+          try completion(CallResult(statusCode:operationGroup.receivedStatusCode()!,
+                                    statusMessage:operationGroup.receivedStatusMessage(),
+                                    resultData:operationGroup.receivedMessage()?.data(),
+                                    initialMetadata:operationGroup.receivedInitialMetadata(),
+                                    trailingMetadata:operationGroup.receivedTrailingMetadata()))
         } else {
           try completion(CallResult(statusCode:0,
                                     statusMessage:nil,
@@ -236,10 +227,9 @@ public class Call {
 
   private func sendWithoutBlocking(data: Data) throws -> Void {
     let messageBuffer = ByteBuffer(data:data)
-    let operation_sendMessage = Operation_SendMessage(message:messageBuffer)
-    let operations = OperationGroup(call:self, operations:[operation_sendMessage])
-    {(success) in
-      if success {
+    let operations = OperationGroup(call:self, operations:[.sendMessage(messageBuffer)])
+    {(operationGroup) in
+      if operationGroup.success {
         DispatchQueue.main.async {
           if self.pendingMessages.count > 0 {
             let nextMessage = self.pendingMessages.first!
@@ -260,14 +250,12 @@ public class Call {
     try self.perform(operations)
   }
 
-
   // receive a message over a streaming connection
   public func receiveMessage(callback:@escaping ((Data!) throws -> Void)) throws -> Void {
-    let operation_receiveMessage = Operation_ReceiveMessage()
-    let operations = OperationGroup(call:self, operations:[operation_receiveMessage])
-    {(success) in
-      if success {
-        if let messageBuffer = operation_receiveMessage.message() {
+    let operations = OperationGroup(call:self, operations:[.receiveMessage])
+    {(operationGroup) in
+      if operationGroup.success {
+        if let messageBuffer = operationGroup.receivedMessage() {
           try callback(messageBuffer.data())
         }
       }
@@ -277,10 +265,9 @@ public class Call {
 
   // send initial metadata over a streaming connection
   private func sendInitialMetadata(metadata: Metadata) throws -> Void {
-    let operation_sendInitialMetadata = Operation_SendInitialMetadata(metadata:metadata);
-    let operations = OperationGroup(call:self, operations:[operation_sendInitialMetadata])
-    {(success) in
-      if success {
+    let operations = OperationGroup(call:self, operations:[.sendInitialMetadata(metadata)])
+    {(operationGroup) in
+      if operationGroup.success {
         print("call successful")
       } else {
         return
@@ -291,13 +278,13 @@ public class Call {
 
   // receive initial metadata from a streaming connection
   private func receiveInitialMetadata() throws -> Void {
-    let operation_receiveInitialMetadata = Operation_ReceiveInitialMetadata()
-    let operations = OperationGroup(call:self, operations:[operation_receiveInitialMetadata])
-    {(success) in
-      if success {
-        let initialMetadata = operation_receiveInitialMetadata.metadata()
-        for j in 0..<initialMetadata.count() {
-          print("Received initial metadata -> " + initialMetadata.key(index:j) + " : " + initialMetadata.value(index:j))
+    let operations = OperationGroup(call:self, operations:[.receiveInitialMetadata])
+    {(operationGroup) in
+      if operationGroup.success {
+        if let initialMetadata = operationGroup.receivedInitialMetadata() {
+          for j in 0..<initialMetadata.count() {
+            print("Received initial metadata -> " + initialMetadata.key(index:j) + " : " + initialMetadata.value(index:j))
+          }
         }
       }
     }
@@ -306,12 +293,10 @@ public class Call {
 
   // receive status from a streaming connection
   private func receiveStatus() throws -> Void {
-    let operation_receiveStatus = Operation_ReceiveStatusOnClient()
-    let operations = OperationGroup(call:self,
-                                    operations:[operation_receiveStatus])
-    {(success) in
-      if success {
-        print("status = \(operation_receiveStatus.status()), \(operation_receiveStatus.statusDetails())")
+    let operations = OperationGroup(call:self, operations:[.receiveStatusOnClient])
+    {(operationGroup) in
+      if operationGroup.success {
+        print("status = \(operationGroup.receivedStatusCode()), \(operationGroup.receivedStatusMessage())")
       }
     }
     try self.perform(operations)
@@ -319,10 +304,9 @@ public class Call {
 
   // close a streaming connection
   public func close(completion:@escaping (() -> Void)) throws -> Void {
-    let operation_sendCloseFromClient = Operation_SendCloseFromClient()
-    let operations = OperationGroup(call:self, operations:[operation_sendCloseFromClient])
-    {(success) in
-      if success {
+    let operations = OperationGroup(call:self, operations:[.sendCloseFromClient])
+    {(operationGroup) in
+      if operationGroup.success {
         completion()
       }
     }
