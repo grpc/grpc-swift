@@ -155,7 +155,7 @@ class Document: NSDocument {
       self.log("GRPC version " + gRPC.version())
 
       self.client = gRPC.Client(address:address)
-      let host = "foo.test.google.fr"
+      self.client.host = "foo.test.google.fr"
       let messageData = "hello, server!".data(using: .utf8)
 
       let steps = 10
@@ -165,15 +165,15 @@ class Document: NSDocument {
           break
         }
         let method = (i < steps) ? "/hello" : "/quit"
-        let call = self.client.makeCall(host: host, method: method)
+        let call = self.client.makeCall(method)
 
         let metadata = Metadata([["x": "xylophone"],
                                  ["y": "yu"],
                                  ["z": "zither"]])
 
         do {
-          try call.performNonStreamingCall(message: messageData!,
-                                           metadata: metadata)
+          try call.perform(message: messageData!,
+                           metadata: metadata)
           {(callResult) in
 
             if let initialMetadata = callResult.initialMetadata {

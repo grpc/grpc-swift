@@ -98,23 +98,25 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
       let certificates = try! String(contentsOf: certificateURL)
       client = Client(address:address, certificates:certificates, host:host)
     }
+    if let client = client {
+      client.host = host
+    }
   }
 
   func callServer(address:String) throws -> Void {
-    let requestHost = "example.com"
     let requestMetadata = Metadata(["x-goog-api-key":"YOUR_API_KEY",
                                     "x-ios-bundle-identifier":Bundle.main.bundleIdentifier!])
-
+    let host = "example.com"
     if (self.streamingButton.intValue == 0) {
       // NONSTREAMING
       if let requestMessage = self.fileDescriptorSet.makeMessage("EchoRequest") {
         requestMessage.addField("text", value:self.messageField.stringValue)
         let requestMessageData = requestMessage.data()
-        prepareClient(address:address, host:requestHost)
+        prepareClient(address:address, host:host)
         guard let client = client else {
           return
         }
-        call = client.makeCall(host: requestHost, method: "/echo.Echo/Get")
+        call = client.makeCall("/echo.Echo/Get")
         guard let call = call else {
           return
         }
@@ -141,11 +143,11 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     else {
       // STREAMING
       if (!nowStreaming) {
-        prepareClient(address:address, host:requestHost)
+        prepareClient(address:address, host:host)
         guard let client = client else {
           return
         }
-        call = client.makeCall(host: requestHost, method: "/echo.Echo/Update")
+        call = client.makeCall("/echo.Echo/Update")
         guard let call = call else {
           return
         }

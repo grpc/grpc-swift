@@ -79,10 +79,11 @@ class StickyNoteViewController : NSViewController, NSTextFieldDelegate {
                                         ["z":"zither"]])
 
         client = Client(address:address)
-        let call = client.makeCall(host: requestHost, method: requestMethod)
-        try call.performNonStreamingCall(message: requestMessage.data(),
-                                         metadata: requestMetadata,
-                                         completion:
+        client.host = requestHost
+        let call = client.makeCall(requestMethod)
+        try call.perform(message: requestMessage.data(),
+                         metadata: requestMetadata,
+                         completion:
           { (callResult) in
 
             if let initialMetadata = callResult.initialMetadata {

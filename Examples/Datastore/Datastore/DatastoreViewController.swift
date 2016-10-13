@@ -112,21 +112,19 @@ class DatastoreViewController : NSViewController, NSTextFieldDelegate {
       guard let client = client else {
         return
       }
-      call = client.makeCall(host: requestHost,
-                               method: "/google.datastore.v1.Datastore/RunQuery",
-                               timeout: 30.0)
+      call = client.makeCall("/google.datastore.v1.Datastore/RunQuery")
       guard let call = call else {
         return
       }
-      _ = call.performNonStreamingCall(messageData: requestMessageData,
-                                       metadata: requestMetadata)
+      try! call.perform(message: requestMessageData,
+                        metadata: requestMetadata)
       { (callResult) in
         print("Received status: \(callResult.statusCode): \(callResult.statusMessage)")
         if let messageData = callResult.resultData,
           let responseMessage = self.fileDescriptorSet.readMessage("RunQueryResponse",
                                                                    data:messageData) {
           responseMessage.display()
-          responseMessage.forOneField("text") {(field) in
+          try! responseMessage.forOneField("text") {(field) in
             DispatchQueue.main.async {
               self.outputField.stringValue = field.string()
             }

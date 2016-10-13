@@ -41,8 +41,7 @@ class SpeechRecognitionService {
 
       if (!nowStreaming) {
         // if we aren't already streaming, set up a gRPC connection
-        call = client.makeCall(host: HOST,
-                               method: "/google.cloud.speech.v1beta1.Speech/StreamingRecognize")
+        call = client.makeCall("/google.cloud.speech.v1beta1.Speech/StreamingRecognize")
 
         if let call = call {
           let metadata = Metadata(["x-goog-api-key":API_KEY,

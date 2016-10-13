@@ -44,13 +44,18 @@ public class Client {
   /// Completion queue for client call operations
   private var completionQueue: CompletionQueue
 
-  /// Timeout for client requests
+  /// Timeout for new calls
   public var timeout: TimeInterval = 600.0
+
+  /// Default host to use for new calls
+  public var host: String
+
 
   /// Initializes a gRPC client
   ///
   /// - Parameter address: the address of the server to be called
   public init(address: String) {
+    self.host = address
     underlyingClient = cgrpc_client_create(address)
     completionQueue = CompletionQueue(underlyingCompletionQueue:cgrpc_client_completion_queue(underlyingClient))
     completionQueue.name = "Client" // only for debugging
@@ -61,6 +66,7 @@ public class Client {
   ///
   /// - Parameter address: the address of the server to be called
   public init(address: String, certificates: String?, host: String?) {
+    self.host = address
     if certificates == nil {
       let bundle = Bundle(for: Client.self)
       let url = bundle.url(forResource: "roots", withExtension: "pem")!
@@ -81,11 +87,12 @@ public class Client {
 
   /// Constructs a Call object to make a gRPC API call
   ///
-  /// - Parameter host: the gRPC host name for the call
   /// - Parameter method: the gRPC method name for the call
+  /// - Parameter host: the gRPC host name for the call. If unspecified, defaults to the Client host
   /// - Parameter timeout: a timeout value in seconds
   /// - Returns: a Call object that can be used to perform the request
-  public func makeCall(host:String, method:String) -> Call {
+  public func makeCall(_ method:String, host:String="") -> Call {
+    let host = (host == "") ? self.host : host
     let underlyingCall = cgrpc_client_create_call(underlyingClient, method, host, timeout)!
     return Call(underlyingCall:underlyingCall, owned:true, completionQueue:self.completionQueue)
   }
