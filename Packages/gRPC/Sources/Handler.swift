@@ -139,7 +139,7 @@ public class Handler {
     try call.perform(operations)
   }
 
-  /// Shutdown the handler's completion queue
+  /// Shuts down the handler's completion queue
   public func shutdown() {
     completionQueue.shutdown()
   }

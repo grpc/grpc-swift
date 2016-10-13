@@ -45,7 +45,10 @@ public class Server {
   var completionQueue: CompletionQueue
 
   /// Active handlers
-  var handlers : NSMutableSet!
+  private var handlers : NSMutableSet!
+
+  /// Mutex for synchronizing access to handlers
+  private var handlersMutex : Mutex = Mutex()
 
   /// Optional callback when server stops serving
   private var onCompletion: (() -> Void)!
@@ -77,9 +80,11 @@ public class Server {
   }
 
   /// Run the server
-  public func run(handlerFunction: @escaping (Handler) -> Void) {
+  public func run(dispatchQueue: DispatchQueue = DispatchQueue.global(),
+                  handlerFunction: @escaping (Handler) -> Void) {
     cgrpc_server_start(underlyingServer);
-    DispatchQueue.global().async {
+    // run the server on a new background thread
+    dispatchQueue.async {
       var running = true
       while(running) {
         do {
@@ -91,9 +96,18 @@ public class Server {
             if event.tag == 101 {
               // run the handler and remove it when it finishes
               if event.success != 0 {
-                self.handlers.add(handler)
-                handler.completionQueue.runToCompletion() {
-                  self.handlers.remove(handler)
+                // hold onto the handler while it runs
+                self.handlersMutex.synchronize {
+                  self.handlers.add(handler)
+                }
+                // this will start the completion queue on a new thread
+                handler.completionQueue.runToCompletion(callbackQueue:dispatchQueue) {
+                  dispatchQueue.async {
+                    self.handlersMutex.synchronize {
+                      // release the handler when it finishes
+                      self.handlers.remove(handler)
+                    }
+                  }
                 }
                 handlerFunction(handler)
               }

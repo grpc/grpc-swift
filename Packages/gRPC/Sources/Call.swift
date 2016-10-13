@@ -35,15 +35,6 @@
 #endif
 import Foundation
 
-/// Singleton class that provides a mutex for synchronizing calls to cgrpc_call_perform()
-private class CallLock {
-  var mutex : Mutex
-  private init() {
-    mutex = Mutex()
-  }
-  static let sharedInstance = CallLock()
-}
-
 public enum CallError : Error {
   case ok
   case unknown
@@ -110,6 +101,9 @@ public struct CallResult {
 /// A gRPC API call
 public class Call {
 
+  /// Shared mutex for synchronizing calls to cgrpc_call_perform()
+  static let callMutex = Mutex()
+
   /// Pointer to underlying C representation
   private var underlyingCall : UnsafeMutableRawPointer
 
@@ -125,6 +119,12 @@ public class Call {
   /// True if a message write operation is underway
   private var writing : Bool
 
+  /// Mutex for synchronizing message sending
+  private var sendMutex : Mutex
+
+  /// Dispatch queue used for sending messages asynchronously
+  private var messageDispatchQueue: DispatchQueue = DispatchQueue.global()
+
   /// Initializes a Call representation
   ///
   /// - Parameter call: the underlying C representation
@@ -135,6 +135,7 @@ public class Call {
     self.completionQueue = completionQueue
     self.pendingMessages = []
     self.writing = false
+    self.sendMutex = Mutex()
   }
 
   deinit {
@@ -149,10 +150,9 @@ public class Call {
   /// - Returns: the result of initiating the call
   func perform(_ operations: OperationGroup) throws -> Void {
     completionQueue.register(operations)
-    let mutex = CallLock.sharedInstance.mutex
-    mutex.lock()
+    Call.callMutex.lock()
     let error = cgrpc_call_perform(underlyingCall, operations.underlyingOperations, operations.tag)
-    mutex.unlock()
+    Call.callMutex.unlock()
     if error != GRPC_CALL_OK {
       throw CallError.callError(grpcCallError:error)
     }
@@ -203,20 +203,19 @@ public class Call {
   }
 
   // send a message over a streaming connection
-  public func sendMessage(data: Data)
-    -> Void {
-      DispatchQueue.main.async {
-        if self.writing {
-          self.pendingMessages.append(data) // TODO: return something if we can't accept another message
-        } else {
-          self.writing = true
-          do {
-            try self.sendWithoutBlocking(data: data)
-          } catch (let callError) {
-            print("grpc error: \(callError)")
-          }
+  public func sendMessage(data: Data) -> Void {
+    self.sendMutex.synchronize {
+      if self.writing {
+        self.pendingMessages.append(data) // TODO: return something if we can't accept another message
+      } else {
+        self.writing = true
+        do {
+          try self.sendWithoutBlocking(data: data)
+        } catch (let callError) {
+          print("grpc error: \(callError)")
         }
       }
+    }
   }
 
   private func sendWithoutBlocking(data: Data) throws -> Void {
@@ -224,17 +223,21 @@ public class Call {
     let operations = OperationGroup(call:self, operations:[.sendMessage(messageBuffer)])
     {(operationGroup) in
       if operationGroup.success {
-        DispatchQueue.main.async {
-          if self.pendingMessages.count > 0 {
-            let nextMessage = self.pendingMessages.first!
-            self.pendingMessages.removeFirst()
-            do {
-              try self.sendWithoutBlocking(data: nextMessage)
-            } catch (let callError) {
-              print("grpc error: \(callError)")
+        self.messageDispatchQueue.async {
+          self.sendMutex.synchronize {
+            // if there are messages pending, send the next one
+            if self.pendingMessages.count > 0 {
+              let nextMessage = self.pendingMessages.first!
+              self.pendingMessages.removeFirst()
+              do {
+                try self.sendWithoutBlocking(data: nextMessage)
+              } catch (let callError) {
+                print("grpc error: \(callError)")
+              }
+            } else {
+              // otherwise, we are finished writing
+              self.writing = false
             }
-          } else {
-            self.writing = false
           }
         }
       } else {

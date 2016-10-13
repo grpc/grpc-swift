@@ -67,4 +67,13 @@ public class Mutex {
   public func unlock() {
     cgrpc_mutex_unlock(underlyingMutex);
   }
+
+  /// Runs a block within a locked mutex
+  ///
+  /// Parameter block: the code to run while the mutex is locked
+  public func synchronize(block:() -> Void) {
+    lock()
+    block()
+    unlock()
+  }
 }

@@ -34,17 +34,11 @@
   import CgRPC
 #endif
 
-/// Singleton class that provides a mutex for synchronizing tag generation
-private class OperationGroupTagLock {
-  var mutex : Mutex
-  private init() {
-    mutex = Mutex()
-  }
-  static let sharedInstance = OperationGroupTagLock()
-}
-
 /// A collection of gRPC operations
 internal class OperationGroup {
+
+  /// A mutex for synchronizing tag generation
+  static let tagMutex = Mutex()
 
   /// Used to generate unique tags for OperationGroups
   private static var nextTag : Int64 = 1
@@ -110,11 +104,10 @@ internal class OperationGroup {
     self.operations = operations
     self.completion = completion
     // set tag to a unique value (per execution)
-    let mutex = OperationGroupTagLock.sharedInstance.mutex
-    mutex.lock()
+    OperationGroup.tagMutex.lock()
     self.tag = OperationGroup.nextTag
     OperationGroup.nextTag += 1
-    mutex.unlock()
+    OperationGroup.tagMutex.unlock()
     // create underlying observers and operations
     self.underlyingOperations = cgrpc_operations_create()
     cgrpc_operations_reserve_space_for_operations(self.underlyingOperations, Int32(operations.count))
