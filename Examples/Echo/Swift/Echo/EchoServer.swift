@@ -58,7 +58,7 @@ class EchoServer {
     print("GRPC version " + gRPC.version())
 
     server.run {(requestHandler) in
-      print("Received request to " + requestHandler.host
+      print("Server received request to " + requestHandler.host
         + " calling " + requestHandler.method
         + " from " + requestHandler.caller)
 

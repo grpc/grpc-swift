@@ -55,7 +55,9 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
 
   @IBAction func messageReturnPressed(sender: NSTextField) {
     if enabled {
-      if let error = try? callServer(address:addressField.stringValue) {
+      do {
+        try callServer(address:addressField.stringValue)
+      } catch (let error) {
         print(error)
       }
     }
@@ -116,10 +118,10 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         guard let call = call else {
           return
         }
-        try call.performNonStreamingCall(message: requestMessageData,
-                                         metadata: requestMetadata)
+        try call.perform(message: requestMessageData,
+                         metadata: requestMetadata)
         {(callResult) in
-          print("Received status: \(callResult.statusCode): \(callResult.statusMessage)")
+          print("Client received status \(callResult.statusCode): \(callResult.statusMessage!)")
           if let messageData = callResult.resultData,
             let responseMessage = self.fileDescriptorSet.readMessage("EchoResponse",
                                                                      data:messageData) {
@@ -160,7 +162,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     requestMessage.addField("text", value:self.messageField.stringValue)
     let messageData = requestMessage.data()
     if let call = call {
-      call.sendMessage(data:messageData)
+      _ = call.sendMessage(data:messageData)
     }
   }
 

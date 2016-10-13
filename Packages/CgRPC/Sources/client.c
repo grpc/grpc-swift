@@ -93,9 +93,9 @@ void cgrpc_client_destroy(cgrpc_client *c) {
 }
 
 cgrpc_call *cgrpc_client_create_call(cgrpc_client *client,
-                                           const char *method,
-                                           const char *host,
-                                           double timeout) {
+                                     const char *method,
+                                     const char *host,
+                                     double timeout) {
   // create call
   gpr_timespec deadline = cgrpc_deadline_in_seconds_from_now(timeout);
   grpc_call *client_call = grpc_channel_create_call(client->client,
