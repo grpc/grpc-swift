@@ -38,7 +38,7 @@ class StickyNoteViewController : NSViewController, NSTextFieldDelegate {
   @IBOutlet weak var messageField: NSTextField!
   @IBOutlet weak var imageView: NSImageView!
 
-  var client: Client!
+  var channel: Channel!
 
   var enabled = false
 
@@ -78,9 +78,9 @@ class StickyNoteViewController : NSViewController, NSTextFieldDelegate {
                                         ["y":"yu"],
                                         ["z":"zither"]])
 
-        client = Client(address:address)
-        client.host = requestHost
-        let call = client.makeCall(requestMethod)
+        channel = Channel(address:address)
+        channel.host = requestHost
+        let call = channel.makeCall(requestMethod)
         try call.perform(message: requestMessage.data(),
                          metadata: requestMetadata,
                          completion:

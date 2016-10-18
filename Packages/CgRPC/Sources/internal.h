@@ -48,9 +48,9 @@ typedef struct {
 } cgrpc_operations;
 
 typedef struct {
-  grpc_channel *client; // owned
+  grpc_channel *channel; // owned
   grpc_completion_queue *completion_queue; // owned
-} cgrpc_client;
+} cgrpc_channel;
 
 typedef struct {
   grpc_server *server; // owned

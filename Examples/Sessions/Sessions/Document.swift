@@ -64,7 +64,7 @@ class Document: NSDocument {
   @IBOutlet var textView: NSTextView!
   // http://stackoverflow.com/questions/24062437/cannot-form-weak-reference-to-instance-of-class-nstextview
 
-  var client : Client!
+  var channel : Channel!
   var server : Server!
   var running: Bool // all accesses to this should be synchronized
 
@@ -141,7 +141,7 @@ class Document: NSDocument {
   }
 
   func stop() {
-    if (self.client != nil) {
+    if (self.channel != nil) {
       setIsRunning(false) // stops client
     }
     if (self.server != nil) {
@@ -154,8 +154,8 @@ class Document: NSDocument {
       self.log("Client Starting")
       self.log("GRPC version " + gRPC.version())
 
-      self.client = gRPC.Client(address:address)
-      self.client.host = "foo.test.google.fr"
+      self.channel = gRPC.Channel(address:address)
+      self.channel.host = "foo.test.google.fr"
       let messageData = "hello, server!".data(using: .utf8)
 
       let steps = 10
@@ -165,7 +165,7 @@ class Document: NSDocument {
           break
         }
         let method = (i < steps) ? "/hello" : "/quit"
-        let call = self.client.makeCall(method)
+        let call = self.channel.makeCall(method)
 
         let metadata = Metadata([["x": "xylophone"],
                                  ["y": "yu"],

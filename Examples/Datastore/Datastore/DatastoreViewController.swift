@@ -41,7 +41,7 @@ class DatastoreViewController : NSViewController, NSTextFieldDelegate {
   @IBOutlet weak var outputField: NSTextField!
 
   private var fileDescriptorSet : FileDescriptorSet
-  private var client: Client?
+  private var channel: Channel?
   private var call: Call?
 
   private var webViewWindowController : WebViewWindowController!
@@ -82,7 +82,7 @@ class DatastoreViewController : NSViewController, NSTextFieldDelegate {
   }
 
   func createClient(address: String, host: String) {
-    client = Client(address:address, certificates:nil, host:nil)
+    channel = Channel(address:address, certificates:nil, host:nil)
   }
 
   func callServer(address:String) {
@@ -109,10 +109,10 @@ class DatastoreViewController : NSViewController, NSTextFieldDelegate {
       check?.display()
 
       createClient(address:address, host:requestHost)
-      guard let client = client else {
+      guard let channel = channel else {
         return
       }
-      call = client.makeCall("/google.datastore.v1.Datastore/RunQuery")
+      call = channel.makeCall("/google.datastore.v1.Datastore/RunQuery")
       guard let call = call else {
         return
       }

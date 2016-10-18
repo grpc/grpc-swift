@@ -25,14 +25,14 @@ class SpeechRecognitionService {
   private var nowStreaming = false
 
   var fileDescriptorSet : FileDescriptorSet
-  var client: Client
+  var channel: Channel
   var call: Call?
 
   static let sharedInstance = SpeechRecognitionService()
 
   private init() {
     fileDescriptorSet = FileDescriptorSet(filename: "speech.out")
-    client = Client(address:HOST, certificates: nil, host: nil)
+    channel = Channel(address:HOST, certificates: nil, host: nil)
   }
 
   func streamAudioData(_ audioData: NSData, completion: SpeechRecognitionCompletionHandler) {
@@ -41,7 +41,7 @@ class SpeechRecognitionService {
 
       if (!nowStreaming) {
         // if we aren't already streaming, set up a gRPC connection
-        call = client.makeCall("/google.cloud.speech.v1beta1.Speech/StreamingRecognize")
+        call = channel.makeCall("/google.cloud.speech.v1beta1.Speech/StreamingRecognize")
 
         if let call = call {
           let metadata = Metadata(["x-goog-api-key":API_KEY,

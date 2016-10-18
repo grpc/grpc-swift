@@ -42,7 +42,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   @IBOutlet weak var TLSButton: NSButton!
 
   private var fileDescriptorSet : FileDescriptorSet
-  private var client: Client?
+  private var channel: Channel?
   private var call: Call?
   private var nowStreaming = false
 
@@ -90,16 +90,16 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     }
   }
 
-  func prepareClient(address: String, host: String) {
+  func prepareChannel(address: String, host: String) {
     if (TLSButton.intValue == 0) {
-      client = Client(address:address)
+      channel = Channel(address:address)
     } else {
       let certificateURL = Bundle.main.url(forResource: "ssl", withExtension: "crt")!
       let certificates = try! String(contentsOf: certificateURL)
-      client = Client(address:address, certificates:certificates, host:host)
+      channel = Channel(address:address, certificates:certificates, host:host)
     }
-    if let client = client {
-      client.host = host
+    if let channel = channel {
+      channel.host = host
     }
   }
 
@@ -112,11 +112,11 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
       if let requestMessage = self.fileDescriptorSet.makeMessage("EchoRequest") {
         requestMessage.addField("text", value:self.messageField.stringValue)
         let requestMessageData = requestMessage.data()
-        prepareClient(address:address, host:host)
-        guard let client = client else {
+        prepareChannel(address:address, host:host)
+        guard let channel = channel else {
           return
         }
-        call = client.makeCall("/echo.Echo/Get")
+        call = channel.makeCall("/echo.Echo/Get")
         guard let call = call else {
           return
         }
@@ -143,11 +143,11 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     else {
       // STREAMING
       if (!nowStreaming) {
-        prepareClient(address:address, host:host)
-        guard let client = client else {
+        prepareChannel(address:address, host:host)
+        guard let channel = channel else {
           return
         }
-        call = client.makeCall("/echo.Echo/Update")
+        call = channel.makeCall("/echo.Echo/Update")
         guard let call = call else {
           return
         }

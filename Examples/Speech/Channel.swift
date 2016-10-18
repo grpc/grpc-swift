@@ -35,13 +35,13 @@
 #endif
 import Foundation
 
-/// A gRPC Client
-public class Client {
+/// A gRPC Channel
+public class Channel {
 
   /// Pointer to underlying C representation
-  private var underlyingClient: UnsafeMutableRawPointer
+  private var underlyingChannel: UnsafeMutableRawPointer
 
-  /// Completion queue for client call operations
+  /// Completion queue for channel call operations
   private var completionQueue: CompletionQueue
 
   /// Timeout for new calls
@@ -51,38 +51,38 @@ public class Client {
   public var host: String
 
 
-  /// Initializes a gRPC client
+  /// Initializes a gRPC channel
   ///
   /// - Parameter address: the address of the server to be called
   public init(address: String) {
     self.host = address
-    underlyingClient = cgrpc_client_create(address)
-    completionQueue = CompletionQueue(underlyingCompletionQueue:cgrpc_client_completion_queue(underlyingClient))
+    underlyingChannel = cgrpc_channel_create(address)
+    completionQueue = CompletionQueue(underlyingCompletionQueue:cgrpc_channel_completion_queue(underlyingChannel))
     completionQueue.name = "Client" // only for debugging
-    self.completionQueue.run() // start a loop that watches the client's completion queue
+    self.completionQueue.run() // start a loop that watches the channel's completion queue
   }
 
-  /// Initializes a gRPC client
+  /// Initializes a gRPC channel
   ///
   /// - Parameter address: the address of the server to be called
   public init(address: String, certificates: String?, host: String?) {
     self.host = address
     if certificates == nil {
-      let bundle = Bundle(for: Client.self)
+      let bundle = Bundle(for: Channel.self)
       let url = bundle.url(forResource: "roots", withExtension: "pem")!
       let data = try! Data(contentsOf: url)
       let s = String(data: data, encoding: .ascii)
-      underlyingClient = cgrpc_client_create_secure(address, s, host)
+      underlyingChannel = cgrpc_channel_create_secure(address, s, host)
     } else {
-      underlyingClient = cgrpc_client_create_secure(address, certificates, host)
+      underlyingChannel = cgrpc_channel_create_secure(address, certificates, host)
     }
-    completionQueue = CompletionQueue(underlyingCompletionQueue:cgrpc_client_completion_queue(underlyingClient))
+    completionQueue = CompletionQueue(underlyingCompletionQueue:cgrpc_channel_completion_queue(underlyingChannel))
     completionQueue.name = "Client" // only for debugging
-    self.completionQueue.run() // start a loop that watches the client's completion queue
+    self.completionQueue.run() // start a loop that watches the channel's completion queue
   }
 
   deinit {
-    cgrpc_client_destroy(underlyingClient)
+    cgrpc_channel_destroy(underlyingChannel)
   }
 
   /// Constructs a Call object to make a gRPC API call
@@ -93,7 +93,7 @@ public class Client {
   /// - Returns: a Call object that can be used to perform the request
   public func makeCall(_ method:String, host:String="") -> Call {
     let host = (host == "") ? self.host : host
-    let underlyingCall = cgrpc_client_create_call(underlyingClient, method, host, timeout)!
+    let underlyingCall = cgrpc_channel_create_call(underlyingChannel, method, host, timeout)!
     return Call(underlyingCall:underlyingCall, owned:true, completionQueue:self.completionQueue)
   }
 }

@@ -41,7 +41,7 @@
 // all domain types are opaque pointers
 typedef void cgrpc_byte_buffer;
 typedef void cgrpc_call;
-typedef void cgrpc_client;
+typedef void cgrpc_channel;
 typedef void cgrpc_completion_queue;
 typedef void cgrpc_handler;
 typedef void cgrpc_metadata;
@@ -126,18 +126,18 @@ void grpc_init();
 void grpc_shutdown();
 const char *grpc_version_string();
 
-// client support
-cgrpc_client *cgrpc_client_create(const char *address);
-cgrpc_client *cgrpc_client_create_secure(const char *address,
-                                         const char *pem_root_certs,
-                                         const char *host);
+// channel support
+cgrpc_channel *cgrpc_channel_create(const char *address);
+cgrpc_channel *cgrpc_channel_create_secure(const char *address,
+                                           const char *pem_root_certs,
+                                           const char *host);
 
-void cgrpc_client_destroy(cgrpc_client *client);
-cgrpc_call *cgrpc_client_create_call(cgrpc_client *client,
-                                     const char *method,
-                                     const char *host,
-                                     double timeout);
-cgrpc_completion_queue *cgrpc_client_completion_queue(cgrpc_client *client);
+void cgrpc_channel_destroy(cgrpc_channel *channel);
+cgrpc_call *cgrpc_channel_create_call(cgrpc_channel *channel,
+                                      const char *method,
+                                      const char *host,
+                                      double timeout);
+cgrpc_completion_queue *cgrpc_channel_completion_queue(cgrpc_channel *channel);
 
 // server support
 cgrpc_server *cgrpc_server_create(const char *address);
