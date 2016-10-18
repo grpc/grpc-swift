@@ -34,9 +34,108 @@ import Foundation
 import gRPC
 import QuickProto
 
+class EchoGetHandler : HandlerHelper {
+  var requestHandler : Handler
+  var fileDescriptorSet: FileDescriptorSet
+  var service : EchoGetService
+
+  init(requestHandler:Handler,
+       fileDescriptorSet: FileDescriptorSet,
+       service: EchoGetService) {
+    self.requestHandler = requestHandler
+    self.fileDescriptorSet = fileDescriptorSet
+    self.service = service
+  }
+
+  // return an empty message of the destination type
+  func replyMessage() -> Message {
+    return fileDescriptorSet.makeMessage("EchoResponse")!
+  }
+
+  // send a message 
+  func sendMessage(message:Message) -> Void {
+    try! requestHandler.sendResponse(message:message.data()) {}
+  }
+
+  func run() {
+    do {
+      try requestHandler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
+        if let requestData = requestData,
+          let requestMessage = self.fileDescriptorSet.readMessage("EchoRequest", data:requestData) {
+          if let replyMessage = self.service.handle(handler:self, request:requestMessage) { // calling stub
+            try self.requestHandler.sendResponse(message:replyMessage.data(),
+                                                 statusCode: 0,
+                                                 statusMessage: "OK",
+                                                 trailingMetadata:Metadata())
+          }
+        }
+      }
+    } catch (let callError) {
+      print("grpc error: \(callError)")
+    }
+  }
+}
+
+class EchoUpdateHandler : HandlerHelper {
+  var requestHandler : Handler
+  var fileDescriptorSet: FileDescriptorSet
+  var service : EchoUpdateService
+
+  init(requestHandler:Handler,
+       fileDescriptorSet: FileDescriptorSet,
+       service: EchoUpdateService) {
+    self.requestHandler = requestHandler
+    self.fileDescriptorSet = fileDescriptorSet
+    self.service = service
+  }
+
+  func replyMessage() -> Message {
+    return fileDescriptorSet.makeMessage("EchoResponse")!
+  }
+
+  func sendMessage(message:Message) -> Void {
+    try! requestHandler.sendResponse(message:message.data()) {}
+  }
+
+  func wait() {
+    do {
+      try requestHandler.receiveMessage() {(requestData) in
+        if let requestData = requestData {
+          if let requestMessage = self.fileDescriptorSet.readMessage("EchoRequest", data:requestData) {
+            self.wait()
+            self.service.handle(handler:self, request:requestMessage)
+          }
+        } else {
+          // if we get an empty message (requestData == nil), we close the connection
+          try self.requestHandler.sendStatus(statusCode: 0,
+                                             statusMessage: "OK",
+                                             trailingMetadata: Metadata())
+          {
+            self.requestHandler.shutdown()
+          }
+        }
+      }
+    } catch (let error) {
+      print(error)
+    }
+  }
+
+  func run() {
+    do {
+      try self.requestHandler.sendMetadata(initialMetadata:Metadata()) {
+        self.wait()
+      }
+    } catch (let callError) {
+      print("grpc error: \(callError)")
+    }
+  }
+}
+
 class EchoServer {
   private var address: String
   private var server: Server
+  private var fileDescriptorSet : FileDescriptorSet
+  private var handlers: Set<NSObject> = []
 
   init(address:String, secure:Bool) {
     gRPC.initialize()
@@ -50,10 +149,10 @@ class EchoServer {
     } else {
       self.server = gRPC.Server(address:address)
     }
+    fileDescriptorSet = FileDescriptorSet(filename:"echo.out")
   }
 
   func start() {
-    let fileDescriptorSet = FileDescriptorSet(filename:"echo.out")
     print("Server Starting")
     print("GRPC version " + gRPC.version())
 
@@ -62,73 +161,44 @@ class EchoServer {
         + " calling " + requestHandler.method
         + " from " + requestHandler.caller)
 
-      // NONSTREAMING
       if (requestHandler.method == "/echo.Echo/Get") {
-        do {
-          try requestHandler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
-            if let requestData = requestData,
-              let requestMessage = fileDescriptorSet.readMessage("EchoRequest", data:requestData) {
-              try requestMessage.forOneField("text") {(field) in
-                let replyMessage = fileDescriptorSet.makeMessage("EchoResponse")!
-                replyMessage.addField("text", value:"Swift nonstreaming echo " + field.string())
-                try requestHandler.sendResponse(message:replyMessage.data(),
-                                                statusCode: 0,
-                                                statusMessage: "OK",
-                                                trailingMetadata:Metadata())
-              }
-            }
-          }
-        } catch (let callError) {
-          print("grpc error: \(callError)")
-        }
+        requestHandler.helper = EchoGetHandler(requestHandler:requestHandler,
+                                               fileDescriptorSet:self.fileDescriptorSet,
+                                               service:EchoGetService())
+        requestHandler.helper.run()
       }
 
-      // STREAMING
       if (requestHandler.method == "/echo.Echo/Update") {
-        do {
-          try requestHandler.sendMetadata(initialMetadata:Metadata()) {
-            // wait for messages and handle them
-            try self.receiveMessage(fileDescriptorSet:fileDescriptorSet,
-                                    requestHandler:requestHandler)
-            // concurrently wait for a close message
-            try requestHandler.receiveClose() {
-              try requestHandler.sendStatus(statusCode: 0,
-                                            statusMessage:"OK",
-                                            trailingMetadata: Metadata())
-              {
-                requestHandler.shutdown()
-              }
-            }
-          }
-        } catch (let callError) {
-          print("grpc error: \(callError)")
-        }
-      }
-    }
-  }
-
-  func receiveMessage(fileDescriptorSet: FileDescriptorSet, requestHandler: Handler) throws -> Void {
-    try requestHandler.receiveMessage() {(requestData) in
-      if let requestData = requestData {
-        if let requestMessage = fileDescriptorSet.readMessage("EchoRequest", data:requestData) {
-          try requestMessage.forOneField("text") {(field) in
-            let replyMessage = fileDescriptorSet.makeMessage("EchoResponse")!
-            replyMessage.addField("text", value:"Swift streaming echo " + field.string())
-            try requestHandler.sendResponse(message:replyMessage.data()) {
-              // after we've sent our response, prepare to handle another message
-              try self.receiveMessage(fileDescriptorSet:fileDescriptorSet, requestHandler:requestHandler)
-            }
-          }
-        }
-      } else {
-        // if we get an empty message (requestData == nil), we close the connection
-        try requestHandler.sendStatus(statusCode: 0,
-                                      statusMessage: "OK",
-                                      trailingMetadata: Metadata())
-        {
-          requestHandler.shutdown()
-        }
+        requestHandler.helper = EchoUpdateHandler(requestHandler:requestHandler,
+                                                  fileDescriptorSet:self.fileDescriptorSet,
+                                                  service:EchoUpdateService())
+        requestHandler.helper.run()
       }
     }
   }
 }
+
+// The following code is for developer/users to edit.
+// Everything above these lines is intended to be preexisting or generated.
+
+class EchoGetService {
+  func handle(handler:EchoGetHandler, request:Message) -> Message? {
+    if let field = request.oneField("text") {
+      let reply = handler.replyMessage()
+      reply.addField("text", value:"Swift nonstreaming echo " + field.string())
+      return reply
+    }
+    return nil
+  }
+}
+
+class EchoUpdateService {
+  func handle(handler:EchoUpdateHandler, request:Message) -> Void {
+    if let field = request.oneField("text") {
+      let reply = handler.replyMessage()
+      reply.addField("text", value:"Swift streaming echo " + field.string())
+      handler.sendMessage(message:reply)
+    }
+  }
+}
+

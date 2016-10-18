@@ -109,6 +109,7 @@ public class Server {
                     }
                   }
                 }
+                // call the handler function on the server thread
                 handlerFunction(handler)
               }
             } else if event.tag == 0 {

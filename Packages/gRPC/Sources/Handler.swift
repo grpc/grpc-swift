@@ -35,6 +35,10 @@
 #endif
 import Foundation // for String.Encoding
 
+public protocol HandlerHelper {
+  func run() -> Void
+}
+
 /// A gRPC request handler
 public class Handler {
   /// Pointer to underlying C representation
@@ -45,6 +49,9 @@ public class Handler {
 
   /// Metadata received with the request
   public var requestMetadata: Metadata
+
+  /// Anything we want retained until the handler is destroyed
+  public var helper : HandlerHelper!
 
   /// A Call object that can be used to respond to the request
   internal lazy var call: Call = {
