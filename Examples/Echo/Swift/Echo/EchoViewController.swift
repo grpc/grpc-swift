@@ -42,8 +42,6 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   @IBOutlet weak var TLSButton: NSButton!
 
   private var service : EchoService?
-
-  private var channel: Channel?
   private var updateCall: EchoUpdateCall?
 
   private var nowStreaming = false
