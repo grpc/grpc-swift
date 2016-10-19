@@ -35,7 +35,7 @@
 #endif
 import Foundation // for String.Encoding
 
-public protocol HandlerHelper {
+public protocol Session {
   func run() -> Void
 }
 
@@ -50,8 +50,8 @@ public class Handler {
   /// Metadata received with the request
   public var requestMetadata: Metadata
 
-  /// Anything we want retained until the handler is destroyed
-  public var helper : HandlerHelper!
+  /// runnable object that we want retained until the handler is destroyed
+  public var session : Session!
 
   /// A Call object that can be used to respond to the request
   internal lazy var call: Call = {

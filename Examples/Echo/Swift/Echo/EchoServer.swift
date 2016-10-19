@@ -34,38 +34,26 @@ import Foundation
 import gRPC
 import QuickProto
 
-class EchoGetHandler : HandlerHelper {
-  var requestHandler : Handler
-  var service : EchoGetService
+class EchoGetSession : Session {
+  var handler : Handler
+  var server : EchoGetServer
 
-  init(requestHandler:Handler,
-       service: EchoGetService) {
-    self.requestHandler = requestHandler
-    self.service = service
-  }
-
-  // return an empty message of the destination type
-  func replyMessage() -> Message {
-    let fileDescriptorSet = FileDescriptorSet.from(filename:"echo.out")!
-    return fileDescriptorSet.makeMessage("EchoResponse")!
-  }
-
-  // send a message
-  func sendMessage(message:Message) -> Void {
-    try! requestHandler.sendResponse(message:message.data()) {}
+  init(handler:Handler, server: EchoGetServer) {
+    self.handler = handler
+    self.server = server
   }
 
   func run() {
     do {
-      try requestHandler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
+      try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
         if let requestData = requestData,
           let fileDescriptorSet = FileDescriptorSet.from(filename:"echo.out"),
           let requestMessage = fileDescriptorSet.readMessage("EchoRequest", data:requestData) {
-          if let replyMessage = self.service.handle(handler:self, request:requestMessage) { // calling stub
-            try self.requestHandler.sendResponse(message:replyMessage.data(),
-                                                 statusCode: 0,
-                                                 statusMessage: "OK",
-                                                 trailingMetadata:Metadata())
+          if let replyMessage = self.server.handle(message:requestMessage) { // calling stub
+            try self.handler.sendResponse(message:replyMessage.data(),
+                                          statusCode: 0,
+                                          statusMessage: "OK",
+                                          trailingMetadata:Metadata())
           }
         }
       }
@@ -75,41 +63,35 @@ class EchoGetHandler : HandlerHelper {
   }
 }
 
-class EchoUpdateHandler : HandlerHelper {
-  var requestHandler : Handler
-  var service : EchoUpdateService
+class EchoUpdateSession : Session {
+  var handler : Handler
+  var server : EchoUpdateServer
 
-  init(requestHandler:Handler,
-       service: EchoUpdateService) {
-    self.requestHandler = requestHandler
-    self.service = service
-  }
-
-  func replyMessage() -> Message {
-    let fileDescriptorSet = FileDescriptorSet.from(filename:"echo.out")!
-    return fileDescriptorSet.makeMessage("EchoResponse")!
+  init(handler:Handler, server: EchoUpdateServer) {
+    self.handler = handler
+    self.server = server
   }
 
   func sendMessage(message:Message) -> Void {
-    try! requestHandler.sendResponse(message:message.data()) {}
+    try! handler.sendResponse(message:message.data()) {}
   }
 
-  func wait() {
+  func waitForMessage() {
     do {
-      try requestHandler.receiveMessage() {(requestData) in
+      try handler.receiveMessage() {(requestData) in
         if let requestData = requestData {
           if let fileDescriptorSet = FileDescriptorSet.from(filename:"echo.out"),
             let requestMessage = fileDescriptorSet.readMessage("EchoRequest", data:requestData) {
-            self.wait()
-            self.service.handle(handler:self, request:requestMessage)
+            self.waitForMessage()
+            self.server.handle(session:self, message:requestMessage)
           }
         } else {
           // if we get an empty message (requestData == nil), we close the connection
-          try self.requestHandler.sendStatus(statusCode: 0,
-                                             statusMessage: "OK",
-                                             trailingMetadata: Metadata())
+          try self.handler.sendStatus(statusCode: 0,
+                                      statusMessage: "OK",
+                                      trailingMetadata: Metadata())
           {
-            self.requestHandler.shutdown()
+            self.handler.shutdown()
           }
         }
       }
@@ -120,8 +102,8 @@ class EchoUpdateHandler : HandlerHelper {
 
   func run() {
     do {
-      try self.requestHandler.sendMetadata(initialMetadata:Metadata()) {
-        self.wait()
+      try self.handler.sendMetadata(initialMetadata:Metadata()) {
+        self.waitForMessage()
       }
     } catch (let callError) {
       print("grpc error: \(callError)")
@@ -132,7 +114,6 @@ class EchoUpdateHandler : HandlerHelper {
 class EchoServer {
   private var address: String
   private var server: Server
-  private var handlers: Set<NSObject> = []
 
   init(address:String, secure:Bool) {
     gRPC.initialize()
@@ -152,21 +133,21 @@ class EchoServer {
     print("Server Starting")
     print("GRPC version " + gRPC.version())
 
-    server.run {(requestHandler) in
-      print("Server received request to " + requestHandler.host
-        + " calling " + requestHandler.method
-        + " from " + requestHandler.caller)
+    server.run {(handler) in
+      print("Server received request to " + handler.host
+        + " calling " + handler.method
+        + " from " + handler.caller)
 
-      if (requestHandler.method == "/echo.Echo/Get") {
-        requestHandler.helper = EchoGetHandler(requestHandler:requestHandler,
-                                               service:EchoGetService())
-        requestHandler.helper.run()
+      if (handler.method == "/echo.Echo/Get") {
+        handler.session = EchoGetSession(handler:handler,
+                                         server:EchoGetServer())
+        handler.session.run()
       }
 
-      if (requestHandler.method == "/echo.Echo/Update") {
-        requestHandler.helper = EchoUpdateHandler(requestHandler:requestHandler,
-                                                  service:EchoUpdateService())
-        requestHandler.helper.run()
+      if (handler.method == "/echo.Echo/Update") {
+        handler.session = EchoUpdateSession(handler:handler,
+                                            server:EchoUpdateServer())
+        handler.session.run()
       }
     }
   }
@@ -175,24 +156,30 @@ class EchoServer {
 // The following code is for developer/users to edit.
 // Everything above these lines is intended to be preexisting or generated.
 
-class EchoGetService {
-  func handle(handler:EchoGetHandler, request:Message) -> Message? {
-    if let field = request.oneField("text") {
-      let reply = handler.replyMessage()
+class EchoGetServer {
+
+  func handle(message:Message) -> Message? {
+    if let field = message.oneField("text") {
+      let fileDescriptorSet = FileDescriptorSet.from(filename:"echo.out")!
+      let reply = fileDescriptorSet.makeMessage("EchoResponse")!
       reply.addField("text", value:"Swift nonstreaming echo " + field.string())
       return reply
     }
     return nil
   }
+
 }
 
-class EchoUpdateService {
-  func handle(handler:EchoUpdateHandler, request:Message) -> Void {
-    if let field = request.oneField("text") {
-      let reply = handler.replyMessage()
+class EchoUpdateServer {
+
+  func handle(session:EchoUpdateSession, message:Message) -> Void {
+    if let field = message.oneField("text") {
+      let fileDescriptorSet = FileDescriptorSet.from(filename:"echo.out")!
+      let reply = fileDescriptorSet.makeMessage("EchoResponse")!
       reply.addField("text", value:"Swift streaming echo " + field.string())
-      handler.sendMessage(message:reply)
+      session.sendMessage(message:reply)
     }
   }
+
 }
 
