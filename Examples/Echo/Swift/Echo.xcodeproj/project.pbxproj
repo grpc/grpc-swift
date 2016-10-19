@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D30DACF01DB6FC2D00886B20 /* EchoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D30DACEF1DB6FC2D00886B20 /* EchoService.swift */; };
 		D324A6021D81CF8F00421B59 /* EchoServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D324A6011D81CF8F00421B59 /* EchoServer.swift */; };
 		D35C9FAC1D74B079000443CD /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C9FAB1D74B079000443CD /* AppDelegate.swift */; };
 		D35C9FAE1D74B079000443CD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D35C9FAD1D74B079000443CD /* Assets.xcassets */; };
@@ -20,6 +21,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		D30DACF41DB6FC2E00886B20 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D3D2EA3F1D75FB60002EF89C /* QuickProto.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = D3275BF41D8B22DC00CDE67D;
+			remoteInfo = QuickProtoApp;
+		};
 		D3BFE28F1D87A45D00A648D8 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = D3D2EA3F1D75FB60002EF89C /* QuickProto.xcodeproj */;
@@ -65,6 +73,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		D30DACEF1DB6FC2D00886B20 /* EchoService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EchoService.swift; sourceTree = "<group>"; };
 		D324A6011D81CF8F00421B59 /* EchoServer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EchoServer.swift; sourceTree = "<group>"; };
 		D35C9FA81D74B079000443CD /* Echo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Echo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D35C9FAB1D74B079000443CD /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -122,6 +131,7 @@
 				D35C9FB21D74B079000443CD /* Info.plist */,
 				D35C9FC71D74B0C1000443CD /* EchoViewController.swift */,
 				D324A6011D81CF8F00421B59 /* EchoServer.swift */,
+				D30DACEF1DB6FC2D00886B20 /* EchoService.swift */,
 			);
 			path = Echo;
 			sourceTree = "<group>";
@@ -140,6 +150,7 @@
 				D3D2EA451D75FB60002EF89C /* QuickProto.framework */,
 				D3BFE2901D87A45D00A648D8 /* QuickProtoTests.xctest */,
 				D3BFE2921D87A45D00A648D8 /* QuickProtoGen.app */,
+				D30DACF51DB6FC2E00886B20 /* QuickProtoApp.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -212,6 +223,13 @@
 /* End PBXProject section */
 
 /* Begin PBXReferenceProxy section */
+		D30DACF51DB6FC2E00886B20 /* QuickProtoApp.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = QuickProtoApp.app;
+			remoteRef = D30DACF41DB6FC2E00886B20 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		D3BFE2901D87A45D00A648D8 /* QuickProtoTests.xctest */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.cfbundle;
@@ -262,6 +280,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D30DACF01DB6FC2D00886B20 /* EchoService.swift in Sources */,
 				D324A6021D81CF8F00421B59 /* EchoServer.swift in Sources */,
 				D35C9FC81D74B0C1000443CD /* EchoViewController.swift in Sources */,
 				D35C9FAC1D74B079000443CD /* AppDelegate.swift in Sources */,

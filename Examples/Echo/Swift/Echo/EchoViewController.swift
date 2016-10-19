@@ -41,8 +41,6 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   @IBOutlet weak var streamingButton: NSButton!
   @IBOutlet weak var TLSButton: NSButton!
 
-  private var fileDescriptorSet : FileDescriptorSet
-
   private var service : EchoService?
 
   private var channel: Channel?
@@ -51,7 +49,6 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   private var nowStreaming = false
 
   required init?(coder:NSCoder) {
-    fileDescriptorSet = FileDescriptorSet(filename: "echo.out")
     super.init(coder:coder)
   }
 
@@ -104,7 +101,6 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     }
     if let service = service {
       service.channel.host = host
-      service.fileDescriptorSet = fileDescriptorSet
     }
   }
 
@@ -114,7 +110,8 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     let host = "example.com"
     if (self.streamingButton.intValue == 0) {
       // NONSTREAMING
-      if let requestMessage = self.fileDescriptorSet.makeMessage("EchoRequest") {
+      if let fileDescriptorSet = FileDescriptorSet.from(filename:"echo.out"),
+        let requestMessage = fileDescriptorSet.makeMessage("EchoRequest") {
         requestMessage.addField("text", value:self.messageField.stringValue)
         prepareService(address:address, host:host)
         if let service = service {
@@ -152,10 +149,12 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   }
 
   func sendMessage() {
-    let requestMessage = self.fileDescriptorSet.makeMessage("EchoRequest")!
-    requestMessage.addField("text", value:self.messageField.stringValue)
-    if let updateCall = updateCall {
-      _ = updateCall.sendMessage(message:requestMessage)
+    if let fileDescriptorSet = FileDescriptorSet.from(filename:"echo.out") {
+      let requestMessage = fileDescriptorSet.makeMessage("EchoRequest")!
+      requestMessage.addField("text", value:self.messageField.stringValue)
+      if let updateCall = updateCall {
+        _ = updateCall.sendMessage(message:requestMessage)
+      }
     }
   }
 
@@ -185,88 +184,5 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   }
 }
 
-// all code that follows is to-be-generated
 
-class EchoGetCall {
-  var call : Call
-  var fileDescriptorSet: FileDescriptorSet
-
-  init(_ call: Call, fileDescriptorSet: FileDescriptorSet) {
-    self.call = call
-    self.fileDescriptorSet = fileDescriptorSet
-  }
-
-  func perform(request: Message, callback:@escaping (CallResult, Message?) -> Void) -> Void {
-    let requestMessageData = request.data()
-    let requestMetadata = Metadata()
-    try! call.perform(message: requestMessageData,
-                      metadata: requestMetadata)
-    {(callResult) in
-      print("Client received status \(callResult.statusCode): \(callResult.statusMessage!)")
-
-      if let messageData = callResult.resultData,
-        let responseMessage = self.fileDescriptorSet.readMessage("EchoResponse",
-                                                                 data:messageData) {
-
-        callback(callResult, responseMessage)
-      } else {
-        callback(callResult, nil)
-      }
-    }
-  }
-}
-
-class EchoUpdateCall {
-  var call : Call
-  var fileDescriptorSet: FileDescriptorSet
-
-  init(_ call: Call, fileDescriptorSet: FileDescriptorSet) {
-    self.call = call
-    self.fileDescriptorSet = fileDescriptorSet
-  }
-
-  func start(metadata:Metadata) throws {
-    try self.call.start(metadata: metadata)
-  }
-
-  func receiveMessage(callback:@escaping (Message?) throws -> Void) throws {
-    try call.receiveMessage() {(data) in
-      guard let responseMessage = self.fileDescriptorSet.readMessage("EchoResponse", data:data)
-        else {
-          return // this stops receiving
-      }
-      try callback(responseMessage)
-    }
-  }
-
-  func sendMessage(message:Message) {
-    let messageData = message.data()
-    _ = call.sendMessage(data:messageData)
-  }
-
-  func close(completion:@escaping (() -> Void)) throws {
-    try call.close(completion:completion)
-  }
-}
-
-class EchoService {
-  public var channel: Channel
-  public var fileDescriptorSet: FileDescriptorSet!
-
-  public init(address: String) {
-    channel = Channel(address:address)
-  }
-
-  public init(address: String, certificates: String?, host: String?) {
-    channel = Channel(address:address, certificates:certificates, host:host)
-  }
-
-  func get() -> EchoGetCall {
-    return EchoGetCall(channel.makeCall("/echo.Echo/Get"), fileDescriptorSet:fileDescriptorSet)
-  }
-
-  func update() -> EchoUpdateCall {
-    return EchoUpdateCall(channel.makeCall("/echo.Echo/Update"), fileDescriptorSet:fileDescriptorSet)
-  }
-}
 

@@ -44,11 +44,22 @@ public class FileDescriptorSet {
     let baseFileDescriptorSet = FileDescriptorSet()
     if let descriptorMessage = baseFileDescriptorSet.readMessage("FileDescriptorSet",
                                                                  data:data) {
-      descriptorMessage.display()
       descriptorMessage.forEachField("file") { (field) in
         let fileDescriptor = FileDescriptor(message: field.message())
         fileDescriptors.append(fileDescriptor)
       }
+    }
+  }
+
+  private static var cache : [String:FileDescriptorSet] = [:]
+
+  public class func from(filename:String) -> FileDescriptorSet? {
+    if let fileDescriptorSet = cache[filename] {
+      return fileDescriptorSet
+    } else {
+      let fileDescriptorSet = FileDescriptorSet(filename:filename)
+      cache[filename] = fileDescriptorSet
+      return fileDescriptorSet
     }
   }
 

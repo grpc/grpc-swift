@@ -36,23 +36,21 @@ import QuickProto
 
 class EchoGetHandler : HandlerHelper {
   var requestHandler : Handler
-  var fileDescriptorSet: FileDescriptorSet
   var service : EchoGetService
 
   init(requestHandler:Handler,
-       fileDescriptorSet: FileDescriptorSet,
        service: EchoGetService) {
     self.requestHandler = requestHandler
-    self.fileDescriptorSet = fileDescriptorSet
     self.service = service
   }
 
   // return an empty message of the destination type
   func replyMessage() -> Message {
+    let fileDescriptorSet = FileDescriptorSet.from(filename:"echo.out")!
     return fileDescriptorSet.makeMessage("EchoResponse")!
   }
 
-  // send a message 
+  // send a message
   func sendMessage(message:Message) -> Void {
     try! requestHandler.sendResponse(message:message.data()) {}
   }
@@ -61,7 +59,8 @@ class EchoGetHandler : HandlerHelper {
     do {
       try requestHandler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
         if let requestData = requestData,
-          let requestMessage = self.fileDescriptorSet.readMessage("EchoRequest", data:requestData) {
+          let fileDescriptorSet = FileDescriptorSet.from(filename:"echo.out"),
+          let requestMessage = fileDescriptorSet.readMessage("EchoRequest", data:requestData) {
           if let replyMessage = self.service.handle(handler:self, request:requestMessage) { // calling stub
             try self.requestHandler.sendResponse(message:replyMessage.data(),
                                                  statusCode: 0,
@@ -78,18 +77,16 @@ class EchoGetHandler : HandlerHelper {
 
 class EchoUpdateHandler : HandlerHelper {
   var requestHandler : Handler
-  var fileDescriptorSet: FileDescriptorSet
   var service : EchoUpdateService
 
   init(requestHandler:Handler,
-       fileDescriptorSet: FileDescriptorSet,
        service: EchoUpdateService) {
     self.requestHandler = requestHandler
-    self.fileDescriptorSet = fileDescriptorSet
     self.service = service
   }
 
   func replyMessage() -> Message {
+    let fileDescriptorSet = FileDescriptorSet.from(filename:"echo.out")!
     return fileDescriptorSet.makeMessage("EchoResponse")!
   }
 
@@ -101,7 +98,8 @@ class EchoUpdateHandler : HandlerHelper {
     do {
       try requestHandler.receiveMessage() {(requestData) in
         if let requestData = requestData {
-          if let requestMessage = self.fileDescriptorSet.readMessage("EchoRequest", data:requestData) {
+          if let fileDescriptorSet = FileDescriptorSet.from(filename:"echo.out"),
+            let requestMessage = fileDescriptorSet.readMessage("EchoRequest", data:requestData) {
             self.wait()
             self.service.handle(handler:self, request:requestMessage)
           }
@@ -134,7 +132,6 @@ class EchoUpdateHandler : HandlerHelper {
 class EchoServer {
   private var address: String
   private var server: Server
-  private var fileDescriptorSet : FileDescriptorSet
   private var handlers: Set<NSObject> = []
 
   init(address:String, secure:Bool) {
@@ -149,7 +146,6 @@ class EchoServer {
     } else {
       self.server = gRPC.Server(address:address)
     }
-    fileDescriptorSet = FileDescriptorSet(filename:"echo.out")
   }
 
   func start() {
@@ -163,14 +159,12 @@ class EchoServer {
 
       if (requestHandler.method == "/echo.Echo/Get") {
         requestHandler.helper = EchoGetHandler(requestHandler:requestHandler,
-                                               fileDescriptorSet:self.fileDescriptorSet,
                                                service:EchoGetService())
         requestHandler.helper.run()
       }
 
       if (requestHandler.method == "/echo.Echo/Update") {
         requestHandler.helper = EchoUpdateHandler(requestHandler:requestHandler,
-                                                  fileDescriptorSet:self.fileDescriptorSet,
                                                   service:EchoUpdateService())
         requestHandler.helper.run()
       }
