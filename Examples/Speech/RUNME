@@ -4,7 +4,7 @@ echo "Installing Cocoapod dependencies"
 pod install
 
 echo "Compile the protocol buffers"
-protoc google/api/*.proto google/cloud/speech/v1beta1/*.proto google/longrunning/*.proto google/protobuf/*.proto google/rpc/*.proto -o speech.out
+protoc google/api/*.proto google/cloud/speech/v1beta1/*.proto google/longrunning/*.proto google/protobuf/*.proto google/rpc/*.proto -o speech.out --swift_out=./Protos
 
 echo "Opening the project workspace in Xcode"
 open Speech.xcworkspace

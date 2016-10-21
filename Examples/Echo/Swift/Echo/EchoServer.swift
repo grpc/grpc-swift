@@ -32,7 +32,6 @@
  */
 import Foundation
 import gRPC
-import QuickProto
 
 class EchoGetSession : Session {
   var handler : Handler
@@ -46,11 +45,10 @@ class EchoGetSession : Session {
   func run() {
     do {
       try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
-        if let requestData = requestData,
-          let fileDescriptorSet = FileDescriptorSet.from(filename:"echo.out"),
-          let requestMessage = fileDescriptorSet.readMessage("EchoRequest", data:requestData) {
+        if let requestData = requestData {
+          let requestMessage = try! Echo_EchoRequest(protobuf:requestData)
           if let replyMessage = self.server.handle(message:requestMessage) { // calling stub
-            try self.handler.sendResponse(message:replyMessage.data(),
+            try self.handler.sendResponse(message:replyMessage.serializeProtobuf(),
                                           statusCode: 0,
                                           statusMessage: "OK",
                                           trailingMetadata:Metadata())
@@ -72,19 +70,19 @@ class EchoUpdateSession : Session {
     self.server = server
   }
 
-  func sendMessage(message:Message) -> Void {
-    try! handler.sendResponse(message:message.data()) {}
+  func sendMessage(message:Echo_EchoResponse) -> Void {
+    try! handler.sendResponse(message:message.serializeProtobuf()) {}
   }
 
   func waitForMessage() {
     do {
       try handler.receiveMessage() {(requestData) in
         if let requestData = requestData {
-          if let fileDescriptorSet = FileDescriptorSet.from(filename:"echo.out"),
-            let requestMessage = fileDescriptorSet.readMessage("EchoRequest", data:requestData) {
-            self.waitForMessage()
-            self.server.handle(session:self, message:requestMessage)
-          }
+
+          let requestMessage = try! Echo_EchoRequest(protobuf:requestData)
+          self.waitForMessage()
+          self.server.handle(session:self, message:requestMessage)
+
         } else {
           // if we get an empty message (requestData == nil), we close the connection
           try self.handler.sendStatus(statusCode: 0,
@@ -158,28 +156,21 @@ class EchoServer {
 
 class EchoGetServer {
 
-  func handle(message:Message) -> Message? {
-    if let field = message.oneField("text") {
-      let fileDescriptorSet = FileDescriptorSet.from(filename:"echo.out")!
-      let reply = fileDescriptorSet.makeMessage("EchoResponse")!
-      reply.addField("text", value:"Swift nonstreaming echo " + field.string())
-      return reply
-    }
-    return nil
+  func handle(message:Echo_EchoRequest) -> Echo_EchoResponse? {
+    var reply = Echo_EchoResponse()
+    reply.text = "Swift nonstreaming echo " + message.text
+    return reply
   }
 
 }
 
 class EchoUpdateServer {
 
-  func handle(session:EchoUpdateSession, message:Message) -> Void {
-    if let field = message.oneField("text") {
-      let fileDescriptorSet = FileDescriptorSet.from(filename:"echo.out")!
-      let reply = fileDescriptorSet.makeMessage("EchoResponse")!
-      reply.addField("text", value:"Swift streaming echo " + field.string())
-      session.sendMessage(message:reply)
-    }
+  func handle(session:EchoUpdateSession, message:Echo_EchoRequest) -> Void {
+    var reply = Echo_EchoResponse()
+    reply.text = "Swift streaming echo " + message.text
+    session.sendMessage(message:reply)
   }
-
+  
 }
 

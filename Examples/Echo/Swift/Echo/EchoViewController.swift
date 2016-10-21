@@ -32,7 +32,6 @@
  */
 import AppKit
 import gRPC
-import QuickProto
 
 class EchoViewController : NSViewController, NSTextFieldDelegate {
   @IBOutlet weak var messageField: NSTextField!
@@ -108,23 +107,19 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     let host = "example.com"
     if (self.streamingButton.intValue == 0) {
       // NONSTREAMING
-      if let fileDescriptorSet = FileDescriptorSet.from(filename:"echo.out"),
-        let requestMessage = fileDescriptorSet.makeMessage("EchoRequest") {
-        requestMessage.addField("text", value:self.messageField.stringValue)
-        prepareService(address:address, host:host)
-        if let service = service {
-          let call = service.get()
-          call.perform(request:requestMessage) {(callResult, response) in
-            if let response = response {
-              try! response.forOneField("text") {(field) in
-                DispatchQueue.main.async {
-                  self.outputField.stringValue = field.string()
-                }
-              }
-            } else {
-              DispatchQueue.main.async {
-                self.outputField.stringValue = "No message received. gRPC Status \(callResult.statusCode): \(callResult.statusMessage)"
-              }
+      prepareService(address:address, host:host)
+      if let service = service {
+        let call = service.get()
+        var requestMessage = Echo_EchoRequest()
+        requestMessage.text = self.messageField.stringValue
+        call.perform(request:requestMessage) {(callResult, response) in
+          if let response = response {
+            DispatchQueue.main.async {
+              self.outputField.stringValue = response.text
+            }
+          } else {
+            DispatchQueue.main.async {
+              self.outputField.stringValue = "No message received. gRPC Status \(callResult.statusCode): \(callResult.statusMessage)"
             }
           }
         }
@@ -147,12 +142,10 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   }
 
   func sendMessage() {
-    if let fileDescriptorSet = FileDescriptorSet.from(filename:"echo.out") {
-      let requestMessage = fileDescriptorSet.makeMessage("EchoRequest")!
-      requestMessage.addField("text", value:self.messageField.stringValue)
-      if let updateCall = updateCall {
-        _ = updateCall.sendMessage(message:requestMessage)
-      }
+    if let updateCall = updateCall {
+      var requestMessage = Echo_EchoRequest()
+      requestMessage.text = self.messageField.stringValue
+      _ = updateCall.sendMessage(message:requestMessage)
     }
   }
 
@@ -163,10 +156,8 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     try updateCall.receiveMessage() {(responseMessage) in
       try self.receiveMessage() // prepare to receive the next message
       if let responseMessage = responseMessage {
-        try responseMessage.forOneField("text") {(field) in
-          DispatchQueue.main.async {
-            self.outputField.stringValue = field.string()
-          }
+        DispatchQueue.main.async {
+          self.outputField.stringValue = responseMessage.text
         }
       }
     }

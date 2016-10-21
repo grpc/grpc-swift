@@ -32,7 +32,6 @@
  */
 import Foundation
 import gRPC
-import QuickProto
 
 // all code that follows is to-be-generated
 
@@ -43,24 +42,23 @@ public class EchoGetCall {
     self.call = call
   }
 
-  func perform(request: Message, callback:@escaping (CallResult, Message?) -> Void) -> Void {
-    let requestMessageData = request.data()
-    let requestMetadata = Metadata()
-    try! call.perform(message: requestMessageData,
-                      metadata: requestMetadata)
-    {(callResult) in
-      print("Client received status \(callResult.statusCode): \(callResult.statusMessage!)")
+  func perform(request: Echo_EchoRequest,
+               callback:@escaping (CallResult, Echo_EchoResponse?) -> Void)
+    -> Void {
+      let requestMessageData = try! request.serializeProtobuf()
+      let requestMetadata = Metadata()
+      try! call.perform(message: requestMessageData,
+                        metadata: requestMetadata)
+      {(callResult) in
+        print("Client received status \(callResult.statusCode): \(callResult.statusMessage!)")
 
-      if let messageData = callResult.resultData,
-        let fileDescriptorSet = FileDescriptorSet.from(filename:"echo.out"),
-        let responseMessage = fileDescriptorSet.readMessage("EchoResponse",
-                                                            data:messageData) {
-
-        callback(callResult, responseMessage)
-      } else {
-        callback(callResult, nil)
+        if let messageData = callResult.resultData {
+          let responseMessage = try! Echo_EchoResponse(protobuf:messageData)
+          callback(callResult, responseMessage)
+        } else {
+          callback(callResult, nil)
+        }
       }
-    }
   }
 }
 
@@ -75,11 +73,10 @@ public class EchoUpdateCall {
     try self.call.start(metadata: metadata)
   }
 
-  func receiveMessage(callback:@escaping (Message?) throws -> Void) throws {
+  func receiveMessage(callback:@escaping (Echo_EchoResponse?) throws -> Void) throws {
     try call.receiveMessage() {(data) in
       guard
-        let fileDescriptorSet = FileDescriptorSet.from(filename:"echo.out"),
-        let responseMessage = fileDescriptorSet.readMessage("EchoResponse", data:data)
+        let responseMessage = try? Echo_EchoResponse(protobuf:data)
         else {
           return
       }
@@ -87,8 +84,8 @@ public class EchoUpdateCall {
     }
   }
 
-  func sendMessage(message:Message) {
-    let messageData = message.data()
+  func sendMessage(message: Echo_EchoRequest) {
+    let messageData = try! message.serializeProtobuf()
     _ = call.sendMessage(data:messageData)
   }
 
