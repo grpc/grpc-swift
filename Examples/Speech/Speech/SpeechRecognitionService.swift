@@ -28,6 +28,8 @@ class SpeechRecognitionService {
   var channel: Channel
   var call: Call?
 
+  var completion: SpeechRecognitionCompletionHandler!
+
   static let sharedInstance = SpeechRecognitionService()
 
   private init() {
@@ -35,7 +37,8 @@ class SpeechRecognitionService {
     channel = Channel(address:HOST, certificates: nil, host: nil)
   }
 
-  func streamAudioData(_ audioData: NSData, completion: SpeechRecognitionCompletionHandler) {
+  func streamAudioData(_ audioData: NSData, completion: @escaping SpeechRecognitionCompletionHandler) {
+    self.completion = completion
 
     do {
 
@@ -63,9 +66,8 @@ class SpeechRecognitionService {
           streamingRecognizeRequest.addField("streaming_config", value:streamingRecognitionConfig)
 
           let messageData = streamingRecognizeRequest.data()
-          call.sendMessage(data:messageData)
+          let success = call.sendMessage(data:messageData)
           nowStreaming = true
-
           self.receiveMessage()
         }
       }
@@ -74,7 +76,10 @@ class SpeechRecognitionService {
         let streamingRecognizeRequest = fileDescriptorSet.makeMessage("StreamingRecognizeRequest")!
         streamingRecognizeRequest.addField("audio_content", value: audioData)
         let messageData = streamingRecognizeRequest.data()
-        call.sendMessage(data:messageData)
+        let success = call.sendMessage(data:messageData)
+        if (!success) {
+          stopStreaming() // restart
+        }
       }
 
     } catch (let error) {
@@ -89,19 +94,11 @@ class SpeechRecognitionService {
           if let data = data {
             if let responseMessage =
               self.fileDescriptorSet.readMessage("StreamingRecognizeResponse", data:data) {
-              responseMessage.forEachField("results") {(field) in
-                if let _ = field.message().oneField("is_final"),
-                  let alternativesField = field.message().oneField("alternatives") {
-                  let alternativeMessage = alternativesField.message()
-                  if let transcript = alternativeMessage.oneField("transcript") {
-                    print(transcript.string())
-                  }
-                }
-              }
+              self.completion(responseMessage, nil)
             }
           }
+          self.receiveMessage()
         }
-        self.receiveMessage()
       }
     } catch (let error) {
       print("Receive error: \(error)")
