@@ -83,6 +83,7 @@ class ViewController : UIViewController, AudioControllerDelegate {
               self.textView.text = error.localizedDescription
             } else if let response = response as? Message {
               var finished = false
+              print("====== RECEIVED MESSAGE ======")
               response.display()
               response.forEachField("results") {(field) in
                 if let alternativesField = field.message().oneField("alternatives") {
@@ -92,9 +93,6 @@ class ViewController : UIViewController, AudioControllerDelegate {
                     if let _ = field.message().oneField("is_final") {
                       self.transcripts.insert(transcript.string(), at:0)
                       self.tableView.insertRows(at:[IndexPath(row:0, section:0)], with: .automatic)
-                      while(self.transcripts.count > 12) {
-                        self.transcripts.removeLast(1)
-                      }
                       self.textView.text = ""
                       finished = true
                     } else {

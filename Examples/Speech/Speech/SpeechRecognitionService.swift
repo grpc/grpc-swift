@@ -66,7 +66,7 @@ class SpeechRecognitionService {
           streamingRecognizeRequest.addField("streaming_config", value:streamingRecognitionConfig)
 
           let messageData = streamingRecognizeRequest.data()
-          let success = call.sendMessage(data:messageData)
+          _ = call.sendMessage(data:messageData)
           nowStreaming = true
           self.receiveMessage()
         }

@@ -277,7 +277,7 @@ public class Call {
     let operations = OperationGroup(call:self, operations:[.sendInitialMetadata(metadata)])
     {(operationGroup) in
       if operationGroup.success {
-        print("call successful")
+
       } else {
         return
       }
