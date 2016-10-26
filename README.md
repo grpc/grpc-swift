@@ -9,7 +9,9 @@ gRPC APIs.
 
 Temporary protocol buffer support is provided in the QuickProto
 library. This simple Swift library provides an API for building and
-parsing protocol buffers with no generated code.
+parsing protocol buffers with no generated code. Conversion to
+Apple's [swift-protobuf](https://github.com/apple/swift-protobuf)
+library is in progress.
 
 Code is provided for both gRPC clients and servers,
 and it can be built either with Xcode or the Swift Package Manager.
@@ -31,8 +33,16 @@ incompatibilities between Linux and Darwin are resolved).
 
 ## Can't find something?
 
-It was harder to get the Swift package manager to deal with 
-code in outside directories than to point Xcode at them, so
-you'll find the code for gRPC, CgRPC, and QuickProto in the
+To make it easier for the Swift Package manager to find,
+the code for gRPC, CgRPC, and QuickProto is in the
 Sources directory associated with each package.
 
+## License
+
+grpc-swift is released under the same license as 
+[gRPC](https://github.com/grpc/grpc), repeated in
+[LICENSE](LICENSE). 
+
+## Contributing
+
+Please get involved! See our [guidelines for contributing](CONTRIBUTING.md).
