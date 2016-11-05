@@ -20,6 +20,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"strings"
 
 	pb "echo"
 	"golang.org/x/net/context"
@@ -63,6 +64,41 @@ func (s *EchoServer) Update(stream pb.Echo_UpdateServer) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func (s *EchoServer) Collect(stream pb.Echo_CollectServer) error {
+	parts := []string{}
+	for {
+		in, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		parts = append(parts, in.Text)
+	}
+	response := &pb.EchoResponse{}
+	response.Text = strings.Join(parts, " ")
+	if err := stream.SendAndClose(response); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *EchoServer) Expand(request *pb.EchoRequest, stream pb.Echo_ExpandServer) error {
+	fmt.Printf("Expand received: %s\n", request.Text)
+	parts := strings.Split(request.Text, " ")
+
+	for _, part := range parts {
+		response := &pb.EchoResponse{}
+		response.Text = part
+		if err := stream.Send(response); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

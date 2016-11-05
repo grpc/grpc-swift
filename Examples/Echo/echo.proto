@@ -18,6 +18,8 @@ package echo;
 service Echo {
   rpc Get(EchoRequest) returns (EchoResponse) {}
   rpc Update(stream EchoRequest) returns (stream EchoResponse) {}
+  rpc Collect(stream EchoRequest) returns (EchoResponse) {}
+  rpc Expand(EchoRequest) returns (stream EchoResponse) {}  
 }
 
 message EchoRequest {

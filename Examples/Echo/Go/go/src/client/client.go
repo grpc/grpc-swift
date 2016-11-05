@@ -33,8 +33,11 @@ const (
 )
 
 func main() {
-
-	var stream = flag.Int("s", 0, "send multiple messages by streaming")
+	var get = flag.Bool("get", false, "call the Get method")
+	var update = flag.Bool("update", false, "call the Update method")
+	var collect = flag.Bool("collect", false, "call the Collect method")
+	var expand = flag.Bool("expand", false, "call the Expand method")
+	var count = flag.Int("n", 10, "number of message to send (update and collect only)")
 	var message = flag.String("m", defaultMessage, "the message to send")
 	var address = flag.String("a", "", "address of the echo server to use")
 	var useTLS = flag.Bool("tls", false, "Use tls for connections.")
@@ -63,17 +66,24 @@ func main() {
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
+
 	defer conn.Close()
 	c := pb.NewEchoClient(conn)
-
-	if *stream > 0 {
-		send_many_messages(c, *message, *stream)
-	} else {
-		send_one_message(c, *message)
+	if *get {
+		call_get(c, *message)
+	}
+	if *update {
+		call_update(c, *message, *count)
+	}
+	if *collect {
+		call_collect(c, *message, *count)
+	}
+	if *expand {
+		call_expand(c, *message)
 	}
 }
 
-func send_one_message(c pb.EchoClient, message string) {
+func call_get(c pb.EchoClient, message string) {
 	// Contact the server and print out its response.
 	response, err := c.Get(context.Background(), &pb.EchoRequest{Text: message})
 	if err != nil {
@@ -82,7 +92,7 @@ func send_one_message(c pb.EchoClient, message string) {
 	log.Printf("Received: %s", response.Text)
 }
 
-func send_many_messages(c pb.EchoClient, message string, count int) {
+func call_update(c pb.EchoClient, message string, count int) {
 	stream, err := c.Update(context.Background())
 	if err != nil {
 		panic(err)
@@ -99,7 +109,6 @@ func send_many_messages(c pb.EchoClient, message string, count int) {
 			if err != nil {
 				log.Fatalf("Failed to receive an echo : %v", err)
 			}
-			count = count + 1
 			log.Printf("Received: %s", in.Text)
 		}
 	}()
@@ -112,4 +121,39 @@ func send_many_messages(c pb.EchoClient, message string, count int) {
 	}
 	stream.CloseSend()
 	<-waitc
+}
+
+func call_collect(c pb.EchoClient, message string, count int) {
+	stream, err := c.Collect(context.Background())
+	if err != nil {
+		panic(err)
+	}
+	for i := 1; i <= count; i++ {
+		var note pb.EchoRequest
+		note.Text = fmt.Sprintf("%s %d", message, i)
+		if err := stream.Send(&note); err != nil {
+			log.Fatalf("Failed to send a message: %v", err)
+		}
+	}
+	response, err := stream.CloseAndRecv()
+	log.Printf("Received: %s", response.Text)
+}
+
+func call_expand(c pb.EchoClient, message string) {
+	stream, err := c.Expand(context.Background(), &pb.EchoRequest{Text: message})
+	if err != nil {
+		panic(err)
+	}
+	for {
+		in, err := stream.Recv()
+		if err == io.EOF {
+			// read done.
+			close(waitc)
+			return
+		}
+		if err != nil {
+			log.Fatalf("Failed to receive an echo : %v", err)
+		}
+		log.Printf("Received: %s", in.Text)
+	}
 }
