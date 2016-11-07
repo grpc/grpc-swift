@@ -21,6 +21,7 @@ import (
 	"log"
 	"net"
 	"strings"
+	"time"
 
 	pb "echo"
 	"golang.org/x/net/context"
@@ -38,7 +39,7 @@ var echoServer EchoServer
 // [START get]
 func (s *EchoServer) Get(ctx context.Context, r *pb.EchoRequest) (*pb.EchoResponse, error) {
 	response := &pb.EchoResponse{}
-	response.Text = "Go nonstreaming echo " + r.Text
+	response.Text = "Go echo get: " + r.Text
 	fmt.Printf("Get received: %s\n", r.Text)
 	return response, nil
 }
@@ -46,6 +47,7 @@ func (s *EchoServer) Get(ctx context.Context, r *pb.EchoRequest) (*pb.EchoRespon
 // [END get]
 
 func (s *EchoServer) Update(stream pb.Echo_UpdateServer) error {
+	count := 0
 	for {
 		in, err := stream.Recv()
 		if err == io.EOF {
@@ -56,7 +58,8 @@ func (s *EchoServer) Update(stream pb.Echo_UpdateServer) error {
 		}
 
 		response := &pb.EchoResponse{}
-		response.Text = "Go streaming echo " + in.Text
+		response.Text = fmt.Sprintf("Go echo update (%d): %s", count, in.Text)
+		count++
 
 		fmt.Printf("Update received: %s\n", in.Text)
 
@@ -80,7 +83,7 @@ func (s *EchoServer) Collect(stream pb.Echo_CollectServer) error {
 		parts = append(parts, in.Text)
 	}
 	response := &pb.EchoResponse{}
-	response.Text = strings.Join(parts, " ")
+	response.Text = fmt.Sprintf("Go echo collect: %s", strings.Join(parts, " "))
 	if err := stream.SendAndClose(response); err != nil {
 		return err
 	}
@@ -91,12 +94,13 @@ func (s *EchoServer) Expand(request *pb.EchoRequest, stream pb.Echo_ExpandServer
 	fmt.Printf("Expand received: %s\n", request.Text)
 	parts := strings.Split(request.Text, " ")
 
-	for _, part := range parts {
+	for i, part := range parts {
 		response := &pb.EchoResponse{}
-		response.Text = part
+		response.Text = fmt.Sprintf("Go echo expand (%d): %s", i, part)
 		if err := stream.Send(response); err != nil {
 			return err
 		}
+		time.Sleep(1*time.Second)
 	}
 
 	return nil

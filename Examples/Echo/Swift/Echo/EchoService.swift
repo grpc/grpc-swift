@@ -62,6 +62,73 @@ public class EchoGetCall {
   }
 }
 
+public class EchoExpandCall {
+  var call : Call
+
+  init(_ call: Call) {
+    self.call = call
+  }
+
+  func perform(request: Echo_EchoRequest,
+               callback:@escaping (CallResult, Echo_EchoResponse?) -> Void)
+    -> Void {
+      let requestMessageData = try! request.serializeProtobuf()
+      let requestMetadata = Metadata()
+      try! call.startServerStreaming(message: requestMessageData,
+                                     metadata: requestMetadata)
+      {(callResult) in
+        //print("Client received status \(callResult.statusCode): \(callResult.statusMessage!)")
+      }
+  }
+
+  func receiveMessage(callback:@escaping (Echo_EchoResponse?) throws -> Void) throws {
+    try call.receiveMessage() {(data) in
+      if let data = data {
+        if let responseMessage = try? Echo_EchoResponse(protobuf:data) {
+          try callback(responseMessage)
+        } else {
+          try callback(nil)
+        }
+      } else {
+        try callback(nil)
+      }
+    }
+  }
+
+}
+
+public class EchoCollectCall {
+  var call : Call
+
+  init(_ call: Call) {
+    self.call = call
+  }
+
+  func start(metadata:Metadata) throws {
+    try self.call.start(metadata: metadata)
+  }
+
+  func receiveMessage(callback:@escaping (Echo_EchoResponse?) throws -> Void) throws {
+    try call.receiveMessage() {(data) in
+      guard
+        let responseMessage = try? Echo_EchoResponse(protobuf:data)
+        else {
+          return
+      }
+      try callback(responseMessage)
+    }
+  }
+
+  func sendMessage(message: Echo_EchoRequest) {
+    let messageData = try! message.serializeProtobuf()
+    _ = call.sendMessage(data:messageData)
+  }
+
+  func close(completion:@escaping (() -> Void)) throws {
+    try call.close(completion:completion)
+  }
+}
+
 public class EchoUpdateCall {
   var call : Call
 
@@ -75,6 +142,10 @@ public class EchoUpdateCall {
 
   func receiveMessage(callback:@escaping (Echo_EchoResponse?) throws -> Void) throws {
     try call.receiveMessage() {(data) in
+      guard let data = data
+        else {
+          return
+      }
       guard
         let responseMessage = try? Echo_EchoResponse(protobuf:data)
         else {
@@ -107,6 +178,14 @@ public class EchoService {
 
   func get() -> EchoGetCall {
     return EchoGetCall(channel.makeCall("/echo.Echo/Get"))
+  }
+
+  func expand() -> EchoExpandCall {
+    return EchoExpandCall(channel.makeCall("/echo.Echo/Expand"))
+  }
+
+  func collect() -> EchoCollectCall {
+    return EchoCollectCall(channel.makeCall("/echo.Echo/Collect"))
   }
 
   func update() -> EchoUpdateCall {

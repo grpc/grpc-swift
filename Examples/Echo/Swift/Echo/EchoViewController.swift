@@ -37,10 +37,14 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   @IBOutlet weak var messageField: NSTextField!
   @IBOutlet weak var outputField: NSTextField!
   @IBOutlet weak var addressField: NSTextField!
-  @IBOutlet weak var streamingButton: NSButton!
   @IBOutlet weak var TLSButton: NSButton!
+  @IBOutlet weak var callSelectButton: NSSegmentedControl!
+  @IBOutlet weak var closeButton: NSButton!
 
   private var service : EchoService?
+
+  private var expandCall: EchoExpandCall?
+  private var collectCall: EchoCollectCall?
   private var updateCall: EchoUpdateCall?
 
   private var nowStreaming = false
@@ -69,8 +73,16 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     }
   }
 
-  @IBAction func buttonValueChanged(sender: NSButton) {
+  @IBAction func buttonValueChanged(sender: NSSegmentedControl) {
     if (nowStreaming && (sender.intValue == 0)) {
+      if let error = try? self.sendClose() {
+        print(error)
+      }
+    }
+  }
+
+  @IBAction func closeButtonPressed(sender: NSButton) {
+    if (nowStreaming) {
       if let error = try? self.sendClose() {
         print(error)
       }
@@ -79,6 +91,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
 
   override func viewDidLoad() {
     gRPC.initialize()
+    closeButton.isEnabled = false
   }
 
   override func viewDidAppear() {
@@ -89,6 +102,9 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   }
 
   func prepareService(address: String, host: String) {
+    if (service != nil) {
+      return
+    }
     if (TLSButton.intValue == 0) {
       service = EchoService(address:address)
     } else {
@@ -102,12 +118,14 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   }
 
   func callServer(address:String) throws -> Void {
+    let host = "example.com"
+    prepareService(address:address, host:host)
+
     let requestMetadata = Metadata(["x-goog-api-key":"YOUR_API_KEY",
                                     "x-ios-bundle-identifier":Bundle.main.bundleIdentifier!])
-    let host = "example.com"
-    if (self.streamingButton.intValue == 0) {
+
+    if (self.callSelectButton.selectedSegment == 0) {
       // NONSTREAMING
-      prepareService(address:address, host:host)
       if let service = service {
         let call = service.get()
         var requestMessage = Echo_EchoRequest()
@@ -125,23 +143,95 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         }
       }
     }
-    else {
-      // STREAMING
+    else if (self.callSelectButton.selectedSegment == 1) {
+      // STREAMING EXPAND
       if (!nowStreaming) {
-        prepareService(address:address, host:host)
+        guard let service = service else {
+          return
+        }
+        expandCall = service.expand()
+        var requestMessage = Echo_EchoRequest()
+        requestMessage.text = self.messageField.stringValue
+        try expandCall!.perform(request:requestMessage) {(callResult, response) in
+        }
+        try! self.receiveExpandMessage()
+      }
+    }
+    else if (self.callSelectButton.selectedSegment == 2) {
+      // STREAMING COLLECT
+      if (!nowStreaming) {
+        guard let service = service else {
+          return
+        }
+        collectCall = service.collect()
+        try collectCall!.start(metadata:requestMetadata)
+        try self.receiveCollectMessage()
+        nowStreaming = true
+        closeButton.isEnabled = true
+      }
+      self.sendCollectMessage()
+
+    }
+    else if (self.callSelectButton.selectedSegment == 3) {
+      // STREAMING UPDATE
+      if (!nowStreaming) {
         guard let service = service else {
           return
         }
         updateCall = service.update()
         try updateCall!.start(metadata:requestMetadata)
-        try self.receiveMessage()
+        try self.receiveUpdateMessage()
         nowStreaming = true
+        closeButton.isEnabled = true
       }
-      self.sendMessage()
+      self.sendUpdateMessage()
     }
   }
 
-  func sendMessage() {
+  func receiveExpandMessage() throws -> Void {
+    guard let expandCall = expandCall else {
+      return
+    }
+    try expandCall.receiveMessage() {(responseMessage) in
+      if let responseMessage = responseMessage {
+        try self.receiveExpandMessage() // prepare to receive the next message
+        DispatchQueue.main.async {
+          self.outputField.stringValue = responseMessage.text
+        }
+      } else {
+        print("expand closed")
+      }
+    }
+  }
+
+  func sendCollectMessage() {
+    if let collectCall = collectCall {
+      var requestMessage = Echo_EchoRequest()
+      requestMessage.text = self.messageField.stringValue
+      _ = collectCall.sendMessage(message:requestMessage)
+    }
+  }
+
+  func receiveCollectMessage() throws -> Void {
+    guard let collectCall = collectCall else {
+      return
+    }
+    try collectCall.receiveMessage() {(responseMessage) in
+      if let responseMessage = responseMessage {
+        DispatchQueue.main.async {
+          self.outputField.stringValue = responseMessage.text
+        }
+      } else {
+        print("collect closed")
+        self.nowStreaming = false
+        self.closeButton.isEnabled = false
+      }
+    }
+  }
+
+
+
+  func sendUpdateMessage() {
     if let updateCall = updateCall {
       var requestMessage = Echo_EchoRequest()
       requestMessage.text = self.messageField.stringValue
@@ -149,26 +239,38 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     }
   }
 
-  func receiveMessage() throws -> Void {
+  func receiveUpdateMessage() throws -> Void {
     guard let updateCall = updateCall else {
       return
     }
     try updateCall.receiveMessage() {(responseMessage) in
-      try self.receiveMessage() // prepare to receive the next message
+      try self.receiveUpdateMessage() // prepare to receive the next message
       if let responseMessage = responseMessage {
         DispatchQueue.main.async {
           self.outputField.stringValue = responseMessage.text
         }
+      } else {
+        print("update closed")
+        self.nowStreaming = false
+        self.closeButton.isEnabled = false
       }
     }
   }
 
   func sendClose() throws {
-    guard let updateCall = updateCall else {
-      return
+    if let updateCall = updateCall {
+      try updateCall.close() {
+        self.updateCall = nil
+        self.nowStreaming = false
+        self.closeButton.isEnabled = false
+      }
     }
-    try updateCall.close() {
-      self.nowStreaming = false
+    if let collectCall = collectCall {
+      try collectCall.close() {
+        self.collectCall = nil
+        self.nowStreaming = false
+        self.closeButton.isEnabled = false
+      }
     }
   }
 }

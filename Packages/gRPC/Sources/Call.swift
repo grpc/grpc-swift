@@ -165,7 +165,7 @@ public class Call {
   ///
   /// - Parameter message: data containing the message to send
   /// - Parameter metadata: metadata to send with the call
-  /// - Parameter callback: a blocko to call with a CallResponse object containing call results
+  /// - Parameter callback: a block to call with a CallResponse object containing call results
   public func perform(message: Data,
                       metadata: Metadata,
                       completion: @escaping (CallResult) throws -> Void)
@@ -186,6 +186,37 @@ public class Call {
                                       resultData:operationGroup.receivedMessage()?.data(),
                                       initialMetadata:operationGroup.receivedInitialMetadata(),
                                       trailingMetadata:operationGroup.receivedTrailingMetadata()))
+          } else {
+            try completion(CallResult(statusCode:0,
+                                      statusMessage:nil,
+                                      resultData:nil,
+                                      initialMetadata:nil,
+                                      trailingMetadata:nil))
+          }
+      })
+
+      try self.perform(operations)
+  }
+
+  public func startServerStreaming(message: Data,
+                                   metadata: Metadata,
+                                   completion: @escaping (CallResult) throws -> Void)
+    throws -> Void {
+      let messageBuffer = ByteBuffer(data:message)
+      let operations = OperationGroup(call:self,
+                                      operations:[.sendInitialMetadata(metadata),
+                                                  .sendMessage(messageBuffer),
+                                                  .sendCloseFromClient,
+                                                  .receiveInitialMetadata
+                                                  ],
+                                      completion:
+        {(operationGroup) in
+          if operationGroup.success {
+            try completion(CallResult(statusCode:0,
+                                      statusMessage:nil,
+                                      resultData:nil,
+                                      initialMetadata:operationGroup.receivedInitialMetadata(),
+                                      trailingMetadata:nil))
           } else {
             try completion(CallResult(statusCode:0,
                                       statusMessage:nil,
@@ -266,6 +297,8 @@ public class Call {
       if operationGroup.success {
         if let messageBuffer = operationGroup.receivedMessage() {
           try callback(messageBuffer.data())
+        } else {
+          try callback(nil) // an empty response signals the end of a connection
         }
       }
     }

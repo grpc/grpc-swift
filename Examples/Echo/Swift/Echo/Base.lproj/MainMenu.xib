@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="11198.2" systemVersion="15G31" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="11201" systemVersion="15G1004" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
     <dependencies>
         <deployment identifier="macosx"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="11198.2"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="11201"/>
     </dependencies>
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="NSApplication">
@@ -105,7 +105,7 @@
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="335" y="390" width="400" height="179"/>
-            <rect key="screenRect" x="0.0" y="0.0" width="1440" height="877"/>
+            <rect key="screenRect" x="0.0" y="0.0" width="1200" height="1897"/>
             <view key="contentView" wantsLayer="YES" id="EiT-Mj-1SZ">
                 <rect key="frame" x="0.0" y="0.0" width="400" height="179"/>
                 <autoresizingMask key="autoresizingMask"/>
@@ -132,9 +132,9 @@
                         </textFieldCell>
                     </textField>
                     <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="jnU-RF-9F0">
-                        <rect key="frame" x="20" y="61" width="360" height="22"/>
+                        <rect key="frame" x="20" y="61" width="305" height="22"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" title="localhost:8081" placeholderString="Server Address" drawsBackground="YES" id="mDa-qc-62R">
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" title="localhost:8080" placeholderString="Server Address" drawsBackground="YES" id="mDa-qc-62R">
                             <font key="font" metaFont="system"/>
                             <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
@@ -143,19 +143,35 @@
                             <action selector="addressReturnPressedWithSender:" target="8aG-cq-jvr" id="LPA-g7-vIb"/>
                         </connections>
                     </textField>
-                    <button fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="5WD-rH-7rC">
-                        <rect key="frame" x="18" y="18" width="84" height="25"/>
+                    <segmentedControl verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Xjz-PB-FD9">
+                        <rect key="frame" x="18" y="16" width="276" height="24"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <buttonCell key="cell" type="check" title="Streaming" bezelStyle="regularSquare" imagePosition="left" inset="2" id="A9P-Au-0Zu">
-                            <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
+                        <segmentedCell key="cell" borderStyle="border" alignment="left" style="rounded" trackingMode="selectOne" id="55X-rv-QL3">
+                            <font key="font" metaFont="system"/>
+                            <segments>
+                                <segment label="Get" width="68" selected="YES"/>
+                                <segment label="Expand" width="67" tag="1"/>
+                                <segment label="Collect" width="67"/>
+                                <segment label="Update"/>
+                            </segments>
+                        </segmentedCell>
+                        <connections>
+                            <action selector="buttonValueChangedWithSender:" target="8aG-cq-jvr" id="6MK-R9-4JD"/>
+                        </connections>
+                    </segmentedControl>
+                    <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="lTw-do-2ef">
+                        <rect key="frame" x="308" y="11" width="75" height="32"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                        <buttonCell key="cell" type="push" title="Close" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="d5c-kK-Cnr">
+                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
                         </buttonCell>
                         <connections>
-                            <action selector="buttonValueChangedWithSender:" target="8aG-cq-jvr" id="hJq-8b-Uoe"/>
+                            <action selector="closeButtonPressedWithSender:" target="8aG-cq-jvr" id="CSt-4Z-6Pf"/>
                         </connections>
                     </button>
                     <button fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="1Ls-ri-Jup">
-                        <rect key="frame" x="170" y="21" width="46" height="18"/>
+                        <rect key="frame" x="336" y="63" width="46" height="18"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <buttonCell key="cell" type="check" title="TLS" bezelStyle="regularSquare" imagePosition="left" inset="2" id="2hc-58-S2L">
                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
@@ -173,9 +189,10 @@
             <connections>
                 <outlet property="TLSButton" destination="1Ls-ri-Jup" id="jan-Vv-OVl"/>
                 <outlet property="addressField" destination="jnU-RF-9F0" id="8vy-f1-cgl"/>
+                <outlet property="callSelectButton" destination="Xjz-PB-FD9" id="hac-kZ-WIN"/>
+                <outlet property="closeButton" destination="lTw-do-2ef" id="gLi-Sn-tTw"/>
                 <outlet property="messageField" destination="DcE-8I-pH3" id="G2X-oh-frG"/>
                 <outlet property="outputField" destination="EyU-Iq-sai" id="9O7-AA-RS0"/>
-                <outlet property="streamingButton" destination="5WD-rH-7rC" id="QqN-UI-iAY"/>
                 <outlet property="view" destination="EiT-Mj-1SZ" id="HXg-ep-0aP"/>
             </connections>
         </viewController>
