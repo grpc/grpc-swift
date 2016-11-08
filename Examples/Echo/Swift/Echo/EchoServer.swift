@@ -34,12 +34,35 @@ import Foundation
 import gRPC
 import Darwin // for sleep()
 
-// nonstreaming
-class EchoGetSession : Session {
-  var handler : Handler
-  var server : EchoGetServer
 
-  init(handler:Handler, server: EchoGetServer) {
+// This seemed like a nice idea but doesn't work because
+// specific message types are in the protocol signatures.
+// There are also functions in the Session classes that depend
+// on specific message types.
+
+protocol UnaryServer {
+  func handle(message:Echo_EchoRequest) -> Echo_EchoResponse?
+}
+
+protocol ServerStreamingServer {
+  func handle(session:ServerStreamingSession, message:Echo_EchoRequest) -> Void
+}
+
+protocol ClientStreamingServer {
+  func handle(session:ClientStreamingSession, message:Echo_EchoRequest) -> Void
+  func close(session:ClientStreamingSession)
+}
+
+protocol BidiStreamingServer {
+  func handle(session:BidiStreamingSession, message:Echo_EchoRequest) -> Void
+}
+
+// nonstreaming
+class UnarySession : Session {
+  var handler : Handler
+  var server : UnaryServer
+
+  init(handler:Handler, server: UnaryServer) {
     self.handler = handler
     self.server = server
   }
@@ -64,11 +87,11 @@ class EchoGetSession : Session {
 }
 
 // server streaming
-class EchoExpandSession : Session {
+class ServerStreamingSession : Session {
   var handler : Handler
-  var server : EchoExpandServer
+  var server : ServerStreamingServer
 
-  init(handler:Handler, server: EchoExpandServer) {
+  init(handler:Handler, server: ServerStreamingServer) {
     self.handler = handler
     self.server = server
   }
@@ -92,11 +115,11 @@ class EchoExpandSession : Session {
 }
 
 // client streaming
-class EchoCollectSession : Session {
+class ClientStreamingSession : Session {
   var handler : Handler
-  var server : EchoCollectServer
+  var server : ClientStreamingServer
 
-  init(handler:Handler, server: EchoCollectServer) {
+  init(handler:Handler, server: ClientStreamingServer) {
     self.handler = handler
     self.server = server
   }
@@ -139,11 +162,11 @@ class EchoCollectSession : Session {
 }
 
 // fully streaming
-class EchoUpdateSession : Session {
+class BidiStreamingSession : Session {
   var handler : Handler
-  var server : EchoUpdateServer
+  var server : BidiStreamingServer
 
-  init(handler:Handler, server: EchoUpdateServer) {
+  init(handler:Handler, server: BidiStreamingServer) {
     self.handler = handler
     self.server = server
   }
@@ -215,26 +238,26 @@ class EchoServer {
         + " from " + handler.caller)
 
       if (handler.method == "/echo.Echo/Get") {
-        handler.session = EchoGetSession(handler:handler,
-                                         server:EchoGetServer())
+        handler.session = UnarySession(handler:handler,
+                                       server:EchoGetServer())
         handler.session.run()
       }
 
       else if (handler.method == "/echo.Echo/Expand") {
-        handler.session = EchoExpandSession(handler:handler,
-                                         server:EchoExpandServer())
+        handler.session = ServerStreamingSession(handler:handler,
+                                                 server:EchoExpandServer())
         handler.session.run()
       }
 
       else if (handler.method == "/echo.Echo/Collect") {
-        handler.session = EchoCollectSession(handler:handler,
-                                         server:EchoCollectServer())
+        handler.session = ClientStreamingSession(handler:handler,
+                                                 server:EchoCollectServer())
         handler.session.run()
       }
 
       else if (handler.method == "/echo.Echo/Update") {
-        handler.session = EchoUpdateSession(handler:handler,
-                                            server:EchoUpdateServer())
+        handler.session = BidiStreamingSession(handler:handler,
+                                               server:EchoUpdateServer())
         handler.session.run()
       }
     }
@@ -244,7 +267,7 @@ class EchoServer {
 // The following code is for developer/users to edit.
 // Everything above these lines is intended to be preexisting or generated.
 
-class EchoGetServer {
+class EchoGetServer : UnaryServer {
 
   func handle(message:Echo_EchoRequest) -> Echo_EchoResponse? {
     var reply = Echo_EchoResponse()
@@ -253,9 +276,9 @@ class EchoGetServer {
   }
 }
 
-class EchoExpandServer {
+class EchoExpandServer : ServerStreamingServer {
 
-  func handle(session:EchoExpandSession, message:Echo_EchoRequest) -> Void {
+  func handle(session:ServerStreamingSession, message:Echo_EchoRequest) -> Void {
     let parts = message.text.components(separatedBy: " ")
     var i = 0
     for part in parts {
@@ -268,27 +291,27 @@ class EchoExpandServer {
   }
 }
 
-class EchoCollectServer {
+class EchoCollectServer : ClientStreamingServer {
   var result = ""
 
-  func handle(session:EchoCollectSession, message:Echo_EchoRequest) -> Void {
+  func handle(session:ClientStreamingSession, message:Echo_EchoRequest) -> Void {
     if result != "" {
       result += " "
     }
     result += message.text
   }
 
-  func close(session:EchoCollectSession) {
+  func close(session:ClientStreamingSession) {
     var reply = Echo_EchoResponse()
     reply.text = "Swift echo collect: " + result
     session.sendMessage(message:reply)
   }
 }
 
-class EchoUpdateServer {
+class EchoUpdateServer : BidiStreamingServer {
   var i = 0
 
-  func handle(session:EchoUpdateSession, message:Echo_EchoRequest) -> Void {
+  func handle(session:BidiStreamingSession, message:Echo_EchoRequest) -> Void {
     var reply = Echo_EchoResponse()
     reply.text = "Swift echo update (\(i)): \(message.text)"
     session.sendMessage(message:reply)
