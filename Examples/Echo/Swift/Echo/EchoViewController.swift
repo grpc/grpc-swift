@@ -35,7 +35,8 @@ import gRPC
 
 class EchoViewController : NSViewController, NSTextFieldDelegate {
   @IBOutlet weak var messageField: NSTextField!
-  @IBOutlet weak var outputField: NSTextField!
+  @IBOutlet weak var sentOutputField: NSTextField!
+  @IBOutlet weak var receivedOutputField: NSTextField!
   @IBOutlet weak var addressField: NSTextField!
   @IBOutlet weak var TLSButton: NSButton!
   @IBOutlet weak var callSelectButton: NSSegmentedControl!
@@ -58,7 +59,8 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   @IBAction func messageReturnPressed(sender: NSTextField) {
     if enabled {
       do {
-        try callServer(address:addressField.stringValue)
+        try callServer(address:addressField.stringValue,
+                       host:"example.com")
       } catch (let error) {
         print(error)
       }
@@ -74,7 +76,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   }
 
   @IBAction func buttonValueChanged(sender: NSSegmentedControl) {
-    if (nowStreaming && (sender.intValue == 0)) {
+    if (nowStreaming) {
       if let error = try? self.sendClose() {
         print(error)
       }
@@ -92,12 +94,21 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   override func viewDidLoad() {
     gRPC.initialize()
     closeButton.isEnabled = false
-  }
-
-  override func viewDidAppear() {
     // prevent the UI from trying to send messages until gRPC is initialized
     DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
       self.enabled = true
+    }
+  }
+
+  func displayMessageSent(_ message:String) {
+    DispatchQueue.main.async {
+      self.sentOutputField.stringValue = message
+    }
+  }
+
+  func displayMessageReceived(_ message:String) {
+    DispatchQueue.main.async {
+      self.receivedOutputField.stringValue = message
     }
   }
 
@@ -108,17 +119,17 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     if (TLSButton.intValue == 0) {
       service = EchoService(address:address)
     } else {
-      let certificateURL = Bundle.main.url(forResource: "ssl", withExtension: "crt")!
+      let certificateURL = Bundle.main.url(forResource: "ssl",
+                                           withExtension: "crt")!
       let certificates = try! String(contentsOf: certificateURL)
       service = EchoService(address:address, certificates:certificates, host:host)
     }
     if let service = service {
-      service.channel.host = host
+      service.channel.host = "example.com" // sample override
     }
   }
 
-  func callServer(address:String) throws -> Void {
-    let host = "example.com"
+  func callServer(address:String, host:String) throws -> Void {
     prepareService(address:address, host:host)
 
     let requestMetadata = Metadata(["x-goog-api-key":"YOUR_API_KEY",
@@ -130,15 +141,12 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         let call = service.get()
         var requestMessage = Echo_EchoRequest()
         requestMessage.text = self.messageField.stringValue
+        self.displayMessageSent(requestMessage.text)
         call.perform(request:requestMessage) {(callResult, response) in
           if let response = response {
-            DispatchQueue.main.async {
-              self.outputField.stringValue = response.text
-            }
+            self.displayMessageReceived(response.text)
           } else {
-            DispatchQueue.main.async {
-              self.outputField.stringValue = "No message received. gRPC Status \(callResult.statusCode): \(callResult.statusMessage)"
-            }
+            self.displayMessageReceived("No message received. gRPC Status \(callResult.statusCode): \(callResult.statusMessage)")
           }
         }
       }
@@ -152,6 +160,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         expandCall = service.expand()
         var requestMessage = Echo_EchoRequest()
         requestMessage.text = self.messageField.stringValue
+        self.displayMessageSent(requestMessage.text)
         try expandCall!.perform(request:requestMessage) {(callResult, response) in
         }
         try! self.receiveExpandMessage()
@@ -170,7 +179,6 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         closeButton.isEnabled = true
       }
       self.sendCollectMessage()
-
     }
     else if (self.callSelectButton.selectedSegment == 3) {
       // STREAMING UPDATE
@@ -195,9 +203,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     try expandCall.receiveMessage() {(responseMessage) in
       if let responseMessage = responseMessage {
         try self.receiveExpandMessage() // prepare to receive the next message
-        DispatchQueue.main.async {
-          self.outputField.stringValue = responseMessage.text
-        }
+        self.displayMessageReceived(responseMessage.text)
       } else {
         print("expand closed")
       }
@@ -208,6 +214,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     if let collectCall = collectCall {
       var requestMessage = Echo_EchoRequest()
       requestMessage.text = self.messageField.stringValue
+      self.displayMessageSent(requestMessage.text)
       _ = collectCall.sendMessage(message:requestMessage)
     }
   }
@@ -218,9 +225,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     }
     try collectCall.receiveMessage() {(responseMessage) in
       if let responseMessage = responseMessage {
-        DispatchQueue.main.async {
-          self.outputField.stringValue = responseMessage.text
-        }
+        self.displayMessageReceived(responseMessage.text)
       } else {
         print("collect closed")
         self.nowStreaming = false
@@ -229,12 +234,11 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     }
   }
 
-
-
   func sendUpdateMessage() {
     if let updateCall = updateCall {
       var requestMessage = Echo_EchoRequest()
       requestMessage.text = self.messageField.stringValue
+      self.displayMessageSent(requestMessage.text)
       _ = updateCall.sendMessage(message:requestMessage)
     }
   }
@@ -247,7 +251,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
       try self.receiveUpdateMessage() // prepare to receive the next message
       if let responseMessage = responseMessage {
         DispatchQueue.main.async {
-          self.outputField.stringValue = responseMessage.text
+          self.receivedOutputField.stringValue = responseMessage.text
         }
       } else {
         print("update closed")

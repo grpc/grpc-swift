@@ -255,7 +255,7 @@ public class Call {
       do {
         try self.sendWithoutBlocking(data: data)
       } catch (let callError) {
-        print("grpc error: \(callError)")
+        print("Call sendMessage: grpc error \(callError)")
       }
     }
     return true
@@ -275,7 +275,7 @@ public class Call {
               do {
                 try self.sendWithoutBlocking(data: nextMessage)
               } catch (let callError) {
-                print("grpc error: \(callError)")
+                print("Call sendWithoutBlocking: grpc error \(callError)")
               }
             } else {
               // otherwise, we are finished writing

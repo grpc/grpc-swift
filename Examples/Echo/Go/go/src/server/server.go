@@ -29,40 +29,33 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-// [START echoserver]
 type EchoServer struct{}
 
 var echoServer EchoServer
 
-// [END echoserver]
-
-// [START get]
-func (s *EchoServer) Get(ctx context.Context, r *pb.EchoRequest) (*pb.EchoResponse, error) {
+// requests are immediately returned, no inbound or outbound streaming
+func (s *EchoServer) Get(ctx context.Context, request *pb.EchoRequest) (*pb.EchoResponse, error) {
+	fmt.Printf("Get received: %s\n", request.Text)
 	response := &pb.EchoResponse{}
-	response.Text = "Go echo get: " + r.Text
-	fmt.Printf("Get received: %s\n", r.Text)
+	response.Text = "Go echo get: " + request.Text
 	return response, nil
 }
 
-// [END get]
-
+// requests stream in and are immediately streamed out
 func (s *EchoServer) Update(stream pb.Echo_UpdateServer) error {
 	count := 0
 	for {
-		in, err := stream.Recv()
+		request, err := stream.Recv()
 		if err == io.EOF {
 			return nil
 		}
 		if err != nil {
 			return err
 		}
-
+		fmt.Printf("Update received: %s\n", request.Text)
 		response := &pb.EchoResponse{}
-		response.Text = fmt.Sprintf("Go echo update (%d): %s", count, in.Text)
+		response.Text = fmt.Sprintf("Go echo update (%d): %s", count, request.Text)
 		count++
-
-		fmt.Printf("Update received: %s\n", in.Text)
-
 		if err := stream.Send(response); err != nil {
 			return err
 		}
@@ -70,17 +63,19 @@ func (s *EchoServer) Update(stream pb.Echo_UpdateServer) error {
 	return nil
 }
 
+// requests stream in, are appended together, and are returned in a single response when the input is closed
 func (s *EchoServer) Collect(stream pb.Echo_CollectServer) error {
 	parts := []string{}
 	for {
-		in, err := stream.Recv()
+		request, err := stream.Recv()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
 			return err
 		}
-		parts = append(parts, in.Text)
+		fmt.Printf("Collect received: %s\n", request.Text)
+		parts = append(parts, request.Text)
 	}
 	response := &pb.EchoResponse{}
 	response.Text = fmt.Sprintf("Go echo collect: %s", strings.Join(parts, " "))
@@ -90,23 +85,21 @@ func (s *EchoServer) Collect(stream pb.Echo_CollectServer) error {
 	return nil
 }
 
+// a single request is accepted and split into parts which are individually returned with a time delay
 func (s *EchoServer) Expand(request *pb.EchoRequest, stream pb.Echo_ExpandServer) error {
 	fmt.Printf("Expand received: %s\n", request.Text)
 	parts := strings.Split(request.Text, " ")
-
 	for i, part := range parts {
 		response := &pb.EchoResponse{}
 		response.Text = fmt.Sprintf("Go echo expand (%d): %s", i, part)
 		if err := stream.Send(response); err != nil {
 			return err
 		}
-		time.Sleep(1*time.Second)
+		time.Sleep(1 * time.Second)
 	}
-
 	return nil
 }
 
-// [START main]
 func main() {
 	var useTLS = flag.Bool("tls", false, "Use tls for connections.")
 
@@ -134,5 +127,3 @@ func main() {
 	pb.RegisterEchoServer(grpcServer, &echoServer)
 	grpcServer.Serve(lis)
 }
-
-// [END main]

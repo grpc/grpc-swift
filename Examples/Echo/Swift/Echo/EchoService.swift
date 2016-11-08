@@ -50,7 +50,7 @@ public class EchoGetCall {
       try! call.perform(message: requestMessageData,
                         metadata: requestMetadata)
       {(callResult) in
-        print("Client received status \(callResult.statusCode): \(callResult.statusMessage!)")
+        print("Client received status \(callResult.statusCode) \(callResult.statusMessage!)")
 
         if let messageData = callResult.resultData {
           let responseMessage = try! Echo_EchoResponse(protobuf:messageData)

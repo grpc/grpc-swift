@@ -133,7 +133,7 @@ internal class CompletionQueue {
               operationGroup.success = (event.success == 1)
               try operationGroup.completion(operationGroup)
             } catch (let callError) {
-              print("grpc error: \(callError)")
+              print("CompletionQueue runToCompletion: grpc error \(callError)")
             }
             self.operationGroupsMutex.lock()
             self.operationGroups[tag] = nil
