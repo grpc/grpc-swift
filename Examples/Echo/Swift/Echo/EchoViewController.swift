@@ -73,6 +73,8 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         print(error)
       }
     }
+    // invalidate the service
+    service = nil
   }
 
   @IBAction func buttonValueChanged(sender: NSSegmentedControl) {

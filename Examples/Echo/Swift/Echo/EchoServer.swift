@@ -32,7 +32,9 @@
  */
 import Foundation
 import gRPC
+import Darwin // for sleep()
 
+// nonstreaming
 class EchoGetSession : Session {
   var handler : Handler
   var server : EchoGetServer
@@ -61,6 +63,82 @@ class EchoGetSession : Session {
   }
 }
 
+// server streaming
+class EchoExpandSession : Session {
+  var handler : Handler
+  var server : EchoExpandServer
+
+  init(handler:Handler, server: EchoExpandServer) {
+    self.handler = handler
+    self.server = server
+  }
+
+  func sendMessage(message:Echo_EchoResponse) -> Void {
+    try! handler.sendResponse(message:message.serializeProtobuf()) {}
+  }
+
+  func run() {
+    do {
+      try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
+        if let requestData = requestData {
+          let requestMessage = try! Echo_EchoRequest(protobuf:requestData)
+          self.server.handle(session: self, message:requestMessage)
+        }
+      }
+    } catch (let callError) {
+      print("grpc error: \(callError)")
+    }
+  }
+}
+
+// client streaming
+class EchoCollectSession : Session {
+  var handler : Handler
+  var server : EchoCollectServer
+
+  init(handler:Handler, server: EchoCollectServer) {
+    self.handler = handler
+    self.server = server
+  }
+
+  func sendMessage(message:Echo_EchoResponse) -> Void {
+    try! self.handler.sendResponse(message:message.serializeProtobuf(),
+                                   statusCode: 0,
+                                   statusMessage: "OK",
+                                   trailingMetadata: Metadata())
+  }
+
+  func waitForMessage() {
+    do {
+      try handler.receiveMessage() {(requestData) in
+        if let requestData = requestData {
+
+          let requestMessage = try! Echo_EchoRequest(protobuf:requestData)
+          self.waitForMessage()
+          self.server.handle(session:self, message:requestMessage)
+
+        } else {
+          // if we get an empty message (requestData == nil), we close the connection
+          self.server.close(session:self)
+        }
+      }
+    } catch (let error) {
+      print(error)
+    }
+  }
+
+  func run() {
+    do {
+      try self.handler.sendMetadata(initialMetadata:Metadata()) {
+        self.waitForMessage()
+      }
+    } catch (let callError) {
+      print("grpc error: \(callError)")
+    }
+  }
+}
+
+// fully streaming
 class EchoUpdateSession : Session {
   var handler : Handler
   var server : EchoUpdateServer
@@ -142,7 +220,19 @@ class EchoServer {
         handler.session.run()
       }
 
-      if (handler.method == "/echo.Echo/Update") {
+      else if (handler.method == "/echo.Echo/Expand") {
+        handler.session = EchoExpandSession(handler:handler,
+                                         server:EchoExpandServer())
+        handler.session.run()
+      }
+
+      else if (handler.method == "/echo.Echo/Collect") {
+        handler.session = EchoCollectSession(handler:handler,
+                                         server:EchoCollectServer())
+        handler.session.run()
+      }
+
+      else if (handler.method == "/echo.Echo/Update") {
         handler.session = EchoUpdateSession(handler:handler,
                                             server:EchoUpdateServer())
         handler.session.run()
@@ -158,19 +248,51 @@ class EchoGetServer {
 
   func handle(message:Echo_EchoRequest) -> Echo_EchoResponse? {
     var reply = Echo_EchoResponse()
-    reply.text = "Swift nonstreaming echo " + message.text
+    reply.text = "Swift echo get: " + message.text
     return reply
   }
+}
 
+class EchoExpandServer {
+
+  func handle(session:EchoExpandSession, message:Echo_EchoRequest) -> Void {
+    let parts = message.text.components(separatedBy: " ")
+    var i = 0
+    for part in parts {
+      var reply = Echo_EchoResponse()
+      reply.text = "Swift echo expand (\(i)): \(part)"
+      session.sendMessage(message:reply)
+      i += 1
+      sleep(1)
+    }
+  }
+}
+
+class EchoCollectServer {
+  var result = ""
+
+  func handle(session:EchoCollectSession, message:Echo_EchoRequest) -> Void {
+    if result != "" {
+      result += " "
+    }
+    result += message.text
+  }
+
+  func close(session:EchoCollectSession) {
+    var reply = Echo_EchoResponse()
+    reply.text = "Swift echo collect: " + result
+    session.sendMessage(message:reply)
+  }
 }
 
 class EchoUpdateServer {
+  var i = 0
 
   func handle(session:EchoUpdateSession, message:Echo_EchoRequest) -> Void {
     var reply = Echo_EchoResponse()
-    reply.text = "Swift streaming echo " + message.text
+    reply.text = "Swift echo update (\(i)): \(message.text)"
     session.sendMessage(message:reply)
+    i += 1
   }
-  
 }
 
