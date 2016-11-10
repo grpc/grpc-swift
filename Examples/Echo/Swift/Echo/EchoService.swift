@@ -42,6 +42,8 @@ public class EchoGetCall {
     self.call = call
   }
 
+  // Call this with the message to send,
+  // the callback will be called after the request is received.
   func perform(request: Echo_EchoRequest,
                callback:@escaping (CallResult, Echo_EchoResponse?) -> Void)
     -> Void {
@@ -69,6 +71,8 @@ public class EchoExpandCall {
     self.call = call
   }
 
+  // Call this once with the message to send,
+  // the callback will be called after the request is initiated.
   func perform(request: Echo_EchoRequest,
                callback:@escaping (CallResult, Echo_EchoResponse?) -> Void)
     -> Void {
@@ -81,6 +85,9 @@ public class EchoExpandCall {
       }
   }
 
+  // Call this to receive a message.
+  // The callback will be called when a message is received.
+  // call this again from the callback to wait for another message.
   func receiveMessage(callback:@escaping (Echo_EchoResponse?) throws -> Void) throws {
     try call.receiveMessage() {(data) in
       if let data = data {
@@ -104,25 +111,32 @@ public class EchoCollectCall {
     self.call = call
   }
 
+  // Call this to start a call.
   func start(metadata:Metadata) throws {
     try self.call.start(metadata: metadata)
   }
 
-  func receiveMessage(callback:@escaping (Echo_EchoResponse?) throws -> Void) throws {
-    try call.receiveMessage() {(data) in
-      guard
-        let responseMessage = try? Echo_EchoResponse(protobuf:data)
-        else {
-          return
-      }
-      try callback(responseMessage)
-    }
-  }
-
+  // Call this to send each message in the request stream.
   func sendMessage(message: Echo_EchoRequest) {
     let messageData = try! message.serializeProtobuf()
     _ = call.sendMessage(data:messageData)
   }
+
+  // Call this to receive a message.
+  // The callback will be called when a message is received.
+  // call this again from the callback to wait for another message.
+  func receiveMessage(callback:@escaping (Echo_EchoResponse?) throws -> Void)
+    throws {
+      try call.receiveMessage() {(data) in
+        guard
+          let responseMessage = try? Echo_EchoResponse(protobuf:data)
+          else {
+            return
+        }
+        try callback(responseMessage)
+      }
+  }
+
 
   func close(completion:@escaping (() -> Void)) throws {
     try call.close(completion:completion)
