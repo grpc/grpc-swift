@@ -53,6 +53,7 @@ public class FileDescriptorSet {
 
   private static var cache : [String:FileDescriptorSet] = [:]
 
+#if !SWIFT_PACKAGE
   public class func from(filename:String) -> FileDescriptorSet? {
     if let fileDescriptorSet = cache[filename] {
       return fileDescriptorSet
@@ -63,7 +64,6 @@ public class FileDescriptorSet {
     }
   }
 
-#if !SWIFT_PACKAGE
   convenience public init(filename:String) {
     let path = Bundle.main.resourcePath!.appending("/").appending(filename)
     let fileDescriptorSetProto = NSData(contentsOfFile:path)

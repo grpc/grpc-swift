@@ -40,31 +40,32 @@ let address = "localhost:8080"
 gRPC.initialize()
 
 if let fileDescriptorSetProto = NSData(contentsOfFile:"echo.out") {
-  let fileDescriptorSet = FileDescriptorSet(proto:fileDescriptorSetProto)
-  if let requestMessage = fileDescriptorSet.createMessage(name:"EchoRequest") {
-    requestMessage.addField(name:"text", value:"hello, swifty!")
+  let fileDescriptorSet = FileDescriptorSet(data:Data(bytes:fileDescriptorSetProto.bytes, count:fileDescriptorSetProto.length))
+  if let requestMessage = fileDescriptorSet.makeMessage("EchoRequest") {
+    requestMessage.addField("text", value:"hello, swifty!")
 
     let requestHost = "foo.test.google.fr"
     let requestMethod = "/echo.Echo/Get"
-    let requestBuffer = ByteBuffer(data:requestMessage.serialize())
+    let requestData = requestMessage.data()
     let requestMetadata = Metadata()
 
-    let client = Client(address:address)
-    let response = client.performRequest(host:requestHost,
-                                         method:requestMethod,
-                                         message:requestBuffer,
-                                         metadata:requestMetadata)
+    let channel = Channel(address:address)
+    let call = channel.makeCall(requestMethod)
+print("calling")
+    try! call.perform(message: requestData, metadata:requestMetadata) {(response) in
 
-    print("Received status: \(response.status) " + response.statusDetails)
+      print("Received status: \(response.statusCode) " + response.statusMessage!)
 
-    if let responseBuffer = response.message,
-      let responseMessage = fileDescriptorSet.readMessage(name:"EchoResponse",
-                                                          proto:responseBuffer.data()) {
-      responseMessage.forOneField(name:"text") {(field) in
-        print(field.string())
+      if let responseData = response.resultData,
+        let responseMessage = fileDescriptorSet.readMessage("EchoResponse", data:responseData) {
+        try! responseMessage.forOneField("text") {(field) in
+          print(field.string())
+        }
+      } else {
+        print("No message received. gRPC Status \(response.statusCode) " + response.statusMessage!)
       }
-    } else {
-      print("No message received. gRPC Status \(response.status) " + response.statusDetails)
     }
   }
 }
+
+print("done")

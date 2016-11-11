@@ -191,7 +191,7 @@ public class Message {
         data.appendVarint(Int(zigzag(Int64(field.integer()))))
       }
     }
-    return data as Data
+    return Data(bytes:data.bytes, count:data.length)
   }
   
 }

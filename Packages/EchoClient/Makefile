@@ -1,6 +1,6 @@
 TARGET=EchoClient
 all:
-	swift build
+	swift build -Xlinker -L/usr/local/lib
 
 install:
 	cp .build/debug/$(TARGET) .

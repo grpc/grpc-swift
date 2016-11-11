@@ -38,46 +38,55 @@ import QuickProto
 let address = "localhost:8080"
 
 if let fileDescriptorSetProto = NSData(contentsOfFile:"echo.out") {
-  let fileDescriptorSet = FileDescriptorSet(proto:fileDescriptorSetProto)
+  let fileDescriptorSet = FileDescriptorSet(data:Data(bytes:fileDescriptorSetProto.bytes, count:fileDescriptorSetProto.length))
 
   gRPC.initialize()
 
   print("Server Starting")
   print("GRPC version " + gRPC.version())
+  var requestCount = 0
 
   let server = gRPC.Server(address:address)
-  server.start()
+  server.run() {(requestHandler) in
+    do {
+      requestCount += 1
 
-  while(true) {
-    let (callError, completionType, requestHandler) = server.getNextRequest(timeout:1.0)
-    if (callError != GRPC_CALL_OK) {
-      print("Call error \(callError)")
-      print("------------------------------")
-    } else if (completionType == GRPC_OP_COMPLETE) {
-      if let requestHandler = requestHandler {
-        print("Received request to " + requestHandler.host()
-          + " calling " + requestHandler.method()
-          + " from " + requestHandler.caller())
+      print("\(requestCount): Received request " + requestHandler.host
+        + " " + requestHandler.method
+        + " from " + requestHandler.caller)
 
-        let (_, _, requestBuffer) = requestHandler.receiveMessage(initialMetadata:Metadata())
-        if let requestBuffer = requestBuffer,
-          let requestMessage = fileDescriptorSet.readMessage(name:"EchoRequest",
-                                                             proto:requestBuffer.data()) {
-
-          requestMessage.forOneField(name:"text") {(field) in
-
-            let replyMessage = fileDescriptorSet.createMessage(name:"EchoResponse")!
-            replyMessage.addField(name:"text", value:field.string())
-
-            let (_, _) = requestHandler.sendResponse(message:ByteBuffer(data:replyMessage.serialize()),
-                                                     trailingMetadata:Metadata())
-          }
-        }
+      let initialMetadata = requestHandler.requestMetadata
+      for i in 0..<initialMetadata.count() {
+        print("\(requestCount): Received initial metadata -> " + initialMetadata.key(index:i)
+          + ":" + initialMetadata.value(index:i))
       }
-    } else if (completionType == GRPC_QUEUE_TIMEOUT) {
-      // everything is fine
-    } else if (completionType == GRPC_QUEUE_SHUTDOWN) {
-      // we should stop
+
+      let initialMetadataToSend = Metadata([["a": "Apple"],
+                                            ["b": "Banana"],
+                                            ["c": "Cherry"]])
+      try requestHandler.receiveMessage(initialMetadata:initialMetadataToSend)
+      {(messageData) in
+            if let requestMessage = fileDescriptorSet.readMessage("EchoRequest", data:messageData!) {
+            try! requestMessage.forOneField("text") {(field) in
+  
+              let replyMessage = fileDescriptorSet.makeMessage("EchoResponse")!
+              replyMessage.addField("text", value:field.string())
+  
+              try! requestHandler.sendResponse(message:replyMessage.data(),
+                                               statusCode:0,
+                                               statusMessage:"OK",
+                                               trailingMetadata:Metadata())
+            }
+          }
+      }
+    } catch (let callError) {
+      Swift.print("call error \(callError)")
     }
   }
-}
+
+  server.onCompletion() {
+    print("Server Stopped")
+  }
+}                  
+
+sleep(600)
