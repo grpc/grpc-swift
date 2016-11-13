@@ -26,10 +26,6 @@ Other examples include [Sessions](Examples/Sessions),
 
 Swift Package Manager builds are demonstrated on Linux using 
 the instructions in the [Packages](Packages) directory.
-(Linux builds are currently untested and were presumed broken
-by the addition of Grand Central Dispatch APIs for streaming
-API support; they will be fixed when threading-related 
-incompatibilities between Linux and Darwin are resolved).
 
 ## Can't find something?
 
