@@ -39,52 +39,59 @@ print("gRPC version", gRPC.version())
 let server = gRPC.Server(address:"localhost:8001")
 var requestCount = 0
 
+let done = NSCondition()
+
 server.run() {(requestHandler) in
 
-      do {
-        requestCount += 1
+  do {
+    requestCount += 1
 
-        print("\(requestCount): Received request " + requestHandler.host
-          + " " + requestHandler.method
-          + " from " + requestHandler.caller)
+    print("\(requestCount): Received request " + requestHandler.host
+      + " " + requestHandler.method
+      + " from " + requestHandler.caller)
 
-        let initialMetadata = requestHandler.requestMetadata
-        for i in 0..<initialMetadata.count() {
-          print("\(requestCount): Received initial metadata -> " + initialMetadata.key(index:i)
-            + ":" + initialMetadata.value(index:i))
-        }
-
-        let initialMetadataToSend = Metadata([["a": "Apple"],
-                                              ["b": "Banana"],
-                                              ["c": "Cherry"]])
-        try requestHandler.receiveMessage(initialMetadata:initialMetadataToSend)
-        {(messageData) in
-          let messageString = String(data: messageData!, encoding: .utf8)
-          print("\(requestCount): Received message: " + messageString!)
-        }
-
-        if requestHandler.method == "/quit" {
-
-        }
-
-        let replyMessage = "hello, client!"
-        let trailingMetadataToSend = Metadata([["0": "zero"],
-                                               ["1": "one"],
-                                               ["2": "two"]])
-        try requestHandler.sendResponse(message:replyMessage.data(using: .utf8)!,
-                                        statusCode:0,
-                                        statusMessage:"OK",
-                                        trailingMetadata:trailingMetadataToSend)
-
-        print("------------------------------")
-      } catch (let callError) {
-        Swift.print("call error \(callError)")
-      }
+    let initialMetadata = requestHandler.requestMetadata
+    for i in 0..<initialMetadata.count() {
+      print("\(requestCount): Received initial metadata -> " + initialMetadata.key(index:i)
+        + ":" + initialMetadata.value(index:i))
     }
-    
-server.onCompletion() {
-    print("Server Stopped")
+
+    let initialMetadataToSend = Metadata([["a": "Apple"],
+                                          ["b": "Banana"],
+                                          ["c": "Cherry"]])
+    try requestHandler.receiveMessage(initialMetadata:initialMetadataToSend)
+    {(messageData) in
+      let messageString = String(data: messageData!, encoding: .utf8)
+      print("\(requestCount): Received message: " + messageString!)
+    }
+
+    if requestHandler.method == "/quit" {
+      print("quitting")
+      done.lock()
+      done.signal()
+      done.unlock()
+    }
+
+    let replyMessage = "hello, client!"
+    let trailingMetadataToSend = Metadata([["0": "zero"],
+                                           ["1": "one"],
+                                           ["2": "two"]])
+    try requestHandler.sendResponse(message:replyMessage.data(using: .utf8)!,
+                                    statusCode:0,
+                                    statusMessage:"OK",
+                                    trailingMetadata:trailingMetadataToSend)
+
+    print("------------------------------")
+  } catch (let callError) {
+    Swift.print("call error \(callError)")
+  }
 }
 
-sleep(600)
+server.onCompletion() {
+  print("Server Stopped")
+}
+
+done.lock()
+done.wait()
+done.unlock()
 

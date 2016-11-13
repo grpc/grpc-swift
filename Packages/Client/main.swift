@@ -42,35 +42,44 @@ print("gRPC version", gRPC.version())
 
 do {
   let c = gRPC.Channel(address:address)
-  let steps = 30
+  let steps = 3
   for i in 0..<steps {
+    let done = NSCondition()
+
     let method = (i < steps-1) ? "/hello" : "/quit"
+    print("calling " + method)
     let call = c.makeCall(method)
 
     let metadata = Metadata([["x": "xylophone"],
                              ["y": "yu"],
                              ["z": "zither"]])
 
+
     try! call.perform(message: message!, metadata:metadata) {
-	(response) in
+      (response) in
       print("status:", response.statusCode)
       print("statusMessage:", response.statusMessage!)
       if let resultData = response.resultData {
-         print("message: \(resultData)")
+        print("message: \(resultData)")
       }
-  
+
       let initialMetadata = response.initialMetadata!
       for i in 0..<initialMetadata.count() {
         print("INITIAL METADATA ->", initialMetadata.key(index:i), ":", initialMetadata.value(index:i))
       }
-  
+
       let trailingMetadata = response.trailingMetadata!
       for i in 0..<trailingMetadata.count() {
         print("TRAILING METADATA ->", trailingMetadata.key(index:i), ":", trailingMetadata.value(index:i))
       }
+      done.lock()
+      done.signal()
+      done.unlock()
     }
+    done.lock()
+    done.wait()
+    done.unlock()
   }
 }
-sleep(2)
-gRPC.shutdown()
+
 print("Done")
