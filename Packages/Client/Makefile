@@ -13,7 +13,7 @@ INCDIR = /usr/local/include
 endif
 
 all:
-	swift build -Xlinker -L../../third_party/grpc/libs/opt -Xlinker -lgrpc -Xcc -I../../third_party/grpc/include/ 
+	swift build -Xlinker -L$(LIBDIR) -Xlinker -lgrpc -Xcc -I$(INCDIR)
 
 install: all
 	cp .build/debug/$(TARGET) .
