@@ -1,7 +1,0 @@
-module CgRPC {
-  header "Sources/cgrpc.h"
-  link "CgRPC"
-  link "grpc"
-  export *
-}
-
