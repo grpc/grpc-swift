@@ -27,6 +27,20 @@ Other examples include [Sessions](Examples/Sessions),
 Swift Package Manager builds are demonstrated on Linux using 
 the instructions in the [Packages](Packages) directory.
 
+## Getting started
+
+After cloning this repository, `cd third_party; RUNME.sh` to
+download its dependencies (we don't use git submodules to keep
+this repository lean for imports with the Swift Package Manager).
+
+## Building grpc
+
+Swift gRPC currently requires a separate build of the grpc core
+library. To do this, enter the grpc directory and run 
+`git submodule update --init` and then `make install`. 
+If you get build errors, edit the Makefile and remove 
+"-Werror" from the line that begins with "CPPFLAGS +=".
+
 ## Can't find something?
 
 To make it easier for the Swift Package manager to find,

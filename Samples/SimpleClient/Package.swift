@@ -32,8 +32,8 @@
  */
 import PackageDescription
 let package = Package (
-    name: "Client",
+    name: "SimpleClient",
     dependencies: [
-        .Package(url: "../gRPC", majorVersion:1),
+        .Package(url: "https://github.com/timburks/grpc-swift.git", Version(0,1,0)),
     ]
 )

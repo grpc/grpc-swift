@@ -31,9 +31,12 @@
  *
  */
 import PackageDescription
-let package = Package (
-    name: "gRPC",
-    dependencies: [
-        .Package(url: "../CgRPC", majorVersion:1),
-    ]
+
+let package = Package(
+  name: "SwiftGRPC",
+  targets: [
+    Target(name: "gRPC",
+           dependencies: ["CgRPC"]),
+    Target(name: "QuickProto"),
+  ]
 )

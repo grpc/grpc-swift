@@ -32,5 +32,8 @@
  */
 import PackageDescription
 let package = Package (
-    name: "QuickProto"
+    name: "EchoClient",
+    dependencies: [
+        .Package(url: "https://github.com/timburks/grpc-swift.git", Version(0,1,0)),
+    ]
 )

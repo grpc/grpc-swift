@@ -31,41 +31,59 @@
  *
  */
 import Foundation
-import CgRPC
 import gRPC
 import QuickProto
 
-let address = "localhost:8080"
+let address = "localhost:8001"
 
 gRPC.initialize()
 
-if let fileDescriptorSetProto = NSData(contentsOfFile:"echo.out") {
-  let fileDescriptorSet = FileDescriptorSet(data:Data(bytes:fileDescriptorSetProto.bytes, count:fileDescriptorSetProto.length))
-  if let requestMessage = fileDescriptorSet.makeMessage("EchoRequest") {
-    requestMessage.addField("text", value:"hello, swifty!")
+guard let fileDescriptorSetProto = NSData(contentsOfFile:"echo.out")
+  else {
+    print("Missing echo.out")
+    exit(-1)
+}
 
-    let requestHost = "foo.test.google.fr"
-    let requestMethod = "/echo.Echo/Get"
-    let requestData = requestMessage.data()
-    let requestMetadata = Metadata()
+let fileDescriptorSet = FileDescriptorSet(data:Data(bytes:fileDescriptorSetProto.bytes,
+                                                          count:fileDescriptorSetProto.length))
 
-    let channel = Channel(address:address)
-    let call = channel.makeCall(requestMethod)
-print("calling")
-    try! call.perform(message: requestData, metadata:requestMetadata) {(response) in
+let requestMethod = "/echo.Echo/Get"
 
+if let requestMessage = fileDescriptorSet.makeMessage("EchoRequest") {
+  requestMessage.addField("text", value:"hello, swifty!")
+  let requestMessageData = requestMessage.data()
+  let requestMetadata = Metadata()
+
+  let channel = Channel(address:address)
+  let call = channel.makeCall(requestMethod)
+
+  let done = NSCondition()
+  do {
+    print("Calling echo service")
+    try call.perform(message:requestMessageData,
+                     metadata:requestMetadata)
+    {(response) in
       print("Received status: \(response.statusCode) " + response.statusMessage!)
-
+      // unpack and process message
       if let responseData = response.resultData,
         let responseMessage = fileDescriptorSet.readMessage("EchoResponse", data:responseData) {
-        try! responseMessage.forOneField("text") {(field) in
+        try responseMessage.forOneField("text") {(field) in
           print(field.string())
         }
       } else {
         print("No message received. gRPC Status \(response.statusCode) " + response.statusMessage!)
       }
+      done.lock()
+      done.signal()
+      done.unlock()
     }
+  } catch let error {
+    print("\(error)")
+    done.lock()
+    done.signal()
+    done.unlock()
   }
+  done.lock()
+  done.wait()
+  done.unlock()
 }
-
-print("done")

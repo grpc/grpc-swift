@@ -61,28 +61,19 @@ Start a docker instance with the following command:
     make
     make install
 
-## Build the gRPC packages
+## Build the samples
     cd
-    cd grpc-swift/Packages
-    cd CgRPC; make; cd ..
-    cd gRPC; make; cd ..
-    cd Server; make; make install; cd ..
-    cd Client; make; make install; cd ..
-
-It may be necessary to run `make` multiple times in the Server and Client directories.
-If you see an error like the following, please retry running `make`.
-
-    root@4d5bef530019:~/grpc/src/swift/Packages/Client# make
-    swift build
-    Cloning /root/grpc/src/swift/Packages/gRPC
-    /usr/bin/git clone --recursive --depth 10 /root/grpc/src/swift/Packages/gRPC /root/grpc/src/swift/Packages/Client/Packages/gRPC
-    warning: --depth is ignored in local clones; use file:// instead.
-    Cloning into '/root/grpc/src/swift/Packages/Client/Packages/gRPC'...
-    done.
-    No submodule mapping found in .gitmodules for path 'Packages/CgRPC-1.0.0'
-    error: Git 2.0 or higher is required. Please update git and retry.
-    make: *** [all] Error 1
+    cd grpc-swift/Samples
+    cd SimpleServer; make; cd ..
+    cd SimpleClient; make; cd ..
+    cd EchoServer; make; cd ..
+    cd EchoClient; make; cd ..
 
 ## Run the test client and server from the grpc/src/swift/Packages directory:
-    Server/Server &
-    Client/Client
+    SimpleServer/.build/debug/SimpleServer &
+    SimpleClient/.build/debug/SimpleClient	
+or	
+
+    EchoServer/.build/debug/EchoServer &
+    EchoClient/.build/debug/EchoClient
+	

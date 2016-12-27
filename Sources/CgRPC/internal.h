@@ -36,7 +36,6 @@
 #include <grpc/grpc.h>
 #include <grpc/grpc_security.h>
 #include <grpc/byte_buffer_reader.h>
-#include <grpc/impl/codegen/alloc.h>
 
 typedef struct {
   grpc_call *call; // owned

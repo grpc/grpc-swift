@@ -31,7 +31,9 @@
  *
  */
 import PackageDescription
-
-let package = Package(
-    name: "CgRPC"
+let package = Package (
+    name: "SimpleServer",
+    dependencies: [
+        .Package(url: "https://github.com/timburks/grpc-swift.git", Version(0,1,0)),
+    ]
 )
