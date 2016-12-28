@@ -65,16 +65,16 @@ Start a docker instance with the following command:
 ## Build the samples
     cd
     cd grpc-swift/Samples
-    cd SimpleServer; make; cd ..
-    cd SimpleClient; make; cd ..
-    cd EchoServer; make; cd ..
-    cd EchoClient; make; cd ..
+    cd Simple/SimpleServer; make; cd ../..
+    cd Simple/SimpleClient; make; cd ../..
+    cd Echo-QuickProto/EchoServer; make; cd ../..
+    cd Echo-QuickProto/EchoClient; make; cd ../..
 
 ## Run the test client and server from the grpc/src/swift/Packages directory:
-    SimpleServer/.build/debug/SimpleServer &
-    SimpleClient/.build/debug/SimpleClient	
+    Simple/SimpleServer/.build/debug/SimpleServer &
+    Simple/SimpleClient/.build/debug/SimpleClient	
 or	
 
-    EchoServer/.build/debug/EchoServer &
-    EchoClient/.build/debug/EchoClient
+    Echo-QuickProto/EchoServer/.build/debug/EchoServer &
+    Echo-QuickProto/EchoClient/.build/debug/EchoClient
 	

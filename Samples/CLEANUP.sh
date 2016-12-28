@@ -1,6 +1,6 @@
 #!/bin/sh
 
-cd SimpleServer; make clean; cd ..
-cd SimpleClient; make clean; cd ..
-cd EchoServer; make clean; cd ..
-cd EchoClient; make clean; cd ..
+cd Simple/SimpleServer; make clean; cd ../..
+cd Simple/SimpleClient; make clean; cd ../..
+cd Echo-QuickProto/EchoServer; make clean; cd ../..
+cd Echo-QuickProto/EchoClient; make clean; cd ../..
