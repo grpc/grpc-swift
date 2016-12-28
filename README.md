@@ -45,7 +45,7 @@ If you get build errors, edit the Makefile and remove
 
 To make it easier for the Swift Package manager to find,
 the code for gRPC, CgRPC, and QuickProto is in the
-Sources directory associated with each package.
+[Sources] directory.
 
 ## Having build problems?
 
