@@ -39,6 +39,13 @@ public struct Echo_EchoRequest: ProtobufGeneratedMessage {
 
   public init() {}
 
+  public init(text: String? = nil)
+  {
+    if let v = text {
+      self.text = v
+    }
+  }
+
   public mutating func _protoc_generated_decodeField(setter: inout ProtobufFieldDecoder, protoFieldNumber: Int) throws -> Bool {
     let handled: Bool
     switch protoFieldNumber {
@@ -75,6 +82,13 @@ public struct Echo_EchoResponse: ProtobufGeneratedMessage {
   public var text: String = ""
 
   public init() {}
+
+  public init(text: String? = nil)
+  {
+    if let v = text {
+      self.text = v
+    }
+  }
 
   public mutating func _protoc_generated_decodeField(setter: inout ProtobufFieldDecoder, protoFieldNumber: Int) throws -> Bool {
     let handled: Bool

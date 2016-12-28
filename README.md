@@ -47,6 +47,16 @@ To make it easier for the Swift Package manager to find,
 the code for gRPC, CgRPC, and QuickProto is in the
 Sources directory associated with each package.
 
+## Having build problems?
+
+grpc-swift depends on Swift, Xcode, and swift-proto, all of which
+are in flux and potential sources of breaking changes. We are currently
+testing with the following versions:
+
+- Xcode 8.2 
+- Swift 3.0.2 
+- swift-proto 0.9.24 
+
 ## License
 
 grpc-swift is released under the same license as 
