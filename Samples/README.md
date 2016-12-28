@@ -1,7 +1,7 @@
-# Swift gRPC Packages
+# Swift gRPC Samples
 
-This directory contains the Swift gRPC API and related components
-in the form of buildable Swift packages.
+This directory contains Swift gRPC samples in the form of 
+buildable Swift packages.
 
 Follow these steps to build and run them on Linux.
 
@@ -55,8 +55,9 @@ Start a docker instance with the following command:
 ## Fetch and build grpc
     git clone https://github.com/grpc/grpc-swift
     cd grpc-swift
-    git submodule update --init
-    cd third_party/grpc
+    cd third_party
+    sh RUNME.sh
+    cd grpc
     git submodule update --init
     make
     make install
