@@ -20,6 +20,7 @@ go get -a github.com/golang/protobuf/protoc-gen-go
 
 echo "3. Run protoc to generate the service API code"
 
+mkdir -p go/src/echo
 protoc ../echo.proto --proto_path=.. --go_out=plugins=grpc:go/src/echo
 
 echo "4. Get the server and client dependencies"
@@ -45,5 +46,5 @@ echo "8. Run the client"
 sleep 1 # give the server some time to start
 ./client -m "Remember the milk."
 
-./client -m "Testing" -s 3
+./client -m "Testing" -n 3 -update
 
