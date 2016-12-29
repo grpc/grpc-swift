@@ -103,6 +103,7 @@ if client != "" {
   let requestMetadata = Metadata(["x-goog-api-key":"YOUR_API_KEY",
                                   "x-ios-bundle-identifier":"com.google.echo"])
 
+  // Unary
   if client == "get" {
     let getCall = service.get()
 
@@ -114,6 +115,7 @@ if client != "" {
       } else {
         print("No message received. gRPC Status \(callResult.statusCode): \(callResult.statusMessage)")
       }
+      print("get closed")
       done.lock()
       done.signal()
       done.unlock()
@@ -124,6 +126,7 @@ if client != "" {
     done.unlock()
   }
 
+  // Server streaming
   if client == "expand" {
     let expandCall = service.expand()
 
@@ -151,6 +154,7 @@ if client != "" {
     done.unlock()
   }
 
+  // Client streaming
   if client == "collect" {
     let collectCall = service.collect()
 
@@ -160,7 +164,7 @@ if client != "" {
       _ = collectCall.sendMessage(message:requestMessage)
     }
 
-    func sendClose() {
+    func sendCollectClose() {
       print("Closing")
       _ = try! collectCall.close(completion:{})
     }
@@ -169,26 +173,32 @@ if client != "" {
       try collectCall.receiveMessage() {(responseMessage) in
         if let responseMessage = responseMessage {
           print("Received: " + responseMessage.text)
-          done.lock()
-          done.signal()
-          done.unlock()
         }
       }
     }
-    try collectCall.start(metadata:requestMetadata)
+
+    try collectCall.start(metadata:requestMetadata) {
+      // this is called when the server closes the connection
+      print("collect closed")
+      done.lock()
+      done.signal()
+      done.unlock()
+    }
     try receiveCollectMessage()
+
     let parts = message.components(separatedBy:" ")
     for part in parts {
       sendCollectMessage(message:part)
       sleep(1)
     }
-    sendClose()
+    sendCollectClose()
     // Wait for the call to complete.
     done.lock()
     done.wait()
     done.unlock()
   }
 
+  // Bidirectional streaming
   if client == "update" {
     let updateCall = service.update()
 
@@ -198,7 +208,7 @@ if client != "" {
       _ = updateCall.sendMessage(message:requestMessage)
     }
 
-    func sendClose() {
+    func sendUpdateClose() {
       print("Closing")
       _ = try! updateCall.close(completion:{})
     }
@@ -213,18 +223,21 @@ if client != "" {
     }
 
     try updateCall.start(metadata:requestMetadata) {
+      // this is called when the server closes the connection
       print("update closed")
       done.lock()
       done.signal()
       done.unlock()
     }
     try receiveUpdateMessage()
+
     let parts = message.components(separatedBy:" ")
     for part in parts {
       sendUpdateMessage(message:part)
       sleep(1)
     }
-    sendClose()
+    sendUpdateClose()
+
     // Wait for the call to complete.
     done.lock()
     done.wait()

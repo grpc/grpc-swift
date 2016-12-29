@@ -101,7 +101,6 @@ public class EchoExpandCall {
       }
     }
   }
-
 }
 
 public class EchoCollectCall {
@@ -112,8 +111,8 @@ public class EchoCollectCall {
   }
 
   // Call this to start a call.
-  func start(metadata:Metadata) throws {
-    try self.call.start(metadata: metadata, completion:{})
+  func start(metadata:Metadata, completion:@escaping (() -> Void)) throws {
+    try self.call.start(metadata: metadata, completion:completion)
   }
 
   // Call this to send each message in the request stream.

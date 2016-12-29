@@ -193,13 +193,11 @@ class BidiStreamingSession : Session {
           self.server.handle(session:self, message:requestMessage)
 
         } else {
-          print("SERVER RECEIVED CLOSE")
           // if we get an empty message (requestData == nil), we close the connection
           try self.handler.sendStatus(statusCode: 0,
                                       statusMessage: "OK",
                                       trailingMetadata: Metadata())
           {
-            print("SERVER SENT CLOSE")
           }
         }
       }
