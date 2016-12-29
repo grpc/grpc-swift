@@ -113,7 +113,7 @@ public class EchoCollectCall {
 
   // Call this to start a call.
   func start(metadata:Metadata) throws {
-    try self.call.start(metadata: metadata)
+    try self.call.start(metadata: metadata, completion:{})
   }
 
   // Call this to send each message in the request stream.
