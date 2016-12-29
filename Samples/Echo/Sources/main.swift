@@ -167,10 +167,18 @@ if client_get || client_expand || client_collect || client_update {
       _ = collectCall.sendMessage(message:requestMessage)
     }
 
+    func sendClose() {
+      print("Closing")
+      _ = try! collectCall.close(completion:{})
+    }
+
     func receiveCollectMessage() throws -> Void {
       try collectCall.receiveMessage() {(responseMessage) in
         if let responseMessage = responseMessage {
           print("Received: " + responseMessage.text)
+          done.lock()
+          done.signal()
+          done.unlock()
         } else {
           print("collect closed")
           done.lock()
@@ -182,6 +190,13 @@ if client_get || client_expand || client_collect || client_update {
     try collectCall.start(metadata:requestMetadata)
     try receiveCollectMessage()
     sendCollectMessage()
+    sleep(1)
+    sendCollectMessage()
+    sleep(1)
+    sendCollectMessage()
+    sleep(1)
+    sendClose()
+
     done.lock()
     done.wait()
     done.unlock()
@@ -195,6 +210,11 @@ if client_get || client_expand || client_collect || client_update {
       requestMessage.text = "hello"
       print("Sending: " + requestMessage.text)
       _ = updateCall.sendMessage(message:requestMessage)
+    }
+
+    func sendClose() {
+      print("Closing")
+      _ = try! updateCall.close(completion:{})
     }
 
     func receiveUpdateMessage() throws -> Void {
@@ -214,6 +234,13 @@ if client_get || client_expand || client_collect || client_update {
     try updateCall.start(metadata:requestMetadata)
     try receiveUpdateMessage()
     sendUpdateMessage()
+    sleep(1)
+    sendUpdateMessage()
+    sleep(1)
+    sendUpdateMessage()
+    sleep(1)
+    sendClose()
+    sleep(1)
     done.lock()
     done.wait()
     done.unlock()

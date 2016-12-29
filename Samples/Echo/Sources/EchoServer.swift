@@ -99,6 +99,15 @@ class ServerStreamingSession : Session {
     try! handler.sendResponse(message:message.serializeProtobuf()) {}
   }
 
+  func close() -> Void {
+    try! self.handler.sendStatus(statusCode:0,
+                                 statusMessage:"OK",
+                                 trailingMetadata:Metadata(),
+                                 completion:{
+
+    })
+  }
+
   func run() {
     do {
       try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
@@ -287,8 +296,7 @@ class EchoExpandServer : ServerStreamingServer {
       i += 1
       sleep(1)
     }
-    var reply = Echo_EchoResponse()
-    session.sendMessage(message:reply)
+    session.close()
   }
 }
 
