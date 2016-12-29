@@ -193,12 +193,13 @@ class BidiStreamingSession : Session {
           self.server.handle(session:self, message:requestMessage)
 
         } else {
+          print("SERVER RECEIVED CLOSE")
           // if we get an empty message (requestData == nil), we close the connection
           try self.handler.sendStatus(statusCode: 0,
                                       statusMessage: "OK",
                                       trailingMetadata: Metadata())
           {
-            self.handler.shutdown()
+            print("SERVER SENT CLOSE")
           }
         }
       }
@@ -278,9 +279,7 @@ class EchoServer {
 class EchoGetServer : UnaryServer {
 
   func handle(message:Echo_EchoRequest) -> Echo_EchoResponse? {
-    var reply = Echo_EchoResponse()
-    reply.text = "Swift echo get: " + message.text
-    return reply
+    return Echo_EchoResponse(text: "Swift echo get: " + message.text)
   }
 }
 
@@ -290,9 +289,7 @@ class EchoExpandServer : ServerStreamingServer {
     let parts = message.text.components(separatedBy: " ")
     var i = 0
     for part in parts {
-      var reply = Echo_EchoResponse()
-      reply.text = "Swift echo expand (\(i)): \(part)"
-      session.sendMessage(message:reply)
+      session.sendMessage(message:Echo_EchoResponse(text:"Swift echo expand (\(i)): \(part)"))
       i += 1
       sleep(1)
     }
@@ -311,9 +308,7 @@ class EchoCollectServer : ClientStreamingServer {
   }
 
   func close(session:ClientStreamingSession) {
-    var reply = Echo_EchoResponse()
-    reply.text = "Swift echo collect: " + result
-    session.sendMessage(message:reply)
+    session.sendMessage(message:Echo_EchoResponse(text:"Swift echo collect: " + result))
   }
 }
 
@@ -321,9 +316,7 @@ class EchoUpdateServer : BidiStreamingServer {
   var i = 0
 
   func handle(session:BidiStreamingSession, message:Echo_EchoRequest) -> Void {
-    var reply = Echo_EchoResponse()
-    reply.text = "Swift echo update (\(i)): \(message.text)"
-    session.sendMessage(message:reply)
+    session.sendMessage(message:Echo_EchoResponse(text:"Swift echo update (\(i)): \(message.text)"))
     i += 1
   }
 }

@@ -209,7 +209,7 @@ public class Call {
                                                   .sendMessage(messageBuffer),
                                                   .sendCloseFromClient,
                                                   .receiveInitialMetadata
-                                                  ],
+        ],
                                       completion:
         {(operationGroup) in
           if operationGroup.success {
@@ -233,10 +233,12 @@ public class Call {
   /// start a streaming connection
   ///
   /// Parameter metadata: initial metadata to send
-  public func start(metadata: Metadata) throws -> Void {
-    try self.sendInitialMetadata(metadata: metadata)
-    try self.receiveInitialMetadata()
-    try self.receiveStatus()
+  public func start(metadata: Metadata,
+                    completion:@escaping (() -> Void))
+    throws -> Void {
+      try self.sendInitialMetadata(metadata: metadata)
+      try self.receiveInitialMetadata()
+      try self.receiveStatus(completion:completion)
   }
 
   /// send a message over a streaming connection
@@ -335,12 +337,13 @@ public class Call {
   }
 
   // receive status from a streaming connection
-  private func receiveStatus() throws -> Void {
+  private func receiveStatus(completion: @escaping (() -> Void)) throws -> Void {
     let operations = OperationGroup(call:self, operations:[.receiveStatusOnClient])
     {(operationGroup) in
       if operationGroup.success {
         print("status = \(operationGroup.receivedStatusCode()), \(operationGroup.receivedStatusMessage())")
       }
+      completion()
     }
     try self.perform(operations)
   }

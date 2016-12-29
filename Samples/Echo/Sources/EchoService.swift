@@ -150,8 +150,8 @@ public class EchoUpdateCall {
     self.call = call
   }
 
-  func start(metadata:Metadata) throws {
-    try self.call.start(metadata: metadata)
+  func start(metadata:Metadata, completion:@escaping (() -> Void)) throws {
+    try self.call.start(metadata: metadata, completion:completion)
   }
 
   func receiveMessage(callback:@escaping (Echo_EchoResponse?) throws -> Void) throws {

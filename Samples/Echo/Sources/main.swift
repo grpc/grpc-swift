@@ -40,12 +40,10 @@ print("\(CommandLine.arguments)")
 var server : Bool = false
 
 // client options
-var client_get : Bool = false
-var client_expand : Bool = false
-var client_collect : Bool = false
-var client_update : Bool = false
+var client : String = ""
+var message : String = "Testing 1 2 3"
 
-// other network configuration
+// general configuration
 var useSSL : Bool = false
 
 var i : Int = 0
@@ -58,44 +56,40 @@ while i < Int(CommandLine.argc) {
 
   if arg == "serve" {
     server = true
-  } else if arg == "get" {
-    client_get = true
-  } else if arg == "expand" {
-    client_expand = true
-  } else if arg == "collect" {
-    client_collect = true
-  } else if arg == "update" {
-    client_update = true
+  } else if (arg == "get") || (arg == "expand") || (arg == "collect") || (arg == "update") {
+    client = arg
   } else if arg == "-ssl" {
     useSSL = true
+  } else if arg == "-m" && (i < Int(CommandLine.argc)) {
+    message = CommandLine.arguments[i]
+    i = i + 1
   }
 }
-
-var insecureEchoServer: EchoServer!
-var secureEchoServer: EchoServer!
 
 var done = NSCondition()
 
 gRPC.initialize()
 
 if server {
+  var echoServer: EchoServer!
   if useSSL {
     print("Starting secure server")
-    secureEchoServer = EchoServer(address:"localhost:8443", secure:true)
-    secureEchoServer.start()
+    echoServer = EchoServer(address:"localhost:8443", secure:true)
   } else {
     print("Starting insecure server")
-    insecureEchoServer = EchoServer(address:"localhost:8081", secure:false)
-    insecureEchoServer.start()
+    echoServer = EchoServer(address:"localhost:8081", secure:false)
   }
-  // we never actually exit the server; kill the process to stop it.
+  echoServer.start()
+  // Block to keep the main thread from finishing while the server runs.
+  // This server never exits. Kill the process to stop it.
   done.lock()
   done.wait()
   done.unlock()
 }
 
-if client_get || client_expand || client_collect || client_update {
+if client != "" {
   print("Starting client")
+
   var service : EchoService
   if useSSL {
     let certificateURL = URL(fileURLWithPath:"ssl.crt")
@@ -109,11 +103,10 @@ if client_get || client_expand || client_collect || client_update {
   let requestMetadata = Metadata(["x-goog-api-key":"YOUR_API_KEY",
                                   "x-ios-bundle-identifier":"com.google.echo"])
 
-  if client_get {
+  if client == "get" {
     let getCall = service.get()
 
-    var requestMessage = Echo_EchoRequest()
-    requestMessage.text = "Hello!!!"
+    var requestMessage = Echo_EchoRequest(text:message)
     print("Sending: " + requestMessage.text)
     getCall.perform(request:requestMessage) {(callResult, responseMessage) in
       if let responseMessage = responseMessage {
@@ -125,19 +118,20 @@ if client_get || client_expand || client_collect || client_update {
       done.signal()
       done.unlock()
     }
+    // Wait for the call to complete.
     done.lock()
     done.wait()
     done.unlock()
   }
 
-  if client_expand {
+  if client == "expand" {
     let expandCall = service.expand()
 
     func receiveExpandMessage() throws -> Void {
       try expandCall.receiveMessage() {(responseMessage) in
         if let responseMessage = responseMessage {
-          try receiveExpandMessage() // prepare to receive the next message
-          print(responseMessage.text)
+          try receiveExpandMessage() // prepare to receive the next message in the stream
+          print("Received: " + responseMessage.text)
         } else {
           print("expand closed")
           done.lock()
@@ -147,22 +141,21 @@ if client_get || client_expand || client_collect || client_update {
       }
     }
 
-    var requestMessage = Echo_EchoRequest()
-    requestMessage.text = "Testing One Two Three"
+    let requestMessage = Echo_EchoRequest(text:message)
     print("Sending: " + requestMessage.text)
-    expandCall.perform(request:requestMessage) {(callResult, response) in}
+    expandCall.perform(request:requestMessage) {(callResult, response) in /* do nothing */}
     try receiveExpandMessage()
+    // Wait for the call to complete.
     done.lock()
     done.wait()
     done.unlock()
   }
 
-  if client_collect {
+  if client == "collect" {
     let collectCall = service.collect()
 
-    func sendCollectMessage() {
-      var requestMessage = Echo_EchoRequest()
-      requestMessage.text = "hello"
+    func sendCollectMessage(message: String) {
+      let requestMessage = Echo_EchoRequest(text:message)
       print("Sending: " + requestMessage.text)
       _ = collectCall.sendMessage(message:requestMessage)
     }
@@ -179,35 +172,28 @@ if client_get || client_expand || client_collect || client_update {
           done.lock()
           done.signal()
           done.unlock()
-        } else {
-          print("collect closed")
-          done.lock()
-          done.signal()
-          done.unlock()
         }
       }
     }
     try collectCall.start(metadata:requestMetadata)
     try receiveCollectMessage()
-    sendCollectMessage()
-    sleep(1)
-    sendCollectMessage()
-    sleep(1)
-    sendCollectMessage()
-    sleep(1)
+    let parts = message.components(separatedBy:" ")
+    for part in parts {
+      sendCollectMessage(message:part)
+      sleep(1)
+    }
     sendClose()
-
+    // Wait for the call to complete.
     done.lock()
     done.wait()
     done.unlock()
   }
 
-  if client_update {
+  if client == "update" {
     let updateCall = service.update()
 
-    func sendUpdateMessage() {
-      var requestMessage = Echo_EchoRequest()
-      requestMessage.text = "hello"
+    func sendUpdateMessage(message: String) {
+      let requestMessage = Echo_EchoRequest(text:message)
       print("Sending: " + requestMessage.text)
       _ = updateCall.sendMessage(message:requestMessage)
     }
@@ -222,25 +208,24 @@ if client_get || client_expand || client_collect || client_update {
         try receiveUpdateMessage() // prepare to receive the next message
         if let responseMessage = responseMessage {
           print("Received: " + responseMessage.text)
-        } else {
-          print("update closed")
-          done.lock()
-          done.signal()
-          done.unlock()
         }
       }
     }
 
-    try updateCall.start(metadata:requestMetadata)
+    try updateCall.start(metadata:requestMetadata) {
+      print("update closed")
+      done.lock()
+      done.signal()
+      done.unlock()
+    }
     try receiveUpdateMessage()
-    sendUpdateMessage()
-    sleep(1)
-    sendUpdateMessage()
-    sleep(1)
-    sendUpdateMessage()
-    sleep(1)
+    let parts = message.components(separatedBy:" ")
+    for part in parts {
+      sendUpdateMessage(message:part)
+      sleep(1)
+    }
     sendClose()
-    sleep(1)
+    // Wait for the call to complete.
     done.lock()
     done.wait()
     done.unlock()
