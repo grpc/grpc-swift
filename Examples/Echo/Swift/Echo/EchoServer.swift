@@ -34,7 +34,6 @@ import Foundation
 import gRPC
 import Darwin // for sleep()
 
-
 // This seemed like a nice idea but doesn't work because
 // specific message types are in the protocol signatures.
 // There are also functions in the Session classes that depend
@@ -98,6 +97,15 @@ class ServerStreamingSession : Session {
 
   func sendMessage(message:Echo_EchoResponse) -> Void {
     try! handler.sendResponse(message:message.serializeProtobuf()) {}
+  }
+
+  func close() -> Void {
+    try! self.handler.sendStatus(statusCode:0,
+                                 statusMessage:"OK",
+                                 trailingMetadata:Metadata(),
+                                 completion:{
+
+    })
   }
 
   func run() {
@@ -190,7 +198,6 @@ class BidiStreamingSession : Session {
                                       statusMessage: "OK",
                                       trailingMetadata: Metadata())
           {
-            self.handler.shutdown()
           }
         }
       }
@@ -219,8 +226,11 @@ class EchoServer {
     self.address = address
     if secure {
       let certificateURL = Bundle.main.url(forResource: "ssl", withExtension: "crt")!
+      //let certificateURL = URL(fileURLWithPath:"ssl.crt")
       let certificate = try! String(contentsOf: certificateURL)
+
       let keyURL = Bundle.main.url(forResource: "ssl", withExtension: "key")!
+      //let keyURL = URL(fileURLWithPath:"ssl.key")
       let key = try! String(contentsOf: keyURL)
       self.server = gRPC.Server(address:address, key:key, certs:certificate)
     } else {
@@ -270,9 +280,7 @@ class EchoServer {
 class EchoGetServer : UnaryServer {
 
   func handle(message:Echo_EchoRequest) -> Echo_EchoResponse? {
-    var reply = Echo_EchoResponse()
-    reply.text = "Swift echo get: " + message.text
-    return reply
+    return Echo_EchoResponse(text: "Swift echo get: " + message.text)
   }
 }
 
@@ -282,12 +290,11 @@ class EchoExpandServer : ServerStreamingServer {
     let parts = message.text.components(separatedBy: " ")
     var i = 0
     for part in parts {
-      var reply = Echo_EchoResponse()
-      reply.text = "Swift echo expand (\(i)): \(part)"
-      session.sendMessage(message:reply)
+      session.sendMessage(message:Echo_EchoResponse(text:"Swift echo expand (\(i)): \(part)"))
       i += 1
       sleep(1)
     }
+    session.close()
   }
 }
 
@@ -302,9 +309,7 @@ class EchoCollectServer : ClientStreamingServer {
   }
 
   func close(session:ClientStreamingSession) {
-    var reply = Echo_EchoResponse()
-    reply.text = "Swift echo collect: " + result
-    session.sendMessage(message:reply)
+    session.sendMessage(message:Echo_EchoResponse(text:"Swift echo collect: " + result))
   }
 }
 
@@ -312,9 +317,7 @@ class EchoUpdateServer : BidiStreamingServer {
   var i = 0
 
   func handle(session:BidiStreamingSession, message:Echo_EchoRequest) -> Void {
-    var reply = Echo_EchoResponse()
-    reply.text = "Swift echo update (\(i)): \(message.text)"
-    session.sendMessage(message:reply)
+    session.sendMessage(message:Echo_EchoResponse(text:"Swift echo update (\(i)): \(message.text)"))
     i += 1
   }
 }

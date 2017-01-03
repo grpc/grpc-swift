@@ -140,15 +140,17 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     if (self.callSelectButton.selectedSegment == 0) {
       // NONSTREAMING
       if let service = service {
-        let call = service.get()
         var requestMessage = Echo_EchoRequest()
         requestMessage.text = self.messageField.stringValue
-        self.displayMessageSent(requestMessage.text)
-        call.perform(request:requestMessage) {(callResult, response) in
-          if let response = response {
-            self.displayMessageReceived(response.text)
-          } else {
-            self.displayMessageReceived("No message received. gRPC Status \(callResult.statusCode): \(callResult.statusMessage)")
+
+        DispatchQueue.global().async {
+          service.get(requestMessage) { result in
+            switch result {
+            case .Success(let responseMessage):
+              self.displayMessageReceived(responseMessage.text)
+            case .Error(let error):
+              self.displayMessageReceived("No message received. \(error)")
+            }
           }
         }
       }
@@ -175,7 +177,10 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
           return
         }
         collectCall = service.collect()
-        try collectCall!.start(metadata:requestMetadata)
+        try collectCall!.start(metadata:requestMetadata) {
+          // this is called when the server closes the connection
+          print("collect closed")
+        }
         try self.receiveCollectMessage()
         nowStreaming = true
         closeButton.isEnabled = true
@@ -189,7 +194,10 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
           return
         }
         updateCall = service.update()
-        try updateCall!.start(metadata:requestMetadata)
+        try updateCall!.start(metadata:requestMetadata) {
+          // this is called when the server closes the connection
+          print("update closed")
+        }
         try self.receiveUpdateMessage()
         nowStreaming = true
         closeButton.isEnabled = true

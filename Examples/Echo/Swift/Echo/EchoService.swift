@@ -35,6 +35,12 @@ import gRPC
 
 // all code that follows is to-be-generated
 
+enum EchoResult {
+  case Success(r: Echo_EchoResponse)
+  case Error(e: CallResult)
+}
+
+
 public class EchoGetCall {
   var call : Call
 
@@ -45,7 +51,7 @@ public class EchoGetCall {
   // Call this with the message to send,
   // the callback will be called after the request is received.
   func perform(request: Echo_EchoRequest,
-               callback:@escaping (CallResult, Echo_EchoResponse?) -> Void)
+               callback:@escaping (EchoResult) -> Void)
     -> Void {
       let requestMessageData = try! request.serializeProtobuf()
       let requestMetadata = Metadata()
@@ -53,12 +59,11 @@ public class EchoGetCall {
                         metadata: requestMetadata)
       {(callResult) in
         print("Client received status \(callResult.statusCode) \(callResult.statusMessage!)")
-
         if let messageData = callResult.resultData {
           let responseMessage = try! Echo_EchoResponse(protobuf:messageData)
-          callback(callResult, responseMessage)
+          callback(EchoResult.Success(r: responseMessage))
         } else {
-          callback(callResult, nil)
+          callback(EchoResult.Error(e: callResult))
         }
       }
   }
@@ -101,7 +106,6 @@ public class EchoExpandCall {
       }
     }
   }
-
 }
 
 public class EchoCollectCall {
@@ -112,8 +116,8 @@ public class EchoCollectCall {
   }
 
   // Call this to start a call.
-  func start(metadata:Metadata) throws {
-    try self.call.start(metadata: metadata, completion: {})
+  func start(metadata:Metadata, completion:@escaping (() -> Void)) throws {
+    try self.call.start(metadata: metadata, completion:completion)
   }
 
   // Call this to send each message in the request stream.
@@ -150,8 +154,8 @@ public class EchoUpdateCall {
     self.call = call
   }
 
-  func start(metadata:Metadata) throws {
-    try self.call.start(metadata: metadata, completion:{})
+  func start(metadata:Metadata, completion:@escaping (() -> Void)) throws {
+    try self.call.start(metadata: metadata, completion:completion)
   }
 
   func receiveMessage(callback:@escaping (Echo_EchoResponse?) throws -> Void) throws {
@@ -190,8 +194,13 @@ public class EchoService {
     channel = Channel(address:address, certificates:certificates, host:host)
   }
 
-  func get() -> EchoGetCall {
-    return EchoGetCall(channel.makeCall("/echo.Echo/Get"))
+  func get(_ requestMessage: Echo_EchoRequest,
+           _ completion:@escaping (EchoResult) -> Void) {
+      let call = EchoGetCall(channel.makeCall("/echo.Echo/Get"))
+      call.perform(request:requestMessage) {(result) in
+        let call = call // retain until completion
+        completion(result)
+      }
   }
 
   func expand() -> EchoExpandCall {
