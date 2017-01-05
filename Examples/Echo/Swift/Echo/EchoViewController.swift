@@ -144,13 +144,14 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         requestMessage.text = self.messageField.stringValue
 
         DispatchQueue.global().async {
-          service.get(requestMessage) { result in
-            switch result {
-            case .Success(let responseMessage):
-              self.displayMessageReceived(responseMessage.text)
-            case .Error(let error):
-              self.displayMessageReceived("No message received. \(error)")
-            }
+          let result = service.get(requestMessage)
+          switch result {
+          case .Response(let responseMessage):
+            self.displayMessageReceived(responseMessage.text)
+          case .CallResult(let result):
+            self.displayMessageReceived("No message received. \(result)")
+          case .Error(let error):
+            self.displayMessageReceived("No message received. \(error)")
           }
         }
       }
@@ -161,12 +162,10 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         guard let service = service else {
           return
         }
-        expandCall = service.expand()
         var requestMessage = Echo_EchoRequest()
         requestMessage.text = self.messageField.stringValue
+        self.expandCall = service.expand(requestMessage)
         self.displayMessageSent(requestMessage.text)
-        try expandCall!.perform(request:requestMessage) {(callResult, response) in
-        }
         try! self.receiveExpandMessage()
       }
     }
@@ -177,11 +176,6 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
           return
         }
         collectCall = service.collect()
-        try collectCall!.start(metadata:requestMetadata) {
-          // this is called when the server closes the connection
-          print("collect closed")
-        }
-        try self.receiveCollectMessage()
         nowStreaming = true
         closeButton.isEnabled = true
       }
@@ -194,10 +188,6 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
           return
         }
         updateCall = service.update()
-        try updateCall!.start(metadata:requestMetadata) {
-          // this is called when the server closes the connection
-          print("update closed")
-        }
         try self.receiveUpdateMessage()
         nowStreaming = true
         closeButton.isEnabled = true
@@ -210,12 +200,20 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     guard let expandCall = expandCall else {
       return
     }
-    try expandCall.receiveMessage() {(responseMessage) in
-      if let responseMessage = responseMessage {
-        try self.receiveExpandMessage() // prepare to receive the next message
-        self.displayMessageReceived(responseMessage.text)
-      } else {
-        print("expand closed")
+    DispatchQueue.global().async {
+      var running = true
+      while running {
+        let result = expandCall.Recv()
+        switch result {
+        case .Response(let responseMessage):
+          self.displayMessageReceived(responseMessage.text)
+        case .CallResult(let result):
+          self.displayMessageReceived("No message received. \(result)")
+          running = false
+        case .Error(let error):
+          self.displayMessageReceived("No message received. \(error)")
+          running = false
+        }
       }
     }
   }
@@ -225,7 +223,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
       var requestMessage = Echo_EchoRequest()
       requestMessage.text = self.messageField.stringValue
       self.displayMessageSent(requestMessage.text)
-      _ = collectCall.sendMessage(message:requestMessage)
+      _ = collectCall.Send(requestMessage)
     }
   }
 
@@ -249,7 +247,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
       var requestMessage = Echo_EchoRequest()
       requestMessage.text = self.messageField.stringValue
       self.displayMessageSent(requestMessage.text)
-      _ = updateCall.sendMessage(message:requestMessage)
+      _ = updateCall.Send(message:requestMessage)
     }
   }
 
@@ -257,34 +255,45 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     guard let updateCall = updateCall else {
       return
     }
-    try updateCall.receiveMessage() {(responseMessage) in
-      try self.receiveUpdateMessage() // prepare to receive the next message
-      if let responseMessage = responseMessage {
-        DispatchQueue.main.async {
-          self.receivedOutputField.stringValue = responseMessage.text
+    DispatchQueue.global().async {
+      var running = true
+      while running {
+        let result = updateCall.Recv()
+        switch result {
+        case .Response(let responseMessage):
+          self.displayMessageReceived(responseMessage.text)
+        case .CallResult(let result):
+          self.displayMessageReceived("No message received. \(result)")
+          running = false
+        case .Error(let error):
+          self.displayMessageReceived("No message received. \(error)")
+          running = false
         }
-      } else {
-        print("update closed")
-        self.nowStreaming = false
-        self.closeButton.isEnabled = false
       }
+
     }
   }
 
   func sendClose() throws {
     if let updateCall = updateCall {
-      try updateCall.close() {
-        self.updateCall = nil
-        self.nowStreaming = false
-        self.closeButton.isEnabled = false
-      }
+      updateCall.CloseSend()
+      self.updateCall = nil
+      self.nowStreaming = false
+      self.closeButton.isEnabled = false
     }
     if let collectCall = collectCall {
-      try collectCall.close() {
-        self.collectCall = nil
-        self.nowStreaming = false
-        self.closeButton.isEnabled = false
+      let result = collectCall.CloseAndRecv()
+      switch result {
+      case .Response(let responseMessage):
+        self.displayMessageReceived(responseMessage.text)
+      case .CallResult(let result):
+        self.displayMessageReceived("No message received. \(result)")
+      case .Error(let error):
+        self.displayMessageReceived("No message received. \(error)")
       }
+      self.collectCall = nil
+      self.nowStreaming = false
+      self.closeButton.isEnabled = false
     }
   }
 }

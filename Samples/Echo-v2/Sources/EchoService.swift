@@ -137,21 +137,32 @@ public class EchoCollectCall {
     let done = NSCondition()
     var result : EchoResult!
 
-    try! self.receiveMessage() {(responseMessage) in
-      if let responseMessage = responseMessage {
-        result = EchoResult.Response(r: responseMessage)
-      } else {
-        result = EchoResult.Error(s: "INVALID RESPONSE")
+    do {
+      try self.receiveMessage() {(responseMessage) in
+        if let responseMessage = responseMessage {
+          result = EchoResult.Response(r: responseMessage)
+        } else {
+          result = EchoResult.Error(s: "INVALID RESPONSE")
+        }
+        done.lock()
+        done.signal()
+        done.unlock()
       }
-      done.lock()
-      done.signal()
-      done.unlock()
+    } catch (let error) {
+      print("ERROR A: \(error)")
+    }
+    do {
+      try call.close(completion:{
+        print("closed")
+      })
+    } catch (let error) {
+      print("ERROR B: \(error)")
     }
 
-    try! call.close(completion:{})
     done.lock()
     done.wait()
     done.unlock()
+
     return result
   }
 
@@ -161,6 +172,10 @@ public class EchoCollectCall {
   func receiveMessage(callback:@escaping (Echo_EchoResponse?) throws -> Void)
     throws {
       try call.receiveMessage() {(data) in
+        guard let data = data else {
+          try callback(nil)
+          return
+        }
         guard
           let responseMessage = try? Echo_EchoResponse(protobuf:data)
           else {
@@ -192,7 +207,7 @@ public class EchoUpdateCall {
           try callback(nil) // error, bad data
         }
       } else {
-          try callback(nil)
+        try callback(nil)
       }
     }
   }
@@ -247,7 +262,7 @@ public class EchoService {
 
   func get(_ requestMessage: Echo_EchoRequest) -> EchoResult {
     let call = EchoGetCall(channel)
-    
+
     let done = NSCondition()
     var finalResult : EchoResult!
     call.perform(request:requestMessage) {(result) in

@@ -36,16 +36,17 @@ import gRPC
 // all code that follows is to-be-generated
 
 enum EchoResult {
-  case Success(r: Echo_EchoResponse)
-  case Error(e: CallResult)
+  case Response(r: Echo_EchoResponse)
+  // these last two should be merged
+  case CallResult(c: CallResult)
+  case Error(s: String)
 }
-
 
 public class EchoGetCall {
   var call : Call
 
-  init(_ call: Call) {
-    self.call = call
+  init(_ channel: Channel) {
+    self.call = channel.makeCall("/echo.Echo/Get")
   }
 
   // Call this with the message to send,
@@ -61,9 +62,9 @@ public class EchoGetCall {
         print("Client received status \(callResult.statusCode) \(callResult.statusMessage!)")
         if let messageData = callResult.resultData {
           let responseMessage = try! Echo_EchoResponse(protobuf:messageData)
-          callback(EchoResult.Success(r: responseMessage))
+          callback(EchoResult.Response(r: responseMessage))
         } else {
-          callback(EchoResult.Error(e: callResult))
+          callback(EchoResult.CallResult(c: callResult))
         }
       }
   }
@@ -72,47 +73,53 @@ public class EchoGetCall {
 public class EchoExpandCall {
   var call : Call
 
-  init(_ call: Call) {
-    self.call = call
+  init(_ channel: Channel) {
+    self.call = channel.makeCall("/echo.Echo/Expand")
   }
 
   // Call this once with the message to send,
   // the callback will be called after the request is initiated.
   func perform(request: Echo_EchoRequest,
-               callback:@escaping (CallResult, Echo_EchoResponse?) -> Void)
+               callback:@escaping (CallResult) -> Void)
     -> Void {
       let requestMessageData = try! request.serializeProtobuf()
       let requestMetadata = Metadata()
       try! call.startServerStreaming(message: requestMessageData,
                                      metadata: requestMetadata)
       {(callResult) in
-        //print("Client received status \(callResult.statusCode): \(callResult.statusMessage!)")
+        callback(callResult)
       }
   }
 
-  // Call this to receive a message.
-  // The callback will be called when a message is received.
-  // call this again from the callback to wait for another message.
-  func receiveMessage(callback:@escaping (Echo_EchoResponse?) throws -> Void) throws {
-    try call.receiveMessage() {(data) in
+  func Recv() -> EchoResult {
+    let done = NSCondition()
+    var result : EchoResult!
+    try! call.receiveMessage() {(data) in
       if let data = data {
         if let responseMessage = try? Echo_EchoResponse(protobuf:data) {
-          try callback(responseMessage)
+          result = EchoResult.Response(r: responseMessage)
         } else {
-          try callback(nil)
+          result = EchoResult.Error(s: "INVALID RESPONSE")
         }
       } else {
-        try callback(nil)
+        result = EchoResult.Error(s: "EOM")
       }
+      done.lock()
+      done.signal()
+      done.unlock()
     }
+    done.lock()
+    done.wait()
+    done.unlock()
+    return result
   }
 }
 
 public class EchoCollectCall {
   var call : Call
 
-  init(_ call: Call) {
-    self.call = call
+  init(_ channel: Channel) {
+    self.call = channel.makeCall("/echo.Echo/Collect")
   }
 
   // Call this to start a call.
@@ -121,9 +128,42 @@ public class EchoCollectCall {
   }
 
   // Call this to send each message in the request stream.
-  func sendMessage(message: Echo_EchoRequest) {
+  func Send(_ message: Echo_EchoRequest) {
     let messageData = try! message.serializeProtobuf()
     _ = call.sendMessage(data:messageData)
+  }
+
+  func CloseAndRecv() -> EchoResult {
+    let done = NSCondition()
+    var result : EchoResult!
+
+    do {
+      try self.receiveMessage() {(responseMessage) in
+        if let responseMessage = responseMessage {
+          result = EchoResult.Response(r: responseMessage)
+        } else {
+          result = EchoResult.Error(s: "INVALID RESPONSE")
+        }
+        done.lock()
+        done.signal()
+        done.unlock()
+      }
+    } catch (let error) {
+      print("ERROR A: \(error)")
+    }
+    do {
+      try call.close(completion:{
+        print("closed")
+      })
+    } catch (let error) {
+      print("ERROR B: \(error)")
+    }
+
+    done.lock()
+    done.wait()
+    done.unlock()
+
+    return result
   }
 
   // Call this to receive a message.
@@ -132,6 +172,10 @@ public class EchoCollectCall {
   func receiveMessage(callback:@escaping (Echo_EchoResponse?) throws -> Void)
     throws {
       try call.receiveMessage() {(data) in
+        guard let data = data else {
+          try callback(nil)
+          return
+        }
         guard
           let responseMessage = try? Echo_EchoResponse(protobuf:data)
           else {
@@ -141,17 +185,13 @@ public class EchoCollectCall {
       }
   }
 
-
-  func close(completion:@escaping (() -> Void)) throws {
-    try call.close(completion:completion)
-  }
 }
 
 public class EchoUpdateCall {
   var call : Call
 
-  init(_ call: Call) {
-    self.call = call
+  init(_ channel: Channel) {
+    self.call = channel.makeCall("/echo.Echo/Update")
   }
 
   func start(metadata:Metadata, completion:@escaping (() -> Void)) throws {
@@ -160,26 +200,52 @@ public class EchoUpdateCall {
 
   func receiveMessage(callback:@escaping (Echo_EchoResponse?) throws -> Void) throws {
     try call.receiveMessage() {(data) in
-      guard let data = data
-        else {
-          return
+      if let data = data {
+        if let responseMessage = try? Echo_EchoResponse(protobuf:data) {
+          try callback(responseMessage)
+        } else {
+          try callback(nil) // error, bad data
+        }
+      } else {
+        try callback(nil)
       }
-      guard
-        let responseMessage = try? Echo_EchoResponse(protobuf:data)
-        else {
-          return
-      }
-      try callback(responseMessage)
     }
   }
 
-  func sendMessage(message: Echo_EchoRequest) {
+  func Recv() -> EchoResult {
+    let done = NSCondition()
+    var result : EchoResult!
+    try! self.receiveMessage() {responseMessage in
+      if let responseMessage = responseMessage {
+        result = EchoResult.Response(r: responseMessage)
+      } else {
+        result = EchoResult.Error(s: "EOM")
+      }
+      done.lock()
+      done.signal()
+      done.unlock()
+    }
+    done.lock()
+    done.wait()
+    done.unlock()
+    return result
+  }
+
+  func Send(message:Echo_EchoRequest) {
     let messageData = try! message.serializeProtobuf()
     _ = call.sendMessage(data:messageData)
   }
 
-  func close(completion:@escaping (() -> Void)) throws {
-    try call.close(completion:completion)
+  func CloseSend() {
+    let done = NSCondition()
+    try! call.close() {
+      done.lock()
+      done.signal()
+      done.unlock()
+    }
+    done.lock()
+    done.wait()
+    done.unlock()
   }
 }
 
@@ -194,24 +260,38 @@ public class EchoService {
     channel = Channel(address:address, certificates:certificates, host:host)
   }
 
-  func get(_ requestMessage: Echo_EchoRequest,
-           _ completion:@escaping (EchoResult) -> Void) {
-      let call = EchoGetCall(channel.makeCall("/echo.Echo/Get"))
-      call.perform(request:requestMessage) {(result) in
-        let call = call // retain until completion
-        completion(result)
-      }
+  func get(_ requestMessage: Echo_EchoRequest) -> EchoResult {
+    let call = EchoGetCall(channel)
+
+    let done = NSCondition()
+    var finalResult : EchoResult!
+    call.perform(request:requestMessage) {(result) in
+      finalResult = result
+      done.lock()
+      done.signal()
+      done.unlock()
+    }
+    done.lock()
+    done.wait()
+    done.unlock()
+    return finalResult
   }
 
-  func expand() -> EchoExpandCall {
-    return EchoExpandCall(channel.makeCall("/echo.Echo/Expand"))
+  func expand(_ requestMessage: Echo_EchoRequest) -> EchoExpandCall {
+    let call = EchoExpandCall(channel)
+    call.perform(request:requestMessage) {response in }
+    return call
   }
 
   func collect() -> EchoCollectCall {
-    return EchoCollectCall(channel.makeCall("/echo.Echo/Collect"))
+    let call = EchoCollectCall(channel)
+    try! call.start(metadata:Metadata(), completion:{})
+    return call
   }
 
   func update() -> EchoUpdateCall {
-    return EchoUpdateCall(channel.makeCall("/echo.Echo/Update"))
+    let call = EchoUpdateCall(channel)
+    try! call.start(metadata:Metadata(), completion:{})
+    return call
   }
 }
