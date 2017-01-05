@@ -37,6 +37,7 @@ import gRPC
 
 enum EchoResult {
   case Response(r: Echo_EchoResponse)
+  // these last two should be merged
   case CallResult(c: CallResult)
   case Error(s: String)
 }
@@ -44,8 +45,8 @@ enum EchoResult {
 public class EchoGetCall {
   var call : Call
 
-  init(_ call: Call) {
-    self.call = call
+  init(_ channel: Channel) {
+    self.call = channel.makeCall("/echo.Echo/Get")
   }
 
   // Call this with the message to send,
@@ -72,8 +73,8 @@ public class EchoGetCall {
 public class EchoExpandCall {
   var call : Call
 
-  init(_ call: Call) {
-    self.call = call
+  init(_ channel: Channel) {
+    self.call = channel.makeCall("/echo.Echo/Expand")
   }
 
   // Call this once with the message to send,
@@ -117,8 +118,8 @@ public class EchoExpandCall {
 public class EchoCollectCall {
   var call : Call
 
-  init(_ call: Call) {
-    self.call = call
+  init(_ channel: Channel) {
+    self.call = channel.makeCall("/echo.Echo/Collect")
   }
 
   // Call this to start a call.
@@ -137,7 +138,6 @@ public class EchoCollectCall {
     var result : EchoResult!
 
     try! self.receiveMessage() {(responseMessage) in
-      print("received")
       if let responseMessage = responseMessage {
         result = EchoResult.Response(r: responseMessage)
       } else {
@@ -148,7 +148,7 @@ public class EchoCollectCall {
       done.unlock()
     }
 
-    try! self.close(completion:{})
+    try! call.close(completion:{})
     done.lock()
     done.wait()
     done.unlock()
@@ -160,7 +160,6 @@ public class EchoCollectCall {
   // call this again from the callback to wait for another message.
   func receiveMessage(callback:@escaping (Echo_EchoResponse?) throws -> Void)
     throws {
-      print("receiving message")
       try call.receiveMessage() {(data) in
         guard
           let responseMessage = try? Echo_EchoResponse(protobuf:data)
@@ -171,17 +170,13 @@ public class EchoCollectCall {
       }
   }
 
-  func close(completion:@escaping (() -> Void)) throws {
-    print("closing")
-    try call.close(completion:completion)
-  }
 }
 
 public class EchoUpdateCall {
   var call : Call
 
-  init(_ call: Call) {
-    self.call = call
+  init(_ channel: Channel) {
+    self.call = channel.makeCall("/echo.Echo/Update")
   }
 
   func start(metadata:Metadata, completion:@escaping (() -> Void)) throws {
@@ -251,7 +246,8 @@ public class EchoService {
   }
 
   func get(_ requestMessage: Echo_EchoRequest) -> EchoResult {
-    let call = EchoGetCall(channel.makeCall("/echo.Echo/Get"))
+    let call = EchoGetCall(channel)
+    
     let done = NSCondition()
     var finalResult : EchoResult!
     call.perform(request:requestMessage) {(result) in
@@ -267,19 +263,19 @@ public class EchoService {
   }
 
   func expand(_ requestMessage: Echo_EchoRequest) -> EchoExpandCall {
-    let call = EchoExpandCall(channel.makeCall("/echo.Echo/Expand"))
+    let call = EchoExpandCall(channel)
     call.perform(request:requestMessage) {response in }
     return call
   }
 
   func collect() -> EchoCollectCall {
-    let call = EchoCollectCall(channel.makeCall("/echo.Echo/Collect"))
+    let call = EchoCollectCall(channel)
     try! call.start(metadata:Metadata(), completion:{})
     return call
   }
 
   func update() -> EchoUpdateCall {
-    let call = EchoUpdateCall(channel.makeCall("/echo.Echo/Update"))
+    let call = EchoUpdateCall(channel)
     try! call.start(metadata:Metadata(), completion:{})
     return call
   }

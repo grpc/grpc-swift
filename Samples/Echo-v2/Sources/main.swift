@@ -78,6 +78,7 @@ if server {
   } else {
     print("Starting insecure server")
     echoServer = EchoServer(address:"localhost:8081", secure:false)
+    echoServer.myServer = MyEchoServer()
   }
   echoServer.start()
   // Block to keep the main thread from finishing while the server runs.

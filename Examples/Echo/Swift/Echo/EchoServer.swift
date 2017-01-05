@@ -34,34 +34,42 @@ import Foundation
 import gRPC
 import Darwin // for sleep()
 
+enum ServerError : Error {
+  case endOfStream
+  case error
+}
+
+protocol CustomEchoServer {
+  func Get(request : Echo_EchoRequest) throws -> Echo_EchoResponse
+  func Collect(stream : EchoCollectSession) throws -> Void
+  func Expand(request : Echo_EchoRequest, stream : EchoExpandSession) throws -> Void
+  func Update(stream : EchoUpdateSession) throws -> Void
+}
+
 // This seemed like a nice idea but doesn't work because
 // specific message types are in the protocol signatures.
 // There are also functions in the Session classes that depend
 // on specific message types.
 
-protocol UnaryServer {
-  func handle(message:Echo_EchoRequest) -> Echo_EchoResponse?
-}
-
 protocol ServerStreamingServer {
-  func handle(session:ServerStreamingSession, message:Echo_EchoRequest) -> Void
+  func handle(session:EchoExpandSession, message:Echo_EchoRequest) -> Void
 }
 
 protocol ClientStreamingServer {
-  func handle(session:ClientStreamingSession, message:Echo_EchoRequest) -> Void
-  func close(session:ClientStreamingSession)
+  func handle(session:EchoCollectSession, message:Echo_EchoRequest) -> Void
+  func close(session:EchoCollectSession)
 }
 
 protocol BidiStreamingServer {
-  func handle(session:BidiStreamingSession, message:Echo_EchoRequest) -> Void
+  func handle(session:EchoUpdateSession, message:Echo_EchoRequest) -> Void
 }
 
-// nonstreaming
-class UnarySession : Session {
+// unary
+class EchoGetSession : Session {
   var handler : Handler
-  var server : UnaryServer
+  var server : CustomEchoServer
 
-  init(handler:Handler, server: UnaryServer) {
+  init(handler:Handler, server: CustomEchoServer) {
     self.handler = handler
     self.server = server
   }
@@ -71,12 +79,13 @@ class UnarySession : Session {
       try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
         if let requestData = requestData {
           let requestMessage = try! Echo_EchoRequest(protobuf:requestData)
-          if let replyMessage = self.server.handle(message:requestMessage) { // calling stub
-            try self.handler.sendResponse(message:replyMessage.serializeProtobuf(),
-                                          statusCode: 0,
-                                          statusMessage: "OK",
-                                          trailingMetadata:Metadata())
-          }
+          let replyMessage = try! self.server.Get(request:requestMessage)
+          // calling stub
+          try self.handler.sendResponse(message:replyMessage.serializeProtobuf(),
+                                        statusCode: 0,
+                                        statusMessage: "OK",
+                                        trailingMetadata:Metadata())
+
         }
       }
     } catch (let callError) {
@@ -86,26 +95,17 @@ class UnarySession : Session {
 }
 
 // server streaming
-class ServerStreamingSession : Session {
+class EchoExpandSession : Session {
   var handler : Handler
-  var server : ServerStreamingServer
+  var server : CustomEchoServer
 
-  init(handler:Handler, server: ServerStreamingServer) {
+  init(handler:Handler, server: CustomEchoServer) {
     self.handler = handler
     self.server = server
   }
 
-  func sendMessage(message:Echo_EchoResponse) -> Void {
-    try! handler.sendResponse(message:message.serializeProtobuf()) {}
-  }
-
-  func close() -> Void {
-    try! self.handler.sendStatus(statusCode:0,
-                                 statusMessage:"OK",
-                                 trailingMetadata:Metadata(),
-                                 completion:{
-
-    })
+  func Send(_ response: Echo_EchoResponse) throws {
+    try! handler.sendResponse(message:response.serializeProtobuf()) {}
   }
 
   func run() {
@@ -113,7 +113,11 @@ class ServerStreamingSession : Session {
       try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
         if let requestData = requestData {
           let requestMessage = try! Echo_EchoRequest(protobuf:requestData)
-          self.server.handle(session: self, message:requestMessage)
+          try self.server.Expand(request:requestMessage, stream: self)
+          try! self.handler.sendStatus(statusCode:0,
+                                       statusMessage:"OK",
+                                       trailingMetadata:Metadata(),
+                                       completion:{})
         }
       }
     } catch (let callError) {
@@ -123,13 +127,42 @@ class ServerStreamingSession : Session {
 }
 
 // client streaming
-class ClientStreamingSession : Session {
+class EchoCollectSession : Session {
   var handler : Handler
-  var server : ClientStreamingServer
+  var server : CustomEchoServer
 
-  init(handler:Handler, server: ClientStreamingServer) {
+  init(handler:Handler, server: CustomEchoServer) {
     self.handler = handler
     self.server = server
+  }
+
+  func Recv() throws -> Echo_EchoRequest {
+    print("collect awaiting message")
+    let done = NSCondition()
+    var requestMessage : Echo_EchoRequest?
+    try self.handler.receiveMessage() {(requestData) in
+      print("collect received message")
+      if let requestData = requestData {
+        requestMessage = try! Echo_EchoRequest(protobuf:requestData)
+      }
+      done.lock()
+      done.signal()
+      done.unlock()
+    }
+    done.lock()
+    done.wait()
+    done.unlock()
+    if requestMessage == nil {
+      throw ServerError.endOfStream
+    }
+    return requestMessage!
+  }
+
+  func SendAndClose(_ response: Echo_EchoResponse) throws {
+    try! self.handler.sendResponse(message:response.serializeProtobuf(),
+                                   statusCode: 0,
+                                   statusMessage: "OK",
+                                   trailingMetadata: Metadata())
   }
 
   func sendMessage(message:Echo_EchoResponse) -> Void {
@@ -139,29 +172,11 @@ class ClientStreamingSession : Session {
                                    trailingMetadata: Metadata())
   }
 
-  func waitForMessage() {
-    do {
-      try handler.receiveMessage() {(requestData) in
-        if let requestData = requestData {
-
-          let requestMessage = try! Echo_EchoRequest(protobuf:requestData)
-          self.waitForMessage()
-          self.server.handle(session:self, message:requestMessage)
-
-        } else {
-          // if we get an empty message (requestData == nil), we close the connection
-          self.server.close(session:self)
-        }
-      }
-    } catch (let error) {
-      print(error)
-    }
-  }
-
   func run() {
     do {
+      print("EchoCollectSession run")
       try self.handler.sendMetadata(initialMetadata:Metadata()) {
-        self.waitForMessage()
+        try self.server.Collect(stream:self)
       }
     } catch (let callError) {
       print("grpc error: \(callError)")
@@ -170,46 +185,65 @@ class ClientStreamingSession : Session {
 }
 
 // fully streaming
-class BidiStreamingSession : Session {
+class EchoUpdateSession : Session {
   var handler : Handler
-  var server : BidiStreamingServer
+  var server : CustomEchoServer
 
-  init(handler:Handler, server: BidiStreamingServer) {
+  init(handler:Handler, server: CustomEchoServer) {
     self.handler = handler
     self.server = server
+  }
+
+  func Recv() throws -> Echo_EchoRequest {
+    print("update awaiting message")
+    let done = NSCondition()
+    var requestMessage : Echo_EchoRequest?
+    try self.handler.receiveMessage() {(requestData) in
+      print("update received message")
+      if let requestData = requestData {
+        requestMessage = try! Echo_EchoRequest(protobuf:requestData)
+      }
+      done.lock()
+      done.signal()
+      done.unlock()
+    }
+    done.lock()
+    done.wait()
+    done.unlock()
+    if requestMessage == nil {
+      throw ServerError.endOfStream
+    }
+    return requestMessage!
+  }
+
+  func Send(_ response: Echo_EchoResponse) throws {
+    try handler.sendResponse(message:response.serializeProtobuf()) {}
   }
 
   func sendMessage(message:Echo_EchoResponse) -> Void {
     try! handler.sendResponse(message:message.serializeProtobuf()) {}
   }
 
-  func waitForMessage() {
-    do {
-      try handler.receiveMessage() {(requestData) in
-        if let requestData = requestData {
+  func Close() {
+    let done = NSCondition()
 
-          let requestMessage = try! Echo_EchoRequest(protobuf:requestData)
-          self.waitForMessage()
-          self.server.handle(session:self, message:requestMessage)
-
-        } else {
-          // if we get an empty message (requestData == nil), we close the connection
-          try self.handler.sendStatus(statusCode: 0,
-                                      statusMessage: "OK",
-                                      trailingMetadata: Metadata())
-          {
-          }
-        }
-      }
-    } catch (let error) {
-      print(error)
+    try! self.handler.sendStatus(statusCode: 0,
+                                 statusMessage: "OK",
+                                 trailingMetadata: Metadata()) {
+                                  done.lock()
+                                  done.signal()
+                                  done.unlock()
     }
+
+    done.lock()
+    done.wait()
+    done.unlock()
   }
 
   func run() {
     do {
       try self.handler.sendMetadata(initialMetadata:Metadata()) {
-        self.waitForMessage()
+        try self.server.Update(stream:self)
       }
     } catch (let callError) {
       print("grpc error: \(callError)")
@@ -221,21 +255,22 @@ class EchoServer {
   private var address: String
   private var server: Server
 
+  public var myServer: MyEchoServer!
+
   init(address:String, secure:Bool) {
     gRPC.initialize()
     self.address = address
     if secure {
       let certificateURL = Bundle.main.url(forResource: "ssl", withExtension: "crt")!
-      //let certificateURL = URL(fileURLWithPath:"ssl.crt")
-      let certificate = try! String(contentsOf: certificateURL)
 
+      let certificate = try! String(contentsOf: certificateURL)
       let keyURL = Bundle.main.url(forResource: "ssl", withExtension: "key")!
-      //let keyURL = URL(fileURLWithPath:"ssl.key")
       let key = try! String(contentsOf: keyURL)
       self.server = gRPC.Server(address:address, key:key, certs:certificate)
     } else {
       self.server = gRPC.Server(address:address)
     }
+    self.myServer = MyEchoServer()
   }
 
   func start() {
@@ -243,31 +278,33 @@ class EchoServer {
     print("GRPC version " + gRPC.version())
 
     server.run {(handler) in
+
       print("Server received request to " + handler.host
         + " calling " + handler.method
         + " from " + handler.caller)
 
       if (handler.method == "/echo.Echo/Get") {
-        handler.session = UnarySession(handler:handler,
-                                       server:EchoGetServer())
+        handler.session = EchoGetSession(handler:handler,
+                                         server:self.myServer)
         handler.session.run()
       }
 
       else if (handler.method == "/echo.Echo/Expand") {
-        handler.session = ServerStreamingSession(handler:handler,
-                                                 server:EchoExpandServer())
+        handler.session = EchoExpandSession(handler:handler,
+                                            server:self.myServer)
         handler.session.run()
       }
 
       else if (handler.method == "/echo.Echo/Collect") {
-        handler.session = ClientStreamingSession(handler:handler,
-                                                 server:EchoCollectServer())
+        handler.session = EchoCollectSession(handler:handler,
+                                             server:self.myServer)
+
         handler.session.run()
       }
 
       else if (handler.method == "/echo.Echo/Update") {
-        handler.session = BidiStreamingSession(handler:handler,
-                                               server:EchoUpdateServer())
+        handler.session = EchoUpdateSession(handler:handler,
+                                            server:self.myServer)
         handler.session.run()
       }
     }
@@ -277,48 +314,61 @@ class EchoServer {
 // The following code is for developer/users to edit.
 // Everything above these lines is intended to be preexisting or generated.
 
-class EchoGetServer : UnaryServer {
+class MyEchoServer : CustomEchoServer {
 
-  func handle(message:Echo_EchoRequest) -> Echo_EchoResponse? {
-    return Echo_EchoResponse(text: "Swift echo get: " + message.text)
+  func Get(request : Echo_EchoRequest) throws -> Echo_EchoResponse {
+    print("Get received: \(request.text)")
+    return Echo_EchoResponse(text:"Swift echo get: " + request.text)
   }
-}
 
-class EchoExpandServer : ServerStreamingServer {
-
-  func handle(session:ServerStreamingSession, message:Echo_EchoRequest) -> Void {
-    let parts = message.text.components(separatedBy: " ")
+  func Expand(request : Echo_EchoRequest, stream : EchoExpandSession) throws -> Void {
+    print("Expand received: \(request.text)")
+    let parts = request.text.components(separatedBy: " ")
     var i = 0
     for part in parts {
-      session.sendMessage(message:Echo_EchoResponse(text:"Swift echo expand (\(i)): \(part)"))
+      try stream.Send(Echo_EchoResponse(text:"Swift echo expand (\(i)): \(part)"))
       i += 1
       sleep(1)
     }
-    session.close()
   }
-}
 
-class EchoCollectServer : ClientStreamingServer {
-  var result = ""
-
-  func handle(session:ClientStreamingSession, message:Echo_EchoRequest) -> Void {
-    if result != "" {
-      result += " "
+  func Collect(stream : EchoCollectSession) throws -> Void {
+    DispatchQueue.global().async {
+      print("Called collect")
+      var parts : [String] = []
+      while true {
+        do {
+          let request = try stream.Recv()
+          print("Collect received: \(request.text)")
+          parts.append(request.text)
+        } catch ServerError.endOfStream {
+          break
+        } catch (let error) {
+          print("\(error)")
+        }
+      }
+      print("sending collect response")
+      let response = Echo_EchoResponse(text:"Swift echo collect: " + parts.joined(separator: " "))
+      try! stream.SendAndClose(response)
     }
-    result += message.text
   }
 
-  func close(session:ClientStreamingSession) {
-    session.sendMessage(message:Echo_EchoResponse(text:"Swift echo collect: " + result))
+  func Update(stream : EchoUpdateSession) throws -> Void {
+    DispatchQueue.global().async {
+      var count = 0
+      while true {
+        do {
+          let request = try stream.Recv()
+          print("Update received: \(request.text)")
+          count += 1
+          try stream.Send(Echo_EchoResponse(text:"Swift echo update (\(count)): \(request.text)"))
+        } catch ServerError.endOfStream {
+          break
+        } catch (let error) {
+          
+        }
+      }
+      stream.Close()
+    }
   }
 }
-
-class EchoUpdateServer : BidiStreamingServer {
-  var i = 0
-
-  func handle(session:BidiStreamingSession, message:Echo_EchoRequest) -> Void {
-    session.sendMessage(message:Echo_EchoResponse(text:"Swift echo update (\(i)): \(message.text)"))
-    i += 1
-  }
-}
-
