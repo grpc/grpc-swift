@@ -143,6 +143,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         var requestMessage = Echo_EchoRequest()
         requestMessage.text = self.messageField.stringValue
 
+        // service.get() is a blocking call
         DispatchQueue.global().async {
           let result = service.get(requestMessage)
           switch result {
@@ -224,21 +225,6 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
       requestMessage.text = self.messageField.stringValue
       self.displayMessageSent(requestMessage.text)
       _ = collectCall.Send(requestMessage)
-    }
-  }
-
-  func receiveCollectMessage() throws -> Void {
-    guard let collectCall = collectCall else {
-      return
-    }
-    try collectCall.receiveMessage() {(responseMessage) in
-      if let responseMessage = responseMessage {
-        self.displayMessageReceived(responseMessage.text)
-      } else {
-        print("collect closed")
-        self.nowStreaming = false
-        self.closeButton.isEnabled = false
-      }
     }
   }
 

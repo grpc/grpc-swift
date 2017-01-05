@@ -30,29 +30,33 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-import Foundation
-import gRPC
 
 // all code that follows is to-be-generated
 
-enum EchoResult {
+import Foundation
+import gRPC
+
+public enum EchoResult {
   case Response(r: Echo_EchoResponse)
   // these last two should be merged
   case CallResult(c: CallResult)
   case Error(s: String)
 }
 
+//
+// Unary GET
+//
 public class EchoGetCall {
   var call : Call
 
-  init(_ channel: Channel) {
+  fileprivate init(_ channel: Channel) {
     self.call = channel.makeCall("/echo.Echo/Get")
   }
 
   // Call this with the message to send,
   // the callback will be called after the request is received.
-  func perform(request: Echo_EchoRequest,
-               callback:@escaping (EchoResult) -> Void)
+  fileprivate func perform(request: Echo_EchoRequest,
+                           callback:@escaping (EchoResult) -> Void)
     -> Void {
       let requestMessageData = try! request.serializeProtobuf()
       let requestMetadata = Metadata()
@@ -70,17 +74,20 @@ public class EchoGetCall {
   }
 }
 
+//
+// Server-streaming EXPAND
+//
 public class EchoExpandCall {
   var call : Call
 
-  init(_ channel: Channel) {
+  fileprivate init(_ channel: Channel) {
     self.call = channel.makeCall("/echo.Echo/Expand")
   }
 
   // Call this once with the message to send,
   // the callback will be called after the request is initiated.
-  func perform(request: Echo_EchoRequest,
-               callback:@escaping (CallResult) -> Void)
+  fileprivate func perform(request: Echo_EchoRequest,
+                           callback:@escaping (CallResult) -> Void)
     -> Void {
       let requestMessageData = try! request.serializeProtobuf()
       let requestMetadata = Metadata()
@@ -91,7 +98,9 @@ public class EchoExpandCall {
       }
   }
 
-  func Recv() -> EchoResult {
+  // Call this to wait for a result.
+  // BLOCKING
+  public func Recv() -> EchoResult {
     let done = NSCondition()
     var result : EchoResult!
     try! call.receiveMessage() {(data) in
@@ -115,25 +124,30 @@ public class EchoExpandCall {
   }
 }
 
+//
+// Client-streaming COLLECT
+//
 public class EchoCollectCall {
   var call : Call
 
-  init(_ channel: Channel) {
+  fileprivate init(_ channel: Channel) {
     self.call = channel.makeCall("/echo.Echo/Collect")
   }
 
   // Call this to start a call.
-  func start(metadata:Metadata, completion:@escaping (() -> Void)) throws {
+  fileprivate func start(metadata:Metadata, completion:@escaping (() -> Void)) throws {
     try self.call.start(metadata: metadata, completion:completion)
   }
 
   // Call this to send each message in the request stream.
-  func Send(_ message: Echo_EchoRequest) {
+  public func Send(_ message: Echo_EchoRequest) {
     let messageData = try! message.serializeProtobuf()
     _ = call.sendMessage(data:messageData)
   }
 
-  func CloseAndRecv() -> EchoResult {
+  // Call this to close the connection and wait for a response.
+  // BLOCKING
+  public func CloseAndRecv() -> EchoResult {
     let done = NSCondition()
     var result : EchoResult!
 
@@ -169,7 +183,7 @@ public class EchoCollectCall {
   // Call this to receive a message.
   // The callback will be called when a message is received.
   // call this again from the callback to wait for another message.
-  func receiveMessage(callback:@escaping (Echo_EchoResponse?) throws -> Void)
+  fileprivate func receiveMessage(callback:@escaping (Echo_EchoResponse?) throws -> Void)
     throws {
       try call.receiveMessage() {(data) in
         guard let data = data else {
@@ -187,18 +201,21 @@ public class EchoCollectCall {
 
 }
 
+//
+// Bidirectional-streaming UPDATE
+//
 public class EchoUpdateCall {
   var call : Call
 
-  init(_ channel: Channel) {
+  fileprivate init(_ channel: Channel) {
     self.call = channel.makeCall("/echo.Echo/Update")
   }
 
-  func start(metadata:Metadata, completion:@escaping (() -> Void)) throws {
+  fileprivate func start(metadata:Metadata, completion:@escaping (() -> Void)) throws {
     try self.call.start(metadata: metadata, completion:completion)
   }
 
-  func receiveMessage(callback:@escaping (Echo_EchoResponse?) throws -> Void) throws {
+  fileprivate func receiveMessage(callback:@escaping (Echo_EchoResponse?) throws -> Void) throws {
     try call.receiveMessage() {(data) in
       if let data = data {
         if let responseMessage = try? Echo_EchoResponse(protobuf:data) {
@@ -212,7 +229,7 @@ public class EchoUpdateCall {
     }
   }
 
-  func Recv() -> EchoResult {
+  public func Recv() -> EchoResult {
     let done = NSCondition()
     var result : EchoResult!
     try! self.receiveMessage() {responseMessage in
@@ -231,12 +248,12 @@ public class EchoUpdateCall {
     return result
   }
 
-  func Send(message:Echo_EchoRequest) {
+  public func Send(message:Echo_EchoRequest) {
     let messageData = try! message.serializeProtobuf()
     _ = call.sendMessage(data:messageData)
   }
 
-  func CloseSend() {
+  public func CloseSend() {
     let done = NSCondition()
     try! call.close() {
       done.lock()
@@ -249,6 +266,8 @@ public class EchoUpdateCall {
   }
 }
 
+// The generated service adaptor
+// Call these methods to make API calls
 public class EchoService {
   public var channel: Channel
 
@@ -260,9 +279,9 @@ public class EchoService {
     channel = Channel(address:address, certificates:certificates, host:host)
   }
 
-  func get(_ requestMessage: Echo_EchoRequest) -> EchoResult {
+  // Synchronous. Unary.
+  public func get(_ requestMessage: Echo_EchoRequest) -> EchoResult {
     let call = EchoGetCall(channel)
-
     let done = NSCondition()
     var finalResult : EchoResult!
     call.perform(request:requestMessage) {(result) in
@@ -277,19 +296,28 @@ public class EchoService {
     return finalResult
   }
 
-  func expand(_ requestMessage: Echo_EchoRequest) -> EchoExpandCall {
+  // Asynchronous. Server-streaming.
+  // Send the initial message.
+  // Use methods on the returned object to get streamed responses.
+  public func expand(_ requestMessage: Echo_EchoRequest) -> EchoExpandCall {
     let call = EchoExpandCall(channel)
     call.perform(request:requestMessage) {response in }
     return call
   }
 
-  func collect() -> EchoCollectCall {
+  // Asynchronous. Client-streaming.
+  // Use methods on the returned object to stream messages and
+  // to close the connection and wait for a final response.
+  public func collect() -> EchoCollectCall {
     let call = EchoCollectCall(channel)
     try! call.start(metadata:Metadata(), completion:{})
     return call
   }
 
-  func update() -> EchoUpdateCall {
+  // Asynchronous. Bidirectional-streaming.
+  // Use methods on the returned object to stream messages,
+  // to wait for replies, and to close the connection.
+  public func update() -> EchoUpdateCall {
     let call = EchoUpdateCall(channel)
     try! call.start(metadata:Metadata(), completion:{})
     return call
