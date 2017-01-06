@@ -48,14 +48,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // create and start a server for handling insecure requests
     insecureServer = Echo_EchoServer(address:"localhost:8081",
-                                     handler:echoHandler,
-                                     secure:false)
+                                     handler:echoHandler)
     insecureServer.start()
 
     // create and start a server for handling secure requests
+    let certificateURL = Bundle.main.url(forResource: "ssl", withExtension: "crt")!
+    let keyURL = Bundle.main.url(forResource: "ssl", withExtension: "key")!
     secureServer = Echo_EchoServer(address:"localhost:8443",
-                                   handler:echoHandler,
-                                   secure:true)
+                                   certificateURL:certificateURL,
+                                   keyURL:keyURL,
+                                   handler:echoHandler)
     secureServer.start()
   }
 }

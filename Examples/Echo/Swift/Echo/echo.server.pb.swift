@@ -237,21 +237,27 @@ public class Echo_EchoServer {
   public var handler: Echo_EchoHandler!
 
   public init(address:String,
-              handler:Echo_EchoHandler,
-              secure:Bool) {
+              handler:Echo_EchoHandler) {
     gRPC.initialize()
     self.address = address
     self.handler = handler
-    if secure {
-      let certificateURL = Bundle.main.url(forResource: "ssl", withExtension: "crt")!
+    self.server = gRPC.Server(address:address)
+  }
 
-      let certificate = try! String(contentsOf: certificateURL)
-      let keyURL = Bundle.main.url(forResource: "ssl", withExtension: "key")!
-      let key = try! String(contentsOf: keyURL)
-      self.server = gRPC.Server(address:address, key:key, certs:certificate)
-    } else {
-      self.server = gRPC.Server(address:address)
+  public init?(address:String,
+               certificateURL:URL,
+               keyURL:URL,
+               handler:Echo_EchoHandler) {
+    gRPC.initialize()
+    self.address = address
+    self.handler = handler
+    guard
+      let certificate = try? String(contentsOf: certificateURL),
+      let key = try? String(contentsOf: keyURL)
+      else {
+        return nil
     }
+    self.server = gRPC.Server(address:address, key:key, certs:certificate)
   }
 
   public func start(queue:DispatchQueue = DispatchQueue.global()) {
