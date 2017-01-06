@@ -36,6 +36,7 @@
 import Foundation
 import gRPC
 
+// this is probably going to go.
 public enum EchoResult {
   case Response(r: Echo_EchoResponse)
   // these last two should be merged
@@ -46,7 +47,7 @@ public enum EchoResult {
 //
 // Unary GET
 //
-public class EchoGetCall {
+public class Echo_EchoGetCall {
   var call : Call
 
   fileprivate init(_ channel: Channel) {
@@ -77,7 +78,7 @@ public class EchoGetCall {
 //
 // Server-streaming EXPAND
 //
-public class EchoExpandCall {
+public class Echo_EchoExpandCall {
   var call : Call
 
   fileprivate init(_ channel: Channel) {
@@ -100,7 +101,7 @@ public class EchoExpandCall {
 
   // Call this to wait for a result.
   // BLOCKING
-  public func Recv() -> EchoResult {
+  public func Receive() -> EchoResult {
     let done = NSCondition()
     var result : EchoResult!
     try! call.receiveMessage() {(data) in
@@ -127,7 +128,7 @@ public class EchoExpandCall {
 //
 // Client-streaming COLLECT
 //
-public class EchoCollectCall {
+public class Echo_EchoCollectCall {
   var call : Call
 
   fileprivate init(_ channel: Channel) {
@@ -147,7 +148,7 @@ public class EchoCollectCall {
 
   // Call this to close the connection and wait for a response.
   // BLOCKING
-  public func CloseAndRecv() -> EchoResult {
+  public func CloseAndReceive() -> EchoResult {
     let done = NSCondition()
     var result : EchoResult!
 
@@ -204,7 +205,7 @@ public class EchoCollectCall {
 //
 // Bidirectional-streaming UPDATE
 //
-public class EchoUpdateCall {
+public class Echo_EchoUpdateCall {
   var call : Call
 
   fileprivate init(_ channel: Channel) {
@@ -229,7 +230,7 @@ public class EchoUpdateCall {
     }
   }
 
-  public func Recv() -> EchoResult {
+  public func Receive() -> EchoResult {
     let done = NSCondition()
     var result : EchoResult!
     try! self.receiveMessage() {responseMessage in
@@ -266,9 +267,8 @@ public class EchoUpdateCall {
   }
 }
 
-// The generated service adaptor
-// Call these methods to make API calls
-public class EchoService {
+// Call methods of this class to make API calls.
+public class Echo_EchoService {
   public var channel: Channel
 
   public init(address: String) {
@@ -281,7 +281,7 @@ public class EchoService {
 
   // Synchronous. Unary.
   public func get(_ requestMessage: Echo_EchoRequest) -> EchoResult {
-    let call = EchoGetCall(channel)
+    let call = Echo_EchoGetCall(channel)
     let done = NSCondition()
     var finalResult : EchoResult!
     call.perform(request:requestMessage) {(result) in
@@ -299,8 +299,8 @@ public class EchoService {
   // Asynchronous. Server-streaming.
   // Send the initial message.
   // Use methods on the returned object to get streamed responses.
-  public func expand(_ requestMessage: Echo_EchoRequest) -> EchoExpandCall {
-    let call = EchoExpandCall(channel)
+  public func expand(_ requestMessage: Echo_EchoRequest) -> Echo_EchoExpandCall {
+    let call = Echo_EchoExpandCall(channel)
     call.perform(request:requestMessage) {response in }
     return call
   }
@@ -308,8 +308,8 @@ public class EchoService {
   // Asynchronous. Client-streaming.
   // Use methods on the returned object to stream messages and
   // to close the connection and wait for a final response.
-  public func collect() -> EchoCollectCall {
-    let call = EchoCollectCall(channel)
+  public func collect() -> Echo_EchoCollectCall {
+    let call = Echo_EchoCollectCall(channel)
     try! call.start(metadata:Metadata(), completion:{})
     return call
   }
@@ -317,8 +317,8 @@ public class EchoService {
   // Asynchronous. Bidirectional-streaming.
   // Use methods on the returned object to stream messages,
   // to wait for replies, and to close the connection.
-  public func update() -> EchoUpdateCall {
-    let call = EchoUpdateCall(channel)
+  public func update() -> Echo_EchoUpdateCall {
+    let call = Echo_EchoUpdateCall(channel)
     try! call.start(metadata:Metadata(), completion:{})
     return call
   }

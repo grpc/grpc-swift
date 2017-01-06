@@ -42,11 +42,11 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   @IBOutlet weak var callSelectButton: NSSegmentedControl!
   @IBOutlet weak var closeButton: NSButton!
 
-  private var service : EchoService?
+  private var service : Echo_EchoService?
 
-  private var expandCall: EchoExpandCall?
-  private var collectCall: EchoCollectCall?
-  private var updateCall: EchoUpdateCall?
+  private var expandCall: Echo_EchoExpandCall?
+  private var collectCall: Echo_EchoCollectCall?
+  private var updateCall: Echo_EchoUpdateCall?
 
   private var nowStreaming = false
 
@@ -119,12 +119,12 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
       return
     }
     if (TLSButton.intValue == 0) {
-      service = EchoService(address:address)
+      service = Echo_EchoService(address:address)
     } else {
       let certificateURL = Bundle.main.url(forResource: "ssl",
                                            withExtension: "crt")!
       let certificates = try! String(contentsOf: certificateURL)
-      service = EchoService(address:address, certificates:certificates, host:host)
+      service = Echo_EchoService(address:address, certificates:certificates, host:host)
     }
     if let service = service {
       service.channel.host = "example.com" // sample override
@@ -142,6 +142,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
       if let service = service {
         var requestMessage = Echo_EchoRequest()
         requestMessage.text = self.messageField.stringValue
+        self.displayMessageSent(requestMessage.text)
 
         // service.get() is a blocking call
         DispatchQueue.global().async {
@@ -204,7 +205,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     DispatchQueue.global().async {
       var running = true
       while running {
-        let result = expandCall.Recv()
+        let result = expandCall.Receive()
         switch result {
         case .Response(let responseMessage):
           self.displayMessageReceived(responseMessage.text)
@@ -244,7 +245,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     DispatchQueue.global().async {
       var running = true
       while running {
-        let result = updateCall.Recv()
+        let result = updateCall.Receive()
         switch result {
         case .Response(let responseMessage):
           self.displayMessageReceived(responseMessage.text)
@@ -268,7 +269,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
       self.closeButton.isEnabled = false
     }
     if let collectCall = collectCall {
-      let result = collectCall.CloseAndRecv()
+      let result = collectCall.CloseAndReceive()
       switch result {
       case .Response(let responseMessage):
         self.displayMessageReceived(responseMessage.text)

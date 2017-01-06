@@ -14,7 +14,7 @@
 		D35C9FAE1D74B079000443CD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D35C9FAD1D74B079000443CD /* Assets.xcassets */; };
 		D35C9FB11D74B079000443CD /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D35C9FAF1D74B079000443CD /* MainMenu.xib */; };
 		D35C9FC81D74B0C1000443CD /* EchoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C9FC71D74B0C1000443CD /* EchoViewController.swift */; };
-		D38F9C401E1F0D2C003DECA4 /* EchoServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D38F9C3F1E1F0D2C003DECA4 /* EchoServer.swift */; };
+		D38F9C401E1F0D2C003DECA4 /* EchoHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = D38F9C3F1E1F0D2C003DECA4 /* EchoHandler.swift */; };
 		D3971E211D89132E001A0B3F /* ssl.key in Resources */ = {isa = PBXBuildFile; fileRef = D3971E201D89132E001A0B3F /* ssl.key */; };
 		D3BFE28C1D87A45D00A648D8 /* ssl.crt in Resources */ = {isa = PBXBuildFile; fileRef = D3BFE28B1D87A45D00A648D8 /* ssl.crt */; };
 		D3D2EA4C1D75FB7F002EF89C /* gRPC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D3D2EA3E1D75FB56002EF89C /* gRPC.framework */; };
@@ -74,7 +74,7 @@
 
 /* Begin PBXFileReference section */
 		D30DACEF1DB6FC2D00886B20 /* echo.client.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = echo.client.pb.swift; sourceTree = "<group>"; };
-		D324A6011D81CF8F00421B59 /* echo.server.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = echo.server.pb.swift; sourceTree = "<group>"; };
+		D324A6011D81CF8F00421B59 /* echo.server.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; lineEnding = 0; path = echo.server.pb.swift; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		D359A6261DBAD11C00FE6282 /* echo.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = echo.pb.swift; path = Protobuf/echo.pb.swift; sourceTree = "<group>"; };
 		D35C9FA81D74B079000443CD /* Echo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Echo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D35C9FAB1D74B079000443CD /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -83,7 +83,7 @@
 		D35C9FB21D74B079000443CD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D35C9FC71D74B0C1000443CD /* EchoViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EchoViewController.swift; sourceTree = "<group>"; };
 		D36C3EF81E145A2200BF4EB3 /* SwiftProtobufRuntime.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SwiftProtobufRuntime.xcodeproj; path = "../../../third_party/swift-protobuf/SwiftProtobufRuntime.xcodeproj"; sourceTree = "<group>"; };
-		D38F9C3F1E1F0D2C003DECA4 /* EchoServer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EchoServer.swift; sourceTree = "<group>"; };
+		D38F9C3F1E1F0D2C003DECA4 /* EchoHandler.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; lineEnding = 0; path = EchoHandler.swift; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		D3971E201D89132E001A0B3F /* ssl.key */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ssl.key; sourceTree = "<group>"; };
 		D3BFE28B1D87A45D00A648D8 /* ssl.crt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ssl.crt; sourceTree = "<group>"; };
 		D3D2EA391D75FB56002EF89C /* gRPC.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = gRPC.xcodeproj; path = ../../../gRPC.xcodeproj; sourceTree = "<group>"; };
@@ -135,7 +135,7 @@
 				D35C9FAD1D74B079000443CD /* Assets.xcassets */,
 				D30DACEF1DB6FC2D00886B20 /* echo.client.pb.swift */,
 				D324A6011D81CF8F00421B59 /* echo.server.pb.swift */,
-				D38F9C3F1E1F0D2C003DECA4 /* EchoServer.swift */,
+				D38F9C3F1E1F0D2C003DECA4 /* EchoHandler.swift */,
 				D35C9FC71D74B0C1000443CD /* EchoViewController.swift */,
 				D35C9FB21D74B079000443CD /* Info.plist */,
 				D35C9FAF1D74B079000443CD /* MainMenu.xib */,
@@ -291,7 +291,7 @@
 				D30DACF01DB6FC2D00886B20 /* echo.client.pb.swift in Sources */,
 				D324A6021D81CF8F00421B59 /* echo.server.pb.swift in Sources */,
 				D35C9FC81D74B0C1000443CD /* EchoViewController.swift in Sources */,
-				D38F9C401E1F0D2C003DECA4 /* EchoServer.swift in Sources */,
+				D38F9C401E1F0D2C003DECA4 /* EchoHandler.swift in Sources */,
 				D359A6271DBAD11C00FE6282 /* echo.pb.swift in Sources */,
 				D35C9FAC1D74B079000443CD /* AppDelegate.swift in Sources */,
 			);

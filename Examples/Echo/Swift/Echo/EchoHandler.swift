@@ -33,58 +33,55 @@
 
 import Foundation
 
-// The following code is for developer/users to edit.
-// Everything above these lines is intended to be preexisting or generated.
+class EchoHandler : Echo_EchoHandler {
 
-class MyEchoServer : CustomEchoServer {
-
+  // Get returns requests as they were received.
   func Get(request : Echo_EchoRequest) throws -> Echo_EchoResponse {
     return Echo_EchoResponse(text:"Swift echo get: " + request.text)
   }
 
-  func Expand(request : Echo_EchoRequest, session : EchoExpandSession) throws -> Void {
+  // Expand splits a request into words and returns each word in a separate message.
+  func Expand(request : Echo_EchoRequest, session : Echo_EchoExpandSession) throws -> Void {
     let parts = request.text.components(separatedBy: " ")
     var i = 0
     for part in parts {
-      try! session.Send(Echo_EchoResponse(text:"Swift echo expand (\(i)): \(part)"))
+      try session.Send(Echo_EchoResponse(text:"Swift echo expand (\(i)): \(part)"))
       i += 1
       sleep(1)
     }
   }
 
-  func Collect(session : EchoCollectSession) throws -> Void {
-    DispatchQueue.global().async {
-      var parts : [String] = []
-      while true {
-        do {
-          let request = try session.Recv()
-          parts.append(request.text)
-        } catch ServerError.endOfStream {
-          break
-        } catch (let error) {
-          print("\(error)")
-        }
+  // Collect collects a sequence of messages and returns them concatenated when the caller closes.
+  func Collect(session : Echo_EchoCollectSession) throws -> Void {
+    var parts : [String] = []
+    while true {
+      do {
+        let request = try session.Receive()
+        parts.append(request.text)
+      } catch Echo_EchoServerError.endOfStream {
+        break
+      } catch (let error) {
+        print("\(error)")
       }
-      let response = Echo_EchoResponse(text:"Swift echo collect: " + parts.joined(separator: " "))
-      try! session.SendAndClose(response)
     }
+    let response = Echo_EchoResponse(text:"Swift echo collect: " + parts.joined(separator: " "))
+    try session.SendAndClose(response)
   }
 
-  func Update(session : EchoUpdateSession) throws -> Void {
-    DispatchQueue.global().async {
-      var count = 0
-      while true {
-        do {
-          let request = try session.Recv()
-          count += 1
-          try session.Send(Echo_EchoResponse(text:"Swift echo update (\(count)): \(request.text)"))
-        } catch ServerError.endOfStream {
-          break
-        } catch (let error) {
-          print("\(error)")
-        }
+  // Update streams back messages as they are received in an input stream.
+  func Update(session : Echo_EchoUpdateSession) throws -> Void {
+    var count = 0
+    while true {
+      do {
+        let request = try session.Receive()
+        count += 1
+        try session.Send(Echo_EchoResponse(text:"Swift echo update (\(count)): \(request.text)"))
+      } catch Echo_EchoServerError.endOfStream {
+        break
+      } catch (let error) {
+        print("\(error)")
       }
-      session.Close()
     }
+    session.Close()
   }
 }
