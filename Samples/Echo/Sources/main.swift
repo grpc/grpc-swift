@@ -71,13 +71,21 @@ var done = NSCondition()
 gRPC.initialize()
 
 if server {
-  var echoServer: EchoServer!
+  let echoProvider = EchoProvider()
+  var echoServer: Echo_EchoServer!
+
   if useSSL {
     print("Starting secure server")
-    echoServer = EchoServer(address:"localhost:8443", secure:true)
+    let certificateURL = URL(fileURLWithPath:"ssl.crt")
+    let keyURL = URL(fileURLWithPath:"ssl.key")
+    echoServer = Echo_EchoServer(address:"localhost:8443",
+                                 certificateURL:certificateURL,
+                                 keyURL:keyURL,
+                                 provider:echoProvider)
   } else {
     print("Starting insecure server")
-    echoServer = EchoServer(address:"localhost:8081", secure:false)
+    echoServer = Echo_EchoServer(address:"localhost:8081",
+                                 provider:echoProvider)
   }
   echoServer.start()
   // Block to keep the main thread from finishing while the server runs.
@@ -90,14 +98,14 @@ if server {
 if client != "" {
   print("Starting client")
 
-  var service : EchoService
+  var service : Echo_EchoService
   if useSSL {
     let certificateURL = URL(fileURLWithPath:"ssl.crt")
     let certificates = try! String(contentsOf: certificateURL)
-    service = EchoService(address:"localhost:8443", certificates:certificates, host:"example.com")
-    service.channel.host = "example.com" // sample override
+    service = Echo_EchoService(address:"localhost:8443", certificates:certificates, host:"example.com")
+    service.host = "example.com" // sample override
   } else {
-    service = EchoService(address:"localhost:8081")
+    service = Echo_EchoService(address:"localhost:8081")
   }
 
   let requestMetadata = Metadata(["x-goog-api-key":"YOUR_API_KEY",
@@ -105,144 +113,82 @@ if client != "" {
 
   // Unary
   if client == "get" {
-    let getCall = service.get()
-
     var requestMessage = Echo_EchoRequest(text:message)
     print("Sending: " + requestMessage.text)
-    getCall.perform(request:requestMessage) {(callResult, responseMessage) in
-      if let responseMessage = responseMessage {
-        print("Received: " + responseMessage.text)
-      } else {
-        print("No message received. gRPC Status \(callResult.statusCode): \(callResult.statusMessage)")
-      }
-      print("get closed")
-      done.lock()
-      done.signal()
-      done.unlock()
-    }
-    // Wait for the call to complete.
-    done.lock()
-    done.wait()
-    done.unlock()
+    let responseMessage = try service.get(requestMessage)
+    print("get received: " + responseMessage.text)
   }
 
   // Server streaming
   if client == "expand" {
-    let expandCall = service.expand()
-
-    func receiveExpandMessage() throws -> Void {
-      try expandCall.receiveMessage() {(responseMessage) in
-        if let responseMessage = responseMessage {
-          try receiveExpandMessage() // prepare to receive the next message in the stream
-          print("Received: " + responseMessage.text)
-        } else {
-          print("expand closed")
-          done.lock()
-          done.signal()
-          done.unlock()
-        }
-      }
-    }
-
     let requestMessage = Echo_EchoRequest(text:message)
     print("Sending: " + requestMessage.text)
-    expandCall.perform(request:requestMessage) {(callResult, response) in /* do nothing */}
-    try receiveExpandMessage()
-    // Wait for the call to complete.
-    done.lock()
-    done.wait()
-    done.unlock()
+    let expandCall = try service.expand(requestMessage)
+    var running = true
+    while running {
+      do {
+        let responseMessage = try expandCall.Receive()
+        print("Received: \(responseMessage.text)")
+      } catch Echo_EchoClientError.endOfStream {
+        print("expand closed")
+        running = false
+      }
+    }
   }
 
   // Client streaming
   if client == "collect" {
-    let collectCall = service.collect()
-
-    func sendCollectMessage(message: String) {
-      let requestMessage = Echo_EchoRequest(text:message)
-      print("Sending: " + requestMessage.text)
-      _ = collectCall.sendMessage(message:requestMessage)
-    }
-
-    func sendCollectClose() {
-      print("Closing")
-      _ = try! collectCall.close(completion:{})
-    }
-
-    func receiveCollectMessage() throws -> Void {
-      try collectCall.receiveMessage() {(responseMessage) in
-        if let responseMessage = responseMessage {
-          print("Received: " + responseMessage.text)
-        }
-      }
-    }
-
-    try collectCall.start(metadata:requestMetadata) {
-      // this is called when the server closes the connection
-      print("collect closed")
-      done.lock()
-      done.signal()
-      done.unlock()
-    }
-    try receiveCollectMessage()
+    let collectCall = try service.collect()
 
     let parts = message.components(separatedBy:" ")
     for part in parts {
-      sendCollectMessage(message:part)
+      let requestMessage = Echo_EchoRequest(text:part)
+      print("Sending: " + part)
+      collectCall.Send(requestMessage)
       sleep(1)
     }
-    sendCollectClose()
-    // Wait for the call to complete.
-    done.lock()
-    done.wait()
-    done.unlock()
+
+    let responseMessage = try collectCall.CloseAndReceive()
+    print("Received: \(responseMessage.text)")
   }
 
   // Bidirectional streaming
   if client == "update" {
-    let updateCall = service.update()
+    let updateCall = try service.update()
 
-    func sendUpdateMessage(message: String) {
-      let requestMessage = Echo_EchoRequest(text:message)
-      print("Sending: " + requestMessage.text)
-      _ = updateCall.sendMessage(message:requestMessage)
-    }
-
-    func sendUpdateClose() {
-      print("Closing")
-      _ = try! updateCall.close(completion:{})
-    }
-
-    func receiveUpdateMessage() throws -> Void {
-      try updateCall.receiveMessage() {(responseMessage) in
-        try receiveUpdateMessage() // prepare to receive the next message
-        if let responseMessage = responseMessage {
-          print("Received: " + responseMessage.text)
+    DispatchQueue.global().async {
+      var running = true
+      while running {
+        do {
+          let responseMessage = try updateCall.Receive()
+          print("Received: \(responseMessage.text)")
+        } catch Echo_EchoClientError.endOfStream {
+          print("update closed")
+          done.lock()
+          done.signal()
+          done.unlock()
+          break
+        } catch (let error) {
+          print("error: \(error)")
         }
       }
     }
 
-    try updateCall.start(metadata:requestMetadata) {
-      // this is called when the server closes the connection
-      print("update closed")
-      done.lock()
-      done.signal()
-      done.unlock()
-    }
-    try receiveUpdateMessage()
-
     let parts = message.components(separatedBy:" ")
     for part in parts {
-      sendUpdateMessage(message:part)
+      let requestMessage = Echo_EchoRequest(text:part)
+      print("Sending: " + requestMessage.text)
+      updateCall.Send(requestMessage)
       sleep(1)
     }
-    sendUpdateClose()
+    updateCall.CloseSend()
 
     // Wait for the call to complete.
     done.lock()
     done.wait()
     done.unlock()
   }
+  
 }
 
 
