@@ -47,9 +47,8 @@ public enum Echo_EchoClientError : Error {
   case invalidMessageReceived
   case error(c: CallResult)
 }
-
 //
-// Unary GET
+// Get (Unary)
 //
 public class Echo_EchoGetCall {
   var call : Call
@@ -85,9 +84,8 @@ public class Echo_EchoGetCall {
     }
   }
 }
-
 //
-// Server-streaming EXPAND
+// Expand (Server streaming)
 //
 public class Echo_EchoExpandCall {
   var call : Call
@@ -134,9 +132,8 @@ public class Echo_EchoExpandCall {
     return returnMessage
   }
 }
-
 //
-// Client-streaming COLLECT
+// Collect (Client streaming)
 //
 public class Echo_EchoCollectCall {
   var call : Call
@@ -210,9 +207,8 @@ public class Echo_EchoCollectCall {
   }
 
 }
-
 //
-// Bidirectional-streaming UPDATE
+// Update (Bidirectional streaming)
 //
 public class Echo_EchoUpdateCall {
   var call : Call
@@ -317,21 +313,18 @@ public class Echo_EchoService {
   public func get(_ request: Echo_EchoRequest) throws -> Echo_EchoResponse {
     return try Echo_EchoGetCall(channel).run(request:request, metadata:metadata)
   }
-
   // Asynchronous. Server-streaming.
   // Send the initial message.
   // Use methods on the returned object to get streamed responses.
   public func expand(_ request: Echo_EchoRequest) throws -> Echo_EchoExpandCall {
     return try Echo_EchoExpandCall(channel).run(request:request, metadata:metadata)
   }
-
   // Asynchronous. Client-streaming.
   // Use methods on the returned object to stream messages and
   // to close the connection and wait for a final response.
   public func collect() throws -> Echo_EchoCollectCall {
     return try Echo_EchoCollectCall(channel).run(metadata:metadata)
   }
-
   // Asynchronous. Bidirectional-streaming.
   // Use methods on the returned object to stream messages,
   // to wait for replies, and to close the connection.

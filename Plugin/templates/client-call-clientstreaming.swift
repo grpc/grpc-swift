@@ -9,21 +9,21 @@ public class {{ .|callname:protoFile,service,method }} {
   }
 
   // Call this to start a call.
-  fileprivate func run(metadata:Metadata) throws -> Echo_EchoCollectCall {
+  fileprivate func run(metadata:Metadata) throws -> {{ .|callname:protoFile,service,method }} {
     try self.call.start(metadata: metadata, completion:{})
     return self
   }
 
   // Call this to send each message in the request stream.
-  public func Send(_ message: Echo_EchoRequest) {
+  public func Send(_ message: {{ method|inputType }}) {
     let messageData = try! message.serializeProtobuf()
     _ = call.sendMessage(data:messageData)
   }
 
   // Call this to close the connection and wait for a response. Blocks.
-  public func CloseAndReceive() throws -> Echo_EchoResponse {
+  public func CloseAndReceive() throws -> {{ method|outputType }} {
     var returnError : {{ .|errorname:protoFile,service }}?
-    var returnMessage : Echo_EchoResponse!
+    var returnMessage : {{ method|outputType }}!
     let done = NSCondition()
 
     do {
@@ -56,7 +56,7 @@ public class {{ .|callname:protoFile,service,method }} {
   // Call this to receive a message.
   // The callback will be called when a message is received.
   // call this again from the callback to wait for another message.
-  fileprivate func receiveMessage(callback:@escaping (Echo_EchoResponse?) throws -> Void)
+  fileprivate func receiveMessage(callback:@escaping ({{ method|outputType }}?) throws -> Void)
     throws {
       try call.receiveMessage() {(data) in
         guard let data = data else {
@@ -64,7 +64,7 @@ public class {{ .|callname:protoFile,service,method }} {
           return
         }
         guard
-          let responseMessage = try? Echo_EchoResponse(protobuf:data)
+          let responseMessage = try? {{ method|outputType }}(protobuf:data)
           else {
             return
         }

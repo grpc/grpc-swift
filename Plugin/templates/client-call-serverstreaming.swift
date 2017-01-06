@@ -9,7 +9,7 @@ public class {{ .|callname:protoFile,service,method }} {
   }
 
   // Call this once with the message to send.
-  fileprivate func run(request: Echo_EchoRequest, metadata: Metadata) throws -> Echo_EchoExpandCall {
+  fileprivate func run(request: {{ method|inputType }}, metadata: Metadata) throws -> {{ .|callname:protoFile,service,method }} {
     let requestMessageData = try! request.serializeProtobuf()
     try! call.startServerStreaming(message: requestMessageData,
                                    metadata: metadata,
@@ -18,14 +18,14 @@ public class {{ .|callname:protoFile,service,method }} {
   }
 
   // Call this to wait for a result. Blocks.
-  public func Receive() throws -> Echo_EchoResponse {
+  public func Receive() throws -> {{ method|outputType }} {
     var returnError : {{ .|errorname:protoFile,service }}?
-    var returnMessage : Echo_EchoResponse!
+    var returnMessage : {{ method|outputType }}!
     let done = NSCondition()
     do {
       try call.receiveMessage() {(data) in
         if let data = data {
-          returnMessage = try? Echo_EchoResponse(protobuf:data)
+          returnMessage = try? {{ method|outputType }}(protobuf:data)
           if returnMessage == nil {
             returnError = {{ .|errorname:protoFile,service }}.invalidMessageReceived
           }

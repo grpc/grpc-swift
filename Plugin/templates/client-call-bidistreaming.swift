@@ -8,15 +8,15 @@ public class {{ .|callname:protoFile,service,method }} {
     self.call = channel.makeCall("{{ .|callpath:protoFile,service,method }}")
   }
 
-  fileprivate func run(metadata:Metadata) throws -> Echo_EchoUpdateCall {
+  fileprivate func run(metadata:Metadata) throws -> {{ .|callname:protoFile,service,method }} {
     try self.call.start(metadata: metadata, completion:{})
     return self
   }
 
-  fileprivate func receiveMessage(callback:@escaping (Echo_EchoResponse?) throws -> Void) throws {
+  fileprivate func receiveMessage(callback:@escaping ({{ method|outputType }}?) throws -> Void) throws {
     try call.receiveMessage() {(data) in
       if let data = data {
-        if let responseMessage = try? Echo_EchoResponse(protobuf:data) {
+        if let responseMessage = try? {{ method|outputType }}(protobuf:data) {
           try callback(responseMessage)
         } else {
           try callback(nil) // error, bad data
@@ -27,14 +27,14 @@ public class {{ .|callname:protoFile,service,method }} {
     }
   }
 
-  public func Receive() throws -> Echo_EchoResponse {
+  public func Receive() throws -> {{ method|outputType }} {
     var returnError : {{ .|errorname:protoFile,service }}?
-    var returnMessage : Echo_EchoResponse!
+    var returnMessage : {{ method|outputType }}!
     let done = NSCondition()
     do {
       try call.receiveMessage() {(data) in
         if let data = data {
-          returnMessage = try? Echo_EchoResponse(protobuf:data)
+          returnMessage = try? {{ method|outputType }}(protobuf:data)
           if returnMessage == nil {
             returnError = {{ .|errorname:protoFile,service }}.invalidMessageReceived
           }
@@ -55,7 +55,7 @@ public class {{ .|callname:protoFile,service,method }} {
     return returnMessage
   }
 
-  public func Send(_ message:Echo_EchoRequest) {
+  public func Send(_ message:{{ method|inputType }}) {
     let messageData = try! message.serializeProtobuf()
     _ = call.sendMessage(data:messageData)
   }

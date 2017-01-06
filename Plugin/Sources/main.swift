@@ -29,22 +29,30 @@ func protoMessageName(_ name :String?) -> String {
   }
 }
 
+func stripMarkers(_ code:String) -> String {
+  let inputLines = code.components(separatedBy:"\n")
+
+  var outputLines : [String] = []
+  for line in inputLines {
+    if line.contains("//-") {
+      let removed = line.replacingOccurrences(of:"//-", with:"")
+      if (removed.trimmingCharacters(in:CharacterSet.whitespaces) != "") {
+        outputLines.append(removed)
+      }
+    } else {
+      outputLines.append(line)
+    }
+  }
+  return outputLines.joined(separator:"\n")
+}
+
+
 
 func main() throws {
 
   // initialize template engine
   let fileSystemLoader = FileSystemLoader(paths: ["templates/"])
   let ext = Extension()
-
-  ext.registerFilter("message") { (value: Any?) in
-    if let value = value as? String {
-      let parts = value.components(separatedBy:".")
-      if parts.count == 3 {
-        return parts[1].capitalized + "_" + parts[2]
-      }
-    }
-    throw TemplateSyntaxError("message: invalid argument \(value)")
-  }
 
   ext.registerFilter("callname") { (value: Any?, arguments: [Any?]) in
     if arguments.count != 3 {
@@ -129,7 +137,6 @@ func main() throws {
     throw TemplateSyntaxError("message: invalid argument \(value)")
   }
 
-
   let templateEnvironment = Environment(loader: fileSystemLoader,
                                         extensions:[ext])
 
@@ -172,7 +179,7 @@ func main() throws {
                                                               context: context)
       var clientfile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
       clientfile.name = package + ".client.pb.swift"
-      clientfile.content = clientcode
+      clientfile.content = stripMarkers(clientcode)
       response.file.append(clientfile)
 
       let servercode = try templateEnvironment.renderTemplate(name:"server.pb.swift",

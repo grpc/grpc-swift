@@ -42,26 +42,26 @@
 import Foundation
 import gRPC
 
-//{% for service in protoFile.service %}
+//-{% for service in protoFile.service %}
 public enum {{ .|errorname:protoFile,service }} : Error {
   case endOfStream
   case invalidMessageReceived
   case error(c: CallResult)
 }
-//{% for method in service.method %}
-//{% if not method.clientStreaming and not method.serverStreaming %}
-//{% include "client-call-unary.swift" %}
-//{% endif %}
-//{% if not method.clientStreaming and method.serverStreaming %}
-//{% include "client-call-serverstreaming.swift" %}
-//{% endif %}
-//{% if method.clientStreaming and not method.serverStreaming %}
-//{% include "client-call-clientstreaming.swift" %}
-//{% endif %}
-//{% if method.clientStreaming and method.serverStreaming %}
-//{% include "client-call-bidistreaming.swift" %}
-//{% endif %}
-//{% endfor %}
+//-{% for method in service.method %}
+//-{% if not method.clientStreaming and not method.serverStreaming %}
+//-{% include "client-call-unary.swift" %}
+//-{% endif %}
+//-{% if not method.clientStreaming and method.serverStreaming %}
+//-{% include "client-call-serverstreaming.swift" %}
+//-{% endif %}
+//-{% if method.clientStreaming and not method.serverStreaming %}
+//-{% include "client-call-clientstreaming.swift" %}
+//-{% endif %}
+//-{% if method.clientStreaming and method.serverStreaming %}
+//-{% include "client-call-bidistreaming.swift" %}
+//-{% endif %}
+//-{% endfor %}
 
 // Call methods of this class to make API calls.
 public class {{ protoFile.package|capitalize }}_{{ service.name }}Service {
@@ -90,37 +90,37 @@ public class {{ protoFile.package|capitalize }}_{{ service.name }}Service {
     metadata = Metadata()
   }
 
-  //{% for method in service.method %}
-  //{% if not method.clientStreaming and not method.serverStreaming %}
+  //-{% for method in service.method %}
+  //-{% if not method.clientStreaming and not method.serverStreaming %}
   // Synchronous. Unary.
-  public func {{ method.name|lowercase }}(_ request: {{ method.inputType|message }}) throws -> {{ method.outputType|message }} {
+  public func {{ method.name|lowercase }}(_ request: {{ method|inputType }}) throws -> {{ method|outputType }} {
     return try {{ .|callname:protoFile,service,method }}(channel).run(request:request, metadata:metadata)
   }
-  //{% endif %}
-  //{% if not method.clientStreaming and method.serverStreaming %}
+  //-{% endif %}
+  //-{% if not method.clientStreaming and method.serverStreaming %}
   // Asynchronous. Server-streaming.
   // Send the initial message.
   // Use methods on the returned object to get streamed responses.
-  public func {{ method.name|lowercase }}(_ request: {{ method.inputType|message }}) throws -> {{ .|callname:protoFile,service,method }} {
+  public func {{ method.name|lowercase }}(_ request: {{ method|inputType }}) throws -> {{ .|callname:protoFile,service,method }} {
     return try {{ .|callname:protoFile,service,method }}(channel).run(request:request, metadata:metadata)
   }
-  //{% endif %}
-  //{% if method.clientStreaming and not method.serverStreaming %}
+  //-{% endif %}
+  //-{% if method.clientStreaming and not method.serverStreaming %}
   // Asynchronous. Client-streaming.
   // Use methods on the returned object to stream messages and
   // to close the connection and wait for a final response.
   public func {{ method.name|lowercase }}() throws -> {{ .|callname:protoFile,service,method }} {
     return try {{ .|callname:protoFile,service,method }}(channel).run(metadata:metadata)
   }
-  //{% endif %}
-  //{% if method.clientStreaming and method.serverStreaming %}
+  //-{% endif %}
+  //-{% if method.clientStreaming and method.serverStreaming %}
   // Asynchronous. Bidirectional-streaming.
   // Use methods on the returned object to stream messages,
   // to wait for replies, and to close the connection.
   public func {{ method.name|lowercase }}() throws -> {{ .|callname:protoFile,service,method }} {
     return try {{ .|callname:protoFile,service,method }}(channel).run(metadata:metadata)
   }
-  //{% endif %}
-  //{% endfor %}
+  //-{% endif %}
+  //-{% endfor %}
 }
-//{% endfor %}
+//-{% endfor %}
