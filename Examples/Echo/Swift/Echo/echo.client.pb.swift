@@ -272,10 +272,12 @@ public class Echo_EchoService {
   public var channel: Channel
 
   public init(address: String) {
+    gRPC.initialize()
     channel = Channel(address:address)
   }
 
   public init(address: String, certificates: String?, host: String?) {
+    gRPC.initialize()
     channel = Channel(address:address, certificates:certificates, host:host)
   }
 

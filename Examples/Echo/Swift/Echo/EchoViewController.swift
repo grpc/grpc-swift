@@ -94,7 +94,6 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   }
 
   override func viewDidLoad() {
-    gRPC.initialize()
     closeButton.isEnabled = false
     // prevent the UI from trying to send messages until gRPC is initialized
     DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {

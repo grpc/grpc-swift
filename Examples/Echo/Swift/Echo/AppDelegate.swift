@@ -37,18 +37,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
   @IBOutlet weak var window: NSWindow!
 
-  var echoHandler : EchoHandler!
+  var echoProvider : EchoProvider!
   var insecureServer: Echo_EchoServer!
   var secureServer: Echo_EchoServer!
 
   func applicationDidFinishLaunching(_ aNotification: Notification) {
 
     // instantiate our custom-written application handler
-    echoHandler = EchoHandler()
+    echoProvider = EchoProvider()
 
     // create and start a server for handling insecure requests
     insecureServer = Echo_EchoServer(address:"localhost:8081",
-                                     handler:echoHandler)
+                                     provider:echoProvider)
     insecureServer.start()
 
     // create and start a server for handling secure requests
@@ -57,7 +57,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     secureServer = Echo_EchoServer(address:"localhost:8443",
                                    certificateURL:certificateURL,
                                    keyURL:keyURL,
-                                   handler:echoHandler)
+                                   provider:echoProvider)
     secureServer.start()
   }
 }

@@ -40,7 +40,7 @@ public enum Echo_EchoServerError : Error {
   case endOfStream
 }
 
-public protocol Echo_EchoHandler {
+public protocol Echo_EchoProvider {
   func Get(request : Echo_EchoRequest) throws -> Echo_EchoResponse
   func Collect(session : Echo_EchoCollectSession) throws -> Void
   func Expand(request : Echo_EchoRequest, session : Echo_EchoExpandSession) throws -> Void
@@ -49,24 +49,24 @@ public protocol Echo_EchoHandler {
 
 // unary
 public class Echo_EchoGetSession {
-  var connection : gRPC.Handler
-  var handler : Echo_EchoHandler
+  var handler : gRPC.Handler
+  var provider : Echo_EchoProvider
 
-  fileprivate init(connection:gRPC.Handler, handler: Echo_EchoHandler) {
-    self.connection = connection
+  fileprivate init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
     self.handler = handler
+    self.provider = provider
   }
 
   fileprivate func run(queue:DispatchQueue) {
     do {
-      try connection.receiveMessage(initialMetadata:Metadata()) {(requestData) in
+      try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
         if let requestData = requestData {
           let requestMessage = try! Echo_EchoRequest(protobuf:requestData)
-          let replyMessage = try! self.handler.Get(request:requestMessage)
-          try self.connection.sendResponse(message:replyMessage.serializeProtobuf(),
-                                           statusCode: 0,
-                                           statusMessage: "OK",
-                                           trailingMetadata:Metadata())
+          let replyMessage = try! self.provider.Get(request:requestMessage)
+          try self.handler.sendResponse(message:replyMessage.serializeProtobuf(),
+                                        statusCode: 0,
+                                        statusMessage: "OK",
+                                        trailingMetadata:Metadata())
 
         }
       }
@@ -78,31 +78,31 @@ public class Echo_EchoGetSession {
 
 // server streaming
 public class Echo_EchoExpandSession {
-  var connection : gRPC.Handler
-  var handler : Echo_EchoHandler
+  var handler : gRPC.Handler
+  var provider : Echo_EchoProvider
 
-  fileprivate init(connection:gRPC.Handler, handler: Echo_EchoHandler) {
-    self.connection = connection
+  fileprivate init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
     self.handler = handler
+    self.provider = provider
   }
 
   public func Send(_ response: Echo_EchoResponse) throws {
-    try! connection.sendResponse(message:response.serializeProtobuf()) {}
+    try! handler.sendResponse(message:response.serializeProtobuf()) {}
   }
 
   fileprivate func run(queue:DispatchQueue) {
     do {
-      try self.connection.receiveMessage(initialMetadata:Metadata()) {(requestData) in
+      try self.handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
         if let requestData = requestData {
           let requestMessage = try! Echo_EchoRequest(protobuf:requestData)
-          // to keep handlers from blocking the server thread,
+          // to keep providers from blocking the server thread,
           // we dispatch them to another queue.
           queue.async {
-            try! self.handler.Expand(request:requestMessage, session: self)
-            try! self.connection.sendStatus(statusCode:0,
-                                            statusMessage:"OK",
-                                            trailingMetadata:Metadata(),
-                                            completion:{})
+            try! self.provider.Expand(request:requestMessage, session: self)
+            try! self.handler.sendStatus(statusCode:0,
+                                         statusMessage:"OK",
+                                         trailingMetadata:Metadata(),
+                                         completion:{})
           }
         }
       }
@@ -114,19 +114,19 @@ public class Echo_EchoExpandSession {
 
 // client streaming
 public class Echo_EchoCollectSession {
-  var connection : gRPC.Handler
-  var handler : Echo_EchoHandler
+  var handler : gRPC.Handler
+  var provider : Echo_EchoProvider
 
-  fileprivate init(connection:gRPC.Handler, handler: Echo_EchoHandler) {
-    self.connection = connection
+  fileprivate init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
     self.handler = handler
+    self.provider = provider
   }
 
   public func Receive() throws -> Echo_EchoRequest {
     print("collect awaiting message")
     let done = NSCondition()
     var requestMessage : Echo_EchoRequest?
-    try self.connection.receiveMessage() {(requestData) in
+    try self.handler.receiveMessage() {(requestData) in
       print("collect received message")
       if let requestData = requestData {
         requestMessage = try! Echo_EchoRequest(protobuf:requestData)
@@ -145,18 +145,18 @@ public class Echo_EchoCollectSession {
   }
 
   public func SendAndClose(_ response: Echo_EchoResponse) throws {
-    try! self.connection.sendResponse(message:response.serializeProtobuf(),
-                                      statusCode: 0,
-                                      statusMessage: "OK",
-                                      trailingMetadata: Metadata())
+    try! self.handler.sendResponse(message:response.serializeProtobuf(),
+                                   statusCode: 0,
+                                   statusMessage: "OK",
+                                   trailingMetadata: Metadata())
   }
 
   fileprivate func run(queue:DispatchQueue) {
     do {
       print("EchoCollectSession run")
-      try self.connection.sendMetadata(initialMetadata:Metadata()) {
+      try self.handler.sendMetadata(initialMetadata:Metadata()) {
         queue.async {
-          try! self.handler.Collect(session:self)
+          try! self.provider.Collect(session:self)
         }
       }
     } catch (let callError) {
@@ -167,19 +167,19 @@ public class Echo_EchoCollectSession {
 
 // fully streaming
 public class Echo_EchoUpdateSession {
-  var connection : gRPC.Handler
-  var handler : Echo_EchoHandler
+  var handler : gRPC.Handler
+  var provider : Echo_EchoProvider
 
-  fileprivate init(connection:gRPC.Handler, handler: Echo_EchoHandler) {
-    self.connection = connection
+  fileprivate init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
     self.handler = handler
+    self.provider = provider
   }
 
   public func Receive() throws -> Echo_EchoRequest {
     print("update awaiting message")
     let done = NSCondition()
     var requestMessage : Echo_EchoRequest?
-    try self.connection.receiveMessage() {(requestData) in
+    try self.handler.receiveMessage() {(requestData) in
       print("update received message")
       if let requestData = requestData {
         requestMessage = try! Echo_EchoRequest(protobuf:requestData)
@@ -198,17 +198,17 @@ public class Echo_EchoUpdateSession {
   }
 
   public func Send(_ response: Echo_EchoResponse) throws {
-    try connection.sendResponse(message:response.serializeProtobuf()) {}
+    try handler.sendResponse(message:response.serializeProtobuf()) {}
   }
 
   public func Close() {
     let done = NSCondition()
-    try! self.connection.sendStatus(statusCode: 0,
-                                    statusMessage: "OK",
-                                    trailingMetadata: Metadata()) {
-                                      done.lock()
-                                      done.signal()
-                                      done.unlock()
+    try! self.handler.sendStatus(statusCode: 0,
+                                 statusMessage: "OK",
+                                 trailingMetadata: Metadata()) {
+                                  done.lock()
+                                  done.signal()
+                                  done.unlock()
     }
     done.lock()
     done.wait()
@@ -217,9 +217,9 @@ public class Echo_EchoUpdateSession {
 
   fileprivate func run(queue:DispatchQueue) {
     do {
-      try self.connection.sendMetadata(initialMetadata:Metadata()) {
+      try self.handler.sendMetadata(initialMetadata:Metadata()) {
         queue.async {
-          try! self.handler.Update(session:self)
+          try! self.provider.Update(session:self)
         }
       }
     } catch (let callError) {
@@ -234,23 +234,23 @@ public class Echo_EchoUpdateSession {
 public class Echo_EchoServer {
   private var address: String
   private var server: gRPC.Server
-  public var handler: Echo_EchoHandler!
+  public var provider: Echo_EchoProvider?
 
   public init(address:String,
-              handler:Echo_EchoHandler) {
+              provider:Echo_EchoProvider) {
     gRPC.initialize()
     self.address = address
-    self.handler = handler
+    self.provider = provider
     self.server = gRPC.Server(address:address)
   }
 
   public init?(address:String,
                certificateURL:URL,
                keyURL:URL,
-               handler:Echo_EchoHandler) {
+               provider:Echo_EchoProvider) {
     gRPC.initialize()
     self.address = address
-    self.handler = handler
+    self.provider = provider
     guard
       let certificate = try? String(contentsOf: certificateURL),
       let key = try? String(contentsOf: keyURL)
@@ -261,23 +261,23 @@ public class Echo_EchoServer {
   }
 
   public func start(queue:DispatchQueue = DispatchQueue.global()) {
-    guard let handler = self.handler else {
-      assert(false) // the server requires a handler
+    guard let provider = self.provider else {
+      assert(false) // the server requires a provider
     }
-    server.run {(connection) in
-      print("Server received request to " + connection.host
-        + " calling " + connection.method
-        + " from " + connection.caller)
+    server.run {(handler) in
+      print("Server received request to " + handler.host
+        + " calling " + handler.method
+        + " from " + handler.caller)
 
-      switch connection.method {
+      switch handler.method {
       case "/echo.Echo/Get":
-        Echo_EchoGetSession(connection:connection, handler:handler).run(queue:queue)
+        Echo_EchoGetSession(handler:handler, provider:provider).run(queue:queue)
       case "/echo.Echo/Expand":
-        Echo_EchoExpandSession(connection:connection, handler:handler).run(queue:queue)
+        Echo_EchoExpandSession(handler:handler, provider:provider).run(queue:queue)
       case "/echo.Echo/Collect":
-        Echo_EchoCollectSession(connection:connection, handler:handler).run(queue:queue)
+        Echo_EchoCollectSession(handler:handler, provider:provider).run(queue:queue)
       case "/echo.Echo/Update":
-        Echo_EchoUpdateSession(connection:connection, handler:handler).run(queue:queue)
+        Echo_EchoUpdateSession(handler:handler, provider:provider).run(queue:queue)
       default:
         break // handle unknown requests
       }

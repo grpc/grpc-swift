@@ -33,7 +33,7 @@
 
 import Foundation
 
-class EchoHandler : Echo_EchoHandler {
+class EchoProvider : Echo_EchoProvider {
 
   // Get returns requests as they were received.
   func Get(request : Echo_EchoRequest) throws -> Echo_EchoResponse {

@@ -14,7 +14,7 @@
 		D35C9FAE1D74B079000443CD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D35C9FAD1D74B079000443CD /* Assets.xcassets */; };
 		D35C9FB11D74B079000443CD /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D35C9FAF1D74B079000443CD /* MainMenu.xib */; };
 		D35C9FC81D74B0C1000443CD /* EchoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C9FC71D74B0C1000443CD /* EchoViewController.swift */; };
-		D38F9C401E1F0D2C003DECA4 /* EchoHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = D38F9C3F1E1F0D2C003DECA4 /* EchoHandler.swift */; };
+		D38F9C401E1F0D2C003DECA4 /* EchoProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = D38F9C3F1E1F0D2C003DECA4 /* EchoProvider.swift */; };
 		D3971E211D89132E001A0B3F /* ssl.key in Resources */ = {isa = PBXBuildFile; fileRef = D3971E201D89132E001A0B3F /* ssl.key */; };
 		D3BFE28C1D87A45D00A648D8 /* ssl.crt in Resources */ = {isa = PBXBuildFile; fileRef = D3BFE28B1D87A45D00A648D8 /* ssl.crt */; };
 		D3D2EA4C1D75FB7F002EF89C /* gRPC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D3D2EA3E1D75FB56002EF89C /* gRPC.framework */; };
@@ -83,7 +83,7 @@
 		D35C9FB21D74B079000443CD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D35C9FC71D74B0C1000443CD /* EchoViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EchoViewController.swift; sourceTree = "<group>"; };
 		D36C3EF81E145A2200BF4EB3 /* SwiftProtobufRuntime.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SwiftProtobufRuntime.xcodeproj; path = "../../../third_party/swift-protobuf/SwiftProtobufRuntime.xcodeproj"; sourceTree = "<group>"; };
-		D38F9C3F1E1F0D2C003DECA4 /* EchoHandler.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; lineEnding = 0; path = EchoHandler.swift; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
+		D38F9C3F1E1F0D2C003DECA4 /* EchoProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; lineEnding = 0; path = EchoProvider.swift; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		D3971E201D89132E001A0B3F /* ssl.key */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ssl.key; sourceTree = "<group>"; };
 		D3BFE28B1D87A45D00A648D8 /* ssl.crt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ssl.crt; sourceTree = "<group>"; };
 		D3D2EA391D75FB56002EF89C /* gRPC.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = gRPC.xcodeproj; path = ../../../gRPC.xcodeproj; sourceTree = "<group>"; };
@@ -135,7 +135,7 @@
 				D35C9FAD1D74B079000443CD /* Assets.xcassets */,
 				D30DACEF1DB6FC2D00886B20 /* echo.client.pb.swift */,
 				D324A6011D81CF8F00421B59 /* echo.server.pb.swift */,
-				D38F9C3F1E1F0D2C003DECA4 /* EchoHandler.swift */,
+				D38F9C3F1E1F0D2C003DECA4 /* EchoProvider.swift */,
 				D35C9FC71D74B0C1000443CD /* EchoViewController.swift */,
 				D35C9FB21D74B079000443CD /* Info.plist */,
 				D35C9FAF1D74B079000443CD /* MainMenu.xib */,
@@ -193,7 +193,7 @@
 			isa = PBXProject;
 			attributes = {
 				LastSwiftUpdateCheck = 0800;
-				LastUpgradeCheck = 0800;
+				LastUpgradeCheck = 0820;
 				ORGANIZATIONNAME = Google;
 				TargetAttributes = {
 					D35C9FA71D74B079000443CD = {
@@ -291,7 +291,7 @@
 				D30DACF01DB6FC2D00886B20 /* echo.client.pb.swift in Sources */,
 				D324A6021D81CF8F00421B59 /* echo.server.pb.swift in Sources */,
 				D35C9FC81D74B0C1000443CD /* EchoViewController.swift in Sources */,
-				D38F9C401E1F0D2C003DECA4 /* EchoHandler.swift in Sources */,
+				D38F9C401E1F0D2C003DECA4 /* EchoProvider.swift in Sources */,
 				D359A6271DBAD11C00FE6282 /* echo.pb.swift in Sources */,
 				D35C9FAC1D74B079000443CD /* AppDelegate.swift in Sources */,
 			);
@@ -342,6 +342,7 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_SUSPICIOUS_MOVES = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
@@ -391,6 +392,7 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_SUSPICIOUS_MOVES = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
