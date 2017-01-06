@@ -46,8 +46,6 @@ func stripMarkers(_ code:String) -> String {
   return outputLines.joined(separator:"\n")
 }
 
-
-
 func main() throws {
 
   // initialize template engine
@@ -104,6 +102,31 @@ func main() throws {
     return "/" + protoFile.package! + "." + service.name! + "/" + method.name!
   }
 
+  ext.registerFilter("sessionname") { (value: Any?, arguments: [Any?]) in
+    if arguments.count != 3 {
+      throw TemplateSyntaxError("expects 3 arguments")
+    }
+    guard let protoFile = arguments[0] as? Google_Protobuf_FileDescriptorProto
+      else {
+        throw TemplateSyntaxError("tag must be called with a " +
+          "Google_Protobuf_FileDescriptorProto" +
+          " argument, received \(arguments[0])")
+    }
+    guard let service = arguments[1] as? Google_Protobuf_ServiceDescriptorProto
+      else {
+        throw TemplateSyntaxError("tag must be called with a " +
+          "Google_Protobuf_ServiceDescriptorProto" +
+          " argument, received \(arguments[1])")
+    }
+    guard let method = arguments[2] as? Google_Protobuf_MethodDescriptorProto
+      else {
+        throw TemplateSyntaxError("tag must be called with a " +
+          "Google_Protobuf_MethodDescriptorProto" +
+          " argument, received \(arguments[2])")
+    }
+    return protoFile.package!.capitalized + "_" + service.name! + method.name! + "Session"
+  }
+
   ext.registerFilter("errorname") { (value: Any?, arguments: [Any?]) in
     if arguments.count != 2 {
       throw TemplateSyntaxError("expects 2 arguments")
@@ -136,6 +159,26 @@ func main() throws {
     }
     throw TemplateSyntaxError("message: invalid argument \(value)")
   }
+
+  ext.registerFilter("servererrorname") { (value: Any?, arguments: [Any?]) in
+    if arguments.count != 2 {
+      throw TemplateSyntaxError("expects 2 arguments")
+    }
+    guard let protoFile = arguments[0] as? Google_Protobuf_FileDescriptorProto
+      else {
+        throw TemplateSyntaxError("tag must be called with a " +
+          "Google_Protobuf_FileDescriptorProto" +
+          " argument, received \(arguments[0])")
+    }
+    guard let service = arguments[1] as? Google_Protobuf_ServiceDescriptorProto
+      else {
+        throw TemplateSyntaxError("tag must be called with a " +
+          "Google_Protobuf_ServiceDescriptorProto" +
+          " argument, received \(arguments[1])")
+    }
+    return protoFile.package!.capitalized + "_" + service.name! + "ServerError"
+  }
+
 
   let templateEnvironment = Environment(loader: fileSystemLoader,
                                         extensions:[ext])
@@ -186,7 +229,7 @@ func main() throws {
                                                               context: context)
       var serverfile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
       serverfile.name = package + ".server.pb.swift"
-      serverfile.content = servercode
+      serverfile.content = stripMarkers(servercode)
       response.file.append(serverfile)
     } catch (let error) {
       log += "ERROR: \(error)\n"

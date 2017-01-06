@@ -48,8 +48,8 @@ public enum Echo_EchoServerError : Error {
 
 public protocol Echo_EchoProvider {
   func get(request : Echo_EchoRequest) throws -> Echo_EchoResponse
-  func collect(session : Echo_EchoCollectSession) throws
   func expand(request : Echo_EchoRequest, session : Echo_EchoExpandSession) throws
+  func collect(session : Echo_EchoCollectSession) throws
   func update(session : Echo_EchoUpdateSession) throws
 }
 
