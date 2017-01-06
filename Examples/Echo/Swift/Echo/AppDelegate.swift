@@ -37,7 +37,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
   @IBOutlet weak var window: NSWindow!
 
-  var echoProvider : EchoProvider!
+  var echoProvider : Echo_EchoProvider!
   var insecureServer: Echo_EchoServer!
   var secureServer: Echo_EchoServer!
 

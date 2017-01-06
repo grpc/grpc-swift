@@ -126,57 +126,44 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
       service = Echo_EchoService(address:address, certificates:certificates, host:host)
     }
     if let service = service {
-      service.channel.host = "example.com" // sample override
+      service.host = "example.com" // sample override
+      service.metadata = Metadata(["x-goog-api-key":"YOUR_API_KEY",
+                                   "x-ios-bundle-identifier":Bundle.main.bundleIdentifier!])
     }
   }
 
   func callServer(address:String, host:String) throws -> Void {
     prepareService(address:address, host:host)
-
-    let requestMetadata = Metadata(["x-goog-api-key":"YOUR_API_KEY",
-                                    "x-ios-bundle-identifier":Bundle.main.bundleIdentifier!])
-
+    guard let service = service else {
+      return
+    }
     if (self.callSelectButton.selectedSegment == 0) {
       // NONSTREAMING
-      if let service = service {
-        var requestMessage = Echo_EchoRequest()
-        requestMessage.text = self.messageField.stringValue
-        self.displayMessageSent(requestMessage.text)
-
-        // service.get() is a blocking call
-        DispatchQueue.global().async {
-          let result = service.get(requestMessage)
-          switch result {
-          case .Response(let responseMessage):
-            self.displayMessageReceived(responseMessage.text)
-          case .CallResult(let result):
-            self.displayMessageReceived("No message received. \(result)")
-          case .Error(let error):
-            self.displayMessageReceived("No message received. \(error)")
-          }
+      let requestMessage = Echo_EchoRequest(text:self.messageField.stringValue)
+      self.displayMessageSent(requestMessage.text)
+      // run this asynchronously because service.get() is a blocking call
+      DispatchQueue.global().async {
+        do {
+          let responseMessage = try service.get(requestMessage)
+          self.displayMessageReceived(responseMessage.text)
+        } catch (let error) {
+          self.displayMessageReceived("No message received. \(error)")
         }
       }
     }
     else if (self.callSelectButton.selectedSegment == 1) {
       // STREAMING EXPAND
       if (!nowStreaming) {
-        guard let service = service else {
-          return
-        }
-        var requestMessage = Echo_EchoRequest()
-        requestMessage.text = self.messageField.stringValue
-        self.expandCall = service.expand(requestMessage)
+        let requestMessage = Echo_EchoRequest(text:self.messageField.stringValue)
+        self.expandCall = try service.expand(requestMessage)
         self.displayMessageSent(requestMessage.text)
-        try! self.receiveExpandMessage()
+        try self.receiveExpandMessages()
       }
     }
     else if (self.callSelectButton.selectedSegment == 2) {
       // STREAMING COLLECT
       if (!nowStreaming) {
-        guard let service = service else {
-          return
-        }
-        collectCall = service.collect()
+        collectCall = try service.collect()
         nowStreaming = true
         closeButton.isEnabled = true
       }
@@ -185,11 +172,8 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     else if (self.callSelectButton.selectedSegment == 3) {
       // STREAMING UPDATE
       if (!nowStreaming) {
-        guard let service = service else {
-          return
-        }
-        updateCall = service.update()
-        try self.receiveUpdateMessage()
+        updateCall = try service.update()
+        try self.receiveUpdateMessages()
         nowStreaming = true
         closeButton.isEnabled = true
       }
@@ -197,23 +181,21 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     }
   }
 
-  func receiveExpandMessage() throws -> Void {
+  func receiveExpandMessages() throws -> Void {
     guard let expandCall = expandCall else {
       return
     }
     DispatchQueue.global().async {
       var running = true
       while running {
-        let result = expandCall.Receive()
-        switch result {
-        case .Response(let responseMessage):
+        do {
+          let responseMessage = try expandCall.Receive()
           self.displayMessageReceived(responseMessage.text)
-        case .CallResult(let result):
-          self.displayMessageReceived("No message received. \(result)")
+        } catch Echo_EchoClientError.endOfStream {
+          self.displayMessageReceived("Done.")
           running = false
-        case .Error(let error):
+        } catch (let error) {
           self.displayMessageReceived("No message received. \(error)")
-          running = false
         }
       }
     }
@@ -221,42 +203,37 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
 
   func sendCollectMessage() {
     if let collectCall = collectCall {
-      var requestMessage = Echo_EchoRequest()
-      requestMessage.text = self.messageField.stringValue
+      let requestMessage = Echo_EchoRequest(text:self.messageField.stringValue)
       self.displayMessageSent(requestMessage.text)
-      _ = collectCall.Send(requestMessage)
+      collectCall.Send(requestMessage)
     }
   }
 
   func sendUpdateMessage() {
     if let updateCall = updateCall {
-      var requestMessage = Echo_EchoRequest()
-      requestMessage.text = self.messageField.stringValue
+      let requestMessage = Echo_EchoRequest(text:self.messageField.stringValue)
       self.displayMessageSent(requestMessage.text)
-      _ = updateCall.Send(message:requestMessage)
+      updateCall.Send(requestMessage)
     }
   }
 
-  func receiveUpdateMessage() throws -> Void {
+  func receiveUpdateMessages() throws -> Void {
     guard let updateCall = updateCall else {
       return
     }
     DispatchQueue.global().async {
       var running = true
       while running {
-        let result = updateCall.Receive()
-        switch result {
-        case .Response(let responseMessage):
+        do {
+          let responseMessage = try updateCall.Receive()
           self.displayMessageReceived(responseMessage.text)
-        case .CallResult(let result):
-          self.displayMessageReceived("No message received. \(result)")
+        } catch Echo_EchoClientError.endOfStream {
+          self.displayMessageReceived("Done.")
           running = false
-        case .Error(let error):
+        } catch (let error) {
           self.displayMessageReceived("No message received. \(error)")
-          running = false
         }
       }
-
     }
   }
 
@@ -268,13 +245,10 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
       self.closeButton.isEnabled = false
     }
     if let collectCall = collectCall {
-      let result = collectCall.CloseAndReceive()
-      switch result {
-      case .Response(let responseMessage):
+      do {
+        let responseMessage = try collectCall.CloseAndReceive()
         self.displayMessageReceived(responseMessage.text)
-      case .CallResult(let result):
-        self.displayMessageReceived("No message received. \(result)")
-      case .Error(let error):
+      } catch (let error) {
         self.displayMessageReceived("No message received. \(error)")
       }
       self.collectCall = nil
@@ -283,6 +257,3 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     }
   }
 }
-
-
-

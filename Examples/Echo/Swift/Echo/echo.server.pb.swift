@@ -41,10 +41,10 @@ public enum Echo_EchoServerError : Error {
 }
 
 public protocol Echo_EchoProvider {
-  func Get(request : Echo_EchoRequest) throws -> Echo_EchoResponse
-  func Collect(session : Echo_EchoCollectSession) throws -> Void
-  func Expand(request : Echo_EchoRequest, session : Echo_EchoExpandSession) throws -> Void
-  func Update(session : Echo_EchoUpdateSession) throws -> Void
+  func get(request : Echo_EchoRequest) throws -> Echo_EchoResponse
+  func collect(session : Echo_EchoCollectSession) throws
+  func expand(request : Echo_EchoRequest, session : Echo_EchoExpandSession) throws
+  func update(session : Echo_EchoUpdateSession) throws
 }
 
 // unary
@@ -62,7 +62,7 @@ public class Echo_EchoGetSession {
       try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
         if let requestData = requestData {
           let requestMessage = try! Echo_EchoRequest(protobuf:requestData)
-          let replyMessage = try! self.provider.Get(request:requestMessage)
+          let replyMessage = try! self.provider.get(request:requestMessage)
           try self.handler.sendResponse(message:replyMessage.serializeProtobuf(),
                                         statusCode: 0,
                                         statusMessage: "OK",
@@ -98,7 +98,7 @@ public class Echo_EchoExpandSession {
           // to keep providers from blocking the server thread,
           // we dispatch them to another queue.
           queue.async {
-            try! self.provider.Expand(request:requestMessage, session: self)
+            try! self.provider.expand(request:requestMessage, session: self)
             try! self.handler.sendStatus(statusCode:0,
                                          statusMessage:"OK",
                                          trailingMetadata:Metadata(),
@@ -156,7 +156,7 @@ public class Echo_EchoCollectSession {
       print("EchoCollectSession run")
       try self.handler.sendMetadata(initialMetadata:Metadata()) {
         queue.async {
-          try! self.provider.Collect(session:self)
+          try! self.provider.collect(session:self)
         }
       }
     } catch (let callError) {
@@ -219,7 +219,7 @@ public class Echo_EchoUpdateSession {
     do {
       try self.handler.sendMetadata(initialMetadata:Metadata()) {
         queue.async {
-          try! self.provider.Update(session:self)
+          try! self.provider.update(session:self)
         }
       }
     } catch (let callError) {

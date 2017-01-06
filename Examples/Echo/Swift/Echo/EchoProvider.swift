@@ -35,13 +35,13 @@ import Foundation
 
 class EchoProvider : Echo_EchoProvider {
 
-  // Get returns requests as they were received.
-  func Get(request : Echo_EchoRequest) throws -> Echo_EchoResponse {
+  // get returns requests as they were received.
+  func get(request : Echo_EchoRequest) throws -> Echo_EchoResponse {
     return Echo_EchoResponse(text:"Swift echo get: " + request.text)
   }
 
-  // Expand splits a request into words and returns each word in a separate message.
-  func Expand(request : Echo_EchoRequest, session : Echo_EchoExpandSession) throws -> Void {
+  // expand splits a request into words and returns each word in a separate message.
+  func expand(request : Echo_EchoRequest, session : Echo_EchoExpandSession) throws -> Void {
     let parts = request.text.components(separatedBy: " ")
     var i = 0
     for part in parts {
@@ -51,8 +51,8 @@ class EchoProvider : Echo_EchoProvider {
     }
   }
 
-  // Collect collects a sequence of messages and returns them concatenated when the caller closes.
-  func Collect(session : Echo_EchoCollectSession) throws -> Void {
+  // collect collects a sequence of messages and returns them concatenated when the caller closes.
+  func collect(session : Echo_EchoCollectSession) throws -> Void {
     var parts : [String] = []
     while true {
       do {
@@ -68,8 +68,8 @@ class EchoProvider : Echo_EchoProvider {
     try session.SendAndClose(response)
   }
 
-  // Update streams back messages as they are received in an input stream.
-  func Update(session : Echo_EchoUpdateSession) throws -> Void {
+  // update streams back messages as they are received in an input stream.
+  func update(session : Echo_EchoUpdateSession) throws -> Void {
     var count = 0
     while true {
       do {
