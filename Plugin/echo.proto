@@ -1,10 +1,10 @@
-// Copyright 2016 Google Inc. All Rights Reserved.
+// Copyright (c) 2015, Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//    http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,12 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import PackageDescription
+syntax = "proto3";
+package echo;
 
-let package = Package(
-    name: "protoc-gen-swiftgrpc",
-    dependencies: [
-        .Package(url: "https://github.com/apple/swift-protobuf.git", Version(0,9,24)),
-        .Package(url: "https://github.com/timburks/Stencil.git", Version(9,9,9)) // temporary fork
-    ]
-)
+service Echo {
+  rpc Get(EchoRequest) returns (EchoResponse) {}
+  rpc Update(stream EchoRequest) returns (stream EchoResponse) {}
+  rpc Collect(stream EchoRequest) returns (EchoResponse) {}
+  rpc Expand(EchoRequest) returns (stream EchoResponse) {}  
+}
+
+message EchoRequest {
+  string text = 1;
+}
+
+message EchoResponse {
+  string text = 1;
+}
