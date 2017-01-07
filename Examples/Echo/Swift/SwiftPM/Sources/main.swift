@@ -32,7 +32,6 @@
  */
 import Foundation
 import gRPC
-import QuickProto
 
 print("\(CommandLine.arguments)")
 

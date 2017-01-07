@@ -1,9 +1,6 @@
 # Swift gRPC Samples
 
-This directory contains Swift gRPC samples in the form of 
-buildable Swift packages.
-
-Follow these steps to build and run them on Linux.
+Follow these steps to build and run Swift gRPC on Linux.
 
 ## Prerequisites
 
@@ -62,18 +59,17 @@ Start a docker instance with the following command:
     make
     make install
 
-## Build the samples
+## Build the Echo sample
     cd
-    cd grpc-swift/Samples
-    cd Simple/SimpleServer; make; cd ../..
-    cd Simple/SimpleClient; make; cd ../..
-    cd Echo; make; cd ../..
+    cd grpc-swift/Examples/Echo/Swift/SwiftPM
+    make
 
-## Run the test client and server from the grpc/src/swift/Packages directory:
-    Simple/SimpleServer/.build/debug/SimpleServer &
-    Simple/SimpleClient/.build/debug/SimpleClient	
-or	
-
-    Echo/.build/debug/Echo serve &
-    Echo/.build/debug/Echo get
+## Run the test client and server 
+    # start the server
+    .build/debug/Echo serve &
+    # run the client to test each Echo API
+    .build/debug/Echo get
+    .build/debug/Echo expand
+    .build/debug/Echo collect
+    .build/debug/Echo update
 	

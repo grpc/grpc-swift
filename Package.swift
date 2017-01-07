@@ -37,6 +37,5 @@ let package = Package(
   targets: [
     Target(name: "gRPC",
            dependencies: ["CgRPC"]),
-    Target(name: "QuickProto"),
   ]
 )
