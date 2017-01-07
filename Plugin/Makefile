@@ -9,12 +9,12 @@ build:
 
 test:	build
 	protoc echo.proto --swiftgrpc_out=.
-	diff echo.client.pb.swift ../Examples/Echo/Swift/Echo/echo.client.pb.swift
-	diff echo.server.pb.swift ../Examples/Echo/Swift/Echo/echo.server.pb.swift
+	diff echo.client.pb.swift ../Examples/Echo/Swift/Generated/echo.client.pb.swift
+	diff echo.server.pb.swift ../Examples/Echo/Swift/Generated/echo.server.pb.swift
 
 deploy:
-	cp echo.client.pb.swift ../Examples/Echo/Swift/Echo/echo.client.pb.swift 
-	cp echo.server.pb.swift ../Examples/Echo/Swift/Echo/echo.server.pb.swift 
+	cp echo.client.pb.swift ../Examples/Echo/Swift/Generated/echo.client.pb.swift 
+	cp echo.server.pb.swift ../Examples/Echo/Swift/Generated/echo.server.pb.swift 
 
 clean :
 	rm -f protoc-gen-swiftgrpc 

@@ -7,13 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		D30DACF01DB6FC2D00886B20 /* echo.client.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = D30DACEF1DB6FC2D00886B20 /* echo.client.pb.swift */; };
-		D324A6021D81CF8F00421B59 /* echo.server.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = D324A6011D81CF8F00421B59 /* echo.server.pb.swift */; };
-		D359A6271DBAD11C00FE6282 /* echo.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = D359A6261DBAD11C00FE6282 /* echo.pb.swift */; };
 		D35C9FAC1D74B079000443CD /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C9FAB1D74B079000443CD /* AppDelegate.swift */; };
 		D35C9FAE1D74B079000443CD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D35C9FAD1D74B079000443CD /* Assets.xcassets */; };
 		D35C9FB11D74B079000443CD /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D35C9FAF1D74B079000443CD /* MainMenu.xib */; };
 		D35C9FC81D74B0C1000443CD /* EchoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C9FC71D74B0C1000443CD /* EchoViewController.swift */; };
+		D36483D81E209D780044E0B7 /* echo.client.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = D36483D51E209D780044E0B7 /* echo.client.pb.swift */; };
+		D36483D91E209D780044E0B7 /* echo.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = D36483D61E209D780044E0B7 /* echo.pb.swift */; };
+		D36483DA1E209D780044E0B7 /* echo.server.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = D36483D71E209D780044E0B7 /* echo.server.pb.swift */; };
 		D38F9C401E1F0D2C003DECA4 /* EchoProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = D38F9C3F1E1F0D2C003DECA4 /* EchoProvider.swift */; };
 		D3971E211D89132E001A0B3F /* ssl.key in Resources */ = {isa = PBXBuildFile; fileRef = D3971E201D89132E001A0B3F /* ssl.key */; };
 		D3BFE28C1D87A45D00A648D8 /* ssl.crt in Resources */ = {isa = PBXBuildFile; fileRef = D3BFE28B1D87A45D00A648D8 /* ssl.crt */; };
@@ -73,15 +73,15 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		D30DACEF1DB6FC2D00886B20 /* echo.client.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = echo.client.pb.swift; sourceTree = "<group>"; };
-		D324A6011D81CF8F00421B59 /* echo.server.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; lineEnding = 0; path = echo.server.pb.swift; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
-		D359A6261DBAD11C00FE6282 /* echo.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = echo.pb.swift; path = Protobuf/echo.pb.swift; sourceTree = "<group>"; };
 		D35C9FA81D74B079000443CD /* Echo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Echo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D35C9FAB1D74B079000443CD /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		D35C9FAD1D74B079000443CD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D35C9FB01D74B079000443CD /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		D35C9FB21D74B079000443CD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D35C9FC71D74B0C1000443CD /* EchoViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EchoViewController.swift; sourceTree = "<group>"; };
+		D36483D51E209D780044E0B7 /* echo.client.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = echo.client.pb.swift; path = Generated/echo.client.pb.swift; sourceTree = "<group>"; };
+		D36483D61E209D780044E0B7 /* echo.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = echo.pb.swift; path = Generated/echo.pb.swift; sourceTree = "<group>"; };
+		D36483D71E209D780044E0B7 /* echo.server.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = echo.server.pb.swift; path = Generated/echo.server.pb.swift; sourceTree = "<group>"; };
 		D36C3EF81E145A2200BF4EB3 /* SwiftProtobufRuntime.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SwiftProtobufRuntime.xcodeproj; path = "../../../third_party/swift-protobuf/SwiftProtobufRuntime.xcodeproj"; sourceTree = "<group>"; };
 		D38F9C3F1E1F0D2C003DECA4 /* EchoProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; lineEnding = 0; path = EchoProvider.swift; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		D3971E201D89132E001A0B3F /* ssl.key */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ssl.key; sourceTree = "<group>"; };
@@ -101,21 +101,13 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		D359A6281DBAD12100FE6282 /* Protobuf */ = {
-			isa = PBXGroup;
-			children = (
-				D359A6261DBAD11C00FE6282 /* echo.pb.swift */,
-			);
-			name = Protobuf;
-			sourceTree = "<group>";
-		};
 		D35C9F9F1D74B079000443CD = {
 			isa = PBXGroup;
 			children = (
 				D36C3EF81E145A2200BF4EB3 /* SwiftProtobufRuntime.xcodeproj */,
 				D3D2EA391D75FB56002EF89C /* gRPC.xcodeproj */,
 				D35C9FAA1D74B079000443CD /* Echo */,
-				D359A6281DBAD12100FE6282 /* Protobuf */,
+				D36483DB1E209D7F0044E0B7 /* Generated */,
 				D35C9FA91D74B079000443CD /* Products */,
 			);
 			sourceTree = "<group>";
@@ -133,8 +125,6 @@
 			children = (
 				D35C9FAB1D74B079000443CD /* AppDelegate.swift */,
 				D35C9FAD1D74B079000443CD /* Assets.xcassets */,
-				D30DACEF1DB6FC2D00886B20 /* echo.client.pb.swift */,
-				D324A6011D81CF8F00421B59 /* echo.server.pb.swift */,
 				D38F9C3F1E1F0D2C003DECA4 /* EchoProvider.swift */,
 				D35C9FC71D74B0C1000443CD /* EchoViewController.swift */,
 				D35C9FB21D74B079000443CD /* Info.plist */,
@@ -143,6 +133,16 @@
 				D3971E201D89132E001A0B3F /* ssl.key */,
 			);
 			path = Echo;
+			sourceTree = "<group>";
+		};
+		D36483DB1E209D7F0044E0B7 /* Generated */ = {
+			isa = PBXGroup;
+			children = (
+				D36483D51E209D780044E0B7 /* echo.client.pb.swift */,
+				D36483D61E209D780044E0B7 /* echo.pb.swift */,
+				D36483D71E209D780044E0B7 /* echo.server.pb.swift */,
+			);
+			name = Generated;
 			sourceTree = "<group>";
 		};
 		D36C3EF91E145A2200BF4EB3 /* Products */ = {
@@ -288,12 +288,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D30DACF01DB6FC2D00886B20 /* echo.client.pb.swift in Sources */,
-				D324A6021D81CF8F00421B59 /* echo.server.pb.swift in Sources */,
 				D35C9FC81D74B0C1000443CD /* EchoViewController.swift in Sources */,
 				D38F9C401E1F0D2C003DECA4 /* EchoProvider.swift in Sources */,
-				D359A6271DBAD11C00FE6282 /* echo.pb.swift in Sources */,
 				D35C9FAC1D74B079000443CD /* AppDelegate.swift in Sources */,
+				D36483DA1E209D780044E0B7 /* echo.server.pb.swift in Sources */,
+				D36483D91E209D780044E0B7 /* echo.pb.swift in Sources */,
+				D36483D81E209D780044E0B7 /* echo.client.pb.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
