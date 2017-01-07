@@ -1,13 +1,13 @@
-//
 // {{ method.name }} (Unary)
-//
 public class {{ .|call:protoFile,service,method }} {
   var call : Call
 
+  /// Create a call.
   fileprivate init(_ channel: Channel) {
     self.call = channel.makeCall("{{ .|path:protoFile,service,method }}")
   }
 
+  /// Run the call. Blocks until the reply is received.
   fileprivate func run(request: {{ method|input }},
                        metadata: Metadata) throws -> {{ method|output }} {
     let done = NSCondition()

@@ -212,6 +212,8 @@ func main() throws {
     }
   }
 
+  log += "\(request)"
+  
   // add the logfile to the code generation response
   var logfile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
   logfile.name = "swiftgrpc.log"

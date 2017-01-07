@@ -1,13 +1,15 @@
-// fully streaming
+// {{ method.name }} (Bidirectional Streaming)
 public class {{ .|session:protoFile,service,method }} {
   var handler : gRPC.Handler
   var provider : {{ .|provider:protoFile,service }}
 
+  /// Create a session.
   fileprivate init(handler:gRPC.Handler, provider: {{ .|provider:protoFile,service }}) {
     self.handler = handler
     self.provider = provider
   }
 
+  /// Receive a message. Blocks until a message is received or the client closes the connection.
   public func Receive() throws -> {{ method|input }} {
     let done = NSCondition()
     var requestMessage : {{ method|input }}?
@@ -28,10 +30,12 @@ public class {{ .|session:protoFile,service,method }} {
     return requestMessage!
   }
 
+  /// Send a message. Nonblocking.
   public func Send(_ response: {{ method|output }}) throws {
     try handler.sendResponse(message:response.serializeProtobuf()) {}
   }
 
+  /// Close a connection. Blocks until the connection is closed.
   public func Close() {
     let done = NSCondition()
     try! self.handler.sendStatus(statusCode: 0,
@@ -46,6 +50,7 @@ public class {{ .|session:protoFile,service,method }} {
     done.unlock()
   }
 
+  /// Run the session. Internal.
   fileprivate func run(queue:DispatchQueue) {
     do {
       try self.handler.sendMetadata(initialMetadata:Metadata()) {

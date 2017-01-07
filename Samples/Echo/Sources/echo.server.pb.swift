@@ -46,22 +46,25 @@ public enum Echo_EchoServerError : Error {
   case endOfStream
 }
 
+/// To build a server, implement a class that conforms to this protocol.
 public protocol Echo_EchoProvider {
   func get(request : Echo_EchoRequest) throws -> Echo_EchoResponse
   func expand(request : Echo_EchoRequest, session : Echo_EchoExpandSession) throws
   func collect(session : Echo_EchoCollectSession) throws
   func update(session : Echo_EchoUpdateSession) throws
 }
-// unary
+// Get (Unary)
 public class Echo_EchoGetSession {
   var handler : gRPC.Handler
   var provider : Echo_EchoProvider
 
+  /// Create a session.
   fileprivate init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
     self.handler = handler
     self.provider = provider
   }
 
+  /// Run the session. Internal.
   fileprivate func run(queue:DispatchQueue) {
     do {
       try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
@@ -80,20 +83,24 @@ public class Echo_EchoGetSession {
     }
   }
 }
-// server streaming
+
+// Expand (Server Streaming)
 public class Echo_EchoExpandSession {
   var handler : gRPC.Handler
   var provider : Echo_EchoProvider
 
+  /// Create a session.
   fileprivate init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
     self.handler = handler
     self.provider = provider
   }
 
+  /// Send a message. Nonblocking.
   public func Send(_ response: Echo_EchoResponse) throws {
     try! handler.sendResponse(message:response.serializeProtobuf()) {}
   }
 
+  /// Run the session. Internal.
   fileprivate func run(queue:DispatchQueue) {
     do {
       try self.handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
@@ -115,16 +122,19 @@ public class Echo_EchoExpandSession {
     }
   }
 }
-// client streaming
+
+// Collect (Client Streaming)
 public class Echo_EchoCollectSession {
   var handler : gRPC.Handler
   var provider : Echo_EchoProvider
 
+  /// Create a session.
   fileprivate init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
     self.handler = handler
     self.provider = provider
   }
 
+  /// Receive a message. Blocks until a message is received or the client closes the connection.
   public func Receive() throws -> Echo_EchoRequest {
     let done = NSCondition()
     var requestMessage : Echo_EchoRequest?
@@ -145,13 +155,15 @@ public class Echo_EchoCollectSession {
     return requestMessage!
   }
 
+  /// Send a response and close the connection.
   public func SendAndClose(_ response: Echo_EchoResponse) throws {
-    try! self.handler.sendResponse(message:response.serializeProtobuf(),
-                                   statusCode: 0,
-                                   statusMessage: "OK",
-                                   trailingMetadata: Metadata())
+    try self.handler.sendResponse(message:response.serializeProtobuf(),
+                                  statusCode: 0,
+                                  statusMessage: "OK",
+                                  trailingMetadata: Metadata())
   }
 
+  /// Run the session. Internal.
   fileprivate func run(queue:DispatchQueue) {
     do {
       try self.handler.sendMetadata(initialMetadata:Metadata()) {
@@ -164,16 +176,19 @@ public class Echo_EchoCollectSession {
     }
   }
 }
-// fully streaming
+
+// Update (Bidirectional Streaming)
 public class Echo_EchoUpdateSession {
   var handler : gRPC.Handler
   var provider : Echo_EchoProvider
 
+  /// Create a session.
   fileprivate init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
     self.handler = handler
     self.provider = provider
   }
 
+  /// Receive a message. Blocks until a message is received or the client closes the connection.
   public func Receive() throws -> Echo_EchoRequest {
     let done = NSCondition()
     var requestMessage : Echo_EchoRequest?
@@ -194,10 +209,12 @@ public class Echo_EchoUpdateSession {
     return requestMessage!
   }
 
+  /// Send a message. Nonblocking.
   public func Send(_ response: Echo_EchoResponse) throws {
     try handler.sendResponse(message:response.serializeProtobuf()) {}
   }
 
+  /// Close a connection. Blocks until the connection is closed.
   public func Close() {
     let done = NSCondition()
     try! self.handler.sendStatus(statusCode: 0,
@@ -212,6 +229,7 @@ public class Echo_EchoUpdateSession {
     done.unlock()
   }
 
+  /// Run the session. Internal.
   fileprivate func run(queue:DispatchQueue) {
     do {
       try self.handler.sendMetadata(initialMetadata:Metadata()) {
@@ -224,14 +242,15 @@ public class Echo_EchoUpdateSession {
     }
   }
 }
-//
-// main server for generated service
-//
+
+
+/// Main server for generated service
 public class Echo_EchoServer {
   private var address: String
   private var server: gRPC.Server
   public var provider: Echo_EchoProvider?
 
+  /// Create a server that accepts insecure connections.
   public init(address:String,
               provider:Echo_EchoProvider) {
     gRPC.initialize()
@@ -240,6 +259,7 @@ public class Echo_EchoServer {
     self.server = gRPC.Server(address:address)
   }
 
+  /// Create a server that accepts secure connections.
   public init?(address:String,
                certificateURL:URL,
                keyURL:URL,
@@ -256,6 +276,7 @@ public class Echo_EchoServer {
     self.server = gRPC.Server(address:address, key:key, certs:certificate)
   }
 
+  /// Start the server.
   public func start(queue:DispatchQueue = DispatchQueue.global()) {
     guard let provider = self.provider else {
       assert(false) // the server requires a provider

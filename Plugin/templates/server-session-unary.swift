@@ -1,13 +1,15 @@
-// unary
+// {{ method.name }} (Unary)
 public class {{ .|session:protoFile,service,method }} {
   var handler : gRPC.Handler
   var provider : {{ .|provider:protoFile,service }}
 
+  /// Create a session.
   fileprivate init(handler:gRPC.Handler, provider: {{ .|provider:protoFile,service }}) {
     self.handler = handler
     self.provider = provider
   }
 
+  /// Run the session. Internal.
   fileprivate func run(queue:DispatchQueue) {
     do {
       try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in

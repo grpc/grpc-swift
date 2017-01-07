@@ -47,6 +47,7 @@ public enum {{ .|servererror:protoFile,service }} : Error {
   case endOfStream
 }
 
+/// To build a server, implement a class that conforms to this protocol.
 public protocol {{ .|provider:protoFile,service }} {
   //-{% for method in service.method %}
   //-{% if not method.clientStreaming and not method.serverStreaming %}
@@ -77,14 +78,14 @@ public protocol {{ .|provider:protoFile,service }} {
 //-{% include "server-session-bidistreaming.swift" %}
 //-{% endif %}
 //-{% endfor %}
-//
-// main server for generated service
-//
+
+/// Main server for generated service
 public class {{ .|server:protoFile,service }} {
   private var address: String
   private var server: gRPC.Server
   public var provider: {{ .|provider:protoFile,service }}?
 
+  /// Create a server that accepts insecure connections.
   public init(address:String,
               provider:{{ .|provider:protoFile,service }}) {
     gRPC.initialize()
@@ -93,6 +94,7 @@ public class {{ .|server:protoFile,service }} {
     self.server = gRPC.Server(address:address)
   }
 
+  /// Create a server that accepts secure connections.
   public init?(address:String,
                certificateURL:URL,
                keyURL:URL,
@@ -109,6 +111,7 @@ public class {{ .|server:protoFile,service }} {
     self.server = gRPC.Server(address:address, key:key, certs:certificate)
   }
 
+  /// Start the server.
   public func start(queue:DispatchQueue = DispatchQueue.global()) {
     guard let provider = self.provider else {
       assert(false) // the server requires a provider

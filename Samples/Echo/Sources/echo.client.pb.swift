@@ -47,16 +47,16 @@ public enum Echo_EchoClientError : Error {
   case invalidMessageReceived
   case error(c: CallResult)
 }
-//
 // Get (Unary)
-//
 public class Echo_EchoGetCall {
   var call : Call
 
+  /// Create a call.
   fileprivate init(_ channel: Channel) {
     self.call = channel.makeCall("/echo.Echo/Get")
   }
 
+  /// Run the call. Blocks until the reply is received.
   fileprivate func run(request: Echo_EchoRequest,
                        metadata: Metadata) throws -> Echo_EchoResponse {
     let done = NSCondition()
@@ -84,12 +84,12 @@ public class Echo_EchoGetCall {
     }
   }
 }
-//
-// Expand (Server streaming)
-//
+
+// Expand (Server Streaming)
 public class Echo_EchoExpandCall {
   var call : Call
 
+  /// Create a call.
   fileprivate init(_ channel: Channel) {
     self.call = channel.makeCall("/echo.Echo/Expand")
   }
@@ -132,12 +132,12 @@ public class Echo_EchoExpandCall {
     return returnMessage
   }
 }
-//
-// Collect (Client streaming)
-//
+
+// Collect (Client Streaming)
 public class Echo_EchoCollectCall {
   var call : Call
 
+  /// Create a call.
   fileprivate init(_ channel: Channel) {
     self.call = channel.makeCall("/echo.Echo/Collect")
   }
@@ -207,12 +207,12 @@ public class Echo_EchoCollectCall {
   }
 
 }
-//
-// Update (Bidirectional streaming)
-//
+
+// Update (Bidirectional Streaming)
 public class Echo_EchoUpdateCall {
   var call : Call
 
+  /// Create a call.
   fileprivate init(_ channel: Channel) {
     self.call = channel.makeCall("/echo.Echo/Update")
   }
@@ -281,6 +281,7 @@ public class Echo_EchoUpdateCall {
     done.unlock()
   }
 }
+
 
 // Call methods of this class to make API calls.
 public class Echo_EchoService {

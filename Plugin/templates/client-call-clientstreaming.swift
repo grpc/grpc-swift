@@ -1,9 +1,8 @@
-//
-// {{ method.name }} (Client streaming)
-//
+// {{ method.name }} (Client Streaming)
 public class {{ .|call:protoFile,service,method }} {
   var call : Call
 
+  /// Create a call.
   fileprivate init(_ channel: Channel) {
     self.call = channel.makeCall("{{ .|path:protoFile,service,method }}")
   }
