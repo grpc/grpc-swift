@@ -1,29 +1,29 @@
 //
 // {{ method.name }} (Client streaming)
 //
-public class {{ .|callname:protoFile,service,method }} {
+public class {{ .|call:protoFile,service,method }} {
   var call : Call
 
   fileprivate init(_ channel: Channel) {
-    self.call = channel.makeCall("{{ .|callpath:protoFile,service,method }}")
+    self.call = channel.makeCall("{{ .|path:protoFile,service,method }}")
   }
 
   // Call this to start a call.
-  fileprivate func run(metadata:Metadata) throws -> {{ .|callname:protoFile,service,method }} {
+  fileprivate func run(metadata:Metadata) throws -> {{ .|call:protoFile,service,method }} {
     try self.call.start(metadata: metadata, completion:{})
     return self
   }
 
   // Call this to send each message in the request stream.
-  public func Send(_ message: {{ method|inputType }}) {
+  public func Send(_ message: {{ method|input }}) {
     let messageData = try! message.serializeProtobuf()
     _ = call.sendMessage(data:messageData)
   }
 
   // Call this to close the connection and wait for a response. Blocks.
-  public func CloseAndReceive() throws -> {{ method|outputType }} {
-    var returnError : {{ .|errorname:protoFile,service }}?
-    var returnMessage : {{ method|outputType }}!
+  public func CloseAndReceive() throws -> {{ method|output }} {
+    var returnError : {{ .|clienterror:protoFile,service }}?
+    var returnMessage : {{ method|output }}!
     let done = NSCondition()
 
     do {
@@ -31,7 +31,7 @@ public class {{ .|callname:protoFile,service,method }} {
         if let responseMessage = responseMessage {
           returnMessage = responseMessage
         } else {
-          returnError = {{ .|errorname:protoFile,service }}.invalidMessageReceived
+          returnError = {{ .|clienterror:protoFile,service }}.invalidMessageReceived
         }
         done.lock()
         done.signal()
@@ -56,7 +56,7 @@ public class {{ .|callname:protoFile,service,method }} {
   // Call this to receive a message.
   // The callback will be called when a message is received.
   // call this again from the callback to wait for another message.
-  fileprivate func receiveMessage(callback:@escaping ({{ method|outputType }}?) throws -> Void)
+  fileprivate func receiveMessage(callback:@escaping ({{ method|output }}?) throws -> Void)
     throws {
       try call.receiveMessage() {(data) in
         guard let data = data else {
@@ -64,7 +64,7 @@ public class {{ .|callname:protoFile,service,method }} {
           return
         }
         guard
-          let responseMessage = try? {{ method|outputType }}(protobuf:data)
+          let responseMessage = try? {{ method|output }}(protobuf:data)
           else {
             return
         }

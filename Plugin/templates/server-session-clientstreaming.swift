@@ -1,19 +1,19 @@
 // client streaming
-public class Echo_EchoCollectSession {
+public class {{ .|session:protoFile,service,method }} {
   var handler : gRPC.Handler
-  var provider : Echo_EchoProvider
+  var provider : {{ .|provider:protoFile,service }}
 
-  fileprivate init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
+  fileprivate init(handler:gRPC.Handler, provider: {{ .|provider:protoFile,service }}) {
     self.handler = handler
     self.provider = provider
   }
 
-  public func Receive() throws -> Echo_EchoRequest {
+  public func Receive() throws -> {{ method|input }} {
     let done = NSCondition()
-    var requestMessage : Echo_EchoRequest?
+    var requestMessage : {{ method|input }}?
     try self.handler.receiveMessage() {(requestData) in
       if let requestData = requestData {
-        requestMessage = try! Echo_EchoRequest(protobuf:requestData)
+        requestMessage = try! {{ method|input }}(protobuf:requestData)
       }
       done.lock()
       done.signal()
@@ -23,12 +23,12 @@ public class Echo_EchoCollectSession {
     done.wait()
     done.unlock()
     if requestMessage == nil {
-      throw Echo_EchoServerError.endOfStream
+      throw {{ .|servererror:protoFile,service }}.endOfStream
     }
     return requestMessage!
   }
 
-  public func SendAndClose(_ response: Echo_EchoResponse) throws {
+  public func SendAndClose(_ response: {{ method|output }}) throws {
     try! self.handler.sendResponse(message:response.serializeProtobuf(),
                                    statusCode: 0,
                                    statusMessage: "OK",
@@ -37,7 +37,6 @@ public class Echo_EchoCollectSession {
 
   fileprivate func run(queue:DispatchQueue) {
     do {
-      print("EchoCollectSession run")
       try self.handler.sendMetadata(initialMetadata:Metadata()) {
         queue.async {
           try! self.provider.collect(session:self)

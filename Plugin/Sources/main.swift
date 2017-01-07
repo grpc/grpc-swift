@@ -29,6 +29,78 @@ func protoMessageName(_ name :String?) -> String {
   }
 }
 
+func pathName(_ arguments: [Any?]) throws -> String {
+  if arguments.count != 3 {
+    throw TemplateSyntaxError("path expects 3 arguments")
+  }
+  guard let protoFile = arguments[0] as? Google_Protobuf_FileDescriptorProto
+    else {
+      throw TemplateSyntaxError("tag must be called with a " +
+        "Google_Protobuf_FileDescriptorProto" +
+        " argument, received \(arguments[0])")
+  }
+  guard let service = arguments[1] as? Google_Protobuf_ServiceDescriptorProto
+    else {
+      throw TemplateSyntaxError("tag must be called with a " +
+        "Google_Protobuf_ServiceDescriptorProto" +
+        " argument, received \(arguments[1])")
+  }
+  guard let method = arguments[2] as? Google_Protobuf_MethodDescriptorProto
+    else {
+      throw TemplateSyntaxError("tag must be called with a " +
+        "Google_Protobuf_MethodDescriptorProto" +
+        " argument, received \(arguments[2])")
+  }
+  return "/" + protoFile.package! + "." + service.name! + "/" + method.name!
+}
+
+func packageServiceMethodName(_ arguments: [Any?]) throws -> String {
+  if arguments.count != 3 {
+    throw TemplateSyntaxError("tag expects 3 arguments")
+  }
+  guard let protoFile = arguments[0] as? Google_Protobuf_FileDescriptorProto
+    else {
+      throw TemplateSyntaxError("tag must be called with a " +
+        "Google_Protobuf_FileDescriptorProto" +
+        " argument, received \(arguments[0])")
+  }
+  guard let service = arguments[1] as? Google_Protobuf_ServiceDescriptorProto
+    else {
+      throw TemplateSyntaxError("tag must be called with a " +
+        "Google_Protobuf_ServiceDescriptorProto" +
+        " argument, received \(arguments[1])")
+  }
+  guard let method = arguments[2] as? Google_Protobuf_MethodDescriptorProto
+    else {
+      throw TemplateSyntaxError("tag must be called with a " +
+        "Google_Protobuf_MethodDescriptorProto" +
+        " argument, received \(arguments[2])")
+  }
+  return protoFile.package!.capitalized + "_" + service.name! + method.name!
+}
+
+func packageServiceName(_ arguments: [Any?]) throws -> String {
+  if arguments.count != 2 {
+    throw TemplateSyntaxError("tag expects 2 arguments")
+  }
+  guard let protoFile = arguments[0] as? Google_Protobuf_FileDescriptorProto
+    else {
+      throw TemplateSyntaxError("tag must be called with a " +
+        "Google_Protobuf_FileDescriptorProto" +
+        " argument, received \(arguments[0])")
+  }
+  guard let service = arguments[1] as? Google_Protobuf_ServiceDescriptorProto
+    else {
+      throw TemplateSyntaxError("tag must be called with a " +
+        "Google_Protobuf_ServiceDescriptorProto" +
+        " argument, received \(arguments[1])")
+  }
+  return protoFile.package!.capitalized + "_" + service.name!
+}
+
+// Code templates use "//-" prefixes to comment-out template operators
+// to keep them from interfering with Swift code formatting tools.
+// Use this to remove them after templates have been expanded.
 func stripMarkers(_ code:String) -> String {
   let inputLines = code.components(separatedBy:"\n")
 
@@ -48,138 +120,42 @@ func stripMarkers(_ code:String) -> String {
 
 func main() throws {
 
-  // initialize template engine
+  // initialize template engine and add custom filters
   let fileSystemLoader = FileSystemLoader(paths: ["templates/"])
   let ext = Extension()
-
-  ext.registerFilter("callname") { (value: Any?, arguments: [Any?]) in
-    if arguments.count != 3 {
-      throw TemplateSyntaxError("expects 3 arguments")
-    }
-    guard let protoFile = arguments[0] as? Google_Protobuf_FileDescriptorProto
-      else {
-        throw TemplateSyntaxError("tag must be called with a " +
-          "Google_Protobuf_FileDescriptorProto" +
-          " argument, received \(arguments[0])")
-    }
-    guard let service = arguments[1] as? Google_Protobuf_ServiceDescriptorProto
-      else {
-        throw TemplateSyntaxError("tag must be called with a " +
-          "Google_Protobuf_ServiceDescriptorProto" +
-          " argument, received \(arguments[1])")
-    }
-    guard let method = arguments[2] as? Google_Protobuf_MethodDescriptorProto
-      else {
-        throw TemplateSyntaxError("tag must be called with a " +
-          "Google_Protobuf_MethodDescriptorProto" +
-          " argument, received \(arguments[2])")
-    }
-    return protoFile.package!.capitalized + "_" + service.name! + method.name! + "Call"
+  ext.registerFilter("call") { (value: Any?, arguments: [Any?]) in
+    return try packageServiceMethodName(arguments) + "Call"
   }
-
-  ext.registerFilter("callpath") { (value: Any?, arguments: [Any?]) in
-    if arguments.count != 3 {
-      throw TemplateSyntaxError("expects 3 arguments")
-    }
-    guard let protoFile = arguments[0] as? Google_Protobuf_FileDescriptorProto
-      else {
-        throw TemplateSyntaxError("tag must be called with a " +
-          "Google_Protobuf_FileDescriptorProto" +
-          " argument, received \(arguments[0])")
-    }
-    guard let service = arguments[1] as? Google_Protobuf_ServiceDescriptorProto
-      else {
-        throw TemplateSyntaxError("tag must be called with a " +
-          "Google_Protobuf_ServiceDescriptorProto" +
-          " argument, received \(arguments[1])")
-    }
-    guard let method = arguments[2] as? Google_Protobuf_MethodDescriptorProto
-      else {
-        throw TemplateSyntaxError("tag must be called with a " +
-          "Google_Protobuf_MethodDescriptorProto" +
-          " argument, received \(arguments[2])")
-    }
-    return "/" + protoFile.package! + "." + service.name! + "/" + method.name!
+  ext.registerFilter("session") { (value: Any?, arguments: [Any?]) in
+    return try packageServiceMethodName(arguments) + "Session"
   }
-
-  ext.registerFilter("sessionname") { (value: Any?, arguments: [Any?]) in
-    if arguments.count != 3 {
-      throw TemplateSyntaxError("expects 3 arguments")
-    }
-    guard let protoFile = arguments[0] as? Google_Protobuf_FileDescriptorProto
-      else {
-        throw TemplateSyntaxError("tag must be called with a " +
-          "Google_Protobuf_FileDescriptorProto" +
-          " argument, received \(arguments[0])")
-    }
-    guard let service = arguments[1] as? Google_Protobuf_ServiceDescriptorProto
-      else {
-        throw TemplateSyntaxError("tag must be called with a " +
-          "Google_Protobuf_ServiceDescriptorProto" +
-          " argument, received \(arguments[1])")
-    }
-    guard let method = arguments[2] as? Google_Protobuf_MethodDescriptorProto
-      else {
-        throw TemplateSyntaxError("tag must be called with a " +
-          "Google_Protobuf_MethodDescriptorProto" +
-          " argument, received \(arguments[2])")
-    }
-    return protoFile.package!.capitalized + "_" + service.name! + method.name! + "Session"
+  ext.registerFilter("path") { (value: Any?, arguments: [Any?]) in
+    return try pathName(arguments)
   }
-
-  ext.registerFilter("errorname") { (value: Any?, arguments: [Any?]) in
-    if arguments.count != 2 {
-      throw TemplateSyntaxError("expects 2 arguments")
-    }
-    guard let protoFile = arguments[0] as? Google_Protobuf_FileDescriptorProto
-      else {
-        throw TemplateSyntaxError("tag must be called with a " +
-          "Google_Protobuf_FileDescriptorProto" +
-          " argument, received \(arguments[0])")
-    }
-    guard let service = arguments[1] as? Google_Protobuf_ServiceDescriptorProto
-      else {
-        throw TemplateSyntaxError("tag must be called with a " +
-          "Google_Protobuf_ServiceDescriptorProto" +
-          " argument, received \(arguments[1])")
-    }
-    return protoFile.package!.capitalized + "_" + service.name! + "ClientError"
+  ext.registerFilter("provider") { (value: Any?, arguments: [Any?]) in
+    return try packageServiceName(arguments) + "Provider"
   }
-
-  ext.registerFilter("inputType") { (value: Any?) in
+  ext.registerFilter("clienterror") { (value: Any?, arguments: [Any?]) in
+    return try packageServiceName(arguments) + "ClientError"
+  }
+  ext.registerFilter("servererror") { (value: Any?, arguments: [Any?]) in
+    return try packageServiceName(arguments) + "ServerError"
+  }
+  ext.registerFilter("server") { (value: Any?, arguments: [Any?]) in
+    return try packageServiceName(arguments) + "Server"
+  }
+  ext.registerFilter("input") { (value: Any?) in
     if let value = value as? Google_Protobuf_MethodDescriptorProto {
       return protoMessageName(value.inputType)
     }
     throw TemplateSyntaxError("message: invalid argument \(value)")
   }
-
-  ext.registerFilter("outputType") { (value: Any?) in
+  ext.registerFilter("output") { (value: Any?) in
     if let value = value as? Google_Protobuf_MethodDescriptorProto {
       return protoMessageName(value.outputType)
     }
     throw TemplateSyntaxError("message: invalid argument \(value)")
   }
-
-  ext.registerFilter("servererrorname") { (value: Any?, arguments: [Any?]) in
-    if arguments.count != 2 {
-      throw TemplateSyntaxError("expects 2 arguments")
-    }
-    guard let protoFile = arguments[0] as? Google_Protobuf_FileDescriptorProto
-      else {
-        throw TemplateSyntaxError("tag must be called with a " +
-          "Google_Protobuf_FileDescriptorProto" +
-          " argument, received \(arguments[0])")
-    }
-    guard let service = arguments[1] as? Google_Protobuf_ServiceDescriptorProto
-      else {
-        throw TemplateSyntaxError("tag must be called with a " +
-          "Google_Protobuf_ServiceDescriptorProto" +
-          " argument, received \(arguments[1])")
-    }
-    return protoFile.package!.capitalized + "_" + service.name! + "ServerError"
-  }
-
-
   let templateEnvironment = Environment(loader: fileSystemLoader,
                                         extensions:[ext])
 
@@ -196,7 +172,7 @@ func main() throws {
 
     // a package declaration is required
     guard let package = protoFile.package else {
-      print("ERROR: no package")
+      print("ERROR: no package for \(protoFile.name)")
       continue
     }
 
@@ -236,8 +212,6 @@ func main() throws {
     }
   }
 
-  // log the entire request proto
-  log += "\n\n\n\(request)"
   // add the logfile to the code generation response
   var logfile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
   logfile.name = "swiftgrpc.log"

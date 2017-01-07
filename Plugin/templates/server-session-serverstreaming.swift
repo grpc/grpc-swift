@@ -1,14 +1,14 @@
 // server streaming
-public class Echo_EchoExpandSession {
+public class {{ .|session:protoFile,service,method }} {
   var handler : gRPC.Handler
-  var provider : Echo_EchoProvider
+  var provider : {{ .|provider:protoFile,service }}
 
-  fileprivate init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
+  fileprivate init(handler:gRPC.Handler, provider: {{ .|provider:protoFile,service }}) {
     self.handler = handler
     self.provider = provider
   }
 
-  public func Send(_ response: Echo_EchoResponse) throws {
+  public func Send(_ response: {{ method|output }}) throws {
     try! handler.sendResponse(message:response.serializeProtobuf()) {}
   }
 
@@ -16,7 +16,7 @@ public class Echo_EchoExpandSession {
     do {
       try self.handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
         if let requestData = requestData {
-          let requestMessage = try! Echo_EchoRequest(protobuf:requestData)
+          let requestMessage = try! {{ method|input }}(protobuf:requestData)
           // to keep providers from blocking the server thread,
           // we dispatch them to another queue.
           queue.async {

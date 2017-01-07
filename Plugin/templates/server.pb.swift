@@ -41,29 +41,28 @@
 
 import Foundation
 import gRPC
-
 //-{% for service in protoFile.service %}
-public enum {{ .|servererrorname:protoFile,service }} : Error {
+
+public enum {{ .|servererror:protoFile,service }} : Error {
   case endOfStream
 }
 
-public protocol Echo_EchoProvider {
+public protocol {{ .|provider:protoFile,service }} {
   //-{% for method in service.method %}
   //-{% if not method.clientStreaming and not method.serverStreaming %}
-  func {{ method.name|lowercase }}(request : {{ method|inputType }}) throws -> {{ method|outputType }}
+  func {{ method.name|lowercase }}(request : {{ method|input }}) throws -> {{ method|output }}
   //-{% endif %}
   //-{% if not method.clientStreaming and method.serverStreaming %}
-  func {{ method.name|lowercase }}(request : {{ method|inputType }}, session : {{ .|sessionname:protoFile,service,method }}) throws
+  func {{ method.name|lowercase }}(request : {{ method|input }}, session : {{ .|session:protoFile,service,method }}) throws
   //-{% endif %}
   //-{% if method.clientStreaming and not method.serverStreaming %}
-  func {{ method.name|lowercase }}(session : {{ .|sessionname:protoFile,service,method }}) throws
+  func {{ method.name|lowercase }}(session : {{ .|session:protoFile,service,method }}) throws
   //-{% endif %}
   //-{% if method.clientStreaming and method.serverStreaming %}
-  func {{ method.name|lowercase }}(session : {{ .|sessionname:protoFile,service,method }}) throws
+  func {{ method.name|lowercase }}(session : {{ .|session:protoFile,service,method }}) throws
   //-{% endif %}
   //-{% endfor %}
 }
-
 //-{% for method in service.method %}
 //-{% if not method.clientStreaming and not method.serverStreaming %}
 //-{% include "server-session-unary.swift" %}
@@ -78,17 +77,16 @@ public protocol Echo_EchoProvider {
 //-{% include "server-session-bidistreaming.swift" %}
 //-{% endif %}
 //-{% endfor %}
-
 //
 // main server for generated service
 //
-public class Echo_EchoServer {
+public class {{ .|server:protoFile,service }} {
   private var address: String
   private var server: gRPC.Server
-  public var provider: Echo_EchoProvider?
+  public var provider: {{ .|provider:protoFile,service }}?
 
   public init(address:String,
-              provider:Echo_EchoProvider) {
+              provider:{{ .|provider:protoFile,service }}) {
     gRPC.initialize()
     self.address = address
     self.provider = provider
@@ -98,7 +96,7 @@ public class Echo_EchoServer {
   public init?(address:String,
                certificateURL:URL,
                keyURL:URL,
-               provider:Echo_EchoProvider) {
+               provider:{{ .|provider:protoFile,service }}) {
     gRPC.initialize()
     self.address = address
     self.provider = provider
@@ -122,8 +120,8 @@ public class Echo_EchoServer {
 
       switch handler.method {
 	  //-{% for method in service.method %}
-      case "{{ .|callpath:protoFile,service,method }}":
-        {{ .|sessionname:protoFile,service,method }}(handler:handler, provider:provider).run(queue:queue)
+      case "{{ .|path:protoFile,service,method }}":
+        {{ .|session:protoFile,service,method }}(handler:handler, provider:provider).run(queue:queue)
 	  //-{% endfor %}
       default:
         break // handle unknown requests

@@ -52,7 +52,6 @@ public protocol Echo_EchoProvider {
   func collect(session : Echo_EchoCollectSession) throws
   func update(session : Echo_EchoUpdateSession) throws
 }
-
 // unary
 public class Echo_EchoGetSession {
   var handler : gRPC.Handler
@@ -81,7 +80,6 @@ public class Echo_EchoGetSession {
     }
   }
 }
-
 // server streaming
 public class Echo_EchoExpandSession {
   var handler : gRPC.Handler
@@ -117,7 +115,6 @@ public class Echo_EchoExpandSession {
     }
   }
 }
-
 // client streaming
 public class Echo_EchoCollectSession {
   var handler : gRPC.Handler
@@ -157,7 +154,6 @@ public class Echo_EchoCollectSession {
 
   fileprivate func run(queue:DispatchQueue) {
     do {
-      print("EchoCollectSession run")
       try self.handler.sendMetadata(initialMetadata:Metadata()) {
         queue.async {
           try! self.provider.collect(session:self)
@@ -168,7 +164,6 @@ public class Echo_EchoCollectSession {
     }
   }
 }
-
 // fully streaming
 public class Echo_EchoUpdateSession {
   var handler : gRPC.Handler
@@ -229,7 +224,6 @@ public class Echo_EchoUpdateSession {
     }
   }
 }
-
 //
 // main server for generated service
 //
@@ -286,4 +280,3 @@ public class Echo_EchoServer {
     }
   }
 }
-

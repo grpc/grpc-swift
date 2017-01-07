@@ -1,9 +1,9 @@
 // unary
-public class Echo_EchoGetSession {
+public class {{ .|session:protoFile,service,method }} {
   var handler : gRPC.Handler
-  var provider : Echo_EchoProvider
+  var provider : {{ .|provider:protoFile,service }}
 
-  fileprivate init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
+  fileprivate init(handler:gRPC.Handler, provider: {{ .|provider:protoFile,service }}) {
     self.handler = handler
     self.provider = provider
   }
@@ -12,7 +12,7 @@ public class Echo_EchoGetSession {
     do {
       try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
         if let requestData = requestData {
-          let requestMessage = try! Echo_EchoRequest(protobuf:requestData)
+          let requestMessage = try! {{ method|input }}(protobuf:requestData)
           let replyMessage = try! self.provider.get(request:requestMessage)
           try self.handler.sendResponse(message:replyMessage.serializeProtobuf(),
                                         statusCode: 0,
