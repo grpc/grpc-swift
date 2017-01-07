@@ -60,41 +60,4 @@ class Stdout {
   }
 }
 
-struct CodePrinter {
-  private(set) var content = ""
-  private var currentIndentDepth = 0
-  private var currentIndent = ""
-  private var atLineStart = true
-
-  mutating func print(_ text: String...) {
-    for t in text {
-      for c in t.characters {
-        if c == "\n" {
-          content.append(c)
-          atLineStart = true
-        } else {
-          if atLineStart {
-            content.append(currentIndent)
-            atLineStart = false
-          }
-          content.append(c)
-        }
-      }
-    }
-  }
-
-  mutating private func resetIndent() {
-    currentIndent = (0..<currentIndentDepth).map { Int -> String in return "  " } .joined(separator:"")
-  }
-
-  mutating func indent() {
-    currentIndentDepth += 1
-    resetIndent()
-  }
-  mutating func outdent() {
-    currentIndentDepth -= 1
-    resetIndent()
-  }
-}
-
 // END swift-protobuf derivation
