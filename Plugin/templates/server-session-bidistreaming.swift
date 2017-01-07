@@ -15,7 +15,11 @@ public class {{ .|session:protoFile,service,method }} {
     var requestMessage : {{ method|input }}?
     try self.handler.receiveMessage() {(requestData) in
       if let requestData = requestData {
-        requestMessage = try! {{ method|input }}(protobuf:requestData)
+        do {
+          requestMessage = try {{ method|input }}(protobuf:requestData)
+        } catch (let error) {
+          print("error \(error)")
+        }
       }
       done.lock()
       done.signal()
@@ -24,10 +28,11 @@ public class {{ .|session:protoFile,service,method }} {
     done.lock()
     done.wait()
     done.unlock()
-    if requestMessage == nil {
+    if let requestMessage = requestMessage {
+      return requestMessage
+    } else {
       throw {{ .|servererror:protoFile,service }}.endOfStream
     }
-    return requestMessage!
   }
 
   /// Send a message. Nonblocking.
@@ -36,11 +41,11 @@ public class {{ .|session:protoFile,service,method }} {
   }
 
   /// Close a connection. Blocks until the connection is closed.
-  public func Close() {
+  public func Close() throws {
     let done = NSCondition()
-    try! self.handler.sendStatus(statusCode: 0,
-                                 statusMessage: "OK",
-                                 trailingMetadata: Metadata()) {
+    try self.handler.sendStatus(statusCode: 0,
+                                statusMessage: "OK",
+                                trailingMetadata: Metadata()) {
                                   done.lock()
                                   done.signal()
                                   done.unlock()
@@ -54,7 +59,11 @@ public class {{ .|session:protoFile,service,method }} {
   fileprivate func run(queue:DispatchQueue) throws {
     try self.handler.sendMetadata(initialMetadata:Metadata()) {
       queue.async {
-        try! self.provider.update(session:self)
+        do {
+          try self.provider.update(session:self)
+        } catch (let error) {
+          print("error \(error)")
+        }
       }
     }
   }

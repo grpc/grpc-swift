@@ -68,8 +68,8 @@ public class Echo_EchoGetSession {
   fileprivate func run(queue:DispatchQueue) throws {
     try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
       if let requestData = requestData {
-        let requestMessage = try! Echo_EchoRequest(protobuf:requestData)
-        let replyMessage = try! self.provider.get(request:requestMessage)
+        let requestMessage = try Echo_EchoRequest(protobuf:requestData)
+        let replyMessage = try self.provider.get(request:requestMessage)
         try self.handler.sendResponse(message:replyMessage.serializeProtobuf(),
                                       statusCode: 0,
                                       statusMessage: "OK",
@@ -92,22 +92,30 @@ public class Echo_EchoExpandSession {
 
   /// Send a message. Nonblocking.
   public func Send(_ response: Echo_EchoResponse) throws {
-    try! handler.sendResponse(message:response.serializeProtobuf()) {}
+    try handler.sendResponse(message:response.serializeProtobuf()) {}
   }
 
   /// Run the session. Internal.
   fileprivate func run(queue:DispatchQueue) throws {
     try self.handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
       if let requestData = requestData {
-        let requestMessage = try! Echo_EchoRequest(protobuf:requestData)
-        // to keep providers from blocking the server thread,
-        // we dispatch them to another queue.
-        queue.async {
-          try! self.provider.expand(request:requestMessage, session: self)
-          try! self.handler.sendStatus(statusCode:0,
-                                       statusMessage:"OK",
-                                       trailingMetadata:Metadata(),
-                                       completion:{})
+        do {
+          let requestMessage = try Echo_EchoRequest(protobuf:requestData)
+          // to keep providers from blocking the server thread,
+          // we dispatch them to another queue.
+          queue.async {
+            do {
+              try self.provider.expand(request:requestMessage, session: self)
+              try self.handler.sendStatus(statusCode:0,
+                                          statusMessage:"OK",
+                                          trailingMetadata:Metadata(),
+                                          completion:{})
+            } catch (let error) {
+              print("error: \(error)")
+            }
+          }
+        } catch (let error) {
+          print("error: \(error)")
         }
       }
     }
@@ -131,7 +139,7 @@ public class Echo_EchoCollectSession {
     var requestMessage : Echo_EchoRequest?
     try self.handler.receiveMessage() {(requestData) in
       if let requestData = requestData {
-        requestMessage = try! Echo_EchoRequest(protobuf:requestData)
+        requestMessage = try? Echo_EchoRequest(protobuf:requestData)
       }
       done.lock()
       done.signal()
@@ -158,7 +166,11 @@ public class Echo_EchoCollectSession {
   fileprivate func run(queue:DispatchQueue) throws {
     try self.handler.sendMetadata(initialMetadata:Metadata()) {
       queue.async {
-        try! self.provider.collect(session:self)
+        do {
+          try self.provider.collect(session:self)
+        } catch (let error) {
+          print("error \(error)")
+        }
       }
     }
   }
@@ -181,7 +193,11 @@ public class Echo_EchoUpdateSession {
     var requestMessage : Echo_EchoRequest?
     try self.handler.receiveMessage() {(requestData) in
       if let requestData = requestData {
-        requestMessage = try! Echo_EchoRequest(protobuf:requestData)
+        do {
+          requestMessage = try Echo_EchoRequest(protobuf:requestData)
+        } catch (let error) {
+          print("error \(error)")
+        }
       }
       done.lock()
       done.signal()
@@ -190,10 +206,11 @@ public class Echo_EchoUpdateSession {
     done.lock()
     done.wait()
     done.unlock()
-    if requestMessage == nil {
+    if let requestMessage = requestMessage {
+      return requestMessage
+    } else {
       throw Echo_EchoServerError.endOfStream
     }
-    return requestMessage!
   }
 
   /// Send a message. Nonblocking.
@@ -202,11 +219,11 @@ public class Echo_EchoUpdateSession {
   }
 
   /// Close a connection. Blocks until the connection is closed.
-  public func Close() {
+  public func Close() throws {
     let done = NSCondition()
-    try! self.handler.sendStatus(statusCode: 0,
-                                 statusMessage: "OK",
-                                 trailingMetadata: Metadata()) {
+    try self.handler.sendStatus(statusCode: 0,
+                                statusMessage: "OK",
+                                trailingMetadata: Metadata()) {
                                   done.lock()
                                   done.signal()
                                   done.unlock()
@@ -220,7 +237,11 @@ public class Echo_EchoUpdateSession {
   fileprivate func run(queue:DispatchQueue) throws {
     try self.handler.sendMetadata(initialMetadata:Metadata()) {
       queue.async {
-        try! self.provider.update(session:self)
+        do {
+          try self.provider.update(session:self)
+        } catch (let error) {
+          print("error \(error)")
+        }
       }
     }
   }

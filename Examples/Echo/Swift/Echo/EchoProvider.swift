@@ -82,6 +82,6 @@ class EchoProvider : Echo_EchoProvider {
         print("\(error)")
       }
     }
-    session.Close()
+    try session.Close()
   }
 }

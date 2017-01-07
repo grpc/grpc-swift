@@ -15,7 +15,7 @@ public class {{ .|session:protoFile,service,method }} {
     var requestMessage : {{ method|input }}?
     try self.handler.receiveMessage() {(requestData) in
       if let requestData = requestData {
-        requestMessage = try! {{ method|input }}(protobuf:requestData)
+        requestMessage = try? {{ method|input }}(protobuf:requestData)
       }
       done.lock()
       done.signal()
@@ -42,7 +42,11 @@ public class {{ .|session:protoFile,service,method }} {
   fileprivate func run(queue:DispatchQueue) throws {
     try self.handler.sendMetadata(initialMetadata:Metadata()) {
       queue.async {
-        try! self.provider.collect(session:self)
+        do {
+          try self.provider.collect(session:self)
+        } catch (let error) {
+          print("error \(error)")
+        }
       }
     }
   }

@@ -11,22 +11,30 @@ public class {{ .|session:protoFile,service,method }} {
 
   /// Send a message. Nonblocking.
   public func Send(_ response: {{ method|output }}) throws {
-    try! handler.sendResponse(message:response.serializeProtobuf()) {}
+    try handler.sendResponse(message:response.serializeProtobuf()) {}
   }
 
   /// Run the session. Internal.
   fileprivate func run(queue:DispatchQueue) throws {
     try self.handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
       if let requestData = requestData {
-        let requestMessage = try! {{ method|input }}(protobuf:requestData)
-        // to keep providers from blocking the server thread,
-        // we dispatch them to another queue.
-        queue.async {
-          try! self.provider.expand(request:requestMessage, session: self)
-          try! self.handler.sendStatus(statusCode:0,
-                                       statusMessage:"OK",
-                                       trailingMetadata:Metadata(),
-                                       completion:{})
+        do {
+          let requestMessage = try {{ method|input }}(protobuf:requestData)
+          // to keep providers from blocking the server thread,
+          // we dispatch them to another queue.
+          queue.async {
+            do {
+              try self.provider.expand(request:requestMessage, session: self)
+              try self.handler.sendStatus(statusCode:0,
+                                          statusMessage:"OK",
+                                          trailingMetadata:Metadata(),
+                                          completion:{})
+            } catch (let error) {
+              print("error: \(error)")
+            }
+          }
+        } catch (let error) {
+          print("error: \(error)")
         }
       }
     }
