@@ -1,37 +1,35 @@
-# Swift gRPC API
+# Swift gRPC 
 
-This repository contains an experimental Swift gRPC API.
+This repository contains an experimental Swift gRPC API
+and code generator.
 
-Not yet intended for production use, it provides low-level
-Swift wrappers for the C gRPC API that can be used to build
-higher-level structures supporting streaming and nonstreaming
-gRPC APIs. 
+It is intended for use with Apple's 
+[swift-protobuf](https://github.com/apple/swift-protobuf)
+support for Protocol Buffers. Both projects contain 
+code generation plugins for `protoc`, Google's 
+Protocol Buffer compiler, and both contain libraries
+of supporting code that is needed to build and run
+the generated code.
 
-Temporary protocol buffer support is provided in the QuickProto
-library. This simple Swift library provides an API for building and
-parsing protocol buffers with no generated code. Conversion to
-Apple's [swift-protobuf](https://github.com/apple/swift-protobuf)
-library is in progress.
+APIs and generated code is provided for both gRPC clients
+and servers, and can be built either with Xcode or the Swift
+Package Manager. Support is provided for all four gRPC
+API styles (Unary, Server Streaming, Client Streaming, 
+and Bidirectional Streaming) and connections can be made
+either over secure (TLS) or insecure channels.
 
-Code is provided for both gRPC clients and servers,
-and it can be built either with Xcode or the Swift Package Manager.
-The Xcode build is demonstrated with [Echo](Examples/Echo), 
-a sample Mac app that can be used to run echo clients and
-servers with streaming and nonstreaming interfaces over secure (TLS)
-and insecure channels.
+The [Echo](Examples/Echo) example provides a comprehensive
+demonstration of currently-supported features.
 
-Other examples include [Sessions](Examples/Sessions), 
-[StickyNotes](Examples/StickyNotes), and 
-[Speech](Examples/Speech).
-
-Swift Package Manager builds are demonstrated on Linux using 
-the instructions in the [Packages](Packages) directory.
+Swift Package Manager builds may also be made on Linux 
+systems. Please see [LINUX.md](LINUX.md) for details.
 
 ## Getting started
 
 After cloning this repository, `cd third_party; RUNME.sh` to
-download its dependencies (we don't use git submodules to keep
-this repository lean for imports with the Swift Package Manager).
+download its dependencies. (We don't use `git submodules` so
+that the repository will stay lean when it is imported with the
+the Swift Package Manager.)
 
 ## Building grpc
 
@@ -40,12 +38,6 @@ library. To do this, enter the grpc directory and run
 `git submodule update --init` and then `make install`. 
 If you get build errors, edit the Makefile and remove 
 "-Werror" from the line that begins with "CPPFLAGS +=".
-
-## Can't find something?
-
-To make it easier for the Swift Package manager to find,
-the code for gRPC, CgRPC, and QuickProto is in the
-[Sources] directory.
 
 ## Having build problems?
 
