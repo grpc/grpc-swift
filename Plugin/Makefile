@@ -8,7 +8,7 @@ build:
 
 
 test:	build
-	protoc echo.proto --swiftgrpc_out=.
+	protoc ../Examples/Echo/echo.proto --proto_path=../Examples/Echo --swiftgrpc_out=. 
 	diff echo.client.pb.swift ../Examples/Echo/Swift/Generated/echo.client.pb.swift
 	diff echo.server.pb.swift ../Examples/Echo/Swift/Generated/echo.server.pb.swift
 
