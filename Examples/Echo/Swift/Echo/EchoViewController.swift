@@ -167,7 +167,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         nowStreaming = true
         closeButton.isEnabled = true
       }
-      self.sendCollectMessage()
+      try self.sendCollectMessage()
     }
     else if (self.callSelectButton.selectedSegment == 3) {
       // STREAMING UPDATE
@@ -177,7 +177,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
         nowStreaming = true
         closeButton.isEnabled = true
       }
-      self.sendUpdateMessage()
+      try self.sendUpdateMessage()
     }
   }
 
@@ -201,19 +201,19 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     }
   }
 
-  func sendCollectMessage() {
+  func sendCollectMessage() throws {
     if let collectCall = collectCall {
       let requestMessage = Echo_EchoRequest(text:self.messageField.stringValue)
       self.displayMessageSent(requestMessage.text)
-      collectCall.Send(requestMessage)
+      try collectCall.Send(requestMessage)
     }
   }
 
-  func sendUpdateMessage() {
+  func sendUpdateMessage() throws {
     if let updateCall = updateCall {
       let requestMessage = Echo_EchoRequest(text:self.messageField.stringValue)
       self.displayMessageSent(requestMessage.text)
-      updateCall.Send(requestMessage)
+      try updateCall.Send(requestMessage)
     }
   }
 
@@ -239,7 +239,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
 
   func sendClose() throws {
     if let updateCall = updateCall {
-      updateCall.CloseSend()
+      try updateCall.CloseSend()
       self.updateCall = nil
       self.nowStreaming = false
       self.closeButton.isEnabled = false

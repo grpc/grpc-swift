@@ -62,9 +62,9 @@ public class Echo_EchoGetCall {
     let done = NSCondition()
     var callResult : CallResult!
     var responseMessage : Echo_EchoResponse?
-    let requestMessageData = try! request.serializeProtobuf()
-    try! call.perform(message: requestMessageData,
-                      metadata: metadata)
+    let requestMessageData = try request.serializeProtobuf()
+    try call.perform(message: requestMessageData,
+                     metadata: metadata)
     {(_callResult) in
       callResult = _callResult
       if let messageData = callResult.resultData {
@@ -96,10 +96,10 @@ public class Echo_EchoExpandCall {
 
   // Call this once with the message to send.
   fileprivate func run(request: Echo_EchoRequest, metadata: Metadata) throws -> Echo_EchoExpandCall {
-    let requestMessageData = try! request.serializeProtobuf()
-    try! call.startServerStreaming(message: requestMessageData,
-                                   metadata: metadata,
-                                   completion:{(CallResult) in })
+    let requestMessageData = try request.serializeProtobuf()
+    try call.startServerStreaming(message: requestMessageData,
+                                  metadata: metadata,
+                                  completion:{(CallResult) in })
     return self
   }
 
@@ -149,8 +149,8 @@ public class Echo_EchoCollectCall {
   }
 
   // Call this to send each message in the request stream.
-  public func Send(_ message: Echo_EchoRequest) {
-    let messageData = try! message.serializeProtobuf()
+  public func Send(_ message: Echo_EchoRequest) throws {
+    let messageData = try message.serializeProtobuf()
     _ = call.sendMessage(data:messageData)
   }
 
@@ -264,14 +264,14 @@ public class Echo_EchoUpdateCall {
     return returnMessage
   }
 
-  public func Send(_ message:Echo_EchoRequest) {
-    let messageData = try! message.serializeProtobuf()
+  public func Send(_ message:Echo_EchoRequest) throws {
+    let messageData = try message.serializeProtobuf()
     _ = call.sendMessage(data:messageData)
   }
 
-  public func CloseSend() {
+  public func CloseSend() throws {
     let done = NSCondition()
-    try! call.close() {
+    try call.close() {
       done.lock()
       done.signal()
       done.unlock()

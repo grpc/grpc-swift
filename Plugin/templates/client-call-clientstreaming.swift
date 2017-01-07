@@ -14,8 +14,8 @@ public class {{ .|call:protoFile,service,method }} {
   }
 
   // Call this to send each message in the request stream.
-  public func Send(_ message: {{ method|input }}) {
-    let messageData = try! message.serializeProtobuf()
+  public func Send(_ message: {{ method|input }}) throws {
+    let messageData = try message.serializeProtobuf()
     _ = call.sendMessage(data:messageData)
   }
 

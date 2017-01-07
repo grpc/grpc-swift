@@ -54,14 +54,14 @@ public class {{ .|call:protoFile,service,method }} {
     return returnMessage
   }
 
-  public func Send(_ message:{{ method|input }}) {
-    let messageData = try! message.serializeProtobuf()
+  public func Send(_ message:{{ method|input }}) throws {
+    let messageData = try message.serializeProtobuf()
     _ = call.sendMessage(data:messageData)
   }
 
-  public func CloseSend() {
+  public func CloseSend() throws {
     let done = NSCondition()
-    try! call.close() {
+    try call.close() {
       done.lock()
       done.signal()
       done.unlock()

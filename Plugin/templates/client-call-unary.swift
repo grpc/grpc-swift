@@ -13,9 +13,9 @@ public class {{ .|call:protoFile,service,method }} {
     let done = NSCondition()
     var callResult : CallResult!
     var responseMessage : {{ method|output }}?
-    let requestMessageData = try! request.serializeProtobuf()
-    try! call.perform(message: requestMessageData,
-                      metadata: metadata)
+    let requestMessageData = try request.serializeProtobuf()
+    try call.perform(message: requestMessageData,
+                     metadata: metadata)
     {(_callResult) in
       callResult = _callResult
       if let messageData = callResult.resultData {

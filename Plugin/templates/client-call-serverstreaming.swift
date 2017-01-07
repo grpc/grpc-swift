@@ -9,10 +9,10 @@ public class {{ .|call:protoFile,service,method }} {
 
   // Call this once with the message to send.
   fileprivate func run(request: {{ method|input }}, metadata: Metadata) throws -> {{ .|call:protoFile,service,method }} {
-    let requestMessageData = try! request.serializeProtobuf()
-    try! call.startServerStreaming(message: requestMessageData,
-                                   metadata: metadata,
-                                   completion:{(CallResult) in })
+    let requestMessageData = try request.serializeProtobuf()
+    try call.startServerStreaming(message: requestMessageData,
+                                  metadata: metadata,
+                                  completion:{(CallResult) in })
     return self
   }
 
