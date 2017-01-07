@@ -42,6 +42,7 @@
 import Foundation
 import gRPC
 
+/// Type for errors thrown from generated server code.
 public enum Echo_EchoServerError : Error {
   case endOfStream
 }

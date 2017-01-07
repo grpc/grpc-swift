@@ -43,6 +43,7 @@ import Foundation
 import gRPC
 //-{% for service in protoFile.service %}
 
+/// Type for errors thrown from generated server code.
 public enum {{ .|servererror:protoFile,service }} : Error {
   case endOfStream
 }
@@ -123,10 +124,10 @@ public class {{ .|server:protoFile,service }} {
 
       do {
         switch handler.method {
-	  //-{% for method in service.method %}
+        //-{% for method in service.method %}
         case "{{ .|path:protoFile,service,method }}":
           try {{ .|session:protoFile,service,method }}(handler:handler, provider:provider).run(queue:queue)
-	  //-{% endfor %}
+        //-{% endfor %}
         default:
           break // handle unknown requests
         }

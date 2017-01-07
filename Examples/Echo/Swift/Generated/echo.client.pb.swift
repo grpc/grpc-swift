@@ -42,6 +42,7 @@
 import Foundation
 import gRPC
 
+/// Type for errors thrown from generated client code.
 public enum Echo_EchoClientError : Error {
   case endOfStream
   case invalidMessageReceived
@@ -287,8 +288,12 @@ public class Echo_EchoUpdateCall {
 public class Echo_EchoService {
   private var channel: Channel
 
+  /// This metadata will be sent with all requests.
   public var metadata : Metadata
 
+  /// This property allows the service host name to be overridden.
+  /// For example, it can be used to make calls to "localhost:8080" 
+  /// appear to be to "example.com".
   public var host : String {
     get {
       return self.channel.host
@@ -298,12 +303,14 @@ public class Echo_EchoService {
     }
   }
 
+  /// Create a client that makes insecure connections.
   public init(address: String) {
     gRPC.initialize()
     channel = Channel(address:address)
     metadata = Metadata()
   }
 
+  /// Create a client that makes secure connections.
   public init(address: String, certificates: String?, host: String?) {
     gRPC.initialize()
     channel = Channel(address:address, certificates:certificates, host:host)
