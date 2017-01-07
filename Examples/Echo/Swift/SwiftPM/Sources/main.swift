@@ -144,7 +144,7 @@ if client != "" {
     for part in parts {
       let requestMessage = Echo_EchoRequest(text:part)
       print("Sending: " + part)
-      collectCall.Send(requestMessage)
+      try collectCall.Send(requestMessage)
       sleep(1)
     }
 
@@ -178,10 +178,10 @@ if client != "" {
     for part in parts {
       let requestMessage = Echo_EchoRequest(text:part)
       print("Sending: " + requestMessage.text)
-      updateCall.Send(requestMessage)
+      try updateCall.Send(requestMessage)
       sleep(1)
     }
-    updateCall.CloseSend()
+    try updateCall.CloseSend()
 
     // Wait for the call to complete.
     done.lock()
