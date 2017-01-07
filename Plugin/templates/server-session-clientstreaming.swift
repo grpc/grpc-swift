@@ -39,15 +39,11 @@ public class {{ .|session:protoFile,service,method }} {
   }
 
   /// Run the session. Internal.
-  fileprivate func run(queue:DispatchQueue) {
-    do {
-      try self.handler.sendMetadata(initialMetadata:Metadata()) {
-        queue.async {
-          try! self.provider.collect(session:self)
-        }
+  fileprivate func run(queue:DispatchQueue) throws {
+    try self.handler.sendMetadata(initialMetadata:Metadata()) {
+      queue.async {
+        try! self.provider.collect(session:self)
       }
-    } catch (let callError) {
-      print("grpc error: \(callError)")
     }
   }
 }

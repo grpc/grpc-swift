@@ -65,21 +65,16 @@ public class Echo_EchoGetSession {
   }
 
   /// Run the session. Internal.
-  fileprivate func run(queue:DispatchQueue) {
-    do {
-      try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
-        if let requestData = requestData {
-          let requestMessage = try! Echo_EchoRequest(protobuf:requestData)
-          let replyMessage = try! self.provider.get(request:requestMessage)
-          try self.handler.sendResponse(message:replyMessage.serializeProtobuf(),
-                                        statusCode: 0,
-                                        statusMessage: "OK",
-                                        trailingMetadata:Metadata())
-
-        }
+  fileprivate func run(queue:DispatchQueue) throws {
+    try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
+      if let requestData = requestData {
+        let requestMessage = try! Echo_EchoRequest(protobuf:requestData)
+        let replyMessage = try! self.provider.get(request:requestMessage)
+        try self.handler.sendResponse(message:replyMessage.serializeProtobuf(),
+                                      statusCode: 0,
+                                      statusMessage: "OK",
+                                      trailingMetadata:Metadata())
       }
-    } catch (let callError) {
-      print("grpc error: \(callError)")
     }
   }
 }
@@ -101,24 +96,20 @@ public class Echo_EchoExpandSession {
   }
 
   /// Run the session. Internal.
-  fileprivate func run(queue:DispatchQueue) {
-    do {
-      try self.handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
-        if let requestData = requestData {
-          let requestMessage = try! Echo_EchoRequest(protobuf:requestData)
-          // to keep providers from blocking the server thread,
-          // we dispatch them to another queue.
-          queue.async {
-            try! self.provider.expand(request:requestMessage, session: self)
-            try! self.handler.sendStatus(statusCode:0,
-                                         statusMessage:"OK",
-                                         trailingMetadata:Metadata(),
-                                         completion:{})
-          }
+  fileprivate func run(queue:DispatchQueue) throws {
+    try self.handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
+      if let requestData = requestData {
+        let requestMessage = try! Echo_EchoRequest(protobuf:requestData)
+        // to keep providers from blocking the server thread,
+        // we dispatch them to another queue.
+        queue.async {
+          try! self.provider.expand(request:requestMessage, session: self)
+          try! self.handler.sendStatus(statusCode:0,
+                                       statusMessage:"OK",
+                                       trailingMetadata:Metadata(),
+                                       completion:{})
         }
       }
-    } catch (let callError) {
-      print("grpc error: \(callError)")
     }
   }
 }
@@ -164,15 +155,11 @@ public class Echo_EchoCollectSession {
   }
 
   /// Run the session. Internal.
-  fileprivate func run(queue:DispatchQueue) {
-    do {
-      try self.handler.sendMetadata(initialMetadata:Metadata()) {
-        queue.async {
-          try! self.provider.collect(session:self)
-        }
+  fileprivate func run(queue:DispatchQueue) throws {
+    try self.handler.sendMetadata(initialMetadata:Metadata()) {
+      queue.async {
+        try! self.provider.collect(session:self)
       }
-    } catch (let callError) {
-      print("grpc error: \(callError)")
     }
   }
 }
@@ -230,15 +217,11 @@ public class Echo_EchoUpdateSession {
   }
 
   /// Run the session. Internal.
-  fileprivate func run(queue:DispatchQueue) {
-    do {
-      try self.handler.sendMetadata(initialMetadata:Metadata()) {
-        queue.async {
-          try! self.provider.update(session:self)
-        }
+  fileprivate func run(queue:DispatchQueue) throws {
+    try self.handler.sendMetadata(initialMetadata:Metadata()) {
+      queue.async {
+        try! self.provider.update(session:self)
       }
-    } catch (let callError) {
-      print("grpc error: \(callError)")
     }
   }
 }
@@ -286,17 +269,21 @@ public class Echo_EchoServer {
         + " calling " + handler.method
         + " from " + handler.caller)
 
-      switch handler.method {
-      case "/echo.Echo/Get":
-        Echo_EchoGetSession(handler:handler, provider:provider).run(queue:queue)
-      case "/echo.Echo/Expand":
-        Echo_EchoExpandSession(handler:handler, provider:provider).run(queue:queue)
-      case "/echo.Echo/Collect":
-        Echo_EchoCollectSession(handler:handler, provider:provider).run(queue:queue)
-      case "/echo.Echo/Update":
-        Echo_EchoUpdateSession(handler:handler, provider:provider).run(queue:queue)
-      default:
-        break // handle unknown requests
+      do {
+        switch handler.method {
+        case "/echo.Echo/Get":
+          try Echo_EchoGetSession(handler:handler, provider:provider).run(queue:queue)
+        case "/echo.Echo/Expand":
+          try Echo_EchoExpandSession(handler:handler, provider:provider).run(queue:queue)
+        case "/echo.Echo/Collect":
+          try Echo_EchoCollectSession(handler:handler, provider:provider).run(queue:queue)
+        case "/echo.Echo/Update":
+          try Echo_EchoUpdateSession(handler:handler, provider:provider).run(queue:queue)
+        default:
+          break // handle unknown requests
+        }
+      } catch (let error) {
+        print("Server error: \(error)")
       }
     }
   }

@@ -121,13 +121,17 @@ public class {{ .|server:protoFile,service }} {
         + " calling " + handler.method
         + " from " + handler.caller)
 
-      switch handler.method {
+      do {
+        switch handler.method {
 	  //-{% for method in service.method %}
-      case "{{ .|path:protoFile,service,method }}":
-        {{ .|session:protoFile,service,method }}(handler:handler, provider:provider).run(queue:queue)
+        case "{{ .|path:protoFile,service,method }}":
+          try {{ .|session:protoFile,service,method }}(handler:handler, provider:provider).run(queue:queue)
 	  //-{% endfor %}
-      default:
-        break // handle unknown requests
+        default:
+          break // handle unknown requests
+        }
+      } catch (let error) {
+        print("Server error: \(error)")
       }
     }
   }
