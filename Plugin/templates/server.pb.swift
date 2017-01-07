@@ -83,7 +83,7 @@ public protocol {{ .|provider:protoFile,service }} {
 public class {{ .|server:protoFile,service }} {
   private var address: String
   private var server: gRPC.Server
-  public var provider: {{ .|provider:protoFile,service }}?
+  private var provider: {{ .|provider:protoFile,service }}?
 
   /// Create a server that accepts insecure connections.
   public init(address:String,

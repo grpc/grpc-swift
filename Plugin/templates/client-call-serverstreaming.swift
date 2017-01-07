@@ -1,6 +1,6 @@
 // {{ method.name }} (Server Streaming)
 public class {{ .|call:protoFile,service,method }} {
-  var call : Call
+  private var call : Call
 
   /// Create a call.
   fileprivate init(_ channel: Channel) {

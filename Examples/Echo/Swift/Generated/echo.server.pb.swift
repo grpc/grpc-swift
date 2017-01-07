@@ -55,8 +55,8 @@ public protocol Echo_EchoProvider {
 }
 // Get (Unary)
 public class Echo_EchoGetSession {
-  var handler : gRPC.Handler
-  var provider : Echo_EchoProvider
+  private var handler : gRPC.Handler
+  private var provider : Echo_EchoProvider
 
   /// Create a session.
   fileprivate init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
@@ -86,8 +86,8 @@ public class Echo_EchoGetSession {
 
 // Expand (Server Streaming)
 public class Echo_EchoExpandSession {
-  var handler : gRPC.Handler
-  var provider : Echo_EchoProvider
+  private var handler : gRPC.Handler
+  private var provider : Echo_EchoProvider
 
   /// Create a session.
   fileprivate init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
@@ -125,8 +125,8 @@ public class Echo_EchoExpandSession {
 
 // Collect (Client Streaming)
 public class Echo_EchoCollectSession {
-  var handler : gRPC.Handler
-  var provider : Echo_EchoProvider
+  private var handler : gRPC.Handler
+  private var provider : Echo_EchoProvider
 
   /// Create a session.
   fileprivate init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
@@ -179,8 +179,8 @@ public class Echo_EchoCollectSession {
 
 // Update (Bidirectional Streaming)
 public class Echo_EchoUpdateSession {
-  var handler : gRPC.Handler
-  var provider : Echo_EchoProvider
+  private var handler : gRPC.Handler
+  private var provider : Echo_EchoProvider
 
   /// Create a session.
   fileprivate init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
@@ -248,7 +248,7 @@ public class Echo_EchoUpdateSession {
 public class Echo_EchoServer {
   private var address: String
   private var server: gRPC.Server
-  public var provider: Echo_EchoProvider?
+  private var provider: Echo_EchoProvider?
 
   /// Create a server that accepts insecure connections.
   public init(address:String,

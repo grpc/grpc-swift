@@ -1,7 +1,7 @@
 // {{ method.name }} (Bidirectional Streaming)
 public class {{ .|session:protoFile,service,method }} {
-  var handler : gRPC.Handler
-  var provider : {{ .|provider:protoFile,service }}
+  private var handler : gRPC.Handler
+  private var provider : {{ .|provider:protoFile,service }}
 
   /// Create a session.
   fileprivate init(handler:gRPC.Handler, provider: {{ .|provider:protoFile,service }}) {

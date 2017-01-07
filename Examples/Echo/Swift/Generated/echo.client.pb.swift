@@ -49,7 +49,7 @@ public enum Echo_EchoClientError : Error {
 }
 // Get (Unary)
 public class Echo_EchoGetCall {
-  var call : Call
+  private var call : Call
 
   /// Create a call.
   fileprivate init(_ channel: Channel) {
@@ -87,7 +87,7 @@ public class Echo_EchoGetCall {
 
 // Expand (Server Streaming)
 public class Echo_EchoExpandCall {
-  var call : Call
+  private var call : Call
 
   /// Create a call.
   fileprivate init(_ channel: Channel) {
@@ -135,7 +135,7 @@ public class Echo_EchoExpandCall {
 
 // Collect (Client Streaming)
 public class Echo_EchoCollectCall {
-  var call : Call
+  private var call : Call
 
   /// Create a call.
   fileprivate init(_ channel: Channel) {
@@ -210,7 +210,7 @@ public class Echo_EchoCollectCall {
 
 // Update (Bidirectional Streaming)
 public class Echo_EchoUpdateCall {
-  var call : Call
+  private var call : Call
 
   /// Create a call.
   fileprivate init(_ channel: Channel) {
