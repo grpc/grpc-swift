@@ -6,8 +6,8 @@ use_frameworks!
 
 target 'Speech' do
 
-  pod 'gRPC-Core', "~> 1.0.0-pre1.1"
-  pod 'SwiftProtobuf', git: 'https://github.com/apple/swift-protobuf.git'
+  pod 'SwiftProtobuf', git: 'https://github.com/apple/swift-protobuf.git', :tag => '0.9.24'
+  pod 'SwiftGRPC', git: 'https://github.com/grpc/grpc-swift.git' #, :tag => '0.1.0'
 
 end
 
