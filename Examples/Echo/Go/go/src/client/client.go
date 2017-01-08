@@ -144,12 +144,10 @@ func call_expand(c pb.EchoClient, message string) {
 	if err != nil {
 		panic(err)
 	}
-	waitc := make(chan struct{})
 	for {
 		in, err := stream.Recv()
 		if err == io.EOF {
 			// read done.
-			close(waitc)
 			return
 		}
 		if err != nil {
@@ -157,5 +155,4 @@ func call_expand(c pb.EchoClient, message string) {
 		}
 		log.Printf("Received: %s", in.Text)
 	}
-	<-waitc
 }
