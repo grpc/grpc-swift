@@ -11,7 +11,6 @@ the Makefile:
 
 	protoc ../Examples/Echo/echo.proto --proto_path=../Examples/Echo --swiftgrpc_out=. 
 
-The plugin uses template files in the [templates](templates) 
+The plugin uses template files in the [swiftgrpc.templates](swiftgrpc.templates) 
 directory. This directory currently must be in the same location 
-where the compiler is run.
-
+as the `protoc-gen-swiftgrpc` plugin executable.

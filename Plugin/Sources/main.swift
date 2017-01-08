@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Stencil
 import Foundation
 import SwiftProtobuf
 import PluginLibrary
+import Stencil
+import PathKit
 
 func protoMessageName(_ name :String?) -> String {
   guard let name = name else {
@@ -120,8 +121,13 @@ func stripMarkers(_ code:String) -> String {
 
 func main() throws {
 
+  // we expect our templates to be in the same directory as this executable.
+  let executableURL = URL(fileURLWithPath: Bundle.main.executablePath!)
+  let executableDir : String = executableURL.deletingLastPathComponent().path
+  let templatePath = Path(executableDir + "/swiftgrpc.templates/")
+
   // initialize template engine and add custom filters
-  let fileSystemLoader = FileSystemLoader(paths: ["templates/"])
+  let fileSystemLoader = FileSystemLoader(paths: [templatePath])
   let ext = Extension()
   ext.registerFilter("call") { (value: Any?, arguments: [Any?]) in
     return try packageServiceMethodName(arguments) + "Call"
@@ -213,7 +219,7 @@ func main() throws {
   }
 
   log += "\(request)"
-  
+
   // add the logfile to the code generation response
   var logfile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
   logfile.name = "swiftgrpc.log"
