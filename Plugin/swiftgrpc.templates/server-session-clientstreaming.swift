@@ -43,7 +43,7 @@ public class {{ .|session:protoFile,service,method }} {
     try self.handler.sendMetadata(initialMetadata:Metadata()) {
       queue.async {
         do {
-          try self.provider.collect(session:self)
+          try self.provider.{{ method.name|lowercase }}(session:self)
         } catch (let error) {
           print("error \(error)")
         }

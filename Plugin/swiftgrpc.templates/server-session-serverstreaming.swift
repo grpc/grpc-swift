@@ -24,7 +24,7 @@ public class {{ .|session:protoFile,service,method }} {
           // we dispatch them to another queue.
           queue.async {
             do {
-              try self.provider.expand(request:requestMessage, session: self)
+              try self.provider.{{ method.name|lowercase }}(request:requestMessage, session: self)
               try self.handler.sendStatus(statusCode:0,
                                           statusMessage:"OK",
                                           trailingMetadata:Metadata(),

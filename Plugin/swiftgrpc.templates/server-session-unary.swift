@@ -14,7 +14,7 @@ public class {{ .|session:protoFile,service,method }} {
     try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
       if let requestData = requestData {
         let requestMessage = try {{ method|input }}(protobuf:requestData)
-        let replyMessage = try self.provider.get(request:requestMessage)
+        let replyMessage = try self.provider.{{ method.name|lowercase }}(request:requestMessage)
         try self.handler.sendResponse(message:replyMessage.serializeProtobuf(),
                                       statusCode: 0,
                                       statusMessage: "OK",
