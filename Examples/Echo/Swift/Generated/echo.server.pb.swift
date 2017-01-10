@@ -41,6 +41,7 @@
 
 import Foundation
 import gRPC
+import Dispatch
 
 /// Type for errors thrown from generated server code.
 public enum Echo_EchoServerError : Error {

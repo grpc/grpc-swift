@@ -32,6 +32,7 @@
  */
 import Foundation
 import gRPC
+import Dispatch
 
 print("\(CommandLine.arguments)")
 
@@ -189,6 +190,3 @@ if client != "" {
   }
   
 }
-
-
-

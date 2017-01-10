@@ -33,9 +33,9 @@ Start a docker instance with the following command:
     # go to /root
     cd
     # download and unpack swift
-    wget https://swift.org/builds/swift-3.0.1-release/ubuntu1604/swift-3.0.1-RELEASE/swift-3.0.1-RELEASE-ubuntu16.04.tar.gz
-    tar xzf swift-3.0.1-RELEASE-ubuntu16.04.tar.gz
-    ln -s swift-3.0.1-RELEASE-ubuntu16.04 swift
+    wget https://swift.org/builds/swift-3.0.2-release/ubuntu1604/swift-3.0.2-RELEASE/swift-3.0.2-RELEASE-ubuntu16.04.tar.gz
+    tar xzf swift-3.0.2-RELEASE-ubuntu16.04.tar.gz
+    ln -s swift-3.0.2-RELEASE-ubuntu16.04 swift
 
 ## Add Swift to your path
     # add swift to your path by adding this to your .bashrc
