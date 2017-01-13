@@ -50,13 +50,23 @@ public enum Echo_EchoServerError : Error {
 
 /// To build a server, implement a class that conforms to this protocol.
 public protocol Echo_EchoProvider {
-  func get(request : Echo_EchoRequest) throws -> Echo_EchoResponse
+  func get(request : Echo_EchoRequest, session : Echo_EchoGetSession) throws -> Echo_EchoResponse
   func expand(request : Echo_EchoRequest, session : Echo_EchoExpandSession) throws
   func collect(session : Echo_EchoCollectSession) throws
   func update(session : Echo_EchoUpdateSession) throws
 }
+
+/// Common properties available in each service session.
+public class Echo_EchoSession {
+  var statusCode : Int = 0
+  var statusMessage : String = "OK"
+  var initialMetadata : Metadata = Metadata()
+  var trailingMetadata : Metadata = Metadata()
+  var receivedMetadata : Metadata = Metadata()
+}
+
 // Get (Unary)
-public class Echo_EchoGetSession {
+public class Echo_EchoGetSession : Echo_EchoSession {
   private var handler : gRPC.Handler
   private var provider : Echo_EchoProvider
 
@@ -68,21 +78,21 @@ public class Echo_EchoGetSession {
 
   /// Run the session. Internal.
   fileprivate func run(queue:DispatchQueue) throws {
-    try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
+    try handler.receiveMessage(initialMetadata:initialMetadata) {(requestData) in
       if let requestData = requestData {
         let requestMessage = try Echo_EchoRequest(protobuf:requestData)
-        let replyMessage = try self.provider.get(request:requestMessage)
+        let replyMessage = try self.provider.get(request:requestMessage, session: self)
         try self.handler.sendResponse(message:replyMessage.serializeProtobuf(),
-                                      statusCode: 0,
-                                      statusMessage: "OK",
-                                      trailingMetadata:Metadata())
+                                      statusCode:self.statusCode,
+                                      statusMessage:self.statusMessage,
+                                      trailingMetadata:self.trailingMetadata)
       }
     }
   }
 }
 
 // Expand (Server Streaming)
-public class Echo_EchoExpandSession {
+public class Echo_EchoExpandSession : Echo_EchoSession {
   private var handler : gRPC.Handler
   private var provider : Echo_EchoProvider
 
@@ -99,7 +109,7 @@ public class Echo_EchoExpandSession {
 
   /// Run the session. Internal.
   fileprivate func run(queue:DispatchQueue) throws {
-    try self.handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
+    try self.handler.receiveMessage(initialMetadata:initialMetadata) {(requestData) in
       if let requestData = requestData {
         do {
           let requestMessage = try Echo_EchoRequest(protobuf:requestData)
@@ -108,9 +118,9 @@ public class Echo_EchoExpandSession {
           queue.async {
             do {
               try self.provider.expand(request:requestMessage, session: self)
-              try self.handler.sendStatus(statusCode:0,
-                                          statusMessage:"OK",
-                                          trailingMetadata:Metadata(),
+              try self.handler.sendStatus(statusCode:self.statusCode,
+                                          statusMessage:self.statusMessage,
+                                          trailingMetadata:self.trailingMetadata,
                                           completion:{})
             } catch (let error) {
               print("error: \(error)")
@@ -125,7 +135,7 @@ public class Echo_EchoExpandSession {
 }
 
 // Collect (Client Streaming)
-public class Echo_EchoCollectSession {
+public class Echo_EchoCollectSession : Echo_EchoSession {
   private var handler : gRPC.Handler
   private var provider : Echo_EchoProvider
 
@@ -159,14 +169,14 @@ public class Echo_EchoCollectSession {
   /// Send a response and close the connection.
   public func SendAndClose(_ response: Echo_EchoResponse) throws {
     try self.handler.sendResponse(message:response.serializeProtobuf(),
-                                  statusCode: 0,
-                                  statusMessage: "OK",
-                                  trailingMetadata: Metadata())
+                                  statusCode:self.statusCode,
+                                  statusMessage:self.statusMessage,
+                                  trailingMetadata:self.trailingMetadata)
   }
 
   /// Run the session. Internal.
   fileprivate func run(queue:DispatchQueue) throws {
-    try self.handler.sendMetadata(initialMetadata:Metadata()) {
+    try self.handler.sendMetadata(initialMetadata:initialMetadata) {
       queue.async {
         do {
           try self.provider.collect(session:self)
@@ -179,7 +189,7 @@ public class Echo_EchoCollectSession {
 }
 
 // Update (Bidirectional Streaming)
-public class Echo_EchoUpdateSession {
+public class Echo_EchoUpdateSession : Echo_EchoSession {
   private var handler : gRPC.Handler
   private var provider : Echo_EchoProvider
 
@@ -223,9 +233,9 @@ public class Echo_EchoUpdateSession {
   /// Close a connection. Blocks until the connection is closed.
   public func Close() throws {
     let done = NSCondition()
-    try self.handler.sendStatus(statusCode: 0,
-                                statusMessage: "OK",
-                                trailingMetadata: Metadata()) {
+    try self.handler.sendStatus(statusCode:self.statusCode,
+                                statusMessage:self.statusMessage,
+                                trailingMetadata:self.trailingMetadata) {
                                   done.lock()
                                   done.signal()
                                   done.unlock()
@@ -237,7 +247,7 @@ public class Echo_EchoUpdateSession {
 
   /// Run the session. Internal.
   fileprivate func run(queue:DispatchQueue) throws {
-    try self.handler.sendMetadata(initialMetadata:Metadata()) {
+    try self.handler.sendMetadata(initialMetadata:initialMetadata) {
       queue.async {
         do {
           try self.provider.update(session:self)

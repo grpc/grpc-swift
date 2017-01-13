@@ -1,5 +1,5 @@
 // {{ method.name }} (Client Streaming)
-public class {{ .|session:protoFile,service,method }} {
+public class {{ .|session:protoFile,service,method }} : {{ .|service:protoFile,service }}Session {
   private var handler : gRPC.Handler
   private var provider : {{ .|provider:protoFile,service }}
 
@@ -33,14 +33,14 @@ public class {{ .|session:protoFile,service,method }} {
   /// Send a response and close the connection.
   public func SendAndClose(_ response: {{ method|output }}) throws {
     try self.handler.sendResponse(message:response.serializeProtobuf(),
-                                  statusCode: 0,
-                                  statusMessage: "OK",
-                                  trailingMetadata: Metadata())
+                                  statusCode:self.statusCode,
+                                  statusMessage:self.statusMessage,
+                                  trailingMetadata:self.trailingMetadata)
   }
 
   /// Run the session. Internal.
   fileprivate func run(queue:DispatchQueue) throws {
-    try self.handler.sendMetadata(initialMetadata:Metadata()) {
+    try self.handler.sendMetadata(initialMetadata:initialMetadata) {
       queue.async {
         do {
           try self.provider.{{ method.name|lowercase }}(session:self)

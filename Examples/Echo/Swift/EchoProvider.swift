@@ -36,7 +36,7 @@ import Foundation
 class EchoProvider : Echo_EchoProvider {
 
   // get returns requests as they were received.
-  func get(request : Echo_EchoRequest) throws -> Echo_EchoResponse {
+  func get(request : Echo_EchoRequest, session : Echo_EchoGetSession) throws -> Echo_EchoResponse {
     return Echo_EchoResponse(text:"Swift echo get: " + request.text)
   }
 

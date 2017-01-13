@@ -1,5 +1,5 @@
 // {{ method.name }} (Bidirectional Streaming)
-public class {{ .|session:protoFile,service,method }} {
+public class {{ .|session:protoFile,service,method }} : {{ .|service:protoFile,service }}Session {
   private var handler : gRPC.Handler
   private var provider : {{ .|provider:protoFile,service }}
 
@@ -43,9 +43,9 @@ public class {{ .|session:protoFile,service,method }} {
   /// Close a connection. Blocks until the connection is closed.
   public func Close() throws {
     let done = NSCondition()
-    try self.handler.sendStatus(statusCode: 0,
-                                statusMessage: "OK",
-                                trailingMetadata: Metadata()) {
+    try self.handler.sendStatus(statusCode:self.statusCode,
+                                statusMessage:self.statusMessage,
+                                trailingMetadata:self.trailingMetadata) {
                                   done.lock()
                                   done.signal()
                                   done.unlock()
@@ -57,7 +57,7 @@ public class {{ .|session:protoFile,service,method }} {
 
   /// Run the session. Internal.
   fileprivate func run(queue:DispatchQueue) throws {
-    try self.handler.sendMetadata(initialMetadata:Metadata()) {
+    try self.handler.sendMetadata(initialMetadata:initialMetadata) {
       queue.async {
         do {
           try self.provider.{{ method.name|lowercase }}(session:self)

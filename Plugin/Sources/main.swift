@@ -150,6 +150,9 @@ func main() throws {
   ext.registerFilter("server") { (value: Any?, arguments: [Any?]) in
     return try packageServiceName(arguments) + "Server"
   }
+  ext.registerFilter("service") { (value: Any?, arguments: [Any?]) in
+    return try packageServiceName(arguments)
+  }
   ext.registerFilter("input") { (value: Any?) in
     if let value = value as? Google_Protobuf_MethodDescriptorProto {
       return protoMessageName(value.inputType)

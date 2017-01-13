@@ -53,7 +53,7 @@ public enum {{ .|servererror:protoFile,service }} : Error {
 public protocol {{ .|provider:protoFile,service }} {
   //-{% for method in service.method %}
   //-{% if not method.clientStreaming and not method.serverStreaming %}
-  func {{ method.name|lowercase }}(request : {{ method|input }}) throws -> {{ method|output }}
+  func {{ method.name|lowercase }}(request : {{ method|input }}, session : {{ .|session:protoFile,service,method }}) throws -> {{ method|output }}
   //-{% endif %}
   //-{% if not method.clientStreaming and method.serverStreaming %}
   func {{ method.name|lowercase }}(request : {{ method|input }}, session : {{ .|session:protoFile,service,method }}) throws
@@ -66,6 +66,16 @@ public protocol {{ .|provider:protoFile,service }} {
   //-{% endif %}
   //-{% endfor %}
 }
+
+/// Common properties available in each service session.
+public class {{ .|service:protoFile,service }}Session {
+  var statusCode : Int = 0
+  var statusMessage : String = "OK"
+  var initialMetadata : Metadata = Metadata()
+  var trailingMetadata : Metadata = Metadata()
+  var receivedMetadata : Metadata = Metadata()
+}
+
 //-{% for method in service.method %}
 //-{% if not method.clientStreaming and not method.serverStreaming %}
 //-{% include "server-session-unary.swift" %}

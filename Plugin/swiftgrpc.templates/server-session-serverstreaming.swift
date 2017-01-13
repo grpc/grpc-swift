@@ -1,5 +1,5 @@
 // {{ method.name }} (Server Streaming)
-public class {{ .|session:protoFile,service,method }} {
+public class {{ .|session:protoFile,service,method }} : {{ .|service:protoFile,service }}Session {
   private var handler : gRPC.Handler
   private var provider : {{ .|provider:protoFile,service }}
 
@@ -16,7 +16,7 @@ public class {{ .|session:protoFile,service,method }} {
 
   /// Run the session. Internal.
   fileprivate func run(queue:DispatchQueue) throws {
-    try self.handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
+    try self.handler.receiveMessage(initialMetadata:initialMetadata) {(requestData) in
       if let requestData = requestData {
         do {
           let requestMessage = try {{ method|input }}(protobuf:requestData)
@@ -25,9 +25,9 @@ public class {{ .|session:protoFile,service,method }} {
           queue.async {
             do {
               try self.provider.{{ method.name|lowercase }}(request:requestMessage, session: self)
-              try self.handler.sendStatus(statusCode:0,
-                                          statusMessage:"OK",
-                                          trailingMetadata:Metadata(),
+              try self.handler.sendStatus(statusCode:self.statusCode,
+                                          statusMessage:self.statusMessage,
+                                          trailingMetadata:self.trailingMetadata,
                                           completion:{})
             } catch (let error) {
               print("error: \(error)")

@@ -1,11 +1,9 @@
 
-all:	test
+default:	build
 
-build:
-	rm -f echo.client.pb.swift echo.server.pb.swift
+build:  clear
 	swift build
 	cp .build/debug/protoc-gen-swiftgrpc .
-
 
 test:	build
 	protoc ../Examples/Echo/echo.proto --proto_path=../Examples/Echo --swiftgrpc_out=. 
@@ -16,9 +14,8 @@ deploy:
 	cp echo.client.pb.swift ../Examples/Echo/Swift/Generated/echo.client.pb.swift 
 	cp echo.server.pb.swift ../Examples/Echo/Swift/Generated/echo.server.pb.swift 
 
-clean :
-	rm -f protoc-gen-swiftgrpc 
-	rm -f swiftgrpc.log
-	rm -f echo.client.pb.swift echo.server.pb.swift
-	rm -rf Packages
-	rm -rf .build
+clear : 
+	rm -f echo.client.pb.swift echo.server.pb.swift swiftgrpc.log
+
+clean : clear
+	rm -rf protoc-gen-swiftgrpc Packages .build
