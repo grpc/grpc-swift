@@ -101,7 +101,7 @@ public class {{ protoFile.package|capitalize }}_{{ service.name }}Service {
   //-{% if not method.clientStreaming and not method.serverStreaming %}
   // Synchronous. Unary.
   public func {{ method.name|lowercase }}(_ request: {{ method|input }}) throws -> {{ method|output }} {
-    return try {{ .|call:protoFile,service,method }}(channel).run(request:request, metadata:metadata)
+    return try {{ .|call:protoFile,service,method }}(channel).run(request:request, metadata:metadata.copy() as! Metadata)
   }
   //-{% endif %}
   //-{% if not method.clientStreaming and method.serverStreaming %}
@@ -109,7 +109,7 @@ public class {{ protoFile.package|capitalize }}_{{ service.name }}Service {
   // Send the initial message.
   // Use methods on the returned object to get streamed responses.
   public func {{ method.name|lowercase }}(_ request: {{ method|input }}) throws -> {{ .|call:protoFile,service,method }} {
-    return try {{ .|call:protoFile,service,method }}(channel).run(request:request, metadata:metadata)
+    return try {{ .|call:protoFile,service,method }}(channel).run(request:request, metadata:metadata.copy() as! Metadata)
   }
   //-{% endif %}
   //-{% if method.clientStreaming and not method.serverStreaming %}
@@ -117,7 +117,7 @@ public class {{ protoFile.package|capitalize }}_{{ service.name }}Service {
   // Use methods on the returned object to stream messages and
   // to close the connection and wait for a final response.
   public func {{ method.name|lowercase }}() throws -> {{ .|call:protoFile,service,method }} {
-    return try {{ .|call:protoFile,service,method }}(channel).run(metadata:metadata)
+    return try {{ .|call:protoFile,service,method }}(channel).run(metadata:metadata.copy() as! Metadata)
   }
   //-{% endif %}
   //-{% if method.clientStreaming and method.serverStreaming %}
@@ -125,7 +125,7 @@ public class {{ protoFile.package|capitalize }}_{{ service.name }}Service {
   // Use methods on the returned object to stream messages,
   // to wait for replies, and to close the connection.
   public func {{ method.name|lowercase }}() throws -> {{ .|call:protoFile,service,method }} {
-    return try {{ .|call:protoFile,service,method }}(channel).run(metadata:metadata)
+    return try {{ .|call:protoFile,service,method }}(channel).run(metadata:metadata.copy() as! Metadata)
   }
   //-{% endif %}
   //-{% endfor %}

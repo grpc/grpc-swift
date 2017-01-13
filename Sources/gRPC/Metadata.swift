@@ -46,7 +46,7 @@ private struct MetadataPair {
 }
 
 /// Metadata sent with gRPC messages
-public class Metadata : CustomStringConvertible {
+public class Metadata : CustomStringConvertible, NSCopying {
 
   /// Pointer to underlying C representation
   var underlyingArray: UnsafeMutableRawPointer
@@ -109,5 +109,13 @@ public class Metadata : CustomStringConvertible {
       result += key + ":" + value + "\n"
     }
     return result
+  }
+
+  public func copy(with zone: NSZone? = nil) -> Any {
+    let copy = Metadata()
+    for i in 0..<count() {
+      copy.add(key:self.key(i), value:self.value(i))
+    }
+    return copy
   }
 }

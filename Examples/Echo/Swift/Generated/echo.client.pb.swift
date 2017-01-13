@@ -319,24 +319,24 @@ public class Echo_EchoService {
 
   // Synchronous. Unary.
   public func get(_ request: Echo_EchoRequest) throws -> Echo_EchoResponse {
-    return try Echo_EchoGetCall(channel).run(request:request, metadata:metadata)
+    return try Echo_EchoGetCall(channel).run(request:request, metadata:metadata.copy() as! Metadata)
   }
   // Asynchronous. Server-streaming.
   // Send the initial message.
   // Use methods on the returned object to get streamed responses.
   public func expand(_ request: Echo_EchoRequest) throws -> Echo_EchoExpandCall {
-    return try Echo_EchoExpandCall(channel).run(request:request, metadata:metadata)
+    return try Echo_EchoExpandCall(channel).run(request:request, metadata:metadata.copy() as! Metadata)
   }
   // Asynchronous. Client-streaming.
   // Use methods on the returned object to stream messages and
   // to close the connection and wait for a final response.
   public func collect() throws -> Echo_EchoCollectCall {
-    return try Echo_EchoCollectCall(channel).run(metadata:metadata)
+    return try Echo_EchoCollectCall(channel).run(metadata:metadata.copy() as! Metadata)
   }
   // Asynchronous. Bidirectional-streaming.
   // Use methods on the returned object to stream messages,
   // to wait for replies, and to close the connection.
   public func update() throws -> Echo_EchoUpdateCall {
-    return try Echo_EchoUpdateCall(channel).run(metadata:metadata)
+    return try Echo_EchoUpdateCall(channel).run(metadata:metadata.copy() as! Metadata)
   }
 }
