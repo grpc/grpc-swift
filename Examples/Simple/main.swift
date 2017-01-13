@@ -85,12 +85,12 @@ func client() throws {
 
       let initialMetadata = response.initialMetadata!
       for i in 0..<initialMetadata.count() {
-        print("INITIAL METADATA ->", initialMetadata.key(index:i), ":", initialMetadata.value(index:i))
+        print("INITIAL METADATA ->", initialMetadata.key(i), ":", initialMetadata.value(i))
       }
 
       let trailingMetadata = response.trailingMetadata!
       for i in 0..<trailingMetadata.count() {
-        print("TRAILING METADATA ->", trailingMetadata.key(index:i), ":", trailingMetadata.value(index:i))
+        print("TRAILING METADATA ->", trailingMetadata.key(i), ":", trailingMetadata.value(i))
       }
       done.lock()
       done.signal()
@@ -120,8 +120,8 @@ func server() throws {
 
       let initialMetadata = requestHandler.requestMetadata
       for i in 0..<initialMetadata.count() {
-        print("\(requestCount): Received initial metadata -> " + initialMetadata.key(index:i)
-          + ":" + initialMetadata.value(index:i))
+        print("\(requestCount): Received initial metadata -> " + initialMetadata.key(i)
+          + ":" + initialMetadata.value(i))
       }
 
       let initialMetadataToSend = Metadata([["a": "Apple"],

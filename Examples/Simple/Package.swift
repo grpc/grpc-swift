@@ -34,6 +34,6 @@ import PackageDescription
 let package = Package (
     name: "Simple",
     dependencies: [
-        .Package(url: "https://github.com/grpc/grpc-swift.git", Version(0,1,0)),
+        .Package(url: "https://github.com/grpc/grpc-swift.git", Version(0,1,1)),
     ]
 )

@@ -178,8 +178,8 @@ class Document: NSDocument {
 
             if let initialMetadata = callResult.initialMetadata {
               for j in 0..<initialMetadata.count() {
-                self.log("\(i): Received initial metadata -> " + initialMetadata.key(index:j)
-                  + " : " + initialMetadata.value(index:j))
+                self.log("\(i): Received initial metadata -> " + initialMetadata.key(j)
+                  + " : " + initialMetadata.value(j))
               }
             }
 
@@ -194,8 +194,8 @@ class Document: NSDocument {
 
             if let trailingMetadata = callResult.trailingMetadata {
               for j in 0..<trailingMetadata.count() {
-                self.log("\(i): Received trailing metadata -> " + trailingMetadata.key(index:j)
-                  + " : " + trailingMetadata.value(index:j))
+                self.log("\(i): Received trailing metadata -> " + trailingMetadata.key(j)
+                  + " : " + trailingMetadata.value(j))
               }
             }
           }
@@ -229,8 +229,8 @@ class Document: NSDocument {
 
         let initialMetadata = requestHandler.requestMetadata
         for i in 0..<initialMetadata.count() {
-          self.log("\(requestCount): Received initial metadata -> " + initialMetadata.key(index:i)
-            + ":" + initialMetadata.value(index:i))
+          self.log("\(requestCount): Received initial metadata -> " + initialMetadata.key(i)
+            + ":" + initialMetadata.value(i))
         }
 
         let initialMetadataToSend = Metadata([["a": "Apple"],
