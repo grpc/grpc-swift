@@ -328,7 +328,7 @@ public class Call {
       if operationGroup.success {
         if let initialMetadata = operationGroup.receivedInitialMetadata() {
           for j in 0..<initialMetadata.count() {
-            print("Received initial metadata -> " + initialMetadata.key(index:j) + " : " + initialMetadata.value(index:j))
+            print("Received initial metadata -> " + initialMetadata.key(j) + " : " + initialMetadata.value(j))
           }
         }
       }

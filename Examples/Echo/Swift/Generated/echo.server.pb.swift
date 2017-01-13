@@ -58,22 +58,27 @@ public protocol Echo_EchoProvider {
 
 /// Common properties available in each service session.
 public class Echo_EchoSession {
-  var statusCode : Int = 0
-  var statusMessage : String = "OK"
-  var initialMetadata : Metadata = Metadata()
-  var trailingMetadata : Metadata = Metadata()
-  var receivedMetadata : Metadata = Metadata()
+  fileprivate var handler : gRPC.Handler
+  public var requestMetadata : Metadata { return handler.requestMetadata }
+
+  public var statusCode : Int = 0
+  public var statusMessage : String = "OK"
+  public var initialMetadata : Metadata = Metadata()
+  public var trailingMetadata : Metadata = Metadata()
+
+  fileprivate init(handler:gRPC.Handler) {
+    self.handler = handler
+  }
 }
 
 // Get (Unary)
 public class Echo_EchoGetSession : Echo_EchoSession {
-  private var handler : gRPC.Handler
   private var provider : Echo_EchoProvider
 
   /// Create a session.
   fileprivate init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
-    self.handler = handler
     self.provider = provider
+    super.init(handler:handler)
   }
 
   /// Run the session. Internal.
@@ -93,13 +98,12 @@ public class Echo_EchoGetSession : Echo_EchoSession {
 
 // Expand (Server Streaming)
 public class Echo_EchoExpandSession : Echo_EchoSession {
-  private var handler : gRPC.Handler
   private var provider : Echo_EchoProvider
 
   /// Create a session.
   fileprivate init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
-    self.handler = handler
     self.provider = provider
+    super.init(handler:handler)
   }
 
   /// Send a message. Nonblocking.
@@ -136,13 +140,12 @@ public class Echo_EchoExpandSession : Echo_EchoSession {
 
 // Collect (Client Streaming)
 public class Echo_EchoCollectSession : Echo_EchoSession {
-  private var handler : gRPC.Handler
   private var provider : Echo_EchoProvider
 
   /// Create a session.
   fileprivate init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
-    self.handler = handler
     self.provider = provider
+    super.init(handler:handler)
   }
 
   /// Receive a message. Blocks until a message is received or the client closes the connection.
@@ -190,13 +193,12 @@ public class Echo_EchoCollectSession : Echo_EchoSession {
 
 // Update (Bidirectional Streaming)
 public class Echo_EchoUpdateSession : Echo_EchoSession {
-  private var handler : gRPC.Handler
   private var provider : Echo_EchoProvider
 
   /// Create a session.
   fileprivate init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
-    self.handler = handler
     self.provider = provider
+    super.init(handler:handler)
   }
 
   /// Receive a message. Blocks until a message is received or the client closes the connection.
@@ -300,7 +302,8 @@ public class Echo_EchoServer {
     server.run {(handler) in
       print("Server received request to " + handler.host
         + " calling " + handler.method
-        + " from " + handler.caller)
+        + " from " + handler.caller
+        + " with " + String(describing:handler.requestMetadata) )
 
       do {
         switch handler.method {

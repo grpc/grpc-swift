@@ -46,7 +46,7 @@ private struct MetadataPair {
 }
 
 /// Metadata sent with gRPC messages
-public class Metadata {
+public class Metadata : CustomStringConvertible {
 
   /// Pointer to underlying C representation
   var underlyingArray: UnsafeMutableRawPointer
@@ -87,17 +87,27 @@ public class Metadata {
     return cgrpc_metadata_array_get_count(underlyingArray);
   }
 
-  public func key(index: Int) -> (String) {
+  public func key(_ index: Int) -> (String) {
     return String(cString:cgrpc_metadata_array_get_key_at_index(underlyingArray, index),
                   encoding:String.Encoding.utf8)!;
   }
 
-  public func value(index: Int) -> (String) {
+  public func value(_ index: Int) -> (String) {
     return String(cString:cgrpc_metadata_array_get_value_at_index(underlyingArray, index),
                   encoding:String.Encoding.utf8)!;
   }
 
   public func add(key:String, value:String) {
     cgrpc_metadata_array_append_metadata(underlyingArray, key, value)
+  }
+
+  public var description : String {
+    var result = ""
+    for i in 0..<count() {
+      let key = self.key(i)
+      let value = self.value(i)
+      result += key + ":" + value + "\n"
+    }
+    return result
   }
 }

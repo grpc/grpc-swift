@@ -1,12 +1,11 @@
 // {{ method.name }} (Client Streaming)
 public class {{ .|session:protoFile,service,method }} : {{ .|service:protoFile,service }}Session {
-  private var handler : gRPC.Handler
   private var provider : {{ .|provider:protoFile,service }}
 
   /// Create a session.
   fileprivate init(handler:gRPC.Handler, provider: {{ .|provider:protoFile,service }}) {
-    self.handler = handler
     self.provider = provider
+    super.init(handler:handler)
   }
 
   /// Receive a message. Blocks until a message is received or the client closes the connection.

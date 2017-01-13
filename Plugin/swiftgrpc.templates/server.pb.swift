@@ -69,11 +69,17 @@ public protocol {{ .|provider:protoFile,service }} {
 
 /// Common properties available in each service session.
 public class {{ .|service:protoFile,service }}Session {
-  var statusCode : Int = 0
-  var statusMessage : String = "OK"
-  var initialMetadata : Metadata = Metadata()
-  var trailingMetadata : Metadata = Metadata()
-  var receivedMetadata : Metadata = Metadata()
+  fileprivate var handler : gRPC.Handler
+  public var requestMetadata : Metadata { return handler.requestMetadata }
+
+  public var statusCode : Int = 0
+  public var statusMessage : String = "OK"
+  public var initialMetadata : Metadata = Metadata()
+  public var trailingMetadata : Metadata = Metadata()
+
+  fileprivate init(handler:gRPC.Handler) {
+    self.handler = handler
+  }
 }
 
 //-{% for method in service.method %}
@@ -131,7 +137,8 @@ public class {{ .|server:protoFile,service }} {
     server.run {(handler) in
       print("Server received request to " + handler.host
         + " calling " + handler.method
-        + " from " + handler.caller)
+        + " from " + handler.caller
+        + " with " + String(describing:handler.requestMetadata) )
 
       do {
         switch handler.method {
