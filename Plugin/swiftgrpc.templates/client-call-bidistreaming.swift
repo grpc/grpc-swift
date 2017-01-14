@@ -12,20 +12,6 @@ public class {{ .|call:protoFile,service,method }} {
     return self
   }
 
-  fileprivate func receiveMessage(callback:@escaping ({{ method|output }}?) throws -> Void) throws {
-    try call.receiveMessage() {(data) in
-      if let data = data {
-        if let responseMessage = try? {{ method|output }}(protobuf:data) {
-          try callback(responseMessage)
-        } else {
-          try callback(nil) // error, bad data
-        }
-      } else {
-        try callback(nil)
-      }
-    }
-  }
-
   public func Receive() throws -> {{ method|output }} {
     var returnError : {{ .|clienterror:protoFile,service }}?
     var returnMessage : {{ method|output }}!

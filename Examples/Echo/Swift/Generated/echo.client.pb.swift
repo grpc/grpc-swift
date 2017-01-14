@@ -223,20 +223,6 @@ public class Echo_EchoUpdateCall {
     return self
   }
 
-  fileprivate func receiveMessage(callback:@escaping (Echo_EchoResponse?) throws -> Void) throws {
-    try call.receiveMessage() {(data) in
-      if let data = data {
-        if let responseMessage = try? Echo_EchoResponse(protobuf:data) {
-          try callback(responseMessage)
-        } else {
-          try callback(nil) // error, bad data
-        }
-      } else {
-        try callback(nil)
-      }
-    }
-  }
-
   public func Receive() throws -> Echo_EchoResponse {
     var returnError : Echo_EchoClientError?
     var returnMessage : Echo_EchoResponse!
