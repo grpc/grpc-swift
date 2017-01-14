@@ -73,3 +73,14 @@ Start a docker instance with the following command:
     .build/debug/Echo collect
     .build/debug/Echo update
 	
+
+## To test the plugin
+    # build and install protoc
+    cd
+    cd grpc-swift/third_party/grpc/third_party/protobuf 
+    make install
+    # build and test the plugin
+    cd
+    cd grpc-swift/Plugin
+    make test
+

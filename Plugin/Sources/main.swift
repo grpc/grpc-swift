@@ -119,10 +119,18 @@ func stripMarkers(_ code:String) -> String {
   return outputLines.joined(separator:"\n")
 }
 
+func Log(_ message : String) {
+  FileHandle.standardError.write((message + "\n").data(using:.utf8)!)
+}
+
 func main() throws {
 
   // we expect our templates to be in the same directory as this executable.
-  let executableURL = URL(fileURLWithPath: Bundle.main.executablePath!)
+  var path = "./protoc-gen-swiftgrpc"
+  if let executablePath = Bundle.main.executablePath {
+    path = executablePath
+  }
+  let executableURL = URL(fileURLWithPath: path)
   let executableDir : String = executableURL.deletingLastPathComponent().path
   let templatePath = Path(executableDir + "/swiftgrpc.templates/")
 
