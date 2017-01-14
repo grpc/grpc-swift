@@ -145,7 +145,7 @@ public class Echo_EchoCollectCall {
 
   // Call this to start a call.
   fileprivate func run(metadata:Metadata) throws -> Echo_EchoCollectCall {
-    try self.call.start(metadata: metadata, completion:{})
+    try self.call.start(metadata: metadata, completion:{_ in})
     return self
   }
 
@@ -219,7 +219,7 @@ public class Echo_EchoUpdateCall {
   }
 
   fileprivate func run(metadata:Metadata) throws -> Echo_EchoUpdateCall {
-    try self.call.start(metadata: metadata, completion:{})
+    try self.call.start(metadata: metadata, completion:{_ in})
     return self
   }
 
