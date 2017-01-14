@@ -1,4 +1,6 @@
 import XCTest
+import Foundation
+import Dispatch
 @testable import gRPC
 
 class gRPCTests: XCTestCase {

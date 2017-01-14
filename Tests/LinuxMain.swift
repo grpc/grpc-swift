@@ -1,5 +1,5 @@
 import XCTest
-@testable import gRPCTestSuite
+@testable import gRPCTests
 
 XCTMain([
   testCase(gRPCTests.allTests),
