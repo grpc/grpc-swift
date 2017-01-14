@@ -99,8 +99,8 @@ public class Echo_EchoExpandCall {
   fileprivate func run(request: Echo_EchoRequest, metadata: Metadata) throws -> Echo_EchoExpandCall {
     let requestMessageData = try request.serializeProtobuf()
     try call.startServerStreaming(message: requestMessageData,
-                                  metadata: metadata,
-                                  completion:{(CallResult) in })
+                                  metadata: metadata)
+    {_ in}
     return self
   }
 
@@ -145,7 +145,8 @@ public class Echo_EchoCollectCall {
 
   // Call this to start a call.
   fileprivate func run(metadata:Metadata) throws -> Echo_EchoCollectCall {
-    try self.call.start(metadata: metadata, completion:{_ in})
+    try self.call.start(metadata: metadata)
+    {_ in}
     return self
   }
 
@@ -219,7 +220,8 @@ public class Echo_EchoUpdateCall {
   }
 
   fileprivate func run(metadata:Metadata) throws -> Echo_EchoUpdateCall {
-    try self.call.start(metadata: metadata, completion:{_ in})
+    try self.call.start(metadata: metadata)
+    {_ in}
     return self
   }
 

@@ -9,7 +9,8 @@ public class {{ .|call:protoFile,service,method }} {
 
   // Call this to start a call.
   fileprivate func run(metadata:Metadata) throws -> {{ .|call:protoFile,service,method }} {
-    try self.call.start(metadata: metadata, completion:{_ in})
+    try self.call.start(metadata: metadata)
+    {_ in}
     return self
   }
 

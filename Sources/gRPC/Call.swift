@@ -103,10 +103,10 @@ public struct CallResult {
 public class Call {
 
   /// Shared mutex for synchronizing calls to cgrpc_call_perform()
-  static let callMutex = Mutex()
+  private static let callMutex = Mutex()
 
   /// Maximum number of messages that can be queued
-  static var maximumQueuedMessages = 10
+  private static var maximumQueuedMessages = 10
 
   /// Pointer to underlying C representation
   private var underlyingCall : UnsafeMutableRawPointer
