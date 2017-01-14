@@ -75,7 +75,7 @@ func client() throws {
                              ["z": "zither"]])
 
 
-    try! call.perform(message: message!, metadata:metadata) {
+    try! call.start(.unary, metadata:metadata, message:message) {
       (response) in
       print("status:", response.statusCode)
       print("statusMessage:", response.statusMessage!)
