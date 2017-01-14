@@ -172,8 +172,9 @@ class Document: NSDocument {
                                  ["z": "zither"]])
 
         do {
-          try call.perform(message: messageData!,
-                           metadata: metadata)
+          try call.start(.unary,
+                         metadata:metadata,
+                         message:messageData)
           {(callResult) in
 
             if let initialMetadata = callResult.initialMetadata {

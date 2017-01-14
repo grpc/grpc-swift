@@ -8,7 +8,8 @@ public class {{ .|call:protoFile,service,method }} {
   }
 
   fileprivate func run(metadata:Metadata) throws -> {{ .|call:protoFile,service,method }} {
-    try self.call.start(metadata: metadata)
+    try self.call.start(.bidiStreaming,
+                        metadata:metadata)
     {_ in}
     return self
   }

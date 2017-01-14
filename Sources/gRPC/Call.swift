@@ -36,6 +36,13 @@
 #endif
 import Foundation
 
+public enum CallStyle {
+  case unary
+  case serverStreaming
+  case clientStreaming
+  case bidiStreaming
+}
+
 public enum CallError : Error {
   case ok
   case unknown
@@ -97,6 +104,22 @@ public struct CallResult {
   public var resultData : Data?
   public var initialMetadata : Metadata?
   public var trailingMetadata : Metadata?
+
+  fileprivate init(_ op : OperationGroup) {
+    if (op.success) {
+      self.statusCode = op.receivedStatusCode()!
+      self.statusMessage = op.receivedStatusMessage()
+      self.resultData = op.receivedMessage()?.data()
+      self.initialMetadata = op.receivedInitialMetadata()
+      self.trailingMetadata = op.receivedTrailingMetadata()
+    } else {
+      self.statusCode = 0
+      self.statusMessage = nil
+      self.resultData = nil
+      self.initialMetadata = nil
+      self.trailingMetadata = nil
+    }
+  }
 }
 
 /// A gRPC API call
@@ -148,7 +171,7 @@ public class Call {
     }
   }
 
-  /// Initiate performance of a group of operations without waiting for completion
+  /// Initiates performance of a group of operations without waiting for completion.
   ///
   /// - Parameter operations: group of operations to be performed
   /// - Returns: the result of initiating the call
@@ -162,104 +185,49 @@ public class Call {
     }
   }
 
-  /// Performs a nonstreaming gRPC API call
+  /// Starts a gRPC API call.
   ///
-  /// - Parameter message: data containing the message to send
+  /// - Parameter style: the style of call to start
   /// - Parameter metadata: metadata to send with the call
-  /// - Parameter callback: a block to call with a CallResponse object containing call results
-  public func perform(message: Data,
-                      metadata: Metadata,
-                      completion: @escaping (CallResult) -> Void)
+  /// - Parameter message: data containing the message to send (.unary and .serverStreaming only)
+  /// - Parameter callback: a block to call with call results
+  public func start(_ style: CallStyle,
+                    metadata: Metadata,
+                    message: Data? = nil,
+                    completion: @escaping (CallResult) -> Void)
     throws -> Void {
-      let messageBuffer = ByteBuffer(data:message)
-      let operations = OperationGroup(call:self,
-                                      operations:[.sendInitialMetadata(metadata),
-                                                  .receiveInitialMetadata,
-                                                  .receiveStatusOnClient,
-                                                  .sendMessage(messageBuffer),
-                                                  .sendCloseFromClient,
-                                                  .receiveMessage],
-                                      completion:
-        {(operationGroup) in
-          if operationGroup.success {
-            completion(CallResult(statusCode:operationGroup.receivedStatusCode()!,
-                                  statusMessage:operationGroup.receivedStatusMessage(),
-                                  resultData:operationGroup.receivedMessage()?.data(),
-                                  initialMetadata:operationGroup.receivedInitialMetadata(),
-                                  trailingMetadata:operationGroup.receivedTrailingMetadata()))
-          } else {
-            completion(CallResult(statusCode:0,
-                                  statusMessage:nil,
-                                  resultData:nil,
-                                  initialMetadata:nil,
-                                  trailingMetadata:nil))
-          }
-      })
-
-      try self.perform(operations)
-  }
-
-  public func startServerStreaming(message: Data,
-                                   metadata: Metadata,
-                                   completion: @escaping (CallResult) -> Void)
-    throws -> Void {
-      let messageBuffer = ByteBuffer(data:message)
-      let operations = OperationGroup(call:self,
-                                      operations:[.sendInitialMetadata(metadata),
-                                                  .receiveInitialMetadata,
-                                                  .receiveStatusOnClient,
-                                                  .sendMessage(messageBuffer),
-                                                  .sendCloseFromClient,
-                                                  ],
-                                      completion:
-        {(operationGroup) in
-          if operationGroup.success {
-            completion(CallResult(statusCode:operationGroup.receivedStatusCode()!,
-                                  statusMessage:operationGroup.receivedStatusMessage(),
-                                  resultData:nil,
-                                  initialMetadata:operationGroup.receivedInitialMetadata(),
-                                  trailingMetadata:nil))
-          } else {
-            completion(CallResult(statusCode:0,
-                                  statusMessage:nil,
-                                  resultData:nil,
-                                  initialMetadata:nil,
-                                  trailingMetadata:nil))
-          }
-      })
-
-      try self.perform(operations)
-  }
-
-  /// start a streaming connection
-  ///
-  /// Parameter metadata: initial metadata to send
-  public func start(metadata: Metadata,
-                    completion:@escaping (CallResult) -> Void)
-    throws -> Void {
-      let operations = OperationGroup(call:self,
-                                      operations:[.sendInitialMetadata(metadata),
-                                                  .receiveInitialMetadata,
-                                                  .receiveStatusOnClient])
-      {(operationGroup) in
-        if operationGroup.success {
-          completion(CallResult(statusCode:operationGroup.receivedStatusCode()!,
-                                statusMessage:operationGroup.receivedStatusMessage(),
-                                resultData:nil,
-                                initialMetadata:operationGroup.receivedInitialMetadata(),
-                                trailingMetadata:nil))
-        } else {
-          completion(CallResult(statusCode:0,
-                                statusMessage:nil,
-                                resultData:nil,
-                                initialMetadata:nil,
-                                trailingMetadata:nil))
+      var operations : [Operation] = []
+      switch style {
+      case .unary:
+        guard let message = message else {
+          throw CallError.invalidMessage
         }
+        operations = [.sendInitialMetadata(metadata.copy() as! Metadata),
+                      .receiveInitialMetadata,
+                      .receiveStatusOnClient,
+                      .sendMessage(ByteBuffer(data:message)),
+                      .sendCloseFromClient,
+                      .receiveMessage]
+      case .serverStreaming:
+        guard let message = message else {
+          throw CallError.invalidMessage
+        }
+        operations = [.sendInitialMetadata(metadata.copy() as! Metadata),
+                      .receiveInitialMetadata,
+                      .receiveStatusOnClient,
+                      .sendMessage(ByteBuffer(data:message)),
+                      .sendCloseFromClient]
+      case .clientStreaming, .bidiStreaming:
+        operations = [.sendInitialMetadata(metadata.copy() as! Metadata),
+                      .receiveInitialMetadata,
+                      .receiveStatusOnClient]
       }
-      try self.perform(operations)
+      try self.perform(OperationGroup(call:self,
+                                      operations:operations,
+                                      completion:{(op) in completion(CallResult(op))}))
   }
 
-  /// send a message over a streaming connection
+  /// Sends a message over a streaming connection.
   ///
   /// Parameter data: the message data to send
   /// Returns: true if the message could be queued or sent, false if the queue is full
@@ -284,7 +252,7 @@ public class Call {
 
   /// helper for sending queued messages
   private func sendWithoutBlocking(data: Data) throws -> Void {
-    let operations = OperationGroup(call:self,
+    try self.perform(OperationGroup(call:self,
                                     operations:[.sendMessage(ByteBuffer(data:data))])
     {(operationGroup) in
       if operationGroup.success {
@@ -308,14 +276,12 @@ public class Call {
       } else {
         // TODO: if the event failed, shut down
       }
-    }
-    try self.perform(operations)
+    })
   }
 
-  // receive a message over a streaming connection
+  // Receive a message over a streaming connection.
   public func receiveMessage(callback:@escaping ((Data!) throws -> Void)) throws -> Void {
-    let operations = OperationGroup(call:self,
-                                    operations:[.receiveMessage])
+    try self.perform(OperationGroup(call:self, operations:[.receiveMessage])
     {(operationGroup) in
       if operationGroup.success {
         if let messageBuffer = operationGroup.receivedMessage() {
@@ -324,17 +290,13 @@ public class Call {
           try callback(nil) // an empty response signals the end of a connection
         }
       }
-    }
-    try self.perform(operations)
+    })
   }
 
-  // close a streaming connection
+  // Closes a streaming connection.
   public func close(completion:@escaping (() -> Void)) throws -> Void {
-    let operations = OperationGroup(call:self,
-                                    operations:[.sendCloseFromClient])
-    {(operationGroup) in
-      completion()
-    }
-    try self.perform(operations)
+    try self.perform(OperationGroup(call:self, operations:[.sendCloseFromClient])
+    {(operationGroup) in completion()
+    })
   }
 }

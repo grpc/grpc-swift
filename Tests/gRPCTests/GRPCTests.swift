@@ -72,7 +72,7 @@ func client() {
       let method = (i < steps-1) ? hello : goodbye
       let call = c.makeCall(method)
       let metadata = Metadata(initialClientMetadata)
-      try call.perform(message: message!, metadata:metadata) {
+      try call.start(.unary, metadata:metadata, message:message) {
         (response) in
         // verify the basic response from the server
         XCTAssertEqual(response.statusCode, statusCode)

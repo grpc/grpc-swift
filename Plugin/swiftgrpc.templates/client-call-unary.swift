@@ -14,8 +14,9 @@ public class {{ .|call:protoFile,service,method }} {
     var callResult : CallResult!
     var responseMessage : {{ method|output }}?
     let requestMessageData = try request.serializeProtobuf()
-    try call.perform(message: requestMessageData,
-                     metadata: metadata)
+    try call.start(.unary,
+                   metadata:metadata,
+                   message:requestMessageData)
     {(_callResult) in
       callResult = _callResult
       if let messageData = callResult.resultData {

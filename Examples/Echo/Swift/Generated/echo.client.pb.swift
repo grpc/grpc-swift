@@ -64,8 +64,9 @@ public class Echo_EchoGetCall {
     var callResult : CallResult!
     var responseMessage : Echo_EchoResponse?
     let requestMessageData = try request.serializeProtobuf()
-    try call.perform(message: requestMessageData,
-                     metadata: metadata)
+    try call.start(.unary,
+                   metadata:metadata,
+                   message:requestMessageData)
     {(_callResult) in
       callResult = _callResult
       if let messageData = callResult.resultData {
@@ -98,8 +99,9 @@ public class Echo_EchoExpandCall {
   // Call this once with the message to send.
   fileprivate func run(request: Echo_EchoRequest, metadata: Metadata) throws -> Echo_EchoExpandCall {
     let requestMessageData = try request.serializeProtobuf()
-    try call.startServerStreaming(message: requestMessageData,
-                                  metadata: metadata)
+    try call.start(.serverStreaming,
+                   metadata:metadata,
+                   message:requestMessageData)
     {_ in}
     return self
   }
@@ -145,7 +147,8 @@ public class Echo_EchoCollectCall {
 
   // Call this to start a call.
   fileprivate func run(metadata:Metadata) throws -> Echo_EchoCollectCall {
-    try self.call.start(metadata: metadata)
+    try self.call.start(.clientStreaming,
+                        metadata:metadata)
     {_ in}
     return self
   }
@@ -220,7 +223,8 @@ public class Echo_EchoUpdateCall {
   }
 
   fileprivate func run(metadata:Metadata) throws -> Echo_EchoUpdateCall {
-    try self.call.start(metadata: metadata)
+    try self.call.start(.bidiStreaming,
+                        metadata:metadata)
     {_ in}
     return self
   }
@@ -307,24 +311,24 @@ public class Echo_EchoService {
 
   // Synchronous. Unary.
   public func get(_ request: Echo_EchoRequest) throws -> Echo_EchoResponse {
-    return try Echo_EchoGetCall(channel).run(request:request, metadata:metadata.copy() as! Metadata)
+    return try Echo_EchoGetCall(channel).run(request:request, metadata:metadata)
   }
   // Asynchronous. Server-streaming.
   // Send the initial message.
   // Use methods on the returned object to get streamed responses.
   public func expand(_ request: Echo_EchoRequest) throws -> Echo_EchoExpandCall {
-    return try Echo_EchoExpandCall(channel).run(request:request, metadata:metadata.copy() as! Metadata)
+    return try Echo_EchoExpandCall(channel).run(request:request, metadata:metadata)
   }
   // Asynchronous. Client-streaming.
   // Use methods on the returned object to stream messages and
   // to close the connection and wait for a final response.
   public func collect() throws -> Echo_EchoCollectCall {
-    return try Echo_EchoCollectCall(channel).run(metadata:metadata.copy() as! Metadata)
+    return try Echo_EchoCollectCall(channel).run(metadata:metadata)
   }
   // Asynchronous. Bidirectional-streaming.
   // Use methods on the returned object to stream messages,
   // to wait for replies, and to close the connection.
   public func update() throws -> Echo_EchoUpdateCall {
-    return try Echo_EchoUpdateCall(channel).run(metadata:metadata.copy() as! Metadata)
+    return try Echo_EchoUpdateCall(channel).run(metadata:metadata)
   }
 }
