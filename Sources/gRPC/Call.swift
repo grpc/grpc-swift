@@ -111,7 +111,11 @@ public struct CallResult {
 
   fileprivate init(_ op : OperationGroup) {
     if (op.success) {
-      self.statusCode = op.receivedStatusCode()!
+      if let statusCode = op.receivedStatusCode() {
+        self.statusCode = statusCode
+      } else {
+        self.statusCode = 0
+      }
       self.statusMessage = op.receivedStatusMessage()
       self.resultData = op.receivedMessage()?.data()
       self.initialMetadata = op.receivedInitialMetadata()
@@ -218,13 +222,12 @@ public class Call {
         }
         operations = [.sendInitialMetadata(metadata.copy() as! Metadata),
                       .receiveInitialMetadata,
-                      .receiveStatusOnClient,
                       .sendMessage(ByteBuffer(data:message)),
-                      .sendCloseFromClient]
+                      .sendCloseFromClient
+        ]
       case .clientStreaming, .bidiStreaming:
         operations = [.sendInitialMetadata(metadata.copy() as! Metadata),
-                      .receiveInitialMetadata,
-                      .receiveStatusOnClient]
+                      .receiveInitialMetadata]
       }
       try self.perform(OperationGroup(call:self,
                                       operations:operations,

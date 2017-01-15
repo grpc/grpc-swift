@@ -8,9 +8,17 @@ public class {{ .|call:protoFile,service,method }} {
   }
 
   fileprivate func run(metadata:Metadata) throws -> {{ .|call:protoFile,service,method }} {
+    let done = NSCondition()
     try self.call.start(.bidiStreaming,
                         metadata:metadata)
-    {_ in}
+    {callResult in
+      done.lock()
+      done.signal()
+      done.unlock()
+    }
+    done.lock()
+    done.wait()
+    done.unlock()
     return self
   }
 

@@ -99,10 +99,18 @@ public class Echo_EchoExpandCall {
   // Call this once with the message to send.
   fileprivate func run(request: Echo_EchoRequest, metadata: Metadata) throws -> Echo_EchoExpandCall {
     let requestData = try request.serializeProtobuf()
+    let done = NSCondition()
     try call.start(.serverStreaming,
                    metadata:metadata,
                    message:requestData)
-    {_ in}
+    {callResult in
+      done.lock()
+      done.signal()
+      done.unlock()
+    }
+    done.lock()
+    done.wait()
+    done.unlock()
     return self
   }
 
@@ -147,9 +155,17 @@ public class Echo_EchoCollectCall {
 
   // Call this to start a call.
   fileprivate func run(metadata:Metadata) throws -> Echo_EchoCollectCall {
+    let done = NSCondition()
     try self.call.start(.clientStreaming,
                         metadata:metadata)
-    {_ in}
+    {callResult in
+      done.lock()
+      done.signal()
+      done.unlock()
+    }
+    done.lock()
+    done.wait()
+    done.unlock()
     return self
   }
 
@@ -200,9 +216,17 @@ public class Echo_EchoUpdateCall {
   }
 
   fileprivate func run(metadata:Metadata) throws -> Echo_EchoUpdateCall {
+    let done = NSCondition()
     try self.call.start(.bidiStreaming,
                         metadata:metadata)
-    {_ in}
+    {callResult in
+      done.lock()
+      done.signal()
+      done.unlock()
+    }
+    done.lock()
+    done.wait()
+    done.unlock()
     return self
   }
 

@@ -9,9 +9,17 @@ public class {{ .|call:protoFile,service,method }} {
 
   // Call this to start a call.
   fileprivate func run(metadata:Metadata) throws -> {{ .|call:protoFile,service,method }} {
+    let done = NSCondition()
     try self.call.start(.clientStreaming,
                         metadata:metadata)
-    {_ in}
+    {callResult in
+      done.lock()
+      done.signal()
+      done.unlock()
+    }
+    done.lock()
+    done.wait()
+    done.unlock()
     return self
   }
 

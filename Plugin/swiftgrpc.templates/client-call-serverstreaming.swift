@@ -10,10 +10,18 @@ public class {{ .|call:protoFile,service,method }} {
   // Call this once with the message to send.
   fileprivate func run(request: {{ method|input }}, metadata: Metadata) throws -> {{ .|call:protoFile,service,method }} {
     let requestData = try request.serializeProtobuf()
+    let done = NSCondition()
     try call.start(.serverStreaming,
                    metadata:metadata,
                    message:requestData)
-    {_ in}
+    {callResult in
+      done.lock()
+      done.signal()
+      done.unlock()
+    }
+    done.lock()
+    done.wait()
+    done.unlock()
     return self
   }
 

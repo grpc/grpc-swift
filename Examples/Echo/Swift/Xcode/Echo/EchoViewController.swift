@@ -160,30 +160,52 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     else if (self.callSelectButton.selectedSegment == 1) {
       // STREAMING EXPAND
       if (!nowStreaming) {
-        let requestMessage = Echo_EchoRequest(text:self.messageField.stringValue)
-        self.expandCall = try service.expand(requestMessage)
-        self.displayMessageSent(requestMessage.text)
-        try self.receiveExpandMessages()
+        DispatchQueue.global().async {
+          do {
+            let requestMessage = Echo_EchoRequest(text:self.messageField.stringValue)
+            self.expandCall = try service.expand(requestMessage)
+            self.displayMessageSent(requestMessage.text)
+            try self.receiveExpandMessages()
+          } catch (let error) {
+            self.displayMessageReceived("No message received. \(error)")
+          }
+        }
       }
     }
     else if (self.callSelectButton.selectedSegment == 2) {
       // STREAMING COLLECT
-      if (!nowStreaming) {
-        collectCall = try service.collect()
-        nowStreaming = true
-        closeButton.isEnabled = true
+      DispatchQueue.global().async {
+        do {
+          if (!self.nowStreaming) {
+            self.collectCall = try service.collect()
+            self.nowStreaming = true
+            DispatchQueue.main.async {
+              self.closeButton.isEnabled = true
+            }
+          }
+          try self.sendCollectMessage()
+        } catch (let error) {
+          self.displayMessageReceived("No message received. \(error)")
+        }
       }
-      try self.sendCollectMessage()
     }
     else if (self.callSelectButton.selectedSegment == 3) {
       // STREAMING UPDATE
-      if (!nowStreaming) {
-        updateCall = try service.update()
-        try self.receiveUpdateMessages()
-        nowStreaming = true
-        closeButton.isEnabled = true
+      DispatchQueue.global().async {
+        do {
+          if (!self.nowStreaming) {
+            self.updateCall = try service.update()
+            try self.receiveUpdateMessages()
+            self.nowStreaming = true
+            DispatchQueue.main.async {
+              self.closeButton.isEnabled = true
+            }
+          }
+          try self.sendUpdateMessage()
+        } catch (let error) {
+          self.displayMessageReceived("No message received. \(error)")
+        }
       }
-      try self.sendUpdateMessage()
     }
   }
 
