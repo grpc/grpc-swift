@@ -43,6 +43,10 @@ public enum CallStyle {
   case bidiStreaming
 }
 
+public enum CallWarning : Error {
+  case blocked
+}
+
 public enum CallError : Error {
   case ok
   case unknown
@@ -230,24 +234,18 @@ public class Call {
   /// Sends a message over a streaming connection.
   ///
   /// Parameter data: the message data to send
-  /// Returns: true if the message could be queued or sent, false if the queue is full
-  public func sendMessage(data: Data) -> Bool {
+  public func sendMessage(data: Data) throws {
     self.sendMutex.lock()
     defer {self.sendMutex.unlock()}
     if self.writing {
       if self.pendingMessages.count == Call.maximumQueuedMessages {
-        return false
+        throw CallWarning.blocked
       }
-      self.pendingMessages.append(data) // TODO: return something if we can't accept another message
+      self.pendingMessages.append(data) 
     } else {
       self.writing = true
-      do {
-        try self.sendWithoutBlocking(data: data)
-      } catch (let callError) {
-        print("Call sendMessage: grpc error \(callError)")
-      }
+      try self.sendWithoutBlocking(data: data)
     }
-    return true
   }
 
   /// helper for sending queued messages
@@ -275,6 +273,7 @@ public class Call {
         }
       } else {
         // TODO: if the event failed, shut down
+        self.writing = false
       }
     })
   }

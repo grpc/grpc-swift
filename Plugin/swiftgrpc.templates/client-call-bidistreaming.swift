@@ -44,7 +44,7 @@ public class {{ .|call:protoFile,service,method }} {
 
   public func Send(_ message:{{ method|input }}) throws {
     let messageData = try message.serializeProtobuf()
-    _ = call.sendMessage(data:messageData)
+    try call.sendMessage(data:messageData)
   }
 
   public func CloseSend() throws {

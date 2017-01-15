@@ -156,7 +156,7 @@ public class Echo_EchoCollectCall {
   // Call this to send each message in the request stream.
   public func Send(_ message: Echo_EchoRequest) throws {
     let messageData = try message.serializeProtobuf()
-    _ = call.sendMessage(data:messageData)
+    try call.sendMessage(data:messageData)
   }
 
   // Call this to close the connection and wait for a response. Blocks.
@@ -238,7 +238,7 @@ public class Echo_EchoUpdateCall {
 
   public func Send(_ message:Echo_EchoRequest) throws {
     let messageData = try message.serializeProtobuf()
-    _ = call.sendMessage(data:messageData)
+    try call.sendMessage(data:messageData)
   }
 
   public func CloseSend() throws {
