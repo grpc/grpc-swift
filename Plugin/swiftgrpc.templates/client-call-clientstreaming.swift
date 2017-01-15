@@ -24,13 +24,13 @@ public class {{ .|call:protoFile,service,method }} {
   // Call this to close the connection and wait for a response. Blocks.
   public func CloseAndReceive() throws -> {{ method|output }} {
     var returnError : {{ .|clienterror:protoFile,service }}?
-    var returnMessage : {{ method|output }}!
+    var returnResponse : {{ method|output }}!
     let done = NSCondition()
-
     do {
-      try self.receiveMessage() {(responseMessage) in
-        if let responseMessage = responseMessage {
-          returnMessage = responseMessage
+      try call.receiveMessage() {(responseData) in
+        if let responseData = responseData,
+          let response = try? {{ method|output }}(protobuf:responseData) {
+          returnResponse = response
         } else {
           returnError = {{ .|clienterror:protoFile,service }}.invalidMessageReceived
         }
@@ -45,32 +45,11 @@ public class {{ .|call:protoFile,service,method }} {
       done.wait()
       done.unlock()
     } catch (let error) {
-      print("ERROR B: \(error)")
+      print("ERROR: \(error)")
     }
-
     if let returnError = returnError {
       throw returnError
     }
-    return returnMessage
+    return returnResponse
   }
-
-  // Call this to receive a message.
-  // The callback will be called when a message is received.
-  // call this again from the callback to wait for another message.
-  fileprivate func receiveMessage(callback:@escaping ({{ method|output }}?) throws -> Void)
-    throws {
-      try call.receiveMessage() {(data) in
-        guard let data = data else {
-          try callback(nil)
-          return
-        }
-        guard
-          let responseMessage = try? {{ method|output }}(protobuf:data)
-          else {
-            return
-        }
-        try callback(responseMessage)
-      }
-  }
-
 }

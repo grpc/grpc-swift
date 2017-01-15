@@ -12,15 +12,15 @@ public class {{ .|call:protoFile,service,method }} {
                        metadata: Metadata) throws -> {{ method|output }} {
     let done = NSCondition()
     var callResult : CallResult!
-    var responseMessage : {{ method|output }}?
-    let requestMessageData = try request.serializeProtobuf()
+    var response : {{ method|output }}?
+    let requestData = try request.serializeProtobuf()
     try call.start(.unary,
                    metadata:metadata,
-                   message:requestMessageData)
+                   message:requestData)
     {(_callResult) in
       callResult = _callResult
-      if let messageData = callResult.resultData {
-        responseMessage = try? {{ method|output }}(protobuf:messageData)
+      if let responseData = callResult.resultData {
+        response = try? {{ method|output }}(protobuf:responseData)
       }
       done.lock()
       done.signal()
@@ -29,8 +29,8 @@ public class {{ .|call:protoFile,service,method }} {
     done.lock()
     done.wait()
     done.unlock()
-    if let responseMessage = responseMessage {
-      return responseMessage
+    if let response = response {
+      return response
     } else {
       throw {{ .|clienterror:protoFile,service }}.error(c: callResult)
     }

@@ -62,15 +62,15 @@ public class Echo_EchoGetCall {
                        metadata: Metadata) throws -> Echo_EchoResponse {
     let done = NSCondition()
     var callResult : CallResult!
-    var responseMessage : Echo_EchoResponse?
-    let requestMessageData = try request.serializeProtobuf()
+    var response : Echo_EchoResponse?
+    let requestData = try request.serializeProtobuf()
     try call.start(.unary,
                    metadata:metadata,
-                   message:requestMessageData)
+                   message:requestData)
     {(_callResult) in
       callResult = _callResult
-      if let messageData = callResult.resultData {
-        responseMessage = try? Echo_EchoResponse(protobuf:messageData)
+      if let responseData = callResult.resultData {
+        response = try? Echo_EchoResponse(protobuf:responseData)
       }
       done.lock()
       done.signal()
@@ -79,8 +79,8 @@ public class Echo_EchoGetCall {
     done.lock()
     done.wait()
     done.unlock()
-    if let responseMessage = responseMessage {
-      return responseMessage
+    if let response = response {
+      return response
     } else {
       throw Echo_EchoClientError.error(c: callResult)
     }
@@ -98,10 +98,10 @@ public class Echo_EchoExpandCall {
 
   // Call this once with the message to send.
   fileprivate func run(request: Echo_EchoRequest, metadata: Metadata) throws -> Echo_EchoExpandCall {
-    let requestMessageData = try request.serializeProtobuf()
+    let requestData = try request.serializeProtobuf()
     try call.start(.serverStreaming,
                    metadata:metadata,
-                   message:requestMessageData)
+                   message:requestData)
     {_ in}
     return self
   }
@@ -109,13 +109,13 @@ public class Echo_EchoExpandCall {
   // Call this to wait for a result. Blocks.
   public func Receive() throws -> Echo_EchoResponse {
     var returnError : Echo_EchoClientError?
-    var returnMessage : Echo_EchoResponse!
+    var response : Echo_EchoResponse!
     let done = NSCondition()
     do {
-      try call.receiveMessage() {(data) in
-        if let data = data {
-          returnMessage = try? Echo_EchoResponse(protobuf:data)
-          if returnMessage == nil {
+      try call.receiveMessage() {(responseData) in
+        if let responseData = responseData {
+          response = try? Echo_EchoResponse(protobuf:responseData)
+          if response == nil {
             returnError = Echo_EchoClientError.invalidMessageReceived
           }
         } else {
@@ -132,7 +132,7 @@ public class Echo_EchoExpandCall {
     if let returnError = returnError {
       throw returnError
     }
-    return returnMessage
+    return response
   }
 }
 
@@ -162,13 +162,13 @@ public class Echo_EchoCollectCall {
   // Call this to close the connection and wait for a response. Blocks.
   public func CloseAndReceive() throws -> Echo_EchoResponse {
     var returnError : Echo_EchoClientError?
-    var returnMessage : Echo_EchoResponse!
+    var returnResponse : Echo_EchoResponse!
     let done = NSCondition()
-
     do {
-      try self.receiveMessage() {(responseMessage) in
-        if let responseMessage = responseMessage {
-          returnMessage = responseMessage
+      try call.receiveMessage() {(responseData) in
+        if let responseData = responseData,
+          let response = try? Echo_EchoResponse(protobuf:responseData) {
+          returnResponse = response
         } else {
           returnError = Echo_EchoClientError.invalidMessageReceived
         }
@@ -183,34 +183,13 @@ public class Echo_EchoCollectCall {
       done.wait()
       done.unlock()
     } catch (let error) {
-      print("ERROR B: \(error)")
+      print("ERROR: \(error)")
     }
-
     if let returnError = returnError {
       throw returnError
     }
-    return returnMessage
+    return returnResponse
   }
-
-  // Call this to receive a message.
-  // The callback will be called when a message is received.
-  // call this again from the callback to wait for another message.
-  fileprivate func receiveMessage(callback:@escaping (Echo_EchoResponse?) throws -> Void)
-    throws {
-      try call.receiveMessage() {(data) in
-        guard let data = data else {
-          try callback(nil)
-          return
-        }
-        guard
-          let responseMessage = try? Echo_EchoResponse(protobuf:data)
-          else {
-            return
-        }
-        try callback(responseMessage)
-      }
-  }
-
 }
 
 // Update (Bidirectional Streaming)
@@ -284,7 +263,7 @@ public class Echo_EchoService {
   public var metadata : Metadata
 
   /// This property allows the service host name to be overridden.
-  /// For example, it can be used to make calls to "localhost:8080" 
+  /// For example, it can be used to make calls to "localhost:8080"
   /// appear to be to "example.com".
   public var host : String {
     get {

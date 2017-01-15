@@ -72,7 +72,7 @@ public class {{ protoFile.package|capitalize }}_{{ service.name }}Service {
   public var metadata : Metadata
 
   /// This property allows the service host name to be overridden.
-  /// For example, it can be used to make calls to "localhost:8080" 
+  /// For example, it can be used to make calls to "localhost:8080"
   /// appear to be to "example.com".
   public var host : String {
     get {
