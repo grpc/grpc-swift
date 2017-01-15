@@ -69,7 +69,9 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
 
   @IBAction func addressReturnPressed(sender: NSTextField) {
     if (nowStreaming) {
-      if let error = try? self.sendClose() {
+      do {
+        try self.sendClose()
+      } catch (let error) {
         print(error)
       }
     }
@@ -79,7 +81,9 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
 
   @IBAction func buttonValueChanged(sender: NSSegmentedControl) {
     if (nowStreaming) {
-      if let error = try? self.sendClose() {
+      do {
+        try self.sendClose()
+      } catch (let error) {
         print(error)
       }
     }
@@ -87,7 +91,9 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
 
   @IBAction func closeButtonPressed(sender: NSButton) {
     if (nowStreaming) {
-      if let error = try? self.sendClose() {
+      do {
+        try self.sendClose()
+      } catch (let error) {
         print(error)
       }
     }

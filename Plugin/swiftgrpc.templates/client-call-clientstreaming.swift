@@ -38,14 +38,12 @@ public class {{ .|call:protoFile,service,method }} {
         done.signal()
         done.unlock()
       }
-      try call.close(completion:{
-        print("closed")
-      })
+      try call.close(completion:{})
       done.lock()
       done.wait()
       done.unlock()
     } catch (let error) {
-      print("ERROR: \(error)")
+      throw error
     }
     if let returnError = returnError {
       throw returnError
