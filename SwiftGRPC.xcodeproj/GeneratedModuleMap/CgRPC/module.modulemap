@@ -1,0 +1,5 @@
+module CgRPC {
+    umbrella header "/Users/timburks/Desktop/grpc-swift/Sources/CgRPC/include/CgRPC.h"
+    link "CgRPC"
+    export *
+}
