@@ -1,9 +1,15 @@
-LIBDIR = /usr/local/lib
-INCDIR = /usr/local/include
+
+CFLAGS = \
+-Xcc -DOPENSSL_NO_ASM \
+-Xcc -ISources/BoringSSL/include \
+-Xcc -ISources/gRPC_Core \
+-Xcc -ISources/gRPC_Core/include
+
+LDFLAGS = -Xlinker -lz 
 
 test:
-	swift build -Xlinker -L$(LIBDIR) -Xlinker -lgrpc -Xcc -I$(INCDIR)
-	swift test -Xlinker -L$(LIBDIR) -Xlinker -lgrpc -Xcc -I$(INCDIR)
+	swift build $(CFLAGS) $(LDFLAGS)
+	swift test $(CFLAGS) $(LDFLAGS) -Xlinker -lgRPC_Core
 
 clean :
 	rm -rf Packages
