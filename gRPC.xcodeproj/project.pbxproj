@@ -8,21 +8,21 @@
 
 /* Begin PBXBuildFile section */
 		D31C3E401D863E9C008676EF /* roots.pem in Resources */ = {isa = PBXBuildFile; fileRef = D31C3E3F1D863E9C008676EF /* roots.pem */; };
+		D32D3BE91E311EDD00615024 /* byte_buffer.c in Sources */ = {isa = PBXBuildFile; fileRef = D32D3BDB1E311EDD00615024 /* byte_buffer.c */; };
+		D32D3BEA1E311EDD00615024 /* call.c in Sources */ = {isa = PBXBuildFile; fileRef = D32D3BDC1E311EDD00615024 /* call.c */; };
+		D32D3BEB1E311EDD00615024 /* cgrpc.h in Headers */ = {isa = PBXBuildFile; fileRef = D32D3BDD1E311EDD00615024 /* cgrpc.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		D32D3BEC1E311EDD00615024 /* channel.c in Sources */ = {isa = PBXBuildFile; fileRef = D32D3BDE1E311EDD00615024 /* channel.c */; };
+		D32D3BED1E311EDD00615024 /* completion_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = D32D3BDF1E311EDD00615024 /* completion_queue.c */; };
+		D32D3BEE1E311EDD00615024 /* event.c in Sources */ = {isa = PBXBuildFile; fileRef = D32D3BE01E311EDD00615024 /* event.c */; };
+		D32D3BEF1E311EDD00615024 /* handler.c in Sources */ = {isa = PBXBuildFile; fileRef = D32D3BE11E311EDD00615024 /* handler.c */; };
+		D32D3BF01E311EDD00615024 /* internal.c in Sources */ = {isa = PBXBuildFile; fileRef = D32D3BE21E311EDD00615024 /* internal.c */; };
+		D32D3BF11E311EDD00615024 /* internal.h in Headers */ = {isa = PBXBuildFile; fileRef = D32D3BE31E311EDD00615024 /* internal.h */; };
+		D32D3BF21E311EDD00615024 /* metadata.c in Sources */ = {isa = PBXBuildFile; fileRef = D32D3BE41E311EDD00615024 /* metadata.c */; };
+		D32D3BF31E311EDD00615024 /* mutex.c in Sources */ = {isa = PBXBuildFile; fileRef = D32D3BE51E311EDD00615024 /* mutex.c */; };
+		D32D3BF41E311EDD00615024 /* observers.c in Sources */ = {isa = PBXBuildFile; fileRef = D32D3BE61E311EDD00615024 /* observers.c */; };
+		D32D3BF51E311EDD00615024 /* operations.c in Sources */ = {isa = PBXBuildFile; fileRef = D32D3BE71E311EDD00615024 /* operations.c */; };
+		D32D3BF61E311EDD00615024 /* server.c in Sources */ = {isa = PBXBuildFile; fileRef = D32D3BE81E311EDD00615024 /* server.c */; };
 		D34B4BB81D7B2C9B00B8B5E2 /* OperationGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = D34B4BB71D7B2C9B00B8B5E2 /* OperationGroup.swift */; };
-		D34B4BBA1D7B2CB200B8B5E2 /* operations.c in Sources */ = {isa = PBXBuildFile; fileRef = D34B4BB91D7B2CB200B8B5E2 /* operations.c */; };
-		D37DD0281D7D09CB009AEB74 /* event.c in Sources */ = {isa = PBXBuildFile; fileRef = D37DD0271D7D09CB009AEB74 /* event.c */; };
-		D3AC86AE1D5BEBBE0042B341 /* byte_buffer.c in Sources */ = {isa = PBXBuildFile; fileRef = D3AC86A21D5BEBBE0042B341 /* byte_buffer.c */; };
-		D3AC86AF1D5BEBBE0042B341 /* call.c in Sources */ = {isa = PBXBuildFile; fileRef = D3AC86A31D5BEBBE0042B341 /* call.c */; };
-		D3AC86B01D5BEBBE0042B341 /* channel.c in Sources */ = {isa = PBXBuildFile; fileRef = D3AC86A41D5BEBBE0042B341 /* channel.c */; };
-		D3AC86B11D5BEBBE0042B341 /* completion_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = D3AC86A51D5BEBBE0042B341 /* completion_queue.c */; };
-		D3AC86B21D5BEBBE0042B341 /* handler.c in Sources */ = {isa = PBXBuildFile; fileRef = D3AC86A61D5BEBBE0042B341 /* handler.c */; };
-		D3AC86B31D5BEBBE0042B341 /* internal.c in Sources */ = {isa = PBXBuildFile; fileRef = D3AC86A71D5BEBBE0042B341 /* internal.c */; };
-		D3AC86B41D5BEBBE0042B341 /* internal.h in Headers */ = {isa = PBXBuildFile; fileRef = D3AC86A81D5BEBBE0042B341 /* internal.h */; };
-		D3AC86B51D5BEBBE0042B341 /* metadata.c in Sources */ = {isa = PBXBuildFile; fileRef = D3AC86A91D5BEBBE0042B341 /* metadata.c */; };
-		D3AC86B61D5BEBBE0042B341 /* mutex.c in Sources */ = {isa = PBXBuildFile; fileRef = D3AC86AA1D5BEBBE0042B341 /* mutex.c */; };
-		D3AC86B71D5BEBBE0042B341 /* observers.c in Sources */ = {isa = PBXBuildFile; fileRef = D3AC86AB1D5BEBBE0042B341 /* observers.c */; };
-		D3AC86B81D5BEBBE0042B341 /* server.c in Sources */ = {isa = PBXBuildFile; fileRef = D3AC86AC1D5BEBBE0042B341 /* server.c */; };
-		D3AC86B91D5BEBBE0042B341 /* cgrpc.h in Headers */ = {isa = PBXBuildFile; fileRef = D3AC86AD1D5BEBBE0042B341 /* cgrpc.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		D3AC86C51D5BEBE00042B341 /* ByteBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3AC86BB1D5BEBE00042B341 /* ByteBuffer.swift */; };
 		D3AC86C61D5BEBE00042B341 /* Call.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3AC86BC1D5BEBE00042B341 /* Call.swift */; };
 		D3AC86C71D5BEBE00042B341 /* Channel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3AC86BD1D5BEBE00042B341 /* Channel.swift */; };
@@ -39,21 +39,21 @@
 
 /* Begin PBXFileReference section */
 		D31C3E3F1D863E9C008676EF /* roots.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = roots.pem; sourceTree = "<group>"; };
+		D32D3BDB1E311EDD00615024 /* byte_buffer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = byte_buffer.c; sourceTree = "<group>"; };
+		D32D3BDC1E311EDD00615024 /* call.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = call.c; sourceTree = "<group>"; };
+		D32D3BDD1E311EDD00615024 /* cgrpc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cgrpc.h; sourceTree = "<group>"; };
+		D32D3BDE1E311EDD00615024 /* channel.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = channel.c; sourceTree = "<group>"; };
+		D32D3BDF1E311EDD00615024 /* completion_queue.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = completion_queue.c; sourceTree = "<group>"; };
+		D32D3BE01E311EDD00615024 /* event.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = event.c; sourceTree = "<group>"; };
+		D32D3BE11E311EDD00615024 /* handler.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = handler.c; sourceTree = "<group>"; };
+		D32D3BE21E311EDD00615024 /* internal.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = internal.c; sourceTree = "<group>"; };
+		D32D3BE31E311EDD00615024 /* internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = internal.h; sourceTree = "<group>"; };
+		D32D3BE41E311EDD00615024 /* metadata.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = metadata.c; sourceTree = "<group>"; };
+		D32D3BE51E311EDD00615024 /* mutex.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = mutex.c; sourceTree = "<group>"; };
+		D32D3BE61E311EDD00615024 /* observers.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = observers.c; sourceTree = "<group>"; };
+		D32D3BE71E311EDD00615024 /* operations.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = operations.c; sourceTree = "<group>"; };
+		D32D3BE81E311EDD00615024 /* server.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = server.c; sourceTree = "<group>"; };
 		D34B4BB71D7B2C9B00B8B5E2 /* OperationGroup.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = OperationGroup.swift; path = Sources/gRPC/OperationGroup.swift; sourceTree = "<group>"; };
-		D34B4BB91D7B2CB200B8B5E2 /* operations.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = operations.c; path = Sources/CgRPC/operations.c; sourceTree = "<group>"; };
-		D37DD0271D7D09CB009AEB74 /* event.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = event.c; path = Sources/CgRPC/event.c; sourceTree = "<group>"; };
-		D3AC86A21D5BEBBE0042B341 /* byte_buffer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = byte_buffer.c; path = Sources/CgRPC/byte_buffer.c; sourceTree = "<group>"; };
-		D3AC86A31D5BEBBE0042B341 /* call.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = call.c; path = Sources/CgRPC/call.c; sourceTree = "<group>"; };
-		D3AC86A41D5BEBBE0042B341 /* channel.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = channel.c; path = Sources/CgRPC/channel.c; sourceTree = "<group>"; };
-		D3AC86A51D5BEBBE0042B341 /* completion_queue.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = completion_queue.c; path = Sources/CgRPC/completion_queue.c; sourceTree = "<group>"; };
-		D3AC86A61D5BEBBE0042B341 /* handler.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = handler.c; path = Sources/CgRPC/handler.c; sourceTree = "<group>"; };
-		D3AC86A71D5BEBBE0042B341 /* internal.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = internal.c; path = Sources/CgRPC/internal.c; sourceTree = "<group>"; };
-		D3AC86A81D5BEBBE0042B341 /* internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = internal.h; path = Sources/CgRPC/internal.h; sourceTree = "<group>"; };
-		D3AC86A91D5BEBBE0042B341 /* metadata.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = metadata.c; path = Sources/CgRPC/metadata.c; sourceTree = "<group>"; };
-		D3AC86AA1D5BEBBE0042B341 /* mutex.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mutex.c; path = Sources/CgRPC/mutex.c; sourceTree = "<group>"; };
-		D3AC86AB1D5BEBBE0042B341 /* observers.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = observers.c; path = Sources/CgRPC/observers.c; sourceTree = "<group>"; };
-		D3AC86AC1D5BEBBE0042B341 /* server.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = server.c; path = Sources/CgRPC/server.c; sourceTree = "<group>"; };
-		D3AC86AD1D5BEBBE0042B341 /* cgrpc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = cgrpc.h; path = Sources/CgRPC/cgrpc.h; sourceTree = "<group>"; };
 		D3AC86BB1D5BEBE00042B341 /* ByteBuffer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ByteBuffer.swift; path = Sources/gRPC/ByteBuffer.swift; sourceTree = "<group>"; };
 		D3AC86BC1D5BEBE00042B341 /* Call.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; lineEnding = 0; name = Call.swift; path = Sources/gRPC/Call.swift; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		D3AC86BD1D5BEBE00042B341 /* Channel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; lineEnding = 0; name = Channel.swift; path = Sources/gRPC/Channel.swift; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
@@ -85,22 +85,23 @@
 		D3AC86BA1D5BEBC60042B341 /* CgRPC/Sources */ = {
 			isa = PBXGroup;
 			children = (
-				D3AC86A21D5BEBBE0042B341 /* byte_buffer.c */,
-				D3AC86A31D5BEBBE0042B341 /* call.c */,
-				D3AC86AD1D5BEBBE0042B341 /* cgrpc.h */,
-				D3AC86A41D5BEBBE0042B341 /* channel.c */,
-				D3AC86A51D5BEBBE0042B341 /* completion_queue.c */,
-				D37DD0271D7D09CB009AEB74 /* event.c */,
-				D3AC86A61D5BEBBE0042B341 /* handler.c */,
-				D3AC86A71D5BEBBE0042B341 /* internal.c */,
-				D3AC86A81D5BEBBE0042B341 /* internal.h */,
-				D3AC86A91D5BEBBE0042B341 /* metadata.c */,
-				D3AC86AA1D5BEBBE0042B341 /* mutex.c */,
-				D3AC86AB1D5BEBBE0042B341 /* observers.c */,
-				D34B4BB91D7B2CB200B8B5E2 /* operations.c */,
-				D3AC86AC1D5BEBBE0042B341 /* server.c */,
+				D32D3BDB1E311EDD00615024 /* byte_buffer.c */,
+				D32D3BDC1E311EDD00615024 /* call.c */,
+				D32D3BDD1E311EDD00615024 /* cgrpc.h */,
+				D32D3BDE1E311EDD00615024 /* channel.c */,
+				D32D3BDF1E311EDD00615024 /* completion_queue.c */,
+				D32D3BE01E311EDD00615024 /* event.c */,
+				D32D3BE11E311EDD00615024 /* handler.c */,
+				D32D3BE21E311EDD00615024 /* internal.c */,
+				D32D3BE31E311EDD00615024 /* internal.h */,
+				D32D3BE41E311EDD00615024 /* metadata.c */,
+				D32D3BE51E311EDD00615024 /* mutex.c */,
+				D32D3BE61E311EDD00615024 /* observers.c */,
+				D32D3BE71E311EDD00615024 /* operations.c */,
+				D32D3BE81E311EDD00615024 /* server.c */,
 			);
 			name = CgRPC/Sources;
+			path = Sources/CgRPC/shim;
 			sourceTree = "<group>";
 		};
 		D3AC86CF1D5BEBEA0042B341 /* gRPC/Sources */ = {
@@ -165,9 +166,9 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D3AC86B91D5BEBBE0042B341 /* cgrpc.h in Headers */,
+				D32D3BEB1E311EDD00615024 /* cgrpc.h in Headers */,
 				D3BD37371D5126380005E698 /* gRPC.h in Headers */,
-				D3AC86B41D5BEBBE0042B341 /* internal.h in Headers */,
+				D32D3BF11E311EDD00615024 /* internal.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -243,17 +244,17 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D3AC86AE1D5BEBBE0042B341 /* byte_buffer.c in Sources */,
-				D34B4BBA1D7B2CB200B8B5E2 /* operations.c in Sources */,
-				D3AC86AF1D5BEBBE0042B341 /* call.c in Sources */,
-				D3AC86B01D5BEBBE0042B341 /* channel.c in Sources */,
-				D3AC86B11D5BEBBE0042B341 /* completion_queue.c in Sources */,
-				D3AC86B21D5BEBBE0042B341 /* handler.c in Sources */,
-				D3AC86B31D5BEBBE0042B341 /* internal.c in Sources */,
-				D3AC86B51D5BEBBE0042B341 /* metadata.c in Sources */,
-				D3AC86B61D5BEBBE0042B341 /* mutex.c in Sources */,
-				D3AC86B71D5BEBBE0042B341 /* observers.c in Sources */,
-				D3AC86B81D5BEBBE0042B341 /* server.c in Sources */,
+				D32D3BEC1E311EDD00615024 /* channel.c in Sources */,
+				D32D3BEE1E311EDD00615024 /* event.c in Sources */,
+				D32D3BF41E311EDD00615024 /* observers.c in Sources */,
+				D32D3BF51E311EDD00615024 /* operations.c in Sources */,
+				D32D3BF61E311EDD00615024 /* server.c in Sources */,
+				D32D3BEF1E311EDD00615024 /* handler.c in Sources */,
+				D32D3BEA1E311EDD00615024 /* call.c in Sources */,
+				D32D3BF31E311EDD00615024 /* mutex.c in Sources */,
+				D32D3BF01E311EDD00615024 /* internal.c in Sources */,
+				D32D3BED1E311EDD00615024 /* completion_queue.c in Sources */,
+				D32D3BE91E311EDD00615024 /* byte_buffer.c in Sources */,
 				D3AC86C81D5BEBE00042B341 /* CompletionQueue.swift in Sources */,
 				D3AC86C61D5BEBE00042B341 /* Call.swift in Sources */,
 				D3AC86CB1D5BEBE00042B341 /* Metadata.swift in Sources */,
@@ -261,11 +262,11 @@
 				D34B4BB81D7B2C9B00B8B5E2 /* OperationGroup.swift in Sources */,
 				D3AC86CA1D5BEBE00042B341 /* Handler.swift in Sources */,
 				D3AC86CD1D5BEBE00042B341 /* Operation.swift in Sources */,
-				D37DD0281D7D09CB009AEB74 /* event.c in Sources */,
 				D3AC86CE1D5BEBE00042B341 /* Server.swift in Sources */,
 				D3AC86C71D5BEBE00042B341 /* Channel.swift in Sources */,
 				D3AC86C51D5BEBE00042B341 /* ByteBuffer.swift in Sources */,
 				D3AC86CC1D5BEBE00042B341 /* Mutex.swift in Sources */,
+				D32D3BF21E311EDD00615024 /* metadata.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -373,7 +374,7 @@
 		D3BD373C1D5126380005E698 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = NO;
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
 				CLANG_ENABLE_MODULES = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEFINES_MODULE = YES;
@@ -389,7 +390,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.google.gRPC;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 3.0;
 			};
@@ -398,7 +398,7 @@
 		D3BD373D1D5126380005E698 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = NO;
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;
 				CLANG_ENABLE_MODULES = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEFINES_MODULE = YES;
@@ -414,7 +414,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.google.gRPC;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "";
 				SWIFT_VERSION = 3.0;
 			};
 			name = Release;

@@ -38,8 +38,6 @@ let package = Package(
     Target(name: "gRPC",
            dependencies: ["CgRPC"]),
     Target(name: "CgRPC",
-           dependencies: ["gRPC_Core"]),
-    Target(name: "gRPC_Core",
            dependencies: ["BoringSSL"]),
   ]
 )

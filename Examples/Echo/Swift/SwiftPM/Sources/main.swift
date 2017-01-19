@@ -32,6 +32,7 @@
  */
 import Foundation
 import gRPC
+import CgRPC
 import Dispatch
 
 print("\(CommandLine.arguments)")
