@@ -25,7 +25,7 @@ Start a docker instance with the swiftdocker image:
     # update package list
     apt-get update
     # install a few missing pieces
-    apt-get install libz-dev
+    apt-get install libz-dev unzip
 
 ## Configure git (optional)
 
@@ -60,21 +60,15 @@ Start a docker instance with the swiftdocker image:
 	
 ## Test the Swift gRPC plugin
 
-    # install protoc build dependencies
-    apt-get install autoconf automake libtool curl make g++ unzip
-    # build and install protoc
+    # install protoc
     cd
-    git clone https://github.com/google/protobuf.git
-    cd protobuf
-    autogen.sh
-    ./configure
-    make install
+    curl -O -L https://github.com/google/protobuf/releases/download/v3.2.0rc2/protoc-3.2.0rc2-linux-x86_64.zip
+    unzip protoc-3.2.0rc2-linux-x86_64.zip -d /usr
     # build the Swift gRPC plugin
     cd
     cd grpc-swift/Plugin
     make
-    # set envirinment variables to allow protoc and the plugin to run 
-    export LD_LIBRARY_PATH=/usr/local/lib
+    # set environment variables to allow protoc and the plugin to run 
     export PATH=.:$PATH
     # test the plugin by regenerating code for a sample .proto service
     make test
