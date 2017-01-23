@@ -4,6 +4,7 @@ default:	build
 build:  clear
 	swift build
 	cp .build/debug/protoc-gen-swiftgrpc .
+	cp .build/debug/protoc-gen-swift .
 
 test:	build
 	protoc ../Examples/Echo/echo.proto --proto_path=../Examples/Echo --swiftgrpc_out=. 
