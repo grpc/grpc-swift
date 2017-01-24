@@ -15,10 +15,6 @@ for protoc.
 ## Low-level demonstrations
 
 [Simple](Simple)
-This is a simple command line tool, built with the Swift Package Manager, that 
-implements a simple client and server using low-level gRPC APIs.
-
-[Sessions](Sessions)
-This is a Mac app that also implements a simple client and server using low-level
-gRPC APIs.
+This sample demonstrates the low-level gRPC APIs with clients and servers
+that can be built with Xcode or the Swift Package Manager.
  
