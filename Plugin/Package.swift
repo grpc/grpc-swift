@@ -15,9 +15,16 @@
 import PackageDescription
 
 let package = Package(
-    name: "protoc-gen-swiftgrpc",
-    dependencies: [
-        .Package(url: "https://github.com/apple/swift-protobuf.git", Version(0,9,24)),
-        .Package(url: "https://github.com/timburks/Stencil.git", Version(9,9,9)) // temporary fork
-    ]
+  name: "SwiftGRPCPlugin",
+  targets: [
+    Target(name: "protoc-gen-swiftgrpc",
+           dependencies: [
+            "TemplateEncoder",
+            ]),
+    Target(name: "TemplateEncoder")
+  ],
+  dependencies: [
+    .Package(url: "https://github.com/apple/swift-protobuf.git", Version(0,9,24)),
+    .Package(url: "https://github.com/timburks/Stencil.git", Version(9,9,9)) // temporary fork
+  ]
 )

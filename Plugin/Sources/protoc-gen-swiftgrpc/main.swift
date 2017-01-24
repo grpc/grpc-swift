@@ -125,17 +125,7 @@ func Log(_ message : String) {
 
 func main() throws {
 
-  // we expect our templates to be in the same directory as this executable.
-  var path = "./protoc-gen-swiftgrpc"
-  if let executablePath = Bundle.main.executablePath {
-    path = executablePath
-  }
-  let executableURL = URL(fileURLWithPath: path)
-  let executableDir : String = executableURL.deletingLastPathComponent().path
-  let templatePath = Path(executableDir + "/swiftgrpc.templates/")
-
   // initialize template engine and add custom filters
-  let fileSystemLoader = FileSystemLoader(paths: [templatePath])
   let ext = Extension()
   ext.registerFilter("call") { (value: Any?, arguments: [Any?]) in
     return try packageServiceMethodName(arguments) + "Call"
@@ -173,7 +163,7 @@ func main() throws {
     }
     throw TemplateSyntaxError("message: invalid argument \(value)")
   }
-  let templateEnvironment = Environment(loader: fileSystemLoader,
+  let templateEnvironment = Environment(loader: InternalLoader(),
                                         extensions:[ext])
 
   // initialize responses
