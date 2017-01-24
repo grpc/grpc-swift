@@ -30,7 +30,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-
 // GENERATED: DO NOT EDIT
 //
 // This file contains base64 encodings of templates used for Swift GRPC code generation.
