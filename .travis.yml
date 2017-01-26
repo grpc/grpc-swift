@@ -25,3 +25,5 @@ script:
   - export PATH=$HOME/swift/bin:$PATH
   - export LD_LIBRARY_PATH=$HOME/swift/lib
   - make test
+  - cd Plugin
+  - make test
