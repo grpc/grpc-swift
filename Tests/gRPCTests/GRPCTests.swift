@@ -3,23 +3,44 @@ import Foundation
 import Dispatch
 @testable import gRPC
 
+func Log(_ message : String) {
+  FileHandle.standardError.write((message + "\n").data(using:.utf8)!)
+}
+
 class gRPCTests: XCTestCase {
+  var count : Int = 0
 
   func testBasicSanity() {
     gRPC.initialize()
     let done = NSCondition()
+    self.count = 2
     DispatchQueue.global().async() {
       server()
+      Log("server finished")
       done.lock()
+      self.count = self.count - 1
       done.signal()
       done.unlock()
     }
     DispatchQueue.global().async() {
       client()
+      Log("client finished")
+      done.lock()
+      self.count = self.count - 1
+      done.signal()
+      done.unlock()
     }
-    done.lock()
-    done.wait()
-    done.unlock()
+    var running = true
+    while (running) {
+      Log("waiting")
+      done.lock()
+      done.wait()
+      if (self.count == 0) {
+        running = false
+      }
+      Log("count \(self.count)")
+      done.unlock()
+    }
   }
 }
 
@@ -66,8 +87,8 @@ func client() {
   let message = clientText.data(using: .utf8)
   let c = gRPC.Channel(address:address)
   c.host = host
+  let done = NSCondition()
   for i in 0..<steps {
-    let done = NSCondition()
     do {
       let method = (i < steps-1) ? hello : goodbye
       let call = c.makeCall(method)
@@ -98,7 +119,12 @@ func client() {
     done.lock()
     done.wait()
     done.unlock()
+    Log("finished client call \(i)")
   }
+  Log("client done")
+  // temporary workaround for a synchronization problem, 
+  // we fail intermittently if the channel is freed too soon after the call is deleted
+  usleep(1000)
 }
 
 func server() {
@@ -123,10 +149,7 @@ func server() {
         XCTAssertEqual(messageString, clientText)
       }
       if requestHandler.method == goodbye {
-        // exit the server thread
-        done.lock()
-        done.signal()
-        done.unlock()
+        server.stop()
       }
       let replyMessage = serverText
       let trailingMetadataToSend = Metadata(trailingServerMetadata)
@@ -138,9 +161,17 @@ func server() {
       XCTFail("error \(error)")
     }
   }
+  server.onCompletion() {
+      // exit the server thread
+      Log("signaling completion")
+      done.lock()
+      done.signal()
+      done.unlock()
+  }
   // wait for the server to exit
   done.lock()
   done.wait()
   done.unlock()
+  Log("server done")
 }
 
