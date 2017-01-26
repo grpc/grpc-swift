@@ -1,6 +1,8 @@
 # Travis CI build file for Swift gRPC.
 
+# Use Ubuntu 14.04
 dist: trusty
+
 sudo: false
 
 addons:
@@ -15,7 +17,6 @@ addons:
     - build-essential 
     - libssl-dev 
     - uuid-dev
-    - unzip     
     - curl
 
 install: ./.travis-install.sh
