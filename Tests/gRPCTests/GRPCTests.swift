@@ -18,7 +18,7 @@ class gRPCTests: XCTestCase {
       } catch (let error) {
         XCTFail("server error \(error)")
       }
-      latch.countDown()
+      latch.signal()
     }
     DispatchQueue.global().async() {
       do {
@@ -26,7 +26,7 @@ class gRPCTests: XCTestCase {
       } catch (let error) {
         XCTFail("client error \(error)")
       }
-      latch.countDown()
+      latch.signal()
     }
     latch.wait()
   }
@@ -96,7 +96,7 @@ func client() throws {
       let trailingMetadata = response.trailingMetadata!
       verify_metadata(trailingMetadata, expected: trailingServerMetadata)
       // report completion
-      latch.countDown()
+      latch.signal()
     }
     // wait for the call to complete
     latch.wait()
@@ -140,7 +140,7 @@ func server() throws {
   }
   server.onCompletion() {
     // exit the server thread
-    latch.countDown()
+    latch.signal()
   }
   // wait for the server to exit
   latch.wait()

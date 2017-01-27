@@ -44,6 +44,9 @@ var server : Bool = false
 var client : String = ""
 var message : String = "Testing 1 2 3"
 
+// self-test mode
+var test : Bool = false
+
 // general configuration
 var useSSL : Bool = false
 
@@ -55,7 +58,9 @@ while i < Int(CommandLine.argc) {
     continue // skip the first argument
   }
 
-  if arg == "serve" {
+  if arg == "test" {
+    test = true
+  } else if arg == "serve" {
     server = true
   } else if (arg == "get") || (arg == "expand") || (arg == "collect") || (arg == "update") {
     client = arg
@@ -67,7 +72,7 @@ while i < Int(CommandLine.argc) {
   }
 }
 
-var done = NSCondition()
+var latch = CountDownLatch(1)
 
 gRPC.initialize()
 
@@ -91,9 +96,7 @@ if server {
   echoServer.start()
   // Block to keep the main thread from finishing while the server runs.
   // This server never exits. Kill the process to stop it.
-  done.lock()
-  done.wait()
-  done.unlock()
+  latch.wait()
 }
 
 if client != "" {
@@ -165,9 +168,7 @@ if client != "" {
           print("Received: \(responseMessage.text)")
         } catch Echo_EchoClientError.endOfStream {
           print("update closed")
-          done.lock()
-          done.signal()
-          done.unlock()
+          latch.signal()
           break
         } catch (let error) {
           print("error: \(error)")
@@ -185,9 +186,10 @@ if client != "" {
     try updateCall.CloseSend()
 
     // Wait for the call to complete.
-    done.lock()
-    done.wait()
-    done.unlock()
+    latch.wait()
   }
-  
+}
+
+if test {
+  print("self test")
 }

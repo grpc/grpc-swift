@@ -34,7 +34,7 @@ import Foundation
 
 /// A synchronization primitive used to synchronize gRPC operations
 /// Initialize it with a count, a call to wait() will block until
-/// countDown() has been called the specified number of times.
+/// signal() has been called the specified number of times.
 public class CountDownLatch {
   private var condition : NSCondition
   private var count : Int
@@ -44,7 +44,7 @@ public class CountDownLatch {
     self.count = count
   }
 
-  public func countDown() {
+  public func signal() {
     condition.lock()
     self.count = self.count - 1
     self.condition.signal()

@@ -64,7 +64,7 @@ func client() throws {
   let c = gRPC.Channel(address:address)
   let steps = 3
   for i in 0..<steps {
-    let done = NSCondition()
+    let latch = CountDownLatch(1)
 
     let method = (i < steps-1) ? "/hello" : "/quit"
     print("calling " + method)
@@ -92,13 +92,9 @@ func client() throws {
       for i in 0..<trailingMetadata.count() {
         print("TRAILING METADATA ->", trailingMetadata.key(i), ":", trailingMetadata.value(i))
       }
-      done.lock()
-      done.signal()
-      done.unlock()
+      latch.signal()
     }
-    done.lock()
-    done.wait()
-    done.unlock()
+    latch.wait()
   }
   print("Done")
 }
@@ -107,7 +103,7 @@ func server() throws {
   let server = gRPC.Server(address:address)
   var requestCount = 0
 
-  let done = NSCondition()
+  let latch = CountDownLatch(1)
 
   server.run() {(requestHandler) in
 
@@ -135,9 +131,7 @@ func server() throws {
 
       if requestHandler.method == "/quit" {
         print("quitting")
-        done.lock()
-        done.signal()
-        done.unlock()
+        latch.signal()
       }
 
       let replyMessage = "hello, client!"
@@ -159,9 +153,7 @@ func server() throws {
     print("Server Stopped")
   }
 
-  done.lock()
-  done.wait()
-  done.unlock()
+  latch.wait()
 }
 
 try main()
