@@ -7,7 +7,7 @@ It includes Swift and Go implementations to verify
 interoperability.
 
 The [Xcode](Xcode) directory contains a Mac app and 
-[SwiftPM](SwiftPM) contains a command-line tool
+[PackageManager](PackageManager) contains a command-line tool
 that can be built with the Swift Package Manager. Both contain
 a Swift client and server, and both are hard-coded to use port
 8081 for insecure connections and port 8443 for secure connections.
