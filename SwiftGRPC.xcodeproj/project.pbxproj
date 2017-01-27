@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D30D29181E3B0AC9004A414B /* CountDownLatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = D30D29171E3B0AC9004A414B /* CountDownLatch.swift */; };
 		OBJ_1000 /* stack.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_231 /* stack.c */; };
 		OBJ_1001 /* a_digest.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_233 /* a_digest.c */; };
 		OBJ_1002 /* a_sign.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_234 /* a_sign.c */; };
@@ -641,6 +642,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		D30D29171E3B0AC9004A414B /* CountDownLatch.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CountDownLatch.swift; sourceTree = "<group>"; };
 		OBJ_100 /* buf.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = buf.c; sourceTree = "<group>"; };
 		OBJ_102 /* asn1_compat.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = asn1_compat.c; sourceTree = "<group>"; };
 		OBJ_103 /* ber.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ber.c; sourceTree = "<group>"; };
@@ -2238,7 +2240,7 @@
 			path = sockaddr;
 			sourceTree = "<group>";
 		};
-		OBJ_5 /*  */ = {
+		OBJ_5 = {
 			isa = PBXGroup;
 			children = (
 				OBJ_6 /* Package.swift */,
@@ -2250,7 +2252,6 @@
 				OBJ_774 /* third_party */,
 				OBJ_775 /* Products */,
 			);
-			name = "";
 			sourceTree = "<group>";
 		};
 		OBJ_500 /* dns */ = {
@@ -2821,6 +2822,7 @@
 				OBJ_758 /* Call.swift */,
 				OBJ_759 /* Channel.swift */,
 				OBJ_760 /* CompletionQueue.swift */,
+				D30D29171E3B0AC9004A414B /* CountDownLatch.swift */,
 				OBJ_761 /* gRPC.swift */,
 				OBJ_762 /* Handler.swift */,
 				OBJ_763 /* Metadata.swift */,
@@ -2996,7 +2998,7 @@
 			knownRegions = (
 				en,
 			);
-			mainGroup = OBJ_5 /*  */;
+			mainGroup = OBJ_5;
 			productRefGroup = OBJ_775 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -3313,6 +3315,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 0;
 			files = (
+				D30D29181E3B0AC9004A414B /* CountDownLatch.swift in Sources */,
 				OBJ_1369 /* ByteBuffer.swift in Sources */,
 				OBJ_1370 /* Call.swift in Sources */,
 				OBJ_1371 /* Channel.swift in Sources */,

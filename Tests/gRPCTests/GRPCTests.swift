@@ -8,39 +8,27 @@ func Log(_ message : String) {
 }
 
 class gRPCTests: XCTestCase {
-  var count : Int = 0
-
+  
   func testBasicSanity() {
     gRPC.initialize()
-    let done = NSCondition()
-    self.count = 2
+    let latch = CountDownLatch(2)
     DispatchQueue.global().async() {
-      server()
-      Log("server finished")
-      done.lock()
-      self.count = self.count - 1
-      done.signal()
-      done.unlock()
-    }
-    DispatchQueue.global().async() {
-      client()
-      Log("client finished")
-      done.lock()
-      self.count = self.count - 1
-      done.signal()
-      done.unlock()
-    }
-    var running = true
-    while (running) {
-      Log("waiting")
-      done.lock()
-      done.wait()
-      if (self.count == 0) {
-        running = false
+      do {
+        try server()
+      } catch (let error) {
+        XCTFail("server error \(error)")
       }
-      Log("count \(self.count)")
-      done.unlock()
+      latch.countDown()
     }
+    DispatchQueue.global().async() {
+      do {
+        try client()
+      } catch (let error) {
+        XCTFail("client error \(error)")
+      }
+      latch.countDown()
+    }
+    latch.wait()
   }
 }
 
@@ -83,61 +71,43 @@ func verify_metadata(_ metadata: Metadata, expected: [String:String]) {
   }
 }
 
-func client() {
+func client() throws {
   let message = clientText.data(using: .utf8)
-  let c = gRPC.Channel(address:address)
-  c.host = host
-  let done = NSCondition()
-  var running = true
+  let channel = gRPC.Channel(address:address)
+  channel.host = host
   for i in 0..<steps {
-    var call : Call
-    do {
-      let method = (i < steps-1) ? hello : goodbye
-      call = c.makeCall(method)
-      let metadata = Metadata(initialClientMetadata)
-      try call.start(.unary, metadata:metadata, message:message) {
-        (response) in
-        // verify the basic response from the server
-        XCTAssertEqual(response.statusCode, statusCode)
-        XCTAssertEqual(response.statusMessage, statusMessage)
-        // verify the message from the server
-        let resultData = response.resultData
-        let messageString = String(data: resultData!, encoding: .utf8)
-        XCTAssertEqual(messageString, serverText)
-        // verify the initial metadata from the server
-        let initialMetadata = response.initialMetadata!
-        verify_metadata(initialMetadata, expected: initialServerMetadata)
-        // verify the trailing metadata from the server
-        let trailingMetadata = response.trailingMetadata!
-        verify_metadata(trailingMetadata, expected: trailingServerMetadata)
-        done.lock()
-        running = false
-        done.signal()
-        done.unlock()
-      }
-    } catch (let error) {
-        XCTFail("error \(error)")
+    let latch = CountDownLatch(1)
+    let method = (i < steps-1) ? hello : goodbye
+    let call = channel.makeCall(method)
+    let metadata = Metadata(initialClientMetadata)
+    try call.start(.unary, metadata:metadata, message:message) {
+      (response) in
+      // verify the basic response from the server
+      XCTAssertEqual(response.statusCode, statusCode)
+      XCTAssertEqual(response.statusMessage, statusMessage)
+      // verify the message from the server
+      let resultData = response.resultData
+      let messageString = String(data: resultData!, encoding: .utf8)
+      XCTAssertEqual(messageString, serverText)
+      // verify the initial metadata from the server
+      let initialMetadata = response.initialMetadata!
+      verify_metadata(initialMetadata, expected: initialServerMetadata)
+      // verify the trailing metadata from the server
+      let trailingMetadata = response.trailingMetadata!
+      verify_metadata(trailingMetadata, expected: trailingServerMetadata)
+      // report completion
+      latch.countDown()
     }
     // wait for the call to complete
-    var finished = false
-    while (!finished) {
-      done.lock()
-      done.wait()
-      if (!running) {
-        finished = true
-      }
-      done.unlock()
-    }
-    Log("finished client call \(i)")
+    latch.wait()
   }
-  Log("client done")
+  usleep(500) // temporarily delay calls to the channel destructor
 }
 
-func server() {
+func server() throws {
   let server = gRPC.Server(address:address)
   var requestCount = 0
-  let done = NSCondition()
-  var running = true
+  let latch = CountDownLatch(1)
   server.run() {(requestHandler) in
     do {
       requestCount += 1
@@ -169,23 +139,9 @@ func server() {
     }
   }
   server.onCompletion() {
-      // exit the server thread
-      Log("signaling completion")
-      done.lock()
-      running = false
-      done.signal()
-      done.unlock()
+    // exit the server thread
+    latch.countDown()
   }
   // wait for the server to exit
-  var finished = false
-  while !finished {
-    done.lock()
-    done.wait()
-    if (!running) {
-      finished = true
-    }
-    done.unlock()
-  }
-  Log("server done")
+  latch.wait()
 }
-
