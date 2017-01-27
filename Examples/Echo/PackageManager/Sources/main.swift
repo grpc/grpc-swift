@@ -131,7 +131,7 @@ if client != "" {
     var running = true
     while running {
       do {
-        let responseMessage = try expandCall.Receive()
+        let responseMessage = try expandCall.receive()
         print("Received: \(responseMessage.text)")
       } catch Echo_EchoClientError.endOfStream {
         print("expand closed")
@@ -148,11 +148,11 @@ if client != "" {
     for part in parts {
       let requestMessage = Echo_EchoRequest(text:part)
       print("Sending: " + part)
-      try collectCall.Send(requestMessage)
+      try collectCall.send(requestMessage)
       sleep(1)
     }
 
-    let responseMessage = try collectCall.CloseAndReceive()
+    let responseMessage = try collectCall.closeAndReceive()
     print("Received: \(responseMessage.text)")
   }
 
@@ -164,7 +164,7 @@ if client != "" {
       var running = true
       while running {
         do {
-          let responseMessage = try updateCall.Receive()
+          let responseMessage = try updateCall.receive()
           print("Received: \(responseMessage.text)")
         } catch Echo_EchoClientError.endOfStream {
           print("update closed")
@@ -180,10 +180,10 @@ if client != "" {
     for part in parts {
       let requestMessage = Echo_EchoRequest(text:part)
       print("Sending: " + requestMessage.text)
-      try updateCall.Send(requestMessage)
+      try updateCall.send(requestMessage)
       sleep(1)
     }
-    try updateCall.CloseSend()
+    try updateCall.closeSend()
 
     // Wait for the call to complete.
     latch.wait()

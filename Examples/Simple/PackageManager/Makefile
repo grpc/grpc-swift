@@ -1,9 +1,9 @@
 
 CFLAGS = \
 -Xcc -DOPENSSL_NO_ASM \
--Xcc -IPackages/SwiftGRPC-0.1.6/Sources/BoringSSL/include \
--Xcc -IPackages/SwiftGRPC-0.1.6/Sources/CgRPC \
--Xcc -IPackages/SwiftGRPC-0.1.6/Sources/CgRPC/include
+-Xcc -IPackages/SwiftGRPC-0.1.7/Sources/BoringSSL/include \
+-Xcc -IPackages/SwiftGRPC-0.1.7/Sources/CgRPC \
+-Xcc -IPackages/SwiftGRPC-0.1.7/Sources/CgRPC/include
 
 LDFLAGS = -Xlinker -lz 
 

@@ -217,7 +217,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
       var running = true
       while running {
         do {
-          let responseMessage = try expandCall.Receive()
+          let responseMessage = try expandCall.receive()
           self.displayMessageReceived(responseMessage.text)
         } catch Echo_EchoClientError.endOfStream {
           self.displayMessageReceived("Done.")
@@ -233,7 +233,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     if let collectCall = collectCall {
       let requestMessage = Echo_EchoRequest(text:self.messageField.stringValue)
       self.displayMessageSent(requestMessage.text)
-      try collectCall.Send(requestMessage)
+      try collectCall.send(requestMessage)
     }
   }
 
@@ -241,7 +241,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     if let updateCall = updateCall {
       let requestMessage = Echo_EchoRequest(text:self.messageField.stringValue)
       self.displayMessageSent(requestMessage.text)
-      try updateCall.Send(requestMessage)
+      try updateCall.send(requestMessage)
     }
   }
 
@@ -253,7 +253,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
       var running = true
       while running {
         do {
-          let responseMessage = try updateCall.Receive()
+          let responseMessage = try updateCall.receive()
           self.displayMessageReceived(responseMessage.text)
         } catch Echo_EchoClientError.endOfStream {
           self.displayMessageReceived("Done.")
@@ -267,14 +267,14 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
 
   func sendClose() throws {
     if let updateCall = updateCall {
-      try updateCall.CloseSend()
+      try updateCall.closeSend()
       self.updateCall = nil
       self.nowStreaming = false
       self.closeButton.isEnabled = false
     }
     if let collectCall = collectCall {
       do {
-        let responseMessage = try collectCall.CloseAndReceive()
+        let responseMessage = try collectCall.closeAndReceive()
         self.displayMessageReceived(responseMessage.text)
       } catch (let error) {
         self.displayMessageReceived("No message received. \(error)")

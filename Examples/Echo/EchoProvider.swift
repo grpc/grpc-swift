@@ -45,7 +45,7 @@ class EchoProvider : Echo_EchoProvider {
     let parts = request.text.components(separatedBy: " ")
     var i = 0
     for part in parts {
-      try session.Send(Echo_EchoResponse(text:"Swift echo expand (\(i)): \(part)"))
+      try session.send(Echo_EchoResponse(text:"Swift echo expand (\(i)): \(part)"))
       i += 1
       sleep(1)
     }
@@ -56,7 +56,7 @@ class EchoProvider : Echo_EchoProvider {
     var parts : [String] = []
     while true {
       do {
-        let request = try session.Receive()
+        let request = try session.receive()
         parts.append(request.text)
       } catch Echo_EchoServerError.endOfStream {
         break
@@ -65,7 +65,7 @@ class EchoProvider : Echo_EchoProvider {
       }
     }
     let response = Echo_EchoResponse(text:"Swift echo collect: " + parts.joined(separator: " "))
-    try session.SendAndClose(response)
+    try session.sendAndClose(response)
   }
 
   // update streams back messages as they are received in an input stream.
@@ -73,15 +73,15 @@ class EchoProvider : Echo_EchoProvider {
     var count = 0
     while true {
       do {
-        let request = try session.Receive()
+        let request = try session.receive()
         count += 1
-        try session.Send(Echo_EchoResponse(text:"Swift echo update (\(count)): \(request.text)"))
+        try session.send(Echo_EchoResponse(text:"Swift echo update (\(count)): \(request.text)"))
       } catch Echo_EchoServerError.endOfStream {
         break
       } catch (let error) {
         print("\(error)")
       }
     }
-    try session.Close()
+    try session.close()
   }
 }
