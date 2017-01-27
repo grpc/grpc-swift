@@ -107,7 +107,7 @@ public class Echo_EchoExpandSession : Echo_EchoSession {
   }
 
   /// Send a message. Nonblocking.
-  public func Send(_ response: Echo_EchoResponse) throws {
+  public func send(_ response: Echo_EchoResponse) throws {
     try handler.sendResponse(message:response.serializeProtobuf()) {}
   }
 
@@ -149,7 +149,7 @@ public class Echo_EchoCollectSession : Echo_EchoSession {
   }
 
   /// Receive a message. Blocks until a message is received or the client closes the connection.
-  public func Receive() throws -> Echo_EchoRequest {
+  public func receive() throws -> Echo_EchoRequest {
     let latch = CountDownLatch(1)
     var requestMessage : Echo_EchoRequest?
     try self.handler.receiveMessage() {(requestData) in
@@ -166,7 +166,7 @@ public class Echo_EchoCollectSession : Echo_EchoSession {
   }
 
   /// Send a response and close the connection.
-  public func SendAndClose(_ response: Echo_EchoResponse) throws {
+  public func sendAndClose(_ response: Echo_EchoResponse) throws {
     try self.handler.sendResponse(message:response.serializeProtobuf(),
                                   statusCode:self.statusCode,
                                   statusMessage:self.statusMessage,
@@ -198,7 +198,7 @@ public class Echo_EchoUpdateSession : Echo_EchoSession {
   }
 
   /// Receive a message. Blocks until a message is received or the client closes the connection.
-  public func Receive() throws -> Echo_EchoRequest {
+  public func receive() throws -> Echo_EchoRequest {
     let latch = CountDownLatch(1)
     var requestMessage : Echo_EchoRequest?
     try self.handler.receiveMessage() {(requestData) in
@@ -220,12 +220,12 @@ public class Echo_EchoUpdateSession : Echo_EchoSession {
   }
 
   /// Send a message. Nonblocking.
-  public func Send(_ response: Echo_EchoResponse) throws {
+  public func send(_ response: Echo_EchoResponse) throws {
     try handler.sendResponse(message:response.serializeProtobuf()) {}
   }
 
   /// Close a connection. Blocks until the connection is closed.
-  public func Close() throws {
+  public func close() throws {
     let latch = CountDownLatch(1)
     try self.handler.sendStatus(statusCode:self.statusCode,
                                 statusMessage:self.statusMessage,

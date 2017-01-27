@@ -9,7 +9,7 @@ public class {{ .|session:protoFile,service,method }} : {{ .|service:protoFile,s
   }
 
   /// Receive a message. Blocks until a message is received or the client closes the connection.
-  public func Receive() throws -> {{ method|input }} {
+  public func receive() throws -> {{ method|input }} {
     let latch = CountDownLatch(1)
     var requestMessage : {{ method|input }}?
     try self.handler.receiveMessage() {(requestData) in
@@ -31,12 +31,12 @@ public class {{ .|session:protoFile,service,method }} : {{ .|service:protoFile,s
   }
 
   /// Send a message. Nonblocking.
-  public func Send(_ response: {{ method|output }}) throws {
+  public func send(_ response: {{ method|output }}) throws {
     try handler.sendResponse(message:response.serializeProtobuf()) {}
   }
 
   /// Close a connection. Blocks until the connection is closed.
-  public func Close() throws {
+  public func close() throws {
     let latch = CountDownLatch(1)
     try self.handler.sendStatus(statusCode:self.statusCode,
                                 statusMessage:self.statusMessage,

@@ -22,7 +22,7 @@ public class {{ .|call:protoFile,service,method }} {
   }
 
   // Call this to wait for a result. Blocks.
-  public func Receive() throws -> {{ method|output }} {
+  public func receive() throws -> {{ method|output }} {
     var returnError : {{ .|clienterror:protoFile,service }}?
     var response : {{ method|output }}!
     let latch = CountDownLatch(1)

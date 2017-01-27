@@ -20,13 +20,13 @@ public class {{ .|call:protoFile,service,method }} {
   }
 
   // Call this to send each message in the request stream.
-  public func Send(_ message: {{ method|input }}) throws {
+  public func send(_ message: {{ method|input }}) throws {
     let messageData = try message.serializeProtobuf()
     try call.sendMessage(data:messageData)
   }
 
   // Call this to close the connection and wait for a response. Blocks.
-  public func CloseAndReceive() throws -> {{ method|output }} {
+  public func closeAndReceive() throws -> {{ method|output }} {
     var returnError : {{ .|clienterror:protoFile,service }}?
     var returnResponse : {{ method|output }}!
     let latch = CountDownLatch(1)

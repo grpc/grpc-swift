@@ -18,7 +18,7 @@ public class {{ .|call:protoFile,service,method }} {
     return self
   }
 
-  public func Receive() throws -> {{ method|output }} {
+  public func receive() throws -> {{ method|output }} {
     var returnError : {{ .|clienterror:protoFile,service }}?
     var returnMessage : {{ method|output }}!
     let latch = CountDownLatch(1)
@@ -42,12 +42,12 @@ public class {{ .|call:protoFile,service,method }} {
     return returnMessage
   }
 
-  public func Send(_ message:{{ method|input }}) throws {
+  public func send(_ message:{{ method|input }}) throws {
     let messageData = try message.serializeProtobuf()
     try call.sendMessage(data:messageData)
   }
 
-  public func CloseSend() throws {
+  public func closeSend() throws {
     let latch = CountDownLatch(1)
     try call.close() {
       latch.signal()

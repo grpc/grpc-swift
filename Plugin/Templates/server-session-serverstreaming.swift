@@ -9,7 +9,7 @@ public class {{ .|session:protoFile,service,method }} : {{ .|service:protoFile,s
   }
 
   /// Send a message. Nonblocking.
-  public func Send(_ response: {{ method|output }}) throws {
+  public func send(_ response: {{ method|output }}) throws {
     try handler.sendResponse(message:response.serializeProtobuf()) {}
   }
 

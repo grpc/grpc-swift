@@ -107,7 +107,7 @@ public class Echo_EchoExpandCall {
   }
 
   // Call this to wait for a result. Blocks.
-  public func Receive() throws -> Echo_EchoResponse {
+  public func receive() throws -> Echo_EchoResponse {
     var returnError : Echo_EchoClientError?
     var response : Echo_EchoResponse!
     let latch = CountDownLatch(1)
@@ -154,13 +154,13 @@ public class Echo_EchoCollectCall {
   }
 
   // Call this to send each message in the request stream.
-  public func Send(_ message: Echo_EchoRequest) throws {
+  public func send(_ message: Echo_EchoRequest) throws {
     let messageData = try message.serializeProtobuf()
     try call.sendMessage(data:messageData)
   }
 
   // Call this to close the connection and wait for a response. Blocks.
-  public func CloseAndReceive() throws -> Echo_EchoResponse {
+  public func closeAndReceive() throws -> Echo_EchoResponse {
     var returnError : Echo_EchoClientError?
     var returnResponse : Echo_EchoResponse!
     let latch = CountDownLatch(1)
@@ -206,7 +206,7 @@ public class Echo_EchoUpdateCall {
     return self
   }
 
-  public func Receive() throws -> Echo_EchoResponse {
+  public func receive() throws -> Echo_EchoResponse {
     var returnError : Echo_EchoClientError?
     var returnMessage : Echo_EchoResponse!
     let latch = CountDownLatch(1)
@@ -230,12 +230,12 @@ public class Echo_EchoUpdateCall {
     return returnMessage
   }
 
-  public func Send(_ message:Echo_EchoRequest) throws {
+  public func send(_ message:Echo_EchoRequest) throws {
     let messageData = try message.serializeProtobuf()
     try call.sendMessage(data:messageData)
   }
 
-  public func CloseSend() throws {
+  public func closeSend() throws {
     let latch = CountDownLatch(1)
     try call.close() {
       latch.signal()
