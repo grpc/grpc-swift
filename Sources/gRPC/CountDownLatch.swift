@@ -45,7 +45,7 @@ public class CountDownLatch {
   }
 
   public func signal() {
-    condition.lock()
+    self.condition.lock()
     self.count = self.count - 1
     self.condition.signal()
     self.condition.unlock()
