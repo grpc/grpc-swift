@@ -8,24 +8,20 @@ public class {{ .|call:protoFile,service,method }} {
   }
 
   fileprivate func run(metadata:Metadata) throws -> {{ .|call:protoFile,service,method }} {
-    let done = NSCondition()
+    let latch = CountDownLatch(1)
     try self.call.start(.bidiStreaming,
                         metadata:metadata)
     {callResult in
-      done.lock()
-      done.signal()
-      done.unlock()
+      latch.signal()
     }
-    done.lock()
-    done.wait()
-    done.unlock()
+    latch.wait()
     return self
   }
 
   public func Receive() throws -> {{ method|output }} {
     var returnError : {{ .|clienterror:protoFile,service }}?
     var returnMessage : {{ method|output }}!
-    let done = NSCondition()
+    let latch = CountDownLatch(1)
     do {
       try call.receiveMessage() {(data) in
         if let data = data {
@@ -36,13 +32,9 @@ public class {{ .|call:protoFile,service,method }} {
         } else {
           returnError = {{ .|clienterror:protoFile,service }}.endOfStream
         }
-        done.lock()
-        done.signal()
-        done.unlock()
+        latch.signal()
       }
-      done.lock()
-      done.wait()
-      done.unlock()
+      latch.wait()
     }
     if let returnError = returnError {
       throw returnError
@@ -56,14 +48,10 @@ public class {{ .|call:protoFile,service,method }} {
   }
 
   public func CloseSend() throws {
-    let done = NSCondition()
+    let latch = CountDownLatch(1)
     try call.close() {
-      done.lock()
-      done.signal()
-      done.unlock()
+      latch.signal()
     }
-    done.lock()
-    done.wait()
-    done.unlock()
+    latch.wait()
   }
 }

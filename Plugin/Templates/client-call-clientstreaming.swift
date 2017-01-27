@@ -9,17 +9,13 @@ public class {{ .|call:protoFile,service,method }} {
 
   // Call this to start a call.
   fileprivate func run(metadata:Metadata) throws -> {{ .|call:protoFile,service,method }} {
-    let done = NSCondition()
+    let latch = CountDownLatch(1)
     try self.call.start(.clientStreaming,
                         metadata:metadata)
     {callResult in
-      done.lock()
-      done.signal()
-      done.unlock()
+      latch.signal()
     }
-    done.lock()
-    done.wait()
-    done.unlock()
+    latch.wait()
     return self
   }
 
@@ -33,7 +29,7 @@ public class {{ .|call:protoFile,service,method }} {
   public func CloseAndReceive() throws -> {{ method|output }} {
     var returnError : {{ .|clienterror:protoFile,service }}?
     var returnResponse : {{ method|output }}!
-    let done = NSCondition()
+    let latch = CountDownLatch(1)
     do {
       try call.receiveMessage() {(responseData) in
         if let responseData = responseData,
@@ -42,14 +38,10 @@ public class {{ .|call:protoFile,service,method }} {
         } else {
           returnError = {{ .|clienterror:protoFile,service }}.invalidMessageReceived
         }
-        done.lock()
-        done.signal()
-        done.unlock()
+        latch.signal()
       }
       try call.close(completion:{})
-      done.lock()
-      done.wait()
-      done.unlock()
+      latch.wait()
     } catch (let error) {
       throw error
     }

@@ -10,7 +10,7 @@ public class {{ .|call:protoFile,service,method }} {
   /// Run the call. Blocks until the reply is received.
   fileprivate func run(request: {{ method|input }},
                        metadata: Metadata) throws -> {{ method|output }} {
-    let done = NSCondition()
+    let latch = CountDownLatch(1)
     var callResult : CallResult!
     var response : {{ method|output }}?
     let requestData = try request.serializeProtobuf()
@@ -22,13 +22,9 @@ public class {{ .|call:protoFile,service,method }} {
       if let responseData = callResult.resultData {
         response = try? {{ method|output }}(protobuf:responseData)
       }
-      done.lock()
-      done.signal()
-      done.unlock()
+      latch.signal()
     }
-    done.lock()
-    done.wait()
-    done.unlock()
+    latch.wait()
     if let response = response {
       return response
     } else {

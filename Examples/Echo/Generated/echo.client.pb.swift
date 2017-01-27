@@ -60,7 +60,7 @@ public class Echo_EchoGetCall {
   /// Run the call. Blocks until the reply is received.
   fileprivate func run(request: Echo_EchoRequest,
                        metadata: Metadata) throws -> Echo_EchoResponse {
-    let done = NSCondition()
+    let latch = CountDownLatch(1)
     var callResult : CallResult!
     var response : Echo_EchoResponse?
     let requestData = try request.serializeProtobuf()
@@ -72,13 +72,9 @@ public class Echo_EchoGetCall {
       if let responseData = callResult.resultData {
         response = try? Echo_EchoResponse(protobuf:responseData)
       }
-      done.lock()
-      done.signal()
-      done.unlock()
+      latch.signal()
     }
-    done.lock()
-    done.wait()
-    done.unlock()
+    latch.wait()
     if let response = response {
       return response
     } else {
@@ -99,18 +95,14 @@ public class Echo_EchoExpandCall {
   // Call this once with the message to send.
   fileprivate func run(request: Echo_EchoRequest, metadata: Metadata) throws -> Echo_EchoExpandCall {
     let requestData = try request.serializeProtobuf()
-    let done = NSCondition()
+    let latch = CountDownLatch(1)
     try call.start(.serverStreaming,
                    metadata:metadata,
                    message:requestData)
     {callResult in
-      done.lock()
-      done.signal()
-      done.unlock()
+      latch.signal()
     }
-    done.lock()
-    done.wait()
-    done.unlock()
+    latch.wait()
     return self
   }
 
@@ -118,7 +110,7 @@ public class Echo_EchoExpandCall {
   public func Receive() throws -> Echo_EchoResponse {
     var returnError : Echo_EchoClientError?
     var response : Echo_EchoResponse!
-    let done = NSCondition()
+    let latch = CountDownLatch(1)
     do {
       try call.receiveMessage() {(responseData) in
         if let responseData = responseData {
@@ -129,13 +121,9 @@ public class Echo_EchoExpandCall {
         } else {
           returnError = Echo_EchoClientError.endOfStream
         }
-        done.lock()
-        done.signal()
-        done.unlock()
+        latch.signal()
       }
-      done.lock()
-      done.wait()
-      done.unlock()
+      latch.wait()
     }
     if let returnError = returnError {
       throw returnError
@@ -155,17 +143,13 @@ public class Echo_EchoCollectCall {
 
   // Call this to start a call.
   fileprivate func run(metadata:Metadata) throws -> Echo_EchoCollectCall {
-    let done = NSCondition()
+    let latch = CountDownLatch(1)
     try self.call.start(.clientStreaming,
                         metadata:metadata)
     {callResult in
-      done.lock()
-      done.signal()
-      done.unlock()
+      latch.signal()
     }
-    done.lock()
-    done.wait()
-    done.unlock()
+    latch.wait()
     return self
   }
 
@@ -179,7 +163,7 @@ public class Echo_EchoCollectCall {
   public func CloseAndReceive() throws -> Echo_EchoResponse {
     var returnError : Echo_EchoClientError?
     var returnResponse : Echo_EchoResponse!
-    let done = NSCondition()
+    let latch = CountDownLatch(1)
     do {
       try call.receiveMessage() {(responseData) in
         if let responseData = responseData,
@@ -188,14 +172,10 @@ public class Echo_EchoCollectCall {
         } else {
           returnError = Echo_EchoClientError.invalidMessageReceived
         }
-        done.lock()
-        done.signal()
-        done.unlock()
+        latch.signal()
       }
       try call.close(completion:{})
-      done.lock()
-      done.wait()
-      done.unlock()
+      latch.wait()
     } catch (let error) {
       throw error
     }
@@ -216,24 +196,20 @@ public class Echo_EchoUpdateCall {
   }
 
   fileprivate func run(metadata:Metadata) throws -> Echo_EchoUpdateCall {
-    let done = NSCondition()
+    let latch = CountDownLatch(1)
     try self.call.start(.bidiStreaming,
                         metadata:metadata)
     {callResult in
-      done.lock()
-      done.signal()
-      done.unlock()
+      latch.signal()
     }
-    done.lock()
-    done.wait()
-    done.unlock()
+    latch.wait()
     return self
   }
 
   public func Receive() throws -> Echo_EchoResponse {
     var returnError : Echo_EchoClientError?
     var returnMessage : Echo_EchoResponse!
-    let done = NSCondition()
+    let latch = CountDownLatch(1)
     do {
       try call.receiveMessage() {(data) in
         if let data = data {
@@ -244,13 +220,9 @@ public class Echo_EchoUpdateCall {
         } else {
           returnError = Echo_EchoClientError.endOfStream
         }
-        done.lock()
-        done.signal()
-        done.unlock()
+        latch.signal()
       }
-      done.lock()
-      done.wait()
-      done.unlock()
+      latch.wait()
     }
     if let returnError = returnError {
       throw returnError
@@ -264,15 +236,11 @@ public class Echo_EchoUpdateCall {
   }
 
   public func CloseSend() throws {
-    let done = NSCondition()
+    let latch = CountDownLatch(1)
     try call.close() {
-      done.lock()
-      done.signal()
-      done.unlock()
+      latch.signal()
     }
-    done.lock()
-    done.wait()
-    done.unlock()
+    latch.wait()
   }
 }
 

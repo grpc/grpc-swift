@@ -150,19 +150,15 @@ public class Echo_EchoCollectSession : Echo_EchoSession {
 
   /// Receive a message. Blocks until a message is received or the client closes the connection.
   public func Receive() throws -> Echo_EchoRequest {
-    let done = NSCondition()
+    let latch = CountDownLatch(1)
     var requestMessage : Echo_EchoRequest?
     try self.handler.receiveMessage() {(requestData) in
       if let requestData = requestData {
         requestMessage = try? Echo_EchoRequest(protobuf:requestData)
       }
-      done.lock()
-      done.signal()
-      done.unlock()
+      latch.signal()
     }
-    done.lock()
-    done.wait()
-    done.unlock()
+    latch.wait()
     if requestMessage == nil {
       throw Echo_EchoServerError.endOfStream
     }
@@ -203,7 +199,7 @@ public class Echo_EchoUpdateSession : Echo_EchoSession {
 
   /// Receive a message. Blocks until a message is received or the client closes the connection.
   public func Receive() throws -> Echo_EchoRequest {
-    let done = NSCondition()
+    let latch = CountDownLatch(1)
     var requestMessage : Echo_EchoRequest?
     try self.handler.receiveMessage() {(requestData) in
       if let requestData = requestData {
@@ -213,13 +209,9 @@ public class Echo_EchoUpdateSession : Echo_EchoSession {
           print("error \(error)")
         }
       }
-      done.lock()
-      done.signal()
-      done.unlock()
+      latch.signal()
     }
-    done.lock()
-    done.wait()
-    done.unlock()
+    latch.wait()
     if let requestMessage = requestMessage {
       return requestMessage
     } else {
@@ -234,17 +226,13 @@ public class Echo_EchoUpdateSession : Echo_EchoSession {
 
   /// Close a connection. Blocks until the connection is closed.
   public func Close() throws {
-    let done = NSCondition()
+    let latch = CountDownLatch(1)
     try self.handler.sendStatus(statusCode:self.statusCode,
                                 statusMessage:self.statusMessage,
                                 trailingMetadata:self.trailingMetadata) {
-                                  done.lock()
-                                  done.signal()
-                                  done.unlock()
+                                  latch.signal()
     }
-    done.lock()
-    done.wait()
-    done.unlock()
+    latch.wait()
   }
 
   /// Run the session. Internal.

@@ -10,18 +10,14 @@ public class {{ .|call:protoFile,service,method }} {
   // Call this once with the message to send.
   fileprivate func run(request: {{ method|input }}, metadata: Metadata) throws -> {{ .|call:protoFile,service,method }} {
     let requestData = try request.serializeProtobuf()
-    let done = NSCondition()
+    let latch = CountDownLatch(1)
     try call.start(.serverStreaming,
                    metadata:metadata,
                    message:requestData)
     {callResult in
-      done.lock()
-      done.signal()
-      done.unlock()
+      latch.signal()
     }
-    done.lock()
-    done.wait()
-    done.unlock()
+    latch.wait()
     return self
   }
 
@@ -29,7 +25,7 @@ public class {{ .|call:protoFile,service,method }} {
   public func Receive() throws -> {{ method|output }} {
     var returnError : {{ .|clienterror:protoFile,service }}?
     var response : {{ method|output }}!
-    let done = NSCondition()
+    let latch = CountDownLatch(1)
     do {
       try call.receiveMessage() {(responseData) in
         if let responseData = responseData {
@@ -40,13 +36,9 @@ public class {{ .|call:protoFile,service,method }} {
         } else {
           returnError = {{ .|clienterror:protoFile,service }}.endOfStream
         }
-        done.lock()
-        done.signal()
-        done.unlock()
+        latch.signal()
       }
-      done.lock()
-      done.wait()
-      done.unlock()
+      latch.wait()
     }
     if let returnError = returnError {
       throw returnError
