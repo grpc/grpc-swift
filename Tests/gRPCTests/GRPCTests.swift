@@ -88,10 +88,12 @@ func client() {
   let c = gRPC.Channel(address:address)
   c.host = host
   let done = NSCondition()
+  var running = true
   for i in 0..<steps {
+    var call : Call
     do {
       let method = (i < steps-1) ? hello : goodbye
-      let call = c.makeCall(method)
+      call = c.makeCall(method)
       let metadata = Metadata(initialClientMetadata)
       try call.start(.unary, metadata:metadata, message:message) {
         (response) in
@@ -109,6 +111,7 @@ func client() {
         let trailingMetadata = response.trailingMetadata!
         verify_metadata(trailingMetadata, expected: trailingServerMetadata)
         done.lock()
+        running = false
         done.signal()
         done.unlock()
       }
@@ -116,21 +119,25 @@ func client() {
         XCTFail("error \(error)")
     }
     // wait for the call to complete
-    done.lock()
-    done.wait()
-    done.unlock()
+    var finished = false
+    while (!finished) {
+      done.lock()
+      done.wait()
+      if (!running) {
+        finished = true
+      }
+      done.unlock()
+    }
     Log("finished client call \(i)")
   }
   Log("client done")
-  // temporary workaround for a synchronization problem, 
-  // we fail intermittently if the channel is freed too soon after the call is deleted
-  usleep(1000)
 }
 
 func server() {
   let server = gRPC.Server(address:address)
   var requestCount = 0
   let done = NSCondition()
+  var running = true
   server.run() {(requestHandler) in
     do {
       requestCount += 1
@@ -165,13 +172,20 @@ func server() {
       // exit the server thread
       Log("signaling completion")
       done.lock()
+      running = false
       done.signal()
       done.unlock()
   }
   // wait for the server to exit
-  done.lock()
-  done.wait()
-  done.unlock()
+  var finished = false
+  while !finished {
+    done.lock()
+    done.wait()
+    if (!running) {
+      finished = true
+    }
+    done.unlock()
+  }
   Log("server done")
 }
 
