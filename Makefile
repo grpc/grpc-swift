@@ -1,6 +1,5 @@
 
 CFLAGS = \
--Xcc -DOPENSSL_NO_ASM \
 -Xcc -ISources/BoringSSL/include \
 -Xcc -ISources/CgRPC 
 
