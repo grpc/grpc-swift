@@ -53,6 +53,7 @@
 #ifndef OPENSSL_HEADER_BASE_H
 #define OPENSSL_HEADER_BASE_H
 
+#define OPENSSL_NO_ASM
 
 /* This file should be the first included by all BoringSSL headers. */
 
