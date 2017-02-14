@@ -8,7 +8,7 @@
 
 /*
  *
- * Copyright 2016, Google Inc.
+ * Copyright 2017, Google Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,6 +41,7 @@
 
 import Foundation
 import gRPC
+
 //-{% for service in protoFile.service %}
 
 /// Type for errors thrown from generated client code.
@@ -65,7 +66,7 @@ public enum {{ .|clienterror:protoFile,service }} : Error {
 //-{% endfor %}
 
 // Call methods of this class to make API calls.
-public class {{ protoFile.package|capitalize }}_{{ service.name }}Service {
+public class {{ .|serviceclass:protoFile,service }} {
   private var channel: Channel
 
   /// This metadata will be sent with all requests.

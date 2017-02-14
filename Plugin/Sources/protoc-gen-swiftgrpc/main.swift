@@ -37,16 +37,33 @@ import PluginLibrary
 import Stencil
 import PathKit
 
+extension String {
+  var undotted : String {
+    return self.replacingOccurrences(of:".", with:"_")
+  }
+
+  var uppercasedFirst : String {
+    var out = self.characters
+    if let first = out.popFirst() {
+      return String(first).uppercased() + String(out)
+    } else {
+      return self
+    }
+  }
+}
+
 func protoMessageName(_ name :String?) -> String {
   guard let name = name else {
     return ""
   }
-  let parts = name.components(separatedBy:".")
-  if parts.count == 3 {
-    return parts[1].capitalized + "_" + parts[2]
-  } else {
-    return name
+  let parts = name.undotted.components(separatedBy:"_")
+  var capitalizedParts : [String] = []
+  for part in parts {
+    if part != "" {
+      capitalizedParts.append(part.uppercasedFirst)
+    }
   }
+  return capitalizedParts.joined(separator:"_")
 }
 
 func pathName(_ arguments: [Any?]) throws -> String {
@@ -96,7 +113,7 @@ func packageServiceMethodName(_ arguments: [Any?]) throws -> String {
         "Google_Protobuf_MethodDescriptorProto" +
         " argument, received \(arguments[2])")
   }
-  return protoFile.package!.capitalized + "_" + service.name! + method.name!
+  return protoFile.package!.capitalized.undotted + "_" + service.name! + method.name!
 }
 
 func packageServiceName(_ arguments: [Any?]) throws -> String {
@@ -115,7 +132,7 @@ func packageServiceName(_ arguments: [Any?]) throws -> String {
         "Google_Protobuf_ServiceDescriptorProto" +
         " argument, received \(arguments[1])")
   }
-  return protoFile.package!.capitalized + "_" + service.name!
+  return protoFile.package!.capitalized.undotted + "_" + service.name!
 }
 
 // Code templates use "//-" prefixes to comment-out template operators
@@ -161,6 +178,9 @@ func main() throws {
   ext.registerFilter("clienterror") { (value: Any?, arguments: [Any?]) in
     return try packageServiceName(arguments) + "ClientError"
   }
+  ext.registerFilter("serviceclass") { (value: Any?, arguments: [Any?]) in
+    return try packageServiceName(arguments) + "Service"
+  }
   ext.registerFilter("servererror") { (value: Any?, arguments: [Any?]) in
     return try packageServiceName(arguments) + "ServerError"
   }
@@ -193,6 +213,8 @@ func main() throws {
   let rawRequest = try Stdin.readall()
   let request = try Google_Protobuf_Compiler_CodeGeneratorRequest(protobuf: rawRequest)
 
+  var generatedFileNames = Set<String>()
+  
   // process each .proto file separately
   for protoFile in request.protoFile {
 
@@ -216,25 +238,35 @@ func main() throws {
       log += " Options \(service.options)\n"
     }
 
+    if protoFile.service.count > 0 {
     // generate separate implementation files for client and server
     let context = ["protoFile": protoFile]
 
     do {
-      let clientcode = try templateEnvironment.renderTemplate(name:"client.pb.swift",
-                                                              context: context)
-      var clientfile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
-      clientfile.name = package + ".client.pb.swift"
-      clientfile.content = stripMarkers(clientcode)
-      response.file.append(clientfile)
+      let clientFileName = package + ".client.pb.swift"
+      if !generatedFileNames.contains(clientFileName) {
+        generatedFileNames.insert(clientFileName)
+        let clientcode = try templateEnvironment.renderTemplate(name:"client.pb.swift",
+                                                                context: context)
+        var clientfile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
+        clientfile.name = clientFileName
+        clientfile.content = stripMarkers(clientcode)
+        response.file.append(clientfile)
+      }
 
-      let servercode = try templateEnvironment.renderTemplate(name:"server.pb.swift",
-                                                              context: context)
-      var serverfile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
-      serverfile.name = package + ".server.pb.swift"
-      serverfile.content = stripMarkers(servercode)
-      response.file.append(serverfile)
+      let serverFileName = package + ".server.pb.swift"
+      if !generatedFileNames.contains(serverFileName) {
+        generatedFileNames.insert(serverFileName)
+        let servercode = try templateEnvironment.renderTemplate(name:"server.pb.swift",
+                                                                context: context)
+        var serverfile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
+        serverfile.name = serverFileName
+        serverfile.content = stripMarkers(servercode)
+        response.file.append(serverfile)
+      }
     } catch (let error) {
       log += "ERROR: \(error)\n"
+    }
     }
   }
 
@@ -251,4 +283,8 @@ func main() throws {
   Stdout.write(bytes: serializedResponse)
 }
 
-try main()
+do {
+	try main()	
+} catch (let error) {
+	Log("ERROR: \(error)")	
+}
