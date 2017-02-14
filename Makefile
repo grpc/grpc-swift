@@ -1,13 +1,11 @@
 
-CFLAGS = \
--Xcc -ISources/BoringSSL/include \
--Xcc -ISources/CgRPC 
+CFLAGS = -Xcc -ISources/BoringSSL/include
 
 LDFLAGS = -Xlinker -lz 
 
 test:
-	swift build $(CFLAGS) $(LDFLAGS)
-	swift test $(CFLAGS) $(LDFLAGS) 
+	swift build -v $(CFLAGS) $(LDFLAGS)
+	swift test -v $(CFLAGS) $(LDFLAGS) 
 
 clean :
 	rm -rf Packages
