@@ -10,7 +10,7 @@ public class {{ .|session:protoFile,service,method }} : {{ .|service:protoFile,s
 
   /// Receive a message. Blocks until a message is received or the client closes the connection.
   public func receive() throws -> {{ method|input }} {
-    let latch = CountDownLatch(1)
+    let sem = DispatchSemaphore(value: 0)
     var requestMessage : {{ method|input }}?
     try self.handler.receiveMessage() {(requestData) in
       if let requestData = requestData {
@@ -20,9 +20,9 @@ public class {{ .|session:protoFile,service,method }} : {{ .|service:protoFile,s
           print("error \(error)")
         }
       }
-      latch.signal()
+      sem.signal()
     }
-    latch.wait()
+    _ = sem.wait(timeout: DispatchTime.distantFuture)
     if let requestMessage = requestMessage {
       return requestMessage
     } else {
@@ -37,13 +37,13 @@ public class {{ .|session:protoFile,service,method }} : {{ .|service:protoFile,s
 
   /// Close a connection. Blocks until the connection is closed.
   public func close() throws {
-    let latch = CountDownLatch(1)
+    let sem = DispatchSemaphore(value: 0)
     try self.handler.sendStatus(statusCode:self.statusCode,
                                 statusMessage:self.statusMessage,
                                 trailingMetadata:self.trailingMetadata) {
-                                  latch.signal()
+                                  sem.signal()
     }
-    latch.wait()
+    _ = sem.wait(timeout: DispatchTime.distantFuture)
   }
 
   /// Run the session. Internal.

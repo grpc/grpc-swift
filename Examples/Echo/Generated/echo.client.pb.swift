@@ -40,8 +40,8 @@
  */
 
 import Foundation
+import Dispatch
 import gRPC
-
 
 /// Type for errors thrown from generated client code.
 public enum Echo_EchoClientError : Error {
@@ -61,7 +61,7 @@ public class Echo_EchoGetCall {
   /// Run the call. Blocks until the reply is received.
   fileprivate func run(request: Echo_EchoRequest,
                        metadata: Metadata) throws -> Echo_EchoResponse {
-    let latch = CountDownLatch(1)
+    let sem = DispatchSemaphore(value: 0)
     var callResult : CallResult!
     var response : Echo_EchoResponse?
     let requestData = try request.serializeProtobuf()
@@ -73,9 +73,9 @@ public class Echo_EchoGetCall {
       if let responseData = callResult.resultData {
         response = try? Echo_EchoResponse(protobuf:responseData)
       }
-      latch.signal()
+      sem.signal()
     }
-    latch.wait()
+    _ = sem.wait(timeout: DispatchTime.distantFuture)
     if let response = response {
       return response
     } else {
@@ -96,14 +96,14 @@ public class Echo_EchoExpandCall {
   // Call this once with the message to send.
   fileprivate func run(request: Echo_EchoRequest, metadata: Metadata) throws -> Echo_EchoExpandCall {
     let requestData = try request.serializeProtobuf()
-    let latch = CountDownLatch(1)
+    let sem = DispatchSemaphore(value: 0)
     try call.start(.serverStreaming,
                    metadata:metadata,
                    message:requestData)
     {callResult in
-      latch.signal()
+      sem.signal()
     }
-    latch.wait()
+    _ = sem.wait(timeout: DispatchTime.distantFuture)
     return self
   }
 
@@ -111,7 +111,7 @@ public class Echo_EchoExpandCall {
   public func receive() throws -> Echo_EchoResponse {
     var returnError : Echo_EchoClientError?
     var response : Echo_EchoResponse!
-    let latch = CountDownLatch(1)
+    let sem = DispatchSemaphore(value: 0)
     do {
       try call.receiveMessage() {(responseData) in
         if let responseData = responseData {
@@ -122,9 +122,9 @@ public class Echo_EchoExpandCall {
         } else {
           returnError = Echo_EchoClientError.endOfStream
         }
-        latch.signal()
+        sem.signal()
       }
-      latch.wait()
+      _ = sem.wait(timeout: DispatchTime.distantFuture)
     }
     if let returnError = returnError {
       throw returnError
@@ -144,13 +144,13 @@ public class Echo_EchoCollectCall {
 
   // Call this to start a call.
   fileprivate func run(metadata:Metadata) throws -> Echo_EchoCollectCall {
-    let latch = CountDownLatch(1)
+    let sem = DispatchSemaphore(value: 0)
     try self.call.start(.clientStreaming,
                         metadata:metadata)
     {callResult in
-      latch.signal()
+      sem.signal()
     }
-    latch.wait()
+    _ = sem.wait(timeout: DispatchTime.distantFuture)
     return self
   }
 
@@ -164,7 +164,7 @@ public class Echo_EchoCollectCall {
   public func closeAndReceive() throws -> Echo_EchoResponse {
     var returnError : Echo_EchoClientError?
     var returnResponse : Echo_EchoResponse!
-    let latch = CountDownLatch(1)
+    let sem = DispatchSemaphore(value: 0)
     do {
       try call.receiveMessage() {(responseData) in
         if let responseData = responseData,
@@ -173,10 +173,10 @@ public class Echo_EchoCollectCall {
         } else {
           returnError = Echo_EchoClientError.invalidMessageReceived
         }
-        latch.signal()
+        sem.signal()
       }
       try call.close(completion:{})
-      latch.wait()
+      _ = sem.wait(timeout: DispatchTime.distantFuture)
     } catch (let error) {
       throw error
     }
@@ -197,20 +197,20 @@ public class Echo_EchoUpdateCall {
   }
 
   fileprivate func run(metadata:Metadata) throws -> Echo_EchoUpdateCall {
-    let latch = CountDownLatch(1)
+    let sem = DispatchSemaphore(value: 0)
     try self.call.start(.bidiStreaming,
                         metadata:metadata)
     {callResult in
-      latch.signal()
+      sem.signal()
     }
-    latch.wait()
+    _ = sem.wait(timeout: DispatchTime.distantFuture)
     return self
   }
 
   public func receive() throws -> Echo_EchoResponse {
     var returnError : Echo_EchoClientError?
     var returnMessage : Echo_EchoResponse!
-    let latch = CountDownLatch(1)
+    let sem = DispatchSemaphore(value: 0)
     do {
       try call.receiveMessage() {(data) in
         if let data = data {
@@ -221,9 +221,9 @@ public class Echo_EchoUpdateCall {
         } else {
           returnError = Echo_EchoClientError.endOfStream
         }
-        latch.signal()
+        sem.signal()
       }
-      latch.wait()
+      _ = sem.wait(timeout: DispatchTime.distantFuture)
     }
     if let returnError = returnError {
       throw returnError
@@ -237,11 +237,11 @@ public class Echo_EchoUpdateCall {
   }
 
   public func closeSend() throws {
-    let latch = CountDownLatch(1)
+    let sem = DispatchSemaphore(value: 0)
     try call.close() {
-      latch.signal()
+      sem.signal()
     }
-    latch.wait()
+    _ = sem.wait(timeout: DispatchTime.distantFuture)
   }
 }
 

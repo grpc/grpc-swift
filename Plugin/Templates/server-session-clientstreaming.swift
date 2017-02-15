@@ -10,15 +10,15 @@ public class {{ .|session:protoFile,service,method }} : {{ .|service:protoFile,s
 
   /// Receive a message. Blocks until a message is received or the client closes the connection.
   public func receive() throws -> {{ method|input }} {
-    let latch = CountDownLatch(1)
+    let sem = DispatchSemaphore(value: 0)
     var requestMessage : {{ method|input }}?
     try self.handler.receiveMessage() {(requestData) in
       if let requestData = requestData {
         requestMessage = try? {{ method|input }}(protobuf:requestData)
       }
-      latch.signal()
+      sem.signal()
     }
-    latch.wait()
+    _ = sem.wait(timeout: DispatchTime.distantFuture)
     if requestMessage == nil {
       throw {{ .|servererror:protoFile,service }}.endOfStream
     }

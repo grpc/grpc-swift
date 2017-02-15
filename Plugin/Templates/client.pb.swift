@@ -40,8 +40,8 @@
  */
 
 import Foundation
+import Dispatch
 import gRPC
-
 //-{% for service in protoFile.service %}
 
 /// Type for errors thrown from generated client code.

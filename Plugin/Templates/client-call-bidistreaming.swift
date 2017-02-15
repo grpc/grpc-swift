@@ -8,20 +8,20 @@ public class {{ .|call:protoFile,service,method }} {
   }
 
   fileprivate func run(metadata:Metadata) throws -> {{ .|call:protoFile,service,method }} {
-    let latch = CountDownLatch(1)
+    let sem = DispatchSemaphore(value: 0)
     try self.call.start(.bidiStreaming,
                         metadata:metadata)
     {callResult in
-      latch.signal()
+      sem.signal()
     }
-    latch.wait()
+    _ = sem.wait(timeout: DispatchTime.distantFuture)
     return self
   }
 
   public func receive() throws -> {{ method|output }} {
     var returnError : {{ .|clienterror:protoFile,service }}?
     var returnMessage : {{ method|output }}!
-    let latch = CountDownLatch(1)
+    let sem = DispatchSemaphore(value: 0)
     do {
       try call.receiveMessage() {(data) in
         if let data = data {
@@ -32,9 +32,9 @@ public class {{ .|call:protoFile,service,method }} {
         } else {
           returnError = {{ .|clienterror:protoFile,service }}.endOfStream
         }
-        latch.signal()
+        sem.signal()
       }
-      latch.wait()
+      _ = sem.wait(timeout: DispatchTime.distantFuture)
     }
     if let returnError = returnError {
       throw returnError
@@ -48,10 +48,10 @@ public class {{ .|call:protoFile,service,method }} {
   }
 
   public func closeSend() throws {
-    let latch = CountDownLatch(1)
+    let sem = DispatchSemaphore(value: 0)
     try call.close() {
-      latch.signal()
+      sem.signal()
     }
-    latch.wait()
+    _ = sem.wait(timeout: DispatchTime.distantFuture)
   }
 }

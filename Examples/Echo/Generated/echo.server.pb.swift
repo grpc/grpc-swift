@@ -40,8 +40,8 @@
  */
 
 import Foundation
-import gRPC
 import Dispatch
+import gRPC
 
 /// Type for errors thrown from generated server code.
 public enum Echo_EchoServerError : Error {
@@ -150,15 +150,15 @@ public class Echo_EchoCollectSession : Echo_EchoSession {
 
   /// Receive a message. Blocks until a message is received or the client closes the connection.
   public func receive() throws -> Echo_EchoRequest {
-    let latch = CountDownLatch(1)
+    let sem = DispatchSemaphore(value: 0)
     var requestMessage : Echo_EchoRequest?
     try self.handler.receiveMessage() {(requestData) in
       if let requestData = requestData {
         requestMessage = try? Echo_EchoRequest(protobuf:requestData)
       }
-      latch.signal()
+      sem.signal()
     }
-    latch.wait()
+    _ = sem.wait(timeout: DispatchTime.distantFuture)
     if requestMessage == nil {
       throw Echo_EchoServerError.endOfStream
     }
@@ -199,7 +199,7 @@ public class Echo_EchoUpdateSession : Echo_EchoSession {
 
   /// Receive a message. Blocks until a message is received or the client closes the connection.
   public func receive() throws -> Echo_EchoRequest {
-    let latch = CountDownLatch(1)
+    let sem = DispatchSemaphore(value: 0)
     var requestMessage : Echo_EchoRequest?
     try self.handler.receiveMessage() {(requestData) in
       if let requestData = requestData {
@@ -209,9 +209,9 @@ public class Echo_EchoUpdateSession : Echo_EchoSession {
           print("error \(error)")
         }
       }
-      latch.signal()
+      sem.signal()
     }
-    latch.wait()
+    _ = sem.wait(timeout: DispatchTime.distantFuture)
     if let requestMessage = requestMessage {
       return requestMessage
     } else {
@@ -226,13 +226,13 @@ public class Echo_EchoUpdateSession : Echo_EchoSession {
 
   /// Close a connection. Blocks until the connection is closed.
   public func close() throws {
-    let latch = CountDownLatch(1)
+    let sem = DispatchSemaphore(value: 0)
     try self.handler.sendStatus(statusCode:self.statusCode,
                                 statusMessage:self.statusMessage,
                                 trailingMetadata:self.trailingMetadata) {
-                                  latch.signal()
+                                  sem.signal()
     }
-    latch.wait()
+    _ = sem.wait(timeout: DispatchTime.distantFuture)
   }
 
   /// Run the session. Internal.

@@ -10,7 +10,7 @@ public class {{ .|call:protoFile,service,method }} {
   /// Run the call. Blocks until the reply is received.
   fileprivate func run(request: {{ method|input }},
                        metadata: Metadata) throws -> {{ method|output }} {
-    let latch = CountDownLatch(1)
+    let sem = DispatchSemaphore(value: 0)
     var callResult : CallResult!
     var response : {{ method|output }}?
     let requestData = try request.serializeProtobuf()
@@ -22,9 +22,9 @@ public class {{ .|call:protoFile,service,method }} {
       if let responseData = callResult.resultData {
         response = try? {{ method|output }}(protobuf:responseData)
       }
-      latch.signal()
+      sem.signal()
     }
-    latch.wait()
+    _ = sem.wait(timeout: DispatchTime.distantFuture)
     if let response = response {
       return response
     } else {

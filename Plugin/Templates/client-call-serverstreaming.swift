@@ -10,14 +10,14 @@ public class {{ .|call:protoFile,service,method }} {
   // Call this once with the message to send.
   fileprivate func run(request: {{ method|input }}, metadata: Metadata) throws -> {{ .|call:protoFile,service,method }} {
     let requestData = try request.serializeProtobuf()
-    let latch = CountDownLatch(1)
+    let sem = DispatchSemaphore(value: 0)
     try call.start(.serverStreaming,
                    metadata:metadata,
                    message:requestData)
     {callResult in
-      latch.signal()
+      sem.signal()
     }
-    latch.wait()
+    _ = sem.wait(timeout: DispatchTime.distantFuture)
     return self
   }
 
@@ -25,7 +25,7 @@ public class {{ .|call:protoFile,service,method }} {
   public func receive() throws -> {{ method|output }} {
     var returnError : {{ .|clienterror:protoFile,service }}?
     var response : {{ method|output }}!
-    let latch = CountDownLatch(1)
+    let sem = DispatchSemaphore(value: 0)
     do {
       try call.receiveMessage() {(responseData) in
         if let responseData = responseData {
@@ -36,9 +36,9 @@ public class {{ .|call:protoFile,service,method }} {
         } else {
           returnError = {{ .|clienterror:protoFile,service }}.endOfStream
         }
-        latch.signal()
+        sem.signal()
       }
-      latch.wait()
+      _ = sem.wait(timeout: DispatchTime.distantFuture)
     }
     if let returnError = returnError {
       throw returnError

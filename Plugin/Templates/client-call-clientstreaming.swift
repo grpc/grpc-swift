@@ -9,13 +9,13 @@ public class {{ .|call:protoFile,service,method }} {
 
   // Call this to start a call.
   fileprivate func run(metadata:Metadata) throws -> {{ .|call:protoFile,service,method }} {
-    let latch = CountDownLatch(1)
+    let sem = DispatchSemaphore(value: 0)
     try self.call.start(.clientStreaming,
                         metadata:metadata)
     {callResult in
-      latch.signal()
+      sem.signal()
     }
-    latch.wait()
+    _ = sem.wait(timeout: DispatchTime.distantFuture)
     return self
   }
 
@@ -29,7 +29,7 @@ public class {{ .|call:protoFile,service,method }} {
   public func closeAndReceive() throws -> {{ method|output }} {
     var returnError : {{ .|clienterror:protoFile,service }}?
     var returnResponse : {{ method|output }}!
-    let latch = CountDownLatch(1)
+    let sem = DispatchSemaphore(value: 0)
     do {
       try call.receiveMessage() {(responseData) in
         if let responseData = responseData,
@@ -38,10 +38,10 @@ public class {{ .|call:protoFile,service,method }} {
         } else {
           returnError = {{ .|clienterror:protoFile,service }}.invalidMessageReceived
         }
-        latch.signal()
+        sem.signal()
       }
       try call.close(completion:{})
-      latch.wait()
+      _ = sem.wait(timeout: DispatchTime.distantFuture)
     } catch (let error) {
       throw error
     }
