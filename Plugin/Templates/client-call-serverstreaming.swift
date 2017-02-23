@@ -1,4 +1,4 @@
-// {{ method.name }} (Server Streaming)
+/// {{ method.name }} (Server Streaming)
 public class {{ .|call:protoFile,service,method }} {
   private var call : Call
 
@@ -7,7 +7,7 @@ public class {{ .|call:protoFile,service,method }} {
     self.call = channel.makeCall("{{ .|path:protoFile,service,method }}")
   }
 
-  // Call this once with the message to send.
+  /// Call this once with the message to send.
   fileprivate func run(request: {{ method|input }}, metadata: Metadata) throws -> {{ .|call:protoFile,service,method }} {
     let requestData = try request.serializeProtobuf()
     let sem = DispatchSemaphore(value: 0)
@@ -21,7 +21,7 @@ public class {{ .|call:protoFile,service,method }} {
     return self
   }
 
-  // Call this to wait for a result. Blocks.
+  /// Call this to wait for a result. Blocks.
   public func receive() throws -> {{ method|output }} {
     var returnError : {{ .|clienterror:protoFile,service }}?
     var response : {{ method|output }}!

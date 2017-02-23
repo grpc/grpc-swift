@@ -65,7 +65,7 @@ public enum {{ .|clienterror:protoFile,service }} : Error {
 //-{% endif %}
 //-{% endfor %}
 
-// Call methods of this class to make API calls.
+/// Call methods of this class to make API calls.
 public class {{ .|serviceclass:protoFile,service }} {
   private var channel: Channel
 
@@ -100,31 +100,31 @@ public class {{ .|serviceclass:protoFile,service }} {
 
   //-{% for method in service.method %}
   //-{% if not method.clientStreaming and not method.serverStreaming %}
-  // Synchronous. Unary.
+  /// Synchronous. Unary.
   public func {{ method.name|lowercase }}(_ request: {{ method|input }}) throws -> {{ method|output }} {
     return try {{ .|call:protoFile,service,method }}(channel).run(request:request, metadata:metadata)
   }
   //-{% endif %}
   //-{% if not method.clientStreaming and method.serverStreaming %}
-  // Asynchronous. Server-streaming.
-  // Send the initial message.
-  // Use methods on the returned object to get streamed responses.
+  /// Asynchronous. Server-streaming.
+  /// Send the initial message.
+  /// Use methods on the returned object to get streamed responses.
   public func {{ method.name|lowercase }}(_ request: {{ method|input }}) throws -> {{ .|call:protoFile,service,method }} {
     return try {{ .|call:protoFile,service,method }}(channel).run(request:request, metadata:metadata)
   }
   //-{% endif %}
   //-{% if method.clientStreaming and not method.serverStreaming %}
-  // Asynchronous. Client-streaming.
-  // Use methods on the returned object to stream messages and
-  // to close the connection and wait for a final response.
+  /// Asynchronous. Client-streaming.
+  /// Use methods on the returned object to stream messages and
+  /// to close the connection and wait for a final response.
   public func {{ method.name|lowercase }}() throws -> {{ .|call:protoFile,service,method }} {
     return try {{ .|call:protoFile,service,method }}(channel).run(metadata:metadata)
   }
   //-{% endif %}
   //-{% if method.clientStreaming and method.serverStreaming %}
-  // Asynchronous. Bidirectional-streaming.
-  // Use methods on the returned object to stream messages,
-  // to wait for replies, and to close the connection.
+  /// Asynchronous. Bidirectional-streaming.
+  /// Use methods on the returned object to stream messages,
+  /// to wait for replies, and to close the connection.
   public func {{ method.name|lowercase }}() throws -> {{ .|call:protoFile,service,method }} {
     return try {{ .|call:protoFile,service,method }}(channel).run(metadata:metadata)
   }

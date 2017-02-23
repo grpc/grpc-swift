@@ -1,4 +1,4 @@
-// {{ method.name }} (Unary)
+/// {{ method.name }} (Unary)
 public class {{ .|call:protoFile,service,method }} {
   private var call : Call
 
