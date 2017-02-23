@@ -67,14 +67,14 @@ public class Channel {
   /// - Parameter address: the address of the server to be called
   public init(address: String, certificates: String?, host: String?) {
     self.host = address
-    if certificates == nil {
+    if let certificates = certificates {
+      underlyingChannel = cgrpc_channel_create_secure(address, certificates, host)
+    } else {
       let bundle = Bundle(for: Channel.self)
       let url = bundle.url(forResource: "roots", withExtension: "pem")!
       let data = try! Data(contentsOf: url)
       let s = String(data: data, encoding: .ascii)
       underlyingChannel = cgrpc_channel_create_secure(address, s, host)
-    } else {
-      underlyingChannel = cgrpc_channel_create_secure(address, certificates, host)
     }
     completionQueue = CompletionQueue(underlyingCompletionQueue:cgrpc_channel_completion_queue(underlyingChannel))
     completionQueue.name = "Client" // only for debugging
