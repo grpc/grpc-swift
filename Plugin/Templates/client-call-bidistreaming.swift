@@ -14,21 +14,15 @@ public class {{ .|call:protoFile,service,method }} {
       return self
   }
 
-  /// Call this to wait for a result. Blocks.
+  /// Call this to wait for a result. Blocking.
   public func receive() throws -> {{ method|output }} {
     var returnError : {{ .|clienterror:protoFile,service }}?
     var returnMessage : {{ method|output }}!
     let sem = DispatchSemaphore(value: 0)
     do {
-      try call.receiveMessage() {(data) in
-        if let data = data {
-          returnMessage = try? {{ method|output }}(protobuf:data)
-          if returnMessage == nil {
-            returnError = {{ .|clienterror:protoFile,service }}.invalidMessageReceived
-          }
-        } else {
-          returnError = {{ .|clienterror:protoFile,service }}.endOfStream
-        }
+      try receive() {response, error in
+        returnMessage = response
+        returnError = error
         sem.signal()
       }
       _ = sem.wait(timeout: DispatchTime.distantFuture)
@@ -62,16 +56,16 @@ public class {{ .|call:protoFile,service,method }} {
     try call.sendMessage(data:messageData)
   }
 
-  /// Call this to close the sending connection. Blocking
+  /// Call this to close the sending connection. Blocking.
   public func closeSend() throws {
     let sem = DispatchSemaphore(value: 0)
-    try call.close() {
+    try closeSend() {
       sem.signal()
     }
     _ = sem.wait(timeout: DispatchTime.distantFuture)
   }
 
-  /// Call this to close the sending connection. Nonblocking
+  /// Call this to close the sending connection. Nonblocking.
   public func closeSend(completion:@escaping ()->()) throws {
     try call.close() {
       completion()

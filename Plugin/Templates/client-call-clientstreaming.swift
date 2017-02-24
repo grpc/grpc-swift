@@ -7,14 +7,14 @@ public class {{ .|call:protoFile,service,method }} {
     self.call = channel.makeCall("{{ .|path:protoFile,service,method }}")
   }
 
-  /// Call this to start a call.
+  /// Call this to start a call. Nonblocking.
   fileprivate func start(metadata:Metadata, completion:@escaping (CallResult)->())
     throws -> {{ .|call:protoFile,service,method }} {
       try self.call.start(.clientStreaming, metadata:metadata, completion:completion)
       return self
   }
 
-  /// Call this to send each message in the request stream.
+  /// Call this to send each message in the request stream. Nonblocking.
   public func send(_ message: {{ method|input }}) throws {
     let messageData = try message.serializeProtobuf()
     try call.sendMessage(data:messageData)
@@ -26,16 +26,11 @@ public class {{ .|call:protoFile,service,method }} {
     var returnResponse : {{ method|output }}!
     let sem = DispatchSemaphore(value: 0)
     do {
-      try call.receiveMessage() {(responseData) in
-        if let responseData = responseData,
-          let response = try? {{ method|output }}(protobuf:responseData) {
-          returnResponse = response
-        } else {
-          returnError = {{ .|clienterror:protoFile,service }}.invalidMessageReceived
-        }
+      try closeAndReceive() {response, error in
+        returnResponse = response
+        returnError = error
         sem.signal()
       }
-      try call.close(completion:{})
       _ = sem.wait(timeout: DispatchTime.distantFuture)
     } catch (let error) {
       throw error

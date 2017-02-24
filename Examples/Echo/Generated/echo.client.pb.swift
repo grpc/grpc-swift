@@ -63,24 +63,18 @@ public class Echo_EchoGetCall {
   fileprivate func run(request: Echo_EchoRequest,
                        metadata: Metadata) throws -> Echo_EchoResponse {
     let sem = DispatchSemaphore(value: 0)
-    var callResult : CallResult!
-    var response : Echo_EchoResponse?
-    let requestData = try request.serializeProtobuf()
-    try call.start(.unary,
-                   metadata:metadata,
-                   message:requestData)
-    {(_callResult) in
-      callResult = _callResult
-      if let responseData = callResult.resultData {
-        response = try? Echo_EchoResponse(protobuf:responseData)
-      }
+    var returnCallResult : CallResult!
+    var returnResponse : Echo_EchoResponse?
+    try start(request:request, metadata:metadata) {response, callResult in
+      returnResponse = response
+      returnCallResult = callResult
       sem.signal()
     }
     _ = sem.wait(timeout: DispatchTime.distantFuture)
-    if let response = response {
-      return response
+    if let returnResponse = returnResponse {
+      return returnResponse
     } else {
-      throw Echo_EchoClientError.error(c: callResult)
+      throw Echo_EchoClientError.error(c: returnCallResult)
     }
   }
 
@@ -115,7 +109,7 @@ public class Echo_EchoExpandCall {
     self.call = channel.makeCall("/echo.Echo/Expand")
   }
 
-  /// Call this once with the message to send.
+  /// Call this once with the message to send. Nonblocking.
   fileprivate func start(request: Echo_EchoRequest,
                          metadata: Metadata,
                          completion: @escaping (CallResult) -> ())
@@ -131,18 +125,12 @@ public class Echo_EchoExpandCall {
   /// Call this to wait for a result. Blocking.
   public func receive() throws -> Echo_EchoResponse {
     var returnError : Echo_EchoClientError?
-    var response : Echo_EchoResponse!
+    var returnResponse : Echo_EchoResponse!
     let sem = DispatchSemaphore(value: 0)
     do {
-      try call.receiveMessage() {(responseData) in
-        if let responseData = responseData {
-          response = try? Echo_EchoResponse(protobuf:responseData)
-          if response == nil {
-            returnError = Echo_EchoClientError.invalidMessageReceived
-          }
-        } else {
-          returnError = Echo_EchoClientError.endOfStream
-        }
+      try receive() {response, error in
+        returnResponse = response
+        returnError = error
         sem.signal()
       }
       _ = sem.wait(timeout: DispatchTime.distantFuture)
@@ -150,7 +138,7 @@ public class Echo_EchoExpandCall {
     if let returnError = returnError {
       throw returnError
     }
-    return response
+    return returnResponse
   }
 
   /// Call this to wait for a result. Nonblocking.
@@ -180,14 +168,14 @@ public class Echo_EchoCollectCall {
     self.call = channel.makeCall("/echo.Echo/Collect")
   }
 
-  /// Call this to start a call.
+  /// Call this to start a call. Nonblocking.
   fileprivate func start(metadata:Metadata, completion:@escaping (CallResult)->())
     throws -> Echo_EchoCollectCall {
       try self.call.start(.clientStreaming, metadata:metadata, completion:completion)
       return self
   }
 
-  /// Call this to send each message in the request stream.
+  /// Call this to send each message in the request stream. Nonblocking.
   public func send(_ message: Echo_EchoRequest) throws {
     let messageData = try message.serializeProtobuf()
     try call.sendMessage(data:messageData)
@@ -199,16 +187,11 @@ public class Echo_EchoCollectCall {
     var returnResponse : Echo_EchoResponse!
     let sem = DispatchSemaphore(value: 0)
     do {
-      try call.receiveMessage() {(responseData) in
-        if let responseData = responseData,
-          let response = try? Echo_EchoResponse(protobuf:responseData) {
-          returnResponse = response
-        } else {
-          returnError = Echo_EchoClientError.invalidMessageReceived
-        }
+      try closeAndReceive() {response, error in
+        returnResponse = response
+        returnError = error
         sem.signal()
       }
-      try call.close(completion:{})
       _ = sem.wait(timeout: DispatchTime.distantFuture)
     } catch (let error) {
       throw error
@@ -254,21 +237,15 @@ public class Echo_EchoUpdateCall {
       return self
   }
 
-  /// Call this to wait for a result. Blocks.
+  /// Call this to wait for a result. Blocking.
   public func receive() throws -> Echo_EchoResponse {
     var returnError : Echo_EchoClientError?
     var returnMessage : Echo_EchoResponse!
     let sem = DispatchSemaphore(value: 0)
     do {
-      try call.receiveMessage() {(data) in
-        if let data = data {
-          returnMessage = try? Echo_EchoResponse(protobuf:data)
-          if returnMessage == nil {
-            returnError = Echo_EchoClientError.invalidMessageReceived
-          }
-        } else {
-          returnError = Echo_EchoClientError.endOfStream
-        }
+      try receive() {response, error in
+        returnMessage = response
+        returnError = error
         sem.signal()
       }
       _ = sem.wait(timeout: DispatchTime.distantFuture)
@@ -302,16 +279,16 @@ public class Echo_EchoUpdateCall {
     try call.sendMessage(data:messageData)
   }
 
-  /// Call this to close the sending connection. Blocking
+  /// Call this to close the sending connection. Blocking.
   public func closeSend() throws {
     let sem = DispatchSemaphore(value: 0)
-    try call.close() {
+    try closeSend() {
       sem.signal()
     }
     _ = sem.wait(timeout: DispatchTime.distantFuture)
   }
 
-  /// Call this to close the sending connection. Nonblocking
+  /// Call this to close the sending connection. Nonblocking.
   public func closeSend(completion:@escaping ()->()) throws {
     try call.close() {
       completion()

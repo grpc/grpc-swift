@@ -7,7 +7,7 @@ public class {{ .|call:protoFile,service,method }} {
     self.call = channel.makeCall("{{ .|path:protoFile,service,method }}")
   }
 
-  /// Call this once with the message to send.
+  /// Call this once with the message to send. Nonblocking.
   fileprivate func start(request: {{ method|input }},
                          metadata: Metadata,
                          completion: @escaping (CallResult) -> ())
@@ -23,18 +23,12 @@ public class {{ .|call:protoFile,service,method }} {
   /// Call this to wait for a result. Blocking.
   public func receive() throws -> {{ method|output }} {
     var returnError : {{ .|clienterror:protoFile,service }}?
-    var response : {{ method|output }}!
+    var returnResponse : {{ method|output }}!
     let sem = DispatchSemaphore(value: 0)
     do {
-      try call.receiveMessage() {(responseData) in
-        if let responseData = responseData {
-          response = try? {{ method|output }}(protobuf:responseData)
-          if response == nil {
-            returnError = {{ .|clienterror:protoFile,service }}.invalidMessageReceived
-          }
-        } else {
-          returnError = {{ .|clienterror:protoFile,service }}.endOfStream
-        }
+      try receive() {response, error in
+        returnResponse = response
+        returnError = error
         sem.signal()
       }
       _ = sem.wait(timeout: DispatchTime.distantFuture)
@@ -42,7 +36,7 @@ public class {{ .|call:protoFile,service,method }} {
     if let returnError = returnError {
       throw returnError
     }
-    return response
+    return returnResponse
   }
 
   /// Call this to wait for a result. Nonblocking.
