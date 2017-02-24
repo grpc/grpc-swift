@@ -8,15 +8,10 @@ public class {{ .|call:protoFile,service,method }} {
   }
 
   /// Call this to start a call.
-  fileprivate func run(metadata:Metadata) throws -> {{ .|call:protoFile,service,method }} {
-    let sem = DispatchSemaphore(value: 0)
-    try self.call.start(.clientStreaming,
-                        metadata:metadata)
-    {callResult in
-      sem.signal()
-    }
-    _ = sem.wait(timeout: DispatchTime.distantFuture)
-    return self
+  fileprivate func start(metadata:Metadata, completion:@escaping (CallResult)->())
+    throws -> {{ .|call:protoFile,service,method }} {
+      try self.call.start(.clientStreaming, metadata:metadata, completion:completion)
+      return self
   }
 
   /// Call this to send each message in the request stream.
@@ -25,7 +20,7 @@ public class {{ .|call:protoFile,service,method }} {
     try call.sendMessage(data:messageData)
   }
 
-  /// Call this to close the connection and wait for a response. Blocks.
+  /// Call this to close the connection and wait for a response. Blocking.
   public func closeAndReceive() throws -> {{ method|output }} {
     var returnError : {{ .|clienterror:protoFile,service }}?
     var returnResponse : {{ method|output }}!
@@ -49,5 +44,23 @@ public class {{ .|call:protoFile,service,method }} {
       throw returnError
     }
     return returnResponse
+  }
+
+  /// Call this to close the connection and wait for a response. Nonblocking.
+  public func closeAndReceive(completion:@escaping ({{ method|output }}?, {{ .|clienterror:protoFile,service }}?)->())
+    throws {
+      do {
+        try call.receiveMessage() {(responseData) in
+          if let responseData = responseData,
+            let response = try? {{ method|output }}(protobuf:responseData) {
+            completion(response, nil)
+          } else {
+            completion(nil, {{ .|clienterror:protoFile,service }}.invalidMessageReceived)
+          }
+        }
+        try call.close(completion:{})
+      } catch (let error) {
+        throw error
+      }
   }
 }

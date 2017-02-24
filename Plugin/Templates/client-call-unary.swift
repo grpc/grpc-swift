@@ -31,4 +31,25 @@ public class {{ .|call:protoFile,service,method }} {
       throw {{ .|clienterror:protoFile,service }}.error(c: callResult)
     }
   }
+
+  /// Start the call. Nonblocking.
+  fileprivate func start(request: {{ method|input }},
+                         metadata: Metadata,
+                         completion: @escaping ({{ method|output }}?, CallResult)->())
+    throws -> {{ .|call:protoFile,service,method }} {
+
+      let requestData = try request.serializeProtobuf()
+      try call.start(.unary,
+                     metadata:metadata,
+                     message:requestData)
+      {(callResult) in
+        if let responseData = callResult.resultData,
+          let response = try? {{ method|output }}(protobuf:responseData) {
+          completion(response, callResult)
+        } else {
+          completion(nil, callResult)
+        }
+      }
+      return self
+  }
 }

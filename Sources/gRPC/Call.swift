@@ -102,7 +102,7 @@ public enum CallError : Error {
   }
 }
 
-public struct CallResult {
+public struct CallResult : CustomStringConvertible {
   public var statusCode : Int
   public var statusMessage : String?
   public var resultData : Data?
@@ -127,6 +127,26 @@ public struct CallResult {
       self.initialMetadata = nil
       self.trailingMetadata = nil
     }
+  }
+
+  public var description : String {
+    var result = "status \(statusCode)"
+    if let statusMessage = self.statusMessage {
+      result += ": " + statusMessage
+    }
+    if let resultData = self.resultData {
+      result += "\n"
+      result += resultData.description
+    }
+    if let initialMetadata = self.initialMetadata {
+      result += "\n"
+      result += initialMetadata.description
+    }
+    if let trailingMetadata = self.trailingMetadata {
+      result += "\n"
+      result += trailingMetadata.description
+    }
+    return result
   }
 }
 
