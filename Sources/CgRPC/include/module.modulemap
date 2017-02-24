@@ -1,5 +1,5 @@
 module CgRPC {
-    header "/Users/timburks/Desktop/grpc-swift/Sources/CgRPC/include/CgRPC.h"
+    header "CgRPC.h"
     link "CgRPC"
     export *
 }
