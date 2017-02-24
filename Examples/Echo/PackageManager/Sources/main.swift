@@ -127,7 +127,7 @@ if client != "" {
   if client == "expand" {
     let requestMessage = Echo_EchoRequest(text:message)
     print("Sending: " + requestMessage.text)
-    let expandCall = try service.expand(requestMessage)
+    let expandCall = try service.expand(requestMessage) {result in }
     var running = true
     while running {
       do {
@@ -142,7 +142,7 @@ if client != "" {
 
   // Client streaming
   if client == "collect" {
-    let collectCall = try service.collect()
+    let collectCall = try service.collect() {result in }
 
     let parts = message.components(separatedBy:" ")
     for part in parts {
@@ -158,7 +158,7 @@ if client != "" {
 
   // Bidirectional streaming
   if client == "update" {
-    let updateCall = try service.update()
+    let updateCall = try service.update() {result in}
 
     DispatchQueue.global().async {
       var running = true
