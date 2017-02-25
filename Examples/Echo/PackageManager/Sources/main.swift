@@ -148,7 +148,7 @@ if client != "" {
     for part in parts {
       let requestMessage = Echo_EchoRequest(text:part)
       print("Sending: " + part)
-      try collectCall.send(requestMessage)
+      try collectCall.send(requestMessage) {error in print(error)}
       sleep(1)
     }
 
@@ -180,7 +180,7 @@ if client != "" {
     for part in parts {
       let requestMessage = Echo_EchoRequest(text:part)
       print("Sending: " + requestMessage.text)
-      try updateCall.send(requestMessage)
+      try updateCall.send(requestMessage) {error in print(error)}
       sleep(1)
     }
     try updateCall.closeSend()
