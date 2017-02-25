@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D30625D01E61331600C92C6A /* BoringSSL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D363FEDF1E5F751500D8F135 /* BoringSSL.framework */; };
+		D30625D11E61331600C92C6A /* CgRPC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D363FEE11E5F751500D8F135 /* CgRPC.framework */; };
+		D30625D21E61331600C92C6A /* gRPC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D363FEE31E5F751500D8F135 /* gRPC.framework */; };
+		D30625D31E61331D00C92C6A /* SwiftProtobuf.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D3F7791E1E380C140002CB64 /* SwiftProtobuf.framework */; };
 		D35358201E219963007FA223 /* echo.client.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = D353581D1E219963007FA223 /* echo.client.pb.swift */; };
 		D35358211E219963007FA223 /* echo.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = D353581E1E219963007FA223 /* echo.pb.swift */; };
 		D35358221E219963007FA223 /* echo.server.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = D353581F1E219963007FA223 /* echo.server.pb.swift */; };
@@ -20,6 +24,27 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		D30625C31E6132AA00C92C6A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D363FED71E5F751500D8F135 /* SwiftGRPC.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_782;
+			remoteInfo = BoringSSL;
+		};
+		D30625C51E6132AA00C92C6A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D363FED71E5F751500D8F135 /* SwiftGRPC.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_1086;
+			remoteInfo = CgRPC;
+		};
+		D30625C71E6132AA00C92C6A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D363FED71E5F751500D8F135 /* SwiftGRPC.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_1366;
+			remoteInfo = gRPC;
+		};
 		D363FEDE1E5F751500D8F135 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = D363FED71E5F751500D8F135 /* SwiftGRPC.xcodeproj */;
@@ -107,6 +132,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D30625D31E61331D00C92C6A /* SwiftProtobuf.framework in Frameworks */,
+				D30625D01E61331600C92C6A /* BoringSSL.framework in Frameworks */,
+				D30625D11E61331600C92C6A /* CgRPC.framework in Frameworks */,
+				D30625D21E61331600C92C6A /* gRPC.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -193,6 +222,9 @@
 			buildRules = (
 			);
 			dependencies = (
+				D30625C41E6132AA00C92C6A /* PBXTargetDependency */,
+				D30625C61E6132AA00C92C6A /* PBXTargetDependency */,
+				D30625C81E6132AA00C92C6A /* PBXTargetDependency */,
 				D3F779261E380C310002CB64 /* PBXTargetDependency */,
 				D38E00371E315DB700CE7B16 /* PBXTargetDependency */,
 				D38E00391E315DB700CE7B16 /* PBXTargetDependency */,
@@ -338,6 +370,21 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		D30625C41E6132AA00C92C6A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = BoringSSL;
+			targetProxy = D30625C31E6132AA00C92C6A /* PBXContainerItemProxy */;
+		};
+		D30625C61E6132AA00C92C6A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = CgRPC;
+			targetProxy = D30625C51E6132AA00C92C6A /* PBXContainerItemProxy */;
+		};
+		D30625C81E6132AA00C92C6A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = gRPC;
+			targetProxy = D30625C71E6132AA00C92C6A /* PBXContainerItemProxy */;
+		};
 		D38E00371E315DB700CE7B16 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = BoringSSL;

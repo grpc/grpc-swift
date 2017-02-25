@@ -65,7 +65,7 @@ public class Echo_EchoGetCall {
     let sem = DispatchSemaphore(value: 0)
     var returnCallResult : CallResult!
     var returnResponse : Echo_EchoResponse?
-    try start(request:request, metadata:metadata) {response, callResult in
+    _ = try start(request:request, metadata:metadata) {response, callResult in
       returnResponse = response
       returnCallResult = callResult
       sem.signal()
@@ -176,9 +176,9 @@ public class Echo_EchoCollectCall {
   }
 
   /// Call this to send each message in the request stream. Nonblocking.
-  public func send(_ message: Echo_EchoRequest) throws {
+  public func send(_ message:Echo_EchoRequest, errorHandler:@escaping (Error)->()) throws {
     let messageData = try message.serializeProtobuf()
-    try call.sendMessage(data:messageData)
+    try call.sendMessage(data:messageData, errorHandler:errorHandler)
   }
 
   /// Call this to close the connection and wait for a response. Blocking.
@@ -274,9 +274,9 @@ public class Echo_EchoUpdateCall {
   }
 
   /// Call this to send each message in the request stream.
-  public func send(_ message:Echo_EchoRequest) throws {
+  public func send(_ message:Echo_EchoRequest, errorHandler:@escaping (Error)->()) throws {
     let messageData = try message.serializeProtobuf()
-    try call.sendMessage(data:messageData)
+    try call.sendMessage(data:messageData, errorHandler:errorHandler)
   }
 
   /// Call this to close the sending connection. Blocking.

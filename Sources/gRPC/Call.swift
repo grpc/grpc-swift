@@ -257,7 +257,7 @@ public class Call {
   /// Sends a message over a streaming connection.
   ///
   /// Parameter data: the message data to send
-  public func sendMessage(data: Data) throws {
+  public func sendMessage(data: Data, errorHandler:@escaping (Error)->()) throws {
     self.sendMutex.lock()
     defer {self.sendMutex.unlock()}
     if self.writing {
@@ -267,12 +267,13 @@ public class Call {
       self.pendingMessages.append(data) 
     } else {
       self.writing = true
-      try self.sendWithoutBlocking(data: data)
+      try self.sendWithoutBlocking(data: data, errorHandler:errorHandler)
     }
   }
 
   /// helper for sending queued messages
-  private func sendWithoutBlocking(data: Data) throws -> Void {
+  private func sendWithoutBlocking(data: Data, errorHandler:@escaping (Error)->())
+    throws -> Void {
     try self.perform(OperationGroup(call:self,
                                     operations:[.sendMessage(ByteBuffer(data:data))])
     {(operationGroup) in
@@ -284,9 +285,9 @@ public class Call {
               let nextMessage = self.pendingMessages.first!
               self.pendingMessages.removeFirst()
               do {
-                try self.sendWithoutBlocking(data: nextMessage)
+                try self.sendWithoutBlocking(data: nextMessage, errorHandler:errorHandler)
               } catch (let callError) {
-                print("Call sendWithoutBlocking: grpc error \(callError)")
+                errorHandler(callError)
               }
             } else {
               // otherwise, we are finished writing
@@ -295,8 +296,9 @@ public class Call {
           }
         }
       } else {
-        // TODO: if the event failed, shut down
+        // if the event failed, shut down
         self.writing = false
+        errorHandler(CallError.unknown)
       }
     })
   }

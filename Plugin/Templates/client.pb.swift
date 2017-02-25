@@ -65,7 +65,6 @@ public enum {{ .|clienterror:protoFile,service }} : Error {
 //-{% include "client-call-bidistreaming.swift" %}
 //-{% endif %}
 //-{% endfor %}
-
 /// Call methods of this class to make API calls.
 public class {{ .|serviceclass:protoFile,service }} {
   private var channel: Channel

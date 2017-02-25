@@ -13,7 +13,7 @@ public class {{ .|call:protoFile,service,method }} {
     let sem = DispatchSemaphore(value: 0)
     var returnCallResult : CallResult!
     var returnResponse : {{ method|output }}?
-    try start(request:request, metadata:metadata) {response, callResult in
+    _ = try start(request:request, metadata:metadata) {response, callResult in
       returnResponse = response
       returnCallResult = callResult
       sem.signal()

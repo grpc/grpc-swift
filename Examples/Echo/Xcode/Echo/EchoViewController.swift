@@ -232,7 +232,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     if let collectCall = collectCall {
       let requestMessage = Echo_EchoRequest(text:self.messageField.stringValue)
       self.displayMessageSent(requestMessage.text)
-      try collectCall.send(requestMessage)
+      try collectCall.send(requestMessage) {error in print(error)}
     }
   }
 
@@ -240,7 +240,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     if let updateCall = updateCall {
       let requestMessage = Echo_EchoRequest(text:self.messageField.stringValue)
       self.displayMessageSent(requestMessage.text)
-      try updateCall.send(requestMessage)
+      try updateCall.send(requestMessage) {error in print(error)}
     }
   }
 
