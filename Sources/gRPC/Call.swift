@@ -157,7 +157,7 @@ public class Call {
   private static let callMutex = Mutex()
 
   /// Maximum number of messages that can be queued
-  private static var maximumQueuedMessages = 10
+  public static var messageQueueMaxLength = 0
 
   /// Pointer to underlying C representation
   private var underlyingCall : UnsafeMutableRawPointer
@@ -169,7 +169,7 @@ public class Call {
   private var owned : Bool
 
   /// A queue of pending messages to send over the call
-  private var pendingMessages : Array<Data>
+  private var messageQueue : Array<Data>
 
   /// True if a message write operation is underway
   private var writing : Bool
@@ -188,7 +188,7 @@ public class Call {
     self.underlyingCall = underlyingCall
     self.owned = owned
     self.completionQueue = completionQueue
-    self.pendingMessages = []
+    self.messageQueue = []
     self.writing = false
     self.sendMutex = Mutex()
   }
@@ -261,10 +261,11 @@ public class Call {
     self.sendMutex.lock()
     defer {self.sendMutex.unlock()}
     if self.writing {
-      if self.pendingMessages.count == Call.maximumQueuedMessages {
+      if (Call.messageQueueMaxLength > 0) && // if max length is <= 0, consider it infinite
+        (self.messageQueue.count == Call.messageQueueMaxLength) {
         throw CallWarning.blocked
       }
-      self.pendingMessages.append(data) 
+      self.messageQueue.append(data) 
     } else {
       self.writing = true
       try self.sendWithoutBlocking(data: data, errorHandler:errorHandler)
@@ -281,9 +282,8 @@ public class Call {
         self.messageDispatchQueue.async {
           self.sendMutex.synchronize {
             // if there are messages pending, send the next one
-            if self.pendingMessages.count > 0 {
-              let nextMessage = self.pendingMessages.first!
-              self.pendingMessages.removeFirst()
+            if self.messageQueue.count > 0 {
+              let nextMessage = self.messageQueue.removeFirst()
               do {
                 try self.sendWithoutBlocking(data: nextMessage, errorHandler:errorHandler)
               } catch (let callError) {
@@ -322,5 +322,10 @@ public class Call {
     try self.perform(OperationGroup(call:self, operations:[.sendCloseFromClient])
     {(operationGroup) in completion()
     })
+  }
+
+  // Get the current message queue length
+  public func messageQueueLength() -> Int {
+    return messageQueue.count
   }
 }
