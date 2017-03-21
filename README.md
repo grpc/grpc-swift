@@ -27,7 +27,7 @@ Swift Package Manager builds may also be made on Linux
 systems. Please see [DOCKER.md](DOCKER.md) and 
 [LINUX.md](LINUX.md) for details.
 
-## gRPC dependencies are vendored  
+## gRPC dependencies are vendored
 
 Swift gRPC now includes vendored copies of the gRPC core 
 library and **BoringSSL**, an OpenSSL fork that is used by
@@ -36,13 +36,18 @@ Manager builds.
 
 ## Building with Xcode
 
-The top-level Makefile uses the Swift Package Manager to generate
-an Xcode project for the SwiftGRPC package. Due to present limitations
-in Package Manager configuration, the libz dependency is not included 
-in the generated Xcode project. If you get build errors about missing
-symbols such as `_deflate`, `_deflateEnd`, etc., you can fix them by
-adding `libz.tbd` to the **Link Binary With Libraries** build step of 
-the **CgRPC** target.
+The top-level Makefile uses the Swift Package Manager to
+generate an Xcode project for the SwiftGRPC package:
+
+    $ make
+
+Then open `SwiftGRPC.xcodeproj` in Xcode. Due to present
+limitations in Package Manager configuration, the libz
+dependency is not included in the generated Xcode project. If
+you get build errors about missing symbols such as
+`_deflate`, `_deflateEnd`, etc., you can fix them by adding
+`libz.tbd` to the **Link Binary With Libraries** build step
+of the **CgRPC** target.
 
 ## Having build problems?
 
@@ -51,7 +56,7 @@ testing with the following versions:
 
 - Xcode 8.2 
 - Swift 3.0.2 
-- swift-proto 0.9.24 
+- swift-protobuf 0.9.24 
 
 ## License
 

@@ -1,6 +1,13 @@
 
 # Examples
 
+To build the Xcode examples, make sure required third party libraries
+(specifically `swift-protobuf`) are retrieved by running the script in the
+`third_party` toplevel directory:
+
+    $ cd third_party
+    $ sh RUNME.sh
+
 ## Swift gRPC generated code examples
 
 [Echo](Echo)
