@@ -55,18 +55,25 @@ extension String {
 
 // functions for use in templates
 
+// Transform .some.package_name.FooBarRequest -> Some_PackageName_FooBarRequest
 func protoMessageName(_ name :String?) -> String {
   guard let name = name else {
     return ""
   }
-  let parts = name.undotted.components(separatedBy:"_")
-  var capitalizedParts : [String] = []
-  for part in parts {
-    if part != "" {
-      capitalizedParts.append(part.uppercasedFirst)
+
+  var parts : [String] = []
+  for dotComponent in name.components(separatedBy:".") {
+    var part = ""
+    if dotComponent == "" {
+      continue
     }
+    for underscoreComponent in dotComponent.components(separatedBy:"_") {
+      part.append(underscoreComponent.uppercasedFirst)
+    }
+    parts.append(part)
   }
-  return capitalizedParts.joined(separator:"_")
+
+  return parts.joined(separator:"_")
 }
 
 func pathName(_ arguments: [Any?]) throws -> String {
