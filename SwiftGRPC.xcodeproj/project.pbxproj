@@ -1263,7 +1263,7 @@
 		OBJ_751 /* b64.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = b64.c; sourceTree = "<group>"; };
 		OBJ_752 /* json_util.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = json_util.c; sourceTree = "<group>"; };
 		OBJ_754 /* CgRPC.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CgRPC.h; sourceTree = "<group>"; };
-		OBJ_755 /* module.modulemap */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; name = module.modulemap; path = "/Users/timburks/Desktop/grpc-swift/Sources/CgRPC/include/module.modulemap"; sourceTree = "<group>"; };
+		OBJ_755 /* module.modulemap */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = module.modulemap; sourceTree = "<group>"; };
 		OBJ_757 /* ByteBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ByteBuffer.swift; sourceTree = "<group>"; };
 		OBJ_758 /* Call.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Call.swift; sourceTree = "<group>"; };
 		OBJ_759 /* Channel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Channel.swift; sourceTree = "<group>"; };
@@ -2024,9 +2024,8 @@
 				OBJ_441 /* src */,
 				OBJ_753 /* include */,
 			);
-			name = CgRPC;
-			path = Sources/CgRPC;
-			sourceTree = SOURCE_ROOT;
+			path = CgRPC;
+			sourceTree = "<group>";
 		};
 		OBJ_423 /* shim */ = {
 			isa = PBXGroup;
@@ -2252,7 +2251,7 @@
 			path = sockaddr;
 			sourceTree = "<group>";
 		};
-		OBJ_5 /*  */ = {
+		OBJ_5 = {
 			isa = PBXGroup;
 			children = (
 				OBJ_6 /* Package.swift */,
@@ -2266,7 +2265,6 @@
 				OBJ_777 /* Products */,
 				D3FF41191E5F4E0D00E4CFB6 /* Frameworks */,
 			);
-			name = "";
 			sourceTree = "<group>";
 		};
 		OBJ_500 /* dns */ = {
@@ -2846,9 +2844,8 @@
 				OBJ_767 /* OperationGroup.swift */,
 				OBJ_768 /* Server.swift */,
 			);
-			name = gRPC;
-			path = Sources/gRPC;
-			sourceTree = SOURCE_ROOT;
+			path = gRPC;
+			sourceTree = "<group>";
 		};
 		OBJ_769 /* Tests */ = {
 			isa = PBXGroup;
@@ -2863,9 +2860,8 @@
 			children = (
 				OBJ_771 /* GRPCTests.swift */,
 			);
-			name = gRPCTests;
-			path = Tests/gRPCTests;
-			sourceTree = SOURCE_ROOT;
+			path = gRPCTests;
+			sourceTree = "<group>";
 		};
 		OBJ_777 /* Products */ = {
 			isa = PBXGroup;
@@ -2886,9 +2882,8 @@
 				OBJ_315 /* ssl */,
 				OBJ_348 /* include */,
 			);
-			name = BoringSSL;
-			path = Sources/BoringSSL;
-			sourceTree = SOURCE_ROOT;
+			path = BoringSSL;
+			sourceTree = "<group>";
 		};
 		OBJ_80 /* bn */ = {
 			isa = PBXGroup;
@@ -3013,7 +3008,7 @@
 			knownRegions = (
 				en,
 			);
-			mainGroup = OBJ_5 /*  */;
+			mainGroup = OBJ_5;
 			productRefGroup = OBJ_777 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
