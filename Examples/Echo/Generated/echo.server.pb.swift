@@ -274,8 +274,8 @@ public class Echo_EchoServer {
     self.address = address
     self.provider = provider
     guard
-      let certificate = try? String(contentsOf: certificateURL),
-      let key = try? String(contentsOf: keyURL)
+      let certificate = try? String(contentsOf: certificateURL, encoding: .utf8),
+      let key = try? String(contentsOf: keyURL, encoding: .utf8)
       else {
         return nil
     }
