@@ -3,3 +3,7 @@ project.xcworkspace
 xcuserdata
 .build
 third_party/**
+Plugin/Packages/**
+Plugin/protoc-*
+Plugin/swiftgrpc.log
+Plugin/echo.*.swift
