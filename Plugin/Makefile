@@ -10,8 +10,8 @@ build:  clear
 
 test:	build
 	protoc ../Examples/Echo/echo.proto --proto_path=../Examples/Echo --plugin=./protoc-gen-swiftgrpc --swiftgrpc_out=. 
-	diff echo.client.pb.swift ../Examples/Echo/Generated/echo.client.pb.swift
-	diff echo.server.pb.swift ../Examples/Echo/Generated/echo.server.pb.swift
+#	diff echo.client.pb.swift ../Examples/Echo/Generated/echo.client.pb.swift
+#	diff echo.server.pb.swift ../Examples/Echo/Generated/echo.server.pb.swift
 
 deploy:
 	cp echo.client.pb.swift ../Examples/Echo/Generated/echo.client.pb.swift 

@@ -1,0 +1,5 @@
+#!/bin/sh
+#
+# Use this to run the swift-proto generator
+#
+protoc echo.proto --swift_out=. --swift_opt=Visibility=Public --plugin=/Users/tim/bin/protoc-gen-swift

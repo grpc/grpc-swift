@@ -84,13 +84,13 @@ public class Echo_EchoGetCall {
                          completion: @escaping (Echo_EchoResponse?, CallResult)->())
     throws -> Echo_EchoGetCall {
 
-      let requestData = try request.serializeProtobuf()
+      let requestData = try request.serializedData()
       try call.start(.unary,
                      metadata:metadata,
                      message:requestData)
       {(callResult) in
         if let responseData = callResult.resultData,
-          let response = try? Echo_EchoResponse(protobuf:responseData) {
+          let response = try? Echo_EchoResponse(serializedData:responseData) {
           completion(response, callResult)
         } else {
           completion(nil, callResult)
@@ -114,7 +114,7 @@ public class Echo_EchoExpandCall {
                          metadata: Metadata,
                          completion: @escaping (CallResult) -> ())
     throws -> Echo_EchoExpandCall {
-      let requestData = try request.serializeProtobuf()
+      let requestData = try request.serializedData()
       try call.start(.serverStreaming,
                      metadata:metadata,
                      message:requestData,
@@ -146,7 +146,7 @@ public class Echo_EchoExpandCall {
     do {
       try call.receiveMessage() {(responseData) in
         if let responseData = responseData {
-          if let response = try? Echo_EchoResponse(protobuf:responseData) {
+          if let response = try? Echo_EchoResponse(serializedData:responseData) {
             completion(response, nil)
           } else {
             completion(nil, Echo_EchoClientError.invalidMessageReceived)
@@ -177,7 +177,7 @@ public class Echo_EchoCollectCall {
 
   /// Call this to send each message in the request stream. Nonblocking.
   public func send(_ message:Echo_EchoRequest, errorHandler:@escaping (Error)->()) throws {
-    let messageData = try message.serializeProtobuf()
+    let messageData = try message.serializedData()
     try call.sendMessage(data:messageData, errorHandler:errorHandler)
   }
 
@@ -208,7 +208,7 @@ public class Echo_EchoCollectCall {
       do {
         try call.receiveMessage() {(responseData) in
           if let responseData = responseData,
-            let response = try? Echo_EchoResponse(protobuf:responseData) {
+            let response = try? Echo_EchoResponse(serializedData:responseData) {
             completion(response, nil)
           } else {
             completion(nil, Echo_EchoClientError.invalidMessageReceived)
@@ -261,7 +261,7 @@ public class Echo_EchoUpdateCall {
     do {
       try call.receiveMessage() {(data) in
         if let data = data {
-          if let returnMessage = try? Echo_EchoResponse(protobuf:data) {
+          if let returnMessage = try? Echo_EchoResponse(serializedData:data) {
             completion(returnMessage, nil)
           } else {
             completion(nil, Echo_EchoClientError.invalidMessageReceived)
@@ -275,7 +275,7 @@ public class Echo_EchoUpdateCall {
 
   /// Call this to send each message in the request stream.
   public func send(_ message:Echo_EchoRequest, errorHandler:@escaping (Error)->()) throws {
-    let messageData = try message.serializeProtobuf()
+    let messageData = try message.serializedData()
     try call.sendMessage(data:messageData, errorHandler:errorHandler)
   }
 

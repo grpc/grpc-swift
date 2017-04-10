@@ -117,7 +117,8 @@ if client != "" {
 
   // Unary
   if client == "get" {
-    var requestMessage = Echo_EchoRequest(text:message)
+    var requestMessage = Echo_EchoRequest()
+    requestMessage.text = message
     print("Sending: " + requestMessage.text)
     let responseMessage = try service.get(requestMessage)
     print("get received: " + responseMessage.text)
@@ -125,7 +126,8 @@ if client != "" {
 
   // Server streaming
   if client == "expand" {
-    let requestMessage = Echo_EchoRequest(text:message)
+    var requestMessage = Echo_EchoRequest()
+    requestMessage.text = message
     print("Sending: " + requestMessage.text)
     let expandCall = try service.expand(requestMessage) {result in }
     var running = true
@@ -146,7 +148,8 @@ if client != "" {
 
     let parts = message.components(separatedBy:" ")
     for part in parts {
-      let requestMessage = Echo_EchoRequest(text:part)
+      var requestMessage = Echo_EchoRequest()
+      requestMessage.text = part
       print("Sending: " + part)
       try collectCall.send(requestMessage) {error in print(error)}
       sleep(1)
@@ -178,7 +181,8 @@ if client != "" {
 
     let parts = message.components(separatedBy:" ")
     for part in parts {
-      let requestMessage = Echo_EchoRequest(text:part)
+      var requestMessage = Echo_EchoRequest()
+      requestMessage.text = part
       print("Sending: " + requestMessage.text)
       try updateCall.send(requestMessage) {error in print(error)}
       sleep(1)

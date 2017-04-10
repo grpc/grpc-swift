@@ -35,6 +35,6 @@ let package = Package (
     name: "Echo",
     dependencies: [
         .Package(url: "https://github.com/grpc/grpc-swift.git", Version(0,1,10)),
-        .Package(url: "https://github.com/apple/swift-protobuf.git", Version(0,9,24)),
+        .Package(url: "https://github.com/timburks/swift-protobuf.git", Version(0,9,30)),
     ]
 )
