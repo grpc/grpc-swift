@@ -1,9 +1,9 @@
 // {{ method.name }} (Client Streaming)
-public class {{ .|session:protoFile,service,method }} : {{ .|service:protoFile,service }}Session {
-  private var provider : {{ .|provider:protoFile,service }}
+public class {{ .|session:file,service,method }} : {{ .|service:file,service }}Session {
+  private var provider : {{ .|provider:file,service }}
 
   /// Create a session.
-  fileprivate init(handler:gRPC.Handler, provider: {{ .|provider:protoFile,service }}) {
+  fileprivate init(handler:gRPC.Handler, provider: {{ .|provider:file,service }}) {
     self.provider = provider
     super.init(handler:handler)
   }
@@ -14,20 +14,20 @@ public class {{ .|session:protoFile,service,method }} : {{ .|service:protoFile,s
     var requestMessage : {{ method|input }}?
     try self.handler.receiveMessage() {(requestData) in
       if let requestData = requestData {
-        requestMessage = try? {{ method|input }}(protobuf:requestData)
+        requestMessage = try? {{ method|input }}(serializedData:requestData)
       }
       sem.signal()
     }
     _ = sem.wait(timeout: DispatchTime.distantFuture)
     if requestMessage == nil {
-      throw {{ .|servererror:protoFile,service }}.endOfStream
+      throw {{ .|servererror:file,service }}.endOfStream
     }
     return requestMessage!
   }
 
   /// Send a response and close the connection.
   public func sendAndClose(_ response: {{ method|output }}) throws {
-    try self.handler.sendResponse(message:response.serializeProtobuf(),
+    try self.handler.sendResponse(message:response.serializedData(),
                                   statusCode:self.statusCode,
                                   statusMessage:self.statusMessage,
                                   trailingMetadata:self.trailingMetadata)

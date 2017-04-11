@@ -43,6 +43,6 @@ let package = Package(
   ],
   dependencies: [
     .Package(url: "https://github.com/apple/swift-protobuf.git", Version(0,9,29)),
-    .Package(url: "https://github.com/kylef/Stencil.git", Version(0,8,0))
+    .Package(url: "https://github.com/timburks/Stencil.git", Version(0,8,1))
   ]
 )

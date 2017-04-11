@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2016, Google Inc.
+ * Copyright 2017, Google Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,11 +30,52 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-import PackageDescription
-let package = Package (
-    name: "Echo",
-    dependencies: [
-        .Package(url: "https://github.com/grpc/grpc-swift.git", Version(0,1,10)),
-        .Package(url: "https://github.com/apple/swift-protobuf.git", Version(0,9,29)),
-    ]
-)
+
+import Foundation
+import SwiftProtobuf
+import PluginLibrary
+import Stencil
+import PathKit
+
+struct FileDescriptor {
+  var name : String
+  var package : String
+  var service: [ServiceDescriptor] = []
+
+  init(proto: Google_Protobuf_FileDescriptorProto) {
+    name = proto.name
+    package = proto.package
+    for service in proto.service {
+      self.service.append(ServiceDescriptor(proto:service))
+    }
+  }
+}
+
+struct ServiceDescriptor {
+  var name : String
+  var method : [MethodDescriptor] = []
+
+  init(proto: Google_Protobuf_ServiceDescriptorProto) {
+    name = proto.name
+    for method in proto.method {
+      self.method.append(MethodDescriptor(proto:method))
+    }
+  }
+}
+
+struct MethodDescriptor {
+  var name : String
+  var inputType : String
+  var outputType : String
+  var clientStreaming : Bool
+  var serverStreaming : Bool
+
+  init(proto: Google_Protobuf_MethodDescriptorProto) {
+    name = proto.name
+    inputType = proto.inputType
+    outputType = proto.outputType
+    clientStreaming = proto.clientStreaming
+    serverStreaming = proto.serverStreaming
+  }
+}
+

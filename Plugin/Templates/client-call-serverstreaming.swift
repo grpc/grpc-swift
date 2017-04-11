@@ -1,18 +1,18 @@
 /// {{ method.name }} (Server Streaming)
-public class {{ .|call:protoFile,service,method }} {
+public class {{ .|call:file,service,method }} {
   private var call : Call
 
   /// Create a call.
   fileprivate init(_ channel: Channel) {
-    self.call = channel.makeCall("{{ .|path:protoFile,service,method }}")
+    self.call = channel.makeCall("{{ .|path:file,service,method }}")
   }
 
   /// Call this once with the message to send. Nonblocking.
   fileprivate func start(request: {{ method|input }},
                          metadata: Metadata,
                          completion: @escaping (CallResult) -> ())
-    throws -> {{ .|call:protoFile,service,method }} {
-      let requestData = try request.serializeProtobuf()
+    throws -> {{ .|call:file,service,method }} {
+      let requestData = try request.serializedData()
       try call.start(.serverStreaming,
                      metadata:metadata,
                      message:requestData,
@@ -22,7 +22,7 @@ public class {{ .|call:protoFile,service,method }} {
 
   /// Call this to wait for a result. Blocking.
   public func receive() throws -> {{ method|output }} {
-    var returnError : {{ .|clienterror:protoFile,service }}?
+    var returnError : {{ .|clienterror:file,service }}?
     var returnResponse : {{ method|output }}!
     let sem = DispatchSemaphore(value: 0)
     do {
@@ -40,17 +40,17 @@ public class {{ .|call:protoFile,service,method }} {
   }
 
   /// Call this to wait for a result. Nonblocking.
-  public func receive(completion:@escaping ({{ method|output }}?, {{ .|clienterror:protoFile,service }}?)->()) throws {
+  public func receive(completion:@escaping ({{ method|output }}?, {{ .|clienterror:file,service }}?)->()) throws {
     do {
       try call.receiveMessage() {(responseData) in
         if let responseData = responseData {
-          if let response = try? {{ method|output }}(protobuf:responseData) {
+          if let response = try? {{ method|output }}(serializedData:responseData) {
             completion(response, nil)
           } else {
-            completion(nil, {{ .|clienterror:protoFile,service }}.invalidMessageReceived)
+            completion(nil, {{ .|clienterror:file,service }}.invalidMessageReceived)
           }
         } else {
-          completion(nil, {{ .|clienterror:protoFile,service }}.endOfStream)
+          completion(nil, {{ .|clienterror:file,service }}.endOfStream)
         }
       }
     }

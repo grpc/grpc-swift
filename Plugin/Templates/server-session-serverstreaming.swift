@@ -1,16 +1,16 @@
 // {{ method.name }} (Server Streaming)
-public class {{ .|session:protoFile,service,method }} : {{ .|service:protoFile,service }}Session {
-  private var provider : {{ .|provider:protoFile,service }}
+public class {{ .|session:file,service,method }} : {{ .|service:file,service }}Session {
+  private var provider : {{ .|provider:file,service }}
 
   /// Create a session.
-  fileprivate init(handler:gRPC.Handler, provider: {{ .|provider:protoFile,service }}) {
+  fileprivate init(handler:gRPC.Handler, provider: {{ .|provider:file,service }}) {
     self.provider = provider
     super.init(handler:handler)
   }
 
   /// Send a message. Nonblocking.
   public func send(_ response: {{ method|output }}) throws {
-    try handler.sendResponse(message:response.serializeProtobuf()) {}
+    try handler.sendResponse(message:response.serializedData()) {}
   }
 
   /// Run the session. Internal.
@@ -18,7 +18,7 @@ public class {{ .|session:protoFile,service,method }} : {{ .|service:protoFile,s
     try self.handler.receiveMessage(initialMetadata:initialMetadata) {(requestData) in
       if let requestData = requestData {
         do {
-          let requestMessage = try {{ method|input }}(protobuf:requestData)
+          let requestMessage = try {{ method|input }}(serializedData:requestData)
           // to keep providers from blocking the server thread,
           // we dispatch them to another queue.
           queue.async {

@@ -1,9 +1,9 @@
 // {{ method.name }} (Unary)
-public class {{ .|session:protoFile,service,method }} : {{ .|service:protoFile,service }}Session {
-  private var provider : {{ .|provider:protoFile,service }}
+public class {{ .|session:file,service,method }} : {{ .|service:file,service }}Session {
+  private var provider : {{ .|provider:file,service }}
 
   /// Create a session.
-  fileprivate init(handler:gRPC.Handler, provider: {{ .|provider:protoFile,service }}) {
+  fileprivate init(handler:gRPC.Handler, provider: {{ .|provider:file,service }}) {
     self.provider = provider
     super.init(handler:handler)
   }
@@ -12,9 +12,9 @@ public class {{ .|session:protoFile,service,method }} : {{ .|service:protoFile,s
   fileprivate func run(queue:DispatchQueue) throws {
     try handler.receiveMessage(initialMetadata:initialMetadata) {(requestData) in
       if let requestData = requestData {
-        let requestMessage = try {{ method|input }}(protobuf:requestData)
+        let requestMessage = try {{ method|input }}(serializedData:requestData)
         let replyMessage = try self.provider.{{ method.name|lowercase }}(request:requestMessage, session: self)
-        try self.handler.sendResponse(message:replyMessage.serializeProtobuf(),
+        try self.handler.sendResponse(message:replyMessage.serializedData(),
                                       statusCode:self.statusCode,
                                       statusMessage:self.statusMessage,
                                       trailingMetadata:self.trailingMetadata)
