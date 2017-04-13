@@ -54,9 +54,9 @@ of the **CgRPC** target.
 grpc-swift depends on Swift, Xcode, and swift-proto. We are currently
 testing with the following versions:
 
-- Xcode 8.2 
-- Swift 3.0.2 
-- swift-protobuf 0.9.24 
+- Xcode 8.3.1 
+- Swift 3.1 
+- swift-protobuf 0.9.29 
 
 ## License
 
