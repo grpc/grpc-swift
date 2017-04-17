@@ -37,102 +37,8 @@ import PluginLibrary
 import Stencil
 import PathKit
 
-extension String {
-  var undotted : String {
-    return self.replacingOccurrences(of:".", with:"_")
-  }
-
-  var uppercasedFirst : String {
-    var out = self.characters
-    if let first = out.popFirst() {
-      return String(first).uppercased() + String(out)
-    } else {
-      return self
-    }
-  }
-}
-
-func protoMessageName(_ name :String?) -> String {
-  guard let name = name else {
-    return ""
-  }
-  let parts = name.undotted.components(separatedBy:"_")
-  var capitalizedParts : [String] = []
-  for part in parts {
-    if part != "" {
-      capitalizedParts.append(part.uppercasedFirst)
-    }
-  }
-  return capitalizedParts.joined(separator:"_")
-}
-
-func pathName(_ arguments: [Any?]) throws -> String {
-  if arguments.count != 3 {
-    throw TemplateSyntaxError("path expects 3 arguments")
-  }
-  guard let protoFile = arguments[0] as? Google_Protobuf_FileDescriptorProto
-    else {
-      throw TemplateSyntaxError("tag must be called with a " +
-        "Google_Protobuf_FileDescriptorProto" +
-        " argument, received \(arguments[0])")
-  }
-  guard let service = arguments[1] as? Google_Protobuf_ServiceDescriptorProto
-    else {
-      throw TemplateSyntaxError("tag must be called with a " +
-        "Google_Protobuf_ServiceDescriptorProto" +
-        " argument, received \(arguments[1])")
-  }
-  guard let method = arguments[2] as? Google_Protobuf_MethodDescriptorProto
-    else {
-      throw TemplateSyntaxError("tag must be called with a " +
-        "Google_Protobuf_MethodDescriptorProto" +
-        " argument, received \(arguments[2])")
-  }
-  return "/" + protoFile.package! + "." + service.name! + "/" + method.name!
-}
-
-func packageServiceMethodName(_ arguments: [Any?]) throws -> String {
-  if arguments.count != 3 {
-    throw TemplateSyntaxError("tag expects 3 arguments")
-  }
-  guard let protoFile = arguments[0] as? Google_Protobuf_FileDescriptorProto
-    else {
-      throw TemplateSyntaxError("tag must be called with a " +
-        "Google_Protobuf_FileDescriptorProto" +
-        " argument, received \(arguments[0])")
-  }
-  guard let service = arguments[1] as? Google_Protobuf_ServiceDescriptorProto
-    else {
-      throw TemplateSyntaxError("tag must be called with a " +
-        "Google_Protobuf_ServiceDescriptorProto" +
-        " argument, received \(arguments[1])")
-  }
-  guard let method = arguments[2] as? Google_Protobuf_MethodDescriptorProto
-    else {
-      throw TemplateSyntaxError("tag must be called with a " +
-        "Google_Protobuf_MethodDescriptorProto" +
-        " argument, received \(arguments[2])")
-  }
-  return protoFile.package!.capitalized.undotted + "_" + service.name! + method.name!
-}
-
-func packageServiceName(_ arguments: [Any?]) throws -> String {
-  if arguments.count != 2 {
-    throw TemplateSyntaxError("tag expects 2 arguments")
-  }
-  guard let protoFile = arguments[0] as? Google_Protobuf_FileDescriptorProto
-    else {
-      throw TemplateSyntaxError("tag must be called with a " +
-        "Google_Protobuf_FileDescriptorProto" +
-        " argument, received \(arguments[0])")
-  }
-  guard let service = arguments[1] as? Google_Protobuf_ServiceDescriptorProto
-    else {
-      throw TemplateSyntaxError("tag must be called with a " +
-        "Google_Protobuf_ServiceDescriptorProto" +
-        " argument, received \(arguments[1])")
-  }
-  return protoFile.package!.capitalized.undotted + "_" + service.name!
+func Log(_ message : String) {
+  FileHandle.standardError.write((message + "\n").data(using:.utf8)!)
 }
 
 // Code templates use "//-" prefixes to comment-out template operators
@@ -155,55 +61,11 @@ func stripMarkers(_ code:String) -> String {
   return outputLines.joined(separator:"\n")
 }
 
-func Log(_ message : String) {
-  FileHandle.standardError.write((message + "\n").data(using:.utf8)!)
-}
-
 func main() throws {
 
   // initialize template engine and add custom filters
-  let ext = Extension()
-  ext.registerFilter("call") { (value: Any?, arguments: [Any?]) in
-    return try packageServiceMethodName(arguments) + "Call"
-  }
-  ext.registerFilter("session") { (value: Any?, arguments: [Any?]) in
-    return try packageServiceMethodName(arguments) + "Session"
-  }
-  ext.registerFilter("path") { (value: Any?, arguments: [Any?]) in
-    return try pathName(arguments)
-  }
-  ext.registerFilter("provider") { (value: Any?, arguments: [Any?]) in
-    return try packageServiceName(arguments) + "Provider"
-  }
-  ext.registerFilter("clienterror") { (value: Any?, arguments: [Any?]) in
-    return try packageServiceName(arguments) + "ClientError"
-  }
-  ext.registerFilter("serviceclass") { (value: Any?, arguments: [Any?]) in
-    return try packageServiceName(arguments) + "Service"
-  }
-  ext.registerFilter("servererror") { (value: Any?, arguments: [Any?]) in
-    return try packageServiceName(arguments) + "ServerError"
-  }
-  ext.registerFilter("server") { (value: Any?, arguments: [Any?]) in
-    return try packageServiceName(arguments) + "Server"
-  }
-  ext.registerFilter("service") { (value: Any?, arguments: [Any?]) in
-    return try packageServiceName(arguments)
-  }
-  ext.registerFilter("input") { (value: Any?) in
-    if let value = value as? Google_Protobuf_MethodDescriptorProto {
-      return protoMessageName(value.inputType)
-    }
-    throw TemplateSyntaxError("message: invalid argument \(value)")
-  }
-  ext.registerFilter("output") { (value: Any?) in
-    if let value = value as? Google_Protobuf_MethodDescriptorProto {
-      return protoMessageName(value.outputType)
-    }
-    throw TemplateSyntaxError("message: invalid argument \(value)")
-  }
   let templateEnvironment = Environment(loader: InternalLoader(),
-                                        extensions:[ext])
+                                        extensions:[GRPCFilterExtension()])
 
   // initialize responses
   var response = Google_Protobuf_Compiler_CodeGeneratorResponse()
@@ -211,62 +73,66 @@ func main() throws {
 
   // read plugin input
   let rawRequest = try Stdin.readall()
-  let request = try Google_Protobuf_Compiler_CodeGeneratorRequest(protobuf: rawRequest)
+  let request = try Google_Protobuf_Compiler_CodeGeneratorRequest(serializedData: rawRequest)
 
   var generatedFileNames = Set<String>()
-  
+
   // process each .proto file separately
   for protoFile in request.protoFile {
 
+    let file = FileDescriptor(proto:protoFile)
+
     // a package declaration is required
-    guard let package = protoFile.package else {
-      print("ERROR: no package for \(protoFile.name)")
+    let package = file.package
+    guard package != "" else {
+      print("ERROR: no package for \(file.name)")
       continue
     }
 
     // log info about the service
-    log += "File \(protoFile.name!)\n"
-    for service in protoFile.service {
-      log += "Service \(service.name!)\n"
+    log += "File \(file.name)\n"
+    for service in file.service {
+      log += "Service \(service.name)\n"
       for method in service.method {
-        log += " Method \(method.name!)\n"
-        log += "  input \(method.inputType!)\n"
-        log += "  output \(method.outputType!)\n"
-        log += "  client_streaming \(method.clientStreaming!)\n"
-        log += "  server_streaming \(method.serverStreaming!)\n"
+        log += " Method \(method.name)\n"
+        log += "  input \(method.inputType)\n"
+        log += "  output \(method.outputType)\n"
+        log += "  client_streaming \(method.clientStreaming)\n"
+        log += "  server_streaming \(method.serverStreaming)\n"
       }
-      log += " Options \(service.options)\n"
     }
 
-    if protoFile.service.count > 0 {
-    // generate separate implementation files for client and server
-    let context = ["protoFile": protoFile]
+    if file.service.count > 0 {
 
-    do {
-      let clientFileName = package + ".client.pb.swift"
-      if !generatedFileNames.contains(clientFileName) {
-        generatedFileNames.insert(clientFileName)
-        let clientcode = try templateEnvironment.renderTemplate(name:"client.pb.swift",
-                                                                context: context)
-        var clientfile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
-        clientfile.name = clientFileName
-        clientfile.content = stripMarkers(clientcode)
-        response.file.append(clientfile)
-      }
+      // generate separate implementation files for client and server
+      let context : [String:Any] = ["file": file]
 
-      let serverFileName = package + ".server.pb.swift"
-      if !generatedFileNames.contains(serverFileName) {
-        generatedFileNames.insert(serverFileName)
-        let servercode = try templateEnvironment.renderTemplate(name:"server.pb.swift",
-                                                                context: context)
-        var serverfile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
-        serverfile.name = serverFileName
-        serverfile.content = stripMarkers(servercode)
-        response.file.append(serverfile)
+      do {
+        let clientFileName = package + ".client.pb.swift"
+        if !generatedFileNames.contains(clientFileName) {
+          generatedFileNames.insert(clientFileName)
+          let clientcode = try templateEnvironment.renderTemplate(name:"client.pb.swift",
+                                                                  context: context)
+          var clientfile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
+          clientfile.name = clientFileName
+          clientfile.content = stripMarkers(clientcode)
+          response.file.append(clientfile)
+        }
+
+        let serverFileName = package + ".server.pb.swift"
+        if !generatedFileNames.contains(serverFileName) {
+          generatedFileNames.insert(serverFileName)
+          let servercode = try templateEnvironment.renderTemplate(name:"server.pb.swift",
+                                                                  context: context)
+          var serverfile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
+          serverfile.name = serverFileName
+          serverfile.content = stripMarkers(servercode)
+          response.file.append(serverfile)
+        }
+      } catch (let error) {
+        Log("ERROR \(error)")
+        log += "ERROR: \(error)\n"
       }
-    } catch (let error) {
-      log += "ERROR: \(error)\n"
-    }
     }
   }
 
@@ -279,12 +145,12 @@ func main() throws {
   response.file.append(logfile)
 
   // return everything to the caller
-  let serializedResponse = try response.serializeProtobuf()
+  let serializedResponse = try response.serializedData()
   Stdout.write(bytes: serializedResponse)
 }
 
 do {
-	try main()	
+  try main()
 } catch (let error) {
-	Log("ERROR: \(error)")	
+  Log("ERROR: \(error)")	
 }

@@ -1,10 +1,10 @@
 /// {{ method.name }} (Unary)
-public class {{ .|call:protoFile,service,method }} {
+public class {{ .|call:file,service,method }} {
   private var call : Call
 
   /// Create a call.
   fileprivate init(_ channel: Channel) {
-    self.call = channel.makeCall("{{ .|path:protoFile,service,method }}")
+    self.call = channel.makeCall("{{ .|path:file,service,method }}")
   }
 
   /// Run the call. Blocks until the reply is received.
@@ -22,7 +22,7 @@ public class {{ .|call:protoFile,service,method }} {
     if let returnResponse = returnResponse {
       return returnResponse
     } else {
-      throw {{ .|clienterror:protoFile,service }}.error(c: returnCallResult)
+      throw {{ .|clienterror:file,service }}.error(c: returnCallResult)
     }
   }
 
@@ -30,15 +30,15 @@ public class {{ .|call:protoFile,service,method }} {
   fileprivate func start(request: {{ method|input }},
                          metadata: Metadata,
                          completion: @escaping ({{ method|output }}?, CallResult)->())
-    throws -> {{ .|call:protoFile,service,method }} {
+    throws -> {{ .|call:file,service,method }} {
 
-      let requestData = try request.serializeProtobuf()
+      let requestData = try request.serializedData()
       try call.start(.unary,
                      metadata:metadata,
                      message:requestData)
       {(callResult) in
         if let responseData = callResult.resultData,
-          let response = try? {{ method|output }}(protobuf:responseData) {
+          let response = try? {{ method|output }}(serializedData:responseData) {
           completion(response, callResult)
         } else {
           completion(nil, callResult)

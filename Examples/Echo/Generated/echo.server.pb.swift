@@ -85,9 +85,9 @@ public class Echo_EchoGetSession : Echo_EchoSession {
   fileprivate func run(queue:DispatchQueue) throws {
     try handler.receiveMessage(initialMetadata:initialMetadata) {(requestData) in
       if let requestData = requestData {
-        let requestMessage = try Echo_EchoRequest(protobuf:requestData)
+        let requestMessage = try Echo_EchoRequest(serializedData:requestData)
         let replyMessage = try self.provider.get(request:requestMessage, session: self)
-        try self.handler.sendResponse(message:replyMessage.serializeProtobuf(),
+        try self.handler.sendResponse(message:replyMessage.serializedData(),
                                       statusCode:self.statusCode,
                                       statusMessage:self.statusMessage,
                                       trailingMetadata:self.trailingMetadata)
@@ -108,7 +108,7 @@ public class Echo_EchoExpandSession : Echo_EchoSession {
 
   /// Send a message. Nonblocking.
   public func send(_ response: Echo_EchoResponse) throws {
-    try handler.sendResponse(message:response.serializeProtobuf()) {}
+    try handler.sendResponse(message:response.serializedData()) {}
   }
 
   /// Run the session. Internal.
@@ -116,7 +116,7 @@ public class Echo_EchoExpandSession : Echo_EchoSession {
     try self.handler.receiveMessage(initialMetadata:initialMetadata) {(requestData) in
       if let requestData = requestData {
         do {
-          let requestMessage = try Echo_EchoRequest(protobuf:requestData)
+          let requestMessage = try Echo_EchoRequest(serializedData:requestData)
           // to keep providers from blocking the server thread,
           // we dispatch them to another queue.
           queue.async {
@@ -154,7 +154,7 @@ public class Echo_EchoCollectSession : Echo_EchoSession {
     var requestMessage : Echo_EchoRequest?
     try self.handler.receiveMessage() {(requestData) in
       if let requestData = requestData {
-        requestMessage = try? Echo_EchoRequest(protobuf:requestData)
+        requestMessage = try? Echo_EchoRequest(serializedData:requestData)
       }
       sem.signal()
     }
@@ -167,7 +167,7 @@ public class Echo_EchoCollectSession : Echo_EchoSession {
 
   /// Send a response and close the connection.
   public func sendAndClose(_ response: Echo_EchoResponse) throws {
-    try self.handler.sendResponse(message:response.serializeProtobuf(),
+    try self.handler.sendResponse(message:response.serializedData(),
                                   statusCode:self.statusCode,
                                   statusMessage:self.statusMessage,
                                   trailingMetadata:self.trailingMetadata)
@@ -204,7 +204,7 @@ public class Echo_EchoUpdateSession : Echo_EchoSession {
     try self.handler.receiveMessage() {(requestData) in
       if let requestData = requestData {
         do {
-          requestMessage = try Echo_EchoRequest(protobuf:requestData)
+          requestMessage = try Echo_EchoRequest(serializedData:requestData)
         } catch (let error) {
           print("error \(error)")
         }
@@ -221,7 +221,7 @@ public class Echo_EchoUpdateSession : Echo_EchoSession {
 
   /// Send a message. Nonblocking.
   public func send(_ response: Echo_EchoResponse) throws {
-    try handler.sendResponse(message:response.serializeProtobuf()) {}
+    try handler.sendResponse(message:response.serializedData()) {}
   }
 
   /// Close a connection. Blocks until the connection is closed.

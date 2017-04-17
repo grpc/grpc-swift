@@ -1,9 +1,9 @@
 // {{ method.name }} (Bidirectional Streaming)
-public class {{ .|session:protoFile,service,method }} : {{ .|service:protoFile,service }}Session {
-  private var provider : {{ .|provider:protoFile,service }}
+public class {{ .|session:file,service,method }} : {{ .|service:file,service }}Session {
+  private var provider : {{ .|provider:file,service }}
 
   /// Create a session.
-  fileprivate init(handler:gRPC.Handler, provider: {{ .|provider:protoFile,service }}) {
+  fileprivate init(handler:gRPC.Handler, provider: {{ .|provider:file,service }}) {
     self.provider = provider
     super.init(handler:handler)
   }
@@ -15,7 +15,7 @@ public class {{ .|session:protoFile,service,method }} : {{ .|service:protoFile,s
     try self.handler.receiveMessage() {(requestData) in
       if let requestData = requestData {
         do {
-          requestMessage = try {{ method|input }}(protobuf:requestData)
+          requestMessage = try {{ method|input }}(serializedData:requestData)
         } catch (let error) {
           print("error \(error)")
         }
@@ -26,13 +26,13 @@ public class {{ .|session:protoFile,service,method }} : {{ .|service:protoFile,s
     if let requestMessage = requestMessage {
       return requestMessage
     } else {
-      throw {{ .|servererror:protoFile,service }}.endOfStream
+      throw {{ .|servererror:file,service }}.endOfStream
     }
   }
 
   /// Send a message. Nonblocking.
   public func send(_ response: {{ method|output }}) throws {
-    try handler.sendResponse(message:response.serializeProtobuf()) {}
+    try handler.sendResponse(message:response.serializedData()) {}
   }
 
   /// Close a connection. Blocks until the connection is closed.
