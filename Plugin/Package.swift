@@ -42,7 +42,7 @@ let package = Package(
     Target(name: "TemplateEncoder")
   ],
   dependencies: [
-    .Package(url: "https://github.com/apple/swift-protobuf.git", Version(0,9,29)),
+    .Package(url: "https://github.com/apple/swift-protobuf.git", Version(0,9,901)),
     .Package(url: "https://github.com/timburks/Stencil.git", Version(0,8,1))
   ]
 )
