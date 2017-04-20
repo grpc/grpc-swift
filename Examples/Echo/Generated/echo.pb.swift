@@ -46,15 +46,15 @@ public struct Echo_EchoRequest: SwiftProtobuf.Message {
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
       switch fieldNumber {
-      case 1: try decoder.decodeSingularStringField(value: &text)
+      case 1: try decoder.decodeSingularStringField(value: &self.text)
       default: break
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if !text.isEmpty {
-      try visitor.visitSingularStringField(value: text, fieldNumber: 1)
+    if !self.text.isEmpty {
+      try visitor.visitSingularStringField(value: self.text, fieldNumber: 1)
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -73,15 +73,15 @@ public struct Echo_EchoResponse: SwiftProtobuf.Message {
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
       switch fieldNumber {
-      case 1: try decoder.decodeSingularStringField(value: &text)
+      case 1: try decoder.decodeSingularStringField(value: &self.text)
       default: break
       }
     }
   }
 
   public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if !text.isEmpty {
-      try visitor.visitSingularStringField(value: text, fieldNumber: 1)
+    if !self.text.isEmpty {
+      try visitor.visitSingularStringField(value: self.text, fieldNumber: 1)
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -97,7 +97,7 @@ extension Echo_EchoRequest: SwiftProtobuf._MessageImplementationBase, SwiftProto
   ]
 
   public func _protobuf_generated_isEqualTo(other: Echo_EchoRequest) -> Bool {
-    if text != other.text {return false}
+    if self.text != other.text {return false}
     if unknownFields != other.unknownFields {return false}
     return true
   }
@@ -109,7 +109,7 @@ extension Echo_EchoResponse: SwiftProtobuf._MessageImplementationBase, SwiftProt
   ]
 
   public func _protobuf_generated_isEqualTo(other: Echo_EchoResponse) -> Bool {
-    if text != other.text {return false}
+    if self.text != other.text {return false}
     if unknownFields != other.unknownFields {return false}
     return true
   }

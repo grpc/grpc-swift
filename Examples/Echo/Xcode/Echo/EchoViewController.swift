@@ -145,7 +145,8 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     }
     if (self.callSelectButton.selectedSegment == 0) {
       // NONSTREAMING
-      let requestMessage = Echo_EchoRequest(text:self.messageField.stringValue)
+      var requestMessage = Echo_EchoRequest()
+      requestMessage.text = self.messageField.stringValue
       self.displayMessageSent(requestMessage.text)
       _ = try service.get(requestMessage) {responseMessage, callResult in
         if let responseMessage = responseMessage {
@@ -159,7 +160,8 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
       // STREAMING EXPAND
       if (!nowStreaming) {
         do {
-          let requestMessage = Echo_EchoRequest(text:self.messageField.stringValue)
+          var requestMessage = Echo_EchoRequest()
+          requestMessage.text = self.messageField.stringValue
           self.expandCall = try service.expand(requestMessage) {call in
             print("Started expand \(call)")
           }
@@ -230,7 +232,8 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
 
   func sendCollectMessage() throws {
     if let collectCall = collectCall {
-      let requestMessage = Echo_EchoRequest(text:self.messageField.stringValue)
+      var requestMessage = Echo_EchoRequest()
+      requestMessage.text = self.messageField.stringValue
       self.displayMessageSent(requestMessage.text)
       try collectCall.send(requestMessage) {error in print(error)}
     }
@@ -238,7 +241,8 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
 
   func sendUpdateMessage() throws {
     if let updateCall = updateCall {
-      let requestMessage = Echo_EchoRequest(text:self.messageField.stringValue)
+      var requestMessage = Echo_EchoRequest()
+      requestMessage.text = self.messageField.stringValue
       self.displayMessageSent(requestMessage.text)
       try updateCall.send(requestMessage) {error in print(error)}
     }
