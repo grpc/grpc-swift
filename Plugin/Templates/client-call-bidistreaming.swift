@@ -51,7 +51,7 @@ public class {{ .|call:file,service,method }} {
   }
 
   /// Call this to send each message in the request stream.
-  public func send(_ message:Echo_EchoRequest, errorHandler:@escaping (Error)->()) throws {
+  public func send(_ message:{{ method|input }}, errorHandler:@escaping (Error)->()) throws {
     let messageData = try message.serializedData()
     try call.sendMessage(data:messageData, errorHandler:errorHandler)
   }
