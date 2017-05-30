@@ -16,8 +16,6 @@ protoc \
 	googleapis/google/type/latlng.proto \
  	-Igoogleapis \
 	--swift_out=googleapis \
-	--swift_opt=Visibility=Public \
-	--plugin=$HOME/local/bin/protoc-gen-swift \
 	--swiftgrpc_out=Sources
 
 # move swift files to this directory

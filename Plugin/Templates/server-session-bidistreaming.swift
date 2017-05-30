@@ -1,5 +1,5 @@
 // {{ method.name }} (Bidirectional Streaming)
-public class {{ .|session:file,service,method }} : {{ .|service:file,service }}Session {
+{{ access }} class {{ .|session:file,service,method }} : {{ .|service:file,service }}Session {
   private var provider : {{ .|provider:file,service }}
 
   /// Create a session.
@@ -9,7 +9,7 @@ public class {{ .|session:file,service,method }} : {{ .|service:file,service }}S
   }
 
   /// Receive a message. Blocks until a message is received or the client closes the connection.
-  public func receive() throws -> {{ method|input }} {
+  {{ access }} func receive() throws -> {{ method|input }} {
     let sem = DispatchSemaphore(value: 0)
     var requestMessage : {{ method|input }}?
     try self.handler.receiveMessage() {(requestData) in
@@ -31,12 +31,12 @@ public class {{ .|session:file,service,method }} : {{ .|service:file,service }}S
   }
 
   /// Send a message. Nonblocking.
-  public func send(_ response: {{ method|output }}) throws {
+  {{ access }} func send(_ response: {{ method|output }}) throws {
     try handler.sendResponse(message:response.serializedData()) {}
   }
 
   /// Close a connection. Blocks until the connection is closed.
-  public func close() throws {
+  {{ access }} func close() throws {
     let sem = DispatchSemaphore(value: 0)
     try self.handler.sendStatus(statusCode:self.statusCode,
                                 statusMessage:self.statusMessage,

@@ -1,5 +1,5 @@
 /// {{ method.name }} (Unary)
-public class {{ .|call:file,service,method }} {
+{{ access }} class {{ .|call:file,service,method }} {
   private var call : Call
 
   /// Create a call.

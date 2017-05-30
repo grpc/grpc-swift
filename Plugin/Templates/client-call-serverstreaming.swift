@@ -1,5 +1,5 @@
 /// {{ method.name }} (Server Streaming)
-public class {{ .|call:file,service,method }} {
+{{ access }} class {{ .|call:file,service,method }} {
   private var call : Call
 
   /// Create a call.
@@ -21,7 +21,7 @@ public class {{ .|call:file,service,method }} {
   }
 
   /// Call this to wait for a result. Blocking.
-  public func receive() throws -> {{ method|output }} {
+  {{ access }} func receive() throws -> {{ method|output }} {
     var returnError : {{ .|clienterror:file,service }}?
     var returnResponse : {{ method|output }}!
     let sem = DispatchSemaphore(value: 0)
@@ -40,7 +40,7 @@ public class {{ .|call:file,service,method }} {
   }
 
   /// Call this to wait for a result. Nonblocking.
-  public func receive(completion:@escaping ({{ method|output }}?, {{ .|clienterror:file,service }}?)->()) throws {
+  {{ access }} func receive(completion:@escaping ({{ method|output }}?, {{ .|clienterror:file,service }}?)->()) throws {
     do {
       try call.receiveMessage() {(responseData) in
         if let responseData = responseData {

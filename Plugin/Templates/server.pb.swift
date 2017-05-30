@@ -45,12 +45,12 @@ import gRPC
 //-{% for service in file.service %}
 
 /// Type for errors thrown from generated server code.
-public enum {{ .|servererror:file,service }} : Error {
+{{ access }} enum {{ .|servererror:file,service }} : Error {
   case endOfStream
 }
 
 /// To build a server, implement a class that conforms to this protocol.
-public protocol {{ .|provider:file,service }} {
+{{ access }} protocol {{ .|provider:file,service }} {
   //-{% for method in service.method %}
   //-{% if not method.clientStreaming and not method.serverStreaming %}
   func {{ method.name|lowercase }}(request : {{ method|input }}, session : {{ .|session:file,service,method }}) throws -> {{ method|output }}
@@ -68,14 +68,14 @@ public protocol {{ .|provider:file,service }} {
 }
 
 /// Common properties available in each service session.
-public class {{ .|service:file,service }}Session {
+{{ access }} class {{ .|service:file,service }}Session {
   fileprivate var handler : gRPC.Handler
-  public var requestMetadata : Metadata { return handler.requestMetadata }
+  {{ access }} var requestMetadata : Metadata { return handler.requestMetadata }
 
-  public var statusCode : Int = 0
-  public var statusMessage : String = "OK"
-  public var initialMetadata : Metadata = Metadata()
-  public var trailingMetadata : Metadata = Metadata()
+  {{ access }} var statusCode : Int = 0
+  {{ access }} var statusMessage : String = "OK"
+  {{ access }} var initialMetadata : Metadata = Metadata()
+  {{ access }} var trailingMetadata : Metadata = Metadata()
 
   fileprivate init(handler:gRPC.Handler) {
     self.handler = handler
@@ -98,13 +98,13 @@ public class {{ .|service:file,service }}Session {
 //-{% endfor %}
 
 /// Main server for generated service
-public class {{ .|server:file,service }} {
+{{ access }} class {{ .|server:file,service }} {
   private var address: String
   private var server: gRPC.Server
   private var provider: {{ .|provider:file,service }}?
 
   /// Create a server that accepts insecure connections.
-  public init(address:String,
+  {{ access }} init(address:String,
               provider:{{ .|provider:file,service }}) {
     gRPC.initialize()
     self.address = address
@@ -113,7 +113,7 @@ public class {{ .|server:file,service }} {
   }
 
   /// Create a server that accepts secure connections.
-  public init?(address:String,
+  {{ access }} init?(address:String,
                certificateURL:URL,
                keyURL:URL,
                provider:{{ .|provider:file,service }}) {
@@ -130,7 +130,7 @@ public class {{ .|server:file,service }} {
   }
 
   /// Start the server.
-  public func start(queue:DispatchQueue = DispatchQueue.global()) {
+  {{ access }} func start(queue:DispatchQueue = DispatchQueue.global()) {
     guard let provider = self.provider else {
       assert(false) // the server requires a provider
     }

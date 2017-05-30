@@ -1,5 +1,5 @@
 /// {{ method.name }} (Client Streaming)
-public class {{ .|call:file,service,method }} {
+{{ access }} class {{ .|call:file,service,method }} {
   private var call : Call
 
   /// Create a call.
@@ -15,13 +15,13 @@ public class {{ .|call:file,service,method }} {
   }
 
   /// Call this to send each message in the request stream. Nonblocking.
-  public func send(_ message:{{ method|input }}, errorHandler:@escaping (Error)->()) throws {
+  {{ access }} func send(_ message:{{ method|input }}, errorHandler:@escaping (Error)->()) throws {
     let messageData = try message.serializedData()
     try call.sendMessage(data:messageData, errorHandler:errorHandler)
   }
 
   /// Call this to close the connection and wait for a response. Blocking.
-  public func closeAndReceive() throws -> {{ method|output }} {
+  {{ access }} func closeAndReceive() throws -> {{ method|output }} {
     var returnError : {{ .|clienterror:file,service }}?
     var returnResponse : {{ method|output }}!
     let sem = DispatchSemaphore(value: 0)
@@ -42,7 +42,7 @@ public class {{ .|call:file,service,method }} {
   }
 
   /// Call this to close the connection and wait for a response. Nonblocking.
-  public func closeAndReceive(completion:@escaping ({{ method|output }}?, {{ .|clienterror:file,service }}?)->())
+  {{ access }} func closeAndReceive(completion:@escaping ({{ method|output }}?, {{ .|clienterror:file,service }}?)->())
     throws {
       do {
         try call.receiveMessage() {(responseData) in
