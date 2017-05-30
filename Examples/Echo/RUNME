@@ -2,4 +2,4 @@
 #
 # Use this to run the swift-proto generator
 #
-protoc echo.proto --swift_out=. --swift_opt=Visibility=Public --plugin=$HOME/local/bin/protoc-gen-swift
+protoc echo.proto --swift_out=./Generated

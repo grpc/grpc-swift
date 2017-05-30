@@ -1,5 +1,5 @@
 // {{ method.name }} (Unary)
-public class {{ .|session:file,service,method }} : {{ .|service:file,service }}Session {
+{{ access }} class {{ .|session:file,service,method }} : {{ .|service:file,service }}Session {
   private var provider : {{ .|provider:file,service }}
 
   /// Create a session.

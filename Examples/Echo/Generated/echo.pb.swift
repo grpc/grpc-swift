@@ -33,17 +33,17 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
   typealias Version = _1
 }
 
-public struct Echo_EchoRequest: SwiftProtobuf.Message {
-  public static let protoMessageName: String = _protobuf_package + ".EchoRequest"
+struct Echo_EchoRequest: SwiftProtobuf.Message {
+  static let protoMessageName: String = _protobuf_package + ".EchoRequest"
 
   /// The text of a message to be echoed.
-  public var text: String = String()
+  var text: String = String()
 
-  public var unknownFields = SwiftProtobuf.UnknownStorage()
+  var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  public init() {}
+  init() {}
 
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
       switch fieldNumber {
       case 1: try decoder.decodeSingularStringField(value: &self.text)
@@ -52,7 +52,7 @@ public struct Echo_EchoRequest: SwiftProtobuf.Message {
     }
   }
 
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
     if !self.text.isEmpty {
       try visitor.visitSingularStringField(value: self.text, fieldNumber: 1)
     }
@@ -60,17 +60,17 @@ public struct Echo_EchoRequest: SwiftProtobuf.Message {
   }
 }
 
-public struct Echo_EchoResponse: SwiftProtobuf.Message {
-  public static let protoMessageName: String = _protobuf_package + ".EchoResponse"
+struct Echo_EchoResponse: SwiftProtobuf.Message {
+  static let protoMessageName: String = _protobuf_package + ".EchoResponse"
 
   /// The text of an echo response.
-  public var text: String = String()
+  var text: String = String()
 
-  public var unknownFields = SwiftProtobuf.UnknownStorage()
+  var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  public init() {}
+  init() {}
 
-  public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
       switch fieldNumber {
       case 1: try decoder.decodeSingularStringField(value: &self.text)
@@ -79,7 +79,7 @@ public struct Echo_EchoResponse: SwiftProtobuf.Message {
     }
   }
 
-  public func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
     if !self.text.isEmpty {
       try visitor.visitSingularStringField(value: self.text, fieldNumber: 1)
     }
@@ -92,11 +92,11 @@ public struct Echo_EchoResponse: SwiftProtobuf.Message {
 fileprivate let _protobuf_package = "echo"
 
 extension Echo_EchoRequest: SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "text"),
   ]
 
-  public func _protobuf_generated_isEqualTo(other: Echo_EchoRequest) -> Bool {
+  func _protobuf_generated_isEqualTo(other: Echo_EchoRequest) -> Bool {
     if self.text != other.text {return false}
     if unknownFields != other.unknownFields {return false}
     return true
@@ -104,11 +104,11 @@ extension Echo_EchoRequest: SwiftProtobuf._MessageImplementationBase, SwiftProto
 }
 
 extension Echo_EchoResponse: SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  public static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "text"),
   ]
 
-  public func _protobuf_generated_isEqualTo(other: Echo_EchoResponse) -> Bool {
+  func _protobuf_generated_isEqualTo(other: Echo_EchoResponse) -> Bool {
     if self.text != other.text {return false}
     if unknownFields != other.unknownFields {return false}
     return true

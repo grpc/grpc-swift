@@ -45,7 +45,7 @@ import gRPC
 //-{% for service in file.service %}
 
 /// Type for errors thrown from generated client code.
-public enum {{ .|clienterror:file,service }} : Error {
+{{ access }} enum {{ .|clienterror:file,service }} : Error {
   case endOfStream
   case invalidMessageReceived
   case error(c: CallResult)
@@ -66,16 +66,16 @@ public enum {{ .|clienterror:file,service }} : Error {
 //-{% endif %}
 //-{% endfor %}
 /// Call methods of this class to make API calls.
-public class {{ .|serviceclass:file,service }} {
+{{ access }} class {{ .|serviceclass:file,service }} {
   private var channel: Channel
 
   /// This metadata will be sent with all requests.
-  public var metadata : Metadata
+  {{ access }} var metadata : Metadata
 
   /// This property allows the service host name to be overridden.
   /// For example, it can be used to make calls to "localhost:8080"
   /// appear to be to "example.com".
-  public var host : String {
+  {{ access }} var host : String {
     get {
       return self.channel.host
     }
@@ -85,14 +85,14 @@ public class {{ .|serviceclass:file,service }} {
   }
 
   /// Create a client that makes insecure connections.
-  public init(address: String) {
+  {{ access }} init(address: String) {
     gRPC.initialize()
     channel = Channel(address:address)
     metadata = Metadata()
   }
 
   /// Create a client that makes secure connections.
-  public init(address: String, certificates: String?, host: String?) {
+  {{ access }} init(address: String, certificates: String?, host: String?) {
     gRPC.initialize()
     channel = Channel(address:address, certificates:certificates, host:host)
     metadata = Metadata()
@@ -101,13 +101,13 @@ public class {{ .|serviceclass:file,service }} {
   //-{% for method in service.method %}
   //-{% if not method.clientStreaming and not method.serverStreaming %}
   /// Synchronous. Unary.
-  public func {{ method.name|lowercase }}(_ request: {{ method|input }})
+  {{ access }} func {{ method.name|lowercase }}(_ request: {{ method|input }})
     throws
     -> {{ method|output }} {
       return try {{ .|call:file,service,method }}(channel).run(request:request, metadata:metadata)
   }
   /// Asynchronous. Unary.
-  public func {{ method.name|lowercase }}(_ request: {{ method|input }},
+  {{ access }} func {{ method.name|lowercase }}(_ request: {{ method|input }},
                   completion: @escaping ({{ method|output }}?, CallResult)->())
     throws
     -> {{ .|call:file,service,method }} {
@@ -120,7 +120,7 @@ public class {{ .|serviceclass:file,service }} {
   /// Asynchronous. Server-streaming.
   /// Send the initial message.
   /// Use methods on the returned object to get streamed responses.
-  public func {{ method.name|lowercase }}(_ request: {{ method|input }}, completion: @escaping (CallResult)->())
+  {{ access }} func {{ method.name|lowercase }}(_ request: {{ method|input }}, completion: @escaping (CallResult)->())
     throws
     -> {{ .|call:file,service,method }} {
       return try {{ .|call:file,service,method }}(channel).start(request:request, metadata:metadata, completion:completion)
@@ -130,7 +130,7 @@ public class {{ .|serviceclass:file,service }} {
   /// Asynchronous. Client-streaming.
   /// Use methods on the returned object to stream messages and
   /// to close the connection and wait for a final response.
-  public func {{ method.name|lowercase }}(completion: @escaping (CallResult)->())
+  {{ access }} func {{ method.name|lowercase }}(completion: @escaping (CallResult)->())
     throws
     -> {{ .|call:file,service,method }} {
       return try {{ .|call:file,service,method }}(channel).start(metadata:metadata, completion:completion)
@@ -140,7 +140,7 @@ public class {{ .|serviceclass:file,service }} {
   /// Asynchronous. Bidirectional-streaming.
   /// Use methods on the returned object to stream messages,
   /// to wait for replies, and to close the connection.
-  public func {{ method.name|lowercase }}(completion: @escaping (CallResult)->())
+  {{ access }} func {{ method.name|lowercase }}(completion: @escaping (CallResult)->())
     throws
     -> {{ .|call:file,service,method }} {
       return try {{ .|call:file,service,method }}(channel).start(metadata:metadata, completion:completion)

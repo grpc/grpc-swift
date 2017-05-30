@@ -1,5 +1,5 @@
 /// {{ method.name }} (Bidirectional Streaming)
-public class {{ .|call:file,service,method }} {
+{{ access }} class {{ .|call:file,service,method }} {
   private var call : Call
 
   /// Create a call.
@@ -15,7 +15,7 @@ public class {{ .|call:file,service,method }} {
   }
 
   /// Call this to wait for a result. Blocking.
-  public func receive() throws -> {{ method|output }} {
+  {{ access }} func receive() throws -> {{ method|output }} {
     var returnError : {{ .|clienterror:file,service }}?
     var returnMessage : {{ method|output }}!
     let sem = DispatchSemaphore(value: 0)
@@ -34,7 +34,7 @@ public class {{ .|call:file,service,method }} {
   }
 
   /// Call this to wait for a result. Nonblocking.
-  public func receive(completion:@escaping ({{ method|output }}?, {{ .|clienterror:file,service }}?)->()) throws {
+  {{ access }} func receive(completion:@escaping ({{ method|output }}?, {{ .|clienterror:file,service }}?)->()) throws {
     do {
       try call.receiveMessage() {(data) in
         if let data = data {
@@ -51,13 +51,13 @@ public class {{ .|call:file,service,method }} {
   }
 
   /// Call this to send each message in the request stream.
-  public func send(_ message:{{ method|input }}, errorHandler:@escaping (Error)->()) throws {
+  {{ access }} func send(_ message:{{ method|input }}, errorHandler:@escaping (Error)->()) throws {
     let messageData = try message.serializedData()
     try call.sendMessage(data:messageData, errorHandler:errorHandler)
   }
 
   /// Call this to close the sending connection. Blocking.
-  public func closeSend() throws {
+  {{ access }} func closeSend() throws {
     let sem = DispatchSemaphore(value: 0)
     try closeSend() {
       sem.signal()
@@ -66,7 +66,7 @@ public class {{ .|call:file,service,method }} {
   }
 
   /// Call this to close the sending connection. Nonblocking.
-  public func closeSend(completion:@escaping ()->()) throws {
+  {{ access }} func closeSend(completion:@escaping ()->()) throws {
     try call.close() {
       completion()
     }

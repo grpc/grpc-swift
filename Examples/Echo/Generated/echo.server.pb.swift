@@ -44,12 +44,12 @@ import Dispatch
 import gRPC
 
 /// Type for errors thrown from generated server code.
-public enum Echo_EchoServerError : Error {
+internal enum Echo_EchoServerError : Error {
   case endOfStream
 }
 
 /// To build a server, implement a class that conforms to this protocol.
-public protocol Echo_EchoProvider {
+internal protocol Echo_EchoProvider {
   func get(request : Echo_EchoRequest, session : Echo_EchoGetSession) throws -> Echo_EchoResponse
   func expand(request : Echo_EchoRequest, session : Echo_EchoExpandSession) throws
   func collect(session : Echo_EchoCollectSession) throws
@@ -57,14 +57,14 @@ public protocol Echo_EchoProvider {
 }
 
 /// Common properties available in each service session.
-public class Echo_EchoSession {
+internal class Echo_EchoSession {
   fileprivate var handler : gRPC.Handler
-  public var requestMetadata : Metadata { return handler.requestMetadata }
+  internal var requestMetadata : Metadata { return handler.requestMetadata }
 
-  public var statusCode : Int = 0
-  public var statusMessage : String = "OK"
-  public var initialMetadata : Metadata = Metadata()
-  public var trailingMetadata : Metadata = Metadata()
+  internal var statusCode : Int = 0
+  internal var statusMessage : String = "OK"
+  internal var initialMetadata : Metadata = Metadata()
+  internal var trailingMetadata : Metadata = Metadata()
 
   fileprivate init(handler:gRPC.Handler) {
     self.handler = handler
@@ -72,7 +72,7 @@ public class Echo_EchoSession {
 }
 
 // Get (Unary)
-public class Echo_EchoGetSession : Echo_EchoSession {
+internal class Echo_EchoGetSession : Echo_EchoSession {
   private var provider : Echo_EchoProvider
 
   /// Create a session.
@@ -97,7 +97,7 @@ public class Echo_EchoGetSession : Echo_EchoSession {
 }
 
 // Expand (Server Streaming)
-public class Echo_EchoExpandSession : Echo_EchoSession {
+internal class Echo_EchoExpandSession : Echo_EchoSession {
   private var provider : Echo_EchoProvider
 
   /// Create a session.
@@ -107,7 +107,7 @@ public class Echo_EchoExpandSession : Echo_EchoSession {
   }
 
   /// Send a message. Nonblocking.
-  public func send(_ response: Echo_EchoResponse) throws {
+  internal func send(_ response: Echo_EchoResponse) throws {
     try handler.sendResponse(message:response.serializedData()) {}
   }
 
@@ -139,7 +139,7 @@ public class Echo_EchoExpandSession : Echo_EchoSession {
 }
 
 // Collect (Client Streaming)
-public class Echo_EchoCollectSession : Echo_EchoSession {
+internal class Echo_EchoCollectSession : Echo_EchoSession {
   private var provider : Echo_EchoProvider
 
   /// Create a session.
@@ -149,7 +149,7 @@ public class Echo_EchoCollectSession : Echo_EchoSession {
   }
 
   /// Receive a message. Blocks until a message is received or the client closes the connection.
-  public func receive() throws -> Echo_EchoRequest {
+  internal func receive() throws -> Echo_EchoRequest {
     let sem = DispatchSemaphore(value: 0)
     var requestMessage : Echo_EchoRequest?
     try self.handler.receiveMessage() {(requestData) in
@@ -166,7 +166,7 @@ public class Echo_EchoCollectSession : Echo_EchoSession {
   }
 
   /// Send a response and close the connection.
-  public func sendAndClose(_ response: Echo_EchoResponse) throws {
+  internal func sendAndClose(_ response: Echo_EchoResponse) throws {
     try self.handler.sendResponse(message:response.serializedData(),
                                   statusCode:self.statusCode,
                                   statusMessage:self.statusMessage,
@@ -188,7 +188,7 @@ public class Echo_EchoCollectSession : Echo_EchoSession {
 }
 
 // Update (Bidirectional Streaming)
-public class Echo_EchoUpdateSession : Echo_EchoSession {
+internal class Echo_EchoUpdateSession : Echo_EchoSession {
   private var provider : Echo_EchoProvider
 
   /// Create a session.
@@ -198,7 +198,7 @@ public class Echo_EchoUpdateSession : Echo_EchoSession {
   }
 
   /// Receive a message. Blocks until a message is received or the client closes the connection.
-  public func receive() throws -> Echo_EchoRequest {
+  internal func receive() throws -> Echo_EchoRequest {
     let sem = DispatchSemaphore(value: 0)
     var requestMessage : Echo_EchoRequest?
     try self.handler.receiveMessage() {(requestData) in
@@ -220,12 +220,12 @@ public class Echo_EchoUpdateSession : Echo_EchoSession {
   }
 
   /// Send a message. Nonblocking.
-  public func send(_ response: Echo_EchoResponse) throws {
+  internal func send(_ response: Echo_EchoResponse) throws {
     try handler.sendResponse(message:response.serializedData()) {}
   }
 
   /// Close a connection. Blocks until the connection is closed.
-  public func close() throws {
+  internal func close() throws {
     let sem = DispatchSemaphore(value: 0)
     try self.handler.sendStatus(statusCode:self.statusCode,
                                 statusMessage:self.statusMessage,
@@ -251,13 +251,13 @@ public class Echo_EchoUpdateSession : Echo_EchoSession {
 
 
 /// Main server for generated service
-public class Echo_EchoServer {
+internal class Echo_EchoServer {
   private var address: String
   private var server: gRPC.Server
   private var provider: Echo_EchoProvider?
 
   /// Create a server that accepts insecure connections.
-  public init(address:String,
+  internal init(address:String,
               provider:Echo_EchoProvider) {
     gRPC.initialize()
     self.address = address
@@ -266,7 +266,7 @@ public class Echo_EchoServer {
   }
 
   /// Create a server that accepts secure connections.
-  public init?(address:String,
+  internal init?(address:String,
                certificateURL:URL,
                keyURL:URL,
                provider:Echo_EchoProvider) {
@@ -283,7 +283,7 @@ public class Echo_EchoServer {
   }
 
   /// Start the server.
-  public func start(queue:DispatchQueue = DispatchQueue.global()) {
+  internal func start(queue:DispatchQueue = DispatchQueue.global()) {
     guard let provider = self.provider else {
       assert(false) // the server requires a provider
     }

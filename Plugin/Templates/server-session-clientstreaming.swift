@@ -1,5 +1,5 @@
 // {{ method.name }} (Client Streaming)
-public class {{ .|session:file,service,method }} : {{ .|service:file,service }}Session {
+{{ access }} class {{ .|session:file,service,method }} : {{ .|service:file,service }}Session {
   private var provider : {{ .|provider:file,service }}
 
   /// Create a session.
@@ -9,7 +9,7 @@ public class {{ .|session:file,service,method }} : {{ .|service:file,service }}S
   }
 
   /// Receive a message. Blocks until a message is received or the client closes the connection.
-  public func receive() throws -> {{ method|input }} {
+  {{ access }} func receive() throws -> {{ method|input }} {
     let sem = DispatchSemaphore(value: 0)
     var requestMessage : {{ method|input }}?
     try self.handler.receiveMessage() {(requestData) in
@@ -26,7 +26,7 @@ public class {{ .|session:file,service,method }} : {{ .|service:file,service }}S
   }
 
   /// Send a response and close the connection.
-  public func sendAndClose(_ response: {{ method|output }}) throws {
+  {{ access }} func sendAndClose(_ response: {{ method|output }}) throws {
     try self.handler.sendResponse(message:response.serializedData(),
                                   statusCode:self.statusCode,
                                   statusMessage:self.statusMessage,

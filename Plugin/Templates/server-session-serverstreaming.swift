@@ -1,5 +1,5 @@
 // {{ method.name }} (Server Streaming)
-public class {{ .|session:file,service,method }} : {{ .|service:file,service }}Session {
+{{ access }} class {{ .|session:file,service,method }} : {{ .|service:file,service }}Session {
   private var provider : {{ .|provider:file,service }}
 
   /// Create a session.
@@ -9,7 +9,7 @@ public class {{ .|session:file,service,method }} : {{ .|service:file,service }}S
   }
 
   /// Send a message. Nonblocking.
-  public func send(_ response: {{ method|output }}) throws {
+  {{ access }} func send(_ response: {{ method|output }}) throws {
     try handler.sendResponse(message:response.serializedData()) {}
   }
 
