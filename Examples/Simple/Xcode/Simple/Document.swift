@@ -244,7 +244,7 @@ class Document: NSDocument {
         Swift.print("call error \(callError)")
       }
     }
-    
+
     self.server.onCompletion() {
       self.log("Server Stopped")
       self.updateInterfaceAfterStopping()

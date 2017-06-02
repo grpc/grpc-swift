@@ -109,7 +109,7 @@ internal class OperationGroup {
   }
 
   /// WARNING: The following assumes that at most one operation of each type is in the group.
-  
+
   /// Gets the message that was received
   ///
   /// - Returns: message

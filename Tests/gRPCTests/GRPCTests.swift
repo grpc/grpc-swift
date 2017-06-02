@@ -23,7 +23,7 @@ func Log(_ message : String) {
 }
 
 class gRPCTests: XCTestCase {
-  
+
   func testBasicSanity() {
     gRPC.initialize()
     let latch = CountDownLatch(2)

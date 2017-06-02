@@ -248,7 +248,7 @@ public class Call {
         (self.messageQueue.count == Call.messageQueueMaxLength) {
         throw CallWarning.blocked
       }
-      self.messageQueue.append(data) 
+      self.messageQueue.append(data)
     } else {
       self.writing = true
       try self.sendWithoutBlocking(data: data, errorHandler:errorHandler)

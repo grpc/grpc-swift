@@ -35,9 +35,9 @@ public class Mutex {
 
   /// Locks a Mutex
   ///
-  /// Waits until no thread has a lock on the Mutex, 
+  /// Waits until no thread has a lock on the Mutex,
   /// causes the calling thread to own an exclusive lock on the Mutex,
-  /// then returns. 
+  /// then returns.
   ///
   /// May block indefinitely or crash if the calling thread has a lock on the Mutex.
   public func lock() {
