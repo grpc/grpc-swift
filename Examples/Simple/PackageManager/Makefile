@@ -1,8 +1,6 @@
 
-LDFLAGS = -Xlinker -lz 
-
 all:
-	swift build -v $(LDFLAGS)
+	swift build
 
 clean :
 	rm -rf Packages

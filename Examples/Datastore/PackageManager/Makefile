@@ -1,8 +1,6 @@
 
-LDFLAGS = -Xlinker -lz 
-
 all:
-	swift build -v $(LDFLAGS)
+	swift build
 	cp .build/debug/Datastore .
 
 clean :
