@@ -1,7 +1,7 @@
 
 CFLAGS = -Xcc -ISources/BoringSSL/include
 
-LDFLAGS = -Xlinker -lz 
+#LDFLAGS = -Xlinker -lz 
 
 all:
 	swift package generate-xcodeproj

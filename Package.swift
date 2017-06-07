@@ -22,5 +22,8 @@ let package = Package(
            dependencies: ["CgRPC"]),
     Target(name: "CgRPC",
            dependencies: ["BoringSSL"]),
+  ],
+  dependencies: [
+    .Package(url: "https://github.com/Zewo/zlib.git", majorVersion: 0, minor: 4),
   ]
 )
