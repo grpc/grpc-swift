@@ -45,7 +45,7 @@ guard let authToken = tokenProvider.token?.accessToken else {
 let projectID = "<YOUR PROJECT ID>"
 
 let certificateURL = URL(fileURLWithPath:"roots.pem")
-let certificates = try! String(contentsOf: certificateURL)
+let certificates = try! String(contentsOf: certificateURL, encoding: .utf8)
 let service = Google_Datastore_V1_DatastoreService(address:"datastore.googleapis.com",
                                                    certificates:certificates,
                                                    host:nil)
@@ -53,7 +53,7 @@ let service = Google_Datastore_V1_DatastoreService(address:"datastore.googleapis
 service.metadata = Metadata(["authorization":"Bearer " + authToken])
 
 var request = Google_Datastore_V1_RunQueryRequest()
-request.projectId = projectID
+request.projectID = projectID
 
 var query = Google_Datastore_V1_GqlQuery()
 query.queryString = "select *"
