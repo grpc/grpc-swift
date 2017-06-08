@@ -17,7 +17,8 @@ import PackageDescription
 let package = Package (
     name: "Datastore",
     dependencies: [
-        .Package(url: "https://github.com/grpc/grpc-swift.git", Version(0,1,12)),
+        .Package(url: "https://github.com/grpc/grpc-swift.git", Version(0,1,13)),
         .Package(url: "https://github.com/apple/swift-protobuf.git", Version(0,9,901)),
+	.Package(url: "https://github.com/google/auth-library-swift.git", Version(0,2,0)),
     ]
 )

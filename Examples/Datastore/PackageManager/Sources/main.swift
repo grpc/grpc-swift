@@ -15,18 +15,40 @@
  */
 import Foundation
 import gRPC
+import OAuth2
+
+let CREDENTIALS = "google.yaml" // in $HOME/.credentials
+let TOKEN = "google.json" // local auth token storage
+
+#if os(OSX)
+// On OS X, we use the local browser to help the user get a token.
+let tokenProvider = try BrowserTokenProvider(credentials:CREDENTIALS, token:TOKEN)
+if tokenProvider.token == nil {
+  try tokenProvider.signIn(scopes:["profile",
+                                   "https://www.googleapis.com/auth/contacts.readonly",
+                                   "https://www.googleapis.com/auth/cloud-platform"])
+  try tokenProvider.saveToken(TOKEN)
+}
+#else
+// On Linux, we can get a token if we are running in Google Cloud Shell
+// or in some other Google Cloud instance (GAE, GKE, GCE, etc).
+let tokenProvider = try GoogleTokenProvider()
+#endif
 
 gRPC.initialize()
 
-let authToken = "<YOUR AUTH TOKEN>"
+guard let authToken = tokenProvider.token?.accessToken else {
+  print("ERROR: No OAuth token is avaiable.")
+  exit(-1)
+}
 
 let projectID = "<YOUR PROJECT ID>"
 
 let certificateURL = URL(fileURLWithPath:"roots.pem")
 let certificates = try! String(contentsOf: certificateURL)
 let service = Google_Datastore_V1_DatastoreService(address:"datastore.googleapis.com",
-                               certificates:certificates,
-                               host:nil)
+                                                   certificates:certificates,
+                                                   host:nil)
 
 service.metadata = Metadata(["authorization":"Bearer " + authToken])
 
@@ -40,6 +62,9 @@ request.gqlQuery = query
 
 print("\(request)")
 
-let result = try service.runquery(request)
-
-print("\(result)")
+do {
+  let result = try service.runquery(request)
+  print("\(result)")
+} catch (let error) {
+  print("ERROR: \(error)")
+}
