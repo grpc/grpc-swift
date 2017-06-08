@@ -71,13 +71,21 @@ public class Metadata : CustomStringConvertible, NSCopying {
   }
 
   public func key(_ index: Int) -> (String) {
-    return String(cString:cgrpc_metadata_array_get_key_at_index(underlyingArray, index),
-                  encoding:String.Encoding.utf8)!;
+    if let key = String(cString:cgrpc_metadata_array_get_key_at_index(underlyingArray, index),
+                        encoding:String.Encoding.utf8) {
+      return key
+    } else {
+      return "<binary-metadata-key>"
+    }
   }
 
   public func value(_ index: Int) -> (String) {
-    return String(cString:cgrpc_metadata_array_get_value_at_index(underlyingArray, index),
-                  encoding:String.Encoding.utf8)!;
+    if let value = String(cString:cgrpc_metadata_array_get_value_at_index(underlyingArray, index),
+                          encoding:String.Encoding.utf8) {
+      return value
+    } else {
+      return "<binary-metadata-value>"
+    }
   }
 
   public func add(key:String, value:String) {
