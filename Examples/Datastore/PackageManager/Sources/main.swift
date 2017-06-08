@@ -42,7 +42,7 @@ guard let authToken = tokenProvider.token?.accessToken else {
   exit(-1)
 }
 
-let projectID = "<YOUR PROJECT ID>"
+let projectID = "YOUR PROJECT ID"
 
 let certificateURL = URL(fileURLWithPath:"roots.pem")
 let certificates = try! String(contentsOf: certificateURL, encoding: .utf8)
