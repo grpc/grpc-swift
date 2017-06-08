@@ -6,35 +6,25 @@ Calls are made directly to the Datastore RPC interface.
 In practice, these would be wrapped in idiomatic code.
 
 Use [RUNME](RUNME) to generate the necessary Protocol Buffer
-and gRPC support code.
+and gRPC support code. It uses protoc and the Swift Protocol
+Buffer and gRPC plugins, so please be sure these are in your
+path. The plugins can be built by running `make` in the 
+top-level Plugins directory.
 
 Calls require a Google project ID and an OAuth token.
-Both should be specified in [Sources/main.swift](Sources/main.swift).
 
 To create a project ID, visit the 
 [Google Cloud Console](https://cloud.google.com/console).
+Then edit [Sources/main.swift](Sources/main.swift) to 
+replace "YOUR PROJECT ID" with your project ID.
 
-One easy way to get an OAuth token is to use the 
+OAuth tokens are obtained using Google's 
+[Auth Library for Swift](https://github.com/google/auth-library-swift).
+On OS X, this package uses a locally-installed browser and
+a temporary web server to take a user through an OAuth signin flow.
+On Linux, it gets an OAuth token from the
 [Instance Metadata Service](https://cloud.google.com/compute/docs/storing-retrieving-metadata)
-that is available in Google cloud instances, such as 
+that is available in Google Cloud instances, such as 
 [Google Compute Engine](https://cloud.google.com/compute/)
 or 
 [Google Cloud Shell](https://cloud.google.com/shell/docs/).
-This allows you to get a short-lived service token with curl:
-
-    curl \
-	  http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token \
-	  -H Metadata-Flavor:Google
-
-That will return something like the following:
-
-	{"access_token":"OAUTH ACCESS TOKEN","expires_in":1799,"token_type":"Bearer"}
-    
-
-Put the string matching OAUTH ACCESS TOKEN in the `authToken` variable in 
-[Sources/main.swift](Sources/main.swift).
-Please note that you must run the `curl` command from within a Google cloud instance.
-Once you have the OAuth token, you can use it from anywhere until it expires.
-
-CAUTION: Please take care to not share your OAuth token. 
-It provides access to all of your Google services.
