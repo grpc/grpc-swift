@@ -61,7 +61,7 @@ Start a docker instance with the following command:
 
 ## Build the Echo sample
     cd
-    cd grpc-swift/Examples/Echo/Swift/SwiftPM
+    cd grpc-swift/Examples/Echo/PackageManager
     make
 
 ## Run the test client and server 
