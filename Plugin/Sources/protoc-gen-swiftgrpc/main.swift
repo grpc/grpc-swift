@@ -56,7 +56,9 @@ func main() throws {
   // read plugin input
   let rawRequest = try Stdin.readall()
   let request = try Google_Protobuf_Compiler_CodeGeneratorRequest(serializedData: rawRequest)
-
+  
+  let options = try GeneratorOptions(parameter: request.parameter)
+  
   var generatedFileNames = Set<String>()
 
   // process each .proto file separately
@@ -87,7 +89,7 @@ func main() throws {
     if file.service.count > 0 {
 
       // generate separate implementation files for client and server
-      let context : [String:Any] = ["file": file, "access": "internal"]
+      let context : [String:Any] = ["file": file, "access": options.visibility.sourceSnippet]
 
       do {
         let clientFileName = package + ".client.pb.swift"
