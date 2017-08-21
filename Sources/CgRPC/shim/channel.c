@@ -29,7 +29,7 @@ cgrpc_channel *cgrpc_channel_create(const char *address) {
   grpc_channel_args channel_args;
   channel_args.num_args = 0;
   c->channel = grpc_insecure_channel_create(address, &channel_args, NULL);
-  c->completion_queue = grpc_completion_queue_create(NULL);
+  c->completion_queue = grpc_completion_queue_create(NULL, NULL, NULL);
   return c;
 }
 
@@ -61,7 +61,7 @@ cgrpc_channel *cgrpc_channel_create_secure(const char *address,
 
   grpc_channel_credentials *creds = grpc_ssl_credentials_create(pem_root_certs, NULL, NULL);
   c->channel = grpc_secure_channel_create(creds, address, channelArgs, NULL);
-  c->completion_queue = grpc_completion_queue_create(NULL);
+  c->completion_queue = grpc_completion_queue_create(NULL, NULL, NULL);
   return c;
 }
 
@@ -81,13 +81,14 @@ cgrpc_call *cgrpc_channel_create_call(cgrpc_channel *channel,
                                       const char *host,
                                       double timeout) {
   // create call
+  grpc_slice host_slice = grpc_slice_from_copied_string(host);
   gpr_timespec deadline = cgrpc_deadline_in_seconds_from_now(timeout);
   grpc_call *channel_call = grpc_channel_create_call(channel->channel,
                                                      NULL,
                                                      GRPC_PROPAGATE_DEFAULTS,
                                                      channel->completion_queue,
-                                                     method,
-                                                     host,
+                                                     grpc_slice_from_copied_string(method),
+                                                     &host_slice, // this might crash
                                                      deadline,
                                                      NULL);
   cgrpc_call *call = (cgrpc_call *) malloc(sizeof(cgrpc_call));

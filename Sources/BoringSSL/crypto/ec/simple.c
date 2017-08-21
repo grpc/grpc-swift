@@ -74,6 +74,7 @@
 #include <openssl/mem.h>
 
 #include "internal.h"
+#include "../internal.h"
 
 
 /* Most method functions in this file are designed to work with non-trivial
@@ -82,16 +83,16 @@
  * field_sqr methods will be used for multiplication, and field_encode and
  * field_decode (if defined) will be used for converting between
  * representations.
-
- * Functions ec_GFp_simple_points_make_affine() and
- * ec_GFp_simple_point_get_affine_coordinates() specifically assume that if a
- * non-trivial representation is used, it is a Montgomery representation (i.e.
- * 'encoding' means multiplying by some factor R). */
+ *
+ * Functions here specifically assume that if a non-trivial representation is
+ * used, it is a Montgomery representation (i.e. 'encoding' means multiplying
+ * by some factor R). */
 
 int ec_GFp_simple_group_init(EC_GROUP *group) {
   BN_init(&group->field);
   BN_init(&group->a);
   BN_init(&group->b);
+  BN_init(&group->one);
   group->a_is_minus3 = 0;
   return 1;
 }
@@ -100,12 +101,14 @@ void ec_GFp_simple_group_finish(EC_GROUP *group) {
   BN_free(&group->field);
   BN_free(&group->a);
   BN_free(&group->b);
+  BN_free(&group->one);
 }
 
 int ec_GFp_simple_group_copy(EC_GROUP *dest, const EC_GROUP *src) {
   if (!BN_copy(&dest->field, &src->field) ||
       !BN_copy(&dest->a, &src->a) ||
-      !BN_copy(&dest->b, &src->b)) {
+      !BN_copy(&dest->b, &src->b) ||
+      !BN_copy(&dest->one, &src->one)) {
     return 0;
   }
 
@@ -172,6 +175,14 @@ int ec_GFp_simple_group_set_curve(EC_GROUP *group, const BIGNUM *p,
   }
   group->a_is_minus3 = (0 == BN_cmp(tmp_a, &group->field));
 
+  if (group->meth->field_encode != NULL) {
+    if (!group->meth->field_encode(group, &group->one, BN_value_one(), ctx)) {
+      goto err;
+    }
+  } else if (!BN_copy(&group->one, BN_value_one())) {
+    goto err;
+  }
+
   ret = 1;
 
 err:
@@ -228,7 +239,6 @@ int ec_GFp_simple_point_init(EC_POINT *point) {
   BN_init(&point->X);
   BN_init(&point->Y);
   BN_init(&point->Z);
-  point->Z_is_one = 0;
 
   return 1;
 }
@@ -243,7 +253,6 @@ void ec_GFp_simple_point_clear_finish(EC_POINT *point) {
   BN_clear_free(&point->X);
   BN_clear_free(&point->Y);
   BN_clear_free(&point->Z);
-  point->Z_is_one = 0;
 }
 
 int ec_GFp_simple_point_copy(EC_POINT *dest, const EC_POINT *src) {
@@ -252,16 +261,30 @@ int ec_GFp_simple_point_copy(EC_POINT *dest, const EC_POINT *src) {
       !BN_copy(&dest->Z, &src->Z)) {
     return 0;
   }
-  dest->Z_is_one = src->Z_is_one;
 
   return 1;
 }
 
 int ec_GFp_simple_point_set_to_infinity(const EC_GROUP *group,
                                         EC_POINT *point) {
-  point->Z_is_one = 0;
   BN_zero(&point->Z);
   return 1;
+}
+
+static int set_Jprojective_coordinate_GFp(const EC_GROUP *group, BIGNUM *out,
+                                          const BIGNUM *in, BN_CTX *ctx) {
+  if (in == NULL) {
+    return 1;
+  }
+  if (BN_is_negative(in) ||
+      BN_cmp(in, &group->field) >= 0) {
+    OPENSSL_PUT_ERROR(EC, EC_R_COORDINATES_OUT_OF_RANGE);
+    return 0;
+  }
+  if (group->meth->field_encode) {
+    return group->meth->field_encode(group, out, in, ctx);
+  }
+  return BN_copy(out, in) != NULL;
 }
 
 int ec_GFp_simple_set_Jprojective_coordinates_GFp(
@@ -277,43 +300,10 @@ int ec_GFp_simple_set_Jprojective_coordinates_GFp(
     }
   }
 
-  if (x != NULL) {
-    if (!BN_nnmod(&point->X, x, &group->field, ctx)) {
-      goto err;
-    }
-    if (group->meth->field_encode &&
-        !group->meth->field_encode(group, &point->X, &point->X, ctx)) {
-      goto err;
-    }
-  }
-
-  if (y != NULL) {
-    if (!BN_nnmod(&point->Y, y, &group->field, ctx)) {
-      goto err;
-    }
-    if (group->meth->field_encode &&
-        !group->meth->field_encode(group, &point->Y, &point->Y, ctx)) {
-      goto err;
-    }
-  }
-
-  if (z != NULL) {
-    int Z_is_one;
-
-    if (!BN_nnmod(&point->Z, z, &group->field, ctx)) {
-      goto err;
-    }
-    Z_is_one = BN_is_one(&point->Z);
-    if (group->meth->field_encode) {
-      if (Z_is_one && (group->meth->field_set_to_one != 0)) {
-        if (!group->meth->field_set_to_one(group, &point->Z, ctx)) {
-          goto err;
-        }
-      } else if (!group->meth->field_encode(group, &point->Z, &point->Z, ctx)) {
-        goto err;
-      }
-    }
-    point->Z_is_one = Z_is_one;
+  if (!set_Jprojective_coordinate_GFp(group, &point->X, x, ctx) ||
+      !set_Jprojective_coordinate_GFp(group, &point->Y, y, ctx) ||
+      !set_Jprojective_coordinate_GFp(group, &point->Z, z, ctx)) {
+    goto err;
   }
 
   ret = 1;
@@ -379,109 +369,6 @@ int ec_GFp_simple_point_set_affine_coordinates(const EC_GROUP *group,
                                                   BN_value_one(), ctx);
 }
 
-int ec_GFp_simple_point_get_affine_coordinates(const EC_GROUP *group,
-                                               const EC_POINT *point, BIGNUM *x,
-                                               BIGNUM *y, BN_CTX *ctx) {
-  BN_CTX *new_ctx = NULL;
-  BIGNUM *Z, *Z_1, *Z_2, *Z_3;
-  const BIGNUM *Z_;
-  int ret = 0;
-
-  if (EC_POINT_is_at_infinity(group, point)) {
-    OPENSSL_PUT_ERROR(EC, EC_R_POINT_AT_INFINITY);
-    return 0;
-  }
-
-  if (ctx == NULL) {
-    ctx = new_ctx = BN_CTX_new();
-    if (ctx == NULL) {
-      return 0;
-    }
-  }
-
-  BN_CTX_start(ctx);
-  Z = BN_CTX_get(ctx);
-  Z_1 = BN_CTX_get(ctx);
-  Z_2 = BN_CTX_get(ctx);
-  Z_3 = BN_CTX_get(ctx);
-  if (Z == NULL || Z_1 == NULL || Z_2 == NULL || Z_3 == NULL) {
-    goto err;
-  }
-
-  /* transform  (X, Y, Z)  into  (x, y) := (X/Z^2, Y/Z^3) */
-
-  if (group->meth->field_decode) {
-    if (!group->meth->field_decode(group, Z, &point->Z, ctx)) {
-      goto err;
-    }
-    Z_ = Z;
-  } else {
-    Z_ = &point->Z;
-  }
-
-  if (BN_is_one(Z_)) {
-    if (group->meth->field_decode) {
-      if (x != NULL && !group->meth->field_decode(group, x, &point->X, ctx)) {
-        goto err;
-      }
-      if (y != NULL && !group->meth->field_decode(group, y, &point->Y, ctx)) {
-        goto err;
-      }
-    } else {
-      if (x != NULL && !BN_copy(x, &point->X)) {
-        goto err;
-      }
-      if (y != NULL && !BN_copy(y, &point->Y)) {
-        goto err;
-      }
-    }
-  } else {
-    if (!BN_mod_inverse(Z_1, Z_, &group->field, ctx)) {
-      OPENSSL_PUT_ERROR(EC, ERR_R_BN_LIB);
-      goto err;
-    }
-
-    if (group->meth->field_encode == 0) {
-      /* field_sqr works on standard representation */
-      if (!group->meth->field_sqr(group, Z_2, Z_1, ctx)) {
-        goto err;
-      }
-    } else if (!BN_mod_sqr(Z_2, Z_1, &group->field, ctx)) {
-      goto err;
-    }
-
-    /* in the Montgomery case, field_mul will cancel out Montgomery factor in
-     * X: */
-    if (x != NULL && !group->meth->field_mul(group, x, &point->X, Z_2, ctx)) {
-      goto err;
-    }
-
-    if (y != NULL) {
-      if (group->meth->field_encode == 0) {
-        /* field_mul works on standard representation */
-        if (!group->meth->field_mul(group, Z_3, Z_2, Z_1, ctx)) {
-          goto err;
-        }
-      } else if (!BN_mod_mul(Z_3, Z_2, Z_1, &group->field, ctx)) {
-        goto err;
-      }
-
-      /* in the Montgomery case, field_mul will cancel out Montgomery factor in
-       * Y: */
-      if (!group->meth->field_mul(group, y, &point->Y, Z_3, ctx)) {
-        goto err;
-      }
-    }
-  }
-
-  ret = 1;
-
-err:
-  BN_CTX_end(ctx);
-  BN_CTX_free(new_ctx);
-  return ret;
-}
-
 int ec_GFp_simple_add(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a,
                       const EC_POINT *b, BN_CTX *ctx) {
   int (*field_mul)(const EC_GROUP *, BIGNUM *, const BIGNUM *, const BIGNUM *,
@@ -531,7 +418,9 @@ int ec_GFp_simple_add(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a,
    */
 
   /* n1, n2 */
-  if (b->Z_is_one) {
+  int b_Z_is_one = BN_cmp(&b->Z, &group->one) == 0;
+
+  if (b_Z_is_one) {
     if (!BN_copy(n1, &a->X) || !BN_copy(n2, &a->Y)) {
       goto end;
     }
@@ -552,7 +441,8 @@ int ec_GFp_simple_add(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a,
   }
 
   /* n3, n4 */
-  if (a->Z_is_one) {
+  int a_Z_is_one = BN_cmp(&a->Z, &group->one) == 0;
+  if (a_Z_is_one) {
     if (!BN_copy(n3, &b->X) || !BN_copy(n4, &b->Y)) {
       goto end;
     }
@@ -590,7 +480,6 @@ int ec_GFp_simple_add(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a,
     } else {
       /* a is the inverse of b */
       BN_zero(&r->Z);
-      r->Z_is_one = 0;
       ret = 1;
       goto end;
     }
@@ -605,16 +494,16 @@ int ec_GFp_simple_add(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a,
   /* 'n8' = n2 + n4 */
 
   /* Z_r */
-  if (a->Z_is_one && b->Z_is_one) {
+  if (a_Z_is_one && b_Z_is_one) {
     if (!BN_copy(&r->Z, n5)) {
       goto end;
     }
   } else {
-    if (a->Z_is_one) {
+    if (a_Z_is_one) {
       if (!BN_copy(n0, &b->Z)) {
         goto end;
       }
-    } else if (b->Z_is_one) {
+    } else if (b_Z_is_one) {
       if (!BN_copy(n0, &a->Z)) {
         goto end;
       }
@@ -625,7 +514,7 @@ int ec_GFp_simple_add(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a,
       goto end;
     }
   }
-  r->Z_is_one = 0;
+
   /* Z_r = Z_a * Z_b * n5 */
 
   /* X_r */
@@ -685,7 +574,6 @@ int ec_GFp_simple_dbl(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a,
 
   if (EC_POINT_is_at_infinity(group, a)) {
     BN_zero(&r->Z);
-    r->Z_is_one = 0;
     return 1;
   }
 
@@ -715,7 +603,7 @@ int ec_GFp_simple_dbl(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a,
    */
 
   /* n1 */
-  if (a->Z_is_one) {
+  if (BN_cmp(&a->Z, &group->one) == 0) {
     if (!field_sqr(group, n0, &a->X, ctx) ||
         !BN_mod_lshift1_quick(n1, n0, p) ||
         !BN_mod_add_quick(n0, n0, n1, p) ||
@@ -748,7 +636,7 @@ int ec_GFp_simple_dbl(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a,
   }
 
   /* Z_r */
-  if (a->Z_is_one) {
+  if (BN_cmp(&a->Z, &group->one) == 0) {
     if (!BN_copy(n0, &a->Y)) {
       goto err;
     }
@@ -758,7 +646,6 @@ int ec_GFp_simple_dbl(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a,
   if (!BN_mod_lshift1_quick(&r->Z, n0, p)) {
     goto err;
   }
-  r->Z_is_one = 0;
   /* Z_r = 2 * Y_a * Z_a */
 
   /* n2 */
@@ -810,7 +697,7 @@ int ec_GFp_simple_invert(const EC_GROUP *group, EC_POINT *point, BN_CTX *ctx) {
 }
 
 int ec_GFp_simple_is_at_infinity(const EC_GROUP *group, const EC_POINT *point) {
-  return !point->Z_is_one && BN_is_zero(&point->Z);
+  return BN_is_zero(&point->Z);
 }
 
 int ec_GFp_simple_is_on_curve(const EC_GROUP *group, const EC_POINT *point,
@@ -821,7 +708,7 @@ int ec_GFp_simple_is_on_curve(const EC_GROUP *group, const EC_POINT *point,
   const BIGNUM *p;
   BN_CTX *new_ctx = NULL;
   BIGNUM *rh, *tmp, *Z4, *Z6;
-  int ret = -1;
+  int ret = 0;
 
   if (EC_POINT_is_at_infinity(group, point)) {
     return 1;
@@ -834,7 +721,7 @@ int ec_GFp_simple_is_on_curve(const EC_GROUP *group, const EC_POINT *point,
   if (ctx == NULL) {
     ctx = new_ctx = BN_CTX_new();
     if (ctx == NULL) {
-      return -1;
+      return 0;
     }
   }
 
@@ -862,7 +749,7 @@ int ec_GFp_simple_is_on_curve(const EC_GROUP *group, const EC_POINT *point,
     goto err;
   }
 
-  if (!point->Z_is_one) {
+  if (BN_cmp(&point->Z, &group->one) != 0) {
     if (!field_sqr(group, tmp, &point->Z, ctx) ||
         !field_sqr(group, Z4, tmp, ctx) ||
         !field_mul(group, Z6, Z4, tmp, ctx)) {
@@ -891,8 +778,6 @@ int ec_GFp_simple_is_on_curve(const EC_GROUP *group, const EC_POINT *point,
       goto err;
     }
   } else {
-    /* point->Z_is_one */
-
     /* rh := (rh + a)*X */
     if (!BN_mod_add_quick(rh, rh, &group->a, p) ||
         !field_mul(group, rh, rh, &point->X, ctx)) {
@@ -941,7 +826,10 @@ int ec_GFp_simple_cmp(const EC_GROUP *group, const EC_POINT *a,
     return 1;
   }
 
-  if (a->Z_is_one && b->Z_is_one) {
+  int a_Z_is_one = BN_cmp(&a->Z, &group->one) == 0;
+  int b_Z_is_one = BN_cmp(&b->Z, &group->one) == 0;
+
+  if (a_Z_is_one && b_Z_is_one) {
     return ((BN_cmp(&a->X, &b->X) == 0) && BN_cmp(&a->Y, &b->Y) == 0) ? 0 : 1;
   }
 
@@ -970,7 +858,7 @@ int ec_GFp_simple_cmp(const EC_GROUP *group, const EC_POINT *a,
    *     (X_a*Z_b^2, Y_a*Z_b^3) = (X_b*Z_a^2, Y_b*Z_a^3).
    */
 
-  if (!b->Z_is_one) {
+  if (!b_Z_is_one) {
     if (!field_sqr(group, Zb23, &b->Z, ctx) ||
         !field_mul(group, tmp1, &a->X, Zb23, ctx)) {
       goto end;
@@ -979,7 +867,7 @@ int ec_GFp_simple_cmp(const EC_GROUP *group, const EC_POINT *a,
   } else {
     tmp1_ = &a->X;
   }
-  if (!a->Z_is_one) {
+  if (!a_Z_is_one) {
     if (!field_sqr(group, Za23, &a->Z, ctx) ||
         !field_mul(group, tmp2, &b->X, Za23, ctx)) {
       goto end;
@@ -996,7 +884,7 @@ int ec_GFp_simple_cmp(const EC_GROUP *group, const EC_POINT *a,
   }
 
 
-  if (!b->Z_is_one) {
+  if (!b_Z_is_one) {
     if (!field_mul(group, Zb23, Zb23, &b->Z, ctx) ||
         !field_mul(group, tmp1, &a->Y, Zb23, ctx)) {
       goto end;
@@ -1005,7 +893,7 @@ int ec_GFp_simple_cmp(const EC_GROUP *group, const EC_POINT *a,
   } else {
     tmp1_ = &a->Y;
   }
-  if (!a->Z_is_one) {
+  if (!a_Z_is_one) {
     if (!field_mul(group, Za23, Za23, &a->Z, ctx) ||
         !field_mul(group, tmp2, &b->Y, Za23, ctx)) {
       goto end;
@@ -1036,7 +924,8 @@ int ec_GFp_simple_make_affine(const EC_GROUP *group, EC_POINT *point,
   BIGNUM *x, *y;
   int ret = 0;
 
-  if (point->Z_is_one || EC_POINT_is_at_infinity(group, point)) {
+  if (BN_cmp(&point->Z, &group->one) == 0 ||
+      EC_POINT_is_at_infinity(group, point)) {
     return 1;
   }
 
@@ -1058,7 +947,7 @@ int ec_GFp_simple_make_affine(const EC_GROUP *group, EC_POINT *point,
       !EC_POINT_set_affine_coordinates_GFp(group, point, x, y, ctx)) {
     goto err;
   }
-  if (!point->Z_is_one) {
+  if (BN_cmp(&point->Z, &group->one) != 0) {
     OPENSSL_PUT_ERROR(EC, ERR_R_INTERNAL_ERROR);
     goto err;
   }
@@ -1076,7 +965,6 @@ int ec_GFp_simple_points_make_affine(const EC_GROUP *group, size_t num,
   BN_CTX *new_ctx = NULL;
   BIGNUM *tmp, *tmp_Z;
   BIGNUM **prod_Z = NULL;
-  size_t i;
   int ret = 0;
 
   if (num == 0) {
@@ -1101,8 +989,8 @@ int ec_GFp_simple_points_make_affine(const EC_GROUP *group, size_t num,
   if (prod_Z == NULL) {
     goto err;
   }
-  memset(prod_Z, 0, num * sizeof(prod_Z[0]));
-  for (i = 0; i < num; i++) {
+  OPENSSL_memset(prod_Z, 0, num * sizeof(prod_Z[0]));
+  for (size_t i = 0; i < num; i++) {
     prod_Z[i] = BN_new();
     if (prod_Z[i] == NULL) {
       goto err;
@@ -1117,18 +1005,12 @@ int ec_GFp_simple_points_make_affine(const EC_GROUP *group, size_t num,
       goto err;
     }
   } else {
-    if (group->meth->field_set_to_one != 0) {
-      if (!group->meth->field_set_to_one(group, prod_Z[0], ctx)) {
-        goto err;
-      }
-    } else {
-      if (!BN_one(prod_Z[0])) {
-        goto err;
-      }
+    if (BN_copy(prod_Z[0], &group->one) == NULL) {
+      goto err;
     }
   }
 
-  for (i = 1; i < num; i++) {
+  for (size_t i = 1; i < num; i++) {
     if (!BN_is_zero(&points[i]->Z)) {
       if (!group->meth->field_mul(group, prod_Z[i], prod_Z[i - 1],
                                   &points[i]->Z, ctx)) {
@@ -1141,10 +1023,16 @@ int ec_GFp_simple_points_make_affine(const EC_GROUP *group, size_t num,
     }
   }
 
-  /* Now use a single explicit inversion to replace every
-   * non-zero points[i]->Z by its inverse. */
-
-  if (!BN_mod_inverse(tmp, prod_Z[num - 1], &group->field, ctx)) {
+  /* Now use a single explicit inversion to replace every non-zero points[i]->Z
+   * by its inverse. We use |BN_mod_inverse_odd| instead of doing a constant-
+   * time inversion using Fermat's Little Theorem because this function is
+   * usually only used for converting multiples of a public key point to
+   * affine, and a public key point isn't secret. If we were to use Fermat's
+   * Little Theorem then the cost of the inversion would usually be so high
+   * that converting the multiples to affine would be counterproductive. */
+  int no_inverse;
+  if (!BN_mod_inverse_odd(tmp, &no_inverse, prod_Z[num - 1], &group->field,
+                          ctx)) {
     OPENSSL_PUT_ERROR(EC, ERR_R_BN_LIB);
     goto err;
   }
@@ -1159,7 +1047,7 @@ int ec_GFp_simple_points_make_affine(const EC_GROUP *group, size_t num,
     }
   }
 
-  for (i = num - 1; i > 0; --i) {
+  for (size_t i = num - 1; i > 0; --i) {
     /* Loop invariant: tmp is the product of the inverses of
      * points[0]->Z .. points[i]->Z (zero-valued inputs skipped). */
     if (BN_is_zero(&points[i]->Z)) {
@@ -1183,7 +1071,7 @@ int ec_GFp_simple_points_make_affine(const EC_GROUP *group, size_t num,
   }
 
   /* Finally, fix up the X and Y coordinates for all points. */
-  for (i = 0; i < num; i++) {
+  for (size_t i = 0; i < num; i++) {
     EC_POINT *p = points[i];
 
     if (!BN_is_zero(&p->Z)) {
@@ -1195,16 +1083,9 @@ int ec_GFp_simple_points_make_affine(const EC_GROUP *group, size_t num,
         goto err;
       }
 
-      if (group->meth->field_set_to_one != NULL) {
-        if (!group->meth->field_set_to_one(group, &p->Z, ctx)) {
-          goto err;
-        }
-      } else {
-        if (!BN_one(&p->Z)) {
-          goto err;
-        }
+      if (BN_copy(&p->Z, &group->one) == NULL) {
+        goto err;
       }
-      p->Z_is_one = 1;
     }
   }
 
@@ -1214,7 +1095,7 @@ err:
   BN_CTX_end(ctx);
   BN_CTX_free(new_ctx);
   if (prod_Z != NULL) {
-    for (i = 0; i < num; i++) {
+    for (size_t i = 0; i < num; i++) {
       if (prod_Z[i] == NULL) {
         break;
       }

@@ -163,7 +163,7 @@ int CRYPTO_get_ex_new_index(CRYPTO_EX_DATA_CLASS *ex_data_class, int *out_index,
   ret = 1;
 
 err:
-  CRYPTO_STATIC_MUTEX_unlock(&ex_data_class->lock);
+  CRYPTO_STATIC_MUTEX_unlock_write(&ex_data_class->lock);
   return ret;
 }
 
@@ -217,7 +217,7 @@ static int get_func_pointers(STACK_OF(CRYPTO_EX_DATA_FUNCS) **out,
   if (n > 0) {
     *out = sk_CRYPTO_EX_DATA_FUNCS_dup(ex_data_class->meth);
   }
-  CRYPTO_STATIC_MUTEX_unlock(&ex_data_class->lock);
+  CRYPTO_STATIC_MUTEX_unlock_read(&ex_data_class->lock);
 
   if (n > 0 && *out == NULL) {
     OPENSSL_PUT_ERROR(CRYPTO, ERR_R_MALLOC_FAILURE);
@@ -244,8 +244,7 @@ int CRYPTO_dup_ex_data(CRYPTO_EX_DATA_CLASS *ex_data_class, CRYPTO_EX_DATA *to,
     return 0;
   }
 
-  size_t i;
-  for (i = 0; i < sk_CRYPTO_EX_DATA_FUNCS_num(func_pointers); i++) {
+  for (size_t i = 0; i < sk_CRYPTO_EX_DATA_FUNCS_num(func_pointers); i++) {
     CRYPTO_EX_DATA_FUNCS *func_pointer =
         sk_CRYPTO_EX_DATA_FUNCS_value(func_pointers, i);
     void *ptr = CRYPTO_get_ex_data(from, i + ex_data_class->num_reserved);
@@ -274,8 +273,7 @@ void CRYPTO_free_ex_data(CRYPTO_EX_DATA_CLASS *ex_data_class, void *obj,
     return;
   }
 
-  size_t i;
-  for (i = 0; i < sk_CRYPTO_EX_DATA_FUNCS_num(func_pointers); i++) {
+  for (size_t i = 0; i < sk_CRYPTO_EX_DATA_FUNCS_num(func_pointers); i++) {
     CRYPTO_EX_DATA_FUNCS *func_pointer =
         sk_CRYPTO_EX_DATA_FUNCS_value(func_pointers, i);
     if (func_pointer->free_func) {

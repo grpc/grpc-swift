@@ -60,7 +60,6 @@
 #include <string.h>
 
 #include <openssl/asn1.h>
-#include <openssl/bn.h>
 #include <openssl/buf.h>
 #include <openssl/bytestring.h>
 #include <openssl/cipher.h>
@@ -68,9 +67,12 @@
 #include <openssl/err.h>
 #include <openssl/hmac.h>
 #include <openssl/mem.h>
+#include <openssl/obj.h>
+#include <openssl/rand.h>
 #include <openssl/x509.h>
 
 #include "internal.h"
+#include "../internal.h"
 #include "../bytestring/internal.h"
 
 
@@ -80,23 +82,21 @@
 
 static int ascii_to_ucs2(const char *ascii, size_t ascii_len,
                          uint8_t **out, size_t *out_len) {
-  uint8_t *unitmp;
-  size_t ulen, i;
-
-  ulen = ascii_len * 2 + 2;
-  if (ulen < ascii_len) {
+  size_t ulen = ascii_len * 2 + 2;
+  if (ascii_len * 2 < ascii_len || ulen < ascii_len * 2) {
     return 0;
   }
-  unitmp = OPENSSL_malloc(ulen);
+
+  uint8_t *unitmp = OPENSSL_malloc(ulen);
   if (unitmp == NULL) {
     return 0;
   }
-  for (i = 0; i < ulen - 2; i += 2) {
+  for (size_t i = 0; i < ulen - 2; i += 2) {
     unitmp[i] = 0;
     unitmp[i + 1] = ascii[i >> 1];
   }
 
-  /* Make result double null terminated */
+  /* Terminate the result with a UCS-2 NUL. */
   unitmp[ulen - 2] = 0;
   unitmp[ulen - 1] = 0;
   *out_len = ulen;
@@ -106,201 +106,197 @@ static int ascii_to_ucs2(const char *ascii, size_t ascii_len,
 
 static int pkcs12_key_gen_raw(const uint8_t *pass_raw, size_t pass_raw_len,
                               const uint8_t *salt, size_t salt_len,
-                              int id, int iterations,
+                              uint8_t id, unsigned iterations,
                               size_t out_len, uint8_t *out,
-                              const EVP_MD *md_type) {
-  uint8_t *B, *D, *I, *p, *Ai;
-  int Slen, Plen, Ilen, Ijlen;
-  int i, j, v;
-  size_t u;
-  int ret = 0;
-  BIGNUM *Ij, *Bpl1; /* These hold Ij and B + 1 */
-  EVP_MD_CTX ctx;
+                              const EVP_MD *md) {
+  /* See https://tools.ietf.org/html/rfc7292#appendix-B. Quoted parts of the
+   * specification have errata applied and other typos fixed. */
 
+  if (iterations < 1) {
+    OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_ITERATION_COUNT);
+    return 0;
+  }
+
+  /* In the spec, |block_size| is called "v", but measured in bits. */
+  size_t block_size = EVP_MD_block_size(md);
+
+  /* 1. Construct a string, D (the "diversifier"), by concatenating v/8 copies
+   * of ID. */
+  uint8_t D[EVP_MAX_MD_BLOCK_SIZE];
+  OPENSSL_memset(D, id, block_size);
+
+  /* 2. Concatenate copies of the salt together to create a string S of length
+   * v(ceiling(s/v)) bits (the final copy of the salt may be truncated to
+   * create S). Note that if the salt is the empty string, then so is S.
+   *
+   * 3. Concatenate copies of the password together to create a string P of
+   * length v(ceiling(p/v)) bits (the final copy of the password may be
+   * truncated to create P).  Note that if the password is the empty string,
+   * then so is P.
+   *
+   * 4. Set I=S||P to be the concatenation of S and P. */
+  if (salt_len + block_size - 1 < salt_len ||
+      pass_raw_len + block_size - 1 < pass_raw_len) {
+    OPENSSL_PUT_ERROR(PKCS8, ERR_R_OVERFLOW);
+    return 0;
+  }
+  size_t S_len = block_size * ((salt_len + block_size - 1) / block_size);
+  size_t P_len = block_size * ((pass_raw_len + block_size - 1) / block_size);
+  size_t I_len = S_len + P_len;
+  if (I_len < S_len) {
+    OPENSSL_PUT_ERROR(PKCS8, ERR_R_OVERFLOW);
+    return 0;
+  }
+
+  uint8_t *I = OPENSSL_malloc(I_len);
+  if (I_len != 0 && I == NULL) {
+    OPENSSL_PUT_ERROR(PKCS8, ERR_R_MALLOC_FAILURE);
+    return 0;
+  }
+
+  for (size_t i = 0; i < S_len; i++) {
+    I[i] = salt[i % salt_len];
+  }
+  for (size_t i = 0; i < P_len; i++) {
+    I[i + S_len] = pass_raw[i % pass_raw_len];
+  }
+
+  int ret = 0;
+  EVP_MD_CTX ctx;
   EVP_MD_CTX_init(&ctx);
-  v = EVP_MD_block_size(md_type);
-  u = EVP_MD_size(md_type);
-  D = OPENSSL_malloc(v);
-  Ai = OPENSSL_malloc(u);
-  B = OPENSSL_malloc(v + 1);
-  Slen = v * ((salt_len + v - 1) / v);
-  if (pass_raw_len) {
-    Plen = v * ((pass_raw_len + v - 1) / v);
-  } else {
-    Plen = 0;
-  }
-  Ilen = Slen + Plen;
-  I = OPENSSL_malloc(Ilen);
-  Ij = BN_new();
-  Bpl1 = BN_new();
-  if (!D || !Ai || !B || !I || !Ij || !Bpl1) {
-    goto err;
-  }
-  for (i = 0; i < v; i++) {
-    D[i] = id;
-  }
-  p = I;
-  for (i = 0; i < Slen; i++) {
-    *p++ = salt[i % salt_len];
-  }
-  for (i = 0; i < Plen; i++) {
-    *p++ = pass_raw[i % pass_raw_len];
-  }
-  for (;;) {
-    if (!EVP_DigestInit_ex(&ctx, md_type, NULL) ||
-        !EVP_DigestUpdate(&ctx, D, v) ||
-        !EVP_DigestUpdate(&ctx, I, Ilen) ||
-        !EVP_DigestFinal_ex(&ctx, Ai, NULL)) {
+
+  while (out_len != 0) {
+    /* A. Set A_i=H^r(D||I). (i.e., the r-th hash of D||I,
+     * H(H(H(... H(D||I)))) */
+    uint8_t A[EVP_MAX_MD_SIZE];
+    unsigned A_len;
+    if (!EVP_DigestInit_ex(&ctx, md, NULL) ||
+        !EVP_DigestUpdate(&ctx, D, block_size) ||
+        !EVP_DigestUpdate(&ctx, I, I_len) ||
+        !EVP_DigestFinal_ex(&ctx, A, &A_len)) {
       goto err;
     }
-    for (j = 1; j < iterations; j++) {
-      if (!EVP_DigestInit_ex(&ctx, md_type, NULL) ||
-          !EVP_DigestUpdate(&ctx, Ai, u) ||
-          !EVP_DigestFinal_ex(&ctx, Ai, NULL)) {
+    for (unsigned iter = 1; iter < iterations; iter++) {
+      if (!EVP_DigestInit_ex(&ctx, md, NULL) ||
+          !EVP_DigestUpdate(&ctx, A, A_len) ||
+          !EVP_DigestFinal_ex(&ctx, A, &A_len)) {
         goto err;
       }
     }
-    memcpy(out, Ai, out_len < u ? out_len : u);
-    if (u >= out_len) {
-      ret = 1;
-      goto end;
+
+    size_t todo = out_len < A_len ? out_len : A_len;
+    OPENSSL_memcpy(out, A, todo);
+    out += todo;
+    out_len -= todo;
+    if (out_len == 0) {
+      break;
     }
-    out_len -= u;
-    out += u;
-    for (j = 0; j < v; j++) {
-      B[j] = Ai[j % u];
+
+    /* B. Concatenate copies of A_i to create a string B of length v bits (the
+     * final copy of A_i may be truncated to create B). */
+    uint8_t B[EVP_MAX_MD_BLOCK_SIZE];
+    for (size_t i = 0; i < block_size; i++) {
+      B[i] = A[i % A_len];
     }
-    /* Work out B + 1 first then can use B as tmp space */
-    if (!BN_bin2bn(B, v, Bpl1) ||
-        !BN_add_word(Bpl1, 1)) {
-      goto err;
-    }
-    for (j = 0; j < Ilen; j += v) {
-      if (!BN_bin2bn(I + j, v, Ij) ||
-          !BN_add(Ij, Ij, Bpl1) ||
-          !BN_bn2bin(Ij, B)) {
-        goto err;
-      }
-      Ijlen = BN_num_bytes(Ij);
-      /* If more than 2^(v*8) - 1 cut off MSB */
-      if (Ijlen > v) {
-        if (!BN_bn2bin(Ij, B)) {
-          goto err;
-        }
-        memcpy(I + j, B + 1, v);
-        /* If less than v bytes pad with zeroes */
-      } else if (Ijlen < v) {
-        memset(I + j, 0, v - Ijlen);
-        if (!BN_bn2bin(Ij, I + j + v - Ijlen)) {
-          goto err;
-        }
-      } else if (!BN_bn2bin(Ij, I + j)) {
-        goto err;
+
+    /* C. Treating I as a concatenation I_0, I_1, ..., I_(k-1) of v-bit blocks,
+     * where k=ceiling(s/v)+ceiling(p/v), modify I by setting I_j=(I_j+B+1) mod
+     * 2^v for each j. */
+    assert(I_len % block_size == 0);
+    for (size_t i = 0; i < I_len; i += block_size) {
+      unsigned carry = 1;
+      for (size_t j = block_size - 1; j < block_size; j--) {
+        carry += I[i + j] + B[j];
+        I[i + j] = (uint8_t)carry;
+        carry >>= 8;
       }
     }
   }
+
+  ret = 1;
 
 err:
-  OPENSSL_PUT_ERROR(PKCS8, ERR_R_MALLOC_FAILURE);
-
-end:
-  OPENSSL_free(Ai);
-  OPENSSL_free(B);
-  OPENSSL_free(D);
+  OPENSSL_cleanse(I, I_len);
   OPENSSL_free(I);
-  BN_free(Ij);
-  BN_free(Bpl1);
   EVP_MD_CTX_cleanup(&ctx);
-
   return ret;
 }
 
-static int pkcs12_pbe_keyivgen(EVP_CIPHER_CTX *ctx, const uint8_t *pass_raw,
-                               size_t pass_raw_len, ASN1_TYPE *param,
-                               const EVP_CIPHER *cipher, const EVP_MD *md,
-                               int is_encrypt) {
-  PBEPARAM *pbe;
-  int salt_len, iterations, ret;
-  uint8_t *salt;
-  const uint8_t *pbuf;
-  uint8_t key[EVP_MAX_KEY_LENGTH], iv[EVP_MAX_IV_LENGTH];
+static int pkcs12_pbe_cipher_init(const struct pbe_suite *suite,
+                                  EVP_CIPHER_CTX *ctx, unsigned iterations,
+                                  const uint8_t *pass_raw, size_t pass_raw_len,
+                                  const uint8_t *salt, size_t salt_len,
+                                  int is_encrypt) {
+  const EVP_CIPHER *cipher = suite->cipher_func();
+  const EVP_MD *md = suite->md_func();
 
-  /* Extract useful info from parameter */
-  if (param == NULL || param->type != V_ASN1_SEQUENCE ||
-      param->value.sequence == NULL) {
-    OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_DECODE_ERROR);
-    return 0;
-  }
-
-  pbuf = param->value.sequence->data;
-  pbe = d2i_PBEPARAM(NULL, &pbuf, param->value.sequence->length);
-  if (pbe == NULL) {
-    OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_DECODE_ERROR);
-    return 0;
-  }
-
-  if (!pbe->iter) {
-    iterations = 1;
-  } else {
-    iterations = ASN1_INTEGER_get(pbe->iter);
-  }
-  salt = pbe->salt->data;
-  salt_len = pbe->salt->length;
-  if (!pkcs12_key_gen_raw(pass_raw, pass_raw_len, salt, salt_len, PKCS12_KEY_ID,
-                          iterations, EVP_CIPHER_key_length(cipher), key, md)) {
+  uint8_t key[EVP_MAX_KEY_LENGTH];
+  if (!pkcs12_key_gen_raw(pass_raw, pass_raw_len, salt,
+                          salt_len, PKCS12_KEY_ID, iterations,
+                          EVP_CIPHER_key_length(cipher), key, md)) {
     OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_KEY_GEN_ERROR);
-    PBEPARAM_free(pbe);
     return 0;
   }
-  if (!pkcs12_key_gen_raw(pass_raw, pass_raw_len, salt, salt_len, PKCS12_IV_ID,
-                          iterations, EVP_CIPHER_iv_length(cipher), iv, md)) {
+
+  uint8_t iv[EVP_MAX_IV_LENGTH];
+  if (!pkcs12_key_gen_raw(pass_raw, pass_raw_len, salt,
+                          salt_len, PKCS12_IV_ID, iterations,
+                          EVP_CIPHER_iv_length(cipher), iv, md)) {
     OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_KEY_GEN_ERROR);
-    PBEPARAM_free(pbe);
     return 0;
   }
-  PBEPARAM_free(pbe);
-  ret = EVP_CipherInit_ex(ctx, cipher, NULL, key, iv, is_encrypt);
+
+  int ret = EVP_CipherInit_ex(ctx, cipher, NULL, key, iv, is_encrypt);
   OPENSSL_cleanse(key, EVP_MAX_KEY_LENGTH);
   OPENSSL_cleanse(iv, EVP_MAX_IV_LENGTH);
   return ret;
 }
 
-typedef int (*keygen_func)(EVP_CIPHER_CTX *ctx, const uint8_t *pass_raw,
-                           size_t pass_raw_len, ASN1_TYPE *param,
-                           const EVP_CIPHER *cipher, const EVP_MD *md,
-                           int is_encrypt);
+static int pkcs12_pbe_decrypt_init(const struct pbe_suite *suite,
+                                   EVP_CIPHER_CTX *ctx, const uint8_t *pass_raw,
+                                   size_t pass_raw_len, CBS *param) {
+  CBS pbe_param, salt;
+  uint64_t iterations;
+  if (!CBS_get_asn1(param, &pbe_param, CBS_ASN1_SEQUENCE) ||
+      !CBS_get_asn1(&pbe_param, &salt, CBS_ASN1_OCTETSTRING) ||
+      !CBS_get_asn1_uint64(&pbe_param, &iterations) ||
+      CBS_len(&pbe_param) != 0 ||
+      CBS_len(param) != 0) {
+    OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_DECODE_ERROR);
+    return 0;
+  }
 
-struct pbe_suite {
-  int pbe_nid;
-  const EVP_CIPHER* (*cipher_func)(void);
-  const EVP_MD* (*md_func)(void);
-  keygen_func keygen;
-  int flags;
-};
+  if (iterations == 0 || iterations > UINT_MAX) {
+    OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_ITERATION_COUNT);
+    return 0;
+  }
 
-#define PBE_UCS2_CONVERT_PASSWORD 0x1
+  return pkcs12_pbe_cipher_init(suite, ctx, (unsigned)iterations, pass_raw,
+                                pass_raw_len, CBS_data(&salt), CBS_len(&salt),
+                                0 /* decrypt */);
+}
 
 static const struct pbe_suite kBuiltinPBE[] = {
     {
-     NID_pbe_WithSHA1And40BitRC2_CBC, EVP_rc2_40_cbc, EVP_sha1,
-     pkcs12_pbe_keyivgen, PBE_UCS2_CONVERT_PASSWORD
+        NID_pbe_WithSHA1And40BitRC2_CBC, EVP_rc2_40_cbc, EVP_sha1,
+        pkcs12_pbe_decrypt_init, PBE_UCS2_CONVERT_PASSWORD,
     },
     {
-     NID_pbe_WithSHA1And128BitRC4, EVP_rc4, EVP_sha1, pkcs12_pbe_keyivgen,
-     PBE_UCS2_CONVERT_PASSWORD
+        NID_pbe_WithSHA1And128BitRC4, EVP_rc4, EVP_sha1,
+        pkcs12_pbe_decrypt_init, PBE_UCS2_CONVERT_PASSWORD,
     },
     {
-     NID_pbe_WithSHA1And3_Key_TripleDES_CBC, EVP_des_ede3_cbc, EVP_sha1,
-     pkcs12_pbe_keyivgen, PBE_UCS2_CONVERT_PASSWORD
+        NID_pbe_WithSHA1And3_Key_TripleDES_CBC, EVP_des_ede3_cbc, EVP_sha1,
+        pkcs12_pbe_decrypt_init, PBE_UCS2_CONVERT_PASSWORD,
     },
     {
-      NID_pbes2, NULL, NULL,  PKCS5_v2_PBE_keyivgen, 0
+        NID_pbes2, NULL, NULL, PKCS5_pbe2_decrypt_init, 0,
     },
 };
 
 static const struct pbe_suite *get_pbe_suite(int pbe_nid) {
   unsigned i;
-  for (i = 0; i < sizeof(kBuiltinPBE) / sizeof(kBuiltinPBE[0]); i++) {
+  for (i = 0; i < OPENSSL_ARRAY_SIZE(kBuiltinPBE); i++) {
     if (kBuiltinPBE[i].pbe_nid == pbe_nid) {
       return &kBuiltinPBE[i];
     }
@@ -351,126 +347,133 @@ static int pass_to_pass_raw(int pbe_nid, const char *pass, int pass_len,
   return 1;
 }
 
-static int pbe_cipher_init(ASN1_OBJECT *pbe_obj,
-                           const uint8_t *pass_raw, size_t pass_raw_len,
-                           ASN1_TYPE *param,
-                           EVP_CIPHER_CTX *ctx, int is_encrypt) {
-  const EVP_CIPHER *cipher;
-  const EVP_MD *md;
-
-  const struct pbe_suite *suite = get_pbe_suite(OBJ_obj2nid(pbe_obj));
+static int pkcs12_pbe_encrypt_init(CBB *out, EVP_CIPHER_CTX *ctx, int alg,
+                                   unsigned iterations, const uint8_t *pass_raw,
+                                   size_t pass_raw_len, const uint8_t *salt,
+                                   size_t salt_len) {
+  const struct pbe_suite *suite = get_pbe_suite(alg);
   if (suite == NULL) {
-    char obj_str[80];
     OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_UNKNOWN_ALGORITHM);
-    if (!pbe_obj) {
-      strncpy(obj_str, "NULL", sizeof(obj_str));
-    } else {
-      i2t_ASN1_OBJECT(obj_str, sizeof(obj_str), pbe_obj);
-    }
-    ERR_add_error_data(2, "TYPE=", obj_str);
     return 0;
   }
 
-  if (suite->cipher_func == NULL) {
-    cipher = NULL;
-  } else {
-    cipher = suite->cipher_func();
-    if (!cipher) {
-      OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_UNKNOWN_CIPHER);
-      return 0;
-    }
-  }
-
-  if (suite->md_func == NULL) {
-    md = NULL;
-  } else {
-    md = suite->md_func();
-    if (!md) {
-      OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_UNKNOWN_DIGEST);
-      return 0;
-    }
-  }
-
-  if (!suite->keygen(ctx, pass_raw, pass_raw_len, param, cipher, md,
-                     is_encrypt)) {
-    OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_KEYGEN_FAILURE);
+  /* See RFC 2898, appendix A.3. */
+  CBB algorithm, param, salt_cbb;
+  if (!CBB_add_asn1(out, &algorithm, CBS_ASN1_SEQUENCE) ||
+      !OBJ_nid2cbb(&algorithm, alg) ||
+      !CBB_add_asn1(&algorithm, &param, CBS_ASN1_SEQUENCE) ||
+      !CBB_add_asn1(&param, &salt_cbb, CBS_ASN1_OCTETSTRING) ||
+      !CBB_add_bytes(&salt_cbb, salt, salt_len) ||
+      !CBB_add_asn1_uint64(&param, iterations) ||
+      !CBB_flush(out)) {
     return 0;
   }
 
-  return 1;
+  return pkcs12_pbe_cipher_init(suite, ctx, iterations, pass_raw, pass_raw_len,
+                                salt, salt_len, 1 /* encrypt */);
 }
 
-static int pbe_crypt(const X509_ALGOR *algor,
-                     const uint8_t *pass_raw, size_t pass_raw_len,
-                     const uint8_t *in, size_t in_len,
-                     uint8_t **out, size_t *out_len,
-                     int is_encrypt) {
-  uint8_t *buf;
-  int n, ret = 0;
+static int pbe_decrypt(uint8_t **out, size_t *out_len, CBS *algorithm,
+                       const uint8_t *pass_raw, size_t pass_raw_len,
+                       const uint8_t *in, size_t in_len) {
+  int ret = 0;
+  uint8_t *buf = NULL;;
   EVP_CIPHER_CTX ctx;
-  unsigned block_size;
-
   EVP_CIPHER_CTX_init(&ctx);
 
-  if (!pbe_cipher_init(algor->algorithm, pass_raw, pass_raw_len,
-                       algor->parameter, &ctx, is_encrypt)) {
-    OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_UNKNOWN_CIPHER_ALGORITHM);
-    return 0;
-  }
-  block_size = EVP_CIPHER_CTX_block_size(&ctx);
-
-  if (in_len + block_size < in_len) {
-    OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_TOO_LONG);
+  CBS obj;
+  if (!CBS_get_asn1(algorithm, &obj, CBS_ASN1_OBJECT)) {
+    OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_DECODE_ERROR);
     goto err;
   }
 
-  buf = OPENSSL_malloc(in_len + block_size);
+  const struct pbe_suite *suite = get_pbe_suite(OBJ_cbs2nid(&obj));
+  if (suite == NULL) {
+    OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_UNKNOWN_ALGORITHM);
+    goto err;
+  }
+
+  if (!suite->decrypt_init(suite, &ctx, pass_raw, pass_raw_len, algorithm)) {
+    OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_KEYGEN_FAILURE);
+    goto err;
+  }
+
+  buf = OPENSSL_malloc(in_len);
   if (buf == NULL) {
     OPENSSL_PUT_ERROR(PKCS8, ERR_R_MALLOC_FAILURE);
     goto err;
   }
 
-  if (!EVP_CipherUpdate(&ctx, buf, &n, in, in_len)) {
-    OPENSSL_free(buf);
-    OPENSSL_PUT_ERROR(PKCS8, ERR_R_EVP_LIB);
+  if (in_len > INT_MAX) {
+    OPENSSL_PUT_ERROR(PKCS8, ERR_R_OVERFLOW);
     goto err;
   }
-  *out_len = n;
 
-  if (!EVP_CipherFinal_ex(&ctx, buf + n, &n)) {
-    OPENSSL_free(buf);
-    OPENSSL_PUT_ERROR(PKCS8, ERR_R_EVP_LIB);
+  int n1, n2;
+  if (!EVP_DecryptUpdate(&ctx, buf, &n1, in, (int)in_len) ||
+      !EVP_DecryptFinal_ex(&ctx, buf + n1, &n2)) {
     goto err;
   }
-  *out_len += n;
+
   *out = buf;
+  *out_len = n1 + n2;
   ret = 1;
+  buf = NULL;
 
 err:
+  OPENSSL_free(buf);
   EVP_CIPHER_CTX_cleanup(&ctx);
   return ret;
 }
 
-static void *pkcs12_item_decrypt_d2i(X509_ALGOR *algor, const ASN1_ITEM *it,
-                                     const uint8_t *pass_raw,
-                                     size_t pass_raw_len,
-                                     ASN1_OCTET_STRING *oct) {
-  uint8_t *out;
-  const uint8_t *p;
-  void *ret;
-  size_t out_len;
+static PKCS8_PRIV_KEY_INFO *pkcs8_decrypt_raw(X509_SIG *pkcs8,
+                                              const uint8_t *pass_raw,
+                                              size_t pass_raw_len) {
+  PKCS8_PRIV_KEY_INFO *ret = NULL;
+  uint8_t *in = NULL, *out = NULL;
+  size_t out_len = 0;
 
-  if (!pbe_crypt(algor, pass_raw, pass_raw_len, oct->data, oct->length,
-                 &out, &out_len, 0 /* decrypt */)) {
-    OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_CRYPT_ERROR);
-    return NULL;
+  /* Convert the legacy ASN.1 object to a byte string. */
+  int in_len = i2d_X509_SIG(pkcs8, &in);
+  if (in_len < 0) {
+    goto err;
   }
-  p = out;
-  ret = ASN1_item_d2i(NULL, &p, out_len, it);
-  OPENSSL_cleanse(out, out_len);
-  if (!ret) {
+
+  /* See RFC 5208, section 6. */
+  CBS cbs, epki, algorithm, ciphertext;
+  CBS_init(&cbs, in, in_len);
+  if (!CBS_get_asn1(&cbs, &epki, CBS_ASN1_SEQUENCE) ||
+      !CBS_get_asn1(&epki, &algorithm, CBS_ASN1_SEQUENCE) ||
+      !CBS_get_asn1(&epki, &ciphertext, CBS_ASN1_OCTETSTRING) ||
+      CBS_len(&epki) != 0 ||
+      CBS_len(&cbs) != 0) {
     OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_DECODE_ERROR);
+    goto err;
   }
+
+  if (!pbe_decrypt(&out, &out_len, &algorithm, pass_raw, pass_raw_len,
+                   CBS_data(&ciphertext), CBS_len(&ciphertext))) {
+    goto err;
+  }
+
+  if (out_len > LONG_MAX) {
+    OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_DECODE_ERROR);
+    goto err;
+  }
+
+  /* Convert back to legacy ASN.1 objects. */
+  const uint8_t *ptr = out;
+  ret = d2i_PKCS8_PRIV_KEY_INFO(NULL, &ptr, (long)out_len);
+  OPENSSL_cleanse(out, out_len);
+  if (ret == NULL || ptr != out + out_len) {
+    OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_DECODE_ERROR);
+    PKCS8_PRIV_KEY_INFO_free(ret);
+    ret = NULL;
+  }
+
+err:
+  OPENSSL_free(in);
+  OPENSSL_cleanse(out, out_len);
   OPENSSL_free(out);
   return ret;
 }
@@ -484,7 +487,7 @@ PKCS8_PRIV_KEY_INFO *PKCS8_decrypt(X509_SIG *pkcs8, const char *pass,
     return NULL;
   }
 
-  PKCS8_PRIV_KEY_INFO *ret = PKCS8_decrypt_pbe(pkcs8, pass_raw, pass_raw_len);
+  PKCS8_PRIV_KEY_INFO *ret = pkcs8_decrypt_raw(pkcs8, pass_raw, pass_raw_len);
 
   if (pass_raw) {
     OPENSSL_cleanse(pass_raw, pass_raw_len);
@@ -493,46 +496,103 @@ PKCS8_PRIV_KEY_INFO *PKCS8_decrypt(X509_SIG *pkcs8, const char *pass,
   return ret;
 }
 
-PKCS8_PRIV_KEY_INFO *PKCS8_decrypt_pbe(X509_SIG *pkcs8, const uint8_t *pass_raw,
-                                       size_t pass_raw_len) {
-  return pkcs12_item_decrypt_d2i(pkcs8->algor,
-                                 ASN1_ITEM_rptr(PKCS8_PRIV_KEY_INFO), pass_raw,
-                                 pass_raw_len, pkcs8->digest);
-}
+static X509_SIG *pkcs8_encrypt_raw(int pbe_nid, const EVP_CIPHER *cipher,
+                                   const uint8_t *pass_raw, size_t pass_raw_len,
+                                   const uint8_t *salt, size_t salt_len,
+                                   int iterations, PKCS8_PRIV_KEY_INFO *p8inf) {
+  X509_SIG *ret = NULL;
+  uint8_t *plaintext = NULL, *salt_buf = NULL, *der = NULL;
+  int plaintext_len = -1;
+  size_t der_len;
+  CBB cbb;
+  CBB_zero(&cbb);
+  EVP_CIPHER_CTX ctx;
+  EVP_CIPHER_CTX_init(&ctx);
 
-static ASN1_OCTET_STRING *pkcs12_item_i2d_encrypt(X509_ALGOR *algor,
-                                                  const ASN1_ITEM *it,
-                                                  const uint8_t *pass_raw,
-                                                  size_t pass_raw_len, void *obj) {
-  ASN1_OCTET_STRING *oct;
-  uint8_t *in = NULL;
-  int in_len;
-  size_t crypt_len;
+  /* Generate a random salt if necessary. */
+  if (salt == NULL) {
+    if (salt_len == 0) {
+      salt_len = PKCS5_SALT_LEN;
+    }
 
-  oct = M_ASN1_OCTET_STRING_new();
-  if (oct == NULL) {
-    OPENSSL_PUT_ERROR(PKCS8, ERR_R_MALLOC_FAILURE);
-    return NULL;
+    salt_buf = OPENSSL_malloc(salt_len);
+    if (salt_buf == NULL ||
+        !RAND_bytes(salt_buf, salt_len)) {
+      goto err;
+    }
+
+    salt = salt_buf;
   }
-  in_len = ASN1_item_i2d(obj, &in, it);
-  if (!in) {
-    OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_ENCODE_ERROR);
-    return NULL;
+
+  if (iterations <= 0) {
+    iterations = PKCS5_DEFAULT_ITERATIONS;
   }
-  if (!pbe_crypt(algor, pass_raw, pass_raw_len, in, in_len, &oct->data, &crypt_len,
-                 1 /* encrypt */)) {
-    OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_ENCRYPT_ERROR);
-    OPENSSL_free(in);
-    return NULL;
+
+  /* Convert the input from the legacy ASN.1 format. */
+  plaintext_len = i2d_PKCS8_PRIV_KEY_INFO(p8inf, &plaintext);
+  if (plaintext_len < 0) {
+    goto err;
   }
-  oct->length = crypt_len;
-  OPENSSL_cleanse(in, in_len);
-  OPENSSL_free(in);
-  return oct;
+
+  CBB epki;
+  if (!CBB_init(&cbb, 128) ||
+      !CBB_add_asn1(&cbb, &epki, CBS_ASN1_SEQUENCE)) {
+    goto err;
+  }
+
+  int alg_ok;
+  if (pbe_nid == -1) {
+    alg_ok = PKCS5_pbe2_encrypt_init(&epki, &ctx, cipher, (unsigned)iterations,
+                                     pass_raw, pass_raw_len, salt, salt_len);
+  } else {
+    alg_ok = pkcs12_pbe_encrypt_init(&epki, &ctx, pbe_nid, (unsigned)iterations,
+                                     pass_raw, pass_raw_len, salt, salt_len);
+  }
+  if (!alg_ok) {
+    goto err;
+  }
+
+  size_t max_out = (size_t)plaintext_len + EVP_CIPHER_CTX_block_size(&ctx);
+  if (max_out < (size_t)plaintext_len) {
+    OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_TOO_LONG);
+    goto err;
+  }
+
+  CBB ciphertext;
+  uint8_t *out;
+  int n1, n2;
+  if (!CBB_add_asn1(&epki, &ciphertext, CBS_ASN1_OCTETSTRING) ||
+      !CBB_reserve(&ciphertext, &out, max_out) ||
+      !EVP_CipherUpdate(&ctx, out, &n1, plaintext, plaintext_len) ||
+      !EVP_CipherFinal_ex(&ctx, out + n1, &n2) ||
+      !CBB_did_write(&ciphertext, n1 + n2) ||
+      !CBB_finish(&cbb, &der, &der_len)) {
+    goto err;
+  }
+
+  /* Convert back to legacy ASN.1 objects. */
+  const uint8_t *ptr = der;
+  ret = d2i_X509_SIG(NULL, &ptr, der_len);
+  if (ret == NULL || ptr != der + der_len) {
+    OPENSSL_PUT_ERROR(PKCS8, ERR_R_INTERNAL_ERROR);
+    X509_SIG_free(ret);
+    ret = NULL;
+  }
+
+err:
+  if (plaintext_len > 0) {
+    OPENSSL_cleanse(plaintext, plaintext_len);
+  }
+  OPENSSL_free(plaintext);
+  OPENSSL_free(salt_buf);
+  OPENSSL_free(der);
+  CBB_cleanup(&cbb);
+  EVP_CIPHER_CTX_cleanup(&ctx);
+  return ret;
 }
 
 X509_SIG *PKCS8_encrypt(int pbe_nid, const EVP_CIPHER *cipher, const char *pass,
-                        int pass_len, uint8_t *salt, size_t salt_len,
+                        int pass_len, const uint8_t *salt, size_t salt_len,
                         int iterations, PKCS8_PRIV_KEY_INFO *p8inf) {
   uint8_t *pass_raw = NULL;
   size_t pass_raw_len = 0;
@@ -540,7 +600,7 @@ X509_SIG *PKCS8_encrypt(int pbe_nid, const EVP_CIPHER *cipher, const char *pass,
     return NULL;
   }
 
-  X509_SIG *ret = PKCS8_encrypt_pbe(pbe_nid, cipher, pass_raw, pass_raw_len,
+  X509_SIG *ret = pkcs8_encrypt_raw(pbe_nid, cipher, pass_raw, pass_raw_len,
                                     salt, salt_len, iterations, p8inf);
 
   if (pass_raw) {
@@ -548,46 +608,6 @@ X509_SIG *PKCS8_encrypt(int pbe_nid, const EVP_CIPHER *cipher, const char *pass,
     OPENSSL_free(pass_raw);
   }
   return ret;
-}
-
-X509_SIG *PKCS8_encrypt_pbe(int pbe_nid, const EVP_CIPHER *cipher,
-                            const uint8_t *pass_raw, size_t pass_raw_len,
-                            uint8_t *salt, size_t salt_len,
-                            int iterations, PKCS8_PRIV_KEY_INFO *p8inf) {
-  X509_SIG *pkcs8 = NULL;
-  X509_ALGOR *pbe;
-
-  pkcs8 = X509_SIG_new();
-  if (pkcs8 == NULL) {
-    OPENSSL_PUT_ERROR(PKCS8, ERR_R_MALLOC_FAILURE);
-    goto err;
-  }
-
-  if (pbe_nid == -1) {
-    pbe = PKCS5_pbe2_set(cipher, iterations, salt, salt_len);
-  } else {
-    pbe = PKCS5_pbe_set(pbe_nid, iterations, salt, salt_len);
-  }
-  if (!pbe) {
-    OPENSSL_PUT_ERROR(PKCS8, ERR_R_ASN1_LIB);
-    goto err;
-  }
-
-  X509_ALGOR_free(pkcs8->algor);
-  pkcs8->algor = pbe;
-  M_ASN1_OCTET_STRING_free(pkcs8->digest);
-  pkcs8->digest = pkcs12_item_i2d_encrypt(
-      pbe, ASN1_ITEM_rptr(PKCS8_PRIV_KEY_INFO), pass_raw, pass_raw_len, p8inf);
-  if (!pkcs8->digest) {
-    OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_ENCRYPT_ERROR);
-    goto err;
-  }
-
-  return pkcs8;
-
-err:
-  X509_SIG_free(pkcs8);
-  return NULL;
 }
 
 EVP_PKEY *EVP_PKCS82PKEY(PKCS8_PRIV_KEY_INFO *p8) {
@@ -647,32 +667,21 @@ struct pkcs12_context {
   size_t password_len;
 };
 
-static int PKCS12_handle_content_info(CBS *content_info, unsigned depth,
-                                      struct pkcs12_context *ctx);
-
-/* PKCS12_handle_content_infos parses a series of PKCS#7 ContentInfos in a
- * SEQUENCE. */
-static int PKCS12_handle_content_infos(CBS *content_infos,
-                                       unsigned depth,
-                                       struct pkcs12_context *ctx) {
+/* PKCS12_handle_sequence parses a BER-encoded SEQUENCE of elements in a PKCS#12
+ * structure. */
+static int PKCS12_handle_sequence(
+    CBS *sequence, struct pkcs12_context *ctx,
+    int (*handle_element)(CBS *cbs, struct pkcs12_context *ctx)) {
   uint8_t *der_bytes = NULL;
   size_t der_len;
   CBS in;
   int ret = 0;
 
-  /* Generally we only expect depths 0 (the top level, with a
-   * pkcs7-encryptedData and a pkcs7-data) and depth 1 (the various PKCS#12
-   * bags). */
-  if (depth > 3) {
-    OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_PKCS12_TOO_DEEPLY_NESTED);
-    return 0;
-  }
-
   /* Although a BER->DER conversion is done at the beginning of |PKCS12_parse|,
    * the ASN.1 data gets wrapped in OCTETSTRINGs and/or encrypted and the
    * conversion cannot see through those wrappings. So each time we step
    * through one we need to convert to DER again. */
-  if (!CBS_asn1_ber_to_der(content_infos, &der_bytes, &der_len)) {
+  if (!CBS_asn1_ber_to_der(sequence, &der_bytes, &der_len)) {
     OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_PKCS12_DATA);
     return 0;
   }
@@ -680,29 +689,27 @@ static int PKCS12_handle_content_infos(CBS *content_infos,
   if (der_bytes != NULL) {
     CBS_init(&in, der_bytes, der_len);
   } else {
-    CBS_init(&in, CBS_data(content_infos), CBS_len(content_infos));
+    CBS_init(&in, CBS_data(sequence), CBS_len(sequence));
   }
 
-  if (!CBS_get_asn1(&in, &in, CBS_ASN1_SEQUENCE)) {
+  CBS child;
+  if (!CBS_get_asn1(&in, &child, CBS_ASN1_SEQUENCE) ||
+      CBS_len(&in) != 0) {
     OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_PKCS12_DATA);
     goto err;
   }
 
-  while (CBS_len(&in) > 0) {
-    CBS content_info;
-    if (!CBS_get_asn1(&in, &content_info, CBS_ASN1_SEQUENCE)) {
+  while (CBS_len(&child) > 0) {
+    CBS element;
+    if (!CBS_get_asn1(&child, &element, CBS_ASN1_SEQUENCE)) {
       OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_PKCS12_DATA);
       goto err;
     }
 
-    if (!PKCS12_handle_content_info(&content_info, depth + 1, ctx)) {
+    if (!handle_element(&element, ctx)) {
       goto err;
     }
   }
-
-  /* NSS includes additional data after the SEQUENCE, but it's an (unwrapped)
-   * copy of the same encrypted private key (with the same IV and
-   * ciphertext)! */
 
   ret = 1;
 
@@ -711,17 +718,116 @@ err:
   return ret;
 }
 
+/* PKCS12_handle_safe_bag parses a single SafeBag element in a PKCS#12
+ * structure. */
+static int PKCS12_handle_safe_bag(CBS *safe_bag, struct pkcs12_context *ctx) {
+  CBS bag_id, wrapped_value;
+  if (!CBS_get_asn1(safe_bag, &bag_id, CBS_ASN1_OBJECT) ||
+      !CBS_get_asn1(safe_bag, &wrapped_value,
+                        CBS_ASN1_CONTEXT_SPECIFIC | CBS_ASN1_CONSTRUCTED | 0)
+      /* Ignore the bagAttributes field. */) {
+    OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_PKCS12_DATA);
+    return 0;
+  }
+
+  int nid = OBJ_cbs2nid(&bag_id);
+  if (nid == NID_pkcs8ShroudedKeyBag) {
+    /* See RFC 7292, section 4.2.2. */
+    if (*ctx->out_key) {
+      OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_MULTIPLE_PRIVATE_KEYS_IN_PKCS12);
+      return 0;
+    }
+
+    if (CBS_len(&wrapped_value) > LONG_MAX) {
+      OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_PKCS12_DATA);
+      return 0;
+    }
+
+    /* |encrypted| isn't actually an X.509 signature, but it has the same
+     * structure as one and so |X509_SIG| is reused to store it. */
+    const uint8_t *inp = CBS_data(&wrapped_value);
+    X509_SIG *encrypted =
+        d2i_X509_SIG(NULL, &inp, (long)CBS_len(&wrapped_value));
+    if (encrypted == NULL) {
+      OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_PKCS12_DATA);
+      return 0;
+    }
+    if (inp != CBS_data(&wrapped_value) + CBS_len(&wrapped_value)) {
+      OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_PKCS12_DATA);
+      X509_SIG_free(encrypted);
+      return 0;
+    }
+
+    PKCS8_PRIV_KEY_INFO *pki =
+        pkcs8_decrypt_raw(encrypted, ctx->password, ctx->password_len);
+    X509_SIG_free(encrypted);
+    if (pki == NULL) {
+      return 0;
+    }
+
+    *ctx->out_key = EVP_PKCS82PKEY(pki);
+    PKCS8_PRIV_KEY_INFO_free(pki);
+    return ctx->out_key != NULL;
+  }
+
+  if (nid == NID_certBag) {
+    /* See RFC 7292, section 4.2.3. */
+    CBS cert_bag, cert_type, wrapped_cert, cert;
+    if (!CBS_get_asn1(&wrapped_value, &cert_bag, CBS_ASN1_SEQUENCE) ||
+        !CBS_get_asn1(&cert_bag, &cert_type, CBS_ASN1_OBJECT) ||
+        !CBS_get_asn1(&cert_bag, &wrapped_cert,
+                      CBS_ASN1_CONTEXT_SPECIFIC | CBS_ASN1_CONSTRUCTED | 0) ||
+        !CBS_get_asn1(&wrapped_cert, &cert, CBS_ASN1_OCTETSTRING)) {
+      OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_PKCS12_DATA);
+      return 0;
+    }
+
+    if (OBJ_cbs2nid(&cert_type) != NID_x509Certificate) {
+      return 1;
+    }
+
+    if (CBS_len(&cert) > LONG_MAX) {
+      OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_PKCS12_DATA);
+      return 0;
+    }
+
+    const uint8_t *inp = CBS_data(&cert);
+    X509 *x509 = d2i_X509(NULL, &inp, (long)CBS_len(&cert));
+    if (!x509) {
+      OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_PKCS12_DATA);
+      return 0;
+    }
+
+    if (inp != CBS_data(&cert) + CBS_len(&cert)) {
+      OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_PKCS12_DATA);
+      X509_free(x509);
+      return 0;
+    }
+
+    if (0 == sk_X509_push(ctx->out_certs, x509)) {
+      X509_free(x509);
+      return 0;
+    }
+
+    return 1;
+  }
+
+  /* Unknown element type - ignore it. */
+  return 1;
+}
+
 /* PKCS12_handle_content_info parses a single PKCS#7 ContentInfo element in a
  * PKCS#12 structure. */
-static int PKCS12_handle_content_info(CBS *content_info, unsigned depth,
+static int PKCS12_handle_content_info(CBS *content_info,
                                       struct pkcs12_context *ctx) {
-  CBS content_type, wrapped_contents, contents, content_infos;
+  CBS content_type, wrapped_contents, contents;
   int nid, ret = 0;
   uint8_t *storage = NULL;
 
   if (!CBS_get_asn1(content_info, &content_type, CBS_ASN1_OBJECT) ||
       !CBS_get_asn1(content_info, &wrapped_contents,
-                        CBS_ASN1_CONTEXT_SPECIFIC | CBS_ASN1_CONSTRUCTED | 0)) {
+                        CBS_ASN1_CONTEXT_SPECIFIC | CBS_ASN1_CONSTRUCTED | 0) ||
+      CBS_len(content_info) != 0) {
     OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_PKCS12_DATA);
     goto err;
   }
@@ -734,8 +840,6 @@ static int PKCS12_handle_content_info(CBS *content_info, unsigned depth,
      * encrypted certificate bag and it's generally encrypted with 40-bit
      * RC2-CBC. */
     CBS version_bytes, eci, contents_type, ai, encrypted_contents;
-    X509_ALGOR *algor = NULL;
-    const uint8_t *inp;
     uint8_t *out;
     size_t out_len;
 
@@ -747,7 +851,7 @@ static int PKCS12_handle_content_info(CBS *content_info, unsigned depth,
         !CBS_get_asn1(&eci, &contents_type, CBS_ASN1_OBJECT) ||
         /* AlgorithmIdentifier, see
          * https://tools.ietf.org/html/rfc5280#section-4.1.1.2 */
-        !CBS_get_asn1_element(&eci, &ai, CBS_ASN1_SEQUENCE) ||
+        !CBS_get_asn1(&eci, &ai, CBS_ASN1_SEQUENCE) ||
         !CBS_get_asn1_implicit_string(
             &eci, &encrypted_contents, &storage,
             CBS_ASN1_CONTEXT_SPECIFIC | 0, CBS_ASN1_OCTETSTRING)) {
@@ -755,122 +859,32 @@ static int PKCS12_handle_content_info(CBS *content_info, unsigned depth,
       goto err;
     }
 
-    if (OBJ_cbs2nid(&contents_type) != NID_pkcs7_data ||
-        CBS_len(&ai) > LONG_MAX) {
+    if (OBJ_cbs2nid(&contents_type) != NID_pkcs7_data) {
       OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_PKCS12_DATA);
       goto err;
     }
 
-    inp = CBS_data(&ai);
-    algor = d2i_X509_ALGOR(NULL, &inp, (long)CBS_len(&ai));
-    if (algor == NULL) {
-      goto err;
-    }
-    if (inp != CBS_data(&ai) + CBS_len(&ai)) {
-      X509_ALGOR_free(algor);
-      OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_PKCS12_DATA);
+    if (!pbe_decrypt(&out, &out_len, &ai, ctx->password, ctx->password_len,
+                     CBS_data(&encrypted_contents),
+                     CBS_len(&encrypted_contents))) {
       goto err;
     }
 
-    if (!pbe_crypt(algor, ctx->password, ctx->password_len,
-                   CBS_data(&encrypted_contents), CBS_len(&encrypted_contents),
-                   &out, &out_len, 0 /* decrypt */)) {
-      X509_ALGOR_free(algor);
-      goto err;
-    }
-    X509_ALGOR_free(algor);
-
-    CBS_init(&content_infos, out, out_len);
-    ret = PKCS12_handle_content_infos(&content_infos, depth + 1, ctx);
+    CBS safe_contents;
+    CBS_init(&safe_contents, out, out_len);
+    ret = PKCS12_handle_sequence(&safe_contents, ctx, PKCS12_handle_safe_bag);
     OPENSSL_free(out);
   } else if (nid == NID_pkcs7_data) {
     CBS octet_string_contents;
 
     if (!CBS_get_asn1(&wrapped_contents, &octet_string_contents,
-                          CBS_ASN1_OCTETSTRING)) {
+                      CBS_ASN1_OCTETSTRING)) {
       OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_PKCS12_DATA);
       goto err;
     }
 
-    ret = PKCS12_handle_content_infos(&octet_string_contents, depth + 1, ctx);
-  } else if (nid == NID_pkcs8ShroudedKeyBag) {
-    /* See ftp://ftp.rsasecurity.com/pub/pkcs/pkcs-12/pkcs-12v1.pdf, section
-     * 4.2.2. */
-    const uint8_t *inp = CBS_data(&wrapped_contents);
-    PKCS8_PRIV_KEY_INFO *pki = NULL;
-    X509_SIG *encrypted = NULL;
-
-    if (*ctx->out_key) {
-      OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_MULTIPLE_PRIVATE_KEYS_IN_PKCS12);
-      goto err;
-    }
-
-    if (CBS_len(&wrapped_contents) > LONG_MAX) {
-      OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_PKCS12_DATA);
-      goto err;
-    }
-
-    /* encrypted isn't actually an X.509 signature, but it has the same
-     * structure as one and so |X509_SIG| is reused to store it. */
-    encrypted = d2i_X509_SIG(NULL, &inp, (long)CBS_len(&wrapped_contents));
-    if (encrypted == NULL) {
-      OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_PKCS12_DATA);
-      goto err;
-    }
-    if (inp != CBS_data(&wrapped_contents) + CBS_len(&wrapped_contents)) {
-      OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_PKCS12_DATA);
-      X509_SIG_free(encrypted);
-      goto err;
-    }
-
-    pki = PKCS8_decrypt_pbe(encrypted, ctx->password, ctx->password_len);
-    X509_SIG_free(encrypted);
-    if (pki == NULL) {
-      goto err;
-    }
-
-    *ctx->out_key = EVP_PKCS82PKEY(pki);
-    PKCS8_PRIV_KEY_INFO_free(pki);
-
-    if (ctx->out_key == NULL) {
-      goto err;
-    }
-    ret = 1;
-  } else if (nid == NID_certBag) {
-    CBS cert_bag, cert_type, wrapped_cert, cert;
-
-    if (!CBS_get_asn1(&wrapped_contents, &cert_bag, CBS_ASN1_SEQUENCE) ||
-        !CBS_get_asn1(&cert_bag, &cert_type, CBS_ASN1_OBJECT) ||
-        !CBS_get_asn1(&cert_bag, &wrapped_cert,
-                      CBS_ASN1_CONTEXT_SPECIFIC | CBS_ASN1_CONSTRUCTED | 0) ||
-        !CBS_get_asn1(&wrapped_cert, &cert, CBS_ASN1_OCTETSTRING)) {
-      OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_PKCS12_DATA);
-      goto err;
-    }
-
-    if (OBJ_cbs2nid(&cert_type) == NID_x509Certificate) {
-      if (CBS_len(&cert) > LONG_MAX) {
-        OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_PKCS12_DATA);
-        goto err;
-      }
-      const uint8_t *inp = CBS_data(&cert);
-      X509 *x509 = d2i_X509(NULL, &inp, (long)CBS_len(&cert));
-      if (!x509) {
-        OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_PKCS12_DATA);
-        goto err;
-      }
-      if (inp != CBS_data(&cert) + CBS_len(&cert)) {
-        OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_PKCS12_DATA);
-        X509_free(x509);
-        goto err;
-      }
-
-      if (0 == sk_X509_push(ctx->out_certs, x509)) {
-        X509_free(x509);
-        goto err;
-      }
-    }
-    ret = 1;
+    ret = PKCS12_handle_sequence(&octet_string_contents, ctx,
+                                 PKCS12_handle_safe_bag);
   } else {
     /* Unknown element type - ignore it. */
     ret = 1;
@@ -903,7 +917,7 @@ int PKCS12_get_key_and_certs(EVP_PKEY **out_key, STACK_OF(X509) *out_certs,
   }
 
   *out_key = NULL;
-  memset(&ctx, 0, sizeof(ctx));
+  OPENSSL_memset(&ctx, 0, sizeof(ctx));
 
   /* See ftp://ftp.rsasecurity.com/pub/pkcs/pkcs-12/pkcs-12v1.pdf, section
    * four. */
@@ -987,7 +1001,7 @@ int PKCS12_get_key_and_certs(EVP_PKEY **out_key, STACK_OF(X509) *out_certs,
     iterations = 1;
     if (CBS_len(&mac_data) > 0) {
       if (!CBS_get_asn1_uint64(&mac_data, &iterations) ||
-          iterations > INT_MAX) {
+          iterations > UINT_MAX) {
         OPENSSL_PUT_ERROR(PKCS8, PKCS8_R_BAD_PKCS12_DATA);
         goto err;
       }
@@ -1018,7 +1032,7 @@ int PKCS12_get_key_and_certs(EVP_PKEY **out_key, STACK_OF(X509) *out_certs,
   }
 
   /* authsafes contains a series of PKCS#7 ContentInfos. */
-  if (!PKCS12_handle_content_infos(&authsafes, 0, &ctx)) {
+  if (!PKCS12_handle_sequence(&authsafes, &ctx, PKCS12_handle_content_info)) {
     goto err;
   }
 
@@ -1046,7 +1060,8 @@ struct pkcs12_st {
   size_t ber_len;
 };
 
-PKCS12* d2i_PKCS12(PKCS12 **out_p12, const uint8_t **ber_bytes, size_t ber_len) {
+PKCS12 *d2i_PKCS12(PKCS12 **out_p12, const uint8_t **ber_bytes,
+                   size_t ber_len) {
   PKCS12 *p12;
 
   p12 = OPENSSL_malloc(sizeof(PKCS12));
@@ -1060,7 +1075,7 @@ PKCS12* d2i_PKCS12(PKCS12 **out_p12, const uint8_t **ber_bytes, size_t ber_len) 
     return NULL;
   }
 
-  memcpy(p12->ber_bytes, *ber_bytes, ber_len);
+  OPENSSL_memcpy(p12->ber_bytes, *ber_bytes, ber_len);
   p12->ber_len = ber_len;
   *ber_bytes += ber_len;
 
@@ -1185,7 +1200,7 @@ int PKCS12_verify_mac(const PKCS12 *p12, const char *password,
     }
   } else if (password_len != -1 &&
              (password[password_len] != 0 ||
-              memchr(password, 0, password_len) != NULL)) {
+              OPENSSL_memchr(password, 0, password_len) != NULL)) {
     return 0;
   }
 

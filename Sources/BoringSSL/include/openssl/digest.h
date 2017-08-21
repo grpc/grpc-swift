@@ -102,7 +102,8 @@ OPENSSL_EXPORT const EVP_MD *EVP_get_digestbyobj(const ASN1_OBJECT *obj);
  * An EVP_MD_CTX represents the state of a specific digest operation in
  * progress. */
 
-/* EVP_MD_CTX_init initialises an, already allocated, |EVP_MD_CTX|. */
+/* EVP_MD_CTX_init initialises an, already allocated, |EVP_MD_CTX|. This is the
+ * same as setting the structure to zero. */
 OPENSSL_EXPORT void EVP_MD_CTX_init(EVP_MD_CTX *ctx);
 
 /* EVP_MD_CTX_create allocates and initialises a fresh |EVP_MD_CTX| and returns
@@ -143,11 +144,16 @@ OPENSSL_EXPORT int EVP_DigestUpdate(EVP_MD_CTX *ctx, const void *data,
  * at least this much space. */
 #define EVP_MAX_MD_SIZE 64 /* SHA-512 is the longest so far. */
 
+/* EVP_MAX_MD_BLOCK_SIZE is the largest digest block size supported, in
+ * bytes. */
+#define EVP_MAX_MD_BLOCK_SIZE 128 /* SHA-512 is the longest so far. */
+
 /* EVP_DigestFinal_ex finishes the digest in |ctx| and writes the output to
- * |md_out|. At most |EVP_MAX_MD_SIZE| bytes are written. If |out_size| is not
- * NULL then |*out_size| is set to the number of bytes written. It returns one.
- * After this call, the hash cannot be updated or finished again until
- * |EVP_DigestInit_ex| is called to start another hashing operation. */
+ * |md_out|. |EVP_MD_CTX_size| bytes are written, which is at most
+ * |EVP_MAX_MD_SIZE|. If |out_size| is not NULL then |*out_size| is set to the
+ * number of bytes written. It returns one. After this call, the hash cannot be
+ * updated or finished again until |EVP_DigestInit_ex| is called to start
+ * another hashing operation. */
 OPENSSL_EXPORT int EVP_DigestFinal_ex(EVP_MD_CTX *ctx, uint8_t *md_out,
                                       unsigned int *out_size);
 
@@ -156,11 +162,11 @@ OPENSSL_EXPORT int EVP_DigestFinal_ex(EVP_MD_CTX *ctx, uint8_t *md_out,
 OPENSSL_EXPORT int EVP_DigestFinal(EVP_MD_CTX *ctx, uint8_t *md_out,
                                    unsigned int *out_size);
 
-/* EVP_Digest performs a complete hashing operation in one call. It hashes
- * |len| bytes from |data| and writes the digest to |md_out|. At most
- * |EVP_MAX_MD_SIZE| bytes are written. If |out_size| is not NULL then
- * |*out_size| is set to the number of bytes written. It returns one on success
- * and zero otherwise. */
+/* EVP_Digest performs a complete hashing operation in one call. It hashes |len|
+ * bytes from |data| and writes the digest to |md_out|. |EVP_MD_CTX_size| bytes
+ * are written, which is at most |EVP_MAX_MD_SIZE|. If |out_size| is not NULL
+ * then |*out_size| is set to the number of bytes written. It returns one on
+ * success and zero otherwise. */
 OPENSSL_EXPORT int EVP_Digest(const void *data, size_t len, uint8_t *md_out,
                               unsigned int *md_out_size, const EVP_MD *type,
                               ENGINE *impl);
@@ -171,7 +177,7 @@ OPENSSL_EXPORT int EVP_Digest(const void *data, size_t len, uint8_t *md_out,
  * These functions allow code to learn details about an abstract hash
  * function. */
 
-/* EVP_MD_type returns a NID identifing |md|. (For example, |NID_sha256|.) */
+/* EVP_MD_type returns a NID identifying |md|. (For example, |NID_sha256|.) */
 OPENSSL_EXPORT int EVP_MD_type(const EVP_MD *md);
 
 /* EVP_MD_flags returns the flags for |md|, which is a set of |EVP_MD_FLAG_*|
@@ -209,6 +215,12 @@ OPENSSL_EXPORT int EVP_add_digest(const EVP_MD *digest);
  * |name|, or NULL if the name is unknown. */
 OPENSSL_EXPORT const EVP_MD *EVP_get_digestbyname(const char *);
 
+/* EVP_dss1 returns the value of EVP_sha1(). This was provided by OpenSSL to
+ * specifiy the original DSA signatures, which were fixed to use SHA-1. Note,
+ * however, that attempting to sign or verify DSA signatures with the EVP
+ * interface will always fail. */
+OPENSSL_EXPORT const EVP_MD *EVP_dss1(void);
+
 
 /* Digest operation accessors. */
 
@@ -218,11 +230,11 @@ OPENSSL_EXPORT const EVP_MD *EVP_MD_CTX_md(const EVP_MD_CTX *ctx);
 
 /* EVP_MD_CTX_size returns the digest size of |ctx|, in bytes. It
  * will crash if a digest hasn't been set on |ctx|. */
-OPENSSL_EXPORT unsigned EVP_MD_CTX_size(const EVP_MD_CTX *ctx);
+OPENSSL_EXPORT size_t EVP_MD_CTX_size(const EVP_MD_CTX *ctx);
 
 /* EVP_MD_CTX_block_size returns the block size of the digest function used by
  * |ctx|, in bytes. It will crash if a digest hasn't been set on |ctx|. */
-OPENSSL_EXPORT unsigned EVP_MD_CTX_block_size(const EVP_MD_CTX *ctx);
+OPENSSL_EXPORT size_t EVP_MD_CTX_block_size(const EVP_MD_CTX *ctx);
 
 /* EVP_MD_CTX_type returns a NID describing the digest function used by |ctx|.
  * (For example, |NID_sha256|.) It will crash if a digest hasn't been set on
@@ -251,6 +263,23 @@ struct env_md_ctx_st {
 
 #if defined(__cplusplus)
 }  /* extern C */
+
+#if !defined(BORINGSSL_NO_CXX)
+extern "C++" {
+
+namespace bssl {
+
+BORINGSSL_MAKE_DELETER(EVP_MD_CTX, EVP_MD_CTX_destroy)
+
+using ScopedEVP_MD_CTX =
+    internal::StackAllocated<EVP_MD_CTX, int, EVP_MD_CTX_init,
+                             EVP_MD_CTX_cleanup>;
+
+}  // namespace bssl
+
+}  // extern C++
+#endif
+
 #endif
 
 #define DIGEST_R_INPUT_NOT_INITIALIZED 100

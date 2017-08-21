@@ -54,10 +54,11 @@
 #include <string.h>
 
 #include <openssl/digest.h>
-#include <openssl/obj.h>
+#include <openssl/nid.h>
 #include <openssl/sha.h>
 
 #include "../internal.h"
+#include "internal.h"
 
 
 /* TODO(davidben): unsigned should be size_t. The various constant_time
@@ -72,7 +73,7 @@
  * supported by TLS.) */
 #define MAX_HASH_BLOCK_SIZE 128
 
-int EVP_tls_cbc_remove_padding(unsigned *out_len,
+int EVP_tls_cbc_remove_padding(unsigned *out_padding_ok, unsigned *out_len,
                                const uint8_t *in, unsigned in_len,
                                unsigned block_size, unsigned mac_size) {
   unsigned padding_length, good, to_check, i;
@@ -118,140 +119,97 @@ int EVP_tls_cbc_remove_padding(unsigned *out_len,
    * bad padding would give POODLE's padding oracle. */
   padding_length = good & (padding_length + 1);
   *out_len = in_len - padding_length;
-
-  return constant_time_select_int(good, 1, -1);
+  *out_padding_ok = good;
+  return 1;
 }
-
-/* If CBC_MAC_ROTATE_IN_PLACE is defined then EVP_tls_cbc_copy_mac is performed
- * with variable accesses in a 64-byte-aligned buffer. Assuming that this fits
- * into a single or pair of cache-lines, then the variable memory accesses don't
- * actually affect the timing. CPUs with smaller cache-lines [if any] are not
- * multi-core and are not considered vulnerable to cache-timing attacks. */
-#define CBC_MAC_ROTATE_IN_PLACE
 
 void EVP_tls_cbc_copy_mac(uint8_t *out, unsigned md_size,
                           const uint8_t *in, unsigned in_len,
                           unsigned orig_len) {
-#if defined(CBC_MAC_ROTATE_IN_PLACE)
-  uint8_t rotated_mac_buf[64 + EVP_MAX_MD_SIZE];
-  uint8_t *rotated_mac;
-#else
-  uint8_t rotated_mac[EVP_MAX_MD_SIZE];
-#endif
+  uint8_t rotated_mac1[EVP_MAX_MD_SIZE], rotated_mac2[EVP_MAX_MD_SIZE];
+  uint8_t *rotated_mac = rotated_mac1;
+  uint8_t *rotated_mac_tmp = rotated_mac2;
 
   /* mac_end is the index of |in| just after the end of the MAC. */
   unsigned mac_end = in_len;
   unsigned mac_start = mac_end - md_size;
-  /* scan_start contains the number of bytes that we can ignore because
-   * the MAC's position can only vary by 255 bytes. */
-  unsigned scan_start = 0;
-  unsigned i, j;
-  unsigned rotate_offset;
 
   assert(orig_len >= in_len);
   assert(in_len >= md_size);
   assert(md_size <= EVP_MAX_MD_SIZE);
 
-#if defined(CBC_MAC_ROTATE_IN_PLACE)
-  rotated_mac = rotated_mac_buf + ((0 - (size_t)rotated_mac_buf) & 63);
-#endif
-
+  /* scan_start contains the number of bytes that we can ignore because
+   * the MAC's position can only vary by 255 bytes. */
+  unsigned scan_start = 0;
   /* This information is public so it's safe to branch based on it. */
   if (orig_len > md_size + 255 + 1) {
     scan_start = orig_len - (md_size + 255 + 1);
   }
 
-  /* Ideally the next statement would be:
-   *
-   *   rotate_offset = (mac_start - scan_start) % md_size;
-   *
-   * However, division is not a constant-time operation (at least on Intel
-   * chips). Thus we enumerate the possible values of md_size and handle each
-   * separately. The value of |md_size| is public information (it's determined
-   * by the cipher suite in the ServerHello) so our timing can vary based on
-   * its value. */
-
-  rotate_offset = mac_start - scan_start;
-  /* rotate_offset can be, at most, 255 (bytes of padding) + 1 (padding length)
-   * + md_size = 256 + 48 (since SHA-384 is the largest hash) = 304. */
-  assert(rotate_offset <= 304);
-
-  if (md_size == 16) {
-    rotate_offset &= 15;
-  } else if (md_size == 20) {
-    /* 1/20 is approximated as 25/512 and then Barrett reduction is used.
-     * Analytically, this is correct for 0 <= rotate_offset <= 853. */
-    unsigned q = (rotate_offset * 25) >> 9;
-    rotate_offset -= q * 20;
-    rotate_offset -=
-        constant_time_select(constant_time_ge(rotate_offset, 20), 20, 0);
-  } else if (md_size == 32) {
-    rotate_offset &= 31;
-  } else if (md_size == 48) {
-    /* 1/48 is approximated as 10/512 and then Barrett reduction is used.
-     * Analytically, this is correct for 0 <= rotate_offset <= 768. */
-    unsigned q = (rotate_offset * 10) >> 9;
-    rotate_offset -= q * 48;
-    rotate_offset -=
-        constant_time_select(constant_time_ge(rotate_offset, 48), 48, 0);
-  } else {
-    /* This should be impossible therefore this path doesn't run in constant
-     * time. */
-    assert(0);
-    rotate_offset = rotate_offset % md_size;
-  }
-
-  memset(rotated_mac, 0, md_size);
-  for (i = scan_start, j = 0; i < orig_len; i++) {
-    uint8_t mac_started = constant_time_ge_8(i, mac_start);
-    uint8_t mac_ended = constant_time_ge_8(i, mac_end);
-    uint8_t b = in[i];
-    rotated_mac[j++] |= b & mac_started & ~mac_ended;
-    j &= constant_time_lt(j, md_size);
-  }
-
-/* Now rotate the MAC */
-#if defined(CBC_MAC_ROTATE_IN_PLACE)
-  j = 0;
-  for (i = 0; i < md_size; i++) {
-    /* in case cache-line is 32 bytes, touch second line */
-    ((volatile uint8_t *)rotated_mac)[rotate_offset ^ 32];
-    out[j++] = rotated_mac[rotate_offset++];
-    rotate_offset &= constant_time_lt(rotate_offset, md_size);
-  }
-#else
-  memset(out, 0, md_size);
-  rotate_offset = md_size - rotate_offset;
-  rotate_offset &= constant_time_lt(rotate_offset, md_size);
-  for (i = 0; i < md_size; i++) {
-    for (j = 0; j < md_size; j++) {
-      out[j] |= rotated_mac[i] & constant_time_eq_8(j, rotate_offset);
+  unsigned rotate_offset = 0;
+  uint8_t mac_started = 0;
+  OPENSSL_memset(rotated_mac, 0, md_size);
+  for (unsigned i = scan_start, j = 0; i < orig_len; i++, j++) {
+    if (j >= md_size) {
+      j -= md_size;
     }
-    rotate_offset++;
-    rotate_offset &= constant_time_lt(rotate_offset, md_size);
+    unsigned is_mac_start = constant_time_eq(i, mac_start);
+    mac_started |= is_mac_start;
+    uint8_t mac_ended = constant_time_ge_8(i, mac_end);
+    rotated_mac[j] |= in[i] & mac_started & ~mac_ended;
+    /* Save the offset that |mac_start| is mapped to. */
+    rotate_offset |= j & is_mac_start;
   }
-#endif
+
+  /* Now rotate the MAC. We rotate in log(md_size) steps, one for each bit
+   * position. */
+  for (unsigned offset = 1; offset < md_size;
+       offset <<= 1, rotate_offset >>= 1) {
+    /* Rotate by |offset| iff the corresponding bit is set in
+     * |rotate_offset|, placing the result in |rotated_mac_tmp|. */
+    const uint8_t skip_rotate = (rotate_offset & 1) - 1;
+    for (unsigned i = 0, j = offset; i < md_size; i++, j++) {
+      if (j >= md_size) {
+        j -= md_size;
+      }
+      rotated_mac_tmp[i] =
+          constant_time_select_8(skip_rotate, rotated_mac[i], rotated_mac[j]);
+    }
+
+    /* Swap pointers so |rotated_mac| contains the (possibly) rotated value.
+     * Note the number of iterations and thus the identity of these pointers is
+     * public information. */
+    uint8_t *tmp = rotated_mac;
+    rotated_mac = rotated_mac_tmp;
+    rotated_mac_tmp = tmp;
+  }
+
+  OPENSSL_memcpy(out, rotated_mac, md_size);
 }
 
 /* u32toBE serialises an unsigned, 32-bit number (n) as four bytes at (p) in
  * big-endian order. The value of p is advanced by four. */
-#define u32toBE(n, p) \
-  (*((p)++)=(uint8_t)(n>>24), \
-   *((p)++)=(uint8_t)(n>>16), \
-   *((p)++)=(uint8_t)(n>>8), \
-   *((p)++)=(uint8_t)(n))
+#define u32toBE(n, p)                \
+  do {                               \
+    *((p)++) = (uint8_t)((n) >> 24); \
+    *((p)++) = (uint8_t)((n) >> 16); \
+    *((p)++) = (uint8_t)((n) >> 8);  \
+    *((p)++) = (uint8_t)((n));       \
+  } while (0)
 
 /* u64toBE serialises an unsigned, 64-bit number (n) as eight bytes at (p) in
  * big-endian order. The value of p is advanced by eight. */
-#define u64toBE(n, p) \
-  (*((p)++)=(uint8_t)(n>>56), \
-   *((p)++)=(uint8_t)(n>>48), \
-   *((p)++)=(uint8_t)(n>>40), \
-   *((p)++)=(uint8_t)(n>>32), \
-   *((p)++)=(uint8_t)(n>>24), \
-   *((p)++)=(uint8_t)(n>>16), \
-   *((p)++)=(uint8_t)(n>>8), \
-   *((p)++)=(uint8_t)(n))
+#define u64toBE(n, p)                \
+  do {                               \
+    *((p)++) = (uint8_t)((n) >> 56); \
+    *((p)++) = (uint8_t)((n) >> 48); \
+    *((p)++) = (uint8_t)((n) >> 40); \
+    *((p)++) = (uint8_t)((n) >> 32); \
+    *((p)++) = (uint8_t)((n) >> 24); \
+    *((p)++) = (uint8_t)((n) >> 16); \
+    *((p)++) = (uint8_t)((n) >> 8);  \
+    *((p)++) = (uint8_t)((n));       \
+  } while (0)
 
 /* These functions serialize the state of a hash and thus perform the standard
  * "final" operation without adding the padding and length that such a function
@@ -424,16 +382,16 @@ int EVP_tls_cbc_digest_record(const EVP_MD *md, uint8_t *md_out,
 
   /* Compute the initial HMAC block. */
   bits += 8 * md_block_size;
-  memset(hmac_pad, 0, md_block_size);
+  OPENSSL_memset(hmac_pad, 0, md_block_size);
   assert(mac_secret_length <= sizeof(hmac_pad));
-  memcpy(hmac_pad, mac_secret, mac_secret_length);
+  OPENSSL_memcpy(hmac_pad, mac_secret, mac_secret_length);
   for (i = 0; i < md_block_size; i++) {
     hmac_pad[i] ^= 0x36;
   }
 
   md_transform(md_state.c, hmac_pad);
 
-  memset(length_bytes, 0, md_length_size - 4);
+  OPENSSL_memset(length_bytes, 0, md_length_size - 4);
   length_bytes[md_length_size - 4] = (uint8_t)(bits >> 24);
   length_bytes[md_length_size - 3] = (uint8_t)(bits >> 16);
   length_bytes[md_length_size - 2] = (uint8_t)(bits >> 8);
@@ -441,15 +399,15 @@ int EVP_tls_cbc_digest_record(const EVP_MD *md, uint8_t *md_out,
 
   if (k > 0) {
     /* k is a multiple of md_block_size. */
-    memcpy(first_block, header, 13);
-    memcpy(first_block + 13, data, md_block_size - 13);
+    OPENSSL_memcpy(first_block, header, 13);
+    OPENSSL_memcpy(first_block + 13, data, md_block_size - 13);
     md_transform(md_state.c, first_block);
     for (i = 1; i < k / md_block_size; i++) {
       md_transform(md_state.c, data + md_block_size * i - 13);
     }
   }
 
-  memset(mac_out, 0, sizeof(mac_out));
+  OPENSSL_memset(mac_out, 0, sizeof(mac_out));
 
   /* We now process the final hash blocks. For each block, we construct
    * it in constant time. If the |i==index_a| then we'll include the 0x80

@@ -78,9 +78,6 @@ extern "C" {
 /* Low-level operations on elliptic curves. */
 
 
-typedef struct ec_group_st EC_GROUP;
-typedef struct ec_point_st EC_POINT;
-
 /* point_conversion_form_t enumerates forms, as defined in X9.62 (ECDSA), for
  * the encoding of a elliptic curve point (x,y) */
 typedef enum {
@@ -89,7 +86,7 @@ typedef enum {
    * is. */
   POINT_CONVERSION_COMPRESSED = 2,
 
-  /* POINT_CONVERSION_COMPRESSED indicates that the point is encoded as
+  /* POINT_CONVERSION_UNCOMPRESSED indicates that the point is encoded as
    * z||x||y, where z is the octet 0x04. */
   POINT_CONVERSION_UNCOMPRESSED = 4,
 
@@ -189,12 +186,13 @@ OPENSSL_EXPORT int EC_POINT_is_at_infinity(const EC_GROUP *group,
                                            const EC_POINT *point);
 
 /* EC_POINT_is_on_curve returns one if |point| is an element of |group| and
- * zero otheriwse. If |ctx| is non-NULL, it may be used. */
+ * and zero otherwise or when an error occurs. This is different from OpenSSL,
+ * which returns -1 on error. If |ctx| is non-NULL, it may be used. */
 OPENSSL_EXPORT int EC_POINT_is_on_curve(const EC_GROUP *group,
                                         const EC_POINT *point, BN_CTX *ctx);
 
-/* EC_POINT_cmp returns zero if |a| is equal to |b|, greater than zero is
- * non-equal and -1 on error. If |ctx| is not NULL, it may be used. */
+/* EC_POINT_cmp returns zero if |a| is equal to |b|, greater than zero if
+ * not equal and -1 on error. If |ctx| is not NULL, it may be used. */
 OPENSSL_EXPORT int EC_POINT_cmp(const EC_GROUP *group, const EC_POINT *a,
                                 const EC_POINT *b, BN_CTX *ctx);
 
@@ -220,10 +218,10 @@ OPENSSL_EXPORT int EC_POINT_get_affine_coordinates_GFp(const EC_GROUP *group,
                                                        BIGNUM *x, BIGNUM *y,
                                                        BN_CTX *ctx);
 
-/* EC_POINT_set_affine_coordinates_GFp sets the value of |p| to be (|x|, |y|).
- * The |ctx| argument may be used if not NULL. It returns one on success or
- * zero on error. Note that, unlike with OpenSSL, it's considered an error if
- * the point is not on the curve. */
+/* EC_POINT_set_affine_coordinates_GFp sets the value of |point| to be
+ * (|x|, |y|). The |ctx| argument may be used if not NULL. It returns one
+ * on success or zero on error. Note that, unlike with OpenSSL, it's
+ * considered an error if the point is not on the curve. */
 OPENSSL_EXPORT int EC_POINT_set_affine_coordinates_GFp(const EC_GROUP *group,
                                                        EC_POINT *point,
                                                        const BIGNUM *x,
@@ -274,8 +272,8 @@ OPENSSL_EXPORT int EC_POINT_add(const EC_GROUP *group, EC_POINT *r,
 OPENSSL_EXPORT int EC_POINT_dbl(const EC_GROUP *group, EC_POINT *r,
                                 const EC_POINT *a, BN_CTX *ctx);
 
-/* EC_POINT_invert sets |a| equal to minus |a|. It returns one on success and zero
- * otherwise. If |ctx| is not NULL, it may be used. */
+/* EC_POINT_invert sets |a| equal to minus |a|. It returns one on success and
+ * zero otherwise. If |ctx| is not NULL, it may be used. */
 OPENSSL_EXPORT int EC_POINT_invert(const EC_GROUP *group, EC_POINT *a,
                                    BN_CTX *ctx);
 
@@ -288,16 +286,31 @@ OPENSSL_EXPORT int EC_POINT_mul(const EC_GROUP *group, EC_POINT *r,
 
 /* Deprecated functions. */
 
-/* EC_GROUP_new_arbitrary creates a new, arbitrary elliptic curve group based on
- * the equation y² = x³ + a·x + b. The generator is set to (gx, gy) which must
- * have the given order and cofactor. It returns the new group or NULL on error.
+/* EC_GROUP_new_curve_GFp creates a new, arbitrary elliptic curve group based
+ * on the equation y² = x³ + a·x + b. It returns the new group or NULL on
+ * error.
+ *
+ * This new group has no generator. It is an error to use a generator-less group
+ * with any functions except for |EC_GROUP_free|, |EC_POINT_new|,
+ * |EC_POINT_set_affine_coordinates_GFp|, and |EC_GROUP_set_generator|.
  *
  * |EC_GROUP|s returned by this function will always compare as unequal via
  * |EC_GROUP_cmp| (even to themselves). |EC_GROUP_get_curve_name| will always
- * return |NID_undef|. */
-OPENSSL_EXPORT EC_GROUP *EC_GROUP_new_arbitrary(
-    const BIGNUM *p, const BIGNUM *a, const BIGNUM *b, const BIGNUM *gx,
-    const BIGNUM *gy, const BIGNUM *order, const BIGNUM *cofactor);
+ * return |NID_undef|.
+ *
+ * Avoid using arbitrary curves and use |EC_GROUP_new_by_curve_name| instead. */
+OPENSSL_EXPORT EC_GROUP *EC_GROUP_new_curve_GFp(const BIGNUM *p,
+                                                const BIGNUM *a,
+                                                const BIGNUM *b, BN_CTX *ctx);
+
+/* EC_GROUP_set_generator sets the generator for |group| to |generator|, which
+ * must have the given order and cofactor. It may only be used with |EC_GROUP|
+ * objects returned by |EC_GROUP_new_curve_GFp| and may only be used once on
+ * each group. */
+OPENSSL_EXPORT int EC_GROUP_set_generator(EC_GROUP *group,
+                                          const EC_POINT *generator,
+                                          const BIGNUM *order,
+                                          const BIGNUM *cofactor);
 
 /* EC_GROUP_get_order sets |*order| to the order of |group|, if it's not
  * NULL. It returns one on success and zero otherwise. |ctx| is ignored. Use
@@ -343,6 +356,18 @@ OPENSSL_EXPORT size_t EC_get_builtin_curves(EC_builtin_curve *out_curves,
 
 #if defined(__cplusplus)
 }  /* extern C */
+
+extern "C++" {
+
+namespace bssl {
+
+BORINGSSL_MAKE_DELETER(EC_POINT, EC_POINT_free)
+BORINGSSL_MAKE_DELETER(EC_GROUP, EC_GROUP_free)
+
+}  // namespace bssl
+
+}  /* extern C++ */
+
 #endif
 
 #define EC_R_BUFFER_TOO_SMALL 100
@@ -376,5 +401,6 @@ OPENSSL_EXPORT size_t EC_get_builtin_curves(EC_builtin_curve *out_curves,
 #define EC_R_DECODE_ERROR 128
 #define EC_R_ENCODE_ERROR 129
 #define EC_R_GROUP_MISMATCH 130
+#define EC_R_INVALID_COFACTOR 131
 
 #endif  /* OPENSSL_HEADER_EC_H */

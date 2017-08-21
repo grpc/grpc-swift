@@ -60,7 +60,7 @@
 #include <openssl/base.h>
 
 #include <openssl/bytestring.h>
-#include <openssl/obj_mac.h>
+#include <openssl/nid.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -135,7 +135,7 @@ OPENSSL_EXPORT int OBJ_nid2cbb(CBB *out, int nid);
 
 /* Dealing with textual representations of object identifiers. */
 
-/* OBJ_txt2obj returns an ASN1_OBJECT for the textual respresentation in |s|.
+/* OBJ_txt2obj returns an ASN1_OBJECT for the textual representation in |s|.
  * If |dont_search_names| is zero, then |s| will be matched against the long
  * and short names of a known objects to find a match. Otherwise |s| must
  * contain an ASCII string with a dotted sequence of numbers. The resulting
@@ -144,7 +144,7 @@ OPENSSL_EXPORT int OBJ_nid2cbb(CBB *out, int nid);
 OPENSSL_EXPORT ASN1_OBJECT *OBJ_txt2obj(const char *s, int dont_search_names);
 
 /* OBJ_obj2txt converts |obj| to a textual representation. If
- * |dont_return_name| is zero then |obj| will be matched against known objects
+ * |always_return_oid| is zero then |obj| will be matched against known objects
  * and the long (preferably) or short name will be used if found. Otherwise
  * |obj| will be converted into a dotted sequence of integers. If |out| is not
  * NULL, then at most |out_len| bytes of the textual form will be written
@@ -152,7 +152,7 @@ OPENSSL_EXPORT ASN1_OBJECT *OBJ_txt2obj(const char *s, int dont_search_names);
  * always be NUL terminated. It returns the number of characters that could
  * have been written, not including the final NUL, or -1 on error. */
 OPENSSL_EXPORT int OBJ_obj2txt(char *out, int out_len, const ASN1_OBJECT *obj,
-                               int dont_return_name);
+                               int always_return_oid);
 
 
 /* Adding objects at runtime. */
@@ -187,6 +187,34 @@ OPENSSL_EXPORT int OBJ_find_sigid_algs(int sign_nid, int *out_digest_nid,
  * whether the combination is valid. */
 OPENSSL_EXPORT int OBJ_find_sigid_by_algs(int *out_sign_nid, int digest_nid,
                                           int pkey_nid);
+
+
+/* Deprecated functions. */
+
+typedef struct obj_name_st {
+  int type;
+  int alias;
+  const char *name;
+  const char *data;
+} OBJ_NAME;
+
+#define OBJ_NAME_TYPE_MD_METH 1
+#define OBJ_NAME_TYPE_CIPHER_METH 2
+
+/* OBJ_NAME_do_all_sorted calls |callback| zero or more times, each time with
+ * the name of a different primitive. If |type| is |OBJ_NAME_TYPE_MD_METH| then
+ * the primitives will be hash functions, alternatively if |type| is
+ * |OBJ_NAME_TYPE_CIPHER_METH| then the primitives will be ciphers or cipher
+ * modes.
+ *
+ * This function is ill-specified and should never be used. */
+OPENSSL_EXPORT void OBJ_NAME_do_all_sorted(
+    int type, void (*callback)(const OBJ_NAME *, void *arg), void *arg);
+
+/* OBJ_NAME_do_all calls |OBJ_NAME_do_all_sorted|. */
+OPENSSL_EXPORT void OBJ_NAME_do_all(int type, void (*callback)(const OBJ_NAME *,
+                                                               void *arg),
+                                    void *arg);
 
 
 #if defined(__cplusplus)

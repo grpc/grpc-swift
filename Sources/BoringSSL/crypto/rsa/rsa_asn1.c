@@ -59,8 +59,6 @@
 #include <limits.h>
 #include <string.h>
 
-#include <openssl/asn1.h>
-#include <openssl/asn1t.h>
 #include <openssl/bn.h>
 #include <openssl/bytestring.h>
 #include <openssl/err.h>
@@ -68,6 +66,7 @@
 
 #include "internal.h"
 #include "../bytestring/internal.h"
+#include "../internal.h"
 
 
 static int parse_integer_buggy(CBS *cbs, BIGNUM **out, int buggy) {
@@ -185,7 +184,7 @@ static RSA_additional_prime *rsa_parse_additional_prime(CBS *cbs) {
     OPENSSL_PUT_ERROR(RSA, ERR_R_MALLOC_FAILURE);
     return 0;
   }
-  memset(ret, 0, sizeof(RSA_additional_prime));
+  OPENSSL_memset(ret, 0, sizeof(RSA_additional_prime));
 
   CBS child;
   if (!CBS_get_asn1(cbs, &child, CBS_ASN1_SEQUENCE) ||
@@ -282,6 +281,11 @@ RSA *RSA_parse_private_key(CBS *cbs) {
     goto err;
   }
 
+  if (!RSA_check_key(ret)) {
+    OPENSSL_PUT_ERROR(RSA, RSA_R_BAD_RSA_PARAMETERS);
+    goto err;
+  }
+
   BN_CTX_free(ctx);
   BN_free(product_of_primes_so_far);
   return ret;
@@ -325,22 +329,23 @@ int RSA_marshal_private_key(CBB *cbb, const RSA *rsa) {
     return 0;
   }
 
+  CBB other_prime_infos;
   if (is_multiprime) {
-    CBB other_prime_infos;
     if (!CBB_add_asn1(&child, &other_prime_infos, CBS_ASN1_SEQUENCE)) {
       OPENSSL_PUT_ERROR(RSA, RSA_R_ENCODE_ERROR);
       return 0;
     }
-    size_t i;
-    for (i = 0; i < sk_RSA_additional_prime_num(rsa->additional_primes); i++) {
+    for (size_t i = 0; i < sk_RSA_additional_prime_num(rsa->additional_primes);
+         i++) {
       RSA_additional_prime *ap =
-              sk_RSA_additional_prime_value(rsa->additional_primes, i);
+          sk_RSA_additional_prime_value(rsa->additional_primes, i);
       CBB other_prime_info;
       if (!CBB_add_asn1(&other_prime_infos, &other_prime_info,
                         CBS_ASN1_SEQUENCE) ||
           !marshal_integer(&other_prime_info, ap->prime) ||
           !marshal_integer(&other_prime_info, ap->exp) ||
-          !marshal_integer(&other_prime_info, ap->coeff)) {
+          !marshal_integer(&other_prime_info, ap->coeff) ||
+          !CBB_flush(&other_prime_infos)) {
         OPENSSL_PUT_ERROR(RSA, RSA_R_ENCODE_ERROR);
         return 0;
       }
@@ -390,6 +395,7 @@ int i2d_RSAPublicKey(const RSA *in, uint8_t **outp) {
   CBB cbb;
   if (!CBB_init(&cbb, 0) ||
       !RSA_marshal_public_key(&cbb, in)) {
+    CBB_cleanup(&cbb);
     return -1;
   }
   return CBB_finish_i2d(&cbb, outp);
@@ -417,19 +423,11 @@ int i2d_RSAPrivateKey(const RSA *in, uint8_t **outp) {
   CBB cbb;
   if (!CBB_init(&cbb, 0) ||
       !RSA_marshal_private_key(&cbb, in)) {
+    CBB_cleanup(&cbb);
     return -1;
   }
   return CBB_finish_i2d(&cbb, outp);
 }
-
-ASN1_SEQUENCE(RSA_PSS_PARAMS) = {
-  ASN1_EXP_OPT(RSA_PSS_PARAMS, hashAlgorithm, X509_ALGOR,0),
-  ASN1_EXP_OPT(RSA_PSS_PARAMS, maskGenAlgorithm, X509_ALGOR,1),
-  ASN1_EXP_OPT(RSA_PSS_PARAMS, saltLength, ASN1_INTEGER,2),
-  ASN1_EXP_OPT(RSA_PSS_PARAMS, trailerField, ASN1_INTEGER,3),
-} ASN1_SEQUENCE_END(RSA_PSS_PARAMS);
-
-IMPLEMENT_ASN1_FUNCTIONS(RSA_PSS_PARAMS);
 
 RSA *RSAPublicKey_dup(const RSA *rsa) {
   uint8_t *der;

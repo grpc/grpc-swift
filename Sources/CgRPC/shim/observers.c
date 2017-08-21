@@ -97,7 +97,7 @@ void cgrpc_observer_apply(cgrpc_observer *observer, grpc_op *op) {
     }
     case GRPC_OP_SEND_MESSAGE: {
       cgrpc_observer_send_message *obs = (cgrpc_observer_send_message *) observer;
-      op->data.send_message = obs->request_payload;
+      op->data.send_message.send_message = obs->request_payload;
       break;
     }
     case GRPC_OP_SEND_CLOSE_FROM_CLIENT: {
@@ -108,30 +108,30 @@ void cgrpc_observer_apply(cgrpc_observer *observer, grpc_op *op) {
       op->data.send_status_from_server.trailing_metadata_count = obs->trailing_metadata.count;
       op->data.send_status_from_server.trailing_metadata = obs->trailing_metadata.metadata;
       op->data.send_status_from_server.status = obs->status;
-      op->data.send_status_from_server.status_details = obs->status_details;
+      op->data.send_status_from_server.status_details = &obs->status_details;
       break;
     }
     case GRPC_OP_RECV_INITIAL_METADATA: {
       cgrpc_observer_recv_initial_metadata *obs = (cgrpc_observer_recv_initial_metadata *) observer;
       grpc_metadata_array_init(&(obs->initial_metadata_recv));
-      op->data.recv_initial_metadata = &(obs->initial_metadata_recv);
+      //REVIEW - possibly broken in upgrade to v1.4
+      // op->data.recv_initial_metadata = &(obs->initial_metadata_recv);
       break;
     }
     case GRPC_OP_RECV_MESSAGE: {
       cgrpc_observer_recv_message *obs = (cgrpc_observer_recv_message *) observer;
-      op->data.recv_message = &(obs->response_payload_recv);
+      op->data.recv_message.recv_message = &(obs->response_payload_recv);
       break;
     }
     case GRPC_OP_RECV_STATUS_ON_CLIENT: {
       cgrpc_observer_recv_status_on_client *obs = (cgrpc_observer_recv_status_on_client *) observer;
       grpc_metadata_array_init(&(obs->trailing_metadata_recv));
       obs->server_status = GRPC_STATUS_OK;
-      obs->server_details = NULL;
+      obs->server_details = grpc_slice_from_copied_string("");
       obs->server_details_capacity = 0;
       op->data.recv_status_on_client.trailing_metadata = &(obs->trailing_metadata_recv);
       op->data.recv_status_on_client.status = &(obs->server_status);
       op->data.recv_status_on_client.status_details = &(obs->server_details);
-      op->data.recv_status_on_client.status_details_capacity = &(obs->server_details_capacity);
       break;
     }
     case GRPC_OP_RECV_CLOSE_ON_SERVER: {
@@ -185,7 +185,6 @@ void cgrpc_observer_destroy(cgrpc_observer *observer) {
     }
     case GRPC_OP_RECV_STATUS_ON_CLIENT: {
       cgrpc_observer_recv_status_on_client *obs = (cgrpc_observer_recv_status_on_client *) observer;
-      free(obs->server_details);
       grpc_metadata_array_destroy(&(obs->trailing_metadata_recv));
       free(obs);
       break;
@@ -224,7 +223,7 @@ void cgrpc_observer_send_status_from_server_set_status(cgrpc_observer_send_statu
 }
 
 void cgrpc_observer_send_status_from_server_set_status_details(cgrpc_observer_send_status_from_server *observer, const char *statusDetails) {
-  observer->status_details = strdup(statusDetails);
+  observer->status_details = grpc_slice_from_copied_string(statusDetails);
 }
 
 cgrpc_metadata_array *cgrpc_observer_recv_status_on_client_get_metadata(cgrpc_observer_recv_status_on_client *observer) {
@@ -238,7 +237,7 @@ long cgrpc_observer_recv_status_on_client_get_status(cgrpc_observer_recv_status_
 }
 
 const char *cgrpc_observer_recv_status_on_client_get_status_details(cgrpc_observer_recv_status_on_client *observer) {
-  return observer->server_details;
+  return (const char *) GRPC_SLICE_START_PTR(observer->server_details);
 }
 
 int cgrpc_observer_recv_close_on_server_get_was_cancelled(cgrpc_observer_recv_close_on_server *observer) {

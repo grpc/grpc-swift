@@ -95,6 +95,10 @@ OPENSSL_EXPORT int CBS_get_u24(CBS *cbs, uint32_t *out);
  * and advances |cbs|. It returns one on success and zero on error. */
 OPENSSL_EXPORT int CBS_get_u32(CBS *cbs, uint32_t *out);
 
+/* CBS_get_last_u8 sets |*out| to the last uint8_t from |cbs| and shortens
+ * |cbs|. It returns one on success and zero on error. */
+OPENSSL_EXPORT int CBS_get_last_u8(CBS *cbs, uint8_t *out);
+
 /* CBS_get_bytes sets |*out| to the next |len| bytes from |cbs| and advances
  * |cbs|. It returns one on success and zero on error. */
 OPENSSL_EXPORT int CBS_get_bytes(CBS *cbs, CBS *out, size_t len);
@@ -121,6 +125,7 @@ OPENSSL_EXPORT int CBS_get_u24_length_prefixed(CBS *cbs, CBS *out);
 
 /* Parsing ASN.1 */
 
+/* The following values are tag numbers for UNIVERSAL elements. */
 #define CBS_ASN1_BOOLEAN 0x1
 #define CBS_ASN1_INTEGER 0x2
 #define CBS_ASN1_BITSTRING 0x3
@@ -128,6 +133,7 @@ OPENSSL_EXPORT int CBS_get_u24_length_prefixed(CBS *cbs, CBS *out);
 #define CBS_ASN1_NULL 0x5
 #define CBS_ASN1_OBJECT 0x6
 #define CBS_ASN1_ENUMERATED 0xa
+#define CBS_ASN1_UTF8STRING 0xc
 #define CBS_ASN1_SEQUENCE (0x10 | CBS_ASN1_CONSTRUCTED)
 #define CBS_ASN1_SET (0x11 | CBS_ASN1_CONSTRUCTED)
 #define CBS_ASN1_NUMERICSTRING 0x12
@@ -143,8 +149,27 @@ OPENSSL_EXPORT int CBS_get_u24_length_prefixed(CBS *cbs, CBS *out);
 #define CBS_ASN1_UNIVERSALSTRING 0x1c
 #define CBS_ASN1_BMPSTRING 0x1e
 
+/* CBS_ASN1_CONSTRUCTED may be ORed into a tag to toggle the constructed
+ * bit. |CBS| and |CBB| APIs consider the constructed bit to be part of the
+ * tag. */
 #define CBS_ASN1_CONSTRUCTED 0x20
+
+/* The following values specify the constructed bit or tag class and may be ORed
+ * into a tag number to produce the final tag. If none is used, the tag will be
+ * UNIVERSAL.
+ *
+ * Note that although they currently match the DER serialization, consumers must
+ * use these bits rather than make assumptions about the representation. This is
+ * to allow for tag numbers beyond 31 in the future. */
+#define CBS_ASN1_APPLICATION 0x40
 #define CBS_ASN1_CONTEXT_SPECIFIC 0x80
+#define CBS_ASN1_PRIVATE 0xc0
+
+/* CBS_ASN1_CLASS_MASK may be ANDed with a tag to query its class. */
+#define CBS_ASN1_CLASS_MASK 0xc0
+
+/* CBS_ASN1_TAG_NUMBER_MASK may be ANDed with a tag to query its number. */
+#define CBS_ASN1_TAG_NUMBER_MASK 0x1f
 
 /* CBS_get_asn1 sets |*out| to the contents of DER-encoded, ASN.1 element (not
  * including tag and length bytes) and advances |cbs| over it. The ASN.1
@@ -164,6 +189,14 @@ OPENSSL_EXPORT int CBS_get_asn1_element(CBS *cbs, CBS *out, unsigned tag_value);
  * it returns one, CBS_get_asn1 may still fail if the rest of the
  * element is malformed. */
 OPENSSL_EXPORT int CBS_peek_asn1_tag(const CBS *cbs, unsigned tag_value);
+
+/* CBS_get_any_asn1 sets |*out| to contain the next ASN.1 element from |*cbs|
+ * (not including tag and length bytes), sets |*out_tag| to the tag number, and
+ * advances |*cbs|. It returns one on success and zero on error. Either of |out|
+ * and |out_tag| may be NULL to ignore the value.
+ *
+ * Tag numbers greater than 30 are not supported (i.e. short form only). */
+OPENSSL_EXPORT int CBS_get_any_asn1(CBS *cbs, CBS *out, unsigned *out_tag);
 
 /* CBS_get_any_asn1_element sets |*out| to contain the next ASN.1 element from
  * |*cbs| (including header bytes) and advances |*cbs|. It sets |*out_tag| to
@@ -224,6 +257,15 @@ OPENSSL_EXPORT int CBS_get_optional_asn1_uint64(CBS *cbs, uint64_t *out,
 OPENSSL_EXPORT int CBS_get_optional_asn1_bool(CBS *cbs, int *out, unsigned tag,
                                               int default_value);
 
+/* CBS_is_valid_asn1_bitstring returns one if |cbs| is a valid ASN.1 BIT STRING
+ * and zero otherwise. */
+OPENSSL_EXPORT int CBS_is_valid_asn1_bitstring(const CBS *cbs);
+
+/* CBS_asn1_bitstring_has_bit returns one if |cbs| is a valid ASN.1 BIT STRING
+ * and the specified bit is present and set. Otherwise, it returns zero. |bit|
+ * is indexed starting from zero. */
+OPENSSL_EXPORT int CBS_asn1_bitstring_has_bit(const CBS *cbs, unsigned bit);
+
 
 /* CRYPTO ByteBuilder.
  *
@@ -237,7 +279,8 @@ OPENSSL_EXPORT int CBS_get_optional_asn1_bool(CBS *cbs, int *out, unsigned tag,
  * not be used again.
  *
  * If one needs to force a length prefix to be written out because a |CBB| is
- * going out of scope, use |CBB_flush|. */
+ * going out of scope, use |CBB_flush|. If an operation on a |CBB| fails, it is
+ * in an undefined state and must not be used except to call |CBB_cleanup|. */
 
 struct cbb_buffer_st {
   uint8_t *buf;
@@ -245,6 +288,8 @@ struct cbb_buffer_st {
   size_t cap;      /* The size of buf. */
   char can_resize; /* One iff |buf| is owned by this object. If not then |buf|
                       cannot be resized. */
+  char error;      /* One iff there was an error writing to this CBB. All future
+                      operations will fail. */
 };
 
 struct cbb_st {
@@ -299,8 +344,10 @@ OPENSSL_EXPORT void CBB_cleanup(CBB *cbb);
 OPENSSL_EXPORT int CBB_finish(CBB *cbb, uint8_t **out_data, size_t *out_len);
 
 /* CBB_flush causes any pending length prefixes to be written out and any child
- * |CBB| objects of |cbb| to be invalidated. It returns one on success or zero
- * on error. */
+ * |CBB| objects of |cbb| to be invalidated. This allows |cbb| to continue to be
+ * used after the children go out of scope, e.g. when local |CBB| objects are
+ * added as children to a |CBB| that persists after a function returns. This
+ * function returns one on success or zero on error. */
 OPENSSL_EXPORT int CBB_flush(CBB *cbb);
 
 /* CBB_data returns a pointer to the bytes written to |cbb|. It does not flush
@@ -337,7 +384,7 @@ OPENSSL_EXPORT int CBB_add_u24_length_prefixed(CBB *cbb, CBB *out_contents);
  * the object. Passing in |tag| number 31 will return in an error since only
  * single octet identifiers are supported. It returns one on success or zero
  * on error. */
-OPENSSL_EXPORT int CBB_add_asn1(CBB *cbb, CBB *out_contents, uint8_t tag);
+OPENSSL_EXPORT int CBB_add_asn1(CBB *cbb, CBB *out_contents, unsigned tag);
 
 /* CBB_add_bytes appends |len| bytes from |data| to |cbb|. It returns one on
  * success and zero otherwise. */
@@ -372,6 +419,10 @@ OPENSSL_EXPORT int CBB_add_u16(CBB *cbb, uint16_t value);
  * returns one on success and zero otherwise. */
 OPENSSL_EXPORT int CBB_add_u24(CBB *cbb, uint32_t value);
 
+/* CBB_add_u32 appends a 32-bit, big-endian number from |value| to |cbb|. It
+ * returns one on success and zero otherwise. */
+OPENSSL_EXPORT int CBB_add_u32(CBB *cbb, uint32_t value);
+
 /* CBB_discard_child discards the current unflushed child of |cbb|. Neither the
  * child's contents nor the length prefix will be included in the output. */
 OPENSSL_EXPORT void CBB_discard_child(CBB *cbb);
@@ -384,6 +435,20 @@ OPENSSL_EXPORT int CBB_add_asn1_uint64(CBB *cbb, uint64_t value);
 
 #if defined(__cplusplus)
 }  /* extern C */
+
+
+#if !defined(BORINGSSL_NO_CXX)
+extern "C++" {
+
+namespace bssl {
+
+using ScopedCBB = internal::StackAllocated<CBB, void, CBB_zero, CBB_cleanup>;
+
+}  // namespace bssl
+
+}  // extern C++
+#endif
+
 #endif
 
 #endif  /* OPENSSL_HEADER_BYTESTRING_H */

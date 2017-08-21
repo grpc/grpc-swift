@@ -56,62 +56,139 @@
 
 #include <openssl/bn.h>
 
+#include <assert.h>
 #include <limits.h>
+
 #include <openssl/err.h>
 
 #include "internal.h"
 
 
-#define asm __asm__
+#if !defined(BN_ULLONG)
+/* bn_div_words divides a double-width |h|,|l| by |d| and returns the result,
+ * which must fit in a |BN_ULONG|. */
+static BN_ULONG bn_div_words(BN_ULONG h, BN_ULONG l, BN_ULONG d) {
+  BN_ULONG dh, dl, q, ret = 0, th, tl, t;
+  int i, count = 2;
 
-#if !defined(OPENSSL_NO_ASM)
-# if defined(__GNUC__) && __GNUC__>=2
-#  if defined(OPENSSL_X86)
-   /*
-    * There were two reasons for implementing this template:
-    * - GNU C generates a call to a function (__udivdi3 to be exact)
-    *   in reply to ((((BN_ULLONG)n0)<<BN_BITS2)|n1)/d0 (I fail to
-    *   understand why...);
-    * - divl doesn't only calculate quotient, but also leaves
-    *   remainder in %edx which we can definitely use here:-)
-    *
-    *					<appro@fy.chalmers.se>
-    */
-#undef div_asm
-#  define div_asm(n0,n1,d0)		\
-	({  asm volatile (			\
-		"divl	%4"			\
-		: "=a"(q), "=d"(rem)		\
-		: "a"(n1), "d"(n0), "g"(d0)	\
-		: "cc");			\
-	    q;					\
-	})
-#  define REMAINDER_IS_ALREADY_CALCULATED
-#  elif defined(OPENSSL_X86_64)
-   /*
-    * Same story here, but it's 128-bit by 64-bit division. Wow!
-    *					<appro@fy.chalmers.se>
-    */
-#  undef div_asm
-#  define div_asm(n0,n1,d0)		\
-	({  asm volatile (			\
-		"divq	%4"			\
-		: "=a"(q), "=d"(rem)		\
-		: "a"(n1), "d"(n0), "g"(d0)	\
-		: "cc");			\
-	    q;					\
-	})
-#  define REMAINDER_IS_ALREADY_CALCULATED
-#  endif /* __<cpu> */
-# endif /* __GNUC__ */
-#endif /* OPENSSL_NO_ASM */
+  if (d == 0) {
+    return BN_MASK2;
+  }
+
+  i = BN_num_bits_word(d);
+  assert((i == BN_BITS2) || (h <= (BN_ULONG)1 << i));
+
+  i = BN_BITS2 - i;
+  if (h >= d) {
+    h -= d;
+  }
+
+  if (i) {
+    d <<= i;
+    h = (h << i) | (l >> (BN_BITS2 - i));
+    l <<= i;
+  }
+  dh = (d & BN_MASK2h) >> BN_BITS4;
+  dl = (d & BN_MASK2l);
+  for (;;) {
+    if ((h >> BN_BITS4) == dh) {
+      q = BN_MASK2l;
+    } else {
+      q = h / dh;
+    }
+
+    th = q * dh;
+    tl = dl * q;
+    for (;;) {
+      t = h - th;
+      if ((t & BN_MASK2h) ||
+          ((tl) <= ((t << BN_BITS4) | ((l & BN_MASK2h) >> BN_BITS4)))) {
+        break;
+      }
+      q--;
+      th -= dh;
+      tl -= dl;
+    }
+    t = (tl >> BN_BITS4);
+    tl = (tl << BN_BITS4) & BN_MASK2h;
+    th += t;
+
+    if (l < tl) {
+      th++;
+    }
+    l -= tl;
+    if (h < th) {
+      h += d;
+      q--;
+    }
+    h -= th;
+
+    if (--count == 0) {
+      break;
+    }
+
+    ret = q << BN_BITS4;
+    h = ((h << BN_BITS4) | (l >> BN_BITS4)) & BN_MASK2;
+    l = (l & BN_MASK2l) << BN_BITS4;
+  }
+
+  ret |= q;
+  return ret;
+}
+#endif /* !defined(BN_ULLONG) */
+
+static inline void bn_div_rem_words(BN_ULONG *quotient_out, BN_ULONG *rem_out,
+                                    BN_ULONG n0, BN_ULONG n1, BN_ULONG d0) {
+  /* GCC and Clang generate function calls to |__udivdi3| and |__umoddi3| when
+   * the |BN_ULLONG|-based C code is used.
+   *
+   * GCC bugs:
+   *   * https://gcc.gnu.org/bugzilla/show_bug.cgi?id=14224
+   *   * https://gcc.gnu.org/bugzilla/show_bug.cgi?id=43721
+   *   * https://gcc.gnu.org/bugzilla/show_bug.cgi?id=54183
+   *   * https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58897
+   *   * https://gcc.gnu.org/bugzilla/show_bug.cgi?id=65668
+   *
+   * Clang bugs:
+   *   * https://llvm.org/bugs/show_bug.cgi?id=6397
+   *   * https://llvm.org/bugs/show_bug.cgi?id=12418
+   *
+   * These issues aren't specific to x86 and x86_64, so it might be worthwhile
+   * to add more assembly language implementations. */
+#if !defined(OPENSSL_NO_ASM) && defined(OPENSSL_X86) && defined(__GNUC__)
+  __asm__ volatile (
+    "divl %4"
+    : "=a"(*quotient_out), "=d"(*rem_out)
+    : "a"(n1), "d"(n0), "rm"(d0)
+    : "cc" );
+#elif !defined(OPENSSL_NO_ASM) && defined(OPENSSL_X86_64) && defined(__GNUC__)
+  __asm__ volatile (
+    "divq %4"
+    : "=a"(*quotient_out), "=d"(*rem_out)
+    : "a"(n1), "d"(n0), "rm"(d0)
+    : "cc" );
+#else
+#if defined(BN_ULLONG)
+  BN_ULLONG n = (((BN_ULLONG)n0) << BN_BITS2) | n1;
+  *quotient_out = (BN_ULONG)(n / d0);
+#else
+  *quotient_out = bn_div_words(n0, n1, d0);
+#endif
+  *rem_out = n1 - (*quotient_out * d0);
+#endif
+}
 
 /* BN_div computes  dv := num / divisor,  rounding towards
  * zero, and sets up rm  such that  dv*divisor + rm = num  holds.
  * Thus:
  *     dv->neg == num->neg ^ divisor->neg  (unless the result is zero)
  *     rm->neg == num->neg                 (unless the remainder is zero)
- * If 'dv' or 'rm' is NULL, the respective value is not returned. */
+ * If 'dv' or 'rm' is NULL, the respective value is not returned.
+ *
+ * This was specifically designed to contain fewer branches that may leak
+ * sensitive information; see "New Branch Prediction Vulnerabilities in OpenSSL
+ * and Necessary Software Countermeasures" by Onur Acıçmez, Shay Gueron, and
+ * Jean-Pierre Seifert. */
 int BN_div(BIGNUM *dv, BIGNUM *rm, const BIGNUM *num, const BIGNUM *divisor,
            BN_CTX *ctx) {
   int norm_shift, i, loop;
@@ -119,7 +196,6 @@ int BN_div(BIGNUM *dv, BIGNUM *rm, const BIGNUM *num, const BIGNUM *divisor,
   BN_ULONG *resp, *wnump;
   BN_ULONG d0, d1;
   int num_n, div_n;
-  int no_branch = 0;
 
   /* Invalid zero-padding would have particularly bad consequences
    * so don't just rely on bn_check_top() here */
@@ -129,26 +205,9 @@ int BN_div(BIGNUM *dv, BIGNUM *rm, const BIGNUM *num, const BIGNUM *divisor,
     return 0;
   }
 
-  if ((num->flags & BN_FLG_CONSTTIME) != 0 ||
-      (divisor->flags & BN_FLG_CONSTTIME) != 0) {
-    no_branch = 1;
-  }
-
   if (BN_is_zero(divisor)) {
     OPENSSL_PUT_ERROR(BN, BN_R_DIV_BY_ZERO);
     return 0;
-  }
-
-  if (!no_branch && BN_ucmp(num, divisor) < 0) {
-    if (rm != NULL) {
-      if (BN_copy(rm, num) == NULL) {
-        return 0;
-      }
-    }
-    if (dv != NULL) {
-      BN_zero(dv);
-    }
-    return 1;
   }
 
   BN_CTX_start(ctx);
@@ -176,26 +235,23 @@ int BN_div(BIGNUM *dv, BIGNUM *rm, const BIGNUM *num, const BIGNUM *divisor,
   }
   snum->neg = 0;
 
-  if (no_branch) {
-    /* Since we don't know whether snum is larger than sdiv,
-     * we pad snum with enough zeroes without changing its
-     * value.
-     */
-    if (snum->top <= sdiv->top + 1) {
-      if (bn_wexpand(snum, sdiv->top + 2) == NULL) {
-        goto err;
-      }
-      for (i = snum->top; i < sdiv->top + 2; i++) {
-        snum->d[i] = 0;
-      }
-      snum->top = sdiv->top + 2;
-    } else {
-      if (bn_wexpand(snum, snum->top + 1) == NULL) {
-        goto err;
-      }
-      snum->d[snum->top] = 0;
-      snum->top++;
+  /* Since we don't want to have special-case logic for the case where snum is
+   * larger than sdiv, we pad snum with enough zeroes without changing its
+   * value. */
+  if (snum->top <= sdiv->top + 1) {
+    if (bn_wexpand(snum, sdiv->top + 2) == NULL) {
+      goto err;
     }
+    for (i = snum->top; i < sdiv->top + 2; i++) {
+      snum->d[i] = 0;
+    }
+    snum->top = sdiv->top + 2;
+  } else {
+    if (bn_wexpand(snum, snum->top + 1) == NULL) {
+      goto err;
+    }
+    snum->d[snum->top] = 0;
+    snum->top++;
   }
 
   div_n = sdiv->top;
@@ -223,21 +279,12 @@ int BN_div(BIGNUM *dv, BIGNUM *rm, const BIGNUM *num, const BIGNUM *divisor,
   if (!bn_wexpand(res, (loop + 1))) {
     goto err;
   }
-  res->top = loop - no_branch;
+  res->top = loop - 1;
   resp = &(res->d[loop - 1]);
 
   /* space for temp */
   if (!bn_wexpand(tmp, (div_n + 1))) {
     goto err;
-  }
-
-  if (!no_branch) {
-    if (BN_ucmp(&wnum, sdiv) >= 0) {
-      bn_sub_words(wnum.d, wnum.d, sdiv->d, div_n);
-      *resp = 1;
-    } else {
-      res->top--;
-    }
   }
 
   /* if res->top == 0 then clear the neg value otherwise decrease
@@ -260,23 +307,10 @@ int BN_div(BIGNUM *dv, BIGNUM *rm, const BIGNUM *num, const BIGNUM *divisor,
       q = BN_MASK2;
     } else {
       /* n0 < d0 */
+      bn_div_rem_words(&q, &rem, n0, n1, d0);
+
 #ifdef BN_ULLONG
-      BN_ULLONG t2;
-
-#if defined(BN_ULLONG) && !defined(div_asm)
-      q = (BN_ULONG)(((((BN_ULLONG)n0) << BN_BITS2) | n1) / d0);
-#else
-      q = div_asm(n0, n1, d0);
-#endif
-
-#ifndef REMAINDER_IS_ALREADY_CALCULATED
-      /* rem doesn't have to be BN_ULLONG. The least we know it's less that d0,
-       * isn't it? */
-      rem = (n1 - q * d0) & BN_MASK2;
-#endif
-
-      t2 = (BN_ULLONG)d1 * q;
-
+      BN_ULLONG t2 = (BN_ULLONG)d1 * q;
       for (;;) {
         if (t2 <= ((((BN_ULLONG)rem) << BN_BITS2) | wnump[-2])) {
           break;
@@ -290,13 +324,7 @@ int BN_div(BIGNUM *dv, BIGNUM *rm, const BIGNUM *num, const BIGNUM *divisor,
       }
 #else /* !BN_ULLONG */
       BN_ULONG t2l, t2h;
-
-      q = bn_div_words(n0, n1, d0);
-
-      rem = (n1 - q * d0) & BN_MASK2;
-
       BN_UMULT_LOHI(t2l, t2h, d1, q);
-
       for (;;) {
         if ((t2h < rem) || ((t2h == rem) && (t2l <= wnump[-2]))) {
           break;
@@ -349,9 +377,7 @@ int BN_div(BIGNUM *dv, BIGNUM *rm, const BIGNUM *num, const BIGNUM *divisor,
       rm->neg = neg;
     }
   }
-  if (no_branch) {
-    bn_correct_top(res);
-  }
+  bn_correct_top(res);
   BN_CTX_end(ctx);
   return 1;
 
@@ -556,7 +582,7 @@ BN_ULONG BN_div_word(BIGNUM *a, BN_ULONG w) {
     return 0;
   }
 
-  /* normalize input (so bn_div_words doesn't complain) */
+  /* normalize input for |bn_div_rem_words|. */
   j = BN_BITS2 - BN_num_bits_word(w);
   w <<= j;
   if (!BN_lshift(a, a, j)) {
@@ -564,16 +590,20 @@ BN_ULONG BN_div_word(BIGNUM *a, BN_ULONG w) {
   }
 
   for (i = a->top - 1; i >= 0; i--) {
-    BN_ULONG l, d;
-
-    l = a->d[i];
-    d = bn_div_words(ret, l, w);
+    BN_ULONG l = a->d[i];
+    BN_ULONG d;
+    BN_ULONG unused_rem;
+    bn_div_rem_words(&d, &unused_rem, ret, l, w);
     ret = (l - ((d * w) & BN_MASK2)) & BN_MASK2;
     a->d[i] = d;
   }
 
   if ((a->top > 0) && (a->d[a->top - 1] == 0)) {
     a->top--;
+  }
+
+  if (a->top == 0) {
+    a->neg = 0;
   }
 
   ret >>= j;
@@ -592,6 +622,20 @@ BN_ULONG BN_mod_word(const BIGNUM *a, BN_ULONG w) {
     return (BN_ULONG) -1;
   }
 
+#ifndef BN_ULLONG
+  /* If |w| is too long and we don't have |BN_ULLONG| then we need to fall back
+   * to using |BN_div_word|. */
+  if (w > ((BN_ULONG)1 << BN_BITS4)) {
+    BIGNUM *tmp = BN_dup(a);
+    if (tmp == NULL) {
+      return (BN_ULONG)-1;
+    }
+    ret = BN_div_word(tmp, w);
+    BN_free(tmp);
+    return ret;
+  }
+#endif
+
   w &= BN_MASK2;
   for (i = a->top - 1; i >= 0; i--) {
 #ifndef BN_ULLONG
@@ -602,4 +646,83 @@ BN_ULONG BN_mod_word(const BIGNUM *a, BN_ULONG w) {
 #endif
   }
   return (BN_ULONG)ret;
+}
+
+int BN_mod_pow2(BIGNUM *r, const BIGNUM *a, size_t e) {
+  if (e == 0 || a->top == 0) {
+    BN_zero(r);
+    return 1;
+  }
+
+  size_t num_words = 1 + ((e - 1) / BN_BITS2);
+
+  /* If |a| definitely has less than |e| bits, just BN_copy. */
+  if ((size_t) a->top < num_words) {
+    return BN_copy(r, a) != NULL;
+  }
+
+  /* Otherwise, first make sure we have enough space in |r|.
+   * Note that this will fail if num_words > INT_MAX. */
+  if (bn_wexpand(r, num_words) == NULL) {
+    return 0;
+  }
+
+  /* Copy the content of |a| into |r|. */
+  OPENSSL_memcpy(r->d, a->d, num_words * sizeof(BN_ULONG));
+
+  /* If |e| isn't word-aligned, we have to mask off some of our bits. */
+  size_t top_word_exponent = e % (sizeof(BN_ULONG) * 8);
+  if (top_word_exponent != 0) {
+    r->d[num_words - 1] &= (((BN_ULONG) 1) << top_word_exponent) - 1;
+  }
+
+  /* Fill in the remaining fields of |r|. */
+  r->neg = a->neg;
+  r->top = (int) num_words;
+  bn_correct_top(r);
+  return 1;
+}
+
+int BN_nnmod_pow2(BIGNUM *r, const BIGNUM *a, size_t e) {
+  if (!BN_mod_pow2(r, a, e)) {
+    return 0;
+  }
+
+  /* If the returned value was non-negative, we're done. */
+  if (BN_is_zero(r) || !r->neg) {
+    return 1;
+  }
+
+  size_t num_words = 1 + (e - 1) / BN_BITS2;
+
+  /* Expand |r| to the size of our modulus. */
+  if (bn_wexpand(r, num_words) == NULL) {
+    return 0;
+  }
+
+  /* Clear the upper words of |r|. */
+  OPENSSL_memset(&r->d[r->top], 0, (num_words - r->top) * BN_BYTES);
+
+  /* Set parameters of |r|. */
+  r->neg = 0;
+  r->top = (int) num_words;
+
+  /* Now, invert every word. The idea here is that we want to compute 2^e-|x|,
+   * which is actually equivalent to the twos-complement representation of |x|
+   * in |e| bits, which is -x = ~x + 1. */
+  for (int i = 0; i < r->top; i++) {
+    r->d[i] = ~r->d[i];
+  }
+
+  /* If our exponent doesn't span the top word, we have to mask the rest. */
+  size_t top_word_exponent = e % BN_BITS2;
+  if (top_word_exponent != 0) {
+    r->d[r->top - 1] &= (((BN_ULONG) 1) << top_word_exponent) - 1;
+  }
+
+  /* Keep the correct_top invariant for BN_add. */
+  bn_correct_top(r);
+
+  /* Finally, add one, for the reason described above. */
+  return BN_add(r, r, BN_value_one());
 }

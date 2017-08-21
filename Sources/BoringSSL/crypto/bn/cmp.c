@@ -56,6 +56,8 @@
 
 #include <openssl/bn.h>
 
+#include <openssl/mem.h>
+
 #include "internal.h"
 
 
@@ -183,6 +185,17 @@ int BN_abs_is_word(const BIGNUM *bn, BN_ULONG w) {
   }
 }
 
+int BN_cmp_word(const BIGNUM *a, BN_ULONG b) {
+  BIGNUM b_bn;
+  BN_init(&b_bn);
+
+  b_bn.d = &b;
+  b_bn.top = b > 0;
+  b_bn.dmax = 1;
+  b_bn.flags = BN_FLG_STATIC_DATA;
+  return BN_cmp(a, &b_bn);
+}
+
 int BN_is_zero(const BIGNUM *bn) {
   return bn->top == 0;
 }
@@ -197,4 +210,30 @@ int BN_is_word(const BIGNUM *bn, BN_ULONG w) {
 
 int BN_is_odd(const BIGNUM *bn) {
   return bn->top > 0 && (bn->d[0] & 1) == 1;
+}
+
+int BN_is_pow2(const BIGNUM *bn) {
+  if (bn->top == 0 || bn->neg) {
+    return 0;
+  }
+
+  for (int i = 0; i < bn->top - 1; i++) {
+    if (bn->d[i] != 0) {
+      return 0;
+    }
+  }
+
+  return 0 == (bn->d[bn->top-1] & (bn->d[bn->top-1] - 1));
+}
+
+int BN_equal_consttime(const BIGNUM *a, const BIGNUM *b) {
+  if (a->top != b->top) {
+    return 0;
+  }
+
+  int limbs_are_equal =
+    CRYPTO_memcmp(a->d, b->d, (size_t)a->top * sizeof(a->d[0])) == 0;
+
+  return constant_time_select_int(constant_time_eq_int(a->neg, b->neg),
+                                  limbs_are_equal, 0);
 }

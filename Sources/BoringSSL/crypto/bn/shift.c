@@ -94,7 +94,7 @@ int BN_lshift(BIGNUM *r, const BIGNUM *a, int n) {
       t[nw + i] = (l << lb) & BN_MASK2;
     }
   }
-  memset(t, 0, nw * sizeof(t[0]));
+  OPENSSL_memset(t, 0, nw * sizeof(t[0]));
   r->top = a->top + nw + 1;
   bn_correct_top(r);
 
@@ -182,6 +182,10 @@ int BN_rshift(BIGNUM *r, const BIGNUM *a, int n) {
     }
   }
 
+  if (r->top == 0) {
+    r->neg = 0;
+  }
+
   return 1;
 }
 
@@ -214,6 +218,10 @@ int BN_rshift1(BIGNUM *r, const BIGNUM *a) {
     c = (t & 1) ? BN_TBIT : 0;
   }
   r->top = j;
+
+  if (r->top == 0) {
+    r->neg = 0;
+  }
 
   return 1;
 }

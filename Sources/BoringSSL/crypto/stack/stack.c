@@ -60,6 +60,9 @@
 
 #include <openssl/mem.h>
 
+#include "../internal.h"
+
+
 /* kMinSize is the number of pointers that will be initially allocated in a new
  * stack. */
 static const size_t kMinSize = 4;
@@ -71,14 +74,14 @@ _STACK *sk_new(stack_cmp_func comp) {
   if (ret == NULL) {
     goto err;
   }
-  memset(ret, 0, sizeof(_STACK));
+  OPENSSL_memset(ret, 0, sizeof(_STACK));
 
   ret->data = OPENSSL_malloc(sizeof(void *) * kMinSize);
   if (ret->data == NULL) {
     goto err;
   }
 
-  memset(ret->data, 0, sizeof(void *) * kMinSize);
+  OPENSSL_memset(ret->data, 0, sizeof(void *) * kMinSize);
 
   ret->comp = comp;
   ret->num_alloc = kMinSize;
@@ -103,7 +106,7 @@ void sk_zero(_STACK *sk) {
   if (sk == NULL || sk->num == 0) {
     return;
   }
-  memset(sk->data, 0, sizeof(void*) * sk->num);
+  OPENSSL_memset(sk->data, 0, sizeof(void*) * sk->num);
   sk->num = 0;
   sk->sorted = 0;
 }
@@ -131,13 +134,11 @@ void sk_free(_STACK *sk) {
 }
 
 void sk_pop_free(_STACK *sk, void (*func)(void *)) {
-  size_t i;
-
   if (sk == NULL) {
     return;
   }
 
-  for (i = 0; i < sk->num; i++) {
+  for (size_t i = 0; i < sk->num; i++) {
     if (sk->data[i] != NULL) {
       func(sk->data[i]);
     }
@@ -179,8 +180,8 @@ size_t sk_insert(_STACK *sk, void *p, size_t where) {
   if (where >= sk->num) {
     sk->data[sk->num] = p;
   } else {
-    memmove(&sk->data[where + 1], &sk->data[where],
-            sizeof(void *) * (sk->num - where));
+    OPENSSL_memmove(&sk->data[where + 1], &sk->data[where],
+                    sizeof(void *) * (sk->num - where));
     sk->data[where] = p;
   }
 
@@ -200,7 +201,7 @@ void *sk_delete(_STACK *sk, size_t where) {
   ret = sk->data[where];
 
   if (where != sk->num - 1) {
-    memmove(&sk->data[where], &sk->data[where + 1],
+    OPENSSL_memmove(&sk->data[where], &sk->data[where + 1],
             sizeof(void *) * (sk->num - where - 1));
   }
 
@@ -209,13 +210,11 @@ void *sk_delete(_STACK *sk, size_t where) {
 }
 
 void *sk_delete_ptr(_STACK *sk, void *p) {
-  size_t i;
-
   if (sk == NULL) {
     return NULL;
   }
 
-  for (i = 0; i < sk->num; i++) {
+  for (size_t i = 0; i < sk->num; i++) {
     if (sk->data[i] == p) {
       return sk_delete(sk, i);
     }
@@ -225,17 +224,13 @@ void *sk_delete_ptr(_STACK *sk, void *p) {
 }
 
 int sk_find(_STACK *sk, size_t *out_index, void *p) {
-  const void *const *r;
-  size_t i;
-  int (*comp_func)(const void *,const void *);
-
   if (sk == NULL) {
     return 0;
   }
 
   if (sk->comp == NULL) {
     /* Use pointer equality when no comparison function has been set. */
-    for (i = 0; i < sk->num; i++) {
+    for (size_t i = 0; i < sk->num; i++) {
       if (sk->data[i] == p) {
         if (out_index) {
           *out_index = i;
@@ -257,18 +252,19 @@ int sk_find(_STACK *sk, size_t *out_index, void *p) {
    * elements. However, since we're passing an array of pointers to
    * qsort/bsearch, we can just cast the comparison function and everything
    * works. */
-  comp_func=(int (*)(const void *,const void *))(sk->comp);
-  r = bsearch(&p, sk->data, sk->num, sizeof(void *), comp_func);
+  const void *const *r = bsearch(&p, sk->data, sk->num, sizeof(void *),
+                                 (int (*)(const void *, const void *))sk->comp);
   if (r == NULL) {
     return 0;
   }
-  i = ((void **)r) - sk->data;
+  size_t idx = ((void **)r) - sk->data;
   /* This function always returns the first result. */
-  while (i > 0 && sk->comp((const void**) &p, (const void**) &sk->data[i-1]) == 0) {
-    i--;
+  while (idx > 0 &&
+         sk->comp((const void **)&p, (const void **)&sk->data[idx - 1]) == 0) {
+    idx--;
   }
   if (out_index) {
-    *out_index = i;
+    *out_index = idx;
   }
   return 1;
 }
@@ -315,7 +311,7 @@ _STACK *sk_dup(const _STACK *sk) {
   ret->data = s;
 
   ret->num = sk->num;
-  memcpy(ret->data, sk->data, sizeof(void *) * sk->num);
+  OPENSSL_memcpy(ret->data, sk->data, sizeof(void *) * sk->num);
   ret->sorted = sk->sorted;
   ret->num_alloc = sk->num_alloc;
   ret->comp = sk->comp;
@@ -329,7 +325,7 @@ err:
 void sk_sort(_STACK *sk) {
   int (*comp_func)(const void *,const void *);
 
-  if (sk == NULL || sk->sorted) {
+  if (sk == NULL || sk->comp == NULL || sk->sorted) {
     return;
   }
 
@@ -364,15 +360,13 @@ _STACK *sk_deep_copy(const _STACK *sk, void *(*copy_func)(void *),
     return NULL;
   }
 
-  size_t i;
-  for (i = 0; i < ret->num; i++) {
+  for (size_t i = 0; i < ret->num; i++) {
     if (ret->data[i] == NULL) {
       continue;
     }
     ret->data[i] = copy_func(ret->data[i]);
     if (ret->data[i] == NULL) {
-      size_t j;
-      for (j = 0; j < i; j++) {
+      for (size_t j = 0; j < i; j++) {
         if (ret->data[j] != NULL) {
           free_func(ret->data[j]);
         }

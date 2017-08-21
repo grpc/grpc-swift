@@ -78,7 +78,7 @@ typedef struct {
   grpc_op_type op_type;
   grpc_metadata_array trailing_metadata;
   grpc_status_code status;
-  char *status_details;
+  grpc_slice status_details;
 } cgrpc_observer_send_status_from_server;
 
 typedef struct {
@@ -95,7 +95,7 @@ typedef struct {
   grpc_op_type op_type;
   grpc_metadata_array trailing_metadata_recv;
   grpc_status_code server_status;
-  char *server_details;
+  grpc_slice server_details;
   size_t server_details_capacity;
 } cgrpc_observer_recv_status_on_client;
 

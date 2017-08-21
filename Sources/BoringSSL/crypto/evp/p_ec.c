@@ -66,10 +66,11 @@
 #include <openssl/ecdsa.h>
 #include <openssl/err.h>
 #include <openssl/mem.h>
-#include <openssl/obj.h>
+#include <openssl/nid.h>
 
 #include "internal.h"
 #include "../ec/internal.h"
+#include "../internal.h"
 
 
 typedef struct {
@@ -84,7 +85,7 @@ static int pkey_ec_init(EVP_PKEY_CTX *ctx) {
   if (!dctx) {
     return 0;
   }
-  memset(dctx, 0, sizeof(EC_PKEY_CTX));
+  OPENSSL_memset(dctx, 0, sizeof(EC_PKEY_CTX));
 
   ctx->data = dctx;
 

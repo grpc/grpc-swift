@@ -21,7 +21,7 @@
 #include <assert.h>
 
 void cgrpc_call_destroy(cgrpc_call *call) {
-  grpc_call_destroy(call->call);
+  //grpc_call_destroy(call->call);
   free(call);
 }
 

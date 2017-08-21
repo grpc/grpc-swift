@@ -27,7 +27,7 @@ cgrpc_handler *cgrpc_handler_create_with_server(cgrpc_server *server) {
   handler->server = server;
   grpc_metadata_array_init(&(handler->request_metadata_recv));
   grpc_call_details_init(&(handler->call_details));
-  handler->completion_queue = grpc_completion_queue_create(NULL);
+  handler->completion_queue = grpc_completion_queue_create(NULL, NULL, NULL);
   return handler;
 }
 
@@ -38,17 +38,17 @@ void cgrpc_handler_destroy(cgrpc_handler *h) {
   grpc_metadata_array_destroy(&(h->request_metadata_recv));
   grpc_call_details_destroy(&(h->call_details));
   if (h->server_call) {
-    grpc_call_destroy(h->server_call);
+    //grpc_call_destroy(h->server_call);
   }
   free(h);
 }
 
 const char *cgrpc_handler_host(cgrpc_handler *h) {
-  return h->call_details.host;
+  return (const char *) GRPC_SLICE_START_PTR(h->call_details.host);
 }
 
 const char *cgrpc_handler_method(cgrpc_handler *h) {
-  return h->call_details.method;
+  return (const char *) GRPC_SLICE_START_PTR(h->call_details.method);
 }
 
 const char *cgrpc_handler_call_peer(cgrpc_handler *h) {

@@ -118,6 +118,7 @@
 #include <openssl/err.h>
 
 #include "internal.h"
+#include "../crypto/internal.h"
 
 
 /* to_u64_be treats |in| as a 8-byte big-endian integer and returns the value as
@@ -171,10 +172,12 @@ static void dtls1_bitmap_record(DTLS1_BITMAP *bitmap,
   }
 }
 
-enum ssl_open_record_t dtls_open_record(
-    SSL *ssl, uint8_t *out_type, uint8_t *out, size_t *out_len,
-    size_t *out_consumed, uint8_t *out_alert, size_t max_out, const uint8_t *in,
-    size_t in_len) {
+enum ssl_open_record_t dtls_open_record(SSL *ssl, uint8_t *out_type, CBS *out,
+                                        size_t *out_consumed,
+                                        uint8_t *out_alert, uint8_t *in,
+                                        size_t in_len) {
+  *out_consumed = 0;
+
   CBS cbs;
   CBS_init(&cbs, in, in_len);
 
@@ -195,10 +198,8 @@ enum ssl_open_record_t dtls_open_record(
     return ssl_open_record_discard;
   }
 
-  if (ssl->msg_callback != NULL) {
-    ssl->msg_callback(0 /* read */, 0, SSL3_RT_HEADER, in,
-                      DTLS1_RT_HEADER_LENGTH, ssl, ssl->msg_callback_arg);
-  }
+  ssl_do_msg_callback(ssl, 0 /* read */, SSL3_RT_HEADER, in,
+                      DTLS1_RT_HEADER_LENGTH);
 
   uint16_t epoch = (((uint16_t)sequence[0]) << 8) | sequence[1];
   if (epoch != ssl->d1->r_epoch ||
@@ -211,11 +212,9 @@ enum ssl_open_record_t dtls_open_record(
     return ssl_open_record_discard;
   }
 
-  /* Decrypt the body. */
-  size_t plaintext_len;
-  if (!SSL_AEAD_CTX_open(ssl->s3->aead_read_ctx, out, &plaintext_len, max_out,
-                         type, version, sequence, CBS_data(&body),
-                         CBS_len(&body))) {
+  /* Decrypt the body in-place. */
+  if (!SSL_AEAD_CTX_open(ssl->s3->aead_read_ctx, out, type, version, sequence,
+                         (uint8_t *)CBS_data(&body), CBS_len(&body))) {
     /* Bad packets are silently dropped in DTLS. See section 4.2.1 of RFC 6347.
      * Clear the error queue of any errors decryption may have added. Drop the
      * entire packet as it must not have come from the peer.
@@ -226,9 +225,10 @@ enum ssl_open_record_t dtls_open_record(
     *out_consumed = in_len - CBS_len(&cbs);
     return ssl_open_record_discard;
   }
+  *out_consumed = in_len - CBS_len(&cbs);
 
   /* Check the plaintext length. */
-  if (plaintext_len > SSL3_RT_MAX_PLAIN_LENGTH) {
+  if (CBS_len(out) > SSL3_RT_MAX_PLAIN_LENGTH) {
     OPENSSL_PUT_ERROR(SSL, SSL_R_DATA_LENGTH_TOO_LONG);
     *out_alert = SSL_AD_RECORD_OVERFLOW;
     return ssl_open_record_error;
@@ -239,15 +239,49 @@ enum ssl_open_record_t dtls_open_record(
   /* TODO(davidben): Limit the number of empty records as in TLS? This is only
    * useful if we also limit discarded packets. */
 
+  if (type == SSL3_RT_ALERT) {
+    return ssl_process_alert(ssl, out_alert, CBS_data(out), CBS_len(out));
+  }
+
+  ssl->s3->warning_alert_count = 0;
+
   *out_type = type;
-  *out_len = plaintext_len;
-  *out_consumed = in_len - CBS_len(&cbs);
   return ssl_open_record_success;
+}
+
+static const SSL_AEAD_CTX *get_write_aead(const SSL *ssl,
+                                          enum dtls1_use_epoch_t use_epoch) {
+  if (use_epoch == dtls1_use_previous_epoch) {
+    /* DTLS renegotiation is unsupported, so only epochs 0 (NULL cipher) and 1
+     * (negotiated cipher) exist. */
+    assert(ssl->d1->w_epoch == 1);
+    return NULL;
+  }
+
+  return ssl->s3->aead_write_ctx;
+}
+
+size_t dtls_max_seal_overhead(const SSL *ssl,
+                              enum dtls1_use_epoch_t use_epoch) {
+  return DTLS1_RT_HEADER_LENGTH +
+         SSL_AEAD_CTX_max_overhead(get_write_aead(ssl, use_epoch));
+}
+
+size_t dtls_seal_prefix_len(const SSL *ssl, enum dtls1_use_epoch_t use_epoch) {
+  return DTLS1_RT_HEADER_LENGTH +
+         SSL_AEAD_CTX_explicit_nonce_len(get_write_aead(ssl, use_epoch));
 }
 
 int dtls_seal_record(SSL *ssl, uint8_t *out, size_t *out_len, size_t max_out,
                      uint8_t type, const uint8_t *in, size_t in_len,
                      enum dtls1_use_epoch_t use_epoch) {
+  const size_t prefix = dtls_seal_prefix_len(ssl, use_epoch);
+  if (buffers_alias(in, in_len, out, max_out) &&
+      (max_out < prefix || out + prefix != in)) {
+    OPENSSL_PUT_ERROR(SSL, SSL_R_OUTPUT_ALIASES_INPUT);
+    return 0;
+  }
+
   /* Determine the parameters for the current epoch. */
   uint16_t epoch = ssl->d1->w_epoch;
   SSL_AEAD_CTX *aead = ssl->s3->aead_write_ctx;
@@ -265,12 +299,6 @@ int dtls_seal_record(SSL *ssl, uint8_t *out, size_t *out_len, size_t max_out,
     OPENSSL_PUT_ERROR(SSL, SSL_R_BUFFER_TOO_SMALL);
     return 0;
   }
-  /* Check the record header does not alias any part of the input.
-   * |SSL_AEAD_CTX_seal| will internally enforce other aliasing requirements. */
-  if (in < out + DTLS1_RT_HEADER_LENGTH && out < in + in_len) {
-    OPENSSL_PUT_ERROR(SSL, SSL_R_OUTPUT_ALIASES_INPUT);
-    return 0;
-  }
 
   out[0] = type;
 
@@ -280,7 +308,7 @@ int dtls_seal_record(SSL *ssl, uint8_t *out, size_t *out_len, size_t max_out,
 
   out[3] = epoch >> 8;
   out[4] = epoch & 0xff;
-  memcpy(&out[5], &seq[2], 6);
+  OPENSSL_memcpy(&out[5], &seq[2], 6);
 
   size_t ciphertext_len;
   if (!SSL_AEAD_CTX_seal(aead, out + DTLS1_RT_HEADER_LENGTH, &ciphertext_len,
@@ -299,10 +327,8 @@ int dtls_seal_record(SSL *ssl, uint8_t *out, size_t *out_len, size_t max_out,
 
   *out_len = DTLS1_RT_HEADER_LENGTH + ciphertext_len;
 
-  if (ssl->msg_callback) {
-    ssl->msg_callback(1 /* write */, 0, SSL3_RT_HEADER, out,
-                      DTLS1_RT_HEADER_LENGTH, ssl, ssl->msg_callback_arg);
-  }
+  ssl_do_msg_callback(ssl, 1 /* write */, SSL3_RT_HEADER, out,
+                      DTLS1_RT_HEADER_LENGTH);
 
   return 1;
 }

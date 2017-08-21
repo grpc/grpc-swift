@@ -61,9 +61,10 @@
 
 #include <openssl/err.h>
 #include <openssl/mem.h>
-#include <openssl/obj.h>
+#include <openssl/nid.h>
 
 #include "internal.h"
+#include "../internal.h"
 
 
 const EVP_CIPHER *EVP_get_cipherbynid(int nid) {
@@ -88,7 +89,7 @@ const EVP_CIPHER *EVP_get_cipherbynid(int nid) {
 }
 
 void EVP_CIPHER_CTX_init(EVP_CIPHER_CTX *ctx) {
-  memset(ctx, 0, sizeof(EVP_CIPHER_CTX));
+  OPENSSL_memset(ctx, 0, sizeof(EVP_CIPHER_CTX));
 }
 
 EVP_CIPHER_CTX *EVP_CIPHER_CTX_new(void) {
@@ -108,7 +109,7 @@ int EVP_CIPHER_CTX_cleanup(EVP_CIPHER_CTX *c) {
   }
   OPENSSL_free(c->cipher_data);
 
-  memset(c, 0, sizeof(EVP_CIPHER_CTX));
+  OPENSSL_memset(c, 0, sizeof(EVP_CIPHER_CTX));
   return 1;
 }
 
@@ -126,19 +127,23 @@ int EVP_CIPHER_CTX_copy(EVP_CIPHER_CTX *out, const EVP_CIPHER_CTX *in) {
   }
 
   EVP_CIPHER_CTX_cleanup(out);
-  memcpy(out, in, sizeof(EVP_CIPHER_CTX));
+  OPENSSL_memcpy(out, in, sizeof(EVP_CIPHER_CTX));
 
   if (in->cipher_data && in->cipher->ctx_size) {
     out->cipher_data = OPENSSL_malloc(in->cipher->ctx_size);
     if (!out->cipher_data) {
+      out->cipher = NULL;
       OPENSSL_PUT_ERROR(CIPHER, ERR_R_MALLOC_FAILURE);
       return 0;
     }
-    memcpy(out->cipher_data, in->cipher_data, in->cipher->ctx_size);
+    OPENSSL_memcpy(out->cipher_data, in->cipher_data, in->cipher->ctx_size);
   }
 
   if (in->cipher->flags & EVP_CIPH_CUSTOM_COPY) {
-    return in->cipher->ctrl((EVP_CIPHER_CTX *)in, EVP_CTRL_COPY, 0, out);
+    if (!in->cipher->ctrl((EVP_CIPHER_CTX *)in, EVP_CTRL_COPY, 0, out)) {
+      out->cipher = NULL;
+      return 0;
+    }
   }
 
   return 1;
@@ -210,9 +215,9 @@ int EVP_CipherInit_ex(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *cipher,
       case EVP_CIPH_CBC_MODE:
         assert(EVP_CIPHER_CTX_iv_length(ctx) <= sizeof(ctx->iv));
         if (iv) {
-          memcpy(ctx->oiv, iv, EVP_CIPHER_CTX_iv_length(ctx));
+          OPENSSL_memcpy(ctx->oiv, iv, EVP_CIPHER_CTX_iv_length(ctx));
         }
-        memcpy(ctx->iv, ctx->oiv, EVP_CIPHER_CTX_iv_length(ctx));
+        OPENSSL_memcpy(ctx->iv, ctx->oiv, EVP_CIPHER_CTX_iv_length(ctx));
         break;
 
       case EVP_CIPH_CTR_MODE:
@@ -220,7 +225,7 @@ int EVP_CipherInit_ex(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *cipher,
         ctx->num = 0;
         /* Don't reuse IV for CTR mode */
         if (iv) {
-          memcpy(ctx->iv, iv, EVP_CIPHER_CTX_iv_length(ctx));
+          OPENSSL_memcpy(ctx->iv, iv, EVP_CIPHER_CTX_iv_length(ctx));
         }
         break;
 
@@ -284,14 +289,14 @@ int EVP_EncryptUpdate(EVP_CIPHER_CTX *ctx, uint8_t *out, int *out_len,
   bl = ctx->cipher->block_size;
   assert(bl <= (int)sizeof(ctx->buf));
   if (i != 0) {
-    if (i + in_len < bl) {
-      memcpy(&ctx->buf[i], in, in_len);
+    if (bl - i > in_len) {
+      OPENSSL_memcpy(&ctx->buf[i], in, in_len);
       ctx->buf_len += in_len;
       *out_len = 0;
       return 1;
     } else {
       j = bl - i;
-      memcpy(&ctx->buf[i], in, j);
+      OPENSSL_memcpy(&ctx->buf[i], in, j);
       if (!ctx->cipher->cipher(ctx, out, ctx->buf, bl)) {
         return 0;
       }
@@ -314,7 +319,7 @@ int EVP_EncryptUpdate(EVP_CIPHER_CTX *ctx, uint8_t *out, int *out_len,
   }
 
   if (i != 0) {
-    memcpy(ctx->buf, &in[in_len], i);
+    OPENSSL_memcpy(ctx->buf, &in[in_len], i);
   }
   ctx->buf_len = i;
   return 1;
@@ -393,7 +398,7 @@ int EVP_DecryptUpdate(EVP_CIPHER_CTX *ctx, uint8_t *out, int *out_len,
   assert(b <= sizeof(ctx->final));
 
   if (ctx->final_used) {
-    memcpy(out, ctx->final, b);
+    OPENSSL_memcpy(out, ctx->final, b);
     out += b;
     fix_len = 1;
   } else {
@@ -409,7 +414,7 @@ int EVP_DecryptUpdate(EVP_CIPHER_CTX *ctx, uint8_t *out, int *out_len,
   if (b > 1 && !ctx->buf_len) {
     *out_len -= b;
     ctx->final_used = 1;
-    memcpy(ctx->final, &out[*out_len], b);
+    OPENSSL_memcpy(ctx->final, &out[*out_len], b);
   } else {
     ctx->final_used = 0;
   }

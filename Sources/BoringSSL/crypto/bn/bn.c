@@ -73,14 +73,14 @@ BIGNUM *BN_new(void) {
     return NULL;
   }
 
-  memset(bn, 0, sizeof(BIGNUM));
+  OPENSSL_memset(bn, 0, sizeof(BIGNUM));
   bn->flags = BN_FLG_MALLOCED;
 
   return bn;
 }
 
 void BN_init(BIGNUM *bn) {
-  memset(bn, 0, sizeof(BIGNUM));
+  OPENSSL_memset(bn, 0, sizeof(BIGNUM));
 }
 
 void BN_free(BIGNUM *bn) {
@@ -149,7 +149,7 @@ BIGNUM *BN_copy(BIGNUM *dest, const BIGNUM *src) {
     return NULL;
   }
 
-  memcpy(dest->d, src->d, sizeof(src->d[0]) * src->top);
+  OPENSSL_memcpy(dest->d, src->d, sizeof(src->d[0]) * src->top);
 
   dest->top = src->top;
   dest->neg = src->neg;
@@ -158,7 +158,7 @@ BIGNUM *BN_copy(BIGNUM *dest, const BIGNUM *src) {
 
 void BN_clear(BIGNUM *bn) {
   if (bn->d != NULL) {
-    memset(bn->d, 0, bn->dmax * sizeof(bn->d[0]));
+    OPENSSL_memset(bn->d, 0, bn->dmax * sizeof(bn->d[0]));
   }
 
   bn->top = 0;
@@ -170,12 +170,6 @@ const BIGNUM *BN_value_one(void) {
   static const BIGNUM kOne = STATIC_BIGNUM(kOneLimbs);
 
   return &kOne;
-}
-
-void BN_with_flags(BIGNUM *out, const BIGNUM *in, int flags) {
-  memcpy(out, in, sizeof(BIGNUM));
-  out->flags &= ~BN_FLG_MALLOCED;
-  out->flags |= BN_FLG_STATIC_DATA | flags;
 }
 
 /* BN_num_bits_word returns the minimum number of bits needed to represent the
@@ -266,6 +260,40 @@ int BN_set_word(BIGNUM *bn, BN_ULONG value) {
   return 1;
 }
 
+int BN_set_u64(BIGNUM *bn, uint64_t value) {
+#if BN_BITS2 == 64
+  return BN_set_word(bn, value);
+#elif BN_BITS2 == 32
+  if (value <= BN_MASK2) {
+    return BN_set_word(bn, (BN_ULONG)value);
+  }
+
+  if (bn_wexpand(bn, 2) == NULL) {
+    return 0;
+  }
+
+  bn->neg = 0;
+  bn->d[0] = (BN_ULONG)value;
+  bn->d[1] = (BN_ULONG)(value >> 32);
+  bn->top = 2;
+  return 1;
+#else
+#error "BN_BITS2 must be 32 or 64."
+#endif
+}
+
+int bn_set_words(BIGNUM *bn, const BN_ULONG *words, size_t num) {
+  if (bn_wexpand(bn, num) == NULL) {
+    return 0;
+  }
+  OPENSSL_memmove(bn->d, words, num * sizeof(BN_ULONG));
+  /* |bn_wexpand| verified that |num| isn't too large. */
+  bn->top = (int)num;
+  bn_correct_top(bn);
+  bn->neg = 0;
+  return 1;
+}
+
 int BN_is_negative(const BIGNUM *bn) {
   return bn->neg != 0;
 }
@@ -301,7 +329,7 @@ BIGNUM *bn_wexpand(BIGNUM *bn, size_t words) {
     return NULL;
   }
 
-  memcpy(a, bn->d, sizeof(BN_ULONG) * bn->top);
+  OPENSSL_memcpy(a, bn->d, sizeof(BN_ULONG) * bn->top);
 
   OPENSSL_free(bn->d);
   bn->d = a;
@@ -330,12 +358,8 @@ void bn_correct_top(BIGNUM *bn) {
     }
     bn->top = tmp_top;
   }
-}
 
-int BN_get_flags(const BIGNUM *bn, int flags) {
-  return bn->flags & flags;
-}
-
-void BN_set_flags(BIGNUM *bn, int flags) {
-  bn->flags |= flags;
+  if (bn->top == 0) {
+    bn->neg = 0;
+  }
 }

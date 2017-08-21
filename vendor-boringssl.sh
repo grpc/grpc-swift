@@ -67,3 +67,5 @@ do
   echo "EXCLUDE $exclude"
   find $DSTROOT -name "$exclude" -exec rm -rf {} \;
 done
+
+perl -pi -e '$_ .= qq(\n#define OPENSSL_NO_ASM\n) if /#define OPENSSL_HEADER_BASE_H/' Sources/BoringSSL/include/openssl/base.h

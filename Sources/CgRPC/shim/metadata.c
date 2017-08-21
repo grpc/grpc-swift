@@ -34,11 +34,11 @@ size_t cgrpc_metadata_array_get_count(cgrpc_metadata_array *array) {
 }
 
 const char *cgrpc_metadata_array_get_key_at_index(cgrpc_metadata_array *array, size_t index) {
-  return array->metadata[index].key;
+  return (const char *) GRPC_SLICE_START_PTR(array->metadata[index].key);
 }
 
 const char *cgrpc_metadata_array_get_value_at_index(cgrpc_metadata_array *array, size_t index) {
-  return array->metadata[index].value;
+  return (const char *) GRPC_SLICE_START_PTR(array->metadata[index].value);
 }
 
 void cgrpc_metadata_array_move_metadata(cgrpc_metadata_array *destination,
@@ -60,9 +60,8 @@ void cgrpc_metadata_array_append_metadata(cgrpc_metadata_array *metadata, const 
   }
   if (metadata->count < metadata->capacity) {
     size_t i = metadata->count;
-    metadata->metadata[i].key = strdup(key);
-    metadata->metadata[i].value = strdup(value);
-    metadata->metadata[i].value_length = strlen(value);
+    metadata->metadata[i].key = grpc_slice_from_copied_string(key);
+    metadata->metadata[i].value = grpc_slice_from_copied_string(value);
     metadata->count++;
   }
 }

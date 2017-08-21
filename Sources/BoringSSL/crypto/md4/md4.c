@@ -59,11 +59,22 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../internal.h"
+
+
+uint8_t *MD4(const uint8_t *data, size_t len, uint8_t *out) {
+  MD4_CTX ctx;
+  MD4_Init(&ctx);
+  MD4_Update(&ctx, data, len);
+  MD4_Final(out, &ctx);
+
+  return out;
+}
 
 /* Implemented from RFC1186 The MD4 Message-Digest Algorithm. */
 
 int MD4_Init(MD4_CTX *md4) {
-  memset(md4, 0, sizeof(MD4_CTX));
+  OPENSSL_memset(md4, 0, sizeof(MD4_CTX));
   md4->h[0] = 0x67452301UL;
   md4->h[1] = 0xefcdab89UL;
   md4->h[2] = 0x98badcfeUL;
@@ -105,23 +116,23 @@ void md4_block_data_order(uint32_t *state, const uint8_t *data, size_t num);
 
 #define ROTATE(a, n) (((a) << (n)) | ((a) >> (32 - (n))))
 
-#define R0(a, b, c, d, k, s, t)        \
-  {                                    \
-    a += ((k) + (t)+F((b), (c), (d))); \
-    a = ROTATE(a, s);                  \
-  };
+#define R0(a, b, c, d, k, s, t)            \
+  do {                                     \
+    (a) += ((k) + (t) + F((b), (c), (d))); \
+    (a) = ROTATE(a, s);                    \
+  } while (0)
 
-#define R1(a, b, c, d, k, s, t)        \
-  {                                    \
-    a += ((k) + (t)+G((b), (c), (d))); \
-    a = ROTATE(a, s);                  \
-  };
+#define R1(a, b, c, d, k, s, t)            \
+  do {                                     \
+    (a) += ((k) + (t) + G((b), (c), (d))); \
+    (a) = ROTATE(a, s);                    \
+  } while (0)
 
-#define R2(a, b, c, d, k, s, t)        \
-  {                                    \
-    a += ((k) + (t)+H((b), (c), (d))); \
-    a = ROTATE(a, s);                  \
-  };
+#define R2(a, b, c, d, k, s, t)            \
+  do {                                     \
+    (a) += ((k) + (t) + H((b), (c), (d))); \
+    (a) = ROTATE(a, s);                    \
+  } while (0)
 
 void md4_block_data_order(uint32_t *state, const uint8_t *data, size_t num) {
   uint32_t A, B, C, D, l;

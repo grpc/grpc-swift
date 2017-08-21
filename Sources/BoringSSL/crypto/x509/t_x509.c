@@ -54,6 +54,7 @@
  * copied and put under another distribution licence
  * [including the GNU Public Licence.] */
 
+#include <ctype.h>
 #include <openssl/asn1.h>
 #include <openssl/bio.h>
 #include <openssl/digest.h>
@@ -64,7 +65,8 @@
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 
-#include "../evp/internal.h"
+#include "internal.h"
+
 
 #ifndef OPENSSL_NO_FP_API
 int X509_print_ex_fp(FILE *fp, X509 *x, unsigned long nmflag,
@@ -132,7 +134,8 @@ int X509_print_ex(BIO *bp, X509 *x, unsigned long nmflags,
             goto err;
 
         bs = X509_get_serialNumber(x);
-        if (bs->length <= (int)sizeof(long)) {
+        if (bs->length < (int)sizeof(long)
+            || (bs->length == sizeof(long) && (bs->data[0] & 0x80) == 0)) {
             l = ASN1_INTEGER_get(bs);
             if (bs->type == V_ASN1_NEG_INTEGER) {
                 l = -l;
@@ -205,7 +208,7 @@ int X509_print_ex(BIO *bp, X509 *x, unsigned long nmflags,
         pkey = X509_get_pubkey(x);
         if (pkey == NULL) {
             BIO_printf(bp, "%12sUnable to load Public Key\n", "");
-            BIO_print_errors(bp);
+            ERR_print_errors(bp);
         } else {
             EVP_PKEY_print_public(bp, pkey, 16, NULL);
             EVP_PKEY_free(pkey);
@@ -298,22 +301,18 @@ int X509_ocspid_print(BIO *bp, X509 *x)
 
 int X509_signature_print(BIO *bp, X509_ALGOR *sigalg, ASN1_STRING *sig)
 {
-    int sig_nid;
     if (BIO_puts(bp, "    Signature Algorithm: ") <= 0)
         return 0;
     if (i2a_ASN1_OBJECT(bp, sigalg->algorithm) <= 0)
         return 0;
 
-    sig_nid = OBJ_obj2nid(sigalg->algorithm);
-    if (sig_nid != NID_undef) {
-        int pkey_nid, dig_nid;
-        const EVP_PKEY_ASN1_METHOD *ameth;
-        if (OBJ_find_sigid_algs(sig_nid, &dig_nid, &pkey_nid)) {
-            ameth = EVP_PKEY_asn1_find(NULL, pkey_nid);
-            if (ameth && ameth->sig_print)
-                return ameth->sig_print(bp, sigalg, sig, 9, 0);
-        }
+    /* RSA-PSS signatures have parameters to print. */
+    int sig_nid = OBJ_obj2nid(sigalg->algorithm);
+    if (sig_nid == NID_rsassaPss &&
+        !x509_print_rsa_pss_params(bp, sigalg, 9, 0)) {
+        return 0;
     }
+
     if (sig)
         return X509_signature_dump(bp, sig, 9);
     else if (BIO_puts(bp, "\n") <= 0)
@@ -417,45 +416,84 @@ int ASN1_GENERALIZEDTIME_print(BIO *bp, const ASN1_GENERALIZEDTIME *tm)
     return (0);
 }
 
-int ASN1_UTCTIME_print(BIO *bp, const ASN1_UTCTIME *tm)
-{
-    const char *v;
-    int gmt = 0;
-    int i;
-    int y = 0, M = 0, d = 0, h = 0, m = 0, s = 0;
+// consume_two_digits is a helper function for ASN1_UTCTIME_print. If |*v|,
+// assumed to be |*len| bytes long, has two leading digits, updates |*out| with
+// their value, updates |v| and |len|, and returns one. Otherwise, returns
+// zero.
+static int consume_two_digits(int* out, const char **v, int *len) {
+  if (*len < 2|| !isdigit((*v)[0]) || !isdigit((*v)[1])) {
+    return 0;
+  }
+  *out = ((*v)[0] - '0') * 10 + ((*v)[1] - '0');
+  *len -= 2;
+  *v += 2;
+  return 1;
+}
 
-    i = tm->length;
-    v = (const char *)tm->data;
+// consume_zulu_timezone is a helper function for ASN1_UTCTIME_print. If |*v|,
+// assumed to be |*len| bytes long, starts with "Z" then it updates |*v| and
+// |*len| and returns one. Otherwise returns zero.
+static int consume_zulu_timezone(const char **v, int *len) {
+  if (*len == 0 || (*v)[0] != 'Z') {
+    return 0;
+  }
 
-    if (i < 10)
-        goto err;
-    if (v[i - 1] == 'Z')
-        gmt = 1;
-    for (i = 0; i < 10; i++)
-        if ((v[i] > '9') || (v[i] < '0'))
-            goto err;
-    y = (v[0] - '0') * 10 + (v[1] - '0');
-    if (y < 50)
-        y += 100;
-    M = (v[2] - '0') * 10 + (v[3] - '0');
-    if ((M > 12) || (M < 1))
-        goto err;
-    d = (v[4] - '0') * 10 + (v[5] - '0');
-    h = (v[6] - '0') * 10 + (v[7] - '0');
-    m = (v[8] - '0') * 10 + (v[9] - '0');
-    if (tm->length >= 12 &&
-        (v[10] >= '0') && (v[10] <= '9') && (v[11] >= '0') && (v[11] <= '9'))
-        s = (v[10] - '0') * 10 + (v[11] - '0');
+  *len -= 1;
+  *v += 1;
+  return 1;
+}
 
-    if (BIO_printf(bp, "%s %2d %02d:%02d:%02d %d%s",
-                   mon[M - 1], d, h, m, s, y + 1900,
-                   (gmt) ? " GMT" : "") <= 0)
-        return (0);
-    else
-        return (1);
- err:
-    BIO_write(bp, "Bad time value", 14);
-    return (0);
+int ASN1_UTCTIME_print(BIO *bp, const ASN1_UTCTIME *tm) {
+  const char *v = (const char *)tm->data;
+  int len = tm->length;
+  int Y = 0, M = 0, D = 0, h = 0, m = 0, s = 0;
+
+  // YYMMDDhhmm are required to be present.
+  if (!consume_two_digits(&Y, &v, &len) ||
+      !consume_two_digits(&M, &v, &len) ||
+      !consume_two_digits(&D, &v, &len) ||
+      !consume_two_digits(&h, &v, &len) ||
+      !consume_two_digits(&m, &v, &len)) {
+    goto err;
+  }
+  // https://tools.ietf.org/html/rfc5280, section 4.1.2.5.1, requires seconds
+  // to be present, but historically this code has forgiven its absence.
+  consume_two_digits(&s, &v, &len);
+
+  // https://tools.ietf.org/html/rfc5280, section 4.1.2.5.1, specifies this
+  // interpretation of the year.
+  if (Y < 50) {
+    Y += 2000;
+  } else {
+    Y += 1900;
+  }
+  if (M > 12 || M == 0) {
+    goto err;
+  }
+  if (D > 31 || D == 0) {
+    goto err;
+  }
+  if (h > 23 || m > 59 || s > 60) {
+    goto err;
+  }
+
+  // https://tools.ietf.org/html/rfc5280, section 4.1.2.5.1, requires the "Z"
+  // to be present, but historically this code has forgiven its absence.
+  const int is_gmt = consume_zulu_timezone(&v, &len);
+
+  // https://tools.ietf.org/html/rfc5280, section 4.1.2.5.1, does not permit
+  // the specification of timezones using the +hhmm / -hhmm syntax, which is
+  // the only other thing that might legitimately be found at the end.
+  if (len) {
+    goto err;
+  }
+
+  return BIO_printf(bp, "%s %2d %02d:%02d:%02d %d%s", mon[M - 1], D, h, m, s, Y,
+                    is_gmt ? " GMT" : "") > 0;
+
+err:
+  BIO_write(bp, "Bad time value", 14);
+  return 0;
 }
 
 int X509_NAME_print(BIO *bp, X509_NAME *name, int obase)

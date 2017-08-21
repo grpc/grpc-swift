@@ -72,7 +72,8 @@ static void rand_thread_state_free(void *state) {
   OPENSSL_free(state);
 }
 
-#if defined(OPENSSL_X86_64) && !defined(OPENSSL_NO_ASM)
+#if defined(OPENSSL_X86_64) && !defined(OPENSSL_NO_ASM) && \
+    !defined(BORINGSSL_UNSAFE_DETERMINISTIC_MODE)
 
 /* These functions are defined in asm/rdrand-x86_64.pl */
 extern int CRYPTO_rdrand(uint8_t out[8]);
@@ -100,7 +101,7 @@ static int hwrand(uint8_t *buf, size_t len) {
     if (!CRYPTO_rdrand(rand_buf)) {
       return 0;
     }
-    memcpy(buf + len_multiple8, rand_buf, len);
+    OPENSSL_memcpy(buf + len_multiple8, rand_buf, len);
   }
 
   return 1;
@@ -137,7 +138,7 @@ int RAND_bytes(uint8_t *buf, size_t len) {
       return 1;
     }
 
-    memset(state->partial_block, 0, sizeof(state->partial_block));
+    OPENSSL_memset(state->partial_block, 0, sizeof(state->partial_block));
     state->calls_used = kMaxCallsPerRefresh;
   }
 
@@ -160,8 +161,8 @@ int RAND_bytes(uint8_t *buf, size_t len) {
         todo = kMaxBytesPerCall;
       }
       uint8_t nonce[12];
-      memset(nonce, 0, 4);
-      memcpy(nonce + 4, &state->calls_used, sizeof(state->calls_used));
+      OPENSSL_memset(nonce, 0, 4);
+      OPENSSL_memcpy(nonce + 4, &state->calls_used, sizeof(state->calls_used));
       CRYPTO_chacha_20(buf, buf, todo, state->key, nonce, 0);
       buf += todo;
       remaining -= todo;
@@ -170,8 +171,8 @@ int RAND_bytes(uint8_t *buf, size_t len) {
   } else {
     if (sizeof(state->partial_block) - state->partial_block_used < len) {
       uint8_t nonce[12];
-      memset(nonce, 0, 4);
-      memcpy(nonce + 4, &state->calls_used, sizeof(state->calls_used));
+      OPENSSL_memset(nonce, 0, 4);
+      OPENSSL_memcpy(nonce + 4, &state->calls_used, sizeof(state->calls_used));
       CRYPTO_chacha_20(state->partial_block, state->partial_block,
                        sizeof(state->partial_block), state->key, nonce, 0);
       state->partial_block_used = 0;
@@ -239,3 +240,5 @@ RAND_METHOD *RAND_SSLeay(void) {
 }
 
 void RAND_set_rand_method(const RAND_METHOD *method) {}
+
+void RAND_cleanup(void) {}

@@ -59,6 +59,8 @@
 #include <limits.h>
 #include <string.h>
 
+#include "../internal.h"
+
 
 /* hexdump_ctx contains the state of a hexdump. */
 struct hexdump_ctx {
@@ -86,7 +88,6 @@ static char to_char(uint8_t b) {
  * |ctx|. */
 static int hexdump_write(struct hexdump_ctx *ctx, const uint8_t *data,
                          size_t len) {
-  size_t i;
   char buf[10];
   unsigned l;
 
@@ -95,7 +96,7 @@ static int hexdump_write(struct hexdump_ctx *ctx, const uint8_t *data,
    * ^ offset                          ^ extra space           ^ ASCII of line
    */
 
-  for (i = 0; i < len; i++) {
+  for (size_t i = 0; i < len; i++) {
     if (ctx->used == 0) {
       /* The beginning of a line. */
       BIO_indent(ctx->bio, ctx->indent, UINT_MAX);
@@ -155,7 +156,7 @@ static int finish(struct hexdump_ctx *ctx) {
     return 1;
   }
 
-  memset(buf, ' ', 4);
+  OPENSSL_memset(buf, ' ', 4);
   buf[4] = '|';
 
   for (; ctx->used < 16; ctx->used++) {
@@ -180,7 +181,7 @@ static int finish(struct hexdump_ctx *ctx) {
 
 int BIO_hexdump(BIO *bio, const uint8_t *data, size_t len, unsigned indent) {
   struct hexdump_ctx ctx;
-  memset(&ctx, 0, sizeof(ctx));
+  OPENSSL_memset(&ctx, 0, sizeof(ctx));
   ctx.bio = bio;
   ctx.indent = indent;
 

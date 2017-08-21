@@ -14,13 +14,12 @@
 
 #include "internal.h"
 
-#if defined(OPENSSL_WINDOWS) && !defined(OPENSSL_NO_THREADS)
+#if defined(OPENSSL_WINDOWS_THREADS)
 
-#pragma warning(push, 3)
+OPENSSL_MSVC_PRAGMA(warning(push, 3))
 #include <windows.h>
-#pragma warning(pop)
+OPENSSL_MSVC_PRAGMA(warning(pop))
 
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -28,110 +27,59 @@
 #include <openssl/type_check.h>
 
 
-OPENSSL_COMPILE_ASSERT(sizeof(CRYPTO_MUTEX) >= sizeof(CRITICAL_SECTION),
+OPENSSL_COMPILE_ASSERT(sizeof(CRYPTO_MUTEX) >= sizeof(SRWLOCK),
                        CRYPTO_MUTEX_too_small);
 
-union run_once_arg_t {
-  void (*func)(void);
-  void *data;
-};
-
-static void run_once(CRYPTO_once_t *once, void (*init)(union run_once_arg_t),
-                     union run_once_arg_t arg) {
-  /* Values must be aligned. */
-  assert((((uintptr_t) once) & 3) == 0);
-
-  /* This assumes that reading *once has acquire semantics. This should be true
-   * on x86 and x86-64, where we expect Windows to run. */
-#if !defined(OPENSSL_X86) && !defined(OPENSSL_X86_64)
-#error "Windows once code may not work on other platforms." \
-       "You can use InitOnceBeginInitialize on >=Vista"
-#endif
-  if (*once == 1) {
-    return;
-  }
-
-  for (;;) {
-    switch (InterlockedCompareExchange(once, 2, 0)) {
-      case 0:
-        /* The value was zero so we are the first thread to call |CRYPTO_once|
-         * on it. */
-        init(arg);
-        /* Write one to indicate that initialisation is complete. */
-        InterlockedExchange(once, 1);
-        return;
-
-      case 1:
-        /* Another thread completed initialisation between our fast-path check
-         * and |InterlockedCompareExchange|. */
-        return;
-
-      case 2:
-        /* Another thread is running the initialisation. Switch to it then try
-         * again. */
-        SwitchToThread();
-        break;
-
-      default:
-        abort();
-    }
-  }
+static BOOL CALLBACK call_once_init(INIT_ONCE *once, void *arg, void **out) {
+  void (**init)(void) = (void (**)(void))arg;
+  (**init)();
+  return TRUE;
 }
 
-static void call_once_init(union run_once_arg_t arg) {
-  arg.func();
-}
-
-void CRYPTO_once(CRYPTO_once_t *in_once, void (*init)(void)) {
-  union run_once_arg_t arg;
-  arg.func = init;
-  run_once(in_once, call_once_init, arg);
+void CRYPTO_once(CRYPTO_once_t *once, void (*init)(void)) {
+  if (!InitOnceExecuteOnce(once, call_once_init, &init, NULL)) {
+    abort();
+  }
 }
 
 void CRYPTO_MUTEX_init(CRYPTO_MUTEX *lock) {
-  if (!InitializeCriticalSectionAndSpinCount((CRITICAL_SECTION *) lock, 0x400)) {
-    abort();
-  }
+  InitializeSRWLock((SRWLOCK *) lock);
 }
 
 void CRYPTO_MUTEX_lock_read(CRYPTO_MUTEX *lock) {
-  /* Since we have to support Windows XP, read locks are actually exclusive. */
-  EnterCriticalSection((CRITICAL_SECTION *) lock);
+  AcquireSRWLockShared((SRWLOCK *) lock);
 }
 
 void CRYPTO_MUTEX_lock_write(CRYPTO_MUTEX *lock) {
-  EnterCriticalSection((CRITICAL_SECTION *) lock);
+  AcquireSRWLockExclusive((SRWLOCK *) lock);
 }
 
-void CRYPTO_MUTEX_unlock(CRYPTO_MUTEX *lock) {
-  LeaveCriticalSection((CRITICAL_SECTION *) lock);
+void CRYPTO_MUTEX_unlock_read(CRYPTO_MUTEX *lock) {
+  ReleaseSRWLockShared((SRWLOCK *) lock);
+}
+
+void CRYPTO_MUTEX_unlock_write(CRYPTO_MUTEX *lock) {
+  ReleaseSRWLockExclusive((SRWLOCK *) lock);
 }
 
 void CRYPTO_MUTEX_cleanup(CRYPTO_MUTEX *lock) {
-  DeleteCriticalSection((CRITICAL_SECTION *) lock);
-}
-
-static void static_lock_init(union run_once_arg_t arg) {
-  struct CRYPTO_STATIC_MUTEX *lock = arg.data;
-  if (!InitializeCriticalSectionAndSpinCount(&lock->lock, 0x400)) {
-    abort();
-  }
+  /* SRWLOCKs require no cleanup. */
 }
 
 void CRYPTO_STATIC_MUTEX_lock_read(struct CRYPTO_STATIC_MUTEX *lock) {
-  union run_once_arg_t arg;
-  arg.data = lock;
-  /* Since we have to support Windows XP, read locks are actually exclusive. */
-  run_once(&lock->once, static_lock_init, arg);
-  EnterCriticalSection(&lock->lock);
+  AcquireSRWLockShared(&lock->lock);
 }
 
 void CRYPTO_STATIC_MUTEX_lock_write(struct CRYPTO_STATIC_MUTEX *lock) {
-  CRYPTO_STATIC_MUTEX_lock_read(lock);
+  AcquireSRWLockExclusive(&lock->lock);
 }
 
-void CRYPTO_STATIC_MUTEX_unlock(struct CRYPTO_STATIC_MUTEX *lock) {
-  LeaveCriticalSection(&lock->lock);
+void CRYPTO_STATIC_MUTEX_unlock_read(struct CRYPTO_STATIC_MUTEX *lock) {
+  ReleaseSRWLockShared(&lock->lock);
+}
+
+void CRYPTO_STATIC_MUTEX_unlock_write(struct CRYPTO_STATIC_MUTEX *lock) {
+  ReleaseSRWLockExclusive(&lock->lock);
 }
 
 static CRITICAL_SECTION g_destructors_lock;
@@ -150,9 +98,14 @@ static void thread_local_init(void) {
   g_thread_local_failed = (g_thread_local_key == TLS_OUT_OF_INDEXES);
 }
 
-static void NTAPI thread_local_destructor(PVOID module,
-                                          DWORD reason, PVOID reserved) {
-  if (DLL_THREAD_DETACH != reason && DLL_PROCESS_DETACH != reason) {
+static void NTAPI thread_local_destructor(PVOID module, DWORD reason,
+                                          PVOID reserved) {
+  /* Only free memory on |DLL_THREAD_DETACH|, not |DLL_PROCESS_DETACH|. In
+   * VS2015's debug runtime, the C runtime has been unloaded by the time
+   * |DLL_PROCESS_DETACH| runs. See https://crbug.com/575795. This is consistent
+   * with |pthread_key_create| which does not call destructors on process exit,
+   * only thread exit. */
+  if (reason != DLL_THREAD_DETACH) {
     return;
   }
 
@@ -169,7 +122,7 @@ static void NTAPI thread_local_destructor(PVOID module,
   thread_local_destructor_t destructors[NUM_OPENSSL_THREAD_LOCALS];
 
   EnterCriticalSection(&g_destructors_lock);
-  memcpy(destructors, g_destructors, sizeof(destructors));
+  OPENSSL_memcpy(destructors, g_destructors, sizeof(destructors));
   LeaveCriticalSection(&g_destructors_lock);
 
   unsigned i;
@@ -265,7 +218,7 @@ int CRYPTO_set_thread_local(thread_local_data_t index, void *value,
       destructor(value);
       return 0;
     }
-    memset(pointers, 0, sizeof(void *) * NUM_OPENSSL_THREAD_LOCALS);
+    OPENSSL_memset(pointers, 0, sizeof(void *) * NUM_OPENSSL_THREAD_LOCALS);
     if (TlsSetValue(g_thread_local_key, pointers) == 0) {
       OPENSSL_free(pointers);
       destructor(value);
@@ -281,4 +234,4 @@ int CRYPTO_set_thread_local(thread_local_data_t index, void *value,
   return 1;
 }
 
-#endif  /* OPENSSL_WINDOWS && !OPENSSL_NO_THREADS */
+#endif  /* OPENSSL_WINDOWS_THREADS */

@@ -36,8 +36,23 @@ extern "C" {
 
 /* CRYPTO_library_init initializes the crypto library. It must be called if the
  * library is built with BORINGSSL_NO_STATIC_INITIALIZER. Otherwise, it does
- * nothing and a static initializer is used instead. */
+ * nothing and a static initializer is used instead. It is safe to call this
+ * function multiple times and concurrently from multiple threads.
+ *
+ * On some ARM configurations, this function may require filesystem access and
+ * should be called before entering a sandbox. */
 OPENSSL_EXPORT void CRYPTO_library_init(void);
+
+/* CRYPTO_is_confidential_build returns one if the linked version of BoringSSL
+ * has been built with the BORINGSSL_CONFIDENTIAL define and zero otherwise.
+ *
+ * This is used by some consumers to identify whether they are using an
+ * internal version of BoringSSL. */
+OPENSSL_EXPORT int CRYPTO_is_confidential_build(void);
+
+/* CRYPTO_has_asm returns one unless BoringSSL was built with OPENSSL_NO_ASM,
+ * in which case it returns zero. */
+OPENSSL_EXPORT int CRYPTO_has_asm(void);
 
 
 /* Deprecated functions. */
@@ -62,8 +77,14 @@ OPENSSL_EXPORT int CRYPTO_malloc_init(void);
 /* ENGINE_load_builtin_engines does nothing. */
 OPENSSL_EXPORT void ENGINE_load_builtin_engines(void);
 
+/* ENGINE_register_all_complete returns one. */
+OPENSSL_EXPORT int ENGINE_register_all_complete(void);
+
 /* OPENSSL_load_builtin_modules does nothing. */
 OPENSSL_EXPORT void OPENSSL_load_builtin_modules(void);
+
+/* FIPS_mode returns zero. */
+OPENSSL_EXPORT int FIPS_mode(void);
 
 
 #if defined(__cplusplus)

@@ -66,6 +66,7 @@
 
 #include <openssl/ecdh.h>
 
+#include <limits.h>
 #include <string.h>
 
 #include <openssl/bn.h>
@@ -73,9 +74,11 @@
 #include <openssl/err.h>
 #include <openssl/mem.h>
 
+#include "../internal.h"
+
 
 int ECDH_compute_key(void *out, size_t outlen, const EC_POINT *pub_key,
-                     EC_KEY *priv_key,
+                     const EC_KEY *priv_key,
                      void *(*kdf)(const void *in, size_t inlen, void *out,
                                   size_t *outlen)) {
   const BIGNUM *const priv = EC_KEY_get0_private_key(priv_key);
@@ -139,10 +142,15 @@ int ECDH_compute_key(void *out, size_t outlen, const EC_POINT *pub_key,
     if (buflen < outlen) {
       outlen = buflen;
     }
-    memcpy(out, buf, outlen);
+    OPENSSL_memcpy(out, buf, outlen);
   }
 
-  ret = outlen;
+  if (outlen > INT_MAX) {
+    OPENSSL_PUT_ERROR(ECDH, ERR_R_OVERFLOW);
+    goto err;
+  }
+
+  ret = (int)outlen;
 
 err:
   OPENSSL_free(buf);

@@ -56,22 +56,51 @@
 
 #include <openssl/evp.h>
 
-#include <openssl/asn1.h>
+#include <string.h>
+
 #include <openssl/bytestring.h>
+#include <openssl/dsa.h>
+#include <openssl/ec_key.h>
 #include <openssl/err.h>
-#include <openssl/obj.h>
-#include <openssl/x509.h>
+#include <openssl/rsa.h>
 
 #include "internal.h"
+#include "../internal.h"
 
+
+static const EVP_PKEY_ASN1_METHOD *const kASN1Methods[] = {
+    &rsa_asn1_meth,
+    &ec_asn1_meth,
+    &dsa_asn1_meth,
+};
+
+static int parse_key_type(CBS *cbs, int *out_type) {
+  CBS oid;
+  if (!CBS_get_asn1(cbs, &oid, CBS_ASN1_OBJECT)) {
+    return 0;
+  }
+
+  unsigned i;
+  for (i = 0; i < OPENSSL_ARRAY_SIZE(kASN1Methods); i++) {
+    const EVP_PKEY_ASN1_METHOD *method = kASN1Methods[i];
+    if (CBS_len(&oid) == method->oid_len &&
+        OPENSSL_memcmp(CBS_data(&oid), method->oid, method->oid_len) == 0) {
+      *out_type = method->pkey_id;
+      return 1;
+    }
+  }
+
+  return 0;
+}
 
 EVP_PKEY *EVP_parse_public_key(CBS *cbs) {
   /* Parse the SubjectPublicKeyInfo. */
-  CBS spki, algorithm, oid, key;
+  CBS spki, algorithm, key;
+  int type;
   uint8_t padding;
   if (!CBS_get_asn1(cbs, &spki, CBS_ASN1_SEQUENCE) ||
       !CBS_get_asn1(&spki, &algorithm, CBS_ASN1_SEQUENCE) ||
-      !CBS_get_asn1(&algorithm, &oid, CBS_ASN1_OBJECT) ||
+      !parse_key_type(&algorithm, &type) ||
       !CBS_get_asn1(&spki, &key, CBS_ASN1_BITSTRING) ||
       CBS_len(&spki) != 0 ||
       /* Every key type defined encodes the key as a byte string with the same
@@ -85,7 +114,7 @@ EVP_PKEY *EVP_parse_public_key(CBS *cbs) {
   /* Set up an |EVP_PKEY| of the appropriate type. */
   EVP_PKEY *ret = EVP_PKEY_new();
   if (ret == NULL ||
-      !EVP_PKEY_set_type(ret, OBJ_cbs2nid(&oid))) {
+      !EVP_PKEY_set_type(ret, type)) {
     goto err;
   }
 
@@ -106,7 +135,7 @@ err:
 }
 
 int EVP_marshal_public_key(CBB *cbb, const EVP_PKEY *key) {
-  if (key->ameth->pub_encode == NULL) {
+  if (key->ameth == NULL || key->ameth->pub_encode == NULL) {
     OPENSSL_PUT_ERROR(EVP, EVP_R_UNSUPPORTED_ALGORITHM);
     return 0;
   }
@@ -116,13 +145,14 @@ int EVP_marshal_public_key(CBB *cbb, const EVP_PKEY *key) {
 
 EVP_PKEY *EVP_parse_private_key(CBS *cbs) {
   /* Parse the PrivateKeyInfo. */
-  CBS pkcs8, algorithm, oid, key;
+  CBS pkcs8, algorithm, key;
   uint64_t version;
+  int type;
   if (!CBS_get_asn1(cbs, &pkcs8, CBS_ASN1_SEQUENCE) ||
       !CBS_get_asn1_uint64(&pkcs8, &version) ||
       version != 0 ||
       !CBS_get_asn1(&pkcs8, &algorithm, CBS_ASN1_SEQUENCE) ||
-      !CBS_get_asn1(&algorithm, &oid, CBS_ASN1_OBJECT) ||
+      !parse_key_type(&algorithm, &type) ||
       !CBS_get_asn1(&pkcs8, &key, CBS_ASN1_OCTETSTRING)) {
     OPENSSL_PUT_ERROR(EVP, EVP_R_DECODE_ERROR);
     return NULL;
@@ -133,7 +163,7 @@ EVP_PKEY *EVP_parse_private_key(CBS *cbs) {
   /* Set up an |EVP_PKEY| of the appropriate type. */
   EVP_PKEY *ret = EVP_PKEY_new();
   if (ret == NULL ||
-      !EVP_PKEY_set_type(ret, OBJ_cbs2nid(&oid))) {
+      !EVP_PKEY_set_type(ret, type)) {
     goto err;
   }
 
@@ -154,7 +184,7 @@ err:
 }
 
 int EVP_marshal_private_key(CBB *cbb, const EVP_PKEY *key) {
-  if (key->ameth->priv_encode == NULL) {
+  if (key->ameth == NULL || key->ameth->priv_encode == NULL) {
     OPENSSL_PUT_ERROR(EVP, EVP_R_UNSUPPORTED_ALGORITHM);
     return 0;
   }
@@ -162,107 +192,134 @@ int EVP_marshal_private_key(CBB *cbb, const EVP_PKEY *key) {
   return key->ameth->priv_encode(cbb, key);
 }
 
+static EVP_PKEY *old_priv_decode(CBS *cbs, int type) {
+  EVP_PKEY *ret = EVP_PKEY_new();
+  if (ret == NULL) {
+    return NULL;
+  }
+
+  switch (type) {
+    case EVP_PKEY_EC: {
+      EC_KEY *ec_key = EC_KEY_parse_private_key(cbs, NULL);
+      if (ec_key == NULL || !EVP_PKEY_assign_EC_KEY(ret, ec_key)) {
+        EC_KEY_free(ec_key);
+        goto err;
+      }
+      return ret;
+    }
+    case EVP_PKEY_DSA: {
+      DSA *dsa = DSA_parse_private_key(cbs);
+      if (dsa == NULL || !EVP_PKEY_assign_DSA(ret, dsa)) {
+        DSA_free(dsa);
+        goto err;
+      }
+      return ret;
+    }
+    case EVP_PKEY_RSA: {
+      RSA *rsa = RSA_parse_private_key(cbs);
+      if (rsa == NULL || !EVP_PKEY_assign_RSA(ret, rsa)) {
+        RSA_free(rsa);
+        goto err;
+      }
+      return ret;
+    }
+    default:
+      OPENSSL_PUT_ERROR(EVP, EVP_R_UNKNOWN_PUBLIC_KEY_TYPE);
+      goto err;
+  }
+
+err:
+  EVP_PKEY_free(ret);
+  return NULL;
+}
+
 EVP_PKEY *d2i_PrivateKey(int type, EVP_PKEY **out, const uint8_t **inp,
                          long len) {
-  EVP_PKEY *ret;
+  if (len < 0) {
+    OPENSSL_PUT_ERROR(EVP, EVP_R_DECODE_ERROR);
+    return NULL;
+  }
 
-  if (out == NULL || *out == NULL) {
-    ret = EVP_PKEY_new();
+  /* Parse with the legacy format. */
+  CBS cbs;
+  CBS_init(&cbs, *inp, (size_t)len);
+  EVP_PKEY *ret = old_priv_decode(&cbs, type);
+  if (ret == NULL) {
+    /* Try again with PKCS#8. */
+    ERR_clear_error();
+    CBS_init(&cbs, *inp, (size_t)len);
+    ret = EVP_parse_private_key(&cbs);
     if (ret == NULL) {
-      OPENSSL_PUT_ERROR(EVP, ERR_R_EVP_LIB);
       return NULL;
     }
-  } else {
-    ret = *out;
-  }
-
-  if (!EVP_PKEY_set_type(ret, type)) {
-    OPENSSL_PUT_ERROR(EVP, EVP_R_UNKNOWN_PUBLIC_KEY_TYPE);
-    goto err;
-  }
-
-  const uint8_t *in = *inp;
-  /* If trying to remove |old_priv_decode|, note that some code depends on this
-   * function writing into |*out| and the |priv_decode| path doesn't support
-   * that. */
-  if (!ret->ameth->old_priv_decode ||
-      !ret->ameth->old_priv_decode(ret, &in, len)) {
-    if (ret->ameth->priv_decode) {
-      /* Reset |in| in case |old_priv_decode| advanced it on error. */
-      in = *inp;
-      PKCS8_PRIV_KEY_INFO *p8 = d2i_PKCS8_PRIV_KEY_INFO(NULL, &in, len);
-      if (!p8) {
-        goto err;
-      }
+    if (ret->type != type) {
+      OPENSSL_PUT_ERROR(EVP, EVP_R_DIFFERENT_KEY_TYPES);
       EVP_PKEY_free(ret);
-      ret = EVP_PKCS82PKEY(p8);
-      PKCS8_PRIV_KEY_INFO_free(p8);
-      if (ret == NULL) {
-        goto err;
-      }
-    } else {
-      OPENSSL_PUT_ERROR(EVP, ERR_R_ASN1_LIB);
-      goto err;
+      return NULL;
     }
   }
 
   if (out != NULL) {
+    EVP_PKEY_free(*out);
     *out = ret;
   }
-  *inp = in;
+  *inp = CBS_data(&cbs);
   return ret;
+}
 
-err:
-  if (out == NULL || *out != ret) {
-    EVP_PKEY_free(ret);
+/* num_elements parses one SEQUENCE from |in| and returns the number of elements
+ * in it. On parse error, it returns zero. */
+static size_t num_elements(const uint8_t *in, size_t in_len) {
+  CBS cbs, sequence;
+  CBS_init(&cbs, in, (size_t)in_len);
+
+  if (!CBS_get_asn1(&cbs, &sequence, CBS_ASN1_SEQUENCE)) {
+    return 0;
   }
-  return NULL;
+
+  size_t count = 0;
+  while (CBS_len(&sequence) > 0) {
+    if (!CBS_get_any_asn1_element(&sequence, NULL, NULL, NULL)) {
+      return 0;
+    }
+
+    count++;
+  }
+
+  return count;
 }
 
 EVP_PKEY *d2i_AutoPrivateKey(EVP_PKEY **out, const uint8_t **inp, long len) {
-  STACK_OF(ASN1_TYPE) *inkey;
-  const uint8_t *p;
-  int keytype;
-  p = *inp;
-
-  /* Dirty trick: read in the ASN1 data into out STACK_OF(ASN1_TYPE):
-   * by analyzing it we can determine the passed structure: this
-   * assumes the input is surrounded by an ASN1 SEQUENCE. */
-  inkey = d2i_ASN1_SEQUENCE_ANY(NULL, &p, len);
-  /* Since we only need to discern "traditional format" RSA and DSA
-   * keys we can just count the elements. */
-  if (sk_ASN1_TYPE_num(inkey) == 6) {
-    keytype = EVP_PKEY_DSA;
-  } else if (sk_ASN1_TYPE_num(inkey) == 4) {
-    keytype = EVP_PKEY_EC;
-  } else if (sk_ASN1_TYPE_num(inkey) == 3) {
-    /* This seems to be PKCS8, not traditional format */
-    p = *inp;
-    PKCS8_PRIV_KEY_INFO *p8 = d2i_PKCS8_PRIV_KEY_INFO(NULL, &p, len);
-    EVP_PKEY *ret;
-
-    sk_ASN1_TYPE_pop_free(inkey, ASN1_TYPE_free);
-    if (!p8) {
-      OPENSSL_PUT_ERROR(EVP, EVP_R_UNSUPPORTED_PUBLIC_KEY_TYPE);
-      return NULL;
-    }
-    ret = EVP_PKCS82PKEY(p8);
-    PKCS8_PRIV_KEY_INFO_free(p8);
-    if (ret == NULL) {
-      return NULL;
-    }
-
-    *inp = p;
-    if (out) {
-      *out = ret;
-    }
-    return ret;
-  } else {
-    keytype = EVP_PKEY_RSA;
+  if (len < 0) {
+    OPENSSL_PUT_ERROR(EVP, EVP_R_DECODE_ERROR);
+    return NULL;
   }
 
-  sk_ASN1_TYPE_pop_free(inkey, ASN1_TYPE_free);
-  return d2i_PrivateKey(keytype, out, inp, len);
+  /* Parse the input as a PKCS#8 PrivateKeyInfo. */
+  CBS cbs;
+  CBS_init(&cbs, *inp, (size_t)len);
+  EVP_PKEY *ret = EVP_parse_private_key(&cbs);
+  if (ret != NULL) {
+    if (out != NULL) {
+      EVP_PKEY_free(*out);
+      *out = ret;
+    }
+    *inp = CBS_data(&cbs);
+    return ret;
+  }
+  ERR_clear_error();
+
+  /* Count the elements to determine the legacy key format. */
+  switch (num_elements(*inp, (size_t)len)) {
+    case 4:
+      return d2i_PrivateKey(EVP_PKEY_EC, out, inp, len);
+
+    case 6:
+      return d2i_PrivateKey(EVP_PKEY_DSA, out, inp, len);
+
+    default:
+      return d2i_PrivateKey(EVP_PKEY_RSA, out, inp, len);
+  }
 }
 
 int i2d_PublicKey(EVP_PKEY *key, uint8_t **outp) {

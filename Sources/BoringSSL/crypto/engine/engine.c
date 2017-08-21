@@ -23,6 +23,8 @@
 #include <openssl/rsa.h>
 #include <openssl/thread.h>
 
+#include "../internal.h"
+
 
 struct engine_st {
   RSA_METHOD *rsa_method;
@@ -35,7 +37,7 @@ ENGINE *ENGINE_new(void) {
     return NULL;
   }
 
-  memset(engine, 0, sizeof(ENGINE));
+  OPENSSL_memset(engine, 0, sizeof(ENGINE));
   return engine;
 }
 
@@ -93,4 +95,4 @@ void METHOD_unref(void *method_in) {
   assert(method->is_static);
 }
 
-OPENSSL_DECLARE_ERROR_REASON(ENGINE, OPERATION_NOT_SUPPORTED);
+OPENSSL_DECLARE_ERROR_REASON(ENGINE, OPERATION_NOT_SUPPORTED)

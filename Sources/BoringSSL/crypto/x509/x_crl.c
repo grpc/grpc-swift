@@ -283,7 +283,7 @@ static int crl_cb(int operation, ASN1_VALUE **pval, const ASN1_ITEM *it,
                 if ((nid == NID_issuing_distribution_point)
                     || (nid == NID_authority_key_identifier)
                     || (nid == NID_delta_crl))
-                    break;;
+                    continue;
                 crl->flags |= EXFLAG_CRITICAL;
                 break;
             }
@@ -299,7 +299,9 @@ static int crl_cb(int operation, ASN1_VALUE **pval, const ASN1_ITEM *it,
         break;
 
     case ASN1_OP_FREE_POST:
-        if (crl->meth->crl_free) {
+        /* |crl->meth| may be NULL if constructing the object failed before
+         * |ASN1_OP_NEW_POST| was run. */
+        if (crl->meth && crl->meth->crl_free) {
             if (!crl->meth->crl_free(crl))
                 return 0;
         }
@@ -460,14 +462,14 @@ static int def_crl_lookup(X509_CRL *crl,
 
     CRYPTO_STATIC_MUTEX_lock_read(&g_crl_sort_lock);
     const int is_sorted = sk_X509_REVOKED_is_sorted(crl->crl->revoked);
-    CRYPTO_STATIC_MUTEX_unlock(&g_crl_sort_lock);
+    CRYPTO_STATIC_MUTEX_unlock_read(&g_crl_sort_lock);
 
     if (!is_sorted) {
         CRYPTO_STATIC_MUTEX_lock_write(&g_crl_sort_lock);
         if (!sk_X509_REVOKED_is_sorted(crl->crl->revoked)) {
             sk_X509_REVOKED_sort(crl->crl->revoked);
         }
-        CRYPTO_STATIC_MUTEX_unlock(&g_crl_sort_lock);
+        CRYPTO_STATIC_MUTEX_unlock_write(&g_crl_sort_lock);
     }
 
     if (!sk_X509_REVOKED_find(crl->crl->revoked, &idx, &rtmp))

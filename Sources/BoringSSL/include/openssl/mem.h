@@ -124,8 +124,27 @@ OPENSSL_EXPORT int BIO_vsnprintf(char *buf, size_t n, const char *format,
     OPENSSL_PRINTF_FORMAT_FUNC(3, 0);
 
 
+/* Deprecated functions. */
+
+#define CRYPTO_malloc OPENSSL_malloc
+#define CRYPTO_realloc OPENSSL_realloc
+#define CRYPTO_free OPENSSL_free
+
+
 #if defined(__cplusplus)
 }  /* extern C */
+
+extern "C++" {
+
+namespace bssl {
+
+BORINGSSL_MAKE_DELETER(char, OPENSSL_free)
+BORINGSSL_MAKE_DELETER(uint8_t, OPENSSL_free)
+
+}  // namespace bssl
+
+}  /* extern C++ */
+
 #endif
 
 #endif  /* OPENSSL_HEADER_MEM_H */

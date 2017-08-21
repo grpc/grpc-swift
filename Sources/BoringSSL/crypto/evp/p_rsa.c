@@ -64,9 +64,10 @@
 #include <openssl/digest.h>
 #include <openssl/err.h>
 #include <openssl/mem.h>
-#include <openssl/obj.h>
+#include <openssl/nid.h>
 #include <openssl/rsa.h>
 
+#include "../internal.h"
 #include "../rsa/internal.h"
 #include "internal.h"
 
@@ -97,7 +98,7 @@ static int pkey_rsa_init(EVP_PKEY_CTX *ctx) {
   if (!rctx) {
     return 0;
   }
-  memset(rctx, 0, sizeof(RSA_PKEY_CTX));
+  OPENSSL_memset(rctx, 0, sizeof(RSA_PKEY_CTX));
 
   rctx->nbits = 2048;
   rctx->pad_mode = RSA_PKCS1_PADDING;
@@ -231,6 +232,11 @@ static int pkey_rsa_verify(EVP_PKEY_CTX *ctx, const uint8_t *sig,
         return RSA_verify(EVP_MD_type(rctx->md), tbs, tbslen, sig, siglen, rsa);
 
       case RSA_PKCS1_PSS_PADDING:
+        if (tbslen != EVP_MD_size(rctx->md)) {
+          OPENSSL_PUT_ERROR(EVP, EVP_R_INVALID_DIGEST_LENGTH);
+          return 0;
+        }
+
         if (!setup_tbuf(rctx, ctx) ||
             !RSA_verify_raw(rsa, &rslen, rctx->tbuf, key_len, sig, siglen,
                             RSA_NO_PADDING) ||
@@ -284,7 +290,7 @@ static int pkey_rsa_verify_recover(EVP_PKEY_CTX *ctx, uint8_t *out,
       return 0;
     }
     *out_len = ret;
-    memcpy(out, rctx->tbuf, *out_len);
+    OPENSSL_memcpy(out, rctx->tbuf, *out_len);
     return 1;
   }
 
@@ -324,7 +330,7 @@ static int pkey_rsa_verify_recover(EVP_PKEY_CTX *ctx, uint8_t *out,
   }
 
   if (out != NULL) {
-    memcpy(out, rctx->tbuf + asn1_prefix_len, result_len);
+    OPENSSL_memcpy(out, rctx->tbuf + asn1_prefix_len, result_len);
   }
   *out_len = result_len;
 

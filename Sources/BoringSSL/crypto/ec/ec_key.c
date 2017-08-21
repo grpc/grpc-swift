@@ -91,7 +91,7 @@ EC_KEY *EC_KEY_new_method(const ENGINE *engine) {
     return NULL;
   }
 
-  memset(ret, 0, sizeof(EC_KEY));
+  OPENSSL_memset(ret, 0, sizeof(EC_KEY));
 
   if (engine) {
     ret->ecdsa_meth = ENGINE_get_ECDSA_method(engine);
@@ -317,14 +317,6 @@ int EC_KEY_check_key(const EC_KEY *eckey) {
     OPENSSL_PUT_ERROR(EC, EC_R_POINT_IS_NOT_ON_CURVE);
     goto err;
   }
-  /* TODO(fork): can this be skipped if the cofactor is one or if we're about
-   * to check the private key, below? */
-  if (eckey->group->meth->check_pub_key_order != NULL &&
-      !eckey->group->meth->check_pub_key_order(eckey->group, eckey->pub_key,
-                                               ctx)) {
-    OPENSSL_PUT_ERROR(EC, EC_R_WRONG_ORDER);
-    goto err;
-  }
   /* in case the priv_key is present :
    * check if generator * priv_key == pub_key
    */
@@ -365,15 +357,24 @@ int EC_KEY_set_public_key_affine_coordinates(EC_KEY *key, BIGNUM *x,
     return 0;
   }
   ctx = BN_CTX_new();
+
+  if (ctx == NULL) {
+    return 0;
+  }
+
+  BN_CTX_start(ctx);
   point = EC_POINT_new(key->group);
 
-  if (ctx == NULL ||
-      point == NULL) {
+  if (point == NULL) {
     goto err;
   }
 
   tx = BN_CTX_get(ctx);
   ty = BN_CTX_get(ctx);
+  if (tx == NULL ||
+      ty == NULL) {
+    goto err;
+  }
 
   if (!EC_POINT_set_affine_coordinates_GFp(key->group, point, x, y, ctx) ||
       !EC_POINT_get_affine_coordinates_GFp(key->group, point, tx, ty, ctx)) {
@@ -398,6 +399,7 @@ int EC_KEY_set_public_key_affine_coordinates(EC_KEY *key, BIGNUM *x,
   ok = 1;
 
 err:
+  BN_CTX_end(ctx);
   BN_CTX_free(ctx);
   EC_POINT_free(point);
   return ok;
@@ -423,11 +425,9 @@ int EC_KEY_generate_key(EC_KEY *eckey) {
   }
 
   const BIGNUM *order = EC_GROUP_get0_order(eckey->group);
-  do {
-    if (!BN_rand_range(priv_key, order)) {
-      goto err;
-    }
-  } while (BN_is_zero(priv_key));
+  if (!BN_rand_range_ex(priv_key, 1, order)) {
+    goto err;
+  }
 
   if (eckey->pub_key == NULL) {
     pub_key = EC_POINT_new(eckey->group);

@@ -29,13 +29,13 @@
 #include <openssl/sha.h>
 
 #include "internal.h"
+#include "../internal.h"
 
 
-/* fe means field element. Here the field is \Z/(2^255-19). An element t,
- * entries t[0]...t[9], represents the integer t[0]+2^26 t[1]+2^51 t[2]+2^77
- * t[3]+2^102 t[4]+...+2^230 t[9]. Bounds on each t[i] vary depending on
- * context.  */
-typedef int32_t fe[10];
+static const int64_t kBottom25Bits = INT64_C(0x1ffffff);
+static const int64_t kBottom26Bits = INT64_C(0x3ffffff);
+static const int64_t kTop39Bits = INT64_C(0xfffffffffe000000);
+static const int64_t kTop38Bits = INT64_C(0xfffffffffc000000);
 
 static uint64_t load_3(const uint8_t *in) {
   uint64_t result;
@@ -77,17 +77,17 @@ static void fe_frombytes(fe h, const uint8_t *s) {
   int64_t carry8;
   int64_t carry9;
 
-  carry9 = (h9 + (int64_t) (1<<24)) >> 25; h0 += carry9 * 19; h9 -= carry9 << 25;
-  carry1 = (h1 + (int64_t) (1<<24)) >> 25; h2 += carry1; h1 -= carry1 << 25;
-  carry3 = (h3 + (int64_t) (1<<24)) >> 25; h4 += carry3; h3 -= carry3 << 25;
-  carry5 = (h5 + (int64_t) (1<<24)) >> 25; h6 += carry5; h5 -= carry5 << 25;
-  carry7 = (h7 + (int64_t) (1<<24)) >> 25; h8 += carry7; h7 -= carry7 << 25;
+  carry9 = h9 + (1 << 24); h0 += (carry9 >> 25) * 19; h9 -= carry9 & kTop39Bits;
+  carry1 = h1 + (1 << 24); h2 += carry1 >> 25; h1 -= carry1 & kTop39Bits;
+  carry3 = h3 + (1 << 24); h4 += carry3 >> 25; h3 -= carry3 & kTop39Bits;
+  carry5 = h5 + (1 << 24); h6 += carry5 >> 25; h5 -= carry5 & kTop39Bits;
+  carry7 = h7 + (1 << 24); h8 += carry7 >> 25; h7 -= carry7 & kTop39Bits;
 
-  carry0 = (h0 + (int64_t) (1<<25)) >> 26; h1 += carry0; h0 -= carry0 << 26;
-  carry2 = (h2 + (int64_t) (1<<25)) >> 26; h3 += carry2; h2 -= carry2 << 26;
-  carry4 = (h4 + (int64_t) (1<<25)) >> 26; h5 += carry4; h4 -= carry4 << 26;
-  carry6 = (h6 + (int64_t) (1<<25)) >> 26; h7 += carry6; h6 -= carry6 << 26;
-  carry8 = (h8 + (int64_t) (1<<25)) >> 26; h9 += carry8; h8 -= carry8 << 26;
+  carry0 = h0 + (1 << 25); h1 += carry0 >> 26; h0 -= carry0 & kTop38Bits;
+  carry2 = h2 + (1 << 25); h3 += carry2 >> 26; h2 -= carry2 & kTop38Bits;
+  carry4 = h4 + (1 << 25); h5 += carry4 >> 26; h4 -= carry4 & kTop38Bits;
+  carry6 = h6 + (1 << 25); h7 += carry6 >> 26; h6 -= carry6 & kTop38Bits;
+  carry8 = h8 + (1 << 25); h9 += carry8 >> 26; h8 -= carry8 & kTop38Bits;
 
   h[0] = h0;
   h[1] = h1;
@@ -135,16 +135,6 @@ static void fe_tobytes(uint8_t *s, const fe h) {
   int32_t h8 = h[8];
   int32_t h9 = h[9];
   int32_t q;
-  int32_t carry0;
-  int32_t carry1;
-  int32_t carry2;
-  int32_t carry3;
-  int32_t carry4;
-  int32_t carry5;
-  int32_t carry6;
-  int32_t carry7;
-  int32_t carry8;
-  int32_t carry9;
 
   q = (19 * h9 + (((int32_t) 1) << 24)) >> 25;
   q = (h0 + q) >> 26;
@@ -162,16 +152,16 @@ static void fe_tobytes(uint8_t *s, const fe h) {
   h0 += 19 * q;
   /* Goal: Output h-2^255 q, which is between 0 and 2^255-20. */
 
-  carry0 = h0 >> 26; h1 += carry0; h0 -= carry0 << 26;
-  carry1 = h1 >> 25; h2 += carry1; h1 -= carry1 << 25;
-  carry2 = h2 >> 26; h3 += carry2; h2 -= carry2 << 26;
-  carry3 = h3 >> 25; h4 += carry3; h3 -= carry3 << 25;
-  carry4 = h4 >> 26; h5 += carry4; h4 -= carry4 << 26;
-  carry5 = h5 >> 25; h6 += carry5; h5 -= carry5 << 25;
-  carry6 = h6 >> 26; h7 += carry6; h6 -= carry6 << 26;
-  carry7 = h7 >> 25; h8 += carry7; h7 -= carry7 << 25;
-  carry8 = h8 >> 26; h9 += carry8; h8 -= carry8 << 26;
-  carry9 = h9 >> 25;               h9 -= carry9 << 25;
+  h1 += h0 >> 26; h0 &= kBottom26Bits;
+  h2 += h1 >> 25; h1 &= kBottom25Bits;
+  h3 += h2 >> 26; h2 &= kBottom26Bits;
+  h4 += h3 >> 25; h3 &= kBottom25Bits;
+  h5 += h4 >> 26; h4 &= kBottom26Bits;
+  h6 += h5 >> 25; h5 &= kBottom25Bits;
+  h7 += h6 >> 26; h6 &= kBottom26Bits;
+  h8 += h7 >> 25; h7 &= kBottom25Bits;
+  h9 += h8 >> 26; h8 &= kBottom26Bits;
+                  h9 &= kBottom25Bits;
                   /* h10 = carry9 */
 
   /* Goal: Output h0+...+2^255 h10-2^255 q, which is between 0 and 2^255-20.
@@ -182,32 +172,32 @@ static void fe_tobytes(uint8_t *s, const fe h) {
   s[0] = h0 >> 0;
   s[1] = h0 >> 8;
   s[2] = h0 >> 16;
-  s[3] = (h0 >> 24) | (h1 << 2);
+  s[3] = (h0 >> 24) | ((uint32_t)(h1) << 2);
   s[4] = h1 >> 6;
   s[5] = h1 >> 14;
-  s[6] = (h1 >> 22) | (h2 << 3);
+  s[6] = (h1 >> 22) | ((uint32_t)(h2) << 3);
   s[7] = h2 >> 5;
   s[8] = h2 >> 13;
-  s[9] = (h2 >> 21) | (h3 << 5);
+  s[9] = (h2 >> 21) | ((uint32_t)(h3) << 5);
   s[10] = h3 >> 3;
   s[11] = h3 >> 11;
-  s[12] = (h3 >> 19) | (h4 << 6);
+  s[12] = (h3 >> 19) | ((uint32_t)(h4) << 6);
   s[13] = h4 >> 2;
   s[14] = h4 >> 10;
   s[15] = h4 >> 18;
   s[16] = h5 >> 0;
   s[17] = h5 >> 8;
   s[18] = h5 >> 16;
-  s[19] = (h5 >> 24) | (h6 << 1);
+  s[19] = (h5 >> 24) | ((uint32_t)(h6) << 1);
   s[20] = h6 >> 7;
   s[21] = h6 >> 15;
-  s[22] = (h6 >> 23) | (h7 << 3);
+  s[22] = (h6 >> 23) | ((uint32_t)(h7) << 3);
   s[23] = h7 >> 5;
   s[24] = h7 >> 13;
-  s[25] = (h7 >> 21) | (h8 << 4);
+  s[25] = (h7 >> 21) | ((uint32_t)(h8) << 4);
   s[26] = h8 >> 4;
   s[27] = h8 >> 12;
-  s[28] = (h8 >> 20) | (h9 << 6);
+  s[28] = (h8 >> 20) | ((uint32_t)(h9) << 6);
   s[29] = h9 >> 2;
   s[30] = h9 >> 10;
   s[31] = h9 >> 18;
@@ -215,15 +205,15 @@ static void fe_tobytes(uint8_t *s, const fe h) {
 
 /* h = f */
 static void fe_copy(fe h, const fe f) {
-  memmove(h, f, sizeof(int32_t) * 10);
+  OPENSSL_memmove(h, f, sizeof(int32_t) * 10);
 }
 
 /* h = 0 */
-static void fe_0(fe h) { memset(h, 0, sizeof(int32_t) * 10); }
+static void fe_0(fe h) { OPENSSL_memset(h, 0, sizeof(int32_t) * 10); }
 
 /* h = 1 */
 static void fe_1(fe h) {
-  memset(h, 0, sizeof(int32_t) * 10);
+  OPENSSL_memset(h, 0, sizeof(int32_t) * 10);
   h[0] = 1;
 }
 
@@ -447,46 +437,46 @@ static void fe_mul(fe h, const fe f, const fe g) {
    * |h1| <= (1.65*1.65*2^51*(1+1+19+19+19+19+19+19+19+19))
    *   i.e. |h1| <= 1.7*2^59; narrower ranges for h3, h5, h7, h9 */
 
-  carry0 = (h0 + (int64_t) (1<<25)) >> 26; h1 += carry0; h0 -= carry0 << 26;
-  carry4 = (h4 + (int64_t) (1<<25)) >> 26; h5 += carry4; h4 -= carry4 << 26;
+  carry0 = h0 + (1 << 25); h1 += carry0 >> 26; h0 -= carry0 & kTop38Bits;
+  carry4 = h4 + (1 << 25); h5 += carry4 >> 26; h4 -= carry4 & kTop38Bits;
   /* |h0| <= 2^25 */
   /* |h4| <= 2^25 */
   /* |h1| <= 1.71*2^59 */
   /* |h5| <= 1.71*2^59 */
 
-  carry1 = (h1 + (int64_t) (1<<24)) >> 25; h2 += carry1; h1 -= carry1 << 25;
-  carry5 = (h5 + (int64_t) (1<<24)) >> 25; h6 += carry5; h5 -= carry5 << 25;
+  carry1 = h1 + (1 << 24); h2 += carry1 >> 25; h1 -= carry1 & kTop39Bits;
+  carry5 = h5 + (1 << 24); h6 += carry5 >> 25; h5 -= carry5 & kTop39Bits;
   /* |h1| <= 2^24; from now on fits into int32 */
   /* |h5| <= 2^24; from now on fits into int32 */
   /* |h2| <= 1.41*2^60 */
   /* |h6| <= 1.41*2^60 */
 
-  carry2 = (h2 + (int64_t) (1<<25)) >> 26; h3 += carry2; h2 -= carry2 << 26;
-  carry6 = (h6 + (int64_t) (1<<25)) >> 26; h7 += carry6; h6 -= carry6 << 26;
+  carry2 = h2 + (1 << 25); h3 += carry2 >> 26; h2 -= carry2 & kTop38Bits;
+  carry6 = h6 + (1 << 25); h7 += carry6 >> 26; h6 -= carry6 & kTop38Bits;
   /* |h2| <= 2^25; from now on fits into int32 unchanged */
   /* |h6| <= 2^25; from now on fits into int32 unchanged */
   /* |h3| <= 1.71*2^59 */
   /* |h7| <= 1.71*2^59 */
 
-  carry3 = (h3 + (int64_t) (1<<24)) >> 25; h4 += carry3; h3 -= carry3 << 25;
-  carry7 = (h7 + (int64_t) (1<<24)) >> 25; h8 += carry7; h7 -= carry7 << 25;
+  carry3 = h3 + (1 << 24); h4 += carry3 >> 25; h3 -= carry3 & kTop39Bits;
+  carry7 = h7 + (1 << 24); h8 += carry7 >> 25; h7 -= carry7 & kTop39Bits;
   /* |h3| <= 2^24; from now on fits into int32 unchanged */
   /* |h7| <= 2^24; from now on fits into int32 unchanged */
   /* |h4| <= 1.72*2^34 */
   /* |h8| <= 1.41*2^60 */
 
-  carry4 = (h4 + (int64_t) (1<<25)) >> 26; h5 += carry4; h4 -= carry4 << 26;
-  carry8 = (h8 + (int64_t) (1<<25)) >> 26; h9 += carry8; h8 -= carry8 << 26;
+  carry4 = h4 + (1 << 25); h5 += carry4 >> 26; h4 -= carry4 & kTop38Bits;
+  carry8 = h8 + (1 << 25); h9 += carry8 >> 26; h8 -= carry8 & kTop38Bits;
   /* |h4| <= 2^25; from now on fits into int32 unchanged */
   /* |h8| <= 2^25; from now on fits into int32 unchanged */
   /* |h5| <= 1.01*2^24 */
   /* |h9| <= 1.71*2^59 */
 
-  carry9 = (h9 + (int64_t) (1<<24)) >> 25; h0 += carry9 * 19; h9 -= carry9 << 25;
+  carry9 = h9 + (1 << 24); h0 += (carry9 >> 25) * 19; h9 -= carry9 & kTop39Bits;
   /* |h9| <= 2^24; from now on fits into int32 unchanged */
   /* |h0| <= 1.1*2^39 */
 
-  carry0 = (h0 + (int64_t) (1<<25)) >> 26; h1 += carry0; h0 -= carry0 << 26;
+  carry0 = h0 + (1 << 25); h1 += carry0 >> 26; h0 -= carry0 & kTop38Bits;
   /* |h0| <= 2^25; from now on fits into int32 unchanged */
   /* |h1| <= 1.01*2^24 */
 
@@ -612,24 +602,24 @@ static void fe_sq(fe h, const fe f) {
   int64_t carry8;
   int64_t carry9;
 
-  carry0 = (h0 + (int64_t) (1<<25)) >> 26; h1 += carry0; h0 -= carry0 << 26;
-  carry4 = (h4 + (int64_t) (1<<25)) >> 26; h5 += carry4; h4 -= carry4 << 26;
+  carry0 = h0 + (1 << 25); h1 += carry0 >> 26; h0 -= carry0 & kTop38Bits;
+  carry4 = h4 + (1 << 25); h5 += carry4 >> 26; h4 -= carry4 & kTop38Bits;
 
-  carry1 = (h1 + (int64_t) (1<<24)) >> 25; h2 += carry1; h1 -= carry1 << 25;
-  carry5 = (h5 + (int64_t) (1<<24)) >> 25; h6 += carry5; h5 -= carry5 << 25;
+  carry1 = h1 + (1 << 24); h2 += carry1 >> 25; h1 -= carry1 & kTop39Bits;
+  carry5 = h5 + (1 << 24); h6 += carry5 >> 25; h5 -= carry5 & kTop39Bits;
 
-  carry2 = (h2 + (int64_t) (1<<25)) >> 26; h3 += carry2; h2 -= carry2 << 26;
-  carry6 = (h6 + (int64_t) (1<<25)) >> 26; h7 += carry6; h6 -= carry6 << 26;
+  carry2 = h2 + (1 << 25); h3 += carry2 >> 26; h2 -= carry2 & kTop38Bits;
+  carry6 = h6 + (1 << 25); h7 += carry6 >> 26; h6 -= carry6 & kTop38Bits;
 
-  carry3 = (h3 + (int64_t) (1<<24)) >> 25; h4 += carry3; h3 -= carry3 << 25;
-  carry7 = (h7 + (int64_t) (1<<24)) >> 25; h8 += carry7; h7 -= carry7 << 25;
+  carry3 = h3 + (1 << 24); h4 += carry3 >> 25; h3 -= carry3 & kTop39Bits;
+  carry7 = h7 + (1 << 24); h8 += carry7 >> 25; h7 -= carry7 & kTop39Bits;
 
-  carry4 = (h4 + (int64_t) (1<<25)) >> 26; h5 += carry4; h4 -= carry4 << 26;
-  carry8 = (h8 + (int64_t) (1<<25)) >> 26; h9 += carry8; h8 -= carry8 << 26;
+  carry4 = h4 + (1 << 25); h5 += carry4 >> 26; h4 -= carry4 & kTop38Bits;
+  carry8 = h8 + (1 << 25); h9 += carry8 >> 26; h8 -= carry8 & kTop38Bits;
 
-  carry9 = (h9 + (int64_t) (1<<24)) >> 25; h0 += carry9 * 19; h9 -= carry9 << 25;
+  carry9 = h9 + (1 << 24); h0 += (carry9 >> 25) * 19; h9 -= carry9 & kTop39Bits;
 
-  carry0 = (h0 + (int64_t) (1<<25)) >> 26; h1 += carry0; h0 -= carry0 << 26;
+  carry0 = h0 + (1 << 25); h1 += carry0 >> 26; h0 -= carry0 & kTop38Bits;
 
   h[0] = h0;
   h[1] = h1;
@@ -651,9 +641,6 @@ static void fe_invert(fe out, const fe z) {
   int i;
 
   fe_sq(t0, z);
-  for (i = 1; i < 1; ++i) {
-    fe_sq(t0, t0);
-  }
   fe_sq(t1, t0);
   for (i = 1; i < 2; ++i) {
     fe_sq(t1, t1);
@@ -661,9 +648,6 @@ static void fe_invert(fe out, const fe z) {
   fe_mul(t1, z, t1);
   fe_mul(t0, t0, t1);
   fe_sq(t2, t0);
-  for (i = 1; i < 1; ++i) {
-    fe_sq(t2, t2);
-  }
   fe_mul(t1, t1, t2);
   fe_sq(t2, t1);
   for (i = 1; i < 5; ++i) {
@@ -880,24 +864,24 @@ static void fe_sq2(fe h, const fe f) {
   h8 += h8;
   h9 += h9;
 
-  carry0 = (h0 + (int64_t) (1<<25)) >> 26; h1 += carry0; h0 -= carry0 << 26;
-  carry4 = (h4 + (int64_t) (1<<25)) >> 26; h5 += carry4; h4 -= carry4 << 26;
+  carry0 = h0 + (1 << 25); h1 += carry0 >> 26; h0 -= carry0 & kTop38Bits;
+  carry4 = h4 + (1 << 25); h5 += carry4 >> 26; h4 -= carry4 & kTop38Bits;
 
-  carry1 = (h1 + (int64_t) (1<<24)) >> 25; h2 += carry1; h1 -= carry1 << 25;
-  carry5 = (h5 + (int64_t) (1<<24)) >> 25; h6 += carry5; h5 -= carry5 << 25;
+  carry1 = h1 + (1 << 24); h2 += carry1 >> 25; h1 -= carry1 & kTop39Bits;
+  carry5 = h5 + (1 << 24); h6 += carry5 >> 25; h5 -= carry5 & kTop39Bits;
 
-  carry2 = (h2 + (int64_t) (1<<25)) >> 26; h3 += carry2; h2 -= carry2 << 26;
-  carry6 = (h6 + (int64_t) (1<<25)) >> 26; h7 += carry6; h6 -= carry6 << 26;
+  carry2 = h2 + (1 << 25); h3 += carry2 >> 26; h2 -= carry2 & kTop38Bits;
+  carry6 = h6 + (1 << 25); h7 += carry6 >> 26; h6 -= carry6 & kTop38Bits;
 
-  carry3 = (h3 + (int64_t) (1<<24)) >> 25; h4 += carry3; h3 -= carry3 << 25;
-  carry7 = (h7 + (int64_t) (1<<24)) >> 25; h8 += carry7; h7 -= carry7 << 25;
+  carry3 = h3 + (1 << 24); h4 += carry3 >> 25; h3 -= carry3 & kTop39Bits;
+  carry7 = h7 + (1 << 24); h8 += carry7 >> 25; h7 -= carry7 & kTop39Bits;
 
-  carry4 = (h4 + (int64_t) (1<<25)) >> 26; h5 += carry4; h4 -= carry4 << 26;
-  carry8 = (h8 + (int64_t) (1<<25)) >> 26; h9 += carry8; h8 -= carry8 << 26;
+  carry4 = h4 + (1 << 25); h5 += carry4 >> 26; h4 -= carry4 & kTop38Bits;
+  carry8 = h8 + (1 << 25); h9 += carry8 >> 26; h8 -= carry8 & kTop38Bits;
 
-  carry9 = (h9 + (int64_t) (1<<24)) >> 25; h0 += carry9 * 19; h9 -= carry9 << 25;
+  carry9 = h9 + (1 << 24); h0 += (carry9 >> 25) * 19; h9 -= carry9 & kTop39Bits;
 
-  carry0 = (h0 + (int64_t) (1<<25)) >> 26; h1 += carry0; h0 -= carry0 << 26;
+  carry0 = h0 + (1 << 25); h1 += carry0 >> 26; h0 -= carry0 & kTop38Bits;
 
   h[0] = h0;
   h[1] = h1;
@@ -918,9 +902,6 @@ static void fe_pow22523(fe out, const fe z) {
   int i;
 
   fe_sq(t0, z);
-  for (i = 1; i < 1; ++i) {
-    fe_sq(t0, t0);
-  }
   fe_sq(t1, t0);
   for (i = 1; i < 2; ++i) {
     fe_sq(t1, t1);
@@ -928,9 +909,6 @@ static void fe_pow22523(fe out, const fe z) {
   fe_mul(t1, z, t1);
   fe_mul(t0, t0, t1);
   fe_sq(t0, t0);
-  for (i = 1; i < 1; ++i) {
-    fe_sq(t0, t0);
-  }
   fe_mul(t0, t1, t0);
   fe_sq(t1, t0);
   for (i = 1; i < 5; ++i) {
@@ -974,52 +952,7 @@ static void fe_pow22523(fe out, const fe z) {
   fe_mul(out, t0, z);
 }
 
-/* ge means group element.
-
- * Here the group is the set of pairs (x,y) of field elements (see fe.h)
- * satisfying -x^2 + y^2 = 1 + d x^2y^2
- * where d = -121665/121666.
- *
- * Representations:
- *   ge_p2 (projective): (X:Y:Z) satisfying x=X/Z, y=Y/Z
- *   ge_p3 (extended): (X:Y:Z:T) satisfying x=X/Z, y=Y/Z, XY=ZT
- *   ge_p1p1 (completed): ((X:Z),(Y:T)) satisfying x=X/Z, y=Y/T
- *   ge_precomp (Duif): (y+x,y-x,2dxy) */
-
-typedef struct {
-  fe X;
-  fe Y;
-  fe Z;
-} ge_p2;
-
-typedef struct {
-  fe X;
-  fe Y;
-  fe Z;
-  fe T;
-} ge_p3;
-
-typedef struct {
-  fe X;
-  fe Y;
-  fe Z;
-  fe T;
-} ge_p1p1;
-
-typedef struct {
-  fe yplusx;
-  fe yminusx;
-  fe xy2d;
-} ge_precomp;
-
-typedef struct {
-  fe YplusX;
-  fe YminusX;
-  fe Z;
-  fe T2d;
-} ge_cached;
-
-static void ge_tobytes(uint8_t *s, const ge_p2 *h) {
+void x25519_ge_tobytes(uint8_t *s, const ge_p2 *h) {
   fe recip;
   fe x;
   fe y;
@@ -1049,7 +982,7 @@ static const fe d = {-10913610, 13857413, -15372611, 6949391,   114729,
 static const fe sqrtm1 = {-32595792, -7943725,  9377950,  3500415, 12389472,
                           -272473,   -25146209, -2005654, 326686,  11406482};
 
-static int ge_frombytes_vartime(ge_p3 *h, const uint8_t *s) {
+int x25519_ge_frombytes_vartime(ge_p3 *h, const uint8_t *s) {
   fe u;
   fe v;
   fe v3;
@@ -1105,6 +1038,13 @@ static void ge_p3_0(ge_p3 *h) {
   fe_0(h->T);
 }
 
+static void ge_cached_0(ge_cached *h) {
+  fe_1(h->YplusX);
+  fe_1(h->YminusX);
+  fe_1(h->Z);
+  fe_0(h->T2d);
+}
+
 static void ge_precomp_0(ge_precomp *h) {
   fe_1(h->yplusx);
   fe_1(h->yminusx);
@@ -1122,7 +1062,7 @@ static const fe d2 = {-21827239, -5839606,  -30745221, 13898782, 229458,
                       15978800,  -12551817, -6495438,  29715968, 9444199};
 
 /* r = p */
-static void ge_p3_to_cached(ge_cached *r, const ge_p3 *p) {
+void x25519_ge_p3_to_cached(ge_cached *r, const ge_p3 *p) {
   fe_add(r->YplusX, p->Y, p->X);
   fe_sub(r->YminusX, p->Y, p->X);
   fe_copy(r->Z, p->Z);
@@ -1130,18 +1070,25 @@ static void ge_p3_to_cached(ge_cached *r, const ge_p3 *p) {
 }
 
 /* r = p */
-static void ge_p1p1_to_p2(ge_p2 *r, const ge_p1p1 *p) {
+void x25519_ge_p1p1_to_p2(ge_p2 *r, const ge_p1p1 *p) {
   fe_mul(r->X, p->X, p->T);
   fe_mul(r->Y, p->Y, p->Z);
   fe_mul(r->Z, p->Z, p->T);
 }
 
 /* r = p */
-static void ge_p1p1_to_p3(ge_p3 *r, const ge_p1p1 *p) {
+void x25519_ge_p1p1_to_p3(ge_p3 *r, const ge_p1p1 *p) {
   fe_mul(r->X, p->X, p->T);
   fe_mul(r->Y, p->Y, p->Z);
   fe_mul(r->Z, p->Z, p->T);
   fe_mul(r->T, p->X, p->Y);
+}
+
+/* r = p */
+static void ge_p1p1_to_cached(ge_cached *r, const ge_p1p1 *p) {
+  ge_p3 t;
+  x25519_ge_p1p1_to_p3(&t, p);
+  x25519_ge_p3_to_cached(r, &t);
 }
 
 /* r = 2 * p */
@@ -1199,7 +1146,7 @@ static void ge_msub(ge_p1p1 *r, const ge_p3 *p, const ge_precomp *q) {
 }
 
 /* r = p + q */
-static void ge_add(ge_p1p1 *r, const ge_p3 *p, const ge_cached *q) {
+void x25519_ge_add(ge_p1p1 *r, const ge_p3 *p, const ge_cached *q) {
   fe t0;
 
   fe_add(r->X, p->Y, p->X);
@@ -1216,7 +1163,7 @@ static void ge_add(ge_p1p1 *r, const ge_p3 *p, const ge_cached *q) {
 }
 
 /* r = p - q */
-static void ge_sub(ge_p1p1 *r, const ge_p3 *p, const ge_cached *q) {
+void x25519_ge_sub(ge_p1p1 *r, const ge_p3 *p, const ge_cached *q) {
   fe t0;
 
   fe_add(r->X, p->Y, p->X);
@@ -1242,10 +1189,62 @@ static uint8_t equal(signed char b, signed char c) {
   return y;
 }
 
-static void cmov(ge_precomp *t, ge_precomp *u, uint8_t b) {
+static void cmov(ge_precomp *t, const ge_precomp *u, uint8_t b) {
   fe_cmov(t->yplusx, u->yplusx, b);
   fe_cmov(t->yminusx, u->yminusx, b);
   fe_cmov(t->xy2d, u->xy2d, b);
+}
+
+void x25519_ge_scalarmult_small_precomp(
+    ge_p3 *h, const uint8_t a[32], const uint8_t precomp_table[15 * 2 * 32]) {
+  /* precomp_table is first expanded into matching |ge_precomp|
+   * elements. */
+  ge_precomp multiples[15];
+
+  unsigned i;
+  for (i = 0; i < 15; i++) {
+    const uint8_t *bytes = &precomp_table[i*(2 * 32)];
+    fe x, y;
+    fe_frombytes(x, bytes);
+    fe_frombytes(y, bytes + 32);
+
+    ge_precomp *out = &multiples[i];
+    fe_add(out->yplusx, y, x);
+    fe_sub(out->yminusx, y, x);
+    fe_mul(out->xy2d, x, y);
+    fe_mul(out->xy2d, out->xy2d, d2);
+  }
+
+  /* See the comment above |k25519SmallPrecomp| about the structure of the
+   * precomputed elements. This loop does 64 additions and 64 doublings to
+   * calculate the result. */
+  ge_p3_0(h);
+
+  for (i = 63; i < 64; i--) {
+    unsigned j;
+    signed char index = 0;
+
+    for (j = 0; j < 4; j++) {
+      const uint8_t bit = 1 & (a[(8 * j) + (i / 8)] >> (i & 7));
+      index |= (bit << j);
+    }
+
+    ge_precomp e;
+    ge_precomp_0(&e);
+
+    for (j = 1; j < 16; j++) {
+      cmov(&e, &multiples[j-1], equal(index, j));
+    }
+
+    ge_cached cached;
+    ge_p1p1 r;
+    x25519_ge_p3_to_cached(&cached, h);
+    x25519_ge_add(&r, h, &cached);
+    x25519_ge_p1p1_to_p3(h, &r);
+
+    ge_madd(&r, h, &e);
+    x25519_ge_p1p1_to_p3(h, &r);
+  }
 }
 
 #if defined(OPENSSL_SMALL)
@@ -1341,61 +1340,14 @@ static const uint8_t k25519SmallPrecomp[15 * 2 * 32] = {
     0x45, 0xc9, 0x8b, 0x17, 0x79, 0xe7, 0xc7, 0x90, 0x99, 0x3a, 0x18, 0x25,
 };
 
-static void ge_scalarmult_base(ge_p3 *h, const uint8_t a[32]) {
-  /* k25519SmallPrecomp is first expanded into matching |ge_precomp|
-   * elements. */
-  ge_precomp multiples[15];
-
-  unsigned i;
-  for (i = 0; i < 15; i++) {
-    const uint8_t *bytes = &k25519SmallPrecomp[i*(2 * 32)];
-    fe x, y;
-    fe_frombytes(x, bytes);
-    fe_frombytes(y, bytes + 32);
-
-    ge_precomp *out = &multiples[i];
-    fe_add(out->yplusx, y, x);
-    fe_sub(out->yminusx, y, x);
-    fe_mul(out->xy2d, x, y);
-    fe_mul(out->xy2d, out->xy2d, d2);
-  }
-
-  /* See the comment above |k25519SmallPrecomp| about the structure of the
-   * precomputed elements. This loop does 64 additions and 64 doublings to
-   * calculate the result. */
-  ge_p3_0(h);
-
-  for (i = 63; i < 64; i--) {
-    unsigned j;
-    signed char index = 0;
-
-    for (j = 0; j < 4; j++) {
-      const uint8_t bit = 1 & (a[(8 * j) + (i / 8)] >> (i & 7));
-      index |= (bit << j);
-    }
-
-    ge_precomp e;
-    ge_precomp_0(&e);
-
-    for (j = 1; j < 16; j++) {
-      cmov(&e, &multiples[j-1], equal(index, j));
-    }
-
-    ge_cached cached;
-    ge_p1p1 r;
-    ge_p3_to_cached(&cached, h);
-    ge_add(&r, h, &cached);
-    ge_p1p1_to_p3(h, &r);
-
-    ge_madd(&r, h, &e);
-    ge_p1p1_to_p3(h, &r);
-  }
+void x25519_ge_scalarmult_base(ge_p3 *h, const uint8_t a[32]) {
+  x25519_ge_scalarmult_small_precomp(h, a, k25519SmallPrecomp);
 }
 
 #else
 
 /* k25519Precomp[i][j] = (j+1)*256^i*B */
-static ge_precomp k25519Precomp[32][8] = {
+static const ge_precomp k25519Precomp[32][8] = {
     {
         {
             {25967493, -14356035, 29566456, 3660896, -12694345, 4014787,
@@ -3519,7 +3471,7 @@ static uint8_t negative(signed char b) {
 static void table_select(ge_precomp *t, int pos, signed char b) {
   ge_precomp minust;
   uint8_t bnegative = negative(b);
-  uint8_t babs = b - (((-bnegative) & b) << 1);
+  uint8_t babs = b - ((uint8_t)((-bnegative) & b) << 1);
 
   ge_precomp_0(t);
   cmov(t, &k25519Precomp[pos][0], equal(babs, 1));
@@ -3542,7 +3494,7 @@ static void table_select(ge_precomp *t, int pos, signed char b) {
  *
  * Preconditions:
  *   a[31] <= 127 */
-static void ge_scalarmult_base(ge_p3 *h, const uint8_t *a) {
+void x25519_ge_scalarmult_base(ge_p3 *h, const uint8_t *a) {
   signed char e[64];
   signed char carry;
   ge_p1p1 r;
@@ -3571,26 +3523,87 @@ static void ge_scalarmult_base(ge_p3 *h, const uint8_t *a) {
   for (i = 1; i < 64; i += 2) {
     table_select(&t, i / 2, e[i]);
     ge_madd(&r, h, &t);
-    ge_p1p1_to_p3(h, &r);
+    x25519_ge_p1p1_to_p3(h, &r);
   }
 
   ge_p3_dbl(&r, h);
-  ge_p1p1_to_p2(&s, &r);
+  x25519_ge_p1p1_to_p2(&s, &r);
   ge_p2_dbl(&r, &s);
-  ge_p1p1_to_p2(&s, &r);
+  x25519_ge_p1p1_to_p2(&s, &r);
   ge_p2_dbl(&r, &s);
-  ge_p1p1_to_p2(&s, &r);
+  x25519_ge_p1p1_to_p2(&s, &r);
   ge_p2_dbl(&r, &s);
-  ge_p1p1_to_p3(h, &r);
+  x25519_ge_p1p1_to_p3(h, &r);
 
   for (i = 0; i < 64; i += 2) {
     table_select(&t, i / 2, e[i]);
     ge_madd(&r, h, &t);
-    ge_p1p1_to_p3(h, &r);
+    x25519_ge_p1p1_to_p3(h, &r);
   }
 }
 
 #endif
+
+static void cmov_cached(ge_cached *t, ge_cached *u, uint8_t b) {
+  fe_cmov(t->YplusX, u->YplusX, b);
+  fe_cmov(t->YminusX, u->YminusX, b);
+  fe_cmov(t->Z, u->Z, b);
+  fe_cmov(t->T2d, u->T2d, b);
+}
+
+/* r = scalar * A.
+ * where a = a[0]+256*a[1]+...+256^31 a[31]. */
+void x25519_ge_scalarmult(ge_p2 *r, const uint8_t *scalar, const ge_p3 *A) {
+  ge_p2 Ai_p2[8];
+  ge_cached Ai[16];
+  ge_p1p1 t;
+
+  ge_cached_0(&Ai[0]);
+  x25519_ge_p3_to_cached(&Ai[1], A);
+  ge_p3_to_p2(&Ai_p2[1], A);
+
+  unsigned i;
+  for (i = 2; i < 16; i += 2) {
+    ge_p2_dbl(&t, &Ai_p2[i / 2]);
+    ge_p1p1_to_cached(&Ai[i], &t);
+    if (i < 8) {
+      x25519_ge_p1p1_to_p2(&Ai_p2[i], &t);
+    }
+    x25519_ge_add(&t, A, &Ai[i]);
+    ge_p1p1_to_cached(&Ai[i + 1], &t);
+    if (i < 7) {
+      x25519_ge_p1p1_to_p2(&Ai_p2[i + 1], &t);
+    }
+  }
+
+  ge_p2_0(r);
+  ge_p3 u;
+
+  for (i = 0; i < 256; i += 4) {
+    ge_p2_dbl(&t, r);
+    x25519_ge_p1p1_to_p2(r, &t);
+    ge_p2_dbl(&t, r);
+    x25519_ge_p1p1_to_p2(r, &t);
+    ge_p2_dbl(&t, r);
+    x25519_ge_p1p1_to_p2(r, &t);
+    ge_p2_dbl(&t, r);
+    x25519_ge_p1p1_to_p3(&u, &t);
+
+    uint8_t index = scalar[31 - i/8];
+    index >>= 4 - (i & 4);
+    index &= 0xf;
+
+    unsigned j;
+    ge_cached selected;
+    ge_cached_0(&selected);
+    for (j = 0; j < 16; j++) {
+      cmov_cached(&selected, &Ai[j], equal(j, index));
+    }
+
+    x25519_ge_add(&t, &u, &selected);
+    x25519_ge_p1p1_to_p2(r, &t);
+  }
+}
 
 static void slide(signed char *r, const uint8_t *a) {
   int i;
@@ -3626,7 +3639,7 @@ static void slide(signed char *r, const uint8_t *a) {
   }
 }
 
-static ge_precomp Bi[8] = {
+static const ge_precomp Bi[8] = {
     {
         {25967493, -14356035, 29566456, 3660896, -12694345, 4014787, 27544626,
          -11754271, -6079156, 2047605},
@@ -3697,8 +3710,8 @@ static ge_precomp Bi[8] = {
  * where a = a[0]+256*a[1]+...+256^31 a[31].
  * and b = b[0]+256*b[1]+...+256^31 b[31].
  * B is the Ed25519 base point (x,4/5) with x positive. */
-void ge_double_scalarmult_vartime(ge_p2 *r, const uint8_t *a,
-                                  const ge_p3 *A, const uint8_t *b) {
+static void ge_double_scalarmult_vartime(ge_p2 *r, const uint8_t *a,
+                                         const ge_p3 *A, const uint8_t *b) {
   signed char aslide[256];
   signed char bslide[256];
   ge_cached Ai[8]; /* A,3A,5A,7A,9A,11A,13A,15A */
@@ -3710,30 +3723,30 @@ void ge_double_scalarmult_vartime(ge_p2 *r, const uint8_t *a,
   slide(aslide, a);
   slide(bslide, b);
 
-  ge_p3_to_cached(&Ai[0], A);
+  x25519_ge_p3_to_cached(&Ai[0], A);
   ge_p3_dbl(&t, A);
-  ge_p1p1_to_p3(&A2, &t);
-  ge_add(&t, &A2, &Ai[0]);
-  ge_p1p1_to_p3(&u, &t);
-  ge_p3_to_cached(&Ai[1], &u);
-  ge_add(&t, &A2, &Ai[1]);
-  ge_p1p1_to_p3(&u, &t);
-  ge_p3_to_cached(&Ai[2], &u);
-  ge_add(&t, &A2, &Ai[2]);
-  ge_p1p1_to_p3(&u, &t);
-  ge_p3_to_cached(&Ai[3], &u);
-  ge_add(&t, &A2, &Ai[3]);
-  ge_p1p1_to_p3(&u, &t);
-  ge_p3_to_cached(&Ai[4], &u);
-  ge_add(&t, &A2, &Ai[4]);
-  ge_p1p1_to_p3(&u, &t);
-  ge_p3_to_cached(&Ai[5], &u);
-  ge_add(&t, &A2, &Ai[5]);
-  ge_p1p1_to_p3(&u, &t);
-  ge_p3_to_cached(&Ai[6], &u);
-  ge_add(&t, &A2, &Ai[6]);
-  ge_p1p1_to_p3(&u, &t);
-  ge_p3_to_cached(&Ai[7], &u);
+  x25519_ge_p1p1_to_p3(&A2, &t);
+  x25519_ge_add(&t, &A2, &Ai[0]);
+  x25519_ge_p1p1_to_p3(&u, &t);
+  x25519_ge_p3_to_cached(&Ai[1], &u);
+  x25519_ge_add(&t, &A2, &Ai[1]);
+  x25519_ge_p1p1_to_p3(&u, &t);
+  x25519_ge_p3_to_cached(&Ai[2], &u);
+  x25519_ge_add(&t, &A2, &Ai[2]);
+  x25519_ge_p1p1_to_p3(&u, &t);
+  x25519_ge_p3_to_cached(&Ai[3], &u);
+  x25519_ge_add(&t, &A2, &Ai[3]);
+  x25519_ge_p1p1_to_p3(&u, &t);
+  x25519_ge_p3_to_cached(&Ai[4], &u);
+  x25519_ge_add(&t, &A2, &Ai[4]);
+  x25519_ge_p1p1_to_p3(&u, &t);
+  x25519_ge_p3_to_cached(&Ai[5], &u);
+  x25519_ge_add(&t, &A2, &Ai[5]);
+  x25519_ge_p1p1_to_p3(&u, &t);
+  x25519_ge_p3_to_cached(&Ai[6], &u);
+  x25519_ge_add(&t, &A2, &Ai[6]);
+  x25519_ge_p1p1_to_p3(&u, &t);
+  x25519_ge_p3_to_cached(&Ai[7], &u);
 
   ge_p2_0(r);
 
@@ -3747,22 +3760,22 @@ void ge_double_scalarmult_vartime(ge_p2 *r, const uint8_t *a,
     ge_p2_dbl(&t, r);
 
     if (aslide[i] > 0) {
-      ge_p1p1_to_p3(&u, &t);
-      ge_add(&t, &u, &Ai[aslide[i] / 2]);
+      x25519_ge_p1p1_to_p3(&u, &t);
+      x25519_ge_add(&t, &u, &Ai[aslide[i] / 2]);
     } else if (aslide[i] < 0) {
-      ge_p1p1_to_p3(&u, &t);
-      ge_sub(&t, &u, &Ai[(-aslide[i]) / 2]);
+      x25519_ge_p1p1_to_p3(&u, &t);
+      x25519_ge_sub(&t, &u, &Ai[(-aslide[i]) / 2]);
     }
 
     if (bslide[i] > 0) {
-      ge_p1p1_to_p3(&u, &t);
+      x25519_ge_p1p1_to_p3(&u, &t);
       ge_madd(&t, &u, &Bi[bslide[i] / 2]);
     } else if (bslide[i] < 0) {
-      ge_p1p1_to_p3(&u, &t);
+      x25519_ge_p1p1_to_p3(&u, &t);
       ge_msub(&t, &u, &Bi[(-bslide[i]) / 2]);
     }
 
-    ge_p1p1_to_p2(r, &t);
+    x25519_ge_p1p1_to_p2(r, &t);
   }
 }
 
@@ -3776,7 +3789,7 @@ void ge_double_scalarmult_vartime(ge_p2 *r, const uint8_t *a,
  *   s[0]+256*s[1]+...+256^31*s[31] = s mod l
  *   where l = 2^252 + 27742317777372353535851937790883648493.
  *   Overwrites s in place. */
-static void sc_reduce(uint8_t *s) {
+void x25519_sc_reduce(uint8_t *s) {
   int64_t s0 = 2097151 & load_3(s);
   int64_t s1 = 2097151 & (load_4(s + 2) >> 5);
   int64_t s2 = 2097151 & (load_3(s + 5) >> 2);
@@ -4601,20 +4614,7 @@ static void sc_muladd(uint8_t *s, const uint8_t *a, const uint8_t *b,
 void ED25519_keypair(uint8_t out_public_key[32], uint8_t out_private_key[64]) {
   uint8_t seed[32];
   RAND_bytes(seed, 32);
-
-  uint8_t az[SHA512_DIGEST_LENGTH];
-  SHA512(seed, 32, az);
-
-  az[0] &= 248;
-  az[31] &= 63;
-  az[31] |= 64;
-
-  ge_p3 A;
-  ge_scalarmult_base(&A, az);
-  ge_p3_tobytes(out_public_key, &A);
-
-  memcpy(out_private_key, seed, 32);
-  memmove(out_private_key + 32, out_public_key, 32);
+  ED25519_keypair_from_seed(out_public_key, out_private_key, seed);
 }
 
 int ED25519_sign(uint8_t *out_sig, const uint8_t *message, size_t message_len,
@@ -4633,9 +4633,9 @@ int ED25519_sign(uint8_t *out_sig, const uint8_t *message, size_t message_len,
   uint8_t nonce[SHA512_DIGEST_LENGTH];
   SHA512_Final(nonce, &hash_ctx);
 
-  sc_reduce(nonce);
+  x25519_sc_reduce(nonce);
   ge_p3 R;
-  ge_scalarmult_base(&R, nonce);
+  x25519_ge_scalarmult_base(&R, nonce);
   ge_p3_tobytes(out_sig, &R);
 
   SHA512_Init(&hash_ctx);
@@ -4645,7 +4645,7 @@ int ED25519_sign(uint8_t *out_sig, const uint8_t *message, size_t message_len,
   uint8_t hram[SHA512_DIGEST_LENGTH];
   SHA512_Final(hram, &hash_ctx);
 
-  sc_reduce(hram);
+  x25519_sc_reduce(hram);
   sc_muladd(out_sig + 32, hram, az, nonce);
 
   return 1;
@@ -4655,7 +4655,7 @@ int ED25519_verify(const uint8_t *message, size_t message_len,
                    const uint8_t signature[64], const uint8_t public_key[32]) {
   ge_p3 A;
   if ((signature[63] & 224) != 0 ||
-      ge_frombytes_vartime(&A, public_key) != 0) {
+      x25519_ge_frombytes_vartime(&A, public_key) != 0) {
     return 0;
   }
 
@@ -4663,11 +4663,11 @@ int ED25519_verify(const uint8_t *message, size_t message_len,
   fe_neg(A.T, A.T);
 
   uint8_t pkcopy[32];
-  memcpy(pkcopy, public_key, 32);
+  OPENSSL_memcpy(pkcopy, public_key, 32);
   uint8_t rcopy[32];
-  memcpy(rcopy, signature, 32);
+  OPENSSL_memcpy(rcopy, signature, 32);
   uint8_t scopy[32];
-  memcpy(scopy, signature + 32, 32);
+  OPENSSL_memcpy(scopy, signature + 32, 32);
 
   SHA512_CTX hash_ctx;
   SHA512_Init(&hash_ctx);
@@ -4677,15 +4677,33 @@ int ED25519_verify(const uint8_t *message, size_t message_len,
   uint8_t h[SHA512_DIGEST_LENGTH];
   SHA512_Final(h, &hash_ctx);
 
-  sc_reduce(h);
+  x25519_sc_reduce(h);
 
   ge_p2 R;
   ge_double_scalarmult_vartime(&R, h, &A, scopy);
 
   uint8_t rcheck[32];
-  ge_tobytes(rcheck, &R);
+  x25519_ge_tobytes(rcheck, &R);
 
   return CRYPTO_memcmp(rcheck, rcopy, sizeof(rcheck)) == 0;
+}
+
+void ED25519_keypair_from_seed(uint8_t out_public_key[32],
+                               uint8_t out_private_key[64],
+                               const uint8_t seed[32]) {
+  uint8_t az[SHA512_DIGEST_LENGTH];
+  SHA512(seed, 32, az);
+
+  az[0] &= 248;
+  az[31] &= 63;
+  az[31] |= 64;
+
+  ge_p3 A;
+  x25519_ge_scalarmult_base(&A, az);
+  ge_p3_tobytes(out_public_key, &A);
+
+  OPENSSL_memcpy(out_private_key, seed, 32);
+  OPENSSL_memcpy(out_private_key + 32, out_public_key, 32);
 }
 
 
@@ -4753,17 +4771,17 @@ static void fe_mul121666(fe h, fe f) {
   int64_t carry8;
   int64_t carry9;
 
-  carry9 = (h9 + (int64_t) (1<<24)) >> 25; h0 += carry9 * 19; h9 -= carry9 << 25;
-  carry1 = (h1 + (int64_t) (1<<24)) >> 25; h2 += carry1; h1 -= carry1 << 25;
-  carry3 = (h3 + (int64_t) (1<<24)) >> 25; h4 += carry3; h3 -= carry3 << 25;
-  carry5 = (h5 + (int64_t) (1<<24)) >> 25; h6 += carry5; h5 -= carry5 << 25;
-  carry7 = (h7 + (int64_t) (1<<24)) >> 25; h8 += carry7; h7 -= carry7 << 25;
+  carry9 = h9 + (1 << 24); h0 += (carry9 >> 25) * 19; h9 -= carry9 & kTop39Bits;
+  carry1 = h1 + (1 << 24); h2 += carry1 >> 25; h1 -= carry1 & kTop39Bits;
+  carry3 = h3 + (1 << 24); h4 += carry3 >> 25; h3 -= carry3 & kTop39Bits;
+  carry5 = h5 + (1 << 24); h6 += carry5 >> 25; h5 -= carry5 & kTop39Bits;
+  carry7 = h7 + (1 << 24); h8 += carry7 >> 25; h7 -= carry7 & kTop39Bits;
 
-  carry0 = (h0 + (int64_t) (1<<25)) >> 26; h1 += carry0; h0 -= carry0 << 26;
-  carry2 = (h2 + (int64_t) (1<<25)) >> 26; h3 += carry2; h2 -= carry2 << 26;
-  carry4 = (h4 + (int64_t) (1<<25)) >> 26; h5 += carry4; h4 -= carry4 << 26;
-  carry6 = (h6 + (int64_t) (1<<25)) >> 26; h7 += carry6; h6 -= carry6 << 26;
-  carry8 = (h8 + (int64_t) (1<<25)) >> 26; h9 += carry8; h8 -= carry8 << 26;
+  carry0 = h0 + (1 << 25); h1 += carry0 >> 26; h0 -= carry0 & kTop38Bits;
+  carry2 = h2 + (1 << 25); h3 += carry2 >> 26; h2 -= carry2 & kTop38Bits;
+  carry4 = h4 + (1 << 25); h5 += carry4 >> 26; h4 -= carry4 & kTop38Bits;
+  carry6 = h6 + (1 << 25); h7 += carry6 >> 26; h6 -= carry6 & kTop38Bits;
+  carry8 = h8 + (1 << 25); h9 += carry8 >> 26; h8 -= carry8 & kTop38Bits;
 
   h[0] = h0;
   h[1] = h1;
@@ -4783,7 +4801,7 @@ static void x25519_scalar_mult_generic(uint8_t out[32],
   fe x1, x2, z2, x3, z3, tmp0, tmp1;
 
   uint8_t e[32];
-  memcpy(e, scalar, 32);
+  OPENSSL_memcpy(e, scalar, 32);
   e[0] &= 248;
   e[31] &= 127;
   e[31] |= 64;
@@ -4845,6 +4863,24 @@ static void x25519_scalar_mult(uint8_t out[32], const uint8_t scalar[32],
 
 void X25519_keypair(uint8_t out_public_value[32], uint8_t out_private_key[32]) {
   RAND_bytes(out_private_key, 32);
+
+  /* All X25519 implementations should decode scalars correctly (see
+   * https://tools.ietf.org/html/rfc7748#section-5). However, if an
+   * implementation doesn't then it might interoperate with random keys a
+   * fraction of the time because they'll, randomly, happen to be correctly
+   * formed.
+   *
+   * Thus we do the opposite of the masking here to make sure that our private
+   * keys are never correctly masked and so, hopefully, any incorrect
+   * implementations are deterministically broken.
+   *
+   * This does not affect security because, although we're throwing away
+   * entropy, a valid implementation of scalarmult should throw away the exact
+   * same bits anyway. */
+  out_private_key[0] |= 7;
+  out_private_key[31] &= 63;
+  out_private_key[31] |= 128;
+
   X25519_public_from_private(out_public_value, out_private_key);
 }
 
@@ -4881,13 +4917,13 @@ void X25519_public_from_private(uint8_t out_public_value[32],
 #endif
 
   uint8_t e[32];
-  memcpy(e, private_key, 32);
+  OPENSSL_memcpy(e, private_key, 32);
   e[0] &= 248;
   e[31] &= 127;
   e[31] |= 64;
 
   ge_p3 A;
-  ge_scalarmult_base(&A, e);
+  x25519_ge_scalarmult_base(&A, e);
 
   /* We only need the u-coordinate of the curve25519 point. The map is
    * u=(y+1)/(1-y). Since y=Y/Z, this gives u=(Z+Y)/(Z-Y). */
