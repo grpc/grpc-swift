@@ -27,7 +27,12 @@ cgrpc_handler *cgrpc_handler_create_with_server(cgrpc_server *server) {
   handler->server = server;
   grpc_metadata_array_init(&(handler->request_metadata_recv));
   grpc_call_details_init(&(handler->call_details));
-  handler->completion_queue = grpc_completion_queue_create(NULL, NULL, NULL);
+  grpc_completion_queue_attributes attr;
+  attr.version = 1;
+  attr.cq_completion_type = GRPC_CQ_CURRENT_VERSION;
+  attr.cq_polling_type = GRPC_CQ_DEFAULT_POLLING;
+  grpc_completion_queue_factory *factory = grpc_completion_queue_factory_lookup(&attr);
+  handler->completion_queue = grpc_completion_queue_create(factory, &attr, NULL);
   return handler;
 }
 

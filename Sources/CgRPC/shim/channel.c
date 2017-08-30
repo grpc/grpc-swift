@@ -29,7 +29,12 @@ cgrpc_channel *cgrpc_channel_create(const char *address) {
   grpc_channel_args channel_args;
   channel_args.num_args = 0;
   c->channel = grpc_insecure_channel_create(address, &channel_args, NULL);
-  c->completion_queue = grpc_completion_queue_create(NULL, NULL, NULL);
+  grpc_completion_queue_attributes attr;
+  attr.version = 1;
+  attr.cq_completion_type = GRPC_CQ_CURRENT_VERSION;
+  attr.cq_polling_type = GRPC_CQ_DEFAULT_POLLING;
+  grpc_completion_queue_factory *factory = grpc_completion_queue_factory_lookup(&attr);
+  c->completion_queue = grpc_completion_queue_create(factory, &attr, NULL);
   return c;
 }
 
@@ -61,7 +66,12 @@ cgrpc_channel *cgrpc_channel_create_secure(const char *address,
 
   grpc_channel_credentials *creds = grpc_ssl_credentials_create(pem_root_certs, NULL, NULL);
   c->channel = grpc_secure_channel_create(creds, address, channelArgs, NULL);
-  c->completion_queue = grpc_completion_queue_create(NULL, NULL, NULL);
+  grpc_completion_queue_attributes attr;
+  attr.version = 1;
+  attr.cq_completion_type = GRPC_CQ_CURRENT_VERSION;
+  attr.cq_polling_type = GRPC_CQ_DEFAULT_POLLING;
+  grpc_completion_queue_factory *factory = grpc_completion_queue_factory_lookup(&attr);
+  c->completion_queue = grpc_completion_queue_create(factory, &attr, NULL);
   return c;
 }
 
