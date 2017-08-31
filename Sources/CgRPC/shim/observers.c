@@ -114,8 +114,7 @@ void cgrpc_observer_apply(cgrpc_observer *observer, grpc_op *op) {
     case GRPC_OP_RECV_INITIAL_METADATA: {
       cgrpc_observer_recv_initial_metadata *obs = (cgrpc_observer_recv_initial_metadata *) observer;
       grpc_metadata_array_init(&(obs->initial_metadata_recv));
-      //REVIEW - possibly broken in upgrade to v1.4
-      // op->data.recv_initial_metadata = &(obs->initial_metadata_recv);
+      op->data.recv_initial_metadata.recv_initial_metadata = &(obs->initial_metadata_recv);
       break;
     }
     case GRPC_OP_RECV_MESSAGE: {

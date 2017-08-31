@@ -24,12 +24,7 @@
 cgrpc_server *cgrpc_server_create(const char *address) {
   cgrpc_server *server = (cgrpc_server *) malloc(sizeof (cgrpc_server));
   server->server = grpc_server_create(NULL, NULL);
-  grpc_completion_queue_attributes attr;
-  attr.version = 1;
-  attr.cq_completion_type = GRPC_CQ_CURRENT_VERSION;
-  attr.cq_polling_type = GRPC_CQ_DEFAULT_POLLING;
-  grpc_completion_queue_factory *factory = grpc_completion_queue_factory_lookup(&attr);
-  server->completion_queue = grpc_completion_queue_create(factory, &attr, NULL);
+  server->completion_queue = grpc_completion_queue_create_for_next(NULL);
   grpc_server_register_completion_queue(server->server, server->completion_queue, NULL);
   // prepare the server to listen
   server->port = grpc_server_add_insecure_http2_port(server->server, address);
@@ -41,12 +36,7 @@ cgrpc_server *cgrpc_server_create_secure(const char *address,
                                          const char *cert_chain) {
   cgrpc_server *server = (cgrpc_server *) malloc(sizeof (cgrpc_server));
   server->server = grpc_server_create(NULL, NULL);
-  grpc_completion_queue_attributes attr;
-  attr.version = 1;
-  attr.cq_completion_type = GRPC_CQ_CURRENT_VERSION;
-  attr.cq_polling_type = GRPC_CQ_DEFAULT_POLLING;
-  grpc_completion_queue_factory *factory = grpc_completion_queue_factory_lookup(&attr);
-  server->completion_queue = grpc_completion_queue_create(factory, &attr, NULL);
+  server->completion_queue = grpc_completion_queue_create_for_next(NULL);
   grpc_server_register_completion_queue(server->server, server->completion_queue, NULL);
 
   grpc_ssl_pem_key_cert_pair server_credentials;
