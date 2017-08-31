@@ -165,8 +165,9 @@ void cgrpc_operations_add_operation(cgrpc_operations *call, cgrpc_observer *obse
 cgrpc_metadata_array *cgrpc_metadata_array_create();
 void cgrpc_metadata_array_destroy(cgrpc_metadata_array *array);
 size_t cgrpc_metadata_array_get_count(cgrpc_metadata_array *array);
-const char *cgrpc_metadata_array_get_key_at_index(cgrpc_metadata_array *array, size_t index);
-const char *cgrpc_metadata_array_get_value_at_index(cgrpc_metadata_array *array, size_t index);
+const char *cgrpc_metadata_array_copy_key_at_index(cgrpc_metadata_array *array, size_t index);
+const char *cgrpc_metadata_array_copy_value_at_index(cgrpc_metadata_array *array, size_t index);
+void cgrpc_metadata_free_copied_string(const char *string);
 void cgrpc_metadata_array_move_metadata(cgrpc_metadata_array *dest, cgrpc_metadata_array *src);
 void cgrpc_metadata_array_append_metadata(cgrpc_metadata_array *metadata, const char *key, const char *value);
 
