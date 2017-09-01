@@ -25,3 +25,7 @@ gpr_timespec cgrpc_deadline_in_seconds_from_now(float seconds) {
   return gpr_time_add(gpr_now(GPR_CLOCK_MONOTONIC),
                       gpr_time_from_millis((int64_t)(1e3 * seconds), GPR_TIMESPAN));
 }
+
+void cgrpc_free_copied_string(const char *string) {
+	free(string);
+}
