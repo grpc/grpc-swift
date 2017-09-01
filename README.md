@@ -112,7 +112,7 @@ testing with the following versions:
 
 - Xcode 8.3.2 (8E2002) 
 - Swift 3.1 (swiftlang-802.0.53 clang-802.0.42)
-- swift-protobuf 0.9.903 
+- swift-protobuf 0.9.904 
 
 ## License
 
