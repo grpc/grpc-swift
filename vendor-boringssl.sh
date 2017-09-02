@@ -49,6 +49,7 @@ EXCLUDES=(
 '*_test.*'
 'test_*.*'
 'test'
+'example_*.c'
 )
 
 for pattern in "${PATTERNS[@]}" 
