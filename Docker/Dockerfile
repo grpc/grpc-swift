@@ -7,8 +7,8 @@ RUN apt-get -q update && \
     apt-get -q install -y unzip 
 
 # Install protoc
-RUN curl -O -L https://github.com/google/protobuf/releases/download/v3.2.0/protoc-3.2.0-linux-x86_64.zip && \
-    unzip protoc-3.2.0-linux-x86_64.zip -d /usr
+RUN curl -O -L https://github.com/google/protobuf/releases/download/v3.4.0/protoc-3.4.0-linux-x86_64.zip && \
+    unzip protoc-3.4.0-linux-x86_64.zip -d /usr
 
 # Build and install the swiftgrpc plugin
 RUN git clone https://github.com/grpc/grpc-swift && \
