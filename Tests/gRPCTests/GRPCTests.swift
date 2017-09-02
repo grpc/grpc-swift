@@ -22,17 +22,19 @@
   FileHandle.standardError.write((message + "\n").data(using:.utf8)!)
  }
 
+
+
  class gRPCTests: XCTestCase {
 
   func testBasicSanity() {
     gRPC.initialize()
-
+    let server = gRPC.Server(address:address)
     let sem = DispatchSemaphore(value: 0)
 
     // start the server
     DispatchQueue.global().async() {
       do {
-        try runServer()
+        try runServer(server:server)
       } catch (let error) {
         XCTFail("server error \(error)")
       }
@@ -83,8 +85,6 @@
  let statusCode = 0
  let statusMessage = "OK"
 
- let server = gRPC.Server(address:address)
-
  func verify_metadata(_ metadata: Metadata, expected: [String:String]) {
   XCTAssertGreaterThanOrEqual(metadata.count(), expected.count)
   for i in 0..<metadata.count() {
@@ -127,7 +127,7 @@
   }
  }
 
- func runServer() throws {
+ func runServer(server: gRPC.Server) throws {
   var requestCount = 0
   let sem = DispatchSemaphore(value: 0)
   server.run() {(requestHandler) in

@@ -65,12 +65,14 @@ void cgrpc_server_destroy(cgrpc_server *server) {
   grpc_server_shutdown_and_notify(server->server,
                                   server->completion_queue,
                                   cgrpc_create_tag(1000));
-  grpc_event completion_event =
-  grpc_completion_queue_pluck(server->completion_queue,
-                              cgrpc_create_tag(1000),
-                              cgrpc_deadline_in_seconds_from_now(5),
-                              NULL);
-  assert(completion_event.type == GRPC_OP_COMPLETE);
+  while (1) {
+    double timeout = 5;
+    gpr_timespec deadline = cgrpc_deadline_in_seconds_from_now(timeout);
+    grpc_event completion_event = grpc_completion_queue_next(server->completion_queue, deadline, NULL);
+    if (completion_event.type == GRPC_OP_COMPLETE) {
+      break;
+    }
+  }
   grpc_server_destroy(server->server);
   server->server = NULL;
 
