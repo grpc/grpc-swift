@@ -18,54 +18,26 @@
  import Dispatch
  @testable import gRPC
 
- func Log(_ message : String) {
-  FileHandle.standardError.write((message + "\n").data(using:.utf8)!)
- }
-
-
-
  class gRPCTests: XCTestCase {
-
-  func testBasicSanity() {
-    gRPC.initialize()
-    let server = gRPC.Server(address:address)
-    let sem = DispatchSemaphore(value: 0)
-
-    // start the server
-    DispatchQueue.global().async() {
-      do {
-        try runServer(server:server)
-      } catch (let error) {
-        XCTFail("server error \(error)")
-      }
-      sem.signal() // when the server exits, the test is finished
-    }
-
-    // run the client
-    do {
-      try runClient()
-    } catch (let error) {
-      XCTFail("client error \(error)")
-    }
-	
-    // stop the server
-    server.stop()
-	
-    // wait until the server has shut down
-    _ = sem.wait(timeout: DispatchTime.distantFuture)
+  func testConnectivity() {
+    runTest(useSSL:false)
+  }
+  func testConnectivitySecure() {
+    runTest(useSSL:true)
   }
  }
 
  extension gRPCTests {
   static var allTests : [(String, (gRPCTests) -> () throws -> Void)] {
     return [
-      ("testBasicSanity", testBasicSanity),
+      ("testConnectivity", testConnectivity),
+      ("testConnectivitySecure", testConnectivitySecure),
     ]
   }
  }
 
- let address = "localhost:8081"
- let host = "foo.test.google.fr"
+ let address = "localhost:8085"
+ let host = "example.com"
  let clientText = "hello, server!"
  let serverText = "hello, client!"
  let initialClientMetadata =
@@ -85,6 +57,54 @@
  let statusCode = 0
  let statusMessage = "OK"
 
+ func runTest(useSSL: Bool) {
+  gRPC.initialize()
+
+  let serverRunningSemaphore = DispatchSemaphore(value: 0)
+
+  // create the server
+  var server : gRPC.Server!
+  if useSSL {
+    let certificateURL = URL(fileURLWithPath:"Tests/ssl.crt")
+    let keyURL = URL(fileURLWithPath:"Tests/ssl.key")
+    guard
+      let certificate = try? String(contentsOf: certificateURL, encoding: .utf8),
+      let key = try? String(contentsOf: keyURL, encoding: .utf8)
+      else {
+        return
+    }
+    server = gRPC.Server(address:address,
+                         key:key,
+                         certs:certificate)
+  } else {
+    server = gRPC.Server(address:address)
+  }
+
+  // start the server
+  DispatchQueue.global().async() {
+    do {
+
+      try runServer(server:server)
+    } catch (let error) {
+      XCTFail("server error \(error)")
+    }
+    serverRunningSemaphore.signal() // when the server exits, the test is finished
+  }
+
+  // run the client
+  do {
+    try runClient(useSSL:useSSL)
+  } catch (let error) {
+    XCTFail("client error \(error)")
+  }
+
+  // stop the server
+  server.stop()
+
+  // wait until the server has shut down
+  _ = serverRunningSemaphore.wait(timeout: DispatchTime.distantFuture)
+ }
+
  func verify_metadata(_ metadata: Metadata, expected: [String:String]) {
   XCTAssertGreaterThanOrEqual(metadata.count(), expected.count)
   for i in 0..<metadata.count() {
@@ -94,12 +114,26 @@
   }
  }
 
- func runClient() throws {
+ func runClient(useSSL: Bool) throws {
   let message = clientText.data(using: .utf8)
-  let channel = gRPC.Channel(address:address)
+  var channel : gRPC.Channel!
+
+  if useSSL {
+    let certificateURL = URL(fileURLWithPath:"Tests/ssl.crt")
+    guard
+      let certificates = try? String(contentsOf: certificateURL, encoding: .utf8)
+      else {
+        return
+    }
+    let host = "example.com"
+    channel = gRPC.Channel(address:address, certificates:certificates, host:host)
+  } else {
+    channel = gRPC.Channel(address:address)
+  }
+
   channel.host = host
   for i in 0..<steps {
-      let sem = DispatchSemaphore(value: 0)
+    let sem = DispatchSemaphore(value: 0)
     let method = hello
     let call = channel.makeCall(method)
     let metadata = Metadata(initialClientMetadata)
@@ -123,7 +157,6 @@
     }
     // wait for the call to complete
     _ = sem.wait(timeout: DispatchTime.distantFuture)
-    print("finished client step \(i)")
   }
  }
 
@@ -132,10 +165,9 @@
   let sem = DispatchSemaphore(value: 0)
   server.run() {(requestHandler) in
     do {
-      print("handling request \(requestHandler.method)")
       requestCount += 1
       XCTAssertEqual(requestHandler.host, host)
-        XCTAssertEqual(requestHandler.method, hello)
+      XCTAssertEqual(requestHandler.method, hello)
       let initialMetadata = requestHandler.requestMetadata
       verify_metadata(initialMetadata, expected: initialClientMetadata)
       let initialMetadataToSend = Metadata(initialServerMetadata)
