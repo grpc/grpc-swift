@@ -57,12 +57,11 @@
 #include <openssl/err.h>
 
 
-/* Returns 'ret' such that
- *      ret^2 == a (mod p),
- * using the Tonelli/Shanks algorithm (cf. Henri Cohen, "A Course
- * in Algebraic Computational Number Theory", algorithm 1.5.1).
- * 'p' must be prime! */
 BIGNUM *BN_mod_sqrt(BIGNUM *in, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx) {
+  /* Compute a square root of |a| mod |p| using the Tonelli/Shanks algorithm
+   * (cf. Henri Cohen, "A Course in Algebraic Computational Number Theory",
+   * algorithm 1.5.1). |p| is assumed to be a prime. */
+
   BIGNUM *ret = in;
   int err = 1;
   int r;
@@ -457,7 +456,9 @@ int BN_sqrt(BIGNUM *out_sqrt, const BIGNUM *in, BN_CTX *ctx) {
   }
 
   /* We estimate that the square root of an n-bit number is 2^{n/2}. */
-  BN_lshift(estimate, BN_value_one(), BN_num_bits(in)/2);
+  if (!BN_lshift(estimate, BN_value_one(), BN_num_bits(in)/2)) {
+    goto err;
+  }
 
   /* This is Newton's method for finding a root of the equation |estimate|^2 -
    * |in| = 0. */

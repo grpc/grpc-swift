@@ -109,6 +109,9 @@ void grpc_init();
 void grpc_shutdown();
 const char *grpc_version_string();
 
+// helper
+void cgrpc_free_copied_string(const char *string);
+
 // channel support
 cgrpc_channel *cgrpc_channel_create(const char *address);
 cgrpc_channel *cgrpc_channel_create_secure(const char *address,
@@ -147,8 +150,8 @@ cgrpc_completion_queue *cgrpc_handler_get_completion_queue(cgrpc_handler *h);
 grpc_call_error cgrpc_handler_request_call(cgrpc_handler *h,
                                            cgrpc_metadata_array *metadata,
                                            long tag);
-const char *cgrpc_handler_host(cgrpc_handler *h);
-const char *cgrpc_handler_method(cgrpc_handler *h);
+const char *cgrpc_handler_copy_host(cgrpc_handler *h);
+const char *cgrpc_handler_copy_method(cgrpc_handler *h);
 const char *cgrpc_handler_call_peer(cgrpc_handler *h);
 
 // call support
@@ -165,8 +168,8 @@ void cgrpc_operations_add_operation(cgrpc_operations *call, cgrpc_observer *obse
 cgrpc_metadata_array *cgrpc_metadata_array_create();
 void cgrpc_metadata_array_destroy(cgrpc_metadata_array *array);
 size_t cgrpc_metadata_array_get_count(cgrpc_metadata_array *array);
-const char *cgrpc_metadata_array_get_key_at_index(cgrpc_metadata_array *array, size_t index);
-const char *cgrpc_metadata_array_get_value_at_index(cgrpc_metadata_array *array, size_t index);
+const char *cgrpc_metadata_array_copy_key_at_index(cgrpc_metadata_array *array, size_t index);
+const char *cgrpc_metadata_array_copy_value_at_index(cgrpc_metadata_array *array, size_t index);
 void cgrpc_metadata_array_move_metadata(cgrpc_metadata_array *dest, cgrpc_metadata_array *src);
 void cgrpc_metadata_array_append_metadata(cgrpc_metadata_array *metadata, const char *key, const char *value);
 
@@ -233,7 +236,7 @@ cgrpc_metadata_array *cgrpc_observer_recv_status_on_client_get_metadata
 long cgrpc_observer_recv_status_on_client_get_status
 (cgrpc_observer_recv_status_on_client *observer);
 
-const char *cgrpc_observer_recv_status_on_client_get_status_details
+const char *cgrpc_observer_recv_status_on_client_copy_status_details
 (cgrpc_observer_recv_status_on_client *observer);
 
 // GRPC_OP_RECV_CLOSE_ON_SERVER

@@ -77,7 +77,7 @@ extern "C" {
  *   [section_name]
  *   key2=value2
  *
- * Config files are representated by a |CONF|. */
+ * Config files are represented by a |CONF|. */
 
 struct conf_value_st {
   char *section;
@@ -92,10 +92,10 @@ struct conf_st {
 
 /* NCONF_new returns a fresh, empty |CONF|, or NULL on error. The |method|
  * argument must be NULL. */
-CONF *NCONF_new(void *method);
+OPENSSL_EXPORT CONF *NCONF_new(void *method);
 
 /* NCONF_free frees all the data owned by |conf| and then |conf| itself. */
-void NCONF_free(CONF *conf);
+OPENSSL_EXPORT void NCONF_free(CONF *conf);
 
 /* NCONF_load parses the file named |filename| and adds the values found to
  * |conf|. It returns one on success and zero on error. In the event of an
@@ -155,9 +155,23 @@ OPENSSL_EXPORT void CONF_modules_free(void);
 /* OPENSSL_config does nothing. */
 OPENSSL_EXPORT void OPENSSL_config(CONF_MUST_BE_NULL *config_name);
 
+/* OPENSSL_no_config does nothing. */
+OPENSSL_EXPORT void OPENSSL_no_config(void);
+
 
 #if defined(__cplusplus)
 }  /* extern C */
+
+extern "C++" {
+
+namespace bssl {
+
+BORINGSSL_MAKE_DELETER(CONF, NCONF_free)
+
+}  // namespace bssl
+
+}  /* extern C++ */
+
 #endif
 
 #define CONF_R_LIST_CANNOT_BE_NULL 100

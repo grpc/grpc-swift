@@ -55,12 +55,15 @@
  * copied and put under another distribution licence
  * [including the GNU Public Licence.] */
 
+#include <assert.h>
+#include <limits.h>
 #include <stdio.h>
 
 #include <openssl/asn1t.h>
 #include <openssl/evp.h>
 #include <openssl/mem.h>
 #include <openssl/obj.h>
+#include <openssl/pool.h>
 #include <openssl/thread.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
@@ -95,7 +98,6 @@ static int x509_cb(int operation, ASN1_VALUE **pval, const ASN1_ITEM *it,
     switch (operation) {
 
     case ASN1_OP_NEW_POST:
-        ret->valid = 0;
         ret->name = NULL;
         ret->ex_flags = 0;
         ret->ex_pathlen = -1;
@@ -103,7 +105,14 @@ static int x509_cb(int operation, ASN1_VALUE **pval, const ASN1_ITEM *it,
         ret->akid = NULL;
         ret->aux = NULL;
         ret->crldp = NULL;
+        ret->buf = NULL;
         CRYPTO_new_ex_data(&ret->ex_data);
+        CRYPTO_MUTEX_init(&ret->lock);
+        break;
+
+    case ASN1_OP_D2I_PRE:
+        CRYPTO_BUFFER_free(ret->buf);
+        ret->buf = NULL;
         break;
 
     case ASN1_OP_D2I_POST:
@@ -113,6 +122,7 @@ static int x509_cb(int operation, ASN1_VALUE **pval, const ASN1_ITEM *it,
         break;
 
     case ASN1_OP_FREE_POST:
+        CRYPTO_MUTEX_cleanup(&ret->lock);
         CRYPTO_free_ex_data(&g_ex_data_class, ret, &ret->ex_data);
         X509_CERT_AUX_free(ret->aux);
         ASN1_OCTET_STRING_free(ret->skid);
@@ -121,9 +131,8 @@ static int x509_cb(int operation, ASN1_VALUE **pval, const ASN1_ITEM *it,
         policy_cache_free(ret->policy_cache);
         GENERAL_NAMES_free(ret->altname);
         NAME_CONSTRAINTS_free(ret->nc);
-
-        if (ret->name != NULL)
-            OPENSSL_free(ret->name);
+        CRYPTO_BUFFER_free(ret->buf);
+        OPENSSL_free(ret->name);
         break;
 
     }
@@ -142,10 +151,40 @@ IMPLEMENT_ASN1_FUNCTIONS(X509)
 
 IMPLEMENT_ASN1_DUP_FUNCTION(X509)
 
-X509 *X509_up_ref(X509 *x)
+X509 *X509_parse_from_buffer(CRYPTO_BUFFER *buf) {
+  if (CRYPTO_BUFFER_len(buf) > LONG_MAX) {
+    OPENSSL_PUT_ERROR(SSL, ERR_R_OVERFLOW);
+    return 0;
+  }
+
+  X509 *x509 = X509_new();
+  if (x509 == NULL) {
+    return NULL;
+  }
+
+  x509->cert_info->enc.alias_only_on_next_parse = 1;
+
+  const uint8_t *inp = CRYPTO_BUFFER_data(buf);
+  X509 *x509p = x509;
+  X509 *ret = d2i_X509(&x509p, &inp, CRYPTO_BUFFER_len(buf));
+  if (ret == NULL ||
+      inp - CRYPTO_BUFFER_data(buf) != (ptrdiff_t)CRYPTO_BUFFER_len(buf)) {
+    X509_free(x509p);
+    return NULL;
+  }
+  assert(x509p == x509);
+  assert(ret == x509);
+
+  CRYPTO_BUFFER_up_ref(buf);
+  ret->buf = buf;
+
+  return ret;
+}
+
+int X509_up_ref(X509 *x)
 {
     CRYPTO_refcount_inc(&x->references);
-    return x;
+    return 1;
 }
 
 int X509_get_ex_new_index(long argl, void *argp, CRYPTO_EX_unused * unused,
@@ -204,12 +243,73 @@ X509 *d2i_X509_AUX(X509 **a, const unsigned char **pp, long length)
     return NULL;
 }
 
+/*
+ * Serialize trusted certificate to *pp or just return the required buffer
+ * length if pp == NULL.  We ultimately want to avoid modifying *pp in the
+ * error path, but that depends on similar hygiene in lower-level functions.
+ * Here we avoid compounding the problem.
+ */
+static int i2d_x509_aux_internal(X509 *a, unsigned char **pp)
+{
+    int length, tmplen;
+    unsigned char *start = pp != NULL ? *pp : NULL;
+
+    assert(pp == NULL || *pp != NULL);
+
+    /*
+     * This might perturb *pp on error, but fixing that belongs in i2d_X509()
+     * not here.  It should be that if a == NULL length is zero, but we check
+     * both just in case.
+     */
+    length = i2d_X509(a, pp);
+    if (length <= 0 || a == NULL) {
+        return length;
+    }
+
+    tmplen = i2d_X509_CERT_AUX(a->aux, pp);
+    if (tmplen < 0) {
+        if (start != NULL)
+            *pp = start;
+        return tmplen;
+    }
+    length += tmplen;
+
+    return length;
+}
+
+/*
+ * Serialize trusted certificate to *pp, or just return the required buffer
+ * length if pp == NULL.
+ *
+ * When pp is not NULL, but *pp == NULL, we allocate the buffer, but since
+ * we're writing two ASN.1 objects back to back, we can't have i2d_X509() do
+ * the allocation, nor can we allow i2d_X509_CERT_AUX() to increment the
+ * allocated buffer.
+ */
 int i2d_X509_AUX(X509 *a, unsigned char **pp)
 {
     int length;
-    length = i2d_X509(a, pp);
-    if (a)
-        length += i2d_X509_CERT_AUX(a->aux, pp);
+    unsigned char *tmp;
+
+    /* Buffer provided by caller */
+    if (pp == NULL || *pp != NULL)
+        return i2d_x509_aux_internal(a, pp);
+
+    /* Obtain the combined length */
+    if ((length = i2d_x509_aux_internal(a, NULL)) <= 0)
+        return length;
+
+    /* Allocate requisite combined storage */
+    *pp = tmp = OPENSSL_malloc(length);
+    if (tmp == NULL)
+        return -1; /* Push error onto error stack? */
+
+    /* Encode, but keep *pp at the originally malloced pointer */
+    length = i2d_x509_aux_internal(a, &tmp);
+    if (length <= 0) {
+        OPENSSL_free(*pp);
+        *pp = NULL;
+    }
     return length;
 }
 

@@ -138,10 +138,12 @@ static X509_EXTENSION *do_ext_nconf(CONF *conf, X509V3_CTX *ctx, int ext_nid,
             nval = NCONF_get_section(conf, value + 1);
         else
             nval = X509V3_parse_list(value);
-        if (sk_CONF_VALUE_num(nval) <= 0) {
+        if (nval == NULL || sk_CONF_VALUE_num(nval) <= 0) {
             OPENSSL_PUT_ERROR(X509V3, X509V3_R_INVALID_EXTENSION_STRING);
             ERR_add_error_data(4, "name=", OBJ_nid2sn(ext_nid), ",section=",
                                value);
+            if (*value != '@')
+                sk_CONF_VALUE_pop_free(nval, X509V3_conf_free);
             return NULL;
         }
         ext_struc = method->v2i(method, ctx, nval);
@@ -263,10 +265,9 @@ static int v3_check_generic(char **value)
 static X509_EXTENSION *v3_generic_extension(const char *ext, char *value,
                                             int crit, int gen_type,
                                             X509V3_CTX *ctx)
-    OPENSSL_SUPPRESS_POTENTIALLY_UNINITIALIZED_WARNINGS
 {
     unsigned char *ext_der = NULL;
-    long ext_len;
+    long ext_len = 0;
     ASN1_OBJECT *obj = NULL;
     ASN1_OCTET_STRING *oct = NULL;
     X509_EXTENSION *extension = NULL;

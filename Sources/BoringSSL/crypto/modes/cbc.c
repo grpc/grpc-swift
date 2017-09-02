@@ -52,10 +52,6 @@
 #include "internal.h"
 
 
-#ifndef STRICT_ALIGNMENT
-#  define STRICT_ALIGNMENT 0
-#endif
-
 void CRYPTO_cbc128_encrypt(const uint8_t *in, uint8_t *out, size_t len,
                            const void *key, uint8_t ivec[16],
                            block128_f block) {
@@ -107,7 +103,7 @@ void CRYPTO_cbc128_encrypt(const uint8_t *in, uint8_t *out, size_t len,
     out += 16;
   }
 
-  memcpy(ivec, iv, 16);
+  OPENSSL_memcpy(ivec, iv, 16);
 }
 
 void CRYPTO_cbc128_decrypt(const uint8_t *in, uint8_t *out, size_t len,
@@ -158,7 +154,7 @@ void CRYPTO_cbc128_decrypt(const uint8_t *in, uint8_t *out, size_t len,
         out += 16;
       }
     }
-    memcpy(ivec, iv, 16);
+    OPENSSL_memcpy(ivec, iv, 16);
   } else {
     /* |out| is less than two blocks behind |in|. Decrypting an input block
      * directly to |out| would overwrite a ciphertext block before it is used as

@@ -61,39 +61,9 @@
 
 #include <openssl/err.h>
 #include <openssl/mem.h>
-#include <openssl/time_support.h>
 
-#if 0
-int i2d_ASN1_UTCTIME(ASN1_UTCTIME *a, unsigned char **pp)
-{
-    return (i2d_ASN1_bytes((ASN1_STRING *)a, pp,
-                           V_ASN1_UTCTIME, V_ASN1_UNIVERSAL));
-}
+#include "asn1_locl.h"
 
-ASN1_UTCTIME *d2i_ASN1_UTCTIME(ASN1_UTCTIME **a, unsigned char **pp,
-                               long length)
-{
-    ASN1_UTCTIME *ret = NULL;
-
-    ret = (ASN1_UTCTIME *)d2i_ASN1_bytes((ASN1_STRING **)a, pp, length,
-                                         V_ASN1_UTCTIME, V_ASN1_UNIVERSAL);
-    if (ret == NULL) {
-        OPENSSL_PUT_ERROR(ASN1, ERR_R_NESTED_ASN1_ERROR);
-        return (NULL);
-    }
-    if (!ASN1_UTCTIME_check(ret)) {
-        OPENSSL_PUT_ERROR(ASN1, ASN1_R_INVALID_TIME_FORMAT);
-        goto err;
-    }
-
-    return (ret);
- err:
-    if ((ret != NULL) && ((a == NULL) || (*a != ret)))
-        M_ASN1_UTCTIME_free(ret);
-    return (NULL);
-}
-
-#endif
 
 int asn1_utctime_to_tm(struct tm *tm, const ASN1_UTCTIME *d)
 {
@@ -299,7 +269,7 @@ time_t ASN1_UTCTIME_get(const ASN1_UTCTIME *s)
     struct tm tm;
     int offset;
 
-    memset(&tm, '\0', sizeof tm);
+    OPENSSL_memset(&tm, '\0', sizeof tm);
 
 # define g2(p) (((p)[0]-'0')*10+(p)[1]-'0')
     tm.tm_year = g2(s->data);

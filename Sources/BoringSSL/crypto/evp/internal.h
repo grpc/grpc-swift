@@ -59,36 +59,17 @@
 
 #include <openssl/base.h>
 
+#include <openssl/rsa.h>
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
 
-/* These values are flags for EVP_PKEY_ASN1_METHOD.flags. */
-
-/* ASN1_PKEY_SIGPARAM_NULL controls whether the default behavior of
- * EVP_DigestSignAlgorithm writes an explicit NULL parameter in the
- * AlgorithmIdentifier. */
-#define ASN1_PKEY_SIGPARAM_NULL 0x1
-
-/* evp_digest_sign_algorithm_result_t is the return value of the
- * digest_sign_algorithm function in EVP_PKEY_ASN1_METHOD. */
-typedef enum {
-  /* EVP_DIGEST_SIGN_ALGORITHM_ERROR signals an error. */
-  EVP_DIGEST_SIGN_ALGORITHM_ERROR = 0,
-  /* EVP_DIGEST_SIGN_ALGORITHM_SUCCESS signals that the parameters were
-   * serialized in the AlgorithmIdentifier. */
-  EVP_DIGEST_SIGN_ALGORITHM_SUCCESS = 1,
-  /* EVP_DIGEST_SIGN_ALGORITHM_DEFAULT signals that the parameters are
-   * serialized using the default behavior. */
-  EVP_DIGEST_SIGN_ALGORITHM_DEFAULT = 2,
-} evp_digest_sign_algorithm_result_t;
-
 struct evp_pkey_asn1_method_st {
   int pkey_id;
-  unsigned long pkey_flags;
-
-  const char *pem_str;
+  uint8_t oid[9];
+  uint8_t oid_len;
 
   /* pub_decode decodes |params| and |key| as a SubjectPublicKeyInfo
    * and writes the result into |out|. It returns one on success and zero on
@@ -104,7 +85,6 @@ struct evp_pkey_asn1_method_st {
   int (*pub_encode)(CBB *out, const EVP_PKEY *key);
 
   int (*pub_cmp)(const EVP_PKEY *a, const EVP_PKEY *b);
-  int (*pub_print)(BIO *out, const EVP_PKEY *pkey, int indent, ASN1_PCTX *pctx);
 
   /* priv_decode decodes |params| and |key| as a PrivateKeyInfo and writes the
    * result into |out|. It returns one on success and zero on error. |params| is
@@ -115,9 +95,6 @@ struct evp_pkey_asn1_method_st {
   /* priv_encode encodes |key| as a PrivateKeyInfo and appends the result to
    * |out|. It returns one on success and zero on error. */
   int (*priv_encode)(CBB *out, const EVP_PKEY *key);
-
-  int (*priv_print)(BIO *out, const EVP_PKEY *pkey, int indent,
-                    ASN1_PCTX *pctx);
 
   /* pkey_opaque returns 1 if the |pk| is opaque. Opaque keys are backed by
    * custom implementations which do not expose key material and parameters.*/
@@ -135,27 +112,8 @@ struct evp_pkey_asn1_method_st {
   int (*param_missing)(const EVP_PKEY *pk);
   int (*param_copy)(EVP_PKEY *to, const EVP_PKEY *from);
   int (*param_cmp)(const EVP_PKEY *a, const EVP_PKEY *b);
-  int (*param_print)(BIO *out, const EVP_PKEY *pkey, int indent,
-                     ASN1_PCTX *pctx);
-  int (*sig_print)(BIO *out, const X509_ALGOR *sigalg, const ASN1_STRING *sig,
-                   int indent, ASN1_PCTX *pctx);
-
 
   void (*pkey_free)(EVP_PKEY *pkey);
-
-  /* Legacy functions for old PEM */
-
-  int (*old_priv_decode)(EVP_PKEY *pkey, const uint8_t **pder,
-                         int derlen);
-
-  /* Converting parameters to/from AlgorithmIdentifier (X509_ALGOR). */
-  int (*digest_verify_init_from_algorithm)(EVP_MD_CTX *ctx,
-                                           X509_ALGOR *algor,
-                                           EVP_PKEY *pkey);
-  evp_digest_sign_algorithm_result_t (*digest_sign_algorithm)(
-      EVP_MD_CTX *ctx,
-      X509_ALGOR *algor);
-
 } /* EVP_PKEY_ASN1_METHOD */;
 
 

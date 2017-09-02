@@ -191,7 +191,7 @@ OPENSSL_EXPORT int EVP_DecryptUpdate(EVP_CIPHER_CTX *ctx, uint8_t *out,
  * |*out_len| to the number of bytes written. If padding is enabled (the
  * default) then padding is removed from the final block.
  *
- * WARNING: it is unsafe to call this function with unauthenticted
+ * WARNING: it is unsafe to call this function with unauthenticated
  * ciphertext if padding is enabled. */
 OPENSSL_EXPORT int EVP_DecryptFinal_ex(EVP_CIPHER_CTX *ctx, unsigned char *out,
                                        int *out_len);
@@ -282,12 +282,13 @@ OPENSSL_EXPORT int EVP_CIPHER_CTX_set_padding(EVP_CIPHER_CTX *ctx, int pad);
 /* EVP_CIPHER_CTX_set_key_length sets the key length for |ctx|. This is only
  * valid for ciphers that can take a variable length key. It returns one on
  * success and zero on error. */
-OPENSSL_EXPORT int EVP_CIPHER_CTX_set_key_length(EVP_CIPHER_CTX *ctx, unsigned key_len);
+OPENSSL_EXPORT int EVP_CIPHER_CTX_set_key_length(EVP_CIPHER_CTX *ctx,
+                                                 unsigned key_len);
 
 
 /* Cipher accessors. */
 
-/* EVP_CIPHER_nid returns a NID identifing |cipher|. (For example,
+/* EVP_CIPHER_nid returns a NID identifying |cipher|. (For example,
  * |NID_aes_128_gcm|.) */
 OPENSSL_EXPORT int EVP_CIPHER_nid(const EVP_CIPHER *cipher);
 
@@ -481,7 +482,7 @@ struct evp_cipher_ctx_st {
 
   /* num contains the number of bytes of |iv| which are valid for modes that
    * manage partial blocks themselves. */
-  int num;
+  unsigned num;
 
   /* final_used is non-zero if the |final| buffer contains plaintext. */
   int final_used;
@@ -540,6 +541,23 @@ struct evp_cipher_st {
 
 #if defined(__cplusplus)
 }  /* extern C */
+
+#if !defined(BORINGSSL_NO_CXX)
+extern "C++" {
+
+namespace bssl {
+
+BORINGSSL_MAKE_DELETER(EVP_CIPHER_CTX, EVP_CIPHER_CTX_free)
+
+using ScopedEVP_CIPHER_CTX =
+    internal::StackAllocated<EVP_CIPHER_CTX, int, EVP_CIPHER_CTX_init,
+                             EVP_CIPHER_CTX_cleanup>;
+
+}  // namespace bssl
+
+}  // extern C++
+#endif
+
 #endif
 
 #define CIPHER_R_AES_KEY_SETUP_FAILED 100

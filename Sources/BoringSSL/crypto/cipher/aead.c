@@ -20,6 +20,7 @@
 #include <openssl/err.h>
 
 #include "internal.h"
+#include "../internal.h"
 
 
 size_t EVP_AEAD_key_length(const EVP_AEAD *aead) { return aead->key_len; }
@@ -31,7 +32,7 @@ size_t EVP_AEAD_max_overhead(const EVP_AEAD *aead) { return aead->overhead; }
 size_t EVP_AEAD_max_tag_len(const EVP_AEAD *aead) { return aead->max_tag_len; }
 
 void EVP_AEAD_CTX_zero(EVP_AEAD_CTX *ctx) {
-  memset(ctx, 0, sizeof(EVP_AEAD_CTX));
+  OPENSSL_memset(ctx, 0, sizeof(EVP_AEAD_CTX));
 }
 
 int EVP_AEAD_CTX_init(EVP_AEAD_CTX *ctx, const EVP_AEAD *aead,
@@ -80,21 +81,15 @@ void EVP_AEAD_CTX_cleanup(EVP_AEAD_CTX *ctx) {
   ctx->aead = NULL;
 }
 
-/* check_alias returns 0 if |out| points within the buffer determined by |in|
- * and |in_len| and 1 otherwise.
- *
- * When processing, there's only an issue if |out| points within in[:in_len]
- * and isn't equal to |in|. If that's the case then writing the output will
- * stomp input that hasn't been read yet.
- *
- * This function checks for that case. */
-static int check_alias(const uint8_t *in, size_t in_len, const uint8_t *out) {
-  if (out <= in) {
-    return 1;
-  } else if (in + in_len <= out) {
+/* check_alias returns 1 if |out| is compatible with |in| and 0 otherwise. If
+ * |in| and |out| alias, we require that |in| == |out|. */
+static int check_alias(const uint8_t *in, size_t in_len, const uint8_t *out,
+                       size_t out_len) {
+  if (!buffers_alias(in, in_len, out, out_len)) {
     return 1;
   }
-  return 0;
+
+  return in == out;
 }
 
 int EVP_AEAD_CTX_seal(const EVP_AEAD_CTX *ctx, uint8_t *out, size_t *out_len,
@@ -108,7 +103,7 @@ int EVP_AEAD_CTX_seal(const EVP_AEAD_CTX *ctx, uint8_t *out, size_t *out_len,
     goto error;
   }
 
-  if (!check_alias(in, in_len, out)) {
+  if (!check_alias(in, in_len, out, max_out_len)) {
     OPENSSL_PUT_ERROR(CIPHER, CIPHER_R_OUTPUT_ALIASES_INPUT);
     goto error;
   }
@@ -121,7 +116,7 @@ int EVP_AEAD_CTX_seal(const EVP_AEAD_CTX *ctx, uint8_t *out, size_t *out_len,
 error:
   /* In the event of an error, clear the output buffer so that a caller
    * that doesn't check the return value doesn't send raw data. */
-  memset(out, 0, max_out_len);
+  OPENSSL_memset(out, 0, max_out_len);
   *out_len = 0;
   return 0;
 }
@@ -130,7 +125,7 @@ int EVP_AEAD_CTX_open(const EVP_AEAD_CTX *ctx, uint8_t *out, size_t *out_len,
                       size_t max_out_len, const uint8_t *nonce,
                       size_t nonce_len, const uint8_t *in, size_t in_len,
                       const uint8_t *ad, size_t ad_len) {
-  if (!check_alias(in, in_len, out)) {
+  if (!check_alias(in, in_len, out, max_out_len)) {
     OPENSSL_PUT_ERROR(CIPHER, CIPHER_R_OUTPUT_ALIASES_INPUT);
     goto error;
   }
@@ -144,18 +139,12 @@ error:
   /* In the event of an error, clear the output buffer so that a caller
    * that doesn't check the return value doesn't try and process bad
    * data. */
-  memset(out, 0, max_out_len);
+  OPENSSL_memset(out, 0, max_out_len);
   *out_len = 0;
   return 0;
 }
 
-int EVP_AEAD_CTX_get_rc4_state(const EVP_AEAD_CTX *ctx, const RC4_KEY **out_key) {
-  if (ctx->aead->get_rc4_state == NULL) {
-    return 0;
-  }
-
-  return ctx->aead->get_rc4_state(ctx, out_key);
-}
+const EVP_AEAD *EVP_AEAD_CTX_aead(const EVP_AEAD_CTX *ctx) { return ctx->aead; }
 
 int EVP_AEAD_CTX_get_iv(const EVP_AEAD_CTX *ctx, const uint8_t **out_iv,
                         size_t *out_len) {

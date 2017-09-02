@@ -16,12 +16,12 @@
 #
 printf "\033c"
 read -p "Would you like to download swift-protobuf / grpc [y/N]" CONDITION;
-if [ "$CONDITION" = "y" ] ; then
-    read -p "Use last known stable swift-protobuf - 0.9.903 ? or  latest master ? [S/l]  " CONDITION;
-    if [ "$CONDITION" = "l" ] ; then
+if [ "$CONDITION" == "y" ] ; then
+    read -p "Use last known stable swift-protobuf - 0.9.904 ? or  latest master ? [S/l]  " CONDITION;
+    if [ "$CONDITION" == "l" ] ; then
         git clone https://github.com/apple/swift-protobuf.git
     else
-        git clone -b 0.9.903 https://github.com/apple/swift-protobuf.git
+        git clone -b 0.9.904 https://github.com/apple/swift-protobuf.git
     fi
     git clone https://github.com/grpc/grpc.git
     cd grpc

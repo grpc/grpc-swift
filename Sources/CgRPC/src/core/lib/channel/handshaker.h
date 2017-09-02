@@ -1,33 +1,18 @@
 /*
  *
- * Copyright 2016, Google Inc.
- * All rights reserved.
+ * Copyright 2016 gRPC authors.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *     * Neither the name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 
@@ -86,7 +71,8 @@ typedef struct {
 
   /// Shuts down the handshaker (e.g., to clean up when the operation is
   /// aborted in the middle).
-  void (*shutdown)(grpc_exec_ctx* exec_ctx, grpc_handshaker* handshaker);
+  void (*shutdown)(grpc_exec_ctx* exec_ctx, grpc_handshaker* handshaker,
+                   grpc_error* why);
 
   /// Performs handshaking, modifying \a args as needed (e.g., to
   /// replace \a endpoint with a wrapped endpoint).
@@ -111,7 +97,7 @@ void grpc_handshaker_init(const grpc_handshaker_vtable* vtable,
 void grpc_handshaker_destroy(grpc_exec_ctx* exec_ctx,
                              grpc_handshaker* handshaker);
 void grpc_handshaker_shutdown(grpc_exec_ctx* exec_ctx,
-                              grpc_handshaker* handshaker);
+                              grpc_handshaker* handshaker, grpc_error* why);
 void grpc_handshaker_do_handshake(grpc_exec_ctx* exec_ctx,
                                   grpc_handshaker* handshaker,
                                   grpc_tcp_server_acceptor* acceptor,
@@ -141,7 +127,8 @@ void grpc_handshake_manager_destroy(grpc_exec_ctx* exec_ctx,
 /// The caller must still call grpc_handshake_manager_destroy() after
 /// calling this function.
 void grpc_handshake_manager_shutdown(grpc_exec_ctx* exec_ctx,
-                                     grpc_handshake_manager* mgr);
+                                     grpc_handshake_manager* mgr,
+                                     grpc_error* why);
 
 /// Invokes handshakers in the order they were added.
 /// Takes ownership of \a endpoint, and then passes that ownership to
@@ -160,5 +147,21 @@ void grpc_handshake_manager_do_handshake(
     grpc_endpoint* endpoint, const grpc_channel_args* channel_args,
     gpr_timespec deadline, grpc_tcp_server_acceptor* acceptor,
     grpc_iomgr_cb_func on_handshake_done, void* user_data);
+
+/// Add \a mgr to the server side list of all pending handshake managers, the
+/// list starts with \a *head.
+// Not thread-safe. Caller needs to synchronize.
+void grpc_handshake_manager_pending_list_add(grpc_handshake_manager** head,
+                                             grpc_handshake_manager* mgr);
+
+/// Remove \a mgr from the server side list of all pending handshake managers.
+// Not thread-safe. Caller needs to synchronize.
+void grpc_handshake_manager_pending_list_remove(grpc_handshake_manager** head,
+                                                grpc_handshake_manager* mgr);
+
+/// Shutdown all pending handshake managers on the server side.
+// Not thread-safe. Caller needs to synchronize.
+void grpc_handshake_manager_pending_list_shutdown_all(
+    grpc_exec_ctx* exec_ctx, grpc_handshake_manager* head, grpc_error* why);
 
 #endif /* GRPC_CORE_LIB_CHANNEL_HANDSHAKER_H */

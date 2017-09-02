@@ -121,7 +121,6 @@
 #include <openssl/stack.h>
 #include <openssl/x509.h>
 
-#include "../crypto/directory.h"
 #include "internal.h"
 
 
@@ -165,16 +164,17 @@ STACK_OF(X509_NAME) *SSL_load_client_CA_file(const char *file) {
       goto err;
     }
 
-    /* check for duplicates */
-    xn = X509_NAME_dup(xn);
-    if (xn == NULL) {
-      goto err;
-    }
+    /* Check for duplicates. */
     if (sk_X509_NAME_find(sk, NULL, xn)) {
+      continue;
+    }
+
+    xn = X509_NAME_dup(xn);
+    if (xn == NULL ||
+        !sk_X509_NAME_push(sk /* non-owning */, xn) ||
+        !sk_X509_NAME_push(ret /* owning */, xn)) {
       X509_NAME_free(xn);
-    } else {
-      sk_X509_NAME_push(sk, xn);
-      sk_X509_NAME_push(ret, xn);
+      goto err;
     }
   }
 
@@ -198,7 +198,7 @@ int SSL_add_file_cert_subjects_to_stack(STACK_OF(X509_NAME) *stack,
   BIO *in;
   X509 *x = NULL;
   X509_NAME *xn = NULL;
-  int ret = 1;
+  int ret = 0;
   int (*oldcmp)(const X509_NAME **a, const X509_NAME **b);
 
   oldcmp = sk_X509_NAME_set_cmp_func(stack, xname_cmp);
@@ -221,76 +221,29 @@ int SSL_add_file_cert_subjects_to_stack(STACK_OF(X509_NAME) *stack,
     if (xn == NULL) {
       goto err;
     }
-    xn = X509_NAME_dup(xn);
-    if (xn == NULL) {
-      goto err;
-    }
+
+    /* Check for duplicates. */
     if (sk_X509_NAME_find(stack, NULL, xn)) {
+      continue;
+    }
+
+    xn = X509_NAME_dup(xn);
+    if (xn == NULL ||
+        !sk_X509_NAME_push(stack, xn)) {
       X509_NAME_free(xn);
-    } else {
-      sk_X509_NAME_push(stack, xn);
+      goto err;
     }
   }
 
   ERR_clear_error();
+  ret = 1;
 
-  if (0) {
-  err:
-    ret = 0;
-  }
-
+err:
   BIO_free(in);
   X509_free(x);
 
   (void) sk_X509_NAME_set_cmp_func(stack, oldcmp);
 
-  return ret;
-}
-
-/* Add a directory of certs to a stack.
- *
- * \param stack the stack to append to.
- * \param dir the directory to append from. All files in this directory will be
- *     examined as potential certs. Any that are acceptable to
- *     SSL_add_dir_cert_subjects_to_stack() that are not already in the stack will
- *     be included.
- * \return 1 for success, 0 for failure. Note that in the case of failure some
- *     certs may have been added to \c stack. */
-int SSL_add_dir_cert_subjects_to_stack(STACK_OF(X509_NAME) *stack,
-                                       const char *dir) {
-  OPENSSL_DIR_CTX *d = NULL;
-  const char *filename;
-  int ret = 0;
-
-  /* Note that a side effect is that the CAs will be sorted by name */
-  while ((filename = OPENSSL_DIR_read(&d, dir))) {
-    char buf[1024];
-    int r;
-
-    if (strlen(dir) + strlen(filename) + 2 > sizeof(buf)) {
-      OPENSSL_PUT_ERROR(SSL, SSL_R_PATH_TOO_LONG);
-      goto err;
-    }
-
-    r = BIO_snprintf(buf, sizeof buf, "%s/%s", dir, filename);
-    if (r <= 0 || r >= (int)sizeof(buf) ||
-        !SSL_add_file_cert_subjects_to_stack(stack, buf)) {
-      goto err;
-    }
-  }
-
-  if (errno) {
-    OPENSSL_PUT_ERROR(SSL, ERR_R_SYS_LIB);
-    ERR_add_error_data(3, "OPENSSL_DIR_read(&ctx, '", dir, "')");
-    goto err;
-  }
-
-  ret = 1;
-
-err:
-  if (d) {
-    OPENSSL_DIR_end(&d);
-  }
   return ret;
 }
 
@@ -620,14 +573,3 @@ void SSL_CTX_set_default_passwd_cb(SSL_CTX *ctx, pem_password_cb *cb) {
 void SSL_CTX_set_default_passwd_cb_userdata(SSL_CTX *ctx, void *data) {
   ctx->default_passwd_callback_userdata = data;
 }
-
-SSL_SESSION *d2i_SSL_SESSION_bio(BIO *bio, SSL_SESSION **out) {
-  return ASN1_d2i_bio_of(SSL_SESSION, SSL_SESSION_new, d2i_SSL_SESSION, bio,
-                         out);
-}
-
-int i2d_SSL_SESSION_bio(BIO *bio, const SSL_SESSION *session) {
-  return ASN1_i2d_bio_of(SSL_SESSION, i2d_SSL_SESSION, bio, session);
-}
-
-IMPLEMENT_PEM_rw(SSL_SESSION, SSL_SESSION, PEM_STRING_SSL_SESSION, SSL_SESSION)

@@ -55,16 +55,12 @@
 
 #include <openssl/evp.h>
 
-#include <openssl/asn1t.h>
 #include <openssl/bn.h>
 #include <openssl/bytestring.h>
 #include <openssl/ec.h>
 #include <openssl/ec_key.h>
 #include <openssl/ecdsa.h>
 #include <openssl/err.h>
-#include <openssl/mem.h>
-#include <openssl/obj.h>
-#include <openssl/x509.h>
 
 #include "internal.h"
 
@@ -72,19 +68,15 @@
 static int eckey_pub_encode(CBB *out, const EVP_PKEY *key) {
   const EC_KEY *ec_key = key->pkey.ec;
   const EC_GROUP *group = EC_KEY_get0_group(ec_key);
-  int curve_nid = EC_GROUP_get_curve_name(group);
-  if (curve_nid == NID_undef) {
-    OPENSSL_PUT_ERROR(EVP, EVP_R_NO_NID_FOR_CURVE);
-    return 0;
-  }
   const EC_POINT *public_key = EC_KEY_get0_public_key(ec_key);
 
   /* See RFC 5480, section 2. */
-  CBB spki, algorithm, key_bitstring;
+  CBB spki, algorithm, oid, key_bitstring;
   if (!CBB_add_asn1(out, &spki, CBS_ASN1_SEQUENCE) ||
       !CBB_add_asn1(&spki, &algorithm, CBS_ASN1_SEQUENCE) ||
-      !OBJ_nid2cbb(&algorithm, NID_X9_62_id_ecPublicKey) ||
-      !OBJ_nid2cbb(&algorithm, curve_nid) ||
+      !CBB_add_asn1(&algorithm, &oid, CBS_ASN1_OBJECT) ||
+      !CBB_add_bytes(&oid, ec_asn1_meth.oid, ec_asn1_meth.oid_len) ||
+      !EC_KEY_marshal_curve_name(&algorithm, group) ||
       !CBB_add_asn1(&spki, &key_bitstring, CBS_ASN1_BITSTRING) ||
       !CBB_add_u8(&key_bitstring, 0 /* padding */) ||
       !EC_POINT_point2cbb(&key_bitstring, group, public_key,
@@ -101,31 +93,33 @@ static int eckey_pub_decode(EVP_PKEY *out, CBS *params, CBS *key) {
   /* See RFC 5480, section 2. */
 
   /* The parameters are a named curve. */
-  CBS named_curve;
-  if (!CBS_get_asn1(params, &named_curve, CBS_ASN1_OBJECT) ||
-      CBS_len(params) != 0) {
+  EC_POINT *point = NULL;
+  EC_KEY *eckey = NULL;
+  EC_GROUP *group = EC_KEY_parse_curve_name(params);
+  if (group == NULL || CBS_len(params) != 0) {
     OPENSSL_PUT_ERROR(EVP, EVP_R_DECODE_ERROR);
-    return 0;
+    goto err;
   }
 
-  EC_KEY *eckey = EC_KEY_new_by_curve_name(OBJ_cbs2nid(&named_curve));
-  if (eckey == NULL) {
-    return 0;
+  eckey = EC_KEY_new();
+  if (eckey == NULL || !EC_KEY_set_group(eckey, group)) {
+    goto err;
   }
 
-  EC_POINT *point = EC_POINT_new(EC_KEY_get0_group(eckey));
+  point = EC_POINT_new(group);
   if (point == NULL ||
-      !EC_POINT_oct2point(EC_KEY_get0_group(eckey), point, CBS_data(key),
-                          CBS_len(key), NULL) ||
+      !EC_POINT_oct2point(group, point, CBS_data(key), CBS_len(key), NULL) ||
       !EC_KEY_set_public_key(eckey, point)) {
     goto err;
   }
 
+  EC_GROUP_free(group);
   EC_POINT_free(point);
   EVP_PKEY_assign_EC_KEY(out, eckey);
   return 1;
 
 err:
+  EC_GROUP_free(group);
   EC_POINT_free(point);
   EC_KEY_free(eckey);
   return 0;
@@ -169,11 +163,6 @@ static int eckey_priv_decode(EVP_PKEY *out, CBS *params, CBS *key) {
 
 static int eckey_priv_encode(CBB *out, const EVP_PKEY *key) {
   const EC_KEY *ec_key = key->pkey.ec;
-  int curve_nid = EC_GROUP_get_curve_name(EC_KEY_get0_group(ec_key));
-  if (curve_nid == NID_undef) {
-    OPENSSL_PUT_ERROR(EVP, EVP_R_NO_NID_FOR_CURVE);
-    return 0;
-  }
 
   /* Omit the redundant copy of the curve name. This contradicts RFC 5915 but
    * aligns with PKCS #11. SEC 1 only says they may be omitted if known by other
@@ -182,12 +171,13 @@ static int eckey_priv_encode(CBB *out, const EVP_PKEY *key) {
   unsigned enc_flags = EC_KEY_get_enc_flags(ec_key) | EC_PKEY_NO_PARAMETERS;
 
   /* See RFC 5915. */
-  CBB pkcs8, algorithm, private_key;
+  CBB pkcs8, algorithm, oid, private_key;
   if (!CBB_add_asn1(out, &pkcs8, CBS_ASN1_SEQUENCE) ||
       !CBB_add_asn1_uint64(&pkcs8, 0 /* version */) ||
       !CBB_add_asn1(&pkcs8, &algorithm, CBS_ASN1_SEQUENCE) ||
-      !OBJ_nid2cbb(&algorithm, NID_X9_62_id_ecPublicKey) ||
-      !OBJ_nid2cbb(&algorithm, curve_nid) ||
+      !CBB_add_asn1(&algorithm, &oid, CBS_ASN1_OBJECT) ||
+      !CBB_add_bytes(&oid, ec_asn1_meth.oid, ec_asn1_meth.oid_len) ||
+      !EC_KEY_marshal_curve_name(&algorithm, EC_KEY_get0_group(ec_key)) ||
       !CBB_add_asn1(&pkcs8, &private_key, CBS_ASN1_OCTETSTRING) ||
       !EC_KEY_marshal_private_key(&private_key, ec_key, enc_flags) ||
       !CBB_flush(out)) {
@@ -237,153 +227,21 @@ static int ec_cmp_parameters(const EVP_PKEY *a, const EVP_PKEY *b) {
 
 static void int_ec_free(EVP_PKEY *pkey) { EC_KEY_free(pkey->pkey.ec); }
 
-static int do_EC_KEY_print(BIO *bp, const EC_KEY *x, int off, int ktype) {
-  uint8_t *buffer = NULL;
-  const char *ecstr;
-  size_t buf_len = 0, i;
-  int ret = 0, reason = ERR_R_BIO_LIB;
-  BN_CTX *ctx = NULL;
-  const EC_GROUP *group;
-  const EC_POINT *public_key;
-  const BIGNUM *priv_key;
-  uint8_t *pub_key_bytes = NULL;
-  size_t pub_key_bytes_len = 0;
-
-  if (x == NULL || (group = EC_KEY_get0_group(x)) == NULL) {
-    reason = ERR_R_PASSED_NULL_PARAMETER;
-    goto err;
-  }
-
-  ctx = BN_CTX_new();
-  if (ctx == NULL) {
-    reason = ERR_R_MALLOC_FAILURE;
-    goto err;
-  }
-
-  if (ktype > 0) {
-    public_key = EC_KEY_get0_public_key(x);
-    if (public_key != NULL) {
-      pub_key_bytes_len = EC_POINT_point2oct(
-          group, public_key, EC_KEY_get_conv_form(x), NULL, 0, ctx);
-      if (pub_key_bytes_len == 0) {
-        reason = ERR_R_MALLOC_FAILURE;
-        goto err;
-      }
-      pub_key_bytes = OPENSSL_malloc(pub_key_bytes_len);
-      if (pub_key_bytes == NULL) {
-        reason = ERR_R_MALLOC_FAILURE;
-        goto err;
-      }
-      pub_key_bytes_len =
-          EC_POINT_point2oct(group, public_key, EC_KEY_get_conv_form(x),
-                             pub_key_bytes, pub_key_bytes_len, ctx);
-      if (pub_key_bytes_len == 0) {
-        reason = ERR_R_MALLOC_FAILURE;
-        goto err;
-      }
-      buf_len = pub_key_bytes_len;
-    }
-  }
-
-  if (ktype == 2) {
-    priv_key = EC_KEY_get0_private_key(x);
-    if (priv_key && (i = (size_t)BN_num_bytes(priv_key)) > buf_len) {
-      buf_len = i;
-    }
-  } else {
-    priv_key = NULL;
-  }
-
-  if (ktype > 0) {
-    buf_len += 10;
-    if ((buffer = OPENSSL_malloc(buf_len)) == NULL) {
-      reason = ERR_R_MALLOC_FAILURE;
-      goto err;
-    }
-  }
-  if (ktype == 2) {
-    ecstr = "Private-Key";
-  } else if (ktype == 1) {
-    ecstr = "Public-Key";
-  } else {
-    ecstr = "ECDSA-Parameters";
-  }
-
-  if (!BIO_indent(bp, off, 128)) {
-    goto err;
-  }
-  const BIGNUM *order = EC_GROUP_get0_order(group);
-  if (BIO_printf(bp, "%s: (%d bit)\n", ecstr, BN_num_bits(order)) <= 0) {
-    goto err;
-  }
-
-  if ((priv_key != NULL) &&
-      !ASN1_bn_print(bp, "priv:", priv_key, buffer, off)) {
-    goto err;
-  }
-  if (pub_key_bytes != NULL) {
-    BIO_hexdump(bp, pub_key_bytes, pub_key_bytes_len, off);
-  }
-  /* TODO(fork): implement */
-  /*
-  if (!ECPKParameters_print(bp, group, off))
-    goto err; */
-  ret = 1;
-
-err:
-  if (!ret) {
-    OPENSSL_PUT_ERROR(EVP, reason);
-  }
-  OPENSSL_free(pub_key_bytes);
-  BN_CTX_free(ctx);
-  OPENSSL_free(buffer);
-  return ret;
-}
-
-static int eckey_param_print(BIO *bp, const EVP_PKEY *pkey, int indent,
-                             ASN1_PCTX *ctx) {
-  return do_EC_KEY_print(bp, pkey->pkey.ec, indent, 0);
-}
-
-static int eckey_pub_print(BIO *bp, const EVP_PKEY *pkey, int indent,
-                           ASN1_PCTX *ctx) {
-  return do_EC_KEY_print(bp, pkey->pkey.ec, indent, 1);
-}
-
-
-static int eckey_priv_print(BIO *bp, const EVP_PKEY *pkey, int indent,
-                            ASN1_PCTX *ctx) {
-  return do_EC_KEY_print(bp, pkey->pkey.ec, indent, 2);
-}
-
 static int eckey_opaque(const EVP_PKEY *pkey) {
   return EC_KEY_is_opaque(pkey->pkey.ec);
 }
 
-static int old_ec_priv_decode(EVP_PKEY *pkey, const uint8_t **pder,
-                              int derlen) {
-  EC_KEY *ec;
-  if (!(ec = d2i_ECPrivateKey(NULL, pder, derlen))) {
-    OPENSSL_PUT_ERROR(EVP, EVP_R_DECODE_ERROR);
-    return 0;
-  }
-  EVP_PKEY_assign_EC_KEY(pkey, ec);
-  return 1;
-}
-
 const EVP_PKEY_ASN1_METHOD ec_asn1_meth = {
   EVP_PKEY_EC,
-  0,
-  "EC",
+  /* 1.2.840.10045.2.1 */
+  {0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01}, 7,
 
   eckey_pub_decode,
   eckey_pub_encode,
   eckey_pub_cmp,
-  eckey_pub_print,
 
   eckey_priv_decode,
   eckey_priv_encode,
-  eckey_priv_print,
 
   eckey_opaque,
   0 /* pkey_supports_digest */,
@@ -394,12 +252,6 @@ const EVP_PKEY_ASN1_METHOD ec_asn1_meth = {
   ec_missing_parameters,
   ec_copy_parameters,
   ec_cmp_parameters,
-  eckey_param_print,
-  0,
 
   int_ec_free,
-  old_ec_priv_decode,
-
-  NULL /* digest_verify_init_from_algorithm */,
-  NULL /* digest_sign_algorithm */,
 };

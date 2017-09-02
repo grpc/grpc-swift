@@ -108,6 +108,7 @@
 
 #include <openssl/bn.h>
 
+#include <assert.h>
 #include <string.h>
 
 #include <openssl/err.h>
@@ -131,7 +132,7 @@ BN_MONT_CTX *BN_MONT_CTX_new(void) {
     return NULL;
   }
 
-  memset(ret, 0, sizeof(BN_MONT_CTX));
+  OPENSSL_memset(ret, 0, sizeof(BN_MONT_CTX));
   BN_init(&ret->RR);
   BN_init(&ret->N);
 
@@ -162,141 +163,69 @@ BN_MONT_CTX *BN_MONT_CTX_copy(BN_MONT_CTX *to, const BN_MONT_CTX *from) {
   return to;
 }
 
-int BN_MONT_CTX_set(BN_MONT_CTX *mont, const BIGNUM *mod, BN_CTX *ctx) {
-  int ret = 0;
-  BIGNUM *Ri, *R;
-  BIGNUM tmod;
-  BN_ULONG buf[2];
+OPENSSL_COMPILE_ASSERT(BN_MONT_CTX_N0_LIMBS == 1 || BN_MONT_CTX_N0_LIMBS == 2,
+                       BN_MONT_CTX_N0_LIMBS_VALUE_INVALID);
+OPENSSL_COMPILE_ASSERT(sizeof(BN_ULONG) * BN_MONT_CTX_N0_LIMBS ==
+                       sizeof(uint64_t), BN_MONT_CTX_set_64_bit_mismatch);
 
+int BN_MONT_CTX_set(BN_MONT_CTX *mont, const BIGNUM *mod, BN_CTX *ctx) {
   if (BN_is_zero(mod)) {
     OPENSSL_PUT_ERROR(BN, BN_R_DIV_BY_ZERO);
     return 0;
   }
-
-  BN_CTX_start(ctx);
-  Ri = BN_CTX_get(ctx);
-  if (Ri == NULL) {
-    goto err;
+  if (!BN_is_odd(mod)) {
+    OPENSSL_PUT_ERROR(BN, BN_R_CALLED_WITH_EVEN_MODULUS);
+    return 0;
   }
-  R = &mont->RR; /* grab RR as a temp */
+  if (BN_is_negative(mod)) {
+    OPENSSL_PUT_ERROR(BN, BN_R_NEGATIVE_NUMBER);
+    return 0;
+  }
+
+  /* Save the modulus. */
   if (!BN_copy(&mont->N, mod)) {
-    goto err; /* Set N */
-  }
-  mont->N.neg = 0;
-
-  BN_init(&tmod);
-  tmod.d = buf;
-  tmod.dmax = 2;
-  tmod.neg = 0;
-
-#if defined(OPENSSL_BN_ASM_MONT) && (BN_BITS2 <= 32)
-  /* Only certain BN_BITS2<=32 platforms actually make use of
-   * n0[1], and we could use the #else case (with a shorter R
-   * value) for the others.  However, currently only the assembler
-   * files do know which is which. */
-
-  BN_zero(R);
-  if (!BN_set_bit(R, 2 * BN_BITS2)) {
-    goto err;
+    OPENSSL_PUT_ERROR(BN, ERR_R_INTERNAL_ERROR);
+    return 0;
   }
 
-  tmod.top = 0;
-  if ((buf[0] = mod->d[0])) {
-    tmod.top = 1;
-  }
-  if ((buf[1] = mod->top > 1 ? mod->d[1] : 0)) {
-    tmod.top = 2;
-  }
-
-  if (BN_mod_inverse(Ri, R, &tmod, ctx) == NULL) {
-    goto err;
-  }
-  if (!BN_lshift(Ri, Ri, 2 * BN_BITS2)) {
-    goto err; /* R*Ri */
-  }
-  if (!BN_is_zero(Ri)) {
-    if (!BN_sub_word(Ri, 1)) {
-      goto err;
-    }
-  } else {
-    /* if N mod word size == 1 */
-    if (bn_expand(Ri, (int)sizeof(BN_ULONG) * 2) == NULL) {
-      goto err;
-    }
-    /* Ri-- (mod double word size) */
-    Ri->neg = 0;
-    Ri->d[0] = BN_MASK2;
-    Ri->d[1] = BN_MASK2;
-    Ri->top = 2;
-  }
-
-  if (!BN_div(Ri, NULL, Ri, &tmod, ctx)) {
-    goto err;
-  }
-  /* Ni = (R*Ri-1)/N,
-   * keep only couple of least significant words: */
-  mont->n0[0] = (Ri->top > 0) ? Ri->d[0] : 0;
-  mont->n0[1] = (Ri->top > 1) ? Ri->d[1] : 0;
+  /* Find n0 such that n0 * N == -1 (mod r).
+   *
+   * Only certain BN_BITS2<=32 platforms actually make use of n0[1]. For the
+   * others, we could use a shorter R value and use faster |BN_ULONG|-based
+   * math instead of |uint64_t|-based math, which would be double-precision.
+   * However, currently only the assembler files know which is which. */
+  uint64_t n0 = bn_mont_n0(mod);
+  mont->n0[0] = (BN_ULONG)n0;
+#if BN_MONT_CTX_N0_LIMBS == 2
+  mont->n0[1] = (BN_ULONG)(n0 >> BN_BITS2);
 #else
-  BN_zero(R);
-  if (!BN_set_bit(R, BN_BITS2)) {
-    goto err; /* R */
-  }
-
-  buf[0] = mod->d[0]; /* tmod = N mod word size */
-  buf[1] = 0;
-  tmod.top = buf[0] != 0 ? 1 : 0;
-  /* Ri = R^-1 mod N*/
-  if (BN_mod_inverse(Ri, R, &tmod, ctx) == NULL) {
-    goto err;
-  }
-  if (!BN_lshift(Ri, Ri, BN_BITS2)) {
-    goto err; /* R*Ri */
-  }
-  if (!BN_is_zero(Ri)) {
-    if (!BN_sub_word(Ri, 1)) {
-      goto err;
-    }
-  } else {
-    /* if N mod word size == 1 */
-    if (!BN_set_word(Ri, BN_MASK2)) {
-      goto err; /* Ri-- (mod word size) */
-    }
-  }
-  if (!BN_div(Ri, NULL, Ri, &tmod, ctx)) {
-    goto err;
-  }
-  /* Ni = (R*Ri-1)/N,
-   * keep only least significant word: */
-  mont->n0[0] = (Ri->top > 0) ? Ri->d[0] : 0;
   mont->n0[1] = 0;
 #endif
 
-  /* RR = (2^ri)^2 == 2^(ri*2) == 1 << (ri*2), which has its (ri*2)th bit set. */
-  int ri = (BN_num_bits(mod) + (BN_BITS2 - 1)) / BN_BITS2 * BN_BITS2;
-  BN_zero(&(mont->RR));
-  if (!BN_set_bit(&(mont->RR), ri * 2)) {
-    goto err;
-  }
-  if (!BN_mod(&(mont->RR), &(mont->RR), &(mont->N), ctx)) {
-    goto err;
+  /* Save RR = R**2 (mod N). R is the smallest power of 2**BN_BITS such that R
+   * > mod. Even though the assembly on some 32-bit platforms works with 64-bit
+   * values, using |BN_BITS2| here, rather than |BN_MONT_CTX_N0_LIMBS *
+   * BN_BITS2|, is correct because R**2 will still be a multiple of the latter
+   * as |BN_MONT_CTX_N0_LIMBS| is either one or two.
+   *
+   * XXX: This is not constant time with respect to |mont->N|, but it should
+   * be. */
+  unsigned lgBigR = (BN_num_bits(mod) + (BN_BITS2 - 1)) / BN_BITS2 * BN_BITS2;
+  if (!bn_mod_exp_base_2_vartime(&mont->RR, lgBigR * 2, &mont->N)) {
+    return 0;
   }
 
-  ret = 1;
-
-err:
-  BN_CTX_end(ctx);
-  return ret;
+  return 1;
 }
 
-BN_MONT_CTX *BN_MONT_CTX_set_locked(BN_MONT_CTX **pmont, CRYPTO_MUTEX *lock,
-                                    const BIGNUM *mod, BN_CTX *bn_ctx) {
+int BN_MONT_CTX_set_locked(BN_MONT_CTX **pmont, CRYPTO_MUTEX *lock,
+                           const BIGNUM *mod, BN_CTX *bn_ctx) {
   CRYPTO_MUTEX_lock_read(lock);
   BN_MONT_CTX *ctx = *pmont;
-  CRYPTO_MUTEX_unlock(lock);
+  CRYPTO_MUTEX_unlock_read(lock);
 
   if (ctx) {
-    return ctx;
+    return 1;
   }
 
   CRYPTO_MUTEX_lock_write(lock);
@@ -317,8 +246,8 @@ BN_MONT_CTX *BN_MONT_CTX_set_locked(BN_MONT_CTX **pmont, CRYPTO_MUTEX *lock,
   *pmont = ctx;
 
 out:
-  CRYPTO_MUTEX_unlock(lock);
-  return ctx;
+  CRYPTO_MUTEX_unlock_write(lock);
+  return ctx != NULL;
 }
 
 int BN_to_montgomery(BIGNUM *ret, const BIGNUM *a, const BN_MONT_CTX *mont,
@@ -326,14 +255,12 @@ int BN_to_montgomery(BIGNUM *ret, const BIGNUM *a, const BN_MONT_CTX *mont,
   return BN_mod_mul_montgomery(ret, a, &mont->RR, mont, ctx);
 }
 
-#if 0
 static int BN_from_montgomery_word(BIGNUM *ret, BIGNUM *r,
                                    const BN_MONT_CTX *mont) {
-  const BIGNUM *n;
   BN_ULONG *ap, *np, *rp, n0, v, carry;
   int nl, max, i;
 
-  n = &mont->N;
+  const BIGNUM *n = &mont->N;
   nl = n->top;
   if (nl == 0) {
     ret->top = 0;
@@ -351,7 +278,7 @@ static int BN_from_montgomery_word(BIGNUM *ret, BIGNUM *r,
 
   /* clear the top words of T */
   if (max > r->top) {
-    memset(&rp[r->top], 0, (max - r->top) * sizeof(BN_ULONG));
+    OPENSSL_memset(&rp[r->top], 0, (max - r->top) * sizeof(BN_ULONG));
   }
 
   r->top = max;
@@ -376,13 +303,13 @@ static int BN_from_montgomery_word(BIGNUM *ret, BIGNUM *r,
 
   {
     BN_ULONG *nrp;
-    size_t m;
+    uintptr_t m;
 
     v = bn_sub_words(rp, ap, np, nl) - carry;
     /* if subtraction result is real, then trick unconditional memcpy below to
      * perform in-place "refresh" instead of actual copy. */
-    m = (0 - (size_t)v);
-    nrp = (BN_ULONG *)(((intptr_t)rp & ~m) | ((intptr_t)ap & m));
+    m = (0u - (uintptr_t)v);
+    nrp = (BN_ULONG *)(((uintptr_t)rp & ~m) | ((uintptr_t)ap & m));
 
     for (i = 0, nl -= 4; i < nl; i += 4) {
       BN_ULONG t1, t2, t3, t4;
@@ -411,103 +338,25 @@ static int BN_from_montgomery_word(BIGNUM *ret, BIGNUM *r,
 
   return 1;
 }
-#endif
 
-#define PTR_SIZE_INT size_t
-
-static int BN_from_montgomery_word(BIGNUM *ret, BIGNUM *r, const BN_MONT_CTX *mont)
-	{
-	BN_ULONG *ap,*np,*rp,n0,v,carry;
-	int nl,max,i;
-
-	const BIGNUM *n = &mont->N;
-	nl=n->top;
-	if (nl == 0) { ret->top=0; return(1); }
-
-	max=(2*nl); /* carry is stored separately */
-	if (bn_wexpand(r,max) == NULL) return(0);
-
-	r->neg^=n->neg;
-	np=n->d;
-	rp=r->d;
-
-	/* clear the top words of T */
-#if 1
-	for (i=r->top; i<max; i++) /* memset? XXX */
-		rp[i]=0;
-#else
-	memset(&(rp[r->top]),0,(max-r->top)*sizeof(BN_ULONG)); 
-#endif
-
-	r->top=max;
-	n0=mont->n0[0];
-
-	for (carry=0, i=0; i<nl; i++, rp++)
-		{
-		v=bn_mul_add_words(rp,np,nl,(rp[0]*n0)&BN_MASK2);
-		v = (v+carry+rp[nl])&BN_MASK2;
-		carry |= (v != rp[nl]);
-		carry &= (v <= rp[nl]);
-		rp[nl]=v;
-		}
-
-	if (bn_wexpand(ret,nl) == NULL) return(0);
-	ret->top=nl;
-	ret->neg=r->neg;
-
-	rp=ret->d;
-	ap=&(r->d[nl]);
-
-	{
-	BN_ULONG *nrp;
-	size_t m;
-
-	v=bn_sub_words(rp,ap,np,nl)-carry;
-	/* if subtraction result is real, then
-	 * trick unconditional memcpy below to perform in-place
-	 * "refresh" instead of actual copy. */
-	m=(0-(size_t)v);
-	nrp=(BN_ULONG *)(((PTR_SIZE_INT)rp&~m)|((PTR_SIZE_INT)ap&m));
-
-	for (i=0,nl-=4; i<nl; i+=4)
-		{
-		BN_ULONG t1,t2,t3,t4;
-		
-		t1=nrp[i+0];
-		t2=nrp[i+1];
-		t3=nrp[i+2];	ap[i+0]=0;
-		t4=nrp[i+3];	ap[i+1]=0;
-		rp[i+0]=t1;	ap[i+2]=0;
-		rp[i+1]=t2;	ap[i+3]=0;
-		rp[i+2]=t3;
-		rp[i+3]=t4;
-		}
-	for (nl+=4; i<nl; i++)
-		rp[i]=nrp[i], ap[i]=0;
-	}
-	bn_correct_top(r);
-	bn_correct_top(ret);
-
-	return(1);
-	}
-
-int BN_from_montgomery(BIGNUM *ret, const BIGNUM *a, const BN_MONT_CTX *mont,
+int BN_from_montgomery(BIGNUM *r, const BIGNUM *a, const BN_MONT_CTX *mont,
                        BN_CTX *ctx) {
-  int retn = 0;
+  int ret = 0;
   BIGNUM *t;
 
   BN_CTX_start(ctx);
   t = BN_CTX_get(ctx);
-  if (t == NULL) {
-    return 0;
+  if (t == NULL ||
+      !BN_copy(t, a)) {
+    goto err;
   }
 
-  if (BN_copy(t, a)) {
-    retn = BN_from_montgomery_word(ret, t, mont);
-  }
+  ret = BN_from_montgomery_word(r, t, mont);
+
+err:
   BN_CTX_end(ctx);
 
-  return retn;
+  return ret;
 }
 
 int BN_mod_mul_montgomery(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,

@@ -59,7 +59,10 @@
 #include <assert.h>
 #include <string.h>
 
+#include <openssl/digest.h>
 #include <openssl/mem.h>
+
+#include "../internal.h"
 
 
 uint8_t *HMAC(const EVP_MD *evp_md, const void *key, size_t key_len,
@@ -114,9 +117,8 @@ int HMAC_Init_ex(HMAC_CTX *ctx, const void *key, size_t key_len,
    * exist callers which intend the latter, but the former is an awkward edge
    * case. Fix to API to avoid this. */
   if (md != ctx->md || key != NULL) {
-    size_t i;
-    uint8_t pad[HMAC_MAX_MD_CBLOCK];
-    uint8_t key_block[HMAC_MAX_MD_CBLOCK];
+    uint8_t pad[EVP_MAX_MD_BLOCK_SIZE];
+    uint8_t key_block[EVP_MAX_MD_BLOCK_SIZE];
     unsigned key_block_len;
 
     size_t block_size = EVP_MD_block_size(md);
@@ -130,15 +132,15 @@ int HMAC_Init_ex(HMAC_CTX *ctx, const void *key, size_t key_len,
       }
     } else {
       assert(key_len <= sizeof(key_block));
-      memcpy(key_block, key, key_len);
+      OPENSSL_memcpy(key_block, key, key_len);
       key_block_len = (unsigned)key_len;
     }
     /* Keys are then padded with zeros. */
-    if (key_block_len != HMAC_MAX_MD_CBLOCK) {
-      memset(&key_block[key_block_len], 0, sizeof(key_block) - key_block_len);
+    if (key_block_len != EVP_MAX_MD_BLOCK_SIZE) {
+      OPENSSL_memset(&key_block[key_block_len], 0, sizeof(key_block) - key_block_len);
     }
 
-    for (i = 0; i < HMAC_MAX_MD_CBLOCK; i++) {
+    for (size_t i = 0; i < EVP_MAX_MD_BLOCK_SIZE; i++) {
       pad[i] = 0x36 ^ key_block[i];
     }
     if (!EVP_DigestInit_ex(&ctx->i_ctx, md, impl) ||
@@ -146,7 +148,7 @@ int HMAC_Init_ex(HMAC_CTX *ctx, const void *key, size_t key_len,
       return 0;
     }
 
-    for (i = 0; i < HMAC_MAX_MD_CBLOCK; i++) {
+    for (size_t i = 0; i < EVP_MAX_MD_BLOCK_SIZE; i++) {
       pad[i] = 0x5c ^ key_block[i];
     }
     if (!EVP_DigestInit_ex(&ctx->o_ctx, md, impl) ||

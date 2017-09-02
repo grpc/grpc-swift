@@ -116,17 +116,15 @@
 
 #include <openssl/ssl.h>
 
-#include <stdio.h>
 #include <string.h>
 
 #include <openssl/bytestring.h>
 #include <openssl/err.h>
-#include <openssl/obj.h>
 
 #include "internal.h"
 
 
-const SRTP_PROTECTION_PROFILE kSRTPProfiles[] = {
+static const SRTP_PROTECTION_PROFILE kSRTPProfiles[] = {
     {
         "SRTP_AES128_CM_SHA1_80", SRTP_AES128_CM_SHA1_80,
     },
@@ -162,27 +160,27 @@ static int find_profile_by_name(const char *profile_name,
 
 static int ssl_ctx_make_profiles(const char *profiles_string,
                                  STACK_OF(SRTP_PROTECTION_PROFILE) **out) {
-  STACK_OF(SRTP_PROTECTION_PROFILE) *profiles;
-
-  const char *col;
-  const char *ptr = profiles_string;
-
-  profiles = sk_SRTP_PROTECTION_PROFILE_new_null();
+  STACK_OF(SRTP_PROTECTION_PROFILE) *profiles =
+      sk_SRTP_PROTECTION_PROFILE_new_null();
   if (profiles == NULL) {
     OPENSSL_PUT_ERROR(SSL, SSL_R_SRTP_COULD_NOT_ALLOCATE_PROFILES);
     return 0;
   }
 
+  const char *col;
+  const char *ptr = profiles_string;
   do {
-    const SRTP_PROTECTION_PROFILE *p;
-
     col = strchr(ptr, ':');
-    if (find_profile_by_name(ptr, &p,
-                             col ? (size_t)(col - ptr) : strlen(ptr))) {
-      sk_SRTP_PROTECTION_PROFILE_push(profiles, p);
-    } else {
+
+    const SRTP_PROTECTION_PROFILE *profile;
+    if (!find_profile_by_name(ptr, &profile,
+                              col ? (size_t)(col - ptr) : strlen(ptr))) {
       OPENSSL_PUT_ERROR(SSL, SSL_R_SRTP_UNKNOWN_PROTECTION_PROFILE);
-      return 0;
+      goto err;
+    }
+
+    if (!sk_SRTP_PROTECTION_PROFILE_push(profiles, profile)) {
+      goto err;
     }
 
     if (col) {
@@ -190,9 +188,13 @@ static int ssl_ctx_make_profiles(const char *profiles_string,
     }
   } while (col);
 
+  sk_SRTP_PROTECTION_PROFILE_free(*out);
   *out = profiles;
-
   return 1;
+
+err:
+  sk_SRTP_PROTECTION_PROFILE_free(profiles);
+  return 0;
 }
 
 int SSL_CTX_set_srtp_profiles(SSL_CTX *ctx, const char *profiles) {
@@ -212,7 +214,7 @@ STACK_OF(SRTP_PROTECTION_PROFILE) *SSL_get_srtp_profiles(SSL *ssl) {
     return ssl->srtp_profiles;
   }
 
-  if (ssl->ctx != NULL && ssl->ctx->srtp_profiles != NULL) {
+  if (ssl->ctx->srtp_profiles != NULL) {
     return ssl->ctx->srtp_profiles;
   }
 

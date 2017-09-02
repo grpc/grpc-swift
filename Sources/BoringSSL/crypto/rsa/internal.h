@@ -77,9 +77,6 @@ int rsa_default_sign_raw(RSA *rsa, size_t *out_len, uint8_t *out,
                          int padding);
 int rsa_default_decrypt(RSA *rsa, size_t *out_len, uint8_t *out, size_t max_out,
                         const uint8_t *in, size_t in_len, int padding);
-int rsa_default_verify_raw(RSA *rsa, size_t *out_len, uint8_t *out,
-                           size_t max_out, const uint8_t *in, size_t in_len,
-                           int padding);
 int rsa_default_private_transform(RSA *rsa, uint8_t *out, const uint8_t *in,
                                   size_t len);
 int rsa_default_multi_prime_keygen(RSA *rsa, int bits, int num_primes,
@@ -90,17 +87,12 @@ int rsa_default_keygen(RSA *rsa, int bits, BIGNUM *e_value, BN_GENCB *cb);
 #define RSA_PKCS1_PADDING_SIZE 11
 
 
-BN_BLINDING *BN_BLINDING_new(const BIGNUM *A, const BIGNUM *Ai, BIGNUM *mod);
+BN_BLINDING *BN_BLINDING_new(void);
 void BN_BLINDING_free(BN_BLINDING *b);
-int BN_BLINDING_update(BN_BLINDING *b, BN_CTX *ctx);
-int BN_BLINDING_convert(BIGNUM *n, BN_BLINDING *b, BN_CTX *ctx);
-int BN_BLINDING_invert(BIGNUM *n, const BN_BLINDING *b, BN_CTX *ctx);
-BN_BLINDING *BN_BLINDING_create_param(
-    BN_BLINDING *b, const BIGNUM *e, BIGNUM *m, BN_CTX *ctx,
-    int (*bn_mod_exp)(BIGNUM *r, const BIGNUM *a, const BIGNUM *p,
-                      const BIGNUM *m, BN_CTX *ctx, const BN_MONT_CTX *mont),
-    const BN_MONT_CTX *mont);
-BN_BLINDING *rsa_setup_blinding(RSA *rsa, BN_CTX *in_ctx);
+int BN_BLINDING_convert(BIGNUM *n, BN_BLINDING *b, const BIGNUM *e,
+                        const BN_MONT_CTX *mont_ctx, BN_CTX *ctx);
+int BN_BLINDING_invert(BIGNUM *n, const BN_BLINDING *b, BN_MONT_CTX *mont_ctx,
+                       BN_CTX *ctx);
 
 
 int RSA_padding_add_PKCS1_type_1(uint8_t *to, unsigned to_len,

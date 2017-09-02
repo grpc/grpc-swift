@@ -65,6 +65,8 @@
 #include <openssl/mem.h>
 
 #include "conf_def.h"
+#include "internal.h"
+#include "../internal.h"
 
 
 static uint32_t conf_value_hash(const CONF_VALUE *v) {
@@ -117,7 +119,7 @@ CONF_VALUE *CONF_VALUE_new(void) {
     OPENSSL_PUT_ERROR(CONF, ERR_R_MALLOC_FAILURE);
     return NULL;
   }
-  memset(v, 0, sizeof(CONF_VALUE));
+  OPENSSL_memset(v, 0, sizeof(CONF_VALUE));
   return v;
 }
 
@@ -152,7 +154,7 @@ void NCONF_free(CONF *conf) {
   OPENSSL_free(conf);
 }
 
-CONF_VALUE *NCONF_new_section(const CONF *conf, const char *section) {
+static CONF_VALUE *NCONF_new_section(const CONF *conf, const char *section) {
   STACK_OF(CONF_VALUE) *sk = NULL;
   int ok = 0;
   CONF_VALUE *v = NULL, *old_value;
@@ -352,7 +354,7 @@ err:
 static CONF_VALUE *get_section(const CONF *conf, const char *section) {
   CONF_VALUE template;
 
-  memset(&template, 0, sizeof(template));
+  OPENSSL_memset(&template, 0, sizeof(template));
   template.section = (char *) section;
   return lh_CONF_VALUE_retrieve(conf->data, &template);
 }
@@ -369,7 +371,7 @@ const char *NCONF_get_string(const CONF *conf, const char *section,
                              const char *name) {
   CONF_VALUE template, *value;
 
-  memset(&template, 0, sizeof(template));
+  OPENSSL_memset(&template, 0, sizeof(template));
   template.section = (char *) section;
   template.name = (char *) name;
   value = lh_CONF_VALUE_retrieve(conf->data, &template);
@@ -785,3 +787,5 @@ int CONF_modules_load_file(CONF_MUST_BE_NULL *filename, const char *appname,
 void CONF_modules_free(void) {}
 
 void OPENSSL_config(CONF_MUST_BE_NULL *config_name) {}
+
+void OPENSSL_no_config(void) {}

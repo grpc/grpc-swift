@@ -22,40 +22,22 @@
 
 #include <openssl/cpu.h>
 
+#include "internal.h"
+#include "../internal.h"
+
 
 #if defined(OPENSSL_WINDOWS) || !defined(OPENSSL_X86_64)
 
-#if defined(OPENSSL_X86) || defined(OPENSSL_X86_64) || defined(OPENSSL_ARM)
 /* We can assume little-endian. */
 static uint32_t U8TO32_LE(const uint8_t *m) {
   uint32_t r;
-  memcpy(&r, m, sizeof(r));
+  OPENSSL_memcpy(&r, m, sizeof(r));
   return r;
 }
 
-static void U32TO8_LE(uint8_t *m, uint32_t v) { memcpy(m, &v, sizeof(v)); }
-#else
-static uint32_t U8TO32_LE(const uint8_t *m) {
-  return (uint32_t)m[0] | (uint32_t)m[1] << 8 | (uint32_t)m[2] << 16 |
-         (uint32_t)m[3] << 24;
-}
-
 static void U32TO8_LE(uint8_t *m, uint32_t v) {
-  m[0] = v;
-  m[1] = v >> 8;
-  m[2] = v >> 16;
-  m[3] = v >> 24;
+  OPENSSL_memcpy(m, &v, sizeof(v));
 }
-#endif
-
-#if defined(OPENSSL_ARM) && !defined(OPENSSL_NO_ASM)
-void CRYPTO_poly1305_init_neon(poly1305_state *state, const uint8_t key[32]);
-
-void CRYPTO_poly1305_update_neon(poly1305_state *state, const uint8_t *in,
-                                 size_t in_len);
-
-void CRYPTO_poly1305_finish_neon(poly1305_state *state, uint8_t mac[16]);
-#endif
 
 static uint64_t mul32x32_64(uint32_t a, uint32_t b) { return (uint64_t)a * b; }
 
@@ -67,6 +49,11 @@ struct poly1305_state_st {
   unsigned int buf_used;
   uint8_t key[16];
 };
+
+static inline struct poly1305_state_st *poly1305_aligned_state(
+    poly1305_state *state) {
+  return (struct poly1305_state_st *)(((uintptr_t)state + 63) & ~63);
+}
 
 /* poly1305_blocks updates |state| given some amount of input data. This
  * function may only be called with a |len| that is not a multiple of 16 at the
@@ -166,11 +153,11 @@ poly1305_donna_atmost15bytes:
 }
 
 void CRYPTO_poly1305_init(poly1305_state *statep, const uint8_t key[32]) {
-  struct poly1305_state_st *state = (struct poly1305_state_st *)statep;
+  struct poly1305_state_st *state = poly1305_aligned_state(statep);
   uint32_t t0, t1, t2, t3;
 
 #if defined(OPENSSL_ARM) && !defined(OPENSSL_NO_ASM)
-  if (CRYPTO_is_NEON_functional()) {
+  if (CRYPTO_is_NEON_capable()) {
     CRYPTO_poly1305_init_neon(statep, key);
     return;
   }
@@ -208,25 +195,25 @@ void CRYPTO_poly1305_init(poly1305_state *statep, const uint8_t key[32]) {
   state->h4 = 0;
 
   state->buf_used = 0;
-  memcpy(state->key, key + 16, sizeof(state->key));
+  OPENSSL_memcpy(state->key, key + 16, sizeof(state->key));
 }
 
 void CRYPTO_poly1305_update(poly1305_state *statep, const uint8_t *in,
                             size_t in_len) {
   unsigned int i;
-  struct poly1305_state_st *state = (struct poly1305_state_st *)statep;
+  struct poly1305_state_st *state = poly1305_aligned_state(statep);
 
 #if defined(OPENSSL_ARM) && !defined(OPENSSL_NO_ASM)
-  if (CRYPTO_is_NEON_functional()) {
+  if (CRYPTO_is_NEON_capable()) {
     CRYPTO_poly1305_update_neon(statep, in, in_len);
     return;
   }
 #endif
 
   if (state->buf_used) {
-    unsigned int todo = 16 - state->buf_used;
+    unsigned todo = 16 - state->buf_used;
     if (todo > in_len) {
-      todo = in_len;
+      todo = (unsigned)in_len;
     }
     for (i = 0; i < todo; i++) {
       state->buf[state->buf_used + i] = in[i];
@@ -252,18 +239,18 @@ void CRYPTO_poly1305_update(poly1305_state *statep, const uint8_t *in,
     for (i = 0; i < in_len; i++) {
       state->buf[i] = in[i];
     }
-    state->buf_used = in_len;
+    state->buf_used = (unsigned)in_len;
   }
 }
 
 void CRYPTO_poly1305_finish(poly1305_state *statep, uint8_t mac[16]) {
-  struct poly1305_state_st *state = (struct poly1305_state_st *)statep;
+  struct poly1305_state_st *state = poly1305_aligned_state(statep);
   uint64_t f0, f1, f2, f3;
   uint32_t g0, g1, g2, g3, g4;
   uint32_t b, nb;
 
 #if defined(OPENSSL_ARM) && !defined(OPENSSL_NO_ASM)
-  if (CRYPTO_is_NEON_functional()) {
+  if (CRYPTO_is_NEON_capable()) {
     CRYPTO_poly1305_finish_neon(statep, mac);
     return;
   }

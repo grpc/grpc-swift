@@ -24,7 +24,7 @@
 cgrpc_server *cgrpc_server_create(const char *address) {
   cgrpc_server *server = (cgrpc_server *) malloc(sizeof (cgrpc_server));
   server->server = grpc_server_create(NULL, NULL);
-  server->completion_queue = grpc_completion_queue_create(NULL);
+  server->completion_queue = grpc_completion_queue_create_for_next(NULL);
   grpc_server_register_completion_queue(server->server, server->completion_queue, NULL);
   // prepare the server to listen
   server->port = grpc_server_add_insecure_http2_port(server->server, address);
@@ -36,7 +36,7 @@ cgrpc_server *cgrpc_server_create_secure(const char *address,
                                          const char *cert_chain) {
   cgrpc_server *server = (cgrpc_server *) malloc(sizeof (cgrpc_server));
   server->server = grpc_server_create(NULL, NULL);
-  server->completion_queue = grpc_completion_queue_create(NULL);
+  server->completion_queue = grpc_completion_queue_create_for_next(NULL);
   grpc_server_register_completion_queue(server->server, server->completion_queue, NULL);
 
   grpc_ssl_pem_key_cert_pair server_credentials;
@@ -65,12 +65,14 @@ void cgrpc_server_destroy(cgrpc_server *server) {
   grpc_server_shutdown_and_notify(server->server,
                                   server->completion_queue,
                                   cgrpc_create_tag(1000));
-  grpc_event completion_event =
-  grpc_completion_queue_pluck(server->completion_queue,
-                              cgrpc_create_tag(1000),
-                              cgrpc_deadline_in_seconds_from_now(5),
-                              NULL);
-  assert(completion_event.type == GRPC_OP_COMPLETE);
+  while (1) {
+    double timeout = 5;
+    gpr_timespec deadline = cgrpc_deadline_in_seconds_from_now(timeout);
+    grpc_event completion_event = grpc_completion_queue_next(server->completion_queue, deadline, NULL);
+    if (completion_event.type == GRPC_OP_COMPLETE) {
+      break;
+    }
+  }
   grpc_server_destroy(server->server);
   server->server = NULL;
 

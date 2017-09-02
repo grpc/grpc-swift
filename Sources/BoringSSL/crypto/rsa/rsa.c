@@ -64,7 +64,7 @@
 #include <openssl/err.h>
 #include <openssl/ex_data.h>
 #include <openssl/mem.h>
-#include <openssl/obj.h>
+#include <openssl/nid.h>
 #include <openssl/thread.h>
 
 #include "internal.h"
@@ -82,7 +82,7 @@ RSA *RSA_new_method(const ENGINE *engine) {
     return NULL;
   }
 
-  memset(rsa, 0, sizeof(RSA));
+  OPENSSL_memset(rsa, 0, sizeof(RSA));
 
   if (engine) {
     rsa->meth = ENGINE_get_RSA_method(engine);
@@ -167,6 +167,42 @@ void RSA_free(RSA *rsa) {
 int RSA_up_ref(RSA *rsa) {
   CRYPTO_refcount_inc(&rsa->references);
   return 1;
+}
+
+void RSA_get0_key(const RSA *rsa, const BIGNUM **out_n, const BIGNUM **out_e,
+                  const BIGNUM **out_d) {
+  if (out_n != NULL) {
+    *out_n = rsa->n;
+  }
+  if (out_e != NULL) {
+    *out_e = rsa->e;
+  }
+  if (out_d != NULL) {
+    *out_d = rsa->d;
+  }
+}
+
+void RSA_get0_factors(const RSA *rsa, const BIGNUM **out_p,
+                      const BIGNUM **out_q) {
+  if (out_p != NULL) {
+    *out_p = rsa->p;
+  }
+  if (out_q != NULL) {
+    *out_q = rsa->q;
+  }
+}
+
+void RSA_get0_crt_params(const RSA *rsa, const BIGNUM **out_dmp1,
+                         const BIGNUM **out_dmq1, const BIGNUM **out_iqmp) {
+  if (out_dmp1 != NULL) {
+    *out_dmp1 = rsa->dmp1;
+  }
+  if (out_dmq1 != NULL) {
+    *out_dmq1 = rsa->dmq1;
+  }
+  if (out_iqmp != NULL) {
+    *out_iqmp = rsa->iqmp;
+  }
 }
 
 int RSA_generate_key_ex(RSA *rsa, int bits, BIGNUM *e_value, BN_GENCB *cb) {
@@ -256,16 +292,6 @@ int RSA_private_decrypt(size_t flen, const uint8_t *from, uint8_t *to, RSA *rsa,
     return -1;
   }
   return out_len;
-}
-
-int RSA_verify_raw(RSA *rsa, size_t *out_len, uint8_t *out, size_t max_out,
-                   const uint8_t *in, size_t in_len, int padding) {
-  if (rsa->meth->verify_raw) {
-    return rsa->meth->verify_raw(rsa, out_len, out, max_out, in, in_len, padding);
-  }
-
-  return rsa_default_verify_raw(rsa, out_len, out, max_out, in, in_len,
-                                padding);
 }
 
 int RSA_public_decrypt(size_t flen, const uint8_t *from, uint8_t *to, RSA *rsa,
@@ -420,8 +446,8 @@ int RSA_add_pkcs1_prefix(uint8_t **out_msg, size_t *out_msg_len,
       return 0;
     }
 
-    memcpy(signed_msg, prefix, prefix_len);
-    memcpy(signed_msg + prefix_len, msg, msg_len);
+    OPENSSL_memcpy(signed_msg, prefix, prefix_len);
+    OPENSSL_memcpy(signed_msg + prefix_len, msg, msg_len);
 
     *out_msg = signed_msg;
     *out_msg_len = signed_msg_len;
@@ -473,21 +499,17 @@ finish:
 
 int RSA_verify(int hash_nid, const uint8_t *msg, size_t msg_len,
                const uint8_t *sig, size_t sig_len, RSA *rsa) {
+  if (rsa->n == NULL || rsa->e == NULL) {
+    OPENSSL_PUT_ERROR(RSA, RSA_R_VALUE_MISSING);
+    return 0;
+  }
+
   const size_t rsa_size = RSA_size(rsa);
   uint8_t *buf = NULL;
   int ret = 0;
   uint8_t *signed_msg = NULL;
   size_t signed_msg_len, len;
   int signed_msg_is_alloced = 0;
-
-  if (rsa->meth->verify) {
-    return rsa->meth->verify(hash_nid, msg, msg_len, sig, sig_len, rsa);
-  }
-
-  if (sig_len != rsa_size) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_WRONG_SIGNATURE_LENGTH);
-    return 0;
-  }
 
   if (hash_nid == NID_md5_sha1 && msg_len != SSL_SIG_LENGTH) {
     OPENSSL_PUT_ERROR(RSA, RSA_R_INVALID_MESSAGE_LENGTH);
@@ -510,7 +532,7 @@ int RSA_verify(int hash_nid, const uint8_t *msg, size_t msg_len,
     goto out;
   }
 
-  if (len != signed_msg_len || CRYPTO_memcmp(buf, signed_msg, len) != 0) {
+  if (len != signed_msg_len || OPENSSL_memcmp(buf, signed_msg, len) != 0) {
     OPENSSL_PUT_ERROR(RSA, RSA_R_BAD_SIGNATURE);
     goto out;
   }
@@ -531,7 +553,7 @@ static void bn_free_and_null(BIGNUM **bn) {
 }
 
 int RSA_check_key(const RSA *key) {
-  BIGNUM n, pm1, qm1, lcm, gcd, de, dmp1, dmq1, iqmp;
+  BIGNUM n, pm1, qm1, lcm, gcd, de, dmp1, dmq1, iqmp_times_q;
   BN_CTX *ctx;
   int ok = 0, has_crt_values;
 
@@ -570,7 +592,7 @@ int RSA_check_key(const RSA *key) {
   BN_init(&de);
   BN_init(&dmp1);
   BN_init(&dmq1);
-  BN_init(&iqmp);
+  BN_init(&iqmp_times_q);
 
   if (!BN_mul(&n, key->p, key->q, ctx) ||
       /* lcm = lcm(prime-1, for all primes) */
@@ -587,8 +609,7 @@ int RSA_check_key(const RSA *key) {
     num_additional_primes = sk_RSA_additional_prime_num(key->additional_primes);
   }
 
-  size_t i;
-  for (i = 0; i < num_additional_primes; i++) {
+  for (size_t i = 0; i < num_additional_primes; i++) {
     const RSA_additional_prime *ap =
         sk_RSA_additional_prime_value(key->additional_primes, i);
     if (!BN_mul(&n, &n, ap->prime, ctx) ||
@@ -631,14 +652,15 @@ int RSA_check_key(const RSA *key) {
         /* dmq1 = d mod (q-1) */
         !BN_mod(&dmq1, key->d, &qm1, ctx) ||
         /* iqmp = q^-1 mod p */
-        !BN_mod_inverse(&iqmp, key->q, key->p, ctx)) {
+        !BN_mod_mul(&iqmp_times_q, key->iqmp, key->q, key->p, ctx)) {
       OPENSSL_PUT_ERROR(RSA, ERR_LIB_BN);
       goto out;
     }
 
     if (BN_cmp(&dmp1, key->dmp1) != 0 ||
         BN_cmp(&dmq1, key->dmq1) != 0 ||
-        BN_cmp(&iqmp, key->iqmp) != 0) {
+        BN_cmp(key->iqmp, key->p) >= 0 ||
+        !BN_is_one(&iqmp_times_q)) {
       OPENSSL_PUT_ERROR(RSA, RSA_R_CRT_VALUES_INCORRECT);
       goto out;
     }
@@ -655,7 +677,7 @@ out:
   BN_free(&de);
   BN_free(&dmp1);
   BN_free(&dmq1);
-  BN_free(&iqmp);
+  BN_free(&iqmp_times_q);
   BN_CTX_free(ctx);
 
   return ok;

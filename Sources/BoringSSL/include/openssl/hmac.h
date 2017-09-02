@@ -74,8 +74,9 @@ extern "C" {
 
 /* HMAC calculates the HMAC of |data_len| bytes of |data|, using the given key
  * and hash function, and writes the result to |out|. On entry, |out| must
- * contain |EVP_MAX_MD_SIZE| bytes of space. The actual length of the result is
- * written to |*out_len|. It returns |out| or NULL on error. */
+ * contain at least |EVP_MD_size| bytes of space. The actual length of the
+ * result is written to |*out_len|. An output size of |EVP_MAX_MD_SIZE| will
+ * always be large enough. It returns |out| or NULL on error. */
 OPENSSL_EXPORT uint8_t *HMAC(const EVP_MD *evp_md, const void *key,
                              size_t key_len, const uint8_t *data,
                              size_t data_len, uint8_t *out,
@@ -112,8 +113,9 @@ OPENSSL_EXPORT int HMAC_Update(HMAC_CTX *ctx, const uint8_t *data,
 
 /* HMAC_Final completes the HMAC operation in |ctx| and writes the result to
  * |out| and the sets |*out_len| to the length of the result. On entry, |out|
- * must contain at least |EVP_MAX_MD_SIZE| bytes of space. It returns one on
- * success or zero on error. */
+ * must contain at least |HMAC_size| bytes of space. An output size of
+ * |EVP_MAX_MD_SIZE| will always be large enough. It returns one on success or
+ * zero on error. */
 OPENSSL_EXPORT int HMAC_Final(HMAC_CTX *ctx, uint8_t *out,
                               unsigned int *out_len);
 
@@ -143,8 +145,6 @@ OPENSSL_EXPORT int HMAC_CTX_copy(HMAC_CTX *dest, const HMAC_CTX *src);
 
 /* Private functions */
 
-#define HMAC_MAX_MD_CBLOCK 128 /* largest known is SHA512 */
-
 struct hmac_ctx_st {
   const EVP_MD *md;
   EVP_MD_CTX md_ctx;
@@ -155,6 +155,20 @@ struct hmac_ctx_st {
 
 #if defined(__cplusplus)
 }  /* extern C */
+
+#if !defined(BORINGSSL_NO_CXX)
+extern "C++" {
+
+namespace bssl {
+
+using ScopedHMAC_CTX =
+    internal::StackAllocated<HMAC_CTX, void, HMAC_CTX_init, HMAC_CTX_cleanup>;
+
+}  // namespace bssl
+
+}  // extern C++
+#endif
+
 #endif
 
 #endif  /* OPENSSL_HEADER_HMAC_H */

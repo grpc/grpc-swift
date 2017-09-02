@@ -65,6 +65,10 @@
 #include <openssl/stack.h>
 #include <openssl/x509.h>
 
+/* For compatibility with open-iscsi, which assumes that it can get
+ * |OPENSSL_malloc| from pem.h or err.h */
+#include <openssl/crypto.h>
+
 #ifdef  __cplusplus
 extern "C" {
 #endif
@@ -120,6 +124,7 @@ extern "C" {
 #define PEM_STRING_RSA_PUBLIC	"RSA PUBLIC KEY"
 #define PEM_STRING_DSA		"DSA PRIVATE KEY"
 #define PEM_STRING_DSA_PUBLIC	"DSA PUBLIC KEY"
+#define PEM_STRING_EC "EC PRIVATE KEY"
 #define PEM_STRING_PKCS7	"PKCS7"
 #define PEM_STRING_PKCS7_SIGNED	"PKCS #7 SIGNED DATA"
 #define PEM_STRING_PKCS8	"ENCRYPTED PRIVATE KEY"

@@ -100,7 +100,7 @@ typedef struct stack_st {
   void **data;
   /* sorted is non-zero if the values pointed to by |data| are in ascending
    * order, based on |comp|. */
-  size_t sorted;
+  int sorted;
   /* num_alloc contains the number of pointers allocated in the buffer pointed
    * to by |data|, which may be larger than |num|. */
   size_t num_alloc;
@@ -129,6 +129,7 @@ typedef struct stack_st {
  * STACK_OF:BY_DIR_ENTRY
  * STACK_OF:BY_DIR_HASH
  * STACK_OF:CONF_VALUE
+ * STACK_OF:CRYPTO_BUFFER
  * STACK_OF:CRYPTO_EX_DATA_FUNCS
  * STACK_OF:DIST_POINT
  * STACK_OF:GENERAL_NAME
@@ -180,14 +181,12 @@ typedef struct stack_st {
 typedef char *OPENSSL_STRING;
 
 DEFINE_SPECIAL_STACK_OF(OPENSSL_STRING, char)
-DEFINE_SPECIAL_STACK_OF(OPENSSL_BLOCK, uint8_t)
 
 /* The make_macros.sh script in this directory parses the following lines and
  * generates the stack_macros.h file that contains macros for the following
  * types of stacks:
  *
- * SPECIAL_STACK_OF:OPENSSL_STRING
- * SPECIAL_STACK_OF:OPENSSL_BLOCK */
+ * SPECIAL_STACK_OF:OPENSSL_STRING */
 
 #define IN_STACK_H
 #include <openssl/stack_macros.h>

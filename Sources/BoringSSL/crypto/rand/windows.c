@@ -14,12 +14,12 @@
 
 #include <openssl/rand.h>
 
-#if defined(OPENSSL_WINDOWS)
+#if defined(OPENSSL_WINDOWS) && !defined(BORINGSSL_UNSAFE_DETERMINISTIC_MODE)
 
 #include <limits.h>
 #include <stdlib.h>
 
-#pragma warning(push, 3)
+OPENSSL_MSVC_PRAGMA(warning(push, 3))
 
 #include <windows.h>
 
@@ -30,19 +30,16 @@
 #include <ntsecapi.h>
 #undef SystemFunction036
 
-#pragma warning(pop)
+OPENSSL_MSVC_PRAGMA(warning(pop))
 
 #include "internal.h"
 
-
-void RAND_cleanup(void) {
-}
 
 void CRYPTO_sysrand(uint8_t *out, size_t requested) {
   while (requested > 0) {
     ULONG output_bytes_this_pass = ULONG_MAX;
     if (requested < output_bytes_this_pass) {
-      output_bytes_this_pass = requested;
+      output_bytes_this_pass = (ULONG)requested;
     }
     if (RtlGenRandom(out, output_bytes_this_pass) == FALSE) {
       abort();
@@ -53,4 +50,4 @@ void CRYPTO_sysrand(uint8_t *out, size_t requested) {
   return;
 }
 
-#endif  /* OPENSSL_WINDOWS */
+#endif  /* OPENSSL_WINDOWS && !BORINGSSL_UNSAFE_DETERMINISTIC_MODE */

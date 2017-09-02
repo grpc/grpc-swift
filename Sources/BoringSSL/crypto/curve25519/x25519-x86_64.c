@@ -1,7 +1,29 @@
+/* Copyright (c) 2015, Google Inc.
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+ * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
+ * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+ * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
+
+/* This code is mostly taken from the ref10 version of Ed25519 in SUPERCOP
+ * 20141124 (http://bench.cr.yp.to/supercop.html). That code is released as
+ * public domain but this file has the ISC license just to keep licencing
+ * simple.
+ *
+ * The field functions are shared by Ed25519 and X25519 where possible. */
+
 #include <openssl/curve25519.h>
 
 #include <string.h>
 
+#include "../internal.h"
 #include "internal.h"
 
 
@@ -207,7 +229,7 @@ static void mladder(fe25519 *xr, fe25519 *zr, const uint8_t s[32]) {
 void x25519_x86_64(uint8_t out[32], const uint8_t scalar[32],
                   const uint8_t point[32]) {
   uint8_t e[32];
-  memcpy(e, scalar, sizeof(e));
+  OPENSSL_memcpy(e, scalar, sizeof(e));
 
   e[0] &= 248;
   e[31] &= 127;

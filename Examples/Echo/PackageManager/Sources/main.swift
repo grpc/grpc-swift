@@ -83,6 +83,8 @@ if server {
 }
 
 if client != "" {
+  do {
+
   print("Starting client")
 
   var service : Echo_EchoService
@@ -174,6 +176,10 @@ if client != "" {
 
     // Wait for the call to complete.
     latch.wait()
+  }
+
+  } catch let error {
+    print("error:\(error)")
   }
 }
 

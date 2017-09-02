@@ -65,7 +65,6 @@
 #include <openssl/mem.h>
 #include <openssl/thread.h>
 
-#include "internal.h"
 #include "../internal.h"
 
 
@@ -80,7 +79,7 @@ DH *DH_new(void) {
     return NULL;
   }
 
-  memset(dh, 0, sizeof(DH));
+  OPENSSL_memset(dh, 0, sizeof(DH));
 
   CRYPTO_MUTEX_init(&dh->method_mont_p_lock);
 
@@ -113,6 +112,29 @@ void DH_free(DH *dh) {
   CRYPTO_MUTEX_cleanup(&dh->method_mont_p_lock);
 
   OPENSSL_free(dh);
+}
+
+void DH_get0_key(const DH *dh, const BIGNUM **out_pub_key,
+                 const BIGNUM **out_priv_key) {
+  if (out_pub_key != NULL) {
+    *out_pub_key = dh->pub_key;
+  }
+  if (out_priv_key != NULL) {
+    *out_priv_key = dh->priv_key;
+  }
+}
+
+void DH_get0_pqg(const DH *dh, const BIGNUM **out_p, const BIGNUM **out_q,
+                 const BIGNUM **out_g) {
+  if (out_p != NULL) {
+    *out_p = dh->p;
+  }
+  if (out_q != NULL) {
+    *out_q = dh->q;
+  }
+  if (out_g != NULL) {
+    *out_g = dh->g;
+  }
 }
 
 int DH_generate_parameters_ex(DH *dh, int prime_bits, int generator, BN_GENCB *cb) {
@@ -234,11 +256,8 @@ err:
 int DH_generate_key(DH *dh) {
   int ok = 0;
   int generate_new_key = 0;
-  unsigned l;
   BN_CTX *ctx = NULL;
-  BN_MONT_CTX *mont = NULL;
   BIGNUM *pub_key = NULL, *priv_key = NULL;
-  BIGNUM local_priv;
 
   if (BN_num_bits(dh->p) > OPENSSL_DH_MAX_MODULUS_BITS) {
     OPENSSL_PUT_ERROR(DH, DH_R_MODULUS_TOO_LARGE);
@@ -269,31 +288,36 @@ int DH_generate_key(DH *dh) {
     pub_key = dh->pub_key;
   }
 
-  mont = BN_MONT_CTX_set_locked(&dh->method_mont_p, &dh->method_mont_p_lock,
-                                dh->p, ctx);
-  if (!mont) {
+  if (!BN_MONT_CTX_set_locked(&dh->method_mont_p, &dh->method_mont_p_lock,
+                              dh->p, ctx)) {
     goto err;
   }
 
   if (generate_new_key) {
     if (dh->q) {
-      do {
-        if (!BN_rand_range(priv_key, dh->q)) {
-          goto err;
-        }
-      } while (BN_is_zero(priv_key) || BN_is_one(priv_key));
+      if (!BN_rand_range_ex(priv_key, 2, dh->q)) {
+        goto err;
+      }
     } else {
       /* secret exponent length */
-      DH_check_standard_parameters(dh);
-      l = dh->priv_length ? dh->priv_length : BN_num_bits(dh->p) - 1;
-      if (!BN_rand(priv_key, l, 0, 0)) {
+      unsigned priv_bits = dh->priv_length;
+      if (priv_bits == 0) {
+        const unsigned p_bits = BN_num_bits(dh->p);
+        if (p_bits == 0) {
+          goto err;
+        }
+
+        priv_bits = p_bits - 1;
+      }
+
+      if (!BN_rand(priv_key, priv_bits, BN_RAND_TOP_ONE, BN_RAND_BOTTOM_ANY)) {
         goto err;
       }
     }
   }
 
-  BN_with_flags(&local_priv, priv_key, BN_FLG_CONSTTIME);
-  if (!BN_mod_exp_mont(pub_key, dh->g, &local_priv, dh->p, ctx, mont)) {
+  if (!BN_mod_exp_mont_consttime(pub_key, dh->g, priv_key, dh->p, ctx,
+                                 dh->method_mont_p)) {
     goto err;
   }
 
@@ -318,11 +342,9 @@ err:
 
 int DH_compute_key(unsigned char *out, const BIGNUM *peers_key, DH *dh) {
   BN_CTX *ctx = NULL;
-  BN_MONT_CTX *mont = NULL;
   BIGNUM *shared_key;
   int ret = -1;
   int check_result;
-  BIGNUM local_priv;
 
   if (BN_num_bits(dh->p) > OPENSSL_DH_MAX_MODULUS_BITS) {
     OPENSSL_PUT_ERROR(DH, DH_R_MODULUS_TOO_LARGE);
@@ -344,9 +366,8 @@ int DH_compute_key(unsigned char *out, const BIGNUM *peers_key, DH *dh) {
     goto err;
   }
 
-  mont = BN_MONT_CTX_set_locked(&dh->method_mont_p, &dh->method_mont_p_lock,
-                                dh->p, ctx);
-  if (!mont) {
+  if (!BN_MONT_CTX_set_locked(&dh->method_mont_p, &dh->method_mont_p_lock,
+                              dh->p, ctx)) {
     goto err;
   }
 
@@ -355,9 +376,8 @@ int DH_compute_key(unsigned char *out, const BIGNUM *peers_key, DH *dh) {
     goto err;
   }
 
-  BN_with_flags(&local_priv, dh->priv_key, BN_FLG_CONSTTIME);
-  if (!BN_mod_exp_mont(shared_key, peers_key, &local_priv, dh->p, ctx,
-                       mont)) {
+  if (!BN_mod_exp_mont_consttime(shared_key, peers_key, dh->priv_key, dh->p,
+                                 ctx, dh->method_mont_p)) {
     OPENSSL_PUT_ERROR(DH, ERR_R_BN_LIB);
     goto err;
   }

@@ -56,10 +56,14 @@
 
 #include <openssl/asn1.h>
 
+#include <limits.h>
 #include <string.h>
 
 #include <openssl/asn1t.h>
 #include <openssl/mem.h>
+
+#include "../internal.h"
+
 
 static int asn1_i2d_ex_primitive(ASN1_VALUE **pval, unsigned char **out,
                                  const ASN1_ITEM *it, int tag, int aclass);
@@ -213,17 +217,19 @@ int ASN1_item_ex_i2d(ASN1_VALUE **pval, unsigned char **out,
         for (i = 0, tt = it->templates; i < it->tcount; tt++, i++) {
             const ASN1_TEMPLATE *seqtt;
             ASN1_VALUE **pseqval;
+            int tmplen;
             seqtt = asn1_do_adb(pval, tt, 1);
             if (!seqtt)
                 return 0;
             pseqval = asn1_get_field_ptr(pval, seqtt);
-            /* FIXME: check for errors in enhanced version */
-            seqcontlen += asn1_template_ex_i2d(pseqval, NULL, seqtt,
-                                               -1, aclass);
+            tmplen = asn1_template_ex_i2d(pseqval, NULL, seqtt, -1, aclass);
+            if (tmplen == -1 || (tmplen > INT_MAX - seqcontlen))
+                return -1;
+            seqcontlen += tmplen;
         }
 
         seqlen = ASN1_object_size(ndef, seqcontlen, tag);
-        if (!out)
+        if (!out || seqlen == -1)
             return seqlen;
         /* Output SEQUENCE header */
         ASN1_put_object(out, ndef, seqcontlen, tag, aclass);
@@ -337,19 +343,24 @@ static int asn1_template_ex_i2d(ASN1_VALUE **pval, unsigned char **out,
         /* Determine total length of items */
         skcontlen = 0;
         for (j = 0; j < sk_ASN1_VALUE_num(sk); j++) {
+            int tmplen;
             skitem = sk_ASN1_VALUE_value(sk, j);
-            skcontlen += ASN1_item_ex_i2d(&skitem, NULL,
-                                          ASN1_ITEM_ptr(tt->item),
-                                          -1, iclass);
+            tmplen = ASN1_item_ex_i2d(&skitem, NULL, ASN1_ITEM_ptr(tt->item),
+                                      -1, iclass);
+            if (tmplen == -1 || (skcontlen > INT_MAX - tmplen))
+                return -1;
+            skcontlen += tmplen;
         }
         sklen = ASN1_object_size(ndef, skcontlen, sktag);
+        if (sklen == -1)
+            return -1;
         /* If EXPLICIT need length of surrounding tag */
         if (flags & ASN1_TFLG_EXPTAG)
             ret = ASN1_object_size(ndef, sklen, ttag);
         else
             ret = sklen;
 
-        if (!out)
+        if (!out || ret == -1)
             return ret;
 
         /* Now encode this lot... */
@@ -378,7 +389,7 @@ static int asn1_template_ex_i2d(ASN1_VALUE **pval, unsigned char **out,
             return 0;
         /* Find length of EXPLICIT tag */
         ret = ASN1_object_size(ndef, i, ttag);
-        if (out) {
+        if (out && ret != -1) {
             /* Output tag and item */
             ASN1_put_object(out, ndef, i, ttag, tclass);
             ASN1_item_ex_i2d(pval, out, ASN1_ITEM_ptr(tt->item), -1, iclass);
@@ -407,7 +418,7 @@ static int der_cmp(const void *a, const void *b)
     const DER_ENC *d1 = a, *d2 = b;
     int cmplen, i;
     cmplen = (d1->length < d2->length) ? d1->length : d2->length;
-    i = memcmp(d1->data, d2->data, cmplen);
+    i = OPENSSL_memcmp(d1->data, d2->data, cmplen);
     if (i)
         return i;
     return d1->length - d2->length;
@@ -462,7 +473,7 @@ static int asn1_set_seq_out(STACK_OF(ASN1_VALUE) *sk, unsigned char **out,
     /* Output sorted DER encoding */
     p = *out;
     for (i = 0, tder = derlst; i < sk_ASN1_VALUE_num(sk); i++, tder++) {
-        memcpy(p, tder->data, tder->length);
+        OPENSSL_memcpy(p, tder->data, tder->length);
         p += tder->length;
     }
     *out = p;
@@ -609,9 +620,7 @@ int asn1_ex_i2c(ASN1_VALUE **pval, unsigned char *cout, int *putype,
         break;
 
     case V_ASN1_INTEGER:
-    case V_ASN1_NEG_INTEGER:
     case V_ASN1_ENUMERATED:
-    case V_ASN1_NEG_ENUMERATED:
         /*
          * These are all have the same content format as ASN1_INTEGER
          */
@@ -654,6 +663,6 @@ int asn1_ex_i2c(ASN1_VALUE **pval, unsigned char *cout, int *putype,
 
     }
     if (cout && len)
-        memcpy(cout, cont, len);
+        OPENSSL_memcpy(cout, cont, len);
     return len;
 }

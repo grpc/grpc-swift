@@ -115,11 +115,25 @@
 #include <openssl/rand.h>
 #include <openssl/sha.h>
 
+#include "../internal.h"
+
+
 int BN_rand(BIGNUM *rnd, int bits, int top, int bottom) {
   uint8_t *buf = NULL;
   int ret = 0, bit, bytes, mask;
 
   if (rnd == NULL) {
+    return 0;
+  }
+
+  if (top != BN_RAND_TOP_ANY && top != BN_RAND_TOP_ONE &&
+      top != BN_RAND_TOP_TWO) {
+    OPENSSL_PUT_ERROR(BN, ERR_R_SHOULD_NOT_HAVE_BEEN_CALLED);
+    return 0;
+  }
+
+  if (bottom != BN_RAND_BOTTOM_ANY && bottom != BN_RAND_BOTTOM_ODD) {
+    OPENSSL_PUT_ERROR(BN, ERR_R_SHOULD_NOT_HAVE_BEEN_CALLED);
     return 0;
   }
 
@@ -143,8 +157,8 @@ int BN_rand(BIGNUM *rnd, int bits, int top, int bottom) {
     goto err;
   }
 
-  if (top != -1) {
-    if (top && bits > 1) {
+  if (top != BN_RAND_TOP_ANY) {
+    if (top == BN_RAND_TOP_TWO && bits > 1) {
       if (bit == 0) {
         buf[0] = 1;
         buf[1] |= 0x80;
@@ -158,8 +172,8 @@ int BN_rand(BIGNUM *rnd, int bits, int top, int bottom) {
 
   buf[0] &= ~mask;
 
-  /* set bottom bit if requested */
-  if (bottom)  {
+  /* Set the bottom bit if requested, */
+  if (bottom == BN_RAND_BOTTOM_ODD)  {
     buf[bytes - 1] |= 1;
   }
 
@@ -181,63 +195,66 @@ int BN_pseudo_rand(BIGNUM *rnd, int bits, int top, int bottom) {
   return BN_rand(rnd, bits, top, bottom);
 }
 
-int BN_rand_range(BIGNUM *r, const BIGNUM *range) {
+int BN_rand_range_ex(BIGNUM *r, BN_ULONG min_inclusive,
+                     const BIGNUM *max_exclusive) {
   unsigned n;
   unsigned count = 100;
 
-  if (range->neg || BN_is_zero(range)) {
+  if (BN_cmp_word(max_exclusive, min_inclusive) <= 0) {
     OPENSSL_PUT_ERROR(BN, BN_R_INVALID_RANGE);
     return 0;
   }
 
-  n = BN_num_bits(range); /* n > 0 */
+  n = BN_num_bits(max_exclusive); /* n > 0 */
 
   /* BN_is_bit_set(range, n - 1) always holds */
   if (n == 1) {
     BN_zero(r);
-  } else if (!BN_is_bit_set(range, n - 2) && !BN_is_bit_set(range, n - 3)) {
-    /* range = 100..._2,
-     * so  3*range (= 11..._2)  is exactly one bit longer than  range */
-    do {
-      if (!BN_rand(r, n + 1, -1 /* don't set most significant bits */,
-                   0 /* don't set least significant bits */)) {
+    return 1;
+  }
+
+  do {
+    if (!--count) {
+      OPENSSL_PUT_ERROR(BN, BN_R_TOO_MANY_ITERATIONS);
+      return 0;
+    }
+
+    if (!BN_is_bit_set(max_exclusive, n - 2) &&
+        !BN_is_bit_set(max_exclusive, n - 3)) {
+      /* range = 100..._2, so 3*range (= 11..._2) is exactly one bit longer
+       * than range. This is a common scenario when generating a random value
+       * modulo an RSA public modulus, e.g. for RSA base blinding. */
+      if (!BN_rand(r, n + 1, BN_RAND_TOP_ANY, BN_RAND_BOTTOM_ANY)) {
         return 0;
       }
 
       /* If r < 3*range, use r := r MOD range (which is either r, r - range, or
        * r - 2*range). Otherwise, iterate again. Since 3*range = 11..._2, each
        * iteration succeeds with probability >= .75. */
-      if (BN_cmp(r, range) >= 0) {
-        if (!BN_sub(r, r, range)) {
+      if (BN_cmp(r, max_exclusive) >= 0) {
+        if (!BN_sub(r, r, max_exclusive)) {
           return 0;
         }
-        if (BN_cmp(r, range) >= 0) {
-          if (!BN_sub(r, r, range)) {
+        if (BN_cmp(r, max_exclusive) >= 0) {
+          if (!BN_sub(r, r, max_exclusive)) {
             return 0;
           }
         }
       }
-
-      if (!--count) {
-        OPENSSL_PUT_ERROR(BN, BN_R_TOO_MANY_ITERATIONS);
-        return 0;
-      }
-    } while (BN_cmp(r, range) >= 0);
-  } else {
-    do {
+    } else {
       /* range = 11..._2  or  range = 101..._2 */
-      if (!BN_rand(r, n, -1, 0)) {
+      if (!BN_rand(r, n, BN_RAND_TOP_ANY, BN_RAND_BOTTOM_ANY)) {
         return 0;
       }
-
-      if (!--count) {
-        OPENSSL_PUT_ERROR(BN, BN_R_TOO_MANY_ITERATIONS);
-        return 0;
-      }
-    } while (BN_cmp(r, range) >= 0);
-  }
+    }
+  } while (BN_cmp_word(r, min_inclusive) < 0 ||
+           BN_cmp(r, max_exclusive) >= 0);
 
   return 1;
+}
+
+int BN_rand_range(BIGNUM *r, const BIGNUM *range) {
+  return BN_rand_range_ex(r, 0, range);
 }
 
 int BN_pseudo_rand_range(BIGNUM *r, const BIGNUM *range) {
@@ -284,8 +301,8 @@ int BN_generate_dsa_nonce(BIGNUM *out, const BIGNUM *range, const BIGNUM *priv,
     OPENSSL_PUT_ERROR(BN, BN_R_PRIVATE_KEY_TOO_LARGE);
     goto err;
   }
-  memcpy(private_bytes, priv->d, todo);
-  memset(private_bytes + todo, 0, sizeof(private_bytes) - todo);
+  OPENSSL_memcpy(private_bytes, priv->d, todo);
+  OPENSSL_memset(private_bytes + todo, 0, sizeof(private_bytes) - todo);
 
   for (attempt = 0;; attempt++) {
     for (done = 0; done < num_k_bytes;) {
@@ -304,7 +321,7 @@ int BN_generate_dsa_nonce(BIGNUM *out, const BIGNUM *range, const BIGNUM *priv,
       if (todo > SHA512_DIGEST_LENGTH) {
         todo = SHA512_DIGEST_LENGTH;
       }
-      memcpy(k_bytes + done, digest, todo);
+      OPENSSL_memcpy(k_bytes + done, digest, todo);
       done += todo;
     }
 

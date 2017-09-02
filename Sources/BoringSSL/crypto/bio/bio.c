@@ -68,25 +68,6 @@
 #include "../internal.h"
 
 
-/* BIO_set initialises a BIO structure to have the given type and sets the
- * reference count to one. It returns one on success or zero on error. */
-static int bio_set(BIO *bio, const BIO_METHOD *method) {
-  /* This function can be called with a stack allocated |BIO| so we have to
-   * assume that the contents of |BIO| are arbitary. This also means that it'll
-   * leak memory if you call |BIO_set| twice on the same BIO. */
-  memset(bio, 0, sizeof(BIO));
-
-  bio->method = method;
-  bio->shutdown = 1;
-  bio->references = 1;
-
-  if (method->create != NULL && !method->create(bio)) {
-    return 0;
-  }
-
-  return 1;
-}
-
 BIO *BIO_new(const BIO_METHOD *method) {
   BIO *ret = OPENSSL_malloc(sizeof(BIO));
   if (ret == NULL) {
@@ -94,9 +75,14 @@ BIO *BIO_new(const BIO_METHOD *method) {
     return NULL;
   }
 
-  if (!bio_set(ret, method)) {
+  OPENSSL_memset(ret, 0, sizeof(BIO));
+  ret->method = method;
+  ret->shutdown = 1;
+  ret->references = 1;
+
+  if (method->create != NULL && !method->create(ret)) {
     OPENSSL_free(ret);
-    ret = NULL;
+    return NULL;
   }
 
   return ret;
@@ -128,9 +114,9 @@ int BIO_free(BIO *bio) {
   return 1;
 }
 
-BIO *BIO_up_ref(BIO *bio) {
+int BIO_up_ref(BIO *bio) {
   CRYPTO_refcount_inc(&bio->references);
-  return bio;
+  return 1;
 }
 
 void BIO_vfree(BIO *bio) {
@@ -257,6 +243,10 @@ int BIO_reset(BIO *bio) {
   return BIO_ctrl(bio, BIO_CTRL_RESET, 0, NULL);
 }
 
+int BIO_eof(BIO *bio) {
+  return BIO_ctrl(bio, BIO_CTRL_EOF, 0, NULL);
+}
+
 void BIO_set_flags(BIO *bio, int flags) {
   bio->flags |= flags;
 }
@@ -346,7 +336,13 @@ long BIO_callback_ctrl(BIO *bio, int cmd, bio_info_cb fp) {
 }
 
 size_t BIO_pending(const BIO *bio) {
-  return BIO_ctrl((BIO *) bio, BIO_CTRL_PENDING, 0, NULL);
+  const long r = BIO_ctrl((BIO *) bio, BIO_CTRL_PENDING, 0, NULL);
+  assert(r >= 0);
+
+  if (r < 0) {
+    return 0;
+  }
+  return r;
 }
 
 size_t BIO_ctrl_pending(const BIO *bio) {
@@ -354,7 +350,13 @@ size_t BIO_ctrl_pending(const BIO *bio) {
 }
 
 size_t BIO_wpending(const BIO *bio) {
-  return BIO_ctrl((BIO *) bio, BIO_CTRL_WPENDING, 0, NULL);
+  const long r = BIO_ctrl((BIO *) bio, BIO_CTRL_WPENDING, 0, NULL);
+  assert(r >= 0);
+
+  if (r < 0) {
+    return 0;
+  }
+  return r;
 }
 
 int BIO_set_close(BIO *bio, int close_flag) {
@@ -458,12 +460,8 @@ static int print_bio(const char *str, size_t len, void *bio) {
   return BIO_write((BIO *)bio, str, len);
 }
 
-void BIO_print_errors(BIO *bio) {
-  ERR_print_errors_cb(print_bio, bio);
-}
-
 void ERR_print_errors(BIO *bio) {
-  BIO_print_errors(bio);
+  ERR_print_errors_cb(print_bio, bio);
 }
 
 /* bio_read_all reads everything from |bio| and prepends |prefix| to it. On
@@ -490,7 +488,7 @@ static int bio_read_all(BIO *bio, uint8_t **out, size_t *out_len,
   if (*out == NULL) {
     return 0;
   }
-  memcpy(*out, prefix, prefix_len);
+  OPENSSL_memcpy(*out, prefix, prefix_len);
   size_t done = prefix_len;
 
   for (;;) {
@@ -597,7 +595,7 @@ int BIO_read_asn1(BIO *bio, uint8_t **out, size_t *out_len, size_t max_len) {
   if (*out == NULL) {
     return 0;
   }
-  memcpy(*out, header, header_len);
+  OPENSSL_memcpy(*out, header, header_len);
   if (BIO_read(bio, (*out) + header_len, len - header_len) !=
       (int) (len - header_len)) {
     OPENSSL_free(*out);
@@ -606,3 +604,9 @@ int BIO_read_asn1(BIO *bio, uint8_t **out, size_t *out_len, size_t max_len) {
 
   return 1;
 }
+
+void BIO_set_retry_special(BIO *bio) {
+  bio->flags |= BIO_FLAGS_READ | BIO_FLAGS_IO_SPECIAL;
+}
+
+int BIO_set_write_buffer_size(BIO *bio, int buffer_size) { return 0; }

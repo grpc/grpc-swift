@@ -83,11 +83,22 @@
 
 #include <openssl/ssl.h>
 
+#include <assert.h>
+
 #include "internal.h"
 
 
+static int ssl_state(const SSL *ssl) {
+  if (ssl->s3->hs == NULL) {
+    assert(ssl->s3->initial_handshake_complete);
+    return SSL_ST_OK;
+  }
+
+  return ssl->s3->hs->state;
+}
+
 const char *SSL_state_string_long(const SSL *ssl) {
-  switch (ssl->state) {
+  switch (ssl_state(ssl)) {
     case SSL_ST_ACCEPT:
       return "before accept initialization";
 
@@ -104,62 +115,29 @@ const char *SSL_state_string_long(const SSL *ssl) {
     case SSL3_ST_CW_CLNT_HELLO_A:
       return "SSLv3 write client hello A";
 
-    case SSL3_ST_CW_CLNT_HELLO_B:
-      return "SSLv3 write client hello B";
-
     case SSL3_ST_CR_SRVR_HELLO_A:
       return "SSLv3 read server hello A";
-
-    case SSL3_ST_CR_SRVR_HELLO_B:
-      return "SSLv3 read server hello B";
 
     case SSL3_ST_CR_CERT_A:
       return "SSLv3 read server certificate A";
 
-    case SSL3_ST_CR_CERT_B:
-      return "SSLv3 read server certificate B";
-
     case SSL3_ST_CR_KEY_EXCH_A:
       return "SSLv3 read server key exchange A";
-
-    case SSL3_ST_CR_KEY_EXCH_B:
-      return "SSLv3 read server key exchange B";
 
     case SSL3_ST_CR_CERT_REQ_A:
       return "SSLv3 read server certificate request A";
 
-    case SSL3_ST_CR_CERT_REQ_B:
-      return "SSLv3 read server certificate request B";
-
     case SSL3_ST_CR_SESSION_TICKET_A:
       return "SSLv3 read server session ticket A";
-
-    case SSL3_ST_CR_SESSION_TICKET_B:
-      return "SSLv3 read server session ticket B";
 
     case SSL3_ST_CR_SRVR_DONE_A:
       return "SSLv3 read server done A";
 
-    case SSL3_ST_CR_SRVR_DONE_B:
-      return "SSLv3 read server done B";
-
     case SSL3_ST_CW_CERT_A:
       return "SSLv3 write client certificate A";
 
-    case SSL3_ST_CW_CERT_B:
-      return "SSLv3 write client certificate B";
-
-    case SSL3_ST_CW_CERT_C:
-      return "SSLv3 write client certificate C";
-
-    case SSL3_ST_CW_CERT_D:
-      return "SSLv3 write client certificate D";
-
     case SSL3_ST_CW_KEY_EXCH_A:
       return "SSLv3 write client key exchange A";
-
-    case SSL3_ST_CW_KEY_EXCH_B:
-      return "SSLv3 write client key exchange B";
 
     case SSL3_ST_CW_CERT_VRFY_A:
       return "SSLv3 write certificate verify A";
@@ -167,21 +145,13 @@ const char *SSL_state_string_long(const SSL *ssl) {
     case SSL3_ST_CW_CERT_VRFY_B:
       return "SSLv3 write certificate verify B";
 
-    case SSL3_ST_CW_CHANGE_A:
-    case SSL3_ST_SW_CHANGE_A:
-      return "SSLv3 write change cipher spec A";
-
-    case SSL3_ST_CW_CHANGE_B:
-    case SSL3_ST_SW_CHANGE_B:
-      return "SSLv3 write change cipher spec B";
+    case SSL3_ST_CW_CHANGE:
+    case SSL3_ST_SW_CHANGE:
+      return "SSLv3 write change cipher spec";
 
     case SSL3_ST_CW_FINISHED_A:
     case SSL3_ST_SW_FINISHED_A:
       return "SSLv3 write finished A";
-
-    case SSL3_ST_CW_FINISHED_B:
-    case SSL3_ST_SW_FINISHED_B:
-      return "SSLv3 write finished B";
 
     case SSL3_ST_CR_CHANGE:
     case SSL3_ST_SR_CHANGE:
@@ -190,10 +160,6 @@ const char *SSL_state_string_long(const SSL *ssl) {
     case SSL3_ST_CR_FINISHED_A:
     case SSL3_ST_SR_FINISHED_A:
       return "SSLv3 read finished A";
-
-    case SSL3_ST_CR_FINISHED_B:
-    case SSL3_ST_SR_FINISHED_B:
-      return "SSLv3 read finished B";
 
     case SSL3_ST_CW_FLUSH:
     case SSL3_ST_SW_FLUSH:
@@ -208,59 +174,26 @@ const char *SSL_state_string_long(const SSL *ssl) {
     case SSL3_ST_SR_CLNT_HELLO_C:
       return "SSLv3 read client hello C";
 
-    case SSL3_ST_SR_CLNT_HELLO_D:
-      return "SSLv3 read client hello D";
-
-    case SSL3_ST_SW_HELLO_REQ_A:
-      return "SSLv3 write hello request A";
-
-    case SSL3_ST_SW_HELLO_REQ_B:
-      return "SSLv3 write hello request B";
-
-    case SSL3_ST_SW_HELLO_REQ_C:
-      return "SSLv3 write hello request C";
-
     case SSL3_ST_SW_SRVR_HELLO_A:
       return "SSLv3 write server hello A";
-
-    case SSL3_ST_SW_SRVR_HELLO_B:
-      return "SSLv3 write server hello B";
 
     case SSL3_ST_SW_CERT_A:
       return "SSLv3 write certificate A";
 
-    case SSL3_ST_SW_CERT_B:
-      return "SSLv3 write certificate B";
-
     case SSL3_ST_SW_KEY_EXCH_A:
       return "SSLv3 write key exchange A";
-
-    case SSL3_ST_SW_KEY_EXCH_B:
-      return "SSLv3 write key exchange B";
 
     case SSL3_ST_SW_CERT_REQ_A:
       return "SSLv3 write certificate request A";
 
-    case SSL3_ST_SW_CERT_REQ_B:
-      return "SSLv3 write certificate request B";
-
     case SSL3_ST_SW_SESSION_TICKET_A:
       return "SSLv3 write session ticket A";
-
-    case SSL3_ST_SW_SESSION_TICKET_B:
-      return "SSLv3 write session ticket B";
 
     case SSL3_ST_SW_SRVR_DONE_A:
       return "SSLv3 write server done A";
 
-    case SSL3_ST_SW_SRVR_DONE_B:
-      return "SSLv3 write server done B";
-
     case SSL3_ST_SR_CERT_A:
       return "SSLv3 read client certificate A";
-
-    case SSL3_ST_SR_CERT_B:
-      return "SSLv3 read client certificate B";
 
     case SSL3_ST_SR_KEY_EXCH_A:
       return "SSLv3 read client key exchange A";
@@ -271,15 +204,9 @@ const char *SSL_state_string_long(const SSL *ssl) {
     case SSL3_ST_SR_CERT_VRFY_A:
       return "SSLv3 read certificate verify A";
 
-    case SSL3_ST_SR_CERT_VRFY_B:
-      return "SSLv3 read certificate verify B";
-
     /* DTLS */
     case DTLS1_ST_CR_HELLO_VERIFY_REQUEST_A:
       return "DTLS1 read hello verify request A";
-
-    case DTLS1_ST_CR_HELLO_VERIFY_REQUEST_B:
-      return "DTLS1 read hello verify request B";
 
     default:
       return "unknown state";
@@ -287,7 +214,7 @@ const char *SSL_state_string_long(const SSL *ssl) {
 }
 
 const char *SSL_state_string(const SSL *ssl) {
-  switch (ssl->state) {
+  switch (ssl_state(ssl)) {
     case SSL_ST_ACCEPT:
       return "AINIT ";
 
@@ -305,56 +232,26 @@ const char *SSL_state_string(const SSL *ssl) {
     case SSL3_ST_CW_CLNT_HELLO_A:
       return "3WCH_A";
 
-    case SSL3_ST_CW_CLNT_HELLO_B:
-      return "3WCH_B";
-
     case SSL3_ST_CR_SRVR_HELLO_A:
       return "3RSH_A";
-
-    case SSL3_ST_CR_SRVR_HELLO_B:
-      return "3RSH_B";
 
     case SSL3_ST_CR_CERT_A:
       return "3RSC_A";
 
-    case SSL3_ST_CR_CERT_B:
-      return "3RSC_B";
-
     case SSL3_ST_CR_KEY_EXCH_A:
       return "3RSKEA";
-
-    case SSL3_ST_CR_KEY_EXCH_B:
-      return "3RSKEB";
 
     case SSL3_ST_CR_CERT_REQ_A:
       return "3RCR_A";
 
-    case SSL3_ST_CR_CERT_REQ_B:
-      return "3RCR_B";
-
     case SSL3_ST_CR_SRVR_DONE_A:
       return "3RSD_A";
-
-    case SSL3_ST_CR_SRVR_DONE_B:
-      return "3RSD_B";
 
     case SSL3_ST_CW_CERT_A:
       return "3WCC_A";
 
-    case SSL3_ST_CW_CERT_B:
-      return "3WCC_B";
-
-    case SSL3_ST_CW_CERT_C:
-      return "3WCC_C";
-
-    case SSL3_ST_CW_CERT_D:
-      return "3WCC_D";
-
     case SSL3_ST_CW_KEY_EXCH_A:
       return "3WCKEA";
-
-    case SSL3_ST_CW_KEY_EXCH_B:
-      return "3WCKEB";
 
     case SSL3_ST_CW_CERT_VRFY_A:
       return "3WCV_A";
@@ -362,21 +259,13 @@ const char *SSL_state_string(const SSL *ssl) {
     case SSL3_ST_CW_CERT_VRFY_B:
       return "3WCV_B";
 
-    case SSL3_ST_SW_CHANGE_A:
-    case SSL3_ST_CW_CHANGE_A:
-      return "3WCCSA";
-
-    case SSL3_ST_SW_CHANGE_B:
-    case SSL3_ST_CW_CHANGE_B:
-      return "3WCCSB";
+    case SSL3_ST_SW_CHANGE:
+    case SSL3_ST_CW_CHANGE:
+      return "3WCCS_";
 
     case SSL3_ST_SW_FINISHED_A:
     case SSL3_ST_CW_FINISHED_A:
       return "3WFINA";
-
-    case SSL3_ST_SW_FINISHED_B:
-    case SSL3_ST_CW_FINISHED_B:
-      return "3WFINB";
 
     case SSL3_ST_CR_CHANGE:
     case SSL3_ST_SR_CHANGE:
@@ -385,19 +274,6 @@ const char *SSL_state_string(const SSL *ssl) {
     case SSL3_ST_SR_FINISHED_A:
     case SSL3_ST_CR_FINISHED_A:
       return "3RFINA";
-
-    case SSL3_ST_SR_FINISHED_B:
-    case SSL3_ST_CR_FINISHED_B:
-      return "3RFINB";
-
-    case SSL3_ST_SW_HELLO_REQ_A:
-      return "3WHR_A";
-
-    case SSL3_ST_SW_HELLO_REQ_B:
-      return "3WHR_B";
-
-    case SSL3_ST_SW_HELLO_REQ_C:
-      return "3WHR_C";
 
     case SSL3_ST_SR_CLNT_HELLO_A:
       return "3RCH_A";
@@ -408,20 +284,11 @@ const char *SSL_state_string(const SSL *ssl) {
     case SSL3_ST_SR_CLNT_HELLO_C:
       return "3RCH_C";
 
-    case SSL3_ST_SR_CLNT_HELLO_D:
-      return "3RCH_D";
-
     case SSL3_ST_SW_SRVR_HELLO_A:
       return "3WSH_A";
 
-    case SSL3_ST_SW_SRVR_HELLO_B:
-      return "3WSH_B";
-
     case SSL3_ST_SW_CERT_A:
       return "3WSC_A";
-
-    case SSL3_ST_SW_CERT_B:
-      return "3WSC_B";
 
     case SSL3_ST_SW_KEY_EXCH_A:
       return "3WSKEA";
@@ -432,39 +299,21 @@ const char *SSL_state_string(const SSL *ssl) {
     case SSL3_ST_SW_CERT_REQ_A:
       return "3WCR_A";
 
-    case SSL3_ST_SW_CERT_REQ_B:
-      return "3WCR_B";
-
     case SSL3_ST_SW_SRVR_DONE_A:
       return "3WSD_A";
-
-    case SSL3_ST_SW_SRVR_DONE_B:
-      return "3WSD_B";
 
     case SSL3_ST_SR_CERT_A:
       return "3RCC_A";
 
-    case SSL3_ST_SR_CERT_B:
-      return "3RCC_B";
-
     case SSL3_ST_SR_KEY_EXCH_A:
       return "3RCKEA";
-
-    case SSL3_ST_SR_KEY_EXCH_B:
-      return "3RCKEB";
 
     case SSL3_ST_SR_CERT_VRFY_A:
       return "3RCV_A";
 
-    case SSL3_ST_SR_CERT_VRFY_B:
-      return "3RCV_B";
-
     /* DTLS */
     case DTLS1_ST_CR_HELLO_VERIFY_REQUEST_A:
       return "DRCHVA";
-
-    case DTLS1_ST_CR_HELLO_VERIFY_REQUEST_B:
-      return "DRCHVB";
 
     default:
       return "UNKWN ";
@@ -558,6 +407,9 @@ const char *SSL_alert_desc_string_long(int value) {
     case TLS1_AD_INTERNAL_ERROR:
       return "internal error";
 
+    case SSL3_AD_INAPPROPRIATE_FALLBACK:
+      return "inappropriate fallback";
+
     case TLS1_AD_USER_CANCELLED:
       return "user canceled";
 
@@ -582,8 +434,8 @@ const char *SSL_alert_desc_string_long(int value) {
     case TLS1_AD_UNKNOWN_PSK_IDENTITY:
       return "unknown PSK identity";
 
-    case SSL3_AD_INAPPROPRIATE_FALLBACK:
-      return "inappropriate fallback";
+    case TLS1_AD_CERTIFICATE_REQUIRED:
+      return "certificate required";
 
     default:
       return "unknown";

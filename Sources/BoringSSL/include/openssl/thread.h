@@ -67,14 +67,15 @@ extern "C" {
 
 
 #if defined(OPENSSL_NO_THREADS)
-typedef struct crypto_mutex_st {} CRYPTO_MUTEX;
+typedef struct crypto_mutex_st {
+  char padding;  /* Empty structs have different sizes in C and C++. */
+} CRYPTO_MUTEX;
 #elif defined(OPENSSL_WINDOWS)
 /* CRYPTO_MUTEX can appear in public header files so we really don't want to
  * pull in windows.h. It's statically asserted that this structure is large
- * enough to contain a Windows CRITICAL_SECTION by thread_win.c. */
+ * enough to contain a Windows SRWLOCK by thread_win.c. */
 typedef union crypto_mutex_st {
-  double alignment;
-  uint8_t padding[4*sizeof(void*) + 2*sizeof(int)];
+  void *handle;
 } CRYPTO_MUTEX;
 #elif defined(__MACH__) && defined(__APPLE__)
 typedef pthread_rwlock_t CRYPTO_MUTEX;
@@ -100,7 +101,11 @@ typedef union crypto_mutex_st {
 typedef uint32_t CRYPTO_refcount_t;
 
 
-/* Deprecated functions */
+/* Deprecated functions.
+ *
+ * Historically, OpenSSL required callers to provide locking callbacks.
+ * BoringSSL is thread-safe by default, but some old code calls these functions
+ * and so no-op implementations are provided. */
 
 /* These defines do nothing but are provided to make old code easier to
  * compile. */
@@ -122,6 +127,11 @@ OPENSSL_EXPORT void CRYPTO_set_locking_callback(
 OPENSSL_EXPORT void CRYPTO_set_add_lock_callback(int (*func)(
     int *num, int amount, int lock_num, const char *file, int line));
 
+/* CRYPTO_get_locking_callback returns NULL. */
+OPENSSL_EXPORT void (*CRYPTO_get_locking_callback(void))(int mode, int lock_num,
+                                                         const char *file,
+                                                         int line);
+
 /* CRYPTO_get_lock_name returns a fixed, dummy string. */
 OPENSSL_EXPORT const char *CRYPTO_get_lock_name(int lock_num);
 
@@ -139,14 +149,7 @@ OPENSSL_EXPORT void CRYPTO_THREADID_set_pointer(CRYPTO_THREADID *id, void *ptr);
 /* CRYPTO_THREADID_current does nothing. */
 OPENSSL_EXPORT void CRYPTO_THREADID_current(CRYPTO_THREADID *id);
 
-
-/* Private functions.
- *
- * Some old code calls these functions and so no-op implementations are
- * provided.
- *
- * TODO(fork): cleanup callers and remove. */
-
+/* CRYPTO_set_id_callback does nothing. */
 OPENSSL_EXPORT void CRYPTO_set_id_callback(unsigned long (*func)(void));
 
 typedef struct {
@@ -154,16 +157,31 @@ typedef struct {
   struct CRYPTO_dynlock_value *data;
 } CRYPTO_dynlock;
 
+/* CRYPTO_set_dynlock_create_callback does nothing. */
 OPENSSL_EXPORT void CRYPTO_set_dynlock_create_callback(
     struct CRYPTO_dynlock_value *(*dyn_create_function)(const char *file,
                                                         int line));
 
+/* CRYPTO_set_dynlock_lock_callback does nothing. */
 OPENSSL_EXPORT void CRYPTO_set_dynlock_lock_callback(void (*dyn_lock_function)(
     int mode, struct CRYPTO_dynlock_value *l, const char *file, int line));
 
+/* CRYPTO_set_dynlock_destroy_callback does nothing. */
 OPENSSL_EXPORT void CRYPTO_set_dynlock_destroy_callback(
     void (*dyn_destroy_function)(struct CRYPTO_dynlock_value *l,
                                  const char *file, int line));
+
+/* CRYPTO_get_dynlock_create_callback returns NULL. */
+OPENSSL_EXPORT struct CRYPTO_dynlock_value *(
+    *CRYPTO_get_dynlock_create_callback(void))(const char *file, int line);
+
+/* CRYPTO_get_dynlock_lock_callback returns NULL. */
+OPENSSL_EXPORT void (*CRYPTO_get_dynlock_lock_callback(void))(
+    int mode, struct CRYPTO_dynlock_value *l, const char *file, int line);
+
+/* CRYPTO_get_dynlock_destroy_callback returns NULL. */
+OPENSSL_EXPORT void (*CRYPTO_get_dynlock_destroy_callback(void))(
+    struct CRYPTO_dynlock_value *l, const char *file, int line);
 
 
 #if defined(__cplusplus)

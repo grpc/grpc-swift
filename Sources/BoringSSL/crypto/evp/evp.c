@@ -59,12 +59,11 @@
 #include <assert.h>
 #include <string.h>
 
-#include <openssl/bio.h>
 #include <openssl/dsa.h>
 #include <openssl/ec.h>
 #include <openssl/err.h>
 #include <openssl/mem.h>
-#include <openssl/obj.h>
+#include <openssl/nid.h>
 #include <openssl/rsa.h>
 #include <openssl/thread.h>
 
@@ -81,7 +80,7 @@ EVP_PKEY *EVP_PKEY_new(void) {
     return NULL;
   }
 
-  memset(ret, 0, sizeof(EVP_PKEY));
+  OPENSSL_memset(ret, 0, sizeof(EVP_PKEY));
   ret->type = EVP_PKEY_NONE;
   ret->references = 1;
 
@@ -109,9 +108,9 @@ void EVP_PKEY_free(EVP_PKEY *pkey) {
   OPENSSL_free(pkey);
 }
 
-EVP_PKEY *EVP_PKEY_up_ref(EVP_PKEY *pkey) {
+int EVP_PKEY_up_ref(EVP_PKEY *pkey) {
   CRYPTO_refcount_inc(&pkey->references);
-  return pkey;
+  return 1;
 }
 
 int EVP_PKEY_is_opaque(const EVP_PKEY *pkey) {
@@ -195,8 +194,10 @@ int EVP_PKEY_id(const EVP_PKEY *pkey) {
   return pkey->type;
 }
 
-/* TODO(fork): remove the first argument. */
-const EVP_PKEY_ASN1_METHOD *EVP_PKEY_asn1_find(ENGINE **pengine, int nid) {
+/* evp_pkey_asn1_find returns the ASN.1 method table for the given |nid|, which
+ * should be one of the |EVP_PKEY_*| values. It returns NULL if |nid| is
+ * unknown. */
+static const EVP_PKEY_ASN1_METHOD *evp_pkey_asn1_find(int nid) {
   switch (nid) {
     case EVP_PKEY_RSA:
       return &rsa_asn1_meth;
@@ -210,7 +211,7 @@ const EVP_PKEY_ASN1_METHOD *EVP_PKEY_asn1_find(ENGINE **pengine, int nid) {
 }
 
 int EVP_PKEY_type(int nid) {
-  const EVP_PKEY_ASN1_METHOD *meth = EVP_PKEY_asn1_find(NULL, nid);
+  const EVP_PKEY_ASN1_METHOD *meth = evp_pkey_asn1_find(nid);
   if (meth == NULL) {
     return NID_undef;
   }
@@ -301,27 +302,14 @@ EC_KEY *EVP_PKEY_get1_EC_KEY(EVP_PKEY *pkey) {
   return ec_key;
 }
 
+DH *EVP_PKEY_get0_DH(EVP_PKEY *pkey) { return NULL; }
+
 int EVP_PKEY_assign(EVP_PKEY *pkey, int type, void *key) {
   if (!EVP_PKEY_set_type(pkey, type)) {
     return 0;
   }
   pkey->pkey.ptr = key;
   return key != NULL;
-}
-
-const EVP_PKEY_ASN1_METHOD *EVP_PKEY_asn1_find_str(ENGINE **pengine,
-                                                   const char *name,
-                                                   size_t len) {
-  if (len == 3 && memcmp(name, "RSA", 3) == 0) {
-    return &rsa_asn1_meth;
-  }
-  if (len == 2 && memcmp(name, "EC", 2) == 0) {
-    return &ec_asn1_meth;
-  }
-  if (len == 3 && memcmp(name, "DSA", 3) == 0) {
-    return &dsa_asn1_meth;
-  }
-  return NULL;
 }
 
 int EVP_PKEY_set_type(EVP_PKEY *pkey, int type) {
@@ -331,10 +319,10 @@ int EVP_PKEY_set_type(EVP_PKEY *pkey, int type) {
     free_it(pkey);
   }
 
-  ameth = EVP_PKEY_asn1_find(NULL, type);
+  ameth = evp_pkey_asn1_find(type);
   if (ameth == NULL) {
     OPENSSL_PUT_ERROR(EVP, EVP_R_UNSUPPORTED_ALGORITHM);
-    ERR_add_error_dataf("algorithm %d (%s)", type, OBJ_nid2sn(type));
+    ERR_add_error_dataf("algorithm %d", type);
     return 0;
   }
 
@@ -358,41 +346,6 @@ int EVP_PKEY_cmp_parameters(const EVP_PKEY *a, const EVP_PKEY *b) {
   return -2;
 }
 
-static int print_unsupported(BIO *out, const EVP_PKEY *pkey, int indent,
-                             const char *kstr) {
-  BIO_indent(out, indent, 128);
-  BIO_printf(out, "%s algorithm \"%s\" unsupported\n", kstr,
-             OBJ_nid2ln(pkey->type));
-  return 1;
-}
-
-int EVP_PKEY_print_public(BIO *out, const EVP_PKEY *pkey, int indent,
-                          ASN1_PCTX *pctx) {
-  if (pkey->ameth && pkey->ameth->pub_print) {
-    return pkey->ameth->pub_print(out, pkey, indent, pctx);
-  }
-
-  return print_unsupported(out, pkey, indent, "Public Key");
-}
-
-int EVP_PKEY_print_private(BIO *out, const EVP_PKEY *pkey, int indent,
-                           ASN1_PCTX *pctx) {
-  if (pkey->ameth && pkey->ameth->priv_print) {
-    return pkey->ameth->priv_print(out, pkey, indent, pctx);
-  }
-
-  return print_unsupported(out, pkey, indent, "Private Key");
-}
-
-int EVP_PKEY_print_params(BIO *out, const EVP_PKEY *pkey, int indent,
-                          ASN1_PCTX *pctx) {
-  if (pkey->ameth && pkey->ameth->param_print) {
-    return pkey->ameth->param_print(out, pkey, indent, pctx);
-  }
-
-  return print_unsupported(out, pkey, indent, "Parameters");
-}
-
 int EVP_PKEY_CTX_set_signature_md(EVP_PKEY_CTX *ctx, const EVP_MD *md) {
   return EVP_PKEY_CTX_ctrl(ctx, -1, EVP_PKEY_OP_TYPE_SIG, EVP_PKEY_CTRL_MD, 0,
                            (void *)md);
@@ -404,6 +357,8 @@ int EVP_PKEY_CTX_get_signature_md(EVP_PKEY_CTX *ctx, const EVP_MD **out_md) {
 }
 
 void OpenSSL_add_all_algorithms(void) {}
+
+void OPENSSL_add_all_algorithms_conf(void) {}
 
 void OpenSSL_add_all_ciphers(void) {}
 

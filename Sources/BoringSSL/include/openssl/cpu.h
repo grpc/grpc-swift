@@ -110,30 +110,23 @@ OPENSSL_EXPORT char CRYPTO_is_NEON_capable_at_runtime(void);
 /* CRYPTO_is_NEON_capable returns true if the current CPU has a NEON unit. If
  * this is known statically then it returns one immediately. */
 static inline int CRYPTO_is_NEON_capable(void) {
-#if defined(__ARM_NEON__)
+  /* Only statically skip the runtime lookup on aarch64. On arm, one CPU is
+   * known to have a broken NEON unit which is known to fail with on some
+   * hand-written NEON assembly. For now, continue to apply the workaround even
+   * when the compiler is instructed to freely emit NEON code. See
+   * https://crbug.com/341598 and https://crbug.com/606629. */
+#if defined(__ARM_NEON__) && !defined(OPENSSL_ARM)
   return 1;
 #else
   return CRYPTO_is_NEON_capable_at_runtime();
 #endif
 }
 
-/* CRYPTO_set_NEON_capable sets the return value of |CRYPTO_is_NEON_capable|.
- * By default, unless the code was compiled with |-mfpu=neon|, NEON is assumed
- * not to be present. It is not autodetected. Calling this with a zero
- * argument also causes |CRYPTO_is_NEON_functional| to return false. */
-OPENSSL_EXPORT void CRYPTO_set_NEON_capable(char neon_capable);
-
-/* CRYPTO_is_NEON_functional returns true if the current CPU has a /working/
- * NEON unit. Some phones have a NEON unit, but the Poly1305 NEON code causes
- * it to fail. See https://code.google.com/p/chromium/issues/detail?id=341598 */
-OPENSSL_EXPORT char CRYPTO_is_NEON_functional(void);
-
-/* CRYPTO_set_NEON_functional sets the "NEON functional" flag. For
- * |CRYPTO_is_NEON_functional| to return true, both this flag and the NEON flag
- * must be true. By default NEON is assumed to be functional if the code was
- * compiled with |-mfpu=neon| or if |CRYPTO_set_NEON_capable| has been called
- * with a non-zero argument. */
-OPENSSL_EXPORT void CRYPTO_set_NEON_functional(char neon_functional);
+#if defined(OPENSSL_ARM)
+/* CRYPTO_has_broken_NEON returns one if the current CPU is known to have a
+ * broken NEON unit. See https://crbug.com/341598. */
+OPENSSL_EXPORT int CRYPTO_has_broken_NEON(void);
+#endif
 
 /* CRYPTO_is_ARMv8_AES_capable returns true if the current CPU supports the
  * ARMv8 AES instruction. */
@@ -153,10 +146,6 @@ static inline int CRYPTO_is_NEON_capable(void) {
 #endif
 }
 
-static inline int CRYPTO_is_NEON_functional(void) {
-  return CRYPTO_is_NEON_capable();
-}
-
 static inline int CRYPTO_is_ARMv8_AES_capable(void) {
 #if defined(OPENSSL_STATIC_ARMCAP_AES)
   return 1;
@@ -174,7 +163,15 @@ static inline int CRYPTO_is_ARMv8_PMULL_capable(void) {
 }
 
 #endif  /* OPENSSL_STATIC_ARMCAP */
-#endif  /* OPENSSL_ARM */
+#endif  /* OPENSSL_ARM || OPENSSL_AARCH64 */
+
+#if defined(OPENSSL_PPC64LE)
+
+/* CRYPTO_is_PPC64LE_vcrypto_capable returns true iff the current CPU supports
+ * the Vector.AES category of instructions. */
+int CRYPTO_is_PPC64LE_vcrypto_capable(void);
+
+#endif  /* OPENSSL_PPC64LE */
 
 
 #if defined(__cplusplus)

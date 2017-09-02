@@ -69,7 +69,7 @@
 #include <openssl/base64.h>
 #include <openssl/cipher.h>
 #include <openssl/digest.h>
-#include <openssl/obj.h>
+#include <openssl/nid.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -89,8 +89,8 @@ OPENSSL_EXPORT EVP_PKEY *EVP_PKEY_new(void);
  * itself. */
 OPENSSL_EXPORT void EVP_PKEY_free(EVP_PKEY *pkey);
 
-/* EVP_PKEY_up_ref increments the reference count of |pkey| and returns it. */
-OPENSSL_EXPORT EVP_PKEY *EVP_PKEY_up_ref(EVP_PKEY *pkey);
+/* EVP_PKEY_up_ref increments the reference count of |pkey| and returns one. */
+OPENSSL_EXPORT int EVP_PKEY_up_ref(EVP_PKEY *pkey);
 
 /* EVP_PKEY_is_opaque returns one if |pkey| is opaque. Opaque keys are backed by
  * custom implementations which do not expose key material and parameters. It is
@@ -174,7 +174,7 @@ OPENSSL_EXPORT EC_KEY *EVP_PKEY_get1_EC_KEY(EVP_PKEY *pkey);
 OPENSSL_EXPORT int EVP_PKEY_assign(EVP_PKEY *pkey, int type, void *key);
 
 /* EVP_PKEY_set_type sets the type of |pkey| to |type|, which should be one of
- * the |EVP_PKEY_*| values. It returns one if sucessful or zero otherwise. If
+ * the |EVP_PKEY_*| values. It returns one if successful or zero otherwise. If
  * |pkey| is NULL, it simply reports whether the type is known. */
 OPENSSL_EXPORT int EVP_PKEY_set_type(EVP_PKEY *pkey, int type);
 
@@ -250,15 +250,6 @@ OPENSSL_EXPORT int EVP_DigestSignUpdate(EVP_MD_CTX *ctx, const void *data,
 OPENSSL_EXPORT int EVP_DigestSignFinal(EVP_MD_CTX *ctx, uint8_t *out_sig,
                                        size_t *out_sig_len);
 
-/* EVP_DigestSignAlgorithm encodes the signing parameters of |ctx| as an
- * AlgorithmIdentifer and saves the result in |algor|.
- *
- * It returns one on success, or zero on error.
- *
- * TODO(davidben): This API should eventually lose the dependency on
- * crypto/asn1/. */
-OPENSSL_EXPORT int EVP_DigestSignAlgorithm(EVP_MD_CTX *ctx, X509_ALGOR *algor);
-
 
 /* Verifying */
 
@@ -272,18 +263,6 @@ OPENSSL_EXPORT int EVP_DigestSignAlgorithm(EVP_MD_CTX *ctx, X509_ALGOR *algor);
 OPENSSL_EXPORT int EVP_DigestVerifyInit(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
                                         const EVP_MD *type, ENGINE *e,
                                         EVP_PKEY *pkey);
-
-/* EVP_DigestVerifyInitFromAlgorithm sets up |ctx| for a signature verification
- * operation with public key |pkey| and parameters from |algor|. The |ctx|
- * argument must have been initialised with |EVP_MD_CTX_init|.
- *
- * It returns one on success, or zero on error.
- *
- * TODO(davidben): This API should eventually lose the dependency on
- * crypto/asn1/. */
-OPENSSL_EXPORT int EVP_DigestVerifyInitFromAlgorithm(EVP_MD_CTX *ctx,
-                                                     X509_ALGOR *algor,
-                                                     EVP_PKEY *pkey);
 
 /* EVP_DigestVerifyUpdate appends |len| bytes from |data| to the data which
  * will be verified by |EVP_DigestVerifyFinal|. It returns one. */
@@ -399,9 +378,10 @@ OPENSSL_EXPORT int PKCS5_PBKDF2_HMAC(const char *password, size_t password_len,
 /* PKCS5_PBKDF2_HMAC_SHA1 is the same as PKCS5_PBKDF2_HMAC, but with |digest|
  * fixed to |EVP_sha1|. */
 OPENSSL_EXPORT int PKCS5_PBKDF2_HMAC_SHA1(const char *password,
-                                          size_t password_len, const uint8_t *salt,
-                                          size_t salt_len, unsigned iterations,
-                                          size_t key_len, uint8_t *out_key);
+                                          size_t password_len,
+                                          const uint8_t *salt, size_t salt_len,
+                                          unsigned iterations, size_t key_len,
+                                          uint8_t *out_key);
 
 
 /* Public key contexts.
@@ -456,8 +436,8 @@ OPENSSL_EXPORT int EVP_PKEY_sign(EVP_PKEY_CTX *ctx, uint8_t *sig,
  * It returns one on success or zero on error. */
 OPENSSL_EXPORT int EVP_PKEY_verify_init(EVP_PKEY_CTX *ctx);
 
-/* EVP_PKEY_verify verifies that |sig_len| bytes from |sig| are a valid signature
- * for |data|.
+/* EVP_PKEY_verify verifies that |sig_len| bytes from |sig| are a valid
+ * signature for |data|.
  *
  * It returns one on success or zero on error. */
 OPENSSL_EXPORT int EVP_PKEY_verify(EVP_PKEY_CTX *ctx, const uint8_t *sig,
@@ -598,7 +578,10 @@ OPENSSL_EXPORT int EVP_PKEY_CTX_get_rsa_padding(EVP_PKEY_CTX *ctx,
 /* EVP_PKEY_CTX_set_rsa_pss_saltlen sets the length of the salt in a PSS-padded
  * signature. A value of -1 cause the salt to be the same length as the digest
  * in the signature. A value of -2 causes the salt to be the maximum length
- * that will fit. Otherwise the value gives the size of the salt in bytes.
+ * that will fit when signing and recovered from the signature when verifying.
+ * Otherwise the value gives the size of the salt in bytes.
+ *
+ * If unsure, use -1.
  *
  * Returns one on success or zero on error. */
 OPENSSL_EXPORT int EVP_PKEY_CTX_set_rsa_pss_saltlen(EVP_PKEY_CTX *ctx,
@@ -675,6 +658,9 @@ OPENSSL_EXPORT int EVP_PKEY_CTX_get0_rsa_oaep_label(EVP_PKEY_CTX *ctx,
 /* OpenSSL_add_all_algorithms does nothing. */
 OPENSSL_EXPORT void OpenSSL_add_all_algorithms(void);
 
+/* OPENSSL_add_all_algorithms_conf does nothing. */
+OPENSSL_EXPORT void OPENSSL_add_all_algorithms_conf(void);
+
 /* OpenSSL_add_all_ciphers does nothing. */
 OPENSSL_EXPORT void OpenSSL_add_all_ciphers(void);
 
@@ -719,11 +705,10 @@ OPENSSL_EXPORT int i2d_PublicKey(EVP_PKEY *key, uint8_t **outp);
 
 /* d2i_PrivateKey parses an ASN.1, DER-encoded, private key from |len| bytes at
  * |*inp|. If |out| is not NULL then, on exit, a pointer to the result is in
- * |*out|. If |*out| is already non-NULL on entry then the result is written
- * directly into |*out|, otherwise a fresh |EVP_PKEY| is allocated. However,
- * one should not depend on writing into |*out| because this behaviour is
- * likely to change in the future. On successful exit, |*inp| is advanced past
- * the DER structure. It returns the result or NULL on error.
+ * |*out|. Note that, even if |*out| is already non-NULL on entry, it will not
+ * be written to. Rather, a fresh |EVP_PKEY| is allocated and the previous one
+ * is freed. On successful exit, |*inp| is advanced past the DER structure. It
+ * returns the result or NULL on error.
  *
  * This function tries to detect one of several formats. Instead, use
  * |EVP_parse_private_key| for a PrivateKeyInfo, |RSA_parse_private_key| for an
@@ -740,22 +725,11 @@ OPENSSL_EXPORT EVP_PKEY *d2i_PrivateKey(int type, EVP_PKEY **out,
 OPENSSL_EXPORT EVP_PKEY *d2i_AutoPrivateKey(EVP_PKEY **out, const uint8_t **inp,
                                             long len);
 
+/* EVP_PKEY_get0_DH returns NULL. */
+OPENSSL_EXPORT DH *EVP_PKEY_get0_DH(EVP_PKEY *pkey);
 
-/* Private functions */
 
-/* EVP_PKEY_asn1_find returns the ASN.1 method table for the given |nid|, which
- * should be one of the |EVP_PKEY_*| values. It returns NULL if |nid| is
- * unknown. */
-OPENSSL_EXPORT const EVP_PKEY_ASN1_METHOD *EVP_PKEY_asn1_find(ENGINE **pengine,
-                                                              int nid);
-
-/* EVP_PKEY_asn1_find_str returns an |EVP_PKEY_ASN1_METHOD| by matching values
- * of the |len| bytes at |name|. For example, if name equals "EC" then it will
- * return an ECC method. The |pengine| argument is ignored.
- *
- * TODO(fork): move to PEM? */
-OPENSSL_EXPORT const EVP_PKEY_ASN1_METHOD *EVP_PKEY_asn1_find_str(
-    ENGINE **pengine, const char *name, size_t len);
+/* Private structures. */
 
 struct evp_pkey_st {
   CRYPTO_refcount_t references;
@@ -780,54 +754,48 @@ struct evp_pkey_st {
 
 #if defined(__cplusplus)
 }  /* extern C */
+
+extern "C++" {
+namespace bssl {
+
+BORINGSSL_MAKE_DELETER(EVP_PKEY, EVP_PKEY_free)
+BORINGSSL_MAKE_DELETER(EVP_PKEY_CTX, EVP_PKEY_CTX_free)
+
+}  // namespace bssl
+
+}  /* extern C++ */
+
 #endif
 
 #define EVP_R_BUFFER_TOO_SMALL 100
 #define EVP_R_COMMAND_NOT_SUPPORTED 101
-#define EVP_R_DIFFERENT_KEY_TYPES 104
-#define EVP_R_DIFFERENT_PARAMETERS 105
-#define EVP_R_EXPECTING_AN_EC_KEY_KEY 107
-#define EVP_R_EXPECTING_A_DH_KEY 109
-#define EVP_R_EXPECTING_A_DSA_KEY 110
-#define EVP_R_ILLEGAL_OR_UNSUPPORTED_PADDING_MODE 111
-#define EVP_R_INVALID_CURVE 112
-#define EVP_R_INVALID_DIGEST_LENGTH 113
-#define EVP_R_INVALID_DIGEST_TYPE 114
-#define EVP_R_INVALID_KEYBITS 115
-#define EVP_R_INVALID_MGF1_MD 116
-#define EVP_R_INVALID_PADDING_MODE 118
-#define EVP_R_INVALID_PSS_PARAMETERS 119
-#define EVP_R_INVALID_SALT_LENGTH 121
-#define EVP_R_INVALID_TRAILER 122
-#define EVP_R_KEYS_NOT_SET 123
-#define EVP_R_MISSING_PARAMETERS 124
-#define EVP_R_NO_DEFAULT_DIGEST 125
-#define EVP_R_NO_KEY_SET 126
-#define EVP_R_NO_MDC2_SUPPORT 127
-#define EVP_R_NO_NID_FOR_CURVE 128
-#define EVP_R_NO_OPERATION_SET 129
-#define EVP_R_NO_PARAMETERS_SET 130
-#define EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE 131
-#define EVP_R_OPERATON_NOT_INITIALIZED 132
-#define EVP_R_UNKNOWN_DIGEST 133
-#define EVP_R_UNKNOWN_MASK_DIGEST 134
-#define EVP_R_UNSUPPORTED_ALGORITHM 138
-#define EVP_R_UNSUPPORTED_MASK_ALGORITHM 139
-#define EVP_R_UNSUPPORTED_MASK_PARAMETER 140
-#define EVP_R_EXPECTING_AN_RSA_KEY 141
-#define EVP_R_INVALID_OPERATION 142
-#define EVP_R_DECODE_ERROR 143
-#define EVP_R_INVALID_PSS_SALTLEN 144
-#define EVP_R_UNKNOWN_PUBLIC_KEY_TYPE 145
-#define EVP_R_CONTEXT_NOT_INITIALISED 146
-#define EVP_R_DIGEST_AND_KEY_TYPE_NOT_SUPPORTED 147
-#define EVP_R_WRONG_PUBLIC_KEY_TYPE 148
-#define EVP_R_UNKNOWN_SIGNATURE_ALGORITHM 149
-#define EVP_R_UNKNOWN_MESSAGE_DIGEST_ALGORITHM 150
-#define EVP_R_BN_DECODE_ERROR 151
-#define EVP_R_PARAMETER_ENCODING_ERROR 152
-#define EVP_R_UNSUPPORTED_PUBLIC_KEY_TYPE 153
-#define EVP_R_UNSUPPORTED_SIGNATURE_TYPE 154
-#define EVP_R_ENCODE_ERROR 155
+#define EVP_R_DECODE_ERROR 102
+#define EVP_R_DIFFERENT_KEY_TYPES 103
+#define EVP_R_DIFFERENT_PARAMETERS 104
+#define EVP_R_ENCODE_ERROR 105
+#define EVP_R_EXPECTING_AN_EC_KEY_KEY 106
+#define EVP_R_EXPECTING_AN_RSA_KEY 107
+#define EVP_R_EXPECTING_A_DSA_KEY 108
+#define EVP_R_ILLEGAL_OR_UNSUPPORTED_PADDING_MODE 109
+#define EVP_R_INVALID_DIGEST_LENGTH 110
+#define EVP_R_INVALID_DIGEST_TYPE 111
+#define EVP_R_INVALID_KEYBITS 112
+#define EVP_R_INVALID_MGF1_MD 113
+#define EVP_R_INVALID_OPERATION 114
+#define EVP_R_INVALID_PADDING_MODE 115
+#define EVP_R_INVALID_PSS_SALTLEN 116
+#define EVP_R_KEYS_NOT_SET 117
+#define EVP_R_MISSING_PARAMETERS 118
+#define EVP_R_NO_DEFAULT_DIGEST 119
+#define EVP_R_NO_KEY_SET 120
+#define EVP_R_NO_MDC2_SUPPORT 121
+#define EVP_R_NO_NID_FOR_CURVE 122
+#define EVP_R_NO_OPERATION_SET 123
+#define EVP_R_NO_PARAMETERS_SET 124
+#define EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE 125
+#define EVP_R_OPERATON_NOT_INITIALIZED 126
+#define EVP_R_UNKNOWN_PUBLIC_KEY_TYPE 127
+#define EVP_R_UNSUPPORTED_ALGORITHM 128
+#define EVP_R_UNSUPPORTED_PUBLIC_KEY_TYPE 129
 
 #endif  /* OPENSSL_HEADER_EVP_H */

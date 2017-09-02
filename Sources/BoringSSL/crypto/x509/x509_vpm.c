@@ -65,6 +65,8 @@
 #include <openssl/x509v3.h>
 
 #include "vpm_int.h"
+#include "../internal.h"
+
 
 /* X509_VERIFY_PARAM functions */
 
@@ -92,7 +94,7 @@ static int int_x509_param_set_hosts(X509_VERIFY_PARAM_ID *id, int mode,
      * Refuse names with embedded NUL bytes.
      * XXX: Do we need to push an error onto the error stack?
      */
-    if (name && memchr(name, '\0', namelen))
+    if (name && OPENSSL_memchr(name, '\0', namelen))
         return 0;
 
     if (mode == SET_HOST && id->hosts) {
@@ -176,8 +178,8 @@ X509_VERIFY_PARAM *X509_VERIFY_PARAM_new(void)
         OPENSSL_free(param);
         return NULL;
     }
-    memset(param, 0, sizeof(X509_VERIFY_PARAM));
-    memset(paramid, 0, sizeof(X509_VERIFY_PARAM_ID));
+    OPENSSL_memset(param, 0, sizeof(X509_VERIFY_PARAM));
+    OPENSSL_memset(paramid, 0, sizeof(X509_VERIFY_PARAM_ID));
     param->id = paramid;
     x509_verify_param_zero(param);
     return param;
@@ -192,32 +194,43 @@ void X509_VERIFY_PARAM_free(X509_VERIFY_PARAM *param)
     OPENSSL_free(param);
 }
 
-/*
+/*-
  * This function determines how parameters are "inherited" from one structure
- * to another. There are several different ways this can happen. 1. If a
- * child structure needs to have its values initialized from a parent they are
- * simply copied across. For example SSL_CTX copied to SSL. 2. If the
- * structure should take on values only if they are currently unset.  For
- * example the values in an SSL structure will take appropriate value for SSL
- * servers or clients but only if the application has not set new ones. The
- * "inh_flags" field determines how this function behaves. Normally any
- * values which are set in the default are not copied from the destination and
- * verify flags are ORed together. If X509_VP_FLAG_DEFAULT is set then
- * anything set in the source is copied to the destination. Effectively the
- * values in "to" become default values which will be used only if nothing new
- * is set in "from". If X509_VP_FLAG_OVERWRITE is set then all value are
- * copied across whether they are set or not. Flags is still Ored though. If
- * X509_VP_FLAG_RESET_FLAGS is set then the flags value is copied instead of
- * ORed. If X509_VP_FLAG_LOCKED is set then no values are copied. If
- * X509_VP_FLAG_ONCE is set then the current inh_flags setting is zeroed after
- * the next call.
+ * to another. There are several different ways this can happen.
+ *
+ * 1. If a child structure needs to have its values initialized from a parent
+ *    they are simply copied across. For example SSL_CTX copied to SSL.
+ * 2. If the structure should take on values only if they are currently unset.
+ *    For example the values in an SSL structure will take appropriate value
+ *    for SSL servers or clients but only if the application has not set new
+ *    ones.
+ *
+ * The "inh_flags" field determines how this function behaves.
+ *
+ * Normally any values which are set in the default are not copied from the
+ * destination and verify flags are ORed together.
+ *
+ * If X509_VP_FLAG_DEFAULT is set then anything set in the source is copied
+ * to the destination. Effectively the values in "to" become default values
+ * which will be used only if nothing new is set in "from".
+ *
+ * If X509_VP_FLAG_OVERWRITE is set then all value are copied across whether
+ * they are set or not. Flags is still Ored though.
+ *
+ * If X509_VP_FLAG_RESET_FLAGS is set then the flags value is copied instead
+ * of ORed.
+ *
+ * If X509_VP_FLAG_LOCKED is set then no values are copied.
+ *
+ * If X509_VP_FLAG_ONCE is set then the current inh_flags setting is zeroed
+ * after the next call.
  */
 
 /* Macro to test if a field should be copied from src to dest */
 
 #define test_x509_verify_param_copy(field, def) \
-        (to_overwrite || \
-                ((src->field != def) && (to_default || (dest->field == def))))
+  (to_overwrite ||                              \
+   ((src->field != (def)) && (to_default || (dest->field == (def)))))
 
 /* As above but for ID fields */
 
@@ -502,7 +515,7 @@ const char *X509_VERIFY_PARAM_get0_name(const X509_VERIFY_PARAM *param)
 static const X509_VERIFY_PARAM_ID _empty_id =
     { NULL, 0U, NULL, NULL, 0, NULL, 0 };
 
-#define vpm_empty_id (X509_VERIFY_PARAM_ID *)&_empty_id
+#define vpm_empty_id ((X509_VERIFY_PARAM_ID *)&_empty_id)
 
 /*
  * Default verify parameters: these are used for various applications and can

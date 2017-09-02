@@ -60,10 +60,10 @@
 #include <string.h>
 
 #include <openssl/err.h>
-#include <openssl/obj.h>
 #include <openssl/mem.h>
 
 #include "internal.h"
+#include "../internal.h"
 
 
 int EVP_MD_type(const EVP_MD *md) { return md->type; }
@@ -75,7 +75,9 @@ size_t EVP_MD_size(const EVP_MD *md) { return md->md_size; }
 size_t EVP_MD_block_size(const EVP_MD *md) { return md->block_size; }
 
 
-void EVP_MD_CTX_init(EVP_MD_CTX *ctx) { memset(ctx, 0, sizeof(EVP_MD_CTX)); }
+void EVP_MD_CTX_init(EVP_MD_CTX *ctx) {
+  OPENSSL_memset(ctx, 0, sizeof(EVP_MD_CTX));
+}
 
 EVP_MD_CTX *EVP_MD_CTX_create(void) {
   EVP_MD_CTX *ctx = OPENSSL_malloc(sizeof(EVP_MD_CTX));
@@ -141,7 +143,7 @@ int EVP_MD_CTX_copy_ex(EVP_MD_CTX *out, const EVP_MD_CTX *in) {
         return 0;
       }
     }
-    memcpy(out->md_data, in->md_data, in->digest->ctx_size);
+    OPENSSL_memcpy(out->md_data, in->md_data, in->digest->ctx_size);
   }
 
   assert(in->pctx == NULL || in->pctx_ops != NULL);
@@ -166,6 +168,7 @@ int EVP_DigestInit_ex(EVP_MD_CTX *ctx, const EVP_MD *type, ENGINE *engine) {
   if (ctx->digest != type) {
     if (ctx->digest && ctx->digest->ctx_size > 0) {
       OPENSSL_free(ctx->md_data);
+      ctx->md_data = NULL;
     }
     ctx->digest = type;
     if (type->ctx_size > 0) {
@@ -231,11 +234,11 @@ const EVP_MD *EVP_MD_CTX_md(const EVP_MD_CTX *ctx) {
   return ctx->digest;
 }
 
-unsigned EVP_MD_CTX_size(const EVP_MD_CTX *ctx) {
+size_t EVP_MD_CTX_size(const EVP_MD_CTX *ctx) {
   return EVP_MD_size(EVP_MD_CTX_md(ctx));
 }
 
-unsigned EVP_MD_CTX_block_size(const EVP_MD_CTX *ctx) {
+size_t EVP_MD_CTX_block_size(const EVP_MD_CTX *ctx) {
   return EVP_MD_block_size(EVP_MD_CTX_md(ctx));
 }
 

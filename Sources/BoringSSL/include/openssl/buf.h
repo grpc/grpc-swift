@@ -80,6 +80,10 @@ OPENSSL_EXPORT BUF_MEM *BUF_MEM_new(void);
 /* BUF_MEM_free frees |buf->data| if needed and then frees |buf| itself. */
 OPENSSL_EXPORT void BUF_MEM_free(BUF_MEM *buf);
 
+/* BUF_MEM_reserve ensures |buf| has capacity |cap| and allocates memory if
+ * needed. It returns one on success and zero on error. */
+OPENSSL_EXPORT int BUF_MEM_reserve(BUF_MEM *buf, size_t cap);
+
 /* BUF_MEM_grow ensures that |buf| has length |len| and allocates memory if
  * needed. If the length of |buf| increased, the new bytes are filled with
  * zeros. It returns the length of |buf|, or zero if there's an error. */
@@ -113,6 +117,17 @@ OPENSSL_EXPORT size_t BUF_strlcat(char *dst, const char *src, size_t size);
 
 #if defined(__cplusplus)
 }  /* extern C */
+
+extern "C++" {
+
+namespace bssl {
+
+BORINGSSL_MAKE_DELETER(BUF_MEM, BUF_MEM_free)
+
+}  // namespace bssl
+
+}  /* extern C++ */
+
 #endif
 
 #endif  /* OPENSSL_HEADER_BUFFER_H */

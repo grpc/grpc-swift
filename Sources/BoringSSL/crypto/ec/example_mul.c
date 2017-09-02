@@ -70,10 +70,10 @@
 #include <openssl/bn.h>
 #include <openssl/crypto.h>
 #include <openssl/ec.h>
-#include <openssl/obj.h>
+#include <openssl/nid.h>
 
 
-int example_EC_POINT_mul(void) {
+static int example_EC_POINT_mul(void) {
   /* This example ensures that 10×∞ + G = G, in P-256. */
   EC_GROUP *group = NULL;
   EC_POINT *p = NULL, *result = NULL;

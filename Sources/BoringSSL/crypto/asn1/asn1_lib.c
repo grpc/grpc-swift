@@ -63,39 +63,48 @@
 #include <openssl/err.h>
 #include <openssl/mem.h>
 
-/* Cross-module errors from crypto/x509/i2d_pr.c */
-OPENSSL_DECLARE_ERROR_REASON(ASN1, UNSUPPORTED_PUBLIC_KEY_TYPE);
+#include "../internal.h"
 
+
+/* Cross-module errors from crypto/x509/i2d_pr.c. */
+OPENSSL_DECLARE_ERROR_REASON(ASN1, UNSUPPORTED_PUBLIC_KEY_TYPE)
+
+/* Cross-module errors from crypto/x509/algorithm.c. */
+OPENSSL_DECLARE_ERROR_REASON(ASN1, CONTEXT_NOT_INITIALISED)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, DIGEST_AND_KEY_TYPE_NOT_SUPPORTED)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, UNKNOWN_MESSAGE_DIGEST_ALGORITHM)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, UNKNOWN_SIGNATURE_ALGORITHM)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, WRONG_PUBLIC_KEY_TYPE)
 /*
  * Cross-module errors from crypto/x509/asn1_gen.c. TODO(davidben): Remove
  * these once asn1_gen.c is gone.
  */
-OPENSSL_DECLARE_ERROR_REASON(ASN1, DEPTH_EXCEEDED);
-OPENSSL_DECLARE_ERROR_REASON(ASN1, ILLEGAL_BITSTRING_FORMAT);
-OPENSSL_DECLARE_ERROR_REASON(ASN1, ILLEGAL_BOOLEAN);
-OPENSSL_DECLARE_ERROR_REASON(ASN1, ILLEGAL_FORMAT);
-OPENSSL_DECLARE_ERROR_REASON(ASN1, ILLEGAL_HEX);
-OPENSSL_DECLARE_ERROR_REASON(ASN1, ILLEGAL_IMPLICIT_TAG);
-OPENSSL_DECLARE_ERROR_REASON(ASN1, ILLEGAL_INTEGER);
-OPENSSL_DECLARE_ERROR_REASON(ASN1, ILLEGAL_NESTED_TAGGING);
-OPENSSL_DECLARE_ERROR_REASON(ASN1, ILLEGAL_NULL_VALUE);
-OPENSSL_DECLARE_ERROR_REASON(ASN1, ILLEGAL_OBJECT);
-OPENSSL_DECLARE_ERROR_REASON(ASN1, ILLEGAL_TIME_VALUE);
-OPENSSL_DECLARE_ERROR_REASON(ASN1, INTEGER_NOT_ASCII_FORMAT);
-OPENSSL_DECLARE_ERROR_REASON(ASN1, INVALID_MODIFIER);
-OPENSSL_DECLARE_ERROR_REASON(ASN1, INVALID_NUMBER);
-OPENSSL_DECLARE_ERROR_REASON(ASN1, LIST_ERROR);
-OPENSSL_DECLARE_ERROR_REASON(ASN1, MISSING_VALUE);
-OPENSSL_DECLARE_ERROR_REASON(ASN1, NOT_ASCII_FORMAT);
-OPENSSL_DECLARE_ERROR_REASON(ASN1, OBJECT_NOT_ASCII_FORMAT);
-OPENSSL_DECLARE_ERROR_REASON(ASN1, SEQUENCE_OR_SET_NEEDS_CONFIG);
-OPENSSL_DECLARE_ERROR_REASON(ASN1, TIME_NOT_ASCII_FORMAT);
-OPENSSL_DECLARE_ERROR_REASON(ASN1, UNKNOWN_FORMAT);
-OPENSSL_DECLARE_ERROR_REASON(ASN1, UNKNOWN_TAG);
-OPENSSL_DECLARE_ERROR_REASON(ASN1, UNSUPPORTED_TYPE);
+OPENSSL_DECLARE_ERROR_REASON(ASN1, DEPTH_EXCEEDED)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, ILLEGAL_BITSTRING_FORMAT)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, ILLEGAL_BOOLEAN)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, ILLEGAL_FORMAT)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, ILLEGAL_HEX)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, ILLEGAL_IMPLICIT_TAG)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, ILLEGAL_INTEGER)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, ILLEGAL_NESTED_TAGGING)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, ILLEGAL_NULL_VALUE)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, ILLEGAL_OBJECT)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, ILLEGAL_TIME_VALUE)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, INTEGER_NOT_ASCII_FORMAT)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, INVALID_MODIFIER)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, INVALID_NUMBER)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, LIST_ERROR)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, MISSING_VALUE)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, NOT_ASCII_FORMAT)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, OBJECT_NOT_ASCII_FORMAT)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, SEQUENCE_OR_SET_NEEDS_CONFIG)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, TIME_NOT_ASCII_FORMAT)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, UNKNOWN_FORMAT)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, UNKNOWN_TAG)
+OPENSSL_DECLARE_ERROR_REASON(ASN1, UNSUPPORTED_TYPE)
 
 static int asn1_get_length(const unsigned char **pp, int *inf, long *rl,
-                           int max);
+                           long max);
 static void asn1_put_length(unsigned char **pp, int length);
 
 static int _asn1_check_infinite_end(const unsigned char **p, long len)
@@ -167,7 +176,7 @@ int ASN1_get_object(const unsigned char **pp, long *plength, int *ptag,
 
     *ptag = tag;
     *pclass = xclass;
-    if (!asn1_get_length(&p, &inf, plength, (int)max))
+    if (!asn1_get_length(&p, &inf, plength, max))
         goto err;
 
     if (inf && !(ret & V_ASN1_CONSTRUCTED))
@@ -195,14 +204,14 @@ int ASN1_get_object(const unsigned char **pp, long *plength, int *ptag,
 }
 
 static int asn1_get_length(const unsigned char **pp, int *inf, long *rl,
-                           int max)
+                           long max)
 {
     const unsigned char *p = *pp;
     unsigned long ret = 0;
-    unsigned int i;
+    unsigned long i;
 
     if (max-- < 1)
-        return (0);
+        return 0;
     if (*p == 0x80) {
         *inf = 1;
         ret = 0;
@@ -211,15 +220,11 @@ static int asn1_get_length(const unsigned char **pp, int *inf, long *rl,
         *inf = 0;
         i = *p & 0x7f;
         if (*(p++) & 0x80) {
-            if (i > sizeof(long))
+            if (i > sizeof(ret) || max < (long)i)
                 return 0;
-            if (max-- == 0)
-                return (0);
             while (i-- > 0) {
                 ret <<= 8L;
                 ret |= *(p++);
-                if (max-- == 0)
-                    return (0);
             }
         } else
             ret = i;
@@ -228,7 +233,7 @@ static int asn1_get_length(const unsigned char **pp, int *inf, long *rl,
         return 0;
     *pp = p;
     *rl = (long)ret;
-    return (1);
+    return 1;
 }
 
 /*
@@ -296,26 +301,30 @@ static void asn1_put_length(unsigned char **pp, int length)
 
 int ASN1_object_size(int constructed, int length, int tag)
 {
-    int ret;
-
-    ret = length;
-    ret++;
+    int ret = 1;
+    if (length < 0)
+        return -1;
     if (tag >= 31) {
         while (tag > 0) {
             tag >>= 7;
             ret++;
         }
     }
-    if (constructed == 2)
-        return ret + 3;
-    ret++;
-    if (length > 127) {
-        while (length > 0) {
-            length >>= 8;
-            ret++;
+    if (constructed == 2) {
+        ret += 3;
+    } else {
+        ret++;
+        if (length > 127) {
+            int tmplen = length;
+            while (tmplen > 0) {
+                tmplen >>= 8;
+                ret++;
+            }
         }
     }
-    return (ret);
+    if (ret >= INT_MAX - length)
+        return -1;
+    return ret + length;
 }
 
 static int _asn1_Finish(ASN1_const_CTX *c)
@@ -341,32 +350,6 @@ int asn1_Finish(ASN1_CTX *c)
 int asn1_const_Finish(ASN1_const_CTX *c)
 {
     return _asn1_Finish(c);
-}
-
-int asn1_GetSequence(ASN1_const_CTX *c, long *length)
-{
-    const unsigned char *q;
-
-    q = c->p;
-    c->inf = ASN1_get_object(&(c->p), &(c->slen), &(c->tag), &(c->xclass),
-                             *length);
-    if (c->inf & 0x80) {
-        c->error = ASN1_R_BAD_GET_ASN1_OBJECT_CALL;
-        return (0);
-    }
-    if (c->tag != V_ASN1_SEQUENCE) {
-        c->error = ASN1_R_EXPECTING_AN_ASN1_SEQUENCE;
-        return (0);
-    }
-    (*length) -= (c->p - q);
-    if (c->max && (*length < 0)) {
-        c->error = ASN1_R_ASN1_LENGTH_MISMATCH;
-        return (0);
-    }
-    if (c->inf == (1 | V_ASN1_CONSTRUCTED))
-        c->slen = *length + *(c->pp) - c->p;
-    c->eos = 0;
-    return (1);
 }
 
 int ASN1_STRING_copy(ASN1_STRING *dst, const ASN1_STRING *str)
@@ -406,7 +389,7 @@ int ASN1_STRING_set(ASN1_STRING *str, const void *_data, int len)
         else
             len = strlen(data);
     }
-    if ((str->length < len) || (str->data == NULL)) {
+    if ((str->length <= len) || (str->data == NULL)) {
         c = str->data;
         if (c == NULL)
             str->data = OPENSSL_malloc(len + 1);
@@ -421,7 +404,7 @@ int ASN1_STRING_set(ASN1_STRING *str, const void *_data, int len)
     }
     str->length = len;
     if (data != NULL) {
-        memcpy(str->data, data, len);
+        OPENSSL_memcpy(str->data, data, len);
         /* an allowance for strings :-) */
         str->data[len] = '\0';
     }
@@ -472,7 +455,7 @@ int ASN1_STRING_cmp(const ASN1_STRING *a, const ASN1_STRING *b)
 
     i = (a->length - b->length);
     if (i == 0) {
-        i = memcmp(a->data, b->data, a->length);
+        i = OPENSSL_memcmp(a->data, b->data, a->length);
         if (i == 0)
             return (a->type - b->type);
         else

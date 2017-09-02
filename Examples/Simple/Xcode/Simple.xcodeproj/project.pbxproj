@@ -12,78 +12,82 @@
 		D30D73601D565E4400F90CCB /* Document.xib in Resources */ = {isa = PBXBuildFile; fileRef = D30D735E1D565E4400F90CCB /* Document.xib */; };
 		D30D73621D565E4400F90CCB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D30D73611D565E4400F90CCB /* Assets.xcassets */; };
 		D30D73651D565E4400F90CCB /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D30D73631D565E4400F90CCB /* MainMenu.xib */; };
+		D394EF271F58DBA300E99633 /* BoringSSL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D394EF1A1F58DB7A00E99633 /* BoringSSL.framework */; };
+		D394EF281F58DBA300E99633 /* CgRPC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D394EF181F58DB7A00E99633 /* CgRPC.framework */; };
+		D394EF291F58DBA300E99633 /* Czlib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D394EF161F58DB7A00E99633 /* Czlib.framework */; };
+		D394EF2A1F58DBA300E99633 /* gRPC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D394EF1C1F58DB7A00E99633 /* gRPC.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		D3E1EA701EE8AFEB0024A93A /* PBXContainerItemProxy */ = {
+		D394EF131F58DB7A00E99633 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = D3E1EA671EE8AFEB0024A93A /* SwiftGRPC.xcodeproj */;
+			containerPortal = D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */;
 			proxyType = 2;
-			remoteGlobalIDString = OBJ_803;
+			remoteGlobalIDString = OBJ_867;
 			remoteInfo = "zlib-example";
 		};
-		D3E1EA721EE8AFEB0024A93A /* PBXContainerItemProxy */ = {
+		D394EF151F58DB7A00E99633 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = D3E1EA671EE8AFEB0024A93A /* SwiftGRPC.xcodeproj */;
+			containerPortal = D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */;
 			proxyType = 2;
-			remoteGlobalIDString = OBJ_804;
+			remoteGlobalIDString = OBJ_868;
 			remoteInfo = Czlib;
 		};
-		D3E1EA741EE8AFEB0024A93A /* PBXContainerItemProxy */ = {
+		D394EF171F58DB7A00E99633 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = D3E1EA671EE8AFEB0024A93A /* SwiftGRPC.xcodeproj */;
+			containerPortal = D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */;
 			proxyType = 2;
-			remoteGlobalIDString = OBJ_805;
+			remoteGlobalIDString = OBJ_869;
 			remoteInfo = CgRPC;
 		};
-		D3E1EA761EE8AFEB0024A93A /* PBXContainerItemProxy */ = {
+		D394EF191F58DB7A00E99633 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = D3E1EA671EE8AFEB0024A93A /* SwiftGRPC.xcodeproj */;
+			containerPortal = D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */;
 			proxyType = 2;
-			remoteGlobalIDString = OBJ_806;
+			remoteGlobalIDString = OBJ_870;
 			remoteInfo = BoringSSL;
 		};
-		D3E1EA781EE8AFEB0024A93A /* PBXContainerItemProxy */ = {
+		D394EF1B1F58DB7A00E99633 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = D3E1EA671EE8AFEB0024A93A /* SwiftGRPC.xcodeproj */;
+			containerPortal = D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */;
 			proxyType = 2;
-			remoteGlobalIDString = OBJ_807;
+			remoteGlobalIDString = OBJ_871;
 			remoteInfo = gRPC;
 		};
-		D3E1EA7A1EE8AFEB0024A93A /* PBXContainerItemProxy */ = {
+		D394EF1D1F58DB7A00E99633 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = D3E1EA671EE8AFEB0024A93A /* SwiftGRPC.xcodeproj */;
+			containerPortal = D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */;
 			proxyType = 2;
-			remoteGlobalIDString = OBJ_808;
+			remoteGlobalIDString = OBJ_872;
 			remoteInfo = gRPCTests;
 		};
-		D3E1EA7C1EE8B0070024A93A /* PBXContainerItemProxy */ = {
+		D394EF1F1F58DB9800E99633 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = D3E1EA671EE8AFEB0024A93A /* SwiftGRPC.xcodeproj */;
+			containerPortal = D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = OBJ_1428;
-			remoteInfo = gRPC;
-		};
-		D3E1EA7E1EE8B00C0024A93A /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D3E1EA671EE8AFEB0024A93A /* SwiftGRPC.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = OBJ_840;
-			remoteInfo = CgRPC;
-		};
-		D3E1EA801EE8B0120024A93A /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D3E1EA671EE8AFEB0024A93A /* SwiftGRPC.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = OBJ_818;
+			remoteGlobalIDString = OBJ_882;
 			remoteInfo = Czlib;
 		};
-		D3E1EA821EE8B0120024A93A /* PBXContainerItemProxy */ = {
+		D394EF211F58DB9800E99633 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = D3E1EA671EE8AFEB0024A93A /* SwiftGRPC.xcodeproj */;
+			containerPortal = D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = OBJ_1122;
+			remoteGlobalIDString = OBJ_904;
+			remoteInfo = CgRPC;
+		};
+		D394EF231F58DB9800E99633 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_1231;
 			remoteInfo = BoringSSL;
+		};
+		D394EF251F58DB9800E99633 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = OBJ_1543;
+			remoteInfo = gRPC;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -95,7 +99,7 @@
 		D30D73611D565E4400F90CCB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D30D73641D565E4400F90CCB /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		D30D73661D565E4400F90CCB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		D3E1EA671EE8AFEB0024A93A /* SwiftGRPC.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SwiftGRPC.xcodeproj; path = ../../../SwiftGRPC.xcodeproj; sourceTree = "<group>"; };
+		D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SwiftGRPC.xcodeproj; path = ../../../SwiftGRPC.xcodeproj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,6 +107,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D394EF271F58DBA300E99633 /* BoringSSL.framework in Frameworks */,
+				D394EF281F58DBA300E99633 /* CgRPC.framework in Frameworks */,
+				D394EF291F58DBA300E99633 /* Czlib.framework in Frameworks */,
+				D394EF2A1F58DBA300E99633 /* gRPC.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,7 +120,7 @@
 		D30D734E1D565E4400F90CCB = {
 			isa = PBXGroup;
 			children = (
-				D3E1EA671EE8AFEB0024A93A /* SwiftGRPC.xcodeproj */,
+				D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */,
 				D30D73591D565E4400F90CCB /* Simple */,
 				D30D73581D565E4400F90CCB /* Products */,
 			);
@@ -139,15 +147,15 @@
 			path = Simple;
 			sourceTree = "<group>";
 		};
-		D3E1EA681EE8AFEB0024A93A /* Products */ = {
+		D394EF0B1F58DB7A00E99633 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				D3E1EA711EE8AFEB0024A93A /* zlib-example */,
-				D3E1EA731EE8AFEB0024A93A /* Czlib.framework */,
-				D3E1EA751EE8AFEB0024A93A /* CgRPC.framework */,
-				D3E1EA771EE8AFEB0024A93A /* BoringSSL.framework */,
-				D3E1EA791EE8AFEB0024A93A /* gRPC.framework */,
-				D3E1EA7B1EE8AFEB0024A93A /* gRPCTests.xctest */,
+				D394EF141F58DB7A00E99633 /* zlib-example */,
+				D394EF161F58DB7A00E99633 /* Czlib.framework */,
+				D394EF181F58DB7A00E99633 /* CgRPC.framework */,
+				D394EF1A1F58DB7A00E99633 /* BoringSSL.framework */,
+				D394EF1C1F58DB7A00E99633 /* gRPC.framework */,
+				D394EF1E1F58DB7A00E99633 /* gRPCTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -166,6 +174,10 @@
 			buildRules = (
 			);
 			dependencies = (
+				D394EF201F58DB9800E99633 /* PBXTargetDependency */,
+				D394EF221F58DB9800E99633 /* PBXTargetDependency */,
+				D394EF241F58DB9800E99633 /* PBXTargetDependency */,
+				D394EF261F58DB9800E99633 /* PBXTargetDependency */,
 				D3E1EA811EE8B0120024A93A /* PBXTargetDependency */,
 				D3E1EA831EE8B0120024A93A /* PBXTargetDependency */,
 				D3E1EA7F1EE8B00C0024A93A /* PBXTargetDependency */,
@@ -210,8 +222,8 @@
 			projectDirPath = "";
 			projectReferences = (
 				{
-					ProductGroup = D3E1EA681EE8AFEB0024A93A /* Products */;
-					ProjectRef = D3E1EA671EE8AFEB0024A93A /* SwiftGRPC.xcodeproj */;
+					ProductGroup = D394EF0B1F58DB7A00E99633 /* Products */;
+					ProjectRef = D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */;
 				},
 			);
 			projectRoot = "";
@@ -222,46 +234,46 @@
 /* End PBXProject section */
 
 /* Begin PBXReferenceProxy section */
-		D3E1EA711EE8AFEB0024A93A /* zlib-example */ = {
+		D394EF141F58DB7A00E99633 /* zlib-example */ = {
 			isa = PBXReferenceProxy;
 			fileType = "compiled.mach-o.executable";
 			path = "zlib-example";
-			remoteRef = D3E1EA701EE8AFEB0024A93A /* PBXContainerItemProxy */;
+			remoteRef = D394EF131F58DB7A00E99633 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		D3E1EA731EE8AFEB0024A93A /* Czlib.framework */ = {
+		D394EF161F58DB7A00E99633 /* Czlib.framework */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.framework;
 			path = Czlib.framework;
-			remoteRef = D3E1EA721EE8AFEB0024A93A /* PBXContainerItemProxy */;
+			remoteRef = D394EF151F58DB7A00E99633 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		D3E1EA751EE8AFEB0024A93A /* CgRPC.framework */ = {
+		D394EF181F58DB7A00E99633 /* CgRPC.framework */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.framework;
 			path = CgRPC.framework;
-			remoteRef = D3E1EA741EE8AFEB0024A93A /* PBXContainerItemProxy */;
+			remoteRef = D394EF171F58DB7A00E99633 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		D3E1EA771EE8AFEB0024A93A /* BoringSSL.framework */ = {
+		D394EF1A1F58DB7A00E99633 /* BoringSSL.framework */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.framework;
 			path = BoringSSL.framework;
-			remoteRef = D3E1EA761EE8AFEB0024A93A /* PBXContainerItemProxy */;
+			remoteRef = D394EF191F58DB7A00E99633 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		D3E1EA791EE8AFEB0024A93A /* gRPC.framework */ = {
+		D394EF1C1F58DB7A00E99633 /* gRPC.framework */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.framework;
 			path = gRPC.framework;
-			remoteRef = D3E1EA781EE8AFEB0024A93A /* PBXContainerItemProxy */;
+			remoteRef = D394EF1B1F58DB7A00E99633 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		D3E1EA7B1EE8AFEB0024A93A /* gRPCTests.xctest */ = {
+		D394EF1E1F58DB7A00E99633 /* gRPCTests.xctest */ = {
 			isa = PBXReferenceProxy;
 			fileType = file;
 			path = gRPCTests.xctest;
-			remoteRef = D3E1EA7A1EE8AFEB0024A93A /* PBXContainerItemProxy */;
+			remoteRef = D394EF1D1F58DB7A00E99633 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 /* End PBXReferenceProxy section */
@@ -304,25 +316,41 @@
 			isa = PBXTargetDependency;
 			name = gRPC;
 		};
+		D394EF201F58DB9800E99633 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = Czlib;
+			targetProxy = D394EF1F1F58DB9800E99633 /* PBXContainerItemProxy */;
+		};
+		D394EF221F58DB9800E99633 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = CgRPC;
+			targetProxy = D394EF211F58DB9800E99633 /* PBXContainerItemProxy */;
+		};
+		D394EF241F58DB9800E99633 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = BoringSSL;
+			targetProxy = D394EF231F58DB9800E99633 /* PBXContainerItemProxy */;
+		};
+		D394EF261F58DB9800E99633 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = gRPC;
+			targetProxy = D394EF251F58DB9800E99633 /* PBXContainerItemProxy */;
+		};
 		D3E1EA7D1EE8B0070024A93A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = gRPC;
-			targetProxy = D3E1EA7C1EE8B0070024A93A /* PBXContainerItemProxy */;
 		};
 		D3E1EA7F1EE8B00C0024A93A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = CgRPC;
-			targetProxy = D3E1EA7E1EE8B00C0024A93A /* PBXContainerItemProxy */;
 		};
 		D3E1EA811EE8B0120024A93A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = Czlib;
-			targetProxy = D3E1EA801EE8B0120024A93A /* PBXContainerItemProxy */;
 		};
 		D3E1EA831EE8B0120024A93A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = BoringSSL;
-			targetProxy = D3E1EA821EE8B0120024A93A /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 

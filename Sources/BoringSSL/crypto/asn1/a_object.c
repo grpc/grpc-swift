@@ -63,6 +63,9 @@
 #include <openssl/mem.h>
 #include <openssl/obj.h>
 
+#include "../internal.h"
+
+
 int i2d_ASN1_OBJECT(ASN1_OBJECT *a, unsigned char **pp)
 {
     unsigned char *p;
@@ -72,12 +75,12 @@ int i2d_ASN1_OBJECT(ASN1_OBJECT *a, unsigned char **pp)
         return (0);
 
     objsize = ASN1_object_size(0, a->length, V_ASN1_OBJECT);
-    if (pp == NULL)
+    if (pp == NULL || objsize == -1)
         return objsize;
 
     p = *pp;
     ASN1_put_object(&p, 0, a->length, V_ASN1_OBJECT, V_ASN1_UNIVERSAL);
-    memcpy(p, a->data, a->length);
+    OPENSSL_memcpy(p, a->data, a->length);
     p += a->length;
 
     *pp = p;
@@ -172,8 +175,12 @@ int a2d_ASN1_OBJECT(unsigned char *out, int olen, const char *buf, int num)
                 if (!tmp)
                     goto err;
             }
-            while (blsize--)
-                tmp[i++] = (unsigned char)BN_div_word(bl, 0x80L);
+            while (blsize--) {
+                BN_ULONG t = BN_div_word(bl, 0x80L);
+                if (t == (BN_ULONG)-1)
+                    goto err;
+                tmp[i++] = (unsigned char)t;
+            }
         } else {
 
             for (;;) {
@@ -317,7 +324,7 @@ ASN1_OBJECT *c2i_ASN1_OBJECT(ASN1_OBJECT **a, const unsigned char **pp,
         }
         ret->flags |= ASN1_OBJECT_FLAG_DYNAMIC_DATA;
     }
-    memcpy(data, p, length);
+    OPENSSL_memcpy(data, p, length);
     /* reattach data to object, after which it remains const */
     ret->data = data;
     ret->length = length;

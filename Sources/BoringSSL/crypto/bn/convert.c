@@ -118,6 +118,42 @@ BIGNUM *BN_bin2bn(const uint8_t *in, size_t len, BIGNUM *ret) {
   return ret;
 }
 
+BIGNUM *BN_le2bn(const uint8_t *in, size_t len, BIGNUM *ret) {
+  BIGNUM *bn = NULL;
+  if (ret == NULL) {
+    bn = BN_new();
+    ret = bn;
+  }
+
+  if (ret == NULL) {
+    return NULL;
+  }
+
+  if (len == 0) {
+    ret->top = 0;
+    ret->neg = 0;
+    return ret;
+  }
+
+  /* Reserve enough space in |ret|. */
+  size_t num_words = ((len - 1) / BN_BYTES) + 1;
+  if (!bn_wexpand(ret, num_words)) {
+    BN_free(bn);
+    return NULL;
+  }
+  ret->top = num_words;
+
+  /* Make sure the top bytes will be zeroed. */
+  ret->d[num_words - 1] = 0;
+
+  /* We only support little-endian platforms, so we can simply memcpy the
+   * internal representation. */
+  OPENSSL_memcpy(ret->d, in, len);
+
+  bn_correct_top(ret);
+  return ret;
+}
+
 size_t BN_bn2bin(const BIGNUM *in, uint8_t *out) {
   size_t n, i;
   BN_ULONG l;
@@ -128,6 +164,23 @@ size_t BN_bn2bin(const BIGNUM *in, uint8_t *out) {
     *(out++) = (unsigned char)(l >> (8 * (i % BN_BYTES))) & 0xff;
   }
   return n;
+}
+
+int BN_bn2le_padded(uint8_t *out, size_t len, const BIGNUM *in) {
+  /* If we don't have enough space, fail out. */
+  size_t num_bytes = BN_num_bytes(in);
+  if (len < num_bytes) {
+    return 0;
+  }
+
+  /* We only support little-endian platforms, so we can simply memcpy into the
+   * internal representation. */
+  OPENSSL_memcpy(out, in->d, num_bytes);
+
+  /* Pad out the rest of the buffer with zeroes. */
+  OPENSSL_memset(out + num_bytes, 0, len - num_bytes);
+
+  return 1;
 }
 
 /* constant_time_select_ulong returns |x| if |v| is 1 and |y| if |v| is 0. Its
@@ -160,12 +213,9 @@ static BN_ULONG read_word_padded(const BIGNUM *in, size_t i) {
 }
 
 int BN_bn2bin_padded(uint8_t *out, size_t len, const BIGNUM *in) {
-  size_t i;
-  BN_ULONG l;
-
   /* Special case for |in| = 0. Just branch as the probability is negligible. */
   if (BN_is_zero(in)) {
-    memset(out, 0, len);
+    OPENSSL_memset(out, 0, len);
     return 1;
   }
 
@@ -175,7 +225,7 @@ int BN_bn2bin_padded(uint8_t *out, size_t len, const BIGNUM *in) {
     return 0;
   }
   if ((len % BN_BYTES) != 0) {
-    l = read_word_padded(in, len / BN_BYTES);
+    BN_ULONG l = read_word_padded(in, len / BN_BYTES);
     if (l >> (8 * (len % BN_BYTES)) != 0) {
       return 0;
     }
@@ -188,9 +238,9 @@ int BN_bn2bin_padded(uint8_t *out, size_t len, const BIGNUM *in) {
    * leading zero octets is low.
    *
    * See Falko Stenzke, "Manger's Attack revisited", ICICS 2010. */
-  i = len;
+  size_t i = len;
   while (i--) {
-    l = read_word_padded(in, i / BN_BYTES);
+    BN_ULONG l = read_word_padded(in, i / BN_BYTES);
     *(out++) = (uint8_t)(l >> (8 * (i % BN_BYTES))) & 0xff;
   }
   return 1;
@@ -204,17 +254,14 @@ int BN_bn2cbb_padded(CBB *out, size_t len, const BIGNUM *in) {
 static const char hextable[] = "0123456789abcdef";
 
 char *BN_bn2hex(const BIGNUM *bn) {
-  int i, j, v, z = 0;
-  char *buf;
-  char *p;
-
-  buf = OPENSSL_malloc(bn->top * BN_BYTES * 2 + 2);
+  char *buf = OPENSSL_malloc(1 /* leading '-' */ + 1 /* zero is non-empty */ +
+                             bn->top * BN_BYTES * 2 + 1 /* trailing NUL */);
   if (buf == NULL) {
     OPENSSL_PUT_ERROR(BN, ERR_R_MALLOC_FAILURE);
     return NULL;
   }
 
-  p = buf;
+  char *p = buf;
   if (bn->neg) {
     *(p++) = '-';
   }
@@ -223,10 +270,11 @@ char *BN_bn2hex(const BIGNUM *bn) {
     *(p++) = '0';
   }
 
-  for (i = bn->top - 1; i >= 0; i--) {
-    for (j = BN_BITS2 - 8; j >= 0; j -= 8) {
+  int z = 0;
+  for (int i = bn->top - 1; i >= 0; i--) {
+    for (int j = BN_BITS2 - 8; j >= 0; j -= 8) {
       /* strip leading zeros */
-      v = ((int)(bn->d[i] >> (long)j)) & 0xff;
+      int v = ((int)(bn->d[i] >> (long)j)) & 0xff;
       if (z || v != 0) {
         *(p++) = hextable[v >> 4];
         *(p++) = hextable[v & 0x0f];
@@ -372,72 +420,69 @@ int BN_hex2bn(BIGNUM **outp, const char *in) {
 }
 
 char *BN_bn2dec(const BIGNUM *a) {
-  int i = 0, num, ok = 0;
-  char *buf = NULL;
-  char *p;
-  BIGNUM *t = NULL;
-  BN_ULONG *bn_data = NULL, *lp;
-
-  /* get an upper bound for the length of the decimal integer
-   * num <= (BN_num_bits(a) + 1) * log(2)
-   *     <= 3 * BN_num_bits(a) * 0.1001 + log(2) + 1     (rounding error)
-   *     <= BN_num_bits(a)/10 + BN_num_bits/1000 + 1 + 1
-   */
-  i = BN_num_bits(a) * 3;
-  num = i / 10 + i / 1000 + 1 + 1;
-  bn_data = OPENSSL_malloc((num / BN_DEC_NUM + 1) * sizeof(BN_ULONG));
-  buf = OPENSSL_malloc(num + 3);
-  if ((buf == NULL) || (bn_data == NULL)) {
-    OPENSSL_PUT_ERROR(BN, ERR_R_MALLOC_FAILURE);
-    goto err;
-  }
-  t = BN_dup(a);
-  if (t == NULL) {
-    goto err;
+  /* It is easier to print strings little-endian, so we assemble it in reverse
+   * and fix at the end. */
+  BIGNUM *copy = NULL;
+  CBB cbb;
+  if (!CBB_init(&cbb, 16) ||
+      !CBB_add_u8(&cbb, 0 /* trailing NUL */)) {
+    goto cbb_err;
   }
 
-#define BUF_REMAIN (num + 3 - (size_t)(p - buf))
-  p = buf;
-  lp = bn_data;
-  if (BN_is_zero(t)) {
-    *(p++) = '0';
-    *(p++) = '\0';
+  if (BN_is_zero(a)) {
+    if (!CBB_add_u8(&cbb, '0')) {
+      goto cbb_err;
+    }
   } else {
-    if (BN_is_negative(t)) {
-      *p++ = '-';
+    copy = BN_dup(a);
+    if (copy == NULL) {
+      goto err;
     }
 
-    while (!BN_is_zero(t)) {
-      *lp = BN_div_word(t, BN_DEC_CONV);
-      lp++;
-    }
-    lp--;
-    /* We now have a series of blocks, BN_DEC_NUM chars
-     * in length, where the last one needs truncation.
-     * The blocks need to be reversed in order. */
-    BIO_snprintf(p, BUF_REMAIN, BN_DEC_FMT1, *lp);
-    while (*p) {
-      p++;
-    }
-    while (lp != bn_data) {
-      lp--;
-      BIO_snprintf(p, BUF_REMAIN, BN_DEC_FMT2, *lp);
-      while (*p) {
-        p++;
+    while (!BN_is_zero(copy)) {
+      BN_ULONG word = BN_div_word(copy, BN_DEC_CONV);
+      if (word == (BN_ULONG)-1) {
+        goto err;
       }
+
+      const int add_leading_zeros = !BN_is_zero(copy);
+      for (int i = 0; i < BN_DEC_NUM && (add_leading_zeros || word != 0); i++) {
+        if (!CBB_add_u8(&cbb, '0' + word % 10)) {
+          goto cbb_err;
+        }
+        word /= 10;
+      }
+      assert(word == 0);
     }
   }
-  ok = 1;
 
-err:
-  OPENSSL_free(bn_data);
-  BN_free(t);
-  if (!ok) {
-    OPENSSL_free(buf);
-    buf = NULL;
+  if (BN_is_negative(a) &&
+      !CBB_add_u8(&cbb, '-')) {
+    goto cbb_err;
   }
 
-  return buf;
+  uint8_t *data;
+  size_t len;
+  if (!CBB_finish(&cbb, &data, &len)) {
+    goto cbb_err;
+  }
+
+  /* Reverse the buffer. */
+  for (size_t i = 0; i < len/2; i++) {
+    uint8_t tmp = data[i];
+    data[i] = data[len - 1 - i];
+    data[len - 1 - i] = tmp;
+  }
+
+  BN_free(copy);
+  return (char *)data;
+
+cbb_err:
+  OPENSSL_PUT_ERROR(BN, ERR_R_MALLOC_FAILURE);
+err:
+  BN_free(copy);
+  CBB_cleanup(&cbb);
+  return NULL;
 }
 
 int BN_dec2bn(BIGNUM **outp, const char *in) {
@@ -523,6 +568,24 @@ BN_ULONG BN_get_word(const BIGNUM *bn) {
   }
 }
 
+int BN_get_u64(const BIGNUM *bn, uint64_t *out) {
+  switch (bn->top) {
+    case 0:
+      *out = 0;
+      return 1;
+    case 1:
+      *out = bn->d[0];
+      return 1;
+#if defined(OPENSSL_32_BIT)
+    case 2:
+      *out = (uint64_t) bn->d[0] | (((uint64_t) bn->d[1]) << 32);
+      return 1;
+#endif
+    default:
+      return 0;
+  }
+}
+
 size_t BN_bn2mpi(const BIGNUM *in, uint8_t *out) {
   const size_t bits = BN_num_bits(in);
   const size_t bytes = (bits + 7) / 8;
@@ -540,7 +603,7 @@ size_t BN_bn2mpi(const BIGNUM *in, uint8_t *out) {
     /* If we cannot represent the number then we emit zero as the interface
      * doesn't allow an error to be signalled. */
     if (out) {
-      memset(out, 0, 4);
+      OPENSSL_memset(out, 0, 4);
     }
     return 4;
   }
@@ -577,12 +640,14 @@ BIGNUM *BN_mpi2bn(const uint8_t *in, size_t len, BIGNUM *out) {
     return NULL;
   }
 
+  int out_is_alloced = 0;
   if (out == NULL) {
     out = BN_new();
-  }
-  if (out == NULL) {
-    OPENSSL_PUT_ERROR(BN, ERR_R_MALLOC_FAILURE);
-    return NULL;
+    if (out == NULL) {
+      OPENSSL_PUT_ERROR(BN, ERR_R_MALLOC_FAILURE);
+      return NULL;
+    }
+    out_is_alloced = 1;
   }
 
   if (in_len == 0) {
@@ -592,6 +657,9 @@ BIGNUM *BN_mpi2bn(const uint8_t *in, size_t len, BIGNUM *out) {
 
   in += 4;
   if (BN_bin2bn(in, in_len, out) == NULL) {
+    if (out_is_alloced) {
+      BN_free(out);
+    }
     return NULL;
   }
   out->neg = ((*in) & 0x80) != 0;
