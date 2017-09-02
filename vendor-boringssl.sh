@@ -17,55 +17,62 @@
 # This script creates a vendored copy of BoringSSL that is
 # suitable for building with the Swift Package Manager.
 #
+# Usage: 
+#   1. Clone github.com/grpc/grpc into the third_party directory.
+#   2. Get gRPC submodules by running "git submodule update --init"
+#      inside the gRPC directory.
+#   3. Run this script in the grpc-swift directory. It will place 
+#      a local copy of the BoringSSL sources in Sources/BoringSSL.
+#      Any prior contents of Sources/BoringSSL will be deleted.
+#
+
 SRCROOT=third_party/grpc/third_party/boringssl
 DSTROOT=Sources/BoringSSL
 
-rm -rf $DSTROOT/crypto
+echo "REMOVING any previously-vendored BoringSSL code"
 rm -rf $DSTROOT/include
 rm -rf $DSTROOT/ssl
+rm -rf $DSTROOT/crypto
 rm -rf $DSTROOT/err_data.c
-
 
 PATTERNS=(
 'include/openssl/*.h'
 'ssl/*.h'
 'ssl/*.c'
-'ssl/**/*.h'
-'ssl/**/*.c'
-'*.c'
 'crypto/*.h'
 'crypto/*.c'
 'crypto/**/*.h'
 'crypto/**/*.c'
-'*.h'
-'crypto/*.h'
-'crypto/**/*.h')
+)
 
 EXCLUDES=(
 '*_test.*'
 'test_*.*'
-'test')
+'test'
+)
 
 for pattern in "${PATTERNS[@]}" 
 do
-  echo "PATTERN $pattern"
+  echo "COPYING $pattern"
   for i in $SRCROOT/$pattern; do
     path=${i#$SRCROOT}
-    dest="$DSTROOT/$path"
+    dest="$DSTROOT$path"
     dest_dir=$(dirname $dest)
     mkdir -p $dest_dir
-    echo $SRCROOT/$path 
-    echo $dest
     cp $SRCROOT/$path $dest
   done
 done
 
+echo "COPYING err_data.c from gRPC project"
 cp ./third_party/grpc/src/boringssl/err_data.c $DSTROOT
 
 for exclude in "${EXCLUDES[@]}" 
 do
-  echo "EXCLUDE $exclude"
-  find $DSTROOT -name "$exclude" -exec rm -rf {} \;
+  echo "EXCLUDING $exclude"
+  find $DSTROOT -d -name "$exclude" -exec rm -rf {} \;
 done
 
+#
+# edit the BoringSSL headers to disable dependency on assembly language helpers.
+#
 perl -pi -e '$_ .= qq(\n#define OPENSSL_NO_ASM\n) if /#define OPENSSL_HEADER_BASE_H/' Sources/BoringSSL/include/openssl/base.h

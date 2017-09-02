@@ -19,13 +19,30 @@
 # the Swift Package Manager.
 #
 
+#
+# Read the list of files to vendor from the gRPC project.
+#
+# The file that is included here is a generated file.
+# To generate it, copy swift-vendoring.sh.template from
+# the grpc-swift directory to grpc/templates and then
+# run tools/buildgen/generate_projects.sh in the grpc
+# directory.
+#
 source third_party/grpc/swift-vendoring.sh 
 
+#
+# Remove previously-vendored code.
+#
+echo "REMOVING any previously-vendored gRPC code"
 rm -rf Sources/CgRPC/src
 rm -rf Sources/CgRPC/grpc
 rm -rf Sources/CgRPC/third_party
-rm Sources/CgRPC/include/grpc
+rm -rf Sources/CgRPC/include/grpc
 
+#
+# Copy grpc headers and source files
+#
+echo "COPYING public gRPC headers"
 for src in "${public_headers[@]}"
 do
 	dest="Sources/CgRPC/$src"
@@ -34,16 +51,7 @@ do
 	cp third_party/grpc/$src $dest
 done
 
-mv Sources/CgRPC/include/grpc Sources/CgRPC/grpc
-
-for src in "${source_files[@]}"
-do
-	dest="Sources/CgRPC/$src"
-	dest_dir=$(dirname $dest)
-	mkdir -pv $dest_dir
-	cp third_party/grpc/$src $dest
-done
-
+echo "COPYING private grpc headers"
 for src in "${private_headers[@]}"
 do
 	dest="Sources/CgRPC/$src"
@@ -52,14 +60,18 @@ do
 	cp third_party/grpc/$src $dest
 done
 
-echo "TODO:"
-echo "link the grpc headers"
-cd Sources/CgRPC/include; ln -s ../grpc; cd ../../..
-echo "get the nanopb headers"
+echo "COPYING grpc source files"
+for src in "${source_files[@]}"
+do
+	dest="Sources/CgRPC/$src"
+	dest_dir=$(dirname $dest)
+	mkdir -pv $dest_dir
+	cp third_party/grpc/$src $dest
+done
+
+echo "COPYING additional nanopb headers"
 cp third_party/grpc/third_party/nanopb/*.h Sources/CgRPC/third_party/nanopb/
-echo "#define GRPC_ARES 0 in grpc/impl/codegen/port_platform.h"
-perl -pi -e 's/#define GRPC_ARES 1/#define GRPC_ARES 0/' Sources/CgRPC/grpc/impl/codegen/port_platform.h
 
-echo "ok"
-
+echo "DISABLING ARES"
+perl -pi -e 's/#define GRPC_ARES 1/#define GRPC_ARES 0/' Sources/CgRPC/include/grpc/impl/codegen/port_platform.h
 

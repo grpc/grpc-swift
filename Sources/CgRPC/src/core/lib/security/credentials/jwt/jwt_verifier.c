@@ -442,7 +442,7 @@ static EVP_PKEY *extract_pkey_from_x509(const char *x509_str) {
 
 end:
   BIO_free(bio);
-  X509_free(x509);
+  if (x509 != NULL) X509_free(x509);
   return result;
 }
 
@@ -496,8 +496,6 @@ static EVP_PKEY *pkey_from_jwk(grpc_exec_ctx *exec_ctx, const grpc_json *json,
   const grpc_json *key_prop;
   RSA *rsa = NULL;
   EVP_PKEY *result = NULL;
-  BIGNUM *tmp_n = NULL;
-  BIGNUM *tmp_e = NULL;
 
   GPR_ASSERT(kty != NULL && json != NULL);
   if (strcmp(kty, "RSA") != 0) {
@@ -509,6 +507,8 @@ static EVP_PKEY *pkey_from_jwk(grpc_exec_ctx *exec_ctx, const grpc_json *json,
     gpr_log(GPR_ERROR, "Could not create rsa key.");
     goto end;
   }
+  BIGNUM *tmp_n = NULL;
+  BIGNUM *tmp_e = NULL;
   for (key_prop = json->child; key_prop != NULL; key_prop = key_prop->next) {
     if (strcmp(key_prop->key, "n") == 0) {
       tmp_n =
@@ -528,16 +528,11 @@ static EVP_PKEY *pkey_from_jwk(grpc_exec_ctx *exec_ctx, const grpc_json *json,
     gpr_log(GPR_ERROR, "Cannot set RSA key from inputs.");
     goto end;
   }
-  /* RSA_set0_key takes ownership on success. */
-  tmp_n = NULL;
-  tmp_e = NULL;
   result = EVP_PKEY_new();
   EVP_PKEY_set1_RSA(result, rsa); /* uprefs rsa. */
 
 end:
-  RSA_free(rsa);
-  BN_free(tmp_n);
-  BN_free(tmp_e);
+  if (rsa != NULL) RSA_free(rsa);
   return result;
 }
 
@@ -623,7 +618,7 @@ static int verify_jwt_signature(EVP_PKEY *key, const char *alg,
   result = 1;
 
 end:
-  EVP_MD_CTX_destroy(md_ctx);
+  if (md_ctx != NULL) EVP_MD_CTX_destroy(md_ctx);
   return result;
 }
 
@@ -663,7 +658,7 @@ static void on_keys_retrieved(grpc_exec_ctx *exec_ctx, void *user_data,
 
 end:
   if (json != NULL) grpc_json_destroy(json);
-  EVP_PKEY_free(verification_key);
+  if (verification_key != NULL) EVP_PKEY_free(verification_key);
   ctx->user_cb(exec_ctx, ctx->user_data, status, claims);
   verifier_cb_ctx_destroy(exec_ctx, ctx);
 }
