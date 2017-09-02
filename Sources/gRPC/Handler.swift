@@ -38,14 +38,26 @@ public class Handler {
 
   /// The host name sent with the request
   public lazy var host: String = {
-    return String(cString:cgrpc_handler_host(self.underlyingHandler),
-                  encoding:.utf8)!;
+    if let string = cgrpc_handler_copy_host(self.underlyingHandler) {
+      defer {
+        cgrpc_free_copied_string(string);
+      }
+      return String(cString:string, encoding:.utf8)!;
+    } else {
+      return ""
+    }
   }()
 
   /// The method name sent with the request
   public lazy var method: String = {
-    return String(cString:cgrpc_handler_method(self.underlyingHandler),
-                  encoding:.utf8)!;
+    if let string = cgrpc_handler_copy_method(self.underlyingHandler) {
+      defer {
+        cgrpc_free_copied_string(string);
+      }
+      return String(cString:string, encoding:.utf8)!;
+    } else {
+      return ""
+    }
   }()
 
   /// The caller address associated with the request

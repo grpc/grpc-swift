@@ -165,8 +165,14 @@ internal class OperationGroup {
     for (i, operation) in operations.enumerated() {
       switch (operation) {
       case .receiveStatusOnClient:
-        return String(cString:cgrpc_observer_recv_status_on_client_get_status_details(underlyingObservers[i]),
-                      encoding:String.Encoding.utf8)!
+        if let string = cgrpc_observer_recv_status_on_client_copy_status_details(underlyingObservers[i]) {
+          defer {
+            cgrpc_free_copied_string(string);
+          }
+          return String(cString:string, encoding:String.Encoding.utf8)!
+        } else {
+          return nil
+        }
       default:
         continue
       }

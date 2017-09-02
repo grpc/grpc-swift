@@ -235,8 +235,12 @@ long cgrpc_observer_recv_status_on_client_get_status(cgrpc_observer_recv_status_
   return observer->server_status;
 }
 
-const char *cgrpc_observer_recv_status_on_client_get_status_details(cgrpc_observer_recv_status_on_client *observer) {
-  return (const char *) GRPC_SLICE_START_PTR(observer->server_details);
+const char *cgrpc_observer_recv_status_on_client_copy_status_details(cgrpc_observer_recv_status_on_client *observer) {
+  int length = GRPC_SLICE_LENGTH(observer->server_details);
+  char *str = (char *) malloc(length + 1);
+  memcpy(str, GRPC_SLICE_START_PTR(observer->server_details), length);
+  str[length] = 0;
+  return str;
 }
 
 int cgrpc_observer_recv_close_on_server_get_was_cancelled(cgrpc_observer_recv_close_on_server *observer) {

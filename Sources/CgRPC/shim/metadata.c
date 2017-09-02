@@ -49,10 +49,6 @@ const char *cgrpc_metadata_array_copy_value_at_index(cgrpc_metadata_array *array
   return str;
 }
 
-void cgrpc_metadata_free_copied_string(const char *string) {
-	free(string);
-}
-
 int cgrpc_metadata_array_get_value_length_at_index(cgrpc_metadata_array *array, size_t index) {
   return GRPC_SLICE_LENGTH(array->metadata[index].value);
   /*

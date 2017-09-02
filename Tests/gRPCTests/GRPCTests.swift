@@ -62,7 +62,7 @@
   }
  }
 
- let address = "localhost:8998"
+ let address = "localhost:8081"
  let host = "foo.test.google.fr"
  let clientText = "hello, server!"
  let serverText = "hello, client!"
@@ -78,7 +78,7 @@
   ["0": "zero",
    "1": "one",
    "2": "two"]
- let steps = 1
+ let steps = 10
  let hello = "/hello"
  let statusCode = 0
  let statusMessage = "OK"

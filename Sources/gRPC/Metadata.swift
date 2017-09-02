@@ -73,7 +73,7 @@ public class Metadata : CustomStringConvertible, NSCopying {
   public func key(_ index: Int) -> (String) {
     if let string = cgrpc_metadata_array_copy_key_at_index(underlyingArray, index) {
       defer {
-        cgrpc_metadata_free_copied_string(string)
+        cgrpc_free_copied_string(string)
       }
       if let key = String(cString:string, encoding:String.Encoding.utf8) {
         return key
@@ -85,7 +85,7 @@ public class Metadata : CustomStringConvertible, NSCopying {
   public func value(_ index: Int) -> (String) {
     if let string = cgrpc_metadata_array_copy_value_at_index(underlyingArray, index) {
       defer {
-        cgrpc_metadata_free_copied_string(string)
+        cgrpc_free_copied_string(string)
       }
       if let value = String(cString:string, encoding:String.Encoding.utf8)  {
         return value
