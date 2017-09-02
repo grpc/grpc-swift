@@ -5,4 +5,4 @@ all:
 clean :
 	rm -rf Packages
 	rm -rf .build
-	rm -f Package.pins
+	rm -f Package.pins Package.resolved

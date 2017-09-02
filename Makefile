@@ -15,4 +15,4 @@ clean:
 	rm -rf Packages
 	rm -rf .build
 	rm -rf SwiftGRPC.xcodeproj
-	rm -rf Package.pins
+	rm -rf Package.pins Package.resolved
