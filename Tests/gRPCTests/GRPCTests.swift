@@ -25,9 +25,7 @@
   func testConnectivitySecure() {
     runTest(useSSL:true)
   }
- }
 
- extension gRPCTests {
   static var allTests : [(String, (gRPCTests) -> () throws -> Void)] {
     return [
       ("testConnectivity", testConnectivity),

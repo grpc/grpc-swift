@@ -1,5 +1,4 @@
 module CgRPC {
     header "CgRPC.h"
-    link "CgRPC"
     export *
 }
