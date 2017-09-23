@@ -24,6 +24,7 @@
 import Foundation
 import Dispatch
 import gRPC
+import SwiftProtobuf
 //-{% for service in file.service %}
 
 /// Type for errors thrown from generated server code.
