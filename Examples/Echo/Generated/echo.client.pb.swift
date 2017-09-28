@@ -24,6 +24,7 @@
 import Foundation
 import Dispatch
 import gRPC
+import SwiftProtobuf
 
 /// Type for errors thrown from generated client code.
 internal enum Echo_EchoClientError : Error {
