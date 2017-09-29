@@ -117,7 +117,10 @@ cgrpc_channel *cgrpc_channel_create(const char *address);
 cgrpc_channel *cgrpc_channel_create_secure(const char *address,
                                            const char *pem_root_certs,
                                            const char *host);
-
+cgrpc_channel *cgrpc_channel_create_secure_asm(const char *address,
+                                           const char *pem_root_certs,
+                                           const char *private_key,
+                                           const char *cert_chain);
 void cgrpc_channel_destroy(cgrpc_channel *channel);
 cgrpc_call *cgrpc_channel_create_call(cgrpc_channel *channel,
                                       const char *method,
