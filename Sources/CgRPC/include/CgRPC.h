@@ -117,7 +117,7 @@ cgrpc_channel *cgrpc_channel_create(const char *address);
 cgrpc_channel *cgrpc_channel_create_secure(const char *address,
                                            const char *pem_root_certs,
                                            const char *host);
-cgrpc_channel *cgrpc_channel_create_secure_asm(const char *address,
+cgrpc_channel *cgrpc_channel_create_securev2(const char *address,
                                            const char *pem_root_certs,
                                            const char *private_key,
                                            const char *cert_chain);
