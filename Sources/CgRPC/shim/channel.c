@@ -88,7 +88,7 @@ cgrpc_channel *cgrpc_channel_create_securev2(const char *address,
   const char* root_certs = gpr_strdup(pem_root_certs);
   grpc_channel_credentials *creds = grpc_ssl_credentials_create(root_certs, pair, NULL);
   c->channel = grpc_secure_channel_create(creds, address, channelArgs, NULL);
-  c->completion_queue = grpc_completion_queue_create(NULL);
+  c->completion_queue = grpc_completion_queue_create_for_next(NULL);
   return c;
 }
 
