@@ -44,5 +44,5 @@ Pod::Spec.new do |s|
 
   s.source_files = 'Sources/**/*.swift', 'Sources/**/*.[ch]'
 
-  s.dependency 'gRPC-Core', '~> 1.0.1'
+  s.dependency 'gRPC-Core', '>= 1'
 end
