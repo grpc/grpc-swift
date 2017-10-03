@@ -18,7 +18,7 @@ deploy:
 	cp echo.server.pb.swift ../Examples/Echo/Generated/echo.server.pb.swift 
 
 clear : 
-	rm -f echo.client.pb.swift echo.server.pb.swift swiftgrpc.log
+	rm -f echo.pb.swift echo.client.pb.swift echo.server.pb.swift swiftgrpc.log
 
 clean : clear
 	rm -rf protoc-gen-swiftgrpc Packages .build protoc-gen-swift Package.pins

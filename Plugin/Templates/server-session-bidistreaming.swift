@@ -31,8 +31,8 @@
   }
 
   /// Send a message. Nonblocking.
-  {{ access }} func send(_ response: {{ method|output }}) throws {
-    try handler.sendResponse(message:response.serializedData()) {}
+  {{ access }} func send(_ response: {{ method|output }}, completion: @escaping ()->()) throws {
+    try handler.sendResponse(message:response.serializedData()) {completion()}
   }
 
   /// Close a connection. Blocks until the connection is closed.

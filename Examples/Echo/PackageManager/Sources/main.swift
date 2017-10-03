@@ -157,7 +157,7 @@ if client != "" {
         } catch Echo_EchoClientError.endOfStream {
           print("update closed")
           latch.signal()
-          break
+          running = false
         } catch (let error) {
           print("error: \(error)")
         }

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import Foundation
+import Dispatch
 
 class EchoProvider : Echo_EchoProvider {
 
@@ -31,7 +32,9 @@ class EchoProvider : Echo_EchoProvider {
     for part in parts {
       var response = Echo_EchoResponse()
       response.text = "Swift echo expand (\(i)): \(part)"
-      try session.send(response)
+      let sem = DispatchSemaphore(value: 0)
+      try session.send(response) {sem.signal()}
+      _ = sem.wait(timeout: DispatchTime.distantFuture)
       i += 1
       sleep(1)
     }
@@ -64,7 +67,9 @@ class EchoProvider : Echo_EchoProvider {
         count += 1
         var response = Echo_EchoResponse()
         response.text = "Swift echo update (\(count)): \(request.text)"
-        try session.send(response)
+        let sem = DispatchSemaphore(value: 0)
+        try session.send(response) {sem.signal()}
+        _ = sem.wait(timeout: DispatchTime.distantFuture)
       } catch Echo_EchoServerError.endOfStream {
         break
       } catch (let error) {

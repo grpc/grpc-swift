@@ -90,8 +90,8 @@ internal class Echo_EchoExpandSession : Echo_EchoSession {
   }
 
   /// Send a message. Nonblocking.
-  internal func send(_ response: Echo_EchoResponse) throws {
-    try handler.sendResponse(message:response.serializedData()) {}
+  internal func send(_ response: Echo_EchoResponse, completion: @escaping ()->()) throws {
+    try handler.sendResponse(message:response.serializedData()) {completion()}
   }
 
   /// Run the session. Internal.
@@ -203,8 +203,8 @@ internal class Echo_EchoUpdateSession : Echo_EchoSession {
   }
 
   /// Send a message. Nonblocking.
-  internal func send(_ response: Echo_EchoResponse) throws {
-    try handler.sendResponse(message:response.serializedData()) {}
+  internal func send(_ response: Echo_EchoResponse, completion: @escaping ()->()) throws {
+    try handler.sendResponse(message:response.serializedData()) {completion()}
   }
 
   /// Close a connection. Blocks until the connection is closed.
