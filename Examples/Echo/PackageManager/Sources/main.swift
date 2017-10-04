@@ -26,6 +26,8 @@ var server : Bool = false
 // client options
 var client : String = ""
 var message : String = "Testing 1 2 3"
+var address : String = ""
+var port : String = ""
 
 // self-test mode
 var test : Bool = false
@@ -52,10 +54,34 @@ while i < Int(CommandLine.argc) {
   } else if arg == "-m" && (i < Int(CommandLine.argc)) {
     message = CommandLine.arguments[i]
     i = i + 1
+  } else if arg == "-a" && (i < Int(CommandLine.argc)) {
+    address = CommandLine.arguments[i]
+    i = i + 1
+  } else if arg == "-p" && (i < Int(CommandLine.argc)) {
+    port = CommandLine.arguments[i]
+    i = i + 1
   }
 }
 
-var latch = CountDownLatch(1)
+if address == "" {
+  if server {
+    address = "0.0.0.0"
+  } else {
+    address = "localhost"
+  }
+}
+
+if port == "" {
+  if useSSL {
+    port = "8443"
+  } else {
+    port = "8081"
+  }
+}
+
+print(address + ":" + port + "\n")
+
+let sem = DispatchSemaphore(value: 0)
 
 gRPC.initialize()
 
@@ -67,116 +93,116 @@ if server {
     print("Starting secure server")
     let certificateURL = URL(fileURLWithPath:"ssl.crt")
     let keyURL = URL(fileURLWithPath:"ssl.key")
-    echoServer = Echo_EchoServer(address:"localhost:8443",
+    echoServer = Echo_EchoServer(address:address + ":" + port,
                                  certificateURL:certificateURL,
                                  keyURL:keyURL,
                                  provider:echoProvider)
   } else {
     print("Starting insecure server")
-    echoServer = Echo_EchoServer(address:"localhost:8081",
+    echoServer = Echo_EchoServer(address:address + ":" + port,
                                  provider:echoProvider)
   }
   echoServer.start()
   // Block to keep the main thread from finishing while the server runs.
   // This server never exits. Kill the process to stop it.
-  latch.wait()
+  _ = sem.wait(timeout: DispatchTime.distantFuture)
 }
 
 if client != "" {
   do {
 
-  print("Starting client")
+    print("Starting client")
 
-  var service : Echo_EchoService
-  if useSSL {
-    let certificateURL = URL(fileURLWithPath:"ssl.crt")
-    let certificates = try! String(contentsOf: certificateURL)
-    service = Echo_EchoService(address:"localhost:8443", certificates:certificates, host:"example.com")
-    service.host = "example.com" // sample override
-  } else {
-    service = Echo_EchoService(address:"localhost:8081")
-  }
-
-  let requestMetadata = Metadata(["x-goog-api-key":"YOUR_API_KEY",
-                                  "x-ios-bundle-identifier":"com.google.echo"])
-
-  // Unary
-  if client == "get" {
-    var requestMessage = Echo_EchoRequest()
-    requestMessage.text = message
-    print("Sending: " + requestMessage.text)
-    let responseMessage = try service.get(requestMessage)
-    print("get received: " + responseMessage.text)
-  }
-
-  // Server streaming
-  if client == "expand" {
-    var requestMessage = Echo_EchoRequest()
-    requestMessage.text = message
-    print("Sending: " + requestMessage.text)
-    let expandCall = try service.expand(requestMessage) {result in }
-    var running = true
-    while running {
-      do {
-        let responseMessage = try expandCall.receive()
-        print("Received: \(responseMessage.text)")
-      } catch Echo_EchoClientError.endOfStream {
-        print("expand closed")
-        running = false
-      }
+    var service : Echo_EchoService
+    if useSSL {
+      let certificateURL = URL(fileURLWithPath:"ssl.crt")
+      let certificates = try! String(contentsOf: certificateURL)
+      service = Echo_EchoService(address:address + ":" + port, certificates:certificates, host:"example.com")
+      service.host = "example.com" // sample override
+    } else {
+      service = Echo_EchoService(address:address + ":" + port)
     }
-  }
 
-  // Client streaming
-  if client == "collect" {
-    let collectCall = try service.collect() {result in }
+    let requestMetadata = Metadata(["x-goog-api-key":"YOUR_API_KEY",
+                                    "x-ios-bundle-identifier":"com.google.echo"])
 
-    let parts = message.components(separatedBy:" ")
-    for part in parts {
+    // Unary
+    if client == "get" {
       var requestMessage = Echo_EchoRequest()
-      requestMessage.text = part
-      print("Sending: " + part)
-      try collectCall.send(requestMessage) {error in print(error)}
-      sleep(1)
+      requestMessage.text = message
+      print("Sending: " + requestMessage.text)
+      let responseMessage = try service.get(requestMessage)
+      print("get received: " + responseMessage.text)
     }
 
-    let responseMessage = try collectCall.closeAndReceive()
-    print("Received: \(responseMessage.text)")
-  }
-
-  // Bidirectional streaming
-  if client == "update" {
-    let updateCall = try service.update() {result in}
-
-    DispatchQueue.global().async {
+    // Server streaming
+    if client == "expand" {
+      var requestMessage = Echo_EchoRequest()
+      requestMessage.text = message
+      print("Sending: " + requestMessage.text)
+      let expandCall = try service.expand(requestMessage) {result in }
       var running = true
       while running {
         do {
-          let responseMessage = try updateCall.receive()
+          let responseMessage = try expandCall.receive()
           print("Received: \(responseMessage.text)")
         } catch Echo_EchoClientError.endOfStream {
-          print("update closed")
-          latch.signal()
+          print("expand closed")
           running = false
-        } catch (let error) {
-          print("error: \(error)")
         }
       }
     }
 
-    let parts = message.components(separatedBy:" ")
-    for part in parts {
-      var requestMessage = Echo_EchoRequest()
-      requestMessage.text = part
-      print("Sending: " + requestMessage.text)
-      try updateCall.send(requestMessage) {error in print(error)}
-      sleep(1)
-    }
-    try updateCall.closeSend()
+    // Client streaming
+    if client == "collect" {
+      let collectCall = try service.collect() {result in }
 
-    // Wait for the call to complete.
-    latch.wait()
-  }
+      let parts = message.components(separatedBy:" ")
+      for part in parts {
+        var requestMessage = Echo_EchoRequest()
+        requestMessage.text = part
+        print("Sending: " + part)
+        try collectCall.send(requestMessage) {error in print(error)}
+        sleep(1)
+      }
+
+      let responseMessage = try collectCall.closeAndReceive()
+      print("Received: \(responseMessage.text)")
+    }
+
+    // Bidirectional streaming
+    if client == "update" {
+      let updateCall = try service.update() {result in}
+
+      DispatchQueue.global().async {
+        var running = true
+        while running {
+          do {
+            let responseMessage = try updateCall.receive()
+            print("Received: \(responseMessage.text)")
+          } catch Echo_EchoClientError.endOfStream {
+            print("update closed")
+            sem.signal()
+            running = false
+          } catch (let error) {
+            print("error: \(error)")
+          }
+        }
+      }
+
+      let parts = message.components(separatedBy:" ")
+      for part in parts {
+        var requestMessage = Echo_EchoRequest()
+        requestMessage.text = part
+        print("Sending: " + requestMessage.text)
+        try updateCall.send(requestMessage) {error in print(error)}
+        sleep(1)
+      }
+      try updateCall.closeSend()
+
+      // Wait for the call to complete.
+      _ = sem.wait(timeout: DispatchTime.distantFuture)
+    }
 
   } catch let error {
     print("error:\(error)")
