@@ -311,4 +311,12 @@ public class Call {
   public func messageQueueLength() -> Int {
     return messageQueue.count
   }
+
+  /// Finishes the request side of this call, notifies the server that the RPC should be cancelled,
+  /// and finishes the response side of the call with an error of code CANCELED.
+  public func cancel() {
+    Call.callMutex.lock()
+    cgrpc_call_cancel(underlyingCall)
+    Call.callMutex.unlock()
+  }
 }

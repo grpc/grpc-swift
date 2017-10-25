@@ -81,6 +81,11 @@ internal class Echo_EchoGetCall {
       }
       return self
   }
+
+  /// Cancel the call.
+  internal func cancel() {
+    call.cancel()
+  }
 }
 
 /// Expand (Server Streaming)
@@ -139,6 +144,11 @@ internal class Echo_EchoExpandCall {
         }
       }
     }
+  }
+
+  /// Cancel the call.
+  internal func cancel() {
+    call.cancel()
   }
 }
 
@@ -201,6 +211,11 @@ internal class Echo_EchoCollectCall {
       } catch (let error) {
         throw error
       }
+  }
+
+  /// Cancel the call.
+  internal func cancel() {
+    call.cancel()
   }
 }
 
@@ -276,6 +291,11 @@ internal class Echo_EchoUpdateCall {
     try call.close() {
       completion()
     }
+  }
+
+  /// Cancel the call.
+  internal func cancel() {
+    call.cancel()
   }
 }
 
