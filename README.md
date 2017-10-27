@@ -49,7 +49,7 @@ generate the necessary support code.
 Binary releases of `protoc`, the Protocol Buffer Compiler, are
 available on [GitHub](https://github.com/google/protobuf/releases).
 
-To build the plugins, run `make` in the [Plugins](Plugins) directory.
+To build the plugins, run `make` in the [Plugin](Plugin) directory.
 This uses the Swift Package Manager to build both of the necessary
 plugins: `protoc-gen-swift`, which generates Protocol Buffer support code
 and `protoc-gen-swiftgrpc`, which generates gRPC interface code.
