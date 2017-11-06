@@ -58,4 +58,9 @@
         throw error
       }
   }
+
+  /// Cancel the call.
+  {{ access }} func cancel() {
+    call.cancel()
+  }
 }

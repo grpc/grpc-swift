@@ -33,3 +33,7 @@ grpc_call_error cgrpc_call_perform(cgrpc_call *call, cgrpc_operations *operation
                                                 NULL);
   return error;
 }
+
+void cgrpc_call_cancel(cgrpc_call *call) {
+  grpc_call_cancel(call->call, NULL);
+}
