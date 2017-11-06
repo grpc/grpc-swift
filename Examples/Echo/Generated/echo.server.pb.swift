@@ -268,7 +268,7 @@ internal class Echo_EchoServer {
   /// Start the server.
   internal func start(queue:DispatchQueue = DispatchQueue.global()) {
     guard let provider = self.provider else {
-      assert(false) // the server requires a provider
+      fatalError() // the server requires a provider
     }
     server.run {(handler) in
       print("Server received request to " + handler.host
