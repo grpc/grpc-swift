@@ -66,13 +66,6 @@ func main() throws {
 
     let file = FileDescriptor(proto:protoFile)
 
-    // a package declaration is required
-    let package = file.package
-    guard package != "" else {
-      print("ERROR: no package for \(file.name)")
-      continue
-    }
-
     // log info about the service
     log += "File \(file.name)\n"
     for service in file.service {
@@ -87,7 +80,13 @@ func main() throws {
     }
 
     if file.service.count > 0 {
-
+      // a package declaration is required for file containing service(s)
+      let package = file.package
+      guard package != ""  else {
+        print("ERROR: no package for \(file.name)")
+        continue
+      }
+      
       // generate separate implementation files for client and server
       let context : [String:Any] = ["file": file, "access": options.visibility.sourceSnippet]
 
