@@ -123,8 +123,8 @@ if client != "" {
       service = Echo_EchoService(address:address + ":" + port)
     }
 
-    let requestMetadata = Metadata(["x-goog-api-key":"YOUR_API_KEY",
-                                    "x-ios-bundle-identifier":"com.google.echo"])
+    service.metadata = Metadata(["x-goog-api-key":"YOUR_API_KEY",
+                                 "x-ios-bundle-identifier":"com.google.echo"])
 
     // Unary
     if client == "get" {

@@ -17,12 +17,16 @@ import Foundation
 import gRPC
 import OAuth2
 
-let CREDENTIALS = "google.yaml" // in $HOME/.credentials
+let CREDENTIALS = "google.json" // in $HOME/.credentials
 let TOKEN = "google.json" // local auth token storage
 
 #if os(OSX)
 // On OS X, we use the local browser to help the user get a token.
 let tokenProvider = try BrowserTokenProvider(credentials:CREDENTIALS, token:TOKEN)
+guard let tokenProvider = tokenProvider else {
+  print("ERROR: Unable to create BrowserTokenProvider.")
+  exit(-1)
+}
 if tokenProvider.token == nil {
   try tokenProvider.signIn(scopes:["profile",
                                    "https://www.googleapis.com/auth/contacts.readonly",
@@ -37,12 +41,12 @@ let tokenProvider = try GoogleTokenProvider()
 
 gRPC.initialize()
 
-guard let authToken = tokenProvider.token?.accessToken else {
-  print("ERROR: No OAuth token is avaiable.")
+guard let authToken = tokenProvider.token?.AccessToken else {
+  print("ERROR: No OAuth token is available.")
   exit(-1)
 }
 
-let projectID = "YOUR PROJECT ID"
+let projectID = "your-project-identifier"
 
 let certificateURL = URL(fileURLWithPath:"roots.pem")
 let certificates = try! String(contentsOf: certificateURL, encoding: .utf8)
