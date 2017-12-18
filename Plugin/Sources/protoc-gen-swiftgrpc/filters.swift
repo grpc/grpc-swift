@@ -15,7 +15,7 @@
  */
 import Foundation
 import SwiftProtobuf
-import PluginLibrary
+import SwiftProtobufPluginLibrary
 import Stencil
 import PathKit
 
