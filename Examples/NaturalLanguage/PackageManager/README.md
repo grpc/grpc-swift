@@ -16,9 +16,10 @@ Calls require a Google project ID and service account credentials.
 To create a project ID, visit the 
 [Google Cloud Console](https://cloud.google.com/console).
 
-After enabling the Cloud Natural Language API for your project,
-create and download service account credentials, saving them
-in ~/.credentials/credentials.json.
-
 Service account support is provided by Google's 
 [Auth Library for Swift](https://github.com/google/auth-library-swift).
+After enabling the Cloud Natural Language API for your project,
+create and download service account credentials. Then set the
+GOOGLE_APPLICATION_CREDENTIALS environment variable to point to 
+the file containing these credentials.
+
