@@ -28,9 +28,7 @@ guard let tokenProvider = tokenProvider else {
   exit(-1)
 }
 if tokenProvider.token == nil {
-  try tokenProvider.signIn(scopes:["profile",
-                                   "https://www.googleapis.com/auth/contacts.readonly",
-                                   "https://www.googleapis.com/auth/cloud-platform"])
+  try tokenProvider.signIn(scopes:["https://www.googleapis.com/auth/datastore"]) 
   try tokenProvider.saveToken(TOKEN)
 }
 #else
