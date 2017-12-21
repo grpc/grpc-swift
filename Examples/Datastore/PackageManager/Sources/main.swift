@@ -17,56 +17,54 @@ import Foundation
 import gRPC
 import OAuth2
 
-let CREDENTIALS = "google.json" // in $HOME/.credentials
-let TOKEN = "google.json" // local auth token storage
+let scopes = ["https://www.googleapis.com/auth/datastore"]
 
-#if os(OSX)
-// On OS X, we use the local browser to help the user get a token.
-let tokenProvider = try BrowserTokenProvider(credentials:CREDENTIALS, token:TOKEN)
-guard let tokenProvider = tokenProvider else {
-  print("ERROR: Unable to create BrowserTokenProvider.")
-  exit(-1)
+if let provider = DefaultTokenProvider(scopes:scopes) {
+  let sem = DispatchSemaphore(value: 0)
+  try provider.withToken() {(token, error) -> Void in
+    if let token = token {
+      gRPC.initialize()
+
+      guard let authToken = token.AccessToken else {
+        print("ERROR: No OAuth token is available.")
+        exit(-1)
+      }
+
+      let projectID = "your-project-identifier"
+
+      let certificateURL = URL(fileURLWithPath:"roots.pem")
+      let certificates = try! String(contentsOf: certificateURL, encoding: .utf8)
+      let service = Google_Datastore_V1_DatastoreService(address:"datastore.googleapis.com",
+                                                         certificates:certificates,
+                                                         host:nil)
+
+      service.metadata = Metadata(["authorization":"Bearer " + authToken])
+
+      var request = Google_Datastore_V1_RunQueryRequest()
+      request.projectID = projectID
+
+      var query = Google_Datastore_V1_GqlQuery()
+      query.queryString = "select *"
+
+      request.gqlQuery = query
+
+      print("\(request)")
+
+      do {
+        let result = try service.runquery(request)
+        print("\(result)")
+      } catch (let error) {
+        print("ERROR: \(error)")
+      }
+
+    }
+    if let error = error {
+      print("ERROR \(error)")
+    }
+    sem.signal()
+  }
+  _ = sem.wait(timeout: DispatchTime.distantFuture)
+} else {
+  print("Unable to create default token provider.")
 }
-if tokenProvider.token == nil {
-  try tokenProvider.signIn(scopes:["https://www.googleapis.com/auth/datastore"]) 
-  try tokenProvider.saveToken(TOKEN)
-}
-#else
-// On Linux, we can get a token if we are running in Google Cloud Shell
-// or in some other Google Cloud instance (GAE, GKE, GCE, etc).
-let tokenProvider = try GoogleTokenProvider()
-#endif
 
-gRPC.initialize()
-
-guard let authToken = tokenProvider.token?.AccessToken else {
-  print("ERROR: No OAuth token is available.")
-  exit(-1)
-}
-
-let projectID = "your-project-identifier"
-
-let certificateURL = URL(fileURLWithPath:"roots.pem")
-let certificates = try! String(contentsOf: certificateURL, encoding: .utf8)
-let service = Google_Datastore_V1_DatastoreService(address:"datastore.googleapis.com",
-                                                   certificates:certificates,
-                                                   host:nil)
-
-service.metadata = Metadata(["authorization":"Bearer " + authToken])
-
-var request = Google_Datastore_V1_RunQueryRequest()
-request.projectID = projectID
-
-var query = Google_Datastore_V1_GqlQuery()
-query.queryString = "select *"
-
-request.gqlQuery = query
-
-print("\(request)")
-
-do {
-  let result = try service.runquery(request)
-  print("\(result)")
-} catch (let error) {
-  print("ERROR: \(error)")
-}

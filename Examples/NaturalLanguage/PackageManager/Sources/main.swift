@@ -17,7 +17,9 @@ import Foundation
 import gRPC
 import OAuth2
 
-if let provider = DefaultTokenProvider() {
+let scopes = ["https://www.googleapis.com/auth/cloud-language"]
+
+if let provider = DefaultTokenProvider(scopes: scopes) {
   let sem = DispatchSemaphore(value: 0)
   try provider.withToken() {(token, error) -> Void in
     if let token = token {

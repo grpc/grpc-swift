@@ -1,7 +1,7 @@
 
 all:
-	swift build
-	cp .build/debug/Datastore .
+	swift build -c release
+	cp .build/release/Datastore .
 
 clean :
 	rm -rf Packages googleapis .build
