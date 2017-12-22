@@ -126,7 +126,7 @@
     let host = "example.com"
     channel = gRPC.Channel(address:address, certificates:certificates, host:host)
   } else {
-    channel = gRPC.Channel(address:address)
+    channel = gRPC.Channel(address:address, secure:false)
   }
 
   channel.host = host
