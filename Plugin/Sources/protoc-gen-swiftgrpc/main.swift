@@ -60,6 +60,7 @@ func main() throws {
   let options = try GeneratorOptions(parameter: request.parameter)
   
   var generatedFileNames = Set<String>()
+  var clientCount = 0
 
   // process each .proto file separately
   for protoFile in request.protoFile {
@@ -91,9 +92,11 @@ func main() throws {
       let context : [String:Any] = ["file": file, "access": options.visibility.sourceSnippet]
 
       do {
-        let clientFileName = package + ".client.pb.swift"
+        let clientFileName = package + "\(clientCount).client.pb.swift"
+        
         if !generatedFileNames.contains(clientFileName) {
           generatedFileNames.insert(clientFileName)
+          clientCount += 1
           let clientcode = try templateEnvironment.renderTemplate(name:"client.pb.swift",
                                                                   context: context)
           var clientfile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
