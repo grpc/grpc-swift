@@ -16,6 +16,7 @@
 import Foundation
 import gRPC
 import OAuth2
+import Commander
 
 let projectID = "your-project-identifier"
 let scopes = ["https://www.googleapis.com/auth/datastore"]
@@ -47,24 +48,22 @@ func runSelectQuery(service: Google_Datastore_V1_DatastoreService) throws {
   var query = Google_Datastore_V1_GqlQuery()
   query.queryString = "select *"
   request.gqlQuery = query
-  print("\(request)")
   let result = try service.runquery(request)
   print("\(result)")
 }
 
-func runInsert(service: Google_Datastore_V1_DatastoreService) throws {
+func runInsert(service: Google_Datastore_V1_DatastoreService,
+               number: Int) throws {
   var request = Google_Datastore_V1_CommitRequest()
   request.projectID = projectID
   request.mode = .nonTransactional
-
   var pathElement = Google_Datastore_V1_Key.PathElement()
   pathElement.kind = "Thing"
   var key = Google_Datastore_V1_Key()
   key.path = [pathElement]
   var entity = Google_Datastore_V1_Entity()
   entity.key = key
-
-  let thing = Thing(name:"Thing", number:1)
+  let thing = Thing(name:"Thing", number:number)
   let properties = try PropertiesEncoder.encode(thing)!
   for (k,v) in properties {
     var value = Google_Datastore_V1_Value()
@@ -78,17 +77,16 @@ func runInsert(service: Google_Datastore_V1_DatastoreService) throws {
     }
     entity.properties[k] = value
   }
-
+  
   var mutation = Google_Datastore_V1_Mutation()
   mutation.insert = entity
-
   request.mutations.append(mutation)
-
+  
   let result = try service.commit(request)
   print("\(result)")
 }
 
-func main() throws {
+func prepareService() throws -> Google_Datastore_V1_DatastoreService? {
   // Get an OAuth token
   var authToken : String!
   if let provider = DefaultTokenProvider(scopes:scopes) {
@@ -113,13 +111,29 @@ func main() throws {
                                                      certificates:certificates,
                                                      host:nil)
   service.metadata = Metadata(["authorization":"Bearer " + authToken])
-  // Run some queries
-  try runInsert(service:service)
-  try runSelectQuery(service:service)
+  return service
 }
 
-do {
-  try main()
-} catch (let error) {
-  print("ERROR: \(error)")
+func insert(number: Int) throws {
+  if let service = try prepareService() {
+    try runInsert(service:service, number:number)
+  }
 }
+
+func query() throws {
+  if let service = try prepareService() {
+    try runSelectQuery(service:service)
+  }
+}
+
+Group {
+  $0.command("insert") { (number:Int) in
+    try insert(number:number)
+  }
+  
+  $0.command("query") {
+    try query()
+  }
+  
+  }.run()
+
