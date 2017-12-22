@@ -92,7 +92,12 @@ func main() throws {
       let context : [String:Any] = ["file": file, "access": options.visibility.sourceSnippet]
 
       do {
-        let clientFileName = package + "\(clientCount).client.pb.swift"
+        var clientFileName : String
+        if clientCount == 0 {
+          clientFileName = package + ".client.pb.swift"
+        } else {
+          clientFileName = package + "\(clientCount).client.pb.swift"
+        }
         
         if !generatedFileNames.contains(clientFileName) {
           generatedFileNames.insert(clientFileName)
