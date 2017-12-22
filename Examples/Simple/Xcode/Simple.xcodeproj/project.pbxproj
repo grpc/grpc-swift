@@ -19,76 +19,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		D394EF131F58DB7A00E99633 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = OBJ_867;
-			remoteInfo = "zlib-example";
-		};
-		D394EF151F58DB7A00E99633 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = OBJ_868;
-			remoteInfo = Czlib;
-		};
-		D394EF171F58DB7A00E99633 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = OBJ_869;
-			remoteInfo = CgRPC;
-		};
-		D394EF191F58DB7A00E99633 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = OBJ_870;
-			remoteInfo = BoringSSL;
-		};
-		D394EF1B1F58DB7A00E99633 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = OBJ_871;
-			remoteInfo = gRPC;
-		};
-		D394EF1D1F58DB7A00E99633 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = OBJ_872;
-			remoteInfo = gRPCTests;
-		};
-		D394EF1F1F58DB9800E99633 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = OBJ_882;
-			remoteInfo = Czlib;
-		};
-		D394EF211F58DB9800E99633 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = OBJ_904;
-			remoteInfo = CgRPC;
-		};
-		D394EF231F58DB9800E99633 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = OBJ_1231;
-			remoteInfo = BoringSSL;
-		};
-		D394EF251F58DB9800E99633 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = OBJ_1543;
-			remoteInfo = gRPC;
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
@@ -99,7 +29,6 @@
 		D30D73611D565E4400F90CCB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D30D73641D565E4400F90CCB /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		D30D73661D565E4400F90CCB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SwiftGRPC.xcodeproj; path = ../../../SwiftGRPC.xcodeproj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -120,7 +49,6 @@
 		D30D734E1D565E4400F90CCB = {
 			isa = PBXGroup;
 			children = (
-				D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */,
 				D30D73591D565E4400F90CCB /* Simple */,
 				D30D73581D565E4400F90CCB /* Products */,
 			);
@@ -223,7 +151,6 @@
 			projectReferences = (
 				{
 					ProductGroup = D394EF0B1F58DB7A00E99633 /* Products */;
-					ProjectRef = D394EF0A1F58DB7A00E99633 /* SwiftGRPC.xcodeproj */;
 				},
 			);
 			projectRoot = "";
@@ -234,48 +161,6 @@
 /* End PBXProject section */
 
 /* Begin PBXReferenceProxy section */
-		D394EF141F58DB7A00E99633 /* zlib-example */ = {
-			isa = PBXReferenceProxy;
-			fileType = "compiled.mach-o.executable";
-			path = "zlib-example";
-			remoteRef = D394EF131F58DB7A00E99633 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		D394EF161F58DB7A00E99633 /* Czlib.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = Czlib.framework;
-			remoteRef = D394EF151F58DB7A00E99633 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		D394EF181F58DB7A00E99633 /* CgRPC.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = CgRPC.framework;
-			remoteRef = D394EF171F58DB7A00E99633 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		D394EF1A1F58DB7A00E99633 /* BoringSSL.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = BoringSSL.framework;
-			remoteRef = D394EF191F58DB7A00E99633 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		D394EF1C1F58DB7A00E99633 /* gRPC.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = gRPC.framework;
-			remoteRef = D394EF1B1F58DB7A00E99633 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		D394EF1E1F58DB7A00E99633 /* gRPCTests.xctest */ = {
-			isa = PBXReferenceProxy;
-			fileType = file;
-			path = gRPCTests.xctest;
-			remoteRef = D394EF1D1F58DB7A00E99633 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
 /* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
