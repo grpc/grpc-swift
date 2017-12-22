@@ -37,9 +37,14 @@ public class Channel {
   /// Initializes a gRPC channel
   ///
   /// - Parameter address: the address of the server to be called
-  public init(address: String) {
+  /// - Parameter secure: if true, use TLS
+  public init(address: String, secure: Bool = false) {
     self.host = address
-    underlyingChannel = cgrpc_channel_create(address)
+    if secure {
+      underlyingChannel = cgrpc_channel_create_secure(address, roots_pem(), nil)
+    } else {
+      underlyingChannel = cgrpc_channel_create(address)
+    }
     completionQueue = CompletionQueue(underlyingCompletionQueue:cgrpc_channel_completion_queue(underlyingChannel))
     completionQueue.name = "Client" // only for debugging
     self.completionQueue.run() // start a loop that watches the channel's completion queue
@@ -48,13 +53,11 @@ public class Channel {
   /// Initializes a gRPC channel
   ///
   /// - Parameter address: the address of the server to be called
-  public init(address: String, certificates: String?, host: String?) {
+  /// - Parameter certificates: a PEM representation of certificates to use
+  /// - Parameter host: an optional hostname override
+  public init(address: String, certificates: String, host: String?) {
     self.host = address
-    if let certificates = certificates {
-      underlyingChannel = cgrpc_channel_create_secure(address, certificates, host)
-    } else {
-      underlyingChannel = cgrpc_channel_create_secure(address, roots_pem(), host)
-    }
+    underlyingChannel = cgrpc_channel_create_secure(address, certificates, host)
     completionQueue = CompletionQueue(underlyingCompletionQueue:cgrpc_channel_completion_queue(underlyingChannel))
     completionQueue.name = "Client" // only for debugging
     self.completionQueue.run() // start a loop that watches the channel's completion queue
