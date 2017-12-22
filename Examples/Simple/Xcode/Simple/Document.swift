@@ -137,7 +137,7 @@ class Document: NSDocument {
       self.log("Client Starting")
       self.log("GRPC version " + gRPC.version())
 
-      self.channel = gRPC.Channel(address:address)
+      self.channel = gRPC.Channel(address:address, secure:false)
       self.channel.host = "foo.test.google.fr"
       let messageData = "hello, server!".data(using: .utf8)
 
