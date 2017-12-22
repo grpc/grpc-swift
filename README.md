@@ -110,9 +110,9 @@ For an example of this in Swift, please see the
 grpc-swift depends on Swift, Xcode, and swift-proto. We are currently
 testing with the following versions:
 
-- Xcode 9 
-- Swift 4 (swiftlang-900.0.43 clang-900.0.22.8)
-- swift-protobuf 0.9.904 
+- Xcode 9.1
+- Swift 4.0-dev
+- swift-protobuf 1.0.2
 
 ## License
 
