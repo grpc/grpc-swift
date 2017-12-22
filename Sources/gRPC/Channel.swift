@@ -38,7 +38,7 @@ public class Channel {
   ///
   /// - Parameter address: the address of the server to be called
   /// - Parameter secure: if true, use TLS
-  public init(address: String, secure: Bool = false) {
+  public init(address: String, secure: Bool = true) {
     self.host = address
     if secure {
       underlyingChannel = cgrpc_channel_create_secure(address, roots_pem(), nil)
