@@ -53,11 +53,7 @@ public class Channel {
     if let certificates = certificates {
       underlyingChannel = cgrpc_channel_create_secure(address, certificates, host)
     } else {
-      let bundle = Bundle(for: Channel.self)
-      let url = bundle.url(forResource: "roots", withExtension: "pem")!
-      let data = try! Data(contentsOf: url)
-      let s = String(data: data, encoding: .ascii)
-      underlyingChannel = cgrpc_channel_create_secure(address, s, host)
+      underlyingChannel = cgrpc_channel_create_secure(address, roots_pem(), host)
     }
     completionQueue = CompletionQueue(underlyingCompletionQueue:cgrpc_channel_completion_queue(underlyingChannel))
     completionQueue.name = "Client" // only for debugging
