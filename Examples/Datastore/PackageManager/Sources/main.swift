@@ -63,10 +63,8 @@ func prepareService() throws -> Google_Datastore_V1_DatastoreService? {
   }
   // Initialize gRPC service
   gRPC.initialize()
-  let certificateURL = URL(fileURLWithPath:"/roots.pem")
-  let certificates = try! String(contentsOf: certificateURL, encoding: .utf8)
   let service = Google_Datastore_V1_DatastoreService(address:"datastore.googleapis.com",
-                                                     certificates:certificates,
+                                                     certificates:nil,
                                                      host:nil)
   service.metadata = Metadata(["authorization":"Bearer " + authToken])
   return service

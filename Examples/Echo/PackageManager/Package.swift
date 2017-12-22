@@ -17,7 +17,7 @@ import PackageDescription
 let package = Package (
     name: "Echo",
     dependencies: [
-        .Package(url: "https://github.com/grpc/grpc-swift.git", Version(0,2,4)),
+        .Package(url: "https://github.com/grpc/grpc-swift.git", Version(0,2,5)),
         .Package(url: "https://github.com/apple/swift-protobuf.git", Version(1,0,2)),
     ]
 )

@@ -31,10 +31,8 @@ if let provider = DefaultTokenProvider(scopes: scopes) {
         exit(-1)
       }
 
-      let certificateURL = URL(fileURLWithPath:"roots.pem")
-      let certificates = try! String(contentsOf: certificateURL, encoding: .utf8)
       let service = Google_Cloud_Language_V1_LanguageServiceService(address:"language.googleapis.com",
-                                                                    certificates:certificates,
+                                                                    certificates:nil,
                                                                     host:nil)
 
       service.metadata = Metadata(["authorization":"Bearer " + authToken])
