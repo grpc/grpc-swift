@@ -67,15 +67,15 @@ import SwiftProtobuf
     }
   }
 
-  /// Create a client that makes insecure connections.
-  {{ access }} init(address: String) {
+  /// Create a client.
+  {{ access }} init(address: String, secure: Bool = true) {
     gRPC.initialize()
-    channel = Channel(address:address)
+    channel = Channel(address:address, secure:secure)
     metadata = Metadata()
   }
 
-  /// Create a client that makes secure connections.
-  {{ access }} init(address: String, certificates: String?, host: String?) {
+  /// Create a client that makes secure connections with a custom certificate and (optional) hostname.
+  {{ access }} init(address: String, certificates: String, host: String?) {
     gRPC.initialize()
     channel = Channel(address:address, certificates:certificates, host:host)
     metadata = Metadata()

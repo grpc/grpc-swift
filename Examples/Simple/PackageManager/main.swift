@@ -44,7 +44,7 @@ func main() throws {
 
 func client() throws {
   let message = "hello, server!".data(using: .utf8)
-  let c = gRPC.Channel(address:address)
+  let c = gRPC.Channel(address:address, secure:false)
   let steps = 3
   for i in 0..<steps {
     let latch = CountDownLatch(1)

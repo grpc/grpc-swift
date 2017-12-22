@@ -120,7 +120,7 @@ if client != "" {
       service = Echo_EchoService(address:address + ":" + port, certificates:certificates, host:"example.com")
       service.host = "example.com" // sample override
     } else {
-      service = Echo_EchoService(address:address + ":" + port)
+      service = Echo_EchoService(address:address + ":" + port, secure:false)
     }
 
     service.metadata = Metadata(["x-goog-api-key":"YOUR_API_KEY",
