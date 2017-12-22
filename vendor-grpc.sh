@@ -75,3 +75,5 @@ cp third_party/grpc/third_party/nanopb/*.h Sources/CgRPC/third_party/nanopb/
 echo "DISABLING ARES"
 perl -pi -e 's/#define GRPC_ARES 1/#define GRPC_ARES 0/' Sources/CgRPC/include/grpc/impl/codegen/port_platform.h
 
+echo "COPYING roots.pem"
+cp third_party/grpc/etc/roots.pem Assets/roots.pem
