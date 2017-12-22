@@ -6,3 +6,4 @@ all:
 clean :
 	rm -rf Packages googleapis .build
 	rm -f Package.pins NaturalLanguage Sources/*.pb.swift Sources/swiftgrpc.log google.json
+	rm -rf Package.resolved
