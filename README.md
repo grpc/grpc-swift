@@ -41,7 +41,7 @@ The recommended way to use Swift gRPC is to first define an API using the
 language and then use the
 [Protocol Buffer Compiler](https://github.com/google/protobuf)
 and the [Swift Protobuf](https://github.com/apple/swift-protobuf)
-and [gRPC-Swift](https://github.com/grpc/grpc-swift) plugins to
+and [Swift gRPC](https://github.com/grpc/grpc-swift) plugins to
 generate the necessary support code.
 
 ### Getting the dependencies
@@ -79,13 +79,7 @@ generate an Xcode project for the SwiftGRPC package:
 
 This will create `SwiftGRPC.xcodeproj`, which you should
 add to your project, along with setting build dependencies
-on **BoringSSL**, **CgRPC**, and **gRPC**. Due to present
-limitations in Package Manager configuration, the libz
-dependency is not included in the generated Xcode project. If
-you get build errors about missing symbols such as
-`_deflate`, `_deflateEnd`, etc., you can fix them by adding
-`libz.tbd` to the **Link Binary With Libraries** build step
-of the **CgRPC** target.
+on **BoringSSL**, **CgRPC**, **gRPC**, and **CzLib**.
 
 Please also note that your project will need to include the
 **SwiftProtobuf.xcodeproj** from
