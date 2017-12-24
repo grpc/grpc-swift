@@ -68,14 +68,14 @@ func prepareService() throws -> Google_Datastore_V1_DatastoreService? {
   return service
 }
 
-func performList(service: Google_Datastore_V1_DatastoreService) throws {
+func performList<T: Codable>(service: Google_Datastore_V1_DatastoreService, type: T.Type) throws -> [Int64 : T]{
   var request = Google_Datastore_V1_RunQueryRequest()
   request.projectID = projectID
   var query = Google_Datastore_V1_GqlQuery()
-  query.queryString = "select * from Thing"
+  query.queryString = "select * from " + String(describing: type)
   request.gqlQuery = query
   let result = try service.runquery(request)
-  var entities : [Int64 : Thing] = [:]
+  var entities : [Int64 : T] = [:]
   for entityResult in result.batch.entityResults {
     var properties : [String:Any] = [:]
     for property in entityResult.entity.properties {
@@ -89,24 +89,23 @@ func performList(service: Google_Datastore_V1_DatastoreService) throws {
         print("?")
       }
     }
-    let entity = try PropertiesDecoder.decode(Thing.self, from:properties)
+    let entity = try PropertiesDecoder.decode(type, from:properties)
     entities[entityResult.entity.key.path[0].id] = entity
   }
-  print("\(entities)")
+  return entities
 }
 
-func performInsert(service: Google_Datastore_V1_DatastoreService,
-               number: Int) throws {
+func performInsert<T: Codable>(service: Google_Datastore_V1_DatastoreService,
+                               thing: T) throws {
   var request = Google_Datastore_V1_CommitRequest()
   request.projectID = projectID
   request.mode = .nonTransactional
   var pathElement = Google_Datastore_V1_Key.PathElement()
-  pathElement.kind = "Thing"
+  pathElement.kind = String(describing: type(of: thing))
   var key = Google_Datastore_V1_Key()
   key.path = [pathElement]
   var entity = Google_Datastore_V1_Entity()
   entity.key = key
-  let thing = Thing(name:"Thing", number:number)
   let properties = try PropertiesEncoder.encode(thing)!
   for (k,v) in properties {
     var value = Google_Datastore_V1_Value()
@@ -130,8 +129,8 @@ func performInsert(service: Google_Datastore_V1_DatastoreService,
 }
 
 func performDelete(service: Google_Datastore_V1_DatastoreService,
-               kind: String,
-               id: Int64) throws {
+                   kind: String,
+                   id: Int64) throws {
   var request = Google_Datastore_V1_CommitRequest()
   request.projectID = projectID
   request.mode = .nonTransactional
@@ -152,10 +151,11 @@ func performDelete(service: Google_Datastore_V1_DatastoreService,
 Group {
   $0.command("insert") { (number:Int) in
     if let service = try prepareService() {
-      try performInsert(service:service, number:number)
+      let thing = Thing(name:"Thing", number:number)
+      try performInsert(service:service, thing:thing)
     }
   }
-
+  
   $0.command("delete") { (id:Int) in
     if let service = try prepareService() {
       try performDelete(service:service, kind:"Thing", id:Int64(id))
@@ -164,7 +164,8 @@ Group {
   
   $0.command("list") {
     if let service = try prepareService() {
-      try performList(service:service)
+      let entities = try performList(service:service, type: Thing.self)
+      print("\(entities)")
     }
   }
   
