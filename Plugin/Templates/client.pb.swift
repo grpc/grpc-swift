@@ -50,7 +50,7 @@ import SwiftProtobuf
 //-{% endfor %}
 /// Call methods of this class to make API calls.
 {{ access }} class {{ .|serviceclass:file,service }} {
-  private var channel: Channel
+  public var channel: Channel
 
   /// This metadata will be sent with all requests.
   {{ access }} var metadata : Metadata

@@ -301,7 +301,7 @@ internal class Echo_EchoUpdateCall {
 
 /// Call methods of this class to make API calls.
 internal class Echo_EchoService {
-  private var channel: Channel
+  public var channel: Channel
 
   /// This metadata will be sent with all requests.
   internal var metadata : Metadata
