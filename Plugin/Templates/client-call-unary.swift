@@ -1,4 +1,4 @@
-/// {{ method.name }} (Unary)
+/// {{ method|methodDescriptorName }} (Unary)
 {{ access }} class {{ .|call:file,service,method }} {
   private var call : Call
 

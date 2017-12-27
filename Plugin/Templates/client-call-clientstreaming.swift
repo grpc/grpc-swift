@@ -1,4 +1,4 @@
-/// {{ method.name }} (Client Streaming)
+/// {{ method|methodDescriptorName }} (Client Streaming)
 {{ access }} class {{ .|call:file,service,method }} {
   private var call : Call
 

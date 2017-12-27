@@ -1,4 +1,4 @@
-// {{ method.name }} (Server Streaming)
+// {{ method|methodDescriptorName }} (Server Streaming)
 {{ access }} class {{ .|session:file,service,method }} : {{ .|service:file,service }}Session {
   private var provider : {{ .|provider:file,service }}
 
@@ -23,7 +23,7 @@
           // we dispatch them to another queue.
           queue.async {
             do {
-              try self.provider.{{ method.name|lowercase }}(request:requestMessage, session: self)
+              try self.provider.{{ method|methodDescriptorName|lowercase }}(request:requestMessage, session: self)
               try self.handler.sendStatus(statusCode:self.statusCode,
                                           statusMessage:self.statusMessage,
                                           trailingMetadata:self.trailingMetadata,

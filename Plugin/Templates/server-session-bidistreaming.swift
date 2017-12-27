@@ -1,4 +1,4 @@
-// {{ method.name }} (Bidirectional Streaming)
+// {{ method|methodDescriptorName }} (Bidirectional Streaming)
 {{ access }} class {{ .|session:file,service,method }} : {{ .|service:file,service }}Session {
   private var provider : {{ .|provider:file,service }}
 
@@ -51,7 +51,7 @@
     try self.handler.sendMetadata(initialMetadata:initialMetadata) {
       queue.async {
         do {
-          try self.provider.{{ method.name|lowercase }}(session:self)
+          try self.provider.{{ method|methodDescriptorName|lowercase }}(session:self)
         } catch (let error) {
           print("error \(error)")
         }

@@ -58,38 +58,41 @@ func main() throws {
   let request = try Google_Protobuf_Compiler_CodeGeneratorRequest(serializedData: rawRequest)
   
   let options = try GeneratorOptions(parameter: request.parameter)
-  
+
+  // Build the SwiftProtobufPluginLibrary model of the plugin input
+  let descriptorSet = DescriptorSet(protos: request.protoFile)
+
   var generatedFileNames = Set<String>()
   var clientCount = 0
 
   // process each .proto file separately
-  for protoFile in request.protoFile {
-
-    let file = FileDescriptor(proto:protoFile)
+  for fileDescriptor in descriptorSet.files {
 
     // log info about the service
-    log += "File \(file.name)\n"
-    for service in file.service {
-      log += "Service \(service.name)\n"
-      for method in service.method {
-        log += " Method \(method.name)\n"
-        log += "  input \(method.inputType)\n"
-        log += "  output \(method.outputType)\n"
-        log += "  client_streaming \(method.clientStreaming)\n"
-        log += "  server_streaming \(method.serverStreaming)\n"
+    log += "File \(fileDescriptor.name)\n"
+    for serviceDescriptor in fileDescriptor.services {
+      log += "Service \(serviceDescriptor.name)\n"
+      for methodDescriptor in serviceDescriptor.methods {
+        log += " Method \(methodDescriptor.name)\n"
+        log += "  input \(methodDescriptor.inputType.name)\n"
+        log += "  output \(methodDescriptor.outputType.name)\n"
+        log += "  client_streaming \(methodDescriptor.proto.clientStreaming)\n"
+        log += "  server_streaming \(methodDescriptor.proto.serverStreaming)\n"
       }
     }
 
-    if file.service.count > 0 {
+    if fileDescriptor.services.count > 0 {
       // a package declaration is required for file containing service(s)
-      let package = file.package
+      let package = fileDescriptor.package
       guard package != ""  else {
-        print("ERROR: no package for \(file.name)")
+        print("ERROR: no package for \(fileDescriptor.name)")
         continue
       }
       
       // generate separate implementation files for client and server
-      let context : [String:Any] = ["file": file, "access": options.visibility.sourceSnippet]
+      let context : [String:Any] = [
+        "file": fileDescriptor,
+        "access": options.visibility.sourceSnippet]
 
       do {
         var clientFileName : String

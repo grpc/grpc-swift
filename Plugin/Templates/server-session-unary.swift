@@ -1,4 +1,4 @@
-// {{ method.name }} (Unary)
+// {{ method|methodDescriptorName }} (Unary)
 {{ access }} class {{ .|session:file,service,method }} : {{ .|service:file,service }}Session {
   private var provider : {{ .|provider:file,service }}
 
@@ -13,7 +13,7 @@
     try handler.receiveMessage(initialMetadata:initialMetadata) {(requestData) in
       if let requestData = requestData {
         let requestMessage = try {{ method|input }}(serializedData:requestData)
-        let replyMessage = try self.provider.{{ method.name|lowercase }}(request:requestMessage, session: self)
+        let replyMessage = try self.provider.{{ method|methodDescriptorName|lowercase }}(request:requestMessage, session: self)
         try self.handler.sendResponse(message:replyMessage.serializedData(),
                                       statusCode:self.statusCode,
                                       statusMessage:self.statusMessage,
