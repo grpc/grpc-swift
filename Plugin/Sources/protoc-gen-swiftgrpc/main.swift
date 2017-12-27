@@ -43,6 +43,67 @@ func stripMarkers(_ code:String) -> String {
   return outputLines.joined(separator:"\n")
 }
 
+// from apple/swift-protobuf/Sources/protoc-gen-swift/StringUtils.swift
+func splitPath(pathname: String) -> (dir:String, base:String, suffix:String) {
+  var dir = ""
+  var base = ""
+  var suffix = ""
+  #if swift(>=3.2)
+    let pathnameChars = pathname
+  #else
+    let pathnameChars = pathname.characters
+  #endif
+  for c in pathnameChars {
+    if c == "/" {
+      dir += base + suffix + String(c)
+      base = ""
+      suffix = ""
+    } else if c == "." {
+      base += suffix
+      suffix = String(c)
+    } else {
+      suffix += String(c)
+    }
+  }
+  #if swift(>=3.2)
+    let validSuffix = suffix.isEmpty || suffix.first == "."
+  #else
+    let validSuffix = suffix.isEmpty || suffix.characters.first == "."
+  #endif
+  if !validSuffix {
+    base += suffix
+    suffix = ""
+  }
+  return (dir: dir, base: base, suffix: suffix)
+}
+
+enum OutputNaming : String {
+  case FullPath
+  case PathToUnderscores
+  case DropPath
+}
+
+func outputFileName(component: String, index: Int, fileDescriptor: FileDescriptor) -> String {
+  var ext : String
+  if index == 0 {
+    ext = "." + component + ".pb.swift"
+  } else {
+    ext = "\(index)." + component + ".pb.swift"
+  }
+  let pathParts = splitPath(pathname: fileDescriptor.name)
+  let outputNamingOption = OutputNaming.FullPath // temporarily hard-coded
+  switch outputNamingOption {
+  case .FullPath:
+    return pathParts.dir + pathParts.base + ext
+  case .PathToUnderscores:
+    let dirWithUnderscores =
+      pathParts.dir.replacingOccurrences(of: "/", with: "_")
+    return dirWithUnderscores + pathParts.base + ext
+  case .DropPath:
+    return pathParts.base + ext
+  }
+}
+
 func main() throws {
 
   // initialize template engine and add custom filters
@@ -64,6 +125,7 @@ func main() throws {
 
   var generatedFileNames = Set<String>()
   var clientCount = 0
+  var serverCount = 0
 
   // process each .proto file separately
   for fileDescriptor in descriptorSet.files {
@@ -95,13 +157,7 @@ func main() throws {
         "access": options.visibility.sourceSnippet]
 
       do {
-        var clientFileName : String
-        if clientCount == 0 {
-          clientFileName = package + ".client.pb.swift"
-        } else {
-          clientFileName = package + "\(clientCount).client.pb.swift"
-        }
-        
+        let clientFileName = outputFileName(component:"client", index:clientCount, fileDescriptor:fileDescriptor)
         if !generatedFileNames.contains(clientFileName) {
           generatedFileNames.insert(clientFileName)
           clientCount += 1
@@ -113,9 +169,10 @@ func main() throws {
           response.file.append(clientfile)
         }
 
-        let serverFileName = package + ".server.pb.swift"
+        let serverFileName = outputFileName(component:"server", index:serverCount, fileDescriptor:fileDescriptor)
         if !generatedFileNames.contains(serverFileName) {
           generatedFileNames.insert(serverFileName)
+          serverCount += 1
           let servercode = try templateEnvironment.renderTemplate(name:"server.pb.swift",
                                                                   context: context)
           var serverfile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()

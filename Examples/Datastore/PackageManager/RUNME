@@ -16,11 +16,11 @@ protoc \
 	googleapis/google/type/latlng.proto \
  	-Igoogleapis \
 	--swift_out=googleapis \
-	--swiftgrpc_out=Sources
+	--swiftgrpc_out=googleapis
 
-# move swift files to this directory
+# move Swift files to the Sources directory
 find googleapis -name "*.swift" -exec mv {} Sources \;
 
 # remove the grpc service file; we don't need it
-rm Sources/google.datastore.v1.server.pb.swift
+rm Sources/datastore.server.pb.swift
 
