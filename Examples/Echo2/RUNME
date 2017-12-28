@@ -1,0 +1,15 @@
+#!/bin/sh
+#
+# Use this script to regenerate the Protocol Buffer and gRPC files
+# needed to build the example.
+#
+# Note that it requires updated protoc, protoc-gen-swift, and
+# protoc-gen-swiftgrpc binaries and assumes that protoc-gen-swift 
+# is installed in $HOME/local/bin.
+
+protoc \
+	Protos/*.proto \
+	--swift_out=Sources \
+	--swiftgrpc_out=Sources \
+ 	-IProtos 
+
