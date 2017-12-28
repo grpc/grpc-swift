@@ -83,15 +83,11 @@ enum OutputNaming : String {
   case DropPath
 }
 
-func outputFileName(component: String, index: Int, fileDescriptor: FileDescriptor) -> String {
-  var ext : String
-  if index == 0 {
-    ext = "." + component + ".pb.swift"
-  } else {
-    ext = "\(index)." + component + ".pb.swift"
-  }
+var outputNamingOption : OutputNaming = .FullPath // temporarily hard-coded
+
+func outputFileName(component: String, fileDescriptor: FileDescriptor) -> String {
+  let ext = "." + component + ".pb.swift"
   let pathParts = splitPath(pathname: fileDescriptor.name)
-  let outputNamingOption = OutputNaming.FullPath // temporarily hard-coded
   switch outputNamingOption {
   case .FullPath:
     return pathParts.dir + pathParts.base + ext
@@ -104,6 +100,19 @@ func outputFileName(component: String, index: Int, fileDescriptor: FileDescripto
   }
 }
 
+var generatedFiles : [String:Int] = [:]
+
+func uniqueOutputFileName(component: String, fileDescriptor: FileDescriptor) -> String {
+  let defaultName = outputFileName(component:component, fileDescriptor:fileDescriptor)
+  if let count = generatedFiles[defaultName] {
+    generatedFiles[defaultName] = count + 1
+    return outputFileName(component:  "\(count)." + component, fileDescriptor: fileDescriptor )
+  } else {
+    generatedFiles[defaultName] = 1
+    return defaultName
+  }
+}
+
 func main() throws {
 
   // initialize template engine and add custom filters
@@ -112,7 +121,6 @@ func main() throws {
 
   // initialize responses
   var response = Google_Protobuf_Compiler_CodeGeneratorResponse()
-  var log = ""
 
   // read plugin input
   let rawRequest = try Stdin.readall()
@@ -123,25 +131,8 @@ func main() throws {
   // Build the SwiftProtobufPluginLibrary model of the plugin input
   let descriptorSet = DescriptorSet(protos: request.protoFile)
 
-  var generatedFileNames = Set<String>()
-  var clientCount = 0
-  var serverCount = 0
-
   // process each .proto file separately
   for fileDescriptor in descriptorSet.files {
-
-    // log info about the service
-    log += "File \(fileDescriptor.name)\n"
-    for serviceDescriptor in fileDescriptor.services {
-      log += "Service \(serviceDescriptor.name)\n"
-      for methodDescriptor in serviceDescriptor.methods {
-        log += " Method \(methodDescriptor.name)\n"
-        log += "  input \(methodDescriptor.inputType.name)\n"
-        log += "  output \(methodDescriptor.outputType.name)\n"
-        log += "  client_streaming \(methodDescriptor.proto.clientStreaming)\n"
-        log += "  server_streaming \(methodDescriptor.proto.serverStreaming)\n"
-      }
-    }
 
     if fileDescriptor.services.count > 0 {
       // a package declaration is required for file containing service(s)
@@ -157,43 +148,28 @@ func main() throws {
         "access": options.visibility.sourceSnippet]
 
       do {
-        let clientFileName = outputFileName(component:"client", index:clientCount, fileDescriptor:fileDescriptor)
-        if !generatedFileNames.contains(clientFileName) {
-          generatedFileNames.insert(clientFileName)
-          clientCount += 1
-          let clientcode = try templateEnvironment.renderTemplate(name:"client.pb.swift",
-                                                                  context: context)
-          var clientfile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
-          clientfile.name = clientFileName
-          clientfile.content = stripMarkers(clientcode)
-          response.file.append(clientfile)
-        }
 
-        let serverFileName = outputFileName(component:"server", index:serverCount, fileDescriptor:fileDescriptor)
-        if !generatedFileNames.contains(serverFileName) {
-          generatedFileNames.insert(serverFileName)
-          serverCount += 1
-          let servercode = try templateEnvironment.renderTemplate(name:"server.pb.swift",
-                                                                  context: context)
-          var serverfile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
-          serverfile.name = serverFileName
-          serverfile.content = stripMarkers(servercode)
-          response.file.append(serverfile)
-        }
+        let clientFileName = uniqueOutputFileName(component:"client", fileDescriptor:fileDescriptor)
+        let clientcode = try templateEnvironment.renderTemplate(name:"client.pb.swift",
+                                                                context: context)
+        var clientfile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
+        clientfile.name = clientFileName
+        clientfile.content = stripMarkers(clientcode)
+        response.file.append(clientfile)
+
+        let serverFileName = uniqueOutputFileName(component:"server", fileDescriptor:fileDescriptor)
+        let servercode = try templateEnvironment.renderTemplate(name:"server.pb.swift",
+                                                                context: context)
+        var serverfile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
+        serverfile.name = serverFileName
+        serverfile.content = stripMarkers(servercode)
+        response.file.append(serverfile)
+
       } catch (let error) {
         Log("ERROR \(error)")
-        log += "ERROR: \(error)\n"
       }
     }
   }
-
-  log += "\(request)"
-
-  // add the logfile to the code generation response
-  var logfile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
-  logfile.name = "swiftgrpc.log"
-  logfile.content = log
-  response.file.append(logfile)
 
   // return everything to the caller
   let serializedResponse = try response.serializedData()
