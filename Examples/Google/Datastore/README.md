@@ -11,14 +11,7 @@ Buffer and gRPC plugins, so please be sure these are in your
 path. The plugins can be built by running `make` in the 
 top-level Plugins directory.
 
-Calls require a Google project ID and service account credentials.
+## Prerequisites
 
-To create a project ID, visit the 
-[Google Cloud Console](https://cloud.google.com/console).
-
-Service account support is provided by Google's 
-[Auth Library for Swift](https://github.com/google/auth-library-swift).
-After enabling the Cloud Natural Language API for your project,
-create and download service account credentials. Then set the
-GOOGLE_APPLICATION_CREDENTIALS environment variable to point to 
-the file containing these credentials.
+Please be sure to perform the preliminary steps in 
+[Examples/Google/README](../README.md).
