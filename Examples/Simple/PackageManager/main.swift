@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import gRPC
 import Foundation
+import Dispatch
+import gRPC
 
 let address = "localhost:8001"
 let host = "foo.test.google.fr"
@@ -47,7 +48,7 @@ func client() throws {
   let c = gRPC.Channel(address:address, secure:false)
   let steps = 3
   for i in 0..<steps {
-    let latch = CountDownLatch(1)
+    let sem = DispatchSemaphore(value: 0)
 
     let method = (i < steps-1) ? "/hello" : "/quit"
     print("calling " + method)
@@ -75,9 +76,9 @@ func client() throws {
       for i in 0..<trailingMetadata.count() {
         print("TRAILING METADATA ->", trailingMetadata.key(i), ":", trailingMetadata.value(i))
       }
-      latch.signal()
+      sem.signal()
     }
-    latch.wait()
+    _ = sem.wait(timeout: DispatchTime.distantFuture)
   }
   print("Done")
 }
@@ -86,7 +87,7 @@ func server() throws {
   let server = gRPC.Server(address:address)
   var requestCount = 0
 
-  let latch = CountDownLatch(1)
+  let sem = DispatchSemaphore(value: 0)
 
   server.run() {(requestHandler) in
 
@@ -114,7 +115,7 @@ func server() throws {
 
       if requestHandler.method == "/quit" {
         print("quitting")
-        latch.signal()
+        sem.signal()
       }
 
       let replyMessage = "hello, client!"
@@ -136,7 +137,7 @@ func server() throws {
     print("Server Stopped")
   }
 
-  latch.wait()
+  _ = sem.wait(timeout: DispatchTime.distantFuture)
 }
 
 try main()
