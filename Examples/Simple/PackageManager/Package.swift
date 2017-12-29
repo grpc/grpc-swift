@@ -18,5 +18,6 @@ let package = Package (
     name: "Simple",
     dependencies: [
         .Package(url: "https://github.com/grpc/grpc-swift.git", Version(0,3,2)),
+        .Package(url: "https://github.com/kylef/Commander.git", Version(0,8,0)),
     ]
 )
