@@ -1,8 +1,12 @@
 
 all:
-	swift build
+	swift build -c release
+	cp .build/release/Echo .
+
+project:
+	swift package generate-xcodeproj
 
 clean :
-	rm -rf Packages
-	rm -rf .build
-	rm -f Package.pins Package.resolved
+	rm -rf Packages googleapis .build
+	rm -f Package.pins Echo google.json
+	rm -rf Package.resolved Echo.xcodeproj Echo
