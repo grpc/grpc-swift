@@ -10,13 +10,13 @@ build:  clear
 
 test:	build
 	protoc ../Examples/Echo/echo.proto --proto_path=../Examples/Echo --plugin=./protoc-gen-swiftgrpc --swiftgrpc_out=. --swift_out=.
-	diff echo.rpc.swift ../Examples/Echo/Generated/echo.rpc.swift
+	diff echo.grpc.swift ../Examples/Echo/Generated/echo.grpc.swift
 
 deploy:
-	cp echo.rpc.swift ../Examples/Echo/Generated/echo.rpc.swift 
+	cp echo.grpc.swift ../Examples/Echo/Generated/echo.grpc.swift 
 
 clear : 
-	rm -f *.pb.swift *.rpc.swift
+	rm -f *.pb.swift *.grpc.swift
 
 clean : clear
 	rm -rf protoc-gen-swiftgrpc Packages .build protoc-gen-swift Package.pins

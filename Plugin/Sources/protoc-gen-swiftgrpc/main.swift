@@ -151,7 +151,7 @@ func main() throws {
 
       do {
 
-        let grpcFileName = uniqueOutputFileName(component:"rpc", fileDescriptor:fileDescriptor)
+        let grpcFileName = uniqueOutputFileName(component:"grpc", fileDescriptor:fileDescriptor)
         let grpcCode = try templateEnvironment.renderTemplate(name:"main.swift", context: context)
         var grpcFile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
         grpcFile.name = grpcFileName
