@@ -31,7 +31,3 @@ protoc \
 
 # move Swift files to the Sources directory
 find googleapis -name "*.swift" -exec mv {} Sources \;
-
-# remove the grpc service file; we don't need it
-rm Sources/*.server.pb.swift
-
