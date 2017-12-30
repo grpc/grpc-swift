@@ -86,7 +86,7 @@ enum OutputNaming : String {
 var outputNamingOption : OutputNaming = .FullPath // temporarily hard-coded
 
 func outputFileName(component: String, fileDescriptor: FileDescriptor) -> String {
-  let ext = "." + component + ".pb.swift"
+  let ext = "." + component + ".swift"
   let pathParts = splitPath(pathname: fileDescriptor.name)
   switch outputNamingOption {
   case .FullPath:
@@ -145,25 +145,18 @@ func main() throws {
       // generate separate implementation files for client and server
       let context : [String:Any] = [
         "file": fileDescriptor,
+        "client": true,
+        "server": true,
         "access": options.visibility.sourceSnippet]
 
       do {
 
-        let clientFileName = uniqueOutputFileName(component:"client", fileDescriptor:fileDescriptor)
-        let clientcode = try templateEnvironment.renderTemplate(name:"client.pb.swift",
-                                                                context: context)
-        var clientfile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
-        clientfile.name = clientFileName
-        clientfile.content = stripMarkers(clientcode)
-        response.file.append(clientfile)
-
-        let serverFileName = uniqueOutputFileName(component:"server", fileDescriptor:fileDescriptor)
-        let servercode = try templateEnvironment.renderTemplate(name:"server.pb.swift",
-                                                                context: context)
-        var serverfile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
-        serverfile.name = serverFileName
-        serverfile.content = stripMarkers(servercode)
-        response.file.append(serverfile)
+        let grpcFileName = uniqueOutputFileName(component:"grpc", fileDescriptor:fileDescriptor)
+        let grpcCode = try templateEnvironment.renderTemplate(name:"main.swift", context: context)
+        var grpcFile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
+        grpcFile.name = grpcFileName
+        grpcFile.content = stripMarkers(grpcCode)
+        response.file.append(grpcFile)
 
       } catch (let error) {
         Log("ERROR \(error)")

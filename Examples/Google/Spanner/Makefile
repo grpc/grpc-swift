@@ -5,5 +5,5 @@ all:
 
 clean :
 	rm -rf Packages googleapis .build
-	rm -f Package.pins Spanner Sources/*.pb.swift Sources/swiftgrpc.log google.json
+	rm -f Package.pins Spanner Sources/*.pb.swift Sources/*.grpc.swift google.json
 	rm -rf Package.resolved

@@ -7,21 +7,22 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		020BF449F4DC160FFEA59281 /* Pods_Simple.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1637F1B5EB217163B05C09F6 /* Pods_Simple.framework */; };
 		D30D735B1D565E4400F90CCB /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D30D735A1D565E4400F90CCB /* AppDelegate.swift */; };
 		D30D735D1D565E4400F90CCB /* Document.swift in Sources */ = {isa = PBXBuildFile; fileRef = D30D735C1D565E4400F90CCB /* Document.swift */; };
 		D30D73601D565E4400F90CCB /* Document.xib in Resources */ = {isa = PBXBuildFile; fileRef = D30D735E1D565E4400F90CCB /* Document.xib */; };
 		D30D73621D565E4400F90CCB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D30D73611D565E4400F90CCB /* Assets.xcassets */; };
 		D30D73651D565E4400F90CCB /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D30D73631D565E4400F90CCB /* MainMenu.xib */; };
-		D394EF271F58DBA300E99633 /* BoringSSL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D394EF1A1F58DB7A00E99633 /* BoringSSL.framework */; };
-		D394EF281F58DBA300E99633 /* CgRPC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D394EF181F58DB7A00E99633 /* CgRPC.framework */; };
-		D394EF291F58DBA300E99633 /* Czlib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D394EF161F58DB7A00E99633 /* Czlib.framework */; };
-		D394EF2A1F58DBA300E99633 /* gRPC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D394EF1C1F58DB7A00E99633 /* gRPC.framework */; };
+		D394EF271F58DBA300E99633 /* BuildFile in Frameworks */ = {isa = PBXBuildFile; };
+		D394EF281F58DBA300E99633 /* BuildFile in Frameworks */ = {isa = PBXBuildFile; };
+		D394EF291F58DBA300E99633 /* BuildFile in Frameworks */ = {isa = PBXBuildFile; };
+		D394EF2A1F58DBA300E99633 /* BuildFile in Frameworks */ = {isa = PBXBuildFile; };
 /* End PBXBuildFile section */
 
-/* Begin PBXContainerItemProxy section */
-/* End PBXContainerItemProxy section */
-
 /* Begin PBXFileReference section */
+		1637F1B5EB217163B05C09F6 /* Pods_Simple.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Simple.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		82FBE46939E735B1F797924F /* Pods-Simple.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Simple.release.xcconfig"; path = "Pods/Target Support Files/Pods-Simple/Pods-Simple.release.xcconfig"; sourceTree = "<group>"; };
+		92FB91401821C52F1D137A51 /* Pods-Simple.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Simple.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Simple/Pods-Simple.debug.xcconfig"; sourceTree = "<group>"; };
 		D30D73571D565E4400F90CCB /* Simple.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Simple.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D30D735A1D565E4400F90CCB /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		D30D735C1D565E4400F90CCB /* Document.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Document.swift; sourceTree = "<group>"; };
@@ -36,21 +37,41 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D394EF271F58DBA300E99633 /* BoringSSL.framework in Frameworks */,
-				D394EF281F58DBA300E99633 /* CgRPC.framework in Frameworks */,
-				D394EF291F58DBA300E99633 /* Czlib.framework in Frameworks */,
-				D394EF2A1F58DBA300E99633 /* gRPC.framework in Frameworks */,
+				D394EF271F58DBA300E99633 /* BuildFile in Frameworks */,
+				D394EF281F58DBA300E99633 /* BuildFile in Frameworks */,
+				D394EF291F58DBA300E99633 /* BuildFile in Frameworks */,
+				D394EF2A1F58DBA300E99633 /* BuildFile in Frameworks */,
+				020BF449F4DC160FFEA59281 /* Pods_Simple.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		3410CF2A0B1DA40CBD2960DB /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				1637F1B5EB217163B05C09F6 /* Pods_Simple.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		42235A567C9D88F028BC9FBB /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				92FB91401821C52F1D137A51 /* Pods-Simple.debug.xcconfig */,
+				82FBE46939E735B1F797924F /* Pods-Simple.release.xcconfig */,
+			);
+			name = Pods;
+			sourceTree = "<group>";
+		};
 		D30D734E1D565E4400F90CCB = {
 			isa = PBXGroup;
 			children = (
 				D30D73591D565E4400F90CCB /* Simple */,
 				D30D73581D565E4400F90CCB /* Products */,
+				42235A567C9D88F028BC9FBB /* Pods */,
+				3410CF2A0B1DA40CBD2960DB /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -78,12 +99,6 @@
 		D394EF0B1F58DB7A00E99633 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				D394EF141F58DB7A00E99633 /* zlib-example */,
-				D394EF161F58DB7A00E99633 /* Czlib.framework */,
-				D394EF181F58DB7A00E99633 /* CgRPC.framework */,
-				D394EF1A1F58DB7A00E99633 /* BoringSSL.framework */,
-				D394EF1C1F58DB7A00E99633 /* gRPC.framework */,
-				D394EF1E1F58DB7A00E99633 /* gRPCTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -95,9 +110,12 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = D30D73691D565E4400F90CCB /* Build configuration list for PBXNativeTarget "Simple" */;
 			buildPhases = (
+				D0F766A5DE10BD0BBB1D0BED /* [CP] Check Pods Manifest.lock */,
 				D30D73531D565E4400F90CCB /* Sources */,
 				D30D73541D565E4400F90CCB /* Frameworks */,
 				D30D73551D565E4400F90CCB /* Resources */,
+				65570F4D3F2AC86016E847D3 /* [CP] Embed Pods Frameworks */,
+				F67FAAFE297D1C22F4F94B88 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -160,9 +178,6 @@
 		};
 /* End PBXProject section */
 
-/* Begin PBXReferenceProxy section */
-/* End PBXReferenceProxy section */
-
 /* Begin PBXResourcesBuildPhase section */
 		D30D73551D565E4400F90CCB /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
@@ -175,6 +190,57 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		65570F4D3F2AC86016E847D3 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-Simple/Pods-Simple-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		D0F766A5DE10BD0BBB1D0BED /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-Simple-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		F67FAAFE297D1C22F4F94B88 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-Simple/Pods-Simple-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		D30D73531D565E4400F90CCB /* Sources */ = {
@@ -204,22 +270,18 @@
 		D394EF201F58DB9800E99633 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = Czlib;
-			targetProxy = D394EF1F1F58DB9800E99633 /* PBXContainerItemProxy */;
 		};
 		D394EF221F58DB9800E99633 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = CgRPC;
-			targetProxy = D394EF211F58DB9800E99633 /* PBXContainerItemProxy */;
 		};
 		D394EF241F58DB9800E99633 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = BoringSSL;
-			targetProxy = D394EF231F58DB9800E99633 /* PBXContainerItemProxy */;
 		};
 		D394EF261F58DB9800E99633 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = gRPC;
-			targetProxy = D394EF251F58DB9800E99633 /* PBXContainerItemProxy */;
 		};
 		D3E1EA7D1EE8B0070024A93A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -349,6 +411,7 @@
 		};
 		D30D736A1D565E4400F90CCB /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 92FB91401821C52F1D137A51 /* Pods-Simple.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -362,6 +425,7 @@
 		};
 		D30D736B1D565E4400F90CCB /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 82FBE46939E735B1F797924F /* Pods-Simple.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
