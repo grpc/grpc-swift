@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import Foundation
+import Dispatch
 import gRPC
 import OAuth2
 import Commander
@@ -21,8 +22,13 @@ import Commander
 // Convert Encodable objects to dictionaries of property-value pairs.
 class PropertiesEncoder {
   static func encode<T : Encodable>(_ value : T) throws -> [String:Any]? {
-    let plist = try PropertyListEncoder().encode(value)
-    let properties = try PropertyListSerialization.propertyList(from:plist, options:[], format:nil)
+    #if os(OSX)
+      let plist = try PropertyListEncoder().encode(value)
+      let properties = try PropertyListSerialization.propertyList(from:plist, options:[], format:nil)
+    #else
+      let data = try JSONEncoder().encode(value)
+      let properties = try JSONSerialization.jsonObject(with:data, options:[])
+    #endif
     return properties as? [String:Any]
   }
 }
@@ -30,8 +36,13 @@ class PropertiesEncoder {
 // Create Decodable objects from dictionaries of property-value pairs.
 class PropertiesDecoder {
   static func decode<T: Decodable>(_ type: T.Type, from: [String:Any]) throws -> T {
-    let plist = try PropertyListSerialization.data(fromPropertyList: from, format: .binary, options:0)
-    return try PropertyListDecoder().decode(type, from: plist)
+    #if os(OSX)
+      let plist = try PropertyListSerialization.data(fromPropertyList: from, format: .binary, options:0)
+      return try PropertyListDecoder().decode(type, from: plist)
+    #else
+      let data = try JSONSerialization.data(withJSONObject: from, options:[])
+      return try JSONDecoder().decode(type, from: data)
+    #endif
   }
 }
 
