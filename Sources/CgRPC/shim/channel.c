@@ -65,6 +65,32 @@ cgrpc_channel *cgrpc_channel_create_secure(const char *address,
   return c;
 }
 
+cgrpc_channel *cgrpc_channel_create_securev2(const char *address,
+                                             const char *pem_root_certs,
+                                             const char *pem_private_key,
+                                             const char *pem_cert_chain) {
+  cgrpc_channel *c = (cgrpc_channel *) malloc(sizeof (cgrpc_channel));
+  // create the channel
+  int argMax = 2;
+  grpc_channel_args *channelArgs = gpr_malloc(sizeof(grpc_channel_args));
+  channelArgs->args = gpr_malloc(argMax * sizeof(grpc_arg));
+    
+  int argCount = 1;
+  grpc_arg *arg = &channelArgs->args[0];
+  arg->type = GRPC_ARG_STRING;
+  arg->key = gpr_strdup("grpc.primary_user_agent");
+  arg->value.string = gpr_strdup("grpc-swift/0.0.1");
+    
+  channelArgs->num_args = argCount;
+  grpc_ssl_pem_key_cert_pair *pair = gpr_malloc(sizeof(grpc_ssl_pem_key_cert_pair));
+  pair->cert_chain = gpr_strdup(pem_cert_chain);
+  pair->private_key = gpr_strdup(pem_private_key);
+  const char* root_certs = gpr_strdup(pem_root_certs);
+  grpc_channel_credentials *creds = grpc_ssl_credentials_create(root_certs, pair, NULL);
+  c->channel = grpc_secure_channel_create(creds, address, channelArgs, NULL);
+  c->completion_queue = grpc_completion_queue_create_for_next(NULL);
+  return c;
+}
 
 void cgrpc_channel_destroy(cgrpc_channel *c) {
   grpc_channel_destroy(c->channel);

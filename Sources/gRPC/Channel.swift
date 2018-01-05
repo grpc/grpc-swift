@@ -62,6 +62,16 @@ public class Channel {
     completionQueue.name = "Client" // only for debugging
     self.completionQueue.run() // start a loop that watches the channel's completion queue
   }
+  
+  public init(address:String,certificates: String?, privateKey: String?, certChain: String?){
+        
+        self.host = address
+        underlyingChannel = cgrpc_channel_create_securev2(address, certificates, privateKey, certChain )
+        completionQueue = CompletionQueue(underlyingCompletionQueue:cgrpc_channel_completion_queue(underlyingChannel))
+        completionQueue.name = "Client" // only for debugging
+        self.completionQueue.run() // start a loop that watches the channel's completion queue
+        
+  }
 
   deinit {
     cgrpc_channel_destroy(underlyingChannel)
