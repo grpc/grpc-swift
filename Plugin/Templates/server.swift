@@ -103,7 +103,12 @@
           try {{ .|session:file,service,method }}(handler:handler, provider:provider).run(queue:queue)
         //-{% endfor %}
         default:
-          break // handle unknown requests
+          // handle unknown requests
+          try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
+            try handler.sendResponse(statusCode:12,
+                                     statusMessage:"unimplemented " + handler.method,
+                                     trailingMetadata:Metadata())
+          }
         }
       } catch (let error) {
         print("Server error: \(error)")

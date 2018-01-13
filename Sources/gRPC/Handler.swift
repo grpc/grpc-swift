@@ -113,7 +113,9 @@ public class Handler {
 
   /// Sends the response to a request
   ///
-  /// - Parameter message: the message to send
+  /// - Parameter message: message to send
+  /// - Parameter statusCode: status code to send
+  /// - Parameter statusMessage: status message to send
   /// - Parameter trailingMetadata: trailing metadata to send
   public func sendResponse(message: Data,
                            statusCode: Int,
@@ -126,6 +128,27 @@ public class Handler {
         .receiveCloseOnServer,
         .sendStatusFromServer(statusCode, statusMessage, trailingMetadata),
         .sendMessage(messageBuffer)])
+    {(operationGroup) in
+      if operationGroup.success {
+        self.shutdown()
+      }
+    }
+    try call.perform(operations)
+  }
+
+  /// Sends the response to a request
+  ///
+  /// - Parameter statusCode: status code to send
+  /// - Parameter statusMessage: status message to send
+  /// - Parameter trailingMetadata: trailing metadata to send
+  public func sendResponse(statusCode: Int,
+                           statusMessage: String,
+                           trailingMetadata: Metadata) throws -> Void {
+    let operations = OperationGroup(
+      call:call,
+      operations:[
+        .receiveCloseOnServer,
+        .sendStatusFromServer(statusCode, statusMessage, trailingMetadata)])
     {(operationGroup) in
       if operationGroup.success {
         self.shutdown()

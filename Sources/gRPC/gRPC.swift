@@ -36,7 +36,7 @@ public func version() -> String {
 }
 
 /// Status codes for gRPC operations (replicated from status_code_enum.h)
-enum StatusCode: Int {
+public enum StatusCode: Int {
   /// Not an error; returned on success.
   case ok = 0
 
