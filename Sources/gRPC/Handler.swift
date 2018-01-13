@@ -118,7 +118,7 @@ public class Handler {
   /// - Parameter statusMessage: status message to send
   /// - Parameter trailingMetadata: trailing metadata to send
   public func sendResponse(message: Data,
-                           statusCode: Int,
+                           statusCode: StatusCode,
                            statusMessage: String,
                            trailingMetadata: Metadata) throws -> Void {
     let messageBuffer = ByteBuffer(data:message)
@@ -141,7 +141,7 @@ public class Handler {
   /// - Parameter statusCode: status code to send
   /// - Parameter statusMessage: status message to send
   /// - Parameter trailingMetadata: trailing metadata to send
-  public func sendResponse(statusCode: Int,
+  public func sendResponse(statusCode: StatusCode,
                            statusMessage: String,
                            trailingMetadata: Metadata) throws -> Void {
     let operations = OperationGroup(
@@ -236,7 +236,7 @@ public class Handler {
   /// - Parameter statusMessage: status message to send
   /// - Parameter trailingMetadata: trailing metadata to send
   /// - Parameter completion: a completion handler to call after the status has been sent
-  public func sendStatus(statusCode: Int,
+  public func sendStatus(statusCode: StatusCode,
                          statusMessage: String,
                          trailingMetadata: Metadata,
                          completion:@escaping (() -> Void)) throws -> Void {

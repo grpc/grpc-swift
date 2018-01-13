@@ -63,7 +63,7 @@ internal class OperationGroup {
       underlyingObserver = cgrpc_observer_create_send_close_from_client()!
     case .sendStatusFromServer(let statusCode, let statusMessage, let metadata):
       underlyingObserver = cgrpc_observer_create_send_status_from_server(metadata.underlyingArray)!
-      cgrpc_observer_send_status_from_server_set_status(underlyingObserver, Int32(statusCode))
+      cgrpc_observer_send_status_from_server_set_status(underlyingObserver, Int32(statusCode.rawValue))
       cgrpc_observer_send_status_from_server_set_status_details(underlyingObserver, statusMessage)
     case .receiveInitialMetadata:
       underlyingObserver = cgrpc_observer_create_recv_initial_metadata()!

@@ -392,7 +392,7 @@ internal class Echo_EchoSession {
   fileprivate var handler : gRPC.Handler
   internal var requestMetadata : Metadata { return handler.requestMetadata }
 
-  internal var statusCode : Int = 0
+  internal var statusCode : StatusCode = .ok
   internal var statusMessage : String = "OK"
   internal var initialMetadata : Metadata = Metadata()
   internal var trailingMetadata : Metadata = Metadata()
@@ -637,8 +637,8 @@ internal class Echo_EchoServer {
         default:
           // handle unknown requests
           try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
-            try handler.sendResponse(statusCode:12,
-                                     statusMessage:"unimplemented " + handler.method,
+            try handler.sendResponse(statusCode:.unimplemented,
+                                     statusMessage:"unknown method " + handler.method,
                                      trailingMetadata:Metadata())
           }
         }

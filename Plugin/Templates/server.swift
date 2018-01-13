@@ -28,7 +28,7 @@
   fileprivate var handler : gRPC.Handler
   {{ access }} var requestMetadata : Metadata { return handler.requestMetadata }
 
-  {{ access }} var statusCode : Int = 0
+  {{ access }} var statusCode : StatusCode = .ok
   {{ access }} var statusMessage : String = "OK"
   {{ access }} var initialMetadata : Metadata = Metadata()
   {{ access }} var trailingMetadata : Metadata = Metadata()
@@ -105,8 +105,8 @@
         default:
           // handle unknown requests
           try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
-            try handler.sendResponse(statusCode:12,
-                                     statusMessage:"unimplemented " + handler.method,
+            try handler.sendResponse(statusCode:.unimplemented,
+                                     statusMessage:"unknown method " + handler.method,
                                      trailingMetadata:Metadata())
           }
         }

@@ -21,7 +21,7 @@ enum Operation {
   case sendInitialMetadata(Metadata)
   case sendMessage(ByteBuffer)
   case sendCloseFromClient
-  case sendStatusFromServer(Int, String, Metadata)
+  case sendStatusFromServer(StatusCode, String, Metadata)
   case receiveInitialMetadata
   case receiveMessage
   case receiveStatusOnClient
