@@ -108,6 +108,7 @@ typedef struct grpc_event {
 void grpc_init();
 void grpc_shutdown();
 const char *grpc_version_string();
+const char *grpc_g_stands_for();
 
 // helper
 void cgrpc_free_copied_string(const char *string);
@@ -157,6 +158,7 @@ const char *cgrpc_handler_call_peer(cgrpc_handler *h);
 // call support
 void cgrpc_call_destroy(cgrpc_call *call);
 grpc_call_error cgrpc_call_perform(cgrpc_call *call, cgrpc_operations *operations, int64_t tag);
+void cgrpc_call_cancel(cgrpc_call *call);
 
 // operations
 cgrpc_operations *cgrpc_operations_create();
