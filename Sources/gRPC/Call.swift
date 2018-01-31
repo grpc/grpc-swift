@@ -193,6 +193,8 @@ public class Call {
     Call.callMutex.unlock()
     if error != GRPC_CALL_OK {
       throw CallError.callError(grpcCallError:error)
+    } else {
+        try operations.completion(operations)
     }
   }
 
