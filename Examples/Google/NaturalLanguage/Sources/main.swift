@@ -16,6 +16,7 @@
 import Foundation
 import gRPC
 import OAuth2
+import Dispatch
 
 let scopes = ["https://www.googleapis.com/auth/cloud-language"]
 
