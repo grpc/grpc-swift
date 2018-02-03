@@ -113,10 +113,12 @@ public class Handler {
 
   /// Sends the response to a request
   ///
-  /// - Parameter message: the message to send
+  /// - Parameter message: message to send
+  /// - Parameter statusCode: status code to send
+  /// - Parameter statusMessage: status message to send
   /// - Parameter trailingMetadata: trailing metadata to send
   public func sendResponse(message: Data,
-                           statusCode: Int,
+                           statusCode: StatusCode,
                            statusMessage: String,
                            trailingMetadata: Metadata) throws -> Void {
     let messageBuffer = ByteBuffer(data:message)
@@ -126,6 +128,27 @@ public class Handler {
         .receiveCloseOnServer,
         .sendStatusFromServer(statusCode, statusMessage, trailingMetadata),
         .sendMessage(messageBuffer)])
+    {(operationGroup) in
+      if operationGroup.success {
+        self.shutdown()
+      }
+    }
+    try call.perform(operations)
+  }
+
+  /// Sends the response to a request
+  ///
+  /// - Parameter statusCode: status code to send
+  /// - Parameter statusMessage: status message to send
+  /// - Parameter trailingMetadata: trailing metadata to send
+  public func sendResponse(statusCode: StatusCode,
+                           statusMessage: String,
+                           trailingMetadata: Metadata) throws -> Void {
+    let operations = OperationGroup(
+      call:call,
+      operations:[
+        .receiveCloseOnServer,
+        .sendStatusFromServer(statusCode, statusMessage, trailingMetadata)])
     {(operationGroup) in
       if operationGroup.success {
         self.shutdown()
@@ -213,7 +236,7 @@ public class Handler {
   /// - Parameter statusMessage: status message to send
   /// - Parameter trailingMetadata: trailing metadata to send
   /// - Parameter completion: a completion handler to call after the status has been sent
-  public func sendStatus(statusCode: Int,
+  public func sendStatus(statusCode: StatusCode,
                          statusMessage: String,
                          trailingMetadata: Metadata,
                          completion:@escaping (() -> Void)) throws -> Void {
