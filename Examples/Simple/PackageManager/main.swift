@@ -100,7 +100,7 @@ func server() throws {
                                              ["1": "one"],
                                              ["2": "two"]])
       try requestHandler.sendResponse(message:replyMessage.data(using: .utf8)!,
-                                      statusCode:0,
+                                      statusCode:.ok,
                                       statusMessage:"OK",
                                       trailingMetadata:trailingMetadataToSend)
 
