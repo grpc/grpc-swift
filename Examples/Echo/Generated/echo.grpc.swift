@@ -635,7 +635,12 @@ internal class Echo_EchoServer {
         case "/echo.Echo/Update":
           try Echo_EchoUpdateSession(handler:handler, provider:provider).run(queue:queue)
         default:
-          break // handle unknown requests
+          // handle unknown requests
+          try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
+            try handler.sendResponse(statusCode:12,
+                                     statusMessage:"unimplemented " + handler.method,
+                                     trailingMetadata:Metadata())
+          }
         }
       } catch (let error) {
         print("Server error: \(error)")

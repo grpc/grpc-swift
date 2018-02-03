@@ -52,7 +52,7 @@
    "2": "two"]
  let steps = 10
  let hello = "/hello"
- let statusCode = 0
+ let statusCode = StatusCode.ok
  let statusMessage = "OK"
 
  func runTest(useSSL: Bool) {

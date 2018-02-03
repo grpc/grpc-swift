@@ -86,7 +86,7 @@ public enum CallError : Error {
 }
 
 public struct CallResult : CustomStringConvertible {
-  public var statusCode : Int
+  public var statusCode : StatusCode
   public var statusMessage : String?
   public var resultData : Data?
   public var initialMetadata : Metadata?
@@ -94,17 +94,21 @@ public struct CallResult : CustomStringConvertible {
 
   fileprivate init(_ op : OperationGroup) {
     if (op.success) {
-      if let statusCode = op.receivedStatusCode() {
-        self.statusCode = statusCode
+      if let statusCodeRawValue = op.receivedStatusCode() {
+	if let statusCode = StatusCode(rawValue:statusCodeRawValue) {
+          self.statusCode = statusCode
+	} else {
+	  self.statusCode = .unknown
+	}
       } else {
-        self.statusCode = 0
+	self.statusCode = .ok
       }
       self.statusMessage = op.receivedStatusMessage()
       self.resultData = op.receivedMessage()?.data()
       self.initialMetadata = op.receivedInitialMetadata()
       self.trailingMetadata = op.receivedTrailingMetadata()
     } else {
-      self.statusCode = 0
+      self.statusCode = .ok
       self.statusMessage = nil
       self.resultData = nil
       self.initialMetadata = nil
