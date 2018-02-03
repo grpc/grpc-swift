@@ -125,8 +125,19 @@ internal class CompletionQueue {
           }
           break
         case GRPC_QUEUE_SHUTDOWN:
-          running = false
-          break
+            running = false
+            do {
+                for operationGroup in self.operationGroups.values {
+                    operationGroup.success = false
+                    try operationGroup.completion(operationGroup)
+                }
+            } catch (let callError) {
+                print("CompletionQueue runToCompletion: grpc error \(callError)")
+            }
+            self.operationGroupsMutex.lock()
+            self.operationGroups = [:]
+            self.operationGroupsMutex.unlock()
+            break
         case GRPC_QUEUE_TIMEOUT:
           break
         default:
