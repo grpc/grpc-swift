@@ -8,6 +8,7 @@
   }
 
   /// Run the call. Blocks until the reply is received.
+  /// - Throws: `BinaryEncodingError` if encoding fails. `CallError` if fails to call. `{{ .|clienterror:file,service }}` if receives no response.
   fileprivate func run(request: {{ method|input }},
                        metadata: Metadata) throws -> {{ method|output }} {
     let sem = DispatchSemaphore(value: 0)
@@ -27,6 +28,7 @@
   }
 
   /// Start the call. Nonblocking.
+  /// - Throws: `BinaryEncodingError` if encoding fails. `CallError` if fails to call.
   fileprivate func start(request: {{ method|input }},
                          metadata: Metadata,
                          completion: @escaping ({{ method|output }}?, CallResult)->())

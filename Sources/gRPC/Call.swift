@@ -190,6 +190,7 @@ public class Call {
   ///
   /// - Parameter operations: group of operations to be performed
   /// - Returns: the result of initiating the call
+  /// - Throws: `CallError` if fails to call.
   internal func perform(_ operations: OperationGroup) throws -> Void {
     completionQueue.register(operations)
     Call.callMutex.lock()
@@ -206,6 +207,7 @@ public class Call {
   /// - Parameter metadata: metadata to send with the call
   /// - Parameter message: data containing the message to send (.unary and .serverStreaming only)
   /// - Parameter callback: a block to call with call results
+  /// - Throws: `CallError` if fails to call.
   public func start(_ style: CallStyle,
                     metadata: Metadata,
                     message: Data? = nil,
@@ -244,6 +246,7 @@ public class Call {
   /// Sends a message over a streaming connection.
   ///
   /// Parameter data: the message data to send
+  /// - Throws: `CallError` if fails to call. `CallWarning` if blocked.
   public func sendMessage(data: Data, errorHandler:@escaping (Error)->()) throws {
     self.sendMutex.lock()
     defer {self.sendMutex.unlock()}
@@ -291,6 +294,7 @@ public class Call {
   }
 
   // Receive a message over a streaming connection.
+  /// - Throws: `CallError` if fails to call.
   public func receiveMessage(callback:@escaping ((Data!) throws -> Void)) throws -> Void {
     try self.perform(OperationGroup(call:self, operations:[.receiveMessage])
     {(operationGroup) in
@@ -305,6 +309,7 @@ public class Call {
   }
 
   // Closes a streaming connection.
+  /// - Throws: `CallError` if fails to call.
   public func close(completion:@escaping (() -> Void)) throws -> Void {
     try self.perform(OperationGroup(call:self, operations:[.sendCloseFromClient])
     {(operationGroup) in completion()
