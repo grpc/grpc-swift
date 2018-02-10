@@ -43,6 +43,7 @@ internal class Echo_EchoGetCall {
   }
 
   /// Run the call. Blocks until the reply is received.
+  /// - Throws: `BinaryEncodingError` if encoding fails. `CallError` if fails to call. `Echo_EchoClientError` if receives no response.
   fileprivate func run(request: Echo_EchoRequest,
                        metadata: Metadata) throws -> Echo_EchoResponse {
     let sem = DispatchSemaphore(value: 0)
@@ -62,6 +63,7 @@ internal class Echo_EchoGetCall {
   }
 
   /// Start the call. Nonblocking.
+  /// - Throws: `BinaryEncodingError` if encoding fails. `CallError` if fails to call.
   fileprivate func start(request: Echo_EchoRequest,
                          metadata: Metadata,
                          completion: @escaping (Echo_EchoResponse?, CallResult)->())
