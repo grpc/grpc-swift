@@ -1,5 +1,5 @@
 // {{ method|methodDescriptorName }} (Server Streaming)
-{{ access }} class {{ .|session:file,service,method }} : {{ .|service:file,service }}Session {
+{{ access }} final class {{ .|session:file,service,method }} : {{ .|service:file,service }}Session {
   private var provider : {{ .|provider:file,service }}
 
   /// Create a session.

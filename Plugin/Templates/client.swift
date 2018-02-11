@@ -22,7 +22,7 @@
 //-{% endif %}
 //-{% endfor %}
 /// Call methods of this class to make API calls.
-{{ access }} class {{ .|serviceclass:file,service }} {
+{{ access }} final class {{ .|serviceclass:file,service }} {
   public var channel: Channel
 
   /// This metadata will be sent with all requests.
