@@ -34,7 +34,7 @@ internal enum Echo_EchoClientError : Error {
 }
 
 /// Get (Unary)
-internal class Echo_EchoGetCall {
+internal final class Echo_EchoGetCall {
   private var call : Call
 
   /// Create a call.
@@ -91,7 +91,7 @@ internal class Echo_EchoGetCall {
 }
 
 /// Expand (Server Streaming)
-internal class Echo_EchoExpandCall {
+internal final class Echo_EchoExpandCall {
   private var call : Call
 
   /// Create a call.
@@ -155,7 +155,7 @@ internal class Echo_EchoExpandCall {
 }
 
 /// Collect (Client Streaming)
-internal class Echo_EchoCollectCall {
+internal final class Echo_EchoCollectCall {
   private var call : Call
 
   /// Create a call.
@@ -222,7 +222,7 @@ internal class Echo_EchoCollectCall {
 }
 
 /// Update (Bidirectional Streaming)
-internal class Echo_EchoUpdateCall {
+internal final class Echo_EchoUpdateCall {
   private var call : Call
 
   /// Create a call.
@@ -302,7 +302,7 @@ internal class Echo_EchoUpdateCall {
 }
 
 /// Call methods of this class to make API calls.
-internal class Echo_EchoService {
+internal final class Echo_EchoService {
   public var channel: Channel
 
   /// This metadata will be sent with all requests.
@@ -390,7 +390,7 @@ internal protocol Echo_EchoProvider {
 }
 
 /// Common properties available in each service session.
-internal class Echo_EchoSession {
+internal final class Echo_EchoSession {
   fileprivate var handler : gRPC.Handler
   internal var requestMetadata : Metadata { return handler.requestMetadata }
 
@@ -405,7 +405,7 @@ internal class Echo_EchoSession {
 }
 
 // Get (Unary)
-internal class Echo_EchoGetSession : Echo_EchoSession {
+internal final class Echo_EchoGetSession : Echo_EchoSession {
   private var provider : Echo_EchoProvider
 
   /// Create a session.
@@ -430,7 +430,7 @@ internal class Echo_EchoGetSession : Echo_EchoSession {
 }
 
 // Expand (Server Streaming)
-internal class Echo_EchoExpandSession : Echo_EchoSession {
+internal final class Echo_EchoExpandSession : Echo_EchoSession {
   private var provider : Echo_EchoProvider
 
   /// Create a session.
@@ -472,7 +472,7 @@ internal class Echo_EchoExpandSession : Echo_EchoSession {
 }
 
 // Collect (Client Streaming)
-internal class Echo_EchoCollectSession : Echo_EchoSession {
+internal final class Echo_EchoCollectSession : Echo_EchoSession {
   private var provider : Echo_EchoProvider
 
   /// Create a session.
@@ -521,7 +521,7 @@ internal class Echo_EchoCollectSession : Echo_EchoSession {
 }
 
 // Update (Bidirectional Streaming)
-internal class Echo_EchoUpdateSession : Echo_EchoSession {
+internal final class Echo_EchoUpdateSession : Echo_EchoSession {
   private var provider : Echo_EchoProvider
 
   /// Create a session.
@@ -584,7 +584,7 @@ internal class Echo_EchoUpdateSession : Echo_EchoSession {
 
 
 /// Main server for generated service
-internal class Echo_EchoServer {
+internal final class Echo_EchoServer {
   private var address: String
   private var server: gRPC.Server
   private var provider: Echo_EchoProvider?

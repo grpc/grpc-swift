@@ -1,5 +1,5 @@
 /// {{ method|methodDescriptorName }} (Client Streaming)
-{{ access }} class {{ .|call:file,service,method }} {
+{{ access }} final class {{ .|call:file,service,method }} {
   private var call : Call
 
   /// Create a call.
