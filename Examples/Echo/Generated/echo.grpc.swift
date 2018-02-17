@@ -303,7 +303,7 @@ internal final class Echo_EchoUpdateCall {
 
 /// Call methods of this class to make API calls.
 internal final class Echo_EchoService {
-  public var channel: Channel
+  public private(set) var channel: Channel
 
   /// This metadata will be sent with all requests.
   internal var metadata : Metadata
@@ -317,6 +317,16 @@ internal final class Echo_EchoService {
     }
     set {
       self.channel.host = newValue
+    }
+  }
+
+  /// This property allows the service timeout to be overridden.
+  internal var timeout : TimeInterval {
+    get {
+      return self.channel.timeout
+    }
+    set {
+      self.channel.timeout = newValue
     }
   }
 
