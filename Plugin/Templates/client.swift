@@ -40,6 +40,16 @@
     }
   }
 
+  /// This property allows the service timeout to be overridden.
+  {{ access }} var timeout : TimeInterval {
+    get {
+      return self.channel.timeout
+    }
+    set {
+      self.channel.timeout = newValue
+    }
+  }
+
   /// Create a client.
   {{ access }} init(address: String, secure: Bool = true) {
     gRPC.initialize()
