@@ -27,7 +27,6 @@ let package = Package(
   dependencies: [
     .Package(url: "https://github.com/apple/swift-protobuf.git", Version(1,0,2)),
     .Package(url: "https://github.com/kylef/Stencil.git", Version(0,10,1)),
-    .Package(url: "https://github.com/kylef/Spectre.git", Version(0,8,0)),
     .Package(url: "https://github.com/kylef/PathKit.git", Version(0,9,0))
   ]
 )
