@@ -62,8 +62,8 @@ Start a docker instance with the swiftdocker image:
 
     # install protoc
     cd
-    curl -O -L https://github.com/google/protobuf/releases/download/v3.2.0rc2/protoc-3.2.0rc2-linux-x86_64.zip
-    unzip protoc-3.2.0rc2-linux-x86_64.zip -d /usr
+    curl -O -L https://github.com/google/protobuf/releases/download/v3.5.1/protoc-3.5.1-linux-x86_64.zip
+    unzip protoc-3.5.1-linux-x86_64.zip -d /usr
     # build the Swift gRPC plugin
     cd
     cd grpc-swift/Plugin
