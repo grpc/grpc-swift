@@ -93,8 +93,8 @@ static void chttp2_connector_shutdown(grpc_exec_ctx *exec_ctx,
 
 static void on_handshake_done(grpc_exec_ctx *exec_ctx, void *arg,
                               grpc_error *error) {
-  grpc_handshaker_args *args = arg;
-  chttp2_connector *c = args->user_data;
+  grpc_handshaker_args *args = (grpc_handshaker_args *)arg;
+  chttp2_connector *c = (chttp2_connector *)args->user_data;
   gpr_mu_lock(&c->mu);
   if (error != GRPC_ERROR_NONE || c->shutdown) {
     if (error == GRPC_ERROR_NONE) {
@@ -115,11 +115,35 @@ static void on_handshake_done(grpc_exec_ctx *exec_ctx, void *arg,
     }
     memset(c->result, 0, sizeof(*c->result));
   } else {
-    c->result->transport =
-        grpc_create_chttp2_transport(exec_ctx, args->args, args->endpoint, 1);
+    c->result->transport = grpc_create_chttp2_transport(exec_ctx, args->args,
+                                                        args->endpoint, true);
     GPR_ASSERT(c->result->transport);
+    // TODO(roth): We ideally want to wait until we receive HTTP/2
+    // settings from the server before we consider the connection
+    // established.  If that doesn't happen before the connection
+    // timeout expires, then we should consider the connection attempt a
+    // failure and feed that information back into the backoff code.
+    // We could pass a notify_on_receive_settings callback to
+    // grpc_chttp2_transport_start_reading() to let us know when
+    // settings are received, but we would need to figure out how to use
+    // that information here.
+    //
+    // Unfortunately, we don't currently have a way to split apart the two
+    // effects of scheduling c->notify: we start sending RPCs immediately
+    // (which we want to do) and we consider the connection attempt successful
+    // (which we don't want to do until we get the notify_on_receive_settings
+    // callback from the transport).  If we could split those things
+    // apart, then we could start sending RPCs but then wait for our
+    // timeout before deciding if the connection attempt is successful.
+    // If the attempt is not successful, then we would tear down the
+    // transport and feed the failure back into the backoff code.
+    //
+    // In addition, even if we did that, we would probably not want to do
+    // so until after transparent retries is implemented.  Otherwise, any
+    // RPC that we attempt to send on the connection before the timeout
+    // would fail instead of being retried on a subsequent attempt.
     grpc_chttp2_transport_start_reading(exec_ctx, c->result->transport,
-                                        args->read_buffer);
+                                        args->read_buffer, NULL);
     c->result->channel_args = args->args;
   }
   grpc_closure *notify = c->notify;
@@ -143,7 +167,7 @@ static void start_handshake_locked(grpc_exec_ctx *exec_ctx,
 }
 
 static void connected(grpc_exec_ctx *exec_ctx, void *arg, grpc_error *error) {
-  chttp2_connector *c = arg;
+  chttp2_connector *c = (chttp2_connector *)arg;
   gpr_mu_lock(&c->mu);
   GPR_ASSERT(c->connecting);
   c->connecting = false;
@@ -161,7 +185,7 @@ static void connected(grpc_exec_ctx *exec_ctx, void *arg, grpc_error *error) {
       grpc_endpoint_shutdown(exec_ctx, c->endpoint, GRPC_ERROR_REF(error));
     }
     gpr_mu_unlock(&c->mu);
-    chttp2_connector_unref(exec_ctx, arg);
+    chttp2_connector_unref(exec_ctx, (grpc_connector *)arg);
   } else {
     GPR_ASSERT(c->endpoint != NULL);
     start_handshake_locked(exec_ctx, c);
@@ -198,7 +222,7 @@ static const grpc_connector_vtable chttp2_connector_vtable = {
     chttp2_connector_connect};
 
 grpc_connector *grpc_chttp2_connector_create() {
-  chttp2_connector *c = gpr_zalloc(sizeof(*c));
+  chttp2_connector *c = (chttp2_connector *)gpr_zalloc(sizeof(*c));
   c->base.vtable = &chttp2_connector_vtable;
   gpr_mu_init(&c->mu);
   gpr_ref_init(&c->refs, 1);
