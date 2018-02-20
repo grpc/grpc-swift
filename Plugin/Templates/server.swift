@@ -24,7 +24,7 @@
 }
 
 /// Common properties available in each service session.
-{{ access }} final class {{ .|service:file,service }}Session {
+{{ access }} class {{ .|service:file,service }}Session {
   fileprivate var handler : gRPC.Handler
   {{ access }} var requestMetadata : Metadata { return handler.requestMetadata }
 

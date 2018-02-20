@@ -400,7 +400,7 @@ internal protocol Echo_EchoProvider {
 }
 
 /// Common properties available in each service session.
-internal final class Echo_EchoSession {
+internal class Echo_EchoSession {
   fileprivate var handler : gRPC.Handler
   internal var requestMetadata : Metadata { return handler.requestMetadata }
 
