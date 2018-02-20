@@ -23,7 +23,7 @@
 //-{% endfor %}
 /// Call methods of this class to make API calls.
 {{ access }} final class {{ .|serviceclass:file,service }} {
-  public var channel: Channel
+  public private(set) var channel: Channel
 
   /// This metadata will be sent with all requests.
   {{ access }} var metadata : Metadata
@@ -37,6 +37,16 @@
     }
     set {
       self.channel.host = newValue
+    }
+  }
+
+  /// This property allows the service timeout to be overridden.
+  {{ access }} var timeout : TimeInterval {
+    get {
+      return self.channel.timeout
+    }
+    set {
+      self.channel.timeout = newValue
     }
   }
 
