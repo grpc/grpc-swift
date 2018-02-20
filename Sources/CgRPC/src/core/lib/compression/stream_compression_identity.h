@@ -16,13 +16,12 @@
  *
  */
 
-#ifndef GRPC_CORE_LIB_IOMGR_EV_EPOLL_THREAD_POOL_LINUX_H
-#define GRPC_CORE_LIB_IOMGR_EV_EPOLL_THREAD_POOL_LINUX_H
+#ifndef GRPC_CORE_LIB_COMPRESSION_STREAM_COMPRESSION_IDENTITY_H
+#define GRPC_CORE_LIB_COMPRESSION_STREAM_COMPRESSION_IDENTITY_H
 
-#include "src/core/lib/iomgr/ev_posix.h"
-#include "src/core/lib/iomgr/port.h"
+#include "src/core/lib/compression/stream_compression.h"
 
-const grpc_event_engine_vtable *grpc_init_epoll_thread_pool_linux(
-    bool requested_explicitly);
+extern const grpc_stream_compression_vtable
+    grpc_stream_compression_identity_vtable;
 
-#endif /* GRPC_CORE_LIB_IOMGR_EV_EPOLL_THREAD_POOL_LINUX_H */
+#endif
