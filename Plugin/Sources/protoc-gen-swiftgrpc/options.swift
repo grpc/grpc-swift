@@ -47,9 +47,11 @@ class GeneratorOptions {
   }
   
   let visibility: Visibility
+  let generateMockCode: Bool
   
   init(parameter: String?) throws {
     var visibility: Visibility = .Internal
+    var generateMockCode = false
     
     for pair in GeneratorOptions.parseParameter(string: parameter) {
       switch pair.key {
@@ -60,12 +62,20 @@ class GeneratorOptions {
           throw GenerationError.invalidParameterValue(name: pair.key,
                                                       value: pair.value)
         }
+      case "generate_mock_code":
+        switch pair.value {
+        case "true": generateMockCode = true
+        case "false": generateMockCode = false
+        default: throw GenerationError.invalidParameterValue(name: pair.key,
+                                                             value: pair.value)
+        }
       default:
         throw GenerationError.unknownParameter(name: pair.key)
       }
     }
     
     self.visibility = visibility
+    self.generateMockCode = generateMockCode
   }
   
   static func parseParameter(string: String?) -> [(key: String, value: String)] {

@@ -1,15 +1,22 @@
 // {{ method|methodDescriptorName }} (Client Streaming)
-{{ access }} final class {{ .|session:file,service,method }} : {{ .|service:file,service }}Session {
+{{ access }} protocol {{ .|session:file,service,method }} : {{ .|service:file,service }}Session {
+  /// Receive a message. Blocks until a message is received or the client closes the connection.
+  func receive() throws -> {{ method|input }}
+
+  /// Send a response and close the connection.
+  func sendAndClose(_ response: {{ method|output }}) throws
+}
+
+fileprivate final class {{ .|session:file,service,method }}Impl : {{ .|service:file,service }}SessionImpl, {{ .|session:file,service,method }} {
   private var provider : {{ .|provider:file,service }}
 
   /// Create a session.
-  fileprivate init(handler:gRPC.Handler, provider: {{ .|provider:file,service }}) {
+  init(handler:gRPC.Handler, provider: {{ .|provider:file,service }}) {
     self.provider = provider
     super.init(handler:handler)
   }
 
-  /// Receive a message. Blocks until a message is received or the client closes the connection.
-  {{ access }} func receive() throws -> {{ method|input }} {
+  func receive() throws -> {{ method|input }} {
     let sem = DispatchSemaphore(value: 0)
     var requestMessage : {{ method|input }}?
     try self.handler.receiveMessage() {(requestData) in
@@ -25,8 +32,7 @@
     return requestMessage!
   }
 
-  /// Send a response and close the connection.
-  {{ access }} func sendAndClose(_ response: {{ method|output }}) throws {
+  func sendAndClose(_ response: {{ method|output }}) throws {
     try self.handler.sendResponse(message:response.serializedData(),
                                   statusCode:self.statusCode,
                                   statusMessage:self.statusMessage,
@@ -34,7 +40,7 @@
   }
 
   /// Run the session. Internal.
-  fileprivate func run(queue:DispatchQueue) throws {
+  func run(queue:DispatchQueue) throws {
     try self.handler.sendMetadata(initialMetadata:initialMetadata) {
       queue.async {
         do {
@@ -46,3 +52,27 @@
     }
   }
 }
+
+//-{% if generate_mock_code %}
+/// Simple fake implementation of {{ .|session:file,service,method }} that returns a previously-defined set of results
+/// and stores sent values for later verification.
+class {{ .|session:file,service,method }}Stub: {{ .|service:file,service }}SessionStub, {{ .|session:file,service,method }} {
+  var inputs: [{{ method|input }}] = []
+  var output: {{ method|output }}?
+
+  func receive() throws -> {{ method|input }} {
+    if let input = inputs.first {
+      inputs.removeFirst()
+      return input
+    } else {
+      throw {{ .|clienterror:file,service }}.endOfStream
+    }
+  }
+
+  func sendAndClose(_ response: {{ method|output }}) throws {
+    output = response
+  }
+
+  func close() throws { }
+}
+//-{% endif %}

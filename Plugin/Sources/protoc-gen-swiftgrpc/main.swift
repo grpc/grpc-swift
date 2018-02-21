@@ -147,7 +147,8 @@ func main() throws {
         "file": fileDescriptor,
         "client": true,
         "server": true,
-        "access": options.visibility.sourceSnippet]
+        "access": options.visibility.sourceSnippet,
+        "generate_mock_code": options.generateMockCode]
 
       do {
 
