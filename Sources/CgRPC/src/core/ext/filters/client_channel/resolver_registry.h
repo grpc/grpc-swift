@@ -22,7 +22,7 @@
 #include "src/core/ext/filters/client_channel/resolver_factory.h"
 #include "src/core/lib/iomgr/pollset_set.h"
 
-void grpc_resolver_registry_init();
+void grpc_resolver_registry_init(void);
 void grpc_resolver_registry_shutdown(void);
 
 /** Set the default URI prefix to \a default_prefix. */

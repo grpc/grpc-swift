@@ -111,7 +111,7 @@ void grpc_handshaker_do_handshake(grpc_exec_ctx* exec_ctx,
 typedef struct grpc_handshake_manager grpc_handshake_manager;
 
 /// Creates a new handshake manager.  Caller takes ownership.
-grpc_handshake_manager* grpc_handshake_manager_create();
+grpc_handshake_manager* grpc_handshake_manager_create(void);
 
 /// Adds a handshaker to the handshake manager.
 /// Takes ownership of \a handshaker.

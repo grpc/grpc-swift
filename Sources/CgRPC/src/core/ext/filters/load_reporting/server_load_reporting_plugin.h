@@ -53,7 +53,7 @@ typedef struct grpc_load_reporting_call_data {
 } grpc_load_reporting_call_data;
 
 /** Return a \a grpc_arg enabling load reporting */
-grpc_arg grpc_load_reporting_enable_arg();
+grpc_arg grpc_load_reporting_enable_arg(void);
 
 #endif /* GRPC_CORE_EXT_FILTERS_LOAD_REPORTING_SERVER_LOAD_REPORTING_PLUGIN_H \
           */

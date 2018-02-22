@@ -414,7 +414,7 @@ CENSUSAPI int census_trace_scan_start(int consume);
 CENSUSAPI int census_get_trace_record(census_trace_record *trace_record);
 
 /** End a scan previously started by census_trace_scan_start() */
-CENSUSAPI void census_trace_scan_end();
+CENSUSAPI void census_trace_scan_end(void);
 
 /** Core stats collection API's. The following concepts are used:
    * Resource: Users record measurements for a single resource. Examples

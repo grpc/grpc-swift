@@ -43,8 +43,8 @@ struct thd_arg {
   void *arg;               /* argument to a thread */
 };
 
-static void inc_thd_count();
-static void dec_thd_count();
+static void inc_thd_count(void);
+static void dec_thd_count(void);
 
 /* Body of every thread started via gpr_thd_new. */
 static void *thread_body(void *v) {

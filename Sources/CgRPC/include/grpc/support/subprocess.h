@@ -28,7 +28,7 @@ extern "C" {
 typedef struct gpr_subprocess gpr_subprocess;
 
 /** .exe on windows, empty on unices */
-GPRAPI const char *gpr_subprocess_binary_extension();
+GPRAPI const char *gpr_subprocess_binary_extension(void);
 
 GPRAPI gpr_subprocess *gpr_subprocess_create(int argc, const char **argv);
 /** if subprocess has not been joined, kill it */
