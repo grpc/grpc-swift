@@ -28,13 +28,13 @@ public class Server {
   var completionQueue: CompletionQueue
   
   /// Active handlers
-  private var handlers: NSMutableSet!
+  private var handlers: NSMutableSet
   
   /// Mutex for synchronizing access to handlers
   private var handlersMutex: Mutex = Mutex()
   
   /// Optional callback when server stops serving
-  private var onCompletion: (() -> Void)!
+  private var onCompletion: (() -> Void)?
   
   /// Initializes a Server
   ///
