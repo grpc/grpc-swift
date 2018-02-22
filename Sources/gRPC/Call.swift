@@ -210,8 +210,7 @@ public class Call {
   public func start(_ style: CallStyle,
                     metadata: Metadata,
                     message: Data? = nil,
-                    completion: @escaping (CallResult) -> Void)
-    throws {
+                    completion: @escaping (CallResult) -> Void) throws {
     var operations: [Operation] = []
     switch style {
     case .unary:
@@ -267,8 +266,7 @@ public class Call {
   }
   
   /// helper for sending queued messages
-  private func sendWithoutBlocking(data: Data, errorHandler: @escaping (Error) -> Void)
-    throws {
+  private func sendWithoutBlocking(data: Data, errorHandler: @escaping (Error) -> Void) throws {
     try perform(OperationGroup(call: self,
                                operations: [.sendMessage(ByteBuffer(data: data))]) { operationGroup in
         if operationGroup.success {

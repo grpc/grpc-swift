@@ -233,9 +233,11 @@ public class Handler {
                          trailingMetadata: Metadata,
                          completion: @escaping (() -> Void)) throws {
     let operations = OperationGroup(call: call,
-                                    operations: [.sendStatusFromServer(statusCode,
-                                                                       statusMessage,
-                                                                       trailingMetadata)]) { operationGroup in
+                                    operations: [
+                                      .sendStatusFromServer(statusCode,
+                                                            statusMessage,
+                                                            trailingMetadata)
+    ]) { operationGroup in
       if operationGroup.success {
         completion()
       }
