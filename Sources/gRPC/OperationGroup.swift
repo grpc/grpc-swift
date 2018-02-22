@@ -18,7 +18,7 @@
 #endif
 
 /// A collection of gRPC operations
-internal class OperationGroup {
+class OperationGroup {
   /// A mutex for synchronizing tag generation
   static let tagMutex = Mutex()
 
@@ -26,7 +26,7 @@ internal class OperationGroup {
   private static var nextTag: Int64 = 1
 
   /// Automatically-assigned tag that is used by the completion queue that watches this group.
-  internal var tag: Int64
+  var tag: Int64
 
   /// The call associated with the operation group. Retained while the operations are running.
   private var call: Call
@@ -38,13 +38,13 @@ internal class OperationGroup {
   private var underlyingObservers: [UnsafeMutableRawPointer] = []
 
   /// Pointer to underlying C representation
-  internal var underlyingOperations: UnsafeMutableRawPointer?
+  var underlyingOperations: UnsafeMutableRawPointer?
 
   /// Completion handler that is called when the group completes
-  internal var completion: ((OperationGroup) throws -> Void)
+  var completion: ((OperationGroup) throws -> Void)
 
   /// Indicates that the OperationGroup completed successfully
-  internal var success: Bool = false
+  var success: Bool = false
 
   /// Creates the underlying observer needed to run an operation
   ///
@@ -112,7 +112,7 @@ internal class OperationGroup {
   /// Gets the message that was received
   ///
   /// - Returns: message
-  internal func receivedMessage() -> ByteBuffer? {
+  func receivedMessage() -> ByteBuffer? {
     for (i, operation) in operations.enumerated() {
       switch operation {
       case .receiveMessage:
@@ -130,7 +130,7 @@ internal class OperationGroup {
   /// Gets initial metadata that was received
   ///
   /// - Returns: metadata
-  internal func receivedInitialMetadata() -> Metadata? {
+  func receivedInitialMetadata() -> Metadata? {
     for (i, operation) in operations.enumerated() {
       switch operation {
       case .receiveInitialMetadata:
@@ -145,7 +145,7 @@ internal class OperationGroup {
   /// Gets a status code that was received
   ///
   /// - Returns: status code
-  internal func receivedStatusCode() -> Int? {
+  func receivedStatusCode() -> Int? {
     for (i, operation) in operations.enumerated() {
       switch operation {
       case .receiveStatusOnClient:
@@ -160,7 +160,7 @@ internal class OperationGroup {
   /// Gets a status message that was received
   ///
   /// - Returns: status message
-  internal func receivedStatusMessage() -> String? {
+  func receivedStatusMessage() -> String? {
     for (i, operation) in operations.enumerated() {
       switch operation {
       case .receiveStatusOnClient:
@@ -182,7 +182,7 @@ internal class OperationGroup {
   /// Gets trailing metadata that was received
   ///
   /// - Returns: metadata
-  internal func receivedTrailingMetadata() -> Metadata? {
+  func receivedTrailingMetadata() -> Metadata? {
     for (i, operation) in operations.enumerated() {
       switch operation {
       case .receiveStatusOnClient:

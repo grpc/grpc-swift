@@ -24,13 +24,13 @@ public class Handler {
   private var underlyingHandler: UnsafeMutableRawPointer
 
   /// Completion queue for handler response operations
-  internal var completionQueue: CompletionQueue
+  var completionQueue: CompletionQueue
 
   /// Metadata received with the request
   public var requestMetadata: Metadata
 
   /// A Call object that can be used to respond to the request
-  internal lazy var call: Call = {
+  lazy var call: Call = {
     Call(underlyingCall: cgrpc_handler_get_call(self.underlyingHandler),
          owned: false,
          completionQueue: self.completionQueue)

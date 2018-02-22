@@ -21,13 +21,13 @@ import Foundation // for String.Encoding
 /// Representation of raw data that may be sent and received using gRPC
 public class ByteBuffer {
   /// Pointer to underlying C representation
-  internal var underlyingByteBuffer: UnsafeMutableRawPointer
+  var underlyingByteBuffer: UnsafeMutableRawPointer
 
   /// Creates a ByteBuffer from an underlying C representation.
   /// The ByteBuffer takes ownership of the passed-in representation.
   ///
   /// - Parameter underlyingByteBuffer: the underlying C representation
-  internal init(underlyingByteBuffer: UnsafeMutableRawPointer) {
+  init(underlyingByteBuffer: UnsafeMutableRawPointer) {
     self.underlyingByteBuffer = underlyingByteBuffer
   }
 

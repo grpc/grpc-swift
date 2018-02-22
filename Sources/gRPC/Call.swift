@@ -190,7 +190,7 @@ public class Call {
   /// - Parameter operations: group of operations to be performed
   /// - Returns: the result of initiating the call
   /// - Throws: `CallError` if fails to call.
-  internal func perform(_ operations: OperationGroup) throws {
+  func perform(_ operations: OperationGroup) throws {
     completionQueue.register(operations)
     Call.callMutex.lock()
     let error = cgrpc_call_perform(underlyingCall, operations.underlyingOperations, operations.tag)

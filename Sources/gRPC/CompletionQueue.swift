@@ -20,7 +20,7 @@
 import Foundation
 
 /// A type indicating the kind of event returned by the completion queue
-internal enum CompletionType {
+enum CompletionType {
   case queueShutdown
   case queueTimeout
   case complete
@@ -41,12 +41,12 @@ internal enum CompletionType {
 }
 
 /// An event that is returned by the completion queue
-internal struct CompletionQueueEvent {
-  internal var type: CompletionType
-  internal var success: Int32
-  internal var tag: Int64
+struct CompletionQueueEvent {
+  var type: CompletionType
+  var success: Int32
+  var tag: Int64
 
-  internal init(_ event: grpc_event) {
+  init(_ event: grpc_event) {
     type = CompletionType.completionType(event.type)
     success = event.success
     tag = cgrpc_event_tag(event)
@@ -54,9 +54,9 @@ internal struct CompletionQueueEvent {
 }
 
 /// A gRPC Completion Queue
-internal class CompletionQueue {
+class CompletionQueue {
   /// Optional user-provided name for the queue
-  internal var name: String?
+  var name: String?
 
   /// Pointer to underlying C representation
   private var underlyingCompletionQueue: UnsafeMutableRawPointer
@@ -79,7 +79,7 @@ internal class CompletionQueue {
   ///
   /// - Parameter timeout: a timeout value in seconds
   /// - Returns: a grpc_completion_type code indicating the result of waiting
-  internal func wait(timeout: TimeInterval) -> CompletionQueueEvent {
+  func wait(timeout: TimeInterval) -> CompletionQueueEvent {
     let event = cgrpc_completion_queue_get_next_event(underlyingCompletionQueue, timeout)
     return CompletionQueueEvent(event)
   }
@@ -87,7 +87,7 @@ internal class CompletionQueue {
   /// Register an operation group for handling upon completion
   ///
   /// - Parameter operationGroup: the operation group to handle
-  internal func register(_ operationGroup: OperationGroup) {
+  func register(_ operationGroup: OperationGroup) {
     operationGroupsMutex.lock()
     operationGroups[operationGroup.tag] = operationGroup
     operationGroupsMutex.unlock()
@@ -97,7 +97,7 @@ internal class CompletionQueue {
   ///
   /// - Parameter callbackQueue: a DispatchQueue to use to call the completion handler
   /// - Parameter completion: a completion handler that is called when the queue stops running
-  internal func runToCompletion(callbackQueue: DispatchQueue? = DispatchQueue.main,
+  func runToCompletion(callbackQueue: DispatchQueue? = DispatchQueue.main,
                                 _ completion: @escaping () -> Void) {
     // run the completion queue on a new background thread
     DispatchQueue.global().async {
@@ -153,12 +153,12 @@ internal class CompletionQueue {
   }
 
   /// Runs a completion queue
-  internal func run() {
+  func run() {
     runToCompletion(callbackQueue: nil) {}
   }
 
   /// Shuts down a completion queue
-  internal func shutdown() {
+  func shutdown() {
     cgrpc_completion_queue_shutdown(underlyingCompletionQueue)
   }
 }
