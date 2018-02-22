@@ -15,15 +15,16 @@
  */
 import PackageDescription
 
-let package = Package(name: "SwiftGRPCPlugin",
-                      targets: [
-                        Target(name: "protoc-gen-swiftgrpc",
-                               dependencies: [
-                                 "TemplateEncoder"
-                        ]),
-                        Target(name: "TemplateEncoder")
-                      ],
-                      dependencies: [
-                        .Package(url: "https://github.com/apple/swift-protobuf.git", Version(1, 0, 2)),
-                        .Package(url: "https://github.com/kylef/Stencil.git", Version(0, 10, 1))
-])
+let package = Package(
+  name: "SwiftGRPCPlugin",
+  targets: [
+    Target(name: "protoc-gen-swiftgrpc",
+           dependencies: [
+            "TemplateEncoder"
+      ]),
+    Target(name: "TemplateEncoder")
+  ],
+  dependencies: [
+    .Package(url: "https://github.com/apple/swift-protobuf.git", Version(1, 0, 2)),
+    .Package(url: "https://github.com/kylef/Stencil.git", Version(0, 10, 1))
+  ])
