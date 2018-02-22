@@ -22,7 +22,7 @@ import Foundation // for String.Encoding
 public class ByteBuffer {
   /// Pointer to underlying C representation
   internal var underlyingByteBuffer: UnsafeMutableRawPointer
-  
+
   /// Creates a ByteBuffer from an underlying C representation.
   /// The ByteBuffer takes ownership of the passed-in representation.
   ///
@@ -30,7 +30,7 @@ public class ByteBuffer {
   internal init(underlyingByteBuffer: UnsafeMutableRawPointer) {
     self.underlyingByteBuffer = underlyingByteBuffer
   }
-  
+
   /// Creates a byte buffer that contains a copy of the contents of `data`
   ///
   /// - Parameter data: the data to store in the buffer
@@ -41,11 +41,11 @@ public class ByteBuffer {
     }
     self.underlyingByteBuffer = underlyingByteBuffer!
   }
-  
+
   deinit {
     cgrpc_byte_buffer_destroy(underlyingByteBuffer)
   }
-  
+
   /// Gets data from the contents of the ByteBuffer
   ///
   /// - Returns: data formed from the ByteBuffer contents

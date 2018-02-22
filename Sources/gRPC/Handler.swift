@@ -22,20 +22,20 @@ import Foundation // for String.Encoding
 public class Handler {
   /// Pointer to underlying C representation
   private var underlyingHandler: UnsafeMutableRawPointer
-  
+
   /// Completion queue for handler response operations
   internal var completionQueue: CompletionQueue
-  
+
   /// Metadata received with the request
   public var requestMetadata: Metadata
-  
+
   /// A Call object that can be used to respond to the request
   internal lazy var call: Call = {
     Call(underlyingCall: cgrpc_handler_get_call(self.underlyingHandler),
          owned: false,
          completionQueue: self.completionQueue)
   }()
-  
+
   /// The host name sent with the request
   public lazy var host: String = {
     if let string = cgrpc_handler_copy_host(self.underlyingHandler) {
@@ -47,7 +47,7 @@ public class Handler {
       return ""
     }
   }()
-  
+
   /// The method name sent with the request
   public lazy var method: String = {
     if let string = cgrpc_handler_copy_method(self.underlyingHandler) {
@@ -59,13 +59,13 @@ public class Handler {
       return ""
     }
   }()
-  
+
   /// The caller address associated with the request
   public lazy var caller: String = {
     String(cString: cgrpc_handler_call_peer(self.underlyingHandler),
            encoding: .utf8)!
   }()
-  
+
   /// Initializes a Handler
   ///
   /// - Parameter underlyingServer: the underlying C representation of the associated server
@@ -75,11 +75,11 @@ public class Handler {
     completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_handler_get_completion_queue(underlyingHandler))
     completionQueue.name = "Handler"
   }
-  
+
   deinit {
     cgrpc_handler_destroy(self.underlyingHandler)
   }
-  
+
   /// Requests a call for the handler
   ///
   /// Fills the handler properties with information about the received request
@@ -90,7 +90,7 @@ public class Handler {
       throw CallError.callError(grpcCallError: error)
     }
   }
-  
+
   /// Receive the message sent with a call
   ///
   public func receiveMessage(initialMetadata: Metadata,
@@ -108,7 +108,7 @@ public class Handler {
     }
     try call.perform(operations)
   }
-  
+
   /// Sends the response to a request
   ///
   /// - Parameter message: the message to send
@@ -132,7 +132,7 @@ public class Handler {
     }
     try call.perform(operations)
   }
-  
+
   /// Sends the response to a request
   ///
   /// - Parameter statusCode: status code to send
@@ -152,12 +152,12 @@ public class Handler {
     }
     try call.perform(operations)
   }
-  
+
   /// Shuts down the handler's completion queue
   public func shutdown() {
     completionQueue.shutdown()
   }
-  
+
   /// Send initial metadata in response to a connection
   ///
   /// - Parameter initialMetadata: initial metadata to send
@@ -174,7 +174,7 @@ public class Handler {
     }
     try call.perform(operations)
   }
-  
+
   /// Receive the message sent with a call
   ///
   /// - Parameter completion: a completion handler to call after the message has been received
@@ -193,7 +193,7 @@ public class Handler {
     }
     try call.perform(operations)
   }
-  
+
   /// Sends the response to a request
   ///
   /// - Parameter message: the message to send
@@ -208,7 +208,7 @@ public class Handler {
     }
     try call.perform(operations)
   }
-  
+
   /// Recognize when the client has closed a request
   ///
   /// - Parameter completion: a completion handler to call after request has been closed
@@ -221,7 +221,7 @@ public class Handler {
     }
     try call.perform(operations)
   }
-  
+
   /// Send final status to the client
   ///
   /// - Parameter statusCode: status code to send

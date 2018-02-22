@@ -21,31 +21,31 @@
 internal class OperationGroup {
   /// A mutex for synchronizing tag generation
   static let tagMutex = Mutex()
-  
+
   /// Used to generate unique tags for OperationGroups
   private static var nextTag: Int64 = 1
-  
+
   /// Automatically-assigned tag that is used by the completion queue that watches this group.
   internal var tag: Int64
-  
+
   /// The call associated with the operation group. Retained while the operations are running.
   private var call: Call
-  
+
   /// An array of operation objects that are passed into the initializer.
   private var operations: [Operation]
-  
+
   /// An array of observers used to watch the operation
   private var underlyingObservers: [UnsafeMutableRawPointer] = []
-  
+
   /// Pointer to underlying C representation
   internal var underlyingOperations: UnsafeMutableRawPointer?
-  
+
   /// Completion handler that is called when the group completes
   internal var completion: ((OperationGroup) throws -> Void)
-  
+
   /// Indicates that the OperationGroup completed successfully
   internal var success: Bool = false
-  
+
   /// Creates the underlying observer needed to run an operation
   ///
   /// - Parameter: operation: the operation to observe
@@ -75,7 +75,7 @@ internal class OperationGroup {
     }
     return underlyingObserver
   }
-  
+
   /// Initializes an OperationGroup representation
   ///
   /// - Parameter operations: an array of operations
@@ -99,16 +99,16 @@ internal class OperationGroup {
       cgrpc_operations_add_operation(underlyingOperations, underlyingObserver)
     }
   }
-  
+
   deinit {
     for underlyingObserver in underlyingObservers {
       cgrpc_observer_destroy(underlyingObserver)
     }
     cgrpc_operations_destroy(underlyingOperations)
   }
-  
+
   /// WARNING: The following assumes that at most one operation of each type is in the group.
-  
+
   /// Gets the message that was received
   ///
   /// - Returns: message
@@ -126,7 +126,7 @@ internal class OperationGroup {
     }
     return nil
   }
-  
+
   /// Gets initial metadata that was received
   ///
   /// - Returns: metadata
@@ -141,7 +141,7 @@ internal class OperationGroup {
     }
     return nil
   }
-  
+
   /// Gets a status code that was received
   ///
   /// - Returns: status code
@@ -156,7 +156,7 @@ internal class OperationGroup {
     }
     return nil
   }
-  
+
   /// Gets a status message that was received
   ///
   /// - Returns: status message
@@ -178,7 +178,7 @@ internal class OperationGroup {
     }
     return nil
   }
-  
+
   /// Gets trailing metadata that was received
   ///
   /// - Returns: metadata

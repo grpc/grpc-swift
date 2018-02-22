@@ -32,15 +32,15 @@ private struct MetadataPair {
 public class Metadata: CustomStringConvertible, NSCopying {
   /// Pointer to underlying C representation
   var underlyingArray: UnsafeMutableRawPointer
-  
+
   init(underlyingArray: UnsafeMutableRawPointer) {
     self.underlyingArray = underlyingArray
   }
-  
+
   public init() {
     underlyingArray = cgrpc_metadata_array_create()
   }
-  
+
   public init(_ pairs: [[String: String]]) {
     underlyingArray = cgrpc_metadata_array_create()
     for pair in pairs {
@@ -51,7 +51,7 @@ public class Metadata: CustomStringConvertible, NSCopying {
       }
     }
   }
-  
+
   public init(_ pairs: [String: String]) {
     underlyingArray = cgrpc_metadata_array_create()
     for key in pairs.keys {
@@ -60,15 +60,15 @@ public class Metadata: CustomStringConvertible, NSCopying {
       }
     }
   }
-  
+
   deinit {
     cgrpc_metadata_array_destroy(underlyingArray)
   }
-  
+
   public func count() -> Int {
     return cgrpc_metadata_array_get_count(underlyingArray)
   }
-  
+
   public func key(_ index: Int) -> String {
     if let string = cgrpc_metadata_array_copy_key_at_index(underlyingArray, index) {
       defer {
@@ -80,7 +80,7 @@ public class Metadata: CustomStringConvertible, NSCopying {
     }
     return "<binary-metadata-key>"
   }
-  
+
   public func value(_ index: Int) -> String {
     if let string = cgrpc_metadata_array_copy_value_at_index(underlyingArray, index) {
       defer {
@@ -92,11 +92,11 @@ public class Metadata: CustomStringConvertible, NSCopying {
     }
     return "<binary-metadata-value>"
   }
-  
+
   public func add(key: String, value: String) {
     cgrpc_metadata_array_append_metadata(underlyingArray, key, value)
   }
-  
+
   public var description: String {
     var result = ""
     for i in 0..<count() {
@@ -106,7 +106,7 @@ public class Metadata: CustomStringConvertible, NSCopying {
     }
     return result
   }
-  
+
   public func copy(with _: NSZone? = nil) -> Any {
     let copy = Metadata()
     for i in 0..<count() {

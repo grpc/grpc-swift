@@ -46,7 +46,7 @@ public enum CallError: Error {
   case notServerCompletionQueue
   case batchTooBig
   case payloadTypeMismatch
-  
+
   static func callError(grpcCallError error: grpc_call_error) -> CallError {
     switch error {
     case GRPC_CALL_OK:
@@ -91,7 +91,7 @@ public struct CallResult: CustomStringConvertible {
   public var resultData: Data?
   public var initialMetadata: Metadata?
   public var trailingMetadata: Metadata?
-  
+
   fileprivate init(_ op: OperationGroup) {
     if op.success {
       if let statusCodeRawValue = op.receivedStatusCode() {
@@ -115,7 +115,7 @@ public struct CallResult: CustomStringConvertible {
       trailingMetadata = nil
     }
   }
-  
+
   public var description: String {
     var result = "status \(statusCode)"
     if let statusMessage = self.statusMessage {
@@ -141,31 +141,31 @@ public struct CallResult: CustomStringConvertible {
 public class Call {
   /// Shared mutex for synchronizing calls to cgrpc_call_perform()
   private static let callMutex = Mutex()
-  
+
   /// Maximum number of messages that can be queued
   public static var messageQueueMaxLength = 0
-  
+
   /// Pointer to underlying C representation
   private var underlyingCall: UnsafeMutableRawPointer
-  
+
   /// Completion queue used for call
   private var completionQueue: CompletionQueue
-  
+
   /// True if this instance is responsible for deleting the underlying C representation
   private var owned: Bool
-  
+
   /// A queue of pending messages to send over the call
   private var messageQueue: Array<Data>
-  
+
   /// True if a message write operation is underway
   private var writing: Bool
-  
+
   /// Mutex for synchronizing message sending
   private var sendMutex: Mutex
-  
+
   /// Dispatch queue used for sending messages asynchronously
   private var messageDispatchQueue: DispatchQueue = DispatchQueue.global()
-  
+
   /// Initializes a Call representation
   ///
   /// - Parameter call: the underlying C representation
@@ -178,13 +178,13 @@ public class Call {
     writing = false
     sendMutex = Mutex()
   }
-  
+
   deinit {
     if owned {
       cgrpc_call_destroy(underlyingCall)
     }
   }
-  
+
   /// Initiates performance of a group of operations without waiting for completion.
   ///
   /// - Parameter operations: group of operations to be performed
@@ -199,7 +199,7 @@ public class Call {
       throw CallError.callError(grpcCallError: error)
     }
   }
-  
+
   /// Starts a gRPC API call.
   ///
   /// - Parameter style: the style of call to start
@@ -245,7 +245,7 @@ public class Call {
                                operations: operations,
                                completion: { op in completion(CallResult(op)) }))
   }
-  
+
   /// Sends a message over a streaming connection.
   ///
   /// Parameter data: the message data to send
@@ -264,7 +264,7 @@ public class Call {
       try sendWithoutBlocking(data: data, errorHandler: errorHandler)
     }
   }
-  
+
   /// helper for sending queued messages
   private func sendWithoutBlocking(data: Data, errorHandler: @escaping (Error) -> Void) throws {
     try perform(OperationGroup(call: self,
@@ -293,7 +293,7 @@ public class Call {
         }
     })
   }
-  
+
   // Receive a message over a streaming connection.
   /// - Throws: `CallError` if fails to call.
   public func receiveMessage(callback: @escaping ((Data!) throws -> Void)) throws {
@@ -307,19 +307,19 @@ public class Call {
       }
     })
   }
-  
+
   // Closes a streaming connection.
   /// - Throws: `CallError` if fails to call.
   public func close(completion: @escaping (() -> Void)) throws {
     try perform(OperationGroup(call: self, operations: [.sendCloseFromClient]) { _ in completion()
     })
   }
-  
+
   // Get the current message queue length
   public func messageQueueLength() -> Int {
     return messageQueue.count
   }
-  
+
   /// Finishes the request side of this call, notifies the server that the RPC should be cancelled,
   /// and finishes the response side of the call with an error of code CANCELED.
   public func cancel() {

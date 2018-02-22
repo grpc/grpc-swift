@@ -28,7 +28,7 @@ func Log(_ message: String) {
 // Use this to remove them after templates have been expanded.
 func stripMarkers(_ code: String) -> String {
   let inputLines = code.components(separatedBy: "\n")
-  
+
   var outputLines: [String] = []
   for line in inputLines {
     if line.contains("//-") {
@@ -117,19 +117,19 @@ func main() throws {
   // initialize template engine and add custom filters
   let templateEnvironment = Environment(loader: InternalLoader(),
                                         extensions: [GRPCFilterExtension()])
-  
+
   // initialize responses
   var response = Google_Protobuf_Compiler_CodeGeneratorResponse()
-  
+
   // read plugin input
   let rawRequest = try Stdin.readall()
   let request = try Google_Protobuf_Compiler_CodeGeneratorRequest(serializedData: rawRequest)
-  
+
   let options = try GeneratorOptions(parameter: request.parameter)
-  
+
   // Build the SwiftProtobufPluginLibrary model of the plugin input
   let descriptorSet = DescriptorSet(protos: request.protoFile)
-  
+
   // process each .proto file separately
   for fileDescriptor in descriptorSet.files {
     if fileDescriptor.services.count > 0 {
@@ -139,7 +139,7 @@ func main() throws {
         print("ERROR: no package for \(fileDescriptor.name)")
         continue
       }
-      
+
       // generate separate implementation files for client and server
       let context: [String: Any] = [
         "file": fileDescriptor,
@@ -147,7 +147,7 @@ func main() throws {
         "server": true,
         "access": options.visibility.sourceSnippet
       ]
-      
+
       do {
         let grpcFileName = uniqueOutputFileName(component: "grpc", fileDescriptor: fileDescriptor)
         let grpcCode = try templateEnvironment.renderTemplate(name: "main.swift", context: context)
@@ -155,13 +155,13 @@ func main() throws {
         grpcFile.name = grpcFileName
         grpcFile.content = stripMarkers(grpcCode)
         response.file.append(grpcFile)
-        
+
       } catch (let error) {
         Log("ERROR \(error)")
       }
     }
   }
-  
+
   // return everything to the caller
   let serializedResponse = try response.serializedData()
   Stdout.write(bytes: serializedResponse)

@@ -20,11 +20,11 @@ import Foundation
 
 public class InternalLoader: Loader {
   private var templates: [String: String]
-  
+
   public init() {
     templates = loadTemplates()
   }
-  
+
   public func loadTemplate(name: String, environment: Environment) throws -> Template {
     if let encoding = templates[name],
       let data = Data(base64Encoded: encoding, options: []),
@@ -36,7 +36,7 @@ public class InternalLoader: Loader {
       throw TemplateDoesNotExist(templateNames: [name], loader: self)
     }
   }
-  
+
   public func loadTemplate(names: [String], environment: Environment) throws -> Template {
     for name in names {
       if let encoding = templates[name],

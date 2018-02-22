@@ -22,11 +22,11 @@ class gRPCTests: XCTestCase {
   func testConnectivity() {
     runTest(useSSL: false)
   }
-  
+
   func testConnectivitySecure() {
     runTest(useSSL: true)
   }
-  
+
   static var allTests: [(String, (gRPCTests) -> () throws -> Void)] {
     return [
       ("testConnectivity", testConnectivity),
@@ -64,9 +64,9 @@ let statusMessage = "OK"
 
 func runTest(useSSL: Bool) {
   gRPC.initialize()
-  
+
   let serverRunningSemaphore = DispatchSemaphore(value: 0)
-  
+
   // create the server
   var server: gRPC.Server!
   if useSSL {
@@ -84,7 +84,7 @@ func runTest(useSSL: Bool) {
   } else {
     server = gRPC.Server(address: address)
   }
-  
+
   // start the server
   DispatchQueue.global().async {
     do {
@@ -94,17 +94,17 @@ func runTest(useSSL: Bool) {
     }
     serverRunningSemaphore.signal() // when the server exits, the test is finished
   }
-  
+
   // run the client
   do {
     try runClient(useSSL: useSSL)
   } catch (let error) {
     XCTFail("client error \(error)")
   }
-  
+
   // stop the server
   server.stop()
-  
+
   // wait until the server has shut down
   _ = serverRunningSemaphore.wait(timeout: DispatchTime.distantFuture)
 }
@@ -121,7 +121,7 @@ func verify_metadata(_ metadata: Metadata, expected: [String: String]) {
 func runClient(useSSL: Bool) throws {
   let message = clientText.data(using: .utf8)
   var channel: gRPC.Channel!
-  
+
   if useSSL {
     let certificateURL = URL(fileURLWithPath: "Tests/ssl.crt")
     guard
@@ -134,7 +134,7 @@ func runClient(useSSL: Bool) throws {
   } else {
     channel = gRPC.Channel(address: address, secure: false)
   }
-  
+
   channel.host = host
   for i in 0..<steps {
     let sem = DispatchSemaphore(value: 0)

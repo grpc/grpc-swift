@@ -23,19 +23,19 @@ import Foundation
 public class Server {
   /// Pointer to underlying C representation
   private var underlyingServer: UnsafeMutableRawPointer
-  
+
   /// Completion queue used for server operations
   var completionQueue: CompletionQueue
-  
+
   /// Active handlers
   private var handlers: NSMutableSet
-  
+
   /// Mutex for synchronizing access to handlers
   private var handlersMutex: Mutex = Mutex()
-  
+
   /// Optional callback when server stops serving
   private var onCompletion: (() -> Void)?
-  
+
   /// Initializes a Server
   ///
   /// - Parameter address: the address where the server will listen
@@ -45,7 +45,7 @@ public class Server {
     completionQueue.name = "Server " + address
     handlers = NSMutableSet()
   }
-  
+
   /// Initializes a secure Server
   ///
   /// - Parameter address: the address where the server will listen
@@ -57,11 +57,11 @@ public class Server {
     completionQueue.name = "Server " + address
     handlers = NSMutableSet()
   }
-  
+
   deinit {
     cgrpc_server_destroy(underlyingServer)
   }
-  
+
   /// Run the server
   public func run(dispatchQueue: DispatchQueue = DispatchQueue.global(),
                   handlerFunction: @escaping (Handler) -> Void) {
@@ -113,11 +113,11 @@ public class Server {
       }
     }
   }
-  
+
   public func stop() {
     cgrpc_server_stop(underlyingServer)
   }
-  
+
   public func onCompletion(completion: @escaping (() -> Void)) {
     onCompletion = completion
   }

@@ -22,16 +22,16 @@ import Foundation
 public class Channel {
   /// Pointer to underlying C representation
   private var underlyingChannel: UnsafeMutableRawPointer
-  
+
   /// Completion queue for channel call operations
   private var completionQueue: CompletionQueue
-  
+
   /// Timeout for new calls
   public var timeout: TimeInterval = 600.0
-  
+
   /// Default host to use for new calls
   public var host: String
-  
+
   /// Initializes a gRPC channel
   ///
   /// - Parameter address: the address of the server to be called
@@ -47,7 +47,7 @@ public class Channel {
     completionQueue.name = "Client" // only for debugging
     completionQueue.run() // start a loop that watches the channel's completion queue
   }
-  
+
   /// Initializes a gRPC channel
   ///
   /// - Parameter address: the address of the server to be called
@@ -60,11 +60,11 @@ public class Channel {
     completionQueue.name = "Client" // only for debugging
     completionQueue.run() // start a loop that watches the channel's completion queue
   }
-  
+
   deinit {
     cgrpc_channel_destroy(underlyingChannel)
   }
-  
+
   /// Constructs a Call object to make a gRPC API call
   ///
   /// - Parameter method: the gRPC method name for the call

@@ -26,7 +26,7 @@ extension String {
   var undotted: String {
     return replacingOccurrences(of: ".", with: "_")
   }
-  
+
   var uppercasedFirst: String {
     var out = characters
     if let first = out.popFirst() {
