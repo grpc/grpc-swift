@@ -16,16 +16,16 @@
 import AppKit
 import gRPC
 
-class EchoViewController : NSViewController, NSTextFieldDelegate {
-  @IBOutlet weak var messageField: NSTextField!
-  @IBOutlet weak var sentOutputField: NSTextField!
-  @IBOutlet weak var receivedOutputField: NSTextField!
-  @IBOutlet weak var addressField: NSTextField!
-  @IBOutlet weak var TLSButton: NSButton!
-  @IBOutlet weak var callSelectButton: NSSegmentedControl!
-  @IBOutlet weak var closeButton: NSButton!
+class EchoViewController: NSViewController, NSTextFieldDelegate {
+  @IBOutlet var messageField: NSTextField!
+  @IBOutlet var sentOutputField: NSTextField!
+  @IBOutlet var receivedOutputField: NSTextField!
+  @IBOutlet var addressField: NSTextField!
+  @IBOutlet var TLSButton: NSButton!
+  @IBOutlet var callSelectButton: NSSegmentedControl!
+  @IBOutlet var closeButton: NSButton!
 
-  private var service : Echo_EchoService?
+  private var service: Echo_EchoService?
 
   private var expandCall: Echo_EchoExpandCall?
   private var collectCall: Echo_EchoCollectCall?
@@ -33,27 +33,27 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
 
   private var nowStreaming = false
 
-  required init?(coder:NSCoder) {
-    super.init(coder:coder)
+  required init?(coder: NSCoder) {
+    super.init(coder: coder)
   }
 
   private var enabled = false
 
-  @IBAction func messageReturnPressed(sender: NSTextField) {
+  @IBAction func messageReturnPressed(sender _: NSTextField) {
     if enabled {
       do {
-        try callServer(address:addressField.stringValue,
-                       host:"example.com")
+        try callServer(address: addressField.stringValue,
+                       host: "example.com")
       } catch (let error) {
         print(error)
       }
     }
   }
 
-  @IBAction func addressReturnPressed(sender: NSTextField) {
-    if (nowStreaming) {
+  @IBAction func addressReturnPressed(sender _: NSTextField) {
+    if nowStreaming {
       do {
-        try self.sendClose()
+        try sendClose()
       } catch (let error) {
         print(error)
       }
@@ -62,20 +62,20 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     service = nil
   }
 
-  @IBAction func buttonValueChanged(sender: NSSegmentedControl) {
-    if (nowStreaming) {
+  @IBAction func buttonValueChanged(sender _: NSSegmentedControl) {
+    if nowStreaming {
       do {
-        try self.sendClose()
+        try sendClose()
       } catch (let error) {
         print(error)
       }
     }
   }
 
-  @IBAction func closeButtonPressed(sender: NSButton) {
-    if (nowStreaming) {
+  @IBAction func closeButtonPressed(sender _: NSButton) {
+    if nowStreaming {
       do {
-        try self.sendClose()
+        try sendClose()
       } catch (let error) {
         print(error)
       }
@@ -90,115 +90,114 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     }
   }
 
-  func displayMessageSent(_ message:String) {
+  func displayMessageSent(_ message: String) {
     DispatchQueue.main.async {
       self.sentOutputField.stringValue = message
     }
   }
 
-  func displayMessageReceived(_ message:String) {
+  func displayMessageReceived(_ message: String) {
     DispatchQueue.main.async {
       self.receivedOutputField.stringValue = message
     }
   }
 
   func prepareService(address: String, host: String) {
-    if (service != nil) {
+    if service != nil {
       return
     }
-    if (TLSButton.intValue == 0) {
-      service = Echo_EchoService(address:address, secure:false)
+    if TLSButton.intValue == 0 {
+      service = Echo_EchoService(address: address, secure: false)
     } else {
       let certificateURL = Bundle.main.url(forResource: "ssl",
                                            withExtension: "crt")!
       let certificates = try! String(contentsOf: certificateURL)
-      service = Echo_EchoService(address:address, certificates:certificates, host:host)
+      service = Echo_EchoService(address: address, certificates: certificates, host: host)
     }
     if let service = service {
       service.host = "example.com" // sample override
-      service.metadata = Metadata(["x-goog-api-key":"YOUR_API_KEY",
-                                   "x-ios-bundle-identifier":Bundle.main.bundleIdentifier!])
+      service.metadata = Metadata([
+        "x-goog-api-key": "YOUR_API_KEY",
+        "x-ios-bundle-identifier": Bundle.main.bundleIdentifier!
+      ])
     }
   }
 
-  func callServer(address:String, host:String) throws -> Void {
-    prepareService(address:address, host:host)
+  func callServer(address: String, host: String) throws {
+    prepareService(address: address, host: host)
     guard let service = service else {
       return
     }
-    if (self.callSelectButton.selectedSegment == 0) {
+    if callSelectButton.selectedSegment == 0 {
       // NONSTREAMING
       var requestMessage = Echo_EchoRequest()
-      requestMessage.text = self.messageField.stringValue
-      self.displayMessageSent(requestMessage.text)
-      _ = try service.get(requestMessage) {responseMessage, callResult in
+      requestMessage.text = messageField.stringValue
+      displayMessageSent(requestMessage.text)
+      _ = try service.get(requestMessage) { responseMessage, callResult in
         if let responseMessage = responseMessage {
           self.displayMessageReceived(responseMessage.text)
-        } else  {
+        } else {
           self.displayMessageReceived("No message received. \(callResult)")
         }
       }
-    }
-    else if (self.callSelectButton.selectedSegment == 1) {
+    } else if callSelectButton.selectedSegment == 1 {
       // STREAMING EXPAND
-      if (!nowStreaming) {
+      if !nowStreaming {
         do {
           var requestMessage = Echo_EchoRequest()
-          requestMessage.text = self.messageField.stringValue
-          self.expandCall = try service.expand(requestMessage) {call in
+          requestMessage.text = messageField.stringValue
+          expandCall = try service.expand(requestMessage) { call in
             print("Started expand \(call)")
           }
-          try self.receiveExpandMessages()
-          self.displayMessageSent(requestMessage.text)
+          try receiveExpandMessages()
+          displayMessageSent(requestMessage.text)
         } catch (let error) {
           self.displayMessageReceived("No message received. \(error)")
         }
       }
-    }
-    else if (self.callSelectButton.selectedSegment == 2) {
+    } else if callSelectButton.selectedSegment == 2 {
       // STREAMING COLLECT
       do {
-        if (!self.nowStreaming) {
-          let collectCall = try service.collect() {call in
+        if !nowStreaming {
+          let collectCall = try service.collect { call in
             print("Started collect \(call)")
           }
           self.collectCall = collectCall
-          self.nowStreaming = true
+          nowStreaming = true
           DispatchQueue.main.async {
             self.closeButton.isEnabled = true
           }
         }
-        try self.sendCollectMessage()
+        try sendCollectMessage()
       } catch (let error) {
         self.displayMessageReceived("No message received. \(error)")
       }
-    }
-    else if (self.callSelectButton.selectedSegment == 3) {
+    } else if callSelectButton.selectedSegment == 3 {
       // STREAMING UPDATE
       do {
-        if (!self.nowStreaming) {
-          let updateCall = try service.update() {call in
+        if !nowStreaming {
+          let updateCall = try service.update { call in
             print("Started update \(call)")
           }
           self.updateCall = updateCall
-          self.nowStreaming = true
-          try self.receiveUpdateMessages()
+          nowStreaming = true
+          try receiveUpdateMessages()
           DispatchQueue.main.async {
             self.closeButton.isEnabled = true
           }
         }
-        try self.sendUpdateMessage()
+        try sendUpdateMessage()
       } catch (let error) {
         self.displayMessageReceived("No message received. \(error)")
       }
     }
   }
 
-  func receiveExpandMessages() throws -> Void {
+  func receiveExpandMessages() throws {
     guard let expandCall = expandCall else {
       return
     }
-    try expandCall.receive() {response, error in
+    try expandCall.receive { response, error in
       if let responseMessage = response {
         self.displayMessageReceived(responseMessage.text)
         try! self.receiveExpandMessages()
@@ -216,26 +215,26 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
   func sendCollectMessage() throws {
     if let collectCall = collectCall {
       var requestMessage = Echo_EchoRequest()
-      requestMessage.text = self.messageField.stringValue
-      self.displayMessageSent(requestMessage.text)
-      try collectCall.send(requestMessage) {error in print(error)}
+      requestMessage.text = messageField.stringValue
+      displayMessageSent(requestMessage.text)
+      try collectCall.send(requestMessage) { error in print(error) }
     }
   }
 
   func sendUpdateMessage() throws {
     if let updateCall = updateCall {
       var requestMessage = Echo_EchoRequest()
-      requestMessage.text = self.messageField.stringValue
-      self.displayMessageSent(requestMessage.text)
-      try updateCall.send(requestMessage) {error in print(error)}
+      requestMessage.text = messageField.stringValue
+      displayMessageSent(requestMessage.text)
+      try updateCall.send(requestMessage) { error in print(error) }
     }
   }
 
-  func receiveUpdateMessages() throws -> Void {
+  func receiveUpdateMessages() throws {
     guard let updateCall = updateCall else {
       return
     }
-    try updateCall.receive() {response, error in
+    try updateCall.receive { response, error in
       if let responseMessage = response {
         self.displayMessageReceived(responseMessage.text)
         try! self.receiveUpdateMessages()
@@ -252,7 +251,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
 
   func sendClose() throws {
     if let updateCall = updateCall {
-      try updateCall.closeSend() {
+      try updateCall.closeSend {
         self.updateCall = nil
         self.nowStreaming = false
         DispatchQueue.main.async {
@@ -262,7 +261,7 @@ class EchoViewController : NSViewController, NSTextFieldDelegate {
     }
     if let collectCall = collectCall {
       do {
-        try collectCall.closeAndReceive() {response, error in
+        try collectCall.closeAndReceive { response, error in
           if let response = response {
             self.displayMessageReceived(response.text)
           } else if let error = error {
