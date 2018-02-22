@@ -25,9 +25,9 @@ internal enum CompletionType {
   case queueTimeout
   case complete
   case unknown
-
+  
   fileprivate static func completionType(_ value: grpc_completion_type) -> CompletionType {
-    switch(value) {
+    switch value {
     case GRPC_QUEUE_SHUTDOWN:
       return .queueShutdown
     case GRPC_QUEUE_TIMEOUT:
@@ -45,7 +45,7 @@ internal struct CompletionQueueEvent {
   internal var type: CompletionType
   internal var success: Int32
   internal var tag: Int64
-
+  
   internal init(_ event: grpc_event) {
     type = CompletionType.completionType(event.type)
     success = event.success
@@ -55,19 +55,18 @@ internal struct CompletionQueueEvent {
 
 /// A gRPC Completion Queue
 internal class CompletionQueue {
-
   /// Optional user-provided name for the queue
-  internal var name : String?
-
+  internal var name: String?
+  
   /// Pointer to underlying C representation
-  private var underlyingCompletionQueue : UnsafeMutableRawPointer
-
+  private var underlyingCompletionQueue: UnsafeMutableRawPointer
+  
   /// Operation groups that are awaiting completion, keyed by tag
-  private var operationGroups : [Int64 : OperationGroup] = [:]
-
+  private var operationGroups: [Int64: OperationGroup] = [:]
+  
   /// Mutex for synchronizing access to operationGroups
-  private var operationGroupsMutex : Mutex = Mutex()
-
+  private var operationGroupsMutex: Mutex = Mutex()
+  
   /// Initializes a CompletionQueue
   ///
   /// - Parameter cq: the underlying C representation
@@ -75,37 +74,37 @@ internal class CompletionQueue {
     // The underlying completion queue is NOT OWNED by this class, so we don't dealloc it in a deinit
     self.underlyingCompletionQueue = underlyingCompletionQueue
   }
-
+  
   /// Waits for an operation group to complete
   ///
   /// - Parameter timeout: a timeout value in seconds
   /// - Returns: a grpc_completion_type code indicating the result of waiting
   internal func wait(timeout: TimeInterval) -> CompletionQueueEvent {
-    let event = cgrpc_completion_queue_get_next_event(underlyingCompletionQueue, timeout);
+    let event = cgrpc_completion_queue_get_next_event(underlyingCompletionQueue, timeout)
     return CompletionQueueEvent(event)
   }
-
+  
   /// Register an operation group for handling upon completion
   ///
   /// - Parameter operationGroup: the operation group to handle
-  internal func register(_ operationGroup:OperationGroup) -> Void {
+  internal func register(_ operationGroup: OperationGroup) {
     operationGroupsMutex.lock()
     operationGroups[operationGroup.tag] = operationGroup
     operationGroupsMutex.unlock()
   }
-
+  
   /// Runs a completion queue and call a completion handler when finished
   ///
   /// - Parameter callbackQueue: a DispatchQueue to use to call the completion handler
   /// - Parameter completion: a completion handler that is called when the queue stops running
-  internal func runToCompletion(callbackQueue:DispatchQueue? = DispatchQueue.main,
-                                _ completion:@escaping () -> Void) {
+  internal func runToCompletion(callbackQueue: DispatchQueue? = DispatchQueue.main,
+                                _ completion: @escaping () -> Void) {
     // run the completion queue on a new background thread
     DispatchQueue.global().async {
       var running = true
-      while (running) {
+      while running {
         let event = cgrpc_completion_queue_get_next_event(self.underlyingCompletionQueue, -1.0)
-        switch (event.type) {
+        switch event.type {
         case GRPC_OP_COMPLETE:
           let tag = cgrpc_event_tag(event)
           self.operationGroupsMutex.lock()
@@ -125,19 +124,19 @@ internal class CompletionQueue {
           }
           break
         case GRPC_QUEUE_SHUTDOWN:
-            running = false
-            do {
-                for operationGroup in self.operationGroups.values {
-                    operationGroup.success = false
-                    try operationGroup.completion(operationGroup)
-                }
-            } catch (let callError) {
-                print("CompletionQueue runToCompletion: grpc error \(callError)")
+          running = false
+          do {
+            for operationGroup in self.operationGroups.values {
+              operationGroup.success = false
+              try operationGroup.completion(operationGroup)
             }
-            self.operationGroupsMutex.lock()
-            self.operationGroups = [:]
-            self.operationGroupsMutex.unlock()
-            break
+          } catch (let callError) {
+            print("CompletionQueue runToCompletion: grpc error \(callError)")
+          }
+          self.operationGroupsMutex.lock()
+          self.operationGroups = [:]
+          self.operationGroupsMutex.unlock()
+          break
         case GRPC_QUEUE_TIMEOUT:
           break
         default:
@@ -152,14 +151,14 @@ internal class CompletionQueue {
       }
     }
   }
-
+  
   /// Runs a completion queue
-  internal func run() -> Void {
-    self.runToCompletion(callbackQueue:nil) {}
+  internal func run() {
+    runToCompletion(callbackQueue: nil) {}
   }
-
+  
   /// Shuts down a completion queue
-  internal func shutdown() -> Void {
+  internal func shutdown() {
     cgrpc_completion_queue_shutdown(underlyingCompletionQueue)
   }
 }

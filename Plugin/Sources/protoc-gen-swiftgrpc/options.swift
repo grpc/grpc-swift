@@ -93,7 +93,3 @@ class GeneratorOptions {
     return result
   }
 }
-
-
-
-

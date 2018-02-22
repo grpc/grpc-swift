@@ -19,40 +19,39 @@
 
 /// A collection of gRPC operations
 internal class OperationGroup {
-
   /// A mutex for synchronizing tag generation
   static let tagMutex = Mutex()
-
+  
   /// Used to generate unique tags for OperationGroups
-  private static var nextTag : Int64 = 1
-
+  private static var nextTag: Int64 = 1
+  
   /// Automatically-assigned tag that is used by the completion queue that watches this group.
-  internal var tag : Int64
-
+  internal var tag: Int64
+  
   /// The call associated with the operation group. Retained while the operations are running.
-  private var call : Call
-
+  private var call: Call
+  
   /// An array of operation objects that are passed into the initializer.
-  private var operations : [Operation]
-
+  private var operations: [Operation]
+  
   /// An array of observers used to watch the operation
-  private var underlyingObservers : [UnsafeMutableRawPointer] = []
-
+  private var underlyingObservers: [UnsafeMutableRawPointer] = []
+  
   /// Pointer to underlying C representation
-  internal var underlyingOperations : UnsafeMutableRawPointer?
-
+  internal var underlyingOperations: UnsafeMutableRawPointer?
+  
   /// Completion handler that is called when the group completes
-  internal var completion : ((OperationGroup) throws -> Void)
-
+  internal var completion: ((OperationGroup) throws -> Void)
+  
   /// Indicates that the OperationGroup completed successfully
-  internal var success : Bool = false
-
+  internal var success: Bool = false
+  
   /// Creates the underlying observer needed to run an operation
   ///
   /// - Parameter: operation: the operation to observe
   /// - Returns: the observer
   private func underlyingObserverForOperation(operation: Operation) -> UnsafeMutableRawPointer {
-    var underlyingObserver : UnsafeMutableRawPointer
+    var underlyingObserver: UnsafeMutableRawPointer
     switch operation {
     case .sendInitialMetadata(let metadata):
       underlyingObserver = cgrpc_observer_create_send_initial_metadata(metadata.underlyingArray)!
@@ -76,7 +75,7 @@ internal class OperationGroup {
     }
     return underlyingObserver
   }
-
+  
   /// Initializes an OperationGroup representation
   ///
   /// - Parameter operations: an array of operations
@@ -88,37 +87,37 @@ internal class OperationGroup {
     self.completion = completion
     // set tag to a unique value (per execution)
     OperationGroup.tagMutex.lock()
-    self.tag = OperationGroup.nextTag
+    tag = OperationGroup.nextTag
     OperationGroup.nextTag += 1
     OperationGroup.tagMutex.unlock()
     // create underlying observers and operations
-    self.underlyingOperations = cgrpc_operations_create()
-    cgrpc_operations_reserve_space_for_operations(self.underlyingOperations, Int32(operations.count))
+    underlyingOperations = cgrpc_operations_create()
+    cgrpc_operations_reserve_space_for_operations(underlyingOperations, Int32(operations.count))
     for operation in operations {
-      let underlyingObserver = self.underlyingObserverForOperation(operation: operation)
-      self.underlyingObservers.append(underlyingObserver)
-      cgrpc_operations_add_operation(self.underlyingOperations, underlyingObserver)
+      let underlyingObserver = underlyingObserverForOperation(operation: operation)
+      underlyingObservers.append(underlyingObserver)
+      cgrpc_operations_add_operation(underlyingOperations, underlyingObserver)
     }
   }
-
+  
   deinit {
     for underlyingObserver in underlyingObservers {
-      cgrpc_observer_destroy(underlyingObserver);
+      cgrpc_observer_destroy(underlyingObserver)
     }
-    cgrpc_operations_destroy(underlyingOperations);
+    cgrpc_operations_destroy(underlyingOperations)
   }
-
+  
   /// WARNING: The following assumes that at most one operation of each type is in the group.
-
+  
   /// Gets the message that was received
   ///
   /// - Returns: message
   internal func receivedMessage() -> ByteBuffer? {
     for (i, operation) in operations.enumerated() {
-      switch (operation) {
+      switch operation {
       case .receiveMessage:
         if let b = cgrpc_observer_recv_message_get_message(underlyingObservers[i]) {
-          return ByteBuffer(underlyingByteBuffer:b)
+          return ByteBuffer(underlyingByteBuffer: b)
         } else {
           return nil
         }
@@ -127,28 +126,28 @@ internal class OperationGroup {
     }
     return nil
   }
-
+  
   /// Gets initial metadata that was received
   ///
   /// - Returns: metadata
   internal func receivedInitialMetadata() -> Metadata? {
     for (i, operation) in operations.enumerated() {
-      switch (operation) {
+      switch operation {
       case .receiveInitialMetadata:
-        return Metadata(underlyingArray:cgrpc_observer_recv_initial_metadata_get_metadata(underlyingObservers[i]));
+        return Metadata(underlyingArray: cgrpc_observer_recv_initial_metadata_get_metadata(underlyingObservers[i]))
       default:
         continue
       }
     }
     return nil
   }
-
+  
   /// Gets a status code that was received
   ///
   /// - Returns: status code
   internal func receivedStatusCode() -> Int? {
     for (i, operation) in operations.enumerated() {
-      switch (operation) {
+      switch operation {
       case .receiveStatusOnClient:
         return cgrpc_observer_recv_status_on_client_get_status(underlyingObservers[i])
       default:
@@ -157,19 +156,19 @@ internal class OperationGroup {
     }
     return nil
   }
-
+  
   /// Gets a status message that was received
   ///
   /// - Returns: status message
   internal func receivedStatusMessage() -> String? {
     for (i, operation) in operations.enumerated() {
-      switch (operation) {
+      switch operation {
       case .receiveStatusOnClient:
         if let string = cgrpc_observer_recv_status_on_client_copy_status_details(underlyingObservers[i]) {
           defer {
-            cgrpc_free_copied_string(string);
+            cgrpc_free_copied_string(string)
           }
-          return String(cString:string, encoding:String.Encoding.utf8)!
+          return String(cString: string, encoding: String.Encoding.utf8)!
         } else {
           return nil
         }
@@ -179,15 +178,15 @@ internal class OperationGroup {
     }
     return nil
   }
-
+  
   /// Gets trailing metadata that was received
   ///
   /// - Returns: metadata
   internal func receivedTrailingMetadata() -> Metadata? {
     for (i, operation) in operations.enumerated() {
-      switch (operation) {
+      switch operation {
       case .receiveStatusOnClient:
-        return Metadata(underlyingArray:cgrpc_observer_recv_status_on_client_get_metadata(underlyingObservers[i]));
+        return Metadata(underlyingArray: cgrpc_observer_recv_status_on_client_get_metadata(underlyingObservers[i]))
       default:
         continue
       }
@@ -195,4 +194,3 @@ internal class OperationGroup {
     return nil
   }
 }
-

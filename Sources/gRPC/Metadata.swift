@@ -22,83 +22,82 @@ import Foundation // for String.Encoding
 private struct MetadataPair {
   var key: String
   var value: String
-  init(key:String, value:String) {
+  init(key: String, value: String) {
     self.key = key
     self.value = value
   }
 }
 
 /// Metadata sent with gRPC messages
-public class Metadata : CustomStringConvertible, NSCopying {
-
+public class Metadata: CustomStringConvertible, NSCopying {
   /// Pointer to underlying C representation
   var underlyingArray: UnsafeMutableRawPointer
-
+  
   init(underlyingArray: UnsafeMutableRawPointer) {
     self.underlyingArray = underlyingArray
   }
-
+  
   public init() {
-    self.underlyingArray = cgrpc_metadata_array_create();
+    underlyingArray = cgrpc_metadata_array_create()
   }
-
-  public init(_ pairs: [[String:String]]) {
-    underlyingArray = cgrpc_metadata_array_create();
+  
+  public init(_ pairs: [[String: String]]) {
+    underlyingArray = cgrpc_metadata_array_create()
     for pair in pairs {
       for key in pair.keys {
         if let value = pair[key] {
-          add(key:key, value:value)
+          add(key: key, value: value)
         }
       }
     }
   }
-
-  public init(_ pairs: [String:String]) {
-    underlyingArray = cgrpc_metadata_array_create();
+  
+  public init(_ pairs: [String: String]) {
+    underlyingArray = cgrpc_metadata_array_create()
     for key in pairs.keys {
       if let value = pairs[key] {
-        add(key:key, value:value)
+        add(key: key, value: value)
       }
     }
   }
-
+  
   deinit {
-    cgrpc_metadata_array_destroy(underlyingArray);
+    cgrpc_metadata_array_destroy(underlyingArray)
   }
-
+  
   public func count() -> Int {
-    return cgrpc_metadata_array_get_count(underlyingArray);
+    return cgrpc_metadata_array_get_count(underlyingArray)
   }
-
-  public func key(_ index: Int) -> (String) {
+  
+  public func key(_ index: Int) -> String {
     if let string = cgrpc_metadata_array_copy_key_at_index(underlyingArray, index) {
       defer {
         cgrpc_free_copied_string(string)
       }
-      if let key = String(cString:string, encoding:String.Encoding.utf8) {
+      if let key = String(cString: string, encoding: String.Encoding.utf8) {
         return key
       }
     }
     return "<binary-metadata-key>"
   }
-
-  public func value(_ index: Int) -> (String) {
+  
+  public func value(_ index: Int) -> String {
     if let string = cgrpc_metadata_array_copy_value_at_index(underlyingArray, index) {
       defer {
         cgrpc_free_copied_string(string)
       }
-      if let value = String(cString:string, encoding:String.Encoding.utf8)  {
+      if let value = String(cString: string, encoding: String.Encoding.utf8) {
         return value
       }
     }
     return "<binary-metadata-value>"
   }
-
-  public func add(key:String, value:String) {
+  
+  public func add(key: String, value: String) {
     cgrpc_metadata_array_append_metadata(underlyingArray, key, value)
   }
-
-  public var description : String {
+  
+  public var description: String {
     var result = ""
     for i in 0..<count() {
       let key = self.key(i)
@@ -107,11 +106,11 @@ public class Metadata : CustomStringConvertible, NSCopying {
     }
     return result
   }
-
-  public func copy(with zone: NSZone? = nil) -> Any {
+  
+  public func copy(with _: NSZone? = nil) -> Any {
     let copy = Metadata()
     for i in 0..<count() {
-      copy.add(key:self.key(i), value:self.value(i))
+      copy.add(key: key(i), value: value(i))
     }
     return copy
   }

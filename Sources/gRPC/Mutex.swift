@@ -20,19 +20,18 @@
 /// A general-purpose Mutex used to synchronize gRPC operations
 /// but it can be used anywhere
 public class Mutex {
-
   /// Pointer to underlying C representation
   private var underlyingMutex: UnsafeMutableRawPointer
-
+  
   /// Initializes a Mutex
   public init() {
-    underlyingMutex = cgrpc_mutex_create();
+    underlyingMutex = cgrpc_mutex_create()
   }
-
+  
   deinit {
-    cgrpc_mutex_destroy(underlyingMutex);
+    cgrpc_mutex_destroy(underlyingMutex)
   }
-
+  
   /// Locks a Mutex
   ///
   /// Waits until no thread has a lock on the Mutex,
@@ -41,20 +40,20 @@ public class Mutex {
   ///
   /// May block indefinitely or crash if the calling thread has a lock on the Mutex.
   public func lock() {
-    cgrpc_mutex_lock(underlyingMutex);
+    cgrpc_mutex_lock(underlyingMutex)
   }
-
+  
   /// Unlocks a Mutex
   ///
   /// Releases an exclusive lock on the Mutex held by the calling thread.
   public func unlock() {
-    cgrpc_mutex_unlock(underlyingMutex);
+    cgrpc_mutex_unlock(underlyingMutex)
   }
-
+  
   /// Runs a block within a locked mutex
   ///
   /// Parameter block: the code to run while the mutex is locked
-  public func synchronize(block:() -> Void) {
+  public func synchronize(block: () -> Void) {
     lock()
     block()
     unlock()

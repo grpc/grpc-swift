@@ -31,18 +31,18 @@ public class Handler {
   
   /// A Call object that can be used to respond to the request
   internal lazy var call: Call = {
-    return Call(underlyingCall: cgrpc_handler_get_call(self.underlyingHandler),
-                owned: false,
-                completionQueue: self.completionQueue)
+    Call(underlyingCall: cgrpc_handler_get_call(self.underlyingHandler),
+         owned: false,
+         completionQueue: self.completionQueue)
   }()
   
   /// The host name sent with the request
   public lazy var host: String = {
     if let string = cgrpc_handler_copy_host(self.underlyingHandler) {
       defer {
-        cgrpc_free_copied_string(string);
+        cgrpc_free_copied_string(string)
       }
-      return String(cString:string, encoding:.utf8)!;
+      return String(cString: string, encoding: .utf8)!
     } else {
       return ""
     }
@@ -52,9 +52,9 @@ public class Handler {
   public lazy var method: String = {
     if let string = cgrpc_handler_copy_method(self.underlyingHandler) {
       defer {
-        cgrpc_free_copied_string(string);
+        cgrpc_free_copied_string(string)
       }
-      return String(cString:string, encoding:.utf8)!;
+      return String(cString: string, encoding: .utf8)!
     } else {
       return ""
     }
@@ -62,18 +62,17 @@ public class Handler {
   
   /// The caller address associated with the request
   public lazy var caller: String = {
-    return String(cString:cgrpc_handler_call_peer(self.underlyingHandler),
-                  encoding:.utf8)!;
+    String(cString: cgrpc_handler_call_peer(self.underlyingHandler),
+           encoding: .utf8)!
   }()
   
   /// Initializes a Handler
   ///
   /// - Parameter underlyingServer: the underlying C representation of the associated server
-  init(underlyingServer:UnsafeMutableRawPointer) {
+  init(underlyingServer: UnsafeMutableRawPointer) {
     underlyingHandler = cgrpc_handler_create_with_server(underlyingServer)
     requestMetadata = Metadata()
-    completionQueue = CompletionQueue(
-      underlyingCompletionQueue:cgrpc_handler_get_completion_queue(underlyingHandler))
+    completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_handler_get_completion_queue(underlyingHandler))
     completionQueue.name = "Handler"
   }
   
@@ -85,7 +84,7 @@ public class Handler {
   ///
   /// Fills the handler properties with information about the received request
   ///
-  func requestCall(tag: Int) throws -> Void {
+  func requestCall(tag: Int) throws {
     let error = cgrpc_handler_request_call(underlyingHandler, requestMetadata.underlyingArray, tag)
     if error != GRPC_CALL_OK {
       throw CallError.callError(grpcCallError: error)
@@ -95,13 +94,12 @@ public class Handler {
   /// Receive the message sent with a call
   ///
   public func receiveMessage(initialMetadata: Metadata,
-                             completion:@escaping ((Data?) throws -> Void)) throws -> Void {
-    let operations = OperationGroup(
-      call:call,
-      operations:[
-        .sendInitialMetadata(initialMetadata),
-        .receiveMessage])
-    {(operationGroup) in
+                             completion: @escaping ((Data?) throws -> Void)) throws {
+    let operations = OperationGroup(call: call,
+                                    operations: [
+                                      .sendInitialMetadata(initialMetadata),
+                                      .receiveMessage
+    ]) { operationGroup in
       if operationGroup.success {
         try completion(operationGroup.receivedMessage()?.data())
       } else {
@@ -120,15 +118,14 @@ public class Handler {
   public func sendResponse(message: Data,
                            statusCode: StatusCode,
                            statusMessage: String,
-                           trailingMetadata: Metadata) throws -> Void {
-    let messageBuffer = ByteBuffer(data:message)
-    let operations = OperationGroup(
-      call:call,
-      operations:[
-        .receiveCloseOnServer,
-        .sendStatusFromServer(statusCode, statusMessage, trailingMetadata),
-        .sendMessage(messageBuffer)])
-    {(operationGroup) in
+                           trailingMetadata: Metadata) throws {
+    let messageBuffer = ByteBuffer(data: message)
+    let operations = OperationGroup(call: call,
+                                    operations: [
+                                      .receiveCloseOnServer,
+                                      .sendStatusFromServer(statusCode, statusMessage, trailingMetadata),
+                                      .sendMessage(messageBuffer)
+    ]) { operationGroup in
       if operationGroup.success {
         self.shutdown()
       }
@@ -143,13 +140,12 @@ public class Handler {
   /// - Parameter trailingMetadata: trailing metadata to send
   public func sendResponse(statusCode: StatusCode,
                            statusMessage: String,
-                           trailingMetadata: Metadata) throws -> Void {
-    let operations = OperationGroup(
-      call:call,
-      operations:[
-        .receiveCloseOnServer,
-        .sendStatusFromServer(statusCode, statusMessage, trailingMetadata)])
-    {(operationGroup) in
+                           trailingMetadata: Metadata) throws {
+    let operations = OperationGroup(call: call,
+                                    operations: [
+                                      .receiveCloseOnServer,
+                                      .sendStatusFromServer(statusCode, statusMessage, trailingMetadata)
+    ]) { operationGroup in
       if operationGroup.success {
         self.shutdown()
       }
@@ -167,10 +163,9 @@ public class Handler {
   /// - Parameter initialMetadata: initial metadata to send
   /// - Parameter completion: a completion handler to call after the metadata has been sent
   public func sendMetadata(initialMetadata: Metadata,
-                           completion:@escaping (() throws -> Void)) throws -> Void {
-    let operations = OperationGroup(call:call,
-                                    operations:[.sendInitialMetadata(initialMetadata)])
-    {(operationGroup) in
+                           completion: @escaping (() throws -> Void)) throws {
+    let operations = OperationGroup(call: call,
+                                    operations: [.sendInitialMetadata(initialMetadata)]) { operationGroup in
       if operationGroup.success {
         try completion()
       } else {
@@ -184,9 +179,8 @@ public class Handler {
   ///
   /// - Parameter completion: a completion handler to call after the message has been received
   /// - Returns: a tuple containing status codes and a message (if available)
-  public func receiveMessage(completion:(@escaping (Data?) throws -> Void)) throws -> Void {
-    let operations = OperationGroup(call:call, operations:[.receiveMessage])
-    {(operationGroup) in
+  public func receiveMessage(completion: (@escaping (Data?) throws -> Void)) throws {
+    let operations = OperationGroup(call: call, operations: [.receiveMessage]) { operationGroup in
       if operationGroup.success {
         if let message = operationGroup.receivedMessage() {
           try completion(message.data())
@@ -205,10 +199,9 @@ public class Handler {
   /// - Parameter message: the message to send
   /// - Parameter completion: a completion handler to call after the response has been sent
   public func sendResponse(message: Data,
-                           completion: @escaping () throws -> Void) throws -> Void {
-    let operations = OperationGroup(call:call,
-                                    operations:[.sendMessage(ByteBuffer(data:message))])
-    {(operationGroup) in
+                           completion: @escaping () throws -> Void) throws {
+    let operations = OperationGroup(call: call,
+                                    operations: [.sendMessage(ByteBuffer(data: message))]) { operationGroup in
       if operationGroup.success {
         try completion()
       }
@@ -219,10 +212,9 @@ public class Handler {
   /// Recognize when the client has closed a request
   ///
   /// - Parameter completion: a completion handler to call after request has been closed
-  public func receiveClose(completion: @escaping () throws -> Void) throws -> Void {
-    let operations = OperationGroup(call:call,
-                                    operations:[.receiveCloseOnServer])
-    {(operationGroup) in
+  public func receiveClose(completion: @escaping () throws -> Void) throws {
+    let operations = OperationGroup(call: call,
+                                    operations: [.receiveCloseOnServer]) { operationGroup in
       if operationGroup.success {
         try completion()
       }
@@ -239,12 +231,11 @@ public class Handler {
   public func sendStatus(statusCode: StatusCode,
                          statusMessage: String,
                          trailingMetadata: Metadata,
-                         completion:@escaping (() -> Void)) throws -> Void {
-    let operations = OperationGroup(call:call,
-                                    operations:[.sendStatusFromServer(statusCode,
-                                                                      statusMessage,
-                                                                      trailingMetadata)])
-    {(operationGroup) in
+                         completion: @escaping (() -> Void)) throws {
+    let operations = OperationGroup(call: call,
+                                    operations: [.sendStatusFromServer(statusCode,
+                                                                       statusMessage,
+                                                                       trailingMetadata)]) { operationGroup in
       if operationGroup.success {
         completion()
       }

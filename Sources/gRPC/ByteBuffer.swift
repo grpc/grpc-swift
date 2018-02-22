@@ -20,10 +20,9 @@ import Foundation // for String.Encoding
 
 /// Representation of raw data that may be sent and received using gRPC
 public class ByteBuffer {
-
   /// Pointer to underlying C representation
   internal var underlyingByteBuffer: UnsafeMutableRawPointer!
-
+  
   /// Creates a ByteBuffer from an underlying C representation.
   /// The ByteBuffer takes ownership of the passed-in representation.
   ///
@@ -31,25 +30,25 @@ public class ByteBuffer {
   internal init(underlyingByteBuffer: UnsafeMutableRawPointer) {
     self.underlyingByteBuffer = underlyingByteBuffer
   }
-
+  
   /// Creates a byte buffer that contains a copy of the contents of `data`
   ///
   /// - Parameter data: the data to store in the buffer
   public init(data: Data) {
-    data.withUnsafeBytes { (bytes) in
+    data.withUnsafeBytes { bytes in
       underlyingByteBuffer = cgrpc_byte_buffer_create_by_copying_data(bytes, data.count)
     }
   }
-
+  
   deinit {
-    cgrpc_byte_buffer_destroy(underlyingByteBuffer);
+    cgrpc_byte_buffer_destroy(underlyingByteBuffer)
   }
-
+  
   /// Gets data from the contents of the ByteBuffer
   ///
   /// - Returns: data formed from the ByteBuffer contents
   public func data() -> Data? {
-    var length : Int = 0
+    var length: Int = 0
     guard let bytes = cgrpc_byte_buffer_copy_data(underlyingByteBuffer, &length) else {
       return nil
     }
