@@ -33,23 +33,23 @@ size_t cgrpc_metadata_array_get_count(cgrpc_metadata_array *array) {
   return array->count;
 }
 
-const char *cgrpc_metadata_array_copy_key_at_index(cgrpc_metadata_array *array, size_t index) {
-  int length = GRPC_SLICE_LENGTH(array->metadata[index].key);
+char *cgrpc_metadata_array_copy_key_at_index(cgrpc_metadata_array *array, size_t index) {
+  size_t length = GRPC_SLICE_LENGTH(array->metadata[index].key);
   char *str = (char *) malloc(length + 1);
   memcpy(str, GRPC_SLICE_START_PTR(array->metadata[index].key), length);
   str[length] = 0;
   return str;
 }
 
-const char *cgrpc_metadata_array_copy_value_at_index(cgrpc_metadata_array *array, size_t index) {
-  int length = GRPC_SLICE_LENGTH(array->metadata[index].value);
+char *cgrpc_metadata_array_copy_value_at_index(cgrpc_metadata_array *array, size_t index) {
+  size_t length = GRPC_SLICE_LENGTH(array->metadata[index].value);
   char *str = (char *) malloc(length + 1);
   memcpy(str, GRPC_SLICE_START_PTR(array->metadata[index].value), length);
   str[length] = 0;
   return str;
 }
 
-int cgrpc_metadata_array_get_value_length_at_index(cgrpc_metadata_array *array, size_t index) {
+size_t cgrpc_metadata_array_get_value_length_at_index(cgrpc_metadata_array *array, size_t index) {
   return GRPC_SLICE_LENGTH(array->metadata[index].value);
   /*
   int length = GRPC_SLICE_LENGTH(array->metadata[index].value);

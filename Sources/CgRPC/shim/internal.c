@@ -26,6 +26,6 @@ gpr_timespec cgrpc_deadline_in_seconds_from_now(float seconds) {
                       gpr_time_from_millis((int64_t)(1e3 * seconds), GPR_TIMESPAN));
 }
 
-void cgrpc_free_copied_string(const char *string) {
+void cgrpc_free_copied_string(char *string) {
 	free(string);
 }
