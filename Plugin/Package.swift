@@ -18,10 +18,7 @@ import PackageDescription
 let package = Package(
   name: "SwiftGRPCPlugin",
   targets: [
-    Target(name: "protoc-gen-swiftgrpc",
-           dependencies: [
-            "TemplateEncoder"
-      ]),
+    Target(name: "protoc-gen-swiftgrpc"),
     Target(name: "TemplateEncoder")
   ],
   dependencies: [
