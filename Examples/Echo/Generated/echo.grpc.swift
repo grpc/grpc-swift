@@ -350,7 +350,7 @@ internal final class Echo_EchoService {
   }
   /// Asynchronous. Unary.
   internal func get(_ request: Echo_EchoRequest,
-                  completion: @escaping ((Echo_EchoResponse?, CallResult)->()))
+                  completion: @escaping (Echo_EchoResponse?, CallResult)->())
     throws
     -> Echo_EchoGetCall {
       return try Echo_EchoGetCall(channel).start(request:request,
