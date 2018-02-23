@@ -74,7 +74,11 @@ func pathName(filter _: String, arguments: [Any?]) throws -> String {
   else {
     throw invalidArgumentType(filter: "path", required: "MethodDescriptor", received: arguments[2])
   }
-  return "/" + protoFile.package + "." + service.name + "/" + method.name
+  if !protoFile.package.isEmpty {
+    return "/" + protoFile.package + "." + service.name + "/" + method.name
+  } else {
+    return "/" + service.name + "/" + method.name
+  }
 }
 
 func packageServiceMethodName(filter: String, arguments: [Any?]) throws -> String {
@@ -93,7 +97,11 @@ func packageServiceMethodName(filter: String, arguments: [Any?]) throws -> Strin
   else {
     throw invalidArgumentType(filter: filter, required: "MethodDescriptor", received: arguments[0])
   }
-  return protoFile.package.capitalized.undotted + "_" + service.name + method.name
+  if !protoFile.package.isEmpty {
+    return protoFile.package.capitalized.undotted + "_" + service.name + method.name
+  } else {
+    return service.name + method.name
+  }
 }
 
 func packageServiceName(filter: String, arguments: [Any?]) throws -> String {
@@ -108,7 +116,11 @@ func packageServiceName(filter: String, arguments: [Any?]) throws -> String {
   else {
     throw invalidArgumentType(filter: filter, required: "ServiceDescriptor", received: arguments[0])
   }
-  return protoFile.package.capitalized.undotted + "_" + service.name
+  if !protoFile.package.isEmpty {
+    return protoFile.package.capitalized.undotted + "_" + service.name
+  } else {
+    return service.name
+  }
 }
 
 class GRPCFilterExtension: Extension {

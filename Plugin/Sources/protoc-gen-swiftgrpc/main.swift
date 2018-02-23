@@ -135,10 +135,6 @@ func main() throws {
     if fileDescriptor.services.count > 0 {
       // a package declaration is required for file containing service(s)
       let package = fileDescriptor.package
-      guard package != "" else {
-        print("ERROR: no package for \(fileDescriptor.name)")
-        continue
-      }
 
       // generate separate implementation files for client and server
       let context: [String: Any] = [
