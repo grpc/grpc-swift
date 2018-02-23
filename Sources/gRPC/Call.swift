@@ -86,11 +86,11 @@ public enum CallError: Error {
 }
 
 public struct CallResult: CustomStringConvertible {
-  public var statusCode: StatusCode
-  public var statusMessage: String?
-  public var resultData: Data?
-  public var initialMetadata: Metadata?
-  public var trailingMetadata: Metadata?
+  public let statusCode: StatusCode
+  public let statusMessage: String?
+  public let resultData: Data?
+  public let initialMetadata: Metadata?
+  public let trailingMetadata: Metadata?
 
   fileprivate init(_ op: OperationGroup) {
     if op.success {
@@ -146,13 +146,13 @@ public class Call {
   public static var messageQueueMaxLength = 0
 
   /// Pointer to underlying C representation
-  private var underlyingCall: UnsafeMutableRawPointer
+  private let underlyingCall: UnsafeMutableRawPointer
 
   /// Completion queue used for call
-  private var completionQueue: CompletionQueue
+  private let completionQueue: CompletionQueue
 
   /// True if this instance is responsible for deleting the underlying C representation
-  private var owned: Bool
+  private let owned: Bool
 
   /// A queue of pending messages to send over the call
   private var messageQueue: Array<Data>
@@ -161,10 +161,10 @@ public class Call {
   private var writing: Bool
 
   /// Mutex for synchronizing message sending
-  private var sendMutex: Mutex
+  private let sendMutex: Mutex
 
   /// Dispatch queue used for sending messages asynchronously
-  private var messageDispatchQueue: DispatchQueue = DispatchQueue.global()
+  private let messageDispatchQueue: DispatchQueue = DispatchQueue.global()
 
   /// Initializes a Call representation
   ///
@@ -251,17 +251,17 @@ public class Call {
   /// Parameter data: the message data to send
   /// - Throws: `CallError` if fails to call. `CallWarning` if blocked.
   public func sendMessage(data: Data, errorHandler: @escaping (Error) -> Void) throws {
-    sendMutex.lock()
-    defer { self.sendMutex.unlock() }
-    if writing {
-      if (Call.messageQueueMaxLength > 0) && // if max length is <= 0, consider it infinite
-        (messageQueue.count == Call.messageQueueMaxLength) {
-        throw CallWarning.blocked
+    try sendMutex.synchronize {
+      if writing {
+        if (Call.messageQueueMaxLength > 0) && // if max length is <= 0, consider it infinite
+          (messageQueue.count == Call.messageQueueMaxLength) {
+          throw CallWarning.blocked
+        }
+        messageQueue.append(data)
+      } else {
+        writing = true
+        try sendWithoutBlocking(data: data, errorHandler: errorHandler)
       }
-      messageQueue.append(data)
-    } else {
-      writing = true
-      try sendWithoutBlocking(data: data, errorHandler: errorHandler)
     }
   }
 
@@ -323,8 +323,8 @@ public class Call {
   /// Finishes the request side of this call, notifies the server that the RPC should be cancelled,
   /// and finishes the response side of the call with an error of code CANCELED.
   public func cancel() {
-    Call.callMutex.lock()
-    cgrpc_call_cancel(underlyingCall)
-    Call.callMutex.unlock()
+    Call.callMutex.synchronize {
+      cgrpc_call_cancel(underlyingCall)
+    }
   }
 }

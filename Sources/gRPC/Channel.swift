@@ -21,16 +21,16 @@ import Foundation
 /// A gRPC Channel
 public class Channel {
   /// Pointer to underlying C representation
-  private var underlyingChannel: UnsafeMutableRawPointer
+  private let underlyingChannel: UnsafeMutableRawPointer
 
   /// Completion queue for channel call operations
-  private var completionQueue: CompletionQueue
+  private let completionQueue: CompletionQueue
 
   /// Timeout for new calls
-  public var timeout: TimeInterval = 600.0
+  public let timeout: TimeInterval = 600.0
 
   /// Default host to use for new calls
-  public var host: String
+  public let host: String
 
   /// Initializes a gRPC channel
   ///
@@ -43,8 +43,8 @@ public class Channel {
     } else {
       underlyingChannel = cgrpc_channel_create(address)
     }
-    completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_channel_completion_queue(underlyingChannel))
-    completionQueue.name = "Client" // only for debugging
+    completionQueue = CompletionQueue(
+      underlyingCompletionQueue: cgrpc_channel_completion_queue(underlyingChannel), name: "Client")
     completionQueue.run() // start a loop that watches the channel's completion queue
   }
 
@@ -56,8 +56,8 @@ public class Channel {
   public init(address: String, certificates: String, host: String?) {
     self.host = address
     underlyingChannel = cgrpc_channel_create_secure(address, certificates, host)
-    completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_channel_completion_queue(underlyingChannel))
-    completionQueue.name = "Client" // only for debugging
+    completionQueue = CompletionQueue(
+      underlyingCompletionQueue: cgrpc_channel_completion_queue(underlyingChannel), name: "Client")
     completionQueue.run() // start a loop that watches the channel's completion queue
   }
 

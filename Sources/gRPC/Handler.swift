@@ -72,8 +72,8 @@ public class Handler {
   init(underlyingServer: UnsafeMutableRawPointer) {
     underlyingHandler = cgrpc_handler_create_with_server(underlyingServer)
     requestMetadata = Metadata()
-    completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_handler_get_completion_queue(underlyingHandler))
-    completionQueue.name = "Handler"
+    completionQueue = CompletionQueue(
+      underlyingCompletionQueue: cgrpc_handler_get_completion_queue(underlyingHandler), name: "Handler")
   }
 
   deinit {

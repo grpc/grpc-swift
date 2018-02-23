@@ -31,7 +31,7 @@ private struct MetadataPair {
 /// Metadata sent with gRPC messages
 public class Metadata: CustomStringConvertible, NSCopying {
   /// Pointer to underlying C representation
-  var underlyingArray: UnsafeMutableRawPointer
+  let underlyingArray: UnsafeMutableRawPointer
 
   init(underlyingArray: UnsafeMutableRawPointer) {
     self.underlyingArray = underlyingArray

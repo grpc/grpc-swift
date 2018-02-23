@@ -41,8 +41,8 @@ public class Server {
   /// - Parameter address: the address where the server will listen
   public init(address: String) {
     underlyingServer = cgrpc_server_create(address)
-    completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_server_get_completion_queue(underlyingServer))
-    completionQueue.name = "Server " + address
+    completionQueue = CompletionQueue(
+      underlyingCompletionQueue: cgrpc_server_get_completion_queue(underlyingServer), name: "Server " + address)
     handlers = NSMutableSet()
   }
 
@@ -53,8 +53,8 @@ public class Server {
   /// - Parameter certs: the server's certificates
   public init(address: String, key: String, certs: String) {
     underlyingServer = cgrpc_server_create_secure(address, key, certs)
-    completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_server_get_completion_queue(underlyingServer))
-    completionQueue.name = "Server " + address
+    completionQueue = CompletionQueue(
+      underlyingCompletionQueue: cgrpc_server_get_completion_queue(underlyingServer), name: "Server " + address)
     handlers = NSMutableSet()
   }
 

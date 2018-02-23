@@ -26,32 +26,32 @@ class OperationGroup {
   private static var nextTag: Int64 = 1
 
   /// Automatically-assigned tag that is used by the completion queue that watches this group.
-  var tag: Int64
+  let tag: Int64
 
   /// The call associated with the operation group. Retained while the operations are running.
-  private var call: Call
+  private let call: Call
 
   /// An array of operation objects that are passed into the initializer.
-  private var operations: [Operation]
+  private let operations: [Operation]
 
   /// An array of observers used to watch the operation
   private var underlyingObservers: [UnsafeMutableRawPointer] = []
 
   /// Pointer to underlying C representation
-  var underlyingOperations: UnsafeMutableRawPointer?
+  let underlyingOperations: UnsafeMutableRawPointer?
 
   /// Completion handler that is called when the group completes
-  var completion: ((OperationGroup) throws -> Void)
+  let completion: ((OperationGroup) throws -> Void)
 
   /// Indicates that the OperationGroup completed successfully
-  var success: Bool = false
+  var success = false
 
   /// Creates the underlying observer needed to run an operation
   ///
   /// - Parameter: operation: the operation to observe
   /// - Returns: the observer
   private func underlyingObserverForOperation(operation: Operation) -> UnsafeMutableRawPointer {
-    var underlyingObserver: UnsafeMutableRawPointer
+    let underlyingObserver: UnsafeMutableRawPointer
     switch operation {
     case .sendInitialMetadata(let metadata):
       underlyingObserver = cgrpc_observer_create_send_initial_metadata(metadata.underlyingArray)!
