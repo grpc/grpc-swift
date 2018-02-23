@@ -1,4 +1,4 @@
 module CgRPC {
-    header "CgRPC.h"
+    header "cgrpc.h"
     export *
 }
