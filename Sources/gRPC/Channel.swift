@@ -27,10 +27,10 @@ public class Channel {
   private let completionQueue: CompletionQueue
 
   /// Timeout for new calls
-  public let timeout: TimeInterval = 600.0
+  public var timeout: TimeInterval = 600.0
 
   /// Default host to use for new calls
-  public let host: String
+  public var host: String
 
   /// Initializes a gRPC channel
   ///
