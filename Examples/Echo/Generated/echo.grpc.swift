@@ -66,7 +66,7 @@ internal final class Echo_EchoGetCall {
   /// - Throws: `BinaryEncodingError` if encoding fails. `CallError` if fails to call.
   fileprivate func start(request: Echo_EchoRequest,
                          metadata: Metadata,
-                         completion: @escaping (Echo_EchoResponse?, CallResult)->())
+                         completion: @escaping ((Echo_EchoResponse?, CallResult)->()))
     throws -> Echo_EchoGetCall {
 
       let requestData = try request.serializedData()
@@ -102,7 +102,7 @@ internal final class Echo_EchoExpandCall {
   /// Call this once with the message to send. Nonblocking.
   fileprivate func start(request: Echo_EchoRequest,
                          metadata: Metadata,
-                         completion: @escaping (CallResult) -> ())
+                         completion: ((CallResult) -> ())?)
     throws -> Echo_EchoExpandCall {
       let requestData = try request.serializedData()
       try call.start(.serverStreaming,
@@ -164,7 +164,7 @@ internal final class Echo_EchoCollectCall {
   }
 
   /// Call this to start a call. Nonblocking.
-  fileprivate func start(metadata:Metadata, completion:@escaping (CallResult)->())
+  fileprivate func start(metadata:Metadata, completion: ((CallResult)->())?)
     throws -> Echo_EchoCollectCall {
       try self.call.start(.clientStreaming, metadata:metadata, completion:completion)
       return self
@@ -231,7 +231,7 @@ internal final class Echo_EchoUpdateCall {
   }
 
   /// Call this to start a call. Nonblocking.
-  fileprivate func start(metadata:Metadata, completion:@escaping (CallResult)->())
+  fileprivate func start(metadata:Metadata, completion: ((CallResult)->())?)
     throws -> Echo_EchoUpdateCall {
       try self.call.start(.bidiStreaming, metadata:metadata, completion:completion)
       return self
@@ -289,10 +289,8 @@ internal final class Echo_EchoUpdateCall {
   }
 
   /// Call this to close the sending connection. Nonblocking.
-  internal func closeSend(completion:@escaping ()->()) throws {
-    try call.close() {
-      completion()
-    }
+  internal func closeSend(completion: (()->())?) throws {
+	try call.close(completion: completion)
   }
 
   /// Cancel the call.
@@ -352,7 +350,7 @@ internal final class Echo_EchoService {
   }
   /// Asynchronous. Unary.
   internal func get(_ request: Echo_EchoRequest,
-                  completion: @escaping (Echo_EchoResponse?, CallResult)->())
+                  completion: @escaping ((Echo_EchoResponse?, CallResult)->()))
     throws
     -> Echo_EchoGetCall {
       return try Echo_EchoGetCall(channel).start(request:request,
@@ -362,7 +360,7 @@ internal final class Echo_EchoService {
   /// Asynchronous. Server-streaming.
   /// Send the initial message.
   /// Use methods on the returned object to get streamed responses.
-  internal func expand(_ request: Echo_EchoRequest, completion: @escaping (CallResult)->())
+  internal func expand(_ request: Echo_EchoRequest, completion: ((CallResult)->())?)
     throws
     -> Echo_EchoExpandCall {
       return try Echo_EchoExpandCall(channel).start(request:request, metadata:metadata, completion:completion)
@@ -370,7 +368,7 @@ internal final class Echo_EchoService {
   /// Asynchronous. Client-streaming.
   /// Use methods on the returned object to stream messages and
   /// to close the connection and wait for a final response.
-  internal func collect(completion: @escaping (CallResult)->())
+  internal func collect(completion: ((CallResult)->())?)
     throws
     -> Echo_EchoCollectCall {
       return try Echo_EchoCollectCall(channel).start(metadata:metadata, completion:completion)
@@ -378,7 +376,7 @@ internal final class Echo_EchoService {
   /// Asynchronous. Bidirectional-streaming.
   /// Use methods on the returned object to stream messages,
   /// to wait for replies, and to close the connection.
-  internal func update(completion: @escaping (CallResult)->())
+  internal func update(completion: ((CallResult)->())?)
     throws
     -> Echo_EchoUpdateCall {
       return try Echo_EchoUpdateCall(channel).start(metadata:metadata, completion:completion)
@@ -450,8 +448,8 @@ internal final class Echo_EchoExpandSession : Echo_EchoSession {
   }
 
   /// Send a message. Nonblocking.
-  internal func send(_ response: Echo_EchoResponse, completion: @escaping ()->()) throws {
-    try handler.sendResponse(message:response.serializedData()) {completion()}
+  internal func send(_ response: Echo_EchoResponse, completion: ((Bool)->())?) throws {
+	try handler.sendResponse(message:response.serializedData(), completion: completion)
   }
 
   /// Run the session. Internal.
@@ -468,7 +466,7 @@ internal final class Echo_EchoExpandSession : Echo_EchoSession {
               try self.handler.sendStatus(statusCode:self.statusCode,
                                           statusMessage:self.statusMessage,
                                           trailingMetadata:self.trailingMetadata,
-                                          completion:{})
+                                          completion:nil)
             } catch (let error) {
               print("error: \(error)")
             }
@@ -518,7 +516,7 @@ internal final class Echo_EchoCollectSession : Echo_EchoSession {
 
   /// Run the session. Internal.
   fileprivate func run(queue:DispatchQueue) throws {
-    try self.handler.sendMetadata(initialMetadata:initialMetadata) {
+    try self.handler.sendMetadata(initialMetadata:initialMetadata) { _ in
       queue.async {
         do {
           try self.provider.collect(session:self)
@@ -563,8 +561,8 @@ internal final class Echo_EchoUpdateSession : Echo_EchoSession {
   }
 
   /// Send a message. Nonblocking.
-  internal func send(_ response: Echo_EchoResponse, completion: @escaping ()->()) throws {
-    try handler.sendResponse(message:response.serializedData()) {completion()}
+  internal func send(_ response: Echo_EchoResponse, completion: ((Bool)->())?) throws {
+	try handler.sendResponse(message:response.serializedData(), completion: completion)
   }
 
   /// Close a connection. Blocks until the connection is closed.
@@ -572,15 +570,13 @@ internal final class Echo_EchoUpdateSession : Echo_EchoSession {
     let sem = DispatchSemaphore(value: 0)
     try self.handler.sendStatus(statusCode:self.statusCode,
                                 statusMessage:self.statusMessage,
-                                trailingMetadata:self.trailingMetadata) {
-                                  sem.signal()
-    }
+                                trailingMetadata:self.trailingMetadata) { _ in sem.signal() }
     _ = sem.wait(timeout: DispatchTime.distantFuture)
   }
 
   /// Run the session. Internal.
   fileprivate func run(queue:DispatchQueue) throws {
-    try self.handler.sendMetadata(initialMetadata:initialMetadata) {
+    try self.handler.sendMetadata(initialMetadata:initialMetadata) { _ in
       queue.async {
         do {
           try self.provider.update(session:self)

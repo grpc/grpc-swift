@@ -10,7 +10,7 @@
   /// Call this once with the message to send. Nonblocking.
   fileprivate func start(request: {{ method|input }},
                          metadata: Metadata,
-                         completion: @escaping (CallResult) -> ())
+                         completion: ((CallResult) -> ())?)
     throws -> {{ .|call:file,service,method }} {
       let requestData = try request.serializedData()
       try call.start(.serverStreaming,

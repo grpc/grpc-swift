@@ -86,7 +86,7 @@
   /// Asynchronous. Server-streaming.
   /// Send the initial message.
   /// Use methods on the returned object to get streamed responses.
-  {{ access }} func {{ method|methodDescriptorName|lowercase }}(_ request: {{ method|input }}, completion: @escaping (CallResult)->())
+  {{ access }} func {{ method|methodDescriptorName|lowercase }}(_ request: {{ method|input }}, completion: ((CallResult)->())?)
     throws
     -> {{ .|call:file,service,method }} {
       return try {{ .|call:file,service,method }}(channel).start(request:request, metadata:metadata, completion:completion)
@@ -96,7 +96,7 @@
   /// Asynchronous. Client-streaming.
   /// Use methods on the returned object to stream messages and
   /// to close the connection and wait for a final response.
-  {{ access }} func {{ method|methodDescriptorName|lowercase }}(completion: @escaping (CallResult)->())
+  {{ access }} func {{ method|methodDescriptorName|lowercase }}(completion: ((CallResult)->())?)
     throws
     -> {{ .|call:file,service,method }} {
       return try {{ .|call:file,service,method }}(channel).start(metadata:metadata, completion:completion)
@@ -106,7 +106,7 @@
   /// Asynchronous. Bidirectional-streaming.
   /// Use methods on the returned object to stream messages,
   /// to wait for replies, and to close the connection.
-  {{ access }} func {{ method|methodDescriptorName|lowercase }}(completion: @escaping (CallResult)->())
+  {{ access }} func {{ method|methodDescriptorName|lowercase }}(completion: ((CallResult)->())?)
     throws
     -> {{ .|call:file,service,method }} {
       return try {{ .|call:file,service,method }}(channel).start(metadata:metadata, completion:completion)

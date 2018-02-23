@@ -34,7 +34,7 @@ public class Server {
   private var handlersMutex: Mutex = Mutex()
 
   /// Optional callback when server stops serving
-  private var onCompletion: (() -> Void)?
+  public var onCompletion: (() -> Void)?
 
   /// Initializes a Server
   ///
@@ -108,17 +108,11 @@ public class Server {
           running = false
         }
       }
-      if let onCompletion = self.onCompletion {
-        onCompletion()
-      }
+      self.onCompletion?()
     }
   }
 
   public func stop() {
     cgrpc_server_stop(underlyingServer)
-  }
-
-  public func onCompletion(completion: @escaping (() -> Void)) {
-    onCompletion = completion
   }
 }

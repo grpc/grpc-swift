@@ -8,7 +8,7 @@
   }
 
   /// Call this to start a call. Nonblocking.
-  fileprivate func start(metadata:Metadata, completion:@escaping (CallResult)->())
+  fileprivate func start(metadata:Metadata, completion: ((CallResult)->())?)
     throws -> {{ .|call:file,service,method }} {
       try self.call.start(.bidiStreaming, metadata:metadata, completion:completion)
       return self
@@ -66,10 +66,8 @@
   }
 
   /// Call this to close the sending connection. Nonblocking.
-  {{ access }} func closeSend(completion:@escaping ()->()) throws {
-    try call.close() {
-      completion()
-    }
+  {{ access }} func closeSend(completion: (()->())?) throws {
+	try call.close(completion: completion)
   }
 
   /// Cancel the call.

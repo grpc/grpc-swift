@@ -9,8 +9,8 @@
   }
 
   /// Send a message. Nonblocking.
-  {{ access }} func send(_ response: {{ method|output }}, completion: @escaping ()->()) throws {
-    try handler.sendResponse(message:response.serializedData()) {completion()}
+  {{ access }} func send(_ response: {{ method|output }}, completion: ((Bool)->())?) throws {
+	try handler.sendResponse(message:response.serializedData(), completion: completion)
   }
 
   /// Run the session. Internal.
@@ -27,7 +27,7 @@
               try self.handler.sendStatus(statusCode:self.statusCode,
                                           statusMessage:self.statusMessage,
                                           trailingMetadata:self.trailingMetadata,
-                                          completion:{})
+                                          completion:nil)
             } catch (let error) {
               print("error: \(error)")
             }

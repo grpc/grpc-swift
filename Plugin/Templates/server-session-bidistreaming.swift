@@ -31,8 +31,8 @@
   }
 
   /// Send a message. Nonblocking.
-  {{ access }} func send(_ response: {{ method|output }}, completion: @escaping ()->()) throws {
-    try handler.sendResponse(message:response.serializedData()) {completion()}
+  {{ access }} func send(_ response: {{ method|output }}, completion: ((Bool)->())?) throws {
+	try handler.sendResponse(message:response.serializedData(), completion: completion)
   }
 
   /// Close a connection. Blocks until the connection is closed.
@@ -40,15 +40,13 @@
     let sem = DispatchSemaphore(value: 0)
     try self.handler.sendStatus(statusCode:self.statusCode,
                                 statusMessage:self.statusMessage,
-                                trailingMetadata:self.trailingMetadata) {
-                                  sem.signal()
-    }
+                                trailingMetadata:self.trailingMetadata) { _ in sem.signal() }
     _ = sem.wait(timeout: DispatchTime.distantFuture)
   }
 
   /// Run the session. Internal.
   fileprivate func run(queue:DispatchQueue) throws {
-    try self.handler.sendMetadata(initialMetadata:initialMetadata) {
+    try self.handler.sendMetadata(initialMetadata:initialMetadata) { _ in
       queue.async {
         do {
           try self.provider.{{ method|methodDescriptorName|lowercase }}(session:self)

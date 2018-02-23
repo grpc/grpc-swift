@@ -8,7 +8,7 @@
   }
 
   /// Call this to start a call. Nonblocking.
-  fileprivate func start(metadata:Metadata, completion:@escaping (CallResult)->())
+  fileprivate func start(metadata:Metadata, completion: ((CallResult)->())?)
     throws -> {{ .|call:file,service,method }} {
       try self.call.start(.clientStreaming, metadata:metadata, completion:completion)
       return self
