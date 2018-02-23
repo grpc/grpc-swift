@@ -189,7 +189,7 @@ func runServer(server: gRPC.Server) throws {
       XCTFail("error \(error)")
     }
   }
-  server.onCompletion {
+  server.onCompletion = {
     // return from runServer()
     sem.signal()
   }
