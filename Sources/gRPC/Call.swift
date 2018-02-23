@@ -296,7 +296,7 @@ public class Call {
 
   // Receive a message over a streaming connection.
   /// - Throws: `CallError` if fails to call.
-  public func receiveMessage(callback: @escaping ((Data!) throws -> Void)) throws {
+  public func receiveMessage(callback: @escaping (Data?) throws -> Void) throws {
     try perform(OperationGroup(call: self, operations: [.receiveMessage]) { operationGroup in
       if operationGroup.success {
         if let messageBuffer = operationGroup.receivedMessage() {

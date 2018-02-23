@@ -68,7 +68,7 @@ func runTest(useSSL: Bool) {
   let serverRunningSemaphore = DispatchSemaphore(value: 0)
 
   // create the server
-  var server: gRPC.Server!
+  let server: gRPC.Server
   if useSSL {
     let certificateURL = URL(fileURLWithPath: "Tests/ssl.crt")
     let keyURL = URL(fileURLWithPath: "Tests/ssl.key")
@@ -120,7 +120,7 @@ func verify_metadata(_ metadata: Metadata, expected: [String: String]) {
 
 func runClient(useSSL: Bool) throws {
   let message = clientText.data(using: .utf8)
-  var channel: gRPC.Channel!
+  let channel: gRPC.Channel
 
   if useSSL {
     let certificateURL = URL(fileURLWithPath: "Tests/ssl.crt")
@@ -147,8 +147,8 @@ func runClient(useSSL: Bool) throws {
       XCTAssertEqual(response.statusCode, statusCode)
       XCTAssertEqual(response.statusMessage, statusMessage)
       // verify the message from the server
-      let resultData = response.resultData
-      let messageString = String(data: resultData!, encoding: .utf8)
+      let resultData = response.resultData!
+      let messageString = String(data: resultData, encoding: .utf8)
       XCTAssertEqual(messageString, serverText)
       // verify the initial metadata from the server
       let initialMetadata = response.initialMetadata!

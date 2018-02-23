@@ -164,14 +164,10 @@ class OperationGroup {
     for (i, operation) in operations.enumerated() {
       switch operation {
       case .receiveStatusOnClient:
-        if let string = cgrpc_observer_recv_status_on_client_copy_status_details(underlyingObservers[i]) {
-          defer {
-            cgrpc_free_copied_string(string)
-          }
-          return String(cString: string, encoding: String.Encoding.utf8)!
-        } else {
-          return nil
-        }
+        guard let string = cgrpc_observer_recv_status_on_client_copy_status_details(underlyingObservers[i])
+          else { return nil }
+        defer { cgrpc_free_copied_string(string) }
+        return String(cString: string, encoding: String.Encoding.utf8)
       default:
         continue
       }
