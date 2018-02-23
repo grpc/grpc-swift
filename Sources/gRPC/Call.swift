@@ -218,7 +218,7 @@ public class Call {
         throw CallError.invalidMessage
       }
       operations = [
-        .sendInitialMetadata(metadata.copy() as! Metadata),
+        .sendInitialMetadata(metadata.copy()),
         .receiveInitialMetadata,
         .receiveStatusOnClient,
         .sendMessage(ByteBuffer(data: message)),
@@ -230,14 +230,14 @@ public class Call {
         throw CallError.invalidMessage
       }
       operations = [
-        .sendInitialMetadata(metadata.copy() as! Metadata),
+        .sendInitialMetadata(metadata.copy()),
         .receiveInitialMetadata,
         .sendMessage(ByteBuffer(data: message)),
         .sendCloseFromClient
       ]
     case .clientStreaming, .bidiStreaming:
       operations = [
-        .sendInitialMetadata(metadata.copy() as! Metadata),
+        .sendInitialMetadata(metadata.copy()),
         .receiveInitialMetadata
       ]
     }
