@@ -13,34 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Foundation
+import Commander
 import Dispatch
+import Foundation
 import gRPC
 import OAuth2
-import Commander
 
 // Convert Encodable objects to dictionaries of property-value pairs.
 class PropertiesEncoder {
-  static func encode<T : Encodable>(_ value : T) throws -> [String:Any]? {
+  static func encode<T: Encodable>(_ value: T) throws -> [String: Any]? {
     #if os(OSX)
       let plist = try PropertyListEncoder().encode(value)
-      let properties = try PropertyListSerialization.propertyList(from:plist, options:[], format:nil)
+      let properties = try PropertyListSerialization.propertyList(from: plist, options: [], format: nil)
     #else
       let data = try JSONEncoder().encode(value)
-      let properties = try JSONSerialization.jsonObject(with:data, options:[])
+      let properties = try JSONSerialization.jsonObject(with: data, options: [])
     #endif
-    return properties as? [String:Any]
+    return properties as? [String: Any]
   }
 }
 
 // Create Decodable objects from dictionaries of property-value pairs.
 class PropertiesDecoder {
-  static func decode<T: Decodable>(_ type: T.Type, from: [String:Any]) throws -> T {
+  static func decode<T: Decodable>(_ type: T.Type, from: [String: Any]) throws -> T {
     #if os(OSX)
-      let plist = try PropertyListSerialization.data(fromPropertyList: from, format: .binary, options:0)
+      let plist = try PropertyListSerialization.data(fromPropertyList: from, format: .binary, options: 0)
       return try PropertyListDecoder().decode(type, from: plist)
     #else
-      let data = try JSONSerialization.data(withJSONObject: from, options:[])
+      let data = try JSONSerialization.data(withJSONObject: from, options: [])
       return try JSONDecoder().decode(type, from: data)
     #endif
   }
@@ -48,20 +48,20 @@ class PropertiesDecoder {
 
 // a Swift interface to the Google Cloud Datastore API
 class Datastore {
-  var projectID : String
-  var service : Google_Datastore_V1_DatastoreService!
-  
+  var projectID: String
+  var service: Google_Datastore_V1_DatastoreService!
+
   let scopes = ["https://www.googleapis.com/auth/datastore"]
-  
-  init(projectID:String) {
+
+  init(projectID: String) {
     self.projectID = projectID
   }
-  
+
   func authenticate() throws {
-    var authToken : String!
-    if let provider = DefaultTokenProvider(scopes:scopes) {
+    var authToken: String!
+    if let provider = DefaultTokenProvider(scopes: scopes) {
       let sem = DispatchSemaphore(value: 0)
-      try provider.withToken() {(token, error) -> Void in
+      try provider.withToken { (token, _) -> Void in
         if let token = token {
           authToken = token.AccessToken
         }
@@ -75,20 +75,20 @@ class Datastore {
     }
     // Initialize gRPC service
     gRPC.initialize()
-    service = Google_Datastore_V1_DatastoreService(address:"datastore.googleapis.com")
-    service.metadata = Metadata(["authorization":"Bearer " + authToken])
+    service = Google_Datastore_V1_DatastoreService(address: "datastore.googleapis.com")
+    service.metadata = Metadata(["authorization": "Bearer " + authToken])
   }
-  
-  func performList<T: Codable>(type: T.Type) throws -> [Int64 : T]{
+
+  func performList<T: Codable>(type: T.Type) throws -> [Int64: T] {
     var request = Google_Datastore_V1_RunQueryRequest()
     request.projectID = projectID
     var query = Google_Datastore_V1_GqlQuery()
     query.queryString = "select * from " + String(describing: type)
     request.gqlQuery = query
     let result = try service.runquery(request)
-    var entities : [Int64 : T] = [:]
+    var entities: [Int64: T] = [:]
     for entityResult in result.batch.entityResults {
-      var properties : [String:Any] = [:]
+      var properties: [String: Any] = [:]
       for property in entityResult.entity.properties {
         let key = property.key
         switch property.value.valueType! {
@@ -100,12 +100,12 @@ class Datastore {
           print("?")
         }
       }
-      let entity = try PropertiesDecoder.decode(type, from:properties)
+      let entity = try PropertiesDecoder.decode(type, from: properties)
       entities[entityResult.entity.key.path[0].id] = entity
     }
     return entities
   }
-  
+
   func performInsert<T: Codable>(thing: T) throws {
     var request = Google_Datastore_V1_CommitRequest()
     request.projectID = projectID
@@ -117,7 +117,7 @@ class Datastore {
     var entity = Google_Datastore_V1_Entity()
     entity.key = key
     let properties = try PropertiesEncoder.encode(thing)!
-    for (k,v) in properties {
+    for (k, v) in properties {
       var value = Google_Datastore_V1_Value()
       switch v {
       case let v as String:
@@ -137,7 +137,7 @@ class Datastore {
       print("\(mutationResult)")
     }
   }
-  
+
   func performDelete(kind: String,
                      id: Int64) throws {
     var request = Google_Datastore_V1_CommitRequest()
@@ -160,31 +160,30 @@ class Datastore {
 
 let projectID = "your-project-identifier"
 
-struct Thing : Codable {
+struct Thing: Codable {
   var name: String
   var number: Int
 }
 
 Group {
-  $0.command("insert") { (number:Int) in
+  $0.command("insert") { (number: Int) in
     let datastore = Datastore(projectID: projectID)
     try datastore.authenticate()
-    let thing = Thing(name:"Thing", number:number)
-    try datastore.performInsert(thing:thing)
+    let thing = Thing(name: "Thing", number: number)
+    try datastore.performInsert(thing: thing)
   }
-  
-  $0.command("delete") { (id:Int) in
+
+  $0.command("delete") { (id: Int) in
     let datastore = Datastore(projectID: projectID)
     try datastore.authenticate()
-    try datastore.performDelete(kind:"Thing", id:Int64(id))
+    try datastore.performDelete(kind: "Thing", id: Int64(id))
   }
-  
+
   $0.command("list") {
     let datastore = Datastore(projectID: projectID)
     try datastore.authenticate()
     let entities = try datastore.performList(type: Thing.self)
     print("\(entities)")
   }
-  
-  }.run()
 
+}.run()

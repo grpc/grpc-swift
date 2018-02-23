@@ -20,13 +20,11 @@ import gRPC
 extension NSTextView {
   func appendText(line: String) {
     if let textStorage = self.textStorage {
-      textStorage.append(
-        NSAttributedString(string:line+"\n",
-                           attributes:[NSFontAttributeName:NSFont.systemFont(ofSize:12.0)]))
+      textStorage.append(NSAttributedString(string: line + "\n",
+                                            attributes: [NSFontAttributeName: NSFont.systemFont(ofSize: 12.0)]))
     }
     if let contents = self.string {
-      self.scrollRangeToVisible(
-        NSRange(location:contents.lengthOfBytes(using:String.Encoding.utf8),length: 0))
+      scrollRangeToVisible(NSRange(location: contents.lengthOfBytes(using: String.Encoding.utf8), length: 0))
     }
   }
 }
@@ -39,16 +37,15 @@ func sync(lock: AnyObject, closure: () -> Void) {
 }
 
 class Document: NSDocument {
-
-  @IBOutlet weak var hostField: NSTextField!
-  @IBOutlet weak var portField: NSTextField!
-  @IBOutlet weak var connectionSelector: NSSegmentedControl!
-  @IBOutlet weak var startButton: NSButton!
+  @IBOutlet var hostField: NSTextField!
+  @IBOutlet var portField: NSTextField!
+  @IBOutlet var connectionSelector: NSSegmentedControl!
+  @IBOutlet var startButton: NSButton!
   @IBOutlet var textView: NSTextView!
   // http://stackoverflow.com/questions/24062437/cannot-form-weak-reference-to-instance-of-class-nstextview
 
-  var channel : Channel!
-  var server : Server!
+  var channel: Channel!
+  var server: Server!
   var running: Bool // all accesses to this should be synchronized
 
   override init() {
@@ -57,7 +54,7 @@ class Document: NSDocument {
   }
 
   override func close() {
-    self.textView = nil // prevents logging to the textView
+    textView = nil // prevents logging to the textView
     stop()
     super.close()
   }
@@ -66,22 +63,22 @@ class Document: NSDocument {
     return "Document"
   }
 
-  func log(_ line:String) {
+  func log(_ line: String) {
     DispatchQueue.main.async {
       if let view = self.textView {
-        view.appendText(line:line)
+        view.appendText(line: line)
       }
     }
   }
 
-  @IBAction func startButtonPressed(sender: NSButton){
+  @IBAction func startButtonPressed(sender: NSButton) {
     if sender.title == "Start" {
       updateInterfaceBeforeStarting()
       let address = hostField.stringValue + ":" + portField.stringValue
-      if (connectionSelector.selectedSegment == 0) {
-        runClient(address:address)
+      if connectionSelector.selectedSegment == 0 {
+        runClient(address: address)
       } else {
-        runServer(address:address)
+        runServer(address: address)
       }
     } else {
       stop()
@@ -94,7 +91,7 @@ class Document: NSDocument {
     portField.isEnabled = false
     connectionSelector.isEnabled = false
     if let textStorage = self.textView.textStorage {
-      textStorage.setAttributedString(NSAttributedString(string:"", attributes: [:]))
+      textStorage.setAttributedString(NSAttributedString(string: "", attributes: [:]))
     }
   }
 
@@ -109,35 +106,35 @@ class Document: NSDocument {
     }
   }
 
-  func setIsRunning(_ value:Bool) {
-    sync(lock:self) {
+  func setIsRunning(_ value: Bool) {
+    sync(lock: self) {
       self.running = value
     }
   }
 
   func isRunning() -> Bool {
-    var result:Bool = false
-    sync(lock:self) {
+    var result: Bool = false
+    sync(lock: self) {
       result = self.running
     }
     return result
   }
 
   func stop() {
-    if (self.channel != nil) {
+    if channel != nil {
       setIsRunning(false) // stops client
     }
-    if (self.server != nil) {
-      self.server.stop() // stops server
+    if server != nil {
+      server.stop() // stops server
     }
   }
 
-  func runClient(address:String) {
+  func runClient(address: String) {
     DispatchQueue.global().async {
       self.log("Client Starting")
       self.log("GRPC version " + gRPC.version())
 
-      self.channel = gRPC.Channel(address:address, secure:false)
+      self.channel = gRPC.Channel(address: address, secure: false)
       self.channel.host = "foo.test.google.fr"
       let messageData = "hello, server!".data(using: .utf8)
 
@@ -150,15 +147,16 @@ class Document: NSDocument {
         let method = (i < steps) ? "/hello" : "/quit"
         let call = self.channel.makeCall(method)
 
-        let metadata = Metadata([["x": "xylophone"],
-                                 ["y": "yu"],
-                                 ["z": "zither"]])
+        let metadata = Metadata([
+          ["x": "xylophone"],
+          ["y": "yu"],
+          ["z": "zither"]
+        ])
 
         do {
           try call.start(.unary,
-                         metadata:metadata,
-                         message:messageData)
-          {(callResult) in
+                         metadata: metadata,
+                         message: messageData) { callResult in
 
             if let initialMetadata = callResult.initialMetadata {
               for j in 0..<initialMetadata.count() {
@@ -194,15 +192,15 @@ class Document: NSDocument {
     }
   }
 
-  func runServer(address:String) {
-    self.log("Server Starting")
-    self.log("GRPC version " + gRPC.version())
-    self.setIsRunning(true)
+  func runServer(address: String) {
+    log("Server Starting")
+    log("GRPC version " + gRPC.version())
+    setIsRunning(true)
 
-    self.server = gRPC.Server(address:address)
+    server = gRPC.Server(address: address)
     var requestCount = 0
 
-    self.server.run() {(requestHandler) in
+    server.run { requestHandler in
 
       do {
         requestCount += 1
@@ -217,11 +215,12 @@ class Document: NSDocument {
             + ":" + initialMetadata.value(i))
         }
 
-        let initialMetadataToSend = Metadata([["a": "Apple"],
-                                              ["b": "Banana"],
-                                              ["c": "Cherry"]])
-        try requestHandler.receiveMessage(initialMetadata:initialMetadataToSend)
-        {(messageData) in
+        let initialMetadataToSend = Metadata([
+          ["a": "Apple"],
+          ["b": "Banana"],
+          ["c": "Cherry"]
+        ])
+        try requestHandler.receiveMessage(initialMetadata: initialMetadataToSend) { messageData in
           let messageString = String(data: messageData!, encoding: .utf8)
           self.log("\(requestCount): Received message: " + messageString!)
         }
@@ -231,13 +230,15 @@ class Document: NSDocument {
         }
 
         let replyMessage = "hello, client!"
-        let trailingMetadataToSend = Metadata([["0": "zero"],
-                                               ["1": "one"],
-                                               ["2": "two"]])
-        try requestHandler.sendResponse(message:replyMessage.data(using: .utf8)!,
-                                        statusCode:0,
-                                        statusMessage:"OK",
-                                        trailingMetadata:trailingMetadataToSend)
+        let trailingMetadataToSend = Metadata([
+          ["0": "zero"],
+          ["1": "one"],
+          ["2": "two"]
+        ])
+        try requestHandler.sendResponse(message: replyMessage.data(using: .utf8)!,
+                                        statusCode: 0,
+                                        statusMessage: "OK",
+                                        trailingMetadata: trailingMetadataToSend)
 
         self.log("------------------------------")
       } catch (let callError) {
@@ -245,7 +246,7 @@ class Document: NSDocument {
       }
     }
 
-    self.server.onCompletion() {
+    server.onCompletion {
       self.log("Server Stopped")
       self.updateInterfaceAfterStopping()
     }

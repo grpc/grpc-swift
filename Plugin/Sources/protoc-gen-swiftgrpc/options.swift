@@ -20,7 +20,7 @@ enum GenerationError: Error {
   case unknownParameter(name: String)
   /// Raised when a parameter was giving an invalid value
   case invalidParameterValue(name: String, value: String)
-  
+
   var localizedDescription: String {
     switch self {
     case .unknownParameter(let name):
@@ -35,7 +35,7 @@ class GeneratorOptions {
   enum Visibility: String {
     case Internal
     case Public
-    
+
     var sourceSnippet: String {
       switch self {
       case .Internal:
@@ -45,12 +45,12 @@ class GeneratorOptions {
       }
     }
   }
-  
+
   let visibility: Visibility
-  
+
   init(parameter: String?) throws {
     var visibility: Visibility = .Internal
-    
+
     for pair in GeneratorOptions.parseParameter(string: parameter) {
       switch pair.key {
       case "Visibility":
@@ -64,36 +64,32 @@ class GeneratorOptions {
         throw GenerationError.unknownParameter(name: pair.key)
       }
     }
-    
+
     self.visibility = visibility
   }
-  
+
   static func parseParameter(string: String?) -> [(key: String, value: String)] {
     guard let string = string, string.characters.count > 0 else {
       return []
     }
     let parts = string.components(separatedBy: ",")
-    
+
     // Partitions the string into the section before the = and after the =
     let result = parts.map { string -> (key: String, value: String) in
-      
+
       // Finds the equal sign and exits early if none
       guard let index = string.range(of: "=")?.lowerBound else {
         return (string, "")
       }
-      
+
       // Creates key/value pair and trims whitespace
       let key = string.substring(to: index)
         .trimmingCharacters(in: .whitespacesAndNewlines)
       let value = string.substring(from: string.index(after: index))
         .trimmingCharacters(in: .whitespacesAndNewlines)
-      
+
       return (key: key, value: value)
     }
     return result
   }
 }
-
-
-
-

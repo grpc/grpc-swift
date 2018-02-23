@@ -19,16 +19,16 @@ import Foundation
 // A class for loading Stencil templates from compiled-in representations
 
 public class InternalLoader: Loader {
-  private var templates: [String:String]
+  private var templates: [String: String]
 
   public init() {
-    self.templates = loadTemplates()
+    templates = loadTemplates()
   }
 
   public func loadTemplate(name: String, environment: Environment) throws -> Template {
     if let encoding = templates[name],
-      let data = Data(base64Encoded: encoding, options:[]),
-      let template = String(data:data, encoding:.utf8) {
+      let data = Data(base64Encoded: encoding, options: []),
+      let template = String(data: data, encoding: .utf8) {
       return environment.templateClass.init(templateString: template,
                                             environment: environment,
                                             name: name)
@@ -40,8 +40,8 @@ public class InternalLoader: Loader {
   public func loadTemplate(names: [String], environment: Environment) throws -> Template {
     for name in names {
       if let encoding = templates[name],
-        let data = Data(base64Encoded: encoding, options:[]),
-        let template = String(data:data, encoding:.utf8) {
+        let data = Data(base64Encoded: encoding, options: []),
+        let template = String(data: data, encoding: .utf8) {
         return environment.templateClass.init(templateString: template,
                                               environment: environment,
                                               name: name)

@@ -18,19 +18,16 @@ import gRPC
 
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate {
-
-  func applicationDidFinishLaunching(_ aNotification: Notification) {
+  func applicationDidFinishLaunching(_: Notification) {
     gRPC.initialize()
     print("GRPC version", gRPC.version())
   }
 
-  func applicationWillTerminate(_ aNotification: Notification) {
+  func applicationWillTerminate(_: Notification) {
     // We don't call shutdown() here because we can't be sure that
     // any running server queues will have stopped by the time this is
     // called. If one is still running after we call shutdown(), the
     // program will crash.
     // gRPC.shutdown()
   }
-
 }
-

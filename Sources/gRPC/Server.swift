@@ -21,7 +21,6 @@ import Foundation
 
 /// gRPC Server
 public class Server {
-
   /// Pointer to underlying C representation
   private var underlyingServer: UnsafeMutableRawPointer
 
@@ -29,20 +28,20 @@ public class Server {
   var completionQueue: CompletionQueue
 
   /// Active handlers
-  private var handlers : NSMutableSet!
+  private var handlers: NSMutableSet
 
   /// Mutex for synchronizing access to handlers
-  private var handlersMutex : Mutex = Mutex()
+  private var handlersMutex: Mutex = Mutex()
 
   /// Optional callback when server stops serving
-  private var onCompletion: (() -> Void)!
+  private var onCompletion: (() -> Void)?
 
   /// Initializes a Server
   ///
   /// - Parameter address: the address where the server will listen
-  public init(address:String) {
+  public init(address: String) {
     underlyingServer = cgrpc_server_create(address)
-    completionQueue = CompletionQueue(underlyingCompletionQueue:cgrpc_server_get_completion_queue(underlyingServer))
+    completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_server_get_completion_queue(underlyingServer))
     completionQueue.name = "Server " + address
     handlers = NSMutableSet()
   }
@@ -52,9 +51,9 @@ public class Server {
   /// - Parameter address: the address where the server will listen
   /// - Parameter key: the private key for the server's certificates
   /// - Parameter certs: the server's certificates
-  public init(address:String, key:String, certs:String) {
+  public init(address: String, key: String, certs: String) {
     underlyingServer = cgrpc_server_create_secure(address, key, certs)
-    completionQueue = CompletionQueue(underlyingCompletionQueue:cgrpc_server_get_completion_queue(underlyingServer))
+    completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_server_get_completion_queue(underlyingServer))
     completionQueue.name = "Server " + address
     handlers = NSMutableSet()
   }
@@ -66,17 +65,17 @@ public class Server {
   /// Run the server
   public func run(dispatchQueue: DispatchQueue = DispatchQueue.global(),
                   handlerFunction: @escaping (Handler) -> Void) {
-    cgrpc_server_start(underlyingServer);
+    cgrpc_server_start(underlyingServer)
     // run the server on a new background thread
     dispatchQueue.async {
       var running = true
-      while(running) {
+      while running {
         do {
-          let handler = Handler(underlyingServer:self.underlyingServer)
-          try handler.requestCall(tag:101)
+          let handler = Handler(underlyingServer: self.underlyingServer)
+          try handler.requestCall(tag: 101)
           // block while waiting for an incoming request
-          let event = self.completionQueue.wait(timeout:600)
-          if (event.type == .complete) {
+          let event = self.completionQueue.wait(timeout: 600)
+          if event.type == .complete {
             if event.tag == 101 {
               // run the handler and remove it when it finishes
               if event.success != 0 {
@@ -85,7 +84,7 @@ public class Server {
                   self.handlers.add(handler)
                 }
                 // this will start the completion queue on a new thread
-                handler.completionQueue.runToCompletion(callbackQueue:dispatchQueue) {
+                handler.completionQueue.runToCompletion(callbackQueue: dispatchQueue) {
                   dispatchQueue.async {
                     self.handlersMutex.synchronize {
                       // release the handler when it finishes
@@ -99,9 +98,9 @@ public class Server {
             } else if event.tag == 0 {
               running = false // exit the loop
             }
-          } else if (event.type == .queueTimeout) {
+          } else if event.type == .queueTimeout {
             // everything is fine
-          } else if (event.type == .queueShutdown) {
+          } else if event.type == .queueShutdown {
             running = false
           }
         } catch (let callError) {
@@ -119,7 +118,7 @@ public class Server {
     cgrpc_server_stop(underlyingServer)
   }
 
-  public func onCompletion(completion:@escaping (() -> Void)) -> Void {
+  public func onCompletion(completion: @escaping (() -> Void)) {
     onCompletion = completion
   }
 }

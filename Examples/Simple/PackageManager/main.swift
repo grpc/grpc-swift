@@ -13,31 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Foundation
-import Dispatch
-import gRPC
 import Commander
+import Dispatch
+import Foundation
+import gRPC
 
 let address = "localhost:8001"
 let host = "foo.test.google.fr"
 
 func client() throws {
   let message = "hello, server!".data(using: .utf8)
-  let c = gRPC.Channel(address:address, secure:false)
+  let c = gRPC.Channel(address: address, secure: false)
   let steps = 3
   for i in 0..<steps {
     let sem = DispatchSemaphore(value: 0)
 
-    let method = (i < steps-1) ? "/hello" : "/quit"
+    let method = (i < steps - 1) ? "/hello" : "/quit"
     print("calling " + method)
     let call = c.makeCall(method)
 
-    let metadata = Metadata([["x": "xylophone"],
-                             ["y": "yu"],
-                             ["z": "zither"]])
+    let metadata = Metadata([
+      ["x": "xylophone"],
+      ["y": "yu"],
+      ["z": "zither"]
+    ])
 
-    try! call.start(.unary, metadata:metadata, message:message) {
-      (response) in
+    try! call.start(.unary, metadata: metadata, message: message) {
+      response in
       print("status:", response.statusCode)
       print("statusMessage:", response.statusMessage!)
       if let resultData = response.resultData {
@@ -61,12 +63,12 @@ func client() throws {
 }
 
 func server() throws {
-  let server = gRPC.Server(address:address)
+  let server = gRPC.Server(address: address)
   var requestCount = 0
 
   let sem = DispatchSemaphore(value: 0)
 
-  server.run() {(requestHandler) in
+  server.run { requestHandler in
 
     do {
       requestCount += 1
@@ -81,11 +83,12 @@ func server() throws {
           + ":" + initialMetadata.value(i))
       }
 
-      let initialMetadataToSend = Metadata([["a": "Apple"],
-                                            ["b": "Banana"],
-                                            ["c": "Cherry"]])
-      try requestHandler.receiveMessage(initialMetadata:initialMetadataToSend)
-      {(messageData) in
+      let initialMetadataToSend = Metadata([
+        ["a": "Apple"],
+        ["b": "Banana"],
+        ["c": "Cherry"]
+      ])
+      try requestHandler.receiveMessage(initialMetadata: initialMetadataToSend) { messageData in
         let messageString = String(data: messageData!, encoding: .utf8)
         print("\(requestCount): Received message: " + messageString!)
       }
@@ -96,13 +99,15 @@ func server() throws {
       }
 
       let replyMessage = "hello, client!"
-      let trailingMetadataToSend = Metadata([["0": "zero"],
-                                             ["1": "one"],
-                                             ["2": "two"]])
-      try requestHandler.sendResponse(message:replyMessage.data(using: .utf8)!,
-                                      statusCode:.ok,
-                                      statusMessage:"OK",
-                                      trailingMetadata:trailingMetadataToSend)
+      let trailingMetadataToSend = Metadata([
+        ["0": "zero"],
+        ["1": "one"],
+        ["2": "two"]
+      ])
+      try requestHandler.sendResponse(message: replyMessage.data(using: .utf8)!,
+                                      statusCode: .ok,
+                                      statusMessage: "OK",
+                                      trailingMetadata: trailingMetadataToSend)
 
       print("------------------------------")
     } catch (let callError) {
@@ -110,7 +115,7 @@ func server() throws {
     }
   }
 
-  server.onCompletion() {
+  server.onCompletion {
     print("Server Stopped")
   }
 
@@ -118,7 +123,6 @@ func server() throws {
 }
 
 Group {
-
   $0.command("server") {
     gRPC.initialize()
     print("gRPC version", gRPC.version())
@@ -131,6 +135,4 @@ Group {
     try client()
   }
 
-  }.run()
-
-
+}.run()

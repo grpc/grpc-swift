@@ -13,18 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import Dispatch
 import Foundation
 import gRPC
 import OAuth2
-import Dispatch
 
 let scopes = ["https://www.googleapis.com/auth/cloud-language"]
 
 if let provider = DefaultTokenProvider(scopes: scopes) {
   let sem = DispatchSemaphore(value: 0)
-  try provider.withToken() {(token, error) -> Void in
+  try provider.withToken { (token, error) -> Void in
     if let token = token {
-
       gRPC.initialize()
 
       guard let authToken = token.AccessToken else {
@@ -32,9 +31,9 @@ if let provider = DefaultTokenProvider(scopes: scopes) {
         exit(-1)
       }
 
-      let service = Google_Cloud_Language_V1_LanguageServiceService(address:"language.googleapis.com")
+      let service = Google_Cloud_Language_V1_LanguageServiceService(address: "language.googleapis.com")
 
-      service.metadata = Metadata(["authorization":"Bearer " + authToken])
+      service.metadata = Metadata(["authorization": "Bearer " + authToken])
 
       var request = Google_Cloud_Language_V1_AnnotateTextRequest()
 
@@ -59,7 +58,6 @@ if let provider = DefaultTokenProvider(scopes: scopes) {
       } catch (let error) {
         print("ERROR: \(error)")
       }
-
     }
     if let error = error {
       print("ERROR \(error)")
@@ -70,5 +68,3 @@ if let provider = DefaultTokenProvider(scopes: scopes) {
 } else {
   print("Unable to create default token provider.")
 }
-
-

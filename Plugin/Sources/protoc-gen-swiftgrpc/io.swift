@@ -55,7 +55,7 @@ class Stdin {
 
 class Stdout {
   static func write(bytes: Data) {
-    bytes.withUnsafeBytes { (p: UnsafePointer<UInt8>) -> () in
+    bytes.withUnsafeBytes { (p: UnsafePointer<UInt8>) -> Void in
       _ = _write(1, p, bytes.count)
     }
   }

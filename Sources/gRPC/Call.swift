@@ -26,11 +26,11 @@ public enum CallStyle {
   case bidiStreaming
 }
 
-public enum CallWarning : Error {
+public enum CallWarning: Error {
   case blocked
 }
 
-public enum CallError : Error {
+public enum CallError: Error {
   case ok
   case unknown
   case notOnServer
@@ -48,7 +48,7 @@ public enum CallError : Error {
   case payloadTypeMismatch
 
   static func callError(grpcCallError error: grpc_call_error) -> CallError {
-    switch(error) {
+    switch error {
     case GRPC_CALL_OK:
       return .ok
     case GRPC_CALL_ERROR:
@@ -85,38 +85,38 @@ public enum CallError : Error {
   }
 }
 
-public struct CallResult : CustomStringConvertible {
-  public var statusCode : StatusCode
-  public var statusMessage : String?
-  public var resultData : Data?
-  public var initialMetadata : Metadata?
-  public var trailingMetadata : Metadata?
+public struct CallResult: CustomStringConvertible {
+  public var statusCode: StatusCode
+  public var statusMessage: String?
+  public var resultData: Data?
+  public var initialMetadata: Metadata?
+  public var trailingMetadata: Metadata?
 
-  fileprivate init(_ op : OperationGroup) {
-    if (op.success) {
+  fileprivate init(_ op: OperationGroup) {
+    if op.success {
       if let statusCodeRawValue = op.receivedStatusCode() {
-	if let statusCode = StatusCode(rawValue:statusCodeRawValue) {
+        if let statusCode = StatusCode(rawValue: statusCodeRawValue) {
           self.statusCode = statusCode
-	} else {
-	  self.statusCode = .unknown
-	}
+        } else {
+          statusCode = .unknown
+        }
       } else {
-	self.statusCode = .ok
+        statusCode = .ok
       }
-      self.statusMessage = op.receivedStatusMessage()
-      self.resultData = op.receivedMessage()?.data()
-      self.initialMetadata = op.receivedInitialMetadata()
-      self.trailingMetadata = op.receivedTrailingMetadata()
+      statusMessage = op.receivedStatusMessage()
+      resultData = op.receivedMessage()?.data()
+      initialMetadata = op.receivedInitialMetadata()
+      trailingMetadata = op.receivedTrailingMetadata()
     } else {
-      self.statusCode = .ok
-      self.statusMessage = nil
-      self.resultData = nil
-      self.initialMetadata = nil
-      self.trailingMetadata = nil
+      statusCode = .ok
+      statusMessage = nil
+      resultData = nil
+      initialMetadata = nil
+      trailingMetadata = nil
     }
   }
 
-  public var description : String {
+  public var description: String {
     var result = "status \(statusCode)"
     if let statusMessage = self.statusMessage {
       result += ": " + statusMessage
@@ -139,7 +139,6 @@ public struct CallResult : CustomStringConvertible {
 
 /// A gRPC API call
 public class Call {
-
   /// Shared mutex for synchronizing calls to cgrpc_call_perform()
   private static let callMutex = Mutex()
 
@@ -147,22 +146,22 @@ public class Call {
   public static var messageQueueMaxLength = 0
 
   /// Pointer to underlying C representation
-  private var underlyingCall : UnsafeMutableRawPointer
+  private var underlyingCall: UnsafeMutableRawPointer
 
   /// Completion queue used for call
   private var completionQueue: CompletionQueue
 
   /// True if this instance is responsible for deleting the underlying C representation
-  private var owned : Bool
+  private var owned: Bool
 
   /// A queue of pending messages to send over the call
-  private var messageQueue : Array<Data>
+  private var messageQueue: Array<Data>
 
   /// True if a message write operation is underway
-  private var writing : Bool
+  private var writing: Bool
 
   /// Mutex for synchronizing message sending
-  private var sendMutex : Mutex
+  private var sendMutex: Mutex
 
   /// Dispatch queue used for sending messages asynchronously
   private var messageDispatchQueue: DispatchQueue = DispatchQueue.global()
@@ -175,13 +174,13 @@ public class Call {
     self.underlyingCall = underlyingCall
     self.owned = owned
     self.completionQueue = completionQueue
-    self.messageQueue = []
-    self.writing = false
-    self.sendMutex = Mutex()
+    messageQueue = []
+    writing = false
+    sendMutex = Mutex()
   }
 
   deinit {
-    if (owned) {
+    if owned {
       cgrpc_call_destroy(underlyingCall)
     }
   }
@@ -191,13 +190,13 @@ public class Call {
   /// - Parameter operations: group of operations to be performed
   /// - Returns: the result of initiating the call
   /// - Throws: `CallError` if fails to call.
-  internal func perform(_ operations: OperationGroup) throws -> Void {
+  func perform(_ operations: OperationGroup) throws {
     completionQueue.register(operations)
     Call.callMutex.lock()
     let error = cgrpc_call_perform(underlyingCall, operations.underlyingOperations, operations.tag)
     Call.callMutex.unlock()
     if error != GRPC_CALL_OK {
-      throw CallError.callError(grpcCallError:error)
+      throw CallError.callError(grpcCallError: error)
     }
   }
 
@@ -211,93 +210,94 @@ public class Call {
   public func start(_ style: CallStyle,
                     metadata: Metadata,
                     message: Data? = nil,
-                    completion: @escaping (CallResult) -> Void)
-    throws -> Void {
-      var operations : [Operation] = []
-      switch style {
-      case .unary:
-        guard let message = message else {
-          throw CallError.invalidMessage
-        }
-        operations = [.sendInitialMetadata(metadata.copy() as! Metadata),
-                      .receiveInitialMetadata,
-                      .receiveStatusOnClient,
-                      .sendMessage(ByteBuffer(data:message)),
-                      .sendCloseFromClient,
-                      .receiveMessage]
-      case .serverStreaming:
-        guard let message = message else {
-          throw CallError.invalidMessage
-        }
-        operations = [.sendInitialMetadata(metadata.copy() as! Metadata),
-                      .receiveInitialMetadata,
-                      .sendMessage(ByteBuffer(data:message)),
-                      .sendCloseFromClient
-        ]
-      case .clientStreaming, .bidiStreaming:
-        operations = [.sendInitialMetadata(metadata.copy() as! Metadata),
-                      .receiveInitialMetadata]
+                    completion: @escaping (CallResult) -> Void) throws {
+    var operations: [Operation] = []
+    switch style {
+    case .unary:
+      guard let message = message else {
+        throw CallError.invalidMessage
       }
-      try self.perform(OperationGroup(call:self,
-                                      operations:operations,
-                                      completion:{(op) in completion(CallResult(op))}))
+      operations = [
+        .sendInitialMetadata(metadata.copy() as! Metadata),
+        .receiveInitialMetadata,
+        .receiveStatusOnClient,
+        .sendMessage(ByteBuffer(data: message)),
+        .sendCloseFromClient,
+        .receiveMessage
+      ]
+    case .serverStreaming:
+      guard let message = message else {
+        throw CallError.invalidMessage
+      }
+      operations = [
+        .sendInitialMetadata(metadata.copy() as! Metadata),
+        .receiveInitialMetadata,
+        .sendMessage(ByteBuffer(data: message)),
+        .sendCloseFromClient
+      ]
+    case .clientStreaming, .bidiStreaming:
+      operations = [
+        .sendInitialMetadata(metadata.copy() as! Metadata),
+        .receiveInitialMetadata
+      ]
+    }
+    try perform(OperationGroup(call: self,
+                               operations: operations,
+                               completion: { op in completion(CallResult(op)) }))
   }
 
   /// Sends a message over a streaming connection.
   ///
   /// Parameter data: the message data to send
   /// - Throws: `CallError` if fails to call. `CallWarning` if blocked.
-  public func sendMessage(data: Data, errorHandler:@escaping (Error)->()) throws {
-    self.sendMutex.lock()
-    defer {self.sendMutex.unlock()}
-    if self.writing {
+  public func sendMessage(data: Data, errorHandler: @escaping (Error) -> Void) throws {
+    sendMutex.lock()
+    defer { self.sendMutex.unlock() }
+    if writing {
       if (Call.messageQueueMaxLength > 0) && // if max length is <= 0, consider it infinite
-        (self.messageQueue.count == Call.messageQueueMaxLength) {
+        (messageQueue.count == Call.messageQueueMaxLength) {
         throw CallWarning.blocked
       }
-      self.messageQueue.append(data)
+      messageQueue.append(data)
     } else {
-      self.writing = true
-      try self.sendWithoutBlocking(data: data, errorHandler:errorHandler)
+      writing = true
+      try sendWithoutBlocking(data: data, errorHandler: errorHandler)
     }
   }
 
   /// helper for sending queued messages
-  private func sendWithoutBlocking(data: Data, errorHandler:@escaping (Error)->())
-    throws -> Void {
-    try self.perform(OperationGroup(call:self,
-                                    operations:[.sendMessage(ByteBuffer(data:data))])
-    {(operationGroup) in
-      if operationGroup.success {
-        self.messageDispatchQueue.async {
-          self.sendMutex.synchronize {
-            // if there are messages pending, send the next one
-            if self.messageQueue.count > 0 {
-              let nextMessage = self.messageQueue.removeFirst()
-              do {
-                try self.sendWithoutBlocking(data: nextMessage, errorHandler:errorHandler)
-              } catch (let callError) {
-                errorHandler(callError)
+  private func sendWithoutBlocking(data: Data, errorHandler: @escaping (Error) -> Void) throws {
+    try perform(OperationGroup(call: self,
+                               operations: [.sendMessage(ByteBuffer(data: data))]) { operationGroup in
+        if operationGroup.success {
+          self.messageDispatchQueue.async {
+            self.sendMutex.synchronize {
+              // if there are messages pending, send the next one
+              if self.messageQueue.count > 0 {
+                let nextMessage = self.messageQueue.removeFirst()
+                do {
+                  try self.sendWithoutBlocking(data: nextMessage, errorHandler: errorHandler)
+                } catch (let callError) {
+                  errorHandler(callError)
+                }
+              } else {
+                // otherwise, we are finished writing
+                self.writing = false
               }
-            } else {
-              // otherwise, we are finished writing
-              self.writing = false
             }
           }
+        } else {
+          // if the event failed, shut down
+          self.writing = false
+          errorHandler(CallError.unknown)
         }
-      } else {
-        // if the event failed, shut down
-        self.writing = false
-        errorHandler(CallError.unknown)
-      }
     })
   }
 
   // Receive a message over a streaming connection.
   /// - Throws: `CallError` if fails to call.
-  public func receiveMessage(callback:@escaping ((Data!) throws -> Void)) throws -> Void {
-    try self.perform(OperationGroup(call:self, operations:[.receiveMessage])
-    {(operationGroup) in
+  public func receiveMessage(callback: @escaping ((Data!) throws -> Void)) throws {
+    try perform(OperationGroup(call: self, operations: [.receiveMessage]) { operationGroup in
       if operationGroup.success {
         if let messageBuffer = operationGroup.receivedMessage() {
           try callback(messageBuffer.data())
@@ -310,9 +310,8 @@ public class Call {
 
   // Closes a streaming connection.
   /// - Throws: `CallError` if fails to call.
-  public func close(completion:@escaping (() -> Void)) throws -> Void {
-    try self.perform(OperationGroup(call:self, operations:[.sendCloseFromClient])
-    {(operationGroup) in completion()
+  public func close(completion: @escaping (() -> Void)) throws {
+    try perform(OperationGroup(call: self, operations: [.sendCloseFromClient]) { _ in completion()
     })
   }
 
