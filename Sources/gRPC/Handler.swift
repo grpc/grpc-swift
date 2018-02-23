@@ -38,24 +38,23 @@ public class Handler {
 
   /// The host name sent with the request
   public lazy var host: String? = {
-    guard let string = cgrpc_handler_copy_host(self.underlyingHandler)
-      else { return nil }
+    // We actually know that this method will never return nil,
+    // so we can forcibly unwrap the result. (Also below.)
+    let string = cgrpc_handler_copy_host(self.underlyingHandler)!
     defer { cgrpc_free_copied_string(string) }
     return String(cString: string, encoding: .utf8)
   }()
 
   /// The method name sent with the request
   public lazy var method: String? = {
-    guard let string = cgrpc_handler_copy_method(self.underlyingHandler)
-      else { return nil }
+    let string = cgrpc_handler_copy_method(self.underlyingHandler)!
     defer { cgrpc_free_copied_string(string) }
     return String(cString: string, encoding: .utf8)
   }()
 
   /// The caller address associated with the request
   public lazy var caller: String? = {
-    guard let string = cgrpc_handler_call_peer(self.underlyingHandler)
-      else { return nil }
+    let string = cgrpc_handler_call_peer(self.underlyingHandler)!
     defer { cgrpc_free_copied_string(string) }
     return String(cString: string, encoding: .utf8)
   }()
