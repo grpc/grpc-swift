@@ -43,23 +43,23 @@ void cgrpc_handler_destroy(cgrpc_handler *h) {
   free(h);
 }
 
-const char *cgrpc_handler_copy_host(cgrpc_handler *h) {
-  int length = GRPC_SLICE_LENGTH(h->call_details.host);
+char *cgrpc_handler_copy_host(cgrpc_handler *h) {
+  size_t length = GRPC_SLICE_LENGTH(h->call_details.host);
   char *str = (char *) malloc(length + 1);
   memcpy(str, GRPC_SLICE_START_PTR(h->call_details.host), length);
   str[length] = 0;
   return str;
 }
 
-const char *cgrpc_handler_copy_method(cgrpc_handler *h) {
-  int length = GRPC_SLICE_LENGTH(h->call_details.method);
+char *cgrpc_handler_copy_method(cgrpc_handler *h) {
+  size_t length = GRPC_SLICE_LENGTH(h->call_details.method);
   char *str = (char *) malloc(length + 1);
   memcpy(str, GRPC_SLICE_START_PTR(h->call_details.method), length);
   str[length] = 0;
   return str;
 }
 
-const char *cgrpc_handler_call_peer(cgrpc_handler *h) {
+char *cgrpc_handler_call_peer(cgrpc_handler *h) {
   return grpc_call_get_peer(h->server_call);
 }
 
