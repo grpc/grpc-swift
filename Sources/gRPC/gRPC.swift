@@ -18,7 +18,6 @@
 #endif
 import Foundation // for String.Encoding
 
-<<<<<<< HEAD
 public final class gRPC {
   private init() { }  // Static members only.
   
