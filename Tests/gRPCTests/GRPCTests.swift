@@ -53,9 +53,21 @@ let initialServerMetadata =
   ]
 let trailingServerMetadata =
   [
+    // We have more than ten entries here to ensure that even large metadata entries work
+    // and aren't limited by e.g. a fixed-size entry buffer.
     "0": "zero",
     "1": "one",
-    "2": "two"
+    "2": "two",
+    "3": "three",
+    "4": "four",
+    "5": "five",
+    "6": "six",
+    "7": "seven",
+    "8": "eight",
+    "9": "nine",
+    "10": "ten",
+    "11": "eleven",
+    "12": "twelve"
   ]
 let steps = 10
 let hello = "/hello"
@@ -68,7 +80,7 @@ func runTest(useSSL: Bool) {
   let serverRunningSemaphore = DispatchSemaphore(value: 0)
 
   // create the server
-  var server: Server!
+  let server: Server
   if useSSL {
     let certificateURL = URL(fileURLWithPath: "Tests/ssl.crt")
     let keyURL = URL(fileURLWithPath: "Tests/ssl.key")
@@ -109,18 +121,21 @@ func runTest(useSSL: Bool) {
   _ = serverRunningSemaphore.wait(timeout: DispatchTime.distantFuture)
 }
 
-func verify_metadata(_ metadata: Metadata, expected: [String: String]) {
+func verify_metadata(_ metadata: Metadata, expected: [String: String], file: StaticString = #file, line: UInt = #line) {
   XCTAssertGreaterThanOrEqual(metadata.count(), expected.count)
+  var allPresentKeys = Set<String>()
   for i in 0..<metadata.count() {
-    if expected[metadata.key(i)] != nil {
-      XCTAssertEqual(metadata.value(i), expected[metadata.key(i)])
-    }
+    guard let expectedValue = expected[metadata.key(i)!]
+      else { continue }
+    allPresentKeys.insert(metadata.key(i)!)
+    XCTAssertEqual(metadata.value(i), expectedValue, file: file, line: line)
   }
+  XCTAssertEqual(allPresentKeys.sorted(), expected.keys.sorted(), file: file, line: line)
 }
 
 func runClient(useSSL: Bool) throws {
   let message = clientText.data(using: .utf8)
-  var channel: Channel!
+  let channel: Channel
 
   if useSSL {
     let certificateURL = URL(fileURLWithPath: "Tests/ssl.crt")
@@ -136,7 +151,7 @@ func runClient(useSSL: Bool) throws {
   }
 
   channel.host = host
-  for i in 0..<steps {
+  for _ in 0..<steps {
     let sem = DispatchSemaphore(value: 0)
     let method = hello
     let call = channel.makeCall(method)
@@ -147,8 +162,8 @@ func runClient(useSSL: Bool) throws {
       XCTAssertEqual(response.statusCode, statusCode)
       XCTAssertEqual(response.statusMessage, statusMessage)
       // verify the message from the server
-      let resultData = response.resultData
-      let messageString = String(data: resultData!, encoding: .utf8)
+      let resultData = response.resultData!
+      let messageString = String(data: resultData, encoding: .utf8)
       XCTAssertEqual(messageString, serverText)
       // verify the initial metadata from the server
       let initialMetadata = response.initialMetadata!
