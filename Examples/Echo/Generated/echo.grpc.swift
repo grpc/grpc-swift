@@ -385,7 +385,7 @@ internal protocol Echo_EchoService {
 
 }
 
-internal final class Echo_EchoServiceImpl: Echo_EchoService {
+internal final class Echo_EchoServiceClient: Echo_EchoService {
   internal private(set) var channel: Channel
 
   internal var metadata : Metadata
@@ -749,13 +749,16 @@ internal final class Echo_EchoServer {
       fatalError() // the server requires a provider
     }
     server.run {(handler) in
-      print("Server received request to " + handler.host
-        + " calling " + handler.method
-        + " from " + handler.caller
-        + " with " + String(describing:handler.requestMetadata) )
+      let unwrappedHost = handler.host ?? "(nil)"
+      let unwrappedMethod = handler.method ?? "(nil)"
+      let unwrappedCaller = handler.caller ?? "(nil)"
+      print("Server received request to " + unwrappedHost
+        + " calling " + unwrappedMethod
+        + " from " + unwrappedCaller
+        + " with " + handler.requestMetadata.description)
 
       do {
-        switch handler.method {
+        switch unwrappedMethod {
         case "/echo.Echo/Get":
           try Echo_EchoGetSessionImpl(handler:handler, provider:provider).run(queue:queue)
         case "/echo.Echo/Expand":
@@ -768,7 +771,7 @@ internal final class Echo_EchoServer {
           // handle unknown requests
           try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
             try handler.sendResponse(statusCode:.unimplemented,
-                                     statusMessage:"unknown method " + handler.method,
+                                     statusMessage:"unknown method " + unwrappedMethod,
                                      trailingMetadata:Metadata())
           }
         }

@@ -111,13 +111,16 @@ class {{ .|service:file,service }}SessionTestStub: {{ .|service:file,service }}S
       fatalError() // the server requires a provider
     }
     server.run {(handler) in
-      print("Server received request to " + handler.host
-        + " calling " + handler.method
-        + " from " + handler.caller
-        + " with " + String(describing:handler.requestMetadata) )
+      let unwrappedHost = handler.host ?? "(nil)"
+      let unwrappedMethod = handler.method ?? "(nil)"
+      let unwrappedCaller = handler.caller ?? "(nil)"
+      print("Server received request to " + unwrappedHost
+        + " calling " + unwrappedMethod
+        + " from " + unwrappedCaller
+        + " with " + handler.requestMetadata.description)
 
       do {
-        switch handler.method {
+        switch unwrappedMethod {
         //-{% for method in service.methods %}
         case "{{ .|path:file,service,method }}":
           try {{ .|session:file,service,method }}Impl(handler:handler, provider:provider).run(queue:queue)
@@ -126,7 +129,7 @@ class {{ .|service:file,service }}SessionTestStub: {{ .|service:file,service }}S
           // handle unknown requests
           try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
             try handler.sendResponse(statusCode:.unimplemented,
-                                     statusMessage:"unknown method " + handler.method,
+                                     statusMessage:"unknown method " + unwrappedMethod,
                                      trailingMetadata:Metadata())
           }
         }
