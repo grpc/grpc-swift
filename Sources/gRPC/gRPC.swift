@@ -31,15 +31,15 @@ public func shutdown() {
 /// Returns version of underlying gRPC library
 ///
 /// Returns: gRPC version string
-public func version() -> String {
-  return String(cString: grpc_version_string(), encoding: String.Encoding.utf8)!
+public func version() -> String? {
+  return String(cString: grpc_version_string(), encoding: String.Encoding.utf8)
 }
 
 /// Returns name associated with gRPC version
 ///
 /// Returns: gRPC version name
-public func gStandsFor() -> String {
-  return String(cString: grpc_g_stands_for(), encoding: String.Encoding.utf8)!
+public func gStandsFor() -> String? {
+  return String(cString: grpc_g_stands_for(), encoding: String.Encoding.utf8)
 }
 
 /// Status codes for gRPC operations (replicated from status_code_enum.h)

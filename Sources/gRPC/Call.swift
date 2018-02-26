@@ -218,7 +218,7 @@ public class Call {
         throw CallError.invalidMessage
       }
       operations = [
-        .sendInitialMetadata(metadata.copy() as! Metadata),
+        .sendInitialMetadata(metadata.copy()),
         .receiveInitialMetadata,
         .receiveStatusOnClient,
         .sendMessage(ByteBuffer(data: message)),
@@ -230,14 +230,14 @@ public class Call {
         throw CallError.invalidMessage
       }
       operations = [
-        .sendInitialMetadata(metadata.copy() as! Metadata),
+        .sendInitialMetadata(metadata.copy()),
         .receiveInitialMetadata,
         .sendMessage(ByteBuffer(data: message)),
         .sendCloseFromClient
       ]
     case .clientStreaming, .bidiStreaming:
       operations = [
-        .sendInitialMetadata(metadata.copy() as! Metadata),
+        .sendInitialMetadata(metadata.copy()),
         .receiveInitialMetadata
       ]
     }
@@ -298,7 +298,7 @@ public class Call {
 
   // Receive a message over a streaming connection.
   /// - Throws: `CallError` if fails to call.
-  public func receiveMessage(callback: @escaping ((Data?) throws -> Void)) throws {
+  public func receiveMessage(callback: @escaping (Data?) throws -> Void) throws {
     try perform(OperationGroup(call: self, operations: [.receiveMessage]) { operationGroup in
       if operationGroup.success {
         if let messageBuffer = operationGroup.receivedMessage() {

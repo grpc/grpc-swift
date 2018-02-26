@@ -28,7 +28,7 @@ extension String {
   }
 
   var uppercasedFirst: String {
-    var out = characters
+    var out = Substring(self)
     if let first = out.popFirst() {
       return String(first).uppercased() + String(out)
     } else {
@@ -58,7 +58,7 @@ func protoMessageName(_ descriptor: SwiftProtobufPluginLibrary.Descriptor) -> St
   return namer.fullName(message: descriptor)
 }
 
-func pathName(filter _: String, arguments: [Any?]) throws -> String {
+func pathName(arguments: [Any?]) throws -> String {
   if arguments.count != 3 {
     throw invalidArgumentCount(filter: "path", expected: 3)
   }
@@ -116,31 +116,31 @@ class GRPCFilterExtension: Extension {
     super.init()
     // initialize template engine and add custom filters
     let ext = self
-    ext.registerFilter("call") { (_: Any?, arguments: [Any?]) in
+    ext.registerFilter("call") { (_, arguments: [Any?]) in
       return try packageServiceMethodName(filter: "call", arguments: arguments) + "Call"
     }
-    ext.registerFilter("session") { (_: Any?, arguments: [Any?]) in
+    ext.registerFilter("session") { (_, arguments: [Any?]) in
       return try packageServiceMethodName(filter: "session", arguments: arguments) + "Session"
     }
-    ext.registerFilter("path") { (_: Any?, arguments: [Any?]) in
-      return try pathName(filter: "path", arguments: arguments)
+    ext.registerFilter("path") { (_, arguments: [Any?]) in
+      return try pathName(arguments: arguments)
     }
-    ext.registerFilter("provider") { (_: Any?, arguments: [Any?]) in
+    ext.registerFilter("provider") { (_, arguments: [Any?]) in
       return try packageServiceName(filter: "provider", arguments: arguments) + "Provider"
     }
-    ext.registerFilter("clienterror") { (_: Any?, arguments: [Any?]) in
+    ext.registerFilter("clienterror") { (_, arguments: [Any?]) in
       return try packageServiceName(filter: "clienterror", arguments: arguments) + "ClientError"
     }
-    ext.registerFilter("serviceclass") { (_: Any?, arguments: [Any?]) in
+    ext.registerFilter("serviceclass") { (_, arguments: [Any?]) in
       return try packageServiceName(filter: "serviceclass", arguments: arguments) + "Service"
     }
-    ext.registerFilter("servererror") { (_: Any?, arguments: [Any?]) in
+    ext.registerFilter("servererror") { (_, arguments: [Any?]) in
       return try packageServiceName(filter: "servererror", arguments: arguments) + "ServerError"
     }
-    ext.registerFilter("server") { (_: Any?, arguments: [Any?]) in
+    ext.registerFilter("server") { (_, arguments: [Any?]) in
       return try packageServiceName(filter: "server", arguments: arguments) + "Server"
     }
-    ext.registerFilter("service") { (_: Any?, arguments: [Any?]) in
+    ext.registerFilter("service") { (_, arguments: [Any?]) in
       return try packageServiceName(filter: "server", arguments: arguments)
     }
     ext.registerFilter("input") { (value: Any?) in
