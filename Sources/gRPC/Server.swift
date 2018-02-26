@@ -52,14 +52,8 @@ public class Server {
   /// - Parameter certs: the server's certificates
   public init(address: String, key: String, certs: String) {
     underlyingServer = cgrpc_server_create_secure(address, key, certs)
-<<<<<<< HEAD
     completionQueue = CompletionQueue(
       underlyingCompletionQueue: cgrpc_server_get_completion_queue(underlyingServer), name: "Server " + address)
-    handlers = NSMutableSet()
-=======
-    completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_server_get_completion_queue(underlyingServer))
-    completionQueue.name = "Server " + address
->>>>>>> 3602c874d7d72af414fc2d22bc98baf0e2498f88
   }
 
   deinit {
