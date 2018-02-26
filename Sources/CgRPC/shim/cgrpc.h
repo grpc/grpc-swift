@@ -16,7 +16,7 @@
 #ifndef cgrpc_h
 #define cgrpc_h
 
-#import <stdlib.h>
+#include <stdlib.h>
 
 // This file lists C functions and types used to build Swift gRPC support
 

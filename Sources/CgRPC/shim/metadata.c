@@ -16,11 +16,11 @@
 
 #include <grpc/support/alloc.h>
 
+#include <stdlib.h>
+#include <string.h>
+
 #include "internal.h"
 #include "cgrpc.h"
-
-#include "stdlib.h"
-#include "string.h"
 
 cgrpc_metadata_array *cgrpc_metadata_array_create() {
   cgrpc_metadata_array *metadata = (cgrpc_metadata_array *) gpr_malloc(sizeof(cgrpc_metadata_array));

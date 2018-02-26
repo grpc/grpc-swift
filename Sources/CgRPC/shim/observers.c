@@ -236,7 +236,7 @@ long cgrpc_observer_recv_status_on_client_get_status(cgrpc_observer_recv_status_
 }
 
 char *cgrpc_observer_recv_status_on_client_copy_status_details(cgrpc_observer_recv_status_on_client *observer) {
-  int length = GRPC_SLICE_LENGTH(observer->server_details);
+  size_t length = GRPC_SLICE_LENGTH(observer->server_details);
   char *str = (char *) malloc(length + 1);
   memcpy(str, GRPC_SLICE_START_PTR(observer->server_details), length);
   str[length] = 0;
