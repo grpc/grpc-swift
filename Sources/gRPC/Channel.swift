@@ -20,7 +20,6 @@ import Foundation
 
 /// A gRPC Channel
 public class Channel {
-
   /// Pointer to underlying C representation
   private var underlyingChannel: UnsafeMutableRawPointer
 
@@ -33,21 +32,20 @@ public class Channel {
   /// Default host to use for new calls
   public var host: String
 
-
   /// Initializes a gRPC channel
   ///
   /// - Parameter address: the address of the server to be called
   /// - Parameter secure: if true, use TLS
   public init(address: String, secure: Bool = true) {
-    self.host = address
+    host = address
     if secure {
       underlyingChannel = cgrpc_channel_create_secure(address, roots_pem(), nil)
     } else {
       underlyingChannel = cgrpc_channel_create(address)
     }
-    completionQueue = CompletionQueue(underlyingCompletionQueue:cgrpc_channel_completion_queue(underlyingChannel))
+    completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_channel_completion_queue(underlyingChannel))
     completionQueue.name = "Client" // only for debugging
-    self.completionQueue.run() // start a loop that watches the channel's completion queue
+    completionQueue.run() // start a loop that watches the channel's completion queue
   }
 
   /// Initializes a gRPC channel
@@ -58,9 +56,9 @@ public class Channel {
   public init(address: String, certificates: String, host: String?) {
     self.host = address
     underlyingChannel = cgrpc_channel_create_secure(address, certificates, host)
-    completionQueue = CompletionQueue(underlyingCompletionQueue:cgrpc_channel_completion_queue(underlyingChannel))
+    completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_channel_completion_queue(underlyingChannel))
     completionQueue.name = "Client" // only for debugging
-    self.completionQueue.run() // start a loop that watches the channel's completion queue
+    completionQueue.run() // start a loop that watches the channel's completion queue
   }
 
   deinit {
@@ -73,9 +71,9 @@ public class Channel {
   /// - Parameter host: the gRPC host name for the call. If unspecified, defaults to the Client host
   /// - Parameter timeout: a timeout value in seconds
   /// - Returns: a Call object that can be used to perform the request
-  public func makeCall(_ method:String, host:String="") -> Call {
+  public func makeCall(_ method: String, host: String = "") -> Call {
     let host = (host == "") ? self.host : host
     let underlyingCall = cgrpc_channel_create_call(underlyingChannel, method, host, timeout)!
-    return Call(underlyingCall:underlyingCall, owned:true, completionQueue:self.completionQueue)
+    return Call(underlyingCall: underlyingCall, owned: true, completionQueue: completionQueue)
   }
 }

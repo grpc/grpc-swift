@@ -13,64 +13,67 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Foundation
-import Dispatch
-import gRPC
 import Commander
+import Dispatch
+import Foundation
+import gRPC
 
 // Common flags and options
-let sslFlag = Flag("ssl", description:"if true, use SSL for connections")
-func addressOption(_ address:String) -> Option<String> {
-  return Option("address", default:address, description:"address of server")
+let sslFlag = Flag("ssl", description: "if true, use SSL for connections")
+func addressOption(_ address: String) -> Option<String> {
+  return Option("address", default: address, description: "address of server")
 }
-let portOption = Option("port", default:"8081",
-                        description:"port of server")
-let messageOption = Option("message", default:"Testing 1 2 3",
-                           description:"message to send")
+
+let portOption = Option("port",
+                        default: "8081",
+                        description: "port of server")
+let messageOption = Option("message",
+                           default: "Testing 1 2 3",
+                           description: "message to send")
 
 // Helper function for client actions
-func buildEchoService(_ ssl:Bool, _ address:String, _ port:String, _ message:String)
+func buildEchoService(_ ssl: Bool, _ address: String, _ port: String, _: String)
   -> Echo_EchoService {
-    var service : Echo_EchoService
-    if ssl {
-      let certificateURL = URL(fileURLWithPath:"ssl.crt")
-      let certificates = try! String(contentsOf: certificateURL)
-      service = Echo_EchoService(address:address + ":" + port,
-                                 certificates:certificates,
-                                 host:"example.com")
-      service.host = "example.com"
-    } else {
-      service = Echo_EchoService(address:address + ":" + port, secure:false)
-    }
-    service.metadata = Metadata(["x-goog-api-key":"YOUR_API_KEY",
-                                 "x-ios-bundle-identifier":"io.grpc.echo"])
-    return service
+  var service: Echo_EchoService
+  if ssl {
+    let certificateURL = URL(fileURLWithPath: "ssl.crt")
+    let certificates = try! String(contentsOf: certificateURL)
+    service = Echo_EchoService(address: address + ":" + port,
+                               certificates: certificates,
+                               host: "example.com")
+    service.host = "example.com"
+  } else {
+    service = Echo_EchoService(address: address + ":" + port, secure: false)
+  }
+  service.metadata = Metadata([
+    "x-goog-api-key": "YOUR_API_KEY",
+    "x-ios-bundle-identifier": "io.grpc.echo"
+  ])
+  return service
 }
 
 Group {
-
   $0.command("serve",
              sslFlag,
              addressOption("0.0.0.0"),
              portOption,
-             description:"Run an echo server.")
-  { (ssl, address, port) in
+             description: "Run an echo server.") { ssl, address, port in
     let sem = DispatchSemaphore(value: 0)
     let echoProvider = EchoProvider()
     if ssl {
       print("Starting secure server")
-      let certificateURL = URL(fileURLWithPath:"ssl.crt")
-      let keyURL = URL(fileURLWithPath:"ssl.key")
-      if let echoServer = Echo_EchoServer(address:address + ":" + port,
-                                          certificateURL:certificateURL,
-                                          keyURL:keyURL,
-                                          provider:echoProvider) {
+      let certificateURL = URL(fileURLWithPath: "ssl.crt")
+      let keyURL = URL(fileURLWithPath: "ssl.key")
+      if let echoServer = Echo_EchoServer(address: address + ":" + port,
+                                          certificateURL: certificateURL,
+                                          keyURL: keyURL,
+                                          provider: echoProvider) {
         echoServer.start()
       }
     } else {
       print("Starting insecure server")
-      let echoServer = Echo_EchoServer(address:address + ":" + port,
-                                       provider:echoProvider)
+      let echoServer = Echo_EchoServer(address: address + ":" + port,
+                                       provider: echoProvider)
       echoServer.start()
     }
     // This blocks to keep the main thread from finishing while the server runs,
@@ -79,8 +82,7 @@ Group {
   }
 
   $0.command("get", sslFlag, addressOption("localhost"), portOption, messageOption,
-             description: "Perform a unary get().")
-  {(ssl, address, port, message) in
+             description: "Perform a unary get().") { ssl, address, port, message in
     let service = buildEchoService(ssl, address, port, message)
     var requestMessage = Echo_EchoRequest()
     requestMessage.text = message
@@ -90,14 +92,13 @@ Group {
   }
 
   $0.command("expand", sslFlag, addressOption("localhost"), portOption, messageOption,
-             description: "Perform a server-streaming expand().")
-  {(ssl, address, port, message) in
+             description: "Perform a server-streaming expand().") { ssl, address, port, message in
     let service = buildEchoService(ssl, address, port, message)
     var requestMessage = Echo_EchoRequest()
     requestMessage.text = message
     print("Sending: " + requestMessage.text)
     let sem = DispatchSemaphore(value: 0)
-    let expandCall = try service.expand(requestMessage) {result in
+    let expandCall = try service.expand(requestMessage) { result in
       print("result \(result)")
       sem.signal()
     }
@@ -115,21 +116,20 @@ Group {
   }
 
   $0.command("collect", sslFlag, addressOption("localhost"), portOption, messageOption,
-             description: "Perform a client-streaming collect().")
-  {(ssl, address, port, message) in
+             description: "Perform a client-streaming collect().") { ssl, address, port, message in
     let service = buildEchoService(ssl, address, port, message)
     let sem = DispatchSemaphore(value: 0)
-    let collectCall = try service.collect() {result in
+    let collectCall = try service.collect { result in
       print("result \(result)")
       sem.signal()
     }
     _ = sem.wait(timeout: DispatchTime.distantFuture)
-    let parts = message.components(separatedBy:" ")
+    let parts = message.components(separatedBy: " ")
     for part in parts {
       var requestMessage = Echo_EchoRequest()
       requestMessage.text = part
       print("Sending: " + part)
-      try collectCall.send(requestMessage) {error in print(error)}
+      try collectCall.send(requestMessage) { error in print(error) }
       sleep(1)
     }
     let responseMessage = try collectCall.closeAndReceive()
@@ -137,11 +137,10 @@ Group {
   }
 
   $0.command("update", sslFlag, addressOption("localhost"), portOption, messageOption,
-             description: "Perform a bidirectional-streaming update().")
-  {(ssl, address, port, message) in
+             description: "Perform a bidirectional-streaming update().") { ssl, address, port, message in
     let service = buildEchoService(ssl, address, port, message)
     let sem = DispatchSemaphore(value: 0)
-    let updateCall = try service.update() {result in
+    let updateCall = try service.update { result in
       print("result \(result)")
       sem.signal()
     }
@@ -162,16 +161,16 @@ Group {
         }
       }
     }
-    let parts = message.components(separatedBy:" ")
+    let parts = message.components(separatedBy: " ")
     for part in parts {
       var requestMessage = Echo_EchoRequest()
       requestMessage.text = part
       print("Sending: " + requestMessage.text)
-      try updateCall.send(requestMessage) {error in print(error)}
+      try updateCall.send(requestMessage) { error in print(error) }
       sleep(1)
     }
     try updateCall.closeSend()
     _ = sem.wait(timeout: DispatchTime.distantFuture)
   }
 
-  }.run()
+}.run()

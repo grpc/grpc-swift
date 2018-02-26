@@ -4,6 +4,7 @@ xcuserdata
 .build
 third_party/**
 Plugin/Packages/**
+Plugin/Sources/protoc-gen-swiftgrpc/templates.swift
 Plugin/protoc-*
 Plugin/swiftgrpc.log
 Plugin/echo.*.swift

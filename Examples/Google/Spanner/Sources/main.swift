@@ -13,16 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import Commander
 import Foundation
 import gRPC
 import OAuth2
-import Commander
 
 Group {
-
   $0.command("hello") {
     print("hello")
   }
-  
-}.run()
 
+}.run()

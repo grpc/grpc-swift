@@ -13,27 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Foundation
 import Dispatch
+import Foundation
 
-class EchoProvider : Echo_EchoProvider {
-
+class EchoProvider: Echo_EchoProvider {
   // get returns requests as they were received.
-  func get(request : Echo_EchoRequest, session : Echo_EchoGetSession) throws -> Echo_EchoResponse {
+  func get(request: Echo_EchoRequest, session _: Echo_EchoGetSession) throws -> Echo_EchoResponse {
     var response = Echo_EchoResponse()
     response.text = "Swift echo get: " + request.text
     return response
   }
 
   // expand splits a request into words and returns each word in a separate message.
-  func expand(request : Echo_EchoRequest, session : Echo_EchoExpandSession) throws -> Void {
+  func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws {
     let parts = request.text.components(separatedBy: " ")
     var i = 0
     for part in parts {
       var response = Echo_EchoResponse()
       response.text = "Swift echo expand (\(i)): \(part)"
       let sem = DispatchSemaphore(value: 0)
-      try session.send(response) {sem.signal()}
+      try session.send(response) { sem.signal() }
       _ = sem.wait(timeout: DispatchTime.distantFuture)
       i += 1
       sleep(1)
@@ -41,8 +40,8 @@ class EchoProvider : Echo_EchoProvider {
   }
 
   // collect collects a sequence of messages and returns them concatenated when the caller closes.
-  func collect(session : Echo_EchoCollectSession) throws -> Void {
-    var parts : [String] = []
+  func collect(session: Echo_EchoCollectSession) throws {
+    var parts: [String] = []
     while true {
       do {
         let request = try session.receive()
@@ -59,7 +58,7 @@ class EchoProvider : Echo_EchoProvider {
   }
 
   // update streams back messages as they are received in an input stream.
-  func update(session : Echo_EchoUpdateSession) throws -> Void {
+  func update(session: Echo_EchoUpdateSession) throws {
     var count = 0
     while true {
       do {
@@ -68,7 +67,7 @@ class EchoProvider : Echo_EchoProvider {
         var response = Echo_EchoResponse()
         response.text = "Swift echo update (\(count)): \(request.text)"
         let sem = DispatchSemaphore(value: 0)
-        try session.send(response) {sem.signal()}
+        try session.send(response) { sem.signal() }
         _ = sem.wait(timeout: DispatchTime.distantFuture)
       } catch Echo_EchoServerError.endOfStream {
         break

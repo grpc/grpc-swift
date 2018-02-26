@@ -14,37 +14,37 @@
  * limitations under the License.
  */
 import Foundation
+import PathKit
+import Stencil
 import SwiftProtobuf
 import SwiftProtobufPluginLibrary
-import Stencil
-import PathKit
 
-func Log(_ message : String) {
-  FileHandle.standardError.write((message + "\n").data(using:.utf8)!)
+func Log(_ message: String) {
+  FileHandle.standardError.write((message + "\n").data(using: .utf8)!)
 }
 
 // Code templates use "//-" prefixes to comment-out template operators
 // to keep them from interfering with Swift code formatting tools.
 // Use this to remove them after templates have been expanded.
-func stripMarkers(_ code:String) -> String {
-  let inputLines = code.components(separatedBy:"\n")
+func stripMarkers(_ code: String) -> String {
+  let inputLines = code.components(separatedBy: "\n")
 
-  var outputLines : [String] = []
+  var outputLines: [String] = []
   for line in inputLines {
     if line.contains("//-") {
-      let removed = line.replacingOccurrences(of:"//-", with:"")
-      if (removed.trimmingCharacters(in:CharacterSet.whitespaces) != "") {
+      let removed = line.replacingOccurrences(of: "//-", with: "")
+      if removed.trimmingCharacters(in: CharacterSet.whitespaces) != "" {
         outputLines.append(removed)
       }
     } else {
       outputLines.append(line)
     }
   }
-  return outputLines.joined(separator:"\n")
+  return outputLines.joined(separator: "\n")
 }
 
 // from apple/swift-protobuf/Sources/protoc-gen-swift/StringUtils.swift
-func splitPath(pathname: String) -> (dir:String, base:String, suffix:String) {
+func splitPath(pathname: String) -> (dir: String, base: String, suffix: String) {
   var dir = ""
   var base = ""
   var suffix = ""
@@ -77,13 +77,13 @@ func splitPath(pathname: String) -> (dir:String, base:String, suffix:String) {
   return (dir: dir, base: base, suffix: suffix)
 }
 
-enum OutputNaming : String {
+enum OutputNaming: String {
   case FullPath
   case PathToUnderscores
   case DropPath
 }
 
-var outputNamingOption : OutputNaming = .FullPath // temporarily hard-coded
+var outputNamingOption: OutputNaming = .FullPath // temporarily hard-coded
 
 func outputFileName(component: String, fileDescriptor: FileDescriptor) -> String {
   let ext = "." + component + ".swift"
@@ -100,13 +100,13 @@ func outputFileName(component: String, fileDescriptor: FileDescriptor) -> String
   }
 }
 
-var generatedFiles : [String:Int] = [:]
+var generatedFiles: [String: Int] = [:]
 
 func uniqueOutputFileName(component: String, fileDescriptor: FileDescriptor) -> String {
-  let defaultName = outputFileName(component:component, fileDescriptor:fileDescriptor)
+  let defaultName = outputFileName(component: component, fileDescriptor: fileDescriptor)
   if let count = generatedFiles[defaultName] {
     generatedFiles[defaultName] = count + 1
-    return outputFileName(component:  "\(count)." + component, fileDescriptor: fileDescriptor )
+    return outputFileName(component: "\(count)." + component, fileDescriptor: fileDescriptor)
   } else {
     generatedFiles[defaultName] = 1
     return defaultName
@@ -114,10 +114,9 @@ func uniqueOutputFileName(component: String, fileDescriptor: FileDescriptor) -> 
 }
 
 func main() throws {
-
   // initialize template engine and add custom filters
   let templateEnvironment = Environment(loader: InternalLoader(),
-                                        extensions:[GRPCFilterExtension()])
+                                        extensions: [GRPCFilterExtension()])
 
   // initialize responses
   var response = Google_Protobuf_Compiler_CodeGeneratorResponse()
@@ -125,7 +124,7 @@ func main() throws {
   // read plugin input
   let rawRequest = try Stdin.readall()
   let request = try Google_Protobuf_Compiler_CodeGeneratorRequest(serializedData: rawRequest)
-  
+
   let options = try GeneratorOptions(parameter: request.parameter)
 
   // Build the SwiftProtobufPluginLibrary model of the plugin input
@@ -133,27 +132,26 @@ func main() throws {
 
   // process each .proto file separately
   for fileDescriptor in descriptorSet.files {
-
     if fileDescriptor.services.count > 0 {
       // a package declaration is required for file containing service(s)
       let package = fileDescriptor.package
-      guard package != ""  else {
+      guard package != "" else {
         print("ERROR: no package for \(fileDescriptor.name)")
         continue
       }
-      
+
       // generate separate implementation files for client and server
-      let context : [String:Any] = [
+      let context: [String: Any] = [
         "file": fileDescriptor,
         "client": true,
         "server": true,
         "access": options.visibility.sourceSnippet,
-        "generate_mock_code": options.generateMockCode]
+        "generate_mock_code": options.generateMockCode
+      ]
 
       do {
-
-        let grpcFileName = uniqueOutputFileName(component:"grpc", fileDescriptor:fileDescriptor)
-        let grpcCode = try templateEnvironment.renderTemplate(name:"main.swift", context: context)
+        let grpcFileName = uniqueOutputFileName(component: "grpc", fileDescriptor: fileDescriptor)
+        let grpcCode = try templateEnvironment.renderTemplate(name: "main.swift", context: context)
         var grpcFile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
         grpcFile.name = grpcFileName
         grpcFile.content = stripMarkers(grpcCode)
@@ -173,5 +171,5 @@ func main() throws {
 do {
   try main()
 } catch (let error) {
-  Log("ERROR: \(error)")	
+  Log("ERROR: \(error)")
 }

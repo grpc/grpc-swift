@@ -57,11 +57,11 @@ s += "//\n"
 s += "func loadTemplates() -> [String:String] {\n"
 s += "  var templates : [String:String] = [:]\n"
 
-let filenames = try FileManager.default.contentsOfDirectory(atPath:TEMPLATES)
+let filenames = try FileManager.default.contentsOfDirectory(atPath: TEMPLATES)
 for filename in filenames {
   if filename.hasSuffix(".swift") {
-    let fileURL = URL(fileURLWithPath:TEMPLATES + "/" + filename)
-    let filedata = try Data(contentsOf:fileURL)
+    let fileURL = URL(fileURLWithPath: TEMPLATES + "/" + filename)
+    let filedata = try Data(contentsOf: fileURL)
     let encoding = filedata.base64EncodedString()
     s += "\n"
     s += "  templates[\"" + filename + "\"] = \"" + encoding + "\"\n"
