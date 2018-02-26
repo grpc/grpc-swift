@@ -47,8 +47,8 @@ fileprivate class {{ .|service:file,service }}SessionImpl: {{ .|service:file,ser
   }
 }
 
-//-{% if generate_mock_code %}
-class {{ .|service:file,service }}SessionStub: {{ .|service:file,service }}Session {
+//-{% if generateTestStubs %}
+class {{ .|service:file,service }}SessionTestStub: {{ .|service:file,service }}Session {
   var requestMetadata = Metadata()
 
   var statusCode = StatusCode.ok

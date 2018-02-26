@@ -72,9 +72,9 @@ fileprivate final class {{ .|call:file,service,method }}Impl: {{ .|call:file,ser
   }
 }
 
-//-{% if generate_mock_code %}
+//-{% if generateTestStubs %}
 /// Simple fake implementation of {{ .|call:file,service,method }} that returns a previously-defined set of results.
-class {{ .|call:file,service,method }}Stub: {{ .|call:file,service,method }} {
+class {{ .|call:file,service,method }}TestStub: {{ .|call:file,service,method }} {
   var outputs: [{{ method|output }}] = []
   
   func receive(completion:@escaping ({{ method|output }}?, {{ .|clienterror:file,service }}?)->()) throws {

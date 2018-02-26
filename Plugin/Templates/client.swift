@@ -159,11 +159,11 @@
   //-{% endfor %}
 }
 
-//-{% if generate_mock_code %}
+//-{% if generateTestStubs %}
 /// Simple fake implementation of {{ .|serviceclass:file,service }} that returns a previously-defined set of results
 /// and stores request values passed into it for later verification.
 /// Note: completion blocks are NOT called with this default implementation, and asynchronous unary calls are NOT implemented!
-class {{ .|serviceclass:file,service }}Stub: {{ .|serviceclass:file,service }} {
+class {{ .|serviceclass:file,service }}TestStub: {{ .|serviceclass:file,service }} {
   var channel: Channel { fatalError("not implemented") }
   var metadata = Metadata()
   var host = ""

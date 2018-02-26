@@ -47,11 +47,11 @@ class GeneratorOptions {
   }
 
   let visibility: Visibility
-  let generateMockCode: Bool
+  let generateTestStubs: Bool
 
   init(parameter: String?) throws {
     var visibility: Visibility = .Internal
-    var generateMockCode = false
+    var generateTestStubs = false
 
     for pair in GeneratorOptions.parseParameter(string: parameter) {
       switch pair.key {
@@ -62,10 +62,10 @@ class GeneratorOptions {
           throw GenerationError.invalidParameterValue(name: pair.key,
                                                       value: pair.value)
         }
-      case "generate_mock_code":
+      case "TestStubs":
         switch pair.value {
-        case "true": generateMockCode = true
-        case "false": generateMockCode = false
+        case "true": generateTestStubs = true
+        case "false": generateTestStubs = false
         default: throw GenerationError.invalidParameterValue(name: pair.key,
                                                              value: pair.value)
         }
@@ -75,7 +75,7 @@ class GeneratorOptions {
     }
 
     self.visibility = visibility
-    self.generateMockCode = generateMockCode
+    self.generateTestStubs = generateTestStubs
   }
 
   static func parseParameter(string: String?) -> [(key: String, value: String)] {

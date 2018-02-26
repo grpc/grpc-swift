@@ -92,10 +92,10 @@ fileprivate final class {{ .|call:file,service,method }}Impl: {{ .|call:file,ser
   }
 }
 
-//-{% if generate_mock_code %}
+//-{% if generateTestStubs %}
 /// Simple fake implementation of {{ .|call:file,service,method }} that returns a previously-defined set of results
 /// and stores sent values for later verification.
-class {{ .|call:file,service,method }}Stub: {{ .|call:file,service,method }} {
+class {{ .|call:file,service,method }}TestStub: {{ .|call:file,service,method }} {
   var inputs: [{{ method|input }}] = []
   var outputs: [{{ method|output }}] = []
   

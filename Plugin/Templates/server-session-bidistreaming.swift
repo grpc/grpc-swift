@@ -68,10 +68,10 @@ fileprivate final class {{ .|session:file,service,method }}Impl : {{ .|service:f
   }
 }
 
-//-{% if generate_mock_code %}
+//-{% if generateTestStubs %}
 /// Simple fake implementation of {{ .|session:file,service,method }} that returns a previously-defined set of results
 /// and stores sent values for later verification.
-class {{ .|session:file,service,method }}Stub : {{ .|service:file,service }}SessionStub, {{ .|session:file,service,method }} {
+class {{ .|session:file,service,method }}TestStub : {{ .|service:file,service }}SessionTestStub, {{ .|session:file,service,method }} {
   var inputs: [{{ method|input }}] = []
   var outputs: [{{ method|output }}] = []
 
