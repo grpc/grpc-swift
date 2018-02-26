@@ -21,13 +21,13 @@ import Foundation // for String.Encoding
 /// A gRPC request handler
 public class Handler {
   /// Pointer to underlying C representation
-  private var underlyingHandler: UnsafeMutableRawPointer
+  fileprivate let underlyingHandler: UnsafeMutableRawPointer
 
   /// Completion queue for handler response operations
-  var completionQueue: CompletionQueue
+  let completionQueue: CompletionQueue
 
   /// Metadata received with the request
-  public var requestMetadata: Metadata
+  public let requestMetadata: Metadata
 
   /// A Call object that can be used to respond to the request
   lazy var call: Call = {
@@ -236,5 +236,13 @@ public class Handler {
       }
     }
     try call.perform(operations)
+  }
+}
+
+extension Handler: Hashable {
+  public var hashValue: Int { return underlyingHandler.hashValue }
+  
+  public static func ==(A: Handler, B: Handler) -> Bool {
+    return A === B
   }
 }
