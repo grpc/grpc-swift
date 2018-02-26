@@ -70,7 +70,7 @@
   //-{% endfor %}
 }
 
-{{ access }} final class {{ .|serviceclass:file,service }}Impl: {{ .|serviceclass:file,service }} {
+{{ access }} final class {{ .|serviceclass:file,service }}Client: {{ .|serviceclass:file,service }} {
   {{ access }} private(set) var channel: Channel
 
   {{ access }} var metadata : Metadata
