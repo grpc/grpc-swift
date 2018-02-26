@@ -22,16 +22,16 @@ import Foundation
 /// gRPC Server
 public class Server {
   /// Pointer to underlying C representation
-  private var underlyingServer: UnsafeMutableRawPointer
+  private let underlyingServer: UnsafeMutableRawPointer
 
   /// Completion queue used for server operations
-  var completionQueue: CompletionQueue
+  let completionQueue: CompletionQueue
 
   /// Active handlers
-  private var handlers: NSMutableSet
+  private var handlers = Set<Handler>()
 
   /// Mutex for synchronizing access to handlers
-  private var handlersMutex: Mutex = Mutex()
+  private let handlersMutex: Mutex = Mutex()
 
   /// Optional callback when server stops serving
   private var onCompletion: (() -> Void)?
@@ -43,7 +43,6 @@ public class Server {
     underlyingServer = cgrpc_server_create(address)
     completionQueue = CompletionQueue(
       underlyingCompletionQueue: cgrpc_server_get_completion_queue(underlyingServer), name: "Server " + address)
-    handlers = NSMutableSet()
   }
 
   /// Initializes a secure Server
@@ -53,9 +52,14 @@ public class Server {
   /// - Parameter certs: the server's certificates
   public init(address: String, key: String, certs: String) {
     underlyingServer = cgrpc_server_create_secure(address, key, certs)
+<<<<<<< HEAD
     completionQueue = CompletionQueue(
       underlyingCompletionQueue: cgrpc_server_get_completion_queue(underlyingServer), name: "Server " + address)
     handlers = NSMutableSet()
+=======
+    completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_server_get_completion_queue(underlyingServer))
+    completionQueue.name = "Server " + address
+>>>>>>> 3602c874d7d72af414fc2d22bc98baf0e2498f88
   }
 
   deinit {
@@ -81,7 +85,7 @@ public class Server {
               if event.success != 0 {
                 // hold onto the handler while it runs
                 self.handlersMutex.synchronize {
-                  self.handlers.add(handler)
+                  self.handlers.insert(handler)
                 }
                 // this will start the completion queue on a new thread
                 handler.completionQueue.runToCompletion(callbackQueue: dispatchQueue) {

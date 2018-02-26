@@ -21,13 +21,13 @@ import Foundation // for String.Encoding
 /// A gRPC request handler
 public class Handler {
   /// Pointer to underlying C representation
-  private var underlyingHandler: UnsafeMutableRawPointer
+  fileprivate let underlyingHandler: UnsafeMutableRawPointer
 
   /// Completion queue for handler response operations
-  var completionQueue: CompletionQueue
+  let completionQueue: CompletionQueue
 
   /// Metadata received with the request
-  public var requestMetadata: Metadata
+  public let requestMetadata: Metadata
 
   /// A Call object that can be used to respond to the request
   lazy var call: Call = {
@@ -37,33 +37,26 @@ public class Handler {
   }()
 
   /// The host name sent with the request
-  public lazy var host: String = {
-    if let string = cgrpc_handler_copy_host(self.underlyingHandler) {
-      defer {
-        cgrpc_free_copied_string(string)
-      }
-      return String(cString: string, encoding: .utf8)!
-    } else {
-      return ""
-    }
+  public lazy var host: String? = {
+    // We actually know that this method will never return nil,
+    // so we can forcibly unwrap the result. (Also below.)
+    let string = cgrpc_handler_copy_host(self.underlyingHandler)!
+    defer { cgrpc_free_copied_string(string) }
+    return String(cString: string, encoding: .utf8)
   }()
 
   /// The method name sent with the request
-  public lazy var method: String = {
-    if let string = cgrpc_handler_copy_method(self.underlyingHandler) {
-      defer {
-        cgrpc_free_copied_string(string)
-      }
-      return String(cString: string, encoding: .utf8)!
-    } else {
-      return ""
-    }
+  public lazy var method: String? = {
+    let string = cgrpc_handler_copy_method(self.underlyingHandler)!
+    defer { cgrpc_free_copied_string(string) }
+    return String(cString: string, encoding: .utf8)
   }()
 
   /// The caller address associated with the request
-  public lazy var caller: String = {
-    String(cString: cgrpc_handler_call_peer(self.underlyingHandler),
-           encoding: .utf8)!
+  public lazy var caller: String? = {
+    let string = cgrpc_handler_call_peer(self.underlyingHandler)!
+    defer { cgrpc_free_copied_string(string) }
+    return String(cString: string, encoding: .utf8)
   }()
 
   /// Initializes a Handler
@@ -243,5 +236,13 @@ public class Handler {
       }
     }
     try call.perform(operations)
+  }
+}
+
+extension Handler: Hashable {
+  public var hashValue: Int { return underlyingHandler.hashValue }
+  
+  public static func ==(A: Handler, B: Handler) -> Bool {
+    return A === B
   }
 }
