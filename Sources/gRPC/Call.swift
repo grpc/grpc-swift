@@ -219,11 +219,11 @@ public class Call {
       }
       operations = [
         .sendInitialMetadata(metadata.copy()),
-        .receiveInitialMetadata,
-        .receiveStatusOnClient,
-        .sendMessage(ByteBuffer(data: message)),
+        .sendMessage(ByteBuffer(data:message)),
         .sendCloseFromClient,
-        .receiveMessage
+        .receiveInitialMetadata,
+        .receiveMessage,
+        .receiveStatusOnClient,
       ]
     case .serverStreaming:
       guard let message = message else {
@@ -231,14 +231,16 @@ public class Call {
       }
       operations = [
         .sendInitialMetadata(metadata.copy()),
+        .sendMessage(ByteBuffer(data:message)),
+        .sendCloseFromClient,
         .receiveInitialMetadata,
-        .sendMessage(ByteBuffer(data: message)),
-        .sendCloseFromClient
+        .receiveStatusOnClient,
       ]
     case .clientStreaming, .bidiStreaming:
       operations = [
         .sendInitialMetadata(metadata.copy()),
-        .receiveInitialMetadata
+        .receiveInitialMetadata,
+        .receiveStatusOnClient,
       ]
     }
     try perform(OperationGroup(call: self,
