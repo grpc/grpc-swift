@@ -155,7 +155,7 @@ public class Call {
   private var owned: Bool
 
   /// A queue of pending messages to send over the call
-  private var messageQueue: Array<Data>
+  private var messageQueue: [(dataToSend: Data, errorHandler: (Error) -> Void)] = []
 
   /// True if a message write operation is underway
   private var writing: Bool
@@ -174,7 +174,6 @@ public class Call {
     self.underlyingCall = underlyingCall
     self.owned = owned
     self.completionQueue = completionQueue
-    messageQueue = []
     writing = false
     sendMutex = Mutex()
   }
@@ -258,7 +257,7 @@ public class Call {
         (messageQueue.count == Call.messageQueueMaxLength) {
         throw CallWarning.blocked
       }
-      messageQueue.append(data)
+      messageQueue.append((dataToSend: data, errorHandler: errorHandler))
     } else {
       writing = true
       try sendWithoutBlocking(data: data, errorHandler: errorHandler)
@@ -274,9 +273,9 @@ public class Call {
             self.sendMutex.synchronize {
               // if there are messages pending, send the next one
               if self.messageQueue.count > 0 {
-                let nextMessage = self.messageQueue.removeFirst()
+                let (nextMessage, nextErrorHandler) = self.messageQueue.removeFirst()
                 do {
-                  try self.sendWithoutBlocking(data: nextMessage, errorHandler: errorHandler)
+                  try self.sendWithoutBlocking(data: nextMessage, errorHandler: nextErrorHandler)
                 } catch (let callError) {
                   errorHandler(callError)
                 }
