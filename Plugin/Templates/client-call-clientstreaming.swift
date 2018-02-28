@@ -43,7 +43,7 @@ fileprivate final class {{ .|call:file,service,method }}Impl: {{ .|call:file,ser
   }
 
   /// Call this to start a call. Nonblocking.
-  func start(metadata:Metadata, completion: (CallResult)->()?)
+  func start(metadata:Metadata, completion: ((CallResult)->())?)
     throws -> {{ .|call:file,service,method }} {
       try self.call.start(.clientStreaming, metadata:metadata, completion:completion)
       return self

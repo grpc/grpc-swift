@@ -32,7 +32,7 @@ class EchoProvider: Echo_EchoProvider {
       var response = Echo_EchoResponse()
       response.text = "Swift echo expand (\(i)): \(part)"
       let sem = DispatchSemaphore(value: 0)
-      try session.send(response) { sem.signal() }
+      try session.send(response) { _ in sem.signal() }
       _ = sem.wait(timeout: DispatchTime.distantFuture)
       i += 1
       sleep(1)
@@ -67,7 +67,7 @@ class EchoProvider: Echo_EchoProvider {
         var response = Echo_EchoResponse()
         response.text = "Swift echo update (\(count)): \(request.text)"
         let sem = DispatchSemaphore(value: 0)
-        try session.send(response) { sem.signal() }
+        try session.send(response) { _ in sem.signal() }
         _ = sem.wait(timeout: DispatchTime.distantFuture)
       } catch Echo_EchoServerError.endOfStream {
         break

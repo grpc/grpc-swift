@@ -215,7 +215,7 @@ fileprivate final class Echo_EchoCollectCallImpl: Echo_EchoCollectCall {
   }
 
   /// Call this to start a call. Nonblocking.
-  func start(metadata:Metadata, completion: (CallResult)->()?)
+  func start(metadata:Metadata, completion: ((CallResult)->())?)
     throws -> Echo_EchoCollectCall {
       try self.call.start(.clientStreaming, metadata:metadata, completion:completion)
       return self
@@ -366,19 +366,19 @@ internal protocol Echo_EchoService {
   /// Asynchronous. Server-streaming.
   /// Send the initial message.
   /// Use methods on the returned object to get streamed responses.
-  func expand(_ request: Echo_EchoRequest, completion: @escaping (CallResult)->())
+  func expand(_ request: Echo_EchoRequest, completion: ((CallResult)->())?)
     throws -> Echo_EchoExpandCall
 
   /// Asynchronous. Client-streaming.
   /// Use methods on the returned object to stream messages and
   /// to close the connection and wait for a final response.
-  func collect(completion: @escaping (CallResult)->())
+  func collect(completion: ((CallResult)->())?)
     throws -> Echo_EchoCollectCall
 
   /// Asynchronous. Bidirectional-streaming.
   /// Use methods on the returned object to stream messages,
   /// to wait for replies, and to close the connection.
-  func update(completion: @escaping (CallResult)->())
+  func update(completion: ((CallResult)->())?)
     throws -> Echo_EchoUpdateCall
 
 }

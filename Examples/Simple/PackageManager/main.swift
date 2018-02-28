@@ -115,7 +115,7 @@ func server() throws {
     }
   }
 
-  server.onCompletion {
+  server.onCompletion = {
     print("Server Stopped")
   }
 
