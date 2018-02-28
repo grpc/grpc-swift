@@ -1,5 +1,7 @@
+PATH := ../../Plugin:$(PATH)
 
 all:
+	protoc Protos/*.proto -IProtos --swift_out=Sources --swiftgrpc_out=Sources 
 	swift build -c release
 	cp .build/release/Echo .
 
