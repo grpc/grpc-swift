@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, gRPC Authors All rights reserved.
+ * Copyright 2018, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,18 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import PackageDescription
 
-let package = Package(
-  name: "SwiftGRPC",
-  targets: [
-    Target(name: "gRPC",
-           dependencies: ["CgRPC"]),
-    Target(name: "CgRPC",
-           dependencies: ["BoringSSL"]),
-    Target(name: "RootsEncoder")
-  ],
-  dependencies: [
-    .Package(url: "https://github.com/Zewo/zlib.git", majorVersion: 0, minor: 4),
-    .Package(url: "https://github.com/apple/swift-protobuf.git", majorVersion: 1, minor: 0)
-  ])
+import Dispatch
+import Foundation
+import SwiftProtobuf
+
+public protocol ClientCall: class {
+  static var method: String { get }
+}
+
+open class ClientCallBase: ClientCall {
+  open class var method: String { fatalError("needs to be overridden") }
+
+  public let call: Call
+
+  /// Create a call.
+  public init(_ channel: Channel) {
+    call = channel.makeCall(type(of: self).method)
+  }
+}

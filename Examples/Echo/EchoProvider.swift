@@ -15,6 +15,7 @@
  */
 import Dispatch
 import Foundation
+import gRPC
 
 class EchoProvider: Echo_EchoProvider {
   // get returns requests as they were received.
@@ -46,7 +47,7 @@ class EchoProvider: Echo_EchoProvider {
       do {
         let request = try session.receive()
         parts.append(request.text)
-      } catch Echo_EchoServerError.endOfStream {
+      } catch ServerError.endOfStream {
         break
       } catch (let error) {
         print("\(error)")
@@ -69,7 +70,7 @@ class EchoProvider: Echo_EchoProvider {
         let sem = DispatchSemaphore(value: 0)
         try session.send(response) { _ in sem.signal() }
         _ = sem.wait(timeout: DispatchTime.distantFuture)
-      } catch Echo_EchoServerError.endOfStream {
+      } catch ServerError.endOfStream {
         break
       } catch (let error) {
         print("\(error)")

@@ -60,25 +60,29 @@ Group {
              description: "Run an echo server.") { ssl, address, port in
     let sem = DispatchSemaphore(value: 0)
     let echoProvider = EchoProvider()
+    var echoServer: Echo_EchoServer?
     if ssl {
       print("starting secure server")
       let certificateURL = URL(fileURLWithPath: "ssl.crt")
       let keyURL = URL(fileURLWithPath: "ssl.key")
-      if let echoServer = Echo_EchoServer(address: address + ":" + port,
-                                          certificateURL: certificateURL,
-                                          keyURL: keyURL,
-                                          provider: echoProvider) {
-        echoServer.start()
-      }
+      echoServer = Echo_EchoServer(address: address + ":" + port,
+                                   certificateURL: certificateURL,
+                                   keyURL: keyURL,
+                                   provider: echoProvider)
+      echoServer?.start()
     } else {
       print("starting insecure server")
-      let echoServer = Echo_EchoServer(address: address + ":" + port,
-                                       provider: echoProvider)
-      echoServer.start()
+      echoServer = Echo_EchoServer(address: address + ":" + port,
+                                   provider: echoProvider)
+      echoServer?.start()
     }
     // This blocks to keep the main thread from finishing while the server runs,
     // but the server never exits. Kill the process to stop it.
     _ = sem.wait(timeout: DispatchTime.distantFuture)
+    // This suppresses a "variable echoServer was written to, but never read" warning.
+    _ = echoServer
+    // And this ensures that echoServer doesn't get deallocated right after it is created.
+    echoServer = nil
   }
 
   $0.command("get", sslFlag, addressOption("localhost"), portOption, messageOption,
@@ -107,7 +111,7 @@ Group {
       do {
         let responseMessage = try expandCall.receive()
         print("expand received: \(responseMessage.text)")
-      } catch Echo_EchoClientError.endOfStream {
+      } catch ClientError.endOfStream {
         running = false
       }
     }
@@ -150,7 +154,7 @@ Group {
         do {
           let responseMessage = try updateCall.receive()
           print("update received: \(responseMessage.text)")
-        } catch Echo_EchoClientError.endOfStream {
+        } catch ClientError.endOfStream {
           running = false
         } catch (let error) {
           print("error: \(error)")
