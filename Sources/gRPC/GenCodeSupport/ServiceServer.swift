@@ -21,28 +21,28 @@ import SwiftProtobuf
 open class ServiceServer {
   public let address: String
   public let server: Server
-  
+
   /// Create a server that accepts insecure connections.
   public init(address: String) {
     gRPC.initialize()
     self.address = address
-    self.server = Server(address: address)
+    server = Server(address: address)
   }
-  
+
   /// Create a server that accepts secure connections.
-  public init?(address:String, certificateURL: URL, keyURL: URL) {
+  public init?(address: String, certificateURL: URL, keyURL: URL) {
     gRPC.initialize()
     self.address = address
     guard let certificate = try? String(contentsOf: certificateURL, encoding: .utf8),
       let key = try? String(contentsOf: keyURL, encoding: .utf8)
-      else { return nil }
-    self.server = Server(address: address, key: key, certs: certificate)
+    else { return nil }
+    server = Server(address: address, key: key, certs: certificate)
   }
-  
+
   /// Handle the given method. Needs to be overridden by actual implementations.
   /// Returns whether the method was actually handled.
   open func handleMethod(_ method: String, handler: Handler, queue: DispatchQueue) throws -> Bool { fatalError("needs to be overridden") }
-  
+
   /// Start the server.
   public func start(queue: DispatchQueue = DispatchQueue.global()) {
     server.run { [weak self] handler in
@@ -50,7 +50,7 @@ open class ServiceServer {
         print("ERROR: ServiceServer has been asked to handle a request even though it has already been deallocated")
         return
       }
-      
+
       let unwrappedHost = handler.host ?? "(nil)"
       let unwrappedMethod = handler.method ?? "(nil)"
       let unwrappedCaller = handler.caller ?? "(nil)"
@@ -58,11 +58,11 @@ open class ServiceServer {
         + " calling " + unwrappedMethod
         + " from " + unwrappedCaller
         + " with " + handler.requestMetadata.description)
-      
+
       do {
         if try !strongSelf.handleMethod(unwrappedMethod, handler: handler, queue: queue) {
           // handle unknown requests
-          try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
+          try handler.receiveMessage(initialMetadata: Metadata()) { _ in
             try handler.sendResponse(statusCode: .unimplemented,
                                      statusMessage: "unknown method " + unwrappedMethod,
                                      trailingMetadata: Metadata())
