@@ -43,110 +43,36 @@ internal protocol Echo_EchoExpandCall: ClientCallServerStreamingBase {
   /// Call this to wait for a result. Blocking.
   func receive() throws -> Echo_EchoResponse
   /// Call this to wait for a result. Nonblocking.
-  func receive(completion:@escaping (Echo_EchoResponse?, ClientError?)->()) throws
+  func receive(completion: @escaping (Echo_EchoResponse?, ClientError?) -> Void) throws
 }
 
 fileprivate final class Echo_EchoExpandCallImpl: ClientCallServerStreamingImpl<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoExpandCall {
   override class var method: String { return "/echo.Echo/Expand" }
 }
 
-/// Simple fake implementation of Echo_EchoExpandCall that returns a previously-defined set of results.
 class Echo_EchoExpandCallTestStub: ClientCallServerStreamingTestStub<Echo_EchoResponse>, Echo_EchoExpandCall {
   override class var method: String { return "/echo.Echo/Expand" }
 }
 
 /// Collect (Client Streaming)
-internal protocol Echo_EchoCollectCall {
+internal protocol Echo_EchoCollectCall: ClientCallClientStreamingBase {
   /// Call this to send each message in the request stream. Nonblocking.
-  func send(_ message:Echo_EchoRequest, errorHandler:@escaping (Error)->()) throws
+  func send(_ message: Echo_EchoRequest, errorHandler: @escaping (Error) -> Void) throws
   
   /// Call this to close the connection and wait for a response. Blocking.
   func closeAndReceive() throws -> Echo_EchoResponse
   /// Call this to close the connection and wait for a response. Nonblocking.
-  func closeAndReceive(completion:@escaping (Echo_EchoResponse?, Echo_EchoClientError?)->()) throws
-  
-  /// Cancel the call.
-  func cancel()
+  func closeAndReceive(completion: @escaping (Echo_EchoResponse?, ClientError?) -> Void) throws
 }
 
-internal extension Echo_EchoCollectCall {
-  func closeAndReceive() throws -> Echo_EchoResponse {
-    var returnError : Echo_EchoClientError?
-    var returnResponse : Echo_EchoResponse!
-    let sem = DispatchSemaphore(value: 0)
-    do {
-      try closeAndReceive() {response, error in
-        returnResponse = response
-        returnError = error
-        sem.signal()
-      }
-      _ = sem.wait(timeout: DispatchTime.distantFuture)
-    } catch (let error) {
-      throw error
-    }
-    if let returnError = returnError {
-      throw returnError
-    }
-    return returnResponse
-  }
-}
-
-fileprivate final class Echo_EchoCollectCallImpl: Echo_EchoCollectCall {
-  private var call : Call
-
-  /// Create a call.
-  init(_ channel: Channel) {
-    self.call = channel.makeCall("/echo.Echo/Collect")
-  }
-
-  /// Call this to start a call. Nonblocking.
-  func start(metadata:Metadata, completion: ((CallResult)->())?)
-    throws -> Echo_EchoCollectCall {
-      try self.call.start(.clientStreaming, metadata:metadata, completion:completion)
-      return self
-  }
-
-  func send(_ message:Echo_EchoRequest, errorHandler:@escaping (Error)->()) throws {
-    let messageData = try message.serializedData()
-    try call.sendMessage(data:messageData, errorHandler:errorHandler)
-  }
-
-  func closeAndReceive(completion:@escaping (Echo_EchoResponse?, Echo_EchoClientError?)->()) throws {
-    do {
-      try call.receiveMessage() {(responseData) in
-        if let responseData = responseData,
-          let response = try? Echo_EchoResponse(serializedData:responseData) {
-          completion(response, nil)
-        } else {
-          completion(nil, Echo_EchoClientError.invalidMessageReceived)
-        }
-      }
-      try call.close(completion:{})
-    } catch (let error) {
-      throw error
-    }
-  }
-
-  func cancel() {
-    call.cancel()
-  }
+fileprivate final class Echo_EchoCollectCallImpl: ClientCallClientStreamingImpl<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectCall {
+  override class var method: String { return "/echo.Echo/Collect" }
 }
 
 /// Simple fake implementation of Echo_EchoCollectCall
 /// stores sent values for later verification and finall returns a previously-defined result.
-class Echo_EchoCollectCallTestStub: Echo_EchoCollectCall {
-  var inputs: [Echo_EchoRequest] = []
-  var output: Echo_EchoResponse?
-
-  func send(_ message:Echo_EchoRequest, errorHandler:@escaping (Error)->()) throws {
-    inputs.append(message)
-  }
-  
-  func closeAndReceive(completion:@escaping (Echo_EchoResponse?, Echo_EchoClientError?)->()) throws {
-    completion(output!, nil)
-  }
-
-  func cancel() { }
+class Echo_EchoCollectCallTestStub: ClientCallClientStreamingTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectCall {
+  override class var method: String { return "/echo.Echo/Collect" }
 }
 
 /// Update (Bidirectional Streaming)
