@@ -1,3 +1,5 @@
+// swift-tools-version:4.0
+
 /*
  * Copyright 2017, gRPC Authors All rights reserved.
  *
@@ -14,11 +16,22 @@
  * limitations under the License.
  */
 import PackageDescription
-let package = Package (
-    name: "NaturalLanguage",
-    dependencies: [
-        .Package(url: "https://github.com/grpc/grpc-swift.git", Version(0,3,3)),
-        .Package(url: "https://github.com/apple/swift-protobuf.git", Version(1,0,2)),
-        .Package(url: "https://github.com/google/auth-library-swift.git", Version(0,3,6)),
-    ]
-)
+
+let package = Package(
+  name: "NaturalLanguage",
+  dependencies: [
+    .package(url: "../../..", .branch("HEAD")),
+    .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.0.2"),
+    .package(url: "https://github.com/kylef/Commander.git", from: "0.8.0"),
+    .package(url: "https://github.com/google/auth-library-swift.git", from: "0.3.6")
+  ],
+  targets: [
+    .target(name: "NaturalLanguage",
+            dependencies: [
+              "SwiftGRPC",
+              "SwiftProtobuf",
+              "Commander",
+	      "OAuth2"
+            ],
+	    path: "Sources")
+  ])
