@@ -97,8 +97,10 @@ Group {
     var requestMessage = Echo_EchoRequest()
     requestMessage.text = message
     print("expand sending: " + requestMessage.text)
+    let sem = DispatchSemaphore(value: 0)
     let expandCall = try service.expand(requestMessage) { result in
       print("expand completed with result \(result)")
+      sem.signal()
     }
     var running = true
     while running {
@@ -106,17 +108,19 @@ Group {
         let responseMessage = try expandCall.receive()
         print("expand received: \(responseMessage.text)")
       } catch Echo_EchoClientError.endOfStream {
-        print("expand closed")
         running = false
       }
     }
+    _ = sem.wait(timeout: DispatchTime.distantFuture)
   }
 
   $0.command("collect", sslFlag, addressOption("localhost"), portOption, messageOption,
              description: "Perform a client-streaming collect().") { ssl, address, port, message in
     let service = buildEchoService(ssl, address, port, message)
+    let sem = DispatchSemaphore(value: 0)
     let collectCall = try service.collect { result in
       print("collect completed with result \(result)")
+      sem.signal()
     }
     let parts = message.components(separatedBy: " ")
     for part in parts {
@@ -128,16 +132,18 @@ Group {
     }
     let responseMessage = try collectCall.closeAndReceive()
     print("collect received: \(responseMessage.text)")
+    _ = sem.wait(timeout: DispatchTime.distantFuture)
   }
 
   $0.command("update", sslFlag, addressOption("localhost"), portOption, messageOption,
              description: "Perform a bidirectional-streaming update().") { ssl, address, port, message in
     let service = buildEchoService(ssl, address, port, message)
+    let sem = DispatchSemaphore(value: 0)
     let updateCall = try service.update { result in
       print("update completed with result \(result)")
+      sem.signal()
     }
 
-    let sem = DispatchSemaphore(value: 0)
     DispatchQueue.global().async {
       var running = true
       while running {
@@ -145,8 +151,6 @@ Group {
           let responseMessage = try updateCall.receive()
           print("update received: \(responseMessage.text)")
         } catch Echo_EchoClientError.endOfStream {
-          print("update closed")
-          sem.signal()
           running = false
         } catch (let error) {
           print("error: \(error)")

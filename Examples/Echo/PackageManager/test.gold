@@ -5,7 +5,6 @@ expand received: Swift echo expand (0): Testing
 expand received: Swift echo expand (1): 1
 expand received: Swift echo expand (2): 2
 expand received: Swift echo expand (3): 3
-expand closed
 expand completed with result status ok: OK
 
 
@@ -25,7 +24,6 @@ update sending: 2
 update received: Swift echo update (3): 2
 update sending: 3
 update received: Swift echo update (4): 3
-update closed
 update completed with result status ok: OK
 
 
