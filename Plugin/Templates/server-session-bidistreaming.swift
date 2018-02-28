@@ -4,7 +4,7 @@
 
   /// Send a message. Nonblocking.
   func send(_ response: {{ method|output }}, completion: ((Bool) -> Void)?) throws
-  
+
   /// Close a connection. Blocks until the connection is closed.
   func close() throws
 }

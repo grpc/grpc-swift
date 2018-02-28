@@ -26,7 +26,7 @@ import Dispatch
 import gRPC
 import SwiftProtobuf
 
-internal protocol Echo_EchoGetCall: ClientCallUnary { }
+internal protocol Echo_EchoGetCall: ClientCallUnary {}
 
 fileprivate final class Echo_EchoGetCallBase: ClientCallUnaryBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoGetCall {
   override class var method: String { return "/echo.Echo/Get" }
@@ -50,7 +50,7 @@ class Echo_EchoExpandCallTestStub: ClientCallServerStreamingTestStub<Echo_EchoRe
 internal protocol Echo_EchoCollectCall: ClientCallClientStreaming {
   /// Call this to send each message in the request stream. Nonblocking.
   func send(_ message: Echo_EchoRequest, errorHandler: @escaping (Error) -> Void) throws
-  
+
   /// Call this to close the connection and wait for a response. Blocking.
   func closeAndReceive() throws -> Echo_EchoResponse
   /// Call this to close the connection and wait for a response. Nonblocking.
@@ -72,10 +72,10 @@ internal protocol Echo_EchoUpdateCall: ClientCallBidirectionalStreaming {
   func receive() throws -> Echo_EchoResponse
   /// Call this to wait for a result. Nonblocking.
   func receive(completion: @escaping (Echo_EchoResponse?, ClientError?) -> Void) throws
-  
+
   /// Call this to send each message in the request stream.
   func send(_ message: Echo_EchoRequest, errorHandler: @escaping (Error) -> Void) throws
-  
+
   /// Call this to close the sending connection. Blocking.
   func closeSend() throws
   /// Call this to close the sending connection. Nonblocking.
@@ -122,8 +122,7 @@ internal final class Echo_EchoServiceClient: ServiceClientBase, Echo_EchoService
       .run(request: request, metadata: metadata)
   }
   /// Asynchronous. Unary.
-  internal func get(_ request: Echo_EchoRequest,
-                  completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall {
+  internal func get(_ request: Echo_EchoRequest, completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall {
     return try Echo_EchoGetCallBase(channel)
       .start(request: request, metadata: metadata, completion: completion)
   }
@@ -133,7 +132,7 @@ internal final class Echo_EchoServiceClient: ServiceClientBase, Echo_EchoService
   /// Use methods on the returned object to get streamed responses.
   internal func expand(_ request: Echo_EchoRequest, completion: ((CallResult) -> Void)?) throws -> Echo_EchoExpandCall {
     return try Echo_EchoExpandCallBase(channel)
-      .start(request:request, metadata:metadata, completion:completion)
+      .start(request: request, metadata: metadata, completion: completion)
   }
 
   /// Asynchronous. Client-streaming.
@@ -141,7 +140,7 @@ internal final class Echo_EchoServiceClient: ServiceClientBase, Echo_EchoService
   /// to close the connection and wait for a final response.
   internal func collect(completion: ((CallResult) -> Void)?) throws -> Echo_EchoCollectCall {
     return try Echo_EchoCollectCallBase(channel)
-       .start(metadata: metadata, completion: completion)
+      .start(metadata: metadata, completion: completion)
   }
 
   /// Asynchronous. Bidirectional-streaming.
@@ -169,7 +168,7 @@ class Echo_EchoServiceTestStub: ServiceClientTestStubBase, Echo_EchoService {
   var expandRequests: [Echo_EchoRequest] = []
   var expandCalls: [Echo_EchoExpandCall] = []
   func expand(_ request: Echo_EchoRequest, completion: ((CallResult) -> Void)?) throws -> Echo_EchoExpandCall {
-      expandRequests.append(request)
+    expandRequests.append(request)
     defer { expandCalls.removeFirst() }
     return expandCalls.first!
   }
@@ -191,13 +190,13 @@ class Echo_EchoServiceTestStub: ServiceClientTestStubBase, Echo_EchoService {
 
 /// To build a server, implement a class that conforms to this protocol.
 internal protocol Echo_EchoProvider {
-  func get(request : Echo_EchoRequest, session : Echo_EchoGetSession) throws -> Echo_EchoResponse
-  func expand(request : Echo_EchoRequest, session : Echo_EchoExpandSession) throws
-  func collect(session : Echo_EchoCollectSession) throws
-  func update(session : Echo_EchoUpdateSession) throws
+  func get(request: Echo_EchoRequest, session: Echo_EchoGetSession) throws -> Echo_EchoResponse
+  func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws
+  func collect(session: Echo_EchoCollectSession) throws
+  func update(session: Echo_EchoUpdateSession) throws
 }
 
-internal protocol Echo_EchoGetSession: ServerSessionUnary { }
+internal protocol Echo_EchoGetSession: ServerSessionUnary {}
 
 fileprivate final class Echo_EchoGetSessionBase: ServerSessionUnaryBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoGetSession {}
 
@@ -230,7 +229,7 @@ internal protocol Echo_EchoUpdateSession: ServerSessionBidirectionalStreaming {
 
   /// Send a message. Nonblocking.
   func send(_ response: Echo_EchoResponse, completion: ((Bool) -> Void)?) throws
-  
+
   /// Close a connection. Blocks until the connection is closed.
   func close() throws
 }

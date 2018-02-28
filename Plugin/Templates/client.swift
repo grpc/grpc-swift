@@ -55,8 +55,7 @@
       .run(request: request, metadata: metadata)
   }
   /// Asynchronous. Unary.
-  {{ access }} func {{ method|methodDescriptorName|lowercase }}(_ request: {{ method|input }},
-                  completion: @escaping ({{ method|output }}?, CallResult) -> Void) throws -> {{ .|call:file,service,method }} {
+  {{ access }} func {{ method|methodDescriptorName|lowercase }}(_ request: {{ method|input }}, completion: @escaping ({{ method|output }}?, CallResult) -> Void) throws -> {{ .|call:file,service,method }} {
     return try {{ .|call:file,service,method }}Base(channel)
       .start(request: request, metadata: metadata, completion: completion)
   }
@@ -67,7 +66,7 @@
   /// Use methods on the returned object to get streamed responses.
   {{ access }} func {{ method|methodDescriptorName|lowercase }}(_ request: {{ method|input }}, completion: ((CallResult) -> Void)?) throws -> {{ .|call:file,service,method }} {
     return try {{ .|call:file,service,method }}Base(channel)
-      .start(request:request, metadata:metadata, completion:completion)
+      .start(request: request, metadata: metadata, completion: completion)
   }
   //-{% endif %}
   //-{% if method|methodIsClientStreaming %}
@@ -76,7 +75,7 @@
   /// to close the connection and wait for a final response.
   {{ access }} func {{ method|methodDescriptorName|lowercase }}(completion: ((CallResult) -> Void)?) throws -> {{ .|call:file,service,method }} {
     return try {{ .|call:file,service,method }}Base(channel)
-       .start(metadata: metadata, completion: completion)
+      .start(metadata: metadata, completion: completion)
   }
   //-{% endif %}
   //-{% if method|methodIsBidiStreaming %}
@@ -111,7 +110,7 @@ class {{ .|serviceclass:file,service }}TestStub: ServiceClientTestStubBase, {{ .
   var {{ method|methodDescriptorName|lowercase }}Requests: [{{ method|input }}] = []
   var {{ method|methodDescriptorName|lowercase }}Calls: [{{ .|call:file,service,method }}] = []
   func {{ method|methodDescriptorName|lowercase }}(_ request: {{ method|input }}, completion: ((CallResult) -> Void)?) throws -> {{ .|call:file,service,method }} {
-      {{ method|methodDescriptorName|lowercase }}Requests.append(request)
+    {{ method|methodDescriptorName|lowercase }}Requests.append(request)
     defer { {{ method|methodDescriptorName|lowercase }}Calls.removeFirst() }
     return {{ method|methodDescriptorName|lowercase }}Calls.first!
   }

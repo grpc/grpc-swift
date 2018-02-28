@@ -3,16 +3,16 @@
 {{ access }} protocol {{ .|provider:file,service }} {
   //-{% for method in service.methods %}
   //-{% if method|methodIsUnary %}
-  func {{ method|methodDescriptorName|lowercase }}(request : {{ method|input }}, session : {{ .|session:file,service,method }}) throws -> {{ method|output }}
+  func {{ method|methodDescriptorName|lowercase }}(request: {{ method|input }}, session: {{ .|session:file,service,method }}) throws -> {{ method|output }}
   //-{% endif %}
   //-{% if method|methodIsServerStreaming %}
-  func {{ method|methodDescriptorName|lowercase }}(request : {{ method|input }}, session : {{ .|session:file,service,method }}) throws
+  func {{ method|methodDescriptorName|lowercase }}(request: {{ method|input }}, session: {{ .|session:file,service,method }}) throws
   //-{% endif %}
   //-{% if method|methodIsClientStreaming %}
-  func {{ method|methodDescriptorName|lowercase }}(session : {{ .|session:file,service,method }}) throws
+  func {{ method|methodDescriptorName|lowercase }}(session: {{ .|session:file,service,method }}) throws
   //-{% endif %}
   //-{% if method|methodIsBidiStreaming %}
-  func {{ method|methodDescriptorName|lowercase }}(session : {{ .|session:file,service,method }}) throws
+  func {{ method|methodDescriptorName|lowercase }}(session: {{ .|session:file,service,method }}) throws
   //-{% endif %}
   //-{% endfor %}
 }

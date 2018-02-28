@@ -1,4 +1,4 @@
-{{ access }} protocol {{ .|session:file,service,method }}: ServerSessionUnary { }
+{{ access }} protocol {{ .|session:file,service,method }}: ServerSessionUnary {}
 
 fileprivate final class {{ .|session:file,service,method }}Base: ServerSessionUnaryBase<{{ method|input }}, {{ method|output }}>, {{ .|session:file,service,method }} {}
 
