@@ -61,7 +61,7 @@ Group {
     let sem = DispatchSemaphore(value: 0)
     let echoProvider = EchoProvider()
     if ssl {
-      print("Starting secure server")
+      print("starting secure server")
       let certificateURL = URL(fileURLWithPath: "ssl.crt")
       let keyURL = URL(fileURLWithPath: "ssl.key")
       if let echoServer = Echo_EchoServer(address: address + ":" + port,
@@ -71,7 +71,7 @@ Group {
         echoServer.start()
       }
     } else {
-      print("Starting insecure server")
+      print("starting insecure server")
       let echoServer = Echo_EchoServer(address: address + ":" + port,
                                        provider: echoProvider)
       echoServer.start()
@@ -86,7 +86,7 @@ Group {
     let service = buildEchoService(ssl, address, port, message)
     var requestMessage = Echo_EchoRequest()
     requestMessage.text = message
-    print("Sending: " + requestMessage.text)
+    print("get sending: " + requestMessage.text)
     let responseMessage = try service.get(requestMessage)
     print("get received: " + responseMessage.text)
   }
@@ -96,7 +96,7 @@ Group {
     let service = buildEchoService(ssl, address, port, message)
     var requestMessage = Echo_EchoRequest()
     requestMessage.text = message
-    print("Sending: " + requestMessage.text)
+    print("expand sending: " + requestMessage.text)
     let expandCall = try service.expand(requestMessage) { result in
       print("expand completed with result \(result)")
     }
@@ -104,7 +104,7 @@ Group {
     while running {
       do {
         let responseMessage = try expandCall.receive()
-        print("Received: \(responseMessage.text)")
+        print("expand received: \(responseMessage.text)")
       } catch Echo_EchoClientError.endOfStream {
         print("expand closed")
         running = false
@@ -122,12 +122,12 @@ Group {
     for part in parts {
       var requestMessage = Echo_EchoRequest()
       requestMessage.text = part
-      print("Sending: " + part)
+      print("collect sending: " + part)
       try collectCall.send(requestMessage) { error in print(error) }
       sleep(1)
     }
     let responseMessage = try collectCall.closeAndReceive()
-    print("Received: \(responseMessage.text)")
+    print("collect received: \(responseMessage.text)")
   }
 
   $0.command("update", sslFlag, addressOption("localhost"), portOption, messageOption,
@@ -143,7 +143,7 @@ Group {
       while running {
         do {
           let responseMessage = try updateCall.receive()
-          print("Received: \(responseMessage.text)")
+          print("update received: \(responseMessage.text)")
         } catch Echo_EchoClientError.endOfStream {
           print("update closed")
           sem.signal()
@@ -157,7 +157,7 @@ Group {
     for part in parts {
       var requestMessage = Echo_EchoRequest()
       requestMessage.text = part
-      print("Sending: " + requestMessage.text)
+      print("update sending: " + requestMessage.text)
       try updateCall.send(requestMessage) { error in print(error) }
       sleep(1)
     }

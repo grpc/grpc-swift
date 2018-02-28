@@ -8,7 +8,7 @@ all:
 test:
 	swift build -v $(CFLAGS)
 	swift test -v $(CFLAGS)
-	cd Examples/Echo/PackageManager; make
+	cd Examples/Echo/PackageManager; make test
 	cd Examples/Simple/PackageManager; make
 
 clean:
