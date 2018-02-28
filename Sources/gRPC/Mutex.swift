@@ -21,7 +21,7 @@
 /// but it can be used anywhere
 public class Mutex {
   /// Pointer to underlying C representation
-  private var underlyingMutex: UnsafeMutableRawPointer
+  private let underlyingMutex: UnsafeMutableRawPointer
 
   /// Initializes a Mutex
   public init() {
@@ -53,9 +53,9 @@ public class Mutex {
   /// Runs a block within a locked mutex
   ///
   /// Parameter block: the code to run while the mutex is locked
-  public func synchronize(block: () -> Void) {
+  public func synchronize(block: () throws -> Void) rethrows {
     lock()
-    block()
+    try block()
     unlock()
   }
 }

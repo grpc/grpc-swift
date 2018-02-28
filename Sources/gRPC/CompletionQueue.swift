@@ -42,9 +42,9 @@ enum CompletionType {
 
 /// An event that is returned by the completion queue
 struct CompletionQueueEvent {
-  var type: CompletionType
-  var success: Int32
-  var tag: Int64
+  let type: CompletionType
+  let success: Int32
+  let tag: Int64
 
   init(_ event: grpc_event) {
     type = CompletionType.completionType(event.type)
@@ -56,23 +56,24 @@ struct CompletionQueueEvent {
 /// A gRPC Completion Queue
 class CompletionQueue {
   /// Optional user-provided name for the queue
-  var name: String?
+  let name: String?
 
   /// Pointer to underlying C representation
-  private var underlyingCompletionQueue: UnsafeMutableRawPointer
+  private let underlyingCompletionQueue: UnsafeMutableRawPointer
 
   /// Operation groups that are awaiting completion, keyed by tag
   private var operationGroups: [Int64: OperationGroup] = [:]
 
   /// Mutex for synchronizing access to operationGroups
-  private var operationGroupsMutex: Mutex = Mutex()
+  private let operationGroupsMutex: Mutex = Mutex()
 
   /// Initializes a CompletionQueue
   ///
   /// - Parameter cq: the underlying C representation
-  init(underlyingCompletionQueue: UnsafeMutableRawPointer) {
+  init(underlyingCompletionQueue: UnsafeMutableRawPointer, name: String? = nil) {
     // The underlying completion queue is NOT OWNED by this class, so we don't dealloc it in a deinit
     self.underlyingCompletionQueue = underlyingCompletionQueue
+    self.name = name
   }
 
   /// Waits for an operation group to complete
@@ -88,9 +89,9 @@ class CompletionQueue {
   ///
   /// - Parameter operationGroup: the operation group to handle
   func register(_ operationGroup: OperationGroup) {
-    operationGroupsMutex.lock()
-    operationGroups[operationGroup.tag] = operationGroup
-    operationGroupsMutex.unlock()
+    operationGroupsMutex.synchronize {
+      operationGroups[operationGroup.tag] = operationGroup
+    }
   }
 
   /// Runs a completion queue and call a completion handler when finished
@@ -118,9 +119,9 @@ class CompletionQueue {
             } catch (let callError) {
               print("CompletionQueue runToCompletion: grpc error \(callError)")
             }
-            self.operationGroupsMutex.lock()
-            self.operationGroups[tag] = nil
-            self.operationGroupsMutex.unlock()
+            self.operationGroupsMutex.synchronize {
+              self.operationGroups[tag] = nil
+            }
           }
           break
         case GRPC_QUEUE_SHUTDOWN:
@@ -133,9 +134,9 @@ class CompletionQueue {
           } catch (let callError) {
             print("CompletionQueue runToCompletion: grpc error \(callError)")
           }
-          self.operationGroupsMutex.lock()
-          self.operationGroups = [:]
-          self.operationGroupsMutex.unlock()
+          self.operationGroupsMutex.synchronize {
+            self.operationGroups = [:]
+          }
           break
         case GRPC_QUEUE_TIMEOUT:
           break

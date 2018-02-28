@@ -21,7 +21,7 @@ import Foundation // for String.Encoding
 /// Representation of raw data that may be sent and received using gRPC
 public class ByteBuffer {
   /// Pointer to underlying C representation
-  var underlyingByteBuffer: UnsafeMutableRawPointer
+  let underlyingByteBuffer: UnsafeMutableRawPointer
 
   /// Creates a ByteBuffer from an underlying C representation.
   /// The ByteBuffer takes ownership of the passed-in representation.
