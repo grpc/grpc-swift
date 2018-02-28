@@ -81,6 +81,8 @@ open class ClientCallServerStreamingTestStub<OutputType: Message>: ClientCallSer
   open class var method: String { fatalError("needs to be overridden") }
 
   open var outputs: [OutputType] = []
+  
+  public init() {}
 
   open func receive(completion: @escaping (OutputType?, ClientError?) -> Void) throws {
     if let output = outputs.first {

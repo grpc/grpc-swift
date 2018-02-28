@@ -94,6 +94,8 @@ open class ClientCallBidirectionalStreamingTestStub<InputType: Message, OutputTy
 
   open var inputs: [InputType] = []
   open var outputs: [OutputType] = []
+  
+  public init() {}
 
   open func receive(completion: @escaping (OutputType?, ClientError?) -> Void) throws {
     if let output = outputs.first {

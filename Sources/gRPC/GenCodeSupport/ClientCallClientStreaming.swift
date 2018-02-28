@@ -86,6 +86,8 @@ open class ClientCallClientStreamingTestStub<InputType: Message, OutputType: Mes
 
   open var inputs: [InputType] = []
   open var output: OutputType?
+  
+  public init() {}
 
   open func send(_ message: InputType, errorHandler _: @escaping (Error) -> Void) throws {
     inputs.append(message)

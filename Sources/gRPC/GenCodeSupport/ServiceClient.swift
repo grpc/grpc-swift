@@ -71,4 +71,6 @@ open class ServiceClientTestStubBase: ServiceClient {
   open var metadata = Metadata()
   open var host = ""
   open var timeout: TimeInterval = 0
+
+  public init() {}
 }
