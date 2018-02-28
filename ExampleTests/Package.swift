@@ -18,9 +18,9 @@
 import PackageDescription
 
 let package = Package(
-  name: "Echo",
+  name: "ExampleTests",
   dependencies: [
-    .package(url: "../../..", .branch("HEAD")),
+    .package(url: "../", .branch("HEAD")),
     .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.0.2"),
     .package(url: "https://github.com/kylef/Commander.git", from: "0.8.0")
   ],
@@ -30,6 +30,5 @@ let package = Package(
               "SwiftGRPC",
               "SwiftProtobuf",
               "Commander"
-            ],
-	    path: "Sources")
+            ])
   ])

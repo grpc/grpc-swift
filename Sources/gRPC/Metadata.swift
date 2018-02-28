@@ -21,7 +21,7 @@ import Foundation // for String.Encoding
 /// Metadata sent with gRPC messages
 public class Metadata: CustomStringConvertible {
   /// Pointer to underlying C representation
-  var underlyingArray: UnsafeMutableRawPointer
+  let underlyingArray: UnsafeMutableRawPointer
 
   init(underlyingArray: UnsafeMutableRawPointer) {
     self.underlyingArray = underlyingArray

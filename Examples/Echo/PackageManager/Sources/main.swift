@@ -33,17 +33,17 @@ let messageOption = Option("message",
 
 // Helper function for client actions
 func buildEchoService(_ ssl: Bool, _ address: String, _ port: String, _: String)
-  -> Echo_EchoService {
-  var service: Echo_EchoService
+  -> Echo_EchoServiceClient {
+  var service: Echo_EchoServiceClient
   if ssl {
     let certificateURL = URL(fileURLWithPath: "ssl.crt")
     let certificates = try! String(contentsOf: certificateURL)
-    service = Echo_EchoService(address: address + ":" + port,
+    service = Echo_EchoServiceClient(address: address + ":" + port,
                                certificates: certificates,
                                host: "example.com")
     service.host = "example.com"
   } else {
-    service = Echo_EchoService(address: address + ":" + port, secure: false)
+    service = Echo_EchoServiceClient(address: address + ":" + port, secure: false)
   }
   service.metadata = Metadata([
     "x-goog-api-key": "YOUR_API_KEY",
