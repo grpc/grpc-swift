@@ -1,4 +1,4 @@
-{{ access }} protocol {{ .|call:file,service,method }}: ClientCallClientStreamingBase {
+{{ access }} protocol {{ .|call:file,service,method }}: ClientCallClientStreaming {
   /// Call this to send each message in the request stream. Nonblocking.
   func send(_ message: {{ method|input }}, errorHandler: @escaping (Error) -> Void) throws
   
@@ -8,7 +8,7 @@
   func closeAndReceive(completion: @escaping ({{ method|output }}?, ClientError?) -> Void) throws
 }
 
-fileprivate final class {{ .|call:file,service,method }}Impl: ClientCallClientStreamingImpl<{{ method|input }}, {{ method|output }}>, {{ .|call:file,service,method }} {
+fileprivate final class {{ .|call:file,service,method }}Base: ClientCallClientStreamingBase<{{ method|input }}, {{ method|output }}>, {{ .|call:file,service,method }} {
   override class var method: String { return "{{ .|path:file,service,method }}" }
 }
 

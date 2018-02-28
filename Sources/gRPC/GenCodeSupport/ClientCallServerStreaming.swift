@@ -18,9 +18,7 @@ import Dispatch
 import Foundation
 import SwiftProtobuf
 
-public protocol ClientCallServerStreamingBase: class {
-  static var method: String { get }
-
+public protocol ClientCallServerStreaming: ClientCall {
   /// Cancel the call.
   func cancel()
 
@@ -28,16 +26,7 @@ public protocol ClientCallServerStreamingBase: class {
   // as the protocol would then have an associated type requirement (and become pretty much unusable in the process).
 }
 
-open class ClientCallServerStreamingImpl<InputType: Message, OutputType: Message>: ClientCallServerStreamingBase {
-  open class var method: String { fatalError("needs to be overridden") }
-
-  private var call: Call
-
-  /// Create a call.
-  public init(_ channel: Channel) {
-    call = channel.makeCall(type(of: self).method)
-  }
-
+open class ClientCallServerStreamingBase<InputType: Message, OutputType: Message>: ClientCallBase, ClientCallServerStreaming {
   /// Call this once with the message to send. Nonblocking.
   public func start(request: InputType, metadata: Metadata, completion: ((CallResult) -> Void)?) throws -> Self {
     let requestData = try request.serializedData()
@@ -88,7 +77,7 @@ open class ClientCallServerStreamingImpl<InputType: Message, OutputType: Message
 }
 
 /// Simple fake implementation of ClientCallServerStreamingBase that returns a previously-defined set of results.
-open class ClientCallServerStreamingTestStub<OutputType: Message>: ClientCallServerStreamingBase {
+open class ClientCallServerStreamingTestStub<OutputType: Message>: ClientCallServerStreaming {
   open class var method: String { fatalError("needs to be overridden") }
 
   open var outputs: [OutputType] = []

@@ -18,9 +18,7 @@ import Dispatch
 import Foundation
 import SwiftProtobuf
 
-public protocol ClientCallClientStreamingBase: class {
-  static var method: String { get }
-
+public protocol ClientCallClientStreaming: ClientCall {
   /// Cancel the call.
   func cancel()
 
@@ -28,16 +26,7 @@ public protocol ClientCallClientStreamingBase: class {
   // as the protocol would then have an associated type requirement (and become pretty much unusable in the process).
 }
 
-open class ClientCallClientStreamingImpl<InputType: Message, OutputType: Message>: ClientCallClientStreamingBase {
-  open class var method: String { fatalError("needs to be overridden") }
-
-  private var call: Call
-
-  /// Create a call.
-  public init(_ channel: Channel) {
-    call = channel.makeCall(type(of: self).method)
-  }
-
+open class ClientCallClientStreamingBase<InputType: Message, OutputType: Message>: ClientCallBase, ClientCallClientStreaming {
   /// Call this to start a call. Nonblocking.
   public func start(metadata: Metadata, completion: ((CallResult) -> Void)?) throws -> Self {
     try call.start(.clientStreaming, metadata: metadata, completion: completion)
@@ -92,7 +81,7 @@ open class ClientCallClientStreamingImpl<InputType: Message, OutputType: Message
 
 /// Simple fake implementation of ClientCallClientStreamingBase that
 /// stores sent values for later verification and finally returns a previously-defined result.
-open class ClientCallClientStreamingTestStub<InputType: Message, OutputType: Message>: ClientCallClientStreamingBase {
+open class ClientCallClientStreamingTestStub<InputType: Message, OutputType: Message>: ClientCallClientStreaming {
   open class var method: String { fatalError("needs to be overridden") }
 
   open var inputs: [InputType] = []

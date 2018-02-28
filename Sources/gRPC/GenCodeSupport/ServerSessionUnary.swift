@@ -20,8 +20,8 @@ import SwiftProtobuf
 
 public protocol ServerSessionUnary: ServerSession {}
 
-open class ServerSessionUnaryImpl<InputType: Message, OutputType: Message>: ServerSessionImpl, ServerSessionUnary {
-  public typealias ProviderBlock = (InputType, ServerSessionUnaryImpl) throws -> OutputType
+open class ServerSessionUnaryBase<InputType: Message, OutputType: Message>: ServerSessionBase, ServerSessionUnary {
+  public typealias ProviderBlock = (InputType, ServerSessionUnaryBase) throws -> OutputType
   private var providerBlock: ProviderBlock
 
   public init(handler: Handler, providerBlock: @escaping ProviderBlock) {

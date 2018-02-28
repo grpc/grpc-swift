@@ -1,4 +1,4 @@
-{{ access }} protocol {{ .|call:file,service,method }}: ClientCallBidirectionalStreamingBase {
+{{ access }} protocol {{ .|call:file,service,method }}: ClientCallBidirectionalStreaming {
   /// Call this to wait for a result. Blocking.
   func receive() throws -> {{ method|output }}
   /// Call this to wait for a result. Nonblocking.
@@ -13,7 +13,7 @@
   func closeSend(completion: (() -> Void)?) throws
 }
 
-fileprivate final class {{ .|call:file,service,method }}Impl: ClientCallBidirectionalStreamingImpl<{{ method|input }}, {{ method|output }}>, {{ .|call:file,service,method }} {
+fileprivate final class {{ .|call:file,service,method }}Base: ClientCallBidirectionalStreamingBase<{{ method|input }}, {{ method|output }}>, {{ .|call:file,service,method }} {
   override class var method: String { return "{{ .|path:file,service,method }}" }
 }
 

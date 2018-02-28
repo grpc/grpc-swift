@@ -27,7 +27,7 @@ public protocol ServerSession: class {
   var trailingMetadata: Metadata { get }
 }
 
-open class ServerSessionImpl: ServerSession {
+open class ServerSessionBase: ServerSession {
   public var handler: Handler
   public var requestMetadata: Metadata { return handler.requestMetadata }
 

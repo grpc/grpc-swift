@@ -20,8 +20,8 @@ import SwiftProtobuf
 
 public protocol ServerSessionBidirectionalStreaming: ServerSession {}
 
-open class ServerSessionBidirectionalStreamingImpl<InputType: Message, OutputType: Message>: ServerSessionImpl, ServerSessionBidirectionalStreaming {
-  public typealias ProviderBlock = (ServerSessionBidirectionalStreamingImpl) throws -> Void
+open class ServerSessionBidirectionalStreamingBase<InputType: Message, OutputType: Message>: ServerSessionBase, ServerSessionBidirectionalStreaming {
+  public typealias ProviderBlock = (ServerSessionBidirectionalStreamingBase) throws -> Void
   private var providerBlock: ProviderBlock
 
   public init(handler: Handler, providerBlock: @escaping ProviderBlock) {

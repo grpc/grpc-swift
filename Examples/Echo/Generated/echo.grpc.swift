@@ -28,18 +28,18 @@ import SwiftProtobuf
 
 internal protocol Echo_EchoGetCall: ClientCallUnary { }
 
-fileprivate final class Echo_EchoGetCallImpl: ClientCallUnaryImpl<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoGetCall {
+fileprivate final class Echo_EchoGetCallBase: ClientCallUnaryBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoGetCall {
   override class var method: String { return "/echo.Echo/Get" }
 }
 
-internal protocol Echo_EchoExpandCall: ClientCallServerStreamingBase {
+internal protocol Echo_EchoExpandCall: ClientCallServerStreaming {
   /// Call this to wait for a result. Blocking.
   func receive() throws -> Echo_EchoResponse
   /// Call this to wait for a result. Nonblocking.
   func receive(completion: @escaping (Echo_EchoResponse?, ClientError?) -> Void) throws
 }
 
-fileprivate final class Echo_EchoExpandCallImpl: ClientCallServerStreamingImpl<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoExpandCall {
+fileprivate final class Echo_EchoExpandCallBase: ClientCallServerStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoExpandCall {
   override class var method: String { return "/echo.Echo/Expand" }
 }
 
@@ -47,7 +47,7 @@ class Echo_EchoExpandCallTestStub: ClientCallServerStreamingTestStub<Echo_EchoRe
   override class var method: String { return "/echo.Echo/Expand" }
 }
 
-internal protocol Echo_EchoCollectCall: ClientCallClientStreamingBase {
+internal protocol Echo_EchoCollectCall: ClientCallClientStreaming {
   /// Call this to send each message in the request stream. Nonblocking.
   func send(_ message: Echo_EchoRequest, errorHandler: @escaping (Error) -> Void) throws
   
@@ -57,7 +57,7 @@ internal protocol Echo_EchoCollectCall: ClientCallClientStreamingBase {
   func closeAndReceive(completion: @escaping (Echo_EchoResponse?, ClientError?) -> Void) throws
 }
 
-fileprivate final class Echo_EchoCollectCallImpl: ClientCallClientStreamingImpl<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectCall {
+fileprivate final class Echo_EchoCollectCallBase: ClientCallClientStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectCall {
   override class var method: String { return "/echo.Echo/Collect" }
 }
 
@@ -67,7 +67,7 @@ class Echo_EchoCollectCallTestStub: ClientCallClientStreamingTestStub<Echo_EchoR
   override class var method: String { return "/echo.Echo/Collect" }
 }
 
-internal protocol Echo_EchoUpdateCall: ClientCallBidirectionalStreamingBase {
+internal protocol Echo_EchoUpdateCall: ClientCallBidirectionalStreaming {
   /// Call this to wait for a result. Blocking.
   func receive() throws -> Echo_EchoResponse
   /// Call this to wait for a result. Nonblocking.
@@ -82,7 +82,7 @@ internal protocol Echo_EchoUpdateCall: ClientCallBidirectionalStreamingBase {
   func closeSend(completion: (() -> Void)?) throws
 }
 
-fileprivate final class Echo_EchoUpdateCallImpl: ClientCallBidirectionalStreamingImpl<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateCall {
+fileprivate final class Echo_EchoUpdateCallBase: ClientCallBidirectionalStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateCall {
   override class var method: String { return "/echo.Echo/Update" }
 }
 
@@ -91,7 +91,7 @@ class Echo_EchoUpdateCallTestStub: ClientCallBidirectionalStreamingTestStub<Echo
 }
 
 
-/// Instantiate Echo_EchoServiceImpl, then call methods of this protocol to make API calls.
+/// Instantiate Echo_EchoServiceClient, then call methods of this protocol to make API calls.
 internal protocol Echo_EchoService: ServiceClient {
   /// Synchronous. Unary.
   func get(_ request: Echo_EchoRequest) throws -> Echo_EchoResponse
@@ -118,13 +118,13 @@ internal protocol Echo_EchoService: ServiceClient {
 internal final class Echo_EchoServiceClient: ServiceClientBase, Echo_EchoService {
   /// Synchronous. Unary.
   internal func get(_ request: Echo_EchoRequest) throws -> Echo_EchoResponse {
-    return try Echo_EchoGetCallImpl(channel)
+    return try Echo_EchoGetCallBase(channel)
       .run(request: request, metadata: metadata)
   }
   /// Asynchronous. Unary.
   internal func get(_ request: Echo_EchoRequest,
                   completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall {
-    return try Echo_EchoGetCallImpl(channel)
+    return try Echo_EchoGetCallBase(channel)
       .start(request: request, metadata: metadata, completion: completion)
   }
 
@@ -132,7 +132,7 @@ internal final class Echo_EchoServiceClient: ServiceClientBase, Echo_EchoService
   /// Send the initial message.
   /// Use methods on the returned object to get streamed responses.
   internal func expand(_ request: Echo_EchoRequest, completion: ((CallResult) -> Void)?) throws -> Echo_EchoExpandCall {
-    return try Echo_EchoExpandCallImpl(channel)
+    return try Echo_EchoExpandCallBase(channel)
       .start(request:request, metadata:metadata, completion:completion)
   }
 
@@ -140,7 +140,7 @@ internal final class Echo_EchoServiceClient: ServiceClientBase, Echo_EchoService
   /// Use methods on the returned object to stream messages and
   /// to close the connection and wait for a final response.
   internal func collect(completion: ((CallResult) -> Void)?) throws -> Echo_EchoCollectCall {
-    return try Echo_EchoCollectCallImpl(channel)
+    return try Echo_EchoCollectCallBase(channel)
        .start(metadata: metadata, completion: completion)
   }
 
@@ -148,7 +148,7 @@ internal final class Echo_EchoServiceClient: ServiceClientBase, Echo_EchoService
   /// Use methods on the returned object to stream messages,
   /// to wait for replies, and to close the connection.
   internal func update(completion: ((CallResult) -> Void)?) throws -> Echo_EchoUpdateCall {
-    return try Echo_EchoUpdateCallImpl(channel)
+    return try Echo_EchoUpdateCallBase(channel)
       .start(metadata: metadata, completion: completion)
   }
 
@@ -199,7 +199,7 @@ internal protocol Echo_EchoProvider {
 
 internal protocol Echo_EchoGetSession: ServerSessionUnary { }
 
-fileprivate final class Echo_EchoGetSessionImpl: ServerSessionUnaryImpl<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoGetSession {}
+fileprivate final class Echo_EchoGetSessionBase: ServerSessionUnaryBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoGetSession {}
 
 class Echo_EchoGetSessionTestStub: ServerSessionUnaryTestStub, Echo_EchoGetSession {}
 
@@ -208,7 +208,7 @@ internal protocol Echo_EchoExpandSession: ServerSessionServerStreaming {
   func send(_ response: Echo_EchoResponse, completion: ((Bool) -> Void)?) throws
 }
 
-fileprivate final class Echo_EchoExpandSessionImpl: ServerSessionServerStreamingImpl<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoExpandSession {}
+fileprivate final class Echo_EchoExpandSessionBase: ServerSessionServerStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoExpandSession {}
 
 class Echo_EchoExpandSessionTestStub: ServerSessionServerStreamingTestStub<Echo_EchoResponse>, Echo_EchoExpandSession {}
 
@@ -220,7 +220,7 @@ internal protocol Echo_EchoCollectSession: ServerSessionClientStreaming {
   func sendAndClose(_ response: Echo_EchoResponse) throws
 }
 
-fileprivate final class Echo_EchoCollectSessionImpl: ServerSessionClientStreamingImpl<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectSession {}
+fileprivate final class Echo_EchoCollectSessionBase: ServerSessionClientStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectSession {}
 
 class Echo_EchoCollectSessionTestStub: ServerSessionClientStreamingTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectSession {}
 
@@ -235,14 +235,14 @@ internal protocol Echo_EchoUpdateSession: ServerSessionBidirectionalStreaming {
   func close() throws
 }
 
-fileprivate final class Echo_EchoUpdateSessionImpl: ServerSessionBidirectionalStreamingImpl<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateSession {}
+fileprivate final class Echo_EchoUpdateSessionBase: ServerSessionBidirectionalStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateSession {}
 
 class Echo_EchoUpdateSessionTestStub: ServerSessionBidirectionalStreamingTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateSession {}
 
 
 /// Main server for generated service
 internal final class Echo_EchoServer: ServiceServer {
-  private var provider: Echo_EchoProvider
+  private let provider: Echo_EchoProvider
 
   internal init(address: String, provider: Echo_EchoProvider) {
     self.provider = provider
@@ -259,27 +259,27 @@ internal final class Echo_EchoServer: ServiceServer {
     let provider = self.provider
     switch method {
     case "/echo.Echo/Get":
-      try Echo_EchoGetSessionImpl(
+      try Echo_EchoGetSessionBase(
         handler: handler,
-        providerBlock: { try provider.get(request: $0, session: $1 as! Echo_EchoGetSessionImpl) })
+        providerBlock: { try provider.get(request: $0, session: $1 as! Echo_EchoGetSessionBase) })
           .run(queue: queue)
       return true
     case "/echo.Echo/Expand":
-      try Echo_EchoExpandSessionImpl(
+      try Echo_EchoExpandSessionBase(
         handler: handler,
-        providerBlock: { try provider.expand(request: $0, session: $1 as! Echo_EchoExpandSessionImpl) })
+        providerBlock: { try provider.expand(request: $0, session: $1 as! Echo_EchoExpandSessionBase) })
           .run(queue: queue)
       return true
     case "/echo.Echo/Collect":
-      try Echo_EchoCollectSessionImpl(
+      try Echo_EchoCollectSessionBase(
         handler: handler,
-        providerBlock: { try provider.collect(session: $0 as! Echo_EchoCollectSessionImpl) })
+        providerBlock: { try provider.collect(session: $0 as! Echo_EchoCollectSessionBase) })
           .run(queue: queue)
       return true
     case "/echo.Echo/Update":
-      try Echo_EchoUpdateSessionImpl(
+      try Echo_EchoUpdateSessionBase(
         handler: handler,
-        providerBlock: { try provider.update(session: $0 as! Echo_EchoUpdateSessionImpl) })
+        providerBlock: { try provider.update(session: $0 as! Echo_EchoUpdateSessionBase) })
           .run(queue: queue)
       return true
     default:

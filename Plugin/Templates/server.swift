@@ -34,7 +34,7 @@
 
 /// Main server for generated service
 {{ access }} final class {{ .|server:file,service }}: ServiceServer {
-  private var provider: {{ .|provider:file,service }}
+  private let provider: {{ .|provider:file,service }}
 
   {{ access }} init(address: String, provider: {{ .|provider:file,service }}) {
     self.provider = provider
@@ -53,14 +53,14 @@
     //-{% for method in service.methods %}
     case "{{ .|path:file,service,method }}":
       //-{% if method|methodIsUnary or method|methodIsServerStreaming %}
-      try {{ .|session:file,service,method }}Impl(
+      try {{ .|session:file,service,method }}Base(
         handler: handler,
-        providerBlock: { try provider.{{ method|methodDescriptorName|lowercase }}(request: $0, session: $1 as! {{ .|session:file,service,method }}Impl) })
+        providerBlock: { try provider.{{ method|methodDescriptorName|lowercase }}(request: $0, session: $1 as! {{ .|session:file,service,method }}Base) })
           .run(queue: queue)
       //-{% else %}
-      try {{ .|session:file,service,method }}Impl(
+      try {{ .|session:file,service,method }}Base(
         handler: handler,
-        providerBlock: { try provider.{{ method|methodDescriptorName|lowercase }}(session: $0 as! {{ .|session:file,service,method }}Impl) })
+        providerBlock: { try provider.{{ method|methodDescriptorName|lowercase }}(session: $0 as! {{ .|session:file,service,method }}Base) })
           .run(queue: queue)
       //-{% endif %}
       return true

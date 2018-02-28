@@ -18,23 +18,12 @@ import Dispatch
 import Foundation
 import SwiftProtobuf
 
-public protocol ClientCallUnary: class {
-  static var method: String { get }
-
+public protocol ClientCallUnary: ClientCall {
   /// Cancel the call.
   func cancel()
 }
 
-open class ClientCallUnaryImpl<InputType: Message, OutputType: Message>: ClientCallUnary {
-  open class var method: String { fatalError("needs to be overridden") }
-
-  private var call: Call
-
-  /// Create a call.
-  public init(_ channel: Channel) {
-    call = channel.makeCall(type(of: self).method)
-  }
-
+open class ClientCallUnaryBase<InputType: Message, OutputType: Message>: ClientCallBase, ClientCallUnary {
   /// Run the call. Blocks until the reply is received.
   /// - Throws: `BinaryEncodingError` if encoding fails. `CallError` if fails to call. `ClientError` if receives no response.
   public func run(request: InputType, metadata: Metadata) throws -> OutputType {

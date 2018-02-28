@@ -20,8 +20,8 @@ import SwiftProtobuf
 
 public protocol ServerSessionClientStreaming: ServerSession {}
 
-open class ServerSessionClientStreamingImpl<InputType: Message, OutputType: Message>: ServerSessionImpl, ServerSessionClientStreaming {
-  public typealias ProviderBlock = (ServerSessionClientStreamingImpl) throws -> Void
+open class ServerSessionClientStreamingBase<InputType: Message, OutputType: Message>: ServerSessionBase, ServerSessionClientStreaming {
+  public typealias ProviderBlock = (ServerSessionClientStreamingBase) throws -> Void
   private var providerBlock: ProviderBlock
 
   public init(handler: Handler, providerBlock: @escaping ProviderBlock) {

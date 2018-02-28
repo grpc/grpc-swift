@@ -15,7 +15,7 @@
 //-{% endif %}
 //-{% endfor %}
 
-/// Instantiate {{ .|serviceclass:file,service }}Impl, then call methods of this protocol to make API calls.
+/// Instantiate {{ .|serviceclass:file,service }}Client, then call methods of this protocol to make API calls.
 {{ access }} protocol {{ .|serviceclass:file,service }}: ServiceClient {
   //-{% for method in service.methods %}
   //-{% if method|methodIsUnary %}
@@ -51,13 +51,13 @@
   //-{% if method|methodIsUnary %}
   /// Synchronous. Unary.
   {{ access }} func {{ method|methodDescriptorName|lowercase }}(_ request: {{ method|input }}) throws -> {{ method|output }} {
-    return try {{ .|call:file,service,method }}Impl(channel)
+    return try {{ .|call:file,service,method }}Base(channel)
       .run(request: request, metadata: metadata)
   }
   /// Asynchronous. Unary.
   {{ access }} func {{ method|methodDescriptorName|lowercase }}(_ request: {{ method|input }},
                   completion: @escaping ({{ method|output }}?, CallResult) -> Void) throws -> {{ .|call:file,service,method }} {
-    return try {{ .|call:file,service,method }}Impl(channel)
+    return try {{ .|call:file,service,method }}Base(channel)
       .start(request: request, metadata: metadata, completion: completion)
   }
   //-{% endif %}
@@ -66,7 +66,7 @@
   /// Send the initial message.
   /// Use methods on the returned object to get streamed responses.
   {{ access }} func {{ method|methodDescriptorName|lowercase }}(_ request: {{ method|input }}, completion: ((CallResult) -> Void)?) throws -> {{ .|call:file,service,method }} {
-    return try {{ .|call:file,service,method }}Impl(channel)
+    return try {{ .|call:file,service,method }}Base(channel)
       .start(request:request, metadata:metadata, completion:completion)
   }
   //-{% endif %}
@@ -75,7 +75,7 @@
   /// Use methods on the returned object to stream messages and
   /// to close the connection and wait for a final response.
   {{ access }} func {{ method|methodDescriptorName|lowercase }}(completion: ((CallResult) -> Void)?) throws -> {{ .|call:file,service,method }} {
-    return try {{ .|call:file,service,method }}Impl(channel)
+    return try {{ .|call:file,service,method }}Base(channel)
        .start(metadata: metadata, completion: completion)
   }
   //-{% endif %}
@@ -84,7 +84,7 @@
   /// Use methods on the returned object to stream messages,
   /// to wait for replies, and to close the connection.
   {{ access }} func {{ method|methodDescriptorName|lowercase }}(completion: ((CallResult) -> Void)?) throws -> {{ .|call:file,service,method }} {
-    return try {{ .|call:file,service,method }}Impl(channel)
+    return try {{ .|call:file,service,method }}Base(channel)
       .start(metadata: metadata, completion: completion)
   }
   //-{% endif %}

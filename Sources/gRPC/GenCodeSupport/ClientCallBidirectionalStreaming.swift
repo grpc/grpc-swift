@@ -18,23 +18,12 @@ import Dispatch
 import Foundation
 import SwiftProtobuf
 
-public protocol ClientCallBidirectionalStreamingBase: class {
-  static var method: String { get }
-
+public protocol ClientCallBidirectionalStreaming: ClientCall {
   // TODO: Move the other, message type-dependent, methods into this protocol. At the moment, this is not possible,
   // as the protocol would then have an associated type requirement (and become pretty much unusable in the process).
 }
 
-open class ClientCallBidirectionalStreamingImpl<InputType: Message, OutputType: Message>: ClientCallBidirectionalStreamingBase {
-  open class var method: String { fatalError("needs to be overridden") }
-
-  private var call: Call
-
-  /// Create a call.
-  public init(_ channel: Channel) {
-    call = channel.makeCall(type(of: self).method)
-  }
-
+open class ClientCallBidirectionalStreamingBase<InputType: Message, OutputType: Message>: ClientCallBase, ClientCallBidirectionalStreaming {
   /// Call this to start a call. Nonblocking.
   public func start(metadata: Metadata, completion: ((CallResult) -> Void)?)
     throws -> Self {
@@ -100,7 +89,7 @@ open class ClientCallBidirectionalStreamingImpl<InputType: Message, OutputType: 
 
 /// Simple fake implementation of ClientCallBidirectionalStreamingBase that returns a previously-defined set of results
 /// and stores sent values for later verification.
-open class ClientCallBidirectionalStreamingTestStub<InputType: Message, OutputType: Message>: ClientCallBidirectionalStreamingBase {
+open class ClientCallBidirectionalStreamingTestStub<InputType: Message, OutputType: Message>: ClientCallBidirectionalStreaming {
   open class var method: String { fatalError("needs to be overridden") }
 
   open var inputs: [InputType] = []
