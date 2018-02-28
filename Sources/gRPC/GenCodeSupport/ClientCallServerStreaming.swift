@@ -91,9 +91,9 @@ open class ClientCallServerStreamingImpl<InputType: Message, OutputType: Message
 open class ClientCallServerStreamingTestStub<OutputType: Message>: ClientCallServerStreamingBase {
   open class var method: String { fatalError("needs to be overridden") }
   
-  var outputs: [OutputType] = []
+  open var outputs: [OutputType] = []
   
-  public func receive(completion:@escaping (OutputType?, ClientError?)->()) throws {
+  open func receive(completion:@escaping (OutputType?, ClientError?)->()) throws {
     if let output = outputs.first {
       outputs.removeFirst()
       completion(output, nil)
@@ -102,7 +102,7 @@ open class ClientCallServerStreamingTestStub<OutputType: Message>: ClientCallSer
     }
   }
   
-  public func receive() throws -> OutputType {
+  open func receive() throws -> OutputType {
     if let output = outputs.first {
       outputs.removeFirst()
       return output
@@ -111,5 +111,5 @@ open class ClientCallServerStreamingTestStub<OutputType: Message>: ClientCallSer
     }
   }
   
-  public func cancel() { }
+  open func cancel() { }
 }

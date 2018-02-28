@@ -95,20 +95,20 @@ open class ClientCallClientStreamingImpl<InputType: Message, OutputType: Message
 open class ClientCallClientStreamingTestStub<InputType: Message, OutputType: Message>: ClientCallClientStreamingBase {
   open class var method: String { fatalError("needs to be overridden") }
   
-  var inputs: [InputType] = []
-  var output: OutputType?
+  open var inputs: [InputType] = []
+  open var output: OutputType?
   
-  public func send(_ message: InputType, errorHandler:@escaping (Error)->()) throws {
+  open func send(_ message: InputType, errorHandler:@escaping (Error)->()) throws {
     inputs.append(message)
   }
   
-  public func closeAndReceive(completion:@escaping (OutputType?, ClientError?)->()) throws {
+  open func closeAndReceive(completion:@escaping (OutputType?, ClientError?)->()) throws {
     completion(output!, nil)
   }
   
-  public func closeAndReceive() throws -> OutputType {
+  open func closeAndReceive() throws -> OutputType {
     return output!
   }
   
-  public func cancel() { }
+  open func cancel() { }
 }
