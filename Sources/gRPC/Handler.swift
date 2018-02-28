@@ -119,9 +119,7 @@ public class Handler {
                                       .sendStatusFromServer(statusCode, statusMessage, trailingMetadata),
                                       .sendMessage(messageBuffer)
     ]) { operationGroup in
-      if operationGroup.success {
-        self.shutdown()
-      }
+      self.shutdown()
     }
     try call.perform(operations)
   }
@@ -139,9 +137,7 @@ public class Handler {
                                       .receiveCloseOnServer,
                                       .sendStatusFromServer(statusCode, statusMessage, trailingMetadata)
     ]) { operationGroup in
-      if operationGroup.success {
-        self.shutdown()
-      }
+      self.shutdown()
     }
     try call.perform(operations)
   }
@@ -234,6 +230,7 @@ public class Handler {
       if operationGroup.success {
         completion()
       }
+      self.shutdown()
     }
     try call.perform(operations)
   }
