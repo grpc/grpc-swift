@@ -25,7 +25,7 @@ class EchoViewController: NSViewController, NSTextFieldDelegate {
   @IBOutlet var callSelectButton: NSSegmentedControl!
   @IBOutlet var closeButton: NSButton!
 
-  private var service: Echo_EchoService?
+  private var service: Echo_EchoServiceClient?
 
   private var expandCall: Echo_EchoExpandCall?
   private var collectCall: Echo_EchoCollectCall?
@@ -107,12 +107,12 @@ class EchoViewController: NSViewController, NSTextFieldDelegate {
       return
     }
     if TLSButton.intValue == 0 {
-      service = Echo_EchoService(address: address, secure: false)
+      service = Echo_EchoServiceClient(address: address, secure: false)
     } else {
       let certificateURL = Bundle.main.url(forResource: "ssl",
                                            withExtension: "crt")!
       let certificates = try! String(contentsOf: certificateURL)
-      service = Echo_EchoService(address: address, certificates: certificates, host: host)
+      service = Echo_EchoServiceClient(address: address, certificates: certificates, host: host)
     }
     if let service = service {
       service.host = "example.com" // sample override
