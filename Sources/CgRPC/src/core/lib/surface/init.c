@@ -102,8 +102,8 @@ static void register_builtin_channel_init() {
 }
 
 typedef struct grpc_plugin {
-  void (*init)();
-  void (*destroy)();
+  void (*init)(void);
+  void (*destroy)(void);
 } grpc_plugin;
 
 static grpc_plugin g_all_of_the_plugins[MAX_PLUGINS];

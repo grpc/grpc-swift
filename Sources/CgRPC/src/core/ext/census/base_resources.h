@@ -19,6 +19,6 @@
 #define GRPC_CORE_EXT_CENSUS_BASE_RESOURCES_H
 
 /* Define all base resources. This should be called by census initialization. */
-void define_base_resources();
+void define_base_resources(void);
 
 #endif /* GRPC_CORE_EXT_CENSUS_BASE_RESOURCES_H */

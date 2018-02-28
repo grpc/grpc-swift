@@ -21,8 +21,8 @@
 
 #include "src/core/ext/filters/client_channel/proxy_mapper.h"
 
-void grpc_proxy_mapper_registry_init();
-void grpc_proxy_mapper_registry_shutdown();
+void grpc_proxy_mapper_registry_init(void);
+void grpc_proxy_mapper_registry_shutdown(void);
 
 /// Registers a new proxy mapper.  Takes ownership.
 /// If \a at_start is true, the new mapper will be at the beginning of

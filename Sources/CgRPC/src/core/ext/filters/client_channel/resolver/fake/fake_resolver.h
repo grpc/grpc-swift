@@ -24,7 +24,7 @@
 #define GRPC_ARG_FAKE_RESOLVER_RESPONSE_GENERATOR \
   "grpc.fake_resolver.response_generator"
 
-void grpc_resolver_fake_init();
+void grpc_resolver_fake_init(void);
 
 // Instances of \a grpc_fake_resolver_response_generator are passed to the
 // fake resolver in a channel argument (see \a
@@ -34,7 +34,7 @@ void grpc_resolver_fake_init();
 typedef struct grpc_fake_resolver_response_generator
     grpc_fake_resolver_response_generator;
 grpc_fake_resolver_response_generator*
-grpc_fake_resolver_response_generator_create();
+grpc_fake_resolver_response_generator_create(void);
 
 // Instruct the fake resolver associated with the \a response_generator instance
 // to trigger a new resolution for \a uri and \a args.

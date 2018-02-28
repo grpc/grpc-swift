@@ -86,7 +86,7 @@ void grpc_event_engine_init(void);
 void grpc_event_engine_shutdown(void);
 
 /* Return the name of the poll strategy */
-const char *grpc_get_poll_strategy_name();
+const char *grpc_get_poll_strategy_name(void);
 
 /* Create a wrapped file descriptor.
    Requires fd is a non-blocking file descriptor.
@@ -156,6 +156,6 @@ extern grpc_poll_function_type grpc_poll_function;
 /* WARNING: The following two functions should be used for testing purposes
  * ONLY */
 void grpc_set_event_engine_test_only(const grpc_event_engine_vtable *);
-const grpc_event_engine_vtable *grpc_get_event_engine_test_only();
+const grpc_event_engine_vtable *grpc_get_event_engine_test_only(void);
 
 #endif /* GRPC_CORE_LIB_IOMGR_EV_POSIX_H */

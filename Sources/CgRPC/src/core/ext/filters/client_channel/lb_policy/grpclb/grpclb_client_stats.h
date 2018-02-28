@@ -35,7 +35,7 @@ typedef struct {
   size_t num_entries;
 } grpc_grpclb_dropped_call_counts;
 
-grpc_grpclb_client_stats* grpc_grpclb_client_stats_create();
+grpc_grpclb_client_stats* grpc_grpclb_client_stats_create(void);
 grpc_grpclb_client_stats* grpc_grpclb_client_stats_ref(
     grpc_grpclb_client_stats* client_stats);
 void grpc_grpclb_client_stats_unref(grpc_grpclb_client_stats* client_stats);

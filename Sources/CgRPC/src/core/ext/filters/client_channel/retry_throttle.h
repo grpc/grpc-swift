@@ -37,9 +37,9 @@ void grpc_server_retry_throttle_data_unref(
     grpc_server_retry_throttle_data* throttle_data);
 
 /// Initializes global map of failure data for each server name.
-void grpc_retry_throttle_map_init();
+void grpc_retry_throttle_map_init(void);
 /// Shuts down global map of failure data for each server name.
-void grpc_retry_throttle_map_shutdown();
+void grpc_retry_throttle_map_shutdown(void);
 
 /// Returns a reference to the failure data for \a server_name, creating
 /// a new entry if needed.

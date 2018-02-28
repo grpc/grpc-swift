@@ -30,7 +30,7 @@ typedef enum {
   NUM_HANDSHAKER_TYPES,  // Must be last.
 } grpc_handshaker_type;
 
-void grpc_handshaker_factory_registry_init();
+void grpc_handshaker_factory_registry_init(void);
 void grpc_handshaker_factory_registry_shutdown(grpc_exec_ctx* exec_ctx);
 
 /// Registers a new handshaker factory.  Takes ownership.

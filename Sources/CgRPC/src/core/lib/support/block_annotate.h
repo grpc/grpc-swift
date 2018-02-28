@@ -23,8 +23,8 @@
 extern "C" {
 #endif
 
-void gpr_thd_start_blocking_region();
-void gpr_thd_end_blocking_region();
+void gpr_thd_start_blocking_region(void);
+void gpr_thd_end_blocking_region(void);
 
 #ifdef __cplusplus
 }

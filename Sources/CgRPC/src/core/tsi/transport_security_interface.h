@@ -448,10 +448,10 @@ void tsi_handshaker_destroy(tsi_handshaker *self);
 
 /* This method initializes the necessary shared objects used for tsi
    implementation.  */
-void tsi_init();
+void tsi_init(void);
 
 /* This method destroys the shared objects created by tsi_init.  */
-void tsi_destroy();
+void tsi_destroy(void);
 
 #ifdef __cplusplus
 }

@@ -39,7 +39,7 @@ grpc_closure_scheduler *grpc_executor_scheduler(grpc_executor_job_length);
 void grpc_executor_shutdown(grpc_exec_ctx *exec_ctx);
 
 /** Is the executor multi-threaded? */
-bool grpc_executor_is_threaded();
+bool grpc_executor_is_threaded(void);
 
 /* enable/disable threading - must be called after grpc_executor_init and before
    grpc_executor_shutdown */
