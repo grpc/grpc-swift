@@ -1,5 +1,7 @@
+// swift-tools-version:4.0
+
 /*
- * Copyright 2016, gRPC Authors All rights reserved.
+ * Copyright 2017, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +16,18 @@
  * limitations under the License.
  */
 import PackageDescription
-let package = Package (
-    name: "Simple",
-    dependencies: [
-        .Package(url: "https://github.com/grpc/grpc-swift.git", Version(0,3,3)),
-        .Package(url: "https://github.com/kylef/Commander.git", Version(0,8,0)),
-    ]
-)
+
+let package = Package(
+  name: "Simple",
+  dependencies: [
+    .package(url: "../../..", .branch("HEAD")),
+    .package(url: "https://github.com/kylef/Commander.git", from: "0.8.0")
+  ],
+  targets: [
+    .target(name: "Simple",
+            dependencies: [
+              "SwiftGRPC",
+              "Commander"
+            ],
+	    path: ".")
+  ])

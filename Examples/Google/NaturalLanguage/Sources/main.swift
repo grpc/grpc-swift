@@ -31,7 +31,7 @@ if let provider = DefaultTokenProvider(scopes: scopes) {
         exit(-1)
       }
 
-      let service = Google_Cloud_Language_V1_LanguageServiceService(address: "language.googleapis.com")
+      let service = Google_Cloud_Language_V1_LanguageServiceServiceClient(address: "language.googleapis.com")
 
       service.metadata = Metadata(["authorization": "Bearer " + authToken])
 
