@@ -97,12 +97,9 @@ Group {
     var requestMessage = Echo_EchoRequest()
     requestMessage.text = message
     print("Sending: " + requestMessage.text)
-    let sem = DispatchSemaphore(value: 0)
     let expandCall = try service.expand(requestMessage) { result in
-      print("result \(result)")
-      sem.signal()
+      print("expand completed with result \(result)")
     }
-    _ = sem.wait(timeout: DispatchTime.distantFuture)
     var running = true
     while running {
       do {
@@ -118,12 +115,9 @@ Group {
   $0.command("collect", sslFlag, addressOption("localhost"), portOption, messageOption,
              description: "Perform a client-streaming collect().") { ssl, address, port, message in
     let service = buildEchoService(ssl, address, port, message)
-    let sem = DispatchSemaphore(value: 0)
     let collectCall = try service.collect { result in
-      print("result \(result)")
-      sem.signal()
+      print("collect completed with result \(result)")
     }
-    _ = sem.wait(timeout: DispatchTime.distantFuture)
     let parts = message.components(separatedBy: " ")
     for part in parts {
       var requestMessage = Echo_EchoRequest()
@@ -139,13 +133,11 @@ Group {
   $0.command("update", sslFlag, addressOption("localhost"), portOption, messageOption,
              description: "Perform a bidirectional-streaming update().") { ssl, address, port, message in
     let service = buildEchoService(ssl, address, port, message)
-    let sem = DispatchSemaphore(value: 0)
     let updateCall = try service.update { result in
-      print("result \(result)")
-      sem.signal()
+      print("update completed with result \(result)")
     }
-    _ = sem.wait(timeout: DispatchTime.distantFuture)
 
+    let sem = DispatchSemaphore(value: 0)
     DispatchQueue.global().async {
       var running = true
       while running {
