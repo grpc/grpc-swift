@@ -1,4 +1,3 @@
-/// {{ method|methodDescriptorName }} (Client Streaming)
 {{ access }} protocol {{ .|call:file,service,method }}: ClientCallClientStreamingBase {
   /// Call this to send each message in the request stream. Nonblocking.
   func send(_ message: {{ method|input }}, errorHandler: @escaping (Error) -> Void) throws

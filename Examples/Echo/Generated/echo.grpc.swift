@@ -54,7 +54,6 @@ class Echo_EchoExpandCallTestStub: ClientCallServerStreamingTestStub<Echo_EchoRe
   override class var method: String { return "/echo.Echo/Expand" }
 }
 
-/// Collect (Client Streaming)
 internal protocol Echo_EchoCollectCall: ClientCallClientStreamingBase {
   /// Call this to send each message in the request stream. Nonblocking.
   func send(_ message: Echo_EchoRequest, errorHandler: @escaping (Error) -> Void) throws
@@ -75,120 +74,27 @@ class Echo_EchoCollectCallTestStub: ClientCallClientStreamingTestStub<Echo_EchoR
   override class var method: String { return "/echo.Echo/Collect" }
 }
 
-/// Update (Bidirectional Streaming)
-internal protocol Echo_EchoUpdateCall {
+internal protocol Echo_EchoUpdateCall: ClientCallBidirectionalStreamingBase {
   /// Call this to wait for a result. Blocking.
   func receive() throws -> Echo_EchoResponse
   /// Call this to wait for a result. Nonblocking.
-  func receive(completion:@escaping (Echo_EchoResponse?, Echo_EchoClientError?)->()) throws
+  func receive(completion: @escaping (Echo_EchoResponse?, ClientError?) -> Void) throws
   
   /// Call this to send each message in the request stream.
-  func send(_ message:Echo_EchoRequest, errorHandler:@escaping (Error)->()) throws
+  func send(_ message: Echo_EchoRequest, errorHandler: @escaping (Error) -> Void) throws
   
   /// Call this to close the sending connection. Blocking.
   func closeSend() throws
   /// Call this to close the sending connection. Nonblocking.
-  func closeSend(completion: (()->())?) throws
-  
-  /// Cancel the call.
-  func cancel()
+  func closeSend(completion: (() -> Void)?) throws
 }
 
-internal extension Echo_EchoUpdateCall {
-  func receive() throws -> Echo_EchoResponse {
-    var returnError : Echo_EchoClientError?
-    var returnMessage : Echo_EchoResponse!
-    let sem = DispatchSemaphore(value: 0)
-    do {
-      try receive() {response, error in
-        returnMessage = response
-        returnError = error
-        sem.signal()
-      }
-      _ = sem.wait(timeout: DispatchTime.distantFuture)
-    }
-    if let returnError = returnError {
-      throw returnError
-    }
-    return returnMessage
-  }
-
-  func closeSend() throws {
-    let sem = DispatchSemaphore(value: 0)
-    try closeSend() {
-      sem.signal()
-    }
-    _ = sem.wait(timeout: DispatchTime.distantFuture)
-  }
+fileprivate final class Echo_EchoUpdateCallImpl: ClientCallBidirectionalStreamingImpl<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateCall {
+  override class var method: String { return "/echo.Echo/Update" }
 }
 
-fileprivate final class Echo_EchoUpdateCallImpl: Echo_EchoUpdateCall {
-  private var call : Call
-
-  /// Create a call.
-  init(_ channel: Channel) {
-    self.call = channel.makeCall("/echo.Echo/Update")
-  }
-
-  /// Call this to start a call. Nonblocking.
-  func start(metadata:Metadata, completion: ((CallResult)->())?)
-    throws -> Echo_EchoUpdateCall {
-      try self.call.start(.bidiStreaming, metadata:metadata, completion:completion)
-      return self
-  }
-
-  func receive(completion:@escaping (Echo_EchoResponse?, Echo_EchoClientError?)->()) throws {
-    do {
-      try call.receiveMessage() {(data) in
-        if let data = data {
-          if let returnMessage = try? Echo_EchoResponse(serializedData:data) {
-            completion(returnMessage, nil)
-          } else {
-            completion(nil, Echo_EchoClientError.invalidMessageReceived)
-          }
-        } else {
-          completion(nil, Echo_EchoClientError.endOfStream)
-        }
-      }
-    }
-  }
-
-  func send(_ message:Echo_EchoRequest, errorHandler:@escaping (Error)->()) throws {
-    let messageData = try message.serializedData()
-    try call.sendMessage(data:messageData, errorHandler:errorHandler)
-  }
-
-  func closeSend(completion: (()->())?) throws {
-  	try call.close(completion: completion)
-  }
-
-  func cancel() {
-    call.cancel()
-  }
-}
-
-/// Simple fake implementation of Echo_EchoUpdateCall that returns a previously-defined set of results
-/// and stores sent values for later verification.
-class Echo_EchoUpdateCallTestStub: Echo_EchoUpdateCall {
-  var inputs: [Echo_EchoRequest] = []
-  var outputs: [Echo_EchoResponse] = []
-  
-  func receive(completion:@escaping (Echo_EchoResponse?, Echo_EchoClientError?)->()) throws {
-    if let output = outputs.first {
-      outputs.removeFirst()
-      completion(output, nil)
-    } else {
-      completion(nil, Echo_EchoClientError.endOfStream)
-    }
-  }
-
-  func send(_ message:Echo_EchoRequest, errorHandler:@escaping (Error)->()) throws {
-    inputs.append(message)
-  }
-
-  func closeSend(completion: (()->())?) throws { completion?() }
-
-  func cancel() { }
+class Echo_EchoUpdateCallTestStub: ClientCallBidirectionalStreamingTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateCall {
+  override class var method: String { return "/echo.Echo/Update" }
 }
 
 
