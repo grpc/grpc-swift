@@ -92,20 +92,7 @@ class Echo_EchoUpdateCallTestStub: ClientCallBidirectionalStreamingTestStub<Echo
 
 
 /// Instantiate Echo_EchoServiceImpl, then call methods of this protocol to make API calls.
-internal protocol Echo_EchoService {
-  var channel: Channel { get }
-
-  /// This metadata will be sent with all requests.
-  var metadata: Metadata { get }
-
-  /// This property allows the service host name to be overridden.
-  /// For example, it can be used to make calls to "localhost:8080"
-  /// appear to be to "example.com".
-  var host : String { get }
-
-  /// This property allows the service timeout to be overridden.
-  var timeout : TimeInterval { get }
-  
+internal protocol Echo_EchoService: ServiceClient {
   /// Synchronous. Unary.
   func get(_ request: Echo_EchoRequest) throws -> Echo_EchoResponse
   /// Asynchronous. Unary.
@@ -128,35 +115,7 @@ internal protocol Echo_EchoService {
 
 }
 
-internal final class Echo_EchoServiceClient: Echo_EchoService {
-  internal private(set) var channel: Channel
-
-  internal var metadata : Metadata
-
-  internal var host : String {
-    get { return self.channel.host }
-    set { self.channel.host = newValue }
-  }
-
-  internal var timeout : TimeInterval {
-    get { return self.channel.timeout }
-    set { self.channel.timeout = newValue }
-  }
-
-  /// Create a client.
-  internal init(address: String, secure: Bool = true) {
-    gRPC.initialize()
-    channel = Channel(address:address, secure:secure)
-    metadata = Metadata()
-  }
-
-  /// Create a client that makes secure connections with a custom certificate and (optional) hostname.
-  internal init(address: String, certificates: String, host: String?) {
-    gRPC.initialize()
-    channel = Channel(address:address, certificates:certificates, host:host)
-    metadata = Metadata()
-  }
-
+internal final class Echo_EchoServiceClient: ServiceClientBase, Echo_EchoService {
   /// Synchronous. Unary.
   internal func get(_ request: Echo_EchoRequest) throws -> Echo_EchoResponse {
     return try Echo_EchoGetCallImpl(channel)
@@ -195,15 +154,7 @@ internal final class Echo_EchoServiceClient: Echo_EchoService {
 
 }
 
-/// Simple fake implementation of Echo_EchoService that returns a previously-defined set of results
-/// and stores request values passed into it for later verification.
-/// Note: completion blocks are NOT called with this default implementation, and asynchronous unary calls are NOT implemented!
-class Echo_EchoServiceTestStub: Echo_EchoService {
-  var channel: Channel { fatalError("not implemented") }
-  var metadata = Metadata()
-  var host = ""
-  var timeout: TimeInterval = 0
-  
+class Echo_EchoServiceTestStub: ServiceClientTestStubBase, Echo_EchoService {
   var getRequests: [Echo_EchoRequest] = []
   var getResponses: [Echo_EchoResponse] = []
   func get(_ request: Echo_EchoRequest) throws -> Echo_EchoResponse {

@@ -16,20 +16,7 @@
 //-{% endfor %}
 
 /// Instantiate {{ .|serviceclass:file,service }}Impl, then call methods of this protocol to make API calls.
-{{ access }} protocol {{ .|serviceclass:file,service }} {
-  var channel: Channel { get }
-
-  /// This metadata will be sent with all requests.
-  var metadata: Metadata { get }
-
-  /// This property allows the service host name to be overridden.
-  /// For example, it can be used to make calls to "localhost:8080"
-  /// appear to be to "example.com".
-  var host : String { get }
-
-  /// This property allows the service timeout to be overridden.
-  var timeout : TimeInterval { get }
-  
+{{ access }} protocol {{ .|serviceclass:file,service }}: ServiceClient {
   //-{% for method in service.methods %}
   //-{% if method|methodIsUnary %}
   /// Synchronous. Unary.
@@ -59,35 +46,7 @@
   //-{% endfor %}
 }
 
-{{ access }} final class {{ .|serviceclass:file,service }}Client: {{ .|serviceclass:file,service }} {
-  {{ access }} private(set) var channel: Channel
-
-  {{ access }} var metadata : Metadata
-
-  {{ access }} var host : String {
-    get { return self.channel.host }
-    set { self.channel.host = newValue }
-  }
-
-  {{ access }} var timeout : TimeInterval {
-    get { return self.channel.timeout }
-    set { self.channel.timeout = newValue }
-  }
-
-  /// Create a client.
-  {{ access }} init(address: String, secure: Bool = true) {
-    gRPC.initialize()
-    channel = Channel(address:address, secure:secure)
-    metadata = Metadata()
-  }
-
-  /// Create a client that makes secure connections with a custom certificate and (optional) hostname.
-  {{ access }} init(address: String, certificates: String, host: String?) {
-    gRPC.initialize()
-    channel = Channel(address:address, certificates:certificates, host:host)
-    metadata = Metadata()
-  }
-
+{{ access }} final class {{ .|serviceclass:file,service }}Client: ServiceClientBase, {{ .|serviceclass:file,service }} {
   //-{% for method in service.methods %}
   //-{% if method|methodIsUnary %}
   /// Synchronous. Unary.
@@ -134,15 +93,7 @@
 }
 
 //-{% if generateTestStubs %}
-/// Simple fake implementation of {{ .|serviceclass:file,service }} that returns a previously-defined set of results
-/// and stores request values passed into it for later verification.
-/// Note: completion blocks are NOT called with this default implementation, and asynchronous unary calls are NOT implemented!
-class {{ .|serviceclass:file,service }}TestStub: {{ .|serviceclass:file,service }} {
-  var channel: Channel { fatalError("not implemented") }
-  var metadata = Metadata()
-  var host = ""
-  var timeout: TimeInterval = 0
-  
+class {{ .|serviceclass:file,service }}TestStub: ServiceClientTestStubBase, {{ .|serviceclass:file,service }} {
   //-{% for method in service.methods %}
   //-{% if method|methodIsUnary %}
   var {{ method|methodDescriptorName|lowercase }}Requests: [{{ method|input }}] = []
