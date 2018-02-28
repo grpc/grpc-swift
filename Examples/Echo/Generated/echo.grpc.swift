@@ -241,84 +241,49 @@ class Echo_EchoUpdateSessionTestStub: ServerSessionBidirectionalStreamingTestStu
 
 
 /// Main server for generated service
-internal final class Echo_EchoServer {
-  private var address: String
-  private var server: Server
-  private var provider: Echo_EchoProvider?
+internal final class Echo_EchoServer: ServiceServer {
+  private var provider: Echo_EchoProvider
 
-  /// Create a server that accepts insecure connections.
-  internal init(address:String,
-              provider:Echo_EchoProvider) {
-    gRPC.initialize()
-    self.address = address
+  internal init(address: String, provider: Echo_EchoProvider) {
     self.provider = provider
-    self.server = Server(address:address)
+    super.init(address: address)
   }
 
-  /// Create a server that accepts secure connections.
-  internal init?(address:String,
-               certificateURL:URL,
-               keyURL:URL,
-               provider:Echo_EchoProvider) {
-    gRPC.initialize()
-    self.address = address
+  internal init?(address: String, certificateURL: URL, keyURL: URL, provider: Echo_EchoProvider) {
     self.provider = provider
-    guard
-      let certificate = try? String(contentsOf: certificateURL, encoding: .utf8),
-      let key = try? String(contentsOf: keyURL, encoding: .utf8)
-      else {
-        return nil
-    }
-    self.server = Server(address:address, key:key, certs:certificate)
+    super.init(address: address, certificateURL: certificateURL, keyURL: keyURL)
   }
 
   /// Start the server.
-  internal func start(queue:DispatchQueue = DispatchQueue.global()) {
-    guard let provider = self.provider else {
-      fatalError() // the server requires a provider
-    }
-    server.run {(handler) in
-      let unwrappedHost = handler.host ?? "(nil)"
-      let unwrappedMethod = handler.method ?? "(nil)"
-      let unwrappedCaller = handler.caller ?? "(nil)"
-      print("Server received request to " + unwrappedHost
-        + " calling " + unwrappedMethod
-        + " from " + unwrappedCaller
-        + " with " + handler.requestMetadata.description)
-
-      do {
-        switch unwrappedMethod {
-        case "/echo.Echo/Get":
-          try Echo_EchoGetSessionImpl(
-            handler: handler,
-            providerBlock: { try provider.get(request: $0, session: $1 as! Echo_EchoGetSessionImpl) })
-              .run(queue:queue)
-        case "/echo.Echo/Expand":
-          try Echo_EchoExpandSessionImpl(
-            handler: handler,
-            providerBlock: { try provider.expand(request: $0, session: $1 as! Echo_EchoExpandSessionImpl) })
-              .run(queue:queue)
-        case "/echo.Echo/Collect":
-          try Echo_EchoCollectSessionImpl(
-            handler: handler,
-            providerBlock: { try provider.collect(session: $0 as! Echo_EchoCollectSessionImpl) })
-              .run(queue:queue)
-        case "/echo.Echo/Update":
-          try Echo_EchoUpdateSessionImpl(
-            handler: handler,
-            providerBlock: { try provider.update(session: $0 as! Echo_EchoUpdateSessionImpl) })
-              .run(queue:queue)
-        default:
-          // handle unknown requests
-          try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
-            try handler.sendResponse(statusCode:.unimplemented,
-                                     statusMessage:"unknown method " + unwrappedMethod,
-                                     trailingMetadata:Metadata())
-          }
-        }
-      } catch (let error) {
-        print("Server error: \(error)")
-      }
+  internal override func handleMethod(_ method: String, handler: Handler, queue: DispatchQueue) throws -> Bool {
+    let provider = self.provider
+    switch method {
+    case "/echo.Echo/Get":
+      try Echo_EchoGetSessionImpl(
+        handler: handler,
+        providerBlock: { try provider.get(request: $0, session: $1 as! Echo_EchoGetSessionImpl) })
+          .run(queue: queue)
+      return true
+    case "/echo.Echo/Expand":
+      try Echo_EchoExpandSessionImpl(
+        handler: handler,
+        providerBlock: { try provider.expand(request: $0, session: $1 as! Echo_EchoExpandSessionImpl) })
+          .run(queue: queue)
+      return true
+    case "/echo.Echo/Collect":
+      try Echo_EchoCollectSessionImpl(
+        handler: handler,
+        providerBlock: { try provider.collect(session: $0 as! Echo_EchoCollectSessionImpl) })
+          .run(queue: queue)
+      return true
+    case "/echo.Echo/Update":
+      try Echo_EchoUpdateSessionImpl(
+        handler: handler,
+        providerBlock: { try provider.update(session: $0 as! Echo_EchoUpdateSessionImpl) })
+          .run(queue: queue)
+      return true
+    default:
+      return false
     }
   }
 }

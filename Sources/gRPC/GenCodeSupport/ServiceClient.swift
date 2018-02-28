@@ -34,16 +34,16 @@ public protocol ServiceClient {
 }
 
 open class ServiceClientBase: ServiceClient {
-  open private(set) var channel: Channel
+  public let channel: Channel
   
-  open var metadata : Metadata
+  public var metadata: Metadata
   
-  open var host : String {
+  public var host: String {
     get { return self.channel.host }
     set { self.channel.host = newValue }
   }
   
-  open var timeout : TimeInterval {
+  public var timeout: TimeInterval {
     get { return self.channel.timeout }
     set { self.channel.timeout = newValue }
   }
