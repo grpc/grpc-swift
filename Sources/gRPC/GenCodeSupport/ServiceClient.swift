@@ -67,31 +67,8 @@ open class ServiceClientBase: ServiceClient {
 /// and stores request values passed into it for later verification.
 /// Note: completion blocks are NOT called with this default implementation, and asynchronous unary calls are NOT implemented!
 open class ServiceClientTestStubBase: ServiceClient {
-  open private(set) var channel: Channel
-
-  open var metadata: Metadata
-
-  open var host: String {
-    get { return self.channel.host }
-    set { self.channel.host = newValue }
-  }
-
-  open var timeout: TimeInterval {
-    get { return channel.timeout }
-    set { channel.timeout = newValue }
-  }
-
-  /// Create a client.
-  public init(address: String, secure: Bool = true) {
-    gRPC.initialize()
-    channel = Channel(address: address, secure: secure)
-    metadata = Metadata()
-  }
-
-  /// Create a client that makes secure connections with a custom certificate and (optional) hostname.
-  public init(address: String, certificates: String, host: String?) {
-    gRPC.initialize()
-    channel = Channel(address: address, certificates: certificates, host: host)
-    metadata = Metadata()
-  }
+  open var channel: Channel { fatalError("not implemented") }
+  open var metadata = Metadata()
+  open var host = ""
+  open var timeout: TimeInterval = 0
 }
