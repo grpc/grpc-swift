@@ -39,94 +39,20 @@ fileprivate final class Echo_EchoGetCallImpl: ClientCallUnaryImpl<Echo_EchoReque
   override class var method: String { return "/echo.Echo/Get" }
 }
 
-/// Expand (Server Streaming)
-internal protocol Echo_EchoExpandCall {
+internal protocol Echo_EchoExpandCall: ClientCallServerStreamingBase {
   /// Call this to wait for a result. Blocking.
   func receive() throws -> Echo_EchoResponse
   /// Call this to wait for a result. Nonblocking.
-  func receive(completion:@escaping (Echo_EchoResponse?, Echo_EchoClientError?)->()) throws
-  
-  /// Cancel the call.
-  func cancel()
+  func receive(completion:@escaping (Echo_EchoResponse?, ClientError?)->()) throws
 }
 
-internal extension Echo_EchoExpandCall {
-  func receive() throws -> Echo_EchoResponse {
-    var returnError : Echo_EchoClientError?
-    var returnResponse : Echo_EchoResponse!
-    let sem = DispatchSemaphore(value: 0)
-    do {
-      try receive() {response, error in
-        returnResponse = response
-        returnError = error
-        sem.signal()
-      }
-      _ = sem.wait(timeout: DispatchTime.distantFuture)
-    }
-    if let returnError = returnError {
-      throw returnError
-    }
-    return returnResponse
-  }
-}
-
-fileprivate final class Echo_EchoExpandCallImpl: Echo_EchoExpandCall {
-  private var call : Call
-
-  /// Create a call.
-  init(_ channel: Channel) {
-    self.call = channel.makeCall("/echo.Echo/Expand")
-  }
-
-  /// Call this once with the message to send. Nonblocking.
-  func start(request: Echo_EchoRequest,
-                         metadata: Metadata,
-                         completion: ((CallResult) -> ())?)
-    throws -> Echo_EchoExpandCall {
-      let requestData = try request.serializedData()
-      try call.start(.serverStreaming,
-                     metadata:metadata,
-                     message:requestData,
-                     completion:completion)
-      return self
-  }
-
-  func receive(completion:@escaping (Echo_EchoResponse?, Echo_EchoClientError?)->()) throws {
-    do {
-      try call.receiveMessage() {(responseData) in
-        if let responseData = responseData {
-          if let response = try? Echo_EchoResponse(serializedData:responseData) {
-            completion(response, nil)
-          } else {
-            completion(nil, Echo_EchoClientError.invalidMessageReceived)
-          }
-        } else {
-          completion(nil, Echo_EchoClientError.endOfStream)
-        }
-      }
-    }
-  }
-
-  /// Cancel the call.
-  func cancel() {
-    call.cancel()
-  }
+fileprivate final class Echo_EchoExpandCallImpl: ClientCallServerStreamingImpl<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoExpandCall {
+  override class var method: String { return "/echo.Echo/Expand" }
 }
 
 /// Simple fake implementation of Echo_EchoExpandCall that returns a previously-defined set of results.
-class Echo_EchoExpandCallTestStub: Echo_EchoExpandCall {
-  var outputs: [Echo_EchoResponse] = []
-  
-  func receive(completion:@escaping (Echo_EchoResponse?, Echo_EchoClientError?)->()) throws {
-    if let output = outputs.first {
-      outputs.removeFirst()
-      completion(output, nil)
-    } else {
-      completion(nil, Echo_EchoClientError.endOfStream)
-    }
-  }
-
-  func cancel() { }
+class Echo_EchoExpandCallTestStub: ClientCallServerStreamingTestStub<Echo_EchoResponse>, Echo_EchoExpandCall {
+  override class var method: String { return "/echo.Echo/Expand" }
 }
 
 /// Collect (Client Streaming)
