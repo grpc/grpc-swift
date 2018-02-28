@@ -33,66 +33,10 @@ internal enum Echo_EchoClientError : Error {
   case error(c: CallResult)
 }
 
-/// Get (Unary)
-internal protocol Echo_EchoGetCall {
-  /// Cancel the call.
-  func cancel()
-}
+internal protocol Echo_EchoGetCall: ClientCallUnary { }
 
-/// Get (Unary)
-fileprivate final class Echo_EchoGetCallImpl: Echo_EchoGetCall {
-  private var call : Call
-
-  /// Create a call.
-  init(_ channel: Channel) {
-    self.call = channel.makeCall("/echo.Echo/Get")
-  }
-
-  /// Run the call. Blocks until the reply is received.
-  /// - Throws: `BinaryEncodingError` if encoding fails. `CallError` if fails to call. `Echo_EchoClientError` if receives no response.
-  func run(request: Echo_EchoRequest,
-                       metadata: Metadata) throws -> Echo_EchoResponse {
-    let sem = DispatchSemaphore(value: 0)
-    var returnCallResult : CallResult!
-    var returnResponse : Echo_EchoResponse?
-    _ = try start(request:request, metadata:metadata) {response, callResult in
-      returnResponse = response
-      returnCallResult = callResult
-      sem.signal()
-    }
-    _ = sem.wait(timeout: DispatchTime.distantFuture)
-    if let returnResponse = returnResponse {
-      return returnResponse
-    } else {
-      throw Echo_EchoClientError.error(c: returnCallResult)
-    }
-  }
-
-  /// Start the call. Nonblocking.
-  /// - Throws: `BinaryEncodingError` if encoding fails. `CallError` if fails to call.
-  func start(request: Echo_EchoRequest,
-                         metadata: Metadata,
-                         completion: @escaping ((Echo_EchoResponse?, CallResult)->()))
-    throws -> Echo_EchoGetCall {
-
-      let requestData = try request.serializedData()
-      try call.start(.unary,
-                     metadata:metadata,
-                     message:requestData)
-      {(callResult) in
-        if let responseData = callResult.resultData,
-          let response = try? Echo_EchoResponse(serializedData:responseData) {
-          completion(response, callResult)
-        } else {
-          completion(nil, callResult)
-        }
-      }
-      return self
-  }
-
-  func cancel() {
-    call.cancel()
-  }
+fileprivate final class Echo_EchoGetCallImpl: ClientCallUnaryImpl<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoGetCall {
+  override class var method: String { return "/echo.Echo/Get" }
 }
 
 /// Expand (Server Streaming)

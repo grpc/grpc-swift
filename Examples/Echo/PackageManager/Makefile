@@ -1,6 +1,6 @@
 
 all:
-	swift build -c release
+	swift build -c release --product Echo
 	cp .build/release/Echo .
 
 project:
