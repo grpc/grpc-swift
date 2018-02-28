@@ -8,6 +8,6 @@ Plugin/Sources/protoc-gen-swiftgrpc/templates.swift
 Plugin/protoc-*
 Plugin/swiftgrpc.log
 Plugin/echo.*.swift
-ExampleTests/Generated
+Examples/Echo/PackageManager/Echo
 SwiftGRPC.xcodeproj
 Package.resolved

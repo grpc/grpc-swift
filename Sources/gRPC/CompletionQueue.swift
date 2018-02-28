@@ -98,8 +98,8 @@ class CompletionQueue {
   ///
   /// - Parameter callbackQueue: a DispatchQueue to use to call the completion handler
   /// - Parameter completion: a completion handler that is called when the queue stops running
-  func runToCompletion(callbackQueue: DispatchQueue? = DispatchQueue.main,
-                                _ completion: @escaping () -> Void) {
+  func runToCompletion(callbackQueue: DispatchQueue = DispatchQueue.main,
+                       completion: (() -> Void)?) {
     // run the completion queue on a new background thread
     DispatchQueue.global().async {
       var running = true
@@ -115,7 +115,7 @@ class CompletionQueue {
             // call the operation group completion handler
             do {
               operationGroup.success = (event.success == 1)
-              try operationGroup.completion(operationGroup)
+              try operationGroup.completion?(operationGroup)
             } catch (let callError) {
               print("CompletionQueue runToCompletion: grpc error \(callError)")
             }
@@ -129,7 +129,7 @@ class CompletionQueue {
           do {
             for operationGroup in self.operationGroups.values {
               operationGroup.success = false
-              try operationGroup.completion(operationGroup)
+              try operationGroup.completion?(operationGroup)
             }
           } catch (let callError) {
             print("CompletionQueue runToCompletion: grpc error \(callError)")
@@ -144,7 +144,7 @@ class CompletionQueue {
           break
         }
       }
-      if let callbackQueue = callbackQueue {
+      if let completion = completion {
         callbackQueue.async {
           // when the queue stops running, call the queue completion handler
           completion()
@@ -155,7 +155,7 @@ class CompletionQueue {
 
   /// Runs a completion queue
   func run() {
-    runToCompletion(callbackQueue: nil) {}
+    runToCompletion(completion: nil)
   }
 
   /// Shuts down a completion queue

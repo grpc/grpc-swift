@@ -37,7 +37,7 @@ fileprivate final class {{ .|call:file,service,method }}Impl: {{ .|call:file,ser
   /// - Throws: `BinaryEncodingError` if encoding fails. `CallError` if fails to call.
   func start(request: {{ method|input }},
                          metadata: Metadata,
-                         completion: @escaping ({{ method|output }}?, CallResult)->())
+                         completion: @escaping (({{ method|output }}?, CallResult)->()))
     throws -> {{ .|call:file,service,method }} {
 
       let requestData = try request.serializedData()

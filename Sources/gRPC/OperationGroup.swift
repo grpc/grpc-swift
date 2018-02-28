@@ -41,7 +41,7 @@ class OperationGroup {
   let underlyingOperations: UnsafeMutableRawPointer?
 
   /// Completion handler that is called when the group completes
-  let completion: ((OperationGroup) throws -> Void)
+  let completion: ((OperationGroup) throws -> Void)?
 
   /// Indicates that the OperationGroup completed successfully
   var success = false
@@ -81,7 +81,7 @@ class OperationGroup {
   /// - Parameter operations: an array of operations
   init(call: Call,
        operations: [Operation],
-       completion: @escaping ((OperationGroup) throws -> Void)) {
+       completion: ((OperationGroup) throws -> Void)? = nil) {
     self.call = call
     self.operations = operations
     self.completion = completion

@@ -41,7 +41,7 @@ fileprivate final class {{ .|session:file,service,method }}Impl : {{ .|service:f
 
   /// Run the session. Internal.
   func run(queue:DispatchQueue) throws {
-    try self.handler.sendMetadata(initialMetadata:initialMetadata) {
+    try self.handler.sendMetadata(initialMetadata:initialMetadata) { _ in
       queue.async {
         do {
           try self.provider.{{ method|methodDescriptorName|lowercase }}(session:self)

@@ -11,7 +11,7 @@
   /// Call this to close the sending connection. Blocking.
   func closeSend() throws
   /// Call this to close the sending connection. Nonblocking.
-  func closeSend(completion:@escaping ()->()) throws
+  func closeSend(completion: (()->())?) throws
   
   /// Cancel the call.
   func cancel()
@@ -54,7 +54,7 @@ fileprivate final class {{ .|call:file,service,method }}Impl: {{ .|call:file,ser
   }
 
   /// Call this to start a call. Nonblocking.
-  func start(metadata:Metadata, completion:@escaping (CallResult)->())
+  func start(metadata:Metadata, completion: ((CallResult)->())?)
     throws -> {{ .|call:file,service,method }} {
       try self.call.start(.bidiStreaming, metadata:metadata, completion:completion)
       return self
@@ -81,10 +81,8 @@ fileprivate final class {{ .|call:file,service,method }}Impl: {{ .|call:file,ser
     try call.sendMessage(data:messageData, errorHandler:errorHandler)
   }
 
-  func closeSend(completion:@escaping ()->()) throws {
-    try call.close() {
-      completion()
-    }
+  func closeSend(completion: (()->())?) throws {
+  	try call.close(completion: completion)
   }
 
   func cancel() {
@@ -112,7 +110,7 @@ class {{ .|call:file,service,method }}TestStub: {{ .|call:file,service,method }}
     inputs.append(message)
   }
 
-  func closeSend(completion:@escaping ()->()) throws { completion() }
+  func closeSend(completion: (()->())?) throws { completion?() }
 
   func cancel() { }
 }

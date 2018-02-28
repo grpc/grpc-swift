@@ -72,7 +72,7 @@ fileprivate final class Echo_EchoGetCallImpl: Echo_EchoGetCall {
   /// - Throws: `BinaryEncodingError` if encoding fails. `CallError` if fails to call.
   func start(request: Echo_EchoRequest,
                          metadata: Metadata,
-                         completion: @escaping (Echo_EchoResponse?, CallResult)->())
+                         completion: @escaping ((Echo_EchoResponse?, CallResult)->()))
     throws -> Echo_EchoGetCall {
 
       let requestData = try request.serializedData()
@@ -137,7 +137,7 @@ fileprivate final class Echo_EchoExpandCallImpl: Echo_EchoExpandCall {
   /// Call this once with the message to send. Nonblocking.
   func start(request: Echo_EchoRequest,
                          metadata: Metadata,
-                         completion: @escaping (CallResult) -> ())
+                         completion: ((CallResult) -> ())?)
     throws -> Echo_EchoExpandCall {
       let requestData = try request.serializedData()
       try call.start(.serverStreaming,
@@ -169,6 +169,21 @@ fileprivate final class Echo_EchoExpandCallImpl: Echo_EchoExpandCall {
   }
 }
 
+/// Simple fake implementation of Echo_EchoExpandCall that returns a previously-defined set of results.
+class Echo_EchoExpandCallTestStub: Echo_EchoExpandCall {
+  var outputs: [Echo_EchoResponse] = []
+  
+  func receive(completion:@escaping (Echo_EchoResponse?, Echo_EchoClientError?)->()) throws {
+    if let output = outputs.first {
+      outputs.removeFirst()
+      completion(output, nil)
+    } else {
+      completion(nil, Echo_EchoClientError.endOfStream)
+    }
+  }
+
+  func cancel() { }
+}
 
 /// Collect (Client Streaming)
 internal protocol Echo_EchoCollectCall {
@@ -215,7 +230,7 @@ fileprivate final class Echo_EchoCollectCallImpl: Echo_EchoCollectCall {
   }
 
   /// Call this to start a call. Nonblocking.
-  func start(metadata:Metadata, completion:@escaping (CallResult)->())
+  func start(metadata:Metadata, completion: ((CallResult)->())?)
     throws -> Echo_EchoCollectCall {
       try self.call.start(.clientStreaming, metadata:metadata, completion:completion)
       return self
@@ -247,6 +262,22 @@ fileprivate final class Echo_EchoCollectCallImpl: Echo_EchoCollectCall {
   }
 }
 
+/// Simple fake implementation of Echo_EchoCollectCall
+/// stores sent values for later verification and finall returns a previously-defined result.
+class Echo_EchoCollectCallTestStub: Echo_EchoCollectCall {
+  var inputs: [Echo_EchoRequest] = []
+  var output: Echo_EchoResponse?
+
+  func send(_ message:Echo_EchoRequest, errorHandler:@escaping (Error)->()) throws {
+    inputs.append(message)
+  }
+  
+  func closeAndReceive(completion:@escaping (Echo_EchoResponse?, Echo_EchoClientError?)->()) throws {
+    completion(output!, nil)
+  }
+
+  func cancel() { }
+}
 
 /// Update (Bidirectional Streaming)
 internal protocol Echo_EchoUpdateCall {
@@ -261,7 +292,7 @@ internal protocol Echo_EchoUpdateCall {
   /// Call this to close the sending connection. Blocking.
   func closeSend() throws
   /// Call this to close the sending connection. Nonblocking.
-  func closeSend(completion:@escaping ()->()) throws
+  func closeSend(completion: (()->())?) throws
   
   /// Cancel the call.
   func cancel()
@@ -304,7 +335,7 @@ fileprivate final class Echo_EchoUpdateCallImpl: Echo_EchoUpdateCall {
   }
 
   /// Call this to start a call. Nonblocking.
-  func start(metadata:Metadata, completion:@escaping (CallResult)->())
+  func start(metadata:Metadata, completion: ((CallResult)->())?)
     throws -> Echo_EchoUpdateCall {
       try self.call.start(.bidiStreaming, metadata:metadata, completion:completion)
       return self
@@ -331,10 +362,8 @@ fileprivate final class Echo_EchoUpdateCallImpl: Echo_EchoUpdateCall {
     try call.sendMessage(data:messageData, errorHandler:errorHandler)
   }
 
-  func closeSend(completion:@escaping ()->()) throws {
-    try call.close() {
-      completion()
-    }
+  func closeSend(completion: (()->())?) throws {
+  	try call.close(completion: completion)
   }
 
   func cancel() {
@@ -342,6 +371,29 @@ fileprivate final class Echo_EchoUpdateCallImpl: Echo_EchoUpdateCall {
   }
 }
 
+/// Simple fake implementation of Echo_EchoUpdateCall that returns a previously-defined set of results
+/// and stores sent values for later verification.
+class Echo_EchoUpdateCallTestStub: Echo_EchoUpdateCall {
+  var inputs: [Echo_EchoRequest] = []
+  var outputs: [Echo_EchoResponse] = []
+  
+  func receive(completion:@escaping (Echo_EchoResponse?, Echo_EchoClientError?)->()) throws {
+    if let output = outputs.first {
+      outputs.removeFirst()
+      completion(output, nil)
+    } else {
+      completion(nil, Echo_EchoClientError.endOfStream)
+    }
+  }
+
+  func send(_ message:Echo_EchoRequest, errorHandler:@escaping (Error)->()) throws {
+    inputs.append(message)
+  }
+
+  func closeSend(completion: (()->())?) throws { completion?() }
+
+  func cancel() { }
+}
 
 
 /// Instantiate Echo_EchoServiceImpl, then call methods of this protocol to make API calls.
@@ -368,19 +420,19 @@ internal protocol Echo_EchoService {
   /// Asynchronous. Server-streaming.
   /// Send the initial message.
   /// Use methods on the returned object to get streamed responses.
-  func expand(_ request: Echo_EchoRequest, completion: @escaping (CallResult)->())
+  func expand(_ request: Echo_EchoRequest, completion: ((CallResult)->())?)
     throws -> Echo_EchoExpandCall
 
   /// Asynchronous. Client-streaming.
   /// Use methods on the returned object to stream messages and
   /// to close the connection and wait for a final response.
-  func collect(completion: @escaping (CallResult)->())
+  func collect(completion: ((CallResult)->())?)
     throws -> Echo_EchoCollectCall
 
   /// Asynchronous. Bidirectional-streaming.
   /// Use methods on the returned object to stream messages,
   /// to wait for replies, and to close the connection.
-  func update(completion: @escaping (CallResult)->())
+  func update(completion: ((CallResult)->())?)
     throws -> Echo_EchoUpdateCall
 
 }
@@ -441,7 +493,7 @@ internal final class Echo_EchoServiceClient: Echo_EchoService {
   /// Asynchronous. Server-streaming.
   /// Send the initial message.
   /// Use methods on the returned object to get streamed responses.
-  internal func expand(_ request: Echo_EchoRequest, completion: @escaping (CallResult)->())
+  internal func expand(_ request: Echo_EchoRequest, completion: ((CallResult)->())?)
     throws
     -> Echo_EchoExpandCall {
       return try Echo_EchoExpandCallImpl(channel).start(request:request, metadata:metadata, completion:completion)
@@ -450,7 +502,7 @@ internal final class Echo_EchoServiceClient: Echo_EchoService {
   /// Asynchronous. Client-streaming.
   /// Use methods on the returned object to stream messages and
   /// to close the connection and wait for a final response.
-  internal func collect(completion: @escaping (CallResult)->())
+  internal func collect(completion: ((CallResult)->())?)
     throws
     -> Echo_EchoCollectCall {
       return try Echo_EchoCollectCallImpl(channel).start(metadata:metadata, completion:completion)
@@ -459,7 +511,7 @@ internal final class Echo_EchoServiceClient: Echo_EchoService {
   /// Asynchronous. Bidirectional-streaming.
   /// Use methods on the returned object to stream messages,
   /// to wait for replies, and to close the connection.
-  internal func update(completion: @escaping (CallResult)->())
+  internal func update(completion: ((CallResult)->())?)
     throws
     -> Echo_EchoUpdateCall {
       return try Echo_EchoUpdateCallImpl(channel).start(metadata:metadata, completion:completion)
@@ -467,6 +519,51 @@ internal final class Echo_EchoServiceClient: Echo_EchoService {
 
 }
 
+/// Simple fake implementation of Echo_EchoService that returns a previously-defined set of results
+/// and stores request values passed into it for later verification.
+/// Note: completion blocks are NOT called with this default implementation, and asynchronous unary calls are NOT implemented!
+class Echo_EchoServiceTestStub: Echo_EchoService {
+  var channel: Channel { fatalError("not implemented") }
+  var metadata = Metadata()
+  var host = ""
+  var timeout: TimeInterval = 0
+  
+  var getRequests: [Echo_EchoRequest] = []
+  var getResponses: [Echo_EchoResponse] = []
+  func get(_ request: Echo_EchoRequest) throws -> Echo_EchoResponse {
+    getRequests.append(request)
+    defer { getResponses.removeFirst() }
+    return getResponses.first!
+  }
+  func get(_ request: Echo_EchoRequest,
+                  completion: @escaping (Echo_EchoResponse?, CallResult)->()) throws -> Echo_EchoGetCall {
+    fatalError("not implemented")
+  }
+
+  var expandRequests: [Echo_EchoRequest] = []
+  var expandCalls: [Echo_EchoExpandCall] = []
+  func expand(_ request: Echo_EchoRequest, completion: ((CallResult)->())?)
+    throws -> Echo_EchoExpandCall {
+      expandRequests.append(request)
+      defer { expandCalls.removeFirst() }
+      return expandCalls.first!
+  }
+
+  var collectCalls: [Echo_EchoCollectCall] = []
+  func collect(completion: ((CallResult)->())?)
+    throws -> Echo_EchoCollectCall {
+      defer { collectCalls.removeFirst() }
+      return collectCalls.first!
+  }
+
+  var updateCalls: [Echo_EchoUpdateCall] = []
+  func update(completion: ((CallResult)->())?)
+    throws -> Echo_EchoUpdateCall {
+      defer { updateCalls.removeFirst() }
+      return updateCalls.first!
+  }
+
+}
 
 
 
@@ -507,6 +604,14 @@ fileprivate class Echo_EchoSessionImpl: Echo_EchoSession {
   }
 }
 
+class Echo_EchoSessionTestStub: Echo_EchoSession {
+  var requestMetadata = Metadata()
+
+  var statusCode = StatusCode.ok
+  var statusMessage = "OK"
+  var initialMetadata = Metadata()
+  var trailingMetadata = Metadata()
+}
 
 // Get (Unary Streaming)
 internal protocol Echo_EchoGetSession : Echo_EchoSession { }
@@ -535,11 +640,13 @@ fileprivate final class Echo_EchoGetSessionImpl : Echo_EchoSessionImpl, Echo_Ech
   }
 }
 
+/// Trivial fake implementation of Echo_EchoGetSession.
+class Echo_EchoGetSessionTestStub : Echo_EchoSessionTestStub, Echo_EchoGetSession { }
 
 // Expand (Server Streaming)
 internal protocol Echo_EchoExpandSession : Echo_EchoSession {
   /// Send a message. Nonblocking.
-  func send(_ response: Echo_EchoResponse, completion: @escaping ()->()) throws
+  func send(_ response: Echo_EchoResponse, completion: ((Bool)->())?) throws
 }
 
 fileprivate final class Echo_EchoExpandSessionImpl : Echo_EchoSessionImpl, Echo_EchoExpandSession {
@@ -551,8 +658,8 @@ fileprivate final class Echo_EchoExpandSessionImpl : Echo_EchoSessionImpl, Echo_
     super.init(handler:handler)
   }
 
-  func send(_ response: Echo_EchoResponse, completion: @escaping ()->()) throws {
-    try handler.sendResponse(message:response.serializedData()) {completion()}
+  func send(_ response: Echo_EchoResponse, completion: ((Bool)->())?) throws {
+    try handler.sendResponse(message:response.serializedData(), completion: completion)
   }
 
   /// Run the session. Internal.
@@ -569,7 +676,7 @@ fileprivate final class Echo_EchoExpandSessionImpl : Echo_EchoSessionImpl, Echo_
               try self.handler.sendStatus(statusCode:self.statusCode,
                                           statusMessage:self.statusMessage,
                                           trailingMetadata:self.trailingMetadata,
-                                          completion:{})
+                                          completion:nil)
             } catch (let error) {
               print("error: \(error)")
             }
@@ -582,6 +689,17 @@ fileprivate final class Echo_EchoExpandSessionImpl : Echo_EchoSessionImpl, Echo_
   }
 }
 
+/// Simple fake implementation of Echo_EchoExpandSession that returns a previously-defined set of results
+/// and stores sent values for later verification.
+class Echo_EchoExpandSessionTestStub : Echo_EchoSessionTestStub, Echo_EchoExpandSession {
+  var outputs: [Echo_EchoResponse] = []
+
+  func send(_ response: Echo_EchoResponse, completion: ((Bool)->())?) throws {
+    outputs.append(response)
+  }
+
+  func close() throws { }
+}
 
 // Collect (Client Streaming)
 internal protocol Echo_EchoCollectSession : Echo_EchoSession {
@@ -626,7 +744,7 @@ fileprivate final class Echo_EchoCollectSessionImpl : Echo_EchoSessionImpl, Echo
 
   /// Run the session. Internal.
   func run(queue:DispatchQueue) throws {
-    try self.handler.sendMetadata(initialMetadata:initialMetadata) {
+    try self.handler.sendMetadata(initialMetadata:initialMetadata) { _ in
       queue.async {
         do {
           try self.provider.collect(session:self)
@@ -638,6 +756,27 @@ fileprivate final class Echo_EchoCollectSessionImpl : Echo_EchoSessionImpl, Echo
   }
 }
 
+/// Simple fake implementation of Echo_EchoCollectSession that returns a previously-defined set of results
+/// and stores sent values for later verification.
+class Echo_EchoCollectSessionTestStub: Echo_EchoSessionTestStub, Echo_EchoCollectSession {
+  var inputs: [Echo_EchoRequest] = []
+  var output: Echo_EchoResponse?
+
+  func receive() throws -> Echo_EchoRequest {
+    if let input = inputs.first {
+      inputs.removeFirst()
+      return input
+    } else {
+      throw Echo_EchoClientError.endOfStream
+    }
+  }
+
+  func sendAndClose(_ response: Echo_EchoResponse) throws {
+    output = response
+  }
+
+  func close() throws { }
+}
 
 // Update (Bidirectional Streaming)
 internal protocol Echo_EchoUpdateSession : Echo_EchoSession {
@@ -645,7 +784,7 @@ internal protocol Echo_EchoUpdateSession : Echo_EchoSession {
   func receive() throws -> Echo_EchoRequest
 
   /// Send a message. Nonblocking.
-  func send(_ response: Echo_EchoResponse, completion: @escaping ()->()) throws
+  func send(_ response: Echo_EchoResponse, completion: ((Bool)->())?) throws
   
   /// Close a connection. Blocks until the connection is closed.
   func close() throws
@@ -681,23 +820,21 @@ fileprivate final class Echo_EchoUpdateSessionImpl : Echo_EchoSessionImpl, Echo_
     }
   }
 
-  func send(_ response: Echo_EchoResponse, completion: @escaping ()->()) throws {
-    try handler.sendResponse(message:response.serializedData()) {completion()}
+  func send(_ response: Echo_EchoResponse, completion: ((Bool)->())?) throws {
+    try handler.sendResponse(message:response.serializedData(), completion: completion)
   }
 
   func close() throws {
     let sem = DispatchSemaphore(value: 0)
     try self.handler.sendStatus(statusCode:self.statusCode,
                                 statusMessage:self.statusMessage,
-                                trailingMetadata:self.trailingMetadata) {
-                                  sem.signal()
-    }
+                                trailingMetadata:self.trailingMetadata) { _ in sem.signal() }
     _ = sem.wait(timeout: DispatchTime.distantFuture)
   }
 
   /// Run the session. Internal.
   func run(queue:DispatchQueue) throws {
-    try self.handler.sendMetadata(initialMetadata:initialMetadata) {
+    try self.handler.sendMetadata(initialMetadata:initialMetadata) { _ in
       queue.async {
         do {
           try self.provider.update(session:self)
@@ -709,6 +846,27 @@ fileprivate final class Echo_EchoUpdateSessionImpl : Echo_EchoSessionImpl, Echo_
   }
 }
 
+/// Simple fake implementation of Echo_EchoUpdateSession that returns a previously-defined set of results
+/// and stores sent values for later verification.
+class Echo_EchoUpdateSessionTestStub : Echo_EchoSessionTestStub, Echo_EchoUpdateSession {
+  var inputs: [Echo_EchoRequest] = []
+  var outputs: [Echo_EchoResponse] = []
+
+  func receive() throws -> Echo_EchoRequest {
+    if let input = inputs.first {
+      inputs.removeFirst()
+      return input
+    } else {
+      throw Echo_EchoClientError.endOfStream
+    }
+  }
+
+  func send(_ response: Echo_EchoResponse, completion: ((Bool)->())?) throws {
+    outputs.append(response)
+  }
+
+  func close() throws { }
+}
 
 
 /// Main server for generated service

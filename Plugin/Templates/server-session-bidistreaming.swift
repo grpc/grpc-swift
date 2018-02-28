@@ -4,7 +4,7 @@
   func receive() throws -> {{ method|input }}
 
   /// Send a message. Nonblocking.
-  func send(_ response: {{ method|output }}, completion: @escaping ()->()) throws
+  func send(_ response: {{ method|output }}, completion: ((Bool)->())?) throws
   
   /// Close a connection. Blocks until the connection is closed.
   func close() throws
@@ -40,23 +40,21 @@ fileprivate final class {{ .|session:file,service,method }}Impl : {{ .|service:f
     }
   }
 
-  func send(_ response: {{ method|output }}, completion: @escaping ()->()) throws {
-    try handler.sendResponse(message:response.serializedData()) {completion()}
+  func send(_ response: {{ method|output }}, completion: ((Bool)->())?) throws {
+    try handler.sendResponse(message:response.serializedData(), completion: completion)
   }
 
   func close() throws {
     let sem = DispatchSemaphore(value: 0)
     try self.handler.sendStatus(statusCode:self.statusCode,
                                 statusMessage:self.statusMessage,
-                                trailingMetadata:self.trailingMetadata) {
-                                  sem.signal()
-    }
+                                trailingMetadata:self.trailingMetadata) { _ in sem.signal() }
     _ = sem.wait(timeout: DispatchTime.distantFuture)
   }
 
   /// Run the session. Internal.
   func run(queue:DispatchQueue) throws {
-    try self.handler.sendMetadata(initialMetadata:initialMetadata) {
+    try self.handler.sendMetadata(initialMetadata:initialMetadata) { _ in
       queue.async {
         do {
           try self.provider.{{ method|methodDescriptorName|lowercase }}(session:self)
@@ -84,7 +82,7 @@ class {{ .|session:file,service,method }}TestStub : {{ .|service:file,service }}
     }
   }
 
-  func send(_ response: {{ method|output }}, completion: @escaping ()->()) throws {
+  func send(_ response: {{ method|output }}, completion: ((Bool)->())?) throws {
     outputs.append(response)
   }
 

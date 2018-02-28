@@ -209,7 +209,7 @@ public class Call {
   public func start(_ style: CallStyle,
                     metadata: Metadata,
                     message: Data? = nil,
-                    completion: @escaping (CallResult) -> Void) throws {
+                    completion: ((CallResult) -> Void)? = nil) throws {
     var operations: [Operation] = []
     switch style {
     case .unary:
@@ -244,7 +244,9 @@ public class Call {
     }
     try perform(OperationGroup(call: self,
                                operations: operations,
-                               completion: { op in completion(CallResult(op)) }))
+                               completion: completion != nil
+                                ? { op in completion?(CallResult(op)) }
+                                : nil))
   }
 
   /// Sends a message over a streaming connection.
@@ -311,9 +313,11 @@ public class Call {
 
   // Closes a streaming connection.
   /// - Throws: `CallError` if fails to call.
-  public func close(completion: @escaping (() -> Void)) throws {
-    try perform(OperationGroup(call: self, operations: [.sendCloseFromClient]) { _ in completion()
-    })
+  public func close(completion: (() -> Void)? = nil) throws {
+    try perform(OperationGroup(call: self, operations: [.sendCloseFromClient],
+                               completion: completion != nil
+                                ? { op in completion?() }
+                                : nil))
   }
 
   // Get the current message queue length

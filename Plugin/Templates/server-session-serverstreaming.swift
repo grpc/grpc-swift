@@ -1,7 +1,7 @@
 // {{ method|methodDescriptorName }} (Server Streaming)
 {{ access }} protocol {{ .|session:file,service,method }} : {{ .|service:file,service }}Session {
   /// Send a message. Nonblocking.
-  func send(_ response: {{ method|output }}, completion: @escaping ()->()) throws
+  func send(_ response: {{ method|output }}, completion: ((Bool)->())?) throws
 }
 
 fileprivate final class {{ .|session:file,service,method }}Impl : {{ .|service:file,service }}SessionImpl, {{ .|session:file,service,method }} {
@@ -13,8 +13,8 @@ fileprivate final class {{ .|session:file,service,method }}Impl : {{ .|service:f
     super.init(handler:handler)
   }
 
-  func send(_ response: {{ method|output }}, completion: @escaping ()->()) throws {
-    try handler.sendResponse(message:response.serializedData()) {completion()}
+  func send(_ response: {{ method|output }}, completion: ((Bool)->())?) throws {
+    try handler.sendResponse(message:response.serializedData(), completion: completion)
   }
 
   /// Run the session. Internal.
@@ -31,7 +31,7 @@ fileprivate final class {{ .|session:file,service,method }}Impl : {{ .|service:f
               try self.handler.sendStatus(statusCode:self.statusCode,
                                           statusMessage:self.statusMessage,
                                           trailingMetadata:self.trailingMetadata,
-                                          completion:{})
+                                          completion:nil)
             } catch (let error) {
               print("error: \(error)")
             }
@@ -50,7 +50,7 @@ fileprivate final class {{ .|session:file,service,method }}Impl : {{ .|service:f
 class {{ .|session:file,service,method }}TestStub : {{ .|service:file,service }}SessionTestStub, {{ .|session:file,service,method }} {
   var outputs: [{{ method|output }}] = []
 
-  func send(_ response: {{ method|output }}, completion: @escaping ()->()) throws {
+  func send(_ response: {{ method|output }}, completion: ((Bool)->())?) throws {
     outputs.append(response)
   }
 
