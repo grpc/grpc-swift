@@ -43,3 +43,5 @@ script:
   - make test
   - cd Plugin
   - make test
+  - cd ../ExampleTests
+  - make
