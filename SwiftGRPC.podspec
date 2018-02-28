@@ -47,4 +47,5 @@ Pod::Spec.new do |s|
 
   s.dependency 'gRPC-Core', '~> 1.9.1'
   s.dependency 'BoringSSL', '~> 9.1'
+  s.dependency 'SwiftProtobuf', '~> 1.0.2'
 end
