@@ -268,12 +268,6 @@ class Echo_EchoServiceTestStub: Echo_EchoService {
 }
 
 
-
-/// Type for errors thrown from generated server code.
-internal enum Echo_EchoServerError : Error {
-  case endOfStream
-}
-
 /// To build a server, implement a class that conforms to this protocol.
 internal protocol Echo_EchoProvider {
   func get(request : Echo_EchoRequest, session : Echo_EchoGetSession) throws -> Echo_EchoResponse
@@ -282,129 +276,22 @@ internal protocol Echo_EchoProvider {
   func update(session : Echo_EchoUpdateSession) throws
 }
 
-/// Common properties available in each service session.
-internal protocol Echo_EchoSession {
-  var requestMetadata : Metadata { get }
+internal protocol Echo_EchoGetSession: ServerSessionUnary { }
 
-  var statusCode : StatusCode { get }
-  var statusMessage : String { get }
-  var initialMetadata : Metadata { get }
-  var trailingMetadata : Metadata { get }
-}
+fileprivate final class Echo_EchoGetSessionImpl: ServerSessionUnaryImpl<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoGetSession { }
 
-fileprivate class Echo_EchoSessionImpl: Echo_EchoSession {
-  var handler : Handler
-  var requestMetadata : Metadata { return handler.requestMetadata }
+class Echo_EchoGetSessionTestStub: ServerSessionUnaryTestStub, Echo_EchoGetSession { }
 
-  var statusCode : StatusCode = .ok
-  var statusMessage : String = "OK"
-  var initialMetadata : Metadata = Metadata()
-  var trailingMetadata : Metadata = Metadata()
-
-  init(handler:Handler) {
-    self.handler = handler
-  }
-}
-
-class Echo_EchoSessionTestStub: Echo_EchoSession {
-  var requestMetadata = Metadata()
-
-  var statusCode = StatusCode.ok
-  var statusMessage = "OK"
-  var initialMetadata = Metadata()
-  var trailingMetadata = Metadata()
-}
-
-// Get (Unary Streaming)
-internal protocol Echo_EchoGetSession : Echo_EchoSession { }
-
-fileprivate final class Echo_EchoGetSessionImpl : Echo_EchoSessionImpl, Echo_EchoGetSession {
-  private var provider : Echo_EchoProvider
-
-  /// Create a session.
-  init(handler:Handler, provider: Echo_EchoProvider) {
-    self.provider = provider
-    super.init(handler:handler)
-  }
-
-  /// Run the session. Internal.
-  func run(queue:DispatchQueue) throws {
-    try handler.receiveMessage(initialMetadata:initialMetadata) {(requestData) in
-      if let requestData = requestData {
-        let requestMessage = try Echo_EchoRequest(serializedData:requestData)
-        let replyMessage = try self.provider.get(request:requestMessage, session: self)
-        try self.handler.sendResponse(message:replyMessage.serializedData(),
-                                      statusCode:self.statusCode,
-                                      statusMessage:self.statusMessage,
-                                      trailingMetadata:self.trailingMetadata)
-      }
-    }
-  }
-}
-
-/// Trivial fake implementation of Echo_EchoGetSession.
-class Echo_EchoGetSessionTestStub : Echo_EchoSessionTestStub, Echo_EchoGetSession { }
-
-// Expand (Server Streaming)
-internal protocol Echo_EchoExpandSession : Echo_EchoSession {
+internal protocol Echo_EchoExpandSession: ServerSessionServerStreaming {
   /// Send a message. Nonblocking.
-  func send(_ response: Echo_EchoResponse, completion: ((Bool)->())?) throws
+  func send(_ response: Echo_EchoResponse, completion: ((Bool) -> Void)?) throws
 }
 
-fileprivate final class Echo_EchoExpandSessionImpl : Echo_EchoSessionImpl, Echo_EchoExpandSession {
-  private var provider : Echo_EchoProvider
+fileprivate final class Echo_EchoExpandSessionImpl: ServerSessionServerStreamingImpl<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoExpandSession { }
 
-  /// Create a session.
-  init(handler:Handler, provider: Echo_EchoProvider) {
-    self.provider = provider
-    super.init(handler:handler)
-  }
+class Echo_EchoExpandSessionTestStub: ServerSessionServerStreamingTestStub<Echo_EchoResponse>, Echo_EchoExpandSession { }
 
-  func send(_ response: Echo_EchoResponse, completion: ((Bool)->())?) throws {
-    try handler.sendResponse(message:response.serializedData(), completion: completion)
-  }
-
-  /// Run the session. Internal.
-  func run(queue:DispatchQueue) throws {
-    try self.handler.receiveMessage(initialMetadata:initialMetadata) {(requestData) in
-      if let requestData = requestData {
-        do {
-          let requestMessage = try Echo_EchoRequest(serializedData:requestData)
-          // to keep providers from blocking the server thread,
-          // we dispatch them to another queue.
-          queue.async {
-            do {
-              try self.provider.expand(request:requestMessage, session: self)
-              try self.handler.sendStatus(statusCode:self.statusCode,
-                                          statusMessage:self.statusMessage,
-                                          trailingMetadata:self.trailingMetadata,
-                                          completion:nil)
-            } catch (let error) {
-              print("error: \(error)")
-            }
-          }
-        } catch (let error) {
-          print("error: \(error)")
-        }
-      }
-    }
-  }
-}
-
-/// Simple fake implementation of Echo_EchoExpandSession that returns a previously-defined set of results
-/// and stores sent values for later verification.
-class Echo_EchoExpandSessionTestStub : Echo_EchoSessionTestStub, Echo_EchoExpandSession {
-  var outputs: [Echo_EchoResponse] = []
-
-  func send(_ response: Echo_EchoResponse, completion: ((Bool)->())?) throws {
-    outputs.append(response)
-  }
-
-  func close() throws { }
-}
-
-// Collect (Client Streaming)
-internal protocol Echo_EchoCollectSession : Echo_EchoSession {
+internal protocol Echo_EchoCollectSession: ServerSessionClientStreaming {
   /// Receive a message. Blocks until a message is received or the client closes the connection.
   func receive() throws -> Echo_EchoRequest
 
@@ -412,163 +299,24 @@ internal protocol Echo_EchoCollectSession : Echo_EchoSession {
   func sendAndClose(_ response: Echo_EchoResponse) throws
 }
 
-fileprivate final class Echo_EchoCollectSessionImpl : Echo_EchoSessionImpl, Echo_EchoCollectSession {
-  private var provider : Echo_EchoProvider
+fileprivate final class Echo_EchoCollectSessionImpl: ServerSessionClientStreamingImpl<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectSession { }
 
-  /// Create a session.
-  init(handler:Handler, provider: Echo_EchoProvider) {
-    self.provider = provider
-    super.init(handler:handler)
-  }
+class Echo_EchoCollectSessionTestStub: ServerSessionClientStreamingTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectSession { }
 
-  func receive() throws -> Echo_EchoRequest {
-    let sem = DispatchSemaphore(value: 0)
-    var requestMessage : Echo_EchoRequest?
-    try self.handler.receiveMessage() {(requestData) in
-      if let requestData = requestData {
-        requestMessage = try? Echo_EchoRequest(serializedData:requestData)
-      }
-      sem.signal()
-    }
-    _ = sem.wait(timeout: DispatchTime.distantFuture)
-    if requestMessage == nil {
-      throw Echo_EchoServerError.endOfStream
-    }
-    return requestMessage!
-  }
-
-  func sendAndClose(_ response: Echo_EchoResponse) throws {
-    try self.handler.sendResponse(message:response.serializedData(),
-                                  statusCode:self.statusCode,
-                                  statusMessage:self.statusMessage,
-                                  trailingMetadata:self.trailingMetadata)
-  }
-
-  /// Run the session. Internal.
-  func run(queue:DispatchQueue) throws {
-    try self.handler.sendMetadata(initialMetadata:initialMetadata) { _ in
-      queue.async {
-        do {
-          try self.provider.collect(session:self)
-        } catch (let error) {
-          print("error \(error)")
-        }
-      }
-    }
-  }
-}
-
-/// Simple fake implementation of Echo_EchoCollectSession that returns a previously-defined set of results
-/// and stores sent values for later verification.
-class Echo_EchoCollectSessionTestStub: Echo_EchoSessionTestStub, Echo_EchoCollectSession {
-  var inputs: [Echo_EchoRequest] = []
-  var output: Echo_EchoResponse?
-
-  func receive() throws -> Echo_EchoRequest {
-    if let input = inputs.first {
-      inputs.removeFirst()
-      return input
-    } else {
-      throw Echo_EchoClientError.endOfStream
-    }
-  }
-
-  func sendAndClose(_ response: Echo_EchoResponse) throws {
-    output = response
-  }
-
-  func close() throws { }
-}
-
-// Update (Bidirectional Streaming)
-internal protocol Echo_EchoUpdateSession : Echo_EchoSession {
+internal protocol Echo_EchoUpdateSession: ServerSessionBidirectionalStreaming {
   /// Receive a message. Blocks until a message is received or the client closes the connection.
   func receive() throws -> Echo_EchoRequest
 
   /// Send a message. Nonblocking.
-  func send(_ response: Echo_EchoResponse, completion: ((Bool)->())?) throws
+  func send(_ response: Echo_EchoResponse, completion: ((Bool) -> Void)?) throws
   
   /// Close a connection. Blocks until the connection is closed.
   func close() throws
 }
 
-fileprivate final class Echo_EchoUpdateSessionImpl : Echo_EchoSessionImpl, Echo_EchoUpdateSession {
-  private var provider : Echo_EchoProvider
+fileprivate final class Echo_EchoUpdateSessionImpl: ServerSessionBidirectionalStreamingImpl<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateSession { }
 
-  /// Create a session.
-  init(handler:Handler, provider: Echo_EchoProvider) {
-    self.provider = provider
-    super.init(handler:handler)
-  }
-
-  func receive() throws -> Echo_EchoRequest {
-    let sem = DispatchSemaphore(value: 0)
-    var requestMessage : Echo_EchoRequest?
-    try self.handler.receiveMessage() {(requestData) in
-      if let requestData = requestData {
-        do {
-          requestMessage = try Echo_EchoRequest(serializedData:requestData)
-        } catch (let error) {
-          print("error \(error)")
-        }
-      }
-      sem.signal()
-    }
-    _ = sem.wait(timeout: DispatchTime.distantFuture)
-    if let requestMessage = requestMessage {
-      return requestMessage
-    } else {
-      throw Echo_EchoServerError.endOfStream
-    }
-  }
-
-  func send(_ response: Echo_EchoResponse, completion: ((Bool)->())?) throws {
-    try handler.sendResponse(message:response.serializedData(), completion: completion)
-  }
-
-  func close() throws {
-    let sem = DispatchSemaphore(value: 0)
-    try self.handler.sendStatus(statusCode:self.statusCode,
-                                statusMessage:self.statusMessage,
-                                trailingMetadata:self.trailingMetadata) { _ in sem.signal() }
-    _ = sem.wait(timeout: DispatchTime.distantFuture)
-  }
-
-  /// Run the session. Internal.
-  func run(queue:DispatchQueue) throws {
-    try self.handler.sendMetadata(initialMetadata:initialMetadata) { _ in
-      queue.async {
-        do {
-          try self.provider.update(session:self)
-        } catch (let error) {
-          print("error \(error)")
-        }
-      }
-    }
-  }
-}
-
-/// Simple fake implementation of Echo_EchoUpdateSession that returns a previously-defined set of results
-/// and stores sent values for later verification.
-class Echo_EchoUpdateSessionTestStub : Echo_EchoSessionTestStub, Echo_EchoUpdateSession {
-  var inputs: [Echo_EchoRequest] = []
-  var outputs: [Echo_EchoResponse] = []
-
-  func receive() throws -> Echo_EchoRequest {
-    if let input = inputs.first {
-      inputs.removeFirst()
-      return input
-    } else {
-      throw Echo_EchoClientError.endOfStream
-    }
-  }
-
-  func send(_ response: Echo_EchoResponse, completion: ((Bool)->())?) throws {
-    outputs.append(response)
-  }
-
-  func close() throws { }
-}
+class Echo_EchoUpdateSessionTestStub: ServerSessionBidirectionalStreamingTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateSession { }
 
 
 /// Main server for generated service
@@ -620,13 +368,25 @@ internal final class Echo_EchoServer {
       do {
         switch unwrappedMethod {
         case "/echo.Echo/Get":
-          try Echo_EchoGetSessionImpl(handler:handler, provider:provider).run(queue:queue)
+          try Echo_EchoGetSessionImpl(
+            handler: handler,
+            providerBlock: { try provider.get(request: $0, session: $1 as! Echo_EchoGetSessionImpl) })
+              .run(queue:queue)
         case "/echo.Echo/Expand":
-          try Echo_EchoExpandSessionImpl(handler:handler, provider:provider).run(queue:queue)
+          try Echo_EchoExpandSessionImpl(
+            handler: handler,
+            providerBlock: { try provider.expand(request: $0, session: $1 as! Echo_EchoExpandSessionImpl) })
+              .run(queue:queue)
         case "/echo.Echo/Collect":
-          try Echo_EchoCollectSessionImpl(handler:handler, provider:provider).run(queue:queue)
+          try Echo_EchoCollectSessionImpl(
+            handler: handler,
+            providerBlock: { try provider.collect(session: $0 as! Echo_EchoCollectSessionImpl) })
+              .run(queue:queue)
         case "/echo.Echo/Update":
-          try Echo_EchoUpdateSessionImpl(handler:handler, provider:provider).run(queue:queue)
+          try Echo_EchoUpdateSessionImpl(
+            handler: handler,
+            providerBlock: { try provider.update(session: $0 as! Echo_EchoUpdateSessionImpl) })
+              .run(queue:queue)
         default:
           // handle unknown requests
           try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in

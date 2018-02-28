@@ -1,10 +1,4 @@
 //-{% for service in file.services %}
-
-/// Type for errors thrown from generated server code.
-{{ access }} enum {{ .|servererror:file,service }} : Error {
-  case endOfStream
-}
-
 /// To build a server, implement a class that conforms to this protocol.
 {{ access }} protocol {{ .|provider:file,service }} {
   //-{% for method in service.methods %}
@@ -22,41 +16,6 @@
   //-{% endif %}
   //-{% endfor %}
 }
-
-/// Common properties available in each service session.
-{{ access }} protocol {{ .|service:file,service }}Session {
-  var requestMetadata : Metadata { get }
-
-  var statusCode : StatusCode { get }
-  var statusMessage : String { get }
-  var initialMetadata : Metadata { get }
-  var trailingMetadata : Metadata { get }
-}
-
-fileprivate class {{ .|service:file,service }}SessionImpl: {{ .|service:file,service }}Session {
-  var handler : Handler
-  var requestMetadata : Metadata { return handler.requestMetadata }
-
-  var statusCode : StatusCode = .ok
-  var statusMessage : String = "OK"
-  var initialMetadata : Metadata = Metadata()
-  var trailingMetadata : Metadata = Metadata()
-
-  init(handler:Handler) {
-    self.handler = handler
-  }
-}
-
-//-{% if generateTestStubs %}
-class {{ .|service:file,service }}SessionTestStub: {{ .|service:file,service }}Session {
-  var requestMetadata = Metadata()
-
-  var statusCode = StatusCode.ok
-  var statusMessage = "OK"
-  var initialMetadata = Metadata()
-  var trailingMetadata = Metadata()
-}
-//-{% endif %}
 
 //-{% for method in service.methods %}
 //-{% if method|methodIsUnary %}
@@ -123,7 +82,17 @@ class {{ .|service:file,service }}SessionTestStub: {{ .|service:file,service }}S
         switch unwrappedMethod {
         //-{% for method in service.methods %}
         case "{{ .|path:file,service,method }}":
-          try {{ .|session:file,service,method }}Impl(handler:handler, provider:provider).run(queue:queue)
+          //-{% if method|methodIsUnary or method|methodIsServerStreaming %}
+          try {{ .|session:file,service,method }}Impl(
+            handler: handler,
+            providerBlock: { try provider.{{ method|methodDescriptorName|lowercase }}(request: $0, session: $1 as! {{ .|session:file,service,method }}Impl) })
+              .run(queue:queue)
+          //-{% else %}
+          try {{ .|session:file,service,method }}Impl(
+            handler: handler,
+            providerBlock: { try provider.{{ method|methodDescriptorName|lowercase }}(session: $0 as! {{ .|session:file,service,method }}Impl) })
+              .run(queue:queue)
+          //-{% endif %}
         //-{% endfor %}
         default:
           // handle unknown requests
