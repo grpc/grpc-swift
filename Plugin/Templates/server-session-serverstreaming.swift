@@ -8,7 +8,7 @@ fileprivate final class {{ .|session:file,service,method }}Impl : {{ .|service:f
   private var provider : {{ .|provider:file,service }}
 
   /// Create a session.
-  init(handler:gRPC.Handler, provider: {{ .|provider:file,service }}) {
+  init(handler:Handler, provider: {{ .|provider:file,service }}) {
     self.provider = provider
     super.init(handler:handler)
   }
