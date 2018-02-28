@@ -1,27 +1,16 @@
 /// {{ method|methodDescriptorName }} (Server Streaming)
-{{ access }} final class {{ .|call:file,service,method }} {
-  private var call : Call
-
-  /// Create a call.
-  fileprivate init(_ channel: Channel) {
-    self.call = channel.makeCall("{{ .|path:file,service,method }}")
-  }
-
-  /// Call this once with the message to send. Nonblocking.
-  fileprivate func start(request: {{ method|input }},
-                         metadata: Metadata,
-                         completion: @escaping (CallResult) -> ())
-    throws -> {{ .|call:file,service,method }} {
-      let requestData = try request.serializedData()
-      try call.start(.serverStreaming,
-                     metadata:metadata,
-                     message:requestData,
-                     completion:completion)
-      return self
-  }
-
+{{ access }} protocol {{ .|call:file,service,method }} {
   /// Call this to wait for a result. Blocking.
-  {{ access }} func receive() throws -> {{ method|output }} {
+  func receive() throws -> {{ method|output }}
+  /// Call this to wait for a result. Nonblocking.
+  func receive(completion:@escaping ({{ method|output }}?, {{ .|clienterror:file,service }}?)->()) throws
+  
+  /// Cancel the call.
+  func cancel()
+}
+
+{{ access }} extension {{ .|call:file,service,method }} {
+  func receive() throws -> {{ method|output }} {
     var returnError : {{ .|clienterror:file,service }}?
     var returnResponse : {{ method|output }}!
     let sem = DispatchSemaphore(value: 0)
@@ -38,9 +27,30 @@
     }
     return returnResponse
   }
+}
 
-  /// Call this to wait for a result. Nonblocking.
-  {{ access }} func receive(completion:@escaping ({{ method|output }}?, {{ .|clienterror:file,service }}?)->()) throws {
+fileprivate final class {{ .|call:file,service,method }}Impl: {{ .|call:file,service,method }} {
+  private var call : Call
+
+  /// Create a call.
+  init(_ channel: Channel) {
+    self.call = channel.makeCall("{{ .|path:file,service,method }}")
+  }
+
+  /// Call this once with the message to send. Nonblocking.
+  func start(request: {{ method|input }},
+                         metadata: Metadata,
+                         completion: @escaping (CallResult) -> ())
+    throws -> {{ .|call:file,service,method }} {
+      let requestData = try request.serializedData()
+      try call.start(.serverStreaming,
+                     metadata:metadata,
+                     message:requestData,
+                     completion:completion)
+      return self
+  }
+
+  func receive(completion:@escaping ({{ method|output }}?, {{ .|clienterror:file,service }}?)->()) throws {
     do {
       try call.receiveMessage() {(responseData) in
         if let responseData = responseData {
@@ -57,7 +67,25 @@
   }
 
   /// Cancel the call.
-  {{ access }} func cancel() {
+  func cancel() {
     call.cancel()
   }
 }
+
+//-{% if generateTestStubs %}
+/// Simple fake implementation of {{ .|call:file,service,method }} that returns a previously-defined set of results.
+class {{ .|call:file,service,method }}TestStub: {{ .|call:file,service,method }} {
+  var outputs: [{{ method|output }}] = []
+  
+  func receive(completion:@escaping ({{ method|output }}?, {{ .|clienterror:file,service }}?)->()) throws {
+    if let output = outputs.first {
+      outputs.removeFirst()
+      completion(output, nil)
+    } else {
+      completion(nil, {{ .|clienterror:file,service }}.endOfStream)
+    }
+  }
+
+  func cancel() { }
+}
+//-{% endif %}

@@ -1,15 +1,17 @@
-// {{ method|methodDescriptorName }} (Unary)
-{{ access }} final class {{ .|session:file,service,method }} : {{ .|service:file,service }}Session {
+// {{ method|methodDescriptorName }} (Unary Streaming)
+{{ access }} protocol {{ .|session:file,service,method }} : {{ .|service:file,service }}Session { }
+
+fileprivate final class {{ .|session:file,service,method }}Impl : {{ .|service:file,service }}SessionImpl, {{ .|session:file,service,method }} {
   private var provider : {{ .|provider:file,service }}
 
   /// Create a session.
-  fileprivate init(handler:gRPC.Handler, provider: {{ .|provider:file,service }}) {
+  init(handler:gRPC.Handler, provider: {{ .|provider:file,service }}) {
     self.provider = provider
     super.init(handler:handler)
   }
 
   /// Run the session. Internal.
-  fileprivate func run(queue:DispatchQueue) throws {
+  func run(queue:DispatchQueue) throws {
     try handler.receiveMessage(initialMetadata:initialMetadata) {(requestData) in
       if let requestData = requestData {
         let requestMessage = try {{ method|input }}(serializedData:requestData)
@@ -22,3 +24,8 @@
     }
   }
 }
+
+//-{% if generateTestStubs %}
+/// Trivial fake implementation of {{ .|session:file,service,method }}.
+class {{ .|session:file,service,method }}TestStub : {{ .|service:file,service }}SessionTestStub, {{ .|session:file,service,method }} { }
+//-{% endif %}

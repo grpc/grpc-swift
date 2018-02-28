@@ -24,19 +24,39 @@
 }
 
 /// Common properties available in each service session.
-{{ access }} class {{ .|service:file,service }}Session {
-  fileprivate var handler : gRPC.Handler
-  {{ access }} var requestMetadata : Metadata { return handler.requestMetadata }
+{{ access }} protocol {{ .|service:file,service }}Session {
+  var requestMetadata : Metadata { get }
 
-  {{ access }} var statusCode : StatusCode = .ok
-  {{ access }} var statusMessage : String = "OK"
-  {{ access }} var initialMetadata : Metadata = Metadata()
-  {{ access }} var trailingMetadata : Metadata = Metadata()
+  var statusCode : StatusCode { get }
+  var statusMessage : String { get }
+  var initialMetadata : Metadata { get }
+  var trailingMetadata : Metadata { get }
+}
 
-  fileprivate init(handler:gRPC.Handler) {
+fileprivate class {{ .|service:file,service }}SessionImpl: {{ .|service:file,service }}Session {
+  var handler : gRPC.Handler
+  var requestMetadata : Metadata { return handler.requestMetadata }
+
+  var statusCode : StatusCode = .ok
+  var statusMessage : String = "OK"
+  var initialMetadata : Metadata = Metadata()
+  var trailingMetadata : Metadata = Metadata()
+
+  init(handler:gRPC.Handler) {
     self.handler = handler
   }
 }
+
+//-{% if generateTestStubs %}
+class {{ .|service:file,service }}SessionTestStub: {{ .|service:file,service }}Session {
+  var requestMetadata = Metadata()
+
+  var statusCode = StatusCode.ok
+  var statusMessage = "OK"
+  var initialMetadata = Metadata()
+  var trailingMetadata = Metadata()
+}
+//-{% endif %}
 
 //-{% for method in service.methods %}
 //-{% if method|methodIsUnary %}
@@ -91,22 +111,25 @@
       fatalError() // the server requires a provider
     }
     server.run {(handler) in
-      print("Server received request to " + handler.host
-        + " calling " + handler.method
-        + " from " + handler.caller
-        + " with " + String(describing:handler.requestMetadata) )
+      let unwrappedHost = handler.host ?? "(nil)"
+      let unwrappedMethod = handler.method ?? "(nil)"
+      let unwrappedCaller = handler.caller ?? "(nil)"
+      print("Server received request to " + unwrappedHost
+        + " calling " + unwrappedMethod
+        + " from " + unwrappedCaller
+        + " with " + handler.requestMetadata.description)
 
       do {
-        switch handler.method {
+        switch unwrappedMethod {
         //-{% for method in service.methods %}
         case "{{ .|path:file,service,method }}":
-          try {{ .|session:file,service,method }}(handler:handler, provider:provider).run(queue:queue)
+          try {{ .|session:file,service,method }}Impl(handler:handler, provider:provider).run(queue:queue)
         //-{% endfor %}
         default:
           // handle unknown requests
           try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
             try handler.sendResponse(statusCode:.unimplemented,
-                                     statusMessage:"unknown method " + handler.method,
+                                     statusMessage:"unknown method " + unwrappedMethod,
                                      trailingMetadata:Metadata())
           }
         }
