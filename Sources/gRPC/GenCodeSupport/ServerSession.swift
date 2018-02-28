@@ -21,10 +21,10 @@ import SwiftProtobuf
 public protocol ServerSession: class {
   var requestMetadata: Metadata { get }
 
-  var statusCode: StatusCode { get }
-  var statusMessage: String { get }
-  var initialMetadata: Metadata { get }
-  var trailingMetadata: Metadata { get }
+  var statusCode: StatusCode { get set }
+  var statusMessage: String { get set }
+  var initialMetadata: Metadata { get set }
+  var trailingMetadata: Metadata { get set }
 }
 
 open class ServerSessionBase: ServerSession {
