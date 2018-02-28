@@ -5,25 +5,19 @@ expand received: Swift echo expand (0): Testing
 expand received: Swift echo expand (1): 1
 expand received: Swift echo expand (2): 2
 expand received: Swift echo expand (3): 3
-expand completed with result status ok: OK
-
-
+expand completed with code ok
 collect sending: Testing
 collect sending: 1
 collect sending: 2
 collect sending: 3
 collect received: Swift echo collect: Testing 1 2 3
-collect completed with result status ok: OK
-
-
+collect completed with status ok
 update sending: Testing
-update received: Swift echo update (1): Testing
 update sending: 1
-update received: Swift echo update (2): 1
 update sending: 2
-update received: Swift echo update (3): 2
 update sending: 3
+update received: Swift echo update (1): Testing
+update received: Swift echo update (2): 1
+update received: Swift echo update (3): 2
 update received: Swift echo update (4): 3
-update completed with result status ok: OK
-
-
+update completed with status ok

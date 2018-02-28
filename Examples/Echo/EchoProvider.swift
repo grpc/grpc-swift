@@ -36,7 +36,6 @@ class EchoProvider: Echo_EchoProvider {
       try session.send(response) { _ in sem.signal() }
       _ = sem.wait(timeout: DispatchTime.distantFuture)
       i += 1
-      sleep(1)
     }
   }
 

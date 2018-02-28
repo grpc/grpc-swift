@@ -49,7 +49,7 @@ class Echo_EchoExpandCallTestStub: ClientCallServerStreamingTestStub<Echo_EchoRe
 
 internal protocol Echo_EchoCollectCall: ClientCallClientStreaming {
   /// Call this to send each message in the request stream. Nonblocking.
-  func send(_ message: Echo_EchoRequest, errorHandler: @escaping (Error) -> Void) throws
+  func send(_ message: Echo_EchoRequest, completion: @escaping (Error?) -> Void) throws
 
   /// Call this to close the connection and wait for a response. Blocking.
   func closeAndReceive() throws -> Echo_EchoResponse
@@ -74,7 +74,7 @@ internal protocol Echo_EchoUpdateCall: ClientCallBidirectionalStreaming {
   func receive(completion: @escaping (Echo_EchoResponse?, ClientError?) -> Void) throws
 
   /// Call this to send each message in the request stream.
-  func send(_ message: Echo_EchoRequest, errorHandler: @escaping (Error) -> Void) throws
+  func send(_ message: Echo_EchoRequest, completion: @escaping (Error?) -> Void) throws
 
   /// Call this to close the sending connection. Blocking.
   func closeSend() throws
