@@ -50,7 +50,7 @@ fileprivate final class {{ .|session:file,service,method }}Impl : {{ .|service:f
 class {{ .|session:file,service,method }}TestStub : {{ .|service:file,service }}SessionTestStub, {{ .|session:file,service,method }} {
   var outputs: [{{ method|output }}] = []
 
-  func send(_ response: {{ method|output }}, completion: @escaping ()->()) throws {
+  func send(_ response: {{ method|output }}, completion: ((Bool)->())?) throws {
     outputs.append(response)
   }
 

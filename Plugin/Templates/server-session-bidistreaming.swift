@@ -82,7 +82,7 @@ class {{ .|session:file,service,method }}TestStub : {{ .|service:file,service }}
     }
   }
 
-  func send(_ response: {{ method|output }}, completion: @escaping ()->()) throws {
+  func send(_ response: {{ method|output }}, completion: ((Bool)->())?) throws {
     outputs.append(response)
   }
 

@@ -9,7 +9,7 @@ build:  clear
 	cp .build/debug/protoc-gen-swift .
 
 test:	build
-	protoc ../Examples/Echo/echo.proto --proto_path=../Examples/Echo --plugin=./protoc-gen-swiftgrpc --swiftgrpc_out=. --swift_out=.
+	protoc ../Examples/Echo/echo.proto --proto_path=../Examples/Echo --plugin=./protoc-gen-swiftgrpc --swiftgrpc_out=. --swift_out=. --swiftgrpc_opt=TestStubs=true
 	diff echo.grpc.swift ../Examples/Echo/Generated/echo.grpc.swift
 
 deploy:
