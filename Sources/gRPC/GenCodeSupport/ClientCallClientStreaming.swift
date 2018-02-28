@@ -14,63 +14,63 @@
  * limitations under the License.
  */
 
-import Foundation
 import Dispatch
+import Foundation
 import SwiftProtobuf
 
 public protocol ClientCallClientStreamingBase: class {
   static var method: String { get }
-  
+
   /// Cancel the call.
   func cancel()
-  
+
   // TODO: Move the other, message type-dependent, methods into this protocol. At the moment, this is not possible,
   // as the protocol would then have an associated type requirement (and become pretty much unusable in the process).
 }
 
 open class ClientCallClientStreamingImpl<InputType: Message, OutputType: Message>: ClientCallClientStreamingBase {
   open class var method: String { fatalError("needs to be overridden") }
-  
+
   private var call: Call
-  
+
   /// Create a call.
   public init(_ channel: Channel) {
-    self.call = channel.makeCall(type(of: self).method)
+    call = channel.makeCall(type(of: self).method)
   }
-  
+
   /// Call this to start a call. Nonblocking.
-  public func start(metadata:Metadata, completion: ((CallResult)->())?) throws -> Self {
-    try self.call.start(.clientStreaming, metadata:metadata, completion:completion)
+  public func start(metadata: Metadata, completion: ((CallResult) -> Void)?) throws -> Self {
+    try call.start(.clientStreaming, metadata: metadata, completion: completion)
     return self
   }
-  
-  public func send(_ message: InputType, errorHandler:@escaping (Error)->()) throws {
+
+  public func send(_ message: InputType, errorHandler: @escaping (Error) -> Void) throws {
     let messageData = try message.serializedData()
-    try call.sendMessage(data:messageData, errorHandler:errorHandler)
+    try call.sendMessage(data: messageData, errorHandler: errorHandler)
   }
-  
-  public func closeAndReceive(completion:@escaping (OutputType?, ClientError?)->()) throws {
+
+  public func closeAndReceive(completion: @escaping (OutputType?, ClientError?) -> Void) throws {
     do {
-      try call.receiveMessage() {(responseData) in
+      try call.receiveMessage { responseData in
         if let responseData = responseData,
-          let response = try? OutputType(serializedData:responseData) {
+          let response = try? OutputType(serializedData: responseData) {
           completion(response, nil)
         } else {
           completion(nil, .invalidMessageReceived)
         }
       }
-      try call.close(completion:{})
+      try call.close(completion: {})
     } catch (let error) {
       throw error
     }
   }
-  
+
   public func closeAndReceive() throws -> OutputType {
-    var returnError : ClientError?
-    var returnResponse : OutputType!
+    var returnError: ClientError?
+    var returnResponse: OutputType!
     let sem = DispatchSemaphore(value: 0)
     do {
-      try closeAndReceive() {response, error in
+      try closeAndReceive { response, error in
         returnResponse = response
         returnError = error
         sem.signal()
@@ -84,7 +84,7 @@ open class ClientCallClientStreamingImpl<InputType: Message, OutputType: Message
     }
     return returnResponse
   }
-  
+
   public func cancel() {
     call.cancel()
   }
@@ -94,21 +94,21 @@ open class ClientCallClientStreamingImpl<InputType: Message, OutputType: Message
 /// stores sent values for later verification and finally returns a previously-defined result.
 open class ClientCallClientStreamingTestStub<InputType: Message, OutputType: Message>: ClientCallClientStreamingBase {
   open class var method: String { fatalError("needs to be overridden") }
-  
+
   open var inputs: [InputType] = []
   open var output: OutputType?
-  
-  open func send(_ message: InputType, errorHandler:@escaping (Error)->()) throws {
+
+  open func send(_ message: InputType, errorHandler _: @escaping (Error) -> Void) throws {
     inputs.append(message)
   }
-  
-  open func closeAndReceive(completion:@escaping (OutputType?, ClientError?)->()) throws {
+
+  open func closeAndReceive(completion: @escaping (OutputType?, ClientError?) -> Void) throws {
     completion(output!, nil)
   }
-  
+
   open func closeAndReceive() throws -> OutputType {
     return output!
   }
-  
-  open func cancel() { }
+
+  open func cancel() {}
 }

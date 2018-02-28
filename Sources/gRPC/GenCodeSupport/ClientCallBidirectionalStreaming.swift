@@ -14,39 +14,39 @@
  * limitations under the License.
  */
 
-import Foundation
 import Dispatch
+import Foundation
 import SwiftProtobuf
 
 public protocol ClientCallBidirectionalStreamingBase: class {
   static var method: String { get }
-  
+
   // TODO: Move the other, message type-dependent, methods into this protocol. At the moment, this is not possible,
   // as the protocol would then have an associated type requirement (and become pretty much unusable in the process).
 }
 
 open class ClientCallBidirectionalStreamingImpl<InputType: Message, OutputType: Message>: ClientCallBidirectionalStreamingBase {
   open class var method: String { fatalError("needs to be overridden") }
-  
+
   private var call: Call
-  
+
   /// Create a call.
   public init(_ channel: Channel) {
-    self.call = channel.makeCall(type(of: self).method)
+    call = channel.makeCall(type(of: self).method)
   }
-  
+
   /// Call this to start a call. Nonblocking.
-  public func start(metadata:Metadata, completion: ((CallResult)->())?)
+  public func start(metadata: Metadata, completion: ((CallResult) -> Void)?)
     throws -> Self {
-      try self.call.start(.bidiStreaming, metadata:metadata, completion:completion)
-      return self
+    try call.start(.bidiStreaming, metadata: metadata, completion: completion)
+    return self
   }
-  
-  public func receive(completion:@escaping (OutputType?, ClientError?)->()) throws {
+
+  public func receive(completion: @escaping (OutputType?, ClientError?) -> Void) throws {
     do {
-      try call.receiveMessage() {(data) in
+      try call.receiveMessage { data in
         if let data = data {
-          if let returnMessage = try? OutputType(serializedData:data) {
+          if let returnMessage = try? OutputType(serializedData: data) {
             completion(returnMessage, nil)
           } else {
             completion(nil, .invalidMessageReceived)
@@ -57,13 +57,13 @@ open class ClientCallBidirectionalStreamingImpl<InputType: Message, OutputType: 
       }
     }
   }
-  
+
   public func receive() throws -> OutputType {
-    var returnError : ClientError?
-    var returnMessage : OutputType!
+    var returnError: ClientError?
+    var returnMessage: OutputType!
     let sem = DispatchSemaphore(value: 0)
     do {
-      try receive() {response, error in
+      try receive { response, error in
         returnMessage = response
         returnError = error
         sem.signal()
@@ -75,24 +75,24 @@ open class ClientCallBidirectionalStreamingImpl<InputType: Message, OutputType: 
     }
     return returnMessage
   }
-  
-  public func send(_ message:InputType, errorHandler:@escaping (Error)->()) throws {
+
+  public func send(_ message: InputType, errorHandler: @escaping (Error) -> Void) throws {
     let messageData = try message.serializedData()
-    try call.sendMessage(data:messageData, errorHandler:errorHandler)
+    try call.sendMessage(data: messageData, errorHandler: errorHandler)
   }
-  
-  public func closeSend(completion: (()->())?) throws {
+
+  public func closeSend(completion: (() -> Void)?) throws {
     try call.close(completion: completion)
   }
-  
+
   public func closeSend() throws {
     let sem = DispatchSemaphore(value: 0)
-    try closeSend() {
+    try closeSend {
       sem.signal()
     }
     _ = sem.wait(timeout: DispatchTime.distantFuture)
   }
-  
+
   public func cancel() {
     call.cancel()
   }
@@ -102,11 +102,11 @@ open class ClientCallBidirectionalStreamingImpl<InputType: Message, OutputType: 
 /// and stores sent values for later verification.
 open class ClientCallBidirectionalStreamingTestStub<InputType: Message, OutputType: Message>: ClientCallBidirectionalStreamingBase {
   open class var method: String { fatalError("needs to be overridden") }
-  
+
   open var inputs: [InputType] = []
   open var outputs: [OutputType] = []
-  
-  open func receive(completion:@escaping (OutputType?, ClientError?)->()) throws {
+
+  open func receive(completion: @escaping (OutputType?, ClientError?) -> Void) throws {
     if let output = outputs.first {
       outputs.removeFirst()
       completion(output, nil)
@@ -114,7 +114,7 @@ open class ClientCallBidirectionalStreamingTestStub<InputType: Message, OutputTy
       completion(nil, .endOfStream)
     }
   }
-  
+
   open func receive() throws -> OutputType {
     if let output = outputs.first {
       outputs.removeFirst()
@@ -123,14 +123,14 @@ open class ClientCallBidirectionalStreamingTestStub<InputType: Message, OutputTy
       throw ClientError.endOfStream
     }
   }
-  
-  open func send(_ message: InputType, errorHandler:@escaping (Error)->()) throws {
+
+  open func send(_ message: InputType, errorHandler _: @escaping (Error) -> Void) throws {
     inputs.append(message)
   }
-  
-  open func closeSend(completion: (()->())?) throws { completion?() }
-  
-  open func closeSend() throws { }
-  
-  open func cancel() { }
+
+  open func closeSend(completion: (() -> Void)?) throws { completion?() }
+
+  open func closeSend() throws {}
+
+  open func cancel() {}
 }

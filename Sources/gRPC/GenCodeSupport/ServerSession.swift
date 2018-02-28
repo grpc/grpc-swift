@@ -14,36 +14,36 @@
  * limitations under the License.
  */
 
-import Foundation
 import Dispatch
+import Foundation
 import SwiftProtobuf
 
 public protocol ServerSession: class {
-  var requestMetadata : Metadata { get }
-  
-  var statusCode : StatusCode { get }
-  var statusMessage : String { get }
-  var initialMetadata : Metadata { get }
-  var trailingMetadata : Metadata { get }
+  var requestMetadata: Metadata { get }
+
+  var statusCode: StatusCode { get }
+  var statusMessage: String { get }
+  var initialMetadata: Metadata { get }
+  var trailingMetadata: Metadata { get }
 }
 
 open class ServerSessionImpl: ServerSession {
-  public var handler : Handler
-  public var requestMetadata : Metadata { return handler.requestMetadata }
-  
-  public var statusCode : StatusCode = .ok
-  public var statusMessage : String = "OK"
-  public var initialMetadata : Metadata = Metadata()
-  public var trailingMetadata : Metadata = Metadata()
-  
-  public init(handler:Handler) {
+  public var handler: Handler
+  public var requestMetadata: Metadata { return handler.requestMetadata }
+
+  public var statusCode: StatusCode = .ok
+  public var statusMessage: String = "OK"
+  public var initialMetadata: Metadata = Metadata()
+  public var trailingMetadata: Metadata = Metadata()
+
+  public init(handler: Handler) {
     self.handler = handler
   }
 }
 
 open class ServerSessionTestStub: ServerSession {
   open var requestMetadata = Metadata()
-  
+
   open var statusCode = StatusCode.ok
   open var statusMessage = "OK"
   open var initialMetadata = Metadata()

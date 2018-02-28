@@ -14,27 +14,27 @@
  * limitations under the License.
  */
 
-import Foundation
 import Dispatch
+import Foundation
 import SwiftProtobuf
 
-public protocol ServerSessionClientStreaming: ServerSession { }
+public protocol ServerSessionClientStreaming: ServerSession {}
 
 open class ServerSessionClientStreamingImpl<InputType: Message, OutputType: Message>: ServerSessionImpl, ServerSessionClientStreaming {
   public typealias ProviderBlock = (ServerSessionClientStreamingImpl) throws -> Void
   private var providerBlock: ProviderBlock
-  
-  public init(handler:Handler, providerBlock: @escaping ProviderBlock) {
+
+  public init(handler: Handler, providerBlock: @escaping ProviderBlock) {
     self.providerBlock = providerBlock
-    super.init(handler:handler)
+    super.init(handler: handler)
   }
-  
+
   public func receive() throws -> InputType {
     let sem = DispatchSemaphore(value: 0)
-    var requestMessage : InputType?
-    try self.handler.receiveMessage() {(requestData) in
+    var requestMessage: InputType?
+    try handler.receiveMessage { requestData in
       if let requestData = requestData {
-        requestMessage = try? InputType(serializedData:requestData)
+        requestMessage = try? InputType(serializedData: requestData)
       }
       sem.signal()
     }
@@ -44,16 +44,16 @@ open class ServerSessionClientStreamingImpl<InputType: Message, OutputType: Mess
     }
     return requestMessage!
   }
-  
+
   public func sendAndClose(_ response: OutputType) throws {
-    try self.handler.sendResponse(message:response.serializedData(),
-                                  statusCode:self.statusCode,
-                                  statusMessage:self.statusMessage,
-                                  trailingMetadata:self.trailingMetadata)
+    try handler.sendResponse(message: response.serializedData(),
+                             statusCode: statusCode,
+                             statusMessage: statusMessage,
+                             trailingMetadata: trailingMetadata)
   }
-  
-  public func run(queue:DispatchQueue) throws {
-    try self.handler.sendMetadata(initialMetadata:initialMetadata) { _ in
+
+  public func run(queue: DispatchQueue) throws {
+    try handler.sendMetadata(initialMetadata: initialMetadata) { _ in
       queue.async {
         do {
           try self.providerBlock(self)
@@ -70,7 +70,7 @@ open class ServerSessionClientStreamingImpl<InputType: Message, OutputType: Mess
 open class ServerSessionClientStreamingTestStub<InputType: Message, OutputType: Message>: ServerSessionTestStub, ServerSessionClientStreaming {
   open var inputs: [InputType] = []
   open var output: OutputType?
-  
+
   open func receive() throws -> InputType {
     if let input = inputs.first {
       inputs.removeFirst()
@@ -79,10 +79,10 @@ open class ServerSessionClientStreamingTestStub<InputType: Message, OutputType: 
       throw ServerError.endOfStream
     }
   }
-  
+
   open func sendAndClose(_ response: OutputType) throws {
     output = response
   }
-  
-  open func close() throws { }
+
+  open func close() throws {}
 }

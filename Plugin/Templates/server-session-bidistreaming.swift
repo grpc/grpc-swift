@@ -9,8 +9,8 @@
   func close() throws
 }
 
-fileprivate final class {{ .|session:file,service,method }}Impl: ServerSessionBidirectionalStreamingImpl<{{ method|input }}, {{ method|output }}>, {{ .|session:file,service,method }} { }
+fileprivate final class {{ .|session:file,service,method }}Impl: ServerSessionBidirectionalStreamingImpl<{{ method|input }}, {{ method|output }}>, {{ .|session:file,service,method }} {}
 
 //-{% if generateTestStubs %}
-class {{ .|session:file,service,method }}TestStub: ServerSessionBidirectionalStreamingTestStub<{{ method|input }}, {{ method|output }}>, {{ .|session:file,service,method }} { }
+class {{ .|session:file,service,method }}TestStub: ServerSessionBidirectionalStreamingTestStub<{{ method|input }}, {{ method|output }}>, {{ .|session:file,service,method }} {}
 //-{% endif %}

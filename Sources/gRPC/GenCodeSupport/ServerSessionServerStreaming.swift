@@ -14,39 +14,39 @@
  * limitations under the License.
  */
 
-import Foundation
 import Dispatch
+import Foundation
 import SwiftProtobuf
 
-public protocol ServerSessionServerStreaming: ServerSession { }
+public protocol ServerSessionServerStreaming: ServerSession {}
 
 open class ServerSessionServerStreamingImpl<InputType: Message, OutputType: Message>: ServerSessionImpl, ServerSessionServerStreaming {
   public typealias ProviderBlock = (InputType, ServerSessionServerStreamingImpl) throws -> Void
   private var providerBlock: ProviderBlock
-  
-  public init(handler:Handler, providerBlock: @escaping ProviderBlock) {
+
+  public init(handler: Handler, providerBlock: @escaping ProviderBlock) {
     self.providerBlock = providerBlock
-    super.init(handler:handler)
+    super.init(handler: handler)
   }
-  
-  public func send(_ response: OutputType, completion: ((Bool)->())?) throws {
-    try handler.sendResponse(message:response.serializedData(), completion: completion)
+
+  public func send(_ response: OutputType, completion: ((Bool) -> Void)?) throws {
+    try handler.sendResponse(message: response.serializedData(), completion: completion)
   }
-  
-  public func run(queue:DispatchQueue) throws {
-    try self.handler.receiveMessage(initialMetadata:initialMetadata) {(requestData) in
+
+  public func run(queue: DispatchQueue) throws {
+    try handler.receiveMessage(initialMetadata: initialMetadata) { requestData in
       if let requestData = requestData {
         do {
-          let requestMessage = try InputType(serializedData:requestData)
+          let requestMessage = try InputType(serializedData: requestData)
           // to keep providers from blocking the server thread,
           // we dispatch them to another queue.
           queue.async {
             do {
               try self.providerBlock(requestMessage, self)
-              try self.handler.sendStatus(statusCode:self.statusCode,
-                                          statusMessage:self.statusMessage,
-                                          trailingMetadata:self.trailingMetadata,
-                                          completion:nil)
+              try self.handler.sendStatus(statusCode: self.statusCode,
+                                          statusMessage: self.statusMessage,
+                                          trailingMetadata: self.trailingMetadata,
+                                          completion: nil)
             } catch (let error) {
               print("error: \(error)")
             }
@@ -63,10 +63,10 @@ open class ServerSessionServerStreamingImpl<InputType: Message, OutputType: Mess
 /// and stores sent values for later verification.
 open class ServerSessionServerStreamingTestStub<OutputType: Message>: ServerSessionTestStub, ServerSessionServerStreaming {
   open var outputs: [OutputType] = []
-  
-  open func send(_ response: OutputType, completion: ((Bool)->())?) throws {
+
+  open func send(_ response: OutputType, completion _: ((Bool) -> Void)?) throws {
     outputs.append(response)
   }
-  
-  open func close() throws { }
+
+  open func close() throws {}
 }

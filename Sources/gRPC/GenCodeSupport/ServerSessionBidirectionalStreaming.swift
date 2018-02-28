@@ -14,28 +14,28 @@
  * limitations under the License.
  */
 
-import Foundation
 import Dispatch
+import Foundation
 import SwiftProtobuf
 
-public protocol ServerSessionBidirectionalStreaming: ServerSession { }
+public protocol ServerSessionBidirectionalStreaming: ServerSession {}
 
 open class ServerSessionBidirectionalStreamingImpl<InputType: Message, OutputType: Message>: ServerSessionImpl, ServerSessionBidirectionalStreaming {
   public typealias ProviderBlock = (ServerSessionBidirectionalStreamingImpl) throws -> Void
   private var providerBlock: ProviderBlock
-  
-  public init(handler:Handler, providerBlock: @escaping ProviderBlock) {
+
+  public init(handler: Handler, providerBlock: @escaping ProviderBlock) {
     self.providerBlock = providerBlock
-    super.init(handler:handler)
+    super.init(handler: handler)
   }
-  
+
   public func receive() throws -> InputType {
     let sem = DispatchSemaphore(value: 0)
-    var requestMessage : InputType?
-    try self.handler.receiveMessage() {(requestData) in
+    var requestMessage: InputType?
+    try handler.receiveMessage { requestData in
       if let requestData = requestData {
         do {
-          requestMessage = try InputType(serializedData:requestData)
+          requestMessage = try InputType(serializedData: requestData)
         } catch (let error) {
           print("error \(error)")
         }
@@ -49,21 +49,21 @@ open class ServerSessionBidirectionalStreamingImpl<InputType: Message, OutputTyp
       throw ServerError.endOfStream
     }
   }
-  
-  public func send(_ response: OutputType, completion: ((Bool)->())?) throws {
-    try handler.sendResponse(message:response.serializedData(), completion: completion)
+
+  public func send(_ response: OutputType, completion: ((Bool) -> Void)?) throws {
+    try handler.sendResponse(message: response.serializedData(), completion: completion)
   }
-  
+
   public func close() throws {
     let sem = DispatchSemaphore(value: 0)
-    try self.handler.sendStatus(statusCode:self.statusCode,
-                                statusMessage:self.statusMessage,
-                                trailingMetadata:self.trailingMetadata) { _ in sem.signal() }
+    try handler.sendStatus(statusCode: statusCode,
+                           statusMessage: statusMessage,
+                           trailingMetadata: trailingMetadata) { _ in sem.signal() }
     _ = sem.wait(timeout: DispatchTime.distantFuture)
   }
-  
-  public func run(queue:DispatchQueue) throws {
-    try self.handler.sendMetadata(initialMetadata:initialMetadata) { _ in
+
+  public func run(queue: DispatchQueue) throws {
+    try handler.sendMetadata(initialMetadata: initialMetadata) { _ in
       queue.async {
         do {
           try self.providerBlock(self)
@@ -80,7 +80,7 @@ open class ServerSessionBidirectionalStreamingImpl<InputType: Message, OutputTyp
 open class ServerSessionBidirectionalStreamingTestStub<InputType: Message, OutputType: Message>: ServerSessionTestStub, ServerSessionBidirectionalStreaming {
   open var inputs: [InputType] = []
   open var outputs: [OutputType] = []
-  
+
   open func receive() throws -> InputType {
     if let input = inputs.first {
       inputs.removeFirst()
@@ -89,10 +89,10 @@ open class ServerSessionBidirectionalStreamingTestStub<InputType: Message, Outpu
       throw ServerError.endOfStream
     }
   }
-  
-  open func send(_ response: OutputType, completion: ((Bool)->())?) throws {
+
+  open func send(_ response: OutputType, completion _: ((Bool) -> Void)?) throws {
     outputs.append(response)
   }
-  
-  open func close() throws { }
+
+  open func close() throws {}
 }

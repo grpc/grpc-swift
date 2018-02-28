@@ -14,45 +14,45 @@
  * limitations under the License.
  */
 
-import Foundation
 import Dispatch
+import Foundation
 import SwiftProtobuf
 
 public protocol ClientCallServerStreamingBase: class {
   static var method: String { get }
-  
+
   /// Cancel the call.
   func cancel()
-  
+
   // TODO: Move the other, message type-dependent, methods into this protocol. At the moment, this is not possible,
   // as the protocol would then have an associated type requirement (and become pretty much unusable in the process).
 }
 
 open class ClientCallServerStreamingImpl<InputType: Message, OutputType: Message>: ClientCallServerStreamingBase {
   open class var method: String { fatalError("needs to be overridden") }
-  
+
   private var call: Call
-  
+
   /// Create a call.
   public init(_ channel: Channel) {
-    self.call = channel.makeCall(type(of: self).method)
+    call = channel.makeCall(type(of: self).method)
   }
-  
+
   /// Call this once with the message to send. Nonblocking.
-  public func start(request: InputType, metadata: Metadata, completion: ((CallResult) -> ())?) throws -> Self {
+  public func start(request: InputType, metadata: Metadata, completion: ((CallResult) -> Void)?) throws -> Self {
     let requestData = try request.serializedData()
     try call.start(.serverStreaming,
-                   metadata:metadata,
-                   message:requestData,
-                   completion:completion)
+                   metadata: metadata,
+                   message: requestData,
+                   completion: completion)
     return self
   }
-  
-  public func receive(completion:@escaping (OutputType?, ClientError?)->()) throws {
+
+  public func receive(completion: @escaping (OutputType?, ClientError?) -> Void) throws {
     do {
-      try call.receiveMessage() {(responseData) in
+      try call.receiveMessage { responseData in
         if let responseData = responseData {
-          if let response = try? OutputType(serializedData:responseData) {
+          if let response = try? OutputType(serializedData: responseData) {
             completion(response, nil)
           } else {
             completion(nil, .invalidMessageReceived)
@@ -63,13 +63,13 @@ open class ClientCallServerStreamingImpl<InputType: Message, OutputType: Message
       }
     }
   }
-  
+
   public func receive() throws -> OutputType {
-    var returnError : ClientError?
-    var returnResponse : OutputType!
+    var returnError: ClientError?
+    var returnResponse: OutputType!
     let sem = DispatchSemaphore(value: 0)
     do {
-      try receive() {response, error in
+      try receive { response, error in
         returnResponse = response
         returnError = error
         sem.signal()
@@ -81,7 +81,7 @@ open class ClientCallServerStreamingImpl<InputType: Message, OutputType: Message
     }
     return returnResponse
   }
-  
+
   public func cancel() {
     call.cancel()
   }
@@ -90,10 +90,10 @@ open class ClientCallServerStreamingImpl<InputType: Message, OutputType: Message
 /// Simple fake implementation of ClientCallServerStreamingBase that returns a previously-defined set of results.
 open class ClientCallServerStreamingTestStub<OutputType: Message>: ClientCallServerStreamingBase {
   open class var method: String { fatalError("needs to be overridden") }
-  
+
   open var outputs: [OutputType] = []
-  
-  open func receive(completion:@escaping (OutputType?, ClientError?)->()) throws {
+
+  open func receive(completion: @escaping (OutputType?, ClientError?) -> Void) throws {
     if let output = outputs.first {
       outputs.removeFirst()
       completion(output, nil)
@@ -101,7 +101,7 @@ open class ClientCallServerStreamingTestStub<OutputType: Message>: ClientCallSer
       completion(nil, .endOfStream)
     }
   }
-  
+
   open func receive() throws -> OutputType {
     if let output = outputs.first {
       outputs.removeFirst()
@@ -110,6 +110,6 @@ open class ClientCallServerStreamingTestStub<OutputType: Message>: ClientCallSer
       throw ClientError.endOfStream
     }
   }
-  
-  open func cancel() { }
+
+  open func cancel() {}
 }

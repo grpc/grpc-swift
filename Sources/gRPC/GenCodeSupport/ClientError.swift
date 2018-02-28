@@ -15,11 +15,9 @@
  */
 
 import Foundation
-import Dispatch
-import SwiftProtobuf
 
 public enum ClientError: Error {
-	case endOfStream
-	case invalidMessageReceived
-	case error(c: CallResult)
+  case endOfStream
+  case invalidMessageReceived
+  case error(c: CallResult)
 }

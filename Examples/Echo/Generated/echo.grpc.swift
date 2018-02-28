@@ -278,18 +278,18 @@ internal protocol Echo_EchoProvider {
 
 internal protocol Echo_EchoGetSession: ServerSessionUnary { }
 
-fileprivate final class Echo_EchoGetSessionImpl: ServerSessionUnaryImpl<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoGetSession { }
+fileprivate final class Echo_EchoGetSessionImpl: ServerSessionUnaryImpl<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoGetSession {}
 
-class Echo_EchoGetSessionTestStub: ServerSessionUnaryTestStub, Echo_EchoGetSession { }
+class Echo_EchoGetSessionTestStub: ServerSessionUnaryTestStub, Echo_EchoGetSession {}
 
 internal protocol Echo_EchoExpandSession: ServerSessionServerStreaming {
   /// Send a message. Nonblocking.
   func send(_ response: Echo_EchoResponse, completion: ((Bool) -> Void)?) throws
 }
 
-fileprivate final class Echo_EchoExpandSessionImpl: ServerSessionServerStreamingImpl<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoExpandSession { }
+fileprivate final class Echo_EchoExpandSessionImpl: ServerSessionServerStreamingImpl<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoExpandSession {}
 
-class Echo_EchoExpandSessionTestStub: ServerSessionServerStreamingTestStub<Echo_EchoResponse>, Echo_EchoExpandSession { }
+class Echo_EchoExpandSessionTestStub: ServerSessionServerStreamingTestStub<Echo_EchoResponse>, Echo_EchoExpandSession {}
 
 internal protocol Echo_EchoCollectSession: ServerSessionClientStreaming {
   /// Receive a message. Blocks until a message is received or the client closes the connection.
@@ -299,9 +299,9 @@ internal protocol Echo_EchoCollectSession: ServerSessionClientStreaming {
   func sendAndClose(_ response: Echo_EchoResponse) throws
 }
 
-fileprivate final class Echo_EchoCollectSessionImpl: ServerSessionClientStreamingImpl<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectSession { }
+fileprivate final class Echo_EchoCollectSessionImpl: ServerSessionClientStreamingImpl<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectSession {}
 
-class Echo_EchoCollectSessionTestStub: ServerSessionClientStreamingTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectSession { }
+class Echo_EchoCollectSessionTestStub: ServerSessionClientStreamingTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectSession {}
 
 internal protocol Echo_EchoUpdateSession: ServerSessionBidirectionalStreaming {
   /// Receive a message. Blocks until a message is received or the client closes the connection.
@@ -314,9 +314,9 @@ internal protocol Echo_EchoUpdateSession: ServerSessionBidirectionalStreaming {
   func close() throws
 }
 
-fileprivate final class Echo_EchoUpdateSessionImpl: ServerSessionBidirectionalStreamingImpl<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateSession { }
+fileprivate final class Echo_EchoUpdateSessionImpl: ServerSessionBidirectionalStreamingImpl<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateSession {}
 
-class Echo_EchoUpdateSessionTestStub: ServerSessionBidirectionalStreamingTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateSession { }
+class Echo_EchoUpdateSessionTestStub: ServerSessionBidirectionalStreamingTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateSession {}
 
 
 /// Main server for generated service

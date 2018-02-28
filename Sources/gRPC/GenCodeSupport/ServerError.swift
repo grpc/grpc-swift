@@ -15,8 +15,6 @@
  */
 
 import Foundation
-import Dispatch
-import SwiftProtobuf
 
 /// Type for errors thrown from generated server code.
 public enum ServerError: Error {

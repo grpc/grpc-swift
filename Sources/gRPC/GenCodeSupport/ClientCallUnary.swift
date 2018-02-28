@@ -14,34 +14,34 @@
  * limitations under the License.
  */
 
-import Foundation
 import Dispatch
+import Foundation
 import SwiftProtobuf
 
 public protocol ClientCallUnary: class {
   static var method: String { get }
-  
+
   /// Cancel the call.
   func cancel()
 }
 
 open class ClientCallUnaryImpl<InputType: Message, OutputType: Message>: ClientCallUnary {
   open class var method: String { fatalError("needs to be overridden") }
-  
+
   private var call: Call
-  
+
   /// Create a call.
   public init(_ channel: Channel) {
-    self.call = channel.makeCall(type(of: self).method)
+    call = channel.makeCall(type(of: self).method)
   }
-  
+
   /// Run the call. Blocks until the reply is received.
   /// - Throws: `BinaryEncodingError` if encoding fails. `CallError` if fails to call. `ClientError` if receives no response.
   public func run(request: InputType, metadata: Metadata) throws -> OutputType {
     let sem = DispatchSemaphore(value: 0)
-    var returnCallResult : CallResult!
-    var returnResponse : OutputType?
-    _ = try start(request:request, metadata:metadata) { response, callResult in
+    var returnCallResult: CallResult!
+    var returnResponse: OutputType?
+    _ = try start(request: request, metadata: metadata) { response, callResult in
       returnResponse = response
       returnCallResult = callResult
       sem.signal()
@@ -53,16 +53,16 @@ open class ClientCallUnaryImpl<InputType: Message, OutputType: Message>: ClientC
       throw ClientError.error(c: returnCallResult)
     }
   }
-  
+
   /// Start the call. Nonblocking.
   /// - Throws: `BinaryEncodingError` if encoding fails. `CallError` if fails to call.
   public func start(request: InputType,
                     metadata: Metadata,
-                    completion: @escaping ((OutputType?, CallResult)->())) throws -> Self {
+                    completion: @escaping ((OutputType?, CallResult) -> Void)) throws -> Self {
     let requestData = try request.serializedData()
-    try call.start(.unary, metadata:metadata, message:requestData) { (callResult) in
+    try call.start(.unary, metadata: metadata, message: requestData) { callResult in
       if let responseData = callResult.resultData,
-        let response = try? OutputType(serializedData:responseData) {
+        let response = try? OutputType(serializedData: responseData) {
         completion(response, callResult)
       } else {
         completion(nil, callResult)
@@ -70,7 +70,7 @@ open class ClientCallUnaryImpl<InputType: Message, OutputType: Message>: ClientC
     }
     return self
   }
-  
+
   public func cancel() {
     call.cancel()
   }

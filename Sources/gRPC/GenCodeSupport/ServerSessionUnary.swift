@@ -14,34 +14,34 @@
  * limitations under the License.
  */
 
-import Foundation
 import Dispatch
+import Foundation
 import SwiftProtobuf
 
-public protocol ServerSessionUnary: ServerSession { }
+public protocol ServerSessionUnary: ServerSession {}
 
 open class ServerSessionUnaryImpl<InputType: Message, OutputType: Message>: ServerSessionImpl, ServerSessionUnary {
   public typealias ProviderBlock = (InputType, ServerSessionUnaryImpl) throws -> OutputType
   private var providerBlock: ProviderBlock
-  
-  public init(handler:Handler, providerBlock: @escaping ProviderBlock) {
+
+  public init(handler: Handler, providerBlock: @escaping ProviderBlock) {
     self.providerBlock = providerBlock
-    super.init(handler:handler)
+    super.init(handler: handler)
   }
-  
-  public func run(queue:DispatchQueue) throws {
-    try handler.receiveMessage(initialMetadata:initialMetadata) {(requestData) in
+
+  public func run(queue _: DispatchQueue) throws {
+    try handler.receiveMessage(initialMetadata: initialMetadata) { requestData in
       if let requestData = requestData {
-        let requestMessage = try InputType(serializedData:requestData)
+        let requestMessage = try InputType(serializedData: requestData)
         let replyMessage = try self.providerBlock(requestMessage, self)
-        try self.handler.sendResponse(message:replyMessage.serializedData(),
-                                      statusCode:self.statusCode,
-                                      statusMessage:self.statusMessage,
-                                      trailingMetadata:self.trailingMetadata)
+        try self.handler.sendResponse(message: replyMessage.serializedData(),
+                                      statusCode: self.statusCode,
+                                      statusMessage: self.statusMessage,
+                                      trailingMetadata: self.trailingMetadata)
       }
     }
   }
 }
 
 /// Trivial fake implementation of ServerSessionUnary.
-open class ServerSessionUnaryTestStub: ServerSessionTestStub, ServerSessionUnary { }
+open class ServerSessionUnaryTestStub: ServerSessionTestStub, ServerSessionUnary {}
