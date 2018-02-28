@@ -494,7 +494,7 @@ internal protocol Echo_EchoSession {
 }
 
 fileprivate class Echo_EchoSessionImpl: Echo_EchoSession {
-  var handler : gRPC.Handler
+  var handler : Handler
   var requestMetadata : Metadata { return handler.requestMetadata }
 
   var statusCode : StatusCode = .ok
@@ -502,7 +502,7 @@ fileprivate class Echo_EchoSessionImpl: Echo_EchoSession {
   var initialMetadata : Metadata = Metadata()
   var trailingMetadata : Metadata = Metadata()
 
-  init(handler:gRPC.Handler) {
+  init(handler:Handler) {
     self.handler = handler
   }
 }
@@ -515,7 +515,7 @@ fileprivate final class Echo_EchoGetSessionImpl : Echo_EchoSessionImpl, Echo_Ech
   private var provider : Echo_EchoProvider
 
   /// Create a session.
-  init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
+  init(handler:Handler, provider: Echo_EchoProvider) {
     self.provider = provider
     super.init(handler:handler)
   }
@@ -546,7 +546,7 @@ fileprivate final class Echo_EchoExpandSessionImpl : Echo_EchoSessionImpl, Echo_
   private var provider : Echo_EchoProvider
 
   /// Create a session.
-  init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
+  init(handler:Handler, provider: Echo_EchoProvider) {
     self.provider = provider
     super.init(handler:handler)
   }
@@ -596,7 +596,7 @@ fileprivate final class Echo_EchoCollectSessionImpl : Echo_EchoSessionImpl, Echo
   private var provider : Echo_EchoProvider
 
   /// Create a session.
-  init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
+  init(handler:Handler, provider: Echo_EchoProvider) {
     self.provider = provider
     super.init(handler:handler)
   }
@@ -655,7 +655,7 @@ fileprivate final class Echo_EchoUpdateSessionImpl : Echo_EchoSessionImpl, Echo_
   private var provider : Echo_EchoProvider
 
   /// Create a session.
-  init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
+  init(handler:Handler, provider: Echo_EchoProvider) {
     self.provider = provider
     super.init(handler:handler)
   }
@@ -714,7 +714,7 @@ fileprivate final class Echo_EchoUpdateSessionImpl : Echo_EchoSessionImpl, Echo_
 /// Main server for generated service
 internal final class Echo_EchoServer {
   private var address: String
-  private var server: gRPC.Server
+  private var server: Server
   private var provider: Echo_EchoProvider?
 
   /// Create a server that accepts insecure connections.
@@ -723,7 +723,7 @@ internal final class Echo_EchoServer {
     gRPC.initialize()
     self.address = address
     self.provider = provider
-    self.server = gRPC.Server(address:address)
+    self.server = Server(address:address)
   }
 
   /// Create a server that accepts secure connections.
@@ -740,7 +740,7 @@ internal final class Echo_EchoServer {
       else {
         return nil
     }
-    self.server = gRPC.Server(address:address, key:key, certs:certificate)
+    self.server = Server(address:address, key:key, certs:certificate)
   }
 
   /// Start the server.

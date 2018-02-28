@@ -34,7 +34,7 @@
 }
 
 fileprivate class {{ .|service:file,service }}SessionImpl: {{ .|service:file,service }}Session {
-  var handler : gRPC.Handler
+  var handler : Handler
   var requestMetadata : Metadata { return handler.requestMetadata }
 
   var statusCode : StatusCode = .ok
@@ -42,7 +42,7 @@ fileprivate class {{ .|service:file,service }}SessionImpl: {{ .|service:file,ser
   var initialMetadata : Metadata = Metadata()
   var trailingMetadata : Metadata = Metadata()
 
-  init(handler:gRPC.Handler) {
+  init(handler:Handler) {
     self.handler = handler
   }
 }
@@ -76,7 +76,7 @@ class {{ .|service:file,service }}SessionTestStub: {{ .|service:file,service }}S
 /// Main server for generated service
 {{ access }} final class {{ .|server:file,service }} {
   private var address: String
-  private var server: gRPC.Server
+  private var server: Server
   private var provider: {{ .|provider:file,service }}?
 
   /// Create a server that accepts insecure connections.
@@ -85,7 +85,7 @@ class {{ .|service:file,service }}SessionTestStub: {{ .|service:file,service }}S
     gRPC.initialize()
     self.address = address
     self.provider = provider
-    self.server = gRPC.Server(address:address)
+    self.server = Server(address:address)
   }
 
   /// Create a server that accepts secure connections.
@@ -102,7 +102,7 @@ class {{ .|service:file,service }}SessionTestStub: {{ .|service:file,service }}S
       else {
         return nil
     }
-    self.server = gRPC.Server(address:address, key:key, certs:certificate)
+    self.server = Server(address:address, key:key, certs:certificate)
   }
 
   /// Start the server.
