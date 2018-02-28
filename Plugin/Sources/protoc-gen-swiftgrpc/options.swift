@@ -47,9 +47,11 @@ class GeneratorOptions {
   }
 
   let visibility: Visibility
+  let generateTestStubs: Bool
 
   init(parameter: String?) throws {
     var visibility: Visibility = .Internal
+    var generateTestStubs = false
 
     for pair in GeneratorOptions.parseParameter(string: parameter) {
       switch pair.key {
@@ -60,12 +62,20 @@ class GeneratorOptions {
           throw GenerationError.invalidParameterValue(name: pair.key,
                                                       value: pair.value)
         }
+      case "TestStubs":
+        switch pair.value {
+        case "true": generateTestStubs = true
+        case "false": generateTestStubs = false
+        default: throw GenerationError.invalidParameterValue(name: pair.key,
+                                                             value: pair.value)
+        }
       default:
         throw GenerationError.unknownParameter(name: pair.key)
       }
     }
 
     self.visibility = visibility
+    self.generateTestStubs = generateTestStubs
   }
 
   static func parseParameter(string: String?) -> [(key: String, value: String)] {

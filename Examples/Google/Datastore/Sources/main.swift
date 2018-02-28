@@ -49,7 +49,7 @@ class PropertiesDecoder {
 // a Swift interface to the Google Cloud Datastore API
 class Datastore {
   var projectID: String
-  var service: Google_Datastore_V1_DatastoreService!
+  var service: Google_Datastore_V1_DatastoreServiceClient!
 
   let scopes = ["https://www.googleapis.com/auth/datastore"]
 
@@ -75,7 +75,7 @@ class Datastore {
     }
     // Initialize gRPC service
     gRPC.initialize()
-    service = Google_Datastore_V1_DatastoreService(address: "datastore.googleapis.com")
+    service = Google_Datastore_V1_DatastoreServiceClient(address: "datastore.googleapis.com")
     service.metadata = Metadata(["authorization": "Bearer " + authToken])
   }
 

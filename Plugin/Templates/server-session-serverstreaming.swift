@@ -1,20 +1,24 @@
 // {{ method|methodDescriptorName }} (Server Streaming)
-{{ access }} final class {{ .|session:file,service,method }} : {{ .|service:file,service }}Session {
+{{ access }} protocol {{ .|session:file,service,method }} : {{ .|service:file,service }}Session {
+  /// Send a message. Nonblocking.
+  func send(_ response: {{ method|output }}, completion: ((Bool)->())?) throws
+}
+
+fileprivate final class {{ .|session:file,service,method }}Impl : {{ .|service:file,service }}SessionImpl, {{ .|session:file,service,method }} {
   private var provider : {{ .|provider:file,service }}
 
   /// Create a session.
-  fileprivate init(handler:gRPC.Handler, provider: {{ .|provider:file,service }}) {
+  init(handler:Handler, provider: {{ .|provider:file,service }}) {
     self.provider = provider
     super.init(handler:handler)
   }
 
-  /// Send a message. Nonblocking.
-  {{ access }} func send(_ response: {{ method|output }}, completion: ((Bool)->())?) throws {
-	try handler.sendResponse(message:response.serializedData(), completion: completion)
+  func send(_ response: {{ method|output }}, completion: ((Bool)->())?) throws {
+    try handler.sendResponse(message:response.serializedData(), completion: completion)
   }
 
   /// Run the session. Internal.
-  fileprivate func run(queue:DispatchQueue) throws {
+  func run(queue:DispatchQueue) throws {
     try self.handler.receiveMessage(initialMetadata:initialMetadata) {(requestData) in
       if let requestData = requestData {
         do {
@@ -39,3 +43,17 @@
     }
   }
 }
+
+//-{% if generateTestStubs %}
+/// Simple fake implementation of {{ .|session:file,service,method }} that returns a previously-defined set of results
+/// and stores sent values for later verification.
+class {{ .|session:file,service,method }}TestStub : {{ .|service:file,service }}SessionTestStub, {{ .|session:file,service,method }} {
+  var outputs: [{{ method|output }}] = []
+
+  func send(_ response: {{ method|output }}, completion: @escaping ()->()) throws {
+    outputs.append(response)
+  }
+
+  func close() throws { }
+}
+//-{% endif %}

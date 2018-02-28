@@ -80,7 +80,7 @@ func runTest(useSSL: Bool) {
   let serverRunningSemaphore = DispatchSemaphore(value: 0)
 
   // create the server
-  let server: gRPC.Server
+  let server: Server
   if useSSL {
     let certificateURL = URL(fileURLWithPath: "Tests/ssl.crt")
     let keyURL = URL(fileURLWithPath: "Tests/ssl.key")
@@ -90,11 +90,11 @@ func runTest(useSSL: Bool) {
     else {
       return
     }
-    server = gRPC.Server(address: address,
-                         key: key,
-                         certs: certificate)
+    server = Server(address: address,
+                    key: key,
+                    certs: certificate)
   } else {
-    server = gRPC.Server(address: address)
+    server = Server(address: address)
   }
 
   // start the server
@@ -135,7 +135,7 @@ func verify_metadata(_ metadata: Metadata, expected: [String: String], file: Sta
 
 func runClient(useSSL: Bool) throws {
   let message = clientText.data(using: .utf8)
-  let channel: gRPC.Channel
+  let channel: Channel
 
   if useSSL {
     let certificateURL = URL(fileURLWithPath: "Tests/ssl.crt")
@@ -145,9 +145,9 @@ func runClient(useSSL: Bool) throws {
       return
     }
     let host = "example.com"
-    channel = gRPC.Channel(address: address, certificates: certificates, host: host)
+    channel = Channel(address: address, certificates: certificates, host: host)
   } else {
-    channel = gRPC.Channel(address: address, secure: false)
+    channel = Channel(address: address, secure: false)
   }
 
   channel.host = host
@@ -179,7 +179,7 @@ func runClient(useSSL: Bool) throws {
   }
 }
 
-func runServer(server: gRPC.Server) throws {
+func runServer(server: Server) throws {
   var requestCount = 0
   let sem = DispatchSemaphore(value: 0)
   server.run { requestHandler in

@@ -25,7 +25,7 @@ class EchoViewController: NSViewController, NSTextFieldDelegate {
   @IBOutlet var callSelectButton: NSSegmentedControl!
   @IBOutlet var closeButton: NSButton!
 
-  private var service: Echo_EchoService?
+  private var service: Echo_EchoServiceClient?
 
   private var expandCall: Echo_EchoExpandCall?
   private var collectCall: Echo_EchoCollectCall?
@@ -107,12 +107,12 @@ class EchoViewController: NSViewController, NSTextFieldDelegate {
       return
     }
     if TLSButton.intValue == 0 {
-      service = Echo_EchoService(address: address, secure: false)
+      service = Echo_EchoServiceClient(address: address, secure: false)
     } else {
       let certificateURL = Bundle.main.url(forResource: "ssl",
                                            withExtension: "crt")!
       let certificates = try! String(contentsOf: certificateURL)
-      service = Echo_EchoService(address: address, certificates: certificates, host: host)
+      service = Echo_EchoServiceClient(address: address, certificates: certificates, host: host)
     }
     if let service = service {
       service.host = "example.com" // sample override
@@ -147,7 +147,7 @@ class EchoViewController: NSViewController, NSTextFieldDelegate {
           var requestMessage = Echo_EchoRequest()
           requestMessage.text = messageField.stringValue
           expandCall = try service.expand(requestMessage) { call in
-            print("Started expand \(call)")
+            print("Completed expand \(call)")
           }
           try receiveExpandMessages()
           displayMessageSent(requestMessage.text)
@@ -160,7 +160,7 @@ class EchoViewController: NSViewController, NSTextFieldDelegate {
       do {
         if !nowStreaming {
           let collectCall = try service.collect { call in
-            print("Started collect \(call)")
+            print("Completed collect \(call)")
           }
           self.collectCall = collectCall
           nowStreaming = true
@@ -177,7 +177,7 @@ class EchoViewController: NSViewController, NSTextFieldDelegate {
       do {
         if !nowStreaming {
           let updateCall = try service.update { call in
-            print("Started update \(call)")
+            print("Completed update \(call)")
           }
           self.updateCall = updateCall
           nowStreaming = true

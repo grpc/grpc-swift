@@ -65,8 +65,8 @@ public class Handler {
   init(underlyingServer: UnsafeMutableRawPointer) {
     underlyingHandler = cgrpc_handler_create_with_server(underlyingServer)
     requestMetadata = Metadata()
-    completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_handler_get_completion_queue(underlyingHandler))
-    completionQueue.name = "Handler"
+    completionQueue = CompletionQueue(
+      underlyingCompletionQueue: cgrpc_handler_get_completion_queue(underlyingHandler), name: "Handler")
   }
 
   deinit {
@@ -119,10 +119,7 @@ public class Handler {
                                       .sendStatusFromServer(statusCode, statusMessage, trailingMetadata),
                                       .sendMessage(messageBuffer)
     ]) { operationGroup in
-      // TODO(timburks): Should we also shut down do in case of error?
-      if operationGroup.success {
-        self.shutdown()
-      }
+      self.shutdown()
     }
     try call.perform(operations)
   }
@@ -140,10 +137,7 @@ public class Handler {
                                       .receiveCloseOnServer,
                                       .sendStatusFromServer(statusCode, statusMessage, trailingMetadata)
     ]) { operationGroup in
-      // TODO(timburks): Should we also shut down do in case of error?
-      if operationGroup.success {
-        self.shutdown()
-      }
+      self.shutdown()
     }
     try call.perform(operations)
   }
@@ -222,9 +216,10 @@ public class Handler {
                                       .sendStatusFromServer(statusCode,
                                                             statusMessage,
                                                             trailingMetadata)
-    ], completion: completion != nil
-      ? { operationGroup in completion?(operationGroup.success) }
-      : nil)
+    ]) { operationGroup in
+      completion?(operationGroup.success)
+      self.shutdown()
+    }
     try call.perform(operations)
   }
 }

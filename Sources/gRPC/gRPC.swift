@@ -18,28 +18,32 @@
 #endif
 import Foundation // for String.Encoding
 
-/// Initializes gRPC system
-public func initialize() {
-  grpc_init()
-}
-
-/// Shuts down gRPC system
-public func shutdown() {
-  grpc_shutdown()
-}
-
-/// Returns version of underlying gRPC library
-///
-/// Returns: gRPC version string
-public func version() -> String? {
-  return String(cString: grpc_version_string(), encoding: String.Encoding.utf8)
-}
-
-/// Returns name associated with gRPC version
-///
-/// Returns: gRPC version name
-public func gStandsFor() -> String? {
-  return String(cString: grpc_g_stands_for(), encoding: String.Encoding.utf8)
+public final class gRPC {
+  private init() { }  // Static members only.
+  
+  /// Initializes gRPC system
+  public static func initialize() {
+    grpc_init()
+  }
+  
+  /// Shuts down gRPC system
+  public static func shutdown() {
+    grpc_shutdown()
+  }
+  
+  /// Returns version of underlying gRPC library
+  ///
+  /// Returns: gRPC version string
+  public static var version: String? {
+    return String(cString: grpc_version_string(), encoding: String.Encoding.utf8)
+  }
+  
+  /// Returns name associated with gRPC version
+  ///
+  /// Returns: gRPC version name
+  public static var gStandsFor: String? {
+    return String(cString: grpc_g_stands_for(), encoding: String.Encoding.utf8)
+  }
 }
 
 /// Status codes for gRPC operations (replicated from status_code_enum.h)

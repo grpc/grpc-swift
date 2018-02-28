@@ -34,17 +34,23 @@ internal enum Echo_EchoClientError : Error {
 }
 
 /// Get (Unary)
-internal final class Echo_EchoGetCall {
+internal protocol Echo_EchoGetCall {
+  /// Cancel the call.
+  func cancel()
+}
+
+/// Get (Unary)
+fileprivate final class Echo_EchoGetCallImpl: Echo_EchoGetCall {
   private var call : Call
 
   /// Create a call.
-  fileprivate init(_ channel: Channel) {
+  init(_ channel: Channel) {
     self.call = channel.makeCall("/echo.Echo/Get")
   }
 
   /// Run the call. Blocks until the reply is received.
   /// - Throws: `BinaryEncodingError` if encoding fails. `CallError` if fails to call. `Echo_EchoClientError` if receives no response.
-  fileprivate func run(request: Echo_EchoRequest,
+  func run(request: Echo_EchoRequest,
                        metadata: Metadata) throws -> Echo_EchoResponse {
     let sem = DispatchSemaphore(value: 0)
     var returnCallResult : CallResult!
@@ -64,7 +70,7 @@ internal final class Echo_EchoGetCall {
 
   /// Start the call. Nonblocking.
   /// - Throws: `BinaryEncodingError` if encoding fails. `CallError` if fails to call.
-  fileprivate func start(request: Echo_EchoRequest,
+  func start(request: Echo_EchoRequest,
                          metadata: Metadata,
                          completion: @escaping ((Echo_EchoResponse?, CallResult)->()))
     throws -> Echo_EchoGetCall {
@@ -84,36 +90,24 @@ internal final class Echo_EchoGetCall {
       return self
   }
 
-  /// Cancel the call.
-  internal func cancel() {
+  func cancel() {
     call.cancel()
   }
 }
 
 /// Expand (Server Streaming)
-internal final class Echo_EchoExpandCall {
-  private var call : Call
-
-  /// Create a call.
-  fileprivate init(_ channel: Channel) {
-    self.call = channel.makeCall("/echo.Echo/Expand")
-  }
-
-  /// Call this once with the message to send. Nonblocking.
-  fileprivate func start(request: Echo_EchoRequest,
-                         metadata: Metadata,
-                         completion: ((CallResult) -> ())?)
-    throws -> Echo_EchoExpandCall {
-      let requestData = try request.serializedData()
-      try call.start(.serverStreaming,
-                     metadata:metadata,
-                     message:requestData,
-                     completion:completion)
-      return self
-  }
-
+internal protocol Echo_EchoExpandCall {
   /// Call this to wait for a result. Blocking.
-  internal func receive() throws -> Echo_EchoResponse {
+  func receive() throws -> Echo_EchoResponse
+  /// Call this to wait for a result. Nonblocking.
+  func receive(completion:@escaping (Echo_EchoResponse?, Echo_EchoClientError?)->()) throws
+  
+  /// Cancel the call.
+  func cancel()
+}
+
+internal extension Echo_EchoExpandCall {
+  func receive() throws -> Echo_EchoResponse {
     var returnError : Echo_EchoClientError?
     var returnResponse : Echo_EchoResponse!
     let sem = DispatchSemaphore(value: 0)
@@ -130,9 +124,30 @@ internal final class Echo_EchoExpandCall {
     }
     return returnResponse
   }
+}
 
-  /// Call this to wait for a result. Nonblocking.
-  internal func receive(completion:@escaping (Echo_EchoResponse?, Echo_EchoClientError?)->()) throws {
+fileprivate final class Echo_EchoExpandCallImpl: Echo_EchoExpandCall {
+  private var call : Call
+
+  /// Create a call.
+  init(_ channel: Channel) {
+    self.call = channel.makeCall("/echo.Echo/Expand")
+  }
+
+  /// Call this once with the message to send. Nonblocking.
+  func start(request: Echo_EchoRequest,
+                         metadata: Metadata,
+                         completion: ((CallResult) -> ())?)
+    throws -> Echo_EchoExpandCall {
+      let requestData = try request.serializedData()
+      try call.start(.serverStreaming,
+                     metadata:metadata,
+                     message:requestData,
+                     completion:completion)
+      return self
+  }
+
+  func receive(completion:@escaping (Echo_EchoResponse?, Echo_EchoClientError?)->()) throws {
     do {
       try call.receiveMessage() {(responseData) in
         if let responseData = responseData {
@@ -149,35 +164,28 @@ internal final class Echo_EchoExpandCall {
   }
 
   /// Cancel the call.
-  internal func cancel() {
+  func cancel() {
     call.cancel()
   }
 }
 
+
 /// Collect (Client Streaming)
-internal final class Echo_EchoCollectCall {
-  private var call : Call
-
-  /// Create a call.
-  fileprivate init(_ channel: Channel) {
-    self.call = channel.makeCall("/echo.Echo/Collect")
-  }
-
-  /// Call this to start a call. Nonblocking.
-  fileprivate func start(metadata:Metadata, completion: ((CallResult)->())?)
-    throws -> Echo_EchoCollectCall {
-      try self.call.start(.clientStreaming, metadata:metadata, completion:completion)
-      return self
-  }
-
+internal protocol Echo_EchoCollectCall {
   /// Call this to send each message in the request stream. Nonblocking.
-  internal func send(_ message:Echo_EchoRequest, errorHandler:@escaping (Error)->()) throws {
-    let messageData = try message.serializedData()
-    try call.sendMessage(data:messageData, errorHandler:errorHandler)
-  }
-
+  func send(_ message:Echo_EchoRequest, errorHandler:@escaping (Error)->()) throws
+  
   /// Call this to close the connection and wait for a response. Blocking.
-  internal func closeAndReceive() throws -> Echo_EchoResponse {
+  func closeAndReceive() throws -> Echo_EchoResponse
+  /// Call this to close the connection and wait for a response. Nonblocking.
+  func closeAndReceive(completion:@escaping (Echo_EchoResponse?, Echo_EchoClientError?)->()) throws
+  
+  /// Cancel the call.
+  func cancel()
+}
+
+internal extension Echo_EchoCollectCall {
+  func closeAndReceive() throws -> Echo_EchoResponse {
     var returnError : Echo_EchoClientError?
     var returnResponse : Echo_EchoResponse!
     let sem = DispatchSemaphore(value: 0)
@@ -196,49 +204,71 @@ internal final class Echo_EchoCollectCall {
     }
     return returnResponse
   }
+}
 
-  /// Call this to close the connection and wait for a response. Nonblocking.
-  internal func closeAndReceive(completion:@escaping (Echo_EchoResponse?, Echo_EchoClientError?)->())
-    throws {
-      do {
-        try call.receiveMessage() {(responseData) in
-          if let responseData = responseData,
-            let response = try? Echo_EchoResponse(serializedData:responseData) {
-            completion(response, nil)
-          } else {
-            completion(nil, Echo_EchoClientError.invalidMessageReceived)
-          }
-        }
-        try call.close(completion:{})
-      } catch (let error) {
-        throw error
-      }
+fileprivate final class Echo_EchoCollectCallImpl: Echo_EchoCollectCall {
+  private var call : Call
+
+  /// Create a call.
+  init(_ channel: Channel) {
+    self.call = channel.makeCall("/echo.Echo/Collect")
   }
 
-  /// Cancel the call.
-  internal func cancel() {
+  /// Call this to start a call. Nonblocking.
+  func start(metadata:Metadata, completion: (CallResult)->()?)
+    throws -> Echo_EchoCollectCall {
+      try self.call.start(.clientStreaming, metadata:metadata, completion:completion)
+      return self
+  }
+
+  func send(_ message:Echo_EchoRequest, errorHandler:@escaping (Error)->()) throws {
+    let messageData = try message.serializedData()
+    try call.sendMessage(data:messageData, errorHandler:errorHandler)
+  }
+
+  func closeAndReceive(completion:@escaping (Echo_EchoResponse?, Echo_EchoClientError?)->()) throws {
+    do {
+      try call.receiveMessage() {(responseData) in
+        if let responseData = responseData,
+          let response = try? Echo_EchoResponse(serializedData:responseData) {
+          completion(response, nil)
+        } else {
+          completion(nil, Echo_EchoClientError.invalidMessageReceived)
+        }
+      }
+      try call.close(completion:{})
+    } catch (let error) {
+      throw error
+    }
+  }
+
+  func cancel() {
     call.cancel()
   }
 }
 
+
 /// Update (Bidirectional Streaming)
-internal final class Echo_EchoUpdateCall {
-  private var call : Call
-
-  /// Create a call.
-  fileprivate init(_ channel: Channel) {
-    self.call = channel.makeCall("/echo.Echo/Update")
-  }
-
-  /// Call this to start a call. Nonblocking.
-  fileprivate func start(metadata:Metadata, completion: ((CallResult)->())?)
-    throws -> Echo_EchoUpdateCall {
-      try self.call.start(.bidiStreaming, metadata:metadata, completion:completion)
-      return self
-  }
-
+internal protocol Echo_EchoUpdateCall {
   /// Call this to wait for a result. Blocking.
-  internal func receive() throws -> Echo_EchoResponse {
+  func receive() throws -> Echo_EchoResponse
+  /// Call this to wait for a result. Nonblocking.
+  func receive(completion:@escaping (Echo_EchoResponse?, Echo_EchoClientError?)->()) throws
+  
+  /// Call this to send each message in the request stream.
+  func send(_ message:Echo_EchoRequest, errorHandler:@escaping (Error)->()) throws
+  
+  /// Call this to close the sending connection. Blocking.
+  func closeSend() throws
+  /// Call this to close the sending connection. Nonblocking.
+  func closeSend(completion: (()->())?) throws
+  
+  /// Cancel the call.
+  func cancel()
+}
+
+internal extension Echo_EchoUpdateCall {
+  func receive() throws -> Echo_EchoResponse {
     var returnError : Echo_EchoClientError?
     var returnMessage : Echo_EchoResponse!
     let sem = DispatchSemaphore(value: 0)
@@ -256,8 +286,31 @@ internal final class Echo_EchoUpdateCall {
     return returnMessage
   }
 
-  /// Call this to wait for a result. Nonblocking.
-  internal func receive(completion:@escaping (Echo_EchoResponse?, Echo_EchoClientError?)->()) throws {
+  func closeSend() throws {
+    let sem = DispatchSemaphore(value: 0)
+    try closeSend() {
+      sem.signal()
+    }
+    _ = sem.wait(timeout: DispatchTime.distantFuture)
+  }
+}
+
+fileprivate final class Echo_EchoUpdateCallImpl: Echo_EchoUpdateCall {
+  private var call : Call
+
+  /// Create a call.
+  init(_ channel: Channel) {
+    self.call = channel.makeCall("/echo.Echo/Update")
+  }
+
+  /// Call this to start a call. Nonblocking.
+  func start(metadata:Metadata, completion: ((CallResult)->())?)
+    throws -> Echo_EchoUpdateCall {
+      try self.call.start(.bidiStreaming, metadata:metadata, completion:completion)
+      return self
+  }
+
+  func receive(completion:@escaping (Echo_EchoResponse?, Echo_EchoClientError?)->()) throws {
     do {
       try call.receiveMessage() {(data) in
         if let data = data {
@@ -273,42 +326,68 @@ internal final class Echo_EchoUpdateCall {
     }
   }
 
-  /// Call this to send each message in the request stream.
-  internal func send(_ message:Echo_EchoRequest, errorHandler:@escaping (Error)->()) throws {
+  func send(_ message:Echo_EchoRequest, errorHandler:@escaping (Error)->()) throws {
     let messageData = try message.serializedData()
     try call.sendMessage(data:messageData, errorHandler:errorHandler)
   }
 
-  /// Call this to close the sending connection. Blocking.
-  internal func closeSend() throws {
-    let sem = DispatchSemaphore(value: 0)
-    try closeSend() {
-      sem.signal()
-    }
-    _ = sem.wait(timeout: DispatchTime.distantFuture)
+  func closeSend(completion: (()->())?) throws {
+  	try call.close(completion: completion)
   }
 
-  /// Call this to close the sending connection. Nonblocking.
-  internal func closeSend(completion: (()->())?) throws {
-	try call.close(completion: completion)
-  }
-
-  /// Cancel the call.
-  internal func cancel() {
+  func cancel() {
     call.cancel()
   }
 }
 
-/// Call methods of this class to make API calls.
-internal final class Echo_EchoService {
-  public private(set) var channel: Channel
+
+
+/// Instantiate Echo_EchoServiceImpl, then call methods of this protocol to make API calls.
+internal protocol Echo_EchoService {
+  var channel: Channel { get }
 
   /// This metadata will be sent with all requests.
-  internal var metadata : Metadata
+  var metadata: Metadata { get }
 
   /// This property allows the service host name to be overridden.
   /// For example, it can be used to make calls to "localhost:8080"
   /// appear to be to "example.com".
+  var host : String { get }
+
+  /// This property allows the service timeout to be overridden.
+  var timeout : TimeInterval { get }
+  
+  /// Synchronous. Unary.
+  func get(_ request: Echo_EchoRequest) throws -> Echo_EchoResponse
+  /// Asynchronous. Unary.
+  func get(_ request: Echo_EchoRequest,
+                  completion: @escaping (Echo_EchoResponse?, CallResult)->()) throws -> Echo_EchoGetCall
+
+  /// Asynchronous. Server-streaming.
+  /// Send the initial message.
+  /// Use methods on the returned object to get streamed responses.
+  func expand(_ request: Echo_EchoRequest, completion: @escaping (CallResult)->())
+    throws -> Echo_EchoExpandCall
+
+  /// Asynchronous. Client-streaming.
+  /// Use methods on the returned object to stream messages and
+  /// to close the connection and wait for a final response.
+  func collect(completion: @escaping (CallResult)->())
+    throws -> Echo_EchoCollectCall
+
+  /// Asynchronous. Bidirectional-streaming.
+  /// Use methods on the returned object to stream messages,
+  /// to wait for replies, and to close the connection.
+  func update(completion: @escaping (CallResult)->())
+    throws -> Echo_EchoUpdateCall
+
+}
+
+internal final class Echo_EchoServiceClient: Echo_EchoService {
+  internal private(set) var channel: Channel
+
+  internal var metadata : Metadata
+
   internal var host : String {
     get {
       return self.channel.host
@@ -318,7 +397,6 @@ internal final class Echo_EchoService {
     }
   }
 
-  /// This property allows the service timeout to be overridden.
   internal var timeout : TimeInterval {
     get {
       return self.channel.timeout
@@ -346,42 +424,48 @@ internal final class Echo_EchoService {
   internal func get(_ request: Echo_EchoRequest)
     throws
     -> Echo_EchoResponse {
-      return try Echo_EchoGetCall(channel).run(request:request, metadata:metadata)
+      return try Echo_EchoGetCallImpl(channel).run(request:request, metadata:metadata)
   }
   /// Asynchronous. Unary.
   internal func get(_ request: Echo_EchoRequest,
                   completion: @escaping (Echo_EchoResponse?, CallResult)->())
     throws
     -> Echo_EchoGetCall {
-      return try Echo_EchoGetCall(channel).start(request:request,
+      return try Echo_EchoGetCallImpl(channel).start(request:request,
                                                  metadata:metadata,
                                                  completion:completion)
   }
+
   /// Asynchronous. Server-streaming.
   /// Send the initial message.
   /// Use methods on the returned object to get streamed responses.
   internal func expand(_ request: Echo_EchoRequest, completion: ((CallResult)->())?)
     throws
     -> Echo_EchoExpandCall {
-      return try Echo_EchoExpandCall(channel).start(request:request, metadata:metadata, completion:completion)
+      return try Echo_EchoExpandCallImpl(channel).start(request:request, metadata:metadata, completion:completion)
   }
+
   /// Asynchronous. Client-streaming.
   /// Use methods on the returned object to stream messages and
   /// to close the connection and wait for a final response.
   internal func collect(completion: ((CallResult)->())?)
     throws
     -> Echo_EchoCollectCall {
-      return try Echo_EchoCollectCall(channel).start(metadata:metadata, completion:completion)
+      return try Echo_EchoCollectCallImpl(channel).start(metadata:metadata, completion:completion)
   }
+
   /// Asynchronous. Bidirectional-streaming.
   /// Use methods on the returned object to stream messages,
   /// to wait for replies, and to close the connection.
   internal func update(completion: ((CallResult)->())?)
     throws
     -> Echo_EchoUpdateCall {
-      return try Echo_EchoUpdateCall(channel).start(metadata:metadata, completion:completion)
+      return try Echo_EchoUpdateCallImpl(channel).start(metadata:metadata, completion:completion)
   }
+
 }
+
+
 
 
 /// Type for errors thrown from generated server code.
@@ -398,32 +482,44 @@ internal protocol Echo_EchoProvider {
 }
 
 /// Common properties available in each service session.
-internal class Echo_EchoSession {
-  fileprivate var handler : gRPC.Handler
-  internal var requestMetadata : Metadata { return handler.requestMetadata }
+internal protocol Echo_EchoSession {
+  var requestMetadata : Metadata { get }
 
-  internal var statusCode : StatusCode = .ok
-  internal var statusMessage : String = "OK"
-  internal var initialMetadata : Metadata = Metadata()
-  internal var trailingMetadata : Metadata = Metadata()
+  var statusCode : StatusCode { get }
+  var statusMessage : String { get }
+  var initialMetadata : Metadata { get }
+  var trailingMetadata : Metadata { get }
+}
 
-  fileprivate init(handler:gRPC.Handler) {
+fileprivate class Echo_EchoSessionImpl: Echo_EchoSession {
+  var handler : Handler
+  var requestMetadata : Metadata { return handler.requestMetadata }
+
+  var statusCode : StatusCode = .ok
+  var statusMessage : String = "OK"
+  var initialMetadata : Metadata = Metadata()
+  var trailingMetadata : Metadata = Metadata()
+
+  init(handler:Handler) {
     self.handler = handler
   }
 }
 
-// Get (Unary)
-internal final class Echo_EchoGetSession : Echo_EchoSession {
+
+// Get (Unary Streaming)
+internal protocol Echo_EchoGetSession : Echo_EchoSession { }
+
+fileprivate final class Echo_EchoGetSessionImpl : Echo_EchoSessionImpl, Echo_EchoGetSession {
   private var provider : Echo_EchoProvider
 
   /// Create a session.
-  fileprivate init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
+  init(handler:Handler, provider: Echo_EchoProvider) {
     self.provider = provider
     super.init(handler:handler)
   }
 
   /// Run the session. Internal.
-  fileprivate func run(queue:DispatchQueue) throws {
+  func run(queue:DispatchQueue) throws {
     try handler.receiveMessage(initialMetadata:initialMetadata) {(requestData) in
       if let requestData = requestData {
         let requestMessage = try Echo_EchoRequest(serializedData:requestData)
@@ -437,23 +533,28 @@ internal final class Echo_EchoGetSession : Echo_EchoSession {
   }
 }
 
+
 // Expand (Server Streaming)
-internal final class Echo_EchoExpandSession : Echo_EchoSession {
+internal protocol Echo_EchoExpandSession : Echo_EchoSession {
+  /// Send a message. Nonblocking.
+  func send(_ response: Echo_EchoResponse, completion: ((Bool)->())?) throws
+}
+
+fileprivate final class Echo_EchoExpandSessionImpl : Echo_EchoSessionImpl, Echo_EchoExpandSession {
   private var provider : Echo_EchoProvider
 
   /// Create a session.
-  fileprivate init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
+  init(handler:Handler, provider: Echo_EchoProvider) {
     self.provider = provider
     super.init(handler:handler)
   }
 
-  /// Send a message. Nonblocking.
-  internal func send(_ response: Echo_EchoResponse, completion: ((Bool)->())?) throws {
-	try handler.sendResponse(message:response.serializedData(), completion: completion)
+  func send(_ response: Echo_EchoResponse, completion: ((Bool)->())?) throws {
+    try handler.sendResponse(message:response.serializedData(), completion: completion)
   }
 
   /// Run the session. Internal.
-  fileprivate func run(queue:DispatchQueue) throws {
+  func run(queue:DispatchQueue) throws {
     try self.handler.receiveMessage(initialMetadata:initialMetadata) {(requestData) in
       if let requestData = requestData {
         do {
@@ -479,18 +580,26 @@ internal final class Echo_EchoExpandSession : Echo_EchoSession {
   }
 }
 
+
 // Collect (Client Streaming)
-internal final class Echo_EchoCollectSession : Echo_EchoSession {
+internal protocol Echo_EchoCollectSession : Echo_EchoSession {
+  /// Receive a message. Blocks until a message is received or the client closes the connection.
+  func receive() throws -> Echo_EchoRequest
+
+  /// Send a response and close the connection.
+  func sendAndClose(_ response: Echo_EchoResponse) throws
+}
+
+fileprivate final class Echo_EchoCollectSessionImpl : Echo_EchoSessionImpl, Echo_EchoCollectSession {
   private var provider : Echo_EchoProvider
 
   /// Create a session.
-  fileprivate init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
+  init(handler:Handler, provider: Echo_EchoProvider) {
     self.provider = provider
     super.init(handler:handler)
   }
 
-  /// Receive a message. Blocks until a message is received or the client closes the connection.
-  internal func receive() throws -> Echo_EchoRequest {
+  func receive() throws -> Echo_EchoRequest {
     let sem = DispatchSemaphore(value: 0)
     var requestMessage : Echo_EchoRequest?
     try self.handler.receiveMessage() {(requestData) in
@@ -506,8 +615,7 @@ internal final class Echo_EchoCollectSession : Echo_EchoSession {
     return requestMessage!
   }
 
-  /// Send a response and close the connection.
-  internal func sendAndClose(_ response: Echo_EchoResponse) throws {
+  func sendAndClose(_ response: Echo_EchoResponse) throws {
     try self.handler.sendResponse(message:response.serializedData(),
                                   statusCode:self.statusCode,
                                   statusMessage:self.statusMessage,
@@ -515,7 +623,7 @@ internal final class Echo_EchoCollectSession : Echo_EchoSession {
   }
 
   /// Run the session. Internal.
-  fileprivate func run(queue:DispatchQueue) throws {
+  func run(queue:DispatchQueue) throws {
     try self.handler.sendMetadata(initialMetadata:initialMetadata) { _ in
       queue.async {
         do {
@@ -528,18 +636,29 @@ internal final class Echo_EchoCollectSession : Echo_EchoSession {
   }
 }
 
+
 // Update (Bidirectional Streaming)
-internal final class Echo_EchoUpdateSession : Echo_EchoSession {
+internal protocol Echo_EchoUpdateSession : Echo_EchoSession {
+  /// Receive a message. Blocks until a message is received or the client closes the connection.
+  func receive() throws -> Echo_EchoRequest
+
+  /// Send a message. Nonblocking.
+  func send(_ response: Echo_EchoResponse, completion: ((Bool)->())?) throws
+  
+  /// Close a connection. Blocks until the connection is closed.
+  func close() throws
+}
+
+fileprivate final class Echo_EchoUpdateSessionImpl : Echo_EchoSessionImpl, Echo_EchoUpdateSession {
   private var provider : Echo_EchoProvider
 
   /// Create a session.
-  fileprivate init(handler:gRPC.Handler, provider: Echo_EchoProvider) {
+  init(handler:Handler, provider: Echo_EchoProvider) {
     self.provider = provider
     super.init(handler:handler)
   }
 
-  /// Receive a message. Blocks until a message is received or the client closes the connection.
-  internal func receive() throws -> Echo_EchoRequest {
+  func receive() throws -> Echo_EchoRequest {
     let sem = DispatchSemaphore(value: 0)
     var requestMessage : Echo_EchoRequest?
     try self.handler.receiveMessage() {(requestData) in
@@ -560,13 +679,11 @@ internal final class Echo_EchoUpdateSession : Echo_EchoSession {
     }
   }
 
-  /// Send a message. Nonblocking.
-  internal func send(_ response: Echo_EchoResponse, completion: ((Bool)->())?) throws {
-	try handler.sendResponse(message:response.serializedData(), completion: completion)
+  func send(_ response: Echo_EchoResponse, completion: ((Bool)->())?) throws {
+    try handler.sendResponse(message:response.serializedData(), completion: completion)
   }
 
-  /// Close a connection. Blocks until the connection is closed.
-  internal func close() throws {
+  func close() throws {
     let sem = DispatchSemaphore(value: 0)
     try self.handler.sendStatus(statusCode:self.statusCode,
                                 statusMessage:self.statusMessage,
@@ -575,7 +692,7 @@ internal final class Echo_EchoUpdateSession : Echo_EchoSession {
   }
 
   /// Run the session. Internal.
-  fileprivate func run(queue:DispatchQueue) throws {
+  func run(queue:DispatchQueue) throws {
     try self.handler.sendMetadata(initialMetadata:initialMetadata) { _ in
       queue.async {
         do {
@@ -589,10 +706,11 @@ internal final class Echo_EchoUpdateSession : Echo_EchoSession {
 }
 
 
+
 /// Main server for generated service
 internal final class Echo_EchoServer {
   private var address: String
-  private var server: gRPC.Server
+  private var server: Server
   private var provider: Echo_EchoProvider?
 
   /// Create a server that accepts insecure connections.
@@ -601,7 +719,7 @@ internal final class Echo_EchoServer {
     gRPC.initialize()
     self.address = address
     self.provider = provider
-    self.server = gRPC.Server(address:address)
+    self.server = Server(address:address)
   }
 
   /// Create a server that accepts secure connections.
@@ -618,7 +736,7 @@ internal final class Echo_EchoServer {
       else {
         return nil
     }
-    self.server = gRPC.Server(address:address, key:key, certs:certificate)
+    self.server = Server(address:address, key:key, certs:certificate)
   }
 
   /// Start the server.
@@ -627,26 +745,29 @@ internal final class Echo_EchoServer {
       fatalError() // the server requires a provider
     }
     server.run {(handler) in
-      print("Server received request to " + handler.host
-        + " calling " + handler.method
-        + " from " + handler.caller
-        + " with " + String(describing:handler.requestMetadata) )
+      let unwrappedHost = handler.host ?? "(nil)"
+      let unwrappedMethod = handler.method ?? "(nil)"
+      let unwrappedCaller = handler.caller ?? "(nil)"
+      print("Server received request to " + unwrappedHost
+        + " calling " + unwrappedMethod
+        + " from " + unwrappedCaller
+        + " with " + handler.requestMetadata.description)
 
       do {
-        switch handler.method {
+        switch unwrappedMethod {
         case "/echo.Echo/Get":
-          try Echo_EchoGetSession(handler:handler, provider:provider).run(queue:queue)
+          try Echo_EchoGetSessionImpl(handler:handler, provider:provider).run(queue:queue)
         case "/echo.Echo/Expand":
-          try Echo_EchoExpandSession(handler:handler, provider:provider).run(queue:queue)
+          try Echo_EchoExpandSessionImpl(handler:handler, provider:provider).run(queue:queue)
         case "/echo.Echo/Collect":
-          try Echo_EchoCollectSession(handler:handler, provider:provider).run(queue:queue)
+          try Echo_EchoCollectSessionImpl(handler:handler, provider:provider).run(queue:queue)
         case "/echo.Echo/Update":
-          try Echo_EchoUpdateSession(handler:handler, provider:provider).run(queue:queue)
+          try Echo_EchoUpdateSessionImpl(handler:handler, provider:provider).run(queue:queue)
         default:
           // handle unknown requests
           try handler.receiveMessage(initialMetadata:Metadata()) {(requestData) in
             try handler.sendResponse(statusCode:.unimplemented,
-                                     statusMessage:"unknown method " + handler.method,
+                                     statusMessage:"unknown method " + unwrappedMethod,
                                      trailingMetadata:Metadata())
           }
         }

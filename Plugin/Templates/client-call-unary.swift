@@ -1,15 +1,21 @@
 /// {{ method|methodDescriptorName }} (Unary)
-{{ access }} final class {{ .|call:file,service,method }} {
+{{ access }} protocol {{ .|call:file,service,method }} {
+  /// Cancel the call.
+  func cancel()
+}
+
+/// {{ method|methodDescriptorName }} (Unary)
+fileprivate final class {{ .|call:file,service,method }}Impl: {{ .|call:file,service,method }} {
   private var call : Call
 
   /// Create a call.
-  fileprivate init(_ channel: Channel) {
+  init(_ channel: Channel) {
     self.call = channel.makeCall("{{ .|path:file,service,method }}")
   }
 
   /// Run the call. Blocks until the reply is received.
   /// - Throws: `BinaryEncodingError` if encoding fails. `CallError` if fails to call. `{{ .|clienterror:file,service }}` if receives no response.
-  fileprivate func run(request: {{ method|input }},
+  func run(request: {{ method|input }},
                        metadata: Metadata) throws -> {{ method|output }} {
     let sem = DispatchSemaphore(value: 0)
     var returnCallResult : CallResult!
@@ -29,7 +35,7 @@
 
   /// Start the call. Nonblocking.
   /// - Throws: `BinaryEncodingError` if encoding fails. `CallError` if fails to call.
-  fileprivate func start(request: {{ method|input }},
+  func start(request: {{ method|input }},
                          metadata: Metadata,
                          completion: @escaping (({{ method|output }}?, CallResult)->()))
     throws -> {{ .|call:file,service,method }} {
@@ -49,8 +55,7 @@
       return self
   }
 
-  /// Cancel the call.
-  {{ access }} func cancel() {
+  func cancel() {
     call.cancel()
   }
 }

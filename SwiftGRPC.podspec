@@ -29,7 +29,7 @@
 
 Pod::Spec.new do |s|
   s.name = 'SwiftGRPC'
-  s.version = '0.1.0'
+  s.version = '0.3.3'
   s.license  = 'New BSD'
   s.summary = 'Swift gRPC code generator plugin and runtime library'
   s.homepage = 'http://www.grpc.io'
@@ -42,7 +42,9 @@ Pod::Spec.new do |s|
   #s.tvos.deployment_target = '9.0'
   #s.watchos.deployment_target = '2.0'
 
-  s.source_files = 'Sources/**/*.swift', 'Sources/**/*.[ch]'
+  s.source_files = 'Sources/**/*.swift', 'Sources/CgRPC/shim/*.[ch]'
+  s.public_header_files = 'Sources/CgRPC/shim/cgrpc.h'
 
-  s.dependency 'gRPC-Core', '~> 1.0.1'
+  s.dependency 'gRPC-Core', '~> 1.9.1'
+  s.dependency 'BoringSSL', '~> 9.1'
 end

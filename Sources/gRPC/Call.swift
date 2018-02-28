@@ -86,11 +86,11 @@ public enum CallError: Error {
 }
 
 public struct CallResult: CustomStringConvertible {
-  public var statusCode: StatusCode
-  public var statusMessage: String?
-  public var resultData: Data?
-  public var initialMetadata: Metadata?
-  public var trailingMetadata: Metadata?
+  public let statusCode: StatusCode
+  public let statusMessage: String?
+  public let resultData: Data?
+  public let initialMetadata: Metadata?
+  public let trailingMetadata: Metadata?
 
   fileprivate init(_ op: OperationGroup) {
     if op.success {
@@ -146,25 +146,25 @@ public class Call {
   public static var messageQueueMaxLength = 0
 
   /// Pointer to underlying C representation
-  private var underlyingCall: UnsafeMutableRawPointer
+  private let underlyingCall: UnsafeMutableRawPointer
 
   /// Completion queue used for call
-  private var completionQueue: CompletionQueue
+  private let completionQueue: CompletionQueue
 
   /// True if this instance is responsible for deleting the underlying C representation
-  private var owned: Bool
+  private let owned: Bool
 
   /// A queue of pending messages to send over the call
-  private var messageQueue: Array<Data>
+  private var messageQueue: [(dataToSend: Data, errorHandler: (Error) -> Void)] = []
 
   /// True if a message write operation is underway
   private var writing: Bool
 
   /// Mutex for synchronizing message sending
-  private var sendMutex: Mutex
+  private let sendMutex: Mutex
 
   /// Dispatch queue used for sending messages asynchronously
-  private var messageDispatchQueue: DispatchQueue = DispatchQueue.global()
+  private let messageDispatchQueue: DispatchQueue = DispatchQueue.global()
 
   /// Initializes a Call representation
   ///
@@ -174,7 +174,6 @@ public class Call {
     self.underlyingCall = underlyingCall
     self.owned = owned
     self.completionQueue = completionQueue
-    messageQueue = []
     writing = false
     sendMutex = Mutex()
   }
@@ -219,11 +218,11 @@ public class Call {
       }
       operations = [
         .sendInitialMetadata(metadata.copy()),
-        .receiveInitialMetadata,
-        .receiveStatusOnClient,
-        .sendMessage(ByteBuffer(data: message)),
+        .sendMessage(ByteBuffer(data:message)),
         .sendCloseFromClient,
-        .receiveMessage
+        .receiveInitialMetadata,
+        .receiveMessage,
+        .receiveStatusOnClient,
       ]
     case .serverStreaming:
       guard let message = message else {
@@ -231,14 +230,16 @@ public class Call {
       }
       operations = [
         .sendInitialMetadata(metadata.copy()),
+        .sendMessage(ByteBuffer(data:message)),
+        .sendCloseFromClient,
         .receiveInitialMetadata,
-        .sendMessage(ByteBuffer(data: message)),
-        .sendCloseFromClient
+        .receiveStatusOnClient,
       ]
     case .clientStreaming, .bidiStreaming:
       operations = [
         .sendInitialMetadata(metadata.copy()),
-        .receiveInitialMetadata
+        .receiveInitialMetadata,
+        .receiveStatusOnClient,
       ]
     }
     try perform(OperationGroup(call: self,
@@ -253,17 +254,17 @@ public class Call {
   /// Parameter data: the message data to send
   /// - Throws: `CallError` if fails to call. `CallWarning` if blocked.
   public func sendMessage(data: Data, errorHandler: @escaping (Error) -> Void) throws {
-    sendMutex.lock()
-    defer { self.sendMutex.unlock() }
-    if writing {
-      if (Call.messageQueueMaxLength > 0) && // if max length is <= 0, consider it infinite
-        (messageQueue.count == Call.messageQueueMaxLength) {
-        throw CallWarning.blocked
-      }
-      messageQueue.append(data)
-    } else {
-      writing = true
-      try sendWithoutBlocking(data: data, errorHandler: errorHandler)
+    try sendMutex.synchronize {
+      if writing {
+        if (Call.messageQueueMaxLength > 0) && // if max length is <= 0, consider it infinite
+          (messageQueue.count == Call.messageQueueMaxLength) {
+          throw CallWarning.blocked
+        }
+        messageQueue.append((dataToSend: data, errorHandler: errorHandler))
+      } else {
+        writing = true
+        try sendWithoutBlocking(data: data, errorHandler: errorHandler)
+      }  
     }
   }
 
@@ -276,9 +277,9 @@ public class Call {
             self.sendMutex.synchronize {
               // if there are messages pending, send the next one
               if self.messageQueue.count > 0 {
-                let nextMessage = self.messageQueue.removeFirst()
+                let (nextMessage, nextErrorHandler) = self.messageQueue.removeFirst()
                 do {
-                  try self.sendWithoutBlocking(data: nextMessage, errorHandler: errorHandler)
+                  try self.sendWithoutBlocking(data: nextMessage, errorHandler: nextErrorHandler)
                 } catch (let callError) {
                   errorHandler(callError)
                 }
@@ -327,8 +328,8 @@ public class Call {
   /// Finishes the request side of this call, notifies the server that the RPC should be cancelled,
   /// and finishes the response side of the call with an error of code CANCELED.
   public func cancel() {
-    Call.callMutex.lock()
-    cgrpc_call_cancel(underlyingCall)
-    Call.callMutex.unlock()
+    Call.callMutex.synchronize {
+      cgrpc_call_cancel(underlyingCall)
+    }
   }
 }
