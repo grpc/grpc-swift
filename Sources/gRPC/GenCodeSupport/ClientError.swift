@@ -16,6 +16,7 @@
 
 import Foundation
 
+/// Type for errors thrown from generated client code.
 public enum ClientError: Error {
   case endOfStream
   case invalidMessageReceived

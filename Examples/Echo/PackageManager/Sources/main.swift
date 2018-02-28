@@ -105,7 +105,7 @@ Group {
       do {
         let responseMessage = try expandCall.receive()
         print("Received: \(responseMessage.text)")
-      } catch Echo_EchoClientError.endOfStream {
+      } catch ClientError.endOfStream {
         print("expand closed")
         running = false
       }
@@ -144,7 +144,7 @@ Group {
         do {
           let responseMessage = try updateCall.receive()
           print("Received: \(responseMessage.text)")
-        } catch Echo_EchoClientError.endOfStream {
+        } catch ClientError.endOfStream {
           print("update closed")
           sem.signal()
           running = false
