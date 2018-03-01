@@ -81,7 +81,7 @@ open class ClientCallClientStreamingBase<InputType: Message, OutputType: Message
     if let returnError = returnError {
       throw returnError
     }
-    print("closeAndReceive/sync response:", returnReponse)
+    print("closeAndReceive/sync response:", returnResponse)
     return returnResponse
   }
 
