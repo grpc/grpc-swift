@@ -19,8 +19,7 @@ import Foundation
 import SwiftProtobuf
 
 public protocol ClientCallClientStreaming: ClientCall {
-  /// Cancel the call.
-  func cancel()
+  func waitForSendOperationsToFinish()
 
   // TODO: Move the other, message type-dependent, methods into this protocol. At the moment, this is not possible,
   // as the protocol would then have an associated type requirement (and become pretty much unusable in the process).
@@ -40,6 +39,8 @@ open class ClientCallClientStreamingBase<InputType: Message, OutputType: Message
 
   public func closeAndReceive(completion: @escaping (OutputType?, ClientError?) -> Void) throws {
     do {
+      // TODO(timburks, danielalm): What is the correct order here? Close or receive first?
+      // Or should we combine both into one operation group?
       try call.receiveMessage { responseData in
         if let responseData = responseData,
           let response = try? OutputType(serializedData: responseData) {
@@ -48,7 +49,7 @@ open class ClientCallClientStreamingBase<InputType: Message, OutputType: Message
           completion(nil, .invalidMessageReceived)
         }
       }
-      try call.close(completion: {})
+      try call.close(completion: nil)
     } catch (let error) {
       throw error
     }
@@ -74,8 +75,8 @@ open class ClientCallClientStreamingBase<InputType: Message, OutputType: Message
     return returnResponse
   }
 
-  public func cancel() {
-    call.cancel()
+  public func waitForSendOperationsToFinish() {
+    call.messageQueueEmpty.wait()
   }
 }
 
@@ -101,5 +102,7 @@ open class ClientCallClientStreamingTestStub<InputType: Message, OutputType: Mes
     return output!
   }
 
+  open func waitForSendOperationsToFinish() {}
+  
   open func cancel() {}
 }
