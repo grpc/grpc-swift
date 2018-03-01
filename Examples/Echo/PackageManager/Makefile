@@ -18,6 +18,15 @@ test:	all
 	./Echo collect | tee -a test.out
 	./Echo collect | tee -a test.out
 	./Echo update | tee -a test.out
+	./Echo update | tee -a test.out
+	./Echo update | tee -a test.out
+	./Echo update | tee -a test.out
+	./Echo update | tee -a test.out
+	./Echo update | tee -a test.out
+	./Echo update | tee -a test.out
+	./Echo update | tee -a test.out
+	./Echo update | tee -a test.out
+	./Echo update | tee -a test.out
 	kill -9 `cat echo.pid`
 	diff test.out test.gold
 	

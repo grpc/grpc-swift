@@ -146,8 +146,10 @@ Group {
 
   $0.command("update", sslFlag, addressOption("localhost"), portOption, messageOption,
              description: "Perform a bidirectional-streaming update().") { ssl, address, port, message in
+    print("update starting")
     let service = buildEchoService(ssl, address, port, message)
     let sem = DispatchSemaphore(value: 0)
+    print("calling service.update")
     let updateCall = try service.update { result in
       print("update completed with result \(result)")
       sem.signal()
@@ -156,6 +158,7 @@ Group {
     DispatchQueue.global().async {
       var running = true
       while running {
+        print("in update.receive() loop")
         do {
           let responseMessage = try updateCall.receive()
           print("update received: \(responseMessage.text)")
@@ -166,15 +169,19 @@ Group {
         }
       }
     }
+    print("update: before sending message")
     let parts = message.components(separatedBy: " ")
     for part in parts {
       var requestMessage = Echo_EchoRequest()
       requestMessage.text = part
       print("update sending: " + requestMessage.text)
       try updateCall.send(requestMessage) { error in print(error) }
+      print("update sleeping")
       sleep(1)
     }
+    print("update before closeSend")
     try updateCall.closeSend()
+    print("update after closeSend")
     _ = sem.wait(timeout: DispatchTime.distantFuture)
   }
 
