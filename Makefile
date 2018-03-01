@@ -6,10 +6,10 @@ all:
 	swift build -v $(CFLAGS)
 	
 test:
-	#swift build -v $(CFLAGS)
-	#swift test -v $(CFLAGS)
+	swift build -v $(CFLAGS)
+	swift test -v $(CFLAGS)
 	cd Examples/Echo/PackageManager; make test
-	#cd Examples/Simple/PackageManager; make
+	cd Examples/Simple/PackageManager; make
 
 clean:
 	rm -rf Packages
