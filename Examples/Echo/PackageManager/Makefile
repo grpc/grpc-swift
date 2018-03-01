@@ -1,12 +1,16 @@
 
 all:
-	swift build -c release --product Echo
-	cp .build/release/Echo .
+	swift build --product Echo
+	cp .build/debug/Echo .
 
 test:	all
 	./Echo serve & /bin/echo $$! > echo.pid
 	./Echo get | tee test.out
 	./Echo expand | tee -a test.out
+	./Echo collect | tee -a test.out
+	./Echo collect | tee -a test.out
+	./Echo collect | tee -a test.out
+	./Echo collect | tee -a test.out
 	./Echo collect | tee -a test.out
 	./Echo update | tee -a test.out
 	kill -9 `cat echo.pid`
