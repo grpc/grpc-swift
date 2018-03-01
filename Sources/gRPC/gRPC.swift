@@ -34,15 +34,16 @@ public final class gRPC {
   /// Returns version of underlying gRPC library
   ///
   /// Returns: gRPC version string
-  public static var version: String? {
-    return String(cString: grpc_version_string(), encoding: String.Encoding.utf8)
+  public static var version: String {
+    // These two should always be valid UTF-8 strings, so we can forcibly unwrap them.
+    return String(cString: grpc_version_string(), encoding: String.Encoding.utf8)!
   }
   
   /// Returns name associated with gRPC version
   ///
   /// Returns: gRPC version name
-  public static var gStandsFor: String? {
-    return String(cString: grpc_g_stands_for(), encoding: String.Encoding.utf8)
+  public static var gStandsFor: String {
+    return String(cString: grpc_g_stands_for(), encoding: String.Encoding.utf8)!
   }
 }
 
