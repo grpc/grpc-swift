@@ -17,13 +17,13 @@ collect completed with result status ok: OK
 
 
 update sending: Testing
-update received: Swift echo update (1): Testing
 update sending: 1
-update received: Swift echo update (2): 1
 update sending: 2
-update received: Swift echo update (3): 2
 update sending: 3
-update received: Swift echo update (4): 3
+update received: Swift echo update (0): Testing
+update received: Swift echo update (1): 1
+update received: Swift echo update (2): 2
+update received: Swift echo update (3): 3
 update completed with result status ok: OK
 
 

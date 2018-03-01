@@ -28,7 +28,7 @@ test:	all
 	./Echo update | tee -a test.out
 	./Echo update | tee -a test.out
 	kill -9 `cat echo.pid`
-	diff test.out test.gold
+	diff -u test.out test.gold
 	
 project:
 	swift package generate-xcodeproj

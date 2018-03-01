@@ -135,10 +135,9 @@ Group {
       requestMessage.text = part
       print("collect sending: " + part)
       try collectCall.send(requestMessage) { error in print(error) }
-      print("sleeping")
-      sleep(1)
     }
     print("sent all")
+    collectCall.waitForSendOperationsToFinish()
     let responseMessage = try collectCall.closeAndReceive()
     print("collect received: \(responseMessage.text)")
     _ = sem.wait(timeout: DispatchTime.distantFuture)
@@ -154,7 +153,19 @@ Group {
       print("update completed with result \(result)")
       sem.signal()
     }
+    print("update: before sending message")
 
+    let parts = message.components(separatedBy: " ")
+    for part in parts {
+      var requestMessage = Echo_EchoRequest()
+      requestMessage.text = part
+      print("update sending: " + requestMessage.text)
+      try updateCall.send(requestMessage) { error in print(error) }
+    }
+    print("update before waitForSendOperationsToFinish")
+    updateCall.waitForSendOperationsToFinish()
+
+    print("update before receiving")
     DispatchQueue.global().async {
       var running = true
       while running {
@@ -169,16 +180,7 @@ Group {
         }
       }
     }
-    print("update: before sending message")
-    let parts = message.components(separatedBy: " ")
-    for part in parts {
-      var requestMessage = Echo_EchoRequest()
-      requestMessage.text = part
-      print("update sending: " + requestMessage.text)
-      try updateCall.send(requestMessage) { error in print(error) }
-      print("update sleeping")
-      sleep(1)
-    }
+
     print("update before closeSend")
     try updateCall.closeSend()
     print("update after closeSend")

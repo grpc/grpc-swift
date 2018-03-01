@@ -18,10 +18,7 @@ import Dispatch
 import Foundation
 import SwiftProtobuf
 
-public protocol ClientCallUnary: ClientCall {
-  /// Cancel the call.
-  func cancel()
-}
+public protocol ClientCallUnary: ClientCall {}
 
 open class ClientCallUnaryBase<InputType: Message, OutputType: Message>: ClientCallBase, ClientCallUnary {
   /// Run the call. Blocks until the reply is received.
@@ -35,7 +32,7 @@ open class ClientCallUnaryBase<InputType: Message, OutputType: Message>: ClientC
       returnCallResult = callResult
       sem.signal()
     }
-    _ = sem.wait(timeout: DispatchTime.distantFuture)
+    _ = sem.wait()
     if let returnResponse = returnResponse {
       return returnResponse
     } else {
@@ -58,9 +55,5 @@ open class ClientCallUnaryBase<InputType: Message, OutputType: Message>: ClientC
       }
     }
     return self
-  }
-
-  public func cancel() {
-    call.cancel()
   }
 }

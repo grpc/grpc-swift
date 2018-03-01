@@ -157,6 +157,8 @@ public class Call {
   /// A queue of pending messages to send over the call
   private var messageQueue: [(dataToSend: Data, errorHandler: (Error) -> Void)] = []
 
+  public let messageQueueEmpty = DispatchGroup()
+  
   /// True if a message write operation is underway
   private var writing: Bool
 
@@ -254,6 +256,7 @@ public class Call {
   /// Parameter data: the message data to send
   /// - Throws: `CallError` if fails to call. `CallWarning` if blocked.
   public func sendMessage(data: Data, errorHandler: @escaping (Error) -> Void) throws {
+    messageQueueEmpty.enter()
     try sendMutex.synchronize {
       if writing {
         if (Call.messageQueueMaxLength > 0) && // if max length is <= 0, consider it infinite
@@ -294,6 +297,7 @@ public class Call {
           self.writing = false
           errorHandler(CallError.unknown)
         }
+        self.messageQueueEmpty.leave()
     })
   }
 
