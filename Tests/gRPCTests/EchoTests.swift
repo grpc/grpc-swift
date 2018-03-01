@@ -27,7 +27,13 @@ extension Echo_EchoRequest {
 class EchoTests: XCTestCase {
   static var allTests: [(String, (EchoTests) -> () throws -> Void)] {
     return [
-      ("testUnary", testUnary)
+      ("testUnary", testUnary),
+      ("testClientStreaming", testClientStreaming),
+      ("testClientStreamingLotsOfMessages", testClientStreamingLotsOfMessages),
+      ("testServerStreaming", testServerStreaming),
+      ("testServerStreamingLotsOfMessages", testServerStreamingLotsOfMessages),
+      ("testBidirectionalStreamingBatched", testBidirectionalStreamingBatched),
+      ("testBidirectionalStreamingPingPong", testBidirectionalStreamingPingPong)
     ]
   }
   
