@@ -40,16 +40,23 @@ open class ClientCallClientStreamingBase<InputType: Message, OutputType: Message
 
   public func closeAndReceive(completion: @escaping (OutputType?, ClientError?) -> Void) throws {
     do {
+      print("closeAndReceive/async called")
       try call.receiveMessage { responseData in
+        print("closeAndReceive/async receiveMessage callback")
         if let responseData = responseData,
           let response = try? OutputType(serializedData: responseData) {
           completion(response, nil)
         } else {
           completion(nil, .invalidMessageReceived)
         }
+        print("closeAndReceive/async receiveMessage completion handler called")
       }
-      try call.close(completion: {})
+      print("closeAndReceive/async calling close")
+      try call.close(completion: {
+        print("closeAndReceive/async close completion handler called")
+      })
     } catch (let error) {
+      print("closeAndReceive/async error:", error)
       throw error
     }
   }
@@ -58,19 +65,23 @@ open class ClientCallClientStreamingBase<InputType: Message, OutputType: Message
     var returnError: ClientError?
     var returnResponse: OutputType!
     let sem = DispatchSemaphore(value: 0)
+    print("closeAndReceive/sync called")
     do {
       try closeAndReceive { response, error in
         returnResponse = response
         returnError = error
         sem.signal()
       }
+      print("waiting for semaphore")
       _ = sem.wait(timeout: DispatchTime.distantFuture)
     } catch (let error) {
+      print("closeAndReceive/sync error:", error)
       throw error
     }
     if let returnError = returnError {
       throw returnError
     }
+    print("closeAndReceive/sync response:", returnReponse)
     return returnResponse
   }
 

@@ -300,7 +300,9 @@ public class Call {
   // Receive a message over a streaming connection.
   /// - Throws: `CallError` if fails to call.
   public func receiveMessage(callback: @escaping (Data?) throws -> Void) throws {
+    print("Call.receiveMessage called")
     try perform(OperationGroup(call: self, operations: [.receiveMessage]) { operationGroup in
+      print("Call.receiveMessage callback, operationGroup:", operationGroup)
       if operationGroup.success {
         if let messageBuffer = operationGroup.receivedMessage() {
           try callback(messageBuffer.data())

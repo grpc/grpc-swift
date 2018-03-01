@@ -135,6 +135,7 @@ Group {
       requestMessage.text = part
       print("collect sending: " + part)
       try collectCall.send(requestMessage) { error in print(error) }
+      print("sleeping")
       sleep(1)
     }
     print("sent all")

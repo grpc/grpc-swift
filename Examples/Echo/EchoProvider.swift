@@ -42,20 +42,25 @@ class EchoProvider: Echo_EchoProvider {
 
   // collect collects a sequence of messages and returns them concatenated when the caller closes.
   func collect(session: Echo_EchoCollectSession) throws {
+    print("collect session started")
     var parts: [String] = []
     while true {
       do {
         let request = try session.receive()
         parts.append(request.text)
+        print("collect session received", request.text)
       } catch ServerError.endOfStream {
+        print("collect session endOfStream")
         break
       } catch (let error) {
-        print("\(error)")
+        print("collect session error \(error)")
       }
     }
     var response = Echo_EchoResponse()
     response.text = "Swift echo collect: " + parts.joined(separator: " ")
+    print("collect session preparing response:", response.text)
     try session.sendAndClose(response)
+    print("collect session sent response")
   }
 
   // update streams back messages as they are received in an input stream.
