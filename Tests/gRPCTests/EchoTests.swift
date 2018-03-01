@@ -82,7 +82,7 @@ extension EchoTests {
 
 extension EchoTests {
   func testClientStreaming() {
-    let completionHandlerExpectation = XCTestExpectation(description: "completion handler called")
+    let completionHandlerExpectation = expectation(description: "completion handler called")
     let call = try! client.collect { callResult in
       XCTAssertEqual(.ok, callResult.statusCode)
       completionHandlerExpectation.fulfill()
@@ -100,7 +100,7 @@ extension EchoTests {
   }
   
   func testClientStreamingLotsOfMessages() {
-    let completionHandlerExpectation = XCTestExpectation(description: "completion handler called")
+    let completionHandlerExpectation = expectation(description: "completion handler called")
     let call = try! client.collect { callResult in
       XCTAssertEqual(.ok, callResult.statusCode)
       completionHandlerExpectation.fulfill()
@@ -120,7 +120,7 @@ extension EchoTests {
 
 extension EchoTests {
   func testServerStreaming() {
-    let completionHandlerExpectation = XCTestExpectation(description: "completion handler called")
+    let completionHandlerExpectation = expectation(description: "completion handler called")
     let call = try! client.expand(Echo_EchoRequest(text: "foo bar baz")) { callResult in
       XCTAssertEqual(.ok, callResult.statusCode)
       completionHandlerExpectation.fulfill()
@@ -134,7 +134,7 @@ extension EchoTests {
   }
   
   func testServerStreamingLotsOfMessages() {
-    let completionHandlerExpectation = XCTestExpectation(description: "completion handler called")
+    let completionHandlerExpectation = expectation(description: "completion handler called")
     let call = try! client.expand(Echo_EchoRequest(text: EchoTests.lotsOfStrings.joined(separator: " "))) { callResult in
       XCTAssertEqual(.ok, callResult.statusCode)
       completionHandlerExpectation.fulfill()
@@ -150,7 +150,7 @@ extension EchoTests {
 
 extension EchoTests {
   func testBidirectionalStreamingBatched() {
-    let finalCompletionHandlerExpectation = XCTestExpectation(description: "final completion handler called")
+    let finalCompletionHandlerExpectation = expectation(description: "final completion handler called")
     let call = try! client.update { callResult in
       XCTAssertEqual(.ok, callResult.statusCode)
       finalCompletionHandlerExpectation.fulfill()
@@ -161,7 +161,7 @@ extension EchoTests {
     try! call.send(Echo_EchoRequest(text: "baz")) { XCTFail($0.localizedDescription) }
     call.waitForSendOperationsToFinish()
     
-    let closeCompletionHandlerExpectation = XCTestExpectation(description: "close completion handler called")
+    let closeCompletionHandlerExpectation = expectation(description: "close completion handler called")
     try! call.closeSend { closeCompletionHandlerExpectation.fulfill() }
     
     XCTAssertEqual("Swift echo update (0): foo", try! call.receive().text)
@@ -173,7 +173,7 @@ extension EchoTests {
   }
   
   func testBidirectionalStreamingPingPong() {
-    let finalCompletionHandlerExpectation = XCTestExpectation(description: "final completion handler called")
+    let finalCompletionHandlerExpectation = expectation(description: "final completion handler called")
     let call = try! client.update { callResult in
       XCTAssertEqual(.ok, callResult.statusCode)
       finalCompletionHandlerExpectation.fulfill()
@@ -186,7 +186,7 @@ extension EchoTests {
     try! call.send(Echo_EchoRequest(text: "baz")) { XCTFail($0.localizedDescription) }
     XCTAssertEqual("Swift echo update (2): baz", try! call.receive().text)
     
-    let closeCompletionHandlerExpectation = XCTestExpectation(description: "close completion handler called")
+    let closeCompletionHandlerExpectation = expectation(description: "close completion handler called")
     try! call.closeSend { closeCompletionHandlerExpectation.fulfill() }
     
     wait(for: [closeCompletionHandlerExpectation, finalCompletionHandlerExpectation],
