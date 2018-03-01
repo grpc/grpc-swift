@@ -44,6 +44,14 @@ public final class gRPC {
   public static var gStandsFor: String? {
     return String(cString: grpc_g_stands_for(), encoding: String.Encoding.utf8)
   }
+
+  /// Returns default user agent containing gRPC library name and version
+  ///
+  /// Returns: gRPC default user agent
+  public static var defaultUserAgent: String {
+    guard let gStandsFor = gStandsFor, let version = version else { return "" }
+    return "\(gStandsFor):\(version)"
+  }
 }
 
 /// Status codes for gRPC operations (replicated from status_code_enum.h)

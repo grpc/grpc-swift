@@ -114,10 +114,12 @@ const char *grpc_g_stands_for(void);
 void cgrpc_free_copied_string(char *string);
 
 // channel support
-cgrpc_channel *cgrpc_channel_create(const char *address);
+cgrpc_channel *cgrpc_channel_create(const char *address,
+                                    const char *user_agent);
 cgrpc_channel *cgrpc_channel_create_secure(const char *address,
                                            const char *pem_root_certs,
-                                           const char *host);
+                                           const char *host,
+                                           const char *user_agent);
 
 void cgrpc_channel_destroy(cgrpc_channel *channel);
 cgrpc_call *cgrpc_channel_create_call(cgrpc_channel *channel,
