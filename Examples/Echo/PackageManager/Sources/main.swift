@@ -120,12 +120,15 @@ Group {
 
   $0.command("collect", sslFlag, addressOption("localhost"), portOption, messageOption,
              description: "Perform a client-streaming collect().") { ssl, address, port, message in
+    print("collect starting")
     let service = buildEchoService(ssl, address, port, message)
     let sem = DispatchSemaphore(value: 0)
+    print("calling service.collect")
     let collectCall = try service.collect { result in
       print("collect completed with result \(result)")
       sem.signal()
     }
+    print("called service.collect")
     let parts = message.components(separatedBy: " ")
     for part in parts {
       var requestMessage = Echo_EchoRequest()
@@ -134,6 +137,7 @@ Group {
       try collectCall.send(requestMessage) { error in print(error) }
       sleep(1)
     }
+    print("sent all")
     let responseMessage = try collectCall.closeAndReceive()
     print("collect received: \(responseMessage.text)")
     _ = sem.wait(timeout: DispatchTime.distantFuture)
