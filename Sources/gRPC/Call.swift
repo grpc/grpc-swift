@@ -256,8 +256,8 @@ public class Call {
   /// Parameter data: the message data to send
   /// - Throws: `CallError` if fails to call. `CallWarning` if blocked.
   public func sendMessage(data: Data, errorHandler: @escaping (Error) -> Void) throws {
+    messageQueueEmpty.enter()
     try sendMutex.synchronize {
-      messageQueueEmpty.enter()
       if writing {
         if (Call.messageQueueMaxLength > 0) && // if max length is <= 0, consider it infinite
           (messageQueue.count == Call.messageQueueMaxLength) {

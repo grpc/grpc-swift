@@ -38,7 +38,7 @@ open class ServerSessionClientStreamingBase<InputType: Message, OutputType: Mess
       }
       sem.signal()
     }
-    _ = sem.wait(timeout: DispatchTime.distantFuture)
+    _ = sem.wait()
     if requestMessage == nil {
       throw ServerError.endOfStream
     }
