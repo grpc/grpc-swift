@@ -102,7 +102,7 @@ extension EchoTests {
     let response = try! call.closeAndReceive()
     XCTAssertEqual("Swift echo collect: foo bar baz", response.text)
     
-    wait(for: [completionHandlerExpectation], timeout: 0.1, enforceOrder: true)
+    waitForExpectations(timeout: 0.1)
   }
   
   func testClientStreamingLotsOfMessages() {
@@ -120,7 +120,7 @@ extension EchoTests {
     let response = try! call.closeAndReceive()
     XCTAssertEqual("Swift echo collect: " + EchoTests.lotsOfStrings.joined(separator: " "), response.text)
     
-    wait(for: [completionHandlerExpectation], timeout: 0.1, enforceOrder: true)
+    waitForExpectations(timeout: 0.1)
   }
 }
 
@@ -136,7 +136,7 @@ extension EchoTests {
     XCTAssertEqual("Swift echo expand (1): bar", try! call.receive().text)
     XCTAssertEqual("Swift echo expand (2): baz", try! call.receive().text)
     
-    wait(for: [completionHandlerExpectation], timeout: 0.1, enforceOrder: true)
+    waitForExpectations(timeout: 0.1)
   }
   
   func testServerStreamingLotsOfMessages() {
@@ -150,7 +150,7 @@ extension EchoTests {
       XCTAssertEqual("Swift echo expand (\(string)): \(string)", try! call.receive().text)
     }
     
-    wait(for: [completionHandlerExpectation], timeout: 0.1, enforceOrder: true)
+    waitForExpectations(timeout: 0.1)
   }
 }
 
@@ -174,8 +174,7 @@ extension EchoTests {
     XCTAssertEqual("Swift echo update (1): bar", try! call.receive().text)
     XCTAssertEqual("Swift echo update (2): baz", try! call.receive().text)
     
-    wait(for: [closeCompletionHandlerExpectation, finalCompletionHandlerExpectation],
-         timeout: 0.1, enforceOrder: true)
+    waitForExpectations(timeout: 0.1)
   }
   
   func testBidirectionalStreamingPingPong() {
@@ -195,7 +194,6 @@ extension EchoTests {
     let closeCompletionHandlerExpectation = expectation(description: "close completion handler called")
     try! call.closeSend { closeCompletionHandlerExpectation.fulfill() }
     
-    wait(for: [closeCompletionHandlerExpectation, finalCompletionHandlerExpectation],
-         timeout: 0.1, enforceOrder: true)
+    waitForExpectations(timeout: 0.1)
   }
 }
