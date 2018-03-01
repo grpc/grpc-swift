@@ -39,13 +39,15 @@ class EchoTests: XCTestCase {
   
   static let lotsOfStrings = (0..<1000).map { String(describing: $0) }
   
-	let provider = EchoProvider()
-	var server: Echo_EchoServer!
+  let defaultTimeout: TimeInterval = 1.0
+  
+  let provider = EchoProvider()
+  var server: Echo_EchoServer!
   var client: Echo_EchoServiceClient!
   
   var secure: Bool { return false }
-	
-	override func setUp() {
+  
+  override func setUp() {
     super.setUp()
     
     let address = "localhost:5050"
@@ -63,8 +65,8 @@ class EchoTests: XCTestCase {
       client = Echo_EchoServiceClient(address: address, secure: false)
     }
     
-    client.timeout = 0.1
-	}
+    client.timeout = defaultTimeout
+  }
   
   override func tearDown() {
     server = nil
@@ -94,15 +96,15 @@ extension EchoTests {
       completionHandlerExpectation.fulfill()
     }
     
-    try! call.send(Echo_EchoRequest(text: "foo")) { XCTFail($0.localizedDescription) }
-    try! call.send(Echo_EchoRequest(text: "bar")) { XCTFail($0.localizedDescription) }
-    try! call.send(Echo_EchoRequest(text: "baz")) { XCTFail($0.localizedDescription) }
+    try! call.send(Echo_EchoRequest(text: "foo")) { XCTFail(String(describing: $0)) }
+    try! call.send(Echo_EchoRequest(text: "bar")) { XCTFail(String(describing: $0)) }
+    try! call.send(Echo_EchoRequest(text: "baz")) { XCTFail(String(describing: $0)) }
     call.waitForSendOperationsToFinish()
     
     let response = try! call.closeAndReceive()
     XCTAssertEqual("Swift echo collect: foo bar baz", response.text)
     
-    waitForExpectations(timeout: 0.1)
+    waitForExpectations(timeout: defaultTimeout)
   }
   
   func testClientStreamingLotsOfMessages() {
@@ -113,14 +115,14 @@ extension EchoTests {
     }
     
     for string in EchoTests.lotsOfStrings {
-      try! call.send(Echo_EchoRequest(text: string)) { XCTFail($0.localizedDescription) }
+      try! call.send(Echo_EchoRequest(text: string)) { XCTFail(String(describing: $0)) }
     }
     call.waitForSendOperationsToFinish()
     
     let response = try! call.closeAndReceive()
     XCTAssertEqual("Swift echo collect: " + EchoTests.lotsOfStrings.joined(separator: " "), response.text)
     
-    waitForExpectations(timeout: 0.1)
+    waitForExpectations(timeout: defaultTimeout)
   }
 }
 
@@ -136,7 +138,7 @@ extension EchoTests {
     XCTAssertEqual("Swift echo expand (1): bar", try! call.receive().text)
     XCTAssertEqual("Swift echo expand (2): baz", try! call.receive().text)
     
-    waitForExpectations(timeout: 0.1)
+    waitForExpectations(timeout: defaultTimeout)
   }
   
   func testServerStreamingLotsOfMessages() {
@@ -150,7 +152,7 @@ extension EchoTests {
       XCTAssertEqual("Swift echo expand (\(string)): \(string)", try! call.receive().text)
     }
     
-    waitForExpectations(timeout: 0.1)
+    waitForExpectations(timeout: defaultTimeout)
   }
 }
 
@@ -162,9 +164,9 @@ extension EchoTests {
       finalCompletionHandlerExpectation.fulfill()
     }
     
-    try! call.send(Echo_EchoRequest(text: "foo")) { XCTFail($0.localizedDescription) }
-    try! call.send(Echo_EchoRequest(text: "bar")) { XCTFail($0.localizedDescription) }
-    try! call.send(Echo_EchoRequest(text: "baz")) { XCTFail($0.localizedDescription) }
+    try! call.send(Echo_EchoRequest(text: "foo")) { XCTFail(String(describing: $0)) }
+    try! call.send(Echo_EchoRequest(text: "bar")) { XCTFail(String(describing: $0)) }
+    try! call.send(Echo_EchoRequest(text: "baz")) { XCTFail(String(describing: $0)) }
     call.waitForSendOperationsToFinish()
     
     let closeCompletionHandlerExpectation = expectation(description: "close completion handler called")
@@ -174,7 +176,7 @@ extension EchoTests {
     XCTAssertEqual("Swift echo update (1): bar", try! call.receive().text)
     XCTAssertEqual("Swift echo update (2): baz", try! call.receive().text)
     
-    waitForExpectations(timeout: 0.1)
+    waitForExpectations(timeout: defaultTimeout)
   }
   
   func testBidirectionalStreamingPingPong() {
@@ -184,16 +186,16 @@ extension EchoTests {
       finalCompletionHandlerExpectation.fulfill()
     }
     
-    try! call.send(Echo_EchoRequest(text: "foo")) { XCTFail($0.localizedDescription) }
+    try! call.send(Echo_EchoRequest(text: "foo")) { XCTFail(String(describing: $0)) }
     XCTAssertEqual("Swift echo update (0): foo", try! call.receive().text)
-    try! call.send(Echo_EchoRequest(text: "bar")) { XCTFail($0.localizedDescription) }
+    try! call.send(Echo_EchoRequest(text: "bar")) { XCTFail(String(describing: $0)) }
     XCTAssertEqual("Swift echo update (1): bar", try! call.receive().text)
-    try! call.send(Echo_EchoRequest(text: "baz")) { XCTFail($0.localizedDescription) }
+    try! call.send(Echo_EchoRequest(text: "baz")) { XCTFail(String(describing: $0)) }
     XCTAssertEqual("Swift echo update (2): baz", try! call.receive().text)
     
     let closeCompletionHandlerExpectation = expectation(description: "close completion handler called")
     try! call.closeSend { closeCompletionHandlerExpectation.fulfill() }
     
-    waitForExpectations(timeout: 0.1)
+    waitForExpectations(timeout: defaultTimeout)
   }
 }
