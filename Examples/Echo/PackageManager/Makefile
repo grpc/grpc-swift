@@ -1,7 +1,7 @@
 
 all:
-	swift build -c release --product Echo
-	cp .build/release/Echo .
+	swift build --product Echo
+	cp .build/debug/Echo .
 
 test:	all
 	./Echo serve & /bin/echo $$! > echo.pid
