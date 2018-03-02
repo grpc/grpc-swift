@@ -230,7 +230,7 @@ extension EchoTests {
     }
     call.waitForSendOperationsToFinish()
     
-    let closeCompletionHandlerExpectation = XCTestExpectation(description: "close completion handler called")
+    let closeCompletionHandlerExpectation = expectation(description: "close completion handler called")
     try! call.closeSend { closeCompletionHandlerExpectation.fulfill() }
     
     for string in EchoTests.lotsOfStrings {
@@ -254,7 +254,7 @@ extension EchoTests {
       XCTAssertEqual("Swift echo update (\(string)): \(string)", try! call.receive().text)
     }
     
-    let closeCompletionHandlerExpectation = XCTestExpectation(description: "close completion handler called")
+    let closeCompletionHandlerExpectation = expectation(description: "close completion handler called")
     try! call.closeSend { closeCompletionHandlerExpectation.fulfill() }
     
     waitForExpectations(timeout: defaultTimeout)
