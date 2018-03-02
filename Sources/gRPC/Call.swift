@@ -275,31 +275,23 @@ public class Call {
   private func sendWithoutBlocking(data: Data, completion: @escaping (Error?) -> Void) throws {
     try perform(OperationGroup(call: self,
                                operations: [.sendMessage(ByteBuffer(data: data))]) { operationGroup in
-        if operationGroup.success {
-          self.messageDispatchQueue.async {
-            self.sendMutex.synchronize {
-              // if there are messages pending, send the next one
-              if self.messageQueue.count > 0 {
-                let (nextMessage, nextCompletionHandler) = self.messageQueue.removeFirst()
-                do {
-                  try self.sendWithoutBlocking(data: nextMessage, completion: nextCompletionHandler)
-                } catch (let callError) {
-                  nextCompletionHandler(callError)
-                }
-              } else {
-                // otherwise, we are finished writing
-                self.writing = false
+        self.messageDispatchQueue.async {
+          self.sendMutex.synchronize {
+            // if there are messages pending, send the next one
+            if self.messageQueue.count > 0 {
+              let (nextMessage, nextCompletionHandler) = self.messageQueue.removeFirst()
+              do {
+                try self.sendWithoutBlocking(data: nextMessage, completion: nextCompletionHandler)
+              } catch (let callError) {
+                nextCompletionHandler(callError)
               }
+            } else {
+              // otherwise, we are finished writing
+              self.writing = false
             }
           }
-          completion(nil)
-        } else {
-          // if the event failed, shut down
-          self.sendMutex.synchronize {
-            self.writing = false
-          }
-          completion(CallError.unknown)
         }
+        completion(operationGroup.success ? nil : CallError.unknown)
         self.messageQueueEmpty.leave()
     })
   }
