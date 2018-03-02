@@ -25,7 +25,7 @@ func addressOption(_ address: String) -> Option<String> {
 }
 
 let portOption = Option("port",
-                        default: "8081",
+                        default: "8080",
                         description: "port of server")
 let messageOption = Option("message",
                            default: "Testing 1 2 3",
@@ -102,8 +102,9 @@ Group {
     requestMessage.text = message
     print("expand sending: " + requestMessage.text)
     let sem = DispatchSemaphore(value: 0)
+    var callResult : CallResult?
     let expandCall = try service.expand(requestMessage) { result in
-      print("expand completed with result \(result)")
+      callResult = result
       sem.signal()
     }
     var running = true
@@ -116,6 +117,9 @@ Group {
       }
     }
     _ = sem.wait(timeout: DispatchTime.distantFuture)
+    if let statusCode = callResult?.statusCode {
+      print("expand completed with code \(statusCode)")
+    }
   }
 
   $0.command("collect", sslFlag, addressOption("localhost"), portOption, messageOption,
@@ -124,23 +128,32 @@ Group {
     let service = buildEchoService(ssl, address, port, message)
     let sem = DispatchSemaphore(value: 0)
     print("calling service.collect")
+    var callResult : CallResult?
     let collectCall = try service.collect { result in
-      print("collect completed with result \(result)")
+      callResult = result
       sem.signal()
     }
     print("called service.collect")
+
     let parts = message.components(separatedBy: " ")
     for part in parts {
       var requestMessage = Echo_EchoRequest()
       requestMessage.text = part
       print("collect sending: " + part)
-      try collectCall.send(requestMessage) { error in print(error) }
+      try collectCall.send(requestMessage) { error in
+        if let error = error {	
+          print("collect send error \(error)")
+        }
+      }
     }
     print("sent all")
     collectCall.waitForSendOperationsToFinish()
     let responseMessage = try collectCall.closeAndReceive()
     print("collect received: \(responseMessage.text)")
     _ = sem.wait(timeout: DispatchTime.distantFuture)
+    if let statusCode = callResult?.statusCode {
+      print("collect completed with code \(statusCode)")
+    }
   }
 
   $0.command("update", sslFlag, addressOption("localhost"), portOption, messageOption,
@@ -149,8 +162,9 @@ Group {
     let service = buildEchoService(ssl, address, port, message)
     let sem = DispatchSemaphore(value: 0)
     print("calling service.update")
+    var callResult : CallResult?
     let updateCall = try service.update { result in
-      print("update completed with result \(result)")
+      callResult = result
       sem.signal()
     }
     print("update: before sending message")
@@ -160,31 +174,37 @@ Group {
       var requestMessage = Echo_EchoRequest()
       requestMessage.text = part
       print("update sending: " + requestMessage.text)
-      try updateCall.send(requestMessage) { error in print(error) }
+      try updateCall.send(requestMessage) { error in
+        if let error = error {	
+          print("update send error \(error)")
+        }
+      }
     }
     print("update before waitForSendOperationsToFinish")
     updateCall.waitForSendOperationsToFinish()
 
-    print("update before receiving")
-    DispatchQueue.global().async {
-      var running = true
-      while running {
-        print("in update.receive() loop")
-        do {
-          let responseMessage = try updateCall.receive()
-          print("update received: \(responseMessage.text)")
-        } catch ClientError.endOfStream {
-          running = false
-        } catch (let error) {
-          print("error: \(error)")
-        }
-      }
-    }
-
     print("update before closeSend")
     try updateCall.closeSend()
     print("update after closeSend")
+    
+    while true {
+      print("in update.receive() loop")
+      do {
+        let responseMessage = try updateCall.receive()
+        print("update received: \(responseMessage.text)")
+      } catch ClientError.endOfStream {
+        break
+      } catch (let error) {
+        print("update receive error: \(error)")
+        break
+      }
+    }
+
     _ = sem.wait(timeout: DispatchTime.distantFuture)
+
+    if let statusCode = callResult?.statusCode {
+      print("update completed with code \(statusCode)")
+    }
   }
 
 }.run()

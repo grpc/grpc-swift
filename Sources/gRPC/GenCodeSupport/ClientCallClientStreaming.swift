@@ -32,30 +32,24 @@ open class ClientCallClientStreamingBase<InputType: Message, OutputType: Message
     return self
   }
 
-  public func send(_ message: InputType, errorHandler: @escaping (Error) -> Void) throws {
+  public func send(_ message: InputType, completion: @escaping (Error?) -> Void) throws {
     let messageData = try message.serializedData()
-    try call.sendMessage(data: messageData, errorHandler: errorHandler)
+    try call.sendMessage(data: messageData, completion: completion)
   }
 
   public func closeAndReceive(completion: @escaping (OutputType?, ClientError?) -> Void) throws {
     do {
       print("closeAndReceive/async called")
-      // TODO(timburks, danielalm): What is the correct order here? Close or receive first?
-      // Or should we combine both into one operation group?
-      try call.receiveMessage { responseData in
-        print("closeAndReceive/async receiveMessage callback")
+      try call.closeAndReceiveMessage { responseData in
+        print("closeAndReceive/async closeAndReceiveMessage callback start")
         if let responseData = responseData,
           let response = try? OutputType(serializedData: responseData) {
           completion(response, nil)
         } else {
           completion(nil, .invalidMessageReceived)
         }
-        print("closeAndReceive/async receiveMessage completion handler called")
+        print("closeAndReceive/async closeAndReceiveMessage callback end")
       }
-      print("closeAndReceive/async calling close")
-      try call.close(completion: {
-        print("closeAndReceive/async close completion handler called")
-      })
     } catch (let error) {
       print("closeAndReceive/async error:", error)
       throw error
@@ -101,7 +95,7 @@ open class ClientCallClientStreamingTestStub<InputType: Message, OutputType: Mes
   
   public init() {}
 
-  open func send(_ message: InputType, errorHandler _: @escaping (Error) -> Void) throws {
+  open func send(_ message: InputType, completion _: @escaping (Error?) -> Void) throws {
     inputs.append(message)
   }
 

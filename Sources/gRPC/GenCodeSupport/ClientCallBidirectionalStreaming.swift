@@ -67,9 +67,9 @@ open class ClientCallBidirectionalStreamingBase<InputType: Message, OutputType: 
     return returnMessage
   }
 
-  public func send(_ message: InputType, errorHandler: @escaping (Error) -> Void) throws {
+  public func send(_ message: InputType, completion: @escaping (Error?) -> Void) throws {
     let messageData = try message.serializedData()
-    try call.sendMessage(data: messageData, errorHandler: errorHandler)
+    try call.sendMessage(data: messageData, completion: completion)
   }
 
   public func closeSend(completion: (() -> Void)?) throws {
@@ -117,7 +117,7 @@ open class ClientCallBidirectionalStreamingTestStub<InputType: Message, OutputTy
     }
   }
 
-  open func send(_ message: InputType, errorHandler _: @escaping (Error) -> Void) throws {
+  open func send(_ message: InputType, completion _: @escaping (Error?) -> Void) throws {
     inputs.append(message)
   }
 
