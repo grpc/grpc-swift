@@ -1,16 +1,20 @@
 
 all:
-	swift build -c release --product Echo
-	cp .build/release/Echo .
+	swift build --product Echo
+	cp .build/debug/Echo .
 
 test:	all
 	./Echo serve & /bin/echo $$! > echo.pid
+	sleep 1
 	./Echo get | tee test.out
+	sleep 1
 	./Echo expand | tee -a test.out
+	sleep 1
 	./Echo collect | tee -a test.out
+	sleep 1
 	./Echo update | tee -a test.out
 	kill -9 `cat echo.pid`
-	diff test.out test.gold
+	diff -u test.out test.gold
 	
 project:
 	swift package generate-xcodeproj

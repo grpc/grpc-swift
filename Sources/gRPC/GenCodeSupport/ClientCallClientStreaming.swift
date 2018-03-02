@@ -19,8 +19,7 @@ import Foundation
 import SwiftProtobuf
 
 public protocol ClientCallClientStreaming: ClientCall {
-  /// Cancel the call.
-  func cancel()
+  func waitForSendOperationsToFinish()
 
   // TODO: Move the other, message type-dependent, methods into this protocol. At the moment, this is not possible,
   // as the protocol would then have an associated type requirement (and become pretty much unusable in the process).
@@ -40,15 +39,19 @@ open class ClientCallClientStreamingBase<InputType: Message, OutputType: Message
 
   public func closeAndReceive(completion: @escaping (OutputType?, ClientError?) -> Void) throws {
     do {
+      print("closeAndReceive/async called")
       try call.closeAndReceiveMessage { responseData in
+        print("closeAndReceive/async closeAndReceiveMessage callback start")
         if let responseData = responseData,
           let response = try? OutputType(serializedData: responseData) {
           completion(response, nil)
         } else {
           completion(nil, .invalidMessageReceived)
         }
+        print("closeAndReceive/async closeAndReceiveMessage callback end")
       }
     } catch (let error) {
+      print("closeAndReceive/async error:", error)
       throw error
     }
   }
@@ -57,24 +60,28 @@ open class ClientCallClientStreamingBase<InputType: Message, OutputType: Message
     var returnError: ClientError?
     var returnResponse: OutputType!
     let sem = DispatchSemaphore(value: 0)
+    print("closeAndReceive/sync called")
     do {
       try closeAndReceive { response, error in
         returnResponse = response
         returnError = error
         sem.signal()
       }
-      _ = sem.wait(timeout: DispatchTime.distantFuture)
+      print("waiting for semaphore")
+      _ = sem.wait()
     } catch (let error) {
+      print("closeAndReceive/sync error:", error)
       throw error
     }
     if let returnError = returnError {
       throw returnError
     }
+    print("closeAndReceive/sync response:", returnResponse)
     return returnResponse
   }
 
-  public func cancel() {
-    call.cancel()
+  public func waitForSendOperationsToFinish() {
+    call.messageQueueEmpty.wait()
   }
 }
 
@@ -100,5 +107,7 @@ open class ClientCallClientStreamingTestStub<InputType: Message, OutputType: Mes
     return output!
   }
 
+  open func waitForSendOperationsToFinish() {}
+  
   open func cancel() {}
 }

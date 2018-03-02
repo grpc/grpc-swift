@@ -42,7 +42,7 @@ open class ServerSessionBidirectionalStreamingBase<InputType: Message, OutputTyp
       }
       sem.signal()
     }
-    _ = sem.wait(timeout: DispatchTime.distantFuture)
+    _ = sem.wait()
     if let requestMessage = requestMessage {
       return requestMessage
     } else {
@@ -59,7 +59,7 @@ open class ServerSessionBidirectionalStreamingBase<InputType: Message, OutputTyp
     try handler.sendStatus(statusCode: statusCode,
                            statusMessage: statusMessage,
                            trailingMetadata: trailingMetadata) { _ in sem.signal() }
-    _ = sem.wait(timeout: DispatchTime.distantFuture)
+    _ = sem.wait()
   }
 
   public func run(queue: DispatchQueue) throws {
