@@ -5,9 +5,13 @@ all:
 
 test:	all
 	./Echo serve & /bin/echo $$! > echo.pid
+	sleep 1
 	./Echo get | tee test.out
+	sleep 1
 	./Echo expand | tee -a test.out
+	sleep 1
 	./Echo collect | tee -a test.out
+	sleep 1
 	./Echo update | tee -a test.out
 	kill -9 `cat echo.pid`
 	diff -u test.out test.gold
