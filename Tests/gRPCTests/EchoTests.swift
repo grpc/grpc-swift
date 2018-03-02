@@ -33,7 +33,9 @@ class EchoTests: XCTestCase {
       ("testServerStreaming", testServerStreaming),
       ("testServerStreamingLotsOfMessages", testServerStreamingLotsOfMessages),
       ("testBidirectionalStreamingBatched", testBidirectionalStreamingBatched),
-      ("testBidirectionalStreamingPingPong", testBidirectionalStreamingPingPong)
+      ("testBidirectionalStreamingPingPong", testBidirectionalStreamingPingPong),
+      ("testBidirectionalStreamingLotsOfMessagesBatched", testBidirectionalStreamingLotsOfMessagesBatched),
+      ("testBidirectionalStreamingLotsOfMessagesPingPong", testBidirectionalStreamingLotsOfMessagesPingPong)
     ]
   }
   
