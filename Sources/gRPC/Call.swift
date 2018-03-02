@@ -295,7 +295,9 @@ public class Call {
           completion(nil)
         } else {
           // if the event failed, shut down
-          self.writing = false
+          self.sendMutex.synchronize {
+            self.writing = false
+          }
           completion(CallError.unknown)
         }
         self.messageQueueEmpty.leave()
