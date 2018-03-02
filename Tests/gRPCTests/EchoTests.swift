@@ -33,7 +33,9 @@ class EchoTests: XCTestCase {
       ("testServerStreaming", testServerStreaming),
       ("testServerStreamingLotsOfMessages", testServerStreamingLotsOfMessages),
       ("testBidirectionalStreamingBatched", testBidirectionalStreamingBatched),
-      ("testBidirectionalStreamingPingPong", testBidirectionalStreamingPingPong)
+      ("testBidirectionalStreamingPingPong", testBidirectionalStreamingPingPong),
+      ("testBidirectionalStreamingLotsOfMessagesBatched", testBidirectionalStreamingLotsOfMessagesBatched),
+      ("testBidirectionalStreamingLotsOfMessagesPingPong", testBidirectionalStreamingLotsOfMessagesPingPong)
     ]
   }
   
@@ -74,7 +76,11 @@ class EchoTests: XCTestCase {
     server.server.stop()
     server = nil
     
-    Thread.sleep(forTimeInterval: 1.0)
+    #if os(Linux)
+      // Having to sleep here is really not a good solution,
+      // but it appears to help with fixing test flakes under Linux.
+      Thread.sleep(forTimeInterval: 1.0)
+    #endif
     
     super.tearDown()
   }
@@ -236,7 +242,6 @@ extension EchoTests {
     try! call.closeSend { closeCompletionHandlerExpectation.fulfill() }
     
     for string in EchoTests.lotsOfStrings {
-      print("receiving \(string)")
       XCTAssertEqual("Swift echo update (\(string)): \(string)", try! call.receive().text)
     }
     

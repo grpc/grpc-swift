@@ -137,8 +137,8 @@ Group {
       requestMessage.text = part
       print("collect sending: " + part)
       try collectCall.send(requestMessage) { error in print(error) }
-      usleep(100000)
     }
+    collectCall.waitForSendOperationsToFinish()
     let responseMessage = try collectCall.closeAndReceive()
     print("collect received: \(responseMessage.text)")
     _ = sem.wait(timeout: DispatchTime.distantFuture)
@@ -176,8 +176,8 @@ Group {
       requestMessage.text = part
       print("update sending: " + requestMessage.text)
       try updateCall.send(requestMessage) { error in print(error) }
-      usleep(100000)
     }
+    updateCall.waitForSendOperationsToFinish()
     try updateCall.closeSend()
     _ = sem.wait(timeout: DispatchTime.distantFuture)
     if let statusMessage = callResult?.statusMessage {
