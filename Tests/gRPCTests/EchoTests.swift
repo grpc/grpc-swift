@@ -242,7 +242,6 @@ extension EchoTests {
     try! call.closeSend { closeCompletionHandlerExpectation.fulfill() }
     
     for string in EchoTests.lotsOfStrings {
-      print("receiving \(string)")
       XCTAssertEqual("Swift echo update (\(string)): \(string)", try! call.receive().text)
     }
     
