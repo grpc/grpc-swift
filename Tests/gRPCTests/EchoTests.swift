@@ -216,4 +216,47 @@ extension EchoTests {
     
     waitForExpectations(timeout: defaultTimeout)
   }
+  
+  func testBidirectionalStreamingLotsOfMessagesBatched() {
+    let finalCompletionHandlerExpectation = expectation(description: "final completion handler called")
+    let call = try! client.update { callResult in
+      XCTAssertEqual(.ok, callResult.statusCode)
+      finalCompletionHandlerExpectation.fulfill()
+    }
+    
+    for string in EchoTests.lotsOfStrings {
+      let sendExpectation = expectation(description: "send completion handler \(string) called")
+      try! call.send(Echo_EchoRequest(text: string)) { [sendExpectation] in XCTAssertNil($0); sendExpectation.fulfill() }
+    }
+    call.waitForSendOperationsToFinish()
+    
+    let closeCompletionHandlerExpectation = XCTestExpectation(description: "close completion handler called")
+    try! call.closeSend { closeCompletionHandlerExpectation.fulfill() }
+    
+    for string in EchoTests.lotsOfStrings {
+      print("receiving \(string)")
+      XCTAssertEqual("Swift echo update (\(string)): \(string)", try! call.receive().text)
+    }
+    
+    waitForExpectations(timeout: defaultTimeout)
+  }
+  
+  func testBidirectionalStreamingLotsOfMessagesPingPong() {
+    let finalCompletionHandlerExpectation = expectation(description: "final completion handler called")
+    let call = try! client.update { callResult in
+      XCTAssertEqual(.ok, callResult.statusCode)
+      finalCompletionHandlerExpectation.fulfill()
+    }
+    
+    for string in EchoTests.lotsOfStrings {
+      let sendExpectation = expectation(description: "send completion handler \(string) called")
+      try! call.send(Echo_EchoRequest(text: string)) { [sendExpectation] in XCTAssertNil($0); sendExpectation.fulfill() }
+      XCTAssertEqual("Swift echo update (\(string)): \(string)", try! call.receive().text)
+    }
+    
+    let closeCompletionHandlerExpectation = XCTestExpectation(description: "close completion handler called")
+    try! call.closeSend { closeCompletionHandlerExpectation.fulfill() }
+    
+    waitForExpectations(timeout: defaultTimeout)
+  }
 }
