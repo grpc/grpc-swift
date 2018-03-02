@@ -1,6 +1,6 @@
 
 all:
-	swift build --product Echo
+	swift build -c debug --product Echo
 	cp .build/debug/Echo .
 
 test:	all
