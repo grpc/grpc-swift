@@ -125,13 +125,13 @@ func server() throws {
 Group {
   $0.command("server") {
     gRPC.initialize()
-    print("gRPC version", gRPC.version!)
+    print("gRPC version", gRPC.version)
     try server()
   }
 
   $0.command("client") {
     gRPC.initialize()
-    print("gRPC version", gRPC.version!)
+    print("gRPC version", gRPC.version)
     try client()
   }
 

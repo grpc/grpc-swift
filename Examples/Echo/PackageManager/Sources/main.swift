@@ -25,7 +25,7 @@ func addressOption(_ address: String) -> Option<String> {
 }
 
 let portOption = Option("port",
-                        default: "8081",
+                        default: "8080",
                         description: "port of server")
 let messageOption = Option("message",
                            default: "Testing 1 2 3",
@@ -102,8 +102,9 @@ Group {
     requestMessage.text = message
     print("expand sending: " + requestMessage.text)
     let sem = DispatchSemaphore(value: 0)
+    var callResult : CallResult?
     let expandCall = try service.expand(requestMessage) { result in
-      print("expand completed with result \(result)")
+      callResult = result
       sem.signal()
     }
     var running = true
@@ -116,35 +117,48 @@ Group {
       }
     }
     _ = sem.wait(timeout: DispatchTime.distantFuture)
+    if let statusCode = callResult?.statusCode {
+      print("expand completed with code \(statusCode)")
+    }
   }
 
   $0.command("collect", sslFlag, addressOption("localhost"), portOption, messageOption,
              description: "Perform a client-streaming collect().") { ssl, address, port, message in
     let service = buildEchoService(ssl, address, port, message)
     let sem = DispatchSemaphore(value: 0)
+    var callResult : CallResult?
     let collectCall = try service.collect { result in
-      print("collect completed with result \(result)")
+      callResult = result
       sem.signal()
     }
+
     let parts = message.components(separatedBy: " ")
     for part in parts {
       var requestMessage = Echo_EchoRequest()
       requestMessage.text = part
       print("collect sending: " + part)
-      try collectCall.send(requestMessage) { error in print(error) }
+      try collectCall.send(requestMessage) { error in
+        if let error = error {	
+          print("collect send error \(error)")
+        }
+      }
     }
     collectCall.waitForSendOperationsToFinish()
     let responseMessage = try collectCall.closeAndReceive()
     print("collect received: \(responseMessage.text)")
     _ = sem.wait(timeout: DispatchTime.distantFuture)
+    if let statusCode = callResult?.statusCode {
+      print("collect completed with status \(statusCode)")
+    }
   }
 
   $0.command("update", sslFlag, addressOption("localhost"), portOption, messageOption,
              description: "Perform a bidirectional-streaming update().") { ssl, address, port, message in
     let service = buildEchoService(ssl, address, port, message)
     let sem = DispatchSemaphore(value: 0)
+    var callResult : CallResult?
     let updateCall = try service.update { result in
-      print("update completed with result \(result)")
+      callResult = result
       sem.signal()
     }
 
@@ -157,22 +171,25 @@ Group {
     }
     updateCall.waitForSendOperationsToFinish()
     
-    DispatchQueue.global().async {
-      var running = true
-      while running {
-        do {
-          let responseMessage = try updateCall.receive()
-          print("update received: \(responseMessage.text)")
-        } catch ClientError.endOfStream {
-          running = false
-        } catch (let error) {
-          print("error: \(error)")
-        }
+    try updateCall.closeSend()
+    
+    while true {
+      do {
+        let responseMessage = try updateCall.receive()
+        print("update received: \(responseMessage.text)")
+      } catch ClientError.endOfStream {
+        break
+      } catch (let error) {
+        responses.append("update receive error: \(error)")
+        break
       }
     }
-    
-    try updateCall.closeSend()
+
     _ = sem.wait(timeout: DispatchTime.distantFuture)
+
+    if let statusCode = callResult?.statusCode {
+      print("update completed with code \(statusCode)")
+    }
   }
 
 }.run()
