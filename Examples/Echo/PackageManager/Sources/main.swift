@@ -148,7 +148,7 @@ Group {
     print("collect received: \(responseMessage.text)")
     _ = sem.wait(timeout: DispatchTime.distantFuture)
     if let statusCode = callResult?.statusCode {
-      print("collect completed with status \(statusCode)")
+      print("collect completed with code \(statusCode)")
     }
   }
 
@@ -167,7 +167,11 @@ Group {
       var requestMessage = Echo_EchoRequest()
       requestMessage.text = part
       print("update sending: " + requestMessage.text)
-      try updateCall.send(requestMessage) { error in print(error) }
+      try updateCall.send(requestMessage) { error in
+        if let error = error {	
+          print("update send error \(error)")
+        }
+      }
     }
     updateCall.waitForSendOperationsToFinish()
     
@@ -180,7 +184,7 @@ Group {
       } catch ClientError.endOfStream {
         break
       } catch (let error) {
-        responses.append("update receive error: \(error)")
+        print("update receive error: \(error)")
         break
       }
     }
