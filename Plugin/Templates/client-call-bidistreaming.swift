@@ -5,7 +5,7 @@
   func receive(completion: @escaping ({{ method|output }}?, ClientError?) -> Void) throws
 
   /// Call this to send each message in the request stream.
-  func send(_ message: {{ method|input }}, errorHandler: @escaping (Error) -> Void) throws
+  func send(_ message: {{ method|input }}, completion: @escaping (Error?) -> Void) throws
 
   /// Call this to close the sending connection. Blocking.
   func closeSend() throws

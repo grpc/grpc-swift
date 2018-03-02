@@ -1,6 +1,6 @@
 {{ access }} protocol {{ .|call:file,service,method }}: ClientCallClientStreaming {
   /// Call this to send each message in the request stream. Nonblocking.
-  func send(_ message: {{ method|input }}, errorHandler: @escaping (Error) -> Void) throws
+  func send(_ message: {{ method|input }}, completion: @escaping (Error?) -> Void) throws
 
   /// Call this to close the connection and wait for a response. Blocking.
   func closeAndReceive() throws -> {{ method|output }}

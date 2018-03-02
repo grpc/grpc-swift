@@ -33,14 +33,14 @@ open class ClientCallClientStreamingBase<InputType: Message, OutputType: Message
     return self
   }
 
-  public func send(_ message: InputType, errorHandler: @escaping (Error) -> Void) throws {
+  public func send(_ message: InputType, completion: @escaping (Error?) -> Void) throws {
     let messageData = try message.serializedData()
-    try call.sendMessage(data: messageData, errorHandler: errorHandler)
+    try call.sendMessage(data: messageData, completion: completion)
   }
 
   public func closeAndReceive(completion: @escaping (OutputType?, ClientError?) -> Void) throws {
     do {
-      try call.receiveMessage { responseData in
+      try call.closeAndReceiveMessage { responseData in
         if let responseData = responseData,
           let response = try? OutputType(serializedData: responseData) {
           completion(response, nil)
@@ -48,7 +48,6 @@ open class ClientCallClientStreamingBase<InputType: Message, OutputType: Message
           completion(nil, .invalidMessageReceived)
         }
       }
-      try call.close(completion: {})
     } catch (let error) {
       throw error
     }
@@ -89,7 +88,7 @@ open class ClientCallClientStreamingTestStub<InputType: Message, OutputType: Mes
   
   public init() {}
 
-  open func send(_ message: InputType, errorHandler _: @escaping (Error) -> Void) throws {
+  open func send(_ message: InputType, completion _: @escaping (Error?) -> Void) throws {
     inputs.append(message)
   }
 

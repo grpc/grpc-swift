@@ -155,7 +155,7 @@ public class Call {
   private let owned: Bool
 
   /// A queue of pending messages to send over the call
-  private var messageQueue: [(dataToSend: Data, errorHandler: (Error) -> Void)] = []
+  private var messageQueue: [(dataToSend: Data, completion: (Error?) -> Void)] = []
 
   /// True if a message write operation is underway
   private var writing: Bool
@@ -253,23 +253,23 @@ public class Call {
   ///
   /// Parameter data: the message data to send
   /// - Throws: `CallError` if fails to call. `CallWarning` if blocked.
-  public func sendMessage(data: Data, errorHandler: @escaping (Error) -> Void) throws {
+  public func sendMessage(data: Data, completion: @escaping (Error?) -> Void) throws {
     try sendMutex.synchronize {
       if writing {
         if (Call.messageQueueMaxLength > 0) && // if max length is <= 0, consider it infinite
           (messageQueue.count == Call.messageQueueMaxLength) {
           throw CallWarning.blocked
         }
-        messageQueue.append((dataToSend: data, errorHandler: errorHandler))
+        messageQueue.append((dataToSend: data, completion: completion))
       } else {
         writing = true
-        try sendWithoutBlocking(data: data, errorHandler: errorHandler)
+        try sendWithoutBlocking(data: data, completion: completion)
       }  
     }
   }
 
   /// helper for sending queued messages
-  private func sendWithoutBlocking(data: Data, errorHandler: @escaping (Error) -> Void) throws {
+  private func sendWithoutBlocking(data: Data, completion: @escaping (Error?) -> Void) throws {
     try perform(OperationGroup(call: self,
                                operations: [.sendMessage(ByteBuffer(data: data))]) { operationGroup in
         if operationGroup.success {
@@ -277,11 +277,11 @@ public class Call {
             self.sendMutex.synchronize {
               // if there are messages pending, send the next one
               if self.messageQueue.count > 0 {
-                let (nextMessage, nextErrorHandler) = self.messageQueue.removeFirst()
+                let (nextMessage, nextCompletionHandler) = self.messageQueue.removeFirst()
                 do {
-                  try self.sendWithoutBlocking(data: nextMessage, errorHandler: nextErrorHandler)
+                  try self.sendWithoutBlocking(data: nextMessage, completion: nextCompletionHandler)
                 } catch (let callError) {
-                  errorHandler(callError)
+                  nextCompletionHandler(callError)
                 }
               } else {
                 // otherwise, we are finished writing
@@ -289,11 +289,26 @@ public class Call {
               }
             }
           }
+          completion(nil)
         } else {
           // if the event failed, shut down
           self.writing = false
-          errorHandler(CallError.unknown)
+          completion(CallError.unknown)
         }
+    })
+  }
+
+  // Receive a message over a streaming connection.
+  /// - Throws: `CallError` if fails to call.
+  public func closeAndReceiveMessage(callback: @escaping (Data?) throws -> Void) throws {
+    try perform(OperationGroup(call: self, operations: [.sendCloseFromClient, .receiveMessage]) { operationGroup in
+      if operationGroup.success {
+        if let messageBuffer = operationGroup.receivedMessage() {
+          try callback(messageBuffer.data())
+        } else {
+          try callback(nil) // an empty response signals the end of a connection
+        }
+      }
     })
   }
 
