@@ -87,6 +87,7 @@ Group {
 
   $0.command("get", sslFlag, addressOption("localhost"), portOption, messageOption,
              description: "Perform a unary get().") { ssl, address, port, message in
+    print("calling get")
     let service = buildEchoService(ssl, address, port, message)
     var requestMessage = Echo_EchoRequest()
     requestMessage.text = message
@@ -97,6 +98,7 @@ Group {
 
   $0.command("expand", sslFlag, addressOption("localhost"), portOption, messageOption,
              description: "Perform a server-streaming expand().") { ssl, address, port, message in
+    print("calling expand")
     let service = buildEchoService(ssl, address, port, message)
     var requestMessage = Echo_EchoRequest()
     requestMessage.text = message
@@ -124,6 +126,7 @@ Group {
 
   $0.command("collect", sslFlag, addressOption("localhost"), portOption, messageOption,
              description: "Perform a client-streaming collect().") { ssl, address, port, message in
+    print("calling collect")
     let service = buildEchoService(ssl, address, port, message)
     let sem = DispatchSemaphore(value: 0)
     var callResult : CallResult?
@@ -169,6 +172,7 @@ Group {
 
   $0.command("update", sslFlag, addressOption("localhost"), portOption, messageOption,
              description: "Perform a bidirectional-streaming update().") { ssl, address, port, message in
+    print("calling update")
     let service = buildEchoService(ssl, address, port, message)
     let sem = DispatchSemaphore(value: 0)
     var callResult : CallResult?
