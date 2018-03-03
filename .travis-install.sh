@@ -30,7 +30,7 @@ mkdir -p local
 
 
 # Install swift
-SWIFT_URL=https://swift.org/builds/swift-4.0-branch/ubuntu1404/swift-4.0-DEVELOPMENT-SNAPSHOT-2017-12-04-a/swift-4.0-DEVELOPMENT-SNAPSHOT-2017-12-04-a-ubuntu14.04.tar.gz
+SWIFT_URL=https://swift.org/builds/swift-4.0.3-release/ubuntu1404/swift-4.0.3-RELEASE/swift-4.0.3-RELEASE-ubuntu14.04.tar.gz
 echo $SWIFT_URL
 curl -fSsL $SWIFT_URL -o swift.tar.gz 
 tar -xzf swift.tar.gz --strip-components=2 --directory=local
