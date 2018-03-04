@@ -11,9 +11,6 @@ invocation from the Makefile:
 
 		protoc ../Examples/Echo/echo.proto --proto_path=../Examples/Echo --plugin=./protoc-gen-swiftgrpc --swiftgrpc_out=.
 
-The plugin uses template files in the [Templates](Templates) directory. 
-These files are compiled into the `protoc-gen-swiftgrpc` plugin executable.
-
 The Swift gRPC plugin can be installed by placing the
 `protoc-gen-swiftgrpc` binary into one of the directories in your
 path.  Specifying `--swiftgrpc_out` to `protoc` will automatically
