@@ -18,15 +18,7 @@ import Dispatch
 import Foundation
 import SwiftProtobuf
 
-public protocol ClientCallClientStreaming: ClientCall {
-  /// Cancel the call.
-  func cancel()
-
-  // TODO: Move the other, message type-dependent, methods into this protocol. At the moment, this is not possible,
-  // as the protocol would then have an associated type requirement (and become pretty much unusable in the process).
-}
-
-open class ClientCallClientStreamingBase<InputType: Message, OutputType: Message>: ClientCallBase, ClientCallClientStreaming {
+open class ClientCallClientStreamingBase<InputType: Message, OutputType: Message>: ClientCallBase {
   /// Call this to start a call. Nonblocking.
   public func start(metadata: Metadata, completion: ((CallResult) -> Void)?) throws -> Self {
     try call.start(.clientStreaming, metadata: metadata, completion: completion)
@@ -73,14 +65,11 @@ open class ClientCallClientStreamingBase<InputType: Message, OutputType: Message
     return returnResponse
   }
 
-  public func cancel() {
-    call.cancel()
-  }
 }
 
 /// Simple fake implementation of ClientCallClientStreamingBase that
 /// stores sent values for later verification and finally returns a previously-defined result.
-open class ClientCallClientStreamingTestStub<InputType: Message, OutputType: Message>: ClientCallClientStreaming {
+open class ClientCallClientStreamingTestStub<InputType: Message, OutputType: Message>: ClientCall {
   open class var method: String { fatalError("needs to be overridden") }
 
   open var inputs: [InputType] = []

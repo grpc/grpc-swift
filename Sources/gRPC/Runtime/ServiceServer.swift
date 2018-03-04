@@ -16,7 +16,6 @@
 
 import Dispatch
 import Foundation
-import SwiftProtobuf
 
 open class ServiceServer {
   public let address: String

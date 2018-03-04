@@ -18,31 +18,20 @@ import Dispatch
 import Foundation
 import SwiftProtobuf
 
-public protocol ClientCallServerStreaming: ClientCall {
-  /// Cancel the call.
-  func cancel()
-
-  // TODO: Move the other, message type-dependent, methods into this protocol. At the moment, this is not possible,
-  // as the protocol would then have an associated type requirement (and become pretty much unusable in the process).
-}
-
-open class ClientCallServerStreamingBase<InputType: Message, OutputType: Message>: ClientCallBase, ClientCallServerStreaming {
-  /// Call this once with the message to send. Nonblocking.
-  public func start(request: InputType, metadata: Metadata, completion: ((CallResult) -> Void)?) throws -> Self {
-    let requestData = try request.serializedData()
-    try call.start(.serverStreaming,
-                   metadata: metadata,
-                   message: requestData,
-                   completion: completion)
+open class ClientCallBidirectionalStreamingBase<InputType: Message, OutputType: Message>: ClientCallBase {
+  /// Call this to start a call. Nonblocking.
+  public func start(metadata: Metadata, completion: ((CallResult) -> Void)?)
+    throws -> Self {
+    try call.start(.bidiStreaming, metadata: metadata, completion: completion)
     return self
   }
 
   public func receive(completion: @escaping (OutputType?, ClientError?) -> Void) throws {
     do {
-      try call.receiveMessage { responseData in
-        if let responseData = responseData {
-          if let response = try? OutputType(serializedData: responseData) {
-            completion(response, nil)
+      try call.receiveMessage { data in
+        if let data = data {
+          if let returnMessage = try? OutputType(serializedData: data) {
+            completion(returnMessage, nil)
           } else {
             completion(nil, .invalidMessageReceived)
           }
@@ -55,11 +44,11 @@ open class ClientCallServerStreamingBase<InputType: Message, OutputType: Message
 
   public func receive() throws -> OutputType {
     var returnError: ClientError?
-    var returnResponse: OutputType!
+    var returnMessage: OutputType!
     let sem = DispatchSemaphore(value: 0)
     do {
       try receive { response, error in
-        returnResponse = response
+        returnMessage = response
         returnError = error
         sem.signal()
       }
@@ -68,18 +57,34 @@ open class ClientCallServerStreamingBase<InputType: Message, OutputType: Message
     if let returnError = returnError {
       throw returnError
     }
-    return returnResponse
+    return returnMessage
   }
 
-  public func cancel() {
-    call.cancel()
+  public func send(_ message: InputType, completion: @escaping (Error?) -> Void) throws {
+    let messageData = try message.serializedData()
+    try call.sendMessage(data: messageData, completion: completion)
   }
+
+  public func closeSend(completion: (() -> Void)?) throws {
+    try call.close(completion: completion)
+  }
+
+  public func closeSend() throws {
+    let sem = DispatchSemaphore(value: 0)
+    try closeSend {
+      sem.signal()
+    }
+    _ = sem.wait(timeout: DispatchTime.distantFuture)
+  }
+
 }
 
-/// Simple fake implementation of ClientCallServerStreamingBase that returns a previously-defined set of results.
-open class ClientCallServerStreamingTestStub<OutputType: Message>: ClientCallServerStreaming {
+/// Simple fake implementation of ClientCallBidirectionalStreamingBase that returns a previously-defined set of results
+/// and stores sent values for later verification.
+open class ClientCallBidirectionalStreamingTestStub<InputType: Message, OutputType: Message> {
   open class var method: String { fatalError("needs to be overridden") }
 
+  open var inputs: [InputType] = []
   open var outputs: [OutputType] = []
   
   public init() {}
@@ -101,6 +106,14 @@ open class ClientCallServerStreamingTestStub<OutputType: Message>: ClientCallSer
       throw ClientError.endOfStream
     }
   }
+
+  open func send(_ message: InputType, completion _: @escaping (Error?) -> Void) throws {
+    inputs.append(message)
+  }
+
+  open func closeSend(completion: (() -> Void)?) throws { completion?() }
+
+  open func closeSend() throws {}
 
   open func cancel() {}
 }

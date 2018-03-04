@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-import Dispatch
 import Foundation
-import SwiftProtobuf
 
 public protocol ClientCall: class {
   static var method: String { get }
+
+  func cancel()
 }
 
 open class ClientCallBase: ClientCall {
@@ -30,5 +30,10 @@ open class ClientCallBase: ClientCall {
   /// Create a call.
   public init(_ channel: Channel) {
     call = channel.makeCall(type(of: self).method)
+  }
+
+  /// Cancel a call.
+  public func cancel() {
+    call.cancel()
   }
 }

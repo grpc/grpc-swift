@@ -16,7 +16,6 @@
 
 import Dispatch
 import Foundation
-import SwiftProtobuf
 
 public protocol ServerSession: class {
   var requestMetadata: Metadata { get }

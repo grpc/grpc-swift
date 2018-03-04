@@ -18,12 +18,7 @@ import Dispatch
 import Foundation
 import SwiftProtobuf
 
-public protocol ClientCallUnary: ClientCall {
-  /// Cancel the call.
-  func cancel()
-}
-
-open class ClientCallUnaryBase<InputType: Message, OutputType: Message>: ClientCallBase, ClientCallUnary {
+open class ClientCallUnaryBase<InputType: Message, OutputType: Message>: ClientCallBase {
   /// Run the call. Blocks until the reply is received.
   /// - Throws: `BinaryEncodingError` if encoding fails. `CallError` if fails to call. `ClientError` if receives no response.
   public func run(request: InputType, metadata: Metadata) throws -> OutputType {
@@ -60,7 +55,4 @@ open class ClientCallUnaryBase<InputType: Message, OutputType: Message>: ClientC
     return self
   }
 
-  public func cancel() {
-    call.cancel()
-  }
 }

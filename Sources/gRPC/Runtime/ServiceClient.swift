@@ -16,7 +16,6 @@
 
 import Dispatch
 import Foundation
-import SwiftProtobuf
 
 public protocol ServiceClient {
   var channel: Channel { get }
