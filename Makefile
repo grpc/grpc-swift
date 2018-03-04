@@ -2,14 +2,23 @@
 CFLAGS = -Xcc -ISources/BoringSSL/include
 
 all:
-	swift package generate-xcodeproj
 	swift build -v $(CFLAGS)
+	cp .build/debug/protoc-gen-swift .
+	cp .build/debug/protoc-gen-swiftgrpc .
 	
-test:
-	swift build -v $(CFLAGS)
+project:
+	swift package generate-xcodeproj
+
+test:	all
 	swift test -v $(CFLAGS)
+
+test-examples:
 	cd Examples/Echo/PackageManager; make test
 	cd Examples/Simple/PackageManager; make
+
+test-plugin:
+	protoc Examples/Echo/echo.proto --proto_path=Examples/Echo --plugin=.build/debug/protoc-gen-swiftgrpc --swiftgrpc_out=/tmp --swiftgrpc_opt=TestStubs=true
+	diff /tmp/echo.grpc.swift Examples/Echo/Generated/echo.grpc.swift
 
 clean:
 	rm -rf Packages
