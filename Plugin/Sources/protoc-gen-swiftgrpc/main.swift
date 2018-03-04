@@ -14,33 +14,11 @@
  * limitations under the License.
  */
 import Foundation
-import PathKit
-import Stencil
 import SwiftProtobuf
 import SwiftProtobufPluginLibrary
 
 func Log(_ message: String) {
   FileHandle.standardError.write((message + "\n").data(using: .utf8)!)
-}
-
-// Code templates use "//-" prefixes to comment-out template operators
-// to keep them from interfering with Swift code formatting tools.
-// Use this to remove them after templates have been expanded.
-func stripMarkers(_ code: String) -> String {
-  let inputLines = code.components(separatedBy: "\n")
-
-  var outputLines: [String] = []
-  for line in inputLines {
-    if line.contains("//-") {
-      let removed = line.replacingOccurrences(of: "//-", with: "")
-      if removed.trimmingCharacters(in: CharacterSet.whitespaces) != "" {
-        outputLines.append(removed)
-      }
-    } else {
-      outputLines.append(line)
-    }
-  }
-  return outputLines.joined(separator: "\n")
 }
 
 // from apple/swift-protobuf/Sources/protoc-gen-swift/StringUtils.swift
@@ -114,9 +92,6 @@ func uniqueOutputFileName(component: String, fileDescriptor: FileDescriptor) -> 
 }
 
 func main() throws {
-  // initialize template engine and add custom filters
-  let templateEnvironment = Environment(loader: InternalLoader(),
-                                        extensions: [GRPCFilterExtension()])
 
   // initialize responses
   var response = Google_Protobuf_Compiler_CodeGeneratorResponse()
@@ -133,29 +108,12 @@ func main() throws {
   // process each .proto file separately
   for fileDescriptor in descriptorSet.files {
     if fileDescriptor.services.count > 0 {
-      // a package declaration is required for file containing service(s)
-      let package = fileDescriptor.package
-
-      // generate separate implementation files for client and server
-      let context: [String: Any] = [
-        "file": fileDescriptor,
-        "client": true,
-        "server": true,
-        "access": options.visibility.sourceSnippet,
-        "generateTestStubs": options.generateTestStubs
-      ]
-
-      do {
-        let grpcFileName = uniqueOutputFileName(component: "grpc", fileDescriptor: fileDescriptor)
-        let grpcCode = try templateEnvironment.renderTemplate(name: "main.swift", context: context)
-        var grpcFile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
-        grpcFile.name = grpcFileName
-        grpcFile.content = stripMarkers(grpcCode)
-        response.file.append(grpcFile)
-
-      } catch (let error) {
-        Log("ERROR \(error)")
-      }
+      let grpcFileName = uniqueOutputFileName(component: "grpc", fileDescriptor: fileDescriptor)
+      let grpcGenerator = Generator(fileDescriptor, options: options)
+      var grpcFile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
+      grpcFile.name = grpcFileName
+      grpcFile.content = grpcGenerator.code
+      response.file.append(grpcFile)
     }
   }
 

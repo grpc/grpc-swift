@@ -2,9 +2,7 @@
 default:	build
 
 build:  clear
-	swift build --product TemplateEncoder
-	.build/debug/TemplateEncoder > Sources/protoc-gen-swiftgrpc/templates.swift
-	swift build --product protoc-gen-swiftgrpc
+	swift build 
 	cp .build/debug/protoc-gen-swiftgrpc .
 	cp .build/debug/protoc-gen-swift .
 
