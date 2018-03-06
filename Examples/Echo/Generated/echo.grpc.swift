@@ -251,6 +251,11 @@ internal final class Echo_EchoServer: ServiceServer {
     super.init(address: address, certificateURL: certificateURL, keyURL: keyURL)
   }
 
+  internal init?(address: String, certificateString: String, keyString: String, provider: Echo_EchoProvider) {
+    self.provider = provider
+    super.init(address: address, certificateString: certificateString, keyString: keyString)
+  }
+
   /// Start the server.
   internal override func handleMethod(_ method: String, handler: Handler, queue: DispatchQueue) throws -> Bool {
     let provider = self.provider
