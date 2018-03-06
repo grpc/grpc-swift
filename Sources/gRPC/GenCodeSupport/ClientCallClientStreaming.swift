@@ -63,7 +63,7 @@ open class ClientCallClientStreamingBase<InputType: Message, OutputType: Message
         returnError = error
         sem.signal()
       }
-      _ = sem.wait(timeout: DispatchTime.distantFuture)
+      _ = sem.wait()
     } catch (let error) {
       throw error
     }

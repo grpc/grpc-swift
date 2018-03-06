@@ -57,7 +57,7 @@ func client() throws {
       }
       sem.signal()
     }
-    _ = sem.wait(timeout: DispatchTime.distantFuture)
+    _ = sem.wait()
   }
   print("Done")
 }
@@ -119,7 +119,7 @@ func server() throws {
     print("Server Stopped")
   }
 
-  _ = sem.wait(timeout: DispatchTime.distantFuture)
+  _ = sem.wait()
 }
 
 Group {
