@@ -63,9 +63,9 @@ class EchoProvider: Echo_EchoProvider {
     while true {
       do {
         let request = try session.receive()
-        count += 1
         var response = Echo_EchoResponse()
         response.text = "Swift echo update (\(count)): \(request.text)"
+        count += 1
         let sem = DispatchSemaphore(value: 0)
         try session.send(response) { _ in sem.signal() }
         _ = sem.wait(timeout: DispatchTime.distantFuture)

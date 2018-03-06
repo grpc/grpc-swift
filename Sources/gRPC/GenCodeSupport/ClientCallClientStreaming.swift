@@ -19,8 +19,7 @@ import Foundation
 import SwiftProtobuf
 
 public protocol ClientCallClientStreaming: ClientCall {
-  /// Cancel the call.
-  func cancel()
+  func waitForSendOperationsToFinish()
 
   // TODO: Move the other, message type-dependent, methods into this protocol. At the moment, this is not possible,
   // as the protocol would then have an associated type requirement (and become pretty much unusable in the process).
@@ -73,8 +72,8 @@ open class ClientCallClientStreamingBase<InputType: Message, OutputType: Message
     return returnResponse
   }
 
-  public func cancel() {
-    call.cancel()
+  public func waitForSendOperationsToFinish() {
+    call.messageQueueEmpty.wait()
   }
 }
 
@@ -100,5 +99,7 @@ open class ClientCallClientStreamingTestStub<InputType: Message, OutputType: Mes
     return output!
   }
 
+  open func waitForSendOperationsToFinish() {}
+  
   open func cancel() {}
 }

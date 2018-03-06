@@ -19,6 +19,8 @@ import Foundation
 import SwiftProtobuf
 
 public protocol ClientCallBidirectionalStreaming: ClientCall {
+  func waitForSendOperationsToFinish()
+  
   // TODO: Move the other, message type-dependent, methods into this protocol. At the moment, this is not possible,
   // as the protocol would then have an associated type requirement (and become pretty much unusable in the process).
 }
@@ -81,9 +83,9 @@ open class ClientCallBidirectionalStreamingBase<InputType: Message, OutputType: 
     }
     _ = sem.wait(timeout: DispatchTime.distantFuture)
   }
-
-  public func cancel() {
-    call.cancel()
+  
+  public func waitForSendOperationsToFinish() {
+    call.messageQueueEmpty.wait()
   }
 }
 
@@ -122,6 +124,8 @@ open class ClientCallBidirectionalStreamingTestStub<InputType: Message, OutputTy
   open func closeSend(completion: (() -> Void)?) throws { completion?() }
 
   open func closeSend() throws {}
+
+  open func waitForSendOperationsToFinish() {}
 
   open func cancel() {}
 }
