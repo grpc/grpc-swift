@@ -25,5 +25,6 @@ clean:
 	rm -rf .build
 	rm -rf SwiftGRPC.xcodeproj
 	rm -rf Package.pins Package.resolved
+	rm -rf protoc-gen-swift protoc-gen-swiftgrpc
 	cd Examples/Echo/PackageManager; make clean
 	cd Examples/Simple/PackageManager; make clean
