@@ -76,12 +76,6 @@ class EchoTests: XCTestCase {
     server.server.stop()
     server = nil
 
-    #if os(Linux)
-      // Having to sleep here is really not a good solution,
-      // but it appears to help with fixing test flakes under Linux.
-      Thread.sleep(forTimeInterval: 1.0)
-    #endif
-
     super.tearDown()
   }
 }
