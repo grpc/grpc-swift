@@ -30,7 +30,7 @@ public class Handler {
   public let requestMetadata: Metadata
 
   /// A Call object that can be used to respond to the request
-  lazy var call: Call = {
+  private(set) lazy var call: Call = {
     Call(underlyingCall: cgrpc_handler_get_call(self.underlyingHandler),
          owned: false,
          completionQueue: self.completionQueue)
@@ -166,14 +166,7 @@ public class Handler {
   /// - Parameter completion: a completion handler to call after the message has been received
   /// - Returns: a tuple containing status codes and a message (if available)
   public func receiveMessage(completion: @escaping (Data?) throws -> Void) throws {
-    let operations = OperationGroup(call: call, operations: [.receiveMessage]) { operationGroup in
-      if operationGroup.success {
-        try completion(operationGroup.receivedMessage()?.data())
-      } else {
-        try completion(nil)
-      }
-    }
-    try call.perform(operations)
+    try call.receiveMessage(completion: completion)
   }
   
   /// Sends the response to a request
@@ -181,13 +174,8 @@ public class Handler {
   /// - Parameter message: the message to send
   /// - Parameter completion: a completion handler to call after the response has been sent
   public func sendResponse(message: Data,
-                           completion: ((Bool) throws -> Void)? = nil) throws {
-    let operations = OperationGroup(call: call,
-                                    operations: [.sendMessage(ByteBuffer(data: message))],
-                                    completion: completion != nil
-                                      ? { operationGroup in try completion?(operationGroup.success) }
-                                      : nil)
-    try call.perform(operations)
+                           completion: ((Error?) -> Void)? = nil) throws {
+    try call.sendMessage(data: message, completion: completion)
   }
   
   /// Recognize when the client has closed a request

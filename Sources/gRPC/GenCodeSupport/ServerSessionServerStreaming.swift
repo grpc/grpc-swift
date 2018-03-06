@@ -18,7 +18,9 @@ import Dispatch
 import Foundation
 import SwiftProtobuf
 
-public protocol ServerSessionServerStreaming: ServerSession {}
+public protocol ServerSessionServerStreaming: ServerSession {
+  func waitForSendOperationsToFinish()
+}
 
 open class ServerSessionServerStreamingBase<InputType: Message, OutputType: Message>: ServerSessionBase, ServerSessionServerStreaming {
   public typealias ProviderBlock = (InputType, ServerSessionServerStreamingBase) throws -> Void
@@ -29,12 +31,13 @@ open class ServerSessionServerStreamingBase<InputType: Message, OutputType: Mess
     super.init(handler: handler)
   }
 
-  public func send(_ response: OutputType, completion: ((Bool) -> Void)?) throws {
+  public func send(_ response: OutputType, completion: ((Error?) -> Void)?) throws {
     try handler.sendResponse(message: response.serializedData(), completion: completion)
   }
 
   public func run(queue: DispatchQueue) throws {
     try handler.receiveMessage(initialMetadata: initialMetadata) { requestData in
+      // TODO(danielalm): Unify this behavior with `ServerSessionBidirectionalStreamingBase.run()`.
       if let requestData = requestData {
         do {
           let requestMessage = try InputType(serializedData: requestData)
@@ -57,6 +60,10 @@ open class ServerSessionServerStreamingBase<InputType: Message, OutputType: Mess
       }
     }
   }
+
+  public func waitForSendOperationsToFinish() {
+    handler.call.messageQueueEmpty.wait()
+  }
 }
 
 /// Simple fake implementation of ServerSessionServerStreaming that returns a previously-defined set of results
@@ -64,9 +71,11 @@ open class ServerSessionServerStreamingBase<InputType: Message, OutputType: Mess
 open class ServerSessionServerStreamingTestStub<OutputType: Message>: ServerSessionTestStub, ServerSessionServerStreaming {
   open var outputs: [OutputType] = []
 
-  open func send(_ response: OutputType, completion _: ((Bool) -> Void)?) throws {
+  open func send(_ response: OutputType, completion _: ((Error?) -> Void)?) throws {
     outputs.append(response)
   }
 
   open func close() throws {}
+
+  open func waitForSendOperationsToFinish() {}
 }

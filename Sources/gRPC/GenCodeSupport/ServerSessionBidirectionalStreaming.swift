@@ -18,7 +18,9 @@ import Dispatch
 import Foundation
 import SwiftProtobuf
 
-public protocol ServerSessionBidirectionalStreaming: ServerSession {}
+public protocol ServerSessionBidirectionalStreaming: ServerSession {
+  func waitForSendOperationsToFinish()
+}
 
 open class ServerSessionBidirectionalStreamingBase<InputType: Message, OutputType: Message>: ServerSessionBase, ServerSessionBidirectionalStreaming {
   public typealias ProviderBlock = (ServerSessionBidirectionalStreamingBase) throws -> Void
@@ -50,7 +52,7 @@ open class ServerSessionBidirectionalStreamingBase<InputType: Message, OutputTyp
     }
   }
 
-  public func send(_ response: OutputType, completion: ((Bool) -> Void)?) throws {
+  public func send(_ response: OutputType, completion: ((Error?) -> Void)?) throws {
     try handler.sendResponse(message: response.serializedData(), completion: completion)
   }
 
@@ -73,6 +75,10 @@ open class ServerSessionBidirectionalStreamingBase<InputType: Message, OutputTyp
       }
     }
   }
+
+  public func waitForSendOperationsToFinish() {
+    handler.call.messageQueueEmpty.wait()
+  }
 }
 
 /// Simple fake implementation of ServerSessionBidirectionalStreaming that returns a previously-defined set of results
@@ -90,9 +96,11 @@ open class ServerSessionBidirectionalStreamingTestStub<InputType: Message, Outpu
     }
   }
 
-  open func send(_ response: OutputType, completion _: ((Bool) -> Void)?) throws {
+  open func send(_ response: OutputType, completion _: ((Error?) -> Void)?) throws {
     outputs.append(response)
   }
 
   open func close() throws {}
+
+  open func waitForSendOperationsToFinish() {}
 }

@@ -28,15 +28,16 @@ class EchoProvider: Echo_EchoProvider {
   // expand splits a request into words and returns each word in a separate message.
   func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws {
     let parts = request.text.components(separatedBy: " ")
-    var i = 0
-    for part in parts {
+    for (i, part) in parts.enumerated() {
       var response = Echo_EchoResponse()
       response.text = "Swift echo expand (\(i)): \(part)"
-      let sem = DispatchSemaphore(value: 0)
-      try session.send(response) { _ in sem.signal() }
-      _ = sem.wait()
-      i += 1
+      try session.send(response) {
+        if let error = $0 {
+          print("expand error: \(error)")
+        }
+      }
     }
+    session.waitForSendOperationsToFinish()
   }
 
   // collect collects a sequence of messages and returns them concatenated when the caller closes.
@@ -66,15 +67,19 @@ class EchoProvider: Echo_EchoProvider {
         var response = Echo_EchoResponse()
         response.text = "Swift echo update (\(count)): \(request.text)"
         count += 1
-        let sem = DispatchSemaphore(value: 0)
-        try session.send(response) { _ in sem.signal() }
-        _ = sem.wait()
+        try session.send(response) {
+          if let error = $0 {
+            print("update error: \(error)")
+          }
+        }
       } catch ServerError.endOfStream {
         break
       } catch (let error) {
         print("\(error)")
+        break
       }
     }
+    session.waitForSendOperationsToFinish()
     try session.close()
   }
 }

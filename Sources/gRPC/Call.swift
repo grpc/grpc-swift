@@ -143,7 +143,7 @@ public class Call {
   private static let callMutex = Mutex()
 
   /// Maximum number of messages that can be queued
-  public static var messageQueueMaxLength = 0
+  public static var messageQueueMaxLength: Int? = nil
 
   /// Pointer to underlying C representation
   private let underlyingCall: UnsafeMutableRawPointer
@@ -155,8 +155,10 @@ public class Call {
   private let owned: Bool
 
   /// A queue of pending messages to send over the call
-  private var messageQueue: [(dataToSend: Data, completion: (Error?) -> Void)] = []
+  private var messageQueue: [(dataToSend: Data, completion: ((Error?) -> Void)?)] = []
 
+  /// A dispatch group that contains all pending send operations.
+  /// You can wait on it to ensure that all currently enqueued messages have been sent.
   public let messageQueueEmpty = DispatchGroup()
   
   /// True if a message write operation is underway
@@ -206,7 +208,7 @@ public class Call {
   /// - Parameter style: the style of call to start
   /// - Parameter metadata: metadata to send with the call
   /// - Parameter message: data containing the message to send (.unary and .serverStreaming only)
-  /// - Parameter callback: a block to call with call results
+  /// - Parameter completion: a block to call with call results
   /// - Throws: `CallError` if fails to call.
   public func start(_ style: CallStyle,
                     metadata: Metadata,
@@ -255,12 +257,12 @@ public class Call {
   ///
   /// Parameter data: the message data to send
   /// - Throws: `CallError` if fails to call. `CallWarning` if blocked.
-  public func sendMessage(data: Data, completion: @escaping (Error?) -> Void) throws {
+  public func sendMessage(data: Data, completion: ((Error?) -> Void)? = nil) throws {
     messageQueueEmpty.enter()
     try sendMutex.synchronize {
       if writing {
-        if (Call.messageQueueMaxLength > 0) && // if max length is <= 0, consider it infinite
-          (messageQueue.count == Call.messageQueueMaxLength) {
+        if let messageQueueMaxLength = Call.messageQueueMaxLength,
+          messageQueue.count >= messageQueueMaxLength {
           throw CallWarning.blocked
         }
         messageQueue.append((dataToSend: data, completion: completion))
@@ -272,7 +274,7 @@ public class Call {
   }
 
   /// helper for sending queued messages
-  private func sendWithoutBlocking(data: Data, completion: @escaping (Error?) -> Void) throws {
+  private func sendWithoutBlocking(data: Data, completion: ((Error?) -> Void)?) throws {
     try perform(OperationGroup(call: self,
                                operations: [.sendMessage(ByteBuffer(data: data))]) { operationGroup in
         // TODO(timburks, danielalm): Is the `async` dispatch here needed, and/or should we call the completion handler
@@ -287,7 +289,7 @@ public class Call {
               do {
                 try self.sendWithoutBlocking(data: nextMessage, completion: nextCompletionHandler)
               } catch (let callError) {
-                nextCompletionHandler(callError)
+                nextCompletionHandler?(callError)
               }
             } else {
               // otherwise, we are finished writing
@@ -295,20 +297,20 @@ public class Call {
             }
           }
         }
-        completion(operationGroup.success ? nil : CallError.unknown)
+        completion?(operationGroup.success ? nil : CallError.unknown)
         self.messageQueueEmpty.leave()
     })
   }
 
   // Receive a message over a streaming connection.
   /// - Throws: `CallError` if fails to call.
-  public func closeAndReceiveMessage(callback: @escaping (Data?) throws -> Void) throws {
+  public func closeAndReceiveMessage(completion: @escaping (Data?) throws -> Void) throws {
     try perform(OperationGroup(call: self, operations: [.sendCloseFromClient, .receiveMessage]) { operationGroup in
       if operationGroup.success {
         if let messageBuffer = operationGroup.receivedMessage() {
-          try callback(messageBuffer.data())
+          try completion(messageBuffer.data())
         } else {
-          try callback(nil) // an empty response signals the end of a connection
+          try completion(nil) // an empty response signals the end of a connection
         }
       }
     })
@@ -316,14 +318,12 @@ public class Call {
 
   // Receive a message over a streaming connection.
   /// - Throws: `CallError` if fails to call.
-  public func receiveMessage(callback: @escaping (Data?) throws -> Void) throws {
+  public func receiveMessage(completion: @escaping (Data?) throws -> Void) throws {
     try perform(OperationGroup(call: self, operations: [.receiveMessage]) { operationGroup in
       if operationGroup.success {
-        if let messageBuffer = operationGroup.receivedMessage() {
-          try callback(messageBuffer.data())
-        } else {
-          try callback(nil) // an empty response signals the end of a connection
-        }
+        try completion(operationGroup.receivedMessage()?.data())
+      } else {
+        try completion(nil)
       }
     })
   }
