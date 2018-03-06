@@ -2,6 +2,8 @@
 project.xcworkspace
 xcuserdata
 .build
+protoc-gen-swift
+protoc-gen-swiftgrpc
 third_party/**
 Plugin/Packages/**
 Plugin/Sources/protoc-gen-swiftgrpc/templates.swift
