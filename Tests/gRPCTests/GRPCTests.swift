@@ -88,6 +88,7 @@ func runTest(useSSL: Bool) {
       let certificate = try? String(contentsOf: certificateURL, encoding: .utf8),
       let key = try? String(contentsOf: keyURL, encoding: .utf8)
     else {
+      // FIXME: We don't want tests to silently pass just because the certificates can't be loaded.
       return
     }
     server = Server(address: address,
