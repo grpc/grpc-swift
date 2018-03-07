@@ -17,7 +17,7 @@
 		D36AB73D1F58DF10007D7184 /* BoringSSL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D36AB7281F58DEDB007D7184 /* BoringSSL.framework */; };
 		D36AB73E1F58DF10007D7184 /* CgRPC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D36AB7261F58DEDB007D7184 /* CgRPC.framework */; };
 		D36AB73F1F58DF10007D7184 /* Czlib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D36AB7241F58DEDB007D7184 /* Czlib.framework */; };
-		D36AB7401F58DF10007D7184 /* gRPC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D36AB72A1F58DEDB007D7184 /* gRPC.framework */; };
+		D36AB7401F58DF10007D7184 /* SwiftGRPC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D36AB72A1F58DEDB007D7184 /* SwiftGRPC.framework */; };
 		D36AB7411F58DF10007D7184 /* SwiftProtobuf.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D36AB7341F58DEDB007D7184 /* SwiftProtobuf.framework */; };
 		D3971E211D89132E001A0B3F /* ssl.key in Resources */ = {isa = PBXBuildFile; fileRef = D3971E201D89132E001A0B3F /* ssl.key */; };
 		D3BFE28C1D87A45D00A648D8 /* ssl.crt in Resources */ = {isa = PBXBuildFile; fileRef = D3BFE28B1D87A45D00A648D8 /* ssl.crt */; };
@@ -83,10 +83,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		D315DEDF1EE8B29A007670CE /* SwiftProtobuf.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SwiftProtobuf.xcodeproj; path = "../../../third_party/swift-protobuf/SwiftProtobuf.xcodeproj"; sourceTree = "<group>"; };
-		D353581D1E219963007FA223 /* echo.grpc.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = echo.grpc.swift; path = ../Generated/echo.grpc.swift; sourceTree = "<group>"; };
-		D353581E1E219963007FA223 /* echo.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = echo.pb.swift; path = ../Generated/echo.pb.swift; sourceTree = "<group>"; };
-		D35358241E219980007FA223 /* EchoProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = EchoProvider.swift; path = ../EchoProvider.swift; sourceTree = "<group>"; };
+		D315DEDF1EE8B29A007670CE /* SwiftProtobuf.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SwiftProtobuf.xcodeproj; path = "../../third_party/swift-protobuf/SwiftProtobuf.xcodeproj"; sourceTree = "<group>"; };
+		D353581D1E219963007FA223 /* echo.grpc.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = echo.grpc.swift; path = ../../Sources/EchoExample/Generated/echo.grpc.swift; sourceTree = "<group>"; };
+		D353581E1E219963007FA223 /* echo.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = echo.pb.swift; path = ../../Sources/EchoExample/Generated/echo.pb.swift; sourceTree = "<group>"; };
+		D35358241E219980007FA223 /* EchoProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = EchoProvider.swift; path = ../../Sources/EchoExample/EchoProvider.swift; sourceTree = "<group>"; };
 		D35C9FA81D74B079000443CD /* Echo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Echo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D35C9FAB1D74B079000443CD /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		D35C9FAD1D74B079000443CD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
