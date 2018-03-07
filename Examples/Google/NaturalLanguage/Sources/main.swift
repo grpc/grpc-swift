@@ -64,7 +64,7 @@ if let provider = DefaultTokenProvider(scopes: scopes) {
     }
     sem.signal()
   }
-  _ = sem.wait(timeout: DispatchTime.distantFuture)
+  _ = sem.wait()
 } else {
   print("Unable to create default token provider.")
 }

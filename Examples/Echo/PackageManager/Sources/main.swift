@@ -78,7 +78,7 @@ Group {
     }
     // This blocks to keep the main thread from finishing while the server runs,
     // but the server never exits. Kill the process to stop it.
-    _ = sem.wait(timeout: DispatchTime.distantFuture)
+    _ = sem.wait()
     // This suppresses a "variable echoServer was written to, but never read" warning.
     _ = echoServer
     // And this ensures that echoServer doesn't get deallocated right after it is created.
@@ -118,7 +118,7 @@ Group {
         running = false
       }
     }
-    _ = sem.wait(timeout: DispatchTime.distantFuture)
+    _ = sem.wait()
     if let statusCode = callResult?.statusCode {
       print("expand completed with code \(statusCode)")
     }
@@ -149,7 +149,7 @@ Group {
     collectCall.waitForSendOperationsToFinish()
     let responseMessage = try collectCall.closeAndReceive()
     print("collect received: \(responseMessage.text)")
-    _ = sem.wait(timeout: DispatchTime.distantFuture)
+    _ = sem.wait()
     if let statusCode = callResult?.statusCode {
       print("collect completed with code \(statusCode)")
     }
@@ -193,7 +193,7 @@ Group {
       }
     }
 
-    _ = sem.wait(timeout: DispatchTime.distantFuture)
+    _ = sem.wait()
 
     if let statusCode = callResult?.statusCode {
       print("update completed with code \(statusCode)")

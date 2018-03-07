@@ -118,7 +118,7 @@ func runTest(useSSL: Bool) {
   server.stop()
 
   // wait until the server has shut down
-  _ = serverRunningSemaphore.wait(timeout: DispatchTime.distantFuture)
+  _ = serverRunningSemaphore.wait()
 }
 
 func verify_metadata(_ metadata: Metadata, expected: [String: String], file: StaticString = #file, line: UInt = #line) {
@@ -175,7 +175,7 @@ func runClient(useSSL: Bool) throws {
       sem.signal()
     }
     // wait for the call to complete
-    _ = sem.wait(timeout: DispatchTime.distantFuture)
+    _ = sem.wait()
   }
 }
 
@@ -209,5 +209,5 @@ func runServer(server: Server) throws {
     sem.signal()
   }
   // wait for the server to exit
-  _ = sem.wait(timeout: DispatchTime.distantFuture)
+  _ = sem.wait()
 }

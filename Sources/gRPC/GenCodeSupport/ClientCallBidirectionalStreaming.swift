@@ -59,7 +59,7 @@ open class ClientCallBidirectionalStreamingBase<InputType: Message, OutputType: 
         returnError = error
         sem.signal()
       }
-      _ = sem.wait(timeout: DispatchTime.distantFuture)
+      _ = sem.wait()
     }
     if let returnError = returnError {
       throw returnError
@@ -81,7 +81,7 @@ open class ClientCallBidirectionalStreamingBase<InputType: Message, OutputType: 
     try closeSend {
       sem.signal()
     }
-    _ = sem.wait(timeout: DispatchTime.distantFuture)
+    _ = sem.wait()
   }
   
   public func waitForSendOperationsToFinish() {

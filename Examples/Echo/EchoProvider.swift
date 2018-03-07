@@ -34,7 +34,7 @@ class EchoProvider: Echo_EchoProvider {
       response.text = "Swift echo expand (\(i)): \(part)"
       let sem = DispatchSemaphore(value: 0)
       try session.send(response) { _ in sem.signal() }
-      _ = sem.wait(timeout: DispatchTime.distantFuture)
+      _ = sem.wait()
       i += 1
     }
   }
@@ -68,7 +68,7 @@ class EchoProvider: Echo_EchoProvider {
         count += 1
         let sem = DispatchSemaphore(value: 0)
         try session.send(response) { _ in sem.signal() }
-        _ = sem.wait(timeout: DispatchTime.distantFuture)
+        _ = sem.wait()
       } catch ServerError.endOfStream {
         break
       } catch (let error) {
