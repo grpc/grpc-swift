@@ -1,3 +1,5 @@
+// swift-tools-version:4.0
+
 /*
  * Copyright 2017, gRPC Authors All rights reserved.
  *
@@ -17,15 +19,24 @@ import PackageDescription
 
 let package = Package(
   name: "SwiftGRPC",
-  targets: [
-    Target(name: "gRPC",
-           dependencies: ["CgRPC"]),
-    Target(name: "CgRPC",
-           dependencies: ["BoringSSL"]),
-    Target(name: "RootsEncoder"),
-    Target(name: "protoc-gen-swiftgrpc")
+  products: [
+    .library(name: "gRPC", targets: ["gRPC"]),
   ],
   dependencies: [
-    .Package(url: "https://github.com/Zewo/zlib.git", majorVersion: 0, minor: 4),
-    .Package(url: "https://github.com/apple/swift-protobuf.git", majorVersion: 1, minor: 0)
+    .package(url: "https://github.com/Zewo/zlib.git", from: "0.4.0"),
+    .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.0.2")
+  ],
+  targets: [
+    .target(name: "gRPC",
+            dependencies: ["CgRPC", "SwiftProtobuf"]),
+    .target(name: "CgRPC",
+            dependencies: ["BoringSSL", "zlib"]),
+    .target(name: "RootsEncoder"),
+    .target(name: "protoc-gen-swiftgrpc",
+            dependencies: [
+              "SwiftProtobuf",
+              "SwiftProtobufPluginLibrary",
+              "protoc-gen-swift"]),
+    .target(name: "BoringSSL"),
+    .testTarget(name: "gRPCTests", dependencies: ["gRPC"])
   ])
