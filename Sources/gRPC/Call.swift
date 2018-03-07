@@ -157,6 +157,8 @@ public class Call {
   /// A queue of pending messages to send over the call
   private var messageQueue: [(dataToSend: Data, completion: (Error?) -> Void)] = []
 
+  public let messageQueueEmpty = DispatchGroup()
+  
   /// True if a message write operation is underway
   private var writing: Bool
 
@@ -254,6 +256,7 @@ public class Call {
   /// Parameter data: the message data to send
   /// - Throws: `CallError` if fails to call. `CallWarning` if blocked.
   public func sendMessage(data: Data, completion: @escaping (Error?) -> Void) throws {
+    messageQueueEmpty.enter()
     try sendMutex.synchronize {
       if writing {
         if (Call.messageQueueMaxLength > 0) && // if max length is <= 0, consider it infinite
@@ -272,29 +275,28 @@ public class Call {
   private func sendWithoutBlocking(data: Data, completion: @escaping (Error?) -> Void) throws {
     try perform(OperationGroup(call: self,
                                operations: [.sendMessage(ByteBuffer(data: data))]) { operationGroup in
-        if operationGroup.success {
-          self.messageDispatchQueue.async {
-            self.sendMutex.synchronize {
-              // if there are messages pending, send the next one
-              if self.messageQueue.count > 0 {
-                let (nextMessage, nextCompletionHandler) = self.messageQueue.removeFirst()
-                do {
-                  try self.sendWithoutBlocking(data: nextMessage, completion: nextCompletionHandler)
-                } catch (let callError) {
-                  nextCompletionHandler(callError)
-                }
-              } else {
-                // otherwise, we are finished writing
-                self.writing = false
+        // TODO(timburks, danielalm): Is the `async` dispatch here needed, and/or should we call the completion handler
+        // and leave `messageQueueEmpty` in the `async` block as well?
+        self.messageDispatchQueue.async {
+          // Always enqueue the next message, even if sending this one failed. This ensures that all send completion
+          // handlers are called eventually.
+          self.sendMutex.synchronize {
+            // if there are messages pending, send the next one
+            if self.messageQueue.count > 0 {
+              let (nextMessage, nextCompletionHandler) = self.messageQueue.removeFirst()
+              do {
+                try self.sendWithoutBlocking(data: nextMessage, completion: nextCompletionHandler)
+              } catch (let callError) {
+                nextCompletionHandler(callError)
               }
+            } else {
+              // otherwise, we are finished writing
+              self.writing = false
             }
           }
-          completion(nil)
-        } else {
-          // if the event failed, shut down
-          self.writing = false
-          completion(CallError.unknown)
         }
+        completion(operationGroup.success ? nil : CallError.unknown)
+        self.messageQueueEmpty.leave()
     })
   }
 

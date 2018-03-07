@@ -14,14 +14,14 @@ collect sending: 1
 collect sending: 2
 collect sending: 3
 collect received: Swift echo collect: Testing 1 2 3
-collect completed with status ok
+collect completed with code ok
 calling update
 update sending: Testing
 update sending: 1
 update sending: 2
 update sending: 3
-update received: Swift echo update (1): Testing
-update received: Swift echo update (2): 1
-update received: Swift echo update (3): 2
-update received: Swift echo update (4): 3
-update completed with status ok
+update received: Swift echo update (0): Testing
+update received: Swift echo update (1): 1
+update received: Swift echo update (2): 2
+update received: Swift echo update (3): 3
+update completed with code ok

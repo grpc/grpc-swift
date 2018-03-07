@@ -19,9 +19,6 @@ import Foundation
 import SwiftProtobuf
 
 public protocol ClientCallServerStreaming: ClientCall {
-  /// Cancel the call.
-  func cancel()
-
   // TODO: Move the other, message type-dependent, methods into this protocol. At the moment, this is not possible,
   // as the protocol would then have an associated type requirement (and become pretty much unusable in the process).
 }
@@ -69,10 +66,6 @@ open class ClientCallServerStreamingBase<InputType: Message, OutputType: Message
       throw returnError
     }
     return returnResponse
-  }
-
-  public func cancel() {
-    call.cancel()
   }
 }
 
