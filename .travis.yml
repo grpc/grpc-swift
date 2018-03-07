@@ -38,7 +38,7 @@ addons:
 install: ./.travis-install.sh
 
 script: 
-  - export PATH=.:$HOME/local/bin:$PATH
+  - export PATH=$HOME/local/bin:$PATH
   - export LD_LIBRARY_PATH=$HOME/local/lib
   - make test
   - make test-plugin
