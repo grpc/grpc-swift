@@ -46,5 +46,8 @@ let package = Package(
               "Commander"
             ],
             path: "Sources/EchoExample"),
+    .target(name: "Simple",
+            dependencies: ["SwiftGRPC", "Commander"],
+            path: "Sources/SimpleExample"),
     .testTarget(name: "SwiftGRPCTests", dependencies: ["SwiftGRPC"])
   ])
