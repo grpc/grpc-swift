@@ -12,6 +12,16 @@ project:
 test:	all
 	swift test -v $(CFLAGS)
 
+test-echo:	all
+	cp .build/debug/Echo .
+	./Echo serve & /bin/echo $$! > echo.pid
+	./Echo get | tee test.out
+	./Echo expand | tee -a test.out
+	./Echo collect | tee -a test.out
+	./Echo update | tee -a test.out
+	kill -9 `cat echo.pid`
+	diff -u test.out Sources/EchoExample/test.gold
+
 test-examples:
 	cd Examples/Echo/PackageManager; make test
 	cd Examples/Simple/PackageManager; make

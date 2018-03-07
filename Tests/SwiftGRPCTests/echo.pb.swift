@@ -1,1 +1,1 @@
-../../Examples/Echo/Generated/echo.pb.swift
+../../Sources/EchoExample/Generated/echo.pb.swift

@@ -1,1 +1,1 @@
-../../Examples/Echo/Generated/echo.grpc.swift
+../../Sources/EchoExample/Generated/echo.grpc.swift
