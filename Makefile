@@ -22,13 +22,12 @@ test-echo:	all
 	kill -9 `cat echo.pid`
 	diff -u test.out Sources/EchoExample/test.gold
 
-test-examples:
-	cd Examples/Echo/PackageManager; make test
+test-examples: test-echo
 	cd Examples/Simple/PackageManager; make
 
-test-plugin:
-	protoc Examples/Echo/echo.proto --proto_path=Examples/Echo --plugin=.build/debug/protoc-gen-swiftgrpc --swiftgrpc_out=/tmp --swiftgrpc_opt=TestStubs=true
-	diff /tmp/echo.grpc.swift Examples/Echo/Generated/echo.grpc.swift
+test-plugin: all
+	protoc Sources/EchoExample/echo.proto --proto_path=Sources/EchoExample --plugin=.build/debug/protoc-gen-swift --plugin=.build/debug/protoc-gen-swiftgrpc --swiftgrpc_out=/tmp --swiftgrpc_opt=TestStubs=true
+	diff -u /tmp/echo.grpc.swift Sources/EchoExample/Generated/echo.grpc.swift
 
 clean:
 	rm -rf Packages
