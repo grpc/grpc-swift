@@ -16,7 +16,7 @@
 import Commander
 import Dispatch
 import Foundation
-import gRPC
+import SwiftGRPC
 import OAuth2
 
 // Convert Encodable objects to dictionaries of property-value pairs.

@@ -20,14 +20,14 @@ import PackageDescription
 let package = Package(
   name: "SwiftGRPC",
   products: [
-    .library(name: "gRPC", targets: ["gRPC"]),
+    .library(name: "SwiftGRPC", targets: ["SwiftGRPC"]),
   ],
   dependencies: [
     .package(url: "https://github.com/Zewo/zlib.git", from: "0.4.0"),
     .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.0.2")
   ],
   targets: [
-    .target(name: "gRPC",
+    .target(name: "SwiftGRPC",
             dependencies: ["CgRPC", "SwiftProtobuf"]),
     .target(name: "CgRPC",
             dependencies: ["BoringSSL", "zlib"]),
@@ -38,5 +38,5 @@ let package = Package(
               "SwiftProtobufPluginLibrary",
               "protoc-gen-swift"]),
     .target(name: "BoringSSL"),
-    .testTarget(name: "gRPCTests", dependencies: ["gRPC"])
+    .testTarget(name: "SwiftGRPCTests", dependencies: ["SwiftGRPC"])
   ])

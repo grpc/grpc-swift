@@ -27,7 +27,7 @@ let package = Package(
   targets: [
     .target(name: "Echo",
             dependencies: [
-              "gRPC",
+              "SwiftGRPC",
               "SwiftProtobuf",
               "Commander"
             ],

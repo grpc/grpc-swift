@@ -22,7 +22,7 @@
 //
 import Foundation
 import Dispatch
-import gRPC
+import SwiftGRPC
 import SwiftProtobuf
 
 internal protocol Echo_EchoGetCall: ClientCallUnary {}

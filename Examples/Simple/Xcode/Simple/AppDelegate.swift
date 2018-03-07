@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import Cocoa
-import gRPC
+import SwiftGRPC
 
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate {

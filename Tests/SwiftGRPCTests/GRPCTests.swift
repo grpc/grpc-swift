@@ -15,7 +15,7 @@
  */
 import Dispatch
 import Foundation
-@testable import gRPC
+@testable import SwiftGRPC
 import XCTest
 
 class gRPCTests: XCTestCase {

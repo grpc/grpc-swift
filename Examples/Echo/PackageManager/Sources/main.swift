@@ -16,7 +16,7 @@
 import Commander
 import Dispatch
 import Foundation
-import gRPC
+import SwiftGRPC
 
 // Common flags and options
 let sslFlag = Flag("ssl", description: "if true, use SSL for connections")

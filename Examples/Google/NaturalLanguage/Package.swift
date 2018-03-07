@@ -28,7 +28,7 @@ let package = Package(
   targets: [
     .target(name: "NaturalLanguage",
             dependencies: [
-              "gRPC",
+              "SwiftGRPC",
               "SwiftProtobuf",
               "Commander",
 	            "OAuth2"

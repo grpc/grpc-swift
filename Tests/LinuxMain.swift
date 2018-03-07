@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import XCTest
-@testable import gRPCTests
+@testable import SwiftGRPCTests
 
 XCTMain([
   testCase(gRPCTests.allTests),

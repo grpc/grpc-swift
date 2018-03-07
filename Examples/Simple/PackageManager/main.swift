@@ -16,7 +16,7 @@
 import Commander
 import Dispatch
 import Foundation
-import gRPC
+import SwiftGRPC
 
 let address = "localhost:8001"
 let host = "foo.test.google.fr"

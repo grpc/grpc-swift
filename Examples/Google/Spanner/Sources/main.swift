@@ -15,7 +15,7 @@
  */
 import Commander
 import Foundation
-import gRPC
+import SwiftGRPC
 import OAuth2
 
 Group {

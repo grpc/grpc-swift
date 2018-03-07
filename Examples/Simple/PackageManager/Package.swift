@@ -26,7 +26,7 @@ let package = Package(
   targets: [
     .target(name: "Simple",
             dependencies: [
-              "gRPC",
+              "SwiftGRPC",
               "Commander"
             ],
 	    path: ".")
