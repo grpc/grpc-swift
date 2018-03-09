@@ -28,10 +28,10 @@ let package = Package(
   targets: [
     .target(name: "Spanner",
             dependencies: [
-              "SwiftGRPC",
+              "gRPC",
               "SwiftProtobuf",
               "Commander",
-	      "OAuth2"
+	            "OAuth2"
             ],
 	    path: "Sources")
   ])
