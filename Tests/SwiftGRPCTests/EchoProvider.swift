@@ -1,1 +1,1 @@
-../../Sources/EchoExample/EchoProvider.swift
+../../Sources/Examples/Echo/EchoProvider.swift
