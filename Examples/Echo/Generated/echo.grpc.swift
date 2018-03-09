@@ -202,7 +202,7 @@ class Echo_EchoGetSessionTestStub: ServerSessionUnaryTestStub, Echo_EchoGetSessi
 
 internal protocol Echo_EchoExpandSession: ServerSessionServerStreaming {
   /// Send a message. Nonblocking.
-  func send(_ response: Echo_EchoResponse, completion: ((Bool) -> Void)?) throws
+  func send(_ response: Echo_EchoResponse, completion: ((Error?) -> Void)?) throws
 }
 
 fileprivate final class Echo_EchoExpandSessionBase: ServerSessionServerStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoExpandSession {}
@@ -226,7 +226,7 @@ internal protocol Echo_EchoUpdateSession: ServerSessionBidirectionalStreaming {
   func receive() throws -> Echo_EchoRequest
 
   /// Send a message. Nonblocking.
-  func send(_ response: Echo_EchoResponse, completion: ((Bool) -> Void)?) throws
+  func send(_ response: Echo_EchoResponse, completion: ((Error?) -> Void)?) throws
 
   /// Close a connection. Blocks until the connection is closed.
   func close() throws
