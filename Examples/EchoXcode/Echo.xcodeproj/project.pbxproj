@@ -84,9 +84,9 @@
 
 /* Begin PBXFileReference section */
 		D315DEDF1EE8B29A007670CE /* SwiftProtobuf.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SwiftProtobuf.xcodeproj; path = "../../third_party/swift-protobuf/SwiftProtobuf.xcodeproj"; sourceTree = "<group>"; };
-		D353581D1E219963007FA223 /* echo.grpc.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = echo.grpc.swift; path = ../../Sources/EchoExample/Generated/echo.grpc.swift; sourceTree = "<group>"; };
-		D353581E1E219963007FA223 /* echo.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = echo.pb.swift; path = ../../Sources/EchoExample/Generated/echo.pb.swift; sourceTree = "<group>"; };
-		D35358241E219980007FA223 /* EchoProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = EchoProvider.swift; path = ../../Sources/EchoExample/EchoProvider.swift; sourceTree = "<group>"; };
+		D353581D1E219963007FA223 /* echo.grpc.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = echo.grpc.swift; path = ../../Sources/Examples/Echo/Generated/echo.grpc.swift; sourceTree = "<group>"; };
+		D353581E1E219963007FA223 /* echo.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = echo.pb.swift; path = ../../Sources/Examples/Echo/Generated/echo.pb.swift; sourceTree = "<group>"; };
+		D35358241E219980007FA223 /* EchoProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = EchoProvider.swift; path = ../../Sources/Examples/Echo/EchoProvider.swift; sourceTree = "<group>"; };
 		D35C9FA81D74B079000443CD /* Echo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Echo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D35C9FAB1D74B079000443CD /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		D35C9FAD1D74B079000443CD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };

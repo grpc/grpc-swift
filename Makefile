@@ -20,11 +20,11 @@ test-echo:	all
 	./Echo collect | tee -a test.out
 	./Echo update | tee -a test.out
 	kill -9 `cat echo.pid`
-	diff -u test.out Sources/EchoExample/test.gold
+	diff -u test.out Sources/Examples/Echo/test.gold
 
 test-plugin: all
-	protoc Sources/EchoExample/echo.proto --proto_path=Sources/EchoExample --plugin=.build/debug/protoc-gen-swift --plugin=.build/debug/protoc-gen-swiftgrpc --swiftgrpc_out=/tmp --swiftgrpc_opt=TestStubs=true
-	diff -u /tmp/echo.grpc.swift Sources/EchoExample/Generated/echo.grpc.swift
+	protoc Sources/Examples/Echo/echo.proto --proto_path=Sources/Examples/Echo --plugin=.build/debug/protoc-gen-swift --plugin=.build/debug/protoc-gen-swiftgrpc --swiftgrpc_out=/tmp --swiftgrpc_opt=TestStubs=true
+	diff -u /tmp/echo.grpc.swift Sources/Examples/Echo/Generated/echo.grpc.swift
 
 clean:
 	rm -rf Packages
