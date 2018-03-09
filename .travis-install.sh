@@ -16,7 +16,7 @@
 #
 
 #
-# Install dependencies that aren't available as Ubuntu packages.
+# Install dependencies that aren't available as Ubuntu packages (or already present on macOS).
 #
 # Everything goes into $HOME/local. 
 #
@@ -28,15 +28,19 @@
 cd
 mkdir -p local
 
+if [ $TRAVIS_OS_NAME == "osx" ]; then
+  PROTOC_URL=https://github.com/google/protobuf/releases/download/v3.5.1/protoc-3.5.1-osx-x86_64.zip
+else
+  # Install swift
+  SWIFT_URL=https://swift.org/builds/swift-4.0.3-release/ubuntu1404/swift-4.0.3-RELEASE/swift-4.0.3-RELEASE-ubuntu14.04.tar.gz
+  echo $SWIFT_URL
+  curl -fSsL $SWIFT_URL -o swift.tar.gz 
+  tar -xzf swift.tar.gz --strip-components=2 --directory=local
 
-# Install swift
-SWIFT_URL=https://swift.org/builds/swift-4.0.3-release/ubuntu1404/swift-4.0.3-RELEASE/swift-4.0.3-RELEASE-ubuntu14.04.tar.gz
-echo $SWIFT_URL
-curl -fSsL $SWIFT_URL -o swift.tar.gz 
-tar -xzf swift.tar.gz --strip-components=2 --directory=local
+  PROTOC_URL=https://github.com/google/protobuf/releases/download/v3.5.1/protoc-3.5.1-linux-x86_64.zip
+fi
 
 # Install protoc
-PROTOC_URL=https://github.com/google/protobuf/releases/download/v3.5.1/protoc-3.5.1-linux-x86_64.zip
 echo $PROTOC_URL
 curl -fSsL $PROTOC_URL -o protoc.zip
 unzip protoc.zip -d local

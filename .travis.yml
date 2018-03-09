@@ -15,8 +15,14 @@
 #
 # Travis CI build file for Swift gRPC.
 
+os:
+  - linux
+  - osx
+
 # Use Ubuntu 14.04
 dist: trusty
+
+osx_image: xcode9
 
 sudo: false
 
