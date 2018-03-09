@@ -15,7 +15,7 @@
  */
 import Dispatch
 import Foundation
-import gRPC
+import SwiftGRPC
 
 class EchoProvider: Echo_EchoProvider {
   // get returns requests as they were received.

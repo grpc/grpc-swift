@@ -73,7 +73,7 @@ class Generator {
       //\n
       """)
     
-    for moduleName in ["Foundation", "Dispatch", "gRPC", "SwiftProtobuf"] {
+    for moduleName in ["Foundation", "Dispatch", "SwiftGRPC", "SwiftProtobuf"] {
       println("import \(moduleName)")
     }
     println()

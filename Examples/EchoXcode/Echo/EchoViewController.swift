@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import AppKit
-import gRPC
+import SwiftGRPC
 
 class EchoViewController: NSViewController, NSTextFieldDelegate {
   @IBOutlet var messageField: NSTextField!

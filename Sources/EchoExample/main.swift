@@ -16,7 +16,7 @@
 import Commander
 import Dispatch
 import Foundation
-import gRPC
+import SwiftGRPC
 
 // Common flags and options
 let sslFlag = Flag("ssl", description: "if true, use SSL for connections")
@@ -141,7 +141,7 @@ Group {
       requestMessage.text = part
       print("collect sending: " + part)
       try collectCall.send(requestMessage) { error in
-        if let error = error {	
+        if let error = error {
           print("collect send error \(error)")
         }
       }
@@ -172,15 +172,15 @@ Group {
       requestMessage.text = part
       print("update sending: " + requestMessage.text)
       try updateCall.send(requestMessage) { error in
-        if let error = error {	
+        if let error = error {
           print("update send error \(error)")
         }
       }
     }
     updateCall.waitForSendOperationsToFinish()
-    
+
     try updateCall.closeSend()
-    
+
     while true {
       do {
         let responseMessage = try updateCall.receive()

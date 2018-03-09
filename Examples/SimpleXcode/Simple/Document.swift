@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import Cocoa
-import gRPC
+import SwiftGRPC
 
 // https://gist.github.com/rickw/cc198001f5f3aa59ae9f
 extension NSTextView {

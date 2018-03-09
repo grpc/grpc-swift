@@ -10,8 +10,8 @@ Plugin/Sources/protoc-gen-swiftgrpc/templates.swift
 Plugin/protoc-*
 Plugin/swiftgrpc.log
 Plugin/echo.*.swift
-Examples/Echo/PackageManager/Echo
-Examples/Echo/PackageManager/test.out
-Examples/Echo/PackageManager/echo.pid
+Echo
+test.out
+echo.pid
 SwiftGRPC.xcodeproj
 Package.resolved

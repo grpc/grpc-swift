@@ -19,13 +19,13 @@ package echo;
 service Echo {
   // Immediately returns an echo of a request.
   rpc Get(EchoRequest) returns (EchoResponse) {}
-  
+
   // Splits a request into words and returns each word in a stream of messages.
-  rpc Expand(EchoRequest) returns (stream EchoResponse) {}  
-  
+  rpc Expand(EchoRequest) returns (stream EchoResponse) {}
+
   // Collects a stream of messages and returns them concatenated when the caller closes.
   rpc Collect(stream EchoRequest) returns (EchoResponse) {}
-  
+
   // Streams back messages as they are received in an input stream.
   rpc Update(stream EchoRequest) returns (stream EchoResponse) {}
 }

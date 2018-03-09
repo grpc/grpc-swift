@@ -28,7 +28,7 @@ let package = Package(
   targets: [
     .target(name: "Spanner",
             dependencies: [
-              "gRPC",
+              "SwiftGRPC",
               "SwiftProtobuf",
               "Commander",
 	            "OAuth2"
