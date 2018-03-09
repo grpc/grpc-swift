@@ -30,12 +30,19 @@ open class ServiceServer {
   }
 
   /// Create a server that accepts secure connections.
-  public init?(address: String, certificateURL: URL, keyURL: URL) {
+  public init(address: String, certificateString: String, keyString: String) {
     gRPC.initialize()
     self.address = address
+    server = Server(address: address, key: keyString, certs: certificateString)
+  }
+
+  /// Create a server that accepts secure connections.
+  public init?(address: String, certificateURL: URL, keyURL: URL) {
     guard let certificate = try? String(contentsOf: certificateURL, encoding: .utf8),
       let key = try? String(contentsOf: keyURL, encoding: .utf8)
-    else { return nil }
+      else { return nil }
+    gRPC.initialize()
+    self.address = address
     server = Server(address: address, key: key, certs: certificate)
   }
 
