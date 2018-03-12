@@ -48,4 +48,6 @@ open class ServerSessionTestStub: ServerSession {
   open var statusMessage = "OK"
   open var initialMetadata = Metadata()
   open var trailingMetadata = Metadata()
+
+  public init() {}
 }
