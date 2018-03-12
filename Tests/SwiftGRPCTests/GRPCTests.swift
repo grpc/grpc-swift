@@ -44,13 +44,13 @@ let initialClientMetadata =
     "x": "xylophone",
     "y": "yu",
     "z": "zither"
-  ]
+]
 let initialServerMetadata =
   [
     "a": "Apple",
     "b": "Banana",
     "c": "Cherry"
-  ]
+]
 let trailingServerMetadata =
   [
     // We have more than ten entries here to ensure that even large metadata entries work
@@ -68,7 +68,7 @@ let trailingServerMetadata =
     "10": "ten",
     "11": "eleven",
     "12": "twelve"
-  ]
+]
 let steps = 10
 let hello = "/hello.unary"
 let helloServerStream = "/hello.server-stream"
@@ -94,9 +94,9 @@ func runTest(useSSL: Bool) {
     guard
       let certificate = try? String(contentsOf: certificateURL, encoding: .utf8),
       let key = try? String(contentsOf: keyURL, encoding: .utf8)
-    else {
-      // FIXME: We don't want tests to silently pass just because the certificates can't be loaded.
-      return
+      else {
+        // FIXME: We don't want tests to silently pass just because the certificates can't be loaded.
+        return
     }
     server = Server(address: address,
                     key: key,
@@ -148,8 +148,8 @@ func runClient(useSSL: Bool) throws {
     let certificateURL = URL(fileURLWithPath: "Tests/ssl.crt")
     guard
       let certificates = try? String(contentsOf: certificateURL, encoding: .utf8)
-    else {
-      return
+      else {
+        return
     }
     let host = "example.com"
     channel = Channel(address: address, certificates: certificates, host: host)
@@ -164,127 +164,127 @@ func runClient(useSSL: Bool) throws {
 }
 
 func callUnary(channel: Channel) throws {
-    let message = clientText.data(using: .utf8)
+  let message = clientText.data(using: .utf8)
 
-    for i in 0..<steps {
-        let sem = DispatchSemaphore(value: 0)
-        let method = hello
-        let call = channel.makeCall(method)
-        let metadata = Metadata(initialClientMetadata)
-        try call.start(.unary, metadata: metadata, message: message) {
-            response in
-            // verify the basic response from the server
-            XCTAssertEqual(response.statusCode, (i % 2  == 0) ? evenStatusCode : oddStatusCode)
-            XCTAssertEqual(response.statusMessage, (i % 2  == 0) ? eventStatusMessage : oddStatusMessage)
+  for i in 0..<steps {
+    let sem = DispatchSemaphore(value: 0)
+    let method = hello
+    let call = channel.makeCall(method)
+    let metadata = Metadata(initialClientMetadata)
+    try call.start(.unary, metadata: metadata, message: message) {
+      response in
+      // verify the basic response from the server
+      XCTAssertEqual(response.statusCode, (i % 2  == 0) ? evenStatusCode : oddStatusCode)
+      XCTAssertEqual(response.statusMessage, (i % 2  == 0) ? eventStatusMessage : oddStatusMessage)
 
-            // verify the message from the server
-            if (i % 2) == 0 {
-                let resultData = response.resultData!
-                let messageString = String(data: resultData, encoding: .utf8)
-                XCTAssertEqual(messageString, serverText)
-            }
+      // verify the message from the server
+      if (i % 2) == 0 {
+        let resultData = response.resultData!
+        let messageString = String(data: resultData, encoding: .utf8)
+        XCTAssertEqual(messageString, serverText)
+      }
 
-            // verify the initial metadata from the server
-            let initialMetadata = response.initialMetadata!
-            verify_metadata(initialMetadata, expected: initialServerMetadata)
+      // verify the initial metadata from the server
+      let initialMetadata = response.initialMetadata!
+      verify_metadata(initialMetadata, expected: initialServerMetadata)
 
-            // verify the trailing metadata from the server
-            let trailingMetadata = response.trailingMetadata!
-            verify_metadata(trailingMetadata, expected: trailingServerMetadata)
+      // verify the trailing metadata from the server
+      let trailingMetadata = response.trailingMetadata!
+      verify_metadata(trailingMetadata, expected: trailingServerMetadata)
 
-            // report completion
-            sem.signal()
-        }
-        // wait for the call to complete
-        _ = sem.wait()
+      // report completion
+      sem.signal()
     }
+    // wait for the call to complete
+    _ = sem.wait()
+  }
 }
 
 func callServerStream(channel: Channel) throws {
-    let message = clientText.data(using: .utf8)
-    let metadata = Metadata(initialClientMetadata)
+  let message = clientText.data(using: .utf8)
+  let metadata = Metadata(initialClientMetadata)
 
-    let sem = DispatchSemaphore(value: 0)
-    let method = helloServerStream
-    let call = channel.makeCall(method)
-    try call.start(.serverStreaming, metadata: metadata, message: message) {
-        response in
+  let sem = DispatchSemaphore(value: 0)
+  let method = helloServerStream
+  let call = channel.makeCall(method)
+  try call.start(.serverStreaming, metadata: metadata, message: message) {
+    response in
 
-        XCTAssertEqual(response.statusCode, StatusCode.outOfRange)
-        XCTAssertEqual(response.statusMessage, "Out of range")
+    XCTAssertEqual(response.statusCode, StatusCode.outOfRange)
+    XCTAssertEqual(response.statusMessage, "Out of range")
 
-        // verify the trailing metadata from the server
-        let trailingMetadata = response.trailingMetadata!
-        verify_metadata(trailingMetadata, expected: trailingServerMetadata)
+    // verify the trailing metadata from the server
+    let trailingMetadata = response.trailingMetadata!
+    verify_metadata(trailingMetadata, expected: trailingServerMetadata)
 
-        sem.signal() // signal call is finished
-    }
+    sem.signal() // signal call is finished
+  }
 
-    call.messageQueueEmpty.wait() // wait for start to finish
+  call.messageQueueEmpty.wait() // wait for start to finish
 
-    for _ in 0..<steps {
-        let messageSem = DispatchSemaphore(value: 0)
-        try call.receiveMessage(completion: { (data) in
-            if let data = data {
-                let messageString = String(data: data, encoding: .utf8)
-                XCTAssertEqual(messageString, serverText)
-            }
-            messageSem.signal()
-        })
+  for _ in 0..<steps {
+    let messageSem = DispatchSemaphore(value: 0)
+    try call.receiveMessage(completion: { (data) in
+      if let data = data {
+        let messageString = String(data: data, encoding: .utf8)
+        XCTAssertEqual(messageString, serverText)
+      }
+      messageSem.signal()
+    })
 
-        _ = messageSem.wait()
-    }
-    _ = sem.wait()
+    _ = messageSem.wait()
+  }
+  _ = sem.wait()
 }
 
 let clientPing = "ping"
 let serverPong = "pong"
 
 func callBiDiStream(channel: Channel) throws {
+  let message = clientPing.data(using: .utf8)
+  let metadata = Metadata(initialClientMetadata)
+
+  let sem = DispatchSemaphore(value: 0)
+  let method = helloBiDiStream
+  let call = channel.makeCall(method)
+  try call.start(.bidiStreaming, metadata: metadata, message: message) {
+    response in
+
+    XCTAssertEqual(response.statusCode, StatusCode.resourceExhausted)
+    XCTAssertEqual(response.statusMessage, "Resource Exhausted")
+
+    // verify the trailing metadata from the server
+    let trailingMetadata = response.trailingMetadata!
+    verify_metadata(trailingMetadata, expected: trailingServerMetadata)
+
+    sem.signal() // signal call is finished
+  }
+
+  call.messageQueueEmpty.wait() // wait for start to finish
+
+  // Send pings
+  for _ in 0..<steps {
+    let pingSem = DispatchSemaphore(value: 0)
     let message = clientPing.data(using: .utf8)
-    let metadata = Metadata(initialClientMetadata)
-
-    let sem = DispatchSemaphore(value: 0)
-    let method = helloBiDiStream
-    let call = channel.makeCall(method)
-    try call.start(.bidiStreaming, metadata: metadata, message: message) {
-        response in
-
-        XCTAssertEqual(response.statusCode, StatusCode.resourceExhausted)
-        XCTAssertEqual(response.statusMessage, "Resource Exhausted")
-
-        // verify the trailing metadata from the server
-        let trailingMetadata = response.trailingMetadata!
-        verify_metadata(trailingMetadata, expected: trailingServerMetadata)
-
-        sem.signal() // signal call is finished
+    try call.sendMessage(data: message!) { (err) in
+      XCTAssertNil(err)
+      pingSem.signal()
     }
+    _ = pingSem.wait()
+  }
 
-    call.messageQueueEmpty.wait() // wait for start to finish
-
-    // Send pings
-    for _ in 0..<steps {
-        let pingSem = DispatchSemaphore(value: 0)
-        let message = clientPing.data(using: .utf8)
-        try call.sendMessage(data: message!) { (err) in
-            XCTAssertNil(err)
-            pingSem.signal()
-        }
-        _ = pingSem.wait()
-    }
-
-    // Receive pongs
-    for _ in 0..<steps {
-        let pongSem = DispatchSemaphore(value: 0)
-        try call.receiveMessage(completion: { (data) in
-            if let data = data {
-                let messageString = String(data: data, encoding: .utf8)
-                XCTAssertEqual(messageString, serverPong)
-            }
-            pongSem.signal()
-        })
-        _ = pongSem.wait()
-    }
+  // Receive pongs
+  for _ in 0..<steps {
+    let pongSem = DispatchSemaphore(value: 0)
+    try call.receiveMessage(completion: { (data) in
+      if let data = data {
+        let messageString = String(data: data, encoding: .utf8)
+        XCTAssertEqual(messageString, serverPong)
+      }
+      pongSem.signal()
+    })
+    _ = pongSem.wait()
+  }
 }
 
 func runServer(server: Server) throws {
@@ -292,20 +292,20 @@ func runServer(server: Server) throws {
   let sem = DispatchSemaphore(value: 0)
   server.run { requestHandler in
     do {
-        if let method = requestHandler.method {
-            switch method {
-            case hello:
-                try handleUnary(requestHandler: requestHandler, requestCount: requestCount)
-            case helloServerStream:
-                try handleServerStream(requestHandler: requestHandler)
-            case helloBiDiStream:
-                try handleBiDiStream(requestHandler: requestHandler)
-            default:
-                XCTFail("Invalid method \(method)")
-            }
+      if let method = requestHandler.method {
+        switch method {
+        case hello:
+          try handleUnary(requestHandler: requestHandler, requestCount: requestCount)
+        case helloServerStream:
+          try handleServerStream(requestHandler: requestHandler)
+        case helloBiDiStream:
+          try handleBiDiStream(requestHandler: requestHandler)
+        default:
+          XCTFail("Invalid method \(method)")
         }
+      }
 
-        requestCount += 1
+      requestCount += 1
     } catch (let error) {
       XCTFail("error \(error)")
     }
@@ -319,95 +319,95 @@ func runServer(server: Server) throws {
 }
 
 func handleUnary(requestHandler: Handler, requestCount: Int) throws {
-    XCTAssertEqual(requestHandler.host, host)
-    XCTAssertEqual(requestHandler.method, hello)
-    let initialMetadata = requestHandler.requestMetadata
-    verify_metadata(initialMetadata, expected: initialClientMetadata)
-    let initialMetadataToSend = Metadata(initialServerMetadata)
-    try requestHandler.receiveMessage(initialMetadata: initialMetadataToSend) { messageData in
-        let messageString = String(data: messageData!, encoding: .utf8)
-        XCTAssertEqual(messageString, clientText)
-    }
+  XCTAssertEqual(requestHandler.host, host)
+  XCTAssertEqual(requestHandler.method, hello)
+  let initialMetadata = requestHandler.requestMetadata
+  verify_metadata(initialMetadata, expected: initialClientMetadata)
+  let initialMetadataToSend = Metadata(initialServerMetadata)
+  try requestHandler.receiveMessage(initialMetadata: initialMetadataToSend) { messageData in
+    let messageString = String(data: messageData!, encoding: .utf8)
+    XCTAssertEqual(messageString, clientText)
+  }
 
-    if (requestCount % 2) == 0 {
-        let replyMessage = serverText
-        let trailingMetadataToSend = Metadata(trailingServerMetadata)
-        try requestHandler.sendResponse(message: replyMessage.data(using: .utf8)!,
-                                        statusCode: evenStatusCode,
-                                        statusMessage: eventStatusMessage,
-                                        trailingMetadata: trailingMetadataToSend)
-    } else {
-        let trailingMetadataToSend = Metadata(trailingServerMetadata)
-        try requestHandler.sendResponse(statusCode: oddStatusCode,
-                                        statusMessage: oddStatusMessage,
-                                        trailingMetadata: trailingMetadataToSend)
-    }
+  if (requestCount % 2) == 0 {
+    let replyMessage = serverText
+    let trailingMetadataToSend = Metadata(trailingServerMetadata)
+    try requestHandler.sendResponse(message: replyMessage.data(using: .utf8)!,
+                                    statusCode: evenStatusCode,
+                                    statusMessage: eventStatusMessage,
+                                    trailingMetadata: trailingMetadataToSend)
+  } else {
+    let trailingMetadataToSend = Metadata(trailingServerMetadata)
+    try requestHandler.sendResponse(statusCode: oddStatusCode,
+                                    statusMessage: oddStatusMessage,
+                                    trailingMetadata: trailingMetadataToSend)
+  }
 }
 
 func handleServerStream(requestHandler: Handler) throws {
-    XCTAssertEqual(requestHandler.host, host)
-    XCTAssertEqual(requestHandler.method, helloServerStream)
-    let initialMetadata = requestHandler.requestMetadata
-    verify_metadata(initialMetadata, expected: initialClientMetadata)
+  XCTAssertEqual(requestHandler.host, host)
+  XCTAssertEqual(requestHandler.method, helloServerStream)
+  let initialMetadata = requestHandler.requestMetadata
+  verify_metadata(initialMetadata, expected: initialClientMetadata)
 
-    let initialMetadataToSend = Metadata(initialServerMetadata)
-    try requestHandler.receiveMessage(initialMetadata: initialMetadataToSend) { messageData in
-        let messageString = String(data: messageData!, encoding: .utf8)
-        XCTAssertEqual(messageString, clientText)
-    }
+  let initialMetadataToSend = Metadata(initialServerMetadata)
+  try requestHandler.receiveMessage(initialMetadata: initialMetadataToSend) { messageData in
+    let messageString = String(data: messageData!, encoding: .utf8)
+    XCTAssertEqual(messageString, clientText)
+  }
 
-    let replyMessage = serverText
-    for _ in 0..<steps {
-        let sendSem = DispatchSemaphore(value: 0)
-        try requestHandler.sendResponse(message: replyMessage.data(using: .utf8)!, completion: { (error) in
-            XCTAssertNil(error)
-            sendSem.signal()
-        })
-        _ = sendSem.wait()
-    }
+  let replyMessage = serverText
+  for _ in 0..<steps {
+    let sendSem = DispatchSemaphore(value: 0)
+    try requestHandler.sendResponse(message: replyMessage.data(using: .utf8)!, completion: { (error) in
+      XCTAssertNil(error)
+      sendSem.signal()
+    })
+    _ = sendSem.wait()
+  }
 
-    let trailingMetadataToSend = Metadata(trailingServerMetadata)
-    try requestHandler.sendStatus(statusCode: StatusCode.outOfRange,
-                                  statusMessage: "Out of range",
-                                  trailingMetadata: trailingMetadataToSend)
+  let trailingMetadataToSend = Metadata(trailingServerMetadata)
+  try requestHandler.sendStatus(statusCode: StatusCode.outOfRange,
+                                statusMessage: "Out of range",
+                                trailingMetadata: trailingMetadataToSend)
 }
 
 func handleBiDiStream(requestHandler: Handler) throws {
-    XCTAssertEqual(requestHandler.host, host)
-    XCTAssertEqual(requestHandler.method, helloBiDiStream)
-    let initialMetadata = requestHandler.requestMetadata
-    verify_metadata(initialMetadata, expected: initialClientMetadata)
+  XCTAssertEqual(requestHandler.host, host)
+  XCTAssertEqual(requestHandler.method, helloBiDiStream)
+  let initialMetadata = requestHandler.requestMetadata
+  verify_metadata(initialMetadata, expected: initialClientMetadata)
 
-    let initialMetadataToSend = Metadata(initialServerMetadata)
-    try requestHandler.receiveMessage(initialMetadata: initialMetadataToSend) { messageData in
-        let messageString = String(data: messageData!, encoding: .utf8)
-        XCTAssertEqual(messageString, clientPing)
-    }
+  let initialMetadataToSend = Metadata(initialServerMetadata)
+  try requestHandler.receiveMessage(initialMetadata: initialMetadataToSend) { messageData in
+    let messageString = String(data: messageData!, encoding: .utf8)
+    XCTAssertEqual(messageString, clientPing)
+  }
 
-    // Receive remaining pings
-    for _ in 0..<steps-1 {
-        let receiveSem = DispatchSemaphore(value: 0)
-        try requestHandler.receiveMessage(completion: { (data) in
-            let messageString = String(data: data!, encoding: .utf8)
-            XCTAssertEqual(messageString, clientPing)
-            receiveSem.signal()
-        })
-        _ = receiveSem.wait()
-    }
+  // Receive remaining pings
+  for _ in 0..<steps-1 {
+    let receiveSem = DispatchSemaphore(value: 0)
+    try requestHandler.receiveMessage(completion: { (data) in
+      let messageString = String(data: data!, encoding: .utf8)
+      XCTAssertEqual(messageString, clientPing)
+      receiveSem.signal()
+    })
+    _ = receiveSem.wait()
+  }
 
-    // Send back pongs
-    let replyMessage = serverPong.data(using: .utf8)!
-    for _ in 0..<steps {
-        let sendSem = DispatchSemaphore(value: 0)
-        try requestHandler.sendResponse(message: replyMessage, completion: { (error) in
-            XCTAssertNil(error)
-            sendSem.signal()
-        })
-        _ = sendSem.wait()
-    }
+  // Send back pongs
+  let replyMessage = serverPong.data(using: .utf8)!
+  for _ in 0..<steps {
+    let sendSem = DispatchSemaphore(value: 0)
+    try requestHandler.sendResponse(message: replyMessage, completion: { (error) in
+      XCTAssertNil(error)
+      sendSem.signal()
+    })
+    _ = sendSem.wait()
+  }
 
-    let trailingMetadataToSend = Metadata(trailingServerMetadata)
-    try requestHandler.sendStatus(statusCode: StatusCode.resourceExhausted,
-                                  statusMessage: "Resource Exhausted",
-                                  trailingMetadata: trailingMetadataToSend)
+  let trailingMetadataToSend = Metadata(trailingServerMetadata)
+  try requestHandler.sendStatus(statusCode: StatusCode.resourceExhausted,
+                                statusMessage: "Resource Exhausted",
+                                trailingMetadata: trailingMetadataToSend)
 }
