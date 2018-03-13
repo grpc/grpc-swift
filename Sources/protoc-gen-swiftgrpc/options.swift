@@ -85,7 +85,7 @@ class GeneratorOptions {
   }
 
   static func parseParameter(string: String?) -> [(key: String, value: String)] {
-    guard let string = string, string.characters.count > 0 else {
+    guard let string = string, !string.isEmpty else {
       return []
     }
     let parts = string.components(separatedBy: ",")
