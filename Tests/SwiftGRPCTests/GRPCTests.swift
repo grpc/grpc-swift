@@ -220,8 +220,6 @@ func callServerStream(channel: Channel) throws {
     sem.signal() // signal call is finished
   }
 
-  call.messageQueueEmpty.wait() // wait for start to finish
-
   for _ in 0..<steps {
     let messageSem = DispatchSemaphore(value: 0)
     try call.receiveMessage(completion: { (data) in
@@ -234,6 +232,7 @@ func callServerStream(channel: Channel) throws {
 
     _ = messageSem.wait()
   }
+
   _ = sem.wait()
 }
 
@@ -260,8 +259,6 @@ func callBiDiStream(channel: Channel) throws {
     sem.signal() // signal call is finished
   }
 
-  call.messageQueueEmpty.wait() // wait for start to finish
-
   // Send pings
   for _ in 0..<steps {
     let pingSem = DispatchSemaphore(value: 0)
@@ -285,6 +282,8 @@ func callBiDiStream(channel: Channel) throws {
     })
     _ = pongSem.wait()
   }
+
+  _ = sem.wait()
 }
 
 func runServer(server: Server) throws {

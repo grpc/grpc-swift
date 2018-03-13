@@ -108,7 +108,7 @@ public struct CallResult: CustomStringConvertible {
       initialMetadata = op.receivedInitialMetadata()
       trailingMetadata = op.receivedTrailingMetadata()
     } else {
-      statusCode = .ok
+      statusCode = .unknown
       statusMessage = nil
       resultData = nil
       initialMetadata = nil
