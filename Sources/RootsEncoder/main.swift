@@ -49,21 +49,43 @@ s += " * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n"
 s += " *\n"
 s += " */\n"
 s += "// GENERATED: DO NOT EDIT\n"
-s += "//\n"
-s += "// This file contain a function that returns the default roots.pem.\n"
-s += "//\n"
-s += "import Foundation\n"
-s += "\n"
-s += "func roots_pem() -> String? {\n"
-let fileURL = URL(fileURLWithPath: "Assets/roots.pem")
-let filedata = try Data(contentsOf: fileURL)
-let encoding = filedata.base64EncodedString()
-s += "  let roots = \n"
-s += "    \"" + encoding + "\"\n"
-s += "  if let data = Data(base64Encoded: roots, options:[]) {\n"
-s += "    return String(data:data, encoding:.utf8)\n"
-s += "  } else {\n"
-s += "    return nil\n"
-s += "  }\n"
-s += "}\n"
+
+if CommandLine.arguments.contains("test") {
+  s += "//\n"
+  s += "// This file contain a function that returns the contents of Tests/ssl.crt and Tests/ssl.key.\n"
+  s += "//\n"
+  s += "import Foundation\n"
+  s += "\n"
+
+  s += "let certificateForTests = "
+  let certificateURL = URL(fileURLWithPath: "Tests/ssl.crt")
+  let certificateData = try Data(contentsOf: certificateURL)
+  let encodedCertificate = certificateData.base64EncodedString()
+  s += "Data(base64Encoded: \"\(encodedCertificate)\", options:[])!\n"
+
+  s += "let keyForTests = "
+  let keyURL = URL(fileURLWithPath: "Tests/ssl.key")
+  let keyData = try Data(contentsOf: keyURL)
+  let encodedKey = keyData.base64EncodedString()
+  s += "Data(base64Encoded: \"\(encodedKey)\", options:[])!"
+} else {
+  s += "//\n"
+  s += "// This file contain a function that returns the default roots.pem.\n"
+  s += "//\n"
+  s += "import Foundation\n"
+  s += "\n"
+
+  s += "func roots_pem() -> String? {\n"
+  let fileURL = URL(fileURLWithPath: "Assets/roots.pem")
+  let filedata = try Data(contentsOf: fileURL)
+  let encoding = filedata.base64EncodedString()
+  s += "  let roots = \n"
+  s += "    \"" + encoding + "\"\n"
+  s += "  if let data = Data(base64Encoded: roots, options:[]) {\n"
+  s += "    return String(data:data, encoding:.utf8)\n"
+  s += "  } else {\n"
+  s += "    return nil\n"
+  s += "  }\n"
+  s += "}\n"
+}
 print(s)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, gRPC Authors All rights reserved.
+ * Copyright 2018, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Commander
+
+import Dispatch
 import Foundation
-import SwiftGRPC
-import OAuth2
+import SwiftProtobuf
 
-Group {
-  $0.command("hello") {
-    print("hello")
+public protocol ClientCall: class {
+  static var method: String { get }
+  
+  /// Cancel the call.
+  func cancel()
+}
+
+open class ClientCallBase: ClientCall {
+  open class var method: String { fatalError("needs to be overridden") }
+
+  public let call: Call
+
+  /// Create a call.
+  public init(_ channel: Channel) {
+    call = channel.makeCall(type(of: self).method)
   }
-
-}.run()
+  
+  public func cancel() { call.cancel() }
+}

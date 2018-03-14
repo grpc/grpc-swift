@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, gRPC Authors All rights reserved.
+ * Copyright 2018, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Commander
-import Foundation
-import SwiftGRPC
-import OAuth2
+import SwiftProtobufPluginLibrary
 
-Group {
-  $0.command("hello") {
-    print("hello")
+internal enum StreamingType {
+  case unary
+  case clientStreaming
+  case serverStreaming
+  case bidirectionalStreaming
+}
+
+internal func streamingType(_ method: MethodDescriptor) -> StreamingType {
+  if method.proto.clientStreaming {
+    if method.proto.serverStreaming {
+      return .bidirectionalStreaming
+    } else {
+      return .clientStreaming
+    }
+  } else {
+    if method.proto.serverStreaming {
+      return .serverStreaming
+    } else {
+      return .unary
+    }
   }
-
-}.run()
+}

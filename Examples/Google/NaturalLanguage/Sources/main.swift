@@ -15,7 +15,7 @@
  */
 import Dispatch
 import Foundation
-import gRPC
+import SwiftGRPC
 import OAuth2
 
 let scopes = ["https://www.googleapis.com/auth/cloud-language"]
@@ -64,7 +64,7 @@ if let provider = DefaultTokenProvider(scopes: scopes) {
     }
     sem.signal()
   }
-  _ = sem.wait(timeout: DispatchTime.distantFuture)
+  _ = sem.wait()
 } else {
   print("Unable to create default token provider.")
 }

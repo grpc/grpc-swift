@@ -15,8 +15,14 @@
 #
 # Travis CI build file for Swift gRPC.
 
+os:
+  - linux
+  - osx
+
 # Use Ubuntu 14.04
 dist: trusty
+
+osx_image: xcode9
 
 sudo: false
 
@@ -38,9 +44,8 @@ addons:
 install: ./.travis-install.sh
 
 script: 
-  - export PATH=.:$HOME/local/bin:$PATH
+  - export PATH=$HOME/local/bin:$PATH
   - export LD_LIBRARY_PATH=$HOME/local/lib
   - make test
-  - cd Plugin
-  - make test
-  - cd ..
+  - make test-plugin
+  - make test-echo

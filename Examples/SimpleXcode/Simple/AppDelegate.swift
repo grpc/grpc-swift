@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, gRPC Authors All rights reserved.
+ * Copyright 2016, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Commander
-import Foundation
+import Cocoa
 import SwiftGRPC
-import OAuth2
 
-Group {
-  $0.command("hello") {
-    print("hello")
+@NSApplicationMain
+class AppDelegate: NSObject, NSApplicationDelegate {
+  func applicationDidFinishLaunching(_: Notification) {
+    gRPC.initialize()
+    print("GRPC version", gRPC.version())
   }
 
-}.run()
+  func applicationWillTerminate(_: Notification) {
+    // We don't call shutdown() here because we can't be sure that
+    // any running server queues will have stopped by the time this is
+    // called. If one is still running after we call shutdown(), the
+    // program will crash.
+    // gRPC.shutdown()
+  }
+}
