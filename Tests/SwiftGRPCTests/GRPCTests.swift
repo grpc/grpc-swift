@@ -253,13 +253,11 @@ func callBiDiStream(channel: Channel) throws {
 
   // Send pings
   for _ in 0..<steps {
-    let pingSem = DispatchSemaphore(value: 0)
     let message = clientPing.data(using: .utf8)
     try call.sendMessage(data: message!) { (err) in
       XCTAssertNil(err)
-      pingSem.signal()
     }
-    _ = pingSem.wait()
+    call.messageQueueEmpty.wait()
   }
 
   // Receive pongs
@@ -351,12 +349,10 @@ func handleServerStream(requestHandler: Handler) throws {
 
   let replyMessage = serverText
   for _ in 0..<steps {
-    let sendSem = DispatchSemaphore(value: 0)
     try requestHandler.sendResponse(message: replyMessage.data(using: .utf8)!, completion: { (error) in
       XCTAssertNil(error)
-      sendSem.signal()
     })
-    _ = sendSem.wait()
+    requestHandler.call.messageQueueEmpty.wait()
   }
 
   let trailingMetadataToSend = Metadata(trailingServerMetadata)
@@ -391,12 +387,10 @@ func handleBiDiStream(requestHandler: Handler) throws {
   // Send back pongs
   let replyMessage = serverPong.data(using: .utf8)!
   for _ in 0..<steps {
-    let sendSem = DispatchSemaphore(value: 0)
     try requestHandler.sendResponse(message: replyMessage, completion: { (error) in
       XCTAssertNil(error)
-      sendSem.signal()
     })
-    _ = sendSem.wait()
+    requestHandler.call.messageQueueEmpty.wait()
   }
 
   let trailingMetadataToSend = Metadata(trailingServerMetadata)
