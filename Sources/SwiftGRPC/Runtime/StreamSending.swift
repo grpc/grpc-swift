@@ -28,4 +28,8 @@ extension StreamSending {
   public func send(_ message: SentType, completion: @escaping (Error?) -> Void) throws {
     try call.sendMessage(data: message.serializedData(), completion: completion)
   }
+  
+  public func waitForSendOperationsToFinish() {
+    call.messageQueueEmpty.wait()
+  }
 }

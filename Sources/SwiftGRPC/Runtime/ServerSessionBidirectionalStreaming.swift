@@ -53,10 +53,6 @@ open class ServerSessionBidirectionalStreamingBase<InputType: Message, OutputTyp
       }
     }
   }
-
-  public func waitForSendOperationsToFinish() {
-    handler.call.messageQueueEmpty.wait()
-  }
 }
 
 /// Simple fake implementation of ServerSessionBidirectionalStreaming that returns a previously-defined set of results

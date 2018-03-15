@@ -58,10 +58,6 @@ open class ServerSessionServerStreamingBase<InputType: Message, OutputType: Mess
       }
     }
   }
-
-  public func waitForSendOperationsToFinish() {
-    handler.call.messageQueueEmpty.wait()
-  }
 }
 
 /// Simple fake implementation of ServerSessionServerStreaming that returns a previously-defined set of results

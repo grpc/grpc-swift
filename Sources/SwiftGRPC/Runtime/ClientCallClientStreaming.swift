@@ -60,10 +60,6 @@ open class ClientCallClientStreamingBase<InputType: Message, OutputType: Message
     case .error(let error): throw error
     }
   }
-
-  public func waitForSendOperationsToFinish() {
-    call.messageQueueEmpty.wait()
-  }
 }
 
 /// Simple fake implementation of ClientCallClientStreamingBase that

@@ -36,11 +36,6 @@ open class ClientCallBidirectionalStreamingBase<InputType: Message, OutputType: 
     return self
   }
 
-  public func send(_ message: InputType, completion: @escaping (Error?) -> Void) throws {
-    let messageData = try message.serializedData()
-    try call.sendMessage(data: messageData, completion: completion)
-  }
-
   public func closeSend(completion: (() -> Void)?) throws {
     try call.close(completion: completion)
   }
@@ -51,10 +46,6 @@ open class ClientCallBidirectionalStreamingBase<InputType: Message, OutputType: 
       sem.signal()
     }
     _ = sem.wait()
-  }
-  
-  public func waitForSendOperationsToFinish() {
-    call.messageQueueEmpty.wait()
   }
 }
 
