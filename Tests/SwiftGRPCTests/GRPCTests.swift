@@ -89,18 +89,9 @@ func runTest(useSSL: Bool) {
   // create the server
   let server: Server
   if useSSL {
-    let certificateURL = URL(fileURLWithPath: "Tests/ssl.crt")
-    let keyURL = URL(fileURLWithPath: "Tests/ssl.key")
-    guard
-      let certificate = try? String(contentsOf: certificateURL, encoding: .utf8),
-      let key = try? String(contentsOf: keyURL, encoding: .utf8)
-      else {
-        // FIXME: We don't want tests to silently pass just because the certificates can't be loaded.
-        return
-    }
     server = Server(address: address,
-                    key: key,
-                    certs: certificate)
+                    key: String(data: keyForTests, encoding: .utf8)!,
+                    certs: String(data: certificateForTests, encoding: .utf8)!)
   } else {
     server = Server(address: address)
   }
@@ -151,7 +142,6 @@ func runClient(useSSL: Bool) throws {
       else {
         return
     }
-    let host = "example.com"
     channel = Channel(address: address, certificates: certificates, host: host)
   } else {
     channel = Channel(address: address, secure: false)

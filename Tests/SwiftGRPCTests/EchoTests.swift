@@ -61,6 +61,7 @@ class EchoTests: XCTestCase {
                                provider: provider)
       server.start(queue: DispatchQueue.global())
       client = Echo_EchoServiceClient(address: address, certificates: certificateString, host: "example.com")
+      client.host = "example.com"
     } else {
       server = Echo_EchoServer(address: address, provider: provider)
       server.start(queue: DispatchQueue.global())
@@ -80,11 +81,9 @@ class EchoTests: XCTestCase {
   }
 }
 
-// Currently broken and thus commented out.
-// TODO(danielalm): Fix these.
-//class EchoTestsSecure: EchoTests {
-//  override var secure: Bool { return true }
-//}
+class EchoTestsSecure: EchoTests {
+  override var secure: Bool { return true }
+}
 
 extension EchoTests {
   func testUnary() {
