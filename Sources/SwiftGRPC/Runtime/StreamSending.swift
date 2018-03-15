@@ -13,20 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import Dispatch
 import Foundation
 import SwiftProtobuf
-import SwiftProtobufPluginLibrary
 
-extension Generator {
-  func printStreamReceiveMethods(receivedType: String) {
-    println("/// Call this to wait for a result. Blocking.")
-    println("func receive() throws -> \(receivedType)?")
-    println("/// Call this to wait for a result. Nonblocking.")
-    println("func receive(completion: @escaping (ResultOrRPCError<\(receivedType)?>) -> Void) throws")
-  }
+public protocol StreamSending {
+  associatedtype SentType: Message
   
-  func printStreamSendMethods(sentType: String) {
-    println("/// Call this to send each message in the request stream. Nonblocking.")
-    println("func send(_ message: \(sentType), completion: @escaping (Error?) -> Void) throws")
+  var call: Call { get }
+}
+
+extension StreamSending {
+  public func send(_ message: SentType, completion: @escaping (Error?) -> Void) throws {
+    try call.sendMessage(data: message.serializedData(), completion: completion)
   }
 }

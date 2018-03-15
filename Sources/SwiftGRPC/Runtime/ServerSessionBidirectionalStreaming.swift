@@ -22,8 +22,9 @@ public protocol ServerSessionBidirectionalStreaming: ServerSession {
   func waitForSendOperationsToFinish()
 }
 
-open class ServerSessionBidirectionalStreamingBase<InputType: Message, OutputType: Message>: ServerSessionBase, ServerSessionBidirectionalStreaming, StreamReceiving {
+open class ServerSessionBidirectionalStreamingBase<InputType: Message, OutputType: Message>: ServerSessionBase, ServerSessionBidirectionalStreaming, StreamReceiving, StreamSending {
   public typealias ReceivedType = InputType
+  public typealias SentType = OutputType
   
   public typealias ProviderBlock = (ServerSessionBidirectionalStreamingBase) throws -> Void
   private var providerBlock: ProviderBlock
@@ -31,10 +32,6 @@ open class ServerSessionBidirectionalStreamingBase<InputType: Message, OutputTyp
   public init(handler: Handler, providerBlock: @escaping ProviderBlock) {
     self.providerBlock = providerBlock
     super.init(handler: handler)
-  }
-
-  public func send(_ response: OutputType, completion: ((Error?) -> Void)?) throws {
-    try handler.sendResponse(message: response.serializedData(), completion: completion)
   }
 
   public func close() throws {
@@ -78,8 +75,8 @@ open class ServerSessionBidirectionalStreamingTestStub<InputType: Message, Outpu
     inputs.removeFirst()
   }
 
-  open func send(_ response: OutputType, completion _: ((Error?) -> Void)?) throws {
-    outputs.append(response)
+  open func send(_ message: OutputType, completion _: @escaping (Error?) -> Void) throws {
+    outputs.append(message)
   }
 
   open func close() throws {}

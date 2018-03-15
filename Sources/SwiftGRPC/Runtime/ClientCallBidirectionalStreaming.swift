@@ -25,8 +25,9 @@ public protocol ClientCallBidirectionalStreaming: ClientCall {
   // as the protocol would then have an associated type requirement (and become pretty much unusable in the process).
 }
 
-open class ClientCallBidirectionalStreamingBase<InputType: Message, OutputType: Message>: ClientCallBase, ClientCallBidirectionalStreaming, StreamReceiving {
+open class ClientCallBidirectionalStreamingBase<InputType: Message, OutputType: Message>: ClientCallBase, ClientCallBidirectionalStreaming, StreamReceiving, StreamSending {
   public typealias ReceivedType = OutputType
+  public typealias SentType = InputType
   
   /// Call this to start a call. Nonblocking.
   public func start(metadata: Metadata, completion: ((CallResult) -> Void)?)
