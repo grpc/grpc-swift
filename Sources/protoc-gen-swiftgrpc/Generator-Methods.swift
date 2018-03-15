@@ -13,10 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import Foundation
+import SwiftProtobuf
+import SwiftProtobufPluginLibrary
 
-/// Type for errors thrown from generated server code.
-public enum ServerError: Error {
-  case endOfStream
+extension Generator {
+  func printStreamReceiveMethods(receivedType: String) {
+    println("/// Call this to wait for a result. Blocking.")
+    println("func receive() throws -> \(receivedType)?")
+    println("/// Call this to wait for a result. Nonblocking.")
+    println("func receive(completion: @escaping (ResultOrRPCError<\(receivedType)?>) -> Void) throws")
+  }
 }

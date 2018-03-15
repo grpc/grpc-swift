@@ -145,8 +145,7 @@ extension Generator {
   private func printServerMethodClientStreaming() {
     println("\(access) protocol \(methodSessionName): ServerSessionClientStreaming {")
     indent()
-    println("/// Receive a message. Blocks until a message is received or the client closes the connection.")
-    println("func receive() throws -> \(methodInputName)")
+    printStreamReceiveMethods(receivedType: methodInputName)
     println()
     println("/// Send a response and close the connection.")
     println("func sendAndClose(_ response: \(methodOutputName)) throws")
@@ -178,8 +177,7 @@ extension Generator {
   private func printServerMethodBidirectional() {
     println("\(access) protocol \(methodSessionName): ServerSessionBidirectionalStreaming {")
     indent()
-    println("/// Receive a message. Blocks until a message is received or the client closes the connection.")
-    println("func receive() throws -> \(methodInputName)")
+    printStreamReceiveMethods(receivedType: methodInputName)
     println()
     println("/// Send a message. Nonblocking.")
     println("func send(_ response: \(methodOutputName), completion: ((Error?) -> Void)?) throws")

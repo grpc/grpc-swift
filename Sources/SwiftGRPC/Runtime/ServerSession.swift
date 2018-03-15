@@ -18,6 +18,18 @@ import Dispatch
 import Foundation
 import SwiftProtobuf
 
+public struct ServerErrorStatus: Error {
+  public let statusCode: StatusCode
+  public let statusMessage: String
+  public let trailingMetadata: Metadata
+  
+  public init(statusCode: StatusCode, statusMessage: String, trailingMetadata: Metadata = Metadata()) {
+    self.statusCode = statusCode
+    self.statusMessage = statusMessage
+    self.trailingMetadata = trailingMetadata
+  }
+}
+
 public protocol ServerSession: class {
   var requestMetadata: Metadata { get }
 
@@ -35,6 +47,8 @@ open class ServerSessionBase: ServerSession {
   public var statusMessage: String = "OK"
   public var initialMetadata: Metadata = Metadata()
   public var trailingMetadata: Metadata = Metadata()
+  
+  public var call: Call { return handler.call }
 
   public init(handler: Handler) {
     self.handler = handler

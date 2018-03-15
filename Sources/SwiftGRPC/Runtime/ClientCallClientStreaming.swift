@@ -37,39 +37,31 @@ open class ClientCallClientStreamingBase<InputType: Message, OutputType: Message
     try call.sendMessage(data: messageData, completion: completion)
   }
 
-  public func closeAndReceive(completion: @escaping (OutputType?, ClientError?) -> Void) throws {
-    do {
-      try call.closeAndReceiveMessage { responseData in
-        if let responseData = responseData,
-          let response = try? OutputType(serializedData: responseData) {
-          completion(response, nil)
-        } else {
-          completion(nil, .invalidMessageReceived)
-        }
+  public func closeAndReceive(completion: @escaping (ResultOrRPCError<OutputType>) -> Void) throws {
+    try call.closeAndReceiveMessage { callResult in
+      guard let responseData = callResult.resultData else {
+        completion(.error(.callError(callResult))); return
       }
-    } catch (let error) {
-      throw error
+      if let response = try? OutputType(serializedData: responseData) {
+        completion(.result(response))
+      } else {
+        completion(.error(.invalidMessageReceived))
+      }
     }
   }
 
   public func closeAndReceive() throws -> OutputType {
-    var returnError: ClientError?
-    var returnResponse: OutputType!
+    var result: ResultOrRPCError<OutputType>?
     let sem = DispatchSemaphore(value: 0)
-    do {
-      try closeAndReceive { response, error in
-        returnResponse = response
-        returnError = error
-        sem.signal()
-      }
-      _ = sem.wait()
-    } catch (let error) {
-      throw error
+    try closeAndReceive {
+      result = $0
+      sem.signal()
     }
-    if let returnError = returnError {
-      throw returnError
+    _ = sem.wait()
+    switch result! {
+    case .result(let response): return response
+    case .error(let error): throw error
     }
-    return returnResponse
   }
 
   public func waitForSendOperationsToFinish() {
@@ -91,8 +83,8 @@ open class ClientCallClientStreamingTestStub<InputType: Message, OutputType: Mes
     inputs.append(message)
   }
 
-  open func closeAndReceive(completion: @escaping (OutputType?, ClientError?) -> Void) throws {
-    completion(output!, nil)
+  open func closeAndReceive(completion: @escaping (ResultOrRPCError<OutputType>) -> Void) throws {
+    completion(.result(output!))
   }
 
   open func closeAndReceive() throws -> OutputType {

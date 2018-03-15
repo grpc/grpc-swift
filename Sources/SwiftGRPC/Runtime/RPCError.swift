@@ -17,8 +17,39 @@
 import Foundation
 
 /// Type for errors thrown from generated client code.
-public enum ClientError: Error {
-  case endOfStream
+public enum RPCError: Error {
   case invalidMessageReceived
-  case error(c: CallResult)
+  case callError(CallResult)
 }
+
+public extension RPCError {
+  var callResult: CallResult? {
+    switch self {
+    case .invalidMessageReceived: return nil
+    case .callError(let callResult): return callResult
+    }
+  }
+}
+
+
+public enum ResultOrRPCError<ResultType> {
+  case result(ResultType)
+  case error(RPCError)
+}
+
+public extension ResultOrRPCError {
+  var result: ResultType? {
+    switch self {
+    case .result(let result): return result
+    case .error: return nil
+    }
+  }
+  
+  var error: RPCError? {
+    switch self {
+    case .result: return nil
+    case .error(let error): return error
+    }
+  }
+}
+

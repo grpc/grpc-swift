@@ -32,7 +32,7 @@ class OperationGroup {
   private let call: Call
 
   /// An array of operation objects that are passed into the initializer.
-  private let operations: [Operation]
+  let operations: [Operation]
 
   /// An array of observers used to watch the operation
   private var underlyingObservers: [UnsafeMutableRawPointer] = []
@@ -41,7 +41,7 @@ class OperationGroup {
   let underlyingOperations: UnsafeMutableRawPointer?
 
   /// Completion handler that is called when the group completes
-  let completion: ((OperationGroup) throws -> Void)?
+  let completion: ((OperationGroup) -> Void)?
 
   /// Indicates that the OperationGroup completed successfully
   var success = false
@@ -81,7 +81,7 @@ class OperationGroup {
   /// - Parameter operations: an array of operations
   init(call: Call,
        operations: [Operation],
-       completion: ((OperationGroup) throws -> Void)? = nil) {
+       completion: ((OperationGroup) -> Void)? = nil) {
     self.call = call
     self.operations = operations
     self.completion = completion

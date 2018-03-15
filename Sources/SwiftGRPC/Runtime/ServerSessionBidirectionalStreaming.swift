@@ -22,34 +22,15 @@ public protocol ServerSessionBidirectionalStreaming: ServerSession {
   func waitForSendOperationsToFinish()
 }
 
-open class ServerSessionBidirectionalStreamingBase<InputType: Message, OutputType: Message>: ServerSessionBase, ServerSessionBidirectionalStreaming {
+open class ServerSessionBidirectionalStreamingBase<InputType: Message, OutputType: Message>: ServerSessionBase, ServerSessionBidirectionalStreaming, StreamReceiving {
+  public typealias ReceivedType = InputType
+  
   public typealias ProviderBlock = (ServerSessionBidirectionalStreamingBase) throws -> Void
   private var providerBlock: ProviderBlock
 
   public init(handler: Handler, providerBlock: @escaping ProviderBlock) {
     self.providerBlock = providerBlock
     super.init(handler: handler)
-  }
-
-  public func receive() throws -> InputType {
-    let sem = DispatchSemaphore(value: 0)
-    var requestMessage: InputType?
-    try handler.receiveMessage { requestData in
-      if let requestData = requestData {
-        do {
-          requestMessage = try InputType(serializedData: requestData)
-        } catch (let error) {
-          print("error \(error)")
-        }
-      }
-      sem.signal()
-    }
-    _ = sem.wait()
-    if let requestMessage = requestMessage {
-      return requestMessage
-    } else {
-      throw ServerError.endOfStream
-    }
   }
 
   public func send(_ response: OutputType, completion: ((Error?) -> Void)?) throws {
@@ -87,13 +68,14 @@ open class ServerSessionBidirectionalStreamingTestStub<InputType: Message, Outpu
   open var inputs: [InputType] = []
   open var outputs: [OutputType] = []
 
-  open func receive() throws -> InputType {
-    if let input = inputs.first {
-      inputs.removeFirst()
-      return input
-    } else {
-      throw ServerError.endOfStream
-    }
+  open func receive() throws -> InputType? {
+    defer { inputs.removeFirst() }
+    return inputs.first
+  }
+  
+  open func receive(completion: @escaping (ResultOrRPCError<InputType?>) -> Void) throws {
+    completion(.result(inputs.first))
+    inputs.removeFirst()
   }
 
   open func send(_ response: OutputType, completion _: ((Error?) -> Void)?) throws {

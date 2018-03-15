@@ -25,46 +25,14 @@ public protocol ClientCallBidirectionalStreaming: ClientCall {
   // as the protocol would then have an associated type requirement (and become pretty much unusable in the process).
 }
 
-open class ClientCallBidirectionalStreamingBase<InputType: Message, OutputType: Message>: ClientCallBase, ClientCallBidirectionalStreaming {
+open class ClientCallBidirectionalStreamingBase<InputType: Message, OutputType: Message>: ClientCallBase, ClientCallBidirectionalStreaming, StreamReceiving {
+  public typealias ReceivedType = OutputType
+  
   /// Call this to start a call. Nonblocking.
   public func start(metadata: Metadata, completion: ((CallResult) -> Void)?)
     throws -> Self {
     try call.start(.bidiStreaming, metadata: metadata, completion: completion)
     return self
-  }
-
-  public func receive(completion: @escaping (OutputType?, ClientError?) -> Void) throws {
-    do {
-      try call.receiveMessage { data in
-        if let data = data {
-          if let returnMessage = try? OutputType(serializedData: data) {
-            completion(returnMessage, nil)
-          } else {
-            completion(nil, .invalidMessageReceived)
-          }
-        } else {
-          completion(nil, .endOfStream)
-        }
-      }
-    }
-  }
-
-  public func receive() throws -> OutputType {
-    var returnError: ClientError?
-    var returnMessage: OutputType!
-    let sem = DispatchSemaphore(value: 0)
-    do {
-      try receive { response, error in
-        returnMessage = response
-        returnError = error
-        sem.signal()
-      }
-      _ = sem.wait()
-    }
-    if let returnError = returnError {
-      throw returnError
-    }
-    return returnMessage
   }
 
   public func send(_ message: InputType, completion: @escaping (Error?) -> Void) throws {
@@ -99,22 +67,14 @@ open class ClientCallBidirectionalStreamingTestStub<InputType: Message, OutputTy
   
   public init() {}
 
-  open func receive(completion: @escaping (OutputType?, ClientError?) -> Void) throws {
-    if let output = outputs.first {
-      outputs.removeFirst()
-      completion(output, nil)
-    } else {
-      completion(nil, .endOfStream)
-    }
+  open func receive(completion: @escaping (ResultOrRPCError<OutputType?>) -> Void) throws {
+    completion(.result(outputs.first))
+    outputs.removeFirst()
   }
 
-  open func receive() throws -> OutputType {
-    if let output = outputs.first {
-      outputs.removeFirst()
-      return output
-    } else {
-      throw ClientError.endOfStream
-    }
+  open func receive() throws -> OutputType? {
+    defer { outputs.removeFirst() }
+    return outputs.first
   }
 
   open func send(_ message: InputType, completion _: @escaping (Error?) -> Void) throws {

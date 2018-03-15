@@ -30,7 +30,7 @@ public class Handler {
   public let requestMetadata: Metadata
 
   /// A Call object that can be used to respond to the request
-  private(set) lazy var call: Call = {
+  public lazy var call: Call = {
     Call(underlyingCall: cgrpc_handler_get_call(self.underlyingHandler),
          owned: false,
          completionQueue: self.completionQueue)
@@ -87,16 +87,16 @@ public class Handler {
   /// Receive the message sent with a call
   ///
   public func receiveMessage(initialMetadata: Metadata,
-                             completion: @escaping (Data?) throws -> Void) throws {
+                             completion: @escaping (Data?) -> Void) throws {
     let operations = OperationGroup(call: call,
                                     operations: [
                                       .sendInitialMetadata(initialMetadata),
                                       .receiveMessage
     ]) { operationGroup in
       if operationGroup.success {
-        try completion(operationGroup.receivedMessage()?.data())
+        completion(operationGroup.receivedMessage()?.data())
       } else {
-        try completion(nil)
+        completion(nil)
       }
     }
     try call.perform(operations)
@@ -152,11 +152,11 @@ public class Handler {
   /// - Parameter initialMetadata: initial metadata to send
   /// - Parameter completion: a completion handler to call after the metadata has been sent
   public func sendMetadata(initialMetadata: Metadata,
-                           completion: ((Bool) throws -> Void)? = nil) throws {
+                           completion: ((Bool) -> Void)? = nil) throws {
     let operations = OperationGroup(call: call,
                                     operations: [.sendInitialMetadata(initialMetadata)],
                                     completion: completion != nil
-                                      ? { operationGroup in try completion?(operationGroup.success) }
+                                      ? { operationGroup in completion?(operationGroup.success) }
                                       : nil)
     try call.perform(operations)
   }
@@ -165,7 +165,7 @@ public class Handler {
   ///
   /// - Parameter completion: a completion handler to call after the message has been received
   /// - Returns: a tuple containing status codes and a message (if available)
-  public func receiveMessage(completion: @escaping (Data?) throws -> Void) throws {
+  public func receiveMessage(completion: @escaping (CallResult) -> Void) throws {
     try call.receiveMessage(completion: completion)
   }
   
@@ -181,10 +181,10 @@ public class Handler {
   /// Recognize when the client has closed a request
   ///
   /// - Parameter completion: a completion handler to call after request has been closed
-  public func receiveClose(completion: @escaping (Bool) throws -> Void) throws {
+  public func receiveClose(completion: @escaping (Bool) -> Void) throws {
     let operations = OperationGroup(call: call,
                                     operations: [.receiveCloseOnServer]) { operationGroup in
-                                      try completion(operationGroup.success)
+                                      completion(operationGroup.success)
     }
     try call.perform(operations)
   }
@@ -197,7 +197,7 @@ public class Handler {
   /// - Parameter completion: a completion handler to call after the status has been sent
   public func sendStatus(statusCode: StatusCode,
                          statusMessage: String,
-                         trailingMetadata: Metadata,
+                         trailingMetadata: Metadata = Metadata(),
                          completion: ((Bool) -> Void)? = nil) throws {
     let operations = OperationGroup(call: call,
                                     operations: [
@@ -209,6 +209,14 @@ public class Handler {
       self.shutdown()
     }
     try call.perform(operations)
+  }
+  
+  public func sendError(_ error: ServerErrorStatus,
+                        completion: ((Bool) -> Void)? = nil) throws {
+    try sendStatus(statusCode: error.statusCode,
+                   statusMessage: error.statusMessage,
+                   trailingMetadata: error.trailingMetadata,
+                   completion: completion)
   }
 }
 

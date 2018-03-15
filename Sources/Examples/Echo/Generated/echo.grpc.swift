@@ -33,9 +33,9 @@ fileprivate final class Echo_EchoGetCallBase: ClientCallUnaryBase<Echo_EchoReque
 
 internal protocol Echo_EchoExpandCall: ClientCallServerStreaming {
   /// Call this to wait for a result. Blocking.
-  func receive() throws -> Echo_EchoResponse
+  func receive() throws -> Echo_EchoResponse?
   /// Call this to wait for a result. Nonblocking.
-  func receive(completion: @escaping (Echo_EchoResponse?, ClientError?) -> Void) throws
+  func receive(completion: @escaping (ResultOrRPCError<Echo_EchoResponse?>) -> Void) throws
 }
 
 fileprivate final class Echo_EchoExpandCallBase: ClientCallServerStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoExpandCall {
@@ -53,7 +53,7 @@ internal protocol Echo_EchoCollectCall: ClientCallClientStreaming {
   /// Call this to close the connection and wait for a response. Blocking.
   func closeAndReceive() throws -> Echo_EchoResponse
   /// Call this to close the connection and wait for a response. Nonblocking.
-  func closeAndReceive(completion: @escaping (Echo_EchoResponse?, ClientError?) -> Void) throws
+  func closeAndReceive(completion: @escaping (ResultOrRPCError<Echo_EchoResponse>) -> Void) throws
 }
 
 fileprivate final class Echo_EchoCollectCallBase: ClientCallClientStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectCall {
@@ -68,9 +68,9 @@ class Echo_EchoCollectCallTestStub: ClientCallClientStreamingTestStub<Echo_EchoR
 
 internal protocol Echo_EchoUpdateCall: ClientCallBidirectionalStreaming {
   /// Call this to wait for a result. Blocking.
-  func receive() throws -> Echo_EchoResponse
+  func receive() throws -> Echo_EchoResponse?
   /// Call this to wait for a result. Nonblocking.
-  func receive(completion: @escaping (Echo_EchoResponse?, ClientError?) -> Void) throws
+  func receive(completion: @escaping (ResultOrRPCError<Echo_EchoResponse?>) -> Void) throws
 
   /// Call this to send each message in the request stream.
   func send(_ message: Echo_EchoRequest, completion: @escaping (Error?) -> Void) throws
@@ -210,8 +210,10 @@ fileprivate final class Echo_EchoExpandSessionBase: ServerSessionServerStreaming
 class Echo_EchoExpandSessionTestStub: ServerSessionServerStreamingTestStub<Echo_EchoResponse>, Echo_EchoExpandSession {}
 
 internal protocol Echo_EchoCollectSession: ServerSessionClientStreaming {
-  /// Receive a message. Blocks until a message is received or the client closes the connection.
-  func receive() throws -> Echo_EchoRequest
+  /// Call this to wait for a result. Blocking.
+  func receive() throws -> Echo_EchoRequest?
+  /// Call this to wait for a result. Nonblocking.
+  func receive(completion: @escaping (ResultOrRPCError<Echo_EchoRequest?>) -> Void) throws
 
   /// Send a response and close the connection.
   func sendAndClose(_ response: Echo_EchoResponse) throws
@@ -222,8 +224,10 @@ fileprivate final class Echo_EchoCollectSessionBase: ServerSessionClientStreamin
 class Echo_EchoCollectSessionTestStub: ServerSessionClientStreamingTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectSession {}
 
 internal protocol Echo_EchoUpdateSession: ServerSessionBidirectionalStreaming {
-  /// Receive a message. Blocks until a message is received or the client closes the connection.
-  func receive() throws -> Echo_EchoRequest
+  /// Call this to wait for a result. Blocking.
+  func receive() throws -> Echo_EchoRequest?
+  /// Call this to wait for a result. Nonblocking.
+  func receive(completion: @escaping (ResultOrRPCError<Echo_EchoRequest?>) -> Void) throws
 
   /// Send a message. Nonblocking.
   func send(_ response: Echo_EchoResponse, completion: ((Error?) -> Void)?) throws

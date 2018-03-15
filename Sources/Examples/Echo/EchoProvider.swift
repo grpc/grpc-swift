@@ -45,10 +45,9 @@ class EchoProvider: Echo_EchoProvider {
     var parts: [String] = []
     while true {
       do {
-        let request = try session.receive()
+        guard let request = try session.receive()
+          else { break }  // End of stream
         parts.append(request.text)
-      } catch ServerError.endOfStream {
-        break
       } catch (let error) {
         print("\(error)")
       }
@@ -63,7 +62,8 @@ class EchoProvider: Echo_EchoProvider {
     var count = 0
     while true {
       do {
-        let request = try session.receive()
+        guard let request = try session.receive()
+          else { break }  // End of stream
         var response = Echo_EchoResponse()
         response.text = "Swift echo update (\(count)): \(request.text)"
         count += 1
@@ -72,8 +72,6 @@ class EchoProvider: Echo_EchoProvider {
             print("update error: \(error)")
           }
         }
-      } catch ServerError.endOfStream {
-        break
       } catch (let error) {
         print("\(error)")
         break

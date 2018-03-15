@@ -222,10 +222,12 @@ func callServerStream(channel: Channel) throws {
 
   for _ in 0..<steps {
     let messageSem = DispatchSemaphore(value: 0)
-    try call.receiveMessage(completion: { (data) in
-      if let data = data {
+    try call.receiveMessage(completion: { callResult in
+      if let data = callResult.resultData {
         let messageString = String(data: data, encoding: .utf8)
         XCTAssertEqual(messageString, serverText)
+      } else {
+        print("unexpected result: \(callResult)")
       }
       messageSem.signal()
     })
@@ -273,10 +275,12 @@ func callBiDiStream(channel: Channel) throws {
   // Receive pongs
   for _ in 0..<steps {
     let pongSem = DispatchSemaphore(value: 0)
-    try call.receiveMessage(completion: { (data) in
-      if let data = data {
+    try call.receiveMessage(completion: { callResult in
+      if let data = callResult.resultData {
         let messageString = String(data: data, encoding: .utf8)
         XCTAssertEqual(messageString, serverPong)
+      } else {
+        print("unexpected result: \(callResult)")
       }
       pongSem.signal()
     })
@@ -386,8 +390,8 @@ func handleBiDiStream(requestHandler: Handler) throws {
   // Receive remaining pings
   for _ in 0..<steps-1 {
     let receiveSem = DispatchSemaphore(value: 0)
-    try requestHandler.receiveMessage(completion: { (data) in
-      let messageString = String(data: data!, encoding: .utf8)
+    try requestHandler.receiveMessage(completion: { callStatus in
+      let messageString = String(data: callStatus.resultData!, encoding: .utf8)
       XCTAssertEqual(messageString, clientPing)
       receiveSem.signal()
     })

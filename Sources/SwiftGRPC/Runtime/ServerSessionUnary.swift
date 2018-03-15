@@ -28,16 +28,35 @@ open class ServerSessionUnaryBase<InputType: Message, OutputType: Message>: Serv
     self.providerBlock = providerBlock
     super.init(handler: handler)
   }
-
+  
   public func run(queue _: DispatchQueue) throws {
     try handler.receiveMessage(initialMetadata: initialMetadata) { requestData in
-      if let requestData = requestData {
+      guard let requestData = requestData else {
+        print("ServerSessionUnaryBase.run empty request data")
+        do {
+          try self.handler.sendStatus(statusCode: .invalidArgument,
+                                      statusMessage: "no request data received")
+        } catch {
+          print("ServerSessionUnaryBase.run error sending status: \(error)")
+        }
+        return
+      }
+      do {
         let requestMessage = try InputType(serializedData: requestData)
         let replyMessage = try self.providerBlock(requestMessage, self)
         try self.handler.sendResponse(message: replyMessage.serializedData(),
                                       statusCode: self.statusCode,
                                       statusMessage: self.statusMessage,
                                       trailingMetadata: self.trailingMetadata)
+      } catch {
+        print("ServerSessionUnaryBase.run error processing request: \(error)")
+        
+        do {
+          try self.handler.sendError((error as? ServerErrorStatus)
+            ?? ServerErrorStatus(statusCode: .unknown, statusMessage: "unknown error processing request"))
+        } catch {
+          print("ServerSessionUnaryBase.run error sending status: \(error)")
+        }
       }
     }
   }

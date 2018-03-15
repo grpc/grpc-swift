@@ -113,12 +113,8 @@ class CompletionQueue {
           self.operationGroupsMutex.unlock()
           if let operationGroup = operationGroup {
             // call the operation group completion handler
-            do {
-              operationGroup.success = (event.success == 1)
-              try operationGroup.completion?(operationGroup)
-            } catch (let callError) {
-              print("CompletionQueue runToCompletion: grpc error \(callError)")
-            }
+            operationGroup.success = (event.success == 1)
+            operationGroup.completion?(operationGroup)
             self.operationGroupsMutex.synchronize {
               self.operationGroups[tag] = nil
             }
@@ -126,13 +122,9 @@ class CompletionQueue {
           break
         case GRPC_QUEUE_SHUTDOWN:
           running = false
-          do {
-            for operationGroup in self.operationGroups.values {
-              operationGroup.success = false
-              try operationGroup.completion?(operationGroup)
-            }
-          } catch (let callError) {
-            print("CompletionQueue runToCompletion: grpc error \(callError)")
+          for operationGroup in self.operationGroups.values {
+            operationGroup.success = false
+            operationGroup.completion?(operationGroup)
           }
           self.operationGroupsMutex.synchronize {
             self.operationGroups = [:]

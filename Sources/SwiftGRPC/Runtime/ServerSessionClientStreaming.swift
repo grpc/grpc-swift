@@ -20,29 +20,15 @@ import SwiftProtobuf
 
 public protocol ServerSessionClientStreaming: ServerSession {}
 
-open class ServerSessionClientStreamingBase<InputType: Message, OutputType: Message>: ServerSessionBase, ServerSessionClientStreaming {
+open class ServerSessionClientStreamingBase<InputType: Message, OutputType: Message>: ServerSessionBase, ServerSessionClientStreaming, StreamReceiving {
+  public typealias ReceivedType = InputType
+  
   public typealias ProviderBlock = (ServerSessionClientStreamingBase) throws -> Void
   private var providerBlock: ProviderBlock
 
   public init(handler: Handler, providerBlock: @escaping ProviderBlock) {
     self.providerBlock = providerBlock
     super.init(handler: handler)
-  }
-
-  public func receive() throws -> InputType {
-    let sem = DispatchSemaphore(value: 0)
-    var requestMessage: InputType?
-    try handler.receiveMessage { requestData in
-      if let requestData = requestData {
-        requestMessage = try? InputType(serializedData: requestData)
-      }
-      sem.signal()
-    }
-    _ = sem.wait()
-    if requestMessage == nil {
-      throw ServerError.endOfStream
-    }
-    return requestMessage!
   }
 
   public func sendAndClose(_ response: OutputType) throws {
@@ -71,13 +57,14 @@ open class ServerSessionClientStreamingTestStub<InputType: Message, OutputType: 
   open var inputs: [InputType] = []
   open var output: OutputType?
 
-  open func receive() throws -> InputType {
-    if let input = inputs.first {
-      inputs.removeFirst()
-      return input
-    } else {
-      throw ServerError.endOfStream
-    }
+  open func receive() throws -> InputType? {
+    defer { inputs.removeFirst() }
+    return inputs.first
+  }
+  
+  open func receive(completion: @escaping (ResultOrRPCError<InputType?>) -> Void) throws {
+    completion(.result(inputs.first))
+    inputs.removeFirst()
   }
 
   open func sendAndClose(_ response: OutputType) throws {
