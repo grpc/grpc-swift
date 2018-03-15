@@ -84,7 +84,7 @@ let eventStatusMessage = "Not Found"
 func runTest(useSSL: Bool) {
   gRPC.initialize()
 
-  let serverRunningSemaphore = DispatchSemaphore(value: 0)
+  var serverRunningSemaphore: DispatchSemaphore?
 
   // create the server
   let server: Server
@@ -97,13 +97,10 @@ func runTest(useSSL: Bool) {
   }
 
   // start the server
-  DispatchQueue.global().async {
-    do {
-      try runServer(server: server)
-    } catch (let error) {
-      XCTFail("server error \(error)")
-    }
-    serverRunningSemaphore.signal() // when the server exits, the test is finished
+  do {
+    serverRunningSemaphore = try runServer(server: server)
+  } catch (let error) {
+    XCTFail("server error \(error)")
   }
 
   // run the client
@@ -117,7 +114,7 @@ func runTest(useSSL: Bool) {
   server.stop()
 
   // wait until the server has shut down
-  _ = serverRunningSemaphore.wait()
+  _ = serverRunningSemaphore!.wait()
 }
 
 func verify_metadata(_ metadata: Metadata, expected: [String: String], file: StaticString = #file, line: UInt = #line) {
@@ -217,7 +214,7 @@ func callServerStream(channel: Channel) throws {
         let messageString = String(data: data, encoding: .utf8)
         XCTAssertEqual(messageString, serverText)
       } else {
-        print("unexpected result: \(callResult)")
+        print("callServerStream unexpected result: \(callResult)")
       }
       messageSem.signal()
     })
@@ -260,6 +257,12 @@ func callBiDiStream(channel: Channel) throws {
     call.messageQueueEmpty.wait()
   }
 
+  let closeSem = DispatchSemaphore(value: 0)
+  try call.close {
+    closeSem.signal()
+  }
+  _ = closeSem.wait()
+
   // Receive pongs
   for _ in 0..<steps {
     let pongSem = DispatchSemaphore(value: 0)
@@ -268,7 +271,7 @@ func callBiDiStream(channel: Channel) throws {
         let messageString = String(data: data, encoding: .utf8)
         XCTAssertEqual(messageString, serverPong)
       } else {
-        print("unexpected result: \(callResult)")
+        print("callBiDiStream unexpected result: \(callResult)")
       }
       pongSem.signal()
     })
@@ -278,7 +281,7 @@ func callBiDiStream(channel: Channel) throws {
   _ = sem.wait()
 }
 
-func runServer(server: Server) throws {
+func runServer(server: Server) throws -> DispatchSemaphore {
   var requestCount = 0
   let sem = DispatchSemaphore(value: 0)
   server.run { requestHandler in
@@ -306,7 +309,7 @@ func runServer(server: Server) throws {
     sem.signal()
   }
   // wait for the server to exit
-  _ = sem.wait()
+  return sem
 }
 
 func handleUnary(requestHandler: Handler, requestCount: Int) throws {
@@ -368,13 +371,14 @@ func handleBiDiStream(requestHandler: Handler) throws {
   verify_metadata(initialMetadata, expected: initialClientMetadata)
 
   let initialMetadataToSend = Metadata(initialServerMetadata)
-  try requestHandler.receiveMessage(initialMetadata: initialMetadataToSend) { messageData in
-    let messageString = String(data: messageData!, encoding: .utf8)
-    XCTAssertEqual(messageString, clientPing)
+  let sendMetadataSem = DispatchSemaphore(value: 0)
+  try requestHandler.sendMetadata(initialMetadata: initialMetadataToSend) { _ in
+    _ = sendMetadataSem.signal()
   }
-
+  _ = sendMetadataSem.wait()
+  
   // Receive remaining pings
-  for _ in 0..<steps-1 {
+  for _ in 0..<steps {
     let receiveSem = DispatchSemaphore(value: 0)
     try requestHandler.receiveMessage(completion: { callStatus in
       let messageString = String(data: callStatus.resultData!, encoding: .utf8)
@@ -394,7 +398,9 @@ func handleBiDiStream(requestHandler: Handler) throws {
   }
 
   let trailingMetadataToSend = Metadata(trailingServerMetadata)
+  let sem = DispatchSemaphore(value: 0)
   try requestHandler.sendStatus(statusCode: StatusCode.resourceExhausted,
                                 statusMessage: "Resource Exhausted",
-                                trailingMetadata: trailingMetadataToSend)
+                                trailingMetadata: trailingMetadataToSend) { _ in sem.signal() }
+  _ = sem.wait()
 }
