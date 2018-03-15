@@ -30,7 +30,7 @@ public class Handler {
   public let requestMetadata: Metadata
 
   /// A Call object that can be used to respond to the request
-  public lazy var call: Call = {
+  public private(set) lazy var call: Call = {
     Call(underlyingCall: cgrpc_handler_get_call(self.underlyingHandler),
          owned: false,
          completionQueue: self.completionQueue)
