@@ -41,7 +41,7 @@ class EchoTests: XCTestCase {
 
   static let lotsOfStrings = (0..<1000).map { String(describing: $0) }
 
-  let defaultTimeout: TimeInterval = 5.0
+  let defaultTimeout: TimeInterval = 1.0
 
   let provider = EchoProvider()
   var server: Echo_EchoServer!
