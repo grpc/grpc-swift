@@ -49,7 +49,8 @@ class EchoProvider: Echo_EchoProvider {
           else { break }  // End of stream
         parts.append(request.text)
       } catch {
-        print("\(error)")
+        print("collect error: \(error)")
+        break
       }
     }
     var response = Echo_EchoResponse()
@@ -73,7 +74,7 @@ class EchoProvider: Echo_EchoProvider {
           }
         }
       } catch {
-        print("\(error)")
+        print("update error: \(error)")
         break
       }
     }

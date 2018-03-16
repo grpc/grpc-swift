@@ -18,13 +18,7 @@ import Foundation
 @testable import SwiftGRPC
 import XCTest
 
-extension Echo_EchoRequest {
-  init(text: String) {
-    self.text = text
-  }
-}
-
-class EchoTests: XCTestCase {
+class EchoTests: BasicEchoTestCase {
   static var allTests: [(String, (EchoTests) -> () throws -> Void)] {
     return [
       ("testUnary", testUnary),
@@ -40,45 +34,6 @@ class EchoTests: XCTestCase {
   }
 
   static let lotsOfStrings = (0..<1000).map { String(describing: $0) }
-
-  let defaultTimeout: TimeInterval = 1.0
-
-  let provider = EchoProvider()
-  var server: Echo_EchoServer!
-  var client: Echo_EchoServiceClient!
-
-  var secure: Bool { return false }
-
-  override func setUp() {
-    super.setUp()
-
-    let address = "localhost:5050"
-    if secure {
-      let certificateString = String(data: certificateForTests, encoding: .utf8)!
-      server = Echo_EchoServer(address: address,
-                               certificateString: certificateString,
-                               keyString: String(data: keyForTests, encoding: .utf8)!,
-                               provider: provider)
-      server.start(queue: DispatchQueue.global())
-      client = Echo_EchoServiceClient(address: address, certificates: certificateString, host: "example.com")
-      client.host = "example.com"
-    } else {
-      server = Echo_EchoServer(address: address, provider: provider)
-      server.start(queue: DispatchQueue.global())
-      client = Echo_EchoServiceClient(address: address, secure: false)
-    }
-
-    client.timeout = defaultTimeout
-  }
-
-  override func tearDown() {
-    client = nil
-
-    server.server.stop()
-    server = nil
-
-    super.tearDown()
-  }
 }
 
 class EchoTestsSecure: EchoTests {

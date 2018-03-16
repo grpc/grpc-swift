@@ -214,7 +214,7 @@ func callServerStream(channel: Channel) throws {
         let messageString = String(data: data, encoding: .utf8)
         XCTAssertEqual(messageString, serverText)
       } else {
-        print("callServerStream unexpected result: \(callResult)")
+        XCTFail("callServerStream unexpected result: \(callResult)")
       }
       messageSem.signal()
     }
@@ -271,7 +271,7 @@ func callBiDiStream(channel: Channel) throws {
         let messageString = String(data: data, encoding: .utf8)
         XCTAssertEqual(messageString, serverPong)
       } else {
-        print("callBiDiStream unexpected result: \(callResult)")
+        XCTFail("callBiDiStream unexpected result: \(callResult)")
       }
       pongSem.signal()
     }

@@ -37,7 +37,7 @@ fileprivate class TimingOutEchoProvider: Echo_EchoProvider {
   }
 }
 
-class ServerTimeoutTests: XCTestCase {
+class ServerTimeoutTests: BasicEchoTestCase {
   static var allTests: [(String, (ServerTimeoutTests) -> () throws -> Void)] {
     return [
       ("testTimeoutUnary", testTimeoutUnary),
@@ -47,31 +47,9 @@ class ServerTimeoutTests: XCTestCase {
     ]
   }
   
-  let defaultTimeout: TimeInterval = 0.1
+  override func makeProvider() -> Echo_EchoProvider { return TimingOutEchoProvider() }
   
-  fileprivate let provider = TimingOutEchoProvider()
-  var server: Echo_EchoServer!
-  var client: Echo_EchoServiceClient!
-  
-  override func setUp() {
-    super.setUp()
-    
-    let address = "localhost:5050"
-    server = Echo_EchoServer(address: address, provider: provider)
-    server.start(queue: DispatchQueue.global())
-    client = Echo_EchoServiceClient(address: address, secure: false)
-    
-    client.timeout = defaultTimeout
-  }
-  
-  override func tearDown() {
-    client = nil
-    
-    server.server.stop()
-    server = nil
-    
-    super.tearDown()
-  }
+  override var defaultTimeout: TimeInterval { return 0.1 }
 }
 
 extension ServerTimeoutTests {

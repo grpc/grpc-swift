@@ -18,9 +18,9 @@ import Foundation
 @testable import SwiftGRPC
 import XCTest
 
-// TODO(danielalm): Also run a similar set of tests with SSL enabled.
-class ErrorHandlingTests: XCTestCase {
-  static var allTests: [(String, (ErrorHandlingTests) -> () throws -> Void)] {
+// TODO(danielalm): Also test connection failure with regards to SSL issues.
+class ConnectionFailureTests: XCTestCase {
+  static var allTests: [(String, (ConnectionFailureTests) -> () throws -> Void)] {
     return [
       ("testConnectionFailureUnary", testConnectionFailureUnary),
       ("testConnectionFailureClientStreaming", testConnectionFailureClientStreaming),
@@ -34,7 +34,7 @@ class ErrorHandlingTests: XCTestCase {
   let defaultTimeout: TimeInterval = 0.5
 }
 
-extension ErrorHandlingTests {
+extension ConnectionFailureTests {
   func testConnectionFailureUnary() {
     let client = Echo_EchoServiceClient(address: "localhost:1234", secure: false)
     client.timeout = defaultTimeout

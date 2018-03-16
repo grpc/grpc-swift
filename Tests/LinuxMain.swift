@@ -18,7 +18,8 @@ import XCTest
 
 XCTMain([
   testCase(gRPCTests.allTests),
+  testCase(ClientTimeoutTests.allTests),
+  testCase(ConnectionFailureTests.allTests),
   testCase(EchoTests.allTests),
-  testCase(ErrorHandlingTests.allTests),
   testCase(ServerTimeoutTests.allTests)
 ])
