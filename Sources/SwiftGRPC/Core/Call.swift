@@ -155,7 +155,6 @@ public class Call {
   /// Parameter data: the message data to send
   /// - Throws: `CallError` if fails to call. `CallWarning` if blocked.
   public func sendMessage(data: Data, completion: ((Error?) -> Void)? = nil) throws {
-    messageQueueEmpty.enter()
     try sendMutex.synchronize {
       if writing {
         if let messageQueueMaxLength = Call.messageQueueMaxLength,
@@ -166,14 +165,16 @@ public class Call {
       } else {
         writing = true
         try sendWithoutBlocking(data: data, completion: completion)
-      }  
+      }
+      messageQueueEmpty.enter()
     }
   }
 
   /// helper for sending queued messages
   private func sendWithoutBlocking(data: Data, completion: ((Error?) -> Void)?) throws {
-    try perform(OperationGroup(call: self,
-                               operations: [.sendMessage(ByteBuffer(data: data))]) { operationGroup in
+    try perform(OperationGroup(
+      call: self,
+      operations: [.sendMessage(ByteBuffer(data: data))]) { operationGroup in
         // Always enqueue the next message, even if sending this one failed. This ensures that all send completion
         // handlers are called eventually.
         self.sendMutex.synchronize {
