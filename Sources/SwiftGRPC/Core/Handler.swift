@@ -137,7 +137,7 @@ public class Handler {
                                       .receiveCloseOnServer,
                                       .sendStatusFromServer(statusCode, statusMessage, trailingMetadata),
                                       .sendMessage(messageBuffer)
-    ]) { operationGroup in
+    ]) { _ in
       self.shutdown()
     }
     try call.perform(operations)

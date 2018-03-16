@@ -29,6 +29,7 @@ class OperationGroup {
   let tag: Int64
 
   /// The call associated with the operation group. Retained while the operations are running.
+  // FIXME(danielalm): Is this property needed?
   private let call: Call
 
   /// An array of operation objects that are passed into the initializer.
