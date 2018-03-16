@@ -141,14 +141,19 @@ extension Generator {
       println("class \(methodSessionName)TestStub: ServerSessionUnaryTestStub, \(methodSessionName) {}")
     }
   }
+  
+  private func printServerMethodSendAndClose(sentType: String) {
+    println("/// Close the connection and send a single result. Non-blocking.")
+    println("/// You MUST call this method once you are done processing the request.")
+    println("func sendAndClose(response: \(sentType), status: ServerStatus, completion: ((CallResult) -> Void)?) throws")
+  }
 
   private func printServerMethodClientStreaming() {
     println("\(access) protocol \(methodSessionName): ServerSessionClientStreaming {")
     indent()
     printStreamReceiveMethods(receivedType: methodInputName)
     println()
-    println("/// Send a response and close the connection.")
-    println("func sendAndClose(_ response: \(methodOutputName)) throws")
+    printServerMethodSendAndClose(sentType: methodOutputName)
     outdent()
     println("}")
     println()
@@ -159,10 +164,18 @@ extension Generator {
     }
   }
 
+  private func printServerMethodClose() {
+    println("/// Close the connection and send the status. Non-blocking.")
+    println("/// You MUST call this method once you are done processing the request.")
+    println("func close(withStatus status: ServerStatus, completion: ((CallResult) -> Void)?) throws")
+  }
+  
   private func printServerMethodServerStreaming() {
     println("\(access) protocol \(methodSessionName): ServerSessionServerStreaming {")
     indent()
     printStreamSendMethods(sentType: methodOutputName)
+    println()
+    printServerMethodClose()
     outdent()
     println("}")
     println()
@@ -180,8 +193,7 @@ extension Generator {
     println()
     printStreamSendMethods(sentType: methodOutputName)
     println()
-    println("/// Close a connection. Blocks until the connection is closed.")
-    println("func close() throws")
+    printServerMethodClose()
     outdent()
     println("}")
     println()

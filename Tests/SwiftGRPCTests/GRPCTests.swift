@@ -322,14 +322,14 @@ func handleUnary(requestHandler: Handler, requestCount: Int) throws {
     let replyMessage = serverText
     let trailingMetadataToSend = Metadata(trailingServerMetadata)
     try requestHandler.sendResponse(message: replyMessage.data(using: .utf8)!,
-                                    statusCode: evenStatusCode,
-                                    statusMessage: eventStatusMessage,
-                                    trailingMetadata: trailingMetadataToSend)
+                                    status: ServerStatus(code: evenStatusCode,
+                                                         message: eventStatusMessage,
+                                                         trailingMetadata: trailingMetadataToSend))
   } else {
     let trailingMetadataToSend = Metadata(trailingServerMetadata)
-    try requestHandler.sendStatus(statusCode: oddStatusCode,
-                                  statusMessage: oddStatusMessage,
-                                  trailingMetadata: trailingMetadataToSend)
+    try requestHandler.sendStatus(ServerStatus(code: oddStatusCode,
+                                               message: oddStatusMessage,
+                                               trailingMetadata: trailingMetadataToSend))
   }
 }
 
@@ -357,9 +357,9 @@ func handleServerStream(requestHandler: Handler) throws {
   }
 
   let trailingMetadataToSend = Metadata(trailingServerMetadata)
-  try requestHandler.sendStatus(statusCode: StatusCode.outOfRange,
-                                statusMessage: "Out of range",
-                                trailingMetadata: trailingMetadataToSend)
+  try requestHandler.sendStatus(ServerStatus(code: .outOfRange,
+                                             message: "Out of range",
+                                             trailingMetadata: trailingMetadataToSend))
 }
 
 func handleBiDiStream(requestHandler: Handler) throws {
@@ -400,8 +400,8 @@ func handleBiDiStream(requestHandler: Handler) throws {
 
   let trailingMetadataToSend = Metadata(trailingServerMetadata)
   let sem = DispatchSemaphore(value: 0)
-  try requestHandler.sendStatus(statusCode: StatusCode.resourceExhausted,
-                                statusMessage: "Resource Exhausted",
-                                trailingMetadata: trailingMetadataToSend) { _ in sem.signal() }
+  try requestHandler.sendStatus(ServerStatus(code: .resourceExhausted,
+                                             message: "Resource Exhausted",
+                                             trailingMetadata: trailingMetadataToSend)) { _ in sem.signal() }
   _ = sem.wait()
 }

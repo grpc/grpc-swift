@@ -203,6 +203,10 @@ class Echo_EchoGetSessionTestStub: ServerSessionUnaryTestStub, Echo_EchoGetSessi
 internal protocol Echo_EchoExpandSession: ServerSessionServerStreaming {
   /// Call this to send each message in the request stream. Nonblocking.
   func send(_ message: Echo_EchoResponse, completion: @escaping (Error?) -> Void) throws
+
+  /// Close the connection and send the status. Non-blocking.
+  /// You MUST call this method once you are done processing the request.
+  func close(withStatus status: ServerStatus, completion: ((CallResult) -> Void)?) throws
 }
 
 fileprivate final class Echo_EchoExpandSessionBase: ServerSessionServerStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoExpandSession {}
@@ -215,8 +219,9 @@ internal protocol Echo_EchoCollectSession: ServerSessionClientStreaming {
   /// Call this to wait for a result. Nonblocking.
   func receive(completion: @escaping (ResultOrRPCError<Echo_EchoRequest?>) -> Void) throws
 
-  /// Send a response and close the connection.
-  func sendAndClose(_ response: Echo_EchoResponse) throws
+  /// Close the connection and send a single result. Non-blocking.
+  /// You MUST call this method once you are done processing the request.
+  func sendAndClose(response: Echo_EchoResponse, status: ServerStatus, completion: ((CallResult) -> Void)?) throws
 }
 
 fileprivate final class Echo_EchoCollectSessionBase: ServerSessionClientStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectSession {}
@@ -232,8 +237,9 @@ internal protocol Echo_EchoUpdateSession: ServerSessionBidirectionalStreaming {
   /// Call this to send each message in the request stream. Nonblocking.
   func send(_ message: Echo_EchoResponse, completion: @escaping (Error?) -> Void) throws
 
-  /// Close a connection. Blocks until the connection is closed.
-  func close() throws
+  /// Close the connection and send the status. Non-blocking.
+  /// You MUST call this method once you are done processing the request.
+  func close(withStatus status: ServerStatus, completion: ((CallResult) -> Void)?) throws
 }
 
 fileprivate final class Echo_EchoUpdateSessionBase: ServerSessionBidirectionalStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateSession {}

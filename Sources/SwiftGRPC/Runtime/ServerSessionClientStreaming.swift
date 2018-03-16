@@ -30,21 +30,34 @@ open class ServerSessionClientStreamingBase<InputType: Message, OutputType: Mess
     self.providerBlock = providerBlock
     super.init(handler: handler)
   }
-
-  public func sendAndClose(_ response: OutputType) throws {
-    try handler.sendResponse(message: response.serializedData(),
-                             statusCode: statusCode,
-                             statusMessage: statusMessage,
-                             trailingMetadata: trailingMetadata)
+  
+  public func sendAndClose(response: OutputType, status: ServerStatus = .ok,
+                           completion: ((CallResult) -> Void)? = nil) throws {
+    try handler.sendResponse(message: response.serializedData(), status: status, completion: completion)
   }
 
   public func run(queue: DispatchQueue) throws {
-    try handler.sendMetadata(initialMetadata: initialMetadata) { _ in
+    try handler.sendMetadata(initialMetadata: initialMetadata) { success in
       queue.async {
-        do {
-          try self.providerBlock(self)
-        } catch {
-          print("error \(error)")
+        var responseStatus: ServerStatus?
+        if success {
+          do {
+            try self.providerBlock(self)
+          } catch {
+            responseStatus = (error as? ServerStatus) ?? .processingError
+          }
+        } else {
+          print("ServerSessionClientStreamingBase.run sending initial metadata failed")
+          responseStatus = .sendingInitialMetadataFailed
+        }
+        
+        if let responseStatus = responseStatus {
+          // Error encountered, notify the client.
+          do {
+            try self.handler.sendStatus(responseStatus)
+          } catch {
+            print("ServerSessionClientStreamingBase.run error sending status: \(error)")
+          }
         }
       }
     }
@@ -56,6 +69,7 @@ open class ServerSessionClientStreamingBase<InputType: Message, OutputType: Mess
 open class ServerSessionClientStreamingTestStub<InputType: Message, OutputType: Message>: ServerSessionTestStub, ServerSessionClientStreaming {
   open var inputs: [InputType] = []
   open var output: OutputType?
+  open var status: ServerStatus?
 
   open func receive() throws -> InputType? {
     defer { inputs.removeFirst() }
@@ -67,8 +81,10 @@ open class ServerSessionClientStreamingTestStub<InputType: Message, OutputType: 
     inputs.removeFirst()
   }
 
-  open func sendAndClose(_ response: OutputType) throws {
-    output = response
+  open func sendAndClose(response: OutputType, status: ServerStatus, completion: ((CallResult) -> Void)?) throws {
+    self.output = response
+    self.status = status
+    completion?(.fakeOK)
   }
 
   open func close() throws {}

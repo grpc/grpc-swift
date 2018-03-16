@@ -32,28 +32,30 @@ open class ServerSessionServerStreamingBase<InputType: Message, OutputType: Mess
     self.providerBlock = providerBlock
     super.init(handler: handler)
   }
-
+  
   public func run(queue: DispatchQueue) throws {
     try handler.receiveMessage(initialMetadata: initialMetadata) { requestData in
-      // TODO(danielalm): Unify this behavior with `ServerSessionBidirectionalStreamingBase.run()`.
-      if let requestData = requestData {
-        do {
-          let requestMessage = try InputType(serializedData: requestData)
-          // to keep providers from blocking the server thread,
-          // we dispatch them to another queue.
-          queue.async {
-            do {
-              try self.providerBlock(requestMessage, self)
-              try self.handler.sendStatus(statusCode: self.statusCode,
-                                          statusMessage: self.statusMessage,
-                                          trailingMetadata: self.trailingMetadata,
-                                          completion: nil)
-            } catch {
-              print("error: \(error)")
-            }
+      queue.async {
+        var responseStatus: ServerStatus?
+        if let requestData = requestData {
+          do {
+            let requestMessage = try InputType(serializedData: requestData)
+            try self.providerBlock(requestMessage, self)
+          } catch {
+            responseStatus = (error as? ServerStatus) ?? .processingError
           }
-        } catch {
-          print("error: \(error)")
+        } else {
+          print("ServerSessionServerStreamingBase.run empty request data")
+          responseStatus = .noRequestData
+        }
+        
+        if let responseStatus = responseStatus {
+          // Error encountered, notify the client.
+          do {
+            try self.handler.sendStatus(responseStatus)
+          } catch {
+            print("ServerSessionServerStreamingBase.run error sending status: \(error)")
+          }
         }
       }
     }
@@ -64,12 +66,16 @@ open class ServerSessionServerStreamingBase<InputType: Message, OutputType: Mess
 /// and stores sent values for later verification.
 open class ServerSessionServerStreamingTestStub<OutputType: Message>: ServerSessionTestStub, ServerSessionServerStreaming {
   open var outputs: [OutputType] = []
+  open var status: ServerStatus?
 
   open func send(_ message: OutputType, completion _: @escaping (Error?) -> Void) throws {
     outputs.append(message)
   }
 
-  open func close() throws {}
+  open func close(withStatus status: ServerStatus, completion: ((CallResult) -> Void)?) throws {
+    self.status = status
+    completion?(.fakeOK)
+  }
 
   open func waitForSendOperationsToFinish() {}
 }

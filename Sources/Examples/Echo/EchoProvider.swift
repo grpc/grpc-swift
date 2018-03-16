@@ -38,6 +38,7 @@ class EchoProvider: Echo_EchoProvider {
       }
     }
     session.waitForSendOperationsToFinish()
+    try session.close(withStatus: .ok, completion: nil)
   }
 
   // collect collects a sequence of messages and returns them concatenated when the caller closes.
@@ -55,7 +56,7 @@ class EchoProvider: Echo_EchoProvider {
     }
     var response = Echo_EchoResponse()
     response.text = "Swift echo collect: " + parts.joined(separator: " ")
-    try session.sendAndClose(response)
+    try session.sendAndClose(response: response, status: .ok, completion: nil)
   }
 
   // update streams back messages as they are received in an input stream.
@@ -79,6 +80,6 @@ class EchoProvider: Echo_EchoProvider {
       }
     }
     session.waitForSendOperationsToFinish()
-    try session.close()
+    try session.close(withStatus: .ok, completion: nil)
   }
 }

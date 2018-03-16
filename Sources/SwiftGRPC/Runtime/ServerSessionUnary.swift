@@ -21,6 +21,8 @@ import SwiftProtobuf
 public protocol ServerSessionUnary: ServerSession {}
 
 open class ServerSessionUnaryBase<InputType: Message, OutputType: Message>: ServerSessionBase, ServerSessionUnary {
+  public typealias SentType = OutputType
+  
   public typealias ProviderBlock = (InputType, ServerSessionUnaryBase) throws -> OutputType
   private var providerBlock: ProviderBlock
 
@@ -29,31 +31,30 @@ open class ServerSessionUnaryBase<InputType: Message, OutputType: Message>: Serv
     super.init(handler: handler)
   }
   
-  public func run(queue _: DispatchQueue) throws {
+  public func run(queue: DispatchQueue) throws {
     try handler.receiveMessage(initialMetadata: initialMetadata) { requestData in
-      guard let requestData = requestData else {
-        print("ServerSessionUnaryBase.run empty request data")
-        do {
-          try self.handler.sendStatus(statusCode: .invalidArgument,
-                                      statusMessage: "no request data received")
-        } catch {
-          print("ServerSessionUnaryBase.run error sending status: \(error)")
+      queue.async {
+        let responseStatus: ServerStatus
+        if let requestData = requestData {
+          do {
+            let requestMessage = try InputType(serializedData: requestData)
+            let responseMessage = try self.providerBlock(requestMessage, self)
+            try self.handler.call.sendMessage(data: responseMessage.serializedData()) {
+              guard let error = $0
+                else { return }
+              print("ServerSessionUnaryBase.run error sending response: \(error)")
+            }
+            responseStatus = .ok
+          } catch {
+            responseStatus = (error as? ServerStatus) ?? .processingError
+          }
+        } else {
+          print("ServerSessionUnaryBase.run empty request data")
+          responseStatus = .noRequestData
         }
-        return
-      }
-      do {
-        let requestMessage = try InputType(serializedData: requestData)
-        let replyMessage = try self.providerBlock(requestMessage, self)
-        try self.handler.sendResponse(message: replyMessage.serializedData(),
-                                      statusCode: self.statusCode,
-                                      statusMessage: self.statusMessage,
-                                      trailingMetadata: self.trailingMetadata)
-      } catch {
-        print("ServerSessionUnaryBase.run error processing request: \(error)")
         
         do {
-          try self.handler.sendError((error as? ServerErrorStatus)
-            ?? ServerErrorStatus(statusCode: .unknown, statusMessage: "unknown error processing request"))
+          try self.handler.sendStatus(responseStatus)
         } catch {
           print("ServerSessionUnaryBase.run error sending status: \(error)")
         }

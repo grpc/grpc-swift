@@ -33,22 +33,29 @@ open class ServerSessionBidirectionalStreamingBase<InputType: Message, OutputTyp
     self.providerBlock = providerBlock
     super.init(handler: handler)
   }
-
-  public func close() throws {
-    let sem = DispatchSemaphore(value: 0)
-    try handler.sendStatus(statusCode: statusCode,
-                           statusMessage: statusMessage,
-                           trailingMetadata: trailingMetadata) { _ in sem.signal() }
-    _ = sem.wait()
-  }
-
+  
   public func run(queue: DispatchQueue) throws {
-    try handler.sendMetadata(initialMetadata: initialMetadata) { _ in
+    try handler.sendMetadata(initialMetadata: initialMetadata) { success in
       queue.async {
-        do {
-          try self.providerBlock(self)
-        } catch {
-          print("error \(error)")
+        var responseStatus: ServerStatus?
+        if success {
+          do {
+            try self.providerBlock(self)
+          } catch {
+            responseStatus = (error as? ServerStatus) ?? .processingError
+          }
+        } else {
+          print("ServerSessionBidirectionalStreamingBase.run sending initial metadata failed")
+          responseStatus = .sendingInitialMetadataFailed
+        }
+        
+        if let responseStatus = responseStatus {
+          // Error encountered, notify the client.
+          do {
+            try self.handler.sendStatus(responseStatus)
+          } catch {
+            print("ServerSessionBidirectionalStreamingBase.run error sending status: \(error)")
+          }
         }
       }
     }
@@ -60,6 +67,7 @@ open class ServerSessionBidirectionalStreamingBase<InputType: Message, OutputTyp
 open class ServerSessionBidirectionalStreamingTestStub<InputType: Message, OutputType: Message>: ServerSessionTestStub, ServerSessionBidirectionalStreaming {
   open var inputs: [InputType] = []
   open var outputs: [OutputType] = []
+  open var status: ServerStatus?
 
   open func receive() throws -> InputType? {
     defer { inputs.removeFirst() }
@@ -75,7 +83,10 @@ open class ServerSessionBidirectionalStreamingTestStub<InputType: Message, Outpu
     outputs.append(message)
   }
 
-  open func close() throws {}
+  open func close(withStatus status: ServerStatus, completion: ((CallResult) -> Void)?) throws {
+    self.status = status
+    completion?(.fakeOK)
+  }
 
   open func waitForSendOperationsToFinish() {}
 }

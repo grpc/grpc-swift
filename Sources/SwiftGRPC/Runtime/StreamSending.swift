@@ -33,3 +33,9 @@ extension StreamSending {
     call.messageQueueEmpty.wait()
   }
 }
+
+extension StreamSending where Self: ServerSessionBase {
+  public func close(withStatus status: ServerStatus = .ok, completion: ((CallResult) -> Void)? = nil) throws {
+    try handler.sendStatus(status, completion: completion)
+  }
+}

@@ -21,5 +21,6 @@ XCTMain([
   testCase(ClientTimeoutTests.allTests),
   testCase(ConnectionFailureTests.allTests),
   testCase(EchoTests.allTests),
+  testCase(ServerThrowingTests.allTests),
   testCase(ServerTimeoutTests.allTests)
 ])
