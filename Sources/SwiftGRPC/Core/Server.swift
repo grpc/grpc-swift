@@ -21,6 +21,12 @@ import Foundation
 
 /// gRPC Server
 public class Server {
+  static let handlerCallTag = 101
+  
+  // These are sent by the CgRPC shim.
+  static let stopTag = 0
+  static let destroyTag = 1000
+  
   /// Pointer to underlying C representation
   private let underlyingServer: UnsafeMutableRawPointer
 
@@ -70,13 +76,13 @@ public class Server {
       while running {
         do {
           let handler = Handler(underlyingServer: self.underlyingServer)
-          try handler.requestCall(tag: 101)
+          try handler.requestCall(tag: Server.handlerCallTag)
 
           // block while waiting for an incoming request
           let event = self.completionQueue.wait(timeout: 600)
 
           if event.type == .complete {
-            if event.tag == 101 {
+            if event.tag == Server.handlerCallTag {
               // run the handler and remove it when it finishes
               if event.success != 0 {
                 // hold onto the handler while it runs
@@ -95,7 +101,7 @@ public class Server {
                 // call the handler function on the server thread
                 handlerFunction(handler)
               }
-            } else if event.tag == 0 || event.tag == 1000 {
+            } else if event.tag == Server.stopTag || event.tag == Server.destroyTag {
               running = false // exit the loop
             }
           } else if event.type == .queueTimeout {
