@@ -172,11 +172,3 @@ public class Handler {
                    completion: completion)
   }
 }
-
-extension Handler: Hashable {
-  public var hashValue: Int { return underlyingHandler.hashValue }
-  
-  public static func ==(A: Handler, B: Handler) -> Bool {
-    return A === B
-  }
-}
