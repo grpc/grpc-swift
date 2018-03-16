@@ -188,8 +188,8 @@ public class Call {
               let (nextMessage, nextCompletionHandler) = self.messageQueue.removeFirst()
               do {
                 try self.sendWithoutBlocking(data: nextMessage, completion: nextCompletionHandler)
-              } catch (let callError) {
-                nextCompletionHandler?(callError)
+              } catch {
+                nextCompletionHandler?(error)
               }
             } else {
               // otherwise, we are finished writing

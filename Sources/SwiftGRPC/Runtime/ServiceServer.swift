@@ -73,7 +73,7 @@ open class ServiceServer {
                                  statusMessage: "unknown method " + unwrappedMethod,
                                  trailingMetadata: Metadata())
         }
-      } catch (let error) {
+      } catch {
         print("Server error: \(error)")
       }
     }

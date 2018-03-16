@@ -47,7 +47,7 @@ open class ServerSessionBidirectionalStreamingBase<InputType: Message, OutputTyp
       queue.async {
         do {
           try self.providerBlock(self)
-        } catch (let error) {
+        } catch {
           print("error \(error)")
         }
       }

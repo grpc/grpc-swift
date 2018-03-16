@@ -99,14 +99,14 @@ func runTest(useSSL: Bool) {
   // start the server
   do {
     serverRunningSemaphore = try runServer(server: server)
-  } catch (let error) {
+  } catch {
     XCTFail("server error \(error)")
   }
 
   // run the client
   do {
     try runClient(useSSL: useSSL)
-  } catch (let error) {
+  } catch {
     XCTFail("client error \(error)")
   }
 
@@ -300,7 +300,7 @@ func runServer(server: Server) throws -> DispatchSemaphore {
       }
 
       requestCount += 1
-    } catch (let error) {
+    } catch {
       XCTFail("error \(error)")
     }
   }

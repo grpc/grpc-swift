@@ -48,7 +48,7 @@ class EchoProvider: Echo_EchoProvider {
         guard let request = try session.receive()
           else { break }  // End of stream
         parts.append(request.text)
-      } catch (let error) {
+      } catch {
         print("\(error)")
       }
     }
@@ -72,7 +72,7 @@ class EchoProvider: Echo_EchoProvider {
             print("update error: \(error)")
           }
         }
-      } catch (let error) {
+      } catch {
         print("\(error)")
         break
       }

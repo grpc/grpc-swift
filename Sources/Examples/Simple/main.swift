@@ -110,8 +110,8 @@ func server() throws {
                                       trailingMetadata: trailingMetadataToSend)
 
       print("------------------------------")
-    } catch (let callError) {
-      Swift.print("call error \(callError)")
+    } catch {
+      Swift.print("call error \(error)")
     }
   }
 

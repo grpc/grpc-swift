@@ -109,8 +109,8 @@ public class Server {
           } else if event.type == .queueShutdown {
             running = false
           }
-        } catch (let callError) {
-          print("server call error: \(callError)")
+        } catch {
+          print("server call error: \(error)")
           running = false
         }
       }

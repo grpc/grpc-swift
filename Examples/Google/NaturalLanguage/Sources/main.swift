@@ -55,7 +55,7 @@ if let provider = DefaultTokenProvider(scopes: scopes) {
       do {
         let result = try service.annotatetext(request)
         print("\(result)")
-      } catch (let error) {
+      } catch {
         print("ERROR: \(error)")
       }
     }

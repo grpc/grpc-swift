@@ -43,7 +43,7 @@ open class ServerSessionClientStreamingBase<InputType: Message, OutputType: Mess
       queue.async {
         do {
           try self.providerBlock(self)
-        } catch (let error) {
+        } catch {
           print("error \(error)")
         }
       }

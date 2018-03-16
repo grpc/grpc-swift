@@ -48,11 +48,11 @@ open class ServerSessionServerStreamingBase<InputType: Message, OutputType: Mess
                                           statusMessage: self.statusMessage,
                                           trailingMetadata: self.trailingMetadata,
                                           completion: nil)
-            } catch (let error) {
+            } catch {
               print("error: \(error)")
             }
           }
-        } catch (let error) {
+        } catch {
           print("error: \(error)")
         }
       }
