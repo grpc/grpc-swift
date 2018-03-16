@@ -66,6 +66,8 @@ class CompletionQueue {
 
   /// Mutex for synchronizing access to operationGroups
   private let operationGroupsMutex: Mutex = Mutex()
+  
+  private var hasBeenShutdown = false
 
   /// Initializes a CompletionQueue
   ///
@@ -90,7 +92,16 @@ class CompletionQueue {
   /// - Parameter operationGroup: the operation group to handle
   func register(_ operationGroup: OperationGroup) {
     operationGroupsMutex.synchronize {
-      operationGroups[operationGroup.tag] = operationGroup
+      if !hasBeenShutdown {
+        operationGroups[operationGroup.tag] = operationGroup
+      } else {
+        // The queue has been shut down already, so there's no spinloop to call the operation group's completion handler
+        // on. To guarantee that the completion handler gets called, we'll enqueue it right now.
+        DispatchQueue.global().async {
+          operationGroup.success = false
+          operationGroup.completion?(operationGroup)
+        }
+      }
     }
   }
 
@@ -124,6 +135,7 @@ class CompletionQueue {
           self.operationGroupsMutex.lock()
           let currentOperationGroups = self.operationGroups
           self.operationGroups = [:]
+          self.hasBeenShutdown = true
           self.operationGroupsMutex.unlock()
           
           for operationGroup in currentOperationGroups.values {
