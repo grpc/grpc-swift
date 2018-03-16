@@ -60,9 +60,6 @@ public class Call {
   /// Mutex for synchronizing message sending
   private let sendMutex: Mutex
 
-  /// Dispatch queue used for sending messages asynchronously
-  private let messageDispatchQueue: DispatchQueue = DispatchQueue.global()
-
   /// Initializes a Call representation
   ///
   /// - Parameter call: the underlying C representation
@@ -177,24 +174,20 @@ public class Call {
   private func sendWithoutBlocking(data: Data, completion: ((Error?) -> Void)?) throws {
     try perform(OperationGroup(call: self,
                                operations: [.sendMessage(ByteBuffer(data: data))]) { operationGroup in
-        // TODO(timburks, danielalm): Is the `async` dispatch here needed, and/or should we call the completion handler
-        // and leave `messageQueueEmpty` in the `async` block as well?
-        self.messageDispatchQueue.async {
-          // Always enqueue the next message, even if sending this one failed. This ensures that all send completion
-          // handlers are called eventually.
-          self.sendMutex.synchronize {
-            // if there are messages pending, send the next one
-            if self.messageQueue.count > 0 {
-              let (nextMessage, nextCompletionHandler) = self.messageQueue.removeFirst()
-              do {
-                try self.sendWithoutBlocking(data: nextMessage, completion: nextCompletionHandler)
-              } catch {
-                nextCompletionHandler?(error)
-              }
-            } else {
-              // otherwise, we are finished writing
-              self.writing = false
+        // Always enqueue the next message, even if sending this one failed. This ensures that all send completion
+        // handlers are called eventually.
+        self.sendMutex.synchronize {
+          // if there are messages pending, send the next one
+          if self.messageQueue.count > 0 {
+            let (nextMessage, nextCompletionHandler) = self.messageQueue.removeFirst()
+            do {
+              try self.sendWithoutBlocking(data: nextMessage, completion: nextCompletionHandler)
+            } catch {
+              nextCompletionHandler?(error)
             }
+          } else {
+            // otherwise, we are finished writing
+            self.writing = false
           }
         }
         completion?(operationGroup.success ? nil : CallError.unknown)
