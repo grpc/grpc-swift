@@ -8,7 +8,7 @@ all:
 	
 project:
 	swift package generate-xcodeproj
-	# Optional: set the generated project's indentation settings.
+# Optional: set the generated project's indentation settings.
 	-ruby fix-indentation-settings.rb
 
 test:	all
