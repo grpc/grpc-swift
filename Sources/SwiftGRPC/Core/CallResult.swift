@@ -42,20 +42,20 @@ public struct CallResult: CustomStringConvertible {
   }
   
   public var description: String {
-    var result = "status \(statusCode)"
+    var result = "\(success ? "successful" : "unsuccessful"), status \(statusCode)"
     if let statusMessage = self.statusMessage {
       result += ": " + statusMessage
     }
     if let resultData = self.resultData {
-      result += "\n"
+      result += "\nresultData: "
       result += resultData.description
     }
     if let initialMetadata = self.initialMetadata {
-      result += "\n"
+      result += "\ninitialMetadata: "
       result += initialMetadata.description
     }
     if let trailingMetadata = self.trailingMetadata {
-      result += "\n"
+      result += "\ntrailingMetadata: "
       result += trailingMetadata.description
     }
     return result

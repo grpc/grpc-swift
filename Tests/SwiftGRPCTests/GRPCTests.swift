@@ -69,7 +69,7 @@ let trailingServerMetadata =
     "11": "eleven",
     "12": "twelve"
 ]
-let steps = 10
+let steps = 100
 let hello = "/hello.unary"
 let helloServerStream = "/hello.server-stream"
 let helloBiDiStream = "/hello.bidi-stream"
@@ -133,13 +133,9 @@ func runClient(useSSL: Bool) throws {
   let channel: Channel
 
   if useSSL {
-    let certificateURL = URL(fileURLWithPath: "Tests/ssl.crt")
-    guard
-      let certificates = try? String(contentsOf: certificateURL, encoding: .utf8)
-      else {
-        return
-    }
-    channel = Channel(address: address, certificates: certificates, host: host)
+    channel = Channel(address: address,
+                      certificates: String(data: certificateForTests, encoding: .utf8)!,
+                      host: host)
   } else {
     channel = Channel(address: address, secure: false)
   }
@@ -218,7 +214,6 @@ func callServerStream(channel: Channel) throws {
       }
       messageSem.signal()
     }
-
     _ = messageSem.wait()
   }
 
@@ -356,6 +351,9 @@ func handleServerStream(requestHandler: Handler) throws {
       XCTAssertNil(error)
     }
     requestHandler.call.messageQueueEmpty.wait()
+    // FIXME(danielalm): For some (so far unknown) reason, this delay is required to prevent some sent messages to get
+    // dropped, even though we already queue messages that can't be sent right now.
+    Thread.sleep(forTimeInterval: 0.0001)
   }
 
   let trailingMetadataToSend = Metadata(trailingServerMetadata)
@@ -395,6 +393,9 @@ func handleBiDiStream(requestHandler: Handler) throws {
       XCTAssertNil(error)
     }
     requestHandler.call.messageQueueEmpty.wait()
+    // FIXME(danielalm): For some (so far unknown) reason, this delay is required to prevent some sent messages to get
+    // dropped, even though we already queue messages that can't be sent right now.
+    Thread.sleep(forTimeInterval: 0.0001)
   }
 
   let trailingMetadataToSend = Metadata(trailingServerMetadata)
