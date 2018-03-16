@@ -90,7 +90,7 @@ public class Server {
                   self.handlers.insert(handler)
                 }
                 // this will start the completion queue on a new thread
-                handler.completionQueue.runToCompletion(callbackQueue: dispatchQueue) {
+                handler.completionQueue.runToCompletion {
                   dispatchQueue.async {
                     self.handlersMutex.synchronize {
                       // release the handler when it finishes

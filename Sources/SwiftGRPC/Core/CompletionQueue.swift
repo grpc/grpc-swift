@@ -107,14 +107,12 @@ class CompletionQueue {
 
   /// Runs a completion queue and call a completion handler when finished
   ///
-  /// - Parameter callbackQueue: a DispatchQueue to use to call the completion handler
   /// - Parameter completion: a completion handler that is called when the queue stops running
-  func runToCompletion(callbackQueue: DispatchQueue = DispatchQueue.main,
-                       completion: (() -> Void)?) {
+  func runToCompletion(completion: (() -> Void)?) {
     // run the completion queue on a new background thread
     DispatchQueue.global().async {
       spinloop: while true {
-        let event = cgrpc_completion_queue_get_next_event(self.underlyingCompletionQueue, -1.0)
+        let event = cgrpc_completion_queue_get_next_event(self.underlyingCompletionQueue, 600)
         switch event.type {
         case GRPC_OP_COMPLETE:
           let tag = cgrpc_event_tag(event)
@@ -150,12 +148,8 @@ class CompletionQueue {
           break spinloop
         }
       }
-      if let completion = completion {
-        callbackQueue.async {
-          // when the queue stops running, call the queue completion handler
-          completion()
-        }
-      }
+      // when the queue stops running, call the queue completion handler
+      completion?()
     }
   }
 
