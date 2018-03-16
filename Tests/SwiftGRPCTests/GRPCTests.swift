@@ -209,7 +209,7 @@ func callServerStream(channel: Channel) throws {
 
   for _ in 0..<steps {
     let messageSem = DispatchSemaphore(value: 0)
-    try call.receiveMessage(completion: { callResult in
+    try call.receiveMessage { callResult in
       if let data = callResult.resultData {
         let messageString = String(data: data, encoding: .utf8)
         XCTAssertEqual(messageString, serverText)
@@ -217,7 +217,7 @@ func callServerStream(channel: Channel) throws {
         print("callServerStream unexpected result: \(callResult)")
       }
       messageSem.signal()
-    })
+    }
 
     _ = messageSem.wait()
   }
@@ -266,7 +266,7 @@ func callBiDiStream(channel: Channel) throws {
   // Receive pongs
   for _ in 0..<steps {
     let pongSem = DispatchSemaphore(value: 0)
-    try call.receiveMessage(completion: { callResult in
+    try call.receiveMessage { callResult in
       if let data = callResult.resultData {
         let messageString = String(data: data, encoding: .utf8)
         XCTAssertEqual(messageString, serverPong)
@@ -274,7 +274,7 @@ func callBiDiStream(channel: Channel) throws {
         print("callBiDiStream unexpected result: \(callResult)")
       }
       pongSem.signal()
-    })
+    }
     _ = pongSem.wait()
   }
 
@@ -332,9 +332,9 @@ func handleUnary(requestHandler: Handler, requestCount: Int) throws {
                                     trailingMetadata: trailingMetadataToSend)
   } else {
     let trailingMetadataToSend = Metadata(trailingServerMetadata)
-    try requestHandler.sendResponse(statusCode: oddStatusCode,
-                                    statusMessage: oddStatusMessage,
-                                    trailingMetadata: trailingMetadataToSend)
+    try requestHandler.sendStatus(statusCode: oddStatusCode,
+                                  statusMessage: oddStatusMessage,
+                                  trailingMetadata: trailingMetadataToSend)
   }
 }
 
@@ -352,9 +352,9 @@ func handleServerStream(requestHandler: Handler) throws {
 
   let replyMessage = serverText
   for _ in 0..<steps {
-    try requestHandler.sendResponse(message: replyMessage.data(using: .utf8)!, completion: { (error) in
+    try requestHandler.call.sendMessage(data: replyMessage.data(using: .utf8)!) { error in
       XCTAssertNil(error)
-    })
+    }
     requestHandler.call.messageQueueEmpty.wait()
   }
 
@@ -380,20 +380,20 @@ func handleBiDiStream(requestHandler: Handler) throws {
   // Receive remaining pings
   for _ in 0..<steps {
     let receiveSem = DispatchSemaphore(value: 0)
-    try requestHandler.receiveMessage(completion: { callStatus in
+    try requestHandler.call.receiveMessage { callStatus in
       let messageString = String(data: callStatus.resultData!, encoding: .utf8)
       XCTAssertEqual(messageString, clientPing)
       receiveSem.signal()
-    })
+    }
     _ = receiveSem.wait()
   }
 
   // Send back pongs
   let replyMessage = serverPong.data(using: .utf8)!
   for _ in 0..<steps {
-    try requestHandler.sendResponse(message: replyMessage, completion: { (error) in
+    try requestHandler.call.sendMessage(data: replyMessage) { error in
       XCTAssertNil(error)
-    })
+    }
     requestHandler.call.messageQueueEmpty.wait()
   }
 

@@ -83,6 +83,25 @@ public class Handler {
       throw CallError.callError(grpcCallError: error)
     }
   }
+  
+  /// Shuts down the handler's completion queue
+  public func shutdown() {
+    completionQueue.shutdown()
+  }
+  
+  /// Send initial metadata in response to a connection
+  ///
+  /// - Parameter initialMetadata: initial metadata to send
+  /// - Parameter completion: a completion handler to call after the metadata has been sent
+  public func sendMetadata(initialMetadata: Metadata,
+                           completion: ((Bool) -> Void)? = nil) throws {
+    let operations = OperationGroup(call: call,
+                                    operations: [.sendInitialMetadata(initialMetadata)],
+                                    completion: completion != nil
+                                      ? { operationGroup in completion?(operationGroup.success) }
+                                      : nil)
+    try call.perform(operations)
+  }
 
   /// Receive the message sent with a call
   ///
@@ -124,71 +143,6 @@ public class Handler {
     try call.perform(operations)
   }
 
-  /// Sends the response to a request
-  ///
-  /// - Parameter statusCode: status code to send
-  /// - Parameter statusMessage: status message to send
-  /// - Parameter trailingMetadata: trailing metadata to send
-  public func sendResponse(statusCode: StatusCode,
-                           statusMessage: String,
-                           trailingMetadata: Metadata) throws {
-    let operations = OperationGroup(call: call,
-                                    operations: [
-                                      .receiveCloseOnServer,
-                                      .sendStatusFromServer(statusCode, statusMessage, trailingMetadata)
-    ]) { operationGroup in
-      self.shutdown()
-    }
-    try call.perform(operations)
-  }
-
-  /// Shuts down the handler's completion queue
-  public func shutdown() {
-    completionQueue.shutdown()
-  }
-
-  /// Send initial metadata in response to a connection
-  ///
-  /// - Parameter initialMetadata: initial metadata to send
-  /// - Parameter completion: a completion handler to call after the metadata has been sent
-  public func sendMetadata(initialMetadata: Metadata,
-                           completion: ((Bool) -> Void)? = nil) throws {
-    let operations = OperationGroup(call: call,
-                                    operations: [.sendInitialMetadata(initialMetadata)],
-                                    completion: completion != nil
-                                      ? { operationGroup in completion?(operationGroup.success) }
-                                      : nil)
-    try call.perform(operations)
-  }
-  
-  /// Receive the message sent with a call
-  ///
-  /// - Parameter completion: a completion handler to call after the message has been received
-  /// - Returns: a tuple containing status codes and a message (if available)
-  public func receiveMessage(completion: @escaping (CallResult) -> Void) throws {
-    try call.receiveMessage(completion: completion)
-  }
-  
-  /// Sends the response to a request
-  ///
-  /// - Parameter message: the message to send
-  /// - Parameter completion: a completion handler to call after the response has been sent
-  public func sendResponse(message: Data,
-                           completion: ((Error?) -> Void)? = nil) throws {
-    try call.sendMessage(data: message, completion: completion)
-  }
-  
-  /// Recognize when the client has closed a request
-  ///
-  /// - Parameter completion: a completion handler to call after request has been closed
-  public func receiveClose(completion: @escaping (Bool) -> Void) throws {
-    let operations = OperationGroup(call: call,
-                                    operations: [.receiveCloseOnServer]) { operationGroup in
-                                      completion(operationGroup.success)
-    }
-    try call.perform(operations)
-  }
-
   /// Send final status to the client
   ///
   /// - Parameter statusCode: status code to send
@@ -201,9 +155,8 @@ public class Handler {
                          completion: ((Bool) -> Void)? = nil) throws {
     let operations = OperationGroup(call: call,
                                     operations: [
-                                      .sendStatusFromServer(statusCode,
-                                                            statusMessage,
-                                                            trailingMetadata)
+                                      .receiveCloseOnServer,
+                                      .sendStatusFromServer(statusCode, statusMessage, trailingMetadata)
     ]) { operationGroup in
       completion?(operationGroup.success)
       self.shutdown()

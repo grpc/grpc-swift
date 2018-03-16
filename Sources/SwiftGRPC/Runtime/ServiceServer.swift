@@ -69,9 +69,9 @@ open class ServiceServer {
       do {
         if try !strongSelf.handleMethod(unwrappedMethod, handler: handler, queue: queue) {
           // handle unknown requests
-          try handler.sendResponse(statusCode: .unimplemented,
-                                   statusMessage: "unknown method " + unwrappedMethod,
-                                   trailingMetadata: Metadata())
+          try handler.sendStatus(statusCode: .unimplemented,
+                                 statusMessage: "unknown method " + unwrappedMethod,
+                                 trailingMetadata: Metadata())
         }
       } catch (let error) {
         print("Server error: \(error)")
