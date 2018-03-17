@@ -81,8 +81,8 @@ extension ServerTimeoutTests {
     call.waitForSendOperationsToFinish()
     
     do {
-      _ = try call.closeAndReceive()
-      XCTFail("should have thrown")
+      let result = try call.closeAndReceive()
+      XCTFail("should have thrown, instead received \(result)")
     } catch let receiveError {
       XCTAssertEqual(.unknown, (receiveError as! RPCError).callResult!.statusCode)
     }
@@ -97,7 +97,8 @@ extension ServerTimeoutTests {
       completionHandlerExpectation.fulfill()
     }
     
-    // TODO(danielalm): Why doesn't `call.receive()` throw once the call times out?
+    // FIXME(danielalm): Why does `call.receive()` essentially return "end of stream" once the call times out,
+    // rather than returning an error?
     XCTAssertNil(try! call.receive())
     
     waitForExpectations(timeout: defaultTimeout)
@@ -118,17 +119,9 @@ extension ServerTimeoutTests {
     }
     call.waitForSendOperationsToFinish()
     
-    // FIXME(danielalm): Why does `call.receive()` only throw on Linux (but not macOS) once the call times out?
-    #if os(Linux)
-    do {
-      _ = try call.receive()
-      XCTFail("should have thrown")
-    } catch let receiveError {
-      XCTAssertEqual(.unknown, (receiveError as! RPCError).callResult!.statusCode)
-    }
-    #else
+    // FIXME(danielalm): Why does `call.receive()` essentially return "end of stream" once the call times out,
+    // rather than returning an error?
     XCTAssertNil(try! call.receive())
-    #endif
     
     waitForExpectations(timeout: defaultTimeout)
   }
