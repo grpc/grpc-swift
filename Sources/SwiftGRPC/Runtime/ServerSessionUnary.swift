@@ -21,6 +21,8 @@ import SwiftProtobuf
 public protocol ServerSessionUnary: ServerSession {}
 
 open class ServerSessionUnaryBase<InputType: Message, OutputType: Message>: ServerSessionBase, ServerSessionUnary {
+  public typealias SentType = OutputType
+  
   public typealias ProviderBlock = (InputType, ServerSessionUnaryBase) throws -> OutputType
   private var providerBlock: ProviderBlock
 
@@ -28,16 +30,34 @@ open class ServerSessionUnaryBase<InputType: Message, OutputType: Message>: Serv
     self.providerBlock = providerBlock
     super.init(handler: handler)
   }
-
-  public func run(queue _: DispatchQueue) throws {
+  
+  public func run(queue: DispatchQueue) throws {
     try handler.receiveMessage(initialMetadata: initialMetadata) { requestData in
-      if let requestData = requestData {
-        let requestMessage = try InputType(serializedData: requestData)
-        let replyMessage = try self.providerBlock(requestMessage, self)
-        try self.handler.sendResponse(message: replyMessage.serializedData(),
-                                      statusCode: self.statusCode,
-                                      statusMessage: self.statusMessage,
-                                      trailingMetadata: self.trailingMetadata)
+      queue.async {
+        let responseStatus: ServerStatus
+        if let requestData = requestData {
+          do {
+            let requestMessage = try InputType(serializedData: requestData)
+            let responseMessage = try self.providerBlock(requestMessage, self)
+            try self.handler.call.sendMessage(data: responseMessage.serializedData()) {
+              guard let error = $0
+                else { return }
+              print("ServerSessionUnaryBase.run error sending response: \(error)")
+            }
+            responseStatus = .ok
+          } catch {
+            responseStatus = (error as? ServerStatus) ?? .processingError
+          }
+        } else {
+          print("ServerSessionUnaryBase.run empty request data")
+          responseStatus = .noRequestData
+        }
+        
+        do {
+          try self.handler.sendStatus(responseStatus)
+        } catch {
+          print("ServerSessionUnaryBase.run error sending status: \(error)")
+        }
       }
     }
   }

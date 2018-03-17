@@ -109,16 +109,13 @@ Group {
       callResult = result
       sem.signal()
     }
-    var running = true
-    while running {
-      do {
-        let responseMessage = try expandCall.receive()
-        print("expand received: \(responseMessage.text)")
-      } catch ClientError.endOfStream {
-        running = false
-      }
+    while true {
+      guard let responseMessage = try expandCall.receive()
+        else { break }  // End of stream
+      print("expand received: \(responseMessage.text)")
     }
     _ = sem.wait()
+
     if let statusCode = callResult?.statusCode {
       print("expand completed with code \(statusCode)")
     }
@@ -150,6 +147,7 @@ Group {
     let responseMessage = try collectCall.closeAndReceive()
     print("collect received: \(responseMessage.text)")
     _ = sem.wait()
+
     if let statusCode = callResult?.statusCode {
       print("collect completed with code \(statusCode)")
     }
@@ -182,17 +180,10 @@ Group {
     try updateCall.closeSend()
 
     while true {
-      do {
-        let responseMessage = try updateCall.receive()
-        print("update received: \(responseMessage.text)")
-      } catch ClientError.endOfStream {
-        break
-      } catch (let error) {
-        print("update receive error: \(error)")
-        break
-      }
+      guard let responseMessage = try updateCall.receive()
+        else { break }  // End of stream
+      print("update received: \(responseMessage.text)")
     }
-
     _ = sem.wait()
 
     if let statusCode = callResult?.statusCode {

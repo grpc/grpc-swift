@@ -25,55 +25,40 @@ public protocol ClientCallClientStreaming: ClientCall {
   // as the protocol would then have an associated type requirement (and become pretty much unusable in the process).
 }
 
-open class ClientCallClientStreamingBase<InputType: Message, OutputType: Message>: ClientCallBase, ClientCallClientStreaming {
+open class ClientCallClientStreamingBase<InputType: Message, OutputType: Message>: ClientCallBase, ClientCallClientStreaming, StreamSending {
+  public typealias SentType = InputType
+  
   /// Call this to start a call. Nonblocking.
   public func start(metadata: Metadata, completion: ((CallResult) -> Void)?) throws -> Self {
     try call.start(.clientStreaming, metadata: metadata, completion: completion)
     return self
   }
 
-  public func send(_ message: InputType, completion: @escaping (Error?) -> Void) throws {
-    let messageData = try message.serializedData()
-    try call.sendMessage(data: messageData, completion: completion)
-  }
-
-  public func closeAndReceive(completion: @escaping (OutputType?, ClientError?) -> Void) throws {
-    do {
-      try call.closeAndReceiveMessage { responseData in
-        if let responseData = responseData,
-          let response = try? OutputType(serializedData: responseData) {
-          completion(response, nil)
-        } else {
-          completion(nil, .invalidMessageReceived)
-        }
+  public func closeAndReceive(completion: @escaping (ResultOrRPCError<OutputType>) -> Void) throws {
+    try call.closeAndReceiveMessage { callResult in
+      guard let responseData = callResult.resultData else {
+        completion(.error(.callError(callResult))); return
       }
-    } catch (let error) {
-      throw error
+      if let response = try? OutputType(serializedData: responseData) {
+        completion(.result(response))
+      } else {
+        completion(.error(.invalidMessageReceived))
+      }
     }
   }
 
   public func closeAndReceive() throws -> OutputType {
-    var returnError: ClientError?
-    var returnResponse: OutputType!
+    var result: ResultOrRPCError<OutputType>?
     let sem = DispatchSemaphore(value: 0)
-    do {
-      try closeAndReceive { response, error in
-        returnResponse = response
-        returnError = error
-        sem.signal()
-      }
-      _ = sem.wait()
-    } catch (let error) {
-      throw error
+    try closeAndReceive {
+      result = $0
+      sem.signal()
     }
-    if let returnError = returnError {
-      throw returnError
+    _ = sem.wait()
+    switch result! {
+    case .result(let response): return response
+    case .error(let error): throw error
     }
-    return returnResponse
-  }
-
-  public func waitForSendOperationsToFinish() {
-    call.messageQueueEmpty.wait()
   }
 }
 
@@ -90,9 +75,13 @@ open class ClientCallClientStreamingTestStub<InputType: Message, OutputType: Mes
   open func send(_ message: InputType, completion _: @escaping (Error?) -> Void) throws {
     inputs.append(message)
   }
+  
+  open func send(_ message: InputType) throws {
+    inputs.append(message)
+  }
 
-  open func closeAndReceive(completion: @escaping (OutputType?, ClientError?) -> Void) throws {
-    completion(output!, nil)
+  open func closeAndReceive(completion: @escaping (ResultOrRPCError<OutputType>) -> Void) throws {
+    completion(.result(output!))
   }
 
   open func closeAndReceive() throws -> OutputType {

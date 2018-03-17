@@ -44,7 +44,7 @@ class EchoViewController: NSViewController, NSTextFieldDelegate {
       do {
         try callServer(address: addressField.stringValue,
                        host: "example.com")
-      } catch (let error) {
+      } catch {
         print(error)
       }
     }
@@ -54,7 +54,7 @@ class EchoViewController: NSViewController, NSTextFieldDelegate {
     if nowStreaming {
       do {
         try sendClose()
-      } catch (let error) {
+      } catch {
         print(error)
       }
     }
@@ -66,7 +66,7 @@ class EchoViewController: NSViewController, NSTextFieldDelegate {
     if nowStreaming {
       do {
         try sendClose()
-      } catch (let error) {
+      } catch {
         print(error)
       }
     }
@@ -76,7 +76,7 @@ class EchoViewController: NSViewController, NSTextFieldDelegate {
     if nowStreaming {
       do {
         try sendClose()
-      } catch (let error) {
+      } catch {
         print(error)
       }
     }
@@ -151,7 +151,7 @@ class EchoViewController: NSViewController, NSTextFieldDelegate {
           }
           try receiveExpandMessages()
           displayMessageSent(requestMessage.text)
-        } catch (let error) {
+        } catch {
           self.displayMessageReceived("No message received. \(error)")
         }
       }
@@ -169,7 +169,7 @@ class EchoViewController: NSViewController, NSTextFieldDelegate {
           }
         }
         try sendCollectMessage()
-      } catch (let error) {
+      } catch {
         self.displayMessageReceived("No message received. \(error)")
       }
     } else if callSelectButton.selectedSegment == 3 {
@@ -187,7 +187,7 @@ class EchoViewController: NSViewController, NSTextFieldDelegate {
           }
         }
         try sendUpdateMessage()
-      } catch (let error) {
+      } catch {
         self.displayMessageReceived("No message received. \(error)")
       }
     }

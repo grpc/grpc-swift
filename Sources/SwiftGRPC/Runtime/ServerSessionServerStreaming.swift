@@ -22,7 +22,9 @@ public protocol ServerSessionServerStreaming: ServerSession {
   func waitForSendOperationsToFinish()
 }
 
-open class ServerSessionServerStreamingBase<InputType: Message, OutputType: Message>: ServerSessionBase, ServerSessionServerStreaming {
+open class ServerSessionServerStreamingBase<InputType: Message, OutputType: Message>: ServerSessionBase, ServerSessionServerStreaming, StreamSending {
+  public typealias SentType = OutputType
+  
   public typealias ProviderBlock = (InputType, ServerSessionServerStreamingBase) throws -> Void
   private var providerBlock: ProviderBlock
 
@@ -30,39 +32,33 @@ open class ServerSessionServerStreamingBase<InputType: Message, OutputType: Mess
     self.providerBlock = providerBlock
     super.init(handler: handler)
   }
-
-  public func send(_ response: OutputType, completion: ((Error?) -> Void)?) throws {
-    try handler.sendResponse(message: response.serializedData(), completion: completion)
-  }
-
+  
   public func run(queue: DispatchQueue) throws {
     try handler.receiveMessage(initialMetadata: initialMetadata) { requestData in
-      // TODO(danielalm): Unify this behavior with `ServerSessionBidirectionalStreamingBase.run()`.
-      if let requestData = requestData {
-        do {
-          let requestMessage = try InputType(serializedData: requestData)
-          // to keep providers from blocking the server thread,
-          // we dispatch them to another queue.
-          queue.async {
-            do {
-              try self.providerBlock(requestMessage, self)
-              try self.handler.sendStatus(statusCode: self.statusCode,
-                                          statusMessage: self.statusMessage,
-                                          trailingMetadata: self.trailingMetadata,
-                                          completion: nil)
-            } catch (let error) {
-              print("error: \(error)")
-            }
+      queue.async {
+        var responseStatus: ServerStatus?
+        if let requestData = requestData {
+          do {
+            let requestMessage = try InputType(serializedData: requestData)
+            try self.providerBlock(requestMessage, self)
+          } catch {
+            responseStatus = (error as? ServerStatus) ?? .processingError
           }
-        } catch (let error) {
-          print("error: \(error)")
+        } else {
+          print("ServerSessionServerStreamingBase.run empty request data")
+          responseStatus = .noRequestData
+        }
+        
+        if let responseStatus = responseStatus {
+          // Error encountered, notify the client.
+          do {
+            try self.handler.sendStatus(responseStatus)
+          } catch {
+            print("ServerSessionServerStreamingBase.run error sending status: \(error)")
+          }
         }
       }
     }
-  }
-
-  public func waitForSendOperationsToFinish() {
-    handler.call.messageQueueEmpty.wait()
   }
 }
 
@@ -70,12 +66,20 @@ open class ServerSessionServerStreamingBase<InputType: Message, OutputType: Mess
 /// and stores sent values for later verification.
 open class ServerSessionServerStreamingTestStub<OutputType: Message>: ServerSessionTestStub, ServerSessionServerStreaming {
   open var outputs: [OutputType] = []
+  open var status: ServerStatus?
 
-  open func send(_ response: OutputType, completion _: ((Error?) -> Void)?) throws {
-    outputs.append(response)
+  open func send(_ message: OutputType, completion _: @escaping (Error?) -> Void) throws {
+    outputs.append(message)
   }
 
-  open func close() throws {}
+  open func send(_ message: OutputType) throws {
+    outputs.append(message)
+  }
+
+  open func close(withStatus status: ServerStatus, completion: (() -> Void)?) throws {
+    self.status = status
+    completion?()
+  }
 
   open func waitForSendOperationsToFinish() {}
 }

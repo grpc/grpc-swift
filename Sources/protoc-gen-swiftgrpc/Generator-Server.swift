@@ -141,15 +141,23 @@ extension Generator {
       println("class \(methodSessionName)TestStub: ServerSessionUnaryTestStub, \(methodSessionName) {}")
     }
   }
+  
+  private func printServerMethodSendAndClose(sentType: String) {
+    println("/// You MUST call one of these two methods once you are done processing the request.")
+    println("/// Close the connection and send a single result. Non-blocking.")
+    println("func sendAndClose(response: \(sentType), status: ServerStatus, completion: (() -> Void)?) throws")
+    println("/// Close the connection and send an error. Non-blocking.")
+    println("/// Use this method if you encountered an error that makes it impossible to send a response.")
+    println("/// Accordingly, it does not make sense to call this method with a status of `.ok`.")
+    println("func sendErrorAndClose(status: ServerStatus, completion: (() -> Void)?) throws")
+  }
 
   private func printServerMethodClientStreaming() {
     println("\(access) protocol \(methodSessionName): ServerSessionClientStreaming {")
     indent()
-    println("/// Receive a message. Blocks until a message is received or the client closes the connection.")
-    println("func receive() throws -> \(methodInputName)")
+    printStreamReceiveMethods(receivedType: methodInputName)
     println()
-    println("/// Send a response and close the connection.")
-    println("func sendAndClose(_ response: \(methodOutputName)) throws")
+    printServerMethodSendAndClose(sentType: methodOutputName)
     outdent()
     println("}")
     println()
@@ -160,11 +168,18 @@ extension Generator {
     }
   }
 
+  private func printServerMethodClose() {
+    println("/// Close the connection and send the status. Non-blocking.")
+    println("/// You MUST call this method once you are done processing the request.")
+    println("func close(withStatus status: ServerStatus, completion: (() -> Void)?) throws")
+  }
+  
   private func printServerMethodServerStreaming() {
     println("\(access) protocol \(methodSessionName): ServerSessionServerStreaming {")
     indent()
-    println("/// Send a message. Nonblocking.")
-    println("func send(_ response: \(methodOutputName), completion: ((Error?) -> Void)?) throws")
+    printStreamSendMethods(sentType: methodOutputName)
+    println()
+    printServerMethodClose()
     outdent()
     println("}")
     println()
@@ -178,14 +193,11 @@ extension Generator {
   private func printServerMethodBidirectional() {
     println("\(access) protocol \(methodSessionName): ServerSessionBidirectionalStreaming {")
     indent()
-    println("/// Receive a message. Blocks until a message is received or the client closes the connection.")
-    println("func receive() throws -> \(methodInputName)")
+    printStreamReceiveMethods(receivedType: methodInputName)
     println()
-    println("/// Send a message. Nonblocking.")
-    println("func send(_ response: \(methodOutputName), completion: ((Error?) -> Void)?) throws")
+    printStreamSendMethods(sentType: methodOutputName)
     println()
-    println("/// Close a connection. Blocks until the connection is closed.")
-    println("func close() throws")
+    printServerMethodClose()
     outdent()
     println("}")
     println()

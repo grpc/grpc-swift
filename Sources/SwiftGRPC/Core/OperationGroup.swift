@@ -29,10 +29,11 @@ class OperationGroup {
   let tag: Int64
 
   /// The call associated with the operation group. Retained while the operations are running.
+  // FIXME(danielalm): Is this property needed?
   private let call: Call
 
   /// An array of operation objects that are passed into the initializer.
-  private let operations: [Operation]
+  let operations: [Operation]
 
   /// An array of observers used to watch the operation
   private var underlyingObservers: [UnsafeMutableRawPointer] = []
@@ -41,10 +42,13 @@ class OperationGroup {
   let underlyingOperations: UnsafeMutableRawPointer?
 
   /// Completion handler that is called when the group completes
-  let completion: ((OperationGroup) throws -> Void)?
+  let completion: ((OperationGroup) -> Void)?
 
   /// Indicates that the OperationGroup completed successfully
   var success = false
+  
+  fileprivate var cachedInitialMetadata: Metadata?
+  fileprivate var cachedTrailingMetadata: Metadata?
 
   /// Creates the underlying observer needed to run an operation
   ///
@@ -81,7 +85,7 @@ class OperationGroup {
   /// - Parameter operations: an array of operations
   init(call: Call,
        operations: [Operation],
-       completion: ((OperationGroup) throws -> Void)? = nil) {
+       completion: ((OperationGroup) -> Void)? = nil) {
     self.call = call
     self.operations = operations
     self.completion = completion
@@ -107,7 +111,8 @@ class OperationGroup {
     cgrpc_operations_destroy(underlyingOperations)
   }
 
-  /// WARNING: The following assumes that at most one operation of each type is in the group.
+  /// WARNING: The following assumes that at most one operation of each type is in the group,
+  ///          and these methods must ONLY be called after the operation has been returned to a completion queue.
 
   /// Gets the message that was received
   ///
@@ -131,10 +136,15 @@ class OperationGroup {
   ///
   /// - Returns: metadata
   func receivedInitialMetadata() -> Metadata? {
+    if let cachedInitialMetadata = self.cachedInitialMetadata {
+      return cachedInitialMetadata
+    }
     for (i, operation) in operations.enumerated() {
       switch operation {
       case .receiveInitialMetadata:
-        return Metadata(underlyingArray: cgrpc_observer_recv_initial_metadata_get_metadata(underlyingObservers[i]))
+        cachedInitialMetadata = Metadata(
+          underlyingArray: cgrpc_observer_recv_initial_metadata_get_metadata(underlyingObservers[i]))
+        return cachedInitialMetadata!
       default:
         continue
       }
@@ -164,7 +174,7 @@ class OperationGroup {
     for (i, operation) in operations.enumerated() {
       switch operation {
       case .receiveStatusOnClient:
-        // We actually know that this method will never return nil, so we can forcibly the result. (Also below.)
+        // We actually know that this method will never return nil, so we can forcibly unwrap the result. (Also below.)
         let string = cgrpc_observer_recv_status_on_client_copy_status_details(underlyingObservers[i])!
         defer { cgrpc_free_copied_string(string) }
         return String(cString: string, encoding: String.Encoding.utf8)
@@ -179,10 +189,15 @@ class OperationGroup {
   ///
   /// - Returns: metadata
   func receivedTrailingMetadata() -> Metadata? {
+    if let cachedTrailingMetadata = self.cachedTrailingMetadata {
+      return cachedTrailingMetadata
+    }
     for (i, operation) in operations.enumerated() {
       switch operation {
       case .receiveStatusOnClient:
-        return Metadata(underlyingArray: cgrpc_observer_recv_status_on_client_get_metadata(underlyingObservers[i]))
+        cachedTrailingMetadata = Metadata(
+          underlyingArray: cgrpc_observer_recv_status_on_client_get_metadata(underlyingObservers[i]))
+        return cachedTrailingMetadata!
       default:
         continue
       }

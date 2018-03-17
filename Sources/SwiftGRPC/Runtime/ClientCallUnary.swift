@@ -22,7 +22,7 @@ public protocol ClientCallUnary: ClientCall {}
 
 open class ClientCallUnaryBase<InputType: Message, OutputType: Message>: ClientCallBase, ClientCallUnary {
   /// Run the call. Blocks until the reply is received.
-  /// - Throws: `BinaryEncodingError` if encoding fails. `CallError` if fails to call. `ClientError` if receives no response.
+  /// - Throws: `BinaryEncodingError` if encoding fails. `CallError` if fails to call. `RPCError` if receives no response.
   public func run(request: InputType, metadata: Metadata) throws -> OutputType {
     let sem = DispatchSemaphore(value: 0)
     var returnCallResult: CallResult!
@@ -36,7 +36,7 @@ open class ClientCallUnaryBase<InputType: Message, OutputType: Message>: ClientC
     if let returnResponse = returnResponse {
       return returnResponse
     } else {
-      throw ClientError.error(c: returnCallResult)
+      throw RPCError.callError(returnCallResult)
     }
   }
 
@@ -47,9 +47,8 @@ open class ClientCallUnaryBase<InputType: Message, OutputType: Message>: ClientC
                     completion: @escaping ((OutputType?, CallResult) -> Void)) throws -> Self {
     let requestData = try request.serializedData()
     try call.start(.unary, metadata: metadata, message: requestData) { callResult in
-      if let responseData = callResult.resultData,
-        let response = try? OutputType(serializedData: responseData) {
-        completion(response, callResult)
+      if let responseData = callResult.resultData {
+        completion(try? OutputType(serializedData: responseData), callResult)
       } else {
         completion(nil, callResult)
       }

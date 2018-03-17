@@ -105,13 +105,11 @@ func server() throws {
         "2": "two"
       ])
       try requestHandler.sendResponse(message: replyMessage.data(using: .utf8)!,
-                                      statusCode: .ok,
-                                      statusMessage: "OK",
-                                      trailingMetadata: trailingMetadataToSend)
+                                      status: ServerStatus(code: .ok, message: "OK", trailingMetadata: trailingMetadataToSend))
 
       print("------------------------------")
-    } catch (let callError) {
-      Swift.print("call error \(callError)")
+    } catch {
+      Swift.print("call error \(error)")
     }
   }
 

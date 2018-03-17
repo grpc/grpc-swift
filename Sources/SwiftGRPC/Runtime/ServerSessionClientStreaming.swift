@@ -20,7 +20,9 @@ import SwiftProtobuf
 
 public protocol ServerSessionClientStreaming: ServerSession {}
 
-open class ServerSessionClientStreamingBase<InputType: Message, OutputType: Message>: ServerSessionBase, ServerSessionClientStreaming {
+open class ServerSessionClientStreamingBase<InputType: Message, OutputType: Message>: ServerSessionBase, ServerSessionClientStreaming, StreamReceiving {
+  public typealias ReceivedType = InputType
+  
   public typealias ProviderBlock = (ServerSessionClientStreamingBase) throws -> Void
   private var providerBlock: ProviderBlock
 
@@ -28,37 +30,38 @@ open class ServerSessionClientStreamingBase<InputType: Message, OutputType: Mess
     self.providerBlock = providerBlock
     super.init(handler: handler)
   }
-
-  public func receive() throws -> InputType {
-    let sem = DispatchSemaphore(value: 0)
-    var requestMessage: InputType?
-    try handler.receiveMessage { requestData in
-      if let requestData = requestData {
-        requestMessage = try? InputType(serializedData: requestData)
-      }
-      sem.signal()
-    }
-    _ = sem.wait()
-    if requestMessage == nil {
-      throw ServerError.endOfStream
-    }
-    return requestMessage!
+  
+  public func sendAndClose(response: OutputType, status: ServerStatus = .ok,
+                           completion: (() -> Void)? = nil) throws {
+    try handler.sendResponse(message: response.serializedData(), status: status, completion: completion)
   }
 
-  public func sendAndClose(_ response: OutputType) throws {
-    try handler.sendResponse(message: response.serializedData(),
-                             statusCode: statusCode,
-                             statusMessage: statusMessage,
-                             trailingMetadata: trailingMetadata)
+  public func sendErrorAndClose(status: ServerStatus, completion: (() -> Void)? = nil) throws {
+    try handler.sendStatus(status, completion: completion)
   }
-
+  
   public func run(queue: DispatchQueue) throws {
-    try handler.sendMetadata(initialMetadata: initialMetadata) { _ in
+    try handler.sendMetadata(initialMetadata: initialMetadata) { success in
       queue.async {
-        do {
-          try self.providerBlock(self)
-        } catch (let error) {
-          print("error \(error)")
+        var responseStatus: ServerStatus?
+        if success {
+          do {
+            try self.providerBlock(self)
+          } catch {
+            responseStatus = (error as? ServerStatus) ?? .processingError
+          }
+        } else {
+          print("ServerSessionClientStreamingBase.run sending initial metadata failed")
+          responseStatus = .sendingInitialMetadataFailed
+        }
+        
+        if let responseStatus = responseStatus {
+          // Error encountered, notify the client.
+          do {
+            try self.handler.sendStatus(responseStatus)
+          } catch {
+            print("ServerSessionClientStreamingBase.run error sending status: \(error)")
+          }
         }
       }
     }
@@ -70,19 +73,27 @@ open class ServerSessionClientStreamingBase<InputType: Message, OutputType: Mess
 open class ServerSessionClientStreamingTestStub<InputType: Message, OutputType: Message>: ServerSessionTestStub, ServerSessionClientStreaming {
   open var inputs: [InputType] = []
   open var output: OutputType?
+  open var status: ServerStatus?
 
-  open func receive() throws -> InputType {
-    if let input = inputs.first {
-      inputs.removeFirst()
-      return input
-    } else {
-      throw ServerError.endOfStream
-    }
+  open func receive() throws -> InputType? {
+    defer { if !inputs.isEmpty { inputs.removeFirst() } }
+    return inputs.first
+  }
+  
+  open func receive(completion: @escaping (ResultOrRPCError<InputType?>) -> Void) throws {
+    completion(.result(try self.receive()))
   }
 
-  open func sendAndClose(_ response: OutputType) throws {
-    output = response
+  open func sendAndClose(response: OutputType, status: ServerStatus, completion: (() -> Void)?) throws {
+    self.output = response
+    self.status = status
+    completion?()
   }
 
+  open func sendErrorAndClose(status: ServerStatus, completion: (() -> Void)? = nil) throws {
+    self.status = status
+    completion?()
+  }
+  
   open func close() throws {}
 }

@@ -30,113 +30,6 @@ public enum CallWarning: Error {
   case blocked
 }
 
-public enum CallError: Error {
-  case ok
-  case unknown
-  case notOnServer
-  case notOnClient
-  case alreadyAccepted
-  case alreadyInvoked
-  case notInvoked
-  case alreadyFinished
-  case tooManyOperations
-  case invalidFlags
-  case invalidMetadata
-  case invalidMessage
-  case notServerCompletionQueue
-  case batchTooBig
-  case payloadTypeMismatch
-
-  static func callError(grpcCallError error: grpc_call_error) -> CallError {
-    switch error {
-    case GRPC_CALL_OK:
-      return .ok
-    case GRPC_CALL_ERROR:
-      return .unknown
-    case GRPC_CALL_ERROR_NOT_ON_SERVER:
-      return .notOnServer
-    case GRPC_CALL_ERROR_NOT_ON_CLIENT:
-      return .notOnClient
-    case GRPC_CALL_ERROR_ALREADY_ACCEPTED:
-      return .alreadyAccepted
-    case GRPC_CALL_ERROR_ALREADY_INVOKED:
-      return .alreadyInvoked
-    case GRPC_CALL_ERROR_NOT_INVOKED:
-      return .notInvoked
-    case GRPC_CALL_ERROR_ALREADY_FINISHED:
-      return .alreadyFinished
-    case GRPC_CALL_ERROR_TOO_MANY_OPERATIONS:
-      return .tooManyOperations
-    case GRPC_CALL_ERROR_INVALID_FLAGS:
-      return .invalidFlags
-    case GRPC_CALL_ERROR_INVALID_METADATA:
-      return .invalidMetadata
-    case GRPC_CALL_ERROR_INVALID_MESSAGE:
-      return .invalidMessage
-    case GRPC_CALL_ERROR_NOT_SERVER_COMPLETION_QUEUE:
-      return .notServerCompletionQueue
-    case GRPC_CALL_ERROR_BATCH_TOO_BIG:
-      return .batchTooBig
-    case GRPC_CALL_ERROR_PAYLOAD_TYPE_MISMATCH:
-      return .payloadTypeMismatch
-    default:
-      return .unknown
-    }
-  }
-}
-
-public struct CallResult: CustomStringConvertible {
-  public let statusCode: StatusCode
-  public let statusMessage: String?
-  public let resultData: Data?
-  public let initialMetadata: Metadata?
-  public let trailingMetadata: Metadata?
-
-  fileprivate init(_ op: OperationGroup) {
-    if op.success {
-      if let statusCodeRawValue = op.receivedStatusCode() {
-        if let statusCode = StatusCode(rawValue: statusCodeRawValue) {
-          self.statusCode = statusCode
-        } else {
-          statusCode = .unknown
-        }
-      } else {
-        statusCode = .ok
-      }
-      statusMessage = op.receivedStatusMessage()
-      resultData = op.receivedMessage()?.data()
-      initialMetadata = op.receivedInitialMetadata()
-      trailingMetadata = op.receivedTrailingMetadata()
-    } else {
-      statusCode = .unknown
-      statusMessage = nil
-      resultData = nil
-      initialMetadata = nil
-      trailingMetadata = nil
-    }
-  }
-
-  public var description: String {
-    var result = "status \(statusCode)"
-    if let statusMessage = self.statusMessage {
-      result += ": " + statusMessage
-    }
-    if let resultData = self.resultData {
-      result += "\n"
-      result += resultData.description
-    }
-    if let initialMetadata = self.initialMetadata {
-      result += "\n"
-      result += initialMetadata.description
-    }
-    if let trailingMetadata = self.trailingMetadata {
-      result += "\n"
-      result += trailingMetadata.description
-    }
-    return result
-  }
-}
-
 /// A gRPC API call
 public class Call {
   /// Shared mutex for synchronizing calls to cgrpc_call_perform()
@@ -166,9 +59,6 @@ public class Call {
 
   /// Mutex for synchronizing message sending
   private let sendMutex: Mutex
-
-  /// Dispatch queue used for sending messages asynchronously
-  private let messageDispatchQueue: DispatchQueue = DispatchQueue.global()
 
   /// Initializes a Call representation
   ///
@@ -209,6 +99,8 @@ public class Call {
   /// - Parameter metadata: metadata to send with the call
   /// - Parameter message: data containing the message to send (.unary and .serverStreaming only)
   /// - Parameter completion: a block to call with call results
+  ///     The argument to `completion` will always have `.success = true`
+  ///     because operations containing `.receiveCloseOnClient` always succeed.
   /// - Throws: `CallError` if fails to call.
   public func start(_ style: CallStyle,
                     metadata: Metadata,
@@ -240,11 +132,18 @@ public class Call {
         .receiveStatusOnClient,
       ]
     case .clientStreaming, .bidiStreaming:
-      operations = [
-        .sendInitialMetadata(metadata.copy()),
-        .receiveInitialMetadata,
-        .receiveStatusOnClient,
-      ]
+      try perform(OperationGroup(call: self,
+                                 operations: [
+                                  .sendInitialMetadata(metadata.copy()),
+                                  .receiveInitialMetadata
+                                  ],
+                                 completion: nil))
+      try perform(OperationGroup(call: self,
+                                 operations: [.receiveStatusOnClient],
+                                 completion: completion != nil
+                                  ? { op in completion?(CallResult(op)) }
+                                  : nil))
+      return
     }
     try perform(OperationGroup(call: self,
                                operations: operations,
@@ -258,7 +157,6 @@ public class Call {
   /// Parameter data: the message data to send
   /// - Throws: `CallError` if fails to call. `CallWarning` if blocked.
   public func sendMessage(data: Data, completion: ((Error?) -> Void)? = nil) throws {
-    messageQueueEmpty.enter()
     try sendMutex.synchronize {
       if writing {
         if let messageQueueMaxLength = Call.messageQueueMaxLength,
@@ -269,32 +167,30 @@ public class Call {
       } else {
         writing = true
         try sendWithoutBlocking(data: data, completion: completion)
-      }  
+      }
+      messageQueueEmpty.enter()
     }
   }
 
   /// helper for sending queued messages
   private func sendWithoutBlocking(data: Data, completion: ((Error?) -> Void)?) throws {
-    try perform(OperationGroup(call: self,
-                               operations: [.sendMessage(ByteBuffer(data: data))]) { operationGroup in
-        // TODO(timburks, danielalm): Is the `async` dispatch here needed, and/or should we call the completion handler
-        // and leave `messageQueueEmpty` in the `async` block as well?
-        self.messageDispatchQueue.async {
-          // Always enqueue the next message, even if sending this one failed. This ensures that all send completion
-          // handlers are called eventually.
-          self.sendMutex.synchronize {
-            // if there are messages pending, send the next one
-            if self.messageQueue.count > 0 {
-              let (nextMessage, nextCompletionHandler) = self.messageQueue.removeFirst()
-              do {
-                try self.sendWithoutBlocking(data: nextMessage, completion: nextCompletionHandler)
-              } catch (let callError) {
-                nextCompletionHandler?(callError)
-              }
-            } else {
-              // otherwise, we are finished writing
-              self.writing = false
+    try perform(OperationGroup(
+      call: self,
+      operations: [.sendMessage(ByteBuffer(data: data))]) { operationGroup in
+        // Always enqueue the next message, even if sending this one failed. This ensures that all send completion
+        // handlers are called eventually.
+        self.sendMutex.synchronize {
+          // if there are messages pending, send the next one
+          if self.messageQueue.count > 0 {
+            let (nextMessage, nextCompletionHandler) = self.messageQueue.removeFirst()
+            do {
+              try self.sendWithoutBlocking(data: nextMessage, completion: nextCompletionHandler)
+            } catch {
+              nextCompletionHandler?(error)
             }
+          } else {
+            // otherwise, we are finished writing
+            self.writing = false
           }
         }
         completion?(operationGroup.success ? nil : CallError.unknown)
@@ -304,27 +200,17 @@ public class Call {
 
   // Receive a message over a streaming connection.
   /// - Throws: `CallError` if fails to call.
-  public func closeAndReceiveMessage(completion: @escaping (Data?) throws -> Void) throws {
+  public func closeAndReceiveMessage(completion: @escaping (CallResult) -> Void) throws {
     try perform(OperationGroup(call: self, operations: [.sendCloseFromClient, .receiveMessage]) { operationGroup in
-      if operationGroup.success {
-        if let messageBuffer = operationGroup.receivedMessage() {
-          try completion(messageBuffer.data())
-        } else {
-          try completion(nil) // an empty response signals the end of a connection
-        }
-      }
+      completion(CallResult(operationGroup))
     })
   }
 
   // Receive a message over a streaming connection.
   /// - Throws: `CallError` if fails to call.
-  public func receiveMessage(completion: @escaping (Data?) throws -> Void) throws {
+  public func receiveMessage(completion: @escaping (CallResult) -> Void) throws {
     try perform(OperationGroup(call: self, operations: [.receiveMessage]) { operationGroup in
-      if operationGroup.success {
-        try completion(operationGroup.receivedMessage()?.data())
-      } else {
-        try completion(nil)
-      }
+      completion(CallResult(operationGroup))
     })
   }
 

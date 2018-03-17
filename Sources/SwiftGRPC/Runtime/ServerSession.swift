@@ -18,34 +18,54 @@ import Dispatch
 import Foundation
 import SwiftProtobuf
 
+public struct ServerStatus: Error {
+  public let code: StatusCode
+  public let message: String
+  public let trailingMetadata: Metadata
+  
+  public init(code: StatusCode, message: String, trailingMetadata: Metadata = Metadata()) {
+    self.code = code
+    self.message = message
+    self.trailingMetadata = trailingMetadata
+  }
+  
+  public static let ok = ServerStatus(code: .ok, message: "OK")
+  public static let processingError = ServerStatus(code: .internalError, message: "unknown error processing request")
+  public static let noRequestData = ServerStatus(code: .invalidArgument, message: "no request data received")
+  public static let sendingInitialMetadataFailed = ServerStatus(code: .internalError, message: "sending initial metadata failed")
+}
+
 public protocol ServerSession: class {
   var requestMetadata: Metadata { get }
 
-  var statusCode: StatusCode { get set }
-  var statusMessage: String { get set }
   var initialMetadata: Metadata { get set }
-  var trailingMetadata: Metadata { get set }
+  
+  func cancel()
 }
 
 open class ServerSessionBase: ServerSession {
   public var handler: Handler
   public var requestMetadata: Metadata { return handler.requestMetadata }
 
-  public var statusCode: StatusCode = .ok
-  public var statusMessage: String = "OK"
   public var initialMetadata: Metadata = Metadata()
-  public var trailingMetadata: Metadata = Metadata()
+  
+  public var call: Call { return handler.call }
 
   public init(handler: Handler) {
     self.handler = handler
+  }
+  
+  public func cancel() {
+    call.cancel()
   }
 }
 
 open class ServerSessionTestStub: ServerSession {
   open var requestMetadata = Metadata()
 
-  open var statusCode = StatusCode.ok
-  open var statusMessage = "OK"
   open var initialMetadata = Metadata()
-  open var trailingMetadata = Metadata()
+
+  public init() {}
+  
+  open func cancel() {}
 }

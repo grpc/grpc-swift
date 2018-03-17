@@ -181,8 +181,8 @@ class Document: NSDocument {
               }
             }
           }
-        } catch (let callError) {
-          Swift.print("call error \(callError)")
+        } catch {
+          Swift.print("call error \(error)")
         }
         self.log("------------------------------")
         sleep(1)
@@ -241,8 +241,8 @@ class Document: NSDocument {
                                         trailingMetadata: trailingMetadataToSend)
 
         self.log("------------------------------")
-      } catch (let callError) {
-        Swift.print("call error \(callError)")
+      } catch {
+        Swift.print("call error \(error)")
       }
     }
 

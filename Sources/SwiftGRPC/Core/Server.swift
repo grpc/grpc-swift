@@ -21,17 +21,17 @@ import Foundation
 
 /// gRPC Server
 public class Server {
+  static let handlerCallTag = 101
+  
+  // These are sent by the CgRPC shim.
+  static let stopTag = 0
+  static let destroyTag = 1000
+  
   /// Pointer to underlying C representation
   private let underlyingServer: UnsafeMutableRawPointer
 
   /// Completion queue used for server operations
   let completionQueue: CompletionQueue
-
-  /// Active handlers
-  private var handlers = Set<Handler>()
-
-  /// Mutex for synchronizing access to handlers
-  private let handlersMutex: Mutex = Mutex()
 
   /// Optional callback when server stops serving
   public var onCompletion: (() -> Void)?
@@ -70,32 +70,33 @@ public class Server {
       while running {
         do {
           let handler = Handler(underlyingServer: self.underlyingServer)
-          try handler.requestCall(tag: 101)
+          try handler.requestCall(tag: Server.handlerCallTag)
 
           // block while waiting for an incoming request
           let event = self.completionQueue.wait(timeout: 600)
 
           if event.type == .complete {
-            if event.tag == 101 {
+            if event.tag == Server.handlerCallTag {
               // run the handler and remove it when it finishes
               if event.success != 0 {
                 // hold onto the handler while it runs
-                self.handlersMutex.synchronize {
-                  self.handlers.insert(handler)
-                }
+                var strongHandlerReference: Handler?
+                strongHandlerReference = handler
+                // To prevent the "Variable 'strongHandlerReference' was written to, but never read" warning.
+                _ = strongHandlerReference
                 // this will start the completion queue on a new thread
-                handler.completionQueue.runToCompletion(callbackQueue: dispatchQueue) {
+                handler.completionQueue.runToCompletion {
                   dispatchQueue.async {
-                    self.handlersMutex.synchronize {
-                      // release the handler when it finishes
-                      self.handlers.remove(handler)
-                    }
+                    // release the handler when it finishes
+                    strongHandlerReference = nil
                   }
                 }
-                // call the handler function on the server thread
-                handlerFunction(handler)
+                dispatchQueue.async {
+                  // dispatch the handler function on a separate thread
+                  handlerFunction(handler)
+                }
               }
-            } else if event.tag == 0 || event.tag == 1000 {
+            } else if event.tag == Server.stopTag || event.tag == Server.destroyTag {
               running = false // exit the loop
             }
           } else if event.type == .queueTimeout {
@@ -103,8 +104,8 @@ public class Server {
           } else if event.type == .queueShutdown {
             running = false
           }
-        } catch (let callError) {
-          print("server call error: \(callError)")
+        } catch {
+          print("server call error: \(error)")
           running = false
         }
       }

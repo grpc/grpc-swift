@@ -69,7 +69,7 @@ let trailingServerMetadata =
     "11": "eleven",
     "12": "twelve"
 ]
-let steps = 10
+let steps = 100
 let hello = "/hello.unary"
 let helloServerStream = "/hello.server-stream"
 let helloBiDiStream = "/hello.bidi-stream"
@@ -84,41 +84,29 @@ let eventStatusMessage = "Not Found"
 func runTest(useSSL: Bool) {
   gRPC.initialize()
 
-  let serverRunningSemaphore = DispatchSemaphore(value: 0)
+  var serverRunningSemaphore: DispatchSemaphore?
 
   // create the server
   let server: Server
   if useSSL {
-    let certificateURL = URL(fileURLWithPath: "Tests/ssl.crt")
-    let keyURL = URL(fileURLWithPath: "Tests/ssl.key")
-    guard
-      let certificate = try? String(contentsOf: certificateURL, encoding: .utf8),
-      let key = try? String(contentsOf: keyURL, encoding: .utf8)
-      else {
-        // FIXME: We don't want tests to silently pass just because the certificates can't be loaded.
-        return
-    }
     server = Server(address: address,
-                    key: key,
-                    certs: certificate)
+                    key: String(data: keyForTests, encoding: .utf8)!,
+                    certs: String(data: certificateForTests, encoding: .utf8)!)
   } else {
     server = Server(address: address)
   }
 
   // start the server
-  DispatchQueue.global().async {
-    do {
-      try runServer(server: server)
-    } catch (let error) {
-      XCTFail("server error \(error)")
-    }
-    serverRunningSemaphore.signal() // when the server exits, the test is finished
+  do {
+    serverRunningSemaphore = try runServer(server: server)
+  } catch {
+    XCTFail("server error \(error)")
   }
 
   // run the client
   do {
     try runClient(useSSL: useSSL)
-  } catch (let error) {
+  } catch {
     XCTFail("client error \(error)")
   }
 
@@ -126,7 +114,7 @@ func runTest(useSSL: Bool) {
   server.stop()
 
   // wait until the server has shut down
-  _ = serverRunningSemaphore.wait()
+  _ = serverRunningSemaphore!.wait()
 }
 
 func verify_metadata(_ metadata: Metadata, expected: [String: String], file: StaticString = #file, line: UInt = #line) {
@@ -145,14 +133,9 @@ func runClient(useSSL: Bool) throws {
   let channel: Channel
 
   if useSSL {
-    let certificateURL = URL(fileURLWithPath: "Tests/ssl.crt")
-    guard
-      let certificates = try? String(contentsOf: certificateURL, encoding: .utf8)
-      else {
-        return
-    }
-    let host = "example.com"
-    channel = Channel(address: address, certificates: certificates, host: host)
+    channel = Channel(address: address,
+                      certificates: String(data: certificateForTests, encoding: .utf8)!,
+                      host: host)
   } else {
     channel = Channel(address: address, secure: false)
   }
@@ -210,8 +193,8 @@ func callServerStream(channel: Channel) throws {
   try call.start(.serverStreaming, metadata: metadata, message: message) {
     response in
 
-    XCTAssertEqual(response.statusCode, StatusCode.outOfRange)
-    XCTAssertEqual(response.statusMessage, "Out of range")
+    XCTAssertEqual(response.statusCode, .ok)
+    XCTAssertEqual(response.statusMessage, "Custom Status Message ServerStreaming")
 
     // verify the trailing metadata from the server
     let trailingMetadata = response.trailingMetadata!
@@ -222,14 +205,15 @@ func callServerStream(channel: Channel) throws {
 
   for _ in 0..<steps {
     let messageSem = DispatchSemaphore(value: 0)
-    try call.receiveMessage(completion: { (data) in
-      if let data = data {
+    try call.receiveMessage { callResult in
+      if let data = callResult.resultData {
         let messageString = String(data: data, encoding: .utf8)
         XCTAssertEqual(messageString, serverText)
+      } else {
+        XCTFail("callServerStream unexpected result: \(callResult)")
       }
       messageSem.signal()
-    })
-
+    }
     _ = messageSem.wait()
   }
 
@@ -249,8 +233,8 @@ func callBiDiStream(channel: Channel) throws {
   try call.start(.bidiStreaming, metadata: metadata, message: message) {
     response in
 
-    XCTAssertEqual(response.statusCode, StatusCode.resourceExhausted)
-    XCTAssertEqual(response.statusMessage, "Resource Exhausted")
+    XCTAssertEqual(response.statusCode, .ok)
+    XCTAssertEqual(response.statusMessage, "Custom Status Message BiDi")
 
     // verify the trailing metadata from the server
     let trailingMetadata = response.trailingMetadata!
@@ -261,32 +245,38 @@ func callBiDiStream(channel: Channel) throws {
 
   // Send pings
   for _ in 0..<steps {
-    let pingSem = DispatchSemaphore(value: 0)
     let message = clientPing.data(using: .utf8)
     try call.sendMessage(data: message!) { (err) in
       XCTAssertNil(err)
-      pingSem.signal()
     }
-    _ = pingSem.wait()
+    call.messageQueueEmpty.wait()
   }
+
+  let closeSem = DispatchSemaphore(value: 0)
+  try call.close {
+    closeSem.signal()
+  }
+  _ = closeSem.wait()
 
   // Receive pongs
   for _ in 0..<steps {
     let pongSem = DispatchSemaphore(value: 0)
-    try call.receiveMessage(completion: { (data) in
-      if let data = data {
+    try call.receiveMessage { callResult in
+      if let data = callResult.resultData {
         let messageString = String(data: data, encoding: .utf8)
         XCTAssertEqual(messageString, serverPong)
+      } else {
+        XCTFail("callBiDiStream unexpected result: \(callResult)")
       }
       pongSem.signal()
-    })
+    }
     _ = pongSem.wait()
   }
 
   _ = sem.wait()
 }
 
-func runServer(server: Server) throws {
+func runServer(server: Server) throws -> DispatchSemaphore {
   var requestCount = 0
   let sem = DispatchSemaphore(value: 0)
   server.run { requestHandler in
@@ -305,7 +295,7 @@ func runServer(server: Server) throws {
       }
 
       requestCount += 1
-    } catch (let error) {
+    } catch {
       XCTFail("error \(error)")
     }
   }
@@ -314,7 +304,7 @@ func runServer(server: Server) throws {
     sem.signal()
   }
   // wait for the server to exit
-  _ = sem.wait()
+  return sem
 }
 
 func handleUnary(requestHandler: Handler, requestCount: Int) throws {
@@ -332,14 +322,14 @@ func handleUnary(requestHandler: Handler, requestCount: Int) throws {
     let replyMessage = serverText
     let trailingMetadataToSend = Metadata(trailingServerMetadata)
     try requestHandler.sendResponse(message: replyMessage.data(using: .utf8)!,
-                                    statusCode: evenStatusCode,
-                                    statusMessage: eventStatusMessage,
-                                    trailingMetadata: trailingMetadataToSend)
+                                    status: ServerStatus(code: evenStatusCode,
+                                                         message: eventStatusMessage,
+                                                         trailingMetadata: trailingMetadataToSend))
   } else {
     let trailingMetadataToSend = Metadata(trailingServerMetadata)
-    try requestHandler.sendResponse(statusCode: oddStatusCode,
-                                    statusMessage: oddStatusMessage,
-                                    trailingMetadata: trailingMetadataToSend)
+    try requestHandler.sendStatus(ServerStatus(code: oddStatusCode,
+                                               message: oddStatusMessage,
+                                               trailingMetadata: trailingMetadataToSend))
   }
 }
 
@@ -357,18 +347,20 @@ func handleServerStream(requestHandler: Handler) throws {
 
   let replyMessage = serverText
   for _ in 0..<steps {
-    let sendSem = DispatchSemaphore(value: 0)
-    try requestHandler.sendResponse(message: replyMessage.data(using: .utf8)!, completion: { (error) in
+    try requestHandler.call.sendMessage(data: replyMessage.data(using: .utf8)!) { error in
       XCTAssertNil(error)
-      sendSem.signal()
-    })
-    _ = sendSem.wait()
+    }
+    requestHandler.call.messageQueueEmpty.wait()
   }
 
   let trailingMetadataToSend = Metadata(trailingServerMetadata)
-  try requestHandler.sendStatus(statusCode: StatusCode.outOfRange,
-                                statusMessage: "Out of range",
-                                trailingMetadata: trailingMetadataToSend)
+  try requestHandler.sendStatus(ServerStatus(
+    // We need to return status OK here, as it seems like the server might never send out the last few messages once it
+    // has been asked to send a non-OK status. Alternatively, we could send a non-OK status here, but then we would need
+    // to sleep for a few milliseconds before sending the non-OK status.
+    code: .ok,
+    message: "Custom Status Message ServerStreaming",
+    trailingMetadata: trailingMetadataToSend))
 }
 
 func handleBiDiStream(requestHandler: Handler) throws {
@@ -378,35 +370,40 @@ func handleBiDiStream(requestHandler: Handler) throws {
   verify_metadata(initialMetadata, expected: initialClientMetadata)
 
   let initialMetadataToSend = Metadata(initialServerMetadata)
-  try requestHandler.receiveMessage(initialMetadata: initialMetadataToSend) { messageData in
-    let messageString = String(data: messageData!, encoding: .utf8)
-    XCTAssertEqual(messageString, clientPing)
+  let sendMetadataSem = DispatchSemaphore(value: 0)
+  try requestHandler.sendMetadata(initialMetadata: initialMetadataToSend) { _ in
+    _ = sendMetadataSem.signal()
   }
-
+  _ = sendMetadataSem.wait()
+  
   // Receive remaining pings
-  for _ in 0..<steps-1 {
+  for _ in 0..<steps {
     let receiveSem = DispatchSemaphore(value: 0)
-    try requestHandler.receiveMessage(completion: { (data) in
-      let messageString = String(data: data!, encoding: .utf8)
+    try requestHandler.call.receiveMessage { callStatus in
+      let messageString = String(data: callStatus.resultData!, encoding: .utf8)
       XCTAssertEqual(messageString, clientPing)
       receiveSem.signal()
-    })
+    }
     _ = receiveSem.wait()
   }
 
   // Send back pongs
   let replyMessage = serverPong.data(using: .utf8)!
   for _ in 0..<steps {
-    let sendSem = DispatchSemaphore(value: 0)
-    try requestHandler.sendResponse(message: replyMessage, completion: { (error) in
+    try requestHandler.call.sendMessage(data: replyMessage) { error in
       XCTAssertNil(error)
-      sendSem.signal()
-    })
-    _ = sendSem.wait()
+    }
+    requestHandler.call.messageQueueEmpty.wait()
   }
 
   let trailingMetadataToSend = Metadata(trailingServerMetadata)
-  try requestHandler.sendStatus(statusCode: StatusCode.resourceExhausted,
-                                statusMessage: "Resource Exhausted",
-                                trailingMetadata: trailingMetadataToSend)
+  let sem = DispatchSemaphore(value: 0)
+  try requestHandler.sendStatus(ServerStatus(
+    // We need to return status OK here, as it seems like the server might never send out the last few messages once it
+    // has been asked to send a non-OK status. Alternatively, we could send a non-OK status here, but then we would need
+    // to sleep for a few milliseconds before sending the non-OK status.
+    code: .ok,
+    message: "Custom Status Message BiDi",
+    trailingMetadata: trailingMetadataToSend)) { sem.signal() }
+  _ = sem.wait()
 }

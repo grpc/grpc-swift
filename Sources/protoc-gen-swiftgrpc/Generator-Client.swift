@@ -18,7 +18,6 @@ import SwiftProtobuf
 import SwiftProtobufPluginLibrary
 
 extension Generator {
-
   internal func printClient() {
     for method in service.methods {
       self.method = method
@@ -57,10 +56,7 @@ extension Generator {
   private func printServiceClientMethodCallServerStreaming() {
     println("\(access) protocol \(callName): ClientCallServerStreaming {")
     indent()
-    println("/// Call this to wait for a result. Blocking.")
-    println("func receive() throws -> \(methodOutputName)")
-    println("/// Call this to wait for a result. Nonblocking.")
-    println("func receive(completion: @escaping (\(methodOutputName)?, ClientError?) -> Void) throws")
+    printStreamReceiveMethods(receivedType: methodOutputName)
     outdent()
     println("}")
     println()
@@ -83,13 +79,12 @@ extension Generator {
   private func printServiceClientMethodCallClientStreaming() {
     println("\(options.visibility.sourceSnippet) protocol \(callName): ClientCallClientStreaming {")
     indent()
-    println("/// Call this to send each message in the request stream. Nonblocking.")
-    println("func send(_ message: \(methodInputName), completion: @escaping (Error?) -> Void) throws")
+    printStreamSendMethods(sentType: methodInputName)
     println()
     println("/// Call this to close the connection and wait for a response. Blocking.")
     println("func closeAndReceive() throws -> \(methodOutputName)")
     println("/// Call this to close the connection and wait for a response. Nonblocking.")
-    println("func closeAndReceive(completion: @escaping (\(methodOutputName)?, ClientError?) -> Void) throws")
+    println("func closeAndReceive(completion: @escaping (ResultOrRPCError<\(methodOutputName)>) -> Void) throws")
     outdent()
     println("}")
     println()
@@ -114,13 +109,9 @@ extension Generator {
   private func printServiceClientMethodCallBidiStreaming() {
     println("\(access) protocol \(callName): ClientCallBidirectionalStreaming {")
     indent()
-    println("/// Call this to wait for a result. Blocking.")
-    println("func receive() throws -> \(methodOutputName)")
-    println("/// Call this to wait for a result. Nonblocking.")
-    println("func receive(completion: @escaping (\(methodOutputName)?, ClientError?) -> Void) throws")
+    printStreamReceiveMethods(receivedType: methodOutputName)
     println()
-    println("/// Call this to send each message in the request stream.")
-    println("func send(_ message: \(methodInputName), completion: @escaping (Error?) -> Void) throws")
+    printStreamSendMethods(sentType: methodInputName)
     println()
     println("/// Call this to close the sending connection. Blocking.")
     println("func closeSend() throws")

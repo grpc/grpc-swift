@@ -22,7 +22,10 @@ public protocol ServerSessionBidirectionalStreaming: ServerSession {
   func waitForSendOperationsToFinish()
 }
 
-open class ServerSessionBidirectionalStreamingBase<InputType: Message, OutputType: Message>: ServerSessionBase, ServerSessionBidirectionalStreaming {
+open class ServerSessionBidirectionalStreamingBase<InputType: Message, OutputType: Message>: ServerSessionBase, ServerSessionBidirectionalStreaming, StreamReceiving, StreamSending {
+  public typealias ReceivedType = InputType
+  public typealias SentType = OutputType
+  
   public typealias ProviderBlock = (ServerSessionBidirectionalStreamingBase) throws -> Void
   private var providerBlock: ProviderBlock
 
@@ -30,54 +33,32 @@ open class ServerSessionBidirectionalStreamingBase<InputType: Message, OutputTyp
     self.providerBlock = providerBlock
     super.init(handler: handler)
   }
-
-  public func receive() throws -> InputType {
-    let sem = DispatchSemaphore(value: 0)
-    var requestMessage: InputType?
-    try handler.receiveMessage { requestData in
-      if let requestData = requestData {
-        do {
-          requestMessage = try InputType(serializedData: requestData)
-        } catch (let error) {
-          print("error \(error)")
-        }
-      }
-      sem.signal()
-    }
-    _ = sem.wait()
-    if let requestMessage = requestMessage {
-      return requestMessage
-    } else {
-      throw ServerError.endOfStream
-    }
-  }
-
-  public func send(_ response: OutputType, completion: ((Error?) -> Void)?) throws {
-    try handler.sendResponse(message: response.serializedData(), completion: completion)
-  }
-
-  public func close() throws {
-    let sem = DispatchSemaphore(value: 0)
-    try handler.sendStatus(statusCode: statusCode,
-                           statusMessage: statusMessage,
-                           trailingMetadata: trailingMetadata) { _ in sem.signal() }
-    _ = sem.wait()
-  }
-
+  
   public func run(queue: DispatchQueue) throws {
-    try handler.sendMetadata(initialMetadata: initialMetadata) { _ in
+    try handler.sendMetadata(initialMetadata: initialMetadata) { success in
       queue.async {
-        do {
-          try self.providerBlock(self)
-        } catch (let error) {
-          print("error \(error)")
+        var responseStatus: ServerStatus?
+        if success {
+          do {
+            try self.providerBlock(self)
+          } catch {
+            responseStatus = (error as? ServerStatus) ?? .processingError
+          }
+        } else {
+          print("ServerSessionBidirectionalStreamingBase.run sending initial metadata failed")
+          responseStatus = .sendingInitialMetadataFailed
+        }
+        
+        if let responseStatus = responseStatus {
+          // Error encountered, notify the client.
+          do {
+            try self.handler.sendStatus(responseStatus)
+          } catch {
+            print("ServerSessionBidirectionalStreamingBase.run error sending status: \(error)")
+          }
         }
       }
     }
-  }
-
-  public func waitForSendOperationsToFinish() {
-    handler.call.messageQueueEmpty.wait()
   }
 }
 
@@ -86,21 +67,29 @@ open class ServerSessionBidirectionalStreamingBase<InputType: Message, OutputTyp
 open class ServerSessionBidirectionalStreamingTestStub<InputType: Message, OutputType: Message>: ServerSessionTestStub, ServerSessionBidirectionalStreaming {
   open var inputs: [InputType] = []
   open var outputs: [OutputType] = []
+  open var status: ServerStatus?
 
-  open func receive() throws -> InputType {
-    if let input = inputs.first {
-      inputs.removeFirst()
-      return input
-    } else {
-      throw ServerError.endOfStream
-    }
+  open func receive() throws -> InputType? {
+    defer { if !inputs.isEmpty { inputs.removeFirst() } }
+    return inputs.first
+  }
+  
+  open func receive(completion: @escaping (ResultOrRPCError<InputType?>) -> Void) throws {
+    completion(.result(try self.receive()))
   }
 
-  open func send(_ response: OutputType, completion _: ((Error?) -> Void)?) throws {
-    outputs.append(response)
+  open func send(_ message: OutputType, completion _: @escaping (Error?) -> Void) throws {
+    outputs.append(message)
   }
 
-  open func close() throws {}
+  open func send(_ message: OutputType) throws {
+    outputs.append(message)
+  }
+
+  open func close(withStatus status: ServerStatus, completion: (() -> Void)?) throws {
+    self.status = status
+    completion?()
+  }
 
   open func waitForSendOperationsToFinish() {}
 }

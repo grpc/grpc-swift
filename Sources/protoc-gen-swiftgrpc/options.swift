@@ -99,9 +99,9 @@ class GeneratorOptions {
       }
 
       // Creates key/value pair and trims whitespace
-      let key = string.substring(to: index)
+      let key = string[..<index]
         .trimmingCharacters(in: .whitespacesAndNewlines)
-      let value = string.substring(from: string.index(after: index))
+      let value = string[string.index(after: index)...]
         .trimmingCharacters(in: .whitespacesAndNewlines)
 
       return (key: key, value: value)

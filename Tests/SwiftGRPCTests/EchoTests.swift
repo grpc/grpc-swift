@@ -18,13 +18,7 @@ import Foundation
 @testable import SwiftGRPC
 import XCTest
 
-extension Echo_EchoRequest {
-  init(text: String) {
-    self.text = text
-  }
-}
-
-class EchoTests: XCTestCase {
+class EchoTests: BasicEchoTestCase {
   static var allTests: [(String, (EchoTests) -> () throws -> Void)] {
     return [
       ("testUnary", testUnary),
@@ -40,51 +34,11 @@ class EchoTests: XCTestCase {
   }
 
   static let lotsOfStrings = (0..<1000).map { String(describing: $0) }
-
-  let defaultTimeout: TimeInterval = 5.0
-
-  let provider = EchoProvider()
-  var server: Echo_EchoServer!
-  var client: Echo_EchoServiceClient!
-
-  var secure: Bool { return false }
-
-  override func setUp() {
-    super.setUp()
-
-    let address = "localhost:5050"
-    if secure {
-      let certificateString = String(data: certificateForTests, encoding: .utf8)!
-      server = Echo_EchoServer(address: address,
-                               certificateString: certificateString,
-                               keyString: String(data: keyForTests, encoding: .utf8)!,
-                               provider: provider)
-      server.start(queue: DispatchQueue.global())
-      client = Echo_EchoServiceClient(address: address, certificates: certificateString, host: "example.com")
-    } else {
-      server = Echo_EchoServer(address: address, provider: provider)
-      server.start(queue: DispatchQueue.global())
-      client = Echo_EchoServiceClient(address: address, secure: false)
-    }
-
-    client.timeout = defaultTimeout
-  }
-
-  override func tearDown() {
-    client = nil
-
-    server.server.stop()
-    server = nil
-
-    super.tearDown()
-  }
 }
 
-// Currently broken and thus commented out.
-// TODO(danielalm): Fix these.
-//class EchoTestsSecure: EchoTests {
-//  override var secure: Bool { return true }
-//}
+class EchoTestsSecure: EchoTests {
+  override var secure: Bool { return true }
+}
 
 extension EchoTests {
   func testUnary() {
@@ -146,9 +100,10 @@ extension EchoTests {
       completionHandlerExpectation.fulfill()
     }
 
-    XCTAssertEqual("Swift echo expand (0): foo", try! call.receive().text)
-    XCTAssertEqual("Swift echo expand (1): bar", try! call.receive().text)
-    XCTAssertEqual("Swift echo expand (2): baz", try! call.receive().text)
+    XCTAssertEqual("Swift echo expand (0): foo", try! call.receive()!.text)
+    XCTAssertEqual("Swift echo expand (1): bar", try! call.receive()!.text)
+    XCTAssertEqual("Swift echo expand (2): baz", try! call.receive()!.text)
+    XCTAssertNil(try! call.receive())
 
     waitForExpectations(timeout: defaultTimeout)
   }
@@ -161,8 +116,9 @@ extension EchoTests {
     }
 
     for string in EchoTests.lotsOfStrings {
-      XCTAssertEqual("Swift echo expand (\(string)): \(string)", try! call.receive().text)
+      XCTAssertEqual("Swift echo expand (\(string)): \(string)", try! call.receive()!.text)
     }
+    XCTAssertNil(try! call.receive())
 
     waitForExpectations(timeout: defaultTimeout)
   }
@@ -187,9 +143,10 @@ extension EchoTests {
     let closeCompletionHandlerExpectation = expectation(description: "close completion handler called")
     try! call.closeSend { closeCompletionHandlerExpectation.fulfill() }
 
-    XCTAssertEqual("Swift echo update (0): foo", try! call.receive().text)
-    XCTAssertEqual("Swift echo update (1): bar", try! call.receive().text)
-    XCTAssertEqual("Swift echo update (2): baz", try! call.receive().text)
+    XCTAssertEqual("Swift echo update (0): foo", try! call.receive()!.text)
+    XCTAssertEqual("Swift echo update (1): bar", try! call.receive()!.text)
+    XCTAssertEqual("Swift echo update (2): baz", try! call.receive()!.text)
+    XCTAssertNil(try! call.receive())
 
     waitForExpectations(timeout: defaultTimeout)
   }
@@ -203,19 +160,21 @@ extension EchoTests {
 
     var sendExpectation = expectation(description: "send completion handler 1 called")
     try! call.send(Echo_EchoRequest(text: "foo")) { [sendExpectation] in XCTAssertNil($0); sendExpectation.fulfill() }
-    XCTAssertEqual("Swift echo update (0): foo", try! call.receive().text)
+    XCTAssertEqual("Swift echo update (0): foo", try! call.receive()!.text)
 
     sendExpectation = expectation(description: "send completion handler 2 called")
     try! call.send(Echo_EchoRequest(text: "bar")) { [sendExpectation] in XCTAssertNil($0); sendExpectation.fulfill() }
-    XCTAssertEqual("Swift echo update (1): bar", try! call.receive().text)
+    XCTAssertEqual("Swift echo update (1): bar", try! call.receive()!.text)
 
     sendExpectation = expectation(description: "send completion handler 3 called")
     try! call.send(Echo_EchoRequest(text: "baz")) { [sendExpectation] in XCTAssertNil($0); sendExpectation.fulfill() }
-    XCTAssertEqual("Swift echo update (2): baz", try! call.receive().text)
+    XCTAssertEqual("Swift echo update (2): baz", try! call.receive()!.text)
 
     let closeCompletionHandlerExpectation = expectation(description: "close completion handler called")
     try! call.closeSend { closeCompletionHandlerExpectation.fulfill() }
 
+    XCTAssertNil(try! call.receive())
+    
     waitForExpectations(timeout: defaultTimeout)
   }
 
@@ -236,8 +195,9 @@ extension EchoTests {
     try! call.closeSend { closeCompletionHandlerExpectation.fulfill() }
 
     for string in EchoTests.lotsOfStrings {
-      XCTAssertEqual("Swift echo update (\(string)): \(string)", try! call.receive().text)
+      XCTAssertEqual("Swift echo update (\(string)): \(string)", try! call.receive()!.text)
     }
+    XCTAssertNil(try! call.receive())
 
     waitForExpectations(timeout: defaultTimeout)
   }
@@ -252,11 +212,13 @@ extension EchoTests {
     for string in EchoTests.lotsOfStrings {
       let sendExpectation = expectation(description: "send completion handler \(string) called")
       try! call.send(Echo_EchoRequest(text: string)) { [sendExpectation] in XCTAssertNil($0); sendExpectation.fulfill() }
-      XCTAssertEqual("Swift echo update (\(string)): \(string)", try! call.receive().text)
+      XCTAssertEqual("Swift echo update (\(string)): \(string)", try! call.receive()!.text)
     }
 
     let closeCompletionHandlerExpectation = expectation(description: "close completion handler called")
     try! call.closeSend { closeCompletionHandlerExpectation.fulfill() }
+    
+    XCTAssertNil(try! call.receive())
 
     waitForExpectations(timeout: defaultTimeout)
   }

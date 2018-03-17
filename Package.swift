@@ -23,7 +23,7 @@ let package = Package(
     .library(name: "SwiftGRPC", targets: ["SwiftGRPC"]),
   ],
   dependencies: [
-    .package(url: "https://github.com/Zewo/zlib.git", from: "0.4.0"),
+    .package(url: "https://github.com/apple/swift-nio-zlib-support.git", from: "1.0.0"),
     .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.0.2"),
     .package(url: "https://github.com/kylef/Commander.git", from: "0.8.0")
   ],
@@ -31,7 +31,7 @@ let package = Package(
     .target(name: "SwiftGRPC",
             dependencies: ["CgRPC", "SwiftProtobuf"]),
     .target(name: "CgRPC",
-            dependencies: ["BoringSSL", "zlib"]),
+            dependencies: ["BoringSSL"]),
     .target(name: "RootsEncoder"),
     .target(name: "protoc-gen-swiftgrpc",
             dependencies: [

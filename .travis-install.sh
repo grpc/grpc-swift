@@ -28,7 +28,7 @@
 cd
 mkdir -p local
 
-if [ $TRAVIS_OS_NAME == "osx" ]; then
+if [ "$TRAVIS_OS_NAME" == "osx" ]; then
   PROTOC_URL=https://github.com/google/protobuf/releases/download/v3.5.1/protoc-3.5.1-osx-x86_64.zip
 else
   # Install swift

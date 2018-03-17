@@ -66,6 +66,8 @@ class CompletionQueue {
 
   /// Mutex for synchronizing access to operationGroups
   private let operationGroupsMutex: Mutex = Mutex()
+  
+  private var hasBeenShutdown = false
 
   /// Initializes a CompletionQueue
   ///
@@ -90,21 +92,27 @@ class CompletionQueue {
   /// - Parameter operationGroup: the operation group to handle
   func register(_ operationGroup: OperationGroup) {
     operationGroupsMutex.synchronize {
-      operationGroups[operationGroup.tag] = operationGroup
+      if !hasBeenShutdown {
+        operationGroups[operationGroup.tag] = operationGroup
+      } else {
+        // The queue has been shut down already, so there's no spinloop to call the operation group's completion handler
+        // on. To guarantee that the completion handler gets called, we'll enqueue it right now.
+        DispatchQueue.global().async {
+          operationGroup.success = false
+          operationGroup.completion?(operationGroup)
+        }
+      }
     }
   }
 
   /// Runs a completion queue and call a completion handler when finished
   ///
-  /// - Parameter callbackQueue: a DispatchQueue to use to call the completion handler
   /// - Parameter completion: a completion handler that is called when the queue stops running
-  func runToCompletion(callbackQueue: DispatchQueue = DispatchQueue.main,
-                       completion: (() -> Void)?) {
+  func runToCompletion(completion: (() -> Void)?) {
     // run the completion queue on a new background thread
     DispatchQueue.global().async {
-      var running = true
-      while running {
-        let event = cgrpc_completion_queue_get_next_event(self.underlyingCompletionQueue, -1.0)
+      spinloop: while true {
+        let event = cgrpc_completion_queue_get_next_event(self.underlyingCompletionQueue, 600)
         switch event.type {
         case GRPC_OP_COMPLETE:
           let tag = cgrpc_event_tag(event)
@@ -113,43 +121,35 @@ class CompletionQueue {
           self.operationGroupsMutex.unlock()
           if let operationGroup = operationGroup {
             // call the operation group completion handler
-            do {
-              operationGroup.success = (event.success == 1)
-              try operationGroup.completion?(operationGroup)
-            } catch (let callError) {
-              print("CompletionQueue runToCompletion: grpc error \(callError)")
-            }
+            operationGroup.success = (event.success == 1)
+            operationGroup.completion?(operationGroup)
             self.operationGroupsMutex.synchronize {
               self.operationGroups[tag] = nil
             }
+          } else {
+            print("CompletionQueue.runToCompletion error: operation group with tag \(tag) not found")
           }
-          break
         case GRPC_QUEUE_SHUTDOWN:
-          running = false
-          do {
-            for operationGroup in self.operationGroups.values {
-              operationGroup.success = false
-              try operationGroup.completion?(operationGroup)
-            }
-          } catch (let callError) {
-            print("CompletionQueue runToCompletion: grpc error \(callError)")
+          self.operationGroupsMutex.lock()
+          let currentOperationGroups = self.operationGroups
+          self.operationGroups = [:]
+          self.hasBeenShutdown = true
+          self.operationGroupsMutex.unlock()
+          
+          for operationGroup in currentOperationGroups.values {
+            operationGroup.success = false
+            operationGroup.completion?(operationGroup)
           }
-          self.operationGroupsMutex.synchronize {
-            self.operationGroups = [:]
-          }
-          break
+          break spinloop
         case GRPC_QUEUE_TIMEOUT:
-          break
+          continue spinloop
         default:
-          break
+          print("CompletionQueue.runToCompletion error: unknown event type \(event.type)")
+          break spinloop
         }
       }
-      if let completion = completion {
-        callbackQueue.async {
-          // when the queue stops running, call the queue completion handler
-          completion()
-        }
-      }
+      // when the queue stops running, call the queue completion handler
+      completion?()
     }
   }
 

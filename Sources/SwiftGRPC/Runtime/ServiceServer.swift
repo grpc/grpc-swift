@@ -65,17 +65,24 @@ open class ServiceServer {
         + " calling " + unwrappedMethod
         + " from " + unwrappedCaller
         + " with " + handler.requestMetadata.description)
-
+      
       do {
-        if try !strongSelf.handleMethod(unwrappedMethod, handler: handler, queue: queue) {
-          // handle unknown requests
-          try handler.receiveMessage(initialMetadata: Metadata()) { _ in
-            try handler.sendResponse(statusCode: .unimplemented,
-                                     statusMessage: "unknown method " + unwrappedMethod,
-                                     trailingMetadata: Metadata())
+        if !(try strongSelf.handleMethod(unwrappedMethod, handler: handler, queue: queue)) {
+          do {
+            try handler.call.perform(OperationGroup(
+              call: handler.call,
+              operations: [
+                .sendInitialMetadata(Metadata()),
+                .receiveCloseOnServer,
+                .sendStatusFromServer(.unimplemented, "unknown method " + unwrappedMethod, Metadata())
+            ]) { _ in
+              handler.shutdown()
+            })
+          } catch {
+            print("ServiceServer.start error sending status for unknown method: \(error)")
           }
         }
-      } catch (let error) {
+      } catch {
         print("Server error: \(error)")
       }
     }

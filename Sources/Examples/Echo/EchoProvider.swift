@@ -38,6 +38,7 @@ class EchoProvider: Echo_EchoProvider {
       }
     }
     session.waitForSendOperationsToFinish()
+    try session.close(withStatus: .ok, completion: nil)
   }
 
   // collect collects a sequence of messages and returns them concatenated when the caller closes.
@@ -45,17 +46,17 @@ class EchoProvider: Echo_EchoProvider {
     var parts: [String] = []
     while true {
       do {
-        let request = try session.receive()
+        guard let request = try session.receive()
+          else { break }  // End of stream
         parts.append(request.text)
-      } catch ServerError.endOfStream {
+      } catch {
+        print("collect error: \(error)")
         break
-      } catch (let error) {
-        print("\(error)")
       }
     }
     var response = Echo_EchoResponse()
     response.text = "Swift echo collect: " + parts.joined(separator: " ")
-    try session.sendAndClose(response)
+    try session.sendAndClose(response: response, status: .ok, completion: nil)
   }
 
   // update streams back messages as they are received in an input stream.
@@ -63,7 +64,8 @@ class EchoProvider: Echo_EchoProvider {
     var count = 0
     while true {
       do {
-        let request = try session.receive()
+        guard let request = try session.receive()
+          else { break }  // End of stream
         var response = Echo_EchoResponse()
         response.text = "Swift echo update (\(count)): \(request.text)"
         count += 1
@@ -72,14 +74,12 @@ class EchoProvider: Echo_EchoProvider {
             print("update error: \(error)")
           }
         }
-      } catch ServerError.endOfStream {
-        break
-      } catch (let error) {
-        print("\(error)")
+      } catch {
+        print("update error: \(error)")
         break
       }
     }
     session.waitForSendOperationsToFinish()
-    try session.close()
+    try session.close(withStatus: .ok, completion: nil)
   }
 }

@@ -124,6 +124,6 @@ func main() throws {
 
 do {
   try main()
-} catch (let error) {
+} catch {
   Log("ERROR: \(error)")
 }
