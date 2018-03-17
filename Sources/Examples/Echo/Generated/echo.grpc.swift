@@ -219,9 +219,13 @@ internal protocol Echo_EchoCollectSession: ServerSessionClientStreaming {
   /// Call this to wait for a result. Nonblocking.
   func receive(completion: @escaping (ResultOrRPCError<Echo_EchoRequest?>) -> Void) throws
 
+  /// You MUST call one of these two methods once you are done processing the request.
   /// Close the connection and send a single result. Non-blocking.
-  /// You MUST call this method once you are done processing the request.
   func sendAndClose(response: Echo_EchoResponse, status: ServerStatus, completion: ((CallResult) -> Void)?) throws
+  /// Close the connection and send an error. Non-blocking.
+  /// Use this method if you encountered an error that makes it impossible to send a response.
+  /// Accordingly, it does not make sense to call this method with a status of `.ok`.
+  func sendErrorAndClose(status: ServerStatus, completion: ((CallResult) -> Void)?) throws
 }
 
 fileprivate final class Echo_EchoCollectSessionBase: ServerSessionClientStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectSession {}

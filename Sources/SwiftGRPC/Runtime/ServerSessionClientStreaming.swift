@@ -36,6 +36,10 @@ open class ServerSessionClientStreamingBase<InputType: Message, OutputType: Mess
     try handler.sendResponse(message: response.serializedData(), status: status, completion: completion)
   }
 
+  public func sendErrorAndClose(status: ServerStatus, completion: ((CallResult) -> Void)? = nil) throws {
+    try handler.sendStatus(status, completion: completion)
+  }
+  
   public func run(queue: DispatchQueue) throws {
     try handler.sendMetadata(initialMetadata: initialMetadata) { success in
       queue.async {
@@ -86,5 +90,10 @@ open class ServerSessionClientStreamingTestStub<InputType: Message, OutputType: 
     completion?(.fakeOK)
   }
 
+  open func sendErrorAndClose(status: ServerStatus, completion: ((CallResult) -> Void)? = nil) throws {
+    self.status = status
+    completion?(.fakeOK)
+  }
+  
   open func close() throws {}
 }
