@@ -193,8 +193,8 @@ func callServerStream(channel: Channel) throws {
   try call.start(.serverStreaming, metadata: metadata, message: message) {
     response in
 
-    XCTAssertEqual(response.statusCode, StatusCode.outOfRange)
-    XCTAssertEqual(response.statusMessage, "Out of range")
+    XCTAssertEqual(response.statusCode, .ok)
+    XCTAssertEqual(response.statusMessage, "Custom Status Message ServerStreaming")
 
     // verify the trailing metadata from the server
     let trailingMetadata = response.trailingMetadata!
@@ -233,8 +233,8 @@ func callBiDiStream(channel: Channel) throws {
   try call.start(.bidiStreaming, metadata: metadata, message: message) {
     response in
 
-    XCTAssertEqual(response.statusCode, StatusCode.resourceExhausted)
-    XCTAssertEqual(response.statusMessage, "Resource Exhausted")
+    XCTAssertEqual(response.statusCode, .ok)
+    XCTAssertEqual(response.statusMessage, "Custom Status Message BiDi")
 
     // verify the trailing metadata from the server
     let trailingMetadata = response.trailingMetadata!
@@ -351,15 +351,16 @@ func handleServerStream(requestHandler: Handler) throws {
       XCTAssertNil(error)
     }
     requestHandler.call.messageQueueEmpty.wait()
-    // FIXME(danielalm): For some (so far unknown) reason, this delay is required to prevent some sent messages to get
-    // dropped, even though we already queue messages that can't be sent right now.
-    Thread.sleep(forTimeInterval: 0.0001)
   }
 
   let trailingMetadataToSend = Metadata(trailingServerMetadata)
-  try requestHandler.sendStatus(ServerStatus(code: .outOfRange,
-                                             message: "Out of range",
-                                             trailingMetadata: trailingMetadataToSend))
+  try requestHandler.sendStatus(ServerStatus(
+    // We need to return status OK here, as it seems like the server might never send out the last few messages once it
+    // has been asked to send a non-OK status. Alternatively, we could send a non-OK status here, but then we would need
+    // to sleep for a few milliseconds before sending the non-OK status.
+    code: .ok,
+    message: "Custom Status Message ServerStreaming",
+    trailingMetadata: trailingMetadataToSend))
 }
 
 func handleBiDiStream(requestHandler: Handler) throws {
@@ -393,15 +394,16 @@ func handleBiDiStream(requestHandler: Handler) throws {
       XCTAssertNil(error)
     }
     requestHandler.call.messageQueueEmpty.wait()
-    // FIXME(danielalm): For some (so far unknown) reason, this delay is required to prevent some sent messages to get
-    // dropped, even though we already queue messages that can't be sent right now.
-    Thread.sleep(forTimeInterval: 0.0001)
   }
 
   let trailingMetadataToSend = Metadata(trailingServerMetadata)
   let sem = DispatchSemaphore(value: 0)
-  try requestHandler.sendStatus(ServerStatus(code: .resourceExhausted,
-                                             message: "Resource Exhausted",
-                                             trailingMetadata: trailingMetadataToSend)) { _ in sem.signal() }
+  try requestHandler.sendStatus(ServerStatus(
+    // We need to return status OK here, as it seems like the server might never send out the last few messages once it
+    // has been asked to send a non-OK status. Alternatively, we could send a non-OK status here, but then we would need
+    // to sleep for a few milliseconds before sending the non-OK status.
+    code: .ok,
+    message: "Custom Status Message BiDi",
+    trailingMetadata: trailingMetadataToSend)) { _ in sem.signal() }
   _ = sem.wait()
 }
