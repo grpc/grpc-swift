@@ -24,6 +24,12 @@ extension Echo_EchoRequest {
   }
 }
 
+extension Echo_EchoResponse {
+  init(text: String) {
+    self.text = text
+  }
+}
+
 class BasicEchoTestCase: XCTestCase {
   func makeProvider() -> Echo_EchoProvider { return EchoProvider() }
   

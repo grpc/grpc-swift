@@ -44,15 +44,14 @@ open class ClientCallServerStreamingTestStub<OutputType: Message>: ClientCallSer
   open var outputs: [OutputType] = []
   
   public init() {}
-
-  open func receive(completion: @escaping (ResultOrRPCError<OutputType?>) -> Void) throws {
-    completion(.result(outputs.first))
-    outputs.removeFirst()
-  }
-
+  
   open func receive() throws -> OutputType? {
-    defer { outputs.removeFirst() }
+    defer { if !outputs.isEmpty { outputs.removeFirst() } }
     return outputs.first
+  }
+  
+  open func receive(completion: @escaping (ResultOrRPCError<OutputType?>) -> Void) throws {
+    completion(.result(try self.receive()))
   }
 
   open func cancel() {}

@@ -70,13 +70,12 @@ open class ServerSessionBidirectionalStreamingTestStub<InputType: Message, Outpu
   open var status: ServerStatus?
 
   open func receive() throws -> InputType? {
-    defer { inputs.removeFirst() }
+    defer { if !inputs.isEmpty { inputs.removeFirst() } }
     return inputs.first
   }
   
   open func receive(completion: @escaping (ResultOrRPCError<InputType?>) -> Void) throws {
-    completion(.result(inputs.first))
-    inputs.removeFirst()
+    completion(.result(try self.receive()))
   }
 
   open func send(_ message: OutputType, completion _: @escaping (Error?) -> Void) throws {

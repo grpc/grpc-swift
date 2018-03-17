@@ -72,13 +72,12 @@ open class ServerSessionClientStreamingTestStub<InputType: Message, OutputType: 
   open var status: ServerStatus?
 
   open func receive() throws -> InputType? {
-    defer { inputs.removeFirst() }
+    defer { if !inputs.isEmpty { inputs.removeFirst() } }
     return inputs.first
   }
   
   open func receive(completion: @escaping (ResultOrRPCError<InputType?>) -> Void) throws {
-    completion(.result(inputs.first))
-    inputs.removeFirst()
+    completion(.result(try self.receive()))
   }
 
   open func sendAndClose(response: OutputType, status: ServerStatus, completion: ((CallResult) -> Void)?) throws {
