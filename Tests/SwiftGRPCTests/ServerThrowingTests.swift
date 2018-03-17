@@ -54,8 +54,8 @@ class ServerThrowingTests: BasicEchoTestCase {
 extension ServerThrowingTests {
   func testServerThrowsUnary() {
     do {
-      _ = try client.get(Echo_EchoRequest(text: "foo")).text
-      XCTFail("should have thrown")
+      let result = try client.get(Echo_EchoRequest(text: "foo")).text
+      XCTFail("should have thrown, received \(result) instead")
     } catch {
       guard case let .callError(callResult) = error as! RPCError
         else { XCTFail("unexpected error \(error)"); return }
@@ -81,8 +81,8 @@ extension ServerThrowingTests {
     call.waitForSendOperationsToFinish()
     
     do {
-      _ = try call.closeAndReceive()
-      XCTFail("should have thrown")
+      let result = try call.closeAndReceive()
+      XCTFail("should have thrown, received \(result) instead")
     } catch let receiveError {
       XCTAssertEqual(.unknown, (receiveError as! RPCError).callResult!.statusCode)
     }

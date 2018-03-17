@@ -32,11 +32,11 @@ open class ServerSessionClientStreamingBase<InputType: Message, OutputType: Mess
   }
   
   public func sendAndClose(response: OutputType, status: ServerStatus = .ok,
-                           completion: ((CallResult) -> Void)? = nil) throws {
+                           completion: (() -> Void)? = nil) throws {
     try handler.sendResponse(message: response.serializedData(), status: status, completion: completion)
   }
 
-  public func sendErrorAndClose(status: ServerStatus, completion: ((CallResult) -> Void)? = nil) throws {
+  public func sendErrorAndClose(status: ServerStatus, completion: (() -> Void)? = nil) throws {
     try handler.sendStatus(status, completion: completion)
   }
   
@@ -84,15 +84,15 @@ open class ServerSessionClientStreamingTestStub<InputType: Message, OutputType: 
     completion(.result(try self.receive()))
   }
 
-  open func sendAndClose(response: OutputType, status: ServerStatus, completion: ((CallResult) -> Void)?) throws {
+  open func sendAndClose(response: OutputType, status: ServerStatus, completion: (() -> Void)?) throws {
     self.output = response
     self.status = status
-    completion?(.fakeOK)
+    completion?()
   }
 
-  open func sendErrorAndClose(status: ServerStatus, completion: ((CallResult) -> Void)? = nil) throws {
+  open func sendErrorAndClose(status: ServerStatus, completion: (() -> Void)? = nil) throws {
     self.status = status
-    completion?(.fakeOK)
+    completion?()
   }
   
   open func close() throws {}

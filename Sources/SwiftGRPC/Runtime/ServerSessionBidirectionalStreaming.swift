@@ -86,9 +86,9 @@ open class ServerSessionBidirectionalStreamingTestStub<InputType: Message, Outpu
     outputs.append(message)
   }
 
-  open func close(withStatus status: ServerStatus, completion: ((CallResult) -> Void)?) throws {
+  open func close(withStatus status: ServerStatus, completion: (() -> Void)?) throws {
     self.status = status
-    completion?(.fakeOK)
+    completion?()
   }
 
   open func waitForSendOperationsToFinish() {}

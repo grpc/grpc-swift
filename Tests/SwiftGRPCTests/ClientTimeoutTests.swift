@@ -47,8 +47,8 @@ extension ClientTimeoutTests {
     call.waitForSendOperationsToFinish()
     
     do {
-      _ = try call.closeAndReceive()
-      XCTFail("should have thrown")
+      let result = try call.closeAndReceive()
+      XCTFail("should have thrown, received \(result) instead")
     } catch let receiveError {
       XCTAssertEqual(.unknown, (receiveError as! RPCError).callResult!.statusCode)
     }
@@ -70,8 +70,8 @@ extension ClientTimeoutTests {
     Thread.sleep(forTimeInterval: 0.2)
     
     do {
-      _ = try call.closeAndReceive()
-      XCTFail("should have thrown")
+      let result = try call.closeAndReceive()
+      XCTFail("should have thrown, received \(result) instead")
     } catch let receiveError {
       XCTAssertEqual(.unknown, (receiveError as! RPCError).callResult!.statusCode)
     }

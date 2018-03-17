@@ -404,6 +404,6 @@ func handleBiDiStream(requestHandler: Handler) throws {
     // to sleep for a few milliseconds before sending the non-OK status.
     code: .ok,
     message: "Custom Status Message BiDi",
-    trailingMetadata: trailingMetadataToSend)) { _ in sem.signal() }
+    trailingMetadata: trailingMetadataToSend)) { sem.signal() }
   _ = sem.wait()
 }

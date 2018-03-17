@@ -40,8 +40,8 @@ extension ConnectionFailureTests {
     client.timeout = defaultTimeout
     
     do {
-      _ = try client.get(Echo_EchoRequest(text: "foo")).text
-      XCTFail("should have thrown")
+      let result = try client.get(Echo_EchoRequest(text: "foo")).text
+      XCTFail("should have thrown, received \(result) instead")
     } catch {
       guard case let .callError(callResult) = error as! RPCError
         else { XCTFail("unexpected error \(error)"); return }
@@ -68,8 +68,8 @@ extension ConnectionFailureTests {
     call.waitForSendOperationsToFinish()
     
     do {
-      _ = try call.closeAndReceive()
-      XCTFail("should have thrown")
+      let result = try call.closeAndReceive()
+      XCTFail("should have thrown, received \(result) instead")
     } catch let receiveError {
       XCTAssertEqual(.unknown, (receiveError as! RPCError).callResult!.statusCode)
     }
@@ -88,8 +88,8 @@ extension ConnectionFailureTests {
     }
     
     do {
-      _ = try call.receive()
-      XCTFail("should have thrown")
+      let result = try call.receive()
+      XCTFail("should have thrown, received \(String(describing: result)) instead")
     } catch let receiveError {
       XCTAssertEqual(.unknown, (receiveError as! RPCError).callResult!.statusCode)
     }
@@ -115,8 +115,8 @@ extension ConnectionFailureTests {
     call.waitForSendOperationsToFinish()
     
     do {
-      _ = try call.receive()
-      XCTFail("should have thrown")
+      let result = try call.receive()
+      XCTFail("should have thrown, received \(String(describing: result)) instead")
     } catch let receiveError {
       XCTAssertEqual(.unknown, (receiveError as! RPCError).callResult!.statusCode)
     }

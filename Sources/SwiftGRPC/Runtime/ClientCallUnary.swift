@@ -47,9 +47,8 @@ open class ClientCallUnaryBase<InputType: Message, OutputType: Message>: ClientC
                     completion: @escaping ((OutputType?, CallResult) -> Void)) throws -> Self {
     let requestData = try request.serializedData()
     try call.start(.unary, metadata: metadata, message: requestData) { callResult in
-      if let responseData = callResult.resultData,
-        let response = try? OutputType(serializedData: responseData) {
-        completion(response, callResult)
+      if let responseData = callResult.resultData {
+        completion(try? OutputType(serializedData: responseData), callResult)
       } else {
         completion(nil, callResult)
       }

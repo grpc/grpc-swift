@@ -145,11 +145,11 @@ extension Generator {
   private func printServerMethodSendAndClose(sentType: String) {
     println("/// You MUST call one of these two methods once you are done processing the request.")
     println("/// Close the connection and send a single result. Non-blocking.")
-    println("func sendAndClose(response: \(sentType), status: ServerStatus, completion: ((CallResult) -> Void)?) throws")
+    println("func sendAndClose(response: \(sentType), status: ServerStatus, completion: (() -> Void)?) throws")
     println("/// Close the connection and send an error. Non-blocking.")
     println("/// Use this method if you encountered an error that makes it impossible to send a response.")
     println("/// Accordingly, it does not make sense to call this method with a status of `.ok`.")
-    println("func sendErrorAndClose(status: ServerStatus, completion: ((CallResult) -> Void)?) throws")
+    println("func sendErrorAndClose(status: ServerStatus, completion: (() -> Void)?) throws")
   }
 
   private func printServerMethodClientStreaming() {
@@ -171,7 +171,7 @@ extension Generator {
   private func printServerMethodClose() {
     println("/// Close the connection and send the status. Non-blocking.")
     println("/// You MUST call this method once you are done processing the request.")
-    println("func close(withStatus status: ServerStatus, completion: ((CallResult) -> Void)?) throws")
+    println("func close(withStatus status: ServerStatus, completion: (() -> Void)?) throws")
   }
   
   private func printServerMethodServerStreaming() {

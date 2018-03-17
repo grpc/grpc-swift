@@ -121,9 +121,10 @@ public class Handler {
     })
   }
 
-  /// Sends the response to a request
+  /// Sends the response to a request.
+  /// The completion handler does not take an argument because operations containing `.receiveCloseOnServer` always succeed.
   public func sendResponse(message: Data, status: ServerStatus,
-                           completion: ((CallResult) -> Void)? = nil) throws {
+                           completion: (() -> Void)? = nil) throws {
     let messageBuffer = ByteBuffer(data: message)
     try call.perform(OperationGroup(
       call: call,
@@ -131,21 +132,22 @@ public class Handler {
         .sendMessage(messageBuffer),
         .receiveCloseOnServer,
         .sendStatusFromServer(status.code, status.message, status.trailingMetadata)
-    ]) { operationGroup in
-      completion?(CallResult(operationGroup))
+    ]) { _ in
+      completion?()
       self.shutdown()
     })
   }
 
-  /// Send final status to the client
-  public func sendStatus(_ status: ServerStatus, completion: ((CallResult) -> Void)? = nil) throws {
+  /// Send final status to the client.
+  /// The completion handler does not take an argument because operations containing `.receiveCloseOnServer` always succeed.
+  public func sendStatus(_ status: ServerStatus, completion: (() -> Void)? = nil) throws {
     try call.perform(OperationGroup(
       call: call,
       operations: [
         .receiveCloseOnServer,
         .sendStatusFromServer(status.code, status.message, status.trailingMetadata)
-    ]) { operationGroup in
-      completion?(CallResult(operationGroup))
+    ]) { _ in
+      completion?()
       self.shutdown()
     })
   }

@@ -99,6 +99,8 @@ public class Call {
   /// - Parameter metadata: metadata to send with the call
   /// - Parameter message: data containing the message to send (.unary and .serverStreaming only)
   /// - Parameter completion: a block to call with call results
+  ///     The argument to `completion` will always have `.success = true`
+  ///     because operations containing `.receiveCloseOnClient` always succeed.
   /// - Throws: `CallError` if fails to call.
   public func start(_ style: CallStyle,
                     metadata: Metadata,

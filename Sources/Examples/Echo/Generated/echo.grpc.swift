@@ -212,7 +212,7 @@ internal protocol Echo_EchoExpandSession: ServerSessionServerStreaming {
 
   /// Close the connection and send the status. Non-blocking.
   /// You MUST call this method once you are done processing the request.
-  func close(withStatus status: ServerStatus, completion: ((CallResult) -> Void)?) throws
+  func close(withStatus status: ServerStatus, completion: (() -> Void)?) throws
 }
 
 fileprivate final class Echo_EchoExpandSessionBase: ServerSessionServerStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoExpandSession {}
@@ -227,11 +227,11 @@ internal protocol Echo_EchoCollectSession: ServerSessionClientStreaming {
 
   /// You MUST call one of these two methods once you are done processing the request.
   /// Close the connection and send a single result. Non-blocking.
-  func sendAndClose(response: Echo_EchoResponse, status: ServerStatus, completion: ((CallResult) -> Void)?) throws
+  func sendAndClose(response: Echo_EchoResponse, status: ServerStatus, completion: (() -> Void)?) throws
   /// Close the connection and send an error. Non-blocking.
   /// Use this method if you encountered an error that makes it impossible to send a response.
   /// Accordingly, it does not make sense to call this method with a status of `.ok`.
-  func sendErrorAndClose(status: ServerStatus, completion: ((CallResult) -> Void)?) throws
+  func sendErrorAndClose(status: ServerStatus, completion: (() -> Void)?) throws
 }
 
 fileprivate final class Echo_EchoCollectSessionBase: ServerSessionClientStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectSession {}
@@ -251,7 +251,7 @@ internal protocol Echo_EchoUpdateSession: ServerSessionBidirectionalStreaming {
 
   /// Close the connection and send the status. Non-blocking.
   /// You MUST call this method once you are done processing the request.
-  func close(withStatus status: ServerStatus, completion: ((CallResult) -> Void)?) throws
+  func close(withStatus status: ServerStatus, completion: (() -> Void)?) throws
 }
 
 fileprivate final class Echo_EchoUpdateSessionBase: ServerSessionBidirectionalStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateSession {}

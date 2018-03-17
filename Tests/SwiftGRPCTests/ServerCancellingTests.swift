@@ -18,57 +18,59 @@ import Foundation
 @testable import SwiftGRPC
 import XCTest
 
-fileprivate class TimingOutEchoProvider: Echo_EchoProvider {
-  func get(request: Echo_EchoRequest, session _: Echo_EchoGetSession) throws -> Echo_EchoResponse {
-    Thread.sleep(forTimeInterval: 0.2)
+fileprivate class CancellingProvider: Echo_EchoProvider {
+  func get(request: Echo_EchoRequest, session: Echo_EchoGetSession) throws -> Echo_EchoResponse {
+    session.cancel()
     return Echo_EchoResponse()
   }
   
   func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws {
-    Thread.sleep(forTimeInterval: 0.2)
+    session.cancel()
+    XCTAssertThrowsError(try session.send(Echo_EchoResponse()))
   }
   
   func collect(session: Echo_EchoCollectSession) throws {
-    Thread.sleep(forTimeInterval: 0.2)
+    session.cancel()
+    try! session.sendAndClose(response: Echo_EchoResponse(), status: .ok, completion: nil)
   }
   
   func update(session: Echo_EchoUpdateSession) throws {
-    Thread.sleep(forTimeInterval: 0.2)
+    session.cancel()
+    XCTAssertThrowsError(try session.send(Echo_EchoResponse()))
   }
 }
 
-class ServerTimeoutTests: BasicEchoTestCase {
-  static var allTests: [(String, (ServerTimeoutTests) -> () throws -> Void)] {
+class ServerCancellingTests: BasicEchoTestCase {
+  static var allTests: [(String, (ServerCancellingTests) -> () throws -> Void)] {
     return [
-      ("testTimeoutUnary", testTimeoutUnary),
-      ("testTimeoutClientStreaming", testTimeoutClientStreaming),
-      ("testTimeoutServerStreaming", testTimeoutServerStreaming),
-      ("testTimeoutBidirectionalStreaming", testTimeoutBidirectionalStreaming)
+      ("testServerThrowsUnary", testServerThrowsUnary),
+      ("testServerThrowsClientStreaming", testServerThrowsClientStreaming),
+      ("testServerThrowsServerStreaming", testServerThrowsServerStreaming),
+      ("testServerThrowsBidirectionalStreaming", testServerThrowsBidirectionalStreaming)
     ]
   }
   
-  override func makeProvider() -> Echo_EchoProvider { return TimingOutEchoProvider() }
-  
-  override var defaultTimeout: TimeInterval { return 0.1 }
+  override func makeProvider() -> Echo_EchoProvider { return CancellingProvider() }
 }
 
-extension ServerTimeoutTests {
-  func testTimeoutUnary() {
+extension ServerCancellingTests {
+  func testServerThrowsUnary() {
     do {
       let result = try client.get(Echo_EchoRequest(text: "foo")).text
       XCTFail("should have thrown, received \(result) instead")
     } catch {
       guard case let .callError(callResult) = error as! RPCError
         else { XCTFail("unexpected error \(error)"); return }
-      XCTAssertEqual(.deadlineExceeded, callResult.statusCode)
-      XCTAssertEqual("Deadline Exceeded", callResult.statusMessage)
+      XCTAssertEqual(.cancelled, callResult.statusCode)
+      XCTAssertEqual("Cancelled", callResult.statusMessage)
     }
   }
   
-  func testTimeoutClientStreaming() {
+  func testServerThrowsClientStreaming() {
     let completionHandlerExpectation = expectation(description: "final completion handler called")
     let call = try! client.collect { callResult in
-      XCTAssertEqual(.deadlineExceeded, callResult.statusCode)
+      XCTAssertEqual(.cancelled, callResult.statusCode)
+      XCTAssertEqual("Cancelled", callResult.statusMessage)
       completionHandlerExpectation.fulfill()
     }
     
@@ -82,7 +84,7 @@ extension ServerTimeoutTests {
     
     do {
       let result = try call.closeAndReceive()
-      XCTFail("should have thrown, instead received \(result)")
+      XCTFail("should have thrown, received \(result) instead")
     } catch let receiveError {
       XCTAssertEqual(.unknown, (receiveError as! RPCError).callResult!.statusCode)
     }
@@ -90,24 +92,25 @@ extension ServerTimeoutTests {
     waitForExpectations(timeout: defaultTimeout)
   }
   
-  func testTimeoutServerStreaming() {
+  func testServerThrowsServerStreaming() {
     let completionHandlerExpectation = expectation(description: "completion handler called")
     let call = try! client.expand(Echo_EchoRequest(text: "foo bar baz")) { callResult in
-      XCTAssertEqual(.deadlineExceeded, callResult.statusCode)
+      XCTAssertEqual(.cancelled, callResult.statusCode)
+      XCTAssertEqual("Cancelled", callResult.statusMessage)
       completionHandlerExpectation.fulfill()
     }
     
-    // FIXME(danielalm): Why does `call.receive()` essentially return "end of stream" once the call times out,
-    // rather than returning an error?
+    // FIXME(danielalm): Why does `call.receive()` essentially return "end of stream", rather than returning an error?
     XCTAssertNil(try! call.receive())
     
     waitForExpectations(timeout: defaultTimeout)
   }
   
-  func testTimeoutBidirectionalStreaming() {
+  func testServerThrowsBidirectionalStreaming() {
     let completionHandlerExpectation = expectation(description: "completion handler called")
     let call = try! client.update { callResult in
-      XCTAssertEqual(.deadlineExceeded, callResult.statusCode)
+      XCTAssertEqual(.cancelled, callResult.statusCode)
+      XCTAssertEqual("Cancelled", callResult.statusMessage)
       completionHandlerExpectation.fulfill()
     }
     
@@ -119,8 +122,7 @@ extension ServerTimeoutTests {
     }
     call.waitForSendOperationsToFinish()
     
-    // FIXME(danielalm): Why does `call.receive()` essentially return "end of stream" once the call times out,
-    // rather than returning an error?
+    // FIXME(danielalm): Why does `call.receive()` essentially return "end of stream", rather than returning an error?
     XCTAssertNil(try! call.receive())
     
     waitForExpectations(timeout: defaultTimeout)

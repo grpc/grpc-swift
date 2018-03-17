@@ -39,6 +39,8 @@ public protocol ServerSession: class {
   var requestMetadata: Metadata { get }
 
   var initialMetadata: Metadata { get set }
+  
+  func cancel()
 }
 
 open class ServerSessionBase: ServerSession {
@@ -52,6 +54,10 @@ open class ServerSessionBase: ServerSession {
   public init(handler: Handler) {
     self.handler = handler
   }
+  
+  public func cancel() {
+    call.cancel()
+  }
 }
 
 open class ServerSessionTestStub: ServerSession {
@@ -60,4 +66,6 @@ open class ServerSessionTestStub: ServerSession {
   open var initialMetadata = Metadata()
 
   public init() {}
+  
+  open func cancel() {}
 }

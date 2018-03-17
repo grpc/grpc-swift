@@ -48,7 +48,7 @@ extension StreamSending {
 }
 
 extension StreamSending where Self: ServerSessionBase {
-  public func close(withStatus status: ServerStatus = .ok, completion: ((CallResult) -> Void)? = nil) throws {
+  public func close(withStatus status: ServerStatus = .ok, completion: (() -> Void)? = nil) throws {
     try handler.sendStatus(status, completion: completion)
   }
 }
