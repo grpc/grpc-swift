@@ -26,7 +26,9 @@ extension Generator {
   }
   
   func printStreamSendMethods(sentType: String) {
-    println("/// Call this to send each message in the request stream. Nonblocking.")
+    println("/// Send a message to the stream. Nonblocking.")
     println("func send(_ message: \(sentType), completion: @escaping (Error?) -> Void) throws")
+    println("/// Send a message to the stream and wait for the send operation to finish. Blocking.")
+    println("func send(_ message: \(sentType)) throws")
   }
 }

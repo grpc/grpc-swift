@@ -47,8 +47,10 @@ class Echo_EchoExpandCallTestStub: ClientCallServerStreamingTestStub<Echo_EchoRe
 }
 
 internal protocol Echo_EchoCollectCall: ClientCallClientStreaming {
-  /// Call this to send each message in the request stream. Nonblocking.
+  /// Send a message to the stream. Nonblocking.
   func send(_ message: Echo_EchoRequest, completion: @escaping (Error?) -> Void) throws
+  /// Send a message to the stream and wait for the send operation to finish. Blocking.
+  func send(_ message: Echo_EchoRequest) throws
 
   /// Call this to close the connection and wait for a response. Blocking.
   func closeAndReceive() throws -> Echo_EchoResponse
@@ -72,8 +74,10 @@ internal protocol Echo_EchoUpdateCall: ClientCallBidirectionalStreaming {
   /// Call this to wait for a result. Nonblocking.
   func receive(completion: @escaping (ResultOrRPCError<Echo_EchoResponse?>) -> Void) throws
 
-  /// Call this to send each message in the request stream. Nonblocking.
+  /// Send a message to the stream. Nonblocking.
   func send(_ message: Echo_EchoRequest, completion: @escaping (Error?) -> Void) throws
+  /// Send a message to the stream and wait for the send operation to finish. Blocking.
+  func send(_ message: Echo_EchoRequest) throws
 
   /// Call this to close the sending connection. Blocking.
   func closeSend() throws
@@ -201,8 +205,10 @@ fileprivate final class Echo_EchoGetSessionBase: ServerSessionUnaryBase<Echo_Ech
 class Echo_EchoGetSessionTestStub: ServerSessionUnaryTestStub, Echo_EchoGetSession {}
 
 internal protocol Echo_EchoExpandSession: ServerSessionServerStreaming {
-  /// Call this to send each message in the request stream. Nonblocking.
+  /// Send a message to the stream. Nonblocking.
   func send(_ message: Echo_EchoResponse, completion: @escaping (Error?) -> Void) throws
+  /// Send a message to the stream and wait for the send operation to finish. Blocking.
+  func send(_ message: Echo_EchoResponse) throws
 
   /// Close the connection and send the status. Non-blocking.
   /// You MUST call this method once you are done processing the request.
@@ -238,8 +244,10 @@ internal protocol Echo_EchoUpdateSession: ServerSessionBidirectionalStreaming {
   /// Call this to wait for a result. Nonblocking.
   func receive(completion: @escaping (ResultOrRPCError<Echo_EchoRequest?>) -> Void) throws
 
-  /// Call this to send each message in the request stream. Nonblocking.
+  /// Send a message to the stream. Nonblocking.
   func send(_ message: Echo_EchoResponse, completion: @escaping (Error?) -> Void) throws
+  /// Send a message to the stream and wait for the send operation to finish. Blocking.
+  func send(_ message: Echo_EchoResponse) throws
 
   /// Close the connection and send the status. Non-blocking.
   /// You MUST call this method once you are done processing the request.

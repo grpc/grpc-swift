@@ -72,6 +72,10 @@ open class ServerSessionServerStreamingTestStub<OutputType: Message>: ServerSess
     outputs.append(message)
   }
 
+  open func send(_ message: OutputType) throws {
+    outputs.append(message)
+  }
+
   open func close(withStatus status: ServerStatus, completion: ((CallResult) -> Void)?) throws {
     self.status = status
     completion?(.fakeOK)

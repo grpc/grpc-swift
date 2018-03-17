@@ -29,6 +29,19 @@ extension StreamSending {
     try call.sendMessage(data: message.serializedData(), completion: completion)
   }
   
+  public func send(_ message: SentType) throws {
+    var resultError: Error?
+    let sem = DispatchSemaphore(value: 0)
+    try send(message) {
+      resultError = $0
+      sem.signal()
+    }
+    _ = sem.wait()
+    if let resultError = resultError {
+      throw resultError
+    }
+  }
+  
   public func waitForSendOperationsToFinish() {
     call.messageQueueEmpty.wait()
   }

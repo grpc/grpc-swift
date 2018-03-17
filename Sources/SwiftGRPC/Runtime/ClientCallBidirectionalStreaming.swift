@@ -71,6 +71,10 @@ open class ClientCallBidirectionalStreamingTestStub<InputType: Message, OutputTy
   open func send(_ message: InputType, completion _: @escaping (Error?) -> Void) throws {
     inputs.append(message)
   }
+  
+  open func send(_ message: InputType) throws {
+    inputs.append(message)
+  }
 
   open func closeSend(completion: (() -> Void)?) throws { completion?() }
 

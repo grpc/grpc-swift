@@ -75,6 +75,10 @@ open class ClientCallClientStreamingTestStub<InputType: Message, OutputType: Mes
   open func send(_ message: InputType, completion _: @escaping (Error?) -> Void) throws {
     inputs.append(message)
   }
+  
+  open func send(_ message: InputType) throws {
+    inputs.append(message)
+  }
 
   open func closeAndReceive(completion: @escaping (ResultOrRPCError<OutputType>) -> Void) throws {
     completion(.result(output!))
