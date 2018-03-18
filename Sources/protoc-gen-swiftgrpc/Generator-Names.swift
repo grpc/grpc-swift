@@ -60,7 +60,8 @@ extension Generator {
   }
 
   internal var methodFunctionName: String {
-    return method.name.lowercased()
+    let name = method.name
+    return name.prefix(1).lowercased() + name.dropFirst()
   }
 
   internal var methodSessionName: String {
