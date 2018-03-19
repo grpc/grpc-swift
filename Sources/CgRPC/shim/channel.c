@@ -71,8 +71,6 @@ void cgrpc_channel_destroy(cgrpc_channel *c) {
   c->channel = NULL;
 
   grpc_completion_queue_shutdown(c->completion_queue);
-  cgrpc_completion_queue_drain(c->completion_queue);
-  grpc_completion_queue_destroy(c->completion_queue);
   free(c);
 }
 

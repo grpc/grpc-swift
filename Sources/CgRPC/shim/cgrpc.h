@@ -110,6 +110,9 @@ void grpc_shutdown(void);
 const char *grpc_version_string(void);
 const char *grpc_g_stands_for(void);
 
+void cgrpc_completion_queue_drain(cgrpc_completion_queue *cq);
+void grpc_completion_queue_destroy(cgrpc_completion_queue *cq);
+
 // helper
 void cgrpc_free_copied_string(char *string);
 
