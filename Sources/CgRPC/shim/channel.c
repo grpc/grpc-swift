@@ -101,3 +101,7 @@ cgrpc_call *cgrpc_channel_create_call(cgrpc_channel *channel,
 cgrpc_completion_queue *cgrpc_channel_completion_queue(cgrpc_channel *channel) {
   return channel->completion_queue;
 }
+
+grpc_connectivity_state cgrpc_channel_check_connectivity_state(cgrpc_channel *channel, int try_to_connect) {
+  return grpc_channel_check_connectivity_state(channel->channel, try_to_connect);
+}
