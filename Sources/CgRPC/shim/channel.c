@@ -85,6 +85,7 @@ cgrpc_call *cgrpc_channel_create_call(cgrpc_channel *channel,
   // create call
   host_slice = grpc_slice_from_copied_string(host);
   gpr_timespec deadline = cgrpc_deadline_in_seconds_from_now(timeout);
+  // The resulting call will have a retain call of +1. We'll release it in `cgrpc_call_destroy()`.
   grpc_call *channel_call = grpc_channel_create_call(channel->channel,
                                                      NULL,
                                                      GRPC_PROPAGATE_DEFAULTS,

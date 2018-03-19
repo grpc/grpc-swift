@@ -32,7 +32,7 @@ public class Handler {
   /// A Call object that can be used to respond to the request
   public private(set) lazy var call: Call = {
     Call(underlyingCall: cgrpc_handler_get_call(self.underlyingHandler),
-         owned: false,
+         owned: true,
          completionQueue: self.completionQueue)
   }()
 

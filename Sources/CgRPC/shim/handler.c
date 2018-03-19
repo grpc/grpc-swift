@@ -38,7 +38,7 @@ void cgrpc_handler_destroy(cgrpc_handler *h) {
   grpc_metadata_array_destroy(&(h->request_metadata_recv));
   grpc_call_details_destroy(&(h->call_details));
   if (h->server_call) {
-    //grpc_call_destroy(h->server_call);
+    grpc_call_unref(h->server_call);
   }
   free(h);
 }
@@ -67,6 +67,10 @@ cgrpc_call *cgrpc_handler_get_call(cgrpc_handler *h) {
   cgrpc_call *call = (cgrpc_call *) malloc(sizeof(cgrpc_call));
   memset(call, 0, sizeof(cgrpc_call));
   call->call = h->server_call;
+  if (call->call) {
+    // This retain will be balanced by `cgrpc_call_destroy()`.
+    grpc_call_ref(call->call);
+  }
   return call;
 }
 
@@ -77,6 +81,11 @@ cgrpc_completion_queue *cgrpc_handler_get_completion_queue(cgrpc_handler *h) {
 grpc_call_error cgrpc_handler_request_call(cgrpc_handler *h,
                                            cgrpc_metadata_array *metadata,
                                            long tag) {
+  if (h->server_call != NULL) {
+    return GRPC_CALL_OK;
+  }
+  // This fills `h->server_call` with a call with retain count of +1.
+  // We'll release that retain in `cgrpc_handler_destroy()`.
   return grpc_server_request_call(h->server->server,
                                   &(h->server_call),
                                   &(h->call_details),
@@ -85,5 +94,3 @@ grpc_call_error cgrpc_handler_request_call(cgrpc_handler *h,
                                   h->server->completion_queue,
                                   cgrpc_create_tag(tag));
 }
-
-
