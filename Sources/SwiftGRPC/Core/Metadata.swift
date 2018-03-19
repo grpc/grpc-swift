@@ -69,13 +69,13 @@ public class Metadata: CustomStringConvertible {
   }
   
   public var description: String {
-    var result = ""
+    var lines: [String] = []
     for i in 0..<count() {
       let key = self.key(i)
       let value = self.value(i)
-      result += (key ?? "(nil)") + ":" + (value ?? "(nil)") + "\n"
+      lines.append((key ?? "(nil)") + ":" + (value ?? "(nil)"))
     }
-    return result
+    return lines.joined(separator: "\n")
   }
   
   public func copy() -> Metadata {

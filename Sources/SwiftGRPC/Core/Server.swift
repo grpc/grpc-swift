@@ -66,8 +66,7 @@ public class Server {
     cgrpc_server_start(underlyingServer)
     // run the server on a new background thread
     dispatchQueue.async {
-      var running = true
-      while running {
+      spinloop: while true {
         do {
           let handler = Handler(underlyingServer: self.underlyingServer)
           try handler.requestCall(tag: Server.handlerCallTag)
@@ -97,16 +96,17 @@ public class Server {
                 }
               }
             } else if event.tag == Server.stopTag || event.tag == Server.destroyTag {
-              running = false // exit the loop
+              break spinloop
             }
           } else if event.type == .queueTimeout {
             // everything is fine
+            continue
           } else if event.type == .queueShutdown {
-            running = false
+            break spinloop
           }
         } catch {
           print("server call error: \(error)")
-          running = false
+          break spinloop
         }
       }
       self.onCompletion?()

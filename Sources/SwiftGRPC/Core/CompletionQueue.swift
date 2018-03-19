@@ -77,6 +77,11 @@ class CompletionQueue {
     self.underlyingCompletionQueue = underlyingCompletionQueue
     self.name = name
   }
+  
+  deinit {
+    cgrpc_completion_queue_drain(underlyingCompletionQueue)
+    grpc_completion_queue_destroy(underlyingCompletionQueue)
+  }
 
   /// Waits for an operation group to complete
   ///

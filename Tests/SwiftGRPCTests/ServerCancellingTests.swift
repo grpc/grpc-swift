@@ -51,6 +51,8 @@ class ServerCancellingTests: BasicEchoTestCase {
   }
   
   override func makeProvider() -> Echo_EchoProvider { return CancellingProvider() }
+  
+  override var defaultTimeout: TimeInterval { return 5.0 }
 }
 
 extension ServerCancellingTests {
