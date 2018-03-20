@@ -162,9 +162,15 @@ class CompletionQueue {
 
   /// Shuts down a completion queue
   func shutdown() {
+    var needsShutdown = false
     operationGroupsMutex.synchronize {
-      hasBeenShutdown = true
+      if !hasBeenShutdown {
+        needsShutdown = true
+        hasBeenShutdown = true
+      }
     }
-    cgrpc_completion_queue_shutdown(underlyingCompletionQueue)
+    if needsShutdown {
+      cgrpc_completion_queue_shutdown(underlyingCompletionQueue)
+    }
   }
 }

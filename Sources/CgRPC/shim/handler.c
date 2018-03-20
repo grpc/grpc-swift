@@ -32,7 +32,6 @@ cgrpc_handler *cgrpc_handler_create_with_server(cgrpc_server *server) {
 }
 
 void cgrpc_handler_destroy(cgrpc_handler *h) {
-  grpc_completion_queue_shutdown(h->completion_queue);
   grpc_metadata_array_destroy(&(h->request_metadata_recv));
   grpc_call_details_destroy(&(h->call_details));
   if (h->server_call) {
