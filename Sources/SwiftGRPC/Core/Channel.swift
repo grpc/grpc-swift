@@ -66,6 +66,7 @@ public class Channel {
   }
 
   deinit {
+    completionQueue.shutdown()
     cgrpc_channel_destroy(underlyingChannel)
   }
 
