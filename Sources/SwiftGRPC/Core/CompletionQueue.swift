@@ -96,11 +96,10 @@ class CompletionQueue {
     return CompletionQueueEvent(event)
   }
 
-  /// Register an operation group for handling upon completion. Returns true if the operation group was registered
-  /// successfully.
+  /// Register an operation group for handling upon completion. Will throw if the queue has been shutdown already.
   ///
   /// - Parameter operationGroup: the operation group to handle
-  func register(_ operationGroup: OperationGroup, onSuccess: () throws -> Void) rethrows {
+  func register(_ operationGroup: OperationGroup, onSuccess: () throws -> Void) throws {
     try operationGroupsMutex.synchronize {
       guard !hasBeenShutdown
         else { throw CallError.completionQueueShutdown }
