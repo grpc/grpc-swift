@@ -79,6 +79,10 @@ class CompletionQueue {
   }
   
   deinit {
+    operationGroupsMutex.synchronize {
+      hasBeenShutdown = true
+    }
+    cgrpc_completion_queue_shutdown(underlyingCompletionQueue)
     cgrpc_completion_queue_drain(underlyingCompletionQueue)
     grpc_completion_queue_destroy(underlyingCompletionQueue)
   }
@@ -92,21 +96,15 @@ class CompletionQueue {
     return CompletionQueueEvent(event)
   }
 
-  /// Register an operation group for handling upon completion
+  /// Register an operation group for handling upon completion. Will throw if the queue has been shutdown already.
   ///
   /// - Parameter operationGroup: the operation group to handle
-  func register(_ operationGroup: OperationGroup) {
-    operationGroupsMutex.synchronize {
-      if !hasBeenShutdown {
-        operationGroups[operationGroup.tag] = operationGroup
-      } else {
-        // The queue has been shut down already, so there's no spinloop to call the operation group's completion handler
-        // on. To guarantee that the completion handler gets called, we'll enqueue it right now.
-        DispatchQueue.global().async {
-          operationGroup.success = false
-          operationGroup.completion?(operationGroup)
-        }
-      }
+  func register(_ operationGroup: OperationGroup, onSuccess: () throws -> Void) throws {
+    try operationGroupsMutex.synchronize {
+      guard !hasBeenShutdown
+        else { throw CallError.completionQueueShutdown }
+      operationGroups[operationGroup.tag] = operationGroup
+      try onSuccess()
     }
   }
 
@@ -138,7 +136,6 @@ class CompletionQueue {
           self.operationGroupsMutex.lock()
           let currentOperationGroups = self.operationGroups
           self.operationGroups = [:]
-          self.hasBeenShutdown = true
           self.operationGroupsMutex.unlock()
           
           for operationGroup in currentOperationGroups.values {
@@ -165,6 +162,15 @@ class CompletionQueue {
 
   /// Shuts down a completion queue
   func shutdown() {
-    cgrpc_completion_queue_shutdown(underlyingCompletionQueue)
+    var needsShutdown = false
+    operationGroupsMutex.synchronize {
+      if !hasBeenShutdown {
+        needsShutdown = true
+        hasBeenShutdown = true
+      }
+    }
+    if needsShutdown {
+      cgrpc_completion_queue_shutdown(underlyingCompletionQueue)
+    }
   }
 }

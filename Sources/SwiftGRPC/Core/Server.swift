@@ -58,6 +58,7 @@ public class Server {
 
   deinit {
     cgrpc_server_destroy(underlyingServer)
+    completionQueue.shutdown()
   }
 
   /// Run the server

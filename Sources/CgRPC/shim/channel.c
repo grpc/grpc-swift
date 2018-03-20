@@ -69,8 +69,6 @@ cgrpc_channel *cgrpc_channel_create_secure(const char *address,
 void cgrpc_channel_destroy(cgrpc_channel *c) {
   grpc_channel_destroy(c->channel);
   c->channel = NULL;
-
-  grpc_completion_queue_shutdown(c->completion_queue);
   free(c);
 }
 

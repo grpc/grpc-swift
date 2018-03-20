@@ -51,12 +51,12 @@ extension EchoTests {
   }
   
   func testUnaryLotsOfRequests() {
-    // No need to spam the log with 50k lines.
+    // No need to spam the log with 10k lines.
     server.shouldLogRequests = false
     // Sending that many requests at once can sometimes trip things up, it seems.
     client.timeout = 5.0
     let clockStart = clock()
-    let numberOfRequests = 50_000
+    let numberOfRequests = 10_000
     for i in 0..<numberOfRequests {
       if i % 1_000 == 0 && i > 0 {
         print("\(i) requests sent so far, elapsed time: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))")

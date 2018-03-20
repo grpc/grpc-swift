@@ -70,6 +70,9 @@ public class Handler {
   }
 
   deinit {
+    // Technically unnecessary, because the handler only gets released once the completion queue has already been
+    // shut down, but it doesn't hurt to keep this here.
+    completionQueue.shutdown()
     cgrpc_handler_destroy(self.underlyingHandler)
   }
 

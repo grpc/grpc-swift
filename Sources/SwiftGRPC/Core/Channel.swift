@@ -67,6 +67,7 @@ public class Channel {
 
   deinit {
     cgrpc_channel_destroy(underlyingChannel)
+    completionQueue.shutdown()
   }
 
   /// Constructs a Call object to make a gRPC API call

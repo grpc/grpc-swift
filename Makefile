@@ -9,7 +9,7 @@ all:
 project:
 	swift package generate-xcodeproj
 # Optional: set the generated project's indentation settings.
-	-ruby fix-indentation-settings.rb
+	-ruby fix-indentation-settings.rb || echo "Consider running 'sudo gem install xcodeproj' to automatically set correct indentation settings for the generated project."
 
 test:	all
 	swift test -v $(CFLAGS)

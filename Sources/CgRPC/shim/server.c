@@ -75,8 +75,6 @@ void cgrpc_server_destroy(cgrpc_server *server) {
   }
   grpc_server_destroy(server->server);
   server->server = NULL;
-
-  grpc_completion_queue_shutdown(server->completion_queue);
 }
 
 void cgrpc_server_start(cgrpc_server *server) {
