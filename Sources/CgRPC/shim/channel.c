@@ -69,10 +69,6 @@ cgrpc_channel *cgrpc_channel_create_secure(const char *address,
 void cgrpc_channel_destroy(cgrpc_channel *c) {
   grpc_channel_destroy(c->channel);
   c->channel = NULL;
-
-  grpc_completion_queue_shutdown(c->completion_queue);
-  cgrpc_completion_queue_drain(c->completion_queue);
-  grpc_completion_queue_destroy(c->completion_queue);
   free(c);
 }
 
@@ -85,6 +81,7 @@ cgrpc_call *cgrpc_channel_create_call(cgrpc_channel *channel,
   // create call
   host_slice = grpc_slice_from_copied_string(host);
   gpr_timespec deadline = cgrpc_deadline_in_seconds_from_now(timeout);
+  // The resulting call will have a retain call of +1. We'll release it in `cgrpc_call_destroy()`.
   grpc_call *channel_call = grpc_channel_create_call(channel->channel,
                                                      NULL,
                                                      GRPC_PROPAGATE_DEFAULTS,
@@ -101,4 +98,8 @@ cgrpc_call *cgrpc_channel_create_call(cgrpc_channel *channel,
 
 cgrpc_completion_queue *cgrpc_channel_completion_queue(cgrpc_channel *channel) {
   return channel->completion_queue;
+}
+
+grpc_connectivity_state cgrpc_channel_check_connectivity_state(cgrpc_channel *channel, int try_to_connect) {
+  return grpc_channel_check_connectivity_state(channel->channel, try_to_connect);
 }

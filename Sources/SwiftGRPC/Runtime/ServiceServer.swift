@@ -22,6 +22,8 @@ open class ServiceServer {
   public let address: String
   public let server: Server
 
+  public var shouldLogRequests = true
+
   /// Create a server that accepts insecure connections.
   public init(address: String) {
     gRPC.initialize()
@@ -58,13 +60,15 @@ open class ServiceServer {
         return
       }
 
-      let unwrappedHost = handler.host ?? "(nil)"
       let unwrappedMethod = handler.method ?? "(nil)"
-      let unwrappedCaller = handler.caller ?? "(nil)"
-      print("Server received request to " + unwrappedHost
-        + " calling " + unwrappedMethod
-        + " from " + unwrappedCaller
-        + " with " + handler.requestMetadata.description)
+      if strongSelf.shouldLogRequests == true {
+        let unwrappedHost = handler.host ?? "(nil)"
+        let unwrappedCaller = handler.caller ?? "(nil)"
+        print("Server received request to " + unwrappedHost
+          + " calling " + unwrappedMethod
+          + " from " + unwrappedCaller
+          + " with " + handler.requestMetadata.description)
+      }
       
       do {
         if !(try strongSelf.handleMethod(unwrappedMethod, handler: handler, queue: queue)) {

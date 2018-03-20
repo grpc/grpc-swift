@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, gRPC Authors All rights reserved.
+ * Copyright 2018, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import XCTest
-@testable import SwiftGRPCTests
+#if SWIFT_PACKAGE
+  import CgRPC
+#endif
+import Foundation
 
-XCTMain([
-  testCase(gRPCTests.allTests),
-  testCase(ClientCancellingTests.allTests),
-  testCase(ClientTestExample.allTests),
-  testCase(ClientTimeoutTests.allTests),
-  testCase(CompletionQueueTests.allTests),
-  testCase(ConnectionFailureTests.allTests),
-  testCase(EchoTests.allTests),
-  testCase(ServerCancellingTests.allTests),
-  testCase(ServerTestExample.allTests),
-  testCase(ServerThrowingTests.allTests),
-  testCase(ServerTimeoutTests.allTests)
-])
+public enum ConnectivityState: Int32, Error {
+  case initializing = -1
+  case idle
+  case connecting
+  case ready
+  case transient_failure
+  case shutdown
+  
+  static func fromCEnum(_ connectivityState: grpc_connectivity_state) -> ConnectivityState? {
+    return ConnectivityState(rawValue: connectivityState.rawValue)
+  }
+}

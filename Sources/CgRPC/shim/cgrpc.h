@@ -91,6 +91,22 @@ typedef enum grpc_completion_type {
   GRPC_OP_COMPLETE
 } grpc_completion_type;
 
+/** Connectivity state of a channel. */
+typedef enum grpc_connectivity_state {
+  /** channel has just been initialized */
+  GRPC_CHANNEL_INIT = -1,
+  /** channel is idle */
+  GRPC_CHANNEL_IDLE,
+  /** channel is connecting */
+  GRPC_CHANNEL_CONNECTING,
+  /** channel is ready for work */
+  GRPC_CHANNEL_READY,
+  /** channel has seen a failure but expects to recover */
+  GRPC_CHANNEL_TRANSIENT_FAILURE,
+  /** channel has seen a failure that it cannot recover from */
+  GRPC_CHANNEL_SHUTDOWN
+} grpc_connectivity_state;
+
 typedef struct grpc_event {
   /** The type of the completion. */
   grpc_completion_type type;
@@ -110,6 +126,9 @@ void grpc_shutdown(void);
 const char *grpc_version_string(void);
 const char *grpc_g_stands_for(void);
 
+void cgrpc_completion_queue_drain(cgrpc_completion_queue *cq);
+void grpc_completion_queue_destroy(cgrpc_completion_queue *cq);
+
 // helper
 void cgrpc_free_copied_string(char *string);
 
@@ -125,6 +144,9 @@ cgrpc_call *cgrpc_channel_create_call(cgrpc_channel *channel,
                                       const char *host,
                                       double timeout);
 cgrpc_completion_queue *cgrpc_channel_completion_queue(cgrpc_channel *channel);
+
+grpc_connectivity_state cgrpc_channel_check_connectivity_state(
+    cgrpc_channel *channel, int try_to_connect);
 
 // server support
 cgrpc_server *cgrpc_server_create(const char *address);

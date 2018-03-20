@@ -22,6 +22,7 @@ class EchoTests: BasicEchoTestCase {
   static var allTests: [(String, (EchoTests) -> () throws -> Void)] {
     return [
       ("testUnary", testUnary),
+      ("testUnaryLotsOfRequests", testUnaryLotsOfRequests),
       ("testClientStreaming", testClientStreaming),
       ("testClientStreamingLotsOfMessages", testClientStreamingLotsOfMessages),
       ("testServerStreaming", testServerStreaming),
@@ -47,6 +48,22 @@ extension EchoTests {
     XCTAssertEqual("Swift echo get: foo", try! client.get(Echo_EchoRequest(text: "foo")).text)
     XCTAssertEqual("Swift echo get: foo", try! client.get(Echo_EchoRequest(text: "foo")).text)
     XCTAssertEqual("Swift echo get: foo", try! client.get(Echo_EchoRequest(text: "foo")).text)
+  }
+  
+  func testUnaryLotsOfRequests() {
+    // No need to spam the log with 10k lines.
+    server.shouldLogRequests = false
+    // Sending that many requests at once can sometimes trip things up, it seems.
+    client.timeout = 5.0
+    let clockStart = clock()
+    let numberOfRequests = 10_000
+    for i in 0..<numberOfRequests {
+      if i % 1_000 == 0 && i > 0 {
+        print("\(i) requests sent so far, elapsed time: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))")
+      }
+      XCTAssertEqual("Swift echo get: foo \(i)", try client.get(Echo_EchoRequest(text: "foo \(i)")).text)
+    }
+    print("total time for \(numberOfRequests) requests: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))")
   }
 }
 

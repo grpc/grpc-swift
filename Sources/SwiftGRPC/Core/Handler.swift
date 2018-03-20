@@ -32,7 +32,7 @@ public class Handler {
   /// A Call object that can be used to respond to the request
   public private(set) lazy var call: Call = {
     Call(underlyingCall: cgrpc_handler_get_call(self.underlyingHandler),
-         owned: false,
+         owned: true,
          completionQueue: self.completionQueue)
   }()
 
@@ -70,6 +70,9 @@ public class Handler {
   }
 
   deinit {
+    // Technically unnecessary, because the handler only gets released once the completion queue has already been
+    // shut down, but it doesn't hurt to keep this here.
+    completionQueue.shutdown()
     cgrpc_handler_destroy(self.underlyingHandler)
   }
 
