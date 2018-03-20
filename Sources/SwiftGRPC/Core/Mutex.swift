@@ -53,9 +53,8 @@ public class Mutex {
   /// Runs a block within a locked mutex
   ///
   /// Parameter block: the code to run while the mutex is locked
-  public func synchronize(block: () throws -> Void) rethrows {
-    lock()
-    try block()
-    unlock()
+  public func synchronize<T>(block: () throws -> T) rethrows -> T {
+    lock(); defer { unlock() }
+    return try block()
   }
 }

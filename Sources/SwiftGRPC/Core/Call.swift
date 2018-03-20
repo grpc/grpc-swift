@@ -84,12 +84,15 @@ public class Call {
   /// - Returns: the result of initiating the call
   /// - Throws: `CallError` if fails to call.
   func perform(_ operations: OperationGroup) throws {
-    completionQueue.register(operations)
-    Call.callMutex.lock()
-    let error = cgrpc_call_perform(underlyingCall, operations.underlyingOperations, operations.tag)
-    Call.callMutex.unlock()
-    if error != GRPC_CALL_OK {
-      throw CallError.callError(grpcCallError: error)
+    try completionQueue.register(operations) {
+      Call.callMutex.lock()
+      // We need to do the perform *inside* the `completionQueue.register` call, to ensure that the queue can't get
+      // shutdown in between registering the operation group and calling `cgrpc_call_perform`.
+      let error = cgrpc_call_perform(underlyingCall, operations.underlyingOperations, operations.tag)
+      Call.callMutex.unlock()
+      if error != GRPC_CALL_OK {
+        throw CallError.callError(grpcCallError: error)
+      }
     }
   }
 
