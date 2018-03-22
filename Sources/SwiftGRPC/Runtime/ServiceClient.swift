@@ -18,19 +18,19 @@ import Dispatch
 import Foundation
 import SwiftProtobuf
 
-public protocol ServiceClient {
+public protocol ServiceClient: class {
   var channel: Channel { get }
 
   /// This metadata will be sent with all requests.
-  var metadata: Metadata { get }
+  var metadata: Metadata { get set }
 
   /// This property allows the service host name to be overridden.
   /// For example, it can be used to make calls to "localhost:8080"
   /// appear to be to "example.com".
-  var host: String { get }
+  var host: String { get set }
 
   /// This property allows the service timeout to be overridden.
-  var timeout: TimeInterval { get }
+  var timeout: TimeInterval { get set }
 }
 
 open class ServiceClientBase: ServiceClient {
