@@ -23,19 +23,29 @@
 #include <stdlib.h>
 #include <string.h>
 
-cgrpc_channel *cgrpc_channel_create(const char *address) {
+cgrpc_channel *cgrpc_channel_create(const char *address,
+                                    const char *user_agent) {
   cgrpc_channel *c = (cgrpc_channel *) malloc(sizeof (cgrpc_channel));
   // create the channel
-  grpc_channel_args channel_args;
-  channel_args.num_args = 0;
-  c->channel = grpc_insecure_channel_create(address, &channel_args, NULL);
+
+  grpc_channel_args *channelArgs = gpr_malloc(sizeof(grpc_channel_args));
+  channelArgs->args = gpr_malloc(1 * sizeof(grpc_arg));
+
+  grpc_arg *arg = &channelArgs->args[0];
+  arg->type = GRPC_ARG_STRING;
+  arg->key = gpr_strdup(GRPC_ARG_PRIMARY_USER_AGENT_STRING);
+  arg->value.string = gpr_strdup(user_agent);
+  channelArgs->num_args = 1;
+
+  c->channel = grpc_insecure_channel_create(address, channelArgs, NULL);
   c->completion_queue = grpc_completion_queue_create_for_next(NULL);
   return c;
 }
 
 cgrpc_channel *cgrpc_channel_create_secure(const char *address,
                                            const char *pem_root_certs,
-                                           const char *host) {
+                                           const char *host,
+                                           const char *user_agent) {
   cgrpc_channel *c = (cgrpc_channel *) malloc(sizeof (cgrpc_channel));
   // create the channel
 
@@ -46,8 +56,8 @@ cgrpc_channel *cgrpc_channel_create_secure(const char *address,
   int argCount = 1;
   grpc_arg *arg = &channelArgs->args[0];
   arg->type = GRPC_ARG_STRING;
-  arg->key = gpr_strdup("grpc.primary_user_agent");
-  arg->value.string = gpr_strdup("grpc-swift/0.0.1");
+  arg->key = gpr_strdup(GRPC_ARG_PRIMARY_USER_AGENT_STRING);
+  arg->value.string = gpr_strdup(user_agent);
 
   if (host) {
     argCount++;

@@ -49,16 +49,16 @@ open class ServiceClientBase: ServiceClient {
   }
 
   /// Create a client.
-  public init(address: String, secure: Bool = true) {
+  public init(address: String, secure: Bool = true, userAgent: String = gRPC.defaultUserAgent) {
     gRPC.initialize()
-    channel = Channel(address: address, secure: secure)
+    channel = Channel(address: address, secure: secure, userAgent: userAgent)
     metadata = Metadata()
   }
 
   /// Create a client that makes secure connections with a custom certificate and (optional) hostname.
-  public init(address: String, certificates: String, host: String?) {
+  public init(address: String, certificates: String, host: String?, userAgent: String = gRPC.defaultUserAgent) {
     gRPC.initialize()
-    channel = Channel(address: address, certificates: certificates, host: host)
+    channel = Channel(address: address, certificates: certificates, host: host, userAgent: userAgent)
     metadata = Metadata()
   }
 }
