@@ -15,6 +15,7 @@
  */
 #if SWIFT_PACKAGE
   import CgRPC
+  import Dispatch
 #endif
 import Foundation
 
