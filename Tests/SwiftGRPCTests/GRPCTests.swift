@@ -146,7 +146,7 @@ func runClient(useSSL: Bool) throws {
   if useSSL {
     channel = Channel(address: address,
                       certificates: String(data: certificateForTests, encoding: .utf8)!,
-                      host: host)
+                      args: [Arg.sslTargetNameOverride(host)])
   } else {
     channel = Channel(address: address, secure: false)
   }
