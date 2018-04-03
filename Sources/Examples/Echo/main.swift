@@ -38,11 +38,11 @@ func buildEchoService(_ ssl: Bool, _ address: String, _ port: String, _: String)
   if ssl {
     let certificateURL = URL(fileURLWithPath: "ssl.crt")
     let certificates = try! String(contentsOf: certificateURL)
-    let args: [Arg] = [.sslTargetNameOverride("example.com")]
+    let arguments: [Channel.Argument] = [.sslTargetNameOverride("example.com")]
 
     service = Echo_EchoServiceClient(address: address + ":" + port,
                                certificates: certificates,
-                               args: args)
+                               arguments: arguments)
     service.host = "example.com"
   } else {
     service = Echo_EchoServiceClient(address: address + ":" + port, secure: false)

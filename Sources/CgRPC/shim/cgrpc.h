@@ -125,20 +125,20 @@ typedef enum grpc_arg_type {
 } grpc_arg_type;
 
 typedef struct grpc_arg_pointer_vtable {
-  void* (*copy)(void* p);
-  void (*destroy)(void* p);
-  int (*cmp)(void* p, void* q);
+  void *(*copy)(void *p);
+  void (*destroy)(void *p);
+  int (*cmp)(void *p, void *q);
 } grpc_arg_pointer_vtable;
 
 typedef struct grpc_arg {
   grpc_arg_type type;
-  char* key;
+  char *key;
   union grpc_arg_value {
-    char* string;
+    char *string;
     int integer;
     struct grpc_arg_pointer {
-      void* p;
-      const grpc_arg_pointer_vtable* vtable;
+      void *p;
+      const grpc_arg_pointer_vtable *vtable;
     } pointer;
   } value;
 } grpc_arg;
@@ -151,7 +151,7 @@ void grpc_shutdown(void);
 const char *grpc_version_string(void);
 const char *grpc_g_stands_for(void);
 
-char* gpr_strdup(const char* src);
+char *gpr_strdup(const char *src);
 
 void cgrpc_completion_queue_drain(cgrpc_completion_queue *cq);
 void grpc_completion_queue_destroy(cgrpc_completion_queue *cq);
@@ -162,11 +162,11 @@ void cgrpc_free_copied_string(char *string);
 // channel support
 cgrpc_channel *cgrpc_channel_create(const char *address, 
                                     grpc_arg *args,
-                                    int number_args);
+                                    int num_args);
 cgrpc_channel *cgrpc_channel_create_secure(const char *address,
                                            const char *pem_root_certs,
                                            grpc_arg *args,
-                                           int number_args);
+                                           int num_args);
 
 void cgrpc_channel_destroy(cgrpc_channel *channel);
 cgrpc_call *cgrpc_channel_create_call(cgrpc_channel *channel,

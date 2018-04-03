@@ -40,15 +40,15 @@ public class Channel {
   ///
   /// - Parameter address: the address of the server to be called
   /// - Parameter secure: if true, use TLS
-  /// - Parameter args: list of arguments
-  public init(address: String, secure: Bool = true, args: [Arg] = []) {
+  /// - Parameter arguments: list of channel configuration options
+  public init(address: String, secure: Bool = true, arguments: [Argument] = []) {
     host = address
-    var cargs = args.map({ $0.toCArg() })
+    var cargs = arguments.map { $0.toCArg() }
 
     if secure {
-      underlyingChannel = cgrpc_channel_create_secure(address, roots_pem(), &cargs, Int32(args.count))
+      underlyingChannel = cgrpc_channel_create_secure(address, roots_pem(), &cargs, Int32(arguments.count))
     } else {
-      underlyingChannel = cgrpc_channel_create(address, &cargs, Int32(args.count))
+      underlyingChannel = cgrpc_channel_create(address, &cargs, Int32(arguments.count))
     }
     completionQueue = CompletionQueue(
       underlyingCompletionQueue: cgrpc_channel_completion_queue(underlyingChannel), name: "Client")
@@ -59,12 +59,12 @@ public class Channel {
   ///
   /// - Parameter address: the address of the server to be called
   /// - Parameter certificates: a PEM representation of certificates to use
-  /// - Parameter args: list of arguments
-  public init(address: String, certificates: String, args: [Arg] = []) {
+  /// - Parameter arguments: list of channel configuration options
+  public init(address: String, certificates: String, arguments: [Argument] = []) {
     self.host = address
-    var cargs = args.map({ $0.toCArg() })
+    var cargs = arguments.map { $0.toCArg() }
 
-    underlyingChannel = cgrpc_channel_create_secure(address, certificates, &cargs, Int32(args.count))
+    underlyingChannel = cgrpc_channel_create_secure(address, certificates, &cargs, Int32(arguments.count))
     completionQueue = CompletionQueue(
       underlyingCompletionQueue: cgrpc_channel_completion_queue(underlyingChannel), name: "Client")
     completionQueue.run() // start a loop that watches the channel's completion queue

@@ -49,16 +49,16 @@ open class ServiceClientBase: ServiceClient {
   }
 
   /// Create a client.
-  public init(address: String, secure: Bool = true, args: [Arg] = []) {
+  public init(address: String, secure: Bool = true, arguments: [Channel.Argument] = []) {
     gRPC.initialize()
-    channel = Channel(address: address, secure: secure, args: args)
+    channel = Channel(address: address, secure: secure, arguments: arguments)
     metadata = Metadata()
   }
 
   /// Create a client that makes secure connections with a custom certificate.
-  public init(address: String, certificates: String, args: [Arg] = []) {
+  public init(address: String, certificates: String, arguments: [Channel.Argument] = []) {
     gRPC.initialize()
-    channel = Channel(address: address, certificates: certificates, args: args)
+    channel = Channel(address: address, certificates: certificates, arguments: arguments)
     metadata = Metadata()
   }
 }

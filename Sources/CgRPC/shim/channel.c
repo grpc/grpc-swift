@@ -35,6 +35,7 @@ cgrpc_channel *cgrpc_channel_create(const char *address,
   // create the channel
   c->channel = grpc_insecure_channel_create(address, channel_args, NULL);
   c->completion_queue = grpc_completion_queue_create_for_next(NULL);
+  gpr_free(channel_args);
   return c;
 }
 
@@ -52,6 +53,7 @@ cgrpc_channel *cgrpc_channel_create_secure(const char *address,
   grpc_channel_credentials *creds = grpc_ssl_credentials_create(pem_root_certs, NULL, NULL);
   c->channel = grpc_secure_channel_create(creds, address, channel_args, NULL);
   c->completion_queue = grpc_completion_queue_create_for_next(NULL);
+  gpr_free(channel_args);
   return c;
 }
 
