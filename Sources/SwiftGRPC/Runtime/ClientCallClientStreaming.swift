@@ -76,7 +76,7 @@ open class ClientCallClientStreamingTestStub<InputType: Message, OutputType: Mes
     inputs.append(message)
   }
   
-  open func send(_ message: InputType) throws {
+  open func sendInternal(_ message: InputType, timeout: DispatchTime) throws {
     inputs.append(message)
   }
 

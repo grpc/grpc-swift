@@ -75,13 +75,13 @@ open class ServerSessionClientStreamingTestStub<InputType: Message, OutputType: 
   open var output: OutputType?
   open var status: ServerStatus?
 
-  open func receive() throws -> InputType? {
+  open func receiveInternal(timeout: DispatchTime) throws -> InputType? {
     defer { if !inputs.isEmpty { inputs.removeFirst() } }
     return inputs.first
   }
   
   open func receive(completion: @escaping (ResultOrRPCError<InputType?>) -> Void) throws {
-    completion(.result(try self.receive()))
+    completion(.result(try self.receiveInternal(timeout: .distantFuture)))
   }
 
   open func sendAndClose(response: OutputType, status: ServerStatus, completion: (() -> Void)?) throws {

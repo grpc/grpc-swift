@@ -45,13 +45,13 @@ open class ClientCallServerStreamingTestStub<OutputType: Message>: ClientCallSer
   
   public init() {}
   
-  open func receive() throws -> OutputType? {
+  open func receiveInternal(timeout: DispatchTime) throws -> OutputType? {
     defer { if !outputs.isEmpty { outputs.removeFirst() } }
     return outputs.first
   }
   
   open func receive(completion: @escaping (ResultOrRPCError<OutputType?>) -> Void) throws {
-    completion(.result(try self.receive()))
+    completion(.result(try self.receiveInternal(timeout: .distantFuture)))
   }
 
   open func cancel() {}

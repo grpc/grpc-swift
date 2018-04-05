@@ -72,7 +72,7 @@ open class ServerSessionServerStreamingTestStub<OutputType: Message>: ServerSess
     outputs.append(message)
   }
 
-  open func send(_ message: OutputType) throws {
+  open func sendInternal(_ message: OutputType, timeout: DispatchTime) throws {
     outputs.append(message)
   }
 
