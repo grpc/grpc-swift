@@ -55,6 +55,13 @@ open class ServiceClientBase: ServiceClient {
     metadata = Metadata()
   }
 
+  /// Create a client using a pre-defined channel.
+  public init(channel: Channel) {
+    gRPC.initialize()
+    self.channel = channel
+    self.metadata = Metadata()
+  }
+
   /// Create a client that makes secure connections with a custom certificate and (optional) hostname.
   public init(address: String, certificates: String, host: String?) {
     gRPC.initialize()
