@@ -29,7 +29,7 @@
 
 Pod::Spec.new do |s|
   s.name = 'SwiftGRPC'
-  s.version = '0.3.3'
+  s.version = '0.4.0'
   s.license  = 'New BSD'
   s.summary = 'Swift gRPC code generator plugin and runtime library'
   s.homepage = 'http://www.grpc.io'
