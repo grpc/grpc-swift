@@ -59,20 +59,20 @@ open class ClientCallBidirectionalStreamingTestStub<InputType: Message, OutputTy
   
   public init() {}
 
-  open func receive() throws -> OutputType? {
+  open func _receive(timeout: DispatchTime) throws -> OutputType? {
     defer { if !outputs.isEmpty { outputs.removeFirst() } }
     return outputs.first
   }
   
   open func receive(completion: @escaping (ResultOrRPCError<OutputType?>) -> Void) throws {
-    completion(.result(try self.receive()))
+    completion(.result(try self._receive(timeout: .distantFuture)))
   }
 
   open func send(_ message: InputType, completion _: @escaping (Error?) -> Void) throws {
     inputs.append(message)
   }
   
-  open func send(_ message: InputType) throws {
+  open func _send(_ message: InputType, timeout: DispatchTime) throws {
     inputs.append(message)
   }
 

@@ -24,7 +24,8 @@ test-echo:	all
 	kill -9 `cat echo.pid`
 	diff -u test.out Sources/Examples/Echo/test.gold
 
-test-plugin: all
+test-plugin:
+	swift build -v $(CFLAGS) --product protoc-gen-swiftgrpc
 	protoc Sources/Examples/Echo/echo.proto --proto_path=Sources/Examples/Echo --plugin=.build/debug/protoc-gen-swift --plugin=.build/debug/protoc-gen-swiftgrpc --swiftgrpc_out=/tmp --swiftgrpc_opt=TestStubs=true
 	diff -u /tmp/echo.grpc.swift Sources/Examples/Echo/Generated/echo.grpc.swift
 

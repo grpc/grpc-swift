@@ -19,16 +19,34 @@ import SwiftProtobufPluginLibrary
 
 extension Generator {
   func printStreamReceiveMethods(receivedType: String) {
-    println("/// Call this to wait for a result. Blocking.")
-    println("func receive() throws -> \(receivedType)?")
+    println("/// Do not call this directly, call `receive()` in the protocol extension below instead.")
+    println("func _receive(timeout: DispatchTime) throws -> \(receivedType)?")
     println("/// Call this to wait for a result. Nonblocking.")
     println("func receive(completion: @escaping (ResultOrRPCError<\(receivedType)?>) -> Void) throws")
+  }
+  
+  func printStreamReceiveExtension(extendedType: String, receivedType: String) {
+    println("\(access) extension \(extendedType) {")
+    indent()
+    println("/// Call this to wait for a result. Blocking.")
+    println("func receive(timeout: DispatchTime = .distantFuture) throws -> \(receivedType)? { return try self._receive(timeout: timeout) }")
+    outdent()
+    println("}")
   }
   
   func printStreamSendMethods(sentType: String) {
     println("/// Send a message to the stream. Nonblocking.")
     println("func send(_ message: \(sentType), completion: @escaping (Error?) -> Void) throws")
+    println("/// Do not call this directly, call `send()` in the protocol extension below instead.")
+    println("func _send(_ message: \(sentType), timeout: DispatchTime) throws")
+  }
+  
+  func printStreamSendExtension(extendedType: String,sentType: String) {
+    println("\(access) extension \(extendedType) {")
+    indent()
     println("/// Send a message to the stream and wait for the send operation to finish. Blocking.")
-    println("func send(_ message: \(sentType)) throws")
+    println("func send(_ message: \(sentType), timeout: DispatchTime = .distantFuture) throws { try self._send(message, timeout: timeout) }")
+    outdent()
+    println("}")
   }
 }
