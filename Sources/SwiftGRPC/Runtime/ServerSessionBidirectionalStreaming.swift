@@ -69,20 +69,20 @@ open class ServerSessionBidirectionalStreamingTestStub<InputType: Message, Outpu
   open var outputs: [OutputType] = []
   open var status: ServerStatus?
 
-  open func receiveInternal(timeout: DispatchTime) throws -> InputType? {
+  open func _receive(timeout: DispatchTime) throws -> InputType? {
     defer { if !inputs.isEmpty { inputs.removeFirst() } }
     return inputs.first
   }
   
   open func receive(completion: @escaping (ResultOrRPCError<InputType?>) -> Void) throws {
-    completion(.result(try self.receiveInternal(timeout: .distantFuture)))
+    completion(.result(try self._receive(timeout: .distantFuture)))
   }
 
   open func send(_ message: OutputType, completion _: @escaping (Error?) -> Void) throws {
     outputs.append(message)
   }
 
-  open func sendInternal(_ message: OutputType, timeout: DispatchTime) throws {
+  open func _send(_ message: OutputType, timeout: DispatchTime) throws {
     outputs.append(message)
   }
 

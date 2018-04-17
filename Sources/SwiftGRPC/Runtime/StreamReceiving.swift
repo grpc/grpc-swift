@@ -43,7 +43,7 @@ extension StreamReceiving {
     }
   }
   
-  public func receiveInternal(timeout: DispatchTime) throws -> ReceivedType? {
+  public func _receive(timeout: DispatchTime) throws -> ReceivedType? {
     var result: ResultOrRPCError<ReceivedType?>?
     let sem = DispatchSemaphore(value: 0)
     try receive {

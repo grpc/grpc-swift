@@ -29,7 +29,7 @@ extension StreamSending {
     try call.sendMessage(data: message.serializedData(), completion: completion)
   }
   
-  public func sendInternal(_ message: SentType, timeout: DispatchTime) throws {
+  public func _send(_ message: SentType, timeout: DispatchTime) throws {
     var resultError: Error?
     let sem = DispatchSemaphore(value: 0)
     try send(message) {
