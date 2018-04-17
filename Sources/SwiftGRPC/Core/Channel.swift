@@ -41,6 +41,7 @@ public class Channel {
   /// - Parameter address: the address of the server to be called
   /// - Parameter secure: if true, use TLS
   public init(address: String, secure: Bool = true) {
+    gRPC.initialize()
     host = address
     if secure {
       underlyingChannel = cgrpc_channel_create_secure(address, roots_pem(), nil)
@@ -58,6 +59,7 @@ public class Channel {
   /// - Parameter certificates: a PEM representation of certificates to use
   /// - Parameter host: an optional hostname override
   public init(address: String, certificates: String, host: String?) {
+    gRPC.initialize()
     self.host = address
     underlyingChannel = cgrpc_channel_create_secure(address, certificates, host)
     completionQueue = CompletionQueue(

@@ -1,6 +1,7 @@
 .DS_Store
 project.xcworkspace
 xcuserdata
+DerivedData/
 .build
 /protoc-gen-swift
 /protoc-gen-swiftgrpc
