@@ -88,7 +88,7 @@ public class Call {
       Call.callMutex.lock()
       // We need to do the perform *inside* the `completionQueue.register` call, to ensure that the queue can't get
       // shutdown in between registering the operation group and calling `cgrpc_call_perform`.
-      let error = cgrpc_call_perform(underlyingCall, operations.underlyingOperations, operations.tag)
+      let error = cgrpc_call_perform(underlyingCall, operations.underlyingOperations, UnsafeMutableRawPointer(bitPattern:operations.tag))
       Call.callMutex.unlock()
       if error != GRPC_CALL_OK {
         throw CallError.callError(grpcCallError: error)

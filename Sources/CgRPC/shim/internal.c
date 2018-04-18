@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-void *cgrpc_create_tag(intptr_t t) { return (void *)t; }
+void *cgrpc_create_tag(void *t) { return t; }
 
 gpr_timespec cgrpc_deadline_in_seconds_from_now(float seconds) {
   return gpr_time_add(gpr_now(GPR_CLOCK_MONOTONIC),
