@@ -58,13 +58,13 @@ cgrpc_server *cgrpc_server_create_secure(const char *address,
 void cgrpc_server_stop(cgrpc_server *server) {
   grpc_server_shutdown_and_notify(server->server,
                                   server->completion_queue,
-                                  cgrpc_create_tag(0));
+                                  cgrpc_create_tag((void *) 0));
 }
 
 void cgrpc_server_destroy(cgrpc_server *server) {
   grpc_server_shutdown_and_notify(server->server,
                                   server->completion_queue,
-                                  cgrpc_create_tag(1000));
+                                  cgrpc_create_tag((void *) 1000));
   while (1) {
     double timeout = 5;
     gpr_timespec deadline = cgrpc_deadline_in_seconds_from_now(timeout);
