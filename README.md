@@ -101,12 +101,12 @@ For an example of this in Swift, please see the
 
 ## Having build problems?
 
-grpc-swift depends on Swift, Xcode, and swift-proto. We are currently
+grpc-swift depends on Swift, Xcode, and swift-protobuf. We are currently
 testing with the following versions:
 
 - Xcode 9.1
 - Swift 4.0-dev
-- swift-protobuf 1.0.2
+- swift-protobuf 1.0.3
 
 ## License
 
