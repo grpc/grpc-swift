@@ -46,7 +46,7 @@ Manager builds.
 
 After [building your project](#building-your-project), add the generated
 `SwiftGRPC.xcodeproj` to your project, and add build dependencies
-on **BoringSSL**, **CgRPC**, **gRPC**, and **CzLib**.
+on **BoringSSL**, **CgRPC**, and **SwiftGRPC**.
 
 Please also note that your project will need to include the
 `SwiftProtobuf.xcodeproj` from
@@ -119,7 +119,7 @@ grpc-swift depends on Swift, Xcode, and swift-protobuf. We are currently
 testing with the following versions:
 
 - Xcode 9.1
-- Swift 4.0-dev
+- Swift 4.0
 - swift-protobuf 1.0.3
 
 ## License
