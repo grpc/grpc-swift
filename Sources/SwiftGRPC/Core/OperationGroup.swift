@@ -23,10 +23,10 @@ class OperationGroup {
   static let tagMutex = Mutex()
 
   /// Used to generate unique tags for OperationGroups
-  private static var nextTag: Int64 = 1
+  private static var nextTag: Int = 1
 
   /// Automatically-assigned tag that is used by the completion queue that watches this group.
-  let tag: Int64
+  let tag: Int
 
   /// The call associated with the operation group. Retained while the operations are running.
   // FIXME(danielalm): Is this property needed?

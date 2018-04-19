@@ -27,7 +27,7 @@ void cgrpc_call_destroy(cgrpc_call *call) {
   free(call);
 }
 
-grpc_call_error cgrpc_call_perform(cgrpc_call *call, cgrpc_operations *operations, int64_t tag) {
+grpc_call_error cgrpc_call_perform(cgrpc_call *call, cgrpc_operations *operations, void *tag) {
   grpc_call_error error = grpc_call_start_batch(call->call,
                                                 operations->ops,
                                                 operations->ops_count,

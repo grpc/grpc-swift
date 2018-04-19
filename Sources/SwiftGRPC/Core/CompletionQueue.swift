@@ -44,12 +44,12 @@ enum CompletionType {
 struct CompletionQueueEvent {
   let type: CompletionType
   let success: Int32
-  let tag: Int64
+  let tag: Int
 
   init(_ event: grpc_event) {
     type = CompletionType.completionType(event.type)
     success = event.success
-    tag = cgrpc_event_tag(event)
+    tag = Int(bitPattern: cgrpc_event_tag(event))
   }
 }
 
@@ -62,7 +62,7 @@ class CompletionQueue {
   private let underlyingCompletionQueue: UnsafeMutableRawPointer
 
   /// Operation groups that are awaiting completion, keyed by tag
-  private var operationGroups: [Int64: OperationGroup] = [:]
+  private var operationGroups: [Int: OperationGroup] = [:]
 
   /// Mutex for synchronizing access to operationGroups
   private let operationGroupsMutex: Mutex = Mutex()
@@ -118,7 +118,7 @@ class CompletionQueue {
         let event = cgrpc_completion_queue_get_next_event(self.underlyingCompletionQueue, 600)
         switch event.type {
         case GRPC_OP_COMPLETE:
-          let tag = cgrpc_event_tag(event)
+          let tag = Int(bitPattern:cgrpc_event_tag(event))
           self.operationGroupsMutex.lock()
           let operationGroup = self.operationGroups[tag]
           self.operationGroupsMutex.unlock()
