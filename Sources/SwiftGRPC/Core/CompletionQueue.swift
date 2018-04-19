@@ -49,7 +49,7 @@ struct CompletionQueueEvent {
   init(_ event: grpc_event) {
     type = CompletionType.completionType(event.type)
     success = event.success
-    tag = Int(bitPattern:cgrpc_event_tag(event))
+    tag = Int(bitPattern: cgrpc_event_tag(event))
   }
 }
 

@@ -81,7 +81,7 @@ public class Handler {
   /// Fills the handler properties with information about the received request
   ///
   func requestCall(tag: Int) throws {
-    let error = cgrpc_handler_request_call(underlyingHandler, requestMetadata.underlyingArray, UnsafeMutableRawPointer(bitPattern:tag))
+    let error = cgrpc_handler_request_call(underlyingHandler, requestMetadata.underlyingArray, UnsafeMutableRawPointer(bitPattern: tag))
     if error != GRPC_CALL_OK {
       throw CallError.callError(grpcCallError: error)
     }
