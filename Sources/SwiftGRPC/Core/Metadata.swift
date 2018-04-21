@@ -44,11 +44,11 @@ public class Metadata: CustomStringConvertible {
     ownsFields = true
   }
 
-  public init(_ pairs: [String: String]) {
+  public init(_ pairs: [String: String]) throws {
     underlyingArray = cgrpc_metadata_array_create()
     ownsFields = true
     for (key, value) in pairs {
-      try! add(key: key, value: value)
+      try add(key: key, value: value)
     }
   }
 
