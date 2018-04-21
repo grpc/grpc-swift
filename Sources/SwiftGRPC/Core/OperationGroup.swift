@@ -54,18 +54,18 @@ class OperationGroup {
   ///
   /// - Parameter: operation: the operation to observe
   /// - Returns: the observer
-  private func underlyingObserverForOperation(operation: Operation) -> UnsafeMutableRawPointer {
+  private func underlyingObserverForOperation(operation: Operation) throws -> UnsafeMutableRawPointer {
     let underlyingObserver: UnsafeMutableRawPointer
     switch operation {
     case .sendInitialMetadata(let metadata):
-      underlyingObserver = cgrpc_observer_create_send_initial_metadata(metadata.underlyingArray)!
+      underlyingObserver = cgrpc_observer_create_send_initial_metadata(try metadata.getUnderlyingArrayAndTransferFieldOwnership())!
     case .sendMessage(let message):
       underlyingObserver = cgrpc_observer_create_send_message()!
       cgrpc_observer_send_message_set_message(underlyingObserver, message.underlyingByteBuffer)
     case .sendCloseFromClient:
       underlyingObserver = cgrpc_observer_create_send_close_from_client()!
     case .sendStatusFromServer(let statusCode, let statusMessage, let metadata):
-      underlyingObserver = cgrpc_observer_create_send_status_from_server(metadata.underlyingArray)!
+      underlyingObserver = cgrpc_observer_create_send_status_from_server(try metadata.getUnderlyingArrayAndTransferFieldOwnership())!
       cgrpc_observer_send_status_from_server_set_status(underlyingObserver, Int32(statusCode.rawValue))
       cgrpc_observer_send_status_from_server_set_status_details(underlyingObserver, statusMessage)
     case .receiveInitialMetadata:
@@ -85,7 +85,7 @@ class OperationGroup {
   /// - Parameter operations: an array of operations
   init(call: Call,
        operations: [Operation],
-       completion: ((OperationGroup) -> Void)? = nil) {
+       completion: ((OperationGroup) -> Void)? = nil) throws {
     self.call = call
     self.operations = operations
     self.completion = completion
@@ -98,7 +98,7 @@ class OperationGroup {
     underlyingOperations = cgrpc_operations_create()
     cgrpc_operations_reserve_space_for_operations(underlyingOperations, Int32(operations.count))
     for operation in operations {
-      let underlyingObserver = underlyingObserverForOperation(operation: operation)
+      let underlyingObserver = try underlyingObserverForOperation(operation: operation)
       underlyingObservers.append(underlyingObserver)
       cgrpc_operations_add_operation(underlyingOperations, underlyingObserver)
     }
@@ -143,7 +143,8 @@ class OperationGroup {
       switch operation {
       case .receiveInitialMetadata:
         cachedInitialMetadata = Metadata(
-          underlyingArray: cgrpc_observer_recv_initial_metadata_get_metadata(underlyingObservers[i]))
+          underlyingArray: cgrpc_observer_recv_initial_metadata_get_metadata(underlyingObservers[i]),
+          ownsFields: false)
         return cachedInitialMetadata!
       default:
         continue
@@ -196,7 +197,8 @@ class OperationGroup {
       switch operation {
       case .receiveStatusOnClient:
         cachedTrailingMetadata = Metadata(
-          underlyingArray: cgrpc_observer_recv_status_on_client_get_metadata(underlyingObservers[i]))
+          underlyingArray: cgrpc_observer_recv_status_on_client_get_metadata(underlyingObservers[i]),
+          ownsFields: false)
         return cachedTrailingMetadata!
       default:
         continue
