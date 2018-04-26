@@ -28,6 +28,13 @@ cgrpc_metadata_array *cgrpc_metadata_array_create() {
   return metadata;
 }
 
+void cgrpc_metadata_array_unref_fields(cgrpc_metadata_array *array) {
+  for (size_t i = 0; i < array->count; i++) {
+    grpc_slice_unref(array->metadata[i].key);
+    grpc_slice_unref(array->metadata[i].value);
+  }
+}
+
 void cgrpc_metadata_array_destroy(cgrpc_metadata_array *array) {
   grpc_metadata_array_destroy(array);
   gpr_free(array);
@@ -62,6 +69,21 @@ void cgrpc_metadata_array_move_metadata(cgrpc_metadata_array *destination,
   source->count = 0;
   source->capacity = 0;
   source->metadata = NULL;
+}
+
+cgrpc_metadata_array *cgrpc_metadata_array_copy(cgrpc_metadata_array *src) {
+  cgrpc_metadata_array *dst = cgrpc_metadata_array_create();
+  if (src->count > 0) {
+    dst->capacity = src->count;
+    dst->metadata = gpr_malloc(dst->capacity * sizeof(grpc_metadata));
+    dst->count = src->count;
+    for (size_t i = 0; i < src->count; i++) {
+      dst->metadata[i].key = grpc_slice_ref(src->metadata[i].key);
+      dst->metadata[i].value = grpc_slice_ref(src->metadata[i].value);
+      dst->metadata[i].flags = src->metadata[i].flags;
+    }
+  }
+  return dst;
 }
 
 void cgrpc_metadata_array_append_metadata(cgrpc_metadata_array *metadata, const char *key, const char *value) {

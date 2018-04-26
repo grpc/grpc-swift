@@ -72,24 +72,25 @@ void cgrpc_channel_destroy(cgrpc_channel *c) {
   free(c);
 }
 
-grpc_slice host_slice;
-
 cgrpc_call *cgrpc_channel_create_call(cgrpc_channel *channel,
                                       const char *method,
                                       const char *host,
                                       double timeout) {
   // create call
-  host_slice = grpc_slice_from_copied_string(host);
+  grpc_slice host_slice = grpc_slice_from_copied_string(host);
+  grpc_slice method_slice = grpc_slice_from_copied_string(method);
   gpr_timespec deadline = cgrpc_deadline_in_seconds_from_now(timeout);
   // The resulting call will have a retain call of +1. We'll release it in `cgrpc_call_destroy()`.
   grpc_call *channel_call = grpc_channel_create_call(channel->channel,
                                                      NULL,
                                                      GRPC_PROPAGATE_DEFAULTS,
                                                      channel->completion_queue,
-                                                     grpc_slice_from_copied_string(method),
+                                                     method_slice,
                                                      &host_slice,
                                                      deadline,
                                                      NULL);
+  grpc_slice_unref(host_slice);
+  grpc_slice_unref(method_slice);
   cgrpc_call *call = (cgrpc_call *) malloc(sizeof(cgrpc_call));
   memset(call, 0, sizeof(cgrpc_call));
   call->call = channel_call;

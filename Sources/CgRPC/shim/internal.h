@@ -96,7 +96,6 @@ typedef struct {
   grpc_metadata_array trailing_metadata_recv;
   grpc_status_code server_status;
   grpc_slice server_details;
-  size_t server_details_capacity;
 } cgrpc_observer_recv_status_on_client;
 
 typedef struct {

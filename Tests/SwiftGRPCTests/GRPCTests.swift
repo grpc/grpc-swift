@@ -178,7 +178,7 @@ func callUnaryIndividual(channel: Channel, message: Data, shouldSucceed: Bool) t
   let sem = DispatchSemaphore(value: 0)
   let method = hello
   let call = channel.makeCall(method)
-  let metadata = Metadata(initialClientMetadata)
+  let metadata = try Metadata(initialClientMetadata)
   try call.start(.unary, metadata: metadata, message: message) {
     response in
     // verify the basic response from the server
@@ -224,7 +224,7 @@ func callUnaryIndividual(channel: Channel, message: Data, shouldSucceed: Bool) t
 
 func callServerStream(channel: Channel) throws {
   let message = evenClientText.data(using: .utf8)
-  let metadata = Metadata(initialClientMetadata)
+  let metadata = try Metadata(initialClientMetadata)
 
   let sem = DispatchSemaphore(value: 0)
   let method = helloServerStream
@@ -266,7 +266,7 @@ let clientPing = "ping"
 let serverPong = "pong"
 
 func callBiDiStream(channel: Channel) throws {
-  let metadata = Metadata(initialClientMetadata)
+  let metadata = try Metadata(initialClientMetadata)
 
   let sem = DispatchSemaphore(value: 0)
   let method = helloBiDiStream
@@ -353,7 +353,7 @@ func handleUnary(requestHandler: Handler) throws {
   XCTAssertEqual(requestHandler.method, hello)
   let initialMetadata = requestHandler.requestMetadata
   verify_metadata(initialMetadata, expected: initialClientMetadata)
-  let initialMetadataToSend = Metadata(initialServerMetadata)
+  let initialMetadataToSend = try Metadata(initialServerMetadata)
   let receiveSem = DispatchSemaphore(value: 0)
   var inputMessage: Data?
   try requestHandler.receiveMessage(initialMetadata: initialMetadataToSend) {
@@ -377,7 +377,7 @@ func handleUnary(requestHandler: Handler) throws {
   let replyMessage = (inputMessage == nil || inputMessage!.count < sizeThresholdForReturningDataVerbatim)
     ? serverText.data(using: .utf8)!
     : inputMessage!
-  let trailingMetadataToSend = Metadata(trailingServerMetadata)
+  let trailingMetadataToSend = try Metadata(trailingServerMetadata)
   if let inputMessage = inputMessage,
     inputMessage.count >= sizeThresholdForReturningDataVerbatim
       || inputMessage == evenClientText.data(using: .utf8)! {
@@ -398,7 +398,7 @@ func handleServerStream(requestHandler: Handler) throws {
   let initialMetadata = requestHandler.requestMetadata
   verify_metadata(initialMetadata, expected: initialClientMetadata)
 
-  let initialMetadataToSend = Metadata(initialServerMetadata)
+  let initialMetadataToSend = try Metadata(initialServerMetadata)
   try requestHandler.receiveMessage(initialMetadata: initialMetadataToSend) {
     if let messageData = $0 {
       let messageString = String(data: messageData, encoding: .utf8)
@@ -416,7 +416,7 @@ func handleServerStream(requestHandler: Handler) throws {
     requestHandler.call.messageQueueEmpty.wait()
   }
 
-  let trailingMetadataToSend = Metadata(trailingServerMetadata)
+  let trailingMetadataToSend = try Metadata(trailingServerMetadata)
   try requestHandler.sendStatus(ServerStatus(
     // We need to return status OK here, as it seems like the server might never send out the last few messages once it
     // has been asked to send a non-OK status. Alternatively, we could send a non-OK status here, but then we would need
@@ -432,7 +432,7 @@ func handleBiDiStream(requestHandler: Handler) throws {
   let initialMetadata = requestHandler.requestMetadata
   verify_metadata(initialMetadata, expected: initialClientMetadata)
 
-  let initialMetadataToSend = Metadata(initialServerMetadata)
+  let initialMetadataToSend = try Metadata(initialServerMetadata)
   let sendMetadataSem = DispatchSemaphore(value: 0)
   try requestHandler.sendMetadata(initialMetadata: initialMetadataToSend) { _ in
     _ = sendMetadataSem.signal()
@@ -463,7 +463,7 @@ func handleBiDiStream(requestHandler: Handler) throws {
     requestHandler.call.messageQueueEmpty.wait()
   }
 
-  let trailingMetadataToSend = Metadata(trailingServerMetadata)
+  let trailingMetadataToSend = try Metadata(trailingServerMetadata)
   let sem = DispatchSemaphore(value: 0)
   try requestHandler.sendStatus(ServerStatus(
     // We need to return status OK here, as it seems like the server might never send out the last few messages once it
