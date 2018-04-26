@@ -67,17 +67,19 @@ open class ClientCallClientStreamingBase<InputType: Message, OutputType: Message
 open class ClientCallClientStreamingTestStub<InputType: Message, OutputType: Message>: ClientCallClientStreaming {
   open class var method: String { fatalError("needs to be overridden") }
 
+  open var lock = Mutex()
+  
   open var inputs: [InputType] = []
   open var output: OutputType?
   
   public init() {}
 
   open func send(_ message: InputType, completion _: @escaping (Error?) -> Void) throws {
-    inputs.append(message)
+    lock.synchronize { inputs.append(message) }
   }
   
   open func _send(_ message: InputType, timeout: DispatchTime) throws {
-    inputs.append(message)
+    lock.synchronize { inputs.append(message) }
   }
 
   open func closeAndReceive(completion: @escaping (ResultOrRPCError<OutputType>) -> Void) throws {
