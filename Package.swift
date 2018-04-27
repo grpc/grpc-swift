@@ -17,16 +17,21 @@
  */
 import PackageDescription
 
+var dependencies: [Package.Dependency] = [
+  .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.0.2"),
+  .package(url: "https://github.com/kylef/Commander.git", from: "0.8.0")
+]
+
+#if !os(macOS)
+dependencies.insert(.package(url: "https://github.com/apple/swift-nio-zlib-support.git", from: "1.0.0"), at: 0)
+#endif
+
 let package = Package(
   name: "SwiftGRPC",
   products: [
     .library(name: "SwiftGRPC", targets: ["SwiftGRPC"]),
   ],
-  dependencies: [
-    .package(url: "https://github.com/apple/swift-nio-zlib-support.git", from: "1.0.0"),
-    .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.0.2"),
-    .package(url: "https://github.com/kylef/Commander.git", from: "0.8.0")
-  ],
+  dependencies: dependencies,
   targets: [
     .target(name: "SwiftGRPC",
             dependencies: ["CgRPC", "SwiftProtobuf"]),
