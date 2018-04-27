@@ -22,8 +22,17 @@ var dependencies: [Package.Dependency] = [
   .package(url: "https://github.com/kylef/Commander.git", from: "0.8.0")
 ]
 
+/*
+ * `swift-nio-zlib-support` uses `pkgConfig` to find `zlib` on 
+ * non-Apple platforms. Details here: 
+ * https://github.com/apple/swift-nio-zlib-support/issues/2#issuecomment-384681975
+ * 
+ * This doesn't play well with Macports, so require it only for non-Apple
+ * platforms, until there is a better solution. 
+ * Issue: https://github.com/grpc/grpc-swift/issues/220
+ */
 #if !os(macOS)
-dependencies.insert(.package(url: "https://github.com/apple/swift-nio-zlib-support.git", from: "1.0.0"), at: 0)
+dependencies.append(.package(url: "https://github.com/apple/swift-nio-zlib-support.git", from: "1.0.0"))
 #endif
 
 let package = Package(
