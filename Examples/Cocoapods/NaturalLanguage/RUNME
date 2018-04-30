@@ -1,0 +1,27 @@
+#!/bin/sh
+#
+# Use this script to regenerate the Protocol Buffer and gRPC files
+# needed to build the example.
+#
+# Note that it requires protoc, protoc-gen-swift, and
+# protoc-gen-swiftgrpc binaries.
+
+if [ ! -d "googleapis" ]; then
+  curl -L -O https://github.com/googleapis/googleapis/archive/master.zip
+  unzip master.zip
+  rm -f master.zip
+  mv googleapis-master googleapis
+fi
+
+protoc \
+ 	google/cloud/language/v1/language_service.proto \
+	google/api/annotations.proto \
+	google/api/http.proto \
+	google/protobuf/descriptor.proto \
+ 	-Igoogleapis \
+	-I../../Google/common/include \
+	--swift_out=googleapis \
+	--swiftgrpc_out=googleapis
+
+# move Swift files to the sources directory
+find googleapis -name "*.swift" -exec mv {} NaturalLanguage \;
