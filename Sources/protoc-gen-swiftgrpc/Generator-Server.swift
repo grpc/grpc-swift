@@ -161,6 +161,8 @@ extension Generator {
     outdent()
     println("}")
     println()
+    printStreamReceiveExtension(extendedType: methodSessionName, receivedType: methodInputName)
+    println()
     println("fileprivate final class \(methodSessionName)Base: ServerSessionClientStreamingBase<\(methodInputName), \(methodOutputName)>, \(methodSessionName) {}")
     if options.generateTestStubs {
       println()
@@ -183,6 +185,8 @@ extension Generator {
     outdent()
     println("}")
     println()
+    printStreamSendExtension(extendedType: methodSessionName, sentType: methodOutputName)
+    println()
     println("fileprivate final class \(methodSessionName)Base: ServerSessionServerStreamingBase<\(methodInputName), \(methodOutputName)>, \(methodSessionName) {}")
     if options.generateTestStubs {
       println()
@@ -200,6 +204,10 @@ extension Generator {
     printServerMethodClose()
     outdent()
     println("}")
+    println()
+    printStreamReceiveExtension(extendedType: methodSessionName, receivedType: methodInputName)
+    println()
+    printStreamSendExtension(extendedType: methodSessionName, sentType: methodOutputName)
     println()
     println("fileprivate final class \(methodSessionName)Base: ServerSessionBidirectionalStreamingBase<\(methodInputName), \(methodOutputName)>, \(methodSessionName) {}")
     if options.generateTestStubs {

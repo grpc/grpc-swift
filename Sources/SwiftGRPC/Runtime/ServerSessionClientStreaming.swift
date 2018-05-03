@@ -71,27 +71,35 @@ open class ServerSessionClientStreamingBase<InputType: Message, OutputType: Mess
 /// Simple fake implementation of ServerSessionClientStreaming that returns a previously-defined result
 /// and stores sent values for later verification.
 open class ServerSessionClientStreamingTestStub<InputType: Message, OutputType: Message>: ServerSessionTestStub, ServerSessionClientStreaming {
+  open var lock = Mutex()
+  
   open var inputs: [InputType] = []
   open var output: OutputType?
   open var status: ServerStatus?
 
-  open func receive() throws -> InputType? {
-    defer { if !inputs.isEmpty { inputs.removeFirst() } }
-    return inputs.first
+  open func _receive(timeout: DispatchTime) throws -> InputType? {
+    return lock.synchronize {
+      defer { if !inputs.isEmpty { inputs.removeFirst() } }
+      return inputs.first
+    }
   }
   
   open func receive(completion: @escaping (ResultOrRPCError<InputType?>) -> Void) throws {
-    completion(.result(try self.receive()))
+    completion(.result(try self._receive(timeout: .distantFuture)))
   }
 
   open func sendAndClose(response: OutputType, status: ServerStatus, completion: (() -> Void)?) throws {
-    self.output = response
-    self.status = status
+    lock.synchronize {
+      self.output = response
+      self.status = status
+    }
     completion?()
   }
 
   open func sendErrorAndClose(status: ServerStatus, completion: (() -> Void)? = nil) throws {
-    self.status = status
+    lock.synchronize {
+      self.status = status
+    }
     completion?()
   }
   

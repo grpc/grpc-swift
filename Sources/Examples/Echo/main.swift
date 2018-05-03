@@ -47,7 +47,7 @@ func buildEchoService(_ ssl: Bool, _ address: String, _ port: String, _: String)
   } else {
     service = Echo_EchoServiceClient(address: address + ":" + port, secure: false)
   }
-  service.metadata = Metadata([
+  service.metadata = try! Metadata([
     "x-goog-api-key": "YOUR_API_KEY",
     "x-ios-bundle-identifier": "io.grpc.echo"
   ])

@@ -27,12 +27,34 @@ Swift Package Manager builds may also be made on Linux
 systems. Please see [DOCKER.md](DOCKER.md) and 
 [LINUX.md](LINUX.md) for details.
 
-## gRPC dependencies are vendored
+## CocoaPods integration
 
-Swift gRPC includes vendored copies of the gRPC core
-library and **BoringSSL**, an OpenSSL fork that is used by
-the gRPC Core. These are built automatically in Swift Package
+Swift gRPC is currently available [from CocoaPods](https://cocoapods.org/pods/SwiftGRPC).
+To integrate, add the following line to your `Podfile`:
+
+    pod 'SwiftGRPC'
+
+Then, run `pod install` from command line and use your project's generated
+`.xcworkspace` file.
+
+## Manual integration
+
+When not using CocoaPods, Swift gRPC includes **vendored copies** of the
+gRPC Core library and BoringSSL (an OpenSSL fork that is used by
+the gRPC Core). These are built automatically in Swift Package
 Manager builds.
+
+After [building your project](#building-your-project), add the generated
+`SwiftGRPC.xcodeproj` to your project, and add build dependencies
+on **BoringSSL**, **CgRPC**, and **SwiftGRPC**.
+
+Please also note that your project will need to include the
+`SwiftProtobuf.xcodeproj` from
+[Swift Protobuf](https://github.com/apple/swift-protobuf) and
+the source files that you generate with `protoc`/[plugins](#getting-the-plugins).
+
+See [Echo](Examples/Echo) for a working Xcode-based
+example, and don't hesitate to file issues if you find any problems.
 
 ## Usage
 
@@ -44,7 +66,7 @@ and the [Swift Protobuf](https://github.com/apple/swift-protobuf)
 and [Swift gRPC](https://github.com/grpc/grpc-swift) plugins to
 generate the necessary support code.
 
-### Getting the dependencies
+### Getting the plugins
 
 Binary releases of `protoc`, the Protocol Buffer Compiler, are
 available on [GitHub](https://github.com/google/protobuf/releases).
@@ -78,16 +100,8 @@ generate an Xcode project for the SwiftGRPC package:
     $ make
 
 This will create `SwiftGRPC.xcodeproj`, which you should
-add to your project, along with setting build dependencies
-on **BoringSSL**, **CgRPC**, **gRPC**, and **CzLib**.
-
-Please also note that your project will need to include the
-**SwiftProtobuf.xcodeproj** from
-[Swift Protobuf](https://github.com/apple/swift-protobuf) and
-the source files that you generated with `protoc` and the plugins.
-
-Please see [Echo](Examples/Echo) for a working Xcode-based
-example and file issues if you find any problems.
+add to your project, along with setting the necessary build dependencies
+mentioned [above](#manual-integration).
 
 ### Low-level gRPC
 
@@ -101,12 +115,12 @@ For an example of this in Swift, please see the
 
 ## Having build problems?
 
-grpc-swift depends on Swift, Xcode, and swift-proto. We are currently
+grpc-swift depends on Swift, Xcode, and swift-protobuf. We are currently
 testing with the following versions:
 
 - Xcode 9.1
-- Swift 4.0-dev
-- swift-protobuf 1.0.2
+- Swift 4.0
+- swift-protobuf 1.0.3
 
 ## License
 

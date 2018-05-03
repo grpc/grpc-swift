@@ -19,13 +19,14 @@ import Foundation
 /// Type for errors thrown from generated client code.
 public enum RPCError: Error {
   case invalidMessageReceived
+  case timedOut
   case callError(CallResult)
 }
 
 public extension RPCError {
   var callResult: CallResult? {
     switch self {
-    case .invalidMessageReceived: return nil
+    case .invalidMessageReceived, .timedOut: return nil
     case .callError(let callResult): return callResult
     }
   }

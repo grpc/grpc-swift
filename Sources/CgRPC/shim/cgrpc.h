@@ -202,14 +202,14 @@ cgrpc_completion_queue *cgrpc_handler_get_completion_queue(cgrpc_handler *h);
 
 grpc_call_error cgrpc_handler_request_call(cgrpc_handler *h,
                                            cgrpc_metadata_array *metadata,
-                                           long tag);
+                                           void *tag);
 char *cgrpc_handler_copy_host(cgrpc_handler *h);
 char *cgrpc_handler_copy_method(cgrpc_handler *h);
 char *cgrpc_handler_call_peer(cgrpc_handler *h);
 
 // call support
 void cgrpc_call_destroy(cgrpc_call *call);
-grpc_call_error cgrpc_call_perform(cgrpc_call *call, cgrpc_operations *operations, int64_t tag);
+grpc_call_error cgrpc_call_perform(cgrpc_call *call, cgrpc_operations *operations, void *tag);
 void cgrpc_call_cancel(cgrpc_call *call);
 
 // operations
@@ -221,10 +221,12 @@ void cgrpc_operations_add_operation(cgrpc_operations *call, cgrpc_observer *obse
 // metadata support
 cgrpc_metadata_array *cgrpc_metadata_array_create(void);
 void cgrpc_metadata_array_destroy(cgrpc_metadata_array *array);
+void cgrpc_metadata_array_unref_fields(cgrpc_metadata_array *array);
 size_t cgrpc_metadata_array_get_count(cgrpc_metadata_array *array);
 char *cgrpc_metadata_array_copy_key_at_index(cgrpc_metadata_array *array, size_t index);
 char *cgrpc_metadata_array_copy_value_at_index(cgrpc_metadata_array *array, size_t index);
 void cgrpc_metadata_array_move_metadata(cgrpc_metadata_array *dest, cgrpc_metadata_array *src);
+cgrpc_metadata_array *cgrpc_metadata_array_copy(cgrpc_metadata_array *src);
 void cgrpc_metadata_array_append_metadata(cgrpc_metadata_array *metadata, const char *key, const char *value);
 
 // mutex support
@@ -239,7 +241,7 @@ cgrpc_byte_buffer *cgrpc_byte_buffer_create_by_copying_data(const void *source, 
 const void *cgrpc_byte_buffer_copy_data(cgrpc_byte_buffer *bb, size_t *length);
 
 // event support
-int64_t cgrpc_event_tag(grpc_event ev);
+void *cgrpc_event_tag(grpc_event ev);
 
 // observers
 

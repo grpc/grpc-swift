@@ -41,17 +41,21 @@ open class ClientCallServerStreamingBase<InputType: Message, OutputType: Message
 open class ClientCallServerStreamingTestStub<OutputType: Message>: ClientCallServerStreaming {
   open class var method: String { fatalError("needs to be overridden") }
 
+  open var lock = Mutex()
+  
   open var outputs: [OutputType] = []
   
   public init() {}
   
-  open func receive() throws -> OutputType? {
-    defer { if !outputs.isEmpty { outputs.removeFirst() } }
-    return outputs.first
+  open func _receive(timeout: DispatchTime) throws -> OutputType? {
+    return lock.synchronize {
+      defer { if !outputs.isEmpty { outputs.removeFirst() } }
+      return outputs.first
+    }
   }
   
   open func receive(completion: @escaping (ResultOrRPCError<OutputType?>) -> Void) throws {
-    completion(.result(try self.receive()))
+    completion(.result(try self._receive(timeout: .distantFuture)))
   }
 
   open func cancel() {}

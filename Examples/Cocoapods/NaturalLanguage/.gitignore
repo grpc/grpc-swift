@@ -1,0 +1,4 @@
+NaturalLanguage/*.pb.swift
+NaturalLanguage/*.grpc.swift
+
+googleapis/

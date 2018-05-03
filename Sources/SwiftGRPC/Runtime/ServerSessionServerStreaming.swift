@@ -65,19 +65,21 @@ open class ServerSessionServerStreamingBase<InputType: Message, OutputType: Mess
 /// Simple fake implementation of ServerSessionServerStreaming that returns a previously-defined set of results
 /// and stores sent values for later verification.
 open class ServerSessionServerStreamingTestStub<OutputType: Message>: ServerSessionTestStub, ServerSessionServerStreaming {
+  open var lock = Mutex()
+  
   open var outputs: [OutputType] = []
   open var status: ServerStatus?
 
   open func send(_ message: OutputType, completion _: @escaping (Error?) -> Void) throws {
-    outputs.append(message)
+    lock.synchronize { outputs.append(message) }
   }
 
-  open func send(_ message: OutputType) throws {
-    outputs.append(message)
+  open func _send(_ message: OutputType, timeout: DispatchTime) throws {
+    lock.synchronize { outputs.append(message) }
   }
 
   open func close(withStatus status: ServerStatus, completion: (() -> Void)?) throws {
-    self.status = status
+    lock.synchronize { self.status = status }
     completion?()
   }
 

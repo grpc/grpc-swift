@@ -43,14 +43,16 @@ extension StreamReceiving {
     }
   }
   
-  public func receive() throws -> ReceivedType? {
+  public func _receive(timeout: DispatchTime) throws -> ReceivedType? {
     var result: ResultOrRPCError<ReceivedType?>?
     let sem = DispatchSemaphore(value: 0)
     try receive {
       result = $0
       sem.signal()
     }
-    _ = sem.wait()
+    if sem.wait(timeout: timeout) == .timedOut {
+      throw RPCError.timedOut
+    }
     switch result! {
     case .result(let response): return response
     case .error(let error): throw error
