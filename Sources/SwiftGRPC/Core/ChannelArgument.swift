@@ -75,7 +75,23 @@ public extension Channel {
 }
 
 extension Channel.Argument {
-  func toCArg() -> grpc_arg {
+  class Wrapper {
+    // Creating a `grpc_arg` allocates memory. This wrapper ensures that the memory is freed after use.
+    let wrapped: grpc_arg
+    
+    init(_ wrapped: grpc_arg) {
+      self.wrapped = wrapped
+    }
+    
+    deinit {
+      gpr_free(wrapped.key)
+      if wrapped.type == GRPC_ARG_STRING {
+        gpr_free(wrapped.value.string)
+      }
+    }
+  }
+  
+  func toCArg() -> Wrapper {
     switch self {
     case let .defaultAuthority(value):
       return makeArgument("grpc.default_authority", value: value)
@@ -107,34 +123,34 @@ extension Channel.Argument {
   }
 }
 
-private func makeArgument(_ key: String, value: String) -> grpc_arg {
+private func makeArgument(_ key: String, value: String) -> Channel.Argument.Wrapper {
   var arg = grpc_arg()
   arg.key = gpr_strdup(key)
   arg.type = GRPC_ARG_STRING
   arg.value.string = gpr_strdup(value)
-  return arg
+  return Channel.Argument.Wrapper(arg)
 }
 
-private func makeArgument(_ key: String, value: Bool) -> grpc_arg {
+private func makeArgument(_ key: String, value: Bool) -> Channel.Argument.Wrapper {
   return makeArgument(key, value: Int32(value ? 1 : 0))
 }
 
-private func makeArgument(_ key: String, value: Double) -> grpc_arg {
+private func makeArgument(_ key: String, value: Double) -> Channel.Argument.Wrapper {
   return makeArgument(key, value: Int32(value))
 }
 
-private func makeArgument(_ key: String, value: UInt) -> grpc_arg {
+private func makeArgument(_ key: String, value: UInt) -> Channel.Argument.Wrapper {
   return makeArgument(key, value: Int32(value))
 }
 
-private func makeArgument(_ key: String, value: Int) -> grpc_arg {
+private func makeArgument(_ key: String, value: Int) -> Channel.Argument.Wrapper {
   return makeArgument(key, value: Int32(value))
 }
 
-private func makeArgument(_ key: String, value: Int32) -> grpc_arg {
+private func makeArgument(_ key: String, value: Int32) -> Channel.Argument.Wrapper {
   var arg = grpc_arg()
   arg.key = gpr_strdup(key)
   arg.type = GRPC_ARG_INTEGER
   arg.value.integer = value
-  return arg
+  return Channel.Argument.Wrapper(arg)
 }

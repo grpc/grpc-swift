@@ -20,29 +20,77 @@ import Foundation
 @testable import SwiftGRPC
 import XCTest
 
-class ChannelArgumentTests: XCTestCase {
+fileprivate class ChannelArgumentTestProvider: Echo_EchoProvider {
+  func get(request: Echo_EchoRequest, session: Echo_EchoGetSession) throws -> Echo_EchoResponse {
+    // We simply return the user agent we received, which can then be inspected by the test code.
+    return Echo_EchoResponse(text: (session as! ServerSessionBase).handler.requestMetadata["user-agent"]!)
+  }
+  
+  func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws {
+    fatalError("not implemented")
+  }
+  
+  func collect(session: Echo_EchoCollectSession) throws {
+    fatalError("not implemented")
+  }
+  
+  func update(session: Echo_EchoUpdateSession) throws {
+    fatalError("not implemented")
+  }
+}
+
+class ChannelArgumentTests: BasicEchoTestCase {
+  static var allTests: [(String, (ChannelArgumentTests) -> () throws -> Void)] {
+    return [
+      ("testArgumentKey", testArgumentKey),
+      ("testStringArgument", testStringArgument),
+      ("testIntegerArgument", testIntegerArgument),
+      ("testBoolArgument", testBoolArgument),
+      ("testTimeIntervalArgument", testTimeIntervalArgument),
+    ]
+  }
+  
+  fileprivate func makeClient(_ arguments: [Channel.Argument]) -> Echo_EchoServiceClient {
+    let client = Echo_EchoServiceClient(address: address, secure: false, arguments: arguments)
+    client.timeout = defaultTimeout
+    return client
+  }
+  
+  override func makeProvider() -> Echo_EchoProvider { return ChannelArgumentTestProvider() }
+}
+
+extension ChannelArgumentTests {
   func testArgumentKey() {
-    let argument: Channel.Argument = .defaultAuthority("default")
-    XCTAssertEqual(String(cString: argument.toCArg().key), "grpc.default_authority")
+    let argument = Channel.Argument.defaultAuthority("default")
+    XCTAssertEqual(String(cString: argument.toCArg().wrapped.key), "grpc.default_authority")
   }
 
   func testStringArgument() {
-    let argument: Channel.Argument = .primaryUserAgent("Primary/0.1")
-    XCTAssertEqual(String(cString: argument.toCArg().value.string), "Primary/0.1")
+    let argument = Channel.Argument.primaryUserAgent("Primary/0.1")
+    XCTAssertEqual(String(cString: argument.toCArg().wrapped.value.string), "Primary/0.1")
   }
 
   func testIntegerArgument() {
-    let argument: Channel.Argument = .http2MaxPingsWithoutData(5)
-    XCTAssertEqual(argument.toCArg().value.integer, 5)
+    let argument = Channel.Argument.http2MaxPingsWithoutData(5)
+    XCTAssertEqual(argument.toCArg().wrapped.value.integer, 5)
   }
 
   func testBoolArgument() {
-    let argument: Channel.Argument = .keepAlivePermitWithoutCalls(true)
-    XCTAssertEqual(argument.toCArg().value.integer, 1)
+    let argument = Channel.Argument.keepAlivePermitWithoutCalls(true)
+    XCTAssertEqual(argument.toCArg().wrapped.value.integer, 1)
   }
 
   func testTimeIntervalArgument() {
-    let argument: Channel.Argument = .keepAliveTime(2.5)
-    XCTAssertEqual(argument.toCArg().value.integer, 2500) // in ms
+    let argument = Channel.Argument.keepAliveTime(2.5)
+    XCTAssertEqual(argument.toCArg().wrapped.value.integer, 2500) // in ms
+  }
+}
+
+extension ChannelArgumentTests {
+  func testPracticalUse() {
+    let client = makeClient([.primaryUserAgent("FOO"), .secondaryUserAgent("BAR")])
+    let responseText = try! client.get(Echo_EchoRequest(text: "")).text
+    XCTAssertTrue(responseText.hasPrefix("FOO "), "user agent \(responseText) should begin with 'FOO '")
+    XCTAssertTrue(responseText.hasSuffix(" BAR"), "user agent \(responseText) should end with ' BAR'")
   }
 }

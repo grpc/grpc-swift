@@ -25,35 +25,31 @@
 
 cgrpc_channel *cgrpc_channel_create(const char *address,
                                     grpc_arg *args,
-                                    int number_args) {
+                                    int num_args) {
   cgrpc_channel *c = (cgrpc_channel *) malloc(sizeof (cgrpc_channel));
 
-  grpc_channel_args *channel_args = gpr_malloc(sizeof(grpc_channel_args));
-  channel_args->args = args;
-  channel_args->num_args = number_args;
+  grpc_channel_args channel_args;
+  channel_args.args = args;
+  channel_args.num_args = num_args;
 
-  // create the channel
-  c->channel = grpc_insecure_channel_create(address, channel_args, NULL);
+  c->channel = grpc_insecure_channel_create(address, &channel_args, NULL);
   c->completion_queue = grpc_completion_queue_create_for_next(NULL);
-  gpr_free(channel_args);
   return c;
 }
 
 cgrpc_channel *cgrpc_channel_create_secure(const char *address,
                                            const char *pem_root_certs,
                                            grpc_arg *args,
-                                           int number_args) {
+                                           int num_args) {
   cgrpc_channel *c = (cgrpc_channel *) malloc(sizeof (cgrpc_channel));
-  // create the channel
 
-  grpc_channel_args *channel_args = gpr_malloc(sizeof(grpc_channel_args));
-  channel_args->args = args;
-  channel_args->num_args = number_args;
+  grpc_channel_args channel_args;
+  channel_args.args = args;
+  channel_args.num_args = num_args;
 
   grpc_channel_credentials *creds = grpc_ssl_credentials_create(pem_root_certs, NULL, NULL);
-  c->channel = grpc_secure_channel_create(creds, address, channel_args, NULL);
+  c->channel = grpc_secure_channel_create(creds, address, &channel_args, NULL);
   c->completion_queue = grpc_completion_queue_create_for_next(NULL);
-  gpr_free(channel_args);
   return c;
 }
 

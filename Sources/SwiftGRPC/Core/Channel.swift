@@ -42,13 +42,15 @@ public class Channel {
   /// - Parameter secure: if true, use TLS
   /// - Parameter arguments: list of channel configuration options
   public init(address: String, secure: Bool = true, arguments: [Argument] = []) {
+    gRPC.initialize()
     host = address
-    var cargs = arguments.map { $0.toCArg() }
+    let argumentWrappers = arguments.map { $0.toCArg() }
+    var argumentValues = argumentWrappers.map { $0.wrapped }
 
     if secure {
-      underlyingChannel = cgrpc_channel_create_secure(address, roots_pem(), &cargs, Int32(arguments.count))
+      underlyingChannel = cgrpc_channel_create_secure(address, roots_pem(), &argumentValues, Int32(arguments.count))
     } else {
-      underlyingChannel = cgrpc_channel_create(address, &cargs, Int32(arguments.count))
+      underlyingChannel = cgrpc_channel_create(address, &argumentValues, Int32(arguments.count))
     }
     completionQueue = CompletionQueue(
       underlyingCompletionQueue: cgrpc_channel_completion_queue(underlyingChannel), name: "Client")
@@ -61,10 +63,12 @@ public class Channel {
   /// - Parameter certificates: a PEM representation of certificates to use
   /// - Parameter arguments: list of channel configuration options
   public init(address: String, certificates: String, arguments: [Argument] = []) {
+    gRPC.initialize()
     self.host = address
-    var cargs = arguments.map { $0.toCArg() }
+    let argumentWrappers = arguments.map { $0.toCArg() }
+    var argumentValues = argumentWrappers.map { $0.wrapped }
 
-    underlyingChannel = cgrpc_channel_create_secure(address, certificates, &cargs, Int32(arguments.count))
+    underlyingChannel = cgrpc_channel_create_secure(address, certificates, &argumentValues, Int32(arguments.count))
     completionQueue = CompletionQueue(
       underlyingCompletionQueue: cgrpc_channel_completion_queue(underlyingChannel), name: "Client")
     completionQueue.run() // start a loop that watches the channel's completion queue

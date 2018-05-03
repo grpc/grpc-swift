@@ -152,6 +152,7 @@ const char *grpc_version_string(void);
 const char *grpc_g_stands_for(void);
 
 char *gpr_strdup(const char *src);
+void gpr_free(void *p);
 
 void cgrpc_completion_queue_drain(cgrpc_completion_queue *cq);
 void grpc_completion_queue_destroy(cgrpc_completion_queue *cq);
@@ -160,7 +161,7 @@ void grpc_completion_queue_destroy(cgrpc_completion_queue *cq);
 void cgrpc_free_copied_string(char *string);
 
 // channel support
-cgrpc_channel *cgrpc_channel_create(const char *address, 
+cgrpc_channel *cgrpc_channel_create(const char *address,
                                     grpc_arg *args,
                                     int num_args);
 cgrpc_channel *cgrpc_channel_create_secure(const char *address,
