@@ -110,3 +110,17 @@ public class Metadata: CustomStringConvertible {
     return underlyingArray
   }
 }
+
+extension Metadata {
+  public subscript(_ key: String) -> String? {
+    for i in 0..<self.count() {
+      let currentKey = self.key(i)
+      guard currentKey == key
+        else { continue }
+      
+      return self.value(i)
+    }
+    
+    return nil
+  }
+}

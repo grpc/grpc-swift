@@ -23,11 +23,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-cgrpc_channel *cgrpc_channel_create(const char *address) {
+cgrpc_channel *cgrpc_channel_create(const char *address,
+                                    grpc_arg *args,
+                                    int num_args) {
   cgrpc_channel *c = (cgrpc_channel *) malloc(sizeof (cgrpc_channel));
-  // create the channel
+
   grpc_channel_args channel_args;
-  channel_args.num_args = 0;
+  channel_args.args = args;
+  channel_args.num_args = num_args;
+
   c->channel = grpc_insecure_channel_create(address, &channel_args, NULL);
   c->completion_queue = grpc_completion_queue_create_for_next(NULL);
   return c;
@@ -35,32 +39,16 @@ cgrpc_channel *cgrpc_channel_create(const char *address) {
 
 cgrpc_channel *cgrpc_channel_create_secure(const char *address,
                                            const char *pem_root_certs,
-                                           const char *host) {
+                                           grpc_arg *args,
+                                           int num_args) {
   cgrpc_channel *c = (cgrpc_channel *) malloc(sizeof (cgrpc_channel));
-  // create the channel
 
-  int argMax = 2;
-  grpc_channel_args *channelArgs = gpr_malloc(sizeof(grpc_channel_args));
-  channelArgs->args = gpr_malloc(argMax * sizeof(grpc_arg));
-
-  int argCount = 1;
-  grpc_arg *arg = &channelArgs->args[0];
-  arg->type = GRPC_ARG_STRING;
-  arg->key = gpr_strdup("grpc.primary_user_agent");
-  arg->value.string = gpr_strdup("grpc-swift/0.0.1");
-
-  if (host) {
-    argCount++;
-    arg = &channelArgs->args[1];
-    arg->type = GRPC_ARG_STRING;
-    arg->key = gpr_strdup("grpc.ssl_target_name_override");
-    arg->value.string = gpr_strdup(host);
-  }
-
-  channelArgs->num_args = argCount;
+  grpc_channel_args channel_args;
+  channel_args.args = args;
+  channel_args.num_args = num_args;
 
   grpc_channel_credentials *creds = grpc_ssl_credentials_create(pem_root_certs, NULL, NULL);
-  c->channel = grpc_secure_channel_create(creds, address, channelArgs, NULL);
+  c->channel = grpc_secure_channel_create(creds, address, &channel_args, NULL);
   c->completion_queue = grpc_completion_queue_create_for_next(NULL);
   return c;
 }
