@@ -53,7 +53,7 @@ Please also note that your project will need to include the
 [Swift Protobuf](https://github.com/apple/swift-protobuf) and
 the source files that you generate with `protoc`/[plugins](#getting-the-plugins).
 
-See [Echo](Examples/Echo) for a working Xcode-based
+See [Echo](Examples/EchoXcode) for a working Xcode-based
 example, and don't hesitate to file issues if you find any problems.
 
 ## Usage
@@ -111,7 +111,7 @@ communication system that can support arbitrary payloads. As such,
 each gRPC library includes low-level interfaces that can be used
 to directly build API clients and servers with no generated code.
 For an example of this in Swift, please see the
-[Simple](Examples/Simple) example.
+[Simple](Examples/SimpleXcode) example.
 
 ## Having build problems?
 
