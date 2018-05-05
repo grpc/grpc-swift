@@ -61,12 +61,13 @@ public class Server {
     completionQueue.shutdown()
   }
 
-  /// Run the server
+  /// Run the server.
+  ///
+  /// - Parameter handlerFunction: will be called to handle an incoming request. Dispatched on a new thread, so can be blocking.
   public func run(handlerFunction: @escaping (Handler) -> Void) {
     cgrpc_server_start(underlyingServer)
     // run the server on a new background thread
     let spinloopThreadQueue = DispatchQueue(label: "SwiftGRPC.CompletionQueue.runToCompletion.spinloopThread")
-    let handlerDispatchQueue = DispatchQueue(label: "SwiftGRPC.Server.run.dispatchHandler", attributes: .concurrent)
     spinloopThreadQueue.async {
       spinloop: while true {
         do {
@@ -87,13 +88,13 @@ public class Server {
                 _ = strongHandlerReference
                 // this will start the completion queue on a new thread
                 handler.completionQueue.runToCompletion {
-                  handlerDispatchQueue.async {
-                    // release the handler when it finishes
-                    strongHandlerReference = nil
-                  }
+                  // release the handler when it finishes
+                  strongHandlerReference = nil
                 }
-                handlerDispatchQueue.async {
-                  // dispatch the handler function on a separate thread
+                
+                // Dispatch the handler function on a separate thread.
+                let handlerDispatchThreadQueue = DispatchQueue(label: "SwiftGRPC.Server.run.dispatchHandlerThread")
+                handlerDispatchThreadQueue.async {
                   handlerFunction(handler)
                 }
               }

@@ -41,29 +41,32 @@ open class ServerSessionClientStreamingBase<InputType: Message, OutputType: Mess
   }
   
   public func run() throws {
-    try handler.sendMetadata(initialMetadata: initialMetadata) { success in
-      let handlerThreadQueue = DispatchQueue(label: "SwiftGRPC.ServerSessionClientStreamingBase.run.handlerThread")
-      handlerThreadQueue.async {
-        var responseStatus: ServerStatus?
-        if success {
-          do {
-            try self.providerBlock(self)
-          } catch {
-            responseStatus = (error as? ServerStatus) ?? .processingError
-          }
-        } else {
-          print("ServerSessionClientStreamingBase.run sending initial metadata failed")
-          responseStatus = .sendingInitialMetadataFailed
-        }
-        
-        if let responseStatus = responseStatus {
-          // Error encountered, notify the client.
-          do {
-            try self.handler.sendStatus(responseStatus)
-          } catch {
-            print("ServerSessionClientStreamingBase.run error sending status: \(error)")
-          }
-        }
+    let sendMetadataSignal = DispatchSemaphore(value: 0)
+    var success = false
+    try handler.sendMetadata(initialMetadata: initialMetadata) {
+      success = $0
+      sendMetadataSignal.signal()
+    }
+    sendMetadataSignal.wait()
+    
+    var responseStatus: ServerStatus?
+    if success {
+      do {
+        try self.providerBlock(self)
+      } catch {
+        responseStatus = (error as? ServerStatus) ?? .processingError
+      }
+    } else {
+      print("ServerSessionClientStreamingBase.run sending initial metadata failed")
+      responseStatus = .sendingInitialMetadataFailed
+    }
+    
+    if let responseStatus = responseStatus {
+      // Error encountered, notify the client.
+      do {
+        try self.handler.sendStatus(responseStatus)
+      } catch {
+        print("ServerSessionClientStreamingBase.run error sending status: \(error)")
       }
     }
   }
