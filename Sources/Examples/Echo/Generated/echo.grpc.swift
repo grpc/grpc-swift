@@ -211,11 +211,13 @@ class Echo_EchoServiceTestStub: ServiceClientTestStubBase, Echo_EchoService {
 }
 
 /// To build a server, implement a class that conforms to this protocol.
+/// If one of the methods returning `ServerStatus?` returns nil,
+/// it is expected that you have already returned a status to the client by means of `session.close`.
 internal protocol Echo_EchoProvider {
   func get(request: Echo_EchoRequest, session: Echo_EchoGetSession) throws -> Echo_EchoResponse
-  func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws
-  func collect(session: Echo_EchoCollectSession) throws
-  func update(session: Echo_EchoUpdateSession) throws
+  func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws -> ServerStatus?
+  func collect(session: Echo_EchoCollectSession) throws -> Echo_EchoResponse?
+  func update(session: Echo_EchoUpdateSession) throws -> ServerStatus?
 }
 
 internal protocol Echo_EchoGetSession: ServerSessionUnary {}
@@ -231,7 +233,8 @@ internal protocol Echo_EchoExpandSession: ServerSessionServerStreaming {
   func _send(_ message: Echo_EchoResponse, timeout: DispatchTime) throws
 
   /// Close the connection and send the status. Non-blocking.
-  /// You MUST call this method once you are done processing the request.
+  /// This method should be called if and only if your request handler returns a nil value instead of a server status;
+  /// otherwise SwiftGRPC will take care of sending the status for you.
   func close(withStatus status: ServerStatus, completion: (() -> Void)?) throws
 }
 
@@ -250,7 +253,8 @@ internal protocol Echo_EchoCollectSession: ServerSessionClientStreaming {
   /// Call this to wait for a result. Nonblocking.
   func receive(completion: @escaping (ResultOrRPCError<Echo_EchoRequest?>) -> Void) throws
 
-  /// You MUST call one of these two methods once you are done processing the request.
+  /// Exactly one of these two methods should be called if and only if your request handler returns nil;
+  /// otherwise SwiftGRPC will take care of sending the response and status for you.
   /// Close the connection and send a single result. Non-blocking.
   func sendAndClose(response: Echo_EchoResponse, status: ServerStatus, completion: (() -> Void)?) throws
   /// Close the connection and send an error. Non-blocking.
@@ -280,7 +284,8 @@ internal protocol Echo_EchoUpdateSession: ServerSessionBidirectionalStreaming {
   func _send(_ message: Echo_EchoResponse, timeout: DispatchTime) throws
 
   /// Close the connection and send the status. Non-blocking.
-  /// You MUST call this method once you are done processing the request.
+  /// This method should be called if and only if your request handler returns a nil value instead of a server status;
+  /// otherwise SwiftGRPC will take care of sending the status for you.
   func close(withStatus status: ServerStatus, completion: (() -> Void)?) throws
 }
 
@@ -318,36 +323,33 @@ internal final class Echo_EchoServer: ServiceServer {
     super.init(address: address, certificateString: certificateString, keyString: keyString)
   }
 
-  /// Start the server.
-  internal override func handleMethod(_ method: String, handler: Handler) throws -> Bool {
+  /// Determines and calls the appropriate request handler, depending on the request's method.
+  /// Throws `HandleMethodError.unknownMethod` for methods not handled by this service.
+  internal override func handleMethod(_ method: String, handler: Handler) throws -> ServerStatus? {
     let provider = self.provider
     switch method {
     case "/echo.Echo/Get":
-      try Echo_EchoGetSessionBase(
+      return try Echo_EchoGetSessionBase(
         handler: handler,
         providerBlock: { try provider.get(request: $0, session: $1 as! Echo_EchoGetSessionBase) })
           .run()
-      return true
     case "/echo.Echo/Expand":
-      try Echo_EchoExpandSessionBase(
+      return try Echo_EchoExpandSessionBase(
         handler: handler,
         providerBlock: { try provider.expand(request: $0, session: $1 as! Echo_EchoExpandSessionBase) })
           .run()
-      return true
     case "/echo.Echo/Collect":
-      try Echo_EchoCollectSessionBase(
+      return try Echo_EchoCollectSessionBase(
         handler: handler,
         providerBlock: { try provider.collect(session: $0 as! Echo_EchoCollectSessionBase) })
           .run()
-      return true
     case "/echo.Echo/Update":
-      try Echo_EchoUpdateSessionBase(
+      return try Echo_EchoUpdateSessionBase(
         handler: handler,
         providerBlock: { try provider.update(session: $0 as! Echo_EchoUpdateSessionBase) })
           .run()
-      return true
     default:
-      return false
+      throw HandleMethodError.unknownMethod
     }
   }
 }

@@ -58,6 +58,36 @@ open class ServerSessionBase: ServerSession {
   public func cancel() {
     call.cancel()
   }
+  
+  func sendInitialMetadataAndWait() throws {
+    let sendMetadataSignal = DispatchSemaphore(value: 0)
+    var success = false
+    try handler.sendMetadata(initialMetadata: initialMetadata) {
+      success = $0
+      sendMetadataSignal.signal()
+    }
+    sendMetadataSignal.wait()
+    
+    if !success {
+      throw ServerStatus.sendingInitialMetadataFailed
+    }
+  }
+  
+  func receiveRequestAndWait() throws -> Data {
+    let sendMetadataSignal = DispatchSemaphore(value: 0)
+    var requestData: Data?
+    try handler.receiveMessage(initialMetadata: initialMetadata) {
+      requestData = $0
+      sendMetadataSignal.signal()
+    }
+    sendMetadataSignal.wait()
+    
+    if let requestData = requestData {
+      return requestData
+    } else {
+      throw ServerStatus.noRequestData
+    }
+  }
 }
 
 open class ServerSessionTestStub: ServerSession {

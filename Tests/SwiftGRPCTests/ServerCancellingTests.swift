@@ -24,19 +24,21 @@ fileprivate class CancellingProvider: Echo_EchoProvider {
     return Echo_EchoResponse()
   }
   
-  func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws {
+  func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws -> ServerStatus? {
     session.cancel()
     XCTAssertThrowsError(try session.send(Echo_EchoResponse()))
+    return nil
   }
   
-  func collect(session: Echo_EchoCollectSession) throws {
+  func collect(session: Echo_EchoCollectSession) throws -> Echo_EchoResponse? {
     session.cancel()
-    try! session.sendAndClose(response: Echo_EchoResponse(), status: .ok, completion: nil)
+    return Echo_EchoResponse()
   }
   
-  func update(session: Echo_EchoUpdateSession) throws {
+  func update(session: Echo_EchoUpdateSession) throws -> ServerStatus? {
     session.cancel()
     XCTAssertThrowsError(try session.send(Echo_EchoResponse()))
+    return nil
   }
 }
 

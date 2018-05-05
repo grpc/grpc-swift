@@ -26,15 +26,15 @@ fileprivate class ChannelArgumentTestProvider: Echo_EchoProvider {
     return Echo_EchoResponse(text: (session as! ServerSessionBase).handler.requestMetadata["user-agent"]!)
   }
   
-  func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws {
+  func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws -> ServerStatus? {
     fatalError("not implemented")
   }
   
-  func collect(session: Echo_EchoCollectSession) throws {
+  func collect(session: Echo_EchoCollectSession) throws -> Echo_EchoResponse? {
     fatalError("not implemented")
   }
   
-  func update(session: Echo_EchoUpdateSession) throws {
+  func update(session: Echo_EchoUpdateSession) throws -> ServerStatus? {
     fatalError("not implemented")
   }
 }

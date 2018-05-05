@@ -48,9 +48,13 @@ open class ServiceServer {
     server = Server(address: address, key: key, certs: certificate)
   }
 
+  public enum HandleMethodError: Error {
+    case unknownMethod
+  }
+  
   /// Handle the given method. Needs to be overridden by actual implementations.
   /// Returns whether the method was actually handled.
-  open func handleMethod(_ method: String, handler: Handler) throws -> Bool { fatalError("needs to be overridden") }
+  open func handleMethod(_ method: String, handler: Handler) throws -> ServerStatus? { fatalError("needs to be overridden") }
 
   /// Start the server.
   public func start() {
@@ -71,23 +75,36 @@ open class ServiceServer {
       }
       
       do {
-        if !(try strongSelf.handleMethod(unwrappedMethod, handler: handler)) {
-          do {
-            try handler.call.perform(OperationGroup(
-              call: handler.call,
-              operations: [
-                .sendInitialMetadata(Metadata()),
-                .receiveCloseOnServer,
-                .sendStatusFromServer(.unimplemented, "unknown method " + unwrappedMethod, Metadata())
-            ]) { _ in
-              handler.shutdown()
-            })
-          } catch {
-            print("ServiceServer.start error sending status for unknown method: \(error)")
+        do {
+          if let responseStatus = try strongSelf.handleMethod(unwrappedMethod, handler: handler) {
+            // The handler wants us to send the status for them; do that.
+            // But first, ensure that all outgoing messages have been enqueued, to avoid ending the stream prematurely:
+            handler.call.messageQueueEmpty.wait()
+            try handler.sendStatus(responseStatus)
           }
+        } catch _ as HandleMethodError {
+          // The method is not implemented by the service - send a status saying so.
+          try handler.call.perform(OperationGroup(
+            call: handler.call,
+            operations: [
+              .sendInitialMetadata(Metadata()),
+              .receiveCloseOnServer,
+              .sendStatusFromServer(.unimplemented, "unknown method " + unwrappedMethod, Metadata())
+          ]) { _ in
+            handler.shutdown()
+          })
         }
       } catch {
-        print("Server error: \(error)")
+        // The individual sessions' `run` methods (which are called by `self.handleMethod`) only throw errors if
+        // they encountered an error that has not also been "seen" by the actual request handler implementation.
+        // Therefore, this error is "really unexpected" and  should be logged here - there's nowhere else to log it otherwise.
+        print("ServiceServer error: \(error)")
+        do {
+          try handler.sendStatus((error as? ServerStatus) ?? .processingError)
+        } catch {
+          print("ServiceServer error sending status: \(error)")
+          handler.shutdown()
+        }
       }
     }
   }

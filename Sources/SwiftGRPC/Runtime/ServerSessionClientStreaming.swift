@@ -23,7 +23,7 @@ public protocol ServerSessionClientStreaming: ServerSession {}
 open class ServerSessionClientStreamingBase<InputType: Message, OutputType: Message>: ServerSessionBase, ServerSessionClientStreaming, StreamReceiving {
   public typealias ReceivedType = InputType
   
-  public typealias ProviderBlock = (ServerSessionClientStreamingBase) throws -> Void
+  public typealias ProviderBlock = (ServerSessionClientStreamingBase) throws -> OutputType?
   private var providerBlock: ProviderBlock
 
   public init(handler: Handler, providerBlock: @escaping ProviderBlock) {
@@ -40,35 +40,25 @@ open class ServerSessionClientStreamingBase<InputType: Message, OutputType: Mess
     try handler.sendStatus(status, completion: completion)
   }
   
-  public func run() throws {
-    let sendMetadataSignal = DispatchSemaphore(value: 0)
-    var success = false
-    try handler.sendMetadata(initialMetadata: initialMetadata) {
-      success = $0
-      sendMetadataSignal.signal()
-    }
-    sendMetadataSignal.wait()
+  public func run() throws -> ServerStatus? {
+    try sendInitialMetadataAndWait()
     
-    var responseStatus: ServerStatus?
-    if success {
-      do {
-        try self.providerBlock(self)
-      } catch {
-        responseStatus = (error as? ServerStatus) ?? .processingError
+    let responseMessage: OutputType
+    do {
+      guard let handlerResponse = try self.providerBlock(self) else {
+        // This indicates that the provider blocks has taken responsibility for sending a response and status, so do
+        // nothing.
+        return nil
       }
-    } else {
-      print("ServerSessionClientStreamingBase.run sending initial metadata failed")
-      responseStatus = .sendingInitialMetadataFailed
+      responseMessage = handlerResponse
+    } catch {
+      // Errors thrown by `providerBlock` should be logged in that method;
+      // we return the error as a status code to avoid `ServiceServer` logging this as a "really unexpected" error.
+      return (error as? ServerStatus) ?? .processingError
     }
     
-    if let responseStatus = responseStatus {
-      // Error encountered, notify the client.
-      do {
-        try self.handler.sendStatus(responseStatus)
-      } catch {
-        print("ServerSessionClientStreamingBase.run error sending status: \(error)")
-      }
-    }
+    try self.sendAndClose(response: responseMessage)
+    return nil  // The status will already be sent by `sendAndClose` above.
   }
 }
 

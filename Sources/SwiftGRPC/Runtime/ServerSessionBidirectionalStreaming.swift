@@ -26,7 +26,7 @@ open class ServerSessionBidirectionalStreamingBase<InputType: Message, OutputTyp
   public typealias ReceivedType = InputType
   public typealias SentType = OutputType
   
-  public typealias ProviderBlock = (ServerSessionBidirectionalStreamingBase) throws -> Void
+  public typealias ProviderBlock = (ServerSessionBidirectionalStreamingBase) throws -> ServerStatus?
   private var providerBlock: ProviderBlock
 
   public init(handler: Handler, providerBlock: @escaping ProviderBlock) {
@@ -34,34 +34,14 @@ open class ServerSessionBidirectionalStreamingBase<InputType: Message, OutputTyp
     super.init(handler: handler)
   }
   
-  public func run() throws {
-    let sendMetadataSignal = DispatchSemaphore(value: 0)
-    var success = false
-    try handler.sendMetadata(initialMetadata: initialMetadata) {
-      success = $0
-      sendMetadataSignal.signal()
-    }
-    sendMetadataSignal.wait()
-    
-    var responseStatus: ServerStatus?
-    if success {
-      do {
-        try self.providerBlock(self)
-      } catch {
-        responseStatus = (error as? ServerStatus) ?? .processingError
-      }
-    } else {
-      print("ServerSessionBidirectionalStreamingBase.run sending initial metadata failed")
-      responseStatus = .sendingInitialMetadataFailed
-    }
-    
-    if let responseStatus = responseStatus {
-      // Error encountered, notify the client.
-      do {
-        try self.handler.sendStatus(responseStatus)
-      } catch {
-        print("ServerSessionBidirectionalStreamingBase.run error sending status: \(error)")
-      }
+  public func run() throws -> ServerStatus? {
+    try sendInitialMetadataAndWait()
+    do {
+      return try self.providerBlock(self)
+    } catch {
+      // Errors thrown by `providerBlock` should be logged in that method;
+      // we return the error as a status code to avoid `ServiceServer` logging this as a "really unexpected" error.
+      return (error as? ServerStatus) ?? .processingError
     }
   }
 }
