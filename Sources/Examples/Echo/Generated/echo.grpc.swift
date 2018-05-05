@@ -319,32 +319,32 @@ internal final class Echo_EchoServer: ServiceServer {
   }
 
   /// Start the server.
-  internal override func handleMethod(_ method: String, handler: Handler, queue: DispatchQueue) throws -> Bool {
+  internal override func handleMethod(_ method: String, handler: Handler) throws -> Bool {
     let provider = self.provider
     switch method {
     case "/echo.Echo/Get":
       try Echo_EchoGetSessionBase(
         handler: handler,
         providerBlock: { try provider.get(request: $0, session: $1 as! Echo_EchoGetSessionBase) })
-          .run(queue: queue)
+          .run()
       return true
     case "/echo.Echo/Expand":
       try Echo_EchoExpandSessionBase(
         handler: handler,
         providerBlock: { try provider.expand(request: $0, session: $1 as! Echo_EchoExpandSessionBase) })
-          .run(queue: queue)
+          .run()
       return true
     case "/echo.Echo/Collect":
       try Echo_EchoCollectSessionBase(
         handler: handler,
         providerBlock: { try provider.collect(session: $0 as! Echo_EchoCollectSessionBase) })
-          .run(queue: queue)
+          .run()
       return true
     case "/echo.Echo/Update":
       try Echo_EchoUpdateSessionBase(
         handler: handler,
         providerBlock: { try provider.update(session: $0 as! Echo_EchoUpdateSessionBase) })
-          .run(queue: queue)
+          .run()
       return true
     default:
       return false

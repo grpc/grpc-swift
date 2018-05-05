@@ -62,8 +62,7 @@ public class Server {
   }
 
   /// Run the server
-  public func run(dispatchQueue: DispatchQueue = DispatchQueue.global(),
-                  handlerFunction: @escaping (Handler) -> Void) {
+  public func run(handlerFunction: @escaping (Handler) -> Void) {
     cgrpc_server_start(underlyingServer)
     // run the server on a new background thread
     let spinloopThreadQueue = DispatchQueue(label: "SwiftGRPC.CompletionQueue.runToCompletion.spinloopThread")

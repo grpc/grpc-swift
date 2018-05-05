@@ -40,7 +40,7 @@ open class ServerSessionClientStreamingBase<InputType: Message, OutputType: Mess
     try handler.sendStatus(status, completion: completion)
   }
   
-  public func run(queue: DispatchQueue) throws {
+  public func run() throws {
     try handler.sendMetadata(initialMetadata: initialMetadata) { success in
       let handlerThreadQueue = DispatchQueue(label: "SwiftGRPC.ServerSessionClientStreamingBase.run.handlerThread")
       handlerThreadQueue.async {

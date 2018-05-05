@@ -33,7 +33,7 @@ open class ServerSessionServerStreamingBase<InputType: Message, OutputType: Mess
     super.init(handler: handler)
   }
   
-  public func run(queue: DispatchQueue) throws {
+  public func run() throws {
     try handler.receiveMessage(initialMetadata: initialMetadata) { requestData in
       let handlerThreadQueue = DispatchQueue(label: "SwiftGRPC.ServerSessionServerStreamingBase.run.handlerThread")
       handlerThreadQueue.async {

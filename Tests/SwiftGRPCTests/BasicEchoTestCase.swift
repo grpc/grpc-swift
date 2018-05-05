@@ -52,12 +52,12 @@ class BasicEchoTestCase: XCTestCase {
                                certificateString: certificateString,
                                keyString: String(data: keyForTests, encoding: .utf8)!,
                                provider: provider)
-      server.start(queue: DispatchQueue.global())
+      server.start()
       client = Echo_EchoServiceClient(address: address, certificates: certificateString, arguments: [.sslTargetNameOverride("example.com")])
       client.host = "example.com"
     } else {
       server = Echo_EchoServer(address: address, provider: provider)
-      server.start(queue: DispatchQueue.global())
+      server.start()
       client = Echo_EchoServiceClient(address: address, secure: false)
     }
     
