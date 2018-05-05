@@ -104,6 +104,7 @@ public class Call {
   /// - Parameter completion: a block to call with call results
   ///     The argument to `completion` will always have `.success = true`
   ///     because operations containing `.receiveCloseOnClient` always succeed.
+  ///   Runs synchronously on the completion queue's thread. Should not be blocking.
   /// - Throws: `CallError` if fails to call.
   public func start(_ style: CallStyle,
                     metadata: Metadata,
@@ -157,7 +158,8 @@ public class Call {
 
   /// Sends a message over a streaming connection.
   ///
-  /// Parameter data: the message data to send
+  /// - Parameter data: the message data to send
+  /// - Parameter completion: Runs synchronously on the completion queue's thread once the message has been sent. Should not be blocking.
   /// - Throws: `CallError` if fails to call. `CallWarning` if blocked.
   public func sendMessage(data: Data, completion: ((Error?) -> Void)? = nil) throws {
     try sendMutex.synchronize {
@@ -202,6 +204,7 @@ public class Call {
   }
 
   // Receive a message over a streaming connection.
+  /// - Parameter completion: Runs synchronously on the completion queue's thread once the message has been received. Should not be blocking.
   /// - Throws: `CallError` if fails to call.
   public func closeAndReceiveMessage(completion: @escaping (CallResult) -> Void) throws {
     try perform(OperationGroup(call: self, operations: [.sendCloseFromClient, .receiveMessage]) { operationGroup in
@@ -210,6 +213,7 @@ public class Call {
   }
 
   // Receive a message over a streaming connection.
+  /// - Parameter completion: Runs synchronously on the completion queue's thread once the message has been received. Should not be blocking.
   /// - Throws: `CallError` if fails to call.
   public func receiveMessage(completion: @escaping (CallResult) -> Void) throws {
     try perform(OperationGroup(call: self, operations: [.receiveMessage]) { operationGroup in
@@ -218,6 +222,7 @@ public class Call {
   }
 
   // Closes a streaming connection.
+  /// - Parameter completion: Runs synchronously on the completion queue's thread once the connection has been closed. Should not be blocking.
   /// - Throws: `CallError` if fails to call.
   public func close(completion: (() -> Void)? = nil) throws {
     try perform(OperationGroup(call: self, operations: [.sendCloseFromClient],

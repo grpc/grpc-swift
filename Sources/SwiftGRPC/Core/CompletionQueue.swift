@@ -98,7 +98,7 @@ class CompletionQueue {
 
   /// Register an operation group for handling upon completion. Will throw if the queue has been shutdown already.
   ///
-  /// - Parameter operationGroup: the operation group to handle. Runs synchronously on the queue's thread, so should not be blocking.
+  /// - Parameter operationGroup: the operation group to handle.
   func register(_ operationGroup: OperationGroup, onSuccess: () throws -> Void) throws {
     try operationGroupsMutex.synchronize {
       guard !hasBeenShutdown
