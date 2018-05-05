@@ -33,7 +33,8 @@ open class ServerSessionUnaryBase<InputType: Message, OutputType: Message>: Serv
   
   public func run(queue: DispatchQueue) throws {
     try handler.receiveMessage(initialMetadata: initialMetadata) { requestData in
-      queue.async {
+      let handlerThreadQueue = DispatchQueue(label: "SwiftGRPC.ServerSessionUnaryBase.run.handlerThread")
+      handlerThreadQueue.async {
         let responseStatus: ServerStatus
         if let requestData = requestData {
           do {

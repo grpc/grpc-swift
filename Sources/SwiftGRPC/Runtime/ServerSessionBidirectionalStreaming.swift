@@ -36,7 +36,8 @@ open class ServerSessionBidirectionalStreamingBase<InputType: Message, OutputTyp
   
   public func run(queue: DispatchQueue) throws {
     try handler.sendMetadata(initialMetadata: initialMetadata) { success in
-      queue.async {
+      let handlerThreadQueue = DispatchQueue(label: "SwiftGRPC.ServerSessionBidirectionalStreamingBase.run.handlerThread")
+      handlerThreadQueue.async {
         var responseStatus: ServerStatus?
         if success {
           do {
