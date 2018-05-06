@@ -57,6 +57,7 @@ open class ServerSessionBase: ServerSession {
   
   public func cancel() {
     call.cancel()
+    handler.shutdown()
   }
   
   func sendInitialMetadataAndWait() throws {

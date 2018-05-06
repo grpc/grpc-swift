@@ -18,11 +18,16 @@ import Foundation
 import XCTest
 
 class ServiceClientTests: BasicEchoTestCase {
-  private lazy var sharedChannel = Channel(address: address, secure: false)
+  private var sharedChannel: Channel?
 
   override func setUp() {
     super.setUp()
     sharedChannel = Channel(address: address, secure: false)
+  }
+  
+  override func tearDown() {
+    sharedChannel = nil
+    super.tearDown()
   }
 
   func testSharingChannelBetweenClientsUnaryAsync() {
@@ -30,13 +35,13 @@ class ServiceClientTests: BasicEchoTestCase {
     let secondCallExpectation = expectation(description: "Second call completes successfully")
 
     do {
-      let client1 = Echo_EchoServiceClient(channel: sharedChannel)
+      let client1 = Echo_EchoServiceClient(channel: sharedChannel!)
       try _ = client1.get(Echo_EchoRequest(text: "foo")) { _, callResult in
         XCTAssertEqual(.ok, callResult.statusCode)
         firstCallExpectation.fulfill()
       }
 
-      let client2 = Echo_EchoServiceClient(channel: sharedChannel)
+      let client2 = Echo_EchoServiceClient(channel: sharedChannel!)
       try _ = client2.get(Echo_EchoRequest(text: "foo")) { _, callResult in
         XCTAssertEqual(.ok, callResult.statusCode)
         secondCallExpectation.fulfill()
@@ -50,7 +55,7 @@ class ServiceClientTests: BasicEchoTestCase {
 
   func testSharedChannelStillWorksAfterFirstUnaryClientCompletes() {
     do {
-      let client1 = Echo_EchoServiceClient(channel: sharedChannel)
+      let client1 = Echo_EchoServiceClient(channel: sharedChannel!)
       let response1 = try client1.get(Echo_EchoRequest(text: "foo")).text
       XCTAssertEqual("Swift echo get: foo", response1)
     } catch let error {
@@ -58,7 +63,7 @@ class ServiceClientTests: BasicEchoTestCase {
     }
 
     do {
-      let client2 = Echo_EchoServiceClient(channel: sharedChannel)
+      let client2 = Echo_EchoServiceClient(channel: sharedChannel!)
       let response2 = try client2.get(Echo_EchoRequest(text: "foo")).text
       XCTAssertEqual("Swift echo get: foo", response2)
     } catch let error {

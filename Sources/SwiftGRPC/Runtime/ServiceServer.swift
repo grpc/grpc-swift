@@ -76,33 +76,38 @@ open class ServiceServer {
       
       do {
         do {
-          if let responseStatus = try strongSelf.handleMethod(unwrappedMethod, handler: handler) {
+          if let responseStatus = try strongSelf.handleMethod(unwrappedMethod, handler: handler),
+            !handler.completionQueue.hasBeenShutdown {
             // The handler wants us to send the status for them; do that.
             // But first, ensure that all outgoing messages have been enqueued, to avoid ending the stream prematurely:
             handler.call.messageQueueEmpty.wait()
             try handler.sendStatus(responseStatus)
           }
         } catch _ as HandleMethodError {
-          // The method is not implemented by the service - send a status saying so.
-          try handler.call.perform(OperationGroup(
-            call: handler.call,
-            operations: [
-              .sendInitialMetadata(Metadata()),
-              .receiveCloseOnServer,
-              .sendStatusFromServer(.unimplemented, "unknown method " + unwrappedMethod, Metadata())
-          ]) { _ in
-            handler.shutdown()
-          })
+          if !handler.completionQueue.hasBeenShutdown {
+            // The method is not implemented by the service - send a status saying so.
+            try handler.call.perform(OperationGroup(
+              call: handler.call,
+              operations: [
+                .sendInitialMetadata(Metadata()),
+                .receiveCloseOnServer,
+                .sendStatusFromServer(.unimplemented, "unknown method " + unwrappedMethod, Metadata())
+            ]) { _ in
+              handler.shutdown()
+            })
+          }
         }
       } catch {
         // The individual sessions' `run` methods (which are called by `self.handleMethod`) only throw errors if
         // they encountered an error that has not also been "seen" by the actual request handler implementation.
         // Therefore, this error is "really unexpected" and  should be logged here - there's nowhere else to log it otherwise.
-        print("ServiceServer error: \(error)")
+        print("ServiceServer unexpected error handling method '\(unwrappedMethod)': \(error)")
         do {
-          try handler.sendStatus((error as? ServerStatus) ?? .processingError)
+          if !handler.completionQueue.hasBeenShutdown {
+            try handler.sendStatus((error as? ServerStatus) ?? .processingError)
+          }
         } catch {
-          print("ServiceServer error sending status: \(error)")
+          print("ServiceServer unexpected error handling method '\(unwrappedMethod)'; sending status failed as well: \(error)")
           handler.shutdown()
         }
       }
