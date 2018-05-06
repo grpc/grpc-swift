@@ -50,10 +50,10 @@ open class ServiceServer {
 
   /// Handle the given method. Needs to be overridden by actual implementations.
   /// Returns whether the method was actually handled.
-  open func handleMethod(_ method: String, handler: Handler, queue: DispatchQueue) throws -> Bool { fatalError("needs to be overridden") }
+  open func handleMethod(_ method: String, handler: Handler) throws -> Bool { fatalError("needs to be overridden") }
 
   /// Start the server.
-  public func start(queue: DispatchQueue = DispatchQueue.global()) {
+  public func start() {
     server.run { [weak self] handler in
       guard let strongSelf = self else {
         print("ERROR: ServiceServer has been asked to handle a request even though it has already been deallocated")
@@ -71,7 +71,7 @@ open class ServiceServer {
       }
       
       do {
-        if !(try strongSelf.handleMethod(unwrappedMethod, handler: handler, queue: queue)) {
+        if !(try strongSelf.handleMethod(unwrappedMethod, handler: handler)) {
           do {
             try handler.call.perform(OperationGroup(
               call: handler.call,

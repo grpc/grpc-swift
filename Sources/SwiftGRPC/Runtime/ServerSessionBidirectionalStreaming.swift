@@ -34,29 +34,33 @@ open class ServerSessionBidirectionalStreamingBase<InputType: Message, OutputTyp
     super.init(handler: handler)
   }
   
-  public func run(queue: DispatchQueue) throws {
-    try handler.sendMetadata(initialMetadata: initialMetadata) { success in
-      queue.async {
-        var responseStatus: ServerStatus?
-        if success {
-          do {
-            try self.providerBlock(self)
-          } catch {
-            responseStatus = (error as? ServerStatus) ?? .processingError
-          }
-        } else {
-          print("ServerSessionBidirectionalStreamingBase.run sending initial metadata failed")
-          responseStatus = .sendingInitialMetadataFailed
-        }
-        
-        if let responseStatus = responseStatus {
-          // Error encountered, notify the client.
-          do {
-            try self.handler.sendStatus(responseStatus)
-          } catch {
-            print("ServerSessionBidirectionalStreamingBase.run error sending status: \(error)")
-          }
-        }
+  public func run() throws {
+    let sendMetadataSignal = DispatchSemaphore(value: 0)
+    var success = false
+    try handler.sendMetadata(initialMetadata: initialMetadata) {
+      success = $0
+      sendMetadataSignal.signal()
+    }
+    sendMetadataSignal.wait()
+    
+    var responseStatus: ServerStatus?
+    if success {
+      do {
+        try self.providerBlock(self)
+      } catch {
+        responseStatus = (error as? ServerStatus) ?? .processingError
+      }
+    } else {
+      print("ServerSessionBidirectionalStreamingBase.run sending initial metadata failed")
+      responseStatus = .sendingInitialMetadataFailed
+    }
+    
+    if let responseStatus = responseStatus {
+      // Error encountered, notify the client.
+      do {
+        try self.handler.sendStatus(responseStatus)
+      } catch {
+        print("ServerSessionBidirectionalStreamingBase.run error sending status: \(error)")
       }
     }
   }

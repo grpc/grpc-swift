@@ -89,7 +89,7 @@ extension Generator {
     println("}")
     println()
     println("/// Start the server.")
-    println("\(access) override func handleMethod(_ method: String, handler: Handler, queue: DispatchQueue) throws -> Bool {")
+    println("\(access) override func handleMethod(_ method: String, handler: Handler) throws -> Bool {")
     indent()
     println("let provider = self.provider")
     println("switch method {")
@@ -104,7 +104,7 @@ extension Generator {
         println("handler: handler,")
         println("providerBlock: { try provider.\(methodFunctionName)(request: $0, session: $1 as! \(methodSessionName)Base) })")
         indent()
-        println(".run(queue: queue)")
+        println(".run()")
         outdent()
         outdent()
       default:
@@ -113,7 +113,7 @@ extension Generator {
         println("handler: handler,")
         println("providerBlock: { try provider.\(methodFunctionName)(session: $0 as! \(methodSessionName)Base) })")
         indent()
-        println(".run(queue: queue)")
+        println(".run()")
         outdent()
         outdent()
       }

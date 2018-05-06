@@ -98,7 +98,7 @@ class CompletionQueue {
 
   /// Register an operation group for handling upon completion. Will throw if the queue has been shutdown already.
   ///
-  /// - Parameter operationGroup: the operation group to handle
+  /// - Parameter operationGroup: the operation group to handle.
   func register(_ operationGroup: OperationGroup, onSuccess: () throws -> Void) throws {
     try operationGroupsMutex.synchronize {
       guard !hasBeenShutdown
@@ -113,7 +113,8 @@ class CompletionQueue {
   /// - Parameter completion: a completion handler that is called when the queue stops running
   func runToCompletion(completion: (() -> Void)?) {
     // run the completion queue on a new background thread
-    DispatchQueue.global().async {
+    let spinloopThreadQueue = DispatchQueue(label: "SwiftGRPC.CompletionQueue.runToCompletion.spinloopThread")
+    spinloopThreadQueue.async {
       spinloop: while true {
         let event = cgrpc_completion_queue_get_next_event(self.underlyingCompletionQueue, 600)
         switch event.type {
