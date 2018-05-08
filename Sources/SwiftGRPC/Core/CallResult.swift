@@ -62,11 +62,11 @@ public struct CallResult: CustomStringConvertible {
     }
     if let initialMetadata = self.initialMetadata {
       result += "\ninitialMetadata: "
-      result += initialMetadata.description
+      result += initialMetadata.dictionaryRepresentation.description
     }
     if let trailingMetadata = self.trailingMetadata {
       result += "\ntrailingMetadata: "
-      result += trailingMetadata.description
+      result += trailingMetadata.dictionaryRepresentation.description
     }
     return result
   }

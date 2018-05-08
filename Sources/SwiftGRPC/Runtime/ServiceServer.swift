@@ -71,7 +71,7 @@ open class ServiceServer {
         print("Server received request to " + unwrappedHost
           + " calling " + unwrappedMethod
           + " from " + unwrappedCaller
-          + " with " + handler.requestMetadata.description)
+          + " with metadata " + handler.requestMetadata.dictionaryRepresentation.description)
       }
       
       do {
