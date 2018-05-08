@@ -24,16 +24,19 @@ fileprivate class TimingOutEchoProvider: Echo_EchoProvider {
     return Echo_EchoResponse()
   }
   
-  func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws {
+  func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws -> ServerStatus? {
     Thread.sleep(forTimeInterval: 0.2)
+    return .ok
   }
   
-  func collect(session: Echo_EchoCollectSession) throws {
+  func collect(session: Echo_EchoCollectSession) throws -> Echo_EchoResponse? {
     Thread.sleep(forTimeInterval: 0.2)
+    return Echo_EchoResponse()
   }
   
-  func update(session: Echo_EchoUpdateSession) throws {
+  func update(session: Echo_EchoUpdateSession) throws -> ServerStatus? {
     Thread.sleep(forTimeInterval: 0.2)
+    return .ok
   }
 }
 

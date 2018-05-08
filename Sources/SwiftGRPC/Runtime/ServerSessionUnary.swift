@@ -31,47 +31,31 @@ open class ServerSessionUnaryBase<InputType: Message, OutputType: Message>: Serv
     super.init(handler: handler)
   }
   
-  public func run() throws {
-    let sendMetadataSignal = DispatchSemaphore(value: 0)
-    var requestData: Data?
-    try handler.receiveMessage(initialMetadata: initialMetadata) {
-      requestData = $0
-      sendMetadataSignal.signal()
-    }
-    sendMetadataSignal.wait()
+  public func run() throws -> ServerStatus? {
+    let requestData = try receiveRequestAndWait()
+    let requestMessage = try InputType(serializedData: requestData)
     
-    let responseStatus: ServerStatus
-    if let requestData = requestData {
-      do {
-        let requestMessage = try InputType(serializedData: requestData)
-        let responseMessage = try self.providerBlock(requestMessage, self)
-        
-        let sendResponseSignal = DispatchSemaphore(value: 0)
-        var sendResponseError: Error?
-        try self.handler.call.sendMessage(data: responseMessage.serializedData()) {
-          sendResponseError = $0
-          sendResponseSignal.signal()
-        }
-        sendResponseSignal.wait()
-        if let sendResponseError = sendResponseError {
-          print("ServerSessionUnaryBase.run error sending response: \(sendResponseError)")
-          throw sendResponseError
-        }
-        
-        responseStatus = .ok
-      } catch {
-        responseStatus = (error as? ServerStatus) ?? .processingError
-      }
-    } else {
-      print("ServerSessionUnaryBase.run no request data")
-      responseStatus = .noRequestData
-    }
-    
+    let responseMessage: OutputType
     do {
-      try self.handler.sendStatus(responseStatus)
+      responseMessage = try self.providerBlock(requestMessage, self)
     } catch {
-      print("ServerSessionUnaryBase.run error sending status: \(error)")
+      // Errors thrown by `providerBlock` should be logged in that method;
+      // we return the error as a status code to avoid `ServiceServer` logging this as a "really unexpected" error.
+      return (error as? ServerStatus) ?? .processingError
     }
+    
+    let sendResponseSignal = DispatchSemaphore(value: 0)
+    var sendResponseError: Error?
+    try self.handler.call.sendMessage(data: responseMessage.serializedData()) {
+      sendResponseError = $0
+      sendResponseSignal.signal()
+    }
+    sendResponseSignal.wait()
+    if let sendResponseError = sendResponseError {
+      throw sendResponseError
+    }
+    
+    return .ok
   }
 }
 

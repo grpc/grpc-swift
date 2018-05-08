@@ -25,7 +25,7 @@ public protocol ServerSessionServerStreaming: ServerSession {
 open class ServerSessionServerStreamingBase<InputType: Message, OutputType: Message>: ServerSessionBase, ServerSessionServerStreaming, StreamSending {
   public typealias SentType = OutputType
   
-  public typealias ProviderBlock = (InputType, ServerSessionServerStreamingBase) throws -> Void
+  public typealias ProviderBlock = (InputType, ServerSessionServerStreamingBase) throws -> ServerStatus?
   private var providerBlock: ProviderBlock
 
   public init(handler: Handler, providerBlock: @escaping ProviderBlock) {
@@ -33,35 +33,15 @@ open class ServerSessionServerStreamingBase<InputType: Message, OutputType: Mess
     super.init(handler: handler)
   }
   
-  public func run() throws {
-    let sendMetadataSignal = DispatchSemaphore(value: 0)
-    var requestData: Data?
-    try handler.receiveMessage(initialMetadata: initialMetadata) {
-      requestData = $0
-      sendMetadataSignal.signal()
-    }
-    sendMetadataSignal.wait()
-    
-    var responseStatus: ServerStatus?
-    if let requestData = requestData {
-      do {
-        let requestMessage = try InputType(serializedData: requestData)
-        try self.providerBlock(requestMessage, self)
-      } catch {
-        responseStatus = (error as? ServerStatus) ?? .processingError
-      }
-    } else {
-      print("ServerSessionServerStreamingBase.run no request data")
-      responseStatus = .noRequestData
-    }
-    
-    if let responseStatus = responseStatus {
-      // Error encountered, notify the client.
-      do {
-        try self.handler.sendStatus(responseStatus)
-      } catch {
-        print("ServerSessionServerStreamingBase.run error sending status: \(error)")
-      }
+  public func run() throws -> ServerStatus? {
+    let requestData = try receiveRequestAndWait()
+    let requestMessage = try InputType(serializedData: requestData)
+    do {
+      return try self.providerBlock(requestMessage, self)
+    } catch {
+      // Errors thrown by `providerBlock` should be logged in that method;
+      // we return the error as a status code to avoid `ServiceServer` logging this as a "really unexpected" error.
+      return (error as? ServerStatus) ?? .processingError
     }
   }
 }

@@ -61,18 +61,13 @@ extension ServerTestExample {
     let session = Echo_EchoCollectSessionTestStub()
     session.inputs = ["foo", "bar", "baz"].map { Echo_EchoRequest(text: $0) }
     
-    XCTAssertNoThrow(try provider.collect(session: session))
-    
-    XCTAssertEqual(.ok, session.status!.code)
-    XCTAssertEqual(Echo_EchoResponse(text: "Swift echo collect: foo bar baz"),
-                   session.output)
+    XCTAssertEqual(Echo_EchoResponse(text: "Swift echo collect: foo bar baz"), try provider.collect(session: session)!)
   }
   
   func testServerStreaming() {
     let session = Echo_EchoExpandSessionTestStub()
-    XCTAssertNoThrow(try provider.expand(request: Echo_EchoRequest(text: "foo bar baz"), session: session))
+    XCTAssertEqual(.ok, try provider.expand(request: Echo_EchoRequest(text: "foo bar baz"), session: session)!.code)
     
-    XCTAssertEqual(.ok, session.status!.code)
     XCTAssertEqual(["foo", "bar", "baz"].enumerated()
       .map { Echo_EchoResponse(text: "Swift echo expand (\($0)): \($1)") },
                    session.outputs)
@@ -82,9 +77,8 @@ extension ServerTestExample {
     let inputStrings = ["foo", "bar", "baz"]
     let session = Echo_EchoUpdateSessionTestStub()
     session.inputs = inputStrings.map { Echo_EchoRequest(text: $0) }
-    XCTAssertNoThrow(try provider.update(session: session))
+    XCTAssertEqual(.ok, try! provider.update(session: session)!.code)
     
-    XCTAssertEqual(.ok, session.status!.code)
     XCTAssertEqual(inputStrings.enumerated()
       .map { Echo_EchoResponse(text: "Swift echo update (\($0)): \($1)") },
                    session.outputs)

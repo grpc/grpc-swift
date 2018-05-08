@@ -67,7 +67,9 @@ class CompletionQueue {
   /// Mutex for synchronizing access to operationGroups
   private let operationGroupsMutex: Mutex = Mutex()
   
-  private var hasBeenShutdown = false
+  private var _hasBeenShutdown = false
+  
+  public var hasBeenShutdown: Bool { return operationGroupsMutex.synchronize { _hasBeenShutdown } }
 
   /// Initializes a CompletionQueue
   ///
@@ -80,7 +82,7 @@ class CompletionQueue {
   
   deinit {
     operationGroupsMutex.synchronize {
-      hasBeenShutdown = true
+      _hasBeenShutdown = true
     }
     cgrpc_completion_queue_shutdown(underlyingCompletionQueue)
     cgrpc_completion_queue_drain(underlyingCompletionQueue)
@@ -101,7 +103,7 @@ class CompletionQueue {
   /// - Parameter operationGroup: the operation group to handle.
   func register(_ operationGroup: OperationGroup, onSuccess: () throws -> Void) throws {
     try operationGroupsMutex.synchronize {
-      guard !hasBeenShutdown
+      guard !_hasBeenShutdown
         else { throw CallError.completionQueueShutdown }
       operationGroups[operationGroup.tag] = operationGroup
       try onSuccess()
@@ -113,7 +115,11 @@ class CompletionQueue {
   /// - Parameter completion: a completion handler that is called when the queue stops running
   func runToCompletion(completion: (() -> Void)?) {
     // run the completion queue on a new background thread
-    let spinloopThreadQueue = DispatchQueue(label: "SwiftGRPC.CompletionQueue.runToCompletion.spinloopThread")
+    var threadLabel = "SwiftGRPC.CompletionQueue.runToCompletion.spinloopThread"
+    if let name = self.name {
+      threadLabel.append(" (\(name))")
+    }
+    let spinloopThreadQueue = DispatchQueue(label: threadLabel)
     spinloopThreadQueue.async {
       spinloop: while true {
         let event = cgrpc_completion_queue_get_next_event(self.underlyingCompletionQueue, 600)
@@ -147,7 +153,6 @@ class CompletionQueue {
         case GRPC_QUEUE_TIMEOUT:
           continue spinloop
         default:
-          print("CompletionQueue.runToCompletion error: unknown event type \(event.type)")
           break spinloop
         }
       }
@@ -165,9 +170,9 @@ class CompletionQueue {
   func shutdown() {
     var needsShutdown = false
     operationGroupsMutex.synchronize {
-      if !hasBeenShutdown {
+      if !_hasBeenShutdown {
         needsShutdown = true
-        hasBeenShutdown = true
+        _hasBeenShutdown = true
       }
     }
     if needsShutdown {

@@ -25,15 +25,15 @@ fileprivate class StatusThrowingProvider: Echo_EchoProvider {
     throw testStatus
   }
   
-  func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws {
+  func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws -> ServerStatus? {
     throw testStatus
   }
   
-  func collect(session: Echo_EchoCollectSession) throws {
+  func collect(session: Echo_EchoCollectSession) throws -> Echo_EchoResponse? {
     throw testStatus
   }
   
-  func update(session: Echo_EchoUpdateSession) throws {
+  func update(session: Echo_EchoUpdateSession) throws -> ServerStatus? {
     throw testStatus
   }
 }
