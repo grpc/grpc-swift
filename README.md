@@ -88,6 +88,21 @@ search path. Invoke them with commands like the following:
 By convention the `--swift_out` option invokes the `protoc-gen-swift`
 plugin and `--swiftgrpc_out` invokes `protoc-gen-swiftgrpc`.
 
+#### Parameters
+To pass extra parameters to the plugin, use a comma-separated parameter list 
+separated from the output directory by a colon.
+
+| Flag | Values | Default | Description |
+|:-|:-|:-|:-|
+| `Visibility` | `Internal`/`Public` | `Internal` | ACL of generated code |
+| `Server` |  `true`/`false` | `true` | Whether to generate server code |
+| `Client` |  `true`/`false` | `true` | Whether to generate client code |
+| `TestStubs` |  `true`/`false` | `false` | Whether to generate test stub code |
+
+Example:
+
+    $ protoc <your proto> --swiftgrpc_out=Client=true,Server=false:.
+
 ### Building your project
 
 Most `grpc-swift` development is done with the Swift Package Manager.

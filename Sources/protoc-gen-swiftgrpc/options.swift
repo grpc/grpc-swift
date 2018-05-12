@@ -31,57 +31,61 @@ enum GenerationError: Error {
   }
 }
 
-class GeneratorOptions {
+final class GeneratorOptions {
   enum Visibility: String {
-    case Internal
-    case Public
+    case `internal` = "Internal"
+    case `public` = "Public"
 
     var sourceSnippet: String {
       switch self {
-      case .Internal:
+      case .internal:
         return "internal"
-      case .Public:
+      case .public:
         return "public"
       }
     }
   }
 
-  let visibility: Visibility
-  let generateTestStubs: Bool
-  let generateClient: Bool
-  let generateServer: Bool
+  private(set) var visibility = Visibility.internal
+  private(set) var generateServer = true
+  private(set) var generateClient = true
+  private(set) var generateTestStubs = false
 
   init(parameter: String?) throws {
-    var visibility: Visibility = .Internal
-
-    var generateTestStubs = false
-
     for pair in GeneratorOptions.parseParameter(string: parameter) {
       switch pair.key {
       case "Visibility":
         if let value = Visibility(rawValue: pair.value) {
           visibility = value
         } else {
-          throw GenerationError.invalidParameterValue(name: pair.key,
-                                                      value: pair.value)
+          throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }
+
+      case "Server":
+        if let value = Bool(pair.value) {
+          generateServer = value
+        } else {
+          throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
+        }
+
+      case "Client":
+        if let value = Bool(pair.value) {
+          generateClient = value
+        } else {
+          throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
+        }
+
       case "TestStubs":
-        switch pair.value {
-        case "true": generateTestStubs = true
-        case "false": generateTestStubs = false
-        default: throw GenerationError.invalidParameterValue(name: pair.key,
-                                                             value: pair.value)
+        if let value = Bool(pair.value) {
+            generateTestStubs = value
+        } else {
+            throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }
 
       default:
         throw GenerationError.unknownParameter(name: pair.key)
       }
     }
-
-    self.visibility = visibility
-    self.generateTestStubs = generateTestStubs
-    self.generateClient = true
-    self.generateServer = true
   }
 
   static func parseParameter(string: String?) -> [(key: String, value: String)] {
