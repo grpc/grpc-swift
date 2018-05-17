@@ -17,7 +17,7 @@
 import UIKit
 import SwiftGRPC
 
-let GOOGLE_API_KEY = ""
+let GOOGLE_API_KEY = "AIzaSyBG5QMN3YxZRtjBzT3T0pzKV54rDhd8yJo"
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
