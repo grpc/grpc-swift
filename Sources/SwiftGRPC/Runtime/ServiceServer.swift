@@ -71,7 +71,7 @@ open class ServiceServer {
         print("Server received request to " + unwrappedHost
           + " calling " + unwrappedMethod
           + " from " + unwrappedCaller
-          + " with " + handler.requestMetadata.description)
+          + " with metadata " + handler.requestMetadata.dictionaryRepresentation.description)
       }
       
       do {
@@ -84,6 +84,7 @@ open class ServiceServer {
             try handler.sendStatus(responseStatus)
           }
         } catch _ as HandleMethodError {
+          print("ServiceServer call to unknown method '\(unwrappedMethod)'")
           if !handler.completionQueue.hasBeenShutdown {
             // The method is not implemented by the service - send a status saying so.
             try handler.call.perform(OperationGroup(

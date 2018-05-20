@@ -19,7 +19,7 @@
 import Foundation // for String.Encoding
 
 /// Metadata sent with gRPC messages
-public class Metadata: CustomStringConvertible {
+public class Metadata {
   public enum Error: Swift.Error {
     /// Field ownership can only be transferred once. Likewise, it is not advisable to write to a metadata array whose
     /// fields we do not own.
@@ -88,14 +88,20 @@ public class Metadata: CustomStringConvertible {
     cgrpc_metadata_array_append_metadata(underlyingArray, key, value)
   }
   
-  public var description: String {
-    var lines: [String] = []
+  public var dictionaryRepresentation: [String: String] {
+    var result: [String: String] = [:]
+    var unknownKeyCount = 0
     for i in 0..<count() {
-      let key = self.key(i)
-      let value = self.value(i)
-      lines.append((key ?? "(nil)") + ":" + (value ?? "(nil)"))
+      let key: String
+      if let unwrappedKey = self.key(i) {
+        key = unwrappedKey
+      } else {
+        key = "(unknown\(unknownKeyCount))"
+        unknownKeyCount += 1
+      }
+      result[key] = self.value(i) ?? "(unknown)"
     }
-    return lines.joined(separator: "\n")
+    return result
   }
   
   public func copy() -> Metadata {
