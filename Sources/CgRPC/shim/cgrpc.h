@@ -148,7 +148,7 @@ cgrpc_completion_queue *cgrpc_channel_completion_queue(cgrpc_channel *channel);
 grpc_connectivity_state cgrpc_channel_check_connectivity_state(
     cgrpc_channel *channel, int try_to_connect);
 void cgrpc_channel_watch_connectivity_state(cgrpc_channel *channel,
-                                            cgrpc_completion_queue * completion_queue,
+                                            cgrpc_completion_queue *completion_queue,
                                             grpc_connectivity_state last_observed_state,
                                             double deadline,
                                             void *tag);
