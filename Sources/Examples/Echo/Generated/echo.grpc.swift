@@ -32,10 +32,15 @@ fileprivate final class Echo_EchoGetCallBase: ClientCallUnaryBase<Echo_EchoReque
 }
 
 internal protocol Echo_EchoExpandCall: ClientCallServerStreaming {
-  /// Call this to wait for a result. Blocking.
-  func receive() throws -> Echo_EchoResponse?
+  /// Do not call this directly, call `receive()` in the protocol extension below instead.
+  func _receive(timeout: DispatchTime) throws -> Echo_EchoResponse?
   /// Call this to wait for a result. Nonblocking.
   func receive(completion: @escaping (ResultOrRPCError<Echo_EchoResponse?>) -> Void) throws
+}
+
+internal extension Echo_EchoExpandCall {
+  /// Call this to wait for a result. Blocking.
+  func receive(timeout: DispatchTime = .distantFuture) throws -> Echo_EchoResponse? { return try self._receive(timeout: timeout) }
 }
 
 fileprivate final class Echo_EchoExpandCallBase: ClientCallServerStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoExpandCall {
@@ -49,13 +54,18 @@ class Echo_EchoExpandCallTestStub: ClientCallServerStreamingTestStub<Echo_EchoRe
 internal protocol Echo_EchoCollectCall: ClientCallClientStreaming {
   /// Send a message to the stream. Nonblocking.
   func send(_ message: Echo_EchoRequest, completion: @escaping (Error?) -> Void) throws
-  /// Send a message to the stream and wait for the send operation to finish. Blocking.
-  func send(_ message: Echo_EchoRequest) throws
+  /// Do not call this directly, call `send()` in the protocol extension below instead.
+  func _send(_ message: Echo_EchoRequest, timeout: DispatchTime) throws
 
   /// Call this to close the connection and wait for a response. Blocking.
   func closeAndReceive() throws -> Echo_EchoResponse
   /// Call this to close the connection and wait for a response. Nonblocking.
   func closeAndReceive(completion: @escaping (ResultOrRPCError<Echo_EchoResponse>) -> Void) throws
+}
+
+internal extension Echo_EchoCollectCall {
+  /// Send a message to the stream and wait for the send operation to finish. Blocking.
+  func send(_ message: Echo_EchoRequest, timeout: DispatchTime = .distantFuture) throws { try self._send(message, timeout: timeout) }
 }
 
 fileprivate final class Echo_EchoCollectCallBase: ClientCallClientStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectCall {
@@ -69,20 +79,30 @@ class Echo_EchoCollectCallTestStub: ClientCallClientStreamingTestStub<Echo_EchoR
 }
 
 internal protocol Echo_EchoUpdateCall: ClientCallBidirectionalStreaming {
-  /// Call this to wait for a result. Blocking.
-  func receive() throws -> Echo_EchoResponse?
+  /// Do not call this directly, call `receive()` in the protocol extension below instead.
+  func _receive(timeout: DispatchTime) throws -> Echo_EchoResponse?
   /// Call this to wait for a result. Nonblocking.
   func receive(completion: @escaping (ResultOrRPCError<Echo_EchoResponse?>) -> Void) throws
 
   /// Send a message to the stream. Nonblocking.
   func send(_ message: Echo_EchoRequest, completion: @escaping (Error?) -> Void) throws
-  /// Send a message to the stream and wait for the send operation to finish. Blocking.
-  func send(_ message: Echo_EchoRequest) throws
+  /// Do not call this directly, call `send()` in the protocol extension below instead.
+  func _send(_ message: Echo_EchoRequest, timeout: DispatchTime) throws
 
   /// Call this to close the sending connection. Blocking.
   func closeSend() throws
   /// Call this to close the sending connection. Nonblocking.
   func closeSend(completion: (() -> Void)?) throws
+}
+
+internal extension Echo_EchoUpdateCall {
+  /// Call this to wait for a result. Blocking.
+  func receive(timeout: DispatchTime = .distantFuture) throws -> Echo_EchoResponse? { return try self._receive(timeout: timeout) }
+}
+
+internal extension Echo_EchoUpdateCall {
+  /// Send a message to the stream and wait for the send operation to finish. Blocking.
+  func send(_ message: Echo_EchoRequest, timeout: DispatchTime = .distantFuture) throws { try self._send(message, timeout: timeout) }
 }
 
 fileprivate final class Echo_EchoUpdateCallBase: ClientCallBidirectionalStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateCall {
@@ -191,11 +211,13 @@ class Echo_EchoServiceTestStub: ServiceClientTestStubBase, Echo_EchoService {
 }
 
 /// To build a server, implement a class that conforms to this protocol.
+/// If one of the methods returning `ServerStatus?` returns nil,
+/// it is expected that you have already returned a status to the client by means of `session.close`.
 internal protocol Echo_EchoProvider {
   func get(request: Echo_EchoRequest, session: Echo_EchoGetSession) throws -> Echo_EchoResponse
-  func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws
-  func collect(session: Echo_EchoCollectSession) throws
-  func update(session: Echo_EchoUpdateSession) throws
+  func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws -> ServerStatus?
+  func collect(session: Echo_EchoCollectSession) throws -> Echo_EchoResponse?
+  func update(session: Echo_EchoUpdateSession) throws -> ServerStatus?
 }
 
 internal protocol Echo_EchoGetSession: ServerSessionUnary {}
@@ -207,12 +229,18 @@ class Echo_EchoGetSessionTestStub: ServerSessionUnaryTestStub, Echo_EchoGetSessi
 internal protocol Echo_EchoExpandSession: ServerSessionServerStreaming {
   /// Send a message to the stream. Nonblocking.
   func send(_ message: Echo_EchoResponse, completion: @escaping (Error?) -> Void) throws
-  /// Send a message to the stream and wait for the send operation to finish. Blocking.
-  func send(_ message: Echo_EchoResponse) throws
+  /// Do not call this directly, call `send()` in the protocol extension below instead.
+  func _send(_ message: Echo_EchoResponse, timeout: DispatchTime) throws
 
   /// Close the connection and send the status. Non-blocking.
-  /// You MUST call this method once you are done processing the request.
+  /// This method should be called if and only if your request handler returns a nil value instead of a server status;
+  /// otherwise SwiftGRPC will take care of sending the status for you.
   func close(withStatus status: ServerStatus, completion: (() -> Void)?) throws
+}
+
+internal extension Echo_EchoExpandSession {
+  /// Send a message to the stream and wait for the send operation to finish. Blocking.
+  func send(_ message: Echo_EchoResponse, timeout: DispatchTime = .distantFuture) throws { try self._send(message, timeout: timeout) }
 }
 
 fileprivate final class Echo_EchoExpandSessionBase: ServerSessionServerStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoExpandSession {}
@@ -220,12 +248,13 @@ fileprivate final class Echo_EchoExpandSessionBase: ServerSessionServerStreaming
 class Echo_EchoExpandSessionTestStub: ServerSessionServerStreamingTestStub<Echo_EchoResponse>, Echo_EchoExpandSession {}
 
 internal protocol Echo_EchoCollectSession: ServerSessionClientStreaming {
-  /// Call this to wait for a result. Blocking.
-  func receive() throws -> Echo_EchoRequest?
+  /// Do not call this directly, call `receive()` in the protocol extension below instead.
+  func _receive(timeout: DispatchTime) throws -> Echo_EchoRequest?
   /// Call this to wait for a result. Nonblocking.
   func receive(completion: @escaping (ResultOrRPCError<Echo_EchoRequest?>) -> Void) throws
 
-  /// You MUST call one of these two methods once you are done processing the request.
+  /// Exactly one of these two methods should be called if and only if your request handler returns nil;
+  /// otherwise SwiftGRPC will take care of sending the response and status for you.
   /// Close the connection and send a single result. Non-blocking.
   func sendAndClose(response: Echo_EchoResponse, status: ServerStatus, completion: (() -> Void)?) throws
   /// Close the connection and send an error. Non-blocking.
@@ -234,24 +263,40 @@ internal protocol Echo_EchoCollectSession: ServerSessionClientStreaming {
   func sendErrorAndClose(status: ServerStatus, completion: (() -> Void)?) throws
 }
 
+internal extension Echo_EchoCollectSession {
+  /// Call this to wait for a result. Blocking.
+  func receive(timeout: DispatchTime = .distantFuture) throws -> Echo_EchoRequest? { return try self._receive(timeout: timeout) }
+}
+
 fileprivate final class Echo_EchoCollectSessionBase: ServerSessionClientStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectSession {}
 
 class Echo_EchoCollectSessionTestStub: ServerSessionClientStreamingTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectSession {}
 
 internal protocol Echo_EchoUpdateSession: ServerSessionBidirectionalStreaming {
-  /// Call this to wait for a result. Blocking.
-  func receive() throws -> Echo_EchoRequest?
+  /// Do not call this directly, call `receive()` in the protocol extension below instead.
+  func _receive(timeout: DispatchTime) throws -> Echo_EchoRequest?
   /// Call this to wait for a result. Nonblocking.
   func receive(completion: @escaping (ResultOrRPCError<Echo_EchoRequest?>) -> Void) throws
 
   /// Send a message to the stream. Nonblocking.
   func send(_ message: Echo_EchoResponse, completion: @escaping (Error?) -> Void) throws
-  /// Send a message to the stream and wait for the send operation to finish. Blocking.
-  func send(_ message: Echo_EchoResponse) throws
+  /// Do not call this directly, call `send()` in the protocol extension below instead.
+  func _send(_ message: Echo_EchoResponse, timeout: DispatchTime) throws
 
   /// Close the connection and send the status. Non-blocking.
-  /// You MUST call this method once you are done processing the request.
+  /// This method should be called if and only if your request handler returns a nil value instead of a server status;
+  /// otherwise SwiftGRPC will take care of sending the status for you.
   func close(withStatus status: ServerStatus, completion: (() -> Void)?) throws
+}
+
+internal extension Echo_EchoUpdateSession {
+  /// Call this to wait for a result. Blocking.
+  func receive(timeout: DispatchTime = .distantFuture) throws -> Echo_EchoRequest? { return try self._receive(timeout: timeout) }
+}
+
+internal extension Echo_EchoUpdateSession {
+  /// Send a message to the stream and wait for the send operation to finish. Blocking.
+  func send(_ message: Echo_EchoResponse, timeout: DispatchTime = .distantFuture) throws { try self._send(message, timeout: timeout) }
 }
 
 fileprivate final class Echo_EchoUpdateSessionBase: ServerSessionBidirectionalStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateSession {}
@@ -278,36 +323,33 @@ internal final class Echo_EchoServer: ServiceServer {
     super.init(address: address, certificateString: certificateString, keyString: keyString)
   }
 
-  /// Start the server.
-  internal override func handleMethod(_ method: String, handler: Handler, queue: DispatchQueue) throws -> Bool {
+  /// Determines and calls the appropriate request handler, depending on the request's method.
+  /// Throws `HandleMethodError.unknownMethod` for methods not handled by this service.
+  internal override func handleMethod(_ method: String, handler: Handler) throws -> ServerStatus? {
     let provider = self.provider
     switch method {
     case "/echo.Echo/Get":
-      try Echo_EchoGetSessionBase(
+      return try Echo_EchoGetSessionBase(
         handler: handler,
         providerBlock: { try provider.get(request: $0, session: $1 as! Echo_EchoGetSessionBase) })
-          .run(queue: queue)
-      return true
+          .run()
     case "/echo.Echo/Expand":
-      try Echo_EchoExpandSessionBase(
+      return try Echo_EchoExpandSessionBase(
         handler: handler,
         providerBlock: { try provider.expand(request: $0, session: $1 as! Echo_EchoExpandSessionBase) })
-          .run(queue: queue)
-      return true
+          .run()
     case "/echo.Echo/Collect":
-      try Echo_EchoCollectSessionBase(
+      return try Echo_EchoCollectSessionBase(
         handler: handler,
         providerBlock: { try provider.collect(session: $0 as! Echo_EchoCollectSessionBase) })
-          .run(queue: queue)
-      return true
+          .run()
     case "/echo.Echo/Update":
-      try Echo_EchoUpdateSessionBase(
+      return try Echo_EchoUpdateSessionBase(
         handler: handler,
         providerBlock: { try provider.update(session: $0 as! Echo_EchoUpdateSessionBase) })
-          .run(queue: queue)
-      return true
+          .run()
     default:
-      return false
+      throw HandleMethodError.unknownMethod
     }
   }
 }

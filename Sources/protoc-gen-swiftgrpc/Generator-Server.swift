@@ -41,6 +41,8 @@ extension Generator {
 
   private func printServerProtocol() {
     println("/// To build a server, implement a class that conforms to this protocol.")
+    println("/// If one of the methods returning `ServerStatus?` returns nil,")
+    println("/// it is expected that you have already returned a status to the client by means of `session.close`.")
     println("\(access) protocol \(providerName) {")
     indent()
     for method in service.methods {
@@ -49,11 +51,11 @@ extension Generator {
       case .unary:
         println("func \(methodFunctionName)(request: \(methodInputName), session: \(methodSessionName)) throws -> \(methodOutputName)")
       case .serverStreaming:
-        println("func \(methodFunctionName)(request: \(methodInputName), session: \(methodSessionName)) throws")
+        println("func \(methodFunctionName)(request: \(methodInputName), session: \(methodSessionName)) throws -> ServerStatus?")
       case .clientStreaming:
-        println("func \(methodFunctionName)(session: \(methodSessionName)) throws")
+        println("func \(methodFunctionName)(session: \(methodSessionName)) throws -> \(methodOutputName)?")
       case .bidirectionalStreaming:
-        println("func \(methodFunctionName)(session: \(methodSessionName)) throws")
+        println("func \(methodFunctionName)(session: \(methodSessionName)) throws -> ServerStatus?")
       }
     }
     outdent()
@@ -88,8 +90,9 @@ extension Generator {
     outdent()
     println("}")
     println()
-    println("/// Start the server.")
-    println("\(access) override func handleMethod(_ method: String, handler: Handler, queue: DispatchQueue) throws -> Bool {")
+    println("/// Determines and calls the appropriate request handler, depending on the request's method.")
+    println("/// Throws `HandleMethodError.unknownMethod` for methods not handled by this service.")
+    println("\(access) override func handleMethod(_ method: String, handler: Handler) throws -> ServerStatus? {")
     indent()
     println("let provider = self.provider")
     println("switch method {")
@@ -99,30 +102,29 @@ extension Generator {
       indent()
       switch streamingType(method) {
       case .unary, .serverStreaming:
-        println("try \(methodSessionName)Base(")
+        println("return try \(methodSessionName)Base(")
         indent()
         println("handler: handler,")
         println("providerBlock: { try provider.\(methodFunctionName)(request: $0, session: $1 as! \(methodSessionName)Base) })")
         indent()
-        println(".run(queue: queue)")
+        println(".run()")
         outdent()
         outdent()
       default:
-        println("try \(methodSessionName)Base(")
+        println("return try \(methodSessionName)Base(")
         indent()
         println("handler: handler,")
         println("providerBlock: { try provider.\(methodFunctionName)(session: $0 as! \(methodSessionName)Base) })")
         indent()
-        println(".run(queue: queue)")
+        println(".run()")
         outdent()
         outdent()
       }
-      println("return true")
       outdent()
     }
     println("default:")
     indent()
-    println("return false")
+    println("throw HandleMethodError.unknownMethod")
     outdent()
     println("}")
     outdent()
@@ -143,7 +145,8 @@ extension Generator {
   }
   
   private func printServerMethodSendAndClose(sentType: String) {
-    println("/// You MUST call one of these two methods once you are done processing the request.")
+    println("/// Exactly one of these two methods should be called if and only if your request handler returns nil;")
+    println("/// otherwise SwiftGRPC will take care of sending the response and status for you.")
     println("/// Close the connection and send a single result. Non-blocking.")
     println("func sendAndClose(response: \(sentType), status: ServerStatus, completion: (() -> Void)?) throws")
     println("/// Close the connection and send an error. Non-blocking.")
@@ -161,6 +164,8 @@ extension Generator {
     outdent()
     println("}")
     println()
+    printStreamReceiveExtension(extendedType: methodSessionName, receivedType: methodInputName)
+    println()
     println("fileprivate final class \(methodSessionName)Base: ServerSessionClientStreamingBase<\(methodInputName), \(methodOutputName)>, \(methodSessionName) {}")
     if options.generateTestStubs {
       println()
@@ -170,7 +175,8 @@ extension Generator {
 
   private func printServerMethodClose() {
     println("/// Close the connection and send the status. Non-blocking.")
-    println("/// You MUST call this method once you are done processing the request.")
+    println("/// This method should be called if and only if your request handler returns a nil value instead of a server status;")
+    println("/// otherwise SwiftGRPC will take care of sending the status for you.")
     println("func close(withStatus status: ServerStatus, completion: (() -> Void)?) throws")
   }
   
@@ -182,6 +188,8 @@ extension Generator {
     printServerMethodClose()
     outdent()
     println("}")
+    println()
+    printStreamSendExtension(extendedType: methodSessionName, sentType: methodOutputName)
     println()
     println("fileprivate final class \(methodSessionName)Base: ServerSessionServerStreamingBase<\(methodInputName), \(methodOutputName)>, \(methodSessionName) {}")
     if options.generateTestStubs {
@@ -200,6 +208,10 @@ extension Generator {
     printServerMethodClose()
     outdent()
     println("}")
+    println()
+    printStreamReceiveExtension(extendedType: methodSessionName, receivedType: methodInputName)
+    println()
+    printStreamSendExtension(extendedType: methodSessionName, sentType: methodOutputName)
     println()
     println("fileprivate final class \(methodSessionName)Base: ServerSessionBidirectionalStreamingBase<\(methodInputName), \(methodOutputName)>, \(methodSessionName) {}")
     if options.generateTestStubs {

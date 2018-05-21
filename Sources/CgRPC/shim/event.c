@@ -16,6 +16,6 @@
 #include "internal.h"
 #include "cgrpc.h"
 
-int64_t cgrpc_event_tag(grpc_event ev) {
-  return (int64_t) ev.tag;
+void *cgrpc_event_tag(grpc_event ev) {
+  return ev.tag;
 }

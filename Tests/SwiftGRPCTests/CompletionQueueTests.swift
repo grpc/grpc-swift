@@ -25,18 +25,19 @@ fileprivate class ClosingProvider: Echo_EchoProvider {
     return Echo_EchoResponse()
   }
   
-  func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws {
+  func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws -> ServerStatus? {
     let closeSem = DispatchSemaphore(value: 0)
     try! session.close(withStatus: .ok) {
       closeSem.signal()
     }
     XCTAssertThrowsError(try session.send(Echo_EchoResponse()))
     doneExpectation.fulfill()
+    return nil
   }
   
-  func collect(session: Echo_EchoCollectSession) throws { }
+  func collect(session: Echo_EchoCollectSession) throws -> Echo_EchoResponse? { fatalError("not implemented") }
   
-  func update(session: Echo_EchoUpdateSession) throws { }
+  func update(session: Echo_EchoUpdateSession) throws -> ServerStatus? { fatalError("not implemented") }
 }
 
 class CompletionQueueTests: BasicEchoTestCase {

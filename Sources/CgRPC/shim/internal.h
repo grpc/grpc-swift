@@ -96,7 +96,6 @@ typedef struct {
   grpc_metadata_array trailing_metadata_recv;
   grpc_status_code server_status;
   grpc_slice server_details;
-  size_t server_details_capacity;
 } cgrpc_observer_recv_status_on_client;
 
 typedef struct {
@@ -105,7 +104,7 @@ typedef struct {
 } cgrpc_observer_recv_close_on_server;
 
 // internal utilities
-void *cgrpc_create_tag(intptr_t t);
+void *cgrpc_create_tag(void *t);
 gpr_timespec cgrpc_deadline_in_seconds_from_now(float seconds);
 
 void cgrpc_observer_apply(cgrpc_observer *observer, grpc_op *op);

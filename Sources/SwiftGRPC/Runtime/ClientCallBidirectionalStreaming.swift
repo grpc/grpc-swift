@@ -54,26 +54,30 @@ open class ClientCallBidirectionalStreamingBase<InputType: Message, OutputType: 
 open class ClientCallBidirectionalStreamingTestStub<InputType: Message, OutputType: Message>: ClientCallBidirectionalStreaming {
   open class var method: String { fatalError("needs to be overridden") }
 
+  open var lock = Mutex()
+  
   open var inputs: [InputType] = []
   open var outputs: [OutputType] = []
   
   public init() {}
 
-  open func receive() throws -> OutputType? {
-    defer { if !outputs.isEmpty { outputs.removeFirst() } }
-    return outputs.first
+  open func _receive(timeout: DispatchTime) throws -> OutputType? {
+    return lock.synchronize {
+      defer { if !outputs.isEmpty { outputs.removeFirst() } }
+      return outputs.first
+    }
   }
   
   open func receive(completion: @escaping (ResultOrRPCError<OutputType?>) -> Void) throws {
-    completion(.result(try self.receive()))
+    completion(.result(try self._receive(timeout: .distantFuture)))
   }
 
   open func send(_ message: InputType, completion _: @escaping (Error?) -> Void) throws {
-    inputs.append(message)
+    lock.synchronize { inputs.append(message) }
   }
   
-  open func send(_ message: InputType) throws {
-    inputs.append(message)
+  open func _send(_ message: InputType, timeout: DispatchTime) throws {
+    lock.synchronize { inputs.append(message) }
   }
 
   open func closeSend(completion: (() -> Void)?) throws { completion?() }

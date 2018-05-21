@@ -32,33 +32,32 @@ extension Echo_EchoResponse {
 
 class BasicEchoTestCase: XCTestCase {
   func makeProvider() -> Echo_EchoProvider { return EchoProvider() }
-  
-  var defaultTimeout: TimeInterval { return 1.0 }
-  
+
   var provider: Echo_EchoProvider!
   var server: Echo_EchoServer!
   var client: Echo_EchoServiceClient!
   
+  var defaultTimeout: TimeInterval { return 1.0 }
   var secure: Bool { return false }
-  
+  var address: String { return "localhost:5050" }
+
   override func setUp() {
     super.setUp()
     
     provider = makeProvider()
     
-    let address = "localhost:5050"
     if secure {
       let certificateString = String(data: certificateForTests, encoding: .utf8)!
       server = Echo_EchoServer(address: address,
                                certificateString: certificateString,
                                keyString: String(data: keyForTests, encoding: .utf8)!,
                                provider: provider)
-      server.start(queue: DispatchQueue.global())
-      client = Echo_EchoServiceClient(address: address, certificates: certificateString, host: "example.com")
+      server.start()
+      client = Echo_EchoServiceClient(address: address, certificates: certificateString, arguments: [.sslTargetNameOverride("example.com")])
       client.host = "example.com"
     } else {
       server = Echo_EchoServer(address: address, provider: provider)
-      server.start(queue: DispatchQueue.global())
+      server.start()
       client = Echo_EchoServiceClient(address: address, secure: false)
     }
     

@@ -77,7 +77,7 @@ cgrpc_completion_queue *cgrpc_handler_get_completion_queue(cgrpc_handler *h) {
 
 grpc_call_error cgrpc_handler_request_call(cgrpc_handler *h,
                                            cgrpc_metadata_array *metadata,
-                                           long tag) {
+                                           void *tag) {
   if (h->server_call != NULL) {
     return GRPC_CALL_OK;
   }

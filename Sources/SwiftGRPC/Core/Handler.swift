@@ -81,7 +81,9 @@ public class Handler {
   /// Fills the handler properties with information about the received request
   ///
   func requestCall(tag: Int) throws {
-    let error = cgrpc_handler_request_call(underlyingHandler, requestMetadata.underlyingArray, tag)
+    let error = cgrpc_handler_request_call(underlyingHandler,
+                                           try requestMetadata.getUnderlyingArrayAndTransferFieldOwnership(),
+                                           UnsafeMutableRawPointer(bitPattern: tag))
     if error != GRPC_CALL_OK {
       throw CallError.callError(grpcCallError: error)
     }
@@ -100,7 +102,7 @@ public class Handler {
                            completion: ((Bool) -> Void)? = nil) throws {
     try call.perform(OperationGroup(
       call: call,
-      operations: [.sendInitialMetadata(initialMetadata)],
+      operations: [.sendInitialMetadata(initialMetadata.copy())],
       completion: completion != nil
         ? { operationGroup in completion?(operationGroup.success) }
         : nil))
@@ -113,7 +115,7 @@ public class Handler {
     try call.perform(OperationGroup(
       call: call,
       operations: [
-        .sendInitialMetadata(initialMetadata),
+        .sendInitialMetadata(initialMetadata.copy()),
         .receiveMessage
     ]) { operationGroup in
       if operationGroup.success {
@@ -134,7 +136,7 @@ public class Handler {
       operations: [
         .sendMessage(messageBuffer),
         .receiveCloseOnServer,
-        .sendStatusFromServer(status.code, status.message, status.trailingMetadata)
+        .sendStatusFromServer(status.code, status.message, status.trailingMetadata.copy())
     ]) { _ in
       completion?()
       self.shutdown()
@@ -148,7 +150,7 @@ public class Handler {
       call: call,
       operations: [
         .receiveCloseOnServer,
-        .sendStatusFromServer(status.code, status.message, status.trailingMetadata)
+        .sendStatusFromServer(status.code, status.message, status.trailingMetadata.copy())
     ]) { _ in
       completion?()
       self.shutdown()

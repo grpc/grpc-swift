@@ -25,7 +25,7 @@ public protocol ServerSessionServerStreaming: ServerSession {
 open class ServerSessionServerStreamingBase<InputType: Message, OutputType: Message>: ServerSessionBase, ServerSessionServerStreaming, StreamSending {
   public typealias SentType = OutputType
   
-  public typealias ProviderBlock = (InputType, ServerSessionServerStreamingBase) throws -> Void
+  public typealias ProviderBlock = (InputType, ServerSessionServerStreamingBase) throws -> ServerStatus?
   private var providerBlock: ProviderBlock
 
   public init(handler: Handler, providerBlock: @escaping ProviderBlock) {
@@ -33,31 +33,15 @@ open class ServerSessionServerStreamingBase<InputType: Message, OutputType: Mess
     super.init(handler: handler)
   }
   
-  public func run(queue: DispatchQueue) throws {
-    try handler.receiveMessage(initialMetadata: initialMetadata) { requestData in
-      queue.async {
-        var responseStatus: ServerStatus?
-        if let requestData = requestData {
-          do {
-            let requestMessage = try InputType(serializedData: requestData)
-            try self.providerBlock(requestMessage, self)
-          } catch {
-            responseStatus = (error as? ServerStatus) ?? .processingError
-          }
-        } else {
-          print("ServerSessionServerStreamingBase.run empty request data")
-          responseStatus = .noRequestData
-        }
-        
-        if let responseStatus = responseStatus {
-          // Error encountered, notify the client.
-          do {
-            try self.handler.sendStatus(responseStatus)
-          } catch {
-            print("ServerSessionServerStreamingBase.run error sending status: \(error)")
-          }
-        }
-      }
+  public func run() throws -> ServerStatus? {
+    let requestData = try receiveRequestAndWait()
+    let requestMessage = try InputType(serializedData: requestData)
+    do {
+      return try self.providerBlock(requestMessage, self)
+    } catch {
+      // Errors thrown by `providerBlock` should be logged in that method;
+      // we return the error as a status code to avoid `ServiceServer` logging this as a "really unexpected" error.
+      return (error as? ServerStatus) ?? .processingError
     }
   }
 }
@@ -65,19 +49,21 @@ open class ServerSessionServerStreamingBase<InputType: Message, OutputType: Mess
 /// Simple fake implementation of ServerSessionServerStreaming that returns a previously-defined set of results
 /// and stores sent values for later verification.
 open class ServerSessionServerStreamingTestStub<OutputType: Message>: ServerSessionTestStub, ServerSessionServerStreaming {
+  open var lock = Mutex()
+  
   open var outputs: [OutputType] = []
   open var status: ServerStatus?
 
   open func send(_ message: OutputType, completion _: @escaping (Error?) -> Void) throws {
-    outputs.append(message)
+    lock.synchronize { outputs.append(message) }
   }
 
-  open func send(_ message: OutputType) throws {
-    outputs.append(message)
+  open func _send(_ message: OutputType, timeout: DispatchTime) throws {
+    lock.synchronize { outputs.append(message) }
   }
 
   open func close(withStatus status: ServerStatus, completion: (() -> Void)?) throws {
-    self.status = status
+    lock.synchronize { self.status = status }
     completion?()
   }
 

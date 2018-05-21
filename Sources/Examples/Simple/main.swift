@@ -32,7 +32,7 @@ func client() throws {
     print("calling " + method)
     let call = c.makeCall(method)
 
-    let metadata = Metadata([
+    let metadata = try Metadata([
       "x": "xylophone",
       "y": "yu",
       "z": "zither"
@@ -83,7 +83,7 @@ func server() throws {
           + ":" + initialMetadata.value(i)!)
       }
 
-      let initialMetadataToSend = Metadata([
+      let initialMetadataToSend = try Metadata([
         "a": "Apple",
         "b": "Banana",
         "c": "Cherry"
@@ -99,7 +99,7 @@ func server() throws {
       }
 
       let replyMessage = "hello, client!"
-      let trailingMetadataToSend = Metadata([
+      let trailingMetadataToSend = try Metadata([
         "0": "zero",
         "1": "one",
         "2": "two"

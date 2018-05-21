@@ -79,6 +79,29 @@ extension ClientTimeoutTests {
     waitForExpectations(timeout: defaultTimeout)
   }
   
+  func testBidirectionalStreamingTimeoutPassedToReceiveMethod() {
+    let completionHandlerExpectation = expectation(description: "final completion handler called")
+    let call = try! client.update { callResult in
+      XCTAssertEqual(.ok, callResult.statusCode)
+      completionHandlerExpectation.fulfill()
+    }
+    
+    do {
+      let result = try call.receive(timeout: .now() + .milliseconds(10))
+      XCTFail("should have thrown, received \(String(describing: result)) instead")
+    } catch let receiveError {
+      if case .timedOut = receiveError as! RPCError {
+        // This is the expected case - we need to formulate this as an if statement to use case-based pattern matching.
+      } else {
+        XCTFail("received error \(receiveError) instead of .timedOut")
+      }
+    }
+	
+	try! call.closeSend()
+    
+    waitForExpectations(timeout: defaultTimeout)
+  }
+  
   // FIXME(danielalm): Add support for setting a maximum timeout on the server, to prevent DoS attacks where clients
   // start a ton of calls, but never finish them (i.e. essentially leaking a connection on the server side).
 }

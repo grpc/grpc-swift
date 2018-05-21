@@ -44,12 +44,12 @@ enum CompletionType {
 struct CompletionQueueEvent {
   let type: CompletionType
   let success: Int32
-  let tag: Int64
+  let tag: Int
 
   init(_ event: grpc_event) {
     type = CompletionType.completionType(event.type)
     success = event.success
-    tag = cgrpc_event_tag(event)
+    tag = Int(bitPattern: cgrpc_event_tag(event))
   }
 }
 
@@ -62,12 +62,14 @@ class CompletionQueue {
   private let underlyingCompletionQueue: UnsafeMutableRawPointer
 
   /// Operation groups that are awaiting completion, keyed by tag
-  private var operationGroups: [Int64: OperationGroup] = [:]
+  private var operationGroups: [Int: OperationGroup] = [:]
 
   /// Mutex for synchronizing access to operationGroups
   private let operationGroupsMutex: Mutex = Mutex()
   
-  private var hasBeenShutdown = false
+  private var _hasBeenShutdown = false
+  
+  public var hasBeenShutdown: Bool { return operationGroupsMutex.synchronize { _hasBeenShutdown } }
 
   /// Initializes a CompletionQueue
   ///
@@ -80,7 +82,7 @@ class CompletionQueue {
   
   deinit {
     operationGroupsMutex.synchronize {
-      hasBeenShutdown = true
+      _hasBeenShutdown = true
     }
     cgrpc_completion_queue_shutdown(underlyingCompletionQueue)
     cgrpc_completion_queue_drain(underlyingCompletionQueue)
@@ -98,10 +100,10 @@ class CompletionQueue {
 
   /// Register an operation group for handling upon completion. Will throw if the queue has been shutdown already.
   ///
-  /// - Parameter operationGroup: the operation group to handle
+  /// - Parameter operationGroup: the operation group to handle.
   func register(_ operationGroup: OperationGroup, onSuccess: () throws -> Void) throws {
     try operationGroupsMutex.synchronize {
-      guard !hasBeenShutdown
+      guard !_hasBeenShutdown
         else { throw CallError.completionQueueShutdown }
       operationGroups[operationGroup.tag] = operationGroup
       try onSuccess()
@@ -113,12 +115,17 @@ class CompletionQueue {
   /// - Parameter completion: a completion handler that is called when the queue stops running
   func runToCompletion(completion: (() -> Void)?) {
     // run the completion queue on a new background thread
-    DispatchQueue.global().async {
+    var threadLabel = "SwiftGRPC.CompletionQueue.runToCompletion.spinloopThread"
+    if let name = self.name {
+      threadLabel.append(" (\(name))")
+    }
+    let spinloopThreadQueue = DispatchQueue(label: threadLabel)
+    spinloopThreadQueue.async {
       spinloop: while true {
         let event = cgrpc_completion_queue_get_next_event(self.underlyingCompletionQueue, 600)
         switch event.type {
         case GRPC_OP_COMPLETE:
-          let tag = cgrpc_event_tag(event)
+          let tag = Int(bitPattern:cgrpc_event_tag(event))
           self.operationGroupsMutex.lock()
           let operationGroup = self.operationGroups[tag]
           self.operationGroupsMutex.unlock()
@@ -146,7 +153,6 @@ class CompletionQueue {
         case GRPC_QUEUE_TIMEOUT:
           continue spinloop
         default:
-          print("CompletionQueue.runToCompletion error: unknown event type \(event.type)")
           break spinloop
         }
       }
@@ -164,9 +170,9 @@ class CompletionQueue {
   func shutdown() {
     var needsShutdown = false
     operationGroupsMutex.synchronize {
-      if !hasBeenShutdown {
+      if !_hasBeenShutdown {
         needsShutdown = true
-        hasBeenShutdown = true
+        _hasBeenShutdown = true
       }
     }
     if needsShutdown {

@@ -26,7 +26,7 @@ class EchoProvider: Echo_EchoProvider {
   }
 
   // expand splits a request into words and returns each word in a separate message.
-  func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws {
+  func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws -> ServerStatus? {
     let parts = request.text.components(separatedBy: " ")
     for (i, part) in parts.enumerated() {
       var response = Echo_EchoResponse()
@@ -37,12 +37,11 @@ class EchoProvider: Echo_EchoProvider {
         }
       }
     }
-    session.waitForSendOperationsToFinish()
-    try session.close(withStatus: .ok, completion: nil)
+    return .ok
   }
 
   // collect collects a sequence of messages and returns them concatenated when the caller closes.
-  func collect(session: Echo_EchoCollectSession) throws {
+  func collect(session: Echo_EchoCollectSession) throws -> Echo_EchoResponse? {
     var parts: [String] = []
     while true {
       do {
@@ -56,11 +55,11 @@ class EchoProvider: Echo_EchoProvider {
     }
     var response = Echo_EchoResponse()
     response.text = "Swift echo collect: " + parts.joined(separator: " ")
-    try session.sendAndClose(response: response, status: .ok, completion: nil)
+    return response
   }
 
   // update streams back messages as they are received in an input stream.
-  func update(session: Echo_EchoUpdateSession) throws {
+  func update(session: Echo_EchoUpdateSession) throws -> ServerStatus? {
     var count = 0
     while true {
       do {
@@ -79,7 +78,6 @@ class EchoProvider: Echo_EchoProvider {
         break
       }
     }
-    session.waitForSendOperationsToFinish()
-    try session.close(withStatus: .ok, completion: nil)
+    return .ok
   }
 }

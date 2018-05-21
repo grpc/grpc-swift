@@ -31,35 +31,31 @@ open class ServerSessionUnaryBase<InputType: Message, OutputType: Message>: Serv
     super.init(handler: handler)
   }
   
-  public func run(queue: DispatchQueue) throws {
-    try handler.receiveMessage(initialMetadata: initialMetadata) { requestData in
-      queue.async {
-        let responseStatus: ServerStatus
-        if let requestData = requestData {
-          do {
-            let requestMessage = try InputType(serializedData: requestData)
-            let responseMessage = try self.providerBlock(requestMessage, self)
-            try self.handler.call.sendMessage(data: responseMessage.serializedData()) {
-              guard let error = $0
-                else { return }
-              print("ServerSessionUnaryBase.run error sending response: \(error)")
-            }
-            responseStatus = .ok
-          } catch {
-            responseStatus = (error as? ServerStatus) ?? .processingError
-          }
-        } else {
-          print("ServerSessionUnaryBase.run empty request data")
-          responseStatus = .noRequestData
-        }
-        
-        do {
-          try self.handler.sendStatus(responseStatus)
-        } catch {
-          print("ServerSessionUnaryBase.run error sending status: \(error)")
-        }
-      }
+  public func run() throws -> ServerStatus? {
+    let requestData = try receiveRequestAndWait()
+    let requestMessage = try InputType(serializedData: requestData)
+    
+    let responseMessage: OutputType
+    do {
+      responseMessage = try self.providerBlock(requestMessage, self)
+    } catch {
+      // Errors thrown by `providerBlock` should be logged in that method;
+      // we return the error as a status code to avoid `ServiceServer` logging this as a "really unexpected" error.
+      return (error as? ServerStatus) ?? .processingError
     }
+    
+    let sendResponseSignal = DispatchSemaphore(value: 0)
+    var sendResponseError: Error?
+    try self.handler.call.sendMessage(data: responseMessage.serializedData()) {
+      sendResponseError = $0
+      sendResponseSignal.signal()
+    }
+    sendResponseSignal.wait()
+    if let sendResponseError = sendResponseError {
+      throw sendResponseError
+    }
+    
+    return .ok
   }
 }
 

@@ -19,26 +19,43 @@
 import Foundation // for String.Encoding
 
 /// Metadata sent with gRPC messages
-public class Metadata: CustomStringConvertible {
+public class Metadata {
+  public enum Error: Swift.Error {
+    /// Field ownership can only be transferred once. Likewise, it is not advisable to write to a metadata array whose
+    /// fields we do not own.
+    case doesNotOwnFields
+  }
+  
   /// Pointer to underlying C representation
-  let underlyingArray: UnsafeMutableRawPointer
+  fileprivate let underlyingArray: UnsafeMutableRawPointer
+  /// Ownership of the fields inside metadata arrays provided by `grpc_op_recv_initial_metadata` and
+  /// `grpc_op_recv_status_on_client` is retained by the gRPC library. Similarly, passing metadata to gRPC for sending
+  /// to the client for sending/receiving also transfers ownership. However, before we have passed that metadata to
+  /// gRPC, we are still responsible for releasing its fields. This variable tracks that.
+  fileprivate var ownsFields: Bool
 
-  init(underlyingArray: UnsafeMutableRawPointer) {
+  init(underlyingArray: UnsafeMutableRawPointer, ownsFields: Bool) {
     self.underlyingArray = underlyingArray
+    self.ownsFields = ownsFields
   }
 
   public init() {
     underlyingArray = cgrpc_metadata_array_create()
+    ownsFields = true
   }
 
-  public init(_ pairs: [String: String]) {
+  public init(_ pairs: [String: String]) throws {
     underlyingArray = cgrpc_metadata_array_create()
+    ownsFields = true
     for (key, value) in pairs {
-      add(key: key, value: value)
+      try add(key: key, value: value)
     }
   }
 
   deinit {
+    if ownsFields {
+      cgrpc_metadata_array_unref_fields(underlyingArray)
+    }
     cgrpc_metadata_array_destroy(underlyingArray)
   }
 
@@ -64,29 +81,52 @@ public class Metadata: CustomStringConvertible {
     return String(cString: valueData, encoding: String.Encoding.utf8)
   }
   
-  public func add(key: String, value: String) {
+  public func add(key: String, value: String) throws {
+    if !ownsFields {
+      throw Error.doesNotOwnFields
+    }
     cgrpc_metadata_array_append_metadata(underlyingArray, key, value)
   }
   
-  public var description: String {
-    var lines: [String] = []
+  public var dictionaryRepresentation: [String: String] {
+    var result: [String: String] = [:]
+    var unknownKeyCount = 0
     for i in 0..<count() {
-      let key = self.key(i)
-      let value = self.value(i)
-      lines.append((key ?? "(nil)") + ":" + (value ?? "(nil)"))
+      let key: String
+      if let unwrappedKey = self.key(i) {
+        key = unwrappedKey
+      } else {
+        key = "(unknown\(unknownKeyCount))"
+        unknownKeyCount += 1
+      }
+      result[key] = self.value(i) ?? "(unknown)"
     }
-    return lines.joined(separator: "\n")
+    return result
   }
   
   public func copy() -> Metadata {
-    let copy = Metadata()
-    for index in 0..<count() {
-      let keyData = cgrpc_metadata_array_copy_key_at_index(underlyingArray, index)!
-      defer { cgrpc_free_copied_string(keyData) }
-      let valueData = cgrpc_metadata_array_copy_value_at_index(underlyingArray, index)!
-      defer { cgrpc_free_copied_string(valueData) }
-      cgrpc_metadata_array_append_metadata(copy.underlyingArray, keyData, valueData)
+    return Metadata(underlyingArray: cgrpc_metadata_array_copy(underlyingArray), ownsFields: true)
+  }
+  
+  func getUnderlyingArrayAndTransferFieldOwnership() throws -> UnsafeMutableRawPointer {
+    if !ownsFields {
+      throw Error.doesNotOwnFields
     }
-    return copy
+    ownsFields = false
+    return underlyingArray
+  }
+}
+
+extension Metadata {
+  public subscript(_ key: String) -> String? {
+    for i in 0..<self.count() {
+      let currentKey = self.key(i)
+      guard currentKey == key
+        else { continue }
+      
+      return self.value(i)
+    }
+    
+    return nil
   }
 }

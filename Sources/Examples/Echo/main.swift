@@ -38,14 +38,16 @@ func buildEchoService(_ ssl: Bool, _ address: String, _ port: String, _: String)
   if ssl {
     let certificateURL = URL(fileURLWithPath: "ssl.crt")
     let certificates = try! String(contentsOf: certificateURL)
+    let arguments: [Channel.Argument] = [.sslTargetNameOverride("example.com")]
+    
     service = Echo_EchoServiceClient(address: address + ":" + port,
-                               certificates: certificates,
-                               host: "example.com")
+                                     certificates: certificates,
+                                     arguments: arguments)
     service.host = "example.com"
   } else {
     service = Echo_EchoServiceClient(address: address + ":" + port, secure: false)
   }
-  service.metadata = Metadata([
+  service.metadata = try! Metadata([
     "x-goog-api-key": "YOUR_API_KEY",
     "x-ios-bundle-identifier": "io.grpc.echo"
   ])
