@@ -85,8 +85,9 @@ public class Channel {
   /// - Parameter host: the gRPC host name for the call. If unspecified, defaults to the Client host
   /// - Parameter timeout: a timeout value in seconds
   /// - Returns: a Call object that can be used to perform the request
-  public func makeCall(_ method: String, host: String = "") -> Call {
+  public func makeCall(_ method: String, host: String = "", timeout: TimeInterval? = nil) -> Call {
     let host = (host == "") ? self.host : host
+    let timeout = timeout ?? self.timeout
     let underlyingCall = cgrpc_channel_create_call(underlyingChannel, method, host, timeout)!
     return Call(underlyingCall: underlyingCall, owned: true, completionQueue: completionQueue)
   }
