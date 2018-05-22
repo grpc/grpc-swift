@@ -133,7 +133,7 @@ private extension Channel {
       spinloopThreadQueue.async { [weak self] in
         guard let `self` = self else { return }
 
-        spinloop: while true  {
+        while true  {
           guard let underlyingState = self.lastState.underlyingState else {
             print("Couldn't retrieve `underlyingState`")
             return
@@ -152,12 +152,13 @@ private extension Channel {
             }
             
             self.lastState = newState
-          case .queueShutdown:
-            break spinloop
           case .queueTimeout:
-            continue spinloop
+            continue
+          case .queueShutdown:
+            return
           default:
-            break spinloop
+            print("Event's completion type is `unknown`")
+            continue
           }
         }
       }
