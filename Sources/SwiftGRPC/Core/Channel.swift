@@ -134,10 +134,7 @@ private extension Channel {
         guard let `self` = self else { return }
 
         while true  {
-          guard let underlyingState = self.lastState.underlyingState else {
-            print("Couldn't retrieve `underlyingState`")
-            return
-          }
+          guard let underlyingState = self.lastState.underlyingState else { return }
           
           let deadline: TimeInterval = 0.2
           cgrpc_channel_watch_connectivity_state(self.underlyingChannel, self.underlyingCompletionQueue, underlyingState, deadline, nil)
@@ -157,7 +154,6 @@ private extension Channel {
           case .queueShutdown:
             return
           default:
-            print("Event's completion type is `unknown`")
             continue
           }
         }
