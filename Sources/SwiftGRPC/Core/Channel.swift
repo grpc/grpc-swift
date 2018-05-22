@@ -89,10 +89,17 @@ public class Channel {
     return Call(underlyingCall: underlyingCall, owned: true, completionQueue: completionQueue)
   }
 
+  /// Check the current connectivity state
+  ///
+  /// - Parameter tryToConnect: boolean value to indicate if should try to connect if channel's connectivity state is idle
+  /// - Returns: a ConnectivityState value representing the current connectivity state of the channel
   public func connectivityState(tryToConnect: Bool = false) -> ConnectivityState {
     return ConnectivityState.connectivityState(cgrpc_channel_check_connectivity_state(underlyingChannel, tryToConnect ? 1 : 0))
   }
 
+  /// Subscribe to connectivity state changes
+  ///
+  /// - Parameter callback: block executed every time a new connectivity state is detected
   public func subscribe(callback: @escaping (ConnectivityState) -> Void) {
     let observer = ConnectivityObserver(underlyingChannel: underlyingChannel, currentState: connectivityState(), callback: callback)
     connectivityObservers.append(observer)
