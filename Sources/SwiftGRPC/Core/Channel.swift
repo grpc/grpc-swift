@@ -73,6 +73,7 @@ public class Channel {
   }
 
   deinit {
+    connectivityObservers.forEach { $0.shutdown() }
     cgrpc_channel_destroy(underlyingChannel)
     completionQueue.shutdown()
   }
@@ -101,8 +102,7 @@ public class Channel {
   ///
   /// - Parameter callback: block executed every time a new connectivity state is detected
   public func subscribe(callback: @escaping (ConnectivityState) -> Void) {
-    let observer = ConnectivityObserver(underlyingChannel: underlyingChannel, currentState: connectivityState(), callback: callback)
-    connectivityObservers.append(observer)
+    connectivityObservers.append(ConnectivityObserver(underlyingChannel: underlyingChannel, currentState: connectivityState(), callback: callback))
   }
 }
 
@@ -124,15 +124,13 @@ private extension Channel {
     }
 
     deinit {
-      completionQueue.shutdown()
+      shutdown()
     }
 
     private func run() {
       let spinloopThreadQueue = DispatchQueue(label: "SwiftGRPC.ConnectivityObserver.run.spinloopThread")
 
-      spinloopThreadQueue.async { [weak self] in
-        guard let `self` = self else { return }
-
+      spinloopThreadQueue.async {
         while true  {
           guard let underlyingState = self.lastState.underlyingState else { return }
           
@@ -158,6 +156,10 @@ private extension Channel {
           }
         }
       }
+    }
+    
+    func shutdown() {
+      completionQueue.shutdown()
     }
   }
 }
