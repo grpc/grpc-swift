@@ -18,6 +18,10 @@
 
 #include <stdio.h>
 
+grpc_completion_queue *cgrpc_completion_queue_create_for_next() {
+  return grpc_completion_queue_create_for_next(NULL);
+}
+
 grpc_event cgrpc_completion_queue_get_next_event(grpc_completion_queue *cq, double timeout) {
   gpr_timespec deadline = cgrpc_deadline_in_seconds_from_now(timeout);
   if (timeout < 0) {

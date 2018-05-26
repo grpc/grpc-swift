@@ -92,3 +92,8 @@ cgrpc_completion_queue *cgrpc_channel_completion_queue(cgrpc_channel *channel) {
 grpc_connectivity_state cgrpc_channel_check_connectivity_state(cgrpc_channel *channel, int try_to_connect) {
   return grpc_channel_check_connectivity_state(channel->channel, try_to_connect);
 }
+
+void cgrpc_channel_watch_connectivity_state(cgrpc_channel *channel, cgrpc_completion_queue *completion_queue, grpc_connectivity_state last_observed_state, double deadline, void *tag) {
+  gpr_timespec deadline_seconds = cgrpc_deadline_in_seconds_from_now(deadline);
+  return grpc_channel_watch_connectivity_state(channel->channel, last_observed_state, deadline_seconds, completion_queue, tag);
+}
