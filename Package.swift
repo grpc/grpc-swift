@@ -17,30 +17,16 @@
  */
 import PackageDescription
 
-var dependencies: [Package.Dependency] = [
-  .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.0.2"),
-  .package(url: "https://github.com/kylef/Commander.git", from: "0.8.0")
-]
-
-/*
- * `swift-nio-zlib-support` uses `pkgConfig` to find `zlib` on 
- * non-Apple platforms. Details here: 
- * https://github.com/apple/swift-nio-zlib-support/issues/2#issuecomment-384681975
- * 
- * This doesn't play well with Macports, so require it only for non-Apple
- * platforms, until there is a better solution. 
- * Issue: https://github.com/grpc/grpc-swift/issues/220
- */
-#if !os(macOS)
-dependencies.append(.package(url: "https://github.com/apple/swift-nio-zlib-support.git", from: "1.0.0"))
-#endif
-
 let package = Package(
   name: "SwiftGRPC",
   products: [
     .library(name: "SwiftGRPC", targets: ["SwiftGRPC"]),
   ],
-  dependencies: dependencies,
+  dependencies: [
+    .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.0.2"),
+    .package(url: "https://github.com/kylef/Commander.git", from: "0.8.0"),
+    .package(url: "https://github.com/apple/swift-nio-zlib-support.git", from: "1.0.0")
+  ],
   targets: [
     .target(name: "SwiftGRPC",
             dependencies: ["CgRPC", "SwiftProtobuf"]),
