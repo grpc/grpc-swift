@@ -1,5 +1,5 @@
 
-CFLAGS = -Xcc -ISources/BoringSSL/include -Xcc -DPB_FIELD_16BIT=1
+CFLAGS = -Xcc -ISources/BoringSSL/include
 
 all:
 	swift build -v $(CFLAGS)
@@ -8,7 +8,7 @@ all:
 	
 project:
 	swift package generate-xcodeproj
-	@ruby fix-project-settings.rb || echo "ERROR: Please install Ruby and the 'xcodeproj' gem to automatically fix the Xcode project's settings."
+	@-ruby fix-project-settings.rb || echo "Consider running 'sudo gem install xcodeproj' to automatically set correct indentation settings for the generated project."
 
 test:	all
 	swift test -v $(CFLAGS)
