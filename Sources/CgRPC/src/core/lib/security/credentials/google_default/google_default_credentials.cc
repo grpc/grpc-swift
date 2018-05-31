@@ -220,7 +220,7 @@ end:
   return error;
 }
 
-grpc_channel_credentials* grpc_google_default_credentials_create(void) {
+grpc_channel_credentials* grpc_google_default_credentials_create(const char* pem_root_certs) {
   grpc_channel_credentials* result = nullptr;
   grpc_call_credentials* call_creds = nullptr;
   grpc_error* error = GRPC_ERROR_CREATE_FROM_STATIC_STRING(
@@ -273,7 +273,7 @@ end:
          it
          can be cached and re-served. */
       grpc_channel_credentials* ssl_creds =
-          grpc_ssl_credentials_create(nullptr, nullptr, nullptr);
+          grpc_ssl_credentials_create(pem_root_certs, nullptr, nullptr);
       default_credentials = grpc_channel_credentials_ref(
           grpc_composite_channel_credentials_create(ssl_creds, call_creds,
                                                     nullptr));
