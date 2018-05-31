@@ -38,11 +38,15 @@ rm -rf $DSTROOT/err_data.c
 PATTERNS=(
 'include/openssl/*.h'
 'ssl/*.h'
-'ssl/*.c'
+'ssl/*.cc'
 'crypto/*.h'
 'crypto/*.c'
-'crypto/**/*.h'
-'crypto/**/*.c'
+'crypto/*/*.h'
+'crypto/*/*.c'
+'crypto/*/*/*.h'
+'crypto/*/*/*.c'
+'third_party/fiat/*.h'
+'third_party/fiat/*.c'
 )
 
 EXCLUDES=(
@@ -54,7 +58,6 @@ EXCLUDES=(
 
 for pattern in "${PATTERNS[@]}" 
 do
-  echo "COPYING $pattern"
   for i in $SRCROOT/$pattern; do
     path=${i#$SRCROOT}
     dest="$DSTROOT$path"
@@ -72,6 +75,12 @@ do
   echo "EXCLUDING $exclude"
   find $DSTROOT -d -name "$exclude" -exec rm -rf {} \;
 done
+
+echo "GENERATING err_data.c"
+go run $SRCROOT/crypto/err/err_data_generate.go > $DSTROOT/crypto/err/err_data.c
+
+echo "DELETING crypto/fipsmodule/bcm.c"
+rm -f $DSTROOT/crypto/fipsmodule/bcm.c
 
 #
 # edit the BoringSSL headers to disable dependency on assembly language helpers.
