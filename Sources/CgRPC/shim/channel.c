@@ -53,6 +53,21 @@ cgrpc_channel *cgrpc_channel_create_secure(const char *address,
   return c;
 }
 
+cgrpc_channel *cgrpc_channel_create_google(const char *address,
+                                           const char *pem_root_certs,
+                                           grpc_arg *args,
+                                           int num_args) {
+    cgrpc_channel *c = (cgrpc_channel *) malloc(sizeof (cgrpc_channel));
+
+    grpc_channel_args channel_args;
+    channel_args.args = args;
+    channel_args.num_args = num_args;
+
+    grpc_channel_credentials *google_creds = grpc_google_default_credentials_create(pem_root_certs);
+    c->channel = grpc_secure_channel_create(google_creds, address, &channel_args, NULL);
+    c->completion_queue = grpc_completion_queue_create_for_next(NULL);
+    return c;
+}
 
 void cgrpc_channel_destroy(cgrpc_channel *c) {
   grpc_channel_destroy(c->channel);
