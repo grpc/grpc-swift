@@ -188,11 +188,11 @@ int X509_up_ref(X509 *x)
 }
 
 int X509_get_ex_new_index(long argl, void *argp, CRYPTO_EX_unused * unused,
-                          CRYPTO_EX_dup *dup_func, CRYPTO_EX_free *free_func)
+                          CRYPTO_EX_dup *dup_unused, CRYPTO_EX_free *free_func)
 {
     int index;
     if (!CRYPTO_get_ex_new_index(&g_ex_data_class, &index, argl, argp,
-                                 dup_func, free_func)) {
+                                 free_func)) {
         return -1;
     }
     return index;
@@ -313,7 +313,7 @@ int i2d_X509_AUX(X509 *a, unsigned char **pp)
     return length;
 }
 
-void X509_get0_signature(ASN1_BIT_STRING **psig, X509_ALGOR **palg,
+void X509_get0_signature(const ASN1_BIT_STRING **psig, const X509_ALGOR **palg,
                          const X509 *x)
 {
     if (psig)

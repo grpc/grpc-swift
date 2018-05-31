@@ -72,6 +72,9 @@ done
 echo "COPYING additional nanopb headers"
 cp third_party/grpc/third_party/nanopb/*.h Sources/CgRPC/third_party/nanopb/
 
+echo "ADDING additional compiler flags to nanopb/pb.h"
+perl -pi -e 's/\/\* #define PB_FIELD_16BIT 1 \*\//#define PB_FIELD_16BIT 1/' Sources/CgRPC/third_party/nanopb/pb.h
+
 echo "DISABLING ARES"
 perl -pi -e 's/#define GRPC_ARES 1/#define GRPC_ARES 0/' Sources/CgRPC/include/grpc/impl/codegen/port_platform.h
 
