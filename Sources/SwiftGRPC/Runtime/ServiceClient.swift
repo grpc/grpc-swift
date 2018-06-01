@@ -49,9 +49,9 @@ open class ServiceClientBase: ServiceClient {
   }
 
   /// Create a client.
-  public init(address: String, secure: Bool = true, arguments: [Channel.Argument] = []) {
+  public init(address: String, type: Channel.ChannelType = .secure, arguments: [Channel.Argument] = []) {
     gRPC.initialize()
-    channel = Channel(address: address, secure: secure, arguments: arguments)
+    channel = Channel(address: address, type: type, arguments: arguments)
     metadata = Metadata()
   }
 

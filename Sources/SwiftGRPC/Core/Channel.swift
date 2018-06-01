@@ -36,22 +36,32 @@ public class Channel {
   /// Connectivity state observers
   private var connectivityObservers: [ConnectivityObserver] = []
 
+    public enum ChannelType {
+        case insecure
+        case secure
+        case google
+    }
+
   /// Initializes a gRPC channel
   ///
   /// - Parameter address: the address of the server to be called
   /// - Parameter secure: if true, use TLS
   /// - Parameter arguments: list of channel configuration options
-  public init(address: String, secure: Bool = true, arguments: [Argument] = []) {
+  public init(address: String, type: ChannelType = .secure, arguments: [Argument] = []) {
     gRPC.initialize()
     host = address
     let argumentWrappers = arguments.map { $0.toCArg() }
     var argumentValues = argumentWrappers.map { $0.wrapped }
 
-    if secure {
-      underlyingChannel = cgrpc_channel_create_secure(address, roots_pem(), &argumentValues, Int32(arguments.count))
-    } else {
-      underlyingChannel = cgrpc_channel_create(address, &argumentValues, Int32(arguments.count))
+    switch type {
+    case .insecure:
+        underlyingChannel = cgrpc_channel_create(address, &argumentValues, Int32(arguments.count))
+    case .secure:
+        underlyingChannel = cgrpc_channel_create_secure(address, roots_pem(), &argumentValues, Int32(arguments.count))
+    case .google:
+        underlyingChannel = cgrpc_channel_create_google(address, roots_pem(), &argumentValues, Int32(arguments.count))
     }
+
     completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_channel_completion_queue(underlyingChannel), name: "Client")
     completionQueue.run() // start a loop that watches the channel's completion queue
   }
