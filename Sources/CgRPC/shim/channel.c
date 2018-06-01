@@ -49,11 +49,14 @@ cgrpc_channel *cgrpc_channel_create_secure(const char *address,
   channel_args.args = args;
   channel_args.num_args = num_args;
 
-  grpc_ssl_pem_key_cert_pair client_credentials;
-  client_credentials.cert_chain = client_certs;
-  client_credentials.private_key = client_private_key;
+  grpc_ssl_pem_key_cert_pair *client_credentials = malloc(sizeof (struct grpc_ssl_pem_key_cert_pair));
+  client_credentials->cert_chain = client_certs;
+  client_credentials->private_key = client_private_key;
+  if (client_certs == NULL || client_private_key == NULL) {
+      client_credentials = NULL;
+  }
 
-  grpc_channel_credentials *creds = grpc_ssl_credentials_create(pem_root_certs, &client_credentials, NULL);
+  grpc_channel_credentials *creds = grpc_ssl_credentials_create(pem_root_certs, client_credentials, NULL);
   c->channel = grpc_secure_channel_create(creds, address, &channel_args, NULL);
   c->completion_queue = grpc_completion_queue_create_for_next(NULL);
   return c;
