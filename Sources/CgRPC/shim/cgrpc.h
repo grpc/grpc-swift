@@ -166,6 +166,8 @@ cgrpc_channel *cgrpc_channel_create(const char *address,
                                     int num_args);
 cgrpc_channel *cgrpc_channel_create_secure(const char *address,
                                            const char *pem_root_certs,
+                                           const char *client_certs,
+                                           const char *client_key,
                                            grpc_arg *args,
                                            int num_args);
 
