@@ -71,6 +71,38 @@ public extension Channel {
     /// secure channel is an SSL channel). If this parameter is specified and the
     /// underlying is not an SSL channel, it will just be ignored.
     case sslTargetNameOverride(String)
+    
+    /// Enable census for tracing and stats collection.
+    case enableCensus(Bool)
+    
+    /// Enable load reporting.
+    case enableLoadReporting(Bool)
+    
+    /// Request that optional features default to off (regarless of what they usually
+    /// default to) - to enable tight control over what gets enabled.
+    case enableMinimalStack(Bool)
+    
+    /// Maximum number of concurrent incoming streams to allow on a http2 connection.
+    case maxConcurrentStreams(UInt)
+    
+    /// Maximum message length that the channel can receive (in byts).
+    /// -1 means unlimited.
+    case maxReceiveMessageLength(Int)
+    
+    /// Maximum message length that the channel can send (in bytes).
+    /// -1 means unlimited.
+    case maxSendMessageLength(Int)
+    
+    /// Maximum time that a channel may have no outstanding rpcs.
+    case maxConnectionIdle(TimeInterval)
+    
+    /// Maximum time that a channel may exist.
+    case maxConnectionAge(TimeInterval)
+
+    /// Enable/disable support for deadline checking.
+    /// Defaults to true, unless `enableMinimalStack` is enabled, in which case it
+    /// defaults to false.
+    case enableDeadlineChecks(Bool)
   }
 }
 
@@ -119,6 +151,24 @@ extension Channel.Argument {
       return makeArgument("grpc.http2.max_pings_without_data", value: value)
     case let .sslTargetNameOverride(value):
       return makeArgument("grpc.ssl_target_name_override", value: value)
+    case let .enableCensus(value):
+      return makeArgument("grpc.census", value: value)
+    case let .enableLoadReporting(value):
+      return makeArgument("grpc.loadreporting", value: value)
+    case let .enableMinimalStack(value):
+      return makeArgument("grpc.minimal_stack", value: value)
+    case let .maxConcurrentStreams(value):
+      return makeArgument("grpc.max_concurrent_streams", value: value)
+    case let .maxReceiveMessageLength(value):
+      return makeArgument("grpc.max_receive_message_length", value: value)
+    case let .maxSendMessageLength(value):
+      return makeArgument("grpc.max_send_message_length", value: value)
+    case let .maxConnectionIdle(value):
+      return makeArgument("grpc.max_connection_idle_ms", value: value * 1_000)
+    case let .maxConnectionAge(value):
+      return makeArgument("grpc.max_connection_age_ms", value: value * 1_000)
+    case let .enableDeadlineChecks(value):
+      return makeArgument("grpc.enable_deadline_checking", value: value)
     }
   }
 }
