@@ -28,7 +28,7 @@ cache:
 # Use Ubuntu 14.04
 dist: trusty
 
-osx_image: xcode9
+osx_image: xcode9.3
 
 sudo: false
 
@@ -57,3 +57,4 @@ script:
   - make test
   - make test-plugin
   - make test-echo
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then make xcodebuild; fi

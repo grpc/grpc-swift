@@ -173,6 +173,7 @@
 #endif /* _LP64 */
 #ifdef __GLIBC__
 #define GPR_POSIX_CRASH_HANDLER 1
+#define GPR_LINUX_PTHREAD_NAME 1
 #else /* musl libc */
 #define GPR_MUSL_LIBC_COMPAT 1
 #endif
@@ -194,11 +195,25 @@
 #define GPR_PTHREAD_TLS 1
 #else /* __MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_7 */
 #define GPR_CPU_POSIX 1
+/* TODO(vjpai): there is a reported issue in bazel build for Mac where __thread
+   in a header is currently not working (bazelbuild/bazel#4341). Remove
+   the following conditional and use GPR_GCC_TLS when that is fixed */
+#ifndef GRPC_BAZEL_BUILD
 #define GPR_GCC_TLS 1
+#else /* GRPC_BAZEL_BUILD */
+#define GPR_PTHREAD_TLS 1
+#endif /* GRPC_BAZEL_BUILD */
+#define GPR_APPLE_PTHREAD_NAME 1
 #endif
 #else /* __MAC_OS_X_VERSION_MIN_REQUIRED */
 #define GPR_CPU_POSIX 1
+/* TODO(vjpai): Remove the following conditional and use only GPR_GCC_TLS
+   when bazelbuild/bazel#4341 is fixed */
+#ifndef GRPC_BAZEL_BUILD
 #define GPR_GCC_TLS 1
+#else /* GRPC_BAZEL_BUILD */
+#define GPR_PTHREAD_TLS 1
+#endif /* GRPC_BAZEL_BUILD */
 #endif
 #define GPR_POSIX_CRASH_HANDLER 1
 #endif
@@ -224,6 +239,29 @@
 #define _BSD_SOURCE
 #endif
 #define GPR_FREEBSD 1
+#define GPR_CPU_POSIX 1
+#define GPR_GCC_ATOMIC 1
+#define GPR_GCC_TLS 1
+#define GPR_POSIX_LOG 1
+#define GPR_POSIX_ENV 1
+#define GPR_POSIX_TMPFILE 1
+#define GPR_POSIX_STRING 1
+#define GPR_POSIX_SUBPROCESS 1
+#define GPR_POSIX_SYNC 1
+#define GPR_POSIX_TIME 1
+#define GPR_GETPID_IN_UNISTD_H 1
+#define GPR_SUPPORT_CHANNELS_FROM_FD 1
+#ifdef _LP64
+#define GPR_ARCH_64 1
+#else /* _LP64 */
+#define GPR_ARCH_32 1
+#endif /* _LP64 */
+#elif defined(__OpenBSD__)
+#define GPR_PLATFORM_STRING "openbsd"
+#ifndef _BSD_SOURCE
+#define _BSD_SOURCE
+#endif
+#define GPR_OPENBSD 1
 #define GPR_CPU_POSIX 1
 #define GPR_GCC_ATOMIC 1
 #define GPR_GCC_TLS 1
@@ -273,6 +311,30 @@
 #error "Could not auto-detect platform"
 #endif
 #endif /* GPR_NO_AUTODETECT_PLATFORM */
+
+/*
+ *  There are platforms for which TLS should not be used even though the
+ * compiler makes it seem like it's supported (Android NDK < r12b for example).
+ * This is primarily because of linker problems and toolchain misconfiguration:
+ * TLS isn't supported until NDK r12b per
+ * https://developer.android.com/ndk/downloads/revision_history.html
+ * TLS also does not work with Android NDK if GCC is being used as the compiler
+ * instead of Clang.
+ * Since NDK r16, `__NDK_MAJOR__` and `__NDK_MINOR__` are defined in
+ * <android/ndk-version.h>. For NDK < r16, users should define these macros,
+ * e.g. `-D__NDK_MAJOR__=11 -D__NKD_MINOR__=0` for NDK r11. */
+#if defined(__ANDROID__) && defined(GPR_GCC_TLS)
+#if __has_include(<android/ndk-version.h>)
+#include <android/ndk-version.h>
+#endif /* __has_include(<android/ndk-version.h>) */
+#if (defined(__clang__) && defined(__NDK_MAJOR__) && defined(__NDK_MINOR__) && \
+     ((__NDK_MAJOR__ < 12) ||                                                  \
+      ((__NDK_MAJOR__ == 12) && (__NDK_MINOR__ < 1)))) ||                      \
+    (defined(__GNUC__) && !defined(__clang__))
+#undef GPR_GCC_TLS
+#define GPR_PTHREAD_TLS 1
+#endif
+#endif /*defined(__ANDROID__) && defined(GPR_GCC_TLS) */
 
 #if defined(__has_include)
 #if __has_include(<atomic>)
@@ -372,6 +434,14 @@ typedef unsigned __int64 uint64_t;
 #endif
 #endif
 
+#ifndef GRPC_UNUSED
+#if defined(__GNUC__) && !defined(__MINGW32__)
+#define GRPC_UNUSED __attribute__((unused))
+#else
+#define GRPC_UNUSED
+#endif
+#endif
+
 #ifndef GPR_PRINT_FORMAT_CHECK
 #ifdef __GNUC__
 #define GPR_PRINT_FORMAT_CHECK(FORMAT_STR, ARGS) \
@@ -414,5 +484,35 @@ typedef unsigned __int64 uint64_t;
 #define GPR_ATTRIBUTE_NO_TSAN
 #endif /* GPR_ATTRIBUTE_NO_TSAN (2) */
 #endif /* GPR_ATTRIBUTE_NO_TSAN (1) */
+
+/* GRPC_ALLOW_EXCEPTIONS should be 0 or 1 if exceptions are allowed or not */
+#ifndef GRPC_ALLOW_EXCEPTIONS
+/* If not already set, set to 1 on Windows (style guide standard) but to
+ * 0 on non-Windows platforms unless the compiler defines __EXCEPTIONS */
+#ifdef GPR_WINDOWS
+#define GRPC_ALLOW_EXCEPTIONS 1
+#else /* GPR_WINDOWS */
+#ifdef __EXCEPTIONS
+#define GRPC_ALLOW_EXCEPTIONS 1
+#else /* __EXCEPTIONS */
+#define GRPC_ALLOW_EXCEPTIONS 0
+#endif /* __EXCEPTIONS */
+#endif /* __GPR_WINDOWS */
+#endif /* GRPC_ALLOW_EXCEPTIONS */
+
+/* Use GPR_LIKELY only in cases where you are sure that a certain outcome is the
+ * most likely. Ideally, also collect performance numbers to justify the claim.
+ */
+#ifdef __GNUC__
+#define GPR_LIKELY(x) __builtin_expect((x), 1)
+#define GPR_UNLIKELY(x) __builtin_expect((x), 0)
+#else /* __GNUC__ */
+#define GPR_LIKELY(x) (x)
+#define GPR_UNLIKELY(x) (x)
+#endif /* __GNUC__ */
+
+#ifndef __STDC_FORMAT_MACROS
+#define __STDC_FORMAT_MACROS
+#endif
 
 #endif /* GRPC_IMPL_CODEGEN_PORT_PLATFORM_H */

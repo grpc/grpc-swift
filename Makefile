@@ -1,9 +1,8 @@
 UNAME_S = $(shell uname -s)
 
 ifeq ($(UNAME_S),Linux)
-  CFLAGS = -Xcc -DTSI_OPENSSL_ALPN_SUPPORT=0
 else
-  CFLAGS = -Xcc -ISources/BoringSSL/include
+  CFLAGS = -Xcc -ISources/BoringSSL/include -Xlinker -lz
 endif
 
 all:
@@ -12,9 +11,8 @@ all:
 	cp .build/debug/protoc-gen-swiftgrpc .
 	
 project:
-	swift package generate-xcodeproj
-# Optional: set the generated project's indentation settings.
-	-ruby fix-indentation-settings.rb || echo "Consider running 'sudo gem install xcodeproj' to automatically set correct indentation settings for the generated project."
+	swift package -v $(CFLAGS) generate-xcodeproj
+	@-ruby fix-project-settings.rb || echo "Consider running 'sudo gem install xcodeproj' to automatically set correct indentation settings for the generated project."
 
 test:	all
 	swift test -v $(CFLAGS)
@@ -34,9 +32,12 @@ test-plugin:
 	protoc Sources/Examples/Echo/echo.proto --proto_path=Sources/Examples/Echo --plugin=.build/debug/protoc-gen-swift --plugin=.build/debug/protoc-gen-swiftgrpc --swiftgrpc_out=/tmp --swiftgrpc_opt=TestStubs=true
 	diff -u /tmp/echo.grpc.swift Sources/Examples/Echo/Generated/echo.grpc.swift
 
+xcodebuild: project
+		xcodebuild -configuration "Debug" -parallelizeTargets -target SwiftGRPC -target Echo -target Simple -target protoc-gen-swiftgrpc build
+
 clean:
 	rm -rf Packages
-	rm -rf .build
+	rm -rf .build build
 	rm -rf SwiftGRPC.xcodeproj
 	rm -rf Package.pins Package.resolved
 	rm -rf protoc-gen-swift protoc-gen-swiftgrpc

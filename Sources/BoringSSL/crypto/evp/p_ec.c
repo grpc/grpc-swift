@@ -69,12 +69,12 @@
 #include <openssl/nid.h>
 
 #include "internal.h"
-#include "../ec/internal.h"
+#include "../fipsmodule/ec/internal.h"
 #include "../internal.h"
 
 
 typedef struct {
-  /* message digest */
+  // message digest
   const EVP_MD *md;
 } EC_PKEY_CTX;
 
@@ -161,8 +161,8 @@ static int pkey_ec_derive(EVP_PKEY_CTX *ctx, uint8_t *key,
   }
   pubkey = EC_KEY_get0_public_key(ctx->peerkey->pkey.ec);
 
-  /* NB: unlike PKCS#3 DH, if *outlen is less than maximum size this is
-   * not an error, the result is truncated. */
+  // NB: unlike PKCS#3 DH, if *outlen is less than maximum size this is
+  // not an error, the result is truncated.
 
   outlen = *keylen;
 
@@ -196,7 +196,7 @@ static int pkey_ec_ctrl(EVP_PKEY_CTX *ctx, int type, int p1, void *p2) {
       return 1;
 
     case EVP_PKEY_CTRL_PEER_KEY:
-      /* Default behaviour is OK */
+      // Default behaviour is OK
       return 1;
 
     default:
@@ -228,10 +228,12 @@ const EVP_PKEY_METHOD ec_pkey_meth = {
     pkey_ec_cleanup,
     pkey_ec_keygen,
     pkey_ec_sign,
+    NULL /* sign_message */,
     pkey_ec_verify,
-    0 /* verify_recover */,
-    0 /* encrypt */,
-    0 /* decrypt */,
+    NULL /* verify_message */,
+    NULL /* verify_recover */,
+    NULL /* encrypt */,
+    NULL /* decrypt */,
     pkey_ec_derive,
     pkey_ec_ctrl,
 };
