@@ -57,3 +57,4 @@ script:
   - make test
   - make test-plugin
   - make test-echo
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then make xcodebuild; fi
