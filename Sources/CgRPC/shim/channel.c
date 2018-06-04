@@ -56,7 +56,7 @@ cgrpc_channel *cgrpc_channel_create_secure(const char *address,
     client_credentials.private_key = client_private_key;
     client_credentials_pointer = &client_credentials;
   }
-  grpc_channel_credentials *creds = grpc_ssl_credentials_create(pem_root_certs, client_credentials, NULL);
+  grpc_channel_credentials *creds = grpc_ssl_credentials_create(pem_root_certs, client_credentials_pointer, NULL);
 
   c->channel = grpc_secure_channel_create(creds, address, &channel_args, NULL);
   c->completion_queue = grpc_completion_queue_create_for_next(NULL);
