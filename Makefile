@@ -1,7 +1,6 @@
 UNAME_S = $(shell uname -s)
 
 ifeq ($(UNAME_S),Linux)
-  CFLAGS = -Xcc -DTSI_OPENSSL_ALPN_SUPPORT=0
 else
   CFLAGS = -Xcc -ISources/BoringSSL/include
 endif

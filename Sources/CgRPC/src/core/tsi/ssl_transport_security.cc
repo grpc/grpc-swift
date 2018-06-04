@@ -62,7 +62,7 @@ extern "C" {
    bad practice.
    TODO(jboeuf): refactor all the #if / #endif in a separate module. */
 #ifndef TSI_OPENSSL_ALPN_SUPPORT
-#define TSI_OPENSSL_ALPN_SUPPORT 1
+#define TSI_OPENSSL_ALPN_SUPPORT 0
 #endif
 
 /* TODO(jboeuf): I have not found a way to get this number dynamically from the
