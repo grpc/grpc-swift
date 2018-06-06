@@ -33,29 +33,53 @@ extension Echo_EchoResponse {
 class BasicEchoTestCase: XCTestCase {
   func makeProvider() -> Echo_EchoProvider { return EchoProvider() }
 
+  enum Security {
+    case secure(certificate: String, key: String)
+    case root
+    case none
+
+    init(certificate: Data, key: Data) {
+      let certString = String(data: certificate, encoding: .utf8)!
+      let keyString = String(data: key, encoding: .utf8)!
+      self = .secure(certificate: certString, key: keyString)
+    }
+
+    static var trusted: Security {
+      return self.init(certificate: certificateForTests, key: keyForTests)
+    }
+
+    static var selfSigned: Security {
+      return self.init(certificate: selfSignedCertificateForTests, key: selfSignedKeyForTests)
+    }
+  }
+
   var provider: Echo_EchoProvider!
   var server: Echo_EchoServer!
   var client: Echo_EchoServiceClient!
   
   var defaultTimeout: TimeInterval { return 1.0 }
-  var secure: Bool { return false }
+  var security: Security { return .none }
   var address: String { return "localhost:5050" }
 
   override func setUp() {
     super.setUp()
     
     provider = makeProvider()
-    
-    if secure {
-      let certificateString = String(data: certificateForTests, encoding: .utf8)!
+
+    switch security {
+    case let .secure(certificate, key):
       server = Echo_EchoServer(address: address,
-                               certificateString: certificateString,
-                               keyString: String(data: keyForTests, encoding: .utf8)!,
+                               certificateString: certificate,
+                               keyString: key,
                                provider: provider)
       server.start()
-      client = Echo_EchoServiceClient(address: address, certificates: certificateString, arguments: [.sslTargetNameOverride("example.com")])
+      client = Echo_EchoServiceClient(address: address, certificates: certificate, arguments: [.sslTargetNameOverride("example.com")])
       client.host = "example.com"
-    } else {
+    case .root:
+      server = Echo_EchoServer(address: address, provider: provider)
+      server.start()
+      client = Echo_EchoServiceClient(address: address, secure: true)
+    case .none:
       server = Echo_EchoServer(address: address, provider: provider)
       server.start()
       client = Echo_EchoServiceClient(address: address, secure: false)
@@ -63,7 +87,7 @@ class BasicEchoTestCase: XCTestCase {
     
     client.timeout = defaultTimeout
   }
-  
+
   override func tearDown() {
     client = nil
     
