@@ -6,16 +6,16 @@ else
 endif
 
 all:
-	swift build -v $(CFLAGS)
+	swift build $(CFLAGS)
 	cp .build/debug/protoc-gen-swift .
 	cp .build/debug/protoc-gen-swiftgrpc .
 	
 project:
-	swift package -v $(CFLAGS) generate-xcodeproj
+	swift package $(CFLAGS) generate-xcodeproj
 	@-ruby fix-project-settings.rb || echo "Consider running 'sudo gem install xcodeproj' to automatically set correct indentation settings for the generated project."
 
 test:	all
-	swift test -v $(CFLAGS)
+	swift test $(CFLAGS)
 
 test-echo:	all
 	cp .build/debug/Echo .
@@ -28,7 +28,7 @@ test-echo:	all
 	diff -u test.out Sources/Examples/Echo/test.gold
 
 test-plugin:
-	swift build -v $(CFLAGS) --product protoc-gen-swiftgrpc
+	swift build $(CFLAGS) --product protoc-gen-swiftgrpc
 	protoc Sources/Examples/Echo/echo.proto --proto_path=Sources/Examples/Echo --plugin=.build/debug/protoc-gen-swift --plugin=.build/debug/protoc-gen-swiftgrpc --swiftgrpc_out=/tmp --swiftgrpc_opt=TestStubs=true
 	diff -u /tmp/echo.grpc.swift Sources/Examples/Echo/Generated/echo.grpc.swift
 
