@@ -133,7 +133,7 @@ GRPCAPI void grpc_channel_credentials_release(grpc_channel_credentials* creds);
 /** Creates default credentials to connect to a google gRPC service.
    WARNING: Do NOT use this credentials to connect to a non-google service as
    this could result in an oauth2 token leak. */
-GRPCAPI grpc_channel_credentials* grpc_google_default_credentials_create(void);
+GRPCAPI grpc_channel_credentials* grpc_google_default_credentials_create(const char* pem_root_certs);
 
 /** Callback for getting the SSL roots override from the application.
    In case of success, *pem_roots_certs must be set to a NULL terminated string
