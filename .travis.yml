@@ -34,6 +34,8 @@ sudo: false
 
 addons:
   apt:
+    sources:
+      - sourceline: 'ppa:ondrej/apache2'  # for libnghttp2-dev
     packages:
       - clang-3.8 
       - lldb-3.8 
@@ -46,6 +48,10 @@ addons:
       - uuid-dev
       - curl
       - unzip
+      - libnghttp2-dev
+
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install nghttp2; fi
 
 install: ./.travis-install.sh
 
