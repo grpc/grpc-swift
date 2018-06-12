@@ -31,6 +31,12 @@ extension Echo_EchoResponse {
 }
 
 class BasicEchoTestCase: XCTestCase {
+  enum Security {
+    case none
+    case ssl
+    case tlsMutualAuth
+  }
+
   func makeProvider() -> Echo_EchoProvider { return EchoProvider() }
 
   var provider: Echo_EchoProvider!
@@ -38,29 +44,40 @@ class BasicEchoTestCase: XCTestCase {
   var client: Echo_EchoServiceClient!
   
   var defaultTimeout: TimeInterval { return 1.0 }
-  var secure: Bool { return false }
+  var security: Security { return .none }
   var address: String { return "localhost:5050" }
 
   override func setUp() {
     super.setUp()
     
     provider = makeProvider()
-    
-    if secure {
-      let certificateString = String(data: certificateForTests, encoding: .utf8)!
+
+    let certificateString = String(data: certificateForTests, encoding: .utf8)!
+    let keyString = String(data: keyForTests, encoding: .utf8)!
+    let rootCerts = String(data: trustCollectionCertificateForTests, encoding: .utf8)!
+    let clientCertificateString = String(data: clientCertificateForTests, encoding: .utf8)!
+    let clientKeyString = String(data: clientKeyForTests, encoding: .utf8)!
+
+    switch security {
+    case .ssl:
       server = Echo_EchoServer(address: address,
                                certificateString: certificateString,
-                               keyString: String(data: keyForTests, encoding: .utf8)!,
+                               keyString: keyString,
                                provider: provider)
       server.start()
-      client = Echo_EchoServiceClient(address: address, certificates: certificateString, arguments: [.sslTargetNameOverride("example.com")])
+      client = Echo_EchoServiceClient(address: address, certificates: rootCerts, arguments: [.sslTargetNameOverride("example.com")])
       client.host = "example.com"
-    } else {
+    case .tlsMutualAuth:
+      server = Echo_EchoServer(address: address, certificateString: certificateString, keyString: keyString, rootCerts: rootCerts, provider: provider)
+      server.start()
+      client = Echo_EchoServiceClient(address: address, certificates: rootCerts, clientCertificates: clientCertificateString, clientKey: clientKeyString, arguments: [.sslTargetNameOverride("example.com")])
+      client.host = "example.com"
+    case .none:
       server = Echo_EchoServer(address: address, provider: provider)
       server.start()
       client = Echo_EchoServiceClient(address: address, secure: false)
     }
-    
+
     client.timeout = defaultTimeout
   }
   

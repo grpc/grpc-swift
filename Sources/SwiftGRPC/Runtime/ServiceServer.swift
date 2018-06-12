@@ -32,20 +32,27 @@ open class ServiceServer {
   }
 
   /// Create a server that accepts secure connections.
-  public init(address: String, certificateString: String, keyString: String) {
+  public init(address: String, certificateString: String, keyString: String, rootCerts: String? = nil) {
     gRPC.initialize()
     self.address = address
-    server = Server(address: address, key: keyString, certs: certificateString)
+    server = Server(address: address, key: keyString, certs: certificateString, rootCerts: rootCerts)
   }
 
   /// Create a server that accepts secure connections.
-  public init?(address: String, certificateURL: URL, keyURL: URL) {
+  public init?(address: String, certificateURL: URL, keyURL: URL, rootCertsURL: URL?) {
     guard let certificate = try? String(contentsOf: certificateURL, encoding: .utf8),
       let key = try? String(contentsOf: keyURL, encoding: .utf8)
       else { return nil }
+    var rootCerts: String?
+    if let rootCertsURL = rootCertsURL {
+      guard let rootCertsString = try? String(contentsOf: rootCertsURL, encoding: .utf8) else {
+        return nil
+      }
+      rootCerts = rootCertsString
+    }
     gRPC.initialize()
     self.address = address
-    server = Server(address: address, key: key, certs: certificate)
+    server = Server(address: address, key: key, certs: certificate, rootCerts: rootCerts)
   }
 
   public enum HandleMethodError: Error {

@@ -190,7 +190,9 @@ void cgrpc_channel_watch_connectivity_state(cgrpc_channel *channel,
 cgrpc_server *cgrpc_server_create(const char *address);
 cgrpc_server *cgrpc_server_create_secure(const char *address,
                                          const char *private_key,
-                                         const char *cert_chain);
+                                         const char *cert_chain,
+                                         const char *root_certs,
+                                         int force_client_auth);
 void cgrpc_server_stop(cgrpc_server *server);
 void cgrpc_server_destroy(cgrpc_server *s);
 void cgrpc_server_start(cgrpc_server *s);

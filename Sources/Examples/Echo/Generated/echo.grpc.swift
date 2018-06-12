@@ -313,14 +313,14 @@ internal final class Echo_EchoServer: ServiceServer {
     super.init(address: address)
   }
 
-  internal init?(address: String, certificateURL: URL, keyURL: URL, provider: Echo_EchoProvider) {
+  internal init?(address: String, certificateURL: URL, keyURL: URL, rootCertsURL: URL? = nil, provider: Echo_EchoProvider) {
     self.provider = provider
-    super.init(address: address, certificateURL: certificateURL, keyURL: keyURL)
+    super.init(address: address, certificateURL: certificateURL, keyURL: keyURL, rootCertsURL: rootCertsURL)
   }
 
-  internal init?(address: String, certificateString: String, keyString: String, provider: Echo_EchoProvider) {
+  internal init?(address: String, certificateString: String, keyString: String, rootCerts: String? = nil, provider: Echo_EchoProvider) {
     self.provider = provider
-    super.init(address: address, certificateString: certificateString, keyString: keyString)
+    super.init(address: address, certificateString: certificateString, keyString: keyString, rootCerts: rootCerts)
   }
 
   /// Determines and calls the appropriate request handler, depending on the request's method.

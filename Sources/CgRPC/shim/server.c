@@ -33,7 +33,9 @@ cgrpc_server *cgrpc_server_create(const char *address) {
 
 cgrpc_server *cgrpc_server_create_secure(const char *address,
                                          const char *private_key,
-                                         const char *cert_chain) {
+                                         const char *cert_chain,
+                                         const char *root_certs,
+                                         int force_client_auth) {
   cgrpc_server *server = (cgrpc_server *) malloc(sizeof (cgrpc_server));
   server->server = grpc_server_create(NULL, NULL);
   server->completion_queue = grpc_completion_queue_create_for_next(NULL);
@@ -44,10 +46,10 @@ cgrpc_server *cgrpc_server_create_secure(const char *address,
   server_credentials.cert_chain = cert_chain;
 
   grpc_server_credentials *credentials = grpc_ssl_server_credentials_create
-  (NULL,
+  (root_certs,
    &server_credentials,
    1,
-   0,
+   force_client_auth,
    NULL);
   
   // prepare the server to listen
