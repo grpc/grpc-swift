@@ -52,23 +52,23 @@ class BasicEchoTestCase: XCTestCase {
     
     provider = makeProvider()
 
-    let certificateString = String(data: certificateForTests, encoding: .utf8)!
-    let keyString = String(data: keyForTests, encoding: .utf8)!
-    let rootCerts = String(data: trustCollectionCertificateForTests, encoding: .utf8)!
-    let clientCertificateString = String(data: clientCertificateForTests, encoding: .utf8)!
-    let clientKeyString = String(data: clientKeyForTests, encoding: .utf8)!
+    let serverCertificateString = String(data: serverCertificate, encoding: .utf8)!
+    let serverKeyString = String(data: serverKey, encoding: .utf8)!
+    let rootCerts = String(data: trustCollectionCertificate, encoding: .utf8)!
+    let clientCertificateString = String(data: clientCertificate, encoding: .utf8)!
+    let clientKeyString = String(data: clientKey, encoding: .utf8)!
 
     switch security {
     case .ssl:
       server = Echo_EchoServer(address: address,
-                               certificateString: certificateString,
-                               keyString: keyString,
+                               certificateString: serverCertificateString,
+                               keyString: serverKeyString,
                                provider: provider)
       server.start()
       client = Echo_EchoServiceClient(address: address, certificates: rootCerts, arguments: [.sslTargetNameOverride("example.com")])
       client.host = "example.com"
     case .tlsMutualAuth:
-      server = Echo_EchoServer(address: address, certificateString: certificateString, keyString: keyString, rootCerts: rootCerts, provider: provider)
+      server = Echo_EchoServer(address: address, certificateString: serverCertificateString, keyString: serverKeyString, rootCerts: rootCerts, provider: provider)
       server.start()
       client = Echo_EchoServiceClient(address: address, certificates: rootCerts, clientCertificates: clientCertificateString, clientKey: clientKeyString, arguments: [.sslTargetNameOverride("example.com")])
       client.host = "example.com"
