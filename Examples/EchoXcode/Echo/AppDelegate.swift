@@ -20,25 +20,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   @IBOutlet var window: NSWindow!
 
   var echoProvider: Echo_EchoProvider!
-  var insecureServer: Echo_EchoServer!
-  var secureServer: Echo_EchoServer!
+  var insecureServer: ServiceServer!
+  var secureServer: ServiceServer!
 
   func applicationDidFinishLaunching(_: Notification) {
     // instantiate our custom-written application handler
     echoProvider = EchoProvider()
 
-    // create and start a server for handling insecure requests
-    insecureServer = Echo_EchoServer(address: "localhost:8081",
-                                     provider: echoProvider)
-    insecureServer.start()
-
-    // create and start a server for handling secure requests
-    let certificateURL = Bundle.main.url(forResource: "ssl", withExtension: "crt")!
-    let keyURL = Bundle.main.url(forResource: "ssl", withExtension: "key")!
-    secureServer = Echo_EchoServer(address: "localhost:8443",
-                                   certificateURL: certificateURL,
-                                   keyURL: keyURL,
-                                   provider: echoProvider)
-    secureServer.start()
+	// create and start a server for handling insecure requests
+	insecureServer = ServiceServer(address: "localhost:8081",
+								   services: [echoProvider])
+	insecureServer.start()
+	
+	// create and start a server for handling secure requests
+	let certificateURL = Bundle.main.url(forResource: "ssl", withExtension: "crt")!
+	let keyURL = Bundle.main.url(forResource: "ssl", withExtension: "key")!
+	secureServer = ServiceServer(address: "localhost:8443",
+								 certificateURL: certificateURL,
+								 keyURL: keyURL,
+								 services: [echoProvider])
+	secureServer.start()
   }
 }
