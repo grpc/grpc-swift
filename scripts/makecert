@@ -29,6 +29,5 @@ openssl x509 -req -days 365 -in client.csr -CA ca.crt -CAkey ca.key -set_serial 
 
 # netty only supports PKCS8 keys. openssl is used to convert from PKCS1 to PKCS8
 # http://netty.io/wiki/sslcontextbuilder-and-private-key.html
-# Generates client.pem which is the clientPrivateKeyFile for the Client (needed for mutual TLS only)
 openssl pkcs8 -topk8 -nocrypt -in client.key -out client.pem
 openssl pkcs8 -topk8 -nocrypt -in server.key -out server.pem
