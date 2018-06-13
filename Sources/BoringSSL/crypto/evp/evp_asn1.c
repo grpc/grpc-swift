@@ -216,9 +216,9 @@ static EVP_PKEY *old_priv_decode(CBS *cbs, int type) {
       return ret;
     }
     case EVP_PKEY_RSA: {
-      RSA *rsa = RSA_parse_private_key(cbs);
+      RSA *rsa = BORING_RSA_parse_private_key(cbs);
       if (rsa == NULL || !EVP_PKEY_assign_RSA(ret, rsa)) {
-        RSA_free(rsa);
+        BORING_RSA_free(rsa);
         goto err;
       }
       return ret;

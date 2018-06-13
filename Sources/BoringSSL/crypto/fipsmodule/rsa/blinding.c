@@ -243,7 +243,7 @@ static int bn_blinding_create_param(BN_BLINDING *b, const BIGNUM *e,
     // For reasonably-sized RSA keys, it should almost never be the case that a
     // random value doesn't have an inverse.
     if (retry_counter-- == 0) {
-      OPENSSL_PUT_ERROR(RSA, RSA_R_TOO_MANY_ITERATIONS);
+      OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_TOO_MANY_ITERATIONS);
       return 0;
     }
     ERR_clear_error();

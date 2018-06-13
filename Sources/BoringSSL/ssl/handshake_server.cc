@@ -910,7 +910,7 @@ static enum ssl_hs_wait_t do_send_server_hello_done(SSL_HANDSHAKE *hs) {
     if (!ssl->method->init_message(ssl, cbb.get(), &body,
                                    SSL3_MT_CERTIFICATE_REQUEST) ||
         !CBB_add_u8_length_prefixed(&body, &cert_types) ||
-        !CBB_add_u8(&cert_types, SSL3_CT_RSA_SIGN) ||
+        !CBB_add_u8(&cert_types, SSL3_CT_BORING_RSA_SIGN) ||
         (ssl_protocol_version(ssl) >= TLS1_VERSION &&
          !CBB_add_u8(&cert_types, TLS_CT_ECDSA_SIGN)) ||
         (ssl_protocol_version(ssl) >= TLS1_2_VERSION &&

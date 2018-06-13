@@ -69,7 +69,7 @@ extern "C" {
 
 // Default implementations of RSA operations.
 
-const RSA_METHOD *RSA_default_method(void);
+const BORING_RSA_METHOD *RSA_default_method(void);
 
 size_t rsa_default_size(const RSA *rsa);
 int rsa_default_sign_raw(RSA *rsa, size_t *out_len, uint8_t *out,

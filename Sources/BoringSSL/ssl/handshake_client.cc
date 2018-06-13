@@ -1303,9 +1303,9 @@ static enum ssl_hs_wait_t do_send_client_key_exchange(SSL_HANDSHAKE *hs) {
     }
 
     uint8_t *ptr;
-    if (!CBB_reserve(enc_pms, &ptr, RSA_size(rsa)) ||
-        !RSA_encrypt(rsa, &enc_pms_len, ptr, RSA_size(rsa), pms.data(),
-                     pms.size(), RSA_PKCS1_PADDING) ||
+    if (!CBB_reserve(enc_pms, &ptr, BORING_RSA_size(rsa)) ||
+        !BORING_RSA_encrypt(rsa, &enc_pms_len, ptr, BORING_RSA_size(rsa), pms.data(),
+                     pms.size(), BORING_RSA_PKCS1_PADDING) ||
         !CBB_did_write(enc_pms, enc_pms_len) ||
         !CBB_flush(&body)) {
       return ssl_hs_error;

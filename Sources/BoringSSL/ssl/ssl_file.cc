@@ -324,7 +324,7 @@ int SSL_use_RSAPrivateKey_file(SSL *ssl, const char *file, int type) {
     goto end;
   }
   ret = SSL_use_RSAPrivateKey(ssl, rsa);
-  RSA_free(rsa);
+  BORING_RSA_free(rsa);
 
 end:
   BIO_free(in);
@@ -446,7 +446,7 @@ int SSL_CTX_use_RSAPrivateKey_file(SSL_CTX *ctx, const char *file, int type) {
     goto end;
   }
   ret = SSL_CTX_use_RSAPrivateKey(ctx, rsa);
-  RSA_free(rsa);
+  BORING_RSA_free(rsa);
 
 end:
   BIO_free(in);

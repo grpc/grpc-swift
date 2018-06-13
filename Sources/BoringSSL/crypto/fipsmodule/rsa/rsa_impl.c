@@ -76,7 +76,7 @@ static int check_modulus_and_exponent_sizes(const RSA *rsa) {
   unsigned rsa_bits = BN_num_bits(rsa->n);
 
   if (rsa_bits > 16 * 1024) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_MODULUS_TOO_LARGE);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_MODULUS_TOO_LARGE);
     return 0;
   }
 
@@ -92,7 +92,7 @@ static int check_modulus_and_exponent_sizes(const RSA *rsa) {
   static const unsigned kMaxExponentBits = 33;
 
   if (BN_num_bits(rsa->e) > kMaxExponentBits) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_BAD_E_VALUE);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_BAD_E_VALUE);
     return 0;
   }
 
@@ -101,7 +101,7 @@ static int check_modulus_and_exponent_sizes(const RSA *rsa) {
   // is much smaller than the minimum RSA key size that any application should
   // accept.
   if (rsa_bits <= kMaxExponentBits) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_KEY_SIZE_TOO_SMALL);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_KEY_SIZE_TOO_SMALL);
     return 0;
   }
   assert(BN_ucmp(rsa->n, rsa->e) > 0);
@@ -113,21 +113,21 @@ size_t rsa_default_size(const RSA *rsa) {
   return BN_num_bytes(rsa->n);
 }
 
-int RSA_encrypt(RSA *rsa, size_t *out_len, uint8_t *out, size_t max_out,
+int BORING_RSA_encrypt(RSA *rsa, size_t *out_len, uint8_t *out, size_t max_out,
                 const uint8_t *in, size_t in_len, int padding) {
   if (rsa->n == NULL || rsa->e == NULL) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_VALUE_MISSING);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_VALUE_MISSING);
     return 0;
   }
 
-  const unsigned rsa_size = RSA_size(rsa);
+  const unsigned rsa_size = BORING_RSA_size(rsa);
   BIGNUM *f, *result;
   uint8_t *buf = NULL;
   BN_CTX *ctx = NULL;
   int i, ret = 0;
 
   if (max_out < rsa_size) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_OUTPUT_BUFFER_TOO_SMALL);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_OUTPUT_BUFFER_TOO_SMALL);
     return 0;
   }
 
@@ -150,19 +150,19 @@ int RSA_encrypt(RSA *rsa, size_t *out_len, uint8_t *out, size_t max_out,
   }
 
   switch (padding) {
-    case RSA_PKCS1_PADDING:
-      i = RSA_padding_add_PKCS1_type_2(buf, rsa_size, in, in_len);
+    case BORING_RSA_PKCS1_PADDING:
+      i = BORING_RSA_padding_add_PKCS1_type_2(buf, rsa_size, in, in_len);
       break;
-    case RSA_PKCS1_OAEP_PADDING:
+    case BORING_RSA_PKCS1_OAEP_PADDING:
       // Use the default parameters: SHA-1 for both hashes and no label.
-      i = RSA_padding_add_PKCS1_OAEP_mgf1(buf, rsa_size, in, in_len,
+      i = BORING_RSA_padding_add_PKCS1_OAEP_mgf1(buf, rsa_size, in, in_len,
                                           NULL, 0, NULL, NULL);
       break;
-    case RSA_NO_PADDING:
-      i = RSA_padding_add_none(buf, rsa_size, in, in_len);
+    case BORING_RSA_NO_PADDING:
+      i = BORING_RSA_padding_add_none(buf, rsa_size, in, in_len);
       break;
     default:
-      OPENSSL_PUT_ERROR(RSA, RSA_R_UNKNOWN_PADDING_TYPE);
+      OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_UNKNOWN_PADDING_TYPE);
       goto err;
   }
 
@@ -176,7 +176,7 @@ int RSA_encrypt(RSA *rsa, size_t *out_len, uint8_t *out, size_t max_out,
 
   if (BN_ucmp(f, rsa->n) >= 0) {
     // usually the padding functions would catch this
-    OPENSSL_PUT_ERROR(RSA, RSA_R_DATA_TOO_LARGE);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_DATA_TOO_LARGE);
     goto err;
   }
 
@@ -318,12 +318,12 @@ static void rsa_blinding_release(RSA *rsa, BN_BLINDING *blinding,
 int rsa_default_sign_raw(RSA *rsa, size_t *out_len, uint8_t *out,
                          size_t max_out, const uint8_t *in, size_t in_len,
                          int padding) {
-  const unsigned rsa_size = RSA_size(rsa);
+  const unsigned rsa_size = BORING_RSA_size(rsa);
   uint8_t *buf = NULL;
   int i, ret = 0;
 
   if (max_out < rsa_size) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_OUTPUT_BUFFER_TOO_SMALL);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_OUTPUT_BUFFER_TOO_SMALL);
     return 0;
   }
 
@@ -334,14 +334,14 @@ int rsa_default_sign_raw(RSA *rsa, size_t *out_len, uint8_t *out,
   }
 
   switch (padding) {
-    case RSA_PKCS1_PADDING:
-      i = RSA_padding_add_PKCS1_type_1(buf, rsa_size, in, in_len);
+    case BORING_RSA_PKCS1_PADDING:
+      i = BORING_RSA_padding_add_PKCS1_type_1(buf, rsa_size, in, in_len);
       break;
-    case RSA_NO_PADDING:
-      i = RSA_padding_add_none(buf, rsa_size, in, in_len);
+    case BORING_RSA_NO_PADDING:
+      i = BORING_RSA_padding_add_none(buf, rsa_size, in, in_len);
       break;
     default:
-      OPENSSL_PUT_ERROR(RSA, RSA_R_UNKNOWN_PADDING_TYPE);
+      OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_UNKNOWN_PADDING_TYPE);
       goto err;
   }
 
@@ -349,7 +349,7 @@ int rsa_default_sign_raw(RSA *rsa, size_t *out_len, uint8_t *out,
     goto err;
   }
 
-  if (!RSA_private_transform(rsa, out, buf, rsa_size)) {
+  if (!BORING_RSA_private_transform(rsa, out, buf, rsa_size)) {
     goto err;
   }
 
@@ -364,16 +364,16 @@ err:
 
 int rsa_default_decrypt(RSA *rsa, size_t *out_len, uint8_t *out, size_t max_out,
                         const uint8_t *in, size_t in_len, int padding) {
-  const unsigned rsa_size = RSA_size(rsa);
+  const unsigned rsa_size = BORING_RSA_size(rsa);
   uint8_t *buf = NULL;
   int ret = 0;
 
   if (max_out < rsa_size) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_OUTPUT_BUFFER_TOO_SMALL);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_OUTPUT_BUFFER_TOO_SMALL);
     return 0;
   }
 
-  if (padding == RSA_NO_PADDING) {
+  if (padding == BORING_RSA_NO_PADDING) {
     buf = out;
   } else {
     // Allocate a temporary buffer to hold the padded plaintext.
@@ -385,39 +385,39 @@ int rsa_default_decrypt(RSA *rsa, size_t *out_len, uint8_t *out, size_t max_out,
   }
 
   if (in_len != rsa_size) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_DATA_LEN_NOT_EQUAL_TO_MOD_LEN);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_DATA_LEN_NOT_EQUAL_TO_MOD_LEN);
     goto err;
   }
 
-  if (!RSA_private_transform(rsa, buf, in, rsa_size)) {
+  if (!BORING_RSA_private_transform(rsa, buf, in, rsa_size)) {
     goto err;
   }
 
   switch (padding) {
-    case RSA_PKCS1_PADDING:
+    case BORING_RSA_PKCS1_PADDING:
       ret =
-          RSA_padding_check_PKCS1_type_2(out, out_len, rsa_size, buf, rsa_size);
+          BORING_RSA_padding_check_PKCS1_type_2(out, out_len, rsa_size, buf, rsa_size);
       break;
-    case RSA_PKCS1_OAEP_PADDING:
+    case BORING_RSA_PKCS1_OAEP_PADDING:
       // Use the default parameters: SHA-1 for both hashes and no label.
-      ret = RSA_padding_check_PKCS1_OAEP_mgf1(out, out_len, rsa_size, buf,
+      ret = BORING_RSA_padding_check_PKCS1_OAEP_mgf1(out, out_len, rsa_size, buf,
                                               rsa_size, NULL, 0, NULL, NULL);
       break;
-    case RSA_NO_PADDING:
+    case BORING_RSA_NO_PADDING:
       *out_len = rsa_size;
       ret = 1;
       break;
     default:
-      OPENSSL_PUT_ERROR(RSA, RSA_R_UNKNOWN_PADDING_TYPE);
+      OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_UNKNOWN_PADDING_TYPE);
       goto err;
   }
 
   if (!ret) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_PADDING_CHECK_FAILED);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_PADDING_CHECK_FAILED);
   }
 
 err:
-  if (padding != RSA_NO_PADDING) {
+  if (padding != BORING_RSA_NO_PADDING) {
     OPENSSL_free(buf);
   }
 
@@ -426,23 +426,23 @@ err:
 
 static int mod_exp(BIGNUM *r0, const BIGNUM *I, RSA *rsa, BN_CTX *ctx);
 
-int RSA_verify_raw(RSA *rsa, size_t *out_len, uint8_t *out, size_t max_out,
+int BORING_RSA_verify_raw(RSA *rsa, size_t *out_len, uint8_t *out, size_t max_out,
                    const uint8_t *in, size_t in_len, int padding) {
   if (rsa->n == NULL || rsa->e == NULL) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_VALUE_MISSING);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_VALUE_MISSING);
     return 0;
   }
 
-  const unsigned rsa_size = RSA_size(rsa);
+  const unsigned rsa_size = BORING_RSA_size(rsa);
   BIGNUM *f, *result;
 
   if (max_out < rsa_size) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_OUTPUT_BUFFER_TOO_SMALL);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_OUTPUT_BUFFER_TOO_SMALL);
     return 0;
   }
 
   if (in_len != rsa_size) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_DATA_LEN_NOT_EQUAL_TO_MOD_LEN);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_DATA_LEN_NOT_EQUAL_TO_MOD_LEN);
     return 0;
   }
 
@@ -466,7 +466,7 @@ int RSA_verify_raw(RSA *rsa, size_t *out_len, uint8_t *out, size_t max_out,
     goto err;
   }
 
-  if (padding == RSA_NO_PADDING) {
+  if (padding == BORING_RSA_NO_PADDING) {
     buf = out;
   } else {
     // Allocate a temporary buffer to hold the padded plaintext.
@@ -482,7 +482,7 @@ int RSA_verify_raw(RSA *rsa, size_t *out_len, uint8_t *out, size_t max_out,
   }
 
   if (BN_ucmp(f, rsa->n) >= 0) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_DATA_TOO_LARGE);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_DATA_TOO_LARGE);
     goto err;
   }
 
@@ -497,21 +497,21 @@ int RSA_verify_raw(RSA *rsa, size_t *out_len, uint8_t *out, size_t max_out,
   }
 
   switch (padding) {
-    case RSA_PKCS1_PADDING:
+    case BORING_RSA_PKCS1_PADDING:
       ret =
-          RSA_padding_check_PKCS1_type_1(out, out_len, rsa_size, buf, rsa_size);
+          BORING_RSA_padding_check_PKCS1_type_1(out, out_len, rsa_size, buf, rsa_size);
       break;
-    case RSA_NO_PADDING:
+    case BORING_RSA_NO_PADDING:
       ret = 1;
       *out_len = rsa_size;
       break;
     default:
-      OPENSSL_PUT_ERROR(RSA, RSA_R_UNKNOWN_PADDING_TYPE);
+      OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_UNKNOWN_PADDING_TYPE);
       goto err;
   }
 
   if (!ret) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_PADDING_CHECK_FAILED);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_PADDING_CHECK_FAILED);
     goto err;
   }
 
@@ -527,7 +527,7 @@ err:
 int rsa_default_private_transform(RSA *rsa, uint8_t *out, const uint8_t *in,
                                   size_t len) {
   if (rsa->n == NULL || rsa->d == NULL) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_VALUE_MISSING);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_VALUE_MISSING);
     return 0;
   }
 
@@ -556,7 +556,7 @@ int rsa_default_private_transform(RSA *rsa, uint8_t *out, const uint8_t *in,
 
   if (BN_ucmp(f, rsa->n) >= 0) {
     // Usually the padding functions would catch this.
-    OPENSSL_PUT_ERROR(RSA, RSA_R_DATA_TOO_LARGE);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_DATA_TOO_LARGE);
     goto err;
   }
 
@@ -565,14 +565,14 @@ int rsa_default_private_transform(RSA *rsa, uint8_t *out, const uint8_t *in,
     goto err;
   }
 
-  const int do_blinding = (rsa->flags & RSA_FLAG_NO_BLINDING) == 0;
+  const int do_blinding = (rsa->flags & BORING_RSA_FLAG_NO_BLINDING) == 0;
 
   if (rsa->e == NULL && do_blinding) {
     // We cannot do blinding or verification without |e|, and continuing without
     // those countermeasures is dangerous. However, the Java/Android RSA API
     // requires support for keys where only |d| and |n| (and not |e|) are known.
-    // The callers that require that bad behavior set |RSA_FLAG_NO_BLINDING|.
-    OPENSSL_PUT_ERROR(RSA, RSA_R_NO_PUBLIC_EXPONENT);
+    // The callers that require that bad behavior set |BORING_RSA_FLAG_NO_BLINDING|.
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_NO_PUBLIC_EXPONENT);
     goto err;
   }
 
@@ -798,9 +798,9 @@ static int generate_prime(BIGNUM *out, int bits, const BIGNUM *e,
 
   // Use the limit from steps 4.7 and 5.8 for most values of |e|. When |e| is 3,
   // the 186-4 limit is too low, so we use a higher one. Note this case is not
-  // reachable from |RSA_generate_key_fips|.
+  // reachable from |BORING_RSA_generate_key_fips|.
   if (bits >= INT_MAX/32) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_MODULUS_TOO_LARGE);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_MODULUS_TOO_LARGE);
     return 0;
   }
   int limit = BN_is_word(e, 3) ? bits * 32 : bits * 5;
@@ -881,7 +881,7 @@ static int generate_prime(BIGNUM *out, int bits, const BIGNUM *e,
     // 5.8).
     tries++;
     if (tries >= limit) {
-      OPENSSL_PUT_ERROR(RSA, RSA_R_TOO_MANY_ITERATIONS);
+      OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_TOO_MANY_ITERATIONS);
       goto err;
     }
     if (!BN_GENCB_call(cb, 2, tries)) {
@@ -894,9 +894,9 @@ err:
   return ret;
 }
 
-int RSA_generate_key_ex(RSA *rsa, int bits, BIGNUM *e_value, BN_GENCB *cb) {
+int BORING_RSA_generate_key_ex(RSA *rsa, int bits, BIGNUM *e_value, BN_GENCB *cb) {
   // See FIPS 186-4 appendix B.3. This function implements a generalized version
-  // of the FIPS algorithm. |RSA_generate_key_fips| performs additional checks
+  // of the FIPS algorithm. |BORING_RSA_generate_key_fips| performs additional checks
   // for FIPS-compliant key generation.
 
   // Always generate RSA keys which are a multiple of 128 bits. Round |bits|
@@ -905,7 +905,7 @@ int RSA_generate_key_ex(RSA *rsa, int bits, BIGNUM *e_value, BN_GENCB *cb) {
 
   // Reject excessively small keys.
   if (bits < 256) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_KEY_SIZE_TOO_SMALL);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_KEY_SIZE_TOO_SMALL);
     return 0;
   }
 
@@ -1005,8 +1005,8 @@ int RSA_generate_key_ex(RSA *rsa, int bits, BIGNUM *e_value, BN_GENCB *cb) {
   // The key generation process is complex and thus error-prone. It could be
   // disastrous to generate and then use a bad key so double-check that the key
   // makes sense.
-  if (!RSA_check_key(rsa)) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_INTERNAL_ERROR);
+  if (!BORING_RSA_check_key(rsa)) {
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_INTERNAL_ERROR);
     goto err;
   }
 
@@ -1024,28 +1024,28 @@ err:
   return ret;
 }
 
-int RSA_generate_key_fips(RSA *rsa, int bits, BN_GENCB *cb) {
+int BORING_RSA_generate_key_fips(RSA *rsa, int bits, BN_GENCB *cb) {
   // FIPS 186-4 allows 2048-bit and 3072-bit RSA keys (1024-bit and 1536-bit
   // primes, respectively) with the prime generation method we use.
   if (bits != 2048 && bits != 3072) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_BAD_RSA_PARAMETERS);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_BAD_BORING_RSA_PARAMETERS);
     return 0;
   }
 
   BIGNUM *e = BN_new();
   int ret = e != NULL &&
-            BN_set_word(e, RSA_F4) &&
-            RSA_generate_key_ex(rsa, bits, e, cb) &&
-            RSA_check_fips(rsa);
+            BN_set_word(e, BORING_RSA_F4) &&
+            BORING_RSA_generate_key_ex(rsa, bits, e, cb) &&
+            BORING_RSA_check_fips(rsa);
   BN_free(e);
   return ret;
 }
 
-DEFINE_METHOD_FUNCTION(RSA_METHOD, RSA_default_method) {
+DEFINE_METHOD_FUNCTION(BORING_RSA_METHOD, BORING_RSA_default_method) {
   // All of the methods are NULL to make it easier for the compiler/linker to
   // drop unused functions. The wrapper functions will select the appropriate
   // |rsa_default_*| implementation.
-  OPENSSL_memset(out, 0, sizeof(RSA_METHOD));
+  OPENSSL_memset(out, 0, sizeof(BORING_RSA_METHOD));
   out->common.is_static = 1;
-  out->flags = RSA_FLAG_CACHE_PUBLIC | RSA_FLAG_CACHE_PRIVATE;
+  out->flags = BORING_RSA_FLAG_CACHE_PUBLIC | BORING_RSA_FLAG_CACHE_PRIVATE;
 }

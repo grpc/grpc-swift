@@ -219,7 +219,7 @@ int i2d_PUBKEY(const EVP_PKEY *a, unsigned char **pp)
 /*
  * The following are equivalents but which return RSA and DSA keys
  */
-RSA *d2i_RSA_PUBKEY(RSA **a, const unsigned char **pp, long length)
+RSA *d2i_BORING_RSA_PUBKEY(RSA **a, const unsigned char **pp, long length)
 {
     EVP_PKEY *pkey;
     RSA *key;
@@ -234,13 +234,13 @@ RSA *d2i_RSA_PUBKEY(RSA **a, const unsigned char **pp, long length)
         return NULL;
     *pp = q;
     if (a) {
-        RSA_free(*a);
+        BORING_RSA_free(*a);
         *a = key;
     }
     return key;
 }
 
-int i2d_RSA_PUBKEY(const RSA *a, unsigned char **pp)
+int i2d_BORING_RSA_PUBKEY(const RSA *a, unsigned char **pp)
 {
     EVP_PKEY *pktmp;
     int ret;

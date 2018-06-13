@@ -215,7 +215,7 @@ int EVP_PKEY_type(int nid) {
 
 int EVP_PKEY_set1_RSA(EVP_PKEY *pkey, RSA *key) {
   if (EVP_PKEY_assign_RSA(pkey, key)) {
-    RSA_up_ref(key);
+    BORING_RSA_up_ref(key);
     return 1;
   }
   return 0;
@@ -227,7 +227,7 @@ int EVP_PKEY_assign_RSA(EVP_PKEY *pkey, RSA *key) {
 
 RSA *EVP_PKEY_get0_RSA(EVP_PKEY *pkey) {
   if (pkey->type != EVP_PKEY_RSA) {
-    OPENSSL_PUT_ERROR(EVP, EVP_R_EXPECTING_AN_RSA_KEY);
+    OPENSSL_PUT_ERROR(EVP, EVP_R_EXPECTING_AN_BORING_RSA_KEY);
     return NULL;
   }
   return pkey->pkey.rsa;
@@ -236,7 +236,7 @@ RSA *EVP_PKEY_get0_RSA(EVP_PKEY *pkey) {
 RSA *EVP_PKEY_get1_RSA(EVP_PKEY *pkey) {
   RSA *rsa = EVP_PKEY_get0_RSA(pkey);
   if (rsa != NULL) {
-    RSA_up_ref(rsa);
+    BORING_RSA_up_ref(rsa);
   }
   return rsa;
 }

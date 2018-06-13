@@ -469,7 +469,7 @@ static BIGNUM* bignum_from_base64(const char* b64) {
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 
 // Provide compatibility across OpenSSL 1.02 and 1.1.
-static int RSA_set0_key(RSA* r, BIGNUM* n, BIGNUM* e, BIGNUM* d) {
+static int BORING_RSA_set0_key(RSA* r, BIGNUM* n, BIGNUM* e, BIGNUM* d) {
   /* If the fields n and e in r are NULL, the corresponding input
    * parameters MUST be non-NULL for n and e.  d may be
    * left NULL (in case only the public key is used).
@@ -507,7 +507,7 @@ static EVP_PKEY* pkey_from_jwk(const grpc_json* json, const char* kty) {
     gpr_log(GPR_ERROR, "Unsupported key type %s.", kty);
     goto end;
   }
-  rsa = RSA_new();
+  rsa = BORING_RSA_new();
   if (rsa == nullptr) {
     gpr_log(GPR_ERROR, "Could not create rsa key.");
     goto end;
@@ -525,18 +525,18 @@ static EVP_PKEY* pkey_from_jwk(const grpc_json* json, const char* kty) {
     gpr_log(GPR_ERROR, "Missing RSA public key field.");
     goto end;
   }
-  if (!RSA_set0_key(rsa, tmp_n, tmp_e, nullptr)) {
+  if (!BORING_RSA_set0_key(rsa, tmp_n, tmp_e, nullptr)) {
     gpr_log(GPR_ERROR, "Cannot set RSA key from inputs.");
     goto end;
   }
-  /* RSA_set0_key takes ownership on success. */
+  /* BORING_RSA_set0_key takes ownership on success. */
   tmp_n = nullptr;
   tmp_e = nullptr;
   result = EVP_PKEY_new();
   EVP_PKEY_set1_RSA(result, rsa); /* uprefs rsa. */
 
 end:
-  RSA_free(rsa);
+  BORING_RSA_free(rsa);
   BN_free(tmp_n);
   BN_free(tmp_e);
   return result;

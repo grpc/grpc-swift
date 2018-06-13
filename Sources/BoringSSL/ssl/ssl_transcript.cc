@@ -326,7 +326,7 @@ bool SSLTranscript::GetSSL3CertVerifyHash(uint8_t *out, size_t *out_len,
     return false;
   }
 
-  if (signature_algorithm == SSL_SIGN_RSA_PKCS1_MD5_SHA1) {
+  if (signature_algorithm == SSL_SIGN_BORING_RSA_PKCS1_MD5_SHA1) {
     size_t md5_len, len;
     if (!SSL3HandshakeMAC(session, md5_.get(), NULL, 0, out, &md5_len) ||
         !SSL3HandshakeMAC(session, hash_.get(), NULL, 0, out + md5_len, &len)) {

@@ -634,11 +634,11 @@ OPENSSL_EXPORT int EVP_PKEY_CTX_get_signature_md(EVP_PKEY_CTX *ctx,
 // RSA specific control functions.
 
 // EVP_PKEY_CTX_set_rsa_padding sets the padding type to use. It should be one
-// of the |RSA_*_PADDING| values. Returns one on success or zero on error.
+// of the |BORING_RSA_*_PADDING| values. Returns one on success or zero on error.
 OPENSSL_EXPORT int EVP_PKEY_CTX_set_rsa_padding(EVP_PKEY_CTX *ctx, int padding);
 
 // EVP_PKEY_CTX_get_rsa_padding sets |*out_padding| to the current padding
-// value, which is one of the |RSA_*_PADDING| values. Returns one on success or
+// value, which is one of the |BORING_RSA_*_PADDING| values. Returns one on success or
 // zero on error.
 OPENSSL_EXPORT int EVP_PKEY_CTX_get_rsa_padding(EVP_PKEY_CTX *ctx,
                                                 int *out_padding);
@@ -757,7 +757,7 @@ OPENSSL_EXPORT void EVP_MD_do_all_sorted(void (*callback)(const EVP_MD *cipher,
 // RSA keys are serialized as a DER-encoded RSAPublicKey (RFC 3447) structure.
 // EC keys are serialized as a DER-encoded ECPrivateKey (RFC 5915) structure.
 //
-// Use |RSA_marshal_private_key| or |EC_marshal_private_key| instead.
+// Use |BORING_RSA_marshal_private_key| or |EC_marshal_private_key| instead.
 OPENSSL_EXPORT int i2d_PrivateKey(const EVP_PKEY *key, uint8_t **outp);
 
 // i2d_PublicKey marshals a public key from |key| to a type-specific format.
@@ -768,7 +768,7 @@ OPENSSL_EXPORT int i2d_PrivateKey(const EVP_PKEY *key, uint8_t **outp);
 // RSA keys are serialized as a DER-encoded RSAPublicKey (RFC 3447) structure.
 // EC keys are serialized as an EC point per SEC 1.
 //
-// Use |RSA_marshal_public_key| or |EC_POINT_point2cbb| instead.
+// Use |BORING_RSA_marshal_public_key| or |EC_POINT_point2cbb| instead.
 OPENSSL_EXPORT int i2d_PublicKey(EVP_PKEY *key, uint8_t **outp);
 
 // d2i_PrivateKey parses an ASN.1, DER-encoded, private key from |len| bytes at
@@ -779,7 +779,7 @@ OPENSSL_EXPORT int i2d_PublicKey(EVP_PKEY *key, uint8_t **outp);
 // returns the result or NULL on error.
 //
 // This function tries to detect one of several formats. Instead, use
-// |EVP_parse_private_key| for a PrivateKeyInfo, |RSA_parse_private_key| for an
+// |EVP_parse_private_key| for a PrivateKeyInfo, |BORING_RSA_parse_private_key| for an
 // RSAPrivateKey, and |EC_parse_private_key| for an ECPrivateKey.
 OPENSSL_EXPORT EVP_PKEY *d2i_PrivateKey(int type, EVP_PKEY **out,
                                         const uint8_t **inp, long len);
@@ -788,7 +788,7 @@ OPENSSL_EXPORT EVP_PKEY *d2i_PrivateKey(int type, EVP_PKEY **out,
 // of the private key.
 //
 // This function tries to detect one of several formats. Instead, use
-// |EVP_parse_private_key| for a PrivateKeyInfo, |RSA_parse_private_key| for an
+// |EVP_parse_private_key| for a PrivateKeyInfo, |BORING_RSA_parse_private_key| for an
 // RSAPrivateKey, and |EC_parse_private_key| for an ECPrivateKey.
 OPENSSL_EXPORT EVP_PKEY *d2i_AutoPrivateKey(EVP_PKEY **out, const uint8_t **inp,
                                             long len);
@@ -842,7 +842,7 @@ BORINGSSL_MAKE_DELETER(EVP_PKEY_CTX, EVP_PKEY_CTX_free)
 #define EVP_R_DIFFERENT_PARAMETERS 104
 #define EVP_R_ENCODE_ERROR 105
 #define EVP_R_EXPECTING_AN_EC_KEY_KEY 106
-#define EVP_R_EXPECTING_AN_RSA_KEY 107
+#define EVP_R_EXPECTING_AN_BORING_RSA_KEY 107
 #define EVP_R_EXPECTING_A_DSA_KEY 108
 #define EVP_R_ILLEGAL_OR_UNSUPPORTED_PADDING_MODE 109
 #define EVP_R_INVALID_DIGEST_LENGTH 110

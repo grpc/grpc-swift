@@ -53,10 +53,10 @@ OPENSSL_EXPORT void ENGINE_free(ENGINE *engine);
 //
 // Set functions return one on success and zero on allocation failure.
 
-OPENSSL_EXPORT int ENGINE_set_RSA_method(ENGINE *engine,
-                                         const RSA_METHOD *method,
+OPENSSL_EXPORT int ENGINE_set_BORING_RSA_method(ENGINE *engine,
+                                         const BORING_RSA_METHOD *method,
                                          size_t method_size);
-OPENSSL_EXPORT RSA_METHOD *ENGINE_get_RSA_method(const ENGINE *engine);
+OPENSSL_EXPORT BORING_RSA_METHOD *ENGINE_get_BORING_RSA_method(const ENGINE *engine);
 
 OPENSSL_EXPORT int ENGINE_set_ECDSA_method(ENGINE *engine,
                                            const ECDSA_METHOD *method,

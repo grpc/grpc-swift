@@ -330,7 +330,7 @@ typedef struct pkcs8_priv_key_info_st PKCS8_PRIV_KEY_INFO;
 typedef struct private_key_st X509_PKEY;
 typedef struct rand_meth_st RAND_METHOD;
 typedef struct rc4_key_st RC4_KEY;
-typedef struct rsa_meth_st RSA_METHOD;
+typedef struct rsa_meth_st BORING_RSA_METHOD;
 typedef struct rsa_st RSA;
 typedef struct sha256_state_st SHA256_CTX;
 typedef struct sha512_state_st SHA512_CTX;
@@ -454,7 +454,7 @@ class StackAllocated {
   }
 
 // Holds ownership of heap-allocated BoringSSL structures. Sample usage:
-//   bssl::UniquePtr<RSA> rsa(RSA_new());
+//   bssl::UniquePtr<RSA> rsa(BORING_RSA_new());
 //   bssl::UniquePtr<BIO> bio(BIO_new(BIO_s_mem()));
 template <typename T>
 using UniquePtr = std::unique_ptr<T, internal::Deleter<T>>;

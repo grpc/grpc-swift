@@ -332,7 +332,7 @@ enum {
 // library. They are sometimes used for a stack trace.
 #define ERR_R_SYS_LIB ERR_LIB_SYS
 #define ERR_R_BN_LIB ERR_LIB_BN
-#define ERR_R_RSA_LIB ERR_LIB_RSA
+#define ERR_R_BORING_RSA_LIB ERR_LIB_RSA
 #define ERR_R_DH_LIB ERR_LIB_DH
 #define ERR_R_EVP_LIB ERR_LIB_EVP
 #define ERR_R_BUF_LIB ERR_LIB_BUF
