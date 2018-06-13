@@ -61,21 +61,19 @@ Group {
              portOption,
              description: "Run an echo server.") { ssl, address, port in
     let sem = DispatchSemaphore(value: 0)
-    let echoProvider = EchoProvider()
-    var echoServer: Echo_EchoServer?
+    var echoServer: ServiceServer?
     if ssl {
       print("starting secure server")
       let certificateURL = URL(fileURLWithPath: "ssl.crt")
       let keyURL = URL(fileURLWithPath: "ssl.key")
-      echoServer = Echo_EchoServer(address: address + ":" + port,
-                                   certificateURL: certificateURL,
-                                   keyURL: keyURL,
-                                   provider: echoProvider)
+      echoServer = ServiceServer(address: address + ":" + port,
+                                 certificateURL: certificateURL,
+                                 keyURL: keyURL,
+                                 serviceProviders: [EchoProvider()])
       echoServer?.start()
     } else {
       print("starting insecure server")
-      echoServer = Echo_EchoServer(address: address + ":" + port,
-                                   provider: echoProvider)
+      echoServer = ServiceServer(address: address + ":" + port, serviceProviders: [EchoProvider()])
       echoServer?.start()
     }
     // This blocks to keep the main thread from finishing while the server runs,

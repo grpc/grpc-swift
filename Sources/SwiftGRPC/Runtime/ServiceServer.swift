@@ -23,23 +23,27 @@ open class ServiceServer {
   public let server: Server
 
   public var shouldLogRequests = true
-
+  
+  fileprivate let servicesByName: [String: ServiceProvider]
+  
   /// Create a server that accepts insecure connections.
-  public init(address: String) {
+  public init(address: String, serviceProviders: [ServiceProvider]) {
     gRPC.initialize()
     self.address = address
     server = Server(address: address)
+    servicesByName = Dictionary(uniqueKeysWithValues: serviceProviders.map { ($0.serviceName, $0) })
   }
 
   /// Create a server that accepts secure connections.
-  public init(address: String, certificateString: String, keyString: String, rootCerts: String? = nil) {
+  public init(address: String, certificateString: String, keyString: String, rootCerts: String? = nil, serviceProviders: [ServiceProvider]) {
     gRPC.initialize()
     self.address = address
     server = Server(address: address, key: keyString, certs: certificateString, rootCerts: rootCerts)
+    servicesByName = Dictionary(uniqueKeysWithValues: serviceProviders.map { ($0.serviceName, $0) })
   }
 
   /// Create a server that accepts secure connections.
-  public init?(address: String, certificateURL: URL, keyURL: URL, rootCertsURL: URL?) {
+  public init?(address: String, certificateURL: URL, keyURL: URL, rootCertsURL: URL? = nil, serviceProviders: [ServiceProvider]) {
     guard let certificate = try? String(contentsOf: certificateURL, encoding: .utf8),
       let key = try? String(contentsOf: keyURL, encoding: .utf8)
       else { return nil }
@@ -53,15 +57,8 @@ open class ServiceServer {
     gRPC.initialize()
     self.address = address
     server = Server(address: address, key: key, certs: certificate, rootCerts: rootCerts)
+    servicesByName = Dictionary(uniqueKeysWithValues: serviceProviders.map { ($0.serviceName, $0) })
   }
-
-  public enum HandleMethodError: Error {
-    case unknownMethod
-  }
-  
-  /// Handle the given method. Needs to be overridden by actual implementations.
-  /// Returns whether the method was actually handled.
-  open func handleMethod(_ method: String, handler: Handler) throws -> ServerStatus? { fatalError("needs to be overridden") }
 
   /// Start the server.
   public func start() {
@@ -83,7 +80,13 @@ open class ServiceServer {
       
       do {
         do {
-          if let responseStatus = try strongSelf.handleMethod(unwrappedMethod, handler: handler),
+          let methodComponents = unwrappedMethod.components(separatedBy: "/")
+          guard methodComponents.count >= 3 && methodComponents[0].isEmpty,
+            let providerForServiceName = strongSelf.servicesByName[methodComponents[1]] else {
+            throw HandleMethodError.unknownMethod
+          }
+          
+          if let responseStatus = try providerForServiceName.handleMethod(unwrappedMethod, handler: handler),
             !handler.completionQueue.hasBeenShutdown {
             // The handler wants us to send the status for them; do that.
             // But first, ensure that all outgoing messages have been enqueued, to avoid ending the stream prematurely:

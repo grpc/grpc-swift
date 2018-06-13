@@ -35,15 +35,13 @@ extension Generator {
       }
       println()
     }
-    println()
-    printServerMainClass()
   }
 
   private func printServerProtocol() {
     println("/// To build a server, implement a class that conforms to this protocol.")
     println("/// If one of the methods returning `ServerStatus?` returns nil,")
     println("/// it is expected that you have already returned a status to the client by means of `session.close`.")
-    println("\(access) protocol \(providerName) {")
+    println("\(access) protocol \(providerName): ServiceProvider {")
     indent()
     for method in service.methods {
       self.method = method
@@ -61,40 +59,14 @@ extension Generator {
     outdent()
     println("}")
     println()
-  }
-
-  private func printServerMainClass() {
-    println("/// Main server for generated service")
-    println("\(access) final class \(serverName): ServiceServer {")
+    println("extension \(providerName) {")
     indent()
-    println("private let provider: \(providerName)")
-    println()
-    println("\(access) init(address: String, provider: \(providerName)) {")
-    indent()
-    println("self.provider = provider")
-    println("super.init(address: address)")
-    outdent()
-    println("}")
-    println()
-    println("\(access) init?(address: String, certificateURL: URL, keyURL: URL, rootCertsURL: URL? = nil, provider: \(providerName)) {")
-    indent()
-    println("self.provider = provider")
-    println("super.init(address: address, certificateURL: certificateURL, keyURL: keyURL, rootCertsURL: rootCertsURL)")
-    outdent()
-    println("}")
-    println()
-    println("\(access) init?(address: String, certificateString: String, keyString: String, rootCerts: String? = nil, provider: \(providerName)) {")
-    indent()
-    println("self.provider = provider")
-    println("super.init(address: address, certificateString: certificateString, keyString: keyString, rootCerts: rootCerts)")
-    outdent()
-    println("}")
+    println("\(access) var serviceName: String { return \"\(servicePath)\" }")
     println()
     println("/// Determines and calls the appropriate request handler, depending on the request's method.")
     println("/// Throws `HandleMethodError.unknownMethod` for methods not handled by this service.")
-    println("\(access) override func handleMethod(_ method: String, handler: Handler) throws -> ServerStatus? {")
+    println("\(access) func handleMethod(_ method: String, handler: Handler) throws -> ServerStatus? {")
     indent()
-    println("let provider = self.provider")
     println("switch method {")
     for method in service.methods {
       self.method = method
@@ -105,7 +77,7 @@ extension Generator {
         println("return try \(methodSessionName)Base(")
         indent()
         println("handler: handler,")
-        println("providerBlock: { try provider.\(methodFunctionName)(request: $0, session: $1 as! \(methodSessionName)Base) })")
+        println("providerBlock: { try self.\(methodFunctionName)(request: $0, session: $1 as! \(methodSessionName)Base) })")
         indent()
         println(".run()")
         outdent()
@@ -114,7 +86,7 @@ extension Generator {
         println("return try \(methodSessionName)Base(")
         indent()
         println("handler: handler,")
-        println("providerBlock: { try provider.\(methodFunctionName)(session: $0 as! \(methodSessionName)Base) })")
+        println("providerBlock: { try self.\(methodFunctionName)(session: $0 as! \(methodSessionName)Base) })")
         indent()
         println(".run()")
         outdent()

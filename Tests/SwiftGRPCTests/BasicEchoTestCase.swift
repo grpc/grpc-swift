@@ -40,7 +40,7 @@ class BasicEchoTestCase: XCTestCase {
   func makeProvider() -> Echo_EchoProvider { return EchoProvider() }
 
   var provider: Echo_EchoProvider!
-  var server: Echo_EchoServer!
+  var server: ServiceServer!
   var client: Echo_EchoServiceClient!
   
   var defaultTimeout: TimeInterval { return 1.0 }
@@ -60,33 +60,33 @@ class BasicEchoTestCase: XCTestCase {
 
     switch security {
     case .ssl:
-      server = Echo_EchoServer(address: address,
+      server = ServiceServer(address: address,
                                certificateString: serverCertificateString,
                                keyString: serverKeyString,
-                               provider: provider)
+                               serviceProviders: [provider])
       server.start()
       client = Echo_EchoServiceClient(address: address, certificates: rootCerts, arguments: [.sslTargetNameOverride("example.com")])
       client.host = "example.com"
     case .tlsMutualAuth:
-      server = Echo_EchoServer(address: address, certificateString: serverCertificateString, keyString: serverKeyString, rootCerts: rootCerts, provider: provider)
+      server = ServiceServer(address: address, certificateString: serverCertificateString, keyString: serverKeyString, rootCerts: rootCerts, serviceProviders: [provider])
       server.start()
       client = Echo_EchoServiceClient(address: address, certificates: rootCerts, clientCertificates: clientCertificateString, clientKey: clientKeyString, arguments: [.sslTargetNameOverride("example.com")])
       client.host = "example.com"
     case .none:
-      server = Echo_EchoServer(address: address, provider: provider)
+      server = ServiceServer(address: address, serviceProviders: [provider])
       server.start()
       client = Echo_EchoServiceClient(address: address, secure: false)
     }
 
     client.timeout = defaultTimeout
   }
-  
+
   override func tearDown() {
     client = nil
-    
+
     server.server.stop()
     server = nil
-    
+
     super.tearDown()
   }
 }

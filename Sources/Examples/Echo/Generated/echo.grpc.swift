@@ -213,11 +213,44 @@ class Echo_EchoServiceTestStub: ServiceClientTestStubBase, Echo_EchoService {
 /// To build a server, implement a class that conforms to this protocol.
 /// If one of the methods returning `ServerStatus?` returns nil,
 /// it is expected that you have already returned a status to the client by means of `session.close`.
-internal protocol Echo_EchoProvider {
+internal protocol Echo_EchoProvider: ServiceProvider {
   func get(request: Echo_EchoRequest, session: Echo_EchoGetSession) throws -> Echo_EchoResponse
   func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws -> ServerStatus?
   func collect(session: Echo_EchoCollectSession) throws -> Echo_EchoResponse?
   func update(session: Echo_EchoUpdateSession) throws -> ServerStatus?
+}
+
+extension Echo_EchoProvider {
+  internal var serviceName: String { return "echo.Echo" }
+
+  /// Determines and calls the appropriate request handler, depending on the request's method.
+  /// Throws `HandleMethodError.unknownMethod` for methods not handled by this service.
+  internal func handleMethod(_ method: String, handler: Handler) throws -> ServerStatus? {
+    switch method {
+    case "/echo.Echo/Get":
+      return try Echo_EchoGetSessionBase(
+        handler: handler,
+        providerBlock: { try self.get(request: $0, session: $1 as! Echo_EchoGetSessionBase) })
+          .run()
+    case "/echo.Echo/Expand":
+      return try Echo_EchoExpandSessionBase(
+        handler: handler,
+        providerBlock: { try self.expand(request: $0, session: $1 as! Echo_EchoExpandSessionBase) })
+          .run()
+    case "/echo.Echo/Collect":
+      return try Echo_EchoCollectSessionBase(
+        handler: handler,
+        providerBlock: { try self.collect(session: $0 as! Echo_EchoCollectSessionBase) })
+          .run()
+    case "/echo.Echo/Update":
+      return try Echo_EchoUpdateSessionBase(
+        handler: handler,
+        providerBlock: { try self.update(session: $0 as! Echo_EchoUpdateSessionBase) })
+          .run()
+    default:
+      throw HandleMethodError.unknownMethod
+    }
+  }
 }
 
 internal protocol Echo_EchoGetSession: ServerSessionUnary {}
@@ -302,55 +335,4 @@ internal extension Echo_EchoUpdateSession {
 fileprivate final class Echo_EchoUpdateSessionBase: ServerSessionBidirectionalStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateSession {}
 
 class Echo_EchoUpdateSessionTestStub: ServerSessionBidirectionalStreamingTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateSession {}
-
-
-/// Main server for generated service
-internal final class Echo_EchoServer: ServiceServer {
-  private let provider: Echo_EchoProvider
-
-  internal init(address: String, provider: Echo_EchoProvider) {
-    self.provider = provider
-    super.init(address: address)
-  }
-
-  internal init?(address: String, certificateURL: URL, keyURL: URL, rootCertsURL: URL? = nil, provider: Echo_EchoProvider) {
-    self.provider = provider
-    super.init(address: address, certificateURL: certificateURL, keyURL: keyURL, rootCertsURL: rootCertsURL)
-  }
-
-  internal init?(address: String, certificateString: String, keyString: String, rootCerts: String? = nil, provider: Echo_EchoProvider) {
-    self.provider = provider
-    super.init(address: address, certificateString: certificateString, keyString: keyString, rootCerts: rootCerts)
-  }
-
-  /// Determines and calls the appropriate request handler, depending on the request's method.
-  /// Throws `HandleMethodError.unknownMethod` for methods not handled by this service.
-  internal override func handleMethod(_ method: String, handler: Handler) throws -> ServerStatus? {
-    let provider = self.provider
-    switch method {
-    case "/echo.Echo/Get":
-      return try Echo_EchoGetSessionBase(
-        handler: handler,
-        providerBlock: { try provider.get(request: $0, session: $1 as! Echo_EchoGetSessionBase) })
-          .run()
-    case "/echo.Echo/Expand":
-      return try Echo_EchoExpandSessionBase(
-        handler: handler,
-        providerBlock: { try provider.expand(request: $0, session: $1 as! Echo_EchoExpandSessionBase) })
-          .run()
-    case "/echo.Echo/Collect":
-      return try Echo_EchoCollectSessionBase(
-        handler: handler,
-        providerBlock: { try provider.collect(session: $0 as! Echo_EchoCollectSessionBase) })
-          .run()
-    case "/echo.Echo/Update":
-      return try Echo_EchoUpdateSessionBase(
-        handler: handler,
-        providerBlock: { try provider.update(session: $0 as! Echo_EchoUpdateSessionBase) })
-          .run()
-    default:
-      throw HandleMethodError.unknownMethod
-    }
-  }
-}
 
