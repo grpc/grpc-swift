@@ -29,7 +29,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 	// create and start a server for handling insecure requests
 	insecureServer = ServiceServer(address: "localhost:8081",
-								   services: [echoProvider])
+								   serviceProviders: [echoProvider])
 	insecureServer.start()
 	
 	// create and start a server for handling secure requests
@@ -38,7 +38,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 	secureServer = ServiceServer(address: "localhost:8443",
 								 certificateURL: certificateURL,
 								 keyURL: keyURL,
-								 services: [echoProvider])
+								 serviceProviders: [echoProvider])
 	secureServer.start()
   }
 }

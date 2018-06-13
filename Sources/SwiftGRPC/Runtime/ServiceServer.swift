@@ -27,30 +27,30 @@ open class ServiceServer {
   fileprivate let servicesByName: [String: ServiceProvider]
   
   /// Create a server that accepts insecure connections.
-  public init(address: String, services: [ServiceProvider]) {
+  public init(address: String, serviceProviders: [ServiceProvider]) {
     gRPC.initialize()
     self.address = address
     server = Server(address: address)
-    servicesByName = Dictionary(uniqueKeysWithValues: services.map { ($0.serviceName, $0) })
+    servicesByName = Dictionary(uniqueKeysWithValues: serviceProviders.map { ($0.serviceName, $0) })
   }
 
   /// Create a server that accepts secure connections.
-  public init(address: String, certificateString: String, keyString: String, services: [ServiceProvider]) {
+  public init(address: String, certificateString: String, keyString: String, serviceProviders: [ServiceProvider]) {
     gRPC.initialize()
     self.address = address
     server = Server(address: address, key: keyString, certs: certificateString)
-    servicesByName = Dictionary(uniqueKeysWithValues: services.map { ($0.serviceName, $0) })
+    servicesByName = Dictionary(uniqueKeysWithValues: serviceProviders.map { ($0.serviceName, $0) })
   }
 
   /// Create a server that accepts secure connections.
-  public init?(address: String, certificateURL: URL, keyURL: URL, services: [ServiceProvider]) {
+  public init?(address: String, certificateURL: URL, keyURL: URL, serviceProviders: [ServiceProvider]) {
     guard let certificate = try? String(contentsOf: certificateURL, encoding: .utf8),
       let key = try? String(contentsOf: keyURL, encoding: .utf8)
       else { return nil }
     gRPC.initialize()
     self.address = address
     server = Server(address: address, key: key, certs: certificate)
-    servicesByName = Dictionary(uniqueKeysWithValues: services.map { ($0.serviceName, $0) })
+    servicesByName = Dictionary(uniqueKeysWithValues: serviceProviders.map { ($0.serviceName, $0) })
   }
 
   /// Start the server.

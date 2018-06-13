@@ -69,11 +69,11 @@ Group {
       echoServer = ServiceServer(address: address + ":" + port,
                                  certificateURL: certificateURL,
                                  keyURL: keyURL,
-                                 services: [EchoProvider()])
+                                 serviceProviders: [EchoProvider()])
       echoServer?.start()
     } else {
       print("starting insecure server")
-      echoServer = ServiceServer(address: address + ":" + port, services: [EchoProvider()])
+      echoServer = ServiceServer(address: address + ":" + port, serviceProviders: [EchoProvider()])
       echoServer?.start()
     }
     // This blocks to keep the main thread from finishing while the server runs,

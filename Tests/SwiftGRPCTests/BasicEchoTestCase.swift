@@ -51,12 +51,12 @@ class BasicEchoTestCase: XCTestCase {
       server = ServiceServer(address: address,
                              certificateString: certificateString,
                              keyString: String(data: keyForTests, encoding: .utf8)!,
-                             services: [provider])
+                             serviceProviders: [provider])
       server.start()
       client = Echo_EchoServiceClient(address: address, certificates: certificateString, arguments: [.sslTargetNameOverride("example.com")])
       client.host = "example.com"
     } else {
-      server = ServiceServer(address: address, services: [provider])
+      server = ServiceServer(address: address, serviceProviders: [provider])
       server.start()
       client = Echo_EchoServiceClient(address: address, secure: false)
     }
