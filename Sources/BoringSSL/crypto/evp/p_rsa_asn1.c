@@ -76,7 +76,7 @@ static int rsa_pub_encode(CBB *out, const EVP_PKEY *key) {
       !CBB_add_asn1(&algorithm, &null, CBS_ASN1_NULL) ||
       !CBB_add_asn1(&spki, &key_bitstring, CBS_ASN1_BITSTRING) ||
       !CBB_add_u8(&key_bitstring, 0 /* padding */) ||
-      !RSA_marshal_public_key(&key_bitstring, key->pkey.rsa) ||
+      !BORING_RSA_marshal_public_key(&key_bitstring, key->pkey.rsa) ||
       !CBB_flush(out)) {
     OPENSSL_PUT_ERROR(EVP, EVP_R_ENCODE_ERROR);
     return 0;
@@ -97,10 +97,10 @@ static int rsa_pub_decode(EVP_PKEY *out, CBS *params, CBS *key) {
     return 0;
   }
 
-  RSA *rsa = RSA_parse_public_key(key);
+  RSA *rsa = BORING_RSA_parse_public_key(key);
   if (rsa == NULL || CBS_len(key) != 0) {
     OPENSSL_PUT_ERROR(EVP, EVP_R_DECODE_ERROR);
-    RSA_free(rsa);
+    BORING_RSA_free(rsa);
     return 0;
   }
 
@@ -122,7 +122,7 @@ static int rsa_priv_encode(CBB *out, const EVP_PKEY *key) {
       !CBB_add_bytes(&oid, rsa_asn1_meth.oid, rsa_asn1_meth.oid_len) ||
       !CBB_add_asn1(&algorithm, &null, CBS_ASN1_NULL) ||
       !CBB_add_asn1(&pkcs8, &private_key, CBS_ASN1_OCTETSTRING) ||
-      !RSA_marshal_private_key(&private_key, key->pkey.rsa) ||
+      !BORING_RSA_marshal_private_key(&private_key, key->pkey.rsa) ||
       !CBB_flush(out)) {
     OPENSSL_PUT_ERROR(EVP, EVP_R_ENCODE_ERROR);
     return 0;
@@ -141,10 +141,10 @@ static int rsa_priv_decode(EVP_PKEY *out, CBS *params, CBS *key) {
     return 0;
   }
 
-  RSA *rsa = RSA_parse_private_key(key);
+  RSA *rsa = BORING_RSA_parse_private_key(key);
   if (rsa == NULL || CBS_len(key) != 0) {
     OPENSSL_PUT_ERROR(EVP, EVP_R_DECODE_ERROR);
-    RSA_free(rsa);
+    BORING_RSA_free(rsa);
     return 0;
   }
 
@@ -153,18 +153,18 @@ static int rsa_priv_decode(EVP_PKEY *out, CBS *params, CBS *key) {
 }
 
 static int rsa_opaque(const EVP_PKEY *pkey) {
-  return RSA_is_opaque(pkey->pkey.rsa);
+  return BORING_RSA_is_opaque(pkey->pkey.rsa);
 }
 
 static int int_rsa_size(const EVP_PKEY *pkey) {
-  return RSA_size(pkey->pkey.rsa);
+  return BORING_RSA_size(pkey->pkey.rsa);
 }
 
 static int rsa_bits(const EVP_PKEY *pkey) {
-  return RSA_bits(pkey->pkey.rsa);
+  return BORING_RSA_bits(pkey->pkey.rsa);
 }
 
-static void int_rsa_free(EVP_PKEY *pkey) { RSA_free(pkey->pkey.rsa); }
+static void int_rsa_free(EVP_PKEY *pkey) { BORING_RSA_free(pkey->pkey.rsa); }
 
 const EVP_PKEY_ASN1_METHOD rsa_asn1_meth = {
   EVP_PKEY_RSA,

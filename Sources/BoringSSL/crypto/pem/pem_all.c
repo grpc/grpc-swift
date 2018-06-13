@@ -144,7 +144,7 @@ static RSA *pkey_get_rsa(EVP_PKEY *key, RSA **rsa)
     if (!rtmp)
         return NULL;
     if (rsa) {
-        RSA_free(*rsa);
+        BORING_RSA_free(*rsa);
         *rsa = rtmp;
     }
     return rtmp;
@@ -173,10 +173,10 @@ IMPLEMENT_PEM_write_cb_const(RSAPrivateKey, RSA, PEM_STRING_RSA,
                              RSAPrivateKey)
 
 
-IMPLEMENT_PEM_rw_const(RSAPublicKey, RSA, PEM_STRING_RSA_PUBLIC,
-                       RSAPublicKey) IMPLEMENT_PEM_rw(RSA_PUBKEY, RSA,
+IMPLEMENT_PEM_rw_const(RSAPublicKey, RSA, PEM_STRING_BORING_RSA_PUBLIC,
+                       RSAPublicKey) IMPLEMENT_PEM_rw(BORING_RSA_PUBKEY, RSA,
                                                       PEM_STRING_PUBLIC,
-                                                      RSA_PUBKEY)
+                                                      BORING_RSA_PUBKEY)
 #ifndef OPENSSL_NO_DSA
 static DSA *pkey_get_dsa(EVP_PKEY *key, DSA **dsa)
 {

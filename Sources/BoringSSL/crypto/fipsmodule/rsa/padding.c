@@ -70,18 +70,18 @@
 #include "../../internal.h"
 
 
-#define RSA_PKCS1_PADDING_SIZE 11
+#define BORING_RSA_PKCS1_PADDING_SIZE 11
 
-int RSA_padding_add_PKCS1_type_1(uint8_t *to, size_t to_len,
+int BORING_RSA_padding_add_PKCS1_type_1(uint8_t *to, size_t to_len,
                                  const uint8_t *from, size_t from_len) {
   // See RFC 8017, section 9.2.
-  if (to_len < RSA_PKCS1_PADDING_SIZE) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_KEY_SIZE_TOO_SMALL);
+  if (to_len < BORING_RSA_PKCS1_PADDING_SIZE) {
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_KEY_SIZE_TOO_SMALL);
     return 0;
   }
 
-  if (from_len > to_len - RSA_PKCS1_PADDING_SIZE) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_DIGEST_TOO_BIG_FOR_RSA_KEY);
+  if (from_len > to_len - BORING_RSA_PKCS1_PADDING_SIZE) {
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_DIGEST_TOO_BIG_FOR_BORING_RSA_KEY);
     return 0;
   }
 
@@ -93,19 +93,19 @@ int RSA_padding_add_PKCS1_type_1(uint8_t *to, size_t to_len,
   return 1;
 }
 
-int RSA_padding_check_PKCS1_type_1(uint8_t *out, size_t *out_len,
+int BORING_RSA_padding_check_PKCS1_type_1(uint8_t *out, size_t *out_len,
                                    size_t max_out, const uint8_t *from,
                                    size_t from_len) {
   // See RFC 8017, section 9.2. This is part of signature verification and thus
   // does not need to run in constant-time.
   if (from_len < 2) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_DATA_TOO_SMALL);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_DATA_TOO_SMALL);
     return 0;
   }
 
   // Check the header.
   if (from[0] != 0 || from[1] != 1) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_BLOCK_TYPE_IS_NOT_01);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_BLOCK_TYPE_IS_NOT_01);
     return 0;
   }
 
@@ -117,18 +117,18 @@ int RSA_padding_check_PKCS1_type_1(uint8_t *out, size_t *out_len,
     }
 
     if (from[pad] != 0xff) {
-      OPENSSL_PUT_ERROR(RSA, RSA_R_BAD_FIXED_HEADER_DECRYPT);
+      OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_BAD_FIXED_HEADER_DECRYPT);
       return 0;
     }
   }
 
   if (pad == from_len) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_NULL_BEFORE_BLOCK_MISSING);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_NULL_BEFORE_BLOCK_MISSING);
     return 0;
   }
 
   if (pad < 2 /* header */ + 8) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_BAD_PAD_BYTE_COUNT);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_BAD_PAD_BYTE_COUNT);
     return 0;
   }
 
@@ -136,7 +136,7 @@ int RSA_padding_check_PKCS1_type_1(uint8_t *out, size_t *out_len,
   pad++;
 
   if (from_len - pad > max_out) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_DATA_TOO_LARGE);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_DATA_TOO_LARGE);
     return 0;
   }
 
@@ -161,16 +161,16 @@ static int rand_nonzero(uint8_t *out, size_t len) {
   return 1;
 }
 
-int RSA_padding_add_PKCS1_type_2(uint8_t *to, size_t to_len,
+int BORING_RSA_padding_add_PKCS1_type_2(uint8_t *to, size_t to_len,
                                  const uint8_t *from, size_t from_len) {
   // See RFC 8017, section 7.2.1.
-  if (to_len < RSA_PKCS1_PADDING_SIZE) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_KEY_SIZE_TOO_SMALL);
+  if (to_len < BORING_RSA_PKCS1_PADDING_SIZE) {
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_KEY_SIZE_TOO_SMALL);
     return 0;
   }
 
-  if (from_len > to_len - RSA_PKCS1_PADDING_SIZE) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_DATA_TOO_LARGE);
+  if (from_len > to_len - BORING_RSA_PKCS1_PADDING_SIZE) {
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_DATA_TOO_LARGE);
     return 0;
   }
 
@@ -187,20 +187,20 @@ int RSA_padding_add_PKCS1_type_2(uint8_t *to, size_t to_len,
   return 1;
 }
 
-int RSA_padding_check_PKCS1_type_2(uint8_t *out, size_t *out_len,
+int BORING_RSA_padding_check_PKCS1_type_2(uint8_t *out, size_t *out_len,
                                    size_t max_out, const uint8_t *from,
                                    size_t from_len) {
   if (from_len == 0) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_EMPTY_PUBLIC_KEY);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_EMPTY_PUBLIC_KEY);
     return 0;
   }
 
   // PKCS#1 v1.5 decryption. See "PKCS #1 v2.2: RSA Cryptography
   // Standard", section 7.2.2.
-  if (from_len < RSA_PKCS1_PADDING_SIZE) {
+  if (from_len < BORING_RSA_PKCS1_PADDING_SIZE) {
     // |from| is zero-padded to the size of the RSA modulus, a public value, so
     // this can be rejected in non-constant time.
-    OPENSSL_PUT_ERROR(RSA, RSA_R_KEY_SIZE_TOO_SMALL);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_KEY_SIZE_TOO_SMALL);
     return 0;
   }
 
@@ -229,12 +229,12 @@ int RSA_padding_check_PKCS1_type_2(uint8_t *out, size_t *out_len,
   zero_index++;
 
   // NOTE: Although this logic attempts to be constant time, the API contracts
-  // of this function and |RSA_decrypt| with |RSA_PKCS1_PADDING| make it
+  // of this function and |BORING_RSA_decrypt| with |BORING_RSA_PKCS1_PADDING| make it
   // impossible to completely avoid Bleichenbacher's attack. Consumers should
-  // use |RSA_PADDING_NONE| and perform the padding check in constant-time
+  // use |BORING_RSA_PADDING_NONE| and perform the padding check in constant-time
   // combined with a swap to a random session key or other mitigation.
   if (!valid_index) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_PKCS_DECODING_ERROR);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_PKCS_DECODING_ERROR);
     return 0;
   }
 
@@ -242,7 +242,7 @@ int RSA_padding_check_PKCS1_type_2(uint8_t *out, size_t *out_len,
   if (msg_len > max_out) {
     // This shouldn't happen because this function is always called with
     // |max_out| as the key size and |from_len| is bounded by the key size.
-    OPENSSL_PUT_ERROR(RSA, RSA_R_PKCS_DECODING_ERROR);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_PKCS_DECODING_ERROR);
     return 0;
   }
 
@@ -251,15 +251,15 @@ int RSA_padding_check_PKCS1_type_2(uint8_t *out, size_t *out_len,
   return 1;
 }
 
-int RSA_padding_add_none(uint8_t *to, size_t to_len, const uint8_t *from,
+int BORING_RSA_padding_add_none(uint8_t *to, size_t to_len, const uint8_t *from,
                          size_t from_len) {
   if (from_len > to_len) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_DATA_TOO_LARGE);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_DATA_TOO_LARGE);
     return 0;
   }
 
   if (from_len < to_len) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_DATA_TOO_SMALL);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_DATA_TOO_SMALL);
     return 0;
   }
 
@@ -310,7 +310,7 @@ err:
   return ret;
 }
 
-int RSA_padding_add_PKCS1_OAEP_mgf1(uint8_t *to, size_t to_len,
+int BORING_RSA_padding_add_PKCS1_OAEP_mgf1(uint8_t *to, size_t to_len,
                                     const uint8_t *from, size_t from_len,
                                     const uint8_t *param, size_t param_len,
                                     const EVP_MD *md, const EVP_MD *mgf1md) {
@@ -324,18 +324,18 @@ int RSA_padding_add_PKCS1_OAEP_mgf1(uint8_t *to, size_t to_len,
   size_t mdlen = EVP_MD_size(md);
 
   if (to_len < 2 * mdlen + 2) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_KEY_SIZE_TOO_SMALL);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_KEY_SIZE_TOO_SMALL);
     return 0;
   }
 
   size_t emlen = to_len - 1;
   if (from_len > emlen - 2 * mdlen - 1) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_DATA_TOO_LARGE);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_DATA_TOO_LARGE);
     return 0;
   }
 
   if (emlen < 2 * mdlen + 1) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_KEY_SIZE_TOO_SMALL);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_KEY_SIZE_TOO_SMALL);
     return 0;
   }
 
@@ -381,7 +381,7 @@ out:
   return ret;
 }
 
-int RSA_padding_check_PKCS1_OAEP_mgf1(uint8_t *out, size_t *out_len,
+int BORING_RSA_padding_check_PKCS1_OAEP_mgf1(uint8_t *out, size_t *out_len,
                                       size_t max_out, const uint8_t *from,
                                       size_t from_len, const uint8_t *param,
                                       size_t param_len, const EVP_MD *md,
@@ -460,7 +460,7 @@ int RSA_padding_check_PKCS1_OAEP_mgf1(uint8_t *out, size_t *out_len,
   one_index++;
   size_t mlen = dblen - one_index;
   if (max_out < mlen) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_DATA_TOO_LARGE);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_DATA_TOO_LARGE);
     goto err;
   }
 
@@ -472,7 +472,7 @@ int RSA_padding_check_PKCS1_OAEP_mgf1(uint8_t *out, size_t *out_len,
 decoding_err:
   // to avoid chosen ciphertext attacks, the error message should not reveal
   // which kind of decoding error happened
-  OPENSSL_PUT_ERROR(RSA, RSA_R_OAEP_DECODING_ERROR);
+  OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_OAEP_DECODING_ERROR);
  err:
   OPENSSL_free(db);
   return 0;
@@ -480,7 +480,7 @@ decoding_err:
 
 static const uint8_t kPSSZeroes[] = {0, 0, 0, 0, 0, 0, 0, 0};
 
-int RSA_verify_PKCS1_PSS_mgf1(RSA *rsa, const uint8_t *mHash,
+int BORING_RSA_verify_PKCS1_PSS_mgf1(RSA *rsa, const uint8_t *mHash,
                               const EVP_MD *Hash, const EVP_MD *mgf1Hash,
                               const uint8_t *EM, int sLen) {
   int i;
@@ -508,14 +508,14 @@ int RSA_verify_PKCS1_PSS_mgf1(RSA *rsa, const uint8_t *mHash,
   } else if (sLen == -2) {
     sLen = -2;
   } else if (sLen < -2) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_SLEN_CHECK_FAILED);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_SLEN_CHECK_FAILED);
     goto err;
   }
 
   MSBits = (BN_num_bits(rsa->n) - 1) & 0x7;
-  emLen = RSA_size(rsa);
+  emLen = BORING_RSA_size(rsa);
   if (EM[0] & (0xFF << MSBits)) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_FIRST_OCTET_INVALID);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_FIRST_OCTET_INVALID);
     goto err;
   }
   if (MSBits == 0) {
@@ -524,11 +524,11 @@ int RSA_verify_PKCS1_PSS_mgf1(RSA *rsa, const uint8_t *mHash,
   }
   if (emLen < (int)hLen + 2 || emLen < ((int)hLen + sLen + 2)) {
     // sLen can be small negative
-    OPENSSL_PUT_ERROR(RSA, RSA_R_DATA_TOO_LARGE);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_DATA_TOO_LARGE);
     goto err;
   }
   if (EM[emLen - 1] != 0xbc) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_LAST_OCTET_INVALID);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_LAST_OCTET_INVALID);
     goto err;
   }
   maskedDBLen = emLen - hLen - 1;
@@ -551,11 +551,11 @@ int RSA_verify_PKCS1_PSS_mgf1(RSA *rsa, const uint8_t *mHash,
     ;
   }
   if (DB[i++] != 0x1) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_SLEN_RECOVERY_FAILED);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_SLEN_RECOVERY_FAILED);
     goto err;
   }
   if (sLen >= 0 && (maskedDBLen - i) != sLen) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_SLEN_CHECK_FAILED);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_SLEN_CHECK_FAILED);
     goto err;
   }
   if (!EVP_DigestInit_ex(&ctx, Hash, NULL) ||
@@ -566,7 +566,7 @@ int RSA_verify_PKCS1_PSS_mgf1(RSA *rsa, const uint8_t *mHash,
     goto err;
   }
   if (OPENSSL_memcmp(H_, H, hLen)) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_BAD_SIGNATURE);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_BAD_SIGNATURE);
     ret = 0;
   } else {
     ret = 1;
@@ -579,7 +579,7 @@ err:
   return ret;
 }
 
-int RSA_padding_add_PKCS1_PSS_mgf1(RSA *rsa, unsigned char *EM,
+int BORING_RSA_padding_add_PKCS1_PSS_mgf1(RSA *rsa, unsigned char *EM,
                                    const unsigned char *mHash,
                                    const EVP_MD *Hash, const EVP_MD *mgf1Hash,
                                    int sLenRequested) {
@@ -595,12 +595,12 @@ int RSA_padding_add_PKCS1_PSS_mgf1(RSA *rsa, unsigned char *EM,
   hLen = EVP_MD_size(Hash);
 
   if (BN_is_zero(rsa->n)) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_EMPTY_PUBLIC_KEY);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_EMPTY_PUBLIC_KEY);
     goto err;
   }
 
   MSBits = (BN_num_bits(rsa->n) - 1) & 0x7;
-  emLen = RSA_size(rsa);
+  emLen = BORING_RSA_size(rsa);
   if (MSBits == 0) {
     assert(emLen >= 1);
     *EM++ = 0;
@@ -608,7 +608,7 @@ int RSA_padding_add_PKCS1_PSS_mgf1(RSA *rsa, unsigned char *EM,
   }
 
   if (emLen < hLen + 2) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_DATA_TOO_LARGE);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_DATA_TOO_LARGE);
     goto err;
   }
 
@@ -622,14 +622,14 @@ int RSA_padding_add_PKCS1_PSS_mgf1(RSA *rsa, unsigned char *EM,
   } else if (sLenRequested == -2) {
     sLen = emLen - hLen - 2;
   } else if (sLenRequested < 0) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_SLEN_CHECK_FAILED);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_SLEN_CHECK_FAILED);
     goto err;
   } else {
     sLen = (size_t)sLenRequested;
   }
 
   if (emLen - hLen - 2 < sLen) {
-    OPENSSL_PUT_ERROR(RSA, RSA_R_DATA_TOO_LARGE);
+    OPENSSL_PUT_ERROR(RSA, BORING_RSA_R_DATA_TOO_LARGE);
     goto err;
   }
 

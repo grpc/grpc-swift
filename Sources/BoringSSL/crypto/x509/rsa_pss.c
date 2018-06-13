@@ -67,14 +67,14 @@
 #include "internal.h"
 
 
-ASN1_SEQUENCE(RSA_PSS_PARAMS) = {
-  ASN1_EXP_OPT(RSA_PSS_PARAMS, hashAlgorithm, X509_ALGOR,0),
-  ASN1_EXP_OPT(RSA_PSS_PARAMS, maskGenAlgorithm, X509_ALGOR,1),
-  ASN1_EXP_OPT(RSA_PSS_PARAMS, saltLength, ASN1_INTEGER,2),
-  ASN1_EXP_OPT(RSA_PSS_PARAMS, trailerField, ASN1_INTEGER,3),
-} ASN1_SEQUENCE_END(RSA_PSS_PARAMS)
+ASN1_SEQUENCE(BORING_RSA_PSS_PARAMS) = {
+  ASN1_EXP_OPT(BORING_RSA_PSS_PARAMS, hashAlgorithm, X509_ALGOR,0),
+  ASN1_EXP_OPT(BORING_RSA_PSS_PARAMS, maskGenAlgorithm, X509_ALGOR,1),
+  ASN1_EXP_OPT(BORING_RSA_PSS_PARAMS, saltLength, ASN1_INTEGER,2),
+  ASN1_EXP_OPT(BORING_RSA_PSS_PARAMS, trailerField, ASN1_INTEGER,3),
+} ASN1_SEQUENCE_END(BORING_RSA_PSS_PARAMS)
 
-IMPLEMENT_ASN1_FUNCTIONS(RSA_PSS_PARAMS)
+IMPLEMENT_ASN1_FUNCTIONS(BORING_RSA_PSS_PARAMS)
 
 
 /* Given an MGF1 Algorithm ID decode to an Algorithm Identifier */
@@ -90,7 +90,7 @@ static X509_ALGOR *rsa_mgf1_decode(X509_ALGOR *alg) {
   return d2i_X509_ALGOR(NULL, &p, plen);
 }
 
-static RSA_PSS_PARAMS *rsa_pss_decode(const X509_ALGOR *alg,
+static BORING_RSA_PSS_PARAMS *rsa_pss_decode(const X509_ALGOR *alg,
                                       X509_ALGOR **pmaskHash) {
   *pmaskHash = NULL;
 
@@ -100,7 +100,7 @@ static RSA_PSS_PARAMS *rsa_pss_decode(const X509_ALGOR *alg,
 
   const uint8_t *p = alg->parameter->value.sequence->data;
   int plen = alg->parameter->value.sequence->length;
-  RSA_PSS_PARAMS *pss = d2i_RSA_PSS_PARAMS(NULL, &p, plen);
+  BORING_RSA_PSS_PARAMS *pss = d2i_BORING_RSA_PSS_PARAMS(NULL, &p, plen);
   if (pss == NULL) {
     return NULL;
   }
@@ -209,7 +209,7 @@ int x509_rsa_ctx_to_pss(EVP_MD_CTX *ctx, X509_ALGOR *algor) {
 
   int ret = 0;
   ASN1_STRING *os = NULL;
-  RSA_PSS_PARAMS *pss = RSA_PSS_PARAMS_new();
+  BORING_RSA_PSS_PARAMS *pss = BORING_RSA_PSS_PARAMS_new();
   if (!pss) {
     goto err;
   }
@@ -228,7 +228,7 @@ int x509_rsa_ctx_to_pss(EVP_MD_CTX *ctx, X509_ALGOR *algor) {
   }
 
   /* Finally create string with pss parameter encoding. */
-  if (!ASN1_item_pack(pss, ASN1_ITEM_rptr(RSA_PSS_PARAMS), &os)) {
+  if (!ASN1_item_pack(pss, ASN1_ITEM_rptr(BORING_RSA_PSS_PARAMS), &os)) {
     goto err;
   }
 
@@ -237,7 +237,7 @@ int x509_rsa_ctx_to_pss(EVP_MD_CTX *ctx, X509_ALGOR *algor) {
   ret = 1;
 
 err:
-  RSA_PSS_PARAMS_free(pss);
+  BORING_RSA_PSS_PARAMS_free(pss);
   ASN1_STRING_free(os);
   return ret;
 }
@@ -248,7 +248,7 @@ int x509_rsa_pss_to_ctx(EVP_MD_CTX *ctx, X509_ALGOR *sigalg, EVP_PKEY *pkey) {
   /* Decode PSS parameters */
   int ret = 0;
   X509_ALGOR *maskHash;
-  RSA_PSS_PARAMS *pss = rsa_pss_decode(sigalg, &maskHash);
+  BORING_RSA_PSS_PARAMS *pss = rsa_pss_decode(sigalg, &maskHash);
   if (pss == NULL) {
     OPENSSL_PUT_ERROR(X509, X509_R_INVALID_PSS_PARAMETERS);
     goto err;
@@ -281,7 +281,7 @@ int x509_rsa_pss_to_ctx(EVP_MD_CTX *ctx, X509_ALGOR *sigalg, EVP_PKEY *pkey) {
 
   EVP_PKEY_CTX *pctx;
   if (!EVP_DigestVerifyInit(ctx, &pctx, md, NULL, pkey) ||
-      !EVP_PKEY_CTX_set_rsa_padding(pctx, RSA_PKCS1_PSS_PADDING) ||
+      !EVP_PKEY_CTX_set_rsa_padding(pctx, BORING_RSA_PKCS1_PSS_PADDING) ||
       !EVP_PKEY_CTX_set_rsa_pss_saltlen(pctx, saltlen) ||
       !EVP_PKEY_CTX_set_rsa_mgf1_md(pctx, mgf1md)) {
     goto err;
@@ -290,7 +290,7 @@ int x509_rsa_pss_to_ctx(EVP_MD_CTX *ctx, X509_ALGOR *sigalg, EVP_PKEY *pkey) {
   ret = 1;
 
 err:
-  RSA_PSS_PARAMS_free(pss);
+  BORING_RSA_PSS_PARAMS_free(pss);
   X509_ALGOR_free(maskHash);
   return ret;
 }
@@ -301,7 +301,7 @@ int x509_print_rsa_pss_params(BIO *bp, const X509_ALGOR *sigalg, int indent,
 
   int rv = 0;
   X509_ALGOR *maskHash;
-  RSA_PSS_PARAMS *pss = rsa_pss_decode(sigalg, &maskHash);
+  BORING_RSA_PSS_PARAMS *pss = rsa_pss_decode(sigalg, &maskHash);
   if (!pss) {
     if (BIO_puts(bp, " (INVALID PSS PARAMETERS)\n") <= 0) {
       goto err;
@@ -379,7 +379,7 @@ int x509_print_rsa_pss_params(BIO *bp, const X509_ALGOR *sigalg, int indent,
   rv = 1;
 
 err:
-  RSA_PSS_PARAMS_free(pss);
+  BORING_RSA_PSS_PARAMS_free(pss);
   X509_ALGOR_free(maskHash);
   return rv;
 }

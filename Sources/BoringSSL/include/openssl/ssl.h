@@ -961,23 +961,23 @@ OPENSSL_EXPORT int SSL_set_ocsp_response(SSL *ssl,
                                          size_t response_len);
 
 // SSL_SIGN_* are signature algorithm values as defined in TLS 1.3.
-#define SSL_SIGN_RSA_PKCS1_SHA1 0x0201
-#define SSL_SIGN_RSA_PKCS1_SHA256 0x0401
-#define SSL_SIGN_RSA_PKCS1_SHA384 0x0501
-#define SSL_SIGN_RSA_PKCS1_SHA512 0x0601
+#define SSL_SIGN_BORING_RSA_PKCS1_SHA1 0x0201
+#define SSL_SIGN_BORING_RSA_PKCS1_SHA256 0x0401
+#define SSL_SIGN_BORING_RSA_PKCS1_SHA384 0x0501
+#define SSL_SIGN_BORING_RSA_PKCS1_SHA512 0x0601
 #define SSL_SIGN_ECDSA_SHA1 0x0203
 #define SSL_SIGN_ECDSA_SECP256R1_SHA256 0x0403
 #define SSL_SIGN_ECDSA_SECP384R1_SHA384 0x0503
 #define SSL_SIGN_ECDSA_SECP521R1_SHA512 0x0603
-#define SSL_SIGN_RSA_PSS_SHA256 0x0804
-#define SSL_SIGN_RSA_PSS_SHA384 0x0805
-#define SSL_SIGN_RSA_PSS_SHA512 0x0806
+#define SSL_SIGN_BORING_RSA_PSS_SHA256 0x0804
+#define SSL_SIGN_BORING_RSA_PSS_SHA384 0x0805
+#define SSL_SIGN_BORING_RSA_PSS_SHA512 0x0806
 #define SSL_SIGN_ED25519 0x0807
 
-// SSL_SIGN_RSA_PKCS1_MD5_SHA1 is an internal signature algorithm used to
+// SSL_SIGN_BORING_RSA_PKCS1_MD5_SHA1 is an internal signature algorithm used to
 // specify raw RSASSA-PKCS1-v1_5 with an MD5/SHA-1 concatenation, as used in TLS
 // before TLS 1.2.
-#define SSL_SIGN_RSA_PKCS1_MD5_SHA1 0xff01
+#define SSL_SIGN_BORING_RSA_PKCS1_MD5_SHA1 0xff01
 
 // SSL_get_signature_algorithm_name returns a human-readable name for |sigalg|,
 // or NULL if unknown. If |include_curve| is one, the curve for ECDSA algorithms
@@ -1001,7 +1001,7 @@ OPENSSL_EXPORT int SSL_is_signature_algorithm_rsa_pss(uint16_t sigalg);
 // SSL_CTX_set_signing_algorithm_prefs configures |ctx| to use |prefs| as the
 // preference list when signing with |ctx|'s private key. It returns one on
 // success and zero on error. |prefs| should not include the internal-only value
-// |SSL_SIGN_RSA_PKCS1_MD5_SHA1|.
+// |SSL_SIGN_BORING_RSA_PKCS1_MD5_SHA1|.
 OPENSSL_EXPORT int SSL_CTX_set_signing_algorithm_prefs(SSL_CTX *ctx,
                                                        const uint16_t *prefs,
                                                        size_t num_prefs);
@@ -1009,7 +1009,7 @@ OPENSSL_EXPORT int SSL_CTX_set_signing_algorithm_prefs(SSL_CTX *ctx,
 // SSL_set_signing_algorithm_prefs configures |ssl| to use |prefs| as the
 // preference list when signing with |ssl|'s private key. It returns one on
 // success and zero on error. |prefs| should not include the internal-only value
-// |SSL_SIGN_RSA_PKCS1_MD5_SHA1|.
+// |SSL_SIGN_BORING_RSA_PKCS1_MD5_SHA1|.
 OPENSSL_EXPORT int SSL_set_signing_algorithm_prefs(SSL *ssl,
                                                    const uint16_t *prefs,
                                                    size_t num_prefs);
@@ -1247,7 +1247,7 @@ OPENSSL_EXPORT uint16_t SSL_CIPHER_get_min_version(const SSL_CIPHER *cipher);
 OPENSSL_EXPORT uint16_t SSL_CIPHER_get_max_version(const SSL_CIPHER *cipher);
 
 // SSL_CIPHER_standard_name returns the standard IETF name for |cipher|. For
-// example, "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256".
+// example, "TLS_ECDHE_BORING_RSA_WITH_AES_128_GCM_SHA256".
 OPENSSL_EXPORT const char *SSL_CIPHER_standard_name(const SSL_CIPHER *cipher);
 
 // SSL_CIPHER_get_name returns the OpenSSL name of |cipher|. For example,
@@ -2458,7 +2458,7 @@ OPENSSL_EXPORT void SSL_CTX_set_ed25519_enabled(SSL_CTX *ctx, int enabled);
 // SSL_CTX_set_verify_algorithm_prefs confingures |ctx| to use |prefs| as the
 // preference list when verifying signature's from the peer's long-term key. It
 // returns one on zero on error. |prefs| should not include the internal-only
-// value |SSL_SIGN_RSA_PKCS1_MD5_SHA1|.
+// value |SSL_SIGN_BORING_RSA_PKCS1_MD5_SHA1|.
 OPENSSL_EXPORT int SSL_CTX_set_verify_algorithm_prefs(SSL_CTX *ctx,
                                                       const uint16_t *prefs,
                                                       size_t num_prefs);
@@ -3769,7 +3769,7 @@ DEFINE_STACK_OF(SSL_COMP)
 #define SSL_OP_LEGACY_SERVER_CONNECT 0
 #define SSL_OP_MICROSOFT_BIG_SSLV3_BUFFER 0
 #define SSL_OP_MICROSOFT_SESS_ID_BUG 0
-#define SSL_OP_MSIE_SSLV2_RSA_PADDING 0
+#define SSL_OP_MSIE_SSLV2_BORING_RSA_PADDING 0
 #define SSL_OP_NETSCAPE_CA_DN_BUG 0
 #define SSL_OP_NETSCAPE_CHALLENGE_BUG 0
 #define SSL_OP_NETSCAPE_DEMO_CIPHER_CHANGE_BUG 0
@@ -4224,7 +4224,7 @@ struct ssl_session_st {
 #define SSL_CTRL_SET_TMP_ECDH doesnt_exist
 #define SSL_CTRL_SET_TMP_ECDH_CB doesnt_exist
 #define SSL_CTRL_SET_TMP_RSA doesnt_exist
-#define SSL_CTRL_SET_TMP_RSA_CB doesnt_exist
+#define SSL_CTRL_SET_TMP_BORING_RSA_CB doesnt_exist
 
 #define DTLSv1_get_timeout DTLSv1_get_timeout
 #define DTLSv1_handle_timeout DTLSv1_handle_timeout
@@ -4386,7 +4386,7 @@ OPENSSL_EXPORT bool SealRecord(SSL *ssl, Span<uint8_t> out_prefix,
 #define SSL_R_BAD_HELLO_REQUEST 110
 #define SSL_R_BAD_LENGTH 111
 #define SSL_R_BAD_PACKET_LENGTH 112
-#define SSL_R_BAD_RSA_ENCRYPT 113
+#define SSL_R_BAD_BORING_RSA_ENCRYPT 113
 #define SSL_R_BAD_SIGNATURE 114
 #define SSL_R_BAD_SRTP_MKI_VALUE 115
 #define SSL_R_BAD_SRTP_PROTECTION_PROFILE_LIST 116
@@ -4437,7 +4437,7 @@ OPENSSL_EXPORT bool SealRecord(SSL *ssl, Span<uint8_t> out_prefix,
 #define SSL_R_INVALID_TICKET_KEYS_LENGTH 161
 #define SSL_R_LENGTH_MISMATCH 162
 #define SSL_R_MISSING_EXTENSION 164
-#define SSL_R_MISSING_RSA_CERTIFICATE 165
+#define SSL_R_MISSING_BORING_RSA_CERTIFICATE 165
 #define SSL_R_MISSING_TMP_DH_KEY 166
 #define SSL_R_MISSING_TMP_ECDH_KEY 167
 #define SSL_R_MIXED_SPECIAL_OPERATOR_WITH_GROUPS 168
@@ -4490,7 +4490,7 @@ OPENSSL_EXPORT bool SealRecord(SSL *ssl, Span<uint8_t> out_prefix,
 #define SSL_R_SSL_HANDSHAKE_FAILURE 215
 #define SSL_R_SSL_SESSION_ID_CONTEXT_TOO_LONG 216
 #define SSL_R_TLS_PEER_DID_NOT_RESPOND_WITH_CERTIFICATE_LIST 217
-#define SSL_R_TLS_RSA_ENCRYPTED_VALUE_LENGTH_IS_WRONG 218
+#define SSL_R_TLS_BORING_RSA_ENCRYPTED_VALUE_LENGTH_IS_WRONG 218
 #define SSL_R_TOO_MANY_EMPTY_FRAGMENTS 219
 #define SSL_R_TOO_MANY_WARNING_ALERTS 220
 #define SSL_R_UNABLE_TO_FIND_ECDH_PARAMETERS 221

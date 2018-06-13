@@ -615,8 +615,8 @@ OPENSSL_EXPORT RSA *d2i_RSAPrivateKey_fp(FILE *fp,RSA **rsa);
 OPENSSL_EXPORT int i2d_RSAPrivateKey_fp(FILE *fp,RSA *rsa);
 OPENSSL_EXPORT RSA *d2i_RSAPublicKey_fp(FILE *fp,RSA **rsa);
 OPENSSL_EXPORT int i2d_RSAPublicKey_fp(FILE *fp,RSA *rsa);
-OPENSSL_EXPORT RSA *d2i_RSA_PUBKEY_fp(FILE *fp,RSA **rsa);
-OPENSSL_EXPORT int i2d_RSA_PUBKEY_fp(FILE *fp,RSA *rsa);
+OPENSSL_EXPORT RSA *d2i_BORING_RSA_PUBKEY_fp(FILE *fp,RSA **rsa);
+OPENSSL_EXPORT int i2d_BORING_RSA_PUBKEY_fp(FILE *fp,RSA *rsa);
 #ifndef OPENSSL_NO_DSA
 OPENSSL_EXPORT DSA *d2i_DSA_PUBKEY_fp(FILE *fp, DSA **dsa);
 OPENSSL_EXPORT int i2d_DSA_PUBKEY_fp(FILE *fp, DSA *dsa);
@@ -649,8 +649,8 @@ OPENSSL_EXPORT RSA *d2i_RSAPrivateKey_bio(BIO *bp,RSA **rsa);
 OPENSSL_EXPORT int i2d_RSAPrivateKey_bio(BIO *bp,RSA *rsa);
 OPENSSL_EXPORT RSA *d2i_RSAPublicKey_bio(BIO *bp,RSA **rsa);
 OPENSSL_EXPORT int i2d_RSAPublicKey_bio(BIO *bp,RSA *rsa);
-OPENSSL_EXPORT RSA *d2i_RSA_PUBKEY_bio(BIO *bp,RSA **rsa);
-OPENSSL_EXPORT int i2d_RSA_PUBKEY_bio(BIO *bp,RSA *rsa);
+OPENSSL_EXPORT RSA *d2i_BORING_RSA_PUBKEY_bio(BIO *bp,RSA **rsa);
+OPENSSL_EXPORT int i2d_BORING_RSA_PUBKEY_bio(BIO *bp,RSA *rsa);
 #ifndef OPENSSL_NO_DSA
 OPENSSL_EXPORT DSA *d2i_DSA_PUBKEY_bio(BIO *bp, DSA **dsa);
 OPENSSL_EXPORT int i2d_DSA_PUBKEY_bio(BIO *bp, DSA *dsa);
@@ -716,8 +716,8 @@ OPENSSL_EXPORT EVP_PKEY *	X509_PUBKEY_get(X509_PUBKEY *key);
 OPENSSL_EXPORT int		i2d_PUBKEY(const EVP_PKEY *a,unsigned char **pp);
 OPENSSL_EXPORT EVP_PKEY *	d2i_PUBKEY(EVP_PKEY **a,const unsigned char **pp,
 			long length);
-OPENSSL_EXPORT int		i2d_RSA_PUBKEY(const RSA *a,unsigned char **pp);
-OPENSSL_EXPORT RSA *		d2i_RSA_PUBKEY(RSA **a,const unsigned char **pp,
+OPENSSL_EXPORT int		i2d_BORING_RSA_PUBKEY(const RSA *a,unsigned char **pp);
+OPENSSL_EXPORT RSA *		d2i_BORING_RSA_PUBKEY(RSA **a,const unsigned char **pp,
 			long length);
 #ifndef OPENSSL_NO_DSA
 OPENSSL_EXPORT int		i2d_DSA_PUBKEY(const DSA *a,unsigned char **pp);
@@ -1091,9 +1091,9 @@ typedef struct rsa_pss_params_st {
   X509_ALGOR *maskGenAlgorithm;
   ASN1_INTEGER *saltLength;
   ASN1_INTEGER *trailerField;
-} RSA_PSS_PARAMS;
+} BORING_RSA_PSS_PARAMS;
 
-DECLARE_ASN1_FUNCTIONS(RSA_PSS_PARAMS)
+DECLARE_ASN1_FUNCTIONS(BORING_RSA_PSS_PARAMS)
 
 
 

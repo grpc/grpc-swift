@@ -418,19 +418,19 @@ static const uint16_t kVerifySignatureAlgorithms[] = {
     // List our preferred algorithms first.
     SSL_SIGN_ED25519,
     SSL_SIGN_ECDSA_SECP256R1_SHA256,
-    SSL_SIGN_RSA_PSS_SHA256,
-    SSL_SIGN_RSA_PKCS1_SHA256,
+    SSL_SIGN_BORING_RSA_PSS_SHA256,
+    SSL_SIGN_BORING_RSA_PKCS1_SHA256,
 
     // Larger hashes are acceptable.
     SSL_SIGN_ECDSA_SECP384R1_SHA384,
-    SSL_SIGN_RSA_PSS_SHA384,
-    SSL_SIGN_RSA_PKCS1_SHA384,
+    SSL_SIGN_BORING_RSA_PSS_SHA384,
+    SSL_SIGN_BORING_RSA_PKCS1_SHA384,
 
-    SSL_SIGN_RSA_PSS_SHA512,
-    SSL_SIGN_RSA_PKCS1_SHA512,
+    SSL_SIGN_BORING_RSA_PSS_SHA512,
+    SSL_SIGN_BORING_RSA_PKCS1_SHA512,
 
     // For now, SHA-1 is still accepted but least preferable.
-    SSL_SIGN_RSA_PKCS1_SHA1,
+    SSL_SIGN_BORING_RSA_PKCS1_SHA1,
 
 };
 
@@ -444,23 +444,23 @@ static const uint16_t kSignSignatureAlgorithms[] = {
     // List our preferred algorithms first.
     SSL_SIGN_ED25519,
     SSL_SIGN_ECDSA_SECP256R1_SHA256,
-    SSL_SIGN_RSA_PSS_SHA256,
-    SSL_SIGN_RSA_PKCS1_SHA256,
+    SSL_SIGN_BORING_RSA_PSS_SHA256,
+    SSL_SIGN_BORING_RSA_PKCS1_SHA256,
 
     // If needed, sign larger hashes.
     //
     // TODO(davidben): Determine which of these may be pruned.
     SSL_SIGN_ECDSA_SECP384R1_SHA384,
-    SSL_SIGN_RSA_PSS_SHA384,
-    SSL_SIGN_RSA_PKCS1_SHA384,
+    SSL_SIGN_BORING_RSA_PSS_SHA384,
+    SSL_SIGN_BORING_RSA_PKCS1_SHA384,
 
     SSL_SIGN_ECDSA_SECP521R1_SHA512,
-    SSL_SIGN_RSA_PSS_SHA512,
-    SSL_SIGN_RSA_PKCS1_SHA512,
+    SSL_SIGN_BORING_RSA_PSS_SHA512,
+    SSL_SIGN_BORING_RSA_PKCS1_SHA512,
 
     // If the peer supports nothing else, sign with SHA-1.
     SSL_SIGN_ECDSA_SHA1,
-    SSL_SIGN_RSA_PKCS1_SHA1,
+    SSL_SIGN_BORING_RSA_PKCS1_SHA1,
 };
 
 int tls12_add_verify_sigalgs(const SSL *ssl, CBB *out) {
@@ -3150,7 +3150,7 @@ int tls1_parse_peer_sigalgs(SSL_HANDSHAKE *hs, const CBS *in_sigalgs) {
 int tls1_get_legacy_signature_algorithm(uint16_t *out, const EVP_PKEY *pkey) {
   switch (EVP_PKEY_id(pkey)) {
     case EVP_PKEY_RSA:
-      *out = SSL_SIGN_RSA_PKCS1_MD5_SHA1;
+      *out = SSL_SIGN_BORING_RSA_PKCS1_MD5_SHA1;
       return 1;
     case EVP_PKEY_EC:
       *out = SSL_SIGN_ECDSA_SHA1;
@@ -3184,15 +3184,15 @@ int tls1_choose_signature_algorithm(SSL_HANDSHAKE *hs, uint16_t *out) {
     // If the client didn't specify any signature_algorithms extension then
     // we can assume that it supports SHA1. See
     // http://tools.ietf.org/html/rfc5246#section-7.4.1.4.1
-    static const uint16_t kDefaultPeerAlgorithms[] = {SSL_SIGN_RSA_PKCS1_SHA1,
+    static const uint16_t kDefaultPeerAlgorithms[] = {SSL_SIGN_BORING_RSA_PKCS1_SHA1,
                                                       SSL_SIGN_ECDSA_SHA1};
     peer_sigalgs = kDefaultPeerAlgorithms;
   }
 
   for (uint16_t sigalg : sigalgs) {
-    // SSL_SIGN_RSA_PKCS1_MD5_SHA1 is an internal value and should never be
+    // SSL_SIGN_BORING_RSA_PKCS1_MD5_SHA1 is an internal value and should never be
     // negotiated.
-    if (sigalg == SSL_SIGN_RSA_PKCS1_MD5_SHA1 ||
+    if (sigalg == SSL_SIGN_BORING_RSA_PKCS1_MD5_SHA1 ||
         !ssl_private_key_supports_signature_algorithm(hs, sigalg)) {
       continue;
     }

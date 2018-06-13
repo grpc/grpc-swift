@@ -27,7 +27,7 @@
 
 
 struct engine_st {
-  RSA_METHOD *rsa_method;
+  BORING_RSA_METHOD *rsa_method;
   ECDSA_METHOD *ecdsa_method;
 };
 
@@ -62,13 +62,13 @@ static int set_method(void **out_member, const void *method, size_t method_size,
   return 1;
 }
 
-int ENGINE_set_RSA_method(ENGINE *engine, const RSA_METHOD *method,
+int ENGINE_set_BORING_RSA_method(ENGINE *engine, const BORING_RSA_METHOD *method,
                          size_t method_size) {
   return set_method((void **)&engine->rsa_method, method, method_size,
-                    sizeof(RSA_METHOD));
+                    sizeof(BORING_RSA_METHOD));
 }
 
-RSA_METHOD *ENGINE_get_RSA_method(const ENGINE *engine) {
+BORING_RSA_METHOD *ENGINE_get_BORING_RSA_method(const ENGINE *engine) {
   return engine->rsa_method;
 }
 

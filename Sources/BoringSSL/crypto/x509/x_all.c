@@ -201,7 +201,7 @@ int i2d_X509_REQ_bio(BIO *bp, X509_REQ *req)
 #ifndef OPENSSL_NO_FP_API
 RSA *d2i_RSAPrivateKey_fp(FILE *fp, RSA **rsa)
 {
-    return ASN1_d2i_fp_of(RSA, RSA_new, d2i_RSAPrivateKey, fp, rsa);
+    return ASN1_d2i_fp_of(RSA, BORING_RSA_new, d2i_RSAPrivateKey, fp, rsa);
 }
 
 int i2d_RSAPrivateKey_fp(FILE *fp, RSA *rsa)
@@ -211,13 +211,13 @@ int i2d_RSAPrivateKey_fp(FILE *fp, RSA *rsa)
 
 RSA *d2i_RSAPublicKey_fp(FILE *fp, RSA **rsa)
 {
-    return ASN1_d2i_fp_of(RSA, RSA_new, d2i_RSAPublicKey, fp, rsa);
+    return ASN1_d2i_fp_of(RSA, BORING_RSA_new, d2i_RSAPublicKey, fp, rsa);
 }
 
-RSA *d2i_RSA_PUBKEY_fp(FILE *fp, RSA **rsa)
+RSA *d2i_BORING_RSA_PUBKEY_fp(FILE *fp, RSA **rsa)
 {
     return ASN1_d2i_fp((void *(*)(void))
-                       RSA_new, (D2I_OF(void)) d2i_RSA_PUBKEY, fp,
+                       BORING_RSA_new, (D2I_OF(void)) d2i_BORING_RSA_PUBKEY, fp,
                        (void **)rsa);
 }
 
@@ -226,15 +226,15 @@ int i2d_RSAPublicKey_fp(FILE *fp, RSA *rsa)
     return ASN1_i2d_fp_of_const(RSA, i2d_RSAPublicKey, fp, rsa);
 }
 
-int i2d_RSA_PUBKEY_fp(FILE *fp, RSA *rsa)
+int i2d_BORING_RSA_PUBKEY_fp(FILE *fp, RSA *rsa)
 {
-    return ASN1_i2d_fp((I2D_OF_const(void))i2d_RSA_PUBKEY, fp, rsa);
+    return ASN1_i2d_fp((I2D_OF_const(void))i2d_BORING_RSA_PUBKEY, fp, rsa);
 }
 #endif
 
 RSA *d2i_RSAPrivateKey_bio(BIO *bp, RSA **rsa)
 {
-    return ASN1_d2i_bio_of(RSA, RSA_new, d2i_RSAPrivateKey, bp, rsa);
+    return ASN1_d2i_bio_of(RSA, BORING_RSA_new, d2i_RSAPrivateKey, bp, rsa);
 }
 
 int i2d_RSAPrivateKey_bio(BIO *bp, RSA *rsa)
@@ -244,12 +244,12 @@ int i2d_RSAPrivateKey_bio(BIO *bp, RSA *rsa)
 
 RSA *d2i_RSAPublicKey_bio(BIO *bp, RSA **rsa)
 {
-    return ASN1_d2i_bio_of(RSA, RSA_new, d2i_RSAPublicKey, bp, rsa);
+    return ASN1_d2i_bio_of(RSA, BORING_RSA_new, d2i_RSAPublicKey, bp, rsa);
 }
 
-RSA *d2i_RSA_PUBKEY_bio(BIO *bp, RSA **rsa)
+RSA *d2i_BORING_RSA_PUBKEY_bio(BIO *bp, RSA **rsa)
 {
-    return ASN1_d2i_bio_of(RSA, RSA_new, d2i_RSA_PUBKEY, bp, rsa);
+    return ASN1_d2i_bio_of(RSA, BORING_RSA_new, d2i_BORING_RSA_PUBKEY, bp, rsa);
 }
 
 int i2d_RSAPublicKey_bio(BIO *bp, RSA *rsa)
@@ -257,9 +257,9 @@ int i2d_RSAPublicKey_bio(BIO *bp, RSA *rsa)
     return ASN1_i2d_bio_of_const(RSA, i2d_RSAPublicKey, bp, rsa);
 }
 
-int i2d_RSA_PUBKEY_bio(BIO *bp, RSA *rsa)
+int i2d_BORING_RSA_PUBKEY_bio(BIO *bp, RSA *rsa)
 {
-    return ASN1_i2d_bio_of_const(RSA, i2d_RSA_PUBKEY, bp, rsa);
+    return ASN1_i2d_bio_of_const(RSA, i2d_BORING_RSA_PUBKEY, bp, rsa);
 }
 
 #ifndef OPENSSL_NO_DSA

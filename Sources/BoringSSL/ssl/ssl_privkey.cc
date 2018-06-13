@@ -105,15 +105,15 @@ typedef struct {
 } SSL_SIGNATURE_ALGORITHM;
 
 static const SSL_SIGNATURE_ALGORITHM kSignatureAlgorithms[] = {
-    {SSL_SIGN_RSA_PKCS1_MD5_SHA1, EVP_PKEY_RSA, NID_undef, &EVP_md5_sha1, 0},
-    {SSL_SIGN_RSA_PKCS1_SHA1, EVP_PKEY_RSA, NID_undef, &EVP_sha1, 0},
-    {SSL_SIGN_RSA_PKCS1_SHA256, EVP_PKEY_RSA, NID_undef, &EVP_sha256, 0},
-    {SSL_SIGN_RSA_PKCS1_SHA384, EVP_PKEY_RSA, NID_undef, &EVP_sha384, 0},
-    {SSL_SIGN_RSA_PKCS1_SHA512, EVP_PKEY_RSA, NID_undef, &EVP_sha512, 0},
+    {SSL_SIGN_BORING_RSA_PKCS1_MD5_SHA1, EVP_PKEY_RSA, NID_undef, &EVP_md5_sha1, 0},
+    {SSL_SIGN_BORING_RSA_PKCS1_SHA1, EVP_PKEY_RSA, NID_undef, &EVP_sha1, 0},
+    {SSL_SIGN_BORING_RSA_PKCS1_SHA256, EVP_PKEY_RSA, NID_undef, &EVP_sha256, 0},
+    {SSL_SIGN_BORING_RSA_PKCS1_SHA384, EVP_PKEY_RSA, NID_undef, &EVP_sha384, 0},
+    {SSL_SIGN_BORING_RSA_PKCS1_SHA512, EVP_PKEY_RSA, NID_undef, &EVP_sha512, 0},
 
-    {SSL_SIGN_RSA_PSS_SHA256, EVP_PKEY_RSA, NID_undef, &EVP_sha256, 1},
-    {SSL_SIGN_RSA_PSS_SHA384, EVP_PKEY_RSA, NID_undef, &EVP_sha384, 1},
-    {SSL_SIGN_RSA_PSS_SHA512, EVP_PKEY_RSA, NID_undef, &EVP_sha512, 1},
+    {SSL_SIGN_BORING_RSA_PSS_SHA256, EVP_PKEY_RSA, NID_undef, &EVP_sha256, 1},
+    {SSL_SIGN_BORING_RSA_PSS_SHA384, EVP_PKEY_RSA, NID_undef, &EVP_sha384, 1},
+    {SSL_SIGN_BORING_RSA_PSS_SHA512, EVP_PKEY_RSA, NID_undef, &EVP_sha512, 1},
 
     {SSL_SIGN_ECDSA_SHA1, EVP_PKEY_EC, NID_undef, &EVP_sha1, 0},
     {SSL_SIGN_ECDSA_SECP256R1_SHA256, EVP_PKEY_EC, NID_X9_62_prime256v1,
@@ -184,7 +184,7 @@ static int setup_ctx(SSL *ssl, EVP_MD_CTX *ctx, EVP_PKEY *pkey, uint16_t sigalg,
   }
 
   if (alg->is_rsa_pss) {
-    if (!EVP_PKEY_CTX_set_rsa_padding(pctx, RSA_PKCS1_PSS_PADDING) ||
+    if (!EVP_PKEY_CTX_set_rsa_padding(pctx, BORING_RSA_PKCS1_PSS_PADDING) ||
         !EVP_PKEY_CTX_set_rsa_pss_saltlen(pctx, -1 /* salt len = hash len */)) {
       return 0;
     }
@@ -254,8 +254,8 @@ enum ssl_private_key_result_t ssl_private_key_decrypt(SSL_HANDSHAKE *hs,
 
   // Decrypt with no padding. PKCS#1 padding will be removed as part of the
   // timing-sensitive code by the caller.
-  if (!RSA_decrypt(rsa, out_len, out, max_out, in.data(), in.size(),
-                   RSA_NO_PADDING)) {
+  if (!BORING_RSA_decrypt(rsa, out_len, out, max_out, in.data(), in.size(),
+                   BORING_RSA_NO_PADDING)) {
     return ssl_private_key_failure;
   }
   return ssl_private_key_success;
@@ -304,7 +304,7 @@ int SSL_use_RSAPrivateKey(SSL *ssl, RSA *rsa) {
 }
 
 int SSL_use_RSAPrivateKey_ASN1(SSL *ssl, const uint8_t *der, size_t der_len) {
-  UniquePtr<RSA> rsa(RSA_private_key_from_bytes(der, der_len));
+  UniquePtr<RSA> rsa(BORING_RSA_private_key_from_bytes(der, der_len));
   if (!rsa) {
     OPENSSL_PUT_ERROR(SSL, ERR_R_ASN1_LIB);
     return 0;
@@ -357,7 +357,7 @@ int SSL_CTX_use_RSAPrivateKey(SSL_CTX *ctx, RSA *rsa) {
 
 int SSL_CTX_use_RSAPrivateKey_ASN1(SSL_CTX *ctx, const uint8_t *der,
                                    size_t der_len) {
-  UniquePtr<RSA> rsa(RSA_private_key_from_bytes(der, der_len));
+  UniquePtr<RSA> rsa(BORING_RSA_private_key_from_bytes(der, der_len));
   if (!rsa) {
     OPENSSL_PUT_ERROR(SSL, ERR_R_ASN1_LIB);
     return 0;
@@ -405,15 +405,15 @@ void SSL_CTX_set_private_key_method(SSL_CTX *ctx,
 const char *SSL_get_signature_algorithm_name(uint16_t sigalg,
                                              int include_curve) {
   switch (sigalg) {
-    case SSL_SIGN_RSA_PKCS1_MD5_SHA1:
+    case SSL_SIGN_BORING_RSA_PKCS1_MD5_SHA1:
       return "rsa_pkcs1_md5_sha1";
-    case SSL_SIGN_RSA_PKCS1_SHA1:
+    case SSL_SIGN_BORING_RSA_PKCS1_SHA1:
       return "rsa_pkcs1_sha1";
-    case SSL_SIGN_RSA_PKCS1_SHA256:
+    case SSL_SIGN_BORING_RSA_PKCS1_SHA256:
       return "rsa_pkcs1_sha256";
-    case SSL_SIGN_RSA_PKCS1_SHA384:
+    case SSL_SIGN_BORING_RSA_PKCS1_SHA384:
       return "rsa_pkcs1_sha384";
-    case SSL_SIGN_RSA_PKCS1_SHA512:
+    case SSL_SIGN_BORING_RSA_PKCS1_SHA512:
       return "rsa_pkcs1_sha512";
     case SSL_SIGN_ECDSA_SHA1:
       return "ecdsa_sha1";
@@ -423,11 +423,11 @@ const char *SSL_get_signature_algorithm_name(uint16_t sigalg,
       return include_curve ? "ecdsa_secp384r1_sha384" : "ecdsa_sha384";
     case SSL_SIGN_ECDSA_SECP521R1_SHA512:
       return include_curve ? "ecdsa_secp521r1_sha512" : "ecdsa_sha512";
-    case SSL_SIGN_RSA_PSS_SHA256:
+    case SSL_SIGN_BORING_RSA_PSS_SHA256:
       return "rsa_pss_sha256";
-    case SSL_SIGN_RSA_PSS_SHA384:
+    case SSL_SIGN_BORING_RSA_PSS_SHA384:
       return "rsa_pss_sha384";
-    case SSL_SIGN_RSA_PSS_SHA512:
+    case SSL_SIGN_BORING_RSA_PSS_SHA512:
       return "rsa_pss_sha512";
     case SSL_SIGN_ED25519:
       return "ed25519";

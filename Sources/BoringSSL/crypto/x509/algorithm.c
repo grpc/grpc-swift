@@ -78,7 +78,7 @@ int x509_digest_sign_algorithm(EVP_MD_CTX *ctx, X509_ALGOR *algor) {
       return 0;
     }
     /* RSA-PSS has special signature algorithm logic. */
-    if (pad_mode == RSA_PKCS1_PSS_PADDING) {
+    if (pad_mode == BORING_RSA_PKCS1_PSS_PADDING) {
       return x509_rsa_ctx_to_pss(ctx, algor);
     }
   }
