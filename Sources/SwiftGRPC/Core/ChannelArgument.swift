@@ -18,91 +18,97 @@
 #endif
 import Foundation // for String.Encoding
 
-public extension Channel {
-  enum Argument {
+extension Channel {
+  public enum Argument {
+    case stringValued(key: String, value: String)
+    case integerValued(key: String, value: Int32)
+    
+    public static func timeIntervalValued(key: String, value: TimeInterval) -> Channel.Argument { return .integerValued(key: key, value: Int32(value * 1_000)) }
+    public static func boolValued(key: String, value: Bool) -> Channel.Argument { return .integerValued(key: key, value: Int32(value ? 1 : 0)) }
+    
     /// Default authority to pass if none specified on call construction.
-    case defaultAuthority(String)
-
+    public static func defaultAuthority(_ value: String) -> Channel.Argument { return .stringValued(key: "grpc.default_authority", value: value) }
+    
     /// Primary user agent. Goes at the start of the user-agent metadata sent
     /// on each request.
-    case primaryUserAgent(String)
-
+    public static func primaryUserAgent(_ value: String) -> Channel.Argument { return .stringValued(key: "grpc.primary_user_agent", value: value) }
+    
     /// Secondary user agent. Goes at the end of the user-agent metadata sent
     /// on each request.
-    case secondaryUserAgent(String)
-
+    public static func secondaryUserAgent(_ value: String) -> Channel.Argument { return .stringValued(key: "grpc.secondary_user_agent", value: value) }
+    
     /// After a duration of this time, the client/server pings its peer to see
     /// if the transport is still alive.
-    case keepAliveTime(TimeInterval)
-
+    public static func keepAliveTime(_ value: TimeInterval) -> Channel.Argument { return .timeIntervalValued(key: "grpc.keepalive_time_ms", value: value) }
+    
     /// After waiting for a duration of this time, if the keepalive ping sender does
     /// not receive the ping ack, it will close the transport.
-    case keepAliveTimeout(TimeInterval)
-
+    public static func keepAliveTimeout(_ value: TimeInterval) -> Channel.Argument { return .timeIntervalValued(key: "grpc.keepalive_timeout_ms", value: value) }
+    
     /// Is it permissible to send keepalive pings without any outstanding streams?
-    case keepAlivePermitWithoutCalls(Bool)
-
+    public static func keepAlivePermitWithoutCalls(_ value: Bool) -> Channel.Argument { return .boolValued(key: "grpc.keepalive_permit_without_calls", value: value) }
+    
     /// The time between the first and second connection attempts.
-    case reconnectBackoffInitial(TimeInterval)
-
+    public static func reconnectBackoffInitial(_ value: TimeInterval) -> Channel.Argument { return .timeIntervalValued(key: "grpc.initial_reconnect_backoff_ms", value: value) }
+    
     /// The minimum time between subsequent connection attempts.
-    case reconnectBackoffMin(TimeInterval)
-
+    public static func reconnectBackoffMin(_ value: TimeInterval) -> Channel.Argument { return .timeIntervalValued(key: "grpc.min_reconnect_backoff_ms", value: value) }
+    
     /// The maximum time between subsequent connection attempts.
-    case reconnectBackoffMax(TimeInterval)
-
+    public static func reconnectBackoffMax(_ value: TimeInterval) -> Channel.Argument { return .timeIntervalValued(key: "grpc.max_reconnect_backoff_ms", value: value) }
+    
     /// Should we allow receipt of true-binary data on http2 connections?
     /// Defaults to on (true)
-    case http2EnableTrueBinary(Bool)
-
+    public static func http2EnableTrueBinary(_ value: Bool) -> Channel.Argument { return .boolValued(key: "grpc.http2.true_binary", value: value) }
+    
     /// Minimum time between sending successive ping frames without receiving
     /// any data frame.
-    case http2MinSentPingInterval(TimeInterval)
-
+    public static func http2MinSentPingInterval(_ value: TimeInterval) -> Channel.Argument { return .timeIntervalValued(key: "grpc.http2.min_time_between_pings_ms", value: value) }
+    
     /// Number of pings before needing to send a data frame or header frame.
     /// `0` indicates that an infinite number of pings can be sent without
     /// sending a data frame or header frame.
-    case http2MaxPingsWithoutData(UInt)
-
+    public static func http2MaxPingsWithoutData(_ value: UInt32) -> Channel.Argument { return .integerValued(key: "grpc.http2.max_pings_without_data", value: Int32(value)) }
+    
     /// This *should* be used for testing only.
     /// Override the target name used for SSL host name checking using this
     /// channel argument. If this argument is not specified, the name used
     /// for SSL host name checking will be the target parameter (assuming that the
     /// secure channel is an SSL channel). If this parameter is specified and the
     /// underlying is not an SSL channel, it will just be ignored.
-    case sslTargetNameOverride(String)
+    public static func sslTargetNameOverride(_ value: String) -> Channel.Argument { return .stringValued(key: "grpc.ssl_target_name_override", value: value) }
     
     /// Enable census for tracing and stats collection.
-    case enableCensus(Bool)
+    public static func enableCensus(_ value: Bool) -> Channel.Argument { return .boolValued(key: "grpc.census", value: value) }
     
     /// Enable load reporting.
-    case enableLoadReporting(Bool)
+    public static func enableLoadReporting(_ value: Bool) -> Channel.Argument { return .boolValued(key: "grpc.loadreporting", value: value) }
     
     /// Request that optional features default to off (regarless of what they usually
     /// default to) - to enable tight control over what gets enabled.
-    case enableMinimalStack(Bool)
+    public static func enableMinimalStack(_ value: Bool) -> Channel.Argument { return .boolValued(key: "grpc.minimal_stack", value: value) }
     
     /// Maximum number of concurrent incoming streams to allow on a http2 connection.
-    case maxConcurrentStreams(UInt)
+    public static func maxConcurrentStreams(_ value: UInt32) -> Channel.Argument { return .integerValued(key: "grpc.max_concurrent_streams", value: Int32(value)) }
     
     /// Maximum message length that the channel can receive (in byts).
     /// -1 means unlimited.
-    case maxReceiveMessageLength(Int)
+    public static func maxReceiveMessageLength(_ value: Int32) -> Channel.Argument { return .integerValued(key: "grpc.max_receive_message_length", value: value) }
     
     /// Maximum message length that the channel can send (in bytes).
     /// -1 means unlimited.
-    case maxSendMessageLength(Int)
+    public static func maxSendMessageLength(_ value: Int32) -> Channel.Argument { return .integerValued(key: "grpc.max_send_message_length", value: value) }
     
     /// Maximum time that a channel may have no outstanding rpcs.
-    case maxConnectionIdle(TimeInterval)
+    public static func maxConnectionIdle(_ value: TimeInterval) -> Channel.Argument { return .timeIntervalValued(key: "grpc.max_connection_idle_ms", value: value) }
     
     /// Maximum time that a channel may exist.
-    case maxConnectionAge(TimeInterval)
-
+    public static func maxConnectionAge(_ value: TimeInterval) -> Channel.Argument { return .timeIntervalValued(key: "grpc.max_connection_age_ms", value: value) }
+    
     /// Enable/disable support for deadline checking.
     /// Defaults to true, unless `enableMinimalStack` is enabled, in which case it
     /// defaults to false.
-    case enableDeadlineChecks(Bool)
+    public static func enableDeadlineChecks(_ value: Bool) -> Channel.Argument { return .boolValued(key: "grpc.enable_deadline_checking", value: value) }
   }
 }
 
@@ -124,83 +130,18 @@ extension Channel.Argument {
   }
   
   func toCArg() -> Wrapper {
+    var arg = grpc_arg()
     switch self {
-    case let .defaultAuthority(value):
-      return makeArgument("grpc.default_authority", value: value)
-    case let .primaryUserAgent(value):
-      return makeArgument("grpc.primary_user_agent", value: value)
-    case let .secondaryUserAgent(value):
-      return makeArgument("grpc.secondary_user_agent", value: value)
-    case let .keepAliveTime(value):
-      return makeArgument("grpc.keepalive_time_ms", value: value * 1_000)
-    case let .keepAliveTimeout(value):
-      return makeArgument("grpc.keepalive_timeout_ms", value: value * 1_000)
-    case let .keepAlivePermitWithoutCalls(value):
-      return makeArgument("grpc.keepalive_permit_without_calls", value: value)
-    case let .reconnectBackoffMin(value):
-      return makeArgument("grpc.min_reconnect_backoff_ms", value: value * 1_000)
-    case let .reconnectBackoffMax(value):
-      return makeArgument("grpc.max_reconnect_backoff_ms", value: value * 1_000)
-    case let .reconnectBackoffInitial(value):
-      return makeArgument("grpc.initial_reconnect_backoff_ms", value: value * 1_000)
-    case let .http2EnableTrueBinary(value):
-      return makeArgument("grpc.http2.true_binary", value: value)
-    case let .http2MinSentPingInterval(value):
-      return makeArgument("grpc.http2.min_time_between_pings_ms", value: value * 1_000)
-    case let .http2MaxPingsWithoutData(value):
-      return makeArgument("grpc.http2.max_pings_without_data", value: value)
-    case let .sslTargetNameOverride(value):
-      return makeArgument("grpc.ssl_target_name_override", value: value)
-    case let .enableCensus(value):
-      return makeArgument("grpc.census", value: value)
-    case let .enableLoadReporting(value):
-      return makeArgument("grpc.loadreporting", value: value)
-    case let .enableMinimalStack(value):
-      return makeArgument("grpc.minimal_stack", value: value)
-    case let .maxConcurrentStreams(value):
-      return makeArgument("grpc.max_concurrent_streams", value: value)
-    case let .maxReceiveMessageLength(value):
-      return makeArgument("grpc.max_receive_message_length", value: value)
-    case let .maxSendMessageLength(value):
-      return makeArgument("grpc.max_send_message_length", value: value)
-    case let .maxConnectionIdle(value):
-      return makeArgument("grpc.max_connection_idle_ms", value: value * 1_000)
-    case let .maxConnectionAge(value):
-      return makeArgument("grpc.max_connection_age_ms", value: value * 1_000)
-    case let .enableDeadlineChecks(value):
-      return makeArgument("grpc.enable_deadline_checking", value: value)
+    case let .stringValued(key, value):
+      arg.key = gpr_strdup(key)
+      arg.type = GRPC_ARG_STRING
+      arg.value.string = gpr_strdup(value)
+      
+    case let .integerValued(key, value):
+      arg.key = gpr_strdup(key)
+      arg.type = GRPC_ARG_INTEGER
+      arg.value.integer = value
     }
+    return Channel.Argument.Wrapper(arg)
   }
-}
-
-private func makeArgument(_ key: String, value: String) -> Channel.Argument.Wrapper {
-  var arg = grpc_arg()
-  arg.key = gpr_strdup(key)
-  arg.type = GRPC_ARG_STRING
-  arg.value.string = gpr_strdup(value)
-  return Channel.Argument.Wrapper(arg)
-}
-
-private func makeArgument(_ key: String, value: Bool) -> Channel.Argument.Wrapper {
-  return makeArgument(key, value: Int32(value ? 1 : 0))
-}
-
-private func makeArgument(_ key: String, value: Double) -> Channel.Argument.Wrapper {
-  return makeArgument(key, value: Int32(value))
-}
-
-private func makeArgument(_ key: String, value: UInt) -> Channel.Argument.Wrapper {
-  return makeArgument(key, value: Int32(value))
-}
-
-private func makeArgument(_ key: String, value: Int) -> Channel.Argument.Wrapper {
-  return makeArgument(key, value: Int32(value))
-}
-
-private func makeArgument(_ key: String, value: Int32) -> Channel.Argument.Wrapper {
-  var arg = grpc_arg()
-  arg.key = gpr_strdup(key)
-  arg.type = GRPC_ARG_INTEGER
-  arg.value.integer = value
-  return Channel.Argument.Wrapper(arg)
 }
