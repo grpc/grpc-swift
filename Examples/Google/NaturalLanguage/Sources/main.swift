@@ -33,7 +33,7 @@ if let provider = DefaultTokenProvider(scopes: scopes) {
 
       let service = Google_Cloud_Language_V1_LanguageServiceServiceClient(address: "language.googleapis.com")
 
-      service.metadata = Metadata(["authorization": "Bearer " + authToken])
+      service.metadata = try! Metadata(["authorization": "Bearer " + authToken])
 
       var request = Google_Cloud_Language_V1_AnnotateTextRequest()
 
@@ -53,7 +53,7 @@ if let provider = DefaultTokenProvider(scopes: scopes) {
       print("\(request)")
 
       do {
-        let result = try service.annotatetext(request)
+        let result = try service.annotateText(request)
         print("\(result)")
       } catch {
         print("ERROR: \(error)")
