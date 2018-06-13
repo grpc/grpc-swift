@@ -51,10 +51,6 @@ extension Generator {
     return nameForPackageService(file, service) + "Provider"
   }
 
-  internal var serverName: String {
-    return nameForPackageService(file, service) + "Server"
-  }
-
   internal var callName: String {
     return nameForPackageServiceMethod(file, service, method) + "Call"
   }
@@ -75,12 +71,16 @@ extension Generator {
   internal var methodOutputName: String {
     return protoMessageName(method.outputType)
   }
+  
+  internal var servicePath: String {
+    if !file.package.isEmpty {
+      return file.package + "." + service.name
+    } else {
+      return service.name
+    }
+  }
 
   internal var methodPath: String {
-    if !file.package.isEmpty {
-      return "\"/" + file.package + "." + service.name + "/" + method.name + "\""
-    } else {
-      return "\"/" + service.name + "/" + method.name + "\""
-    }
+    return "\"/" + servicePath + "/" + method.name + "\""
   }
 }

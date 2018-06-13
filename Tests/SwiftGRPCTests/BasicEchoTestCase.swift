@@ -34,7 +34,7 @@ class BasicEchoTestCase: XCTestCase {
   func makeProvider() -> Echo_EchoProvider { return EchoProvider() }
 
   var provider: Echo_EchoProvider!
-  var server: Echo_EchoServer!
+  var server: ServiceServer!
   var client: Echo_EchoServiceClient!
   
   var defaultTimeout: TimeInterval { return 1.0 }
@@ -48,15 +48,15 @@ class BasicEchoTestCase: XCTestCase {
     
     if secure {
       let certificateString = String(data: certificateForTests, encoding: .utf8)!
-      server = Echo_EchoServer(address: address,
-                               certificateString: certificateString,
-                               keyString: String(data: keyForTests, encoding: .utf8)!,
-                               provider: provider)
+      server = ServiceServer(address: address,
+                             certificateString: certificateString,
+                             keyString: String(data: keyForTests, encoding: .utf8)!,
+                             serviceProviders: [provider])
       server.start()
       client = Echo_EchoServiceClient(address: address, certificates: certificateString, arguments: [.sslTargetNameOverride("example.com")])
       client.host = "example.com"
     } else {
-      server = Echo_EchoServer(address: address, provider: provider)
+      server = ServiceServer(address: address, serviceProviders: [provider])
       server.start()
       client = Echo_EchoServiceClient(address: address, secure: false)
     }
