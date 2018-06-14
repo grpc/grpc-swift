@@ -23,7 +23,7 @@ let host = "foo.test.google.fr"
 
 func client() throws {
   let message = "hello, server!".data(using: .utf8)
-  let c = Channel(address: address, secure: false)
+  let c = Channel(address: address, type: .insecure)
   let steps = 3
   for i in 0..<steps {
     let sem = DispatchSemaphore(value: 0)

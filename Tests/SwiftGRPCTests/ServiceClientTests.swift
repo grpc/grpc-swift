@@ -22,7 +22,7 @@ class ServiceClientTests: BasicEchoTestCase {
 
   override func setUp() {
     super.setUp()
-    sharedChannel = Channel(address: address, secure: false)
+    sharedChannel = Channel(address: address, type: .insecure)
   }
   
   override func tearDown() {

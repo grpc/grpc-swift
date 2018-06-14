@@ -54,8 +54,8 @@
  * copied and put under another distribution licence
  * [including the GNU Public Licence.] */
 
-#ifndef OPENSSL_HEADER_RSA_INTERNAL_H
-#define OPENSSL_HEADER_RSA_INTERNAL_H
+#ifndef OPENSSL_HEADER_BORING_RSA_INTERNAL_H
+#define OPENSSL_HEADER_BORING_RSA_INTERNAL_H
 
 #include <openssl/base.h>
 
@@ -69,7 +69,7 @@ extern "C" {
 
 // Default implementations of RSA operations.
 
-const BORING_RSA_METHOD *RSA_default_method(void);
+const BORING_RSA_METHOD *BORING_RSA_default_method(void);
 
 size_t rsa_default_size(const RSA *rsa);
 int rsa_default_sign_raw(RSA *rsa, size_t *out_len, uint8_t *out,
@@ -89,28 +89,28 @@ int BN_BLINDING_invert(BIGNUM *n, const BN_BLINDING *b, BN_MONT_CTX *mont_ctx,
                        BN_CTX *ctx);
 
 
-int RSA_padding_add_PKCS1_type_1(uint8_t *to, size_t to_len,
+int BORING_RSA_padding_add_PKCS1_type_1(uint8_t *to, size_t to_len,
                                  const uint8_t *from, size_t from_len);
-int RSA_padding_check_PKCS1_type_1(uint8_t *out, size_t *out_len,
+int BORING_RSA_padding_check_PKCS1_type_1(uint8_t *out, size_t *out_len,
                                    size_t max_out, const uint8_t *from,
                                    size_t from_len);
-int RSA_padding_add_PKCS1_type_2(uint8_t *to, size_t to_len,
+int BORING_RSA_padding_add_PKCS1_type_2(uint8_t *to, size_t to_len,
                                  const uint8_t *from, size_t from_len);
-int RSA_padding_check_PKCS1_type_2(uint8_t *out, size_t *out_len,
+int BORING_RSA_padding_check_PKCS1_type_2(uint8_t *out, size_t *out_len,
                                    size_t max_out, const uint8_t *from,
                                    size_t from_len);
-int RSA_padding_check_PKCS1_OAEP_mgf1(uint8_t *out, size_t *out_len,
+int BORING_RSA_padding_check_PKCS1_OAEP_mgf1(uint8_t *out, size_t *out_len,
                                       size_t max_out, const uint8_t *from,
                                       size_t from_len, const uint8_t *param,
                                       size_t param_len, const EVP_MD *md,
                                       const EVP_MD *mgf1md);
-int RSA_padding_add_none(uint8_t *to, size_t to_len, const uint8_t *from,
+int BORING_RSA_padding_add_none(uint8_t *to, size_t to_len, const uint8_t *from,
                          size_t from_len);
 
-// RSA_private_transform calls either the method-specific |private_transform|
+// BORING_RSA_private_transform calls either the method-specific |private_transform|
 // function (if given) or the generic one. See the comment for
 // |private_transform| in |rsa_meth_st|.
-int RSA_private_transform(RSA *rsa, uint8_t *out, const uint8_t *in,
+int BORING_RSA_private_transform(RSA *rsa, uint8_t *out, const uint8_t *in,
                           size_t len);
 
 
@@ -128,4 +128,4 @@ int rsa_greater_than_pow2(const BIGNUM *b, int n);
 }  // extern C
 #endif
 
-#endif  // OPENSSL_HEADER_RSA_INTERNAL_H
+#endif  // OPENSSL_HEADER_BORING_RSA_INTERNAL_H

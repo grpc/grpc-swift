@@ -148,7 +148,7 @@ func runClient(useSSL: Bool) throws {
                       certificates: String(data: certificateForTests, encoding: .utf8)!,
                       arguments: [.sslTargetNameOverride(host)])
   } else {
-    channel = Channel(address: address, secure: false)
+    channel = Channel(address: address, type: .insecure)
   }
 
   channel.host = host
