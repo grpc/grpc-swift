@@ -51,7 +51,7 @@ class ChannelArgumentTests: BasicEchoTestCase {
   }
   
   fileprivate func makeClient(_ arguments: [Channel.Argument]) -> Echo_EchoServiceClient {
-    let client = Echo_EchoServiceClient(address: address, secure: false, arguments: arguments)
+    let client = Echo_EchoServiceClient(address: address, type: .insecure, arguments: arguments)
     client.timeout = defaultTimeout
     return client
   }

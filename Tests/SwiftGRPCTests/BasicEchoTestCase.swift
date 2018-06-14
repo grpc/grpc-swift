@@ -58,7 +58,7 @@ class BasicEchoTestCase: XCTestCase {
     } else {
       server = Echo_EchoServer(address: address, provider: provider)
       server.start()
-      client = Echo_EchoServiceClient(address: address, secure: false)
+      client = Echo_EchoServiceClient(address: address, type: .insecure)
     }
     
     client.timeout = defaultTimeout

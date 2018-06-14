@@ -107,7 +107,7 @@ class EchoViewController: NSViewController, NSTextFieldDelegate {
       return
     }
     if TLSButton.intValue == 0 {
-      service = Echo_EchoServiceClient(address: address, secure: false)
+      service = Echo_EchoServiceClient(address: address, type: .insecure)
     } else {
       let certificateURL = Bundle.main.url(forResource: "ssl",
                                            withExtension: "crt")!

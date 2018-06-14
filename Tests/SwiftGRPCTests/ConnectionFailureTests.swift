@@ -36,7 +36,7 @@ class ConnectionFailureTests: XCTestCase {
 
 extension ConnectionFailureTests {
   func testConnectionFailureUnary() {
-    let client = Echo_EchoServiceClient(address: "localhost:1234", secure: false)
+    let client = Echo_EchoServiceClient(address: "localhost:1234", type: .insecure)
     client.timeout = defaultTimeout
     
     do {
@@ -51,7 +51,7 @@ extension ConnectionFailureTests {
   }
   
   func testConnectionFailureClientStreaming() {
-    let client = Echo_EchoServiceClient(address: "localhost:1234", secure: false)
+    let client = Echo_EchoServiceClient(address: "localhost:1234", type: .insecure)
     client.timeout = defaultTimeout
     
     let completionHandlerExpectation = expectation(description: "final completion handler called")
@@ -78,7 +78,7 @@ extension ConnectionFailureTests {
   }
   
   func testConnectionFailureServerStreaming() {
-    let client = Echo_EchoServiceClient(address: "localhost:1234", secure: false)
+    let client = Echo_EchoServiceClient(address: "localhost:1234", type: .insecure)
     client.timeout = defaultTimeout
     
     let completionHandlerExpectation = expectation(description: "completion handler called")
@@ -98,7 +98,7 @@ extension ConnectionFailureTests {
   }
   
   func testConnectionFailureBidirectionalStreaming() {
-    let client = Echo_EchoServiceClient(address: "localhost:1234", secure: false)
+    let client = Echo_EchoServiceClient(address: "localhost:1234", type: .insecure)
     client.timeout = defaultTimeout
     
     let completionHandlerExpectation = expectation(description: "completion handler called")
