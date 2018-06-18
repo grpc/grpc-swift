@@ -20,7 +20,7 @@ import XCTest
 
 fileprivate let testStatus = ServerStatus(code: .permissionDenied, message: "custom status message")
 fileprivate let testStatusWithTrailingMetadata = ServerStatus(code: .permissionDenied, message: "custom status message",
-                                                              trailingMetadata: try! Metadata(["foo": "bar"]))
+                                                              trailingMetadata: try! Metadata(["some_long_key": "bar"]))
 
 fileprivate class StatusThrowingProvider: Echo_EchoProvider {
   func get(request: Echo_EchoRequest, session _: Echo_EchoGetSession) throws -> Echo_EchoResponse {
@@ -55,16 +55,28 @@ class ServerThrowingTests: BasicEchoTestCase {
 
 extension ServerThrowingTests {
   func testServerThrowsUnary() {
+    let caughtError: RPCError
     do {
       let result = try client.get(Echo_EchoRequest(text: "foo")).text
       XCTFail("should have thrown, received \(result) instead")
+      return
     } catch {
-      guard case let .callError(callResult) = error as! RPCError
-        else { XCTFail("unexpected error \(error)"); return }
-      XCTAssertEqual(.permissionDenied, callResult.statusCode)
-      XCTAssertEqual("custom status message", callResult.statusMessage)
-      XCTAssertEqual(["foo": "bar"], callResult.trailingMetadata?.dictionaryRepresentation)
+      caughtError = error as! RPCError
     }
+    
+    guard case let .callError(callResult) = caughtError
+      else { XCTFail("unexpected error \(caughtError)"); return }
+    
+    // Send another RPC to cause the original metadata array to be deallocated.
+    // If we were not copying the metadata array correctly, this would cause the metadata of the call result to become
+    // corrupted.
+    _ = try? client.get(Echo_EchoRequest(text: "foo")).text
+    // It seems like we need this sleep for the memory corruption to occur.
+    Thread.sleep(forTimeInterval: 0.01)
+    XCTAssertEqual(["some_long_key": "bar"], callResult.trailingMetadata?.dictionaryRepresentation)
+    
+    XCTAssertEqual(.permissionDenied, callResult.statusCode)
+    XCTAssertEqual("custom status message", callResult.statusMessage)
   }
   
   func testServerThrowsClientStreaming() {
