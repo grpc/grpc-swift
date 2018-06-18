@@ -19,10 +19,12 @@ import Foundation
 import XCTest
 
 fileprivate let testStatus = ServerStatus(code: .permissionDenied, message: "custom status message")
+fileprivate let testStatusWithTrailingMetadata = ServerStatus(code: .permissionDenied, message: "custom status message",
+                                                              trailingMetadata: try! Metadata(["foo": "bar"]))
 
 fileprivate class StatusThrowingProvider: Echo_EchoProvider {
   func get(request: Echo_EchoRequest, session _: Echo_EchoGetSession) throws -> Echo_EchoResponse {
-    throw testStatus
+    throw testStatusWithTrailingMetadata
   }
   
   func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws -> ServerStatus? {
@@ -61,6 +63,7 @@ extension ServerThrowingTests {
         else { XCTFail("unexpected error \(error)"); return }
       XCTAssertEqual(.permissionDenied, callResult.statusCode)
       XCTAssertEqual("custom status message", callResult.statusMessage)
+      XCTAssertEqual(["foo": "bar"], callResult.trailingMetadata?.dictionaryRepresentation)
     }
   }
   
