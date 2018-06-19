@@ -52,22 +52,45 @@ s += "// GENERATED: DO NOT EDIT\n"
 
 if CommandLine.arguments.contains("test") {
   s += "//\n"
-  s += "// This file contain a function that returns the contents of Tests/ssl.crt and Tests/ssl.key.\n"
+  s += "// This file contain a function that returns the contents of certificates and keys in Tests/.\n"
   s += "//\n"
   s += "import Foundation\n"
   s += "\n"
 
-  s += "let certificateForTests = "
-  let certificateURL = URL(fileURLWithPath: "Tests/ssl.crt")
+  // server.crt
+  s += "let serverCertificate = "
+  let certificateURL = URL(fileURLWithPath: "Tests/server.crt")
   let certificateData = try Data(contentsOf: certificateURL)
   let encodedCertificate = certificateData.base64EncodedString()
   s += "Data(base64Encoded: \"\(encodedCertificate)\", options:[])!\n"
 
-  s += "let keyForTests = "
-  let keyURL = URL(fileURLWithPath: "Tests/ssl.key")
+  // server.pem
+  s += "let serverKey = "
+  let keyURL = URL(fileURLWithPath: "Tests/server.pem")
   let keyData = try Data(contentsOf: keyURL)
   let encodedKey = keyData.base64EncodedString()
-  s += "Data(base64Encoded: \"\(encodedKey)\", options:[])!"
+  s += "Data(base64Encoded: \"\(encodedKey)\", options:[])!\n"
+
+  // ca.crt
+  s += "let trustCollectionCertificate = "
+  let caURL = URL(fileURLWithPath: "Tests/ca.crt")
+  let caData = try Data(contentsOf: caURL)
+  let caEncoded = caData.base64EncodedString()
+  s += "Data(base64Encoded: \"\(caEncoded)\", options:[])!\n"
+
+  // client.crt
+  s += "let clientCertificate = "
+  let clientCertURL = URL(fileURLWithPath: "Tests/client.crt")
+  let clientCertData = try Data(contentsOf: clientCertURL)
+  let clientCertEncoded = clientCertData.base64EncodedString()
+  s += "Data(base64Encoded: \"\(clientCertEncoded)\", options:[])!\n"
+
+  // client.pem
+  s += "let clientKey = "
+  let clientKeyURL = URL(fileURLWithPath: "Tests/client.pem")
+  let clientKeyData = try Data(contentsOf: clientKeyURL)
+  let clientKeyEncoded = clientKeyData.base64EncodedString()
+  s += "Data(base64Encoded: \"\(clientKeyEncoded)\", options:[])!"
 } else {
   s += "//\n"
   s += "// This file contain a function that returns the default roots.pem.\n"

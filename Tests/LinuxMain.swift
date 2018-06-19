@@ -25,6 +25,8 @@ XCTMain([
   testCase(CompletionQueueTests.allTests),
   testCase(ConnectionFailureTests.allTests),
   testCase(EchoTests.allTests),
+  testCase(EchoTestsSecure.allTests),
+  testCase(EchoTestsMutualAuth.allTests),
   testCase(ServerCancellingTests.allTests),
   testCase(ServerTestExample.allTests),
   testCase(ServerThrowingTests.allTests),

@@ -50,8 +50,9 @@ public class Server {
   /// - Parameter address: the address where the server will listen
   /// - Parameter key: the private key for the server's certificates
   /// - Parameter certs: the server's certificates
-  public init(address: String, key: String, certs: String) {
-    underlyingServer = cgrpc_server_create_secure(address, key, certs)
+  /// - Parameter rootCerts: used to validate client certificates; will enable enforcing valid client certificates when provided
+  public init(address: String, key: String, certs: String, rootCerts: String? = nil) {
+    underlyingServer = cgrpc_server_create_secure(address, key, certs, rootCerts, rootCerts == nil ? 0 : 1)
     completionQueue = CompletionQueue(
       underlyingCompletionQueue: cgrpc_server_get_completion_queue(underlyingServer), name: "Server " + address)
   }
