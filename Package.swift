@@ -25,20 +25,22 @@ let package = Package(
   dependencies: [
     .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.0.2"),
     .package(url: "https://github.com/kylef/Commander.git", from: "0.8.0"),
-    .package(url: "https://github.com/apple/swift-nio-zlib-support.git", from: "1.0.0")
+    .package(url: "https://github.com/apple/swift-nio-zlib-support.git", from: "1.0.0"),
+    
+    /// Bindings to OpenSSL-compatible libraries for TLS support in SwiftNIO
+    .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "1.0.0"),
   ],
   targets: [
     .target(name: "SwiftGRPC",
             dependencies: ["CgRPC", "SwiftProtobuf"]),
     .target(name: "CgRPC",
-            dependencies: ["BoringSSL"]),
+            dependencies: ["NIOOpenSSL"]),
     .target(name: "RootsEncoder"),
     .target(name: "protoc-gen-swiftgrpc",
             dependencies: [
               "SwiftProtobuf",
               "SwiftProtobufPluginLibrary",
               "protoc-gen-swift"]),
-    .target(name: "BoringSSL"),
     .target(name: "Echo",
             dependencies: [
               "SwiftGRPC",

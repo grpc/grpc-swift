@@ -49,7 +49,7 @@ gpr_timespec grpc_max_auth_token_lifetime() {
   return out;
 }
 
-#define GRPC_JWT_BORING_RSA_SHA256_ALGORITHM "RS256"
+#define GRPC_JWT_RSA_SHA256_ALGORITHM "RS256"
 #define GRPC_JWT_TYPE "JWT"
 
 /* --- Override for testing. --- */
@@ -142,7 +142,7 @@ void grpc_auth_json_key_destruct(grpc_auth_json_key* json_key) {
     json_key->client_email = nullptr;
   }
   if (json_key->private_key != nullptr) {
-    BORING_RSA_free(json_key->private_key);
+    RSA_free(json_key->private_key);
     json_key->private_key = nullptr;
   }
 }
@@ -238,7 +238,7 @@ static char* dot_concat_and_free_strings(char* str1, char* str2) {
 }
 
 const EVP_MD* openssl_digest_from_algorithm(const char* algorithm) {
-  if (strcmp(algorithm, GRPC_JWT_BORING_RSA_SHA256_ALGORITHM) == 0) {
+  if (strcmp(algorithm, GRPC_JWT_RSA_SHA256_ALGORITHM) == 0) {
     return EVP_sha256();
   } else {
     gpr_log(GPR_ERROR, "Unknown algorithm %s.", algorithm);
@@ -295,7 +295,7 @@ char* grpc_jwt_encode_and_sign(const grpc_auth_json_key* json_key,
     return g_jwt_encode_and_sign_override(json_key, audience, token_lifetime,
                                           scope);
   } else {
-    const char* sig_algo = GRPC_JWT_BORING_RSA_SHA256_ALGORITHM;
+    const char* sig_algo = GRPC_JWT_RSA_SHA256_ALGORITHM;
     char* to_sign = dot_concat_and_free_strings(
         encoded_jwt_header(json_key->private_key_id, sig_algo),
         encoded_jwt_claim(json_key, audience, token_lifetime, scope));
