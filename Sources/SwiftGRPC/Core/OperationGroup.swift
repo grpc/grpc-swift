@@ -144,7 +144,7 @@ class OperationGroup {
       case .receiveInitialMetadata:
         cachedInitialMetadata = Metadata(
           underlyingArray: cgrpc_observer_recv_initial_metadata_get_metadata(underlyingObservers[i]),
-          ownsFields: false)
+          ownsFields: false).copy()
         return cachedInitialMetadata!
       default:
         continue
@@ -198,7 +198,7 @@ class OperationGroup {
       case .receiveStatusOnClient:
         cachedTrailingMetadata = Metadata(
           underlyingArray: cgrpc_observer_recv_status_on_client_get_metadata(underlyingObservers[i]),
-          ownsFields: false)
+          ownsFields: false).copy()
         return cachedTrailingMetadata!
       default:
         continue
