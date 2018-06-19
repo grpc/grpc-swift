@@ -101,8 +101,8 @@ func runTest(useSSL: Bool) {
   let server: Server
   if useSSL {
     server = Server(address: address,
-                    key: String(data: keyForTests, encoding: .utf8)!,
-                    certs: String(data: certificateForTests, encoding: .utf8)!)
+                    key: String(data: serverKey, encoding: .utf8)!,
+                    certs: String(data: serverCertificate, encoding: .utf8)!)
   } else {
     server = Server(address: address)
   }
@@ -145,7 +145,7 @@ func runClient(useSSL: Bool) throws {
 
   if useSSL {
     channel = Channel(address: address,
-                      certificates: String(data: certificateForTests, encoding: .utf8)!,
+                      certificates: String(data: trustCollectionCertificate, encoding: .utf8)!,
                       arguments: [.sslTargetNameOverride(host)])
   } else {
     channel = Channel(address: address, secure: false)

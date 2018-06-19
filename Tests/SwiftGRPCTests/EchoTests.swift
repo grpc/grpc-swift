@@ -38,7 +38,11 @@ class EchoTests: BasicEchoTestCase {
 }
 
 class EchoTestsSecure: EchoTests {
-  override var secure: Bool { return true }
+  override var security: Security { return .ssl }
+}
+
+class EchoTestsMutualAuth: EchoTests {
+  override var security: Security { return .tlsMutualAuth }
 }
 
 extension EchoTests {
