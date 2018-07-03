@@ -18,23 +18,6 @@ import Dispatch
 import Foundation
 import SwiftProtobuf
 
-public struct ServerStatus: Error {
-  public let code: StatusCode
-  public let message: String
-  public let trailingMetadata: Metadata
-  
-  public init(code: StatusCode, message: String, trailingMetadata: Metadata = Metadata()) {
-    self.code = code
-    self.message = message
-    self.trailingMetadata = trailingMetadata
-  }
-  
-  public static let ok = ServerStatus(code: .ok, message: "OK")
-  public static let processingError = ServerStatus(code: .internalError, message: "unknown error processing request")
-  public static let noRequestData = ServerStatus(code: .invalidArgument, message: "no request data received")
-  public static let sendingInitialMetadataFailed = ServerStatus(code: .internalError, message: "sending initial metadata failed")
-}
-
 public protocol ServerSession: class {
   var requestMetadata: Metadata { get }
 
