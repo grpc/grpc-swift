@@ -11,7 +11,7 @@
 
 Pod::Spec.new do |s|
   s.name = 'SwiftGRPC'
-  s.version = '0.4.3'
+  s.version = '0.5.0'
   s.license     = { :type => 'Apache License, Version 2.0',
                     :text => <<-LICENSE
                       Copyright 2018, gRPC Authors. All rights reserved.
