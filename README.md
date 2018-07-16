@@ -112,7 +112,7 @@ command to generate an Xcode project for the `grpc-swift` core libraries.
 The top-level Makefile uses the Swift Package Manager to
 generate an Xcode project for the SwiftGRPC package:
 
-    $ make
+    $ make && make project
 
 This will create `SwiftGRPC.xcodeproj`, which you should
 add to your project, along with setting the necessary build dependencies
