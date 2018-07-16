@@ -15,7 +15,7 @@ RUN curl -O -L https://github.com/google/protobuf/releases/download/v${PROTOC_VE
 
 # Build and install the swiftgrpc plugin
 RUN git clone https://github.com/grpc/grpc-swift \
-    && cd grpc-swift/Plugin \
+    && cd grpc-swift \
     && make \
     && cp protoc-gen-swift protoc-gen-swiftgrpc /usr/bin \
     && cd / \
