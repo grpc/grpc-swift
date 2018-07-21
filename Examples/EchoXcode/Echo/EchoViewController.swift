@@ -112,11 +112,12 @@ class EchoViewController: NSViewController, NSTextFieldDelegate {
       let certificateURL = Bundle.main.url(forResource: "ssl",
                                            withExtension: "crt")!
       let certificates = try! String(contentsOf: certificateURL)
-      service = Echo_EchoServiceClient(address: address, certificates: certificates, host: host)
+      let arguments: [Channel.Argument] = [.sslTargetNameOverride(host)]
+      service =  Echo_EchoServiceClient(address: address, certificates: certificates, arguments: arguments)
     }
     if let service = service {
       service.host = "example.com" // sample override
-      service.metadata = Metadata([
+      service.metadata = try! Metadata([
         "x-goog-api-key": "YOUR_API_KEY",
         "x-ios-bundle-identifier": Bundle.main.bundleIdentifier!
       ])
@@ -197,17 +198,13 @@ class EchoViewController: NSViewController, NSTextFieldDelegate {
     guard let expandCall = expandCall else {
       return
     }
-    try expandCall.receive { response, error in
-      if let responseMessage = response {
-        self.displayMessageReceived(responseMessage.text)
+    
+    try expandCall.receive { (response) in
+      if case let result?? = response.result  {
+        self.displayMessageReceived(result.text)
         try! self.receiveExpandMessages()
-      } else if let error = error {
-        switch error {
-        case .endOfStream:
-          self.displayMessageReceived("Done.")
-        default:
-          self.displayMessageReceived("No message received. \(error)")
-        }
+      } else if let error = response.error {
+        self.displayMessageReceived("No message received. \(error)")
       }
     }
   }
@@ -217,7 +214,11 @@ class EchoViewController: NSViewController, NSTextFieldDelegate {
       var requestMessage = Echo_EchoRequest()
       requestMessage.text = messageField.stringValue
       displayMessageSent(requestMessage.text)
-      try collectCall.send(requestMessage) { error in print(error) }
+      try collectCall.send(requestMessage) { (error) in
+        if let error = error {
+          print(error)
+        }
+      }
     }
   }
 
@@ -226,7 +227,11 @@ class EchoViewController: NSViewController, NSTextFieldDelegate {
       var requestMessage = Echo_EchoRequest()
       requestMessage.text = messageField.stringValue
       displayMessageSent(requestMessage.text)
-      try updateCall.send(requestMessage) { error in print(error) }
+      try updateCall.send(requestMessage) { (error) in
+        if let error = error {
+          print(error)
+        }
+      }
     }
   }
 
@@ -234,17 +239,13 @@ class EchoViewController: NSViewController, NSTextFieldDelegate {
     guard let updateCall = updateCall else {
       return
     }
-    try updateCall.receive { response, error in
-      if let responseMessage = response {
-        self.displayMessageReceived(responseMessage.text)
+    
+    try updateCall.receive { (response) in
+      if case let result?? = response.result {
+        self.displayMessageReceived(result.text)
         try! self.receiveUpdateMessages()
-      } else if let error = error {
-        switch error {
-        case .endOfStream:
-          self.displayMessageReceived("Done.")
-        default:
-          self.displayMessageReceived("No message received. \(error)")
-        }
+      } else if let error = response.error {
+        self.displayMessageReceived("No message received. \(error)")
       }
     }
   }
@@ -261,10 +262,10 @@ class EchoViewController: NSViewController, NSTextFieldDelegate {
     }
     if let collectCall = collectCall {
       do {
-        try collectCall.closeAndReceive { response, error in
-          if let response = response {
-            self.displayMessageReceived(response.text)
-          } else if let error = error {
+        try collectCall.closeAndReceive { (response) in
+          if let result = response.result {
+            self.displayMessageReceived(result.text)
+          } else if let error = response.error {
             self.displayMessageReceived("No message received. \(error)")
           }
           self.collectCall = nil
