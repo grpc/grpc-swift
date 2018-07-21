@@ -267,10 +267,6 @@
 			isa = PBXTargetDependency;
 			name = gRPC;
 		};
-		D394EF201F58DB9800E99633 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = Czlib;
-		};
 		D394EF221F58DB9800E99633 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = CgRPC;
@@ -290,10 +286,6 @@
 		D3E1EA7F1EE8B00C0024A93A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = CgRPC;
-		};
-		D3E1EA811EE8B0120024A93A /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = Czlib;
 		};
 		D3E1EA831EE8B0120024A93A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
