@@ -59,6 +59,22 @@ public class Channel {
   /// Initializes a gRPC channel
   ///
   /// - Parameter address: the address of the server to be called
+  /// - Parameter arguments: list of channel configuration options
+  public init(googleAddress: String, arguments: [Argument] = []) {
+    gRPC.initialize()
+    host = googleAddress
+    let argumentWrappers = arguments.map { $0.toCArg() }
+    var argumentValues = argumentWrappers.map { $0.wrapped }
+
+    underlyingChannel = cgrpc_channel_create_google(googleAddress, &argumentValues, Int32(arguments.count))
+
+    completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_channel_completion_queue(underlyingChannel), name: "Client")
+    completionQueue.run() // start a loop that watches the channel's completion queue
+  }
+
+  /// Initializes a gRPC channel
+  ///
+  /// - Parameter address: the address of the server to be called
   /// - Parameter certificates: a PEM representation of certificates to use
   /// - Parameter clientCertificates: a PEM representation of the client certificates to use
   /// - Parameter clientKey: a PEM representation of the client key to use
@@ -116,7 +132,7 @@ private extension Channel {
     private let underlyingCompletionQueue: UnsafeMutableRawPointer
     private let callback: (ConnectivityState) -> Void
     private var lastState: ConnectivityState
-    
+
     init(underlyingChannel: UnsafeMutableRawPointer, currentState: ConnectivityState, callback: @escaping (ConnectivityState) -> ()) {
       self.underlyingChannel = underlyingChannel
       self.underlyingCompletionQueue = cgrpc_completion_queue_create_for_next()
@@ -136,7 +152,7 @@ private extension Channel {
       spinloopThreadQueue.async {
         while true  {
           guard let underlyingState = self.lastState.underlyingState else { return }
-          
+
           let deadline: TimeInterval = 0.2
           cgrpc_channel_watch_connectivity_state(self.underlyingChannel, self.underlyingCompletionQueue, underlyingState, deadline, nil)
           let event = self.completionQueue.wait(timeout: deadline)
@@ -144,11 +160,11 @@ private extension Channel {
           switch event.type {
           case .complete:
             let newState = ConnectivityState.connectivityState(cgrpc_channel_check_connectivity_state(self.underlyingChannel, 0))
-            
+
             if newState != self.lastState {
               self.callback(newState)
             }
-            
+
             self.lastState = newState
           case .queueTimeout:
             continue
@@ -160,7 +176,7 @@ private extension Channel {
         }
       }
     }
-    
+
     func shutdown() {
       completionQueue.shutdown()
     }

@@ -171,6 +171,10 @@ cgrpc_channel *cgrpc_channel_create_secure(const char *address,
                                            grpc_arg *args,
                                            int num_args);
 
+cgrpc_channel *cgrpc_channel_create_google(const char *address,
+                                          grpc_arg *args,
+                                          int num_args);
+
 void cgrpc_channel_destroy(cgrpc_channel *channel);
 cgrpc_call *cgrpc_channel_create_call(cgrpc_channel *channel,
                                       const char *method,
