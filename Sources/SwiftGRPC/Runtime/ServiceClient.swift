@@ -61,20 +61,21 @@ open class ServiceClientBase: ServiceClient {
     metadata = Metadata()
   }
 
-  /// Create a client with Google credentials.
-  /// - Parameter googleApi: the name of the Google API service (e.g. "cloudkms" in "cloudkms.googleapis.com")
+  /// Create a client with Google credentials suitable for connecting to a Google-provided API.
+  /// gRPC protobuf defnitions for use with this method are here: https://github.com/googleapis/googleapis
+  /// - Parameter googleAPI: the name of the Google API service (e.g. "cloudkms" in "cloudkms.googleapis.com")
   /// - Parameter arguments: list of channel configuration options
   ///
-  /// Note: cgRPC's `grpc_google_default_credentials_create` doesn't accept a root pem argument.
+  /// Note: CgRPC's `grpc_google_default_credentials_create` doesn't accept a root pem argument.
   /// To override: `export GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=/path/to/your/root/cert.pem`
-  required public init(googleApi: String, arguments: [Channel.Argument] = []) {
+  required public init(googleAPI: String, arguments: [Channel.Argument] = []) {
     gRPC.initialize()
 
     // Force the address of the Google API to account for the security concern mentioned in
     // Sources/CgRPC/include/grpc/grpc_security.h:
     //    WARNING: Do NOT use this credentials to connect to a non-google service as
     //    this could result in an oauth2 token leak.
-    let address = googleApi + ".googleapis.com"
+    let address = googleAPI + ".googleapis.com"
     channel = Channel(googleAddress: address, arguments: arguments)
     metadata = Metadata()
   }
