@@ -20,7 +20,7 @@ API styles (Unary, Server Streaming, Client Streaming,
 and Bidirectional Streaming) and connections can be made
 either over secure (TLS) or insecure channels.
 
-The [Echo](Examples/Echo) example provides a comprehensive
+The [Echo](Examples/EchoXcode/Echo) example provides a comprehensive
 demonstration of currently-supported features.
 
 Swift Package Manager builds may also be made on Linux 
