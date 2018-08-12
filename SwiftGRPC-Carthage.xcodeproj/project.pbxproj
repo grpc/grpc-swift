@@ -2172,18 +2172,18 @@
 		OBJ_1160 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				SwiftGRPC::Echo::Product /* Echo */,
-				SwiftProtobuf::protoc-gen-swift::Product /* protoc-gen-swift */,
 				SwiftGRPC::RootsEncoder::Product /* RootsEncoder */,
-				SwiftGRPC::Simple::Product /* Simple */,
 				SwiftProtobuf::SwiftProtobufPluginLibrary::Product /* SwiftProtobufPluginLibrary.framework */,
-				SwiftGRPC::SwiftGRPCTests::Product /* SwiftGRPCTests.xctest */,
 				SwiftGRPC::SwiftGRPC::Product /* SwiftGRPC.framework */,
-				SwiftGRPC::BoringSSL::Product /* BoringSSL.framework */,
-				Commander::Commander::Product /* Commander.framework */,
-				SwiftGRPC::CgRPC::Product /* CgRPC.framework */,
 				SwiftProtobuf::SwiftProtobuf::Product /* SwiftProtobuf.framework */,
+				SwiftGRPC::BoringSSL::Product /* BoringSSL.framework */,
+				SwiftProtobuf::protoc-gen-swift::Product /* protoc-gen-swift */,
+				SwiftGRPC::Echo::Product /* Echo */,
+				SwiftGRPC::Simple::Product /* Simple */,
+				Commander::Commander::Product /* Commander.framework */,
 				SwiftGRPC::protoc-gen-swiftgrpc::Product /* protoc-gen-swiftgrpc */,
+				SwiftGRPC::SwiftGRPCTests::Product /* SwiftGRPCTests.xctest */,
+				SwiftGRPC::CgRPC::Product /* CgRPC.framework */,
 			);
 			name = Products;
 			path = "";
@@ -4371,7 +4371,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = OBJ_2009 /* Build configuration list for PBXNativeTarget "SwiftProtobuf" */;
 			buildPhases = (
-				31CD0F748721B9677E261D1D /* ShellScript */,
+				9787213439CCFC4B91A030CE /* ShellScript */,
 				OBJ_2012 /* Sources */,
 				OBJ_2089 /* Frameworks */,
 			);
@@ -4412,7 +4412,7 @@
 /* End PBXProject section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		31CD0F748721B9677E261D1D /* ShellScript */ = {
+		9787213439CCFC4B91A030CE /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -5264,6 +5264,7 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1071467962839356487",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/BoringSSL_Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = (
@@ -5296,6 +5297,7 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1071467962839356487",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/BoringSSL_Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = (
@@ -5329,6 +5331,7 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1071467962839356487",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/CgRPC_Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = (
@@ -5362,6 +5365,7 @@
 					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1071467962839356487",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/CgRPC_Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = (
@@ -5393,6 +5397,7 @@
 					"$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/SwiftGRPC_Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = (
@@ -5425,6 +5430,7 @@
 					"$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/SwiftGRPC_Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = (
@@ -5451,6 +5457,7 @@
 				);
 				HEADER_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/SwiftProtobuf_Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";
@@ -5474,6 +5481,7 @@
 				);
 				HEADER_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/SwiftProtobuf_Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_CFLAGS = "$(inherited)";
 				OTHER_LDFLAGS = "$(inherited)";

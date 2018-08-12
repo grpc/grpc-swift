@@ -9,7 +9,6 @@ project.targets.each do |target|
   if !carthage_targets.include?(target.name)
     targets_to_remove << target
   else
-    puts target.name
     target.build_configurations.each do |config|
       config.build_settings["IPHONEOS_DEPLOYMENT_TARGET"] = "9.0"
     end
