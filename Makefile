@@ -36,10 +36,10 @@ xcodebuild: project
 		xcodebuild -configuration "Debug" -parallelizeTargets -target SwiftGRPC -target Echo -target Simple -target protoc-gen-swiftgrpc build
 
 clean:
-	rm -rf Packages
-	rm -rf .build build
-	rm -rf SwiftGRPC.xcodeproj
-	rm -rf Package.pins Package.resolved
-	rm -rf protoc-gen-swift protoc-gen-swiftgrpc
-	cd Examples/Echo/PackageManager; make clean
-	cd Examples/Simple/PackageManager; make clean
+	-rm -rf Packages
+	-rm -rf .build build
+	-rm -rf SwiftGRPC.xcodeproj
+	-rm -rf Package.pins Package.resolved
+	-rm -rf protoc-gen-swift protoc-gen-swiftgrpc
+	-cd Examples/Echo/PackageManager && make clean
+	-cd Examples/Simple/PackageManager && make clean
