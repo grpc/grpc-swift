@@ -11,8 +11,14 @@ all:
 	cp .build/debug/protoc-gen-swiftgrpc .
 	
 project:
-	swift package $(CFLAGS) generate-xcodeproj
-	@-ruby fix-project-settings.rb || echo "Consider running 'sudo gem install xcodeproj' to automatically set correct indentation settings for the generated project."
+	swift package $(CFLAGS) generate-xcodeproj --output SwiftGRPC.xcodeproj
+	@-ruby fix-project-settings.rb SwiftGRPC.xcodeproj || echo "Consider running 'sudo gem install xcodeproj' to automatically set correct indentation settings for the generated project."
+
+project-carthage:
+	swift package generate-xcodeproj --output SwiftGRPC-Carthage.xcodeproj
+	@-ruby fix-project-settings.rb SwiftGRPC-Carthage.xcodeproj || echo "You may need to install xcodeproj ('sudo gem install xcodeproj')!"
+	@ruby remove-unwanted-targets-for-carthage.rb SwiftGRPC-Carthage.xcodeproj || echo "xcodeproj ('sudo gem install xcodeproj') is required in order to generate the Carthage-compatible project!"
+	@ruby add-swift-resolve-prebuild-phase.rb || echo "xcodeproj ('sudo gem install xcodeproj') is required in order to generate the Carthage-compatible project!"
 
 test:	all
 	swift test $(CFLAGS)
@@ -33,13 +39,16 @@ test-plugin:
 	diff -u /tmp/echo.grpc.swift Sources/Examples/Echo/Generated/echo.grpc.swift
 
 xcodebuild: project
-		xcodebuild -configuration "Debug" -parallelizeTargets -target SwiftGRPC -target Echo -target Simple -target protoc-gen-swiftgrpc build
+		xcodebuild -project SwiftGRPC.xcodeproj -configuration "Debug" -parallelizeTargets -target SwiftGRPC -target Echo -target Simple -target protoc-gen-swiftgrpc build
+
+build-carthage:
+	carthage build --no-skip-current
 
 clean:
-	rm -rf Packages
-	rm -rf .build build
-	rm -rf SwiftGRPC.xcodeproj
-	rm -rf Package.pins Package.resolved
-	rm -rf protoc-gen-swift protoc-gen-swiftgrpc
-	cd Examples/Echo/PackageManager; make clean
-	cd Examples/Simple/PackageManager; make clean
+	-rm -rf Packages
+	-rm -rf .build build
+	-rm -rf SwiftGRPC.xcodeproj
+	-rm -rf Package.pins Package.resolved
+	-rm -rf protoc-gen-swift protoc-gen-swiftgrpc
+	-cd Examples/Echo/PackageManager && make clean
+	-cd Examples/Simple/PackageManager && make clean
