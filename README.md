@@ -1,14 +1,14 @@
 [![Build Status](https://travis-ci.org/grpc/grpc-swift.svg?branch=master)](https://travis-ci.org/grpc/grpc-swift)
 
-# Swift gRPC 
+# Swift gRPC
 
 This repository contains an experimental Swift gRPC API
 and code generator.
 
-It is intended for use with Apple's 
+It is intended for use with Apple's
 [swift-protobuf](https://github.com/apple/swift-protobuf)
 support for Protocol Buffers. Both projects contain
-code generation plugins for `protoc`, Google's 
+code generation plugins for `protoc`, Google's
 Protocol Buffer compiler, and both contain libraries
 of supporting code that is needed to build and run
 the generated code.
@@ -16,15 +16,15 @@ the generated code.
 APIs and generated code is provided for both gRPC clients
 and servers, and can be built either with Xcode or the Swift
 Package Manager. Support is provided for all four gRPC
-API styles (Unary, Server Streaming, Client Streaming, 
+API styles (Unary, Server Streaming, Client Streaming,
 and Bidirectional Streaming) and connections can be made
 either over secure (TLS) or insecure channels.
 
 The [Echo](Examples/EchoXcode/Echo) example provides a comprehensive
 demonstration of currently-supported features.
 
-Swift Package Manager builds may also be made on Linux 
-systems. Please see [DOCKER.md](DOCKER.md) and 
+Swift Package Manager builds may also be made on Linux
+systems. Please see [DOCKER.md](DOCKER.md) and
 [LINUX.md](LINUX.md) for details.
 
 ## CocoaPods integration
@@ -89,7 +89,7 @@ By convention the `--swift_out` option invokes the `protoc-gen-swift`
 plugin and `--swiftgrpc_out` invokes `protoc-gen-swiftgrpc`.
 
 #### Parameters
-To pass extra parameters to the plugin, use a comma-separated parameter list 
+To pass extra parameters to the plugin, use a comma-separated parameter list
 separated from the output directory by a colon.
 
 | Flag | Values | Default | Description |
@@ -139,10 +139,21 @@ testing with the following versions:
 
 ## License
 
-grpc-swift is released under the same license as 
+grpc-swift is released under the same license as
 [gRPC](https://github.com/grpc/grpc), repeated in
-[LICENSE](LICENSE). 
+[LICENSE](LICENSE).
 
 ## Contributing
 
 Please get involved! See our [guidelines for contributing](CONTRIBUTING.md).
+
+### Releasing
+
+Prior to creating a new release tag for SwiftGRPC, the `.podspec` file's version should be bumped, and the
+CocoaPods spec linter should be run to ensure that there are no new warnings/errors:
+
+    $ pod spec lint SwiftGRPC.podspec
+
+Once a new release tag is created, the updated CocoaPods spec should also be pushed to the master specs repo:
+
+    $ pod trunk push SwiftGRPC.podspec
