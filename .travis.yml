@@ -58,4 +58,4 @@ script:
   - make test-plugin
   - make test-echo
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then make xcodebuild; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then make clean && travis_wait 20 make build-carthage; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then make clean && travis_wait 40 make build-carthage; fi
