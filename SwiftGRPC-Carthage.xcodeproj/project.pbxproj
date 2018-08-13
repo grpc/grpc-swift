@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		23462367C58F4E6F35890A54 /* cgrpc.h in Headers */ = {isa = PBXBuildFile; fileRef = OBJ_941 /* cgrpc.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		OBJ_1178 /* a_bitstr.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* a_bitstr.c */; };
 		OBJ_1179 /* a_bool.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* a_bool.c */; };
 		OBJ_1180 /* a_d2i_fp.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_13 /* a_d2i_fp.c */; };
@@ -829,7 +830,7 @@
 		OBJ_1039 /* Error.swift */ = {isa = PBXFileReference; path = Error.swift; sourceTree = "<group>"; };
 		OBJ_104 /* ecdh.c */ = {isa = PBXFileReference; path = ecdh.c; sourceTree = "<group>"; };
 		OBJ_1040 /* Group.swift */ = {isa = PBXFileReference; path = Group.swift; sourceTree = "<group>"; };
-		OBJ_1041 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Package.swift; path = "/private/tmp/PR/grpc-swift/.build/checkouts/Commander.git-8842944228949165507/Package.swift"; sourceTree = "<group>"; };
+		OBJ_1041 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Package.swift; path = "/private/tmp/2/grpc-swift/.build/checkouts/Commander.git-8842944228949165507/Package.swift"; sourceTree = "<group>"; };
 		OBJ_1045 /* CommandLine+Extensions.swift */ = {isa = PBXFileReference; path = "CommandLine+Extensions.swift"; sourceTree = "<group>"; };
 		OBJ_1046 /* Descriptor+Extensions.swift */ = {isa = PBXFileReference; path = "Descriptor+Extensions.swift"; sourceTree = "<group>"; };
 		OBJ_1047 /* EnumGenerator.swift */ = {isa = PBXFileReference; path = EnumGenerator.swift; sourceTree = "<group>"; };
@@ -950,7 +951,7 @@
 		OBJ_1156 /* timestamp.pb.swift */ = {isa = PBXFileReference; path = timestamp.pb.swift; sourceTree = "<group>"; };
 		OBJ_1157 /* type.pb.swift */ = {isa = PBXFileReference; path = type.pb.swift; sourceTree = "<group>"; };
 		OBJ_1158 /* wrappers.pb.swift */ = {isa = PBXFileReference; path = wrappers.pb.swift; sourceTree = "<group>"; };
-		OBJ_1159 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Package.swift; path = "/private/tmp/PR/grpc-swift/.build/checkouts/swift-protobuf.git--7219529775138357838/Package.swift"; sourceTree = "<group>"; };
+		OBJ_1159 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Package.swift; path = "/private/tmp/2/grpc-swift/.build/checkouts/swift-protobuf.git--7219529775138357838/Package.swift"; sourceTree = "<group>"; };
 		OBJ_116 /* evp_ctx.c */ = {isa = PBXFileReference; path = evp_ctx.c; sourceTree = "<group>"; };
 		OBJ_117 /* p_dsa_asn1.c */ = {isa = PBXFileReference; path = p_dsa_asn1.c; sourceTree = "<group>"; };
 		OBJ_118 /* p_ec.c */ = {isa = PBXFileReference; path = p_ec.c; sourceTree = "<group>"; };
@@ -1284,7 +1285,7 @@
 		OBJ_449 /* ex_data.h */ = {isa = PBXFileReference; path = ex_data.h; sourceTree = "<group>"; };
 		OBJ_45 /* bio_mem.c */ = {isa = PBXFileReference; path = bio_mem.c; sourceTree = "<group>"; };
 		OBJ_450 /* base.h */ = {isa = PBXFileReference; path = base.h; sourceTree = "<group>"; };
-		OBJ_451 /* module.modulemap */ = {isa = PBXFileReference; name = module.modulemap; path = "/private/tmp/PR/grpc-swift/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL/module.modulemap"; sourceTree = "<group>"; };
+		OBJ_451 /* module.modulemap */ = {isa = PBXFileReference; name = module.modulemap; path = "/private/tmp/2/grpc-swift/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL/module.modulemap"; sourceTree = "<group>"; };
 		OBJ_453 /* EchoProvider.swift */ = {isa = PBXFileReference; path = EchoProvider.swift; sourceTree = "<group>"; };
 		OBJ_455 /* echo.grpc.swift */ = {isa = PBXFileReference; path = echo.grpc.swift; sourceTree = "<group>"; };
 		OBJ_456 /* echo.pb.swift */ = {isa = PBXFileReference; path = echo.pb.swift; sourceTree = "<group>"; };
@@ -1781,7 +1782,7 @@
 		OBJ_995 /* byte_buffer.h */ = {isa = PBXFileReference; path = byte_buffer.h; sourceTree = "<group>"; };
 		OBJ_996 /* connectivity_state.h */ = {isa = PBXFileReference; path = connectivity_state.h; sourceTree = "<group>"; };
 		OBJ_997 /* sync_windows.h */ = {isa = PBXFileReference; path = sync_windows.h; sourceTree = "<group>"; };
-		OBJ_998 /* module.modulemap */ = {isa = PBXFileReference; name = module.modulemap; path = "/private/tmp/PR/grpc-swift/Sources/CgRPC/include/module.modulemap"; sourceTree = "<group>"; };
+		OBJ_998 /* module.modulemap */ = {isa = PBXFileReference; name = module.modulemap; path = "/private/tmp/2/grpc-swift/Sources/CgRPC/include/module.modulemap"; sourceTree = "<group>"; };
 		SwiftGRPC::BoringSSL::Product /* BoringSSL.framework */ = {isa = PBXFileReference; path = BoringSSL.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		SwiftGRPC::CgRPC::Product /* CgRPC.framework */ = {isa = PBXFileReference; path = CgRPC.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		SwiftGRPC::Echo::Product /* Echo */ = {isa = PBXFileReference; path = Echo; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -2172,18 +2173,18 @@
 		OBJ_1160 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				SwiftGRPC::RootsEncoder::Product /* RootsEncoder */,
-				SwiftProtobuf::SwiftProtobufPluginLibrary::Product /* SwiftProtobufPluginLibrary.framework */,
-				SwiftGRPC::SwiftGRPC::Product /* SwiftGRPC.framework */,
-				SwiftProtobuf::SwiftProtobuf::Product /* SwiftProtobuf.framework */,
-				SwiftGRPC::BoringSSL::Product /* BoringSSL.framework */,
-				SwiftProtobuf::protoc-gen-swift::Product /* protoc-gen-swift */,
-				SwiftGRPC::Echo::Product /* Echo */,
-				SwiftGRPC::Simple::Product /* Simple */,
-				Commander::Commander::Product /* Commander.framework */,
-				SwiftGRPC::protoc-gen-swiftgrpc::Product /* protoc-gen-swiftgrpc */,
 				SwiftGRPC::SwiftGRPCTests::Product /* SwiftGRPCTests.xctest */,
+				SwiftProtobuf::SwiftProtobufPluginLibrary::Product /* SwiftProtobufPluginLibrary.framework */,
+				Commander::Commander::Product /* Commander.framework */,
+				SwiftProtobuf::protoc-gen-swift::Product /* protoc-gen-swift */,
+				SwiftProtobuf::SwiftProtobuf::Product /* SwiftProtobuf.framework */,
+				SwiftGRPC::Echo::Product /* Echo */,
+				SwiftGRPC::BoringSSL::Product /* BoringSSL.framework */,
 				SwiftGRPC::CgRPC::Product /* CgRPC.framework */,
+				SwiftGRPC::Simple::Product /* Simple */,
+				SwiftGRPC::SwiftGRPC::Product /* SwiftGRPC.framework */,
+				SwiftGRPC::RootsEncoder::Product /* RootsEncoder */,
+				SwiftGRPC::protoc-gen-swiftgrpc::Product /* protoc-gen-swiftgrpc */,
 			);
 			name = Products;
 			path = "";
@@ -4314,6 +4315,17 @@
 		};
 /* End PBXGroup section */
 
+/* Begin PBXHeadersBuildPhase section */
+		03098F4BD227616E5770449C /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				23462367C58F4E6F35890A54 /* cgrpc.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
 /* Begin PBXNativeTarget section */
 		SwiftGRPC::BoringSSL /* BoringSSL */ = {
 			isa = PBXNativeTarget;
@@ -4337,6 +4349,7 @@
 			buildPhases = (
 				OBJ_1497 /* Sources */,
 				OBJ_1852 /* Frameworks */,
+				03098F4BD227616E5770449C /* Headers */,
 			);
 			buildRules = (
 			);
@@ -4371,7 +4384,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = OBJ_2009 /* Build configuration list for PBXNativeTarget "SwiftProtobuf" */;
 			buildPhases = (
-				9787213439CCFC4B91A030CE /* ShellScript */,
+				D59170D15EFB78FE0A2CCF67 /* ShellScript */,
 				OBJ_2012 /* Sources */,
 				OBJ_2089 /* Frameworks */,
 			);
@@ -4412,7 +4425,7 @@
 /* End PBXProject section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		9787213439CCFC4B91A030CE /* ShellScript */ = {
+		D59170D15EFB78FE0A2CCF67 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -5317,7 +5330,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_CXX_LANGUAGE_STANDARD = "c++11";
-				DEFINES_MODULE = NO;
+				DEFINES_MODULE = YES;
 				ENABLE_TESTABILITY = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -5351,7 +5364,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_CXX_LANGUAGE_STANDARD = "c++11";
-				DEFINES_MODULE = NO;
+				DEFINES_MODULE = YES;
 				ENABLE_TESTABILITY = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
