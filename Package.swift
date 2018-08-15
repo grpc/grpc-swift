@@ -18,16 +18,16 @@
 import PackageDescription
 
 var packageDependencies: [Package.Dependency] = [
-  .package(url: "https://github.com/apple/swift-protobuf.git", Version(1, 0, 2)),
-  .package(url: "https://github.com/kylef/Commander.git", Version(0, 8, 0)),
-  .package(url: "https://github.com/apple/swift-nio-zlib-support.git", Version(1, 0, 0))
+  .package(url: "https://github.com/apple/swift-protobuf.git", versions: Version(1,0,2) ..<Version(1,0,2)),
+  .package(url: "https://github.com/kylef/Commander.git", versions: Version(0,8,0) ..<Version(0,8,0)),
+  .package(url: "https://github.com/apple/swift-nio-zlib-support.git", versions: Version(1,0,0) ..Version(1,0,0))
 ]
 
 var cGRPCDependencies: [Target.Dependency] = []
 #if os(Linux)
 // On Linux, Foundation links with openssl, so we'll need to use that instead of BoringSSL.
 // See https://github.com/apple/swift-nio-ssl/issues/16#issuecomment-392705505 for details.
-packageDependencies.append(.package(url: "https://github.com/apple/swift-nio-ssl-support.git", Version(1, 0, 0)))
+packageDependencies.append(.package(url: "https://github.com/apple/swift-nio-ssl-support.git", versions: Version(1,0,0) ..Version(1,0,0)))
 #else
 cGRPCDependencies.append("BoringSSL")
 #endif
