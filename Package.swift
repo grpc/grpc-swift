@@ -1,5 +1,4 @@
 // swift-tools-version:4.0
-
 /*
  * Copyright 2017, gRPC Authors All rights reserved.
  *
@@ -18,16 +17,16 @@
 import PackageDescription
 
 var packageDependencies: [Package.Dependency] = [
-  .package(url: "https://github.com/apple/swift-protobuf.git", .exact("1.0.2")),
-  .package(url: "https://github.com/kylef/Commander.git", .exact("0.8.0")),
-  .package(url: "https://github.com/apple/swift-nio-zlib-support.git", .exact("1.0.0"))
+  .package(url: "https://github.com/apple/swift-protobuf.git", upToNextMinor(from: "1.0.3")),
+  .package(url: "https://github.com/kylef/Commander.git", from: "0.8.0"),
+  .package(url: "https://github.com/apple/swift-nio-zlib-support.git", from: "1.0.0")
 ]
 
 var cGRPCDependencies: [Target.Dependency] = []
 #if os(Linux)
 // On Linux, Foundation links with openssl, so we'll need to use that instead of BoringSSL.
 // See https://github.com/apple/swift-nio-ssl/issues/16#issuecomment-392705505 for details.
-packageDependencies.append(.package(url: "https://github.com/apple/swift-nio-ssl-support.git", .exact("1.0.0")))
+packageDependencies.append(.package(url: "https://github.com/apple/swift-nio-ssl-support.git", from: "1.0.0"))
 #else
 cGRPCDependencies.append("BoringSSL")
 #endif
