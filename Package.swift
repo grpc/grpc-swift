@@ -1,5 +1,4 @@
 // swift-tools-version:4.0
-
 /*
  * Copyright 2017, gRPC Authors All rights reserved.
  *
@@ -18,7 +17,7 @@
 import PackageDescription
 
 var packageDependencies: [Package.Dependency] = [
-  .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.0.2"),
+  .package(url: "https://github.com/apple/swift-protobuf.git", .upToNextMinor(from: "1.0.3")),
   .package(url: "https://github.com/kylef/Commander.git", from: "0.8.0"),
   .package(url: "https://github.com/apple/swift-nio-zlib-support.git", from: "1.0.0")
 ]
