@@ -16,9 +16,8 @@ project:
 
 project-carthage:
 	swift package generate-xcodeproj --output SwiftGRPC-Carthage.xcodeproj
-	@-ruby fix-project-settings.rb SwiftGRPC-Carthage.xcodeproj || echo "You may need to install xcodeproj ('sudo gem install xcodeproj')!"
-	@ruby remove-unwanted-targets-for-carthage.rb SwiftGRPC-Carthage.xcodeproj || echo "xcodeproj ('sudo gem install xcodeproj') is required in order to generate the Carthage-compatible project!"
-	@ruby add-swift-resolve-prebuild-phase.rb || echo "xcodeproj ('sudo gem install xcodeproj') is required in order to generate the Carthage-compatible project!"
+	@ruby fix-project-settings.rb SwiftGRPC-Carthage.xcodeproj || echo "xcodeproj ('sudo gem install xcodeproj') is required in order to generate the Carthage-compatible project!"
+	@ruby patch-carthage-project.rb SwiftGRPC-Carthage.xcodeproj || echo "xcodeproj ('sudo gem install xcodeproj') is required in order to generate the Carthage-compatible project!"
 
 test:	all
 	swift test $(CFLAGS)
