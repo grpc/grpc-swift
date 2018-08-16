@@ -57,4 +57,4 @@ script:
   - echo -en 'travis_fold:start:make.test-plugin\\r' && make test-plugin && echo -en 'travis_fold:end:make.test-plugin\\r'
   - echo -en 'travis_fold:start:make.test-echo\\r' && make test-echo && echo -en 'travis_fold:end:make.test-echo\\r'
   - echo -en 'travis_fold:start:make.xcodebuild\\r' && if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then make xcodebuild; fi && echo -en 'travis_fold:end:make.xcodebuild\\r'
-  - echo -en 'travis_fold:start:make.build-carthage\\r' && if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then make clean && travis_wait 40 make build-carthage; fi && echo -en 'travis_fold:end:make.build-carthage\\r'
+  - echo -en 'travis_fold:start:make.build-carthage\\r' && if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then make clean && travis_wait 40 make build-carthage-debug; fi && echo -en 'travis_fold:end:make.build-carthage\\r'
