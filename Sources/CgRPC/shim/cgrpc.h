@@ -203,7 +203,7 @@ void cgrpc_server_start(cgrpc_server *s);
 cgrpc_completion_queue *cgrpc_server_get_completion_queue(cgrpc_server *s);
 
 // completion queues
-cgrpc_completion_queue *cgrpc_completion_queue_create_for_next();
+cgrpc_completion_queue *cgrpc_completion_queue_create_for_next(void);
 grpc_event cgrpc_completion_queue_get_next_event(cgrpc_completion_queue *cq,
                                                  double timeout);
 void cgrpc_completion_queue_drain(cgrpc_completion_queue *cq);
