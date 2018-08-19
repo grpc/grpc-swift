@@ -44,11 +44,15 @@ xcodebuild: project
 build-carthage:
 	carthage build --no-skip-current
 
+build-carthage-debug:
+	carthage build --no-skip-current --configuration Debug --platform iOS, macOS
+
 clean:
 	-rm -rf Packages
 	-rm -rf .build build
 	-rm -rf SwiftGRPC.xcodeproj
 	-rm -rf Package.pins Package.resolved
 	-rm -rf protoc-gen-swift protoc-gen-swiftgrpc
-	-cd Examples/Echo/PackageManager && make clean
-	-cd Examples/Simple/PackageManager && make clean
+	-cd Examples/Google/Datastore && make clean
+	-cd Examples/Google/NaturalLanguage && make clean
+	-cd Examples/Google/Spanner && make clean

@@ -49,13 +49,12 @@ addons:
 
 install: ./.travis-install.sh
 
-script: 
-  - export PATH=$HOME/local/bin:$PATH
-  - export LD_LIBRARY_PATH=$HOME/local/lib
-  - swift package -v resolve
-  - make all
-  - make test
-  - make test-plugin
-  - make test-echo
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then make xcodebuild; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then make clean && travis_wait 40 make build-carthage; fi
+script:
+  - echo -en 'travis_fold:start:script.environment\\r' && export PATH=$HOME/local/bin:$PATH && export LD_LIBRARY_PATH=$HOME/local/lib && echo -en 'travis_fold:end:script.environment\\r'
+  - echo -en 'travis_fold:start:swift.resolve-deps\\r' && swift package -v resolve && echo -en 'travis_fold:end:swift.resolve-deps\\r'
+  - echo -en 'travis_fold:start:make.all\\r' && make all && echo -en 'travis_fold:end:make.all\\r'
+  - echo -en 'travis_fold:start:make.test\\r' && make test && echo -en 'travis_fold:end:make.test\\r'
+  - echo -en 'travis_fold:start:make.test-plugin\\r' && make test-plugin && echo -en 'travis_fold:end:make.test-plugin\\r'
+  - echo -en 'travis_fold:start:make.test-echo\\r' && make test-echo && echo -en 'travis_fold:end:make.test-echo\\r'
+  - echo -en 'travis_fold:start:make.project\\r' && if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then make project; fi && echo -en 'travis_fold:end:make.project\\r'
+  - echo -en 'travis_fold:start:make.build-carthage\\r' && if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then make clean && make build-carthage-debug; fi && echo -en 'travis_fold:end:make.build-carthage\\r'
