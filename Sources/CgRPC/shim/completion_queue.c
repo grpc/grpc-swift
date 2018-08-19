@@ -18,7 +18,7 @@
 
 #include <stdio.h>
 
-grpc_completion_queue *cgrpc_completion_queue_create_for_next() {
+grpc_completion_queue *cgrpc_completion_queue_create_for_next(void) {
   return grpc_completion_queue_create_for_next(NULL);
 }
 
