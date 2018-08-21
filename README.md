@@ -135,7 +135,7 @@ testing with the following versions:
 
 - Xcode 9.1
 - Swift 4.0
-- swift-protobuf 1.0.3
+- swift-protobuf 1.1.1
 
 ## License
 
