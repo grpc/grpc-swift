@@ -38,6 +38,7 @@ Start a docker instance with the following command:
     ln -s swift-3.0.2-RELEASE-ubuntu16.04 swift
 
 ## Add Swift to your path
+
     # add swift to your path by adding this to your .bashrc
     export PATH=/root/swift/usr/bin:$PATH
 
@@ -50,21 +51,23 @@ Start a docker instance with the following command:
     git config --global user.name "<your name>"
 
 ## Fetch and build grpc
+
     git clone https://github.com/grpc/grpc-swift
-    cd grpc-swift
-    cd third_party
-    sh RUNME.sh
+    cd grpc-swift/third_party
+    git clone https://github.com/grpc/grpc.git
     cd grpc
     git submodule update --init
     make
     make install
 
 ## Build the Echo sample
+
     cd
     cd grpc-swift/Examples/Echo/PackageManager
     make
 
-## Run the test client and server 
+## Run the test client and server
+
     # start the server
     .build/debug/Echo serve &
     # run the client to test each Echo API
@@ -72,15 +75,14 @@ Start a docker instance with the following command:
     .build/debug/Echo expand
     .build/debug/Echo collect
     .build/debug/Echo update
-	
 
 ## To test the plugin
+
     # build and install protoc
     cd
-    cd grpc-swift/third_party/grpc/third_party/protobuf 
+    cd grpc-swift/third_party/grpc/third_party/protobuf
     make install
     # build and test the plugin
     cd
     cd grpc-swift/Plugin
     make test
-
