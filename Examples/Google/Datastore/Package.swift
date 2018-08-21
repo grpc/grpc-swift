@@ -21,7 +21,7 @@ let package = Package(
   name: "Datastore",
   dependencies: [
     .package(url: "../../..", .branch("HEAD")),
-    .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.0.2"),
+    .package(url: "https://github.com/apple/swift-protobuf.git", .upToNextMinor(from: "1.1.1")),
     .package(url: "https://github.com/kylef/Commander.git", from: "0.8.0"),
     .package(url: "https://github.com/google/auth-library-swift.git", from: "0.3.6")
   ],
