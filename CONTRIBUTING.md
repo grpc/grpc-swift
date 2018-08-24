@@ -8,7 +8,7 @@ Here are some guidelines and information about how to participate.
 ### Legal requirements
 
 In order to protect both you and ourselves, you will need to sign the
-[Contributor License Agreement](https://cla.developers.google.com/clas).
+[Contributor License Agreement](https://identity.linuxfoundation.org/projects/cncf).
 
 ### Technical requirements
 
