@@ -20,7 +20,7 @@ import SwiftGRPC
 class AppDelegate: NSObject, NSApplicationDelegate {
   func applicationDidFinishLaunching(_: Notification) {
     gRPC.initialize()
-    print("GRPC version", gRPC.version())
+    print("GRPC version", gRPC.version)
   }
 
   func applicationWillTerminate(_: Notification) {

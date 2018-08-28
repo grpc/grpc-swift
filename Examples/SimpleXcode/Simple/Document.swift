@@ -132,9 +132,9 @@ class Document: NSDocument {
   func runClient(address: String) {
     DispatchQueue.global().async {
       self.log("Client Starting")
-      self.log("GRPC version " + gRPC.version())
+      self.log("GRPC version " + gRPC.version)
 
-      self.channel = gRPC.Channel(address: address, secure: false)
+      self.channel = Channel(address: address, secure: false)
       self.channel.host = "foo.test.google.fr"
       let messageData = "hello, server!".data(using: .utf8)
 
@@ -147,10 +147,10 @@ class Document: NSDocument {
         let method = (i < steps) ? "/hello" : "/quit"
         let call = self.channel.makeCall(method)
 
-        let metadata = Metadata([
-          ["x": "xylophone"],
-          ["y": "yu"],
-          ["z": "zither"]
+        let metadata = try! Metadata([
+          "x": "xylophone",
+          "y": "yu",
+          "z": "zither"
         ])
 
         do {
@@ -160,13 +160,13 @@ class Document: NSDocument {
 
             if let initialMetadata = callResult.initialMetadata {
               for j in 0..<initialMetadata.count() {
-                self.log("\(i): Received initial metadata -> " + initialMetadata.key(j)
-                  + " : " + initialMetadata.value(j))
+                self.log("\(i): Received initial metadata -> " + initialMetadata.key(j)!
+                  + " : " + initialMetadata.value(j)!)
               }
             }
 
-            self.log("\(i): Received status: \(callResult.statusCode) \(callResult.statusMessage)")
-            if callResult.statusCode != 0 {
+            self.log("\(i): Received status: \(callResult.statusCode) \(callResult.statusMessage ?? "(nil)")")
+            if callResult.statusCode != .ok {
               self.setIsRunning(false)
             }
             if let messageData = callResult.resultData {
@@ -176,8 +176,8 @@ class Document: NSDocument {
 
             if let trailingMetadata = callResult.trailingMetadata {
               for j in 0..<trailingMetadata.count() {
-                self.log("\(i): Received trailing metadata -> " + trailingMetadata.key(j)
-                  + " : " + trailingMetadata.value(j))
+                self.log("\(i): Received trailing metadata -> " + trailingMetadata.key(j)!
+                  + " : " + trailingMetadata.value(j)!)
               }
             }
           }
@@ -194,10 +194,10 @@ class Document: NSDocument {
 
   func runServer(address: String) {
     log("Server Starting")
-    log("GRPC version " + gRPC.version())
+    log("GRPC version " + gRPC.version)
     setIsRunning(true)
 
-    server = gRPC.Server(address: address)
+    server = Server(address: address)
     var requestCount = 0
 
     server.run { requestHandler in
@@ -205,20 +205,18 @@ class Document: NSDocument {
       do {
         requestCount += 1
 
-        self.log("\(requestCount): Received request " + requestHandler.host
-          + " " + requestHandler.method
-          + " from " + requestHandler.caller)
+        self.log("\(requestCount): Received request \(requestHandler.host ?? "(nil)") \(requestHandler.method ?? "(nil)") from \(requestHandler.caller ?? "(nil)")")
 
         let initialMetadata = requestHandler.requestMetadata
         for i in 0..<initialMetadata.count() {
-          self.log("\(requestCount): Received initial metadata -> " + initialMetadata.key(i)
-            + ":" + initialMetadata.value(i))
+          self.log("\(requestCount): Received initial metadata -> " + initialMetadata.key(i)!
+            + ":" + initialMetadata.value(i)!)
         }
 
-        let initialMetadataToSend = Metadata([
-          ["a": "Apple"],
-          ["b": "Banana"],
-          ["c": "Cherry"]
+        let initialMetadataToSend = try! Metadata([
+          "a": "Apple",
+          "b": "Banana",
+          "c": "Cherry"
         ])
         try requestHandler.receiveMessage(initialMetadata: initialMetadataToSend) { messageData in
           let messageString = String(data: messageData!, encoding: .utf8)
@@ -230,15 +228,13 @@ class Document: NSDocument {
         }
 
         let replyMessage = "hello, client!"
-        let trailingMetadataToSend = Metadata([
-          ["0": "zero"],
-          ["1": "one"],
-          ["2": "two"]
+        let trailingMetadataToSend = try! Metadata([
+          "0": "zero",
+          "1": "one",
+          "2": "two"
         ])
         try requestHandler.sendResponse(message: replyMessage.data(using: .utf8)!,
-                                        statusCode: 0,
-                                        statusMessage: "OK",
-                                        trailingMetadata: trailingMetadataToSend)
+										status: ServerStatus(code: .ok, message: "OK", trailingMetadata: trailingMetadataToSend))
 
         self.log("------------------------------")
       } catch {
@@ -246,7 +242,7 @@ class Document: NSDocument {
       }
     }
 
-    server.onCompletion {
+    server.onCompletion = {
       self.log("Server Stopped")
       self.updateInterfaceAfterStopping()
     }
