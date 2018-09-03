@@ -14,75 +14,11 @@
 		D35C9FAE1D74B079000443CD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D35C9FAD1D74B079000443CD /* Assets.xcassets */; };
 		D35C9FB11D74B079000443CD /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D35C9FAF1D74B079000443CD /* MainMenu.xib */; };
 		D35C9FC81D74B0C1000443CD /* EchoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35C9FC71D74B0C1000443CD /* EchoViewController.swift */; };
-		D36AB73D1F58DF10007D7184 /* BoringSSL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D36AB7281F58DEDB007D7184 /* BoringSSL.framework */; };
-		D36AB73E1F58DF10007D7184 /* CgRPC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D36AB7261F58DEDB007D7184 /* CgRPC.framework */; };
-		D36AB7401F58DF10007D7184 /* SwiftGRPC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D36AB72A1F58DEDB007D7184 /* SwiftGRPC.framework */; };
-		D36AB7411F58DF10007D7184 /* SwiftProtobuf.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D36AB7341F58DEDB007D7184 /* SwiftProtobuf.framework */; };
 		D3971E211D89132E001A0B3F /* ssl.key in Resources */ = {isa = PBXBuildFile; fileRef = D3971E201D89132E001A0B3F /* ssl.key */; };
 		D3BFE28C1D87A45D00A648D8 /* ssl.crt in Resources */ = {isa = PBXBuildFile; fileRef = D3BFE28B1D87A45D00A648D8 /* ssl.crt */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXContainerItemProxy section */
-		D315DEEB1EE8B29B007670CE /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D315DEDF1EE8B29A007670CE /* SwiftProtobuf.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = "_____Product_ProtobufTestSuite_macOS";
-			remoteInfo = SwiftProtobufTestSuite_macOS;
-		};
-		D315DEED1EE8B29B007670CE /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D315DEDF1EE8B29A007670CE /* SwiftProtobuf.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = "_____Product_Protobuf_iOS";
-			remoteInfo = SwiftProtobuf_iOS;
-		};
-		D315DEEF1EE8B29B007670CE /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D315DEDF1EE8B29A007670CE /* SwiftProtobuf.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = "_____Product_ProtobufTestSuite_iOS";
-			remoteInfo = SwiftProtobufTestSuite_iOS;
-		};
-		D315DEF11EE8B29B007670CE /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D315DEDF1EE8B29A007670CE /* SwiftProtobuf.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = F44F936F1DAEA53900BC5B85;
-			remoteInfo = SwiftProtobuf_tvOS;
-		};
-		D315DEF31EE8B29B007670CE /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D315DEDF1EE8B29A007670CE /* SwiftProtobuf.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = F44F939F1DAEA7C500BC5B85;
-			remoteInfo = SwiftProtobufTestSuite_tvOS;
-		};
-		D315DEF51EE8B29B007670CE /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D315DEDF1EE8B29A007670CE /* SwiftProtobuf.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = F44F93FE1DAEB13F00BC5B85;
-			remoteInfo = SwiftProtobuf_watchOS;
-		};
-		D315DEF71EE8B2C1007670CE /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D315DEDF1EE8B29A007670CE /* SwiftProtobuf.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = "______Target_Protobuf";
-			remoteInfo = SwiftProtobuf_macOS;
-		};
-		D36AB7331F58DEDB007D7184 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D315DEDF1EE8B29A007670CE /* SwiftProtobuf.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = "_____Product_Protobuf_macOS";
-			remoteInfo = SwiftProtobuf_macOS;
-		};
-/* End PBXContainerItemProxy section */
-
 /* Begin PBXFileReference section */
-		D315DEDF1EE8B29A007670CE /* SwiftProtobuf.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SwiftProtobuf.xcodeproj; path = "../../third_party/swift-protobuf/SwiftProtobuf.xcodeproj"; sourceTree = "<group>"; };
 		D353581D1E219963007FA223 /* echo.grpc.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = echo.grpc.swift; path = ../../Sources/Examples/Echo/Generated/echo.grpc.swift; sourceTree = "<group>"; };
 		D353581E1E219963007FA223 /* echo.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = echo.pb.swift; path = ../../Sources/Examples/Echo/Generated/echo.pb.swift; sourceTree = "<group>"; };
 		D35358241E219980007FA223 /* EchoProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = EchoProvider.swift; path = ../../Sources/Examples/Echo/EchoProvider.swift; sourceTree = "<group>"; };
@@ -101,28 +37,17 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D36AB73D1F58DF10007D7184 /* BoringSSL.framework in Frameworks */,
-				D36AB73E1F58DF10007D7184 /* CgRPC.framework in Frameworks */,
-				D36AB7401F58DF10007D7184 /* gRPC.framework in Frameworks */,
-				D36AB7411F58DF10007D7184 /* SwiftProtobuf.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		D315DEE01EE8B29A007670CE /* Products */ = {
+		65F3F130213563CB00471BFC /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				D36AB7341F58DEDB007D7184 /* SwiftProtobuf.framework */,
-				D315DEEC1EE8B29B007670CE /* SwiftProtobufTests.xctest */,
-				D315DEEE1EE8B29B007670CE /* SwiftProtobuf.framework */,
-				D315DEF01EE8B29B007670CE /* SwiftProtobufTests.xctest */,
-				D315DEF21EE8B29B007670CE /* SwiftProtobuf.framework */,
-				D315DEF41EE8B29B007670CE /* SwiftProtobufTests.xctest */,
-				D315DEF61EE8B29B007670CE /* SwiftProtobuf.framework */,
 			);
-			name = Products;
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		D35358231E219971007FA223 /* Generated */ = {
@@ -137,11 +62,11 @@
 		D35C9F9F1D74B079000443CD = {
 			isa = PBXGroup;
 			children = (
-				D315DEDF1EE8B29A007670CE /* SwiftProtobuf.xcodeproj */,
 				D35C9FAA1D74B079000443CD /* Echo */,
 				D35358231E219971007FA223 /* Generated */,
 				D35358241E219980007FA223 /* EchoProvider.swift */,
 				D35C9FA91D74B079000443CD /* Products */,
+				65F3F130213563CB00471BFC /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -167,18 +92,6 @@
 			path = Echo;
 			sourceTree = "<group>";
 		};
-		D36AB7191F58DEDB007D7184 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				D36AB7221F58DEDB007D7184 /* zlib-example */,
-				D36AB7261F58DEDB007D7184 /* CgRPC.framework */,
-				D36AB7281F58DEDB007D7184 /* BoringSSL.framework */,
-				D36AB72A1F58DEDB007D7184 /* gRPC.framework */,
-				D36AB72C1F58DEDB007D7184 /* gRPCTests.xctest */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -193,15 +106,12 @@
 			buildRules = (
 			);
 			dependencies = (
-				D36AB7361F58DF02007D7184 /* PBXTargetDependency */,
 				D36AB7381F58DF02007D7184 /* PBXTargetDependency */,
 				D36AB73A1F58DF02007D7184 /* PBXTargetDependency */,
 				D36AB73C1F58DF02007D7184 /* PBXTargetDependency */,
-				D315DEFA1EE8B2C7007670CE /* PBXTargetDependency */,
 				D315DEFC1EE8B2C7007670CE /* PBXTargetDependency */,
 				D315DEFE1EE8B2C7007670CE /* PBXTargetDependency */,
 				D315DF001EE8B2C7007670CE /* PBXTargetDependency */,
-				D315DEF81EE8B2C1007670CE /* PBXTargetDependency */,
 			);
 			name = Echo;
 			productName = Echo;
@@ -236,73 +146,12 @@
 			mainGroup = D35C9F9F1D74B079000443CD;
 			productRefGroup = D35C9FA91D74B079000443CD /* Products */;
 			projectDirPath = "";
-			projectReferences = (
-				{
-					ProductGroup = D36AB7191F58DEDB007D7184 /* Products */;
-				},
-				{
-					ProductGroup = D315DEE01EE8B29A007670CE /* Products */;
-					ProjectRef = D315DEDF1EE8B29A007670CE /* SwiftProtobuf.xcodeproj */;
-				},
-			);
 			projectRoot = "";
 			targets = (
 				D35C9FA71D74B079000443CD /* Echo */,
 			);
 		};
 /* End PBXProject section */
-
-/* Begin PBXReferenceProxy section */
-		D315DEEC1EE8B29B007670CE /* SwiftProtobufTests.xctest */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.cfbundle;
-			path = SwiftProtobufTests.xctest;
-			remoteRef = D315DEEB1EE8B29B007670CE /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		D315DEEE1EE8B29B007670CE /* SwiftProtobuf.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = SwiftProtobuf.framework;
-			remoteRef = D315DEED1EE8B29B007670CE /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		D315DEF01EE8B29B007670CE /* SwiftProtobufTests.xctest */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.cfbundle;
-			path = SwiftProtobufTests.xctest;
-			remoteRef = D315DEEF1EE8B29B007670CE /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		D315DEF21EE8B29B007670CE /* SwiftProtobuf.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = SwiftProtobuf.framework;
-			remoteRef = D315DEF11EE8B29B007670CE /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		D315DEF41EE8B29B007670CE /* SwiftProtobufTests.xctest */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.cfbundle;
-			path = SwiftProtobufTests.xctest;
-			remoteRef = D315DEF31EE8B29B007670CE /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		D315DEF61EE8B29B007670CE /* SwiftProtobuf.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = SwiftProtobuf.framework;
-			remoteRef = D315DEF51EE8B29B007670CE /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		D36AB7341F58DEDB007D7184 /* SwiftProtobuf.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = SwiftProtobuf.framework;
-			remoteRef = D36AB7331F58DEDB007D7184 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-/* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
 		D35C9FA61D74B079000443CD /* Resources */ = {
@@ -334,11 +183,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		D315DEF81EE8B2C1007670CE /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = SwiftProtobuf_macOS;
-			targetProxy = D315DEF71EE8B2C1007670CE /* PBXContainerItemProxy */;
-		};
 		D315DEFC1EE8B2C7007670CE /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = CgRPC;
@@ -354,17 +198,14 @@
 		D36AB7381F58DF02007D7184 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = CgRPC;
-			targetProxy = D36AB7371F58DF02007D7184 /* PBXContainerItemProxy */;
 		};
 		D36AB73A1F58DF02007D7184 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = BoringSSL;
-			targetProxy = D36AB7391F58DF02007D7184 /* PBXContainerItemProxy */;
 		};
 		D36AB73C1F58DF02007D7184 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = gRPC;
-			targetProxy = D36AB73B1F58DF02007D7184 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 

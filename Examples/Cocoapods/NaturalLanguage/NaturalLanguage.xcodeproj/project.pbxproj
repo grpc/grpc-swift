@@ -103,7 +103,6 @@
 				D353015B2097A4DC00727A88 /* Frameworks */,
 				D353015C2097A4DC00727A88 /* Resources */,
 				C656FB9F83FB17EE3625C732 /* [CP] Embed Pods Frameworks */,
-				80E1BDF830F9EEC4C0FFA0DA /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -177,28 +176,13 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		80E1BDF830F9EEC4C0FFA0DA /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "[CP] Copy Pods Resources";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-NaturalLanguage/Pods-NaturalLanguage-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
 		C656FB9F83FB17EE3625C732 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
-				"${SRCROOT}/Pods/Target Support Files/Pods-NaturalLanguage/Pods-NaturalLanguage-frameworks.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-NaturalLanguage/Pods-NaturalLanguage-frameworks.sh",
 				"${BUILT_PRODUCTS_DIR}/BoringSSL/openssl.framework",
 				"${BUILT_PRODUCTS_DIR}/SwiftGRPC/SwiftGRPC.framework",
 				"${BUILT_PRODUCTS_DIR}/SwiftProtobuf/SwiftProtobuf.framework",
@@ -215,7 +199,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-NaturalLanguage/Pods-NaturalLanguage-frameworks.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-NaturalLanguage/Pods-NaturalLanguage-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */

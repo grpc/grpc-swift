@@ -34,7 +34,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     signal(UIColor.yellow);
     // Prepare the API client.
     service = Google_Cloud_Language_V1_LanguageServiceServiceClient(address: "language.googleapis.com")
-    service.metadata = Metadata(["x-goog-api-key": GOOGLE_API_KEY])
+    service.metadata = try! Metadata(["x-goog-api-key": GOOGLE_API_KEY])
     // Call the API.
     var document = Google_Cloud_Language_V1_Document()
     document.type = .plainText
