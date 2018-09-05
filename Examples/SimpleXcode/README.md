@@ -11,8 +11,8 @@ on the gRPC Xcode project, which requires a local build of the
 gRPC Core C library. To build that, please run "make" in the
 root of your gRPC distribution. Next use Xcode's "Add Files..."
 command to add the SwiftGRPC.xcodeproj to your project and
-then add the gRPC, CgRPC, and BoringSSL libraries to the target
-dependencies of "Simple".
+then add the gRPC, CgRPC, and BoringSSL libraries to the
+"Linked Frameworks and Libraries" build phase of "Simple".
 
 When running the app, use the "New" menu option to create new
 gRPC sessions. Configure each session using the host and port
