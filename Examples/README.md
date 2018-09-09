@@ -1,12 +1,7 @@
 
 # Examples
 
-To build the Xcode examples, make sure required third party libraries
-(specifically `swift-protobuf`) are retrieved by running the script in the
-`third_party` toplevel directory:
-
-    $ cd third_party
-    $ sh RUNME.sh
+To build the Xcode examples, you will need to add the `SwiftGRPC` project (and possibly the `SwiftProtobuf` project from https://github.com/apple/swift-protobuf as well) to the corresponding Xcode projects. This is explained in more detail in the individual directories' `README.md` files.
 
 ## Swift gRPC generated code examples
 
@@ -28,4 +23,3 @@ Samples that call Google gRPC APIs are in the [Google](Google) directory.
 [Simple](Simple)
 The Simple sample demonstrates the low-level gRPC APIs with clients and servers
 that can be built with Xcode or the Swift Package Manager.
- 
