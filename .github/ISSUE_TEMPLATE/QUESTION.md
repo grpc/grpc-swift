@@ -1,3 +1,9 @@
+---
+name: ❓ Support Question
+about: Not sure how something works or how to implement some functionality? Ask us here! (But please check the README or issues first 🙃)
+
+---
+
 ### Question Checklist
 
 - [ ] Updated grpc-swift to the latest version
