@@ -1,7 +1,6 @@
 ---
 name: ❓ Support Question
 about: Not sure how something works or how to implement some functionality? Ask us here! (But please check the README or issues first 🙃)
-
 ---
 
 ### Question Checklist
@@ -9,7 +8,7 @@ about: Not sure how something works or how to implement some functionality? Ask 
 - [ ] Updated grpc-swift to the latest version
 - [ ] I read the [Contribution Guidelines](https://github.com/grpc/grpc-swift/blob/master/CONTRIBUTING.md)
 - [ ] I read [README](https://github.com/grpc/grpc-swift/blob/master/README.md)
-- [ ] I searched for [existing GitHub issues](https://github.com/grpc/grpc-swift/issues)(especially, there are many [resolved issues related to SSL](https://github.com/grpc/grpc-swift/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aclosed+ssl))
+- [ ] I searched for [existing GitHub issues](https://github.com/grpc/grpc-swift/issues) (especially, there are many [resolved issues related to SSL](https://github.com/grpc/grpc-swift/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aclosed+ssl))
 
 ### Question Subject
 <!-- Is this a question about documentation? -->
