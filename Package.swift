@@ -1,4 +1,4 @@
-// swift-tools-version:4.0
+// swift-tools-version:4.2
 /*
  * Copyright 2017, gRPC Authors All rights reserved.
  *
@@ -60,5 +60,6 @@ let package = Package(
             path: "Sources/Examples/Simple"),
     .testTarget(name: "SwiftGRPCTests", dependencies: ["SwiftGRPC"])
   ],
+  swiftLanguageVersions: [.v4, .v4_2],
   cLanguageStandard: .gnu11,
   cxxLanguageStandard: .cxx11)
