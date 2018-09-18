@@ -1,4 +1,4 @@
 module BoringSSL {
-    umbrella "/private/tmp/PR/grpc-swift/Sources/BoringSSL/include"
+    umbrella "../../../Sources/BoringSSL/include"
     export *
 }
