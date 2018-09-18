@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		243F0A96FFF39FE679036411 /* cgrpc.h in Headers */ = {isa = PBXBuildFile; fileRef = OBJ_941 /* cgrpc.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		9E97487A2A4BB35F3393777B /* cgrpc.h in Headers */ = {isa = PBXBuildFile; fileRef = OBJ_941 /* cgrpc.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		OBJ_1177 /* a_bitstr.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* a_bitstr.c */; };
 		OBJ_1178 /* a_bool.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* a_bool.c */; };
 		OBJ_1179 /* a_d2i_fp.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_13 /* a_d2i_fp.c */; };
@@ -930,7 +930,7 @@
 		OBJ_1038 /* Error.swift */ = {isa = PBXFileReference; path = Error.swift; sourceTree = "<group>"; };
 		OBJ_1039 /* Group.swift */ = {isa = PBXFileReference; path = Group.swift; sourceTree = "<group>"; };
 		OBJ_104 /* ecdh.c */ = {isa = PBXFileReference; path = ecdh.c; sourceTree = "<group>"; };
-		OBJ_1040 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Package.swift; path = "/Users/ishkawa/dev/src/github.com/grpc/grpc-swift/.build/checkouts/Commander.git-8842944228949165507/Package.swift"; sourceTree = "<group>"; };
+		OBJ_1040 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Package.swift; path = "../.build/checkouts/Commander.git-8842944228949165507/Package.swift"; sourceTree = "<group>"; };
 		OBJ_1044 /* CommandLine+Extensions.swift */ = {isa = PBXFileReference; path = "CommandLine+Extensions.swift"; sourceTree = "<group>"; };
 		OBJ_1045 /* Descriptor+Extensions.swift */ = {isa = PBXFileReference; path = "Descriptor+Extensions.swift"; sourceTree = "<group>"; };
 		OBJ_1046 /* EnumGenerator.swift */ = {isa = PBXFileReference; path = EnumGenerator.swift; sourceTree = "<group>"; };
@@ -1051,7 +1051,7 @@
 		OBJ_1155 /* timestamp.pb.swift */ = {isa = PBXFileReference; path = timestamp.pb.swift; sourceTree = "<group>"; };
 		OBJ_1156 /* type.pb.swift */ = {isa = PBXFileReference; path = type.pb.swift; sourceTree = "<group>"; };
 		OBJ_1157 /* wrappers.pb.swift */ = {isa = PBXFileReference; path = wrappers.pb.swift; sourceTree = "<group>"; };
-		OBJ_1158 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Package.swift; path = "/Users/ishkawa/dev/src/github.com/grpc/grpc-swift/.build/checkouts/swift-protobuf.git--7219529775138357838/Package.swift"; sourceTree = "<group>"; };
+		OBJ_1158 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Package.swift; path = "../.build/checkouts/swift-protobuf.git--7219529775138357838/Package.swift"; sourceTree = "<group>"; };
 		OBJ_116 /* evp_ctx.c */ = {isa = PBXFileReference; path = evp_ctx.c; sourceTree = "<group>"; };
 		OBJ_117 /* p_dsa_asn1.c */ = {isa = PBXFileReference; path = p_dsa_asn1.c; sourceTree = "<group>"; };
 		OBJ_118 /* p_ec.c */ = {isa = PBXFileReference; path = p_ec.c; sourceTree = "<group>"; };
@@ -1385,7 +1385,7 @@
 		OBJ_449 /* ex_data.h */ = {isa = PBXFileReference; path = ex_data.h; sourceTree = "<group>"; };
 		OBJ_45 /* bio_mem.c */ = {isa = PBXFileReference; path = bio_mem.c; sourceTree = "<group>"; };
 		OBJ_450 /* base.h */ = {isa = PBXFileReference; path = base.h; sourceTree = "<group>"; };
-		OBJ_451 /* module.modulemap */ = {isa = PBXFileReference; name = module.modulemap; path = "/Users/ishkawa/dev/src/github.com/grpc/grpc-swift/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL/module.modulemap"; sourceTree = "<group>"; };
+		OBJ_451 /* module.modulemap */ = {isa = PBXFileReference; name = module.modulemap; path = "../SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL/module.modulemap"; sourceTree = "<group>"; };
 		OBJ_453 /* EchoProvider.swift */ = {isa = PBXFileReference; path = EchoProvider.swift; sourceTree = "<group>"; };
 		OBJ_455 /* echo.grpc.swift */ = {isa = PBXFileReference; path = echo.grpc.swift; sourceTree = "<group>"; };
 		OBJ_456 /* echo.pb.swift */ = {isa = PBXFileReference; path = echo.pb.swift; sourceTree = "<group>"; };
@@ -1882,7 +1882,7 @@
 		OBJ_995 /* byte_buffer.h */ = {isa = PBXFileReference; path = byte_buffer.h; sourceTree = "<group>"; };
 		OBJ_996 /* connectivity_state.h */ = {isa = PBXFileReference; path = connectivity_state.h; sourceTree = "<group>"; };
 		OBJ_997 /* sync_windows.h */ = {isa = PBXFileReference; path = sync_windows.h; sourceTree = "<group>"; };
-		OBJ_998 /* module.modulemap */ = {isa = PBXFileReference; name = module.modulemap; path = "/Users/ishkawa/dev/src/github.com/grpc/grpc-swift/Sources/CgRPC/include/module.modulemap"; sourceTree = "<group>"; };
+		OBJ_998 /* module.modulemap */ = {isa = PBXFileReference; name = module.modulemap; path = ../Sources/CgRPC/include/module.modulemap; sourceTree = "<group>"; };
 		SwiftGRPC::BoringSSL::Product /* BoringSSL.framework */ = {isa = PBXFileReference; path = BoringSSL.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		SwiftGRPC::CgRPC::Product /* CgRPC.framework */ = {isa = PBXFileReference; path = CgRPC.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		SwiftGRPC::Echo::Product /* Echo */ = {isa = PBXFileReference; path = Echo; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -2020,7 +2020,7 @@
 			isa = PBXGroup;
 			children = (
 				OBJ_1029 /* Commander 0.8.0 */,
-				OBJ_1041 /* SwiftProtobuf 1.1.1 */,
+				OBJ_1041 /* SwiftProtobuf 1.1.2 */,
 			);
 			name = Dependencies;
 			path = "";
@@ -2062,7 +2062,7 @@
 			path = ".build/checkouts/Commander.git-8842944228949165507/Sources/Commander";
 			sourceTree = SOURCE_ROOT;
 		};
-		OBJ_1041 /* SwiftProtobuf 1.1.1 */ = {
+		OBJ_1041 /* SwiftProtobuf 1.1.2 */ = {
 			isa = PBXGroup;
 			children = (
 				OBJ_1042 /* Conformance */,
@@ -2071,7 +2071,7 @@
 				OBJ_1081 /* SwiftProtobuf */,
 				OBJ_1158 /* Package.swift */,
 			);
-			name = "SwiftProtobuf 1.1.1";
+			name = "SwiftProtobuf 1.1.2";
 			path = "";
 			sourceTree = SOURCE_ROOT;
 		};
@@ -2273,18 +2273,18 @@
 		OBJ_1159 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				SwiftGRPC::CgRPC::Product /* CgRPC.framework */,
-				SwiftGRPC::protoc-gen-swiftgrpc::Product /* protoc-gen-swiftgrpc */,
-				Commander::Commander::Product /* Commander.framework */,
 				SwiftGRPC::Echo::Product /* Echo */,
-				SwiftGRPC::Simple::Product /* Simple */,
-				SwiftProtobuf::SwiftProtobuf::Product /* SwiftProtobuf.framework */,
-				SwiftGRPC::SwiftGRPC::Product /* SwiftGRPC.framework */,
 				SwiftGRPC::SwiftGRPCTests::Product /* SwiftGRPCTests.xctest */,
-				SwiftGRPC::RootsEncoder::Product /* RootsEncoder */,
 				SwiftGRPC::BoringSSL::Product /* BoringSSL.framework */,
+				Commander::Commander::Product /* Commander.framework */,
 				SwiftProtobuf::protoc-gen-swift::Product /* protoc-gen-swift */,
+				SwiftGRPC::SwiftGRPC::Product /* SwiftGRPC.framework */,
 				SwiftProtobuf::SwiftProtobufPluginLibrary::Product /* SwiftProtobufPluginLibrary.framework */,
+				SwiftGRPC::Simple::Product /* Simple */,
+				SwiftGRPC::protoc-gen-swiftgrpc::Product /* protoc-gen-swiftgrpc */,
+				SwiftProtobuf::SwiftProtobuf::Product /* SwiftProtobuf.framework */,
+				SwiftGRPC::RootsEncoder::Product /* RootsEncoder */,
+				SwiftGRPC::CgRPC::Product /* CgRPC.framework */,
 			);
 			name = Products;
 			path = "";
@@ -4415,11 +4415,11 @@
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
-		10849E183BE988F5235E68BC /* Headers */ = {
+		DADE5CA5290EA19B3D7E0E8D /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				243F0A96FFF39FE679036411 /* cgrpc.h in Headers */,
+				9E97487A2A4BB35F3393777B /* cgrpc.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4448,7 +4448,7 @@
 			buildPhases = (
 				OBJ_1496 /* Sources */,
 				OBJ_1851 /* Frameworks */,
-				10849E183BE988F5235E68BC /* Headers */,
+				DADE5CA5290EA19B3D7E0E8D /* Headers */,
 			);
 			buildRules = (
 			);
@@ -4483,7 +4483,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = OBJ_2008 /* Build configuration list for PBXNativeTarget "SwiftProtobuf" */;
 			buildPhases = (
-				EBF0157C9D75769E894ADA12 /* ShellScript */,
+				8F5047B9D41AF0E8110B4F53 /* ShellScript */,
 				OBJ_2011 /* Sources */,
 				OBJ_2088 /* Frameworks */,
 			);
@@ -4524,7 +4524,7 @@
 /* End PBXProject section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		EBF0157C9D75769E894ADA12 /* ShellScript */ = {
+		8F5047B9D41AF0E8110B4F53 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
