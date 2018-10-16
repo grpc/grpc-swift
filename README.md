@@ -97,6 +97,8 @@ separated from the output directory by a colon.
 | `Visibility` | `Internal`/`Public` | `Internal` | ACL of generated code |
 | `Server` |  `true`/`false` | `true` | Whether to generate server code |
 | `Client` |  `true`/`false` | `true` | Whether to generate client code |
+| `Async` |  `true`/`false` | `true` | Whether to generate asynchronous code |
+| `Sync` |  `true`/`false` | `true` | Whether to generate synchronous code |
 | `TestStubs` |  `true`/`false` | `false` | Whether to generate test stub code |
 
 Example:
