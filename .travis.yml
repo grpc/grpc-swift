@@ -51,7 +51,6 @@ install: ./.travis-install.sh
 
 script:
   - echo -en 'travis_fold:start:script.environment\\r' && export PATH=$HOME/local/bin:$PATH && export LD_LIBRARY_PATH=$HOME/local/lib && echo -en 'travis_fold:end:script.environment\\r'
-  - echo -en 'travis_fold:start:make.build_carthage\\r' && if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then make clean && make build-carthage-debug; fi && echo -en 'travis_fold:end:make.build_carthage\\r'
   - echo -en 'travis_fold:start:swift.resolve-deps\\r' && swift package -v resolve && echo -en 'travis_fold:end:swift.resolve-deps\\r'
   - echo -en 'travis_fold:start:make.all\\r' && make all && echo -en 'travis_fold:end:make.all\\r'
   - echo -en 'travis_fold:start:make.test\\r' && make test && echo -en 'travis_fold:end:make.test\\r'
