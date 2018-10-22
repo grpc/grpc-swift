@@ -18,7 +18,8 @@ import SwiftProtobuf
 import SwiftProtobufPluginLibrary
 
 extension Generator {
-  internal func printClient() {
+  internal func printClient(asynchronousCode: Bool,
+                            synchronousCode: Bool) {
     for method in service.methods {
       self.method = method
       switch streamingType(method) {
@@ -33,9 +34,11 @@ extension Generator {
       }
     }
     println()
-    printServiceClientProtocol()
+    printServiceClientProtocol(asynchronousCode: asynchronousCode,
+                               synchronousCode: synchronousCode)
     println()
-    printServiceClientImplementation()
+    printServiceClientImplementation(asynchronousCode: asynchronousCode,
+                                     synchronousCode: synchronousCode)
     if options.generateTestStubs {
       println()
       printServiceClientTestStubs()
@@ -144,7 +147,8 @@ extension Generator {
     println()
   }
 
-  private func printServiceClientProtocol() {
+  private func printServiceClientProtocol(asynchronousCode: Bool,
+                                          synchronousCode: Bool) {
     println("/// Instantiate \(serviceClassName)Client, then call methods of this protocol to make API calls.")
     println("\(options.visibility.sourceSnippet) protocol \(serviceClassName): ServiceClient {")
     indent()
@@ -152,10 +156,14 @@ extension Generator {
       self.method = method
       switch streamingType(method) {
       case .unary:
-        println("/// Synchronous. Unary.")
-        println("func \(methodFunctionName)(_ request: \(methodInputName)) throws -> \(methodOutputName)")
-        println("/// Asynchronous. Unary.")
-        println("func \(methodFunctionName)(_ request: \(methodInputName), completion: @escaping (\(methodOutputName)?, CallResult) -> Void) throws -> \(callName)")
+        if synchronousCode {
+          println("/// Synchronous. Unary.")
+          println("func \(methodFunctionName)(_ request: \(methodInputName)) throws -> \(methodOutputName)")
+        }
+        if asynchronousCode {
+          println("/// Asynchronous. Unary.")
+          println("func \(methodFunctionName)(_ request: \(methodInputName), completion: @escaping (\(methodOutputName)?, CallResult) -> Void) throws -> \(callName)")
+        }
       case .serverStreaming:
         println("/// Asynchronous. Server-streaming.")
         println("/// Send the initial message.")
@@ -178,31 +186,36 @@ extension Generator {
     println("}")
   }
 
-  private func printServiceClientImplementation() {
+  private func printServiceClientImplementation(asynchronousCode: Bool,
+                                                synchronousCode: Bool) {
     println("\(access) final class \(serviceClassName)Client: ServiceClientBase, \(serviceClassName) {")
     indent()
     for method in service.methods {
       self.method = method
       switch streamingType(method) {
       case .unary:
-        println("/// Synchronous. Unary.")
-        println("\(access) func \(methodFunctionName)(_ request: \(methodInputName)) throws -> \(methodOutputName) {")
-        indent()
-        println("return try \(callName)Base(channel)")
-        indent()
-        println(".run(request: request, metadata: metadata)")
-        outdent()
-        outdent()
-        println("}")
-        println("/// Asynchronous. Unary.")
-        println("\(access) func \(methodFunctionName)(_ request: \(methodInputName), completion: @escaping (\(methodOutputName)?, CallResult) -> Void) throws -> \(callName) {")
-        indent()
-        println("return try \(callName)Base(channel)")
-        indent()
-        println(".start(request: request, metadata: metadata, completion: completion)")
-        outdent()
-        outdent()
-        println("}")
+        if synchronousCode {
+          println("/// Synchronous. Unary.")
+          println("\(access) func \(methodFunctionName)(_ request: \(methodInputName)) throws -> \(methodOutputName) {")
+          indent()
+          println("return try \(callName)Base(channel)")
+          indent()
+          println(".run(request: request, metadata: metadata)")
+          outdent()
+          outdent()
+          println("}")
+        }
+        if asynchronousCode {
+          println("/// Asynchronous. Unary.")
+          println("\(access) func \(methodFunctionName)(_ request: \(methodInputName), completion: @escaping (\(methodOutputName)?, CallResult) -> Void) throws -> \(callName) {")
+          indent()
+          println("return try \(callName)Base(channel)")
+          indent()
+          println(".start(request: request, metadata: metadata, completion: completion)")
+          outdent()
+          outdent()
+          println("}")
+        }
       case .serverStreaming:
         println("/// Asynchronous. Server-streaming.")
         println("/// Send the initial message.")
