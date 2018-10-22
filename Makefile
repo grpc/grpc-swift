@@ -9,7 +9,13 @@ all:
 	swift build $(CFLAGS)
 	cp .build/debug/protoc-gen-swift .
 	cp .build/debug/protoc-gen-swiftgrpc .
-	
+
+plugin:
+	swift build $(CFLAGS) --product protoc-gen-swift -c release -Xswiftc -static-stdlib
+	swift build $(CFLAGS) --product protoc-gen-swiftgrpc -c release -Xswiftc -static-stdlib
+	cp .build/release/protoc-gen-swift .
+	cp .build/release/protoc-gen-swiftgrpc .
+
 project:
 	swift package $(CFLAGS) generate-xcodeproj --output SwiftGRPC.xcodeproj
 	@-ruby fix-project-settings.rb SwiftGRPC.xcodeproj || echo "Consider running 'sudo gem install xcodeproj' to automatically set correct indentation settings for the generated project."
