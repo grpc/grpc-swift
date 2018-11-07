@@ -152,7 +152,6 @@ private extension Channel {
 
       spinloopThreadQueue.async {
         while true  {
-            
           guard !self.hasBeenShutdown else {
             return
           }

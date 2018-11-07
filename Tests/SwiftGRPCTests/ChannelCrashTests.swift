@@ -8,17 +8,46 @@
 import XCTest
 @testable import SwiftGRPC
 
+class ChannelCrashProvider: Echo_EchoProvider {
+    func get(request: Echo_EchoRequest, session: Echo_EchoGetSession) throws -> Echo_EchoResponse {
+        return Echo_EchoResponse()
+    }
+    
+    func collect(session: Echo_EchoCollectSession) throws -> Echo_EchoResponse? {
+        return Echo_EchoResponse()
+    }
+    
+    func update(session: Echo_EchoUpdateSession) throws -> ServerStatus? {
+        return .ok
+    }
+    
+    func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws -> ServerStatus? {
+        let parts = request.text.components(separatedBy: " ")
+        for (i, part) in parts.enumerated() {
+            usleep(500000)
+            var response = Echo_EchoResponse()
+            response.text = "Swift echo expand (\(i)): \(part)"
+            try session.send(response) {
+                if let error = $0 {
+                    print("expand error: \(error)")
+                }
+            }
+        }
+        return .ok
+    }
+}
+
 class ChannelCrashTests: XCTestCase {
     
     var provider = ChannelCrashProvider()
     var server: ServiceServer!
-    var client: ChannelCrash_ChannelCrashServiceClient?
+    var client: Echo_EchoServiceClient?
 
     func testChannelCrash() {
         server = ServiceServer(address: address, serviceProviders: [provider])
         server.start()
         
-        client = ChannelCrash_ChannelCrashServiceClient(address: address, secure: false)
+        client = Echo_EchoServiceClient(address: address, secure: false)
         client?.timeout = 4
         
         let completionHandlerExpectation = expectation(description: "completion handler called")
@@ -27,8 +56,7 @@ class ChannelCrashTests: XCTestCase {
             print("ConnectivityState: \(connectivityState)")
         }
         
-        var request = ChannelCrash_ChannelCrashRequest()
-        request.text = "foo bar baz foo bar baz"
+        let request = Echo_EchoRequest(text: "foo bar baz foo bar baz")
         let call = try! client!.expand(request) { callResult in
             print("callResult.statusCode: \(callResult.statusCode)")
             completionHandlerExpectation.fulfill()
@@ -43,7 +71,7 @@ class ChannelCrashTests: XCTestCase {
         waitForExpectations(timeout: 5)
     }
     
-    private func receive(call: ChannelCrash_ChannelCrashExpandCall) {
+    private func receive(call: Echo_EchoExpandCall) {
         try? call.receive { result in
             guard case .result(let u) = result, let update = u else {
                 return
