@@ -133,6 +133,7 @@ private extension Channel {
     private let callback: (ConnectivityState) -> Void
     private var lastState: ConnectivityState
     private var hasBeenShutdown = false
+    private let channelMutex: Mutex = Mutex()
 
     init(underlyingChannel: UnsafeMutableRawPointer, currentState: ConnectivityState, callback: @escaping (ConnectivityState) -> ()) {
       self.underlyingChannel = underlyingChannel
@@ -187,7 +188,9 @@ private extension Channel {
     }
 
     func shutdown() {
-      hasBeenShutdown = true
+      channelMutex.synchronize {
+        hasBeenShutdown = true
+      }
       completionQueue.shutdown()
     }
   }
