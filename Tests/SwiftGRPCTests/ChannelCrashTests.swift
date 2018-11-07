@@ -17,7 +17,6 @@ import XCTest
 @testable import SwiftGRPC
 
 class ChannelCrashTests: BasicEchoTestCase {
-    
     override var defaultTimeout: TimeInterval { return 0.4 }
     
     func testDanglingConnectivityObserversDontCrash() {
