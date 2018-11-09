@@ -60,6 +60,11 @@ char *cgrpc_metadata_array_copy_value_at_index(cgrpc_metadata_array *array, size
   return str;
 }
 
+cgrpc_byte_buffer *cgrpc_metadata_array_copy_data_value_at_index(cgrpc_metadata_array *array, size_t index) {
+  size_t length = GRPC_SLICE_LENGTH(array->metadata[index].value);
+  return cgrpc_byte_buffer_create_by_copying_data(GRPC_SLICE_START_PTR(array->metadata[index].value), length);
+}
+
 void cgrpc_metadata_array_move_metadata(cgrpc_metadata_array *destination,
                                         cgrpc_metadata_array *source) {
   destination->count = source->count;

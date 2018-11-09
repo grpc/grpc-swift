@@ -80,7 +80,16 @@ public class Metadata {
     defer { cgrpc_free_copied_string(valueData) }
     return String(cString: valueData, encoding: String.Encoding.utf8)
   }
-  
+
+  public func data(forKey key: String) -> Data? {
+    for index in 0..<count() {
+      guard self.key(index) == key else { continue }
+      let byteBuffer = ByteBuffer(underlyingByteBuffer: cgrpc_metadata_array_copy_data_value_at_index(underlyingArray, index))
+      return byteBuffer.data()
+    }
+    return nil
+  }
+
   public func add(key: String, value: String) throws {
     if !ownsFields {
       throw Error.doesNotOwnFields

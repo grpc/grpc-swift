@@ -240,6 +240,7 @@ void cgrpc_metadata_array_unref_fields(cgrpc_metadata_array *array);
 size_t cgrpc_metadata_array_get_count(cgrpc_metadata_array *array);
 char *cgrpc_metadata_array_copy_key_at_index(cgrpc_metadata_array *array, size_t index);
 char *cgrpc_metadata_array_copy_value_at_index(cgrpc_metadata_array *array, size_t index);
+cgrpc_byte_buffer *cgrpc_metadata_array_copy_data_value_at_index(cgrpc_metadata_array *array, size_t index);
 void cgrpc_metadata_array_move_metadata(cgrpc_metadata_array *dest, cgrpc_metadata_array *src);
 cgrpc_metadata_array *cgrpc_metadata_array_copy(cgrpc_metadata_array *src);
 void cgrpc_metadata_array_append_metadata(cgrpc_metadata_array *metadata, const char *key, const char *value);
