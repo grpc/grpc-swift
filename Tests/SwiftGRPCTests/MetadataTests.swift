@@ -28,4 +28,9 @@ class MetadataTests: XCTestCase {
     let metadata = try! Metadata(["foo": "bar"])
     XCTAssertEqual(["foo": "bar"], metadata.copy().dictionaryRepresentation)
   }
+
+  func testExtractData() {
+    let metadata = try! Metadata(["foo": "bar"])
+    XCTAssertEqual("bar".data(using: .utf8), metadata.data(forKey: "foo"))
+  }
 }
