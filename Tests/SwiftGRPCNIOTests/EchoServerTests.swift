@@ -50,7 +50,7 @@ final class EchoGRPCProvider {
     for (i, part) in parts.enumerated() {
       var response = Echo_EchoResponse()
       response.text = "Swift echo expand (\(i)): \(part)"
-      handler.sendMessage(response)
+      _ = handler.sendMessage(response)
     }
     handler.sendStatus(.ok)
   }
@@ -62,7 +62,7 @@ final class EchoGRPCProvider {
       case .message(let message):
         var response = Echo_EchoResponse()
         response.text = "Swift echo update (\(count)): \(message.text)"
-        handler.sendMessage(response)
+        _ = handler.sendMessage(response)
         count += 1
 
       case .end:
@@ -245,8 +245,6 @@ extension EchoServerTests {
 
 extension EchoServerTests {
   func testBidirectionalStreamingBatched() {
-    //! FIXME: Fix this test.
-    return
     let finalCompletionHandlerExpectation = expectation(description: "final completion handler called")
     let call = try! client.update { callResult in
       XCTAssertEqual(.ok, callResult.statusCode)
@@ -305,8 +303,6 @@ extension EchoServerTests {
   }
 
   func testBidirectionalStreamingLotsOfMessagesBatched() {
-    //! FIXME: Fix this test.
-    return
     let finalCompletionHandlerExpectation = expectation(description: "final completion handler called")
     let call = try! client.update { callResult in
       XCTAssertEqual(.ok, callResult.statusCode)
