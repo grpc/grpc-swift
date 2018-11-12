@@ -18,7 +18,6 @@ import SwiftProtobuf
 import SwiftProtobufPluginLibrary
 
 extension Generator {
-
   internal func printServer() {
     printServerProtocol()
     
