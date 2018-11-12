@@ -23,9 +23,11 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
 
     handlerImplementation?(message, self)
   }
-
-  public func sendMessage(_ message: ResponseMessage) {
-    ctx?.writeAndFlush(self.wrapOutboundOut(.message(message)), promise: nil)
+  
+  public func sendMessage(_ message: ResponseMessage) -> EventLoopFuture<Void> {
+    let promise: EventLoopPromise<Void> = eventLoop.newPromise()
+    ctx?.writeAndFlush(self.wrapOutboundOut(.message(message)), promise: promise)
+    return promise.futureResult
   }
 
   public func sendStatus(_ status: GRPCStatus) {
