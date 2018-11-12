@@ -24,7 +24,7 @@ import XCTest
 
 // This class is what the SwiftGRPC user would actually implement to provide their service.
 final class EchoGRPCProvider {
-  func get(handler: UnaryCallHandler<Echo_EchoRequest, Echo_EchoResponse>, request: Echo_EchoRequest) -> EventLoopFuture<Echo_EchoResponse> {
+  func get(request: Echo_EchoRequest, handler: UnaryCallHandler<Echo_EchoRequest, Echo_EchoResponse>) -> EventLoopFuture<Echo_EchoResponse> {
     var response = Echo_EchoResponse()
     response.text = "Swift echo get: " + request.text
     return handler.eventLoop.newSucceededFuture(result: response)
@@ -45,7 +45,7 @@ final class EchoGRPCProvider {
     }
   }
 
-  func expand(handler: ServerStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>, request: Echo_EchoRequest) {
+  func expand(request: Echo_EchoRequest, handler: ServerStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>) {
     let parts = request.text.components(separatedBy: " ")
     for (i, part) in parts.enumerated() {
       var response = Echo_EchoResponse()
@@ -86,7 +86,7 @@ final class EchoCallHandlerProvider: CallHandlerProvider {
     switch methodName {
     case "Get": return UnaryCallHandler(eventLoop: ctx.eventLoop, headers: headers) { (handler: UnaryCallHandler<Echo_EchoRequest, Echo_EchoResponse>) in
       return { request in
-        self.provider.get(handler: handler, request: request)
+        self.provider.get(request: request, handler: handler)
       }
       }
 
@@ -98,7 +98,7 @@ final class EchoCallHandlerProvider: CallHandlerProvider {
     case "Expand":
       return ServerStreamingCallHandler(eventLoop: ctx.eventLoop, headers: headers) { (handler: ServerStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>) in
         return { request in
-          self.provider.expand(handler: handler, request: request)
+          self.provider.expand(request: request, handler: handler)
         }
       }
 
