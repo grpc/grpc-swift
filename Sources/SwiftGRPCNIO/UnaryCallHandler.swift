@@ -4,17 +4,17 @@ import NIO
 import NIOHTTP1
 
 public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>: UnaryResponseHandler<RequestMessage, ResponseMessage> {
-  public typealias Handler = (RequestMessage) -> EventLoopFuture<ResponseMessage>
-  fileprivate var handler: Handler?
+  public typealias EventObserver = (RequestMessage) -> EventLoopFuture<ResponseMessage>
+  fileprivate var eventObserver: EventObserver?
 
   fileprivate var hasReceivedRequest = false
 
-  public init(eventLoop: EventLoop, headers: HTTPHeaders, handlerFactory: (UnaryCallHandler) -> Handler) {
+  public init(eventLoop: EventLoop, headers: HTTPHeaders, eventObserverFactory: (UnaryCallHandler) -> EventObserver) {
     super.init(eventLoop: eventLoop, headers: headers)
 
-    self.handler = handlerFactory(self)
+    self.eventObserver = eventObserverFactory(self)
     self.responsePromise.futureResult.whenComplete { [weak self] in
-      self?.handler = nil
+      self?.eventObserver = nil
     }
   }
 
@@ -22,7 +22,7 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
     assert(!hasReceivedRequest, "multiple messages received on unary call")
     hasReceivedRequest = true
 
-    handler?(message)
+    eventObserver?(message)
       .cascade(promise: responsePromise)
   }
 }

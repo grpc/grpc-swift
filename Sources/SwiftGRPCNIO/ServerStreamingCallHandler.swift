@@ -4,16 +4,16 @@ import NIO
 import NIOHTTP1
 
 public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage: Message>: StatusSendingHandler<RequestMessage, ResponseMessage> {
-  public typealias Handler = (RequestMessage) -> Void
-  fileprivate var handler: Handler?
+  public typealias EventObserver = (RequestMessage) -> Void
+  fileprivate var eventObserver: EventObserver?
 
   fileprivate var hasReceivedRequest = false
 
-  public init(eventLoop: EventLoop, headers: HTTPHeaders, handlerFactory: (ServerStreamingCallHandler) -> Handler) {
+  public init(eventLoop: EventLoop, headers: HTTPHeaders, eventObserverFactory: (ServerStreamingCallHandler) -> EventObserver) {
     super.init(eventLoop: eventLoop, headers: headers)
-    self.handler = handlerFactory(self)
+    self.eventObserver = eventObserverFactory(self)
     self.statusPromise.futureResult.whenComplete { [weak self] in
-      self?.handler = nil
+      self?.eventObserver = nil
     }
   }
 
@@ -21,7 +21,7 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
     assert(!hasReceivedRequest, "multiple messages received on server-streaming call")
     hasReceivedRequest = true
 
-    handler?(message)
+    eventObserver?(message)
   }
   
   public func sendMessage(_ message: ResponseMessage) -> EventLoopFuture<Void> {
