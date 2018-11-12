@@ -9,7 +9,7 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
 
   fileprivate var hasReceivedRequest = false
 
-  public init(eventLoop: EventLoop, headers: HTTPHeaders, eventObserverFactory: (ServerStreamingCallHandler) -> EventObserver) {
+  public init(eventLoop: EventLoop, headers: HTTPRequestHead, eventObserverFactory: (ServerStreamingCallHandler) -> EventObserver) {
     super.init(eventLoop: eventLoop, headers: headers)
     self.eventObserver = eventObserverFactory(self)
     self.statusPromise.futureResult.whenComplete { [weak self] in

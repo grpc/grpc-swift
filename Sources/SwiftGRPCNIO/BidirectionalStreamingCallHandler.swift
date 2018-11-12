@@ -7,7 +7,7 @@ public class BidirectionalStreamingCallHandler<RequestMessage: Message, Response
   public typealias EventObserver = (StreamEvent<RequestMessage>) -> Void
   fileprivate var eventObserver: EventObserver?
 
-  public init(eventLoop: EventLoop, headers: HTTPHeaders, eventObserverFactory: (BidirectionalStreamingCallHandler) -> EventObserver) {
+  public init(eventLoop: EventLoop, headers: HTTPRequestHead, eventObserverFactory: (BidirectionalStreamingCallHandler) -> EventObserver) {
     super.init(eventLoop: eventLoop, headers: headers)
 
     self.eventObserver = eventObserverFactory(self)

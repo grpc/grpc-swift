@@ -9,7 +9,7 @@ public class UnaryResponseHandler<RequestMessage: Message, ResponseMessage: Mess
   public let responsePromise: EventLoopPromise<ResponseMessage>
   public var responseStatus: GRPCStatus = .ok
 
-  public override init(eventLoop: EventLoop, headers: HTTPHeaders) {
+  public override init(eventLoop: EventLoop, headers: HTTPRequestHead) {
     responsePromise = eventLoop.newPromise()
 
     super.init(eventLoop: eventLoop, headers: headers)

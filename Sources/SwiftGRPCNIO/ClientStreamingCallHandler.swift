@@ -12,7 +12,7 @@ public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage
   public typealias EventObserver = (StreamEvent<RequestMessage>) -> Void
   fileprivate var eventObserver: EventObserver?
 
-  public init(eventLoop: EventLoop, headers: HTTPHeaders, eventObserverFactory: (ClientStreamingCallHandler) -> EventObserver) {
+  public init(eventLoop: EventLoop, headers: HTTPRequestHead, eventObserverFactory: (ClientStreamingCallHandler) -> EventObserver) {
     super.init(eventLoop: eventLoop, headers: headers)
 
     self.eventObserver = eventObserverFactory(self)

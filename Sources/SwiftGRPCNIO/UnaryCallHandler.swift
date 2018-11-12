@@ -9,7 +9,7 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
 
   fileprivate var hasReceivedRequest = false
 
-  public init(eventLoop: EventLoop, headers: HTTPHeaders, eventObserverFactory: (UnaryCallHandler) -> EventObserver) {
+  public init(eventLoop: EventLoop, headers: HTTPRequestHead, eventObserverFactory: (UnaryCallHandler) -> EventObserver) {
     super.init(eventLoop: eventLoop, headers: headers)
 
     self.eventObserver = eventObserverFactory(self)

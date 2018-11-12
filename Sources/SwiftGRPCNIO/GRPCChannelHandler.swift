@@ -7,7 +7,7 @@ import NIOHTTP1
 public protocol GRPCCallHandler: ChannelHandler {
   var eventLoop: EventLoop { get }
   
-  var headers: HTTPHeaders { get }
+  var headers: HTTPRequestHead { get }
   
   func makeGRPCServerCodec() -> ChannelHandler
 }
@@ -16,7 +16,7 @@ public protocol GRPCCallHandler: ChannelHandler {
 public protocol CallHandlerProvider {
   var serviceName: String { get }
 
-  func handleMethod(_ methodName: String, headers: HTTPHeaders, serverHandler: GRPCChannelHandler, ctx: ChannelHandlerContext) -> GRPCCallHandler?
+  func handleMethod(_ methodName: String, headers: HTTPRequestHead, serverHandler: GRPCChannelHandler, ctx: ChannelHandlerContext) -> GRPCCallHandler?
 }
 
 // Listens on a newly-opened HTTP2 channel and waits for the request headers to become available.
@@ -40,7 +40,7 @@ public final class GRPCChannelHandler: ChannelInboundHandler {
       let uriComponents = headers.uri.components(separatedBy: "/")
       guard uriComponents.count >= 3 && uriComponents[0].isEmpty,
         let providerForServiceName = servicesByName[uriComponents[1]],
-        let callHandler = providerForServiceName.handleMethod(uriComponents[2], headers: headers.headers, serverHandler: self, ctx: ctx) else {
+        let callHandler = providerForServiceName.handleMethod(uriComponents[2], headers: headers, serverHandler: self, ctx: ctx) else {
           ctx.writeAndFlush(self.wrapOutboundOut(.status(.unimplemented(method: headers.uri))), promise: nil)
           return
       }

@@ -41,7 +41,7 @@ extension Echo_EchoProvider_NIO {
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  internal func handleMethod(_ methodName: String, headers: HTTPHeaders, serverHandler: GRPCChannelHandler, ctx: ChannelHandlerContext) -> GRPCCallHandler? {
+  internal func handleMethod(_ methodName: String, headers: HTTPRequestHead, serverHandler: GRPCChannelHandler, ctx: ChannelHandlerContext) -> GRPCCallHandler? {
     switch methodName {
     case "Get":
       return UnaryCallHandler(eventLoop: ctx.eventLoop, headers: headers) { handler in
