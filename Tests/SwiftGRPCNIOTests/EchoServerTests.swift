@@ -24,10 +24,10 @@ import XCTest
 
 // This class is what the SwiftGRPC user would actually implement to provide their service.
 final class EchoGRPCProvider {
-  func get(request: Echo_EchoRequest, handler: UnaryCallHandler<Echo_EchoRequest, Echo_EchoResponse>) -> EventLoopFuture<Echo_EchoResponse> {
+  func get(request: Echo_EchoRequest, handler: UnaryCallHandler<Echo_EchoRequest, Echo_EchoResponse>) {
     var response = Echo_EchoResponse()
     response.text = "Swift echo get: " + request.text
-    return handler.eventLoop.newSucceededFuture(result: response)
+    handler.responsePromise.succeed(result: response)
   }
 
   func collect(handler: ClientStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>) -> (StreamEvent<Echo_EchoRequest>) -> Void {
@@ -84,19 +84,20 @@ final class EchoCallHandlerProvider: CallHandlerProvider {
 
   func handleMethod(_ methodName: String, headers: HTTPHeaders, serverHandler: GRPCChannelHandler, ctx: ChannelHandlerContext) -> GRPCCallHandler? {
     switch methodName {
-    case "Get": return UnaryCallHandler(eventLoop: ctx.eventLoop, headers: headers) { (handler: UnaryCallHandler<Echo_EchoRequest, Echo_EchoResponse>) in
-      return { request in
-        self.provider.get(request: request, handler: handler)
+    case "Get":
+      return UnaryCallHandler(eventLoop: ctx.eventLoop, headers: headers) { handler in
+        return { request in
+          self.provider.get(request: request, handler: handler)
+        }
       }
-      }
-
+      
     case "Collect":
       return ClientStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>(eventLoop: ctx.eventLoop, headers: headers) { handler in
         self.provider.collect(handler: handler)
       }
-
+      
     case "Expand":
-      return ServerStreamingCallHandler(eventLoop: ctx.eventLoop, headers: headers) { (handler: ServerStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>) in
+      return ServerStreamingCallHandler(eventLoop: ctx.eventLoop, headers: headers) { handler in
         return { request in
           self.provider.expand(request: request, handler: handler)
         }

@@ -4,7 +4,7 @@ import NIO
 import NIOHTTP1
 
 public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>: UnaryResponseHandler<RequestMessage, ResponseMessage> {
-  public typealias EventObserver = (RequestMessage) -> EventLoopFuture<ResponseMessage>
+  public typealias EventObserver = (RequestMessage) -> Void
   fileprivate var eventObserver: EventObserver?
 
   fileprivate var hasReceivedRequest = false
@@ -23,6 +23,5 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
     hasReceivedRequest = true
 
     eventObserver?(message)
-      .cascade(promise: responsePromise)
   }
 }
