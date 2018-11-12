@@ -7,6 +7,7 @@ import NIOHTTP1
 // calls) to the client. Also see `StatusSendingHandler`.
 public class UnaryResponseHandler<RequestMessage: Message, ResponseMessage: Message>: StatusSendingHandler<RequestMessage, ResponseMessage> {
   public let responsePromise: EventLoopPromise<ResponseMessage>
+  public var responseStatus: GRPCStatus = .ok
 
   public override init(eventLoop: EventLoop, headers: HTTPHeaders) {
     responsePromise = eventLoop.newPromise()
@@ -27,7 +28,7 @@ public class UnaryResponseHandler<RequestMessage: Message, ResponseMessage: Mess
         //  "write message" future doesn't seem to get fulfilled?
         ctx.write(strongSelf.wrapOutboundOut(.message(responseMessage)), promise: nil)
 
-        return GRPCStatus.ok
+        return strongSelf.responseStatus
       }
       .cascade(promise: statusPromise)
   }
