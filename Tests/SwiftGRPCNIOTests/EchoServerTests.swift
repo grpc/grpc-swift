@@ -24,13 +24,13 @@ import XCTest
 
 // This class is what the SwiftGRPC user would actually implement to provide their service.
 final class EchoGRPCProvider {
-  func get(request: Echo_EchoRequest, headers: HTTPHeaders, eventLoop: EventLoop) -> EventLoopFuture<Echo_EchoResponse> {
+  func get(handler: UnaryCallHandler<Echo_EchoRequest, Echo_EchoResponse>, request: Echo_EchoRequest) -> EventLoopFuture<Echo_EchoResponse> {
     var response = Echo_EchoResponse()
     response.text = "Swift echo get: " + request.text
-    return eventLoop.newSucceededFuture(result: response)
+    return handler.eventLoop.newSucceededFuture(result: response)
   }
 
-  func collect(headers: HTTPHeaders, responsePromise: EventLoopPromise<Echo_EchoResponse>) -> (StreamEvent<Echo_EchoRequest>) -> Void {
+  func collect(handler: ClientStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>) -> (StreamEvent<Echo_EchoRequest>) -> Void {
     var parts: [String] = []
     return { event in
       switch event {
@@ -40,12 +40,12 @@ final class EchoGRPCProvider {
       case .end:
         var response = Echo_EchoResponse()
         response.text = "Swift echo collect: " + parts.joined(separator: " ")
-        responsePromise.succeed(result: response)
+        handler.responsePromise.succeed(result: response)
       }
     }
   }
 
-  func expand(request: Echo_EchoRequest, headers: HTTPHeaders, handler: ServerStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>) {
+  func expand(handler: ServerStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>, request: Echo_EchoRequest) {
     let parts = request.text.components(separatedBy: " ")
     for (i, part) in parts.enumerated() {
       var response = Echo_EchoResponse()
@@ -55,7 +55,7 @@ final class EchoGRPCProvider {
     handler.sendStatus(.ok)
   }
 
-  func update(headers: HTTPHeaders, handler: BidirectionalStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>) -> (StreamEvent<Echo_EchoRequest>) -> Void {
+  func update(handler: BidirectionalStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>) -> (StreamEvent<Echo_EchoRequest>) -> Void {
     var count = 0
     return { event in
       switch event {
@@ -84,23 +84,27 @@ final class EchoCallHandlerProvider: CallHandlerProvider {
 
   func handleMethod(_ methodName: String, headers: HTTPHeaders, serverHandler: GRPCChannelHandler, ctx: ChannelHandlerContext) -> GRPCCallHandler? {
     switch methodName {
-    case "Get": return UnaryCallHandler(eventLoop: ctx.eventLoop) { (request: Echo_EchoRequest) -> EventLoopFuture<Echo_EchoResponse> in
-      return self.provider.get(request: request, headers: headers, eventLoop: ctx.eventLoop)
+    case "Get": return UnaryCallHandler(eventLoop: ctx.eventLoop, headers: headers) { (handler: UnaryCallHandler<Echo_EchoRequest, Echo_EchoResponse>) in
+      return { request in
+        self.provider.get(handler: handler, request: request)
+      }
       }
 
     case "Collect":
-      return ClientStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>(eventLoop: ctx.eventLoop) { responsePromise in
-        self.provider.collect(headers: headers, responsePromise: responsePromise)
+      return ClientStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>(eventLoop: ctx.eventLoop, headers: headers) { handler in
+        self.provider.collect(handler: handler)
       }
 
     case "Expand":
-      return ServerStreamingCallHandler(eventLoop: ctx.eventLoop) { (request, handler) in
-        self.provider.expand(request: request, headers: headers, handler: handler)
+      return ServerStreamingCallHandler(eventLoop: ctx.eventLoop, headers: headers) { (handler: ServerStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>) in
+        return { request in
+          self.provider.expand(handler: handler, request: request)
+        }
       }
 
     case "Update":
-      return BidirectionalStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>(eventLoop: ctx.eventLoop) { handler in
-        self.provider.update(headers: headers, handler: handler)
+      return BidirectionalStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>(eventLoop: ctx.eventLoop, headers: headers) { handler in
+        self.provider.update(handler: handler)
       }
 
     default: return nil

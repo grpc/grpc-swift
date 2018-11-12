@@ -4,24 +4,24 @@ import NIO
 import NIOHTTP1
 
 public class BidirectionalStreamingCallHandler<RequestMessage: Message, ResponseMessage: Message>: StatusSendingHandler<RequestMessage, ResponseMessage> {
-  public typealias HandlerImplementation = (StreamEvent<RequestMessage>) -> Void
-  fileprivate var handlerImplementation: HandlerImplementation?
+  public typealias Handler = (StreamEvent<RequestMessage>) -> Void
+  fileprivate var handler: Handler?
 
-  public init(eventLoop: EventLoop, handlerImplementationFactory: (BidirectionalStreamingCallHandler<RequestMessage, ResponseMessage>) -> HandlerImplementation) {
-    super.init(eventLoop: eventLoop)
+  public init(eventLoop: EventLoop, headers: HTTPHeaders, handlerFactory: (BidirectionalStreamingCallHandler) -> Handler) {
+    super.init(eventLoop: eventLoop, headers: headers)
 
-    self.handlerImplementation = handlerImplementationFactory(self)
+    self.handler = handlerFactory(self)
     self.statusPromise.futureResult.whenComplete { [weak self] in
-      self?.handlerImplementation = nil
+      self?.handler = nil
     }
   }
 
   public override func processMessage(_ message: RequestMessage) {
-    handlerImplementation?(.message(message))
+    handler?(.message(message))
   }
 
   public override func endOfStreamReceived() {
-    handlerImplementation?(.end)
+    handler?(.end)
   }
 
   public func sendMessage(_ message: ResponseMessage) -> EventLoopFuture<Void> {

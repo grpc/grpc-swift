@@ -6,12 +6,12 @@ import NIOHTTP1
 // Exposes a promise that should be fulfilled when it is time to return a unary response (for unary and client-streaming
 // calls) to the client. Also see `StatusSendingHandler`.
 public class UnaryResponseHandler<RequestMessage: Message, ResponseMessage: Message>: StatusSendingHandler<RequestMessage, ResponseMessage> {
-  let responsePromise: EventLoopPromise<ResponseMessage>
+  public let responsePromise: EventLoopPromise<ResponseMessage>
 
-  public override init(eventLoop: EventLoop) {
+  public override init(eventLoop: EventLoop, headers: HTTPHeaders) {
     responsePromise = eventLoop.newPromise()
 
-    super.init(eventLoop: eventLoop)
+    super.init(eventLoop: eventLoop, headers: headers)
   }
 
   override public func handlerAdded(ctx: ChannelHandlerContext) {

@@ -15,11 +15,15 @@ public class StatusSendingHandler<RequestMessage: Message, ResponseMessage: Mess
   let statusPromise: EventLoopPromise<GRPCStatus>
   public let eventLoop: EventLoop
 
+  public let headers: HTTPHeaders
+  
   private(set) weak var ctx: ChannelHandlerContext?
 
-  public init(eventLoop: EventLoop) {
+  public init(eventLoop: EventLoop, headers: HTTPHeaders) {
     self.eventLoop = eventLoop
     self.statusPromise = eventLoop.newPromise()
+    
+    self.headers = headers
   }
 
   public func handlerAdded(ctx: ChannelHandlerContext) {

@@ -9,23 +9,23 @@ public enum StreamEvent<Message: SwiftProtobuf.Message> {
 }
 
 public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage: Message>: UnaryResponseHandler<RequestMessage, ResponseMessage> {
-  public typealias HandlerImplementation = (StreamEvent<RequestMessage>) -> Void
-  fileprivate var handlerImplementation: HandlerImplementation?
+  public typealias Handler = (StreamEvent<RequestMessage>) -> Void
+  fileprivate var handler: Handler?
 
-  public init(eventLoop: EventLoop, handlerImplementationFactory: @escaping (EventLoopPromise<ResponseMessage>) -> HandlerImplementation) {
-    super.init(eventLoop: eventLoop)
+  public init(eventLoop: EventLoop, headers: HTTPHeaders, handlerFactory: (ClientStreamingCallHandler) -> Handler) {
+    super.init(eventLoop: eventLoop, headers: headers)
 
-    self.handlerImplementation = handlerImplementationFactory(self.responsePromise)
+    self.handler = handlerFactory(self)
     self.responsePromise.futureResult.whenComplete { [weak self] in
-      self?.handlerImplementation = nil
+      self?.handler = nil
     }
   }
 
   public override func processMessage(_ message: RequestMessage) {
-    handlerImplementation?(.message(message))
+    handler?(.message(message))
   }
 
   public override func endOfStreamReceived() {
-    handlerImplementation?(.end)
+    handler?(.end)
   }
 }
