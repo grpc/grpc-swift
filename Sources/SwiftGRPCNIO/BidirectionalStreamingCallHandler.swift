@@ -24,6 +24,8 @@ public class BidirectionalStreamingCallHandler<RequestMessage: Message, Response
     eventObserver?(.end)
   }
 
+  //! TODO: Should these methods wrapped in a dedicated `Responder` object, to avoid having to expose all the
+  //  `ChannelHandler` methods that are part of the `CallHandler` object?
   public func sendMessage(_ message: ResponseMessage) -> EventLoopFuture<Void> {
     let promise: EventLoopPromise<Void> = eventLoop.newPromise()
     ctx?.writeAndFlush(self.wrapOutboundOut(.message(message)), promise: promise)
