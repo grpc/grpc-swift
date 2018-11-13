@@ -12,7 +12,7 @@ public class StatusSendingHandler<RequestMessage: Message, ResponseMessage: Mess
   public typealias InboundIn = GRPCServerRequestPart<RequestMessage>
   public typealias OutboundOut = GRPCServerResponsePart<ResponseMessage>
 
-  let statusPromise: EventLoopPromise<GRPCStatus>
+  public let statusPromise: EventLoopPromise<GRPCStatus>
   public let eventLoop: EventLoop
 
   public let headers: HTTPRequestHead
