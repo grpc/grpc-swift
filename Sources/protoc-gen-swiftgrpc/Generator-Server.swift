@@ -58,9 +58,9 @@ extension Generator {
         case .serverStreaming:
           println("func \(methodFunctionName)(request: \(methodInputName), handler: ServerStreamingCallHandler<\(methodInputName), \(methodOutputName)>)")
         case .clientStreaming:
-          println("func \(methodFunctionName)(handler: ClientStreamingCallHandler<\(methodInputName), \(methodOutputName)>) -> (StreamEvent<\(methodInputName)>) -> Void")
+          println("func \(methodFunctionName)(handler: ClientStreamingCallHandler<\(methodInputName), \(methodOutputName)>) -> EventLoopFuture<(StreamEvent<\(methodInputName)>) -> Void>")
         case .bidirectionalStreaming:
-          println("func \(methodFunctionName)(handler: BidirectionalStreamingCallHandler<\(methodInputName), \(methodOutputName)>) -> (StreamEvent<\(methodInputName)>) -> Void")
+          println("func \(methodFunctionName)(handler: BidirectionalStreamingCallHandler<\(methodInputName), \(methodOutputName)>) -> EventLoopFuture<(StreamEvent<\(methodInputName)>) -> Void>")
         }
       } else {
         switch streamingType(method) {

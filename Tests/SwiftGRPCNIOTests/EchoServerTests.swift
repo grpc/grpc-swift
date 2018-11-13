@@ -30,9 +30,9 @@ final class EchoGRPCProvider: Echo_EchoProvider_NIO {
     handler.responsePromise.succeed(result: response)
   }
 
-  func collect(handler: ClientStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>) -> (StreamEvent<Echo_EchoRequest>) -> Void {
+  func collect(handler: ClientStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     var parts: [String] = []
-    return { event in
+    return handler.eventLoop.newSucceededFuture(result: { event in
       switch event {
       case .message(let message):
         parts.append(message.text)
@@ -42,7 +42,7 @@ final class EchoGRPCProvider: Echo_EchoProvider_NIO {
         response.text = "Swift echo collect: " + parts.joined(separator: " ")
         handler.responsePromise.succeed(result: response)
       }
-    }
+    })
   }
 
   func expand(request: Echo_EchoRequest, handler: ServerStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>) {
@@ -55,9 +55,9 @@ final class EchoGRPCProvider: Echo_EchoProvider_NIO {
     handler.sendStatus(.ok)
   }
 
-  func update(handler: BidirectionalStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>) -> (StreamEvent<Echo_EchoRequest>) -> Void {
+  func update(handler: BidirectionalStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     var count = 0
-    return { event in
+    return handler.eventLoop.newSucceededFuture(result: { event in
       switch event {
       case .message(let message):
         var response = Echo_EchoResponse()
@@ -68,7 +68,7 @@ final class EchoGRPCProvider: Echo_EchoProvider_NIO {
       case .end:
         handler.sendStatus(.ok)
       }
-    }
+    })
   }
 }
 
