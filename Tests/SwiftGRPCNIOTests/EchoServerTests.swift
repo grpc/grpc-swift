@@ -141,12 +141,9 @@ extension EchoServerTests {
       completionHandlerExpectation.fulfill()
     }
 
-    var sendExpectation = expectation(description: "send completion handler 1 called")
-    try! call.send(Echo_EchoRequest(text: "foo")) { [sendExpectation] in XCTAssertNil($0); sendExpectation.fulfill() }
-    sendExpectation = expectation(description: "send completion handler 2 called")
-    try! call.send(Echo_EchoRequest(text: "bar")) { [sendExpectation] in XCTAssertNil($0); sendExpectation.fulfill() }
-    sendExpectation = expectation(description: "send completion handler 3 called")
-    try! call.send(Echo_EchoRequest(text: "baz")) { [sendExpectation] in XCTAssertNil($0); sendExpectation.fulfill() }
+    try! call.send(Echo_EchoRequest(text: "foo"))
+    try! call.send(Echo_EchoRequest(text: "bar"))
+    try! call.send(Echo_EchoRequest(text: "baz"))
     call.waitForSendOperationsToFinish()
 
     let response = try! call.closeAndReceive()
@@ -163,8 +160,7 @@ extension EchoServerTests {
     }
 
     for string in EchoServerTests.lotsOfStrings {
-      let sendExpectation = expectation(description: "send completion handler \(string) called")
-      try! call.send(Echo_EchoRequest(text: string)) { [sendExpectation] in XCTAssertNil($0); sendExpectation.fulfill() }
+      try! call.send(Echo_EchoRequest(text: string))
     }
     call.waitForSendOperationsToFinish()
 
@@ -215,17 +211,13 @@ extension EchoServerTests {
       finalCompletionHandlerExpectation.fulfill()
     }
 
-    var sendExpectation = expectation(description: "send completion handler 1 called")
-    try! call.send(Echo_EchoRequest(text: "foo")) { [sendExpectation] in XCTAssertNil($0); sendExpectation.fulfill() }
-    sendExpectation = expectation(description: "send completion handler 2 called")
-    try! call.send(Echo_EchoRequest(text: "bar")) { [sendExpectation] in XCTAssertNil($0); sendExpectation.fulfill() }
-    sendExpectation = expectation(description: "send completion handler 3 called")
-    try! call.send(Echo_EchoRequest(text: "baz")) { [sendExpectation] in XCTAssertNil($0); sendExpectation.fulfill() }
+    try! call.send(Echo_EchoRequest(text: "foo"))
+    try! call.send(Echo_EchoRequest(text: "bar"))
+    try! call.send(Echo_EchoRequest(text: "baz"))
 
     call.waitForSendOperationsToFinish()
 
-    let closeCompletionHandlerExpectation = expectation(description: "close completion handler called")
-    try! call.closeSend { closeCompletionHandlerExpectation.fulfill() }
+    try! call.closeSend()
 
     XCTAssertEqual("Swift echo update (0): foo", try! call.receive()!.text)
     XCTAssertEqual("Swift echo update (1): bar", try! call.receive()!.text)
@@ -244,22 +236,18 @@ extension EchoServerTests {
       finalCompletionHandlerExpectation.fulfill()
     }
 
-    var sendExpectation = expectation(description: "send completion handler 1 called")
-    try! call.send(Echo_EchoRequest(text: "foo")) { [sendExpectation] in XCTAssertNil($0); sendExpectation.fulfill() }
+    try! call.send(Echo_EchoRequest(text: "foo"))
     XCTAssertEqual("Swift echo update (0): foo", try! call.receive()!.text)
 
-    sendExpectation = expectation(description: "send completion handler 2 called")
-    try! call.send(Echo_EchoRequest(text: "bar")) { [sendExpectation] in XCTAssertNil($0); sendExpectation.fulfill() }
+    try! call.send(Echo_EchoRequest(text: "bar"))
     XCTAssertEqual("Swift echo update (1): bar", try! call.receive()!.text)
 
-    sendExpectation = expectation(description: "send completion handler 3 called")
-    try! call.send(Echo_EchoRequest(text: "baz")) { [sendExpectation] in XCTAssertNil($0); sendExpectation.fulfill() }
+    try! call.send(Echo_EchoRequest(text: "baz"))
     XCTAssertEqual("Swift echo update (2): baz", try! call.receive()!.text)
 
     call.waitForSendOperationsToFinish()
 
-    let closeCompletionHandlerExpectation = expectation(description: "close completion handler called")
-    try! call.closeSend { closeCompletionHandlerExpectation.fulfill() }
+    try! call.closeSend()
 
     XCTAssertNil(try! call.receive())
 
@@ -274,14 +262,12 @@ extension EchoServerTests {
     }
 
     for string in EchoServerTests.lotsOfStrings {
-      let sendExpectation = expectation(description: "send completion handler \(string) called")
-      try! call.send(Echo_EchoRequest(text: string)) { [sendExpectation] in XCTAssertNil($0); sendExpectation.fulfill() }
+      try! call.send(Echo_EchoRequest(text: string))
     }
 
     call.waitForSendOperationsToFinish()
 
-    let closeCompletionHandlerExpectation = expectation(description: "close completion handler called")
-    try! call.closeSend { closeCompletionHandlerExpectation.fulfill() }
+    try! call.closeSend()
 
     for string in EchoServerTests.lotsOfStrings {
       XCTAssertEqual("Swift echo update (\(string)): \(string)", try! call.receive()!.text)
@@ -301,15 +287,13 @@ extension EchoServerTests {
     }
 
     for string in EchoServerTests.lotsOfStrings {
-      let sendExpectation = expectation(description: "send completion handler \(string) called")
-      try! call.send(Echo_EchoRequest(text: string)) { [sendExpectation] in XCTAssertNil($0); sendExpectation.fulfill() }
+      try! call.send(Echo_EchoRequest(text: string))
       XCTAssertEqual("Swift echo update (\(string)): \(string)", try! call.receive()!.text)
     }
 
     call.waitForSendOperationsToFinish()
 
-    let closeCompletionHandlerExpectation = expectation(description: "close completion handler called")
-    try! call.closeSend { closeCompletionHandlerExpectation.fulfill() }
+    try! call.closeSend()
 
     XCTAssertNil(try! call.receive())
 
