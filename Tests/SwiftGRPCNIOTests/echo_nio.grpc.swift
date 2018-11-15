@@ -30,10 +30,10 @@ import SwiftProtobuf
 
 /// To build a server, implement a class that conforms to this protocol.
 internal protocol Echo_EchoProvider_NIO: CallHandlerProvider {
-  func get(request: Echo_EchoRequest, handler: UnaryCallHandler<Echo_EchoRequest, Echo_EchoResponse>)
-  func expand(request: Echo_EchoRequest, handler: ServerStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>)
-  func collect(handler: ClientStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void>
-  func update(handler: BidirectionalStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void>
+  func get(request: Echo_EchoRequest, context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<Echo_EchoResponse>
+  func expand(request: Echo_EchoRequest, context: StreamingResponseCallContext<Echo_EchoResponse>)
+  func collect(context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void>
+  func update(context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void>
 }
 
 extension Echo_EchoProvider_NIO {
@@ -44,27 +44,27 @@ extension Echo_EchoProvider_NIO {
   internal func handleMethod(_ methodName: String, headers: HTTPRequestHead, serverHandler: GRPCChannelHandler, ctx: ChannelHandlerContext) -> GRPCCallHandler? {
     switch methodName {
     case "Get":
-      return UnaryCallHandler(eventLoop: ctx.eventLoop, headers: headers) { handler in
+      return UnaryCallHandler(eventLoop: ctx.eventLoop, headers: headers) { context in
         return { request in
-          self.get(request: request, handler: handler)
+          self.get(request: request, context: context)
         }
       }
 
     case "Expand":
-      return ServerStreamingCallHandler(eventLoop: ctx.eventLoop, headers: headers) { handler in
+      return ServerStreamingCallHandler(eventLoop: ctx.eventLoop, headers: headers) { context in
         return { request in
-          self.expand(request: request, handler: handler)
+          self.expand(request: request, context: context)
         }
       }
 
     case "Collect":
-      return ClientStreamingCallHandler(eventLoop: ctx.eventLoop, headers: headers) { handler in
-        return self.collect(handler: handler)
+      return ClientStreamingCallHandler(eventLoop: ctx.eventLoop, headers: headers) { context in
+        return self.collect(context: context)
       }
 
     case "Update":
-      return BidirectionalStreamingCallHandler(eventLoop: ctx.eventLoop, headers: headers) { handler in
-        return self.update(handler: handler)
+      return BidirectionalStreamingCallHandler(eventLoop: ctx.eventLoop, headers: headers) { context in
+        return self.update(context: context)
       }
 
     default: return nil

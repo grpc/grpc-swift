@@ -5,10 +5,6 @@ import NIOHTTP1
 
 // Processes individual gRPC messages and stream-close events on a HTTP2 channel.
 public protocol GRPCCallHandler: ChannelHandler {
-  var eventLoop: EventLoop { get }
-  
-  var headers: HTTPRequestHead { get }
-  
   func makeGRPCServerCodec() -> ChannelHandler
 }
 

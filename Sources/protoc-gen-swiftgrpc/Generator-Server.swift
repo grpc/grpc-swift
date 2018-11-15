@@ -54,13 +54,13 @@ extension Generator {
       if options.generateNIOImplementation {
         switch streamingType(method) {
         case .unary:
-          println("func \(methodFunctionName)(request: \(methodInputName), handler: UnaryCallHandler<\(methodInputName), \(methodOutputName)>)")
+          println("func \(methodFunctionName)(request: \(methodInputName), context: UnaryResponseCallContext<\(methodOutputName)>) -> EventLoopFuture<\(methodOutputName)>")
         case .serverStreaming:
-          println("func \(methodFunctionName)(request: \(methodInputName), handler: ServerStreamingCallHandler<\(methodInputName), \(methodOutputName)>)")
+          println("func \(methodFunctionName)(request: \(methodInputName), context: StreamingResponseCallContext<\(methodOutputName)>)")
         case .clientStreaming:
-          println("func \(methodFunctionName)(handler: ClientStreamingCallHandler<\(methodInputName), \(methodOutputName)>) -> EventLoopFuture<(StreamEvent<\(methodInputName)>) -> Void>")
+          println("func \(methodFunctionName)(context: UnaryResponseCallContext<\(methodOutputName)>) -> EventLoopFuture<(StreamEvent<\(methodInputName)>) -> Void>")
         case .bidirectionalStreaming:
-          println("func \(methodFunctionName)(handler: BidirectionalStreamingCallHandler<\(methodInputName), \(methodOutputName)>) -> EventLoopFuture<(StreamEvent<\(methodInputName)>) -> Void>")
+          println("func \(methodFunctionName)(context: StreamingResponseCallContext<\(methodOutputName)>) -> EventLoopFuture<(StreamEvent<\(methodInputName)>) -> Void>")
         }
       } else {
         switch streamingType(method) {
@@ -99,17 +99,17 @@ extension Generator {
         case .clientStreaming: callHandlerType = "ClientStreamingCallHandler"
         case .bidirectionalStreaming: callHandlerType = "BidirectionalStreamingCallHandler"
         }
-        println("return \(callHandlerType)(eventLoop: ctx.eventLoop, headers: headers) { handler in")
+        println("return \(callHandlerType)(eventLoop: ctx.eventLoop, headers: headers) { context in")
         indent()
         switch streamingType(method) {
         case .unary, .serverStreaming:
           println("return { request in")
           indent()
-          println("self.\(methodFunctionName)(request: request, handler: handler)")
+          println("self.\(methodFunctionName)(request: request, context: context)")
           outdent()
           println("}")
         case .clientStreaming, .bidirectionalStreaming:
-          println("return self.\(methodFunctionName)(handler: handler)")
+          println("return self.\(methodFunctionName)(context: context)")
         }
         outdent()
         println("}")

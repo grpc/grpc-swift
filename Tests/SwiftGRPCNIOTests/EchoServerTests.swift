@@ -24,15 +24,15 @@ import XCTest
 
 // This class is what the SwiftGRPC user would actually implement to provide their service.
 final class EchoGRPCProvider: Echo_EchoProvider_NIO {
-  func get(request: Echo_EchoRequest, handler: UnaryCallHandler<Echo_EchoRequest, Echo_EchoResponse>) {
+  func get(request: Echo_EchoRequest, context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<Echo_EchoResponse> {
     var response = Echo_EchoResponse()
     response.text = "Swift echo get: " + request.text
-    handler.responsePromise.succeed(result: response)
+    return context.eventLoop.newSucceededFuture(result: response)
   }
 
-  func collect(handler: ClientStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
+  func collect(context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     var parts: [String] = []
-    return handler.eventLoop.newSucceededFuture(result: { event in
+    return context.eventLoop.newSucceededFuture(result: { event in
       switch event {
       case .message(let message):
         parts.append(message.text)
@@ -40,33 +40,33 @@ final class EchoGRPCProvider: Echo_EchoProvider_NIO {
       case .end:
         var response = Echo_EchoResponse()
         response.text = "Swift echo collect: " + parts.joined(separator: " ")
-        handler.responsePromise.succeed(result: response)
+        context.responsePromise.succeed(result: response)
       }
     })
   }
 
-  func expand(request: Echo_EchoRequest, handler: ServerStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>) {
+  func expand(request: Echo_EchoRequest, context: StreamingResponseCallContext<Echo_EchoResponse>) {
     let parts = request.text.components(separatedBy: " ")
     for (i, part) in parts.enumerated() {
       var response = Echo_EchoResponse()
       response.text = "Swift echo expand (\(i)): \(part)"
-      _ = handler.sendMessage(response)
+      _ = context.sendResponse(response)
     }
-    handler.sendStatus(.ok)
+    context.statusPromise.succeed(result: .ok)
   }
 
-  func update(handler: BidirectionalStreamingCallHandler<Echo_EchoRequest, Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
+  func update(context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     var count = 0
-    return handler.eventLoop.newSucceededFuture(result: { event in
+    return context.eventLoop.newSucceededFuture(result: { event in
       switch event {
       case .message(let message):
         var response = Echo_EchoResponse()
         response.text = "Swift echo update (\(count)): \(message.text)"
-        _ = handler.sendMessage(response)
+        _ = context.sendResponse(response)
         count += 1
 
       case .end:
-        handler.sendStatus(.ok)
+        context.statusPromise.succeed(result: .ok)
       }
     })
   }
