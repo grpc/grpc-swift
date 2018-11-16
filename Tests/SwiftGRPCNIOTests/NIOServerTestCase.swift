@@ -30,7 +30,7 @@ extension Echo_EchoResponse {
   }
 }
 
-class BasicEchoTestCase: XCTestCase {
+class NIOServerTestCase: XCTestCase {
   func makeProvider() -> Echo_EchoProvider { return EchoProvider() }
 
   var provider: Echo_EchoProvider!

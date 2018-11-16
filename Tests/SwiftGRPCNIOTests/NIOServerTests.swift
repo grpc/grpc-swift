@@ -23,7 +23,7 @@ import NIOHTTP2
 import XCTest
 
 // This class is what the SwiftGRPC user would actually implement to provide their service.
-final class EchoGRPCProvider: Echo_EchoProvider_NIO {
+final class EchoProvider_NIO: Echo_EchoProvider_NIO {
   func get(request: Echo_EchoRequest, context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<Echo_EchoResponse> {
     var response = Echo_EchoResponse()
     response.text = "Swift echo get: " + request.text
@@ -76,8 +76,8 @@ final class EchoGRPCProvider: Echo_EchoProvider_NIO {
   }
 }
 
-class EchoServerTests: BasicEchoTestCase {
-  static var allTests: [(String, (EchoServerTests) -> () throws -> Void)] {
+class NIOServerTests: NIOServerTestCase {
+  static var allTests: [(String, (NIOServerTests) -> () throws -> Void)] {
     return [
       ("testUnary", testUnary),
       ("testUnaryLotsOfRequests", testUnaryLotsOfRequests),
@@ -103,7 +103,7 @@ class EchoServerTests: BasicEchoTestCase {
     // This is how a GRPC server would actually be set up.
     eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     server = try! GRPCServer.start(
-      hostname: "localhost", port: 5050, eventLoopGroup: eventLoopGroup, serviceProviders: [EchoGRPCProvider()])
+      hostname: "localhost", port: 5050, eventLoopGroup: eventLoopGroup, serviceProviders: [EchoProvider_NIO()])
       .wait()
   }
 
@@ -117,7 +117,7 @@ class EchoServerTests: BasicEchoTestCase {
   }
 }
 
-extension EchoServerTests {
+extension NIOServerTests {
   func testUnary() {
     XCTAssertEqual("Swift echo get: foo", try! client.get(Echo_EchoRequest(text: "foo")).text)
   }
@@ -137,7 +137,7 @@ extension EchoServerTests {
   }
 }
 
-extension EchoServerTests {
+extension NIOServerTests {
   func testClientStreaming() {
     let completionHandlerExpectation = expectation(description: "final completion handler called")
     let call = try! client.collect { callResult in
@@ -163,19 +163,19 @@ extension EchoServerTests {
       completionHandlerExpectation.fulfill()
     }
 
-    for string in EchoServerTests.lotsOfStrings {
+    for string in NIOServerTests.lotsOfStrings {
       try! call.send(Echo_EchoRequest(text: string))
     }
     call.waitForSendOperationsToFinish()
 
     let response = try! call.closeAndReceive()
-    XCTAssertEqual("Swift echo collect: " + EchoServerTests.lotsOfStrings.joined(separator: " "), response.text)
+    XCTAssertEqual("Swift echo collect: " + NIOServerTests.lotsOfStrings.joined(separator: " "), response.text)
 
     waitForExpectations(timeout: defaultTimeout)
   }
 }
 
-extension EchoServerTests {
+extension NIOServerTests {
   func testServerStreaming() {
     let completionHandlerExpectation = expectation(description: "completion handler called")
     let call = try! client.expand(Echo_EchoRequest(text: "foo bar baz")) { callResult in
@@ -193,12 +193,12 @@ extension EchoServerTests {
 
   func testServerStreamingLotsOfMessages() {
     let completionHandlerExpectation = expectation(description: "completion handler called")
-    let call = try! client.expand(Echo_EchoRequest(text: EchoServerTests.lotsOfStrings.joined(separator: " "))) { callResult in
+    let call = try! client.expand(Echo_EchoRequest(text: NIOServerTests.lotsOfStrings.joined(separator: " "))) { callResult in
       XCTAssertEqual(.ok, callResult.statusCode)
       completionHandlerExpectation.fulfill()
     }
 
-    for string in EchoServerTests.lotsOfStrings {
+    for string in NIOServerTests.lotsOfStrings {
       XCTAssertEqual("Swift echo expand (\(string)): \(string)", try! call.receive()!.text)
     }
     XCTAssertNil(try! call.receive())
@@ -207,7 +207,7 @@ extension EchoServerTests {
   }
 }
 
-extension EchoServerTests {
+extension NIOServerTests {
   func testBidirectionalStreamingBatched() {
     let finalCompletionHandlerExpectation = expectation(description: "final completion handler called")
     let call = try! client.update { callResult in
@@ -263,7 +263,7 @@ extension EchoServerTests {
       finalCompletionHandlerExpectation.fulfill()
     }
 
-    for string in EchoServerTests.lotsOfStrings {
+    for string in NIOServerTests.lotsOfStrings {
       try! call.send(Echo_EchoRequest(text: string))
     }
 
@@ -271,7 +271,7 @@ extension EchoServerTests {
 
     try! call.closeSend()
 
-    for string in EchoServerTests.lotsOfStrings {
+    for string in NIOServerTests.lotsOfStrings {
       XCTAssertEqual("Swift echo update (\(string)): \(string)", try! call.receive()!.text)
     }
     XCTAssertNil(try! call.receive())
@@ -286,7 +286,7 @@ extension EchoServerTests {
       finalCompletionHandlerExpectation.fulfill()
     }
 
-    for string in EchoServerTests.lotsOfStrings {
+    for string in NIOServerTests.lotsOfStrings {
       try! call.send(Echo_EchoRequest(text: string))
       XCTAssertEqual("Swift echo update (\(string)): \(string)", try! call.receive()!.text)
     }
