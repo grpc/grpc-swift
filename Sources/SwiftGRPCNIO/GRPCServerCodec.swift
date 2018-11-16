@@ -17,7 +17,6 @@ public enum GRPCServerResponsePart<MessageType: Message> {
 
 /// A simple channel handler that translates raw gRPC packets into decoded protobuf messages,
 /// and vice versa.
-/// **Currently unused, as we do not yet know the request's method name (and thus message types) when this object is instantiated.**
 public final class GRPCServerCodec<RequestMessage: Message, ResponseMessage: Message>: ChannelInboundHandler, ChannelOutboundHandler {
   public typealias InboundIn = RawGRPCServerRequestPart
   public typealias InboundOut = GRPCServerRequestPart<RequestMessage>

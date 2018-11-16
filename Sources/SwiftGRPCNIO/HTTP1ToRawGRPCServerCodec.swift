@@ -58,6 +58,11 @@ public final class HTTP1ToRawGRPCServerCodec: ChannelInboundHandler, ChannelOutb
       assert(state.expectingBody, "received body while in state \(state)")
       buffer.write(buffer: &body)
 
+      // Iterate over all available incoming data, trying to read length-delimited messages.
+      // Each message has the following format:
+      // - 1 byte "compressed" flag (currently always zero, as we do not support for compression)
+      // - 4 byte signed-integer payload length (N)
+      // - N bytes payload (normally a valid wire-format protocol buffer)
       requestProcessing: while true {
         switch state {
         case .expectingHeaders: preconditionFailure("unexpected state \(state)")
@@ -101,6 +106,7 @@ public final class HTTP1ToRawGRPCServerCodec: ChannelInboundHandler, ChannelOutb
       //! FIXME: Should return a different version if we want to support pPRC.
       ctx.write(self.wrapOutboundOut(.head(HTTPResponseHead(version: .init(major: 2, minor: 0), status: .ok, headers: headers))), promise: promise)
     case .message(var messageBytes):
+      // Write out a length-delimited message payload. See `channelRead` fpor the corresponding format.
       var responseBuffer = ctx.channel.allocator.buffer(capacity: messageBytes.readableBytes + 5)
       responseBuffer.write(integer: Int8(0))  // Compression flag: no compression
       responseBuffer.write(integer: UInt32(messageBytes.readableBytes))

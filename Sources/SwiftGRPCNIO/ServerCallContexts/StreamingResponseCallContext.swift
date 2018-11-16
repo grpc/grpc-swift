@@ -3,6 +3,10 @@ import SwiftProtobuf
 import NIO
 import NIOHTTP1
 
+// Abstract base class exposing a method to send multiple messages over the wire and a promise for the final RPC status.
+// When `statusPromise` is fulfilled, the call is closed and the provided status transmitted.
+// If `statusPromise` is failed and the error is of type `GRPCStatus`, that error will be returned to the client.
+// For other errors, `GRPCStatus.processingError` is returned to the client.
 open class StreamingResponseCallContext<ResponseMessage: Message>: ServerCallContext {
   public typealias WrappedResponse = GRPCServerResponsePart<ResponseMessage>
   
@@ -18,6 +22,7 @@ open class StreamingResponseCallContext<ResponseMessage: Message>: ServerCallCon
   }
 }
 
+// Concrete implementation of `StreamingResponseCallContext` used by our generated code.
 open class StreamingResponseCallContextImpl<ResponseMessage: Message>: StreamingResponseCallContext<ResponseMessage> {
   public let channel: Channel
   
@@ -27,7 +32,11 @@ open class StreamingResponseCallContextImpl<ResponseMessage: Message>: Streaming
     super.init(eventLoop: channel.eventLoop, headers: headers)
     
     statusPromise.futureResult
-      .mapIfError { ($0 as? GRPCStatus) ?? .processingError }
+      // Ensure that any error provided is of type `GRPCStatus`, using "internal server error" as a fallback.
+      .mapIfError { error in
+        (error as? GRPCStatus) ?? .processingError
+      }
+      // Finish the call by returning the final status.
       .whenSuccess {
         self.channel.writeAndFlush(NIOAny(WrappedResponse.status($0)), promise: nil)
     }
@@ -40,6 +49,7 @@ open class StreamingResponseCallContextImpl<ResponseMessage: Message>: Streaming
   }
 }
 
+// Concrete implementation of `StreamingResponseCallContext` used for testing. Simply records all sent messages.
 open class StreamingResponseCallContextTestStub<ResponseMessage: Message>: StreamingResponseCallContext<ResponseMessage> {
   open var recordedResponses: [ResponseMessage] = []
   

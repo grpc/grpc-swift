@@ -3,8 +3,7 @@ import SwiftProtobuf
 import NIO
 import NIOHTTP1
 
-// Provides a means for decoding incoming gRPC messages into protobuf objects, and exposes a promise that should be
-// fulfilled when it is time to return a status to the client.
+// Provides a means for decoding incoming gRPC messages into protobuf objects.
 // Calls through to `processMessage` for individual messages it receives, which needs to be implemented by subclasses.
 public class BaseCallHandler<RequestMessage: Message, ResponseMessage: Message>: GRPCCallHandler, ChannelInboundHandler {
   public func makeGRPCServerCodec() -> ChannelHandler { return GRPCServerCodec<RequestMessage, ResponseMessage>() }
