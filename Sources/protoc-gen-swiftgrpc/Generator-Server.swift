@@ -56,7 +56,7 @@ extension Generator {
         case .unary:
           println("func \(methodFunctionName)(request: \(methodInputName), context: UnaryResponseCallContext<\(methodOutputName)>) -> EventLoopFuture<\(methodOutputName)>")
         case .serverStreaming:
-          println("func \(methodFunctionName)(request: \(methodInputName), context: StreamingResponseCallContext<\(methodOutputName)>)")
+          println("func \(methodFunctionName)(request: \(methodInputName), context: StreamingResponseCallContext<\(methodOutputName)>) -> EventLoopFuture<GRPCStatus>")
         case .clientStreaming:
           println("func \(methodFunctionName)(context: UnaryResponseCallContext<\(methodOutputName)>) -> EventLoopFuture<(StreamEvent<\(methodInputName)>) -> Void>")
         case .bidirectionalStreaming:
@@ -85,7 +85,7 @@ extension Generator {
     if options.generateNIOImplementation {
       println("/// Determines, calls and returns the appropriate request handler, depending on the request's method.")
       println("/// Returns nil for methods not handled by this service.")
-      println("\(access) func handleMethod(_ methodName: String, headers: HTTPRequestHead, serverHandler: GRPCChannelHandler, ctx: ChannelHandlerContext) -> GRPCCallHandler? {")
+      println("\(access) func handleMethod(_ methodName: String, headers: HTTPRequestHead, serverHandler: GRPCChannelHandler, channel: Channel) -> GRPCCallHandler? {")
       indent()
       println("switch methodName {")
       for method in service.methods {
@@ -99,7 +99,7 @@ extension Generator {
         case .clientStreaming: callHandlerType = "ClientStreamingCallHandler"
         case .bidirectionalStreaming: callHandlerType = "BidirectionalStreamingCallHandler"
         }
-        println("return \(callHandlerType)(eventLoop: ctx.eventLoop, headers: headers) { context in")
+        println("return \(callHandlerType)(channel: channel, headers: headers) { context in")
         indent()
         switch streamingType(method) {
         case .unary, .serverStreaming:

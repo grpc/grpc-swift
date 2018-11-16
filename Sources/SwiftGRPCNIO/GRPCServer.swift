@@ -34,6 +34,7 @@ public final class GRPCServer {
       .childChannelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
       .childChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
       .childChannelOption(ChannelOptions.maxMessagesPerRead, value: 1)
+      .childChannelOption(ChannelOptions.allowRemoteHalfClosure, value: true)
 
     return bootstrap.bind(host: hostname, port: port)
       .map { GRPCServer(channel: $0) }

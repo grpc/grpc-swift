@@ -19,10 +19,6 @@ public class BaseCallHandler<RequestMessage: Message, ResponseMessage: Message>:
     case .end: endOfStreamReceived()
     }
   }
-  
-  public func handlerAdded(ctx: ChannelHandlerContext) {
-    fatalError("needs to be overridden")
-  }
 
   public func processMessage(_ message: RequestMessage) {
     fatalError("needs to be overridden")

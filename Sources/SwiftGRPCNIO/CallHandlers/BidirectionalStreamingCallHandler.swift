@@ -9,19 +9,15 @@ public class BidirectionalStreamingCallHandler<RequestMessage: Message, Response
   
   public private(set) var context: StreamingResponseCallContext<ResponseMessage>?
 
-  public init(eventLoop: EventLoop, headers: HTTPRequestHead, eventObserverFactory: (StreamingResponseCallContext<ResponseMessage>) -> EventLoopFuture<EventObserver>) {
+  public init(channel: Channel, headers: HTTPRequestHead, eventObserverFactory: (StreamingResponseCallContext<ResponseMessage>) -> EventLoopFuture<EventObserver>) {
     super.init()
-    self.context = StreamingResponseCallContextImpl<ResponseMessage>(eventLoop: eventLoop, headers: headers)
+    self.context = StreamingResponseCallContextImpl<ResponseMessage>(channel: channel, headers: headers)
     self.eventObserver = eventObserverFactory(context!)
     self.eventObserver?.cascadeFailure(promise: context!.statusPromise)
-    context!.statusPromise.futureResult.whenComplete { [weak self] in
-      self?.eventObserver = nil
-      self?.context = nil
+    context!.statusPromise.futureResult.whenComplete {
+      self.eventObserver = nil
+      self.context = nil
     }
-  }
-  
-  public override func handlerAdded(ctx: ChannelHandlerContext) {
-    context?.ctx = ctx
   }
 
   public override func processMessage(_ message: RequestMessage) {

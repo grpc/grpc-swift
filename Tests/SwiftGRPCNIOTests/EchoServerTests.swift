@@ -45,28 +45,32 @@ final class EchoGRPCProvider: Echo_EchoProvider_NIO {
     })
   }
 
-  func expand(request: Echo_EchoRequest, context: StreamingResponseCallContext<Echo_EchoResponse>) {
+  func expand(request: Echo_EchoRequest, context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<GRPCStatus> {
+    var sendOperationChain = context.eventLoop.newSucceededFuture(result: ())
     let parts = request.text.components(separatedBy: " ")
     for (i, part) in parts.enumerated() {
       var response = Echo_EchoResponse()
       response.text = "Swift echo expand (\(i)): \(part)"
-      _ = context.sendResponse(response)
+      sendOperationChain = sendOperationChain.then { context.sendResponse(response) }
     }
-    context.statusPromise.succeed(result: .ok)
+    return sendOperationChain.map { GRPCStatus.ok }
   }
 
   func update(context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
+    var sendOperationChain = context.eventLoop.newSucceededFuture(result: ())
     var count = 0
     return context.eventLoop.newSucceededFuture(result: { event in
       switch event {
       case .message(let message):
         var response = Echo_EchoResponse()
         response.text = "Swift echo update (\(count)): \(message.text)"
-        _ = context.sendResponse(response)
+        sendOperationChain = sendOperationChain.then { context.sendResponse(response) }
         count += 1
-
+        
       case .end:
-        context.statusPromise.succeed(result: .ok)
+        sendOperationChain
+          .map { GRPCStatus.ok }
+          .cascade(promise: context.statusPromise)
       }
     })
   }
@@ -97,7 +101,7 @@ class EchoServerTests: BasicEchoTestCase {
     super.setUp()
 
     // This is how a GRPC server would actually be set up.
-    eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
+    eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     server = try! GRPCServer.start(
       hostname: "localhost", port: 5050, eventLoopGroup: eventLoopGroup, serviceProviders: [EchoGRPCProvider()])
       .wait()
@@ -228,8 +232,6 @@ extension EchoServerTests {
   }
 
   func testBidirectionalStreamingPingPong() {
-    //! FIXME: Fix this test.
-    return
     let finalCompletionHandlerExpectation = expectation(description: "final completion handler called")
     let call = try! client.update { callResult in
       XCTAssertEqual(.ok, callResult.statusCode)
@@ -278,8 +280,6 @@ extension EchoServerTests {
   }
 
   func testBidirectionalStreamingLotsOfMessagesPingPong() {
-    //! FIXME: Fix this test.
-    return
     let finalCompletionHandlerExpectation = expectation(description: "final completion handler called")
     let call = try! client.update { callResult in
       XCTAssertEqual(.ok, callResult.statusCode)

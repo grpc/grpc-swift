@@ -11,22 +11,22 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
   
   public private(set) var context: UnaryResponseCallContext<ResponseMessage>?
   
-  public init(eventLoop: EventLoop, headers: HTTPRequestHead, eventObserverFactory: (UnaryResponseCallContext<ResponseMessage>) -> EventObserver) {
+  public init(channel: Channel, headers: HTTPRequestHead, eventObserverFactory: (UnaryResponseCallContext<ResponseMessage>) -> EventObserver) {
     super.init()
-    self.context = UnaryResponseCallContextImpl<ResponseMessage>(eventLoop: eventLoop, headers: headers)
+    self.context = UnaryResponseCallContextImpl<ResponseMessage>(channel: channel, headers: headers)
     self.eventObserver = eventObserverFactory(self.context!)
-    context!.responsePromise.futureResult.whenComplete { [weak self] in
-      self?.eventObserver = nil
-      self?.context = nil
+    context!.responsePromise.futureResult.whenComplete {
+      self.eventObserver = nil
+      self.context = nil
     }
   }
   
-  public override func handlerAdded(ctx: ChannelHandlerContext) {
-    context?.ctx = ctx
-  }
-  
   public override func processMessage(_ message: RequestMessage) {
-    assert(!hasReceivedRequest, "multiple messages received on server-streaming call")
+    guard !hasReceivedRequest else {
+      //! FIXME: Better handle this error.
+      print("multiple messages received on unary call")
+      return
+    }
     hasReceivedRequest = true
     
     let resultFuture = self.eventObserver!(message)

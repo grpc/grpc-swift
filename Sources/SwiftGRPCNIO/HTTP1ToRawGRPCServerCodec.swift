@@ -73,16 +73,23 @@ public final class HTTP1ToRawGRPCServerCodec: ChannelInboundHandler, ChannelOutb
         case .receivedMessageLength(let messageLength):
           guard let messageBytes = buffer.readBytes(length: numericCast(messageLength)) else { break }
 
+          //! FIXME: Use a slice of this buffer instead of copying to a new vuffer.
           var responseBuffer = ctx.channel.allocator.buffer(capacity: messageBytes.count)
           responseBuffer.write(bytes: messageBytes)
           ctx.fireChannelRead(self.wrapInboundOut(.message(responseBuffer)))
+          //! FIXME: Call buffer.discardReadBytes() here?
+          //! ALTERNATIVE: Check if the buffer has no further data right now, then clear it.
 
           state = .expectingCompressedFlag
         }
       }
 
     case .end(let trailers):
-      assert(trailers == nil, "unexpected trailers received: \(trailers!)")
+      if let trailers = trailers {
+        //! FIXME: Better handle this error.
+        print("unexpected trailers received: \(trailers)")
+        return
+      }
       ctx.fireChannelRead(self.wrapInboundOut(.end))
     }
   }

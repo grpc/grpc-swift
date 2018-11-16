@@ -31,14 +31,17 @@ public final class GRPCServerCodec<RequestMessage: Message, ResponseMessage: Mes
       ctx.fireChannelRead(self.wrapInboundOut(.headers(headers)))
 
     case .message(var messageData):
+      //! FIXME: `import NIOFoundationCompat`, then use `readData` here.
       let allBytes = messageData.readBytes(length: messageData.readableBytes)!
       do {
         ctx.fireChannelRead(self.wrapInboundOut(.message(try RequestMessage(serializedData: Data(bytes: allBytes)))))
       } catch {
+        //! FIXME: Ensure that the last handler in the pipeline returns `.dataLoss` here?
         ctx.fireErrorCaught(error)
       }
 
-    case .end: ctx.fireChannelRead(self.wrapInboundOut(.end))
+    case .end:
+      ctx.fireChannelRead(self.wrapInboundOut(.end))
     }
   }
 
@@ -55,6 +58,7 @@ public final class GRPCServerCodec<RequestMessage: Message, ResponseMessage: Mes
         ctx.write(self.wrapOutboundOut(.message(responseBuffer)), promise: promise)
       } catch {
         promise?.fail(error: error)
+        ctx.fireErrorCaught(error)
       }
     case .status(let status):
       ctx.write(self.wrapOutboundOut(.status(status)), promise: promise)

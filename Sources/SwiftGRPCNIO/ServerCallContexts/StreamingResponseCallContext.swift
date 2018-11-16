@@ -3,7 +3,9 @@ import SwiftProtobuf
 import NIO
 import NIOHTTP1
 
-open class StreamingResponseCallContext<ResponseMessage: Message>: ServerCallContext<ResponseMessage> {
+open class StreamingResponseCallContext<ResponseMessage: Message>: ServerCallContext {
+  public typealias WrappedResponse = GRPCServerResponsePart<ResponseMessage>
+  
   public let statusPromise: EventLoopPromise<GRPCStatus>
   
   public override init(eventLoop: EventLoop, headers: HTTPRequestHead) {
@@ -17,22 +19,23 @@ open class StreamingResponseCallContext<ResponseMessage: Message>: ServerCallCon
 }
 
 open class StreamingResponseCallContextImpl<ResponseMessage: Message>: StreamingResponseCallContext<ResponseMessage> {
-  public override init(eventLoop: EventLoop, headers: HTTPRequestHead) {
-    super.init(eventLoop: eventLoop, headers: headers)
+  public let channel: Channel
+  
+  public init(channel: Channel, headers: HTTPRequestHead) {
+    self.channel = channel
+    
+    super.init(eventLoop: channel.eventLoop, headers: headers)
     
     statusPromise.futureResult
       .mapIfError { ($0 as? GRPCStatus) ?? .processingError }
-      .whenSuccess { [weak self] in
-        if let strongSelf = self,
-          let ctx = strongSelf.ctx {
-          ctx.writeAndFlush(NIOAny(WrappedResponse.status($0)), promise: nil)
-        }
+      .whenSuccess {
+        self.channel.writeAndFlush(NIOAny(WrappedResponse.status($0)), promise: nil)
     }
   }
   
   open override func sendResponse(_ message: ResponseMessage) -> EventLoopFuture<Void> {
     let promise: EventLoopPromise<Void> = eventLoop.newPromise()
-    ctx?.writeAndFlush(NIOAny(WrappedResponse.message(message)), promise: promise)
+    channel.writeAndFlush(NIOAny(WrappedResponse.message(message)), promise: promise)
     return promise.futureResult
   }
 }

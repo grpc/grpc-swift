@@ -12,7 +12,7 @@ public protocol GRPCCallHandler: ChannelHandler {
 public protocol CallHandlerProvider {
   var serviceName: String { get }
 
-  func handleMethod(_ methodName: String, headers: HTTPRequestHead, serverHandler: GRPCChannelHandler, ctx: ChannelHandlerContext) -> GRPCCallHandler?
+  func handleMethod(_ methodName: String, headers: HTTPRequestHead, serverHandler: GRPCChannelHandler, channel: Channel) -> GRPCCallHandler?
 }
 
 // Listens on a newly-opened HTTP2 channel and waits for the request headers to become available.
@@ -36,7 +36,7 @@ public final class GRPCChannelHandler: ChannelInboundHandler {
       let uriComponents = headers.uri.components(separatedBy: "/")
       guard uriComponents.count >= 3 && uriComponents[0].isEmpty,
         let providerForServiceName = servicesByName[uriComponents[1]],
-        let callHandler = providerForServiceName.handleMethod(uriComponents[2], headers: headers, serverHandler: self, ctx: ctx) else {
+        let callHandler = providerForServiceName.handleMethod(uriComponents[2], headers: headers, serverHandler: self, channel: ctx.channel) else {
           ctx.writeAndFlush(self.wrapOutboundOut(.status(.unimplemented(method: headers.uri))), promise: nil)
           return
       }
@@ -46,13 +46,13 @@ public final class GRPCChannelHandler: ChannelInboundHandler {
       ctx.write(self.wrapOutboundOut(.headers(responseHeaders)), promise: nil)
 
       let codec = callHandler.makeGRPCServerCodec()
-      _ = ctx.pipeline.add(handler: codec, after: self)
+      ctx.pipeline.add(handler: codec, after: self)
         .then { ctx.pipeline.add(handler: callHandler, after: codec) }
-        .then { ctx.pipeline.remove(handler: self) }
+        //! FIXME(lukasa): Fix the ordering of this with NIO 1.12 and replace with `remove(, promise:)`.
+        .whenComplete { _ = ctx.pipeline.remove(handler: self) }
 
     case .message, .end:
-      print("received \(requestPart), should have been removed as a handler at this point")
-      break
+      preconditionFailure("received \(requestPart), should have been removed as a handler at this point")
     }
   }
 }
