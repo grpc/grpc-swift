@@ -78,7 +78,7 @@ public final class HTTP1ToRawGRPCServerCodec: ChannelInboundHandler, ChannelOutb
         case .receivedMessageLength(let messageLength):
           guard let messageBytes = buffer.readBytes(length: numericCast(messageLength)) else { break }
 
-          //! FIXME: Use a slice of this buffer instead of copying to a new vuffer.
+          //! FIXME: Use a slice of this buffer instead of copying to a new buffer.
           var responseBuffer = ctx.channel.allocator.buffer(capacity: messageBytes.count)
           responseBuffer.write(bytes: messageBytes)
           ctx.fireChannelRead(self.wrapInboundOut(.message(responseBuffer)))

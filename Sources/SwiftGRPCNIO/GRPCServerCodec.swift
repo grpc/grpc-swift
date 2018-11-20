@@ -1,6 +1,7 @@
 import Foundation
 import SwiftProtobuf
 import NIO
+import NIOFoundationCompat
 import NIOHTTP1
 
 public enum GRPCServerRequestPart<MessageType: Message> {
@@ -29,11 +30,10 @@ public final class GRPCServerCodec<RequestMessage: Message, ResponseMessage: Mes
     case .head(let requestHead):
       ctx.fireChannelRead(self.wrapInboundOut(.head(requestHead)))
 
-    case .message(var messageData):
-      //! FIXME: `import NIOFoundationCompat`, then use `readData` here.
-      let allBytes = messageData.readBytes(length: messageData.readableBytes)!
+    case .message(var message):
+      let messageAsData = message.readData(length: message.readableBytes)!
       do {
-        ctx.fireChannelRead(self.wrapInboundOut(.message(try RequestMessage(serializedData: Data(bytes: allBytes)))))
+        ctx.fireChannelRead(self.wrapInboundOut(.message(try RequestMessage(serializedData: messageAsData))))
       } catch {
         //! FIXME: Ensure that the last handler in the pipeline returns `.dataLoss` here?
         ctx.fireErrorCaught(error)

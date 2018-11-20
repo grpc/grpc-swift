@@ -45,7 +45,7 @@ let package = Package(
     .target(name: "SwiftGRPC",
             dependencies: ["CgRPC", "SwiftProtobuf"]),
     .target(name: "SwiftGRPCNIO",
-            dependencies: ["SwiftProtobuf", "NIOHTTP1", "NIOHTTP2"]),
+            dependencies: ["SwiftProtobuf", "NIOHTTP1", "NIOFoundationCompat", "NIOHTTP2"]),
     .target(name: "CgRPC",
             dependencies: cGRPCDependencies),
     .target(name: "RootsEncoder"),
