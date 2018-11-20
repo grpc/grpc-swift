@@ -4,7 +4,7 @@ import NIO
 import NIOHTTP1
 
 public enum GRPCServerRequestPart<MessageType: Message> {
-  case headers(HTTPRequestHead)
+  case head(HTTPRequestHead)
   case message(MessageType)
   case end
 }
@@ -26,8 +26,8 @@ public final class GRPCServerCodec<RequestMessage: Message, ResponseMessage: Mes
 
   public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
     switch self.unwrapInboundIn(data) {
-    case .headers(let headers):
-      ctx.fireChannelRead(self.wrapInboundOut(.headers(headers)))
+    case .head(let requestHead):
+      ctx.fireChannelRead(self.wrapInboundOut(.head(requestHead)))
 
     case .message(var messageData):
       //! FIXME: `import NIOFoundationCompat`, then use `readData` here.

@@ -13,7 +13,7 @@ public class BaseCallHandler<RequestMessage: Message, ResponseMessage: Message>:
 
   public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
     switch self.unwrapInboundIn(data) {
-    case .headers: preconditionFailure("should not have received headers")
+    case .head: preconditionFailure("should not have received headers")
     case .message(let message): processMessage(message)
     case .end: endOfStreamReceived()
     }

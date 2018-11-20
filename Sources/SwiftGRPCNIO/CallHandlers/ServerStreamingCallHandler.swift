@@ -15,9 +15,9 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
   //! FIXME: Do we need to keep the context around at all here?
   public private(set) var context: StreamingResponseCallContext<ResponseMessage>?
   
-  public init(channel: Channel, headers: HTTPRequestHead, eventObserverFactory: (StreamingResponseCallContext<ResponseMessage>) -> EventObserver) {
+  public init(channel: Channel, request: HTTPRequestHead, eventObserverFactory: (StreamingResponseCallContext<ResponseMessage>) -> EventObserver) {
     super.init()
-    self.context = StreamingResponseCallContextImpl<ResponseMessage>(channel: channel, headers: headers)
+    self.context = StreamingResponseCallContextImpl<ResponseMessage>(channel: channel, request: request)
     self.eventObserver = eventObserverFactory(context!)
     context!.statusPromise.futureResult.whenComplete {
       // When done, reset references to avoid retain cycles.

@@ -12,9 +12,9 @@ open class StreamingResponseCallContext<ResponseMessage: Message>: ServerCallCon
   
   public let statusPromise: EventLoopPromise<GRPCStatus>
   
-  public override init(eventLoop: EventLoop, headers: HTTPRequestHead) {
+  public override init(eventLoop: EventLoop, request: HTTPRequestHead) {
     self.statusPromise = eventLoop.newPromise()
-    super.init(eventLoop: eventLoop, headers: headers)
+    super.init(eventLoop: eventLoop, request: request)
   }
   
   open func sendResponse(_ message: ResponseMessage) -> EventLoopFuture<Void> {
@@ -26,10 +26,10 @@ open class StreamingResponseCallContext<ResponseMessage: Message>: ServerCallCon
 open class StreamingResponseCallContextImpl<ResponseMessage: Message>: StreamingResponseCallContext<ResponseMessage> {
   public let channel: Channel
   
-  public init(channel: Channel, headers: HTTPRequestHead) {
+  public init(channel: Channel, request: HTTPRequestHead) {
     self.channel = channel
     
-    super.init(eventLoop: channel.eventLoop, headers: headers)
+    super.init(eventLoop: channel.eventLoop, request: request)
     
     statusPromise.futureResult
       // Ensure that any error provided is of type `GRPCStatus`, using "internal server error" as a fallback.

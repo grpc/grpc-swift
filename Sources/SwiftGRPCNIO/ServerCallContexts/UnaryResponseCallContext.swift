@@ -16,9 +16,9 @@ open class UnaryResponseCallContext<ResponseMessage: Message>: ServerCallContext
   public let responsePromise: EventLoopPromise<ResponseMessage>
   public var responseStatus: GRPCStatus = .ok
   
-  public override init(eventLoop: EventLoop, headers: HTTPRequestHead) {
+  public override init(eventLoop: EventLoop, request: HTTPRequestHead) {
     self.responsePromise = eventLoop.newPromise()
-    super.init(eventLoop: eventLoop, headers: headers)
+    super.init(eventLoop: eventLoop, request: request)
   }
 }
 
@@ -26,10 +26,10 @@ open class UnaryResponseCallContext<ResponseMessage: Message>: ServerCallContext
 open class UnaryResponseCallContextImpl<ResponseMessage: Message>: UnaryResponseCallContext<ResponseMessage> {
   public let channel: Channel
   
-  public init(channel: Channel, headers: HTTPRequestHead) {
+  public init(channel: Channel, request: HTTPRequestHead) {
     self.channel = channel
     
-    super.init(eventLoop: channel.eventLoop, headers: headers)
+    super.init(eventLoop: channel.eventLoop, request: request)
     
     responsePromise.futureResult
       .map { responseMessage in

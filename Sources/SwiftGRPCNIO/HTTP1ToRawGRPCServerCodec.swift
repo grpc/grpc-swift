@@ -3,7 +3,7 @@ import NIO
 import NIOHTTP1
 
 public enum RawGRPCServerRequestPart {
-  case headers(HTTPRequestHead)
+  case head(HTTPRequestHead)
   case message(ByteBuffer)
   case end
 }
@@ -43,14 +43,14 @@ public final class HTTP1ToRawGRPCServerCodec: ChannelInboundHandler, ChannelOutb
 
   public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
     switch self.unwrapInboundIn(data) {
-    case .head(let headers):
+    case .head(let requestHead):
       guard case .expectingHeaders = state
         else { preconditionFailure("received headers while in state \(state)") }
 
       state = .expectingCompressedFlag
       buffer = ctx.channel.allocator.buffer(capacity: 5)
 
-      ctx.fireChannelRead(self.wrapInboundOut(.headers(headers)))
+      ctx.fireChannelRead(self.wrapInboundOut(.head(requestHead)))
 
     case .body(var body):
       guard var buffer = buffer

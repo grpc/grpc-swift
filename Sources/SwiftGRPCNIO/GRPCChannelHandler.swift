@@ -14,7 +14,7 @@ public protocol CallHandlerProvider {
   var serviceName: String { get }
 
   // Looks up and returns the `GRPCCallHandler` for a particular method. Returns nil for unsupported methods.
-  func handleMethod(_ methodName: String, headers: HTTPRequestHead, serverHandler: GRPCChannelHandler, channel: Channel) -> GRPCCallHandler?
+  func handleMethod(_ methodName: String, request: HTTPRequestHead, serverHandler: GRPCChannelHandler, channel: Channel) -> GRPCCallHandler?
 }
 
 // Listens on a newly-opened HTTP2 subchannel and waits for the request headers to become available.
@@ -34,12 +34,12 @@ public final class GRPCChannelHandler: ChannelInboundHandler {
   public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
     let requestPart = self.unwrapInboundIn(data)
     switch requestPart {
-    case .headers(let headers):
-      let uriComponents = headers.uri.components(separatedBy: "/")
+    case .head(let requestHead):
+      let uriComponents = requestHead.uri.components(separatedBy: "/")
       guard uriComponents.count >= 3 && uriComponents[0].isEmpty,
         let providerForServiceName = servicesByName[uriComponents[1]],
-        let callHandler = providerForServiceName.handleMethod(uriComponents[2], headers: headers, serverHandler: self, channel: ctx.channel) else {
-          ctx.writeAndFlush(self.wrapOutboundOut(.status(.unimplemented(method: headers.uri))), promise: nil)
+        let callHandler = providerForServiceName.handleMethod(uriComponents[2], request: requestHead, serverHandler: self, channel: ctx.channel) else {
+          ctx.writeAndFlush(self.wrapOutboundOut(.status(.unimplemented(method: requestHead.uri))), promise: nil)
           return
       }
 

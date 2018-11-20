@@ -15,9 +15,9 @@ public class BidirectionalStreamingCallHandler<RequestMessage: Message, Response
 
   // We ask for a future of type `EventObserver` to allow the framework user to e.g. asynchronously authenticate a call.
   // If authentication fails, they can simply fail the observer future, which causes the call to be terminated.
-  public init(channel: Channel, headers: HTTPRequestHead, eventObserverFactory: (StreamingResponseCallContext<ResponseMessage>) -> EventLoopFuture<EventObserver>) {
+  public init(channel: Channel, request: HTTPRequestHead, eventObserverFactory: (StreamingResponseCallContext<ResponseMessage>) -> EventLoopFuture<EventObserver>) {
     super.init()
-    self.context = StreamingResponseCallContextImpl<ResponseMessage>(channel: channel, headers: headers)
+    self.context = StreamingResponseCallContextImpl<ResponseMessage>(channel: channel, request: request)
     self.eventObserver = eventObserverFactory(context!)
     // Terminate the call if no observer is provided.
     self.eventObserver?.cascadeFailure(promise: context!.statusPromise)

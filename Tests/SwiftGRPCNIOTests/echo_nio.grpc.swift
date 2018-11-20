@@ -41,29 +41,29 @@ extension Echo_EchoProvider_NIO {
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  internal func handleMethod(_ methodName: String, headers: HTTPRequestHead, serverHandler: GRPCChannelHandler, channel: Channel) -> GRPCCallHandler? {
+  internal func handleMethod(_ methodName: String, request: HTTPRequestHead, serverHandler: GRPCChannelHandler, channel: Channel) -> GRPCCallHandler? {
     switch methodName {
     case "Get":
-      return UnaryCallHandler(channel: channel, headers: headers) { context in
+      return UnaryCallHandler(channel: channel, request: request) { context in
         return { request in
           self.get(request: request, context: context)
         }
       }
 
     case "Expand":
-      return ServerStreamingCallHandler(channel: channel, headers: headers) { context in
+      return ServerStreamingCallHandler(channel: channel, request: request) { context in
         return { request in
           self.expand(request: request, context: context)
         }
       }
 
     case "Collect":
-      return ClientStreamingCallHandler(channel: channel, headers: headers) { context in
+      return ClientStreamingCallHandler(channel: channel, request: request) { context in
         return self.collect(context: context)
       }
 
     case "Update":
-      return BidirectionalStreamingCallHandler(channel: channel, headers: headers) { context in
+      return BidirectionalStreamingCallHandler(channel: channel, request: request) { context in
         return self.update(context: context)
       }
 

@@ -16,9 +16,9 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
   //! FIXME: Do we need to keep the context around at all here?
   public private(set) var context: UnaryResponseCallContext<ResponseMessage>?
   
-  public init(channel: Channel, headers: HTTPRequestHead, eventObserverFactory: (UnaryResponseCallContext<ResponseMessage>) -> EventObserver) {
+  public init(channel: Channel, request: HTTPRequestHead, eventObserverFactory: (UnaryResponseCallContext<ResponseMessage>) -> EventObserver) {
     super.init()
-    self.context = UnaryResponseCallContextImpl<ResponseMessage>(channel: channel, headers: headers)
+    self.context = UnaryResponseCallContextImpl<ResponseMessage>(channel: channel, request: request)
     self.eventObserver = eventObserverFactory(self.context!)
     context!.responsePromise.futureResult.whenComplete {
       // When done, reset references to avoid retain cycles.
