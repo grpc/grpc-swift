@@ -54,7 +54,7 @@ extension Generator {
       if options.generateNIOImplementation {
         switch streamingType(method) {
         case .unary:
-          println("func \(methodFunctionName)(request: \(methodInputName), context: UnaryResponseCallContext<\(methodOutputName)>) -> EventLoopFuture<\(methodOutputName)>")
+          println("func \(methodFunctionName)(request: \(methodInputName), context: StatusOnlyCallContext) -> EventLoopFuture<\(methodOutputName)>")
         case .serverStreaming:
           println("func \(methodFunctionName)(request: \(methodInputName), context: StreamingResponseCallContext<\(methodOutputName)>) -> EventLoopFuture<GRPCStatus>")
         case .clientStreaming:

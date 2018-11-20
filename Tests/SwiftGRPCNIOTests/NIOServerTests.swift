@@ -24,7 +24,7 @@ import XCTest
 
 // This class is what the SwiftGRPC user would actually implement to provide their service.
 final class EchoProvider_NIO: Echo_EchoProvider_NIO {
-  func get(request: Echo_EchoRequest, context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<Echo_EchoResponse> {
+  func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
     var response = Echo_EchoResponse()
     response.text = "Swift echo get: " + request.text
     return context.eventLoop.newSucceededFuture(result: response)

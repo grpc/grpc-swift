@@ -30,7 +30,7 @@ import SwiftProtobuf
 
 /// To build a server, implement a class that conforms to this protocol.
 internal protocol Echo_EchoProvider_NIO: CallHandlerProvider {
-  func get(request: Echo_EchoRequest, context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<Echo_EchoResponse>
+  func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse>
   func expand(request: Echo_EchoRequest, context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<GRPCStatus>
   func collect(context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void>
   func update(context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void>

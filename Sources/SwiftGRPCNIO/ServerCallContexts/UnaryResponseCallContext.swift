@@ -10,7 +10,7 @@ import NIOHTTP1
 // For unary calls, the response is not actually provided by fulfilling `responsePromise`, but instead by completing
 // the future returned by `UnaryCallHandler.EventObserver`.
 //! FIXME: Should we create an additional variant of this that does not expose `responsePromise` for unary calls?
-open class UnaryResponseCallContext<ResponseMessage: Message>: ServerCallContext {
+open class UnaryResponseCallContext<ResponseMessage: Message>: ServerCallContext, StatusOnlyCallContext {
   public typealias WrappedResponse = GRPCServerResponsePart<ResponseMessage>
   
   public let responsePromise: EventLoopPromise<ResponseMessage>
@@ -20,6 +20,19 @@ open class UnaryResponseCallContext<ResponseMessage: Message>: ServerCallContext
     self.responsePromise = eventLoop.newPromise()
     super.init(eventLoop: eventLoop, request: request)
   }
+}
+
+// Protocol variant of `UnaryResponseCallContext` that only exposes the `responseStatus` field, but not
+// `responsePromise`.
+// Motivation: `UnaryCallHandler` already asks the call handler return an `EventLoopFuture<ResponseMessage>` which
+// is automatically cascaded into `UnaryResponseCallContext.responsePromise`, so that promise does not (and should not)
+// be fulfilled by the user. We can use a protocol (instead of an abstract base class) here because removing the
+// generic `responsePromise` field lets us avoid associated-type requirements on the protol.
+public protocol StatusOnlyCallContext {
+  var eventLoop: EventLoop { get }
+  var request: HTTPRequestHead { get }
+  
+  var responseStatus: GRPCStatus { get set }
 }
 
 // Concrete implementation of `UnaryResponseCallContext` used by our generated code.
