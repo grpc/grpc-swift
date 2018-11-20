@@ -1,0 +1,54 @@
+name: SwiftGRPC-XcodeGen
+options:
+  bundleIdPrefix: "io.grpc"
+  deploymentTarget: 
+    iOS: 10.0
+  indentWidth: 2
+  tabWidth: 2
+  usesTabs: false
+targets:
+  SwiftGRPC:
+    platform: [iOS]
+    settings:
+      SWIFT_VERSION: 4
+    scheme: {}
+    sources:
+      - Sources/SwiftGRPC
+    info:
+      path: Sources/SwiftGRPC/Info.plist
+    dependencies:
+      - target: BoringSSL_$platform
+      - target: CgRPC_$platform
+      - carthage: SwiftProtobuf
+    type: framework
+  BoringSSL:
+    platform: [iOS]
+    settings:
+      SWIFT_VERSION: 4
+      HEADER_SEARCH_PATHS:
+        $(SRCROOT)/Sources/BoringSSL/include
+    scheme: {}
+    sources:
+        - path: Sources/BoringSSL
+          headerVisibility: project
+          excludes: "README.md"
+    info:
+      path: Sources/BoringSSL/Info.plist
+    type: framework
+  CgRPC:
+    platform: [iOS]
+    settings:
+      SWIFT_VERSION: 4
+      HEADER_SEARCH_PATHS:
+        $(inherited)
+        $(SRCROOT)/Sources/BoringSSL/include
+        $(SRCROOT)/Sources/CgRPC/include
+    scheme: {}
+    sources: 
+      - path: Sources/CgRPC
+        headerVisibility: project
+    info:
+      path: Sources/CgRPC/Info.plist
+    dependencies:
+      - target: BoringSSL_$platform
+    type: framework
