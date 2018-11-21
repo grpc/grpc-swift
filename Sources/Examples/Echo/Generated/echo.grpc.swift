@@ -21,6 +21,7 @@
 // limitations under the License.
 //
 import Foundation
+import Dispatch
 import SwiftGRPC
 import SwiftProtobuf
 
