@@ -3,13 +3,14 @@ import SwiftProtobuf
 import NIO
 import NIOHTTP1
 
-// Abstract base class exposing a method that exposes a promise fot the RPC response.
-// When `responsePromise` is fulfilled, the call is closed and the provided response transmitted with status `responseStatus` (`.ok` by default).
-// If `statusPromise` is failed and the error is of type `GRPCStatus`, that error will be returned to the client.
-// For other errors, `GRPCStatus.processingError` is returned to the client.
-// For unary calls, the response is not actually provided by fulfilling `responsePromise`, but instead by completing
-// the future returned by `UnaryCallHandler.EventObserver`.
-//! FIXME: Should we create an additional variant of this that does not expose `responsePromise` for unary calls?
+/// Abstract base class exposing a method that exposes a promise fot the RPC response.
+///
+/// - When `responsePromise` is fulfilled, the call is closed and the provided response transmitted with status `responseStatus` (`.ok` by default).
+/// - If `statusPromise` is failed and the error is of type `GRPCStatus`, that error will be returned to the client.
+/// - For other errors, `GRPCStatus.processingError` is returned to the client.
+///
+/// For unary calls, the response is not actually provided by fulfilling `responsePromise`, but instead by completing
+/// the future returned by `UnaryCallHandler.EventObserver`.
 open class UnaryResponseCallContext<ResponseMessage: Message>: ServerCallContext, StatusOnlyCallContext {
   public typealias WrappedResponse = GRPCServerResponsePart<ResponseMessage>
   
@@ -22,12 +23,15 @@ open class UnaryResponseCallContext<ResponseMessage: Message>: ServerCallContext
   }
 }
 
-// Protocol variant of `UnaryResponseCallContext` that only exposes the `responseStatus` field, but not
-// `responsePromise`.
-// Motivation: `UnaryCallHandler` already asks the call handler return an `EventLoopFuture<ResponseMessage>` which
-// is automatically cascaded into `UnaryResponseCallContext.responsePromise`, so that promise does not (and should not)
-// be fulfilled by the user. We can use a protocol (instead of an abstract base class) here because removing the
-// generic `responsePromise` field lets us avoid associated-type requirements on the protol.
+/// Protocol variant of `UnaryResponseCallContext` that only exposes the `responseStatus` field, but not
+/// `responsePromise`.
+///
+/// Motivation: `UnaryCallHandler` already asks the call handler return an `EventLoopFuture<ResponseMessage>` which
+/// is automatically cascaded into `UnaryResponseCallContext.responsePromise`, so that promise does not (and should not)
+/// be fulfilled by the user.
+///
+/// We can use a protocol (instead of an abstract base class) here because removing the generic `responsePromise` field
+/// lets us avoid associated-type requirements on the protol.
 public protocol StatusOnlyCallContext {
   var eventLoop: EventLoop { get }
   var request: HTTPRequestHead { get }
@@ -35,7 +39,7 @@ public protocol StatusOnlyCallContext {
   var responseStatus: GRPCStatus { get set }
 }
 
-// Concrete implementation of `UnaryResponseCallContext` used by our generated code.
+/// Concrete implementation of `UnaryResponseCallContext` used by our generated code.
 open class UnaryResponseCallContextImpl<ResponseMessage: Message>: UnaryResponseCallContext<ResponseMessage> {
   public let channel: Channel
   
@@ -64,6 +68,7 @@ open class UnaryResponseCallContextImpl<ResponseMessage: Message>: UnaryResponse
   }
 }
 
-// Concrete implementation of `UnaryResponseCallContext` used for testing.
-// Only provided to make it clear in tests that no "real" implementation is used.
+/// Concrete implementation of `UnaryResponseCallContext` used for testing.
+///
+/// Only provided to make it clear in tests that no "real" implementation is used.
 open class UnaryResponseCallContextTestStub<ResponseMessage: Message>: UnaryResponseCallContext<ResponseMessage> { }

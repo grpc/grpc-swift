@@ -1,6 +1,6 @@
 import SwiftProtobuf
 
-// An event that can occur on a clients-streaming RPC. Provided to the event observer registered for that call.
+/// An event that can occur on a client-streaming RPC. Provided to the event observer registered for that call.
 public enum StreamEvent<Message: SwiftProtobuf.Message> {
   case message(Message)
   case end

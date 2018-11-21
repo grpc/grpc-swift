@@ -3,8 +3,11 @@ import NIO
 import NIOHTTP1
 import NIOHTTP2
 
-// Wrapper object to manage the lifecycle of a gRPC server.
+/// Wrapper object to manage the lifecycle of a gRPC server.
 public final class GRPCServer {
+  /// Starts up a server that serves the given providers.
+  ///
+  /// - Returns: A future that is completed when the server has successfully started up.
   public static func start(
     hostname: String,
     port: Int,
@@ -12,8 +15,9 @@ public final class GRPCServer {
     serviceProviders: [CallHandlerProvider]) -> EventLoopFuture<GRPCServer> {
     let servicesByName = Dictionary(uniqueKeysWithValues: serviceProviders.map { ($0.serviceName, $0) })
     let bootstrap = ServerBootstrap(group: eventLoopGroup)
-      // Specify backlog and enable SO_REUSEADDR for the server itself
+      // Specify a backlog to avoid overloading the server.
       .serverChannelOption(ChannelOptions.backlog, value: 256)
+      // Enable `SO_REUSEADDR` to avoid "address already in use" error.
       .serverChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
 
       // Set the handlers that are applied to the accepted Channels
@@ -40,9 +44,9 @@ public final class GRPCServer {
       .map { GRPCServer(channel: $0) }
   }
 
-  fileprivate let channel: Channel
+  private let channel: Channel
 
-  fileprivate init(channel: Channel) {
+  private init(channel: Channel) {
     self.channel = channel
   }
 

@@ -3,10 +3,11 @@ import SwiftProtobuf
 import NIO
 import NIOHTTP1
 
-// Abstract base class exposing a method to send multiple messages over the wire and a promise for the final RPC status.
-// When `statusPromise` is fulfilled, the call is closed and the provided status transmitted.
-// If `statusPromise` is failed and the error is of type `GRPCStatus`, that error will be returned to the client.
-// For other errors, `GRPCStatus.processingError` is returned to the client.
+/// Abstract base class exposing a method to send multiple messages over the wire and a promise for the final RPC status.
+///
+/// - When `statusPromise` is fulfilled, the call is closed and the provided status transmitted.
+/// - If `statusPromise` is failed and the error is of type `GRPCStatus`, that error will be returned to the client.
+/// - For other errors, `GRPCStatus.processingError` is returned to the client.
 open class StreamingResponseCallContext<ResponseMessage: Message>: ServerCallContext {
   public typealias WrappedResponse = GRPCServerResponsePart<ResponseMessage>
   
@@ -22,7 +23,7 @@ open class StreamingResponseCallContext<ResponseMessage: Message>: ServerCallCon
   }
 }
 
-// Concrete implementation of `StreamingResponseCallContext` used by our generated code.
+/// Concrete implementation of `StreamingResponseCallContext` used by our generated code.
 open class StreamingResponseCallContextImpl<ResponseMessage: Message>: StreamingResponseCallContext<ResponseMessage> {
   public let channel: Channel
   
@@ -49,7 +50,9 @@ open class StreamingResponseCallContextImpl<ResponseMessage: Message>: Streaming
   }
 }
 
-// Concrete implementation of `StreamingResponseCallContext` used for testing. Simply records all sent messages.
+/// Concrete implementation of `StreamingResponseCallContext` used for testing.
+///
+/// Simply records all sent messages.
 open class StreamingResponseCallContextTestStub<ResponseMessage: Message>: StreamingResponseCallContext<ResponseMessage> {
   open var recordedResponses: [ResponseMessage] = []
   

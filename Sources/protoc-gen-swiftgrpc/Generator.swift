@@ -77,7 +77,6 @@ class Generator {
     if options.generateNIOImplementation {
       moduleNames = [
         "Foundation",
-        "Dispatch",
         "NIO",
         "NIOHTTP1",
         "SwiftGRPCNIO",

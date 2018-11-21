@@ -108,9 +108,9 @@ class NIOServerTests: NIOServerTestCase {
   }
 
   override func tearDown() {
-    try! server.close().wait()
+    XCTAssertNoThrow(try server.close().wait())
 
-    try! eventLoopGroup.syncShutdownGracefully()
+    XCTAssertNoThrow(try eventLoopGroup.syncShutdownGracefully())
     eventLoopGroup = nil
 
     super.tearDown()
@@ -126,7 +126,7 @@ extension NIOServerTests {
     // Sending that many requests at once can sometimes trip things up, it seems.
     client.timeout = 5.0
     let clockStart = clock()
-    let numberOfRequests = 1_000  //! FIXME: If we set this higher, it causes a crash related to `StreamManager.maxCachedStreamIDs`.
+    let numberOfRequests = 2_000
     for i in 0..<numberOfRequests {
       if i % 1_000 == 0 && i > 0 {
         print("\(i) requests sent so far, elapsed time: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))")
@@ -145,9 +145,9 @@ extension NIOServerTests {
       completionHandlerExpectation.fulfill()
     }
 
-    try! call.send(Echo_EchoRequest(text: "foo"))
-    try! call.send(Echo_EchoRequest(text: "bar"))
-    try! call.send(Echo_EchoRequest(text: "baz"))
+    XCTAssertNoThrow(try call.send(Echo_EchoRequest(text: "foo")))
+    XCTAssertNoThrow(try call.send(Echo_EchoRequest(text: "bar")))
+    XCTAssertNoThrow(try call.send(Echo_EchoRequest(text: "baz")))
     call.waitForSendOperationsToFinish()
 
     let response = try! call.closeAndReceive()
@@ -164,7 +164,7 @@ extension NIOServerTests {
     }
 
     for string in NIOServerTests.lotsOfStrings {
-      try! call.send(Echo_EchoRequest(text: string))
+      XCTAssertNoThrow(try call.send(Echo_EchoRequest(text: string)))
     }
     call.waitForSendOperationsToFinish()
 
@@ -215,13 +215,13 @@ extension NIOServerTests {
       finalCompletionHandlerExpectation.fulfill()
     }
 
-    try! call.send(Echo_EchoRequest(text: "foo"))
-    try! call.send(Echo_EchoRequest(text: "bar"))
-    try! call.send(Echo_EchoRequest(text: "baz"))
+    XCTAssertNoThrow(try call.send(Echo_EchoRequest(text: "foo")))
+    XCTAssertNoThrow(try call.send(Echo_EchoRequest(text: "bar")))
+    XCTAssertNoThrow(try call.send(Echo_EchoRequest(text: "baz")))
 
     call.waitForSendOperationsToFinish()
 
-    try! call.closeSend()
+    XCTAssertNoThrow(try call.closeSend())
 
     XCTAssertEqual("Swift echo update (0): foo", try! call.receive()!.text)
     XCTAssertEqual("Swift echo update (1): bar", try! call.receive()!.text)
@@ -238,18 +238,18 @@ extension NIOServerTests {
       finalCompletionHandlerExpectation.fulfill()
     }
 
-    try! call.send(Echo_EchoRequest(text: "foo"))
+    XCTAssertNoThrow(try call.send(Echo_EchoRequest(text: "foo")))
     XCTAssertEqual("Swift echo update (0): foo", try! call.receive()!.text)
 
-    try! call.send(Echo_EchoRequest(text: "bar"))
+    XCTAssertNoThrow(try call.send(Echo_EchoRequest(text: "bar")))
     XCTAssertEqual("Swift echo update (1): bar", try! call.receive()!.text)
 
-    try! call.send(Echo_EchoRequest(text: "baz"))
+    XCTAssertNoThrow(try call.send(Echo_EchoRequest(text: "baz")))
     XCTAssertEqual("Swift echo update (2): baz", try! call.receive()!.text)
 
     call.waitForSendOperationsToFinish()
 
-    try! call.closeSend()
+    XCTAssertNoThrow(try call.closeSend())
 
     XCTAssertNil(try! call.receive())
 
@@ -264,12 +264,12 @@ extension NIOServerTests {
     }
 
     for string in NIOServerTests.lotsOfStrings {
-      try! call.send(Echo_EchoRequest(text: string))
+      XCTAssertNoThrow(try call.send(Echo_EchoRequest(text: string)))
     }
 
     call.waitForSendOperationsToFinish()
 
-    try! call.closeSend()
+    XCTAssertNoThrow(try call.closeSend())
 
     for string in NIOServerTests.lotsOfStrings {
       XCTAssertEqual("Swift echo update (\(string)): \(string)", try! call.receive()!.text)
@@ -287,13 +287,13 @@ extension NIOServerTests {
     }
 
     for string in NIOServerTests.lotsOfStrings {
-      try! call.send(Echo_EchoRequest(text: string))
+      XCTAssertNoThrow(try call.send(Echo_EchoRequest(text: string)))
       XCTAssertEqual("Swift echo update (\(string)): \(string)", try! call.receive()!.text)
     }
 
     call.waitForSendOperationsToFinish()
 
-    try! call.closeSend()
+    XCTAssertNoThrow(try call.closeSend())
 
     XCTAssertNil(try! call.receive())
 

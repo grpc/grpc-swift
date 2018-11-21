@@ -18,11 +18,11 @@ import PackageDescription
 
 var packageDependencies: [Package.Dependency] = [
   .package(url: "https://github.com/apple/swift-protobuf.git", .upToNextMinor(from: "1.1.1")),
-  .package(url: "https://github.com/kylef/Commander.git", from: "0.8.0"),
-  .package(url: "https://github.com/apple/swift-nio-zlib-support.git", from: "1.0.0"),
-  .package(url: "https://github.com/apple/swift-nio.git", from: "1.9.0"),
-  .package(url: "https://github.com/apple/swift-nio-nghttp2-support.git", from: "1.0.0"),
-  .package(url: "https://github.com/lukasa/swift-nio-http2.git", .branch("cb-issue-24"))
+  .package(url: "https://github.com/kylef/Commander.git", .upToNextMinor(from: "0.8.0")),
+  .package(url: "https://github.com/apple/swift-nio-zlib-support.git", .upToNextMinor(from: "1.0.0")),
+  .package(url: "https://github.com/apple/swift-nio.git", .upToNextMinor(from: "1.11.0")),
+  .package(url: "https://github.com/apple/swift-nio-nghttp2-support.git", .upToNextMinor(from: "1.0.0")),
+  .package(url: "https://github.com/apple/swift-nio-http2.git", .branch("master"))
 ]
 
 var cGRPCDependencies: [Target.Dependency] = []
@@ -45,7 +45,11 @@ let package = Package(
     .target(name: "SwiftGRPC",
             dependencies: ["CgRPC", "SwiftProtobuf"]),
     .target(name: "SwiftGRPCNIO",
-            dependencies: ["SwiftProtobuf", "NIOHTTP1", "NIOFoundationCompat", "NIOHTTP2"]),
+            dependencies: [
+              "NIOFoundationCompat",
+              "NIOHTTP1",
+              "NIOHTTP2",
+              "SwiftProtobuf"]),
     .target(name: "CgRPC",
             dependencies: cGRPCDependencies),
     .target(name: "RootsEncoder"),

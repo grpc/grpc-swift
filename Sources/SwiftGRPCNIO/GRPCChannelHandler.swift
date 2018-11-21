@@ -3,13 +3,14 @@ import SwiftProtobuf
 import NIO
 import NIOHTTP1
 
-// Processes individual gRPC messages and stream-close events on a HTTP2 channel.
+/// Processes individual gRPC messages and stream-close events on a HTTP2 channel.
 public protocol GRPCCallHandler: ChannelHandler {
   func makeGRPCServerCodec() -> ChannelHandler
 }
 
-// Provides `GRPCCallHandler` objects for the methods on a particular service name.
-// Implemented by the generated code.
+/// Provides `GRPCCallHandler` objects for the methods on a particular service name.
+///
+/// Implemented by the generated code.
 public protocol CallHandlerProvider {
   var serviceName: String { get }
 
@@ -17,24 +18,32 @@ public protocol CallHandlerProvider {
   func handleMethod(_ methodName: String, request: HTTPRequestHead, serverHandler: GRPCChannelHandler, channel: Channel) -> GRPCCallHandler?
 }
 
-// Listens on a newly-opened HTTP2 subchannel and waits for the request headers to become available.
-// Once those are available, asks the `CallHandlerProvider` corresponding to the request's service name for an
-// `GRPCCallHandler` object. That object is then forwarded the individual gRPC messages.
-public final class GRPCChannelHandler: ChannelInboundHandler {
-  public typealias InboundIn = RawGRPCServerRequestPart
+/// Listens on a newly-opened HTTP2 subchannel and yields to the sub-handler matching a call, if available.
+///
+/// Once the request headers are available, asks the `CallHandlerProvider` corresponding to the request's service name
+/// for an `GRPCCallHandler` object. That object is then forwarded the individual gRPC messages.
+public final class GRPCChannelHandler {
 
-  public typealias OutboundOut = RawGRPCServerResponsePart
-
-  fileprivate let servicesByName: [String: CallHandlerProvider]
+  private let servicesByName: [String: CallHandlerProvider]
 
   public init(servicesByName: [String: CallHandlerProvider]) {
     self.servicesByName = servicesByName
   }
+}
 
+extension GRPCChannelHandler: ChannelInboundHandler {
+  public typealias InboundIn = RawGRPCServerRequestPart
+  public typealias OutboundOut = RawGRPCServerResponsePart
+  
   public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
     let requestPart = self.unwrapInboundIn(data)
     switch requestPart {
     case .head(let requestHead):
+      // URI format: "/package.Servicename/MethodName", resulting in the following components separated by a slash:
+      // - uriComponents[0]: empty
+      // - uriComponents[1]: service name (including the package name);
+      //     `CallHandlerProvider`s should provide the service name including the package name.
+      // - uriComponents[2]: method name.
       let uriComponents = requestHead.uri.components(separatedBy: "/")
       guard uriComponents.count >= 3 && uriComponents[0].isEmpty,
         let providerForServiceName = servicesByName[uriComponents[1]],

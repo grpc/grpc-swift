@@ -2,28 +2,32 @@ import Foundation
 import NIO
 import NIOHTTP1
 
+/// Incoming gRPC package with an unknown message type (represented by a byte buffer).
 public enum RawGRPCServerRequestPart {
   case head(HTTPRequestHead)
   case message(ByteBuffer)
   case end
 }
 
+/// Outgoing gRPC package with an unknown message type (represented by a byte buffer).
 public enum RawGRPCServerResponsePart {
   case headers(HTTPHeaders)
   case message(ByteBuffer)
   case status(GRPCStatus)
 }
 
-/// A simple channel handler that translates HTTP/1 data types into gRPC packets,
-/// and vice versa.
-public final class HTTP1ToRawGRPCServerCodec: ChannelInboundHandler, ChannelOutboundHandler {
-  public typealias InboundIn = HTTPServerRequestPart
-  public typealias InboundOut = RawGRPCServerRequestPart
-
-  public typealias OutboundIn = RawGRPCServerResponsePart
-  public typealias OutboundOut = HTTPServerResponsePart
-
-  enum State {
+/// A simple channel handler that translates HTTP1 data types into gRPC packets, and vice versa.
+///
+/// This codec allows us to use the "raw" gRPC protocol on a low level, with further handlers operationg the protocol
+/// on a "higher" level.
+///
+/// We use HTTP1 (instead of HTTP2) primitives, as these are easier to work with than raw HTTP2
+/// primitives while providing all the functionality we need. In addition, this should make implementing gRPC-over-HTTP1
+/// (sometimes also called pPRC) easier in the future.
+///
+/// The translation from HTTP2 to HTTP1 is done by `HTTP2ToHTTP1ServerCodec`.
+public final class HTTP1ToRawGRPCServerCodec {
+  private enum State {
     case expectingHeaders
     case expectingCompressedFlag
     case expectingMessageLength
@@ -37,10 +41,15 @@ public final class HTTP1ToRawGRPCServerCodec: ChannelInboundHandler, ChannelOutb
     }
   }
 
-  private(set) var state = State.expectingHeaders
+  private var state = State.expectingHeaders
 
-  private(set) var buffer: NIO.ByteBuffer?
+  private var buffer: NIO.ByteBuffer?
+}
 
+extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
+  public typealias InboundIn = HTTPServerRequestPart
+  public typealias InboundOut = RawGRPCServerRequestPart
+  
   public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
     switch self.unwrapInboundIn(data) {
     case .head(let requestHead):
@@ -68,7 +77,8 @@ public final class HTTP1ToRawGRPCServerCodec: ChannelInboundHandler, ChannelOutb
         case .expectingHeaders: preconditionFailure("unexpected state \(state)")
         case .expectingCompressedFlag:
           guard let compressionFlag: Int8 = buffer.readInteger() else { break requestProcessing }
-          precondition(compressionFlag == 0, "unexpected compression flag \(compressionFlag)")
+          //! FIXME: Avoid crashing here and instead drop the connection.
+          precondition(compressionFlag == 0, "unexpected compression flag \(compressionFlag); compression is not supported and we did not indicate support for it")
           state = .expectingMessageLength
 
         case .expectingMessageLength:
@@ -98,7 +108,12 @@ public final class HTTP1ToRawGRPCServerCodec: ChannelInboundHandler, ChannelOutb
       ctx.fireChannelRead(self.wrapInboundOut(.end))
     }
   }
+}
 
+extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
+  public typealias OutboundIn = RawGRPCServerResponsePart
+  public typealias OutboundOut = HTTPServerResponsePart
+  
   public func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     let responsePart = self.unwrapOutboundIn(data)
     switch responsePart {

@@ -3,23 +3,22 @@ import SwiftProtobuf
 import NIO
 import NIOHTTP1
 
-// Handles server-streaming calls. Calls the observer block with the request message.
-// The observer block is implemented by the framework user and calls `context.sendResponse` as needed.
-// To close the call and send the status, complete the status future returned by the observer block.
+/// Handles server-streaming calls. Calls the observer block with the request message.
+///
+/// - The observer block is implemented by the framework user and calls `context.sendResponse` as needed.
+/// - To close the call and send the status, complete the status future returned by the observer block.
 public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage: Message>: BaseCallHandler<RequestMessage, ResponseMessage> {
   public typealias EventObserver = (RequestMessage) -> EventLoopFuture<GRPCStatus>
-  fileprivate var eventObserver: EventObserver?
+  private var eventObserver: EventObserver?
   
-  fileprivate var hasReceivedRequest = false
-  
-  //! FIXME: Do we need to keep the context around at all here?
-  public private(set) var context: StreamingResponseCallContext<ResponseMessage>?
+  private var context: StreamingResponseCallContext<ResponseMessage>?
   
   public init(channel: Channel, request: HTTPRequestHead, eventObserverFactory: (StreamingResponseCallContext<ResponseMessage>) -> EventObserver) {
     super.init()
-    self.context = StreamingResponseCallContextImpl<ResponseMessage>(channel: channel, request: request)
-    self.eventObserver = eventObserverFactory(context!)
-    context!.statusPromise.futureResult.whenComplete {
+    let context = StreamingResponseCallContextImpl<ResponseMessage>(channel: channel, request: request)
+    self.context = context
+    self.eventObserver = eventObserverFactory(context)
+    context.statusPromise.futureResult.whenComplete {
       // When done, reset references to avoid retain cycles.
       self.eventObserver = nil
       self.context = nil
@@ -28,16 +27,17 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
   
   
   public override func processMessage(_ message: RequestMessage) {
-    guard !hasReceivedRequest else {
-      //! FIXME: Better handle this error.
-      print("multiple messages received on server-streaming call")
+    guard let eventObserver = self.eventObserver,
+      let context = self.context else {
+      //! FIXME: Better handle this error?
+      print("multiple messages received on unary call")
       return
     }
-    hasReceivedRequest = true
     
-    let resultFuture = self.eventObserver!(message)
+    let resultFuture = eventObserver(message)
     resultFuture
       // Fulfill the status promise with whatever status the framework user has provided.
-      .cascade(promise: context!.statusPromise)
+      .cascade(promise: context.statusPromise)
+    self.eventObserver = nil
   }
 }
