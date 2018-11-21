@@ -151,6 +151,7 @@ testing with the following versions:
 - Client support
 - Example projects
 - iOS support
+- Removal of the `libnghttp2` dependency from `SwiftNIOHTTP2`
 
 However, if you are planning to implement a gRPC service based on `SwiftNIO` or the Vapor framework, you might find this package useful. In addition, once ready, this package should provide more predictable and reliable behavior in the future, combined with an improved API and better developer experience.
 
