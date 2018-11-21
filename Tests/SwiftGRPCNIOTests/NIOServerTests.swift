@@ -46,29 +46,29 @@ final class EchoProvider_NIO: Echo_EchoProvider_NIO {
   }
 
   func expand(request: Echo_EchoRequest, context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<GRPCStatus> {
-    var sendOperationChain = context.eventLoop.newSucceededFuture(result: ())
+    var endOfSendOperationQueue = context.eventLoop.newSucceededFuture(result: ())
     let parts = request.text.components(separatedBy: " ")
     for (i, part) in parts.enumerated() {
       var response = Echo_EchoResponse()
       response.text = "Swift echo expand (\(i)): \(part)"
-      sendOperationChain = sendOperationChain.then { context.sendResponse(response) }
+      endOfSendOperationQueue = endOfSendOperationQueue.then { context.sendResponse(response) }
     }
-    return sendOperationChain.map { GRPCStatus.ok }
+    return endOfSendOperationQueue.map { GRPCStatus.ok }
   }
 
   func update(context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
-    var sendOperationChain = context.eventLoop.newSucceededFuture(result: ())
+    var endOfSendOperationQueue = context.eventLoop.newSucceededFuture(result: ())
     var count = 0
     return context.eventLoop.newSucceededFuture(result: { event in
       switch event {
       case .message(let message):
         var response = Echo_EchoResponse()
         response.text = "Swift echo update (\(count)): \(message.text)"
-        sendOperationChain = sendOperationChain.then { context.sendResponse(response) }
+        endOfSendOperationQueue = endOfSendOperationQueue.then { context.sendResponse(response) }
         count += 1
         
       case .end:
-        sendOperationChain
+        endOfSendOperationQueue
           .map { GRPCStatus.ok }
           .cascade(promise: context.statusPromise)
       }
