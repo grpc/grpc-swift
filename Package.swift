@@ -22,7 +22,7 @@ var packageDependencies: [Package.Dependency] = [
   .package(url: "https://github.com/apple/swift-nio-zlib-support.git", .upToNextMinor(from: "1.0.0")),
   .package(url: "https://github.com/apple/swift-nio.git", .upToNextMinor(from: "1.11.0")),
   .package(url: "https://github.com/apple/swift-nio-nghttp2-support.git", .upToNextMinor(from: "1.0.0")),
-  .package(url: "https://github.com/apple/swift-nio-http2.git", .branch("master"))
+  .package(url: "https://github.com/apple/swift-nio-http2.git", .revision("38b8235868e1e6277c420b73ac5cfdfa66382a85"))
 ]
 
 var cGRPCDependencies: [Target.Dependency] = []
