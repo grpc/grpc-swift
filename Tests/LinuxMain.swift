@@ -15,8 +15,10 @@
  */
 import XCTest
 @testable import SwiftGRPCTests
+@testable import SwiftGRPCNIOTests
 
 XCTMain([
+  // SwiftGRPC
   testCase(gRPCTests.allTests),
   testCase(ChannelArgumentTests.allTests),
   testCase(ClientCancellingTests.allTests),
@@ -31,5 +33,8 @@ XCTMain([
   testCase(ServerCancellingTests.allTests),
   testCase(ServerTestExample.allTests),
   testCase(ServerThrowingTests.allTests),
-  testCase(ServerTimeoutTests.allTests)
+  testCase(ServerTimeoutTests.allTests),
+
+  // SwiftGRPCNIO
+  testCase(NIOServerTests.allTests)
 ])

@@ -73,12 +73,29 @@ class Generator {
       //\n
       """)
     
-    for moduleName in ["Foundation", "Dispatch", "SwiftGRPC", "SwiftProtobuf"] {
+    let moduleNames: [String]
+    if options.generateNIOImplementation {
+      moduleNames = [
+        "Foundation",
+        "NIO",
+        "NIOHTTP1",
+        "SwiftGRPCNIO",
+        "SwiftProtobuf"]
+    } else {
+      moduleNames = [
+        "Foundation",
+        "Dispatch",
+        "SwiftGRPC",
+        "SwiftProtobuf"]
+    }
+    for moduleName in moduleNames {
       println("import \(moduleName)")
     }
     println()
     
     if options.generateClient {
+      guard !options.generateNIOImplementation else { fatalError("Generating client code is not yet supported for SwiftGRPC-NIO.") }
+      
       for service in file.services {
         self.service = service
         printClient(asynchronousCode: options.generateAsynchronous,
@@ -88,6 +105,10 @@ class Generator {
     println()
     
     if options.generateServer {
+      if options.generateTestStubs && options.generateNIOImplementation {
+        fatalError("Generating test stubs is not yet supported for SwiftGRPC-NIO.")
+      }
+      
       for service in file.services {
         self.service = service
         printServer()

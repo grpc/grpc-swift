@@ -48,7 +48,11 @@ extension Generator {
   }
 
   internal var providerName: String {
-    return nameForPackageService(file, service) + "Provider"
+    if options.generateNIOImplementation {
+      return nameForPackageService(file, service) + "Provider_NIO"
+    } else {
+      return nameForPackageService(file, service) + "Provider"
+    }
   }
 
   internal var callName: String {

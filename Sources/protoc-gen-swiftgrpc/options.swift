@@ -52,6 +52,7 @@ final class GeneratorOptions {
   private(set) var generateAsynchronous = true
   private(set) var generateSynchronous = true
   private(set) var generateTestStubs = false
+  private(set) var generateNIOImplementation = false
 
   init(parameter: String?) throws {
     for pair in GeneratorOptions.parseParameter(string: parameter) {
@@ -90,12 +91,19 @@ final class GeneratorOptions {
         } else {
           throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }
-
+        
       case "TestStubs":
         if let value = Bool(pair.value) {
-            generateTestStubs = value
+          generateTestStubs = value
         } else {
-            throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
+          throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
+        }
+        
+      case "NIO":
+        if let value = Bool(pair.value) {
+          generateNIOImplementation = value
+        } else {
+          throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }
 
       default:
