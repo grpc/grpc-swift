@@ -11,10 +11,14 @@ public protocol GRPCCallHandler: ChannelHandler {
 /// Provides `GRPCCallHandler` objects for the methods on a particular service name.
 ///
 /// Implemented by the generated code.
-public protocol CallHandlerProvider {
+public protocol CallHandlerProvider: class {
+  /// The name of the service this object is providing methods for, including the package path.
+  ///
+  /// - Example: "io.grpc.Echo.EchoService"
   var serviceName: String { get }
 
-  // Looks up and returns the `GRPCCallHandler` for a particular method. Returns nil for unsupported methods.
+  /// Determines, calls and returns the appropriate request handler (`GRPCCallHandler`), depending on the request's
+  /// method. Returns nil for methods not handled by this service.
   func handleMethod(_ methodName: String, request: HTTPRequestHead, serverHandler: GRPCChannelHandler, channel: Channel) -> GRPCCallHandler?
 }
 
@@ -23,7 +27,6 @@ public protocol CallHandlerProvider {
 /// Once the request headers are available, asks the `CallHandlerProvider` corresponding to the request's service name
 /// for an `GRPCCallHandler` object. That object is then forwarded the individual gRPC messages.
 public final class GRPCChannelHandler {
-
   private let servicesByName: [String: CallHandlerProvider]
 
   public init(servicesByName: [String: CallHandlerProvider]) {

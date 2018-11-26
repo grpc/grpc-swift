@@ -48,6 +48,7 @@ public final class GRPCServer {
     self.channel = channel
   }
 
+  /// Fired when the server shuts down.
   public var onClose: EventLoopFuture<Void> {
     return channel.closeFuture
   }
