@@ -35,10 +35,10 @@ let isLinux = false
 
 // swift build doesn't pass -Xswiftc flags to dependencies, so here using an environment variable
 // is easiest.
-if !ProcessInfo.processInfo.environment.keys.contains("GRPC_USE_OPENSSL") && !isLinux {
-  cGRPCDependencies.append("BoringSSL")
-} else {
+if ProcessInfo.processInfo.environment.keys.contains("GRPC_USE_OPENSSL") || isLinux {
   packageDependencies.append(.package(url: "https://github.com/apple/swift-nio-ssl-support.git", from: "1.0.0"))
+} else {
+  cGRPCDependencies.append("BoringSSL")
 }
 
 let package = Package(
