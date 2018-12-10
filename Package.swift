@@ -26,16 +26,16 @@ var packageDependencies: [Package.Dependency] = [
 var cGRPCDependencies: [Target.Dependency] = []
 
 #if os(Linux)
-// On Linux, Foundation links with openssl, so we'll need to use that instead of BoringSSL.
-// See https://github.com/apple/swift-nio-ssl/issues/16#issuecomment-392705505 for details.
 let isLinux = true
 #else
 let isLinux = false
 #endif 
 
+// On Linux, Foundation links with openssl, so we'll need to use that instead of BoringSSL.
+// See https://github.com/apple/swift-nio-ssl/issues/16#issuecomment-392705505 for details.
 // swift build doesn't pass -Xswiftc flags to dependencies, so here using an environment variable
 // is easiest.
-if ProcessInfo.processInfo.environment.keys.contains("GRPC_USE_OPENSSL") || isLinux {
+if isLinux || ProcessInfo.processInfo.environment.keys.contains("GRPC_USE_OPENSSL") {
   packageDependencies.append(.package(url: "https://github.com/apple/swift-nio-ssl-support.git", from: "1.0.0"))
 } else {
   cGRPCDependencies.append("BoringSSL")
