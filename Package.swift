@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 import PackageDescription
+import Foundation
 
 var packageDependencies: [Package.Dependency] = [
   .package(url: "https://github.com/apple/swift-protobuf.git", .upToNextMinor(from: "1.1.1")),
@@ -26,13 +27,22 @@ var packageDependencies: [Package.Dependency] = [
 ]
 
 var cGRPCDependencies: [Target.Dependency] = []
+
 #if os(Linux)
+let isLinux = true
+#else
+let isLinux = false
+#endif 
+
 // On Linux, Foundation links with openssl, so we'll need to use that instead of BoringSSL.
 // See https://github.com/apple/swift-nio-ssl/issues/16#issuecomment-392705505 for details.
-packageDependencies.append(.package(url: "https://github.com/apple/swift-nio-ssl-support.git", from: "1.0.0"))
-#else
-cGRPCDependencies.append("BoringSSL")
-#endif
+// swift build doesn't pass -Xswiftc flags to dependencies, so here using an environment variable
+// is easiest.
+if isLinux || ProcessInfo.processInfo.environment.keys.contains("GRPC_USE_OPENSSL") {
+  packageDependencies.append(.package(url: "https://github.com/apple/swift-nio-ssl-support.git", from: "1.0.0"))
+} else {
+  cGRPCDependencies.append("BoringSSL")
+}
 
 let package = Package(
   name: "SwiftGRPC",
