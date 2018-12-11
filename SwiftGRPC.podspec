@@ -35,11 +35,12 @@ Pod::Spec.new do |s|
   s.requires_arc = true
   s.ios.deployment_target = '8.0'
   s.osx.deployment_target = '10.10'
+  s.tvos.deployment_target = '10.0'
 
   s.source_files = 'Sources/SwiftGRPC/*.swift', 'Sources/SwiftGRPC/**/*.swift', 'Sources/CgRPC/shim/*.[ch]'
   s.public_header_files = 'Sources/CgRPC/shim/cgrpc.h'
 
-  s.dependency 'gRPC-Core', '~> 1.12.0'
-  s.dependency 'BoringSSL', '~> 10.0'
-  s.dependency 'SwiftProtobuf', '~> 1.1.1'
+  s.dependency 'gRPC-Core', '~> 1.17.0'
+  s.dependency 'BoringSSL-GRPC', '~> 0.0.2'
+  s.dependency 'SwiftProtobuf', '~> 1.2.0'
 end
