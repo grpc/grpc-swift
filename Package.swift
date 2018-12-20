@@ -23,7 +23,7 @@ var packageDependencies: [Package.Dependency] = [
   .package(url: "https://github.com/apple/swift-nio-zlib-support.git", .upToNextMinor(from: "1.0.0")),
   .package(url: "https://github.com/apple/swift-nio.git", .upToNextMinor(from: "1.11.0")),
   .package(url: "https://github.com/apple/swift-nio-nghttp2-support.git", .upToNextMinor(from: "1.0.0")),
-  .package(url: "https://github.com/apple/swift-nio-http2.git", .revision("38b8235868e1e6277c420b73ac5cfdfa66382a85"))
+  .package(url: "https://github.com/apple/swift-nio-http2.git", .revision("dd9339e6310ad8537a271f3ff60a4f3976ca8e4d"))
 ]
 
 var cGRPCDependencies: [Target.Dependency] = []
@@ -32,7 +32,7 @@ var cGRPCDependencies: [Target.Dependency] = []
 let isLinux = true
 #else
 let isLinux = false
-#endif 
+#endif
 
 // On Linux, Foundation links with openssl, so we'll need to use that instead of BoringSSL.
 // See https://github.com/apple/swift-nio-ssl/issues/16#issuecomment-392705505 for details.

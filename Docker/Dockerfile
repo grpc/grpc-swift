@@ -5,7 +5,7 @@ ENV PROTOC_VERSION=3.5.1
 
 # Install a few needed packages that aren't in swiftdocker/swift
 RUN apt-get -q update \
-    && apt-get -q install -y unzip \
+    && apt-get -q install -y unzip libnghttp2-dev \
     && rm -r /var/lib/apt/lists/*
 
 # Install protoc
