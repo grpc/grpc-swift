@@ -20,22 +20,20 @@ Start a docker instance with the following command:
     # install download tools
     apt-get install -y git wget
     # install a few useful utilities
-    apt-get install -y vim sudo
-    # install grpc build dependencies
-    apt-get install -y build-essential autoconf libtool
+    apt-get install -y vim sudo unzip
     # install swift dependencies
     apt-get install -y clang libicu-dev libedit-dev python-dev libxml2-dev
     # install networking dependencies
-    apt-get install -y libcurl4-openssl-dev
+    apt-get install -y libcurl4-openssl-dev libssl-dev libnghttp2-dev
 
 ## Install Swift
 
     # go to /root
-    cd
+    cd /root
     # download and unpack swift
-    wget https://swift.org/builds/swift-3.0.2-release/ubuntu1604/swift-3.0.2-RELEASE/swift-3.0.2-RELEASE-ubuntu16.04.tar.gz
-    tar xzf swift-3.0.2-RELEASE-ubuntu16.04.tar.gz
-    ln -s swift-3.0.2-RELEASE-ubuntu16.04 swift
+    wget https://swift.org/builds/swift-4.2.1-release/ubuntu1604/swift-4.2.1-RELEASE/swift-4.2.1-RELEASE-ubuntu16.04.tar.gz
+    tar xzf swift-4.2.1-RELEASE-ubuntu16.04.tar.gz
+    ln -s swift-4.2.1-RELEASE-ubuntu16.04 swift
 
 ## Add Swift to your path
 
@@ -50,20 +48,11 @@ Start a docker instance with the following command:
     git config --global user.email <your email address>
     git config --global user.name "<your name>"
 
-## Fetch and build grpc
+## Get and build Swift gRPC
 
-    git clone https://github.com/grpc/grpc-swift
-    cd grpc-swift/third_party
-    git clone https://github.com/grpc/grpc.git
-    cd grpc
-    git submodule update --init
-    make
-    make install
-
-## Build the Echo sample
-
-    cd
-    cd grpc-swift/Examples/Echo/PackageManager
+    cd /root
+    git clone https://github.com/grpc/grpc-swift.git
+    cd grpc-swift
     make
 
 ## Run the test client and server
@@ -78,11 +67,11 @@ Start a docker instance with the following command:
 
 ## To test the plugin
 
-    # build and install protoc
-    cd
-    cd grpc-swift/third_party/grpc/third_party/protobuf
-    make install
+    # download and install protoc
+    cd /root
+    wget https://github.com/google/protobuf/releases/download/v3.5.1/protoc-3.5.1-linux-x86_64.zip
+    unzip protoc-3.5.1-linux-x86_64.zip -d /usr
+
     # build and test the plugin
-    cd
-    cd grpc-swift/Plugin
-    make test
+    cd /root/grpc-swift
+    make test-plugin
