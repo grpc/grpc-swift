@@ -8,6 +8,7 @@ build
 /protoc-gen-swiftgrpc
 third_party/**
 /Echo
+/EchoNIO
 /test.out
 /echo.pid
 /SwiftGRPC.xcodeproj
