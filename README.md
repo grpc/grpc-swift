@@ -102,6 +102,7 @@ separated from the output directory by a colon.
 | `Async` |  `true`/`false` | `true` | Whether to generate asynchronous code |
 | `Sync` |  `true`/`false` | `true` | Whether to generate synchronous code |
 | `TestStubs` |  `true`/`false` | `false` | Whether to generate test stub code |
+| `FileNaming` | `FullPath`/`PathToUnderscores`/`DropPath` | `FullPath` | How to handle the naming of generated sources |
 
 Example:
 

@@ -55,18 +55,16 @@ func splitPath(pathname: String) -> (dir: String, base: String, suffix: String) 
   return (dir: dir, base: base, suffix: suffix)
 }
 
-enum OutputNaming: String {
+enum FileNaming: String {
   case FullPath
   case PathToUnderscores
   case DropPath
 }
 
-var outputNamingOption: OutputNaming = .FullPath // temporarily hard-coded
-
-func outputFileName(component: String, fileDescriptor: FileDescriptor) -> String {
+func outputFileName(component: String, fileDescriptor: FileDescriptor, fileNamingOption: FileNaming) -> String {
   let ext = "." + component + ".swift"
   let pathParts = splitPath(pathname: fileDescriptor.name)
-  switch outputNamingOption {
+  switch fileNamingOption {
   case .FullPath:
     return pathParts.dir + pathParts.base + ext
   case .PathToUnderscores:
@@ -80,11 +78,11 @@ func outputFileName(component: String, fileDescriptor: FileDescriptor) -> String
 
 var generatedFiles: [String: Int] = [:]
 
-func uniqueOutputFileName(component: String, fileDescriptor: FileDescriptor) -> String {
-  let defaultName = outputFileName(component: component, fileDescriptor: fileDescriptor)
+func uniqueOutputFileName(component: String, fileDescriptor: FileDescriptor, fileNamingOption: FileNaming) -> String {
+  let defaultName = outputFileName(component: component, fileDescriptor: fileDescriptor, fileNamingOption: fileNamingOption)
   if let count = generatedFiles[defaultName] {
     generatedFiles[defaultName] = count + 1
-    return outputFileName(component: "\(count)." + component, fileDescriptor: fileDescriptor)
+    return outputFileName(component: "\(count)." + component, fileDescriptor: fileDescriptor, fileNamingOption: fileNamingOption)
   } else {
     generatedFiles[defaultName] = 1
     return defaultName
@@ -108,7 +106,7 @@ func main() throws {
   // process each .proto file separately
   for fileDescriptor in descriptorSet.files {
     if fileDescriptor.services.count > 0 {
-      let grpcFileName = uniqueOutputFileName(component: "grpc", fileDescriptor: fileDescriptor)
+      let grpcFileName = uniqueOutputFileName(component: "grpc", fileDescriptor: fileDescriptor, fileNamingOption: options.fileNaming)
       let grpcGenerator = Generator(fileDescriptor, options: options)
       var grpcFile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
       grpcFile.name = grpcFileName
