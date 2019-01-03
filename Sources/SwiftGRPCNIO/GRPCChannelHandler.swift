@@ -55,15 +55,20 @@ extension GRPCChannelHandler: ChannelInboundHandler {
           return
       }
 
-      var responseHeaders = HTTPHeaders()
-      responseHeaders.add(name: "content-type", value: "application/grpc")
-      ctx.write(self.wrapOutboundOut(.headers(responseHeaders)), promise: nil)
-
       let codec = callHandler.makeGRPCServerCodec()
+      let handlerRemoved: EventLoopPromise<Bool> = ctx.eventLoop.newPromise()
+      handlerRemoved.futureResult.whenSuccess { handlerWasRemoved in
+        assert(handlerWasRemoved)
+
+        ctx.pipeline.add(handler: callHandler, after: codec).whenComplete {
+          var responseHeaders = HTTPHeaders()
+          responseHeaders.add(name: "content-type", value: "application/grpc")
+          ctx.write(self.wrapOutboundOut(.headers(responseHeaders)), promise: nil)
+        }
+      }
+
       ctx.pipeline.add(handler: codec, after: self)
-        .then { ctx.pipeline.add(handler: callHandler, after: codec) }
-        //! FIXME(lukasa): Fix the ordering of this with NIO 1.12 and replace with `remove(, promise:)`.
-        .whenComplete { _ = ctx.pipeline.remove(handler: self) }
+        .whenComplete { ctx.pipeline.remove(handler: self, promise: handlerRemoved) }
 
     case .message, .end:
       preconditionFailure("received \(requestPart), should have been removed as a handler at this point")
