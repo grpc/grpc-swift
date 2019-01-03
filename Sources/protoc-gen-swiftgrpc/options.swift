@@ -59,6 +59,7 @@ final class GeneratorOptions {
   private(set) var generateTestStubs = false
   private(set) var generateNIOImplementation = false
   private(set) var protoToModuleMappings = ProtoFileToModuleMappings()
+  private(set) var fileNaming = FileNaming.FullPath
 
   init(parameter: String?) throws {
     for pair in GeneratorOptions.parseParameter(string: parameter) {
@@ -121,6 +122,13 @@ final class GeneratorOptions {
               message: "Parameter 'ProtoPathModuleMappings=\(pair.value)'",
               error: e)
           }
+        }
+
+      case "FileNaming":
+        if let value = FileNaming(rawValue: pair.value) {
+          fileNaming = value
+        } else {
+          throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }
 
       default:
