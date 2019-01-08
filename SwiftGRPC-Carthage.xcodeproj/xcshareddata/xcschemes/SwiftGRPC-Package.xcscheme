@@ -1,10 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
    LastUpgradeVersion = "9999"
-   version = "1.3">
+   version = "1.7">
    <BuildAction
       parallelizeBuildables = "YES"
       buildImplicitDependencies = "YES">
+      <PreActions>
+         <ExecutionAction
+            ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
+            <ActionContent
+               title = "Run Script"
+               scriptText = "cd ${PROJECT_DIR}&#10;swift package resolve&#10;">
+               <EnvironmentBuildable>
+                  <BuildableReference
+                     BuildableIdentifier = "primary"
+                     BlueprintIdentifier = "SwiftGRPC::SwiftGRPC"
+                     BuildableName = "SwiftGRPC.framework"
+                     BlueprintName = "SwiftGRPC"
+                     ReferencedContainer = "container:SwiftGRPC-Carthage.xcodeproj">
+                  </BuildableReference>
+               </EnvironmentBuildable>
+            </ActionContent>
+         </ExecutionAction>
+         <ExecutionAction
+            ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
+            <ActionContent
+               title = "Run Script"
+               scriptText = "exec &gt; ${PROJECT_DIR}/prebuild1.log 2&gt;&amp;1&#10;cd ${PROJECT_DIR}&#10;ruby fix-carthage-paths.rb SwiftGRPC-Carthage.xcodeproj&#10;">
+               <EnvironmentBuildable>
+                  <BuildableReference
+                     BuildableIdentifier = "primary"
+                     BlueprintIdentifier = "SwiftGRPC::SwiftGRPC"
+                     BuildableName = "SwiftGRPC.framework"
+                     BlueprintName = "SwiftGRPC"
+                     ReferencedContainer = "container:SwiftGRPC-Carthage.xcodeproj">
+                  </BuildableReference>
+               </EnvironmentBuildable>
+            </ActionContent>
+         </ExecutionAction>
+      </PreActions>
       <BuildActionEntries>
          <BuildActionEntry
             buildForTesting = "YES"
@@ -15,7 +49,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BuildableName = "&apos;$(TARGET_NAME)&apos;"
-               BlueprintName = "protoc-gen-swiftgrpc"
+               BlueprintName = "RootsEncoder"
                ReferencedContainer = "container:SwiftGRPC-Carthage.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -27,9 +61,8 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "SwiftGRPC::BoringSSL"
-               BuildableName = "BoringSSL.framework"
-               BlueprintName = "BoringSSL"
+               BuildableName = "&apos;lib$(TARGET_NAME)&apos;"
+               BlueprintName = "SwiftGRPCNIO"
                ReferencedContainer = "container:SwiftGRPC-Carthage.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -55,19 +88,6 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BuildableName = "&apos;lib$(TARGET_NAME)&apos;"
-               BlueprintName = "SwiftGRPCNIO"
-               ReferencedContainer = "container:SwiftGRPC-Carthage.xcodeproj">
-            </BuildableReference>
-         </BuildActionEntry>
-         <BuildActionEntry
-            buildForTesting = "YES"
-            buildForRunning = "YES"
-            buildForProfiling = "YES"
-            buildForArchiving = "YES"
-            buildForAnalyzing = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
                BuildableName = "&apos;$(TARGET_NAME)&apos;"
                BlueprintName = "Echo"
                ReferencedContainer = "container:SwiftGRPC-Carthage.xcodeproj">
@@ -82,7 +102,20 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BuildableName = "&apos;$(TARGET_NAME)&apos;"
-               BlueprintName = "RootsEncoder"
+               BlueprintName = "protoc-gen-swiftgrpc"
+               ReferencedContainer = "container:SwiftGRPC-Carthage.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BuildableName = "&apos;$(TARGET_NAME)&apos;"
+               BlueprintName = "Simple"
                ReferencedContainer = "container:SwiftGRPC-Carthage.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -108,8 +141,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BuildableName = "&apos;$(TARGET_NAME)&apos;"
-               BlueprintName = "Simple"
+               BlueprintIdentifier = "SwiftGRPC::BoringSSL"
+               BuildableName = "BoringSSL.framework"
+               BlueprintName = "BoringSSL"
                ReferencedContainer = "container:SwiftGRPC-Carthage.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -126,7 +160,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BuildableName = "&apos;$(TARGET_NAME)&apos;"
-               BlueprintName = "SwiftGRPCNIOTests"
+               BlueprintName = "SwiftGRPCTests"
                ReferencedContainer = "container:SwiftGRPC-Carthage.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -135,7 +169,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BuildableName = "&apos;$(TARGET_NAME)&apos;"
-               BlueprintName = "SwiftGRPCTests"
+               BlueprintName = "SwiftGRPCNIOTests"
                ReferencedContainer = "container:SwiftGRPC-Carthage.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -153,14 +187,6 @@
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES">
-      <MacroExpansion>
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BuildableName = "&apos;$(TARGET_NAME)&apos;"
-            BlueprintName = "protoc-gen-swiftgrpc"
-            ReferencedContainer = "container:SwiftGRPC-Carthage.xcodeproj">
-         </BuildableReference>
-      </MacroExpansion>
       <AdditionalOptions>
       </AdditionalOptions>
    </LaunchAction>

@@ -2132,7 +2132,7 @@
 				OBJ_1073 /* NGHTTP2Session.swift */,
 			);
 			name = NIOHTTP2;
-			path = ".build/checkouts/swift-nio-http2.git-133530686431583629/Sources/NIOHTTP2";
+			path = ".build/checkouts/swift-nio-http2.git--780762501581239283/Sources/NIOHTTP2";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1074 /* CNIONghttp2 */ = {
@@ -2142,7 +2142,7 @@
 				OBJ_1076 /* include */,
 			);
 			name = CNIONghttp2;
-			path = ".build/checkouts/swift-nio-http2.git-133530686431583629/Sources/CNIONghttp2";
+			path = ".build/checkouts/swift-nio-http2.git--780762501581239283/Sources/CNIONghttp2";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1076 /* include */ = {
@@ -2159,7 +2159,7 @@
 			children = (
 			);
 			name = NIOHPACK;
-			path = ".build/checkouts/swift-nio-http2.git-133530686431583629/Sources/NIOHPACK";
+			path = ".build/checkouts/swift-nio-http2.git--780762501581239283/Sources/NIOHPACK";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1080 /* NIOHTTP2Server */ = {
@@ -2167,7 +2167,7 @@
 			children = (
 			);
 			name = NIOHTTP2Server;
-			path = ".build/checkouts/swift-nio-http2.git-133530686431583629/Sources/NIOHTTP2Server";
+			path = ".build/checkouts/swift-nio-http2.git--780762501581239283/Sources/NIOHTTP2Server";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1082 /* swift-nio 1.11.0 */ = {
@@ -2206,7 +2206,7 @@
 				OBJ_1085 /* lock.swift */,
 			);
 			name = NIOConcurrencyHelpers;
-			path = ".build/checkouts/swift-nio.git--6509846197610222608/Sources/NIOConcurrencyHelpers";
+			path = ".build/checkouts/swift-nio-zlib-support.git-2367216852066305267/Sources/NIOConcurrencyHelpers";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1086 /* NIO */ = {
@@ -2269,7 +2269,7 @@
 				OBJ_1141 /* Utilities.swift */,
 			);
 			name = NIO;
-			path = ".build/checkouts/swift-nio.git--6509846197610222608/Sources/NIO";
+			path = ".build/checkouts/swift-nio-zlib-support.git-2367216852066305267/Sources/NIO";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1142 /* CNIODarwin */ = {
@@ -2279,7 +2279,7 @@
 				OBJ_1144 /* include */,
 			);
 			name = CNIODarwin;
-			path = ".build/checkouts/swift-nio.git--6509846197610222608/Sources/CNIODarwin";
+			path = ".build/checkouts/swift-nio-zlib-support.git-2367216852066305267/Sources/CNIODarwin";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1144 /* include */ = {
@@ -2297,7 +2297,7 @@
 				OBJ_1148 /* PriorityQueue.swift */,
 			);
 			name = NIOPriorityQueue;
-			path = ".build/checkouts/swift-nio.git--6509846197610222608/Sources/NIOPriorityQueue";
+			path = ".build/checkouts/swift-nio-zlib-support.git-2367216852066305267/Sources/NIOPriorityQueue";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1149 /* CNIOHTTPParser */ = {
@@ -2307,7 +2307,7 @@
 				OBJ_1151 /* include */,
 			);
 			name = CNIOHTTPParser;
-			path = ".build/checkouts/swift-nio.git--6509846197610222608/Sources/CNIOHTTPParser";
+			path = ".build/checkouts/swift-nio-zlib-support.git-2367216852066305267/Sources/CNIOHTTPParser";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1151 /* include */ = {
@@ -2324,7 +2324,7 @@
 			children = (
 			);
 			name = NIOEchoServer;
-			path = ".build/checkouts/swift-nio.git--6509846197610222608/Sources/NIOEchoServer";
+			path = ".build/checkouts/swift-nio-zlib-support.git-2367216852066305267/Sources/NIOEchoServer";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1155 /* NIOChatClient */ = {
@@ -2332,7 +2332,7 @@
 			children = (
 			);
 			name = NIOChatClient;
-			path = ".build/checkouts/swift-nio.git--6509846197610222608/Sources/NIOChatClient";
+			path = ".build/checkouts/swift-nio-zlib-support.git-2367216852066305267/Sources/NIOChatClient";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1156 /* NIOMulticastChat */ = {
@@ -2340,7 +2340,7 @@
 			children = (
 			);
 			name = NIOMulticastChat;
-			path = ".build/checkouts/swift-nio.git--6509846197610222608/Sources/NIOMulticastChat";
+			path = ".build/checkouts/swift-nio-zlib-support.git-2367216852066305267/Sources/NIOMulticastChat";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1157 /* NIOWebSocketServer */ = {
@@ -2348,7 +2348,7 @@
 			children = (
 			);
 			name = NIOWebSocketServer;
-			path = ".build/checkouts/swift-nio.git--6509846197610222608/Sources/NIOWebSocketServer";
+			path = ".build/checkouts/swift-nio-zlib-support.git-2367216852066305267/Sources/NIOWebSocketServer";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1158 /* CNIOSHA1 */ = {
@@ -2358,7 +2358,7 @@
 				OBJ_1160 /* include */,
 			);
 			name = CNIOSHA1;
-			path = ".build/checkouts/swift-nio.git--6509846197610222608/Sources/CNIOSHA1";
+			path = ".build/checkouts/swift-nio-zlib-support.git-2367216852066305267/Sources/CNIOSHA1";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_116 /* cmac */ = {
@@ -2391,7 +2391,7 @@
 				OBJ_1171 /* HTTPUpgradeHandler.swift */,
 			);
 			name = NIOHTTP1;
-			path = ".build/checkouts/swift-nio.git--6509846197610222608/Sources/NIOHTTP1";
+			path = ".build/checkouts/swift-nio-zlib-support.git-2367216852066305267/Sources/NIOHTTP1";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1172 /* NIOFoundationCompat */ = {
@@ -2400,7 +2400,7 @@
 				OBJ_1173 /* ByteBuffer-foundation.swift */,
 			);
 			name = NIOFoundationCompat;
-			path = ".build/checkouts/swift-nio.git--6509846197610222608/Sources/NIOFoundationCompat";
+			path = ".build/checkouts/swift-nio-zlib-support.git-2367216852066305267/Sources/NIOFoundationCompat";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1174 /* NIOTLS */ = {
@@ -2411,7 +2411,7 @@
 				OBJ_1177 /* TLSEvents.swift */,
 			);
 			name = NIOTLS;
-			path = ".build/checkouts/swift-nio.git--6509846197610222608/Sources/NIOTLS";
+			path = ".build/checkouts/swift-nio-zlib-support.git-2367216852066305267/Sources/NIOTLS";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1178 /* NIOHTTP1Server */ = {
@@ -2419,7 +2419,7 @@
 			children = (
 			);
 			name = NIOHTTP1Server;
-			path = ".build/checkouts/swift-nio.git--6509846197610222608/Sources/NIOHTTP1Server";
+			path = ".build/checkouts/swift-nio-zlib-support.git-2367216852066305267/Sources/NIOHTTP1Server";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1179 /* CNIOZlib */ = {
@@ -2429,7 +2429,7 @@
 				OBJ_1181 /* include */,
 			);
 			name = CNIOZlib;
-			path = ".build/checkouts/swift-nio.git--6509846197610222608/Sources/CNIOZlib";
+			path = ".build/checkouts/swift-nio-zlib-support.git-2367216852066305267/Sources/CNIOZlib";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_118 /* conf */ = {
@@ -2453,7 +2453,7 @@
 			children = (
 			);
 			name = NIOPerformanceTester;
-			path = ".build/checkouts/swift-nio.git--6509846197610222608/Sources/NIOPerformanceTester";
+			path = ".build/checkouts/swift-nio-zlib-support.git-2367216852066305267/Sources/NIOPerformanceTester";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1184 /* CNIOLinux */ = {
@@ -2464,7 +2464,7 @@
 				OBJ_1187 /* include */,
 			);
 			name = CNIOLinux;
-			path = ".build/checkouts/swift-nio.git--6509846197610222608/Sources/CNIOLinux";
+			path = ".build/checkouts/swift-nio-zlib-support.git-2367216852066305267/Sources/CNIOLinux";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1187 /* include */ = {
@@ -2481,7 +2481,7 @@
 			children = (
 			);
 			name = NIOEchoClient;
-			path = ".build/checkouts/swift-nio.git--6509846197610222608/Sources/NIOEchoClient";
+			path = ".build/checkouts/swift-nio-zlib-support.git-2367216852066305267/Sources/NIOEchoClient";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1191 /* NIOChatServer */ = {
@@ -2489,7 +2489,7 @@
 			children = (
 			);
 			name = NIOChatServer;
-			path = ".build/checkouts/swift-nio.git--6509846197610222608/Sources/NIOChatServer";
+			path = ".build/checkouts/swift-nio-zlib-support.git-2367216852066305267/Sources/NIOChatServer";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1192 /* CNIOAtomics */ = {
@@ -2499,7 +2499,7 @@
 				OBJ_1195 /* include */,
 			);
 			name = CNIOAtomics;
-			path = ".build/checkouts/swift-nio.git--6509846197610222608/Sources/CNIOAtomics";
+			path = ".build/checkouts/swift-nio-zlib-support.git-2367216852066305267/Sources/CNIOAtomics";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1193 /* src */ = {
@@ -2524,7 +2524,7 @@
 			children = (
 			);
 			name = NIOWebSocket;
-			path = ".build/checkouts/swift-nio.git--6509846197610222608/Sources/NIOWebSocket";
+			path = ".build/checkouts/swift-nio-zlib-support.git-2367216852066305267/Sources/NIOWebSocket";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1200 /* Commander 0.8.0 */ = {
@@ -2550,7 +2550,7 @@
 				OBJ_1210 /* Group.swift */,
 			);
 			name = Commander;
-			path = ".build/checkouts/Commander.git--6491643195459165963/Sources/Commander";
+			path = ".build/checkouts/Commander.git-907695254211703042/Sources/Commander";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1212 /* SwiftProtobuf 1.1.2 */ = {
@@ -2646,7 +2646,7 @@
 				OBJ_1289 /* wrappers.pb.swift */,
 			);
 			name = SwiftProtobuf;
-			path = ".build/checkouts/swift-protobuf.git--9156097237251452956/Sources/SwiftProtobuf";
+			path = ".build/checkouts/swift-protobuf.git-8306754641556936472/Sources/SwiftProtobuf";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_126 /* curve25519 */ = {
@@ -2692,7 +2692,7 @@
 				OBJ_1308 /* main.swift */,
 			);
 			name = "protoc-gen-swift";
-			path = ".build/checkouts/swift-protobuf.git--9156097237251452956/Sources/protoc-gen-swift";
+			path = ".build/checkouts/swift-protobuf.git-8306754641556936472/Sources/protoc-gen-swift";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1309 /* Conformance */ = {
@@ -2700,7 +2700,7 @@
 			children = (
 			);
 			name = Conformance;
-			path = ".build/checkouts/swift-protobuf.git--9156097237251452956/Sources/Conformance";
+			path = ".build/checkouts/swift-protobuf.git-8306754641556936472/Sources/Conformance";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1310 /* SwiftProtobufPluginLibrary */ = {
@@ -2726,7 +2726,7 @@
 				OBJ_1328 /* swift_protobuf_module_mappings.pb.swift */,
 			);
 			name = SwiftProtobufPluginLibrary;
-			path = ".build/checkouts/swift-protobuf.git--9156097237251452956/Sources/SwiftProtobufPluginLibrary";
+			path = ".build/checkouts/swift-protobuf.git-8306754641556936472/Sources/SwiftProtobufPluginLibrary";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1330 /* Products */ = {
@@ -3560,7 +3560,6 @@
 				OBJ_1330 /* Products */,
 			);
 			indentWidth = 2;
-			name = "";
 			sourceTree = "<group>";
 			tabWidth = 2;
 			usesTabs = 0;
@@ -4906,8 +4905,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = OBJ_2578 /* Build configuration list for PBXNativeTarget "SwiftProtobuf" */;
 			buildPhases = (
-				50392DDF3FAA6F7F49C10ECE /* ShellScript */,
-				D0E448705042D88064C1BAE5 /* ShellScript */,
 				OBJ_2581 /* Sources */,
 				OBJ_2658 /* Frameworks */,
 			);
@@ -4947,35 +4944,6 @@
 			);
 		};
 /* End PBXProject section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		50392DDF3FAA6F7F49C10ECE /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "swift package resolve\n";
-		};
-		D0E448705042D88064C1BAE5 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "ruby fix-carthage-paths.rb SwiftGRPC-Carthage.xcodeproj\n";
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		OBJ_1363 /* Sources */ = {
