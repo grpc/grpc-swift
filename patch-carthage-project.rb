@@ -19,6 +19,13 @@ swift_protobuf_target.new_shell_script_build_phase
 new_script_phase = swift_protobuf_build_phases.pop
 new_script_phase.shell_script = "swift package resolve"
 
+# Add a `fix-carthage-paths.rb` step before building `SwiftProtobuf`
+swift_protobuf_target.new_shell_script_build_phase
+
+fix_paths_script_phase = swift_protobuf_build_phases.pop
+fix_paths_script_phase.shell_script = "ruby fix-carthage-paths.rb SwiftGRPC-Carthage.xcodeproj"
+
+swift_protobuf_build_phases.unshift(fix_paths_script_phase)
 swift_protobuf_build_phases.unshift(new_script_phase)
 
 project.save
