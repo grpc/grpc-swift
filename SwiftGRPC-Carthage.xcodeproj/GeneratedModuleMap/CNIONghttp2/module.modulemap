@@ -1,4 +1,4 @@
 module CNIONghttp2 {
-    umbrella "/Users/dima/Work/grpc-swift/.build/checkouts/swift-nio-http2.git-133530686431583629/Sources/CNIONghttp2/include"
+    umbrella "/Users/dima/Work/grpc-swift/.build/checkouts/swift-nio-http2.git--1916512272171260226/Sources/CNIONghttp2/include"
     export *
 }

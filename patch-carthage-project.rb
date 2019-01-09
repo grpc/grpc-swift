@@ -8,24 +8,36 @@ targets_to_remove = project.targets.select { |target| !carthage_targets.include?
 targets_to_remove.each do |target|
   target.remove_from_project
 end
-
-# Add a `swift package resolve` step before building `SwiftProtobuf`.
-
-swift_protobuf_target = project.targets.select { |target| target.name == "SwiftProtobuf" }[0]
-swift_protobuf_build_phases = swift_protobuf_target.build_phases
-
-swift_protobuf_target.new_shell_script_build_phase
-
-new_script_phase = swift_protobuf_build_phases.pop
-new_script_phase.shell_script = "swift package resolve"
-
-# Add a `fix-carthage-paths.rb` step before building `SwiftProtobuf`
-swift_protobuf_target.new_shell_script_build_phase
-
-fix_paths_script_phase = swift_protobuf_build_phases.pop
-fix_paths_script_phase.shell_script = "ruby fix-carthage-paths.rb SwiftGRPC-Carthage.xcodeproj"
-
-swift_protobuf_build_phases.unshift(fix_paths_script_phase)
-swift_protobuf_build_phases.unshift(new_script_phase)
-
 project.save
+
+# Adding to SwiftGRPC-Package.xcscheme a script to Pre-Actions of BuildAction.
+# Script will resolve SPM dependecies and will fix paths issues for SwiftGRPC-Carthage.xcodeproj before everytime before build action
+schemePath = Xcodeproj::XCScheme.shared_data_dir(project_path) + "SwiftGRPC-Package.xcscheme"
+scheme = Xcodeproj::XCScheme.new(schemePath)
+
+buildActions = scheme.build_action.xml_element
+
+preActions = REXML::Element.new("PreActions")
+
+executionAction = REXML::Element.new("ExecutionAction", preActions)
+executionAction.add_attribute("ActionType","Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction")
+
+actionContent = REXML::Element.new("ActionContent", executionAction)
+actionContent.add_attribute("title", "Run Script")
+scriptText = "cd ${PROJECT_DIR}; rm -r .build; swift package resolve; ruby fix-carthage-paths.rb SwiftGRPC-Carthage.xcodeproj"
+actionContent.add_attribute("scriptText", scriptText)
+
+environmentBuildable = REXML::Element.new("EnvironmentBuildable", actionContent)
+
+buildableReference = REXML::Element.new("BuildableReference", environmentBuildable)
+buildableReference.add_attribute("BuildableIdentifier","primary")
+buildableReference.add_attribute("BlueprintIdentifier","SwiftGRPC::SwiftGRPC")
+buildableReference.add_attribute("BuildableName","SwiftGRPC.framework")
+buildableReference.add_attribute("BlueprintName","SwiftGRPC")
+buildableReference.add_attribute("ReferencedContainer","container:SwiftGRPC-Carthage.xcodeproj")
+
+buildActions.unshift(preActions)
+
+scheme.save!
+
+
