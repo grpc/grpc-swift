@@ -24,7 +24,7 @@ executionAction.add_attribute("ActionType","Xcode.IDEStandardExecutionActionsCor
 
 actionContent = REXML::Element.new("ActionContent", executionAction)
 actionContent.add_attribute("title", "Run Script")
-scriptText = "cd ${PROJECT_DIR}; rm -r .build; swift package resolve; ruby fix-carthage-paths.rb SwiftGRPC-Carthage.xcodeproj"
+scriptText = "cd ${PROJECT_DIR}; rm -rf .build; swift package resolve; ruby fix-carthage-paths.rb SwiftGRPC-Carthage.xcodeproj"
 actionContent.add_attribute("scriptText", scriptText)
 
 environmentBuildable = REXML::Element.new("EnvironmentBuildable", actionContent)
