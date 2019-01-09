@@ -24,7 +24,6 @@ dependenciesGroup.recursive_children_groups.each do |child|
             numberOfDependencies = json["object"]["dependencies"].count
             for i in 1..numberOfDependencies
                 if json["object"]["dependencies"][i-1]["packageRef"]["name"] == repoName
-                    p repoName
                     json["object"]["dependencies"][i-1]["subpath"] = repoNameInXcodeproj
                 end
             end
