@@ -56,6 +56,7 @@ final class GeneratorOptions {
   private(set) var generateClient = true
   private(set) var generateAsynchronous = true
   private(set) var generateSynchronous = true
+  private(set) var generateRxSwift = false
   private(set) var generateTestStubs = false
   private(set) var generateNIOImplementation = false
   private(set) var protoToModuleMappings = ProtoFileToModuleMappings()
@@ -95,6 +96,13 @@ final class GeneratorOptions {
       case "Sync":
         if let value = Bool(pair.value) {
           generateSynchronous = value
+        } else {
+          throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
+        }
+
+      case "RxSwift":
+        if let value = Bool(pair.value) {
+          generateRxSwift = value
         } else {
           throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }

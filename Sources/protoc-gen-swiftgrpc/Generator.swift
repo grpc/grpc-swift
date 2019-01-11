@@ -73,7 +73,7 @@ class Generator {
       //\n
       """)
     
-    let moduleNames: [String]
+    var moduleNames: [String]
     if options.generateNIOImplementation {
       moduleNames = [
         "Foundation",
@@ -87,6 +87,9 @@ class Generator {
         "Dispatch",
         "SwiftGRPC",
         "SwiftProtobuf"]
+    }
+    if options.generateRxSwift {
+      moduleNames.append("RxSwift")
     }
     for moduleName in moduleNames {
       println("import \(moduleName)")
@@ -111,7 +114,8 @@ class Generator {
       for service in file.services {
         self.service = service
         printClient(asynchronousCode: options.generateAsynchronous,
-                    synchronousCode: options.generateSynchronous)
+                    synchronousCode: options.generateSynchronous,
+                    rxSwiftCode: options.generateRxSwift)
       }
     }
     println()
