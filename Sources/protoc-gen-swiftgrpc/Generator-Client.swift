@@ -36,12 +36,14 @@ extension Generator {
     }
     println()
     printServiceClientProtocol(asynchronousCode: asynchronousCode,
-                               synchronousCode: synchronousCode,
-                               rxSwiftCode: rxSwiftCode)
+                               synchronousCode: synchronousCode)
     println()
     printServiceClientImplementation(asynchronousCode: asynchronousCode,
-                                     synchronousCode: synchronousCode,
-                                     rxSwiftCode: rxSwiftCode)
+                                     synchronousCode: synchronousCode)
+    if rxSwiftCode {
+      println()
+      printServiceClientRxSwiftImplementation()
+    }
     if options.generateTestStubs {
       println()
       printServiceClientTestStubs()
@@ -151,8 +153,7 @@ extension Generator {
   }
 
   private func printServiceClientProtocol(asynchronousCode: Bool,
-                                          synchronousCode: Bool,
-                                          rxSwiftCode: Bool) {
+                                          synchronousCode: Bool) {
     println("/// Instantiate \(serviceClassName)Client, then call methods of this protocol to make API calls.")
     println("\(options.visibility.sourceSnippet) protocol \(serviceClassName): ServiceClient {")
     indent()
@@ -167,12 +168,6 @@ extension Generator {
         if asynchronousCode {
           println("/// Asynchronous. Unary.")
           println("func \(methodFunctionName)(_ request: \(methodInputName), completion: @escaping (\(methodOutputName)?, CallResult) -> Void) throws -> \(callName)")
-        }
-        if rxSwiftCode {
-          println("/// RxSwift. Unary.")
-          println("func \(methodFunctionName)(_ request: \(methodInputName)) -> Observable<\(methodOutputName)>")
-          println("/// RxSwift with metadata. Unary.")
-          println("func \(methodFunctionName)(_ request: \(methodInputName), metadata: Metadata) -> Observable<\(methodOutputName)>")
         }
       case .serverStreaming:
         println("/// Asynchronous. Server-streaming.")
@@ -197,8 +192,7 @@ extension Generator {
   }
 
   private func printServiceClientImplementation(asynchronousCode: Bool,
-                                                synchronousCode: Bool,
-                                                rxSwiftCode: Bool) {
+                                                synchronousCode: Bool) {
     println("\(access) final class \(serviceClassName)Client: ServiceClientBase, \(serviceClassName) {")
     indent()
     for method in service.methods {
@@ -223,44 +217,6 @@ extension Generator {
           println("return try \(callName)Base(channel)")
           indent()
           println(".start(request: request, metadata: metadata, completion: completion)")
-          outdent()
-          outdent()
-          println("}")
-        }
-        if rxSwiftCode {
-          println("/// RxSwift. Unary.")
-          println("\(access) func \(methodFunctionName)(_ request: \(methodInputName)) -> Observable<\(methodOutputName)> {")
-          indent()
-          println("return \(methodFunctionName)(request, metadata: metadata)")
-          outdent()
-          println("}")
-          println("/// RxSwift with metadata. Unary.")
-          println("\(access) func \(methodFunctionName)(_ request: \(methodInputName), metadata: Metadata) -> Observable<\(methodOutputName)> {")
-          indent()
-          println("return Observable.just(request)")
-          indent()
-          println(".flatMap { request -> Observable<\(methodOutputName)> in")
-          indent()
-          println("return Observable.create { observer in")
-          indent()
-          println("do {")
-          indent()
-          println("let response = try \(callName)Base(self.channel)")
-          indent()
-          println(".run(request: request, metadata: metadata)")
-          outdent()
-          println("observer.onNext(response)")
-          outdent()
-          println("} catch {")
-          indent()
-          println("observer.onError(error)")
-          outdent()
-          println("}")
-          println("return Disposables.create()")
-          outdent()
-          println("}")
-          outdent()
-          println("}")
           outdent()
           outdent()
           println("}")
@@ -301,6 +257,50 @@ extension Generator {
         outdent()
         outdent()
         println("}")
+      }
+      println()
+    }
+    outdent()
+    println("}")
+  }
+
+  private func printServiceClientRxSwiftImplementation() {
+    println("\(access) extension \(serviceClassName)Client {")
+    indent()
+    for method in service.methods {
+      self.method = method
+      switch streamingType(method) {
+      case .unary:
+        println("/// RxSwift. Unary.")
+        println("\(access) func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata?) -> Observable<\(methodOutputName)> {")
+        indent()
+        println("return Observable.create { observer in")
+        indent()
+        println("_ = try? \(callName)Base(self.channel)")
+        indent()
+        println(".start(request: request, metadata: customMetadata ?? self.metadata, completion: { resp, result in")
+        indent()
+        println("guard let resp: \(methodOutputName) = resp else {")
+        indent()
+        println("observer.onError(RPCError.callError(result))")
+        println("return")
+        outdent()
+        println("}")
+        println("observer.onNext(resp)")
+        outdent()
+        println("})")
+        outdent()
+        println("return Disposables.create()")
+        outdent()
+        println("}")
+        outdent()
+        println("}")
+      case .serverStreaming:
+        break
+      case .clientStreaming:
+        break
+      case .bidirectionalStreaming:
+        break
       }
       println()
     }
