@@ -137,6 +137,7 @@ internal protocol Echo_EchoService: ServiceClient {
   func update(metadata customMetadata: Metadata?, completion: ((CallResult) -> Void)?) throws -> Echo_EchoUpdateCall
 
 }
+
 internal extension Echo_EchoService {
   /// Synchronous. Unary.
   func get(_ request: Echo_EchoRequest) throws -> Echo_EchoResponse {

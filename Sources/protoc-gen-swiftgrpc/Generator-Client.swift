@@ -36,6 +36,7 @@ extension Generator {
     println()
     printServiceClientProtocol(asynchronousCode: asynchronousCode,
                                synchronousCode: synchronousCode)
+    println()
     printServiceClientProtocolExtension(asynchronousCode: asynchronousCode,
                                         synchronousCode: synchronousCode)
     println()
