@@ -117,42 +117,60 @@ class Echo_EchoUpdateCallTestStub: ClientCallBidirectionalStreamingTestStub<Echo
 /// Instantiate Echo_EchoServiceClient, then call methods of this protocol to make API calls.
 internal protocol Echo_EchoService: ServiceClient {
   /// Synchronous. Unary.
-  func get(_ request: Echo_EchoRequest) throws -> Echo_EchoResponse
+  func get(_ request: Echo_EchoRequest, metadata customMetadata: Metadata?) throws -> Echo_EchoResponse
   /// Asynchronous. Unary.
-  func get(_ request: Echo_EchoRequest, completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall
+  func get(_ request: Echo_EchoRequest, metadata customMetadata: Metadata?, completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall
 
   /// Asynchronous. Server-streaming.
   /// Send the initial message.
   /// Use methods on the returned object to get streamed responses.
-  func expand(_ request: Echo_EchoRequest, completion: ((CallResult) -> Void)?) throws -> Echo_EchoExpandCall
+  func expand(_ request: Echo_EchoRequest, metadata customMetadata: Metadata?, completion: ((CallResult) -> Void)?) throws -> Echo_EchoExpandCall
 
   /// Asynchronous. Client-streaming.
   /// Use methods on the returned object to stream messages and
   /// to close the connection and wait for a final response.
-  func collect(completion: ((CallResult) -> Void)?) throws -> Echo_EchoCollectCall
+  func collect(metadata customMetadata: Metadata?, completion: ((CallResult) -> Void)?) throws -> Echo_EchoCollectCall
 
   /// Asynchronous. Bidirectional-streaming.
   /// Use methods on the returned object to stream messages,
   /// to wait for replies, and to close the connection.
-  func update(completion: ((CallResult) -> Void)?) throws -> Echo_EchoUpdateCall
+  func update(metadata customMetadata: Metadata?, completion: ((CallResult) -> Void)?) throws -> Echo_EchoUpdateCall
+
+}
+internal extension Echo_EchoService {
+  /// Synchronous. Unary.
+  func get(_ request: Echo_EchoRequest) throws -> Echo_EchoResponse {
+    return try self.get(request, metadata: self.metadata)
+  }
+  /// Asynchronous. Unary.
+  func get(_ request: Echo_EchoRequest, completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall {
+    return try self.get(request, metadata: self.metadata, completion: completion)
+  }
+
+  /// Asynchronous. Server-streaming.
+  func expand(_ request: Echo_EchoRequest, completion: ((CallResult) -> Void)?) throws -> Echo_EchoExpandCall {
+    return try self.expand(request, metadata: self.metadata, completion: completion)
+  }
+
+  /// Asynchronous. Client-streaming.
+  func collect(completion: ((CallResult) -> Void)?) throws -> Echo_EchoCollectCall {
+    return try self.collect(metadata: self.metadata, completion: completion)
+  }
+
+  /// Asynchronous. Bidirectional-streaming.
+  func update(completion: ((CallResult) -> Void)?) throws -> Echo_EchoUpdateCall {
+    return try self.update(metadata: self.metadata, completion: completion)
+  }
 
 }
 
 internal final class Echo_EchoServiceClient: ServiceClientBase, Echo_EchoService {
   /// Synchronous. Unary.
-  internal func get(_ request: Echo_EchoRequest) throws -> Echo_EchoResponse {
-    return try Echo_EchoGetCallBase(channel)
-      .run(request: request, metadata: metadata)
-  }
   internal func get(_ request: Echo_EchoRequest, metadata customMetadata: Metadata?) throws -> Echo_EchoResponse {
     return try Echo_EchoGetCallBase(channel)
       .run(request: request, metadata: customMetadata ?? self.metadata)
   }
   /// Asynchronous. Unary.
-  internal func get(_ request: Echo_EchoRequest, completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall {
-    return try Echo_EchoGetCallBase(channel)
-      .start(request: request, metadata: metadata, completion: completion)
-  }
   internal func get(_ request: Echo_EchoRequest, metadata customMetadata: Metadata?, completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall {
     return try Echo_EchoGetCallBase(channel)
       .start(request: request, metadata: customMetadata ?? self.metadata, completion: completion)
@@ -161,10 +179,6 @@ internal final class Echo_EchoServiceClient: ServiceClientBase, Echo_EchoService
   /// Asynchronous. Server-streaming.
   /// Send the initial message.
   /// Use methods on the returned object to get streamed responses.
-  internal func expand(_ request: Echo_EchoRequest, completion: ((CallResult) -> Void)?) throws -> Echo_EchoExpandCall {
-    return try Echo_EchoExpandCallBase(channel)
-      .start(request: request, metadata: metadata, completion: completion)
-  }
   internal func expand(_ request: Echo_EchoRequest, metadata customMetadata: Metadata?, completion: ((CallResult) -> Void)?) throws -> Echo_EchoExpandCall {
     return try Echo_EchoExpandCallBase(channel)
       .start(request: request, metadata: customMetadata ?? self.metadata, completion: completion)
@@ -173,10 +187,6 @@ internal final class Echo_EchoServiceClient: ServiceClientBase, Echo_EchoService
   /// Asynchronous. Client-streaming.
   /// Use methods on the returned object to stream messages and
   /// to close the connection and wait for a final response.
-  internal func collect(completion: ((CallResult) -> Void)?) throws -> Echo_EchoCollectCall {
-    return try Echo_EchoCollectCallBase(channel)
-      .start(metadata: metadata, completion: completion)
-  }
   internal func collect(metadata customMetadata: Metadata?, completion: ((CallResult) -> Void)?) throws -> Echo_EchoCollectCall {
     return try Echo_EchoCollectCallBase(channel)
       .start(metadata: customMetadata ?? self.metadata, completion: completion)
@@ -185,10 +195,6 @@ internal final class Echo_EchoServiceClient: ServiceClientBase, Echo_EchoService
   /// Asynchronous. Bidirectional-streaming.
   /// Use methods on the returned object to stream messages,
   /// to wait for replies, and to close the connection.
-  internal func update(completion: ((CallResult) -> Void)?) throws -> Echo_EchoUpdateCall {
-    return try Echo_EchoUpdateCallBase(channel)
-      .start(metadata: metadata, completion: completion)
-  }
   internal func update(metadata customMetadata: Metadata?, completion: ((CallResult) -> Void)?) throws -> Echo_EchoUpdateCall {
     return try Echo_EchoUpdateCallBase(channel)
       .start(metadata: customMetadata ?? self.metadata, completion: completion)
