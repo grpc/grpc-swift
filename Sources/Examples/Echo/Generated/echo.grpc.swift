@@ -205,31 +205,31 @@ internal final class Echo_EchoServiceClient: ServiceClientBase, Echo_EchoService
 class Echo_EchoServiceTestStub: ServiceClientTestStubBase, Echo_EchoService {
   var getRequests: [Echo_EchoRequest] = []
   var getResponses: [Echo_EchoResponse] = []
-  func get(_ request: Echo_EchoRequest) throws -> Echo_EchoResponse {
+  func get(_ request: Echo_EchoRequest, metadata customMetadata: Metadata?) throws -> Echo_EchoResponse {
     getRequests.append(request)
     defer { getResponses.removeFirst() }
     return getResponses.first!
   }
-  func get(_ request: Echo_EchoRequest, completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall {
+  func get(_ request: Echo_EchoRequest, metadata customMetadata: Metadata?, completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall {
     fatalError("not implemented")
   }
 
   var expandRequests: [Echo_EchoRequest] = []
   var expandCalls: [Echo_EchoExpandCall] = []
-  func expand(_ request: Echo_EchoRequest, completion: ((CallResult) -> Void)?) throws -> Echo_EchoExpandCall {
+  func expand(_ request: Echo_EchoRequest, metadata customMetadata: Metadata?, completion: ((CallResult) -> Void)?) throws -> Echo_EchoExpandCall {
     expandRequests.append(request)
     defer { expandCalls.removeFirst() }
     return expandCalls.first!
   }
 
   var collectCalls: [Echo_EchoCollectCall] = []
-  func collect(completion: ((CallResult) -> Void)?) throws -> Echo_EchoCollectCall {
+  func collect(metadata customMetadata: Metadata?, completion: ((CallResult) -> Void)?) throws -> Echo_EchoCollectCall {
     defer { collectCalls.removeFirst() }
     return collectCalls.first!
   }
 
   var updateCalls: [Echo_EchoUpdateCall] = []
-  func update(completion: ((CallResult) -> Void)?) throws -> Echo_EchoUpdateCall {
+  func update(metadata customMetadata: Metadata?, completion: ((CallResult) -> Void)?) throws -> Echo_EchoUpdateCall {
     defer { updateCalls.removeFirst() }
     return updateCalls.first!
   }

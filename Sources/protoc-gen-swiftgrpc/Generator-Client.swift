@@ -322,14 +322,14 @@ extension Generator {
       case .unary:
         println("var \(methodFunctionName)Requests: [\(methodInputName)] = []")
         println("var \(methodFunctionName)Responses: [\(methodOutputName)] = []")
-        println("func \(methodFunctionName)(_ request: \(methodInputName)) throws -> \(methodOutputName) {")
+        println("func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata?) throws -> \(methodOutputName) {")
         indent()
         println("\(methodFunctionName)Requests.append(request)")
         println("defer { \(methodFunctionName)Responses.removeFirst() }")
         println("return \(methodFunctionName)Responses.first!")
         outdent()
         println("}")
-        println("func \(methodFunctionName)(_ request: \(methodInputName), completion: @escaping (\(methodOutputName)?, CallResult) -> Void) throws -> \(callName) {")
+        println("func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata?, completion: @escaping (\(methodOutputName)?, CallResult) -> Void) throws -> \(callName) {")
         indent()
         println("fatalError(\"not implemented\")")
         outdent()
@@ -337,7 +337,7 @@ extension Generator {
       case .serverStreaming:
         println("var \(methodFunctionName)Requests: [\(methodInputName)] = []")
         println("var \(methodFunctionName)Calls: [\(callName)] = []")
-        println("func \(methodFunctionName)(_ request: \(methodInputName), completion: ((CallResult) -> Void)?) throws -> \(callName) {")
+        println("func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata?, completion: ((CallResult) -> Void)?) throws -> \(callName) {")
         indent()
         println("\(methodFunctionName)Requests.append(request)")
         println("defer { \(methodFunctionName)Calls.removeFirst() }")
@@ -346,7 +346,7 @@ extension Generator {
         println("}")
       case .clientStreaming:
         println("var \(methodFunctionName)Calls: [\(callName)] = []")
-        println("func \(methodFunctionName)(completion: ((CallResult) -> Void)?) throws -> \(callName) {")
+        println("func \(methodFunctionName)(metadata customMetadata: Metadata?, completion: ((CallResult) -> Void)?) throws -> \(callName) {")
         indent()
         println("defer { \(methodFunctionName)Calls.removeFirst() }")
         println("return \(methodFunctionName)Calls.first!")
@@ -354,7 +354,7 @@ extension Generator {
         println("}")
       case .bidirectionalStreaming:
         println("var \(methodFunctionName)Calls: [\(callName)] = []")
-        println("func \(methodFunctionName)(completion: ((CallResult) -> Void)?) throws -> \(callName) {")
+        println("func \(methodFunctionName)(metadata customMetadata: Metadata?, completion: ((CallResult) -> Void)?) throws -> \(callName) {")
         indent()
         println("defer { \(methodFunctionName)Calls.removeFirst() }")
         println("return \(methodFunctionName)Calls.first!")
