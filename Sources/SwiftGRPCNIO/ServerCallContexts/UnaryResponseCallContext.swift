@@ -3,7 +3,7 @@ import SwiftProtobuf
 import NIO
 import NIOHTTP1
 
-/// Abstract base class exposing a method that exposes a promise fot the RPC response.
+/// Abstract base class exposing a method that exposes a promise for the RPC response.
 ///
 /// - When `responsePromise` is fulfilled, the call is closed and the provided response transmitted with status `responseStatus` (`.ok` by default).
 /// - If `statusPromise` is failed and the error is of type `GRPCStatus`, that error will be returned to the client.

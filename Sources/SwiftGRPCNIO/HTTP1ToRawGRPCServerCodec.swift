@@ -121,7 +121,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
       //! FIXME: Should return a different version if we want to support pPRC.
       ctx.write(self.wrapOutboundOut(.head(HTTPResponseHead(version: .init(major: 2, minor: 0), status: .ok, headers: headers))), promise: promise)
     case .message(var messageBytes):
-      // Write out a length-delimited message payload. See `channelRead` fpor the corresponding format.
+      // Write out a length-delimited message payload. See `channelRead` for the corresponding format.
       var responseBuffer = ctx.channel.allocator.buffer(capacity: messageBytes.readableBytes + 5)
       responseBuffer.write(integer: Int8(0))  // Compression flag: no compression
       responseBuffer.write(integer: UInt32(messageBytes.readableBytes))
@@ -130,7 +130,9 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
     case .status(let status):
       var trailers = status.trailingMetadata
       trailers.add(name: "grpc-status", value: String(describing: status.code.rawValue))
-      trailers.add(name: "grpc-message", value: status.message)
+      if let message = status.message {
+        trailers.add(name: "grpc-message", value: message)
+      }
       ctx.write(self.wrapOutboundOut(.end(trailers)), promise: promise)
     }
   }

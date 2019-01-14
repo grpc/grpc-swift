@@ -78,6 +78,9 @@ let package = Package(
     .target(name: "Simple",
             dependencies: ["SwiftGRPC", "Commander"],
             path: "Sources/Examples/Simple"),
+    .target(name: "EchoNIO",
+            dependencies: ["SwiftGRPCNIO", "SwiftProtobuf", "Commander"],
+            path: "Sources/Examples/EchoNIO"),
     .testTarget(name: "SwiftGRPCTests", dependencies: ["SwiftGRPC"]),
     .testTarget(name: "SwiftGRPCNIOTests", dependencies: ["SwiftGRPC", "SwiftGRPCNIO"])
   ],
