@@ -27,7 +27,7 @@ public protocol ClientCall {
   var subchannel: EventLoopFuture<Channel> { get }
 
   /// Initial response metadata.
-  var metadata: EventLoopFuture<HTTPHeaders> { get }
+  var initialMetadata: EventLoopFuture<HTTPHeaders> { get }
 
   /// Response status.
   var status: EventLoopFuture<GRPCStatus> { get }
@@ -78,7 +78,7 @@ public protocol UnaryResponseClientCall: ClientCall {
 
 public class BaseClientCall<RequestMessage: Message, ResponseMessage: Message>: ClientCall {
   public let subchannel: EventLoopFuture<Channel>
-  public let metadata: EventLoopFuture<HTTPHeaders>
+  public let initialMetadata: EventLoopFuture<HTTPHeaders>
   public let status: EventLoopFuture<GRPCStatus>
 
   /// Sets up a gRPC call.
@@ -113,7 +113,7 @@ public class BaseClientCall<RequestMessage: Message, ResponseMessage: Message>: 
     }
 
     self.subchannel = subchannelPromise.futureResult
-    self.metadata = metadataPromise.futureResult
+    self.initialMetadata = metadataPromise.futureResult
     self.status = statusPromise.futureResult
   }
 
@@ -121,6 +121,8 @@ public class BaseClientCall<RequestMessage: Message, ResponseMessage: Message>: 
     var requestHead = HTTPRequestHead(version: .init(major: 2, minor: 0), method: .POST, uri: path)
     requestHead.headers.add(name: "host", value: host)
     requestHead.headers.add(name: "content-type", value: "application/grpc")
+    requestHead.headers.add(name: "te", value: "trailers")
+    requestHead.headers.add(name: "user-agent", value: "grpc-swift-nio")
     return requestHead
   }
 }

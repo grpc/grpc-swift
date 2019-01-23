@@ -110,7 +110,7 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
       guard case .expectingBodyOrTrailers = state
         else { preconditionFailure("received trailers while in state \(state)") }
 
-      let statusCode = parseGRPCStatus(from: headers?["grpc-status"].first)
+      let statusCode = headers?["grpc-status"].first.flatMap { parseGRPCStatus(from: $0) } ?? .unknown
       let statusMessage = headers?["grpc-message"].first
 
       ctx.fireChannelRead(wrapInboundOut(.status(GRPCStatus(code: statusCode, message: statusMessage))))
@@ -119,13 +119,8 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
     }
   }
 
-  private func parseGRPCStatus(from status: String?) -> StatusCode {
-    guard let status = status,
-      let statusInt = Int(status),
-      let statusCode = StatusCode(rawValue: statusInt)
-      else { return .unknown }
-
-    return statusCode
+  private func parseGRPCStatus(from status: String) -> StatusCode? {
+    return Int(status).flatMap { StatusCode(rawValue: $0) }
   }
 }
 

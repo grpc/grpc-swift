@@ -29,11 +29,17 @@ let messageOption = Option("message",
                            default: "Testing 1 2 3",
                            description: "message to send")
 
-func makeEchoClient(address: String, port: Int) throws -> EchoClient {
+/// Create en `EchoClient` and wait for it to initialize. Returns nil if initialisation fails.
+func makeEchoClient(address: String, port: Int) -> EchoClient? {
   let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-  return try GRPCClient.start(host: address, port: port, eventLoopGroup: eventLoopGroup)
-    .map { client in EchoClient(client: client) }
-    .wait()
+  do {
+    return try GRPCClient.start(host: address, port: port, eventLoopGroup: eventLoopGroup)
+      .map { client in EchoClient(client: client) }
+      .wait()
+  } catch {
+    print("Unable to create an EchoClient: \(error)")
+    return nil
+  }
 }
 
 Group {
@@ -66,7 +72,7 @@ Group {
     description: "Perform a unary get()."
   ) { address, port, message in
     print("calling get")
-    let echo = try! makeEchoClient(address: address, port: port)
+    guard let echo = makeEchoClient(address: address, port: port) else { return }
 
     var requestMessage = Echo_EchoRequest()
     requestMessage.text = message
@@ -77,7 +83,17 @@ Group {
       print("get received: \(response.text)")
     }
 
-    _ = try! get.response.wait()
+    get.response.whenFailure { error in
+      print("get response failed with error: \(error)")
+    }
+
+    // wait() on the status to stop the program from exiting.
+    do {
+      let status = try get.status.wait()
+      print("get completed with status: \(status)")
+    } catch {
+      print("get status failed with error: \(error)")
+    }
   }
 
   $0.command(
@@ -88,7 +104,7 @@ Group {
     description: "Perform a server-streaming expand()."
   ) { address, port, message in
     print("calling expand")
-    let echo = try! makeEchoClient(address: address, port: port)
+    guard let echo = makeEchoClient(address: address, port: port) else { return }
 
     var requestMessage = Echo_EchoRequest()
     requestMessage.text = message
@@ -98,7 +114,13 @@ Group {
       print("expand received: \(response.text)")
     }
 
-    _ = try! expand.status.wait()
+    // wait() on the status to stop the program from exiting.
+    do {
+      let status = try expand.status.wait()
+      print("expand completed with status: \(status)")
+    } catch {
+      print("expand status failed with error: \(error)")
+    }
   }
 
   $0.command(
@@ -109,7 +131,7 @@ Group {
     description: "Perform a client-streaming collect()."
   ) { address, port, message in
     print("calling collect")
-    let echo = try! makeEchoClient(address: address, port: port)
+    guard let echo = makeEchoClient(address: address, port: port) else { return }
 
     let collect = echo.collect()
 
@@ -125,7 +147,17 @@ Group {
       print("collect received: \(resposne.text)")
     }
 
-    _ = try! collect.status.wait()
+    collect.response.whenFailure { error in
+      print("collect response failed with error: \(error)")
+    }
+
+    // wait() on the status to stop the program from exiting.
+    do {
+      let status = try collect.status.wait()
+      print("collect completed with status: \(status)")
+    } catch {
+      print("collect status failed with error: \(error)")
+    }
   }
 
   $0.command(
@@ -136,7 +168,7 @@ Group {
     description: "Perform a bidirectional-streaming update()."
   ) { address, port, message in
     print("calling update")
-    let echo = try! makeEchoClient(address: address, port: port)
+    guard let echo = makeEchoClient(address: address, port: port) else { return }
 
     let update = echo.update { response in
       print("update received: \(response.text)")
@@ -150,6 +182,12 @@ Group {
     }
     update.send(.end)
 
-    _ = try! update.status.wait()
+    // wait() on the status to stop the program from exiting.
+    do {
+      let status = try update.status.wait()
+      print("update completed with status: \(status)")
+    } catch {
+      print("update status failed with error: \(error)")
+    }
   }
 }.run()

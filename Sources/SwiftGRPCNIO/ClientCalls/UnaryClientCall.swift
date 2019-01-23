@@ -17,20 +17,20 @@ import Foundation
 import SwiftProtobuf
 import NIO
 
-public class UnaryClientCall<Request: Message, Response: Message>: BaseClientCall<Request, Response>, UnaryResponseClientCall {
-  public let response: EventLoopFuture<Response>
+public class UnaryClientCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage>, UnaryResponseClientCall {
+  public let response: EventLoopFuture<ResponseMessage>
 
-  public init(client: GRPCClient, path: String, request: Request) {
-    let responsePromise: EventLoopPromise<Response> = client.channel.eventLoop.newPromise()
+  public init(client: GRPCClient, path: String, request: RequestMessage) {
+    let responsePromise: EventLoopPromise<ResponseMessage> = client.channel.eventLoop.newPromise()
     self.response = responsePromise.futureResult
 
     super.init(channel: client.channel, multiplexer: client.multiplexer, responseHandler: .fulfill(promise: responsePromise))
 
     let requestHead = makeRequestHead(path: path, host: client.host)
     subchannel.whenSuccess { channel in
-      channel.write(GRPCClientRequestPart<Request>.head(requestHead), promise: nil)
-      channel.write(GRPCClientRequestPart<Request>.message(request), promise: nil)
-      channel.writeAndFlush(GRPCClientRequestPart<Request>.end, promise: nil)
+      channel.write(GRPCClientRequestPart<RequestMessage>.head(requestHead), promise: nil)
+      channel.write(GRPCClientRequestPart<RequestMessage>.message(request), promise: nil)
+      channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.end, promise: nil)
     }
   }
 }
