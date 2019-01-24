@@ -18,7 +18,6 @@ dependenciesGroup.recursive_children_groups.each do |child|
         repoNameInXcodeproj = stringArray[0]
 
         if !repoNameInXcodeproj.nil? and repoNameInXcodeproj.include? ".git-"
-
             repoName = repoNameInXcodeproj.split(".git-").first
             
             numberOfDependencies = json["object"]["dependencies"].count
