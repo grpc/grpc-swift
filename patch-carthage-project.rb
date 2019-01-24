@@ -22,7 +22,7 @@ newBuildAction.build_for_running = true
 newBuildAction.build_for_testing = true
 scheme.build_action.add_entry(newBuildAction)
 
-# 3) Adding to SwiftGRPC-Package.xcscheme a script to Pre-Actions of BuildAction.
+# 3) Add a "Pre-Actions" script to the "BuildAction" of SwiftGRPC-Package.xcscheme.
 # Script will resolve SPM dependecies and will fix paths issues for SwiftGRPC-Carthage.xcodeproj before everytime before build action
 buildActions = scheme.build_action.xml_element
 
