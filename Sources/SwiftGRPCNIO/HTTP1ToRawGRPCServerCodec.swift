@@ -27,111 +27,200 @@ public enum RawGRPCServerResponsePart {
 ///
 /// The translation from HTTP2 to HTTP1 is done by `HTTP2ToHTTP1ServerCodec`.
 public final class HTTP1ToRawGRPCServerCodec {
-  private enum State {
-    case expectingHeaders
-    case expectingCompressedFlag
-    case expectingMessageLength
-    case receivedMessageLength(UInt32)
+  internal var inboundState = InboundState.expectingHeaders
+  internal var outboundState = OutboundState.expectingHeaders
 
-    var expectingBody: Bool {
-      switch self {
-      case .expectingHeaders: return false
-      case .expectingCompressedFlag, .expectingMessageLength, .receivedMessageLength: return true
-      }
+  private var buffer: NIO.ByteBuffer?
+
+  // 1-byte for compression flag, 4-bytes for message length.
+  private let protobufMetadataSize = 5
+}
+
+extension HTTP1ToRawGRPCServerCodec {
+  enum InboundState {
+    case expectingHeaders
+    case expectingBody(Body)
+    // ignore any additional messages; e.g. we've seen .end or we've sent an error and are waiting for the stream to close.
+    case ignore
+
+    enum Body {
+      case expectingCompressedFlag
+      case expectingMessageLength
+      case receivedMessageLength(UInt32)
     }
   }
 
-  private var state = State.expectingHeaders
+  enum OutboundState {
+    case expectingHeaders
+    case expectingBodyOrStatus
+    case ignore
+  }
+}
 
-  private var buffer: NIO.ByteBuffer?
+extension HTTP1ToRawGRPCServerCodec {
+  struct StateMachineError: Error, GRPCStatusTransformable {
+    private let message: String
+
+    init(_ message: String) {
+      self.message = message
+    }
+
+    func asGRPCStatus() -> GRPCStatus {
+      return GRPCStatus.processingError
+    }
+  }
 }
 
 extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
   public typealias InboundIn = HTTPServerRequestPart
   public typealias InboundOut = RawGRPCServerRequestPart
-  
+
   public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
-    switch self.unwrapInboundIn(data) {
-    case .head(let requestHead):
-      guard case .expectingHeaders = state
-        else { preconditionFailure("received headers while in state \(state)") }
+    if case .ignore = inboundState { return }
 
-      state = .expectingCompressedFlag
-      buffer = ctx.channel.allocator.buffer(capacity: 5)
+    do {
+      switch self.unwrapInboundIn(data) {
+      case .head(let requestHead):
+        inboundState = try processHead(ctx: ctx, requestHead: requestHead)
 
-      ctx.fireChannelRead(self.wrapInboundOut(.head(requestHead)))
+      case .body(var body):
+        inboundState = try processBody(ctx: ctx, body: &body)
 
-    case .body(var body):
-      guard var buffer = buffer
-        else { preconditionFailure("buffer not initialized") }
-      assert(state.expectingBody, "received body while in state \(state)")
-      buffer.write(buffer: &body)
-
-      // Iterate over all available incoming data, trying to read length-delimited messages.
-      // Each message has the following format:
-      // - 1 byte "compressed" flag (currently always zero, as we do not support for compression)
-      // - 4 byte signed-integer payload length (N)
-      // - N bytes payload (normally a valid wire-format protocol buffer)
-      requestProcessing: while true {
-        switch state {
-        case .expectingHeaders: preconditionFailure("unexpected state \(state)")
-        case .expectingCompressedFlag:
-          guard let compressionFlag: Int8 = buffer.readInteger() else { break requestProcessing }
-          //! FIXME: Avoid crashing here and instead drop the connection.
-          precondition(compressionFlag == 0, "unexpected compression flag \(compressionFlag); compression is not supported and we did not indicate support for it")
-          state = .expectingMessageLength
-
-        case .expectingMessageLength:
-          guard let messageLength: UInt32 = buffer.readInteger() else { break requestProcessing }
-          state = .receivedMessageLength(messageLength)
-
-        case .receivedMessageLength(let messageLength):
-          guard let messageBytes = buffer.readBytes(length: numericCast(messageLength)) else { break }
-
-          //! FIXME: Use a slice of this buffer instead of copying to a new buffer.
-          var responseBuffer = ctx.channel.allocator.buffer(capacity: messageBytes.count)
-          responseBuffer.write(bytes: messageBytes)
-          ctx.fireChannelRead(self.wrapInboundOut(.message(responseBuffer)))
-          //! FIXME: Call buffer.discardReadBytes() here?
-          //! ALTERNATIVE: Check if the buffer has no further data right now, then clear it.
-
-          state = .expectingCompressedFlag
-        }
+      case .end(let trailers):
+        inboundState = try processEnd(ctx: ctx, trailers: trailers)
       }
-
-    case .end(let trailers):
-      if let trailers = trailers {
-        //! FIXME: Better handle this error.
-        print("unexpected trailers received: \(trailers)")
-        return
-      }
-      ctx.fireChannelRead(self.wrapInboundOut(.end))
+    } catch {
+      ctx.fireErrorCaught(error)
+      inboundState = .ignore
     }
+  }
+
+  func processHead(ctx: ChannelHandlerContext, requestHead: HTTPRequestHead) throws -> InboundState {
+    guard case .expectingHeaders = inboundState else {
+      throw StateMachineError("expecteded state .expectingHeaders, got \(inboundState)")
+    }
+
+    ctx.fireChannelRead(self.wrapInboundOut(.head(requestHead)))
+
+    return .expectingBody(.expectingCompressedFlag)
+  }
+
+  func processBody(ctx: ChannelHandlerContext, body: inout ByteBuffer) throws -> InboundState {
+    guard case .expectingBody(let bodyState) = inboundState else {
+      throw StateMachineError("expecteded state .expectingBody(_), got \(inboundState)")
+    }
+
+    return .expectingBody(try processBodyState(ctx: ctx, initialState: bodyState, messageBuffer: &body))
+  }
+
+  func processBodyState(ctx: ChannelHandlerContext, initialState: InboundState.Body, messageBuffer: inout ByteBuffer) throws -> InboundState.Body {
+    var bodyState = initialState
+
+    // Iterate over all available incoming data, trying to read length-delimited messages.
+    // Each message has the following format:
+    // - 1 byte "compressed" flag (currently always zero, as we do not support for compression)
+    // - 4 byte signed-integer payload length (N)
+    // - N bytes payload (normally a valid wire-format protocol buffer)
+    while true {
+      switch bodyState {
+      case .expectingCompressedFlag:
+        guard let compressionFlag: Int8 = messageBuffer.readInteger() else { return .expectingCompressedFlag }
+
+        // TODO: Add support for compression.
+        guard compressionFlag == 0 else { throw GRPCStatus.unsupportedCompression }
+
+        bodyState = .expectingMessageLength
+
+      case .expectingMessageLength:
+        guard let messageLength: UInt32 = messageBuffer.readInteger() else { return .expectingMessageLength }
+        bodyState = .receivedMessageLength(messageLength)
+
+      case .receivedMessageLength(let messageLength):
+        // We need to account for messages being spread across multiple `ByteBuffer`s so buffer them
+        // into `buffer`. Note: when messages are contained within a single `ByteBuffer` we're just
+        // taking a slice so don't incur any extra writes.
+        guard messageBuffer.readableBytes >= messageLength else {
+          let remainingBytes = messageLength - numericCast(messageBuffer.readableBytes)
+
+          if var buffer = buffer {
+            buffer.write(buffer: &messageBuffer)
+            self.buffer = buffer
+          } else {
+            messageBuffer.reserveCapacity(numericCast(messageLength))
+            self.buffer = messageBuffer
+          }
+
+          return .receivedMessageLength(remainingBytes)
+        }
+
+        // We know buffer.readableBytes >= messageLength, so it's okay to force unwrap here.
+        var slice = messageBuffer.readSlice(length: numericCast(messageLength))!
+
+        if var buffer = buffer {
+          buffer.write(buffer: &slice)
+          ctx.fireChannelRead(self.wrapInboundOut(.message(buffer)))
+        } else {
+          ctx.fireChannelRead(self.wrapInboundOut(.message(slice)))
+        }
+
+        self.buffer = nil
+        bodyState = .expectingCompressedFlag
+      }
+    }
+  }
+
+  private func processEnd(ctx: ChannelHandlerContext, trailers: HTTPHeaders?) throws -> InboundState {
+    guard trailers == nil else {
+      throw StateMachineError("unexpected trailers received \(String(describing: trailers))")
+    }
+
+    ctx.fireChannelRead(self.wrapInboundOut(.end))
+    return .ignore
   }
 }
 
 extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
   public typealias OutboundIn = RawGRPCServerResponsePart
   public typealias OutboundOut = HTTPServerResponsePart
-  
+
   public func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+    if case .ignore = outboundState { return }
+
     let responsePart = self.unwrapOutboundIn(data)
     switch responsePart {
     case .headers(let headers):
+      guard case .expectingHeaders = outboundState else { return }
+
       //! FIXME: Should return a different version if we want to support pPRC.
       ctx.write(self.wrapOutboundOut(.head(HTTPResponseHead(version: .init(major: 2, minor: 0), status: .ok, headers: headers))), promise: promise)
+      outboundState = .expectingBodyOrStatus
+
     case .message(var messageBytes):
-      // Write out a length-delimited message payload. See `channelRead` fpor the corresponding format.
-      var responseBuffer = ctx.channel.allocator.buffer(capacity: messageBytes.readableBytes + 5)
+      guard case .expectingBodyOrStatus = outboundState else { return }
+
+      // Write out a length-delimited message payload. See `processBodyState` for the corresponding format.
+      var responseBuffer = ctx.channel.allocator.buffer(capacity: messageBytes.readableBytes + protobufMetadataSize)
       responseBuffer.write(integer: Int8(0))  // Compression flag: no compression
       responseBuffer.write(integer: UInt32(messageBytes.readableBytes))
       responseBuffer.write(buffer: &messageBytes)
       ctx.write(self.wrapOutboundOut(.body(.byteBuffer(responseBuffer))), promise: promise)
+      outboundState = .expectingBodyOrStatus
+
     case .status(let status):
       var trailers = status.trailingMetadata
       trailers.add(name: "grpc-status", value: String(describing: status.code.rawValue))
       trailers.add(name: "grpc-message", value: status.message)
-      ctx.write(self.wrapOutboundOut(.end(trailers)), promise: promise)
+
+      // "Trailers-Only" response
+      if case .expectingHeaders = outboundState {
+        trailers.add(name: "content-type", value: "application/grpc")
+        let responseHead = HTTPResponseHead(version: .init(major: 2, minor: 0), status: .ok)
+        ctx.write(self.wrapOutboundOut(.head(responseHead)), promise: nil)
+      }
+
+      ctx.writeAndFlush(self.wrapOutboundOut(.end(trailers)), promise: promise)
+      outboundState = .ignore
+      inboundState = .ignore
     }
   }
 }

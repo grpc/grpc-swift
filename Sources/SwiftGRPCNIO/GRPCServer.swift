@@ -12,7 +12,9 @@ public final class GRPCServer {
     hostname: String,
     port: Int,
     eventLoopGroup: EventLoopGroup,
-    serviceProviders: [CallHandlerProvider]) -> EventLoopFuture<GRPCServer> {
+    serviceProviders: [CallHandlerProvider],
+    errorHandler: ((Error) -> Void)? = nil
+  ) -> EventLoopFuture<GRPCServer> {
     let servicesByName = Dictionary(uniqueKeysWithValues: serviceProviders.map { ($0.serviceName, $0) })
     let bootstrap = ServerBootstrap(group: eventLoopGroup)
       // Specify a backlog to avoid overloading the server.
@@ -27,7 +29,7 @@ public final class GRPCServer {
           let multiplexer = HTTP2StreamMultiplexer { (channel, streamID) -> EventLoopFuture<Void> in
             return channel.pipeline.add(handler: HTTP2ToHTTP1ServerCodec(streamID: streamID))
               .then { channel.pipeline.add(handler: HTTP1ToRawGRPCServerCodec()) }
-              .then { channel.pipeline.add(handler: GRPCChannelHandler(servicesByName: servicesByName)) }
+              .then { channel.pipeline.add(handler: GRPCChannelHandler(servicesByName: servicesByName, errorHandler: errorHandler)) }
           }
 
           return channel.pipeline.add(handler: multiplexer)

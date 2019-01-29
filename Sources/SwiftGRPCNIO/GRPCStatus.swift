@@ -27,4 +27,19 @@ public struct GRPCStatus: Error {
   public static func unimplemented(method: String) -> GRPCStatus {
     return GRPCStatus(code: .unimplemented, message: "unknown method " + method)
   }
+
+  // These status codes are informed by: https://github.com/grpc/grpc/blob/master/doc/statuscodes.md
+  static internal let requestProtoParseError = GRPCStatus(code: .internalError, message: "could not parse request proto")
+  static internal let responseProtoSerializationError = GRPCStatus(code: .internalError, message: "could not serialize response proto")
+  static internal let unsupportedCompression = GRPCStatus(code: .unimplemented, message: "compression is not supported on the server")
+}
+
+protocol GRPCStatusTransformable: Error {
+  func asGRPCStatus() -> GRPCStatus
+}
+
+extension GRPCStatus: GRPCStatusTransformable {
+  func asGRPCStatus() -> GRPCStatus {
+    return self
+  }
 }

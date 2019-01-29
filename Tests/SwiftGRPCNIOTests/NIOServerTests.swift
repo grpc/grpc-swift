@@ -122,6 +122,12 @@ extension NIOServerTests {
     XCTAssertEqual("Swift echo get: foo", try! client.get(Echo_EchoRequest(text: "foo")).text)
   }
 
+  func testUnaryWithLargeData() throws {
+    // Default max frame size is: 16,384. We'll exceed this as we also have to send the size and compression flag.
+    let request = Echo_EchoRequest.with { $0.text = String(repeating: "e", count: 16_384) }
+    XCTAssertNoThrow(try client.get(request))
+  }
+
   func testUnaryLotsOfRequests() {
     // Sending that many requests at once can sometimes trip things up, it seems.
     client.timeout = 5.0
@@ -134,6 +140,10 @@ extension NIOServerTests {
       XCTAssertEqual("Swift echo get: foo \(i)", try client.get(Echo_EchoRequest(text: "foo \(i)")).text)
     }
     print("total time for \(numberOfRequests) requests: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))")
+  }
+
+  func testUnaryEmptyRequest() throws {
+    XCTAssertNoThrow(try client.get(Echo_EchoRequest()))
   }
 }
 

@@ -13,8 +13,8 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
   
   private var context: StreamingResponseCallContext<ResponseMessage>?
   
-  public init(channel: Channel, request: HTTPRequestHead, eventObserverFactory: (StreamingResponseCallContext<ResponseMessage>) -> EventObserver) {
-    super.init()
+  public init(channel: Channel, request: HTTPRequestHead, errorHandler: ((Error) -> Void)?, eventObserverFactory: (StreamingResponseCallContext<ResponseMessage>) -> EventObserver) {
+    super.init(errorHandler: errorHandler)
     let context = StreamingResponseCallContextImpl<ResponseMessage>(channel: channel, request: request)
     self.context = context
     self.eventObserver = eventObserverFactory(context)
@@ -26,12 +26,10 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
   }
   
   
-  public override func processMessage(_ message: RequestMessage) {
+  public override func processMessage(_ message: RequestMessage) throws {
     guard let eventObserver = self.eventObserver,
       let context = self.context else {
-      //! FIXME: Better handle this error?
-      print("multiple messages received on unary call")
-      return
+        throw GRPCStatus(code: .unimplemented, message: "multiple messages received on unary call")
     }
     
     let resultFuture = eventObserver(message)

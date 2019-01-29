@@ -14,8 +14,8 @@ public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage
   
   // We ask for a future of type `EventObserver` to allow the framework user to e.g. asynchronously authenticate a call.
   // If authentication fails, they can simply fail the observer future, which causes the call to be terminated.
-  public init(channel: Channel, request: HTTPRequestHead, eventObserverFactory: (UnaryResponseCallContext<ResponseMessage>) -> EventLoopFuture<EventObserver>) {
-    super.init()
+  public init(channel: Channel, request: HTTPRequestHead, errorHandler: ((Error) -> Void)?, eventObserverFactory: (UnaryResponseCallContext<ResponseMessage>) -> EventLoopFuture<EventObserver>) {
+    super.init(errorHandler: errorHandler)
     let context = UnaryResponseCallContextImpl<ResponseMessage>(channel: channel, request: request)
     self.context = context
     let eventObserver = eventObserverFactory(context)
