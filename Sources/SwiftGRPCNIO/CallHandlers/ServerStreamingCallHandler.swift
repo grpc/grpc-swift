@@ -13,8 +13,8 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
   
   private var context: StreamingResponseCallContext<ResponseMessage>?
   
-  public init(channel: Channel, request: HTTPRequestHead, errorHandler: ((Error) -> Void)?, eventObserverFactory: (StreamingResponseCallContext<ResponseMessage>) -> EventObserver) {
-    super.init(errorHandler: errorHandler)
+  public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, eventObserverFactory: (StreamingResponseCallContext<ResponseMessage>) -> EventObserver) {
+    super.init(errorDelegate: errorDelegate)
     let context = StreamingResponseCallContextImpl<ResponseMessage>(channel: channel, request: request)
     self.context = context
     self.eventObserver = eventObserverFactory(context)

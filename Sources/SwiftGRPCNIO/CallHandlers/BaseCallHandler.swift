@@ -25,10 +25,10 @@ public class BaseCallHandler<RequestMessage: Message, ResponseMessage: Message>:
   private var serverCanWrite = true
 
   /// Called for each error recieved in `errorCaught(ctx:error:)`.
-  private let errorHandler: ((Error) -> Void)?
+  private weak var errorDelegate: ServerErrorDelegate?
 
-  public init(errorHandler: ((Error) -> Void)? = nil) {
-    self.errorHandler = errorHandler
+  public init(errorDelegate: ServerErrorDelegate? = nil) {
+    self.errorDelegate = errorDelegate
   }
 }
 
@@ -39,9 +39,10 @@ extension BaseCallHandler: ChannelInboundHandler {
   /// appropriate status is written. Errors which don't conform to `GRPCStatusTransformable`
   /// return a status with code `.internalError`.
   public func errorCaught(ctx: ChannelHandlerContext, error: Error) {
-    errorHandler?(error)
+    errorDelegate?.observe(error)
 
-    let status = (error as? GRPCStatusTransformable)?.asGRPCStatus() ?? GRPCStatus.processingError
+    let transformed = errorDelegate?.transform(error) ?? error
+    let status = (transformed as? GRPCStatusTransformable)?.asGRPCStatus() ?? GRPCStatus.processingError
     self.write(ctx: ctx, data: NIOAny(GRPCServerResponsePart<ResponseMessage>.status(status)), promise: nil)
   }
 

@@ -17,7 +17,7 @@ func gRPCMessage(channel: EmbeddedChannel, compression: Bool = false, message: D
 
 class GRPCChannelHandlerTests: GRPCChannelHandlerResponseCapturingTestCase {
   func testUnimplementedMethodReturnsUnimplementedStatus() throws {
-    let responses = waitForGRPCChannelHandlerResponses(count: 1) { channel in
+    let responses = try waitForGRPCChannelHandlerResponses(count: 1) { channel in
       let requestHead = HTTPRequestHead(version: .init(major: 2, minor: 0), method: .POST, uri: "unimplemented")
       try channel.writeInbound(RawGRPCServerRequestPart.head(requestHead))
     }
@@ -28,7 +28,7 @@ class GRPCChannelHandlerTests: GRPCChannelHandlerResponseCapturingTestCase {
   }
 
   func testImplementedMethodReturnsHeadersMessageAndStatus() throws {
-    let responses = waitForGRPCChannelHandlerResponses(count: 3) { channel in
+    let responses = try waitForGRPCChannelHandlerResponses(count: 3) { channel in
       let requestHead = HTTPRequestHead(version: .init(major: 2, minor: 0), method: .POST, uri: "/echo.Echo/Get")
       try channel.writeInbound(RawGRPCServerRequestPart.head(requestHead))
 
@@ -47,7 +47,7 @@ class GRPCChannelHandlerTests: GRPCChannelHandlerResponseCapturingTestCase {
   }
 
   func testImplementedMethodReturnsStatusForBadlyFormedProto() throws {
-    let responses = waitForGRPCChannelHandlerResponses(count: 2) { channel in
+    let responses = try waitForGRPCChannelHandlerResponses(count: 2) { channel in
       let requestHead = HTTPRequestHead(version: .init(major: 2, minor: 0), method: .POST, uri: "/echo.Echo/Get")
       try channel.writeInbound(RawGRPCServerRequestPart.head(requestHead))
 
@@ -67,7 +67,7 @@ class GRPCChannelHandlerTests: GRPCChannelHandlerResponseCapturingTestCase {
 
 class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCase {
   func testUnimplementedStatusReturnedWhenCompressionFlagIsSet() throws {
-    let responses = waitForGRPCChannelHandlerResponses(count: 2) { channel in
+    let responses = try waitForGRPCChannelHandlerResponses(count: 2) { channel in
       let requestHead = HTTPRequestHead(version: .init(major: 2, minor: 0), method: .POST, uri: "/echo.Echo/Get")
       try channel.writeInbound(HTTPServerRequestPart.head(requestHead))
       try channel.writeInbound(HTTPServerRequestPart.body(gRPCMessage(channel: channel, compression: true)))
@@ -82,7 +82,7 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
   }
 
   func testMessageCanBeSentAcrossMultipleByteBuffers() throws {
-    let responses = waitForGRPCChannelHandlerResponses(count: 3) { channel in
+    let responses = try waitForGRPCChannelHandlerResponses(count: 3) { channel in
       let requestHead = HTTPRequestHead(version: .init(major: 2, minor: 0), method: .POST, uri: "/echo.Echo/Get")
       // Sending the header allocates a buffer.
       try channel.writeInbound(HTTPServerRequestPart.head(requestHead))
@@ -111,7 +111,7 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
   }
 
   func testInternalErrorStatusIsReturnedIfMessageCannotBeDeserialized() throws {
-    let responses = waitForGRPCChannelHandlerResponses(count: 2) { channel in
+    let responses = try waitForGRPCChannelHandlerResponses(count: 2) { channel in
       let requestHead = HTTPRequestHead(version: .init(major: 2, minor: 0), method: .POST, uri: "/echo.Echo/Get")
       try channel.writeInbound(HTTPServerRequestPart.head(requestHead))
 
@@ -128,7 +128,7 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
   }
 
   func testInternalErrorStatusIsReturnedWhenSendingTrailersInRequest() throws {
-    let responses = waitForGRPCChannelHandlerResponses(count: 2) { channel in
+    let responses = try waitForGRPCChannelHandlerResponses(count: 2) { channel in
       // We have to use "Collect" (client streaming) as the tests rely on `EmbeddedChannel` which runs in this thread.
       // In the current server implementation, responses from unary calls send a status immediately after sending the response.
       // As such, a unary "Get" would return an "ok" status before the trailers would be sent.
@@ -148,7 +148,7 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
   }
 
   func testOnlyOneStatusIsReturned() throws {
-    let responses = waitForGRPCChannelHandlerResponses(count: 3) { channel in
+    let responses = try waitForGRPCChannelHandlerResponses(count: 3) { channel in
       let requestHead = HTTPRequestHead(version: .init(major: 2, minor: 0), method: .POST, uri: "/echo.Echo/Get")
       try channel.writeInbound(HTTPServerRequestPart.head(requestHead))
       try channel.writeInbound(HTTPServerRequestPart.body(gRPCMessage(channel: channel)))
@@ -173,10 +173,9 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
   override func waitForGRPCChannelHandlerResponses(
     count: Int,
     servicesByName: [String: CallHandlerProvider] = GRPCChannelHandlerResponseCapturingTestCase.echoProvider,
-    timeout: TimeInterval = GRPCChannelHandlerResponseCapturingTestCase.defaultTimeout,
     callback: @escaping (EmbeddedChannel) throws -> Void
-  ) -> [RawGRPCServerResponsePart] {
-    return super.waitForGRPCChannelHandlerResponses(count: count, servicesByName: servicesByName, timeout: timeout) { channel in
+  ) throws -> [RawGRPCServerResponsePart] {
+    return try super.waitForGRPCChannelHandlerResponses(count: count, servicesByName: servicesByName) { channel in
       _ = channel.pipeline.addHandlers(HTTP1ToRawGRPCServerCodec(), first: true)
         .thenThrowing { _ in try callback(channel) }
     }

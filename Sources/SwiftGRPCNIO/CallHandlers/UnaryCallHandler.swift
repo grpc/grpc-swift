@@ -14,8 +14,8 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
   
   private var context: UnaryResponseCallContext<ResponseMessage>?
   
-  public init(channel: Channel, request: HTTPRequestHead, errorHandler: ((Error) -> Void)?, eventObserverFactory: (UnaryResponseCallContext<ResponseMessage>) -> EventObserver) {
-    super.init(errorHandler: errorHandler)
+  public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, eventObserverFactory: (UnaryResponseCallContext<ResponseMessage>) -> EventObserver) {
+    super.init(errorDelegate: errorDelegate)
     let context = UnaryResponseCallContextImpl<ResponseMessage>(channel: channel, request: request)
     self.context = context
     self.eventObserver = eventObserverFactory(context)

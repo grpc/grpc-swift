@@ -34,20 +34,13 @@ func extractStatus(_ response: RawGRPCServerResponsePart) throws -> GRPCStatus {
 
 class CollectingChannelHandler<OutboundIn>: ChannelOutboundHandler {
   var responses: [OutboundIn] = []
-  var responseExpectation: XCTestExpectation?
-
-  init(responseExpectation: XCTestExpectation? = nil) {
-    self.responseExpectation = responseExpectation
-  }
 
   func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     responses.append(unwrapOutboundIn(data))
-    responseExpectation?.fulfill()
   }
 }
 
 class GRPCChannelHandlerResponseCapturingTestCase: XCTestCase {
-  static let defaultTimeout: TimeInterval = 0.2
   static let echoProvider: [String: CallHandlerProvider] = ["echo.Echo": EchoProvider_NIO()]
 
   func configureChannel(withHandlers handlers: [ChannelHandler]) -> EventLoopFuture<EmbeddedChannel> {
@@ -56,23 +49,19 @@ class GRPCChannelHandlerResponseCapturingTestCase: XCTestCase {
       .map { _ in channel }
   }
 
-  /// Waits for `count` responses to be collected and then returns them. The test fails if too many
-  /// responses are collected or not enough are collected before the timeout.
+  /// Waits for `count` responses to be collected and then returns them. The test fails if the number
+  /// of collected responses does not match the expected.
   func waitForGRPCChannelHandlerResponses(
     count: Int,
     servicesByName: [String: CallHandlerProvider] = echoProvider,
-    timeout: TimeInterval = defaultTimeout,
     callback: @escaping (EmbeddedChannel) throws -> Void
-  ) -> [RawGRPCServerResponsePart] {
-    let responseExpectation = expectation(description: "expecting \(count) responses")
-    responseExpectation.expectedFulfillmentCount = count
-    responseExpectation.assertForOverFulfill = true
-
-    let collector = CollectingChannelHandler<RawGRPCServerResponsePart>(responseExpectation: responseExpectation)
-    _ = configureChannel(withHandlers: [collector, GRPCChannelHandler(servicesByName: servicesByName)])
+  ) throws -> [RawGRPCServerResponsePart] {
+    let collector = CollectingChannelHandler<RawGRPCServerResponsePart>()
+    try configureChannel(withHandlers: [collector, GRPCChannelHandler(servicesByName: servicesByName)])
       .thenThrowing(callback)
+      .wait()
 
-    waitForExpectations(timeout: timeout)
+    XCTAssertEqual(count, collector.responses.count)
     return collector.responses
   }
 }

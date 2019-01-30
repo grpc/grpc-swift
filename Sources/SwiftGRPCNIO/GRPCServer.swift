@@ -13,7 +13,7 @@ public final class GRPCServer {
     port: Int,
     eventLoopGroup: EventLoopGroup,
     serviceProviders: [CallHandlerProvider],
-    errorHandler: ((Error) -> Void)? = nil
+    errorDelegate: ServerErrorDelegate? = nil
   ) -> EventLoopFuture<GRPCServer> {
     let servicesByName = Dictionary(uniqueKeysWithValues: serviceProviders.map { ($0.serviceName, $0) })
     let bootstrap = ServerBootstrap(group: eventLoopGroup)
@@ -29,7 +29,7 @@ public final class GRPCServer {
           let multiplexer = HTTP2StreamMultiplexer { (channel, streamID) -> EventLoopFuture<Void> in
             return channel.pipeline.add(handler: HTTP2ToHTTP1ServerCodec(streamID: streamID))
               .then { channel.pipeline.add(handler: HTTP1ToRawGRPCServerCodec()) }
-              .then { channel.pipeline.add(handler: GRPCChannelHandler(servicesByName: servicesByName, errorHandler: errorHandler)) }
+              .then { channel.pipeline.add(handler: GRPCChannelHandler(servicesByName: servicesByName, errorDelegate: errorDelegate)) }
           }
 
           return channel.pipeline.add(handler: multiplexer)
