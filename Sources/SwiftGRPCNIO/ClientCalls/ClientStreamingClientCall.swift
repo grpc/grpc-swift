@@ -20,13 +20,13 @@ import NIO
 public class ClientStreamingClientCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage>, StreamingRequestClientCall, UnaryResponseClientCall {
   public let response: EventLoopFuture<ResponseMessage>
 
-  public init(client: GRPCClient, path: String) {
+  public init(client: GRPCClient, path: String, callOptions: CallOptions) {
     let responsePromise: EventLoopPromise<ResponseMessage> = client.channel.eventLoop.newPromise()
     self.response = responsePromise.futureResult
 
     super.init(channel: client.channel, multiplexer: client.multiplexer, responseHandler: .fulfill(promise: responsePromise))
 
-    let requestHead = makeRequestHead(path: path, host: client.host)
+    let requestHead = makeRequestHead(path: path, host: client.host, customMetadata: callOptions.customMetadata)
     subchannel.whenSuccess { channel in
       channel.write(GRPCClientRequestPart<RequestMessage>.head(requestHead), promise: nil)
     }

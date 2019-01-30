@@ -19,6 +19,7 @@ import NIO
 
 
 class EchoClient: GRPCClientWrapper {
+
   let client: GRPCClient
   let service = "echo.Echo"
 
@@ -26,19 +27,19 @@ class EchoClient: GRPCClientWrapper {
     self.client = client
   }
 
-  func get(request: Echo_EchoRequest) -> UnaryClientCall<Echo_EchoRequest, Echo_EchoResponse> {
-    return UnaryClientCall(client: client, path: path(for: "Get"), request: request)
+  func get(request: Echo_EchoRequest, callOptions: CallOptions? = nil) -> UnaryClientCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return UnaryClientCall(client: client, path: path(forMethod: "Get"), request: request, callOptions: callOptions ?? defaultCallOptions())
   }
 
-  func expand(request: Echo_EchoRequest, handler: @escaping (Echo_EchoResponse) -> Void) -> ServerStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse> {
-    return ServerStreamingClientCall(client: client, path: path(for: "Expand"), request: request, handler: handler)
+  func expand(request: Echo_EchoRequest, callOptions: CallOptions? = nil, handler: @escaping (Echo_EchoResponse) -> Void) -> ServerStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return ServerStreamingClientCall(client: client, path: path(forMethod: "Expand"), request: request, callOptions: callOptions ?? defaultCallOptions(), handler: handler)
   }
 
-  func collect() -> ClientStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse> {
-    return ClientStreamingClientCall(client: client, path: path(for: "Collect"))
+  func collect(callOptions: CallOptions? = nil) -> ClientStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return ClientStreamingClientCall(client: client, path: path(forMethod: "Collect"), callOptions: callOptions ?? defaultCallOptions())
   }
 
-  func update(handler: @escaping (Echo_EchoResponse) -> Void) -> BidirectionalStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse> {
-    return BidirectionalStreamingClientCall(client: client, path: path(for: "Update"), handler: handler)
+  func update(callOptions: CallOptions? = nil, handler: @escaping (Echo_EchoResponse) -> Void) -> BidirectionalStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return BidirectionalStreamingClientCall(client: client, path: path(forMethod: "Update"), callOptions: callOptions ?? defaultCallOptions(), handler: handler)
   }
 }

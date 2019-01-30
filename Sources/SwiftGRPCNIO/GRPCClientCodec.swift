@@ -19,24 +19,24 @@ import NIOHTTP1
 import SwiftProtobuf
 
 /// Outgoing gRPC package with a fixed message type.
-public enum GRPCClientRequestPart<MessageType: Message> {
+public enum GRPCClientRequestPart<RequestMessage: Message> {
   case head(HTTPRequestHead)
-  case message(MessageType)
+  case message(RequestMessage)
   case end
 }
 
 /// Incoming gRPC package with a fixed message type.
-public enum GRPCClientResponsePart<MessageType: Message> {
+public enum GRPCClientResponsePart<ResponseMessage: Message> {
   case headers(HTTPHeaders)
-  case message(MessageType)
+  case message(ResponseMessage)
   case status(GRPCStatus)
 }
 
-public final class RawGRPCToGRPCCodec<RequestMessage: Message, ResponseMessage: Message> {
+public final class GRPCClientCodec<RequestMessage: Message, ResponseMessage: Message> {
   public init() {}
 }
 
-extension RawGRPCToGRPCCodec: ChannelInboundHandler {
+extension GRPCClientCodec: ChannelInboundHandler {
   public typealias InboundIn = RawGRPCClientResponsePart
   public typealias InboundOut = GRPCClientResponsePart<ResponseMessage>
 
@@ -61,7 +61,7 @@ extension RawGRPCToGRPCCodec: ChannelInboundHandler {
   }
 }
 
-extension RawGRPCToGRPCCodec: ChannelOutboundHandler {
+extension GRPCClientCodec: ChannelOutboundHandler {
   public typealias OutboundIn = GRPCClientRequestPart<RequestMessage>
   public typealias OutboundOut = RawGRPCClientRequestPart
 
@@ -74,12 +74,8 @@ extension RawGRPCToGRPCCodec: ChannelOutboundHandler {
 
     case .message(let message):
       do {
-        let messageAsData = try message.serializedData()
-        var buffer = ctx.channel.allocator.buffer(capacity: messageAsData.count)
-        buffer.write(bytes: messageAsData)
-        ctx.write(wrapOutboundOut(.message(buffer)), promise: promise)
+        ctx.write(wrapOutboundOut(.message(try message.serializedData())), promise: promise)
       } catch {
-        print(error)
         ctx.fireErrorCaught(error)
       }
 

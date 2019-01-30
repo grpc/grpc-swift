@@ -106,7 +106,7 @@ public class BaseClientCall<RequestMessage: Message, ResponseMessage: Message>: 
       multiplexer.createStreamChannel(promise: subchannelPromise) { (subchannel, streamID) -> EventLoopFuture<Void> in
         subchannel.pipeline.addHandlers([HTTP2ToHTTP1ClientCodec(streamID: streamID, httpProtocol: .http),
                                          HTTP1ToRawGRPCClientCodec(),
-                                         RawGRPCToGRPCCodec<RequestMessage, ResponseMessage>(),
+                                         GRPCClientCodec<RequestMessage, ResponseMessage>(),
                                          channelHandler],
                                         first: false)
       }
@@ -117,8 +117,12 @@ public class BaseClientCall<RequestMessage: Message, ResponseMessage: Message>: 
     self.status = statusPromise.futureResult
   }
 
-  internal func makeRequestHead(path: String, host: String) -> HTTPRequestHead {
+  internal func makeRequestHead(path: String, host: String, customMetadata: HTTPHeaders? = nil) -> HTTPRequestHead {
     var requestHead = HTTPRequestHead(version: .init(major: 2, minor: 0), method: .POST, uri: path)
+    customMetadata?.forEach { name, value in
+      requestHead.headers.add(name: name, value: value)
+    }
+
     requestHead.headers.add(name: "host", value: host)
     requestHead.headers.add(name: "content-type", value: "application/grpc")
     requestHead.headers.add(name: "te", value: "trailers")

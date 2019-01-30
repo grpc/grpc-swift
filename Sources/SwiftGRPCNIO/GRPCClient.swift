@@ -57,23 +57,33 @@ public final class GRPCClient {
   }
 }
 
-public protocol GRPCClientWrapper {
+public protocol GRPCClientWrapper: CallOptionsProvider {
   var client: GRPCClient { get }
 
   /// Name of the service this client wrapper is for.
   var service: String { get }
 
-  /// Return the path for the given method in the format "/Sevice-Name/Method-Name".
+  /// Return the path for the given method in the format "/Service-Name/Method-Name".
   ///
   /// This may be overriden if consumers require a different path format.
   ///
-  /// - Parameter method: name of method to return a path for.
+  /// - Parameter forMethod: name of method to return a path for.
   /// - Returns: path for the given method used in gRPC request headers.
-  func path(for method: String) -> String
+  func path(forMethod method: String) -> String
 }
 
 extension GRPCClientWrapper {
-  public func path(for method: String) -> String {
+  public func path(forMethod method: String) -> String {
     return "/\(service)/\(method)"
+  }
+}
+
+public protocol CallOptionsProvider {
+  func defaultCallOptions() -> CallOptions
+}
+
+extension CallOptionsProvider {
+  public func defaultCallOptions() -> CallOptions {
+    return CallOptions()
   }
 }

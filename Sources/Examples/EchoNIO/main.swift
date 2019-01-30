@@ -143,8 +143,8 @@ Group {
     }
     collect.send(.end)
 
-    collect.response.whenSuccess { resposne in
-      print("collect received: \(resposne.text)")
+    collect.response.whenSuccess { respone in
+      print("collect received: \(respone.text)")
     }
 
     collect.response.whenFailure { error in

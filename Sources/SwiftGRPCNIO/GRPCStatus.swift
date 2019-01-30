@@ -10,7 +10,7 @@ public struct GRPCStatus: Error {
   /// Additional HTTP headers to return in the trailers.
   public let trailingMetadata: HTTPHeaders
 
-  public init(code: StatusCode, message: String?, trailingMetadata: HTTPHeaders = HTTPHeaders()) {
+  public init(code: StatusCode, message: String? = nil, trailingMetadata: HTTPHeaders = HTTPHeaders()) {
     self.code = code
     self.message = message
     self.trailingMetadata = trailingMetadata

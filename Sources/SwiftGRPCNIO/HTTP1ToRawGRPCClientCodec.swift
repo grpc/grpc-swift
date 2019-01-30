@@ -17,10 +17,10 @@ import Foundation
 import NIO
 import NIOHTTP1
 
-/// Outgoing gRPC package with an unknown message type (represented by a byte buffer).
+/// Outgoing gRPC package with an unknown message type (represented as the serialzed protobuf message).
 public enum RawGRPCClientRequestPart {
   case head(HTTPRequestHead)
-  case message(ByteBuffer)
+  case message(Data)
   case end
 }
 
@@ -31,27 +31,29 @@ public enum RawGRPCClientResponsePart {
   case status(GRPCStatus)
 }
 
+/// Codec for translating HTTP/1 resposnes from the server into untyped gRPC packages
+/// and vice-versa.
+///
+/// Most of the inbound processing is done by `LengthPrefixedMessageReader`; which
+/// reads length-prefxied gRPC messages into `ByteBuffer`s containing serialized
+/// Protobuf messages.
+///
+/// The outbound processing transforms serialized Protobufs into length-prefixed
+/// gRPC messages stored in `ByteBuffer`s.
+///
+/// See `HTTP1ToRawGRPCServerCodec` for the corresponding server codec.
 public final class HTTP1ToRawGRPCClientCodec {
+  public init() {}
+
   private enum State {
     case expectingHeaders
     case expectingBodyOrTrailers
-    case expectingCompressedFlag
-    case expectingMessageLength
-    case receivedMessageLength(UInt32)
-
-    var expectingBody: Bool {
-      switch self {
-      case .expectingHeaders: return false
-      case .expectingBodyOrTrailers, .expectingCompressedFlag, .expectingMessageLength, .receivedMessageLength: return true
-      }
-    }
-  }
-
-  public init() {
+    case ignore
   }
 
   private var state: State = .expectingHeaders
-  private var buffer: NIO.ByteBuffer?
+  private let messageReader = LengthPrefixedMessageReader(mode: .client)
+  private let messageWriter = LengthPrefixedMessageWriter()
 }
 
 extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
@@ -59,68 +61,65 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
   public typealias InboundOut = RawGRPCClientResponsePart
 
   public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+    if case .ignore = state { return }
+
     switch unwrapInboundIn(data) {
     case .head(let head):
-      guard case .expectingHeaders = state
-        else { preconditionFailure("received headers while in state \(state)") }
-
-      state = .expectingBodyOrTrailers
-      ctx.fireChannelRead(wrapInboundOut(.headers(head.headers)))
+      state = processHead(ctx: ctx, head: head)
 
     case .body(var message):
-      if case .expectingBodyOrTrailers = state {
-        state = .expectingCompressedFlag
-        if buffer == nil {
-          buffer = ctx.channel.allocator.buffer(capacity: 5)
-        }
+      do {
+        state = try processBody(ctx: ctx, messageBuffer: &message)
+      } catch {
+        ctx.fireErrorCaught(error)
+        state = .ignore
       }
 
-      precondition(state.expectingBody, "received body while in state \(state)")
-
-      guard var buffer = buffer else {
-        preconditionFailure("buffer is not initialized")
-      }
-
-      buffer.write(buffer: &message)
-
-      requestProcessing: while true {
-        switch state {
-        case .expectingHeaders, .expectingBodyOrTrailers:
-          preconditionFailure("unexpected state '\(state)'")
-
-        case .expectingCompressedFlag:
-          guard let compressionFlag: Int8 = buffer.readInteger() else { break requestProcessing }
-          precondition(compressionFlag == 0, "unexpected compression flag \(compressionFlag); compression is not supported and we did not indicate support for it")
-          state = .expectingMessageLength
-
-        case .expectingMessageLength:
-          guard let messageLength: UInt32 = buffer.readInteger() else { break requestProcessing }
-          state = .receivedMessageLength(messageLength)
-
-        case .receivedMessageLength(let messageLength):
-          guard let responseBuffer = buffer.readSlice(length: numericCast(messageLength)) else { break }
-          ctx.fireChannelRead(self.wrapInboundOut(.message(responseBuffer)))
-
-          state = .expectingBodyOrTrailers
-          break requestProcessing
-        }
-      }
-
-    case .end(let headers):
-      guard case .expectingBodyOrTrailers = state
-        else { preconditionFailure("received trailers while in state \(state)") }
-
-      let statusCode = headers?["grpc-status"].first.flatMap { parseGRPCStatus(from: $0) } ?? .unknown
-      let statusMessage = headers?["grpc-message"].first
-
-      ctx.fireChannelRead(wrapInboundOut(.status(GRPCStatus(code: statusCode, message: statusMessage))))
-      state = .expectingHeaders
-
+    case .end(let trailers):
+      state = processTrailers(ctx: ctx, trailers: trailers)
     }
   }
 
-  private func parseGRPCStatus(from status: String) -> StatusCode? {
-    return Int(status).flatMap { StatusCode(rawValue: $0) }
+  /// Forwards the headers from the request head to the next handler.
+  ///
+  /// - note: Requires the `.expectingHeaders` state.
+  private func processHead(ctx: ChannelHandlerContext, head: HTTPResponseHead) -> State {
+    guard case .expectingHeaders = state
+      else { preconditionFailure("received headers while in state \(state)") }
+
+    ctx.fireChannelRead(wrapInboundOut(.headers(head.headers)))
+    return .expectingBodyOrTrailers
+  }
+
+  /// Processes the given buffer; if a complete message is read then it is forwarded to the
+  /// next channel handler.
+  ///
+  /// - note: Requires the `.expectingBodyOrTrailers` state.
+  private func processBody(ctx: ChannelHandlerContext, messageBuffer: inout ByteBuffer) throws -> State {
+    guard case .expectingBodyOrTrailers = state
+      else { preconditionFailure("received body while in state \(state)") }
+
+    if let message = try self.messageReader.read(messageBuffer: &messageBuffer) {
+      ctx.fireChannelRead(wrapInboundOut(.message(message)))
+    }
+
+    return .expectingBodyOrTrailers
+  }
+
+  /// Forwards a `GRPCStatus` to the next handler. The status and message are extracted
+  /// from the trailers if they exist; the `.unknown` status code and an empty message
+  /// are used otherwise.
+  private func processTrailers(ctx: ChannelHandlerContext, trailers: HTTPHeaders?) -> State {
+    guard case .expectingBodyOrTrailers = state
+      else { preconditionFailure("received trailers while in state \(state)") }
+
+    let statusCode = trailers?["grpc-status"].first
+      .flatMap { Int($0) }
+      .flatMap { StatusCode(rawValue: $0) }
+    let statusMessage = trailers?["grpc-message"].first
+
+    ctx.fireChannelRead(wrapInboundOut(.status(GRPCStatus(code: statusCode ?? .unknown, message: statusMessage))))
+    return .ignore
   }
 }
 
@@ -134,16 +133,12 @@ extension HTTP1ToRawGRPCClientCodec: ChannelOutboundHandler {
     case .head(let requestHead):
       ctx.write(wrapOutboundOut(.head(requestHead)), promise: promise)
 
-    case .message(var messageBytes):
-      var requestBuffer = ctx.channel.allocator.buffer(capacity: messageBytes.readableBytes + 5)
-      requestBuffer.write(integer: Int8(0))
-      requestBuffer.write(integer: UInt32(messageBytes.readableBytes))
-      requestBuffer.write(buffer: &messageBytes)
-      ctx.write(wrapOutboundOut(.body(.byteBuffer(requestBuffer))), promise: promise)
+    case .message(let message):
+      let request = messageWriter.write(allocator: ctx.channel.allocator, compression: .none, message: message)
+      ctx.write(wrapOutboundOut(.body(.byteBuffer(request))), promise: promise)
 
     case .end:
       ctx.writeAndFlush(wrapOutboundOut(.end(nil)), promise: promise)
     }
-
   }
 }

@@ -18,11 +18,10 @@ import SwiftProtobuf
 import NIO
 
 public class BidirectionalStreamingClientCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage>, StreamingRequestClientCall {
-
-  public init(client: GRPCClient, path: String, handler: @escaping (ResponseMessage) -> Void) {
+  public init(client: GRPCClient, path: String, callOptions: CallOptions, handler: @escaping (ResponseMessage) -> Void) {
     super.init(channel: client.channel, multiplexer: client.multiplexer, responseHandler: .callback(handler: handler))
 
-    let requestHead = makeRequestHead(path: path, host: client.host)
+    let requestHead = makeRequestHead(path: path, host: client.host, customMetadata: callOptions.customMetadata)
     subchannel.whenSuccess { channel in
       channel.write(GRPCClientRequestPart<RequestMessage>.head(requestHead), promise: nil)
     }

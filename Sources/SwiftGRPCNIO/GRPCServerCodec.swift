@@ -5,16 +5,16 @@ import NIOFoundationCompat
 import NIOHTTP1
 
 /// Incoming gRPC package with a fixed message type.
-public enum GRPCServerRequestPart<MessageType: Message> {
+public enum GRPCServerRequestPart<RequestMessage: Message> {
   case head(HTTPRequestHead)
-  case message(MessageType)
+  case message(RequestMessage)
   case end
 }
 
 /// Outgoing gRPC package with a fixed message type.
-public enum GRPCServerResponsePart<MessageType: Message> {
+public enum GRPCServerResponsePart<ResponseMessage: Message> {
   case headers(HTTPHeaders)
-  case message(MessageType)
+  case message(ResponseMessage)
   case status(GRPCStatus)
 }
 
