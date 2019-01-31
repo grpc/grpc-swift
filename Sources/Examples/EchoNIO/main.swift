@@ -30,11 +30,11 @@ let messageOption = Option("message",
                            description: "message to send")
 
 /// Create en `EchoClient` and wait for it to initialize. Returns nil if initialisation fails.
-func makeEchoClient(address: String, port: Int) -> EchoClient? {
+func makeEchoClient(address: String, port: Int) -> Echo_EchoService_NIOClient? {
   let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
   do {
     return try GRPCClient.start(host: address, port: port, eventLoopGroup: eventLoopGroup)
-      .map { client in EchoClient(client: client) }
+      .map { client in Echo_EchoService_NIOClient(client: client) }
       .wait()
   } catch {
     print("Unable to create an EchoClient: \(error)")
@@ -78,7 +78,7 @@ Group {
     requestMessage.text = message
 
     print("get sending: \(requestMessage.text)")
-    let get = echo.get(request: requestMessage)
+    let get = echo.get(requestMessage)
     get.response.whenSuccess { response in
       print("get received: \(response.text)")
     }
@@ -106,11 +106,10 @@ Group {
     print("calling expand")
     guard let echo = makeEchoClient(address: address, port: port) else { return }
 
-    var requestMessage = Echo_EchoRequest()
-    requestMessage.text = message
+    let requestMessage = Echo_EchoRequest.with { $0.text = message }
 
     print("expand sending: \(requestMessage.text)")
-    let expand = echo.expand(request: requestMessage) { response in
+    let expand = echo.expand(requestMessage) { response in
       print("expand received: \(response.text)")
     }
 

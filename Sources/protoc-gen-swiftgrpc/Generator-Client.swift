@@ -20,6 +20,16 @@ import SwiftProtobufPluginLibrary
 extension Generator {
   internal func printClient(asynchronousCode: Bool,
                             synchronousCode: Bool) {
+    if options.generateNIOImplementation {
+      printNIOGRPCClient()
+    } else {
+      printCGRPCClient(asynchronousCode: asynchronousCode,
+                       synchronousCode: synchronousCode)
+    }
+  }
+
+  private func printCGRPCClient(asynchronousCode: Bool,
+                                synchronousCode: Bool) {
     for method in service.methods {
       self.method = method
       switch streamingType(method) {
@@ -311,5 +321,135 @@ extension Generator {
     }
     outdent()
     println("}")
+  }
+
+  private func printNIOGRPCClient() {
+    println()
+    printNIOServiceClientProtocol()
+    println()
+    printNIOServiceClientImplementation()
+  }
+
+  private func printNIOServiceClientProtocol() {
+    println("/// Instantiate \(serviceClassName)Client, then call methods of this protocol to make API calls.")
+    println("\(options.visibility.sourceSnippet) protocol \(serviceClassName) {")
+    indent()
+    for method in service.methods {
+      self.method = method
+      switch streamingType(method) {
+      case .unary:
+        println("func \(methodFunctionName)(_ request: \(methodInputName), callOptions: CallOptions?) -> UnaryClientCall<\(methodInputName), \(methodOutputName)>")
+
+      case .serverStreaming:
+        println("func \(methodFunctionName)(_ request: \(methodInputName), callOptions: CallOptions?, handler: @escaping (\(methodOutputName)) -> Void) -> ServerStreamingClientCall<\(methodInputName), \(methodOutputName)>")
+
+      case .clientStreaming:
+        println("func \(methodFunctionName)(callOptions: CallOptions?) -> ClientStreamingClientCall<\(methodInputName), \(methodOutputName)>")
+
+      case .bidirectionalStreaming:
+        println("func \(methodFunctionName)(callOptions: CallOptions?, handler: @escaping (\(methodOutputName)) -> Void) -> BidirectionalStreamingClientCall<\(methodInputName), \(methodOutputName)>")
+      }
+    }
+    outdent()
+    println("}")
+  }
+
+  private func printNIOServiceClientImplementation() {
+    println("\(access) final class \(serviceClassName)Client: GRPCClientWrapper, \(serviceClassName) {")
+    indent()
+    println("\(access) let client: GRPCClient")
+    println("\(access) let service = \"\(servicePath)\"")
+    println()
+    println("\(access) init(client: GRPCClient) {")
+    indent()
+    println("self.client = client")
+    outdent()
+    println("}")
+    println()
+
+    for method in service.methods {
+      self.method = method
+      switch streamingType(method) {
+      case .unary:
+        println("/// Asynchronous unary call to \(method.name).")
+        println("///")
+        printParameters()
+        printRequestParameter()
+        printCallOptionsParameter()
+        println("/// - Returns: A `UnaryClientCall` with futures for the metadata, status and response.")
+        println("func \(methodFunctionName)(_ request: \(methodInputName), callOptions: CallOptions? = nil) -> UnaryClientCall<\(methodInputName), \(methodOutputName)> {")
+        indent()
+        println("return UnaryClientCall(client: client, path: path(forMethod: \"\(method.name)\"), request: request, callOptions: callOptions ?? defaultCallOptions())")
+        outdent()
+        println("}")
+
+      case .serverStreaming:
+        println("/// Asynchronous server-streaming call to \(method.name).")
+        println("///")
+        printParameters()
+        printRequestParameter()
+        printCallOptionsParameter()
+        printHandlerParameter()
+        println("/// - Returns: A `ServerStreamingClientCall` with futures for the metadata and status.")
+        println("func \(methodFunctionName)(_ request: \(methodInputName), callOptions: CallOptions? = nil, handler: @escaping (\(methodOutputName)) -> Void) -> ServerStreamingClientCall<\(methodInputName), \(methodOutputName)> {")
+        indent()
+        println("return ServerStreamingClientCall(client: client, path: path(forMethod: \"\(method.name)\"), request: request, callOptions: callOptions ?? defaultCallOptions(), handler: handler)")
+        outdent()
+        println("}")
+
+      case .clientStreaming:
+        println("/// Asynchronous client-streaming call to \(method.name).")
+        println("///")
+        printClientStreamingDetails()
+        println("///")
+        printParameters()
+        printCallOptionsParameter()
+        println("/// - Returns: A `ClientStreamingClientCall` with futures for the metadata, status and response.")
+        println("func \(methodFunctionName)(callOptions: CallOptions? = nil) -> ClientStreamingClientCall<\(methodInputName), \(methodOutputName)> {")
+        indent()
+        println("return ClientStreamingClientCall(client: client, path: path(forMethod: \"\(method.name)\"), callOptions: callOptions ?? defaultCallOptions())")
+        outdent()
+        println("}")
+
+      case .bidirectionalStreaming:
+        println("/// Asynchronous bidirectional-streaming call to \(method.name).")
+        println("///")
+        printClientStreamingDetails()
+        println("///")
+        printParameters()
+        printCallOptionsParameter()
+        printHandlerParameter()
+        println("/// - Returns: A `ClientStreamingClientCall` with futures for the metadata, status and response.")
+        println("func \(methodFunctionName)(callOptions: CallOptions? = nil, handler: @escaping (\(methodOutputName)) -> Void) -> BidirectionalStreamingClientCall<\(methodInputName), \(methodOutputName)> {")
+        indent()
+        println("return BidirectionalStreamingClientCall(client: client, path: path(forMethod: \"\(method.name)\"), callOptions: callOptions ?? defaultCallOptions(), handler: handler)")
+        outdent()
+        println("}")
+      }
+      println()
+    }
+    outdent()
+    println("}")
+  }
+
+  private func printClientStreamingDetails() {
+    println("/// Callers should use the `send` method on the returned object to send messages")
+    println("/// to the server. The caller should send an `.end` after the final message has been sent.")
+  }
+
+  private func printParameters() {
+    println("/// - Parameters:")
+  }
+
+  private func printRequestParameter() {
+    println("///   - request: Request to send to \(method.name).")
+  }
+
+  private func printCallOptionsParameter() {
+    println("///   - callOptions: Call options; `defaultCallOptions()` is used if `nil`.")
+  }
+
+  private func printHandlerParameter() {
+    println("///   - handler: A closure called when each response is received from the server.")
   }
 }

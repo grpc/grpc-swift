@@ -27,6 +27,70 @@ import SwiftGRPCNIO
 import SwiftProtobuf
 
 
+/// Instantiate Echo_EchoService_NIOClient, then call methods of this protocol to make API calls.
+internal protocol Echo_EchoService_NIO {
+  func get(_ request: Echo_EchoRequest, callOptions: CallOptions?) -> UnaryClientCall<Echo_EchoRequest, Echo_EchoResponse>
+  func expand(_ request: Echo_EchoRequest, callOptions: CallOptions?, handler: @escaping (Echo_EchoResponse) -> Void) -> ServerStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse>
+  func collect(callOptions: CallOptions?) -> ClientStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse>
+  func update(callOptions: CallOptions?, handler: @escaping (Echo_EchoResponse) -> Void) -> BidirectionalStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse>
+}
+
+internal final class Echo_EchoService_NIOClient: GRPCClientWrapper, Echo_EchoService_NIO {
+  internal let client: GRPCClient
+  internal let service = "echo.Echo"
+
+  internal init(client: GRPCClient) {
+    self.client = client
+  }
+
+  /// Asynchronous unary call to Get.
+  ///
+  /// - Parameters:
+  ///   - request: Request to send to Get.
+  ///   - callOptions: Call options; `defaultCallOptions()` is used if `nil`.
+  /// - Returns: A `UnaryClientCall` with futures for the metadata, status and response.
+  func get(_ request: Echo_EchoRequest, callOptions: CallOptions? = nil) -> UnaryClientCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return UnaryClientCall(client: client, path: path(forMethod: "Get"), request: request, callOptions: callOptions ?? defaultCallOptions())
+  }
+
+  /// Asynchronous server-streaming call to Expand.
+  ///
+  /// - Parameters:
+  ///   - request: Request to send to Expand.
+  ///   - callOptions: Call options; `defaultCallOptions()` is used if `nil`.
+  ///   - handler: A closure called when each response is received from the server.
+  /// - Returns: A `ServerStreamingClientCall` with futures for the metadata and status.
+  func expand(_ request: Echo_EchoRequest, callOptions: CallOptions? = nil, handler: @escaping (Echo_EchoResponse) -> Void) -> ServerStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return ServerStreamingClientCall(client: client, path: path(forMethod: "Expand"), request: request, callOptions: callOptions ?? defaultCallOptions(), handler: handler)
+  }
+
+  /// Asynchronous client-streaming call to Collect.
+  ///
+  /// Callers should use the `send` method on the returned object to send messages
+  /// to the server. The caller should send an `.end` after the final message has been sent.
+  ///
+  /// - Parameters:
+  ///   - callOptions: Call options; `defaultCallOptions()` is used if `nil`.
+  /// - Returns: A `ClientStreamingClientCall` with futures for the metadata, status and response.
+  func collect(callOptions: CallOptions? = nil) -> ClientStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return ClientStreamingClientCall(client: client, path: path(forMethod: "Collect"), callOptions: callOptions ?? defaultCallOptions())
+  }
+
+  /// Asynchronous bidirectional-streaming call to Update.
+  ///
+  /// Callers should use the `send` method on the returned object to send messages
+  /// to the server. The caller should send an `.end` after the final message has been sent.
+  ///
+  /// - Parameters:
+  ///   - callOptions: Call options; `defaultCallOptions()` is used if `nil`.
+  ///   - handler: A closure called when each response is received from the server.
+  /// - Returns: A `ClientStreamingClientCall` with futures for the metadata, status and response.
+  func update(callOptions: CallOptions? = nil, handler: @escaping (Echo_EchoResponse) -> Void) -> BidirectionalStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return BidirectionalStreamingClientCall(client: client, path: path(forMethod: "Update"), callOptions: callOptions ?? defaultCallOptions(), handler: handler)
+  }
+
+}
+
 /// To build a server, implement a class that conforms to this protocol.
 internal protocol Echo_EchoProvider_NIO: CallHandlerProvider {
   func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse>

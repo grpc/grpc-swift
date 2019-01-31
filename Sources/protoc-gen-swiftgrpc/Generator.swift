@@ -105,9 +105,7 @@ class Generator {
     }
     println()
     
-    if options.generateClient {
-      guard !options.generateNIOImplementation else { fatalError("Generating client code is not yet supported for SwiftGRPC-NIO.") }
-      
+    if options.generateClient {      
       for service in file.services {
         self.service = service
         printClient(asynchronousCode: options.generateAsynchronous,
