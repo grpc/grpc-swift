@@ -161,27 +161,27 @@ extension Generator {
       case .unary:
         if synchronousCode {
           println("/// Synchronous. Unary.")
-          println("func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata?) throws -> \(methodOutputName)")
+          println("func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata) throws -> \(methodOutputName)")
         }
         if asynchronousCode {
           println("/// Asynchronous. Unary.")
-          println("func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata?, completion: @escaping (\(methodOutputName)?, CallResult) -> Void) throws -> \(callName)")
+          println("func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata, completion: @escaping (\(methodOutputName)?, CallResult) -> Void) throws -> \(callName)")
         }
       case .serverStreaming:
         println("/// Asynchronous. Server-streaming.")
         println("/// Send the initial message.")
         println("/// Use methods on the returned object to get streamed responses.")
-        println("func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata?, completion: ((CallResult) -> Void)?) throws -> \(callName)")
+        println("func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata, completion: ((CallResult) -> Void)?) throws -> \(callName)")
       case .clientStreaming:
         println("/// Asynchronous. Client-streaming.")
         println("/// Use methods on the returned object to stream messages and")
         println("/// to close the connection and wait for a final response.")
-        println("func \(methodFunctionName)(metadata customMetadata: Metadata?, completion: ((CallResult) -> Void)?) throws -> \(callName)")
+        println("func \(methodFunctionName)(metadata customMetadata: Metadata, completion: ((CallResult) -> Void)?) throws -> \(callName)")
       case .bidirectionalStreaming:
         println("/// Asynchronous. Bidirectional-streaming.")
         println("/// Use methods on the returned object to stream messages,")
         println("/// to wait for replies, and to close the connection.")
-        println("func \(methodFunctionName)(metadata customMetadata: Metadata?, completion: ((CallResult) -> Void)?) throws -> \(callName)")
+        println("func \(methodFunctionName)(metadata customMetadata: Metadata, completion: ((CallResult) -> Void)?) throws -> \(callName)")
       }
       println()
     }
@@ -190,7 +190,7 @@ extension Generator {
   }
 
   private func printServiceClientProtocolExtension(asynchronousCode: Bool,
-                                          synchronousCode: Bool) {
+                                                   synchronousCode: Bool) {
     println("\(options.visibility.sourceSnippet) extension \(serviceClassName) {")
     indent()
     for method in service.methods {
@@ -251,22 +251,22 @@ extension Generator {
       case .unary:
         if synchronousCode {
           println("/// Synchronous. Unary.")
-          println("\(access) func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata?) throws -> \(methodOutputName) {")
+          println("\(access) func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata) throws -> \(methodOutputName) {")
           indent()
           println("return try \(callName)Base(channel)")
           indent()
-          println(".run(request: request, metadata: customMetadata ?? self.metadata)")
+          println(".run(request: request, metadata: customMetadata)")
           outdent()
           outdent()
           println("}")
         }
         if asynchronousCode {
           println("/// Asynchronous. Unary.")
-          println("\(access) func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata?, completion: @escaping (\(methodOutputName)?, CallResult) -> Void) throws -> \(callName) {")
+          println("\(access) func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata, completion: @escaping (\(methodOutputName)?, CallResult) -> Void) throws -> \(callName) {")
           indent()
           println("return try \(callName)Base(channel)")
           indent()
-          println(".start(request: request, metadata: customMetadata ?? self.metadata, completion: completion)")
+          println(".start(request: request, metadata: customMetadata, completion: completion)")
           outdent()
           outdent()
           println("}")
@@ -275,11 +275,11 @@ extension Generator {
         println("/// Asynchronous. Server-streaming.")
         println("/// Send the initial message.")
         println("/// Use methods on the returned object to get streamed responses.")
-        println("\(access) func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata?, completion: ((CallResult) -> Void)?) throws -> \(callName) {")
+        println("\(access) func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata, completion: ((CallResult) -> Void)?) throws -> \(callName) {")
         indent()
         println("return try \(callName)Base(channel)")
         indent()
-        println(".start(request: request, metadata: customMetadata ?? self.metadata, completion: completion)")
+        println(".start(request: request, metadata: customMetadata, completion: completion)")
         outdent()
         outdent()
         println("}")
@@ -287,11 +287,11 @@ extension Generator {
         println("/// Asynchronous. Client-streaming.")
         println("/// Use methods on the returned object to stream messages and")
         println("/// to close the connection and wait for a final response.")
-        println("\(access) func \(methodFunctionName)(metadata customMetadata: Metadata?, completion: ((CallResult) -> Void)?) throws -> \(callName) {")
+        println("\(access) func \(methodFunctionName)(metadata customMetadata: Metadata, completion: ((CallResult) -> Void)?) throws -> \(callName) {")
         indent()
         println("return try \(callName)Base(channel)")
         indent()
-        println(".start(metadata: customMetadata ?? self.metadata, completion: completion)")
+        println(".start(metadata: customMetadata, completion: completion)")
         outdent()
         outdent()
         println("}")
@@ -299,11 +299,11 @@ extension Generator {
         println("/// Asynchronous. Bidirectional-streaming.")
         println("/// Use methods on the returned object to stream messages,")
         println("/// to wait for replies, and to close the connection.")
-        println("\(access) func \(methodFunctionName)(metadata customMetadata: Metadata?, completion: ((CallResult) -> Void)?) throws -> \(callName) {")
+        println("\(access) func \(methodFunctionName)(metadata customMetadata: Metadata, completion: ((CallResult) -> Void)?) throws -> \(callName) {")
         indent()
         println("return try \(callName)Base(channel)")
         indent()
-        println(".start(metadata: customMetadata ?? self.metadata, completion: completion)")
+        println(".start(metadata: customMetadata, completion: completion)")
         outdent()
         outdent()
         println("}")
@@ -323,14 +323,14 @@ extension Generator {
       case .unary:
         println("var \(methodFunctionName)Requests: [\(methodInputName)] = []")
         println("var \(methodFunctionName)Responses: [\(methodOutputName)] = []")
-        println("func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata?) throws -> \(methodOutputName) {")
+        println("func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata) throws -> \(methodOutputName) {")
         indent()
         println("\(methodFunctionName)Requests.append(request)")
         println("defer { \(methodFunctionName)Responses.removeFirst() }")
         println("return \(methodFunctionName)Responses.first!")
         outdent()
         println("}")
-        println("func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata?, completion: @escaping (\(methodOutputName)?, CallResult) -> Void) throws -> \(callName) {")
+        println("func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata, completion: @escaping (\(methodOutputName)?, CallResult) -> Void) throws -> \(callName) {")
         indent()
         println("fatalError(\"not implemented\")")
         outdent()
@@ -338,7 +338,7 @@ extension Generator {
       case .serverStreaming:
         println("var \(methodFunctionName)Requests: [\(methodInputName)] = []")
         println("var \(methodFunctionName)Calls: [\(callName)] = []")
-        println("func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata?, completion: ((CallResult) -> Void)?) throws -> \(callName) {")
+        println("func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata, completion: ((CallResult) -> Void)?) throws -> \(callName) {")
         indent()
         println("\(methodFunctionName)Requests.append(request)")
         println("defer { \(methodFunctionName)Calls.removeFirst() }")
@@ -347,7 +347,7 @@ extension Generator {
         println("}")
       case .clientStreaming:
         println("var \(methodFunctionName)Calls: [\(callName)] = []")
-        println("func \(methodFunctionName)(metadata customMetadata: Metadata?, completion: ((CallResult) -> Void)?) throws -> \(callName) {")
+        println("func \(methodFunctionName)(metadata customMetadata: Metadata, completion: ((CallResult) -> Void)?) throws -> \(callName) {")
         indent()
         println("defer { \(methodFunctionName)Calls.removeFirst() }")
         println("return \(methodFunctionName)Calls.first!")
@@ -355,7 +355,7 @@ extension Generator {
         println("}")
       case .bidirectionalStreaming:
         println("var \(methodFunctionName)Calls: [\(callName)] = []")
-        println("func \(methodFunctionName)(metadata customMetadata: Metadata?, completion: ((CallResult) -> Void)?) throws -> \(callName) {")
+        println("func \(methodFunctionName)(metadata customMetadata: Metadata, completion: ((CallResult) -> Void)?) throws -> \(callName) {")
         indent()
         println("defer { \(methodFunctionName)Calls.removeFirst() }")
         println("return \(methodFunctionName)Calls.first!")
