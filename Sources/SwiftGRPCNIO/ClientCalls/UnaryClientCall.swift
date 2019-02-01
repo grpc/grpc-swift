@@ -18,19 +18,21 @@ import SwiftProtobuf
 import NIO
 
 public class UnaryClientCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage>, UnaryResponseClientCall {
-  public let response: EventLoopFuture<ResponseMessage>
+  private let responsePromise: EventLoopPromise<ResponseMessage>
+  public var response: EventLoopFuture<ResponseMessage> { return responsePromise.futureResult }
 
   public init(client: GRPCClient, path: String, request: RequestMessage, callOptions: CallOptions) {
-    let responsePromise: EventLoopPromise<ResponseMessage> = client.channel.eventLoop.newPromise()
-    self.response = responsePromise.futureResult
+    self.responsePromise = client.channel.eventLoop.newPromise()
+    super.init(channel: client.channel, multiplexer: client.multiplexer, responseHandler: .fulfill(promise: self.responsePromise))
 
-    super.init(channel: client.channel, multiplexer: client.multiplexer, responseHandler: .fulfill(promise: responsePromise))
+    self.setTimeout(callOptions.timeout)
 
-    let requestHead = makeRequestHead(path: path, host: client.host, customMetadata: callOptions.customMetadata)
-    subchannel.whenSuccess { channel in
-      channel.write(GRPCClientRequestPart<RequestMessage>.head(requestHead), promise: nil)
-      channel.write(GRPCClientRequestPart<RequestMessage>.message(request), promise: nil)
-      channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.end, promise: nil)
-    }
+    let requestHead = self.makeRequestHead(path: path, host: client.host, customMetadata: callOptions.customMetadata)
+    self.send(requestHead: requestHead, request: request)
+  }
+
+  override internal func failPromises(error: Error) {
+    super.failPromises(error: error)
+    self.responsePromise.fail(error: error)
   }
 }

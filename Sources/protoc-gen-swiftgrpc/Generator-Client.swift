@@ -355,14 +355,21 @@ extension Generator {
   }
 
   private func printNIOServiceClientImplementation() {
-    println("\(access) final class \(serviceClassName)Client: GRPCClientWrapper, \(serviceClassName) {")
+    println("\(access) final class \(serviceClassName)Client: GRPCServiceClient, \(serviceClassName) {")
     indent()
     println("\(access) let client: GRPCClient")
     println("\(access) let service = \"\(servicePath)\"")
+    println("\(access) var callOptions: CallOptions")
     println()
-    println("\(access) init(client: GRPCClient) {")
+    println("/// Creates a client for the \(servicePath) service.")
+    println("///")
+    printParameters()
+    println("///   - client: `GRPCClient` with a connection to the service host.")
+    println("///   - callOptions: Options to use for each service call if the user doesn't provide them. Defaults to `client.callOptions`.")
+    println("\(access) init(client: GRPCClient, callOptions: CallOptions? = nil) {")
     indent()
     println("self.client = client")
+    println("self.callOptions = callOptions ?? client.callOptions")
     outdent()
     println("}")
     println()
@@ -379,7 +386,7 @@ extension Generator {
         println("/// - Returns: A `UnaryClientCall` with futures for the metadata, status and response.")
         println("func \(methodFunctionName)(_ request: \(methodInputName), callOptions: CallOptions? = nil) -> UnaryClientCall<\(methodInputName), \(methodOutputName)> {")
         indent()
-        println("return UnaryClientCall(client: client, path: path(forMethod: \"\(method.name)\"), request: request, callOptions: callOptions ?? defaultCallOptions())")
+        println("return UnaryClientCall(client: client, path: path(forMethod: \"\(method.name)\"), request: request, callOptions: callOptions ?? self.callOptions)")
         outdent()
         println("}")
 
@@ -393,7 +400,7 @@ extension Generator {
         println("/// - Returns: A `ServerStreamingClientCall` with futures for the metadata and status.")
         println("func \(methodFunctionName)(_ request: \(methodInputName), callOptions: CallOptions? = nil, handler: @escaping (\(methodOutputName)) -> Void) -> ServerStreamingClientCall<\(methodInputName), \(methodOutputName)> {")
         indent()
-        println("return ServerStreamingClientCall(client: client, path: path(forMethod: \"\(method.name)\"), request: request, callOptions: callOptions ?? defaultCallOptions(), handler: handler)")
+        println("return ServerStreamingClientCall(client: client, path: path(forMethod: \"\(method.name)\"), request: request, callOptions: callOptions ?? self.callOptions, handler: handler)")
         outdent()
         println("}")
 
@@ -407,7 +414,7 @@ extension Generator {
         println("/// - Returns: A `ClientStreamingClientCall` with futures for the metadata, status and response.")
         println("func \(methodFunctionName)(callOptions: CallOptions? = nil) -> ClientStreamingClientCall<\(methodInputName), \(methodOutputName)> {")
         indent()
-        println("return ClientStreamingClientCall(client: client, path: path(forMethod: \"\(method.name)\"), callOptions: callOptions ?? defaultCallOptions())")
+        println("return ClientStreamingClientCall(client: client, path: path(forMethod: \"\(method.name)\"), callOptions: callOptions ?? self.callOptions)")
         outdent()
         println("}")
 
@@ -422,7 +429,7 @@ extension Generator {
         println("/// - Returns: A `ClientStreamingClientCall` with futures for the metadata, status and response.")
         println("func \(methodFunctionName)(callOptions: CallOptions? = nil, handler: @escaping (\(methodOutputName)) -> Void) -> BidirectionalStreamingClientCall<\(methodInputName), \(methodOutputName)> {")
         indent()
-        println("return BidirectionalStreamingClientCall(client: client, path: path(forMethod: \"\(method.name)\"), callOptions: callOptions ?? defaultCallOptions(), handler: handler)")
+        println("return BidirectionalStreamingClientCall(client: client, path: path(forMethod: \"\(method.name)\"), callOptions: callOptions ?? self.callOptions, handler: handler)")
         outdent()
         println("}")
       }
@@ -446,7 +453,7 @@ extension Generator {
   }
 
   private func printCallOptionsParameter() {
-    println("///   - callOptions: Call options; `defaultCallOptions()` is used if `nil`.")
+    println("///   - callOptions: Call options; `self.callOptions` is used if `nil`.")
   }
 
   private func printHandlerParameter() {

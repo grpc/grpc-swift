@@ -15,7 +15,8 @@
  */
 import Dispatch
 import Foundation
-@testable import SwiftGRPC
+import NIO
+@testable import SwiftGRPCNIO
 import XCTest
 
 extension Echo_EchoRequest {
@@ -31,22 +32,15 @@ extension Echo_EchoResponse {
 }
 
 class NIOServerTestCase: XCTestCase {
-  func makeProvider() -> Echo_EchoProvider { return EchoProvider() }
-
-  var provider: Echo_EchoProvider!
-  var client: Echo_EchoServiceClient!
-
-  var defaultTimeout: TimeInterval { return 1.0 }
-  var address: String { return "localhost:5050" }
+  var client: Echo_EchoService_NIOClient!
 
   override func setUp() {
     super.setUp()
 
-    provider = makeProvider()
-
-    client = Echo_EchoServiceClient(address: address, secure: false)
-
-    client.timeout = defaultTimeout
+    let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    self.client = try! GRPCClient.start(host: "localhost", port: 5050, eventLoopGroup: eventLoopGroup)
+      .map { Echo_EchoService_NIOClient(client: $0) }
+      .wait()
   }
 
   override func tearDown() {

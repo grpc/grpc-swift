@@ -19,67 +19,14 @@ import NIOHTTP1
 import NIOHTTP2
 import SwiftProtobuf
 
-public protocol ClientCall {
-  associatedtype RequestMessage: Message
-  associatedtype ResponseMessage: Message
-
-  /// HTTP2 stream that requests and responses are sent and received on.
-  var subchannel: EventLoopFuture<Channel> { get }
-
-  /// Initial response metadata.
-  var initialMetadata: EventLoopFuture<HTTPHeaders> { get }
-
-  /// Response status.
-  var status: EventLoopFuture<GRPCStatus> { get }
-
-  /// Trailing response metadata.
-  ///
-  /// This is the same metadata as `GRPCStatus.trailingMetadata` returned by `status`.
-  var trailingMetadata: EventLoopFuture<HTTPHeaders> { get }
-}
-
-
-extension ClientCall {
-  public var trailingMetadata: EventLoopFuture<HTTPHeaders> {
-    return status.map { $0.trailingMetadata }
-  }
-}
-
-
-public protocol StreamingRequestClientCall: ClientCall {
-  func send(_ event: StreamEvent<RequestMessage>)
-}
-
-
-extension StreamingRequestClientCall {
-  /// Sends a request to the service. Callers must terminate the stream of messages
-  /// with an `.end` event.
-  ///
-  /// - Parameter event: event to send.
-  public func send(_ event: StreamEvent<RequestMessage>) {
-    let request: GRPCClientRequestPart<RequestMessage>
-    switch event {
-    case .message(let message):
-      request = .message(message)
-
-    case .end:
-      request = .end
-    }
-
-    subchannel.whenSuccess { $0.write(NIOAny(request), promise: nil) }
-  }
-}
-
-
-public protocol UnaryResponseClientCall: ClientCall {
-  var response: EventLoopFuture<ResponseMessage> { get }
-}
-
-
 public class BaseClientCall<RequestMessage: Message, ResponseMessage: Message>: ClientCall {
-  public let subchannel: EventLoopFuture<Channel>
-  public let initialMetadata: EventLoopFuture<HTTPHeaders>
-  public let status: EventLoopFuture<GRPCStatus>
+  private let subchannelPromise: EventLoopPromise<Channel>
+  private let initialMetadataPromise: EventLoopPromise<HTTPHeaders>
+  private let statusPromise: EventLoopPromise<GRPCStatus>
+
+  public var subchannel: EventLoopFuture<Channel> { return subchannelPromise.futureResult }
+  public var initialMetadata: EventLoopFuture<HTTPHeaders> { return initialMetadataPromise.futureResult }
+  public var status: EventLoopFuture<GRPCStatus> { return statusPromise.futureResult }
 
   /// Sets up a gRPC call.
   ///
@@ -95,15 +42,17 @@ public class BaseClientCall<RequestMessage: Message, ResponseMessage: Message>: 
     multiplexer: HTTP2StreamMultiplexer,
     responseHandler: GRPCClientResponseChannelHandler<ResponseMessage>.ResponseMessageHandler
   ) {
-    let subchannelPromise: EventLoopPromise<Channel> = channel.eventLoop.newPromise()
-    let metadataPromise: EventLoopPromise<HTTPHeaders> = channel.eventLoop.newPromise()
-    let statusPromise: EventLoopPromise<GRPCStatus> = channel.eventLoop.newPromise()
+    self.subchannelPromise = channel.eventLoop.newPromise()
+    self.initialMetadataPromise = channel.eventLoop.newPromise()
+    self.statusPromise = channel.eventLoop.newPromise()
 
-    let channelHandler = GRPCClientResponseChannelHandler<ResponseMessage>(metadata: metadataPromise, status: statusPromise, messageHandler: responseHandler)
+    let channelHandler = GRPCClientResponseChannelHandler<ResponseMessage>(metadata: self.initialMetadataPromise,
+                                                                           status: self.statusPromise,
+                                                                           messageHandler: responseHandler)
 
     /// Create a new HTTP2 stream to handle calls.
     channel.eventLoop.execute {
-      multiplexer.createStreamChannel(promise: subchannelPromise) { (subchannel, streamID) -> EventLoopFuture<Void> in
+      multiplexer.createStreamChannel(promise: self.subchannelPromise) { (subchannel, streamID) -> EventLoopFuture<Void> in
         subchannel.pipeline.addHandlers([HTTP2ToHTTP1ClientCodec(streamID: streamID, httpProtocol: .http),
                                          HTTP1ToRawGRPCClientCodec(),
                                          GRPCClientCodec<RequestMessage, ResponseMessage>(),
@@ -111,10 +60,32 @@ public class BaseClientCall<RequestMessage: Message, ResponseMessage: Message>: 
                                         first: false)
       }
     }
+  }
 
-    self.subchannel = subchannelPromise.futureResult
-    self.initialMetadata = metadataPromise.futureResult
-    self.status = statusPromise.futureResult
+  internal func send(requestHead: HTTPRequestHead, request: RequestMessage? = nil) {
+    subchannel.whenSuccess { channel in
+      channel.write(GRPCClientRequestPart<RequestMessage>.head(requestHead), promise: nil)
+      if let request = request {
+        channel.write(GRPCClientRequestPart<RequestMessage>.message(request), promise: nil)
+        channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.end, promise: nil)
+      }
+    }
+  }
+
+  internal func setTimeout(_ timeout: GRPCTimeout?) {
+    guard let timeout = timeout else { return }
+
+    self.subchannel.whenSuccess { channel in
+      let timeoutPromise = channel.eventLoop.newPromise(of: Void.self)
+
+      timeoutPromise.futureResult.whenFailure {
+        self.failPromises(error: $0)
+      }
+
+      channel.eventLoop.scheduleTask(in: timeout.asNIOTimeAmount) {
+        timeoutPromise.fail(error: GRPCStatus(code: .deadlineExceeded))
+      }
+    }
   }
 
   internal func makeRequestHead(path: String, host: String, customMetadata: HTTPHeaders? = nil) -> HTTPRequestHead {
@@ -127,6 +98,25 @@ public class BaseClientCall<RequestMessage: Message, ResponseMessage: Message>: 
     requestHead.headers.add(name: "content-type", value: "application/grpc")
     requestHead.headers.add(name: "te", value: "trailers")
     requestHead.headers.add(name: "user-agent", value: "grpc-swift-nio")
+
+    let acceptedEncoding = CompressionMechanism.acceptEncoding
+      .map { $0.rawValue }
+      .joined(separator: ",")
+
+    requestHead.headers.add(name: "grpc-accept-encoding", value: acceptedEncoding)
+
     return requestHead
+  }
+
+  internal func failPromises(error: Error) {
+    self.statusPromise.fail(error: error)
+    self.initialMetadataPromise.fail(error: error)
+  }
+
+  public func cancel() {
+    self.subchannel.whenSuccess { channel in
+      channel.close(mode: .all, promise: nil)
+    }
+    self.failPromises(error: GRPCStatus.cancelled)
   }
 }

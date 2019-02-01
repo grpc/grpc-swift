@@ -21,9 +21,9 @@ public class BidirectionalStreamingClientCall<RequestMessage: Message, ResponseM
   public init(client: GRPCClient, path: String, callOptions: CallOptions, handler: @escaping (ResponseMessage) -> Void) {
     super.init(channel: client.channel, multiplexer: client.multiplexer, responseHandler: .callback(handler: handler))
 
-    let requestHead = makeRequestHead(path: path, host: client.host, customMetadata: callOptions.customMetadata)
-    subchannel.whenSuccess { channel in
-      channel.write(GRPCClientRequestPart<RequestMessage>.head(requestHead), promise: nil)
-    }
+    self.setTimeout(callOptions.timeout)
+
+    let requestHead = self.makeRequestHead(path: path, host: client.host, customMetadata: callOptions.customMetadata)
+    self.send(requestHead: requestHead)
   }
 }

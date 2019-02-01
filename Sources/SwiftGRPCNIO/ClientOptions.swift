@@ -16,10 +16,12 @@
 import Foundation
 import NIOHTTP1
 
-public final class CallOptions {
-  var customMetadata: HTTPHeaders
+public struct CallOptions {
+  public var customMetadata: HTTPHeaders
+  public var timeout: GRPCTimeout?
 
-  public init(customMetadata: HTTPHeaders = HTTPHeaders()) {
+  public init(customMetadata: HTTPHeaders = HTTPHeaders(), timeout: GRPCTimeout? = .minutes(1)) {
     self.customMetadata = customMetadata
+    self.timeout = timeout
   }
 }

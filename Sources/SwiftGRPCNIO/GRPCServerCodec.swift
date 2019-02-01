@@ -57,15 +57,13 @@ extension GRPCServerCodec: ChannelOutboundHandler {
     case .message(let message):
       do {
         let messageData = try message.serializedData()
-        var responseBuffer = ctx.channel.allocator.buffer(capacity: messageData.count)
-        responseBuffer.write(bytes: messageData)
-        ctx.write(self.wrapOutboundOut(.message(responseBuffer)), promise: promise)
+        ctx.write(self.wrapOutboundOut(.message(messageData)), promise: promise)
       } catch {
         promise?.fail(error: error)
         ctx.fireErrorCaught(error)
       }
     case .status(let status):
-      ctx.write(self.wrapOutboundOut(.status(status)), promise: promise)
+      ctx.writeAndFlush(self.wrapOutboundOut(.status(status)), promise: promise)
     }
   }
 }

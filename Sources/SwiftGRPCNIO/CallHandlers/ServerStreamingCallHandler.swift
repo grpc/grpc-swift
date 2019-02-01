@@ -24,8 +24,7 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
       self.context = nil
     }
   }
-  
-  
+
   public override func processMessage(_ message: RequestMessage) {
     guard let eventObserver = self.eventObserver,
       let context = self.context else {

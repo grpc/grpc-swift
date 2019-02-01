@@ -16,17 +16,25 @@
 import Foundation
 import NIO
 
-enum MessageCompression {
-  case none
-
-  var enabled: Bool { return false }
-}
-
 internal class LengthPrefixedMessageWriter {
-  func write(allocator: ByteBufferAllocator, compression: MessageCompression, message: Data) -> ByteBuffer {
+
+  /// Writes the data into a `ByteBuffer` as a gRPC length-prefixed message.
+  ///
+  /// - Parameters:
+  ///   - allocator: Buffer allocator.
+  ///   - compression: Compression mechanism to use.
+  ///   - message: The serialized Protobuf message to write.
+  /// - Returns: A `ByteBuffer` containing a gRPC length-prefixed message.
+  /// - Throws: `CompressionError` if the compression mechanism is not supported.
+  /// - Note: See `LengthPrefixedMessageReader` for more details on the format.
+  func write(allocator: ByteBufferAllocator, compression: CompressionMechanism, message: Data) throws -> ByteBuffer {
+    guard compression.supported else { throw CompressionError.unsupported(compression) }
+
+    // 1-byte for compression flag, 4-bytes for the message length.
     var buffer = allocator.buffer(capacity: 5 + message.count)
 
-    buffer.write(integer: Int8(compression.enabled ? 1 : 0))
+    //: TODO: Add compression support, use the length and compressed content.
+    buffer.write(integer: Int8(compression.requiresFlag ? 1 : 0))
     buffer.write(integer: UInt32(message.count))
     buffer.write(bytes: message)
 

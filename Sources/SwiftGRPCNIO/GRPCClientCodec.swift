@@ -74,7 +74,7 @@ extension GRPCClientCodec: ChannelOutboundHandler {
 
     case .message(let message):
       do {
-        ctx.write(wrapOutboundOut(.message(try message.serializedData())), promise: promise)
+        ctx.writeAndFlush(wrapOutboundOut(.message(try message.serializedData())), promise: promise)
       } catch {
         ctx.fireErrorCaught(error)
       }

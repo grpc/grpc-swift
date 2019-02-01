@@ -17,76 +17,127 @@ import Foundation
 import NIO
 import NIOHTTP1
 
+/// This class reads and decodes length-prefixed gRPC messages.
+///
+/// Messages are expected to be in the following format:
+/// - compression flag: 0/1 as a 1-byte unsigned integer,
+/// - message length: length of the message as a 4-byte unsigned integer,
+/// - message: `message_length` bytes.
+///
+/// - SeeAlso:
+/// [gRPC Protocol](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md)
 internal class LengthPrefixedMessageReader {
-  var buffer: ByteBuffer?
-  var state: State = .expectingCompressedFlag
-  var mode: Mode
+  private var buffer: ByteBuffer!
+  private var state: State = .expectingCompressedFlag
+  private let mode: Mode
 
-  init(mode: Mode) {
+  internal init(mode: Mode) {
     self.mode = mode
   }
 
-  enum Mode { case client, server }
+  internal enum Mode { case client, server }
 
-  enum State {
+  private enum State {
     case expectingCompressedFlag
     case expectingMessageLength
-    case receivedMessageLength(UInt32)
+    case receivedMessageLength(Int)
+    case willBuffer(requiredBytes: Int)
+    case isBuffering(requiredBytes: Int)
   }
 
-  func read(messageBuffer: inout ByteBuffer) throws -> ByteBuffer? {
+  /// Reads bytes from the given buffer until it is exhausted or a message has been read.
+  ///
+  /// Length prefixed messages may be split across multiple input buffers in any of the
+  /// following places:
+  /// 1. after the compression flag,
+  /// 2. after the message length flag,
+  /// 3. at any point within the message.
+  ///
+  /// - Note:
+  /// This method relies on state; if a message is _not_ returned then the next time this
+  /// method is called it expect to read the bytes which follow the most recently read bytes.
+  /// If a message _is_ returned without exhausting the given buffer then reading a
+  /// different buffer is not an issue.
+  ///
+  /// - Parameter messageBuffer: buffer to read from.
+  /// - Returns: A buffer containing a message if one has been read, or `nil` if not enough
+  ///   bytes have been consumed to return a message.
+  /// - Throws: Throws an error if the compression algorithm is not supported. This depends
+  //    on the `Mode` this instance is running in.
+  internal func read(messageBuffer: inout ByteBuffer, compression: CompressionMechanism) throws -> ByteBuffer? {
     while true {
       switch state {
       case .expectingCompressedFlag:
         guard let compressionFlag: Int8 = messageBuffer.readInteger() else { return nil }
+        precondition(compressionFlag == 0)
 
-        try handleCompressionFlag(enabled: compressionFlag != 0)
-        state = .expectingMessageLength
+        try handleCompressionFlag(enabled: compressionFlag != 0, compression: compression)
+        self.state = .expectingMessageLength
 
       case .expectingMessageLength:
         guard let messageLength: UInt32 = messageBuffer.readInteger() else { return nil }
-        state = .receivedMessageLength(messageLength)
+        self.state = .receivedMessageLength(numericCast(messageLength))
 
       case .receivedMessageLength(let messageLength):
-        // We need to account for messages being spread across multiple `ByteBuffer`s so buffer them
-        // into `buffer`. Note: when messages are contained within a single `ByteBuffer` we're just
-        // taking a slice so don't incur any extra writes.
-        guard messageBuffer.readableBytes >= messageLength else {
-          let remainingBytes = messageLength - numericCast(messageBuffer.readableBytes)
+        // If this holds true, we can skip buffering and return a slice.
+        guard messageLength <= messageBuffer.readableBytes else {
+          self.state = .willBuffer(requiredBytes: messageLength)
+          break
+        }
 
-          if var buffer = buffer {
-            buffer.write(buffer: &messageBuffer)
-            self.buffer = buffer
-          } else {
-            messageBuffer.reserveCapacity(numericCast(messageLength))
-            self.buffer = messageBuffer
-          }
+        self.state = .expectingCompressedFlag
+        // We know messageBuffer.readableBytes >= messageLength, so it's okay to force unwrap here.
+        return messageBuffer.readSlice(length: messageLength)!
 
-          state = .receivedMessageLength(remainingBytes)
+      case .willBuffer(let requiredBytes):
+        messageBuffer.reserveCapacity(requiredBytes)
+        self.buffer = messageBuffer
+
+        let readableBytes = messageBuffer.readableBytes
+        // Move the reader index to avoid reading the bytes again.
+        messageBuffer.moveReaderIndex(forwardBy: readableBytes)
+
+        self.state = .isBuffering(requiredBytes: requiredBytes - readableBytes)
+        return nil
+
+      case .isBuffering(let requiredBytes):
+        guard requiredBytes <= messageBuffer.readableBytes else {
+          self.state = .isBuffering(requiredBytes: requiredBytes - self.buffer.write(buffer: &messageBuffer))
           return nil
         }
 
-        // We know buffer.readableBytes >= messageLength, so it's okay to force unwrap here.
-        var slice = messageBuffer.readSlice(length: numericCast(messageLength))!
-        self.buffer?.write(buffer: &slice)
-        let message = self.buffer ?? slice
-
-        self.buffer = nil
+        // We know messageBuffer.readableBytes >= requiredBytes, so it's okay to force unwrap here.
+        var slice = messageBuffer.readSlice(length: requiredBytes)!
+        self.buffer.write(buffer: &slice)
         self.state = .expectingCompressedFlag
-        return message
+
+        defer { self.buffer = nil }
+        return buffer
       }
     }
   }
 
-  private func handleCompressionFlag(enabled: Bool) throws {
-    switch mode {
-    case .client:
-      // TODO: handle this better; cancel the call?
-      precondition(!enabled, "compression is not supported")
+  private func handleCompressionFlag(enabled flagEnabled: Bool, compression: CompressionMechanism) throws {
+    // Do we agree on state?
+    guard flagEnabled == compression.requiresFlag else {
+      switch mode {
+      case .client:
+        // TODO: handle this better; cancel the call?
+        preconditionFailure("compression is not supported")
 
-    case .server:
-      if enabled {
+      case .server:
         throw GRPCStatus(code: .unimplemented, message: "compression is not yet supported on the server")
+      }
+    }
+
+    guard compression.supported else {
+      switch mode {
+      case .client:
+        // TODO: handle this better; cancel the call?
+        preconditionFailure("\(compression) compression is not supported")
+
+      case .server:
+        throw GRPCStatus(code: .unimplemented, message: "\(compression) compression is not yet supported on the server")
       }
     }
   }

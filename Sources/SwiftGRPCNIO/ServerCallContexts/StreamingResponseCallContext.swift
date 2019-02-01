@@ -45,7 +45,7 @@ open class StreamingResponseCallContextImpl<ResponseMessage: Message>: Streaming
   
   open override func sendResponse(_ message: ResponseMessage) -> EventLoopFuture<Void> {
     let promise: EventLoopPromise<Void> = eventLoop.newPromise()
-    channel.writeAndFlush(NIOAny(WrappedResponse.message(message)), promise: promise)
+    channel.write(NIOAny(WrappedResponse.message(message)), promise: promise)
     return promise.futureResult
   }
 }

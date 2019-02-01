@@ -40,11 +40,13 @@ public final class GRPCClient {
   public let channel: Channel
   public let multiplexer: HTTP2StreamMultiplexer
   public let host: String
+  public var callOptions: CallOptions
 
-  init(channel: Channel, multiplexer: HTTP2StreamMultiplexer, host: String) {
+  init(channel: Channel, multiplexer: HTTP2StreamMultiplexer, host: String, callOptions: CallOptions = CallOptions()) {
     self.channel = channel
     self.multiplexer = multiplexer
     self.host = host
+    self.callOptions = callOptions
   }
 
   /// Fired when the client shuts down.
@@ -57,11 +59,14 @@ public final class GRPCClient {
   }
 }
 
-public protocol GRPCClientWrapper: CallOptionsProvider {
+public protocol GRPCServiceClient {
   var client: GRPCClient { get }
 
-  /// Name of the service this client wrapper is for.
+  /// Name of the service this client is for (e.g. "echo.Echo").
   var service: String { get }
+
+  /// The call options to use should the user not provide per-call options.
+  var callOptions: CallOptions { get set }
 
   /// Return the path for the given method in the format "/Service-Name/Method-Name".
   ///
@@ -72,18 +77,8 @@ public protocol GRPCClientWrapper: CallOptionsProvider {
   func path(forMethod method: String) -> String
 }
 
-extension GRPCClientWrapper {
+extension GRPCServiceClient {
   public func path(forMethod method: String) -> String {
     return "/\(service)/\(method)"
-  }
-}
-
-public protocol CallOptionsProvider {
-  func defaultCallOptions() -> CallOptions
-}
-
-extension CallOptionsProvider {
-  public func defaultCallOptions() -> CallOptions {
-    return CallOptions()
   }
 }

@@ -18,7 +18,6 @@ import NIO
 import NIOHTTP1
 import SwiftProtobuf
 
-
 public class GRPCClientResponseChannelHandler<ResponseMessage: Message> {
   private let messageObserver: (ResponseMessage) -> Void
   private let metadataPromise: EventLoopPromise<HTTPHeaders>
@@ -48,7 +47,6 @@ public class GRPCClientResponseChannelHandler<ResponseMessage: Message> {
     }
   }
 }
-
 
 extension GRPCClientResponseChannelHandler: ChannelInboundHandler {
   public typealias InboundIn = GRPCClientResponsePart<ResponseMessage>

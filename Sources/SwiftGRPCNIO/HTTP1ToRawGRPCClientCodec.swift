@@ -54,6 +54,7 @@ public final class HTTP1ToRawGRPCClientCodec {
   private var state: State = .expectingHeaders
   private let messageReader = LengthPrefixedMessageReader(mode: .client)
   private let messageWriter = LengthPrefixedMessageWriter()
+  private var inboundCompression: CompressionMechanism?
 }
 
 extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
@@ -87,6 +88,10 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
     guard case .expectingHeaders = state
       else { preconditionFailure("received headers while in state \(state)") }
 
+    if let encodingType = head.headers["grpc-encoding"].first {
+      inboundCompression = CompressionMechanism(rawValue: encodingType) ?? .unknown
+    }
+
     ctx.fireChannelRead(wrapInboundOut(.headers(head.headers)))
     return .expectingBodyOrTrailers
   }
@@ -99,8 +104,10 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
     guard case .expectingBodyOrTrailers = state
       else { preconditionFailure("received body while in state \(state)") }
 
-    if let message = try self.messageReader.read(messageBuffer: &messageBuffer) {
-      ctx.fireChannelRead(wrapInboundOut(.message(message)))
+    while messageBuffer.readableBytes > 0 {
+      if let message = try self.messageReader.read(messageBuffer: &messageBuffer, compression: inboundCompression ?? .none) {
+        ctx.fireChannelRead(wrapInboundOut(.message(message)))
+      }
     }
 
     return .expectingBodyOrTrailers
@@ -134,8 +141,12 @@ extension HTTP1ToRawGRPCClientCodec: ChannelOutboundHandler {
       ctx.write(wrapOutboundOut(.head(requestHead)), promise: promise)
 
     case .message(let message):
-      let request = messageWriter.write(allocator: ctx.channel.allocator, compression: .none, message: message)
-      ctx.write(wrapOutboundOut(.body(.byteBuffer(request))), promise: promise)
+      do {
+        let request = try messageWriter.write(allocator: ctx.channel.allocator, compression: .none, message: message)
+        ctx.write(wrapOutboundOut(.body(.byteBuffer(request))), promise: promise)
+      } catch {
+        ctx.fireErrorCaught(error)
+      }
 
     case .end:
       ctx.writeAndFlush(wrapOutboundOut(.end(nil)), promise: promise)

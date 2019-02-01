@@ -22,6 +22,8 @@ public struct GRPCStatus: Error {
   public static let ok = GRPCStatus(code: .ok, message: "OK")
   /// "Internal server error" status.
   public static let processingError = GRPCStatus(code: .internalError, message: "unknown error processing request")
+  /// Client cancelled the call.
+  public static let cancelled = GRPCStatus(code: .cancelled, message: "cancelled by the client")
 
   /// Status indicating that the given method is not implemented.
   public static func unimplemented(method: String) -> GRPCStatus {

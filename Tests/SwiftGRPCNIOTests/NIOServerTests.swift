@@ -18,7 +18,6 @@ import Foundation
 import NIO
 import NIOHTTP1
 import NIOHTTP2
-@testable import SwiftGRPC
 @testable import SwiftGRPCNIO
 import XCTest
 
@@ -59,12 +58,15 @@ final class EchoProvider_NIO: Echo_EchoProvider_NIO {
   func update(context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     var endOfSendOperationQueue = context.eventLoop.newSucceededFuture(result: ())
     var count = 0
+
     return context.eventLoop.newSucceededFuture(result: { event in
       switch event {
       case .message(let message):
         var response = Echo_EchoResponse()
         response.text = "Swift echo update (\(count)): \(message.text)"
-        endOfSendOperationQueue = endOfSendOperationQueue.then { context.sendResponse(response) }
+        endOfSendOperationQueue = endOfSendOperationQueue.then {
+          context.sendResponse(response)
+        }
         count += 1
         
       case .end:
@@ -92,19 +94,21 @@ class NIOServerTests: NIOServerTestCase {
     ]
   }
 
-  static let lotsOfStrings = (0..<1000).map { String(describing: $0) }
+  static let aFewStrings = ["foo", "bar", "baz"]
+  static let lotsOfStrings = (0..<10_000).map { String(describing: $0) }
 
   var eventLoopGroup: MultiThreadedEventLoopGroup!
   var server: GRPCServer!
 
   override func setUp() {
-    super.setUp()
-
     // This is how a GRPC server would actually be set up.
     eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     server = try! GRPCServer.start(
       hostname: "localhost", port: 5050, eventLoopGroup: eventLoopGroup, serviceProviders: [EchoProvider_NIO()])
       .wait()
+
+    // `super.setUp()` sets up a client; do this after the server.
+    super.setUp()
   }
 
   override func tearDown() {
@@ -118,185 +122,100 @@ class NIOServerTests: NIOServerTestCase {
 }
 
 extension NIOServerTests {
-  func testUnary() {
-    XCTAssertEqual("Swift echo get: foo", try! client.get(Echo_EchoRequest(text: "foo")).text)
+  func testUnary() throws {
+    XCTAssertEqual(try client.get(Echo_EchoRequest.with { $0.text = "foo" }).response.wait().text, "Swift echo get: foo")
   }
 
-  func testUnaryLotsOfRequests() {
+  func testUnaryLotsOfRequests() throws {
     // Sending that many requests at once can sometimes trip things up, it seems.
-    client.timeout = 5.0
     let clockStart = clock()
     let numberOfRequests = 2_000
+
     for i in 0..<numberOfRequests {
       if i % 1_000 == 0 && i > 0 {
         print("\(i) requests sent so far, elapsed time: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))")
       }
-      XCTAssertEqual("Swift echo get: foo \(i)", try client.get(Echo_EchoRequest(text: "foo \(i)")).text)
+      XCTAssertEqual(try client.get(Echo_EchoRequest.with { $0.text = "foo \(i)" }).response.wait().text, "Swift echo get: foo \(i)")
     }
     print("total time for \(numberOfRequests) requests: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))")
   }
 }
 
 extension NIOServerTests {
-  func testClientStreaming() {
-    let completionHandlerExpectation = expectation(description: "final completion handler called")
-    let call = try! client.collect { callResult in
-      XCTAssertEqual(.ok, callResult.statusCode)
-      completionHandlerExpectation.fulfill()
+  func doTestClientStreaming(messages: [String]) throws {
+    let call = client.collect()
+
+    for message in messages {
+      call.send(.message(Echo_EchoRequest.with { $0.text = message }))
     }
+    call.send(.end)
 
-    XCTAssertNoThrow(try call.send(Echo_EchoRequest(text: "foo")))
-    XCTAssertNoThrow(try call.send(Echo_EchoRequest(text: "bar")))
-    XCTAssertNoThrow(try call.send(Echo_EchoRequest(text: "baz")))
-    call.waitForSendOperationsToFinish()
-
-    let response = try! call.closeAndReceive()
-    XCTAssertEqual("Swift echo collect: foo bar baz", response.text)
-
-    waitForExpectations(timeout: defaultTimeout)
+    XCTAssertEqual("Swift echo collect: " + messages.joined(separator: " "), try call.response.wait().text)
+    XCTAssertEqual(.ok, try call.status.wait().code)
   }
 
-  func testClientStreamingLotsOfMessages() {
-    let completionHandlerExpectation = expectation(description: "completion handler called")
-    let call = try! client.collect { callResult in
-      XCTAssertEqual(.ok, callResult.statusCode)
-      completionHandlerExpectation.fulfill()
-    }
+  func testClientStreaming() {
+    XCTAssertNoThrow(try doTestClientStreaming(messages: NIOServerTests.aFewStrings))
+  }
 
-    for string in NIOServerTests.lotsOfStrings {
-      XCTAssertNoThrow(try call.send(Echo_EchoRequest(text: string)))
-    }
-    call.waitForSendOperationsToFinish()
-
-    let response = try! call.closeAndReceive()
-    XCTAssertEqual("Swift echo collect: " + NIOServerTests.lotsOfStrings.joined(separator: " "), response.text)
-
-    waitForExpectations(timeout: defaultTimeout)
+  func testClientStreamingLotsOfMessages() throws {
+    XCTAssertNoThrow(try doTestClientStreaming(messages: NIOServerTests.lotsOfStrings))
   }
 }
 
 extension NIOServerTests {
-  func testServerStreaming() {
-    let completionHandlerExpectation = expectation(description: "completion handler called")
-    let call = try! client.expand(Echo_EchoRequest(text: "foo bar baz")) { callResult in
-      XCTAssertEqual(.ok, callResult.statusCode)
-      completionHandlerExpectation.fulfill()
+  func doTestServerStreaming(messages: [String]) throws {
+    var index = 0
+    let call = client.expand(Echo_EchoRequest.with { $0.text = messages.joined(separator: " ") }) { response in
+      XCTAssertEqual("Swift echo expand (\(index)): \(messages[index])", response.text)
+      index += 1
     }
 
-    XCTAssertEqual("Swift echo expand (0): foo", try! call.receive()!.text)
-    XCTAssertEqual("Swift echo expand (1): bar", try! call.receive()!.text)
-    XCTAssertEqual("Swift echo expand (2): baz", try! call.receive()!.text)
-    XCTAssertNil(try! call.receive())
+    XCTAssertEqual(try call.status.wait().code, .ok)
+  }
 
-    waitForExpectations(timeout: defaultTimeout)
+  func testServerStreaming() {
+    XCTAssertNoThrow(try doTestServerStreaming(messages: NIOServerTests.aFewStrings))
   }
 
   func testServerStreamingLotsOfMessages() {
-    let completionHandlerExpectation = expectation(description: "completion handler called")
-    let call = try! client.expand(Echo_EchoRequest(text: NIOServerTests.lotsOfStrings.joined(separator: " "))) { callResult in
-      XCTAssertEqual(.ok, callResult.statusCode)
-      completionHandlerExpectation.fulfill()
-    }
-
-    for string in NIOServerTests.lotsOfStrings {
-      XCTAssertEqual("Swift echo expand (\(string)): \(string)", try! call.receive()!.text)
-    }
-    XCTAssertNil(try! call.receive())
-
-    waitForExpectations(timeout: defaultTimeout)
+    XCTAssertNoThrow(try doTestServerStreaming(messages: NIOServerTests.lotsOfStrings))
   }
 }
 
 extension NIOServerTests {
-  func testBidirectionalStreamingBatched() {
-    let finalCompletionHandlerExpectation = expectation(description: "final completion handler called")
-    let call = try! client.update { callResult in
-      XCTAssertEqual(.ok, callResult.statusCode)
-      finalCompletionHandlerExpectation.fulfill()
+  private func doTestBidirectionalStreaming(messages: [String], waitForEachResponse: Bool = false) throws {
+    let responseReceived = waitForEachResponse ? DispatchSemaphore(value: 0) : nil
+    var index = 0
+
+    let call = client.update { response in
+      XCTAssertEqual("Swift echo update (\(index)): \(messages[index])", response.text)
+      responseReceived?.signal()
+      index += 1
     }
 
-    XCTAssertNoThrow(try call.send(Echo_EchoRequest(text: "foo")))
-    XCTAssertNoThrow(try call.send(Echo_EchoRequest(text: "bar")))
-    XCTAssertNoThrow(try call.send(Echo_EchoRequest(text: "baz")))
+    messages.forEach { part in
+      call.send(.message(Echo_EchoRequest.with { $0.text = part }))
+      responseReceived?.wait()
+    }
+    call.send(.end)
 
-    call.waitForSendOperationsToFinish()
-
-    XCTAssertNoThrow(try call.closeSend())
-
-    XCTAssertEqual("Swift echo update (0): foo", try! call.receive()!.text)
-    XCTAssertEqual("Swift echo update (1): bar", try! call.receive()!.text)
-    XCTAssertEqual("Swift echo update (2): baz", try! call.receive()!.text)
-    XCTAssertNil(try! call.receive())
-
-    waitForExpectations(timeout: defaultTimeout)
+    XCTAssertEqual(try call.status.wait().code, .ok)
   }
 
-  func testBidirectionalStreamingPingPong() {
-    let finalCompletionHandlerExpectation = expectation(description: "final completion handler called")
-    let call = try! client.update { callResult in
-      XCTAssertEqual(.ok, callResult.statusCode)
-      finalCompletionHandlerExpectation.fulfill()
-    }
-
-    XCTAssertNoThrow(try call.send(Echo_EchoRequest(text: "foo")))
-    XCTAssertEqual("Swift echo update (0): foo", try! call.receive()!.text)
-
-    XCTAssertNoThrow(try call.send(Echo_EchoRequest(text: "bar")))
-    XCTAssertEqual("Swift echo update (1): bar", try! call.receive()!.text)
-
-    XCTAssertNoThrow(try call.send(Echo_EchoRequest(text: "baz")))
-    XCTAssertEqual("Swift echo update (2): baz", try! call.receive()!.text)
-
-    call.waitForSendOperationsToFinish()
-
-    XCTAssertNoThrow(try call.closeSend())
-
-    XCTAssertNil(try! call.receive())
-
-    waitForExpectations(timeout: defaultTimeout)
+  func testBidirectionalStreamingBatched() throws {
+    XCTAssertNoThrow(try doTestBidirectionalStreaming(messages: NIOServerTests.aFewStrings))
   }
 
-  func testBidirectionalStreamingLotsOfMessagesBatched() {
-    let finalCompletionHandlerExpectation = expectation(description: "final completion handler called")
-    let call = try! client.update { callResult in
-      XCTAssertEqual(.ok, callResult.statusCode)
-      finalCompletionHandlerExpectation.fulfill()
-    }
-
-    for string in NIOServerTests.lotsOfStrings {
-      XCTAssertNoThrow(try call.send(Echo_EchoRequest(text: string)))
-    }
-
-    call.waitForSendOperationsToFinish()
-
-    XCTAssertNoThrow(try call.closeSend())
-
-    for string in NIOServerTests.lotsOfStrings {
-      XCTAssertEqual("Swift echo update (\(string)): \(string)", try! call.receive()!.text)
-    }
-    XCTAssertNil(try! call.receive())
-
-    waitForExpectations(timeout: defaultTimeout)
+  func testBidirectionalStreamingPingPong() throws {
+    XCTAssertNoThrow(try doTestBidirectionalStreaming(messages: NIOServerTests.aFewStrings, waitForEachResponse: true))
   }
 
-  func testBidirectionalStreamingLotsOfMessagesPingPong() {
-    let finalCompletionHandlerExpectation = expectation(description: "final completion handler called")
-    let call = try! client.update { callResult in
-      XCTAssertEqual(.ok, callResult.statusCode)
-      finalCompletionHandlerExpectation.fulfill()
-    }
+  func testBidirectionalStreamingLotsOfMessagesBatched() throws {
+    XCTAssertNoThrow(try doTestBidirectionalStreaming(messages: NIOServerTests.lotsOfStrings))
+  }
 
-    for string in NIOServerTests.lotsOfStrings {
-      XCTAssertNoThrow(try call.send(Echo_EchoRequest(text: string)))
-      XCTAssertEqual("Swift echo update (\(string)): \(string)", try! call.receive()!.text)
-    }
-
-    call.waitForSendOperationsToFinish()
-
-    XCTAssertNoThrow(try call.closeSend())
-
-    XCTAssertNil(try! call.receive())
-
-    waitForExpectations(timeout: defaultTimeout)
+  func testBidirectionalStreamingLotsOfMessagesPingPong() throws {
+    XCTAssertNoThrow(try doTestBidirectionalStreaming(messages: NIOServerTests.lotsOfStrings, waitForEachResponse: true))
   }
 }

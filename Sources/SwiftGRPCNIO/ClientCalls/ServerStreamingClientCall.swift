@@ -21,11 +21,9 @@ public class ServerStreamingClientCall<RequestMessage: Message, ResponseMessage:
   public init(client: GRPCClient, path: String, request: RequestMessage, callOptions: CallOptions, handler: @escaping (ResponseMessage) -> Void) {
     super.init(channel: client.channel, multiplexer: client.multiplexer, responseHandler: .callback(handler: handler))
 
-    let requestHead = makeRequestHead(path: path, host: client.host, customMetadata: callOptions.customMetadata)
-    subchannel.whenSuccess { channel in
-      channel.write(GRPCClientRequestPart<RequestMessage>.head(requestHead), promise: nil)
-      channel.write(GRPCClientRequestPart<RequestMessage>.message(request), promise: nil)
-      channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.end, promise: nil)
-    }
+    self.setTimeout(callOptions.timeout)
+
+    let requestHead = self.makeRequestHead(path: path, host: client.host, customMetadata: callOptions.customMetadata)
+    self.send(requestHead: requestHead, request: request)
   }
 }
