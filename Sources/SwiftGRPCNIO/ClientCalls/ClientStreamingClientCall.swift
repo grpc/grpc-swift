@@ -27,7 +27,7 @@ public class ClientStreamingClientCall<RequestMessage: Message, ResponseMessage:
 
     self.setTimeout(callOptions.timeout)
 
-    let requestHead = self.makeRequestHead(path: path, host: client.host, customMetadata: callOptions.customMetadata)
+    let requestHead = self.makeRequestHead(path: path, host: client.host, callOptions: callOptions)
     self.send(requestHead: requestHead)
   }
 

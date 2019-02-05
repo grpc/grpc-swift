@@ -88,9 +88,10 @@ public class BaseClientCall<RequestMessage: Message, ResponseMessage: Message>: 
     }
   }
 
-  internal func makeRequestHead(path: String, host: String, customMetadata: HTTPHeaders? = nil) -> HTTPRequestHead {
+  internal func makeRequestHead(path: String, host: String, callOptions: CallOptions) -> HTTPRequestHead {
     var requestHead = HTTPRequestHead(version: .init(major: 2, minor: 0), method: .POST, uri: path)
-    customMetadata?.forEach { name, value in
+
+    callOptions.customMetadata.forEach { name, value in
       requestHead.headers.add(name: name, value: value)
     }
 
@@ -104,6 +105,10 @@ public class BaseClientCall<RequestMessage: Message, ResponseMessage: Message>: 
       .joined(separator: ",")
 
     requestHead.headers.add(name: "grpc-accept-encoding", value: acceptedEncoding)
+
+    if let timeout = callOptions.timeout {
+      requestHead.headers.add(name: "grpc-timeout", value: String(describing: timeout))
+    }
 
     return requestHead
   }
