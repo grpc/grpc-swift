@@ -62,16 +62,13 @@ internal class LengthPrefixedMessageReader {
   /// - Parameter messageBuffer: buffer to read from.
   /// - Returns: A buffer containing a message if one has been read, or `nil` if not enough
   ///   bytes have been consumed to return a message.
-  /// - Throws: Throws an error if the compression algorithm is not supported. This depends
-  //    on the `Mode` this instance is running in.
+  /// - Throws: Throws an error if the compression algorithm is not supported.
   internal func read(messageBuffer: inout ByteBuffer, compression: CompressionMechanism) throws -> ByteBuffer? {
     while true {
       switch state {
       case .expectingCompressedFlag:
         guard let compressionFlag: Int8 = messageBuffer.readInteger() else { return nil }
-        precondition(compressionFlag == 0)
-
-        try handleCompressionFlag(enabled: compressionFlag != 0, compression: compression)
+        try handleCompressionFlag(enabled: compressionFlag != 0, mechanism: compression)
         self.state = .expectingMessageLength
 
       case .expectingMessageLength:
@@ -117,28 +114,13 @@ internal class LengthPrefixedMessageReader {
     }
   }
 
-  private func handleCompressionFlag(enabled flagEnabled: Bool, compression: CompressionMechanism) throws {
-    // Do we agree on state?
-    guard flagEnabled == compression.requiresFlag else {
-      switch mode {
-      case .client:
-        // TODO: handle this better; cancel the call?
-        preconditionFailure("compression is not supported")
-
-      case .server:
-        throw GRPCStatus(code: .unimplemented, message: "compression is not yet supported on the server")
-      }
+  private func handleCompressionFlag(enabled flagEnabled: Bool, mechanism: CompressionMechanism) throws {
+    guard flagEnabled == mechanism.requiresFlag else {
+      throw GRPCStatus.processingError
     }
 
-    guard compression.supported else {
-      switch mode {
-      case .client:
-        // TODO: handle this better; cancel the call?
-        preconditionFailure("\(compression) compression is not supported")
-
-      case .server:
-        throw GRPCStatus(code: .unimplemented, message: "\(compression) compression is not yet supported on the server")
-      }
+    guard mechanism.supported else {
+      throw GRPCStatus(code: .unimplemented, message: "\(mechanism) compression is not currently supported on the \(mode)")
     }
   }
 }

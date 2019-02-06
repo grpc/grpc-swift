@@ -68,7 +68,7 @@ final class EchoProvider_NIO: Echo_EchoProvider_NIO {
           context.sendResponse(response)
         }
         count += 1
-        
+
       case .end:
         endOfSendOperationQueue
           .map { GRPCStatus.ok }
@@ -78,7 +78,7 @@ final class EchoProvider_NIO: Echo_EchoProvider_NIO {
   }
 }
 
-class NIOServerTests: NIOServerTestCase {
+class NIOServerTests: BasicEchoTestCase {
   static var allTests: [(String, (NIOServerTests) -> () throws -> Void)] {
     return [
       ("testUnary", testUnary),
@@ -96,34 +96,12 @@ class NIOServerTests: NIOServerTestCase {
 
   static let aFewStrings = ["foo", "bar", "baz"]
   static let lotsOfStrings = (0..<10_000).map { String(describing: $0) }
-
-  var eventLoopGroup: MultiThreadedEventLoopGroup!
-  var server: GRPCServer!
-
-  override func setUp() {
-    // This is how a GRPC server would actually be set up.
-    eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-    server = try! GRPCServer.start(
-      hostname: "localhost", port: 5050, eventLoopGroup: eventLoopGroup, serviceProviders: [EchoProvider_NIO()])
-      .wait()
-
-    // `super.setUp()` sets up a client; do this after the server.
-    super.setUp()
-  }
-
-  override func tearDown() {
-    XCTAssertNoThrow(try server.close().wait())
-
-    XCTAssertNoThrow(try eventLoopGroup.syncShutdownGracefully())
-    eventLoopGroup = nil
-
-    super.tearDown()
-  }
 }
 
 extension NIOServerTests {
   func testUnary() throws {
-    XCTAssertEqual(try client.get(Echo_EchoRequest.with { $0.text = "foo" }).response.wait().text, "Swift echo get: foo")
+    let options = CallOptions(timeout: nil)
+    XCTAssertEqual(try client.get(Echo_EchoRequest.with { $0.text = "foo" }, callOptions: options).response.wait().text, "Swift echo get: foo")
   }
 
   func testUnaryLotsOfRequests() throws {

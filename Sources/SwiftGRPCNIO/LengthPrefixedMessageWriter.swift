@@ -17,7 +17,6 @@ import Foundation
 import NIO
 
 internal class LengthPrefixedMessageWriter {
-
   /// Writes the data into a `ByteBuffer` as a gRPC length-prefixed message.
   ///
   /// - Parameters:

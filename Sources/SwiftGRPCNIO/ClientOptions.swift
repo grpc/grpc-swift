@@ -17,10 +17,15 @@ import Foundation
 import NIOHTTP1
 
 public struct CallOptions {
+  public static let defaultTimeout = GRPCTimeout.minutes(1)
+
+  /// Additional metadata to send to the service.
   public var customMetadata: HTTPHeaders
+
+  /// The call timeout; defaults to to 1 minute.
   public var timeout: GRPCTimeout?
 
-  public init(customMetadata: HTTPHeaders = HTTPHeaders(), timeout: GRPCTimeout? = .minutes(1)) {
+  public init(customMetadata: HTTPHeaders = HTTPHeaders(), timeout: GRPCTimeout? = CallOptions.defaultTimeout) {
     self.customMetadata = customMetadata
     self.timeout = timeout
   }

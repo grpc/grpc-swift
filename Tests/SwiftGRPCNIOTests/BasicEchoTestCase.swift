@@ -31,20 +31,40 @@ extension Echo_EchoResponse {
   }
 }
 
-class NIOServerTestCase: XCTestCase {
+class BasicEchoTestCase: XCTestCase {
+  var defaultTimeout: TimeInterval = 1.0
+
+  var serverEventLoopGroup: EventLoopGroup!
+  var server: GRPCServer!
+
+  var clientEventLoopGroup: EventLoopGroup!
   var client: Echo_EchoService_NIOClient!
 
   override func setUp() {
     super.setUp()
 
-    let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-    self.client = try! GRPCClient.start(host: "localhost", port: 5050, eventLoopGroup: eventLoopGroup)
+    self.serverEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    self.server = try! GRPCServer.start(
+      hostname: "localhost", port: 5050, eventLoopGroup: self.serverEventLoopGroup, serviceProviders: [EchoProvider_NIO()])
+      .wait()
+
+    self.clientEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    self.client = try! GRPCClient.start(
+      host: "localhost", port: 5050, eventLoopGroup: self.clientEventLoopGroup)
       .map { Echo_EchoService_NIOClient(client: $0) }
       .wait()
   }
 
   override func tearDown() {
-    client = nil
+    XCTAssertNoThrow(try self.client.client.close().wait())
+    XCTAssertNoThrow(try self.clientEventLoopGroup.syncShutdownGracefully())
+    self.clientEventLoopGroup = nil
+    self.client = nil
+
+    XCTAssertNoThrow(try self.server.close().wait())
+    XCTAssertNoThrow(try self.serverEventLoopGroup.syncShutdownGracefully())
+    self.serverEventLoopGroup = nil
+    self.server = nil
 
     super.tearDown()
   }

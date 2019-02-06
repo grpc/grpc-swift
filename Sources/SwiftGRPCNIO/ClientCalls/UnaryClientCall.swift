@@ -18,21 +18,19 @@ import SwiftProtobuf
 import NIO
 
 public class UnaryClientCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage>, UnaryResponseClientCall {
-  private let responsePromise: EventLoopPromise<ResponseMessage>
-  public var response: EventLoopFuture<ResponseMessage> { return responsePromise.futureResult }
-
-  public init(client: GRPCClient, path: String, request: RequestMessage, callOptions: CallOptions) {
-    self.responsePromise = client.channel.eventLoop.newPromise()
-    super.init(channel: client.channel, multiplexer: client.multiplexer, responseHandler: .fulfill(promise: self.responsePromise))
-
-    self.setTimeout(callOptions.timeout)
-
-    let requestHead = self.makeRequestHead(path: path, host: client.host, callOptions: callOptions)
-    self.send(requestHead: requestHead, request: request)
+  public var response: EventLoopFuture<ResponseMessage> {
+    // It's okay to force unwrap because we know the handler is holding the response promise.
+    return self.clientChannelHandler.responsePromise!.futureResult
   }
 
-  override internal func failPromises(error: Error) {
-    super.failPromises(error: error)
-    self.responsePromise.fail(error: error)
+  public init(client: GRPCClient, path: String, request: RequestMessage, callOptions: CallOptions) {
+    super.init(
+      client: client,
+      path: path,
+      callOptions: callOptions,
+      responseObserver: .succeedPromise(client.channel.eventLoop.newPromise()))
+
+    self.sendRequest(request)
+    self.sendEnd()
   }
 }

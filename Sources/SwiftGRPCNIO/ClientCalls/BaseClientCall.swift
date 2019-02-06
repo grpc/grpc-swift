@@ -19,76 +19,139 @@ import NIOHTTP1
 import NIOHTTP2
 import SwiftProtobuf
 
-public class BaseClientCall<RequestMessage: Message, ResponseMessage: Message>: ClientCall {
-  private let subchannelPromise: EventLoopPromise<Channel>
-  private let initialMetadataPromise: EventLoopPromise<HTTPHeaders>
-  private let statusPromise: EventLoopPromise<GRPCStatus>
+public class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
+  /// The underlying `GRPCClient` providing the HTTP/2 channel and multiplexer.
+  internal let client: GRPCClient
 
-  public var subchannel: EventLoopFuture<Channel> { return subchannelPromise.futureResult }
-  public var initialMetadata: EventLoopFuture<HTTPHeaders> { return initialMetadataPromise.futureResult }
-  public var status: EventLoopFuture<GRPCStatus> { return statusPromise.futureResult }
+  /// Promise for an HTTP/2 stream.
+  internal let streamPromise: EventLoopPromise<Channel>
+
+  /// Client channel handler. Handles some internal state for reading/writing messages to the channel.
+  /// The handler also owns the promises for the futures that this class surfaces to the user (such as
+  /// `initialMetadata` and `status`).
+  internal let clientChannelHandler: GRPCClientChannelHandler<RequestMessage, ResponseMessage>
 
   /// Sets up a gRPC call.
   ///
-  /// Creates a new HTTP2 stream (`subchannel`) using the given multiplexer and configures the pipeline to
-  /// handle client gRPC requests and responses.
+  /// A number of actions are performed:
+  /// - a new HTTP/2 stream is created and configured using channel and multiplexer provided by `client`,
+  /// - a callback is registered on the new stream (`subchannel`) to send the request head,
+  /// - a timeout is scheduled if one is set in the `callOptions`.
   ///
   /// - Parameters:
-  ///   - channel: the main channel.
-  ///   - multiplexer: HTTP2 stream multiplexer on which HTTP2 streams are created.
-  ///   - responseHandler: handler for received messages.
+  ///   - client: client containing the HTTP/2 channel and multiplexer to use for this call.
+  ///   - path: path for this RPC method.
+  ///   - callOptions: options to use when configuring this call.
+  ///   - responseObserver: observer for received messages.
   init(
-    channel: Channel,
-    multiplexer: HTTP2StreamMultiplexer,
-    responseHandler: GRPCClientResponseChannelHandler<ResponseMessage>.ResponseMessageHandler
+    client: GRPCClient,
+    path: String,
+    callOptions: CallOptions,
+    responseObserver: ResponseObserver<ResponseMessage>
   ) {
-    self.subchannelPromise = channel.eventLoop.newPromise()
-    self.initialMetadataPromise = channel.eventLoop.newPromise()
-    self.statusPromise = channel.eventLoop.newPromise()
+    self.client = client
+    self.streamPromise = client.channel.eventLoop.newPromise()
+    self.clientChannelHandler = GRPCClientChannelHandler(
+      initialMetadataPromise: client.channel.eventLoop.newPromise(),
+      statusPromise: client.channel.eventLoop.newPromise(),
+      responseObserver: responseObserver)
 
-    let channelHandler = GRPCClientResponseChannelHandler<ResponseMessage>(metadata: self.initialMetadataPromise,
-                                                                           status: self.statusPromise,
-                                                                           messageHandler: responseHandler)
+    self.createStreamChannel()
+    self.setTimeout(callOptions.timeout)
 
+    let requestHead = BaseClientCall<RequestMessage, ResponseMessage>.makeRequestHead(path: path, host: client.host, callOptions: callOptions)
+    self.sendRequestHead(requestHead)
+  }
+}
+
+extension BaseClientCall: ClientCall {
+  /// HTTP/2 stream associated with this call.
+  public var subchannel: EventLoopFuture<Channel> {
+    return self.streamPromise.futureResult
+  }
+
+  /// Initial metadata returned from the server.
+  public var initialMetadata: EventLoopFuture<HTTPHeaders> {
+    return self.clientChannelHandler.initialMetadataPromise.futureResult
+  }
+
+  /// Status of this call which may originate from the server or client.
+  ///
+  /// Note: despite `GRPCStatus` being an `Error`, the value will be delievered as a __success__
+  /// result even if the status represents a __negative__ outcome.
+  public var status: EventLoopFuture<GRPCStatus> {
+    return self.clientChannelHandler.statusPromise.futureResult
+  }
+
+  /// Cancel the current call.
+  ///
+  /// Closes the HTTP/2 stream once it becomes available. Additional writes to the channel will be ignored.
+  /// Any unfulfilled promises will be failed with a cancelled status (excepting `status` which will be
+  /// succeeded, if not already succeeded).
+  public func cancel() {
+    self.client.channel.eventLoop.execute {
+      self.subchannel.whenSuccess { channel in
+        channel.close(mode: .all, promise: nil)
+      }
+    }
+  }
+}
+
+extension BaseClientCall {
+  /// Creates and configures an HTTP/2 stream channel. `subchannel` will contain the stream channel when it is created.
+  internal func createStreamChannel() {
     /// Create a new HTTP2 stream to handle calls.
-    channel.eventLoop.execute {
-      multiplexer.createStreamChannel(promise: self.subchannelPromise) { (subchannel, streamID) -> EventLoopFuture<Void> in
+    self.client.channel.eventLoop.execute {
+      self.client.multiplexer.createStreamChannel(promise: self.streamPromise) { (subchannel, streamID) -> EventLoopFuture<Void> in
         subchannel.pipeline.addHandlers([HTTP2ToHTTP1ClientCodec(streamID: streamID, httpProtocol: .http),
                                          HTTP1ToRawGRPCClientCodec(),
                                          GRPCClientCodec<RequestMessage, ResponseMessage>(),
-                                         channelHandler],
+                                         self.clientChannelHandler],
                                         first: false)
       }
     }
   }
 
-  internal func send(requestHead: HTTPRequestHead, request: RequestMessage? = nil) {
-    subchannel.whenSuccess { channel in
+  /// Send the request head once `subchannel` becomes available.
+  internal func sendRequestHead(_ requestHead: HTTPRequestHead) {
+    self.subchannel.whenSuccess { channel in
       channel.write(GRPCClientRequestPart<RequestMessage>.head(requestHead), promise: nil)
-      if let request = request {
-        channel.write(GRPCClientRequestPart<RequestMessage>.message(request), promise: nil)
-        channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.end, promise: nil)
-      }
     }
   }
 
+  /// Send the given request once `subchannel` becomes available.
+  internal func sendRequest(_ request: RequestMessage) {
+    self.subchannel.whenSuccess { channel in
+      channel.write(GRPCClientRequestPart<RequestMessage>.message(request), promise: nil)
+    }
+  }
+
+  /// Send `end` once `subchannel` becomes available.
+  internal func sendEnd() {
+    self.subchannel.whenSuccess { channel in
+      channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.end, promise: nil)
+    }
+  }
+
+  /// Creates a client-side timeout for this call.
   internal func setTimeout(_ timeout: GRPCTimeout?) {
     guard let timeout = timeout else { return }
 
-    self.subchannel.whenSuccess { channel in
-      let timeoutPromise = channel.eventLoop.newPromise(of: Void.self)
-
-      timeoutPromise.futureResult.whenFailure {
-        self.failPromises(error: $0)
-      }
-
-      channel.eventLoop.scheduleTask(in: timeout.asNIOTimeAmount) {
-        timeoutPromise.fail(error: GRPCStatus(code: .deadlineExceeded))
-      }
+    let clientChannelHandler = self.clientChannelHandler
+    self.client.channel.eventLoop.scheduleTask(in: timeout.asNIOTimeAmount) {
+      let status = GRPCStatus(code: .deadlineExceeded, message: "client timed out after \(timeout)")
+      clientChannelHandler.observeStatus(status)
     }
   }
 
-  internal func makeRequestHead(path: String, host: String, callOptions: CallOptions) -> HTTPRequestHead {
+  /// Makes a new `HTTPRequestHead` for this call.
+  ///
+  /// - Parameters:
+  ///   - path: path for this RPC method.
+  ///   - host: the address of the host we are connected to.
+  ///   - callOptions: options to use when configuring this call.
+  /// - Returns: `HTTPRequestHead` configured for this call.
+  internal class func makeRequestHead(path: String, host: String, callOptions: CallOptions) -> HTTPRequestHead {
     var requestHead = HTTPRequestHead(version: .init(major: 2, minor: 0), method: .POST, uri: path)
 
     callOptions.customMetadata.forEach { name, value in
@@ -111,17 +174,5 @@ public class BaseClientCall<RequestMessage: Message, ResponseMessage: Message>: 
     }
 
     return requestHead
-  }
-
-  internal func failPromises(error: Error) {
-    self.statusPromise.fail(error: error)
-    self.initialMetadataPromise.fail(error: error)
-  }
-
-  public func cancel() {
-    self.subchannel.whenSuccess { channel in
-      channel.close(mode: .all, promise: nil)
-    }
-    self.failPromises(error: GRPCStatus.cancelled)
   }
 }

@@ -48,6 +48,7 @@ extension GRPCClientCodec: ChannelInboundHandler {
       ctx.fireChannelRead(wrapInboundOut(.headers(headers)))
 
     case .message(var message):
+      // Force unwrapping is okay here; we're only reading the readable bytes.
       let messageAsData = message.readData(length: message.readableBytes)!
       do {
         ctx.fireChannelRead(self.wrapInboundOut(.message(try ResponseMessage(serializedData: messageAsData))))

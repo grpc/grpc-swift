@@ -47,6 +47,7 @@ internal enum CompressionMechanism: String, CaseIterable {
     }
   }
 
+  /// Compression mechanisms we should list in an accept-encoding header.
   static var acceptEncoding: [CompressionMechanism] {
     return CompressionMechanism
       .allCases

@@ -19,11 +19,6 @@ import NIO
 
 public class BidirectionalStreamingClientCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage>, StreamingRequestClientCall {
   public init(client: GRPCClient, path: String, callOptions: CallOptions, handler: @escaping (ResponseMessage) -> Void) {
-    super.init(channel: client.channel, multiplexer: client.multiplexer, responseHandler: .callback(handler: handler))
-
-    self.setTimeout(callOptions.timeout)
-
-    let requestHead = self.makeRequestHead(path: path, host: client.host, callOptions: callOptions)
-    self.send(requestHead: requestHead)
+    super.init(client: client, path: path, callOptions: callOptions, responseObserver: .callback(handler))
   }
 }
