@@ -60,6 +60,8 @@ final class GeneratorOptions {
   private(set) var generateNIOImplementation = false
   private(set) var protoToModuleMappings = ProtoFileToModuleMappings()
   private(set) var fileNaming = FileNaming.FullPath
+  
+  private(set) var generateQuibiRPC = true
 
   init(parameter: String?) throws {
     for pair in GeneratorOptions.parseParameter(string: parameter) {
@@ -91,7 +93,7 @@ final class GeneratorOptions {
         } else {
           throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }
-        
+      
       case "Sync":
         if let value = Bool(pair.value) {
           generateSynchronous = value
@@ -130,7 +132,13 @@ final class GeneratorOptions {
         } else {
           throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }
-
+      case "Quibi":
+        if let value = Bool(pair.value) {
+          generateQuibiRPC = value
+        } else {
+          throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
+        }
+        
       default:
         throw GenerationError.unknownParameter(name: pair.key)
       }

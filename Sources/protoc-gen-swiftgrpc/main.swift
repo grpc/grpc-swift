@@ -106,7 +106,13 @@ func main() throws {
   // process each .proto file separately
   for fileDescriptor in descriptorSet.files {
     if fileDescriptor.services.count > 0 {
-      let grpcFileName = uniqueOutputFileName(component: "grpc", fileDescriptor: fileDescriptor, fileNamingOption: options.fileNaming)
+      let component:String
+      if (options.generateQuibiRPC) {
+          component = "qrpc"
+      } else {
+          component = "grpc"
+      }
+      let grpcFileName = uniqueOutputFileName(component: component, fileDescriptor: fileDescriptor, fileNamingOption: options.fileNaming)
       let grpcGenerator = Generator(fileDescriptor, options: options)
       var grpcFile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()
       grpcFile.name = grpcFileName
