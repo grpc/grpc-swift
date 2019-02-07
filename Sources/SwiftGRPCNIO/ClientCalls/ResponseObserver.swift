@@ -17,15 +17,12 @@ import Foundation
 import NIO
 import SwiftProtobuf
 
-/// An response message observer.
+/// A response message observer.
 ///
 /// - succeedPromise: succeed the given promise on receipt of a message.
 /// - callback: calls the given callback for each response observed.
 internal enum ResponseObserver<ResponseMessage: Message> {
-  /// Fulfill the given promise on receiving the first response message.
   case succeedPromise(EventLoopPromise<ResponseMessage>)
-
-  /// Call the given handler for each response message received.
   case callback((ResponseMessage) -> Void)
 
   /// Observe the given message.

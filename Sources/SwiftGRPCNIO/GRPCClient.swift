@@ -17,7 +17,7 @@ import Foundation
 import NIO
 import NIOHTTP2
 
-public final class GRPCClient {
+open class GRPCClient {
   public static func start(
     host: String,
     port: Int,

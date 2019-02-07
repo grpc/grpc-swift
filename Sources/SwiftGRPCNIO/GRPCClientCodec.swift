@@ -32,6 +32,8 @@ public enum GRPCClientResponsePart<ResponseMessage: Message> {
   case status(GRPCStatus)
 }
 
+/// This channel handler simply encodes and decodes protobuf messages into into typed messages
+/// and `Data`.
 public final class GRPCClientCodec<RequestMessage: Message, ResponseMessage: Message> {
   public init() {}
 }
@@ -48,7 +50,7 @@ extension GRPCClientCodec: ChannelInboundHandler {
       ctx.fireChannelRead(wrapInboundOut(.headers(headers)))
 
     case .message(var message):
-      // Force unwrapping is okay here; we're only reading the readable bytes.
+      // Force unwrapping is okay here; we're reading the readable bytes.
       let messageAsData = message.readData(length: message.readableBytes)!
       do {
         ctx.fireChannelRead(self.wrapInboundOut(.message(try ResponseMessage(serializedData: messageAsData))))

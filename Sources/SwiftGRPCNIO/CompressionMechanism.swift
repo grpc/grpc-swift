@@ -15,16 +15,22 @@
  */
 import Foundation
 
-enum CompressionError: Error {
+internal enum CompressionError: Error {
   case unsupported(CompressionMechanism)
 }
 
+/// The mechanism to use for message compression.
 internal enum CompressionMechanism: String, CaseIterable {
+  /// No compression was indicated.
   case none
-  case identity
+
+  /// Compression indicated via a header.
+  case identity  // no compression
   case gzip
   case deflate
   case snappy
+
+  /// Compression indiciated via a header, but not one listed in the specification.
   case unknown
 
   /// Whether there should be a corresponding header flag.

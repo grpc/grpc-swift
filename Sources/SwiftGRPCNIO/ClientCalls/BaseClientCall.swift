@@ -34,7 +34,7 @@ public class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
   /// Sets up a gRPC call.
   ///
   /// A number of actions are performed:
-  /// - a new HTTP/2 stream is created and configured using channel and multiplexer provided by `client`,
+  /// - a new HTTP/2 stream is created and configured using the channel and multiplexer provided by `client`,
   /// - a callback is registered on the new stream (`subchannel`) to send the request head,
   /// - a timeout is scheduled if one is set in the `callOptions`.
   ///
@@ -100,7 +100,6 @@ extension BaseClientCall: ClientCall {
 extension BaseClientCall {
   /// Creates and configures an HTTP/2 stream channel. `subchannel` will contain the stream channel when it is created.
   internal func createStreamChannel() {
-    /// Create a new HTTP2 stream to handle calls.
     self.client.channel.eventLoop.execute {
       self.client.multiplexer.createStreamChannel(promise: self.streamPromise) { (subchannel, streamID) -> EventLoopFuture<Void> in
         subchannel.pipeline.addHandlers([HTTP2ToHTTP1ClientCodec(streamID: streamID, httpProtocol: .http),

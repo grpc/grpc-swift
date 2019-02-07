@@ -17,6 +17,12 @@ import Foundation
 import SwiftProtobuf
 import NIO
 
+/// A server-streaming gRPC call. The request is sent on initialisation, each response is passed to the provided observer.
+///
+/// The following futures are available to the caller:
+/// - `initialMetadata`: the initial metadata returned from the server,
+/// - `status`: the status of the gRPC call,
+/// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
 public class ServerStreamingClientCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage> {
   public init(client: GRPCClient, path: String, request: RequestMessage, callOptions: CallOptions, handler: @escaping (ResponseMessage) -> Void) {
     super.init(client: client, path: path, callOptions: callOptions, responseObserver: .callback(handler))

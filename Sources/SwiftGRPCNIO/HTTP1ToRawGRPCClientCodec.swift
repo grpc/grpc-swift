@@ -17,7 +17,7 @@ import Foundation
 import NIO
 import NIOHTTP1
 
-/// Outgoing gRPC package with an unknown message type (represented as the serialzed protobuf message).
+/// Outgoing gRPC package with an unknown message type (represented as the serialized protobuf message).
 public enum RawGRPCClientRequestPart {
   case head(HTTPRequestHead)
   case message(Data)
@@ -54,7 +54,7 @@ public final class HTTP1ToRawGRPCClientCodec {
   private var state: State = .expectingHeaders
   private let messageReader = LengthPrefixedMessageReader(mode: .client)
   private let messageWriter = LengthPrefixedMessageWriter()
-  private var inboundCompression: CompressionMechanism?
+  private var inboundCompression: CompressionMechanism = .none
 }
 
 extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
@@ -105,7 +105,7 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
       else { preconditionFailure("received body while in state \(state)") }
 
     while messageBuffer.readableBytes > 0 {
-      if let message = try self.messageReader.read(messageBuffer: &messageBuffer, compression: inboundCompression ?? .none) {
+      if let message = try self.messageReader.read(messageBuffer: &messageBuffer, compression: inboundCompression) {
         ctx.fireChannelRead(wrapInboundOut(.message(message)))
       }
     }
@@ -114,8 +114,7 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
   }
 
   /// Forwards a `GRPCStatus` to the next handler. The status and message are extracted
-  /// from the trailers if they exist; the `.unknown` status code and an empty message
-  /// are used otherwise.
+  /// from the trailers if they exist; the `.unknown` status code is used if no status exists.
   private func processTrailers(ctx: ChannelHandlerContext, trailers: HTTPHeaders?) -> State {
     guard case .expectingBodyOrTrailers = state
       else { preconditionFailure("received trailers while in state \(state)") }
@@ -129,7 +128,6 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
     return .ignore
   }
 }
-
 
 extension HTTP1ToRawGRPCClientCodec: ChannelOutboundHandler {
   public typealias OutboundIn = RawGRPCClientRequestPart

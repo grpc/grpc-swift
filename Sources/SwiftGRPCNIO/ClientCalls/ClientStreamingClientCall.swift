@@ -17,6 +17,16 @@ import Foundation
 import SwiftProtobuf
 import NIO
 
+/// A client-streaming gRPC call.
+///
+/// Messages should be sent via the `send` method; an `.end` message should be sent
+/// to indicate the final message has been sent.
+///
+/// The following futures are available to the caller:
+/// - `initialMetadata`: the initial metadata returned from the server,
+/// - `response`: the response from the call,
+/// - `status`: the status of the gRPC call,
+/// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
 public class ClientStreamingClientCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage>, StreamingRequestClientCall, UnaryResponseClientCall {
   public var response: EventLoopFuture<ResponseMessage> {
     // It's okay to force unwrap because we know the handler is holding the response promise.

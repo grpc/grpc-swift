@@ -23,7 +23,7 @@ public protocol ClientCall {
   associatedtype RequestMessage: Message
   associatedtype ResponseMessage: Message
 
-  /// HTTP2 stream that requests and responses are sent and received on.
+  /// HTTP/2 stream that requests and responses are sent and received on.
   var subchannel: EventLoopFuture<Channel> { get }
 
   /// Initial response metadata.
