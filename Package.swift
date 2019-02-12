@@ -18,7 +18,7 @@ import PackageDescription
 import Foundation
 
 var packageDependencies: [Package.Dependency] = [
-  .package(url: "https://github.com/apple/swift-protobuf.git", .upToNextMinor(from: "1.1.1")),
+  .package(url: "https://github.com/apple/swift-protobuf.git", .upToNextMinor(from: "1.3.1")),
   .package(url: "https://github.com/kylef/Commander.git", .upToNextMinor(from: "0.8.0")),
   .package(url: "https://github.com/apple/swift-nio-zlib-support.git", .upToNextMinor(from: "1.0.0")),
   .package(url: "https://github.com/apple/swift-nio.git", .upToNextMinor(from: "1.12.0")),
