@@ -45,12 +45,14 @@ public class Channel {
     gRPC.initialize()
     host = address
     let argumentWrappers = arguments.map { $0.toCArg() }
-    var argumentValues = argumentWrappers.map { $0.wrapped }
 
-    if secure {
-      underlyingChannel = cgrpc_channel_create_secure(address, roots_pem(), nil, nil, &argumentValues, Int32(arguments.count))
-    } else {
-      underlyingChannel = cgrpc_channel_create(address, &argumentValues, Int32(arguments.count))
+    underlyingChannel = withExtendedLifetime(argumentWrappers) {
+        var argumentValues = argumentWrappers.map { $0.wrapped }
+        if secure {
+          return cgrpc_channel_create_secure(address, roots_pem(), nil, nil, &argumentValues, Int32(arguments.count))
+        } else {
+          return cgrpc_channel_create(address, &argumentValues, Int32(arguments.count))
+        }
     }
     completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_channel_completion_queue(underlyingChannel), name: "Client")
     completionQueue.run() // start a loop that watches the channel's completion queue
@@ -64,9 +66,11 @@ public class Channel {
     gRPC.initialize()
     host = googleAddress
     let argumentWrappers = arguments.map { $0.toCArg() }
-    var argumentValues = argumentWrappers.map { $0.wrapped }
-
-    underlyingChannel = cgrpc_channel_create_google(googleAddress, &argumentValues, Int32(arguments.count))
+    
+    underlyingChannel = withExtendedLifetime(argumentWrappers) {
+        var argumentValues = argumentWrappers.map { $0.wrapped }
+        return cgrpc_channel_create_google(googleAddress, &argumentValues, Int32(arguments.count))
+    }
 
     completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_channel_completion_queue(underlyingChannel), name: "Client")
     completionQueue.run() // start a loop that watches the channel's completion queue
@@ -83,9 +87,11 @@ public class Channel {
     gRPC.initialize()
     host = address
     let argumentWrappers = arguments.map { $0.toCArg() }
-    var argumentValues = argumentWrappers.map { $0.wrapped }
 
-    underlyingChannel = cgrpc_channel_create_secure(address, certificates, clientCertificates, clientKey, &argumentValues, Int32(arguments.count))
+    underlyingChannel = withExtendedLifetime(argumentWrappers) {
+        var argumentValues = argumentWrappers.map { $0.wrapped }
+        return cgrpc_channel_create_secure(address, certificates, clientCertificates, clientKey, &argumentValues, Int32(arguments.count))
+    }
     completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_channel_completion_queue(underlyingChannel), name: "Client")
     completionQueue.run() // start a loop that watches the channel's completion queue
   }
