@@ -24,7 +24,7 @@ void cgrpc_call_destroy(cgrpc_call *call) {
   if (call->call) {
     grpc_call_unref(call->call);
   }
-  free(call);
+  gpr_free(call);
 }
 
 grpc_call_error cgrpc_call_perform(cgrpc_call *call, cgrpc_operations *operations, void *tag) {
