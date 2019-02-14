@@ -16,9 +16,9 @@
 #include "internal.h"
 #include "cgrpc.h"
 
+#include <grpc/support/alloc.h>
+
 #include <stdlib.h>
-#include <string.h>
-#include <assert.h>
 
 void cgrpc_call_destroy(cgrpc_call *call) {
   if (call->call) {
