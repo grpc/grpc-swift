@@ -33,8 +33,10 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
   typealias Version = _2
 }
 
-struct Echo_EchoRequest: SwiftProtobuf.Message {
-  static let protoMessageName: String = _protobuf_package + ".EchoRequest"
+struct Echo_EchoRequest {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
 
   /// The text of a message to be echoed.
   var text: String = String()
@@ -42,34 +44,12 @@ struct Echo_EchoRequest: SwiftProtobuf.Message {
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
-
-  /// Used by the decoding initializers in the SwiftProtobuf library, not generally
-  /// used directly. `init(serializedData:)`, `init(jsonUTF8Data:)`, and other decoding
-  /// initializers are defined in the SwiftProtobuf library. See the Message and
-  /// Message+*Additions` files.
-  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      switch fieldNumber {
-      case 1: try decoder.decodeSingularStringField(value: &self.text)
-      default: break
-      }
-    }
-  }
-
-  /// Used by the encoding methods of the SwiftProtobuf library, not generally
-  /// used directly. `Message.serializedData()`, `Message.jsonUTF8Data()`, and
-  /// other serializer methods are defined in the SwiftProtobuf library. See the
-  /// `Message` and `Message+*Additions` files.
-  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if !self.text.isEmpty {
-      try visitor.visitSingularStringField(value: self.text, fieldNumber: 1)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
 }
 
-struct Echo_EchoResponse: SwiftProtobuf.Message {
-  static let protoMessageName: String = _protobuf_package + ".EchoResponse"
+struct Echo_EchoResponse {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
 
   /// The text of an echo response.
   var text: String = String()
@@ -77,11 +57,18 @@ struct Echo_EchoResponse: SwiftProtobuf.Message {
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
+}
 
-  /// Used by the decoding initializers in the SwiftProtobuf library, not generally
-  /// used directly. `init(serializedData:)`, `init(jsonUTF8Data:)`, and other decoding
-  /// initializers are defined in the SwiftProtobuf library. See the Message and
-  /// Message+*Additions` files.
+// MARK: - Code below here is support for the SwiftProtobuf runtime.
+
+fileprivate let _protobuf_package = "echo"
+
+extension Echo_EchoRequest: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".EchoRequest"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+    1: .same(proto: "text"),
+  ]
+
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
       switch fieldNumber {
@@ -91,42 +78,45 @@ struct Echo_EchoResponse: SwiftProtobuf.Message {
     }
   }
 
-  /// Used by the encoding methods of the SwiftProtobuf library, not generally
-  /// used directly. `Message.serializedData()`, `Message.jsonUTF8Data()`, and
-  /// other serializer methods are defined in the SwiftProtobuf library. See the
-  /// `Message` and `Message+*Additions` files.
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
     if !self.text.isEmpty {
       try visitor.visitSingularStringField(value: self.text, fieldNumber: 1)
     }
     try unknownFields.traverse(visitor: &visitor)
   }
-}
 
-// MARK: - Code below here is support for the SwiftProtobuf runtime.
-
-fileprivate let _protobuf_package = "echo"
-
-extension Echo_EchoRequest: SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "text"),
-  ]
-
-  func _protobuf_generated_isEqualTo(other: Echo_EchoRequest) -> Bool {
-    if self.text != other.text {return false}
-    if unknownFields != other.unknownFields {return false}
+  static func ==(lhs: Echo_EchoRequest, rhs: Echo_EchoRequest) -> Bool {
+    if lhs.text != rhs.text {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
 }
 
-extension Echo_EchoResponse: SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+extension Echo_EchoResponse: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".EchoResponse"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "text"),
   ]
 
-  func _protobuf_generated_isEqualTo(other: Echo_EchoResponse) -> Bool {
-    if self.text != other.text {return false}
-    if unknownFields != other.unknownFields {return false}
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      switch fieldNumber {
+      case 1: try decoder.decodeSingularStringField(value: &self.text)
+      default: break
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.text.isEmpty {
+      try visitor.visitSingularStringField(value: self.text, fieldNumber: 1)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: Echo_EchoResponse, rhs: Echo_EchoResponse) -> Bool {
+    if lhs.text != rhs.text {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
 }
