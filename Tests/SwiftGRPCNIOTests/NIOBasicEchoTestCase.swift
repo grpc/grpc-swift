@@ -31,7 +31,7 @@ extension Echo_EchoResponse {
   }
 }
 
-class BasicEchoTestCase: XCTestCase {
+class NIOBasicEchoTestCase: XCTestCase {
   var defaultTimeout: TimeInterval = 1.0
 
   var serverEventLoopGroup: EventLoopGroup!

@@ -17,8 +17,8 @@ import Foundation
 import SwiftGRPCNIO
 import XCTest
 
-class ClientCancellingTests: BasicEchoTestCase {
-  static var allTests: [(String, (ClientCancellingTests) -> () throws -> Void)] {
+class NIOClientCancellingTests: NIOBasicEchoTestCase {
+  static var allTests: [(String, (NIOClientCancellingTests) -> () throws -> Void)] {
     return [
       ("testUnary", testUnary),
       ("testClientStreaming", testClientStreaming),
@@ -28,7 +28,7 @@ class ClientCancellingTests: BasicEchoTestCase {
   }
 }
 
-extension ClientCancellingTests {
+extension NIOClientCancellingTests {
   func testUnary() {
     let statusReceived = self.expectation(description: "status received")
 

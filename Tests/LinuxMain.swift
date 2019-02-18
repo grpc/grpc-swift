@@ -36,5 +36,7 @@ XCTMain([
   testCase(ServerTimeoutTests.allTests),
 
   // SwiftGRPCNIO
-  testCase(NIOServerTests.allTests)
+  testCase(NIOServerTests.allTests),
+  testCase(NIOClientCancellingTests.allTests),
+  testCase(NIOClientTimeoutTests.allTests)
 ])

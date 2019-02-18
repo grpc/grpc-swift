@@ -18,8 +18,8 @@ import SwiftGRPCNIO
 import NIO
 import XCTest
 
-class ClientTimeoutTests: BasicEchoTestCase {
-  static var allTests: [(String, (ClientTimeoutTests) -> () throws -> Void)] {
+class NIOClientTimeoutTests: NIOBasicEchoTestCase {
+  static var allTests: [(String, (NIOClientTimeoutTests) -> () throws -> Void)] {
     return [
       ("testUnaryTimeoutAfterSending", testUnaryTimeoutAfterSending),
       ("testServerStreamingTimeoutAfterSending", testServerStreamingTimeoutAfterSending),
@@ -57,7 +57,7 @@ class ClientTimeoutTests: BasicEchoTestCase {
   }
 }
 
-extension ClientTimeoutTests {
+extension NIOClientTimeoutTests {
   func testUnaryTimeoutAfterSending() {
     // The request gets fired on call creation, so we need a very short timeout.
     let callOptions = CallOptions(timeout: .milliseconds(1))
@@ -72,9 +72,7 @@ extension ClientTimeoutTests {
   func testServerStreamingTimeoutAfterSending() {
     // The request gets fired on call creation, so we need a very short timeout.
     let callOptions = CallOptions(timeout: .milliseconds(1))
-    let call = client.expand(Echo_EchoRequest(text: "foo bar baz"), callOptions: callOptions) { response in
-      XCTFail("response received after deadline")
-    }
+    let call = client.expand(Echo_EchoRequest(text: "foo bar baz"), callOptions: callOptions) { _ in }
 
     self.expectDeadlineExceeded(forStatus: call.status)
 
@@ -109,9 +107,7 @@ extension ClientTimeoutTests {
 
   func testBidirectionalStreamingTimeoutBeforeSending() {
     let callOptions = CallOptions(timeout: .milliseconds(50))
-    let call = client.update(callOptions: callOptions) { response in
-      XCTFail("response received after deadline")
-    }
+    let call = client.update(callOptions: callOptions)  { _ in }
 
     self.expectDeadlineExceeded(forStatus: call.status)
 

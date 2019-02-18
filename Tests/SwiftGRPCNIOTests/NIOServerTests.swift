@@ -78,7 +78,7 @@ final class EchoProvider_NIO: Echo_EchoProvider_NIO {
   }
 }
 
-class NIOServerTests: BasicEchoTestCase {
+class NIOServerTests: NIOBasicEchoTestCase {
   static var allTests: [(String, (NIOServerTests) -> () throws -> Void)] {
     return [
       ("testUnary", testUnary),
