@@ -20,7 +20,7 @@ internal enum CompressionError: Error {
 }
 
 /// The mechanism to use for message compression.
-internal enum CompressionMechanism: String, CaseIterable {
+internal enum CompressionMechanism: String {
   /// No compression was indicated.
   case none
 
@@ -38,6 +38,7 @@ internal enum CompressionMechanism: String, CaseIterable {
     switch self {
     case .none:
       return false
+
     case .identity, .gzip, .deflate, .snappy, .unknown:
       return true
     }
@@ -48,6 +49,7 @@ internal enum CompressionMechanism: String, CaseIterable {
     switch self {
     case .identity, .none:
       return true
+
     case .gzip, .deflate, .snappy, .unknown:
       return false
     }
@@ -60,3 +62,11 @@ internal enum CompressionMechanism: String, CaseIterable {
       .filter { $0.supported && $0.requiresFlag }
   }
 }
+
+#if swift(>=4.2)
+extension CompressionMechanism: CaseIterable {}
+#else
+extension CompressionMechanism {
+  public static let allCases: [CompressionMechanism] = [.none, .identity, .gzip, .deflate, .snappy, .unknown]
+}
+#endif
