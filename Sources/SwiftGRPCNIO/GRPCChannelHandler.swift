@@ -30,7 +30,7 @@ public final class GRPCChannelHandler {
   private let servicesByName: [String: CallHandlerProvider]
   private weak var errorDelegate: ServerErrorDelegate?
 
-  public init(servicesByName: [String: CallHandlerProvider], errorDelegate: ServerErrorDelegate? = nil) {
+  public init(servicesByName: [String: CallHandlerProvider], errorDelegate: ServerErrorDelegate?) {
     self.servicesByName = servicesByName
     self.errorDelegate = errorDelegate
   }
@@ -43,7 +43,7 @@ extension GRPCChannelHandler: ChannelInboundHandler {
   public func errorCaught(ctx: ChannelHandlerContext, error: Error) {
     errorDelegate?.observe(error)
 
-    let transformedError = (errorDelegate?.transform(error) ?? error)
+    let transformedError = errorDelegate?.transform(error) ?? error
     let status = (transformedError as? GRPCStatusTransformable)?.asGRPCStatus() ?? GRPCStatus.processingError
     ctx.writeAndFlush(wrapOutboundOut(.status(status)), promise: nil)
   }
@@ -53,7 +53,7 @@ extension GRPCChannelHandler: ChannelInboundHandler {
     switch requestPart {
     case .head(let requestHead):
       guard let callHandler = getCallHandler(channel: ctx.channel, requestHead: requestHead) else {
-          errorCaught(ctx: ctx, error: GRPCStatus.unimplemented(method: requestHead.uri))
+          errorCaught(ctx: ctx, error: GRPCError.unimplementedMethod(requestHead.uri))
           return
       }
 

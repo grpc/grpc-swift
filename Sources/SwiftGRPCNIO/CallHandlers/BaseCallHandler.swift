@@ -27,7 +27,7 @@ public class BaseCallHandler<RequestMessage: Message, ResponseMessage: Message>:
   /// Called for each error recieved in `errorCaught(ctx:error:)`.
   private weak var errorDelegate: ServerErrorDelegate?
 
-  public init(errorDelegate: ServerErrorDelegate? = nil) {
+  public init(errorDelegate: ServerErrorDelegate?) {
     self.errorDelegate = errorDelegate
   }
 }
@@ -48,9 +48,9 @@ extension BaseCallHandler: ChannelInboundHandler {
 
   public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
     switch self.unwrapInboundIn(data) {
-    case .head:
+    case .head(let requestHead):
       // Head should have been handled by `GRPCChannelHandler`.
-      self.errorCaught(ctx: ctx, error: GRPCStatus(code: .unknown, message: "unexpectedly received head"))
+      self.errorCaught(ctx: ctx, error: GRPCError.invalidState("unexpected request head received \(requestHead)"))
 
     case .message(let message):
       do {
@@ -71,7 +71,7 @@ extension BaseCallHandler: ChannelOutboundHandler {
 
   public func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     guard serverCanWrite else {
-      promise?.fail(error: GRPCStatus.processingError)
+      promise?.fail(error: GRPCError.serverNotWritable)
       return
     }
 

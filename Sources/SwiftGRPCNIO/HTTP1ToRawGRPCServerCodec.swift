@@ -27,8 +27,8 @@ public enum RawGRPCServerResponsePart {
 ///
 /// The translation from HTTP2 to HTTP1 is done by `HTTP2ToHTTP1ServerCodec`.
 public final class HTTP1ToRawGRPCServerCodec {
-  internal var inboundState = InboundState.expectingHeaders
-  internal var outboundState = OutboundState.expectingHeaders
+  var inboundState = InboundState.expectingHeaders
+  var outboundState = OutboundState.expectingHeaders
 
   private var buffer: NIO.ByteBuffer?
 
@@ -46,7 +46,7 @@ extension HTTP1ToRawGRPCServerCodec {
     enum Body {
       case expectingCompressedFlag
       case expectingMessageLength
-      case receivedMessageLength(UInt32)
+      case expectingMoreMessageBytes(UInt32)
     }
   }
 
@@ -54,20 +54,6 @@ extension HTTP1ToRawGRPCServerCodec {
     case expectingHeaders
     case expectingBodyOrStatus
     case ignore
-  }
-}
-
-extension HTTP1ToRawGRPCServerCodec {
-  struct StateMachineError: Error, GRPCStatusTransformable {
-    private let message: String
-
-    init(_ message: String) {
-      self.message = message
-    }
-
-    func asGRPCStatus() -> GRPCStatus {
-      return GRPCStatus.processingError
-    }
   }
 }
 
@@ -97,7 +83,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
 
   func processHead(ctx: ChannelHandlerContext, requestHead: HTTPRequestHead) throws -> InboundState {
     guard case .expectingHeaders = inboundState else {
-      throw StateMachineError("expecteded state .expectingHeaders, got \(inboundState)")
+      throw GRPCError.invalidState("expecteded state .expectingHeaders, got \(inboundState)")
     }
 
     ctx.fireChannelRead(self.wrapInboundOut(.head(requestHead)))
@@ -107,7 +93,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
 
   func processBody(ctx: ChannelHandlerContext, body: inout ByteBuffer) throws -> InboundState {
     guard case .expectingBody(let bodyState) = inboundState else {
-      throw StateMachineError("expecteded state .expectingBody(_), got \(inboundState)")
+      throw GRPCError.invalidState("expecteded state .expectingBody(_), got \(inboundState)")
     }
 
     return .expectingBody(try processBodyState(ctx: ctx, initialState: bodyState, messageBuffer: &body))
@@ -124,37 +110,36 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
     while true {
       switch bodyState {
       case .expectingCompressedFlag:
-        guard let compressionFlag: Int8 = messageBuffer.readInteger() else { return .expectingCompressedFlag }
+        guard let compressedFlag: Int8 = messageBuffer.readInteger() else { return .expectingCompressedFlag }
 
         // TODO: Add support for compression.
-        guard compressionFlag == 0 else { throw GRPCStatus.unsupportedCompression }
+        guard compressedFlag == 0 else { throw GRPCError.unexpectedCompression }
 
         bodyState = .expectingMessageLength
 
       case .expectingMessageLength:
         guard let messageLength: UInt32 = messageBuffer.readInteger() else { return .expectingMessageLength }
-        bodyState = .receivedMessageLength(messageLength)
+        bodyState = .expectingMoreMessageBytes(messageLength)
 
-      case .receivedMessageLength(let messageLength):
+      case .expectingMoreMessageBytes(let bytesOutstanding):
         // We need to account for messages being spread across multiple `ByteBuffer`s so buffer them
         // into `buffer`. Note: when messages are contained within a single `ByteBuffer` we're just
         // taking a slice so don't incur any extra writes.
-        guard messageBuffer.readableBytes >= messageLength else {
-          let remainingBytes = messageLength - numericCast(messageBuffer.readableBytes)
+        guard messageBuffer.readableBytes >= bytesOutstanding else {
+          let remainingBytes = bytesOutstanding - numericCast(messageBuffer.readableBytes)
 
           if var buffer = buffer {
             buffer.write(buffer: &messageBuffer)
             self.buffer = buffer
           } else {
-            messageBuffer.reserveCapacity(numericCast(messageLength))
+            messageBuffer.reserveCapacity(numericCast(bytesOutstanding))
             self.buffer = messageBuffer
           }
-
-          return .receivedMessageLength(remainingBytes)
+          return .expectingMoreMessageBytes(remainingBytes)
         }
 
         // We know buffer.readableBytes >= messageLength, so it's okay to force unwrap here.
-        var slice = messageBuffer.readSlice(length: numericCast(messageLength))!
+        var slice = messageBuffer.readSlice(length: numericCast(bytesOutstanding))!
 
         if var buffer = buffer {
           buffer.write(buffer: &slice)
@@ -170,8 +155,8 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
   }
 
   private func processEnd(ctx: ChannelHandlerContext, trailers: HTTPHeaders?) throws -> InboundState {
-    guard trailers == nil else {
-      throw StateMachineError("unexpected trailers received \(String(describing: trailers))")
+    if let trailers = trailers {
+      throw GRPCError.invalidState("unexpected trailers received \(trailers)")
     }
 
     ctx.fireChannelRead(self.wrapInboundOut(.end))
@@ -207,16 +192,18 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
       outboundState = .expectingBodyOrStatus
 
     case .status(let status):
+      // If we error before sending the initial headers (e.g. unimplemtned method) then we won't have sent the request head.
+      // NIOHTTP2 doesn't support sending a single frame as a "Trailers-Only" response so we still need to loop back and
+      // send the request head first.
+      if case .expectingHeaders = outboundState {
+        var headers = HTTPHeaders()
+        headers.add(name: "content-type", value: "application/grpc")
+        self.write(ctx: ctx, data: NIOAny(RawGRPCServerResponsePart.headers(headers)), promise: nil)
+      }
+
       var trailers = status.trailingMetadata
       trailers.add(name: "grpc-status", value: String(describing: status.code.rawValue))
       trailers.add(name: "grpc-message", value: status.message)
-
-      // "Trailers-Only" response
-      if case .expectingHeaders = outboundState {
-        trailers.add(name: "content-type", value: "application/grpc")
-        let responseHead = HTTPResponseHead(version: .init(major: 2, minor: 0), status: .ok)
-        ctx.write(self.wrapOutboundOut(.head(responseHead)), promise: nil)
-      }
 
       ctx.writeAndFlush(self.wrapOutboundOut(.end(trailers)), promise: promise)
       outboundState = .ignore

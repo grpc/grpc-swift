@@ -85,7 +85,7 @@ extension Generator {
     if options.generateNIOImplementation {
       println("/// Determines, calls and returns the appropriate request handler, depending on the request's method.")
       println("/// Returns nil for methods not handled by this service.")
-      println("\(access) func handleMethod(_ methodName: String, request: HTTPRequestHead, serverHandler: GRPCChannelHandler, channel: Channel, errorDelegate: ServerErrorDelegate? = nil) -> GRPCCallHandler? {")
+      println("\(access) func handleMethod(_ methodName: String, request: HTTPRequestHead, serverHandler: GRPCChannelHandler, channel: Channel, errorDelegate: ServerErrorDelegate?) -> GRPCCallHandler? {")
       indent()
       println("switch methodName {")
       for method in service.methods {

@@ -4,34 +4,6 @@ import NIOHTTP1
 @testable import SwiftGRPCNIO
 import XCTest
 
-internal struct CaseExtractError: Error {
-  let message: String
-}
-
-@discardableResult
-func extractHeaders(_ response: RawGRPCServerResponsePart) throws -> HTTPHeaders {
-  guard case .headers(let headers) = response else {
-    throw CaseExtractError(message: "\(response) did not match .headers")
-  }
-  return headers
-}
-
-@discardableResult
-func extractMessage(_ response: RawGRPCServerResponsePart) throws -> ByteBuffer {
-  guard case .message(let message) = response else {
-    throw CaseExtractError(message: "\(response) did not match .message")
-  }
-  return message
-}
-
-@discardableResult
-func extractStatus(_ response: RawGRPCServerResponsePart) throws -> GRPCStatus {
-  guard case .status(let status) = response else {
-    throw CaseExtractError(message: "\(response) did not match .status")
-  }
-  return status
-}
-
 class CollectingChannelHandler<OutboundIn>: ChannelOutboundHandler {
   var responses: [OutboundIn] = []
 
@@ -40,8 +12,19 @@ class CollectingChannelHandler<OutboundIn>: ChannelOutboundHandler {
   }
 }
 
+class CollectingServerErrorDelegate: ServerErrorDelegate {
+  var errors: [Error] = []
+
+  func observe(_ error: Error) {
+    self.errors.append(error)
+  }
+}
+
 class GRPCChannelHandlerResponseCapturingTestCase: XCTestCase {
   static let echoProvider: [String: CallHandlerProvider] = ["echo.Echo": EchoProvider_NIO()]
+  class var defaultServiceProvider: [String: CallHandlerProvider] {
+    return echoProvider
+  }
 
   func configureChannel(withHandlers handlers: [ChannelHandler]) -> EventLoopFuture<EmbeddedChannel> {
     let channel = EmbeddedChannel()
@@ -49,15 +32,28 @@ class GRPCChannelHandlerResponseCapturingTestCase: XCTestCase {
       .map { _ in channel }
   }
 
+  var errorCollector: CollectingServerErrorDelegate = CollectingServerErrorDelegate()
+
+  override func setUp() {
+    errorCollector.errors.removeAll()
+  }
+
   /// Waits for `count` responses to be collected and then returns them. The test fails if the number
   /// of collected responses does not match the expected.
+  ///
+  /// - Parameters:
+  ///   - count: expected number of responses.
+  ///   - servicesByName: service providers keyed by their service name.
+  ///   - callback: a callback called after the channel has been setup, intended to "fill" the channel
+  ///     with messages. The callback is called before this function returns.
+  /// - Returns: The responses collected from the pipeline.
   func waitForGRPCChannelHandlerResponses(
     count: Int,
-    servicesByName: [String: CallHandlerProvider] = echoProvider,
+    servicesByName: [String: CallHandlerProvider] = defaultServiceProvider,
     callback: @escaping (EmbeddedChannel) throws -> Void
   ) throws -> [RawGRPCServerResponsePart] {
     let collector = CollectingChannelHandler<RawGRPCServerResponsePart>()
-    try configureChannel(withHandlers: [collector, GRPCChannelHandler(servicesByName: servicesByName)])
+    try configureChannel(withHandlers: [collector, GRPCChannelHandler(servicesByName: servicesByName, errorDelegate: errorCollector)])
       .thenThrowing(callback)
       .wait()
 

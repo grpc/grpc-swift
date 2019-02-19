@@ -13,7 +13,7 @@ public final class GRPCServer {
     port: Int,
     eventLoopGroup: EventLoopGroup,
     serviceProviders: [CallHandlerProvider],
-    errorDelegate: ServerErrorDelegate? = nil
+    errorDelegate: ServerErrorDelegate? = LoggingServerErrorDelegate()
   ) -> EventLoopFuture<GRPCServer> {
     let servicesByName = Dictionary(uniqueKeysWithValues: serviceProviders.map { ($0.serviceName, $0) })
     let bootstrap = ServerBootstrap(group: eventLoopGroup)
@@ -53,7 +53,7 @@ public final class GRPCServer {
     // Maintain a strong reference to ensure it lives as long as the server.
     self.errorDelegate = errorDelegate
 
-    // `BaseCallHandler` holds a weak reference to the delegate; nil out this reference to avoid retain cycles.
+    // nil out errorDelegate to avoid retain cycles.
     onClose.whenComplete {
       self.errorDelegate = nil
     }

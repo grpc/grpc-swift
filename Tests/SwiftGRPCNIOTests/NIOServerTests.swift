@@ -124,8 +124,10 @@ extension NIOServerTests {
 
   func testUnaryWithLargeData() throws {
     // Default max frame size is: 16,384. We'll exceed this as we also have to send the size and compression flag.
-    let request = Echo_EchoRequest.with { $0.text = String(repeating: "e", count: 16_384) }
-    XCTAssertNoThrow(try client.get(request))
+    let longMessage = String(repeating: "e", count: 16_384)
+    XCTAssertNoThrow(try client.get(Echo_EchoRequest(text: longMessage))) { response in
+      XCTAssertEqual("Swift echo get: \(longMessage)", response.text)
+    }
   }
 
   func testUnaryLotsOfRequests() {

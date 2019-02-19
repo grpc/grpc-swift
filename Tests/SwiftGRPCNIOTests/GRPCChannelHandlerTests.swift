@@ -18,12 +18,15 @@ func gRPCMessage(channel: EmbeddedChannel, compression: Bool = false, message: D
 class GRPCChannelHandlerTests: GRPCChannelHandlerResponseCapturingTestCase {
   func testUnimplementedMethodReturnsUnimplementedStatus() throws {
     let responses = try waitForGRPCChannelHandlerResponses(count: 1) { channel in
-      let requestHead = HTTPRequestHead(version: .init(major: 2, minor: 0), method: .POST, uri: "unimplemented")
+      let requestHead = HTTPRequestHead(version: .init(major: 2, minor: 0), method: .POST, uri: "unimplementedMethodName")
       try channel.writeInbound(RawGRPCServerRequestPart.head(requestHead))
     }
 
+    let expectedError = GRPCError.unimplementedMethod("unimplementedMethodName")
+    XCTAssertEqual(expectedError, errorCollector.errors.first as? GRPCError)
+
     XCTAssertNoThrow(try extractStatus(responses[0])) { status in
-      XCTAssertEqual(status.code, .unimplemented)
+      XCTAssertEqual(status, expectedError.asGRPCStatus())
     }
   }
 
@@ -42,7 +45,7 @@ class GRPCChannelHandlerTests: GRPCChannelHandlerResponseCapturingTestCase {
     XCTAssertNoThrow(try extractHeaders(responses[0]))
     XCTAssertNoThrow(try extractMessage(responses[1]))
     XCTAssertNoThrow(try extractStatus(responses[2])) { status in
-      XCTAssertEqual(status.code, .ok)
+      XCTAssertEqual(status, .ok)
     }
   }
 
@@ -56,28 +59,30 @@ class GRPCChannelHandlerTests: GRPCChannelHandlerResponseCapturingTestCase {
       try channel.writeInbound(RawGRPCServerRequestPart.message(buffer))
     }
 
+    let expectedError = GRPCError.requestProtoParseFailure
+    XCTAssertEqual(expectedError, errorCollector.errors.first as? GRPCError)
+
     XCTAssertNoThrow(try extractHeaders(responses[0]))
     XCTAssertNoThrow(try extractStatus(responses[1])) { status in
-      let expectedStatus = GRPCStatus.requestProtoParseError
-      XCTAssertEqual(status.code, expectedStatus.code)
-      XCTAssertEqual(status.message, expectedStatus.message)
+      XCTAssertEqual(status, expectedError.asGRPCStatus())
     }
   }
 }
 
 class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCase {
-  func testUnimplementedStatusReturnedWhenCompressionFlagIsSet() throws {
+  func testInternalErrorStatusReturnedWhenCompressionFlagIsSet() throws {
     let responses = try waitForGRPCChannelHandlerResponses(count: 2) { channel in
       let requestHead = HTTPRequestHead(version: .init(major: 2, minor: 0), method: .POST, uri: "/echo.Echo/Get")
       try channel.writeInbound(HTTPServerRequestPart.head(requestHead))
       try channel.writeInbound(HTTPServerRequestPart.body(gRPCMessage(channel: channel, compression: true)))
     }
 
+    let expectedError = GRPCError.unexpectedCompression
+    XCTAssertEqual(expectedError, errorCollector.errors.first as? GRPCError)
+
     XCTAssertNoThrow(try extractHeaders(responses[0]))
     XCTAssertNoThrow(try extractStatus(responses[1])) { status in
-      let expected = GRPCStatus.unsupportedCompression
-      XCTAssertEqual(status.code, expected.code)
-      XCTAssertEqual(status.message, expected.message)
+      XCTAssertEqual(status, expectedError.asGRPCStatus())
     }
   }
 
@@ -106,7 +111,7 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
     XCTAssertNoThrow(try extractHeaders(responses[0]))
     XCTAssertNoThrow(try extractMessage(responses[1]))
     XCTAssertNoThrow(try extractStatus(responses[2])) { status in
-      XCTAssertEqual(status.code, .ok)
+      XCTAssertEqual(status, .ok)
     }
   }
 
@@ -119,11 +124,12 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
       try channel.writeInbound(HTTPServerRequestPart.body(buffer))
     }
 
+    let expectedError = GRPCError.requestProtoParseFailure
+    XCTAssertEqual(expectedError, errorCollector.errors.first as? GRPCError)
+
     XCTAssertNoThrow(try extractHeaders(responses[0]))
     XCTAssertNoThrow(try extractStatus(responses[1])) { status in
-      let expected = GRPCStatus.requestProtoParseError
-      XCTAssertEqual(status.code, expected.code)
-      XCTAssertEqual(status.message, expected.message)
+      XCTAssertEqual(status, expectedError.asGRPCStatus())
     }
   }
 
@@ -141,9 +147,15 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
       try channel.writeInbound(HTTPServerRequestPart.end(trailers))
     }
 
+    if case .invalidState(let message)? = errorCollector.errors.first as? GRPCError {
+      XCTAssert(message.contains("trailers"))
+    } else {
+      XCTFail("\(String(describing: errorCollector.errors.first)) was not GRPCError.invalidState")
+    }
+
     XCTAssertNoThrow(try extractHeaders(responses[0]))
     XCTAssertNoThrow(try extractStatus(responses[1])) { status in
-      XCTAssertEqual(status.code, .internalError)
+      XCTAssertEqual(status, .processingError)
     }
   }
 
@@ -166,7 +178,7 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
     XCTAssertNoThrow(try extractHeaders(responses[0]))
     XCTAssertNoThrow(try extractMessage(responses[1]))
     XCTAssertNoThrow(try extractStatus(responses[2])) { status in
-      XCTAssertEqual(status.code, .ok)
+      XCTAssertEqual(status, .ok)
     }
   }
 
@@ -180,17 +192,4 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
         .thenThrowing { _ in try callback(channel) }
     }
   }
-}
-
-// Assert the given expression does not throw, and validate the return value from that expression.
-public func XCTAssertNoThrow<T>(
-    _ expression: @autoclosure () throws -> T,
-    _ message: String = "",
-    file: StaticString = #file,
-    line: UInt = #line,
-    validate: (T) -> Void
-) {
-  var value: T? = nil
-  XCTAssertNoThrow(try value = expression(), message, file: file, line: line)
-  value.map { validate($0) }
 }

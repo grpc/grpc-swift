@@ -35,7 +35,7 @@ extension GRPCServerCodec: ChannelInboundHandler {
       do {
         ctx.fireChannelRead(self.wrapInboundOut(.message(try RequestMessage(serializedData: messageAsData))))
       } catch {
-        ctx.fireErrorCaught(GRPCStatus.requestProtoParseError)
+        ctx.fireErrorCaught(GRPCError.requestProtoParseFailure)
       }
 
     case .end:
@@ -61,9 +61,9 @@ extension GRPCServerCodec: ChannelOutboundHandler {
         responseBuffer.write(bytes: messageData)
         ctx.write(self.wrapOutboundOut(.message(responseBuffer)), promise: promise)
       } catch {
-        let status = GRPCStatus.responseProtoSerializationError
-        promise?.fail(error: status)
-        ctx.fireErrorCaught(status)
+        let error = GRPCError.responseProtoSerializationFailure
+        promise?.fail(error: error)
+        ctx.fireErrorCaught(error)
       }
 
     case .status(let status):
