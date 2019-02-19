@@ -104,7 +104,7 @@ if CommandLine.arguments.contains("test") {
   let encoding = filedata.base64EncodedString()
   s += "  let roots = \n"
   s += "    \"" + encoding + "\"\n"
-  s += "  return String(data: Data(base64Encoded: roots, options:[])!, encoding:.utf8)!\n"
+  s += "  return String(data: Data(base64Encoded: roots, options: [])!, encoding: .utf8)!\n"
   s += "}\n"
 }
 print(s)
