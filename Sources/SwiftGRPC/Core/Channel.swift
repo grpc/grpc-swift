@@ -79,11 +79,11 @@ public class Channel {
   /// Initializes a gRPC channel
   ///
   /// - Parameter address: the address of the server to be called
-  /// - Parameter certificates: a PEM representation of certificates to use
+  /// - Parameter certificates: a PEM representation of certificates to use.
   /// - Parameter clientCertificates: a PEM representation of the client certificates to use
   /// - Parameter clientKey: a PEM representation of the client key to use
   /// - Parameter arguments: list of channel configuration options
-  public init(address: String, certificates: String, clientCertificates: String? = nil, clientKey: String? = nil, arguments: [Argument] = []) {
+  public init(address: String, certificates: String = roots_pem(), clientCertificates: String? = nil, clientKey: String? = nil, arguments: [Argument] = []) {
     gRPC.initialize()
     host = address
     let argumentWrappers = arguments.map { $0.toCArg() }
