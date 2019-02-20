@@ -18,11 +18,16 @@ import PackageDescription
 import Foundation
 
 var packageDependencies: [Package.Dependency] = [
+  // Official SwiftProtobuf library, for [de]serializing data to send on the wire.
   .package(url: "https://github.com/apple/swift-protobuf.git", .upToNextMinor(from: "1.3.1")),
+  
+  // Command line argument parser for our auxiliary command line tools.
   .package(url: "https://github.com/kylef/Commander.git", .upToNextMinor(from: "0.8.0")),
-  .package(url: "https://github.com/apple/swift-nio-zlib-support.git", .upToNextMinor(from: "1.0.0")),
+  
+  // SwiftGRPCNIO dependencies:
+  // Main SwiftNIO package
   .package(url: "https://github.com/apple/swift-nio.git", .upToNextMinor(from: "1.12.0")),
-  .package(url: "https://github.com/apple/swift-nio-nghttp2-support.git", .upToNextMinor(from: "1.0.0")),
+  // HTTP2 via SwiftNIO
   .package(url: "https://github.com/apple/swift-nio-http2.git", .revision("dd9339e6310ad8537a271f3ff60a4f3976ca8e4d"))
 ]
 
