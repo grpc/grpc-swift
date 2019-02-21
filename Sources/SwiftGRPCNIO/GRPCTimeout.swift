@@ -1,25 +1,39 @@
 import Foundation
 import NIO
 
+public enum GRPCTimeoutError: String, Error {
+  case negative = "GRPCTimeout must be non-negative"
+  case tooManyDigits = "GRPCTimeout must be at most 8 digits"
+}
+
 /// A timeout for a gRPC call.
 ///
 /// Timeouts must be positive and at most 8-digits long.
-public struct GRPCTimeout: CustomStringConvertible {
+public struct GRPCTimeout: CustomStringConvertible, Equatable {
+  public static let `default`: GRPCTimeout = try! .minutes(1)
+  /// Creates an infinite timeout. This is a sentinel value which must __not__ be sent to a gRPC service.
+  public static let infinite: GRPCTimeout = GRPCTimeout(nanoseconds: Int64.max, description: "infinite")
+
   /// A description of the timeout in the format described in the
   /// [gRPC protocol](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md).
   public let description: String
+  public let nanoseconds: Int64
 
-  private let nanoseconds: Int64
+  private init(nanoseconds: Int64, description: String) {
+    self.nanoseconds = nanoseconds
+    self.description = description
+  }
 
-  /// Creates a new GRPCTimeout with the given `amount` of the `unit`.
-  ///
-  /// `amount` must be positive and at most 8-digits.
-  private init?(_ amount: Int, _ unit: GRPCTimeoutUnit) {
+  private static func makeTimeout(_ amount: Int, _ unit: GRPCTimeoutUnit) throws -> GRPCTimeout {
     // Timeouts must be positive and at most 8-digits.
-    guard amount >= 0, amount < 100_000_000 else { return nil }
+    if amount < 0 { throw GRPCTimeoutError.negative }
+    if amount >= 100_000_000  { throw GRPCTimeoutError.tooManyDigits }
 
-    self.description = "\(amount) \(unit.rawValue)"
-    self.nanoseconds = Int64(amount) * Int64(unit.asNanoseconds)
+    // See "Timeout" in https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests
+    let description = "\(amount) \(unit.rawValue)"
+    let nanoseconds = Int64(amount) * Int64(unit.asNanoseconds)
+
+    return GRPCTimeout(nanoseconds: nanoseconds, description: description)
   }
 
   /// Creates a new GRPCTimeout for the given amount of hours.
@@ -27,9 +41,10 @@ public struct GRPCTimeout: CustomStringConvertible {
   /// `amount` must be positive and at most 8-digits.
   ///
   /// - Parameter amount: the amount of hours this `GRPCTimeout` represents.
-  /// - Returns: A `GRPCTimeout` representing the given number of hours if the amount was valid, `nil` otherwise.
-  public static func hours(_ amount: Int) -> GRPCTimeout? {
-    return GRPCTimeout(amount, .hours)
+  /// - Returns: A `GRPCTimeout` representing the given number of hours.
+  /// - Throws: `GRPCTimeoutError` if the amount was negative or more than 8 digits long.
+  public static func hours(_ amount: Int) throws -> GRPCTimeout {
+    return try makeTimeout(amount, .hours)
   }
 
   /// Creates a new GRPCTimeout for the given amount of minutes.
@@ -37,9 +52,10 @@ public struct GRPCTimeout: CustomStringConvertible {
   /// `amount` must be positive and at most 8-digits.
   ///
   /// - Parameter amount: the amount of minutes this `GRPCTimeout` represents.
-  /// - Returns: A `GRPCTimeout` representing the given number of minutes if the amount was valid, `nil` otherwise.
-  public static func minutes(_ amount: Int) -> GRPCTimeout? {
-    return GRPCTimeout(amount, .minutes)
+  /// - Returns: A `GRPCTimeout` representing the given number of minutes.
+  /// - Throws: `GRPCTimeoutError` if the amount was negative or more than 8 digits long.
+  public static func minutes(_ amount: Int) throws -> GRPCTimeout {
+    return try makeTimeout(amount, .minutes)
   }
 
   /// Creates a new GRPCTimeout for the given amount of seconds.
@@ -47,9 +63,10 @@ public struct GRPCTimeout: CustomStringConvertible {
   /// `amount` must be positive and at most 8-digits.
   ///
   /// - Parameter amount: the amount of seconds this `GRPCTimeout` represents.
-  /// - Returns: A `GRPCTimeout` representing the given number of seconds if the amount was valid, `nil` otherwise.
-  public static func seconds(_ amount: Int) -> GRPCTimeout? {
-    return GRPCTimeout(amount, .seconds)
+  /// - Returns: A `GRPCTimeout` representing the given number of seconds.
+  /// - Throws: `GRPCTimeoutError` if the amount was negative or more than 8 digits long.
+  public static func seconds(_ amount: Int) throws -> GRPCTimeout {
+    return try makeTimeout(amount, .seconds)
   }
 
   /// Creates a new GRPCTimeout for the given amount of milliseconds.
@@ -57,9 +74,10 @@ public struct GRPCTimeout: CustomStringConvertible {
   /// `amount` must be positive and at most 8-digits.
   ///
   /// - Parameter amount: the amount of milliseconds this `GRPCTimeout` represents.
-  /// - Returns: A `GRPCTimeout` representing the given number of milliseconds if the amount was valid, `nil` otherwise.
-  public static func milliseconds(_ amount: Int) -> GRPCTimeout? {
-    return GRPCTimeout(amount, .milliseconds)
+  /// - Returns: A `GRPCTimeout` representing the given number of milliseconds.
+  /// - Throws: `GRPCTimeoutError` if the amount was negative or more than 8 digits long.
+  public static func milliseconds(_ amount: Int) throws -> GRPCTimeout {
+    return try makeTimeout(amount, .milliseconds)
   }
 
   /// Creates a new GRPCTimeout for the given amount of microseconds.
@@ -67,9 +85,10 @@ public struct GRPCTimeout: CustomStringConvertible {
   /// `amount` must be positive and at most 8-digits.
   ///
   /// - Parameter amount: the amount of microseconds this `GRPCTimeout` represents.
-  /// - Returns: A `GRPCTimeout` representing the given number of microseconds if the amount was valid, `nil` otherwise.
-  public static func microseconds(_ amount: Int) -> GRPCTimeout? {
-    return GRPCTimeout(amount, .microseconds)
+  /// - Returns: A `GRPCTimeout` representing the given number of microseconds.
+  /// - Throws: `GRPCTimeoutError` if the amount was negative or more than 8 digits long.
+  public static func microseconds(_ amount: Int) throws -> GRPCTimeout {
+    return try makeTimeout(amount, .microseconds)
   }
 
   /// Creates a new GRPCTimeout for the given amount of nanoseconds.
@@ -77,9 +96,10 @@ public struct GRPCTimeout: CustomStringConvertible {
   /// `amount` must be positive and at most 8-digits.
   ///
   /// - Parameter amount: the amount of nanoseconds this `GRPCTimeout` represents.
-  /// - Returns: A `GRPCTimeout` representing the given number of nanoseconds if the amount was valid, `nil` otherwise.
-  public static func nanoseconds(_ amount: Int) -> GRPCTimeout? {
-    return GRPCTimeout(amount, .nanoseconds)
+  /// - Returns: A `GRPCTimeout` representing the given number of nanoseconds.
+  /// - Throws: `GRPCTimeoutError` if the amount was negative or more than 8 digits long.
+  public static func nanoseconds(_ amount: Int) throws -> GRPCTimeout {
+    return try makeTimeout(amount, .nanoseconds)
   }
 }
 

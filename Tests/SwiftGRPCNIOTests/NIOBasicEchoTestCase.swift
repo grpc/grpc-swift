@@ -32,7 +32,7 @@ extension Echo_EchoResponse {
 }
 
 class NIOBasicEchoTestCase: XCTestCase {
-  var defaultTimeout: TimeInterval = 1.0
+  var defaultTestTimeout: TimeInterval = 1.0
 
   var serverEventLoopGroup: EventLoopGroup!
   var server: GRPCServer!
@@ -45,13 +45,13 @@ class NIOBasicEchoTestCase: XCTestCase {
 
     self.serverEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     self.server = try! GRPCServer.start(
-      hostname: "localhost", port: 5050, eventLoopGroup: self.serverEventLoopGroup, serviceProviders: [EchoProvider_NIO()])
+      hostname: "localhost", port: 5050, eventLoopGroup: self.serverEventLoopGroup, serviceProviders: [EchoProviderNIO()])
       .wait()
 
     self.clientEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     self.client = try! GRPCClient.start(
       host: "localhost", port: 5050, eventLoopGroup: self.clientEventLoopGroup)
-      .map { Echo_EchoService_NIOClient(client: $0) }
+      .map { Echo_EchoService_NIOClient(client: $0, defaultCallOptions: CallOptions(timeout: try! .seconds(5))) }
       .wait()
   }
 

@@ -27,7 +27,7 @@ import SwiftGRPCNIO
 import SwiftProtobuf
 
 
-/// Instantiate Echo_EchoService_NIOClient, then call methods of this protocol to make API calls.
+/// Usage: instantiate Echo_EchoService_NIOClient, then call methods of this protocol to make API calls.
 internal protocol Echo_EchoService_NIO {
   func get(_ request: Echo_EchoRequest, callOptions: CallOptions?) -> UnaryClientCall<Echo_EchoRequest, Echo_EchoResponse>
   func expand(_ request: Echo_EchoRequest, callOptions: CallOptions?, handler: @escaping (Echo_EchoResponse) -> Void) -> ServerStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse>
@@ -38,37 +38,37 @@ internal protocol Echo_EchoService_NIO {
 internal final class Echo_EchoService_NIOClient: GRPCServiceClient, Echo_EchoService_NIO {
   internal let client: GRPCClient
   internal let service = "echo.Echo"
-  internal var callOptions: CallOptions
+  internal var defaultCallOptions: CallOptions
 
   /// Creates a client for the echo.Echo service.
   ///
   /// - Parameters:
   ///   - client: `GRPCClient` with a connection to the service host.
-  ///   - callOptions: Options to use for each service call if the user doesn't provide them. Defaults to `client.callOptions`.
-  internal init(client: GRPCClient, callOptions: CallOptions? = nil) {
+  ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them. Defaults to `client.defaultCallOptions`.
+  internal init(client: GRPCClient, defaultCallOptions: CallOptions? = nil) {
     self.client = client
-    self.callOptions = callOptions ?? client.callOptions
+    self.defaultCallOptions = defaultCallOptions ?? client.defaultCallOptions
   }
 
   /// Asynchronous unary call to Get.
   ///
   /// - Parameters:
   ///   - request: Request to send to Get.
-  ///   - callOptions: Call options; `self.callOptions` is used if `nil`.
+  ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   /// - Returns: A `UnaryClientCall` with futures for the metadata, status and response.
-  func get(_ request: Echo_EchoRequest, callOptions: CallOptions? = nil) -> UnaryClientCall<Echo_EchoRequest, Echo_EchoResponse> {
-    return UnaryClientCall(client: client, path: path(forMethod: "Get"), request: request, callOptions: callOptions ?? self.callOptions)
+  internal func get(_ request: Echo_EchoRequest, callOptions: CallOptions? = nil) -> UnaryClientCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return UnaryClientCall(client: client, path: path(forMethod: "Get"), request: request, callOptions: callOptions ?? self.defaultCallOptions)
   }
 
   /// Asynchronous server-streaming call to Expand.
   ///
   /// - Parameters:
   ///   - request: Request to send to Expand.
-  ///   - callOptions: Call options; `self.callOptions` is used if `nil`.
+  ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   ///   - handler: A closure called when each response is received from the server.
   /// - Returns: A `ServerStreamingClientCall` with futures for the metadata and status.
-  func expand(_ request: Echo_EchoRequest, callOptions: CallOptions? = nil, handler: @escaping (Echo_EchoResponse) -> Void) -> ServerStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse> {
-    return ServerStreamingClientCall(client: client, path: path(forMethod: "Expand"), request: request, callOptions: callOptions ?? self.callOptions, handler: handler)
+  internal func expand(_ request: Echo_EchoRequest, callOptions: CallOptions? = nil, handler: @escaping (Echo_EchoResponse) -> Void) -> ServerStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return ServerStreamingClientCall(client: client, path: path(forMethod: "Expand"), request: request, callOptions: callOptions ?? self.defaultCallOptions, handler: handler)
   }
 
   /// Asynchronous client-streaming call to Collect.
@@ -77,10 +77,10 @@ internal final class Echo_EchoService_NIOClient: GRPCServiceClient, Echo_EchoSer
   /// to the server. The caller should send an `.end` after the final message has been sent.
   ///
   /// - Parameters:
-  ///   - callOptions: Call options; `self.callOptions` is used if `nil`.
+  ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   /// - Returns: A `ClientStreamingClientCall` with futures for the metadata, status and response.
-  func collect(callOptions: CallOptions? = nil) -> ClientStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse> {
-    return ClientStreamingClientCall(client: client, path: path(forMethod: "Collect"), callOptions: callOptions ?? self.callOptions)
+  internal func collect(callOptions: CallOptions? = nil) -> ClientStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return ClientStreamingClientCall(client: client, path: path(forMethod: "Collect"), callOptions: callOptions ?? self.defaultCallOptions)
   }
 
   /// Asynchronous bidirectional-streaming call to Update.
@@ -89,11 +89,11 @@ internal final class Echo_EchoService_NIOClient: GRPCServiceClient, Echo_EchoSer
   /// to the server. The caller should send an `.end` after the final message has been sent.
   ///
   /// - Parameters:
-  ///   - callOptions: Call options; `self.callOptions` is used if `nil`.
+  ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   ///   - handler: A closure called when each response is received from the server.
-  /// - Returns: A `ClientStreamingClientCall` with futures for the metadata, status and response.
-  func update(callOptions: CallOptions? = nil, handler: @escaping (Echo_EchoResponse) -> Void) -> BidirectionalStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse> {
-    return BidirectionalStreamingClientCall(client: client, path: path(forMethod: "Update"), callOptions: callOptions ?? self.callOptions, handler: handler)
+  /// - Returns: A `ClientStreamingClientCall` with futures for the metadata and status.
+  internal func update(callOptions: CallOptions? = nil, handler: @escaping (Echo_EchoResponse) -> Void) -> BidirectionalStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return BidirectionalStreamingClientCall(client: client, path: path(forMethod: "Update"), callOptions: callOptions ?? self.defaultCallOptions, handler: handler)
   }
 
 }

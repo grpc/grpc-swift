@@ -10,7 +10,7 @@ public struct GRPCStatus: Error {
   /// Additional HTTP headers to return in the trailers.
   public let trailingMetadata: HTTPHeaders
 
-  public init(code: StatusCode, message: String? = nil, trailingMetadata: HTTPHeaders = HTTPHeaders()) {
+  public init(code: StatusCode, message: String?, trailingMetadata: HTTPHeaders = HTTPHeaders()) {
     self.code = code
     self.message = message
     self.trailingMetadata = trailingMetadata
@@ -23,7 +23,7 @@ public struct GRPCStatus: Error {
   /// "Internal server error" status.
   public static let processingError = GRPCStatus(code: .internalError, message: "unknown error processing request")
   /// Client cancelled the call.
-  public static let cancelled = GRPCStatus(code: .cancelled, message: "cancelled by the client")
+  public static let cancelledByClient = GRPCStatus(code: .cancelled, message: "cancelled by the client")
 
   /// Status indicating that the given method is not implemented.
   public static func unimplemented(method: String) -> GRPCStatus {

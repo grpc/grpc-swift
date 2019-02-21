@@ -17,6 +17,9 @@ import Foundation
 import NIO
 import NIOHTTP2
 
+/// Underlying channel and HTTP/2 stream multiplexer.
+///
+/// Different service clients implementing `GRPCServiceClient` may share an instance of this class.
 open class GRPCClient {
   public static func start(
     host: String,
@@ -40,13 +43,13 @@ open class GRPCClient {
   public let channel: Channel
   public let multiplexer: HTTP2StreamMultiplexer
   public let host: String
-  public var callOptions: CallOptions
+  public var defaultCallOptions: CallOptions
 
-  init(channel: Channel, multiplexer: HTTP2StreamMultiplexer, host: String, callOptions: CallOptions = CallOptions()) {
+  init(channel: Channel, multiplexer: HTTP2StreamMultiplexer, host: String, defaultCallOptions: CallOptions = CallOptions()) {
     self.channel = channel
     self.multiplexer = multiplexer
     self.host = host
-    self.callOptions = callOptions
+    self.defaultCallOptions = defaultCallOptions
   }
 
   /// Fired when the client shuts down.
@@ -59,14 +62,16 @@ open class GRPCClient {
   }
 }
 
+/// A GRPC client for a given service.
 public protocol GRPCServiceClient {
+  /// The client providing the underlying HTTP/2 channel for this client.
   var client: GRPCClient { get }
 
   /// Name of the service this client is for (e.g. "echo.Echo").
   var service: String { get }
 
   /// The call options to use should the user not provide per-call options.
-  var callOptions: CallOptions { get set }
+  var defaultCallOptions: CallOptions { get set }
 
   /// Return the path for the given method in the format "/Service-Name/Method-Name".
   ///

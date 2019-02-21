@@ -25,19 +25,27 @@ import NIO
 /// The following futures are available to the caller:
 /// - `initialMetadata`: the initial metadata returned from the server,
 /// - `response`: the response from the call,
-/// - `status`: the status of the gRPC call,
+/// - `status`: the status of the gRPC call after it has ended,
 /// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
 public class ClientStreamingClientCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage>, StreamingRequestClientCall, UnaryResponseClientCall {
-  public var response: EventLoopFuture<ResponseMessage> {
-    // It's okay to force unwrap because we know the handler is holding the response promise.
-    return self.clientChannelHandler.responsePromise!.futureResult
-  }
+  public unowned let response: EventLoopFuture<ResponseMessage>
 
   public init(client: GRPCClient, path: String, callOptions: CallOptions) {
+    let responsePromise: EventLoopPromise<ResponseMessage> = client.channel.eventLoop.newPromise()
+    self.response = responsePromise.futureResult
+
     super.init(
       client: client,
       path: path,
       callOptions: callOptions,
-      responseObserver: .succeedPromise(client.channel.eventLoop.newPromise()))
+      responseObserver: .succeedPromise(responsePromise))
+  }
+
+  public func sendMessage(_ message: RequestMessage) {
+    self._sendMessage(message)
+  }
+
+  public func sendEnd() {
+    self._sendEnd()
   }
 }

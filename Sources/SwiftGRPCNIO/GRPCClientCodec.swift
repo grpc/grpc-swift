@@ -32,7 +32,7 @@ public enum GRPCClientResponsePart<ResponseMessage: Message> {
   case status(GRPCStatus)
 }
 
-/// This channel handler simply encodes and decodes protobuf messages into into typed messages
+/// This channel handler simply encodes and decodes protobuf messages into typed messages
 /// and `Data`.
 public final class GRPCClientCodec<RequestMessage: Message, ResponseMessage: Message> {
   public init() {}
@@ -43,15 +43,15 @@ extension GRPCClientCodec: ChannelInboundHandler {
   public typealias InboundOut = GRPCClientResponsePart<ResponseMessage>
 
   public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
-    let response = unwrapInboundIn(data)
+    let response = self.unwrapInboundIn(data)
 
     switch response {
     case .headers(let headers):
-      ctx.fireChannelRead(wrapInboundOut(.headers(headers)))
+      ctx.fireChannelRead(self.wrapInboundOut(.headers(headers)))
 
-    case .message(var message):
+    case .message(var messageBuffer):
       // Force unwrapping is okay here; we're reading the readable bytes.
-      let messageAsData = message.readData(length: message.readableBytes)!
+      let messageAsData = messageBuffer.readData(length: messageBuffer.readableBytes)!
       do {
         ctx.fireChannelRead(self.wrapInboundOut(.message(try ResponseMessage(serializedData: messageAsData))))
       } catch {
@@ -59,7 +59,7 @@ extension GRPCClientCodec: ChannelInboundHandler {
       }
 
     case .status(let status):
-      ctx.fireChannelRead(wrapInboundOut(.status(status)))
+      ctx.fireChannelRead(self.wrapInboundOut(.status(status)))
     }
   }
 }
@@ -69,21 +69,22 @@ extension GRPCClientCodec: ChannelOutboundHandler {
   public typealias OutboundOut = RawGRPCClientRequestPart
 
   public func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
-    let request = unwrapOutboundIn(data)
+    let request = self.unwrapOutboundIn(data)
 
     switch request {
     case .head(let head):
-      ctx.write(wrapOutboundOut(.head(head)), promise: promise)
+      ctx.write(self.wrapOutboundOut(.head(head)), promise: promise)
 
     case .message(let message):
       do {
-        ctx.writeAndFlush(wrapOutboundOut(.message(try message.serializedData())), promise: promise)
+        ctx.write(self.wrapOutboundOut(.message(try message.serializedData())), promise: promise)
       } catch {
+        promise?.fail(error: error)
         ctx.fireErrorCaught(error)
       }
 
     case .end:
-      ctx.writeAndFlush(wrapOutboundOut(.end), promise: promise)
+      ctx.write(self.wrapOutboundOut(.end), promise: promise)
     }
   }
 }

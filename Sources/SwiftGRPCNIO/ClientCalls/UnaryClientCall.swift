@@ -17,27 +17,27 @@ import Foundation
 import SwiftProtobuf
 import NIO
 
-/// A unary gRPC call. The request is sent on initialisation.
+/// A unary gRPC call. The request is sent on initialization.
 ///
 /// The following futures are available to the caller:
 /// - `initialMetadata`: the initial metadata returned from the server,
 /// - `response`: the response from the unary call,
-/// - `status`: the status of the gRPC call,
+/// - `status`: the status of the gRPC call after it has ended,
 /// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
 public class UnaryClientCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage>, UnaryResponseClientCall {
-  public var response: EventLoopFuture<ResponseMessage> {
-    // It's okay to force unwrap because we know the handler is holding the response promise.
-    return self.clientChannelHandler.responsePromise!.futureResult
-  }
+  public unowned let response: EventLoopFuture<ResponseMessage>
 
   public init(client: GRPCClient, path: String, request: RequestMessage, callOptions: CallOptions) {
+    let responsePromise: EventLoopPromise<ResponseMessage> = client.channel.eventLoop.newPromise()
+    self.response = responsePromise.futureResult
+
     super.init(
       client: client,
       path: path,
       callOptions: callOptions,
-      responseObserver: .succeedPromise(client.channel.eventLoop.newPromise()))
+      responseObserver: .succeedPromise(responsePromise))
 
-    self.sendRequest(request)
-    self.sendEnd()
+    self._sendMessage(request)
+    self._sendEnd()
   }
 }

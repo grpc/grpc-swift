@@ -21,63 +21,6 @@ import NIOHTTP2
 @testable import SwiftGRPCNIO
 import XCTest
 
-// This class is what the SwiftGRPC user would actually implement to provide their service.
-final class EchoProvider_NIO: Echo_EchoProvider_NIO {
-  func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
-    var response = Echo_EchoResponse()
-    response.text = "Swift echo get: " + request.text
-    return context.eventLoop.newSucceededFuture(result: response)
-  }
-
-  func collect(context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
-    var parts: [String] = []
-    return context.eventLoop.newSucceededFuture(result: { event in
-      switch event {
-      case .message(let message):
-        parts.append(message.text)
-
-      case .end:
-        var response = Echo_EchoResponse()
-        response.text = "Swift echo collect: " + parts.joined(separator: " ")
-        context.responsePromise.succeed(result: response)
-      }
-    })
-  }
-
-  func expand(request: Echo_EchoRequest, context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<GRPCStatus> {
-    var endOfSendOperationQueue = context.eventLoop.newSucceededFuture(result: ())
-    let parts = request.text.components(separatedBy: " ")
-    for (i, part) in parts.enumerated() {
-      var response = Echo_EchoResponse()
-      response.text = "Swift echo expand (\(i)): \(part)"
-      endOfSendOperationQueue = endOfSendOperationQueue.then { context.sendResponse(response) }
-    }
-    return endOfSendOperationQueue.map { GRPCStatus.ok }
-  }
-
-  func update(context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
-    var endOfSendOperationQueue = context.eventLoop.newSucceededFuture(result: ())
-    var count = 0
-
-    return context.eventLoop.newSucceededFuture(result: { event in
-      switch event {
-      case .message(let message):
-        var response = Echo_EchoResponse()
-        response.text = "Swift echo update (\(count)): \(message.text)"
-        endOfSendOperationQueue = endOfSendOperationQueue.then {
-          context.sendResponse(response)
-        }
-        count += 1
-
-      case .end:
-        endOfSendOperationQueue
-          .map { GRPCStatus.ok }
-          .cascade(promise: context.statusPromise)
-      }
-    })
-  }
-}
-
 class NIOServerTests: NIOBasicEchoTestCase {
   static var allTests: [(String, (NIOServerTests) -> () throws -> Void)] {
     return [
@@ -95,13 +38,12 @@ class NIOServerTests: NIOBasicEchoTestCase {
   }
 
   static let aFewStrings = ["foo", "bar", "baz"]
-  static let lotsOfStrings = (0..<10_000).map { String(describing: $0) }
+  static let lotsOfStrings = (0..<5_000).map { String(describing: $0) }
 }
 
 extension NIOServerTests {
   func testUnary() throws {
-    let options = CallOptions(timeout: nil)
-    XCTAssertEqual(try client.get(Echo_EchoRequest.with { $0.text = "foo" }, callOptions: options).response.wait().text, "Swift echo get: foo")
+    XCTAssertEqual(try client.get(Echo_EchoRequest(text: "foo")).response.wait().text, "Swift echo get: foo")
   }
 
   func testUnaryLotsOfRequests() throws {
@@ -120,16 +62,16 @@ extension NIOServerTests {
 }
 
 extension NIOServerTests {
-  func doTestClientStreaming(messages: [String]) throws {
+  func doTestClientStreaming(messages: [String], file: StaticString = #file, line: UInt = #line) throws {
     let call = client.collect()
 
     for message in messages {
-      call.send(.message(Echo_EchoRequest.with { $0.text = message }))
+      call.sendMessage(Echo_EchoRequest.with { $0.text = message })
     }
-    call.send(.end)
+    call.sendEnd()
 
-    XCTAssertEqual("Swift echo collect: " + messages.joined(separator: " "), try call.response.wait().text)
-    XCTAssertEqual(.ok, try call.status.wait().code)
+    XCTAssertEqual("Swift echo collect: " + messages.joined(separator: " "), try call.response.wait().text, file: file, line: line)
+    XCTAssertEqual(.ok, try call.status.wait().code, file: file, line: line)
   }
 
   func testClientStreaming() {
@@ -142,14 +84,15 @@ extension NIOServerTests {
 }
 
 extension NIOServerTests {
-  func doTestServerStreaming(messages: [String]) throws {
+  func doTestServerStreaming(messages: [String], file: StaticString = #file, line: UInt = #line) throws {
     var index = 0
     let call = client.expand(Echo_EchoRequest.with { $0.text = messages.joined(separator: " ") }) { response in
-      XCTAssertEqual("Swift echo expand (\(index)): \(messages[index])", response.text)
+      XCTAssertEqual("Swift echo expand (\(index)): \(messages[index])", response.text, file: file, line: line)
       index += 1
     }
 
-    XCTAssertEqual(try call.status.wait().code, .ok)
+    XCTAssertEqual(try call.status.wait().code, .ok, file: file, line: line)
+    XCTAssertEqual(index, messages.count)
   }
 
   func testServerStreaming() {
@@ -162,23 +105,24 @@ extension NIOServerTests {
 }
 
 extension NIOServerTests {
-  private func doTestBidirectionalStreaming(messages: [String], waitForEachResponse: Bool = false) throws {
+  private func doTestBidirectionalStreaming(messages: [String], waitForEachResponse: Bool = false, file: StaticString = #file, line: UInt = #line) throws {
     let responseReceived = waitForEachResponse ? DispatchSemaphore(value: 0) : nil
     var index = 0
 
     let call = client.update { response in
-      XCTAssertEqual("Swift echo update (\(index)): \(messages[index])", response.text)
+      XCTAssertEqual("Swift echo update (\(index)): \(messages[index])", response.text, file: file, line: line)
       responseReceived?.signal()
       index += 1
     }
 
     messages.forEach { part in
-      call.send(.message(Echo_EchoRequest.with { $0.text = part }))
-      responseReceived?.wait()
+      call.sendMessage(Echo_EchoRequest.with { $0.text = part })
+      XCTAssertNotEqual(responseReceived?.wait(timeout: .now() + .seconds(1)), .some(.timedOut), file: file, line: line)
     }
-    call.send(.end)
+    call.sendEnd()
 
-    XCTAssertEqual(try call.status.wait().code, .ok)
+    XCTAssertEqual(try call.status.wait().code, .ok, file: file, line: line)
+    XCTAssertEqual(index, messages.count)
   }
 
   func testBidirectionalStreamingBatched() throws {

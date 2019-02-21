@@ -138,9 +138,9 @@ Group {
       var requestMessage = Echo_EchoRequest()
       requestMessage.text = part
       print("collect sending: \(requestMessage.text)")
-      collect.send(.message(requestMessage))
+      collect.sendMessage(requestMessage)
     }
-    collect.send(.end)
+    collect.sendEnd()
 
     collect.response.whenSuccess { respone in
       print("collect received: \(respone.text)")
@@ -177,9 +177,9 @@ Group {
       var requestMessage = Echo_EchoRequest()
       requestMessage.text = part
       print("update sending: \(requestMessage.text)")
-      update.send(.message(requestMessage))
+      update.sendMessage(requestMessage)
     }
-    update.send(.end)
+    update.sendEnd()
 
     // wait() on the status to stop the program from exiting.
     do {

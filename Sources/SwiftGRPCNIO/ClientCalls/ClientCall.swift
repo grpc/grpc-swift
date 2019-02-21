@@ -19,8 +19,11 @@ import NIOHTTP1
 import NIOHTTP2
 import SwiftProtobuf
 
+/// Base protocol for a client call to a gRPC service.
 public protocol ClientCall {
+  /// The type of the request message for the call.
   associatedtype RequestMessage: Message
+  /// The type of the response message for the call.
   associatedtype ResponseMessage: Message
 
   /// HTTP/2 stream that requests and responses are sent and received on.
@@ -29,7 +32,13 @@ public protocol ClientCall {
   /// Initial response metadata.
   var initialMetadata: EventLoopFuture<HTTPHeaders> { get }
 
-  /// Response status.
+  /// Status of this call which may be populated by the server or client.
+  ///
+  /// The client may populate the status if, for example, it was not possible to connect to the service.
+  ///
+  /// Note: despite `GRPCStatus` being an `Error`, the value will be __always__ delivered as a __success__
+  /// result even if the status represents a __negative__ outcome. This future will __never__ be fulfilled
+  /// with an error.
   var status: EventLoopFuture<GRPCStatus> { get }
 
   /// Trailing response metadata.
@@ -37,7 +46,11 @@ public protocol ClientCall {
   /// This is the same metadata as `GRPCStatus.trailingMetadata` returned by `status`.
   var trailingMetadata: EventLoopFuture<HTTPHeaders> { get }
 
-  /// Cancels the current call.
+  /// Cancel the current call.
+  ///
+  /// Closes the HTTP/2 stream once it becomes available. Additional writes to the channel will be ignored.
+  /// Any unfulfilled promises will be failed with a cancelled status (excepting `status` which will be
+  /// succeeded, if not already succeeded).
   func cancel()
 }
 
@@ -47,32 +60,23 @@ extension ClientCall {
   }
 }
 
-/// A `ClientCall` with server-streaming; i.e. server-streaming and bidirectional-streaming.
+/// A `ClientCall` with request streaming; i.e. server-streaming and bidirectional-streaming.
 public protocol StreamingRequestClientCall: ClientCall {
-  /// Sends a request to the service. Callers must terminate the stream of messages
-  /// with an `.end` event.
+  /// Sends a message to the service.
   ///
-  /// - Parameter event: event to send.
-  func send(_ event: StreamEvent<RequestMessage>)
-}
+  /// - Important: Callers must terminate the stream of messages by calling `sendEnd()`.
+  /// - Parameter message: request message to send.
+  func sendMessage(_ message: RequestMessage)
 
-extension StreamingRequestClientCall {
-  public func send(_ event: StreamEvent<RequestMessage>) {
-    switch event {
-    case .message(let message):
-      subchannel.whenSuccess { channel in
-        channel.write(NIOAny(GRPCClientRequestPart<RequestMessage>.message(message)), promise: nil)
-      }
-
-    case .end:
-      subchannel.whenSuccess { channel in
-        channel.writeAndFlush(NIOAny(GRPCClientRequestPart<RequestMessage>.end), promise: nil)
-      }
-    }
-  }
+  /// Indicates to the service that no more messages will be sent by the client.
+  func sendEnd()
 }
 
 /// A `ClientCall` with a unary response; i.e. unary and client-streaming.
 public protocol UnaryResponseClientCall: ClientCall {
+  /// The response message returned from the service if the call is successful. This may be failed
+  /// if the call encounters an error.
+  ///
+  /// Callers should rely on the `status` of the call for the canonical outcome.
   var response: EventLoopFuture<ResponseMessage> { get }
 }

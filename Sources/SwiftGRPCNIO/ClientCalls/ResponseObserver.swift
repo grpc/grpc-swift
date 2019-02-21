@@ -21,7 +21,7 @@ import SwiftProtobuf
 ///
 /// - succeedPromise: succeed the given promise on receipt of a message.
 /// - callback: calls the given callback for each response observed.
-internal enum ResponseObserver<ResponseMessage: Message> {
+public enum ResponseObserver<ResponseMessage: Message> {
   case succeedPromise(EventLoopPromise<ResponseMessage>)
   case callback((ResponseMessage) -> Void)
 
@@ -33,6 +33,16 @@ internal enum ResponseObserver<ResponseMessage: Message> {
 
     case .succeedPromise(let promise):
       promise.succeed(result: message)
+    }
+  }
+
+  var expectsMultipleResponses: Bool {
+    switch self {
+    case .callback:
+      return true
+
+    case .succeedPromise:
+      return false
     }
   }
 }

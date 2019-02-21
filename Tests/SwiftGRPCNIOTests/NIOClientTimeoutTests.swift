@@ -19,6 +19,9 @@ import NIO
 import XCTest
 
 class NIOClientTimeoutTests: NIOBasicEchoTestCase {
+  let optionsWithShortTimeout = CallOptions(timeout: try! GRPCTimeout.milliseconds(10))
+  let atLeastShortTimeout: TimeInterval = 0.011
+
   static var allTests: [(String, (NIOClientTimeoutTests) -> () throws -> Void)] {
     return [
       ("testUnaryTimeoutAfterSending", testUnaryTimeoutAfterSending),
@@ -39,7 +42,7 @@ class NIOClientTimeoutTests: NIOBasicEchoTestCase {
     }
 
     status.whenFailure { error in
-      XCTFail("unexpectedelty received error for status: \(error)")
+      XCTFail("unexpectedly received error for status: \(error)")
     }
   }
 
@@ -52,7 +55,7 @@ class NIOClientTimeoutTests: NIOBasicEchoTestCase {
     }
 
     response.whenSuccess { response in
-      XCTFail("response recevied after deadline")
+      XCTFail("response received after deadline")
     }
   }
 }
@@ -60,73 +63,69 @@ class NIOClientTimeoutTests: NIOBasicEchoTestCase {
 extension NIOClientTimeoutTests {
   func testUnaryTimeoutAfterSending() {
     // The request gets fired on call creation, so we need a very short timeout.
-    let callOptions = CallOptions(timeout: .milliseconds(1))
+    let callOptions = CallOptions(timeout: try! .milliseconds(1))
     let call = client.get(Echo_EchoRequest(text: "foo"), callOptions: callOptions)
 
     self.expectDeadlineExceeded(forStatus: call.status)
     self.expectDeadlineExceeded(forResponse: call.response)
 
-    waitForExpectations(timeout: defaultTimeout)
+    waitForExpectations(timeout: defaultTestTimeout)
   }
 
   func testServerStreamingTimeoutAfterSending() {
     // The request gets fired on call creation, so we need a very short timeout.
-    let callOptions = CallOptions(timeout: .milliseconds(1))
+    let callOptions = CallOptions(timeout: try! .milliseconds(1))
     let call = client.expand(Echo_EchoRequest(text: "foo bar baz"), callOptions: callOptions) { _ in }
 
     self.expectDeadlineExceeded(forStatus: call.status)
 
-    waitForExpectations(timeout: defaultTimeout)
+    waitForExpectations(timeout: defaultTestTimeout)
   }
 
   func testClientStreamingTimeoutBeforeSending() {
-    let callOptions = CallOptions(timeout: .milliseconds(50))
-    let call = client.collect(callOptions: callOptions)
+    let call = client.collect(callOptions: optionsWithShortTimeout)
 
     self.expectDeadlineExceeded(forStatus: call.status)
     self.expectDeadlineExceeded(forResponse: call.response)
 
-    waitForExpectations(timeout: defaultTimeout)
+    waitForExpectations(timeout: defaultTestTimeout)
   }
 
   func testClientStreamingTimeoutAfterSending() {
-    let callOptions = CallOptions(timeout: .milliseconds(50))
-    let call = client.collect(callOptions: callOptions)
+    let call = client.collect(callOptions: optionsWithShortTimeout)
 
     self.expectDeadlineExceeded(forStatus: call.status)
     self.expectDeadlineExceeded(forResponse: call.response)
 
-    call.send(.message(Echo_EchoRequest(text: "foo")))
+    call.sendMessage(Echo_EchoRequest(text: "foo"))
 
     // Timeout before sending `.end`
-    Thread.sleep(forTimeInterval: 0.1)
-    call.send(.end)
+    Thread.sleep(forTimeInterval: atLeastShortTimeout)
+    call.sendEnd()
 
-    waitForExpectations(timeout: defaultTimeout)
+    waitForExpectations(timeout: defaultTestTimeout)
   }
 
   func testBidirectionalStreamingTimeoutBeforeSending() {
-    let callOptions = CallOptions(timeout: .milliseconds(50))
-    let call = client.update(callOptions: callOptions)  { _ in }
+    let call = client.update(callOptions: optionsWithShortTimeout)  { _ in }
 
     self.expectDeadlineExceeded(forStatus: call.status)
 
-    Thread.sleep(forTimeInterval: 0.1)
-    waitForExpectations(timeout: defaultTimeout)
+    Thread.sleep(forTimeInterval: atLeastShortTimeout)
+    waitForExpectations(timeout: defaultTestTimeout)
   }
 
   func testBidirectionalStreamingTimeoutAfterSending() {
-    let callOptions = CallOptions(timeout: .milliseconds(50))
-    let call = client.update(callOptions: callOptions) { _ in }
+    let call = client.update(callOptions: optionsWithShortTimeout) { _ in }
 
     self.expectDeadlineExceeded(forStatus: call.status)
 
-    call.send(.message(Echo_EchoRequest(text: "foo")))
+    call.sendMessage(Echo_EchoRequest(text: "foo"))
 
     // Timeout before sending `.end`
-    Thread.sleep(forTimeInterval: 0.1)
-    call.send(.end)
+    Thread.sleep(forTimeInterval: atLeastShortTimeout)
+    call.sendEnd()
 
-    waitForExpectations(timeout: defaultTimeout)
+    waitForExpectations(timeout: defaultTestTimeout)
   }
 }

@@ -15,12 +15,12 @@
  */
 import Foundation
 
-internal enum CompressionError: Error {
+public enum CompressionError: Error {
   case unsupported(CompressionMechanism)
 }
 
 /// The mechanism to use for message compression.
-internal enum CompressionMechanism: String {
+public enum CompressionMechanism: String {
   /// No compression was indicated.
   case none
 
@@ -33,7 +33,9 @@ internal enum CompressionMechanism: String {
   /// Compression indiciated via a header, but not one listed in the specification.
   case unknown
 
-  /// Whether there should be a corresponding header flag.
+  /// Whether the compression flag in gRPC length-prefixed messages should be set or not.
+  ///
+  /// See `LengthPrefixedMessageReader` for the message format.
   var requiresFlag: Bool {
     switch self {
     case .none:
@@ -55,16 +57,19 @@ internal enum CompressionMechanism: String {
     }
   }
 
-  /// Compression mechanisms we should list in an accept-encoding header.
-  static var acceptEncoding: [CompressionMechanism] {
+  /// A string containing the supported compression mechanisms to list in the "grpc-accept-encoding" header.
+  static let acceptEncodingHeader: String = {
     return CompressionMechanism
       .allCases
       .filter { $0.supported && $0.requiresFlag }
-  }
+      .map { $0.rawValue }
+      .joined(separator: ", ")
+  }()
 }
 
 #if swift(>=4.2)
 extension CompressionMechanism: CaseIterable {}
+//! FIXME: Remove this code once the CI is updated to 4.2.
 #else
 extension CompressionMechanism {
   public static let allCases: [CompressionMechanism] = [.none, .identity, .gzip, .deflate, .snappy, .unknown]

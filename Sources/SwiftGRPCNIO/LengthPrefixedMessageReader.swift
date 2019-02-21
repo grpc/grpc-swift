@@ -26,7 +26,7 @@ import NIOHTTP1
 ///
 /// - SeeAlso:
 /// [gRPC Protocol](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md)
-internal class LengthPrefixedMessageReader {
+public class LengthPrefixedMessageReader {
   private var buffer: ByteBuffer!
   private var state: State = .expectingCompressedFlag
   private let mode: Mode
@@ -45,25 +45,40 @@ internal class LengthPrefixedMessageReader {
     case isBuffering(requiredBytes: Int)
   }
 
+  /// Consumes all readable bytes from given buffer and returns all messages which could be read.
+  ///
+  /// - SeeAlso: `read(messageBuffer:compression:)`
+  public func consume(messageBuffer: inout ByteBuffer, compression: CompressionMechanism) throws -> [ByteBuffer] {
+    var messages: [ByteBuffer] = []
+
+    while messageBuffer.readableBytes > 0 {
+      if let message = try self.read(messageBuffer: &messageBuffer, compression: compression) {
+        messages.append(message)
+      }
+    }
+
+    return messages
+  }
+
   /// Reads bytes from the given buffer until it is exhausted or a message has been read.
   ///
   /// Length prefixed messages may be split across multiple input buffers in any of the
   /// following places:
   /// 1. after the compression flag,
-  /// 2. after the message length flag,
+  /// 2. after the message length field,
   /// 3. at any point within the message.
   ///
   /// - Note:
   /// This method relies on state; if a message is _not_ returned then the next time this
-  /// method is called it expect to read the bytes which follow the most recently read bytes.
-  /// If a message _is_ returned without exhausting the given buffer then reading a
-  /// different buffer is not an issue.
+  /// method is called it expects to read the bytes which follow the most recently read bytes.
   ///
-  /// - Parameter messageBuffer: buffer to read from.
+  /// - Parameters:
+  ///   - messageBuffer: buffer to read from.
+  ///   - compression: compression mechanism to decode message with.
   /// - Returns: A buffer containing a message if one has been read, or `nil` if not enough
   ///   bytes have been consumed to return a message.
   /// - Throws: Throws an error if the compression algorithm is not supported.
-  internal func read(messageBuffer: inout ByteBuffer, compression: CompressionMechanism) throws -> ByteBuffer? {
+  public func read(messageBuffer: inout ByteBuffer, compression: CompressionMechanism) throws -> ByteBuffer? {
     while true {
       switch state {
       case .expectingCompressedFlag:
@@ -79,7 +94,7 @@ internal class LengthPrefixedMessageReader {
         // If this holds true, we can skip buffering and return a slice.
         guard messageLength <= messageBuffer.readableBytes else {
           self.state = .willBuffer(requiredBytes: messageLength)
-          break
+          continue
         }
 
         self.state = .expectingCompressedFlag

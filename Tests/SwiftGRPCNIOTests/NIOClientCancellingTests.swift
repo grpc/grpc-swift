@@ -31,30 +31,42 @@ class NIOClientCancellingTests: NIOBasicEchoTestCase {
 extension NIOClientCancellingTests {
   func testUnary() {
     let statusReceived = self.expectation(description: "status received")
+    let responseReceived = self.expectation(description: "response received")
 
     let call = client.get(Echo_EchoRequest(text: "foo bar baz"))
     call.cancel()
 
+    call.response.whenFailure { error in
+      XCTAssertEqual((error as? GRPCStatus)?.code, .cancelled)
+      responseReceived.fulfill()
+    }
+
     call.status.whenSuccess { status in
       XCTAssertEqual(status.code, .cancelled)
       statusReceived.fulfill()
     }
 
-    waitForExpectations(timeout: self.defaultTimeout)
+    waitForExpectations(timeout: self.defaultTestTimeout)
   }
 
   func testClientStreaming() throws {
     let statusReceived = self.expectation(description: "status received")
+    let responseReceived = self.expectation(description: "response received")
 
     let call = client.collect()
     call.cancel()
+
+    call.response.whenFailure { error in
+      XCTAssertEqual((error as? GRPCStatus)?.code, .cancelled)
+      responseReceived.fulfill()
+    }
 
     call.status.whenSuccess { status in
       XCTAssertEqual(status.code, .cancelled)
       statusReceived.fulfill()
     }
 
-    waitForExpectations(timeout: self.defaultTimeout)
+    waitForExpectations(timeout: self.defaultTestTimeout)
   }
 
   func testServerStreaming() {
@@ -70,7 +82,7 @@ extension NIOClientCancellingTests {
       statusReceived.fulfill()
     }
 
-    waitForExpectations(timeout: self.defaultTimeout)
+    waitForExpectations(timeout: self.defaultTestTimeout)
   }
 
   func testBidirectionalStreaming() {
@@ -86,6 +98,6 @@ extension NIOClientCancellingTests {
       statusReceived.fulfill()
     }
 
-    waitForExpectations(timeout: self.defaultTimeout)
+    waitForExpectations(timeout: self.defaultTestTimeout)
   }
 }

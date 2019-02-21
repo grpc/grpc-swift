@@ -17,16 +17,25 @@ import Foundation
 import SwiftProtobuf
 import NIO
 
-/// A bidirectional-streaming gRPC call. Each response is passed to the provided observer.
+/// A bidirectional-streaming gRPC call. Each response is passed to the provided observer block.
 ///
 /// Messages should be sent via the `send` method; an `.end` message should be sent
 /// to indicate the final message has been sent.
 ///
 /// The following futures are available to the caller:
 /// - `initialMetadata`: the initial metadata returned from the server,
-/// - `status`: the status of the gRPC call,
+/// - `status`: the status of the gRPC call after it has ended,
 /// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
 public class BidirectionalStreamingClientCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage>, StreamingRequestClientCall {
+
+  public func sendMessage(_ message: RequestMessage) {
+    self._sendMessage(message)
+  }
+
+  public func sendEnd() {
+    self._sendEnd()
+  }
+
   public init(client: GRPCClient, path: String, callOptions: CallOptions, handler: @escaping (ResponseMessage) -> Void) {
     super.init(client: client, path: path, callOptions: callOptions, responseObserver: .callback(handler))
   }

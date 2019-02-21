@@ -31,7 +31,7 @@ public enum RawGRPCClientResponsePart {
   case status(GRPCStatus)
 }
 
-/// Codec for translating HTTP/1 resposnes from the server into untyped gRPC packages
+/// Codec for translating HTTP/1 responses from the server into untyped gRPC packages
 /// and vice-versa.
 ///
 /// Most of the inbound processing is done by `LengthPrefixedMessageReader`; which
@@ -64,7 +64,7 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
   public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
     if case .ignore = state { return }
 
-    switch unwrapInboundIn(data) {
+    switch self.unwrapInboundIn(data) {
     case .head(let head):
       state = processHead(ctx: ctx, head: head)
 
@@ -88,11 +88,21 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
     guard case .expectingHeaders = state
       else { preconditionFailure("received headers while in state \(state)") }
 
-    if let encodingType = head.headers["grpc-encoding"].first {
-      inboundCompression = CompressionMechanism(rawValue: encodingType) ?? .unknown
+    guard head.status == .ok else {
+      ctx.fireErrorCaught(GRPCError.HTTPStatusNotOk)
+      return .ignore
     }
 
-    ctx.fireChannelRead(wrapInboundOut(.headers(head.headers)))
+    if let encodingType = head.headers["grpc-encoding"].first {
+      self.inboundCompression = CompressionMechanism(rawValue: encodingType) ?? .unknown
+    }
+
+    guard inboundCompression.supported else {
+      ctx.fireErrorCaught(GRPCError.unsupportedCompression(inboundCompression))
+      return .ignore
+    }
+
+    ctx.fireChannelRead(self.wrapInboundOut(.headers(head.headers)))
     return .expectingBodyOrTrailers
   }
 
@@ -104,10 +114,8 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
     guard case .expectingBodyOrTrailers = state
       else { preconditionFailure("received body while in state \(state)") }
 
-    while messageBuffer.readableBytes > 0 {
-      if let message = try self.messageReader.read(messageBuffer: &messageBuffer, compression: inboundCompression) {
-        ctx.fireChannelRead(wrapInboundOut(.message(message)))
-      }
+    for message in try self.messageReader.consume(messageBuffer: &messageBuffer, compression: inboundCompression) {
+      ctx.fireChannelRead(self.wrapInboundOut(.message(message)))
     }
 
     return .expectingBodyOrTrailers
@@ -134,20 +142,17 @@ extension HTTP1ToRawGRPCClientCodec: ChannelOutboundHandler {
   public typealias OutboundOut = HTTPClientRequestPart
 
   public func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
-    switch unwrapOutboundIn(data) {
+    switch self.unwrapOutboundIn(data) {
     case .head(let requestHead):
-      ctx.write(wrapOutboundOut(.head(requestHead)), promise: promise)
+      ctx.write(self.wrapOutboundOut(.head(requestHead)), promise: promise)
 
     case .message(let message):
-      do {
-        let request = try messageWriter.write(allocator: ctx.channel.allocator, compression: .none, message: message)
-        ctx.write(wrapOutboundOut(.body(.byteBuffer(request))), promise: promise)
-      } catch {
-        ctx.fireErrorCaught(error)
-      }
+      var request = ctx.channel.allocator.buffer(capacity: LengthPrefixedMessageWriter.metadataLength)
+      messageWriter.write(message, into: &request, usingCompression: .none)
+      ctx.write(self.wrapOutboundOut(.body(.byteBuffer(request))), promise: promise)
 
     case .end:
-      ctx.writeAndFlush(wrapOutboundOut(.end(nil)), promise: promise)
+      ctx.write(self.wrapOutboundOut(.end(nil)), promise: promise)
     }
   }
 }

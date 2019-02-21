@@ -87,12 +87,10 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
       ctx.write(self.wrapOutboundOut(.head(HTTPResponseHead(version: .init(major: 2, minor: 0), status: .ok, headers: headers))), promise: promise)
 
     case .message(let message):
-      do {
-        let responseBuffer = try messageWriter.write(allocator: ctx.channel.allocator, compression: .none, message: message)
-        ctx.write(self.wrapOutboundOut(.body(.byteBuffer(responseBuffer))), promise: promise)
-      } catch {
-        ctx.fireErrorCaught(error)
-      }
+      //! FIXME: Determine which compression mechanism should be used.
+      var responseBuffer = ctx.channel.allocator.buffer(capacity: LengthPrefixedMessageWriter.metadataLength)
+      messageWriter.write(message, into: &responseBuffer, usingCompression: .none)
+      ctx.write(self.wrapOutboundOut(.body(.byteBuffer(responseBuffer))), promise: promise)
 
     case .status(let status):
       var trailers = status.trailingMetadata

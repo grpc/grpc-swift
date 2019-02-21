@@ -14,18 +14,10 @@
  * limitations under the License.
  */
 import Foundation
-import NIOHTTP1
 
-/// Options to use for GRPC calls.
-public struct CallOptions {
-  /// Additional metadata to send to the service.
-  public var customMetadata: HTTPHeaders
-
-  /// The call timeout.
-  public var timeout: GRPCTimeout
-
-  public init(customMetadata: HTTPHeaders = HTTPHeaders(), timeout: GRPCTimeout = GRPCTimeout.default) {
-    self.customMetadata = customMetadata
-    self.timeout = timeout
-  }
+enum GRPCError: Error {
+  case HTTPStatusNotOk
+  case unsupportedCompression(CompressionMechanism)
+  case cancelledByClient
+  case responseCardinalityViolation
 }
