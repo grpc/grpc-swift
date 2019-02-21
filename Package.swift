@@ -26,8 +26,8 @@ var packageDependencies: [Package.Dependency] = [
   
   // SwiftGRPCNIO dependencies:
   // Transitive dependencies
-	.package(url: "https://github.com/apple/swift-nio-zlib-support.git", .upToNextMinor(from: "1.0.0")),
-	.package(url: "https://github.com/apple/swift-nio-nghttp2-support.git", .upToNextMinor(from: "1.0.0")),
+  .package(url: "https://github.com/apple/swift-nio-zlib-support.git", .upToNextMinor(from: "1.0.0")),
+  .package(url: "https://github.com/apple/swift-nio-nghttp2-support.git", .upToNextMinor(from: "1.0.0")),
   // Main SwiftNIO package
   .package(url: "https://github.com/apple/swift-nio.git", .upToNextMinor(from: "1.12.0")),
   // HTTP2 via SwiftNIO
