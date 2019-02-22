@@ -22,16 +22,11 @@ public final class GRPCServer {
 
       // Set the handlers that are applied to the accepted Channels
       .childChannelInitializer { channel in
-        //! FIXME: Add an option for gRPC-via-HTTP1 (pPRC).
-        return channel.pipeline.add(handler: HTTP2Parser(mode: .server)).then {
-          let multiplexer = HTTP2StreamMultiplexer { (channel, streamID) -> EventLoopFuture<Void> in
-            return channel.pipeline.add(handler: HTTP2ToHTTP1ServerCodec(streamID: streamID))
-              .then { channel.pipeline.add(handler: HTTP1ToRawGRPCServerCodec()) }
-              .then { channel.pipeline.add(handler: GRPCChannelHandler(servicesByName: servicesByName)) }
-          }
-
-          return channel.pipeline.add(handler: multiplexer)
-        }
+        return channel.pipeline.add(handler: HTTPProtocolSwitcher {
+          channel -> EventLoopFuture<Void> in
+          return channel.pipeline.add(handler: HTTP1ToRawGRPCServerCodec())
+            .then { channel.pipeline.add(handler: GRPCChannelHandler(servicesByName: servicesByName)) }
+        })
       }
 
       // Enable TCP_NODELAY and SO_REUSEADDR for the accepted Channels
