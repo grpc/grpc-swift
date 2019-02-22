@@ -11,4 +11,3 @@ third_party/**
 /test.out
 /echo.pid
 /SwiftGRPC.xcodeproj
-Package.resolved
