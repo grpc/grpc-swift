@@ -41,7 +41,7 @@ public struct CallResult: CustomStringConvertible {
     trailingMetadata = op.receivedTrailingMetadata()
   }
   
-  fileprivate init(success: Bool, statusCode: StatusCode, statusMessage: String?, resultData: Data?,
+  public init(success: Bool, statusCode: StatusCode, statusMessage: String?, resultData: Data?,
                    initialMetadata: Metadata?, trailingMetadata: Metadata?) {
     self.success = success
     self.statusCode = statusCode

@@ -332,7 +332,11 @@ extension Generator {
         println("}")
         println("func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata, completion: @escaping (\(methodOutputName)?, CallResult) -> Void) throws -> \(callName) {")
         indent()
-        println("fatalError(\"not implemented\")")
+        println("let response = try self.\(methodFunctionName)(request)")
+        println("let callResult = CallResult(success: true, statusCode: .ok, statusMessage: \"OK\", resultData: nil,initialMetadata: nil, trailingMetadata: nil)")
+        println("completion(response,callResult)")
+        println("let channel = Channel(address: \"\")")
+        println("return \(callName)Base(channel)")
         outdent()
         println("}")
       case .serverStreaming:

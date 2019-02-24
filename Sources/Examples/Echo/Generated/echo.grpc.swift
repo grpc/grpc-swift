@@ -212,7 +212,11 @@ class Echo_EchoServiceTestStub: ServiceClientTestStubBase, Echo_EchoService {
     return getResponses.first!
   }
   func get(_ request: Echo_EchoRequest, metadata customMetadata: Metadata, completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall {
-    fatalError("not implemented")
+    let response = try self.get(request)
+    let callResult = CallResult(success: true, statusCode: .ok, statusMessage: "OK", resultData: nil,initialMetadata: nil, trailingMetadata: nil)
+    completion(response,callResult)
+    let channel = Channel(address: "")
+    return Echo_EchoGetCallBase(channel)
   }
 
   var expandRequests: [Echo_EchoRequest] = []
