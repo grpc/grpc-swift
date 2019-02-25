@@ -21,7 +21,8 @@ final class ChannelConnectivityTests: BasicEchoTestCase {
 
   static var allTests: [(String, (ChannelConnectivityTests) -> () throws -> Void)] {
     return [
-      ("testDanglingConnectivityObserversDontCrash", testDanglingConnectivityObserversDontCrash)
+      ("testDanglingConnectivityObserversDontCrash", testDanglingConnectivityObserversDontCrash),
+      ("testMultipleConnectivityObserversAreCalled", testMultipleConnectivityObserversAreCalled),
     ]
   }
 }
@@ -30,12 +31,12 @@ extension ChannelConnectivityTests {
   func testDanglingConnectivityObserversDontCrash() {
     let completionHandlerExpectation = expectation(description: "completion handler called")
 
-    client?.channel.subscribe { connectivityState in
+    client.channel.addConnectivityObserver { connectivityState in
       print("ConnectivityState: \(connectivityState)")
     }
 
     let request = Echo_EchoRequest(text: "foo bar baz foo bar baz")
-    _ = try! client!.expand(request) { callResult in
+    _ = try! client.expand(request) { callResult in
       print("callResult.statusCode: \(callResult.statusCode)")
       completionHandlerExpectation.fulfill()
     }
@@ -45,5 +46,22 @@ extension ChannelConnectivityTests {
     }
 
     waitForExpectations(timeout: 0.5)
+  }
+
+  func testMultipleConnectivityObserversAreCalled() {
+    let completionHandlerExpectation = expectation(description: "completion handler called")
+    var firstObserverCalled = false
+    var secondObserverCalled = false
+
+    client.channel.addConnectivityObserver { _ in firstObserverCalled = true }
+    client.channel.addConnectivityObserver { _ in secondObserverCalled = true }
+
+    _ = try! client.expand(Echo_EchoRequest(text: "foo bar baz foo bar baz")) { _ in
+      completionHandlerExpectation.fulfill()
+    }
+
+    waitForExpectations(timeout: 0.5)
+    XCTAssertTrue(firstObserverCalled)
+    XCTAssertTrue(secondObserverCalled)
   }
 }
