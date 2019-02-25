@@ -33,8 +33,8 @@
         "repositoryURL": "https://github.com/apple/swift-nio-http2.git",
         "state": {
           "branch": null,
-          "revision": "dd9339e6310ad8537a271f3ff60a4f3976ca8e4d",
-          "version": null
+          "revision": "88bd6d369a729f88e63f53ae5265840de4bb1384",
+          "version": "0.2.1"
         }
       },
       {
