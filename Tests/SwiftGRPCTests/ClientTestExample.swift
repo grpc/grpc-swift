@@ -34,12 +34,6 @@ fileprivate class ClientUnderTest {
     return try service.get(Echo_EchoRequest(text: input)).text
   }
   
-  func getWordasynchronous(_ input:String,completion:@escaping (_ word:String)->()) throws  {
-    _ = try service.get(Echo_EchoRequest(text: input),completion:{ (response:Echo_EchoResponse?, callResult:CallResult) in
-      completion(response!.text)
-    })
-  }
-  
   func collectWords(_ input: [String]) throws -> String {
     let call = try service.collect(completion: nil)
     for text in input {
@@ -99,20 +93,24 @@ extension ClientTestExample {
   }
   
   func testClientAsynchronous() throws {
-    
     let fakeService = Echo_EchoServiceTestStub()
     fakeService.getResponses.append(Echo_EchoResponse(text: "bar"))
     
     let client = ClientUnderTest(service: fakeService)
     
-    let completionHandlerExpectation = expectation(description: "final completion handler called")
+    let completionHandlerExpectation = expectation(description: "request completion handler called")
 
-    try client.getWordasynchronous("foo") { (word:String) in
-        XCTAssertEqual("bar", word)
-        completionHandlerExpectation.fulfill()
+    _ = try client.service.get(Echo_EchoRequest(text: "foo")){ (response:Echo_EchoResponse?, callResult:CallResult) in
+      
+      XCTAssertEqual("bar", response?.text)
+      completionHandlerExpectation.fulfill()
     }
     
-    self.wait(for: [completionHandlerExpectation], timeout: 1)
+    waitForExpectations(timeout: 1) { (error) in
+      if let error = error {
+        XCTFail("timeout errored: \(error)")
+      }
+    }
     
     // Ensure that all responses have been consumed.
     XCTAssertEqual(0, fakeService.getResponses.count)
