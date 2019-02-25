@@ -49,9 +49,11 @@ extension Channel {
 
     func shutdown() {
       self.mutex.synchronize {
+        guard !self.hasBeenShutdown else { return }
+
         self.hasBeenShutdown = true
+        self.completionQueue.shutdown()
       }
-      self.completionQueue.shutdown()
     }
 
     // MARK: - Private
