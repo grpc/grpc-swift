@@ -38,7 +38,7 @@ extension Channel {
     }
 
     deinit {
-      shutdown()
+      self.shutdown()
     }
 
     private func run() {
@@ -88,10 +88,10 @@ extension Channel {
     }
 
     func shutdown() {
-      mutex.synchronize {
-        hasBeenShutdown = true
+      self.mutex.synchronize {
+        self.hasBeenShutdown = true
       }
-      completionQueue.shutdown()
+      self.completionQueue.shutdown()
     }
   }
 }
