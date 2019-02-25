@@ -31,7 +31,7 @@ var packageDependencies: [Package.Dependency] = [
   // Main SwiftNIO package
   .package(url: "https://github.com/apple/swift-nio.git", .upToNextMajor(from: "1.12.0")),
   // HTTP2 via SwiftNIO
-  .package(url: "https://github.com/apple/swift-nio-http2.git", .revision("dd9339e6310ad8537a271f3ff60a4f3976ca8e4d"))
+  .package(url: "https://github.com/apple/swift-nio-http2.git", .upToNextMinor(from: "0.2.1"))
 ]
 
 var cGRPCDependencies: [Target.Dependency] = []
@@ -83,6 +83,12 @@ let package = Package(
               "SwiftProtobuf",
               "Commander"],
             path: "Sources/Examples/Echo"),
+    .target(name: "EchoNIO",
+            dependencies: [
+              "SwiftGRPCNIO",
+              "SwiftProtobuf",
+              "Commander"],
+            path: "Sources/Examples/EchoNIO"),
     .target(name: "Simple",
             dependencies: ["SwiftGRPC", "Commander"],
             path: "Sources/Examples/Simple"),
