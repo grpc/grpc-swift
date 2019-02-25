@@ -98,7 +98,7 @@ if CommandLine.arguments.contains("test") {
   s += "import Foundation\n"
   s += "\n"
 
-  s += "public let roots_pem: String = \"\"\"\n"
+  s += "public let kRootCertificates: String = \"\"\"\n"
   let fileURL = URL(fileURLWithPath: "Assets/roots.pem")
   s += try String(contentsOf: fileURL)
   s += "\"\"\""
