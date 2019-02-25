@@ -1,6 +1,7 @@
 import Foundation
 import NIO
 import NIOHTTP1
+import NIOFoundationCompat
 
 /// Incoming gRPC package with an unknown message type (represented by a byte buffer).
 public enum RawGRPCServerRequestPart {
@@ -27,16 +28,42 @@ public enum RawGRPCServerResponsePart {
 ///
 /// The translation from HTTP2 to HTTP1 is done by `HTTP2ToHTTP1ServerCodec`.
 public final class HTTP1ToRawGRPCServerCodec {
-  var inboundState = InboundState.expectingHeaders
-  var outboundState = OutboundState.expectingHeaders
-
-  private var buffer: NIO.ByteBuffer?
-
   // 1-byte for compression flag, 4-bytes for message length.
   private let protobufMetadataSize = 5
+
+  private var contentType: ContentType?
+
+  // The following buffers use force unwrapping explicitly. With optionals, developers
+  // are encouraged to unwrap them using guard-else statements. These don't work cleanly
+  // with structs, since the guard-else would create a new copy of the struct, which
+  // would then have to be re-assigned into the class variable for the changes to take effect.
+  // By force unwrapping, we avoid those reassignments, and the code is a bit cleaner.
+
+  // Buffer to store binary encoded protos as they're being received if the proto is split across
+  // multiple buffers.
+  private var binaryRequestBuffer: NIO.ByteBuffer!
+
+  // Buffers to store text encoded protos. Only used when content-type is application/grpc-web-text.
+  // TODO(kaipi): Extract all gRPC Web processing logic into an independent handler only added on
+  // the HTTP1.1 pipeline, as it's starting to get in the way of readability.
+  private var requestTextBuffer: NIO.ByteBuffer!
+  private var responseTextBuffer: NIO.ByteBuffer!
+
+  var inboundState = InboundState.expectingHeaders
+  var outboundState = OutboundState.expectingHeaders
 }
 
 extension HTTP1ToRawGRPCServerCodec {
+  /// Expected content types for incoming requests.
+  private enum ContentType: String {
+    /// Binary encoded gRPC request.
+    case binary = "application/grpc"
+    /// Base64 encoded gRPC-Web request.
+    case text = "application/grpc-web-text"
+    /// Binary encoded gRPC-Web request.
+    case web = "application/grpc-web"
+  }
+
   enum InboundState {
     case expectingHeaders
     case expectingBody(Body)
@@ -86,14 +113,42 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
       throw GRPCServerError.invalidState("expecteded state .expectingHeaders, got \(inboundState)")
     }
 
-    ctx.fireChannelRead(self.wrapInboundOut(.head(requestHead)))
+    if let contentTypeHeader = requestHead.headers["content-type"].first {
+      contentType = ContentType(rawValue: contentTypeHeader)
+    } else {
+      // If the Content-Type is not present, assume the request is binary encoded gRPC.
+      contentType = .binary
+    }
 
+    if contentType == .text {
+      requestTextBuffer = ctx.channel.allocator.buffer(capacity: 0)
+    }
+
+    ctx.fireChannelRead(self.wrapInboundOut(.head(requestHead)))
     return .expectingBody(.expectingCompressedFlag)
   }
 
   func processBody(ctx: ChannelHandlerContext, body: inout ByteBuffer) throws -> InboundState {
     guard case .expectingBody(let bodyState) = inboundState else {
       throw GRPCServerError.invalidState("expecteded state .expectingBody(_), got \(inboundState)")
+    }
+
+    // If the contentType is text, then decode the incoming bytes as base64 encoded, and append
+    // it to the binary buffer. If the request is chunked, this section will process the text
+    // in the biggest chunk that is multiple of 4, leaving the unread bytes in the textBuffer
+    // where it will expect a new incoming chunk.
+    if contentType == .text {
+      precondition(requestTextBuffer != nil)
+      requestTextBuffer.write(buffer: &body)
+
+      // Read in chunks of 4 bytes as base64 encoded strings will always be multiples of 4.
+      let readyBytes = requestTextBuffer.readableBytes - (requestTextBuffer.readableBytes % 4)
+      guard let base64Encoded = requestTextBuffer.readString(length: readyBytes),
+          let decodedData = Data(base64Encoded: base64Encoded) else {
+        throw GRPCServerError.base64DecodeError
+      }
+
+      body.write(bytes: decodedData)
     }
 
     return .expectingBody(try processBodyState(ctx: ctx, initialState: bodyState, messageBuffer: &body))
@@ -128,12 +183,11 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
         guard messageBuffer.readableBytes >= bytesOutstanding else {
           let remainingBytes = bytesOutstanding - numericCast(messageBuffer.readableBytes)
 
-          if var buffer = buffer {
-            buffer.write(buffer: &messageBuffer)
-            self.buffer = buffer
+          if self.binaryRequestBuffer != nil {
+            self.binaryRequestBuffer.write(buffer: &messageBuffer)
           } else {
             messageBuffer.reserveCapacity(numericCast(bytesOutstanding))
-            self.buffer = messageBuffer
+            self.binaryRequestBuffer = messageBuffer
           }
           return .expectingMoreMessageBytes(remainingBytes)
         }
@@ -141,14 +195,14 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
         // We know buffer.readableBytes >= messageLength, so it's okay to force unwrap here.
         var slice = messageBuffer.readSlice(length: numericCast(bytesOutstanding))!
 
-        if var buffer = buffer {
-          buffer.write(buffer: &slice)
-          ctx.fireChannelRead(self.wrapInboundOut(.message(buffer)))
+        if self.binaryRequestBuffer != nil {
+          self.binaryRequestBuffer.write(buffer: &slice)
+          ctx.fireChannelRead(self.wrapInboundOut(.message(self.binaryRequestBuffer)))
         } else {
           ctx.fireChannelRead(self.wrapInboundOut(.message(slice)))
         }
 
-        self.buffer = nil
+        self.binaryRequestBuffer = nil
         bodyState = .expectingCompressedFlag
       }
     }
@@ -171,13 +225,23 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
   public func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     if case .ignore = outboundState { return }
 
-    let responsePart = self.unwrapOutboundIn(data)
-    switch responsePart {
-    case .headers(let headers):
+    switch self.unwrapOutboundIn(data) {
+    case .headers(var headers):
       guard case .expectingHeaders = outboundState else { return }
 
-      //! FIXME: Should return a different version if we want to support pPRC.
-      ctx.write(self.wrapOutboundOut(.head(HTTPResponseHead(version: .init(major: 2, minor: 0), status: .ok, headers: headers))), promise: promise)
+      var version = HTTPVersion(major: 2, minor: 0)
+      if let contentType = contentType {
+        headers.add(name: "content-type", value: contentType.rawValue)
+        if contentType != .binary {
+          version = .init(major: 1, minor: 1)
+        }
+      }
+
+      if contentType == .text {
+        responseTextBuffer = ctx.channel.allocator.buffer(capacity: 0)
+      }
+
+      ctx.write(self.wrapOutboundOut(.head(HTTPResponseHead(version: version, status: .ok, headers: headers))), promise: promise)
       outboundState = .expectingBodyOrStatus
 
     case .message(var messageBytes):
@@ -188,7 +252,19 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
       responseBuffer.write(integer: Int8(0))  // Compression flag: no compression
       responseBuffer.write(integer: UInt32(messageBytes.readableBytes))
       responseBuffer.write(buffer: &messageBytes)
-      ctx.write(self.wrapOutboundOut(.body(.byteBuffer(responseBuffer))), promise: promise)
+
+      if contentType == .text {
+        precondition(responseTextBuffer != nil)
+        // Store the response into an independent buffer. We can't return the message directly as
+        // it needs to be aggregated with all the responses plus the trailers, in order to have
+        // the base64 response properly encoded in a single byte stream.
+        responseTextBuffer!.write(buffer: &responseBuffer)
+        // Since we stored the written data, mark the write promise as successful so that the
+        // ServerStreaming provider continues sending the data.
+        promise?.succeed(result: Void())
+      } else {
+        ctx.write(self.wrapOutboundOut(.body(.byteBuffer(responseBuffer))), promise: promise)
+      }
       outboundState = .expectingBodyOrStatus
 
     case .status(let status):
@@ -196,16 +272,41 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
       // NIOHTTP2 doesn't support sending a single frame as a "Trailers-Only" response so we still need to loop back and
       // send the request head first.
       if case .expectingHeaders = outboundState {
-        var headers = HTTPHeaders()
-        headers.add(name: "content-type", value: "application/grpc")
-        self.write(ctx: ctx, data: NIOAny(RawGRPCServerResponsePart.headers(headers)), promise: nil)
+        self.write(ctx: ctx, data: NIOAny(RawGRPCServerResponsePart.headers(HTTPHeaders())), promise: nil)
       }
 
       var trailers = status.trailingMetadata
       trailers.add(name: "grpc-status", value: String(describing: status.code.rawValue))
       trailers.add(name: "grpc-message", value: status.message)
 
-      ctx.writeAndFlush(self.wrapOutboundOut(.end(trailers)), promise: promise)
+      if contentType == .text {
+        precondition(responseTextBuffer != nil)
+
+        // Encode the trailers into the response byte stream as a length delimited message, as per
+        // https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-WEB.md
+        let textTrailers = trailers.map { name, value in "\(name): \(value)" }.joined(separator: "\r\n")
+        responseTextBuffer.write(integer: UInt8(0x80))
+        responseTextBuffer.write(integer: UInt32(textTrailers.utf8.count))
+        responseTextBuffer.write(string: textTrailers)
+
+        // TODO: Binary responses that are non multiples of 3 will end = or == when encoded in
+        // base64. Investigate whether this might have any effect on the transport mechanism and
+        // client decoding. Initial results say that they are inocuous, but we might have to keep
+        // an eye on this in case something trips up.
+        if let binaryData = responseTextBuffer.readData(length: responseTextBuffer.readableBytes) {
+          let encodedData = binaryData.base64EncodedString()
+          responseTextBuffer.clear()
+          responseTextBuffer.reserveCapacity(encodedData.utf8.count)
+          responseTextBuffer.write(string: encodedData)
+        }
+        // After collecting all response for gRPC Web connections, send one final aggregated
+        // response.
+        ctx.write(self.wrapOutboundOut(.body(.byteBuffer(responseTextBuffer))), promise: promise)
+        ctx.write(self.wrapOutboundOut(.end(nil)), promise: promise)
+      } else {
+        ctx.write(self.wrapOutboundOut(.end(trailers)), promise: promise)
+      }
+
       outboundState = .ignore
       inboundState = .ignore
     }

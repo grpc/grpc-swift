@@ -19,6 +19,9 @@ public enum GRPCServerError: Error, Equatable {
   /// The RPC method is not implemented on the server.
   case unimplementedMethod(String)
 
+  /// It was not possible to decode a base64 message (gRPC-Web only).
+  case base64DecodeError
+
   /// It was not possible to parse the request protobuf.
   case requestProtoParseFailure
 
@@ -47,6 +50,9 @@ extension GRPCServerError: GRPCStatusTransformable {
     switch self {
     case .unimplementedMethod(let method):
       return GRPCStatus(code: .unimplemented, message: "unknown method \(method)")
+
+    case .base64DecodeError:
+      return GRPCStatus(code: .internalError, message: "could not decode base64 message")
 
     case .requestProtoParseFailure:
       return GRPCStatus(code: .internalError, message: "could not parse request proto")

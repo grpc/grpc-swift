@@ -8,7 +8,11 @@ build
 /protoc-gen-swiftgrpc
 third_party/**
 /Echo
+/EchoNIO
 /test.out
 /echo.pid
 /SwiftGRPC.xcodeproj
 Package.resolved
+Examples/EchoWeb/dist
+Examples/EchoWeb/node_modules
+Examples/EchoWeb/package-lock.json

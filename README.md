@@ -140,7 +140,7 @@ testing with the following versions:
 
 - Xcode 9.1
 - Swift 4.0
-- swift-protobuf 1.1.1
+- swift-protobuf 1.3.1
 
 ## `SwiftGRPCNIO` package
 

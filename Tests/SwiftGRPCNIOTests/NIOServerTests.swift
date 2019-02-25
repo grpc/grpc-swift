@@ -66,7 +66,7 @@ final class EchoProvider_NIO: Echo_EchoProvider_NIO {
         response.text = "Swift echo update (\(count)): \(message.text)"
         endOfSendOperationQueue = endOfSendOperationQueue.then { context.sendResponse(response) }
         count += 1
-        
+
       case .end:
         endOfSendOperationQueue
           .map { GRPCStatus.ok }
