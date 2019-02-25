@@ -70,7 +70,7 @@ extension Channel {
                                                  underlyingState, deadline, nil)
 
           let event = self.completionQueue.wait(timeout: deadline)
-          guard (self.mutex.synchronize{ !self.hasBeenShutdown }) else {
+          guard (self.mutex.synchronize { !self.hasBeenShutdown }) else {
             return
           }
 
