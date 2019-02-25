@@ -135,7 +135,7 @@ private extension Channel {
   final class ConnectivityObserver {
     private let completionQueue: CompletionQueue
     private let underlyingChannel: UnsafeMutableRawPointer
-    private let underlyingCompletionQueue: UnsafeMutableRawPointer = cgrpc_completion_queue_create_for_next()
+    private let underlyingCompletionQueue: UnsafeMutableRawPointer
     private let callback: (ConnectivityState) -> Void
     private var lastState: ConnectivityState
     private var hasBeenShutdown = false
@@ -143,6 +143,7 @@ private extension Channel {
 
     init(underlyingChannel: UnsafeMutableRawPointer, currentState: ConnectivityState, callback: @escaping (ConnectivityState) -> ()) {
       self.underlyingChannel = underlyingChannel
+      self.underlyingCompletionQueue = cgrpc_completion_queue_create_for_next()
       self.completionQueue = CompletionQueue(underlyingCompletionQueue: self.underlyingCompletionQueue, name: "Connectivity State")
       self.callback = callback
       self.lastState = currentState
