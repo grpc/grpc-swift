@@ -34,10 +34,6 @@ class GRPCChannelHandlerResponseCapturingTestCase: XCTestCase {
 
   var errorCollector: CollectingServerErrorDelegate = CollectingServerErrorDelegate()
 
-  override func setUp() {
-    errorCollector.errors.removeAll()
-  }
-
   /// Waits for `count` responses to be collected and then returns them. The test fails if the number
   /// of collected responses does not match the expected.
   ///

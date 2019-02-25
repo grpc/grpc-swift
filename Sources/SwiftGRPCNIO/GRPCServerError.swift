@@ -15,7 +15,7 @@
  */
 import Foundation
 
-public enum GRPCError: Error, Equatable {
+public enum GRPCServerError: Error, Equatable {
   /// The RPC method is not implemented on the server.
   case unimplementedMethod(String)
 
@@ -41,7 +41,7 @@ public enum GRPCError: Error, Equatable {
   case invalidState(String)
 }
 
-extension GRPCError: GRPCStatusTransformable {
+extension GRPCServerError: GRPCStatusTransformable {
   public func asGRPCStatus() -> GRPCStatus {
     // These status codes are informed by: https://github.com/grpc/grpc/blob/master/doc/statuscodes.md
     switch self {

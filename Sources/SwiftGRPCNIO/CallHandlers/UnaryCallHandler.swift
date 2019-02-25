@@ -29,7 +29,7 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
   public override func processMessage(_ message: RequestMessage) throws {
     guard let eventObserver = self.eventObserver,
       let context = self.context else {
-      throw GRPCError.requestCardinalityViolation
+      throw GRPCServerError.requestCardinalityViolation
     }
     
     let resultFuture = eventObserver(message)

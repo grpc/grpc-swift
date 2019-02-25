@@ -83,7 +83,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
 
   func processHead(ctx: ChannelHandlerContext, requestHead: HTTPRequestHead) throws -> InboundState {
     guard case .expectingHeaders = inboundState else {
-      throw GRPCError.invalidState("expecteded state .expectingHeaders, got \(inboundState)")
+      throw GRPCServerError.invalidState("expecteded state .expectingHeaders, got \(inboundState)")
     }
 
     ctx.fireChannelRead(self.wrapInboundOut(.head(requestHead)))
@@ -93,7 +93,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
 
   func processBody(ctx: ChannelHandlerContext, body: inout ByteBuffer) throws -> InboundState {
     guard case .expectingBody(let bodyState) = inboundState else {
-      throw GRPCError.invalidState("expecteded state .expectingBody(_), got \(inboundState)")
+      throw GRPCServerError.invalidState("expecteded state .expectingBody(_), got \(inboundState)")
     }
 
     return .expectingBody(try processBodyState(ctx: ctx, initialState: bodyState, messageBuffer: &body))
@@ -113,7 +113,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
         guard let compressedFlag: Int8 = messageBuffer.readInteger() else { return .expectingCompressedFlag }
 
         // TODO: Add support for compression.
-        guard compressedFlag == 0 else { throw GRPCError.unexpectedCompression }
+        guard compressedFlag == 0 else { throw GRPCServerError.unexpectedCompression }
 
         bodyState = .expectingMessageLength
 
@@ -156,7 +156,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
 
   private func processEnd(ctx: ChannelHandlerContext, trailers: HTTPHeaders?) throws -> InboundState {
     if let trailers = trailers {
-      throw GRPCError.invalidState("unexpected trailers received \(trailers)")
+      throw GRPCServerError.invalidState("unexpected trailers received \(trailers)")
     }
 
     ctx.fireChannelRead(self.wrapInboundOut(.end))
@@ -192,7 +192,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
       outboundState = .expectingBodyOrStatus
 
     case .status(let status):
-      // If we error before sending the initial headers (e.g. unimplemtned method) then we won't have sent the request head.
+      // If we error before sending the initial headers (e.g. unimplemented method) then we won't have sent the request head.
       // NIOHTTP2 doesn't support sending a single frame as a "Trailers-Only" response so we still need to loop back and
       // send the request head first.
       if case .expectingHeaders = outboundState {

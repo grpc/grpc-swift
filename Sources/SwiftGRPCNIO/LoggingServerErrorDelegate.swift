@@ -19,6 +19,6 @@ public class LoggingServerErrorDelegate: ServerErrorDelegate {
   public init() {}
 
   public func observe(_ error: Error) {
-    print("[grpc-server] \(error)")
+    print("[grpc-server][\(Date())] \(error)")
   }
 }

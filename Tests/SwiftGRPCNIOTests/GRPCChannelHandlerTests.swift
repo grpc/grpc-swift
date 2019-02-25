@@ -22,8 +22,8 @@ class GRPCChannelHandlerTests: GRPCChannelHandlerResponseCapturingTestCase {
       try channel.writeInbound(RawGRPCServerRequestPart.head(requestHead))
     }
 
-    let expectedError = GRPCError.unimplementedMethod("unimplementedMethodName")
-    XCTAssertEqual(expectedError, errorCollector.errors.first as? GRPCError)
+    let expectedError = GRPCServerError.unimplementedMethod("unimplementedMethodName")
+    XCTAssertEqual([expectedError], errorCollector.errors as? [GRPCServerError])
 
     XCTAssertNoThrow(try extractStatus(responses[0])) { status in
       XCTAssertEqual(status, expectedError.asGRPCStatus())
@@ -59,8 +59,8 @@ class GRPCChannelHandlerTests: GRPCChannelHandlerResponseCapturingTestCase {
       try channel.writeInbound(RawGRPCServerRequestPart.message(buffer))
     }
 
-    let expectedError = GRPCError.requestProtoParseFailure
-    XCTAssertEqual(expectedError, errorCollector.errors.first as? GRPCError)
+    let expectedError = GRPCServerError.requestProtoParseFailure
+    XCTAssertEqual([expectedError], errorCollector.errors as? [GRPCServerError])
 
     XCTAssertNoThrow(try extractHeaders(responses[0]))
     XCTAssertNoThrow(try extractStatus(responses[1])) { status in
@@ -77,8 +77,8 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
       try channel.writeInbound(HTTPServerRequestPart.body(gRPCMessage(channel: channel, compression: true)))
     }
 
-    let expectedError = GRPCError.unexpectedCompression
-    XCTAssertEqual(expectedError, errorCollector.errors.first as? GRPCError)
+    let expectedError = GRPCServerError.unexpectedCompression
+    XCTAssertEqual([expectedError], errorCollector.errors as? [GRPCServerError])
 
     XCTAssertNoThrow(try extractHeaders(responses[0]))
     XCTAssertNoThrow(try extractStatus(responses[1])) { status in
@@ -124,8 +124,8 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
       try channel.writeInbound(HTTPServerRequestPart.body(buffer))
     }
 
-    let expectedError = GRPCError.requestProtoParseFailure
-    XCTAssertEqual(expectedError, errorCollector.errors.first as? GRPCError)
+    let expectedError = GRPCServerError.requestProtoParseFailure
+    XCTAssertEqual([expectedError], errorCollector.errors as? [GRPCServerError])
 
     XCTAssertNoThrow(try extractHeaders(responses[0]))
     XCTAssertNoThrow(try extractStatus(responses[1])) { status in
@@ -147,7 +147,9 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
       try channel.writeInbound(HTTPServerRequestPart.end(trailers))
     }
 
-    if case .invalidState(let message)? = errorCollector.errors.first as? GRPCError {
+    XCTAssertEqual(errorCollector.errors.count, 1)
+
+    if case .invalidState(let message)? = errorCollector.errors.first as? GRPCServerError {
       XCTAssert(message.contains("trailers"))
     } else {
       XCTFail("\(String(describing: errorCollector.errors.first)) was not GRPCError.invalidState")
