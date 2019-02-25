@@ -120,7 +120,7 @@ public class Channel {
   /// - Parameter tryToConnect: boolean value to indicate if should try to connect if channel's connectivity state is idle
   /// - Returns: a ConnectivityState value representing the current connectivity state of the channel
   public func connectivityState(tryToConnect: Bool = false) -> ConnectivityState {
-    return ConnectivityState.connectivityState(cgrpc_channel_check_connectivity_state(underlyingChannel, tryToConnect ? 1 : 0))
+    return ConnectivityState(cgrpc_channel_check_connectivity_state(underlyingChannel, tryToConnect ? 1 : 0))
   }
 
   /// Subscribe to connectivity state changes
@@ -175,17 +175,16 @@ private extension Channel {
 
           switch event.type {
           case .complete:
-            let newState = ConnectivityState.connectivityState(cgrpc_channel_check_connectivity_state(self.underlyingChannel, 0))
+            let newState = ConnectivityState(cgrpc_channel_check_connectivity_state(self.underlyingChannel, 0))
 
             if newState != self.lastState {
               self.callback(newState)
             }
-
             self.lastState = newState
-          case .queueTimeout:
-            continue
+
           case .queueShutdown:
             return
+
           default:
             continue
           }
@@ -198,63 +197,6 @@ private extension Channel {
         hasBeenShutdown = true
       }
       completionQueue.shutdown()
-    }
-  }
-}
-
-extension Channel {
-  public enum ConnectivityState {
-    /// Channel has just been initialized
-    case initialized
-    /// Channel is idle
-    case idle
-    /// Channel is connecting
-    case connecting
-    /// Channel is ready for work
-    case ready
-    /// Channel has seen a failure but expects to recover
-    case transientFailure
-    /// Channel has seen a failure that it cannot recover from
-    case shutdown
-    /// Channel connectivity state is unknown
-    case unknown
-
-    fileprivate static func connectivityState(_ value: grpc_connectivity_state) -> ConnectivityState {
-      switch value {
-      case GRPC_CHANNEL_INIT:
-        return .initialized
-      case GRPC_CHANNEL_IDLE:
-        return .idle
-      case GRPC_CHANNEL_CONNECTING:
-        return .connecting
-      case GRPC_CHANNEL_READY:
-        return .ready
-      case GRPC_CHANNEL_TRANSIENT_FAILURE:
-        return .transientFailure
-      case GRPC_CHANNEL_SHUTDOWN:
-        return .shutdown
-      default:
-        return .unknown
-      }
-    }
-
-    fileprivate var underlyingState: grpc_connectivity_state? {
-      switch self {
-      case .initialized:
-        return GRPC_CHANNEL_INIT
-      case .idle:
-        return GRPC_CHANNEL_IDLE
-      case .connecting:
-        return GRPC_CHANNEL_CONNECTING
-      case .ready:
-        return GRPC_CHANNEL_READY
-      case .transientFailure:
-        return GRPC_CHANNEL_TRANSIENT_FAILURE
-      case .shutdown:
-        return GRPC_CHANNEL_SHUTDOWN
-      default:
-        return nil
-      }
     }
   }
 }

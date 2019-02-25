@@ -27,12 +27,23 @@ project-carthage:
 	@ruby fix-project-settings.rb SwiftGRPC-Carthage.xcodeproj || echo "xcodeproj ('sudo gem install xcodeproj') is required in order to generate the Carthage-compatible project!"
 	@ruby patch-carthage-project.rb SwiftGRPC-Carthage.xcodeproj || echo "xcodeproj ('sudo gem install xcodeproj') is required in order to generate the Carthage-compatible project!"
 
-test:	all
+test: all
 	swift test $(CFLAGS)
 
-test-echo:	all
+test-echo: all
 	cp .build/debug/Echo .
 	./Echo serve & /bin/echo $$! > echo.pid
+	./Echo get | tee test.out
+	./Echo expand | tee -a test.out
+	./Echo collect | tee -a test.out
+	./Echo update | tee -a test.out
+	kill -9 `cat echo.pid`
+	diff -u test.out Sources/Examples/Echo/test.gold
+
+test-echo-nio: all
+	cp .build/debug/EchoNIO .
+	cp .build/debug/Echo .
+	./EchoNIO serve & /bin/echo $$! > echo.pid
 	./Echo get | tee test.out
 	./Echo expand | tee -a test.out
 	./Echo collect | tee -a test.out

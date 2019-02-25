@@ -37,7 +37,7 @@ public final class GRPCChannelHandler {
 extension GRPCChannelHandler: ChannelInboundHandler {
   public typealias InboundIn = RawGRPCServerRequestPart
   public typealias OutboundOut = RawGRPCServerResponsePart
-  
+
   public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
     let requestPart = self.unwrapInboundIn(data)
     switch requestPart {
@@ -61,9 +61,13 @@ extension GRPCChannelHandler: ChannelInboundHandler {
         assert(handlerWasRemoved)
 
         ctx.pipeline.add(handler: callHandler, after: codec).whenComplete {
-          var responseHeaders = HTTPHeaders()
-          responseHeaders.add(name: "content-type", value: "application/grpc")
-          ctx.write(self.wrapOutboundOut(.headers(responseHeaders)), promise: nil)
+          // Send the .headers event back to begin the headers flushing for the response.
+          // At this point, which headers should be returned is not known, as the content type is
+          // processed in HTTP1ToRawGRPCServerCodec. At the same time the HTTP1ToRawGRPCServerCodec
+          // handler doesn't have the data to determine whether headers should be returned, as it is
+          // this handler that checks whether the stub for the requested Service/Method is implemented.
+          // This likely signals that the architecture for these handlers could be improved.
+          ctx.write(self.wrapOutboundOut(.headers(HTTPHeaders())), promise: nil)
         }
       }
 
