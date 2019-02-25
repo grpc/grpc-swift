@@ -132,7 +132,7 @@ public class Channel {
 }
 
 private extension Channel {
-  class ConnectivityObserver {
+  final class ConnectivityObserver {
     private let completionQueue: CompletionQueue
     private let underlyingChannel: UnsafeMutableRawPointer
     private let underlyingCompletionQueue: UnsafeMutableRawPointer
