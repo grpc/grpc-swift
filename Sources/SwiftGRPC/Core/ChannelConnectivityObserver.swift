@@ -27,7 +27,7 @@ extension Channel {
     private let underlyingCompletionQueue: UnsafeMutableRawPointer
     private var callbacks = [(ConnectivityState) -> Void]()
     private var hasBeenShutdown = false
-    private let stateMutex = Mutex()
+    private let mutex = Mutex()
 
     init(underlyingChannel: UnsafeMutableRawPointer) {
       self.underlyingChannel = underlyingChannel
@@ -46,7 +46,7 @@ extension Channel {
       var lastState = ConnectivityState(cgrpc_channel_check_connectivity_state(self.underlyingChannel, 0))
       spinloopThreadQueue.async {
         while true  {
-          guard (self.stateMutex.synchronize { !self.hasBeenShutdown }) else {
+          guard (self.mutex.synchronize { !self.hasBeenShutdown }) else {
             return
           }
 
@@ -57,7 +57,7 @@ extension Channel {
                                                  underlyingState, deadline, nil)
 
           let event = self.completionQueue.wait(timeout: deadline)
-          guard (self.stateMutex.synchronize{ !self.hasBeenShutdown }) else {
+          guard (self.mutex.synchronize{ !self.hasBeenShutdown }) else {
             return
           }
 
@@ -67,7 +67,7 @@ extension Channel {
             guard newState != lastState else { continue }
 
             lastState = newState
-            self.stateMutex.synchronize {
+            self.mutex.synchronize {
               self.callbacks.forEach { callback in callback(newState) }
             }
 
@@ -82,13 +82,13 @@ extension Channel {
     }
 
     func addConnectivityObserver(callback: @escaping (ConnectivityState) -> Void) {
-      self.stateMutex.synchronize {
+      self.mutex.synchronize {
         self.callbacks.append(callback)
       }
     }
 
     func shutdown() {
-      stateMutex.synchronize {
+      mutex.synchronize {
         hasBeenShutdown = true
       }
       completionQueue.shutdown()
