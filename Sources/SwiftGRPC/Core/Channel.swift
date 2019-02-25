@@ -49,7 +49,7 @@ public class Channel {
     underlyingChannel = withExtendedLifetime(argumentWrappers) {
         var argumentValues = argumentWrappers.map { $0.wrapped }
         if secure {
-          return cgrpc_channel_create_secure(address, roots_pem(), nil, nil, &argumentValues, Int32(arguments.count))
+          return cgrpc_channel_create_secure(address, kRootCertificates, nil, nil, &argumentValues, Int32(arguments.count))
         } else {
           return cgrpc_channel_create(address, &argumentValues, Int32(arguments.count))
         }
@@ -83,7 +83,7 @@ public class Channel {
   /// - Parameter clientCertificates: a PEM representation of the client certificates to use
   /// - Parameter clientKey: a PEM representation of the client key to use
   /// - Parameter arguments: list of channel configuration options
-  public init(address: String, certificates: String = roots_pem(), clientCertificates: String? = nil, clientKey: String? = nil, arguments: [Argument] = []) {
+  public init(address: String, certificates: String = kRootCertificates, clientCertificates: String? = nil, clientKey: String? = nil, arguments: [Argument] = []) {
     gRPC.initialize()
     host = address
     let argumentWrappers = arguments.map { $0.toCArg() }
