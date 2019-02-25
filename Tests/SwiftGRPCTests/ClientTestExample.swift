@@ -107,15 +107,13 @@ extension ClientTestExample {
     
     let completionHandlerExpectation = expectation(description: "final completion handler called")
 
-    var wordAsynchronous:String!
-    try client.getWordasynchronous("foo",completion:{ (word:String) in
-        wordAsynchronous = word
+    try client.getWordasynchronous("foo") { (word:String) in
+        XCTAssertEqual("bar", word)
         completionHandlerExpectation.fulfill()
-    })
+    }
     
     self.wait(for: [completionHandlerExpectation], timeout: 1)
     
-    XCTAssertEqual("bar", wordAsynchronous)
     // Ensure that all responses have been consumed.
     XCTAssertEqual(0, fakeService.getResponses.count)
     // Ensure that the expected requests have been sent.
