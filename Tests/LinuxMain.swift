@@ -21,6 +21,7 @@ XCTMain([
   // SwiftGRPC
   testCase(gRPCTests.allTests),
   testCase(ChannelArgumentTests.allTests),
+  testCase(ChannelConnectivityTests.allTests),
   testCase(ClientCancellingTests.allTests),
   testCase(ClientTestExample.allTests),
   testCase(ClientTimeoutTests.allTests),
