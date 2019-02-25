@@ -20,12 +20,13 @@ import Foundation
 
 /// A gRPC Channel
 public class Channel {
+  private let mutex = Mutex()
   /// Pointer to underlying C representation
   private let underlyingChannel: UnsafeMutableRawPointer
   /// Completion queue for channel call operations
   private let completionQueue: CompletionQueue
-  /// Observer for connectivity state changes.
-  private lazy var connectivityObserver = ConnectivityObserver(underlyingChannel: self.underlyingChannel)
+  /// Observer for connectivity state changes. Created lazily if needed
+  private var connectivityObserver: ConnectivityObserver?
 
   /// Timeout for new calls
   public var timeout: TimeInterval = 600.0
@@ -94,9 +95,9 @@ public class Channel {
   }
 
   deinit {
-    connectivityObserver.shutdown()
-    cgrpc_channel_destroy(underlyingChannel)
-    completionQueue.shutdown()
+    self.connectivityObserver?.shutdown()
+    cgrpc_channel_destroy(self.underlyingChannel)
+    self.completionQueue.shutdown()
   }
 
   /// Constructs a Call object to make a gRPC API call
@@ -124,6 +125,16 @@ public class Channel {
   ///
   /// - Parameter callback: block executed every time a new connectivity state is detected
   public func addConnectivityObserver(callback: @escaping (ConnectivityState) -> Void) {
-    connectivityObserver.addConnectivityObserver(callback: callback)
+    self.mutex.synchronize {
+      let observer: ConnectivityObserver
+      if let existingObserver = self.connectivityObserver {
+        observer = existingObserver
+      } else {
+        observer = ConnectivityObserver(underlyingChannel: self.underlyingChannel)
+        self.connectivityObserver = observer
+      }
+
+      observer.addConnectivityObserver(callback: callback)
+    }
   }
 }
