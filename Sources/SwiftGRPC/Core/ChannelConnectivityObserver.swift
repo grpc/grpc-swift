@@ -22,12 +22,12 @@ import Foundation
 extension Channel {
   /// Provides an interface for observing the connectivity of a given channel.
   final class ConnectivityObserver {
+    private let mutex = Mutex()
     private let completionQueue: CompletionQueue
     private let underlyingChannel: UnsafeMutableRawPointer
     private let underlyingCompletionQueue: UnsafeMutableRawPointer
     private var callbacks = [(ConnectivityState) -> Void]()
     private var hasBeenShutdown = false
-    private let mutex = Mutex()
 
     init(underlyingChannel: UnsafeMutableRawPointer) {
       self.underlyingChannel = underlyingChannel
@@ -41,15 +41,26 @@ extension Channel {
       self.shutdown()
     }
 
+    func addConnectivityObserver(callback: @escaping (ConnectivityState) -> Void) {
+      self.mutex.synchronize {
+        self.callbacks.append(callback)
+      }
+    }
+
+    func shutdown() {
+      self.mutex.synchronize {
+        self.hasBeenShutdown = true
+      }
+      self.completionQueue.shutdown()
+    }
+
+    // MARK: - Private
+
     private func run() {
       let spinloopThreadQueue = DispatchQueue(label: "SwiftGRPC.ConnectivityObserver.run.spinloopThread")
       var lastState = ConnectivityState(cgrpc_channel_check_connectivity_state(self.underlyingChannel, 0))
       spinloopThreadQueue.async {
-        while true  {
-          guard (self.mutex.synchronize { !self.hasBeenShutdown }) else {
-            return
-          }
-
+        while (self.mutex.synchronize { !self.hasBeenShutdown }) {
           guard let underlyingState = lastState.underlyingState else { return }
 
           let deadline: TimeInterval = 0.2
@@ -79,19 +90,6 @@ extension Channel {
           }
         }
       }
-    }
-
-    func addConnectivityObserver(callback: @escaping (ConnectivityState) -> Void) {
-      self.mutex.synchronize {
-        self.callbacks.append(callback)
-      }
-    }
-
-    func shutdown() {
-      self.mutex.synchronize {
-        self.hasBeenShutdown = true
-      }
-      self.completionQueue.shutdown()
     }
   }
 }
