@@ -30,7 +30,7 @@ func client() throws {
 
     let method = (i < steps - 1) ? "/hello" : "/quit"
     print("calling " + method)
-    let call = c.makeCall(method)
+    let call = try! c.makeCall(method)
 
     let metadata = try Metadata([
       "x": "xylophone",

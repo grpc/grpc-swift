@@ -144,16 +144,17 @@ class Document: NSDocument {
         if !self.isRunning() {
           break
         }
-        let method = (i < steps) ? "/hello" : "/quit"
-        let call = self.channel.makeCall(method)
-
-        let metadata = try! Metadata([
-          "x": "xylophone",
-          "y": "yu",
-          "z": "zither"
-        ])
 
         do {
+          let method = (i < steps) ? "/hello" : "/quit"
+          let call = try self.channel.makeCall(method)
+
+          let metadata = try Metadata([
+            "x": "xylophone",
+            "y": "yu",
+            "z": "zither"
+          ])
+
           try call.start(.unary,
                          metadata: metadata,
                          message: messageData) { callResult in

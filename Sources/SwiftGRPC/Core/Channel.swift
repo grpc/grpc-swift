@@ -21,18 +21,30 @@ import Foundation
 /// A gRPC Channel
 public class Channel {
   private let mutex = Mutex()
+  /// Weak references to API calls using this channel that are in-flight
+  private let activeCalls = NSHashTable<Call>.weakObjects()
   /// Pointer to underlying C representation
   private let underlyingChannel: UnsafeMutableRawPointer
   /// Completion queue for channel call operations
   private let completionQueue: CompletionQueue
   /// Observer for connectivity state changes. Created lazily if needed
   private var connectivityObserver: ConnectivityObserver?
+  /// Whether the gRPC channel has been shut down
+  private var hasBeenShutdown = false
 
   /// Timeout for new calls
   public var timeout: TimeInterval = 600.0
 
   /// Default host to use for new calls
   public var host: String
+
+  /// Errors that may be thrown by the channel
+  enum Error: Swift.Error {
+    /// Action cannot be performed because the channel has already been shut down
+    case alreadyShutdown
+    /// Failed to create a new call within the gRPC stack
+    case callCreationFailed
+  }
 
   /// Initializes a gRPC channel
   ///
@@ -94,12 +106,21 @@ public class Channel {
     completionQueue.run() // start a loop that watches the channel's completion queue
   }
 
-  deinit {
+  /// Shut down the channel. No new calls may be made using this channel after it is shut down. Any in-flight calls using this channel will be canceled
+  public func shutdown() {
     self.mutex.synchronize {
+      guard !self.hasBeenShutdown else { return }
+
+      self.hasBeenShutdown = true
       self.connectivityObserver?.shutdown()
+      cgrpc_channel_destroy(self.underlyingChannel)
+      self.completionQueue.shutdown()
+      self.activeCalls.allObjects.forEach { $0.cancel() }
     }
-    cgrpc_channel_destroy(self.underlyingChannel)
-    self.completionQueue.shutdown()
+  }
+
+  deinit {
+    self.shutdown()
   }
 
   /// Constructs a Call object to make a gRPC API call
@@ -108,11 +129,20 @@ public class Channel {
   /// - Parameter host: the gRPC host name for the call. If unspecified, defaults to the Client host
   /// - Parameter timeout: a timeout value in seconds
   /// - Returns: a Call object that can be used to perform the request
-  public func makeCall(_ method: String, host: String = "", timeout: TimeInterval? = nil) -> Call {
-    let host = host.isEmpty ? self.host : host
-    let timeout = timeout ?? self.timeout
-    let underlyingCall = cgrpc_channel_create_call(underlyingChannel, method, host, timeout)!
-    return Call(underlyingCall: underlyingCall, owned: true, completionQueue: completionQueue)
+  public func makeCall(_ method: String, host: String? = nil, timeout: TimeInterval? = nil) throws -> Call {
+    guard (self.mutex.synchronize { !self.hasBeenShutdown }) else {
+      throw Error.alreadyShutdown
+    }
+
+    guard let underlyingCall = cgrpc_channel_create_call(
+      self.underlyingChannel, method, host ?? self.host, timeout ?? self.timeout) else
+    {
+      throw Error.callCreationFailed
+    }
+
+    let call = Call(underlyingCall: underlyingCall, owned: true, completionQueue: self.completionQueue)
+    self.mutex.synchronize { self.activeCalls.add(call) }
+    return call
   }
 
   /// Check the current connectivity state
