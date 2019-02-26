@@ -22,8 +22,6 @@ public struct GRPCStatus: Error, Equatable {
   public static let ok = GRPCStatus(code: .ok, message: "OK")
   /// "Internal server error" status.
   public static let processingError = GRPCStatus(code: .internalError, message: "unknown error processing request")
-  /// Client cancelled the call.
-  public static let cancelledByClient = GRPCStatus(code: .cancelled, message: "cancelled by the client")
 }
 
 public protocol GRPCStatusTransformable: Error {

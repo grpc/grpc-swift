@@ -53,7 +53,7 @@ extension GRPCChannelHandler: ChannelInboundHandler {
     switch requestPart {
     case .head(let requestHead):
       guard let callHandler = getCallHandler(channel: ctx.channel, requestHead: requestHead) else {
-          errorCaught(ctx: ctx, error: GRPCServerError.unimplementedMethod(requestHead.uri))
+          errorCaught(ctx: ctx, error: GRPCError.server(.unimplementedMethod(requestHead.uri)))
           return
       }
 

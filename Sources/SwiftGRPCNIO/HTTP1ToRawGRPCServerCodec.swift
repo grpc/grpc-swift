@@ -116,7 +116,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
 
   func processHead(ctx: ChannelHandlerContext, requestHead: HTTPRequestHead) throws -> InboundState {
     guard case .expectingHeaders = inboundState else {
-      throw GRPCServerError.invalidState("expecteded state .expectingHeaders, got \(inboundState)")
+      throw GRPCError.server(.invalidState("expecteded state .expectingHeaders, got \(inboundState)"))
     }
 
     if let contentTypeHeader = requestHead.headers["content-type"].first {
@@ -136,7 +136,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
 
   func processBody(ctx: ChannelHandlerContext, body: inout ByteBuffer) throws -> InboundState {
     guard case .expectingBody = inboundState else {
-      throw GRPCServerError.invalidState("expecteded state .expectingBody(_), got \(inboundState)")
+      throw GRPCError.server(.invalidState("expecteded state .expectingBody, got \(inboundState)"))
     }
 
     // If the contentType is text, then decode the incoming bytes as base64 encoded, and append
@@ -151,7 +151,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
       let readyBytes = requestTextBuffer.readableBytes - (requestTextBuffer.readableBytes % 4)
       guard let base64Encoded = requestTextBuffer.readString(length: readyBytes),
           let decodedData = Data(base64Encoded: base64Encoded) else {
-        throw GRPCServerError.base64DecodeError
+        throw GRPCError.server(.base64DecodeError)
       }
 
       body.write(bytes: decodedData)
@@ -166,7 +166,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
 
   private func processEnd(ctx: ChannelHandlerContext, trailers: HTTPHeaders?) throws -> InboundState {
     if let trailers = trailers {
-      throw GRPCServerError.invalidState("unexpected trailers received \(trailers)")
+      throw GRPCError.server(.invalidState("unexpected trailers received \(trailers)"))
     }
 
     ctx.fireChannelRead(self.wrapInboundOut(.end))

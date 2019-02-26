@@ -28,7 +28,7 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
   public override func processMessage(_ message: RequestMessage) throws {
     guard let eventObserver = self.eventObserver,
       let context = self.context else {
-        throw GRPCServerError.requestCardinalityViolation
+        throw GRPCError.server(.requestCardinalityViolation)
     }
 
     let resultFuture = eventObserver(message)

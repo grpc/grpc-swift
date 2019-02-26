@@ -64,33 +64,33 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
   public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
     if case .ignore = state { return }
 
-    switch self.unwrapInboundIn(data) {
-    case .head(let head):
-      state = processHead(ctx: ctx, head: head)
+    do {
+      switch self.unwrapInboundIn(data) {
+      case .head(let head):
+        state = try processHead(ctx: ctx, head: head)
 
-    case .body(var message):
-      do {
+      case .body(var message):
         state = try processBody(ctx: ctx, messageBuffer: &message)
-      } catch {
-        ctx.fireErrorCaught(error)
-        state = .ignore
-      }
 
-    case .end(let trailers):
-      state = processTrailers(ctx: ctx, trailers: trailers)
+      case .end(let trailers):
+        state = try processTrailers(ctx: ctx, trailers: trailers)
+      }
+    } catch {
+      ctx.fireErrorCaught(error)
+      state = .ignore
     }
   }
 
   /// Forwards the headers from the request head to the next handler.
   ///
   /// - note: Requires the `.expectingHeaders` state.
-  private func processHead(ctx: ChannelHandlerContext, head: HTTPResponseHead) -> State {
-    guard case .expectingHeaders = state
-      else { preconditionFailure("received headers while in state \(state)") }
+  private func processHead(ctx: ChannelHandlerContext, head: HTTPResponseHead) throws -> State {
+    guard case .expectingHeaders = state else {
+      throw GRPCError.client(.invalidState("received headers while in state \(state)"))
+    }
 
     guard head.status == .ok else {
-      ctx.fireErrorCaught(GRPCClientError.HTTPStatusNotOk)
-      return .ignore
+      throw GRPCError.client(.HTTPStatusNotOk(head.status))
     }
 
     if let encodingType = head.headers["grpc-encoding"].first {
@@ -98,8 +98,7 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
     }
 
     guard inboundCompression.supported else {
-      ctx.fireErrorCaught(GRPCServerError.unsupportedCompressionMechanism(inboundCompression.rawValue))
-      return .ignore
+      throw GRPCError.client(.unsupportedCompressionMechanism(inboundCompression.rawValue))
     }
 
     ctx.fireChannelRead(self.wrapInboundOut(.headers(head.headers)))
@@ -111,8 +110,9 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
   ///
   /// - note: Requires the `.expectingBodyOrTrailers` state.
   private func processBody(ctx: ChannelHandlerContext, messageBuffer: inout ByteBuffer) throws -> State {
-    guard case .expectingBodyOrTrailers = state
-      else { preconditionFailure("received body while in state \(state)") }
+    guard case .expectingBodyOrTrailers = state else {
+      throw GRPCError.client(.invalidState("received body while in state \(state)"))
+    }
 
     for message in try self.messageReader.consume(messageBuffer: &messageBuffer, compression: inboundCompression) {
       ctx.fireChannelRead(self.wrapInboundOut(.message(message)))
@@ -123,9 +123,10 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
 
   /// Forwards a `GRPCStatus` to the next handler. The status and message are extracted
   /// from the trailers if they exist; the `.unknown` status code is used if no status exists.
-  private func processTrailers(ctx: ChannelHandlerContext, trailers: HTTPHeaders?) -> State {
-    guard case .expectingBodyOrTrailers = state
-      else { preconditionFailure("received trailers while in state \(state)") }
+  private func processTrailers(ctx: ChannelHandlerContext, trailers: HTTPHeaders?) throws -> State {
+    guard case .expectingBodyOrTrailers = state else {
+      throw GRPCError.client(.invalidState("received trailers while in state \(state)"))
+    }
 
     let statusCode = trailers?["grpc-status"].first
       .flatMap { Int($0) }

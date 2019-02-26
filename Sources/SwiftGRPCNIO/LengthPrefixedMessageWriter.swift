@@ -26,7 +26,7 @@ public class LengthPrefixedMessageWriter {
   ///   - compression: Compression mechanism to use; the mechansim must be supported.
   ///   - message: The serialized Protobuf message to write.
   /// - Returns: A `ByteBuffer` containing a gRPC length-prefixed message.
-  /// - Precondition: `compression.supported` returns `true`.
+  /// - Precondition: `compression.supported` is `true`.
   /// - Note: See `LengthPrefixedMessageReader` for more details on the format.
   func write(_ message: Data, into buffer: inout ByteBuffer, usingCompression compression: CompressionMechanism) {
     precondition(compression.supported, "compression mechanism \(compression) is not supported")

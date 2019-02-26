@@ -137,7 +137,7 @@ extension GRPCClientChannelHandler: ChannelInboundHandler {
 
     case .message(let message):
       guard self.inboundState == .expectingMessageOrStatus else {
-        self.errorCaught(ctx: ctx, error: GRPCClientError.responseCardinalityViolation)
+        self.errorCaught(ctx: ctx, error: GRPCError.client(.responseCardinalityViolation))
         return
       }
 
@@ -191,7 +191,7 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
 extension GRPCClientChannelHandler {
   /// Closes the HTTP/2 stream. Inbound and outbound state are set to ignore.
   public func close(ctx: ChannelHandlerContext, mode: CloseMode, promise: EventLoopPromise<Void>?) {
-    self.observeStatus(GRPCStatus.cancelledByClient)
+    self.observeStatus(GRPCError.client(.cancelledByClient).asGRPCStatus())
 
     requestHeadSentPromise.futureResult.whenComplete {
       ctx.close(mode: mode, promise: promise)
@@ -207,8 +207,5 @@ extension GRPCClientChannelHandler {
     //! TODO: Add an error handling delegate, similar to in the server.
     let status = (error as? GRPCStatus) ?? .processingError
     self.observeStatus(status)
-
-    // We don't expect any more requests/responses beyond this point.
-    self.close(ctx: ctx, mode: .all, promise: nil)
   }
 }

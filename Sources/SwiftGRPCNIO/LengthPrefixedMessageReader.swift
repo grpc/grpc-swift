@@ -27,15 +27,11 @@ import NIOHTTP1
 /// - SeeAlso:
 /// [gRPC Protocol](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md)
 public class LengthPrefixedMessageReader {
+  public typealias Mode = GRPCError.Origin
+
+  private let mode: Mode
   private var buffer: ByteBuffer!
   private var state: State = .expectingCompressedFlag
-  private let mode: Mode
-
-  internal init(mode: Mode) {
-    self.mode = mode
-  }
-
-  internal enum Mode { case client, server }
 
   private enum State {
     case expectingCompressedFlag
@@ -43,6 +39,10 @@ public class LengthPrefixedMessageReader {
     case receivedMessageLength(Int)
     case willBuffer(requiredBytes: Int)
     case isBuffering(requiredBytes: Int)
+  }
+
+  public init(mode: Mode) {
+    self.mode = mode
   }
 
   /// Consumes all readable bytes from given buffer and returns all messages which could be read.
@@ -131,11 +131,11 @@ public class LengthPrefixedMessageReader {
 
   private func handleCompressionFlag(enabled flagEnabled: Bool, mechanism: CompressionMechanism) throws {
     guard flagEnabled == mechanism.requiresFlag else {
-      throw GRPCServerError.unexpectedCompression
+      throw GRPCError.common(.unexpectedCompression, origin: mode)
     }
 
     guard mechanism.supported else {
-      throw GRPCServerError.unsupportedCompressionMechanism(mechanism.rawValue)
+      throw GRPCError.common(.unsupportedCompressionMechanism(mechanism.rawValue), origin: mode)
     }
   }
 }
