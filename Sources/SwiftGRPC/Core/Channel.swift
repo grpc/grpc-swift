@@ -95,7 +95,9 @@ public class Channel {
   }
 
   deinit {
-    self.connectivityObserver?.shutdown()
+    self.mutex.synchronize {
+      self.connectivityObserver?.shutdown()
+    }
     cgrpc_channel_destroy(self.underlyingChannel)
     self.completionQueue.shutdown()
   }

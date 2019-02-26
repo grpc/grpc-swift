@@ -79,10 +79,9 @@ extension Channel {
             let newState = ConnectivityState(cgrpc_channel_check_connectivity_state(self.underlyingChannel, 0))
             guard newState != lastState else { continue }
 
+            let callbacks = self.mutex.synchronize { Array(self.callbacks) }
             lastState = newState
-            self.mutex.synchronize {
-              self.callbacks.forEach { callback in callback(newState) }
-            }
+            callbacks.forEach { callback in callback(newState) }
 
           case .queueShutdown:
             return

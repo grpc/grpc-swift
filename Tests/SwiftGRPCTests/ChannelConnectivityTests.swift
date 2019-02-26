@@ -49,13 +49,14 @@ extension ChannelConnectivityTests {
   }
 
   func testMultipleConnectivityObserversAreCalled() {
-    let completionHandlerExpectation = expectation(description: "completion handler called")
+    // Linux doesn't yet support `assertForOverFulfill` or `expectedFulfillmentCount`, and since these are
+    // called multiple times, we can't use expectations. https://bugs.swift.org/browse/SR-6249
     var firstObserverCalled = false
     var secondObserverCalled = false
-
     client.channel.addConnectivityObserver { _ in firstObserverCalled = true }
     client.channel.addConnectivityObserver { _ in secondObserverCalled = true }
 
+    let completionHandlerExpectation = expectation(description: "completion handler called")
     _ = try! client.expand(Echo_EchoRequest(text: "foo bar baz foo bar baz")) { _ in
       completionHandlerExpectation.fulfill()
     }
