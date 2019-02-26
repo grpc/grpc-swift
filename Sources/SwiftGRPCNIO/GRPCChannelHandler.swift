@@ -19,7 +19,7 @@ public protocol CallHandlerProvider: class {
 
   /// Determines, calls and returns the appropriate request handler (`GRPCCallHandler`), depending on the request's
   /// method. Returns nil for methods not handled by this service.
-  func handleMethod(_ methodName: String, request: HTTPRequestHead, serverHandler: GRPCChannelHandler, channel: Channel) -> GRPCCallHandler?
+  func handleMethod(_ methodName: String, request: HTTPRequestHead, serverHandler: GRPCChannelHandler, channel: Channel, errorDelegate: ServerErrorDelegate?) -> GRPCCallHandler?
 }
 
 /// Listens on a newly-opened HTTP2 subchannel and yields to the sub-handler matching a call, if available.
@@ -28,9 +28,11 @@ public protocol CallHandlerProvider: class {
 /// for an `GRPCCallHandler` object. That object is then forwarded the individual gRPC messages.
 public final class GRPCChannelHandler {
   private let servicesByName: [String: CallHandlerProvider]
+  private weak var errorDelegate: ServerErrorDelegate?
 
-  public init(servicesByName: [String: CallHandlerProvider]) {
+  public init(servicesByName: [String: CallHandlerProvider], errorDelegate: ServerErrorDelegate?) {
     self.servicesByName = servicesByName
+    self.errorDelegate = errorDelegate
   }
 }
 
@@ -38,20 +40,20 @@ extension GRPCChannelHandler: ChannelInboundHandler {
   public typealias InboundIn = RawGRPCServerRequestPart
   public typealias OutboundOut = RawGRPCServerResponsePart
 
+  public func errorCaught(ctx: ChannelHandlerContext, error: Error) {
+    errorDelegate?.observe(error)
+
+    let transformedError = errorDelegate?.transform(error) ?? error
+    let status = (transformedError as? GRPCStatusTransformable)?.asGRPCStatus() ?? GRPCStatus.processingError
+    ctx.writeAndFlush(wrapOutboundOut(.status(status)), promise: nil)
+  }
+
   public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
     let requestPart = self.unwrapInboundIn(data)
     switch requestPart {
     case .head(let requestHead):
-      // URI format: "/package.Servicename/MethodName", resulting in the following components separated by a slash:
-      // - uriComponents[0]: empty
-      // - uriComponents[1]: service name (including the package name);
-      //     `CallHandlerProvider`s should provide the service name including the package name.
-      // - uriComponents[2]: method name.
-      let uriComponents = requestHead.uri.components(separatedBy: "/")
-      guard uriComponents.count >= 3 && uriComponents[0].isEmpty,
-        let providerForServiceName = servicesByName[uriComponents[1]],
-        let callHandler = providerForServiceName.handleMethod(uriComponents[2], request: requestHead, serverHandler: self, channel: ctx.channel) else {
-          ctx.writeAndFlush(self.wrapOutboundOut(.status(.unimplemented(method: requestHead.uri))), promise: nil)
+      guard let callHandler = getCallHandler(channel: ctx.channel, requestHead: requestHead) else {
+          errorCaught(ctx: ctx, error: GRPCServerError.unimplementedMethod(requestHead.uri))
           return
       }
 
@@ -75,7 +77,25 @@ extension GRPCChannelHandler: ChannelInboundHandler {
         .whenComplete { ctx.pipeline.remove(handler: self, promise: handlerRemoved) }
 
     case .message, .end:
-      preconditionFailure("received \(requestPart), should have been removed as a handler at this point")
+      // We can reach this point if we're receiving messages for a method that isn't implemented.
+      // A status resposne will have been fired which should also close the stream; there's not a
+      // lot we can do at this point.
+      break
     }
+  }
+
+  private func getCallHandler(channel: Channel, requestHead: HTTPRequestHead) -> GRPCCallHandler? {
+    // URI format: "/package.Servicename/MethodName", resulting in the following components separated by a slash:
+    // - uriComponents[0]: empty
+    // - uriComponents[1]: service name (including the package name);
+    //     `CallHandlerProvider`s should provide the service name including the package name.
+    // - uriComponents[2]: method name.
+    let uriComponents = requestHead.uri.components(separatedBy: "/")
+    guard uriComponents.count >= 3 && uriComponents[0].isEmpty,
+      let providerForServiceName = servicesByName[uriComponents[1]],
+      let callHandler = providerForServiceName.handleMethod(uriComponents[2], request: requestHead, serverHandler: self, channel: channel, errorDelegate: errorDelegate) else {
+        return nil
+    }
+    return callHandler
   }
 }

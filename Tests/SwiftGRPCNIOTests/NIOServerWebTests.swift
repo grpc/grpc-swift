@@ -25,7 +25,8 @@ class NIOServerWebTests: NIOServerTestCase {
   static var allTests: [(String, (NIOServerWebTests) -> () throws -> Void)] {
     return [
       ("testUnary", testUnary),
-      ("testUnaryLotsOfRequests", testUnaryLotsOfRequests),
+      //! FIXME: Broken on Linux: https://github.com/grpc/grpc-swift/issues/382
+      // ("testUnaryLotsOfRequests", testUnaryLotsOfRequests),
       ("testServerStreaming", testServerStreaming),
     ]
   }
@@ -114,13 +115,15 @@ extension NIOServerWebTests {
     // Sending that many requests at once can sometimes trip things up, it seems.
     let clockStart = clock()
     let numberOfRequests = 2_000
+
     let completionHandlerExpectation = expectation(description: "completion handler called")
-#if os(macOS)
-    // Linux version of Swift doesn't have this API yet.
+    // Linux version of Swift doesn't have the `expectedFulfillmentCount` API yet.
     // Implemented in https://github.com/apple/swift-corelibs-xctest/pull/228 but not yet
     // released.
-    completionHandlerExpectation.expectedFulfillmentCount = numberOfRequests
-#endif
+    //
+    // Wait for the expected number of responses (i.e. `numberOfRequests`) instead.
+    var responses = 0
+
     for i in 0..<numberOfRequests {
       let message = "foo \(i)"
       let expectedData = gRPCEncodedEchoRequest("Swift echo get: \(message)") + gRPCWebOKTrailers()
@@ -129,7 +132,11 @@ extension NIOServerWebTests {
         XCTAssertNil(error)
         if let data = data {
           XCTAssertEqual(String(data: data, encoding: .utf8), expectedResponse)
-          completionHandlerExpectation.fulfill()
+          responses += 1
+
+          if responses == numberOfRequests {
+            completionHandlerExpectation.fulfill()
+          }
         }
       }
     }

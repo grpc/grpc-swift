@@ -19,7 +19,7 @@ public enum GRPCServerResponsePart<MessageType: Message> {
 }
 
 /// A simple channel handler that translates raw gRPC packets into decoded protobuf messages, and vice versa.
-public final class GRPCServerCodec<RequestMessage: Message, ResponseMessage: Message> { }
+public final class GRPCServerCodec<RequestMessage: Message, ResponseMessage: Message> {}
 
 extension GRPCServerCodec: ChannelInboundHandler {
   public typealias InboundIn = RawGRPCServerRequestPart
@@ -35,8 +35,7 @@ extension GRPCServerCodec: ChannelInboundHandler {
       do {
         ctx.fireChannelRead(self.wrapInboundOut(.message(try RequestMessage(serializedData: messageAsData))))
       } catch {
-        //! FIXME: Ensure that the last handler in the pipeline returns `.dataLoss` here?
-        ctx.fireErrorCaught(error)
+        ctx.fireErrorCaught(GRPCServerError.requestProtoParseFailure)
       }
 
     case .end:
@@ -54,6 +53,7 @@ extension GRPCServerCodec: ChannelOutboundHandler {
     switch responsePart {
     case .headers(let headers):
       ctx.write(self.wrapOutboundOut(.headers(headers)), promise: promise)
+
     case .message(let message):
       do {
         let messageData = try message.serializedData()
@@ -61,9 +61,11 @@ extension GRPCServerCodec: ChannelOutboundHandler {
         responseBuffer.write(bytes: messageData)
         ctx.write(self.wrapOutboundOut(.message(responseBuffer)), promise: promise)
       } catch {
+        let error = GRPCServerError.responseProtoSerializationFailure
         promise?.fail(error: error)
         ctx.fireErrorCaught(error)
       }
+
     case .status(let status):
       ctx.write(self.wrapOutboundOut(.status(status)), promise: promise)
     }
