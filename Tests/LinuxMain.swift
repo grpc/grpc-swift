@@ -37,8 +37,8 @@ XCTMain([
   testCase(ServerTimeoutTests.allTests),
 
   // SwiftGRPCNIO
-  testCase(NIOServerTests.allTests)
-  testCase(NIOServerWebTests.allTests)
-  testCase(GRPCChannelHandlerTests.allTests)
+  testCase(NIOServerTests.allTests),
+  testCase(NIOServerWebTests.allTests),
+  testCase(GRPCChannelHandlerTests.allTests),
   testCase(HTTP1ToRawGRPCServerCodecTests.allTests)
 ])
