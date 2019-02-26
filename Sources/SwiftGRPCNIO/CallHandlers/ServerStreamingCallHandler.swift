@@ -10,11 +10,11 @@ import NIOHTTP1
 public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage: Message>: BaseCallHandler<RequestMessage, ResponseMessage> {
   public typealias EventObserver = (RequestMessage) -> EventLoopFuture<GRPCStatus>
   private var eventObserver: EventObserver?
-  
+
   private var context: StreamingResponseCallContext<ResponseMessage>?
-  
-  public init(channel: Channel, request: HTTPRequestHead, eventObserverFactory: (StreamingResponseCallContext<ResponseMessage>) -> EventObserver) {
-    super.init()
+
+  public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, eventObserverFactory: (StreamingResponseCallContext<ResponseMessage>) -> EventObserver) {
+    super.init(errorDelegate: errorDelegate)
     let context = StreamingResponseCallContextImpl<ResponseMessage>(channel: channel, request: request)
     self.context = context
     self.eventObserver = eventObserverFactory(context)
@@ -25,14 +25,12 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
     }
   }
 
-  public override func processMessage(_ message: RequestMessage) {
+  public override func processMessage(_ message: RequestMessage) throws {
     guard let eventObserver = self.eventObserver,
       let context = self.context else {
-      //! FIXME: Better handle this error?
-      print("multiple messages received on unary call")
-      return
+        throw GRPCServerError.requestCardinalityViolation
     }
-    
+
     let resultFuture = eventObserver(message)
     resultFuture
       // Fulfill the status promise with whatever status the framework user has provided.

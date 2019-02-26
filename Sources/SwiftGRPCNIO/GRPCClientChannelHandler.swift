@@ -137,7 +137,7 @@ extension GRPCClientChannelHandler: ChannelInboundHandler {
 
     case .message(let message):
       guard self.inboundState == .expectingMessageOrStatus else {
-        self.errorCaught(ctx: ctx, error: GRPCError.responseCardinalityViolation)
+        self.errorCaught(ctx: ctx, error: GRPCClientError.responseCardinalityViolation)
         return
       }
 

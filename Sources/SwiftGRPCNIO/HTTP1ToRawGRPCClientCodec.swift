@@ -89,7 +89,7 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
       else { preconditionFailure("received headers while in state \(state)") }
 
     guard head.status == .ok else {
-      ctx.fireErrorCaught(GRPCError.HTTPStatusNotOk)
+      ctx.fireErrorCaught(GRPCClientError.HTTPStatusNotOk)
       return .ignore
     }
 
@@ -98,7 +98,7 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
     }
 
     guard inboundCompression.supported else {
-      ctx.fireErrorCaught(GRPCError.unsupportedCompression(inboundCompression))
+      ctx.fireErrorCaught(GRPCServerError.unsupportedCompressionMechanism(inboundCompression.rawValue))
       return .ignore
     }
 

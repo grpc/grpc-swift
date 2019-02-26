@@ -14,8 +14,8 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
   
   private var context: UnaryResponseCallContext<ResponseMessage>?
   
-  public init(channel: Channel, request: HTTPRequestHead, eventObserverFactory: (UnaryResponseCallContext<ResponseMessage>) -> EventObserver) {
-    super.init()
+  public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, eventObserverFactory: (UnaryResponseCallContext<ResponseMessage>) -> EventObserver) {
+    super.init(errorDelegate: errorDelegate)
     let context = UnaryResponseCallContextImpl<ResponseMessage>(channel: channel, request: request)
     self.context = context
     self.eventObserver = eventObserverFactory(context)
@@ -26,12 +26,10 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
     }
   }
   
-  public override func processMessage(_ message: RequestMessage) {
+  public override func processMessage(_ message: RequestMessage) throws {
     guard let eventObserver = self.eventObserver,
       let context = self.context else {
-      //! FIXME: Better handle this error?
-      print("multiple messages received on unary call")
-      return
+      throw GRPCServerError.requestCardinalityViolation
     }
     
     let resultFuture = eventObserver(message)

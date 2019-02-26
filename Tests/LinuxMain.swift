@@ -21,6 +21,7 @@ XCTMain([
   // SwiftGRPC
   testCase(gRPCTests.allTests),
   testCase(ChannelArgumentTests.allTests),
+  testCase(ChannelConnectivityTests.allTests),
   testCase(ClientCancellingTests.allTests),
   testCase(ClientTestExample.allTests),
   testCase(ClientTimeoutTests.allTests),
@@ -39,4 +40,7 @@ XCTMain([
   testCase(NIOServerTests.allTests),
   testCase(NIOClientCancellingTests.allTests),
   testCase(NIOClientTimeoutTests.allTests)
+  testCase(NIOServerWebTests.allTests),
+  testCase(GRPCChannelHandlerTests.allTests),
+  testCase(HTTP1ToRawGRPCServerCodecTests.allTests)
 ])

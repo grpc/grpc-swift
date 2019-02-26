@@ -15,9 +15,10 @@
  */
 import Foundation
 
-enum GRPCError: Error {
-  case HTTPStatusNotOk
-  case unsupportedCompression(CompressionMechanism)
-  case cancelledByClient
-  case responseCardinalityViolation
+public class LoggingServerErrorDelegate: ServerErrorDelegate {
+  public init() {}
+
+  public func observe(_ error: Error) {
+    print("[grpc-server][\(Date())] \(error)")
+  }
 }

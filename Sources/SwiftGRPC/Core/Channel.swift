@@ -45,12 +45,14 @@ public class Channel {
     gRPC.initialize()
     host = address
     let argumentWrappers = arguments.map { $0.toCArg() }
-    var argumentValues = argumentWrappers.map { $0.wrapped }
 
-    if secure {
-      underlyingChannel = cgrpc_channel_create_secure(address, roots_pem(), nil, nil, &argumentValues, Int32(arguments.count))
-    } else {
-      underlyingChannel = cgrpc_channel_create(address, &argumentValues, Int32(arguments.count))
+    underlyingChannel = withExtendedLifetime(argumentWrappers) {
+        var argumentValues = argumentWrappers.map { $0.wrapped }
+        if secure {
+          return cgrpc_channel_create_secure(address, kRootCertificates, nil, nil, &argumentValues, Int32(arguments.count))
+        } else {
+          return cgrpc_channel_create(address, &argumentValues, Int32(arguments.count))
+        }
     }
     completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_channel_completion_queue(underlyingChannel), name: "Client")
     completionQueue.run() // start a loop that watches the channel's completion queue
@@ -64,9 +66,11 @@ public class Channel {
     gRPC.initialize()
     host = googleAddress
     let argumentWrappers = arguments.map { $0.toCArg() }
-    var argumentValues = argumentWrappers.map { $0.wrapped }
-
-    underlyingChannel = cgrpc_channel_create_google(googleAddress, &argumentValues, Int32(arguments.count))
+    
+    underlyingChannel = withExtendedLifetime(argumentWrappers) {
+        var argumentValues = argumentWrappers.map { $0.wrapped }
+        return cgrpc_channel_create_google(googleAddress, &argumentValues, Int32(arguments.count))
+    }
 
     completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_channel_completion_queue(underlyingChannel), name: "Client")
     completionQueue.run() // start a loop that watches the channel's completion queue
@@ -75,17 +79,19 @@ public class Channel {
   /// Initializes a gRPC channel
   ///
   /// - Parameter address: the address of the server to be called
-  /// - Parameter certificates: a PEM representation of certificates to use
+  /// - Parameter certificates: a PEM representation of certificates to use.
   /// - Parameter clientCertificates: a PEM representation of the client certificates to use
   /// - Parameter clientKey: a PEM representation of the client key to use
   /// - Parameter arguments: list of channel configuration options
-  public init(address: String, certificates: String, clientCertificates: String? = nil, clientKey: String? = nil, arguments: [Argument] = []) {
+  public init(address: String, certificates: String = kRootCertificates, clientCertificates: String? = nil, clientKey: String? = nil, arguments: [Argument] = []) {
     gRPC.initialize()
     host = address
     let argumentWrappers = arguments.map { $0.toCArg() }
-    var argumentValues = argumentWrappers.map { $0.wrapped }
 
-    underlyingChannel = cgrpc_channel_create_secure(address, certificates, clientCertificates, clientKey, &argumentValues, Int32(arguments.count))
+    underlyingChannel = withExtendedLifetime(argumentWrappers) {
+        var argumentValues = argumentWrappers.map { $0.wrapped }
+        return cgrpc_channel_create_secure(address, certificates, clientCertificates, clientKey, &argumentValues, Int32(arguments.count))
+    }
     completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_channel_completion_queue(underlyingChannel), name: "Client")
     completionQueue.run() // start a loop that watches the channel's completion queue
   }
@@ -114,7 +120,7 @@ public class Channel {
   /// - Parameter tryToConnect: boolean value to indicate if should try to connect if channel's connectivity state is idle
   /// - Returns: a ConnectivityState value representing the current connectivity state of the channel
   public func connectivityState(tryToConnect: Bool = false) -> ConnectivityState {
-    return ConnectivityState.connectivityState(cgrpc_channel_check_connectivity_state(underlyingChannel, tryToConnect ? 1 : 0))
+    return ConnectivityState(cgrpc_channel_check_connectivity_state(underlyingChannel, tryToConnect ? 1 : 0))
   }
 
   /// Subscribe to connectivity state changes
@@ -126,7 +132,7 @@ public class Channel {
 }
 
 private extension Channel {
-  class ConnectivityObserver {
+  final class ConnectivityObserver {
     private let completionQueue: CompletionQueue
     private let underlyingChannel: UnsafeMutableRawPointer
     private let underlyingCompletionQueue: UnsafeMutableRawPointer
@@ -169,17 +175,16 @@ private extension Channel {
 
           switch event.type {
           case .complete:
-            let newState = ConnectivityState.connectivityState(cgrpc_channel_check_connectivity_state(self.underlyingChannel, 0))
+            let newState = ConnectivityState(cgrpc_channel_check_connectivity_state(self.underlyingChannel, 0))
 
             if newState != self.lastState {
               self.callback(newState)
             }
-
             self.lastState = newState
-          case .queueTimeout:
-            continue
+
           case .queueShutdown:
             return
+
           default:
             continue
           }
@@ -192,63 +197,6 @@ private extension Channel {
         hasBeenShutdown = true
       }
       completionQueue.shutdown()
-    }
-  }
-}
-
-extension Channel {
-  public enum ConnectivityState {
-    /// Channel has just been initialized
-    case initialized
-    /// Channel is idle
-    case idle
-    /// Channel is connecting
-    case connecting
-    /// Channel is ready for work
-    case ready
-    /// Channel has seen a failure but expects to recover
-    case transientFailure
-    /// Channel has seen a failure that it cannot recover from
-    case shutdown
-    /// Channel connectivity state is unknown
-    case unknown
-
-    fileprivate static func connectivityState(_ value: grpc_connectivity_state) -> ConnectivityState {
-      switch value {
-      case GRPC_CHANNEL_INIT:
-        return .initialized
-      case GRPC_CHANNEL_IDLE:
-        return .idle
-      case GRPC_CHANNEL_CONNECTING:
-        return .connecting
-      case GRPC_CHANNEL_READY:
-        return .ready
-      case GRPC_CHANNEL_TRANSIENT_FAILURE:
-        return .transientFailure
-      case GRPC_CHANNEL_SHUTDOWN:
-        return .shutdown
-      default:
-        return .unknown
-      }
-    }
-
-    fileprivate var underlyingState: grpc_connectivity_state? {
-      switch self {
-      case .initialized:
-        return GRPC_CHANNEL_INIT
-      case .idle:
-        return GRPC_CHANNEL_IDLE
-      case .connecting:
-        return GRPC_CHANNEL_CONNECTING
-      case .ready:
-        return GRPC_CHANNEL_READY
-      case .transientFailure:
-        return GRPC_CHANNEL_TRANSIENT_FAILURE
-      case .shutdown:
-        return GRPC_CHANNEL_SHUTDOWN
-      default:
-        return nil
-      }
     }
   }
 }

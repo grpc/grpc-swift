@@ -131,11 +131,11 @@ public class LengthPrefixedMessageReader {
 
   private func handleCompressionFlag(enabled flagEnabled: Bool, mechanism: CompressionMechanism) throws {
     guard flagEnabled == mechanism.requiresFlag else {
-      throw GRPCStatus.processingError
+      throw GRPCServerError.unexpectedCompression
     }
 
     guard mechanism.supported else {
-      throw GRPCStatus(code: .unimplemented, message: "\(mechanism) compression is not currently supported on the \(mode)")
+      throw GRPCServerError.unsupportedCompressionMechanism(mechanism.rawValue)
     }
   }
 }

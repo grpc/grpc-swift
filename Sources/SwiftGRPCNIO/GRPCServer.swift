@@ -12,7 +12,9 @@ public final class GRPCServer {
     hostname: String,
     port: Int,
     eventLoopGroup: EventLoopGroup,
-    serviceProviders: [CallHandlerProvider]) -> EventLoopFuture<GRPCServer> {
+    serviceProviders: [CallHandlerProvider],
+    errorDelegate: ServerErrorDelegate? = LoggingServerErrorDelegate()
+  ) -> EventLoopFuture<GRPCServer> {
     let servicesByName = Dictionary(uniqueKeysWithValues: serviceProviders.map { ($0.serviceName, $0) })
     let bootstrap = ServerBootstrap(group: eventLoopGroup)
       // Specify a backlog to avoid overloading the server.
@@ -22,16 +24,11 @@ public final class GRPCServer {
 
       // Set the handlers that are applied to the accepted Channels
       .childChannelInitializer { channel in
-        //! FIXME: Add an option for gRPC-via-HTTP1 (pPRC).
-        return channel.pipeline.add(handler: HTTP2Parser(mode: .server)).then {
-          let multiplexer = HTTP2StreamMultiplexer { (channel, streamID) -> EventLoopFuture<Void> in
-            return channel.pipeline.add(handler: HTTP2ToHTTP1ServerCodec(streamID: streamID))
-              .then { channel.pipeline.add(handler: HTTP1ToRawGRPCServerCodec()) }
-              .then { channel.pipeline.add(handler: GRPCChannelHandler(servicesByName: servicesByName)) }
-          }
-
-          return channel.pipeline.add(handler: multiplexer)
-        }
+        return channel.pipeline.add(handler: HTTPProtocolSwitcher {
+          channel -> EventLoopFuture<Void> in
+          return channel.pipeline.add(handler: HTTP1ToRawGRPCServerCodec())
+            .then { channel.pipeline.add(handler: GRPCChannelHandler(servicesByName: servicesByName, errorDelegate: errorDelegate)) }
+        })
       }
 
       // Enable TCP_NODELAY and SO_REUSEADDR for the accepted Channels
@@ -39,13 +36,22 @@ public final class GRPCServer {
       .childChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
 
     return bootstrap.bind(host: hostname, port: port)
-      .map { GRPCServer(channel: $0) }
+      .map { GRPCServer(channel: $0, errorDelegate: errorDelegate) }
   }
 
   private let channel: Channel
+  private var errorDelegate: ServerErrorDelegate?
 
-  private init(channel: Channel) {
+  private init(channel: Channel, errorDelegate: ServerErrorDelegate?) {
     self.channel = channel
+
+    // Maintain a strong reference to ensure it lives as long as the server.
+    self.errorDelegate = errorDelegate
+
+    // nil out errorDelegate to avoid retain cycles.
+    onClose.whenComplete {
+      self.errorDelegate = nil
+    }
   }
 
   /// Fired when the server shuts down.
@@ -53,6 +59,7 @@ public final class GRPCServer {
     return channel.closeFuture
   }
 
+  /// Shut down the server; this should be called to avoid leaking resources.
   public func close() -> EventLoopFuture<Void> {
     return channel.close(mode: .all)
   }
