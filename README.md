@@ -183,3 +183,7 @@ When issuing a new release, the following steps should be followed:
 1. Bump the version in the `SwiftGRPC.podspec` file
 
 1. Merge these changes, then create a new `Release` with corresponding `Tag`. Be sure to include a list of changes in the message
+
+1. Push the update to the CocoaPods specs repo:
+
+    `$ pod trunk push`
