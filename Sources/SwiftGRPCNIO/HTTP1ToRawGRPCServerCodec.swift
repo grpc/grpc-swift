@@ -94,15 +94,6 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
         inboundState = try processHead(ctx: ctx, requestHead: requestHead)
 
       case .body(var body):
-        // do {
-        //   while body.readableBytes > 0 {
-        //     if let message = try messageReader.read(messageBuffer: &body, compression: .none) {
-        //       ctx.fireChannelRead(wrapInboundOut(.message(message)))
-        //     }
-        //   }
-        // } catch {
-        //   ctx.fireErrorCaught(error)
-        // }
         inboundState = try processBody(ctx: ctx, body: &body)
 
       case .end(let trailers):

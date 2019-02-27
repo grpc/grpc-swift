@@ -122,7 +122,7 @@ extension BaseClientCall {
 
   /// Send the given message once `subchannel` becomes available.
   ///
-  /// - Note: This is prefixed to allow for classes conforming to StreamingRequestClientCall to have use the same function name.
+  /// - Note: This is prefixed to allow for classes conforming to `StreamingRequestClientCall` to use the non-underbarred name.
   internal func _sendMessage(_ message: RequestMessage) {
     self.subchannel.whenSuccess { channel in
       channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.message(message), promise: nil)
@@ -132,7 +132,7 @@ extension BaseClientCall {
   /// Send `end` once `subchannel` becomes available.
   ///
   /// - Important: This should only ever be called once.
-  /// - Note: This is prefixed to allow for classes conforming to StreamingRequestClientCall to have use the same function name.
+  /// - Note: This is prefixed to allow for classes conforming to `StreamingRequestClientCall` to use the non-underbarred name.
   internal func _sendEnd() {
     self.subchannel.whenSuccess { channel in
       channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.end, promise: nil)
@@ -145,9 +145,8 @@ extension BaseClientCall {
   private func setTimeout(_ timeout: GRPCTimeout) {
     if timeout == .infinite { return }
 
-    let clientChannelHandler = self.clientChannelHandler
-    self.client.channel.eventLoop.scheduleTask(in: timeout.asNIOTimeAmount) {
-      clientChannelHandler.observeError(.client(.deadlineExceeded(timeout)))
+    self.client.channel.eventLoop.scheduleTask(in: timeout.asNIOTimeAmount) { [weak self] in
+      self?.clientChannelHandler.observeError(.client(.deadlineExceeded(timeout)))
     }
   }
 

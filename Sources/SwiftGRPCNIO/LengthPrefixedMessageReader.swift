@@ -24,6 +24,9 @@ import NIOHTTP1
 /// - message length: length of the message as a 4-byte unsigned integer,
 /// - message: `message_length` bytes.
 ///
+/// Messages may span multiple `ByteBuffer`s, and `ByteBuffer`s may contain multiple
+/// length-prefixed messages.
+///
 /// - SeeAlso:
 /// [gRPC Protocol](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md)
 public class LengthPrefixedMessageReader {

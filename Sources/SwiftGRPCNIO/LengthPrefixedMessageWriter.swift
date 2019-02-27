@@ -22,17 +22,16 @@ public class LengthPrefixedMessageWriter {
   /// Writes the data into a `ByteBuffer` as a gRPC length-prefixed message.
   ///
   /// - Parameters:
-  ///   - allocator: Buffer allocator.
-  ///   - compression: Compression mechanism to use; the mechansim must be supported.
   ///   - message: The serialized Protobuf message to write.
+  ///   - buffer: The buffer to write the message into.
+  ///   - compression: Compression mechanism to use; the mechansim must be supported.
   /// - Returns: A `ByteBuffer` containing a gRPC length-prefixed message.
   /// - Precondition: `compression.supported` is `true`.
   /// - Note: See `LengthPrefixedMessageReader` for more details on the format.
   func write(_ message: Data, into buffer: inout ByteBuffer, usingCompression compression: CompressionMechanism) {
     precondition(compression.supported, "compression mechanism \(compression) is not supported")
 
-    // 1-byte for compression flag, 4-bytes for the message length.
-    buffer.reserveCapacity(5 + message.count)
+    buffer.reserveCapacity(LengthPrefixedMessageWriter.metadataLength + message.count)
 
     //! TODO: Add compression support, use the length and compressed content.
     buffer.write(integer: Int8(compression.requiresFlag ? 1 : 0))
