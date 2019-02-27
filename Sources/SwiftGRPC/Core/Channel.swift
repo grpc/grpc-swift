@@ -130,18 +130,19 @@ public class Channel {
   /// - Parameter timeout: a timeout value in seconds
   /// - Returns: a Call object that can be used to perform the request
   public func makeCall(_ method: String, host: String? = nil, timeout: TimeInterval? = nil) throws -> Call {
-    guard (self.mutex.synchronize { !self.hasBeenShutdown }) else {
+    self.mutex.lock()
+    defer { self.mutex.unlock() }
+
+    guard !self.hasBeenShutdown else {
       throw Error.alreadyShutdown
     }
 
     guard let underlyingCall = cgrpc_channel_create_call(
-      self.underlyingChannel, method, host ?? self.host, timeout ?? self.timeout) else
-    {
-      throw Error.callCreationFailed
-    }
+      self.underlyingChannel, method, host ?? self.host, timeout ?? self.timeout)
+      else { throw Error.callCreationFailed }
 
     let call = Call(underlyingCall: underlyingCall, owned: true, completionQueue: self.completionQueue)
-    self.mutex.synchronize { self.activeCalls.add(call) }
+    self.activeCalls.add(call)
     return call
   }
 
