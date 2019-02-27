@@ -21,12 +21,12 @@ import Foundation
 /// A gRPC Channel
 public class Channel {
   private let mutex = Mutex()
-  /// Weak references to API calls using this channel that are in-flight
-  private let activeCalls = NSHashTable<Call>.weakObjects()
   /// Pointer to underlying C representation
   private let underlyingChannel: UnsafeMutableRawPointer
   /// Completion queue for channel call operations
   private let completionQueue: CompletionQueue
+  /// Weak references to API calls using this channel that are in-flight
+  private var activeCalls = [WeakReference<Call>]()
   /// Observer for connectivity state changes. Created lazily if needed
   private var connectivityObserver: ConnectivityObserver?
   /// Whether the gRPC channel has been shut down
@@ -51,39 +51,32 @@ public class Channel {
   /// - Parameter address: the address of the server to be called
   /// - Parameter secure: if true, use TLS
   /// - Parameter arguments: list of channel configuration options
-  public init(address: String, secure: Bool = true, arguments: [Argument] = []) {
+  public convenience init(address: String, secure: Bool = true, arguments: [Argument] = []) {
     gRPC.initialize()
-    host = address
-    let argumentWrappers = arguments.map { $0.toCArg() }
 
-    underlyingChannel = withExtendedLifetime(argumentWrappers) {
+    let argumentWrappers = arguments.map { $0.toCArg() }
+    self.init(host: address, underlyingChannel: withExtendedLifetime(argumentWrappers) {
       var argumentValues = argumentWrappers.map { $0.wrapped }
       if secure {
         return cgrpc_channel_create_secure(address, kRootCertificates, nil, nil, &argumentValues, Int32(arguments.count))
       } else {
         return cgrpc_channel_create(address, &argumentValues, Int32(arguments.count))
       }
-    }
-    completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_channel_completion_queue(underlyingChannel), name: "Client")
-    completionQueue.run() // start a loop that watches the channel's completion queue
+    })
   }
 
   /// Initializes a gRPC channel
   ///
   /// - Parameter address: the address of the server to be called
   /// - Parameter arguments: list of channel configuration options
-  public init(googleAddress: String, arguments: [Argument] = []) {
+  public convenience init(googleAddress: String, arguments: [Argument] = []) {
     gRPC.initialize()
-    host = googleAddress
-    let argumentWrappers = arguments.map { $0.toCArg() }
 
-    underlyingChannel = withExtendedLifetime(argumentWrappers) {
+    let argumentWrappers = arguments.map { $0.toCArg() }
+    self.init(host: googleAddress, underlyingChannel: withExtendedLifetime(argumentWrappers) {
       var argumentValues = argumentWrappers.map { $0.wrapped }
       return cgrpc_channel_create_google(googleAddress, &argumentValues, Int32(arguments.count))
-    }
-
-    completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_channel_completion_queue(underlyingChannel), name: "Client")
-    completionQueue.run() // start a loop that watches the channel's completion queue
+    })
   }
 
   /// Initializes a gRPC channel
@@ -93,17 +86,14 @@ public class Channel {
   /// - Parameter clientCertificates: a PEM representation of the client certificates to use
   /// - Parameter clientKey: a PEM representation of the client key to use
   /// - Parameter arguments: list of channel configuration options
-  public init(address: String, certificates: String = kRootCertificates, clientCertificates: String? = nil, clientKey: String? = nil, arguments: [Argument] = []) {
+  public convenience init(address: String, certificates: String = kRootCertificates, clientCertificates: String? = nil, clientKey: String? = nil, arguments: [Argument] = []) {
     gRPC.initialize()
-    host = address
-    let argumentWrappers = arguments.map { $0.toCArg() }
 
-    underlyingChannel = withExtendedLifetime(argumentWrappers) {
+    let argumentWrappers = arguments.map { $0.toCArg() }
+    self.init(host: address, underlyingChannel: withExtendedLifetime(argumentWrappers) {
       var argumentValues = argumentWrappers.map { $0.wrapped }
       return cgrpc_channel_create_secure(address, certificates, clientCertificates, clientKey, &argumentValues, Int32(arguments.count))
-    }
-    completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_channel_completion_queue(underlyingChannel), name: "Client")
-    completionQueue.run() // start a loop that watches the channel's completion queue
+    })
   }
 
   /// Shut down the channel. No new calls may be made using this channel after it is shut down. Any in-flight calls using this channel will be canceled
@@ -115,7 +105,7 @@ public class Channel {
       self.connectivityObserver?.shutdown()
       cgrpc_channel_destroy(self.underlyingChannel)
       self.completionQueue.shutdown()
-      self.activeCalls.allObjects.forEach { $0.cancel() }
+      self.activeCalls.forEach { $0.value?.cancel() }
     }
   }
 
@@ -142,7 +132,7 @@ public class Channel {
       else { throw Error.callCreationFailed }
 
     let call = Call(underlyingCall: underlyingCall, owned: true, completionQueue: self.completionQueue)
-    self.activeCalls.add(call)
+    self.activeCalls.append(WeakReference(value: call))
     return call
   }
 
@@ -169,5 +159,40 @@ public class Channel {
 
       observer.addConnectivityObserver(callback: callback)
     }
+  }
+
+  // MARK: - Private
+
+  private init(host: String, underlyingChannel: UnsafeMutableRawPointer) {
+    self.host = host
+    self.underlyingChannel = underlyingChannel
+    self.completionQueue = CompletionQueue(underlyingCompletionQueue: cgrpc_channel_completion_queue(underlyingChannel),
+                                           name: "Client")
+
+    self.completionQueue.run()
+    self.scheduleActiveCallCleanUp()
+  }
+
+  private func scheduleActiveCallCleanUp() {
+    DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + 10.0) { [weak self] in
+      self?.cleanUpActiveCalls()
+    }
+  }
+
+  private func cleanUpActiveCalls() {
+    self.mutex.synchronize {
+      self.activeCalls = self.activeCalls.filter { $0.value != nil }
+    }
+    self.scheduleActiveCallCleanUp()
+  }
+}
+
+/// Used to hold weak references to objects since `NSHashTable<T>.weakObjects()` isn't available on Linux.
+/// If/when this type becomes available on Linux, this should be replaced.
+private final class WeakReference<T: AnyObject> {
+  weak var value: T?
+
+  init(value: T) {
+    self.value = value
   }
 }
