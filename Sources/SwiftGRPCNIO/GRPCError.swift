@@ -21,7 +21,7 @@ public struct GRPCError: Error, GRPCStatusTransformable {
   public enum Origin { case client, server }
 
   /// The underlying error thrown by framework.
-  public let error: GRPCStatusTransformable
+  public let error: Error
 
   /// The origin of the error.
   public let origin: Origin
@@ -33,10 +33,10 @@ public struct GRPCError: Error, GRPCStatusTransformable {
   public let line: Int
 
   public func asGRPCStatus() -> GRPCStatus {
-    return error.asGRPCStatus()
+    return (error as? GRPCStatusTransformable)?.asGRPCStatus() ?? GRPCStatus.processingError
   }
 
-  private init(_ error: GRPCStatusTransformable, origin: Origin, file: StaticString, line: Int) {
+  private init(_ error: Error, origin: Origin, file: StaticString, line: Int) {
     self.error = error
     self.origin = origin
     self.file = file
@@ -67,6 +67,10 @@ public struct GRPCError: Error, GRPCStatusTransformable {
   public static func common(_ error: GRPCCommonError, origin: Origin, file: StaticString = #file, line: Int = #line) -> GRPCError {
     return GRPCError(error, origin: origin, file: file, line: line)
   }
+
+  public static func unknown(_ error: Error, origin: Origin) -> GRPCError {
+    return GRPCError(error, origin: origin, file: "<unknown>", line: 0)
+  }
 }
 
 /// An error which should only be thrown by the server.
@@ -77,8 +81,8 @@ public enum GRPCServerError: Error, Equatable {
   /// It was not possible to decode a base64 message (gRPC-Web only).
   case base64DecodeError
 
-  /// It was not possible to parse the request protobuf.
-  case requestProtoParseFailure
+  /// It was not possible to deserialize the request protobuf.
+  case requestProtoDeserializationFailure
 
   /// It was not possible to serialize the response protobuf.
   case responseProtoSerializationFailure
@@ -98,8 +102,17 @@ public enum GRPCClientError: Error, Equatable {
   /// The call was cancelled by the client.
   case cancelledByClient
 
+  /// It was not possible to deserialize the response protobuf.
+  case responseProtoDeserializationFailure
+
+  /// It was not possible to serialize the request protobuf.
+  case requestProtoSerializationFailure
+
   /// More than one response was received for a unary-response call.
   case responseCardinalityViolation
+
+  /// The call deadline was exceeded.
+  case deadlineExceeded(GRPCTimeout)
 }
 
 /// An error which should be thrown by either the client or server.
@@ -124,7 +137,7 @@ extension GRPCServerError: GRPCStatusTransformable {
     case .base64DecodeError:
       return GRPCStatus(code: .internalError, message: "could not decode base64 message")
 
-    case .requestProtoParseFailure:
+    case .requestProtoDeserializationFailure:
       return GRPCStatus(code: .internalError, message: "could not parse request proto")
 
     case .responseProtoSerializationFailure:
@@ -150,6 +163,15 @@ extension GRPCClientError: GRPCStatusTransformable {
 
     case .responseCardinalityViolation:
       return GRPCStatus(code: .unimplemented, message: "response cardinality violation; method requires exactly one response but server sent more")
+
+    case .responseProtoDeserializationFailure:
+      return GRPCStatus(code: .internalError, message: "could not parse response proto")
+
+    case .requestProtoSerializationFailure:
+      return GRPCStatus(code: .internalError, message: "could not serialize request proto")
+
+    case .deadlineExceeded(let timeout):
+      return GRPCStatus(code: .deadlineExceeded, message: "call exceeded timeout of \(timeout)")
     }
   }
 }

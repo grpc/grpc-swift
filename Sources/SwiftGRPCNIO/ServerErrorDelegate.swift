@@ -17,7 +17,7 @@ import Foundation
 import NIO
 
 public protocol ServerErrorDelegate: class {
-  //! FIXME: Provide more context about where the error was thrown.
+  //! FIXME: Provide more context about where the error was thrown, i.e. using `GRPCError`.
   /// Called when an error is thrown in the channel pipeline.
   func observe(_ error: Error)
 

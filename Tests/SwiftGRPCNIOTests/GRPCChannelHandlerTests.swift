@@ -56,7 +56,7 @@ class GRPCChannelHandlerTests: GRPCChannelHandlerResponseCapturingTestCase {
       try channel.writeInbound(RawGRPCServerRequestPart.message(buffer))
     }
 
-    let expectedError = GRPCServerError.requestProtoParseFailure
+    let expectedError = GRPCServerError.requestProtoDeserializationFailure
     XCTAssertEqual([expectedError], errorCollector.asGRPCServerErrors)
 
     XCTAssertNoThrow(try extractHeaders(responses[0]))

@@ -35,7 +35,7 @@ extension GRPCServerCodec: ChannelInboundHandler {
       do {
         ctx.fireChannelRead(self.wrapInboundOut(.message(try RequestMessage(serializedData: messageAsData))))
       } catch {
-        ctx.fireErrorCaught(GRPCError.server(.requestProtoParseFailure))
+        ctx.fireErrorCaught(GRPCError.server(.requestProtoDeserializationFailure))
       }
 
     case .end:

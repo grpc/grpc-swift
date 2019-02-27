@@ -147,8 +147,7 @@ extension BaseClientCall {
 
     let clientChannelHandler = self.clientChannelHandler
     self.client.channel.eventLoop.scheduleTask(in: timeout.asNIOTimeAmount) {
-      let status = GRPCStatus(code: .deadlineExceeded, message: "client timed out after \(timeout)")
-      clientChannelHandler.observeStatus(status)
+      clientChannelHandler.observeError(.client(.deadlineExceeded(timeout)))
     }
   }
 

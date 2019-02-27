@@ -80,7 +80,7 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
       try channel.writeInbound(HTTPServerRequestPart.body(buffer))
     }
 
-    let expectedError = GRPCServerError.requestProtoParseFailure
+    let expectedError = GRPCServerError.requestProtoDeserializationFailure
     XCTAssertEqual([expectedError], errorCollector.asGRPCServerErrors)
 
     XCTAssertNoThrow(try extractHeaders(responses[0]))
