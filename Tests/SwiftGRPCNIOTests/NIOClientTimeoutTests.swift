@@ -20,7 +20,7 @@ import XCTest
 
 class NIOClientTimeoutTests: NIOBasicEchoTestCase {
   let optionsWithShortTimeout = CallOptions(timeout: try! GRPCTimeout.milliseconds(10))
-  let atLeastShortTimeout: TimeInterval = 0.011
+  let moreThanShortTimeout: TimeInterval = 0.011
 
   static var allTests: [(String, (NIOClientTimeoutTests) -> () throws -> Void)] {
     return [
@@ -100,7 +100,7 @@ extension NIOClientTimeoutTests {
     call.sendMessage(Echo_EchoRequest(text: "foo"))
 
     // Timeout before sending `.end`
-    Thread.sleep(forTimeInterval: atLeastShortTimeout)
+    Thread.sleep(forTimeInterval: moreThanShortTimeout)
     call.sendEnd()
 
     waitForExpectations(timeout: defaultTestTimeout)
@@ -111,7 +111,7 @@ extension NIOClientTimeoutTests {
 
     self.expectDeadlineExceeded(forStatus: call.status)
 
-    Thread.sleep(forTimeInterval: atLeastShortTimeout)
+    Thread.sleep(forTimeInterval: moreThanShortTimeout)
     waitForExpectations(timeout: defaultTestTimeout)
   }
 
@@ -123,7 +123,7 @@ extension NIOClientTimeoutTests {
     call.sendMessage(Echo_EchoRequest(text: "foo"))
 
     // Timeout before sending `.end`
-    Thread.sleep(forTimeInterval: atLeastShortTimeout)
+    Thread.sleep(forTimeInterval: moreThanShortTimeout)
     call.sendEnd()
 
     waitForExpectations(timeout: defaultTestTimeout)

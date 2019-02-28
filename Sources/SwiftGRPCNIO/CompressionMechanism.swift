@@ -21,16 +21,20 @@ public enum CompressionError: Error {
 
 /// The mechanism to use for message compression.
 public enum CompressionMechanism: String {
-  /// No compression was indicated.
+  // No compression was indicated.
   case none
 
-  /// Compression indicated via a header.
-  case identity  // no compression
+  // Compression indicated via a header.
   case gzip
   case deflate
   case snappy
+  // This is the same as `.none` but was indicated via a "grpc-encoding" and may be listed
+  // in the "grpc-accept-encoding" header. If this is the compression mechanism being used
+  // then the compression flag should be indicated in length-prefxied messages (see
+  // `LengthPrefixedMessageReader`).
+  case identity
 
-  /// Compression indiciated via a header, but not one listed in the specification.
+  // Compression indicated via a header, but not one listed in the specification.
   case unknown
 
   /// Whether the compression flag in gRPC length-prefixed messages should be set or not.

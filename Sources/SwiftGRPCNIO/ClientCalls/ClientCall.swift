@@ -60,7 +60,7 @@ extension ClientCall {
   }
 }
 
-/// A `ClientCall` with request streaming; i.e. server-streaming and bidirectional-streaming.
+/// A `ClientCall` with request streaming; i.e. client-streaming and bidirectional-streaming.
 public protocol StreamingRequestClientCall: ClientCall {
   /// Sends a message to the service.
   ///

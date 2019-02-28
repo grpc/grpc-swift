@@ -71,6 +71,9 @@ public class LengthPrefixedMessageReader {
   /// 2. after the message length field,
   /// 3. at any point within the message.
   ///
+  /// It is possible for the message length field to be split across multiple `ByteBuffer`s,
+  /// this is unlikely to happen in practice.
+  ///
   /// - Note:
   /// This method relies on state; if a message is _not_ returned then the next time this
   /// method is called it expects to read the bytes which follow the most recently read bytes.
@@ -90,6 +93,7 @@ public class LengthPrefixedMessageReader {
         self.state = .expectingMessageLength
 
       case .expectingMessageLength:
+        //! FIXME: Support the message length being split across multiple byte buffers.
         guard let messageLength: UInt32 = messageBuffer.readInteger() else { return nil }
         self.state = .receivedMessageLength(numericCast(messageLength))
 

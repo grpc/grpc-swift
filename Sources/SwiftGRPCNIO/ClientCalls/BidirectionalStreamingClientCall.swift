@@ -27,7 +27,6 @@ import NIO
 /// - `status`: the status of the gRPC call after it has ended,
 /// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
 public class BidirectionalStreamingClientCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage>, StreamingRequestClientCall {
-
   public func sendMessage(_ message: RequestMessage) {
     self._sendMessage(message)
   }
