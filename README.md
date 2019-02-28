@@ -170,11 +170,20 @@ Please get involved! See our [guidelines for contributing](CONTRIBUTING.md).
 
 ### Releasing
 
-Prior to creating a new release tag for SwiftGRPC, the `.podspec` file's version should be bumped, and the
-CocoaPods spec linter should be run to ensure that there are no new warnings/errors:
+When issuing a new release, the following steps should be followed:
 
-    $ pod spec lint SwiftGRPC.podspec
+1. Run the CocoaPods linter to ensure that there are no new warnings/errors:
 
-Once a new release tag is created, the updated CocoaPods spec should also be pushed to the master specs repo:
+    `$ pod spec lint SwiftGRPC.podspec`
+    
+1. Update the Carthage Xcode project (diff will need to be checked in with the version bump):
 
-    $ pod trunk push SwiftGRPC.podspec
+    `$ make project-carthage`
+    
+1. Bump the version in the `SwiftGRPC.podspec` file
+
+1. Merge these changes, then create a new `Release` with corresponding `Tag`. Be sure to include a list of changes in the message
+
+1. Push the update to the CocoaPods specs repo:
+
+    `$ pod trunk push`
