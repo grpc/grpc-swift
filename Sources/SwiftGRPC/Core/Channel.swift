@@ -18,6 +18,16 @@ import CgRPC
 #endif
 import Foundation
 
+/// Used to hold weak references to objects since `NSHashTable<T>.weakObjects()` isn't available on Linux.
+/// If/when this type becomes available on Linux, this should be replaced.
+private final class WeakReference<T: AnyObject> {
+  private(set) weak var value: T?
+
+  init(value: T) {
+    self.value = value
+  }
+}
+
 /// A gRPC Channel
 public class Channel {
   private let mutex = Mutex()
@@ -184,15 +194,5 @@ public class Channel {
       self.activeCalls = self.activeCalls.filter { $0.value != nil }
     }
     self.scheduleActiveCallCleanUp()
-  }
-}
-
-/// Used to hold weak references to objects since `NSHashTable<T>.weakObjects()` isn't available on Linux.
-/// If/when this type becomes available on Linux, this should be replaced.
-private final class WeakReference<T: AnyObject> {
-  weak var value: T?
-
-  init(value: T) {
-    self.value = value
   }
 }

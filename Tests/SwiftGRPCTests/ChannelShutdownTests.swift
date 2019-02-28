@@ -42,9 +42,8 @@ extension ChannelShutdownTests {
     let call = try! self.client.channel.makeCall("foo")
     self.client.channel.shutdown()
 
-    XCTAssertThrowsError(try call.receiveMessage(completion: { _ in })) { error in
+    XCTAssertThrowsError(try call.receiveMessage { _ in }) { error in
       XCTAssertEqual(.completionQueueShutdown, error as? CallError)
-      XCTAssertNotNil(self.client.channel)
     }
   }
 
@@ -54,7 +53,6 @@ extension ChannelShutdownTests {
 
     XCTAssertThrowsError(try call.close()) { error in
       XCTAssertEqual(.completionQueueShutdown, error as? CallError)
-      XCTAssertNotNil(self.client.channel)
     }
   }
 
@@ -62,9 +60,8 @@ extension ChannelShutdownTests {
     let call = try! self.client.channel.makeCall("foo")
     self.client.channel.shutdown()
 
-    XCTAssertThrowsError(try call.closeAndReceiveMessage(completion: { _ in })) { error in
+    XCTAssertThrowsError(try call.closeAndReceiveMessage { _ in }) { error in
       XCTAssertEqual(.completionQueueShutdown, error as? CallError)
-      XCTAssertNotNil(self.client.channel)
     }
   }
 
@@ -74,7 +71,6 @@ extension ChannelShutdownTests {
 
     XCTAssertThrowsError(try call.sendMessage(data: Data())) { error in
       XCTAssertEqual(.completionQueueShutdown, error as? CallError)
-      XCTAssertNotNil(self.client.channel)
     }
   }
 
