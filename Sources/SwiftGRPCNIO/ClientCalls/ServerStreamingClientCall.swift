@@ -26,7 +26,10 @@ import NIO
 public class ServerStreamingClientCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage> {
   public init(client: GRPCClient, path: String, request: RequestMessage, callOptions: CallOptions, handler: @escaping (ResponseMessage) -> Void) {
     super.init(client: client, path: path, callOptions: callOptions, responseObserver: .callback(handler))
-    self._sendMessage(request)
-    self._sendEnd()
+
+    let requestHead = self.makeRequestHead(path: path, host: client.host, callOptions: callOptions)
+    self.sendHead(requestHead)
+      .then { self._sendMessage(request) }
+      .whenSuccess { self._sendEnd(promise: nil) }
   }
 }

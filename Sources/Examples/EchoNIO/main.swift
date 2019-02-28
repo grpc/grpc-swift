@@ -132,13 +132,14 @@ Group {
 
     let collect = echo.collect()
 
+    var queue = collect.newMessageQueue()
     for part in message.components(separatedBy: " ") {
       var requestMessage = Echo_EchoRequest()
       requestMessage.text = part
       print("collect sending: \(requestMessage.text)")
-      collect.sendMessage(requestMessage)
+      queue = queue.then { collect.sendMessage(requestMessage) }
     }
-    collect.sendEnd()
+    queue.whenSuccess { collect.sendEnd(promise: nil) }
 
     collect.response.whenSuccess { respone in
       print("collect received: \(respone.text)")
@@ -171,13 +172,14 @@ Group {
       print("update received: \(response.text)")
     }
 
+    var queue = update.newMessageQueue()
     for part in message.components(separatedBy: " ") {
       var requestMessage = Echo_EchoRequest()
       requestMessage.text = part
       print("update sending: \(requestMessage.text)")
-      update.sendMessage(requestMessage)
+      queue = queue.then { update.sendMessage(requestMessage) }
     }
-    update.sendEnd()
+    queue.whenSuccess { update.sendEnd(promise: nil) }
 
     // wait() on the status to stop the program from exiting.
     do {

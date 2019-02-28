@@ -97,11 +97,11 @@ extension NIOClientTimeoutTests {
     self.expectDeadlineExceeded(forStatus: call.status)
     self.expectDeadlineExceeded(forResponse: call.response)
 
-    call.sendMessage(Echo_EchoRequest(text: "foo"))
+    call.sendMessage(Echo_EchoRequest(text: "foo"), promise: nil)
 
     // Timeout before sending `.end`
     Thread.sleep(forTimeInterval: moreThanShortTimeout)
-    call.sendEnd()
+    call.sendEnd(promise: nil)
 
     waitForExpectations(timeout: defaultTestTimeout)
   }
@@ -120,11 +120,11 @@ extension NIOClientTimeoutTests {
 
     self.expectDeadlineExceeded(forStatus: call.status)
 
-    call.sendMessage(Echo_EchoRequest(text: "foo"))
+    call.sendMessage(Echo_EchoRequest(text: "foo"), promise: nil)
 
     // Timeout before sending `.end`
     Thread.sleep(forTimeInterval: moreThanShortTimeout)
-    call.sendEnd()
+    call.sendEnd(promise: nil)
 
     waitForExpectations(timeout: defaultTestTimeout)
   }

@@ -67,9 +67,6 @@ open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
 
     self.createStreamChannel()
     self.setTimeout(callOptions.timeout)
-
-    let requestHead = BaseClientCall<RequestMessage, ResponseMessage>.makeRequestHead(path: path, host: client.host, callOptions: callOptions)
-    self.sendHead(requestHead)
   }
 }
 
@@ -114,29 +111,78 @@ extension BaseClientCall {
   /// Send the request head once `subchannel` becomes available.
   ///
   /// - Important: This should only ever be called once.
-  private func sendHead(_ requestHead: HTTPRequestHead) {
+  ///
+  /// - Parameters:
+  ///   - requestHead: The request head to send.
+  ///   - promise: A promise to fulfill once the request head has been sent.
+  internal func sendHead(_ requestHead: HTTPRequestHead, promise: EventLoopPromise<Void>?) {
+    // The nghttp2 implementation of NIOHTTP2 has a known defect where "promises on control frame
+    // writes do not work and will be leaked. Promises on DATA frame writes work just fine and will
+    // be fulfilled correctly." Succeed the promise here as a temporary workaround.
+    promise?.succeed(result: ())
     self.subchannel.whenSuccess { channel in
       channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.head(requestHead), promise: nil)
+    }
+  }
+
+  /// Send the request head once `subchannel` becomes available.
+  ///
+  /// - Important: This should only ever be called once.
+  ///
+  /// - Parameter requestHead: The request head to send.
+  /// - Returns: A future which will be succeeded once the request head has been sent.
+  internal func sendHead(_ requestHead: HTTPRequestHead) -> EventLoopFuture<Void> {
+    let promise = client.channel.eventLoop.newPromise(of: Void.self)
+    self.sendHead(requestHead, promise: promise)
+    return promise.futureResult
+  }
+
+  /// Send the given message once `subchannel` becomes available.
+  ///
+  /// - Note: This is prefixed to allow for classes conforming to `StreamingRequestClientCall` to use the non-underbarred name.
+  /// - Parameters:
+  ///   - message: The message to send.
+  ///   - promise: A promise to fulfil when the message reaches the network.
+  internal func _sendMessage(_ message: RequestMessage, promise: EventLoopPromise<Void>?) {
+    self.subchannel.whenSuccess { channel in
+      channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.message(message), promise: promise)
     }
   }
 
   /// Send the given message once `subchannel` becomes available.
   ///
   /// - Note: This is prefixed to allow for classes conforming to `StreamingRequestClientCall` to use the non-underbarred name.
-  internal func _sendMessage(_ message: RequestMessage) {
+  /// - Returns: A future which will be fullfilled when the message reaches the network.
+  internal func _sendMessage(_ message: RequestMessage) -> EventLoopFuture<Void> {
+    let promise = client.channel.eventLoop.newPromise(of: Void.self)
+    self._sendMessage(message, promise: promise)
+    return promise.futureResult
+  }
+
+  /// Send `end` once `subchannel` becomes available.
+  ///
+  /// - Note: This is prefixed to allow for classes conforming to `StreamingRequestClientCall` to use the non-underbarred name.
+  /// - Important: This should only ever be called once.
+  /// - Parameter promise: A promise to succeed once then end has been sent.
+  internal func _sendEnd(promise: EventLoopPromise<Void>?) {
+    // The nghttp2 implementation of NIOHTTP2 has a known defect where "promises on control frame
+    // writes do not work and will be leaked. Promises on DATA frame writes work just fine and will
+    // be fulfilled correctly." Succeed the promise here as a temporary workaround.
+    promise?.succeed(result: ())
     self.subchannel.whenSuccess { channel in
-      channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.message(message), promise: nil)
+      channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.end, promise: nil)
     }
   }
 
   /// Send `end` once `subchannel` becomes available.
   ///
-  /// - Important: This should only ever be called once.
   /// - Note: This is prefixed to allow for classes conforming to `StreamingRequestClientCall` to use the non-underbarred name.
-  internal func _sendEnd() {
-    self.subchannel.whenSuccess { channel in
-      channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.end, promise: nil)
-    }
+  /// - Important: This should only ever be called once.
+  ///- Returns: A future which will be succeeded once the end has been sent.
+  internal func _sendEnd() -> EventLoopFuture<Void> {
+    let promise = client.channel.eventLoop.newPromise(of: Void.self)
+    self._sendEnd(promise: promise)
+    return promise.futureResult
   }
 
   /// Creates a client-side timeout for this call.
@@ -157,7 +203,7 @@ extension BaseClientCall {
   ///   - host: the address of the host we are connected to.
   ///   - callOptions: options to use when configuring this call.
   /// - Returns: `HTTPRequestHead` configured for this call.
-  internal class func makeRequestHead(path: String, host: String, callOptions: CallOptions) -> HTTPRequestHead {
+  internal func makeRequestHead(path: String, host: String, callOptions: CallOptions) -> HTTPRequestHead {
     var requestHead = HTTPRequestHead(version: .init(major: 2, minor: 0), method: .POST, uri: path)
 
     callOptions.customMetadata.forEach { name, value in

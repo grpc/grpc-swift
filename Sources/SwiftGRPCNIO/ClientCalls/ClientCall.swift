@@ -64,12 +64,45 @@ extension ClientCall {
 public protocol StreamingRequestClientCall: ClientCall {
   /// Sends a message to the service.
   ///
-  /// - Important: Callers must terminate the stream of messages by calling `sendEnd()`.
-  /// - Parameter message: request message to send.
-  func sendMessage(_ message: RequestMessage)
+  /// - Important: Callers must terminate the stream of messages by calling `sendEnd()` or `sendEnd(promise:)`.
+  ///
+  /// - Parameter message: The message to send.
+  /// - Returns: A future which will be fullfilled when the message has been sent.
+  func sendMessage(_ message: RequestMessage) -> EventLoopFuture<Void>
 
-  /// Indicates to the service that no more messages will be sent by the client.
-  func sendEnd()
+  /// Sends a message to the service.
+  ///
+  /// - Important: Callers must terminate the stream of messages by calling `sendEnd()` or `sendEnd(promise:)`.
+  ///
+  /// - Parameters:
+  ///   - message: The message to send.
+  ///   - promise: A promise to be fulfilled when the message has been sent.
+  func sendMessage(_ message: RequestMessage, promise: EventLoopPromise<Void>?)
+
+  /// Returns a new succeeded future.
+  ///
+  /// Callers may use this to create a message queue as such:
+  /// ```
+  /// var queue = call.newMessageQueue()
+  /// for message in messagesToSend {
+  ///   queue = queue.then { call.sendMessage(message) }
+  /// }
+  /// ```
+  ///
+  /// - Returns: A succeeded future which may be used as the head of a message queue.
+  func newMessageQueue() -> EventLoopFuture<Void>
+
+  /// Terminates a stream of messages sent to the service.
+  ///
+  /// - Important: This should only ever be called once.
+  /// - Returns: A future which will be fullfilled when the end has been sent.
+  func sendEnd() -> EventLoopFuture<Void>
+
+  /// Terminates a stream of messages sent to the service.
+  ///
+  /// - Important: This should only ever be called once.
+  /// - Parameter promise: A promise to be fulfilled when the end has been sent.
+  func sendEnd(promise: EventLoopPromise<Void>?)
 }
 
 /// A `ClientCall` with a unary response; i.e. unary and client-streaming.

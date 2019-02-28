@@ -52,10 +52,11 @@ extension NIOServerTests {
     let numberOfRequests = 2_000
 
     for i in 0..<numberOfRequests {
+      print(i)
       if i % 1_000 == 0 && i > 0 {
         print("\(i) requests sent so far, elapsed time: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))")
       }
-      XCTAssertEqual(try client.get(Echo_EchoRequest.with { $0.text = "foo \(i)" }).response.wait().text, "Swift echo get: foo \(i)")
+      XCTAssertEqual(try client.get(Echo_EchoRequest(text: "foo \(i)")).response.wait().text, "Swift echo get: foo \(i)")
     }
     print("total time for \(numberOfRequests) requests: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))")
   }
@@ -75,10 +76,11 @@ extension NIOServerTests {
   func doTestClientStreaming(messages: [String], file: StaticString = #file, line: UInt = #line) throws {
     let call = client.collect()
 
+    var queue = call.newMessageQueue()
     for message in messages {
-      call.sendMessage(Echo_EchoRequest.with { $0.text = message })
+      queue = queue.then { call.sendMessage(Echo_EchoRequest(text: message)) }
     }
-    call.sendEnd()
+    queue.whenSuccess { call.sendEnd(promise: nil) }
 
     XCTAssertEqual("Swift echo collect: " + messages.joined(separator: " "), try call.response.wait().text, file: file, line: line)
     XCTAssertEqual(.ok, try call.status.wait().code, file: file, line: line)
@@ -126,7 +128,7 @@ extension NIOServerTests {
     }
 
     messages.forEach { part in
-      call.sendMessage(Echo_EchoRequest.with { $0.text = part })
+      call.sendMessage(Echo_EchoRequest(text: part), promise: nil)
       XCTAssertNotEqual(responseReceived?.wait(timeout: .now() + .seconds(1)), .some(.timedOut), file: file, line: line)
     }
     call.sendEnd()

@@ -25,7 +25,7 @@ import NIO
 /// - `status`: the status of the gRPC call after it has ended,
 /// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
 public class UnaryClientCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage>, UnaryResponseClientCall {
-  public unowned let response: EventLoopFuture<ResponseMessage>
+  public let response: EventLoopFuture<ResponseMessage>
 
   public init(client: GRPCClient, path: String, request: RequestMessage, callOptions: CallOptions) {
     let responsePromise: EventLoopPromise<ResponseMessage> = client.channel.eventLoop.newPromise()
@@ -37,7 +37,9 @@ public class UnaryClientCall<RequestMessage: Message, ResponseMessage: Message>:
       callOptions: callOptions,
       responseObserver: .succeedPromise(responsePromise))
 
-    self._sendMessage(request)
-    self._sendEnd()
+    let requestHead = self.makeRequestHead(path: path, host: client.host, callOptions: callOptions)
+    self.sendHead(requestHead)
+      .then { self._sendMessage(request) }
+      .whenSuccess { self._sendEnd(promise: nil) }
   }
 }

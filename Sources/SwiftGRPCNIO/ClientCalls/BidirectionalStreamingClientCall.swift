@@ -27,15 +27,34 @@ import NIO
 /// - `status`: the status of the gRPC call after it has ended,
 /// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
 public class BidirectionalStreamingClientCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage>, StreamingRequestClientCall {
-  public func sendMessage(_ message: RequestMessage) {
-    self._sendMessage(message)
-  }
-
-  public func sendEnd() {
-    self._sendEnd()
-  }
+  private var messageQueue: EventLoopFuture<Void>
 
   public init(client: GRPCClient, path: String, callOptions: CallOptions, handler: @escaping (ResponseMessage) -> Void) {
+    self.messageQueue = client.channel.eventLoop.newSucceededFuture(result: ())
     super.init(client: client, path: path, callOptions: callOptions, responseObserver: .callback(handler))
+
+    let requestHead = self.makeRequestHead(path: path, host: client.host, callOptions: callOptions)
+    self.messageQueue = self.messageQueue.then { self.sendHead(requestHead) }
+  }
+
+  public func sendMessage(_ message: RequestMessage) -> EventLoopFuture<Void> {
+    return self._sendMessage(message)
+  }
+
+  public func sendMessage(_ message: RequestMessage, promise: EventLoopPromise<Void>?) {
+    self._sendMessage(message, promise: promise)
+  }
+
+  public func sendEnd() -> EventLoopFuture<Void> {
+    return self._sendEnd()
+  }
+
+  public func sendEnd(promise: EventLoopPromise<Void>?) {
+    self._sendEnd(promise: promise)
+  }
+
+  public func newMessageQueue() -> EventLoopFuture<Void> {
+    defer { self.messageQueue = client.channel.eventLoop.newSucceededFuture(result: ()) }
+    return self.messageQueue
   }
 }
