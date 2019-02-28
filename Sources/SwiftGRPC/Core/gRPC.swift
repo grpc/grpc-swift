@@ -14,35 +14,30 @@
  * limitations under the License.
  */
 #if SWIFT_PACKAGE
-  import CgRPC
+import CgRPC
 #endif
-import Foundation // for String.Encoding
 
 public final class gRPC {
   private init() { }  // Static members only.
-  
+
   /// Initializes gRPC system
   public static func initialize() {
     grpc_init()
   }
-  
+
   /// Shuts down gRPC system
   public static func shutdown() {
     grpc_shutdown()
   }
-  
+
   /// Returns version of underlying gRPC library
-  ///
-  /// Returns: gRPC version string
   public static var version: String {
     // These two should always be valid UTF-8 strings, so we can forcibly unwrap them.
-    return String(cString: grpc_version_string(), encoding: String.Encoding.utf8)!
+    return String(cString: grpc_version_string(), encoding: .utf8)!
   }
-  
+
   /// Returns name associated with gRPC version
-  ///
-  /// Returns: gRPC version name
   public static var gStandsFor: String {
-    return String(cString: grpc_g_stands_for(), encoding: String.Encoding.utf8)!
+    return String(cString: grpc_g_stands_for(), encoding: .utf8)!
   }
 }
