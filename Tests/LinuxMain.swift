@@ -22,6 +22,7 @@ XCTMain([
   testCase(gRPCTests.allTests),
   testCase(ChannelArgumentTests.allTests),
   testCase(ChannelConnectivityTests.allTests),
+  testCase(ChannelShutdownTests.allTests),
   testCase(ClientCancellingTests.allTests),
   testCase(ClientTestExample.allTests),
   testCase(ClientTimeoutTests.allTests),

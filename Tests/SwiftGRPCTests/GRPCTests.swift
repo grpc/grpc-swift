@@ -177,7 +177,7 @@ func callUnary(channel: Channel) throws {
 func callUnaryIndividual(channel: Channel, message: Data, shouldSucceed: Bool) throws {
   let sem = DispatchSemaphore(value: 0)
   let method = hello
-  let call = channel.makeCall(method)
+  let call = try channel.makeCall(method)
   let metadata = try Metadata(initialClientMetadata)
   try call.start(.unary, metadata: metadata, message: message) {
     response in
@@ -228,7 +228,7 @@ func callServerStream(channel: Channel) throws {
 
   let sem = DispatchSemaphore(value: 0)
   let method = helloServerStream
-  let call = channel.makeCall(method)
+  let call = try channel.makeCall(method)
   try call.start(.serverStreaming, metadata: metadata, message: message) {
     response in
 
@@ -270,7 +270,7 @@ func callBiDiStream(channel: Channel) throws {
 
   let sem = DispatchSemaphore(value: 0)
   let method = helloBiDiStream
-  let call = channel.makeCall(method)
+  let call = try channel.makeCall(method)
   try call.start(.bidiStreaming, metadata: metadata, message: nil) {
     response in
 
