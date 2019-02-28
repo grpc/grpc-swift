@@ -22,7 +22,7 @@ var packageDependencies: [Package.Dependency] = [
   .package(url: "https://github.com/apple/swift-protobuf.git", .upToNextMajor(from: "1.3.1")),
   
   // Command line argument parser for our auxiliary command line tools.
-  .package(url: "https://github.com/kylef/Commander.git", .upToNextMajor(from: "0.8.0")),
+  .package(url: "https://github.com/kylef/Commander.git", .upToNextMinor(from: "0.8.0")),
   
   // SwiftGRPCNIO dependencies:
   // Transitive dependencies
