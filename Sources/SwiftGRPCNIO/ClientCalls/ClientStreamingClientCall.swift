@@ -63,7 +63,6 @@ public class ClientStreamingClientCall<RequestMessage: Message, ResponseMessage:
   }
 
   public func newMessageQueue() -> EventLoopFuture<Void> {
-    defer { self.messageQueue = client.channel.eventLoop.newSucceededFuture(result: ()) }
     return self.messageQueue
   }
 }

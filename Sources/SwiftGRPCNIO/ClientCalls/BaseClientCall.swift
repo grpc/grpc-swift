@@ -119,6 +119,7 @@ extension BaseClientCall {
     // The nghttp2 implementation of NIOHTTP2 has a known defect where "promises on control frame
     // writes do not work and will be leaked. Promises on DATA frame writes work just fine and will
     // be fulfilled correctly." Succeed the promise here as a temporary workaround.
+    //! TODO: remove this and pass the promise to `writeAndFlush` when NIOHTTP2 supports it.
     promise?.succeed(result: ())
     self.subchannel.whenSuccess { channel in
       channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.head(requestHead), promise: nil)
@@ -168,6 +169,7 @@ extension BaseClientCall {
     // The nghttp2 implementation of NIOHTTP2 has a known defect where "promises on control frame
     // writes do not work and will be leaked. Promises on DATA frame writes work just fine and will
     // be fulfilled correctly." Succeed the promise here as a temporary workaround.
+    //! TODO: remove this and pass the promise to `writeAndFlush` when NIOHTTP2 supports it.
     promise?.succeed(result: ())
     self.subchannel.whenSuccess { channel in
       channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.end, promise: nil)

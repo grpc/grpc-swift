@@ -79,9 +79,9 @@ public protocol StreamingRequestClientCall: ClientCall {
   ///   - promise: A promise to be fulfilled when the message has been sent.
   func sendMessage(_ message: RequestMessage, promise: EventLoopPromise<Void>?)
 
-  /// Returns a new succeeded future.
+  /// Returns a future which can be used as a message queue.
   ///
-  /// Callers may use this to create a message queue as such:
+  /// Callers may use this as such:
   /// ```
   /// var queue = call.newMessageQueue()
   /// for message in messagesToSend {
@@ -89,7 +89,7 @@ public protocol StreamingRequestClientCall: ClientCall {
   /// }
   /// ```
   ///
-  /// - Returns: A succeeded future which may be used as the head of a message queue.
+  /// - Returns: A future which may be used as the head of a message queue.
   func newMessageQueue() -> EventLoopFuture<Void>
 
   /// Terminates a stream of messages sent to the service.
