@@ -28,16 +28,15 @@ import SystemConfiguration
 open class ClientNetworkMonitor {
     private let queue: DispatchQueue
     private let callback: (State) -> Void
-    private var reachability: SCNetworkReachability?
-    private var appWasInForeground: Bool?
+    private let reachability: SCNetworkReachability
 
     /// Instance of network info being used for obtaining cellular technology names.
-    public private(set) lazy var cellularInfo = CTTelephonyNetworkInfo()
+    public let cellularInfo = CTTelephonyNetworkInfo()
     /// Whether the network is currently reachable. Backed by `SCNetworkReachability`.
     public private(set) var isReachable: Bool?
     /// Whether the device is currently using wifi (versus cellular).
     public private(set) var isUsingWifi: Bool?
-    /// Name of the cellular technology being used (i.e., `CTRadioAccessTechnologyLTE`).
+    /// Name of the cellular technology being used (e.g., `CTRadioAccessTechnologyLTE`).
     public private(set) var cellularName: String?
 
     /// Represents a state of connectivity.
@@ -56,29 +55,32 @@ open class ClientNetworkMonitor {
         case cellularToWifi
         /// The device switched from wifi to cellular.
         case wifiToCellular
-        /// The cellular technology changed (i.e., 3G <> LTE).
+        /// The cellular technology changed (e.g., 3G <> LTE).
         case cellularTechnology(technology: String)
     }
 
-    /// Designated initializer for the network monitor.
+    /// Designated initializer for the network monitor. Initializer fails if reachability is unavailable.
     ///
+    /// - Parameter host:     Host to use for monitoring reachability.
     /// - Parameter queue:    Queue on which to process and update network changes. Will create one if `nil`.
     ///                       Should always be used when accessing properties of this class.
-    /// - Parameter host:     Host to use for monitoring reachability.
     /// - Parameter callback: Closure to call whenever state changes.
-    public init(host: String = "google.com", queue: DispatchQueue? = nil, callback: @escaping (State) -> Void) {
+    public init?(host: String = "google.com", queue: DispatchQueue? = nil, callback: @escaping (State) -> Void) {
+        guard let reachability = SCNetworkReachabilityCreateWithName(nil, host) else {
+            return nil
+        }
+
         self.queue = queue ?? DispatchQueue(label: "SwiftGRPC.ClientNetworkMonitor.queue")
         self.callback = callback
-        self.startMonitoringReachability(host: host)
+        self.reachability = reachability
+        self.startMonitoringReachability(reachability)
         self.startMonitoringCellular()
     }
 
     deinit {
-        if let reachability = self.reachability {
-            SCNetworkReachabilitySetCallback(reachability, nil, nil)
-            SCNetworkReachabilityUnscheduleFromRunLoop(reachability, CFRunLoopGetMain(),
-                                                       CFRunLoopMode.commonModes.rawValue)
-        }
+        SCNetworkReachabilitySetCallback(self.reachability, nil, nil)
+        SCNetworkReachabilityUnscheduleFromRunLoop(self.reachability, CFRunLoopGetMain(),
+                                                   CFRunLoopMode.commonModes.rawValue)
         NotificationCenter.default.removeObserver(self)
     }
 
@@ -86,7 +88,7 @@ open class ClientNetworkMonitor {
 
     private func startMonitoringCellular() {
         let notificationName: Notification.Name
-        if #available(iOS 13, *) {
+        if #available(iOS 12.0, *) {
             notificationName = .CTServiceRadioAccessTechnologyDidChange
         } else {
             notificationName = .CTRadioAccessTechnologyDidChange
@@ -100,7 +102,7 @@ open class ClientNetworkMonitor {
     private func cellularDidChange(_ notification: NSNotification) {
         self.queue.async {
             let newCellularName: String?
-            if #available(iOS 13, *) {
+            if #available(iOS 12.0, *) {
                 let cellularKey = notification.object as? String
                 newCellularName = cellularKey.flatMap { self.cellularInfo.serviceCurrentRadioAccessTechnology?[$0] }
             } else {
@@ -117,11 +119,7 @@ open class ClientNetworkMonitor {
 
     // MARK: - Reachability
 
-    private func startMonitoringReachability(host: String) {
-        guard let reachability = SCNetworkReachabilityCreateWithName(nil, host) else {
-            return
-        }
-
+    private func startMonitoringReachability(_ reachability: SCNetworkReachability) {
         let info = Unmanaged.passUnretained(self).toOpaque()
         var context = SCNetworkReachabilityContext(version: 0, info: info, retain: nil,
                                                    release: nil, copyDescription: nil)
@@ -134,8 +132,6 @@ open class ClientNetworkMonitor {
         SCNetworkReachabilityScheduleWithRunLoop(reachability, CFRunLoopGetMain(),
                                                  CFRunLoopMode.commonModes.rawValue)
         self.queue.async { [weak self] in
-            self?.reachability = reachability
-
             var flags = SCNetworkReachabilityFlags()
             SCNetworkReachabilityGetFlags(reachability, &flags)
             self?.reachabilityDidChange(with: flags)
@@ -144,18 +140,20 @@ open class ClientNetworkMonitor {
 
     private func reachabilityDidChange(with flags: SCNetworkReachabilityFlags) {
         self.queue.async {
+            let isUsingWifi = !flags.contains(.isWWAN)
             let isReachable = flags.contains(.reachable)
-            if let wasReachable = self.isReachable, wasReachable != isReachable {
+
+            let notifyForWifi = self.isUsingWifi != nil && self.isUsingWifi != isUsingWifi
+            let notifyForReachable = self.isReachable != nil && self.isReachable != isReachable
+
+            self.isReachable = isReachable
+            self.isUsingWifi = isUsingWifi
+
+            if notifyForWifi {
+                self.callback(State(lastChange: isUsingWifi ? .cellularToWifi : .wifiToCellular, isReachable: isReachable))
+            } else if notifyForReachable {
                 self.callback(State(lastChange: .reachability(isReachable: isReachable), isReachable: isReachable))
             }
-            self.isReachable = isReachable
-
-            let isUsingWifi = !flags.contains(.isWWAN)
-            if let wasUsingWifi = self.isUsingWifi, wasUsingWifi != isUsingWifi {
-                self.callback(State(lastChange: isUsingWifi ? .cellularToWifi : .wifiToCellular,
-                                    isReachable: self.isReachable ?? false))
-            }
-            self.isUsingWifi = isUsingWifi
         }
     }
 }
