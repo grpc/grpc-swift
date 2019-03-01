@@ -146,8 +146,8 @@ open class ClientNetworkMonitor {
       let notifyForWifi = self.isUsingWifi != nil && self.isUsingWifi != isUsingWifi
       let notifyForReachable = self.isReachable != nil && self.isReachable != isReachable
 
-      self.isReachable = isReachable
       self.isUsingWifi = isUsingWifi
+      self.isReachable = isReachable
 
       if notifyForWifi {
         self.callback(State(lastChange: isUsingWifi ? .cellularToWifi : .wifiToCellular, isReachable: isReachable))
