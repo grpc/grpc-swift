@@ -139,23 +139,26 @@ For an example of this in Swift, please see the
 The SwiftGRPC implementation that is backed by [gRPC-Core](https://github.com/grpc/grpc)
 (and not SwiftNIO) is known to have some connectivity issues on iOS clients - namely, silently
 disconnecting (making it seem like active calls/connections are hanging) when switching
-between wifi <> cellular. The root cause of these problems is that the
+between wifi <> cellular or between cellular technologies (3G <> LTE). The root cause of these problems is that the
 backing gRPC-Core doesn't get the optimizations made by iOS' networking stack when these
 types of changes occur, and isn't able to handle them itself.
 
-To aid in this problem, there is a [`ClientNetworkMonitor`](./Sources/SwiftGRPC/Core/ClientNetworkMonitor.swift)
-that monitors the device for events that can cause gRPC to disconnect silently. We recommend utilizing this component to call `shutdown()` (or destroy) any active `Channel` instances, and start new ones when the network is reachable.
+There is also documentation of this behavior in [this gRPC-Core readme](https://github.com/grpc/grpc/blob/v1.19.0/src/objective-c/NetworkTransitionBehavior.md).
 
-Setting the [`keepAliveTimeout` argument](https://github.com/grpc/grpc-swift/blob/c401b44ea81b246b8e7fea191ea1ee11a834ee60/Sources/SwiftGRPC/Core/ChannelArgument.swift#L46)
+To aid in this problem, there is a [`ClientNetworkMonitor`](./Sources/SwiftGRPC/Core/ClientNetworkMonitor.swift)
+that monitors the device for events that can cause gRPC to disconnect silently. We recommend utilizing this component to
+call `shutdown()` (or destroy) any active `Channel` instances, and start new ones when the network is reachable.
+
+Setting the [`keepAliveTimeout` argument](https://github.com/grpc/grpc-swift/blob/0.7.0/Sources/SwiftGRPC/Core/ChannelArgument.swift#L46)
 on channels is also encouraged.
 
 Details:
 - **Switching between wifi <> cellular:** Channels silently disconnect
-- **Network becoming unreachable:** Most times channels will time out after a few seconds, but
-  `ClientNetworkMonitor` will notify of these changes much faster
+- **Switching between 3G <> LTE (etc.):** Channels silently disconnect
+- **Network becoming unreachable:** Most times channels will time out after a few seconds, but `ClientNetworkMonitor` will notify of these changes much faster
 - **Switching between background <> foreground:** No known issues
 
-Original issue: https://github.com/grpc/grpc-swift/issues/337.
+Original SwiftGRPC issue: https://github.com/grpc/grpc-swift/issues/337.
 
 ## Having build problems?
 
