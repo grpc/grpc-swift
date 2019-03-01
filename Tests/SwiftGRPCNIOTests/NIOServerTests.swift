@@ -52,7 +52,6 @@ extension NIOServerTests {
     let numberOfRequests = 2_000
 
     for i in 0..<numberOfRequests {
-      print(i)
       if i % 1_000 == 0 && i > 0 {
         print("\(i) requests sent so far, elapsed time: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))")
       }
@@ -131,7 +130,7 @@ extension NIOServerTests {
       call.sendMessage(Echo_EchoRequest(text: part), promise: nil)
       XCTAssertNotEqual(responseReceived?.wait(timeout: .now() + .seconds(1)), .some(.timedOut), file: file, line: line)
     }
-    call.sendEnd()
+    call.sendEnd(promise: nil)
 
     XCTAssertEqual(try call.status.wait().code, .ok, file: file, line: line)
     XCTAssertEqual(index, messages.count)
