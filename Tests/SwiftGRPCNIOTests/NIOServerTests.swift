@@ -116,11 +116,12 @@ extension NIOServerTests {
 }
 
 extension NIOServerTests {
-  private func doTestBidirectionalStreaming(messages: [String], waitForEachResponse: Bool = false, file: StaticString = #file, line: UInt = #line) throws {
+  private func doTestBidirectionalStreaming(messages: [String], waitForEachResponse: Bool = false, timeout: GRPCTimeout? = nil, file: StaticString = #file, line: UInt = #line) throws {
     let responseReceived = waitForEachResponse ? DispatchSemaphore(value: 0) : nil
     var index = 0
 
-    let call = client.update { response in
+    let callOptions = timeout.map { CallOptions(timeout: $0) }
+    let call = client.update(callOptions: callOptions) { response in
       XCTAssertEqual("Swift echo update (\(index)): \(messages[index])", response.text, file: file, line: line)
       responseReceived?.signal()
       index += 1
@@ -145,10 +146,10 @@ extension NIOServerTests {
   }
 
   func testBidirectionalStreamingLotsOfMessagesBatched() throws {
-    XCTAssertNoThrow(try doTestBidirectionalStreaming(messages: NIOServerTests.lotsOfStrings))
+    XCTAssertNoThrow(try doTestBidirectionalStreaming(messages: NIOServerTests.lotsOfStrings, timeout: try .seconds(15)))
   }
 
   func testBidirectionalStreamingLotsOfMessagesPingPong() throws {
-    XCTAssertNoThrow(try doTestBidirectionalStreaming(messages: NIOServerTests.lotsOfStrings, waitForEachResponse: true))
+    XCTAssertNoThrow(try doTestBidirectionalStreaming(messages: NIOServerTests.lotsOfStrings, waitForEachResponse: true, timeout: try .seconds(15)))
   }
 }
