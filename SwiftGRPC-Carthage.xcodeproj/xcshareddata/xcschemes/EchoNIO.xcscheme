@@ -6,7 +6,7 @@
         <BuildableReference
           BuildableIdentifier = "primary"
           BuildableName = "'$(TARGET_NAME)'"
-          BlueprintName = "RootsEncoder"
+          BlueprintName = "EchoNIO"
           ReferencedContainer = "container:SwiftGRPC-Carthage.xcodeproj">
         </BuildableReference>
       </BuildActionEntry>
@@ -54,7 +54,7 @@
       <BuildableReference
          BuildableIdentifier = "primary"
          BuildableName = "'$(TARGET_NAME)'"
-         BlueprintName = "RootsEncoder"
+         BlueprintName = "EchoNIO"
          ReferencedContainer = "container:SwiftGRPC-Carthage.xcodeproj">
       </BuildableReference>
    </BuildableProductRunnable>
