@@ -33,8 +33,8 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
       try channel.writeInbound(HTTPServerRequestPart.body(gRPCMessage(channel: channel, compression: true)))
     }
 
-    let expectedError = GRPCServerError.unexpectedCompression
-    XCTAssertEqual([expectedError], errorCollector.errors as? [GRPCServerError])
+    let expectedError = GRPCCommonError.unexpectedCompression
+    XCTAssertEqual([expectedError], errorCollector.asGRPCCommonErrors)
 
     XCTAssertNoThrow(try extractHeaders(responses[0]))
     XCTAssertNoThrow(try extractStatus(responses[1])) { status in
@@ -80,8 +80,8 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
       try channel.writeInbound(HTTPServerRequestPart.body(buffer))
     }
 
-    let expectedError = GRPCServerError.requestProtoParseFailure
-    XCTAssertEqual([expectedError], errorCollector.errors as? [GRPCServerError])
+    let expectedError = GRPCServerError.requestProtoDeserializationFailure
+    XCTAssertEqual([expectedError], errorCollector.asGRPCServerErrors)
 
     XCTAssertNoThrow(try extractHeaders(responses[0]))
     XCTAssertNoThrow(try extractStatus(responses[1])) { status in
@@ -105,10 +105,10 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
 
     XCTAssertEqual(errorCollector.errors.count, 1)
 
-    if case .invalidState(let message)? = errorCollector.errors.first as? GRPCServerError {
+    if case .some(.invalidState(let message)) = errorCollector.asGRPCCommonErrors?.first {
       XCTAssert(message.contains("trailers"))
     } else {
-      XCTFail("\(String(describing: errorCollector.errors.first)) was not GRPCError.invalidState")
+      XCTFail("\(String(describing: errorCollector.errors.first)) was not .invalidState")
     }
 
     XCTAssertNoThrow(try extractHeaders(responses[0]))

@@ -10,9 +10,9 @@ import NIOHTTP1
 public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage: Message>: BaseCallHandler<RequestMessage, ResponseMessage> {
   public typealias EventObserver = (RequestMessage) -> EventLoopFuture<GRPCStatus>
   private var eventObserver: EventObserver?
-  
+
   private var context: StreamingResponseCallContext<ResponseMessage>?
-  
+
   public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, eventObserverFactory: (StreamingResponseCallContext<ResponseMessage>) -> EventObserver) {
     super.init(errorDelegate: errorDelegate)
     let context = StreamingResponseCallContextImpl<ResponseMessage>(channel: channel, request: request)
@@ -24,14 +24,13 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
       self.context = nil
     }
   }
-  
-  
+
   public override func processMessage(_ message: RequestMessage) throws {
     guard let eventObserver = self.eventObserver,
       let context = self.context else {
-        throw GRPCServerError.requestCardinalityViolation
+        throw GRPCError.server(.requestCardinalityViolation)
     }
-    
+
     let resultFuture = eventObserver(message)
     resultFuture
       // Fulfill the status promise with whatever status the framework user has provided.

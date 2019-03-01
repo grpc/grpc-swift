@@ -45,7 +45,7 @@ func extractHeaders(_ response: RawGRPCServerResponsePart) throws -> HTTPHeaders
 }
 
 @discardableResult
-func extractMessage(_ response: RawGRPCServerResponsePart) throws -> ByteBuffer {
+func extractMessage(_ response: RawGRPCServerResponsePart) throws -> Data {
   guard case .message(let message) = response else {
     throw CaseExtractError(message: "\(response) did not match .message")
   }

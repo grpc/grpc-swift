@@ -50,7 +50,7 @@ extension BaseCallHandler: ChannelInboundHandler {
     switch self.unwrapInboundIn(data) {
     case .head(let requestHead):
       // Head should have been handled by `GRPCChannelHandler`.
-      self.errorCaught(ctx: ctx, error: GRPCServerError.invalidState("unexpected request head received \(requestHead)"))
+      self.errorCaught(ctx: ctx, error: GRPCError.server(.invalidState("unexpected request head received \(requestHead)")))
 
     case .message(let message):
       do {
@@ -71,7 +71,7 @@ extension BaseCallHandler: ChannelOutboundHandler {
 
   public func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     guard serverCanWrite else {
-      promise?.fail(error: GRPCServerError.serverNotWritable)
+      promise?.fail(error: GRPCError.server(.serverNotWritable))
       return
     }
 

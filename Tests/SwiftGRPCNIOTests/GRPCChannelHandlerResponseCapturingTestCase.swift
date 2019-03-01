@@ -15,13 +15,25 @@ class CollectingChannelHandler<OutboundIn>: ChannelOutboundHandler {
 class CollectingServerErrorDelegate: ServerErrorDelegate {
   var errors: [Error] = []
 
+  var asGRPCErrors: [GRPCError]? {
+    return self.errors as? [GRPCError]
+  }
+
+  var asGRPCServerErrors: [GRPCServerError]? {
+    return (self.asGRPCErrors?.map { $0.error }) as? [GRPCServerError]
+  }
+
+  var asGRPCCommonErrors: [GRPCCommonError]? {
+    return (self.asGRPCErrors?.map { $0.error }) as? [GRPCCommonError]
+  }
+
   func observe(_ error: Error) {
     self.errors.append(error)
   }
 }
 
 class GRPCChannelHandlerResponseCapturingTestCase: XCTestCase {
-  static let echoProvider: [String: CallHandlerProvider] = ["echo.Echo": EchoProvider_NIO()]
+  static let echoProvider: [String: CallHandlerProvider] = ["echo.Echo": EchoProviderNIO()]
   class var defaultServiceProvider: [String: CallHandlerProvider] {
     return echoProvider
   }

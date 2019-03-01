@@ -21,7 +21,7 @@ import XCTest
 // Only test Unary and ServerStreaming, as ClientStreaming is not
 // supported in HTTP1.
 // TODO: Add tests for application/grpc-web as well.
-class NIOServerWebTests: NIOServerTestCase {
+class NIOServerWebTests: NIOBasicEchoTestCase {
   static var allTests: [(String, (NIOServerWebTests) -> () throws -> Void)] {
     return [
       ("testUnary", testUnary),
@@ -29,28 +29,6 @@ class NIOServerWebTests: NIOServerTestCase {
       // ("testUnaryLotsOfRequests", testUnaryLotsOfRequests),
       ("testServerStreaming", testServerStreaming),
     ]
-  }
-
-  var eventLoopGroup: MultiThreadedEventLoopGroup!
-  var server: GRPCServer!
-
-  override func setUp() {
-    super.setUp()
-
-    // This is how a GRPC server would actually be set up.
-    eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-    server = try! GRPCServer.start(
-      hostname: "localhost", port: 5050, eventLoopGroup: eventLoopGroup, serviceProviders: [EchoProvider_NIO()])
-      .wait()
-  }
-
-  override func tearDown() {
-    XCTAssertNoThrow(try server.close().wait())
-
-    XCTAssertNoThrow(try eventLoopGroup.syncShutdownGracefully())
-    eventLoopGroup = nil
-
-    super.tearDown()
   }
 
   private func gRPCEncodedEchoRequest(_ text: String) -> Data {
@@ -108,7 +86,7 @@ extension NIOServerWebTests {
       }
     }
 
-    waitForExpectations(timeout: defaultTimeout)
+    waitForExpectations(timeout: defaultTestTimeout)
   }
 
   func testUnaryLotsOfRequests() {
@@ -166,6 +144,6 @@ extension NIOServerWebTests {
       }
     }
 
-    waitForExpectations(timeout: defaultTimeout)
+    waitForExpectations(timeout: defaultTestTimeout)
   }
 }

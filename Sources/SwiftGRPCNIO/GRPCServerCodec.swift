@@ -5,16 +5,16 @@ import NIOFoundationCompat
 import NIOHTTP1
 
 /// Incoming gRPC package with a fixed message type.
-public enum GRPCServerRequestPart<MessageType: Message> {
+public enum GRPCServerRequestPart<RequestMessage: Message> {
   case head(HTTPRequestHead)
-  case message(MessageType)
+  case message(RequestMessage)
   case end
 }
 
 /// Outgoing gRPC package with a fixed message type.
-public enum GRPCServerResponsePart<MessageType: Message> {
+public enum GRPCServerResponsePart<ResponseMessage: Message> {
   case headers(HTTPHeaders)
-  case message(MessageType)
+  case message(ResponseMessage)
   case status(GRPCStatus)
 }
 
@@ -35,7 +35,7 @@ extension GRPCServerCodec: ChannelInboundHandler {
       do {
         ctx.fireChannelRead(self.wrapInboundOut(.message(try RequestMessage(serializedData: messageAsData))))
       } catch {
-        ctx.fireErrorCaught(GRPCServerError.requestProtoParseFailure)
+        ctx.fireErrorCaught(GRPCError.server(.requestProtoDeserializationFailure))
       }
 
     case .end:
@@ -57,17 +57,15 @@ extension GRPCServerCodec: ChannelOutboundHandler {
     case .message(let message):
       do {
         let messageData = try message.serializedData()
-        var responseBuffer = ctx.channel.allocator.buffer(capacity: messageData.count)
-        responseBuffer.write(bytes: messageData)
-        ctx.write(self.wrapOutboundOut(.message(responseBuffer)), promise: promise)
+        ctx.write(self.wrapOutboundOut(.message(messageData)), promise: promise)
       } catch {
-        let error = GRPCServerError.responseProtoSerializationFailure
+        let error = GRPCError.server(.responseProtoSerializationFailure)
         promise?.fail(error: error)
         ctx.fireErrorCaught(error)
       }
 
     case .status(let status):
-      ctx.write(self.wrapOutboundOut(.status(status)), promise: promise)
+      ctx.writeAndFlush(self.wrapOutboundOut(.status(status)), promise: promise)
     }
   }
 }

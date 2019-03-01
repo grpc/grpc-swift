@@ -20,7 +20,7 @@ class GRPCChannelHandlerTests: GRPCChannelHandlerResponseCapturingTestCase {
     }
 
     let expectedError = GRPCServerError.unimplementedMethod("unimplementedMethodName")
-    XCTAssertEqual([expectedError], errorCollector.errors as? [GRPCServerError])
+    XCTAssertEqual([expectedError], errorCollector.asGRPCServerErrors)
 
     XCTAssertNoThrow(try extractStatus(responses[0])) { status in
       XCTAssertEqual(status, expectedError.asGRPCStatus())
@@ -56,8 +56,8 @@ class GRPCChannelHandlerTests: GRPCChannelHandlerResponseCapturingTestCase {
       try channel.writeInbound(RawGRPCServerRequestPart.message(buffer))
     }
 
-    let expectedError = GRPCServerError.requestProtoParseFailure
-    XCTAssertEqual([expectedError], errorCollector.errors as? [GRPCServerError])
+    let expectedError = GRPCServerError.requestProtoDeserializationFailure
+    XCTAssertEqual([expectedError], errorCollector.asGRPCServerErrors)
 
     XCTAssertNoThrow(try extractHeaders(responses[0]))
     XCTAssertNoThrow(try extractStatus(responses[1])) { status in
