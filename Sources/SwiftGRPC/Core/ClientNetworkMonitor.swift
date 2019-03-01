@@ -151,7 +151,9 @@ open class ClientNetworkMonitor {
 
       if notifyForWifi {
         self.callback(State(lastChange: isUsingWifi ? .cellularToWifi : .wifiToCellular, isReachable: isReachable))
-      } else if notifyForReachable {
+      }
+
+      if notifyForReachable {
         self.callback(State(lastChange: .reachability(isReachable: isReachable), isReachable: isReachable))
       }
     }
