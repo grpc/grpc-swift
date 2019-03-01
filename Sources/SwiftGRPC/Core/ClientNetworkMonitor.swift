@@ -22,7 +22,7 @@ import SystemConfiguration
 /// it seem like active calls/connections are hanging), then manually shut down / restart gRPC channels as
 /// needed. The root cause of these problems is that the backing gRPC-Core doesn't get the optimizations
 /// made by iOS' networking stack when changes occur on the device such as switching from wifi to cellular,
-/// enabling/disabling airplane mode, etc.
+/// switching between 3G and LTE, enabling/disabling airplane mode, etc.
 /// Read more: https://github.com/grpc/grpc-swift/tree/master/README.md#known-issues
 /// Original issue: https://github.com/grpc/grpc-swift/issues/337
 open class ClientNetworkMonitor {
