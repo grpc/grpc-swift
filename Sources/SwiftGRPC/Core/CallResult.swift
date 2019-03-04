@@ -41,8 +41,9 @@ public struct CallResult: CustomStringConvertible {
     trailingMetadata = op.receivedTrailingMetadata()
   }
   
-  //This method is only public for use by test stubs. Please do not use for other purpose.
-  public init(success: Bool, statusCode: StatusCode, statusMessage: String?, resultData: Data?, initialMetadata: Metadata?, trailingMetadata: Metadata?) {
+  // This method is only public for use by test stubs. Please do not use for other purposes.
+  public init(success: Bool, statusCode: StatusCode, statusMessage: String?, resultData: Data?,
+              initialMetadata: Metadata?, trailingMetadata: Metadata?) {
     self.success = success
     self.statusCode = statusCode
     self.statusMessage = statusMessage
