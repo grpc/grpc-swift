@@ -16,6 +16,7 @@
 import Foundation
 import SwiftProtobuf
 import NIO
+import _NIO1APIShims
 
 /// A server-streaming gRPC call. The request is sent on initialization, each response is passed to the provided observer block.
 ///

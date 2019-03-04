@@ -1,6 +1,7 @@
 import Foundation
 import SwiftProtobuf
 import NIO
+import _NIO1APIShims
 import NIOHTTP1
 
 /// Processes individual gRPC messages and stream-close events on a HTTP2 channel.

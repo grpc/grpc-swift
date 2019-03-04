@@ -1,6 +1,7 @@
 import Foundation
 import SwiftProtobuf
 import NIO
+import _NIO1APIShims
 import NIOHTTP1
 
 /// Handles bidirectional streaming calls. Forwards incoming messages and end-of-stream events to the observer block.
@@ -12,7 +13,7 @@ import NIOHTTP1
 public class BidirectionalStreamingCallHandler<RequestMessage: Message, ResponseMessage: Message>: BaseCallHandler<RequestMessage, ResponseMessage> {
   public typealias EventObserver = (StreamEvent<RequestMessage>) -> Void
   private var eventObserver: EventLoopFuture<EventObserver>?
-  
+
   private var context: StreamingResponseCallContext<ResponseMessage>?
 
   // We ask for a future of type `EventObserver` to allow the framework user to e.g. asynchronously authenticate a call.

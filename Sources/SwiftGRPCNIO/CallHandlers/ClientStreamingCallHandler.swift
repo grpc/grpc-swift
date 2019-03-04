@@ -1,6 +1,7 @@
 import Foundation
 import SwiftProtobuf
 import NIO
+import _NIO1APIShims
 import NIOHTTP1
 
 /// Handles client-streaming calls. Forwards incoming messages and end-of-stream events to the observer block.
@@ -12,9 +13,9 @@ import NIOHTTP1
 public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage: Message>: BaseCallHandler<RequestMessage, ResponseMessage> {
   public typealias EventObserver = (StreamEvent<RequestMessage>) -> Void
   private var eventObserver: EventLoopFuture<EventObserver>?
-  
+
   private var context: UnaryResponseCallContext<ResponseMessage>?
-  
+
   // We ask for a future of type `EventObserver` to allow the framework user to e.g. asynchronously authenticate a call.
   // If authentication fails, they can simply fail the observer future, which causes the call to be terminated.
   public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, eventObserverFactory: (UnaryResponseCallContext<ResponseMessage>) -> EventLoopFuture<EventObserver>) {
@@ -29,7 +30,7 @@ public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage
       self.context = nil
     }
   }
-  
+
   public override func handlerAdded(ctx: ChannelHandlerContext) {
     guard let eventObserver = eventObserver,
       let context = context else { return }
@@ -39,19 +40,19 @@ public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage
     // Otherwise, our `OutboundOut` type would not match the `OutboundIn` type of the next handler on the channel.
     eventObserver.cascadeFailure(promise: context.responsePromise)
   }
-  
+
   public override func processMessage(_ message: RequestMessage) {
     eventObserver?.whenSuccess { observer in
       observer(.message(message))
     }
   }
-  
+
   public override func endOfStreamReceived() throws {
     eventObserver?.whenSuccess { observer in
       observer(.end)
     }
   }
-  
+
   override func sendErrorStatus(_ status: GRPCStatus) {
     context?.responsePromise.fail(error: status)
   }

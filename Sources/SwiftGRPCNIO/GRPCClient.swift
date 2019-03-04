@@ -15,6 +15,7 @@
  */
 import Foundation
 import NIO
+import _NIO1APIShims
 import NIOHTTP2
 
 /// Underlying channel and HTTP/2 stream multiplexer.

@@ -15,6 +15,7 @@
  */
 import Foundation
 import NIO
+import _NIO1APIShims
 
 public class LengthPrefixedMessageWriter {
   public static let metadataLength = 5

@@ -15,6 +15,8 @@
  */
 import Foundation
 import NIO
+import _NIO1APIShims
+import NIOHTTP1
 
 /// This class reads and decodes length-prefixed gRPC messages.
 ///

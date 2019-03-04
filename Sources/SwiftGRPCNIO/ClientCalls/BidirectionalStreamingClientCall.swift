@@ -16,6 +16,7 @@
 import Foundation
 import SwiftProtobuf
 import NIO
+import _NIO1APIShims
 
 /// A bidirectional-streaming gRPC call. Each response is passed to the provided observer block.
 ///

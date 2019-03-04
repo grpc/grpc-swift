@@ -1,5 +1,7 @@
 import NIO
+import _NIO1APIShims
 import NIOHTTP1
+import _NIO1APIShims
 
 /// Handler that manages the CORS protocol for requests incoming from the browser.
 public class WebCORSHandler {

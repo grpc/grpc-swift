@@ -1,6 +1,7 @@
 import Foundation
 import SwiftProtobuf
 import NIO
+import _NIO1APIShims
 import NIOFoundationCompat
 import NIOHTTP1
 
@@ -47,7 +48,7 @@ extension GRPCServerCodec: ChannelInboundHandler {
 extension GRPCServerCodec: ChannelOutboundHandler {
   public typealias OutboundIn = GRPCServerResponsePart<ResponseMessage>
   public typealias OutboundOut = RawGRPCServerResponsePart
-  
+
   public func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     let responsePart = self.unwrapOutboundIn(data)
     switch responsePart {

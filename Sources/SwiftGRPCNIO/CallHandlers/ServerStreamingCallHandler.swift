@@ -1,6 +1,7 @@
 import Foundation
 import SwiftProtobuf
 import NIO
+import _NIO1APIShims
 import NIOHTTP1
 
 /// Handles server-streaming calls. Calls the observer block with the request message.

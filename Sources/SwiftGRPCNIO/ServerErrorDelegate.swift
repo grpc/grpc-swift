@@ -15,6 +15,7 @@
  */
 import Foundation
 import NIO
+import _NIO1APIShims
 
 public protocol ServerErrorDelegate: class {
   //! FIXME: Provide more context about where the error was thrown, i.e. using `GRPCError`.

@@ -15,6 +15,7 @@
  */
 import Foundation
 import NIO
+import _NIO1APIShims
 import SwiftGRPCNIO
 
 class EchoProviderNIO: Echo_EchoProvider_NIO {
