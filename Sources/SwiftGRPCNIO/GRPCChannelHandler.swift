@@ -53,8 +53,8 @@ extension GRPCChannelHandler: ChannelInboundHandler {
     switch requestPart {
     case .head(let requestHead):
       guard let callHandler = getCallHandler(channel: ctx.channel, requestHead: requestHead) else {
-          errorCaught(ctx: ctx, error: GRPCError.server(.unimplementedMethod(requestHead.uri)))
-          return
+        errorCaught(ctx: ctx, error: GRPCError.server(.unimplementedMethod(requestHead.uri)))
+        return
       }
 
       let codec = callHandler.makeGRPCServerCodec()
@@ -69,7 +69,7 @@ extension GRPCChannelHandler: ChannelInboundHandler {
           // handler doesn't have the data to determine whether headers should be returned, as it is
           // this handler that checks whether the stub for the requested Service/Method is implemented.
           // This likely signals that the architecture for these handlers could be improved.
-          ctx.write(self.wrapOutboundOut(.headers(HTTPHeaders())), promise: nil)
+          ctx.writeAndFlush(self.wrapOutboundOut(.headers(HTTPHeaders())), promise: nil)
         }
       }
 
