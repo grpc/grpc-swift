@@ -19,7 +19,7 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
     let context = StreamingResponseCallContextImpl<ResponseMessage>(channel: channel, request: request)
     self.context = context
     self.eventObserver = eventObserverFactory(context)
-    context.statusPromise.futureResult.whenComplete {
+    context.statusPromise.futureResult.whenComplete { _ in
       // When done, reset references to avoid retain cycles.
       self.eventObserver = nil
       self.context = nil
@@ -35,7 +35,7 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
     let resultFuture = eventObserver(message)
     resultFuture
       // Fulfill the status promise with whatever status the framework user has provided.
-      .cascade(promise: context.statusPromise)
+      .cascade(to: context.statusPromise)
     self.eventObserver = nil
   }
   
@@ -46,6 +46,6 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
   }
   
   override func sendErrorStatus(_ status: GRPCStatus) {
-    context?.statusPromise.fail(error: status)
+    context?.statusPromise.fail(status)
   }
 }

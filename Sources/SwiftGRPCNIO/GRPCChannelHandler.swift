@@ -59,11 +59,9 @@ extension GRPCChannelHandler: ChannelInboundHandler {
       }
 
       let codec = callHandler.makeGRPCServerCodec()
-      let handlerRemoved: EventLoopPromise<Bool> = context.eventLoop.newPromise()
-      handlerRemoved.futureResult.whenSuccess { handlerWasRemoved in
-        assert(handlerWasRemoved)
-
-        context.pipeline.add(handler: callHandler, after: codec).whenComplete {
+      let handlerRemoved: EventLoopPromise<Void> = context.eventLoop.makePromise()
+      handlerRemoved.futureResult.whenSuccess {
+        context.pipeline.addHandler(callHandler, position: .after(codec)).whenComplete { _ in
           // Send the .headers event back to begin the headers flushing for the response.
           // At this point, which headers should be returned is not known, as the content type is
           // processed in HTTP1ToRawGRPCServerCodec. At the same time the HTTP1ToRawGRPCServerCodec
@@ -74,8 +72,8 @@ extension GRPCChannelHandler: ChannelInboundHandler {
         }
       }
 
-      context.pipeline.add(handler: codec, after: self)
-        .whenComplete { context.pipeline.remove(handler: self, promise: handlerRemoved) }
+      context.pipeline.addHandler(codec, position: .after(self))
+        .whenSuccess { context.pipeline.removeHandler(self as! RemovableChannelHandler, promise: handlerRemoved) }
 
     case .message, .end:
       // We can reach this point if we're receiving messages for a method that isn't implemented.

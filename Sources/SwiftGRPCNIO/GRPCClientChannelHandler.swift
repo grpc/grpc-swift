@@ -105,10 +105,10 @@ internal class GRPCClientChannelHandler<RequestMessage: Message, ResponseMessage
   /// - Parameter status: the status to observe.
   internal func observeStatus(_ status: GRPCStatus) {
     if status.code != .ok {
-      self.initialMetadataPromise.fail(error: status)
-      self.responsePromise?.fail(error: status)
+      self.initialMetadataPromise.fail(status)
+      self.responsePromise?.fail(status)
     }
-    self.statusPromise.succeed(result: status)
+    self.statusPromise.succeed(status)
   }
 
   /// Observe the given error.
@@ -142,7 +142,7 @@ extension GRPCClientChannelHandler: ChannelInboundHandler {
         return
       }
 
-      self.initialMetadataPromise.succeed(result: headers)
+      self.initialMetadataPromise.succeed(headers)
       self.inboundState = .expectingMessageOrStatus
 
     case .message(let message):
@@ -183,7 +183,7 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
       }
 
       // See the documentation for `requestHeadSentPromise` for an explanation of this.
-      self.requestHeadSentPromise = promise ?? context.eventLoop.newPromise()
+      self.requestHeadSentPromise = promise ?? context.eventLoop.makePromise()
       context.write(data, promise: self.requestHeadSentPromise)
       self.outboundState = .expectingMessageOrEnd
 
@@ -203,7 +203,7 @@ extension GRPCClientChannelHandler {
   public func close(context: ChannelHandlerContext, mode: CloseMode, promise: EventLoopPromise<Void>?) {
     self.observeError(GRPCError.client(.cancelledByClient))
 
-    requestHeadSentPromise.futureResult.whenComplete {
+    requestHeadSentPromise.futureResult.whenComplete { _ in
       context.close(mode: mode, promise: promise)
     }
 

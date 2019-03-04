@@ -61,7 +61,7 @@ extension GRPCServerCodec: ChannelOutboundHandler {
         context.write(self.wrapOutboundOut(.message(messageData)), promise: promise)
       } catch {
         let error = GRPCError.server(.responseProtoSerializationFailure)
-        promise?.fail(error: error)
+        promise?.fail(error)
         context.fireErrorCaught(error)
       }
 

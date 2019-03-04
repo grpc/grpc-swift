@@ -88,7 +88,7 @@ extension BaseCallHandler: ChannelOutboundHandler {
 
   public func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     guard serverCanWrite else {
-      promise?.fail(error: GRPCError.server(.serverNotWritable))
+      promise?.fail(GRPCError.server(.serverNotWritable))
       return
     }
 

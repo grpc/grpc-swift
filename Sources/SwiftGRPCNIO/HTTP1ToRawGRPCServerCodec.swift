@@ -29,6 +29,8 @@ public enum RawGRPCServerResponsePart {
 ///
 /// The translation from HTTP2 to HTTP1 is done by `HTTP2ToHTTP1ServerCodec`.
 public final class HTTP1ToRawGRPCServerCodec {
+  public init() {}
+
   // 1-byte for compression flag, 4-bytes for message length.
   private let protobufMetadataSize = 5
 
@@ -137,7 +139,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
     // where it will expect a new incoming chunk.
     if contentType == .text {
       precondition(requestTextBuffer != nil)
-      requestTextBuffer.write(buffer: &body)
+      requestTextBuffer.writeBuffer(&body)
 
       // Read in chunks of 4 bytes as base64 encoded strings will always be multiples of 4.
       let readyBytes = requestTextBuffer.readableBytes - (requestTextBuffer.readableBytes % 4)
@@ -146,7 +148,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
         throw GRPCError.server(.base64DecodeError)
       }
 
-      body.write(bytes: decodedData)
+      body.writeBytes(decodedData)
     }
 
     self.messageReader.append(buffer: &body)
@@ -208,12 +210,12 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
         // Write into a temporary buffer to avoid: "error: cannot pass immutable value as inout argument: 'self' is immutable"
         var responseBuffer = context.channel.allocator.buffer(capacity: LengthPrefixedMessageWriter.metadataLength)
         messageWriter.write(messageBytes, into: &responseBuffer, usingCompression: .none)
-        responseTextBuffer.write(buffer: &responseBuffer)
+        responseTextBuffer.writeBuffer(&responseBuffer)
         #endif
 
         // Since we stored the written data, mark the write promise as successful so that the
         // ServerStreaming provider continues sending the data.
-        promise?.succeed(result: Void())
+        promise?.succeed(())
       } else {
         var responseBuffer = context.channel.allocator.buffer(capacity: LengthPrefixedMessageWriter.metadataLength)
         messageWriter.write(messageBytes, into: &responseBuffer, usingCompression: .none)
@@ -241,9 +243,9 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
         // Encode the trailers into the response byte stream as a length delimited message, as per
         // https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-WEB.md
         let textTrailers = trailers.map { name, value in "\(name): \(value)" }.joined(separator: "\r\n")
-        responseTextBuffer.write(integer: UInt8(0x80))
-        responseTextBuffer.write(integer: UInt32(textTrailers.utf8.count))
-        responseTextBuffer.write(string: textTrailers)
+        responseTextBuffer.writeInteger(UInt8(0x80))
+        responseTextBuffer.writeInteger(UInt32(textTrailers.utf8.count))
+        responseTextBuffer.writeString(textTrailers)
 
         // TODO: Binary responses that are non multiples of 3 will end = or == when encoded in
         // base64. Investigate whether this might have any effect on the transport mechanism and
@@ -253,7 +255,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
           let encodedData = binaryData.base64EncodedString()
           responseTextBuffer.clear()
           responseTextBuffer.reserveCapacity(encodedData.utf8.count)
-          responseTextBuffer.write(string: encodedData)
+          responseTextBuffer.writeString(encodedData)
         }
         // After collecting all response for gRPC Web connections, send one final aggregated
         // response.

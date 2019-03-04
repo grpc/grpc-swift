@@ -25,10 +25,9 @@ public final class GRPCServer {
 
       // Set the handlers that are applied to the accepted Channels
       .childChannelInitializer { channel in
-        return channel.pipeline.add(handler: HTTPProtocolSwitcher {
-          channel -> EventLoopFuture<Void> in
-          return channel.pipeline.add(handler: HTTP1ToRawGRPCServerCodec())
-            .then { channel.pipeline.add(handler: GRPCChannelHandler(servicesByName: servicesByName, errorDelegate: errorDelegate)) }
+        return channel.pipeline.addHandler(HTTPProtocolSwitcher { channel -> EventLoopFuture<Void> in
+          return channel.pipeline.addHandler(HTTP1ToRawGRPCServerCodec())
+            .flatMap { channel.pipeline.addHandler(GRPCChannelHandler(servicesByName: servicesByName, errorDelegate: errorDelegate)) }
         })
       }
 
@@ -50,7 +49,7 @@ public final class GRPCServer {
     self.errorDelegate = errorDelegate
 
     // nil out errorDelegate to avoid retain cycles.
-    onClose.whenComplete {
+    onClose.whenComplete { _ in
       self.errorDelegate = nil
     }
   }

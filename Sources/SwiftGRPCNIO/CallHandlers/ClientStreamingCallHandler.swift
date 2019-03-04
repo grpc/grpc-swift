@@ -24,7 +24,10 @@ public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage
     self.context = context
     let eventObserver = eventObserverFactory(context)
     self.eventObserver = eventObserver
-    context.responsePromise.futureResult.whenComplete {
+
+    // Terminate the call if no observer is provided.
+    eventObserver.cascadeFailure(to: context.responsePromise)
+    context.responsePromise.futureResult.whenComplete { _ in
       // When done, reset references to avoid retain cycles.
       self.eventObserver = nil
       self.context = nil
@@ -38,7 +41,7 @@ public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage
     // This is being done _after_ we have been added as a handler to ensure that the `GRPCServerCodec` required to
     // translate our outgoing `GRPCServerResponsePart<ResponseMessage>` message is already present on the channel.
     // Otherwise, our `OutboundOut` type would not match the `OutboundIn` type of the next handler on the channel.
-    eventObserver.cascadeFailure(promise: context.responsePromise)
+    eventObserver.cascadeFailure(to: context.responsePromise)
   }
 
   public override func processMessage(_ message: RequestMessage) {
@@ -54,6 +57,6 @@ public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage
   }
 
   override func sendErrorStatus(_ status: GRPCStatus) {
-    context?.responsePromise.fail(error: status)
+    context?.responsePromise.fail(status)
   }
 }

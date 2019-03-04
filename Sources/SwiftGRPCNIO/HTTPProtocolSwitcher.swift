@@ -1,6 +1,5 @@
 import Foundation
 import NIO
-import _NIO1APIShims
 import NIOHTTP1
 import NIOHTTP2
 
@@ -59,21 +58,17 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler {
       // while gRPC-Web does not support HTTP2 at all, so there are no compelling use cases
       // to support this.
       _ = context.pipeline.configureHTTPServerPipeline(withErrorHandling: true)
-        .then { context.pipeline.add(handler: WebCORSHandler()) }
-        .then { (Void) -> EventLoopFuture<Void> in self.handlersInitializer(context.channel) }
+        .flatMap { context.pipeline.addHandler(WebCORSHandler()) }
+        .flatMap { (Void) -> EventLoopFuture<Void> in self.handlersInitializer(context.channel) }
     case .http2:
-      _ = context.pipeline.add(handler: HTTP2Parser(mode: .server))
-        .then { () -> EventLoopFuture<Void> in
-          let multiplexer = HTTP2StreamMultiplexer { (channel, streamID) -> EventLoopFuture<Void> in
-            return channel.pipeline.add(handler: HTTP2ToHTTP1ServerCodec(streamID: streamID))
-              .then { (Void) -> EventLoopFuture<Void> in self.handlersInitializer(channel) }
-          }
-          return context.pipeline.add(handler: multiplexer)
-        }
+      _ = context.channel.configureHTTP2Pipeline(mode: .server) { (streamChannel, streamID) in
+        return streamChannel.pipeline.addHandler(HTTP2ToHTTP1ServerCodec(streamID: streamID))
+          .flatMap { _ in self.handlersInitializer(streamChannel) }
+      }
     }
 
     context.fireChannelRead(data)
-    _ = context.pipeline.remove(context: context)
+    _ = context.pipeline.removeHandler(context: context)
   }
 
   /// Peek into the first line of the packet to check which HTTP version is being used.
@@ -83,8 +78,9 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler {
     let result = regex.firstMatch(in: preamble, options: [], range: range)!
 
     let versionRange = result.range(at: 1)
-    let start = String.UTF16Index(encodedOffset: versionRange.location)
-    let end = String.UTF16Index(encodedOffset: versionRange.location + versionRange.length)
+
+    let start = String.Index(utf16Offset: versionRange.location, in: preamble)
+    let end = String.Index(utf16Offset: versionRange.location + versionRange.length, in: preamble)
 
     switch String(preamble.utf16[start..<end])! {
     case "1":

@@ -24,13 +24,16 @@ public class BidirectionalStreamingCallHandler<RequestMessage: Message, Response
     self.context = context
     let eventObserver = eventObserverFactory(context)
     self.eventObserver = eventObserver
-    context.statusPromise.futureResult.whenComplete {
+
+    // Terminate the call if no observer is provided.
+    eventObserver.cascadeFailure(to: context.statusPromise)
+    context.statusPromise.futureResult.whenComplete { _ in
       // When done, reset references to avoid retain cycles.
       self.eventObserver = nil
       self.context = nil
     }
   }
-  
+
   public override func handlerAdded(ctx: ChannelHandlerContext) {
     guard let eventObserver = eventObserver,
       let context = context else { return }
@@ -38,9 +41,9 @@ public class BidirectionalStreamingCallHandler<RequestMessage: Message, Response
     // This is being done _after_ we have been added as a handler to ensure that the `GRPCServerCodec` required to
     // translate our outgoing `GRPCServerResponsePart<ResponseMessage>` message is already present on the channel.
     // Otherwise, our `OutboundOut` type would not match the `OutboundIn` type of the next handler on the channel.
-    eventObserver.cascadeFailure(promise: context.statusPromise)
+    eventObserver.cascadeFailure(to: context.statusPromise)
   }
-  
+
 
   public override func processMessage(_ message: RequestMessage) {
     eventObserver?.whenSuccess { observer in
@@ -53,8 +56,8 @@ public class BidirectionalStreamingCallHandler<RequestMessage: Message, Response
       observer(.end)
     }
   }
-  
+
   override func sendErrorStatus(_ status: GRPCStatus) {
-    context?.statusPromise.fail(error: status)
+    context?.statusPromise.fail(status)
   }
 }

@@ -15,7 +15,7 @@ open class StreamingResponseCallContext<ResponseMessage: Message>: ServerCallCon
   public let statusPromise: EventLoopPromise<GRPCStatus>
 
   public override init(eventLoop: EventLoop, request: HTTPRequestHead) {
-    self.statusPromise = eventLoop.newPromise()
+    self.statusPromise = eventLoop.makePromise()
     super.init(eventLoop: eventLoop, request: request)
   }
 
@@ -35,7 +35,7 @@ open class StreamingResponseCallContextImpl<ResponseMessage: Message>: Streaming
 
     statusPromise.futureResult
       // Ensure that any error provided is of type `GRPCStatus`, using "internal server error" as a fallback.
-      .mapIfError { error in
+      .recover { error in
         (error as? GRPCStatus) ?? .processingError
       }
       // Finish the call by returning the final status.
@@ -45,7 +45,7 @@ open class StreamingResponseCallContextImpl<ResponseMessage: Message>: Streaming
   }
 
   open override func sendResponse(_ message: ResponseMessage) -> EventLoopFuture<Void> {
-    let promise: EventLoopPromise<Void> = eventLoop.newPromise()
+    let promise: EventLoopPromise<Void> = eventLoop.makePromise()
     channel.writeAndFlush(NIOAny(WrappedResponse.message(message)), promise: promise)
     return promise.futureResult
   }
@@ -59,6 +59,6 @@ open class StreamingResponseCallContextTestStub<ResponseMessage: Message>: Strea
 
   open override func sendResponse(_ message: ResponseMessage) -> EventLoopFuture<Void> {
     recordedResponses.append(message)
-    return eventLoop.newSucceededFuture(result: ())
+    return eventLoop.makeSucceededFuture(())
   }
 }

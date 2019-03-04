@@ -8,6 +8,7 @@ class CollectingChannelHandler<OutboundIn>: ChannelOutboundHandler {
   var responses: [OutboundIn] = []
 
   func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+    promise?.succeed(())
     responses.append(unwrapOutboundIn(data))
   }
 }

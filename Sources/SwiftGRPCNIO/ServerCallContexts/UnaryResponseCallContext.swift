@@ -19,7 +19,7 @@ open class UnaryResponseCallContext<ResponseMessage: Message>: ServerCallContext
   public var responseStatus: GRPCStatus = .ok
 
   public override init(eventLoop: EventLoop, request: HTTPRequestHead) {
-    self.responsePromise = eventLoop.newPromise()
+    self.responsePromise = eventLoop.makePromise()
     super.init(eventLoop: eventLoop, request: request)
   }
 }
@@ -55,7 +55,7 @@ open class UnaryResponseCallContextImpl<ResponseMessage: Message>: UnaryResponse
         return self.responseStatus
       }
       // Ensure that any error provided is of type `GRPCStatus`, using "internal server error" as a fallback.
-      .mapIfError { error in
+      .recover { error in
         (error as? GRPCStatus) ?? .processingError
       }
       // Finish the call by returning the final status.

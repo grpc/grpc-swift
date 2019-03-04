@@ -20,7 +20,7 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
     let context = UnaryResponseCallContextImpl<ResponseMessage>(channel: channel, request: request)
     self.context = context
     self.eventObserver = eventObserverFactory(context)
-    context.responsePromise.futureResult.whenComplete {
+    context.responsePromise.futureResult.whenComplete { _ in
       // When done, reset references to avoid retain cycles.
       self.eventObserver = nil
       self.context = nil
@@ -36,7 +36,7 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
     let resultFuture = eventObserver(message)
     resultFuture
       // Fulfill the response promise with whatever response (or error) the framework user has provided.
-      .cascade(promise: context.responsePromise)
+      .cascade(to: context.responsePromise)
     self.eventObserver = nil
   }
   
@@ -47,6 +47,6 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
   }
   
   override func sendErrorStatus(_ status: GRPCStatus) {
-    context?.responsePromise.fail(error: status)
+    context?.responsePromise.fail(status)
   }
 }

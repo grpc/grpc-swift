@@ -29,45 +29,45 @@ private let expectedError = GRPCStatus(code: .internalError, message: "expected 
 // to the channel.
 private class ImmediateThrowingEchoProviderNIO: Echo_EchoProvider_NIO {
   func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
-    return context.eventLoop.newFailedFuture(error: expectedError)
+    return context.eventLoop.makeFailedFuture(expectedError)
   }
   
   func expand(request: Echo_EchoRequest, context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<GRPCStatus> {
-    return context.eventLoop.newFailedFuture(error: expectedError)
+    return context.eventLoop.makeFailedFuture(expectedError)
   }
   
   func collect(context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
-    return context.eventLoop.newFailedFuture(error: expectedError)
+    return context.eventLoop.makeFailedFuture(expectedError)
   }
   
   func update(context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
-    return context.eventLoop.newFailedFuture(error: expectedError)
+    return context.eventLoop.makeFailedFuture(expectedError)
   }
 }
 
 private extension EventLoop {
-  func newFailedFuture<T>(error: Error, delay: TimeInterval) -> EventLoopFuture<T> {
+  func makeFailedFuture<T>(_ error: Error, delay: TimeInterval) -> EventLoopFuture<T> {
     return self.scheduleTask(in: .nanoseconds(TimeAmount.Value(delay * 1000 * 1000 * 1000))) { () }.futureResult
-      .thenThrowing { _ -> T in throw error }
+      .flatMapThrowing { _ -> T in throw error }
   }
 }
 
 /// See `ImmediateThrowingEchoProviderNIO`.
 private class DelayedThrowingEchoProviderNIO: Echo_EchoProvider_NIO {
   func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
-    return context.eventLoop.newFailedFuture(error: expectedError, delay: 0.01)
+    return context.eventLoop.makeFailedFuture(expectedError, delay: 0.01)
   }
   
   func expand(request: Echo_EchoRequest, context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<GRPCStatus> {
-    return context.eventLoop.newFailedFuture(error: expectedError, delay: 0.01)
+    return context.eventLoop.makeFailedFuture(expectedError, delay: 0.01)
   }
   
   func collect(context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
-    return context.eventLoop.newFailedFuture(error: expectedError, delay: 0.01)
+    return context.eventLoop.makeFailedFuture(expectedError, delay: 0.01)
   }
   
   func update(context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
-    return context.eventLoop.newFailedFuture(error: expectedError, delay: 0.01)
+    return context.eventLoop.makeFailedFuture(expectedError, delay: 0.01)
   }
 }
 
@@ -76,19 +76,19 @@ private class ErrorReturningEchoProviderNIO: ImmediateThrowingEchoProviderNIO {
   // There's no status promise to fulfill for unary calls (only the response promise), so that case is omitted.
   
   override func expand(request: Echo_EchoRequest, context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<GRPCStatus> {
-    return context.eventLoop.newSucceededFuture(result: expectedError)
+    return context.eventLoop.makeSucceededFuture(expectedError)
   }
   
   override func collect(context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
-    return context.eventLoop.newSucceededFuture(result: { _ in
+    return context.eventLoop.makeSucceededFuture({ _ in
       context.responseStatus = expectedError
-      context.responsePromise.succeed(result: Echo_EchoResponse())
+      context.responsePromise.succeed(Echo_EchoResponse())
     })
   }
   
   override func update(context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
-    return context.eventLoop.newSucceededFuture(result: { _ in
-      context.statusPromise.succeed(result: expectedError)
+    return context.eventLoop.makeSucceededFuture({ _ in
+      context.statusPromise.succeed(expectedError)
     })
   }
 }
