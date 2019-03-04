@@ -31,7 +31,7 @@ open class UnaryResponseCallContext<ResponseMessage: Message>: ServerCallContext
 /// be fulfilled by the user.
 ///
 /// We can use a protocol (instead of an abstract base class) here because removing the generic `responsePromise` field
-/// lets us avoid associated-type requirements on the protol.
+/// lets us avoid associated-type requirements on the protocol.
 public protocol StatusOnlyCallContext: ServerCallContext {
   var responseStatus: GRPCStatus { get set }
 }
