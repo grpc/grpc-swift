@@ -215,8 +215,8 @@ class Echo_EchoServiceTestStub: ServiceClientTestStubBase, Echo_EchoService {
     let response = try self.get(request)
     let callResult = CallResult(success: true, statusCode: .ok, statusMessage: "OK", resultData: nil,initialMetadata: nil, trailingMetadata: nil)
     completion(response, callResult)
-    let channel = Channel(address: "")
-    return Echo_EchoGetCallBase(channel)
+    let fakeChannel = Channel(address: "")
+    return Echo_EchoGetCallBase(fakeChannel)
   }
 
   var expandRequests: [Echo_EchoRequest] = []
