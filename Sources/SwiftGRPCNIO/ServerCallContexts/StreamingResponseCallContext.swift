@@ -8,7 +8,7 @@ import NIOHTTP1
 /// - When `statusPromise` is fulfilled, the call is closed and the provided status transmitted.
 /// - If `statusPromise` is failed and the error is of type `GRPCStatus`, that error will be returned to the client.
 /// - For other errors, `GRPCStatus.processingError` is returned to the client.
-open class StreamingResponseCallContext<ResponseMessage: Message>: ServerCallContext {
+open class StreamingResponseCallContext<ResponseMessage: Message>: ServerCallContextBase {
   public typealias WrappedResponse = GRPCServerResponsePart<ResponseMessage>
   
   public let statusPromise: EventLoopPromise<GRPCStatus>
