@@ -33,8 +33,9 @@ open class GRPCClient {
       // Enable SO_REUSEADDR.
       .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
       .channelInitializer { channel in
-        channel.configureHTTP2Pipeline(mode: .client).cascade(to: multiplexerPromise)
-        return channel.eventLoop.makeSucceededFuture(())
+        let multiplexer = channel.configureHTTP2Pipeline(mode: .client)
+        multiplexer.cascade(to: multiplexerPromise)
+        return multiplexer.map { _ in }
       }
 
     return bootstrap.connect(host: host, port: port)

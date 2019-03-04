@@ -37,7 +37,7 @@ public final class GRPCChannelHandler {
   }
 }
 
-extension GRPCChannelHandler: ChannelInboundHandler {
+extension GRPCChannelHandler: ChannelInboundHandler, RemovableChannelHandler {
   public typealias InboundIn = RawGRPCServerRequestPart
   public typealias OutboundOut = RawGRPCServerResponsePart
 
@@ -73,7 +73,7 @@ extension GRPCChannelHandler: ChannelInboundHandler {
       }
 
       context.pipeline.addHandler(codec, position: .after(self))
-        .whenSuccess { context.pipeline.removeHandler(self as! RemovableChannelHandler, promise: handlerRemoved) }
+        .whenSuccess { context.pipeline.removeHandler(context: context, promise: handlerRemoved) }
 
     case .message, .end:
       // We can reach this point if we're receiving messages for a method that isn't implemented.

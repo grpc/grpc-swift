@@ -75,11 +75,11 @@ extension NIOServerTests {
 
 extension NIOServerTests {
   func doTestClientStreaming(messages: [String], file: StaticString = #file, line: UInt = #line) throws {
-    let call = client.collect()
+    let call = client.collect(callOptions: CallOptions(timeout: .infinite))
 
     var queue = call.newMessageQueue()
     for message in messages {
-      queue = queue.then { call.sendMessage(Echo_EchoRequest(text: message)) }
+      queue = queue.flatMap { call.sendMessage(Echo_EchoRequest(text: message)) }
     }
     queue.whenSuccess { call.sendEnd(promise: nil) }
 

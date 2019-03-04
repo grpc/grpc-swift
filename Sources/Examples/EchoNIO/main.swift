@@ -45,7 +45,7 @@ func makeEchoClient(address: String, port: Int) -> Echo_EchoService_NIOClient? {
 
 Group {
   $0.command("serve",
-             addressOption("0.0.0.0"),
+             addressOption("localhost"),
              portOption,
              description: "Run an echo server.") { address, port in
     let sem = DispatchSemaphore(value: 0)

@@ -35,7 +35,7 @@ class GRPCChannelHandlerTests: GRPCChannelHandlerResponseCapturingTestCase {
       let request = Echo_EchoRequest.with { $0.text = "echo!" }
       let requestData = try request.serializedData()
       var buffer = channel.allocator.buffer(capacity: requestData.count)
-      buffer.write(bytes: requestData)
+      buffer.writeBytes(requestData)
       try channel.writeInbound(RawGRPCServerRequestPart.message(buffer))
     }
 
@@ -52,7 +52,7 @@ class GRPCChannelHandlerTests: GRPCChannelHandlerResponseCapturingTestCase {
       try channel.writeInbound(RawGRPCServerRequestPart.head(requestHead))
 
       var buffer = channel.allocator.buffer(capacity: 3)
-      buffer.write(bytes: [1, 2, 3])
+      buffer.writeBytes([1, 2, 3])
       try channel.writeInbound(RawGRPCServerRequestPart.message(buffer))
     }
 

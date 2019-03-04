@@ -22,12 +22,11 @@ public final class GRPCServer {
       .serverChannelOption(ChannelOptions.backlog, value: 256)
       // Enable `SO_REUSEADDR` to avoid "address already in use" error.
       .serverChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
-
       // Set the handlers that are applied to the accepted Channels
       .childChannelInitializer { channel in
         return channel.pipeline.addHandler(HTTPProtocolSwitcher { channel -> EventLoopFuture<Void> in
-          return channel.pipeline.addHandler(HTTP1ToRawGRPCServerCodec())
-            .flatMap { channel.pipeline.addHandler(GRPCChannelHandler(servicesByName: servicesByName, errorDelegate: errorDelegate)) }
+          return channel.pipeline.addHandlers(HTTP1ToRawGRPCServerCodec(),
+                                              GRPCChannelHandler(servicesByName: servicesByName, errorDelegate: errorDelegate))
         })
       }
 

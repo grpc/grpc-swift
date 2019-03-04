@@ -8,14 +8,21 @@ import NIOHTTP2
 public class HTTPProtocolSwitcher {
   private let handlersInitializer: ((Channel) -> EventLoopFuture<Void>)
 
+  // We could receieve additional data after the initial data and before configuring
+  // the pipeline; buffer it and fire it down the pipeline once it is configured.
+  private enum State { case notConfigured, configuring, configured }
+  private var state: State = .notConfigured
+  private var bufferedData: [NIOAny] = []
+
   public init(handlersInitializer: (@escaping (Channel) -> EventLoopFuture<Void>)) {
     self.handlersInitializer = handlersInitializer
   }
 }
 
-extension HTTPProtocolSwitcher: ChannelInboundHandler {
+extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
   public typealias InboundIn = ByteBuffer
   public typealias InboundOut = ByteBuffer
+
 
   enum HTTPProtocolVersionError: Error {
     /// Raised when it wasn't possible to detect HTTP Protocol version.
@@ -36,45 +43,70 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler {
   }
 
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
-    // Detect the HTTP protocol version for the incoming request, or error out if it
-    // couldn't be detected.
-    var inBuffer = unwrapInboundIn(data)
-    guard let initialData = inBuffer.readString(length: inBuffer.readableBytes),
-          let preamble = initialData.split(separator: "\r\n",
-                                           maxSplits: 1,
-                                           omittingEmptySubsequences: true).first,
-          let version = protocolVersion(String(preamble)) else {
+    switch self.state {
+    case .notConfigured:
+      self.state = .configuring
+      self.bufferedData.append(data)
 
-      context.fireErrorCaught(HTTPProtocolVersionError.invalidHTTPProtocolVersion)
-      return
-    }
-
-    // Depending on whether it is HTTP1 or HTTP2, created different processing pipelines.
-    // Inbound handlers in handlersInitializer should expect HTTPServerRequestPart objects
-    // and outbound handlers should return HTTPServerResponsePart objects.
-    switch version {
-    case .http1:
-      // Upgrade connections are not handled since gRPC connections already arrive in HTTP2,
-      // while gRPC-Web does not support HTTP2 at all, so there are no compelling use cases
-      // to support this.
-      _ = context.pipeline.configureHTTPServerPipeline(withErrorHandling: true)
-        .flatMap { context.pipeline.addHandler(WebCORSHandler()) }
-        .flatMap { (Void) -> EventLoopFuture<Void> in self.handlersInitializer(context.channel) }
-    case .http2:
-      _ = context.channel.configureHTTP2Pipeline(mode: .server) { (streamChannel, streamID) in
-        return streamChannel.pipeline.addHandler(HTTP2ToHTTP1ServerCodec(streamID: streamID))
-          .flatMap { _ in self.handlersInitializer(streamChannel) }
+      // Detect the HTTP protocol version for the incoming request, or error out if it
+      // couldn't be detected.
+      var inBuffer = self.unwrapInboundIn(data)
+      guard let initialData = inBuffer.readString(length: inBuffer.readableBytes),
+        let preamble = initialData.split(separator: "\r\n",
+                                         maxSplits: 1,
+                                         omittingEmptySubsequences: true).first,
+        let version = protocolVersion(String(preamble)) else {
+          context.fireErrorCaught(HTTPProtocolVersionError.invalidHTTPProtocolVersion)
+          return
       }
-    }
 
-    context.fireChannelRead(data)
-    _ = context.pipeline.removeHandler(context: context)
+      // Once configured remove ourself from the pipeline and fire any buffered data down
+      // the pipeline.
+      let pipelineConfigured: EventLoopPromise<Void> = context.eventLoop.makePromise()
+      pipelineConfigured.futureResult.map {
+        context.pipeline.removeHandler(self)
+      }.whenSuccess { _ in
+        self.state = .configured
+        self.bufferedData.forEach {
+          context.pipeline.fireChannelRead($0)
+        }
+      }
+
+      // Depending on whether it is HTTP1 or HTTP2, created different processing pipelines.
+      // Inbound handlers in handlersInitializer should expect HTTPServerRequestPart objects
+      // and outbound handlers should return HTTPServerResponsePart objects.
+      switch version {
+      case .http1:
+        // Upgrade connections are not handled since gRPC connections already arrive in HTTP2,
+        // while gRPC-Web does not support HTTP2 at all, so there are no compelling use cases
+        // to support this.
+        context.pipeline.configureHTTPServerPipeline(withErrorHandling: true).flatMap {
+          context.pipeline.addHandler(WebCORSHandler())
+        }.flatMap { (Void) -> EventLoopFuture<Void> in
+          self.handlersInitializer(context.channel)
+        }.cascade(to: pipelineConfigured)
+
+      case .http2:
+        context.channel.configureHTTP2Pipeline(mode: .server) { (streamChannel, streamID) in
+          return streamChannel.pipeline.addHandler(HTTP2ToHTTP1ServerCodec(streamID: streamID)).flatMap {
+            self.handlersInitializer(streamChannel)
+          }
+        }.map { (_: HTTP2StreamMultiplexer) in
+        }.cascade(to: pipelineConfigured)
+      }
+
+    case .configuring:
+      self.bufferedData.append(data)
+
+    case .configured:
+      assertionFailure("unexpectedly received data; this handler should have been removed from the pipeline")
+    }
   }
 
   /// Peek into the first line of the packet to check which HTTP version is being used.
   private func protocolVersion(_ preamble: String) -> HTTPProtocolVersion? {
     let range = NSRange(location: 0, length: preamble.utf16.count)
-    let regex = try! NSRegularExpression(pattern: "^.*HTTP/(\\d)\\.\\d$")
+    let regex = try! NSRegularExpression(pattern: ".*HTTP/(\\d)\\.\\d$")
     let result = regex.firstMatch(in: preamble, options: [], range: range)!
 
     let versionRange = result.range(at: 1)

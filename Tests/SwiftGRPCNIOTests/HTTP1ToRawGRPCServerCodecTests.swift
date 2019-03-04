@@ -7,10 +7,10 @@ import NIOHTTP1
 func gRPCMessage(channel: EmbeddedChannel, compression: Bool = false, message: Data? = nil) -> ByteBuffer {
   let messageLength = message?.count ?? 0
   var buffer = channel.allocator.buffer(capacity: 5 + messageLength)
-  buffer.write(integer: Int8(compression ? 1 : 0))
-  buffer.write(integer: UInt32(messageLength))
+  buffer.writeInteger(Int8(compression ? 1 : 0))
+  buffer.writeInteger(UInt32(messageLength))
   if let bytes = message {
-    buffer.write(bytes: bytes)
+    buffer.writeBytes(bytes)
   }
   return buffer
 }
@@ -52,15 +52,15 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
       let requestAsData = try request.serializedData()
 
       var buffer = channel.allocator.buffer(capacity: 1)
-      buffer.write(integer: Int8(0))
+      buffer.writeInteger(Int8(0))
       try channel.writeInbound(HTTPServerRequestPart.body(buffer))
 
       buffer = channel.allocator.buffer(capacity: 4)
-      buffer.write(integer: Int32(requestAsData.count))
+      buffer.writeInteger(Int32(requestAsData.count))
       try channel.writeInbound(HTTPServerRequestPart.body(buffer))
 
       buffer = channel.allocator.buffer(capacity: requestAsData.count)
-      buffer.write(bytes: requestAsData)
+      buffer.writeBytes(requestAsData)
       try channel.writeInbound(HTTPServerRequestPart.body(buffer))
     }
 
@@ -76,7 +76,7 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
       let requestHead = HTTPRequestHead(version: .init(major: 2, minor: 0), method: .POST, uri: "/echo.Echo/Get")
       try channel.writeInbound(HTTPServerRequestPart.head(requestHead))
 
-      let buffer = gRPCMessage(channel: channel, message: Data(bytes: [42]))
+      let buffer = gRPCMessage(channel: channel, message: Data([42]))
       try channel.writeInbound(HTTPServerRequestPart.body(buffer))
     }
 
@@ -146,8 +146,8 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
     callback: @escaping (EmbeddedChannel) throws -> Void
     ) throws -> [RawGRPCServerResponsePart] {
     return try super.waitForGRPCChannelHandlerResponses(count: count, servicesByName: servicesByName) { channel in
-      _ = channel.pipeline.addHandlers(HTTP1ToRawGRPCServerCodec(), first: true)
-        .thenThrowing { _ in try callback(channel) }
+      _ = channel.pipeline.addHandlers(HTTP1ToRawGRPCServerCodec(), position: .first)
+        .flatMapThrowing { _ in try callback(channel) }
     }
   }
 }
