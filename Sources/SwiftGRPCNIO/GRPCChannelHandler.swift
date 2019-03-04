@@ -40,41 +40,41 @@ extension GRPCChannelHandler: ChannelInboundHandler {
   public typealias InboundIn = RawGRPCServerRequestPart
   public typealias OutboundOut = RawGRPCServerResponsePart
 
-  public func errorCaught(ctx: ChannelHandlerContext, error: Error) {
+  public func errorCaught(context: ChannelHandlerContext, error: Error) {
     errorDelegate?.observe(error)
 
     let transformedError = errorDelegate?.transform(error) ?? error
     let status = (transformedError as? GRPCStatusTransformable)?.asGRPCStatus() ?? GRPCStatus.processingError
-    ctx.writeAndFlush(wrapOutboundOut(.status(status)), promise: nil)
+    context.writeAndFlush(wrapOutboundOut(.status(status)), promise: nil)
   }
 
-  public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+  public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     let requestPart = self.unwrapInboundIn(data)
     switch requestPart {
     case .head(let requestHead):
-      guard let callHandler = getCallHandler(channel: ctx.channel, requestHead: requestHead) else {
-        errorCaught(ctx: ctx, error: GRPCError.server(.unimplementedMethod(requestHead.uri)))
+      guard let callHandler = getCallHandler(channel: context.channel, requestHead: requestHead) else {
+        errorCaught(context: context, error: GRPCError.server(.unimplementedMethod(requestHead.uri)))
         return
       }
 
       let codec = callHandler.makeGRPCServerCodec()
-      let handlerRemoved: EventLoopPromise<Bool> = ctx.eventLoop.newPromise()
+      let handlerRemoved: EventLoopPromise<Bool> = context.eventLoop.newPromise()
       handlerRemoved.futureResult.whenSuccess { handlerWasRemoved in
         assert(handlerWasRemoved)
 
-        ctx.pipeline.add(handler: callHandler, after: codec).whenComplete {
+        context.pipeline.add(handler: callHandler, after: codec).whenComplete {
           // Send the .headers event back to begin the headers flushing for the response.
           // At this point, which headers should be returned is not known, as the content type is
           // processed in HTTP1ToRawGRPCServerCodec. At the same time the HTTP1ToRawGRPCServerCodec
           // handler doesn't have the data to determine whether headers should be returned, as it is
           // this handler that checks whether the stub for the requested Service/Method is implemented.
           // This likely signals that the architecture for these handlers could be improved.
-          ctx.writeAndFlush(self.wrapOutboundOut(.headers(HTTPHeaders())), promise: nil)
+          context.writeAndFlush(self.wrapOutboundOut(.headers(HTTPHeaders())), promise: nil)
         }
       }
 
-      ctx.pipeline.add(handler: codec, after: self)
-        .whenComplete { ctx.pipeline.remove(handler: self, promise: handlerRemoved) }
+      context.pipeline.add(handler: codec, after: self)
+        .whenComplete { context.pipeline.remove(handler: self, promise: handlerRemoved) }
 
     case .message, .end:
       // We can reach this point if we're receiving messages for a method that isn't implemented.

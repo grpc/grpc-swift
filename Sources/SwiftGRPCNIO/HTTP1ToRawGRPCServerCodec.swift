@@ -85,27 +85,27 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
   public typealias InboundIn = HTTPServerRequestPart
   public typealias InboundOut = RawGRPCServerRequestPart
 
-  public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+  public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     if case .ignore = inboundState { return }
 
     do {
       switch self.unwrapInboundIn(data) {
       case .head(let requestHead):
-        inboundState = try processHead(ctx: ctx, requestHead: requestHead)
+        inboundState = try processHead(context: context, requestHead: requestHead)
 
       case .body(var body):
-        inboundState = try processBody(ctx: ctx, body: &body)
+        inboundState = try processBody(context: context, body: &body)
 
       case .end(let trailers):
-        inboundState = try processEnd(ctx: ctx, trailers: trailers)
+        inboundState = try processEnd(context: context, trailers: trailers)
       }
     } catch {
-      ctx.fireErrorCaught(error)
+      context.fireErrorCaught(error)
       inboundState = .ignore
     }
   }
 
-  func processHead(ctx: ChannelHandlerContext, requestHead: HTTPRequestHead) throws -> InboundState {
+  func processHead(context: ChannelHandlerContext, requestHead: HTTPRequestHead) throws -> InboundState {
     guard case .expectingHeaders = inboundState else {
       throw GRPCError.server(.invalidState("expecteded state .expectingHeaders, got \(inboundState)"))
     }
@@ -118,14 +118,14 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
     }
 
     if contentType == .text {
-      requestTextBuffer = ctx.channel.allocator.buffer(capacity: 0)
+      requestTextBuffer = context.channel.allocator.buffer(capacity: 0)
     }
 
-    ctx.fireChannelRead(self.wrapInboundOut(.head(requestHead)))
+    context.fireChannelRead(self.wrapInboundOut(.head(requestHead)))
     return .expectingBody
   }
 
-  func processBody(ctx: ChannelHandlerContext, body: inout ByteBuffer) throws -> InboundState {
+  func processBody(context: ChannelHandlerContext, body: inout ByteBuffer) throws -> InboundState {
     guard case .expectingBody = inboundState else {
       throw GRPCError.server(.invalidState("expecteded state .expectingBody, got \(inboundState)"))
     }
@@ -150,18 +150,18 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
 
     self.messageReader.append(buffer: &body)
     while let message = try self.messageReader.nextMessage() {
-      ctx.fireChannelRead(self.wrapInboundOut(.message(message)))
+      context.fireChannelRead(self.wrapInboundOut(.message(message)))
     }
 
     return .expectingBody
   }
 
-  private func processEnd(ctx: ChannelHandlerContext, trailers: HTTPHeaders?) throws -> InboundState {
+  private func processEnd(context: ChannelHandlerContext, trailers: HTTPHeaders?) throws -> InboundState {
     if let trailers = trailers {
       throw GRPCError.server(.invalidState("unexpected trailers received \(trailers)"))
     }
 
-    ctx.fireChannelRead(self.wrapInboundOut(.end))
+    context.fireChannelRead(self.wrapInboundOut(.end))
     return .ignore
   }
 }
@@ -170,7 +170,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
   public typealias OutboundIn = RawGRPCServerResponsePart
   public typealias OutboundOut = HTTPServerResponsePart
 
-  public func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+  public func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     if case .ignore = outboundState { return }
 
     switch self.unwrapOutboundIn(data) {
@@ -186,10 +186,10 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
       }
 
       if contentType == .text {
-        responseTextBuffer = ctx.channel.allocator.buffer(capacity: 0)
+        responseTextBuffer = context.channel.allocator.buffer(capacity: 0)
       }
 
-      ctx.write(self.wrapOutboundOut(.head(HTTPResponseHead(version: version, status: .ok, headers: headers))), promise: promise)
+      context.write(self.wrapOutboundOut(.head(HTTPResponseHead(version: version, status: .ok, headers: headers))), promise: promise)
       outboundState = .expectingBodyOrStatus
 
     case .message(let messageBytes):
@@ -205,7 +205,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
         messageWriter.write(messageBytes, into: &self.responseTextBuffer, usingCompression: .none)
         #else
         // Write into a temporary buffer to avoid: "error: cannot pass immutable value as inout argument: 'self' is immutable"
-        var responseBuffer = ctx.channel.allocator.buffer(capacity: LengthPrefixedMessageWriter.metadataLength)
+        var responseBuffer = context.channel.allocator.buffer(capacity: LengthPrefixedMessageWriter.metadataLength)
         messageWriter.write(messageBytes, into: &responseBuffer, usingCompression: .none)
         responseTextBuffer.write(buffer: &responseBuffer)
         #endif
@@ -214,9 +214,9 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
         // ServerStreaming provider continues sending the data.
         promise?.succeed(result: Void())
       } else {
-        var responseBuffer = ctx.channel.allocator.buffer(capacity: LengthPrefixedMessageWriter.metadataLength)
+        var responseBuffer = context.channel.allocator.buffer(capacity: LengthPrefixedMessageWriter.metadataLength)
         messageWriter.write(messageBytes, into: &responseBuffer, usingCompression: .none)
-        ctx.write(self.wrapOutboundOut(.body(.byteBuffer(responseBuffer))), promise: promise)
+        context.write(self.wrapOutboundOut(.body(.byteBuffer(responseBuffer))), promise: promise)
       }
       outboundState = .expectingBodyOrStatus
 
@@ -225,7 +225,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
       // NIOHTTP2 doesn't support sending a single frame as a "Trailers-Only" response so we still need to loop back and
       // send the request head first.
       if case .expectingHeaders = outboundState {
-        self.write(ctx: ctx, data: NIOAny(RawGRPCServerResponsePart.headers(HTTPHeaders())), promise: nil)
+        self.write(context: context, data: NIOAny(RawGRPCServerResponsePart.headers(HTTPHeaders())), promise: nil)
       }
 
       var trailers = status.trailingMetadata
@@ -256,10 +256,10 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
         }
         // After collecting all response for gRPC Web connections, send one final aggregated
         // response.
-        ctx.write(self.wrapOutboundOut(.body(.byteBuffer(responseTextBuffer))), promise: promise)
-        ctx.write(self.wrapOutboundOut(.end(nil)), promise: promise)
+        context.write(self.wrapOutboundOut(.body(.byteBuffer(responseTextBuffer))), promise: promise)
+        context.write(self.wrapOutboundOut(.end(nil)), promise: promise)
       } else {
-        ctx.write(self.wrapOutboundOut(.end(trailers)), promise: promise)
+        context.write(self.wrapOutboundOut(.end(trailers)), promise: promise)
       }
 
       outboundState = .ignore

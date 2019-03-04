@@ -35,7 +35,7 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler {
     case http2
   }
 
-  public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+  public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     // Detect the HTTP protocol version for the incoming request, or error out if it
     // couldn't be detected.
     var inBuffer = unwrapInboundIn(data)
@@ -45,7 +45,7 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler {
                                            omittingEmptySubsequences: true).first,
           let version = protocolVersion(String(preamble)) else {
 
-      ctx.fireErrorCaught(HTTPProtocolVersionError.invalidHTTPProtocolVersion)
+      context.fireErrorCaught(HTTPProtocolVersionError.invalidHTTPProtocolVersion)
       return
     }
 
@@ -57,22 +57,22 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler {
       // Upgrade connections are not handled since gRPC connections already arrive in HTTP2,
       // while gRPC-Web does not support HTTP2 at all, so there are no compelling use cases
       // to support this.
-      _ = ctx.pipeline.configureHTTPServerPipeline(withErrorHandling: true)
-        .then { ctx.pipeline.add(handler: WebCORSHandler()) }
-        .then { (Void) -> EventLoopFuture<Void> in self.handlersInitializer(ctx.channel) }
+      _ = context.pipeline.configureHTTPServerPipeline(withErrorHandling: true)
+        .then { context.pipeline.add(handler: WebCORSHandler()) }
+        .then { (Void) -> EventLoopFuture<Void> in self.handlersInitializer(context.channel) }
     case .http2:
-      _ = ctx.pipeline.add(handler: HTTP2Parser(mode: .server))
+      _ = context.pipeline.add(handler: HTTP2Parser(mode: .server))
         .then { () -> EventLoopFuture<Void> in
           let multiplexer = HTTP2StreamMultiplexer { (channel, streamID) -> EventLoopFuture<Void> in
             return channel.pipeline.add(handler: HTTP2ToHTTP1ServerCodec(streamID: streamID))
               .then { (Void) -> EventLoopFuture<Void> in self.handlersInitializer(channel) }
           }
-          return ctx.pipeline.add(handler: multiplexer)
+          return context.pipeline.add(handler: multiplexer)
         }
     }
 
-    ctx.fireChannelRead(data)
-    _ = ctx.pipeline.remove(ctx: ctx)
+    context.fireChannelRead(data)
+    _ = context.pipeline.remove(context: context)
   }
 
   /// Peek into the first line of the packet to check which HTTP version is being used.

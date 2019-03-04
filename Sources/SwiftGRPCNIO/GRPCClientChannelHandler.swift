@@ -46,7 +46,7 @@ internal class GRPCClientChannelHandler<RequestMessage: Message, ResponseMessage
   /// error because of an issue with nghttp2/swift-nio-http2.
   ///
   /// Since we need this promise to succeed before we can close the channel, `BaseClientCall` sends
-  /// the request head in `init` which will in turn initialize this promise in `write(ctx:data:promise:)`.
+  /// the request head in `init` which will in turn initialize this promise in `write(context:data:promise:)`.
   /// This means that this promise should never be nil in practice.
   ///
   /// See: https://github.com/apple/swift-nio-http2/issues/39.
@@ -131,13 +131,13 @@ extension GRPCClientChannelHandler: ChannelInboundHandler {
   ///   promise is succeeded, otherwise a callback is called.
   /// - status: the status promise is succeeded; if the status is not `ok` then the initial metadata
   ///   and response promise (if available) are failed with the status. The channel is then closed.
-  public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+  public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     guard self.inboundState != .ignore else { return }
 
     switch unwrapInboundIn(data) {
     case .headers(let headers):
       guard self.inboundState == .expectingHeadersOrStatus else {
-        self.errorCaught(ctx: ctx, error: GRPCError.client(.invalidState("received headers while in state \(self.inboundState)")))
+        self.errorCaught(context: context, error: GRPCError.client(.invalidState("received headers while in state \(self.inboundState)")))
         return
       }
 
@@ -146,7 +146,7 @@ extension GRPCClientChannelHandler: ChannelInboundHandler {
 
     case .message(let message):
       guard self.inboundState == .expectingMessageOrStatus else {
-        self.errorCaught(ctx: ctx, error: GRPCError.client(.responseCardinalityViolation))
+        self.errorCaught(context: context, error: GRPCError.client(.responseCardinalityViolation))
         return
       }
 
@@ -155,14 +155,14 @@ extension GRPCClientChannelHandler: ChannelInboundHandler {
 
     case .status(let status):
       guard self.inboundState.expectingStatus else {
-        self.errorCaught(ctx: ctx, error: GRPCError.client(.invalidState("received status while in state \(self.inboundState)")))
+        self.errorCaught(context: context, error: GRPCError.client(.invalidState("received status while in state \(self.inboundState)")))
         return
       }
 
       self.observeStatus(status)
 
       // We don't expect any more requests/responses beyond this point.
-      self.close(ctx: ctx, mode: .all, promise: nil)
+      self.close(context: context, mode: .all, promise: nil)
     }
   }
 }
@@ -171,39 +171,39 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
   public typealias OutboundIn = GRPCClientRequestPart<RequestMessage>
   public typealias OutboundOut = GRPCClientRequestPart<RequestMessage>
 
-  public func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+  public func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     guard self.outboundState != .ignore else { return }
 
     switch self.unwrapOutboundIn(data) {
     case .head:
       guard self.outboundState == .expectingHead else {
-        self.errorCaught(ctx: ctx, error: GRPCError.client(.invalidState("received headers while in state \(self.outboundState)")))
+        self.errorCaught(context: context, error: GRPCError.client(.invalidState("received headers while in state \(self.outboundState)")))
         return
       }
 
       // See the documentation for `requestHeadSentPromise` for an explanation of this.
-      self.requestHeadSentPromise = promise ?? ctx.eventLoop.newPromise()
-      ctx.write(data, promise: self.requestHeadSentPromise)
+      self.requestHeadSentPromise = promise ?? context.eventLoop.newPromise()
+      context.write(data, promise: self.requestHeadSentPromise)
       self.outboundState = .expectingMessageOrEnd
 
     default:
       guard self.outboundState == .expectingMessageOrEnd else {
-        self.errorCaught(ctx: ctx, error: GRPCError.client(.invalidState("received message or end while in state \(self.outboundState)")))
+        self.errorCaught(context: context, error: GRPCError.client(.invalidState("received message or end while in state \(self.outboundState)")))
         return
       }
 
-      ctx.write(data, promise: promise)
+      context.write(data, promise: promise)
     }
   }
 }
 
 extension GRPCClientChannelHandler {
   /// Closes the HTTP/2 stream. Inbound and outbound state are set to ignore.
-  public func close(ctx: ChannelHandlerContext, mode: CloseMode, promise: EventLoopPromise<Void>?) {
+  public func close(context: ChannelHandlerContext, mode: CloseMode, promise: EventLoopPromise<Void>?) {
     self.observeError(GRPCError.client(.cancelledByClient))
 
     requestHeadSentPromise.futureResult.whenComplete {
-      ctx.close(mode: mode, promise: promise)
+      context.close(mode: mode, promise: promise)
     }
 
     self.inboundState = .ignore
@@ -211,9 +211,9 @@ extension GRPCClientChannelHandler {
   }
 
   /// Observe an error from the pipeline and close the channel.
-  public func errorCaught(ctx: ChannelHandlerContext, error: Error) {
+  public func errorCaught(context: ChannelHandlerContext, error: Error) {
     //! TODO: Add an error handling delegate, similar to in the server.
     self.observeError((error as? GRPCError) ?? GRPCError.unknown(error, origin: .client))
-    ctx.close(mode: .all, promise: nil)
+    context.close(mode: .all, promise: nil)
   }
 }

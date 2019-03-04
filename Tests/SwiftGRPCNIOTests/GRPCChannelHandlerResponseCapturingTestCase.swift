@@ -7,7 +7,7 @@ import XCTest
 class CollectingChannelHandler<OutboundIn>: ChannelOutboundHandler {
   var responses: [OutboundIn] = []
 
-  func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+  func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     responses.append(unwrapOutboundIn(data))
   }
 }
