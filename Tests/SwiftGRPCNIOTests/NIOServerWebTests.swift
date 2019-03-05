@@ -42,9 +42,9 @@ class NIOServerWebTests: NIOBasicEchoTestCase {
     data.insert(UInt8(0), at: 0)
     return data
   }
-
-  private func gRPCWebOKTrailers() -> Data {
-    var data = "grpc-status: 0\r\ngrpc-message: OK".data(using: .utf8)!
+  
+  private func gRPCWebTrailers(status: Int, message: String) -> Data {
+    var data = "grpc-status: \(status)\r\ngrpc-message: \(message)".data(using: .utf8)!
     // Add the gRPC prefix with the compression byte and the 4 length bytes.
     for i in 0..<4 {
       data.insert(UInt8((data.count >> (i * 8)) & 0xFF), at: 0)
@@ -52,14 +52,20 @@ class NIOServerWebTests: NIOBasicEchoTestCase {
     data.insert(UInt8(0x80), at: 0)
     return data
   }
+  
+  private func gRPCWebOKTrailers() -> Data {
+    return gRPCWebTrailers(status: 0, message: "OK")
+  }
 
-  private func sendOverHTTP1(rpcMethod: String, message: String, handler: @escaping (Data?, Error?) -> Void) {
+  private func sendOverHTTP1(rpcMethod: String, message: String?, handler: @escaping (Data?, Error?) -> Void) {
     let serverURL = URL(string: "http://localhost:5050/echo.Echo/\(rpcMethod)")!
     var request = URLRequest(url: serverURL)
     request.httpMethod = "POST"
     request.setValue("application/grpc-web-text", forHTTPHeaderField: "content-type")
 
-    request.httpBody = gRPCEncodedEchoRequest(message).base64EncodedData()
+    if let message = message {
+      request.httpBody = gRPCEncodedEchoRequest(message).base64EncodedData()
+    }
 
     let sem = DispatchSemaphore(value: 0)
     URLSession.shared.dataTask(with: request) { (data, response, error) in
@@ -85,7 +91,25 @@ extension NIOServerWebTests {
         completionHandlerExpectation.fulfill()
       }
     }
-
+    
+    waitForExpectations(timeout: defaultTestTimeout)
+  }
+  
+  func testUnaryWithoutRequestMessage() {
+    let expectedData = gRPCWebTrailers(
+      status: 12, message: "request cardinality violation; method requires exactly one request but client sent none")
+    let expectedResponse = expectedData.base64EncodedString()
+    
+    let completionHandlerExpectation = expectation(description: "completion handler called")
+    
+    sendOverHTTP1(rpcMethod: "Get", message: nil) { data, error in
+      XCTAssertNil(error)
+      if let data = data {
+        XCTAssertEqual(String(data: data, encoding: .utf8), expectedResponse)
+        completionHandlerExpectation.fulfill()
+      }
+    }
+    
     waitForExpectations(timeout: defaultTestTimeout)
   }
 
