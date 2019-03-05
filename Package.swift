@@ -31,7 +31,7 @@ var packageDependencies: [Package.Dependency] = [
   // Main SwiftNIO package
   .package(url: "https://github.com/apple/swift-nio.git", .upToNextMajor(from: "1.12.0")),
   // HTTP2 via SwiftNIO
-  .package(url: "https://github.com/apple/swift-nio-http2.git", .upToNextMinor(from: "0.2.1"))
+  .package(url: "https://github.com/apple/swift-nio-http2.git", .branch("nghttp2-support-branch"))
 ]
 
 var cGRPCDependencies: [Target.Dependency] = []

@@ -24,17 +24,17 @@
         "repositoryURL": "https://github.com/apple/swift-nio.git",
         "state": {
           "branch": null,
-          "revision": "98434c1f1d687ff5a24d2cabfbd19b5c7d2d7a2f",
-          "version": "1.13.0"
+          "revision": "87dbd0216c47ea2e7ddb1b545271b716e03b943e",
+          "version": "1.13.1"
         }
       },
       {
         "package": "swift-nio-http2",
         "repositoryURL": "https://github.com/apple/swift-nio-http2.git",
         "state": {
-          "branch": null,
-          "revision": "88bd6d369a729f88e63f53ae5265840de4bb1384",
-          "version": "0.2.1"
+          "branch": "nghttp2-support-branch",
+          "revision": "86877eab84bc33cbc2a2fa4b522e3a2474b28cec",
+          "version": null
         }
       },
       {
