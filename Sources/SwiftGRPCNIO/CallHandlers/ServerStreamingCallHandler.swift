@@ -28,7 +28,7 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
   public override func processMessage(_ message: RequestMessage) throws {
     guard let eventObserver = self.eventObserver,
       let context = self.context else {
-        throw GRPCError.server(.requestCardinalityViolationTooMany)
+        throw GRPCError.server(.requestCardinalityViolationTooManyRequests)
     }
 
     let resultFuture = eventObserver(message)
@@ -40,7 +40,7 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
   
   public override func endOfStreamReceived() throws {
     if self.eventObserver != nil {
-      throw GRPCError.server(.requestCardinalityViolationTooFew)
+      throw GRPCError.server(.requestCardinalityViolationTooFewRequests)
     }
   }
 }
