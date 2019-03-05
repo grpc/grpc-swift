@@ -50,7 +50,7 @@ open class UnaryResponseCallContextImpl<ResponseMessage: Message>: UnaryResponse
         // Send the response provided to the promise.
         //! FIXME: It would be nicer to chain sending the status onto a successful write, but for some reason the
         //  "write message" future doesn't seem to get fulfilled?
-        self.channel.write(NIOAny(WrappedResponse.message(responseMessage)), promise: nil)
+        self.channel.writeAndFlush(NIOAny(WrappedResponse.message(responseMessage)), promise: nil)
         
         return self.responseStatus
       }
