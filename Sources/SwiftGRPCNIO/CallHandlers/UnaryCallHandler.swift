@@ -29,7 +29,7 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
   public override func processMessage(_ message: RequestMessage) throws {
     guard let eventObserver = self.eventObserver,
       let context = self.context else {
-      throw GRPCError.server(.requestCardinalityViolationTooManyRequests)
+      throw GRPCError.server(.tooManyRequests)
     }
     
     let resultFuture = eventObserver(message)
@@ -41,7 +41,7 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
   
   public override func endOfStreamReceived() throws {
     if self.eventObserver != nil {
-      throw GRPCError.server(.requestCardinalityViolationTooFewRequests)
+      throw GRPCError.server(.tooFewRequests)
     }
   }
   
