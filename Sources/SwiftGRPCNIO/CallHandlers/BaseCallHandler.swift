@@ -30,6 +30,12 @@ public class BaseCallHandler<RequestMessage: Message, ResponseMessage: Message>:
   public init(errorDelegate: ServerErrorDelegate?) {
     self.errorDelegate = errorDelegate
   }
+  
+  /// Sends an error status to the client while ensuring that all call context promises are fulfilled.
+  /// Because only the concrete call subclass knows which promises need to be fulfilled, this method needs to be overridden.
+  func sendErrorStatus(_ status: GRPCStatus) {
+    fatalError("needs to be overridden")
+  }
 }
 
 extension BaseCallHandler: ChannelInboundHandler {
@@ -40,10 +46,10 @@ extension BaseCallHandler: ChannelInboundHandler {
   /// return a status with code `.internalError`.
   public func errorCaught(ctx: ChannelHandlerContext, error: Error) {
     errorDelegate?.observe(error)
-
+    
     let transformed = errorDelegate?.transform(error) ?? error
     let status = (transformed as? GRPCStatusTransformable)?.asGRPCStatus() ?? GRPCStatus.processingError
-    self.write(ctx: ctx, data: NIOAny(GRPCServerResponsePart<ResponseMessage>.status(status)), promise: nil)
+    sendErrorStatus(status)
   }
 
   public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {

@@ -43,4 +43,8 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
       throw GRPCError.server(.requestCardinalityViolationTooFewRequests)
     }
   }
+  
+  override func sendErrorStatus(_ status: GRPCStatus) {
+    context?.statusPromise.fail(error: status)
+  }
 }

@@ -44,4 +44,8 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
       throw GRPCError.server(.requestCardinalityViolationTooFewRequests)
     }
   }
+  
+  override func sendErrorStatus(_ status: GRPCStatus) {
+    context?.responsePromise.fail(error: status)
+  }
 }

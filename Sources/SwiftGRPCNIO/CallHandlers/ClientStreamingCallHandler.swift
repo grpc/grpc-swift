@@ -40,4 +40,8 @@ public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage
       observer(.end)
     }
   }
+  
+  override func sendErrorStatus(_ status: GRPCStatus) {
+    context?.responsePromise.fail(error: status)
+  }
 }

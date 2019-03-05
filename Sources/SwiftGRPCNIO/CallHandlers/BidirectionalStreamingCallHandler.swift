@@ -41,4 +41,8 @@ public class BidirectionalStreamingCallHandler<RequestMessage: Message, Response
       observer(.end)
     }
   }
+  
+  override func sendErrorStatus(_ status: GRPCStatus) {
+    context?.statusPromise.fail(error: status)
+  }
 }
