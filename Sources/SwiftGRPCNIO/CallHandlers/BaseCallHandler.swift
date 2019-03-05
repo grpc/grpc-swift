@@ -19,7 +19,7 @@ public class BaseCallHandler<RequestMessage: Message, ResponseMessage: Message>:
   /// Called when the client has half-closed the stream, indicating that they won't send any further data.
   ///
   /// Overridden by subclasses if the "end-of-stream" event is relevant.
-  public func endOfStreamReceived() { }
+  public func endOfStreamReceived() throws { }
 
   /// Whether this handler can still write messages to the client.
   private var serverCanWrite = true
@@ -60,7 +60,11 @@ extension BaseCallHandler: ChannelInboundHandler {
       }
 
     case .end:
-      endOfStreamReceived()
+      do {
+        try endOfStreamReceived()
+      } catch {
+        self.errorCaught(ctx: ctx, error: error)
+      }
     }
   }
 }

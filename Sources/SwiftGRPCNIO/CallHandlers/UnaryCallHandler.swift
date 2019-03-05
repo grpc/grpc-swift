@@ -29,7 +29,7 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
   public override func processMessage(_ message: RequestMessage) throws {
     guard let eventObserver = self.eventObserver,
       let context = self.context else {
-      throw GRPCError.server(.requestCardinalityViolation)
+      throw GRPCError.server(.requestCardinalityViolationTooMany)
     }
     
     let resultFuture = eventObserver(message)
@@ -37,5 +37,11 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
       // Fulfill the response promise with whatever response (or error) the framework user has provided.
       .cascade(promise: context.responsePromise)
     self.eventObserver = nil
+  }
+  
+  public override func endOfStreamReceived() throws {
+    if self.eventObserver != nil {
+      throw GRPCError.server(.requestCardinalityViolationTooFew)
+    }
   }
 }

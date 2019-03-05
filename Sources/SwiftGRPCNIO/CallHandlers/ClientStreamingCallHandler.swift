@@ -35,7 +35,7 @@ public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage
     }
   }
   
-  public override func endOfStreamReceived() {
+  public override func endOfStreamReceived() throws {
     eventObserver?.whenSuccess { observer in
       observer(.end)
     }

@@ -36,7 +36,7 @@ public class BidirectionalStreamingCallHandler<RequestMessage: Message, Response
     }
   }
 
-  public override func endOfStreamReceived() {
+  public override func endOfStreamReceived() throws {
     eventObserver?.whenSuccess { observer in
       observer(.end)
     }
