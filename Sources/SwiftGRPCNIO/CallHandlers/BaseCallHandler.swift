@@ -46,7 +46,7 @@ extension BaseCallHandler: ChannelInboundHandler {
   /// return a status with code `.internalError`.
   public func errorCaught(ctx: ChannelHandlerContext, error: Error) {
     errorDelegate?.observe(error)
-    
+
     let transformed = errorDelegate?.transform(error) ?? error
     let status = (transformed as? GRPCStatusTransformable)?.asGRPCStatus() ?? GRPCStatus.processingError
     sendErrorStatus(status)

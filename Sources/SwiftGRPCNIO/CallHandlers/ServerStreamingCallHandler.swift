@@ -40,7 +40,7 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
   
   public override func endOfStreamReceived() throws {
     if self.eventObserver != nil {
-      throw GRPCError.server(.tooFewRequests)
+      throw GRPCError.server(.noRequestsButOneExpected)
     }
   }
   

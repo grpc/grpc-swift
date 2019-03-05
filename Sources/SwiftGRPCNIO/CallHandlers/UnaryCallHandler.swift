@@ -41,7 +41,7 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
   
   public override func endOfStreamReceived() throws {
     if self.eventObserver != nil {
-      throw GRPCError.server(.tooFewRequests)
+      throw GRPCError.server(.noRequestsButOneExpected)
     }
   }
   
