@@ -31,7 +31,7 @@ public class BidirectionalStreamingCallHandler<RequestMessage: Message, Response
   public override func handlerAdded(ctx: ChannelHandlerContext) {
     guard let eventObserver = eventObserver,
       let context = context else { return }
-    // Terminate the call if providing an observer fails.
+    // Terminate the call if the future providing an observer fails.
     // This is being done _after_ we have been added as a handler to ensure that the `GRPCServerCodec` required to
     // translate our outgoing `GRPCServerResponsePart<ResponseMessage>` message is already present on the channel.
     // Otherwise, our `OutboundOut` type would not match the `OutboundIn` type of the next handler on the channel.

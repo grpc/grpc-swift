@@ -23,9 +23,9 @@ import XCTest
 
 private let expectedError = GRPCStatus(code: .internalError, message: "expected error")
 
-// Motivation for two different provides: Throwing immediately causes the event observer future (in the
+// Motivation for two different providers: Throwing immediately causes the event observer future (in the
 // client-streaming and bidi-streaming cases) to throw immediately, _before_ the corresponding handler has even added
-// to the channel. We want to test that case as well as the one were we throw only _after_ the handler has been added
+// to the channel. We want to test that case as well as the one where we throw only _after_ the handler has been added
 // to the channel.
 private class ImmediateThrowingEchoProviderNIO: Echo_EchoProvider_NIO {
   func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
