@@ -26,6 +26,8 @@ class NIOServerTests: NIOBasicEchoTestCase {
     return [
       ("testUnary", testUnary),
       ("testUnaryLotsOfRequests", testUnaryLotsOfRequests),
+      ("testUnaryWithLargeData", testUnaryWithLargeData),
+      ("testUnaryEmptyRequest", testUnaryEmptyRequest),
       ("testClientStreaming", testClientStreaming),
       ("testClientStreamingLotsOfMessages", testClientStreamingLotsOfMessages),
       ("testServerStreaming", testServerStreaming),

@@ -34,11 +34,15 @@ XCTMain([
   testCase(MetadataTests.allTests),
   testCase(ServerCancellingTests.allTests),
   testCase(ServerTestExample.allTests),
-  testCase(ServerThrowingTests.allTests),
+  testCase(SwiftGRPCTests.ServerThrowingTests.allTests),
   testCase(ServerTimeoutTests.allTests),
 
   // SwiftGRPCNIO
+  //! TODO: Is there a better way to split tests for our two library targets?
   testCase(NIOServerTests.allTests),
+  testCase(SwiftGRPCNIOTests.ServerThrowingTests.allTests),
+  testCase(SwiftGRPCNIOTests.ServerDelayedThrowingTests.allTests),
+  testCase(SwiftGRPCNIOTests.ClientThrowingWhenServerReturningErrorTests.allTests),
   testCase(NIOClientCancellingTests.allTests),
   testCase(NIOClientTimeoutTests.allTests),
   testCase(NIOServerWebTests.allTests),
