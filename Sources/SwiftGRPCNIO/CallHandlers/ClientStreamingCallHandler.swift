@@ -6,6 +6,9 @@ import NIOHTTP1
 /// Handles client-streaming calls. Forwards incoming messages and end-of-stream events to the observer block.
 ///
 /// - The observer block is implemented by the framework user and fulfills `context.responsePromise` when done.
+///   If the framework user wants to return a call error (e.g. in case of authentication failure),
+///   they can fail the observer block future.
+/// - To close the call and send the response, complete `context.responsePromise`.
 public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage: Message>: BaseCallHandler<RequestMessage, ResponseMessage> {
   public typealias EventObserver = (StreamEvent<RequestMessage>) -> Void
   private var eventObserver: EventLoopFuture<EventObserver>?

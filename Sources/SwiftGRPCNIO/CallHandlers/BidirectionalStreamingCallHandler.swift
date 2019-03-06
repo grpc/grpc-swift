@@ -6,7 +6,9 @@ import NIOHTTP1
 /// Handles bidirectional streaming calls. Forwards incoming messages and end-of-stream events to the observer block.
 ///
 /// - The observer block is implemented by the framework user and calls `context.sendResponse` as needed.
-/// - To close the call and send the status, fulfill `context.statusPromise`.
+///   If the framework user wants to return a call error (e.g. in case of authentication failure),
+///   they can fail the observer block future.
+/// - To close the call and send the status, complete `context.statusPromise`.
 public class BidirectionalStreamingCallHandler<RequestMessage: Message, ResponseMessage: Message>: BaseCallHandler<RequestMessage, ResponseMessage> {
   public typealias EventObserver = (StreamEvent<RequestMessage>) -> Void
   private var eventObserver: EventLoopFuture<EventObserver>?
