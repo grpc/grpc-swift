@@ -26,6 +26,35 @@ public struct CallResult: CustomStringConvertible {
   public let resultData: Data?
   public let initialMetadata: Metadata?
   public let trailingMetadata: Metadata?
+
+  public static func error(
+    statusCode: StatusCode = .unknown,
+    statusMessage: String? = nil,
+    initialMetadata: Metadata? = nil,
+    trailingMetadata: Metadata? = nil
+  ) -> CallResult {
+    return CallResult(
+      success: false,
+      statusCode: statusCode,
+      statusMessage: statusMessage,
+      resultData: nil,
+      initialMetadata: nil,
+      trailingMetadata: nil)
+  }
+
+  public static func success(
+    resultData: Data,
+    initialMetadata: Metadata? = nil,
+    trailingMetadata: Metadata? = nil
+  ) -> CallResult {
+    return CallResult(
+      success: true,
+      statusCode: .ok,
+      statusMessage: "OK",
+      resultData: resultData,
+      initialMetadata: nil,
+      trailingMetadata: nil)
+  }
   
   init(_ op: OperationGroup) {
     success = op.success
