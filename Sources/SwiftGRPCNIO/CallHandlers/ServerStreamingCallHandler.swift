@@ -28,7 +28,7 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
   public override func processMessage(_ message: RequestMessage) throws {
     guard let eventObserver = self.eventObserver,
       let context = self.context else {
-        throw GRPCError.server(.requestCardinalityViolation)
+        throw GRPCError.server(.tooManyRequests)
     }
 
     let resultFuture = eventObserver(message)
@@ -36,5 +36,15 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
       // Fulfill the status promise with whatever status the framework user has provided.
       .cascade(promise: context.statusPromise)
     self.eventObserver = nil
+  }
+  
+  public override func endOfStreamReceived() throws {
+    if self.eventObserver != nil {
+      throw GRPCError.server(.noRequestsButOneExpected)
+    }
+  }
+  
+  override func sendErrorStatus(_ status: GRPCStatus) {
+    context?.statusPromise.fail(error: status)
   }
 }

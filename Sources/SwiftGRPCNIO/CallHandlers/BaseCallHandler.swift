@@ -19,7 +19,7 @@ public class BaseCallHandler<RequestMessage: Message, ResponseMessage: Message>:
   /// Called when the client has half-closed the stream, indicating that they won't send any further data.
   ///
   /// Overridden by subclasses if the "end-of-stream" event is relevant.
-  public func endOfStreamReceived() { }
+  public func endOfStreamReceived() throws { }
 
   /// Whether this handler can still write messages to the client.
   private var serverCanWrite = true
@@ -29,6 +29,12 @@ public class BaseCallHandler<RequestMessage: Message, ResponseMessage: Message>:
 
   public init(errorDelegate: ServerErrorDelegate?) {
     self.errorDelegate = errorDelegate
+  }
+  
+  /// Sends an error status to the client while ensuring that all call context promises are fulfilled.
+  /// Because only the concrete call subclass knows which promises need to be fulfilled, this method needs to be overridden.
+  func sendErrorStatus(_ status: GRPCStatus) {
+    fatalError("needs to be overridden")
   }
 }
 
@@ -43,7 +49,7 @@ extension BaseCallHandler: ChannelInboundHandler {
 
     let transformed = errorDelegate?.transform(error) ?? error
     let status = (transformed as? GRPCStatusTransformable)?.asGRPCStatus() ?? GRPCStatus.processingError
-    self.write(ctx: ctx, data: NIOAny(GRPCServerResponsePart<ResponseMessage>.status(status)), promise: nil)
+    sendErrorStatus(status)
   }
 
   public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
@@ -60,7 +66,11 @@ extension BaseCallHandler: ChannelInboundHandler {
       }
 
     case .end:
-      endOfStreamReceived()
+      do {
+        try endOfStreamReceived()
+      } catch {
+        self.errorCaught(ctx: ctx, error: error)
+      }
     }
   }
 }
