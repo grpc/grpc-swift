@@ -47,11 +47,8 @@ private class ImmediateThrowingEchoProviderNIO: Echo_EchoProvider_NIO {
 
 private extension EventLoop {
   func newFailedFuture<T>(error: Error, delay: TimeInterval) -> EventLoopFuture<T> {
-    let promise = self.newPromise(of: T.self)
-    DispatchQueue.global().asyncAfter(deadline: .now() + delay) {
-      promise.fail(error: error)
-    }
-    return promise.futureResult
+    return self.scheduleTask(in: .nanoseconds(TimeAmount.Value(delay * 1000 * 1000 * 1000))) { () }.futureResult
+      .thenThrowing { _ -> T in throw error }
   }
 }
 
