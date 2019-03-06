@@ -38,8 +38,8 @@ public struct CallResult: CustomStringConvertible {
       statusCode: statusCode,
       statusMessage: statusMessage,
       resultData: nil,
-      initialMetadata: nil,
-      trailingMetadata: nil)
+      initialMetadata: initialMetadata,
+      trailingMetadata: trailingMetadata)
   }
 
   public static func success(
@@ -52,8 +52,8 @@ public struct CallResult: CustomStringConvertible {
       statusCode: .ok,
       statusMessage: "OK",
       resultData: resultData,
-      initialMetadata: nil,
-      trailingMetadata: nil)
+      initialMetadata: initialMetadata,
+      trailingMetadata: trailingMetadata)
   }
   
   init(_ op: OperationGroup) {
