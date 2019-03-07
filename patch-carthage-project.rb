@@ -48,5 +48,3 @@ buildableReference.add_attribute("ReferencedContainer","container:SwiftGRPC-Cart
 buildActions.unshift(preActions)
 
 scheme.save!
-
-
