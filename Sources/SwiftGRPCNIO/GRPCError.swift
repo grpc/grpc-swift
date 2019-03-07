@@ -87,8 +87,11 @@ public enum GRPCServerError: Error, Equatable {
   /// It was not possible to serialize the response protobuf.
   case responseProtoSerializationFailure
 
+  /// Zero requests were sent for a unary-request call.
+  case noRequestsButOneExpected
+  
   /// More than one request was sent for a unary-request call.
-  case requestCardinalityViolation
+  case tooManyRequests
 
   /// The server received a message when it was not in a writable state.
   case serverNotWritable
@@ -143,7 +146,10 @@ extension GRPCServerError: GRPCStatusTransformable {
     case .responseProtoSerializationFailure:
       return GRPCStatus(code: .internalError, message: "could not serialize response proto")
 
-    case .requestCardinalityViolation:
+    case .noRequestsButOneExpected:
+      return GRPCStatus(code: .unimplemented, message: "request cardinality violation; method requires exactly one request but client sent none")
+      
+    case .tooManyRequests:
       return GRPCStatus(code: .unimplemented, message: "request cardinality violation; method requires exactly one request but client sent more")
 
     case .serverNotWritable:

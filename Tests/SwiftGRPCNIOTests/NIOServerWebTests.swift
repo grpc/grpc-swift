@@ -25,6 +25,7 @@ class NIOServerWebTests: NIOBasicEchoTestCase {
   static var allTests: [(String, (NIOServerWebTests) -> () throws -> Void)] {
     return [
       ("testUnary", testUnary),
+      ("testUnaryWithoutRequestMessage", testUnaryWithoutRequestMessage),
       //! FIXME: Broken on Linux: https://github.com/grpc/grpc-swift/issues/382
       // ("testUnaryLotsOfRequests", testUnaryLotsOfRequests),
       ("testServerStreaming", testServerStreaming),
@@ -43,8 +44,8 @@ class NIOServerWebTests: NIOBasicEchoTestCase {
     return data
   }
 
-  private func gRPCWebOKTrailers() -> Data {
-    var data = "grpc-status: 0\r\ngrpc-message: OK".data(using: .utf8)!
+  private func gRPCWebTrailers(status: Int = 0, message: String = "OK") -> Data {
+    var data = "grpc-status: \(status)\r\ngrpc-message: \(message)".data(using: .utf8)!
     // Add the gRPC prefix with the compression byte and the 4 length bytes.
     for i in 0..<4 {
       data.insert(UInt8((data.count >> (i * 8)) & 0xFF), at: 0)
@@ -53,13 +54,15 @@ class NIOServerWebTests: NIOBasicEchoTestCase {
     return data
   }
 
-  private func sendOverHTTP1(rpcMethod: String, message: String, handler: @escaping (Data?, Error?) -> Void) {
+  private func sendOverHTTP1(rpcMethod: String, message: String?, handler: @escaping (Data?, Error?) -> Void) {
     let serverURL = URL(string: "http://localhost:5050/echo.Echo/\(rpcMethod)")!
     var request = URLRequest(url: serverURL)
     request.httpMethod = "POST"
     request.setValue("application/grpc-web-text", forHTTPHeaderField: "content-type")
 
-    request.httpBody = gRPCEncodedEchoRequest(message).base64EncodedData()
+    if let message = message {
+      request.httpBody = gRPCEncodedEchoRequest(message).base64EncodedData()
+    }
 
     let sem = DispatchSemaphore(value: 0)
     URLSession.shared.dataTask(with: request) { (data, response, error) in
@@ -73,7 +76,7 @@ class NIOServerWebTests: NIOBasicEchoTestCase {
 extension NIOServerWebTests {
   func testUnary() {
     let message = "hello, world!"
-    let expectedData = gRPCEncodedEchoRequest("Swift echo get: \(message)") + gRPCWebOKTrailers()
+    let expectedData = gRPCEncodedEchoRequest("Swift echo get: \(message)") + gRPCWebTrailers()
     let expectedResponse = expectedData.base64EncodedString()
 
     let completionHandlerExpectation = expectation(description: "completion handler called")
@@ -83,6 +86,28 @@ extension NIOServerWebTests {
       if let data = data {
         XCTAssertEqual(String(data: data, encoding: .utf8), expectedResponse)
         completionHandlerExpectation.fulfill()
+      } else {
+        XCTFail("no data returned")
+      }
+    }
+
+    waitForExpectations(timeout: defaultTestTimeout)
+  }
+  
+  func testUnaryWithoutRequestMessage() {
+    let expectedData = gRPCWebTrailers(
+      status: 12, message: "request cardinality violation; method requires exactly one request but client sent none")
+    let expectedResponse = expectedData.base64EncodedString()
+
+    let completionHandlerExpectation = expectation(description: "completion handler called")
+
+    sendOverHTTP1(rpcMethod: "Get", message: nil) { data, error in
+      XCTAssertNil(error)
+      if let data = data {
+        XCTAssertEqual(String(data: data, encoding: .utf8), expectedResponse)
+        completionHandlerExpectation.fulfill()
+      } else {
+        XCTFail("no data returned")
       }
     }
 
@@ -104,7 +129,7 @@ extension NIOServerWebTests {
 
     for i in 0..<numberOfRequests {
       let message = "foo \(i)"
-      let expectedData = gRPCEncodedEchoRequest("Swift echo get: \(message)") + gRPCWebOKTrailers()
+      let expectedData = gRPCEncodedEchoRequest("Swift echo get: \(message)") + gRPCWebTrailers()
       let expectedResponse = expectedData.base64EncodedString()
       sendOverHTTP1(rpcMethod: "Get", message: message) { data, error in
         XCTAssertNil(error)
@@ -132,7 +157,7 @@ extension NIOServerWebTests {
       expectedData.append(gRPCEncodedEchoRequest("Swift echo expand (\(index)): \(component)"))
       index += 1
     }
-    expectedData.append(gRPCWebOKTrailers())
+    expectedData.append(gRPCWebTrailers())
     let expectedResponse = expectedData.base64EncodedString()
     let completionHandlerExpectation = expectation(description: "completion handler called")
 

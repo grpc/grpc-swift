@@ -46,9 +46,13 @@ public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage
     }
   }
   
-  public override func endOfStreamReceived() {
+  public override func endOfStreamReceived() throws {
     eventObserver?.whenSuccess { observer in
       observer(.end)
     }
+  }
+  
+  override func sendErrorStatus(_ status: GRPCStatus) {
+    context?.responsePromise.fail(error: status)
   }
 }
