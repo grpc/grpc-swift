@@ -40,7 +40,7 @@ public enum CompressionMechanism: String {
   /// Whether the compression flag in gRPC length-prefixed messages should be set or not.
   ///
   /// See `LengthPrefixedMessageReader` for the message format.
-  var requiresFlag: Bool {
+  public var requiresFlag: Bool {
     switch self {
     case .none:
       return false
@@ -51,7 +51,7 @@ public enum CompressionMechanism: String {
   }
 
   /// Whether the given compression is supported.
-  var supported: Bool {
+  public var supported: Bool {
     switch self {
     case .identity, .none:
       return true

@@ -46,5 +46,6 @@ XCTMain([
   testCase(NIOClientTimeoutTests.allTests),
   testCase(NIOServerWebTests.allTests),
   testCase(GRPCChannelHandlerTests.allTests),
-  testCase(HTTP1ToRawGRPCServerCodecTests.allTests)
+  testCase(HTTP1ToRawGRPCServerCodecTests.allTests),
+  testCase(LengthPrefixedMessageReaderTests.allTests),
 ])

@@ -15,7 +15,6 @@
  */
 import Foundation
 import NIO
-import NIOHTTP1
 
 /// This class reads and decodes length-prefixed gRPC messages.
 ///
@@ -32,117 +31,115 @@ import NIOHTTP1
 public class LengthPrefixedMessageReader {
   public typealias Mode = GRPCError.Origin
 
-  private let mode: Mode
-  private var buffer: ByteBuffer!
-  private var state: State = .expectingCompressedFlag
+  /// The mechanism that messages will be compressed with.
+  public var compressionMechanism: CompressionMechanism
 
-  private enum State {
+  public init(mode: Mode, compressionMechanism: CompressionMechanism) {
+    self.mode = mode
+    self.compressionMechanism = compressionMechanism
+  }
+
+  /// The result of trying to parse a message with the bytes we currently have.
+  ///
+  /// - needMoreData: More data is required to continue reading a message.
+  /// - continue: Continue reading a message.
+  /// - message: A message was read.
+  internal enum ParseResult {
+    case needMoreData
+    case `continue`
+    case message(ByteBuffer)
+  }
+
+  /// The parsing state; what we expect to be reading next.
+  internal enum ParseState {
     case expectingCompressedFlag
     case expectingMessageLength
-    case receivedMessageLength(Int)
-    case willBuffer(requiredBytes: Int)
-    case isBuffering(requiredBytes: Int)
+    case expectingMessage(UInt32)
   }
 
-  public init(mode: Mode) {
-    self.mode = mode
-  }
+  private let mode: Mode
+  private var buffer: ByteBuffer!
+  private var state: ParseState = .expectingCompressedFlag
 
-  /// Consumes all readable bytes from given buffer and returns all messages which could be read.
-  ///
-  /// - SeeAlso: `read(messageBuffer:compression:)`
-  public func consume(messageBuffer: inout ByteBuffer, compression: CompressionMechanism) throws -> [ByteBuffer] {
-    var messages: [ByteBuffer] = []
-
-    while messageBuffer.readableBytes > 0 {
-      if let message = try self.read(messageBuffer: &messageBuffer, compression: compression) {
-        messages.append(message)
-      }
+  /// Appends data to the buffer from which messages will be read.
+  public func append(buffer: inout ByteBuffer) {
+    if self.buffer == nil {
+      self.buffer = buffer.slice()
+      // mark the bytes as "read"
+      buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
+    } else {
+      self.buffer.write(buffer: &buffer)
     }
-
-    return messages
   }
 
-  /// Reads bytes from the given buffer until it is exhausted or a message has been read.
+  /// Reads bytes from the buffer until it is exhausted or a message has been read.
   ///
-  /// Length prefixed messages may be split across multiple input buffers in any of the
-  /// following places:
-  /// 1. after the compression flag,
-  /// 2. after the message length field,
-  /// 3. at any point within the message.
-  ///
-  /// It is possible for the message length field to be split across multiple `ByteBuffer`s,
-  /// this is unlikely to happen in practice.
-  ///
-  /// - Note:
-  /// This method relies on state; if a message is _not_ returned then the next time this
-  /// method is called it expects to read the bytes which follow the most recently read bytes.
-  ///
-  /// - Parameters:
-  ///   - messageBuffer: buffer to read from.
-  ///   - compression: compression mechanism to decode message with.
   /// - Returns: A buffer containing a message if one has been read, or `nil` if not enough
   ///   bytes have been consumed to return a message.
   /// - Throws: Throws an error if the compression algorithm is not supported.
-  public func read(messageBuffer: inout ByteBuffer, compression: CompressionMechanism) throws -> ByteBuffer? {
-    while true {
-      switch state {
-      case .expectingCompressedFlag:
-        guard let compressionFlag: Int8 = messageBuffer.readInteger() else { return nil }
-        try handleCompressionFlag(enabled: compressionFlag != 0, mechanism: compression)
-        self.state = .expectingMessageLength
+  public func nextMessage() throws -> ByteBuffer? {
+    switch try self.processNextState() {
+    case .needMoreData:
+      self.nilBufferIfPossible()
+      return nil
 
-      case .expectingMessageLength:
-        //! FIXME: Support the message length being split across multiple byte buffers.
-        guard let messageLength: UInt32 = messageBuffer.readInteger() else { return nil }
-        self.state = .receivedMessageLength(numericCast(messageLength))
+    case .continue:
+      return try nextMessage()
 
-      case .receivedMessageLength(let messageLength):
-        // If this holds true, we can skip buffering and return a slice.
-        guard messageLength <= messageBuffer.readableBytes else {
-          self.state = .willBuffer(requiredBytes: messageLength)
-          continue
-        }
-
-        self.state = .expectingCompressedFlag
-        // We know messageBuffer.readableBytes >= messageLength, so it's okay to force unwrap here.
-        return messageBuffer.readSlice(length: messageLength)!
-
-      case .willBuffer(let requiredBytes):
-        messageBuffer.reserveCapacity(requiredBytes)
-        self.buffer = messageBuffer
-
-        let readableBytes = messageBuffer.readableBytes
-        // Move the reader index to avoid reading the bytes again.
-        messageBuffer.moveReaderIndex(forwardBy: readableBytes)
-
-        self.state = .isBuffering(requiredBytes: requiredBytes - readableBytes)
-        return nil
-
-      case .isBuffering(let requiredBytes):
-        guard requiredBytes <= messageBuffer.readableBytes else {
-          self.state = .isBuffering(requiredBytes: requiredBytes - self.buffer.write(buffer: &messageBuffer))
-          return nil
-        }
-
-        // We know messageBuffer.readableBytes >= requiredBytes, so it's okay to force unwrap here.
-        var slice = messageBuffer.readSlice(length: requiredBytes)!
-        self.buffer.write(buffer: &slice)
-        self.state = .expectingCompressedFlag
-
-        defer { self.buffer = nil }
-        return buffer
-      }
+    case .message(let message):
+      self.nilBufferIfPossible()
+      return message
     }
   }
 
-  private func handleCompressionFlag(enabled flagEnabled: Bool, mechanism: CompressionMechanism) throws {
-    guard flagEnabled == mechanism.requiresFlag else {
+  /// `nil`s out `buffer` if it exists and has no readable bytes.
+  ///
+  /// This allows the next call to `append` to avoid writing the contents of the appended buffer.
+  private func nilBufferIfPossible() {
+    if self.buffer?.readableBytes == 0 {
+      self.buffer = nil
+    }
+  }
+
+  private func processNextState() throws -> ParseResult {
+    guard self.buffer != nil else { return .needMoreData }
+
+    switch self.state {
+    case .expectingCompressedFlag:
+      guard let compressionFlag: Int8 = self.buffer.readInteger() else {
+        return .needMoreData
+      }
+      try self.handleCompressionFlag(enabled: compressionFlag != 0)
+      self.state = .expectingMessageLength
+
+    case .expectingMessageLength:
+      guard let messageLength: UInt32 = self.buffer.readInteger() else {
+        return .needMoreData
+      }
+      self.state = .expectingMessage(messageLength)
+
+    case .expectingMessage(let length):
+      guard let message = self.buffer.readSlice(length: numericCast(length)) else {
+        return .needMoreData
+      }
+      self.state = .expectingCompressedFlag
+      return .message(message)
+    }
+
+    return .continue
+  }
+
+  private func handleCompressionFlag(enabled flagEnabled: Bool) throws {
+    guard flagEnabled else {
+      return
+    }
+
+    guard self.compressionMechanism.requiresFlag else {
       throw GRPCError.common(.unexpectedCompression, origin: mode)
     }
 
-    guard mechanism.supported else {
-      throw GRPCError.common(.unsupportedCompressionMechanism(mechanism.rawValue), origin: mode)
+    guard self.compressionMechanism.supported else {
+      throw GRPCError.common(.unsupportedCompressionMechanism(compressionMechanism.rawValue), origin: mode)
     }
   }
 }
