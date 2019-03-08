@@ -16,6 +16,12 @@ public class BaseCallHandler<RequestMessage: Message, ResponseMessage: Message>:
     fatalError("needs to be overridden")
   }
 
+  /// Needs to be implemented by this class so that subclasses can override it.
+  ///
+  /// Otherwise, the subclass's implementation will simply never be called (probably because the protocol's default
+  /// implementation in an extension is being used instead).
+  public func handlerAdded(ctx: ChannelHandlerContext) { }
+  
   /// Called when the client has half-closed the stream, indicating that they won't send any further data.
   ///
   /// Overridden by subclasses if the "end-of-stream" event is relevant.

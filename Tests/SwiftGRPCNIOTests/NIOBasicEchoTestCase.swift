@@ -39,13 +39,15 @@ class NIOBasicEchoTestCase: XCTestCase {
 
   var clientEventLoopGroup: EventLoopGroup!
   var client: Echo_EchoService_NIOClient!
+  
+  func makeEchoProvider() -> Echo_EchoProvider_NIO { return EchoProviderNIO() }
 
   override func setUp() {
     super.setUp()
 
     self.serverEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     self.server = try! GRPCServer.start(
-      hostname: "localhost", port: 5050, eventLoopGroup: self.serverEventLoopGroup, serviceProviders: [EchoProviderNIO()])
+      hostname: "localhost", port: 5050, eventLoopGroup: self.serverEventLoopGroup, serviceProviders: [makeEchoProvider()])
       .wait()
 
     self.clientEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)

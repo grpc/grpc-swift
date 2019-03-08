@@ -7,7 +7,7 @@ import NIOHTTP1
 ///
 /// - The observer block is implemented by the framework user and returns a future containing the call result.
 /// - To return a response to the client, the framework user should complete that future
-/// (similar to e.g. serving regular HTTP requests in frameworks such as Vapor).
+///   (similar to e.g. serving regular HTTP requests in frameworks such as Vapor).
 public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>: BaseCallHandler<RequestMessage, ResponseMessage> {
   public typealias EventObserver = (RequestMessage) -> EventLoopFuture<ResponseMessage>
   private var eventObserver: EventObserver?
