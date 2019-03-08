@@ -1,6 +1,5 @@
 import Foundation
 import NIOHTTP1
-import _NIO1APIShims
 
 /// Encapsulates the result of a gRPC call.
 public struct GRPCStatus: Error, Equatable {

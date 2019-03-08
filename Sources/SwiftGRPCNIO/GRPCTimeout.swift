@@ -1,6 +1,5 @@
 import Foundation
 import NIO
-import _NIO1APIShims
 
 public enum GRPCTimeoutError: String, Error {
   case negative = "GRPCTimeout must be non-negative"

@@ -1,7 +1,6 @@
 import Foundation
 import SwiftProtobuf
 import NIO
-import _NIO1APIShims
 import NIOHTTP1
 
 /// Protocol declaring a minimum set of properties exposed by *all* types of call contexts.

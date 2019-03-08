@@ -15,7 +15,6 @@
  */
 import Foundation
 import NIOHTTP1
-import _NIO1APIShims
 
 /// Options to use for GRPC calls.
 public struct CallOptions {

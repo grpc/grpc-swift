@@ -1,7 +1,6 @@
 import Foundation
 import SwiftProtobuf
 import NIO
-import _NIO1APIShims
 import NIOHTTP1
 
 /// Handles unary calls. Calls the observer block with the request message.

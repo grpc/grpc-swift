@@ -17,7 +17,6 @@ import Commander
 import Dispatch
 import Foundation
 import NIO
-import _NIO1APIShims
 import SwiftGRPCNIO
 
 // Common flags and options

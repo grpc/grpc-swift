@@ -1,7 +1,6 @@
 import Foundation
 import SwiftProtobuf
 import NIO
-import _NIO1APIShims
 import NIOHTTP1
 
 /// Handles bidirectional streaming calls. Forwards incoming messages and end-of-stream events to the observer block.

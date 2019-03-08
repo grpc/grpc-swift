@@ -1,7 +1,6 @@
 import Foundation
 import SwiftProtobuf
 import NIO
-import _NIO1APIShims
 import NIOHTTP1
 
 /// Abstract base class exposing a method to send multiple messages over the wire and a promise for the final RPC status.

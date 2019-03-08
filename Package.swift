@@ -64,7 +64,6 @@ let package = Package(
     .target(name: "SwiftGRPCNIO",
             dependencies: [
               "NIO",
-              "_NIO1APIShims",
               "NIOFoundationCompat",
               "NIOHTTP1",
               "NIOHTTP2",

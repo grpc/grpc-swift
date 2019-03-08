@@ -15,7 +15,6 @@
  */
 import Foundation
 import NIOHTTP1
-import _NIO1APIShims
 
 /// Wraps a gRPC error to provide contextual information about where it was thrown.
 public struct GRPCError: Error, GRPCStatusTransformable {

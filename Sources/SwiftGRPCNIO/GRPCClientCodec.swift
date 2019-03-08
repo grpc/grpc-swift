@@ -15,7 +15,6 @@
  */
 import Foundation
 import NIO
-import _NIO1APIShims
 import NIOHTTP1
 import SwiftProtobuf
 

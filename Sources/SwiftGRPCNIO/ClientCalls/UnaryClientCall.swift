@@ -16,7 +16,6 @@
 import Foundation
 import SwiftProtobuf
 import NIO
-import _NIO1APIShims
 
 /// A unary gRPC call. The request is sent on initialization.
 ///

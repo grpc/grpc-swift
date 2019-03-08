@@ -25,7 +25,6 @@ import NIO
 import NIOHTTP1
 import SwiftGRPCNIO
 import SwiftProtobuf
-import _NIO1APIShims
 
 
 /// Usage: instantiate Echo_EchoService_NIOClient, then call methods of this protocol to make API calls.
