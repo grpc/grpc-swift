@@ -130,7 +130,7 @@ extension ServerThrowingTests {
     
     if type(of: makeEchoProvider()) != ErrorReturningEchoProviderNIO.self {
       // With `ErrorReturningEchoProviderNIO` we actually _return_ a response, which means that the `response` future
-      // will _not_ fail.
+      // will _not_ fail, so in that case this test doesn't apply.
       XCTAssertThrowsError(try call.response.wait()) {
         XCTAssertEqual(expectedError, $0 as? GRPCStatus)
       }
@@ -138,13 +138,13 @@ extension ServerThrowingTests {
   }
   
   func testServerStreaming() {
-    let call = client.expand(Echo_EchoRequest(text: "foo")) { _ in XCTFail("no message expected") }
+    let call = client.expand(Echo_EchoRequest(text: "foo")) { XCTFail("no message expected, got \($0)") }
     // Nothing to throw here, but the `status` should be the expected error.
     XCTAssertEqual(expectedError, try call.status.wait())
   }
   
   func testBidirectionalStreaming() {
-    let call = client.update() { _ in XCTFail("no message expected") }
+    let call = client.update() { XCTFail("no message expected, got \($0)") }
     XCTAssertNoThrow(try call.sendEnd().wait())
     // Nothing to throw here, but the `status` should be the expected error.
     XCTAssertEqual(expectedError, try call.status.wait())
