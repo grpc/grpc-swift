@@ -39,7 +39,7 @@ Then, run `pod install` from command line and use your project's generated
 
 ## Manual integration
 
-When not using CocoaPods, Swift gRPC includes **vendored copies** of the
+When not using CocoaPods, Swift gRPC includes **[vendored copies](./scripts/vendor-all.sh)** of the
 gRPC Core library and BoringSSL (an OpenSSL fork that is used by
 the gRPC Core). These are built automatically in Swift Package
 Manager builds.
