@@ -1,6 +1,6 @@
 #!/bin/sh
-#
-# Copyright 2016, gRPC Authors All rights reserved.
+
+# Copyright 2019, gRPC Authors All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,31 +13,27 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
+
 # This script vendors the gRPC Core library into the
 # CgRPC module in a form suitable for building with
 # the Swift Package Manager.
 #
+# For usage, see `vendor-all.sh`.
 
-#
-# Read the list of files to vendor from the gRPC project.
-#
-# The file that is included here is a generated file.
-# To generate it, copy swift-vendoring.sh.template from
-# the grpc-swift directory to grpc/templates and then
-# run tools/buildgen/generate_projects.sh in the grpc
-# directory.
-#
-source third_party/grpc/swift-vendoring.sh 
+source ./tmp/grpc/swift-vendoring.sh
+
+TMP_DIR=./tmp
+DSTROOT=../Sources
+DSTASSETS=../Assets
 
 #
 # Remove previously-vendored code.
 #
 echo "REMOVING any previously-vendored gRPC code"
-rm -rf Sources/CgRPC/src
-rm -rf Sources/CgRPC/grpc
-rm -rf Sources/CgRPC/third_party
-rm -rf Sources/CgRPC/include/grpc
+rm -rf $DSTROOT/CgRPC/src
+rm -rf $DSTROOT/CgRPC/grpc
+rm -rf $DSTROOT/CgRPC/third_party
+rm -rf $DSTROOT/CgRPC/include/grpc
 
 #
 # Copy grpc headers and source files
@@ -45,41 +41,41 @@ rm -rf Sources/CgRPC/include/grpc
 echo "COPYING public gRPC headers"
 for src in "${public_headers[@]}"
 do
-	dest="Sources/CgRPC/$src"
+	dest="$DSTROOT/CgRPC/$src"
 	dest_dir=$(dirname $dest)
 	mkdir -pv $dest_dir
-	cp third_party/grpc/$src $dest
+	cp $TMP_DIR/grpc/$src $dest
 done
 
-echo "COPYING private grpc headers"
+echo "COPYING private gRPC headers"
 for src in "${private_headers[@]}"
 do
-	dest="Sources/CgRPC/$src"
+	dest="$DSTROOT/CgRPC/$src"
 	dest_dir=$(dirname $dest)
 	mkdir -pv $dest_dir
-	cp third_party/grpc/$src $dest
+	cp $TMP_DIR/grpc/$src $dest
 done
 
-echo "COPYING grpc source files"
+echo "COPYING gRPC source files"
 for src in "${source_files[@]}"
 do
-	dest="Sources/CgRPC/$src"
+	dest="$DSTROOT/CgRPC/$src"
 	dest_dir=$(dirname $dest)
 	mkdir -pv $dest_dir
-	cp third_party/grpc/$src $dest
+	cp $TMP_DIR/grpc/$src $dest
 done
 
 echo "COPYING additional nanopb headers"
-cp third_party/grpc/third_party/nanopb/*.h Sources/CgRPC/third_party/nanopb/
+cp $TMP_DIR/grpc/third_party/nanopb/*.h $DSTROOT/CgRPC/third_party/nanopb/
 
 echo "ADDING additional compiler flags to nanopb/pb.h"
-perl -pi -e 's/\/\* #define PB_FIELD_16BIT 1 \*\//#define PB_FIELD_16BIT 1/' Sources/CgRPC/third_party/nanopb/pb.h
+perl -pi -e 's/\/\* #define PB_FIELD_16BIT 1 \*\//#define PB_FIELD_16BIT 1/' $DSTROOT/CgRPC/third_party/nanopb/pb.h
 
 echo "ADDING additional compiler flags to tsi/ssl_transport_security.cc"
-perl -pi -e 's/#define TSI_OPENSSL_ALPN_SUPPORT 1/#define TSI_OPENSSL_ALPN_SUPPORT 0/' Sources/CgRPC/src/core/tsi/ssl_transport_security.cc
+perl -pi -e 's/#define TSI_OPENSSL_ALPN_SUPPORT 1/#define TSI_OPENSSL_ALPN_SUPPORT 0/' $DSTROOT/CgRPC/src/core/tsi/ssl_transport_security.cc
 
 echo "DISABLING ARES"
-perl -pi -e 's/#define GRPC_ARES 1/#define GRPC_ARES 0/' Sources/CgRPC/include/grpc/impl/codegen/port_platform.h
+perl -pi -e 's/#define GRPC_ARES 1/#define GRPC_ARES 0/' $DSTROOT/CgRPC/include/grpc/impl/codegen/port_platform.h
 
 echo "COPYING roots.pem"
-cp third_party/grpc/etc/roots.pem Assets/roots.pem
+cp $TMP_DIR/grpc/etc/roots.pem $DSTASSETS/roots.pem
