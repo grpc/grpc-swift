@@ -101,16 +101,11 @@ extension ClientTestExample {
     let completionHandlerExpectation = expectation(description: "request completion handler called")
 
     _ = try client.service.get(Echo_EchoRequest(text: "foo")){ (response:Echo_EchoResponse?, callResult:CallResult) in
-      
       XCTAssertEqual("bar", response?.text)
       completionHandlerExpectation.fulfill()
     }
     
-    waitForExpectations(timeout: 1) { (error) in
-      if let error = error {
-        XCTFail("timeout errored: \(error)")
-      }
-    }
+    waitForExpectations(timeout: 1)
     
     // Ensure that all responses have been consumed.
     XCTAssertEqual(0, fakeService.getResponses.count)
