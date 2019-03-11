@@ -119,13 +119,8 @@ extension BaseClientCall {
   ///   - requestHead: The request head to send.
   ///   - promise: A promise to fulfill once the request head has been sent.
   internal func sendHead(_ requestHead: HTTPRequestHead, promise: EventLoopPromise<Void>?) {
-    // The nghttp2 implementation of NIOHTTP2 has a known defect where "promises on control frame
-    // writes do not work and will be leaked. Promises on DATA frame writes work just fine and will
-    // be fulfilled correctly." Succeed the promise here as a temporary workaround.
-    //! TODO: remove this and pass the promise to `writeAndFlush` when NIOHTTP2 supports it.
-    promise?.succeed(())
     self.subchannel.whenSuccess { channel in
-      channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.head(requestHead), promise: nil)
+      channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.head(requestHead), promise: promise)
     }
   }
 
@@ -169,13 +164,8 @@ extension BaseClientCall {
   /// - Important: This should only ever be called once.
   /// - Parameter promise: A promise to succeed once then end has been sent.
   internal func _sendEnd(promise: EventLoopPromise<Void>?) {
-    // The nghttp2 implementation of NIOHTTP2 has a known defect where "promises on control frame
-    // writes do not work and will be leaked. Promises on DATA frame writes work just fine and will
-    // be fulfilled correctly." Succeed the promise here as a temporary workaround.
-    //! TODO: remove this and pass the promise to `writeAndFlush` when NIOHTTP2 supports it.
-    promise?.succeed(())
     self.subchannel.whenSuccess { channel in
-      channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.end, promise: nil)
+      channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.end, promise: promise)
     }
   }
 

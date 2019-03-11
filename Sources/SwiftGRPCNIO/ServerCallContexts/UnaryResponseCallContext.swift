@@ -46,12 +46,12 @@ open class UnaryResponseCallContextImpl<ResponseMessage: Message>: UnaryResponse
     super.init(eventLoop: channel.eventLoop, request: request)
 
     responsePromise.futureResult
+      // Send the response provided to the promise.
       .map { responseMessage in
-        // Send the response provided to the promise.
-        //! FIXME: It would be nicer to chain sending the status onto a successful write, but for some reason the
-        //  "write message" future doesn't seem to get fulfilled?
-        self.channel.writeAndFlush(NIOAny(WrappedResponse.message(responseMessage)), promise: nil)
-        return self.responseStatus
+        self.channel.writeAndFlush(NIOAny(WrappedResponse.message(responseMessage)))
+      }
+      .map { _ in
+        self.responseStatus
       }
       // Ensure that any error provided is of type `GRPCStatus`, using "internal server error" as a fallback.
       .recover { error in

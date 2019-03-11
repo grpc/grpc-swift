@@ -40,18 +40,6 @@ internal class GRPCClientChannelHandler<RequestMessage: Message, ResponseMessage
     return promise
   }
 
-  /// Promise that the `HTTPRequestHead` has been sent to the network.
-  ///
-  /// If we attempt to close the stream before this has been fulfilled then the program will fatal
-  /// error because of an issue with nghttp2/swift-nio-http2.
-  ///
-  /// Since we need this promise to succeed before we can close the channel, `BaseClientCall` sends
-  /// the request head in `init` which will in turn initialize this promise in `write(context:data:promise:)`.
-  /// This means that this promise should never be nil in practice.
-  ///
-  /// See: https://github.com/apple/swift-nio-http2/issues/39.
-  private var requestHeadSentPromise: EventLoopPromise<Void>!
-
   private enum InboundState {
     case expectingHeadersOrStatus
     case expectingMessageOrStatus
@@ -181,9 +169,7 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
         return
       }
 
-      // See the documentation for `requestHeadSentPromise` for an explanation of this.
-      self.requestHeadSentPromise = promise ?? context.eventLoop.makePromise()
-      context.write(data, promise: self.requestHeadSentPromise)
+      context.write(data, promise: promise)
       self.outboundState = .expectingMessageOrEnd
 
     default:
@@ -202,9 +188,7 @@ extension GRPCClientChannelHandler {
   public func close(context: ChannelHandlerContext, mode: CloseMode, promise: EventLoopPromise<Void>?) {
     self.observeError(GRPCError.client(.cancelledByClient))
 
-    requestHeadSentPromise.futureResult.whenComplete { _ in
-      context.close(mode: mode, promise: promise)
-    }
+    context.close(mode: mode, promise: promise)
 
     self.inboundState = .ignore
     self.outboundState = .ignore
