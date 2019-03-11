@@ -335,8 +335,8 @@ extension Generator {
         println("let response = try self.\(methodFunctionName)(request)")
         println("let callResult = CallResult(success: true, statusCode: .ok, statusMessage: \"OK\", resultData: nil, initialMetadata: nil, trailingMetadata: nil)")
         println("completion(response, callResult)")
-        println("let channel = Channel(address: \"\")")
-        println("return \(callName)Base(channel)")
+        println("let fakeChannel = Channel(address: \"\")")
+        println("return \(callName)Base(fakeChannel)")
         outdent()
         println("}")
       case .serverStreaming:
