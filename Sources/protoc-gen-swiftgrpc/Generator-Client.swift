@@ -175,6 +175,7 @@ extension Generator {
         }
         if asynchronousCode {
           println("/// Asynchronous. Unary.")
+	  println("@discardableResult")
           println("func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata, completion: @escaping (\(methodOutputName)?, CallResult) -> Void) throws -> \(callName)")
         }
       case .serverStreaming:
@@ -217,6 +218,7 @@ extension Generator {
         }
         if asynchronousCode {
           println("/// Asynchronous. Unary.")
+	  println("@discardableResult")
           println("func \(methodFunctionName)(_ request: \(methodInputName), completion: @escaping (\(methodOutputName)?, CallResult) -> Void) throws -> \(callName) {")
           indent()
           println("return try self.\(methodFunctionName)(request, metadata: self.metadata, completion: completion)")
@@ -272,6 +274,7 @@ extension Generator {
         }
         if asynchronousCode {
           println("/// Asynchronous. Unary.")
+	  println("@discardableResult")
           println("\(access) func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata, completion: @escaping (\(methodOutputName)?, CallResult) -> Void) throws -> \(callName) {")
           indent()
           println("return try \(callName)Base(channel)")
@@ -340,6 +343,7 @@ extension Generator {
         println("return \(methodFunctionName)Responses.first!")
         outdent()
         println("}")
+	println("@discardableResult")
         println("func \(methodFunctionName)(_ request: \(methodInputName), metadata customMetadata: Metadata, completion: @escaping (\(methodOutputName)?, CallResult) -> Void) throws -> \(callName) {")
         indent()
         println("fatalError(\"not implemented\")")
