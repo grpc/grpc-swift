@@ -58,7 +58,7 @@ open class ClientCallUnaryBase<InputType: Message, OutputType: Message>: ClientC
 }
 
 /// Simple fake implementation of `ClientCallUnary`.
-open class ClientCallUnaryTestStub<InputType: Message, OutputType: Message>: ClientCallUnary {
+open class ClientCallUnaryTestStub: ClientCallUnary {
   open class var method: String { fatalError("needs to be overridden") }
 
   open func cancel() {}

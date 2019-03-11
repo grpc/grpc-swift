@@ -31,7 +31,7 @@ fileprivate final class Echo_EchoGetCallBase: ClientCallUnaryBase<Echo_EchoReque
   override class var method: String { return "/echo.Echo/Get" }
 }
 
-class Echo_EchoGetCallTestStub: ClientCallUnaryTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoGetCall {
+class Echo_EchoGetCallTestStub: ClientCallUnaryTestStub, Echo_EchoGetCall {
   override class var method: String { return "/echo.Echo/Get" }
 }
 
