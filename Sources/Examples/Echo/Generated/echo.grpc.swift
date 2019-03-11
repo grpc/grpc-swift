@@ -123,6 +123,7 @@ internal protocol Echo_EchoService: ServiceClient {
   /// Synchronous. Unary.
   func get(_ request: Echo_EchoRequest, metadata customMetadata: Metadata) throws -> Echo_EchoResponse
   /// Asynchronous. Unary.
+  @discardableResult
   func get(_ request: Echo_EchoRequest, metadata customMetadata: Metadata, completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall
 
   /// Asynchronous. Server-streaming.
@@ -148,6 +149,7 @@ internal extension Echo_EchoService {
     return try self.get(request, metadata: self.metadata)
   }
   /// Asynchronous. Unary.
+  @discardableResult
   func get(_ request: Echo_EchoRequest, completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall {
     return try self.get(request, metadata: self.metadata, completion: completion)
   }
@@ -176,6 +178,7 @@ internal final class Echo_EchoServiceClient: ServiceClientBase, Echo_EchoService
       .run(request: request, metadata: customMetadata)
   }
   /// Asynchronous. Unary.
+  @discardableResult
   internal func get(_ request: Echo_EchoRequest, metadata customMetadata: Metadata, completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall {
     return try Echo_EchoGetCallBase(channel)
       .start(request: request, metadata: customMetadata, completion: completion)
@@ -215,6 +218,7 @@ class Echo_EchoServiceTestStub: ServiceClientTestStubBase, Echo_EchoService {
     defer { getResponses.removeFirst() }
     return getResponses.first!
   }
+  @discardableResult
   func get(_ request: Echo_EchoRequest, metadata customMetadata: Metadata, completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall {
     fatalError("not implemented")
   }
