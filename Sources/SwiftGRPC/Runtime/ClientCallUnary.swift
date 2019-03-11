@@ -56,3 +56,10 @@ open class ClientCallUnaryBase<InputType: Message, OutputType: Message>: ClientC
     return self
   }
 }
+
+/// Simple fake implementation of `ClientCallUnary`.
+open class ClientCallUnaryTestStub: ClientCallUnary {
+  open class var method: String { fatalError("needs to be overridden") }
+
+  open func cancel() {}
+}

@@ -31,6 +31,10 @@ fileprivate final class Echo_EchoGetCallBase: ClientCallUnaryBase<Echo_EchoReque
   override class var method: String { return "/echo.Echo/Get" }
 }
 
+class Echo_EchoGetCallTestStub: ClientCallUnaryTestStub, Echo_EchoGetCall {
+  override class var method: String { return "/echo.Echo/Get" }
+}
+
 internal protocol Echo_EchoExpandCall: ClientCallServerStreaming {
   /// Do not call this directly, call `receive()` in the protocol extension below instead.
   func _receive(timeout: DispatchTime) throws -> Echo_EchoResponse?

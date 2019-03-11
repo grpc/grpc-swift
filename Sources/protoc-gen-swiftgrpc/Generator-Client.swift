@@ -66,6 +66,14 @@ extension Generator {
     println("override class var method: String { return \(methodPath) }")
     outdent()
     println("}")
+    if options.generateTestStubs {
+      println()
+      println("class \(callName)TestStub: ClientCallUnaryTestStub, \(callName) {")
+      indent()
+      println("override class var method: String { return \(methodPath) }")
+      outdent()
+      println("}")
+    }
     println()
   }
 
