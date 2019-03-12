@@ -31,10 +31,6 @@ fileprivate final class Echo_EchoGetCallBase: ClientCallUnaryBase<Echo_EchoReque
   override class var method: String { return "/echo.Echo/Get" }
 }
 
-class Echo_EchoGetCallTestStub: ClientCallUnaryTestStub, Echo_EchoGetCall {
-  override class var method: String { return "/echo.Echo/Get" }
-}
-
 internal protocol Echo_EchoExpandCall: ClientCallServerStreaming {
   /// Do not call this directly, call `receive()` in the protocol extension below instead.
   func _receive(timeout: DispatchTime) throws -> Echo_EchoResponse?
@@ -48,10 +44,6 @@ internal extension Echo_EchoExpandCall {
 }
 
 fileprivate final class Echo_EchoExpandCallBase: ClientCallServerStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoExpandCall {
-  override class var method: String { return "/echo.Echo/Expand" }
-}
-
-class Echo_EchoExpandCallTestStub: ClientCallServerStreamingTestStub<Echo_EchoResponse>, Echo_EchoExpandCall {
   override class var method: String { return "/echo.Echo/Expand" }
 }
 
@@ -73,12 +65,6 @@ internal extension Echo_EchoCollectCall {
 }
 
 fileprivate final class Echo_EchoCollectCallBase: ClientCallClientStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectCall {
-  override class var method: String { return "/echo.Echo/Collect" }
-}
-
-/// Simple fake implementation of Echo_EchoCollectCall
-/// stores sent values for later verification and finall returns a previously-defined result.
-class Echo_EchoCollectCallTestStub: ClientCallClientStreamingTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectCall {
   override class var method: String { return "/echo.Echo/Collect" }
 }
 
@@ -110,10 +96,6 @@ internal extension Echo_EchoUpdateCall {
 }
 
 fileprivate final class Echo_EchoUpdateCallBase: ClientCallBidirectionalStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateCall {
-  override class var method: String { return "/echo.Echo/Update" }
-}
-
-class Echo_EchoUpdateCallTestStub: ClientCallBidirectionalStreamingTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateCall {
   override class var method: String { return "/echo.Echo/Update" }
 }
 
@@ -208,6 +190,24 @@ internal final class Echo_EchoServiceClient: ServiceClientBase, Echo_EchoService
       .start(metadata: customMetadata, completion: completion)
   }
 
+}
+
+class Echo_EchoGetCallTestStub: ClientCallUnaryTestStub, Echo_EchoGetCall {
+  override class var method: String { return "/echo.Echo/Get" }
+}
+
+class Echo_EchoExpandCallTestStub: ClientCallServerStreamingTestStub<Echo_EchoResponse>, Echo_EchoExpandCall {
+  override class var method: String { return "/echo.Echo/Expand" }
+}
+
+/// Simple fake implementation of Echo_EchoCollectCall
+/// stores sent values for later verification and finall returns a previously-defined result.
+class Echo_EchoCollectCallTestStub: ClientCallClientStreamingTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectCall {
+  override class var method: String { return "/echo.Echo/Collect" }
+}
+
+class Echo_EchoUpdateCallTestStub: ClientCallBidirectionalStreamingTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateCall {
+  override class var method: String { return "/echo.Echo/Update" }
 }
 
 class Echo_EchoServiceTestStub: ServiceClientTestStubBase, Echo_EchoService {
