@@ -40,7 +40,7 @@ class LengthPrefixedMessageReaderTests: XCTestCase {
     ] + twoByteMessage
   }
 
-  func assertMessagesEqual(_ buffer: ByteBuffer?, expected expectedBytes: [UInt8], file: StaticString = #file, line: UInt = #line) {
+  func assertMessagesEqual(expected expectedBytes: [UInt8], actual buffer: ByteBuffer?, file: StaticString = #file, line: UInt = #line) {
     guard let buffer = buffer else {
       XCTFail("buffer is nil", file: file, line: line)
       return
@@ -51,7 +51,7 @@ class LengthPrefixedMessageReaderTests: XCTestCase {
       return
     }
 
-    XCTAssertEqual(bytes, expectedBytes, file: file, line: line)
+    XCTAssertEqual(expectedBytes, bytes, file: file, line: line)
   }
 
   func testNextMessageReturnsNilWhenNoBytesAppended() throws {
@@ -62,7 +62,7 @@ class LengthPrefixedMessageReaderTests: XCTestCase {
     var buffer = byteBuffer(withBytes: lengthPrefixedTwoByteMessage())
     reader.append(buffer: &buffer)
 
-    self.assertMessagesEqual(try reader.nextMessage(), expected: twoByteMessage)
+    self.assertMessagesEqual(expected: twoByteMessage, actual: try reader.nextMessage())
   }
 
   func testNextMessageReturnsMessageForZeroLengthMessage() throws {
@@ -75,7 +75,7 @@ class LengthPrefixedMessageReaderTests: XCTestCase {
     var buffer = byteBuffer(withBytes: bytes)
     reader.append(buffer: &buffer)
 
-    self.assertMessagesEqual(try reader.nextMessage(), expected: [])
+    self.assertMessagesEqual(expected: [], actual: try reader.nextMessage())
   }
 
   func testNextMessageDeliveredAcrossMultipleByteBuffers() throws {
@@ -94,7 +94,7 @@ class LengthPrefixedMessageReaderTests: XCTestCase {
     var secondBuffer = byteBuffer(withBytes: secondBytes)
     reader.append(buffer: &secondBuffer)
 
-    self.assertMessagesEqual(try reader.nextMessage(), expected: [0xf0, 0xba])
+    self.assertMessagesEqual(expected: [0xf0, 0xba], actual: try reader.nextMessage())
   }
 
   func testNextMessageWhenMultipleMessagesAreBuffered() throws {
@@ -116,9 +116,9 @@ class LengthPrefixedMessageReaderTests: XCTestCase {
     var buffer = byteBuffer(withBytes: bytes)
     reader.append(buffer: &buffer)
 
-    self.assertMessagesEqual(try reader.nextMessage(), expected: [0x0f, 0x00])
-    self.assertMessagesEqual(try reader.nextMessage(), expected: [0xde, 0xad, 0xbe, 0xef])
-    self.assertMessagesEqual(try reader.nextMessage(), expected: [0x01])
+    self.assertMessagesEqual(expected: [0x0f, 0x00], actual: try reader.nextMessage())
+    self.assertMessagesEqual(expected: [0xde, 0xad, 0xbe, 0xef], actual: try reader.nextMessage())
+    self.assertMessagesEqual(expected: [0x01], actual: try reader.nextMessage())
   }
 
   func testNextMessageReturnsNilWhenNoMessageLengthIsAvailable() throws {
@@ -131,6 +131,7 @@ class LengthPrefixedMessageReaderTests: XCTestCase {
 
     XCTAssertNil(try reader.nextMessage())
 
+    // Ensure we can read a message when the rest of the bytes are delivered
     let restOfBytes: [UInt8] = [
       0x00, 0x00, 0x00, 0x01,  // 4-byte message length (1)
       0x00,                    // 1-byte message
@@ -138,7 +139,7 @@ class LengthPrefixedMessageReaderTests: XCTestCase {
 
     var secondBuffer = byteBuffer(withBytes: restOfBytes)
     reader.append(buffer: &secondBuffer)
-    self.assertMessagesEqual(try reader.nextMessage(), expected: [0x00])
+    self.assertMessagesEqual(expected: [0x00], actual: try reader.nextMessage())
   }
 
   func testNextMessageReturnsNilWhenNotAllMessageLengthIsAvailable() throws {
@@ -152,6 +153,7 @@ class LengthPrefixedMessageReaderTests: XCTestCase {
 
     XCTAssertNil(try reader.nextMessage())
 
+    // Ensure we can read a message when the rest of the bytes are delivered
     let restOfBytes: [UInt8] = [
       0x00, 0x01,  // 4-byte message length (1)
       0x00,        // 1-byte message
@@ -159,7 +161,7 @@ class LengthPrefixedMessageReaderTests: XCTestCase {
 
     var secondBuffer = byteBuffer(withBytes: restOfBytes)
     reader.append(buffer: &secondBuffer)
-    self.assertMessagesEqual(try reader.nextMessage(), expected: [0x00])
+    self.assertMessagesEqual(expected: [0x00], actual: try reader.nextMessage())
   }
 
 
@@ -174,9 +176,10 @@ class LengthPrefixedMessageReaderTests: XCTestCase {
 
     XCTAssertNil(try reader.nextMessage())
 
+    // Ensure we can read a message when the rest of the bytes are delivered
     var secondBuffer = byteBuffer(withBytes: twoByteMessage)
     reader.append(buffer: &secondBuffer)
-    self.assertMessagesEqual(try reader.nextMessage(), expected: twoByteMessage)
+    self.assertMessagesEqual(expected: twoByteMessage, actual: try reader.nextMessage())
   }
 
   func testNextMessageReturnsNilWhenNotAllMessageBytesAreAvailable() throws {
@@ -191,13 +194,14 @@ class LengthPrefixedMessageReaderTests: XCTestCase {
 
     XCTAssertNil(try reader.nextMessage())
 
+    // Ensure we can read a message when the rest of the bytes are delivered
     let restOfBytes: [UInt8] = [
       0x01  // final byte of message
     ]
 
     var secondBuffer = byteBuffer(withBytes: restOfBytes)
     reader.append(buffer: &secondBuffer)
-    self.assertMessagesEqual(try reader.nextMessage(), expected: [0x00, 0x01])
+    self.assertMessagesEqual(expected: [0x00, 0x01], actual: try reader.nextMessage())
   }
 
   func testNextMessageThrowsWhenCompressionMechanismIsNotSupported() throws {
@@ -209,7 +213,7 @@ class LengthPrefixedMessageReaderTests: XCTestCase {
     reader.append(buffer: &buffer)
 
     XCTAssertThrowsError(try reader.nextMessage()) { error in
-      XCTAssertEqual((error as? GRPCError)?.error as? GRPCCommonError, .unsupportedCompressionMechanism("unknown"))
+      XCTAssertEqual(.unsupportedCompressionMechanism("unknown"), (error as? GRPCError)?.error as? GRPCCommonError)
     }
   }
 
@@ -222,7 +226,7 @@ class LengthPrefixedMessageReaderTests: XCTestCase {
     reader.append(buffer: &buffer)
 
     XCTAssertThrowsError(try reader.nextMessage()) { error in
-      XCTAssertEqual((error as? GRPCError)?.error as? GRPCCommonError, .unexpectedCompression)
+      XCTAssertEqual(.unexpectedCompression, (error as? GRPCError)?.error as? GRPCCommonError)
     }
   }
 
@@ -235,13 +239,13 @@ class LengthPrefixedMessageReaderTests: XCTestCase {
     var buffer = byteBuffer(withBytes: lengthPrefixedTwoByteMessage())
     reader.append(buffer: &buffer)
 
-    self.assertMessagesEqual(try reader.nextMessage(), expected: twoByteMessage)
+    self.assertMessagesEqual(expected: twoByteMessage, actual: try reader.nextMessage())
   }
 
   func testAppendReadsAllBytes() throws {
     var buffer = byteBuffer(withBytes: lengthPrefixedTwoByteMessage())
     reader.append(buffer: &buffer)
 
-    XCTAssertEqual(buffer.readableBytes, 0)
+    XCTAssertEqual(0, buffer.readableBytes)
   }
 }
