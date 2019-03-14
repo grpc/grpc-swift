@@ -102,8 +102,8 @@ separated from the output directory by a colon.
 | `Client` |  `true`/`false` | `true` | Whether to generate client code |
 | `Async` |  `true`/`false` | `true` | Whether to generate asynchronous code |
 | `Sync` |  `true`/`false` | `true` | Whether to generate synchronous code |
+| `Implementations` |  `true`/`false` | `true` | Whether to generate protocols and non-test service code. Toggling this to `false` is mostly useful when combined with `TestStubs=true` to generate files containing only test stub code.  |
 | `TestStubs` |  `true`/`false` | `false` | Whether to generate test stub code |
-| `Implementations` |  `true`/`false` | `true` | Whether to generate imlpementation code |
 | `FileNaming` | `FullPath`/`PathToUnderscores`/`DropPath` | `FullPath` | How to handle the naming of generated sources |
 | `ExtraModuleImports` |  `String` | `` | Extra module to import in generated code |
 

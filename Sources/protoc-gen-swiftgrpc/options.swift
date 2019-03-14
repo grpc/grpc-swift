@@ -142,7 +142,7 @@ final class GeneratorOptions {
 
       case "ExtraModuleImports":
         if !pair.value.isEmpty {
-          extraModuleImports += [pair.value]
+          extraModuleImports.append(pair.value)
         } else {
           throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }

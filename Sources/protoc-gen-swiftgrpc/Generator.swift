@@ -88,10 +88,7 @@ class Generator {
         "SwiftGRPC",
         "SwiftProtobuf"]
     }
-    for moduleName in moduleNames {
-      println("import \(moduleName)")
-    }
-    for moduleName in options.extraModuleImports {
+    for moduleName in moduleNames +  options.extraModuleImports {
       println("import \(moduleName)")
     }
     // Build systems like Bazel will generate the Swift service definitions in a different module
@@ -108,11 +105,13 @@ class Generator {
     }
     println()
     
-    if options.generateClient {      
-      for service in file.services where options.generateImplementations {
-        self.service = service
-        printClient(asynchronousCode: options.generateAsynchronous,
-                    synchronousCode: options.generateSynchronous)
+    if options.generateClient {
+      if options.generateImplementations {
+        for service in file.services {
+          self.service = service
+          printClient(asynchronousCode: options.generateAsynchronous,
+                      synchronousCode: options.generateSynchronous)
+        }
       }
 
       if options.generateTestStubs {
