@@ -61,5 +61,7 @@ open class ClientCallUnaryBase<InputType: Message, OutputType: Message>: ClientC
 open class ClientCallUnaryTestStub: ClientCallUnary {
   open class var method: String { fatalError("needs to be overridden") }
 
+  public init() {}
+
   open func cancel() {}
 }
