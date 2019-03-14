@@ -54,8 +54,8 @@ extension Generator {
                                      synchronousCode: synchronousCode)
   }
 
-  internal func printCGRPCClientTestStubs(asynchronousCode: Bool,
-                                          synchronousCode: Bool) {
+  func printCGRPCClientTestStubs(asynchronousCode: Bool,
+                                 synchronousCode: Bool) {
     for method in service.methods {
       self.method = method
       switch streamingType(method) {

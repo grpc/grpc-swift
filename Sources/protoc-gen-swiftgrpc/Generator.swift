@@ -88,7 +88,7 @@ class Generator {
         "SwiftGRPC",
         "SwiftProtobuf"]
     }
-    for moduleName in moduleNames +  options.extraModuleImports {
+    for moduleName in (moduleNames + options.extraModuleImports).sorted() {
       println("import \(moduleName)")
     }
     // Build systems like Bazel will generate the Swift service definitions in a different module
@@ -132,7 +132,7 @@ class Generator {
         fatalError("Generating test stubs is not yet supported for SwiftGRPC-NIO.")
       }
       if options.generateTestStubs && !options.generateImplementations {
-        fatalError("Generating server test stubs without an implementation is not yet supported.")
+        fatalError("Generating server test stubs without an implementation is not supported.")
       }
       
       for service in file.services {
