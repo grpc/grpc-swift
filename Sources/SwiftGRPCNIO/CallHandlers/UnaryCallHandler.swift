@@ -13,23 +13,23 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
   public typealias EventObserver = (RequestMessage) -> EventLoopFuture<ResponseMessage>
   private var eventObserver: EventObserver?
 
-  private var context: UnaryResponseCallContext<ResponseMessage>?
+  private var callContext: UnaryResponseCallContext<ResponseMessage>?
 
   public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, eventObserverFactory: (UnaryResponseCallContext<ResponseMessage>) -> EventObserver) {
     super.init(errorDelegate: errorDelegate)
-    let context = UnaryResponseCallContextImpl<ResponseMessage>(channel: channel, request: request)
-    self.context = context
-    self.eventObserver = eventObserverFactory(context)
-    context.responsePromise.futureResult.whenComplete { _ in
+    let callContext = UnaryResponseCallContextImpl<ResponseMessage>(channel: channel, request: request)
+    self.callContext = callContext
+    self.eventObserver = eventObserverFactory(callContext)
+    callContext.responsePromise.futureResult.whenComplete { _ in
       // When done, reset references to avoid retain cycles.
       self.eventObserver = nil
-      self.context = nil
+      self.callContext = nil
     }
   }
 
   public override func processMessage(_ message: RequestMessage) throws {
     guard let eventObserver = self.eventObserver,
-      let context = self.context else {
+      let context = self.callContext else {
       throw GRPCError.server(.tooManyRequests)
     }
 
@@ -47,6 +47,6 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
   }
   
   override func sendErrorStatus(_ status: GRPCStatus) {
-    context?.responsePromise.fail(status)
+    callContext?.responsePromise.fail(status)
   }
 }

@@ -21,7 +21,7 @@ public class BaseCallHandler<RequestMessage: Message, ResponseMessage: Message>:
   ///
   /// Otherwise, the subclass's implementation will simply never be called (probably because the protocol's default
   /// implementation in an extension is being used instead).
-  public func handlerAdded(ctx: ChannelHandlerContext) { }
+  public func handlerAdded(context: ChannelHandlerContext) { }
 
   /// Called when the client has half-closed the stream, indicating that they won't send any further data.
   ///
