@@ -53,7 +53,7 @@ public final class HTTP1ToRawGRPCServerCodec {
   var outboundState = OutboundState.expectingHeaders
 
   var messageWriter = LengthPrefixedMessageWriter()
-  var messageReader = LengthPrefixedMessageReader(mode: .server)
+  var messageReader = LengthPrefixedMessageReader(mode: .server, compressionMechanism: .none)
 }
 
 extension HTTP1ToRawGRPCServerCodec {
@@ -148,7 +148,8 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
       body.write(bytes: decodedData)
     }
 
-    for message in try messageReader.consume(messageBuffer: &body, compression: .none) {
+    self.messageReader.append(buffer: &body)
+    while let message = try self.messageReader.nextMessage() {
       ctx.fireChannelRead(self.wrapInboundOut(.message(message)))
     }
 

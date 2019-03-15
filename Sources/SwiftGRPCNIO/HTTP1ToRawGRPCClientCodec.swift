@@ -52,7 +52,7 @@ public final class HTTP1ToRawGRPCClientCodec {
   }
 
   private var state: State = .expectingHeaders
-  private let messageReader = LengthPrefixedMessageReader(mode: .client)
+  private let messageReader = LengthPrefixedMessageReader(mode: .client, compressionMechanism: .none)
   private let messageWriter = LengthPrefixedMessageWriter()
   private var inboundCompression: CompressionMechanism = .none
 }
@@ -93,13 +93,15 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
       throw GRPCError.client(.HTTPStatusNotOk(head.status))
     }
 
-    if let encodingType = head.headers["grpc-encoding"].first {
-      self.inboundCompression = CompressionMechanism(rawValue: encodingType) ?? .unknown
-    }
+    let inboundCompression: CompressionMechanism = head.headers["grpc-encoding"]
+      .first
+      .map { CompressionMechanism(rawValue: $0) ?? .unknown } ?? .none
 
     guard inboundCompression.supported else {
       throw GRPCError.client(.unsupportedCompressionMechanism(inboundCompression.rawValue))
     }
+
+    self.messageReader.compressionMechanism = inboundCompression
 
     ctx.fireChannelRead(self.wrapInboundOut(.headers(head.headers)))
     return .expectingBodyOrTrailers
@@ -114,7 +116,8 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
       throw GRPCError.client(.invalidState("received body while in state \(state)"))
     }
 
-    for message in try self.messageReader.consume(messageBuffer: &messageBuffer, compression: inboundCompression) {
+    self.messageReader.append(buffer: &messageBuffer)
+    while let message = try self.messageReader.nextMessage() {
       ctx.fireChannelRead(self.wrapInboundOut(.message(message)))
     }
 
