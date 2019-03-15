@@ -1,5 +1,7 @@
 [![Build Status](https://travis-ci.org/grpc/grpc-swift.svg?branch=master)](https://travis-ci.org/grpc/grpc-swift)
 
+⚠️ **This is a development branch for the NIO variant of grpc-swift which requires Swift 5** ⚠️
+
 # Swift gRPC
 
 This repository contains an experimental Swift gRPC API
