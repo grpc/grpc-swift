@@ -25,10 +25,6 @@ extension Generator {
     } else {
       printCGRPCClient(asynchronousCode: asynchronousCode,
                        synchronousCode: synchronousCode)
-      if options.generateTestStubs {
-        printCGRPCClientTestStubs(asynchronousCode: asynchronousCode,
-                                 synchronousCode: synchronousCode)
-      }
     }
   }
 
@@ -58,8 +54,8 @@ extension Generator {
                                      synchronousCode: synchronousCode)
   }
 
-  private func printCGRPCClientTestStubs(asynchronousCode: Bool,
-                                         synchronousCode: Bool) {
+  func printCGRPCClientTestStubs(asynchronousCode: Bool,
+                                 synchronousCode: Bool) {
     for method in service.methods {
       self.method = method
       switch streamingType(method) {
