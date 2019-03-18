@@ -65,16 +65,11 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
           return
       }
 
-      // Once configured remove ourself from the pipeline and fire any buffered data down
-      // the pipeline.
+      // Once configured remove ourself from the pipeline.
       let pipelineConfigured: EventLoopPromise<Void> = context.eventLoop.makePromise()
-      pipelineConfigured.futureResult.map {
-        context.pipeline.removeHandler(self)
-      }.whenSuccess { _ in
+      pipelineConfigured.futureResult.whenSuccess {
         self.state = .configured
-        self.bufferedData.forEach {
-          context.pipeline.fireChannelRead($0)
-        }
+        context.pipeline.removeHandler(context: context, promise: nil)
       }
 
       // Depending on whether it is HTTP1 or HTTP2, create different processing pipelines.
@@ -105,6 +100,14 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
     case .configured:
       assertionFailure("unexpectedly received data; this handler should have been removed from the pipeline")
     }
+  }
+
+  public func removeHandler(context: ChannelHandlerContext, removalToken: ChannelHandlerContext.RemovalToken) {
+    self.bufferedData.forEach {
+      context.fireChannelRead($0)
+    }
+
+    context.leavePipeline(removalToken: removalToken)
   }
 
   /// Peek into the first line of the packet to check which HTTP version is being used.
