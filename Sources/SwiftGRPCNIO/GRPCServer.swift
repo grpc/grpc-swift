@@ -5,6 +5,76 @@ import NIOHTTP2
 import NIOSSL
 
 /// Wrapper object to manage the lifecycle of a gRPC server.
+///
+/// The pipeline is configured in three stages detailed below. Note: handlers marked with
+/// a '*' are responsible for handling errors.
+///
+/// 1. Initial stage, prior to HTTP protocol detection.
+///
+///                           ┌───────────────────────────┐
+///                           │   HTTPProtocolSwitcher    │
+///                           └─▲───────────────────────┬─┘
+///                   ByteBuffer│                       │ByteBuffer
+///                           ┌─┴───────────────────────▼─┐
+///                           │       NIOSSLHandler       │
+///                           └─▲───────────────────────┬─┘
+///                   ByteBuffer│                       │ByteBuffer
+///                             │                       ▼
+///
+///    The NIOSSLHandler is optional and depends on how the framework user has configured
+///    their server. The HTTPProtocolSwitched detects which HTTP version is being used and
+///    configures the pipeline accordingly.
+///
+/// 2. HTTP version detected. "HTTP Handlers" depends on the HTTP version determined by
+///    HTTPProtocolSwitcher. All of these handlers are provided by NIO except for the
+///    WebCORSHandler which is used for HTTP/1.
+///
+///                           ┌───────────────────────────┐
+///                           │    GRPCChannelHandler*    │
+///                           └─▲───────────────────────┬─┘
+///     RawGRPCServerRequestPart│                       │RawGRPCServerResponsePart
+///                           ┌─┴───────────────────────▼─┐
+///                           │ HTTP1ToRawGRPCServerCodec │
+///                           └─▲───────────────────────┬─┘
+///        HTTPServerRequestPart│                       │HTTPServerResponsePart
+///                           ┌─┴───────────────────────▼─┐
+///                           │       HTTP Handlers       │
+///                           └─▲───────────────────────┬─┘
+///                   ByteBuffer│                       │ByteBuffer
+///                           ┌─┴───────────────────────▼─┐
+///                           │       NIOSSLHandler       │
+///                           └─▲───────────────────────┬─┘
+///                   ByteBuffer│                       │ByteBuffer
+///                             │                       ▼
+///
+///    The GPRCChannelHandler resolves the request head and configures the rest of the pipeline
+///    based on the RPC call being made.
+///
+/// 3. The call has been resolved and is a function that this server can handle. Responses are
+///    written into `BaseCallHandler` by a user-implemented `CallHandlerProvider`.
+///
+///                           ┌───────────────────────────┐
+///                           │     BaseCallHandler*      │
+///                           └─▲───────────────────────┬─┘
+///    GRPCServerRequestPart<T1>│                       │GRPCServerResponsePart<T2>
+///                           ┌─┴───────────────────────▼─┐
+///                           │      GRPCServerCodec      │
+///                           └─▲───────────────────────┬─┘
+///     RawGRPCServerRequestPart│                       │RawGRPCServerResponsePart
+///                           ┌─┴───────────────────────▼─┐
+///                           │ HTTP1ToRawGRPCServerCodec │
+///                           └─▲───────────────────────┬─┘
+///        HTTPServerRequestPart│                       │HTTPServerResponsePart
+///                           ┌─┴───────────────────────▼─┐
+///                           │       HTTP Handlers       │
+///                           └─▲───────────────────────┬─┘
+///                   ByteBuffer│                       │ByteBuffer
+///                           ┌─┴───────────────────────▼─┐
+///                           │       NIOSSLHandler       │
+///                           └─▲───────────────────────┬─┘
+///                   ByteBuffer│                       │ByteBuffer
+///                             │                       ▼
+///
 public final class GRPCServer {
   /// Starts up a server that serves the given providers.
   ///
