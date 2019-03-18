@@ -10,14 +10,14 @@ import NIOHTTP1
 /// - For other errors, `GRPCStatus.processingError` is returned to the client.
 open class StreamingResponseCallContext<ResponseMessage: Message>: ServerCallContextBase {
   public typealias WrappedResponse = GRPCServerResponsePart<ResponseMessage>
-  
+
   public let statusPromise: EventLoopPromise<GRPCStatus>
-  
+
   public override init(eventLoop: EventLoop, request: HTTPRequestHead) {
-    self.statusPromise = eventLoop.newPromise()
+    self.statusPromise = eventLoop.makePromise()
     super.init(eventLoop: eventLoop, request: request)
   }
-  
+
   open func sendResponse(_ message: ResponseMessage) -> EventLoopFuture<Void> {
     fatalError("needs to be overridden")
   }
@@ -26,15 +26,15 @@ open class StreamingResponseCallContext<ResponseMessage: Message>: ServerCallCon
 /// Concrete implementation of `StreamingResponseCallContext` used by our generated code.
 open class StreamingResponseCallContextImpl<ResponseMessage: Message>: StreamingResponseCallContext<ResponseMessage> {
   public let channel: Channel
-  
+
   public init(channel: Channel, request: HTTPRequestHead) {
     self.channel = channel
-    
+
     super.init(eventLoop: channel.eventLoop, request: request)
-    
+
     statusPromise.futureResult
       // Ensure that any error provided is of type `GRPCStatus`, using "internal server error" as a fallback.
-      .mapIfError { error in
+      .recover { error in
         (error as? GRPCStatus) ?? .processingError
       }
       // Finish the call by returning the final status.
@@ -42,9 +42,9 @@ open class StreamingResponseCallContextImpl<ResponseMessage: Message>: Streaming
         self.channel.writeAndFlush(NIOAny(WrappedResponse.status($0)), promise: nil)
     }
   }
-  
+
   open override func sendResponse(_ message: ResponseMessage) -> EventLoopFuture<Void> {
-    let promise: EventLoopPromise<Void> = eventLoop.newPromise()
+    let promise: EventLoopPromise<Void> = eventLoop.makePromise()
     channel.writeAndFlush(NIOAny(WrappedResponse.message(message)), promise: promise)
     return promise.futureResult
   }
@@ -55,9 +55,9 @@ open class StreamingResponseCallContextImpl<ResponseMessage: Message>: Streaming
 /// Simply records all sent messages.
 open class StreamingResponseCallContextTestStub<ResponseMessage: Message>: StreamingResponseCallContext<ResponseMessage> {
   open var recordedResponses: [ResponseMessage] = []
-  
+
   open override func sendResponse(_ message: ResponseMessage) -> EventLoopFuture<Void> {
     recordedResponses.append(message)
-    return eventLoop.newSucceededFuture(result: ())
+    return eventLoop.makeSucceededFuture(())
   }
 }

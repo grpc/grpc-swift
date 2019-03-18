@@ -28,7 +28,7 @@ public class UnaryClientCall<RequestMessage: Message, ResponseMessage: Message>:
   public let response: EventLoopFuture<ResponseMessage>
 
   public init(client: GRPCClient, path: String, request: RequestMessage, callOptions: CallOptions) {
-    let responsePromise: EventLoopPromise<ResponseMessage> = client.channel.eventLoop.newPromise()
+    let responsePromise: EventLoopPromise<ResponseMessage> = client.channel.eventLoop.makePromise()
     self.response = responsePromise.futureResult
 
     super.init(
@@ -39,7 +39,7 @@ public class UnaryClientCall<RequestMessage: Message, ResponseMessage: Message>:
 
     let requestHead = self.makeRequestHead(path: path, host: client.host, callOptions: callOptions)
     self.sendHead(requestHead)
-      .then { self._sendMessage(request) }
+      .flatMap { self._sendMessage(request) }
       .whenSuccess { self._sendEnd(promise: nil) }
   }
 }

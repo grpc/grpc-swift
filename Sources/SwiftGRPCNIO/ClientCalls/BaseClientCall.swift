@@ -59,10 +59,10 @@ open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
     responseObserver: ResponseObserver<ResponseMessage>
   ) {
     self.client = client
-    self.streamPromise = client.channel.eventLoop.newPromise()
+    self.streamPromise = client.channel.eventLoop.makePromise()
     self.clientChannelHandler = GRPCClientChannelHandler(
-      initialMetadataPromise: client.channel.eventLoop.newPromise(),
-      statusPromise: client.channel.eventLoop.newPromise(),
+      initialMetadataPromise: client.channel.eventLoop.makePromise(),
+      statusPromise: client.channel.eventLoop.makePromise(),
       responseObserver: responseObserver)
 
     self.createStreamChannel()
@@ -83,6 +83,12 @@ extension BaseClientCall: ClientCall {
     return self.clientChannelHandler.statusPromise.futureResult
   }
 
+  // Workaround for: https://bugs.swift.org/browse/SR-10128
+  // Once resolved this can become a default implementation on `ClientCall`.
+  public var trailingMetadata: EventLoopFuture<HTTPHeaders> {
+    return status.map { $0.trailingMetadata }
+  }
+
   public func cancel() {
     self.client.channel.eventLoop.execute {
       self.subchannel.whenSuccess { channel in
@@ -99,11 +105,10 @@ extension BaseClientCall {
   private func createStreamChannel() {
     self.client.channel.eventLoop.execute {
       self.client.multiplexer.createStreamChannel(promise: self.streamPromise) { (subchannel, streamID) -> EventLoopFuture<Void> in
-        subchannel.pipeline.addHandlers([HTTP2ToHTTP1ClientCodec(streamID: streamID, httpProtocol: .http),
-                                         HTTP1ToRawGRPCClientCodec(),
-                                         GRPCClientCodec<RequestMessage, ResponseMessage>(),
-                                         self.clientChannelHandler],
-                                        first: false)
+        subchannel.pipeline.addHandlers(HTTP2ToHTTP1ClientCodec(streamID: streamID, httpProtocol: .http),
+                                        HTTP1ToRawGRPCClientCodec(),
+                                        GRPCClientCodec<RequestMessage, ResponseMessage>(),
+                                        self.clientChannelHandler)
       }
     }
   }
@@ -116,13 +121,8 @@ extension BaseClientCall {
   ///   - requestHead: The request head to send.
   ///   - promise: A promise to fulfill once the request head has been sent.
   internal func sendHead(_ requestHead: HTTPRequestHead, promise: EventLoopPromise<Void>?) {
-    // The nghttp2 implementation of NIOHTTP2 has a known defect where "promises on control frame
-    // writes do not work and will be leaked. Promises on DATA frame writes work just fine and will
-    // be fulfilled correctly." Succeed the promise here as a temporary workaround.
-    //! TODO: remove this and pass the promise to `writeAndFlush` when NIOHTTP2 supports it.
-    promise?.succeed(result: ())
     self.subchannel.whenSuccess { channel in
-      channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.head(requestHead), promise: nil)
+      channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.head(requestHead), promise: promise)
     }
   }
 
@@ -133,7 +133,7 @@ extension BaseClientCall {
   /// - Parameter requestHead: The request head to send.
   /// - Returns: A future which will be succeeded once the request head has been sent.
   internal func sendHead(_ requestHead: HTTPRequestHead) -> EventLoopFuture<Void> {
-    let promise = client.channel.eventLoop.newPromise(of: Void.self)
+    let promise = client.channel.eventLoop.makePromise(of: Void.self)
     self.sendHead(requestHead, promise: promise)
     return promise.futureResult
   }
@@ -155,7 +155,7 @@ extension BaseClientCall {
   /// - Note: This is prefixed to allow for classes conforming to `StreamingRequestClientCall` to use the non-underbarred name.
   /// - Returns: A future which will be fullfilled when the message reaches the network.
   internal func _sendMessage(_ message: RequestMessage) -> EventLoopFuture<Void> {
-    let promise = client.channel.eventLoop.newPromise(of: Void.self)
+    let promise = client.channel.eventLoop.makePromise(of: Void.self)
     self._sendMessage(message, promise: promise)
     return promise.futureResult
   }
@@ -166,13 +166,8 @@ extension BaseClientCall {
   /// - Important: This should only ever be called once.
   /// - Parameter promise: A promise to succeed once then end has been sent.
   internal func _sendEnd(promise: EventLoopPromise<Void>?) {
-    // The nghttp2 implementation of NIOHTTP2 has a known defect where "promises on control frame
-    // writes do not work and will be leaked. Promises on DATA frame writes work just fine and will
-    // be fulfilled correctly." Succeed the promise here as a temporary workaround.
-    //! TODO: remove this and pass the promise to `writeAndFlush` when NIOHTTP2 supports it.
-    promise?.succeed(result: ())
     self.subchannel.whenSuccess { channel in
-      channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.end, promise: nil)
+      channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.end, promise: promise)
     }
   }
 
@@ -182,7 +177,7 @@ extension BaseClientCall {
   /// - Important: This should only ever be called once.
   ///- Returns: A future which will be succeeded once the end has been sent.
   internal func _sendEnd() -> EventLoopFuture<Void> {
-    let promise = client.channel.eventLoop.newPromise(of: Void.self)
+    let promise = client.channel.eventLoop.makePromise(of: Void.self)
     self._sendEnd(promise: promise)
     return promise.futureResult
   }

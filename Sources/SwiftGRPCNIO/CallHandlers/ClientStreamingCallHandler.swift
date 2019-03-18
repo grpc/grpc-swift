@@ -12,47 +12,47 @@ import NIOHTTP1
 public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage: Message>: BaseCallHandler<RequestMessage, ResponseMessage> {
   public typealias EventObserver = (StreamEvent<RequestMessage>) -> Void
   private var eventObserver: EventLoopFuture<EventObserver>?
-  
-  private var context: UnaryResponseCallContext<ResponseMessage>?
-  
+
+  private var callContext: UnaryResponseCallContext<ResponseMessage>?
+
   // We ask for a future of type `EventObserver` to allow the framework user to e.g. asynchronously authenticate a call.
   // If authentication fails, they can simply fail the observer future, which causes the call to be terminated.
   public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, eventObserverFactory: (UnaryResponseCallContext<ResponseMessage>) -> EventLoopFuture<EventObserver>) {
     super.init(errorDelegate: errorDelegate)
-    let context = UnaryResponseCallContextImpl<ResponseMessage>(channel: channel, request: request)
-    self.context = context
-    let eventObserver = eventObserverFactory(context)
+    let callContext = UnaryResponseCallContextImpl<ResponseMessage>(channel: channel, request: request)
+    self.callContext = callContext
+    let eventObserver = eventObserverFactory(callContext)
     self.eventObserver = eventObserver
-    context.responsePromise.futureResult.whenComplete {
+    callContext.responsePromise.futureResult.whenComplete { _ in
       // When done, reset references to avoid retain cycles.
       self.eventObserver = nil
-      self.context = nil
+      self.callContext = nil
     }
   }
-  
-  public override func handlerAdded(ctx: ChannelHandlerContext) {
-    guard let eventObserver = eventObserver,
-      let context = context else { return }
+
+  public override func handlerAdded(context: ChannelHandlerContext) {
+    guard let eventObserver = self.eventObserver,
+      let callContext = self.callContext else { return }
     // Terminate the call if the future providing an observer fails.
     // This is being done _after_ we have been added as a handler to ensure that the `GRPCServerCodec` required to
     // translate our outgoing `GRPCServerResponsePart<ResponseMessage>` message is already present on the channel.
     // Otherwise, our `OutboundOut` type would not match the `OutboundIn` type of the next handler on the channel.
-    eventObserver.cascadeFailure(promise: context.responsePromise)
+    eventObserver.cascadeFailure(to: callContext.responsePromise)
   }
-  
+
   public override func processMessage(_ message: RequestMessage) {
-    eventObserver?.whenSuccess { observer in
+    self.eventObserver?.whenSuccess { observer in
       observer(.message(message))
     }
   }
-  
+
   public override func endOfStreamReceived() throws {
-    eventObserver?.whenSuccess { observer in
+    self.eventObserver?.whenSuccess { observer in
       observer(.end)
     }
   }
-  
+
   override func sendErrorStatus(_ status: GRPCStatus) {
-    context?.responsePromise.fail(error: status)
+    self.callContext?.responsePromise.fail(status)
   }
 }

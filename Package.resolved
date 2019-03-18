@@ -24,8 +24,8 @@
         "repositoryURL": "https://github.com/apple/swift-nio.git",
         "state": {
           "branch": null,
-          "revision": "98434c1f1d687ff5a24d2cabfbd19b5c7d2d7a2f",
-          "version": "1.13.0"
+          "revision": "35ed9ff754493f7ebe6f0795c59c34c58696c3ea",
+          "version": "2.0.0-convergence.2"
         }
       },
       {
@@ -33,17 +33,8 @@
         "repositoryURL": "https://github.com/apple/swift-nio-http2.git",
         "state": {
           "branch": null,
-          "revision": "88bd6d369a729f88e63f53ae5265840de4bb1384",
-          "version": "0.2.1"
-        }
-      },
-      {
-        "package": "swift-nio-nghttp2-support",
-        "repositoryURL": "https://github.com/apple/swift-nio-nghttp2-support.git",
-        "state": {
-          "branch": null,
-          "revision": "324e323e92ab12e565d63bffb07b5833a63a425f",
-          "version": "1.0.0"
+          "revision": "d9f11317499f008ddebfef2d44fcc62ba1b49410",
+          "version": "1.0.0-convergence.1"
         }
       },
       {
@@ -60,8 +51,8 @@
         "repositoryURL": "https://github.com/apple/swift-protobuf.git",
         "state": {
           "branch": null,
-          "revision": "ab98c52b5166593ad1ae0df246463266df151cfa",
-          "version": "1.3.1"
+          "revision": "6520fb185db88c0774a929acea1f7d5981a30d3a",
+          "version": "1.4.0"
         }
       }
     ]

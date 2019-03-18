@@ -15,6 +15,7 @@
  */
 import Foundation
 import NIO
+import NIOHTTP1
 
 /// This class reads and decodes length-prefixed gRPC messages.
 ///
@@ -68,7 +69,7 @@ public class LengthPrefixedMessageReader {
       // mark the bytes as "read"
       buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
     } else {
-      self.buffer.write(buffer: &buffer)
+      self.buffer.writeBuffer(&buffer)
     }
   }
 

@@ -32,9 +32,9 @@ public class ClientStreamingClientCall<RequestMessage: Message, ResponseMessage:
   private var messageQueue: EventLoopFuture<Void>
 
   public init(client: GRPCClient, path: String, callOptions: CallOptions) {
-    let responsePromise: EventLoopPromise<ResponseMessage> = client.channel.eventLoop.newPromise()
+    let responsePromise: EventLoopPromise<ResponseMessage> = client.channel.eventLoop.makePromise()
     self.response = responsePromise.futureResult
-    self.messageQueue = client.channel.eventLoop.newSucceededFuture(result: ())
+    self.messageQueue = client.channel.eventLoop.makeSucceededFuture(())
 
     super.init(
       client: client,
@@ -43,7 +43,7 @@ public class ClientStreamingClientCall<RequestMessage: Message, ResponseMessage:
       responseObserver: .succeedPromise(responsePromise))
 
     let requestHead = self.makeRequestHead(path: path, host: client.host, callOptions: callOptions)
-    self.messageQueue = self.messageQueue.then { self.sendHead(requestHead) }
+    self.messageQueue = self.messageQueue.flatMap { self.sendHead(requestHead) }
   }
 
   public func sendMessage(_ message: RequestMessage) -> EventLoopFuture<Void> {

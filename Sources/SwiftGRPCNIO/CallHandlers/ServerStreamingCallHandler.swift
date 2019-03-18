@@ -11,30 +11,30 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
   public typealias EventObserver = (RequestMessage) -> EventLoopFuture<GRPCStatus>
   private var eventObserver: EventObserver?
 
-  private var context: StreamingResponseCallContext<ResponseMessage>?
+  private var callContext: StreamingResponseCallContext<ResponseMessage>?
 
   public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, eventObserverFactory: (StreamingResponseCallContext<ResponseMessage>) -> EventObserver) {
     super.init(errorDelegate: errorDelegate)
-    let context = StreamingResponseCallContextImpl<ResponseMessage>(channel: channel, request: request)
-    self.context = context
-    self.eventObserver = eventObserverFactory(context)
-    context.statusPromise.futureResult.whenComplete {
+    let callContext = StreamingResponseCallContextImpl<ResponseMessage>(channel: channel, request: request)
+    self.callContext = callContext
+    self.eventObserver = eventObserverFactory(callContext)
+    callContext.statusPromise.futureResult.whenComplete { _ in
       // When done, reset references to avoid retain cycles.
       self.eventObserver = nil
-      self.context = nil
+      self.callContext = nil
     }
   }
 
   public override func processMessage(_ message: RequestMessage) throws {
     guard let eventObserver = self.eventObserver,
-      let context = self.context else {
+      let callContext = self.callContext else {
         throw GRPCError.server(.tooManyRequests)
     }
 
     let resultFuture = eventObserver(message)
     resultFuture
       // Fulfill the status promise with whatever status the framework user has provided.
-      .cascade(promise: context.statusPromise)
+      .cascade(to: callContext.statusPromise)
     self.eventObserver = nil
   }
   
@@ -45,6 +45,6 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
   }
   
   override func sendErrorStatus(_ status: GRPCStatus) {
-    context?.statusPromise.fail(error: status)
+    self.callContext?.statusPromise.fail(status)
   }
 }

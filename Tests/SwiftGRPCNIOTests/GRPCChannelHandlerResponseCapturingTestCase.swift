@@ -7,7 +7,8 @@ import XCTest
 class CollectingChannelHandler<OutboundIn>: ChannelOutboundHandler {
   var responses: [OutboundIn] = []
 
-  func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+  func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+    promise?.succeed(())
     responses.append(unwrapOutboundIn(data))
   }
 }
@@ -40,7 +41,7 @@ class GRPCChannelHandlerResponseCapturingTestCase: XCTestCase {
 
   func configureChannel(withHandlers handlers: [ChannelHandler]) -> EventLoopFuture<EmbeddedChannel> {
     let channel = EmbeddedChannel()
-    return channel.pipeline.addHandlers(handlers, first: true)
+    return channel.pipeline.addHandlers(handlers, position: .first)
       .map { _ in channel }
   }
 
@@ -62,7 +63,7 @@ class GRPCChannelHandlerResponseCapturingTestCase: XCTestCase {
   ) throws -> [RawGRPCServerResponsePart] {
     let collector = CollectingChannelHandler<RawGRPCServerResponsePart>()
     try configureChannel(withHandlers: [collector, GRPCChannelHandler(servicesByName: servicesByName, errorDelegate: errorCollector)])
-      .thenThrowing(callback)
+      .flatMapThrowing(callback)
       .wait()
 
     XCTAssertEqual(count, collector.responses.count)

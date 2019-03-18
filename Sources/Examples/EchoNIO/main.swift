@@ -44,7 +44,7 @@ func makeEchoClient(address: String, port: Int) -> Echo_EchoService_NIOClient? {
 
 Group {
   $0.command("serve",
-             addressOption("0.0.0.0"),
+             addressOption("localhost"),
              portOption,
              description: "Run an echo server.") { address, port in
     let sem = DispatchSemaphore(value: 0)
@@ -137,7 +137,7 @@ Group {
       var requestMessage = Echo_EchoRequest()
       requestMessage.text = part
       print("collect sending: \(requestMessage.text)")
-      queue = queue.then { collect.sendMessage(requestMessage) }
+      queue = queue.flatMap { collect.sendMessage(requestMessage) }
     }
     queue.whenSuccess { collect.sendEnd(promise: nil) }
 
@@ -177,7 +177,7 @@ Group {
       var requestMessage = Echo_EchoRequest()
       requestMessage.text = part
       print("update sending: \(requestMessage.text)")
-      queue = queue.then { update.sendMessage(requestMessage) }
+      queue = queue.flatMap { update.sendMessage(requestMessage) }
     }
     queue.whenSuccess { update.sendEnd(promise: nil) }
 

@@ -32,7 +32,7 @@ public enum ResponseObserver<ResponseMessage: Message> {
       callback(message)
 
     case .succeedPromise(let promise):
-      promise.succeed(result: message)
+      promise.succeed(message)
     }
   }
 

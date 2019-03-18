@@ -13,12 +13,12 @@ import NIOHTTP1
 /// the future returned by `UnaryCallHandler.EventObserver`.
 open class UnaryResponseCallContext<ResponseMessage: Message>: ServerCallContextBase, StatusOnlyCallContext {
   public typealias WrappedResponse = GRPCServerResponsePart<ResponseMessage>
-  
+
   public let responsePromise: EventLoopPromise<ResponseMessage>
   public var responseStatus: GRPCStatus = .ok
-  
+
   public override init(eventLoop: EventLoop, request: HTTPRequestHead) {
-    self.responsePromise = eventLoop.newPromise()
+    self.responsePromise = eventLoop.makePromise()
     super.init(eventLoop: eventLoop, request: request)
   }
 }
@@ -39,23 +39,22 @@ public protocol StatusOnlyCallContext: ServerCallContext {
 /// Concrete implementation of `UnaryResponseCallContext` used by our generated code.
 open class UnaryResponseCallContextImpl<ResponseMessage: Message>: UnaryResponseCallContext<ResponseMessage> {
   public let channel: Channel
-  
+
   public init(channel: Channel, request: HTTPRequestHead) {
     self.channel = channel
-    
+
     super.init(eventLoop: channel.eventLoop, request: request)
-    
+
     responsePromise.futureResult
+      // Send the response provided to the promise.
       .map { responseMessage in
-        // Send the response provided to the promise.
-        //! FIXME: It would be nicer to chain sending the status onto a successful write, but for some reason the
-        //  "write message" future doesn't seem to get fulfilled?
-        self.channel.writeAndFlush(NIOAny(WrappedResponse.message(responseMessage)), promise: nil)
-        
-        return self.responseStatus
+        self.channel.writeAndFlush(NIOAny(WrappedResponse.message(responseMessage)))
+      }
+      .map { _ in
+        self.responseStatus
       }
       // Ensure that any error provided is of type `GRPCStatus`, using "internal server error" as a fallback.
-      .mapIfError { error in
+      .recover { error in
         (error as? GRPCStatus) ?? .processingError
       }
       // Finish the call by returning the final status.

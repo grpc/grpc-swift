@@ -17,7 +17,8 @@
 
 os:
   - linux
-  - osx
+  # Travis' most recent version of Xcode is 10.2 beta 2; we need at least beta 4.
+  # - osx
 
 cache:
   apt: true
@@ -28,30 +29,25 @@ cache:
 # Use Ubuntu 14.04
 dist: trusty
 
-osx_image: xcode9.3
+# Travis' most recent version of Xcode is 10.2 beta 2; we need at least beta 4.
+# osx_image: xcode10.2
 
 sudo: false
 
 addons:
   apt:
-    sources:
-      - sourceline: 'ppa:ondrej/apache2'  # for libnghttp2-dev
     packages:
-      - clang-3.8 
-      - lldb-3.8 
-      - libicu-dev 
-      - libtool 
-      - libcurl4-openssl-dev 
-      - libbsd-dev 
-      - build-essential 
-      - libssl-dev 
+      - clang-3.8
+      - lldb-3.8
+      - libicu-dev
+      - libtool
+      - libcurl4-openssl-dev
+      - libbsd-dev
+      - build-essential
+      - libssl-dev
       - uuid-dev
       - curl
       - unzip
-      - libnghttp2-dev
-
-before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install nghttp2; fi
 
 install: ./.travis-install.sh
 

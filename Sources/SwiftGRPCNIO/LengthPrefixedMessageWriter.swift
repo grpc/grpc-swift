@@ -34,8 +34,8 @@ public class LengthPrefixedMessageWriter {
     buffer.reserveCapacity(LengthPrefixedMessageWriter.metadataLength + message.count)
 
     //! TODO: Add compression support, use the length and compressed content.
-    buffer.write(integer: Int8(compression.requiresFlag ? 1 : 0))
-    buffer.write(integer: UInt32(message.count))
-    buffer.write(bytes: message)
+    buffer.writeInteger(Int8(compression.requiresFlag ? 1 : 0))
+    buffer.writeInteger(UInt32(message.count))
+    buffer.writeBytes(message)
   }
 }

@@ -1,4 +1,4 @@
-// swift-tools-version:4.0
+// swift-tools-version:5.0
 /*
  * Copyright 2017, gRPC Authors All rights reserved.
  *
@@ -20,18 +20,17 @@ import Foundation
 var packageDependencies: [Package.Dependency] = [
   // Official SwiftProtobuf library, for [de]serializing data to send on the wire.
   .package(url: "https://github.com/apple/swift-protobuf.git", .upToNextMajor(from: "1.3.1")),
-  
+
   // Command line argument parser for our auxiliary command line tools.
   .package(url: "https://github.com/kylef/Commander.git", .upToNextMinor(from: "0.8.0")),
-  
+
   // SwiftGRPCNIO dependencies:
   // Transitive dependencies
   .package(url: "https://github.com/apple/swift-nio-zlib-support.git", .upToNextMajor(from: "1.0.0")),
-  .package(url: "https://github.com/apple/swift-nio-nghttp2-support.git", .upToNextMajor(from: "1.0.0")),
   // Main SwiftNIO package
-  .package(url: "https://github.com/apple/swift-nio.git", .upToNextMajor(from: "1.12.0")),
+  .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0-convergence.1"),
   // HTTP2 via SwiftNIO
-  .package(url: "https://github.com/apple/swift-nio-http2.git", .upToNextMinor(from: "0.2.1"))
+  .package(url: "https://github.com/apple/swift-nio-http2.git", from: "1.0.0-convergence.1"),
 ]
 
 var cGRPCDependencies: [Target.Dependency] = []
@@ -64,6 +63,7 @@ let package = Package(
             dependencies: ["CgRPC", "SwiftProtobuf"]),
     .target(name: "SwiftGRPCNIO",
             dependencies: [
+              "NIO",
               "NIOFoundationCompat",
               "NIOHTTP1",
               "NIOHTTP2",

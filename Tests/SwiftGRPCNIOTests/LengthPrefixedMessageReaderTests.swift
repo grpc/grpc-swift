@@ -28,7 +28,7 @@ class LengthPrefixedMessageReaderTests: XCTestCase {
 
   func byteBuffer(withBytes bytes: [UInt8]) -> ByteBuffer {
     var buffer = allocator.buffer(capacity: bytes.count)
-    buffer.write(bytes: bytes)
+    buffer.writeBytes(bytes)
     return buffer
   }
 

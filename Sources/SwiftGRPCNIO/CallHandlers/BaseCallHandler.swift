@@ -20,8 +20,8 @@ public class BaseCallHandler<RequestMessage: Message, ResponseMessage: Message>:
   ///
   /// Otherwise, the subclass's implementation will simply never be called (probably because the protocol's default
   /// implementation in an extension is being used instead).
-  public func handlerAdded(ctx: ChannelHandlerContext) { }
-  
+  public func handlerAdded(context: ChannelHandlerContext) { }
+
   /// Called when the client has half-closed the stream, indicating that they won't send any further data.
   ///
   /// Overridden by subclasses if the "end-of-stream" event is relevant.
@@ -30,13 +30,13 @@ public class BaseCallHandler<RequestMessage: Message, ResponseMessage: Message>:
   /// Whether this handler can still write messages to the client.
   private var serverCanWrite = true
 
-  /// Called for each error recieved in `errorCaught(ctx:error:)`.
+  /// Called for each error recieved in `errorCaught(context:error:)`.
   private weak var errorDelegate: ServerErrorDelegate?
 
   public init(errorDelegate: ServerErrorDelegate?) {
     self.errorDelegate = errorDelegate
   }
-  
+
   /// Sends an error status to the client while ensuring that all call context promises are fulfilled.
   /// Because only the concrete call subclass knows which promises need to be fulfilled, this method needs to be overridden.
   func sendErrorStatus(_ status: GRPCStatus) {
@@ -50,7 +50,7 @@ extension BaseCallHandler: ChannelInboundHandler {
   /// Passes errors to the user-provided `errorHandler`. After an error has been received an
   /// appropriate status is written. Errors which don't conform to `GRPCStatusTransformable`
   /// return a status with code `.internalError`.
-  public func errorCaught(ctx: ChannelHandlerContext, error: Error) {
+  public func errorCaught(context: ChannelHandlerContext, error: Error) {
     errorDelegate?.observe(error)
 
     let transformed = errorDelegate?.transform(error) ?? error
@@ -58,24 +58,24 @@ extension BaseCallHandler: ChannelInboundHandler {
     sendErrorStatus(status)
   }
 
-  public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+  public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     switch self.unwrapInboundIn(data) {
     case .head(let requestHead):
       // Head should have been handled by `GRPCChannelHandler`.
-      self.errorCaught(ctx: ctx, error: GRPCError.server(.invalidState("unexpected request head received \(requestHead)")))
+      self.errorCaught(context: context, error: GRPCError.server(.invalidState("unexpected request head received \(requestHead)")))
 
     case .message(let message):
       do {
         try processMessage(message)
       } catch {
-        self.errorCaught(ctx: ctx, error: error)
+        self.errorCaught(context: context, error: error)
       }
 
     case .end:
       do {
         try endOfStreamReceived()
       } catch {
-        self.errorCaught(ctx: ctx, error: error)
+        self.errorCaught(context: context, error: error)
       }
     }
   }
@@ -85,18 +85,18 @@ extension BaseCallHandler: ChannelOutboundHandler {
   public typealias OutboundIn = GRPCServerResponsePart<ResponseMessage>
   public typealias OutboundOut = GRPCServerResponsePart<ResponseMessage>
 
-  public func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+  public func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     guard serverCanWrite else {
-      promise?.fail(error: GRPCError.server(.serverNotWritable))
+      promise?.fail(GRPCError.server(.serverNotWritable))
       return
     }
 
     // We can only write one status; make sure we don't write again.
     if case .status = unwrapOutboundIn(data) {
       serverCanWrite = false
-      ctx.writeAndFlush(data, promise: promise)
+      context.writeAndFlush(data, promise: promise)
     } else {
-      ctx.write(data, promise: promise)
+      context.write(data, promise: promise)
     }
   }
 }

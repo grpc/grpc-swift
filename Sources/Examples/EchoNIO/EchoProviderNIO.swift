@@ -21,23 +21,23 @@ class EchoProviderNIO: Echo_EchoProvider_NIO {
   func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
     var response = Echo_EchoResponse()
     response.text = "Swift echo get: " + request.text
-    return context.eventLoop.newSucceededFuture(result: response)
+    return context.eventLoop.makeSucceededFuture(response)
   }
 
   func expand(request: Echo_EchoRequest, context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<GRPCStatus> {
-    var endOfSendOperationQueue = context.eventLoop.newSucceededFuture(result: ())
+    var endOfSendOperationQueue = context.eventLoop.makeSucceededFuture(())
     let parts = request.text.components(separatedBy: " ")
     for (i, part) in parts.enumerated() {
       var response = Echo_EchoResponse()
       response.text = "Swift echo expand (\(i)): \(part)"
-      endOfSendOperationQueue = endOfSendOperationQueue.then { context.sendResponse(response) }
+      endOfSendOperationQueue = endOfSendOperationQueue.flatMap { context.sendResponse(response) }
     }
     return endOfSendOperationQueue.map { GRPCStatus.ok }
   }
 
   func collect(context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     var parts: [String] = []
-    return context.eventLoop.newSucceededFuture(result: { event in
+    return context.eventLoop.makeSucceededFuture({ event in
       switch event {
       case .message(let message):
         parts.append(message.text)
@@ -45,26 +45,26 @@ class EchoProviderNIO: Echo_EchoProvider_NIO {
       case .end:
         var response = Echo_EchoResponse()
         response.text = "Swift echo collect: " + parts.joined(separator: " ")
-        context.responsePromise.succeed(result: response)
+        context.responsePromise.succeed(response)
       }
     })
   }
 
   func update(context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
-    var endOfSendOperationQueue = context.eventLoop.newSucceededFuture(result: ())
+    var endOfSendOperationQueue = context.eventLoop.makeSucceededFuture(())
     var count = 0
-    return context.eventLoop.newSucceededFuture(result: { event in
+    return context.eventLoop.makeSucceededFuture({ event in
       switch event {
       case .message(let message):
         var response = Echo_EchoResponse()
         response.text = "Swift echo update (\(count)): \(message.text)"
-        endOfSendOperationQueue = endOfSendOperationQueue.then { context.sendResponse(response) }
+        endOfSendOperationQueue = endOfSendOperationQueue.flatMap { context.sendResponse(response) }
         count += 1
 
       case .end:
         endOfSendOperationQueue
           .map { GRPCStatus.ok }
-          .cascade(promise: context.statusPromise)
+          .cascade(to: context.statusPromise)
       }
     })
   }

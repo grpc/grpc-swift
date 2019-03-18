@@ -29,7 +29,7 @@ public class ServerStreamingClientCall<RequestMessage: Message, ResponseMessage:
 
     let requestHead = self.makeRequestHead(path: path, host: client.host, callOptions: callOptions)
     self.sendHead(requestHead)
-      .then { self._sendMessage(request) }
+      .flatMap { self._sendMessage(request) }
       .whenSuccess { self._sendEnd(promise: nil) }
   }
 }

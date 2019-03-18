@@ -7,7 +7,7 @@ import NIOHTTP1
 public protocol ServerCallContext: class {
   /// The event loop this call is served on.
   var eventLoop: EventLoop { get }
-  
+
   /// Generic metadata provided with this request.
   var request: HTTPRequestHead { get }
 }
@@ -16,7 +16,7 @@ public protocol ServerCallContext: class {
 open class ServerCallContextBase: ServerCallContext {
   public let eventLoop: EventLoop
   public let request: HTTPRequestHead
-  
+
   public init(eventLoop: EventLoop, request: HTTPRequestHead) {
     self.eventLoop = eventLoop
     self.request = request

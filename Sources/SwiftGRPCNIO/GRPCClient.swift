@@ -26,18 +26,20 @@ open class GRPCClient {
     port: Int,
     eventLoopGroup: EventLoopGroup
   ) -> EventLoopFuture<GRPCClient> {
+    let multiplexerPromise: EventLoopPromise<HTTP2StreamMultiplexer> = eventLoopGroup.next().makePromise()
+
     let bootstrap = ClientBootstrap(group: eventLoopGroup)
       // Enable SO_REUSEADDR.
       .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
       .channelInitializer { channel in
-        channel.pipeline.add(handler: HTTP2Parser(mode: .client))
-    }
+        let multiplexer = channel.configureHTTP2Pipeline(mode: .client)
+        multiplexer.cascade(to: multiplexerPromise)
+        return multiplexer.map { _ in }
+      }
 
-    return bootstrap.connect(host: host, port: port).then { (channel: Channel) -> EventLoopFuture<GRPCClient> in
-      let multiplexer = HTTP2StreamMultiplexer(inboundStreamStateInitializer: nil)
-      return channel.pipeline.add(handler: multiplexer)
-        .map { GRPCClient(channel: channel, multiplexer: multiplexer, host: host) }
-    }
+    return bootstrap.connect(host: host, port: port)
+      .and(multiplexerPromise.futureResult)
+      .map { channel, multiplexer in GRPCClient(channel: channel, multiplexer: multiplexer, host: host) }
   }
 
   public let channel: Channel

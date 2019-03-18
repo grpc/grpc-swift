@@ -8,14 +8,26 @@ import NIOHTTP2
 public class HTTPProtocolSwitcher {
   private let handlersInitializer: ((Channel) -> EventLoopFuture<Void>)
 
+  // We could receive additional data after the initial data and before configuring
+  // the pipeline; buffer it and fire it down the pipeline once it is configured.
+  private enum State {
+    case notConfigured
+    case configuring
+    case configured
+  }
+
+  private var state: State = .notConfigured
+  private var bufferedData: [NIOAny] = []
+
   public init(handlersInitializer: (@escaping (Channel) -> EventLoopFuture<Void>)) {
     self.handlersInitializer = handlersInitializer
   }
 }
 
-extension HTTPProtocolSwitcher: ChannelInboundHandler {
+extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
   public typealias InboundIn = ByteBuffer
   public typealias InboundOut = ByteBuffer
+
 
   enum HTTPProtocolVersionError: Error {
     /// Raised when it wasn't possible to detect HTTP Protocol version.
@@ -35,44 +47,67 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler {
     case http2
   }
 
-  public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
-    // Detect the HTTP protocol version for the incoming request, or error out if it
-    // couldn't be detected.
-    var inBuffer = unwrapInboundIn(data)
-    guard let initialData = inBuffer.readString(length: inBuffer.readableBytes),
-          let preamble = initialData.split(separator: "\r\n",
-                                           maxSplits: 1,
-                                           omittingEmptySubsequences: true).first,
-          let version = protocolVersion(String(preamble)) else {
+  public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+    switch self.state {
+    case .notConfigured:
+      self.state = .configuring
+      self.bufferedData.append(data)
 
-      ctx.fireErrorCaught(HTTPProtocolVersionError.invalidHTTPProtocolVersion)
-      return
-    }
+      // Detect the HTTP protocol version for the incoming request, or error out if it
+      // couldn't be detected.
+      var inBuffer = self.unwrapInboundIn(data)
+      guard let initialData = inBuffer.readString(length: inBuffer.readableBytes),
+        let preamble = initialData.split(separator: "\r\n",
+                                         maxSplits: 1,
+                                         omittingEmptySubsequences: true).first,
+        let version = protocolVersion(String(preamble)) else {
+          context.fireErrorCaught(HTTPProtocolVersionError.invalidHTTPProtocolVersion)
+          return
+      }
 
-    // Depending on whether it is HTTP1 or HTTP2, created different processing pipelines.
-    // Inbound handlers in handlersInitializer should expect HTTPServerRequestPart objects
-    // and outbound handlers should return HTTPServerResponsePart objects.
-    switch version {
-    case .http1:
-      // Upgrade connections are not handled since gRPC connections already arrive in HTTP2,
-      // while gRPC-Web does not support HTTP2 at all, so there are no compelling use cases
-      // to support this.
-      _ = ctx.pipeline.configureHTTPServerPipeline(withErrorHandling: true)
-        .then { ctx.pipeline.add(handler: WebCORSHandler()) }
-        .then { (Void) -> EventLoopFuture<Void> in self.handlersInitializer(ctx.channel) }
-    case .http2:
-      _ = ctx.pipeline.add(handler: HTTP2Parser(mode: .server))
-        .then { () -> EventLoopFuture<Void> in
-          let multiplexer = HTTP2StreamMultiplexer { (channel, streamID) -> EventLoopFuture<Void> in
-            return channel.pipeline.add(handler: HTTP2ToHTTP1ServerCodec(streamID: streamID))
-              .then { (Void) -> EventLoopFuture<Void> in self.handlersInitializer(channel) }
+      // Once configured remove ourself from the pipeline.
+      let pipelineConfigured: EventLoopPromise<Void> = context.eventLoop.makePromise()
+      pipelineConfigured.futureResult.whenSuccess {
+        self.state = .configured
+        context.pipeline.removeHandler(context: context, promise: nil)
+      }
+
+      // Depending on whether it is HTTP1 or HTTP2, create different processing pipelines.
+      // Inbound handlers in handlersInitializer should expect HTTPServerRequestPart objects
+      // and outbound handlers should return HTTPServerResponsePart objects.
+      switch version {
+      case .http1:
+        // Upgrade connections are not handled since gRPC connections already arrive in HTTP2,
+        // while gRPC-Web does not support HTTP2 at all, so there are no compelling use cases
+        // to support this.
+        context.pipeline.configureHTTPServerPipeline(withErrorHandling: true)
+          .flatMap { context.pipeline.addHandler(WebCORSHandler()) }
+          .flatMap { self.handlersInitializer(context.channel) }
+          .cascade(to: pipelineConfigured)
+
+      case .http2:
+        context.channel.configureHTTP2Pipeline(mode: .server) { (streamChannel, streamID) in
+            streamChannel.pipeline.addHandler(HTTP2ToHTTP1ServerCodec(streamID: streamID))
+              .flatMap { self.handlersInitializer(streamChannel) }
           }
-          return ctx.pipeline.add(handler: multiplexer)
-        }
+          .map { _ in }
+          .cascade(to: pipelineConfigured)
+      }
+
+    case .configuring:
+      self.bufferedData.append(data)
+
+    case .configured:
+      assertionFailure("unexpectedly received data; this handler should have been removed from the pipeline")
+    }
+  }
+
+  public func removeHandler(context: ChannelHandlerContext, removalToken: ChannelHandlerContext.RemovalToken) {
+    self.bufferedData.forEach {
+      context.fireChannelRead($0)
     }
 
-    ctx.fireChannelRead(data)
-    _ = ctx.pipeline.remove(ctx: ctx)
+    context.leavePipeline(removalToken: removalToken)
   }
 
   /// Peek into the first line of the packet to check which HTTP version is being used.
@@ -82,8 +117,9 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler {
     let result = regex.firstMatch(in: preamble, options: [], range: range)!
 
     let versionRange = result.range(at: 1)
-    let start = String.UTF16Index(encodedOffset: versionRange.location)
-    let end = String.UTF16Index(encodedOffset: versionRange.location + versionRange.length)
+
+    let start = String.Index(utf16Offset: versionRange.location, in: preamble)
+    let end = String.Index(utf16Offset: versionRange.location + versionRange.length, in: preamble)
 
     switch String(preamble.utf16[start..<end])! {
     case "1":

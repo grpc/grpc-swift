@@ -10,7 +10,7 @@ extension WebCORSHandler: ChannelInboundHandler {
   public typealias InboundIn = HTTPServerRequestPart
   public typealias OutboundOut = HTTPServerResponsePart
 
-  public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+  public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     // If the request is OPTIONS, the request is not propagated further.
     switch self.unwrapInboundIn(data) {
     case .head(let requestHead):
@@ -22,10 +22,10 @@ extension WebCORSHandler: ChannelInboundHandler {
         headers.add(name: "Access-Control-Allow-Headers",
                     value: "content-type,x-grpc-web,x-user-agent")
         headers.add(name: "Access-Control-Max-Age", value: "86400")
-        ctx.write(self.wrapOutboundOut(.head(HTTPResponseHead(version: requestHead.version,
-                                                              status: .ok,
-                                                              headers: headers))),
-                  promise: nil)
+        context.write(self.wrapOutboundOut(.head(HTTPResponseHead(version: requestHead.version,
+                                                                  status: .ok,
+                                                                  headers: headers))),
+                      promise: nil)
         return
       }
     case .body:
@@ -37,20 +37,20 @@ extension WebCORSHandler: ChannelInboundHandler {
 
     case .end:
       if requestMethod == .OPTIONS {
-        ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
+        context.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
         requestMethod = nil
         return
       }
     }
     // The OPTIONS request should be fully handled at this point.
-    ctx.fireChannelRead(data)
+    context.fireChannelRead(data)
   }
 }
 
 extension WebCORSHandler: ChannelOutboundHandler {
   public typealias OutboundIn = HTTPServerResponsePart
 
-  public func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+  public func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     let responsePart = self.unwrapOutboundIn(data)
     switch responsePart {
     case .head(let responseHead):
@@ -62,12 +62,12 @@ extension WebCORSHandler: ChannelOutboundHandler {
       // inject the gRPC call handler.
       headers.add(name: "Connection", value: "close")
 
-      ctx.write(self.wrapOutboundOut(.head(HTTPResponseHead(version: responseHead.version,
-                                                            status: responseHead.status,
-                                                            headers: headers))),
-                promise: promise)
+      context.write(self.wrapOutboundOut(.head(HTTPResponseHead(version: responseHead.version,
+                                                                status: responseHead.status,
+                                                                headers: headers))),
+                    promise: promise)
     default:
-      ctx.write(data, promise: promise)
+      context.write(data, promise: promise)
     }
   }
 }
