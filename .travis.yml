@@ -28,7 +28,7 @@ cache:
 # Use Ubuntu 14.04
 dist: trusty
 
-osx_image: xcode9.3
+osx_image: xcode10.2
 
 sudo: false
 
@@ -37,14 +37,14 @@ addons:
     sources:
       - sourceline: 'ppa:ondrej/apache2'  # for libnghttp2-dev
     packages:
-      - clang-3.8 
-      - lldb-3.8 
-      - libicu-dev 
-      - libtool 
-      - libcurl4-openssl-dev 
-      - libbsd-dev 
-      - build-essential 
-      - libssl-dev 
+      - clang-3.8
+      - lldb-3.8
+      - libicu-dev
+      - libtool
+      - libcurl4-openssl-dev
+      - libbsd-dev
+      - build-essential
+      - libssl-dev
       - uuid-dev
       - curl
       - unzip
