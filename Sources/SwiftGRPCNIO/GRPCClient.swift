@@ -16,6 +16,7 @@
 import Foundation
 import NIO
 import NIOHTTP2
+import NIOSSL
 
 /// Underlying channel and HTTP/2 stream multiplexer.
 ///
@@ -24,34 +25,64 @@ open class GRPCClient {
   public static func start(
     host: String,
     port: Int,
-    eventLoopGroup: EventLoopGroup
-  ) -> EventLoopFuture<GRPCClient> {
+    eventLoopGroup: EventLoopGroup,
+    sslContext: NIOSSLContext? = nil
+  ) throws -> EventLoopFuture<GRPCClient> {
+    // We need to capture the multiplexer from the channel initializer to store it after connection.
     let multiplexerPromise: EventLoopPromise<HTTP2StreamMultiplexer> = eventLoopGroup.next().makePromise()
 
     let bootstrap = ClientBootstrap(group: eventLoopGroup)
       // Enable SO_REUSEADDR.
       .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
       .channelInitializer { channel in
-        let multiplexer = channel.configureHTTP2Pipeline(mode: .client)
+        let multiplexer = configureSSL(sslContext: sslContext, channel: channel, host: host).flatMap {
+          channel.configureHTTP2Pipeline(mode: .client)
+        }
+
         multiplexer.cascade(to: multiplexerPromise)
         return multiplexer.map { _ in }
       }
 
     return bootstrap.connect(host: host, port: port)
       .and(multiplexerPromise.futureResult)
-      .map { channel, multiplexer in GRPCClient(channel: channel, multiplexer: multiplexer, host: host) }
+      .map { channel, multiplexer in GRPCClient(channel: channel, multiplexer: multiplexer, host: host, httpProtocol: sslContext == nil ? .http : .https) }
+  }
+
+  /// Configure an SSL handler on the channel, if one is provided.
+  ///
+  /// - Parameters:
+  ///   - sslContext: SSL context to use when creating the handler.
+  ///   - channel: The channel on which to add the SSL handler.
+  ///   - host: The hostname of the server we're connecting to.
+  /// - Returns: A future which will be succeeded when the pipeline has been configured.
+  private static func configureSSL(sslContext: NIOSSLContext?, channel: Channel, host: String) -> EventLoopFuture<Void> {
+    guard let sslContext = sslContext else {
+      return channel.eventLoop.makeSucceededFuture(())
+    }
+
+    let handlerAddedPromise: EventLoopPromise<Void> = channel.eventLoop.makePromise()
+
+    do {
+      channel.pipeline.addHandler(try NIOSSLClientHandler(context: sslContext, serverHostname: host)).cascade(to: handlerAddedPromise)
+    } catch {
+      handlerAddedPromise.fail(error)
+    }
+
+    return handlerAddedPromise.futureResult
   }
 
   public let channel: Channel
   public let multiplexer: HTTP2StreamMultiplexer
   public let host: String
   public var defaultCallOptions: CallOptions
+  public let httpProtocol: HTTP2ToHTTP1ClientCodec.HTTPProtocol
 
-  init(channel: Channel, multiplexer: HTTP2StreamMultiplexer, host: String, defaultCallOptions: CallOptions = CallOptions()) {
+  init(channel: Channel, multiplexer: HTTP2StreamMultiplexer, host: String, httpProtocol: HTTP2ToHTTP1ClientCodec.HTTPProtocol, defaultCallOptions: CallOptions = CallOptions()) {
     self.channel = channel
     self.multiplexer = multiplexer
     self.host = host
     self.defaultCallOptions = defaultCallOptions
+    self.httpProtocol = httpProtocol
   }
 
   /// Fired when the client shuts down.

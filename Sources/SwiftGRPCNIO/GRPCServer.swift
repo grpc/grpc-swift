@@ -2,6 +2,7 @@ import Foundation
 import NIO
 import NIOHTTP1
 import NIOHTTP2
+import NIOSSL
 
 /// Wrapper object to manage the lifecycle of a gRPC server.
 public final class GRPCServer {
@@ -13,8 +14,9 @@ public final class GRPCServer {
     port: Int,
     eventLoopGroup: EventLoopGroup,
     serviceProviders: [CallHandlerProvider],
-    errorDelegate: ServerErrorDelegate? = LoggingServerErrorDelegate()
-  ) -> EventLoopFuture<GRPCServer> {
+    errorDelegate: ServerErrorDelegate? = LoggingServerErrorDelegate(),
+    sslContext: NIOSSLContext? = nil
+  ) throws -> EventLoopFuture<GRPCServer> {
     let servicesByName = Dictionary(uniqueKeysWithValues: serviceProviders.map { ($0.serviceName, $0) })
     let bootstrap = ServerBootstrap(group: eventLoopGroup)
       // Specify a backlog to avoid overloading the server.
@@ -23,10 +25,14 @@ public final class GRPCServer {
       .serverChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
       // Set the handlers that are applied to the accepted Channels
       .childChannelInitializer { channel in
-        channel.pipeline.addHandler(HTTPProtocolSwitcher { channel in
+        let protocolSwitcherHandler = HTTPProtocolSwitcher { channel -> EventLoopFuture<Void> in
           channel.pipeline.addHandlers(HTTP1ToRawGRPCServerCodec(),
                                        GRPCChannelHandler(servicesByName: servicesByName, errorDelegate: errorDelegate))
-        })
+        }
+
+        return configureSSL(sslContext: sslContext, channel: channel).flatMap {
+          channel.pipeline.addHandler(protocolSwitcherHandler)
+        }
       }
 
       // Enable TCP_NODELAY and SO_REUSEADDR for the accepted Channels
@@ -36,6 +42,29 @@ public final class GRPCServer {
     return bootstrap.bind(host: hostname, port: port)
       .map { GRPCServer(channel: $0, errorDelegate: errorDelegate) }
   }
+
+  /// Configure an SSL handler on the channel, if one is provided.
+  ///
+  /// - Parameters:
+  ///   - sslContext: SSL context to use when creating the handler.
+  ///   - channel: The channel on which to add the SSL handler.
+  /// - Returns: A future which will be succeeded when the pipeline has been configured.
+  private static func configureSSL(sslContext: NIOSSLContext?, channel: Channel) -> EventLoopFuture<Void> {
+    guard let sslContext = sslContext else {
+      return channel.eventLoop.makeSucceededFuture(())
+    }
+
+    let handlerAddedPromise: EventLoopPromise<Void> = channel.eventLoop.makePromise()
+
+    do {
+      channel.pipeline.addHandler(try NIOSSLServerHandler(context: sslContext)).cascade(to: handlerAddedPromise)
+    } catch {
+      handlerAddedPromise.fail(error)
+    }
+
+    return handlerAddedPromise.futureResult
+  }
+
 
   private let channel: Channel
   private var errorDelegate: ServerErrorDelegate?
