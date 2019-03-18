@@ -23,9 +23,9 @@ public final class GRPCServer {
       .serverChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
       // Set the handlers that are applied to the accepted Channels
       .childChannelInitializer { channel in
-        return channel.pipeline.addHandler(HTTPProtocolSwitcher { channel -> EventLoopFuture<Void> in
-          return channel.pipeline.addHandlers(HTTP1ToRawGRPCServerCodec(),
-                                              GRPCChannelHandler(servicesByName: servicesByName, errorDelegate: errorDelegate))
+        channel.pipeline.addHandler(HTTPProtocolSwitcher { channel in
+          channel.pipeline.addHandlers(HTTP1ToRawGRPCServerCodec(),
+                                       GRPCChannelHandler(servicesByName: servicesByName, errorDelegate: errorDelegate))
         })
       }
 

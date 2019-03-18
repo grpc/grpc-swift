@@ -39,7 +39,7 @@ open class GRPCClient {
 
     return bootstrap.connect(host: host, port: port)
       .and(multiplexerPromise.futureResult)
-      .map { channel, multiplexer in return GRPCClient(channel: channel, multiplexer: multiplexer, host: host) }
+      .map { channel, multiplexer in GRPCClient(channel: channel, multiplexer: multiplexer, host: host) }
   }
 
   public let channel: Channel

@@ -8,9 +8,14 @@ import NIOHTTP2
 public class HTTPProtocolSwitcher {
   private let handlersInitializer: ((Channel) -> EventLoopFuture<Void>)
 
-  // We could receieve additional data after the initial data and before configuring
+  // We could receive additional data after the initial data and before configuring
   // the pipeline; buffer it and fire it down the pipeline once it is configured.
-  private enum State { case notConfigured, configuring, configured }
+  private enum State {
+    case notConfigured
+    case configuring
+    case configured
+  }
+
   private var state: State = .notConfigured
   private var bufferedData: [NIOAny] = []
 
@@ -72,7 +77,7 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
         }
       }
 
-      // Depending on whether it is HTTP1 or HTTP2, created different processing pipelines.
+      // Depending on whether it is HTTP1 or HTTP2, create different processing pipelines.
       // Inbound handlers in handlersInitializer should expect HTTPServerRequestPart objects
       // and outbound handlers should return HTTPServerResponsePart objects.
       switch version {
@@ -80,19 +85,18 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
         // Upgrade connections are not handled since gRPC connections already arrive in HTTP2,
         // while gRPC-Web does not support HTTP2 at all, so there are no compelling use cases
         // to support this.
-        context.pipeline.configureHTTPServerPipeline(withErrorHandling: true).flatMap {
-          context.pipeline.addHandler(WebCORSHandler())
-        }.flatMap { (Void) -> EventLoopFuture<Void> in
-          self.handlersInitializer(context.channel)
-        }.cascade(to: pipelineConfigured)
+        context.pipeline.configureHTTPServerPipeline(withErrorHandling: true)
+          .flatMap { context.pipeline.addHandler(WebCORSHandler()) }
+          .flatMap { self.handlersInitializer(context.channel) }
+          .cascade(to: pipelineConfigured)
 
       case .http2:
         context.channel.configureHTTP2Pipeline(mode: .server) { (streamChannel, streamID) in
-          return streamChannel.pipeline.addHandler(HTTP2ToHTTP1ServerCodec(streamID: streamID)).flatMap {
-            self.handlersInitializer(streamChannel)
+            streamChannel.pipeline.addHandler(HTTP2ToHTTP1ServerCodec(streamID: streamID))
+              .flatMap { self.handlersInitializer(streamChannel) }
           }
-        }.map { (_: HTTP2StreamMultiplexer) in
-        }.cascade(to: pipelineConfigured)
+          .map { _ in }
+          .cascade(to: pipelineConfigured)
       }
 
     case .configuring:
@@ -106,7 +110,7 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
   /// Peek into the first line of the packet to check which HTTP version is being used.
   private func protocolVersion(_ preamble: String) -> HTTPProtocolVersion? {
     let range = NSRange(location: 0, length: preamble.utf16.count)
-    let regex = try! NSRegularExpression(pattern: ".*HTTP/(\\d)\\.\\d$")
+    let regex = try! NSRegularExpression(pattern: "^.*HTTP/(\\d)\\.\\d$")
     let result = regex.firstMatch(in: preamble, options: [], range: range)!
 
     let versionRange = result.range(at: 1)

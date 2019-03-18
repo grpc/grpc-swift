@@ -23,9 +23,9 @@ extension WebCORSHandler: ChannelInboundHandler {
                     value: "content-type,x-grpc-web,x-user-agent")
         headers.add(name: "Access-Control-Max-Age", value: "86400")
         context.write(self.wrapOutboundOut(.head(HTTPResponseHead(version: requestHead.version,
-                                                              status: .ok,
-                                                              headers: headers))),
-                  promise: nil)
+                                                                  status: .ok,
+                                                                  headers: headers))),
+                      promise: nil)
         return
       }
     case .body:
@@ -63,9 +63,9 @@ extension WebCORSHandler: ChannelOutboundHandler {
       headers.add(name: "Connection", value: "close")
 
       context.write(self.wrapOutboundOut(.head(HTTPResponseHead(version: responseHead.version,
-                                                            status: responseHead.status,
-                                                            headers: headers))),
-                promise: promise)
+                                                                status: responseHead.status,
+                                                                headers: headers))),
+                    promise: promise)
     default:
       context.write(data, promise: promise)
     }
