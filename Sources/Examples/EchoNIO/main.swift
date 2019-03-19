@@ -33,7 +33,7 @@ let messageOption = Option("message",
 
 func makeClientTLSConfiguration() throws -> TLSConfiguration {
   let certificate = try NIOSSLCertificate(file: "ssl.crt", format: .pem)
-  // The certificate common name is "example.com", so skip verification.
+  // The certificate common name is "example.com", so skip hostname verification.
   return .forClient(certificateVerification: .noHostnameVerification,
                     trustRoots: .certificates([certificate]))
 }
@@ -46,18 +46,25 @@ func makeServerTLSConfiguration() throws -> TLSConfiguration {
                     trustRoots: .certificates([certificate]))
 }
 
+func makeClientTLS(enabled: Bool) throws -> GRPCClient.TLSMode {
+  guard enabled else {
+    return .none
+  }
+  return .custom(try NIOSSLContext(configuration: try makeClientTLSConfiguration()))
+}
+
+func makeServerTLS(enabled: Bool) throws -> GRPCServer.TLSMode {
+  guard enabled else {
+    return .none
+  }
+  return .custom(try NIOSSLContext(configuration: try makeServerTLSConfiguration()))
+}
+
 /// Create en `EchoClient` and wait for it to initialize. Returns nil if initialisation fails.
 func makeEchoClient(address: String, port: Int, ssl: Bool) -> Echo_EchoService_NIOClient? {
   let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
   do {
-    let sslContext: NIOSSLContext?
-    if ssl {
-      sslContext = try NIOSSLContext(configuration: makeClientTLSConfiguration())
-    } else {
-      sslContext = nil
-    }
-
-    return try GRPCClient.start(host: address, port: port, eventLoopGroup: eventLoopGroup, sslContext: sslContext)
+    return try GRPCClient.start(host: address, port: port, eventLoopGroup: eventLoopGroup, tls: try makeClientTLS(enabled: ssl))
       .map { client in Echo_EchoService_NIOClient(client: client) }
       .wait()
   } catch {
@@ -75,20 +82,12 @@ Group {
     let sem = DispatchSemaphore(value: 0)
     let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
-    let sslContext: NIOSSLContext?
-    if ssl {
-      sslContext = try NIOSSLContext(configuration: makeServerTLSConfiguration())
-      print("starting secure server")
-    } else {
-      sslContext = nil
-      print("starting insecure server")
-    }
-
+    print(ssl ? "starting secure server" : "starting insecure server")
     _ = try! GRPCServer.start(hostname: address,
                               port: port,
                               eventLoopGroup: eventLoopGroup,
                               serviceProviders: [EchoProviderNIO()],
-                              sslContext: sslContext)
+                              tls: makeServerTLS(enabled: ssl))
       .wait()
 
     // This blocks to keep the main thread from finishing while the server runs,

@@ -85,7 +85,7 @@ public final class GRPCServer {
     eventLoopGroup: EventLoopGroup,
     serviceProviders: [CallHandlerProvider],
     errorDelegate: ServerErrorDelegate? = LoggingServerErrorDelegate(),
-    sslContext: NIOSSLContext? = nil
+    tls tlsMode: TLSMode = .none
   ) throws -> EventLoopFuture<GRPCServer> {
     let servicesByName = Dictionary(uniqueKeysWithValues: serviceProviders.map { ($0.serviceName, $0) })
     let bootstrap = ServerBootstrap(group: eventLoopGroup)
@@ -100,7 +100,7 @@ public final class GRPCServer {
                                        GRPCChannelHandler(servicesByName: servicesByName, errorDelegate: errorDelegate))
         }
 
-        return configureSSL(sslContext: sslContext, channel: channel).flatMap {
+        return configureTLS(mode: tlsMode, channel: channel).flatMap {
           channel.pipeline.addHandler(protocolSwitcherHandler)
         }
       }
@@ -116,11 +116,11 @@ public final class GRPCServer {
   /// Configure an SSL handler on the channel, if one is provided.
   ///
   /// - Parameters:
-  ///   - sslContext: SSL context to use when creating the handler.
+  ///   - mode: TLS mode to run the server in.
   ///   - channel: The channel on which to add the SSL handler.
   /// - Returns: A future which will be succeeded when the pipeline has been configured.
-  private static func configureSSL(sslContext: NIOSSLContext?, channel: Channel) -> EventLoopFuture<Void> {
-    guard let sslContext = sslContext else {
+  private static func configureTLS(mode: TLSMode, channel: Channel) -> EventLoopFuture<Void> {
+    guard let sslContext = mode.sslContext else {
       return channel.eventLoop.makeSucceededFuture(())
     }
 
@@ -134,7 +134,6 @@ public final class GRPCServer {
 
     return handlerAddedPromise.futureResult
   }
-
 
   private let channel: Channel
   private var errorDelegate: ServerErrorDelegate?
@@ -159,5 +158,22 @@ public final class GRPCServer {
   /// Shut down the server; this should be called to avoid leaking resources.
   public func close() -> EventLoopFuture<Void> {
     return channel.close(mode: .all)
+  }
+}
+
+extension GRPCServer {
+  public enum TLSMode {
+    case none
+    case custom(NIOSSLContext)
+
+    var sslContext: NIOSSLContext? {
+      switch self {
+      case .none:
+        return nil
+
+      case .custom(let context):
+        return context
+      }
+    }
   }
 }

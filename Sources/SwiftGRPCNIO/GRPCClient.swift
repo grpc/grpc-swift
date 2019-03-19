@@ -26,7 +26,7 @@ open class GRPCClient {
     host: String,
     port: Int,
     eventLoopGroup: EventLoopGroup,
-    sslContext: NIOSSLContext? = nil
+    tls tlsMode: TLSMode = .none
   ) throws -> EventLoopFuture<GRPCClient> {
     // We need to capture the multiplexer from the channel initializer to store it after connection.
     let multiplexerPromise: EventLoopPromise<HTTP2StreamMultiplexer> = eventLoopGroup.next().makePromise()
@@ -35,7 +35,7 @@ open class GRPCClient {
       // Enable SO_REUSEADDR.
       .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
       .channelInitializer { channel in
-        let multiplexer = configureSSL(sslContext: sslContext, channel: channel, host: host).flatMap {
+        let multiplexer = configureTLS(mode: tlsMode, channel: channel, host: host).flatMap {
           channel.configureHTTP2Pipeline(mode: .client)
         }
 
@@ -45,24 +45,24 @@ open class GRPCClient {
 
     return bootstrap.connect(host: host, port: port)
       .and(multiplexerPromise.futureResult)
-      .map { channel, multiplexer in GRPCClient(channel: channel, multiplexer: multiplexer, host: host, httpProtocol: sslContext == nil ? .http : .https) }
+      .map { channel, multiplexer in GRPCClient(channel: channel, multiplexer: multiplexer, host: host, httpProtocol: tlsMode.httpProtocol) }
   }
 
-  /// Configure an SSL handler on the channel, if one is provided.
+  /// Configure an SSL handler on the channel, if one is required.
   ///
   /// - Parameters:
-  ///   - sslContext: SSL context to use when creating the handler.
+  ///   - mode: TLS mode to use when creating the new handler.
   ///   - channel: The channel on which to add the SSL handler.
   ///   - host: The hostname of the server we're connecting to.
   /// - Returns: A future which will be succeeded when the pipeline has been configured.
-  private static func configureSSL(sslContext: NIOSSLContext?, channel: Channel, host: String) -> EventLoopFuture<Void> {
-    guard let sslContext = sslContext else {
-      return channel.eventLoop.makeSucceededFuture(())
-    }
-
+  private static func configureTLS(mode tls: TLSMode, channel: Channel, host: String) -> EventLoopFuture<Void> {
     let handlerAddedPromise: EventLoopPromise<Void> = channel.eventLoop.makePromise()
 
     do {
+      guard let sslContext = try tls.makeSSLContext() else {
+        handlerAddedPromise.succeed(())
+        return handlerAddedPromise.futureResult
+      }
       channel.pipeline.addHandler(try NIOSSLClientHandler(context: sslContext, serverHostname: host)).cascade(to: handlerAddedPromise)
     } catch {
       handlerAddedPromise.fail(error)
@@ -113,6 +113,41 @@ public protocol GRPCServiceClient {
   /// - Parameter forMethod: name of method to return a path for.
   /// - Returns: path for the given method used in gRPC request headers.
   func path(forMethod method: String) -> String
+}
+
+extension GRPCClient {
+  public enum TLSMode {
+    case none
+    case anonymous
+    case custom(NIOSSLContext)
+
+    /// Returns an SSL context for the TLS mode.
+    ///
+    /// - Returns: An SSL context for the TLS mode, or `nil` if TLS is not being used.
+    public func makeSSLContext() throws -> NIOSSLContext? {
+      switch self {
+      case .none:
+        return nil
+
+      case .anonymous:
+        return try NIOSSLContext(configuration: .forClient())
+
+      case .custom(let context):
+        return context
+      }
+    }
+
+    /// Rethrns the HTTP protocol for the TLS mode.
+    public var httpProtocol: HTTP2ToHTTP1ClientCodec.HTTPProtocol {
+      switch self {
+      case .none:
+        return .http
+
+      case .anonymous, .custom:
+        return .https
+      }
+    }
+  }
 }
 
 extension GRPCServiceClient {
