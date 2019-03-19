@@ -12,7 +12,7 @@ import NIOSSL
 /// 1. Initial stage, prior to HTTP protocol detection.
 ///
 ///                           ┌───────────────────────────┐
-///                           │   HTTPProtocolSwitcher    │
+///                           │   HTTPProtocolSwitcher*   │
 ///                           └─▲───────────────────────┬─┘
 ///                   ByteBuffer│                       │ByteBuffer
 ///                           ┌─┴───────────────────────▼─┐
@@ -95,7 +95,7 @@ public final class GRPCServer {
       .serverChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
       // Set the handlers that are applied to the accepted Channels
       .childChannelInitializer { channel in
-        let protocolSwitcherHandler = HTTPProtocolSwitcher { channel -> EventLoopFuture<Void> in
+        let protocolSwitcherHandler = HTTPProtocolSwitcher(errorDelegate: errorDelegate) { channel -> EventLoopFuture<Void> in
           channel.pipeline.addHandlers(HTTP1ToRawGRPCServerCodec(),
                                        GRPCChannelHandler(servicesByName: servicesByName, errorDelegate: errorDelegate))
         }
