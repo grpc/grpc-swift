@@ -93,7 +93,7 @@ private class ErrorReturningEchoProviderNIO: ImmediateThrowingEchoProviderNIO {
   }
 }
 
-class ServerThrowingTests: NIOBasicEchoTestCase {
+class ServerThrowingTests: NIOEchoTestCaseBase {
   override func makeEchoProvider() -> Echo_EchoProvider_NIO { return ImmediateThrowingEchoProviderNIO() }
   
   static var allTests: [(String, (ServerThrowingTests) -> () throws -> Void)] {

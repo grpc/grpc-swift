@@ -21,7 +21,7 @@ import XCTest
 // Only test Unary and ServerStreaming, as ClientStreaming is not
 // supported in HTTP1.
 // TODO: Add tests for application/grpc-web as well.
-class NIOServerWebTests: NIOBasicEchoTestCase {
+class NIOServerWebTests: NIOEchoTestCaseBase {
   static var allTests: [(String, (NIOServerWebTests) -> () throws -> Void)] {
     return [
       ("testUnary", testUnary),

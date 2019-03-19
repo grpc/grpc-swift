@@ -17,7 +17,7 @@ import Foundation
 import SwiftGRPCNIO
 import XCTest
 
-class NIOClientCancellingTests: NIOBasicEchoTestCase {
+class NIOClientCancellingTests: NIOEchoTestCaseBase {
   static var allTests: [(String, (NIOClientCancellingTests) -> () throws -> Void)] {
     return [
       ("testUnary", testUnary),
