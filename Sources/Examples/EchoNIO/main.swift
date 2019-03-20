@@ -17,9 +17,11 @@ import Commander
 import Dispatch
 import Foundation
 import NIO
+import NIOSSL
 import SwiftGRPCNIO
 
 // Common flags and options
+let sslFlag = Flag("ssl", description: "if true, use SSL for connections")
 func addressOption(_ address: String) -> Option<String> {
   return Option("address", default: address, description: "address of server")
 }
@@ -29,11 +31,40 @@ let messageOption = Option("message",
                            default: "Testing 1 2 3",
                            description: "message to send")
 
+func makeClientTLSConfiguration() throws -> TLSConfiguration {
+  let certificate = try NIOSSLCertificate(file: "ssl.crt", format: .pem)
+  // The certificate common name is "example.com", so skip hostname verification.
+  return .forClient(certificateVerification: .noHostnameVerification,
+                    trustRoots: .certificates([certificate]))
+}
+
+func makeServerTLSConfiguration() throws -> TLSConfiguration {
+  let certificate = try NIOSSLCertificate(file: "ssl.crt", format: .pem)
+  let key = try NIOSSLPrivateKey(file: "ssl.key", format: .pem)
+  return .forServer(certificateChain: [.certificate(certificate)],
+                    privateKey: .privateKey(key),
+                    trustRoots: .certificates([certificate]))
+}
+
+func makeClientTLS(enabled: Bool) throws -> GRPCClient.TLSMode {
+  guard enabled else {
+    return .none
+  }
+  return .custom(try NIOSSLContext(configuration: try makeClientTLSConfiguration()))
+}
+
+func makeServerTLS(enabled: Bool) throws -> GRPCServer.TLSMode {
+  guard enabled else {
+    return .none
+  }
+  return .custom(try NIOSSLContext(configuration: try makeServerTLSConfiguration()))
+}
+
 /// Create en `EchoClient` and wait for it to initialize. Returns nil if initialisation fails.
-func makeEchoClient(address: String, port: Int) -> Echo_EchoService_NIOClient? {
+func makeEchoClient(address: String, port: Int, ssl: Bool) -> Echo_EchoService_NIOClient? {
   let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
   do {
-    return try GRPCClient.start(host: address, port: port, eventLoopGroup: eventLoopGroup)
+    return try GRPCClient.start(host: address, port: port, eventLoopGroup: eventLoopGroup, tls: try makeClientTLS(enabled: ssl))
       .map { client in Echo_EchoService_NIOClient(client: client) }
       .wait()
   } catch {
@@ -44,17 +75,19 @@ func makeEchoClient(address: String, port: Int) -> Echo_EchoService_NIOClient? {
 
 Group {
   $0.command("serve",
+             sslFlag,
              addressOption("localhost"),
              portOption,
-             description: "Run an echo server.") { address, port in
+             description: "Run an echo server.") { ssl, address, port in
     let sem = DispatchSemaphore(value: 0)
     let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
-    print("starting insecure server")
+    print(ssl ? "starting secure server" : "starting insecure server")
     _ = try! GRPCServer.start(hostname: address,
                               port: port,
                               eventLoopGroup: eventLoopGroup,
-                              serviceProviders: [EchoProviderNIO()])
+                              serviceProviders: [EchoProviderNIO()],
+                              tls: makeServerTLS(enabled: ssl))
       .wait()
 
     // This blocks to keep the main thread from finishing while the server runs,
@@ -64,13 +97,14 @@ Group {
 
   $0.command(
     "get",
+    sslFlag,
     addressOption("localhost"),
     portOption,
     messageOption,
     description: "Perform a unary get()."
-  ) { address, port, message in
+  ) { ssl, address, port, message in
     print("calling get")
-    guard let echo = makeEchoClient(address: address, port: port) else { return }
+    guard let echo = makeEchoClient(address: address, port: port, ssl: ssl) else { return }
 
     var requestMessage = Echo_EchoRequest()
     requestMessage.text = message
@@ -96,13 +130,14 @@ Group {
 
   $0.command(
     "expand",
+    sslFlag,
     addressOption("localhost"),
     portOption,
     messageOption,
     description: "Perform a server-streaming expand()."
-  ) { address, port, message in
+  ) { ssl, address, port, message in
     print("calling expand")
-    guard let echo = makeEchoClient(address: address, port: port) else { return }
+    guard let echo = makeEchoClient(address: address, port: port, ssl: ssl) else { return }
 
     let requestMessage = Echo_EchoRequest.with { $0.text = message }
 
@@ -122,13 +157,14 @@ Group {
 
   $0.command(
     "collect",
+    sslFlag,
     addressOption("localhost"),
     portOption,
     messageOption,
     description: "Perform a client-streaming collect()."
-  ) { address, port, message in
+  ) { ssl, address, port, message in
     print("calling collect")
-    guard let echo = makeEchoClient(address: address, port: port) else { return }
+    guard let echo = makeEchoClient(address: address, port: port, ssl: ssl) else { return }
 
     let collect = echo.collect()
 
@@ -160,13 +196,14 @@ Group {
 
   $0.command(
     "update",
+    sslFlag,
     addressOption("localhost"),
     portOption,
     messageOption,
     description: "Perform a bidirectional-streaming update()."
-  ) { address, port, message in
+  ) { ssl, address, port, message in
     print("calling update")
-    guard let echo = makeEchoClient(address: address, port: port) else { return }
+    guard let echo = makeEchoClient(address: address, port: port, ssl: ssl) else { return }
 
     let update = echo.update { response in
       print("update received: \(response.text)")

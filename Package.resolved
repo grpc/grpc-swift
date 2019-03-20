@@ -38,6 +38,15 @@
         }
       },
       {
+        "package": "swift-nio-ssl",
+        "repositoryURL": "https://github.com/apple/swift-nio-ssl.git",
+        "state": {
+          "branch": null,
+          "revision": "5995ce5eac7b8e9fa65f4871c0173ffc54e26db7",
+          "version": "2.0.0-convergence.1"
+        }
+      },
+      {
         "package": "swift-nio-zlib-support",
         "repositoryURL": "https://github.com/apple/swift-nio-zlib-support.git",
         "state": {

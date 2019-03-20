@@ -31,6 +31,8 @@ var packageDependencies: [Package.Dependency] = [
   .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0-convergence.1"),
   // HTTP2 via SwiftNIO
   .package(url: "https://github.com/apple/swift-nio-http2.git", from: "1.0.0-convergence.1"),
+  // TLS via SwiftNIO
+  .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.0.0-convergence.1"),
 ]
 
 var cGRPCDependencies: [Target.Dependency] = []
@@ -67,6 +69,7 @@ let package = Package(
               "NIOFoundationCompat",
               "NIOHTTP1",
               "NIOHTTP2",
+              "NIOSSL",
               "SwiftProtobuf"]),
     .target(name: "CgRPC",
             dependencies: cGRPCDependencies),

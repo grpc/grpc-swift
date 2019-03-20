@@ -7,6 +7,7 @@ import NIOHTTP2
 /// the incoming request is HTTP 1 or 2.
 public class HTTPProtocolSwitcher {
   private let handlersInitializer: ((Channel) -> EventLoopFuture<Void>)
+  private let errorDelegate: ServerErrorDelegate?
 
   // We could receive additional data after the initial data and before configuring
   // the pipeline; buffer it and fire it down the pipeline once it is configured.
@@ -19,7 +20,8 @@ public class HTTPProtocolSwitcher {
   private var state: State = .notConfigured
   private var bufferedData: [NIOAny] = []
 
-  public init(handlersInitializer: (@escaping (Channel) -> EventLoopFuture<Void>)) {
+  public init(errorDelegate: ServerErrorDelegate?, handlersInitializer: (@escaping (Channel) -> EventLoopFuture<Void>)) {
+    self.errorDelegate = errorDelegate
     self.handlersInitializer = handlersInitializer
   }
 }
@@ -27,7 +29,6 @@ public class HTTPProtocolSwitcher {
 extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
   public typealias InboundIn = ByteBuffer
   public typealias InboundOut = ByteBuffer
-
 
   enum HTTPProtocolVersionError: Error {
     /// Raised when it wasn't possible to detect HTTP Protocol version.
@@ -65,11 +66,18 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
           return
       }
 
-      // Once configured remove ourself from the pipeline.
+      // Once configured remove ourself from the pipeline, or handle the error.
       let pipelineConfigured: EventLoopPromise<Void> = context.eventLoop.makePromise()
-      pipelineConfigured.futureResult.whenSuccess {
-        self.state = .configured
-        context.pipeline.removeHandler(context: context, promise: nil)
+      pipelineConfigured.futureResult.whenComplete { result in
+        switch result {
+        case .success:
+          self.state = .configuring
+          context.pipeline.removeHandler(context: context, promise: nil)
+
+        case .failure(let error):
+          self.state = .notConfigured
+          self.errorCaught(context: context, error: error)
+        }
       }
 
       // Depending on whether it is HTTP1 or HTTP2, create different processing pipelines.
@@ -108,6 +116,18 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
     }
 
     context.leavePipeline(removalToken: removalToken)
+  }
+
+  public func errorCaught(context: ChannelHandlerContext, error: Error) {
+    switch self.state {
+    case .notConfigured, .configuring:
+      errorDelegate?.observe(error)
+      context.close(mode: .all, promise: nil)
+
+    case .configured:
+      // If we're configured we will rely on a handler further down the pipeline.
+      context.fireErrorCaught(error)
+    }
   }
 
   /// Peek into the first line of the packet to check which HTTP version is being used.

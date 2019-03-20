@@ -105,7 +105,7 @@ extension BaseClientCall {
   private func createStreamChannel() {
     self.client.channel.eventLoop.execute {
       self.client.multiplexer.createStreamChannel(promise: self.streamPromise) { (subchannel, streamID) -> EventLoopFuture<Void> in
-        subchannel.pipeline.addHandlers(HTTP2ToHTTP1ClientCodec(streamID: streamID, httpProtocol: .http),
+        subchannel.pipeline.addHandlers(HTTP2ToHTTP1ClientCodec(streamID: streamID, httpProtocol: self.client.httpProtocol),
                                         HTTP1ToRawGRPCClientCodec(),
                                         GRPCClientCodec<RequestMessage, ResponseMessage>(),
                                         self.clientChannelHandler)
