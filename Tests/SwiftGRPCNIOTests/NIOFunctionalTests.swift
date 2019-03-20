@@ -72,32 +72,38 @@ class NIOFunctionalTestsInsecureTransport: NIOEchoTestCaseBase, NIOFunctionalTes
 }
 
 extension NIOFunctionalTestsInsecureTransport {
-  func makeStatusExpectation() -> XCTestExpectation {
-    return self.expectation(description: "Status received")
+  func makeExpectation(description: String, expectedFulfillmentCount: Int = 1, assertForOverFulfill: Bool = true) -> XCTestExpectation {
+    let expectation = self.expectation(description: description)
+    expectation.expectedFulfillmentCount = expectedFulfillmentCount
+    expectation.assertForOverFulfill = assertForOverFulfill
+    return expectation
   }
 
-  func makeResponseExpectation(count: Int) -> XCTestExpectation {
-    let responseExpectation = self.expectation(description: "Expecting \(count) response(s)")
-    responseExpectation.expectedFulfillmentCount = count
-    responseExpectation.assertForOverFulfill = true
-    return responseExpectation
+  func makeStatusExpectation(expectedFulfillmentCount: Int = 1) -> XCTestExpectation {
+    return makeExpectation(description: "Expecting status received",
+                           expectedFulfillmentCount: expectedFulfillmentCount)
+  }
+
+  func makeResponseExpectation(expectedFulfillmentCount: Int = 1) -> XCTestExpectation {
+    return makeExpectation(description: "Expecting \(expectedFulfillmentCount) response(s)",
+                           expectedFulfillmentCount: expectedFulfillmentCount)
   }
 }
 
 extension NIOFunctionalTestsInsecureTransport {
-  func doTestUnary(request: Echo_EchoRequest, expect response: Echo_EchoResponse) {
-    let responseExpectation = self.makeResponseExpectation(count: 1)
+  func doTestUnary(request: Echo_EchoRequest, expect response: Echo_EchoResponse, file: StaticString = #file, line: UInt = #line) {
+    let responseExpectation = self.makeResponseExpectation()
     let statusExpectation = self.makeStatusExpectation()
 
     let call = client.get(request)
-    call.expectResponse(response, fulfill: responseExpectation)
-    call.expectStatusCode(.ok, fulfill: statusExpectation)
+    call.response.assertEqual(response, fulfill: responseExpectation, file: file, line: line)
+    call.status.map { $0.code }.assertEqual(.ok, fulfill: statusExpectation, file: file, line: line)
 
     self.wait(for: [responseExpectation, statusExpectation], timeout: self.defaultTestTimeout)
   }
 
-  func doTestUnary(message: String) {
-    self.doTestUnary(request: Echo_EchoRequest(text: message), expect: Echo_EchoResponse(text: "Swift echo get: \(message)"))
+  func doTestUnary(message: String, file: StaticString = #file, line: UInt = #line) {
+    self.doTestUnary(request: Echo_EchoRequest(text: message), expect: Echo_EchoResponse(text: "Swift echo get: \(message)"), file: file, line: line)
   }
 
   func testUnary() throws {
@@ -110,18 +116,25 @@ extension NIOFunctionalTestsInsecureTransport {
     // Sending that many requests at once can sometimes trip things up, it seems.
     let clockStart = clock()
     let numberOfRequests = 2_000
-    let responseExpectation = self.makeResponseExpectation(count: numberOfRequests)
+    let responseExpectation = self.makeResponseExpectation(expectedFulfillmentCount: numberOfRequests)
+    let statusExpectation = self.makeStatusExpectation(expectedFulfillmentCount: numberOfRequests)
 
     for i in 0..<numberOfRequests {
       if i % 1_000 == 0 && i > 0 {
         print("\(i) requests sent so far, elapsed time: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))")
       }
-      self.doTestUnary(message: "foo \(i)")
-      responseExpectation.fulfill()
-    }
 
-    self.wait(for: [responseExpectation], timeout: self.defaultTestTimeout)
-    print("total time for \(numberOfRequests) requests: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))")
+      let request = Echo_EchoRequest(text: "foo \(i)")
+      let response = Echo_EchoResponse(text: "Swift echo get: foo \(i)")
+
+      let call = client.get(request)
+      call.response.assertEqual(response, fulfill: responseExpectation)
+      call.status.map { $0.code }.assertEqual(.ok, fulfill: statusExpectation)
+    }
+    print("total time to send \(numberOfRequests) requests: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))")
+
+    self.wait(for: [responseExpectation, statusExpectation], timeout: self.defaultTestTimeout)
+    print("total time to receive \(numberOfRequests) responses: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))")
   }
 
   func testUnaryWithLargeData() throws {
@@ -137,12 +150,12 @@ extension NIOFunctionalTestsInsecureTransport {
 
 extension NIOFunctionalTestsInsecureTransport {
   func doTestClientStreaming(messages: [String], file: StaticString = #file, line: UInt = #line) throws {
-    let responseExpectation = self.makeResponseExpectation(count: 1)
+    let responseExpectation = self.makeResponseExpectation()
     let statusExpectation = self.makeStatusExpectation()
 
     let call = client.collect(callOptions: CallOptions(timeout: .infinite))
-    call.expectStatusCode(.ok, fulfill: statusExpectation)
-    call.expectResponse(Echo_EchoResponse(text: "Swift echo collect: \(messages.joined(separator: " "))"), fulfill: responseExpectation)
+    call.status.map { $0.code }.assertEqual(.ok, fulfill: statusExpectation, file: file, line: line)
+    call.response.assertEqual(Echo_EchoResponse(text: "Swift echo collect: \(messages.joined(separator: " "))"), fulfill: responseExpectation)
 
     var queue = call.newMessageQueue()
     for message in messages {
@@ -165,19 +178,20 @@ extension NIOFunctionalTestsInsecureTransport {
 
 extension NIOFunctionalTestsInsecureTransport {
   func doTestServerStreaming(messages: [String], file: StaticString = #file, line: UInt = #line) throws {
-    let responseExpectation = self.makeResponseExpectation(count: messages.count)
+    let responseExpectation = self.makeResponseExpectation(expectedFulfillmentCount: messages.count)
     let statusExpectation = self.makeStatusExpectation()
 
     var iterator = messages.enumerated().makeIterator()
     let call = client.expand(Echo_EchoRequest(text: messages.joined(separator: " "))) { response in
       if let (index, message) = iterator.next() {
-        assertResponse(Echo_EchoResponse(text: "Swift echo expand (\(index)): \(message)"), actual: response, fulfill: responseExpectation, file: file, line: line)
+        XCTAssertEqual(Echo_EchoResponse(text: "Swift echo expand (\(index)): \(message)"), response, file: file, line: line)
+        responseExpectation.fulfill()
       } else {
         XCTFail("Too many responses received", file: file, line: line)
       }
     }
 
-    call.expectStatusCode(.ok, fulfill: statusExpectation)
+    call.status.map { $0.code }.assertEqual(.ok, fulfill: statusExpectation, file: file, line: line)
     self.wait(for: [responseExpectation, statusExpectation], timeout: self.defaultTestTimeout)
   }
 
@@ -192,24 +206,24 @@ extension NIOFunctionalTestsInsecureTransport {
 }
 
 extension NIOFunctionalTestsInsecureTransport {
-  private func doTestBidirectionalStreaming(messages: [String], waitForEachResponse: Bool = false, callTimeout: GRPCTimeout? = nil, file: StaticString = #file, line: UInt = #line) throws {
-    let responseExpectation = self.makeResponseExpectation(count: messages.count)
+  private func doTestBidirectionalStreaming(messages: [String], waitForEachResponse: Bool = false, file: StaticString = #file, line: UInt = #line) throws {
+    let responseExpectation = self.makeResponseExpectation(expectedFulfillmentCount: messages.count)
     let statusExpectation = self.makeStatusExpectation()
 
     let responseReceived = waitForEachResponse ? DispatchSemaphore(value: 0) : nil
 
     var iterator = messages.enumerated().makeIterator()
-    let callOptions = callTimeout.map { CallOptions(timeout: $0) }
-    let call = client.update(callOptions: callOptions) { response in
+    let call = client.update { response in
       if let (index, message) = iterator.next() {
-        assertResponse(Echo_EchoResponse(text: "Swift echo update (\(index)): \(message)"), actual: response, fulfill: responseExpectation)
+        XCTAssertEqual(Echo_EchoResponse(text: "Swift echo update (\(index)): \(message)"), response, file: file, line: line)
+        responseExpectation.fulfill()
         responseReceived?.signal()
       } else {
         XCTFail("Too many responses received", file: file, line: line)
       }
     }
 
-    call.expectStatusCode(.ok, fulfill: statusExpectation, file: file, line: line)
+    call.status.map { $0.code }.assertEqual(.ok, fulfill: statusExpectation, file: file, line: line)
 
     messages.forEach { part in
       call.sendMessage(Echo_EchoRequest(text: part), promise: nil)
@@ -230,12 +244,12 @@ extension NIOFunctionalTestsInsecureTransport {
 
   func testBidirectionalStreamingLotsOfMessagesBatched() throws {
     self.defaultTestTimeout = 15.0
-    XCTAssertNoThrow(try doTestBidirectionalStreaming(messages: lotsOfStrings, callTimeout: try .seconds(15)))
+    XCTAssertNoThrow(try doTestBidirectionalStreaming(messages: lotsOfStrings))
   }
 
   func testBidirectionalStreamingLotsOfMessagesPingPong() throws {
     self.defaultTestTimeout = 15.0
-    XCTAssertNoThrow(try doTestBidirectionalStreaming(messages: lotsOfStrings, waitForEachResponse: true, callTimeout: try .seconds(15)))
+    XCTAssertNoThrow(try doTestBidirectionalStreaming(messages: lotsOfStrings, waitForEachResponse: true))
   }
 }
 

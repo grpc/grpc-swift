@@ -143,7 +143,7 @@ class NIOEchoTestCaseBase: XCTestCase {
   }
 
   func makeEchoClient() throws -> Echo_EchoService_NIOClient {
-    return Echo_EchoService_NIOClient(client: try self.makeClient(), defaultCallOptions: CallOptions(timeout: try .seconds(5)))
+    return Echo_EchoService_NIOClient(client: try self.makeClient())
   }
 
   override func setUp() {

@@ -36,8 +36,8 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
     let expectedError = GRPCCommonError.unexpectedCompression
     XCTAssertEqual([expectedError], errorCollector.asGRPCCommonErrors)
 
-    XCTAssertNoThrow(try extractHeaders(responses[0]))
-    XCTAssertNoThrow(try extractStatus(responses[1])) { status in
+    responses[0].assertHeaders()
+    responses[1].assertStatus { status in
       XCTAssertEqual(status, expectedError.asGRPCStatus())
     }
   }
@@ -64,9 +64,9 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
       try channel.writeInbound(HTTPServerRequestPart.body(buffer))
     }
 
-    XCTAssertNoThrow(try extractHeaders(responses[0]))
-    XCTAssertNoThrow(try extractMessage(responses[1]))
-    XCTAssertNoThrow(try extractStatus(responses[2])) { status in
+    responses[0].assertHeaders()
+    responses[1].assertMessage()
+    responses[2].assertStatus { status in
       XCTAssertEqual(status, .ok)
     }
   }
@@ -83,8 +83,8 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
     let expectedError = GRPCServerError.requestProtoDeserializationFailure
     XCTAssertEqual([expectedError], errorCollector.asGRPCServerErrors)
 
-    XCTAssertNoThrow(try extractHeaders(responses[0]))
-    XCTAssertNoThrow(try extractStatus(responses[1])) { status in
+    responses[0].assertHeaders()
+    responses[1].assertStatus { status in
       XCTAssertEqual(status, expectedError.asGRPCStatus())
     }
   }
@@ -111,8 +111,8 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
       XCTFail("\(String(describing: errorCollector.errors.first)) was not .invalidState")
     }
 
-    XCTAssertNoThrow(try extractHeaders(responses[0]))
-    XCTAssertNoThrow(try extractStatus(responses[1])) { status in
+    responses[0].assertHeaders()
+    responses[1].assertStatus { status in
       XCTAssertEqual(status, .processingError)
     }
   }
@@ -133,9 +133,9 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
       try channel.writeInbound(HTTPServerRequestPart.end(trailers))
     }
 
-    XCTAssertNoThrow(try extractHeaders(responses[0]))
-    XCTAssertNoThrow(try extractMessage(responses[1]))
-    XCTAssertNoThrow(try extractStatus(responses[2])) { status in
+    responses[0].assertHeaders()
+    responses[1].assertMessage()
+    responses[2].assertStatus { status in
       XCTAssertEqual(status, .ok)
     }
   }
