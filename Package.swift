@@ -89,14 +89,19 @@ let package = Package(
     .target(name: "EchoNIO",
             dependencies: [
               "SwiftGRPCNIO",
+              "SwiftGRPCNIOTestData",
               "SwiftProtobuf",
               "Commander"],
             path: "Sources/Examples/EchoNIO"),
     .target(name: "Simple",
             dependencies: ["SwiftGRPC", "Commander"],
             path: "Sources/Examples/Simple"),
-    .testTarget(name: "SwiftGRPCTests", dependencies: ["SwiftGRPC"]),
-    .testTarget(name: "SwiftGRPCNIOTests", dependencies: ["SwiftGRPC", "SwiftGRPCNIO"])
+    .target(name: "SwiftGRPCNIOTestData",
+            dependencies: ["NIOSSL"]),
+    .testTarget(name: "SwiftGRPCTests",
+                dependencies: ["SwiftGRPC"]),
+    .testTarget(name: "SwiftGRPCNIOTests",
+                dependencies: ["SwiftGRPC", "SwiftGRPCNIO", "SwiftGRPCNIOTestData"]),
   ],
   cLanguageStandard: .gnu11,
   cxxLanguageStandard: .cxx11)
