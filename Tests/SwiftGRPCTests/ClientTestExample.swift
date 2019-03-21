@@ -100,7 +100,7 @@ extension ClientTestExample {
     
     let completionHandlerExpectation = expectation(description: "request completion handler called")
 
-    _ = try client.service.get(Echo_EchoRequest(text: "foo")) { (response:Echo_EchoResponse?, callResult:CallResult) in
+    _ = try client.service.get(Echo_EchoRequest(text: "foo")) { response, _ in
       XCTAssertEqual("bar", response?.text)
       completionHandlerExpectation.fulfill()
     }
