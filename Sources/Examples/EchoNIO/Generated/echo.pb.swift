@@ -1,1 +1,1 @@
-../../../../Tests/SwiftGRPCNIOTests/echo.pb.swift
+../../Echo/Generated/echo.pb.swift

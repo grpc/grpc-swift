@@ -13,27 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import Dispatch
-import Foundation
 import SwiftProtobuf
 
 public protocol ClientCall: class {
   static var method: String { get }
-  
+
   /// Cancel the call.
   func cancel()
 }
 
-open class ClientCallBase: ClientCall {
+open class ClientCallBase {
   open class var method: String { fatalError("needs to be overridden") }
 
   public let call: Call
 
   /// Create a call.
-  public init(_ channel: Channel) {
-    call = channel.makeCall(type(of: self).method)
+  public init(_ channel: Channel) throws {
+    self.call = try channel.makeCall(type(of: self).method)
   }
-  
-  public func cancel() { call.cancel() }
+}
+
+extension ClientCallBase: ClientCall {
+  public func cancel() {
+    self.call.cancel()
+  }
 }

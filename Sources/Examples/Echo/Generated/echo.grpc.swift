@@ -20,8 +20,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-import Foundation
 import Dispatch
+import Foundation
 import SwiftGRPC
 import SwiftProtobuf
 
@@ -47,10 +47,6 @@ fileprivate final class Echo_EchoExpandCallBase: ClientCallServerStreamingBase<E
   override class var method: String { return "/echo.Echo/Expand" }
 }
 
-class Echo_EchoExpandCallTestStub: ClientCallServerStreamingTestStub<Echo_EchoResponse>, Echo_EchoExpandCall {
-  override class var method: String { return "/echo.Echo/Expand" }
-}
-
 internal protocol Echo_EchoCollectCall: ClientCallClientStreaming {
   /// Send a message to the stream. Nonblocking.
   func send(_ message: Echo_EchoRequest, completion: @escaping (Error?) -> Void) throws
@@ -69,12 +65,6 @@ internal extension Echo_EchoCollectCall {
 }
 
 fileprivate final class Echo_EchoCollectCallBase: ClientCallClientStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectCall {
-  override class var method: String { return "/echo.Echo/Collect" }
-}
-
-/// Simple fake implementation of Echo_EchoCollectCall
-/// stores sent values for later verification and finall returns a previously-defined result.
-class Echo_EchoCollectCallTestStub: ClientCallClientStreamingTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectCall {
   override class var method: String { return "/echo.Echo/Collect" }
 }
 
@@ -109,16 +99,13 @@ fileprivate final class Echo_EchoUpdateCallBase: ClientCallBidirectionalStreamin
   override class var method: String { return "/echo.Echo/Update" }
 }
 
-class Echo_EchoUpdateCallTestStub: ClientCallBidirectionalStreamingTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateCall {
-  override class var method: String { return "/echo.Echo/Update" }
-}
-
 
 /// Instantiate Echo_EchoServiceClient, then call methods of this protocol to make API calls.
 internal protocol Echo_EchoService: ServiceClient {
   /// Synchronous. Unary.
   func get(_ request: Echo_EchoRequest, metadata customMetadata: Metadata) throws -> Echo_EchoResponse
   /// Asynchronous. Unary.
+  @discardableResult
   func get(_ request: Echo_EchoRequest, metadata customMetadata: Metadata, completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall
 
   /// Asynchronous. Server-streaming.
@@ -144,6 +131,7 @@ internal extension Echo_EchoService {
     return try self.get(request, metadata: self.metadata)
   }
   /// Asynchronous. Unary.
+  @discardableResult
   func get(_ request: Echo_EchoRequest, completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall {
     return try self.get(request, metadata: self.metadata, completion: completion)
   }
@@ -172,6 +160,7 @@ internal final class Echo_EchoServiceClient: ServiceClientBase, Echo_EchoService
       .run(request: request, metadata: customMetadata)
   }
   /// Asynchronous. Unary.
+  @discardableResult
   internal func get(_ request: Echo_EchoRequest, metadata customMetadata: Metadata, completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall {
     return try Echo_EchoGetCallBase(channel)
       .start(request: request, metadata: customMetadata, completion: completion)
@@ -203,6 +192,24 @@ internal final class Echo_EchoServiceClient: ServiceClientBase, Echo_EchoService
 
 }
 
+class Echo_EchoGetCallTestStub: ClientCallUnaryTestStub, Echo_EchoGetCall {
+  override class var method: String { return "/echo.Echo/Get" }
+}
+
+class Echo_EchoExpandCallTestStub: ClientCallServerStreamingTestStub<Echo_EchoResponse>, Echo_EchoExpandCall {
+  override class var method: String { return "/echo.Echo/Expand" }
+}
+
+/// Simple fake implementation of Echo_EchoCollectCall
+/// stores sent values for later verification and finall returns a previously-defined result.
+class Echo_EchoCollectCallTestStub: ClientCallClientStreamingTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectCall {
+  override class var method: String { return "/echo.Echo/Collect" }
+}
+
+class Echo_EchoUpdateCallTestStub: ClientCallBidirectionalStreamingTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateCall {
+  override class var method: String { return "/echo.Echo/Update" }
+}
+
 class Echo_EchoServiceTestStub: ServiceClientTestStubBase, Echo_EchoService {
   var getRequests: [Echo_EchoRequest] = []
   var getResponses: [Echo_EchoResponse] = []
@@ -211,6 +218,7 @@ class Echo_EchoServiceTestStub: ServiceClientTestStubBase, Echo_EchoService {
     defer { getResponses.removeFirst() }
     return getResponses.first!
   }
+  @discardableResult
   func get(_ request: Echo_EchoRequest, metadata customMetadata: Metadata, completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall {
     let response = try self.get(request)
     let callResult = CallResult(success: true, statusCode: .ok, statusMessage: "OK", resultData: nil, initialMetadata: nil, trailingMetadata: nil)

@@ -5,21 +5,21 @@ import NIOFoundationCompat
 import NIOHTTP1
 
 /// Incoming gRPC package with a fixed message type.
-public enum GRPCServerRequestPart<MessageType: Message> {
+public enum GRPCServerRequestPart<RequestMessage: Message> {
   case head(HTTPRequestHead)
-  case message(MessageType)
+  case message(RequestMessage)
   case end
 }
 
 /// Outgoing gRPC package with a fixed message type.
-public enum GRPCServerResponsePart<MessageType: Message> {
+public enum GRPCServerResponsePart<ResponseMessage: Message> {
   case headers(HTTPHeaders)
-  case message(MessageType)
+  case message(ResponseMessage)
   case status(GRPCStatus)
 }
 
 /// A simple channel handler that translates raw gRPC packets into decoded protobuf messages, and vice versa.
-public final class GRPCServerCodec<RequestMessage: Message, ResponseMessage: Message> { }
+public final class GRPCServerCodec<RequestMessage: Message, ResponseMessage: Message> {}
 
 extension GRPCServerCodec: ChannelInboundHandler {
   public typealias InboundIn = RawGRPCServerRequestPart
@@ -35,8 +35,7 @@ extension GRPCServerCodec: ChannelInboundHandler {
       do {
         ctx.fireChannelRead(self.wrapInboundOut(.message(try RequestMessage(serializedData: messageAsData))))
       } catch {
-        //! FIXME: Ensure that the last handler in the pipeline returns `.dataLoss` here?
-        ctx.fireErrorCaught(error)
+        ctx.fireErrorCaught(GRPCError.server(.requestProtoDeserializationFailure))
       }
 
     case .end:
@@ -54,18 +53,19 @@ extension GRPCServerCodec: ChannelOutboundHandler {
     switch responsePart {
     case .headers(let headers):
       ctx.write(self.wrapOutboundOut(.headers(headers)), promise: promise)
+
     case .message(let message):
       do {
         let messageData = try message.serializedData()
-        var responseBuffer = ctx.channel.allocator.buffer(capacity: messageData.count)
-        responseBuffer.write(bytes: messageData)
-        ctx.write(self.wrapOutboundOut(.message(responseBuffer)), promise: promise)
+        ctx.write(self.wrapOutboundOut(.message(messageData)), promise: promise)
       } catch {
+        let error = GRPCError.server(.responseProtoSerializationFailure)
         promise?.fail(error: error)
         ctx.fireErrorCaught(error)
       }
+
     case .status(let status):
-      ctx.write(self.wrapOutboundOut(.status(status)), promise: promise)
+      ctx.writeAndFlush(self.wrapOutboundOut(.status(status)), promise: promise)
     }
   }
 }

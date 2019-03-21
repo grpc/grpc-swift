@@ -12,7 +12,7 @@ third_party/**
 /test.out
 /echo.pid
 /SwiftGRPC.xcodeproj
-Package.resolved
+/scripts/tmp/
 Examples/EchoWeb/dist
 Examples/EchoWeb/node_modules
 Examples/EchoWeb/package-lock.json
