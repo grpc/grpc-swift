@@ -95,7 +95,7 @@ func main() throws {
   var response = Google_Protobuf_Compiler_CodeGeneratorResponse()
 
   // read plugin input
-  let rawRequest = try Stdin.readall()
+  let rawRequest = FileHandle.standardInput.readDataToEndOfFile()
   let request = try Google_Protobuf_Compiler_CodeGeneratorRequest(serializedData: rawRequest)
 
   let options = try GeneratorOptions(parameter: request.parameter)
@@ -116,8 +116,7 @@ func main() throws {
   }
 
   // return everything to the caller
-  let serializedResponse = try response.serializedData()
-  Stdout.write(bytes: serializedResponse)
+  FileHandle.standardOutput.write(try response.serializedData())
 }
 
 do {
