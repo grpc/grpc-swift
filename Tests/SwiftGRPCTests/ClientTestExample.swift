@@ -92,6 +92,27 @@ extension ClientTestExample {
     XCTAssertEqual([Echo_EchoRequest(text: "foo")], fakeService.getRequests)
   }
   
+  func testClientAsynchronous() throws {
+    let fakeService = Echo_EchoServiceTestStub()
+    fakeService.getResponses.append(Echo_EchoResponse(text: "bar"))
+    
+    let client = ClientUnderTest(service: fakeService)
+    
+    let completionHandlerExpectation = expectation(description: "request completion handler called")
+
+    _ = try client.service.get(Echo_EchoRequest(text: "foo")) { response, _ in
+      XCTAssertEqual("bar", response?.text)
+      completionHandlerExpectation.fulfill()
+    }
+    
+    waitForExpectations(timeout: 1)
+    
+    // Ensure that all responses have been consumed.
+    XCTAssertEqual(0, fakeService.getResponses.count)
+    // Ensure that the expected requests have been sent.
+    XCTAssertEqual([Echo_EchoRequest(text: "foo")], fakeService.getRequests)
+  }
+  
   func testClientStreaming() {
     let inputStrings = ["foo", "bar", "baz"]
     let fakeService = Echo_EchoServiceTestStub()
