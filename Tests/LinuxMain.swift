@@ -38,7 +38,9 @@ XCTMain([
   testCase(ServerTimeoutTests.allTests),
 
   // SwiftGRPCNIO
-  testCase(NIOServerTests.allTests),
+  testCase(NIOFunctionalTestsInsecureTransport.allTests),
+  testCase(NIOFunctionalTestsAnonymousClient.allTests),
+  testCase(NIOFunctionalTestsMutualAuthentication.allTests),
   testCase(SwiftGRPCNIOTests.ServerThrowingTests.allTests),
   testCase(SwiftGRPCNIOTests.ServerDelayedThrowingTests.allTests),
   testCase(SwiftGRPCNIOTests.ClientThrowingWhenServerReturningErrorTests.allTests),
