@@ -29,7 +29,8 @@ class NIOClientTimeoutTests: NIOBasicEchoTestCase {
       ("testClientStreamingTimeoutBeforeSending", testClientStreamingTimeoutBeforeSending),
       ("testClientStreamingTimeoutAfterSending", testClientStreamingTimeoutAfterSending),
       ("testBidirectionalStreamingTimeoutBeforeSending", testBidirectionalStreamingTimeoutBeforeSending),
-      ("testBidirectionalStreamingTimeoutAfterSending", testBidirectionalStreamingTimeoutAfterSending)
+      // This test tends to crash randomly on Linux, so it is disabled there for now.
+      //("testBidirectionalStreamingTimeoutAfterSending", testBidirectionalStreamingTimeoutAfterSending),
     ]
   }
 
