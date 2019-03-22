@@ -20,11 +20,11 @@ import XCTest
 
 fileprivate class ClosingProvider: Echo_EchoProvider {
   var doneExpectation: XCTestExpectation!
-  
+
   func get(request: Echo_EchoRequest, session: Echo_EchoGetSession) throws -> Echo_EchoResponse {
     return Echo_EchoResponse()
   }
-  
+
   func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws -> ServerStatus? {
     let closeSem = DispatchSemaphore(value: 0)
     try! session.close(withStatus: .ok) {
@@ -34,33 +34,27 @@ fileprivate class ClosingProvider: Echo_EchoProvider {
     doneExpectation.fulfill()
     return nil
   }
-  
+
   func collect(session: Echo_EchoCollectSession) throws -> Echo_EchoResponse? { fatalError("not implemented") }
-  
+
   func update(session: Echo_EchoUpdateSession) throws -> ServerStatus? { fatalError("not implemented") }
 }
 
 class CompletionQueueTests: BasicEchoTestCase {
-  static var allTests: [(String, (CompletionQueueTests) -> () throws -> Void)] {
-    return [
-      ("testCompletionQueueThrowsAfterShutdown", testCompletionQueueThrowsAfterShutdown)
-    ]
-  }
-  
   override func makeProvider() -> Echo_EchoProvider { return ClosingProvider() }
 }
 
 extension CompletionQueueTests {
   func testCompletionQueueThrowsAfterShutdown() {
     (self.provider as! ClosingProvider).doneExpectation = expectation(description: "end of server-side request handler reached")
-    
+
     let completionHandlerExpectation = expectation(description: "completion handler called")
     _ = try! client.expand(Echo_EchoRequest(text: "foo bar baz")) { callResult in
       XCTAssertEqual(.ok, callResult.statusCode)
       XCTAssertEqual("OK", callResult.statusMessage)
       completionHandlerExpectation.fulfill()
     }
-    
+
     waitForExpectations(timeout: defaultTimeout)
   }
 }

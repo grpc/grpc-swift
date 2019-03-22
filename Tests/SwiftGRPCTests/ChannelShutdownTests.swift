@@ -17,16 +17,6 @@
 import XCTest
 
 final class ChannelShutdownTests: BasicEchoTestCase {
-  static var allTests: [(String, (ChannelShutdownTests) -> () throws -> Void)] {
-    return [
-      ("testThrowsWhenCreatingCallWithAlreadyShutDownChannel", testThrowsWhenCreatingCallWithAlreadyShutDownChannel),
-      ("testCallReceiveThrowsWhenChannelIsShutDown", testCallReceiveThrowsWhenChannelIsShutDown),
-      ("testCallCloseThrowsWhenChannelIsShutDown", testCallCloseThrowsWhenChannelIsShutDown),
-      ("testCallCloseAndReceiveThrowsWhenChannelIsShutDown", testCallCloseAndReceiveThrowsWhenChannelIsShutDown),
-      ("testCallSendThrowsWhenChannelIsShutDown", testCallSendThrowsWhenChannelIsShutDown),
-      ("testCancelsActiveCallWhenShutdownIsCalled", testCancelsActiveCallWhenShutdownIsCalled),
-    ]
-  }
 }
 
 extension ChannelShutdownTests {

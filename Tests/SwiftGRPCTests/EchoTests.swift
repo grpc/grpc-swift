@@ -19,21 +19,6 @@ import Foundation
 import XCTest
 
 class EchoTests: BasicEchoTestCase {
-  static var allTests: [(String, (EchoTests) -> () throws -> Void)] {
-    return [
-      ("testUnary", testUnary),
-      ("testUnaryLotsOfRequests", testUnaryLotsOfRequests),
-      ("testClientStreaming", testClientStreaming),
-      ("testClientStreamingLotsOfMessages", testClientStreamingLotsOfMessages),
-      ("testServerStreaming", testServerStreaming),
-      ("testServerStreamingLotsOfMessages", testServerStreamingLotsOfMessages),
-      ("testBidirectionalStreamingBatched", testBidirectionalStreamingBatched),
-      ("testBidirectionalStreamingPingPong", testBidirectionalStreamingPingPong),
-      ("testBidirectionalStreamingLotsOfMessagesBatched", testBidirectionalStreamingLotsOfMessagesBatched),
-      ("testBidirectionalStreamingLotsOfMessagesPingPong", testBidirectionalStreamingLotsOfMessagesPingPong)
-    ]
-  }
-
   static let lotsOfStrings = (0..<1000).map { String(describing: $0) }
 }
 
@@ -53,7 +38,7 @@ extension EchoTests {
     XCTAssertEqual("Swift echo get: foo", try! client.get(Echo_EchoRequest(text: "foo")).text)
     XCTAssertEqual("Swift echo get: foo", try! client.get(Echo_EchoRequest(text: "foo")).text)
   }
-  
+
   func testUnaryLotsOfRequests() {
     // No need to spam the log with 10k lines.
     server.shouldLogRequests = false
@@ -195,7 +180,7 @@ extension EchoTests {
     try! call.closeSend { closeCompletionHandlerExpectation.fulfill() }
 
     XCTAssertNil(try! call.receive())
-    
+
     waitForExpectations(timeout: defaultTimeout)
   }
 
@@ -238,7 +223,7 @@ extension EchoTests {
 
     let closeCompletionHandlerExpectation = expectation(description: "close completion handler called")
     try! call.closeSend { closeCompletionHandlerExpectation.fulfill() }
-    
+
     XCTAssertNil(try! call.receive())
 
     waitForExpectations(timeout: defaultTimeout)

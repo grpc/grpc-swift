@@ -22,16 +22,6 @@ import XCTest
 // supported in HTTP1.
 // TODO: Add tests for application/grpc-web as well.
 class NIOServerWebTests: NIOEchoTestCaseBase {
-  static var allTests: [(String, (NIOServerWebTests) -> () throws -> Void)] {
-    return [
-      ("testUnary", testUnary),
-      ("testUnaryWithoutRequestMessage", testUnaryWithoutRequestMessage),
-      //! FIXME: Broken on Linux: https://github.com/grpc/grpc-swift/issues/382
-      // ("testUnaryLotsOfRequests", testUnaryLotsOfRequests),
-      ("testServerStreaming", testServerStreaming),
-    ]
-  }
-
   private func gRPCEncodedEchoRequest(_ text: String) -> Data {
     var request = Echo_EchoRequest()
     request.text = text
@@ -93,7 +83,7 @@ extension NIOServerWebTests {
 
     waitForExpectations(timeout: defaultTestTimeout)
   }
-  
+
   func testUnaryWithoutRequestMessage() {
     let expectedData = gRPCWebTrailers(
       status: 12, message: "request cardinality violation; method requires exactly one request but client sent none")

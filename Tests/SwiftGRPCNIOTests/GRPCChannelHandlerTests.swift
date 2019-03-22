@@ -5,14 +5,6 @@ import NIOHTTP1
 @testable import SwiftGRPCNIO
 
 class GRPCChannelHandlerTests: GRPCChannelHandlerResponseCapturingTestCase {
-  static var allTests: [(String, (GRPCChannelHandlerTests) -> () throws -> Void)] {
-    return [
-      ("testUnimplementedMethodReturnsUnimplementedStatus", testUnimplementedMethodReturnsUnimplementedStatus),
-      ("testImplementedMethodReturnsHeadersMessageAndStatus", testImplementedMethodReturnsHeadersMessageAndStatus),
-      ("testImplementedMethodReturnsStatusForBadlyFormedProto", testImplementedMethodReturnsStatusForBadlyFormedProto),
-    ]
-  }
-
   func testUnimplementedMethodReturnsUnimplementedStatus() throws {
     let responses = try waitForGRPCChannelHandlerResponses(count: 1) { channel in
       let requestHead = HTTPRequestHead(version: .init(major: 2, minor: 0), method: .POST, uri: "unimplementedMethodName")

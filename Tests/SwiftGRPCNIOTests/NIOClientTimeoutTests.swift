@@ -22,17 +22,6 @@ class NIOClientTimeoutTests: NIOEchoTestCaseBase {
   let optionsWithShortTimeout = CallOptions(timeout: try! GRPCTimeout.milliseconds(10))
   let moreThanShortTimeout: TimeInterval = 0.011
 
-  static var allTests: [(String, (NIOClientTimeoutTests) -> () throws -> Void)] {
-    return [
-      ("testUnaryTimeoutAfterSending", testUnaryTimeoutAfterSending),
-      ("testServerStreamingTimeoutAfterSending", testServerStreamingTimeoutAfterSending),
-      ("testClientStreamingTimeoutBeforeSending", testClientStreamingTimeoutBeforeSending),
-      ("testClientStreamingTimeoutAfterSending", testClientStreamingTimeoutAfterSending),
-      ("testBidirectionalStreamingTimeoutBeforeSending", testBidirectionalStreamingTimeoutBeforeSending),
-      ("testBidirectionalStreamingTimeoutAfterSending", testBidirectionalStreamingTimeoutAfterSending)
-    ]
-  }
-
   private func expectDeadlineExceeded(forStatus status: EventLoopFuture<GRPCStatus>) {
     let statusExpectation = self.expectation(description: "status received")
 

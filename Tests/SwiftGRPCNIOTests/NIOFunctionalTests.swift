@@ -21,41 +21,7 @@ import NIOHTTP2
 @testable import SwiftGRPCNIO
 import XCTest
 
-protocol NIOFunctionalTests: class {
-  func testUnary() throws
-  func testUnaryLotsOfRequests() throws
-  func testUnaryWithLargeData() throws
-  func testUnaryEmptyRequest() throws
-  func testClientStreaming() throws
-  func testClientStreamingLotsOfMessages() throws
-  func testServerStreaming() throws
-  func testServerStreamingLotsOfMessages() throws
-  func testBidirectionalStreamingBatched() throws
-  func testBidirectionalStreamingPingPong() throws
-  func testBidirectionalStreamingLotsOfMessagesBatched() throws
-  func testBidirectionalStreamingLotsOfMessagesPingPong() throws
-}
-
-extension NIOFunctionalTests {
-  static var allTests: [(String, (Self) -> () throws -> Void)] {
-    return [
-      ("testUnary", testUnary),
-      ("testUnaryLotsOfRequests", testUnaryLotsOfRequests),
-      ("testUnaryWithLargeData", testUnaryWithLargeData),
-      ("testUnaryEmptyRequest", testUnaryEmptyRequest),
-      ("testClientStreaming", testClientStreaming),
-      ("testClientStreamingLotsOfMessages", testClientStreamingLotsOfMessages),
-      ("testServerStreaming", testServerStreaming),
-      ("testServerStreamingLotsOfMessages", testServerStreamingLotsOfMessages),
-      ("testBidirectionalStreamingBatched", testBidirectionalStreamingBatched),
-      ("testBidirectionalStreamingPingPong", testBidirectionalStreamingPingPong),
-      ("testBidirectionalStreamingLotsOfMessagesBatched", testBidirectionalStreamingLotsOfMessagesBatched),
-      ("testBidirectionalStreamingLotsOfMessagesPingPong", testBidirectionalStreamingLotsOfMessagesPingPong)
-    ]
-  }
-}
-
-class NIOFunctionalTestsInsecureTransport: NIOEchoTestCaseBase, NIOFunctionalTests {
+class NIOFunctionalTestsInsecureTransport: NIOEchoTestCaseBase {
   override var transportSecurity: TransportSecurity {
     return .none
   }
