@@ -18,12 +18,20 @@ import PackageDescription
 import Foundation
 
 var packageDependencies: [Package.Dependency] = [
-  .package(url: "https://github.com/apple/swift-protobuf.git", .upToNextMinor(from: "1.1.1")),
+  // Official SwiftProtobuf library, for [de]serializing data to send on the wire.
+  .package(url: "https://github.com/apple/swift-protobuf.git", .upToNextMajor(from: "1.3.1")),
+  
+  // Command line argument parser for our auxiliary command line tools.
   .package(url: "https://github.com/kylef/Commander.git", .upToNextMinor(from: "0.8.0")),
-  .package(url: "https://github.com/apple/swift-nio-zlib-support.git", .upToNextMinor(from: "1.0.0")),
-  .package(url: "https://github.com/apple/swift-nio.git", .upToNextMinor(from: "1.11.0")),
-  .package(url: "https://github.com/apple/swift-nio-nghttp2-support.git", .upToNextMinor(from: "1.0.0")),
-  .package(url: "https://github.com/apple/swift-nio-http2.git", .revision("38b8235868e1e6277c420b73ac5cfdfa66382a85"))
+  
+  // SwiftGRPCNIO dependencies:
+  // Transitive dependencies
+  .package(url: "https://github.com/apple/swift-nio-zlib-support.git", .upToNextMajor(from: "1.0.0")),
+  .package(url: "https://github.com/apple/swift-nio-nghttp2-support.git", .upToNextMajor(from: "1.0.0")),
+  // Main SwiftNIO package
+  .package(url: "https://github.com/apple/swift-nio.git", .upToNextMajor(from: "1.12.0")),
+  // HTTP2 via SwiftNIO
+  .package(url: "https://github.com/apple/swift-nio-http2.git", .upToNextMinor(from: "0.2.1"))
 ]
 
 var cGRPCDependencies: [Target.Dependency] = []
@@ -32,7 +40,7 @@ var cGRPCDependencies: [Target.Dependency] = []
 let isLinux = true
 #else
 let isLinux = false
-#endif 
+#endif
 
 // On Linux, Foundation links with openssl, so we'll need to use that instead of BoringSSL.
 // See https://github.com/apple/swift-nio-ssl/issues/16#issuecomment-392705505 for details.
@@ -75,6 +83,12 @@ let package = Package(
               "SwiftProtobuf",
               "Commander"],
             path: "Sources/Examples/Echo"),
+    .target(name: "EchoNIO",
+            dependencies: [
+              "SwiftGRPCNIO",
+              "SwiftProtobuf",
+              "Commander"],
+            path: "Sources/Examples/EchoNIO"),
     .target(name: "Simple",
             dependencies: ["SwiftGRPC", "Commander"],
             path: "Sources/Examples/Simple"),

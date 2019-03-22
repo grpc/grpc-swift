@@ -18,15 +18,12 @@
 #include <grpc/support/string_util.h>
 #include <grpc/support/alloc.h>
 
-#include <assert.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 cgrpc_channel *cgrpc_channel_create(const char *address,
                                     grpc_arg *args,
                                     int num_args) {
-  cgrpc_channel *c = (cgrpc_channel *) malloc(sizeof (cgrpc_channel));
+  cgrpc_channel *c = (cgrpc_channel *) gpr_zalloc(sizeof (cgrpc_channel));
 
   grpc_channel_args channel_args;
   channel_args.args = args;
@@ -43,7 +40,7 @@ cgrpc_channel *cgrpc_channel_create_secure(const char *address,
                                            const char *client_private_key,
                                            grpc_arg *args,
                                            int num_args) {
-  cgrpc_channel *c = (cgrpc_channel *) malloc(sizeof (cgrpc_channel));
+  cgrpc_channel *c = (cgrpc_channel *) gpr_zalloc(sizeof (cgrpc_channel));
 
   grpc_channel_args channel_args;
   channel_args.args = args;
@@ -66,7 +63,7 @@ cgrpc_channel *cgrpc_channel_create_secure(const char *address,
 cgrpc_channel *cgrpc_channel_create_google(const char *address,
                                            grpc_arg *args,
                                            int num_args) {
-  cgrpc_channel *c = (cgrpc_channel *) malloc(sizeof (cgrpc_channel));
+  cgrpc_channel *c = (cgrpc_channel *) gpr_zalloc(sizeof (cgrpc_channel));
 
   grpc_channel_args channel_args;
   channel_args.args = args;
@@ -83,7 +80,7 @@ cgrpc_channel *cgrpc_channel_create_google(const char *address,
 void cgrpc_channel_destroy(cgrpc_channel *c) {
   grpc_channel_destroy(c->channel);
   c->channel = NULL;
-  free(c);
+  gpr_free(c);
 }
 
 cgrpc_call *cgrpc_channel_create_call(cgrpc_channel *channel,
@@ -105,8 +102,7 @@ cgrpc_call *cgrpc_channel_create_call(cgrpc_channel *channel,
                                                      NULL);
   grpc_slice_unref(host_slice);
   grpc_slice_unref(method_slice);
-  cgrpc_call *call = (cgrpc_call *) malloc(sizeof(cgrpc_call));
-  memset(call, 0, sizeof(cgrpc_call));
+  cgrpc_call *call = (cgrpc_call *) gpr_zalloc(sizeof(cgrpc_call));
   call->call = channel_call;
   return call;
 }

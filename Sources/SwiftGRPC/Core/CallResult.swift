@@ -26,6 +26,35 @@ public struct CallResult: CustomStringConvertible {
   public let resultData: Data?
   public let initialMetadata: Metadata?
   public let trailingMetadata: Metadata?
+
+  public static func error(
+    statusCode: StatusCode = .unknown,
+    statusMessage: String? = nil,
+    initialMetadata: Metadata? = nil,
+    trailingMetadata: Metadata? = nil
+  ) -> CallResult {
+    return CallResult(
+      success: false,
+      statusCode: statusCode,
+      statusMessage: statusMessage,
+      resultData: nil,
+      initialMetadata: initialMetadata,
+      trailingMetadata: trailingMetadata)
+  }
+
+  public static func success(
+    resultData: Data,
+    initialMetadata: Metadata? = nil,
+    trailingMetadata: Metadata? = nil
+  ) -> CallResult {
+    return CallResult(
+      success: true,
+      statusCode: .ok,
+      statusMessage: "OK",
+      resultData: resultData,
+      initialMetadata: initialMetadata,
+      trailingMetadata: trailingMetadata)
+  }
   
   init(_ op: OperationGroup) {
     success = op.success
@@ -41,8 +70,9 @@ public struct CallResult: CustomStringConvertible {
     trailingMetadata = op.receivedTrailingMetadata()
   }
   
-  fileprivate init(success: Bool, statusCode: StatusCode, statusMessage: String?, resultData: Data?,
-                   initialMetadata: Metadata?, trailingMetadata: Metadata?) {
+  // This method is only public for use by test stubs. Please do not use for other purposes.
+  public init(success: Bool, statusCode: StatusCode, statusMessage: String?, resultData: Data?,
+              initialMetadata: Metadata?, trailingMetadata: Metadata?) {
     self.success = success
     self.statusCode = statusCode
     self.statusMessage = statusMessage

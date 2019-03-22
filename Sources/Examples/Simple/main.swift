@@ -30,7 +30,7 @@ func client() throws {
 
     let method = (i < steps - 1) ? "/hello" : "/quit"
     print("calling " + method)
-    let call = c.makeCall(method)
+    let call = try c.makeCall(method)
 
     let metadata = try Metadata([
       "x": "xylophone",
@@ -38,7 +38,7 @@ func client() throws {
       "z": "zither"
     ])
 
-    try! call.start(.unary, metadata: metadata, message: message) {
+    try call.start(.unary, metadata: metadata, message: message) {
       response in
       print("status:", response.statusCode)
       print("statusMessage:", response.statusMessage!)

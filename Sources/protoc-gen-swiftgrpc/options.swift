@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 import Foundation
+import SwiftProtobufPluginLibrary
 
 enum GenerationError: Error {
   /// Raised when parsing the parameter string and found an unknown key
   case unknownParameter(name: String)
   /// Raised when a parameter was giving an invalid value
   case invalidParameterValue(name: String, value: String)
+  /// Raised to wrap another error but provide a context message.
+  case wrappedError(message: String, error: Error)
 
   var localizedDescription: String {
     switch self {
@@ -27,6 +30,8 @@ enum GenerationError: Error {
       return "Unknown generation parameter '\(name)'"
     case .invalidParameterValue(let name, let value):
       return "Unknown value for generation parameter '\(name)': '\(value)'"
+    case .wrappedError(let message, let error):
+      return "\(message): \(error.localizedDescription)"
     }
   }
 }
@@ -52,7 +57,11 @@ final class GeneratorOptions {
   private(set) var generateAsynchronous = true
   private(set) var generateSynchronous = true
   private(set) var generateTestStubs = false
+  private(set) var generateImplementations = true 
   private(set) var generateNIOImplementation = false
+  private(set) var protoToModuleMappings = ProtoFileToModuleMappings()
+  private(set) var fileNaming = FileNaming.FullPath
+  private(set) var extraModuleImports: [String] = []
 
   init(parameter: String?) throws {
     for pair in GeneratorOptions.parseParameter(string: parameter) {
@@ -99,9 +108,41 @@ final class GeneratorOptions {
           throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }
         
+      case "Implementations":
+        if let value = Bool(pair.value) {
+          generateImplementations = value
+        } else {
+          throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
+        }
+
       case "NIO":
         if let value = Bool(pair.value) {
           generateNIOImplementation = value
+        } else {
+          throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
+        }
+
+      case "ProtoPathModuleMappings":
+        if !pair.value.isEmpty {
+          do {
+            protoToModuleMappings = try ProtoFileToModuleMappings(path: pair.value)
+          } catch let e {
+            throw GenerationError.wrappedError(
+              message: "Parameter 'ProtoPathModuleMappings=\(pair.value)'",
+              error: e)
+          }
+        }
+
+      case "FileNaming":
+        if let value = FileNaming(rawValue: pair.value) {
+          fileNaming = value
+        } else {
+          throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
+        }
+
+      case "ExtraModuleImports":
+        if !pair.value.isEmpty {
+          extraModuleImports.append(pair.value)
         } else {
           throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }

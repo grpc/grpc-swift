@@ -20,8 +20,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-import Foundation
 import Dispatch
+import Foundation
 import SwiftGRPC
 import SwiftProtobuf
 
@@ -47,10 +47,6 @@ fileprivate final class Echo_EchoExpandCallBase: ClientCallServerStreamingBase<E
   override class var method: String { return "/echo.Echo/Expand" }
 }
 
-class Echo_EchoExpandCallTestStub: ClientCallServerStreamingTestStub<Echo_EchoResponse>, Echo_EchoExpandCall {
-  override class var method: String { return "/echo.Echo/Expand" }
-}
-
 internal protocol Echo_EchoCollectCall: ClientCallClientStreaming {
   /// Send a message to the stream. Nonblocking.
   func send(_ message: Echo_EchoRequest, completion: @escaping (Error?) -> Void) throws
@@ -69,12 +65,6 @@ internal extension Echo_EchoCollectCall {
 }
 
 fileprivate final class Echo_EchoCollectCallBase: ClientCallClientStreamingBase<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectCall {
-  override class var method: String { return "/echo.Echo/Collect" }
-}
-
-/// Simple fake implementation of Echo_EchoCollectCall
-/// stores sent values for later verification and finall returns a previously-defined result.
-class Echo_EchoCollectCallTestStub: ClientCallClientStreamingTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectCall {
   override class var method: String { return "/echo.Echo/Collect" }
 }
 
@@ -109,101 +99,149 @@ fileprivate final class Echo_EchoUpdateCallBase: ClientCallBidirectionalStreamin
   override class var method: String { return "/echo.Echo/Update" }
 }
 
-class Echo_EchoUpdateCallTestStub: ClientCallBidirectionalStreamingTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateCall {
-  override class var method: String { return "/echo.Echo/Update" }
-}
-
 
 /// Instantiate Echo_EchoServiceClient, then call methods of this protocol to make API calls.
 internal protocol Echo_EchoService: ServiceClient {
   /// Synchronous. Unary.
-  func get(_ request: Echo_EchoRequest) throws -> Echo_EchoResponse
+  func get(_ request: Echo_EchoRequest, metadata customMetadata: Metadata) throws -> Echo_EchoResponse
   /// Asynchronous. Unary.
-  func get(_ request: Echo_EchoRequest, completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall
+  @discardableResult
+  func get(_ request: Echo_EchoRequest, metadata customMetadata: Metadata, completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall
 
   /// Asynchronous. Server-streaming.
   /// Send the initial message.
   /// Use methods on the returned object to get streamed responses.
-  func expand(_ request: Echo_EchoRequest, completion: ((CallResult) -> Void)?) throws -> Echo_EchoExpandCall
+  func expand(_ request: Echo_EchoRequest, metadata customMetadata: Metadata, completion: ((CallResult) -> Void)?) throws -> Echo_EchoExpandCall
 
   /// Asynchronous. Client-streaming.
   /// Use methods on the returned object to stream messages and
   /// to close the connection and wait for a final response.
-  func collect(completion: ((CallResult) -> Void)?) throws -> Echo_EchoCollectCall
+  func collect(metadata customMetadata: Metadata, completion: ((CallResult) -> Void)?) throws -> Echo_EchoCollectCall
 
   /// Asynchronous. Bidirectional-streaming.
   /// Use methods on the returned object to stream messages,
   /// to wait for replies, and to close the connection.
-  func update(completion: ((CallResult) -> Void)?) throws -> Echo_EchoUpdateCall
+  func update(metadata customMetadata: Metadata, completion: ((CallResult) -> Void)?) throws -> Echo_EchoUpdateCall
+
+}
+
+internal extension Echo_EchoService {
+  /// Synchronous. Unary.
+  func get(_ request: Echo_EchoRequest) throws -> Echo_EchoResponse {
+    return try self.get(request, metadata: self.metadata)
+  }
+  /// Asynchronous. Unary.
+  @discardableResult
+  func get(_ request: Echo_EchoRequest, completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall {
+    return try self.get(request, metadata: self.metadata, completion: completion)
+  }
+
+  /// Asynchronous. Server-streaming.
+  func expand(_ request: Echo_EchoRequest, completion: ((CallResult) -> Void)?) throws -> Echo_EchoExpandCall {
+    return try self.expand(request, metadata: self.metadata, completion: completion)
+  }
+
+  /// Asynchronous. Client-streaming.
+  func collect(completion: ((CallResult) -> Void)?) throws -> Echo_EchoCollectCall {
+    return try self.collect(metadata: self.metadata, completion: completion)
+  }
+
+  /// Asynchronous. Bidirectional-streaming.
+  func update(completion: ((CallResult) -> Void)?) throws -> Echo_EchoUpdateCall {
+    return try self.update(metadata: self.metadata, completion: completion)
+  }
 
 }
 
 internal final class Echo_EchoServiceClient: ServiceClientBase, Echo_EchoService {
   /// Synchronous. Unary.
-  internal func get(_ request: Echo_EchoRequest) throws -> Echo_EchoResponse {
+  internal func get(_ request: Echo_EchoRequest, metadata customMetadata: Metadata) throws -> Echo_EchoResponse {
     return try Echo_EchoGetCallBase(channel)
-      .run(request: request, metadata: metadata)
+      .run(request: request, metadata: customMetadata)
   }
   /// Asynchronous. Unary.
-  internal func get(_ request: Echo_EchoRequest, completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall {
+  @discardableResult
+  internal func get(_ request: Echo_EchoRequest, metadata customMetadata: Metadata, completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall {
     return try Echo_EchoGetCallBase(channel)
-      .start(request: request, metadata: metadata, completion: completion)
+      .start(request: request, metadata: customMetadata, completion: completion)
   }
 
   /// Asynchronous. Server-streaming.
   /// Send the initial message.
   /// Use methods on the returned object to get streamed responses.
-  internal func expand(_ request: Echo_EchoRequest, completion: ((CallResult) -> Void)?) throws -> Echo_EchoExpandCall {
+  internal func expand(_ request: Echo_EchoRequest, metadata customMetadata: Metadata, completion: ((CallResult) -> Void)?) throws -> Echo_EchoExpandCall {
     return try Echo_EchoExpandCallBase(channel)
-      .start(request: request, metadata: metadata, completion: completion)
+      .start(request: request, metadata: customMetadata, completion: completion)
   }
 
   /// Asynchronous. Client-streaming.
   /// Use methods on the returned object to stream messages and
   /// to close the connection and wait for a final response.
-  internal func collect(completion: ((CallResult) -> Void)?) throws -> Echo_EchoCollectCall {
+  internal func collect(metadata customMetadata: Metadata, completion: ((CallResult) -> Void)?) throws -> Echo_EchoCollectCall {
     return try Echo_EchoCollectCallBase(channel)
-      .start(metadata: metadata, completion: completion)
+      .start(metadata: customMetadata, completion: completion)
   }
 
   /// Asynchronous. Bidirectional-streaming.
   /// Use methods on the returned object to stream messages,
   /// to wait for replies, and to close the connection.
-  internal func update(completion: ((CallResult) -> Void)?) throws -> Echo_EchoUpdateCall {
+  internal func update(metadata customMetadata: Metadata, completion: ((CallResult) -> Void)?) throws -> Echo_EchoUpdateCall {
     return try Echo_EchoUpdateCallBase(channel)
-      .start(metadata: metadata, completion: completion)
+      .start(metadata: customMetadata, completion: completion)
   }
 
+}
+
+class Echo_EchoGetCallTestStub: ClientCallUnaryTestStub, Echo_EchoGetCall {
+  override class var method: String { return "/echo.Echo/Get" }
+}
+
+class Echo_EchoExpandCallTestStub: ClientCallServerStreamingTestStub<Echo_EchoResponse>, Echo_EchoExpandCall {
+  override class var method: String { return "/echo.Echo/Expand" }
+}
+
+/// Simple fake implementation of Echo_EchoCollectCall
+/// stores sent values for later verification and finall returns a previously-defined result.
+class Echo_EchoCollectCallTestStub: ClientCallClientStreamingTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoCollectCall {
+  override class var method: String { return "/echo.Echo/Collect" }
+}
+
+class Echo_EchoUpdateCallTestStub: ClientCallBidirectionalStreamingTestStub<Echo_EchoRequest, Echo_EchoResponse>, Echo_EchoUpdateCall {
+  override class var method: String { return "/echo.Echo/Update" }
 }
 
 class Echo_EchoServiceTestStub: ServiceClientTestStubBase, Echo_EchoService {
   var getRequests: [Echo_EchoRequest] = []
   var getResponses: [Echo_EchoResponse] = []
-  func get(_ request: Echo_EchoRequest) throws -> Echo_EchoResponse {
+  func get(_ request: Echo_EchoRequest, metadata customMetadata: Metadata) throws -> Echo_EchoResponse {
     getRequests.append(request)
     defer { getResponses.removeFirst() }
     return getResponses.first!
   }
-  func get(_ request: Echo_EchoRequest, completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall {
-    fatalError("not implemented")
+  @discardableResult
+  func get(_ request: Echo_EchoRequest, metadata customMetadata: Metadata, completion: @escaping (Echo_EchoResponse?, CallResult) -> Void) throws -> Echo_EchoGetCall {
+    let response = try self.get(request)
+    let callResult = CallResult(success: true, statusCode: .ok, statusMessage: "OK", resultData: nil, initialMetadata: nil, trailingMetadata: nil)
+    completion(response, callResult)
+    return Echo_EchoGetCallTestStub()
   }
 
   var expandRequests: [Echo_EchoRequest] = []
   var expandCalls: [Echo_EchoExpandCall] = []
-  func expand(_ request: Echo_EchoRequest, completion: ((CallResult) -> Void)?) throws -> Echo_EchoExpandCall {
+  func expand(_ request: Echo_EchoRequest, metadata customMetadata: Metadata, completion: ((CallResult) -> Void)?) throws -> Echo_EchoExpandCall {
     expandRequests.append(request)
     defer { expandCalls.removeFirst() }
     return expandCalls.first!
   }
 
   var collectCalls: [Echo_EchoCollectCall] = []
-  func collect(completion: ((CallResult) -> Void)?) throws -> Echo_EchoCollectCall {
+  func collect(metadata customMetadata: Metadata, completion: ((CallResult) -> Void)?) throws -> Echo_EchoCollectCall {
     defer { collectCalls.removeFirst() }
     return collectCalls.first!
   }
 
   var updateCalls: [Echo_EchoUpdateCall] = []
-  func update(completion: ((CallResult) -> Void)?) throws -> Echo_EchoUpdateCall {
+  func update(metadata customMetadata: Metadata, completion: ((CallResult) -> Void)?) throws -> Echo_EchoUpdateCall {
     defer { updateCalls.removeFirst() }
     return updateCalls.first!
   }

@@ -98,17 +98,9 @@ if CommandLine.arguments.contains("test") {
   s += "import Foundation\n"
   s += "\n"
 
-  s += "func roots_pem() -> String? {\n"
+  s += "public let kRootCertificates: String = \"\"\"\n"
   let fileURL = URL(fileURLWithPath: "Assets/roots.pem")
-  let filedata = try Data(contentsOf: fileURL)
-  let encoding = filedata.base64EncodedString()
-  s += "  let roots = \n"
-  s += "    \"" + encoding + "\"\n"
-  s += "  if let data = Data(base64Encoded: roots, options:[]) {\n"
-  s += "    return String(data:data, encoding:.utf8)\n"
-  s += "  } else {\n"
-  s += "    return nil\n"
-  s += "  }\n"
-  s += "}\n"
+  s += try String(contentsOf: fileURL)
+  s += "\"\"\""
 }
 print(s)

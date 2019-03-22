@@ -24,6 +24,15 @@
           <BuildableReference
             BuildableIdentifier = "primary"
             BuildableName = "'$(TARGET_NAME)'"
+            BlueprintName = "SwiftGRPCNIOTests"
+            ReferencedContainer = "container:SwiftGRPC-Carthage.xcodeproj">
+          </BuildableReference>
+        </TestableReference>
+        <TestableReference
+          skipped = "NO">
+          <BuildableReference
+            BuildableIdentifier = "primary"
+            BuildableName = "'$(TARGET_NAME)'"
             BlueprintName = "SwiftGRPCTests"
             ReferencedContainer = "container:SwiftGRPC-Carthage.xcodeproj">
           </BuildableReference>

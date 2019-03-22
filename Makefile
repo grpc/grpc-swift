@@ -27,12 +27,23 @@ project-carthage:
 	@ruby fix-project-settings.rb SwiftGRPC-Carthage.xcodeproj || echo "xcodeproj ('sudo gem install xcodeproj') is required in order to generate the Carthage-compatible project!"
 	@ruby patch-carthage-project.rb SwiftGRPC-Carthage.xcodeproj || echo "xcodeproj ('sudo gem install xcodeproj') is required in order to generate the Carthage-compatible project!"
 
-test:	all
+test: all
 	swift test $(CFLAGS)
 
-test-echo:	all
+test-echo: all
 	cp .build/debug/Echo .
 	./Echo serve & /bin/echo $$! > echo.pid
+	./Echo get | tee test.out
+	./Echo expand | tee -a test.out
+	./Echo collect | tee -a test.out
+	./Echo update | tee -a test.out
+	kill -9 `cat echo.pid`
+	diff -u test.out Sources/Examples/Echo/test.gold
+
+test-echo-nio: all
+	cp .build/debug/EchoNIO .
+	cp .build/debug/Echo .
+	./EchoNIO serve & /bin/echo $$! > echo.pid
 	./Echo get | tee test.out
 	./Echo expand | tee -a test.out
 	./Echo collect | tee -a test.out
@@ -47,8 +58,8 @@ test-plugin:
 
 test-plugin-nio:
 	swift build $(CFLAGS) --product protoc-gen-swiftgrpc
-	protoc Sources/Examples/Echo/echo.proto --proto_path=Sources/Examples/Echo --plugin=.build/debug/protoc-gen-swift --plugin=.build/debug/protoc-gen-swiftgrpc --swiftgrpc_out=/tmp --swiftgrpc_opt=Client=false,NIO=true
-		diff -u /tmp/echo.grpc.swift Tests/SwiftGRPCNIOTests/echo_nio.grpc.swift
+	protoc Sources/Examples/Echo/echo.proto --proto_path=Sources/Examples/Echo --plugin=.build/debug/protoc-gen-swift --plugin=.build/debug/protoc-gen-swiftgrpc --swiftgrpc_out=/tmp --swiftgrpc_opt=NIO=true
+	diff -u /tmp/echo.grpc.swift Sources/Examples/EchoNIO/Generated/echo.grpc.swift
 
 xcodebuild: project
 		xcodebuild -project SwiftGRPC.xcodeproj -configuration "Debug" -parallelizeTargets -target SwiftGRPC -target Echo -target Simple -target protoc-gen-swiftgrpc build
