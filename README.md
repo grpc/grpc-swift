@@ -71,15 +71,17 @@ generate the necessary support code.
 Binary releases of `protoc`, the Protocol Buffer Compiler, are
 available on [GitHub](https://github.com/google/protobuf/releases).
 
-To build the plugins, run `make` in the main directory.
+To build the plugins, run `make plugin` in the main directory.
 This uses the Swift Package Manager to build both of the necessary
 plugins: `protoc-gen-swift`, which generates Protocol Buffer support code
 and `protoc-gen-swiftgrpc`, which generates gRPC interface code.
 
+To install these plugins, just copy the two executables (`protoc-gen-swift` and `protoc-gen-swiftgrpc`) that show up in the main directory into a directory that is part of your `PATH` environment variable.
+
 ### Using the plugins
 
 To use the plugins, `protoc` and both plugins should be in your
-search path. Invoke them with commands like the following:
+search path (see above). Invoke them with commands like the following:
 
     protoc <your proto files> \
         --swift_out=. \
@@ -97,6 +99,8 @@ separated from the output directory by a colon.
 | `Visibility` | `Internal`/`Public` | `Internal` | ACL of generated code |
 | `Server` |  `true`/`false` | `true` | Whether to generate server code |
 | `Client` |  `true`/`false` | `true` | Whether to generate client code |
+| `Async` |  `true`/`false` | `true` | Whether to generate asynchronous code |
+| `Sync` |  `true`/`false` | `true` | Whether to generate synchronous code |
 | `TestStubs` |  `true`/`false` | `false` | Whether to generate test stub code |
 
 Example:
@@ -136,6 +140,22 @@ testing with the following versions:
 - Xcode 9.1
 - Swift 4.0
 - swift-protobuf 1.1.1
+
+## `SwiftGRPCNIO` package
+
+`SwiftGRPCNIO` is a clean-room implementation of the gRPC protocol on top of the [`SwiftNIO`](http://github.com/apple/swift-nio) library. This implementation is not yet production-ready as it lacks several things recommended for production use:
+
+- Better test coverage
+- Full error handling
+- SSL support
+- Client support
+- Example projects
+- iOS support
+- Removal of the `libnghttp2` dependency from `SwiftNIOHTTP2`
+
+However, if you are planning to implement a gRPC service based on `SwiftNIO` or the Vapor framework, you might find this package useful. In addition, once ready, this package should provide more predictable and reliable behavior in the future, combined with an improved API and better developer experience.
+
+You may also want to have a look at [this presentation](https://docs.google.com/presentation/d/1Mnsaq4mkeagZSP4mK1k0vewZrJKynm_MCteRDyM3OX8/edit) for more details on the motivation for this package.
 
 ## License
 

@@ -132,6 +132,8 @@ private extension Channel {
     private let underlyingCompletionQueue: UnsafeMutableRawPointer
     private let callback: (ConnectivityState) -> Void
     private var lastState: ConnectivityState
+    private var hasBeenShutdown = false
+    private let stateMutex: Mutex = Mutex()
 
     init(underlyingChannel: UnsafeMutableRawPointer, currentState: ConnectivityState, callback: @escaping (ConnectivityState) -> ()) {
       self.underlyingChannel = underlyingChannel
@@ -151,11 +153,19 @@ private extension Channel {
 
       spinloopThreadQueue.async {
         while true  {
+          guard (self.stateMutex.synchronize{ !self.hasBeenShutdown }) else {
+            return
+          }
+            
           guard let underlyingState = self.lastState.underlyingState else { return }
 
           let deadline: TimeInterval = 0.2
           cgrpc_channel_watch_connectivity_state(self.underlyingChannel, self.underlyingCompletionQueue, underlyingState, deadline, nil)
           let event = self.completionQueue.wait(timeout: deadline)
+          
+          guard (self.stateMutex.synchronize{ !self.hasBeenShutdown }) else {
+            return
+          }
 
           switch event.type {
           case .complete:
@@ -178,6 +188,9 @@ private extension Channel {
     }
 
     func shutdown() {
+      stateMutex.synchronize {
+        hasBeenShutdown = true
+      }
       completionQueue.shutdown()
     }
   }

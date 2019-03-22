@@ -18,9 +18,12 @@ import SwiftProtobuf
 import SwiftProtobufPluginLibrary
 
 extension Generator {
-
   internal func printServer() {
     printServerProtocol()
+    
+    guard !options.generateNIOImplementation
+      else { return }
+    
     for method in service.methods {
       self.method = method
       switch streamingType(method) {
@@ -39,21 +42,37 @@ extension Generator {
 
   private func printServerProtocol() {
     println("/// To build a server, implement a class that conforms to this protocol.")
-    println("/// If one of the methods returning `ServerStatus?` returns nil,")
-    println("/// it is expected that you have already returned a status to the client by means of `session.close`.")
-    println("\(access) protocol \(providerName): ServiceProvider {")
+    if !options.generateNIOImplementation {
+      println("/// If one of the methods returning `ServerStatus?` returns nil,")
+      println("/// it is expected that you have already returned a status to the client by means of `session.close`.")
+    }
+    println("\(access) protocol \(providerName): \(options.generateNIOImplementation ? "CallHandlerProvider" : "ServiceProvider") {")
     indent()
     for method in service.methods {
       self.method = method
-      switch streamingType(method) {
-      case .unary:
-        println("func \(methodFunctionName)(request: \(methodInputName), session: \(methodSessionName)) throws -> \(methodOutputName)")
-      case .serverStreaming:
-        println("func \(methodFunctionName)(request: \(methodInputName), session: \(methodSessionName)) throws -> ServerStatus?")
-      case .clientStreaming:
-        println("func \(methodFunctionName)(session: \(methodSessionName)) throws -> \(methodOutputName)?")
-      case .bidirectionalStreaming:
-        println("func \(methodFunctionName)(session: \(methodSessionName)) throws -> ServerStatus?")
+      
+      if options.generateNIOImplementation {
+        switch streamingType(method) {
+        case .unary:
+          println("func \(methodFunctionName)(request: \(methodInputName), context: StatusOnlyCallContext) -> EventLoopFuture<\(methodOutputName)>")
+        case .serverStreaming:
+          println("func \(methodFunctionName)(request: \(methodInputName), context: StreamingResponseCallContext<\(methodOutputName)>) -> EventLoopFuture<GRPCStatus>")
+        case .clientStreaming:
+          println("func \(methodFunctionName)(context: UnaryResponseCallContext<\(methodOutputName)>) -> EventLoopFuture<(StreamEvent<\(methodInputName)>) -> Void>")
+        case .bidirectionalStreaming:
+          println("func \(methodFunctionName)(context: StreamingResponseCallContext<\(methodOutputName)>) -> EventLoopFuture<(StreamEvent<\(methodInputName)>) -> Void>")
+        }
+      } else {
+        switch streamingType(method) {
+        case .unary:
+          println("func \(methodFunctionName)(request: \(methodInputName), session: \(methodSessionName)) throws -> \(methodOutputName)")
+        case .serverStreaming:
+          println("func \(methodFunctionName)(request: \(methodInputName), session: \(methodSessionName)) throws -> ServerStatus?")
+        case .clientStreaming:
+          println("func \(methodFunctionName)(session: \(methodSessionName)) throws -> \(methodOutputName)?")
+        case .bidirectionalStreaming:
+          println("func \(methodFunctionName)(session: \(methodSessionName)) throws -> ServerStatus?")
+        }
       }
     }
     outdent()
@@ -63,44 +82,84 @@ extension Generator {
     indent()
     println("\(access) var serviceName: String { return \"\(servicePath)\" }")
     println()
-    println("/// Determines and calls the appropriate request handler, depending on the request's method.")
-    println("/// Throws `HandleMethodError.unknownMethod` for methods not handled by this service.")
-    println("\(access) func handleMethod(_ method: String, handler: Handler) throws -> ServerStatus? {")
-    indent()
-    println("switch method {")
-    for method in service.methods {
-      self.method = method
-      println("case \(methodPath):")
+    if options.generateNIOImplementation {
+      println("/// Determines, calls and returns the appropriate request handler, depending on the request's method.")
+      println("/// Returns nil for methods not handled by this service.")
+      println("\(access) func handleMethod(_ methodName: String, request: HTTPRequestHead, serverHandler: GRPCChannelHandler, channel: Channel) -> GRPCCallHandler? {")
       indent()
-      switch streamingType(method) {
-      case .unary, .serverStreaming:
-        println("return try \(methodSessionName)Base(")
+      println("switch methodName {")
+      for method in service.methods {
+        self.method = method
+        println("case \"\(method.name)\":")
         indent()
-        println("handler: handler,")
-        println("providerBlock: { try self.\(methodFunctionName)(request: $0, session: $1 as! \(methodSessionName)Base) })")
+        let callHandlerType: String
+        switch streamingType(method) {
+        case .unary: callHandlerType = "UnaryCallHandler"
+        case .serverStreaming: callHandlerType = "ServerStreamingCallHandler"
+        case .clientStreaming: callHandlerType = "ClientStreamingCallHandler"
+        case .bidirectionalStreaming: callHandlerType = "BidirectionalStreamingCallHandler"
+        }
+        println("return \(callHandlerType)(channel: channel, request: request) { context in")
         indent()
-        println(".run()")
+        switch streamingType(method) {
+        case .unary, .serverStreaming:
+          println("return { request in")
+          indent()
+          println("self.\(methodFunctionName)(request: request, context: context)")
+          outdent()
+          println("}")
+        case .clientStreaming, .bidirectionalStreaming:
+          println("return self.\(methodFunctionName)(context: context)")
+        }
         outdent()
+        println("}")
         outdent()
-      default:
-        println("return try \(methodSessionName)Base(")
+        println()
+      }
+      println("default: return nil")
+      println("}")
+      outdent()
+      println("}")
+    } else {
+      println("/// Determines and calls the appropriate request handler, depending on the request's method.")
+      println("/// Throws `HandleMethodError.unknownMethod` for methods not handled by this service.")
+      println("\(access) func handleMethod(_ method: String, handler: Handler) throws -> ServerStatus? {")
+      indent()
+      println("switch method {")
+      for method in service.methods {
+        self.method = method
+        println("case \(methodPath):")
         indent()
-        println("handler: handler,")
-        println("providerBlock: { try self.\(methodFunctionName)(session: $0 as! \(methodSessionName)Base) })")
-        indent()
-        println(".run()")
-        outdent()
+        switch streamingType(method) {
+        case .unary, .serverStreaming:
+          println("return try \(methodSessionName)Base(")
+          indent()
+          println("handler: handler,")
+          println("providerBlock: { try self.\(methodFunctionName)(request: $0, session: $1 as! \(methodSessionName)Base) })")
+          indent()
+          println(".run()")
+          outdent()
+          outdent()
+        default:
+          println("return try \(methodSessionName)Base(")
+          indent()
+          println("handler: handler,")
+          println("providerBlock: { try self.\(methodFunctionName)(session: $0 as! \(methodSessionName)Base) })")
+          indent()
+          println(".run()")
+          outdent()
+          outdent()
+        }
         outdent()
       }
+      println("default:")
+      indent()
+      println("throw HandleMethodError.unknownMethod")
       outdent()
+      println("}")
+      outdent()
+      println("}")
     }
-    println("default:")
-    indent()
-    println("throw HandleMethodError.unknownMethod")
-    outdent()
-    println("}")
-    outdent()
-    println("}")
     outdent()
     println("}")
     println()
