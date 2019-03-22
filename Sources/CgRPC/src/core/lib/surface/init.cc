@@ -27,13 +27,12 @@
 #include <grpc/support/log.h>
 #include <grpc/support/time.h>
 #include "src/core/lib/channel/channel_stack.h"
-#include "src/core/lib/channel/channel_trace_registry.h"
+#include "src/core/lib/channel/channelz_registry.h"
 #include "src/core/lib/channel/connected_channel.h"
 #include "src/core/lib/channel/handshaker_registry.h"
 #include "src/core/lib/debug/stats.h"
 #include "src/core/lib/debug/trace.h"
-#include "src/core/lib/gpr/fork.h"
-#include "src/core/lib/gprpp/thd.h"
+#include "src/core/lib/gprpp/fork.h"
 #include "src/core/lib/http/parser.h"
 #include "src/core/lib/iomgr/call_combiner.h"
 #include "src/core/lib/iomgr/combiner.h"
@@ -65,12 +64,10 @@ static int g_initializations;
 
 static void do_basic_init(void) {
   gpr_log_verbosity_init();
-  grpc_fork_support_init();
   gpr_mu_init(&g_init_mu);
   grpc_register_built_in_plugins();
   grpc_cq_global_init();
   g_initializations = 0;
-  grpc_fork_handlers_auto_register();
 }
 
 static bool append_filter(grpc_channel_stack_builder* builder, void* arg) {
@@ -123,18 +120,21 @@ void grpc_init(void) {
 
   gpr_mu_lock(&g_init_mu);
   if (++g_initializations == 1) {
+    grpc_core::Fork::GlobalInit();
+    grpc_fork_handlers_auto_register();
     gpr_time_init();
-    grpc_core::Thread::Init();
+    gpr_arena_init();
     grpc_stats_init();
     grpc_slice_intern_init();
     grpc_mdctx_global_init();
     grpc_channel_init_init();
-    grpc_channel_trace_registry_init();
+    grpc_core::channelz::ChannelzRegistry::Init();
     grpc_security_pre_init();
+    grpc_core::ApplicationCallbackExecCtx::GlobalInit();
     grpc_core::ExecCtx::GlobalInit();
     grpc_iomgr_init();
     gpr_timers_global_init();
-    grpc_handshaker_factory_registry_init();
+    grpc_core::HandshakerRegistry::Init();
     grpc_security_init();
     for (i = 0; i < g_number_of_plugins; i++) {
       if (g_all_of_the_plugins[i].init != nullptr) {
@@ -162,10 +162,11 @@ void grpc_shutdown(void) {
   if (--g_initializations == 0) {
     {
       grpc_core::ExecCtx exec_ctx(0);
+      grpc_iomgr_shutdown_background_closure();
       {
         grpc_timer_manager_set_threading(
             false);  // shutdown timer_manager thread
-        grpc_executor_shutdown();
+        grpc_core::Executor::ShutdownAll();
         for (i = g_number_of_plugins; i >= 0; i--) {
           if (g_all_of_the_plugins[i].destroy != nullptr) {
             g_all_of_the_plugins[i].destroy();
@@ -176,12 +177,14 @@ void grpc_shutdown(void) {
       gpr_timers_global_destroy();
       grpc_tracer_shutdown();
       grpc_mdctx_global_shutdown();
-      grpc_handshaker_factory_registry_shutdown();
+      grpc_core::HandshakerRegistry::Shutdown();
       grpc_slice_intern_shutdown();
-      grpc_channel_trace_registry_shutdown();
+      grpc_core::channelz::ChannelzRegistry::Shutdown();
       grpc_stats_shutdown();
+      grpc_core::Fork::GlobalShutdown();
     }
     grpc_core::ExecCtx::GlobalShutdown();
+    grpc_core::ApplicationCallbackExecCtx::GlobalShutdown();
   }
   gpr_mu_unlock(&g_init_mu);
 }

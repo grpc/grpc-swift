@@ -25,7 +25,7 @@
 
 #include "src/core/ext/filters/client_channel/lb_policy/grpclb/grpclb_client_stats.h"
 #include "src/core/ext/filters/client_channel/lb_policy/grpclb/proto/grpc/lb/v1/load_balancer.pb.h"
-#include "src/core/ext/filters/client_channel/lb_policy_factory.h"
+#include "src/core/lib/iomgr/exec_ctx.h"
 
 #define GRPC_GRPCLB_SERVICE_NAME_MAX_LENGTH 128
 
@@ -33,7 +33,9 @@ typedef grpc_lb_v1_Server_ip_address_t grpc_grpclb_ip_address;
 typedef grpc_lb_v1_LoadBalanceRequest grpc_grpclb_request;
 typedef grpc_lb_v1_InitialLoadBalanceResponse grpc_grpclb_initial_response;
 typedef grpc_lb_v1_Server grpc_grpclb_server;
-typedef grpc_lb_v1_Duration grpc_grpclb_duration;
+typedef google_protobuf_Duration grpc_grpclb_duration;
+typedef google_protobuf_Timestamp grpc_grpclb_timestamp;
+
 typedef struct {
   grpc_grpclb_server** servers;
   size_t num_servers;
@@ -42,7 +44,7 @@ typedef struct {
 /** Create a request for a gRPC LB service under \a lb_service_name */
 grpc_grpclb_request* grpc_grpclb_request_create(const char* lb_service_name);
 grpc_grpclb_request* grpc_grpclb_load_report_request_create_locked(
-    grpc_grpclb_client_stats* client_stats);
+    grpc_core::GrpcLbClientStats* client_stats);
 
 /** Protocol Buffers v3-encode \a request */
 grpc_slice grpc_grpclb_request_encode(const grpc_grpclb_request* request);

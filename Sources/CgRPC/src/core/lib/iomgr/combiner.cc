@@ -29,9 +29,10 @@
 
 #include "src/core/lib/debug/stats.h"
 #include "src/core/lib/iomgr/executor.h"
+#include "src/core/lib/iomgr/iomgr.h"
 #include "src/core/lib/profiling/timers.h"
 
-grpc_core::TraceFlag grpc_combiner_trace(false, "combiner");
+grpc_core::DebugOnlyTraceFlag grpc_combiner_trace(false, "combiner");
 
 #define GRPC_COMBINER_TRACE(fn)          \
   do {                                   \
@@ -63,11 +64,12 @@ struct grpc_combiner {
   gpr_refcount refs;
 };
 
+static void combiner_run(grpc_closure* closure, grpc_error* error);
 static void combiner_exec(grpc_closure* closure, grpc_error* error);
 static void combiner_finally_exec(grpc_closure* closure, grpc_error* error);
 
 static const grpc_closure_scheduler_vtable scheduler = {
-    combiner_exec, combiner_exec, "combiner:immediately"};
+    combiner_run, combiner_exec, "combiner:immediately"};
 static const grpc_closure_scheduler_vtable finally_scheduler = {
     combiner_finally_exec, combiner_finally_exec, "combiner:finally"};
 
@@ -81,8 +83,9 @@ grpc_combiner* grpc_combiner_create(void) {
   gpr_atm_no_barrier_store(&lock->state, STATE_UNORPHANED);
   gpr_mpscq_init(&lock->queue);
   grpc_closure_list_init(&lock->final_list);
-  GRPC_CLOSURE_INIT(&lock->offload, offload, lock,
-                    grpc_executor_scheduler(GRPC_EXECUTOR_SHORT));
+  GRPC_CLOSURE_INIT(
+      &lock->offload, offload, lock,
+      grpc_core::Executor::Scheduler(grpc_core::ExecutorJobType::SHORT));
   GRPC_COMBINER_TRACE(gpr_log(GPR_INFO, "C:%p create", lock));
   return lock;
 }
@@ -227,8 +230,14 @@ bool grpc_combiner_continue_exec_ctx() {
                               grpc_core::ExecCtx::Get()->IsReadyToFinish(),
                               lock->time_to_execute_final_list));
 
+  // offload only if all the following conditions are true:
+  // 1. the combiner is contended and has more than one closure to execute
+  // 2. the current execution context needs to finish as soon as possible
+  // 3. the DEFAULT executor is threaded
+  // 4. the current thread is not a worker for any background poller
   if (contended && grpc_core::ExecCtx::Get()->IsReadyToFinish() &&
-      grpc_executor_is_threaded()) {
+      grpc_core::Executor::IsThreadedDefault() &&
+      !grpc_iomgr_is_any_background_poller_thread()) {
     GPR_TIMER_MARK("offload_from_finished_exec_ctx", 0);
     // this execution context wants to move on: schedule remaining work to be
     // picked up on the executor
@@ -341,6 +350,22 @@ static void combiner_finally_exec(grpc_closure* closure, grpc_error* error) {
     gpr_atm_full_fetch_add(&lock->state, STATE_ELEM_COUNT_LOW_BIT);
   }
   grpc_closure_list_append(&lock->final_list, closure, error);
+}
+
+static void combiner_run(grpc_closure* closure, grpc_error* error) {
+  grpc_combiner* lock = COMBINER_FROM_CLOSURE_SCHEDULER(closure, scheduler);
+#ifndef NDEBUG
+  closure->scheduled = false;
+  GRPC_COMBINER_TRACE(gpr_log(
+      GPR_DEBUG,
+      "Combiner:%p grpc_combiner_run closure:%p created [%s:%d] run [%s:%d]",
+      lock, closure, closure->file_created, closure->line_created,
+      closure->file_initiated, closure->line_initiated));
+#endif
+  GPR_ASSERT(grpc_core::ExecCtx::Get()->combiner_data()->active_combiner ==
+             lock);
+  closure->cb(closure->cb_arg, error);
+  GRPC_ERROR_UNREF(error);
 }
 
 static void enqueue_finally(void* closure, grpc_error* error) {
