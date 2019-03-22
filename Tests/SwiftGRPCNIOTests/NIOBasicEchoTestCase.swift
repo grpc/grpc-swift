@@ -18,7 +18,7 @@ import Foundation
 import NIO
 import NIOSSL
 @testable import SwiftGRPCNIO
-import SwiftGRPCNIOTestData
+import SwiftGRPCNIOSampleData
 import XCTest
 
 extension Echo_EchoRequest {
@@ -40,22 +40,22 @@ enum TransportSecurity {
 }
 
 extension TransportSecurity {
-  private func caCert() throws -> GRPCSwiftCertificate {
-    let cert = try GRPCSwiftCertificate.ca()
+  var caCert: NIOSSLCertificate {
+    let cert = SampleCertificate.ca
     cert.assertNotExpired()
-    return cert
+    return cert.certificate
   }
 
-  private func clientCert() throws -> GRPCSwiftCertificate {
-    let cert = try GRPCSwiftCertificate.client()
+  var clientCert: NIOSSLCertificate {
+    let cert = SampleCertificate.client
     cert.assertNotExpired()
-    return cert
+    return cert.certificate
   }
 
-  private func serverCert() throws -> GRPCSwiftCertificate {
-    let cert = try GRPCSwiftCertificate.server()
+  var serverCert: NIOSSLCertificate {
+    let cert = SampleCertificate.server
     cert.assertNotExpired()
-    return cert
+    return cert.certificate
   }
 }
 
@@ -70,13 +70,9 @@ extension TransportSecurity {
       return nil
 
     case .anonymousClient, .mutualAuthentication:
-      let caCert = try self.caCert()
-      let serverCert = try self.serverCert()
-      let serverKey = try GRPCSwiftPrivateKey.server()
-
-      return .forServer(certificateChain: [.certificate(serverCert.certificate)],
-                        privateKey: .privateKey(serverKey),
-                        trustRoots: .certificates ([caCert.certificate]))
+      return .forServer(certificateChain: [.certificate(self.serverCert)],
+                        privateKey: .privateKey(SamplePrivateKey.server), 
+                        trustRoots: .certificates ([self.caCert]))
     }
   }
 
@@ -90,18 +86,14 @@ extension TransportSecurity {
       return nil
 
     case .anonymousClient:
-      let caCert = try self.caCert()
       return .forClient(certificateVerification: .noHostnameVerification,
-                        trustRoots: .certificates([caCert.certificate]))
+                        trustRoots: .certificates([self.caCert]))
 
     case .mutualAuthentication:
-      let caCert = try self.caCert()
-      let clientCert = try self.clientCert()
-      let clientKey = try GRPCSwiftPrivateKey.client()
       return .forClient(certificateVerification: .noHostnameVerification,
-                        trustRoots: .certificates([caCert.certificate]),
-                        certificateChain: [.certificate(clientCert.certificate)],
-                        privateKey: .privateKey(clientKey))
+                        trustRoots: .certificates([self.caCert]),
+                        certificateChain: [.certificate(self.clientCert)],
+                        privateKey: .privateKey(SamplePrivateKey.client))
     }
   }
 }
@@ -109,8 +101,8 @@ extension TransportSecurity {
 class NIOEchoTestCaseBase: XCTestCase {
   var defaultTestTimeout: TimeInterval = 1.0
 
-  var serverEventLoopGroup: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-  var clientEventLoopGroup: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+  let serverEventLoopGroup: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+  let clientEventLoopGroup: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
   var transportSecurity: TransportSecurity {
     return .none

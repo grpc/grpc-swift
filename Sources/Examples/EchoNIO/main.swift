@@ -19,7 +19,7 @@ import Foundation
 import NIO
 import NIOSSL
 import SwiftGRPCNIO
-import SwiftGRPCNIOTestData
+import SwiftGRPCNIOSampleData
 
 // Common flags and options
 let sslFlag = Flag("ssl", description: "if true, use SSL for connections")
@@ -47,27 +47,25 @@ func makeServerTLS(enabled: Bool) throws -> GRPCServer.TLSMode {
 }
 
 func makeClientTLSConfiguration() throws -> TLSConfiguration {
-  let caCert = try GRPCSwiftCertificate.ca()
-  let clientCert = try GRPCSwiftCertificate.client()
-  let clientKey = try GRPCSwiftPrivateKey.client()
+  let caCert = SampleCertificate.ca
+  let clientCert = SampleCertificate.client
   precondition(!caCert.isExpired && !clientCert.isExpired,
                "SSL certificates are expired. Please submit an issue at https://github.com/grpc/grpc-swift.")
 
   return .forClient(certificateVerification: .noHostnameVerification,
                     trustRoots: .certificates([caCert.certificate]),
                     certificateChain: [.certificate(clientCert.certificate)],
-                    privateKey: .privateKey(clientKey))
+                    privateKey: .privateKey(SamplePrivateKey.client))
 }
 
 func makeServerTLSConfiguration() throws -> TLSConfiguration {
-  let caCert = try GRPCSwiftCertificate.ca()
-  let serverCert = try GRPCSwiftCertificate.server()
-  let serverKey = try GRPCSwiftPrivateKey.server()
+  let caCert = SampleCertificate.ca
+  let serverCert = SampleCertificate.server
   precondition(!caCert.isExpired && !serverCert.isExpired,
                "SSL certificates are expired. Please submit an issue at https://github.com/grpc/grpc-swift.")
 
   return .forServer(certificateChain: [.certificate(serverCert.certificate)],
-                    privateKey: .privateKey(serverKey),
+                    privateKey: .privateKey(SamplePrivateKey.server),
                     trustRoots: .certificates([caCert.certificate]))
 }
 

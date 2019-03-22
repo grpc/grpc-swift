@@ -24,10 +24,10 @@ extension EventLoopFuture where Value: Equatable {
   /// - Parameters:
   ///   - expected: The expected value.
   ///   - expectation: A test expectation to fulfill once the future has completed.
-  func assertEqual(_ expected: Value, fulfill expectation: XCTestExpectation? = nil, file: StaticString = #file, line: UInt = #line) {
+  func assertEqual(_ expected: Value, fulfill expectation: XCTestExpectation, file: StaticString = #file, line: UInt = #line) {
     self.whenComplete { result in
       defer {
-        expectation?.fulfill()
+        expectation.fulfill()
       }
 
       switch result {

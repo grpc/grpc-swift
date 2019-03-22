@@ -1,5 +1,5 @@
 /*
- * Copyright 2018, gRPC Authors All rights reserved.
+ * Copyright 2019, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,37 +17,30 @@ import Foundation
 import NIOSSL
 
 /// Wraps `NIOSSLCertificate` to provide the certificate common name and expiry date.
-public struct GRPCSwiftCertificate {
+public struct SampleCertificate {
   public var certificate: NIOSSLCertificate
   public var commonName: String
   public var notAfter: Date
 
-  public static func ca() throws -> GRPCSwiftCertificate {
-    return GRPCSwiftCertificate(
-      certificate: try NIOSSLCertificate(buffer: Array(caCert.utf8CString), format: .pem),
-      commonName: "foo",
-      // 18/03/2020 11:28:32
-      notAfter: Date(timeIntervalSince1970: 1584530912.0))
-  }
+  public static let ca = SampleCertificate(
+    certificate: try! NIOSSLCertificate(buffer: Array(caCert.utf8CString), format: .pem),
+    commonName: "foo",
+    notAfter: Date(timeIntervalSince1970: 1584530912.0))
 
-  public static func server() throws -> GRPCSwiftCertificate {
-    return GRPCSwiftCertificate(
-      certificate: try NIOSSLCertificate(buffer: Array(serverCert.utf8CString), format: .pem),
-      commonName: "example.com",
-      // 18/03/2020 11:28:33
-      notAfter: Date(timeIntervalSince1970: 1584530913.0))
-  }
+  public static let server = SampleCertificate(
+    certificate: try! NIOSSLCertificate(buffer: Array(serverCert.utf8CString), format: .pem),
+    commonName: "example.com",
+    // 18/03/2020 11:28:33
+    notAfter: Date(timeIntervalSince1970: 1584530913.0))
 
-  public static func client() throws -> GRPCSwiftCertificate {
-    return GRPCSwiftCertificate(
-      certificate: try NIOSSLCertificate(buffer: Array(clientCert.utf8CString), format: .pem),
+  public static let client = SampleCertificate(
+      certificate: try! NIOSSLCertificate(buffer: Array(clientCert.utf8CString), format: .pem),
       commonName: "localhost",
       // 18/03/2020 11:28:35
       notAfter: Date(timeIntervalSince1970: 1584530915.0))
-  }
 }
 
-extension GRPCSwiftCertificate {
+extension SampleCertificate {
   /// Returns whether the certificate has expired.
   public var isExpired: Bool {
     return notAfter < Date()
@@ -55,20 +48,14 @@ extension GRPCSwiftCertificate {
 }
 
 /// Provides convenience methods to make `NIOSSLPrivateKey`s for corresponding `GRPCSwiftCertificate`s.
-public struct GRPCSwiftPrivateKey {
-  private init() {
-  }
+public struct SamplePrivateKey {
+  private init() { }
 
-  public static func server() throws -> NIOSSLPrivateKey {
-    return try NIOSSLPrivateKey(buffer: Array(serverKey.utf8CString), format: .pem)
-  }
-
-  public static func client() throws -> NIOSSLPrivateKey {
-    return try NIOSSLPrivateKey(buffer: Array(clientKey.utf8CString), format: .pem)
-  }
+  public static let server = try! NIOSSLPrivateKey(buffer: Array(serverKey.utf8CString), format: .pem)
+  public static let client = try! NIOSSLPrivateKey(buffer: Array(clientKey.utf8CString), format: .pem)
 }
 
-// MARK:- Certificates and private keys
+// MARK: - Certificates and private keys
 
 // NOTE: use the "makecerts" script in the scripts directory to generate new
 // certificates and private keys when these expire.

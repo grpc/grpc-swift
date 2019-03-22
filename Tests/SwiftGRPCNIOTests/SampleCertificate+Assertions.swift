@@ -15,9 +15,9 @@
  */
 import Foundation
 import XCTest
-import SwiftGRPCNIOTestData
+import SwiftGRPCNIOSampleData
 
-extension GRPCSwiftCertificate {
+extension SampleCertificate {
   func assertNotExpired(file: StaticString = #file, line: UInt = #line) {
     XCTAssertFalse(self.isExpired, "Certificate expired at \(self.notAfter)", file: file, line: line)
   }
