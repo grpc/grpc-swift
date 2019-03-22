@@ -20,7 +20,7 @@ public enum CompressionError: Error {
 }
 
 /// The mechanism to use for message compression.
-public enum CompressionMechanism: String {
+public enum CompressionMechanism: String, CaseIterable {
   // No compression was indicated.
   case none
 
@@ -70,12 +70,3 @@ public enum CompressionMechanism: String {
       .joined(separator: ", ")
   }()
 }
-
-#if swift(>=4.2)
-extension CompressionMechanism: CaseIterable {}
-//! FIXME: Remove this code once the CI is updated to 4.2.
-#else
-extension CompressionMechanism {
-  public static let allCases: [CompressionMechanism] = [.none, .identity, .gzip, .deflate, .snappy, .unknown]
-}
-#endif
