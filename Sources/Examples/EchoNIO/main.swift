@@ -19,6 +19,7 @@ import Foundation
 import NIO
 import NIOSSL
 import SwiftGRPCNIO
+import SwiftGRPCNIOSampleData
 
 // Common flags and options
 let sslFlag = Flag("ssl", description: "if true, use SSL for connections")
@@ -30,21 +31,6 @@ let portOption = Option("port", default: 8080)
 let messageOption = Option("message",
                            default: "Testing 1 2 3",
                            description: "message to send")
-
-func makeClientTLSConfiguration() throws -> TLSConfiguration {
-  let certificate = try NIOSSLCertificate(file: "ssl.crt", format: .pem)
-  // The certificate common name is "example.com", so skip hostname verification.
-  return .forClient(certificateVerification: .noHostnameVerification,
-                    trustRoots: .certificates([certificate]))
-}
-
-func makeServerTLSConfiguration() throws -> TLSConfiguration {
-  let certificate = try NIOSSLCertificate(file: "ssl.crt", format: .pem)
-  let key = try NIOSSLPrivateKey(file: "ssl.key", format: .pem)
-  return .forServer(certificateChain: [.certificate(certificate)],
-                    privateKey: .privateKey(key),
-                    trustRoots: .certificates([certificate]))
-}
 
 func makeClientTLS(enabled: Bool) throws -> GRPCClient.TLSMode {
   guard enabled else {
@@ -58,6 +44,29 @@ func makeServerTLS(enabled: Bool) throws -> GRPCServer.TLSMode {
     return .none
   }
   return .custom(try NIOSSLContext(configuration: try makeServerTLSConfiguration()))
+}
+
+func makeClientTLSConfiguration() throws -> TLSConfiguration {
+  let caCert = SampleCertificate.ca
+  let clientCert = SampleCertificate.client
+  precondition(!caCert.isExpired && !clientCert.isExpired,
+               "SSL certificates are expired. Please submit an issue at https://github.com/grpc/grpc-swift.")
+
+  return .forClient(certificateVerification: .noHostnameVerification,
+                    trustRoots: .certificates([caCert.certificate]),
+                    certificateChain: [.certificate(clientCert.certificate)],
+                    privateKey: .privateKey(SamplePrivateKey.client))
+}
+
+func makeServerTLSConfiguration() throws -> TLSConfiguration {
+  let caCert = SampleCertificate.ca
+  let serverCert = SampleCertificate.server
+  precondition(!caCert.isExpired && !serverCert.isExpired,
+               "SSL certificates are expired. Please submit an issue at https://github.com/grpc/grpc-swift.")
+
+  return .forServer(certificateChain: [.certificate(serverCert.certificate)],
+                    privateKey: .privateKey(SamplePrivateKey.server),
+                    trustRoots: .certificates([caCert.certificate]))
 }
 
 /// Create en `EchoClient` and wait for it to initialize. Returns nil if initialisation fails.

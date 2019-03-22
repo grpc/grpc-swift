@@ -18,7 +18,7 @@ import SwiftGRPCNIO
 import NIO
 import XCTest
 
-class NIOClientTimeoutTests: NIOBasicEchoTestCase {
+class NIOClientTimeoutTests: NIOEchoTestCaseBase {
   let optionsWithShortTimeout = CallOptions(timeout: try! GRPCTimeout.milliseconds(10))
   let moreThanShortTimeout: TimeInterval = 0.011
 

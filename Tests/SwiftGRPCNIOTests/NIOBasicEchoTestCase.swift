@@ -16,7 +16,9 @@
 import Dispatch
 import Foundation
 import NIO
+import NIOSSL
 @testable import SwiftGRPCNIO
+import SwiftGRPCNIOSampleData
 import XCTest
 
 extension Echo_EchoRequest {
@@ -31,41 +33,124 @@ extension Echo_EchoResponse {
   }
 }
 
-class NIOBasicEchoTestCase: XCTestCase {
+enum TransportSecurity {
+  case none
+  case anonymousClient
+  case mutualAuthentication
+}
+
+extension TransportSecurity {
+  var caCert: NIOSSLCertificate {
+    let cert = SampleCertificate.ca
+    cert.assertNotExpired()
+    return cert.certificate
+  }
+
+  var clientCert: NIOSSLCertificate {
+    let cert = SampleCertificate.client
+    cert.assertNotExpired()
+    return cert.certificate
+  }
+
+  var serverCert: NIOSSLCertificate {
+    let cert = SampleCertificate.server
+    cert.assertNotExpired()
+    return cert.certificate
+  }
+}
+
+extension TransportSecurity {
+  func makeServerTLS() throws -> GRPCServer.TLSMode {
+    return try makeServerTLSConfiguration().map { .custom(try NIOSSLContext(configuration: $0)) } ?? .none
+  }
+
+  func makeServerTLSConfiguration() throws -> TLSConfiguration? {
+    switch self {
+    case .none:
+      return nil
+
+    case .anonymousClient, .mutualAuthentication:
+      return .forServer(certificateChain: [.certificate(self.serverCert)],
+                        privateKey: .privateKey(SamplePrivateKey.server), 
+                        trustRoots: .certificates ([self.caCert]))
+    }
+  }
+
+  func makeClientTLS() throws -> GRPCClient.TLSMode {
+    return try makeClientTLSConfiguration().map { .custom(try NIOSSLContext(configuration: $0)) } ?? .none
+  }
+
+  func makeClientTLSConfiguration() throws -> TLSConfiguration? {
+    switch self {
+    case .none:
+      return nil
+
+    case .anonymousClient:
+      return .forClient(certificateVerification: .noHostnameVerification,
+                        trustRoots: .certificates([self.caCert]))
+
+    case .mutualAuthentication:
+      return .forClient(certificateVerification: .noHostnameVerification,
+                        trustRoots: .certificates([self.caCert]),
+                        certificateChain: [.certificate(self.clientCert)],
+                        privateKey: .privateKey(SamplePrivateKey.client))
+    }
+  }
+}
+
+class NIOEchoTestCaseBase: XCTestCase {
   var defaultTestTimeout: TimeInterval = 1.0
 
-  var serverEventLoopGroup: EventLoopGroup!
-  var server: GRPCServer!
+  let serverEventLoopGroup: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+  let clientEventLoopGroup: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
-  var clientEventLoopGroup: EventLoopGroup!
+  var transportSecurity: TransportSecurity {
+    return .none
+  }
+
+  var server: GRPCServer!
   var client: Echo_EchoService_NIOClient!
-  
-  func makeEchoProvider() -> Echo_EchoProvider_NIO { return EchoProviderNIO() }
+
+  func makeServer() throws -> GRPCServer {
+    return try GRPCServer.start(
+      hostname: "localhost",
+      port: 5050,
+      eventLoopGroup: self.serverEventLoopGroup,
+      serviceProviders: [makeEchoProvider()],
+      tls: try self.transportSecurity.makeServerTLS()
+    ).wait()
+  }
+
+  func makeClient() throws -> GRPCClient {
+    return try GRPCClient.start(
+      host: "localhost",
+      port: 5050,
+      eventLoopGroup: self.clientEventLoopGroup,
+      tls: try self.transportSecurity.makeClientTLS()
+    ).wait()
+  }
+
+  func makeEchoProvider() -> Echo_EchoProvider_NIO {
+    return EchoProviderNIO()
+  }
+
+  func makeEchoClient() throws -> Echo_EchoService_NIOClient {
+    return Echo_EchoService_NIOClient(client: try self.makeClient())
+  }
 
   override func setUp() {
     super.setUp()
-
-    self.serverEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-    self.server = try! GRPCServer.start(
-      hostname: "localhost", port: 5050, eventLoopGroup: self.serverEventLoopGroup, serviceProviders: [makeEchoProvider()])
-      .wait()
-
-    self.clientEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-    self.client = try! GRPCClient.start(
-      host: "localhost", port: 5050, eventLoopGroup: self.clientEventLoopGroup)
-      .map { Echo_EchoService_NIOClient(client: $0, defaultCallOptions: CallOptions(timeout: try! .seconds(5))) }
-      .wait()
+    self.server = try! self.makeServer()
+    self.client = try! self.makeEchoClient()
   }
 
   override func tearDown() {
     XCTAssertNoThrow(try self.client.client.close().wait())
     XCTAssertNoThrow(try self.clientEventLoopGroup.syncShutdownGracefully())
-    self.clientEventLoopGroup = nil
     self.client = nil
 
     XCTAssertNoThrow(try self.server.close().wait())
     XCTAssertNoThrow(try self.serverEventLoopGroup.syncShutdownGracefully())
-    self.serverEventLoopGroup = nil
     self.server = nil
 
     super.tearDown()
