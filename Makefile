@@ -61,6 +61,14 @@ test-plugin-nio:
 	protoc Sources/Examples/Echo/echo.proto --proto_path=Sources/Examples/Echo --plugin=.build/debug/protoc-gen-swift --plugin=.build/debug/protoc-gen-swiftgrpc --swiftgrpc_out=/tmp --swiftgrpc_opt=NIO=true
 	diff -u /tmp/echo.grpc.swift Sources/Examples/EchoNIO/Generated/echo.grpc.swift
 
+test-generate-linuxmain:
+ifeq ($(UNAME_S), Darwin)
+	swift test --generate-linuxmain
+	@git diff --exit-code */LinuxMain.swift */XCTestManifests.swift > /dev/null || { echo "Generated tests are out-of-date; run 'swift test --generate-linuxmain' to update them!"; exit 1; }
+else
+	echo "test-generate-linuxmain is only available on Darwin"
+endif
+
 xcodebuild: project
 		xcodebuild -project SwiftGRPC.xcodeproj -configuration "Debug" -parallelizeTargets -target SwiftGRPC -target Echo -target Simple -target protoc-gen-swiftgrpc build
 

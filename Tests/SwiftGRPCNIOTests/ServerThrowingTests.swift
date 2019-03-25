@@ -31,15 +31,15 @@ private class ImmediateThrowingEchoProviderNIO: Echo_EchoProvider_NIO {
   func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
     return context.eventLoop.makeFailedFuture(expectedError)
   }
-  
+
   func expand(request: Echo_EchoRequest, context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<GRPCStatus> {
     return context.eventLoop.makeFailedFuture(expectedError)
   }
-  
+
   func collect(context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     return context.eventLoop.makeFailedFuture(expectedError)
   }
-  
+
   func update(context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     return context.eventLoop.makeFailedFuture(expectedError)
   }
@@ -57,15 +57,15 @@ private class DelayedThrowingEchoProviderNIO: Echo_EchoProvider_NIO {
   func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
     return context.eventLoop.makeFailedFuture(expectedError, delay: 0.01)
   }
-  
+
   func expand(request: Echo_EchoRequest, context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<GRPCStatus> {
     return context.eventLoop.makeFailedFuture(expectedError, delay: 0.01)
   }
-  
+
   func collect(context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     return context.eventLoop.makeFailedFuture(expectedError, delay: 0.01)
   }
-  
+
   func update(context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     return context.eventLoop.makeFailedFuture(expectedError, delay: 0.01)
   }
@@ -74,18 +74,18 @@ private class DelayedThrowingEchoProviderNIO: Echo_EchoProvider_NIO {
 /// Ensures that fulfilling the status promise (where possible) with an error yields the same result as failing the future.
 private class ErrorReturningEchoProviderNIO: ImmediateThrowingEchoProviderNIO {
   // There's no status promise to fulfill for unary calls (only the response promise), so that case is omitted.
-  
+
   override func expand(request: Echo_EchoRequest, context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<GRPCStatus> {
     return context.eventLoop.makeSucceededFuture(expectedError)
   }
-  
+
   override func collect(context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     return context.eventLoop.makeSucceededFuture({ _ in
       context.responseStatus = expectedError
       context.responsePromise.succeed(Echo_EchoResponse())
     })
   }
-  
+
   override func update(context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     return context.eventLoop.makeSucceededFuture({ _ in
       context.statusPromise.succeed(expectedError)
@@ -95,15 +95,6 @@ private class ErrorReturningEchoProviderNIO: ImmediateThrowingEchoProviderNIO {
 
 class ServerThrowingTests: NIOEchoTestCaseBase {
   override func makeEchoProvider() -> Echo_EchoProvider_NIO { return ImmediateThrowingEchoProviderNIO() }
-  
-  static var allTests: [(String, (ServerThrowingTests) -> () throws -> Void)] {
-    return [
-      ("testUnary", testUnary),
-      ("testClientStreaming", testClientStreaming),
-      ("testServerStreaming", testServerStreaming),
-      ("testBidirectionalStreaming", testBidirectionalStreaming),
-    ]
-  }
 }
 
 class ServerDelayedThrowingTests: ServerThrowingTests {
@@ -122,12 +113,12 @@ extension ServerThrowingTests {
       XCTAssertEqual(expectedError, $0 as? GRPCStatus)
     }
   }
-  
+
   func testClientStreaming() {
     let call = client.collect()
     XCTAssertNoThrow(try call.sendEnd().wait())
     XCTAssertEqual(expectedError, try call.status.wait())
-    
+
     if type(of: makeEchoProvider()) != ErrorReturningEchoProviderNIO.self {
       // With `ErrorReturningEchoProviderNIO` we actually _return_ a response, which means that the `response` future
       // will _not_ fail, so in that case this test doesn't apply.
@@ -136,13 +127,13 @@ extension ServerThrowingTests {
       }
     }
   }
-  
+
   func testServerStreaming() {
     let call = client.expand(Echo_EchoRequest(text: "foo")) { XCTFail("no message expected, got \($0)") }
     // Nothing to throw here, but the `status` should be the expected error.
     XCTAssertEqual(expectedError, try call.status.wait())
   }
-  
+
   func testBidirectionalStreaming() {
     let call = client.update() { XCTFail("no message expected, got \($0)") }
     XCTAssertNoThrow(try call.sendEnd().wait())

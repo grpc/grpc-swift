@@ -18,12 +18,6 @@ import Foundation
 import XCTest
 
 class MetadataTests: XCTestCase {
-  static var allTests: [(String, (MetadataTests) -> () throws -> Void)] {
-    return [
-      ("testCopyDoesNotCorruptData", testCopyDoesNotCorruptData)
-    ]
-  }
-  
   func testCopyDoesNotCorruptData() {
     let metadata = try! Metadata(["foo": "bar"])
     XCTAssertEqual(["foo": "bar"], metadata.copy().dictionaryRepresentation)

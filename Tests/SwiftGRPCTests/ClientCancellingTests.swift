@@ -19,14 +19,6 @@ import Foundation
 import XCTest
 
 class ClientCancellingTests: BasicEchoTestCase {
-  static var allTests: [(String, (ClientCancellingTests) -> () throws -> Void)] {
-    return [
-      ("testUnary", testUnary),
-      ("testClientStreaming", testClientStreaming),
-      ("testServerStreaming", testServerStreaming),
-      ("testBidirectionalStreaming", testBidirectionalStreaming),
-    ]
-  }
 }
 
 extension ClientCancellingTests {
@@ -37,69 +29,69 @@ extension ClientCancellingTests {
       XCTAssertEqual(.cancelled, callResult.statusCode)
       completionHandlerExpectation.fulfill()
     }
-    
+
     call.cancel()
-    
+
     waitForExpectations(timeout: defaultTimeout)
   }
-  
+
   func testClientStreaming() {
     let completionHandlerExpectation = expectation(description: "final completion handler called")
     let call = try! client.collect { callResult in
       XCTAssertEqual(.cancelled, callResult.statusCode)
       completionHandlerExpectation.fulfill()
     }
-    
+
     call.cancel()
-    
+
     let sendExpectation = expectation(description: "send completion handler 1 called")
     try! call.send(Echo_EchoRequest(text: "foo")) { [sendExpectation] in XCTAssertEqual(.unknown, $0 as! CallError); sendExpectation.fulfill() }
     call.waitForSendOperationsToFinish()
-    
+
     do {
       let result = try call.closeAndReceive()
       XCTFail("should have thrown, received \(result) instead")
     } catch let receiveError {
       XCTAssertEqual(.unknown, (receiveError as! RPCError).callResult!.statusCode)
     }
-    
+
     waitForExpectations(timeout: defaultTimeout)
   }
-  
+
   func testServerStreaming() {
     let completionHandlerExpectation = expectation(description: "completion handler called")
     let call = try! client.expand(Echo_EchoRequest(text: "foo bar baz")) { callResult in
       XCTAssertEqual(.cancelled, callResult.statusCode)
       completionHandlerExpectation.fulfill()
     }
-    
+
     XCTAssertEqual("Swift echo expand (0): foo", try! call.receive()!.text)
-    
+
     call.cancel()
-    
+
     do {
       let result = try call.receive()
       XCTFail("should have thrown, received \(String(describing: result)) instead")
     } catch let receiveError {
       XCTAssertEqual(.unknown, (receiveError as! RPCError).callResult!.statusCode)
     }
-    
+
     waitForExpectations(timeout: defaultTimeout)
   }
-  
+
   func testBidirectionalStreaming() {
     let finalCompletionHandlerExpectation = expectation(description: "final completion handler called")
     let call = try! client.update { callResult in
       XCTAssertEqual(.cancelled, callResult.statusCode)
       finalCompletionHandlerExpectation.fulfill()
     }
-    
+
     var sendExpectation = expectation(description: "send completion handler 1 called")
     try! call.send(Echo_EchoRequest(text: "foo")) { [sendExpectation] in XCTAssertNil($0); sendExpectation.fulfill() }
     XCTAssertEqual("Swift echo update (0): foo", try! call.receive()!.text)
-    
+
     call.cancel()
-    
+
     sendExpectation = expectation(description: "send completion handler 2 called")
     try! call.send(Echo_EchoRequest(text: "bar")) { [sendExpectation] in XCTAssertEqual(.unknown, $0 as! CallError); sendExpectation.fulfill() }
     do {
@@ -108,10 +100,10 @@ extension ClientCancellingTests {
     } catch let receiveError {
       XCTAssertEqual(.unknown, (receiveError as! RPCError).callResult!.statusCode)
     }
-    
+
     let closeCompletionHandlerExpectation = expectation(description: "close completion handler called")
     try! call.closeSend { closeCompletionHandlerExpectation.fulfill() }
-    
+
     waitForExpectations(timeout: defaultTimeout)
   }
 }

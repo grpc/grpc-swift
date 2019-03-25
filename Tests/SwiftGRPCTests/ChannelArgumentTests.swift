@@ -25,37 +25,27 @@ fileprivate class ChannelArgumentTestProvider: Echo_EchoProvider {
     // We simply return the user agent we received, which can then be inspected by the test code.
     return Echo_EchoResponse(text: (session as! ServerSessionBase).handler.requestMetadata["user-agent"]!)
   }
-  
+
   func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws -> ServerStatus? {
     fatalError("not implemented")
   }
-  
+
   func collect(session: Echo_EchoCollectSession) throws -> Echo_EchoResponse? {
     fatalError("not implemented")
   }
-  
+
   func update(session: Echo_EchoUpdateSession) throws -> ServerStatus? {
     fatalError("not implemented")
   }
 }
 
 class ChannelArgumentTests: BasicEchoTestCase {
-  static var allTests: [(String, (ChannelArgumentTests) -> () throws -> Void)] {
-    return [
-      ("testArgumentKey", testArgumentKey),
-      ("testStringArgument", testStringArgument),
-      ("testIntegerArgument", testIntegerArgument),
-      ("testBoolArgument", testBoolArgument),
-      ("testTimeIntervalArgument", testTimeIntervalArgument),
-    ]
-  }
-  
   fileprivate func makeClient(_ arguments: [Channel.Argument]) -> Echo_EchoServiceClient {
     let client = Echo_EchoServiceClient(address: address, secure: false, arguments: arguments)
     client.timeout = defaultTimeout
     return client
   }
-  
+
   override func makeProvider() -> Echo_EchoProvider { return ChannelArgumentTestProvider() }
 }
 

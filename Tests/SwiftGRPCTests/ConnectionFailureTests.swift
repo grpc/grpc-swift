@@ -20,17 +20,8 @@ import XCTest
 
 // TODO(danielalm): Also test connection failure with regards to SSL issues.
 class ConnectionFailureTests: XCTestCase {
-  static var allTests: [(String, (ConnectionFailureTests) -> () throws -> Void)] {
-    return [
-      ("testConnectionFailureUnary", testConnectionFailureUnary),
-      ("testConnectionFailureClientStreaming", testConnectionFailureClientStreaming),
-      ("testConnectionFailureServerStreaming", testConnectionFailureServerStreaming),
-      ("testConnectionFailureBidirectionalStreaming", testConnectionFailureBidirectionalStreaming)
-    ]
-  }
-  
   let address = "localhost:5050"
-  
+
   let defaultTimeout: TimeInterval = 0.5
 }
 
@@ -38,7 +29,7 @@ extension ConnectionFailureTests {
   func testConnectionFailureUnary() {
     let client = Echo_EchoServiceClient(address: "localhost:1234", secure: false)
     client.timeout = defaultTimeout
-    
+
     do {
       let result = try client.get(Echo_EchoRequest(text: "foo")).text
       XCTFail("should have thrown, received \(result) instead")
@@ -49,78 +40,78 @@ extension ConnectionFailureTests {
       XCTAssertEqual("Connect Failed", callResult.statusMessage)
     }
   }
-  
+
   func testConnectionFailureClientStreaming() {
     let client = Echo_EchoServiceClient(address: "localhost:1234", secure: false)
     client.timeout = defaultTimeout
-    
+
     let completionHandlerExpectation = expectation(description: "final completion handler called")
     let call = try! client.collect { callResult in
       XCTAssertEqual(.unavailable, callResult.statusCode)
       completionHandlerExpectation.fulfill()
     }
-    
+
     let sendExpectation = expectation(description: "send completion handler 1 called")
     try! call.send(Echo_EchoRequest(text: "foo")) { [sendExpectation] in
       XCTAssertEqual(.unknown, $0 as! CallError)
       sendExpectation.fulfill()
     }
     call.waitForSendOperationsToFinish()
-    
+
     do {
       let result = try call.closeAndReceive()
       XCTFail("should have thrown, received \(result) instead")
     } catch let receiveError {
       XCTAssertEqual(.unknown, (receiveError as! RPCError).callResult!.statusCode)
     }
-    
+
     waitForExpectations(timeout: defaultTimeout)
   }
-  
+
   func testConnectionFailureServerStreaming() {
     let client = Echo_EchoServiceClient(address: "localhost:1234", secure: false)
     client.timeout = defaultTimeout
-    
+
     let completionHandlerExpectation = expectation(description: "completion handler called")
     let call = try! client.expand(Echo_EchoRequest(text: "foo bar baz")) { callResult in
       XCTAssertEqual(.unavailable, callResult.statusCode)
       completionHandlerExpectation.fulfill()
     }
-    
+
     do {
       let result = try call.receive()
       XCTFail("should have thrown, received \(String(describing: result)) instead")
     } catch let receiveError {
       XCTAssertEqual(.unknown, (receiveError as! RPCError).callResult!.statusCode)
     }
-    
+
     waitForExpectations(timeout: defaultTimeout)
   }
-  
+
   func testConnectionFailureBidirectionalStreaming() {
     let client = Echo_EchoServiceClient(address: "localhost:1234", secure: false)
     client.timeout = defaultTimeout
-    
+
     let completionHandlerExpectation = expectation(description: "completion handler called")
     let call = try! client.update { callResult in
       XCTAssertEqual(.unavailable, callResult.statusCode)
       completionHandlerExpectation.fulfill()
     }
-    
+
     let sendExpectation = expectation(description: "send completion handler 1 called")
     try! call.send(Echo_EchoRequest(text: "foo")) { [sendExpectation] in
       XCTAssertEqual(.unknown, $0 as! CallError)
       sendExpectation.fulfill()
     }
     call.waitForSendOperationsToFinish()
-    
+
     do {
       let result = try call.receive()
       XCTFail("should have thrown, received \(String(describing: result)) instead")
     } catch let receiveError {
       XCTAssertEqual(.unknown, (receiveError as! RPCError).callResult!.statusCode)
     }
-    
+
     waitForExpectations(timeout: defaultTimeout)
   }
 }

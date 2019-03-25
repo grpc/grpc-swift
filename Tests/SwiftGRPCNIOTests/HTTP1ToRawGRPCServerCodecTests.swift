@@ -16,16 +16,6 @@ func gRPCMessage(channel: EmbeddedChannel, compression: Bool = false, message: D
 }
 
 class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCase {
-  static var allTests: [(String, (HTTP1ToRawGRPCServerCodecTests) -> () throws -> Void)] {
-    return [
-      ("testInternalErrorStatusReturnedWhenCompressionFlagIsSet", testInternalErrorStatusReturnedWhenCompressionFlagIsSet),
-      ("testMessageCanBeSentAcrossMultipleByteBuffers", testMessageCanBeSentAcrossMultipleByteBuffers),
-      ("testInternalErrorStatusIsReturnedIfMessageCannotBeDeserialized", testInternalErrorStatusIsReturnedIfMessageCannotBeDeserialized),
-      ("testInternalErrorStatusIsReturnedWhenSendingTrailersInRequest", testInternalErrorStatusIsReturnedWhenSendingTrailersInRequest),
-      ("testOnlyOneStatusIsReturned", testOnlyOneStatusIsReturned),
-    ]
-  }
-
   func testInternalErrorStatusReturnedWhenCompressionFlagIsSet() throws {
     let responses = try waitForGRPCChannelHandlerResponses(count: 2) { channel in
       let requestHead = HTTPRequestHead(version: .init(major: 2, minor: 0), method: .POST, uri: "/echo.Echo/Get")

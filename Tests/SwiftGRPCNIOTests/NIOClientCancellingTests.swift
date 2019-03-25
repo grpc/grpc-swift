@@ -18,17 +18,6 @@ import SwiftGRPCNIO
 import XCTest
 
 class NIOClientCancellingTests: NIOEchoTestCaseBase {
-  static var allTests: [(String, (NIOClientCancellingTests) -> () throws -> Void)] {
-    return [
-      ("testUnary", testUnary),
-      ("testClientStreaming", testClientStreaming),
-      ("testServerStreaming", testServerStreaming),
-      ("testBidirectionalStreaming", testBidirectionalStreaming)
-    ]
-  }
-}
-
-extension NIOClientCancellingTests {
   func testUnary() {
     let statusReceived = self.expectation(description: "status received")
     let responseReceived = self.expectation(description: "response received")

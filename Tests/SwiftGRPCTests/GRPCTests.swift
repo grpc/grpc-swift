@@ -23,7 +23,7 @@ class gRPCTests: XCTestCase {
   // To detect such rare errors, we run the tests several times.
   // (By now, all known errors should have been fixed, but we'd still like to detect new ones.)
   let testRepetitions = 10
-  
+
   func testConnectivity() {
     for _ in 0..<testRepetitions {
       runTest(useSSL: false)
@@ -34,13 +34,6 @@ class gRPCTests: XCTestCase {
     for _ in 0..<testRepetitions {
       runTest(useSSL: true)
     }
-  }
-
-  static var allTests: [(String, (gRPCTests) -> () throws -> Void)] {
-    return [
-      ("testConnectivity", testConnectivity),
-      ("testConnectivitySecure", testConnectivitySecure)
-    ]
   }
 }
 
@@ -184,9 +177,9 @@ func callUnaryIndividual(channel: Channel, message: Data, shouldSucceed: Bool) t
     // verify the basic response from the server
     XCTAssertEqual(response.statusCode, .ok)
     XCTAssertEqual(response.statusMessage, shouldSucceed ? evenStatusMessage : oddStatusMessage)
-    
+
     //print("response.resultData?.count", response.resultData?.count)
-    
+
     // verify the message from the server
     if shouldSucceed {
       if let resultData = response.resultData {
@@ -200,21 +193,21 @@ func callUnaryIndividual(channel: Channel, message: Data, shouldSucceed: Bool) t
         XCTFail("callUnary response missing")
       }
     }
-    
+
     // verify the initial metadata from the server
     if let initialMetadata = response.initialMetadata {
       verify_metadata(initialMetadata, expected: initialServerMetadata)
     } else {
       XCTFail("callUnary initial metadata missing")
     }
-    
+
     // verify the trailing metadata from the server
     if let trailingMetadata = response.trailingMetadata {
       verify_metadata(trailingMetadata, expected: trailingServerMetadata)
     } else {
       XCTFail("callUnary trailing metadata missing")
     }
-    
+
     // report completion
     sem.signal()
   }
@@ -438,7 +431,7 @@ func handleBiDiStream(requestHandler: Handler) throws {
     _ = sendMetadataSem.signal()
   }
   _ = sendMetadataSem.wait()
-  
+
   // Receive remaining pings
   for _ in 0..<steps {
     let receiveSem = DispatchSemaphore(value: 0)

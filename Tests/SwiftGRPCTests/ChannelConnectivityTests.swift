@@ -18,13 +18,6 @@ import XCTest
 
 final class ChannelConnectivityTests: BasicEchoTestCase {
   override var defaultTimeout: TimeInterval { return 0.4 }
-
-  static var allTests: [(String, (ChannelConnectivityTests) -> () throws -> Void)] {
-    return [
-      ("testDanglingConnectivityObserversDontCrash", testDanglingConnectivityObserversDontCrash),
-      ("testMultipleConnectivityObserversAreCalled", testMultipleConnectivityObserversAreCalled),
-    ]
-  }
 }
 
 extension ChannelConnectivityTests {
