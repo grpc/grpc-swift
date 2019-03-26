@@ -28,11 +28,11 @@ var packageDependencies: [Package.Dependency] = [
   // Transitive dependencies
   .package(url: "https://github.com/apple/swift-nio-zlib-support.git", .upToNextMajor(from: "1.0.0")),
   // Main SwiftNIO package
-  .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0-convergence.1"),
+  .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0"),
   // HTTP2 via SwiftNIO
-  .package(url: "https://github.com/apple/swift-nio-http2.git", from: "1.0.0-convergence.1"),
+  .package(url: "https://github.com/apple/swift-nio-http2.git", from: "1.0.0"),
   // TLS via SwiftNIO
-  .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.0.0-convergence.1"),
+  .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.0.0"),
 ]
 
 var cGRPCDependencies: [Target.Dependency] = []
