@@ -27,6 +27,7 @@ import SystemConfiguration
 /// Original issue: https://github.com/grpc/grpc-swift/issues/337
 open class ClientNetworkMonitor {
   private let queue: DispatchQueue
+  private let useNewCellMonitor: Bool
   private let callback: (State) -> Void
   private let reachability: SCNetworkReachability
 
@@ -61,16 +62,21 @@ open class ClientNetworkMonitor {
 
   /// Designated initializer for the network monitor. Initializer fails if reachability is unavailable.
   ///
-  /// - Parameter host:     Host to use for monitoring reachability.
-  /// - Parameter queue:    Queue on which to process and update network changes. Will create one if `nil`.
-  ///                       Should always be used when accessing properties of this class.
-  /// - Parameter callback: Closure to call whenever state changes.
-  public init?(host: String = "google.com", queue: DispatchQueue? = nil, callback: @escaping (State) -> Void) {
+  /// - Parameter host:              Host to use for monitoring reachability.
+  /// - Parameter queue:             Queue on which to process and update network changes. Will create one if `nil`.
+  ///                                Should always be used when accessing properties of this class.
+  /// - Parameter useNewCellMonitor: Whether to use the new cellular monitor introduced in iOS 12.
+  ///                                Due to rdar://46873673 this defaults to false to prevent crashes.
+  /// - Parameter callback:          Closure to call whenever state changes.
+  public init?(host: String = "google.com", queue: DispatchQueue? = nil, useNewCellMonitor: Bool = false,
+               callback: @escaping (State) -> Void)
+  {
     guard let reachability = SCNetworkReachabilityCreateWithName(nil, host) else {
       return nil
     }
 
     self.queue = queue ?? DispatchQueue(label: "SwiftGRPC.ClientNetworkMonitor.queue")
+    self.useNewCellMonitor = useNewCellMonitor
     self.callback = callback
     self.reachability = reachability
     self.startMonitoringReachability(reachability)
@@ -88,7 +94,7 @@ open class ClientNetworkMonitor {
 
   private func startMonitoringCellular() {
     let notificationName: Notification.Name
-    if #available(iOS 12.0, *) {
+    if #available(iOS 12.0, *), self.useNewCellMonitor {
       notificationName = .CTServiceRadioAccessTechnologyDidChange
     } else {
       notificationName = .CTRadioAccessTechnologyDidChange
@@ -102,7 +108,7 @@ open class ClientNetworkMonitor {
   private func cellularDidChange(_ notification: NSNotification) {
     self.queue.async {
       let newCellularName: String?
-      if #available(iOS 12.0, *) {
+      if #available(iOS 12.0, *), self.useNewCellMonitor {
         let cellularKey = notification.object as? String
         newCellularName = cellularKey.flatMap { self.cellularInfo.serviceCurrentRadioAccessTechnology?[$0] }
       } else {
