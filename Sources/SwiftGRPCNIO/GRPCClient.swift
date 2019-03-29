@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import Foundation
+import SwiftProtobuf
 
 /// A GRPC client.
 public protocol GRPCClient {
@@ -22,6 +23,46 @@ public protocol GRPCClient {
 
   /// The call options to use should the user not provide per-call options.
   var defaultCallOptions: CallOptions { get set }
+}
+
+extension GRPCClient {
+  public func makeUnaryCall<Request: Message, Response: Message>(
+    path: String,
+    request: Request,
+    callOptions: CallOptions,
+    responseType: Response.Type = Response.self
+  ) -> UnaryClientCall<Request, Response> {
+    return UnaryClientCall(connection: self.connection, path: path, request: request, callOptions: callOptions)
+  }
+
+  public func makeServerStreamingCall<Request: Message, Response: Message>(
+    path: String,
+    request: Request,
+    callOptions: CallOptions,
+    responseType: Response.Type = Response.self,
+    handler: @escaping (Response) -> Void
+  ) -> ServerStreamingClientCall<Request, Response> {
+    return ServerStreamingClientCall(connection: self.connection, path: path, request: request, callOptions: callOptions, handler: handler)
+  }
+
+  public func makeClientStreamingCall<Request: Message, Response: Message>(
+    path: String,
+    callOptions: CallOptions,
+    requestType: Request.Type = Request.self,
+    responseType: Response.Type = Response.self
+  ) -> ClientStreamingClientCall<Request, Response> {
+    return ClientStreamingClientCall(connection: self.connection, path: path, callOptions: callOptions)
+  }
+
+  public func makeBidirectionalStreamingCall<Request: Message, Response: Message>(
+    path: String,
+    callOptions: CallOptions,
+    requestType: Request.Type = Request.self,
+    responseType: Response.Type = Response.self,
+    handler: @escaping (Response) -> Void
+  ) -> BidirectionalStreamingClientCall<Request, Response> {
+    return BidirectionalStreamingClientCall(connection: self.connection, path: path, callOptions: callOptions, handler: handler)
+  }
 }
 
 /// A GRPC client for a named service.
