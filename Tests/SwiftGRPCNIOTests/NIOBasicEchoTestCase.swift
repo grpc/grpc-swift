@@ -76,7 +76,7 @@ extension TransportSecurity {
     }
   }
 
-  func makeClientTLS() throws -> GRPCClient.TLSMode {
+  func makeClientTLS() throws -> GRPCClientConnection.TLSMode {
     return try makeClientTLSConfiguration().map { .custom(try NIOSSLContext(configuration: $0)) } ?? .none
   }
 
@@ -121,8 +121,8 @@ class NIOEchoTestCaseBase: XCTestCase {
     ).wait()
   }
 
-  func makeClient() throws -> GRPCClient {
-    return try GRPCClient.start(
+  func makeClientConnection() throws -> GRPCClientConnection {
+    return try GRPCClientConnection.start(
       host: "localhost",
       port: 5050,
       eventLoopGroup: self.clientEventLoopGroup,
@@ -135,7 +135,7 @@ class NIOEchoTestCaseBase: XCTestCase {
   }
 
   func makeEchoClient() throws -> Echo_EchoService_NIOClient {
-    return Echo_EchoService_NIOClient(client: try self.makeClient())
+    return Echo_EchoService_NIOClient(connection: try self.makeClientConnection())
   }
 
   override func setUp() {
@@ -145,7 +145,7 @@ class NIOEchoTestCaseBase: XCTestCase {
   }
 
   override func tearDown() {
-    XCTAssertNoThrow(try self.client.client.close().wait())
+    XCTAssertNoThrow(try self.client.connection.close().wait())
     XCTAssertNoThrow(try self.clientEventLoopGroup.syncShutdownGracefully())
     self.client = nil
 
