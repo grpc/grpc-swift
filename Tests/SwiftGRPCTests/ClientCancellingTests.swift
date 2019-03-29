@@ -29,10 +29,14 @@ class ClientCancellingTests: BasicEchoTestCase {
   }
 }
 
+private func manyWords(_ count: Int) -> String {
+  return (0..<count).map { String(describing: $0) }.joined(separator: " ")
+}
+
 extension ClientCancellingTests {
   func testUnary() {
     let completionHandlerExpectation = expectation(description: "final completion handler called")
-    let call = try! client.get(Echo_EchoRequest(text: "foo bar baz")) { response, callResult in
+    let call = try! client.get(Echo_EchoRequest(text: manyWords(100))) { response, callResult in
       XCTAssertNil(response)
       XCTAssertEqual(.cancelled, callResult.statusCode)
       completionHandlerExpectation.fulfill()
@@ -68,12 +72,12 @@ extension ClientCancellingTests {
   
   func testServerStreaming() {
     let completionHandlerExpectation = expectation(description: "completion handler called")
-    let call = try! client.expand(Echo_EchoRequest(text: "foo bar baz")) { callResult in
+    let call = try! client.expand(Echo_EchoRequest(text: manyWords(100))) { callResult in
       XCTAssertEqual(.cancelled, callResult.statusCode)
       completionHandlerExpectation.fulfill()
     }
     
-    XCTAssertEqual("Swift echo expand (0): foo", try! call.receive()!.text)
+    XCTAssertEqual("Swift echo expand (0): 0", try! call.receive()!.text)
     
     call.cancel()
     
