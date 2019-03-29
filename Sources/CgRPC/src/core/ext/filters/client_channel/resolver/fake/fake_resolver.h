@@ -19,10 +19,9 @@
 
 #include <grpc/support/port_platform.h>
 
-#include "src/core/ext/filters/client_channel/lb_policy_factory.h"
-#include "src/core/ext/filters/client_channel/uri_parser.h"
 #include "src/core/lib/channel/channel_args.h"
 #include "src/core/lib/gprpp/ref_counted.h"
+#include "src/core/lib/iomgr/error.h"
 
 #define GRPC_ARG_FAKE_RESOLVER_RESPONSE_GENERATOR \
   "grpc.fake_resolver.response_generator"
@@ -53,12 +52,17 @@ class FakeResolverResponseGenerator
   // The new re-resolution response replaces any previous re-resolution
   // response that may have been set by a previous call.
   // If the re-resolution response is set to NULL, then the fake
-  // resolver will return the last value set via \a SetResponse().
+  // resolver will not return anything when \a RequestReresolutionLocked()
+  // is called.
   void SetReresolutionResponse(grpc_channel_args* response);
 
   // Tells the resolver to return a transient failure (signalled by
   // returning a null result with no error).
   void SetFailure();
+
+  // Same as SetFailure(), but instead of returning the error
+  // immediately, waits for the next call to RequestReresolutionLocked().
+  void SetFailureOnReresolution();
 
   // Returns a channel arg containing \a generator.
   static grpc_arg MakeChannelArg(FakeResolverResponseGenerator* generator);

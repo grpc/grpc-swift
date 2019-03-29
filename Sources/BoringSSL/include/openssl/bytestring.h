@@ -164,34 +164,36 @@ OPENSSL_EXPORT int CBS_get_u24_length_prefixed(CBS *cbs, CBS *out);
 #define CBS_ASN1_UNIVERSALSTRING 0x1cu
 #define CBS_ASN1_BMPSTRING 0x1eu
 
+// CBS_ASN1_TAG_SHIFT is how much the in-memory representation shifts the class
+// and constructed bits from the DER serialization. This allows representing tag
+// numbers beyond 31.
+//
+// Consumers must use the following constants to decompose or assemble tags.
+#define CBS_ASN1_TAG_SHIFT 24
+
 // CBS_ASN1_CONSTRUCTED may be ORed into a tag to toggle the constructed
 // bit. |CBS| and |CBB| APIs consider the constructed bit to be part of the
 // tag.
-#define CBS_ASN1_CONSTRUCTED 0x20u
+#define CBS_ASN1_CONSTRUCTED (0x20u << CBS_ASN1_TAG_SHIFT)
 
-// The following values specify the constructed bit or tag class and may be ORed
-// into a tag number to produce the final tag. If none is used, the tag will be
-// UNIVERSAL.
-//
-// Note that although they currently match the DER serialization, consumers must
-// use these bits rather than make assumptions about the representation. This is
-// to allow for tag numbers beyond 31 in the future.
-#define CBS_ASN1_APPLICATION 0x40u
-#define CBS_ASN1_CONTEXT_SPECIFIC 0x80u
-#define CBS_ASN1_PRIVATE 0xc0u
+// The following values specify the tag class and may be ORed into a tag number
+// to produce the final tag. If none is used, the tag will be UNIVERSAL.
+#define CBS_ASN1_UNIVERSAL (0u << CBS_ASN1_TAG_SHIFT)
+#define CBS_ASN1_APPLICATION (0x40u << CBS_ASN1_TAG_SHIFT)
+#define CBS_ASN1_CONTEXT_SPECIFIC (0x80u << CBS_ASN1_TAG_SHIFT)
+#define CBS_ASN1_PRIVATE (0xc0u << CBS_ASN1_TAG_SHIFT)
 
-// CBS_ASN1_CLASS_MASK may be ANDed with a tag to query its class.
-#define CBS_ASN1_CLASS_MASK 0xc0u
+// CBS_ASN1_CLASS_MASK may be ANDed with a tag to query its class. This will
+// give one of the four values above.
+#define CBS_ASN1_CLASS_MASK (0xc0u << CBS_ASN1_TAG_SHIFT)
 
 // CBS_ASN1_TAG_NUMBER_MASK may be ANDed with a tag to query its number.
-#define CBS_ASN1_TAG_NUMBER_MASK 0x1fu
+#define CBS_ASN1_TAG_NUMBER_MASK ((1u << (5 + CBS_ASN1_TAG_SHIFT)) - 1)
 
 // CBS_get_asn1 sets |*out| to the contents of DER-encoded, ASN.1 element (not
 // including tag and length bytes) and advances |cbs| over it. The ASN.1
 // element must match |tag_value|. It returns one on success and zero
 // on error.
-//
-// Tag numbers greater than 30 are not supported (i.e. short form only).
 OPENSSL_EXPORT int CBS_get_asn1(CBS *cbs, CBS *out, unsigned tag_value);
 
 // CBS_get_asn1_element acts like |CBS_get_asn1| but |out| will include the
@@ -209,16 +211,12 @@ OPENSSL_EXPORT int CBS_peek_asn1_tag(const CBS *cbs, unsigned tag_value);
 // (not including tag and length bytes), sets |*out_tag| to the tag number, and
 // advances |*cbs|. It returns one on success and zero on error. Either of |out|
 // and |out_tag| may be NULL to ignore the value.
-//
-// Tag numbers greater than 30 are not supported (i.e. short form only).
 OPENSSL_EXPORT int CBS_get_any_asn1(CBS *cbs, CBS *out, unsigned *out_tag);
 
 // CBS_get_any_asn1_element sets |*out| to contain the next ASN.1 element from
 // |*cbs| (including header bytes) and advances |*cbs|. It sets |*out_tag| to
 // the tag number and |*out_header_len| to the length of the ASN.1 header. Each
 // of |out|, |out_tag|, and |out_header_len| may be NULL to ignore the value.
-//
-// Tag numbers greater than 30 are not supported (i.e. short form only).
 OPENSSL_EXPORT int CBS_get_any_asn1_element(CBS *cbs, CBS *out,
                                             unsigned *out_tag,
                                             size_t *out_header_len);
@@ -237,11 +235,15 @@ OPENSSL_EXPORT int CBS_get_any_ber_asn1_element(CBS *cbs, CBS *out,
 // in 64 bits.
 OPENSSL_EXPORT int CBS_get_asn1_uint64(CBS *cbs, uint64_t *out);
 
+// CBS_get_asn1_bool gets an ASN.1 BOOLEAN from |cbs| and sets |*out| to zero
+// or one based on its value. It returns one on success or zero on error.
+OPENSSL_EXPORT int CBS_get_asn1_bool(CBS *cbs, int *out);
+
 // CBS_get_optional_asn1 gets an optional explicitly-tagged element from |cbs|
-// tagged with |tag| and sets |*out| to its contents. If present and if
-// |out_present| is not NULL, it sets |*out_present| to one, otherwise zero. It
-// returns one on success, whether or not the element was present, and zero on
-// decode failure.
+// tagged with |tag| and sets |*out| to its contents, or ignores it if |out| is
+// NULL. If present and if |out_present| is not NULL, it sets |*out_present| to
+// one, otherwise zero. It returns one on success, whether or not the element
+// was present, and zero on decode failure.
 OPENSSL_EXPORT int CBS_get_optional_asn1(CBS *cbs, CBS *out, int *out_present,
                                          unsigned tag);
 
@@ -280,6 +282,13 @@ OPENSSL_EXPORT int CBS_is_valid_asn1_bitstring(const CBS *cbs);
 // and the specified bit is present and set. Otherwise, it returns zero. |bit|
 // is indexed starting from zero.
 OPENSSL_EXPORT int CBS_asn1_bitstring_has_bit(const CBS *cbs, unsigned bit);
+
+// CBS_asn1_oid_to_text interprets |cbs| as DER-encoded ASN.1 OBJECT IDENTIFIER
+// contents (not including the element framing) and returns the ASCII
+// representation (e.g., "1.2.840.113554.4.1.72585") in a newly-allocated
+// string, or NULL on failure. The caller must release the result with
+// |OPENSSL_free|.
+OPENSSL_EXPORT char *CBS_asn1_oid_to_text(const CBS *cbs);
 
 
 // CRYPTO ByteBuilder.
@@ -396,9 +405,7 @@ OPENSSL_EXPORT int CBB_add_u24_length_prefixed(CBB *cbb, CBB *out_contents);
 
 // CBB_add_asn1 sets |*out_contents| to a |CBB| into which the contents of an
 // ASN.1 object can be written. The |tag| argument will be used as the tag for
-// the object. Passing in |tag| number 31 will return in an error since only
-// single octet identifiers are supported. It returns one on success or zero
-// on error.
+// the object. It returns one on success or zero on error.
 OPENSSL_EXPORT int CBB_add_asn1(CBB *cbb, CBB *out_contents, unsigned tag);
 
 // CBB_add_bytes appends |len| bytes from |data| to |cbb|. It returns one on
@@ -447,6 +454,15 @@ OPENSSL_EXPORT void CBB_discard_child(CBB *cbb);
 // error.
 OPENSSL_EXPORT int CBB_add_asn1_uint64(CBB *cbb, uint64_t value);
 
+// CBB_add_asn1_octet_string writes an ASN.1 OCTET STRING into |cbb| with the
+// given contents. It returns one on success and zero on error.
+OPENSSL_EXPORT int CBB_add_asn1_octet_string(CBB *cbb, const uint8_t *data,
+                                             size_t data_len);
+
+// CBB_add_asn1_bool writes an ASN.1 BOOLEAN into |cbb| which is true iff
+// |value| is non-zero.  It returns one on success and zero on error.
+OPENSSL_EXPORT int CBB_add_asn1_bool(CBB *cbb, int value);
+
 // CBB_add_asn1_oid_from_text decodes |len| bytes from |text| as an ASCII OID
 // representation, e.g. "1.2.840.113554.4.1.72585", and writes the DER-encoded
 // contents to |cbb|. It returns one on success and zero on malloc failure or if
@@ -454,9 +470,18 @@ OPENSSL_EXPORT int CBB_add_asn1_uint64(CBB *cbb, uint64_t value);
 // the element's contents.
 //
 // This function considers OID strings with components which do not fit in a
-// |uint32_t| to be invalid.
+// |uint64_t| to be invalid.
 OPENSSL_EXPORT int CBB_add_asn1_oid_from_text(CBB *cbb, const char *text,
                                               size_t len);
+
+// CBB_flush_asn1_set_of calls |CBB_flush| on |cbb| and then reorders the
+// contents for a DER-encoded ASN.1 SET OF type. It returns one on success and
+// zero on failure. DER canonicalizes SET OF contents by sorting
+// lexicographically by encoding. Call this function when encoding a SET OF
+// type in an order that is not already known to be canonical.
+//
+// Note a SET type has a slightly different ordering than a SET OF.
+OPENSSL_EXPORT int CBB_flush_asn1_set_of(CBB *cbb);
 
 
 #if defined(__cplusplus)

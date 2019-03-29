@@ -35,18 +35,31 @@ static grpc_error* init_channel_elem(grpc_channel_element* elem,
 static void destroy_channel_elem(grpc_channel_element* elem) {}
 
 namespace {
+
 struct call_data {
+  call_data(const grpc_call_element_args& args) {
+    if (args.context[GRPC_GRPCLB_CLIENT_STATS].value != nullptr) {
+      // Get stats object from context and take a ref.
+      client_stats = static_cast<grpc_core::GrpcLbClientStats*>(
+                         args.context[GRPC_GRPCLB_CLIENT_STATS].value)
+                         ->Ref();
+      // Record call started.
+      client_stats->AddCallStarted();
+    }
+  }
+
   // Stats object to update.
-  grpc_grpclb_client_stats* client_stats;
+  grpc_core::RefCountedPtr<grpc_core::GrpcLbClientStats> client_stats;
   // State for intercepting send_initial_metadata.
   grpc_closure on_complete_for_send;
   grpc_closure* original_on_complete_for_send;
-  bool send_initial_metadata_succeeded;
+  bool send_initial_metadata_succeeded = false;
   // State for intercepting recv_initial_metadata.
   grpc_closure recv_initial_metadata_ready;
   grpc_closure* original_recv_initial_metadata_ready;
-  bool recv_initial_metadata_succeeded;
+  bool recv_initial_metadata_succeeded = false;
 };
+
 }  // namespace
 
 static void on_complete_for_send(void* arg, grpc_error* error) {
@@ -68,16 +81,8 @@ static void recv_initial_metadata_ready(void* arg, grpc_error* error) {
 
 static grpc_error* init_call_elem(grpc_call_element* elem,
                                   const grpc_call_element_args* args) {
-  call_data* calld = static_cast<call_data*>(elem->call_data);
-  // Get stats object from context and take a ref.
   GPR_ASSERT(args->context != nullptr);
-  if (args->context[GRPC_GRPCLB_CLIENT_STATS].value != nullptr) {
-    calld->client_stats =
-        grpc_grpclb_client_stats_ref(static_cast<grpc_grpclb_client_stats*>(
-            args->context[GRPC_GRPCLB_CLIENT_STATS].value));
-    // Record call started.
-    grpc_grpclb_client_stats_add_call_started(calld->client_stats);
-  }
+  new (elem->call_data) call_data(*args);
   return GRPC_ERROR_NONE;
 }
 
@@ -88,13 +93,14 @@ static void destroy_call_elem(grpc_call_element* elem,
   if (calld->client_stats != nullptr) {
     // Record call finished, optionally setting client_failed_to_send and
     // received.
-    grpc_grpclb_client_stats_add_call_finished(
+    calld->client_stats->AddCallFinished(
         !calld->send_initial_metadata_succeeded /* client_failed_to_send */,
-        calld->recv_initial_metadata_succeeded /* known_received */,
-        calld->client_stats);
+        calld->recv_initial_metadata_succeeded /* known_received */);
     // All done, so unref the stats object.
-    grpc_grpclb_client_stats_unref(calld->client_stats);
+    // TODO(roth): Eliminate this once filter stack is converted to C++.
+    calld->client_stats.reset();
   }
+  calld->~call_data();
 }
 
 static void start_transport_stream_op_batch(

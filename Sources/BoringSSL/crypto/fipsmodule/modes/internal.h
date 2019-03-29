@@ -66,38 +66,6 @@ extern "C" {
 #define STRICT_ALIGNMENT 0
 #endif
 
-#if defined(__GNUC__) && __GNUC__ >= 2
-static inline uint32_t CRYPTO_bswap4(uint32_t x) {
-  return __builtin_bswap32(x);
-}
-
-static inline uint64_t CRYPTO_bswap8(uint64_t x) {
-  return __builtin_bswap64(x);
-}
-#elif defined(_MSC_VER)
-OPENSSL_MSVC_PRAGMA(warning(push, 3))
-#include <intrin.h>
-OPENSSL_MSVC_PRAGMA(warning(pop))
-#pragma intrinsic(_byteswap_uint64, _byteswap_ulong)
-static inline uint32_t CRYPTO_bswap4(uint32_t x) {
-  return _byteswap_ulong(x);
-}
-
-static inline uint64_t CRYPTO_bswap8(uint64_t x) {
-  return _byteswap_uint64(x);
-}
-#else
-static inline uint32_t CRYPTO_bswap4(uint32_t x) {
-  x = (x >> 16) | (x << 16);
-  x = ((x & 0xff00ff00) >> 8) | ((x & 0x00ff00ff) << 8);
-  return x;
-}
-
-static inline uint64_t CRYPTO_bswap8(uint64_t x) {
-  return CRYPTO_bswap4(x >> 32) | (((uint64_t)CRYPTO_bswap4(x)) << 32);
-}
-#endif
-
 static inline uint32_t GETU32(const void *in) {
   uint32_t v;
   OPENSSL_memcpy(&v, in, sizeof(v));
@@ -279,6 +247,42 @@ OPENSSL_EXPORT int CRYPTO_gcm128_finish(GCM128_CONTEXT *ctx, const uint8_t *tag,
 // The minimum of |len| and 16 bytes are copied into |tag|.
 OPENSSL_EXPORT void CRYPTO_gcm128_tag(GCM128_CONTEXT *ctx, uint8_t *tag,
                                       size_t len);
+
+
+// CCM.
+
+typedef struct ccm128_context {
+  block128_f block;
+  ctr128_f ctr;
+  unsigned M, L;
+} CCM128_CONTEXT;
+
+// CRYPTO_ccm128_init initialises |ctx| to use |block| (typically AES) with the
+// specified |M| and |L| parameters. It returns one on success and zero if |M|
+// or |L| is invalid.
+int CRYPTO_ccm128_init(CCM128_CONTEXT *ctx, const void *key, block128_f block,
+                       ctr128_f ctr, unsigned M, unsigned L);
+
+// CRYPTO_ccm128_max_input returns the maximum input length accepted by |ctx|.
+size_t CRYPTO_ccm128_max_input(const CCM128_CONTEXT *ctx);
+
+// CRYPTO_ccm128_encrypt encrypts |len| bytes from |in| to |out| writing the tag
+// to |out_tag|. |key| must be the same key that was passed to
+// |CRYPTO_ccm128_init|. It returns one on success and zero otherwise.
+int CRYPTO_ccm128_encrypt(const CCM128_CONTEXT *ctx, const void *key,
+                          uint8_t *out, uint8_t *out_tag, size_t tag_len,
+                          const uint8_t *nonce, size_t nonce_len,
+                          const uint8_t *in, size_t len, const uint8_t *aad,
+                          size_t aad_len);
+
+// CRYPTO_ccm128_decrypt decrypts |len| bytes from |in| to |out|, writing the
+// expected tag to |out_tag|. |key| must be the same key that was passed to
+// |CRYPTO_ccm128_init|. It returns one on success and zero otherwise.
+int CRYPTO_ccm128_decrypt(const CCM128_CONTEXT *ctx, const void *key,
+                          uint8_t *out, uint8_t *out_tag, size_t tag_len,
+                          const uint8_t *nonce, size_t nonce_len,
+                          const uint8_t *in, size_t len, const uint8_t *aad,
+                          size_t aad_len);
 
 
 // CBC.

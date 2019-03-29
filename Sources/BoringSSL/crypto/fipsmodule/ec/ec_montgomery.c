@@ -93,7 +93,6 @@ void ec_GFp_mont_group_finish(EC_GROUP *group) {
 int ec_GFp_mont_group_set_curve(EC_GROUP *group, const BIGNUM *p,
                                 const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx) {
   BN_CTX *new_ctx = NULL;
-  BN_MONT_CTX *mont = NULL;
   int ret = 0;
 
   BN_MONT_CTX_free(group->mont);
@@ -106,17 +105,11 @@ int ec_GFp_mont_group_set_curve(EC_GROUP *group, const BIGNUM *p,
     }
   }
 
-  mont = BN_MONT_CTX_new();
-  if (mont == NULL) {
-    goto err;
-  }
-  if (!BN_MONT_CTX_set(mont, p, ctx)) {
+  group->mont = BN_MONT_CTX_new_for_modulus(p, ctx);
+  if (group->mont == NULL) {
     OPENSSL_PUT_ERROR(EC, ERR_R_BN_LIB);
     goto err;
   }
-
-  group->mont = mont;
-  mont = NULL;
 
   ret = ec_GFp_simple_group_set_curve(group, p, a, b, ctx);
 
@@ -127,7 +120,6 @@ int ec_GFp_mont_group_set_curve(EC_GROUP *group, const BIGNUM *p,
 
 err:
   BN_CTX_free(new_ctx);
-  BN_MONT_CTX_free(mont);
   return ret;
 }
 
@@ -270,6 +262,7 @@ DEFINE_METHOD_FUNCTION(EC_METHOD, EC_GFp_mont_method) {
   out->group_set_curve = ec_GFp_mont_group_set_curve;
   out->point_get_affine_coordinates = ec_GFp_mont_point_get_affine_coordinates;
   out->mul = ec_wNAF_mul /* XXX: Not constant time. */;
+  out->mul_public = ec_wNAF_mul;
   out->field_mul = ec_GFp_mont_field_mul;
   out->field_sqr = ec_GFp_mont_field_sqr;
   out->field_encode = ec_GFp_mont_field_encode;

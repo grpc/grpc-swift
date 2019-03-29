@@ -79,11 +79,11 @@ typedef struct {
 } grpc_call_stats;
 
 /** Information about the call upon completion. */
-typedef struct {
+struct grpc_call_final_info {
   grpc_call_stats stats;
-  grpc_status_code final_status;
-  const char** error_string;
-} grpc_call_final_info;
+  grpc_status_code final_status = GRPC_STATUS_OK;
+  const char* error_string = nullptr;
+};
 
 /* Channel filters specify:
    1. the amount of memory needed in the channel & call (via the sizeof_XXX
@@ -138,7 +138,7 @@ typedef struct {
      is_first, is_last designate this elements position in the stack, and are
      useful for asserting correct configuration by upper layer code.
      The filter does not need to do any chaining.
-     Implementations may assume that elem->call_data is all zeros. */
+     Implementations may assume that elem->channel_data is all zeros. */
   grpc_error* (*init_channel_elem)(grpc_channel_element* elem,
                                    grpc_channel_element_args* args);
   /* Destroy per channel data.

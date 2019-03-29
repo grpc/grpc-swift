@@ -215,13 +215,6 @@ static const uint8_t kP521Params[6 * 66] = {
     0xB7, 0x1E, 0x91, 0x38, 0x64, 0x09,
 };
 
-// MSan appears to have a bug that causes code to be miscompiled in opt mode.
-// While that is being looked at, don't run the uint128_t code under MSan.
-#if defined(OPENSSL_64_BIT) && !defined(OPENSSL_WINDOWS) && \
-    !defined(MEMORY_SANITIZER)
-#define BORINGSSL_USE_INT128_CODE
-#endif
-
 DEFINE_METHOD_FUNCTION(struct built_in_curves, OPENSSL_built_in_curves) {
   // 1.3.132.0.35
   static const uint8_t kOIDP521[] = {0x2b, 0x81, 0x04, 0x00, 0x23};
@@ -253,15 +246,11 @@ DEFINE_METHOD_FUNCTION(struct built_in_curves, OPENSSL_built_in_curves) {
   out->curves[2].param_len = 32;
   out->curves[2].params = kP256Params;
   out->curves[2].method =
-#if defined(BORINGSSL_USE_INT128_CODE)
 #if !defined(OPENSSL_NO_ASM) && defined(OPENSSL_X86_64) && \
     !defined(OPENSSL_SMALL)
       EC_GFp_nistz256_method();
 #else
       EC_GFp_nistp256_method();
-#endif
-#else
-      EC_GFp_mont_method();
 #endif
 
   // 1.3.132.0.33
@@ -273,7 +262,7 @@ DEFINE_METHOD_FUNCTION(struct built_in_curves, OPENSSL_built_in_curves) {
   out->curves[3].param_len = 28;
   out->curves[3].params = kP224Params;
   out->curves[3].method =
-#if defined(BORINGSSL_USE_INT128_CODE) && !defined(OPENSSL_SMALL)
+#if defined(BORINGSSL_HAS_UINT128) && !defined(OPENSSL_SMALL)
       EC_GFp_nistp224_method();
 #else
       EC_GFp_mont_method();
@@ -398,11 +387,12 @@ int EC_GROUP_set_generator(EC_GROUP *group, const EC_POINT *generator,
     EC_POINT_free(copy);
     return 0;
   }
+  // Store the order in minimal form, so it can be used with |BN_ULONG| arrays.
+  bn_set_minimal_width(&group->order);
 
   BN_MONT_CTX_free(group->order_mont);
-  group->order_mont = BN_MONT_CTX_new();
-  if (group->order_mont == NULL ||
-      !BN_MONT_CTX_set(group->order_mont, &group->order, NULL)) {
+  group->order_mont = BN_MONT_CTX_new_for_modulus(&group->order, NULL);
+  if (group->order_mont == NULL) {
     return 0;
   }
 
@@ -459,9 +449,8 @@ static EC_GROUP *ec_group_new_from_data(const struct built_in_curve *curve) {
     goto err;
   }
 
-  group->order_mont = BN_MONT_CTX_new();
-  if (group->order_mont == NULL ||
-      !BN_MONT_CTX_set(group->order_mont, &group->order, ctx)) {
+  group->order_mont = BN_MONT_CTX_new_for_modulus(&group->order, ctx);
+  if (group->order_mont == NULL) {
     OPENSSL_PUT_ERROR(EC, ERR_R_BN_LIB);
     goto err;
   }
@@ -779,6 +768,15 @@ int EC_POINT_set_affine_coordinates_GFp(const EC_GROUP *group, EC_POINT *point,
   }
 
   if (!EC_POINT_is_on_curve(group, point, ctx)) {
+    // In the event of an error, defend against the caller not checking the
+    // return value by setting a known safe value: the base point.
+    const EC_POINT *generator = EC_GROUP_get0_generator(group);
+    // The generator can be missing if the caller is in the process of
+    // constructing an arbitrary group. In this, we give up and hope they're
+    // checking the return value.
+    if (generator) {
+      EC_POINT_copy(point, generator);
+    }
     OPENSSL_PUT_ERROR(EC, EC_R_POINT_IS_NOT_ON_CURVE);
     return 0;
   }
@@ -817,6 +815,25 @@ int EC_POINT_invert(const EC_GROUP *group, EC_POINT *a, BN_CTX *ctx) {
   return ec_GFp_simple_invert(group, a, ctx);
 }
 
+static int arbitrary_bignum_to_scalar(const EC_GROUP *group, EC_SCALAR *out,
+                                      const BIGNUM *in, BN_CTX *ctx) {
+  if (ec_bignum_to_scalar(group, out, in)) {
+    return 1;
+  }
+
+  ERR_clear_error();
+
+  // This is an unusual input, so we do not guarantee constant-time processing.
+  const BIGNUM *order = &group->order;
+  BN_CTX_start(ctx);
+  BIGNUM *tmp = BN_CTX_get(ctx);
+  int ok = tmp != NULL &&
+           BN_nnmod(tmp, in, order, ctx) &&
+           ec_bignum_to_scalar_unchecked(group, out, tmp);
+  BN_CTX_end(ctx);
+  return ok;
+}
+
 int EC_POINT_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *g_scalar,
                  const EC_POINT *p, const BIGNUM *p_scalar, BN_CTX *ctx) {
   // Previously, this function set |r| to the point at infinity if there was
@@ -828,30 +845,27 @@ int EC_POINT_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *g_scalar,
     return 0;
   }
 
-  // We cannot easily process arbitrary scalars in constant-time, and there is
-  // no need to do so. Require that scalars be the same size as the order.
-  //
-  // One could require they be fully reduced, but some consumers try to check
-  // that |order| * |pubkey| is the identity. This comes from following NIST SP
-  // 800-56A section 5.6.2.3.2. (Though all our curves have cofactor one, so
-  // this check isn't useful.)
   int ret = 0;
   EC_SCALAR g_scalar_storage, p_scalar_storage;
   EC_SCALAR *g_scalar_arg = NULL, *p_scalar_arg = NULL;
-  unsigned order_bits = BN_num_bits(&group->order);
+  BN_CTX *new_ctx = NULL;
+  if (ctx == NULL) {
+    new_ctx = BN_CTX_new();
+    if (new_ctx == NULL) {
+      goto err;
+    }
+    ctx = new_ctx;
+  }
+
   if (g_scalar != NULL) {
-    if (BN_is_negative(g_scalar) || BN_num_bits(g_scalar) > order_bits ||
-        !ec_bignum_to_scalar(group, &g_scalar_storage, g_scalar)) {
-      OPENSSL_PUT_ERROR(EC, EC_R_INVALID_SCALAR);
+    if (!arbitrary_bignum_to_scalar(group, &g_scalar_storage, g_scalar, ctx)) {
       goto err;
     }
     g_scalar_arg = &g_scalar_storage;
   }
 
   if (p_scalar != NULL) {
-    if (BN_is_negative(p_scalar) || BN_num_bits(p_scalar) > order_bits ||
-        !ec_bignum_to_scalar(group, &p_scalar_storage, p_scalar)) {
-      OPENSSL_PUT_ERROR(EC, EC_R_INVALID_SCALAR);
+    if (!arbitrary_bignum_to_scalar(group, &p_scalar_storage, p_scalar, ctx)) {
       goto err;
     }
     p_scalar_arg = &p_scalar_storage;
@@ -860,9 +874,28 @@ int EC_POINT_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *g_scalar,
   ret = ec_point_mul_scalar(group, r, g_scalar_arg, p, p_scalar_arg, ctx);
 
 err:
+  BN_CTX_free(new_ctx);
   OPENSSL_cleanse(&g_scalar_storage, sizeof(g_scalar_storage));
   OPENSSL_cleanse(&p_scalar_storage, sizeof(p_scalar_storage));
   return ret;
+}
+
+int ec_point_mul_scalar_public(const EC_GROUP *group, EC_POINT *r,
+                               const EC_SCALAR *g_scalar, const EC_POINT *p,
+                               const EC_SCALAR *p_scalar, BN_CTX *ctx) {
+  if ((g_scalar == NULL && p_scalar == NULL) ||
+      (p == NULL) != (p_scalar == NULL))  {
+    OPENSSL_PUT_ERROR(EC, ERR_R_PASSED_NULL_PARAMETER);
+    return 0;
+  }
+
+  if (EC_GROUP_cmp(group, r->group, NULL) != 0 ||
+      (p != NULL && EC_GROUP_cmp(group, p->group, NULL) != 0)) {
+    OPENSSL_PUT_ERROR(EC, EC_R_INCOMPATIBLE_OBJECTS);
+    return 0;
+  }
+
+  return group->meth->mul_public(group, r, g_scalar, p, p_scalar, ctx);
 }
 
 int ec_point_mul_scalar(const EC_GROUP *group, EC_POINT *r,
@@ -881,18 +914,6 @@ int ec_point_mul_scalar(const EC_GROUP *group, EC_POINT *r,
   }
 
   return group->meth->mul(group, r, g_scalar, p, p_scalar, ctx);
-}
-
-int ec_point_set_Jprojective_coordinates_GFp(const EC_GROUP *group,
-                                             EC_POINT *point, const BIGNUM *x,
-                                             const BIGNUM *y, const BIGNUM *z,
-                                             BN_CTX *ctx) {
-  if (EC_GROUP_cmp(group, point->group, NULL) != 0) {
-    OPENSSL_PUT_ERROR(EC, EC_R_INCOMPATIBLE_OBJECTS);
-    return 0;
-  }
-  return ec_GFp_simple_set_Jprojective_coordinates_GFp(group, point, x, y, z,
-                                                       ctx);
 }
 
 void EC_GROUP_set_asn1_flag(EC_GROUP *group, int flag) {}
@@ -927,17 +948,27 @@ size_t EC_get_builtin_curves(EC_builtin_curve *out_curves,
 
 int ec_bignum_to_scalar(const EC_GROUP *group, EC_SCALAR *out,
                         const BIGNUM *in) {
-  if (BN_is_negative(in) || in->top > group->order.top) {
+  if (!ec_bignum_to_scalar_unchecked(group, out, in)) {
+    return 0;
+  }
+  if (!bn_less_than_words(out->words, group->order.d, group->order.width)) {
     OPENSSL_PUT_ERROR(EC, EC_R_INVALID_SCALAR);
     return 0;
   }
-  OPENSSL_memset(out->words, 0, group->order.top * sizeof(BN_ULONG));
-  OPENSSL_memcpy(out->words, in->d, in->top * sizeof(BN_ULONG));
+  return 1;
+}
+
+int ec_bignum_to_scalar_unchecked(const EC_GROUP *group, EC_SCALAR *out,
+                                  const BIGNUM *in) {
+  if (!bn_copy_words(out->words, group->order.width, in)) {
+    OPENSSL_PUT_ERROR(EC, EC_R_INVALID_SCALAR);
+    return 0;
+  }
   return 1;
 }
 
 int ec_random_nonzero_scalar(const EC_GROUP *group, EC_SCALAR *out,
                              const uint8_t additional_data[32]) {
-  return bn_rand_range_words(out->words, 1, group->order.d, group->order.top,
+  return bn_rand_range_words(out->words, 1, group->order.d, group->order.width,
                              additional_data);
 }

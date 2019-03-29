@@ -21,40 +21,87 @@
 #include "src/core/lib/gpr/arena.h"
 
 #include <string.h>
+#include <new>
 
 #include <grpc/support/alloc.h>
 #include <grpc/support/atm.h>
 #include <grpc/support/log.h>
+#include <grpc/support/sync.h>
+
+#include "src/core/lib/gpr/alloc.h"
+#include "src/core/lib/gpr/env.h"
+#include "src/core/lib/gprpp/memory.h"
+
+namespace {
+enum init_strategy {
+  NO_INIT,        // Do not initialize the arena blocks.
+  ZERO_INIT,      // Initialize arena blocks with 0.
+  NON_ZERO_INIT,  // Initialize arena blocks with a non-zero value.
+};
+
+gpr_once g_init_strategy_once = GPR_ONCE_INIT;
+init_strategy g_init_strategy = NO_INIT;
+}  // namespace
+
+static void set_strategy_from_env() {
+  char* str = gpr_getenv("GRPC_ARENA_INIT_STRATEGY");
+  if (str == nullptr) {
+    g_init_strategy = NO_INIT;
+  } else if (strcmp(str, "zero_init") == 0) {
+    g_init_strategy = ZERO_INIT;
+  } else if (strcmp(str, "non_zero_init") == 0) {
+    g_init_strategy = NON_ZERO_INIT;
+  } else {
+    g_init_strategy = NO_INIT;
+  }
+  gpr_free(str);
+}
+
+static void* gpr_arena_alloc_maybe_init(size_t size) {
+  void* mem = gpr_malloc_aligned(size, GPR_MAX_ALIGNMENT);
+  gpr_once_init(&g_init_strategy_once, set_strategy_from_env);
+  if (GPR_UNLIKELY(g_init_strategy != NO_INIT)) {
+    if (g_init_strategy == ZERO_INIT) {
+      memset(mem, 0, size);
+    } else {  // NON_ZERO_INIT.
+      memset(mem, 0xFE, size);
+    }
+  }
+  return mem;
+}
+
+void gpr_arena_init() {
+  gpr_once_init(&g_init_strategy_once, set_strategy_from_env);
+}
 
 // Uncomment this to use a simple arena that simply allocates the
 // requested amount of memory for each call to gpr_arena_alloc().  This
 // effectively eliminates the efficiency gain of using an arena, but it
 // may be useful for debugging purposes.
 //#define SIMPLE_ARENA_FOR_DEBUGGING
-
 #ifdef SIMPLE_ARENA_FOR_DEBUGGING
 
-#include <grpc/support/sync.h>
-
 struct gpr_arena {
+  gpr_arena() { gpr_mu_init(&mu); }
+  ~gpr_arena() {
+    gpr_mu_destroy(&mu);
+    for (size_t i = 0; i < num_ptrs; ++i) {
+      gpr_free_aligned(ptrs[i]);
+    }
+    gpr_free(ptrs);
+  }
+
   gpr_mu mu;
-  void** ptrs;
-  size_t num_ptrs;
+  void** ptrs = nullptr;
+  size_t num_ptrs = 0;
 };
 
 gpr_arena* gpr_arena_create(size_t ignored_initial_size) {
-  gpr_arena* arena = (gpr_arena*)gpr_zalloc(sizeof(*arena));
-  gpr_mu_init(&arena->mu);
-  return arena;
+  return grpc_core::New<gpr_arena>();
 }
 
 size_t gpr_arena_destroy(gpr_arena* arena) {
-  gpr_mu_destroy(&arena->mu);
-  for (size_t i = 0; i < arena->num_ptrs; ++i) {
-    gpr_free(arena->ptrs[i]);
-  }
-  gpr_free(arena->ptrs);
-  gpr_free(arena);
+  grpc_core::Delete(arena);
   return 1;  // Value doesn't matter, since it won't be used.
 }
 
@@ -62,7 +109,8 @@ void* gpr_arena_alloc(gpr_arena* arena, size_t size) {
   gpr_mu_lock(&arena->mu);
   arena->ptrs =
       (void**)gpr_realloc(arena->ptrs, sizeof(void*) * (arena->num_ptrs + 1));
-  void* retval = arena->ptrs[arena->num_ptrs++] = gpr_zalloc(size);
+  void* retval = arena->ptrs[arena->num_ptrs++] =
+      gpr_arena_alloc_maybe_init(size);
   gpr_mu_unlock(&arena->mu);
   return retval;
 }
@@ -74,79 +122,71 @@ void* gpr_arena_alloc(gpr_arena* arena, size_t size) {
 // arena API to C++, we should consider replacing gpr_arena_alloc() with a
 // template that takes the type of the value being allocated, which
 // would allow us to use the alignment actually needed by the caller.
-#define ROUND_UP_TO_ALIGNMENT_SIZE(x) \
-  (((x) + GPR_MAX_ALIGNMENT - 1u) & ~(GPR_MAX_ALIGNMENT - 1u))
 
 typedef struct zone {
-  size_t size_begin;
-  size_t size_end;
-  gpr_atm next_atm;
+  zone* next = nullptr;
 } zone;
 
 struct gpr_arena {
-  gpr_atm size_so_far;
+  gpr_arena(size_t initial_size)
+      : initial_zone_size(initial_size), last_zone(&initial_zone) {
+    gpr_mu_init(&arena_growth_mutex);
+  }
+  ~gpr_arena() {
+    gpr_mu_destroy(&arena_growth_mutex);
+    zone* z = initial_zone.next;
+    while (z) {
+      zone* next_z = z->next;
+      z->~zone();
+      gpr_free_aligned(z);
+      z = next_z;
+    }
+  }
+
+  // Keep track of the total used size. We use this in our call sizing
+  // historesis.
+  gpr_atm total_used = 0;
+  size_t initial_zone_size;
   zone initial_zone;
+  zone* last_zone;
+  gpr_mu arena_growth_mutex;
 };
 
-static void* zalloc_aligned(size_t size) {
-  void* ptr = gpr_malloc_aligned(size, GPR_MAX_ALIGNMENT);
-  memset(ptr, 0, size);
-  return ptr;
-}
-
 gpr_arena* gpr_arena_create(size_t initial_size) {
-  initial_size = ROUND_UP_TO_ALIGNMENT_SIZE(initial_size);
-  gpr_arena* a = static_cast<gpr_arena*>(zalloc_aligned(
-      ROUND_UP_TO_ALIGNMENT_SIZE(sizeof(gpr_arena)) + initial_size));
-  a->initial_zone.size_end = initial_size;
-  return a;
+  initial_size = GPR_ROUND_UP_TO_ALIGNMENT_SIZE(initial_size);
+  return new (gpr_arena_alloc_maybe_init(
+      GPR_ROUND_UP_TO_ALIGNMENT_SIZE(sizeof(gpr_arena)) + initial_size))
+      gpr_arena(initial_size);
 }
 
 size_t gpr_arena_destroy(gpr_arena* arena) {
-  gpr_atm size = gpr_atm_no_barrier_load(&arena->size_so_far);
-  zone* z = (zone*)gpr_atm_no_barrier_load(&arena->initial_zone.next_atm);
+  const gpr_atm size = gpr_atm_no_barrier_load(&arena->total_used);
+  arena->~gpr_arena();
   gpr_free_aligned(arena);
-  while (z) {
-    zone* next_z = (zone*)gpr_atm_no_barrier_load(&z->next_atm);
-    gpr_free_aligned(z);
-    z = next_z;
-  }
   return static_cast<size_t>(size);
 }
 
 void* gpr_arena_alloc(gpr_arena* arena, size_t size) {
-  size = ROUND_UP_TO_ALIGNMENT_SIZE(size);
-  size_t start = static_cast<size_t>(
-      gpr_atm_no_barrier_fetch_add(&arena->size_so_far, size));
-  zone* z = &arena->initial_zone;
-  while (start > z->size_end) {
-    zone* next_z = (zone*)gpr_atm_acq_load(&z->next_atm);
-    if (next_z == nullptr) {
-      size_t next_z_size =
-          static_cast<size_t>(gpr_atm_no_barrier_load(&arena->size_so_far));
-      next_z = static_cast<zone*>(zalloc_aligned(
-          ROUND_UP_TO_ALIGNMENT_SIZE(sizeof(zone)) + next_z_size));
-      next_z->size_begin = z->size_end;
-      next_z->size_end = z->size_end + next_z_size;
-      if (!gpr_atm_rel_cas(&z->next_atm, static_cast<gpr_atm>(NULL),
-                           (gpr_atm)next_z)) {
-        gpr_free_aligned(next_z);
-        next_z = (zone*)gpr_atm_acq_load(&z->next_atm);
-      }
-    }
-    z = next_z;
+  size = GPR_ROUND_UP_TO_ALIGNMENT_SIZE(size);
+  size_t begin = gpr_atm_no_barrier_fetch_add(&arena->total_used, size);
+  if (begin + size <= arena->initial_zone_size) {
+    return reinterpret_cast<char*>(arena) +
+           GPR_ROUND_UP_TO_ALIGNMENT_SIZE(sizeof(gpr_arena)) + begin;
+  } else {
+    // If the allocation isn't able to end in the initial zone, create a new
+    // zone for this allocation, and any unused space in the initial zone is
+    // wasted. This overflowing and wasting is uncommon because of our arena
+    // sizing historesis (that is, most calls should have a large enough initial
+    // zone and will not need to grow the arena).
+    gpr_mu_lock(&arena->arena_growth_mutex);
+    zone* z = new (gpr_arena_alloc_maybe_init(
+        GPR_ROUND_UP_TO_ALIGNMENT_SIZE(sizeof(zone)) + size)) zone();
+    arena->last_zone->next = z;
+    arena->last_zone = z;
+    gpr_mu_unlock(&arena->arena_growth_mutex);
+    return reinterpret_cast<char*>(z) +
+           GPR_ROUND_UP_TO_ALIGNMENT_SIZE(sizeof(zone));
   }
-  if (start + size > z->size_end) {
-    return gpr_arena_alloc(arena, size);
-  }
-  GPR_ASSERT(start >= z->size_begin);
-  GPR_ASSERT(start + size <= z->size_end);
-  char* ptr = (z == &arena->initial_zone)
-                  ? reinterpret_cast<char*>(arena) +
-                        ROUND_UP_TO_ALIGNMENT_SIZE(sizeof(gpr_arena))
-                  : reinterpret_cast<char*>(z) +
-                        ROUND_UP_TO_ALIGNMENT_SIZE(sizeof(zone));
-  return ptr + start - z->size_begin;
 }
 
 #endif  // SIMPLE_ARENA_FOR_DEBUGGING

@@ -34,12 +34,7 @@ bool ssl_protocol_version_from_wire(uint16_t *out, uint16_t version) {
       *out = version;
       return true;
 
-    case TLS1_3_DRAFT_VERSION:
-    case TLS1_3_DRAFT21_VERSION:
-    case TLS1_3_DRAFT22_VERSION:
-    case TLS1_3_EXPERIMENT_VERSION:
-    case TLS1_3_EXPERIMENT2_VERSION:
-    case TLS1_3_EXPERIMENT3_VERSION:
+    case TLS1_3_DRAFT23_VERSION:
       *out = TLS1_3_VERSION;
       return true;
 
@@ -61,12 +56,7 @@ bool ssl_protocol_version_from_wire(uint16_t *out, uint16_t version) {
 // decreasing preference.
 
 static const uint16_t kTLSVersions[] = {
-    TLS1_3_DRAFT22_VERSION,
-    TLS1_3_EXPERIMENT3_VERSION,
-    TLS1_3_EXPERIMENT2_VERSION,
-    TLS1_3_EXPERIMENT_VERSION,
-    TLS1_3_DRAFT_VERSION,
-    TLS1_3_DRAFT21_VERSION,
+    TLS1_3_DRAFT23_VERSION,
     TLS1_2_VERSION,
     TLS1_1_VERSION,
     TLS1_VERSION,
@@ -109,12 +99,7 @@ static bool method_supports_version(const SSL_PROTOCOL_METHOD *method,
 
 static const char *ssl_version_to_string(uint16_t version) {
   switch (version) {
-    case TLS1_3_DRAFT_VERSION:
-    case TLS1_3_DRAFT21_VERSION:
-    case TLS1_3_DRAFT22_VERSION:
-    case TLS1_3_EXPERIMENT_VERSION:
-    case TLS1_3_EXPERIMENT2_VERSION:
-    case TLS1_3_EXPERIMENT3_VERSION:
+    case TLS1_3_DRAFT23_VERSION:
       return "TLSv1.3";
 
     case TLS1_2_VERSION:
@@ -143,12 +128,7 @@ static const char *ssl_version_to_string(uint16_t version) {
 static uint16_t wire_version_to_api(uint16_t version) {
   switch (version) {
     // Report TLS 1.3 draft versions as TLS 1.3 in the public API.
-    case TLS1_3_DRAFT_VERSION:
-    case TLS1_3_DRAFT21_VERSION:
-    case TLS1_3_DRAFT22_VERSION:
-    case TLS1_3_EXPERIMENT_VERSION:
-    case TLS1_3_EXPERIMENT2_VERSION:
-    case TLS1_3_EXPERIMENT3_VERSION:
+    case TLS1_3_DRAFT23_VERSION:
       return TLS1_3_VERSION;
     default:
       return version;
@@ -159,16 +139,11 @@ static uint16_t wire_version_to_api(uint16_t version) {
 // particular, it picks an arbitrary TLS 1.3 representative. This should only be
 // used in context where that does not matter.
 static bool api_version_to_wire(uint16_t *out, uint16_t version) {
-  if (version == TLS1_3_DRAFT_VERSION ||
-      version == TLS1_3_DRAFT21_VERSION ||
-      version == TLS1_3_DRAFT22_VERSION ||
-      version == TLS1_3_EXPERIMENT_VERSION ||
-      version == TLS1_3_EXPERIMENT2_VERSION ||
-      version == TLS1_3_EXPERIMENT3_VERSION) {
+  if (version == TLS1_3_DRAFT23_VERSION) {
     return false;
   }
   if (version == TLS1_3_VERSION) {
-    version = TLS1_3_DRAFT_VERSION;
+    version = TLS1_3_DRAFT23_VERSION;
   }
 
   // Check it is a real protocol version.
@@ -319,34 +294,18 @@ bool ssl_supports_version(SSL_HANDSHAKE *hs, uint16_t version) {
     return false;
   }
 
-  // TLS 1.3 variants must additionally match |tls13_variant|.
+  // This logic is part of the TLS 1.3 variants mechanism used in TLS 1.3
+  // experimentation. Although we currently only have one variant, TLS 1.3 does
+  // not a final stable deployment yet, so leave the logic in place for now.
   if (protocol_version != TLS1_3_VERSION ||
-      (ssl->tls13_variant == tls13_experiment &&
-       version == TLS1_3_EXPERIMENT_VERSION) ||
-      (ssl->tls13_variant == tls13_experiment2 &&
-       version == TLS1_3_EXPERIMENT2_VERSION) ||
-      (ssl->tls13_variant == tls13_experiment3 &&
-       version == TLS1_3_EXPERIMENT3_VERSION) ||
-      (ssl->tls13_variant == tls13_draft21 &&
-       version == TLS1_3_DRAFT21_VERSION) ||
-      (ssl->tls13_variant == tls13_draft22 &&
-       version == TLS1_3_DRAFT22_VERSION) ||
       (ssl->tls13_variant == tls13_default &&
-       version == TLS1_3_DRAFT_VERSION)) {
+       version == TLS1_3_DRAFT23_VERSION)) {
     return true;
   }
 
   // The server, when not configured at |tls13_default|, should additionally
-  // enable all variants, except draft-21 which is implemented solely for QUIC
-  // interop testing and will not be deployed, and draft-22 which will be
-  // enabled once the draft is finalized and ready to be deployed in Chrome.
-  // Currently, this is to implement the draft-18 vs. experiments field trials.
-  // In the future, this will be to transition cleanly to a final draft-22
-  // which hopefully includes the deployability fixes.
-  if (ssl->server &&
-      ssl->tls13_variant != tls13_default &&
-      version != TLS1_3_DRAFT21_VERSION &&
-      version != TLS1_3_DRAFT22_VERSION) {
+  // enable all variants.
+  if (ssl->server && ssl->tls13_variant != tls13_default) {
     return true;
   }
 
@@ -395,38 +354,6 @@ bool ssl_negotiate_version(SSL_HANDSHAKE *hs, uint8_t *out_alert,
   OPENSSL_PUT_ERROR(SSL, SSL_R_UNSUPPORTED_PROTOCOL);
   *out_alert = SSL_AD_PROTOCOL_VERSION;
   return false;
-}
-
-bool ssl_is_draft21(uint16_t version) {
-  return version == TLS1_3_DRAFT21_VERSION || version == TLS1_3_DRAFT22_VERSION;
-}
-
-bool ssl_is_draft22(uint16_t version) {
-  return version == TLS1_3_DRAFT22_VERSION;
-}
-
-bool ssl_is_resumption_experiment(uint16_t version) {
-  return version == TLS1_3_EXPERIMENT_VERSION ||
-         version == TLS1_3_EXPERIMENT2_VERSION ||
-         version == TLS1_3_EXPERIMENT3_VERSION ||
-         version == TLS1_3_DRAFT22_VERSION;
-}
-
-bool ssl_is_resumption_variant(enum tls13_variant_t variant) {
-  return variant == tls13_experiment || variant == tls13_experiment2 ||
-         variant == tls13_experiment3 || variant == tls13_draft22;
-}
-
-bool ssl_is_resumption_client_ccs_experiment(uint16_t version) {
-  return version == TLS1_3_EXPERIMENT_VERSION ||
-         version == TLS1_3_EXPERIMENT2_VERSION ||
-         version == TLS1_3_DRAFT22_VERSION;
-}
-
-bool ssl_is_resumption_record_version_experiment(uint16_t version) {
-  return version == TLS1_3_EXPERIMENT2_VERSION ||
-         version == TLS1_3_EXPERIMENT3_VERSION ||
-         version == TLS1_3_DRAFT22_VERSION;
 }
 
 }  // namespace bssl

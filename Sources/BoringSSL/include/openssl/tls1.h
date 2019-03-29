@@ -202,19 +202,24 @@ extern "C" {
 // ExtensionType value from RFC7627
 #define TLSEXT_TYPE_extended_master_secret 23
 
+// ExtensionType value from draft-ietf-tokbind-negotiation-10
+#define TLSEXT_TYPE_token_binding 24
+
+// ExtensionType value from draft-ietf-quic-tls
+#define TLSEXT_TYPE_quic_transport_parameters 26
+
 // ExtensionType value from RFC4507
 #define TLSEXT_TYPE_session_ticket 35
 
 // ExtensionType values from draft-ietf-tls-tls13-18
 #define TLSEXT_TYPE_supported_groups 10
-#define TLSEXT_TYPE_key_share 40
 #define TLSEXT_TYPE_pre_shared_key 41
 #define TLSEXT_TYPE_early_data 42
 #define TLSEXT_TYPE_supported_versions 43
 #define TLSEXT_TYPE_cookie 44
 #define TLSEXT_TYPE_psk_key_exchange_modes 45
-#define TLSEXT_TYPE_ticket_early_data_info 46
 #define TLSEXT_TYPE_certificate_authorities 47
+#define TLSEXT_TYPE_key_share 51
 
 // ExtensionType value from RFC5746
 #define TLSEXT_TYPE_renegotiate 0xff01
@@ -227,6 +232,9 @@ extern "C" {
 
 // This is not an IANA defined extension number
 #define TLSEXT_TYPE_channel_id 30032
+
+// This is not an IANA defined extension number
+#define TLSEXT_TYPE_dummy_pq_padding 54537
 
 // status request value from RFC 3546
 #define TLSEXT_STATUSTYPE_ocsp 1
