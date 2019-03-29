@@ -446,10 +446,10 @@ extension Generator {
   }
 
   private func printNIOServiceClientImplementation() {
-    println("\(access) final class \(serviceClassName)Client: GRPCClient, \(serviceClassName) {")
+    println("\(access) final class \(serviceClassName)Client: GRPCServiceClient, \(serviceClassName) {")
     indent()
     println("\(access) let connection: GRPCClientConnection")
-    println("\(access) let service = \"\(servicePath)\"")
+    println("\(access) var serviceName: String { return \"\(servicePath)\" }")
     println("\(access) var defaultCallOptions: CallOptions")
     println()
     println("/// Creates a client for the \(servicePath) service.")

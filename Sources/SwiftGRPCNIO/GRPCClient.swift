@@ -15,28 +15,32 @@
  */
 import Foundation
 
-/// A GRPC client for a given service.
+/// A GRPC client.
 public protocol GRPCClient {
   /// The connection providing the underlying HTTP/2 channel for this client.
   var connection: GRPCClientConnection { get }
 
-  /// Name of the service this client is for (e.g. "echo.Echo").
-  var service: String { get }
-
   /// The call options to use should the user not provide per-call options.
   var defaultCallOptions: CallOptions { get set }
+}
 
-  /// Return the path for the given method in the format "/Service-Name/Method-Name".
+/// A GRPC client for a named service.
+public protocol GRPCServiceClient: GRPCClient {
+  /// Name of the service this client is for (e.g. "echo.Echo").
+  var serviceName: String { get }
+
+  /// Creates a path for a given method on this service.
   ///
-  /// This may be overriden if consumers require a different path format.
+  /// This defaults to "/Service-Name/Method-Name" but may be overriden if consumers
+  /// require a different path format.
   ///
-  /// - Parameter forMethod: name of method to return a path for.
+  /// - Parameter method: name of method to return a path for.
   /// - Returns: path for the given method used in gRPC request headers.
   func path(forMethod method: String) -> String
 }
 
-extension GRPCClient {
+extension GRPCServiceClient {
   public func path(forMethod method: String) -> String {
-    return "/\(service)/\(method)"
+    return "/\(self.serviceName)/\(method)"
   }
 }

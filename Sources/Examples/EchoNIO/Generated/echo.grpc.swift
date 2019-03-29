@@ -35,9 +35,9 @@ internal protocol Echo_EchoService_NIO {
   func update(callOptions: CallOptions?, handler: @escaping (Echo_EchoResponse) -> Void) -> BidirectionalStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse>
 }
 
-internal final class Echo_EchoService_NIOClient: GRPCClient, Echo_EchoService_NIO {
+internal final class Echo_EchoService_NIOClient: GRPCServiceClient, Echo_EchoService_NIO {
   internal let connection: GRPCClientConnection
-  internal let service = "echo.Echo"
+  internal var serviceName: String { return "echo.Echo" }
   internal var defaultCallOptions: CallOptions
 
   /// Creates a client for the echo.Echo service.
