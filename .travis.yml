@@ -17,8 +17,7 @@
 
 os:
   - linux
-  # Travis' most recent version of Xcode is 10.2 beta 2; we need at least beta 4.
-  # - osx
+  - osx
 
 cache:
   apt: true
@@ -29,8 +28,7 @@ cache:
 # Use Ubuntu 14.04
 dist: trusty
 
-# Travis' most recent version of Xcode is 10.2 beta 2; we need at least beta 4.
-# osx_image: xcode10.2
+osx_image: xcode10.2
 
 sudo: false
 
