@@ -83,6 +83,12 @@ extension BaseClientCall: ClientCall {
     return self.clientChannelHandler.statusPromise.futureResult
   }
 
+  // Workaround for: https://bugs.swift.org/browse/SR-10128
+  // Once resolved this can become a default implementation on `ClientCall`.
+  public var trailingMetadata: EventLoopFuture<HTTPHeaders> {
+    return status.map { $0.trailingMetadata }
+  }
+
   public func cancel() {
     self.client.channel.eventLoop.execute {
       self.subchannel.whenSuccess { channel in
