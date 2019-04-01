@@ -32,7 +32,7 @@ let messageOption = Option("message",
                            default: "Testing 1 2 3",
                            description: "message to send")
 
-func makeClientTLS(enabled: Bool) throws -> GRPCClient.TLSMode {
+func makeClientTLS(enabled: Bool) throws -> GRPCClientConnection.TLSMode {
   guard enabled else {
     return .none
   }
@@ -73,8 +73,8 @@ func makeServerTLSConfiguration() throws -> TLSConfiguration {
 func makeEchoClient(address: String, port: Int, ssl: Bool) -> Echo_EchoService_NIOClient? {
   let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
   do {
-    return try GRPCClient.start(host: address, port: port, eventLoopGroup: eventLoopGroup, tls: try makeClientTLS(enabled: ssl))
-      .map { client in Echo_EchoService_NIOClient(client: client) }
+    return try GRPCClientConnection.start(host: address, port: port, eventLoopGroup: eventLoopGroup, tls: try makeClientTLS(enabled: ssl))
+      .map { Echo_EchoService_NIOClient(connection: $0) }
       .wait()
   } catch {
     print("Unable to create an EchoClient: \(error)")
