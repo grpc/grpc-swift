@@ -84,7 +84,7 @@ extension BaseClientCall: ClientCall {
   }
 
   // Workaround for: https://bugs.swift.org/browse/SR-10128
-  // Once resolved this can become a default implementation on `ClientCall`.
+  // TODO: Make this a default implementation on `ClientCall` when SR-10128 is resolved.
   public var trailingMetadata: EventLoopFuture<HTTPHeaders> {
     return status.map { $0.trailingMetadata }
   }
