@@ -54,12 +54,6 @@ public protocol ClientCall {
   func cancel()
 }
 
-extension ClientCall {
-  public var trailingMetadata: EventLoopFuture<HTTPHeaders> {
-    return status.map { $0.trailingMetadata }
-  }
-}
-
 /// A `ClientCall` with request streaming; i.e. client-streaming and bidirectional-streaming.
 public protocol StreamingRequestClientCall: ClientCall {
   /// Sends a message to the service.
