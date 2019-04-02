@@ -74,14 +74,12 @@ open class GRPCClientConnection {
   public let channel: Channel
   public let multiplexer: HTTP2StreamMultiplexer
   public let host: String
-  public var defaultCallOptions: CallOptions
   public let httpProtocol: HTTP2ToHTTP1ClientCodec.HTTPProtocol
 
-  init(channel: Channel, multiplexer: HTTP2StreamMultiplexer, host: String, httpProtocol: HTTP2ToHTTP1ClientCodec.HTTPProtocol, defaultCallOptions: CallOptions = CallOptions()) {
+  init(channel: Channel, multiplexer: HTTP2StreamMultiplexer, host: String, httpProtocol: HTTP2ToHTTP1ClientCodec.HTTPProtocol) {
     self.channel = channel
     self.multiplexer = multiplexer
     self.host = host
-    self.defaultCallOptions = defaultCallOptions
     self.httpProtocol = httpProtocol
   }
 
