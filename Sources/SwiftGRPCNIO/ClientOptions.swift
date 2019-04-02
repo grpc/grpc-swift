@@ -24,8 +24,12 @@ public struct CallOptions {
   /// The call timeout.
   public var timeout: GRPCTimeout
 
-  public init(customMetadata: HTTPHeaders = HTTPHeaders(), timeout: GRPCTimeout = GRPCTimeout.default) {
+  /// Whether the call is cacheable.
+  public var cacheable: Bool
+
+  public init(customMetadata: HTTPHeaders = HTTPHeaders(), timeout: GRPCTimeout = GRPCTimeout.infinite, cacheable: Bool = false) {
     self.customMetadata = customMetadata
     self.timeout = timeout
+    self.cacheable = false
   }
 }

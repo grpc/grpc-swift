@@ -93,6 +93,12 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
       throw GRPCError.client(.HTTPStatusNotOk(head.status))
     }
 
+    // Trailers-Only response.
+    if head.headers.contains(name: "grpc-status") {
+      self.state = .expectingBodyOrTrailers
+      return try self.processTrailers(context: context, trailers: head.headers)
+    }
+
     let inboundCompression: CompressionMechanism = head.headers["grpc-encoding"]
       .first
       .map { CompressionMechanism(rawValue: $0) ?? .unknown } ?? .none

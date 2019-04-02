@@ -201,7 +201,8 @@ extension BaseClientCall {
   ///   - callOptions: options to use when configuring this call.
   /// - Returns: `HTTPRequestHead` configured for this call.
   internal func makeRequestHead(path: String, host: String, callOptions: CallOptions) -> HTTPRequestHead {
-    var requestHead = HTTPRequestHead(version: .init(major: 2, minor: 0), method: .POST, uri: path)
+    let method: HTTPMethod = callOptions.cacheable ? .GET : .POST
+    var requestHead = HTTPRequestHead(version: .init(major: 2, minor: 0), method: method, uri: path)
 
     callOptions.customMetadata.forEach { name, value in
       requestHead.headers.add(name: name, value: value)

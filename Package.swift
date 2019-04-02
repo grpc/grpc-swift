@@ -93,6 +93,12 @@ let package = Package(
               "SwiftProtobuf",
               "Commander"],
             path: "Sources/Examples/EchoNIO"),
+    .target(name: "SwiftGRPCNIOInteropabilityTests",
+            dependencies: ["SwiftGRPCNIO"]),
+    .target(name: "SwiftGRPCNIOInteropabilityTestsCLI",
+            dependencies: [
+              "SwiftGRPCNIOInteropabilityTests",
+              "Commander"]),
     .target(name: "Simple",
             dependencies: ["SwiftGRPC", "Commander"],
             path: "Sources/Examples/Simple"),
@@ -101,7 +107,11 @@ let package = Package(
     .testTarget(name: "SwiftGRPCTests",
                 dependencies: ["SwiftGRPC"]),
     .testTarget(name: "SwiftGRPCNIOTests",
-                dependencies: ["SwiftGRPC", "SwiftGRPCNIO", "SwiftGRPCNIOSampleData"]),
+                dependencies: [
+                  "SwiftGRPC",
+                  "SwiftGRPCNIO",
+                  "SwiftGRPCNIOSampleData",
+                  "SwiftGRPCNIOInteropabilityTests"]),
   ],
   cLanguageStandard: .gnu11,
   cxxLanguageStandard: .cxx11)

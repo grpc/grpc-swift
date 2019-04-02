@@ -135,7 +135,7 @@ public final class GRPCServer {
     return handlerAddedPromise.futureResult
   }
 
-  private let channel: Channel
+  public let channel: Channel
   private var errorDelegate: ServerErrorDelegate?
 
   private init(channel: Channel, errorDelegate: ServerErrorDelegate?) {

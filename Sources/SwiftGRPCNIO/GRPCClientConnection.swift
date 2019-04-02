@@ -26,7 +26,8 @@ open class GRPCClientConnection {
     host: String,
     port: Int,
     eventLoopGroup: EventLoopGroup,
-    tls tlsMode: TLSMode = .none
+    tls tlsMode: TLSMode = .none,
+    hostnameOverride: String? = nil
   ) throws -> EventLoopFuture<GRPCClientConnection> {
     // We need to capture the multiplexer from the channel initializer to store it after connection.
     let multiplexerPromise: EventLoopPromise<HTTP2StreamMultiplexer> = eventLoopGroup.next().makePromise()
@@ -35,7 +36,7 @@ open class GRPCClientConnection {
       // Enable SO_REUSEADDR.
       .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
       .channelInitializer { channel in
-        let multiplexer = configureTLS(mode: tlsMode, channel: channel, host: host).flatMap {
+        let multiplexer = configureTLS(mode: tlsMode, channel: channel, host: hostnameOverride ?? host).flatMap {
           channel.configureHTTP2Pipeline(mode: .client)
         }
 
