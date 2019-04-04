@@ -32,7 +32,7 @@ public struct GRPCError: Error, GRPCStatusTransformable {
   /// The line number in the `file` where the error was thrown.
   public let line: Int
 
-  public func asGRPCStatus() -> GRPCStatus {
+  public func asGRPCStatus() -> GRPCStatus? {
     return (error as? GRPCStatusTransformable)?.asGRPCStatus() ?? GRPCStatus.processingError
   }
 
@@ -131,7 +131,7 @@ public enum GRPCCommonError: Error, Equatable {
 }
 
 extension GRPCServerError: GRPCStatusTransformable {
-  public func asGRPCStatus() -> GRPCStatus {
+  public func asGRPCStatus() -> GRPCStatus? {
     // These status codes are informed by: https://github.com/grpc/grpc/blob/master/doc/statuscodes.md
     switch self {
     case .unimplementedMethod(let method):
@@ -159,7 +159,7 @@ extension GRPCServerError: GRPCStatusTransformable {
 }
 
 extension GRPCClientError: GRPCStatusTransformable {
-  public func asGRPCStatus() -> GRPCStatus {
+  public func asGRPCStatus() -> GRPCStatus? {
     switch self {
     case .HTTPStatusNotOk(let status):
       return GRPCStatus(code: .unknown, message: "server returned \(status.code) \(status.reasonPhrase)")
@@ -183,7 +183,7 @@ extension GRPCClientError: GRPCStatusTransformable {
 }
 
 extension GRPCCommonError: GRPCStatusTransformable {
-  public func asGRPCStatus() -> GRPCStatus {
+  public func asGRPCStatus() -> GRPCStatus? {
     switch self {
     case .invalidState:
       return GRPCStatus.processingError

@@ -25,11 +25,11 @@ public struct GRPCStatus: Error, Equatable {
 }
 
 public protocol GRPCStatusTransformable: Error {
-  func asGRPCStatus() -> GRPCStatus
+  func asGRPCStatus() -> GRPCStatus?
 }
 
 extension GRPCStatus: GRPCStatusTransformable {
-  public func asGRPCStatus() -> GRPCStatus {
+  public func asGRPCStatus() -> GRPCStatus? {
     return self
   }
 }

@@ -55,7 +55,7 @@ open class UnaryResponseCallContextImpl<ResponseMessage: Message>: UnaryResponse
       }
       // Ensure that any error provided is of type `GRPCStatus`, using "internal server error" as a fallback.
       .recover { error in
-        (error as? GRPCStatus) ?? .processingError
+        (error as? GRPCStatusTransformable)?.asGRPCStatus() ?? .processingError
       }
       // Finish the call by returning the final status.
       .whenSuccess { status in
