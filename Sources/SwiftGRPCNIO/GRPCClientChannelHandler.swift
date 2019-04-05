@@ -27,8 +27,8 @@ import SwiftProtobuf
 ///
 /// Errors are also handled by the channel handler. Promises for the initial metadata and
 /// response (if applicable) are failed with first error received. The status promise is __succeeded__
-/// with the error as a `GRPCStatus`. The stream is also closed and any inbound or outbound messages
-/// are ignored.
+/// with the error as the result of `GRPCStatusTransformable.asGRPCStatus()`, if available.
+/// The stream is also closed and any inbound or outbound messages are ignored.
 internal class GRPCClientChannelHandler<RequestMessage: Message, ResponseMessage: Message> {
   internal let initialMetadataPromise: EventLoopPromise<HTTPHeaders>
   internal let statusPromise: EventLoopPromise<GRPCStatus>
@@ -85,7 +85,7 @@ internal class GRPCClientChannelHandler<RequestMessage: Message, ResponseMessage
 
   /// Observe the given status.
   ///
-  /// The `status` promise is __succeeded__ with the given status despite `GRPCStatus` being an
+  /// The `status` promise is __succeeded__ with the given status despite `GRPCStatus` conforming to
   /// `Error`. If `status.code != .ok` then the initial metadata and response promises (if applicable)
   /// are failed with the given status.
   ///
