@@ -225,7 +225,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
 
       var trailers = status.trailingMetadata
       trailers.add(name: "grpc-status", value: String(describing: status.code.rawValue))
-      if let message = status.message {
+      if let message = status.message.flatMap(StatusMessageMarshaller.marshall) {
         trailers.add(name: "grpc-message", value: message)
       }
 
