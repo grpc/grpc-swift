@@ -82,8 +82,13 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler {
     let result = regex.firstMatch(in: preamble, options: [], range: range)!
 
     let versionRange = result.range(at: 1)
-    let start = String.UTF16Index(encodedOffset: versionRange.location)
-    let end = String.UTF16Index(encodedOffset: versionRange.location + versionRange.length)
+    #if swift(>=5.0)
+    let start = String.Index(utf16Offset: versionRange.location, in: preamble)
+    let end = String.Index(utf16Offset: versionRange.location + versionRange.length, in: preamble)
+    #else
+    let start = String.UTF16View.Index(encodedOffset: versionRange.location)
+    let end = String.UTF16View.Index(encodedOffset: versionRange.location + versionRange.length)
+    #endif
 
     switch String(preamble.utf16[start..<end])! {
     case "1":
