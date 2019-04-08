@@ -43,8 +43,8 @@ open class StreamingResponseCallContextImpl<ResponseMessage: Message>: Streaming
     statusPromise.futureResult
       // Ensure that any error provided can be transformed to `GRPCStatus`, using "internal server error" as a fallback.
       .recover { [weak errorDelegate] error in
-        errorDelegate?.observeUserError(error, request: request)
-        return errorDelegate?.transformUserError(error, request: request)
+        errorDelegate?.observeRequestHandlerError(error, request: request)
+        return errorDelegate?.transformRequestHandlerError(error, request: request)
           ?? (error as? GRPCStatusTransformable)?.asGRPCStatus()
           ?? .processingError
       }

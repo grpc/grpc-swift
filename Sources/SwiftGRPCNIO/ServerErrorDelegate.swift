@@ -40,7 +40,7 @@ public protocol ServerErrorDelegate: class {
   /// - Parameters:
   ///   - error: The original error the status/response promise was failed with.
   ///   - request: The headers of the request whose status/response promise was failed.
-  func observeUserError(_ error: Error, request: HTTPRequestHead)
+  func observeRequestHandlerError(_ error: Error, request: HTTPRequestHead)
 
   /// Transforms the given status or response promise failure into a new error.
   ///
@@ -58,13 +58,13 @@ public protocol ServerErrorDelegate: class {
   /// - Parameters:
   ///   - error: The original error the status/response promise was failed with.
   ///   - request: The headers of the request whose status/response promise was failed.
-  func transformUserError(_ error: Error, request: HTTPRequestHead) -> GRPCStatus?
+  func transformRequestHandlerError(_ error: Error, request: HTTPRequestHead) -> GRPCStatus?
 }
 
 public extension ServerErrorDelegate {
   func observeLibraryError(_ error: Error) { }
   func transformLibraryError(_ error: Error) -> GRPCStatus? { return nil }
 
-  func observeUserError(_ error: Error, request: HTTPRequestHead) { }
-  func transformUserError(_ error: Error, request: HTTPRequestHead) -> GRPCStatus? { return nil }
+  func observeRequestHandlerError(_ error: Error, request: HTTPRequestHead) { }
+  func transformRequestHandlerError(_ error: Error, request: HTTPRequestHead) -> GRPCStatus? { return nil }
 }
