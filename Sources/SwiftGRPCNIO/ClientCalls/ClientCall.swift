@@ -36,7 +36,7 @@ public protocol ClientCall {
   ///
   /// The client may populate the status if, for example, it was not possible to connect to the service.
   ///
-  /// Note: despite `GRPCStatus` being an `Error`, the value will be __always__ delivered as a __success__
+  /// Note: despite `GRPCStatus` conforming to `Error`, the value will be __always__ delivered as a __success__
   /// result even if the status represents a __negative__ outcome. This future will __never__ be fulfilled
   /// with an error.
   var status: EventLoopFuture<GRPCStatus> { get }

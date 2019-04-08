@@ -6,8 +6,9 @@ import NIOHTTP1
 /// Abstract base class exposing a method that exposes a promise for the RPC response.
 ///
 /// - When `responsePromise` is fulfilled, the call is closed and the provided response transmitted with status `responseStatus` (`.ok` by default).
-/// - If `statusPromise` is failed and the error is of type `GRPCStatus`, that error will be returned to the client.
-/// - For other errors, `GRPCStatus.processingError` is returned to the client.
+/// - If `statusPromise` is failed and the error is of type `GRPCStatusTransformable`,
+///   the result of `error.asGRPCStatus()` will be returned to the client.
+/// - If `error.asGRPCStatus()` is not available, `GRPCStatus.processingError` is returned to the client.
 ///
 /// For unary calls, the response is not actually provided by fulfilling `responsePromise`, but instead by completing
 /// the future returned by `UnaryCallHandler.EventObserver`.
@@ -53,9 +54,9 @@ open class UnaryResponseCallContextImpl<ResponseMessage: Message>: UnaryResponse
       .map { _ in
         self.responseStatus
       }
-      // Ensure that any error provided is of type `GRPCStatus`, using "internal server error" as a fallback.
+      // Ensure that any error provided can be transformed to `GRPCStatus`, using "internal server error" as a fallback.
       .recover { error in
-        (error as? GRPCStatus) ?? .processingError
+        (error as? GRPCStatusTransformable)?.asGRPCStatus() ?? .processingError
       }
       // Finish the call by returning the final status.
       .whenSuccess { status in

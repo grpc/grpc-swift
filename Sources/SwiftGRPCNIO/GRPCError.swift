@@ -33,7 +33,7 @@ public struct GRPCError: Error, GRPCStatusTransformable {
   public let line: Int
 
   public func asGRPCStatus() -> GRPCStatus {
-    return (error as? GRPCStatusTransformable)?.asGRPCStatus() ?? GRPCStatus.processingError
+    return (error as? GRPCStatusTransformable)?.asGRPCStatus() ?? .processingError
   }
 
   private init(_ error: Error, origin: Origin, file: StaticString, line: Int) {

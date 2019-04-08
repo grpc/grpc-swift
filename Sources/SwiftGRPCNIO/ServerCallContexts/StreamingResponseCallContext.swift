@@ -6,8 +6,9 @@ import NIOHTTP1
 /// Abstract base class exposing a method to send multiple messages over the wire and a promise for the final RPC status.
 ///
 /// - When `statusPromise` is fulfilled, the call is closed and the provided status transmitted.
-/// - If `statusPromise` is failed and the error is of type `GRPCStatus`, that error will be returned to the client.
-/// - For other errors, `GRPCStatus.processingError` is returned to the client.
+/// - If `statusPromise` is failed and the error is of type `GRPCStatusTransformable`,
+///   the result of `error.asGRPCStatus()` will be returned to the client.
+/// - If `error.asGRPCStatus()` is not available, `GRPCStatus.processingError` is returned to the client.
 open class StreamingResponseCallContext<ResponseMessage: Message>: ServerCallContextBase {
   public typealias WrappedResponse = GRPCServerResponsePart<ResponseMessage>
 
@@ -33,9 +34,9 @@ open class StreamingResponseCallContextImpl<ResponseMessage: Message>: Streaming
     super.init(eventLoop: channel.eventLoop, request: request)
 
     statusPromise.futureResult
-      // Ensure that any error provided is of type `GRPCStatus`, using "internal server error" as a fallback.
+      // Ensure that any error provided can be transformed to `GRPCStatus`, using "internal server error" as a fallback.
       .recover { error in
-        (error as? GRPCStatus) ?? .processingError
+        (error as? GRPCStatusTransformable)?.asGRPCStatus() ?? .processingError
       }
       // Finish the call by returning the final status.
       .whenSuccess {

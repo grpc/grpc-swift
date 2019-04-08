@@ -33,8 +33,8 @@
         "repositoryURL": "https://github.com/apple/swift-nio-http2.git",
         "state": {
           "branch": null,
-          "revision": "a9fc7c17dda4cd72ae9ec5848d1c30b230f2b1ed",
-          "version": "1.0.0"
+          "revision": "a92923bcb7d884e6977b7cb131705703936af956",
+          "version": "1.0.1"
         }
       },
       {
@@ -42,8 +42,8 @@
         "repositoryURL": "https://github.com/apple/swift-nio-ssl.git",
         "state": {
           "branch": null,
-          "revision": "a41d0643866c5128ef0d5b2f14368db820312380",
-          "version": "2.0.0"
+          "revision": "47d971e1367f6df8ddf06c284ad266df39c31024",
+          "version": "2.0.1"
         }
       },
       {
