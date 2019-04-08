@@ -19,7 +19,7 @@ public class BidirectionalStreamingCallHandler<RequestMessage: Message, Response
   // If authentication fails, they can simply fail the observer future, which causes the call to be terminated.
   public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, eventObserverFactory: (StreamingResponseCallContext<ResponseMessage>) -> EventLoopFuture<EventObserver>) {
     super.init(errorDelegate: errorDelegate)
-    let context = StreamingResponseCallContextImpl<ResponseMessage>(channel: channel, request: request)
+    let context = StreamingResponseCallContextImpl<ResponseMessage>(channel: channel, request: request, errorDelegate: errorDelegate)
     self.callContext = context
     let eventObserver = eventObserverFactory(context)
     self.eventObserver = eventObserver

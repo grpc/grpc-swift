@@ -30,7 +30,7 @@ public class BaseCallHandler<RequestMessage: Message, ResponseMessage: Message>:
   /// Whether this handler can still write messages to the client.
   private var serverCanWrite = true
 
-  /// Called for each error recieved in `errorCaught(context:error:)`.
+  /// Called for each error received in `errorCaught(context:error:)`.
   private weak var errorDelegate: ServerErrorDelegate?
 
   public init(errorDelegate: ServerErrorDelegate?) {
