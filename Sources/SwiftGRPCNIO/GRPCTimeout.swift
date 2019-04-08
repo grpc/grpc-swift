@@ -30,7 +30,7 @@ public struct GRPCTimeout: CustomStringConvertible, Equatable {
     if amount >= 100_000_000  { throw GRPCTimeoutError.tooManyDigits }
 
     // See "Timeout" in https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests
-    let description = "\(amount) \(unit.rawValue)"
+    let description = "\(amount)\(unit.rawValue)"
     let nanoseconds = Int64(amount) * Int64(unit.asNanoseconds)
 
     return GRPCTimeout(nanoseconds: nanoseconds, description: description)
