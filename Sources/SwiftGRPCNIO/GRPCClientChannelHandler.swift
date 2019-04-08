@@ -104,7 +104,7 @@ internal class GRPCClientChannelHandler<RequestMessage: Message, ResponseMessage
   ///
   /// - Parameter error: the error to observe.
   internal func observeError(_ error: GRPCError) {
-    self.observeStatus(error.asGRPCStatus() ?? .processingError)
+    self.observeStatus(error.asGRPCStatus())
   }
 }
 
