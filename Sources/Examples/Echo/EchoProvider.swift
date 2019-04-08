@@ -27,19 +27,14 @@ class EchoProvider: Echo_EchoProvider {
 
   // expand splits a request into words and returns each word in a separate message.
   func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws -> ServerStatus? {
-    let sendError = Atomic<Bool>(false)
     let parts = request.text.components(separatedBy: " ")
     for (i, part) in parts.enumerated() {
       var response = Echo_EchoResponse()
       response.text = "Swift echo expand (\(i)): \(part)"
       try session.send(response) {
         if let error = $0 {
-          print("expand send error: \(error)")
-          sendError.mutate { $0 = true }
+          print("expand error: \(error)")
         }
-      }
-      if sendError.value {
-        break
       }
     }
     return .ok
@@ -54,7 +49,7 @@ class EchoProvider: Echo_EchoProvider {
           else { break }  // End of stream
         parts.append(request.text)
       } catch {
-        print("collect receive error: \(error)")
+        print("collect error: \(error)")
         break
       }
     }
@@ -65,7 +60,6 @@ class EchoProvider: Echo_EchoProvider {
 
   // update streams back messages as they are received in an input stream.
   func update(session: Echo_EchoUpdateSession) throws -> ServerStatus? {
-    let sendError = Atomic<Bool>(false)
     var count = 0
     while true {
       do {
@@ -76,38 +70,14 @@ class EchoProvider: Echo_EchoProvider {
         count += 1
         try session.send(response) {
           if let error = $0 {
-            print("update send error: \(error)")
-            sendError.mutate { $0 = true }
+            print("update error: \(error)")
           }
         }
-        if sendError.value {
-          break
-        }
       } catch {
-        print("update receive error: \(error)")
+        print("update error: \(error)")
         break
       }
     }
     return .ok
-  }
-}
-
-final class Atomic<A> {
-  private let queue = DispatchQueue(label: "Atomic serial queue")
-  private var _value: A
-  init(_ value: A) {
-    self._value = value
-  }
-
-  var value: A {
-    get {
-      return queue.sync { self._value }
-    }
-  }
-
-  func mutate(_ transform: (inout A) -> ()) {
-    queue.sync {
-      transform(&self._value)
-    }
   }
 }
