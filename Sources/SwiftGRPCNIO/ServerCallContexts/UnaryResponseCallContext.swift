@@ -41,7 +41,12 @@ public protocol StatusOnlyCallContext: ServerCallContext {
 open class UnaryResponseCallContextImpl<ResponseMessage: Message>: UnaryResponseCallContext<ResponseMessage> {
   public let channel: Channel
 
-  public init(channel: Channel, request: HTTPRequestHead) {
+  /// - Parameters:
+  ///   - channel: The NIO channel the call is handled on.
+  ///   - request: The headers provided with this call.
+  ///   - errorDelegate: Provides a means for transforming response promise failures to `GRPCStatusTransformable` before
+  ///     sending them to the client.
+  public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?) {
     self.channel = channel
 
     super.init(eventLoop: channel.eventLoop, request: request)
@@ -55,8 +60,11 @@ open class UnaryResponseCallContextImpl<ResponseMessage: Message>: UnaryResponse
         self.responseStatus
       }
       // Ensure that any error provided can be transformed to `GRPCStatus`, using "internal server error" as a fallback.
-      .recover { error in
-        (error as? GRPCStatusTransformable)?.asGRPCStatus() ?? .processingError
+      .recover { [weak errorDelegate] error in
+        errorDelegate?.observeRequestHandlerError(error, request: request)
+        return errorDelegate?.transformRequestHandlerError(error, request: request)
+          ?? (error as? GRPCStatusTransformable)?.asGRPCStatus()
+          ?? .processingError
       }
       // Finish the call by returning the final status.
       .whenSuccess { status in

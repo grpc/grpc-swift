@@ -15,26 +15,56 @@
  */
 import Foundation
 import NIO
+import NIOHTTP1
 
 public protocol ServerErrorDelegate: class {
   //! FIXME: Provide more context about where the error was thrown, i.e. using `GRPCError`.
   /// Called when an error is thrown in the channel pipeline.
-  func observe(_ error: Error)
+  func observeLibraryError(_ error: Error)
 
-  /// Transforms the given error into a new error.
+  /// Transforms the given error (thrown somewhere inside the gRPC library) into a new error.
   ///
-  /// This allows framework users to transform errors which may be out of their control
-  /// due to third-party libraries, for example, into more meaningful errors or
-  /// `GRPCStatus` errors. Errors returned from this protocol are not passed to
-  /// `observe`.
+  /// This allows library users to transform errors which may be out of their control
+  /// into more meaningful `GRPCStatus` errors before they are sent to the user.
   ///
   /// - note:
-  /// This defaults to returning the provided error.
-  func transform(_ error: Error) -> Error
+  /// Errors returned by this method are not passed to `observe` again.
+  ///
+  /// - note:
+  /// This defaults to returning `nil`. In that case, if the original error conforms to `GRPCStatusTransformable`,
+  /// that error's `asGRPCStatus()` result will be sent to the user. If that's not the case, either,
+  /// `GRPCStatus.processingError` is returned.
+  func transformLibraryError(_ error: Error) -> GRPCStatus?
+
+  /// Called when a request's status or response promise is failed somewhere in the user-provided request handler code.
+  /// - Parameters:
+  ///   - error: The original error the status/response promise was failed with.
+  ///   - request: The headers of the request whose status/response promise was failed.
+  func observeRequestHandlerError(_ error: Error, request: HTTPRequestHead)
+
+  /// Transforms the given status or response promise failure into a new error.
+  ///
+  /// This allows library users to transform errors which happen during their handling of the request
+  /// into more meaningful `GRPCStatus` errors before they are sent to the user.
+  ///
+  /// - note:
+  /// Errors returned by this method are not passed to `observe` again.
+  ///
+  /// - note:
+  /// This defaults to returning `nil`. In that case, if the original error conforms to `GRPCStatusTransformable`,
+  /// that error's `asGRPCStatus()` result will be sent to the user. If that's not the case, either,
+  /// `GRPCStatus.processingError` is returned.
+  ///
+  /// - Parameters:
+  ///   - error: The original error the status/response promise was failed with.
+  ///   - request: The headers of the request whose status/response promise was failed.
+  func transformRequestHandlerError(_ error: Error, request: HTTPRequestHead) -> GRPCStatus?
 }
 
 public extension ServerErrorDelegate {
-  func transform(_ error: Error) -> Error {
-    return error
-  }
+  func observeLibraryError(_ error: Error) { }
+  func transformLibraryError(_ error: Error) -> GRPCStatus? { return nil }
+
+  func observeRequestHandlerError(_ error: Error, request: HTTPRequestHead) { }
+  func transformRequestHandlerError(_ error: Error, request: HTTPRequestHead) -> GRPCStatus? { return nil }
 }

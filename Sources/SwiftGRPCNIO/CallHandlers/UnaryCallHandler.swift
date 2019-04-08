@@ -16,7 +16,7 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
 
   public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, eventObserverFactory: (UnaryResponseCallContext<ResponseMessage>) -> EventObserver) {
     super.init(errorDelegate: errorDelegate)
-    let callContext = UnaryResponseCallContextImpl<ResponseMessage>(channel: channel, request: request)
+    let callContext = UnaryResponseCallContextImpl<ResponseMessage>(channel: channel, request: request, errorDelegate: errorDelegate)
     self.callContext = callContext
     self.eventObserver = eventObserverFactory(callContext)
     callContext.responsePromise.futureResult.whenComplete { _ in

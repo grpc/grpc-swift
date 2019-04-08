@@ -30,7 +30,7 @@ public class BaseCallHandler<RequestMessage: Message, ResponseMessage: Message>:
   /// Whether this handler can still write messages to the client.
   private var serverCanWrite = true
 
-  /// Called for each error recieved in `errorCaught(context:error:)`.
+  /// Called for each error received in `errorCaught(context:error:)`.
   private weak var errorDelegate: ServerErrorDelegate?
 
   public init(errorDelegate: ServerErrorDelegate?) {
@@ -51,10 +51,11 @@ extension BaseCallHandler: ChannelInboundHandler {
   /// appropriate status is written. Errors which don't conform to `GRPCStatusTransformable`
   /// return a status with code `.internalError`.
   public func errorCaught(context: ChannelHandlerContext, error: Error) {
-    errorDelegate?.observe(error)
+    errorDelegate?.observeLibraryError(error)
 
-    let transformed = errorDelegate?.transform(error) ?? error
-    let status = (transformed as? GRPCStatusTransformable)?.asGRPCStatus() ?? GRPCStatus.processingError
+    let status = errorDelegate?.transformLibraryError(error)
+      ?? (error as? GRPCStatusTransformable)?.asGRPCStatus()
+      ?? .processingError
     sendErrorStatus(status)
   }
 

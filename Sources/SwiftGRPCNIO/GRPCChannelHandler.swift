@@ -41,10 +41,11 @@ extension GRPCChannelHandler: ChannelInboundHandler, RemovableChannelHandler {
   public typealias OutboundOut = RawGRPCServerResponsePart
 
   public func errorCaught(context: ChannelHandlerContext, error: Error) {
-    errorDelegate?.observe(error)
+    errorDelegate?.observeLibraryError(error)
 
-    let transformedError = errorDelegate?.transform(error) ?? error
-    let status = (transformedError as? GRPCStatusTransformable)?.asGRPCStatus() ?? GRPCStatus.processingError
+    let status = errorDelegate?.transformLibraryError(error)
+      ?? (error as? GRPCStatusTransformable)?.asGRPCStatus()
+      ?? .processingError
     context.writeAndFlush(wrapOutboundOut(.status(status)), promise: nil)
   }
 

@@ -19,7 +19,7 @@ public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage
   // If authentication fails, they can simply fail the observer future, which causes the call to be terminated.
   public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, eventObserverFactory: (UnaryResponseCallContext<ResponseMessage>) -> EventLoopFuture<EventObserver>) {
     super.init(errorDelegate: errorDelegate)
-    let callContext = UnaryResponseCallContextImpl<ResponseMessage>(channel: channel, request: request)
+    let callContext = UnaryResponseCallContextImpl<ResponseMessage>(channel: channel, request: request, errorDelegate: errorDelegate)
     self.callContext = callContext
     let eventObserver = eventObserverFactory(callContext)
     self.eventObserver = eventObserver

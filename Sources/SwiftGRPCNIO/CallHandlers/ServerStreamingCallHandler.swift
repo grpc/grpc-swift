@@ -15,7 +15,7 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
 
   public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, eventObserverFactory: (StreamingResponseCallContext<ResponseMessage>) -> EventObserver) {
     super.init(errorDelegate: errorDelegate)
-    let callContext = StreamingResponseCallContextImpl<ResponseMessage>(channel: channel, request: request)
+    let callContext = StreamingResponseCallContextImpl<ResponseMessage>(channel: channel, request: request, errorDelegate: errorDelegate)
     self.callContext = callContext
     self.eventObserver = eventObserverFactory(callContext)
     callContext.statusPromise.futureResult.whenComplete { _ in

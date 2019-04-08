@@ -21,31 +21,32 @@ import NIOHTTP2
 @testable import SwiftGRPCNIO
 import XCTest
 
-private let expectedError = GRPCStatus(code: .internalError, message: "expected error")
+let thrownError = GRPCStatus(code: .internalError, message: "expected error")
+let transformedError = GRPCStatus(code: .aborted, message: "transformed error")
 
 // Motivation for two different providers: Throwing immediately causes the event observer future (in the
 // client-streaming and bidi-streaming cases) to throw immediately, _before_ the corresponding handler has even added
 // to the channel. We want to test that case as well as the one where we throw only _after_ the handler has been added
 // to the channel.
-private class ImmediateThrowingEchoProviderNIO: Echo_EchoProvider_NIO {
+class ImmediateThrowingEchoProviderNIO: Echo_EchoProvider_NIO {
   func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
-    return context.eventLoop.makeFailedFuture(expectedError)
+    return context.eventLoop.makeFailedFuture(thrownError)
   }
 
   func expand(request: Echo_EchoRequest, context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<GRPCStatus> {
-    return context.eventLoop.makeFailedFuture(expectedError)
+    return context.eventLoop.makeFailedFuture(thrownError)
   }
 
   func collect(context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
-    return context.eventLoop.makeFailedFuture(expectedError)
+    return context.eventLoop.makeFailedFuture(thrownError)
   }
 
   func update(context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
-    return context.eventLoop.makeFailedFuture(expectedError)
+    return context.eventLoop.makeFailedFuture(thrownError)
   }
 }
 
-private extension EventLoop {
+extension EventLoop {
   func makeFailedFuture<T>(_ error: Error, delay: TimeInterval) -> EventLoopFuture<T> {
     return self.scheduleTask(in: .nanoseconds(TimeAmount.Value(delay * 1000 * 1000 * 1000))) { () }.futureResult
       .flatMapThrowing { _ -> T in throw error }
@@ -53,47 +54,53 @@ private extension EventLoop {
 }
 
 /// See `ImmediateThrowingEchoProviderNIO`.
-private class DelayedThrowingEchoProviderNIO: Echo_EchoProvider_NIO {
+class DelayedThrowingEchoProviderNIO: Echo_EchoProvider_NIO {
   func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
-    return context.eventLoop.makeFailedFuture(expectedError, delay: 0.01)
+    return context.eventLoop.makeFailedFuture(thrownError, delay: 0.01)
   }
 
   func expand(request: Echo_EchoRequest, context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<GRPCStatus> {
-    return context.eventLoop.makeFailedFuture(expectedError, delay: 0.01)
+    return context.eventLoop.makeFailedFuture(thrownError, delay: 0.01)
   }
 
   func collect(context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
-    return context.eventLoop.makeFailedFuture(expectedError, delay: 0.01)
+    return context.eventLoop.makeFailedFuture(thrownError, delay: 0.01)
   }
 
   func update(context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
-    return context.eventLoop.makeFailedFuture(expectedError, delay: 0.01)
+    return context.eventLoop.makeFailedFuture(thrownError, delay: 0.01)
   }
 }
 
 /// Ensures that fulfilling the status promise (where possible) with an error yields the same result as failing the future.
-private class ErrorReturningEchoProviderNIO: ImmediateThrowingEchoProviderNIO {
+class ErrorReturningEchoProviderNIO: ImmediateThrowingEchoProviderNIO {
   // There's no status promise to fulfill for unary calls (only the response promise), so that case is omitted.
 
   override func expand(request: Echo_EchoRequest, context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<GRPCStatus> {
-    return context.eventLoop.makeSucceededFuture(expectedError)
+    return context.eventLoop.makeSucceededFuture(thrownError)
   }
 
   override func collect(context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     return context.eventLoop.makeSucceededFuture({ _ in
-      context.responseStatus = expectedError
+      context.responseStatus = thrownError
       context.responsePromise.succeed(Echo_EchoResponse())
     })
   }
 
   override func update(context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     return context.eventLoop.makeSucceededFuture({ _ in
-      context.statusPromise.succeed(expectedError)
+      context.statusPromise.succeed(thrownError)
     })
   }
 }
 
+private class ErrorTransformingDelegate: ServerErrorDelegate {
+  func transformRequestHandlerError(_ error: Error, request: HTTPRequestHead) -> GRPCStatus? { return transformedError }
+}
+
 class ServerThrowingTests: NIOEchoTestCaseBase {
+  var expectedError: GRPCStatus { return thrownError }
+
   override func makeEchoProvider() -> Echo_EchoProvider_NIO { return ImmediateThrowingEchoProviderNIO() }
 }
 
@@ -103,6 +110,12 @@ class ServerDelayedThrowingTests: ServerThrowingTests {
 
 class ClientThrowingWhenServerReturningErrorTests: ServerThrowingTests {
   override func makeEchoProvider() -> Echo_EchoProvider_NIO { return ErrorReturningEchoProviderNIO() }
+}
+
+class ServerErrorTransformingTests: ServerThrowingTests {
+  override var expectedError: GRPCStatus { return transformedError }
+
+  override func makeErrorDelegate() -> ServerErrorDelegate? { return ErrorTransformingDelegate() }
 }
 
 extension ServerThrowingTests {

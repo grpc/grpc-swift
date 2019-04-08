@@ -104,9 +104,7 @@ class NIOEchoTestCaseBase: XCTestCase {
   let serverEventLoopGroup: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
   let clientEventLoopGroup: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
-  var transportSecurity: TransportSecurity {
-    return .none
-  }
+  var transportSecurity: TransportSecurity { return .none }
 
   var server: GRPCServer!
   var client: Echo_EchoService_NIOClient!
@@ -117,6 +115,7 @@ class NIOEchoTestCaseBase: XCTestCase {
       port: 5050,
       eventLoopGroup: self.serverEventLoopGroup,
       serviceProviders: [makeEchoProvider()],
+      errorDelegate: makeErrorDelegate(),
       tls: try self.transportSecurity.makeServerTLS()
     ).wait()
   }
@@ -130,9 +129,9 @@ class NIOEchoTestCaseBase: XCTestCase {
     ).wait()
   }
 
-  func makeEchoProvider() -> Echo_EchoProvider_NIO {
-    return EchoProviderNIO()
-  }
+  func makeEchoProvider() -> Echo_EchoProvider_NIO { return EchoProviderNIO() }
+
+  func makeErrorDelegate() -> ServerErrorDelegate? { return nil }
 
   func makeEchoClient() throws -> Echo_EchoService_NIOClient {
     return Echo_EchoService_NIOClient(connection: try self.makeClientConnection())

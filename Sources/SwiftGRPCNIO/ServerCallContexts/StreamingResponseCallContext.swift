@@ -28,15 +28,25 @@ open class StreamingResponseCallContext<ResponseMessage: Message>: ServerCallCon
 open class StreamingResponseCallContextImpl<ResponseMessage: Message>: StreamingResponseCallContext<ResponseMessage> {
   public let channel: Channel
 
-  public init(channel: Channel, request: HTTPRequestHead) {
+  /// - Parameters:
+  ///   - channel: The NIO channel the call is handled on.
+  ///   - request: The headers provided with this call.
+  ///   - errorDelegate: Provides a means for transforming status promise failures to `GRPCStatusTransformable` before
+  ///     sending them to the client.
+  ///
+  ///     Note: `errorDelegate` is not called for status promise that are `succeeded` with a non-OK status.
+  public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?) {
     self.channel = channel
 
     super.init(eventLoop: channel.eventLoop, request: request)
 
     statusPromise.futureResult
       // Ensure that any error provided can be transformed to `GRPCStatus`, using "internal server error" as a fallback.
-      .recover { error in
-        (error as? GRPCStatusTransformable)?.asGRPCStatus() ?? .processingError
+      .recover { [weak errorDelegate] error in
+        errorDelegate?.observeRequestHandlerError(error, request: request)
+        return errorDelegate?.transformRequestHandlerError(error, request: request)
+          ?? (error as? GRPCStatusTransformable)?.asGRPCStatus()
+          ?? .processingError
       }
       // Finish the call by returning the final status.
       .whenSuccess {

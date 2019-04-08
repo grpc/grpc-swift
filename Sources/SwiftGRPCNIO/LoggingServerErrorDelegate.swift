@@ -18,7 +18,11 @@ import Foundation
 public class LoggingServerErrorDelegate: ServerErrorDelegate {
   public init() {}
 
-  public func observe(_ error: Error) {
-    print("[grpc-server][\(Date())] \(error)")
+  public func observeLibraryError(_ error: Error) {
+    print("[grpc-server][\(Date())] library: \(error)")
+  }
+
+  public func observeRequestHandlerError(_ error: Error) {
+    print("[grpc-server][\(Date())] request handler: \(error)")
   }
 }

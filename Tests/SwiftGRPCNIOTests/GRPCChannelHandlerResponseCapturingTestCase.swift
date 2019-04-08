@@ -28,7 +28,7 @@ class CollectingServerErrorDelegate: ServerErrorDelegate {
     return (self.asGRPCErrors?.map { $0.error }) as? [GRPCCommonError]
   }
 
-  func observe(_ error: Error) {
+  func observeLibraryError(_ error: Error) {
     self.errors.append(error)
   }
 }
