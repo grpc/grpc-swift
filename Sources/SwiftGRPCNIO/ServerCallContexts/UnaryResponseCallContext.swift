@@ -62,8 +62,8 @@ open class UnaryResponseCallContextImpl<ResponseMessage: Message>: UnaryResponse
       // Ensure that any error provided can be transformed to `GRPCStatus`, using "internal server error" as a fallback.
       .recover { [weak errorDelegate] error in
         errorDelegate?.observeUserError(error, request: request)
-        return (errorDelegate?.transformUserError(error, request: request)
-          ?? error as? GRPCStatusTransformable)?.asGRPCStatus()
+        return errorDelegate?.transformUserError(error, request: request)
+          ?? (error as? GRPCStatusTransformable)?.asGRPCStatus()
           ?? .processingError
       }
       // Finish the call by returning the final status.

@@ -95,7 +95,7 @@ class ErrorReturningEchoProviderNIO: ImmediateThrowingEchoProviderNIO {
 }
 
 private class ErrorTransformingDelegate: ServerErrorDelegate {
-  func transformUserError(_ error: Error, request: HTTPRequestHead) -> GRPCStatusTransformable? { return transformedError }
+  func transformUserError(_ error: Error, request: HTTPRequestHead) -> GRPCStatus? { return transformedError }
 }
 
 class ServerThrowingTests: NIOEchoTestCaseBase {

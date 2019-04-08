@@ -53,8 +53,9 @@ extension BaseCallHandler: ChannelInboundHandler {
   public func errorCaught(context: ChannelHandlerContext, error: Error) {
     errorDelegate?.observeLibraryError(error)
 
-    let transformed = errorDelegate?.transformLibraryError(error) ?? error as? GRPCStatusTransformable
-    let status = transformed?.asGRPCStatus() ?? .processingError
+    let status = errorDelegate?.transformLibraryError(error)
+      ?? (error as? GRPCStatusTransformable)?.asGRPCStatus()
+      ?? .processingError
     sendErrorStatus(status)
   }
 
