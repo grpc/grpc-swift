@@ -121,7 +121,7 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
   public func errorCaught(context: ChannelHandlerContext, error: Error) {
     switch self.state {
     case .notConfigured, .configuring:
-      errorDelegate?.observe(error)
+      errorDelegate?.observeLibraryError(error)
       context.close(mode: .all, promise: nil)
 
     case .configured:

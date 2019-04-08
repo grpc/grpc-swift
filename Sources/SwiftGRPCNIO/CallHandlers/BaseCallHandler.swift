@@ -51,10 +51,10 @@ extension BaseCallHandler: ChannelInboundHandler {
   /// appropriate status is written. Errors which don't conform to `GRPCStatusTransformable`
   /// return a status with code `.internalError`.
   public func errorCaught(context: ChannelHandlerContext, error: Error) {
-    errorDelegate?.observe(error)
+    errorDelegate?.observeLibraryError(error)
 
-    let transformed = errorDelegate?.transform(error) ?? error
-    let status = (transformed as? GRPCStatusTransformable)?.asGRPCStatus() ?? GRPCStatus.processingError
+    let transformed = errorDelegate?.transformLibraryError(error) ?? error as? GRPCStatusTransformable
+    let status = transformed?.asGRPCStatus() ?? .processingError
     sendErrorStatus(status)
   }
 
