@@ -144,7 +144,12 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
       StatusMessageMarshaller.unmarshall($0)
     }
 
-    context.fireChannelRead(wrapInboundOut(.status(GRPCStatus(code: statusCode ?? .unknown, message: statusMessage))))
+    let status = GRPCStatus(
+      code: statusCode ?? .unknown,
+      message: statusMessage,
+      trailingMetadata: trailers ?? HTTPHeaders())
+
+    context.fireChannelRead(wrapInboundOut(.status(status)))
     return .ignore
   }
 }
