@@ -140,11 +140,21 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
     let statusCode = trailers?["grpc-status"].first
       .flatMap { Int($0) }
       .flatMap { StatusCode(rawValue: $0) }
+
     let statusMessage = trailers?["grpc-message"].first.map {
       GRPCStatusMessageMarshaller.unmarshall($0)
     }
 
-    context.fireChannelRead(wrapInboundOut(.status(GRPCStatus(code: statusCode ?? .unknown, message: statusMessage))))
+    var customTrailers = trailers
+    customTrailers?.remove(name: "grpc-status")
+    customTrailers?.remove(name: "grpc-message")
+
+    let status = GRPCStatus(
+      code: statusCode ?? .unknown,
+      message: statusMessage,
+      trailingMetadata: customTrailers ?? HTTPHeaders())
+
+    context.fireChannelRead(wrapInboundOut(.status(status)))
     return .ignore
   }
 }
