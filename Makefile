@@ -11,8 +11,8 @@ all:
 	cp .build/debug/protoc-gen-swiftgrpc .
 
 plugin:
-	swift build $(CFLAGS) --product protoc-gen-swift -c release -Xswiftc -static-stdlib
-	swift build $(CFLAGS) --product protoc-gen-swiftgrpc -c release -Xswiftc -static-stdlib
+	swift build $(CFLAGS) --product protoc-gen-swift --static-swift-stdlib -c release
+	swift build $(CFLAGS) --product protoc-gen-swiftgrpc --static-swift-stdlib -c release
 	cp .build/release/protoc-gen-swift .
 	cp .build/release/protoc-gen-swiftgrpc .
 
