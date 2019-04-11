@@ -29,24 +29,18 @@ open class GRPCClientConnection {
     tls tlsMode: TLSMode = .none,
     hostnameOverride: String? = nil
   ) throws -> EventLoopFuture<GRPCClientConnection> {
-    // We need to capture the multiplexer from the channel initializer to store it after connection.
-    let multiplexerPromise: EventLoopPromise<HTTP2StreamMultiplexer> = eventLoopGroup.next().makePromise()
-
     let bootstrap = ClientBootstrap(group: eventLoopGroup)
       // Enable SO_REUSEADDR.
       .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
       .channelInitializer { channel in
-        let multiplexer = configureTLS(mode: tlsMode, channel: channel, host: hostnameOverride ?? host).flatMap {
-          channel.configureHTTP2Pipeline(mode: .client)
-        }
-
-        multiplexer.cascade(to: multiplexerPromise)
-        return multiplexer.map { _ in }
+        configureTLS(mode: tlsMode, channel: channel, host: hostnameOverride ?? host)
       }
 
-    return bootstrap.connect(host: host, port: port)
-      .and(multiplexerPromise.futureResult)
-      .map { channel, multiplexer in GRPCClientConnection(channel: channel, multiplexer: multiplexer, host: host, httpProtocol: tlsMode.httpProtocol) }
+    return bootstrap.connect(host: host, port: port).flatMap { channel in
+      channel.configureHTTP2Pipeline(mode: .client).and(value: channel)
+    }.map { multiplexer, channel in
+      GRPCClientConnection(channel: channel, multiplexer: multiplexer, host: host, httpProtocol: tlsMode.httpProtocol)
+    }
   }
 
   /// Configure an SSL handler on the channel, if one is required.
