@@ -19,7 +19,11 @@
 # As part of this process, BoringSSL and gRPC Core are both vendored by
 # invoking their respective vendoring scripts in this directory.
 #
-# Usage: `$ ./vendor-all.sh v1.14.0` # Or whatever the gRPC core version is
+
+if [ "$#" -ne 1 ]; then
+  echo "Usage: './vendor-all.sh v1.14.0' (or whatever the gRPC core version is)" >&2
+  exit 1
+fi
 
 set -euxo pipefail
 

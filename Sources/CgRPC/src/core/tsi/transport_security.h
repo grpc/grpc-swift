@@ -73,12 +73,14 @@ typedef struct {
                      size_t* bytes_to_send_size,
                      tsi_handshaker_result** handshaker_result,
                      tsi_handshaker_on_next_done_cb cb, void* user_data);
+  void (*shutdown)(tsi_handshaker* self);
 } tsi_handshaker_vtable;
 
 struct tsi_handshaker {
   const tsi_handshaker_vtable* vtable;
   bool frame_protector_created;
   bool handshaker_result_created;
+  bool handshake_shutdown;
 };
 
 /* Base for tsi_handshaker_result implementations.
@@ -120,7 +122,8 @@ tsi_result tsi_construct_allocated_string_peer_property(
     const char* name, size_t value_length, tsi_peer_property* property);
 tsi_result tsi_construct_string_peer_property_from_cstring(
     const char* name, const char* value, tsi_peer_property* property);
-
+const tsi_peer_property* tsi_peer_get_property_by_name(const tsi_peer* peer,
+                                                       const char* name);
 /* Utils. */
 char* tsi_strdup(const char* src); /* Sadly, no strdup in C89. */
 

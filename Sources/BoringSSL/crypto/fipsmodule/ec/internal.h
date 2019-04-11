@@ -91,10 +91,9 @@ extern "C" {
 OPENSSL_COMPILE_ASSERT(EC_MAX_SCALAR_WORDS <= BN_SMALL_MAX_WORDS,
                        bn_small_functions_applicable);
 
-// An EC_SCALAR is a |BN_num_bits(order)|-bit integer. Only the first
-// |order->top| words are used. An |EC_SCALAR| is specific to an |EC_GROUP| and
-// must not be mixed between groups. Unless otherwise specified, it is fully
-// reduced modulo the |order|.
+// An EC_SCALAR is an integer fully reduced modulo the order. Only the first
+// |order->width| words are used. An |EC_SCALAR| is specific to an |EC_GROUP|
+// and must not be mixed between groups.
 typedef union {
   // bytes is the representation of the scalar in little-endian order.
   uint8_t bytes[EC_MAX_SCALAR_BYTES];
@@ -116,6 +115,12 @@ struct ec_method_st {
   // non-null.
   int (*mul)(const EC_GROUP *group, EC_POINT *r, const EC_SCALAR *g_scalar,
              const EC_POINT *p, const EC_SCALAR *p_scalar, BN_CTX *ctx);
+  // mul_public performs the same computation as mul. It further assumes that
+  // the inputs are public so there is no concern about leaking their values
+  // through timing.
+  int (*mul_public)(const EC_GROUP *group, EC_POINT *r,
+                    const EC_SCALAR *g_scalar, const EC_POINT *p,
+                    const EC_SCALAR *p_scalar, BN_CTX *ctx);
 
   // 'field_mul' and 'field_sqr' can be used by 'add' and 'dbl' so that the
   // same implementations of point operations can be used with different
@@ -173,12 +178,15 @@ struct ec_point_st {
 
 EC_GROUP *ec_group_new(const EC_METHOD *meth);
 
-// ec_bignum_to_scalar converts |in| to an |EC_SCALAR| and writes it to |*out|.
-// |in| must be non-negative and have at most |BN_num_bits(&group->order)| bits.
-// It returns one on success and zero on error. It does not ensure |in| is fully
-// reduced.
-int ec_bignum_to_scalar(const EC_GROUP *group, EC_SCALAR *out,
-                        const BIGNUM *in);
+// ec_bignum_to_scalar converts |in| to an |EC_SCALAR| and writes it to
+// |*out|. It returns one on success and zero if |in| is out of range.
+OPENSSL_EXPORT int ec_bignum_to_scalar(const EC_GROUP *group, EC_SCALAR *out,
+                                       const BIGNUM *in);
+
+// ec_bignum_to_scalar_unchecked behaves like |ec_bignum_to_scalar| but does not
+// check |in| is fully reduced.
+int ec_bignum_to_scalar_unchecked(const EC_GROUP *group, EC_SCALAR *out,
+                                  const BIGNUM *in);
 
 // ec_random_nonzero_scalar sets |out| to a uniformly selected random value from
 // 1 to |group->order| - 1. It returns one on success and zero on error.
@@ -192,6 +200,24 @@ int ec_random_nonzero_scalar(const EC_GROUP *group, EC_SCALAR *out,
 int ec_point_mul_scalar(const EC_GROUP *group, EC_POINT *r,
                         const EC_SCALAR *g_scalar, const EC_POINT *p,
                         const EC_SCALAR *p_scalar, BN_CTX *ctx);
+
+// ec_point_mul_scalar_public performs the same computation as
+// ec_point_mul_scalar.  It further assumes that the inputs are public so
+// there is no concern about leaking their values through timing.
+OPENSSL_EXPORT int ec_point_mul_scalar_public(
+    const EC_GROUP *group, EC_POINT *r, const EC_SCALAR *g_scalar,
+    const EC_POINT *p, const EC_SCALAR *p_scalar, BN_CTX *ctx);
+
+// ec_compute_wNAF writes the modified width-(w+1) Non-Adjacent Form (wNAF) of
+// |scalar| to |out| and returns one on success or zero on internal error. |out|
+// must have room for |bits| + 1 elements, each of which will be either zero or
+// odd with an absolute value less than  2^w  satisfying
+//     scalar = \sum_j out[j]*2^j
+// where at most one of any  w+1  consecutive digits is non-zero
+// with the exception that the most significant digit may be only
+// w-1 zeros away from that next non-zero digit.
+int ec_compute_wNAF(const EC_GROUP *group, int8_t *out, const EC_SCALAR *scalar,
+                    size_t bits, int w);
 
 int ec_wNAF_mul(const EC_GROUP *group, EC_POINT *r, const EC_SCALAR *g_scalar,
                 const EC_POINT *p, const EC_SCALAR *p_scalar, BN_CTX *ctx);
@@ -208,16 +234,9 @@ int ec_GFp_simple_point_init(EC_POINT *);
 void ec_GFp_simple_point_finish(EC_POINT *);
 int ec_GFp_simple_point_copy(EC_POINT *, const EC_POINT *);
 int ec_GFp_simple_point_set_to_infinity(const EC_GROUP *, EC_POINT *);
-int ec_GFp_simple_set_Jprojective_coordinates_GFp(const EC_GROUP *, EC_POINT *,
-                                                  const BIGNUM *x,
-                                                  const BIGNUM *y,
-                                                  const BIGNUM *z, BN_CTX *);
 int ec_GFp_simple_point_set_affine_coordinates(const EC_GROUP *, EC_POINT *,
                                                const BIGNUM *x, const BIGNUM *y,
                                                BN_CTX *);
-int ec_GFp_simple_set_compressed_coordinates(const EC_GROUP *, EC_POINT *,
-                                             const BIGNUM *x, int y_bit,
-                                             BN_CTX *);
 int ec_GFp_simple_add(const EC_GROUP *, EC_POINT *r, const EC_POINT *a,
                       const EC_POINT *b, BN_CTX *);
 int ec_GFp_simple_dbl(const EC_GROUP *, EC_POINT *r, const EC_POINT *a,
@@ -249,11 +268,6 @@ int ec_GFp_mont_field_encode(const EC_GROUP *, BIGNUM *r, const BIGNUM *a,
 int ec_GFp_mont_field_decode(const EC_GROUP *, BIGNUM *r, const BIGNUM *a,
                              BN_CTX *);
 
-int ec_point_set_Jprojective_coordinates_GFp(const EC_GROUP *group,
-                                             EC_POINT *point, const BIGNUM *x,
-                                             const BIGNUM *y, const BIGNUM *z,
-                                             BN_CTX *ctx);
-
 void ec_GFp_nistp_recode_scalar_bits(uint8_t *sign, uint8_t *digit, uint8_t in);
 
 const EC_METHOD *EC_GFp_nistp224_method(void);
@@ -263,11 +277,18 @@ const EC_METHOD *EC_GFp_nistp256_method(void);
 // x86-64 optimized P256. See http://eprint.iacr.org/2013/816.
 const EC_METHOD *EC_GFp_nistz256_method(void);
 
+// An EC_WRAPPED_SCALAR is an |EC_SCALAR| with a parallel |BIGNUM|
+// representation. It exists to support the |EC_KEY_get0_private_key| API.
+typedef struct {
+  BIGNUM bignum;
+  EC_SCALAR scalar;
+} EC_WRAPPED_SCALAR;
+
 struct ec_key_st {
   EC_GROUP *group;
 
   EC_POINT *pub_key;
-  BIGNUM *priv_key;
+  EC_WRAPPED_SCALAR *priv_key;
 
   // fixed_k may contain a specific value of 'k', to be used in ECDSA signing.
   // This is only for the FIPS power-on tests.

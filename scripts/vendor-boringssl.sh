@@ -78,4 +78,4 @@ rm -f $DSTROOT/crypto/fipsmodule/bcm.c
 #
 # edit the BoringSSL headers to disable dependency on assembly language helpers.
 #
-perl -pi -e '$_ .= qq(\n#define OPENSSL_NO_ASM\n) if /#define OPENSSL_HEADER_BASE_H/' Sources/BoringSSL/include/openssl/base.h
+perl -pi -e '$_ .= qq(\n#define OPENSSL_NO_ASM\n) if /#define OPENSSL_HEADER_BASE_H/' $DSTROOT/include/openssl/base.h

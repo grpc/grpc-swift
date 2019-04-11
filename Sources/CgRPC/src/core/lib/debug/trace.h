@@ -53,18 +53,19 @@ void grpc_tracer_enable_flag(grpc_core::TraceFlag* flag);
 class TraceFlag {
  public:
   TraceFlag(bool default_enabled, const char* name);
-  ~TraceFlag() {}
+  // This needs to be trivially destructible as it is used as global variable.
+  ~TraceFlag() = default;
 
   const char* name() const { return name_; }
 
-// This following define may be commented out to ensure that the compiler
-// deletes any "if (tracer.enabled()) {...}" codeblocks. This is useful to
-// test the performance impact tracers have on the system.
-//
-// #define COMPILE_OUT_ALL_TRACERS_IN_OPT_BUILD
-#ifdef COMPILE_OUT_ALL_TRACERS_IN_OPT_BUILD
-  bool enabled() { return false; }
-#else
+// Use the symbol GRPC_USE_TRACERS to determine if tracers will be enabled in
+// opt builds (tracers are always on in dbg builds). The default in OSS is for
+// tracers to be on since we support binary distributions of gRPC for the
+// wrapped language (wr don't want to force recompilation to get tracing).
+// Internally, however, for performance reasons, we compile them out by
+// default, since internal build systems make recompiling trivial.
+#define GRPC_USE_TRACERS  // tracers on by default in OSS
+#if defined(GRPC_USE_TRACERS) || !defined(NDEBUG)
   bool enabled() {
 #ifdef GRPC_THREADSAFE_TRACER
     return gpr_atm_no_barrier_load(&value_) != 0;
@@ -72,7 +73,9 @@ class TraceFlag {
     return value_;
 #endif  // GRPC_THREADSAFE_TRACER
   }
-#endif  // COMPILE_OUT_ALL_TRACERS_IN_OPT_BUILD
+#else
+  bool enabled() { return false; }
+#endif /* defined(GRPC_USE_TRACERS) || !defined(NDEBUG) */
 
  private:
   friend void grpc_core::testing::grpc_tracer_enable_flag(TraceFlag* flag);
@@ -100,8 +103,9 @@ typedef TraceFlag DebugOnlyTraceFlag;
 #else
 class DebugOnlyTraceFlag {
  public:
-  DebugOnlyTraceFlag(bool default_enabled, const char* name) {}
-  bool enabled() { return false; }
+  constexpr DebugOnlyTraceFlag(bool default_enabled, const char* name) {}
+  constexpr bool enabled() const { return false; }
+  constexpr const char* name() const { return "DebugOnlyTraceFlag"; }
 
  private:
   void set_enabled(bool enabled) {}

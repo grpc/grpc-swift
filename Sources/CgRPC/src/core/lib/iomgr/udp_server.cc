@@ -152,7 +152,7 @@ GrpcUdpListener::GrpcUdpListener(grpc_udp_server* server, int fd,
   grpc_sockaddr_to_string(&addr_str, addr, 1);
   gpr_asprintf(&name, "udp-server-listener:%s", addr_str);
   gpr_free(addr_str);
-  emfd_ = grpc_fd_create(fd, name);
+  emfd_ = grpc_fd_create(fd, name, true);
   memcpy(&addr_, addr, sizeof(grpc_resolved_address));
   GPR_ASSERT(emfd_);
   gpr_free(name);
@@ -300,8 +300,7 @@ void GrpcUdpListener::OrphanFd() {
                     grpc_schedule_on_exec_ctx);
   /* Because at this point, all listening sockets have been shutdown already, no
    * need to call OnFdAboutToOrphan() to notify the handler again. */
-  grpc_fd_orphan(emfd_, &destroyed_closure_, nullptr,
-                 false /* already_closed */, "udp_listener_shutdown");
+  grpc_fd_orphan(emfd_, &destroyed_closure_, nullptr, "udp_listener_shutdown");
 }
 
 void grpc_udp_server_destroy(grpc_udp_server* s, grpc_closure* on_done) {
@@ -482,8 +481,9 @@ void GrpcUdpListener::OnRead(grpc_error* error, void* do_read_arg) {
   if (udp_handler_->Read()) {
     /* There maybe more packets to read. Schedule read_more_cb_ closure to run
      * after finishing this event loop. */
-    GRPC_CLOSURE_INIT(&do_read_closure_, do_read, do_read_arg,
-                      grpc_executor_scheduler(GRPC_EXECUTOR_LONG));
+    GRPC_CLOSURE_INIT(
+        &do_read_closure_, do_read, do_read_arg,
+        grpc_core::Executor::Scheduler(grpc_core::ExecutorJobType::LONG));
     GRPC_CLOSURE_SCHED(&do_read_closure_, GRPC_ERROR_NONE);
   } else {
     /* Finish reading all the packets, re-arm the notification event so we can
@@ -543,8 +543,9 @@ void GrpcUdpListener::OnCanWrite(grpc_error* error, void* do_write_arg) {
   }
 
   /* Schedule actual write in another thread. */
-  GRPC_CLOSURE_INIT(&do_write_closure_, do_write, do_write_arg,
-                    grpc_executor_scheduler(GRPC_EXECUTOR_LONG));
+  GRPC_CLOSURE_INIT(
+      &do_write_closure_, do_write, do_write_arg,
+      grpc_core::Executor::Scheduler(grpc_core::ExecutorJobType::LONG));
 
   GRPC_CLOSURE_SCHED(&do_write_closure_, GRPC_ERROR_NONE);
 }

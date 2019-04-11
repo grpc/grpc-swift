@@ -19,9 +19,6 @@
 
 #include <openssl/base.h>
 
-#if defined(OPENSSL_64_BIT) && !defined(OPENSSL_WINDOWS) && \
-    !defined(OPENSSL_SMALL)
-
 #include <openssl/bn.h>
 #include <openssl/ec.h>
 #include <openssl/err.h>
@@ -33,6 +30,8 @@
 #include "../delocate.h"
 #include "../../internal.h"
 
+
+#if defined(BORINGSSL_HAS_UINT128) && !defined(OPENSSL_SMALL)
 
 // Field elements are represented as a_0 + 2^56*a_1 + 2^112*a_2 + 2^168*a_3
 // using 64-bit coefficients called 'limbs', and sometimes (for multiplication
@@ -256,23 +255,6 @@ static void p224_felem_sum(p224_felem out, const p224_felem in) {
   out[1] += in[1];
   out[2] += in[2];
   out[3] += in[3];
-}
-
-// Get negative value: out = -in
-// Assumes in[i] < 2^57
-static void p224_felem_neg(p224_felem out, const p224_felem in) {
-  static const p224_limb two58p2 =
-      (((p224_limb)1) << 58) + (((p224_limb)1) << 2);
-  static const p224_limb two58m2 =
-      (((p224_limb)1) << 58) - (((p224_limb)1) << 2);
-  static const p224_limb two58m42m2 =
-      (((p224_limb)1) << 58) - (((p224_limb)1) << 42) - (((p224_limb)1) << 2);
-
-  // Set to 0 mod 2^224-2^96+1 to ensure out > in
-  out[0] = two58p2 - in[0];
-  out[1] = two58m42m2 - in[1];
-  out[2] = two58m2 - in[2];
-  out[3] = two58m2 - in[3];
 }
 
 // Subtract field elements: out -= in
@@ -512,6 +494,15 @@ static void p224_felem_contract(p224_felem out, const p224_felem in) {
   out[1] = tmp[1];
   out[2] = tmp[2];
   out[3] = tmp[3];
+}
+
+// Get negative value: out = -in
+// Requires in[i] < 2^63,
+// ensures out[0] < 2^56, out[1] < 2^56, out[2] < 2^56, out[3] <= 2^56 + 2^16
+static void p224_felem_neg(p224_felem out, const p224_felem in) {
+  p224_widefelem tmp = {0};
+  p224_felem_diff_128_64(tmp, in);
+  p224_felem_reduce(out, tmp);
 }
 
 // Zero-check: returns 1 if input is 0, and 0 otherwise. We know that field
@@ -1016,22 +1007,27 @@ static int ec_GFp_nistp224_point_get_affine_coordinates(const EC_GROUP *group,
   p224_felem_inv(z2, z1);
   p224_felem_square(tmp, z2);
   p224_felem_reduce(z1, tmp);
-  p224_felem_mul(tmp, x_in, z1);
-  p224_felem_reduce(x_in, tmp);
-  p224_felem_contract(x_out, x_in);
-  if (x != NULL && !p224_felem_to_BN(x, x_out)) {
-    OPENSSL_PUT_ERROR(EC, ERR_R_BN_LIB);
-    return 0;
+
+  if (x != NULL) {
+    p224_felem_mul(tmp, x_in, z1);
+    p224_felem_reduce(x_in, tmp);
+    p224_felem_contract(x_out, x_in);
+    if (!p224_felem_to_BN(x, x_out)) {
+      OPENSSL_PUT_ERROR(EC, ERR_R_BN_LIB);
+      return 0;
+    }
   }
 
-  p224_felem_mul(tmp, z1, z2);
-  p224_felem_reduce(z1, tmp);
-  p224_felem_mul(tmp, y_in, z1);
-  p224_felem_reduce(y_in, tmp);
-  p224_felem_contract(y_out, y_in);
-  if (y != NULL && !p224_felem_to_BN(y, y_out)) {
-    OPENSSL_PUT_ERROR(EC, ERR_R_BN_LIB);
-    return 0;
+  if (y != NULL) {
+    p224_felem_mul(tmp, z1, z2);
+    p224_felem_reduce(z1, tmp);
+    p224_felem_mul(tmp, y_in, z1);
+    p224_felem_reduce(y_in, tmp);
+    p224_felem_contract(y_out, y_in);
+    if (!p224_felem_to_BN(y, y_out)) {
+      OPENSSL_PUT_ERROR(EC, ERR_R_BN_LIB);
+      return 0;
+    }
   }
 
   return 1;
@@ -1041,27 +1037,8 @@ static int ec_GFp_nistp224_points_mul(const EC_GROUP *group, EC_POINT *r,
                                       const EC_SCALAR *g_scalar,
                                       const EC_POINT *p,
                                       const EC_SCALAR *p_scalar, BN_CTX *ctx) {
-  int ret = 0;
-  BN_CTX *new_ctx = NULL;
-  BIGNUM *x, *y, *z, *tmp_scalar;
   p224_felem p_pre_comp[17][3];
   p224_felem x_in, y_in, z_in, x_out, y_out, z_out;
-
-  if (ctx == NULL) {
-    ctx = BN_CTX_new();
-    new_ctx = ctx;
-    if (ctx == NULL) {
-      return 0;
-    }
-  }
-
-  BN_CTX_start(ctx);
-  if ((x = BN_CTX_get(ctx)) == NULL ||
-      (y = BN_CTX_get(ctx)) == NULL ||
-      (z = BN_CTX_get(ctx)) == NULL ||
-      (tmp_scalar = BN_CTX_get(ctx)) == NULL) {
-    goto err;
-  }
 
   if (p != NULL && p_scalar != NULL) {
     // We treat NULL scalars as 0, and NULL points as points at infinity, i.e.,
@@ -1071,7 +1048,7 @@ static int ec_GFp_nistp224_points_mul(const EC_GROUP *group, EC_POINT *r,
     if (!p224_BN_to_felem(x_out, &p->X) ||
         !p224_BN_to_felem(y_out, &p->Y) ||
         !p224_BN_to_felem(z_out, &p->Z)) {
-      goto err;
+      return 0;
     }
 
     p224_felem_assign(p_pre_comp[1][0], x_out);
@@ -1101,18 +1078,13 @@ static int ec_GFp_nistp224_points_mul(const EC_GROUP *group, EC_POINT *r,
   p224_felem_contract(x_in, x_out);
   p224_felem_contract(y_in, y_out);
   p224_felem_contract(z_in, z_out);
-  if (!p224_felem_to_BN(x, x_in) ||
-      !p224_felem_to_BN(y, y_in) ||
-      !p224_felem_to_BN(z, z_in)) {
+  if (!p224_felem_to_BN(&r->X, x_in) ||
+      !p224_felem_to_BN(&r->Y, y_in) ||
+      !p224_felem_to_BN(&r->Z, z_in)) {
     OPENSSL_PUT_ERROR(EC, ERR_R_BN_LIB);
-    goto err;
+    return 0;
   }
-  ret = ec_point_set_Jprojective_coordinates_GFp(group, r, x, y, z, ctx);
-
-err:
-  BN_CTX_end(ctx);
-  BN_CTX_free(new_ctx);
-  return ret;
+  return 1;
 }
 
 DEFINE_METHOD_FUNCTION(EC_METHOD, EC_GFp_nistp224_method) {
@@ -1122,10 +1094,11 @@ DEFINE_METHOD_FUNCTION(EC_METHOD, EC_GFp_nistp224_method) {
   out->point_get_affine_coordinates =
       ec_GFp_nistp224_point_get_affine_coordinates;
   out->mul = ec_GFp_nistp224_points_mul;
+  out->mul_public = ec_GFp_nistp224_points_mul;
   out->field_mul = ec_GFp_simple_field_mul;
   out->field_sqr = ec_GFp_simple_field_sqr;
   out->field_encode = NULL;
   out->field_decode = NULL;
 };
 
-#endif  // 64_BIT && !WINDOWS && !SMALL
+#endif  // BORINGSSL_HAS_UINT128 && !SMALL

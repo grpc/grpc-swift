@@ -117,6 +117,9 @@ OPENSSL_EXPORT void RSA_get0_crt_params(const RSA *rsa, const BIGNUM **out_dmp1,
 //
 // |d| may be NULL, but |n| and |e| must either be non-NULL or already
 // configured on |rsa|.
+//
+// It is an error to call this function after |rsa| has been used for a
+// cryptographic operation. Construct a new |RSA| object instead.
 OPENSSL_EXPORT int RSA_set0_key(RSA *rsa, BIGNUM *n, BIGNUM *e, BIGNUM *d);
 
 // RSA_set0_factors sets |rsa|'s prime factors to |p| and |q|, if non-NULL, and
@@ -124,6 +127,9 @@ OPENSSL_EXPORT int RSA_set0_key(RSA *rsa, BIGNUM *n, BIGNUM *e, BIGNUM *d);
 // returns one. Otherwise, it returns zero.
 //
 // Each argument must either be non-NULL or already configured on |rsa|.
+//
+// It is an error to call this function after |rsa| has been used for a
+// cryptographic operation. Construct a new |RSA| object instead.
 OPENSSL_EXPORT int RSA_set0_factors(RSA *rsa, BIGNUM *p, BIGNUM *q);
 
 // RSA_set0_crt_params sets |rsa|'s CRT parameters to |dmp1|, |dmq1|, and
@@ -131,6 +137,9 @@ OPENSSL_EXPORT int RSA_set0_factors(RSA *rsa, BIGNUM *p, BIGNUM *q);
 // ownership of its parameters and returns one. Otherwise, it returns zero.
 //
 // Each argument must either be non-NULL or already configured on |rsa|.
+//
+// It is an error to call this function after |rsa| has been used for a
+// cryptographic operation. Construct a new |RSA| object instead.
 OPENSSL_EXPORT int RSA_set0_crt_params(RSA *rsa, BIGNUM *dmp1, BIGNUM *dmq1,
                                        BIGNUM *iqmp);
 
@@ -489,12 +498,6 @@ OPENSSL_EXPORT void *RSA_get_ex_data(const RSA *rsa, int idx);
 // API, like a platform key store.
 #define RSA_FLAG_OPAQUE 1
 
-// Deprecated and ignored.
-#define RSA_FLAG_CACHE_PUBLIC 2
-
-// Deprecated and ignored.
-#define RSA_FLAG_CACHE_PRIVATE 4
-
 // RSA_FLAG_NO_BLINDING disables blinding of private operations, which is a
 // dangerous thing to do. It is deprecated and should not be used. It will
 // be ignored whenever possible.
@@ -506,10 +509,6 @@ OPENSSL_EXPORT void *RSA_get_ex_data(const RSA *rsa, int idx);
 // RSA_FLAG_EXT_PKEY is deprecated and ignored.
 #define RSA_FLAG_EXT_PKEY 0x20
 
-// RSA_FLAG_SIGN_VER causes the |sign| and |verify| functions of |rsa_meth_st|
-// to be called when set.
-#define RSA_FLAG_SIGN_VER 0x40
-
 
 // RSA public exponent values.
 
@@ -518,6 +517,12 @@ OPENSSL_EXPORT void *RSA_get_ex_data(const RSA *rsa, int idx);
 
 
 // Deprecated functions.
+
+#define RSA_METHOD_FLAG_NO_CHECK RSA_FLAG_OPAQUE
+
+// RSA_flags returns the flags for |rsa|. These are a bitwise OR of |RSA_FLAG_*|
+// constants.
+OPENSSL_EXPORT int RSA_flags(const RSA *rsa);
 
 // RSA_blinding_on returns one.
 OPENSSL_EXPORT int RSA_blinding_on(RSA *rsa, BN_CTX *ctx);
@@ -631,6 +636,9 @@ typedef struct bn_blinding_st BN_BLINDING;
 struct rsa_st {
   RSA_METHOD *meth;
 
+  // Access to the following fields was historically allowed, but
+  // deprecated. Use |RSA_get0_*| and |RSA_set0_*| instead. Access to all other
+  // fields is forbidden and will cause threading errors.
   BIGNUM *n;
   BIGNUM *e;
   BIGNUM *d;
@@ -653,6 +661,18 @@ struct rsa_st {
   BN_MONT_CTX *mont_p;
   BN_MONT_CTX *mont_q;
 
+  // The following fields are copies of |d|, |dmp1|, and |dmq1|, respectively,
+  // but with the correct widths to prevent side channels. These must use
+  // separate copies due to threading concerns caused by OpenSSL's API
+  // mistakes. See https://github.com/openssl/openssl/issues/5158 and
+  // the |freeze_private_key| implementation.
+  BIGNUM *d_fixed, *dmp1_fixed, *dmq1_fixed;
+
+  // inv_small_mod_large_mont is q^-1 mod p in Montgomery form, using |mont_p|,
+  // if |p| >= |q|. Otherwise, it is p^-1 mod q in Montgomery form, using
+  // |mont_q|.
+  BIGNUM *inv_small_mod_large_mont;
+
   // num_blindings contains the size of the |blindings| and |blindings_inuse|
   // arrays. This member and the |blindings_inuse| array are protected by
   // |lock|.
@@ -662,6 +682,10 @@ struct rsa_st {
   // |blindings_inuse| from 0 to 1.
   BN_BLINDING **blindings;
   unsigned char *blindings_inuse;
+
+  // private_key_frozen is one if the key has been used for a private key
+  // operation and may no longer be mutated.
+  unsigned private_key_frozen:1;
 };
 
 
@@ -727,5 +751,6 @@ BORINGSSL_MAKE_DELETER(RSA, RSA_free)
 #define RSA_R_VALUE_MISSING 144
 #define RSA_R_WRONG_SIGNATURE_LENGTH 145
 #define RSA_R_PUBLIC_KEY_VALIDATION_FAILED 146
+#define RSA_R_D_OUT_OF_RANGE 147
 
 #endif  // OPENSSL_HEADER_RSA_H

@@ -441,6 +441,10 @@ static enum ssl_hs_wait_t do_read_client_hello(SSL_HANDSHAKE *hs) {
     return ssl_hs_error;
   }
 
+  if (ssl->handoff) {
+    return ssl_hs_handoff;
+  }
+
   SSL_CLIENT_HELLO client_hello;
   if (!ssl_client_hello_init(ssl, &client_hello, msg)) {
     OPENSSL_PUT_ERROR(SSL, SSL_R_DECODE_ERROR);
@@ -707,8 +711,16 @@ static enum ssl_hs_wait_t do_send_server_hello(SSL_HANDSHAKE *hs) {
     return ssl_hs_error;
   }
 
-  // TODO(davidben): Implement the TLS 1.1 and 1.2 downgrade sentinels once TLS
-  // 1.3 is finalized and we are not implementing a draft version.
+  // Implement the TLS 1.3 anti-downgrade feature, but with a different value.
+  //
+  // For draft TLS 1.3 versions, it is not safe to deploy this feature. However,
+  // some TLS terminators are non-compliant and copy the origin server's value,
+  // so we wish to measure eventual compatibility impact.
+  if (hs->max_version >= TLS1_3_VERSION) {
+    OPENSSL_memcpy(ssl->s3->server_random + SSL3_RANDOM_SIZE -
+                       sizeof(kDraftDowngradeRandom),
+                   kDraftDowngradeRandom, sizeof(kDraftDowngradeRandom));
+  }
 
   const SSL_SESSION *session = hs->new_session.get();
   if (ssl->session != NULL) {
