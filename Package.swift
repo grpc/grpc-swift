@@ -93,7 +93,7 @@ let package = Package(
               "SwiftProtobuf",
               "Commander"],
             path: "Sources/Examples/EchoNIO"),
-    .target(name: "SwiftGRPCNIOInteropabilityTests",
+    .target(name: "SwiftGRPCNIOInteroperabilityTests",
             dependencies: ["SwiftGRPCNIO"]),
     .target(name: "Simple",
             dependencies: ["SwiftGRPC", "Commander"],
