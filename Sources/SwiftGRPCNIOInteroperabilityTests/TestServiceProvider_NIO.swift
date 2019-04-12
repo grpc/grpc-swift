@@ -23,7 +23,17 @@ import NIO
 public class TestServiceProvider_NIO: Grpc_Testing_TestServiceProvider_NIO {
   public init() { }
 
+  private static let echoMetadataNotImplemented = GRPCStatus(
+    code: .unimplemented,
+    message: "Echoing metadata is not yet supported")
+
   /// Features that this server implements.
+  ///
+  /// Some 'features' are methods, whilst others optionally modify the outcome of those methods. The
+  /// specification is not explicit about where these modifying features should be implemented (i.e.
+  /// which methods should support them) and they are not listed in the individual metdod
+  /// descriptions. As such implementation of these modifying features within each method is
+  /// determined by the features required by each test.
   public static var implementedFeatures: Set<ServerFeature> {
     return [
       .emptyCall,
@@ -53,25 +63,27 @@ public class TestServiceProvider_NIO: Grpc_Testing_TestServiceProvider_NIO {
     request: Grpc_Testing_SimpleRequest,
     context: StatusOnlyCallContext
   ) -> EventLoopFuture<Grpc_Testing_SimpleResponse> {
-    let promise = context.eventLoop.makePromise(of: Grpc_Testing_SimpleResponse.self)
     if request.shouldEchoStatus {
       let code = StatusCode(rawValue: numericCast(request.responseStatus.code)) ?? .unknown
-      promise.fail(GRPCStatus(code: code, message: request.responseStatus.message))
-    } else if context.request.headers.shouldEchoMetadata {
-      promise.fail(GRPCStatus(code: .unimplemented, message: "Echoing metadata is not yet supported"))
-    } else if case .UNRECOGNIZED = request.responseType {
-      promise.fail(GRPCStatus(code: .invalidArgument, message: nil))
-    } else {
-      let response = Grpc_Testing_SimpleResponse.with { response in
-        response.payload = Grpc_Testing_Payload.with { payload in
-          payload.body = Data(repeating: 0, count: numericCast(request.responseSize))
-          payload.type = request.responseType
-        }
-      }
-      promise.succeed(response)
+      return context.eventLoop.makeFailedFuture(GRPCStatus(code: code, message: request.responseStatus.message))
     }
 
-    return promise.futureResult
+    if context.request.headers.shouldEchoMetadata {
+      return context.eventLoop.makeFailedFuture(TestServiceProvider_NIO.echoMetadataNotImplemented)
+    }
+
+    if case .UNRECOGNIZED = request.responseType {
+      return context.eventLoop.makeFailedFuture(GRPCStatus(code: .invalidArgument, message: nil))
+    }
+
+    let response = Grpc_Testing_SimpleResponse.with { response in
+      response.payload = Grpc_Testing_Payload.with { payload in
+        payload.body = Data(repeating: 0, count: numericCast(request.responseSize))
+        payload.type = request.responseType
+      }
+    }
+
+    return context.eventLoop.makeSucceededFuture(response)
   }
 
   /// Server gets the default `SimpleRequest` proto as the request. The content of the request is
@@ -137,7 +149,6 @@ public class TestServiceProvider_NIO: Grpc_Testing_TestServiceProvider_NIO {
           response.aggregatedPayloadSize = numericCast(aggregatePayloadSize)
         })
       }
-
     })
   }
 
@@ -151,11 +162,7 @@ public class TestServiceProvider_NIO: Grpc_Testing_TestServiceProvider_NIO {
   ) -> EventLoopFuture<(StreamEvent<Grpc_Testing_StreamingOutputCallRequest>) -> Void> {
     // We don't have support for this yet so just fail the call.
     if context.request.headers.shouldEchoMetadata {
-      let status = GRPCStatus(
-        code: .unimplemented,
-        message: "'cacheableUnaryCall' requires control of the initial/trailing metadata which isn't supported"
-      )
-      return context.eventLoop.makeFailedFuture(status)
+      return context.eventLoop.makeFailedFuture(TestServiceProvider_NIO.echoMetadataNotImplemented)
     }
 
     var sendQueue = context.eventLoop.makeSucceededFuture(())
