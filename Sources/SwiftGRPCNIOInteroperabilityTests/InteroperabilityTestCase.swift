@@ -104,4 +104,40 @@ extension InteroperabilityTestCase {
       return TimeoutOnSleepingServer()
     }
   }
+
+  /// The set of server features required to run this test.
+  public var requiredServerFeatures: Set<ServerFeature> {
+    switch self {
+    case .emptyUnary:
+      return [.emptyCall]
+    case .cacheableUnary:
+      return [.cacheableUnaryCall]
+    case .largeUnary:
+      return [.unaryCall]
+    case .clientStreaming:
+      return [.streamingInputCall]
+    case .serverStreaming:
+      return [.streamingOutputCall]
+    case .pingPong:
+      return [.fullDuplexCall]
+    case .emptyStream:
+      return [.fullDuplexCall]
+    case .customMetadata:
+      return [.unaryCall, .fullDuplexCall, .echoMetadata]
+    case .statusCodeAndMessage:
+      return [.unaryCall, .fullDuplexCall, .echoStatus]
+    case .specialStatusMessage:
+      return [.unaryCall, .echoStatus]
+    case .unimplementedMethod:
+      return []
+    case .unimplementedService:
+      return []
+    case .cancelAfterBegin:
+      return [.streamingInputCall]
+    case .cancelAfterFirstResponse:
+      return [.fullDuplexCall]
+    case .timeoutOnSleepingServer:
+      return [.fullDuplexCall]
+    }
+  }
 }

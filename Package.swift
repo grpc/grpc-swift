@@ -107,7 +107,11 @@ let package = Package(
     .testTarget(name: "SwiftGRPCTests",
                 dependencies: ["SwiftGRPC"]),
     .testTarget(name: "SwiftGRPCNIOTests",
-                dependencies: ["SwiftGRPC", "SwiftGRPCNIO", "SwiftGRPCNIOSampleData"]),
+                dependencies: [
+                  "SwiftGRPC",
+                  "SwiftGRPCNIO",
+                  "SwiftGRPCNIOSampleData",
+                  "SwiftGRPCNIOInteroperabilityTests"]),
   ],
   cLanguageStandard: .gnu11,
   cxxLanguageStandard: .cxx11)
