@@ -61,8 +61,34 @@ extension EchoStatusRequest {
   }
 }
 
+extension EchoStatusRequest {
+  static func withStatus(of status: Grpc_Testing_EchoStatus) -> Self {
+    return Self.with { instance in
+      instance.responseStatus = status
+    }
+  }
+}
+
 extension Grpc_Testing_SimpleRequest: EchoStatusRequest { }
 extension Grpc_Testing_StreamingOutputCallRequest: EchoStatusRequest { }
+
+// MARK: - Payload request
+
+protocol PayloadRequest: Message {
+  var payload: Grpc_Testing_Payload { get set }
+}
+
+extension PayloadRequest {
+  static func withPayload(of payload: Grpc_Testing_Payload) -> Self {
+    return Self.with { instance in
+      instance.payload = payload
+    }
+  }
+}
+
+extension Grpc_Testing_SimpleRequest: PayloadRequest { }
+extension Grpc_Testing_StreamingOutputCallRequest: PayloadRequest { }
+extension Grpc_Testing_StreamingInputCallRequest: PayloadRequest { }
 
 // MARK: - Echo metadata
 
