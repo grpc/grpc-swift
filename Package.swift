@@ -95,6 +95,10 @@ let package = Package(
             path: "Sources/Examples/EchoNIO"),
     .target(name: "SwiftGRPCNIOInteroperabilityTests",
             dependencies: ["SwiftGRPCNIO"]),
+    .target(name: "SwiftGRPCNIOInteroperabilityTestsCLI",
+            dependencies: [
+              "SwiftGRPCNIOInteroperabilityTests",
+              "Commander"]),
     .target(name: "Simple",
             dependencies: ["SwiftGRPC", "Commander"],
             path: "Sources/Examples/Simple"),

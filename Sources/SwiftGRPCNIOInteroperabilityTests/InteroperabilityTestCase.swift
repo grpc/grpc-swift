@@ -28,3 +28,80 @@ public protocol InteroperabilityTest {
   /// - Throws: Any exception may be thrown to indicate an unsuccessful test.
   func run(using connection: GRPCClientConnection) throws
 }
+
+/// Test cases as listed by the [gRPC interoperability test description
+/// specification](https://github.com/grpc/grpc/blob/master/doc/interop-test-descriptions.md).
+///
+/// This is not a complete list, the following tests have not been implemented:
+/// - client_compressed_unary
+/// - server_compressed_unary
+/// - client_compressed_streaming
+/// - server_compressed_streaming
+/// - compute_engine_creds
+/// - jwt_token_creds
+/// - oauth2_auth_token
+/// - per_rpc_creds
+/// - google_default_credentials
+/// - compute_engine_channel_credentials
+///
+/// Note: a description from the specification is included inline for each test as documentation for
+/// its associated `InteroperabilityTest` class.
+public enum InteroperabilityTestCase: String, CaseIterable {
+  case emptyUnary = "empty_unary"
+  case cacheableUnary = "cacheable_unary"
+  case largeUnary = "large_unary"
+  case clientStreaming = "client_streaming"
+  case serverStreaming = "server_streaming"
+  case pingPong = "ping_pong"
+  case emptyStream = "empty_stream"
+  case customMetadata = "custom_metadata"
+  case statusCodeAndMessage = "status_code_and_message"
+  case specialStatusMessage = "special_status_message"
+  case unimplementedMethod = "unimplemented_method"
+  case unimplementedService = "unimplemented_service"
+  case cancelAfterBegin = "cancel_after_begin"
+  case cancelAfterFirstResponse = "cancel_after_first_response"
+  case timeoutOnSleepingServer = "timeout_on_sleeping_server"
+
+  public var name: String {
+    return self.rawValue
+  }
+}
+
+extension InteroperabilityTestCase {
+  /// Return a new instance of the test case.
+  public func makeTest() -> InteroperabilityTest {
+    switch self {
+    case .emptyUnary:
+      return EmptyUnary()
+    case .cacheableUnary:
+      return CacheableUnary()
+    case .largeUnary:
+      return LargeUnary()
+    case .clientStreaming:
+      return ClientStreaming()
+    case .serverStreaming:
+      return ServerStreaming()
+    case .pingPong:
+      return PingPong()
+    case .emptyStream:
+      return EmptyStream()
+    case .customMetadata:
+      return CustomMetadata()
+    case .statusCodeAndMessage:
+      return StatusCodeAndMessage()
+    case .specialStatusMessage:
+      return SpecialStatusMessage()
+    case .unimplementedMethod:
+      return UnimplementedMethod()
+    case .unimplementedService:
+      return UnimplementedService()
+    case .cancelAfterBegin:
+      return CancelAfterBegin()
+    case .cancelAfterFirstResponse:
+      return CancelAfterFirstResponse()
+    case .timeoutOnSleepingServer:
+      return TimeoutOnSleepingServer()
+    }
+  }
+}
