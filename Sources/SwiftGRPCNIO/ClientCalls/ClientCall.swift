@@ -20,12 +20,7 @@ import NIOHTTP2
 import SwiftProtobuf
 
 /// Base protocol for a client call to a gRPC service.
-public protocol ClientCall {
-  /// The type of the request message for the call.
-  associatedtype RequestMessage: Message
-  /// The type of the response message for the call.
-  associatedtype ResponseMessage: Message
-
+public protocol UntypedClientCall {
   /// HTTP/2 stream that requests and responses are sent and received on.
   var subchannel: EventLoopFuture<Channel> { get }
 
@@ -52,6 +47,14 @@ public protocol ClientCall {
   /// Any unfulfilled promises will be failed with a cancelled status (excepting `status` which will be
   /// succeeded, if not already succeeded).
   func cancel()
+}
+
+/// Base protocol for a client call to a gRPC service.
+public protocol ClientCall: UntypedClientCall {
+  /// The type of the request message for the call.
+  associatedtype RequestMessage: Message
+  /// The type of the response message for the call.
+  associatedtype ResponseMessage: Message
 }
 
 /// A `ClientCall` with request streaming; i.e. client-streaming and bidirectional-streaming.
