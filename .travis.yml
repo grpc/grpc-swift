@@ -16,27 +16,28 @@
 # Travis CI build file for Swift gRPC.
 
 matrix:
-  os:
-    - linux
-      osx_image: xcode10
-      env:
-        - SWIFT_VERSION=4.2
-        - MAJOR_VERSION=4.2
-    - osx
-      osx_image: xcode10
-      env:
-        - SWIFT_VERSION=4.2
-        - MAJOR_VERSION=4.2
-    - linux
-      osx_image: xcode10.2
-      env:
-        - SWIFT_VERSION=5.0
-        - MAJOR_VERSION=5
-    - osx
-      osx_image: xcode10.2
-      env:
-        - SWIFT_VERSION=5.0
-        - MAJOR_VERSION=5
+  include:
+    os:
+      - linux
+        osx_image: xcode10
+        env:
+          - SWIFT_VERSION=4.2
+          - MAJOR_VERSION=4.2
+      - osx
+        osx_image: xcode10
+        env:
+          - SWIFT_VERSION=4.2
+          - MAJOR_VERSION=4.2
+      - linux
+        osx_image: xcode10.2
+        env:
+          - SWIFT_VERSION=5.0
+          - MAJOR_VERSION=5
+      - osx
+        osx_image: xcode10.2
+        env:
+          - SWIFT_VERSION=5.0
+          - MAJOR_VERSION=5
 
 cache:
   apt: true
