@@ -17,6 +17,7 @@ import Foundation
 import NIO
 import NIOHTTP2
 import NIOSSL
+import NIOTLS
 
 /// Underlying channel and HTTP/2 stream multiplexer.
 ///
@@ -49,8 +50,23 @@ open class GRPCClientConnection {
       }
 
     return bootstrap.connect(host: host, port: port).flatMap { channel in
-      channel.pipeline.context(handlerType: HTTP2StreamMultiplexer.self).map { context in
-        context.handler as! HTTP2StreamMultiplexer
+      // Check the handshake succeeded and a valid protocol was negotiated via ALPN.
+      let tlsVerified: EventLoopFuture<Void>
+
+      if case .none = tlsMode {
+        tlsVerified = channel.eventLoop.makeSucceededFuture(())
+      } else {
+        tlsVerified = channel.pipeline.context(handlerType: GRPCTLSVerificationHandler.self).map {
+          $0.handler as! GRPCTLSVerificationHandler
+        }.flatMap {
+          $0.verification
+        }
+      }
+
+      return tlsVerified.flatMap {
+        channel.pipeline.context(handlerType: HTTP2StreamMultiplexer.self)
+      }.map {
+        $0.handler as! HTTP2StreamMultiplexer
       }.map { multiplexer in
         GRPCClientConnection(channel: channel, multiplexer: multiplexer, host: host, httpProtocol: tlsMode.httpProtocol)
       }
@@ -72,7 +88,11 @@ open class GRPCClientConnection {
         handlerAddedPromise.succeed(())
         return handlerAddedPromise.futureResult
       }
-      channel.pipeline.addHandler(try NIOSSLClientHandler(context: sslContext, serverHostname: host)).cascade(to: handlerAddedPromise)
+
+      let sslHandler = try NIOSSLClientHandler(context: sslContext, serverHostname: host)
+      let verificationHandler = GRPCTLSVerificationHandler()
+
+      channel.pipeline.addHandlers(sslHandler, verificationHandler).cascade(to: handlerAddedPromise)
     } catch {
       handlerAddedPromise.fail(error)
     }

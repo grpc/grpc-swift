@@ -55,7 +55,8 @@ func makeClientTLSConfiguration() throws -> TLSConfiguration {
   return .forClient(certificateVerification: .noHostnameVerification,
                     trustRoots: .certificates([caCert.certificate]),
                     certificateChain: [.certificate(clientCert.certificate)],
-                    privateKey: .privateKey(SamplePrivateKey.client))
+                    privateKey: .privateKey(SamplePrivateKey.client),
+                    applicationProtocols: GRPCApplicationProtocolIdentifier.allCases.map { $0.rawValue })
 }
 
 func makeServerTLSConfiguration() throws -> TLSConfiguration {
@@ -66,7 +67,8 @@ func makeServerTLSConfiguration() throws -> TLSConfiguration {
 
   return .forServer(certificateChain: [.certificate(serverCert.certificate)],
                     privateKey: .privateKey(SamplePrivateKey.server),
-                    trustRoots: .certificates([caCert.certificate]))
+                    trustRoots: .certificates([caCert.certificate]),
+                    applicationProtocols: GRPCApplicationProtocolIdentifier.allCases.map { $0.rawValue })
 }
 
 /// Create en `EchoClient` and wait for it to initialize. Returns nil if initialisation fails.
