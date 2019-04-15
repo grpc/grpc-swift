@@ -30,16 +30,13 @@ import NIOHTTP1
 /// Client asserts:
 /// - call was successful
 /// - response is non-null
-///
-/// It may be possible to use UnaryCall instead of EmptyCall, but it is harder to ensure that the
-/// proto serialized to zero bytes.
 class EmptyUnary: InteroperabilityTest {
   func run(using connection: GRPCClientConnection) throws {
     let client = Grpc_Testing_TestServiceService_NIOClient(connection: connection)
     let call = client.emptyCall(Grpc_Testing_Empty())
 
-    try assertEqual(call.response, Grpc_Testing_Empty())
-    try assertEqual(call.status.map { $0.code }, .ok)
+    try waitAndAssertEqual(call.response, Grpc_Testing_Empty())
+    try waitAndAssertEqual(call.status.map { $0.code }, .ok)
   }
 }
 
@@ -78,9 +75,10 @@ class CacheableUnary: InteroperabilityTest {
     let call1 = client.cacheableUnaryCall(request, callOptions: callOptions)
     let call2 = client.cacheableUnaryCall(request, callOptions: callOptions)
 
-    try assertEqual(call1.response.map { $0.payload }, call2.response.map { $0.payload })
-    try assertEqual(call1.status.map { $0.code }, .ok)
-    try assertEqual(call2.status.map { $0.code }, .ok)
+    // The server ignores the request payload so we must not validate against it.
+    try waitAndAssertEqual(call1.response.map { $0.payload }, call2.response.map { $0.payload })
+    try waitAndAssertEqual(call1.status.map { $0.code }, .ok)
+    try waitAndAssertEqual(call2.status.map { $0.code }, .ok)
   }
 }
 
@@ -117,8 +115,8 @@ class LargeUnary: InteroperabilityTest {
 
     let call = client.unaryCall(request)
 
-    try assertEqual(call.response.map { $0.payload.body.count }, 314_159)
-    try assertEqual(call.status.map { $0.code }, .ok)
+    try waitAndAssertEqual(call.response.map { $0.payload }, .zeros(count: 314_159))
+    try waitAndAssertEqual(call.status.map { $0.code }, .ok)
   }
 }
 
@@ -171,7 +169,7 @@ class ClientStreaming: InteroperabilityTest {
     let client = Grpc_Testing_TestServiceService_NIOClient(connection: connection)
     let call = client.streamingInputCall()
 
-    call.newMessageQueue().flatMap {
+    let messagesSent = call.newMessageQueue().flatMap {
       call.sendMessage(.withPayload(of: .zeros(count: 27_182)))
     }.flatMap {
       call.sendMessage(.withPayload(of: .zeros(count: 8)))
@@ -179,12 +177,14 @@ class ClientStreaming: InteroperabilityTest {
       call.sendMessage(.withPayload(of: .zeros(count: 1_828)))
     }.flatMap {
       call.sendMessage(.withPayload(of: .zeros(count: 45_904)))
-    }.whenSuccess {
-      call.sendEnd(promise: nil)
+    }.flatMap {
+      call.sendEnd()
     }
 
-    try assertEqual(call.response.map { $0.aggregatedPayloadSize }, 74_922)
-    try assertEqual(call.status.map { $0.code }, .ok)
+    try messagesSent.wait()
+
+    try waitAndAssertEqual(call.response.map { $0.aggregatedPayloadSize }, 74_922)
+    try waitAndAssertEqual(call.status.map { $0.code }, .ok)
   }
 }
 
@@ -227,14 +227,14 @@ class ServerStreaming: InteroperabilityTest {
       request.responseParameters = responseSizes.map { .size($0) }
     }
 
-    var actualResponseSizes: [Int] = []
+    var payloads: [Grpc_Testing_Payload] = []
     let call = client.streamingOutputCall(request) { response in
-      actualResponseSizes.append(response.payload.body.count)
+      payloads.append(response.payload)
     }
 
     // Wait for the status first to ensure we've finished collecting responses.
-    try assertEqual(call.status.map { $0.code }, .ok)
-    try assertEqual(actualResponseSizes, responseSizes)
+    try waitAndAssertEqual(call.status.map { $0.code }, .ok)
+    try assertEqual(payloads, responseSizes.map { .zeros(count: $0) })
   }
 }
 
@@ -305,14 +305,14 @@ class PingPong: InteroperabilityTest {
 
     let responseReceived = DispatchSemaphore(value: 0)
 
-    var actualResponseSizes: [Int] = []
+    var payloads: [Grpc_Testing_Payload] = []
     let call = client.fullDuplexCall { response in
-      actualResponseSizes.append(response.payload.body.count)
+      payloads.append(response.payload)
       responseReceived.signal()
     }
 
     try zip(requestSizes, responseSizes).map { requestSize, responseSize in
-      return Grpc_Testing_StreamingOutputCallRequest.with { request in
+      Grpc_Testing_StreamingOutputCallRequest.with { request in
         request.payload = .zeros(count: requestSize)
         request.responseParameters = [.size(responseSize)]
       }
@@ -322,8 +322,8 @@ class PingPong: InteroperabilityTest {
     }
     call.sendEnd(promise: nil)
 
-    try assertEqual(call.status.map { $0.code }, .ok)
-    try assertEqual(actualResponseSizes, responseSizes)
+    try waitAndAssertEqual(call.status.map { $0.code }, .ok)
+    try assertEqual(payloads, responseSizes.map { .zeros(count: $0) })
   }
 }
 
@@ -346,9 +346,10 @@ class EmptyStream: InteroperabilityTest {
     let call = client.fullDuplexCall { response in
       responses.append(response)
     }
-    call.sendEnd(promise: nil)
 
-    try assertEqual(call.status.map { $0.code }, .ok)
+    try call.sendEnd().wait()
+
+    try waitAndAssertEqual(call.status.map { $0.code }, .ok)
     try assertEqual(responses, [])
   }
 }
@@ -397,6 +398,22 @@ class EmptyStream: InteroperabilityTest {
 /// - metadata with key "x-grpc-test-echo-trailing-bin" and value 0xababab is received in the
 ///   trailing metadata for calls in Procedure steps 1 and 2.
 class CustomMetadata: InteroperabilityTest {
+  let initialMetadataName = "x-grpc-test-echo-initial"
+  let initialMetadataValue = "test_initial_metadata_value"
+
+  let trailingMetadataName = "x-grpc-test-echo-trailing-bin"
+  let trailingMetadataValue = Data([0xab, 0xab, 0xab]).base64EncodedString()
+
+  func checkMetadata<SpecificClientCall>(call: SpecificClientCall) throws where SpecificClientCall: ClientCall {
+    let initialName = call.initialMetadata.map { $0[self.initialMetadataName] }
+    try waitAndAssertEqual(initialName, [self.initialMetadataValue])
+
+    let trailingName = call.trailingMetadata.map { $0[self.trailingMetadataName] }
+    try waitAndAssertEqual(trailingName, [self.trailingMetadataValue])
+
+    try waitAndAssertEqual(call.status.map { $0.code }, .ok)
+  }
+
   func run(using connection: GRPCClientConnection) throws {
     let client = Grpc_Testing_TestServiceService_NIOClient(connection: connection)
 
@@ -405,26 +422,14 @@ class CustomMetadata: InteroperabilityTest {
       request.payload = .zeros(count: 217_828)
     }
 
-    let initialName = "x-grpc-test-echo-initial"
-    let initialValue = "test_initial_metadata_value"
-
-    let trailingName = "x-grpc-test-echo-trailing-bin"
-    let trailingValue = Data([0xab, 0xab, 0xab])
-
-    func checkMetadata(call: UntypedClientCall) throws {
-      try assertEqual(call.initialMetadata.map { $0[initialName] }, [initialValue])
-      try assertEqual(call.trailingMetadata.map { $0[trailingName] }, [trailingValue.base64EncodedString()])
-      try assertEqual(call.status.map { $0.code }, .ok)
-    }
-
     var customMetadata = HTTPHeaders()
-    customMetadata.add(name: initialName, value: initialValue)
-    customMetadata.add(name: trailingName, value: trailingValue.base64EncodedString())
+    customMetadata.add(name: self.initialMetadataName, value: self.initialMetadataValue)
+    customMetadata.add(name: self.trailingMetadataName, value: self.trailingMetadataValue)
 
     let callOptions = CallOptions(customMetadata: customMetadata)
 
     let unaryCall = client.unaryCall(unaryRequest, callOptions: callOptions)
-    try checkMetadata(call: unaryCall)
+    try self.checkMetadata(call: unaryCall)
 
     let duplexCall = client.fullDuplexCall(callOptions: callOptions) { _ in }
     let duplexRequest = Grpc_Testing_StreamingOutputCallRequest.with { request in
@@ -432,11 +437,15 @@ class CustomMetadata: InteroperabilityTest {
       request.payload = .zeros(count: 271_828)
     }
 
-    duplexCall.sendMessage(duplexRequest).whenSuccess {
-      duplexCall.sendEnd(promise: nil)
+    let messagesSent = duplexCall.newMessageQueue().flatMap {
+      duplexCall.sendMessage(duplexRequest)
+    }.flatMap {
+      duplexCall.sendEnd()
     }
 
-    try checkMetadata(call: duplexCall)
+    try messagesSent.wait()
+
+    try self.checkMetadata(call: duplexCall)
   }
 }
 
@@ -473,29 +482,32 @@ class CustomMetadata: InteroperabilityTest {
 /// - received status code is the same as the sent code for both Procedure steps 1 and 2
 /// - received status message is the same as the sent message for both Procedure steps 1 and 2
 class StatusCodeAndMessage: InteroperabilityTest {
+  let expectedCode = 2
+  let expectedMessage = "test status message"
+
+  func checkStatus<SpecificClientCall>(call: SpecificClientCall) throws where SpecificClientCall: ClientCall {
+    try waitAndAssertEqual(call.status.map { $0.code.rawValue }, self.expectedCode)
+    try waitAndAssertEqual(call.status.map { $0.message }, self.expectedMessage)
+  }
+
   func run(using connection: GRPCClientConnection) throws {
     let client = Grpc_Testing_TestServiceService_NIOClient(connection: connection)
 
-    let code = 2
-    let message = "test status message"
-
-    func checkStatus(call: UntypedClientCall) throws {
-      try assertEqual(call.status.map { $0.code.rawValue }, code)
-      try assertEqual(call.status.map { $0.message }, message)
-    }
-
-    let echoStatus: Grpc_Testing_EchoStatus = .init(code: Int32(code), message: message)
+    let echoStatus = Grpc_Testing_EchoStatus(code: Int32(self.expectedCode), message: self.expectedMessage)
 
     let unaryCall = client.unaryCall(.withStatus(of: echoStatus))
-    try checkStatus(call: unaryCall)
+    try self.checkStatus(call: unaryCall)
 
     var responses: [Grpc_Testing_StreamingOutputCallResponse] = []
     let duplexCall = client.fullDuplexCall { response in
       responses.append(response)
     }
-    duplexCall.sendMessage(.withStatus(of: echoStatus), promise: nil)
 
-    try checkStatus(call: duplexCall)
+    try duplexCall.newMessageQueue().flatMap {
+      duplexCall.sendMessage(.withStatus(of: echoStatus))
+    }.wait()
+
+    try self.checkStatus(call: duplexCall)
     try assertEqual(responses, [])
   }
 }
@@ -530,8 +542,8 @@ class SpecialStatusMessage: InteroperabilityTest {
     let message = "\t\ntest with whitespace\r\nand Unicode BMP ☺ and non-BMP 😈\t\n"
 
     let call = client.unaryCall(.withStatus(of: .init(code: Int32(code), message: message)))
-    try assertEqual(call.status.map { $0.code.rawValue }, code)
-    try assertEqual(call.status.map { $0.message }, message)
+    try waitAndAssertEqual(call.status.map { $0.code.rawValue }, code)
+    try waitAndAssertEqual(call.status.map { $0.message }, message)
   }
 }
 
@@ -554,7 +566,7 @@ class UnimplementedMethod: InteroperabilityTest {
   func run(using connection: GRPCClientConnection) throws {
     let client = Grpc_Testing_TestServiceService_NIOClient(connection: connection)
     let call = client.unimplementedCall(Grpc_Testing_Empty())
-    try assertEqual(call.status.map { $0.code }, .unimplemented)
+    try waitAndAssertEqual(call.status.map { $0.code }, .unimplemented)
   }
 }
 
@@ -576,7 +588,7 @@ class UnimplementedService: InteroperabilityTest {
   func run(using connection: GRPCClientConnection) throws {
     let client = Grpc_Testing_UnimplementedServiceService_NIOClient(connection: connection)
     let call = client.unimplementedCall(Grpc_Testing_Empty())
-    try assertEqual(call.status.map { $0.code }, .unimplemented)
+    try waitAndAssertEqual(call.status.map { $0.code }, .unimplemented)
   }
 }
 
@@ -598,7 +610,7 @@ class CancelAfterBegin: InteroperabilityTest {
     let call = client.streamingInputCall()
     call.cancel()
 
-    try assertEqual(call.status.map { $0.code }, .cancelled)
+    try waitAndAssertEqual(call.status.map { $0.code }, .cancelled)
   }
 }
 
@@ -644,7 +656,7 @@ class CancelAfterFirstResponse: InteroperabilityTest {
 
     call.sendMessage(request, promise: nil)
 
-    try assertEqual(call.status.map { $0.code }, .cancelled)
+    try waitAndAssertEqual(call.status.map { $0.code }, .cancelled)
   }
 }
 
@@ -674,6 +686,6 @@ class TimeoutOnSleepingServer: InteroperabilityTest {
     let callOptions = CallOptions(timeout: try .milliseconds(1))
     let call = client.fullDuplexCall(callOptions: callOptions) { _ in }
 
-    try assertEqual(call.status.map { $0.code }, .deadlineExceeded)
+    try waitAndAssertEqual(call.status.map { $0.code }, .deadlineExceeded)
   }
 }

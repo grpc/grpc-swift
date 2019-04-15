@@ -17,6 +17,8 @@ import Foundation
 import NIO
 
 /// Assertion error for interoperability testing.
+///
+/// This is required because these tests must be able to run without XCTest.
 public struct AssertionError: Error {
   let message: String
   let file: StaticString
@@ -35,11 +37,11 @@ public func assertEqual<T: Equatable>(
   }
 }
 
-/// Asserts that the value returned by the future is equal to the given value.
+/// Waits for the future to be fulfilled and asserts that its value is equal to the given value.
 ///
 /// - Important: This should not be run on an event loop since this function calls `wait()` on the
 ///   given future.
-public func assertEqual<T: Equatable>(
+public func waitAndAssertEqual<T: Equatable>(
   _ future: EventLoopFuture<T>,
   _ value: T,
   file: StaticString = #file,
@@ -48,11 +50,11 @@ public func assertEqual<T: Equatable>(
   try assertEqual(try future.wait(), value, file: file, line: line)
 }
 
-/// Asserts that values retuned by each future are equal.
+/// Waits for the futures to be fulfilled and ssserts that their values are equal.
 ///
 /// - Important: This should not be run on an event loop since this function calls `wait()` on the
 ///   given future.
-public func assertEqual<T: Equatable>(
+public func waitAndAssertEqual<T: Equatable>(
   _ future1: EventLoopFuture<T>,
   _ future2: EventLoopFuture<T>,
   file: StaticString = #file,
