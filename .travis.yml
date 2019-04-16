@@ -18,17 +18,15 @@
 matrix:
   include:
     - os: linux
-      osx_image: xcode10
       env:
         - SWIFT_VERSION=4.2
         - MAJOR_VERSION=4.2
     - os: osx
-      osx_image: xcode10
+      osx_image: xcode10.2
       env:
         - SWIFT_VERSION=4.2
         - MAJOR_VERSION=4.2
     - os: linux
-      osx_image: xcode10.2
       env:
         - SWIFT_VERSION=5.0
         - MAJOR_VERSION=5
