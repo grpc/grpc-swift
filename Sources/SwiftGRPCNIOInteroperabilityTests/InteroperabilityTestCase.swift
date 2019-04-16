@@ -14,22 +14,17 @@
  * limitations under the License.
  */
 import Foundation
+import SwiftGRPCNIO
+import NIO
 import NIOHTTP1
 
-/// Options to use for GRPC calls.
-public struct CallOptions {
-  /// Additional metadata to send to the service.
-  public var customMetadata: HTTPHeaders
-
-  /// The call timeout.
-  public var timeout: GRPCTimeout
-
-  /// Whether the call is cacheable.
-  public var cacheable: Bool
-
-  public init(customMetadata: HTTPHeaders = HTTPHeaders(), timeout: GRPCTimeout = GRPCTimeout.infinite, cacheable: Bool = false) {
-    self.customMetadata = customMetadata
-    self.timeout = timeout
-    self.cacheable = false
-  }
+public protocol InteroperabilityTest {
+  /// Run a test case using the given connection.
+  ///
+  /// The test case is considered unsuccessful if any exception is thrown, conversely if no
+  /// exceptions are thrown it is successful.
+  ///
+  /// - Parameter connection: The connection to use for the test.
+  /// - Throws: Any exception may be thrown to indicate an unsuccessful test.
+  func run(using connection: GRPCClientConnection) throws
 }

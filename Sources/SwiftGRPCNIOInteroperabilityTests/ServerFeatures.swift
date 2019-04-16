@@ -23,7 +23,7 @@ import NIOHTTP1
 /// We use this enum to match up tests we can run on the NIO client against the NIO server at
 /// run time.
 ///
-/// These features are listed in the [gRPC interopability test description
+/// These features are listed in the [gRPC interoperability test description
 /// specification](https://github.com/grpc/grpc/blob/master/doc/interop-test-descriptions.md).
 ///
 ///
