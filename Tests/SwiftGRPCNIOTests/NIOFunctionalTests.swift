@@ -96,6 +96,10 @@ extension NIOFunctionalTestsInsecureTransport {
       let call = client.get(request)
       call.response.assertEqual(response, fulfill: responseExpectation)
       call.status.map { $0.code }.assertEqual(.ok, fulfill: statusExpectation)
+
+      // Sleep for 250 us to avoid the quadratic runtime described in
+      // https://github.com/apple/swift-nio-http2/issues/87#issuecomment-483542401.
+      Thread.sleep(forTimeInterval: 0.00025)
     }
     print("total time to send \(numberOfRequests) requests: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))")
 
