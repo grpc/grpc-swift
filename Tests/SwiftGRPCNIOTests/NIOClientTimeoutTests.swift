@@ -22,29 +22,31 @@ class NIOClientTimeoutTests: NIOEchoTestCaseBase {
   let optionsWithShortTimeout = CallOptions(timeout: try! GRPCTimeout.milliseconds(10))
   let moreThanShortTimeout: TimeInterval = 0.011
 
-  private func expectDeadlineExceeded(forStatus status: EventLoopFuture<GRPCStatus>) {
+  private func expectDeadlineExceeded(forStatus status: EventLoopFuture<GRPCStatus>,
+                                      file: StaticString = #file, line: UInt = #line) {
     let statusExpectation = self.expectation(description: "status received")
 
     status.whenSuccess { status in
-      XCTAssertEqual(status.code, .deadlineExceeded)
+      XCTAssertEqual(status.code, .deadlineExceeded, file: file, line: line)
       statusExpectation.fulfill()
     }
 
     status.whenFailure { error in
-      XCTFail("unexpectedly received error for status: \(error)")
+      XCTFail("unexpectedly received error for status: \(error)", file: file, line: line)
     }
   }
 
-  private func expectDeadlineExceeded(forResponse response: EventLoopFuture<Echo_EchoResponse>) {
+  private func expectDeadlineExceeded(forResponse response: EventLoopFuture<Echo_EchoResponse>,
+                                      file: StaticString = #file, line: UInt = #line) {
     let responseExpectation = self.expectation(description: "response received")
 
     response.whenFailure { error in
-      XCTAssertEqual((error as? GRPCStatus)?.code, .deadlineExceeded)
+      XCTAssertEqual((error as? GRPCStatus)?.code, .deadlineExceeded, file: file, line: line)
       responseExpectation.fulfill()
     }
 
     response.whenSuccess { response in
-      XCTFail("response received after deadline")
+      XCTFail("response received after deadline", file: file, line: line)
     }
   }
 }
@@ -52,7 +54,7 @@ class NIOClientTimeoutTests: NIOEchoTestCaseBase {
 extension NIOClientTimeoutTests {
   func testUnaryTimeoutAfterSending() {
     // The request gets fired on call creation, so we need a very short timeout.
-    let callOptions = CallOptions(timeout: try! .milliseconds(1))
+    let callOptions = CallOptions(timeout: try! .microseconds(100))
     let call = client.get(Echo_EchoRequest(text: "foo"), callOptions: callOptions)
 
     self.expectDeadlineExceeded(forStatus: call.status)
@@ -63,7 +65,7 @@ extension NIOClientTimeoutTests {
 
   func testServerStreamingTimeoutAfterSending() {
     // The request gets fired on call creation, so we need a very short timeout.
-    let callOptions = CallOptions(timeout: try! .milliseconds(1))
+    let callOptions = CallOptions(timeout: try! .microseconds(100))
     let call = client.expand(Echo_EchoRequest(text: "foo bar baz"), callOptions: callOptions) { _ in }
 
     self.expectDeadlineExceeded(forStatus: call.status)

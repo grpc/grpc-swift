@@ -101,8 +101,8 @@ extension TransportSecurity {
 class NIOEchoTestCaseBase: XCTestCase {
   var defaultTestTimeout: TimeInterval = 1.0
 
-  let serverEventLoopGroup: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-  let clientEventLoopGroup: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+  var serverEventLoopGroup: EventLoopGroup!
+  var clientEventLoopGroup: EventLoopGroup!
 
   var transportSecurity: TransportSecurity { return .none }
 
@@ -139,7 +139,10 @@ class NIOEchoTestCaseBase: XCTestCase {
 
   override func setUp() {
     super.setUp()
+    self.serverEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     self.server = try! self.makeServer()
+
+    self.clientEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     self.client = try! self.makeEchoClient()
   }
 
@@ -147,10 +150,12 @@ class NIOEchoTestCaseBase: XCTestCase {
     XCTAssertNoThrow(try self.client.connection.close().wait())
     XCTAssertNoThrow(try self.clientEventLoopGroup.syncShutdownGracefully())
     self.client = nil
+    self.clientEventLoopGroup = nil
 
     XCTAssertNoThrow(try self.server.close().wait())
     XCTAssertNoThrow(try self.serverEventLoopGroup.syncShutdownGracefully())
     self.server = nil
+    self.serverEventLoopGroup = nil
 
     super.tearDown()
   }
