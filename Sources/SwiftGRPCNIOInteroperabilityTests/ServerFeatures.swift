@@ -26,6 +26,12 @@ import NIOHTTP1
 /// These features are listed in the [gRPC interoperability test description
 /// specification](https://github.com/grpc/grpc/blob/master/doc/interop-test-descriptions.md).
 ///
+/// Missing features:
+/// - compressed response
+/// - compressed request
+/// - observe `ResponseParameter.interval_us`
+/// - echo authenticated username
+/// - echo authenticated OAuth scope
 ///
 /// - Note: This is not a complete set of features, only those used in either the client or server.
 public enum ServerFeature {

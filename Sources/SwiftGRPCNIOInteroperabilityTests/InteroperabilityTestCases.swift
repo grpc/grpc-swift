@@ -17,6 +17,18 @@ import Foundation
 import SwiftGRPCNIO
 import NIOHTTP1
 
+/// Missing tests:
+/// - client_compressed_unary
+/// - server_compressed_unary
+/// - client_compressed_streaming
+/// - server_compressed_streaming
+/// - compute_engine_creds
+/// - jwt_token_creds
+/// - oauth2_auth_token
+/// - per_rpc_creds
+/// - google_default_credentials
+/// - compute_engine_channel_credentials
+
 /// This test verifies that implementations support zero-size messages. Ideally, client
 /// implementations would verify that the request and response were zero bytes serialized, but
 /// this is generally prohibitive to perform, so is not required.
