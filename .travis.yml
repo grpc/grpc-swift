@@ -15,9 +15,26 @@
 #
 # Travis CI build file for Swift gRPC.
 
-os:
-  - linux
-  - osx
+matrix:
+  include:
+    - os: linux
+      env:
+        - SWIFT_VERSION=4.2
+        - MAJOR_VERSION=4.2
+    - os: osx
+      osx_image: xcode10.2
+      env:
+        - SWIFT_VERSION=4.2
+        - MAJOR_VERSION=4.2
+    - os: linux
+      env:
+        - SWIFT_VERSION=5.0
+        - MAJOR_VERSION=5
+    - os: osx
+      osx_image: xcode10.2
+      env:
+        - SWIFT_VERSION=5.0
+        - MAJOR_VERSION=5
 
 cache:
   apt: true
@@ -28,8 +45,6 @@ cache:
 # Use Ubuntu 14.04
 dist: trusty
 
-osx_image: xcode9.3
-
 sudo: false
 
 addons:
@@ -37,14 +52,14 @@ addons:
     sources:
       - sourceline: 'ppa:ondrej/apache2'  # for libnghttp2-dev
     packages:
-      - clang-3.8 
-      - lldb-3.8 
-      - libicu-dev 
-      - libtool 
-      - libcurl4-openssl-dev 
-      - libbsd-dev 
-      - build-essential 
-      - libssl-dev 
+      - clang-3.8
+      - lldb-3.8
+      - libicu-dev
+      - libtool
+      - libcurl4-openssl-dev
+      - libbsd-dev
+      - build-essential
+      - libssl-dev
       - uuid-dev
       - curl
       - unzip

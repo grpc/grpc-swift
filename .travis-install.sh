@@ -18,23 +18,23 @@
 #
 # Install dependencies that aren't available as Ubuntu packages (or already present on macOS).
 #
-# Everything goes into $HOME/local. 
+# Everything goes into $HOME/local.
 #
-# Scripts should add 
-# - $HOME/local/bin to PATH 
+# Scripts should add
+# - $HOME/local/bin to PATH
 # - $HOME/local/lib to LD_LIBRARY_PATH
 #
 
 cd
 mkdir -p local
 
-if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+if [[ "${TRAVIS_OS_NAME}" == "osx" ]]; then
   PROTOC_URL=https://github.com/google/protobuf/releases/download/v3.5.1/protoc-3.5.1-osx-x86_64.zip
 else
   # Install swift
-  SWIFT_URL=https://swift.org/builds/swift-4.1.1-release/ubuntu1404/swift-4.1.1-RELEASE/swift-4.1.1-RELEASE-ubuntu14.04.tar.gz
+  SWIFT_URL=https://swift.org/builds/swift-${SWIFT_VERSION}-release/ubuntu1404/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu14.04.tar.gz
   echo $SWIFT_URL
-  curl -fSsL $SWIFT_URL -o swift.tar.gz 
+  curl -fSsL $SWIFT_URL -o swift.tar.gz
   tar -xzf swift.tar.gz --strip-components=2 --directory=local
 
   PROTOC_URL=https://github.com/google/protobuf/releases/download/v3.5.1/protoc-3.5.1-linux-x86_64.zip

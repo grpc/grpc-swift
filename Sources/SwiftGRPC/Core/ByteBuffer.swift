@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 #if SWIFT_PACKAGE
-  import CgRPC
+import CgRPC
 #endif
-import Foundation // for String.Encoding
+import Foundation
 
 /// Representation of raw data that may be sent and received using gRPC
 public class ByteBuffer {
@@ -35,11 +35,16 @@ public class ByteBuffer {
   ///
   /// - Parameter data: the data to store in the buffer
   public init(data: Data) {
-    var underlyingByteBuffer: UnsafeMutableRawPointer?
-    data.withUnsafeBytes { bytes in
-      underlyingByteBuffer = cgrpc_byte_buffer_create_by_copying_data(bytes, data.count)
+#if swift(>=5.0)
+    self.underlyingByteBuffer = data.withUnsafeBytes { bytes in
+      let buffer = bytes.bindMemory(to: UInt8.self).baseAddress
+      return cgrpc_byte_buffer_create_by_copying_data(buffer, data.count)
     }
-    self.underlyingByteBuffer = underlyingByteBuffer!
+#else
+    self.underlyingByteBuffer = data.withUnsafeBytes { bytes in
+      return cgrpc_byte_buffer_create_by_copying_data(bytes, data.count)
+    }
+#endif
   }
 
   deinit {
