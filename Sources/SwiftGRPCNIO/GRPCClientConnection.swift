@@ -22,11 +22,22 @@ import NIOSSL
 ///
 /// Different service clients implementing `GRPCClient` may share an instance of this class.
 open class GRPCClientConnection {
+  /// Starts a connection to the given host and port.
+  ///
+  /// - Parameters:
+  ///   - host: Host to connect to.
+  ///   - port: Port on the host to connect to.
+  ///   - eventLoopGroup: Event loop group to run the connection on.
+  ///   - tlsMode: How TLS should be configured for this connection.
+  ///   - hostOverride: Value to use for TLS SNI extension; this must not be an IP address. Ignored
+  ///       if `tlsMode` is `.none`.
+  /// - Returns: A future which will be fulfilled with a connection to the remote peer.
   public static func start(
     host: String,
     port: Int,
     eventLoopGroup: EventLoopGroup,
-    tls tlsMode: TLSMode = .none
+    tls tlsMode: TLSMode = .none,
+    hostOverride: String? = nil
   ) throws -> EventLoopFuture<GRPCClientConnection> {
     // We need to capture the multiplexer from the channel initializer to store it after connection.
     let multiplexerPromise: EventLoopPromise<HTTP2StreamMultiplexer> = eventLoopGroup.next().makePromise()
@@ -35,7 +46,7 @@ open class GRPCClientConnection {
       // Enable SO_REUSEADDR.
       .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
       .channelInitializer { channel in
-        let multiplexer = configureTLS(mode: tlsMode, channel: channel, host: host).flatMap {
+        let multiplexer = configureTLS(mode: tlsMode, channel: channel, host: hostOverride ?? host).flatMap {
           channel.configureHTTP2Pipeline(mode: .client)
         }
 
