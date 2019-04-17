@@ -43,7 +43,7 @@ fileprivate class TimingOutEchoProvider: Echo_EchoProvider {
 class ServerTimeoutTests: BasicEchoTestCase {
   override func makeProvider() -> Echo_EchoProvider { return TimingOutEchoProvider() }
 
-  override var defaultTimeout: TimeInterval { return 0.1 }
+  override var defaultTimeout: TimeInterval { return 0.01 }
 }
 
 extension ServerTimeoutTests {
@@ -81,7 +81,7 @@ extension ServerTimeoutTests {
       XCTAssertEqual(.unknown, (receiveError as! RPCError).callResult!.statusCode)
     }
 
-    waitForExpectations(timeout: defaultTimeout)
+    waitForExpectations(timeout: 2 * defaultTimeout)
   }
 
   func testTimeoutServerStreaming() {
@@ -95,7 +95,7 @@ extension ServerTimeoutTests {
     // rather than returning an error?
     XCTAssertNil(try! call.receive())
 
-    waitForExpectations(timeout: defaultTimeout)
+    waitForExpectations(timeout: 2 * defaultTimeout)
   }
 
   func testTimeoutBidirectionalStreaming() {
@@ -117,6 +117,6 @@ extension ServerTimeoutTests {
     // rather than returning an error?
     XCTAssertNil(try! call.receive())
 
-    waitForExpectations(timeout: defaultTimeout)
+    waitForExpectations(timeout: 2 * defaultTimeout)
   }
 }
