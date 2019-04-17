@@ -33,7 +33,7 @@ public struct InteroperabilityTestCredentials {
 
   /// gRPC interoperability test server certificate.
   ///
-  /// Note: the specification refers to the cerificate and key as "server1", this name is carried
+  /// Note: the specification refers to the certificate and key as "server1", this name is carried
   /// across here.
   public static let server1Certificate = try! NIOSSLCertificate(
     buffer: Array(server1CertificatePem.utf8CString),
@@ -41,7 +41,7 @@ public struct InteroperabilityTestCredentials {
 
   /// gRPC interoperability test server private key.
   ///
-  /// Note: the specification refers to the cerificate and key as "server1", this name is carried
+  /// Note: the specification refers to the certificate and key as "server1", this name is carried
   /// across here.
   public static let server1Key = try! NIOSSLPrivateKey(
     buffer: Array(server1KeyPem.utf8CString),

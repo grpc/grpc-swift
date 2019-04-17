@@ -22,6 +22,16 @@ import NIOSSL
 ///
 /// Different service clients implementing `GRPCClient` may share an instance of this class.
 open class GRPCClientConnection {
+  /// Starts a connection to the given host and port.
+  ///
+  /// - Parameters:
+  ///   - host: Host to connect to.
+  ///   - port: Port on the host to connect to.
+  ///   - eventLoopGroup: Event loop group to run the connection on.
+  ///   - tlsMode: How TLS should be configured for this connection.
+  ///   - hostOverride: Value to use for TLS SNI extension; this must not be an IP address. Ignored
+  ///       if `tlsMode` is `.none`.
+  /// - Returns: A future which will be fulfilled with a connection to the remote peer.
   public static func start(
     host: String,
     port: Int,
