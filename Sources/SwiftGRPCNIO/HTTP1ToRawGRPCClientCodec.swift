@@ -94,12 +94,12 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
     }
 
     // Trailers-Only response.
-    if head.headers.contains(name: "grpc-status") {
+    if head.headers.contains(name: GRPCHeaderName.statusCode) {
       self.state = .expectingBodyOrTrailers
       return try self.processTrailers(context: context, trailers: head.headers)
     }
 
-    let inboundCompression: CompressionMechanism = head.headers["grpc-encoding"]
+    let inboundCompression: CompressionMechanism = head.headers[GRPCHeaderName.encoding]
       .first
       .map { CompressionMechanism(rawValue: $0) ?? .unknown } ?? .none
 
@@ -137,22 +137,21 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
       throw GRPCError.client(.invalidState("received trailers while in state \(state)"))
     }
 
-    let statusCode = trailers?["grpc-status"].first
-      .flatMap { Int($0) }
-      .flatMap { StatusCode(rawValue: $0) }
+    let statusCode = trailers?[GRPCHeaderName.statusCode].first.flatMap {
+      Int($0)
+    }.flatMap {
+      StatusCode(rawValue: $0)
+    } ?? .unknown
 
-    let statusMessage = trailers?["grpc-message"].first.map {
+    let statusMessage = trailers?[GRPCHeaderName.statusMessage].first.map {
       GRPCStatusMessageMarshaller.unmarshall($0)
     }
 
-    var customTrailers = trailers
-    customTrailers?.remove(name: "grpc-status")
-    customTrailers?.remove(name: "grpc-message")
+    var trailingCustomMetadata = trailers ?? HTTPHeaders()
+    trailingCustomMetadata.remove(name: GRPCHeaderName.statusCode)
+    trailingCustomMetadata.remove(name: GRPCHeaderName.statusMessage)
 
-    let status = GRPCStatus(
-      code: statusCode ?? .unknown,
-      message: statusMessage,
-      trailingMetadata: customTrailers ?? HTTPHeaders())
+    let status = GRPCStatus(code: statusCode, message: statusMessage, trailingMetadata: trailingCustomMetadata)
 
     context.fireChannelRead(wrapInboundOut(.status(status)))
     return .ignore
