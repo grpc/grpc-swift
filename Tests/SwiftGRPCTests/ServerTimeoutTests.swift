@@ -20,29 +20,29 @@ import XCTest
 
 fileprivate class TimingOutEchoProvider: Echo_EchoProvider {
   func get(request: Echo_EchoRequest, session _: Echo_EchoGetSession) throws -> Echo_EchoResponse {
-    Thread.sleep(forTimeInterval: 0.2)
+    Thread.sleep(forTimeInterval: 0.1)
     return Echo_EchoResponse()
   }
 
   func expand(request: Echo_EchoRequest, session: Echo_EchoExpandSession) throws -> ServerStatus? {
-    Thread.sleep(forTimeInterval: 0.2)
+    Thread.sleep(forTimeInterval: 0.1)
     return .ok
   }
 
   func collect(session: Echo_EchoCollectSession) throws -> Echo_EchoResponse? {
-    Thread.sleep(forTimeInterval: 0.2)
+    Thread.sleep(forTimeInterval: 0.1)
     return Echo_EchoResponse()
   }
 
   func update(session: Echo_EchoUpdateSession) throws -> ServerStatus? {
-    Thread.sleep(forTimeInterval: 0.2)
+    Thread.sleep(forTimeInterval: 0.1)
     return .ok
   }
 }
 
 class ServerTimeoutTests: BasicEchoTestCase {
   override func makeProvider() -> Echo_EchoProvider { return TimingOutEchoProvider() }
-
+  
   override var defaultTimeout: TimeInterval { return 0.01 }
 }
 
@@ -80,8 +80,8 @@ extension ServerTimeoutTests {
     } catch let receiveError {
       XCTAssertEqual(.unknown, (receiveError as! RPCError).callResult!.statusCode)
     }
-
-    waitForExpectations(timeout: 2 * defaultTimeout)
+    
+    waitForExpectations(timeout: 0.2)
   }
 
   func testTimeoutServerStreaming() {
@@ -94,8 +94,8 @@ extension ServerTimeoutTests {
     // FIXME(danielalm): Why does `call.receive()` essentially return "end of stream" once the call times out,
     // rather than returning an error?
     XCTAssertNil(try! call.receive())
-
-    waitForExpectations(timeout: 2 * defaultTimeout)
+    
+    waitForExpectations(timeout: 0.2)
   }
 
   func testTimeoutBidirectionalStreaming() {
@@ -116,7 +116,7 @@ extension ServerTimeoutTests {
     // FIXME(danielalm): Why does `call.receive()` essentially return "end of stream" once the call times out,
     // rather than returning an error?
     XCTAssertNil(try! call.receive())
-
-    waitForExpectations(timeout: 2 * defaultTimeout)
+    
+    waitForExpectations(timeout: 0.2)
   }
 }

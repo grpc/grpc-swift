@@ -50,7 +50,7 @@ extension ChannelConnectivityTests {
     client.channel.addConnectivityObserver { _ in secondObserverCalled = true }
 
     let completionHandlerExpectation = expectation(description: "completion handler called")
-    _ = try! client.expand(Echo_EchoRequest(text: "foo bar baz foo bar baz")) { _ in
+    _ = try! client.get(Echo_EchoRequest(text: "foo")) { _, _ in
       completionHandlerExpectation.fulfill()
     }
 
