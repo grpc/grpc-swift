@@ -52,7 +52,7 @@ class ServerTimeoutTests: BasicEchoTestCase {
   
   override func makeProvider() -> Echo_EchoProvider { return TimingOutEchoProvider() }
   
-  override var defaultTimeout: TimeInterval { return 0.001 }
+  override var defaultTimeout: TimeInterval { return 0.01 }
 }
 
 extension ServerTimeoutTests {
