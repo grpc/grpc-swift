@@ -61,7 +61,7 @@ extension ChannelConnectivityTests {
       completionHandlerExpectation.fulfill()
     }
 
-    waitForExpectations(timeout: 0.5)
+    waitForExpectations(timeout: 1.0)
     XCTAssertTrue(firstObserverCalled)
     XCTAssertTrue(secondObserverCalled)
   }

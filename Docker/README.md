@@ -11,5 +11,3 @@ The following commands push the image to Google Container Registry.
 
     docker tag grpc/swift gcr.io/swift-services/grpc
     gcloud docker -- push gcr.io/swift-services/grpc
-
-

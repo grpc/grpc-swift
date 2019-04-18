@@ -167,9 +167,9 @@ Original SwiftGRPC issue: https://github.com/grpc/grpc-swift/issues/337.
 grpc-swift depends on Swift, Xcode, and swift-protobuf. We are currently
 testing with the following versions:
 
-- Xcode 10.0 / 10.2
+- Xcode 10.2
 - Swift 4.2 / 5.0
-- swift-protobuf 1.3.1
+- swift-protobuf 1.5.0
 
 ## `SwiftGRPCNIO` package
 
