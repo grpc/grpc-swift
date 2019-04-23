@@ -17,6 +17,7 @@ import Foundation
 import NIO
 import NIOHTTP2
 import NIOSSL
+import NIOTLS
 
 /// Underlying channel and HTTP/2 stream multiplexer.
 ///
@@ -49,8 +50,30 @@ open class GRPCClientConnection {
       }
 
     return bootstrap.connect(host: host, port: port).flatMap { channel in
-      channel.pipeline.context(handlerType: HTTP2StreamMultiplexer.self).map { context in
-        context.handler as! HTTP2StreamMultiplexer
+      // Check the handshake succeeded and a valid protocol was negotiated via ALPN.
+      let tlsVerified: EventLoopFuture<Void>
+
+      if case .none = tlsMode {
+        tlsVerified = channel.eventLoop.makeSucceededFuture(())
+      } else {
+        // TODO: Use `handler(type:)` introduced in https://github.com/apple/swift-nio/pull/974
+        // once it has been released.
+        tlsVerified = channel.pipeline.context(handlerType: GRPCTLSVerificationHandler.self).map {
+          $0.handler as! GRPCTLSVerificationHandler
+        }.flatMap {
+          // Use the result of the verification future to determine whether we should return a
+          // connection to the caller. Note that even though it contains a `Void` it may also
+          // contain an `Error`, which is what we are interested in here.
+          $0.verification
+        }
+      }
+
+      return tlsVerified.flatMap {
+        // TODO: Use `handler(type:)` introduced in https://github.com/apple/swift-nio/pull/974
+        // once it has been released.
+        channel.pipeline.context(handlerType: HTTP2StreamMultiplexer.self)
+      }.map {
+        $0.handler as! HTTP2StreamMultiplexer
       }.map { multiplexer in
         GRPCClientConnection(channel: channel, multiplexer: multiplexer, host: host, httpProtocol: tlsMode.httpProtocol)
       }
@@ -72,7 +95,11 @@ open class GRPCClientConnection {
         handlerAddedPromise.succeed(())
         return handlerAddedPromise.futureResult
       }
-      channel.pipeline.addHandler(try NIOSSLClientHandler(context: sslContext, serverHostname: host)).cascade(to: handlerAddedPromise)
+
+      let sslHandler = try NIOSSLClientHandler(context: sslContext, serverHostname: host)
+      let verificationHandler = GRPCTLSVerificationHandler()
+
+      channel.pipeline.addHandlers(sslHandler, verificationHandler).cascade(to: handlerAddedPromise)
     } catch {
       handlerAddedPromise.fail(error)
     }

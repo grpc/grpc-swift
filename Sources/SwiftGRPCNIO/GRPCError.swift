@@ -116,6 +116,9 @@ public enum GRPCClientError: Error, Equatable {
 
   /// The call deadline was exceeded.
   case deadlineExceeded(GRPCTimeout)
+
+  /// The protocol negotiated via ALPN was not valid.
+  case applicationLevelProtocolNegotiationFailed
 }
 
 /// An error which should be thrown by either the client or server.
@@ -178,6 +181,9 @@ extension GRPCClientError: GRPCStatusTransformable {
 
     case .deadlineExceeded(let timeout):
       return GRPCStatus(code: .deadlineExceeded, message: "call exceeded timeout of \(timeout)")
+
+    case .applicationLevelProtocolNegotiationFailed:
+      return GRPCStatus(code: .invalidArgument, message: "failed to negotiate application level protocol")
     }
   }
 }

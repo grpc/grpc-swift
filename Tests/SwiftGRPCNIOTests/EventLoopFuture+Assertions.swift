@@ -40,3 +40,29 @@ extension EventLoopFuture where Value: Equatable {
     }
   }
 }
+
+extension EventLoopFuture {
+  /// Registers a callback which asserts that this future is fulfilled with an error. Causes a test
+  /// failure if the future is not fulfilled with an error.
+  ///
+  /// Callers can additionally verify the error by providing an error handler.
+  ///
+  /// - Parameters:
+  ///   - expectation: A test expectation to fulfill once the future has completed.
+  ///   - handler: A block to run additional verification on the error. Defaults to no-op.
+  func assertError(fulfill expectation: XCTestExpectation, file: StaticString = #file, line: UInt = #line, handler: @escaping (Error) -> Void = { _ in }) {
+    self.whenComplete { result in
+      defer {
+        expectation.fulfill()
+      }
+
+      switch result {
+      case .success:
+        XCTFail("Unexpectedly received \(Value.self), expected an error", file: file, line: line)
+
+      case .failure(let error):
+        handler(error)
+      }
+    }
+  }
+}

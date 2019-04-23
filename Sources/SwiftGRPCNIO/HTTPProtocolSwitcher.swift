@@ -134,7 +134,9 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
   private func protocolVersion(_ preamble: String) -> HTTPProtocolVersion? {
     let range = NSRange(location: 0, length: preamble.utf16.count)
     let regex = try! NSRegularExpression(pattern: "^.*HTTP/(\\d)\\.\\d$")
-    let result = regex.firstMatch(in: preamble, options: [], range: range)!
+    guard let result = regex.firstMatch(in: preamble, options: [], range: range) else {
+      return nil
+    }
 
     let versionRange = result.range(at: 1)
 
