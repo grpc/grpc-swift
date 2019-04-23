@@ -22,6 +22,30 @@ import SwiftProtobuf
 /// This class provides much of the boilerplate for the four types of gRPC call objects returned to framework
 /// users.
 ///
+/// Each call will be configured on a multiplexed channel on the given connection. The multiplexed
+/// channel will be configured as such:
+///
+///                           ┌───────────────────────────┐
+///                           │ GRPCClientChannelHandler  │
+///                           └─▲───────────────────────┬─┘
+///   GRPCClientResponsePart<T1>│                       │GRPCClientRequestPart<T2>
+///                           ┌─┴───────────────────────▼─┐
+///                           │       GRPCClientCodec     │
+///                           └─▲───────────────────────┬─┘
+///    RawGRPCClientResponsePart│                       │RawGRPCClientRequestPart
+///                           ┌─┴───────────────────────▼─┐
+///                           │ HTTP1ToRawGRPCClientCodec │
+///                           └─▲───────────────────────┬─┘
+///       HTTPClientResponsePart│                       │HTTPClientRequestPart
+///                           ┌─┴───────────────────────▼─┐
+///                           │  HTTP2ToHTTP1ClientCodec  │
+///                           └─▲───────────────────────┬─┘
+///                   HTTP2Frame│                       │HTTP2Frame
+///                             |                       |
+///
+/// Note: below the `HTTP2ToHTTP1ClientCodec` is the "main" pipeline provided by the channel in
+/// `GRPCClientConnection`.
+///
 /// Setup includes:
 /// - creation of an HTTP/2 stream for the call to execute on,
 /// - configuration of the NIO channel handlers for the stream, and
