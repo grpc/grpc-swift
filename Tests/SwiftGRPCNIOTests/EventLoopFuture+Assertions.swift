@@ -58,7 +58,7 @@ extension EventLoopFuture {
 
       switch result {
       case .success:
-        XCTFail("Unexpectedly received \(Value.self))", file: file, line: line)
+        XCTFail("Unexpectedly received \(Value.self), expected an error", file: file, line: line)
 
       case .failure(let error):
         handler(error)

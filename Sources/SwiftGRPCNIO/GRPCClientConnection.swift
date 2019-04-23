@@ -56,6 +56,8 @@ open class GRPCClientConnection {
       if case .none = tlsMode {
         tlsVerified = channel.eventLoop.makeSucceededFuture(())
       } else {
+        // TODO: Use `handler(type:)` introduced in https://github.com/apple/swift-nio/pull/974
+        // once it has been released.
         tlsVerified = channel.pipeline.context(handlerType: GRPCTLSVerificationHandler.self).map {
           $0.handler as! GRPCTLSVerificationHandler
         }.flatMap {
@@ -64,6 +66,8 @@ open class GRPCClientConnection {
       }
 
       return tlsVerified.flatMap {
+        // TODO: Use `handler(type:)` introduced in https://github.com/apple/swift-nio/pull/974
+        // once it has been released.
         channel.pipeline.context(handlerType: HTTP2StreamMultiplexer.self)
       }.map {
         $0.handler as! HTTP2StreamMultiplexer
