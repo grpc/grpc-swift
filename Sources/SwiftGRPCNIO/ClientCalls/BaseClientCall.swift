@@ -22,7 +22,7 @@ import SwiftProtobuf
 /// This class provides much of the boilerplate for the four types of gRPC call objects returned to framework
 /// users.
 ///
-/// Each call will be configured on a multiplexed channel on the given connection. The mutliplexed
+/// Each call will be configured on a multiplexed channel on the given connection. The multiplexed
 /// channel will be configured as such:
 ///
 ///                           ┌───────────────────────────┐
