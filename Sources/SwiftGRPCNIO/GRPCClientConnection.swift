@@ -61,6 +61,9 @@ open class GRPCClientConnection {
         tlsVerified = channel.pipeline.context(handlerType: GRPCTLSVerificationHandler.self).map {
           $0.handler as! GRPCTLSVerificationHandler
         }.flatMap {
+          // Use the result of the verification future to determine whether we should return a
+          // connection to the caller. Note that even though it contains a `Void` it may also
+          // contain an `Error`, which is what we are interested in here.
           $0.verification
         }
       }
