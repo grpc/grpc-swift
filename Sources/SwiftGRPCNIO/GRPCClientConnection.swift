@@ -22,6 +22,35 @@ import NIOTLS
 /// Underlying channel and HTTP/2 stream multiplexer.
 ///
 /// Different service clients implementing `GRPCClient` may share an instance of this class.
+///
+/// The connection is initially setup with a handler to verify that TLS was established
+/// successfully (assuming TLS is being used).
+///
+///                          ▲                       |
+///                HTTP2Frame│                       │HTTP2Frame
+///                        ┌─┴───────────────────────▼─┐
+///                        │   HTTP2StreamMultiplexer  |
+///                        └─▲───────────────────────┬─┘
+///                HTTP2Frame│                       │HTTP2Frame
+///                        ┌─┴───────────────────────▼─┐
+///                        │       NIOHTTP2Handler     │
+///                        └─▲───────────────────────┬─┘
+///                ByteBuffer│                       │ByteBuffer
+///                        ┌─┴───────────────────────▼─┐
+///                        │ GRPCTLSVerificationHandler│
+///                        └─▲───────────────────────┬─┘
+///                ByteBuffer│                       │ByteBuffer
+///                        ┌─┴───────────────────────▼─┐
+///                        │       NIOSSLHandler       │
+///                        └─▲───────────────────────┬─┘
+///                ByteBuffer│                       │ByteBuffer
+///                          │                       ▼
+///
+/// The `GRPCTLSVerificationHandler` observes the outcome of the SSL handshake and determines
+/// whether a `GRPCClientConnection` should be returned to the user. In either eventuality, the
+/// handler removes itself from the pipeline once TLS has been verified.
+///
+/// See `BaseClientCall` for a description of the remainder of the client pipeline.
 open class GRPCClientConnection {
   /// Starts a connection to the given host and port.
   ///
