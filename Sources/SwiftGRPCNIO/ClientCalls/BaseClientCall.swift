@@ -243,10 +243,10 @@ extension BaseClientCall {
     //! FIXME: Add a more specific user-agent, see: https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#user-agents
     requestHead.headers.add(name: "user-agent", value: "grpc-swift-nio")
 
-    requestHead.headers.add(name: "grpc-accept-encoding", value: CompressionMechanism.acceptEncodingHeader)
+    requestHead.headers.add(name: GRPCHeaderName.acceptEncoding, value: CompressionMechanism.acceptEncodingHeader)
 
     if callOptions.timeout != .infinite {
-      requestHead.headers.add(name: "grpc-timeout", value: String(describing: callOptions.timeout))
+      requestHead.headers.add(name: GRPCHeaderName.timeout, value: String(describing: callOptions.timeout))
     }
 
     return requestHead
