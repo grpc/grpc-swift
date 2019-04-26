@@ -35,6 +35,7 @@ Pod::Spec.new do |s|
   s.requires_arc = true
   s.ios.deployment_target = '8.0'
   s.osx.deployment_target = '10.10'
+  s.tvos.deployment_target = '10.0'
 
   s.source_files = 'Sources/SwiftGRPC/*.swift', 'Sources/SwiftGRPC/**/*.swift', 'Sources/CgRPC/shim/*.[ch]'
   s.public_header_files = 'Sources/CgRPC/shim/cgrpc.h'
