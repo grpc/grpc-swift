@@ -27,7 +27,7 @@ func makeClientTLS() throws -> GRPCClientConnection.TLSMode {
   return .custom(context)
 }
 
-let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 2)
+let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
 /// Create a client and wait for it to initialize. Returns nil if initialisation fails.
 func makeServiceClient(address: String, port: Int) -> Google_Cloud_Language_V1_LanguageServiceService_NIOClient? {
