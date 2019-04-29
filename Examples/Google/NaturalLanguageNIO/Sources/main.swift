@@ -46,29 +46,46 @@ func makeServiceClient(address: String, port: Int) -> Google_Cloud_Language_V1_L
   }
 }
 
-let scopes = ["https://www.googleapis.com/auth/cloud-language"]
-
-var authToken: String?
-
-if let provider = DefaultTokenProvider(scopes: scopes) {
-  let sem = DispatchSemaphore(value: 0)
-  try provider.withToken { (token, error) in
-    if let token = token {
-      authToken = token.AccessToken
-    }
-    sem.signal()
-  }
-  print("waiting for token")
-  _ = sem.wait()
-} else {
-  print("Unable to create default token provider.")
+enum AuthError: Error {
+  case providerFailed
+  case noProvider
 }
 
-guard let authToken = authToken
+func getAuthToken(_ eventLoopGroup: MultiThreadedEventLoopGroup,
+                  scopes: [String]) -> EventLoopFuture<String> {
+  let promise = eventLoopGroup.next().makePromise(of: String.self)
+  if let provider = DefaultTokenProvider(scopes: scopes) {
+    do {
+      try provider.withToken { (token, error) in
+        if let token = token,
+          let accessToken = token.AccessToken {
+          promise.succeed(accessToken)
+        } else {
+          if let error = error {
+            promise.fail(error)
+          } else {
+            promise.fail(AuthError.providerFailed)
+          }
+        }
+      }
+    }
+    catch {
+      promise.fail(AuthError.providerFailed)
+    }
+  } else {
+    promise.fail(AuthError.noProvider)
+  }
+  return promise.futureResult
+}
+
+let scopes = ["https://www.googleapis.com/auth/cloud-language"]
+guard let authToken = try? getAuthToken(eventLoopGroup, scopes: scopes).wait()
   else {
     print("ERROR: No OAuth token is available.")
     exit(-1)
 }
+
+print("my token: \(authToken)")
 
 guard let service = makeServiceClient(
   address: "language.googleapis.com",
@@ -77,7 +94,6 @@ guard let service = makeServiceClient(
     print("ERROR: Unable to create service client.")
     exit(-1)
 }
-
 
 let headers = HTTPHeaders([("authorization", "Bearer " + authToken)])
 let callOptions = CallOptions(customMetadata: headers,
