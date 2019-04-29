@@ -33,9 +33,9 @@ let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 2)
 func makeServiceClient(address: String, port: Int) -> Google_Cloud_Language_V1_LanguageServiceService_NIOClient? {
   do {
     return try GRPCClientConnection.start(host: address,
-                                port: port,
-                                eventLoopGroup: eventLoopGroup,
-                                tls:makeClientTLS())
+                                          port: port,
+                                          eventLoopGroup: eventLoopGroup,
+                                          tls: makeClientTLS())
       .map { client in
         Google_Cloud_Language_V1_LanguageServiceService_NIOClient(connection: client)
       }
@@ -48,7 +48,7 @@ func makeServiceClient(address: String, port: Int) -> Google_Cloud_Language_V1_L
 
 let scopes = ["https://www.googleapis.com/auth/cloud-language"]
 
-var authToken : String?
+var authToken: String?
 
 if let provider = DefaultTokenProvider(scopes: scopes) {
   let sem = DispatchSemaphore(value: 0)
@@ -80,8 +80,8 @@ guard let service = makeServiceClient(
 
 
 let headers = HTTPHeaders([("authorization", "Bearer " + authToken)])
-let callOptions = CallOptions(customMetadata:headers,
-                              timeout:try! GRPCTimeout.seconds(30))
+let callOptions = CallOptions(customMetadata: headers,
+                              timeout: try! GRPCTimeout.seconds(30))
 
 var request = Google_Cloud_Language_V1_AnnotateTextRequest()
 
