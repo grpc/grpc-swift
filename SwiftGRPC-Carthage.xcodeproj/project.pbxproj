@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		9CE4DF9F8E548E36E5727790 /* cgrpc.h in Headers */ = {isa = PBXBuildFile; fileRef = OBJ_933 /* cgrpc.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		99779FFA0164ABB266AAF060 /* cgrpc.h in Headers */ = {isa = PBXBuildFile; fileRef = OBJ_933 /* cgrpc.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		OBJ_1481 /* a_bitstr.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* a_bitstr.c */; };
 		OBJ_1482 /* a_bool.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_13 /* a_bool.c */; };
 		OBJ_1483 /* a_d2i_fp.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_14 /* a_d2i_fp.c */; };
@@ -343,18 +343,18 @@
 		OBJ_1854 /* CNIOSHA1.h in Headers */ = {isa = PBXBuildFile; fileRef = OBJ_1202 /* CNIOSHA1.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		OBJ_1861 /* empty.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_1204 /* empty.c */; };
 		OBJ_1863 /* CNIOZlib.h in Headers */ = {isa = PBXBuildFile; fileRef = OBJ_1206 /* CNIOZlib.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		OBJ_1870 /* byte_buffer.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_462 /* byte_buffer.c */; };
-		OBJ_1871 /* call.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_463 /* call.c */; };
-		OBJ_1872 /* channel.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_464 /* channel.c */; };
-		OBJ_1873 /* completion_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_465 /* completion_queue.c */; };
-		OBJ_1874 /* event.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_466 /* event.c */; };
-		OBJ_1875 /* handler.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_467 /* handler.c */; };
-		OBJ_1876 /* internal.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_468 /* internal.c */; };
-		OBJ_1877 /* metadata.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_469 /* metadata.c */; };
-		OBJ_1878 /* mutex.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_470 /* mutex.c */; };
-		OBJ_1879 /* observers.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_471 /* observers.c */; };
-		OBJ_1880 /* operations.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_472 /* operations.c */; };
-		OBJ_1881 /* server.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_473 /* server.c */; };
+		OBJ_1870 /* byte_buffer_shim.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_462 /* byte_buffer_shim.c */; };
+		OBJ_1871 /* call_shim.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_463 /* call_shim.c */; };
+		OBJ_1872 /* channel_shim.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_464 /* channel_shim.c */; };
+		OBJ_1873 /* completion_queue_shim.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_465 /* completion_queue_shim.c */; };
+		OBJ_1874 /* event_shim.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_466 /* event_shim.c */; };
+		OBJ_1875 /* handler_shim.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_467 /* handler_shim.c */; };
+		OBJ_1876 /* internal_shim.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_468 /* internal_shim.c */; };
+		OBJ_1877 /* metadata_shim.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_469 /* metadata_shim.c */; };
+		OBJ_1878 /* mutex_shim.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_470 /* mutex_shim.c */; };
+		OBJ_1879 /* observers_shim.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_471 /* observers_shim.c */; };
+		OBJ_1880 /* operations_shim.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_472 /* operations_shim.c */; };
+		OBJ_1881 /* server_shim.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_473 /* server_shim.c */; };
 		OBJ_1882 /* grpc_context.cc in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_479 /* grpc_context.cc */; };
 		OBJ_1883 /* backup_poller.cc in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_481 /* backup_poller.cc */; };
 		OBJ_1884 /* channel_connectivity.cc in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_482 /* channel_connectivity.cc */; };
@@ -1347,7 +1347,7 @@
 		OBJ_1172 /* HTTP2ToHTTP1Codec.swift */ = {isa = PBXFileReference; path = HTTP2ToHTTP1Codec.swift; sourceTree = "<group>"; };
 		OBJ_1173 /* HTTP2UserEvents.swift */ = {isa = PBXFileReference; path = HTTP2UserEvents.swift; sourceTree = "<group>"; };
 		OBJ_1174 /* NGHTTP2Session.swift */ = {isa = PBXFileReference; path = NGHTTP2Session.swift; sourceTree = "<group>"; };
-		OBJ_1176 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Package.swift; path = "../.build/checkouts/swift-nio-http2.git-1684232237084789971/Package.swift"; sourceTree = "<group>"; };
+		OBJ_1176 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Package.swift; path = "../.build/checkouts/swift-nio-http2/Package.swift"; sourceTree = "<group>"; };
 		OBJ_118 /* evp_ctx.c */ = {isa = PBXFileReference; path = evp_ctx.c; sourceTree = "<group>"; };
 		OBJ_1180 /* c-atomics.c */ = {isa = PBXFileReference; path = "c-atomics.c"; sourceTree = "<group>"; };
 		OBJ_1182 /* CNIOAtomics.h */ = {isa = PBXFileReference; path = CNIOAtomics.h; sourceTree = "<group>"; };
@@ -1449,7 +1449,7 @@
 		OBJ_129 /* sign.c */ = {isa = PBXFileReference; path = sign.c; sourceTree = "<group>"; };
 		OBJ_1290 /* SNIHandler.swift */ = {isa = PBXFileReference; path = SNIHandler.swift; sourceTree = "<group>"; };
 		OBJ_1291 /* TLSEvents.swift */ = {isa = PBXFileReference; path = TLSEvents.swift; sourceTree = "<group>"; };
-		OBJ_1294 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Package.swift; path = "../.build/checkouts/swift-nio.git--5531377063216196022/Package.swift"; sourceTree = "<group>"; };
+		OBJ_1294 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Package.swift; path = "../.build/checkouts/swift-nio/Package.swift"; sourceTree = "<group>"; };
 		OBJ_1297 /* ArgumentConvertible.swift */ = {isa = PBXFileReference; path = ArgumentConvertible.swift; sourceTree = "<group>"; };
 		OBJ_1298 /* ArgumentDescription.swift */ = {isa = PBXFileReference; path = ArgumentDescription.swift; sourceTree = "<group>"; };
 		OBJ_1299 /* ArgumentParser.swift */ = {isa = PBXFileReference; path = ArgumentParser.swift; sourceTree = "<group>"; };
@@ -1461,7 +1461,7 @@
 		OBJ_1303 /* Commands.swift */ = {isa = PBXFileReference; path = Commands.swift; sourceTree = "<group>"; };
 		OBJ_1304 /* Error.swift */ = {isa = PBXFileReference; path = Error.swift; sourceTree = "<group>"; };
 		OBJ_1305 /* Group.swift */ = {isa = PBXFileReference; path = Group.swift; sourceTree = "<group>"; };
-		OBJ_1306 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Package.swift; path = "../.build/checkouts/Commander.git--4520459584696957767/Package.swift"; sourceTree = "<group>"; };
+		OBJ_1306 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Package.swift; path = ../.build/checkouts/Commander/Package.swift; sourceTree = "<group>"; };
 		OBJ_1310 /* AnyMessageStorage.swift */ = {isa = PBXFileReference; path = AnyMessageStorage.swift; sourceTree = "<group>"; };
 		OBJ_1311 /* AnyUnpackError.swift */ = {isa = PBXFileReference; path = AnyUnpackError.swift; sourceTree = "<group>"; };
 		OBJ_1312 /* BinaryDecoder.swift */ = {isa = PBXFileReference; path = BinaryDecoder.swift; sourceTree = "<group>"; };
@@ -1587,7 +1587,7 @@
 		OBJ_1424 /* StringUtils.swift */ = {isa = PBXFileReference; path = StringUtils.swift; sourceTree = "<group>"; };
 		OBJ_1425 /* Version.swift */ = {isa = PBXFileReference; path = Version.swift; sourceTree = "<group>"; };
 		OBJ_1426 /* main.swift */ = {isa = PBXFileReference; path = main.swift; sourceTree = "<group>"; };
-		OBJ_1427 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Package.swift; path = "../.build/checkouts/swift-protobuf.git-2901371442460970160/Package.swift"; sourceTree = "<group>"; };
+		OBJ_1427 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; name = Package.swift; path = "../.build/checkouts/swift-protobuf/Package.swift"; sourceTree = "<group>"; };
 		OBJ_143 /* exponentiation.c */ = {isa = PBXFileReference; path = exponentiation.c; sourceTree = "<group>"; };
 		OBJ_144 /* gcd.c */ = {isa = PBXFileReference; path = gcd.c; sourceTree = "<group>"; };
 		OBJ_145 /* generic.c */ = {isa = PBXFileReference; path = generic.c; sourceTree = "<group>"; };
@@ -1596,20 +1596,20 @@
 		OBJ_146 /* jacobi.c */ = {isa = PBXFileReference; path = jacobi.c; sourceTree = "<group>"; };
 		OBJ_1460 /* scripts */ = {isa = PBXFileReference; path = scripts; sourceTree = SOURCE_ROOT; };
 		OBJ_1461 /* Assets */ = {isa = PBXFileReference; path = Assets; sourceTree = SOURCE_ROOT; };
-		OBJ_1462 /* DerivedData */ = {isa = PBXFileReference; path = DerivedData; sourceTree = SOURCE_ROOT; };
-		OBJ_1463 /* OVERVIEW.md */ = {isa = PBXFileReference; path = OVERVIEW.md; sourceTree = "<group>"; };
-		OBJ_1464 /* fix-project-settings.rb */ = {isa = PBXFileReference; path = "fix-project-settings.rb"; sourceTree = "<group>"; };
-		OBJ_1465 /* LICENSE */ = {isa = PBXFileReference; path = LICENSE; sourceTree = "<group>"; };
-		OBJ_1466 /* PATENTS */ = {isa = PBXFileReference; path = PATENTS; sourceTree = "<group>"; };
-		OBJ_1467 /* AUTHORS */ = {isa = PBXFileReference; path = AUTHORS; sourceTree = "<group>"; };
-		OBJ_1468 /* Makefile */ = {isa = PBXFileReference; path = Makefile; sourceTree = "<group>"; };
-		OBJ_1469 /* patch-carthage-project.rb */ = {isa = PBXFileReference; path = "patch-carthage-project.rb"; sourceTree = "<group>"; };
+		OBJ_1462 /* OVERVIEW.md */ = {isa = PBXFileReference; path = OVERVIEW.md; sourceTree = "<group>"; };
+		OBJ_1463 /* fix-project-settings.rb */ = {isa = PBXFileReference; path = "fix-project-settings.rb"; sourceTree = "<group>"; };
+		OBJ_1464 /* LICENSE */ = {isa = PBXFileReference; path = LICENSE; sourceTree = "<group>"; };
+		OBJ_1465 /* PATENTS */ = {isa = PBXFileReference; path = PATENTS; sourceTree = "<group>"; };
+		OBJ_1466 /* AUTHORS */ = {isa = PBXFileReference; path = AUTHORS; sourceTree = "<group>"; };
+		OBJ_1467 /* Makefile */ = {isa = PBXFileReference; path = Makefile; sourceTree = "<group>"; };
+		OBJ_1468 /* patch-carthage-project.rb */ = {isa = PBXFileReference; path = "patch-carthage-project.rb"; sourceTree = "<group>"; };
+		OBJ_1469 /* LINUX.md */ = {isa = PBXFileReference; path = LINUX.md; sourceTree = "<group>"; };
 		OBJ_147 /* montgomery.c */ = {isa = PBXFileReference; path = montgomery.c; sourceTree = "<group>"; };
-		OBJ_1470 /* LINUX.md */ = {isa = PBXFileReference; path = LINUX.md; sourceTree = "<group>"; };
-		OBJ_1471 /* README.md */ = {isa = PBXFileReference; path = README.md; sourceTree = "<group>"; };
-		OBJ_1472 /* fix-carthage-paths.rb */ = {isa = PBXFileReference; path = "fix-carthage-paths.rb"; sourceTree = "<group>"; };
-		OBJ_1473 /* CONTRIBUTING.md */ = {isa = PBXFileReference; path = CONTRIBUTING.md; sourceTree = "<group>"; };
-		OBJ_1474 /* DOCKER.md */ = {isa = PBXFileReference; path = DOCKER.md; sourceTree = "<group>"; };
+		OBJ_1470 /* README.md */ = {isa = PBXFileReference; path = README.md; sourceTree = "<group>"; };
+		OBJ_1471 /* fix-carthage-paths.rb */ = {isa = PBXFileReference; path = "fix-carthage-paths.rb"; sourceTree = "<group>"; };
+		OBJ_1472 /* CONTRIBUTING.md */ = {isa = PBXFileReference; path = CONTRIBUTING.md; sourceTree = "<group>"; };
+		OBJ_1473 /* DOCKER.md */ = {isa = PBXFileReference; path = DOCKER.md; sourceTree = "<group>"; };
+		OBJ_1474 /* patch-test.rb */ = {isa = PBXFileReference; path = "patch-test.rb"; sourceTree = "<group>"; };
 		OBJ_1475 /* SwiftGRPC.podspec */ = {isa = PBXFileReference; path = SwiftGRPC.podspec; sourceTree = "<group>"; };
 		OBJ_148 /* montgomery_inv.c */ = {isa = PBXFileReference; path = montgomery_inv.c; sourceTree = "<group>"; };
 		OBJ_149 /* mul.c */ = {isa = PBXFileReference; path = mul.c; sourceTree = "<group>"; };
@@ -1920,19 +1920,19 @@
 		OBJ_458 /* module.modulemap */ = {isa = PBXFileReference; name = module.modulemap; path = "../SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL/module.modulemap"; sourceTree = "<group>"; };
 		OBJ_46 /* bio_mem.c */ = {isa = PBXFileReference; path = bio_mem.c; sourceTree = "<group>"; };
 		OBJ_460 /* README.md */ = {isa = PBXFileReference; path = README.md; sourceTree = "<group>"; };
-		OBJ_462 /* byte_buffer.c */ = {isa = PBXFileReference; path = byte_buffer.c; sourceTree = "<group>"; };
-		OBJ_463 /* call.c */ = {isa = PBXFileReference; path = call.c; sourceTree = "<group>"; };
-		OBJ_464 /* channel.c */ = {isa = PBXFileReference; path = channel.c; sourceTree = "<group>"; };
-		OBJ_465 /* completion_queue.c */ = {isa = PBXFileReference; path = completion_queue.c; sourceTree = "<group>"; };
-		OBJ_466 /* event.c */ = {isa = PBXFileReference; path = event.c; sourceTree = "<group>"; };
-		OBJ_467 /* handler.c */ = {isa = PBXFileReference; path = handler.c; sourceTree = "<group>"; };
-		OBJ_468 /* internal.c */ = {isa = PBXFileReference; path = internal.c; sourceTree = "<group>"; };
-		OBJ_469 /* metadata.c */ = {isa = PBXFileReference; path = metadata.c; sourceTree = "<group>"; };
+		OBJ_462 /* byte_buffer_shim.c */ = {isa = PBXFileReference; path = byte_buffer_shim.c; sourceTree = "<group>"; };
+		OBJ_463 /* call_shim.c */ = {isa = PBXFileReference; path = call_shim.c; sourceTree = "<group>"; };
+		OBJ_464 /* channel_shim.c */ = {isa = PBXFileReference; path = channel_shim.c; sourceTree = "<group>"; };
+		OBJ_465 /* completion_queue_shim.c */ = {isa = PBXFileReference; path = completion_queue_shim.c; sourceTree = "<group>"; };
+		OBJ_466 /* event_shim.c */ = {isa = PBXFileReference; path = event_shim.c; sourceTree = "<group>"; };
+		OBJ_467 /* handler_shim.c */ = {isa = PBXFileReference; path = handler_shim.c; sourceTree = "<group>"; };
+		OBJ_468 /* internal_shim.c */ = {isa = PBXFileReference; path = internal_shim.c; sourceTree = "<group>"; };
+		OBJ_469 /* metadata_shim.c */ = {isa = PBXFileReference; path = metadata_shim.c; sourceTree = "<group>"; };
 		OBJ_47 /* connect.c */ = {isa = PBXFileReference; path = connect.c; sourceTree = "<group>"; };
-		OBJ_470 /* mutex.c */ = {isa = PBXFileReference; path = mutex.c; sourceTree = "<group>"; };
-		OBJ_471 /* observers.c */ = {isa = PBXFileReference; path = observers.c; sourceTree = "<group>"; };
-		OBJ_472 /* operations.c */ = {isa = PBXFileReference; path = operations.c; sourceTree = "<group>"; };
-		OBJ_473 /* server.c */ = {isa = PBXFileReference; path = server.c; sourceTree = "<group>"; };
+		OBJ_470 /* mutex_shim.c */ = {isa = PBXFileReference; path = mutex_shim.c; sourceTree = "<group>"; };
+		OBJ_471 /* observers_shim.c */ = {isa = PBXFileReference; path = observers_shim.c; sourceTree = "<group>"; };
+		OBJ_472 /* operations_shim.c */ = {isa = PBXFileReference; path = operations_shim.c; sourceTree = "<group>"; };
+		OBJ_473 /* server_shim.c */ = {isa = PBXFileReference; path = server_shim.c; sourceTree = "<group>"; };
 		OBJ_479 /* grpc_context.cc */ = {isa = PBXFileReference; path = grpc_context.cc; sourceTree = "<group>"; };
 		OBJ_48 /* fd.c */ = {isa = PBXFileReference; path = fd.c; sourceTree = "<group>"; };
 		OBJ_481 /* backup_poller.cc */ = {isa = PBXFileReference; path = backup_poller.cc; sourceTree = "<group>"; };
@@ -2936,7 +2936,7 @@
 				OBJ_1154 /* include */,
 			);
 			name = CNIONghttp2;
-			path = ".build/checkouts/swift-nio-http2.git-1684232237084789971/Sources/CNIONghttp2";
+			path = ".build/checkouts/swift-nio-http2/Sources/CNIONghttp2";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1154 /* include */ = {
@@ -2954,7 +2954,7 @@
 			children = (
 			);
 			name = NIOHPACK;
-			path = ".build/checkouts/swift-nio-http2.git-1684232237084789971/Sources/NIOHPACK";
+			path = ".build/checkouts/swift-nio-http2/Sources/NIOHPACK";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1158 /* NIOHTTP2 */ = {
@@ -2978,7 +2978,7 @@
 				OBJ_1174 /* NGHTTP2Session.swift */,
 			);
 			name = NIOHTTP2;
-			path = ".build/checkouts/swift-nio-http2.git-1684232237084789971/Sources/NIOHTTP2";
+			path = ".build/checkouts/swift-nio-http2/Sources/NIOHTTP2";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1175 /* NIOHTTP2Server */ = {
@@ -2986,7 +2986,7 @@
 			children = (
 			);
 			name = NIOHTTP2Server;
-			path = ".build/checkouts/swift-nio-http2.git-1684232237084789971/Sources/NIOHTTP2Server";
+			path = ".build/checkouts/swift-nio-http2/Sources/NIOHTTP2Server";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1177 /* swift-nio 1.13.2 */ = {
@@ -3026,7 +3026,7 @@
 				OBJ_1181 /* include */,
 			);
 			name = CNIOAtomics;
-			path = ".build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOAtomics";
+			path = ".build/checkouts/swift-nio/Sources/CNIOAtomics";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1179 /* src */ = {
@@ -3055,7 +3055,7 @@
 				OBJ_1186 /* include */,
 			);
 			name = CNIODarwin;
-			path = ".build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIODarwin";
+			path = ".build/checkouts/swift-nio/Sources/CNIODarwin";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1186 /* include */ = {
@@ -3074,7 +3074,7 @@
 				OBJ_1190 /* include */,
 			);
 			name = CNIOHTTPParser;
-			path = ".build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOHTTPParser";
+			path = ".build/checkouts/swift-nio/Sources/CNIOHTTPParser";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1190 /* include */ = {
@@ -3095,7 +3095,7 @@
 				OBJ_1196 /* include */,
 			);
 			name = CNIOLinux;
-			path = ".build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOLinux";
+			path = ".build/checkouts/swift-nio/Sources/CNIOLinux";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1196 /* include */ = {
@@ -3115,7 +3115,7 @@
 				OBJ_1201 /* include */,
 			);
 			name = CNIOSHA1;
-			path = ".build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOSHA1";
+			path = ".build/checkouts/swift-nio/Sources/CNIOSHA1";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1201 /* include */ = {
@@ -3134,7 +3134,7 @@
 				OBJ_1205 /* include */,
 			);
 			name = CNIOZlib;
-			path = ".build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOZlib";
+			path = ".build/checkouts/swift-nio/Sources/CNIOZlib";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1205 /* include */ = {
@@ -3206,7 +3206,7 @@
 				OBJ_1262 /* Utilities.swift */,
 			);
 			name = NIO;
-			path = ".build/checkouts/swift-nio.git--5531377063216196022/Sources/NIO";
+			path = ".build/checkouts/swift-nio/Sources/NIO";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1263 /* NIOChatClient */ = {
@@ -3214,7 +3214,7 @@
 			children = (
 			);
 			name = NIOChatClient;
-			path = ".build/checkouts/swift-nio.git--5531377063216196022/Sources/NIOChatClient";
+			path = ".build/checkouts/swift-nio/Sources/NIOChatClient";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1264 /* NIOChatServer */ = {
@@ -3222,7 +3222,7 @@
 			children = (
 			);
 			name = NIOChatServer;
-			path = ".build/checkouts/swift-nio.git--5531377063216196022/Sources/NIOChatServer";
+			path = ".build/checkouts/swift-nio/Sources/NIOChatServer";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1265 /* NIOConcurrencyHelpers */ = {
@@ -3232,7 +3232,7 @@
 				OBJ_1267 /* lock.swift */,
 			);
 			name = NIOConcurrencyHelpers;
-			path = ".build/checkouts/swift-nio.git--5531377063216196022/Sources/NIOConcurrencyHelpers";
+			path = ".build/checkouts/swift-nio/Sources/NIOConcurrencyHelpers";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1268 /* NIOEchoClient */ = {
@@ -3240,7 +3240,7 @@
 			children = (
 			);
 			name = NIOEchoClient;
-			path = ".build/checkouts/swift-nio.git--5531377063216196022/Sources/NIOEchoClient";
+			path = ".build/checkouts/swift-nio/Sources/NIOEchoClient";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1269 /* NIOEchoServer */ = {
@@ -3248,7 +3248,7 @@
 			children = (
 			);
 			name = NIOEchoServer;
-			path = ".build/checkouts/swift-nio.git--5531377063216196022/Sources/NIOEchoServer";
+			path = ".build/checkouts/swift-nio/Sources/NIOEchoServer";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1270 /* NIOFoundationCompat */ = {
@@ -3257,7 +3257,7 @@
 				OBJ_1271 /* ByteBuffer-foundation.swift */,
 			);
 			name = NIOFoundationCompat;
-			path = ".build/checkouts/swift-nio.git--5531377063216196022/Sources/NIOFoundationCompat";
+			path = ".build/checkouts/swift-nio/Sources/NIOFoundationCompat";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1272 /* NIOHTTP1 */ = {
@@ -3274,7 +3274,7 @@
 				OBJ_1281 /* HTTPUpgradeHandler.swift */,
 			);
 			name = NIOHTTP1;
-			path = ".build/checkouts/swift-nio.git--5531377063216196022/Sources/NIOHTTP1";
+			path = ".build/checkouts/swift-nio/Sources/NIOHTTP1";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1282 /* NIOHTTP1Server */ = {
@@ -3282,7 +3282,7 @@
 			children = (
 			);
 			name = NIOHTTP1Server;
-			path = ".build/checkouts/swift-nio.git--5531377063216196022/Sources/NIOHTTP1Server";
+			path = ".build/checkouts/swift-nio/Sources/NIOHTTP1Server";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1283 /* NIOMulticastChat */ = {
@@ -3290,7 +3290,7 @@
 			children = (
 			);
 			name = NIOMulticastChat;
-			path = ".build/checkouts/swift-nio.git--5531377063216196022/Sources/NIOMulticastChat";
+			path = ".build/checkouts/swift-nio/Sources/NIOMulticastChat";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1284 /* NIOPerformanceTester */ = {
@@ -3298,7 +3298,7 @@
 			children = (
 			);
 			name = NIOPerformanceTester;
-			path = ".build/checkouts/swift-nio.git--5531377063216196022/Sources/NIOPerformanceTester";
+			path = ".build/checkouts/swift-nio/Sources/NIOPerformanceTester";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1285 /* NIOPriorityQueue */ = {
@@ -3308,7 +3308,7 @@
 				OBJ_1287 /* PriorityQueue.swift */,
 			);
 			name = NIOPriorityQueue;
-			path = ".build/checkouts/swift-nio.git--5531377063216196022/Sources/NIOPriorityQueue";
+			path = ".build/checkouts/swift-nio/Sources/NIOPriorityQueue";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1288 /* NIOTLS */ = {
@@ -3319,7 +3319,7 @@
 				OBJ_1291 /* TLSEvents.swift */,
 			);
 			name = NIOTLS;
-			path = ".build/checkouts/swift-nio.git--5531377063216196022/Sources/NIOTLS";
+			path = ".build/checkouts/swift-nio/Sources/NIOTLS";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1292 /* NIOWebSocket */ = {
@@ -3327,7 +3327,7 @@
 			children = (
 			);
 			name = NIOWebSocket;
-			path = ".build/checkouts/swift-nio.git--5531377063216196022/Sources/NIOWebSocket";
+			path = ".build/checkouts/swift-nio/Sources/NIOWebSocket";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1293 /* NIOWebSocketServer */ = {
@@ -3335,7 +3335,7 @@
 			children = (
 			);
 			name = NIOWebSocketServer;
-			path = ".build/checkouts/swift-nio.git--5531377063216196022/Sources/NIOWebSocketServer";
+			path = ".build/checkouts/swift-nio/Sources/NIOWebSocketServer";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1295 /* Commander 0.8.0 */ = {
@@ -3362,7 +3362,7 @@
 				OBJ_1305 /* Group.swift */,
 			);
 			name = Commander;
-			path = ".build/checkouts/Commander.git--4520459584696957767/Sources/Commander";
+			path = .build/checkouts/Commander/Sources/Commander;
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1307 /* SwiftProtobuf 1.5.0 */ = {
@@ -3383,7 +3383,7 @@
 			children = (
 			);
 			name = Conformance;
-			path = ".build/checkouts/swift-protobuf.git-2901371442460970160/Sources/Conformance";
+			path = ".build/checkouts/swift-protobuf/Sources/Conformance";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1309 /* SwiftProtobuf */ = {
@@ -3470,7 +3470,7 @@
 				OBJ_1388 /* wrappers.pb.swift */,
 			);
 			name = SwiftProtobuf;
-			path = ".build/checkouts/swift-protobuf.git-2901371442460970160/Sources/SwiftProtobuf";
+			path = ".build/checkouts/swift-protobuf/Sources/SwiftProtobuf";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_131 /* fipsmodule */ = {
@@ -3558,7 +3558,7 @@
 				OBJ_1407 /* swift_protobuf_module_mappings.pb.swift */,
 			);
 			name = SwiftProtobufPluginLibrary;
-			path = ".build/checkouts/swift-protobuf.git-2901371442460970160/Sources/SwiftProtobufPluginLibrary";
+			path = ".build/checkouts/swift-protobuf/Sources/SwiftProtobufPluginLibrary";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1408 /* protoc-gen-swift */ = {
@@ -3584,41 +3584,41 @@
 				OBJ_1426 /* main.swift */,
 			);
 			name = "protoc-gen-swift";
-			path = ".build/checkouts/swift-protobuf.git-2901371442460970160/Sources/protoc-gen-swift";
+			path = ".build/checkouts/swift-protobuf/Sources/protoc-gen-swift";
 			sourceTree = SOURCE_ROOT;
 		};
 		OBJ_1428 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				SwiftGRPC::Simple::Product /* Simple */,
-				SwiftGRPC::SwiftGRPCNIOTests::Product /* SwiftGRPCNIOTests.xctest */,
-				SwiftGRPC::Echo::Product /* Echo */,
-				swift-nio::NIOConcurrencyHelpers::Product /* NIOConcurrencyHelpers.framework */,
-				SwiftProtobuf::SwiftProtobuf::Product /* SwiftProtobuf.framework */,
-				SwiftGRPC::protoc-gen-swiftgrpc::Product /* protoc-gen-swiftgrpc */,
-				swift-nio::CNIODarwin::Product /* CNIODarwin.framework */,
-				swift-nio::CNIOSHA1::Product /* CNIOSHA1.framework */,
-				SwiftGRPC::RootsEncoder::Product /* RootsEncoder */,
-				swift-nio-http2::CNIONghttp2::Product /* CNIONghttp2.framework */,
-				swift-nio::CNIOLinux::Product /* CNIOLinux.framework */,
-				Commander::Commander::Product /* Commander.framework */,
-				SwiftGRPC::SwiftGRPC::Product /* SwiftGRPC.framework */,
-				SwiftGRPC::SwiftGRPCTests::Product /* SwiftGRPCTests.xctest */,
-				SwiftGRPC::SwiftGRPCNIO::Product /* SwiftGRPCNIO.framework */,
-				swift-nio-http2::NIOHTTP2::Product /* NIOHTTP2.framework */,
 				swift-nio::CNIOAtomics::Product /* CNIOAtomics.framework */,
+				SwiftGRPC::SwiftGRPC::Product /* SwiftGRPC.framework */,
+				SwiftProtobuf::protoc-gen-swift::Product /* protoc-gen-swift */,
+				SwiftGRPC::Echo::Product /* Echo */,
+				SwiftGRPC::Simple::Product /* Simple */,
 				swift-nio::CNIOZlib::Product /* CNIOZlib.framework */,
-				swift-nio::CNIOHTTPParser::Product /* CNIOHTTPParser.framework */,
-				SwiftGRPC::CgRPC::Product /* CgRPC.framework */,
-				swift-nio::NIO::Product /* NIO.framework */,
+				swift-nio::CNIODarwin::Product /* CNIODarwin.framework */,
+				SwiftProtobuf::SwiftProtobuf::Product /* SwiftProtobuf.framework */,
 				swift-nio::NIOHTTP1::Product /* NIOHTTP1.framework */,
+				SwiftGRPC::RootsEncoder::Product /* RootsEncoder */,
+				swift-nio::CNIOSHA1::Product /* CNIOSHA1.framework */,
 				SwiftProtobuf::SwiftProtobufPluginLibrary::Product /* SwiftProtobufPluginLibrary.framework */,
+				SwiftGRPC::SwiftGRPCNIO::Product /* SwiftGRPCNIO.framework */,
+				swift-nio::NIOConcurrencyHelpers::Product /* NIOConcurrencyHelpers.framework */,
 				swift-nio::NIOPriorityQueue::Product /* NIOPriorityQueue.framework */,
-				swift-nio::NIOFoundationCompat::Product /* NIOFoundationCompat.framework */,
+				swift-nio::CNIOHTTPParser::Product /* CNIOHTTPParser.framework */,
 				SwiftGRPC::BoringSSL::Product /* BoringSSL.framework */,
 				SwiftGRPC::EchoNIO::Product /* EchoNIO */,
+				SwiftGRPC::SwiftGRPCNIOTests::Product /* SwiftGRPCNIOTests.xctest */,
+				Commander::Commander::Product /* Commander.framework */,
+				swift-nio-http2::CNIONghttp2::Product /* CNIONghttp2.framework */,
+				SwiftGRPC::SwiftGRPCTests::Product /* SwiftGRPCTests.xctest */,
+				SwiftGRPC::CgRPC::Product /* CgRPC.framework */,
+				swift-nio::NIO::Product /* NIO.framework */,
 				swift-nio::NIOTLS::Product /* NIOTLS.framework */,
-				SwiftProtobuf::protoc-gen-swift::Product /* protoc-gen-swift */,
+				swift-nio::CNIOLinux::Product /* CNIOLinux.framework */,
+				SwiftGRPC::protoc-gen-swiftgrpc::Product /* protoc-gen-swiftgrpc */,
+				swift-nio::NIOFoundationCompat::Product /* NIOFoundationCompat.framework */,
+				swift-nio-http2::NIOHTTP2::Product /* NIOHTTP2.framework */,
 			);
 			name = Products;
 			path = "";
@@ -4196,18 +4196,18 @@
 		OBJ_461 /* shim */ = {
 			isa = PBXGroup;
 			children = (
-				OBJ_462 /* byte_buffer.c */,
-				OBJ_463 /* call.c */,
-				OBJ_464 /* channel.c */,
-				OBJ_465 /* completion_queue.c */,
-				OBJ_466 /* event.c */,
-				OBJ_467 /* handler.c */,
-				OBJ_468 /* internal.c */,
-				OBJ_469 /* metadata.c */,
-				OBJ_470 /* mutex.c */,
-				OBJ_471 /* observers.c */,
-				OBJ_472 /* operations.c */,
-				OBJ_473 /* server.c */,
+				OBJ_462 /* byte_buffer_shim.c */,
+				OBJ_463 /* call_shim.c */,
+				OBJ_464 /* channel_shim.c */,
+				OBJ_465 /* completion_queue_shim.c */,
+				OBJ_466 /* event_shim.c */,
+				OBJ_467 /* handler_shim.c */,
+				OBJ_468 /* internal_shim.c */,
+				OBJ_469 /* metadata_shim.c */,
+				OBJ_470 /* mutex_shim.c */,
+				OBJ_471 /* observers_shim.c */,
+				OBJ_472 /* operations_shim.c */,
+				OBJ_473 /* server_shim.c */,
 			);
 			name = shim;
 			path = shim;
@@ -4351,19 +4351,19 @@
 				OBJ_1459 /* Examples */,
 				OBJ_1460 /* scripts */,
 				OBJ_1461 /* Assets */,
-				OBJ_1462 /* DerivedData */,
-				OBJ_1463 /* OVERVIEW.md */,
-				OBJ_1464 /* fix-project-settings.rb */,
-				OBJ_1465 /* LICENSE */,
-				OBJ_1466 /* PATENTS */,
-				OBJ_1467 /* AUTHORS */,
-				OBJ_1468 /* Makefile */,
-				OBJ_1469 /* patch-carthage-project.rb */,
-				OBJ_1470 /* LINUX.md */,
-				OBJ_1471 /* README.md */,
-				OBJ_1472 /* fix-carthage-paths.rb */,
-				OBJ_1473 /* CONTRIBUTING.md */,
-				OBJ_1474 /* DOCKER.md */,
+				OBJ_1462 /* OVERVIEW.md */,
+				OBJ_1463 /* fix-project-settings.rb */,
+				OBJ_1464 /* LICENSE */,
+				OBJ_1465 /* PATENTS */,
+				OBJ_1466 /* AUTHORS */,
+				OBJ_1467 /* Makefile */,
+				OBJ_1468 /* patch-carthage-project.rb */,
+				OBJ_1469 /* LINUX.md */,
+				OBJ_1470 /* README.md */,
+				OBJ_1471 /* fix-carthage-paths.rb */,
+				OBJ_1472 /* CONTRIBUTING.md */,
+				OBJ_1473 /* DOCKER.md */,
+				OBJ_1474 /* patch-test.rb */,
 				OBJ_1475 /* SwiftGRPC.podspec */,
 			);
 			indentWidth = 2;
@@ -5691,11 +5691,11 @@
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
-		25BEE5AB2B8317A43EFBB04F /* Headers */ = {
+		00DEF0A839685874D8280A01 /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9CE4DF9F8E548E36E5727790 /* cgrpc.h in Headers */,
+				99779FFA0164ABB266AAF060 /* cgrpc.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5724,7 +5724,7 @@
 			buildPhases = (
 				OBJ_1869 /* Sources */,
 				OBJ_2248 /* Frameworks */,
-				25BEE5AB2B8317A43EFBB04F /* Headers */,
+				00DEF0A839685874D8280A01 /* Headers */,
 			);
 			buildRules = (
 			);
@@ -6126,18 +6126,18 @@
 		OBJ_1869 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
-				OBJ_1870 /* byte_buffer.c in Sources */,
-				OBJ_1871 /* call.c in Sources */,
-				OBJ_1872 /* channel.c in Sources */,
-				OBJ_1873 /* completion_queue.c in Sources */,
-				OBJ_1874 /* event.c in Sources */,
-				OBJ_1875 /* handler.c in Sources */,
-				OBJ_1876 /* internal.c in Sources */,
-				OBJ_1877 /* metadata.c in Sources */,
-				OBJ_1878 /* mutex.c in Sources */,
-				OBJ_1879 /* observers.c in Sources */,
-				OBJ_1880 /* operations.c in Sources */,
-				OBJ_1881 /* server.c in Sources */,
+				OBJ_1870 /* byte_buffer_shim.c in Sources */,
+				OBJ_1871 /* call_shim.c in Sources */,
+				OBJ_1872 /* channel_shim.c in Sources */,
+				OBJ_1873 /* completion_queue_shim.c in Sources */,
+				OBJ_1874 /* event_shim.c in Sources */,
+				OBJ_1875 /* handler_shim.c in Sources */,
+				OBJ_1876 /* internal_shim.c in Sources */,
+				OBJ_1877 /* metadata_shim.c in Sources */,
+				OBJ_1878 /* mutex_shim.c in Sources */,
+				OBJ_1879 /* observers_shim.c in Sources */,
+				OBJ_1880 /* operations_shim.c in Sources */,
+				OBJ_1881 /* server_shim.c in Sources */,
 				OBJ_1882 /* grpc_context.cc in Sources */,
 				OBJ_1883 /* backup_poller.cc in Sources */,
 				OBJ_1884 /* channel_connectivity.cc in Sources */,
@@ -6667,23 +6667,21 @@
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/Sources/BoringSSL/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/BoringSSL_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
-					"-lnghttp2",
 					"-lz",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include";
 				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.BoringSSL;
 				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
@@ -6707,23 +6705,21 @@
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)/Sources/BoringSSL/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/BoringSSL_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
-					"-lnghttp2",
 					"-lz",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include";
 				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.BoringSSL;
 				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
@@ -6745,8 +6741,8 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOAtomics/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/CNIOAtomics_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -6778,8 +6774,8 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOAtomics/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/CNIOAtomics_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -6811,8 +6807,8 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIODarwin/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIODarwin/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/CNIODarwin_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -6844,8 +6840,8 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIODarwin/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIODarwin/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/CNIODarwin_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -6877,8 +6873,8 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOHTTPParser/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOHTTPParser/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/CNIOHTTPParser_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -6910,8 +6906,8 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOHTTPParser/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOHTTPParser/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/CNIOHTTPParser_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -6943,8 +6939,8 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOLinux/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOLinux/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/CNIOLinux_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -6976,8 +6972,8 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOLinux/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOLinux/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/CNIOLinux_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -7008,22 +7004,22 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio-http2.git-1684232237084789971/Sources/CNIONghttp2/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
+					"$(SRCROOT)/.build/checkouts/swift-nio-http2/Sources/CNIONghttp2/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/CNIONghttp2_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
+					"-L/usr/local/Cellar/nghttp2/1.38.0/lib",
 					"-lnghttp2",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include";
 				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.CNIONghttp2;
 				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
@@ -7044,22 +7040,22 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio-http2.git-1684232237084789971/Sources/CNIONghttp2/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
+					"$(SRCROOT)/.build/checkouts/swift-nio-http2/Sources/CNIONghttp2/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/CNIONghttp2_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
+					"-L/usr/local/Cellar/nghttp2/1.38.0/lib",
 					"-lnghttp2",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include";
 				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.CNIONghttp2;
 				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
@@ -7081,8 +7077,8 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOSHA1/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOSHA1/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/CNIOSHA1_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -7114,8 +7110,8 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOSHA1/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOSHA1/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/CNIOSHA1_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -7147,8 +7143,8 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOZlib/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOZlib/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/CNIOZlib_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -7180,8 +7176,8 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOZlib/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOZlib/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/CNIOZlib_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -7216,23 +7212,21 @@
 					"$(inherited)",
 					"$(SRCROOT)/Sources/CgRPC/include",
 					"$(SRCROOT)/Sources/BoringSSL/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/CgRPC_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
-					"-lnghttp2",
 					"-lz",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include";
 				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.CgRPC;
 				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
@@ -7257,23 +7251,21 @@
 					"$(inherited)",
 					"$(SRCROOT)/Sources/CgRPC/include",
 					"$(SRCROOT)/Sources/BoringSSL/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/CgRPC_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
-					"-lnghttp2",
 					"-lz",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include";
 				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.CgRPC;
 				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
@@ -7364,8 +7356,8 @@
 					"$(inherited)",
 					"$(SRCROOT)/Sources/CgRPC/include",
 					"$(SRCROOT)/Sources/BoringSSL/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 					"$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/Echo_Info.plist";
@@ -7373,15 +7365,15 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx @executable_path";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
+					"-L/usr/local/Cellar/nghttp2/1.38.0/lib",
 					"-lnghttp2",
 					"-lz",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include -Xcc -fmodule-map-file=$(SRCROOT)/Sources/CgRPC/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL/module.modulemap";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include -Xcc -fmodule-map-file=$(SRCROOT)/Sources/CgRPC/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL/module.modulemap";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_FORCE_DYNAMIC_LINK_STDLIB = YES;
 				SWIFT_FORCE_STATIC_LINK_STDLIB = NO;
@@ -7401,8 +7393,8 @@
 					"$(inherited)",
 					"$(SRCROOT)/Sources/CgRPC/include",
 					"$(SRCROOT)/Sources/BoringSSL/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 					"$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/Echo_Info.plist";
@@ -7410,15 +7402,15 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx @executable_path";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
+					"-L/usr/local/Cellar/nghttp2/1.38.0/lib",
 					"-lnghttp2",
 					"-lz",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include -Xcc -fmodule-map-file=$(SRCROOT)/Sources/CgRPC/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL/module.modulemap";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include -Xcc -fmodule-map-file=$(SRCROOT)/Sources/CgRPC/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL/module.modulemap";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_FORCE_DYNAMIC_LINK_STDLIB = YES;
 				SWIFT_FORCE_STATIC_LINK_STDLIB = NO;
@@ -7436,15 +7428,15 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio-http2.git-1684232237084789971/Sources/CNIONghttp2/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOZlib/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOHTTPParser/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOSHA1/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOAtomics/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIODarwin/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOLinux/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio-http2/Sources/CNIONghttp2/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOZlib/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOHTTPParser/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOSHA1/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIODarwin/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOLinux/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 					"$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/CNIONghttp2",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/EchoNIO_Info.plist";
@@ -7452,15 +7444,15 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx @executable_path";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
+					"-L/usr/local/Cellar/nghttp2/1.38.0/lib",
 					"-lnghttp2",
 					"-lz",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/CNIONghttp2/module.modulemap";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/CNIONghttp2/module.modulemap";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_FORCE_DYNAMIC_LINK_STDLIB = YES;
 				SWIFT_FORCE_STATIC_LINK_STDLIB = NO;
@@ -7478,15 +7470,15 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio-http2.git-1684232237084789971/Sources/CNIONghttp2/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOZlib/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOHTTPParser/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOSHA1/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOAtomics/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIODarwin/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOLinux/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio-http2/Sources/CNIONghttp2/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOZlib/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOHTTPParser/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOSHA1/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIODarwin/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOLinux/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 					"$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/CNIONghttp2",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/EchoNIO_Info.plist";
@@ -7494,15 +7486,15 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx @executable_path";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
+					"-L/usr/local/Cellar/nghttp2/1.38.0/lib",
 					"-lnghttp2",
 					"-lz",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/CNIONghttp2/module.modulemap";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/CNIONghttp2/module.modulemap";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_FORCE_DYNAMIC_LINK_STDLIB = YES;
 				SWIFT_FORCE_STATIC_LINK_STDLIB = NO;
@@ -7521,11 +7513,11 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOSHA1/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOAtomics/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIODarwin/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOLinux/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOSHA1/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIODarwin/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOLinux/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/NIO_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -7556,11 +7548,11 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOSHA1/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOAtomics/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIODarwin/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOLinux/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOSHA1/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIODarwin/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOLinux/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/NIO_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -7591,8 +7583,8 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOAtomics/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/NIOConcurrencyHelpers_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -7623,8 +7615,8 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOAtomics/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/NIOConcurrencyHelpers_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -7655,11 +7647,11 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOSHA1/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOAtomics/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIODarwin/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOLinux/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOSHA1/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIODarwin/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOLinux/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/NIOFoundationCompat_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -7690,11 +7682,11 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOSHA1/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOAtomics/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIODarwin/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOLinux/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOSHA1/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIODarwin/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOLinux/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/NIOFoundationCompat_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -7725,13 +7717,13 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOZlib/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOHTTPParser/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOSHA1/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOAtomics/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIODarwin/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOLinux/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOZlib/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOHTTPParser/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOSHA1/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIODarwin/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOLinux/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/NIOHTTP1_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -7762,13 +7754,13 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOZlib/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOHTTPParser/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOSHA1/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOAtomics/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIODarwin/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOLinux/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOZlib/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOHTTPParser/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOSHA1/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIODarwin/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOLinux/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/NIOHTTP1_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -7799,15 +7791,15 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOZlib/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOHTTPParser/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOSHA1/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOAtomics/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIODarwin/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOLinux/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
-					"$(SRCROOT)/.build/checkouts/swift-nio-http2.git-1684232237084789971/Sources/CNIONghttp2/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOZlib/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOHTTPParser/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOSHA1/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIODarwin/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOLinux/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
+					"$(SRCROOT)/.build/checkouts/swift-nio-http2/Sources/CNIONghttp2/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
 					"$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/CNIONghttp2",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/NIOHTTP2_Info.plist";
@@ -7815,15 +7807,15 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lz",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
+					"-L/usr/local/Cellar/nghttp2/1.38.0/lib",
 					"-lnghttp2",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/CNIONghttp2/module.modulemap";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/CNIONghttp2/module.modulemap";
 				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.NIOHTTP2;
 				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
@@ -7844,15 +7836,15 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOZlib/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOHTTPParser/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOSHA1/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOAtomics/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIODarwin/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOLinux/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
-					"$(SRCROOT)/.build/checkouts/swift-nio-http2.git-1684232237084789971/Sources/CNIONghttp2/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOZlib/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOHTTPParser/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOSHA1/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIODarwin/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOLinux/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
+					"$(SRCROOT)/.build/checkouts/swift-nio-http2/Sources/CNIONghttp2/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
 					"$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/CNIONghttp2",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/NIOHTTP2_Info.plist";
@@ -7860,15 +7852,15 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lz",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
+					"-L/usr/local/Cellar/nghttp2/1.38.0/lib",
 					"-lnghttp2",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/CNIONghttp2/module.modulemap";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/CNIONghttp2/module.modulemap";
 				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.NIOHTTP2;
 				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
@@ -7889,7 +7881,7 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/NIOPriorityQueue_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -7920,7 +7912,7 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/NIOPriorityQueue_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -7951,11 +7943,11 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOSHA1/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOAtomics/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIODarwin/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOLinux/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOSHA1/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIODarwin/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOLinux/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/NIOTLS_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -7986,11 +7978,11 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOSHA1/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOAtomics/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIODarwin/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOLinux/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOSHA1/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIODarwin/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOLinux/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/NIOTLS_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
@@ -8020,23 +8012,23 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/RootsEncoder_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx @executable_path";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
+					"-L/usr/local/Cellar/nghttp2/1.38.0/lib",
 					"-lnghttp2",
 					"-lz",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_FORCE_DYNAMIC_LINK_STDLIB = YES;
 				SWIFT_FORCE_STATIC_LINK_STDLIB = NO;
@@ -8054,23 +8046,23 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/RootsEncoder_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx @executable_path";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
+					"-L/usr/local/Cellar/nghttp2/1.38.0/lib",
 					"-lnghttp2",
 					"-lz",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_FORCE_DYNAMIC_LINK_STDLIB = YES;
 				SWIFT_FORCE_STATIC_LINK_STDLIB = NO;
@@ -8090,8 +8082,8 @@
 					"$(inherited)",
 					"$(SRCROOT)/Sources/CgRPC/include",
 					"$(SRCROOT)/Sources/BoringSSL/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 					"$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/Simple_Info.plist";
@@ -8099,15 +8091,15 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx @executable_path";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
+					"-L/usr/local/Cellar/nghttp2/1.38.0/lib",
 					"-lnghttp2",
 					"-lz",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include -Xcc -fmodule-map-file=$(SRCROOT)/Sources/CgRPC/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL/module.modulemap";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include -Xcc -fmodule-map-file=$(SRCROOT)/Sources/CgRPC/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL/module.modulemap";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_FORCE_DYNAMIC_LINK_STDLIB = YES;
 				SWIFT_FORCE_STATIC_LINK_STDLIB = NO;
@@ -8127,8 +8119,8 @@
 					"$(inherited)",
 					"$(SRCROOT)/Sources/CgRPC/include",
 					"$(SRCROOT)/Sources/BoringSSL/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 					"$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/Simple_Info.plist";
@@ -8136,15 +8128,15 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx @executable_path";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
+					"-L/usr/local/Cellar/nghttp2/1.38.0/lib",
 					"-lnghttp2",
 					"-lz",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include -Xcc -fmodule-map-file=$(SRCROOT)/Sources/CgRPC/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL/module.modulemap";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include -Xcc -fmodule-map-file=$(SRCROOT)/Sources/CgRPC/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL/module.modulemap";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_FORCE_DYNAMIC_LINK_STDLIB = YES;
 				SWIFT_FORCE_STATIC_LINK_STDLIB = NO;
@@ -8165,8 +8157,8 @@
 					"$(inherited)",
 					"$(SRCROOT)/Sources/CgRPC/include",
 					"$(SRCROOT)/Sources/BoringSSL/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 					"$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/SwiftGRPC_Info.plist";
@@ -8174,15 +8166,13 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
-					"-lnghttp2",
 					"-lz",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include -Xcc -fmodule-map-file=$(SRCROOT)/Sources/CgRPC/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL/module.modulemap";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include -Xcc -fmodule-map-file=$(SRCROOT)/Sources/CgRPC/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL/module.modulemap";
 				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.SwiftGRPC;
 				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
@@ -8205,8 +8195,8 @@
 					"$(inherited)",
 					"$(SRCROOT)/Sources/CgRPC/include",
 					"$(SRCROOT)/Sources/BoringSSL/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 					"$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/SwiftGRPC_Info.plist";
@@ -8214,15 +8204,13 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
-					"-lnghttp2",
 					"-lz",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include -Xcc -fmodule-map-file=$(SRCROOT)/Sources/CgRPC/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL/module.modulemap";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include -Xcc -fmodule-map-file=$(SRCROOT)/Sources/CgRPC/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL/module.modulemap";
 				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.SwiftGRPC;
 				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
@@ -8243,15 +8231,15 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio-http2.git-1684232237084789971/Sources/CNIONghttp2/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOZlib/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOHTTPParser/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOSHA1/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOAtomics/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIODarwin/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOLinux/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio-http2/Sources/CNIONghttp2/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOZlib/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOHTTPParser/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOSHA1/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIODarwin/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOLinux/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 					"$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/CNIONghttp2",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/SwiftGRPCNIO_Info.plist";
@@ -8259,15 +8247,15 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
+					"-L/usr/local/Cellar/nghttp2/1.38.0/lib",
 					"-lnghttp2",
 					"-lz",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/CNIONghttp2/module.modulemap";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/CNIONghttp2/module.modulemap";
 				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.SwiftGRPCNIO;
 				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
@@ -8288,15 +8276,15 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio-http2.git-1684232237084789971/Sources/CNIONghttp2/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOZlib/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOHTTPParser/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOSHA1/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOAtomics/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIODarwin/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOLinux/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio-http2/Sources/CNIONghttp2/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOZlib/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOHTTPParser/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOSHA1/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIODarwin/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOLinux/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 					"$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/CNIONghttp2",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/SwiftGRPCNIO_Info.plist";
@@ -8304,15 +8292,15 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
+					"-L/usr/local/Cellar/nghttp2/1.38.0/lib",
 					"-lnghttp2",
 					"-lz",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/CNIONghttp2/module.modulemap";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/CNIONghttp2/module.modulemap";
 				PRODUCT_BUNDLE_IDENTIFIER = io.grpc.SwiftGRPCNIO;
 				PRODUCT_MODULE_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
@@ -8334,17 +8322,17 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio-http2.git-1684232237084789971/Sources/CNIONghttp2/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOZlib/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOHTTPParser/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOSHA1/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOAtomics/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIODarwin/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOLinux/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-http2/Sources/CNIONghttp2/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOZlib/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOHTTPParser/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOSHA1/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIODarwin/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOLinux/include",
 					"$(SRCROOT)/Sources/CgRPC/include",
 					"$(SRCROOT)/Sources/BoringSSL/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 					"$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/CNIONghttp2",
 					"$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL",
 				);
@@ -8353,15 +8341,15 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @loader_path/../Frameworks @loader_path/Frameworks";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
+					"-L/usr/local/Cellar/nghttp2/1.38.0/lib",
 					"-lnghttp2",
 					"-lz",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/CNIONghttp2/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/Sources/CgRPC/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL/module.modulemap";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/CNIONghttp2/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/Sources/CgRPC/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL/module.modulemap";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = SwiftGRPCNIOTests;
@@ -8379,17 +8367,17 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio-http2.git-1684232237084789971/Sources/CNIONghttp2/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOZlib/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOHTTPParser/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOSHA1/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOAtomics/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIODarwin/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio.git--5531377063216196022/Sources/CNIOLinux/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio-http2/Sources/CNIONghttp2/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOZlib/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOHTTPParser/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOSHA1/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOAtomics/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIODarwin/include",
+					"$(SRCROOT)/.build/checkouts/swift-nio/Sources/CNIOLinux/include",
 					"$(SRCROOT)/Sources/CgRPC/include",
 					"$(SRCROOT)/Sources/BoringSSL/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 					"$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/CNIONghttp2",
 					"$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL",
 				);
@@ -8398,15 +8386,15 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @loader_path/../Frameworks @loader_path/Frameworks";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
+					"-L/usr/local/Cellar/nghttp2/1.38.0/lib",
 					"-lnghttp2",
 					"-lz",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/CNIONghttp2/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/Sources/CgRPC/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL/module.modulemap";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/CNIONghttp2/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/Sources/CgRPC/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL/module.modulemap";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = SwiftGRPCNIOTests;
@@ -8460,8 +8448,8 @@
 					"$(inherited)",
 					"$(SRCROOT)/Sources/CgRPC/include",
 					"$(SRCROOT)/Sources/BoringSSL/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 					"$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/SwiftGRPCTests_Info.plist";
@@ -8469,15 +8457,15 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @loader_path/../Frameworks @loader_path/Frameworks";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
+					"-L/usr/local/Cellar/nghttp2/1.38.0/lib",
 					"-lnghttp2",
 					"-lz",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include -Xcc -fmodule-map-file=$(SRCROOT)/Sources/CgRPC/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL/module.modulemap";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include -Xcc -fmodule-map-file=$(SRCROOT)/Sources/CgRPC/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL/module.modulemap";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = SwiftGRPCTests;
@@ -8497,8 +8485,8 @@
 					"$(inherited)",
 					"$(SRCROOT)/Sources/CgRPC/include",
 					"$(SRCROOT)/Sources/BoringSSL/include",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 					"$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/SwiftGRPCTests_Info.plist";
@@ -8506,15 +8494,15 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @loader_path/../Frameworks @loader_path/Frameworks";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
+					"-L/usr/local/Cellar/nghttp2/1.38.0/lib",
 					"-lnghttp2",
 					"-lz",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include -Xcc -fmodule-map-file=$(SRCROOT)/Sources/CgRPC/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL/module.modulemap";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include -Xcc -fmodule-map-file=$(SRCROOT)/Sources/CgRPC/include/module.modulemap -Xcc -fmodule-map-file=$(SRCROOT)/SwiftGRPC-Carthage.xcodeproj/GeneratedModuleMap/BoringSSL/module.modulemap";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_VERSION = 5.0;
 				TARGET_NAME = SwiftGRPCTests;
@@ -8694,23 +8682,23 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/protoc_gen_swiftgrpc_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx @executable_path";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
+					"-L/usr/local/Cellar/nghttp2/1.38.0/lib",
 					"-lnghttp2",
 					"-lz",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_FORCE_DYNAMIC_LINK_STDLIB = YES;
 				SWIFT_FORCE_STATIC_LINK_STDLIB = NO;
@@ -8728,23 +8716,23 @@
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support.git--6355023976830560477",
-					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support.git--1829432960581026853",
+					"$(SRCROOT)/.build/checkouts/swift-nio-nghttp2-support",
+					"$(SRCROOT)/.build/checkouts/swift-nio-zlib-support",
 				);
 				INFOPLIST_FILE = "SwiftGRPC-Carthage.xcodeproj/protoc_gen_swiftgrpc_Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) $(TOOLCHAIN_DIR)/usr/lib/swift/macosx @executable_path";
 				OTHER_CFLAGS = (
 					"$(inherited)",
-					"-I/usr/local/Cellar/nghttp2/1.37.0/include",
+					"-I/usr/local/Cellar/nghttp2/1.38.0/include",
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-L/usr/local/Cellar/nghttp2/1.37.0/lib",
+					"-L/usr/local/Cellar/nghttp2/1.38.0/lib",
 					"-lnghttp2",
 					"-lz",
 				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.37.0/include";
+				OTHER_SWIFT_FLAGS = "$(inherited) -I/usr/local/Cellar/nghttp2/1.38.0/include";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_FORCE_DYNAMIC_LINK_STDLIB = YES;
 				SWIFT_FORCE_STATIC_LINK_STDLIB = NO;
