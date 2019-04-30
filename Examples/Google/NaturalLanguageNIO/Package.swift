@@ -31,7 +31,6 @@ let package = Package(
               "SwiftGRPCNIO",
               "SwiftProtobuf",
               "Commander",
-	      "OAuth2"
-            ],
-	    path: "Sources")
+              "OAuth2"],
+            path: "Sources")
   ])
