@@ -141,7 +141,9 @@ public class Call {
                                   .sendInitialMetadata(metadata.copy()),
                                   .receiveInitialMetadata
                                   ],
-                                 completion: nil))
+                                 completion: completion != nil
+                                  ? { op in completion?(CallResult(op)) }
+                                  : nil))
       try perform(OperationGroup(call: self,
                                  operations: [.receiveStatusOnClient],
                                  completion: completion != nil
