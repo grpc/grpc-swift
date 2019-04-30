@@ -38,25 +38,6 @@ class NIOFunctionalTestsInsecureTransport: NIOEchoTestCaseBase {
 }
 
 extension NIOFunctionalTestsInsecureTransport {
-  func makeExpectation(description: String, expectedFulfillmentCount: Int = 1, assertForOverFulfill: Bool = true) -> XCTestExpectation {
-    let expectation = self.expectation(description: description)
-    expectation.expectedFulfillmentCount = expectedFulfillmentCount
-    expectation.assertForOverFulfill = assertForOverFulfill
-    return expectation
-  }
-
-  func makeStatusExpectation(expectedFulfillmentCount: Int = 1) -> XCTestExpectation {
-    return makeExpectation(description: "Expecting status received",
-                           expectedFulfillmentCount: expectedFulfillmentCount)
-  }
-
-  func makeResponseExpectation(expectedFulfillmentCount: Int = 1) -> XCTestExpectation {
-    return makeExpectation(description: "Expecting \(expectedFulfillmentCount) response(s)",
-                           expectedFulfillmentCount: expectedFulfillmentCount)
-  }
-}
-
-extension NIOFunctionalTestsInsecureTransport {
   func doTestUnary(request: Echo_EchoRequest, expect response: Echo_EchoResponse, file: StaticString = #file, line: UInt = #line) {
     let responseExpectation = self.makeResponseExpectation()
     let statusExpectation = self.makeStatusExpectation()

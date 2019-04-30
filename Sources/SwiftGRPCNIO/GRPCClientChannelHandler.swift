@@ -100,11 +100,16 @@ internal class GRPCClientChannelHandler<RequestMessage: Message, ResponseMessage
 
   /// Observe the given error.
   ///
-  /// Calls `observeStatus(status:)`. with `error.asGRPCStatus()`.
+  /// If the error conforms to `GRPCStatusTransformable` then `observeStatus(status:)` is called
+  /// with the transformed error, otherwise `GRPCStatus.processingError` is used.
   ///
   /// - Parameter error: the error to observe.
-  internal func observeError(_ error: GRPCError) {
-    self.observeStatus(error.asGRPCStatus())
+  internal func observeError(_ error: Error) {
+    if let transformable = error as? GRPCStatusTransformable {
+      self.observeStatus(transformable.asGRPCStatus())
+    } else {
+      self.observeStatus(.processingError)
+    }
   }
 }
 

@@ -66,3 +66,17 @@ extension EventLoopFuture {
     }
   }
 }
+
+extension EventLoopFuture {
+  // TODO: Replace with `always` once https://github.com/apple/swift-nio/pull/981 is released.
+  func peekError(callback: @escaping (Error) -> ()) -> EventLoopFuture<Value> {
+    self.whenFailure(callback)
+    return self
+  }
+
+  // TODO: Replace with `always` once https://github.com/apple/swift-nio/pull/981 is released.
+  func peek(callback: @escaping (Value) -> ()) -> EventLoopFuture<Value> {
+    self.whenSuccess(callback)
+    return self
+  }
+}

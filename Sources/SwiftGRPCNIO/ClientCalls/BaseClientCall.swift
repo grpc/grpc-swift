@@ -89,6 +89,10 @@ open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
       statusPromise: connection.channel.eventLoop.makePromise(),
       responseObserver: responseObserver)
 
+    self.streamPromise.futureResult.whenFailure { error in
+      self.clientChannelHandler.observeError(error)
+    }
+
     self.createStreamChannel()
     self.setTimeout(callOptions.timeout)
   }
@@ -145,9 +149,7 @@ extension BaseClientCall {
   ///   - requestHead: The request head to send.
   ///   - promise: A promise to fulfill once the request head has been sent.
   internal func sendHead(_ requestHead: HTTPRequestHead, promise: EventLoopPromise<Void>?) {
-    self.subchannel.whenSuccess { channel in
-      channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.head(requestHead), promise: promise)
-    }
+    self.writeAndFlushOnStream(.head(requestHead), promise: promise)
   }
 
   /// Send the request head once `subchannel` becomes available.
@@ -169,9 +171,7 @@ extension BaseClientCall {
   ///   - message: The message to send.
   ///   - promise: A promise to fulfil when the message reaches the network.
   internal func _sendMessage(_ message: RequestMessage, promise: EventLoopPromise<Void>?) {
-    self.subchannel.whenSuccess { channel in
-      channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.message(message), promise: promise)
-    }
+    self.writeAndFlushOnStream(.message(message), promise: promise)
   }
 
   /// Send the given message once `subchannel` becomes available.
@@ -190,9 +190,7 @@ extension BaseClientCall {
   /// - Important: This should only ever be called once.
   /// - Parameter promise: A promise to succeed once then end has been sent.
   internal func _sendEnd(promise: EventLoopPromise<Void>?) {
-    self.subchannel.whenSuccess { channel in
-      channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.end, promise: promise)
-    }
+    self.writeAndFlushOnStream(.end, promise: promise)
   }
 
   /// Send `end` once `subchannel` becomes available.
@@ -206,6 +204,26 @@ extension BaseClientCall {
     return promise.futureResult
   }
 
+  /// Writes the given request on the future `Channel` for the HTTP/2 stream used to make this call.
+  ///
+  /// This method is intended to be used by the `sendX` methods in order to ensure that they fail
+  /// futures associated with this call should the write fail (e.g. due to a closed connection).
+  private func writeAndFlushOnStream(_ request: GRPCClientRequestPart<RequestMessage>, promise: EventLoopPromise<Void>?) {
+    // We need to use a promise here; if the write fails then it _must_ be observed by the handler
+    // to ensure that any futures given to the user are fulfilled.
+    let promise = promise ?? self.connection.channel.eventLoop.makePromise()
+
+    promise.futureResult.whenFailure { error in
+      self.clientChannelHandler.observeError(error)
+    }
+
+    self.subchannel.cascadeFailure(to: promise)
+
+    self.subchannel.whenSuccess { channel in
+      channel.writeAndFlush(NIOAny(request), promise: promise)
+    }
+  }
+
   /// Creates a client-side timeout for this call.
   ///
   /// - Important: This should only ever be called once.
@@ -213,7 +231,7 @@ extension BaseClientCall {
     if timeout == .infinite { return }
 
     self.connection.channel.eventLoop.scheduleTask(in: timeout.asNIOTimeAmount) { [weak self] in
-      self?.clientChannelHandler.observeError(.client(.deadlineExceeded(timeout)))
+      self?.clientChannelHandler.observeError(GRPCError.client(.deadlineExceeded(timeout)))
     }
   }
 

@@ -150,7 +150,10 @@ class NIOEchoTestCaseBase: XCTestCase {
   }
 
   override func tearDown() {
-    XCTAssertNoThrow(try self.client.connection.close().wait())
+    // Some tests close the channel, so would throw here if called twice.
+    if self.client.connection.channel.isActive {
+      XCTAssertNoThrow(try self.client.connection.close().wait())
+    }
     XCTAssertNoThrow(try self.clientEventLoopGroup.syncShutdownGracefully())
     self.client = nil
     self.clientEventLoopGroup = nil
@@ -161,5 +164,34 @@ class NIOEchoTestCaseBase: XCTestCase {
     self.serverEventLoopGroup = nil
 
     super.tearDown()
+  }
+}
+
+extension NIOEchoTestCaseBase {
+  func makeExpectation(description: String, expectedFulfillmentCount: Int = 1, assertForOverFulfill: Bool = true) -> XCTestExpectation {
+    let expectation = self.expectation(description: description)
+    expectation.expectedFulfillmentCount = expectedFulfillmentCount
+    expectation.assertForOverFulfill = assertForOverFulfill
+    return expectation
+  }
+
+  func makeStatusExpectation(expectedFulfillmentCount: Int = 1) -> XCTestExpectation {
+    return makeExpectation(description: "Expecting status received",
+                           expectedFulfillmentCount: expectedFulfillmentCount)
+  }
+
+  func makeResponseExpectation(expectedFulfillmentCount: Int = 1) -> XCTestExpectation {
+    return makeExpectation(description: "Expecting \(expectedFulfillmentCount) response(s)",
+      expectedFulfillmentCount: expectedFulfillmentCount)
+  }
+
+  func makeRequestExpectation(expectedFulfillmentCount: Int = 1) -> XCTestExpectation {
+    return makeExpectation(
+      description: "Expecting \(expectedFulfillmentCount) request(s) to have been sent",
+      expectedFulfillmentCount: expectedFulfillmentCount)
+  }
+
+  func makeInitialMetadataExpectation() -> XCTestExpectation {
+    return makeExpectation(description: "Expecting initial metadata")
   }
 }

@@ -28,8 +28,10 @@ public class ServerStreamingClientCall<RequestMessage: Message, ResponseMessage:
     super.init(connection: connection, path: path, callOptions: callOptions, responseObserver: .callback(handler))
 
     let requestHead = self.makeRequestHead(path: path, host: connection.host, callOptions: callOptions)
-    self.sendHead(requestHead)
-      .flatMap { self._sendMessage(request) }
-      .whenSuccess { self._sendEnd(promise: nil) }
+    self.sendHead(requestHead).flatMap {
+      self._sendMessage(request)
+    }.whenSuccess {
+      self._sendEnd(promise: nil)
+    }
   }
 }

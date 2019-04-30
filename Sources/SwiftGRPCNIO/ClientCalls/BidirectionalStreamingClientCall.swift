@@ -34,7 +34,9 @@ public class BidirectionalStreamingClientCall<RequestMessage: Message, ResponseM
     super.init(connection: connection, path: path, callOptions: callOptions, responseObserver: .callback(handler))
 
     let requestHead = self.makeRequestHead(path: path, host: connection.host, callOptions: callOptions)
-    self.messageQueue = self.messageQueue.flatMap { self.sendHead(requestHead) }
+    self.messageQueue = self.messageQueue.flatMap {
+      self.sendHead(requestHead)
+    }
   }
 
   public func sendMessage(_ message: RequestMessage) -> EventLoopFuture<Void> {
