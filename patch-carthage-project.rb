@@ -10,15 +10,15 @@ targets_to_remove.each do |target|
 end
 
 # 2) Prevent linking of nghttp2 library
-carthage_nghttp2_unlink_targets = [ "BoringSSL", "CgRPC", "SwiftGRPC" ]
-targets_to_unlink = project.targets.select { |target| carthage_nghttp2_unlink_targets.include?(target.name) }
-ldflags_to_remove = [ "-L/usr/local/Cellar/nghttp2/1.38.0/lib", "-lnghttp2" ]
-
-targets_to_unlink.each do |target|
+project.targets.each do |target|
   target.build_configurations.each do |conf|
     current_ldflags = target.build_settings(conf.name)["OTHER_LDFLAGS"]
-    cleaned_ldflags = current_ldflags.select { |flag| !ldflags_to_remove.include?(flag) }
-    target.build_settings(conf.name)["OTHER_LDFLAGS"] = cleaned_ldflags
+    if current_ldflags.is_a? String
+      target.build_settings(conf.name)["OTHER_LDFLAGS"] = "" if current_ldflags.downcase().include?("nghttp2")
+    else
+      cleaned_ldflags = current_ldflags.select { |flag| !flag.downcase().include?("nghttp2") }
+      target.build_settings(conf.name)["OTHER_LDFLAGS"] = cleaned_ldflags
+    end
   end
 end
 

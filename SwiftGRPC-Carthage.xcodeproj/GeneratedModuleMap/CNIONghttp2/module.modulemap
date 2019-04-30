@@ -1,4 +1,4 @@
 module CNIONghttp2 {
-    umbrella "/Users/William/Documents/work/clients/perceptolab/safehome/grpc-swift/.build/checkouts/swift-nio-http2/Sources/CNIONghttp2/include"
+    umbrella "/Users/William/Documents/work/clients/perceptolab/safehome/grpc-swift/.build/checkouts/swift-nio-http2.git--6139390414245659487/Sources/CNIONghttp2/include"
     export *
 }
