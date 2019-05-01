@@ -29,20 +29,19 @@ func makeClientTLS() throws -> GRPCClientConnection.TLSMode {
 }
 
 /// Create a client and return a future to provide its value.
-func makeServiceClient(_ eventLoopGroup: MultiThreadedEventLoopGroup,
-                       address: String,
-                       port: Int)
+func makeServiceClient(host: String,
+                       port: Int,
+                       eventLoopGroup: MultiThreadedEventLoopGroup)
   -> EventLoopFuture<Google_Cloud_Language_V1_LanguageServiceService_NIOClient> {
     let promise = eventLoopGroup.next().makePromise(of: Google_Cloud_Language_V1_LanguageServiceService_NIOClient.self)
     do {
-      try GRPCClientConnection.start(host: address,
+      try GRPCClientConnection.start(host: host,
                                      port: port,
                                      eventLoopGroup: eventLoopGroup,
                                      tls: makeClientTLS())
         .map { client in
-          promise.succeed(Google_Cloud_Language_V1_LanguageServiceService_NIOClient(connection: client))
-        }
-        .wait()
+          Google_Cloud_Language_V1_LanguageServiceService_NIOClient(connection: client)
+        }.cascade(to: promise)
     } catch {
       promise.fail(error)
     }
@@ -50,13 +49,13 @@ func makeServiceClient(_ eventLoopGroup: MultiThreadedEventLoopGroup,
 }
 
 enum AuthError: Error {
-  case tokenProviderFailed
   case noTokenProvider
+  case tokenProviderFailed
 }
 
 /// Get an auth token and return a future to provide its value.
-func getAuthToken(_ eventLoop: EventLoop,
-                  scopes: [String])
+func getAuthToken(scopes: [String],
+                  eventLoop: EventLoop)
   -> EventLoopFuture<String> {
     let promise = eventLoop.makePromise(of: String.self)
     guard let provider = DefaultTokenProvider(scopes: scopes) else {
@@ -83,40 +82,42 @@ func getAuthToken(_ eventLoop: EventLoop,
 /// Main program. Make a sample API request.
 do {
   let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-
+  
   // Get an auth token.
   let scopes = ["https://www.googleapis.com/auth/cloud-language"]
-  let authToken = try getAuthToken(eventLoopGroup.next(), scopes: scopes).wait()
-
+  let authToken = try getAuthToken(
+    scopes: scopes,
+    eventLoop: eventLoopGroup.next()).wait()
+  
   // Create a service client.
   let service = try makeServiceClient(
-    eventLoopGroup,
-    address: "language.googleapis.com",
-    port: 443).wait()
-
+    host: "language.googleapis.com",
+    port: 443,
+    eventLoopGroup: eventLoopGroup).wait()
+  
   // Use CallOptions to send the auth token (necessary) and set a custom timeout (optional).
   let headers = HTTPHeaders([("authorization", "Bearer " + authToken)])
   let timeout = try! GRPCTimeout.seconds(30)
   let callOptions = CallOptions(customMetadata: headers, timeout: timeout)
   print("CALL OPTIONS\n\(callOptions)\n")
-
+  
   // Construct the API request.
   var document = Google_Cloud_Language_V1_Document()
   document.type = .plainText
   document.content = "The Caterpillar and Alice looked at each other for some time in silence: at last the Caterpillar took the hookah out of its mouth, and addressed her in a languid, sleepy voice. `Who are you?' said the Caterpillar."
-
+  
   var features = Google_Cloud_Language_V1_AnnotateTextRequest.Features()
   features.extractSyntax = true
   features.extractEntities = true
   features.extractDocumentSentiment = true
   features.extractEntitySentiment = true
   features.classifyText = true
-
+  
   var request = Google_Cloud_Language_V1_AnnotateTextRequest()
   request.document = document
   request.features = features
   print("REQUEST MESSAGE\n\(request)")
-
+  
   // Create/start the API call.
   let call = service.annotateText(request, callOptions: callOptions)
   call.response.whenSuccess { response in
@@ -125,7 +126,7 @@ do {
   call.response.whenFailure { error in
     print("CALL FAILED WITH ERROR\n\(error)")
   }
-
+  
   // wait() on the status to stop the program from exiting.
   let status = try call.status.wait()
   print("CALL STATUS\n\(status)")
