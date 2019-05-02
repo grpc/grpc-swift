@@ -165,7 +165,7 @@ extension GRPCClientError: GRPCStatusTransformable {
   public func asGRPCStatus() -> GRPCStatus {
     switch self {
     case .HTTPStatusNotOk(let status):
-      return GRPCStatus(code: .unknown, message: "server returned \(status.code) \(status.reasonPhrase)")
+      return GRPCStatus(code: status.grpcStatusCode, message: "\(status.code): \(status.reasonPhrase)")
 
     case .cancelledByClient:
       return GRPCStatus(code: .cancelled, message: "client cancelled the call")
@@ -199,6 +199,28 @@ extension GRPCCommonError: GRPCStatusTransformable {
 
     case .unsupportedCompressionMechanism(let mechanism):
       return GRPCStatus(code: .unimplemented, message: "unsupported compression mechanism \(mechanism)")
+    }
+  }
+}
+
+extension HTTPResponseStatus {
+  /// The gRPC status code associated with the HTTP status code.
+  ///
+  /// See: https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md
+  internal var grpcStatusCode: StatusCode {
+    switch self {
+      case .badRequest:
+        return .internalError
+      case .unauthorized:
+        return .unauthenticated
+      case .forbidden:
+        return .permissionDenied
+      case .notFound:
+        return .unimplemented
+      case .tooManyRequests, .badGateway, .serviceUnavailable, .gatewayTimeout:
+        return .unavailable
+      default:
+        return .unknown
     }
   }
 }
