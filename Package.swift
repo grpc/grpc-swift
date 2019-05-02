@@ -108,7 +108,6 @@ let package = Package(
                 dependencies: ["SwiftGRPC"]),
     .testTarget(name: "SwiftGRPCNIOTests",
                 dependencies: [
-                  "SwiftGRPC",
                   "SwiftGRPCNIO",
                   "SwiftGRPCNIOSampleData",
                   "SwiftGRPCNIOInteroperabilityTests"]),
