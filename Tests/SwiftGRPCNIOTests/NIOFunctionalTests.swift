@@ -106,10 +106,10 @@ extension NIOFunctionalTestsInsecureTransport {
         let get = client.get(request)
         get.response.assertEqual(response, fulfill: responseExpectation)
         get.status.map { $0.code }.assertEqual(.ok, fulfill: statusExpectation)
+      }
 
-        if (i+1) % 1_000 == 0 {
-          print("\(i+1) requests sent so far, elapsed time: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))")
-        }
+      if upperBound % 1_000 == 0 {
+        print("\(upperBound) requests sent so far, elapsed time: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))")
       }
 
       self.wait(for: [responseExpectation, statusExpectation], timeout: batchTimeout)
