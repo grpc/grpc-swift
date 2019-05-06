@@ -8,9 +8,23 @@ targets_to_remove = project.targets.select { |target| !carthage_targets.include?
 targets_to_remove.each do |target|
   target.remove_from_project
 end
+
+# 2) Prevent linking of nghttp2 library
+project.targets.each do |target|
+  target.build_configurations.each do |conf|
+    current_ldflags = target.build_settings(conf.name)["OTHER_LDFLAGS"]
+    if current_ldflags.is_a? String
+      target.build_settings(conf.name)["OTHER_LDFLAGS"] = "" if current_ldflags.downcase().include?("nghttp2")
+    else
+      cleaned_ldflags = current_ldflags.select { |flag| !flag.downcase().include?("nghttp2") }
+      target.build_settings(conf.name)["OTHER_LDFLAGS"] = cleaned_ldflags
+    end
+  end
+end
+
 project.save
 
-# 2) Add SwiftProtobuf to the build actions list
+# 3) Add SwiftProtobuf to the build actions list
 schemePath = Xcodeproj::XCScheme.shared_data_dir(project_path) + "SwiftGRPC-Package.xcscheme"
 scheme = Xcodeproj::XCScheme.new(schemePath)
 
@@ -22,7 +36,7 @@ newBuildAction.build_for_running = true
 newBuildAction.build_for_testing = true
 scheme.build_action.add_entry(newBuildAction)
 
-# 3) Add a "Pre-Actions" script to the "BuildAction" of SwiftGRPC-Package.xcscheme.
+# 4) Add a "Pre-Actions" script to the "BuildAction" of SwiftGRPC-Package.xcscheme.
 # The Pre-Actions script will resolve the SPM dependencies and fix the corresponding paths in SwiftGRPC-Carthage.xcodeproj before the BuildAction
 buildActions = scheme.build_action.xml_element
 
