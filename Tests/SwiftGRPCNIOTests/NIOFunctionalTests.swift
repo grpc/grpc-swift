@@ -77,33 +77,44 @@ extension NIOFunctionalTestsInsecureTransport {
   }
 
   func testUnaryLotsOfRequests() throws {
-    self.defaultTestTimeout = 60.0
-
     // Sending that many requests at once can sometimes trip things up, it seems.
     let clockStart = clock()
     let numberOfRequests = 2_000
-    let responseExpectation = self.makeResponseExpectation(expectedFulfillmentCount: numberOfRequests)
-    let statusExpectation = self.makeStatusExpectation(expectedFulfillmentCount: numberOfRequests)
 
-    for i in 0..<numberOfRequests {
-      if i % 1_000 == 0 && i > 0 {
-        print("\(i) requests sent so far, elapsed time: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))")
+    // Due to https://github.com/apple/swift-nio-http2/issues/87#issuecomment-483542401 we need to
+    // limit the number of active streams. The default in NIOHTTP2 is 100, so we'll use it too.
+    //
+    // In the future we might want to build in some kind of mechanism which handles this for the
+    // user.
+    let batchSize = 100
+
+    // Instead of setting a timeout out on the test we'll set one for each batch, if any of them
+    // timeout then we'll bail out of the test.
+    let batchTimeout: TimeInterval = 5.0
+    self.continueAfterFailure = false
+
+    for lowerBound in stride(from: 0, to: numberOfRequests, by: batchSize) {
+      let upperBound = min(lowerBound + batchSize, numberOfRequests)
+      let numberOfCalls = upperBound - lowerBound
+      let responseExpectation = self.makeResponseExpectation(expectedFulfillmentCount: numberOfCalls)
+      let statusExpectation = self.makeStatusExpectation(expectedFulfillmentCount: numberOfCalls)
+
+      for i in lowerBound..<upperBound {
+        let request = Echo_EchoRequest(text: "foo \(i)")
+        let response = Echo_EchoResponse(text: "Swift echo get: foo \(i)")
+
+        let get = client.get(request)
+        get.response.assertEqual(response, fulfill: responseExpectation)
+        get.status.map { $0.code }.assertEqual(.ok, fulfill: statusExpectation)
       }
 
-      let request = Echo_EchoRequest(text: "foo \(i)")
-      let response = Echo_EchoResponse(text: "Swift echo get: foo \(i)")
+      if upperBound % 1_000 == 0 {
+        print("\(upperBound) requests sent so far, elapsed time: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))")
+      }
 
-      let call = client.get(request)
-      call.response.assertEqual(response, fulfill: responseExpectation)
-      call.status.map { $0.code }.assertEqual(.ok, fulfill: statusExpectation)
-
-      // Sleep for 250 us to avoid the quadratic runtime described in
-      // https://github.com/apple/swift-nio-http2/issues/87#issuecomment-483542401.
-      Thread.sleep(forTimeInterval: 0.00025)
+      self.wait(for: [responseExpectation, statusExpectation], timeout: batchTimeout)
     }
-    print("total time to send \(numberOfRequests) requests: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))")
 
-    self.wait(for: [responseExpectation, statusExpectation], timeout: self.defaultTestTimeout)
     print("total time to receive \(numberOfRequests) responses: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))")
   }
 
