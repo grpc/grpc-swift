@@ -128,13 +128,23 @@ public class Call {
       guard let message = message else {
         throw CallError.invalidMessage
       }
-      operations = [
-        .sendInitialMetadata(metadata.copy()),
-        .sendMessage(ByteBuffer(data:message)),
-        .sendCloseFromClient,
-        .receiveInitialMetadata,
-        .receiveStatusOnClient,
-      ]
+      try perform(OperationGroup(call: self,
+                                 operations: [
+                                  .sendInitialMetadata(metadata.copy()),
+                                  .sendMessage(ByteBuffer(data:message)),
+                                  .receiveInitialMetadata,
+                                  ],
+                                 completion: completion != nil
+                                  ? { op in completion?(CallResult(op)) }
+                                  : nil))
+      try perform(OperationGroup(call: self,
+                                 operations: [.sendCloseFromClient,
+                                              .receiveStatusOnClient,
+                                              ],
+                                 completion: completion != nil
+                                  ? { op in completion?(CallResult(op)) }
+                                  : nil))
+      return
     case .clientStreaming, .bidiStreaming:
       try perform(OperationGroup(call: self,
                                  operations: [
