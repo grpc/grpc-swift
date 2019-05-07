@@ -43,7 +43,9 @@ public class ClientStreamingClientCall<RequestMessage: Message, ResponseMessage:
       responseObserver: .succeedPromise(responsePromise))
 
     let requestHead = self.makeRequestHead(path: path, host: connection.host, callOptions: callOptions)
-    self.messageQueue = self.messageQueue.flatMap { self.sendHead(requestHead) }
+    self.messageQueue = self.messageQueue.flatMap {
+      self.sendHead(requestHead)
+    }
   }
 
   public func sendMessage(_ message: RequestMessage) -> EventLoopFuture<Void> {

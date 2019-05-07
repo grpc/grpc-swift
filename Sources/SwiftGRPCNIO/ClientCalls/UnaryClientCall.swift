@@ -38,8 +38,10 @@ public class UnaryClientCall<RequestMessage: Message, ResponseMessage: Message>:
       responseObserver: .succeedPromise(responsePromise))
 
     let requestHead = self.makeRequestHead(path: path, host: connection.host, callOptions: callOptions)
-    self.sendHead(requestHead)
-      .flatMap { self._sendMessage(request) }
-      .whenSuccess { self._sendEnd(promise: nil) }
+    self.sendHead(requestHead).flatMap {
+      self._sendMessage(request)
+    }.whenSuccess {
+      self._sendEnd(promise: nil)
+    }
   }
 }

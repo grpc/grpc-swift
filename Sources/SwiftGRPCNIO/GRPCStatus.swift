@@ -1,5 +1,7 @@
 import Foundation
+import NIO
 import NIOHTTP1
+import NIOHTTP2
 
 /// Encapsulates the result of a gRPC call.
 public struct GRPCStatus: Error, Equatable {
@@ -31,5 +33,29 @@ public protocol GRPCStatusTransformable: Error {
 extension GRPCStatus: GRPCStatusTransformable {
   public func asGRPCStatus() -> GRPCStatus {
     return self
+  }
+}
+
+extension NIOHTTP2Errors.StreamClosed: GRPCStatusTransformable {
+  public func asGRPCStatus() -> GRPCStatus {
+    return .init(code: .unavailable, message: self.localizedDescription)
+  }
+}
+
+extension NIOHTTP2Errors.IOOnClosedConnection: GRPCStatusTransformable {
+  public func asGRPCStatus() -> GRPCStatus {
+    return .init(code: .unavailable, message: "The connection is closed")
+  }
+}
+
+extension ChannelError: GRPCStatusTransformable {
+  public func asGRPCStatus() -> GRPCStatus {
+    switch self {
+    case .inputClosed, .outputClosed, .ioOnClosedChannel:
+      return .init(code: .unavailable, message: "The connection is closed")
+
+    default:
+      return .processingError
+    }
   }
 }
