@@ -155,8 +155,8 @@ extension GRPCClientChannelHandler: ChannelInboundHandler {
 
       self.observeStatus(status)
 
-      // We don't expect any more requests/responses beyond this point.
-      self.close(context: context, mode: .all, promise: nil)
+      // We don't expect any more requests/responses beyond this point and we don't need to close
+      // the channel since NIO's HTTP/2 channel handlers will deal with this for us.
     }
   }
 }
