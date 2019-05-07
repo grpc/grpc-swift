@@ -29,9 +29,9 @@ import NIO
 public class BidirectionalStreamingClientCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage>, StreamingRequestClientCall {
   private var messageQueue: EventLoopFuture<Void>
 
-  public init(connection: GRPCClientConnection, path: String, callOptions: CallOptions, handler: @escaping (ResponseMessage) -> Void) {
+  public init(connection: GRPCClientConnection, path: String, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?, handler: @escaping (ResponseMessage) -> Void) {
     self.messageQueue = connection.channel.eventLoop.makeSucceededFuture(())
-    super.init(connection: connection, path: path, callOptions: callOptions, responseObserver: .callback(handler))
+    super.init(connection: connection, path: path, callOptions: callOptions, responseObserver: .callback(handler), errorDelegate: errorDelegate)
 
     let requestHead = self.makeRequestHead(path: path, host: connection.host, callOptions: callOptions)
     self.messageQueue = self.messageQueue.flatMap {

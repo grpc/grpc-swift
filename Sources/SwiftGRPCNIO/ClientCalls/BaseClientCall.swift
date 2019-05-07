@@ -80,17 +80,19 @@ open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
     connection: GRPCClientConnection,
     path: String,
     callOptions: CallOptions,
-    responseObserver: ResponseObserver<ResponseMessage>
+    responseObserver: ResponseObserver<ResponseMessage>,
+    errorDelegate: ClientErrorDelegate?
   ) {
     self.connection = connection
     self.streamPromise = connection.channel.eventLoop.makePromise()
     self.clientChannelHandler = GRPCClientChannelHandler(
       initialMetadataPromise: connection.channel.eventLoop.makePromise(),
       statusPromise: connection.channel.eventLoop.makePromise(),
-      responseObserver: responseObserver)
+      responseObserver: responseObserver,
+      errorDelegate: errorDelegate)
 
     self.streamPromise.futureResult.whenFailure { error in
-      self.clientChannelHandler.observeError(error)
+      self.clientChannelHandler.observeError(.unknown(error, origin: .client))
     }
 
     self.createStreamChannel()
@@ -214,7 +216,7 @@ extension BaseClientCall {
     let promise = promise ?? self.connection.channel.eventLoop.makePromise()
 
     promise.futureResult.whenFailure { error in
-      self.clientChannelHandler.observeError(error)
+      self.clientChannelHandler.observeError(.unknown(error, origin: .client))
     }
 
     self.subchannel.cascadeFailure(to: promise)
