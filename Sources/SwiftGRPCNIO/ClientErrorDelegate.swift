@@ -31,7 +31,7 @@ public protocol ClientErrorDelegate: class {
   func didCatchError(_ error: Error, file: StaticString, line: Int)
 }
 
-/// A `ClientErrorDelegate` which logs errors using only in debug builds.
+/// A `ClientErrorDelegate` which logs errors only in debug builds.
 public class DebugOnlyLoggingClientErrorDelegate: ClientErrorDelegate {
   public static let shared = DebugOnlyLoggingClientErrorDelegate()
 
