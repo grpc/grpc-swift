@@ -92,7 +92,7 @@ class NIOClientTLSFailureTests: XCTestCase {
     let connectionExpectation = self.makeClientConnectionExpectation()
 
     connection.assertError(fulfill: connectionExpectation) { error in
-      let clientError = (error as? GRPCError)?.error as? GRPCClientError
+      let clientError = (error as? GRPCError)?.wrappedError as? GRPCClientError
       XCTAssertEqual(clientError, .applicationLevelProtocolNegotiationFailed)
     }
 

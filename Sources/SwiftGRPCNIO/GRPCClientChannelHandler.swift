@@ -109,7 +109,7 @@ internal class GRPCClientChannelHandler<RequestMessage: Message, ResponseMessage
   ///
   /// - Parameter error: the error to observe.
   internal func observeError(_ error: GRPCError) {
-    self.errorDelegate?.didCatchError(error.error, file: error.file, line: error.line)
+    self.errorDelegate?.didCatchError(error.wrappedError, file: error.file, line: error.line)
     self.observeStatus(error.asGRPCStatus())
   }
 }
@@ -159,6 +159,22 @@ extension GRPCClientChannelHandler: ChannelInboundHandler {
       // the channel since NIO's HTTP/2 channel handlers will deal with this for us.
     }
   }
+
+  public func userInboundEventTriggered(context: ChannelHandlerContext, event: Any) {
+    if let clientUserEvent = event as? GRPCClientUserEvent {
+      switch clientUserEvent {
+      case .cancelled:
+        // We shouldn't observe an error since this event is triggered by the user: just observe the
+        // status.
+        self.observeStatus(GRPCError.client(.cancelledByClient).asGRPCStatus())
+        self.close(context: context, mode: .all, promise: nil)
+
+      case .timedOut(let timeout):
+        self.observeError(GRPCError.client(.deadlineExceeded(timeout)))
+        self.close(context: context, mode: .all, promise: nil)
+      }
+    }
+  }
 }
 
 extension GRPCClientChannelHandler: ChannelOutboundHandler {
@@ -192,8 +208,6 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
 extension GRPCClientChannelHandler {
   /// Closes the HTTP/2 stream. Inbound and outbound state are set to ignore.
   public func close(context: ChannelHandlerContext, mode: CloseMode, promise: EventLoopPromise<Void>?) {
-    self.observeError(GRPCError.client(.cancelledByClient))
-
     context.close(mode: mode, promise: promise)
 
     self.inboundState = .ignore
@@ -205,4 +219,13 @@ extension GRPCClientChannelHandler {
     self.observeError((error as? GRPCError) ?? GRPCError.unknown(error, origin: .client))
     context.close(mode: .all, promise: nil)
   }
+}
+
+/// Client user evenets.
+///
+/// - cancelled: The call has been cancelled.
+/// - timedOut: The call did not complete before the deadline was exceeded.
+public enum GRPCClientUserEvent {
+  case cancelled
+  case timedOut(GRPCTimeout)
 }

@@ -71,7 +71,7 @@ extension TransportSecurity {
 
     case .anonymousClient, .mutualAuthentication:
       return .forServer(certificateChain: [.certificate(self.serverCert)],
-                        privateKey: .privateKey(SamplePrivateKey.server), 
+                        privateKey: .privateKey(SamplePrivateKey.server),
                         trustRoots: .certificates ([self.caCert]),
                         applicationProtocols: GRPCApplicationProtocolIdentifier.allCases.map { $0.rawValue })
     }

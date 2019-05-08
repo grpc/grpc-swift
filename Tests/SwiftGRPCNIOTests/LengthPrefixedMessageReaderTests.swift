@@ -195,7 +195,7 @@ class LengthPrefixedMessageReaderTests: XCTestCase {
     reader.append(buffer: &buffer)
 
     XCTAssertThrowsError(try reader.nextMessage()) { error in
-      XCTAssertEqual(.unsupportedCompressionMechanism("unknown"), (error as? GRPCError)?.error as? GRPCCommonError)
+      XCTAssertEqual(.unsupportedCompressionMechanism("unknown"), (error as? GRPCError)?.wrappedError as? GRPCCommonError)
     }
   }
 
@@ -208,7 +208,7 @@ class LengthPrefixedMessageReaderTests: XCTestCase {
     reader.append(buffer: &buffer)
 
     XCTAssertThrowsError(try reader.nextMessage()) { error in
-      XCTAssertEqual(.unexpectedCompression, (error as? GRPCError)?.error as? GRPCCommonError)
+      XCTAssertEqual(.unexpectedCompression, (error as? GRPCError)?.wrappedError as? GRPCCommonError)
     }
   }
 

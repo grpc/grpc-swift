@@ -21,7 +21,7 @@ public struct GRPCError: Error, GRPCStatusTransformable {
   public enum Origin { case client, server }
 
   /// The underlying error thrown by framework.
-  public let error: Error
+  public let wrappedError: Error
 
   /// The origin of the error.
   public let origin: Origin
@@ -33,11 +33,11 @@ public struct GRPCError: Error, GRPCStatusTransformable {
   public let line: Int
 
   public func asGRPCStatus() -> GRPCStatus {
-    return (error as? GRPCStatusTransformable)?.asGRPCStatus() ?? .processingError
+    return (wrappedError as? GRPCStatusTransformable)?.asGRPCStatus() ?? .processingError
   }
 
   private init(_ error: Error, origin: Origin, file: StaticString, line: Int) {
-    self.error = error
+    self.wrappedError = error
     self.origin = origin
     self.file = file
     self.line = line
