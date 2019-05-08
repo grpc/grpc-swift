@@ -25,6 +25,7 @@ public class GRPCTLSVerificationHandler: ChannelInboundHandler, RemovableChannel
   public typealias InboundIn = Any
 
   private var verificationPromise: EventLoopPromise<Void>!
+  private let delegate: ClientErrorDelegate?
 
   /// A future which is fulfilled when the state of the TLS handshake is known. If the handshake
   /// was successful and the negotiated application protocol is valid then the future is succeeded.
@@ -37,7 +38,9 @@ public class GRPCTLSVerificationHandler: ChannelInboundHandler, RemovableChannel
     return verificationPromise.futureResult
   }
 
-  public init() { }
+  public init(errorDelegate: ClientErrorDelegate?) {
+    self.delegate = errorDelegate
+  }
 
   public func handlerAdded(context: ChannelHandlerContext) {
     self.verificationPromise = context.eventLoop.makePromise()
@@ -49,6 +52,11 @@ public class GRPCTLSVerificationHandler: ChannelInboundHandler, RemovableChannel
 
   public func errorCaught(context: ChannelHandlerContext, error: Error) {
     precondition(self.verificationPromise != nil, "handler has not been added to the pipeline")
+
+    if let delegate = self.delegate {
+      let grpcError = (error as? GRPCError) ?? GRPCError.unknown(error, origin: .client)
+      delegate.didCatchError(grpcError.error, file: grpcError.file, line: grpcError.line)
+    }
 
     verificationPromise.fail(error)
   }

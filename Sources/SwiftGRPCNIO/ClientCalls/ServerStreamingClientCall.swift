@@ -24,8 +24,8 @@ import NIO
 /// - `status`: the status of the gRPC call after it has ended,
 /// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
 public class ServerStreamingClientCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage> {
-  public init(connection: GRPCClientConnection, path: String, request: RequestMessage, callOptions: CallOptions, handler: @escaping (ResponseMessage) -> Void) {
-    super.init(connection: connection, path: path, callOptions: callOptions, responseObserver: .callback(handler))
+  public init(connection: GRPCClientConnection, path: String, request: RequestMessage, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?, handler: @escaping (ResponseMessage) -> Void) {
+    super.init(connection: connection, path: path, callOptions: callOptions, responseObserver: .callback(handler), errorDelegate: errorDelegate)
 
     let requestHead = self.makeRequestHead(path: path, host: connection.host, callOptions: callOptions)
     self.sendHead(requestHead).flatMap {

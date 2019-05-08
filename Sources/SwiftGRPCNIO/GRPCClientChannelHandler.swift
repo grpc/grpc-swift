@@ -33,6 +33,7 @@ internal class GRPCClientChannelHandler<RequestMessage: Message, ResponseMessage
   internal let initialMetadataPromise: EventLoopPromise<HTTPHeaders>
   internal let statusPromise: EventLoopPromise<GRPCStatus>
   internal let responseObserver: ResponseObserver<ResponseMessage>
+  internal let errorDelegate: ClientErrorDelegate?
 
   /// A promise for a unary response.
   internal var responsePromise: EventLoopPromise<ResponseMessage>? {
@@ -76,11 +77,13 @@ internal class GRPCClientChannelHandler<RequestMessage: Message, ResponseMessage
   public init(
     initialMetadataPromise: EventLoopPromise<HTTPHeaders>,
     statusPromise: EventLoopPromise<GRPCStatus>,
-    responseObserver: ResponseObserver<ResponseMessage>
+    responseObserver: ResponseObserver<ResponseMessage>,
+    errorDelegate: ClientErrorDelegate?
   ) {
     self.initialMetadataPromise = initialMetadataPromise
     self.statusPromise = statusPromise
     self.responseObserver = responseObserver
+    self.errorDelegate = errorDelegate
   }
 
   /// Observe the given status.
@@ -100,16 +103,14 @@ internal class GRPCClientChannelHandler<RequestMessage: Message, ResponseMessage
 
   /// Observe the given error.
   ///
-  /// If the error conforms to `GRPCStatusTransformable` then `observeStatus(status:)` is called
-  /// with the transformed error, otherwise `GRPCStatus.processingError` is used.
+  /// If an `errorDelegate` has been set, the delegate's `didCatchError(error:file:line:)` method is
+  /// called with the wrapped error and its source. Any unfulfilled promises are also resolved with
+  /// the given error (see `observeStatus(_:)`).
   ///
   /// - Parameter error: the error to observe.
-  internal func observeError(_ error: Error) {
-    if let transformable = error as? GRPCStatusTransformable {
-      self.observeStatus(transformable.asGRPCStatus())
-    } else {
-      self.observeStatus(.processingError)
-    }
+  internal func observeError(_ error: GRPCError) {
+    self.errorDelegate?.didCatchError(error.error, file: error.file, line: error.line)
+    self.observeStatus(error.asGRPCStatus())
   }
 }
 
@@ -154,8 +155,8 @@ extension GRPCClientChannelHandler: ChannelInboundHandler {
 
       self.observeStatus(status)
 
-      // We don't expect any more requests/responses beyond this point.
-      self.close(context: context, mode: .all, promise: nil)
+      // We don't expect any more requests/responses beyond this point and we don't need to close
+      // the channel since NIO's HTTP/2 channel handlers will deal with this for us.
     }
   }
 }
@@ -201,7 +202,6 @@ extension GRPCClientChannelHandler {
 
   /// Observe an error from the pipeline and close the channel.
   public func errorCaught(context: ChannelHandlerContext, error: Error) {
-    //! TODO: Add an error handling delegate, similar to in the server.
     self.observeError((error as? GRPCError) ?? GRPCError.unknown(error, origin: .client))
     context.close(mode: .all, promise: nil)
   }
