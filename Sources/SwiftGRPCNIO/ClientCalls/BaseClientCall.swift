@@ -122,7 +122,7 @@ extension BaseClientCall: ClientCall {
   public func cancel() {
     self.connection.channel.eventLoop.execute {
       self.subchannel.whenSuccess { channel in
-        channel.close(mode: .all, promise: nil)
+        channel.pipeline.fireUserInboundEventTriggered(GRPCClientUserEvent.cancelled)
       }
     }
   }
@@ -233,7 +233,9 @@ extension BaseClientCall {
     if timeout == .infinite { return }
 
     self.connection.channel.eventLoop.scheduleTask(in: timeout.asNIOTimeAmount) { [weak self] in
-      self?.clientChannelHandler.observeError(GRPCError.client(.deadlineExceeded(timeout)))
+      self?.subchannel.whenSuccess { stream in
+        stream.pipeline.fireUserInboundEventTriggered(GRPCClientUserEvent.timedOut(timeout))
+      }
     }
   }
 

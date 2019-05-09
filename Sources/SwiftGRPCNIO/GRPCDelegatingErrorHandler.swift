@@ -31,7 +31,7 @@ public class GRPCDelegatingErrorHandler: ChannelInboundHandler {
   public func errorCaught(context: ChannelHandlerContext, error: Error) {
     if let delegate = self.delegate {
       let grpcError = (error as? GRPCError) ?? .unknown(error, origin: .client)
-      delegate.didCatchError(grpcError.error, file: grpcError.file, line: grpcError.line)
+      delegate.didCatchError(grpcError.wrappedError, file: grpcError.file, line: grpcError.line)
     }
     context.close(promise: nil)
   }

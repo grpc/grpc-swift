@@ -21,11 +21,11 @@ class CollectingServerErrorDelegate: ServerErrorDelegate {
   }
 
   var asGRPCServerErrors: [GRPCServerError]? {
-    return (self.asGRPCErrors?.map { $0.error }) as? [GRPCServerError]
+    return (self.asGRPCErrors?.map { $0.wrappedError }) as? [GRPCServerError]
   }
 
   var asGRPCCommonErrors: [GRPCCommonError]? {
-    return (self.asGRPCErrors?.map { $0.error }) as? [GRPCCommonError]
+    return (self.asGRPCErrors?.map { $0.wrappedError }) as? [GRPCCommonError]
   }
 
   func observeLibraryError(_ error: Error) {

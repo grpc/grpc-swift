@@ -55,7 +55,7 @@ public class GRPCTLSVerificationHandler: ChannelInboundHandler, RemovableChannel
 
     if let delegate = self.delegate {
       let grpcError = (error as? GRPCError) ?? GRPCError.unknown(error, origin: .client)
-      delegate.didCatchError(grpcError.error, file: grpcError.file, line: grpcError.line)
+      delegate.didCatchError(grpcError.wrappedError, file: grpcError.file, line: grpcError.line)
     }
 
     verificationPromise.fail(error)
