@@ -89,14 +89,19 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
       throw GRPCError.client(.invalidState("received headers while in state \(state)"))
     }
 
-    guard head.status == .ok else {
-      throw GRPCError.client(.HTTPStatusNotOk(head.status))
-    }
-
     // Trailers-Only response.
     if head.headers.contains(name: GRPCHeaderName.statusCode) {
       self.state = .expectingBodyOrTrailers
       return try self.processTrailers(context: context, trailers: head.headers)
+    }
+
+    // This should be checked *after* the trailers-only response is handled since any status code
+    // and message we already have should take precedence over one we generate from the HTTP status
+    // code and reason.
+    //
+    // Source: https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md
+    guard head.status == .ok else {
+      throw GRPCError.client(.HTTPStatusNotOk(head.status))
     }
 
     let inboundCompression: CompressionMechanism = head.headers[GRPCHeaderName.encoding]
