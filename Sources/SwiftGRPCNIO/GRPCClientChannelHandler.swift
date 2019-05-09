@@ -221,11 +221,11 @@ extension GRPCClientChannelHandler {
   }
 }
 
-/// Client user evenets.
-///
-/// - cancelled: The call has been cancelled.
-/// - timedOut: The call did not complete before the deadline was exceeded.
+/// Client user events.
 public enum GRPCClientUserEvent {
+  /// The call has been cancelled.
   case cancelled
+
+  /// The call did not complete before the deadline was exceeded.
   case timedOut(GRPCTimeout)
 }
