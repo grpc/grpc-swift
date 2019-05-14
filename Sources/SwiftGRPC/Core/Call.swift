@@ -132,15 +132,16 @@ public class Call {
                                  operations: [
                                   .sendInitialMetadata(metadata.copy()),
                                   .sendMessage(ByteBuffer(data:message)),
-                                  .receiveInitialMetadata,
+                                  .receiveInitialMetadata
                                   ],
                                  completion: completion != nil
                                   ? { op in completion?(CallResult(op)) }
                                   : nil))
       try perform(OperationGroup(call: self,
-                                 operations: [.sendCloseFromClient,
-                                              .receiveStatusOnClient,
-                                              ],
+                                 operations: [
+                                  .sendCloseFromClient,
+                                  .receiveStatusOnClient
+                                  ],
                                  completion: completion != nil
                                   ? { op in completion?(CallResult(op)) }
                                   : nil))
