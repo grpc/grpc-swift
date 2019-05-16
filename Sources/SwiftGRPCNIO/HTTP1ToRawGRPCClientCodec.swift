@@ -152,11 +152,7 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
       GRPCStatusMessageMarshaller.unmarshall($0)
     }
 
-    var trailingCustomMetadata = trailers ?? HTTPHeaders()
-    trailingCustomMetadata.remove(name: GRPCHeaderName.statusCode)
-    trailingCustomMetadata.remove(name: GRPCHeaderName.statusMessage)
-
-    let status = GRPCStatus(code: statusCode, message: statusMessage, trailingMetadata: trailingCustomMetadata)
+    let status = GRPCStatus(code: statusCode, message: statusMessage, trailingMetadata: trailers ?? HTTPHeaders())
 
     context.fireChannelRead(wrapInboundOut(.status(status)))
     return .ignore
