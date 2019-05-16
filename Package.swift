@@ -26,7 +26,7 @@ var packageDependencies: [Package.Dependency] = [
 
   // SwiftGRPCNIO dependencies:
   // Main SwiftNIO package
-  .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0"),
+  .package(url: "https://github.com/apple/swift-nio.git", from: "2.2.0"),
   // HTTP2 via SwiftNIO
   .package(url: "https://github.com/apple/swift-nio-http2.git", from: "1.2.0"),
   // TLS via SwiftNIO
