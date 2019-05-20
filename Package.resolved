@@ -24,8 +24,8 @@
         "repositoryURL": "https://github.com/apple/swift-nio.git",
         "state": {
           "branch": null,
-          "revision": "22d49070c556f9b9f741345938af9892473c9f13",
-          "version": "2.0.2"
+          "revision": "b2be49ada3d2cf3824e038505be32230d6e62893",
+          "version": "2.1.1"
         }
       },
       {
@@ -33,8 +33,8 @@
         "repositoryURL": "https://github.com/apple/swift-nio-http2.git",
         "state": {
           "branch": null,
-          "revision": "ae57c2a0d8d97df69f56ddac0ad407d08790a104",
-          "version": "1.1.0"
+          "revision": "8752535dd21adac0a9c15ac2566a75dd804f0ebe",
+          "version": "1.2.0"
         }
       },
       {
@@ -44,15 +44,6 @@
           "branch": null,
           "revision": "f9ac0c3486f8e9333e791caf135e3fe067e0e66c",
           "version": "2.0.2"
-        }
-      },
-      {
-        "package": "swift-nio-zlib-support",
-        "repositoryURL": "https://github.com/apple/swift-nio-zlib-support.git",
-        "state": {
-          "branch": null,
-          "revision": "37760e9a52030bb9011972c5213c3350fa9d41fd",
-          "version": "1.0.0"
         }
       },
       {

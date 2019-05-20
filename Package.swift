@@ -25,8 +25,6 @@ var packageDependencies: [Package.Dependency] = [
   .package(url: "https://github.com/kylef/Commander.git", .upToNextMinor(from: "0.8.0")),
 
   // SwiftGRPCNIO dependencies:
-  // Transitive dependencies
-  .package(url: "https://github.com/apple/swift-nio-zlib-support.git", .upToNextMajor(from: "1.0.0")),
   // Main SwiftNIO package
   .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0"),
   // HTTP2 via SwiftNIO
@@ -35,34 +33,13 @@ var packageDependencies: [Package.Dependency] = [
   .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.0.0"),
 ]
 
-var cGRPCDependencies: [Target.Dependency] = []
-
-#if os(Linux)
-let isLinux = true
-#else
-let isLinux = false
-#endif
-
-// On Linux, Foundation links with openssl, so we'll need to use that instead of BoringSSL.
-// See https://github.com/apple/swift-nio-ssl/issues/16#issuecomment-392705505 for details.
-// swift build doesn't pass -Xswiftc flags to dependencies, so here using an environment variable
-// is easiest.
-if isLinux || ProcessInfo.processInfo.environment.keys.contains("GRPC_USE_OPENSSL") {
-  packageDependencies.append(.package(url: "https://github.com/apple/swift-nio-ssl-support.git", from: "1.0.0"))
-} else {
-  cGRPCDependencies.append("BoringSSL")
-}
-
 let package = Package(
   name: "SwiftGRPC",
   products: [
-    .library(name: "SwiftGRPC", targets: ["SwiftGRPC"]),
     .library(name: "SwiftGRPCNIO", targets: ["SwiftGRPCNIO"]),
   ],
   dependencies: packageDependencies,
   targets: [
-    .target(name: "SwiftGRPC",
-            dependencies: ["CgRPC", "SwiftProtobuf"]),
     .target(name: "SwiftGRPCNIO",
             dependencies: [
               "NIO",
@@ -71,21 +48,11 @@ let package = Package(
               "NIOHTTP2",
               "NIOSSL",
               "SwiftProtobuf"]),
-    .target(name: "CgRPC",
-            dependencies: cGRPCDependencies),
-    .target(name: "RootsEncoder"),
     .target(name: "protoc-gen-swiftgrpc",
             dependencies: [
               "SwiftProtobuf",
               "SwiftProtobufPluginLibrary",
               "protoc-gen-swift"]),
-    .target(name: "BoringSSL"),
-    .target(name: "Echo",
-            dependencies: [
-              "SwiftGRPC",
-              "SwiftProtobuf",
-              "Commander"],
-            path: "Sources/Examples/Echo"),
     .target(name: "EchoNIO",
             dependencies: [
               "SwiftGRPCNIO",
@@ -99,18 +66,12 @@ let package = Package(
             dependencies: [
               "SwiftGRPCNIOInteroperabilityTests",
               "Commander"]),
-    .target(name: "Simple",
-            dependencies: ["SwiftGRPC", "Commander"],
-            path: "Sources/Examples/Simple"),
     .target(name: "SwiftGRPCNIOSampleData",
             dependencies: ["NIOSSL"]),
-    .testTarget(name: "SwiftGRPCTests",
-                dependencies: ["SwiftGRPC"]),
     .testTarget(name: "SwiftGRPCNIOTests",
                 dependencies: [
                   "SwiftGRPCNIO",
                   "SwiftGRPCNIOSampleData",
                   "SwiftGRPCNIOInteroperabilityTests"]),
-  ],
-  cLanguageStandard: .gnu11,
-  cxxLanguageStandard: .cxx11)
+  ]
+)
