@@ -26,33 +26,28 @@ import NIO
 /// - `initialMetadata`: the initial metadata returned from the server,
 /// - `status`: the status of the gRPC call after it has ended,
 /// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
-public class BidirectionalStreamingClientCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage>, StreamingRequestClientCall {
+public final class BidirectionalStreamingClientCall<RequestMessage: Message, ResponseMessage: Message>
+  : BaseClientCall<RequestMessage, ResponseMessage>,
+    StreamingRequestClientCall {
   private var messageQueue: EventLoopFuture<Void>
 
   public init(connection: GRPCClientConnection, path: String, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?, handler: @escaping (ResponseMessage) -> Void) {
     self.messageQueue = connection.channel.eventLoop.makeSucceededFuture(())
-    super.init(connection: connection, path: path, callOptions: callOptions, responseObserver: .callback(handler), errorDelegate: errorDelegate)
 
-    let requestHead = self.makeRequestHead(path: path, host: connection.host, callOptions: callOptions)
-    self.messageQueue = self.messageQueue.flatMap {
-      self.sendHead(requestHead)
-    }
-  }
+    let responseHandler = GRPCClientStreamingResponseChannelHandler(
+      initialMetadataPromise: connection.channel.eventLoop.makePromise(),
+      statusPromise: connection.channel.eventLoop.makePromise(),
+      errorDelegate: errorDelegate,
+      timeout: callOptions.timeout,
+      responseHandler: handler)
 
-  public func sendMessage(_ message: RequestMessage) -> EventLoopFuture<Void> {
-    return self._sendMessage(message)
-  }
+    let requestHandler = GRPCClientStreamingRequestChannelHandler<RequestMessage>(
+      requestHead: makeRequestHead(path: path, host: connection.host, callOptions: callOptions))
 
-  public func sendMessage(_ message: RequestMessage, promise: EventLoopPromise<Void>?) {
-    self._sendMessage(message, promise: promise)
-  }
-
-  public func sendEnd() -> EventLoopFuture<Void> {
-    return self._sendEnd()
-  }
-
-  public func sendEnd(promise: EventLoopPromise<Void>?) {
-    self._sendEnd(promise: promise)
+    super.init(
+      connection: connection,
+      responseHandler: responseHandler,
+      requestHandler: requestHandler)
   }
 
   public func newMessageQueue() -> EventLoopFuture<Void> {

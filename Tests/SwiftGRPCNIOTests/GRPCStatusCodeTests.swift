@@ -37,11 +37,12 @@ class GRPCStatusCodeTests: XCTestCase {
     try! self.channel.pipeline.addHandlers([
       HTTP1ToRawGRPCClientCodec(),
       GRPCClientCodec<Echo_EchoRequest, Echo_EchoResponse>(),
-      GRPCClientChannelHandler<Echo_EchoRequest, Echo_EchoResponse>(
+      GRPCClientUnaryResponseChannelHandler<Echo_EchoResponse>(
         initialMetadataPromise: self.metadataPromise,
+        responsePromise: self.responsePromise,
         statusPromise: self.statusPromise,
-        responseObserver: .succeedPromise(self.responsePromise),
-        errorDelegate: nil)
+        errorDelegate: nil,
+        timeout: .infinite)
     ]).wait()
   }
 

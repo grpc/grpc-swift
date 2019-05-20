@@ -73,6 +73,35 @@ public protocol StreamingRequestClientCall: ClientCall {
   ///   - promise: A promise to be fulfilled when the message has been sent.
   func sendMessage(_ message: RequestMessage, promise: EventLoopPromise<Void>?)
 
+  /// Writes a message to the service.
+  ///
+  /// Note: the difference between the `writeMessage` and `sendMessage` methods is that
+  /// `writeMessage` will only write the message whilst `sendMessage` will write the message and
+  /// flush the buffer. In NIO terms they are equivalent to calling `write` and `writeAndFlush`.
+  /// The buffer will only be flushed after calling `sendMessage`, `sendEnd` or once the buffer
+  /// is full.
+  ///
+  /// - Important: Callers must terminate the stream of messages by calling `sendEnd()` or `sendEnd(promise:)`.
+  ///
+  /// - Parameter message: The message to send.
+  /// - Returns: A future which will be fullfilled when the message has been sent.
+  func writeMessage(_ message: RequestMessage) -> EventLoopFuture<Void>
+
+  /// Writes a message.
+  ///
+  /// Note: the difference between the `writeMessage` and `sendMessage` methods is that
+  /// `writeMessage` will only write the message whilst `sendMessage` will write the message and
+  /// flush the buffer. In NIO terms they are equivalent to calling `write` and `writeAndFlush`.
+  /// The buffer will only be flushed after calling `sendMessage`, `sendEnd` or once the buffer
+  /// is full.
+  ///
+  /// - Important: Callers must terminate the stream of messages by calling `sendEnd()` or `sendEnd(promise:)`.
+  ///
+  /// - Parameters:
+  ///   - message: The message to send.
+  ///   - promise: A promise to be fulfilled when the message has been sent.
+  func writeMessage(_ message: RequestMessage, promise: EventLoopPromise<Void>?)
+
   /// Returns a future which can be used as a message queue.
   ///
   /// Callers may use this as such:
@@ -106,4 +135,42 @@ public protocol UnaryResponseClientCall: ClientCall {
   ///
   /// Callers should rely on the `status` of the call for the canonical outcome.
   var response: EventLoopFuture<ResponseMessage> { get }
+}
+
+extension StreamingRequestClientCall {
+  public func sendMessage(_ message: RequestMessage) -> EventLoopFuture<Void> {
+    return self.subchannel.flatMap { channel in
+      channel.writeAndFlush(GRPCClientRequestPart.message(message))
+    }
+  }
+
+  public func sendMessage(_ message: RequestMessage, promise: EventLoopPromise<Void>?) {
+    self.subchannel.whenSuccess { channel in
+      channel.writeAndFlush(GRPCClientRequestPart.message(message), promise: promise)
+    }
+  }
+
+  public func writeMessage(_ message: RequestMessage) -> EventLoopFuture<Void> {
+    return self.subchannel.flatMap { channel in
+      channel.write(GRPCClientRequestPart.message(message))
+    }
+  }
+
+  public func writeMessage(_ message: RequestMessage, promise: EventLoopPromise<Void>?) {
+    self.subchannel.whenSuccess { channel in
+      channel.write(GRPCClientRequestPart.message(message), promise: promise)
+    }
+  }
+
+  public func sendEnd() -> EventLoopFuture<Void> {
+    return self.subchannel.flatMap { channel in
+      return channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.end)
+    }
+  }
+
+  public func sendEnd(promise: EventLoopPromise<Void>?) {
+    self.subchannel.whenSuccess { channel in
+      channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.end, promise: promise)
+    }
+  }
 }
