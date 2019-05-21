@@ -13,12 +13,6 @@ project:
 	swift package $(CFLAGS) generate-xcodeproj --output SwiftGRPC.xcodeproj
 	@-ruby fix-project-settings.rb SwiftGRPC.xcodeproj || echo "Consider running 'sudo gem install xcodeproj' to automatically set correct indentation settings for the generated project."
 
-project-carthage:
-	swift package generate-xcodeproj --output SwiftGRPC-Carthage.xcodeproj
-	@sed -i '' -e "s|$(PWD)|..|g" SwiftGRPC-Carthage.xcodeproj/project.pbxproj
-	@ruby fix-project-settings.rb SwiftGRPC-Carthage.xcodeproj || echo "xcodeproj ('sudo gem install xcodeproj') is required in order to generate the Carthage-compatible project!"
-	@ruby patch-carthage-project.rb SwiftGRPC-Carthage.xcodeproj || echo "xcodeproj ('sudo gem install xcodeproj') is required in order to generate the Carthage-compatible project!"
-
 test: all
 	swift test
 
@@ -34,12 +28,6 @@ ifeq ($(UNAME_S), Darwin)
 else
 	echo "test-generate-linuxmain is only available on Darwin"
 endif
-
-build-carthage:
-	carthage build -project SwiftGRPC-Carthage.xcodeproj --no-skip-current
-
-build-carthage-debug:
-	carthage build -project SwiftGRPC-Carthage.xcodeproj --no-skip-current --configuration Debug --platform iOS, macOS
 
 clean:
 	-rm -rf Packages
