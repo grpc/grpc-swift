@@ -28,7 +28,7 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
 
     responses[0].assertHeaders()
     responses[1].assertStatus { status in
-      XCTAssertEqual(status, expectedError.asGRPCStatus())
+      assertEqualStatusIgnoringTrailers(status, expectedError.asGRPCStatus())
     }
   }
 
@@ -57,7 +57,7 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
     responses[0].assertHeaders()
     responses[1].assertMessage()
     responses[2].assertStatus { status in
-      XCTAssertEqual(status, .ok)
+      assertEqualStatusIgnoringTrailers(status, .ok)
     }
   }
 
@@ -75,7 +75,7 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
 
     responses[0].assertHeaders()
     responses[1].assertStatus { status in
-      XCTAssertEqual(status, expectedError.asGRPCStatus())
+      assertEqualStatusIgnoringTrailers(status, expectedError.asGRPCStatus())
     }
   }
 
@@ -103,7 +103,7 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
 
     responses[0].assertHeaders()
     responses[1].assertStatus { status in
-      XCTAssertEqual(status, .processingError)
+      assertEqualStatusIgnoringTrailers(status, .processingError)
     }
   }
 
@@ -126,7 +126,7 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
     responses[0].assertHeaders()
     responses[1].assertMessage()
     responses[2].assertStatus { status in
-      XCTAssertEqual(status, .ok)
+      assertEqualStatusIgnoringTrailers(status, .ok)
     }
   }
 
