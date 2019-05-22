@@ -1,5 +1,0 @@
-#!/bin/sh
-#
-# Use this to run the swift-proto generator
-#
-protoc echo.proto --swift_out=Generated --swiftgrpc_out=Generated
