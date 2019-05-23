@@ -20,7 +20,7 @@ import NIO
 /// A service prodiver for the gRPC interoperaability test suite.
 ///
 /// See: https://github.com/grpc/grpc/blob/master/doc/interop-test-descriptions.md#server
-public class TestServiceProvider_NIO: Grpc_Testing_TestServiceProvider_NIO {
+public class TestServiceProvider: Grpc_Testing_TestServiceProvider {
   public init() { }
 
   private static let echoMetadataNotImplemented = GRPCStatus(
@@ -69,7 +69,7 @@ public class TestServiceProvider_NIO: Grpc_Testing_TestServiceProvider_NIO {
     }
 
     if context.request.headers.shouldEchoMetadata {
-      return context.eventLoop.makeFailedFuture(TestServiceProvider_NIO.echoMetadataNotImplemented)
+      return context.eventLoop.makeFailedFuture(TestServiceProvider.echoMetadataNotImplemented)
     }
 
     if case .UNRECOGNIZED = request.responseType {
@@ -162,7 +162,7 @@ public class TestServiceProvider_NIO: Grpc_Testing_TestServiceProvider_NIO {
   ) -> EventLoopFuture<(StreamEvent<Grpc_Testing_StreamingOutputCallRequest>) -> Void> {
     // We don't have support for this yet so just fail the call.
     if context.request.headers.shouldEchoMetadata {
-      return context.eventLoop.makeFailedFuture(TestServiceProvider_NIO.echoMetadataNotImplemented)
+      return context.eventLoop.makeFailedFuture(TestServiceProvider.echoMetadataNotImplemented)
     }
 
     var sendQueue = context.eventLoop.makeSucceededFuture(())

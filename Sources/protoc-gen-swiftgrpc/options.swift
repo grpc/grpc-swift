@@ -54,11 +54,6 @@ final class GeneratorOptions {
   private(set) var visibility = Visibility.internal
   private(set) var generateServer = true
   private(set) var generateClient = true
-  private(set) var generateAsynchronous = true
-  private(set) var generateSynchronous = true
-  private(set) var generateTestStubs = false
-  private(set) var generateImplementations = true 
-  private(set) var generateNIOImplementation = false
   private(set) var protoToModuleMappings = ProtoFileToModuleMappings()
   private(set) var fileNaming = FileNaming.FullPath
   private(set) var extraModuleImports: [String] = []
@@ -83,41 +78,6 @@ final class GeneratorOptions {
       case "Client":
         if let value = Bool(pair.value) {
           generateClient = value
-        } else {
-          throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
-        }
-        
-      case "Async":
-        if let value = Bool(pair.value) {
-          generateAsynchronous = value
-        } else {
-          throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
-        }
-        
-      case "Sync":
-        if let value = Bool(pair.value) {
-          generateSynchronous = value
-        } else {
-          throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
-        }
-        
-      case "TestStubs":
-        if let value = Bool(pair.value) {
-          generateTestStubs = value
-        } else {
-          throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
-        }
-        
-      case "Implementations":
-        if let value = Bool(pair.value) {
-          generateImplementations = value
-        } else {
-          throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
-        }
-
-      case "NIO":
-        if let value = Bool(pair.value) {
-          generateNIOImplementation = value
         } else {
           throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }

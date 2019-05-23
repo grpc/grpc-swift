@@ -46,7 +46,7 @@ class Stdin {
       }
       if count < buffSize {
         buff += fragment[0..<count]
-        return Data(bytes: buff)
+        return Data(buff)
       }
       buff += fragment
     }
@@ -55,8 +55,8 @@ class Stdin {
 
 class Stdout {
   static func write(bytes: Data) {
-    bytes.withUnsafeBytes { (p: UnsafePointer<UInt8>) -> Void in
-      _ = _write(1, p, bytes.count)
+    bytes.withUnsafeBytes { (p: UnsafeRawBufferPointer) -> Void in
+      _ = _write(1, p.baseAddress, p.count)
     }
   }
 }

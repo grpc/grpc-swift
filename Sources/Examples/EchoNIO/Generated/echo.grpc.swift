@@ -27,15 +27,15 @@ import SwiftGRPCNIO
 import SwiftProtobuf
 
 
-/// Usage: instantiate Echo_EchoService_NIOClient, then call methods of this protocol to make API calls.
-internal protocol Echo_EchoService_NIO {
+/// Usage: instantiate Echo_EchoServiceClient, then call methods of this protocol to make API calls.
+internal protocol Echo_EchoService {
   func get(_ request: Echo_EchoRequest, callOptions: CallOptions?) -> UnaryClientCall<Echo_EchoRequest, Echo_EchoResponse>
   func expand(_ request: Echo_EchoRequest, callOptions: CallOptions?, handler: @escaping (Echo_EchoResponse) -> Void) -> ServerStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse>
   func collect(callOptions: CallOptions?) -> ClientStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse>
   func update(callOptions: CallOptions?, handler: @escaping (Echo_EchoResponse) -> Void) -> BidirectionalStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse>
 }
 
-internal final class Echo_EchoService_NIOClient: GRPCServiceClient, Echo_EchoService_NIO {
+internal final class Echo_EchoServiceClient: GRPCServiceClient, Echo_EchoService {
   internal let connection: GRPCClientConnection
   internal var serviceName: String { return "echo.Echo" }
   internal var defaultCallOptions: CallOptions
@@ -107,14 +107,14 @@ internal final class Echo_EchoService_NIOClient: GRPCServiceClient, Echo_EchoSer
 }
 
 /// To build a server, implement a class that conforms to this protocol.
-internal protocol Echo_EchoProvider_NIO: CallHandlerProvider {
+internal protocol Echo_EchoProvider: CallHandlerProvider {
   func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse>
   func expand(request: Echo_EchoRequest, context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<GRPCStatus>
   func collect(context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void>
   func update(context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void>
 }
 
-extension Echo_EchoProvider_NIO {
+extension Echo_EchoProvider {
   internal var serviceName: String { return "echo.Echo" }
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.

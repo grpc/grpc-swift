@@ -27,8 +27,8 @@ import SwiftGRPCNIO
 import SwiftProtobuf
 
 
-/// Usage: instantiate Grpc_Testing_TestServiceService_NIOClient, then call methods of this protocol to make API calls.
-public protocol Grpc_Testing_TestServiceService_NIO {
+/// Usage: instantiate Grpc_Testing_TestServiceServiceClient, then call methods of this protocol to make API calls.
+public protocol Grpc_Testing_TestServiceService {
   func emptyCall(_ request: Grpc_Testing_Empty, callOptions: CallOptions?) -> UnaryClientCall<Grpc_Testing_Empty, Grpc_Testing_Empty>
   func unaryCall(_ request: Grpc_Testing_SimpleRequest, callOptions: CallOptions?) -> UnaryClientCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>
   func cacheableUnaryCall(_ request: Grpc_Testing_SimpleRequest, callOptions: CallOptions?) -> UnaryClientCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>
@@ -39,7 +39,7 @@ public protocol Grpc_Testing_TestServiceService_NIO {
   func unimplementedCall(_ request: Grpc_Testing_Empty, callOptions: CallOptions?) -> UnaryClientCall<Grpc_Testing_Empty, Grpc_Testing_Empty>
 }
 
-public final class Grpc_Testing_TestServiceService_NIOClient: GRPCServiceClient, Grpc_Testing_TestServiceService_NIO {
+public final class Grpc_Testing_TestServiceServiceClient: GRPCServiceClient, Grpc_Testing_TestServiceService {
   public let connection: GRPCClientConnection
   public var serviceName: String { return "grpc.testing.TestService" }
   public var defaultCallOptions: CallOptions
@@ -161,12 +161,12 @@ public final class Grpc_Testing_TestServiceService_NIOClient: GRPCServiceClient,
 
 }
 
-/// Usage: instantiate Grpc_Testing_UnimplementedServiceService_NIOClient, then call methods of this protocol to make API calls.
-public protocol Grpc_Testing_UnimplementedServiceService_NIO {
+/// Usage: instantiate Grpc_Testing_UnimplementedServiceServiceClient, then call methods of this protocol to make API calls.
+public protocol Grpc_Testing_UnimplementedServiceService {
   func unimplementedCall(_ request: Grpc_Testing_Empty, callOptions: CallOptions?) -> UnaryClientCall<Grpc_Testing_Empty, Grpc_Testing_Empty>
 }
 
-public final class Grpc_Testing_UnimplementedServiceService_NIOClient: GRPCServiceClient, Grpc_Testing_UnimplementedServiceService_NIO {
+public final class Grpc_Testing_UnimplementedServiceServiceClient: GRPCServiceClient, Grpc_Testing_UnimplementedServiceService {
   public let connection: GRPCClientConnection
   public var serviceName: String { return "grpc.testing.UnimplementedService" }
   public var defaultCallOptions: CallOptions
@@ -195,13 +195,13 @@ public final class Grpc_Testing_UnimplementedServiceService_NIOClient: GRPCServi
 
 }
 
-/// Usage: instantiate Grpc_Testing_ReconnectServiceService_NIOClient, then call methods of this protocol to make API calls.
-public protocol Grpc_Testing_ReconnectServiceService_NIO {
+/// Usage: instantiate Grpc_Testing_ReconnectServiceServiceClient, then call methods of this protocol to make API calls.
+public protocol Grpc_Testing_ReconnectServiceService {
   func start(_ request: Grpc_Testing_ReconnectParams, callOptions: CallOptions?) -> UnaryClientCall<Grpc_Testing_ReconnectParams, Grpc_Testing_Empty>
   func stop(_ request: Grpc_Testing_Empty, callOptions: CallOptions?) -> UnaryClientCall<Grpc_Testing_Empty, Grpc_Testing_ReconnectInfo>
 }
 
-public final class Grpc_Testing_ReconnectServiceService_NIOClient: GRPCServiceClient, Grpc_Testing_ReconnectServiceService_NIO {
+public final class Grpc_Testing_ReconnectServiceServiceClient: GRPCServiceClient, Grpc_Testing_ReconnectServiceService {
   public let connection: GRPCClientConnection
   public var serviceName: String { return "grpc.testing.ReconnectService" }
   public var defaultCallOptions: CallOptions
@@ -243,7 +243,7 @@ public final class Grpc_Testing_ReconnectServiceService_NIOClient: GRPCServiceCl
 }
 
 /// To build a server, implement a class that conforms to this protocol.
-public protocol Grpc_Testing_TestServiceProvider_NIO: CallHandlerProvider {
+public protocol Grpc_Testing_TestServiceProvider: CallHandlerProvider {
   func emptyCall(request: Grpc_Testing_Empty, context: StatusOnlyCallContext) -> EventLoopFuture<Grpc_Testing_Empty>
   func unaryCall(request: Grpc_Testing_SimpleRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Grpc_Testing_SimpleResponse>
   func cacheableUnaryCall(request: Grpc_Testing_SimpleRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Grpc_Testing_SimpleResponse>
@@ -253,7 +253,7 @@ public protocol Grpc_Testing_TestServiceProvider_NIO: CallHandlerProvider {
   func halfDuplexCall(context: StreamingResponseCallContext<Grpc_Testing_StreamingOutputCallResponse>) -> EventLoopFuture<(StreamEvent<Grpc_Testing_StreamingOutputCallRequest>) -> Void>
 }
 
-extension Grpc_Testing_TestServiceProvider_NIO {
+extension Grpc_Testing_TestServiceProvider {
   public var serviceName: String { return "grpc.testing.TestService" }
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
@@ -309,11 +309,11 @@ extension Grpc_Testing_TestServiceProvider_NIO {
 }
 
 /// To build a server, implement a class that conforms to this protocol.
-public protocol Grpc_Testing_UnimplementedServiceProvider_NIO: CallHandlerProvider {
+public protocol Grpc_Testing_UnimplementedServiceProvider: CallHandlerProvider {
   func unimplementedCall(request: Grpc_Testing_Empty, context: StatusOnlyCallContext) -> EventLoopFuture<Grpc_Testing_Empty>
 }
 
-extension Grpc_Testing_UnimplementedServiceProvider_NIO {
+extension Grpc_Testing_UnimplementedServiceProvider {
   public var serviceName: String { return "grpc.testing.UnimplementedService" }
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
@@ -333,12 +333,12 @@ extension Grpc_Testing_UnimplementedServiceProvider_NIO {
 }
 
 /// To build a server, implement a class that conforms to this protocol.
-public protocol Grpc_Testing_ReconnectServiceProvider_NIO: CallHandlerProvider {
+public protocol Grpc_Testing_ReconnectServiceProvider: CallHandlerProvider {
   func start(request: Grpc_Testing_ReconnectParams, context: StatusOnlyCallContext) -> EventLoopFuture<Grpc_Testing_Empty>
   func stop(request: Grpc_Testing_Empty, context: StatusOnlyCallContext) -> EventLoopFuture<Grpc_Testing_ReconnectInfo>
 }
 
-extension Grpc_Testing_ReconnectServiceProvider_NIO {
+extension Grpc_Testing_ReconnectServiceProvider {
   public var serviceName: String { return "grpc.testing.ReconnectService" }
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.

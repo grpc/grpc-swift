@@ -72,11 +72,11 @@ func makeServerTLSConfiguration() throws -> TLSConfiguration {
 }
 
 /// Create en `EchoClient` and wait for it to initialize. Returns nil if initialisation fails.
-func makeEchoClient(address: String, port: Int, ssl: Bool) -> Echo_EchoService_NIOClient? {
+func makeEchoClient(address: String, port: Int, ssl: Bool) -> Echo_EchoServiceClient? {
   let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
   do {
     return try GRPCClientConnection.start(host: address, port: port, eventLoopGroup: eventLoopGroup, tls: try makeClientTLS(enabled: ssl))
-      .map { Echo_EchoService_NIOClient(connection: $0) }
+      .map { Echo_EchoServiceClient(connection: $0) }
       .wait()
   } catch {
     print("Unable to create an EchoClient: \(error)")

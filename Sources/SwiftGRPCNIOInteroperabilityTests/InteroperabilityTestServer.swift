@@ -34,7 +34,7 @@ public func makeInteroperabilityTestServer(
   host: String = "localhost",
   port: Int,
   eventLoopGroup: EventLoopGroup,
-  serviceProviders: [CallHandlerProvider] = [TestServiceProvider_NIO()],
+  serviceProviders: [CallHandlerProvider] = [TestServiceProvider()],
   useTLS: Bool
 ) throws -> EventLoopFuture<GRPCServer> {
   let tlsMode: GRPCServer.TLSMode

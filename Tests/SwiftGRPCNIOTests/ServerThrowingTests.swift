@@ -28,7 +28,7 @@ let transformedError = GRPCStatus(code: .aborted, message: "transformed error")
 // client-streaming and bidi-streaming cases) to throw immediately, _before_ the corresponding handler has even added
 // to the channel. We want to test that case as well as the one where we throw only _after_ the handler has been added
 // to the channel.
-class ImmediateThrowingEchoProviderNIO: Echo_EchoProvider_NIO {
+class ImmediateThrowingEchoProviderNIO: Echo_EchoProvider {
   func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
     return context.eventLoop.makeFailedFuture(thrownError)
   }
@@ -54,7 +54,7 @@ extension EventLoop {
 }
 
 /// See `ImmediateThrowingEchoProviderNIO`.
-class DelayedThrowingEchoProviderNIO: Echo_EchoProvider_NIO {
+class DelayedThrowingEchoProviderNIO: Echo_EchoProvider {
   func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
     return context.eventLoop.makeFailedFuture(thrownError, delay: 0.01)
   }
@@ -101,15 +101,15 @@ private class ErrorTransformingDelegate: ServerErrorDelegate {
 class ServerThrowingTests: NIOEchoTestCaseBase {
   var expectedError: GRPCStatus { return thrownError }
 
-  override func makeEchoProvider() -> Echo_EchoProvider_NIO { return ImmediateThrowingEchoProviderNIO() }
+  override func makeEchoProvider() -> Echo_EchoProvider { return ImmediateThrowingEchoProviderNIO() }
 }
 
 class ServerDelayedThrowingTests: ServerThrowingTests {
-  override func makeEchoProvider() -> Echo_EchoProvider_NIO { return DelayedThrowingEchoProviderNIO() }
+  override func makeEchoProvider() -> Echo_EchoProvider { return DelayedThrowingEchoProviderNIO() }
 }
 
 class ClientThrowingWhenServerReturningErrorTests: ServerThrowingTests {
-  override func makeEchoProvider() -> Echo_EchoProvider_NIO { return ErrorReturningEchoProviderNIO() }
+  override func makeEchoProvider() -> Echo_EchoProvider { return ErrorReturningEchoProviderNIO() }
 }
 
 class ServerErrorTransformingTests: ServerThrowingTests {

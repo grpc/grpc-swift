@@ -18,7 +18,7 @@ test: all
 
 test-plugin:
 	swift build --product protoc-gen-swiftgrpc
-	protoc Sources/Examples/EchoNIO/echo.proto --proto_path=Sources/Examples/EchoNIO --plugin=.build/debug/protoc-gen-swift --plugin=.build/debug/protoc-gen-swiftgrpc --swiftgrpc_out=/tmp --swiftgrpc_opt=NIO=true
+	protoc Sources/Examples/EchoNIO/echo.proto --proto_path=Sources/Examples/EchoNIO --plugin=.build/debug/protoc-gen-swift --plugin=.build/debug/protoc-gen-swiftgrpc --swiftgrpc_out=/tmp
 	diff -u /tmp/echo.grpc.swift Sources/Examples/EchoNIO/Generated/echo.grpc.swift
 
 test-generate-linuxmain:
