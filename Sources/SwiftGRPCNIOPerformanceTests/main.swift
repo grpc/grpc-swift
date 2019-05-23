@@ -237,7 +237,7 @@ enum Benchmarks: String, CaseIterable {
       return "10k unary requests of size \(Benchmarks.largeRequest)"
 
     case .bidirectionalThroughputSmallRequests:
-      return "10k bidirectional messages of size \(Benchmarks.smallRequest)"
+      return "20k bidirectional messages of size \(Benchmarks.smallRequest)"
 
     case .bidirectionalThroughputLargeRequests:
       return "10k bidirectional messages of size \(Benchmarks.largeRequest)"
@@ -256,7 +256,7 @@ enum Benchmarks: String, CaseIterable {
       return UnaryThroughput(factory: factory, requests: 10_000, requestLength: Benchmarks.largeRequest)
 
     case .bidirectionalThroughputSmallRequests:
-      return BidirectionalThroughput(factory: factory, requests: 10_000, requestLength: Benchmarks.smallRequest)
+      return BidirectionalThroughput(factory: factory, requests: 20_000, requestLength: Benchmarks.smallRequest)
 
     case .bidirectionalThroughputLargeRequests:
       return BidirectionalThroughput(factory: factory, requests: 10_000, requestLength: Benchmarks.largeRequest)
