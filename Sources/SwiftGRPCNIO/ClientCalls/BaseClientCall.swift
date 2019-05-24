@@ -247,30 +247,24 @@ extension BaseClientCall {
   ///   - callOptions: options to use when configuring this call.
   /// - Returns: `HTTPRequestHead` configured for this call.
   internal func makeRequestHead(path: String, host: String, callOptions: CallOptions) -> HTTPRequestHead {
-    let method: HTTPMethod = callOptions.cacheable ? .GET : .POST
-    var requestHead = HTTPRequestHead(version: .init(major: 2, minor: 0), method: method, uri: path)
-
-    callOptions.customMetadata.forEach { name, value in
-      requestHead.headers.add(name: name, value: value)
-    }
-
-    // We're dealing with HTTP/1; the NIO HTTP2ToHTTP1Codec replaces "host" with ":authority".
-    requestHead.headers.add(name: "host", value: host)
-
-    requestHead.headers.add(name: "content-type", value: "application/grpc")
-
-    // Used to detect incompatible proxies, as per https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests
-    requestHead.headers.add(name: "te", value: "trailers")
-
-    //! FIXME: Add a more specific user-agent, see: https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#user-agents
-    requestHead.headers.add(name: "user-agent", value: "grpc-swift-nio")
-
-    requestHead.headers.add(name: GRPCHeaderName.acceptEncoding, value: CompressionMechanism.acceptEncodingHeader)
+    var headers: HTTPHeaders = [
+      // We're dealing with HTTP/1; the NIO HTTP2ToHTTP1Codec replaces "host" with ":authority".
+      "host": host,
+      "content-type": "application/grpc",
+      // Used to detect incompatible proxies, as per https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests
+      "te": "trailers",
+      //! FIXME: Add a more specific user-agent, see: https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#user-agents
+      "user-agent": "grpc-swift-nio",
+      GRPCHeaderName.acceptEncoding: CompressionMechanism.acceptEncodingHeader,
+    ]
 
     if callOptions.timeout != .infinite {
-      requestHead.headers.add(name: GRPCHeaderName.timeout, value: String(describing: callOptions.timeout))
+      headers.add(name: GRPCHeaderName.timeout, value: String(describing: callOptions.timeout))
     }
 
-    return requestHead
+    headers.add(contentsOf: callOptions.customMetadata)
+
+    let method: HTTPMethod = callOptions.cacheable ? .GET : .POST
+    return HTTPRequestHead(version: .init(major: 2, minor: 0), method: method, uri: path, headers: headers)
   }
 }
