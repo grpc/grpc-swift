@@ -120,7 +120,7 @@ generate an Xcode project for the SwiftGRPC package:
 
     $ make && make project
 
-This will create `SwiftGRPC.xcodeproj`, which you should
+This will create `GRPC.xcodeproj`, which you should
 add to your project, along with setting the necessary build dependencies
 mentioned [above](#manual-integration).
 
