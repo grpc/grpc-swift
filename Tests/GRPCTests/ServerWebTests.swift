@@ -21,7 +21,7 @@ import XCTest
 // Only test Unary and ServerStreaming, as ClientStreaming is not
 // supported in HTTP1.
 // TODO: Add tests for application/grpc-web as well.
-class NIOServerWebTests: NIOEchoTestCaseBase {
+class ServerWebTests: EchoTestCaseBase {
   private func gRPCEncodedEchoRequest(_ text: String) -> Data {
     var request = Echo_EchoRequest()
     request.text = text
@@ -63,7 +63,7 @@ class NIOServerWebTests: NIOEchoTestCaseBase {
   }
 }
 
-extension NIOServerWebTests {
+extension ServerWebTests {
   func testUnary() {
     let message = "hello, world!"
     let expectedData = gRPCEncodedEchoRequest("Swift echo get: \(message)") + gRPCWebTrailers()

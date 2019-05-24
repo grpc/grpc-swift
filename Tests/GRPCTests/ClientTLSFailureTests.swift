@@ -20,7 +20,7 @@ import NIO
 import NIOSSL
 import XCTest
 
-class NIOClientTLSFailureTests: XCTestCase {
+class ClientTLSFailureTests: XCTestCase {
   let defaultServerTLSConfiguration = TLSConfiguration.forServer(
     certificateChain: [.certificate(SampleCertificate.server.certificate)],
     privateKey: .privateKey(SamplePrivateKey.server),
@@ -61,7 +61,7 @@ class NIOClientTLSFailureTests: XCTestCase {
       hostname: "localhost",
       port: 0,
       eventLoopGroup: self.serverEventLoopGroup,
-      serviceProviders: [EchoProviderNIO()],
+      serviceProviders: [EchoProvider()],
       errorDelegate: nil,
       tls: .custom(try NIOSSLContext(configuration: defaultServerTLSConfiguration))
     ).wait()

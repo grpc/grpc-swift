@@ -1,1 +1,1 @@
-../Examples/EchoNIO/EchoProvider.swift
+../Examples/Echo/EchoProvider.swift

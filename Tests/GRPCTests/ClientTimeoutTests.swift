@@ -18,7 +18,7 @@ import GRPC
 import NIO
 import XCTest
 
-class NIOClientTimeoutTests: NIOEchoTestCaseBase {
+class ClientTimeoutTests: EchoTestCaseBase {
   let optionsWithShortTimeout = CallOptions(timeout: try! GRPCTimeout.milliseconds(10))
   let moreThanShortTimeout: TimeInterval = 0.011
 
@@ -51,7 +51,7 @@ class NIOClientTimeoutTests: NIOEchoTestCaseBase {
   }
 }
 
-extension NIOClientTimeoutTests {
+extension ClientTimeoutTests {
   func testUnaryTimeoutAfterSending() {
     // The request gets fired on call creation, so we need a very short timeout.
     let callOptions = CallOptions(timeout: try! .microseconds(100))

@@ -372,7 +372,7 @@ Group { group in
         hostname: host,
         port: port,
         eventLoopGroup: group,
-        serviceProviders: [EchoProviderNIO()],
+        serviceProviders: [EchoProvider()],
         tls: sslContext.map { .custom($0) } ?? .none).wait()
     } catch {
       print("unable to start server: \(error)")

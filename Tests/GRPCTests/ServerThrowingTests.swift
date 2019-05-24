@@ -38,7 +38,7 @@ func assertEqualStatusIgnoringTrailers(_ status: GRPCStatus, _ otherStatus: GRPC
 // client-streaming and bidi-streaming cases) to throw immediately, _before_ the corresponding handler has even added
 // to the channel. We want to test that case as well as the one where we throw only _after_ the handler has been added
 // to the channel.
-class ImmediateThrowingEchoProviderNIO: Echo_EchoProvider {
+class ImmediateThrowingEchoProvider: Echo_EchoProvider {
   func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
     return context.eventLoop.makeFailedFuture(thrownError)
   }
@@ -63,8 +63,8 @@ extension EventLoop {
   }
 }
 
-/// See `ImmediateThrowingEchoProviderNIO`.
-class DelayedThrowingEchoProviderNIO: Echo_EchoProvider {
+/// See `ImmediateThrowingEchoProvider`.
+class DelayedThrowingEchoProvider: Echo_EchoProvider {
   func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
     return context.eventLoop.makeFailedFuture(thrownError, delay: 0.01)
   }
@@ -83,7 +83,7 @@ class DelayedThrowingEchoProviderNIO: Echo_EchoProvider {
 }
 
 /// Ensures that fulfilling the status promise (where possible) with an error yields the same result as failing the future.
-class ErrorReturningEchoProviderNIO: ImmediateThrowingEchoProviderNIO {
+class ErrorReturningEchoProvider: ImmediateThrowingEchoProvider {
   // There's no status promise to fulfill for unary calls (only the response promise), so that case is omitted.
 
   override func expand(request: Echo_EchoRequest, context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<GRPCStatus> {
@@ -108,18 +108,18 @@ private class ErrorTransformingDelegate: ServerErrorDelegate {
   func transformRequestHandlerError(_ error: Error, request: HTTPRequestHead) -> GRPCStatus? { return transformedError }
 }
 
-class ServerThrowingTests: NIOEchoTestCaseBase {
+class ServerThrowingTests: EchoTestCaseBase {
   var expectedError: GRPCStatus { return thrownError }
 
-  override func makeEchoProvider() -> Echo_EchoProvider { return ImmediateThrowingEchoProviderNIO() }
+  override func makeEchoProvider() -> Echo_EchoProvider { return ImmediateThrowingEchoProvider() }
 }
 
 class ServerDelayedThrowingTests: ServerThrowingTests {
-  override func makeEchoProvider() -> Echo_EchoProvider { return DelayedThrowingEchoProviderNIO() }
+  override func makeEchoProvider() -> Echo_EchoProvider { return DelayedThrowingEchoProvider() }
 }
 
 class ClientThrowingWhenServerReturningErrorTests: ServerThrowingTests {
-  override func makeEchoProvider() -> Echo_EchoProvider { return ErrorReturningEchoProviderNIO() }
+  override func makeEchoProvider() -> Echo_EchoProvider { return ErrorReturningEchoProvider() }
 }
 
 class ServerErrorTransformingTests: ServerThrowingTests {
@@ -142,8 +142,8 @@ extension ServerThrowingTests {
     XCTAssertNoThrow(try call.sendEnd().wait())
     assertEqualStatusIgnoringTrailers(expectedError, try call.status.wait())
 
-    if type(of: makeEchoProvider()) != ErrorReturningEchoProviderNIO.self {
-      // With `ErrorReturningEchoProviderNIO` we actually _return_ a response, which means that the `response` future
+    if type(of: makeEchoProvider()) != ErrorReturningEchoProvider.self {
+      // With `ErrorReturningEchoProvider` we actually _return_ a response, which means that the `response` future
       // will _not_ fail, so in that case this test doesn't apply.
       XCTAssertThrowsError(try call.response.wait()) {
         assertEqualStatusIgnoringTrailers(expectedError, $0 as? GRPCStatus)

@@ -101,7 +101,7 @@ extension TransportSecurity {
   }
 }
 
-class NIOEchoTestCaseBase: XCTestCase {
+class EchoTestCaseBase: XCTestCase {
   var defaultTestTimeout: TimeInterval = 1.0
 
   var serverEventLoopGroup: EventLoopGroup!
@@ -132,7 +132,7 @@ class NIOEchoTestCaseBase: XCTestCase {
     ).wait()
   }
 
-  func makeEchoProvider() -> Echo_EchoProvider { return EchoProviderNIO() }
+  func makeEchoProvider() -> Echo_EchoProvider { return EchoProvider() }
 
   func makeErrorDelegate() -> ServerErrorDelegate? { return nil }
 
@@ -167,7 +167,7 @@ class NIOEchoTestCaseBase: XCTestCase {
   }
 }
 
-extension NIOEchoTestCaseBase {
+extension EchoTestCaseBase {
   func makeExpectation(description: String, expectedFulfillmentCount: Int = 1, assertForOverFulfill: Bool = true) -> XCTestExpectation {
     let expectation = self.expectation(description: description)
     expectation.expectedFulfillmentCount = expectedFulfillmentCount

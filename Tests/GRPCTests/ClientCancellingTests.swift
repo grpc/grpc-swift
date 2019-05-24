@@ -17,7 +17,7 @@ import Foundation
 import GRPC
 import XCTest
 
-class NIOClientCancellingTests: NIOEchoTestCaseBase {
+class ClientCancellingTests: EchoTestCaseBase {
   func testUnary() {
     let statusReceived = self.expectation(description: "status received")
     let responseReceived = self.expectation(description: "response received")

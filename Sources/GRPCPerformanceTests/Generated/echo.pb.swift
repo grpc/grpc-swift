@@ -1,1 +1,1 @@
-../../Examples/EchoNIO/Generated/echo.pb.swift
+../../Examples/Echo/Generated/echo.pb.swift

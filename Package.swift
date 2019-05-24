@@ -37,6 +37,8 @@ let package = Package(
   name: "GRPC",
   products: [
     .library(name: "GRPC", targets: ["GRPC"]),
+    .executable(name: "InteroperabilityTestRunner", targets: ["GRPCInteroperabilityTestsCLI"]),
+    .executable(name: "PerformanceTestRunner", targets: ["GRPCPerformanceTests"]),
   ],
   dependencies: packageDependencies,
   targets: [
@@ -53,13 +55,13 @@ let package = Package(
               "SwiftProtobuf",
               "SwiftProtobufPluginLibrary",
               "protoc-gen-swift"]),
-    .target(name: "EchoNIO",
+    .target(name: "Echo",
             dependencies: [
               "GRPC",
               "GRPCSampleData",
               "SwiftProtobuf",
               "Commander"],
-            path: "Sources/Examples/EchoNIO"),
+            path: "Sources/Examples/Echo"),
     .target(name: "GRPCInteroperabilityTests",
             dependencies: ["GRPC"]),
     .target(name: "GRPCInteroperabilityTestsCLI",

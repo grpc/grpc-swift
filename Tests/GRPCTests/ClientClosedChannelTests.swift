@@ -18,7 +18,7 @@ import GRPC
 import NIO
 import XCTest
 
-class NIOClientClosedChannelTests: NIOEchoTestCaseBase {
+class ClientClosedChannelTests: EchoTestCaseBase {
   func testUnaryOnClosedConnection() throws {
     let initialMetadataExpectation = self.makeInitialMetadataExpectation()
     let responseExpectation = self.makeResponseExpectation()

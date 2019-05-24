@@ -34,7 +34,7 @@ class CollectingServerErrorDelegate: ServerErrorDelegate {
 }
 
 class GRPCChannelHandlerResponseCapturingTestCase: XCTestCase {
-  static let echoProvider: [String: CallHandlerProvider] = ["echo.Echo": EchoProviderNIO()]
+  static let echoProvider: [String: CallHandlerProvider] = ["echo.Echo": EchoProvider()]
   class var defaultServiceProvider: [String: CallHandlerProvider] {
     return echoProvider
   }

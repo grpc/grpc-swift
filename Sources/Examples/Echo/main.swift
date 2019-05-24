@@ -97,7 +97,7 @@ Group {
     _ = try! GRPCServer.start(hostname: address,
                               port: port,
                               eventLoopGroup: eventLoopGroup,
-                              serviceProviders: [EchoProviderNIO()],
+                              serviceProviders: [EchoProvider()],
                               tls: makeServerTLS(enabled: ssl))
       .wait()
 

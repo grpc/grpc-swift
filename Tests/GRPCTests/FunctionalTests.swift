@@ -21,7 +21,7 @@ import NIOHTTP2
 @testable import GRPC
 import XCTest
 
-class NIOFunctionalTestsInsecureTransport: NIOEchoTestCaseBase {
+class FunctionalTestsInsecureTransport: EchoTestCaseBase {
   override var transportSecurity: TransportSecurity {
     return .none
   }
@@ -37,7 +37,7 @@ class NIOFunctionalTestsInsecureTransport: NIOEchoTestCaseBase {
   }
 }
 
-extension NIOFunctionalTestsInsecureTransport {
+extension FunctionalTestsInsecureTransport {
   func doTestUnary(request: Echo_EchoRequest, expect response: Echo_EchoResponse, file: StaticString = #file, line: UInt = #line) {
     let responseExpectation = self.makeResponseExpectation()
     let statusExpectation = self.makeStatusExpectation()
@@ -110,7 +110,7 @@ extension NIOFunctionalTestsInsecureTransport {
   }
 }
 
-extension NIOFunctionalTestsInsecureTransport {
+extension FunctionalTestsInsecureTransport {
   func doTestClientStreaming(messages: [String], file: StaticString = #file, line: UInt = #line) throws {
     let responseExpectation = self.makeResponseExpectation()
     let statusExpectation = self.makeStatusExpectation()
@@ -138,7 +138,7 @@ extension NIOFunctionalTestsInsecureTransport {
   }
 }
 
-extension NIOFunctionalTestsInsecureTransport {
+extension FunctionalTestsInsecureTransport {
   func doTestServerStreaming(messages: [String], file: StaticString = #file, line: UInt = #line) throws {
     let responseExpectation = self.makeResponseExpectation(expectedFulfillmentCount: messages.count)
     let statusExpectation = self.makeStatusExpectation()
@@ -167,7 +167,7 @@ extension NIOFunctionalTestsInsecureTransport {
   }
 }
 
-extension NIOFunctionalTestsInsecureTransport {
+extension FunctionalTestsInsecureTransport {
   private func doTestBidirectionalStreaming(messages: [String], waitForEachResponse: Bool = false, file: StaticString = #file, line: UInt = #line) throws {
     let responseExpectation = self.makeResponseExpectation(expectedFulfillmentCount: messages.count)
     let statusExpectation = self.makeStatusExpectation()
@@ -215,13 +215,13 @@ extension NIOFunctionalTestsInsecureTransport {
   }
 }
 
-class NIOFunctionalTestsAnonymousClient: NIOFunctionalTestsInsecureTransport {
+class FunctionalTestsAnonymousClient: FunctionalTestsInsecureTransport {
   override var transportSecurity: TransportSecurity {
     return .anonymousClient
   }
 }
 
-class NIOFunctionalTestsMutualAuthentication: NIOFunctionalTestsInsecureTransport {
+class FunctionalTestsMutualAuthentication: FunctionalTestsInsecureTransport {
   override var transportSecurity: TransportSecurity {
     return .mutualAuthentication
   }
