@@ -21,9 +21,9 @@
 // limitations under the License.
 //
 import Foundation
+import GRPC
 import NIO
 import NIOHTTP1
-import GRPC
 import SwiftProtobuf
 
 
