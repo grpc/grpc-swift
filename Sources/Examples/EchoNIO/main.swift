@@ -18,8 +18,8 @@ import Dispatch
 import Foundation
 import NIO
 import NIOSSL
-import SwiftGRPCNIO
-import SwiftGRPCNIOSampleData
+import GRPC
+import GRPCSampleData
 
 // Common flags and options
 let sslFlag = Flag("ssl", description: "if true, use SSL for connections")

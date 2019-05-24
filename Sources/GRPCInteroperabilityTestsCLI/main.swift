@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 import Foundation
-import SwiftGRPCNIO
+import GRPC
 import NIO
 import NIOSSL
-import SwiftGRPCNIOInteroperabilityTests
+import GRPCInteroperabilityTests
 import Commander
 
 enum InteroperabilityTestError: LocalizedError {

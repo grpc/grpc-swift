@@ -18,7 +18,7 @@ import Foundation
 import NIO
 import NIOHTTP1
 import NIOHTTP2
-@testable import SwiftGRPCNIO
+@testable import GRPC
 import XCTest
 
 let thrownError = GRPCStatus(code: .internalError, message: "expected error")

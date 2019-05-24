@@ -2,7 +2,7 @@ import Foundation
 import XCTest
 import NIO
 import NIOHTTP1
-@testable import SwiftGRPCNIO
+@testable import GRPC
 
 class GRPCChannelHandlerTests: GRPCChannelHandlerResponseCapturingTestCase {
   func testUnimplementedMethodReturnsUnimplementedStatus() throws {

@@ -15,7 +15,7 @@
  */
 import Foundation
 import NIO
-@testable import SwiftGRPCNIO
+@testable import GRPC
 import XCTest
 
 // Only test Unary and ServerStreaming, as ClientStreaming is not

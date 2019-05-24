@@ -15,7 +15,7 @@
  */
 import Foundation
 import NIO
-import SwiftGRPCNIO
+import GRPC
 
 class EchoProviderNIO: Echo_EchoProvider {
   func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {

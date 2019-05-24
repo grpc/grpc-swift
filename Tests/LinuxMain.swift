@@ -1,6 +1,6 @@
 import XCTest
 
-import SwiftGRPCNIOTests
+import GRPCTests
 
 var tests = [XCTestCaseEntry]()
 tests += SwiftGRPCNIOTests.__allTests()

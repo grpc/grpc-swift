@@ -2,7 +2,7 @@ import Foundation
 import XCTest
 import NIO
 import NIOHTTP1
-@testable import SwiftGRPCNIO
+@testable import GRPC
 
 func gRPCMessage(channel: EmbeddedChannel, compression: Bool = false, message: Data? = nil) -> ByteBuffer {
   let messageLength = message?.count ?? 0

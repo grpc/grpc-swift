@@ -23,7 +23,7 @@
 import Foundation
 import NIO
 import NIOHTTP1
-import SwiftGRPCNIO
+import GRPC
 import SwiftProtobuf
 
 

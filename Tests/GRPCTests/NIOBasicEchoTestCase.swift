@@ -17,8 +17,8 @@ import Dispatch
 import Foundation
 import NIO
 import NIOSSL
-@testable import SwiftGRPCNIO
-import SwiftGRPCNIOSampleData
+@testable import GRPC
+import GRPCSampleData
 import XCTest
 
 extension Echo_EchoRequest {

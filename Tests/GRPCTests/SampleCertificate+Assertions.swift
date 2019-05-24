@@ -15,7 +15,7 @@
  */
 import Foundation
 import XCTest
-import SwiftGRPCNIOSampleData
+import GRPCSampleData
 
 extension SampleCertificate {
   func assertNotExpired(file: StaticString = #file, line: UInt = #line) {

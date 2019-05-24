@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-import SwiftGRPCNIO
+import GRPC
 import NIO
 
 class LengthPrefixedMessageReaderTests: XCTestCase {

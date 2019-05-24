@@ -1,5 +1,5 @@
 import Foundation
-import SwiftGRPCNIO
+import GRPC
 import NIO
 import NIOSSL
 import Commander

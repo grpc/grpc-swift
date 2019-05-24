@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import Foundation
-@testable import SwiftGRPCNIO
+@testable import GRPC
 import NIO
 import NIOHTTP1
 import NIOHTTP2

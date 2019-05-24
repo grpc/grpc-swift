@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import Foundation
-import SwiftGRPCNIO
+import GRPC
 import NIOHTTP1
 
 /// This test verifies that implementations support zero-size messages. Ideally, client
