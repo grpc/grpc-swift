@@ -3,6 +3,6 @@ import XCTest
 import GRPCTests
 
 var tests = [XCTestCaseEntry]()
-tests += SwiftGRPCNIOTests.__allTests()
+tests += GRPCTests.__allTests()
 
 XCTMain(tests)

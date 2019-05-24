@@ -169,9 +169,9 @@ testing with the following versions:
 - Swift 4.0
 - swift-protobuf 1.3.1
 
-## `SwiftGRPCNIO` package
+## `GRPC` package
 
-`SwiftGRPCNIO` is a clean-room implementation of the gRPC protocol on top of the [`SwiftNIO`](http://github.com/apple/swift-nio) library. This implementation is not yet production-ready as it lacks several things recommended for production use:
+`GRPC` is a clean-room implementation of the gRPC protocol on top of the [`SwiftNIO`](http://github.com/apple/swift-nio) library. This implementation is not yet production-ready as it lacks several things recommended for production use:
 
 - Better test coverage
 - Full error handling
