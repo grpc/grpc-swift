@@ -39,6 +39,7 @@ let package = Package(
     .library(name: "GRPC", targets: ["GRPC"]),
     .executable(name: "InteroperabilityTestRunner", targets: ["GRPCInteroperabilityTestsCLI"]),
     .executable(name: "PerformanceTestRunner", targets: ["GRPCPerformanceTests"]),
+    .executable(name: "Echo", targets: ["Echo"]),
   ],
   dependencies: packageDependencies,
   targets: [
