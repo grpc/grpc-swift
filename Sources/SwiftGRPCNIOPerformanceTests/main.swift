@@ -20,9 +20,9 @@ struct ConnectionFactory {
       hostOverride: self.serverHostOverride)
   }
 
-  func makeEchoClient() throws -> EventLoopFuture<Echo_EchoService_NIOClient> {
+  func makeEchoClient() throws -> EventLoopFuture<Echo_EchoServiceClient> {
     return try self.makeConnection().map {
-      Echo_EchoService_NIOClient(connection: $0)
+      Echo_EchoServiceClient(connection: $0)
     }
   }
 }
@@ -41,7 +41,7 @@ class UnaryThroughput: Benchmark {
   let factory: ConnectionFactory
   let requests: Int
   let requestLength: Int
-  var client: Echo_EchoService_NIOClient!
+  var client: Echo_EchoServiceClient!
   var request: String!
 
   init(factory: ConnectionFactory, requests: Int, requestLength: Int) {

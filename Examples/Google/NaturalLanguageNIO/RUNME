@@ -4,7 +4,7 @@
 # needed to build the example.
 #
 # Note that it requires updated protoc, protoc-gen-swift, and
-# protoc-gen-swiftgrpc binaries and assumes that protoc-gen-swift 
+# protoc-gen-swiftgrpc binaries and assumes that protoc-gen-swift
 # is installed in $HOME/local/bin.
 
 if [ ! -d "googleapis" ]; then
@@ -22,8 +22,7 @@ protoc \
  	-Igoogleapis \
 	-I../common/include \
 	--swift_out=googleapis \
-	--swiftgrpc_out=googleapis \
-	--swiftgrpc_opt=NIO=true
+	--swiftgrpc_out=googleapis
 
 # move Swift files to the Sources directory
 find googleapis -name "*.swift" -exec mv {} Sources \;

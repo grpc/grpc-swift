@@ -17,7 +17,7 @@ import Foundation
 import NIO
 import SwiftGRPCNIO
 
-class EchoProviderNIO: Echo_EchoProvider_NIO {
+class EchoProviderNIO: Echo_EchoProvider {
   func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
     var response = Echo_EchoResponse()
     response.text = "Swift echo get: " + request.text

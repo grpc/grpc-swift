@@ -110,7 +110,7 @@ class NIOEchoTestCaseBase: XCTestCase {
   var transportSecurity: TransportSecurity { return .none }
 
   var server: GRPCServer!
-  var client: Echo_EchoService_NIOClient!
+  var client: Echo_EchoServiceClient!
 
   func makeServer() throws -> GRPCServer {
     return try GRPCServer.start(
@@ -132,12 +132,12 @@ class NIOEchoTestCaseBase: XCTestCase {
     ).wait()
   }
 
-  func makeEchoProvider() -> Echo_EchoProvider_NIO { return EchoProviderNIO() }
+  func makeEchoProvider() -> Echo_EchoProvider { return EchoProviderNIO() }
 
   func makeErrorDelegate() -> ServerErrorDelegate? { return nil }
 
-  func makeEchoClient() throws -> Echo_EchoService_NIOClient {
-    return Echo_EchoService_NIOClient(connection: try self.makeClientConnection())
+  func makeEchoClient() throws -> Echo_EchoServiceClient {
+    return Echo_EchoServiceClient(connection: try self.makeClientConnection())
   }
 
   override func setUp() {

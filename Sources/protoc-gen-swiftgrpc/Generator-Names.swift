@@ -44,19 +44,11 @@ extension Generator {
   }
 
   internal var serviceClassName: String {
-    if options.generateNIOImplementation {
-      return nameForPackageService(file, service) + "Service_NIO"
-    } else {
-      return nameForPackageService(file, service) + "Service"
-    }
+    return nameForPackageService(file, service) + "Service"
   }
 
   internal var providerName: String {
-    if options.generateNIOImplementation {
-      return nameForPackageService(file, service) + "Provider_NIO"
-    } else {
-      return nameForPackageService(file, service) + "Provider"
-    }
+    return nameForPackageService(file, service) + "Provider"
   }
 
   internal var callName: String {
@@ -66,10 +58,6 @@ extension Generator {
   internal var methodFunctionName: String {
     let name = method.name
     return name.prefix(1).lowercased() + name.dropFirst()
-  }
-
-  internal var methodSessionName: String {
-    return nameForPackageServiceMethod(file, service, method) + "Session"
   }
 
   internal var methodInputName: String {

@@ -70,7 +70,7 @@ class GRPCInsecureInteroperabilityTests: XCTestCase {
 
   func doRunTest(_ testCase: InteroperabilityTestCase, file: StaticString = #file, line: UInt = #line) {
     // Does the server support the test?
-    let implementedFeatures = TestServiceProvider_NIO.implementedFeatures
+    let implementedFeatures = TestServiceProvider.implementedFeatures
     let missingFeatures = testCase.requiredServerFeatures.subtracting(implementedFeatures)
     guard missingFeatures.isEmpty else {
       print("\(testCase.name) requires features the server does not implement: \(missingFeatures)")

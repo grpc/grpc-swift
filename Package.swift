@@ -19,7 +19,7 @@ import Foundation
 
 var packageDependencies: [Package.Dependency] = [
   // Official SwiftProtobuf library, for [de]serializing data to send on the wire.
-  .package(url: "https://github.com/apple/swift-protobuf.git", .upToNextMajor(from: "1.3.1")),
+  .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.3.1"),
 
   // Command line argument parser for our auxiliary command line tools.
   .package(url: "https://github.com/kylef/Commander.git", .upToNextMinor(from: "0.8.0")),
