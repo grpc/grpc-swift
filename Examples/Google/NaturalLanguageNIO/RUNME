@@ -22,7 +22,7 @@ protoc \
  	-Igoogleapis \
 	-I../common/include \
 	--swift_out=googleapis \
-	--swiftgrpc_out=googleapis \
+	--swiftgrpc_out=googleapis
 
 # move Swift files to the Sources directory
 find googleapis -name "*.swift" -exec mv {} Sources \;
