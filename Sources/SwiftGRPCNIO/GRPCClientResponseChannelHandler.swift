@@ -25,7 +25,6 @@ import NIOHTTP1
 /// aforementioned promises.
 internal class GRPCClientResponseChannelHandler<ResponseMessage: Message>: ChannelInboundHandler {
   public typealias InboundIn = GRPCClientResponsePart<ResponseMessage>
-  public typealias OutboundIn = Any
 
   internal let initialMetadataPromise: EventLoopPromise<HTTPHeaders>
   internal let statusPromise: EventLoopPromise<GRPCStatus>
