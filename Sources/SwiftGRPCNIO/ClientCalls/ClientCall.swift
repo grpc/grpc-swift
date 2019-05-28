@@ -60,9 +60,11 @@ public protocol StreamingRequestClientCall: ClientCall {
   ///
   /// - Important: Callers must terminate the stream of messages by calling `sendEnd()` or `sendEnd(promise:)`.
   ///
-  /// - Parameter message: The message to send.
+  /// - Parameters:
+  ///   - message: The message to
+  ///   - flush: Whether the buffer should be flushed after writing the message.
   /// - Returns: A future which will be fullfilled when the message has been sent.
-  func sendMessage(_ message: RequestMessage) -> EventLoopFuture<Void>
+  func sendMessage(_ message: RequestMessage, flush: Bool) -> EventLoopFuture<Void>
 
   /// Sends a message to the service.
   ///
@@ -71,36 +73,8 @@ public protocol StreamingRequestClientCall: ClientCall {
   /// - Parameters:
   ///   - message: The message to send.
   ///   - promise: A promise to be fulfilled when the message has been sent.
-  func sendMessage(_ message: RequestMessage, promise: EventLoopPromise<Void>?)
-
-  /// Writes a message to the service.
-  ///
-  /// Note: the difference between the `writeMessage` and `sendMessage` methods is that
-  /// `writeMessage` will only write the message whilst `sendMessage` will write the message and
-  /// flush the buffer. In NIO terms they are equivalent to calling `write` and `writeAndFlush`.
-  /// The buffer will only be flushed after calling `sendMessage`, `sendEnd` or once the buffer
-  /// is full.
-  ///
-  /// - Important: Callers must terminate the stream of messages by calling `sendEnd()` or `sendEnd(promise:)`.
-  ///
-  /// - Parameter message: The message to send.
-  /// - Returns: A future which will be fullfilled when the message has been sent.
-  func writeMessage(_ message: RequestMessage) -> EventLoopFuture<Void>
-
-  /// Writes a message.
-  ///
-  /// Note: the difference between the `writeMessage` and `sendMessage` methods is that
-  /// `writeMessage` will only write the message whilst `sendMessage` will write the message and
-  /// flush the buffer. In NIO terms they are equivalent to calling `write` and `writeAndFlush`.
-  /// The buffer will only be flushed after calling `sendMessage`, `sendEnd` or once the buffer
-  /// is full.
-  ///
-  /// - Important: Callers must terminate the stream of messages by calling `sendEnd()` or `sendEnd(promise:)`.
-  ///
-  /// - Parameters:
-  ///   - message: The message to send.
-  ///   - promise: A promise to be fulfilled when the message has been sent.
-  func writeMessage(_ message: RequestMessage, promise: EventLoopPromise<Void>?)
+  ///   - flush: Whether the buffer should be flushed after writing the message.
+  func sendMessage(_ message: RequestMessage, promise: EventLoopPromise<Void>?, flush: Bool)
 
   /// Returns a future which can be used as a message queue.
   ///
@@ -138,27 +112,22 @@ public protocol UnaryResponseClientCall: ClientCall {
 }
 
 extension StreamingRequestClientCall {
-  public func sendMessage(_ message: RequestMessage) -> EventLoopFuture<Void> {
+  public func sendMessage(_ message: RequestMessage, flush: Bool = true) -> EventLoopFuture<Void> {
     return self.subchannel.flatMap { channel in
-      channel.writeAndFlush(GRPCClientRequestPart.message(message))
+      let writeFuture = channel.write(GRPCClientRequestPart.message(message))
+      if flush {
+        channel.flush()
+      }
+      return writeFuture
     }
   }
 
-  public func sendMessage(_ message: RequestMessage, promise: EventLoopPromise<Void>?) {
-    self.subchannel.whenSuccess { channel in
-      channel.writeAndFlush(GRPCClientRequestPart.message(message), promise: promise)
-    }
-  }
-
-  public func writeMessage(_ message: RequestMessage) -> EventLoopFuture<Void> {
-    return self.subchannel.flatMap { channel in
-      channel.write(GRPCClientRequestPart.message(message))
-    }
-  }
-
-  public func writeMessage(_ message: RequestMessage, promise: EventLoopPromise<Void>?) {
+  public func sendMessage(_ message: RequestMessage, promise: EventLoopPromise<Void>?, flush: Bool = true) {
     self.subchannel.whenSuccess { channel in
       channel.write(GRPCClientRequestPart.message(message), promise: promise)
+      if flush {
+        channel.flush()
+      }
     }
   }
 
