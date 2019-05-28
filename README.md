@@ -171,23 +171,16 @@ testing with the following versions:
 
 ## `GRPC` package
 
-`GRPC` is a clean-room implementation of the gRPC protocol on top of the [`SwiftNIO`](http://github.com/apple/swift-nio) library. This implementation is not yet production-ready as it lacks several things recommended for production use:
+`GRPC` is a clean-room implementation of the gRPC protocol on top of the [`SwiftNIO`](http://github.com/apple/swift-nio) library. This implementation currently lacks:
 
-- Better test coverage
-- Full error handling
-- SSL support
-- Client support
 - Example projects
-- iOS support
-- Removal of the `libnghttp2` dependency from `SwiftNIOHTTP2`
+- First-class iOS support (via [Swift NIO Transport Services](https://github.com/apple/swift-nio-transport-services))
 
-However, if you are planning to implement a gRPC service based on `SwiftNIO` or the Vapor framework, you might find this package useful. In addition, once ready, this package should provide more predictable and reliable behavior in the future, combined with an improved API and better developer experience.
-
-You may also want to have a look at [this presentation](https://docs.google.com/presentation/d/1Mnsaq4mkeagZSP4mK1k0vewZrJKynm_MCteRDyM3OX8/edit) for more details on the motivation for this package.
+[This presentation](https://docs.google.com/presentation/d/1Mnsaq4mkeagZSP4mK1k0vewZrJKynm_MCteRDyM3OX8/edit) provides more details on the motivation for this package.
 
 ## License
 
-grpc-swift is released under the same license as
+This package is released under the same license as
 [gRPC](https://github.com/grpc/grpc), repeated in
 [LICENSE](LICENSE).
 
