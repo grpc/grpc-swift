@@ -20,7 +20,7 @@ import XCTest
 
 class ClientTimeoutTests: EchoTestCaseBase {
   let optionsWithShortTimeout = CallOptions(timeout: try! GRPCTimeout.milliseconds(10))
-  let moreThanShortTimeout: TimeInterval = 0.011
+  let moreThanShortTimeout: TimeInterval = 0.020
 
   private func expectDeadlineExceeded(forStatus status: EventLoopFuture<GRPCStatus>,
                                       file: StaticString = #file, line: UInt = #line) {
