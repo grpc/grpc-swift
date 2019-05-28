@@ -60,9 +60,11 @@ public protocol StreamingRequestClientCall: ClientCall {
   ///
   /// - Important: Callers must terminate the stream of messages by calling `sendEnd()` or `sendEnd(promise:)`.
   ///
-  /// - Parameter message: The message to send.
+  /// - Parameters:
+  ///   - message: The message to
+  ///   - flush: Whether the buffer should be flushed after writing the message.
   /// - Returns: A future which will be fullfilled when the message has been sent.
-  func sendMessage(_ message: RequestMessage) -> EventLoopFuture<Void>
+  func sendMessage(_ message: RequestMessage, flush: Bool) -> EventLoopFuture<Void>
 
   /// Sends a message to the service.
   ///
@@ -71,7 +73,8 @@ public protocol StreamingRequestClientCall: ClientCall {
   /// - Parameters:
   ///   - message: The message to send.
   ///   - promise: A promise to be fulfilled when the message has been sent.
-  func sendMessage(_ message: RequestMessage, promise: EventLoopPromise<Void>?)
+  ///   - flush: Whether the buffer should be flushed after writing the message.
+  func sendMessage(_ message: RequestMessage, promise: EventLoopPromise<Void>?, flush: Bool)
 
   /// Returns a future which can be used as a message queue.
   ///
@@ -106,4 +109,37 @@ public protocol UnaryResponseClientCall: ClientCall {
   ///
   /// Callers should rely on the `status` of the call for the canonical outcome.
   var response: EventLoopFuture<ResponseMessage> { get }
+}
+
+extension StreamingRequestClientCall {
+  public func sendMessage(_ message: RequestMessage, flush: Bool = true) -> EventLoopFuture<Void> {
+    return self.subchannel.flatMap { channel in
+      let writeFuture = channel.write(GRPCClientRequestPart.message(message))
+      if flush {
+        channel.flush()
+      }
+      return writeFuture
+    }
+  }
+
+  public func sendMessage(_ message: RequestMessage, promise: EventLoopPromise<Void>?, flush: Bool = true) {
+    self.subchannel.whenSuccess { channel in
+      channel.write(GRPCClientRequestPart.message(message), promise: promise)
+      if flush {
+        channel.flush()
+      }
+    }
+  }
+
+  public func sendEnd() -> EventLoopFuture<Void> {
+    return self.subchannel.flatMap { channel in
+      return channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.end)
+    }
+  }
+
+  public func sendEnd(promise: EventLoopPromise<Void>?) {
+    self.subchannel.whenSuccess { channel in
+      channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.end, promise: promise)
+    }
+  }
 }

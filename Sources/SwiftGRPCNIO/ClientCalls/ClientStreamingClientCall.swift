@@ -27,42 +27,31 @@ import NIO
 /// - `response`: the response from the call,
 /// - `status`: the status of the gRPC call after it has ended,
 /// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
-public class ClientStreamingClientCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage>, StreamingRequestClientCall, UnaryResponseClientCall {
+public final class ClientStreamingClientCall<RequestMessage: Message, ResponseMessage: Message>
+  : BaseClientCall<RequestMessage, ResponseMessage>,
+    StreamingRequestClientCall,
+    UnaryResponseClientCall {
   public let response: EventLoopFuture<ResponseMessage>
   private var messageQueue: EventLoopFuture<Void>
 
   public init(connection: GRPCClientConnection, path: String, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?) {
-    let responsePromise: EventLoopPromise<ResponseMessage> = connection.channel.eventLoop.makePromise()
-    self.response = responsePromise.futureResult
+    let responseHandler = GRPCClientUnaryResponseChannelHandler<ResponseMessage>(
+      initialMetadataPromise: connection.channel.eventLoop.makePromise(),
+      responsePromise: connection.channel.eventLoop.makePromise(),
+      statusPromise: connection.channel.eventLoop.makePromise(),
+      errorDelegate: errorDelegate,
+      timeout: callOptions.timeout)
+
+    let requestHandler = GRPCClientStreamingRequestChannelHandler<RequestMessage>(
+      requestHead: makeRequestHead(path: path, host: connection.host, callOptions: callOptions))
+
+    self.response = responseHandler.responsePromise.futureResult
     self.messageQueue = connection.channel.eventLoop.makeSucceededFuture(())
 
     super.init(
       connection: connection,
-      path: path,
-      callOptions: callOptions,
-      responseObserver: .succeedPromise(responsePromise),
-      errorDelegate: errorDelegate)
-
-    let requestHead = self.makeRequestHead(path: path, host: connection.host, callOptions: callOptions)
-    self.messageQueue = self.messageQueue.flatMap {
-      self.sendHead(requestHead)
-    }
-  }
-
-  public func sendMessage(_ message: RequestMessage) -> EventLoopFuture<Void> {
-    return self._sendMessage(message)
-  }
-
-  public func sendMessage(_ message: RequestMessage, promise: EventLoopPromise<Void>?) {
-    self._sendMessage(message, promise: promise)
-  }
-
-  public func sendEnd() -> EventLoopFuture<Void> {
-    return self._sendEnd()
-  }
-
-  public func sendEnd(promise: EventLoopPromise<Void>?) {
-    self._sendEnd(promise: promise)
+      responseHandler: responseHandler,
+      requestHandler: requestHandler)
   }
 
   public func newMessageQueue() -> EventLoopFuture<Void> {

@@ -16,6 +16,8 @@
 import Foundation
 import SwiftProtobuf
 import NIO
+import NIOHTTP1
+import NIOHTTP2
 
 /// A unary gRPC call. The request is sent on initialization.
 ///
@@ -24,25 +26,27 @@ import NIO
 /// - `response`: the response from the unary call,
 /// - `status`: the status of the gRPC call after it has ended,
 /// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
-public class UnaryClientCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage>, UnaryResponseClientCall {
+public final class UnaryClientCall<RequestMessage: Message, ResponseMessage: Message>
+  : BaseClientCall<RequestMessage, ResponseMessage>,
+    UnaryResponseClientCall {
   public let response: EventLoopFuture<ResponseMessage>
 
   public init(connection: GRPCClientConnection, path: String, request: RequestMessage, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?) {
-    let responsePromise: EventLoopPromise<ResponseMessage> = connection.channel.eventLoop.makePromise()
-    self.response = responsePromise.futureResult
+    let responseHandler = GRPCClientUnaryResponseChannelHandler<ResponseMessage>(
+      initialMetadataPromise: connection.channel.eventLoop.makePromise(),
+      responsePromise: connection.channel.eventLoop.makePromise(),
+      statusPromise: connection.channel.eventLoop.makePromise(),
+      errorDelegate: errorDelegate,
+      timeout: callOptions.timeout)
 
+    let requestHandler = GRPCClientUnaryRequestChannelHandler<RequestMessage>(
+      requestHead: makeRequestHead(path: path, host: connection.host, callOptions: callOptions),
+      request: request)
+
+    self.response = responseHandler.responsePromise.futureResult
     super.init(
       connection: connection,
-      path: path,
-      callOptions: callOptions,
-      responseObserver: .succeedPromise(responsePromise),
-      errorDelegate: errorDelegate)
-
-    let requestHead = self.makeRequestHead(path: path, host: connection.host, callOptions: callOptions)
-    self.sendHead(requestHead).flatMap {
-      self._sendMessage(request)
-    }.whenSuccess {
-      self._sendEnd(promise: nil)
-    }
+      responseHandler: responseHandler,
+      requestHandler: requestHandler)
   }
 }

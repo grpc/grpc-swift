@@ -23,15 +23,22 @@ import NIO
 /// - `initialMetadata`: the initial metadata returned from the server,
 /// - `status`: the status of the gRPC call after it has ended,
 /// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
-public class ServerStreamingClientCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage> {
+public final class ServerStreamingClientCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage> {
   public init(connection: GRPCClientConnection, path: String, request: RequestMessage, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?, handler: @escaping (ResponseMessage) -> Void) {
-    super.init(connection: connection, path: path, callOptions: callOptions, responseObserver: .callback(handler), errorDelegate: errorDelegate)
+    let responseHandler = GRPCClientStreamingResponseChannelHandler(
+      initialMetadataPromise: connection.channel.eventLoop.makePromise(),
+      statusPromise: connection.channel.eventLoop.makePromise(),
+      errorDelegate: errorDelegate,
+      timeout: callOptions.timeout,
+      responseHandler: handler)
 
-    let requestHead = self.makeRequestHead(path: path, host: connection.host, callOptions: callOptions)
-    self.sendHead(requestHead).flatMap {
-      self._sendMessage(request)
-    }.whenSuccess {
-      self._sendEnd(promise: nil)
-    }
+    let requestHandler = GRPCClientUnaryRequestChannelHandler<RequestMessage>(
+      requestHead: makeRequestHead(path: path, host: connection.host, callOptions: callOptions),
+      request: request)
+
+    super.init(
+      connection: connection,
+      responseHandler: responseHandler,
+      requestHandler: requestHandler)
   }
 }
