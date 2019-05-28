@@ -24,7 +24,7 @@ var packageDependencies: [Package.Dependency] = [
   // Command line argument parser for our auxiliary command line tools.
   .package(url: "https://github.com/kylef/Commander.git", .upToNextMinor(from: "0.8.0")),
 
-  // SwiftGRPCNIO dependencies:
+  // GRPC dependencies:
   // Main SwiftNIO package
   .package(url: "https://github.com/apple/swift-nio.git", from: "2.2.0"),
   // HTTP2 via SwiftNIO
@@ -34,13 +34,16 @@ var packageDependencies: [Package.Dependency] = [
 ]
 
 let package = Package(
-  name: "SwiftGRPC",
+  name: "GRPC",
   products: [
-    .library(name: "SwiftGRPCNIO", targets: ["SwiftGRPCNIO"]),
+    .library(name: "GRPC", targets: ["GRPC"]),
+    .executable(name: "InteroperabilityTestRunner", targets: ["GRPCInteroperabilityTestsCLI"]),
+    .executable(name: "PerformanceTestRunner", targets: ["GRPCPerformanceTests"]),
+    .executable(name: "Echo", targets: ["Echo"]),
   ],
   dependencies: packageDependencies,
   targets: [
-    .target(name: "SwiftGRPCNIO",
+    .target(name: "GRPC",
             dependencies: [
               "NIO",
               "NIOFoundationCompat",
@@ -53,29 +56,29 @@ let package = Package(
               "SwiftProtobuf",
               "SwiftProtobufPluginLibrary",
               "protoc-gen-swift"]),
-    .target(name: "EchoNIO",
+    .target(name: "Echo",
             dependencies: [
-              "SwiftGRPCNIO",
-              "SwiftGRPCNIOSampleData",
+              "GRPC",
+              "GRPCSampleData",
               "SwiftProtobuf",
               "Commander"],
-            path: "Sources/Examples/EchoNIO"),
-    .target(name: "SwiftGRPCNIOInteroperabilityTests",
-            dependencies: ["SwiftGRPCNIO"]),
-    .target(name: "SwiftGRPCNIOInteroperabilityTestsCLI",
+            path: "Sources/Examples/Echo"),
+    .target(name: "GRPCInteroperabilityTests",
+            dependencies: ["GRPC"]),
+    .target(name: "GRPCInteroperabilityTestsCLI",
             dependencies: [
-              "SwiftGRPCNIOInteroperabilityTests",
+              "GRPCInteroperabilityTests",
               "Commander"]),
-    .target(name: "SwiftGRPCNIOSampleData",
+    .target(name: "GRPCSampleData",
             dependencies: ["NIOSSL"]),
-    .testTarget(name: "SwiftGRPCNIOTests",
+    .testTarget(name: "GRPCTests",
                 dependencies: [
-                  "SwiftGRPCNIO",
-                  "SwiftGRPCNIOSampleData",
-                  "SwiftGRPCNIOInteroperabilityTests"]),
-    .target(name: "SwiftGRPCNIOPerformanceTests",
+                  "GRPC",
+                  "GRPCSampleData",
+                  "GRPCInteroperabilityTests"]),
+    .target(name: "GRPCPerformanceTests",
             dependencies: [
-              "SwiftGRPCNIO",
+              "GRPC",
               "NIO",
               "NIOSSL",
               "Commander",
