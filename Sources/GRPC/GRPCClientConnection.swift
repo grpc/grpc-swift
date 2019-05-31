@@ -77,8 +77,9 @@ open class GRPCClientConnection {
     hostOverride: String? = nil
   ) throws -> EventLoopFuture<GRPCClientConnection> {
     let bootstrap = ClientBootstrap(group: eventLoopGroup)
-      // Enable SO_REUSEADDR.
+      // Enable SO_REUSEADDR and TCP_NODELAY.
       .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
+      .channelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
       .channelInitializer { channel in
         configureTLS(mode: tlsMode, channel: channel, host: hostOverride ?? host, errorDelegate: errorDelegate).flatMap {
           channel.configureHTTP2Pipeline(mode: .client)
