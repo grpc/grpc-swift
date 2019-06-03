@@ -18,10 +18,10 @@ import Foundation
 /// Provides a "box" to put a value in.
 ///
 /// Allows large values to be passed around without being copied.
-public final class Box<T> {
-  public let value: T
+public final class _Box<T> {
+  let value: T
 
-  public init(_ value: T) {
+  init(_ value: T) {
     self.value = value
   }
 }

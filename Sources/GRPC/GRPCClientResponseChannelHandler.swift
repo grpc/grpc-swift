@@ -121,7 +121,7 @@ internal class GRPCClientResponseChannelHandler<ResponseMessage: Message>: Chann
   /// Called when a response is received. Subclasses should override this method.
   ///
   /// - Parameter response: The received response.
-  internal func onResponse(_ response: Box<ResponseMessage>) {
+  internal func onResponse(_ response: _Box<ResponseMessage>) {
     // no-op
   }
 
@@ -225,7 +225,7 @@ final class GRPCClientUnaryResponseChannelHandler<ResponseMessage: Message>: GRP
   /// Succeeds the response promise with the given response.
   ///
   /// - Parameter response: The response received from the service.
-  override func onResponse(_ response: Box<ResponseMessage>) {
+  override func onResponse(_ response: _Box<ResponseMessage>) {
     self.responsePromise.succeed(response.value)
   }
 
@@ -266,7 +266,7 @@ final class GRPCClientStreamingResponseChannelHandler<ResponseMessage: Message>:
   /// Calls a user-provided handler with the given response.
   ///
   /// - Parameter response: The response received from the service.
-  override func onResponse(_ response: Box<ResponseMessage>) {
+  override func onResponse(_ response: _Box<ResponseMessage>) {
     self.responseHandler(response.value)
   }
 }
