@@ -21,6 +21,8 @@ import SwiftProtobuf
 /// Outgoing gRPC package with a fixed message type.
 public enum GRPCClientRequestPart<RequestMessage: Message> {
   case head(HTTPRequestHead)
+  // We box the message to keep the enum small enough to fit in `NIOAny` and avoid unnecessary
+  // allocations.
   case message(_Box<RequestMessage>)
   case end
 }
@@ -28,6 +30,8 @@ public enum GRPCClientRequestPart<RequestMessage: Message> {
 /// Incoming gRPC package with a fixed message type.
 public enum GRPCClientResponsePart<ResponseMessage: Message> {
   case headers(HTTPHeaders)
+  // We box the message to keep the enum small enough to fit in `NIOAny` and avoid unnecessary
+  // allocations.
   case message(_Box<ResponseMessage>)
   case status(GRPCStatus)
 }
