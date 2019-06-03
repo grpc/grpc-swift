@@ -41,9 +41,9 @@ internal class GRPCClientRequestChannelHandler<RequestMessage: Message>: Channel
 /// Sends the request head, message and end on `channelActive(context:)`.
 internal final class GRPCClientUnaryRequestChannelHandler<RequestMessage: Message>: GRPCClientRequestChannelHandler<RequestMessage> {
   /// The request to send.
-  internal let request: RequestMessage
+  internal let request: _Box<RequestMessage>
 
-  init(requestHead: HTTPRequestHead, request: RequestMessage) {
+  init(requestHead: HTTPRequestHead, request: _Box<RequestMessage>) {
     self.request = request
     super.init(requestHead: requestHead)
   }

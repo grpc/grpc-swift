@@ -4,7 +4,13 @@ import NIOHTTP1
 import NIOHTTP2
 
 /// Encapsulates the result of a gRPC call.
-public struct GRPCStatus: Error, Equatable {
+///
+/// We use a `class` here for a couple of reasons:
+/// - The size of the equivalent `struct` is larger than the value buffer in an existential
+///   container so would incur a heap allocation each time a `GRPCStatus` is passed to a function
+///   taking an `Error`.
+/// - We aren't using value semantics (since all properties are constant).
+public final class GRPCStatus: Error {
   /// The code to return in the `grpc-status` header.
   public let code: StatusCode
   /// The message to return in the `grpc-message` header.

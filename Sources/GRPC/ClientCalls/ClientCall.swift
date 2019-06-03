@@ -114,7 +114,7 @@ public protocol UnaryResponseClientCall: ClientCall {
 extension StreamingRequestClientCall {
   public func sendMessage(_ message: RequestMessage, flush: Bool = true) -> EventLoopFuture<Void> {
     return self.subchannel.flatMap { channel in
-      let writeFuture = channel.write(GRPCClientRequestPart.message(message))
+      let writeFuture = channel.write(GRPCClientRequestPart.message(_Box(message)))
       if flush {
         channel.flush()
       }
@@ -124,7 +124,7 @@ extension StreamingRequestClientCall {
 
   public func sendMessage(_ message: RequestMessage, promise: EventLoopPromise<Void>?, flush: Bool = true) {
     self.subchannel.whenSuccess { channel in
-      channel.write(GRPCClientRequestPart.message(message), promise: promise)
+      channel.write(GRPCClientRequestPart.message(_Box(message)), promise: promise)
       if flush {
         channel.flush()
       }

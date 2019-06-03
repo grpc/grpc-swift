@@ -121,7 +121,7 @@ internal class GRPCClientResponseChannelHandler<ResponseMessage: Message>: Chann
   /// Called when a response is received. Subclasses should override this method.
   ///
   /// - Parameter response: The received response.
-  internal func onResponse(_ response: ResponseMessage) {
+  internal func onResponse(_ response: _Box<ResponseMessage>) {
     // no-op
   }
 
@@ -145,13 +145,13 @@ internal class GRPCClientResponseChannelHandler<ResponseMessage: Message>: Chann
       self.initialMetadataPromise.succeed(headers)
       self.inboundState = .expectingMessageOrStatus
 
-    case .message(let message):
+    case .message(let boxedMessage):
       guard self.inboundState == .expectingMessageOrStatus else {
         self.errorCaught(context: context, error: GRPCError.client(.responseCardinalityViolation))
         return
       }
 
-      self.onResponse(message)
+      self.onResponse(boxedMessage)
       self.inboundState = self.responseArity.inboundStateAfterResponse
 
     case .status(let status):
@@ -225,8 +225,8 @@ final class GRPCClientUnaryResponseChannelHandler<ResponseMessage: Message>: GRP
   /// Succeeds the response promise with the given response.
   ///
   /// - Parameter response: The response received from the service.
-  override func onResponse(_ response: ResponseMessage) {
-    self.responsePromise.succeed(response)
+  override func onResponse(_ response: _Box<ResponseMessage>) {
+    self.responsePromise.succeed(response.value)
   }
 
   /// Fails the response promise if the given status is not `.ok`.
@@ -266,8 +266,8 @@ final class GRPCClientStreamingResponseChannelHandler<ResponseMessage: Message>:
   /// Calls a user-provided handler with the given response.
   ///
   /// - Parameter response: The response received from the service.
-  override func onResponse(_ response: ResponseMessage) {
-    self.responseHandler(response)
+  override func onResponse(_ response: _Box<ResponseMessage>) {
+    self.responseHandler(response.value)
   }
 }
 

@@ -41,7 +41,7 @@ public final class UnaryClientCall<RequestMessage: Message, ResponseMessage: Mes
 
     let requestHandler = GRPCClientUnaryRequestChannelHandler<RequestMessage>(
       requestHead: makeRequestHead(path: path, host: connection.host, callOptions: callOptions),
-      request: request)
+      request: _Box(request))
 
     self.response = responseHandler.responsePromise.futureResult
     super.init(
