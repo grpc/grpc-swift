@@ -21,11 +21,10 @@ import NIO
 import NIOHTTP1
 import NIOSSL
 
-/// Prepare a TLSMode for a general SSL client that supports HTTP/2.
-func makeClientTLS() throws -> GRPCClientConnection.TLSMode {
+/// Prepare an SSL context for a general SSL client that supports HTTP/2.
+func makeClientTLS() throws -> NIOSSLContext {
   let configuration = TLSConfiguration.forClient(applicationProtocols: ["h2"])
-  let context = try NIOSSLContext(configuration: configuration)
-  return .custom(context)
+  return try NIOSSLContext(configuration: configuration)
 }
 
 /// Create a client and return a future to provide its value.
@@ -35,10 +34,12 @@ func makeServiceClient(host: String,
   -> EventLoopFuture<Google_Cloud_Language_V1_LanguageServiceServiceClient> {
     let promise = eventLoopGroup.next().makePromise(of: Google_Cloud_Language_V1_LanguageServiceServiceClient.self)
     do {
-      try GRPCClientConnection.start(host: host,
-                                     port: port,
-                                     eventLoopGroup: eventLoopGroup,
-                                     tls: makeClientTLS())
+      let configuration = GRPCClientConnection.Configuration(
+        target: .hostAndPort(host, port),
+        eventLoopGroup: eventLoopGroup,
+        tlsConfiguration: .init(sslContext: try makeClientTLS())
+
+      try GRPCClientConnection.start(configuration)
         .map { client in
           Google_Cloud_Language_V1_LanguageServiceServiceClient(connection: client)
         }.cascade(to: promise)
