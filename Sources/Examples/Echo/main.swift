@@ -32,11 +32,11 @@ let messageOption = Option("message",
                            default: "Testing 1 2 3",
                            description: "message to send")
 
-func makeClientTLS(enabled: Bool) throws -> GRPCClientConnection.TLSMode {
+func makeClientSSLContext(enabled: Bool) throws -> NIOSSLContext? {
   guard enabled else {
-    return .none
+    return nil
   }
-  return .custom(try NIOSSLContext(configuration: try makeClientTLSConfiguration()))
+  return try NIOSSLContext(configuration: try makeClientTLSConfiguration())
 }
 
 func makeServerTLS(enabled: Bool) throws -> GRPCServer.TLSMode {
@@ -74,8 +74,21 @@ func makeServerTLSConfiguration() throws -> TLSConfiguration {
 /// Create en `EchoClient` and wait for it to initialize. Returns nil if initialisation fails.
 func makeEchoClient(address: String, port: Int, ssl: Bool) -> Echo_EchoServiceClient? {
   let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+
   do {
-    return try GRPCClientConnection.start(host: address, port: port, eventLoopGroup: eventLoopGroup, tls: try makeClientTLS(enabled: ssl))
+    let tlsConfiguration: GRPCClientConnection.TLSConfiguration?
+    if let sslContext = try makeClientSSLContext(enabled: ssl) {
+      tlsConfiguration = .init(sslContext: sslContext)
+    } else {
+      tlsConfiguration = nil
+    }
+
+    let configuration = GRPCClientConnection.Configuration(
+      target: .hostAndPort(address, port),
+      eventLoopGroup: eventLoopGroup,
+      tlsConfiguration: tlsConfiguration)
+
+    return try GRPCClientConnection.start(configuration)
       .map { Echo_EchoServiceClient(connection: $0) }
       .wait()
   } catch {

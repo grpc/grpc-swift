@@ -43,7 +43,7 @@ public final class ClientStreamingClientCall<RequestMessage: Message, ResponseMe
       timeout: callOptions.timeout)
 
     let requestHandler = GRPCClientStreamingRequestChannelHandler<RequestMessage>(
-      requestHead: makeRequestHead(path: path, host: connection.host, callOptions: callOptions))
+      requestHead: makeRequestHead(path: path, host: connection.configuration.target.host, callOptions: callOptions))
 
     self.response = responseHandler.responsePromise.futureResult
     self.messageQueue = connection.channel.eventLoop.makeSucceededFuture(())
