@@ -65,6 +65,15 @@ extension EventLoopFuture {
       }
     }
   }
+
+  /// Registers a callback which fulfills an expectation when the future succeeds.
+  ///
+  /// - Parameter expectation: The expectation to fulfill.
+  func assertSuccess(fulfill expectation: XCTestExpectation, file: StaticString = #file, line: UInt = #line) {
+    self.whenSuccess { _ in
+      expectation.fulfill()
+    }
+  }
 }
 
 extension EventLoopFuture {
