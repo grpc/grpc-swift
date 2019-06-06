@@ -110,11 +110,12 @@ open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
   private func createStreamChannel() {
     self.connection.channel.eventLoop.execute {
       self.connection.multiplexer.createStreamChannel(promise: self.streamPromise) { (subchannel, streamID) -> EventLoopFuture<Void> in
-        subchannel.pipeline.addHandlers(HTTP2ToHTTP1ClientCodec(streamID: streamID, httpProtocol: self.connection.httpProtocol),
-                                        HTTP1ToRawGRPCClientCodec(),
-                                        GRPCClientCodec<RequestMessage, ResponseMessage>(),
-                                        self.requestHandler,
-                                        self.responseHandler)
+        subchannel.pipeline.addHandlers(
+          HTTP2ToHTTP1ClientCodec(streamID: streamID, httpProtocol: self.connection.configuration.httpProtocol),
+          HTTP1ToRawGRPCClientCodec(),
+          GRPCClientCodec<RequestMessage, ResponseMessage>(),
+          self.requestHandler,
+          self.responseHandler)
       }
     }
   }

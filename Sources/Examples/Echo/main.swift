@@ -32,21 +32,18 @@ let messageOption = Option("message",
                            default: "Testing 1 2 3",
                            description: "message to send")
 
-func makeClientSSLContext(enabled: Bool) throws -> NIOSSLContext? {
-  guard enabled else {
-    return nil
-  }
-  return try NIOSSLContext(configuration: try makeClientTLSConfiguration())
+func makeClientSSLContext() throws -> NIOSSLContext {
+  return try NIOSSLContext(configuration: makeClientTLSConfiguration())
 }
 
 func makeServerTLS(enabled: Bool) throws -> GRPCServer.TLSMode {
   guard enabled else {
     return .none
   }
-  return .custom(try NIOSSLContext(configuration: try makeServerTLSConfiguration()))
+  return .custom(try NIOSSLContext(configuration: makeServerTLSConfiguration()))
 }
 
-func makeClientTLSConfiguration() throws -> TLSConfiguration {
+func makeClientTLSConfiguration() -> TLSConfiguration {
   let caCert = SampleCertificate.ca
   let clientCert = SampleCertificate.client
   precondition(!caCert.isExpired && !clientCert.isExpired,
@@ -59,7 +56,7 @@ func makeClientTLSConfiguration() throws -> TLSConfiguration {
                     applicationProtocols: GRPCApplicationProtocolIdentifier.allCases.map { $0.rawValue })
 }
 
-func makeServerTLSConfiguration() throws -> TLSConfiguration {
+func makeServerTLSConfiguration() -> TLSConfiguration {
   let caCert = SampleCertificate.ca
   let serverCert = SampleCertificate.server
   precondition(!caCert.isExpired && !serverCert.isExpired,
@@ -77,8 +74,8 @@ func makeEchoClient(address: String, port: Int, ssl: Bool) -> Echo_EchoServiceCl
 
   do {
     let tlsConfiguration: GRPCClientConnection.TLSConfiguration?
-    if let sslContext = try makeClientSSLContext(enabled: ssl) {
-      tlsConfiguration = .init(sslContext: sslContext)
+    if ssl {
+      tlsConfiguration = .init(sslContext: try makeClientSSLContext())
     } else {
       tlsConfiguration = nil
     }

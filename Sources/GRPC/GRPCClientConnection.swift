@@ -62,8 +62,8 @@ open class GRPCClientConnection {
   /// - Parameter configuration: The configuration to prepare the bootstrap with.
   public class func makeBootstrap(configuration: Configuration) -> ClientBootstrap {
     let bootstrap = ClientBootstrap(group: configuration.eventLoopGroup)
-    // Enable SO_REUSEADDR and TCP_NODELAY.
-    .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
+      // Enable SO_REUSEADDR and TCP_NODELAY.
+      .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
       .channelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
       .channelInitializer { channel in
         let tlsConfigured = configuration.tlsConfiguration.map { tlsConfiguration in
@@ -76,7 +76,7 @@ open class GRPCClientConnection {
           let errorHandler = GRPCDelegatingErrorHandler(delegate: configuration.errorDelegate)
           return channel.pipeline.addHandler(errorHandler)
         }
-    }
+      }
 
     return bootstrap
   }
@@ -84,15 +84,9 @@ open class GRPCClientConnection {
   /// Verifies that a TLS handshake was successful by using the `GRPCTLSVerificationHandler`.
   ///
   /// - Parameter channel: The channel to verify successful TLS setup on.
-  /// - Parameter skipVerification: Whether verification should be skipped. This should be `true`
-  ///     if TLS has not been enabled for the given channel.
-  public class func verifyTLS(channel: Channel, skipVerification: Bool) -> EventLoopFuture<Void> {
-    if skipVerification {
-      return channel.eventLoop.makeSucceededFuture(())
-    } else {
-      return channel.pipeline.handler(type: GRPCTLSVerificationHandler.self).flatMap {
-        $0.verification
-      }
+  public class func verifyTLS(channel: Channel) -> EventLoopFuture<Void> {
+    return channel.pipeline.handler(type: GRPCTLSVerificationHandler.self).flatMap {
+      $0.verification
     }
   }
 
@@ -115,27 +109,30 @@ open class GRPCClientConnection {
   /// handshake was successful (if TLS was configured) and creating the `GRPCClientConnection`.
   /// See the individual functions for more information:
   ///  - `makeBootstrap(configuration:)`,
-  ///  - `verifyTLS(channel:skipVerification:)`, and
+  ///  - `verifyTLS(channel:)`, and
   ///  - `makeGRPCClientConnection(channel:configuration:)`.
   ///
   /// - Parameter configuration: The configuration to start the connection with.
   public class func start(_ configuration: Configuration) -> EventLoopFuture<GRPCClientConnection> {
     return makeBootstrap(configuration: configuration)
-      .connct(to: configuration.target)
+      .connect(to: configuration.target)
       .flatMap { channel in
-        return verifyTLS(channel: channel, skipVerification: configuration.tlsConfiguration == nil)
-          .and(makeGRPCClientConnection(channel: channel, configuration: configuration))
-          .map { $1 }
+        let tlsVerified: EventLoopFuture<Void>?
+        if configuration.tlsConfiguration != nil {
+          tlsVerified = verifyTLS(channel: channel)
+        } else {
+          tlsVerified = nil
+        }
+
+        return (tlsVerified ?? channel.eventLoop.makeSucceededFuture(())).flatMap {
+          makeGRPCClientConnection(channel: channel, configuration: configuration)
+        }
       }
   }
 
   public let channel: Channel
   public let multiplexer: HTTP2StreamMultiplexer
   public let configuration: Configuration
-
-  internal var httpProtocol: HTTP2ToHTTP1ClientCodec.HTTPProtocol {
-    return self.configuration.tlsConfiguration == nil ? .http: .https
-  }
 
   init(channel: Channel, multiplexer: HTTP2StreamMultiplexer, configuration: Configuration) {
     self.channel = channel
@@ -153,7 +150,7 @@ open class GRPCClientConnection {
   }
 }
 
-// MARK:- Configuration structures
+// MARK: - Configuration structures
 
 /// A target to connect to.
 public enum ConnectionTarget {
@@ -228,13 +225,13 @@ extension GRPCClientConnection {
   }
 }
 
-// MARK:- Configuration helpers/extensions
+// MARK: - Configuration helpers/extensions
 
 fileprivate extension ClientBootstrap {
   /// Connect to the given connection target.
   ///
   /// - Parameter target: The target to connect to.
-  func connct(to target: ConnectionTarget) -> EventLoopFuture<Channel> {
+  func connect(to target: ConnectionTarget) -> EventLoopFuture<Channel> {
     switch target {
     case .hostAndPort(let host, let port):
       return self.connect(host: host, port: port)
@@ -273,7 +270,7 @@ fileprivate extension Channel {
   }
 }
 
-// MARK:- Legacy APIs
+// MARK: - Legacy APIs
 
 extension GRPCClientConnection {
   /// Starts a connection to the given host and port.
