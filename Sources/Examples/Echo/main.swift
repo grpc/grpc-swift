@@ -32,21 +32,18 @@ let messageOption = Option("message",
                            default: "Testing 1 2 3",
                            description: "message to send")
 
-func makeClientTLS(enabled: Bool) throws -> GRPCClientConnection.TLSMode {
-  guard enabled else {
-    return .none
-  }
-  return .custom(try NIOSSLContext(configuration: try makeClientTLSConfiguration()))
+func makeClientSSLContext() throws -> NIOSSLContext {
+  return try NIOSSLContext(configuration: makeClientTLSConfiguration())
 }
 
 func makeServerTLS(enabled: Bool) throws -> GRPCServer.TLSMode {
   guard enabled else {
     return .none
   }
-  return .custom(try NIOSSLContext(configuration: try makeServerTLSConfiguration()))
+  return .custom(try NIOSSLContext(configuration: makeServerTLSConfiguration()))
 }
 
-func makeClientTLSConfiguration() throws -> TLSConfiguration {
+func makeClientTLSConfiguration() -> TLSConfiguration {
   let caCert = SampleCertificate.ca
   let clientCert = SampleCertificate.client
   precondition(!caCert.isExpired && !clientCert.isExpired,
@@ -59,7 +56,7 @@ func makeClientTLSConfiguration() throws -> TLSConfiguration {
                     applicationProtocols: GRPCApplicationProtocolIdentifier.allCases.map { $0.rawValue })
 }
 
-func makeServerTLSConfiguration() throws -> TLSConfiguration {
+func makeServerTLSConfiguration() -> TLSConfiguration {
   let caCert = SampleCertificate.ca
   let serverCert = SampleCertificate.server
   precondition(!caCert.isExpired && !serverCert.isExpired,
@@ -74,8 +71,21 @@ func makeServerTLSConfiguration() throws -> TLSConfiguration {
 /// Create en `EchoClient` and wait for it to initialize. Returns nil if initialisation fails.
 func makeEchoClient(address: String, port: Int, ssl: Bool) -> Echo_EchoServiceClient? {
   let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+
   do {
-    return try GRPCClientConnection.start(host: address, port: port, eventLoopGroup: eventLoopGroup, tls: try makeClientTLS(enabled: ssl))
+    let tlsConfiguration: GRPCClientConnection.TLSConfiguration?
+    if ssl {
+      tlsConfiguration = .init(sslContext: try makeClientSSLContext())
+    } else {
+      tlsConfiguration = nil
+    }
+
+    let configuration = GRPCClientConnection.Configuration(
+      target: .hostAndPort(address, port),
+      eventLoopGroup: eventLoopGroup,
+      tlsConfiguration: tlsConfiguration)
+
+    return try GRPCClientConnection.start(configuration)
       .map { Echo_EchoServiceClient(connection: $0) }
       .wait()
   } catch {

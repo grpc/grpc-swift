@@ -110,11 +110,12 @@ open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
   private func createStreamChannel() {
     self.connection.channel.eventLoop.execute {
       self.connection.multiplexer.createStreamChannel(promise: self.streamPromise) { (subchannel, streamID) -> EventLoopFuture<Void> in
-        subchannel.pipeline.addHandlers(HTTP2ToHTTP1ClientCodec(streamID: streamID, httpProtocol: self.connection.httpProtocol),
-                                        HTTP1ToRawGRPCClientCodec(),
-                                        GRPCClientCodec<RequestMessage, ResponseMessage>(),
-                                        self.requestHandler,
-                                        self.responseHandler)
+        subchannel.pipeline.addHandlers(
+          HTTP2ToHTTP1ClientCodec(streamID: streamID, httpProtocol: self.connection.configuration.httpProtocol),
+          HTTP1ToRawGRPCClientCodec(),
+          GRPCClientCodec<RequestMessage, ResponseMessage>(),
+          self.requestHandler,
+          self.responseHandler)
       }
     }
   }
@@ -141,10 +142,8 @@ extension BaseClientCall: ClientCall {
 /// - Parameter path: The path of the gRPC call, e.g. "/serviceName/methodName".
 /// - Parameter host: The host serving the call.
 /// - Parameter callOptions: Options used when making this call.
-internal func makeRequestHead(path: String, host: String, callOptions: CallOptions) -> HTTPRequestHead {
+internal func makeRequestHead(path: String, host: String?, callOptions: CallOptions) -> HTTPRequestHead {
   var headers: HTTPHeaders = [
-    // We're dealing with HTTP/1; the NIO HTTP2ToHTTP1Codec replaces "host" with ":authority".
-    "host": host,
     "content-type": "application/grpc",
     // Used to detect incompatible proxies, as per https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests
     "te": "trailers",
@@ -152,6 +151,11 @@ internal func makeRequestHead(path: String, host: String, callOptions: CallOptio
     "user-agent": "grpc-swift-nio",
     GRPCHeaderName.acceptEncoding: CompressionMechanism.acceptEncodingHeader,
   ]
+
+  if let host = host {
+    // We're dealing with HTTP/1; the NIO HTTP2ToHTTP1Codec replaces "host" with ":authority".
+    headers.add(name: "host", value: host)
+  }
 
   if callOptions.timeout != .infinite {
     headers.add(name: GRPCHeaderName.timeout, value: String(describing: callOptions.timeout))

@@ -32,7 +32,7 @@ extension GRPCClient {
     callOptions: CallOptions,
     responseType: Response.Type = Response.self
   ) -> UnaryClientCall<Request, Response> {
-    return UnaryClientCall(connection: self.connection, path: path, request: request, callOptions: callOptions, errorDelegate: self.connection.errorDelegate)
+    return UnaryClientCall(connection: self.connection, path: path, request: request, callOptions: callOptions, errorDelegate: self.connection.configuration.errorDelegate)
   }
 
   public func makeServerStreamingCall<Request: Message, Response: Message>(
@@ -42,7 +42,7 @@ extension GRPCClient {
     responseType: Response.Type = Response.self,
     handler: @escaping (Response) -> Void
   ) -> ServerStreamingClientCall<Request, Response> {
-    return ServerStreamingClientCall(connection: self.connection, path: path, request: request, callOptions: callOptions, errorDelegate: self.connection.errorDelegate, handler: handler)
+    return ServerStreamingClientCall(connection: self.connection, path: path, request: request, callOptions: callOptions, errorDelegate: self.connection.configuration.errorDelegate, handler: handler)
   }
 
   public func makeClientStreamingCall<Request: Message, Response: Message>(
@@ -51,7 +51,7 @@ extension GRPCClient {
     requestType: Request.Type = Request.self,
     responseType: Response.Type = Response.self
   ) -> ClientStreamingClientCall<Request, Response> {
-    return ClientStreamingClientCall(connection: self.connection, path: path, callOptions: callOptions, errorDelegate: self.connection.errorDelegate)
+    return ClientStreamingClientCall(connection: self.connection, path: path, callOptions: callOptions, errorDelegate: self.connection.configuration.errorDelegate)
   }
 
   public func makeBidirectionalStreamingCall<Request: Message, Response: Message>(
@@ -61,7 +61,7 @@ extension GRPCClient {
     responseType: Response.Type = Response.self,
     handler: @escaping (Response) -> Void
   ) -> BidirectionalStreamingClientCall<Request, Response> {
-    return BidirectionalStreamingClientCall(connection: self.connection, path: path, callOptions: callOptions, errorDelegate: self.connection.errorDelegate, handler: handler)
+    return BidirectionalStreamingClientCall(connection: self.connection, path: path, callOptions: callOptions, errorDelegate: self.connection.configuration.errorDelegate, handler: handler)
   }
 }
 
