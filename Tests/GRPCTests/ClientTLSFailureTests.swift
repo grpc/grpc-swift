@@ -43,12 +43,15 @@ class ClientTLSFailureTests: XCTestCase {
     configuration: TLSConfiguration,
     hostOverride: String? = SampleCertificate.server.commonName
   ) throws -> EventLoopFuture<GRPCClientConnection> {
-    return try GRPCClientConnection.start(
-      host: "localhost",
-      port: self.port,
+    let context = try NIOSSLContext(configuration: configuration)
+    let clientConfiguration = GRPCClientConnection.Configuration(
+      target: .hostAndPort("localhost", self.port),
       eventLoopGroup: self.clientEventLoopGroup,
-      tls: .custom(try NIOSSLContext(configuration: configuration)),
-      hostOverride: hostOverride)
+      tlsConfiguration: GRPCClientConnection.TLSConfiguration(
+        sslContext: context,
+        hostnameOverride: hostOverride))
+
+    return GRPCClientConnection.start(clientConfiguration)
   }
 
   func makeClientConnectionExpectation() -> XCTestExpectation {

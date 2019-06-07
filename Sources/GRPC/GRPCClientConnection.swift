@@ -203,7 +203,7 @@ extension GRPCClientConnection {
       eventLoopGroup: EventLoopGroup,
       errorDelegate: ClientErrorDelegate? = DebugOnlyLoggingClientErrorDelegate.shared,
       tlsConfiguration: TLSConfiguration? = nil
-      ) {
+    ) {
       self.target = target
       self.eventLoopGroup = eventLoopGroup
       self.errorDelegate = errorDelegate
@@ -256,7 +256,7 @@ fileprivate extension Channel {
   func configureTLS(
     _ configuration: GRPCClientConnection.TLSConfiguration,
     errorDelegate: ClientErrorDelegate?
-    ) -> EventLoopFuture<Void> {
+  ) -> EventLoopFuture<Void> {
     do {
       let sslClientHandler = try NIOSSLClientHandler(
         context: configuration.sslContext,
@@ -266,77 +266,6 @@ fileprivate extension Channel {
       return self.pipeline.addHandlers(sslClientHandler, verificationHandler)
     } catch {
       return self.eventLoop.makeFailedFuture(error)
-    }
-  }
-}
-
-// MARK: - Legacy APIs
-
-extension GRPCClientConnection {
-  /// Starts a connection to the given host and port.
-  ///
-  /// - Parameters:
-  ///   - host: Host to connect to.
-  ///   - port: Port on the host to connect to.
-  ///   - eventLoopGroup: Event loop group to run the connection on.
-  ///   - errorDelegate: An error delegate which is called when errors are caught. Provided
-  ///       delegates **must not maintain a strong reference to this `GRPCClientConnection`**. Doing
-  ///       so will cause a retain cycle. Defaults to a delegate which logs errors in debug builds
-  ///       only.
-  ///   - tlsMode: How TLS should be configured for this connection.
-  ///   - hostOverride: Value to use for TLS SNI extension; this must not be an IP address. Ignored
-  ///       if `tlsMode` is `.none`.
-  /// - Returns: A future which will be fulfilled with a connection to the remote peer.
-  public static func start(
-    host: String,
-    port: Int,
-    eventLoopGroup: EventLoopGroup,
-    errorDelegate: ClientErrorDelegate? = DebugOnlyLoggingClientErrorDelegate.shared,
-    tls tlsMode: TLSMode = .none,
-    hostOverride: String? = nil
-  ) throws -> EventLoopFuture<GRPCClientConnection> {
-    var configuration = Configuration(
-      target: .hostAndPort(host, port),
-      eventLoopGroup: eventLoopGroup,
-      errorDelegate: errorDelegate)
-
-    if let sslContext = try tlsMode.makeSSLContext() {
-      configuration.tlsConfiguration = .init(sslContext: sslContext, hostnameOverride: hostOverride)
-    }
-
-    return GRPCClientConnection.start(configuration)
-  }
-
-  public enum TLSMode {
-    case none
-    case anonymous
-    case custom(NIOSSLContext)
-
-    /// Returns an SSL context for the TLS mode.
-    ///
-    /// - Returns: An SSL context for the TLS mode, or `nil` if TLS is not being used.
-    public func makeSSLContext() throws -> NIOSSLContext? {
-      switch self {
-      case .none:
-        return nil
-
-      case .anonymous:
-        return try NIOSSLContext(configuration: .forClient())
-
-      case .custom(let context):
-        return context
-      }
-    }
-
-    /// Rethrns the HTTP protocol for the TLS mode.
-    public var httpProtocol: HTTP2ToHTTP1ClientCodec.HTTPProtocol {
-      switch self {
-      case .none:
-        return .http
-
-      case .anonymous, .custom:
-        return .https
-      }
     }
   }
 }

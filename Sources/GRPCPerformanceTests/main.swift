@@ -5,19 +5,10 @@ import NIOSSL
 import Commander
 
 struct ConnectionFactory {
-  var host: String
-  var port: Int
-  var group: EventLoopGroup
-  var context: NIOSSLContext?
-  var serverHostOverride: String?
+  var configuration: GRPCClientConnection.Configuration
 
   func makeConnection() throws -> EventLoopFuture<GRPCClientConnection> {
-    return try GRPCClientConnection.start(
-      host: self.host,
-      port: self.port,
-      eventLoopGroup: self.group,
-      tls: self.context.map { .custom($0) } ?? .none,
-      hostOverride: self.serverHostOverride)
+    return GRPCClientConnection.start(configuration)
   }
 
   func makeEchoClient() throws -> EventLoopFuture<Echo_EchoServiceClient> {
@@ -110,7 +101,9 @@ final class ConnectionCreationThroughput: Benchmark {
       try self.factory.makeConnection()
     }
 
-    try EventLoopFuture.andAllSucceed(self.createdConnections, on: self.factory.group.next()).wait()
+    try EventLoopFuture.andAllSucceed(
+      self.createdConnections,
+      on: self.factory.configuration.eventLoopGroup.next()).wait()
   }
 
   func tearDown() throws {
@@ -120,7 +113,9 @@ final class ConnectionCreationThroughput: Benchmark {
       }
     }
 
-    try EventLoopFuture.andAllSucceed(connectionClosures, on: self.factory.group.next()).wait()
+    try EventLoopFuture.andAllSucceed(
+      connectionClosures,
+      on: self.factory.configuration.eventLoopGroup.next()).wait()
   }
 }
 
@@ -320,18 +315,21 @@ Group { group in
     privateKeyOption,
     hostOverrideOption
   ) { benchmarkNames, host, port, caCertificatePath, certificatePath, privateKeyPath, hostOverride in
+    var configuration = GRPCClientConnection.Configuration(
+      target: .hostAndPort(host, port),
+      eventLoopGroup: MultiThreadedEventLoopGroup(numberOfThreads: 1))
+
     let sslContext = makeSSLContext(
       caCertificatePath: caCertificatePath,
       certificatePath: certificatePath,
       privateKeyPath: privateKeyPath,
       server: false)
 
-    let factory = ConnectionFactory(
-      host: host,
-      port: port,
-      group: MultiThreadedEventLoopGroup(numberOfThreads: 1),
-      context: sslContext,
-      serverHostOverride: hostOverride.isEmpty ? nil : hostOverride)
+    if let sslContext = sslContext {
+      configuration.tlsConfiguration = .init(sslContext: sslContext, hostnameOverride: hostOverride)
+    }
+
+    let factory = ConnectionFactory(configuration: configuration)
 
     let names = benchmarkNames.components(separatedBy: ",")
 

@@ -32,28 +32,21 @@ public func makeInteroperabilityTestClientConnection(
   eventLoopGroup: EventLoopGroup,
   useTLS: Bool
 ) throws -> EventLoopFuture<GRPCClientConnection> {
-  let tlsMode: GRPCClientConnection.TLSMode
-  let hostOverride: String?
+  var configuration = GRPCClientConnection.Configuration(
+    target: .hostAndPort(host, port),
+    eventLoopGroup: eventLoopGroup)
 
   if useTLS {
     // The CA certificate has a common name of "*.test.google.fr", use the following host override
     // so we can do full certificate verification.
-    hostOverride = "foo.test.google.fr"
+    let hostOverride = "foo.test.google.fr"
     let tlsConfiguration = TLSConfiguration.forClient(
       trustRoots: .certificates([InteroperabilityTestCredentials.caCertificate]),
       applicationProtocols: ["h2"])
 
-    tlsMode = .custom(try NIOSSLContext(configuration: tlsConfiguration))
-  } else {
-    hostOverride = nil
-    tlsMode = .none
+    let context = try NIOSSLContext(configuration: tlsConfiguration)
+    configuration.tlsConfiguration = .init(sslContext: context, hostnameOverride: hostOverride)
   }
 
-  return try GRPCClientConnection.start(
-    host: host,
-    port: port,
-    eventLoopGroup: eventLoopGroup,
-    tls: tlsMode,
-    hostOverride: hostOverride
-  )
+  return GRPCClientConnection.start(configuration)
 }
