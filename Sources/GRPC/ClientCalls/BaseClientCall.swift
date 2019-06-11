@@ -25,9 +25,9 @@ import SwiftProtobuf
 /// Each call will be configured on a multiplexed channel on the given connection. The multiplexed
 /// channel will be configured as such:
 ///
-///              ┌──────────────────────────────────┐
-///              │ GRPCClientResponseChannelHandler │
-///              └────────────▲─────────────────────┘
+///              ┌──────────────────────────────┐
+///              │ ClientResponseChannelHandler │
+///              └────────────▲─────────────────┘
 ///                           │      ┌─────────────────────────────┐
 ///                           │      │ ClientRequestChannelHandler │
 ///                           │      └────────────────┬────────────┘
@@ -63,7 +63,7 @@ open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
   internal let streamPromise: EventLoopPromise<Channel>
 
   /// Channel handler for responses.
-  internal let responseHandler: GRPCClientResponseChannelHandler<ResponseMessage>
+  internal let responseHandler: ClientResponseChannelHandler<ResponseMessage>
 
   /// Channel handler for requests.
   internal let requestHandler: ClientRequestChannelHandler<RequestMessage>
@@ -86,7 +86,7 @@ open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
   ///   - requestHandler: a channel handler for sending requests.
   init(
     connection: ClientConnection,
-    responseHandler: GRPCClientResponseChannelHandler<ResponseMessage>,
+    responseHandler: ClientResponseChannelHandler<ResponseMessage>,
     requestHandler: ClientRequestChannelHandler<RequestMessage>
   ) {
     self.connection = connection

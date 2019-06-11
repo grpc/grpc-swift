@@ -23,7 +23,7 @@ import NIOHTTP1
 /// This includes hold promises for the initial metadata and status of the gRPC call. This handler
 /// is also responsible for error handling, via an error delegate and by appropriately failing the
 /// aforementioned promises.
-internal class GRPCClientResponseChannelHandler<ResponseMessage: Message>: ChannelInboundHandler {
+internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelInboundHandler {
   public typealias InboundIn = GRPCClientResponsePart<ResponseMessage>
 
   internal let initialMetadataPromise: EventLoopPromise<HTTPHeaders>
@@ -69,7 +69,7 @@ internal class GRPCClientResponseChannelHandler<ResponseMessage: Message>: Chann
   private let responseArity: ResponseArity
   private var inboundState: InboundState = .expectingHeadersOrStatus
 
-  /// Creates a new `GRPCClientResponseChannelHandler`.
+  /// Creates a new `ClientResponseChannelHandler`.
   ///
   /// - Parameters:
   ///   - initialMetadataPromise: A promise to succeed on receiving the initial metadata from the service.
@@ -201,7 +201,7 @@ internal class GRPCClientResponseChannelHandler<ResponseMessage: Message>: Chann
 }
 
 /// A channel handler for client calls which recieve a single response.
-final class GRPCClientUnaryResponseChannelHandler<ResponseMessage: Message>: GRPCClientResponseChannelHandler<ResponseMessage> {
+final class GRPCClientUnaryResponseChannelHandler<ResponseMessage: Message>: ClientResponseChannelHandler<ResponseMessage> {
   let responsePromise: EventLoopPromise<ResponseMessage>
 
   internal init(
@@ -240,7 +240,7 @@ final class GRPCClientUnaryResponseChannelHandler<ResponseMessage: Message>: GRP
 }
 
 /// A channel handler for client calls which recieve a stream of responses.
-final class GRPCClientStreamingResponseChannelHandler<ResponseMessage: Message>: GRPCClientResponseChannelHandler<ResponseMessage> {
+final class GRPCClientStreamingResponseChannelHandler<ResponseMessage: Message>: ClientResponseChannelHandler<ResponseMessage> {
   typealias ResponseHandler = (ResponseMessage) -> Void
 
   let responseHandler: ResponseHandler
