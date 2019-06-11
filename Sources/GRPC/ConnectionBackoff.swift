@@ -74,20 +74,10 @@ public class ConnectionBackoffIterator: IteratorProtocol {
     self.connectionBackoff = connectionBackoff
     self.unjitteredBackoff = connectionBackoff.initialBackoff
 
-    // Generate the current and next elements. The first entry has no backoff (i.e. start the first
-    // attempt immediately). The second entry is not jittered.
-    //
-    // We generate `nextElement` before `currentElement` as we need to initialize `productionState`
-    // before can call `makeElement`.
-    if connectionBackoff.initialBackoff < connectionBackoff.maximumBackoff {
-      self.productionState = .producing
-      self.nextElement = self.makeElement(backoff: connectionBackoff.initialBackoff)
-    } else {
-      self.productionState = .stopped
-      self.nextElement = self.makeElement(backoff: connectionBackoff.maximumBackoff)
-    }
-
-    self.currentElement = self.makeElement(backoff: 0.0)
+    // Since the first backoff is `initialBackoff` it must be generated here instead of
+    // by `makeNextElement`.
+    let backoff = min(connectionBackoff.initialBackoff, connectionBackoff.maximumBackoff)
+    self.initialElement = self.makeElement(backoff: backoff)
   }
 
   /// The configuration being used.
@@ -96,58 +86,37 @@ public class ConnectionBackoffIterator: IteratorProtocol {
   /// The backoff in seconds, without jitter.
   private var unjitteredBackoff: TimeInterval
 
-  /// The state of production.
-  private var productionState: ProductionState
+  /// The first element to return. Since the first backoff is defined as `initialBackoff` we can't
+  /// compute it on-the-fly.
+  private var initialElement: Element?
 
-  /// The current timeout and backoff waiting to be returned. This will become `nil` when we run
-  /// out of values to return.
-  private var currentElement: Element?
-
-  /// The next timeout and backoff to be returned.
-  private var nextElement: Element?
-
-  // The current state of production.
-  private enum ProductionState {
-    // Continue to produce values.
-    case producing
-    // No more values will be produced, but some may already exist which may be returned.
-    case stopped
+  /// Whether or not we should make another element.
+  private var shouldMakeNextElement: Bool {
+    return self.unjitteredBackoff < self.connectionBackoff.maximumBackoff
   }
 
-  /// Returns the next pair connection timeout and backoff (in that order) to use should the
+  /// Returns the next pair of connection timeout and backoff (in that order) to use should the
   /// connection attempt fail.
   ///
   /// The iterator will stop producing values _after_ the unjittered backoff is greater than or
   /// equal to the maximum backoff set in the configuration used to create this iterator.
   public func next() -> Element? {
-    guard let current = self.currentElement else {
+    if let initial = self.initialElement {
+      self.initialElement = nil
+      return initial
+    } else {
+      return self.makeNextElement()
+    }
+  }
+
+  /// Produces the next element to return, or `nil` if no more elements should be made.
+  private func makeNextElement() -> Element? {
+    guard self.shouldMakeNextElement else {
       return nil
     }
 
-    self.currentElement = self.nextElement
-
-    switch self.productionState {
-    case .producing:
-      self.nextElement = self.makeNextElement()
-    case .stopped:
-      self.nextElement = nil
-    }
-
-    return current
-  }
-
-  /// Produces the next element to return. This must only be called when then iterator is producing
-  /// values.
-  private func makeNextElement() -> Element {
-    precondition(self.productionState == .producing, "invalid state \(self.productionState)")
-    self.unjitteredBackoff = self.unjitteredBackoff * self.connectionBackoff.multiplier
-
-    // If the backoff is too big before jitter, clamp it to the maximum backoff and set out
-    // production state to `.stopped` so that this is the final value.
-    if self.unjitteredBackoff >= self.connectionBackoff.maximumBackoff {
-      self.unjitteredBackoff = self.connectionBackoff.maximumBackoff
-      self.productionState = .stopped
-    }
+    let unjittered = self.unjitteredBackoff * self.connectionBackoff.multiplier
+    self.unjitteredBackoff = min(unjittered, self.connectionBackoff.maximumBackoff)
 
     let backoff = self.jittered(value: self.unjitteredBackoff)
     return self.makeElement(backoff: backoff)

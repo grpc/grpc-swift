@@ -18,70 +18,51 @@ import GRPC
 import XCTest
 
 class ConnectionBackoffTests: XCTestCase {
-  var backoff: ConnectionBackoff!
-
-  override func setUp() {
-    self.backoff = ConnectionBackoff()
-  }
+  var backoff = ConnectionBackoff()
 
   func testExpectedValuesWithNoJitter() {
     self.backoff.jitter = 0.0
     self.backoff.multiplier = 2.0
     self.backoff.initialBackoff = 1.0
     self.backoff.maximumBackoff = 16.0
+    self.backoff.minimumConnectionTimeout = 4.2
 
-    let expected: [TimeInterval] = [0.0, 1.0, 2.0, 4.0, 8.0, 16.0]
-    let backoffs = Array(self.backoff).map { $0.backoff }
+    let timeoutAndBackoff = Array(self.backoff)
 
-    XCTAssertEqual(expected, backoffs)
+    let expectedBackoff: [TimeInterval] = [1.0, 2.0, 4.0, 8.0, 16.0]
+    XCTAssertEqual(expectedBackoff, timeoutAndBackoff.map { $0.backoff })
+
+    let expectedTimeout: [TimeInterval] = [4.2, 4.2, 4.2, 8.0, 16.0]
+    XCTAssertEqual(expectedTimeout, timeoutAndBackoff.map { $0.timeout })
   }
 
   func testBackoffWithNoJitter() {
     self.backoff.jitter = 0.0
 
     for (i, timeoutAndBackoff) in self.backoff.enumerated() {
-      if i == 0 {
-        // Initial backoff should always be zero.
-        XCTAssertEqual(0.0, timeoutAndBackoff.backoff)
-        XCTAssertEqual(self.backoff.minimumConnectionTimeout, timeoutAndBackoff.timeout)
-      } else {
-        let expected = min(pow(self.backoff.initialBackoff * self.backoff.multiplier, Double(i-1)),
-                           self.backoff.maximumBackoff)
-        XCTAssertEqual(expected, timeoutAndBackoff.backoff, accuracy: 1e-6)
-      }
+      let expected = min(pow(self.backoff.initialBackoff * self.backoff.multiplier, Double(i)),
+                         self.backoff.maximumBackoff)
+      XCTAssertEqual(expected, timeoutAndBackoff.backoff, accuracy: 1e-6)
     }
   }
 
   func testBackoffWithJitter() {
     for (i, timeoutAndBackoff) in self.backoff.enumerated() {
-      if i == 0 {
-        // Initial backoff should always be zero.
-        XCTAssertEqual(0.0, timeoutAndBackoff.backoff)
-        XCTAssertEqual(self.backoff.minimumConnectionTimeout, timeoutAndBackoff.timeout)
-      } else {
-        let unjittered = min(pow(self.backoff.initialBackoff * self.backoff.multiplier, Double(i-1)),
-                             self.backoff.maximumBackoff)
-        let halfJitterRange = self.backoff.jitter * unjittered
-        let jitteredRange = (unjittered-halfJitterRange)...(unjittered+halfJitterRange)
-        XCTAssert(jitteredRange.contains(timeoutAndBackoff.backoff))
-      }
+      let unjittered = min(pow(self.backoff.initialBackoff * self.backoff.multiplier, Double(i)),
+                           self.backoff.maximumBackoff)
+      let halfJitterRange = self.backoff.jitter * unjittered
+      let jitteredRange = (unjittered-halfJitterRange)...(unjittered+halfJitterRange)
+      XCTAssert(jitteredRange.contains(timeoutAndBackoff.backoff))
     }
   }
 
   func testBackoffDoesNotExceedMaximum() {
-    self.backoff.maximumBackoff = self.backoff.initialBackoff
     // Since jitter is applied after checking against the maximum allowed backoff, the maximum
     // backoff can still be exceeded if jitter is non-zero.
     self.backoff.jitter = 0.0
 
-    for (i, timeoutAndBackoff) in self.backoff.enumerated() {
-      if i == 0 {
-        // Initial backoff should always be zero.
-        XCTAssertEqual(0.0, timeoutAndBackoff.backoff)
-        XCTAssertEqual(self.backoff.minimumConnectionTimeout, timeoutAndBackoff.timeout)
-      } else {
-        XCTAssertEqual(timeoutAndBackoff.backoff, self.backoff.maximumBackoff)
-      }
+    for (_, backoff) in self.backoff {
+      XCTAssertLessThanOrEqual(backoff, self.backoff.maximumBackoff)
     }
   }
 

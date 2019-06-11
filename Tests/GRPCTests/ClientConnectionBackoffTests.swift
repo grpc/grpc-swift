@@ -65,7 +65,9 @@ class ClientConnectionBackoffTests: XCTestCase {
     configuration.connectionBackoff = nil
 
     self.client = self.makeClientConnection(configuration)
-    XCTAssertThrowsError(try self.client.wait())
+    XCTAssertThrowsError(try self.client.wait()) { error in
+      XCTAssert(error is NIOConnectionError)
+    }
   }
 
   func testClientEventuallyConnects() throws {
@@ -75,6 +77,9 @@ class ClientConnectionBackoffTests: XCTestCase {
     // Start the client first.
     self.client = self.makeClientConnection(self.makeClientConfiguration())
     self.client.assertSuccess(fulfill: clientConnected)
+
+    // Sleep for a little bit to make sure we hit the backoff.
+    Thread.sleep(forTimeInterval: 0.2)
 
     self.server = try self.makeServer()
     self.server.assertSuccess(fulfill: serverStarted)
@@ -87,6 +92,8 @@ class ClientConnectionBackoffTests: XCTestCase {
     configuration.connectionBackoff = ConnectionBackoff(maximumBackoff: 0.1)
 
     self.client = self.makeClientConnection(configuration)
-    XCTAssertThrowsError(try self.client.wait())
+    XCTAssertThrowsError(try self.client.wait()) { error in
+      XCTAssert(error is NIOConnectionError)
+    }
   }
 }

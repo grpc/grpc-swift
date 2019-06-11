@@ -119,7 +119,7 @@ open class GRPCClientConnection {
 
   /// Starts a client connection using the given configuration and backoff.
   ///
-  /// In additiaon to the steps taken in `start(configuration:)`, we _may_ additionally set a
+  /// In addition to the steps taken in `start(configuration:)`, we _may_ additionally set a
   /// connection timeout and schedule a retry attempt (should the connection fail) if a
   /// `ConnectionBackoff.Iterator` is provided.
   ///
