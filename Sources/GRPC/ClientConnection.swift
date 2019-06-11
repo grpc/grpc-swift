@@ -50,7 +50,7 @@ import NIOTLS
 /// whether a `ClientConnection` should be returned to the user. In either eventuality, the
 /// handler removes itself from the pipeline once TLS has been verified. There is also a delegated
 /// error handler after the `HTTPStreamMultiplexer` in the main channel which uses the error
-/// delegate associated with this connection (see `GRPCDelegatingErrorHandler`).
+/// delegate associated with this connection (see `DelegatingErrorHandler`).
 ///
 /// See `BaseClientCall` for a description of the remainder of the client pipeline.
 open class ClientConnection {
@@ -73,7 +73,7 @@ open class ClientConnection {
         return (tlsConfigured ?? channel.eventLoop.makeSucceededFuture(())).flatMap {
           channel.configureHTTP2Pipeline(mode: .client)
         }.flatMap { _ in
-          let errorHandler = GRPCDelegatingErrorHandler(delegate: configuration.errorDelegate)
+          let errorHandler = DelegatingErrorHandler(delegate: configuration.errorDelegate)
           return channel.pipeline.addHandler(errorHandler)
         }
       }
