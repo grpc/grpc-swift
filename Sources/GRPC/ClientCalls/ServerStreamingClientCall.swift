@@ -32,7 +32,7 @@ public final class ServerStreamingClientCall<RequestMessage: Message, ResponseMe
       timeout: callOptions.timeout,
       responseHandler: handler)
 
-    let requestHandler = GRPCClientUnaryRequestChannelHandler<RequestMessage>(
+    let requestHandler = UnaryRequestChnnelHandler<RequestMessage>(
       requestHead: makeRequestHead(path: path, host: connection.configuration.target.host, callOptions: callOptions),
       request: _Box(request))
 

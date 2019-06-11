@@ -41,7 +41,7 @@ public final class BidirectionalStreamingClientCall<RequestMessage: Message, Res
       timeout: callOptions.timeout,
       responseHandler: handler)
 
-    let requestHandler = GRPCClientStreamingRequestChannelHandler<RequestMessage>(
+    let requestHandler = StreamingRequestChannelHandler<RequestMessage>(
       requestHead: makeRequestHead(path: path, host: connection.configuration.target.host, callOptions: callOptions))
 
     super.init(
