@@ -36,16 +36,16 @@ internal protocol Echo_EchoService {
 }
 
 internal final class Echo_EchoServiceClient: GRPCServiceClient, Echo_EchoService {
-  internal let connection: GRPCClientConnection
+  internal let connection: ClientConnection
   internal var serviceName: String { return "echo.Echo" }
   internal var defaultCallOptions: CallOptions
 
   /// Creates a client for the echo.Echo service.
   ///
   /// - Parameters:
-  ///   - connection: `GRPCClientConnection` to the service host.
+  ///   - connection: `ClientConnection` to the service host.
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
-  internal init(connection: GRPCClientConnection, defaultCallOptions: CallOptions = CallOptions()) {
+  internal init(connection: ClientConnection, defaultCallOptions: CallOptions = CallOptions()) {
     self.connection = connection
     self.defaultCallOptions = defaultCallOptions
   }

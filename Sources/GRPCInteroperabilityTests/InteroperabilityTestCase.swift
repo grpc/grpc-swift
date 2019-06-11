@@ -26,7 +26,7 @@ public protocol InteroperabilityTest {
   ///
   /// - Parameter connection: The connection to use for the test.
   /// - Throws: Any exception may be thrown to indicate an unsuccessful test.
-  func run(using connection: GRPCClientConnection) throws
+  func run(using connection: ClientConnection) throws
 }
 
 /// Test cases as listed by the [gRPC interoperability test description

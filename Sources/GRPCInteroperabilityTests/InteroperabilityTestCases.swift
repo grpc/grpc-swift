@@ -31,7 +31,7 @@ import NIOHTTP1
 /// - call was successful
 /// - response is non-null
 class EmptyUnary: InteroperabilityTest {
-  func run(using connection: GRPCClientConnection) throws {
+  func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_TestServiceServiceClient(connection: connection)
     let call = client.emptyCall(Grpc_Testing_Empty())
 
@@ -62,7 +62,7 @@ class EmptyUnary: InteroperabilityTest {
 /// - Both calls were successful
 /// - The payload body of both responses is the same.
 class CacheableUnary: InteroperabilityTest {
-  func run(using connection: GRPCClientConnection) throws {
+  func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_TestServiceServiceClient(connection: connection)
 
     var timestamp = DispatchTime.now().rawValue
@@ -105,7 +105,7 @@ class CacheableUnary: InteroperabilityTest {
 /// - clients are free to assert that the response payload body contents are zero and comparing
 ///   the entire response message against a golden response
 class LargeUnary: InteroperabilityTest {
-  func run(using connection: GRPCClientConnection) throws {
+  func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_TestServiceServiceClient(connection: connection)
 
     let request = Grpc_Testing_SimpleRequest.with { request in
@@ -165,7 +165,7 @@ class LargeUnary: InteroperabilityTest {
 /// - call was successful
 /// - response aggregated_payload_size is 74922
 class ClientStreaming: InteroperabilityTest {
-  func run(using connection: GRPCClientConnection) throws {
+  func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_TestServiceServiceClient(connection: connection)
     let call = client.streamingInputCall()
 
@@ -219,7 +219,7 @@ class ClientStreaming: InteroperabilityTest {
 /// - clients are free to assert that the response payload body contents are zero and
 ///   comparing the entire response messages against golden responses
 class ServerStreaming: InteroperabilityTest {
-  func run(using connection: GRPCClientConnection) throws {
+  func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_TestServiceServiceClient(connection: connection)
 
     let responseSizes = [31_415, 9, 2_653, 58_979]
@@ -297,7 +297,7 @@ class ServerStreaming: InteroperabilityTest {
 /// - clients are free to assert that the response payload body contents are zero and
 ///   comparing the entire response messages against golden responses
 class PingPong: InteroperabilityTest {
-  func run(using connection: GRPCClientConnection) throws {
+  func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_TestServiceServiceClient(connection: connection)
 
     let requestSizes = [27_182, 8, 1_828, 45_904]
@@ -339,7 +339,7 @@ class PingPong: InteroperabilityTest {
 /// - call was successful
 /// - exactly zero responses
 class EmptyStream: InteroperabilityTest {
-  func run(using connection: GRPCClientConnection) throws {
+  func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_TestServiceServiceClient(connection: connection)
 
     var responses: [Grpc_Testing_StreamingOutputCallResponse] = []
@@ -414,7 +414,7 @@ class CustomMetadata: InteroperabilityTest {
     try waitAndAssertEqual(call.status.map { $0.code }, .ok)
   }
 
-  func run(using connection: GRPCClientConnection) throws {
+  func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_TestServiceServiceClient(connection: connection)
 
     let unaryRequest = Grpc_Testing_SimpleRequest.with { request in
@@ -490,7 +490,7 @@ class StatusCodeAndMessage: InteroperabilityTest {
     try waitAndAssertEqual(call.status.map { $0.message }, self.expectedMessage)
   }
 
-  func run(using connection: GRPCClientConnection) throws {
+  func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_TestServiceServiceClient(connection: connection)
 
     let echoStatus = Grpc_Testing_EchoStatus(code: Int32(self.expectedCode), message: self.expectedMessage)
@@ -535,7 +535,7 @@ class StatusCodeAndMessage: InteroperabilityTest {
 /// - received status message is the same as the sent message for Procedure step 1, including all
 ///   whitespace characters
 class SpecialStatusMessage: InteroperabilityTest {
-  func run(using connection: GRPCClientConnection) throws {
+  func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_TestServiceServiceClient(connection: connection)
 
     let code = 2
@@ -563,7 +563,7 @@ class SpecialStatusMessage: InteroperabilityTest {
 /// Client asserts:
 /// - received status code is 12 (UNIMPLEMENTED)
 class UnimplementedMethod: InteroperabilityTest {
-  func run(using connection: GRPCClientConnection) throws {
+  func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_TestServiceServiceClient(connection: connection)
     let call = client.unimplementedCall(Grpc_Testing_Empty())
     try waitAndAssertEqual(call.status.map { $0.code }, .unimplemented)
@@ -585,7 +585,7 @@ class UnimplementedMethod: InteroperabilityTest {
 /// Client asserts:
 /// - received status code is 12 (UNIMPLEMENTED)
 class UnimplementedService: InteroperabilityTest {
-  func run(using connection: GRPCClientConnection) throws {
+  func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_UnimplementedServiceServiceClient(connection: connection)
     let call = client.unimplementedCall(Grpc_Testing_Empty())
     try waitAndAssertEqual(call.status.map { $0.code }, .unimplemented)
@@ -605,7 +605,7 @@ class UnimplementedService: InteroperabilityTest {
 /// Client asserts:
 /// - Call completed with status CANCELLED
 class CancelAfterBegin: InteroperabilityTest {
-  func run(using connection: GRPCClientConnection) throws {
+  func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_TestServiceServiceClient(connection: connection)
     let call = client.streamingInputCall()
     call.cancel()
@@ -636,7 +636,7 @@ class CancelAfterBegin: InteroperabilityTest {
 /// Client asserts:
 /// - Call completed with status CANCELLED
 class CancelAfterFirstResponse: InteroperabilityTest {
-  func run(using connection: GRPCClientConnection) throws {
+  func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_TestServiceServiceClient(connection: connection)
 
     let promise = client.connection.channel.eventLoop.makePromise(of: Void.self)
@@ -680,7 +680,7 @@ class CancelAfterFirstResponse: InteroperabilityTest {
 /// Client asserts:
 /// - Call completed with status DEADLINE_EXCEEDED.
 class TimeoutOnSleepingServer: InteroperabilityTest {
-  func run(using connection: GRPCClientConnection) throws {
+  func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_TestServiceServiceClient(connection: connection)
 
     let callOptions = CallOptions(timeout: try .milliseconds(1))

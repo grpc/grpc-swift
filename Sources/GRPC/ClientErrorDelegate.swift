@@ -18,9 +18,9 @@ import Foundation
 /// Delegate called when errors are caught by the client on individual HTTP/2 streams and errors in
 /// the underlying HTTP/2 connection.
 ///
-/// The intended use of this protocol is with `GRPCClientConnection`. In order to avoid retain
+/// The intended use of this protocol is with `ClientConnection`. In order to avoid retain
 /// cycles, classes implementing this delegate **must not** maintain a strong reference to the
-/// `GRPCClientConnection`.
+/// `ClientConnection`.
 public protocol ClientErrorDelegate: class {
   /// Called when the client catches an error.
   ///

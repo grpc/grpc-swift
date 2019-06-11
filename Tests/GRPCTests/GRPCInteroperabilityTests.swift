@@ -27,7 +27,7 @@ class GRPCInsecureInteroperabilityTests: XCTestCase {
   var server: GRPCServer!
 
   var clientEventLoopGroup: EventLoopGroup!
-  var clientConnection: GRPCClientConnection!
+  var clientConnection: ClientConnection!
 
   override func setUp() {
     super.setUp()

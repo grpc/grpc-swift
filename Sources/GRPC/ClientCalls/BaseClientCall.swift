@@ -47,7 +47,7 @@ import SwiftProtobuf
 ///                           |                       |
 ///
 /// Note: below the `HTTP2ToHTTP1ClientCodec` is the "main" pipeline provided by the channel in
-/// `GRPCClientConnection`.
+/// `ClientConnection`.
 ///
 /// Setup includes:
 /// - creation of an HTTP/2 stream for the call to execute on,
@@ -56,8 +56,8 @@ import SwiftProtobuf
 ///
 /// This class also provides much of the framework user facing functionality via conformance to `ClientCall`.
 open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
-  /// The underlying `GRPCClientConnection` providing the HTTP/2 channel and multiplexer.
-  internal let connection: GRPCClientConnection
+  /// The underlying `ClientConnection` providing the HTTP/2 channel and multiplexer.
+  internal let connection: ClientConnection
 
   /// Promise for an HTTP/2 stream to execute the call on.
   internal let streamPromise: EventLoopPromise<Channel>
@@ -85,7 +85,7 @@ open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
   ///   - responseHandler: a channel handler for receiving responses.
   ///   - requestHandler: a channel handler for sending requests.
   init(
-    connection: GRPCClientConnection,
+    connection: ClientConnection,
     responseHandler: GRPCClientResponseChannelHandler<ResponseMessage>,
     requestHandler: GRPCClientRequestChannelHandler<RequestMessage>
   ) {

@@ -73,19 +73,19 @@ func makeEchoClient(address: String, port: Int, ssl: Bool) -> Echo_EchoServiceCl
   let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
   do {
-    let tlsConfiguration: GRPCClientConnection.TLSConfiguration?
+    let tlsConfiguration: ClientConnection.TLSConfiguration?
     if ssl {
       tlsConfiguration = .init(sslContext: try makeClientSSLContext())
     } else {
       tlsConfiguration = nil
     }
 
-    let configuration = GRPCClientConnection.Configuration(
+    let configuration = ClientConnection.Configuration(
       target: .hostAndPort(address, port),
       eventLoopGroup: eventLoopGroup,
       tlsConfiguration: tlsConfiguration)
 
-    return try GRPCClientConnection.start(configuration)
+    return try ClientConnection.start(configuration)
       .map { Echo_EchoServiceClient(connection: $0) }
       .wait()
   } catch {
