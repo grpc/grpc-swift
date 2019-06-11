@@ -37,7 +37,7 @@ import NIOTLS
 ///                        └─▲───────────────────────┬─┘
 ///                ByteBuffer│                       │ByteBuffer
 ///                        ┌─┴───────────────────────▼─┐
-///                        │ GRPCTLSVerificationHandler│
+///                        │   TLSVerificationHandler  │
 ///                        └─▲───────────────────────┬─┘
 ///                ByteBuffer│                       │ByteBuffer
 ///                        ┌─┴───────────────────────▼─┐
@@ -46,7 +46,7 @@ import NIOTLS
 ///                ByteBuffer│                       │ByteBuffer
 ///                          │                       ▼
 ///
-/// The `GRPCTLSVerificationHandler` observes the outcome of the SSL handshake and determines
+/// The `TLSVerificationHandler` observes the outcome of the SSL handshake and determines
 /// whether a `ClientConnection` should be returned to the user. In either eventuality, the
 /// handler removes itself from the pipeline once TLS has been verified. There is also a delegated
 /// error handler after the `HTTPStreamMultiplexer` in the main channel which uses the error
@@ -81,11 +81,11 @@ open class ClientConnection {
     return bootstrap
   }
 
-  /// Verifies that a TLS handshake was successful by using the `GRPCTLSVerificationHandler`.
+  /// Verifies that a TLS handshake was successful by using the `TLSVerificationHandler`.
   ///
   /// - Parameter channel: The channel to verify successful TLS setup on.
   public class func verifyTLS(channel: Channel) -> EventLoopFuture<Void> {
-    return channel.pipeline.handler(type: GRPCTLSVerificationHandler.self).flatMap {
+    return channel.pipeline.handler(type: TLSVerificationHandler.self).flatMap {
       $0.verification
     }
   }
@@ -296,7 +296,7 @@ fileprivate extension Channel {
   /// Configure the channel with TLS.
   ///
   /// This function adds two handlers to the pipeline: the `NIOSSLClientHandler` to handle TLS, and
-  /// the `GRPCTLSVerificationHandler` which verifies that a successful handshake was completed.
+  /// the `TLSVerificationHandler` which verifies that a successful handshake was completed.
   ///
   /// - Parameter configuration: The configuration to configure the channel with.
   /// - Parameter errorDelegate: The error delegate to use for the TLS verification handler.
@@ -309,7 +309,7 @@ fileprivate extension Channel {
         context: configuration.sslContext,
         serverHostname: configuration.hostnameOverride)
 
-      let verificationHandler = GRPCTLSVerificationHandler(errorDelegate: errorDelegate)
+      let verificationHandler = TLSVerificationHandler(errorDelegate: errorDelegate)
       return self.pipeline.addHandlers(sslClientHandler, verificationHandler)
     } catch {
       return self.eventLoop.makeFailedFuture(error)
