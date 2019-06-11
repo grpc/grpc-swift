@@ -29,15 +29,15 @@ import NIOSSL
 ///   - useTLS: Whether to use TLS or not. If `true` then the server will use the "server1"
 ///     certificate and CA as set out in the interoperability test specification. The common name
 ///     is "*.test.google.fr"; clients should set their hostname override accordingly.
-/// - Returns: A future `GRPCServer` configured to serve the test service.
+/// - Returns: A future `Server` configured to serve the test service.
 public func makeInteroperabilityTestServer(
   host: String = "localhost",
   port: Int,
   eventLoopGroup: EventLoopGroup,
   serviceProviders: [CallHandlerProvider] = [TestServiceProvider()],
   useTLS: Bool
-) throws -> EventLoopFuture<GRPCServer> {
-  let tlsMode: GRPCServer.TLSMode
+) throws -> EventLoopFuture<Server> {
+  let tlsMode: Server.TLSMode
 
   if useTLS {
     print("Using the gRPC interop testing CA for TLS; clients should expect the host to be '*.test.google.fr'")
@@ -58,7 +58,7 @@ public func makeInteroperabilityTestServer(
     tlsMode = .none
   }
 
-  return try GRPCServer.start(
+  return try Server.start(
     hostname: host,
     port: port,
     eventLoopGroup: eventLoopGroup,

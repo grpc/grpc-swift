@@ -22,7 +22,7 @@ class ClientConnectionBackoffTests: XCTestCase {
   let port = 8080
 
   var client: EventLoopFuture<ClientConnection>!
-  var server: EventLoopFuture<GRPCServer>!
+  var server: EventLoopFuture<Server>!
 
   var group: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
@@ -39,8 +39,8 @@ class ClientConnectionBackoffTests: XCTestCase {
     XCTAssertNoThrow(try self.group.syncShutdownGracefully())
   }
 
-  func makeServer() throws -> EventLoopFuture<GRPCServer> {
-    return try GRPCServer.start(
+  func makeServer() throws -> EventLoopFuture<Server> {
+    return try Server.start(
       hostname: "localhost",
       port: self.port,
       eventLoopGroup: self.group,

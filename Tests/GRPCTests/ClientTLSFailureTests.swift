@@ -36,7 +36,7 @@ class ClientTLSFailureTests: XCTestCase {
 
   var clientEventLoopGroup: EventLoopGroup!
   var serverEventLoopGroup: EventLoopGroup!
-  var server: GRPCServer!
+  var server: Server!
   var port: Int!
 
   func makeClientConnection(
@@ -60,7 +60,7 @@ class ClientTLSFailureTests: XCTestCase {
 
   override func setUp() {
     self.serverEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-    self.server = try! GRPCServer.start(
+    self.server = try! Server.start(
       hostname: "localhost",
       port: 0,
       eventLoopGroup: self.serverEventLoopGroup,

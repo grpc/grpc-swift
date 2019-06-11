@@ -60,7 +60,7 @@ extension TransportSecurity {
 }
 
 extension TransportSecurity {
-  func makeServerTLS() throws -> GRPCServer.TLSMode {
+  func makeServerTLS() throws -> Server.TLSMode {
     return try makeServerTLSConfiguration().map { .custom(try NIOSSLContext(configuration: $0)) } ?? .none
   }
 
@@ -114,7 +114,7 @@ class EchoTestCaseBase: XCTestCase {
 
   var transportSecurity: TransportSecurity { return .none }
 
-  var server: GRPCServer!
+  var server: Server!
   var client: Echo_EchoServiceClient!
 
   func makeClientConfiguration() throws -> ClientConnection.Configuration {
@@ -124,8 +124,8 @@ class EchoTestCaseBase: XCTestCase {
       tlsConfiguration: try self.transportSecurity.makeConfiguration())
   }
 
-  func makeServer() throws -> GRPCServer {
-    return try GRPCServer.start(
+  func makeServer() throws -> Server {
+    return try Server.start(
       hostname: "localhost",
       port: 5050,
       eventLoopGroup: self.serverEventLoopGroup,

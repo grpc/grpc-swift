@@ -363,10 +363,10 @@ Group { group in
       privateKeyPath: privateKeyPath,
       server: true)
 
-    let server: GRPCServer
+    let server: Server
 
     do {
-      server = try GRPCServer.start(
+      server = try Server.start(
         hostname: host,
         port: port,
         eventLoopGroup: group,
