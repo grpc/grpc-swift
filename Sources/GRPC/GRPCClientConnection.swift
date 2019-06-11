@@ -114,9 +114,32 @@ open class GRPCClientConnection {
   ///
   /// - Parameter configuration: The configuration to start the connection with.
   public class func start(_ configuration: Configuration) -> EventLoopFuture<GRPCClientConnection> {
-    return makeBootstrap(configuration: configuration)
-      .connect(to: configuration.target)
-      .flatMap { channel in
+    return start(configuration, backoffIterator: configuration.connectionBackoff?.makeIterator())
+  }
+
+  /// Starts a client connection using the given configuration and backoff.
+  ///
+  /// In addition to the steps taken in `start(configuration:)`, we _may_ additionally set a
+  /// connection timeout and schedule a retry attempt (should the connection fail) if a
+  /// `ConnectionBackoff.Iterator` is provided.
+  ///
+  /// - Parameter configuration: The configuration to start the connection with.
+  /// - Parameter backoffIterator: A `ConnectionBackoff` iterator which generates connection
+  ///     timeouts and backoffs to use when attempting to retry the connection.
+  internal class func start(
+    _ configuration: Configuration,
+    backoffIterator: ConnectionBackoff.Iterator?
+  ) -> EventLoopFuture<GRPCClientConnection> {
+    let timeoutAndBackoff = backoffIterator?.next()
+
+    var bootstrap = makeBootstrap(configuration: configuration)
+    // Set a timeout, if we have one.
+    if let timeout = timeoutAndBackoff?.timeout {
+      bootstrap = bootstrap.connectTimeout(.seconds(timeInterval: timeout))
+    }
+
+    let connection = bootstrap.connect(to: configuration.target)
+      .flatMap { channel -> EventLoopFuture<GRPCClientConnection> in
         let tlsVerified: EventLoopFuture<Void>?
         if configuration.tlsConfiguration != nil {
           tlsVerified = verifyTLS(channel: channel)
@@ -128,6 +151,22 @@ open class GRPCClientConnection {
           makeGRPCClientConnection(channel: channel, configuration: configuration)
         }
       }
+
+    guard let backoff = timeoutAndBackoff?.backoff else {
+      return connection
+    }
+
+    // If we're in error then schedule our next attempt.
+    return connection.flatMapError { error in
+      // The `futureResult` of the scheduled task is of type
+      // `EventLoopFuture<EventLoopFuture<GRPCClientConnection>>`, so we need to `flatMap` it to
+      // remove a level of indirection.
+      return connection.eventLoop.scheduleTask(in: .seconds(timeInterval: backoff)) {
+        return start(configuration, backoffIterator: backoffIterator)
+      }.futureResult.flatMap { nextConnection in
+        return nextConnection
+      }
+    }
   }
 
   public let channel: Channel
@@ -186,6 +225,10 @@ extension GRPCClientConnection {
     /// TLS configuration for this connection. `nil` if TLS is not desired.
     public var tlsConfiguration: TLSConfiguration?
 
+    /// The connection backoff configuration. If no connection retrying is required then this should
+    /// be `nil`.
+    public var connectionBackoff: ConnectionBackoff?
+
     /// The HTTP protocol used for this connection.
     public var httpProtocol: HTTP2ToHTTP1ClientCodec.HTTPProtocol {
       return self.tlsConfiguration == nil ? .http : .https
@@ -198,16 +241,20 @@ extension GRPCClientConnection {
     /// - Parameter errorDelegate: The error delegate, defaulting to a delegate which will log only
     ///     on debug builds.
     /// - Parameter tlsConfiguration: TLS configuration, defaulting to `nil`.
+    /// - Parameter connectionBackoff: The connection backoff configuration to use, defaulting
+    ///     to `nil`.
     public init(
       target: ConnectionTarget,
       eventLoopGroup: EventLoopGroup,
       errorDelegate: ClientErrorDelegate? = DebugOnlyLoggingClientErrorDelegate.shared,
-      tlsConfiguration: TLSConfiguration? = nil
+      tlsConfiguration: TLSConfiguration? = nil,
+      connectionBackoff: ConnectionBackoff? = nil
     ) {
       self.target = target
       self.eventLoopGroup = eventLoopGroup
       self.errorDelegate = errorDelegate
       self.tlsConfiguration = tlsConfiguration
+      self.connectionBackoff = connectionBackoff
     }
   }
 
@@ -267,5 +314,14 @@ fileprivate extension Channel {
     } catch {
       return self.eventLoop.makeFailedFuture(error)
     }
+  }
+}
+
+fileprivate extension TimeAmount {
+  /// Creates a new `TimeAmount` from the given time interval in seconds.
+  ///
+  /// - Parameter timeInterval: The amount of time in seconds
+  static func seconds(timeInterval: TimeInterval) -> TimeAmount {
+    return .nanoseconds(TimeAmount.Value(timeInterval * 1_000_000_000))
   }
 }
