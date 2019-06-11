@@ -29,39 +29,59 @@ extension GRPCClient {
   public func makeUnaryCall<Request: Message, Response: Message>(
     path: String,
     request: Request,
-    callOptions: CallOptions,
+    callOptions: CallOptions? = nil,
     responseType: Response.Type = Response.self
   ) -> UnaryClientCall<Request, Response> {
-    return UnaryClientCall(connection: self.connection, path: path, request: request, callOptions: callOptions, errorDelegate: self.connection.configuration.errorDelegate)
+    return UnaryClientCall(
+      connection: self.connection,
+      path: path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      errorDelegate: self.connection.configuration.errorDelegate)
   }
 
   public func makeServerStreamingCall<Request: Message, Response: Message>(
     path: String,
     request: Request,
-    callOptions: CallOptions,
+    callOptions: CallOptions? = nil,
     responseType: Response.Type = Response.self,
     handler: @escaping (Response) -> Void
   ) -> ServerStreamingClientCall<Request, Response> {
-    return ServerStreamingClientCall(connection: self.connection, path: path, request: request, callOptions: callOptions, errorDelegate: self.connection.configuration.errorDelegate, handler: handler)
+    return ServerStreamingClientCall(
+      connection: self.connection,
+      path: path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      errorDelegate: self.connection.configuration.errorDelegate,
+      handler: handler)
   }
 
   public func makeClientStreamingCall<Request: Message, Response: Message>(
     path: String,
-    callOptions: CallOptions,
+    callOptions: CallOptions? = nil,
     requestType: Request.Type = Request.self,
     responseType: Response.Type = Response.self
   ) -> ClientStreamingClientCall<Request, Response> {
-    return ClientStreamingClientCall(connection: self.connection, path: path, callOptions: callOptions, errorDelegate: self.connection.configuration.errorDelegate)
+    return ClientStreamingClientCall(
+      connection: self.connection,
+      path: path,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      errorDelegate: self.connection.configuration.errorDelegate)
   }
 
   public func makeBidirectionalStreamingCall<Request: Message, Response: Message>(
     path: String,
-    callOptions: CallOptions,
+    callOptions: CallOptions? = nil,
     requestType: Request.Type = Request.self,
     responseType: Response.Type = Response.self,
     handler: @escaping (Response) -> Void
   ) -> BidirectionalStreamingClientCall<Request, Response> {
-    return BidirectionalStreamingClientCall(connection: self.connection, path: path, callOptions: callOptions, errorDelegate: self.connection.configuration.errorDelegate, handler: handler)
+    return BidirectionalStreamingClientCall(
+      connection: self.connection,
+      path: path,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      errorDelegate: self.connection.configuration.errorDelegate,
+      handler: handler)
   }
 }
 
@@ -83,5 +103,22 @@ public protocol GRPCServiceClient: GRPCClient {
 extension GRPCServiceClient {
   public func path(forMethod method: String) -> String {
     return "/\(self.serviceName)/\(method)"
+  }
+}
+
+/// A client which has no generated stubs and may be used to create gRPC calls manually.
+/// See `GRPCClient` for details.
+public final class AnyServiceClient: GRPCClient {
+  public let connection: GRPCClientConnection
+  public var defaultCallOptions: CallOptions
+
+  /// Creates a client which may be used to call any service.
+  ///
+  /// - Parameters:
+  ///   - connection: `GRPCClientConnection` to the service host.
+  ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
+  public init(connection: GRPCClientConnection, defaultCallOptions: CallOptions = CallOptions()) {
+    self.connection = connection
+    self.defaultCallOptions = defaultCallOptions
   }
 }
