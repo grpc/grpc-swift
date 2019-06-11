@@ -207,7 +207,7 @@ extension HTTPResponseStatus {
   /// The gRPC status code associated with the HTTP status code.
   ///
   /// See: https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md
-  internal var grpcStatusCode: StatusCode {
+  internal var grpcStatusCode: GRPCStatus.Code {
     switch self {
       case .badRequest:
         return .internalError

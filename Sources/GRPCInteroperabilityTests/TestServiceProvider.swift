@@ -64,7 +64,7 @@ public class TestServiceProvider: Grpc_Testing_TestServiceProvider {
     context: StatusOnlyCallContext
   ) -> EventLoopFuture<Grpc_Testing_SimpleResponse> {
     if request.shouldEchoStatus {
-      let code = StatusCode(rawValue: numericCast(request.responseStatus.code)) ?? .unknown
+      let code = GRPCStatus.Code(rawValue: numericCast(request.responseStatus.code)) ?? .unknown
       return context.eventLoop.makeFailedFuture(GRPCStatus(code: code, message: request.responseStatus.message))
     }
 
@@ -171,7 +171,7 @@ public class TestServiceProvider: Grpc_Testing_TestServiceProvider {
       switch event {
       case .message(let message):
         if message.shouldEchoStatus {
-          let code = StatusCode(rawValue: numericCast(message.responseStatus.code))
+          let code = GRPCStatus.Code(rawValue: numericCast(message.responseStatus.code))
           let status = GRPCStatus(code: code ?? .unknown, message: message.responseStatus.message)
           context.statusPromise.succeed(status)
         } else {

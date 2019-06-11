@@ -97,7 +97,7 @@ class GRPCStatusCodeTests: XCTestCase {
   }
 
   func testStatusCodeAndMessageAreRespectedForNon200Responses() throws {
-    let statusCode: StatusCode = .doNotUse
+    let statusCode: GRPCStatus.Code = .doNotUse
     let statusMessage = "Not the HTTP error phrase"
 
     var headers = HTTPHeaders()
