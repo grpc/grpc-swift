@@ -28,9 +28,9 @@ import SwiftProtobuf
 ///              ┌──────────────────────────────────┐
 ///              │ GRPCClientResponseChannelHandler │
 ///              └────────────▲─────────────────────┘
-///                           │  ┌─────────────────────────────────┐
-///                           │  │ GRPCClientRequestChannelHandler │
-///                           │  └────────────────────┬────────────┘
+///                           │      ┌─────────────────────────────┐
+///                           │      │ ClientRequestChannelHandler │
+///                           │      └────────────────┬────────────┘
 /// GRPCClientResponsePart<T1>│                       │GRPCClientRequestPart<T2>
 ///                         ┌─┴───────────────────────▼─┐
 ///                         │       GRPCClientCodec     │
@@ -66,7 +66,7 @@ open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
   internal let responseHandler: GRPCClientResponseChannelHandler<ResponseMessage>
 
   /// Channel handler for requests.
-  internal let requestHandler: GRPCClientRequestChannelHandler<RequestMessage>
+  internal let requestHandler: ClientRequestChannelHandler<RequestMessage>
 
   // Note: documentation is inherited from the `ClientCall` protocol.
   public let subchannel: EventLoopFuture<Channel>
@@ -87,7 +87,7 @@ open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
   init(
     connection: ClientConnection,
     responseHandler: GRPCClientResponseChannelHandler<ResponseMessage>,
-    requestHandler: GRPCClientRequestChannelHandler<RequestMessage>
+    requestHandler: ClientRequestChannelHandler<RequestMessage>
   ) {
     self.connection = connection
     self.responseHandler = responseHandler
