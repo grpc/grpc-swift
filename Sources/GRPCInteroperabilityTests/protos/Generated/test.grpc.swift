@@ -32,7 +32,7 @@ public protocol Grpc_Testing_TestServiceService {
   func emptyCall(_ request: Grpc_Testing_Empty, callOptions: CallOptions?) -> UnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty>
   func unaryCall(_ request: Grpc_Testing_SimpleRequest, callOptions: CallOptions?) -> UnaryCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>
   func cacheableUnaryCall(_ request: Grpc_Testing_SimpleRequest, callOptions: CallOptions?) -> UnaryCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>
-  func streamingOutputCall(_ request: Grpc_Testing_StreamingOutputCallRequest, callOptions: CallOptions?, handler: @escaping (Grpc_Testing_StreamingOutputCallResponse) -> Void) -> ServerStreamingClientCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse>
+  func streamingOutputCall(_ request: Grpc_Testing_StreamingOutputCallRequest, callOptions: CallOptions?, handler: @escaping (Grpc_Testing_StreamingOutputCallResponse) -> Void) -> ServerStreamingCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse>
   func streamingInputCall(callOptions: CallOptions?) -> ClientStreamingClientCall<Grpc_Testing_StreamingInputCallRequest, Grpc_Testing_StreamingInputCallResponse>
   func fullDuplexCall(callOptions: CallOptions?, handler: @escaping (Grpc_Testing_StreamingOutputCallResponse) -> Void) -> BidirectionalStreamingClientCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse>
   func halfDuplexCall(callOptions: CallOptions?, handler: @escaping (Grpc_Testing_StreamingOutputCallResponse) -> Void) -> BidirectionalStreamingClientCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse>
@@ -96,8 +96,8 @@ public final class Grpc_Testing_TestServiceServiceClient: GRPCServiceClient, Grp
   ///   - request: Request to send to StreamingOutputCall.
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   ///   - handler: A closure called when each response is received from the server.
-  /// - Returns: A `ServerStreamingClientCall` with futures for the metadata and status.
-  public func streamingOutputCall(_ request: Grpc_Testing_StreamingOutputCallRequest, callOptions: CallOptions? = nil, handler: @escaping (Grpc_Testing_StreamingOutputCallResponse) -> Void) -> ServerStreamingClientCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse> {
+  /// - Returns: A `ServerStreamingCall` with futures for the metadata and status.
+  public func streamingOutputCall(_ request: Grpc_Testing_StreamingOutputCallRequest, callOptions: CallOptions? = nil, handler: @escaping (Grpc_Testing_StreamingOutputCallResponse) -> Void) -> ServerStreamingCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse> {
     return self.makeServerStreamingCall(path: self.path(forMethod: "StreamingOutputCall"),
                                         request: request,
                                         callOptions: callOptions ?? self.defaultCallOptions,

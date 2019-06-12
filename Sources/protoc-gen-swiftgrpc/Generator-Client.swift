@@ -36,7 +36,7 @@ extension Generator {
         println("func \(methodFunctionName)(_ request: \(methodInputName), callOptions: CallOptions?) -> UnaryCall<\(methodInputName), \(methodOutputName)>")
 
       case .serverStreaming:
-        println("func \(methodFunctionName)(_ request: \(methodInputName), callOptions: CallOptions?, handler: @escaping (\(methodOutputName)) -> Void) -> ServerStreamingClientCall<\(methodInputName), \(methodOutputName)>")
+        println("func \(methodFunctionName)(_ request: \(methodInputName), callOptions: CallOptions?, handler: @escaping (\(methodOutputName)) -> Void) -> ServerStreamingCall<\(methodInputName), \(methodOutputName)>")
 
       case .clientStreaming:
         println("func \(methodFunctionName)(callOptions: CallOptions?) -> ClientStreamingClientCall<\(methodInputName), \(methodOutputName)>")
@@ -94,8 +94,8 @@ extension Generator {
         printRequestParameter()
         printCallOptionsParameter()
         printHandlerParameter()
-        println("/// - Returns: A `ServerStreamingClientCall` with futures for the metadata and status.")
-        println("\(access) func \(methodFunctionName)(_ request: \(methodInputName), callOptions: CallOptions? = nil, handler: @escaping (\(methodOutputName)) -> Void) -> ServerStreamingClientCall<\(methodInputName), \(methodOutputName)> {")
+        println("/// - Returns: A `ServerStreamingCall` with futures for the metadata and status.")
+        println("\(access) func \(methodFunctionName)(_ request: \(methodInputName), callOptions: CallOptions? = nil, handler: @escaping (\(methodOutputName)) -> Void) -> ServerStreamingCall<\(methodInputName), \(methodOutputName)> {")
         indent()
         println("return self.makeServerStreamingCall(path: self.path(forMethod: \"\(method.name)\"),")
         println("                                    request: request,")
