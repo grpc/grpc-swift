@@ -26,7 +26,7 @@ import NIO
 /// - `initialMetadata`: the initial metadata returned from the server,
 /// - `status`: the status of the gRPC call after it has ended,
 /// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
-public final class BidirectionalStreamingClientCall<RequestMessage: Message, ResponseMessage: Message>
+public final class BidirectionalStreamingCall<RequestMessage: Message, ResponseMessage: Message>
   : BaseClientCall<RequestMessage, ResponseMessage>,
     StreamingRequestClientCall {
   private var messageQueue: EventLoopFuture<Void>

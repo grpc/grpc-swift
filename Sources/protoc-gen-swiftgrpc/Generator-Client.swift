@@ -42,7 +42,7 @@ extension Generator {
         println("func \(methodFunctionName)(callOptions: CallOptions?) -> ClientStreamingCall<\(methodInputName), \(methodOutputName)>")
 
       case .bidirectionalStreaming:
-        println("func \(methodFunctionName)(callOptions: CallOptions?, handler: @escaping (\(methodOutputName)) -> Void) -> BidirectionalStreamingClientCall<\(methodInputName), \(methodOutputName)>")
+        println("func \(methodFunctionName)(callOptions: CallOptions?, handler: @escaping (\(methodOutputName)) -> Void) -> BidirectionalStreamingCall<\(methodInputName), \(methodOutputName)>")
       }
     }
     outdent()
@@ -128,7 +128,7 @@ extension Generator {
         printCallOptionsParameter()
         printHandlerParameter()
         println("/// - Returns: A `ClientStreamingCall` with futures for the metadata and status.")
-        println("\(access) func \(methodFunctionName)(callOptions: CallOptions? = nil, handler: @escaping (\(methodOutputName)) -> Void) -> BidirectionalStreamingClientCall<\(methodInputName), \(methodOutputName)> {")
+        println("\(access) func \(methodFunctionName)(callOptions: CallOptions? = nil, handler: @escaping (\(methodOutputName)) -> Void) -> BidirectionalStreamingCall<\(methodInputName), \(methodOutputName)> {")
         indent()
         println("return self.makeBidirectionalStreamingCall(path: self.path(forMethod: \"\(method.name)\"),")
         println("                                           callOptions: callOptions ?? self.defaultCallOptions,")

@@ -75,8 +75,8 @@ extension GRPCClient {
     requestType: Request.Type = Request.self,
     responseType: Response.Type = Response.self,
     handler: @escaping (Response) -> Void
-  ) -> BidirectionalStreamingClientCall<Request, Response> {
-    return BidirectionalStreamingClientCall(
+  ) -> BidirectionalStreamingCall<Request, Response> {
+    return BidirectionalStreamingCall(
       connection: self.connection,
       path: path,
       callOptions: callOptions ?? self.defaultCallOptions,
