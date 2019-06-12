@@ -39,7 +39,7 @@ extension Generator {
         println("func \(methodFunctionName)(_ request: \(methodInputName), callOptions: CallOptions?, handler: @escaping (\(methodOutputName)) -> Void) -> ServerStreamingCall<\(methodInputName), \(methodOutputName)>")
 
       case .clientStreaming:
-        println("func \(methodFunctionName)(callOptions: CallOptions?) -> ClientStreamingClientCall<\(methodInputName), \(methodOutputName)>")
+        println("func \(methodFunctionName)(callOptions: CallOptions?) -> ClientStreamingCall<\(methodInputName), \(methodOutputName)>")
 
       case .bidirectionalStreaming:
         println("func \(methodFunctionName)(callOptions: CallOptions?, handler: @escaping (\(methodOutputName)) -> Void) -> BidirectionalStreamingClientCall<\(methodInputName), \(methodOutputName)>")
@@ -111,8 +111,8 @@ extension Generator {
         println("///")
         printParameters()
         printCallOptionsParameter()
-        println("/// - Returns: A `ClientStreamingClientCall` with futures for the metadata, status and response.")
-        println("\(access) func \(methodFunctionName)(callOptions: CallOptions? = nil) -> ClientStreamingClientCall<\(methodInputName), \(methodOutputName)> {")
+        println("/// - Returns: A `ClientStreamingCall` with futures for the metadata, status and response.")
+        println("\(access) func \(methodFunctionName)(callOptions: CallOptions? = nil) -> ClientStreamingCall<\(methodInputName), \(methodOutputName)> {")
         indent()
         println("return self.makeClientStreamingCall(path: self.path(forMethod: \"\(method.name)\"),")
         println("                                    callOptions: callOptions ?? self.defaultCallOptions)")
@@ -127,7 +127,7 @@ extension Generator {
         printParameters()
         printCallOptionsParameter()
         printHandlerParameter()
-        println("/// - Returns: A `ClientStreamingClientCall` with futures for the metadata and status.")
+        println("/// - Returns: A `ClientStreamingCall` with futures for the metadata and status.")
         println("\(access) func \(methodFunctionName)(callOptions: CallOptions? = nil, handler: @escaping (\(methodOutputName)) -> Void) -> BidirectionalStreamingClientCall<\(methodInputName), \(methodOutputName)> {")
         indent()
         println("return self.makeBidirectionalStreamingCall(path: self.path(forMethod: \"\(method.name)\"),")

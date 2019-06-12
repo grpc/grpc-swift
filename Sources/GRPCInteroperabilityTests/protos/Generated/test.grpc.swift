@@ -33,7 +33,7 @@ public protocol Grpc_Testing_TestServiceService {
   func unaryCall(_ request: Grpc_Testing_SimpleRequest, callOptions: CallOptions?) -> UnaryCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>
   func cacheableUnaryCall(_ request: Grpc_Testing_SimpleRequest, callOptions: CallOptions?) -> UnaryCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>
   func streamingOutputCall(_ request: Grpc_Testing_StreamingOutputCallRequest, callOptions: CallOptions?, handler: @escaping (Grpc_Testing_StreamingOutputCallResponse) -> Void) -> ServerStreamingCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse>
-  func streamingInputCall(callOptions: CallOptions?) -> ClientStreamingClientCall<Grpc_Testing_StreamingInputCallRequest, Grpc_Testing_StreamingInputCallResponse>
+  func streamingInputCall(callOptions: CallOptions?) -> ClientStreamingCall<Grpc_Testing_StreamingInputCallRequest, Grpc_Testing_StreamingInputCallResponse>
   func fullDuplexCall(callOptions: CallOptions?, handler: @escaping (Grpc_Testing_StreamingOutputCallResponse) -> Void) -> BidirectionalStreamingClientCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse>
   func halfDuplexCall(callOptions: CallOptions?, handler: @escaping (Grpc_Testing_StreamingOutputCallResponse) -> Void) -> BidirectionalStreamingClientCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse>
   func unimplementedCall(_ request: Grpc_Testing_Empty, callOptions: CallOptions?) -> UnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty>
@@ -111,8 +111,8 @@ public final class Grpc_Testing_TestServiceServiceClient: GRPCServiceClient, Grp
   ///
   /// - Parameters:
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
-  /// - Returns: A `ClientStreamingClientCall` with futures for the metadata, status and response.
-  public func streamingInputCall(callOptions: CallOptions? = nil) -> ClientStreamingClientCall<Grpc_Testing_StreamingInputCallRequest, Grpc_Testing_StreamingInputCallResponse> {
+  /// - Returns: A `ClientStreamingCall` with futures for the metadata, status and response.
+  public func streamingInputCall(callOptions: CallOptions? = nil) -> ClientStreamingCall<Grpc_Testing_StreamingInputCallRequest, Grpc_Testing_StreamingInputCallResponse> {
     return self.makeClientStreamingCall(path: self.path(forMethod: "StreamingInputCall"),
                                         callOptions: callOptions ?? self.defaultCallOptions)
   }
@@ -125,7 +125,7 @@ public final class Grpc_Testing_TestServiceServiceClient: GRPCServiceClient, Grp
   /// - Parameters:
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   ///   - handler: A closure called when each response is received from the server.
-  /// - Returns: A `ClientStreamingClientCall` with futures for the metadata and status.
+  /// - Returns: A `ClientStreamingCall` with futures for the metadata and status.
   public func fullDuplexCall(callOptions: CallOptions? = nil, handler: @escaping (Grpc_Testing_StreamingOutputCallResponse) -> Void) -> BidirectionalStreamingClientCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse> {
     return self.makeBidirectionalStreamingCall(path: self.path(forMethod: "FullDuplexCall"),
                                                callOptions: callOptions ?? self.defaultCallOptions,
@@ -140,7 +140,7 @@ public final class Grpc_Testing_TestServiceServiceClient: GRPCServiceClient, Grp
   /// - Parameters:
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   ///   - handler: A closure called when each response is received from the server.
-  /// - Returns: A `ClientStreamingClientCall` with futures for the metadata and status.
+  /// - Returns: A `ClientStreamingCall` with futures for the metadata and status.
   public func halfDuplexCall(callOptions: CallOptions? = nil, handler: @escaping (Grpc_Testing_StreamingOutputCallResponse) -> Void) -> BidirectionalStreamingClientCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse> {
     return self.makeBidirectionalStreamingCall(path: self.path(forMethod: "HalfDuplexCall"),
                                                callOptions: callOptions ?? self.defaultCallOptions,

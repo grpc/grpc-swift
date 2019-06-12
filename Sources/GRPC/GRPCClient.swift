@@ -61,8 +61,8 @@ extension GRPCClient {
     callOptions: CallOptions? = nil,
     requestType: Request.Type = Request.self,
     responseType: Response.Type = Response.self
-  ) -> ClientStreamingClientCall<Request, Response> {
-    return ClientStreamingClientCall(
+  ) -> ClientStreamingCall<Request, Response> {
+    return ClientStreamingCall(
       connection: self.connection,
       path: path,
       callOptions: callOptions ?? self.defaultCallOptions,

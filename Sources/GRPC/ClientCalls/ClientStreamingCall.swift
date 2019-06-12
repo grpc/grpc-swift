@@ -27,7 +27,7 @@ import NIO
 /// - `response`: the response from the call,
 /// - `status`: the status of the gRPC call after it has ended,
 /// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
-public final class ClientStreamingClientCall<RequestMessage: Message, ResponseMessage: Message>
+public final class ClientStreamingCall<RequestMessage: Message, ResponseMessage: Message>
   : BaseClientCall<RequestMessage, ResponseMessage>,
     StreamingRequestClientCall,
     UnaryResponseClientCall {
