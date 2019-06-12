@@ -33,7 +33,7 @@ extension Generator {
       self.method = method
       switch streamingType(method) {
       case .unary:
-        println("func \(methodFunctionName)(_ request: \(methodInputName), callOptions: CallOptions?) -> UnaryClientCall<\(methodInputName), \(methodOutputName)>")
+        println("func \(methodFunctionName)(_ request: \(methodInputName), callOptions: CallOptions?) -> UnaryCall<\(methodInputName), \(methodOutputName)>")
 
       case .serverStreaming:
         println("func \(methodFunctionName)(_ request: \(methodInputName), callOptions: CallOptions?, handler: @escaping (\(methodOutputName)) -> Void) -> ServerStreamingClientCall<\(methodInputName), \(methodOutputName)>")
@@ -78,8 +78,8 @@ extension Generator {
         printParameters()
         printRequestParameter()
         printCallOptionsParameter()
-        println("/// - Returns: A `UnaryClientCall` with futures for the metadata, status and response.")
-        println("\(access) func \(methodFunctionName)(_ request: \(methodInputName), callOptions: CallOptions? = nil) -> UnaryClientCall<\(methodInputName), \(methodOutputName)> {")
+        println("/// - Returns: A `UnaryCall` with futures for the metadata, status and response.")
+        println("\(access) func \(methodFunctionName)(_ request: \(methodInputName), callOptions: CallOptions? = nil) -> UnaryCall<\(methodInputName), \(methodOutputName)> {")
         indent()
         println("return self.makeUnaryCall(path: self.path(forMethod: \"\(method.name)\"),")
         println("                          request: request,")

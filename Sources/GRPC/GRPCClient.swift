@@ -31,8 +31,8 @@ extension GRPCClient {
     request: Request,
     callOptions: CallOptions? = nil,
     responseType: Response.Type = Response.self
-  ) -> UnaryClientCall<Request, Response> {
-    return UnaryClientCall(
+  ) -> UnaryCall<Request, Response> {
+    return UnaryCall(
       connection: self.connection,
       path: path,
       request: request,

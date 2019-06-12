@@ -29,7 +29,7 @@ import SwiftProtobuf
 
 /// Usage: instantiate Echo_EchoServiceClient, then call methods of this protocol to make API calls.
 internal protocol Echo_EchoService {
-  func get(_ request: Echo_EchoRequest, callOptions: CallOptions?) -> UnaryClientCall<Echo_EchoRequest, Echo_EchoResponse>
+  func get(_ request: Echo_EchoRequest, callOptions: CallOptions?) -> UnaryCall<Echo_EchoRequest, Echo_EchoResponse>
   func expand(_ request: Echo_EchoRequest, callOptions: CallOptions?, handler: @escaping (Echo_EchoResponse) -> Void) -> ServerStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse>
   func collect(callOptions: CallOptions?) -> ClientStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse>
   func update(callOptions: CallOptions?, handler: @escaping (Echo_EchoResponse) -> Void) -> BidirectionalStreamingClientCall<Echo_EchoRequest, Echo_EchoResponse>
@@ -55,8 +55,8 @@ internal final class Echo_EchoServiceClient: GRPCServiceClient, Echo_EchoService
   /// - Parameters:
   ///   - request: Request to send to Get.
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
-  /// - Returns: A `UnaryClientCall` with futures for the metadata, status and response.
-  internal func get(_ request: Echo_EchoRequest, callOptions: CallOptions? = nil) -> UnaryClientCall<Echo_EchoRequest, Echo_EchoResponse> {
+  /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
+  internal func get(_ request: Echo_EchoRequest, callOptions: CallOptions? = nil) -> UnaryCall<Echo_EchoRequest, Echo_EchoResponse> {
     return self.makeUnaryCall(path: self.path(forMethod: "Get"),
                               request: request,
                               callOptions: callOptions ?? self.defaultCallOptions)
