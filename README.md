@@ -205,13 +205,17 @@ logical cores on your system.
 We also `wait` for the server to start before setting up a client.
 
 ```swift
+let serverEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 let server = try Server.start(
   hostname: host,
   port: port,
-  eventLoopGroup: MultiThreadedEventLoopGroup(numberOfThreads: 1),
+  eventLoopGroup: serverEventLoopGroup,
   serviceProviders: [EchoProvider()]
 ).wait()
 ```
+
+Note that the at the end of the program, the `serverEventLoopGroup` whould be
+shutdown (`try serverEventLoopGroup.syncShutdownGracefully()`).
 
 Normally the client would be in a different binary to the server, however, for
 this example we will include them together.
@@ -222,9 +226,10 @@ means to make gRPC calls via a generated client. Note that
 `Echo_EchoServiceClient` is the client we generated from `echo.proto`.
 
 ```swift
+let clientEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 let configuration = ClientConnection.Configuration(
   target: .hostAndPort(host, port),
-  eventLoopGroup: MultiThreadedEventLoopGroup(numberOfThreads: 1)
+  eventLoopGroup: clientEventLoopGroup
 )
 
 let echo = try ClientConnection.start(configuration).map {
@@ -232,6 +237,9 @@ let echo = try ClientConnection.start(configuration).map {
   Echo_EchoServiceClient(connection: $0)
 }.wait()
 ```
+
+Note that the `clientEventLoopGroup` should also be shutdown when it is no
+longer required.
 
 We can also define some options on our call, such as custom metadata and a
 timeout. Note that options are not required at the call-site and may be omitted
@@ -368,6 +376,39 @@ These differences are summarised in the following table.
 | Server Streaming        | Handler  | At call time
 | Bidirectional Streaming | Handler  | On the call object
 
+### Using TLS
+
+gRPC calls can be made over a secure channel by configuring TLS. This requires
+specifying `tlsConfiguration` on `ClientConnection.Configuration` or
+`Server.Configuration`.
+
+Configuring TLS requires a [`NIOSSLContext`][nio-ref-sslcontext] which in turn
+requires a [`TLSConfiguration`][nio-ref-tlsconfig] (this is _not_ the same as
+`ClientConnection.TLSConfiguration` or `Server.TLSConfiguration`).
+
+For the client, [`TLSConfiguration`][nio-ref-tlsconfig] can be as simple as:
+
+```swift
+let configuration = TLSConfiguration.forClient(
+  minimumTLSVersion: TLSVersion = .tlsv12,
+  applicationProtocols: GRPCApplicationProtocolIdentifier.allCases.map { $0.rawValue }
+)
+```
+
+For the server, [`TLSConfiguration`][nio-ref-tlsconfig] is slightly more
+complicated as it requires a certificate chain and private key:
+
+```swift
+let configuration = TLSConfiguration.forServer(
+  certificateChain: [.file("cert.pem")],
+  privateKey: .file("key.pem"),
+  minimumTLSVersion: TLSVersion = .tlsv12,
+  applicationProtocols: GRPCApplicationProtocolIdentifier.allCases.map { $0.rawValue }
+)
+```
+
+Note that the gRPC specification requires TLS v1.2 or later.
+
 ### Plugin Options
 
 To pass extra parameters to the plugin, use a comma-separated parameter list
@@ -401,6 +442,8 @@ Please get involved! See our [guidelines for contributing](CONTRIBUTING.md).
 [grpc]: https://github.com/grpc/grpc
 [nio-ref-elf]: https://apple.github.io/swift-nio/docs/current/NIO/Classes/EventLoopFuture.html
 [nio-ref-elg]: https://apple.github.io/swift-nio/docs/current/NIO/Classes/MultiThreadedEventLoopGroup.html
+[nio-ref-sslcontext]: https://apple.github.io/swift-nio-ssl/docs/current/NIOSSL/Classes/NIOSSLContext.html
+[nio-ref-tlsconfig]: https://apple.github.io/swift-nio-ssl/docs/current/NIOSSL/Structs/TLSConfiguration.html
 [protobuf-releases]: https://github.com/protocolbuffers/protobuf/releases
 [protobuf]: https://github.com/google/protobuf
 [swift-nio]: https://github.com/apple/swift-nio
