@@ -15,7 +15,7 @@ all four gRPC API styles (Unary, Server Streaming, Client Streaming, and
 Bidirectional Streaming) and connections can be made either over secure (TLS) or
 insecure channels.
 
-Swift gRPC is build on top of [Swift NIO][swift-nio] as opposed to the core
+Swift gRPC is built on top of [Swift NIO][swift-nio] as opposed to the core
 library provided by the [gRPC project][grpc].
 
 ## Getting Started
@@ -41,7 +41,7 @@ dependencies: [
 ##### Xcode
 
 From Xcode 11 it is possible to [add Swift Package dependencies to Xcode
-projects][xcode-spm] and link targets to products of those packages, this is the
+projects][xcode-spm] and link targets to products of those packages; this is the
 easiest way to integrate Swift gRPC with an existing `xcodeproj`.
 
 ##### Manual Integration
@@ -144,7 +144,7 @@ directory:
 protoc echo.proto --swift_out=.
 ```
 
-Swift gRPC, provides a plugin (`protoc-gen-swiftgrpc`) to generate the client
+Swift gRPC provides a plugin (`protoc-gen-swiftgrpc`) to generate the client
 and server for the `Echo` service defined above. It can be invoked to produce
 `echo.grpc.swift` as such:
 
@@ -213,10 +213,13 @@ let server = try Server.start(
 ).wait()
 ```
 
-Once the server has started we can create a client by first defining its
-configuration, starting a connection, and then using that connection as a means
-to make gRPC calls via a generated client. Note that `Echo_EchoServiceClient` is
-the client we generated from `echo.proto`.
+Normally the client would be in a different binary to the server, however, for
+this example we will include them together.
+
+Once the server has started we can create a client by defining the connection
+configuration, starting the connection, and then using that connection as a
+means to make gRPC calls via a generated client. Note that
+`Echo_EchoServiceClient` is the client we generated from `echo.proto`.
 
 ```swift
 let configuration = ClientConnection.Configuration(
@@ -230,9 +233,11 @@ let echo = try ClientConnection.start(configuration).map {
 }.wait()
 ```
 
-We can also define some options on our call, like custom metadata and a timeout.
-These options can be set as defaults on the client (passed as an additional
-argument to the generated client) or on a per-call basis as we're doing here.
+We can also define some options on our call, such as custom metadata and a
+timeout. Note that options are not required at the call-site and may be omitted
+entirely. If options are omitted from the call then they are taken from the
+client instead. Default client options may be passed as an additional argument
+to the generated client.
 
 ```swift
 var callOptions = CallOptions()
@@ -243,8 +248,8 @@ callOptions.customMetadata.add(name: "x-request-id", value: UUID().uuidString)
 callOptions.timeout = try .seconds(5)
 ```
 
-We can now may an asynchronous call to the service by using the functions on the
-generated client:
+We can now make an asynchronous call to the service by using the functions on
+the generated client:
 
 ```swift
 let request = Echo_EchoRequest.with {
@@ -259,11 +264,11 @@ and has [futures][nio-ref-elf] for the initial metadata, response, trailing
 metadata and call status. The differences between call types is detailed in
 [API Types](#api-types).
 
-Note that the call can be made synchronous by waiting on the `response` on the
-`get` object:
+Note that the call can be made synchronous by waiting on the `response` property
+of the `get` object:
 
-```
-let response = try echo.get(request).response.wait()
+```swift
+let response = try get.response.wait()
 ```
 
 We can register callbacks on the response to observe its value:
@@ -287,8 +292,8 @@ The call will always terminate with a status which includes a status code and
 optionally a message and trailing metadata.
 
 This is often the most useful way to determine the outcome of a call. However,
-it should be noted that __even if the call fails, the `status` future will be
-succeeded__.
+it should be noted that **even if the call fails, the `status` future will be
+_succeeded_**.
 
 ```swift
 get.status.whenSuccess { status in
