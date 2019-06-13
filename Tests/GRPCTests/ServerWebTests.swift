@@ -45,7 +45,7 @@ class ServerWebTests: EchoTestCaseBase {
   }
 
   private func sendOverHTTP1(rpcMethod: String, message: String?, handler: @escaping (Data?, Error?) -> Void) {
-    let serverURL = URL(string: "http://localhost:5050/echo.Echo/\(rpcMethod)")!
+    let serverURL = URL(string: "http://localhost:\(self.port!)/echo.Echo/\(rpcMethod)")!
     var request = URLRequest(url: serverURL)
     request.httpMethod = "POST"
     request.setValue("application/grpc-web-text", forHTTPHeaderField: "content-type")

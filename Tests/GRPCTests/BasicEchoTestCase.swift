@@ -17,7 +17,7 @@ import Dispatch
 import Foundation
 import NIO
 import NIOSSL
-@testable import GRPC
+import GRPC
 import GRPCSampleData
 import XCTest
 
@@ -60,8 +60,13 @@ extension TransportSecurity {
 }
 
 extension TransportSecurity {
-  func makeServerTLS() throws -> Server.TLSMode {
-    return try makeServerTLSConfiguration().map { .custom(try NIOSSLContext(configuration: $0)) } ?? .none
+  func makeServerConfiguration() throws -> Server.TLSConfiguration? {
+    guard let config = try self.makeServerTLSConfiguration() else {
+      return nil
+    }
+
+    let context = try NIOSSLContext(configuration: config)
+    return .init(sslContext: context)
   }
 
   func makeServerTLSConfiguration() throws -> TLSConfiguration? {
@@ -77,7 +82,7 @@ extension TransportSecurity {
     }
   }
 
-  func makeConfiguration() throws -> ClientConnection.TLSConfiguration? {
+  func makeClientConfiguration() throws -> ClientConnection.TLSConfiguration? {
     guard let config = try self.makeClientTLSConfiguration() else {
       return nil
     }
@@ -116,6 +121,7 @@ class EchoTestCaseBase: XCTestCase {
 
   var server: Server!
   var client: Echo_EchoServiceClient!
+  var port: Int!
 
   // Prefer POSIX: subclasses can override this and add availability checks to ensure NIOTS
   // variants run where possible.
@@ -123,52 +129,57 @@ class EchoTestCaseBase: XCTestCase {
     return .userDefined(.posix)
   }
 
-  func makeClientConfiguration() throws -> ClientConnection.Configuration {
+  func makeClientConfiguration(port: Int) throws -> ClientConnection.Configuration {
     return .init(
-      target: .hostAndPort("localhost", 5050),
+      target: .hostAndPort("localhost", port),
       eventLoopGroup: self.clientEventLoopGroup,
-      tlsConfiguration: try self.transportSecurity.makeConfiguration())
+      tlsConfiguration: try self.transportSecurity.makeClientConfiguration())
+  }
+
+  func makeServerConfiguration() throws -> Server.Configuration {
+    return .init(
+      target: .hostAndPort("localhost", 0),
+      eventLoopGroup: self.serverEventLoopGroup,
+      serviceProviders: [makeEchoProvider()],
+      errorDelegate: self.makeErrorDelegate(),
+      tlsConfiguration: try self.transportSecurity.makeServerConfiguration())
   }
 
   func makeServer() throws -> Server {
-    return try Server.start(
-      hostname: "localhost",
-      port: 5050,
-      eventLoopGroup: self.serverEventLoopGroup,
-      serviceProviders: [makeEchoProvider()],
-      errorDelegate: makeErrorDelegate(),
-      tls: try self.transportSecurity.makeServerTLS()
-    ).wait()
+    return try Server.start(configuration: self.makeServerConfiguration()).wait()
   }
 
-  func makeClientConnection() throws -> ClientConnection {
-    return try ClientConnection.start(self.makeClientConfiguration()).wait()
+  func makeClientConnection(port: Int) throws -> ClientConnection {
+    return try ClientConnection.start(self.makeClientConfiguration(port: port)).wait()
   }
 
   func makeEchoProvider() -> Echo_EchoProvider { return EchoProvider() }
 
   func makeErrorDelegate() -> ServerErrorDelegate? { return nil }
 
-  func makeEchoClient() throws -> Echo_EchoServiceClient {
-    return Echo_EchoServiceClient(connection: try self.makeClientConnection())
+  func makeEchoClient(port: Int) throws -> Echo_EchoServiceClient {
+    return Echo_EchoServiceClient(connection: try self.makeClientConnection(port: port))
   }
 
   override func setUp() {
     super.setUp()
-    self.serverEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    self.serverEventLoopGroup = GRPCNIO.makeEventLoopGroup(
+      loopCount: 1,
+      networkPreference: self.networkPreference)
     self.server = try! self.makeServer()
+
+    self.port = self.server.channel.localAddress!.port!
 
     self.clientEventLoopGroup = GRPCNIO.makeEventLoopGroup(
       loopCount: 1,
       networkPreference: self.networkPreference)
-    self.client = try! self.makeEchoClient()
+    self.client = try! self.makeEchoClient(port: self.port)
   }
 
   override func tearDown() {
     // Some tests close the channel, so would throw here if called twice.
-    if self.client.connection.channel.isActive {
-      XCTAssertNoThrow(try self.client.connection.close().wait())
-    }
+    try? self.client.connection.close().wait()
+
     XCTAssertNoThrow(try self.clientEventLoopGroup.syncShutdownGracefully())
     self.client = nil
     self.clientEventLoopGroup = nil
@@ -177,6 +188,7 @@ class EchoTestCaseBase: XCTestCase {
     XCTAssertNoThrow(try self.serverEventLoopGroup.syncShutdownGracefully())
     self.server = nil
     self.serverEventLoopGroup = nil
+    self.port = nil
 
     super.tearDown()
   }

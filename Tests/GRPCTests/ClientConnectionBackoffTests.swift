@@ -32,19 +32,20 @@ class ClientConnectionBackoffTests: XCTestCase {
     }
 
     // We don't always expect a client (since we deliberately timeout the connection in some cases).
-    if let client = try? self.client.wait() {
+    if let client = try? self.client.wait(), client.channel.isActive {
       XCTAssertNoThrow(try client.channel.close().wait())
     }
 
     XCTAssertNoThrow(try self.group.syncShutdownGracefully())
   }
 
-  func makeServer() throws -> EventLoopFuture<Server> {
-    return try Server.start(
-      hostname: "localhost",
-      port: self.port,
+  func makeServer() -> EventLoopFuture<Server> {
+    let configuration = Server.Configuration(
+      target: .hostAndPort("localhost", self.port),
       eventLoopGroup: self.group,
       serviceProviders: [])
+
+    return Server.start(configuration: configuration)
   }
 
   func makeClientConfiguration() -> ClientConnection.Configuration {
@@ -81,7 +82,7 @@ class ClientConnectionBackoffTests: XCTestCase {
     // Sleep for a little bit to make sure we hit the backoff.
     Thread.sleep(forTimeInterval: 0.2)
 
-    self.server = try self.makeServer()
+    self.server = self.makeServer()
     self.server.assertSuccess(fulfill: serverStarted)
 
     self.wait(for: [serverStarted, clientConnected], timeout: 2.0, enforceOrder: true)

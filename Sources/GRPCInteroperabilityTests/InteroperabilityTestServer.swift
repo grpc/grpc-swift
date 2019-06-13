@@ -37,7 +37,10 @@ public func makeInteroperabilityTestServer(
   serviceProviders: [CallHandlerProvider] = [TestServiceProvider()],
   useTLS: Bool
 ) throws -> EventLoopFuture<Server> {
-  let tlsMode: Server.TLSMode
+  var configuration = Server.Configuration(
+    target: .hostAndPort(host, port),
+    eventLoopGroup: eventLoopGroup,
+    serviceProviders: serviceProviders)
 
   if useTLS {
     print("Using the gRPC interop testing CA for TLS; clients should expect the host to be '*.test.google.fr'")
@@ -53,16 +56,9 @@ public func makeInteroperabilityTestServer(
       applicationProtocols: ["h2"]
     )
 
-    tlsMode = .custom(try NIOSSLContext(configuration: tlsConfiguration))
-  } else {
-    tlsMode = .none
+    let sslContext = try NIOSSLContext(configuration: tlsConfiguration)
+    configuration.tlsConfiguration = .init(sslContext: sslContext)
   }
 
-  return try Server.start(
-    hostname: host,
-    port: port,
-    eventLoopGroup: eventLoopGroup,
-    serviceProviders: serviceProviders,
-    tls: tlsMode
-  )
+  return Server.start(configuration: configuration)
 }
