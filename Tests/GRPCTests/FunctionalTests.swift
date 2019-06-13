@@ -226,3 +226,26 @@ class FunctionalTestsMutualAuthentication: FunctionalTestsInsecureTransport {
     return .mutualAuthentication
   }
 }
+
+// MARK: - Variants using NIO TS and Network.framework
+
+@available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
+class FunctionalTestsInsecureTransportNIOTS: FunctionalTestsInsecureTransport {
+  override var networkPreference: NetworkPreference {
+    return .userDefined(.networkFramework)
+  }
+}
+
+@available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
+class FunctionalTestsAnonymousClientNIOTS: FunctionalTestsAnonymousClient {
+  override var networkPreference: NetworkPreference {
+    return .userDefined(.networkFramework)
+  }
+}
+
+@available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
+class FunctionalTestsMutualAuthenticationNIOTS: FunctionalTestsMutualAuthentication {
+  override var networkPreference: NetworkPreference {
+    return .userDefined(.networkFramework)
+  }
+}
