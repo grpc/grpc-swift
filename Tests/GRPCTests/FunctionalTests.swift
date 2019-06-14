@@ -227,7 +227,13 @@ class FunctionalTestsMutualAuthentication: FunctionalTestsInsecureTransport {
 @available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
 class FunctionalTestsInsecureTransportNIOTS: FunctionalTestsInsecureTransport {
   override var networkPreference: NetworkPreference {
+    #if canImport(Network)
     return .userDefined(.networkFramework)
+    #else
+    // We shouldn't need this, since the tests won't do anything. However, we still need to be able
+    // to compile this class.
+    return .userDefined(.posix)
+    #endif
   }
 
   override func testBidirectionalStreamingBatched() throws {
