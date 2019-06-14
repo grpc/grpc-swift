@@ -35,9 +35,7 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
       String(describing: $0)
     }
   }
-}
 
-extension FunctionalTestsInsecureTransport {
   func doTestUnary(request: Echo_EchoRequest, expect response: Echo_EchoResponse, file: StaticString = #file, line: UInt = #line) {
     let responseExpectation = self.makeResponseExpectation()
     let statusExpectation = self.makeStatusExpectation()
@@ -108,9 +106,7 @@ extension FunctionalTestsInsecureTransport {
   func testUnaryEmptyRequest() throws {
     self.doTestUnary(request: Echo_EchoRequest(), expect: Echo_EchoResponse(text: "Swift echo get: "))
   }
-}
 
-extension FunctionalTestsInsecureTransport {
   func doTestClientStreaming(messages: [String], file: StaticString = #file, line: UInt = #line) throws {
     let responseExpectation = self.makeResponseExpectation()
     let statusExpectation = self.makeStatusExpectation()
@@ -136,9 +132,7 @@ extension FunctionalTestsInsecureTransport {
     self.defaultTestTimeout = 15.0
     XCTAssertNoThrow(try doTestClientStreaming(messages: lotsOfStrings))
   }
-}
 
-extension FunctionalTestsInsecureTransport {
   func doTestServerStreaming(messages: [String], file: StaticString = #file, line: UInt = #line) throws {
     let responseExpectation = self.makeResponseExpectation(expectedFulfillmentCount: messages.count)
     let statusExpectation = self.makeStatusExpectation()
@@ -165,9 +159,7 @@ extension FunctionalTestsInsecureTransport {
     self.defaultTestTimeout = 15.0
     XCTAssertNoThrow(try doTestServerStreaming(messages: lotsOfStrings))
   }
-}
 
-extension FunctionalTestsInsecureTransport {
   private func doTestBidirectionalStreaming(messages: [String], waitForEachResponse: Bool = false, file: StaticString = #file, line: UInt = #line) throws {
     let responseExpectation = self.makeResponseExpectation(expectedFulfillmentCount: messages.count)
     let statusExpectation = self.makeStatusExpectation()
