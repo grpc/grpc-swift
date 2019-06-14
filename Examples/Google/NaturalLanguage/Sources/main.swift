@@ -37,9 +37,9 @@ func makeServiceClient(host: String,
       let configuration = ClientConnection.Configuration(
         target: .hostAndPort(host, port),
         eventLoopGroup: eventLoopGroup,
-        tlsConfiguration: .init(sslContext: try makeClientTLS())
+        tlsConfiguration: .init(sslContext: try makeClientTLS()))
 
-      try ClientConnection.start(configuration)
+      ClientConnection.start(configuration)
         .map { client in
           Google_Cloud_Language_V1_LanguageServiceServiceClient(connection: client)
         }.cascade(to: promise)
