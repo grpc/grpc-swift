@@ -31,9 +31,11 @@ public enum NetworkPreference {
 /// The network implementation to use: POSIX sockets or Network.framework. This also determines
 /// which variant of NIO to use; NIO or NIOTransportServices, respectively.
 public enum NetworkImplementation {
+#if canImport(Network)
   /// Network.framework (NIOTransportServices).
   @available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
   case networkFramework
+#endif
   /// POSIX (NIO).
   case posix
 }
@@ -51,11 +53,15 @@ extension NetworkPreference {
   public var implementation: NetworkImplementation {
     switch self {
     case .best:
-      if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
-        return .networkFramework
-      } else {
-        return .posix
+      #if canImport(Network)
+      guard #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else {
+        // This is gated by the availability of `.networkFramework` so should never happen.
+        fatalError(".networkFramework is being used on an unsupported platform")
       }
+      return .networkFramework
+      #else
+      return .posix
+      #endif
 
     case .userDefined(let implementation):
       return implementation
@@ -79,8 +85,10 @@ public protocol GenericClientBootstrap {
 
 extension ClientBootstrap: GenericClientBootstrap {}
 
+#if canImport(Network)
 @available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
 extension NIOTSConnectionBootstrap: GenericClientBootstrap {}
+#endif
 
 /// This protocol is intended as a layer of abstraction over `ServerBootstrap` and
 /// `NIOTSListenerBootstrap`.
@@ -98,8 +106,10 @@ public protocol GenericServerBootstrap {
 
 extension ServerBootstrap: GenericServerBootstrap {}
 
+#if canImport(Network)
 @available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
 extension NIOTSListenerBootstrap: GenericServerBootstrap {}
+#endif
 
 // MARK: - Bootstrap / EventLoopGroup helpers
 
@@ -116,13 +126,14 @@ public enum GRPCNIO {
     networkPreference: NetworkPreference = .best
   ) -> EventLoopGroup {
     switch networkPreference.implementation {
+#if canImport(Network)
     case .networkFramework:
       guard #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else {
         // This is gated by the availability of `.networkFramework` so should never happen.
         fatalError(".networkFramework is being used on an unsupported platform")
       }
       return NIOTSEventLoopGroup(loopCount: loopCount)
-
+#endif
     case .posix:
       return MultiThreadedEventLoopGroup(numberOfThreads: loopCount)
     }
@@ -135,11 +146,13 @@ public enum GRPCNIO {
   ///
   /// - Parameter group: The `EventLoopGroup` to use.
   public static func makeClientBootstrap(group: EventLoopGroup) -> GenericClientBootstrap {
+#if canImport(Network)
     if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
       if let tsGroup = group as? NIOTSEventLoopGroup {
         return NIOTSConnectionBootstrap(group: tsGroup)
       }
     }
+#endif
     return ClientBootstrap(group: group)
   }
 
@@ -150,11 +163,13 @@ public enum GRPCNIO {
   ///
   /// - Parameter group: The `EventLoopGroup` to use.
   public static func makeServerBootstrap(group: EventLoopGroup) -> GenericServerBootstrap {
+#if canImport(Network)
     if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
       if let tsGroup = group as? NIOTSEventLoopGroup {
         return NIOTSListenerBootstrap(group: tsGroup)
       }
     }
+#endif
     return ServerBootstrap(group: group)
   }
 }
