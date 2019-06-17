@@ -72,8 +72,8 @@ let package = Package(
       ]
     ),
 
-    // Interoperability tests, this doesn't contain the CLI as this code is
-    // reused in the main test suite.
+    // Interoperability tests, this target doesn't contain the CLI as the
+    // interoperability tests are reused in the main test suite.
     .target(
       name: "GRPCInteroperabilityTests",
       dependencies: ["GRPC"]
