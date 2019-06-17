@@ -35,7 +35,7 @@ let package = Package(
     .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.0.0"),
 
     // Official SwiftProtobuf library, for [de]serializing data to send on the wire.
-    .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.3.1"),
+    .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.5.0"),
 
     // Command line argument parser for our auxiliary command line tools.
     .package(url: "https://github.com/kylef/Commander.git", from: "0.8.0"),
@@ -72,8 +72,8 @@ let package = Package(
       ]
     ),
 
-    // Interoperability tests, this doesn't contain the CLI as this is reused
-    // in the main test suite.
+    // Interoperability tests, this doesn't contain the CLI as this code is
+    // reused in the main test suite.
     .target(
       name: "GRPCInteroperabilityTests",
       dependencies: ["GRPC"]
