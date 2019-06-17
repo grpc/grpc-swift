@@ -71,9 +71,12 @@ extension NetworkPreference {
 
 // MARK: - Generic Bootstraps
 
+// TODO: Revisit the handling of NIO/NIOTS once https://github.com/apple/swift-nio/issues/796
+// is addressed.
+
 /// This protocol is intended as a layer of abstraction over `ClientBootstrap` and
 /// `NIOTSConnectionBootstrap`.
-public protocol GenericClientBootstrap {
+public protocol ClientBootstrapProtocol {
   func connect(to: SocketAddress) -> EventLoopFuture<Channel>
   func connect(host: String, port: Int) -> EventLoopFuture<Channel>
   func connect(unixDomainSocketPath: String) -> EventLoopFuture<Channel>
@@ -83,16 +86,16 @@ public protocol GenericClientBootstrap {
   func channelInitializer(_ handler: @escaping (Channel) -> EventLoopFuture<Void>) -> Self
 }
 
-extension ClientBootstrap: GenericClientBootstrap {}
+extension ClientBootstrap: ClientBootstrapProtocol {}
 
 #if canImport(Network)
 @available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
-extension NIOTSConnectionBootstrap: GenericClientBootstrap {}
+extension NIOTSConnectionBootstrap: ClientBootstrapProtocol {}
 #endif
 
 /// This protocol is intended as a layer of abstraction over `ServerBootstrap` and
 /// `NIOTSListenerBootstrap`.
-public protocol GenericServerBootstrap {
+public protocol ServerBootstrapProtocol {
   func bind(to: SocketAddress) -> EventLoopFuture<Channel>
   func bind(host: String, port: Int) -> EventLoopFuture<Channel>
   func bind(unixDomainSocketPath: String) -> EventLoopFuture<Channel>
@@ -104,11 +107,11 @@ public protocol GenericServerBootstrap {
   func childChannelOption<T>(_ option: T, value: T.Value) -> Self where T: ChannelOption
 }
 
-extension ServerBootstrap: GenericServerBootstrap {}
+extension ServerBootstrap: ServerBootstrapProtocol {}
 
 #if canImport(Network)
 @available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
-extension NIOTSListenerBootstrap: GenericServerBootstrap {}
+extension NIOTSListenerBootstrap: ServerBootstrapProtocol {}
 #endif
 
 // MARK: - Bootstrap / EventLoopGroup helpers
@@ -145,7 +148,7 @@ public enum GRPCNIO {
   /// `NIOTSConnectionBootstrap`, otherwise it will be a `ClientBootstrap`.
   ///
   /// - Parameter group: The `EventLoopGroup` to use.
-  public static func makeClientBootstrap(group: EventLoopGroup) -> GenericClientBootstrap {
+  public static func makeClientBootstrap(group: EventLoopGroup) -> ClientBootstrapProtocol {
 #if canImport(Network)
     if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
       if let tsGroup = group as? NIOTSEventLoopGroup {
@@ -162,7 +165,7 @@ public enum GRPCNIO {
   /// `NIOTSListenerBootstrap`, otherwise it will be a `ServerBootstrap`.
   ///
   /// - Parameter group: The `EventLoopGroup` to use.
-  public static func makeServerBootstrap(group: EventLoopGroup) -> GenericServerBootstrap {
+  public static func makeServerBootstrap(group: EventLoopGroup) -> ServerBootstrapProtocol {
 #if canImport(Network)
     if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
       if let tsGroup = group as? NIOTSEventLoopGroup {
