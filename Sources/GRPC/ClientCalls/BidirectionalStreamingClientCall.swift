@@ -31,7 +31,7 @@ public final class BidirectionalStreamingClientCall<RequestMessage: Message, Res
     StreamingRequestClientCall {
   private var messageQueue: EventLoopFuture<Void>
 
-  public init(connection: GRPCClientConnection, path: String, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?, handler: @escaping (ResponseMessage) -> Void) {
+  public init(connection: ClientConnection, path: String, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?, handler: @escaping (ResponseMessage) -> Void) {
     self.messageQueue = connection.channel.eventLoop.makeSucceededFuture(())
 
     let responseHandler = GRPCClientStreamingResponseChannelHandler(
@@ -41,7 +41,7 @@ public final class BidirectionalStreamingClientCall<RequestMessage: Message, Res
       timeout: callOptions.timeout,
       responseHandler: handler)
 
-    let requestHandler = GRPCClientStreamingRequestChannelHandler<RequestMessage>(
+    let requestHandler = StreamingRequestChannelHandler<RequestMessage>(
       requestHead: makeRequestHead(path: path, host: connection.configuration.target.host, callOptions: callOptions))
 
     super.init(

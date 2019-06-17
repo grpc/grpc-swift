@@ -37,7 +37,7 @@ import NIOTLS
 ///                        └─▲───────────────────────┬─┘
 ///                ByteBuffer│                       │ByteBuffer
 ///                        ┌─┴───────────────────────▼─┐
-///                        │ GRPCTLSVerificationHandler│
+///                        │   TLSVerificationHandler  │
 ///                        └─▲───────────────────────┬─┘
 ///                ByteBuffer│                       │ByteBuffer
 ///                        ┌─┴───────────────────────▼─┐
@@ -46,18 +46,18 @@ import NIOTLS
 ///                ByteBuffer│                       │ByteBuffer
 ///                          │                       ▼
 ///
-/// The `GRPCTLSVerificationHandler` observes the outcome of the SSL handshake and determines
-/// whether a `GRPCClientConnection` should be returned to the user. In either eventuality, the
+/// The `TLSVerificationHandler` observes the outcome of the SSL handshake and determines
+/// whether a `ClientConnection` should be returned to the user. In either eventuality, the
 /// handler removes itself from the pipeline once TLS has been verified. There is also a delegated
 /// error handler after the `HTTPStreamMultiplexer` in the main channel which uses the error
-/// delegate associated with this connection (see `GRPCDelegatingErrorHandler`).
+/// delegate associated with this connection (see `DelegatingErrorHandler`).
 ///
 /// See `BaseClientCall` for a description of the remainder of the client pipeline.
-open class GRPCClientConnection {
+open class ClientConnection {
   /// Makes and configures a `ClientBootstrap` using the provided configuration.
   ///
   /// Enables `SO_REUSEADDR` and `TCP_NODELAY` and configures the `channelInitializer` to use the
-  /// handlers detailed in the documentation for `GRPCClientConnection`.
+  /// handlers detailed in the documentation for `ClientConnection`.
   ///
   /// - Parameter configuration: The configuration to prepare the bootstrap with.
   public class func makeBootstrap(configuration: Configuration) -> ClientBootstrap {
@@ -73,7 +73,7 @@ open class GRPCClientConnection {
         return (tlsConfigured ?? channel.eventLoop.makeSucceededFuture(())).flatMap {
           channel.configureHTTP2Pipeline(mode: .client)
         }.flatMap { _ in
-          let errorHandler = GRPCDelegatingErrorHandler(delegate: configuration.errorDelegate)
+          let errorHandler = DelegatingErrorHandler(delegate: configuration.errorDelegate)
           return channel.pipeline.addHandler(errorHandler)
         }
       }
@@ -81,39 +81,39 @@ open class GRPCClientConnection {
     return bootstrap
   }
 
-  /// Verifies that a TLS handshake was successful by using the `GRPCTLSVerificationHandler`.
+  /// Verifies that a TLS handshake was successful by using the `TLSVerificationHandler`.
   ///
   /// - Parameter channel: The channel to verify successful TLS setup on.
   public class func verifyTLS(channel: Channel) -> EventLoopFuture<Void> {
-    return channel.pipeline.handler(type: GRPCTLSVerificationHandler.self).flatMap {
+    return channel.pipeline.handler(type: TLSVerificationHandler.self).flatMap {
       $0.verification
     }
   }
 
-  /// Makes a `GRPCClientConnection` from the given channel and configuration.
+  /// Makes a `ClientConnection` from the given channel and configuration.
   ///
   /// - Parameter channel: The channel to use for the connection.
   /// - Parameter configuration: The configuration used to create the channel.
-  public class func makeGRPCClientConnection(
+  public class func makeClientConnection(
     channel: Channel,
     configuration: Configuration
-  ) -> EventLoopFuture<GRPCClientConnection> {
+  ) -> EventLoopFuture<ClientConnection> {
     return channel.pipeline.handler(type: HTTP2StreamMultiplexer.self).map { multiplexer in
-      GRPCClientConnection(channel: channel, multiplexer: multiplexer, configuration: configuration)
+      ClientConnection(channel: channel, multiplexer: multiplexer, configuration: configuration)
     }
   }
 
   /// Starts a client connection using the given configuration.
   ///
   /// This involves: creating a `ClientBootstrap`, connecting to a target, verifying that the TLS
-  /// handshake was successful (if TLS was configured) and creating the `GRPCClientConnection`.
+  /// handshake was successful (if TLS was configured) and creating the `ClientConnection`.
   /// See the individual functions for more information:
   ///  - `makeBootstrap(configuration:)`,
   ///  - `verifyTLS(channel:)`, and
-  ///  - `makeGRPCClientConnection(channel:configuration:)`.
+  ///  - `makeClientConnection(channel:configuration:)`.
   ///
   /// - Parameter configuration: The configuration to start the connection with.
-  public class func start(_ configuration: Configuration) -> EventLoopFuture<GRPCClientConnection> {
+  public class func start(_ configuration: Configuration) -> EventLoopFuture<ClientConnection> {
     return start(configuration, backoffIterator: configuration.connectionBackoff?.makeIterator())
   }
 
@@ -129,7 +129,7 @@ open class GRPCClientConnection {
   internal class func start(
     _ configuration: Configuration,
     backoffIterator: ConnectionBackoff.Iterator?
-  ) -> EventLoopFuture<GRPCClientConnection> {
+  ) -> EventLoopFuture<ClientConnection> {
     let timeoutAndBackoff = backoffIterator?.next()
 
     var bootstrap = makeBootstrap(configuration: configuration)
@@ -139,7 +139,7 @@ open class GRPCClientConnection {
     }
 
     let connection = bootstrap.connect(to: configuration.target)
-      .flatMap { channel -> EventLoopFuture<GRPCClientConnection> in
+      .flatMap { channel -> EventLoopFuture<ClientConnection> in
         let tlsVerified: EventLoopFuture<Void>?
         if configuration.tlsConfiguration != nil {
           tlsVerified = verifyTLS(channel: channel)
@@ -148,7 +148,7 @@ open class GRPCClientConnection {
         }
 
         return (tlsVerified ?? channel.eventLoop.makeSucceededFuture(())).flatMap {
-          makeGRPCClientConnection(channel: channel, configuration: configuration)
+          makeClientConnection(channel: channel, configuration: configuration)
         }
       }
 
@@ -159,7 +159,7 @@ open class GRPCClientConnection {
     // If we're in error then schedule our next attempt.
     return connection.flatMapError { error in
       // The `futureResult` of the scheduled task is of type
-      // `EventLoopFuture<EventLoopFuture<GRPCClientConnection>>`, so we need to `flatMap` it to
+      // `EventLoopFuture<EventLoopFuture<ClientConnection>>`, so we need to `flatMap` it to
       // remove a level of indirection.
       return connection.eventLoop.scheduleTask(in: .seconds(timeInterval: backoff)) {
         return start(configuration, backoffIterator: backoffIterator)
@@ -208,7 +208,7 @@ public enum ConnectionTarget {
   }
 }
 
-extension GRPCClientConnection {
+extension ClientConnection {
   /// The configuration for a connection.
   public struct Configuration {
     /// The target to connect to.
@@ -218,7 +218,7 @@ extension GRPCClientConnection {
     public var eventLoopGroup: EventLoopGroup
 
     /// An error delegate which is called when errors are caught. Provided delegates **must not
-    /// maintain a strong reference to this `GRPCClientConnection`**. Doing so will cause a retain
+    /// maintain a strong reference to this `ClientConnection`**. Doing so will cause a retain
     /// cycle.
     public var errorDelegate: ClientErrorDelegate?
 
@@ -296,12 +296,12 @@ fileprivate extension Channel {
   /// Configure the channel with TLS.
   ///
   /// This function adds two handlers to the pipeline: the `NIOSSLClientHandler` to handle TLS, and
-  /// the `GRPCTLSVerificationHandler` which verifies that a successful handshake was completed.
+  /// the `TLSVerificationHandler` which verifies that a successful handshake was completed.
   ///
   /// - Parameter configuration: The configuration to configure the channel with.
   /// - Parameter errorDelegate: The error delegate to use for the TLS verification handler.
   func configureTLS(
-    _ configuration: GRPCClientConnection.TLSConfiguration,
+    _ configuration: ClientConnection.TLSConfiguration,
     errorDelegate: ClientErrorDelegate?
   ) -> EventLoopFuture<Void> {
     do {
@@ -309,7 +309,7 @@ fileprivate extension Channel {
         context: configuration.sslContext,
         serverHostname: configuration.hostnameOverride)
 
-      let verificationHandler = GRPCTLSVerificationHandler(errorDelegate: errorDelegate)
+      let verificationHandler = TLSVerificationHandler(errorDelegate: errorDelegate)
       return self.pipeline.addHandlers(sslClientHandler, verificationHandler)
     } catch {
       return self.eventLoop.makeFailedFuture(error)

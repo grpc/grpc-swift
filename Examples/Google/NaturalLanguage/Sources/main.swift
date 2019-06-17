@@ -34,12 +34,12 @@ func makeServiceClient(host: String,
   -> EventLoopFuture<Google_Cloud_Language_V1_LanguageServiceServiceClient> {
     let promise = eventLoopGroup.next().makePromise(of: Google_Cloud_Language_V1_LanguageServiceServiceClient.self)
     do {
-      let configuration = GRPCClientConnection.Configuration(
+      let configuration = ClientConnection.Configuration(
         target: .hostAndPort(host, port),
         eventLoopGroup: eventLoopGroup,
         tlsConfiguration: .init(sslContext: try makeClientTLS()))
 
-      GRPCClientConnection.start(configuration)
+      ClientConnection.start(configuration)
         .map { client in
           Google_Cloud_Language_V1_LanguageServiceServiceClient(connection: client)
         }.cascade(to: promise)

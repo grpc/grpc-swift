@@ -60,7 +60,7 @@ extension TransportSecurity {
 }
 
 extension TransportSecurity {
-  func makeServerTLS() throws -> GRPCServer.TLSMode {
+  func makeServerTLS() throws -> Server.TLSMode {
     return try makeServerTLSConfiguration().map { .custom(try NIOSSLContext(configuration: $0)) } ?? .none
   }
 
@@ -77,13 +77,13 @@ extension TransportSecurity {
     }
   }
 
-  func makeConfiguration() throws -> GRPCClientConnection.TLSConfiguration? {
+  func makeConfiguration() throws -> ClientConnection.TLSConfiguration? {
     guard let config = try self.makeClientTLSConfiguration() else {
       return nil
     }
 
     let context = try NIOSSLContext(configuration: config)
-    return GRPCClientConnection.TLSConfiguration(sslContext: context)
+    return ClientConnection.TLSConfiguration(sslContext: context)
   }
 
   func makeClientTLSConfiguration() throws -> TLSConfiguration? {
@@ -114,18 +114,18 @@ class EchoTestCaseBase: XCTestCase {
 
   var transportSecurity: TransportSecurity { return .none }
 
-  var server: GRPCServer!
+  var server: Server!
   var client: Echo_EchoServiceClient!
 
-  func makeClientConfiguration() throws -> GRPCClientConnection.Configuration {
+  func makeClientConfiguration() throws -> ClientConnection.Configuration {
     return .init(
       target: .hostAndPort("localhost", 5050),
       eventLoopGroup: self.clientEventLoopGroup,
       tlsConfiguration: try self.transportSecurity.makeConfiguration())
   }
 
-  func makeServer() throws -> GRPCServer {
-    return try GRPCServer.start(
+  func makeServer() throws -> Server {
+    return try Server.start(
       hostname: "localhost",
       port: 5050,
       eventLoopGroup: self.serverEventLoopGroup,
@@ -135,8 +135,8 @@ class EchoTestCaseBase: XCTestCase {
     ).wait()
   }
 
-  func makeClientConnection() throws -> GRPCClientConnection {
-    return try GRPCClientConnection.start(self.makeClientConfiguration()).wait()
+  func makeClientConnection() throws -> ClientConnection {
+    return try ClientConnection.start(self.makeClientConfiguration()).wait()
   }
 
   func makeEchoProvider() -> Echo_EchoProvider { return EchoProvider() }

@@ -19,7 +19,7 @@ import SwiftProtobuf
 /// A GRPC client.
 public protocol GRPCClient {
   /// The connection providing the underlying HTTP/2 channel for this client.
-  var connection: GRPCClientConnection { get }
+  var connection: ClientConnection { get }
 
   /// The call options to use should the user not provide per-call options.
   var defaultCallOptions: CallOptions { get set }
@@ -109,15 +109,15 @@ extension GRPCServiceClient {
 /// A client which has no generated stubs and may be used to create gRPC calls manually.
 /// See `GRPCClient` for details.
 public final class AnyServiceClient: GRPCClient {
-  public let connection: GRPCClientConnection
+  public let connection: ClientConnection
   public var defaultCallOptions: CallOptions
 
   /// Creates a client which may be used to call any service.
   ///
   /// - Parameters:
-  ///   - connection: `GRPCClientConnection` to the service host.
+  ///   - connection: `ClientConnection` to the service host.
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
-  public init(connection: GRPCClientConnection, defaultCallOptions: CallOptions = CallOptions()) {
+  public init(connection: ClientConnection, defaultCallOptions: CallOptions = CallOptions()) {
     self.connection = connection
     self.defaultCallOptions = defaultCallOptions
   }

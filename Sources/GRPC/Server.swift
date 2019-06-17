@@ -75,7 +75,7 @@ import NIOSSL
 ///                   ByteBuffer│                       │ByteBuffer
 ///                             │                       ▼
 ///
-public final class GRPCServer {
+public final class Server {
   /// Starts up a server that serves the given providers.
   ///
   /// - Returns: A future that is completed when the server has successfully started up.
@@ -86,7 +86,7 @@ public final class GRPCServer {
     serviceProviders: [CallHandlerProvider],
     errorDelegate: ServerErrorDelegate? = LoggingServerErrorDelegate(),
     tls tlsMode: TLSMode = .none
-  ) throws -> EventLoopFuture<GRPCServer> {
+  ) throws -> EventLoopFuture<Server> {
     let servicesByName = Dictionary(uniqueKeysWithValues: serviceProviders.map { ($0.serviceName, $0) })
     let bootstrap = ServerBootstrap(group: eventLoopGroup)
       // Specify a backlog to avoid overloading the server.
@@ -110,7 +110,7 @@ public final class GRPCServer {
       .childChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
 
     return bootstrap.bind(host: hostname, port: port)
-      .map { GRPCServer(channel: $0, errorDelegate: errorDelegate) }
+      .map { Server(channel: $0, errorDelegate: errorDelegate) }
   }
 
   /// Configure an SSL handler on the channel, if one is provided.
@@ -161,7 +161,7 @@ public final class GRPCServer {
   }
 }
 
-extension GRPCServer {
+extension Server {
   public enum TLSMode {
     case none
     case custom(NIOSSLContext)

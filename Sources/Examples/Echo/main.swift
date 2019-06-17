@@ -36,7 +36,7 @@ func makeClientSSLContext() throws -> NIOSSLContext {
   return try NIOSSLContext(configuration: makeClientTLSConfiguration())
 }
 
-func makeServerTLS(enabled: Bool) throws -> GRPCServer.TLSMode {
+func makeServerTLS(enabled: Bool) throws -> Server.TLSMode {
   guard enabled else {
     return .none
   }
@@ -73,19 +73,19 @@ func makeEchoClient(address: String, port: Int, ssl: Bool) -> Echo_EchoServiceCl
   let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
   do {
-    let tlsConfiguration: GRPCClientConnection.TLSConfiguration?
+    let tlsConfiguration: ClientConnection.TLSConfiguration?
     if ssl {
       tlsConfiguration = .init(sslContext: try makeClientSSLContext())
     } else {
       tlsConfiguration = nil
     }
 
-    let configuration = GRPCClientConnection.Configuration(
+    let configuration = ClientConnection.Configuration(
       target: .hostAndPort(address, port),
       eventLoopGroup: eventLoopGroup,
       tlsConfiguration: tlsConfiguration)
 
-    return try GRPCClientConnection.start(configuration)
+    return try ClientConnection.start(configuration)
       .map { Echo_EchoServiceClient(connection: $0) }
       .wait()
   } catch {
@@ -104,7 +104,7 @@ Group {
     let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
     print(ssl ? "starting secure server" : "starting insecure server")
-    _ = try! GRPCServer.start(hostname: address,
+    _ = try! Server.start(hostname: address,
                               port: port,
                               eventLoopGroup: eventLoopGroup,
                               serviceProviders: [EchoProvider()],

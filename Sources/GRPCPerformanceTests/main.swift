@@ -5,10 +5,10 @@ import NIOSSL
 import Commander
 
 struct ConnectionFactory {
-  var configuration: GRPCClientConnection.Configuration
+  var configuration: ClientConnection.Configuration
 
-  func makeConnection() throws -> EventLoopFuture<GRPCClientConnection> {
-    return GRPCClientConnection.start(configuration)
+  func makeConnection() throws -> EventLoopFuture<ClientConnection> {
+    return ClientConnection.start(configuration)
   }
 
   func makeEchoClient() throws -> EventLoopFuture<Echo_EchoServiceClient> {
@@ -87,7 +87,7 @@ final class ConnectionCreationThroughput: Benchmark {
   let factory: ConnectionFactory
   let connections: Int
 
-  var createdConnections: [EventLoopFuture<GRPCClientConnection>] = []
+  var createdConnections: [EventLoopFuture<ClientConnection>] = []
 
   init(factory: ConnectionFactory, connections: Int) {
     self.factory = factory
@@ -315,7 +315,7 @@ Group { group in
     privateKeyOption,
     hostOverrideOption
   ) { benchmarkNames, host, port, caCertificatePath, certificatePath, privateKeyPath, hostOverride in
-    var configuration = GRPCClientConnection.Configuration(
+    var configuration = ClientConnection.Configuration(
       target: .hostAndPort(host, port),
       eventLoopGroup: MultiThreadedEventLoopGroup(numberOfThreads: 1))
 
@@ -363,10 +363,10 @@ Group { group in
       privateKeyPath: privateKeyPath,
       server: true)
 
-    let server: GRPCServer
+    let server: Server
 
     do {
-      server = try GRPCServer.start(
+      server = try Server.start(
         hostname: host,
         port: port,
         eventLoopGroup: group,

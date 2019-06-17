@@ -31,7 +31,7 @@ public final class UnaryClientCall<RequestMessage: Message, ResponseMessage: Mes
     UnaryResponseClientCall {
   public let response: EventLoopFuture<ResponseMessage>
 
-  public init(connection: GRPCClientConnection, path: String, request: RequestMessage, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?) {
+  public init(connection: ClientConnection, path: String, request: RequestMessage, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?) {
     let responseHandler = GRPCClientUnaryResponseChannelHandler<ResponseMessage>(
       initialMetadataPromise: connection.channel.eventLoop.makePromise(),
       responsePromise: connection.channel.eventLoop.makePromise(),
@@ -39,7 +39,7 @@ public final class UnaryClientCall<RequestMessage: Message, ResponseMessage: Mes
       errorDelegate: errorDelegate,
       timeout: callOptions.timeout)
 
-    let requestHandler = GRPCClientUnaryRequestChannelHandler<RequestMessage>(
+    let requestHandler = UnaryRequestChnnelHandler<RequestMessage>(
       requestHead: makeRequestHead(path: path, host: connection.configuration.target.host, callOptions: callOptions),
       request: _Box(request))
 

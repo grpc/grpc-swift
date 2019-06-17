@@ -24,10 +24,10 @@ class GRPCInsecureInteroperabilityTests: XCTestCase {
   var useTLS: Bool { return false }
 
   var serverEventLoopGroup: EventLoopGroup!
-  var server: GRPCServer!
+  var server: Server!
 
   var clientEventLoopGroup: EventLoopGroup!
-  var clientConnection: GRPCClientConnection!
+  var clientConnection: ClientConnection!
 
   override func setUp() {
     super.setUp()

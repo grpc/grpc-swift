@@ -19,7 +19,7 @@ import NIO
 import NIOHTTP1
 
 /// A base channel handler for client requests.
-internal class GRPCClientRequestChannelHandler<RequestMessage: Message>: ChannelInboundHandler {
+internal class ClientRequestChannelHandler<RequestMessage: Message>: ChannelInboundHandler {
   typealias InboundIn = Never
   typealias OutboundOut = GRPCClientRequestPart<RequestMessage>
 
@@ -39,7 +39,7 @@ internal class GRPCClientRequestChannelHandler<RequestMessage: Message>: Channel
 /// A channel handler for unary client requests.
 ///
 /// Sends the request head, message and end on `channelActive(context:)`.
-internal final class GRPCClientUnaryRequestChannelHandler<RequestMessage: Message>: GRPCClientRequestChannelHandler<RequestMessage> {
+internal final class UnaryRequestChnnelHandler<RequestMessage: Message>: ClientRequestChannelHandler<RequestMessage> {
   /// The request to send.
   internal let request: _Box<RequestMessage>
 
@@ -59,7 +59,7 @@ internal final class GRPCClientUnaryRequestChannelHandler<RequestMessage: Messag
 /// A channel handler for client calls which stream requests.
 ///
 /// Sends the request head on `channelActive(context:)`.
-internal final class GRPCClientStreamingRequestChannelHandler<RequestMessage: Message>: GRPCClientRequestChannelHandler<RequestMessage> {
+internal final class StreamingRequestChannelHandler<RequestMessage: Message>: ClientRequestChannelHandler<RequestMessage> {
   override public func channelActive(context: ChannelHandlerContext) {
     context.writeAndFlush(self.wrapOutboundOut(.head(self.requestHead)), promise: nil)
     context.fireChannelActive()

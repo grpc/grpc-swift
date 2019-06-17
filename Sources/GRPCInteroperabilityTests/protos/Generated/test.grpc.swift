@@ -40,16 +40,16 @@ public protocol Grpc_Testing_TestServiceService {
 }
 
 public final class Grpc_Testing_TestServiceServiceClient: GRPCServiceClient, Grpc_Testing_TestServiceService {
-  public let connection: GRPCClientConnection
+  public let connection: ClientConnection
   public var serviceName: String { return "grpc.testing.TestService" }
   public var defaultCallOptions: CallOptions
 
   /// Creates a client for the grpc.testing.TestService service.
   ///
   /// - Parameters:
-  ///   - connection: `GRPCClientConnection` to the service host.
+  ///   - connection: `ClientConnection` to the service host.
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
-  public init(connection: GRPCClientConnection, defaultCallOptions: CallOptions = CallOptions()) {
+  public init(connection: ClientConnection, defaultCallOptions: CallOptions = CallOptions()) {
     self.connection = connection
     self.defaultCallOptions = defaultCallOptions
   }
@@ -167,16 +167,16 @@ public protocol Grpc_Testing_UnimplementedServiceService {
 }
 
 public final class Grpc_Testing_UnimplementedServiceServiceClient: GRPCServiceClient, Grpc_Testing_UnimplementedServiceService {
-  public let connection: GRPCClientConnection
+  public let connection: ClientConnection
   public var serviceName: String { return "grpc.testing.UnimplementedService" }
   public var defaultCallOptions: CallOptions
 
   /// Creates a client for the grpc.testing.UnimplementedService service.
   ///
   /// - Parameters:
-  ///   - connection: `GRPCClientConnection` to the service host.
+  ///   - connection: `ClientConnection` to the service host.
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
-  public init(connection: GRPCClientConnection, defaultCallOptions: CallOptions = CallOptions()) {
+  public init(connection: ClientConnection, defaultCallOptions: CallOptions = CallOptions()) {
     self.connection = connection
     self.defaultCallOptions = defaultCallOptions
   }
@@ -202,16 +202,16 @@ public protocol Grpc_Testing_ReconnectServiceService {
 }
 
 public final class Grpc_Testing_ReconnectServiceServiceClient: GRPCServiceClient, Grpc_Testing_ReconnectServiceService {
-  public let connection: GRPCClientConnection
+  public let connection: ClientConnection
   public var serviceName: String { return "grpc.testing.ReconnectService" }
   public var defaultCallOptions: CallOptions
 
   /// Creates a client for the grpc.testing.ReconnectService service.
   ///
   /// - Parameters:
-  ///   - connection: `GRPCClientConnection` to the service host.
+  ///   - connection: `ClientConnection` to the service host.
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
-  public init(connection: GRPCClientConnection, defaultCallOptions: CallOptions = CallOptions()) {
+  public init(connection: ClientConnection, defaultCallOptions: CallOptions = CallOptions()) {
     self.connection = connection
     self.defaultCallOptions = defaultCallOptions
   }

@@ -21,7 +21,7 @@ public enum GRPCApplicationProtocolIdentifier: String, CaseIterable {
 /// Users of this handler should rely on the `verification` future held by this instance.
 ///
 /// On fulfillment of the promise this handler is removed from the channel pipeline.
-public class GRPCTLSVerificationHandler: ChannelInboundHandler, RemovableChannelHandler {
+public class TLSVerificationHandler: ChannelInboundHandler, RemovableChannelHandler {
   public typealias InboundIn = Any
 
   private var verificationPromise: EventLoopPromise<Void>!

@@ -25,12 +25,12 @@ import SwiftProtobuf
 /// Each call will be configured on a multiplexed channel on the given connection. The multiplexed
 /// channel will be configured as such:
 ///
-///              ┌──────────────────────────────────┐
-///              │ GRPCClientResponseChannelHandler │
-///              └────────────▲─────────────────────┘
-///                           │  ┌─────────────────────────────────┐
-///                           │  │ GRPCClientRequestChannelHandler │
-///                           │  └────────────────────┬────────────┘
+///              ┌──────────────────────────────┐
+///              │ ClientResponseChannelHandler │
+///              └────────────▲─────────────────┘
+///                           │      ┌─────────────────────────────┐
+///                           │      │ ClientRequestChannelHandler │
+///                           │      └────────────────┬────────────┘
 /// GRPCClientResponsePart<T1>│                       │GRPCClientRequestPart<T2>
 ///                         ┌─┴───────────────────────▼─┐
 ///                         │       GRPCClientCodec     │
@@ -47,7 +47,7 @@ import SwiftProtobuf
 ///                           |                       |
 ///
 /// Note: below the `HTTP2ToHTTP1ClientCodec` is the "main" pipeline provided by the channel in
-/// `GRPCClientConnection`.
+/// `ClientConnection`.
 ///
 /// Setup includes:
 /// - creation of an HTTP/2 stream for the call to execute on,
@@ -56,17 +56,17 @@ import SwiftProtobuf
 ///
 /// This class also provides much of the framework user facing functionality via conformance to `ClientCall`.
 open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
-  /// The underlying `GRPCClientConnection` providing the HTTP/2 channel and multiplexer.
-  internal let connection: GRPCClientConnection
+  /// The underlying `ClientConnection` providing the HTTP/2 channel and multiplexer.
+  internal let connection: ClientConnection
 
   /// Promise for an HTTP/2 stream to execute the call on.
   internal let streamPromise: EventLoopPromise<Channel>
 
   /// Channel handler for responses.
-  internal let responseHandler: GRPCClientResponseChannelHandler<ResponseMessage>
+  internal let responseHandler: ClientResponseChannelHandler<ResponseMessage>
 
   /// Channel handler for requests.
-  internal let requestHandler: GRPCClientRequestChannelHandler<RequestMessage>
+  internal let requestHandler: ClientRequestChannelHandler<RequestMessage>
 
   // Note: documentation is inherited from the `ClientCall` protocol.
   public let subchannel: EventLoopFuture<Channel>
@@ -85,9 +85,9 @@ open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
   ///   - responseHandler: a channel handler for receiving responses.
   ///   - requestHandler: a channel handler for sending requests.
   init(
-    connection: GRPCClientConnection,
-    responseHandler: GRPCClientResponseChannelHandler<ResponseMessage>,
-    requestHandler: GRPCClientRequestChannelHandler<RequestMessage>
+    connection: ClientConnection,
+    responseHandler: ClientResponseChannelHandler<ResponseMessage>,
+    requestHandler: ClientRequestChannelHandler<RequestMessage>
   ) {
     self.connection = connection
     self.responseHandler = responseHandler

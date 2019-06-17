@@ -145,7 +145,7 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
     let statusCode = trailers?[GRPCHeaderName.statusCode].first.flatMap {
       Int($0)
     }.flatMap {
-      StatusCode(rawValue: $0)
+      GRPCStatus.Code(rawValue: $0)
     } ?? .unknown
 
     let statusMessage = trailers?[GRPCHeaderName.statusMessage].first.map {

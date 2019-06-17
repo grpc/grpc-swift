@@ -25,14 +25,14 @@ import NIOSSL
 ///   - port: The port to connect to.
 ///   - eventLoopGroup: Event loop group to run client connection on.
 ///   - useTLS: Whether to use TLS or not.
-/// - Returns: A future of a `GRPCClientConnection`.
+/// - Returns: A future of a `ClientConnection`.
 public func makeInteroperabilityTestClientConnection(
   host: String,
   port: Int,
   eventLoopGroup: EventLoopGroup,
   useTLS: Bool
-) throws -> EventLoopFuture<GRPCClientConnection> {
-  var configuration = GRPCClientConnection.Configuration(
+) throws -> EventLoopFuture<ClientConnection> {
+  var configuration = ClientConnection.Configuration(
     target: .hostAndPort(host, port),
     eventLoopGroup: eventLoopGroup)
 
@@ -48,5 +48,5 @@ public func makeInteroperabilityTestClientConnection(
     configuration.tlsConfiguration = .init(sslContext: context, hostnameOverride: hostOverride)
   }
 
-  return GRPCClientConnection.start(configuration)
+  return ClientConnection.start(configuration)
 }

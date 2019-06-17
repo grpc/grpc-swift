@@ -34,7 +34,7 @@ public final class ClientStreamingClientCall<RequestMessage: Message, ResponseMe
   public let response: EventLoopFuture<ResponseMessage>
   private var messageQueue: EventLoopFuture<Void>
 
-  public init(connection: GRPCClientConnection, path: String, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?) {
+  public init(connection: ClientConnection, path: String, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?) {
     let responseHandler = GRPCClientUnaryResponseChannelHandler<ResponseMessage>(
       initialMetadataPromise: connection.channel.eventLoop.makePromise(),
       responsePromise: connection.channel.eventLoop.makePromise(),
@@ -42,7 +42,7 @@ public final class ClientStreamingClientCall<RequestMessage: Message, ResponseMe
       errorDelegate: errorDelegate,
       timeout: callOptions.timeout)
 
-    let requestHandler = GRPCClientStreamingRequestChannelHandler<RequestMessage>(
+    let requestHandler = StreamingRequestChannelHandler<RequestMessage>(
       requestHead: makeRequestHead(path: path, host: connection.configuration.target.host, callOptions: callOptions))
 
     self.response = responseHandler.responsePromise.futureResult

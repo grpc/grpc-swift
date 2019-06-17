@@ -44,7 +44,7 @@ enum InteroperabilityTestError: LocalizedError {
 ///   - name: the name of the test, use for logging only.
 ///   - connection: client connection to use for running the test.
 /// - Throws: `InteroperabilityTestError` if the test fails.
-func runTest(_ instance: InteroperabilityTest, name: String, connection: GRPCClientConnection) throws {
+func runTest(_ instance: InteroperabilityTest, name: String, connection: ClientConnection) throws {
   do {
     print("Running '\(name)' ... ", terminator: "")
     try instance.run(using: connection)
