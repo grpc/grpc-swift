@@ -60,53 +60,34 @@ extension TransportSecurity {
 }
 
 extension TransportSecurity {
-  func makeServerConfiguration() throws -> Server.TLSConfiguration? {
-    guard let config = try self.makeServerTLSConfiguration() else {
-      return nil
-    }
-
-    let context = try NIOSSLContext(configuration: config)
-    return .init(sslContext: context)
-  }
-
-  func makeServerTLSConfiguration() throws -> TLSConfiguration? {
+  func makeServerTLSConfiguration() -> Server.Configuration.TLS? {
     switch self {
     case .none:
       return nil
 
     case .anonymousClient, .mutualAuthentication:
-      return .forServer(certificateChain: [.certificate(self.serverCert)],
-                        privateKey: .privateKey(SamplePrivateKey.server),
-                        trustRoots: .certificates ([self.caCert]),
-                        applicationProtocols: GRPCApplicationProtocolIdentifier.allCases.map { $0.rawValue })
+      return .init(certificateChain: [.certificate(self.serverCert)],
+                   privateKey: .privateKey(SamplePrivateKey.server),
+                   trustRoots: .certificates ([self.caCert]))
     }
   }
 
-  func makeClientConfiguration() throws -> ClientConnection.TLSConfiguration? {
-    guard let config = try self.makeClientTLSConfiguration() else {
-      return nil
-    }
-
-    let context = try NIOSSLContext(configuration: config)
-    return ClientConnection.TLSConfiguration(sslContext: context)
-  }
-
-  func makeClientTLSConfiguration() throws -> TLSConfiguration? {
+  func makeClientTLSConfiguration() -> ClientConnection.Configuration.TLS? {
     switch self {
     case .none:
       return nil
 
     case .anonymousClient:
-      return .forClient(certificateVerification: .noHostnameVerification,
-                        trustRoots: .certificates([self.caCert]),
-                        applicationProtocols: GRPCApplicationProtocolIdentifier.allCases.map { $0.rawValue })
+      return .init(
+        trustRoots: .certificates([self.caCert]),
+        certificateVerification: .noHostnameVerification)
 
     case .mutualAuthentication:
-      return .forClient(certificateVerification: .noHostnameVerification,
-                        trustRoots: .certificates([self.caCert]),
-                        certificateChain: [.certificate(self.clientCert)],
-                        privateKey: .privateKey(SamplePrivateKey.client),
-                        applicationProtocols: GRPCApplicationProtocolIdentifier.allCases.map { $0.rawValue })
+      return .init(
+        certificateChain: [.certificate(self.clientCert)],
+        privateKey: .privateKey(SamplePrivateKey.client),
+        trustRoots: .certificates([self.caCert]),
+        certificateVerification: .noHostnameVerification)
     }
   }
 }
@@ -133,7 +114,7 @@ class EchoTestCaseBase: XCTestCase {
     return .init(
       target: .hostAndPort("localhost", port),
       eventLoopGroup: self.clientEventLoopGroup,
-      tlsConfiguration: try self.transportSecurity.makeClientConfiguration())
+      tls: self.transportSecurity.makeClientTLSConfiguration())
   }
 
   func makeServerConfiguration() throws -> Server.Configuration {
@@ -142,7 +123,7 @@ class EchoTestCaseBase: XCTestCase {
       eventLoopGroup: self.serverEventLoopGroup,
       serviceProviders: [makeEchoProvider()],
       errorDelegate: self.makeErrorDelegate(),
-      tlsConfiguration: try self.transportSecurity.makeServerConfiguration())
+      tls: self.transportSecurity.makeServerTLSConfiguration())
   }
 
   func makeServer() throws -> Server {

@@ -49,15 +49,11 @@ public func makeInteroperabilityTestServer(
     let serverCert = InteroperabilityTestCredentials.server1Certificate
     let serverKey = InteroperabilityTestCredentials.server1Key
 
-    let tlsConfiguration = TLSConfiguration.forServer(
+    configuration.tls = .init(
       certificateChain: [.certificate(serverCert)],
       privateKey: .privateKey(serverKey),
-      trustRoots: .certificates([caCert]),
-      applicationProtocols: ["h2"]
+      trustRoots: .certificates([caCert])
     )
-
-    let sslContext = try NIOSSLContext(configuration: tlsConfiguration)
-    configuration.tlsConfiguration = .init(sslContext: sslContext)
   }
 
   return Server.start(configuration: configuration)

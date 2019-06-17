@@ -32,61 +32,39 @@ let messageOption = Option("message",
                            default: "Testing 1 2 3",
                            description: "message to send")
 
-func makeClientSSLContext() throws -> NIOSSLContext {
-  return try NIOSSLContext(configuration: makeClientTLSConfiguration())
-}
-
-func makeServerSSLContext() throws -> NIOSSLContext {
-  return try NIOSSLContext(configuration: makeServerTLSConfiguration())
-}
-
-func makeClientTLSConfiguration() -> TLSConfiguration {
+func makeClientTLSConfiguration() -> ClientConnection.Configuration.TLS {
   let caCert = SampleCertificate.ca
   let clientCert = SampleCertificate.client
   precondition(!caCert.isExpired && !clientCert.isExpired,
                "SSL certificates are expired. Please submit an issue at https://github.com/grpc/grpc-swift.")
 
-  return .forClient(certificateVerification: .noHostnameVerification,
-                    trustRoots: .certificates([caCert.certificate]),
-                    certificateChain: [.certificate(clientCert.certificate)],
-                    privateKey: .privateKey(SamplePrivateKey.client),
-                    applicationProtocols: GRPCApplicationProtocolIdentifier.allCases.map { $0.rawValue })
+  return .init(certificateChain: [.certificate(clientCert.certificate)],
+               privateKey: .privateKey(SamplePrivateKey.client),
+               trustRoots: .certificates([caCert.certificate]),
+               certificateVerification: .noHostnameVerification)
 }
 
-func makeServerTLSConfiguration() -> TLSConfiguration {
+func makeServerTLSConfiguration() -> Server.Configuration.TLS {
   let caCert = SampleCertificate.ca
   let serverCert = SampleCertificate.server
   precondition(!caCert.isExpired && !serverCert.isExpired,
                "SSL certificates are expired. Please submit an issue at https://github.com/grpc/grpc-swift.")
 
-  return .forServer(certificateChain: [.certificate(serverCert.certificate)],
-                    privateKey: .privateKey(SamplePrivateKey.server),
-                    trustRoots: .certificates([caCert.certificate]),
-                    applicationProtocols: GRPCApplicationProtocolIdentifier.allCases.map { $0.rawValue })
+  return .init(certificateChain: [.certificate(serverCert.certificate)],
+               privateKey: .privateKey(SamplePrivateKey.server),
+               trustRoots: .certificates([caCert.certificate]))
 }
 
 /// Create en `EchoClient` and wait for it to initialize. Returns nil if initialisation fails.
 func makeEchoClient(address: String, port: Int, ssl: Bool) -> Echo_EchoServiceClient? {
   let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
-  do {
-    let tlsConfiguration: ClientConnection.TLSConfiguration?
-    if ssl {
-      tlsConfiguration = .init(sslContext: try makeClientSSLContext())
-    } else {
-      tlsConfiguration = nil
-    }
+  let configuration = ClientConnection.Configuration(
+    target: .hostAndPort(address, port),
+    eventLoopGroup: eventLoopGroup,
+    tls: ssl ? makeClientTLSConfiguration() : nil)
 
-    let configuration = ClientConnection.Configuration(
-      target: .hostAndPort(address, port),
-      eventLoopGroup: eventLoopGroup,
-      tlsConfiguration: tlsConfiguration)
-
-    return Echo_EchoServiceClient(connection: ClientConnection(configuration: configuration))
-  } catch {
-    print("Unable to create an EchoClient: \(error)")
-    return nil
-  }
+  return Echo_EchoServiceClient(connection: ClientConnection(configuration: configuration))
 }
 
 Group {
@@ -104,7 +82,7 @@ Group {
 
     if ssl {
       print("starting secure server")
-      configuration.tlsConfiguration = .init(sslContext: try makeServerSSLContext())
+      configuration.tls = makeServerTLSConfiguration()
     } else {
       print("starting insecure server")
     }

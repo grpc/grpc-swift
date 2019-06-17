@@ -217,7 +217,7 @@ func measure(description: String, benchmark: Benchmark, repeats: Int) -> Benchma
 /// - Parameter certificatePath: The path to the certificate.
 /// - Parameter privateKeyPath: The path to the private key.
 /// - Parameter server: Whether this is for the server or not.
-private func makeSSLContext(caCertificatePath: String, certificatePath: String, privateKeyPath: String, server: Bool) -> NIOSSLContext? {
+private func makeServerTLSConfiguration(caCertificatePath: String, certificatePath: String, privateKeyPath: String) -> Server.Configuration.TLS? {
   // Commander doesn't have Optional options; we use empty strings to indicate no value.
   guard certificatePath.isEmpty == privateKeyPath.isEmpty &&
     privateKeyPath.isEmpty == caCertificatePath.isEmpty else {
@@ -230,29 +230,35 @@ private func makeSSLContext(caCertificatePath: String, certificatePath: String, 
     return nil
   }
 
-  let configuration: TLSConfiguration
-  if server {
-    configuration = .forServer(
-      certificateChain: [.file(certificatePath)],
-      privateKey: .file(privateKeyPath),
-      trustRoots: .file(caCertificatePath),
-      applicationProtocols: ["h2"]
-    )
-  } else {
-    configuration = .forClient(
-      trustRoots: .file(caCertificatePath),
-      certificateChain: [.file(certificatePath)],
-      privateKey: .file(privateKeyPath),
-      applicationProtocols: ["h2"]
-    )
+  return .init(
+    certificateChain: [.file(certificatePath)],
+    privateKey: .file(privateKeyPath),
+    trustRoots: .file(caCertificatePath)
+  )
+}
+
+private func makeClientTLSConfiguration(
+  caCertificatePath: String,
+  certificatePath: String,
+  privateKeyPath: String
+) -> ClientConnection.Configuration.TLS? {
+  // Commander doesn't have Optional options; we use empty strings to indicate no value.
+  guard certificatePath.isEmpty == privateKeyPath.isEmpty &&
+    privateKeyPath.isEmpty == caCertificatePath.isEmpty else {
+      print("Paths for CA certificate, certificate and private key must be provided")
+      exit(1)
   }
 
-  do {
-    return try NIOSSLContext(configuration: configuration)
-  } catch {
-    print("Unable to create SSL context: \(error)")
-    exit(1)
+  // No need to check them all because of the guard statement above.
+  if caCertificatePath.isEmpty {
+    return nil
   }
+
+  return .init(
+    certificateChain: [.file(certificatePath)],
+    privateKey: .file(privateKeyPath),
+    trustRoots: .file(caCertificatePath)
+  )
 }
 
 enum Benchmarks: String, CaseIterable {
@@ -357,19 +363,15 @@ Group { group in
     privateKeyOption,
     hostOverrideOption
   ) { benchmarkNames, host, port, caCertificatePath, certificatePath, privateKeyPath, hostOverride in
-    var configuration = ClientConnection.Configuration(
-      target: .hostAndPort(host, port),
-      eventLoopGroup: MultiThreadedEventLoopGroup(numberOfThreads: 1))
-
-    let sslContext = makeSSLContext(
+    let tlsConfiguration = makeClientTLSConfiguration(
       caCertificatePath: caCertificatePath,
       certificatePath: certificatePath,
-      privateKeyPath: privateKeyPath,
-      server: false)
+      privateKeyPath: privateKeyPath)
 
-    if let sslContext = sslContext {
-      configuration.tlsConfiguration = .init(sslContext: sslContext, hostnameOverride: hostOverride)
-    }
+    let configuration = ClientConnection.Configuration(
+      target: .hostAndPort(host, port),
+      eventLoopGroup: MultiThreadedEventLoopGroup(numberOfThreads: 1),
+      tls: tlsConfiguration)
 
     let factory = ConnectionFactory(configuration: configuration)
 
@@ -399,17 +401,17 @@ Group { group in
     privateKeyOption
   ) { host, port, caCertificatePath, certificatePath, privateKeyPath in
     let group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
-    let sslContext = makeSSLContext(
+
+    let tlsConfiguration = makeServerTLSConfiguration(
       caCertificatePath: caCertificatePath,
       certificatePath: certificatePath,
-      privateKeyPath: privateKeyPath,
-      server: true)
+      privateKeyPath: privateKeyPath)
 
     let configuration = Server.Configuration(
       target: .hostAndPort(host, port),
       eventLoopGroup: group,
       serviceProviders: [EchoProvider()],
-      tlsConfiguration: sslContext.map { .init(sslContext: $0) })
+      tls: tlsConfiguration)
 
     let server: Server
 

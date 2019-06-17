@@ -184,7 +184,7 @@ extension ClientConnection {
     )
 
     let channel = bootstrap.connect(to: configuration.target).flatMap { channel -> EventLoopFuture<Channel> in
-      if configuration.tlsConfiguration != nil {
+      if configuration.tls != nil {
         return channel.verifyTLS().map { channel }
       } else {
         return channel.eventLoop.makeSucceededFuture(channel)
@@ -251,7 +251,7 @@ extension ClientConnection {
       .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
       .channelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
       .channelInitializer { channel in
-        let tlsConfigured = configuration.tlsConfiguration.map { tlsConfiguration in
+        let tlsConfigured = configuration.tls.map { tlsConfiguration in
           channel.configureTLS(tlsConfiguration, errorDelegate: configuration.errorDelegate)
         }
 
@@ -308,7 +308,7 @@ extension ClientConnection {
     public var connectivityStateDelegate: ConnectivityStateDelegate?
 
     /// TLS configuration for this connection. `nil` if TLS is not desired.
-    public var tlsConfiguration: TLSConfiguration?
+    public var tls: TLS?
 
     /// The connection backoff configuration. If no connection retrying is required then this should
     /// be `nil`.
@@ -316,7 +316,7 @@ extension ClientConnection {
 
     /// The HTTP protocol used for this connection.
     public var httpProtocol: HTTP2ToHTTP1ClientCodec.HTTPProtocol {
-      return self.tlsConfiguration == nil ? .http : .https
+      return self.tls == nil ? .http : .https
     }
 
     /// Create a `Configuration` with some pre-defined defaults.
@@ -334,28 +334,15 @@ extension ClientConnection {
       eventLoopGroup: EventLoopGroup,
       errorDelegate: ClientErrorDelegate? = DebugOnlyLoggingClientErrorDelegate.shared,
       connectivityStateDelegate: ConnectivityStateDelegate? = nil,
-      tlsConfiguration: TLSConfiguration? = nil,
+      tls: Configuration.TLS? = nil,
       connectionBackoff: ConnectionBackoff? = nil
     ) {
       self.target = target
       self.eventLoopGroup = eventLoopGroup
       self.errorDelegate = errorDelegate
       self.connectivityStateDelegate = connectivityStateDelegate
-      self.tlsConfiguration = tlsConfiguration
+      self.tls = tls
       self.connectionBackoff = connectionBackoff
-    }
-  }
-
-  /// The TLS configuration for a connection.
-  public struct TLSConfiguration {
-    /// The SSL context to use.
-    public var sslContext: NIOSSLContext
-    /// Value to use for TLS SNI extension; this must not be an IP address.
-    public var hostnameOverride: String?
-
-    public init(sslContext: NIOSSLContext, hostnameOverride: String? = nil) {
-      self.sslContext = sslContext
-      self.hostnameOverride = hostnameOverride
     }
   }
 }
@@ -389,12 +376,12 @@ fileprivate extension Channel {
   /// - Parameter configuration: The configuration to configure the channel with.
   /// - Parameter errorDelegate: The error delegate to use for the TLS verification handler.
   func configureTLS(
-    _ configuration: ClientConnection.TLSConfiguration,
+    _ configuration: ClientConnection.Configuration.TLS,
     errorDelegate: ClientErrorDelegate?
   ) -> EventLoopFuture<Void> {
     do {
       let sslClientHandler = try NIOSSLClientHandler(
-        context: configuration.sslContext,
+        context: try NIOSSLContext(configuration: configuration.configuration),
         serverHostname: configuration.hostnameOverride)
 
       return self.pipeline.addHandlers(sslClientHandler, TLSVerificationHandler())

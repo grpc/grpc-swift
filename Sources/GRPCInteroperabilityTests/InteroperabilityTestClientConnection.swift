@@ -39,13 +39,10 @@ public func makeInteroperabilityTestClientConnection(
   if useTLS {
     // The CA certificate has a common name of "*.test.google.fr", use the following host override
     // so we can do full certificate verification.
-    let hostOverride = "foo.test.google.fr"
-    let tlsConfiguration = TLSConfiguration.forClient(
+    configuration.tls = .init(
       trustRoots: .certificates([InteroperabilityTestCredentials.caCertificate]),
-      applicationProtocols: ["h2"])
-
-    let context = try NIOSSLContext(configuration: tlsConfiguration)
-    configuration.tlsConfiguration = .init(sslContext: context, hostnameOverride: hostOverride)
+      hostnameOverride: "foo.test.google.fr"
+    )
   }
 
   return ClientConnection(configuration: configuration)
