@@ -116,7 +116,7 @@ extension NIOTSListenerBootstrap: GenericServerBootstrap {}
 public enum GRPCNIO {
   /// Makes a new event loop group based on the network preference.
   ///
-  /// If `.best` is chosen and `Network.framework` is available then ` NIOTSEventLoopGroup` will
+  /// If `.best` is chosen and `Network.framework` is available then `NIOTSEventLoopGroup` will
   /// be returned. A `MultiThreadedEventLoopGroup` will be returned otherwise.
   ///
   /// - Parameter loopCount: The number of event loops to create in the event loop group.
