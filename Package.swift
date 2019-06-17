@@ -17,22 +17,6 @@
 import PackageDescription
 import Foundation
 
-var packageDependencies: [Package.Dependency] = [
-  // Official SwiftProtobuf library, for [de]serializing data to send on the wire.
-  .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.3.1"),
-
-  // Command line argument parser for our auxiliary command line tools.
-  .package(url: "https://github.com/kylef/Commander.git", .upToNextMinor(from: "0.8.0")),
-
-  // GRPC dependencies:
-  // Main SwiftNIO package
-  .package(url: "https://github.com/apple/swift-nio.git", from: "2.2.0"),
-  // HTTP2 via SwiftNIO
-  .package(url: "https://github.com/apple/swift-nio-http2.git", from: "1.2.1"),
-  // TLS via SwiftNIO
-  .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.0.0"),
-]
-
 let package = Package(
   name: "GRPC",
   products: [
@@ -41,46 +25,95 @@ let package = Package(
     .executable(name: "PerformanceTestRunner", targets: ["GRPCPerformanceTests"]),
     .executable(name: "Echo", targets: ["Echo"]),
   ],
-  dependencies: packageDependencies,
+  dependencies: [
+    // GRPC dependencies:
+    // Main SwiftNIO package
+    .package(url: "https://github.com/apple/swift-nio.git", from: "2.2.0"),
+    // HTTP2 via SwiftNIO
+    .package(url: "https://github.com/apple/swift-nio-http2.git", from: "1.2.1"),
+    // TLS via SwiftNIO
+    .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.0.0"),
+
+    // Official SwiftProtobuf library, for [de]serializing data to send on the wire.
+    .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.5.0"),
+
+    // Command line argument parser for our auxiliary command line tools.
+    .package(url: "https://github.com/kylef/Commander.git", from: "0.8.0"),
+  ],
   targets: [
-    .target(name: "GRPC",
-            dependencies: [
-              "NIO",
-              "NIOFoundationCompat",
-              "NIOHTTP1",
-              "NIOHTTP2",
-              "NIOSSL",
-              "SwiftProtobuf"]),
-    .target(name: "protoc-gen-swiftgrpc",
-            dependencies: [
-              "SwiftProtobuf",
-              "SwiftProtobufPluginLibrary",
-              "protoc-gen-swift"]),
-    .target(name: "Echo",
-            dependencies: [
-              "GRPC",
-              "GRPCSampleData",
-              "SwiftProtobuf",
-              "Commander"],
-            path: "Sources/Examples/Echo"),
-    .target(name: "GRPCInteroperabilityTests",
-            dependencies: ["GRPC"]),
-    .target(name: "GRPCInteroperabilityTestsCLI",
-            dependencies: [
-              "GRPCInteroperabilityTests",
-              "Commander"]),
-    .target(name: "GRPCSampleData",
-            dependencies: ["NIOSSL"]),
-    .testTarget(name: "GRPCTests",
-                dependencies: [
-                  "GRPC",
-                  "GRPCSampleData",
-                  "GRPCInteroperabilityTests"]),
-    .target(name: "GRPCPerformanceTests",
-            dependencies: [
-              "GRPC",
-              "NIO",
-              "NIOSSL",
-              "Commander",
-            ]),
+    // The main GRPC module.
+    .target(
+      name: "GRPC",
+      dependencies: [
+        "NIO",
+        "NIOFoundationCompat",
+        "NIOHTTP1",
+        "NIOHTTP2",
+        "NIOSSL",
+        "SwiftProtobuf"
+      ]
+    ),  // and its tests.
+    .testTarget(
+      name: "GRPCTests",
+      dependencies: [
+        "GRPC",
+        "GRPCSampleData",
+        "GRPCInteroperabilityTests"
+      ]
+    ),
+
+    // The `protoc` plugin.
+    .target(
+      name: "protoc-gen-swiftgrpc",
+      dependencies: [
+        "SwiftProtobuf",
+        "SwiftProtobufPluginLibrary",
+        "protoc-gen-swift"
+      ]
+    ),
+
+    // Interoperability tests, this target doesn't contain the CLI as the
+    // interoperability tests are reused in the main test suite.
+    .target(
+      name: "GRPCInteroperabilityTests",
+      dependencies: ["GRPC"]
+    ),
+
+    // The CLI for the interoperability tests.
+    .target(
+      name: "GRPCInteroperabilityTestsCLI",
+      dependencies: [
+        "GRPCInteroperabilityTests",
+        "Commander"
+      ]
+    ),
+
+    // Performance tests and CLI.
+    .target(
+      name: "GRPCPerformanceTests",
+      dependencies: [
+        "GRPC",
+        "NIO",
+        "NIOSSL",
+        "Commander",
+      ]
+    ),
+
+    // Sample data, used in examples and tests.
+    .target(
+      name: "GRPCSampleData",
+      dependencies: ["NIOSSL"]
+    ),
+
+    // Echo example.
+    .target(
+      name: "Echo",
+      dependencies: [
+        "GRPC",
+        "GRPCSampleData",
+        "SwiftProtobuf",
+        "Commander"
+      ],
+      path: "Sources/Examples/Echo"
+    ),
   ])
