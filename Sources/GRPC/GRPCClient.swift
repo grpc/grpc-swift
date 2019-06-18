@@ -31,8 +31,8 @@ extension GRPCClient {
     request: Request,
     callOptions: CallOptions? = nil,
     responseType: Response.Type = Response.self
-  ) -> UnaryClientCall<Request, Response> {
-    return UnaryClientCall(
+  ) -> UnaryCall<Request, Response> {
+    return UnaryCall(
       connection: self.connection,
       path: path,
       request: request,
@@ -46,8 +46,8 @@ extension GRPCClient {
     callOptions: CallOptions? = nil,
     responseType: Response.Type = Response.self,
     handler: @escaping (Response) -> Void
-  ) -> ServerStreamingClientCall<Request, Response> {
-    return ServerStreamingClientCall(
+  ) -> ServerStreamingCall<Request, Response> {
+    return ServerStreamingCall(
       connection: self.connection,
       path: path,
       request: request,
@@ -61,8 +61,8 @@ extension GRPCClient {
     callOptions: CallOptions? = nil,
     requestType: Request.Type = Request.self,
     responseType: Response.Type = Response.self
-  ) -> ClientStreamingClientCall<Request, Response> {
-    return ClientStreamingClientCall(
+  ) -> ClientStreamingCall<Request, Response> {
+    return ClientStreamingCall(
       connection: self.connection,
       path: path,
       callOptions: callOptions ?? self.defaultCallOptions,
@@ -75,8 +75,8 @@ extension GRPCClient {
     requestType: Request.Type = Request.self,
     responseType: Response.Type = Response.self,
     handler: @escaping (Response) -> Void
-  ) -> BidirectionalStreamingClientCall<Request, Response> {
-    return BidirectionalStreamingClientCall(
+  ) -> BidirectionalStreamingCall<Request, Response> {
+    return BidirectionalStreamingCall(
       connection: self.connection,
       path: path,
       callOptions: callOptions ?? self.defaultCallOptions,

@@ -17,14 +17,23 @@ import Foundation
 import SwiftProtobuf
 import NIO
 
-/// A server-streaming gRPC call. The request is sent on initialization, each response is passed to the provided observer block.
+/// A bidirectional-streaming gRPC call. Each response is passed to the provided observer block.
+///
+/// Messages should be sent via the `send` method; an `.end` message should be sent
+/// to indicate the final message has been sent.
 ///
 /// The following futures are available to the caller:
 /// - `initialMetadata`: the initial metadata returned from the server,
 /// - `status`: the status of the gRPC call after it has ended,
 /// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
-public final class ServerStreamingClientCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage> {
-  public init(connection: ClientConnection, path: String, request: RequestMessage, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?, handler: @escaping (ResponseMessage) -> Void) {
+public final class BidirectionalStreamingCall<RequestMessage: Message, ResponseMessage: Message>
+  : BaseClientCall<RequestMessage, ResponseMessage>,
+    StreamingRequestClientCall {
+  private var messageQueue: EventLoopFuture<Void>
+
+  public init(connection: ClientConnection, path: String, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?, handler: @escaping (ResponseMessage) -> Void) {
+    self.messageQueue = connection.channel.eventLoop.makeSucceededFuture(())
+
     let responseHandler = GRPCClientStreamingResponseChannelHandler(
       initialMetadataPromise: connection.channel.eventLoop.makePromise(),
       statusPromise: connection.channel.eventLoop.makePromise(),
@@ -32,13 +41,16 @@ public final class ServerStreamingClientCall<RequestMessage: Message, ResponseMe
       timeout: callOptions.timeout,
       responseHandler: handler)
 
-    let requestHandler = UnaryRequestChnnelHandler<RequestMessage>(
-      requestHead: makeRequestHead(path: path, host: connection.configuration.target.host, callOptions: callOptions),
-      request: _Box(request))
+    let requestHandler = StreamingRequestChannelHandler<RequestMessage>(
+      requestHead: makeRequestHead(path: path, host: connection.configuration.target.host, callOptions: callOptions))
 
     super.init(
       connection: connection,
       responseHandler: responseHandler,
       requestHandler: requestHandler)
+  }
+
+  public func newMessageQueue() -> EventLoopFuture<Void> {
+    return self.messageQueue
   }
 }
