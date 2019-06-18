@@ -35,9 +35,7 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
       String(describing: $0)
     }
   }
-}
 
-extension FunctionalTestsInsecureTransport {
   func doTestUnary(request: Echo_EchoRequest, expect response: Echo_EchoResponse, file: StaticString = #file, line: UInt = #line) {
     let responseExpectation = self.makeResponseExpectation()
     let statusExpectation = self.makeStatusExpectation()
@@ -108,9 +106,7 @@ extension FunctionalTestsInsecureTransport {
   func testUnaryEmptyRequest() throws {
     self.doTestUnary(request: Echo_EchoRequest(), expect: Echo_EchoResponse(text: "Swift echo get: "))
   }
-}
 
-extension FunctionalTestsInsecureTransport {
   func doTestClientStreaming(messages: [String], file: StaticString = #file, line: UInt = #line) throws {
     let responseExpectation = self.makeResponseExpectation()
     let statusExpectation = self.makeStatusExpectation()
@@ -136,9 +132,7 @@ extension FunctionalTestsInsecureTransport {
     self.defaultTestTimeout = 15.0
     XCTAssertNoThrow(try doTestClientStreaming(messages: lotsOfStrings))
   }
-}
 
-extension FunctionalTestsInsecureTransport {
   func doTestServerStreaming(messages: [String], file: StaticString = #file, line: UInt = #line) throws {
     let responseExpectation = self.makeResponseExpectation(expectedFulfillmentCount: messages.count)
     let statusExpectation = self.makeStatusExpectation()
@@ -165,9 +159,7 @@ extension FunctionalTestsInsecureTransport {
     self.defaultTestTimeout = 15.0
     XCTAssertNoThrow(try doTestServerStreaming(messages: lotsOfStrings))
   }
-}
 
-extension FunctionalTestsInsecureTransport {
   private func doTestBidirectionalStreaming(messages: [String], waitForEachResponse: Bool = false, file: StaticString = #file, line: UInt = #line) throws {
     let responseExpectation = self.makeResponseExpectation(expectedFulfillmentCount: messages.count)
     let statusExpectation = self.makeStatusExpectation()
@@ -222,6 +214,111 @@ class FunctionalTestsAnonymousClient: FunctionalTestsInsecureTransport {
 }
 
 class FunctionalTestsMutualAuthentication: FunctionalTestsInsecureTransport {
+  override var transportSecurity: TransportSecurity {
+    return .mutualAuthentication
+  }
+}
+
+// MARK: - Variants using NIO TS and Network.framework
+
+// Unfortunately `swift test --generate-linuxmain` uses the macOS test discovery. Because of this
+// it's difficult to avoid tests which run on Linux. To get around this shortcoming we can just
+// run no-op tests on Linux.
+@available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
+class FunctionalTestsInsecureTransportNIOTS: FunctionalTestsInsecureTransport {
+  override var networkPreference: NetworkPreference {
+    #if canImport(Network)
+    return .userDefined(.networkFramework)
+    #else
+    // We shouldn't need this, since the tests won't do anything. However, we still need to be able
+    // to compile this class.
+    return .userDefined(.posix)
+    #endif
+  }
+
+  override func testBidirectionalStreamingBatched() throws {
+    #if canImport(Network)
+    try super.testBidirectionalStreamingBatched()
+    #endif
+  }
+
+  override func testBidirectionalStreamingLotsOfMessagesBatched() throws {
+    #if canImport(Network)
+    try super.testBidirectionalStreamingLotsOfMessagesBatched()
+    #endif
+  }
+
+  override func testBidirectionalStreamingLotsOfMessagesPingPong() throws {
+    #if canImport(Network)
+    try super.testBidirectionalStreamingLotsOfMessagesPingPong()
+    #endif
+  }
+
+  override func testBidirectionalStreamingPingPong() throws {
+    #if canImport(Network)
+    try super.testBidirectionalStreamingPingPong()
+    #endif
+  }
+
+  override func testClientStreaming() {
+    #if canImport(Network)
+    super.testClientStreaming()
+    #endif
+  }
+
+  override func testClientStreamingLotsOfMessages() throws {
+    #if canImport(Network)
+    try super.testClientStreamingLotsOfMessages()
+    #endif
+  }
+
+  override func testServerStreaming() {
+    #if canImport(Network)
+    super.testServerStreaming()
+    #endif
+  }
+
+  override func testServerStreamingLotsOfMessages() {
+    #if canImport(Network)
+    super.testServerStreamingLotsOfMessages()
+    #endif
+  }
+
+  override func testUnary() throws {
+    #if canImport(Network)
+    try super.testUnary()
+    #endif
+  }
+
+  override func testUnaryEmptyRequest() throws {
+    #if canImport(Network)
+    try super.testUnaryEmptyRequest()
+    #endif
+  }
+
+  override func testUnaryLotsOfRequests() throws {
+    #if canImport(Network)
+    try super.testUnaryLotsOfRequests()
+    #endif
+  }
+
+  override func testUnaryWithLargeData() throws {
+    #if canImport(Network)
+    try super.testUnaryWithLargeData()
+    #endif
+  }
+
+}
+
+@available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
+class FunctionalTestsAnonymousClientNIOTS: FunctionalTestsInsecureTransportNIOTS {
+  override var transportSecurity: TransportSecurity {
+    return .anonymousClient
+  }
+}
+
+@available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
+class FunctionalTestsMutualAuthenticationNIOTS: FunctionalTestsInsecureTransportNIOTS {
   override var transportSecurity: TransportSecurity {
     return .mutualAuthentication
   }

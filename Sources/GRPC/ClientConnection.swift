@@ -60,8 +60,8 @@ open class ClientConnection {
   /// handlers detailed in the documentation for `ClientConnection`.
   ///
   /// - Parameter configuration: The configuration to prepare the bootstrap with.
-  public class func makeBootstrap(configuration: Configuration) -> ClientBootstrap {
-    let bootstrap = ClientBootstrap(group: configuration.eventLoopGroup)
+  public class func makeBootstrap(configuration: Configuration) -> ClientBootstrapProtocol {
+    let bootstrap = GRPCNIO.makeClientBootstrap(group: configuration.eventLoopGroup)
       // Enable SO_REUSEADDR and TCP_NODELAY.
       .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
       .channelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
@@ -274,7 +274,7 @@ extension ClientConnection {
 
 // MARK: - Configuration helpers/extensions
 
-fileprivate extension ClientBootstrap {
+fileprivate extension ClientBootstrapProtocol {
   /// Connect to the given connection target.
   ///
   /// - Parameter target: The target to connect to.

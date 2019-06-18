@@ -117,6 +117,12 @@ class EchoTestCaseBase: XCTestCase {
   var server: Server!
   var client: Echo_EchoServiceClient!
 
+  // Prefer POSIX: subclasses can override this and add availability checks to ensure NIOTS
+  // variants run where possible.
+  var networkPreference: NetworkPreference {
+    return .userDefined(.posix)
+  }
+
   func makeClientConfiguration() throws -> ClientConnection.Configuration {
     return .init(
       target: .hostAndPort("localhost", 5050),
@@ -152,7 +158,9 @@ class EchoTestCaseBase: XCTestCase {
     self.serverEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     self.server = try! self.makeServer()
 
-    self.clientEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    self.clientEventLoopGroup = GRPCNIO.makeEventLoopGroup(
+      loopCount: 1,
+      networkPreference: self.networkPreference)
     self.client = try! self.makeEchoClient()
   }
 
