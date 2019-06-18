@@ -1,209 +1,452 @@
-[![Build Status](https://travis-ci.org/grpc/grpc-swift.svg?branch=master)](https://travis-ci.org/grpc/grpc-swift)
-
-⚠️ **This is a development branch for the NIO variant of grpc-swift which requires Swift 5** ⚠️
+[![Build Status](https://travis-ci.org/grpc/grpc-swift.svg?branch=nio)](https://travis-ci.org/grpc/grpc-swift)
 
 # Swift gRPC
 
-This repository contains an experimental Swift gRPC API
-and code generator.
+This repository contains a Swift gRPC API and code generator.
 
-It is intended for use with Apple's
-[swift-protobuf](https://github.com/apple/swift-protobuf)
-support for Protocol Buffers. Both projects contain
-code generation plugins for `protoc`, Google's
-Protocol Buffer compiler, and both contain libraries
-of supporting code that is needed to build and run
-the generated code.
+It is intended for use with Apple's [SwiftProtobuf][swift-protobuf] support for
+Protocol Buffers. Both projects contain code generation plugins for `protoc`,
+Google's Protocol Buffer compiler, and both contain libraries of supporting code
+that is needed to build and run the generated code.
 
-APIs and generated code is provided for both gRPC clients
-and servers, and can be built either with Xcode or the Swift
-Package Manager. Support is provided for all four gRPC
-API styles (Unary, Server Streaming, Client Streaming,
-and Bidirectional Streaming) and connections can be made
-either over secure (TLS) or insecure channels.
+APIs and generated code is provided for both gRPC clients and servers, and can
+be built either with Xcode or the Swift Package Manager. Support is provided for
+all four gRPC API styles (Unary, Server Streaming, Client Streaming, and
+Bidirectional Streaming) and connections can be made either over secure (TLS) or
+insecure channels.
 
-The [Echo](Examples/EchoXcode/Echo) example provides a comprehensive
-demonstration of currently-supported features.
+Swift gRPC is built on top of [Swift NIO][swift-nio] as opposed to the core
+library provided by the [gRPC project][grpc].
 
-Swift Package Manager builds may also be made on Linux
-systems. Please see [DOCKER.md](DOCKER.md) and
-[LINUX.md](LINUX.md) for details.
+## Getting Started
 
-## CocoaPods integration
+There are two parts to Swift gRPC: the gRPC library and an API code generator.
 
-Swift gRPC is currently available [from CocoaPods](https://cocoapods.org/pods/SwiftGRPC).
-To integrate, add the following line to your `Podfile`:
+### Getting the gRPC library
 
-    pod 'SwiftGRPC'
+Note that this package requires Swift 5.
 
-Then, run `pod install` from command line and use your project's generated
-`.xcworkspace` file.
+#### Swift Package Manager
 
-## Manual integration
+The Swift Package Manager is the preferred way to get Swift gRPC. Simply add the
+package dependency to your `Package.swift` and depend on `"GRPC"` in the
+necessary targets:
 
-When not using CocoaPods, Swift gRPC includes **[vendored copies](./scripts/vendor-all.sh)** of the
-gRPC Core library and BoringSSL (an OpenSSL fork that is used by
-the gRPC Core). These are built automatically in Swift Package
-Manager builds.
+```swift
+dependencies: [
+  .package(url: "https://github.com/grpc/grpc-swift.git", .branch("nio"))
+]
+```
 
-After [building your project](#building-your-project), add the generated
-`SwiftGRPC.xcodeproj` to your project, and add build dependencies
-on **BoringSSL**, **CgRPC**, and **SwiftGRPC**.
+##### Xcode
 
-Please also note that your project will need to include the
-`SwiftProtobuf.xcodeproj` from
-[Swift Protobuf](https://github.com/apple/swift-protobuf) and
-the source files that you generate with `protoc`/[plugins](#getting-the-plugins).
+From Xcode 11 it is possible to [add Swift Package dependencies to Xcode
+projects][xcode-spm] and link targets to products of those packages; this is the
+easiest way to integrate Swift gRPC with an existing `xcodeproj`.
 
-See [Echo](Examples/EchoXcode) for a working Xcode-based
-example, and don't hesitate to file issues if you find any problems.
+##### Manual Integration
 
-## Usage
+Alternatively, Swift gRPC can be manually integrated into a project:
+
+1. Build an Xcode project: `swift package generate-xcodeproj`,
+1. Add the generated project to your own project, and
+1. Add a build dependency on `GRPC`.
+
+#### CocoaPods
+
+CocoaPods support will be added in v1.0.
+
+### Getting the `protoc` Plugins
+
+Binary releases of `protoc`, the Protocol Buffer Compiler, are available on
+[GitHub][protobuf-releases].
+
+To build the plugins, run `make plugin` in the main directory. This uses the
+Swift Package Manager to build both of the necessary plugins:
+`protoc-gen-swift`, which generates Protocol Buffer support code and
+`protoc-gen-swiftgrpc`, which generates gRPC interface code.
+
+To install these plugins, just copy the two executables (`protoc-gen-swift` and
+`protoc-gen-swiftgrpc`) that show up in the main directory into a directory that
+is part of your `PATH` environment variable. Alternatively the full path to the
+plugins can be specified when using `protoc`.
+
+## Using Swift gRPC
+
+### Recommended
 
 The recommended way to use Swift gRPC is to first define an API using the
-[Protocol Buffer](https://developers.google.com/protocol-buffers/)
-language and then use the
-[Protocol Buffer Compiler](https://github.com/google/protobuf)
-and the [Swift Protobuf](https://github.com/apple/swift-protobuf)
-and [Swift gRPC](https://github.com/grpc/grpc-swift) plugins to
-generate the necessary support code.
+[Protocol Buffer][protobuf] language and then use the [Protocol Buffer
+Compiler][protobuf] and the [Swift Protobuf][swift-protobuf] and [Swift
+gRPC](#getting-the-protoc-plugins) plugins to generate the necessary
+support code.
 
-### Getting the plugins
+### Example
 
-Binary releases of `protoc`, the Protocol Buffer Compiler, are
-available on [GitHub](https://github.com/google/protobuf/releases).
+This example demonstrates how to create a simple service which echoes any
+requests it receives back to the caller. We will also demonstrate how to call
+the service using a generated client.
 
-To build the plugins, run `make plugin` in the main directory.
-This uses the Swift Package Manager to build both of the necessary
-plugins: `protoc-gen-swift`, which generates Protocol Buffer support code
-and `protoc-gen-swiftgrpc`, which generates gRPC interface code.
+We will only cover the unary calls in this example. All call types are
+demonstrated in the [Echo example][example-echo].
 
-To install these plugins, just copy the two executables (`protoc-gen-swift` and `protoc-gen-swiftgrpc`) that show up in the main directory into a directory that is part of your `PATH` environment variable.
+Three main steps are required:
 
-### Using the plugins
+1. Defining the service in the `proto` interface definition language,
+1. Generating the service and client code, and
+1. Implementing the service code.
 
-To use the plugins, `protoc` and both plugins should be in your
-search path (see above). Invoke them with commands like the following:
+#### Defining the Service
 
-    protoc <your proto files> \
-        --swift_out=. \
-        --swiftgrpc_out=.
+The first step is to define our service defined in the [Protocol
+Buffer][protobuf] language as follows:
 
-By convention the `--swift_out` option invokes the `protoc-gen-swift`
-plugin and `--swiftgrpc_out` invokes `protoc-gen-swiftgrpc`.
+```proto
+syntax = "proto3";
 
-#### Parameters
+// The namespace for our service, we may have multiple services within a
+// single package.
+package echo;
+
+// The definition of our service.
+service Echo {
+  // Get takes a single EchoRequest protobuf message as input and returns a
+  // single EchoResponse protobuf message in response.
+  rpc Get(EchoRequest) returns (EchoResponse) {}
+}
+
+// The EchoRequest protobuf message definition.
+message EchoRequest {
+  // The text of a message to be echoed.
+  string text = 1;
+}
+
+// The EchoResponse protobuf message definition.
+message EchoResponse {
+  // The text of an echo response.
+  string text = 1;
+}
+```
+
+#### Generating the Service and Client Code
+
+Once we have defined our service we can generate the necessary code to implement
+our service and client.
+
+Models (such as `EchoRequest` and `EchoResponse`) are generated using the
+`protoc` plugin provided by [SwiftProtobuf][swift-protobuf]. Assuming the
+above definition for the Echo service and models were saved as `echo.proto` and
+the `protoc-gen-swift` plugin is available in your `PATH` then the following
+will generate the models and write them to `echo.pb.swift` in the current
+directory:
+
+```sh
+protoc echo.proto --swift_out=.
+```
+
+Swift gRPC provides a plugin (`protoc-gen-swiftgrpc`) to generate the client
+and server for the `Echo` service defined above. It can be invoked to produce
+`echo.grpc.swift` as such:
+
+```sh
+protoc echo.proto --swiftgrpc_out=.
+```
+
+By default both the client and service code is generated (see [Plugin
+Options](#plugin-options) for more details).
+
+#### Implementing the Service Code
+
+The generated service code includes a protocol called `Echo_EchoProvider` which
+defines the set of RPCs that the service offers. The service can be implemented
+by creating a class which conforms to the protocol.
+
+```swift
+import GRPC
+import NIO
+
+class EchoProvider: Echo_EchoProvider {
+  func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
+    let response = Echo_EchoResponse.with {
+      $0.text = "Swift echo get: \(request.text)"
+    }
+    return context.eventLoop.makeSucceededFuture(response)
+  }
+}
+```
+
+#### Using the Service Provider and Generated Client
+
+Now that we have implemented our service code and generated a client, we can put
+it all together.
+
+First we need the appropriate imports:
+
+```swift
+import GRPC
+import NIO
+import Foundation
+```
+
+Since this is just a locally hosted example we'll run the server on localhost
+port 8080.
+
+```
+let host = "localhost"
+let port = 8080
+```
+
+First we need to start the server and provide the Echo service using the
+`EchoProvider` we implemented above. We create a [multhithreaded event loop
+group][nio-ref-elg] which will spawn a single thread to run events on the
+server. Note that you can also use `System.coreCount` to get the number of
+logical cores on your system.
+
+We also `wait` for the server to start before setting up a client.
+
+```swift
+let serverEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+let server = try Server.start(
+  hostname: host,
+  port: port,
+  eventLoopGroup: serverEventLoopGroup,
+  serviceProviders: [EchoProvider()]
+).wait()
+```
+
+Note that the at the end of the program, the `serverEventLoopGroup` whould be
+shutdown (`try serverEventLoopGroup.syncShutdownGracefully()`).
+
+Normally the client would be in a different binary to the server, however, for
+this example we will include them together.
+
+Once the server has started we can create a client by defining the connection
+configuration, starting the connection, and then using that connection as a
+means to make gRPC calls via a generated client. Note that
+`Echo_EchoServiceClient` is the client we generated from `echo.proto`.
+
+```swift
+let clientEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+let configuration = ClientConnection.Configuration(
+  target: .hostAndPort(host, port),
+  eventLoopGroup: clientEventLoopGroup
+)
+
+let echo = try ClientConnection.start(configuration).map {
+  // This is our generated client, we only need to pass it a connection.
+  Echo_EchoServiceClient(connection: $0)
+}.wait()
+```
+
+Note that the `clientEventLoopGroup` should also be shutdown when it is no
+longer required.
+
+We can also define some options on our call, such as custom metadata and a
+timeout. Note that options are not required at the call-site and may be omitted
+entirely. If options are omitted from the call then they are taken from the
+client instead. Default client options may be passed as an additional argument
+to the generated client.
+
+```swift
+var callOptions = CallOptions()
+// Add a request id header to the call.
+callOptions.customMetadata.add(name: "x-request-id", value: UUID().uuidString)
+// Set the timeout to 5 seconds. This may throw since the timeout is validated against
+// the gRPC specification, which limits timeouts to be at most 8 digits long.
+callOptions.timeout = try .seconds(5)
+```
+
+We can now make an asynchronous call to the service by using the functions on
+the generated client:
+
+```swift
+let request = Echo_EchoRequest.with {
+  $0.text = "Hello!"
+}
+
+let get = echo.get(request, callOptions: callOptions)
+```
+
+The returned `get` object is of type `UnaryClientCall<Echo_EchoRequest, Echo_EchoResponse>`
+and has [futures][nio-ref-elf] for the initial metadata, response, trailing
+metadata and call status. The differences between call types is detailed in
+[API Types](#api-types).
+
+Note that the call can be made synchronous by waiting on the `response` property
+of the `get` object:
+
+```swift
+let response = try get.response.wait()
+```
+
+We can register callbacks on the response to observe its value:
+
+```swift
+get.response.whenSuccess { response in
+  print("Received '\(response.text)' from the Echo service")
+}
+```
+
+We can also register a callback on the response to observe an error should the
+call fail:
+
+```swift
+get.response.whenFailure { error in
+  print("The Get call to the Echo service failed: \(error)")
+}
+```
+
+The call will always terminate with a status which includes a status code and
+optionally a message and trailing metadata.
+
+This is often the most useful way to determine the outcome of a call. However,
+it should be noted that **even if the call fails, the `status` future will be
+_succeeded_**.
+
+```swift
+get.status.whenSuccess { status in
+  if let message = status.message {
+    print("Get completed with status code \(status.code) and message '\(message)'")
+  } else {
+    print("Get completed with status code \(status.code)")
+  }
+}
+```
+
+If the program succeeds it should emit the following output (if you're running
+the example the program may terminate before the callbacks are called, to avoid
+this you can simply `wait()` on the call status):
+
+```
+Received 'Swift echo get: Hello!' from the Echo service
+Get completed with status code ok and message 'OK'
+```
+
+### Without a Generated Client
+
+It is also possible to call gRPC services without a generated client. The models
+for the requests and responses are required, however.
+
+If you are calling a service which you don't have any generated client, you can
+use `AnyServiceClient`. For example, to call "Get" on the Echo service you can
+do the following:
+
+```swift
+let connection = ... // get a ClientConnection
+let anyService = AnyServiceClient(connection: connection)
+
+let get = anyService.makeUnaryCall(
+  path: "/echo.Echo/Get",
+  request: Echo_EchoRequest.with { $0.text = "Hello!" },
+  responseType: Echo_EchoResponse.self)
+```
+
+Calls for client-, server- and bidirectional-streaming are done in a similar way
+using `makeClientStreamingCall`, `makeServerStreamingCall`, and
+`makeBidirectionalStreamingCall` respectively.
+
+These methods are also available on generated clients, allowing you to call
+methods which have been added to the service since the client was generated.
+
+### API Types
+
+Swift gRPC provides all four API styles: Unary, Server Streaming, Client
+Streaming, and Bidirectional Streaming. Calls to the generated types will return
+an object of the approriate type:
+
+- `UnaryClientCall<Request, Response>`
+- `ClientStreamingClientCall<Request, Response>`
+- `ServerStreamingClientCall<Request, Response>`
+- `BidirectionalStreamingClientCall<Request, Response>`
+
+Each call object provides [futures][nio-ref-elf] for the initial metadata,
+trailing metadata, and status. _Unary response_ calls also have a future for the
+response whilst _streaming response_ calls will call a handler for each response.
+Calls with _unary requests_ send their message when instantiating the call,
+_streaming request_ calls include methods on the call object to send messages
+(`sendMessage(_:flush:)` and `sendMessage(_:promise:flush:)`) as well as methods
+for terminated the stream of messages (`sendEnd()` and `sendEnd(promise:)`).
+
+These differences are summarised in the following table.
+
+| API Type                | Response | Send Message
+|:------------------------|:---------|:------------------
+| Unary                   | Future   | At call time
+| Client Streaming        | Future   | On the call object
+| Server Streaming        | Handler  | At call time
+| Bidirectional Streaming | Handler  | On the call object
+
+### Using TLS
+
+gRPC calls can be made over a secure channel by configuring TLS. This requires
+specifying `tlsConfiguration` on `ClientConnection.Configuration` or
+`Server.Configuration`.
+
+Configuring TLS requires a [`NIOSSLContext`][nio-ref-sslcontext] which in turn
+requires a [`TLSConfiguration`][nio-ref-tlsconfig] (this is _not_ the same as
+`ClientConnection.TLSConfiguration` or `Server.TLSConfiguration`).
+
+For the client, [`TLSConfiguration`][nio-ref-tlsconfig] can be as simple as:
+
+```swift
+let configuration = TLSConfiguration.forClient(
+  minimumTLSVersion: TLSVersion = .tlsv12,
+  applicationProtocols: GRPCApplicationProtocolIdentifier.allCases.map { $0.rawValue }
+)
+```
+
+For the server, [`TLSConfiguration`][nio-ref-tlsconfig] is slightly more
+complicated as it requires a certificate chain and private key:
+
+```swift
+let configuration = TLSConfiguration.forServer(
+  certificateChain: [.file("cert.pem")],
+  privateKey: .file("key.pem"),
+  minimumTLSVersion: TLSVersion = .tlsv12,
+  applicationProtocols: GRPCApplicationProtocolIdentifier.allCases.map { $0.rawValue }
+)
+```
+
+Note that the gRPC specification requires TLS v1.2 or later.
+
+### Plugin Options
 
 To pass extra parameters to the plugin, use a comma-separated parameter list
 separated from the output directory by a colon.
 
-| Flag | Values | Default | Description |
-|:-|:-|:-|:-|
-| `Visibility` | `Internal`/`Public` | `Internal` | ACL of generated code |
-| `Server` | `true`/`false` | `true` | Whether to generate server code |
-| `Client` | `true`/`false` | `true` | Whether to generate client code |
-| `FileNaming` | `FullPath`/`PathToUnderscores`/`DropPath` | `FullPath` | How to handle the naming of generated sources |
-| `ExtraModuleImports` | `String` | | Extra module to import in generated code. This parameter may be included multiple times to import more than one module |
+| Flag                 | Values                                    | Default    | Description
+|:---------------------|:------------------------------------------|:-----------|:----------------------------------------------------------------------------------------------------------------------
+| `Visibility`         | `Internal`/`Public`                       | `Internal` | ACL of generated code
+| `Server`             | `true`/`false`                            | `true`     | Whether to generate server code
+| `Client`             | `true`/`false`                            | `true`     | Whether to generate client code
+| `FileNaming`         | `FullPath`/`PathToUnderscores`/`DropPath` | `FullPath` | How to handle the naming of generated sources, see [documentation][swift-protobuf-filenaming]
+| `ExtraModuleImports` | `String`                                  |            | Extra module to import in generated code. This parameter may be included multiple times to import more than one module
 
-Example:
+For example, to generate only client stubs:
 
-    $ protoc <your proto> --swiftgrpc_out=Client=true,Server=false:.
-
-### Building your project
-
-Most `grpc-swift` development is done with the Swift Package Manager.
-For usage in Xcode projects, we rely on the `swift package generate-xcodeproj`
-command to generate an Xcode project for the `grpc-swift` core libraries.
-
-The top-level Makefile uses the Swift Package Manager to
-generate an Xcode project for the SwiftGRPC package:
-
-    $ make && make project
-
-This will create `GRPC.xcodeproj`, which you should
-add to your project, along with setting the necessary build dependencies
-mentioned [above](#manual-integration).
-
-### Low-level gRPC
-
-While the recommended way to use gRPC is with Protocol Buffers
-and generated code, at its core gRPC is a powerful HTTP/2-based
-communication system that can support arbitrary payloads. As such,
-each gRPC library includes low-level interfaces that can be used
-to directly build API clients and servers with no generated code.
-For an example of this in Swift, please see the
-[Simple](Examples/SimpleXcode) example.
-
-### Known issues
-
-The SwiftGRPC implementation that is backed by [gRPC-Core](https://github.com/grpc/grpc)
-(and not SwiftNIO) is known to have some connectivity issues on iOS clients - namely, silently
-disconnecting (making it seem like active calls/connections are hanging) when switching
-between wifi <> cellular or between cellular technologies (3G <> LTE). The root cause of these problems is that the
-backing gRPC-Core doesn't get the optimizations made by iOS' networking stack when these
-types of changes occur, and isn't able to handle them itself.
-
-There is also documentation of this behavior in [this gRPC-Core readme](https://github.com/grpc/grpc/blob/v1.19.0/src/objective-c/NetworkTransitionBehavior.md).
-
-To aid in this problem, there is a [`ClientNetworkMonitor`](./Sources/SwiftGRPC/Core/ClientNetworkMonitor.swift)
-that monitors the device for events that can cause gRPC to disconnect silently. We recommend utilizing this component to
-call `shutdown()` (or destroy) any active `Channel` instances, and start new ones when the network is reachable.
-
-Setting the [`keepAliveTimeout` argument](https://github.com/grpc/grpc-swift/blob/0.7.0/Sources/SwiftGRPC/Core/ChannelArgument.swift#L46)
-on channels is also encouraged.
-
-Details:
-- **Switching between wifi <> cellular:** Channels silently disconnect
-- **Switching between 3G <> LTE (etc.):** Channels silently disconnect
-- **Network becoming unreachable:** Most times channels will time out after a few seconds, but `ClientNetworkMonitor` will notify of these changes much faster
-- **Switching between background <> foreground:** No known issues
-
-Original SwiftGRPC issue: https://github.com/grpc/grpc-swift/issues/337.
-
-## Having build problems?
-
-grpc-swift depends on Swift, Xcode, and swift-protobuf. We are currently
-testing with the following versions:
-
-- Xcode 9.1
-- Swift 4.0
-- swift-protobuf 1.3.1
-
-## `GRPC` package
-
-`GRPC` is a clean-room implementation of the gRPC protocol on top of the [`SwiftNIO`](http://github.com/apple/swift-nio) library. This implementation currently lacks:
-
-- Example projects
-- First-class iOS support (via [Swift NIO Transport Services](https://github.com/apple/swift-nio-transport-services))
-
-[This presentation](https://docs.google.com/presentation/d/1Mnsaq4mkeagZSP4mK1k0vewZrJKynm_MCteRDyM3OX8/edit) provides more details on the motivation for this package.
+```sh
+protoc <your proto> --swiftgrpc_out=Client=true,Server=false:.
+```
 
 ## License
 
-This package is released under the same license as
-[gRPC](https://github.com/grpc/grpc), repeated in
+Swift gRPC is released under the same license as [gRPC][grpc], repeated in
 [LICENSE](LICENSE).
 
 ## Contributing
 
 Please get involved! See our [guidelines for contributing](CONTRIBUTING.md).
 
-### Releasing
 
-When issuing a new release, the following steps should be followed:
-
-1. Run the CocoaPods linter to ensure that there are no new warnings/errors:
-
-    `$ pod spec lint SwiftGRPC.podspec`
-
-1. Update the Carthage Xcode project (diff will need to be checked in with the version bump):
-
-    `$ make project-carthage`
-
-1. Bump the version in the `SwiftGRPC.podspec` file
-
-1. Merge these changes, then create a new `Release` with corresponding `Tag`. Be sure to include a list of changes in the message
-
-1. Push the update to the CocoaPods specs repo:
-
-    `$ pod trunk push`
+[example-echo]: Sources/Examples/Echo
+[grpc]: https://github.com/grpc/grpc
+[nio-ref-elf]: https://apple.github.io/swift-nio/docs/current/NIO/Classes/EventLoopFuture.html
+[nio-ref-elg]: https://apple.github.io/swift-nio/docs/current/NIO/Classes/MultiThreadedEventLoopGroup.html
+[nio-ref-sslcontext]: https://apple.github.io/swift-nio-ssl/docs/current/NIOSSL/Classes/NIOSSLContext.html
+[nio-ref-tlsconfig]: https://apple.github.io/swift-nio-ssl/docs/current/NIOSSL/Structs/TLSConfiguration.html
+[protobuf-releases]: https://github.com/protocolbuffers/protobuf/releases
+[protobuf]: https://github.com/google/protobuf
+[swift-nio]: https://github.com/apple/swift-nio
+[swift-protobuf-filenaming]: https://github.com/apple/swift-protobuf/blob/master/Documentation/PLUGIN.md#generation-option-filenaming---naming-of-generated-sources
+[swift-protobuf]: https://github.com/apple/swift-protobuf
+[xcode-spm]: https://help.apple.com/xcode/mac/current/#/devb83d64851
