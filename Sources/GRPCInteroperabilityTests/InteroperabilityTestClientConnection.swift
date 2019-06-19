@@ -31,7 +31,7 @@ public func makeInteroperabilityTestClientConnection(
   port: Int,
   eventLoopGroup: EventLoopGroup,
   useTLS: Bool
-) throws -> EventLoopFuture<ClientConnection> {
+) throws -> ClientConnection {
   var configuration = ClientConnection.Configuration(
     target: .hostAndPort(host, port),
     eventLoopGroup: eventLoopGroup)
@@ -48,5 +48,5 @@ public func makeInteroperabilityTestClientConnection(
     configuration.tlsConfiguration = .init(sslContext: context, hostnameOverride: hostOverride)
   }
 
-  return ClientConnection.start(configuration)
+  return ClientConnection(configuration: configuration)
 }

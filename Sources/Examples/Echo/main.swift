@@ -82,9 +82,7 @@ func makeEchoClient(address: String, port: Int, ssl: Bool) -> Echo_EchoServiceCl
       eventLoopGroup: eventLoopGroup,
       tlsConfiguration: tlsConfiguration)
 
-    return try ClientConnection.start(configuration)
-      .map { Echo_EchoServiceClient(connection: $0) }
-      .wait()
+    return Echo_EchoServiceClient(connection: ClientConnection(configuration: configuration))
   } catch {
     print("Unable to create an EchoClient: \(error)")
     return nil

@@ -25,7 +25,6 @@ public class TLSVerificationHandler: ChannelInboundHandler, RemovableChannelHand
   public typealias InboundIn = Any
 
   private var verificationPromise: EventLoopPromise<Void>!
-  private let delegate: ClientErrorDelegate?
 
   /// A future which is fulfilled when the state of the TLS handshake is known. If the handshake
   /// was successful and the negotiated application protocol is valid then the future is succeeded.
@@ -38,26 +37,21 @@ public class TLSVerificationHandler: ChannelInboundHandler, RemovableChannelHand
     return verificationPromise.futureResult
   }
 
-  public init(errorDelegate: ClientErrorDelegate?) {
-    self.delegate = errorDelegate
-  }
+  public init() { }
 
   public func handlerAdded(context: ChannelHandlerContext) {
     self.verificationPromise = context.eventLoop.makePromise()
     // Remove ourselves from the pipeline when the promise gets fulfilled.
-    self.verificationPromise.futureResult.whenComplete { _ in
+    self.verificationPromise.futureResult.recover { error in
+      // If we have an error we should let the rest of the pipeline know.
+      context.fireErrorCaught(error)
+    }.whenComplete { _ in
       context.pipeline.removeHandler(self, promise: nil)
     }
   }
 
   public func errorCaught(context: ChannelHandlerContext, error: Error) {
     precondition(self.verificationPromise != nil, "handler has not been added to the pipeline")
-
-    if let delegate = self.delegate {
-      let grpcError = (error as? GRPCError) ?? GRPCError.unknown(error, origin: .client)
-      delegate.didCatchError(grpcError.wrappedError, file: grpcError.file, line: grpcError.line)
-    }
-
     verificationPromise.fail(error)
   }
 
@@ -73,7 +67,8 @@ public class TLSVerificationHandler: ChannelInboundHandler, RemovableChannelHand
     if let proto = negotiatedProtocol, GRPCApplicationProtocolIdentifier(rawValue: proto) != nil {
       self.verificationPromise.succeed(())
     } else {
-      self.verificationPromise.fail(GRPCError.client(.applicationLevelProtocolNegotiationFailed))
+      let error = GRPCError.client(.applicationLevelProtocolNegotiationFailed)
+      self.verificationPromise.fail(error)
     }
   }
 }

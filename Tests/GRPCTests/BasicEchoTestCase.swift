@@ -150,7 +150,7 @@ class EchoTestCaseBase: XCTestCase {
   }
 
   func makeClientConnection(port: Int) throws -> ClientConnection {
-    return try ClientConnection.start(self.makeClientConfiguration(port: port)).wait()
+    return try ClientConnection(configuration: self.makeClientConfiguration(port: port))
   }
 
   func makeEchoProvider() -> Echo_EchoProvider { return EchoProvider() }
@@ -179,7 +179,6 @@ class EchoTestCaseBase: XCTestCase {
   override func tearDown() {
     // Some tests close the channel, so would throw here if called twice.
     try? self.client.connection.close().wait()
-
     XCTAssertNoThrow(try self.clientEventLoopGroup.syncShutdownGracefully())
     self.client = nil
     self.clientEventLoopGroup = nil

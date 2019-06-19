@@ -160,7 +160,7 @@ let group = Group { group in
         host: host,
         port: port,
         eventLoopGroup: eventLoopGroup,
-        useTLS: useTLS == "true").wait()
+        useTLS: useTLS == "true")
       try runTest(instance, name: testCaseName, connection: connection)
     }
   }

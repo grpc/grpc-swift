@@ -7,14 +7,12 @@ import Commander
 struct ConnectionFactory {
   var configuration: ClientConnection.Configuration
 
-  func makeConnection() throws -> EventLoopFuture<ClientConnection> {
-    return ClientConnection.start(configuration)
+  func makeConnection() -> ClientConnection {
+    return ClientConnection(configuration: self.configuration)
   }
 
-  func makeEchoClient() throws -> EventLoopFuture<Echo_EchoServiceClient> {
-    return try self.makeConnection().map {
-      Echo_EchoServiceClient(connection: $0)
-    }
+  func makeEchoClient() -> Echo_EchoServiceClient {
+    return Echo_EchoServiceClient(connection: self.makeConnection())
   }
 }
 
@@ -42,7 +40,7 @@ class UnaryThroughput: Benchmark {
   }
 
   func setUp() throws {
-    self.client = try self.factory.makeEchoClient().wait()
+    self.client = self.factory.makeEchoClient()
     self.request = String(repeating: "0", count: self.requestLength)
   }
 
@@ -56,7 +54,7 @@ class UnaryThroughput: Benchmark {
         client.get(Echo_EchoRequest.with { $0.text = self.request }).response
       }
 
-      try EventLoopFuture.andAllSucceed(requests, on: self.client.connection.channel.eventLoop).wait()
+      try EventLoopFuture.andAllSucceed(requests, on: self.client.connection.eventLoop).wait()
     }
   }
 
@@ -86,8 +84,32 @@ class BidirectionalThroughput: UnaryThroughput {
 final class ConnectionCreationThroughput: Benchmark {
   let factory: ConnectionFactory
   let connections: Int
+  var createdConnections: [ClientConnection] = []
 
-  var createdConnections: [EventLoopFuture<ClientConnection>] = []
+  class ConnectionReadinessDelegate: ConnectivityStateDelegate {
+    let promise: EventLoopPromise<Void>
+
+    var ready: EventLoopFuture<Void> {
+      return promise.futureResult
+    }
+
+    init(promise: EventLoopPromise<Void>) {
+      self.promise = promise
+    }
+
+    func connectivityStateDidChange(from oldState: ConnectivityState, to newState: ConnectivityState) {
+      switch newState {
+      case .ready:
+        promise.succeed(())
+
+      case .shutdown:
+        promise.fail(GRPCStatus(code: .unavailable, message: nil))
+
+      default:
+        break
+      }
+    }
+  }
 
   init(factory: ConnectionFactory, connections: Int) {
     self.factory = factory
@@ -97,20 +119,25 @@ final class ConnectionCreationThroughput: Benchmark {
   func setUp() throws { }
 
   func run() throws {
-    self.createdConnections = try (0..<connections).map { _ in
-      try self.factory.makeConnection()
+    let connectionsAndDelegates: [(ClientConnection, ConnectionReadinessDelegate)] = (0..<connections).map { _ in
+      let promise = self.factory.configuration.eventLoopGroup.next().makePromise(of: Void.self)
+      var configuration = self.factory.configuration
+      let delegate = ConnectionReadinessDelegate(promise: promise)
+      configuration.connectivityStateDelegate = delegate
+      return (ClientConnection(configuration: configuration), delegate)
     }
 
+    self.createdConnections = connectionsAndDelegates.map { connection, _ in connection }
+    let futures = connectionsAndDelegates.map { _, delegate in delegate.ready }
     try EventLoopFuture.andAllSucceed(
-      self.createdConnections,
-      on: self.factory.configuration.eventLoopGroup.next()).wait()
+      futures,
+      on: self.factory.configuration.eventLoopGroup.next()
+    ).wait()
   }
 
   func tearDown() throws {
     let connectionClosures = self.createdConnections.map {
-      $0.flatMap {
-        $0.close()
-      }
+      $0.close()
     }
 
     try EventLoopFuture.andAllSucceed(

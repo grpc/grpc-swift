@@ -51,7 +51,7 @@ class GRPCInsecureInteroperabilityTests: XCTestCase {
       port: serverPort,
       eventLoopGroup: self.clientEventLoopGroup,
       useTLS: self.useTLS
-    ).wait()
+    )
   }
 
   override func tearDown() {

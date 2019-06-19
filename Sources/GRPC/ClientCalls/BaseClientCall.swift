@@ -108,8 +108,12 @@ open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
   /// Creates and configures an HTTP/2 stream channel. The `self.subchannel` future will hold the
   /// stream channel once it has been created.
   private func createStreamChannel() {
-    self.connection.channel.eventLoop.execute {
-      self.connection.multiplexer.createStreamChannel(promise: self.streamPromise) { (subchannel, streamID) -> EventLoopFuture<Void> in
+    self.connection.multiplexer.whenFailure { error in
+      self.streamPromise.fail(error)
+    }
+
+    self.connection.multiplexer.whenSuccess { multiplexer in
+      multiplexer.createStreamChannel(promise: self.streamPromise) { (subchannel, streamID) -> EventLoopFuture<Void> in
         subchannel.pipeline.addHandlers(
           HTTP2ToHTTP1ClientCodec(streamID: streamID, httpProtocol: self.connection.configuration.httpProtocol),
           HTTP1ToRawGRPCClientCodec(),
