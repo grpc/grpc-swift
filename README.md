@@ -34,7 +34,7 @@ necessary targets:
 
 ```swift
 dependencies: [
-  .package(url: "https://github.com/grpc/grpc-swift.git", .branch("nio"))
+  .package(url: "https://github.com/grpc/grpc-swift.git", from: 1.0.0-alpha.1")
 ]
 ```
 
@@ -197,7 +197,7 @@ let port = 8080
 ```
 
 First we need to start the server and provide the Echo service using the
-`EchoProvider` we implemented above. We create a [multhithreaded event loop
+`EchoProvider` we implemented above. We create an [event loop
 group][nio-ref-elg] which will spawn a single thread to run events on the
 server. Note that you can also use `System.coreCount` to get the number of
 logical cores on your system.
@@ -205,13 +205,13 @@ logical cores on your system.
 We also `wait` for the server to start before setting up a client.
 
 ```swift
-let serverEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-let server = try Server.start(
-  hostname: host,
-  port: port,
+let serverEventLoopGroup = GRPCNIO.makeEventLoopGroup(numberOfThreads: 1)
+let configuration = Server.Configuration(
+  target: .hostAndPort(address, port),
   eventLoopGroup: serverEventLoopGroup,
-  serviceProviders: [EchoProvider()]
-).wait()
+  serviceProviders: [EchoProvider()])
+
+let server = try Server.start(configuration: configuration).wait()
 ```
 
 Note that the at the end of the program, the `serverEventLoopGroup` whould be
@@ -226,16 +226,15 @@ means to make gRPC calls via a generated client. Note that
 `Echo_EchoServiceClient` is the client we generated from `echo.proto`.
 
 ```swift
-let clientEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+let clientEventLoopGroup = GRPCNIO.makeEventLoopGroup(loopCount: 1)
 let configuration = ClientConnection.Configuration(
   target: .hostAndPort(host, port),
   eventLoopGroup: clientEventLoopGroup
 )
 
-let echo = try ClientConnection.start(configuration).map {
-  // This is our generated client, we only need to pass it a connection.
-  Echo_EchoServiceClient(connection: $0)
-}.wait()
+let connection = ClientConnection(configuration: configuration)
+// This is our generated client, we only need to pass it a connection.
+let echo = Echo_EchoServiceClient(connection: connection)
 ```
 
 Note that the `clientEventLoopGroup` should also be shutdown when it is no
@@ -354,10 +353,10 @@ Swift gRPC provides all four API styles: Unary, Server Streaming, Client
 Streaming, and Bidirectional Streaming. Calls to the generated types will return
 an object of the approriate type:
 
-- `UnaryClientCall<Request, Response>`
-- `ClientStreamingClientCall<Request, Response>`
-- `ServerStreamingClientCall<Request, Response>`
-- `BidirectionalStreamingClientCall<Request, Response>`
+- `UnaryCall<Request, Response>`
+- `ClientStreamingCall<Request, Response>`
+- `ServerStreamingCall<Request, Response>`
+- `BidirectionalStreamingCall<Request, Response>`
 
 Each call object provides [futures][nio-ref-elf] for the initial metadata,
 trailing metadata, and status. _Unary response_ calls also have a future for the
@@ -409,6 +408,29 @@ let configuration = TLSConfiguration.forServer(
 
 Note that the gRPC specification requires TLS v1.2 or later.
 
+### NIO vs. NIO Transport Services
+
+NIO offers extensions to provide first-class support for Apple platforms (iOS
+12+, macOS 10.14+, tvOS 12+, watchOS 6+) via [NIO Transport Services][nio-ts].
+NIO Transport Services uses [Network.framework][network-framework] and
+`DispatchQueue`s to schedule tasks.
+
+To use NIO Transport Services in gRPC Swift you need to provide a
+`NIOTSEventLoopGroup` to the configuration of your server or client connection.
+gRPC Swift provides a helper method to provide the correct `EventLoopGroup`
+based on the network preference:
+
+```swift
+GRPCNIO.makeEventLoopGroup(loopCount:networkPreference:) -> EventLoopGroup
+```
+
+Here `networkPreference` defaults to `.best`, which chooses the
+`.networkFramework` implementation if it is available (iOS 12+, macOS 10.14+,
+tvOS 12+, watchOS 6+) and uses `.posix` otherwise.
+
+Using the TLS provided by `Network.framework` via NIO Transport Services is not
+currently supported. Instead, TLS is provided by `NIOSSL`.
+
 ### Plugin Options
 
 To pass extra parameters to the plugin, use a comma-separated parameter list
@@ -440,10 +462,12 @@ Please get involved! See our [guidelines for contributing](CONTRIBUTING.md).
 
 [example-echo]: Sources/Examples/Echo
 [grpc]: https://github.com/grpc/grpc
+[network-framework]: https://developer.apple.com/documentation/network
 [nio-ref-elf]: https://apple.github.io/swift-nio/docs/current/NIO/Classes/EventLoopFuture.html
-[nio-ref-elg]: https://apple.github.io/swift-nio/docs/current/NIO/Classes/MultiThreadedEventLoopGroup.html
+[nio-ref-elg]: https://apple.github.io/swift-nio/docs/current/NIO/Protocols/EventLoopGroup.html
 [nio-ref-sslcontext]: https://apple.github.io/swift-nio-ssl/docs/current/NIOSSL/Classes/NIOSSLContext.html
 [nio-ref-tlsconfig]: https://apple.github.io/swift-nio-ssl/docs/current/NIOSSL/Structs/TLSConfiguration.html
+[nio-ts]: https://github.com/apple/swift-nio-transport-services
 [protobuf-releases]: https://github.com/protocolbuffers/protobuf/releases
 [protobuf]: https://github.com/google/protobuf
 [swift-nio]: https://github.com/apple/swift-nio
