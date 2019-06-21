@@ -69,7 +69,7 @@ class ClientConnectionBackoffTests: XCTestCase {
     let configuration = Server.Configuration(
       target: .hostAndPort("localhost", self.port),
       eventLoopGroup: self.serverGroup,
-      serviceProviders: [])
+      serviceProviders: [EchoProvider()])
 
     return Server.start(configuration: configuration)
   }
@@ -142,12 +142,14 @@ class ClientConnectionBackoffTests: XCTestCase {
     let server = try self.server.wait()
 
     let connectionReady = self.expectation(description: "connection ready")
-    self.client = self.makeClientConnection(self.makeClientConfiguration())
+    var configuration = self.makeClientConfiguration()
+    configuration.connectionBackoff!.maximumBackoff = 2.0
+    self.client = self.makeClientConnection(configuration)
     self.client.connectivity.onNext(state: .ready) {
       connectionReady.fulfill()
     }
 
-    // Once the connection ready we can kill the server.
+    // Once the connection is ready we can kill the server.
     self.wait(for: [connectionReady], timeout: 1.0)
     XCTAssertEqual(self.stateDelegate.clearStates(), [.connecting, .ready])
 
@@ -169,16 +171,18 @@ class ClientConnectionBackoffTests: XCTestCase {
       reconnectionReady.fulfill()
     }
 
+    let echo = Echo_EchoServiceClient(connection: self.client)
+    // This should succeed once we get a connection again.
+    let get = echo.get(.with { $0.text = "hello" })
+
     // Start a new server.
     self.serverGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     self.server = self.makeServer()
 
-    self.wait(for: [reconnectionReady], timeout: 1.0)
+    self.wait(for: [reconnectionReady], timeout: 2.0)
     XCTAssertEqual(self.stateDelegate.clearStates(), [.connecting, .ready])
 
-    // Ensure we can actually make a call.
-    let echo = Echo_EchoServiceClient(connection: self.client)
-    let get = echo.get(Echo_EchoRequest.with { $0.text = "hello" })
+    // The call should be able to succeed now.
     XCTAssertEqual(try get.status.map { $0.code }.wait(), .ok)
 
     try self.client.close().wait()

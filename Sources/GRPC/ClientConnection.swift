@@ -99,59 +99,29 @@ public class ClientConnection {
       $0.closeFuture
     }.whenComplete { _ in
       // `.shutdown` is terminal so don't attempt a reconnection.
-      if self.connectivity.state != .shutdown {
-        let newChannel = ClientConnection.makeChannel(
-          configuration: self.configuration,
-          connectivityMonitor: self.connectivity
-        )
-
-        self.channel = newChannel
-        self.multiplexer = newChannel.flatMap {
-          $0.pipeline.handler(type: HTTP2StreamMultiplexer.self)
-        }
-
-        // Change the state if the connection was successful.
-        newChannel.whenSuccess { _ in
-          self.connectivity.state = .ready
-        }
-        self.replaceChannelAndMultiplexerOnClose(channel: newChannel)
+      guard self.connectivity.state != .shutdown else {
+        return
       }
+
+      let newChannel = ClientConnection.makeChannel(
+        configuration: self.configuration,
+        connectivityMonitor: self.connectivity
+      )
+
+      self.channel = newChannel
+      self.multiplexer = newChannel.flatMap {
+        $0.pipeline.handler(type: HTTP2StreamMultiplexer.self)
+      }
+
+      // Change the state if the connection was successful.
+      newChannel.whenSuccess { _ in
+        self.connectivity.state = .ready
+      }
+      self.replaceChannelAndMultiplexerOnClose(channel: newChannel)
     }
   }
 
-  /// Replaces the `channel` and `multiplexer` on this instance and registers a callback on the
-  /// `closeFuture` of the newly created `channel` to call this function.
-  private func replaceChannelAndMultiplexer() {
-    let newChannel = ClientConnection.makeChannel(
-      configuration: self.configuration,
-      connectivityMonitor: self.connectivity
-    )
-
-    newChannel.always { result in
-      if case .failure = result {
-        self.connectivity.state = .shutdown
-      }
-    }.flatMap {
-      $0.closeFuture
-    }.whenComplete { _ in
-      // `.shutdown` is terminal: don't attempt a reconnection.
-      if self.connectivity.state != .shutdown {
-        self.replaceChannelAndMultiplexer()
-      }
-    }
-
-    self.channel = newChannel
-    self.multiplexer = newChannel.flatMap {
-      $0.pipeline.handler(type: HTTP2StreamMultiplexer.self)
-    }
-
-    // Change the state if the connection was successful.
-    newChannel.whenSuccess { _ in
-      self.connectivity.state = .ready
-    }
-  }
-
-  /// The `EventLoop` this connection is using. Note that this _may_ change over time.
+  /// The `EventLoop` this connection is using.
   public var eventLoop: EventLoop {
     return self.channel.eventLoop
   }

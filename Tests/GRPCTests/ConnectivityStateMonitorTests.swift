@@ -17,7 +17,7 @@
 import XCTest
 
 class ConnectivityStateMonitorTests: XCTestCase {
-  var monitor = ConnectivityStateMonitor(delegate: nil, initialState: .idle)
+  var monitor = ConnectivityStateMonitor(delegate: nil)
 
   // Ensure `.idle` isn't first since it is the initial state and we only trigger callbacks
   // when the state changes, not when the state is set.

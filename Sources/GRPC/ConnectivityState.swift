@@ -39,7 +39,7 @@ public enum ConnectivityState {
   /// This channel has started shutting down. Any new RPCs should fail immediately. Pending RPCs
   /// may continue running till the application cancels them. Channels may enter this state either
   /// because the application explicitly requested a shutdown or if a non-recoverable error has
-  /// happened during attempts to connect communicate. Channels that enter this state never leave
+  /// happened during attempts to connect. Channels that have entered this state will never leave
   /// this state.
   case shutdown
 }
@@ -77,8 +77,7 @@ public class ConnectivityStateMonitor {
   /// Creates a new connectivity state monitor.
   ///
   /// - Parameter delegate: A delegate to call when the connectivity state changes.
-  /// - Parameter initialState: The initial connectivity state, defaults to `.idle`.
-  public init(delegate: ConnectivityStateDelegate?, initialState: ConnectivityState = .idle) {
+  public init(delegate: ConnectivityStateDelegate?) {
     self.delegate = delegate
     self.state = .idle
   }
