@@ -363,15 +363,16 @@ Group { group in
       privateKeyPath: privateKeyPath,
       server: true)
 
+    let configuration = Server.Configuration(
+      target: .hostAndPort(host, port),
+      eventLoopGroup: group,
+      serviceProviders: [EchoProvider()],
+      tlsConfiguration: sslContext.map { .init(sslContext: $0) })
+
     let server: Server
 
     do {
-      server = try Server.start(
-        hostname: host,
-        port: port,
-        eventLoopGroup: group,
-        serviceProviders: [EchoProvider()],
-        tls: sslContext.map { .custom($0) } ?? .none).wait()
+      server = try Server.start(configuration: configuration).wait()
     } catch {
       print("unable to start server: \(error)")
       exit(1)

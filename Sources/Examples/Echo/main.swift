@@ -36,11 +36,8 @@ func makeClientSSLContext() throws -> NIOSSLContext {
   return try NIOSSLContext(configuration: makeClientTLSConfiguration())
 }
 
-func makeServerTLS(enabled: Bool) throws -> Server.TLSMode {
-  guard enabled else {
-    return .none
-  }
-  return .custom(try NIOSSLContext(configuration: makeServerTLSConfiguration()))
+func makeServerSSLContext() throws -> NIOSSLContext {
+  return try NIOSSLContext(configuration: makeServerTLSConfiguration())
 }
 
 func makeClientTLSConfiguration() -> TLSConfiguration {
@@ -100,20 +97,26 @@ Group {
              addressOption("localhost"),
              portOption,
              description: "Run an echo server.") { ssl, address, port in
-    let sem = DispatchSemaphore(value: 0)
     let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
-    print(ssl ? "starting secure server" : "starting insecure server")
-    _ = try! Server.start(hostname: address,
-                              port: port,
-                              eventLoopGroup: eventLoopGroup,
-                              serviceProviders: [EchoProvider()],
-                              tls: makeServerTLS(enabled: ssl))
+    var configuration = Server.Configuration(
+      target: .hostAndPort(address, port),
+      eventLoopGroup: eventLoopGroup,
+      serviceProviders: [EchoProvider()])
+
+    if ssl {
+      print("starting secure server")
+      configuration.tlsConfiguration = .init(sslContext: try makeServerSSLContext())
+    } else {
+      print("starting insecure server")
+    }
+
+    let server = try! Server.start(configuration: configuration)
       .wait()
 
     // This blocks to keep the main thread from finishing while the server runs,
     // but the server never exits. Kill the process to stop it.
-    _ = sem.wait()
+    try server.onClose.wait()
   }
 
   $0.command(

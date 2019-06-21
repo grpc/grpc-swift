@@ -16,7 +16,9 @@
 import Foundation
 
 public class LoggingServerErrorDelegate: ServerErrorDelegate {
-  public init() {}
+  public static let shared = LoggingServerErrorDelegate()
+
+  private init() {}
 
   public func observeLibraryError(_ error: Error) {
     print("[grpc-server][\(Date())] library: \(error)")

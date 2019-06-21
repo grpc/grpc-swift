@@ -1,3 +1,18 @@
+/*
+ * Copyright 2019, gRPC Authors All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import Foundation
 import NIO
 import NIOHTTP1
@@ -76,63 +91,54 @@ import NIOSSL
 ///                             │                       ▼
 ///
 public final class Server {
-  /// Starts up a server that serves the given providers.
-  ///
-  /// - Returns: A future that is completed when the server has successfully started up.
-  public static func start(
-    hostname: String,
-    port: Int,
-    eventLoopGroup: EventLoopGroup,
-    serviceProviders: [CallHandlerProvider],
-    errorDelegate: ServerErrorDelegate? = LoggingServerErrorDelegate(),
-    tls tlsMode: TLSMode = .none
-  ) throws -> EventLoopFuture<Server> {
-    let servicesByName = Dictionary(uniqueKeysWithValues: serviceProviders.map { ($0.serviceName, $0) })
-    let bootstrap = ServerBootstrap(group: eventLoopGroup)
+  /// Makes and configures a `ServerBootstrap` using the provided configuration.
+  public class func makeBootstrap(configuration: Configuration) -> ServerBootstrapProtocol {
+    let bootstrap = GRPCNIO.makeServerBootstrap(group: configuration.eventLoopGroup)
+
+    // Backlog is only available on `ServerBootstrap`.
+    if bootstrap is ServerBootstrap {
       // Specify a backlog to avoid overloading the server.
-      .serverChannelOption(ChannelOptions.backlog, value: 256)
+      _ = bootstrap.serverChannelOption(ChannelOptions.backlog, value: 256)
+    }
+
+    return bootstrap
       // Enable `SO_REUSEADDR` to avoid "address already in use" error.
       .serverChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
       // Set the handlers that are applied to the accepted Channels
       .childChannelInitializer { channel in
-        let protocolSwitcherHandler = HTTPProtocolSwitcher(errorDelegate: errorDelegate) { channel -> EventLoopFuture<Void> in
-          channel.pipeline.addHandlers(HTTP1ToRawGRPCServerCodec(),
-                                       GRPCChannelHandler(servicesByName: servicesByName, errorDelegate: errorDelegate))
+        let protocolSwitcher = HTTPProtocolSwitcher(errorDelegate: configuration.errorDelegate) { channel -> EventLoopFuture<Void> in
+          let handlers: [ChannelHandler] = [
+            HTTP1ToRawGRPCServerCodec(),
+            GRPCChannelHandler(
+              servicesByName: configuration.serviceProvidersByName,
+              errorDelegate: configuration.errorDelegate
+            )
+          ]
+          return channel.pipeline.addHandlers(handlers)
         }
 
-        return configureTLS(mode: tlsMode, channel: channel).flatMap {
-          channel.pipeline.addHandler(protocolSwitcherHandler)
+        if let tlsConfiguration = configuration.tlsConfiguration {
+          return channel.configureTLS(configuration: tlsConfiguration).flatMap {
+            channel.pipeline.addHandler(protocolSwitcher)
+          }
+        } else {
+          return channel.pipeline.addHandler(protocolSwitcher)
         }
       }
 
       // Enable TCP_NODELAY and SO_REUSEADDR for the accepted Channels
       .childChannelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
       .childChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
-
-    return bootstrap.bind(host: hostname, port: port)
-      .map { Server(channel: $0, errorDelegate: errorDelegate) }
   }
 
-  /// Configure an SSL handler on the channel, if one is provided.
-  ///
-  /// - Parameters:
-  ///   - mode: TLS mode to run the server in.
-  ///   - channel: The channel on which to add the SSL handler.
-  /// - Returns: A future which will be succeeded when the pipeline has been configured.
-  private static func configureTLS(mode: TLSMode, channel: Channel) -> EventLoopFuture<Void> {
-    guard let sslContext = mode.sslContext else {
-      return channel.eventLoop.makeSucceededFuture(())
-    }
-
-    let handlerAddedPromise: EventLoopPromise<Void> = channel.eventLoop.makePromise()
-
-    do {
-      channel.pipeline.addHandler(try NIOSSLServerHandler(context: sslContext)).cascade(to: handlerAddedPromise)
-    } catch {
-      handlerAddedPromise.fail(error)
-    }
-
-    return handlerAddedPromise.futureResult
+  /// Starts a server with the given configuration. See `Server.Configuration` for the options
+  /// available to configure the server.
+  public static func start(configuration: Configuration) -> EventLoopFuture<Server> {
+    return makeBootstrap(configuration: configuration)
+      .bind(to: configuration.target)
+      .map { channel in
+        Server(channel: channel, errorDelegate: configuration.errorDelegate)
+      }
   }
 
   public let channel: Channel
@@ -161,19 +167,93 @@ public final class Server {
   }
 }
 
+public typealias BindTarget = ConnectionTarget
+
 extension Server {
-  public enum TLSMode {
-    case none
-    case custom(NIOSSLContext)
+  /// The configuration for a server.
+  public struct Configuration {
+    /// The target to bind to.
+    public var target: BindTarget
 
-    var sslContext: NIOSSLContext? {
-      switch self {
-      case .none:
-        return nil
+    /// The event loop group to run the connection on.
+    public var eventLoopGroup: EventLoopGroup
 
-      case .custom(let context):
-        return context
-      }
+    /// Providers the server should use to handle gRPC requests.
+    public var serviceProviders: [CallHandlerProvider]
+
+    /// An error delegate which is called when errors are caught. Provided delegates **must not
+    /// maintain a strong reference to this `Server`**. Doing so will cause a retain cycle.
+    public var errorDelegate: ServerErrorDelegate?
+
+    /// TLS configuration for this connection. `nil` if TLS is not desired.
+    public var tlsConfiguration: TLSConfiguration?
+
+    /// Create a `Configuration` with some pre-defined defaults.
+    ///
+    /// - Parameter target: The target to bind to.
+    /// - Parameter eventLoopGroup: The event loop group to run the server on.
+    /// - Parameter serviceProviders: An array of `CallHandlerProvider`s which the server should use
+    ///     to handle requests.
+    /// - Parameter errorDelegate: The error delegate, defaulting to a logging delegate.
+    /// - Parameter tlsConfiguration: TLS configuration, defaulting to `nil`.
+    public init(
+      target: BindTarget,
+      eventLoopGroup: EventLoopGroup,
+      serviceProviders: [CallHandlerProvider],
+      errorDelegate: ServerErrorDelegate? = LoggingServerErrorDelegate.shared,
+      tlsConfiguration: TLSConfiguration? = nil
+    ) {
+      self.target = target
+      self.eventLoopGroup = eventLoopGroup
+      self.serviceProviders = serviceProviders
+      self.errorDelegate = errorDelegate
+      self.tlsConfiguration = tlsConfiguration
+    }
+  }
+
+  /// The TLS configuration for a connection.
+  public struct TLSConfiguration {
+    /// The SSL context to use.
+    public var sslContext: NIOSSLContext
+
+    public init(sslContext: NIOSSLContext) {
+      self.sslContext = sslContext
+    }
+  }
+}
+
+fileprivate extension Server.Configuration {
+  var serviceProvidersByName: [String: CallHandlerProvider] {
+    return Dictionary(uniqueKeysWithValues: self.serviceProviders.map { ($0.serviceName, $0) })
+  }
+}
+
+fileprivate extension Channel {
+  /// Configure an SSL handler on the channel.
+  ///
+  /// - Parameters:
+  ///   - configuration: The configuration to use when creating the handler.
+  /// - Returns: A future which will be succeeded when the pipeline has been configured.
+  func configureTLS(configuration: Server.TLSConfiguration) -> EventLoopFuture<Void> {
+    do {
+      return self.pipeline.addHandler(try NIOSSLServerHandler(context: configuration.sslContext))
+    } catch {
+      return self.pipeline.eventLoop.makeFailedFuture(error)
+    }
+  }
+}
+
+fileprivate extension ServerBootstrapProtocol {
+  func bind(to target: BindTarget) -> EventLoopFuture<Channel> {
+    switch target {
+    case .hostAndPort(let host, let port):
+      return self.bind(host: host, port: port)
+
+    case .unixDomainSocket(let path):
+      return self.bind(unixDomainSocketPath: path)
+
+    case .socketAddress(let address):
+      return self.bind(to: address)
     }
   }
 }

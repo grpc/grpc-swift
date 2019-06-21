@@ -60,14 +60,16 @@ class ClientTLSFailureTests: XCTestCase {
 
   override func setUp() {
     self.serverEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-    self.server = try! Server.start(
-      hostname: "localhost",
-      port: 0,
+    let sslContext = try! NIOSSLContext(configuration: self.defaultServerTLSConfiguration)
+
+    let configuration = Server.Configuration(
+      target: .hostAndPort("localhost", 0),
       eventLoopGroup: self.serverEventLoopGroup,
       serviceProviders: [EchoProvider()],
       errorDelegate: nil,
-      tls: .custom(try NIOSSLContext(configuration: defaultServerTLSConfiguration))
-    ).wait()
+      tlsConfiguration: .init(sslContext: sslContext))
+
+    self.server = try! Server.start(configuration: configuration).wait()
 
     self.port = self.server.channel.localAddress?.port
 
