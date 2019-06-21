@@ -18,32 +18,58 @@ import GRPC
 import NIO
 import XCTest
 
+class ConnectivityStateCollectionDelegate: ConnectivityStateDelegate {
+  var states: [ConnectivityState] = []
+
+  func clearStates() -> [ConnectivityState] {
+    defer {
+      self.states = []
+    }
+    return self.states
+  }
+
+  func connectivityStateDidChange(from oldState: ConnectivityState, to newState: ConnectivityState) {
+    self.states.append(newState)
+  }
+}
+
 class ClientConnectionBackoffTests: XCTestCase {
   let port = 8080
 
-  var client: EventLoopFuture<ClientConnection>!
+  var client: ClientConnection!
   var server: EventLoopFuture<Server>!
 
-  var group: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+  var serverGroup: EventLoopGroup!
+  var clientGroup: EventLoopGroup!
+
+  var stateDelegate = ConnectivityStateCollectionDelegate()
+
+  override func setUp() {
+    self.serverGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    self.clientGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+  }
 
   override func tearDown() {
     if let server = self.server {
       XCTAssertNoThrow(try server.flatMap { $0.channel.close() }.wait())
     }
+    XCTAssertNoThrow(try? self.serverGroup.syncShutdownGracefully())
+    self.server = nil
+    self.serverGroup = nil
 
-    // We don't always expect a client (since we deliberately timeout the connection in some cases).
-    if let client = try? self.client.wait(), client.channel.isActive {
-      XCTAssertNoThrow(try client.channel.close().wait())
-    }
-
-    XCTAssertNoThrow(try self.group.syncShutdownGracefully())
+    // We don't always expect a client to be closed cleanly, since in some cases we deliberately
+    // timeout the connection.
+    try? self.client.close().wait()
+    XCTAssertNoThrow(try self.clientGroup.syncShutdownGracefully())
+    self.client = nil
+    self.clientGroup = nil
   }
 
   func makeServer() -> EventLoopFuture<Server> {
     let configuration = Server.Configuration(
       target: .hostAndPort("localhost", self.port),
-      eventLoopGroup: self.group,
-      serviceProviders: [])
+      eventLoopGroup: self.serverGroup,
+      serviceProviders: [EchoProvider()])
 
     return Server.start(configuration: configuration)
   }
@@ -51,50 +77,115 @@ class ClientConnectionBackoffTests: XCTestCase {
   func makeClientConfiguration() -> ClientConnection.Configuration {
     return .init(
       target: .hostAndPort("localhost", self.port),
-      eventLoopGroup: self.group,
-      connectionBackoff: ConnectionBackoff())
+      eventLoopGroup: self.clientGroup,
+      connectivityStateDelegate: self.stateDelegate,
+      connectionBackoff: ConnectionBackoff(maximumBackoff: 0.1))
   }
 
   func makeClientConnection(
     _ configuration: ClientConnection.Configuration
-  ) -> EventLoopFuture<ClientConnection> {
-    return ClientConnection.start(configuration)
+  ) -> ClientConnection {
+    return ClientConnection(configuration: configuration)
   }
 
   func testClientConnectionFailsWithNoBackoff() throws {
     var configuration = self.makeClientConfiguration()
     configuration.connectionBackoff = nil
 
+    let connectionShutdown = self.expectation(description: "client shutdown")
     self.client = self.makeClientConnection(configuration)
-    XCTAssertThrowsError(try self.client.wait()) { error in
-      XCTAssert(error is NIOConnectionError)
+    self.client.connectivity.onNext(state: .shutdown) {
+      connectionShutdown.fulfill()
     }
+
+    self.wait(for: [connectionShutdown], timeout: 1.0)
+    XCTAssertEqual(self.stateDelegate.states, [.connecting, .shutdown])
   }
 
   func testClientEventuallyConnects() throws {
-    let clientConnected = self.expectation(description: "client connected")
-    let serverStarted = self.expectation(description: "server started")
-
     // Start the client first.
     self.client = self.makeClientConnection(self.makeClientConfiguration())
-    self.client.assertSuccess(fulfill: clientConnected)
 
-    // Sleep for a little bit to make sure we hit the backoff.
-    Thread.sleep(forTimeInterval: 0.2)
+    let transientFailure = self.expectation(description: "connection transientFailure")
+    self.client.connectivity.onNext(state: .transientFailure) {
+      transientFailure.fulfill()
+    }
+
+    let connectionReady = self.expectation(description: "connection ready")
+    self.client.connectivity.onNext(state: .ready) {
+      connectionReady.fulfill()
+    }
+
+    self.wait(for: [transientFailure], timeout: 1.0)
 
     self.server = self.makeServer()
+    let serverStarted = self.expectation(description: "server started")
     self.server.assertSuccess(fulfill: serverStarted)
 
-    self.wait(for: [serverStarted, clientConnected], timeout: 2.0, enforceOrder: true)
+    self.wait(for: [serverStarted, connectionReady], timeout: 2.0, enforceOrder: true)
+    XCTAssertEqual(self.stateDelegate.states, [.connecting, .transientFailure, .connecting, .ready])
   }
 
   func testClientEventuallyTimesOut() throws {
-    var configuration = self.makeClientConfiguration()
-    configuration.connectionBackoff = ConnectionBackoff(maximumBackoff: 0.1)
-
-    self.client = self.makeClientConnection(configuration)
-    XCTAssertThrowsError(try self.client.wait()) { error in
-      XCTAssert(error is NIOConnectionError)
+    let connectionShutdown = self.expectation(description: "connection shutdown")
+    self.client = self.makeClientConnection(self.makeClientConfiguration())
+    self.client.connectivity.onNext(state: .shutdown) {
+      connectionShutdown.fulfill()
     }
+
+    self.wait(for: [connectionShutdown], timeout: 1.0)
+    XCTAssertEqual(self.stateDelegate.states, [.connecting, .transientFailure, .connecting, .shutdown])
+  }
+
+  func testClientReconnectsAutomatically() throws {
+    self.server = self.makeServer()
+    let server = try self.server.wait()
+
+    let connectionReady = self.expectation(description: "connection ready")
+    var configuration = self.makeClientConfiguration()
+    configuration.connectionBackoff!.maximumBackoff = 2.0
+    self.client = self.makeClientConnection(configuration)
+    self.client.connectivity.onNext(state: .ready) {
+      connectionReady.fulfill()
+    }
+
+    // Once the connection is ready we can kill the server.
+    self.wait(for: [connectionReady], timeout: 1.0)
+    XCTAssertEqual(self.stateDelegate.clearStates(), [.connecting, .ready])
+
+    try server.close().wait()
+    try self.serverGroup.syncShutdownGracefully()
+    self.server = nil
+    self.serverGroup = nil
+
+    let transientFailure = self.expectation(description: "connection transientFailure")
+    self.client.connectivity.onNext(state: .transientFailure) {
+      transientFailure.fulfill()
+    }
+
+    self.wait(for: [transientFailure], timeout: 1.0)
+    XCTAssertEqual(self.stateDelegate.clearStates(), [.connecting, .transientFailure])
+
+    let reconnectionReady = self.expectation(description: "(re)connection ready")
+    self.client.connectivity.onNext(state: .ready) {
+      reconnectionReady.fulfill()
+    }
+
+    let echo = Echo_EchoServiceClient(connection: self.client)
+    // This should succeed once we get a connection again.
+    let get = echo.get(.with { $0.text = "hello" })
+
+    // Start a new server.
+    self.serverGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    self.server = self.makeServer()
+
+    self.wait(for: [reconnectionReady], timeout: 2.0)
+    XCTAssertEqual(self.stateDelegate.clearStates(), [.connecting, .ready])
+
+    // The call should be able to succeed now.
+    XCTAssertEqual(try get.status.map { $0.code }.wait(), .ok)
+
+    try self.client.close().wait()
+    XCTAssertEqual(self.stateDelegate.clearStates(), [.shutdown])
   }
 }

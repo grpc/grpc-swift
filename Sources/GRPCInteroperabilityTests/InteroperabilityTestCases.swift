@@ -639,7 +639,7 @@ class CancelAfterFirstResponse: InteroperabilityTest {
   func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_TestServiceServiceClient(connection: connection)
 
-    let promise = client.connection.channel.eventLoop.makePromise(of: Void.self)
+    let promise = client.connection.eventLoop.makePromise(of: Void.self)
 
     let call = client.fullDuplexCall { _ in
       promise.succeed(())

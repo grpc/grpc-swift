@@ -20,6 +20,20 @@ import NIO
 import NIOSSL
 import XCTest
 
+class ErrorRecordingDelegate: ClientErrorDelegate {
+  var errors: [Error] = []
+  var expectation: XCTestExpectation
+
+  init(expectation: XCTestExpectation) {
+    self.expectation = expectation
+  }
+
+  func didCatchError(_ error: Error, file: StaticString, line: Int) {
+    self.errors.append(error)
+    self.expectation.fulfill()
+  }
+}
+
 class ClientTLSFailureTests: XCTestCase {
   let defaultServerTLSConfiguration = TLSConfiguration.forServer(
     certificateChain: [.certificate(SampleCertificate.server.certificate)],
@@ -39,19 +53,26 @@ class ClientTLSFailureTests: XCTestCase {
   var server: Server!
   var port: Int!
 
-  func makeClientConnection(
-    configuration: TLSConfiguration,
+  func makeClientConfiguration(
+    tls: TLSConfiguration,
     hostOverride: String? = SampleCertificate.server.commonName
-  ) throws -> EventLoopFuture<ClientConnection> {
-    let context = try NIOSSLContext(configuration: configuration)
-    let clientConfiguration = ClientConnection.Configuration(
+  ) throws -> ClientConnection.Configuration {
+    return ClientConnection.Configuration(
       target: .hostAndPort("localhost", self.port),
       eventLoopGroup: self.clientEventLoopGroup,
-      tlsConfiguration: ClientConnection.TLSConfiguration(
-        sslContext: context,
-        hostnameOverride: hostOverride))
+      tlsConfiguration: try .init(
+        sslContext: NIOSSLContext(configuration: tls),
+        hostnameOverride: hostOverride
+      )
+    )
+  }
 
-    return ClientConnection.start(clientConfiguration)
+  func makeClientTLSConfiguration(
+    tls: TLSConfiguration,
+    hostOverride: String? = SampleCertificate.server.commonName
+  ) throws -> ClientConnection.TLSConfiguration {
+    let context = try NIOSSLContext(configuration: tls)
+    return .init(sslContext: context, hostnameOverride: hostOverride)
   }
 
   func makeClientConnectionExpectation() -> XCTestExpectation {
@@ -90,51 +111,77 @@ class ClientTLSFailureTests: XCTestCase {
   }
 
   func testClientConnectionFailsWhenProtocolCanNotBeNegotiated() throws {
-    var configuration = defaultClientTLSConfiguration
-    configuration.applicationProtocols = ["not-h2", "not-grpc-ext"]
+    let shutdownExpectation = self.expectation(description: "client shutdown")
+    let errorExpectation = self.expectation(description: "error")
 
-    let connection = try self.makeClientConnection(configuration: configuration)
-    let connectionExpectation = self.makeClientConnectionExpectation()
+    var tls = defaultClientTLSConfiguration
+    tls.applicationProtocols = ["not-h2", "not-grpc-ext"]
+    var configuration = try self.makeClientConfiguration(tls: tls)
 
-    connection.assertError(fulfill: connectionExpectation) { error in
-      let clientError = (error as? GRPCError)?.wrappedError as? GRPCClientError
-      XCTAssertEqual(clientError, .applicationLevelProtocolNegotiationFailed)
+    let errorRecorder = ErrorRecordingDelegate(expectation: errorExpectation)
+    configuration.errorDelegate = errorRecorder
+
+    let connection = ClientConnection(configuration: configuration)
+    connection.connectivity.onNext(state: .shutdown) {
+      shutdownExpectation.fulfill()
     }
 
-    self.wait(for: [connectionExpectation], timeout: self.defaultTestTimeout)
+    self.wait(for: [shutdownExpectation, errorExpectation], timeout: self.defaultTestTimeout)
+
+    let clientErrors = errorRecorder.errors.compactMap { $0 as? GRPCClientError }
+    XCTAssertEqual(clientErrors, [.applicationLevelProtocolNegotiationFailed])
   }
 
   func testClientConnectionFailsWhenServerIsUnknown() throws {
-    var configuration = defaultClientTLSConfiguration
-    configuration.trustRoots = .certificates([])
+    let shutdownExpectation = self.expectation(description: "client shutdown")
+    let errorExpectation = self.expectation(description: "error")
 
-    let connection = try self.makeClientConnection(configuration: configuration)
-    let connectionExpectation = self.makeClientConnectionExpectation()
+    var tls = defaultClientTLSConfiguration
+    tls.trustRoots = .certificates([])
+    var configuration = try self.makeClientConfiguration(tls: tls)
 
-    connection.assertError(fulfill: connectionExpectation) { error in
-      guard case .some(.handshakeFailed(.sslError)) = error as? NIOSSLError else {
-        XCTFail("Expected NIOSSLError.handshakeFailed(BoringSSL.sslError) but got \(error)")
-        return
-      }
+    let errorRecorder = ErrorRecordingDelegate(expectation: errorExpectation)
+    configuration.errorDelegate = errorRecorder
+
+    let connection = ClientConnection(configuration: configuration)
+    connection.connectivity.onNext(state: .shutdown) {
+      shutdownExpectation.fulfill()
     }
 
-    self.wait(for: [connectionExpectation], timeout: self.defaultTestTimeout)
+    self.wait(for: [shutdownExpectation, errorExpectation], timeout: self.defaultTestTimeout)
+
+    if let nioSSLError = errorRecorder.errors.first as? NIOSSLError,
+      case .handshakeFailed(.sslError) = nioSSLError {
+      // Expected case.
+    } else {
+      XCTFail("Expected NIOSSLError.handshakeFailed(BoringSSL.sslError)")
+    }
   }
 
   func testClientConnectionFailsWhenHostnameIsNotValid() throws {
-    let connection = try self.makeClientConnection(
-      configuration: self.defaultClientTLSConfiguration,
-      hostOverride: "not-the-server-hostname")
+    let shutdownExpectation = self.expectation(description: "client shutdown")
+    let errorExpectation = self.expectation(description: "error")
 
-    let connectionExpectation = self.makeClientConnectionExpectation()
+    var configuration = try self.makeClientConfiguration(
+      tls: self.defaultClientTLSConfiguration,
+      hostOverride: "not-the-server-hostname"
+    )
 
-    connection.assertError(fulfill: connectionExpectation) { error in
-      guard case .some(.unableToValidateCertificate) = error as? NIOSSLError else {
-        XCTFail("Expected NIOSSLError.unableToValidateCertificate but got \(error)")
-        return
-      }
+    let errorRecorder = ErrorRecordingDelegate(expectation: errorExpectation)
+    configuration.errorDelegate = errorRecorder
+
+    let connection = ClientConnection(configuration: configuration)
+    connection.connectivity.onNext(state: .shutdown) {
+      shutdownExpectation.fulfill()
     }
 
-    self.wait(for: [connectionExpectation], timeout: self.defaultTestTimeout)
+    self.wait(for: [shutdownExpectation, errorExpectation], timeout: self.defaultTestTimeout)
+
+    if let nioSSLError = errorRecorder.errors.first as? NIOSSLError,
+      case .unableToValidateCertificate = nioSSLError {
+      // Expected case.
+    } else {
+      XCTFail("Expected NIOSSLError.unableToValidateCertificate")
+    }
   }
 }
