@@ -1,8 +1,8 @@
 [![Build Status](https://travis-ci.org/grpc/grpc-swift.svg?branch=nio)](https://travis-ci.org/grpc/grpc-swift)
 
-# Swift gRPC
+# gRPC Swift
 
-This repository contains a Swift gRPC API and code generator.
+This repository contains a gRPC Swift API and code generator.
 
 It is intended for use with Apple's [SwiftProtobuf][swift-protobuf] support for
 Protocol Buffers. Both projects contain code generation plugins for `protoc`,
@@ -15,12 +15,12 @@ all four gRPC API styles (Unary, Server Streaming, Client Streaming, and
 Bidirectional Streaming) and connections can be made either over secure (TLS) or
 insecure channels.
 
-Swift gRPC is built on top of [Swift NIO][swift-nio] as opposed to the core
+gRPC Swift is built on top of [Swift NIO][swift-nio] as opposed to the core
 library provided by the [gRPC project][grpc].
 
 ## Getting Started
 
-There are two parts to Swift gRPC: the gRPC library and an API code generator.
+There are two parts to gRPC Swift: the gRPC library and an API code generator.
 
 ### Getting the gRPC library
 
@@ -28,13 +28,13 @@ Note that this package requires Swift 5.
 
 #### Swift Package Manager
 
-The Swift Package Manager is the preferred way to get Swift gRPC. Simply add the
+The Swift Package Manager is the preferred way to get gRPC Swift. Simply add the
 package dependency to your `Package.swift` and depend on `"GRPC"` in the
 necessary targets:
 
 ```swift
 dependencies: [
-  .package(url: "https://github.com/grpc/grpc-swift.git", from: 1.0.0-alpha.1")
+  .package(url: "https://github.com/grpc/grpc-swift.git", from: "1.0.0-alpha.1")
 ]
 ```
 
@@ -42,11 +42,11 @@ dependencies: [
 
 From Xcode 11 it is possible to [add Swift Package dependencies to Xcode
 projects][xcode-spm] and link targets to products of those packages; this is the
-easiest way to integrate Swift gRPC with an existing `xcodeproj`.
+easiest way to integrate gRPC Swift with an existing `xcodeproj`.
 
 ##### Manual Integration
 
-Alternatively, Swift gRPC can be manually integrated into a project:
+Alternatively, gRPC Swift can be manually integrated into a project:
 
 1. Build an Xcode project: `swift package generate-xcodeproj`,
 1. Add the generated project to your own project, and
@@ -71,11 +71,11 @@ To install these plugins, just copy the two executables (`protoc-gen-swift` and
 is part of your `PATH` environment variable. Alternatively the full path to the
 plugins can be specified when using `protoc`.
 
-## Using Swift gRPC
+## Using gRPC Swift
 
 ### Recommended
 
-The recommended way to use Swift gRPC is to first define an API using the
+The recommended way to use gRPC Swift is to first define an API using the
 [Protocol Buffer][protobuf] language and then use the [Protocol Buffer
 Compiler][protobuf] and the [Swift Protobuf][swift-protobuf] and [Swift
 gRPC](#getting-the-protoc-plugins) plugins to generate the necessary
@@ -144,7 +144,7 @@ directory:
 protoc echo.proto --swift_out=.
 ```
 
-Swift gRPC provides a plugin (`protoc-gen-swiftgrpc`) to generate the client
+gRPC Swift provides a plugin (`protoc-gen-swiftgrpc`) to generate the client
 and server for the `Echo` service defined above. It can be invoked to produce
 `echo.grpc.swift` as such:
 
@@ -349,7 +349,7 @@ methods which have been added to the service since the client was generated.
 
 ### API Types
 
-Swift gRPC provides all four API styles: Unary, Server Streaming, Client
+gRPC Swift provides all four API styles: Unary, Server Streaming, Client
 Streaming, and Bidirectional Streaming. Calls to the generated types will return
 an object of the approriate type:
 
@@ -452,7 +452,7 @@ protoc <your proto> --swiftgrpc_out=Client=true,Server=false:.
 
 ## License
 
-Swift gRPC is released under the same license as [gRPC][grpc], repeated in
+gRPC Swift is released under the same license as [gRPC][grpc], repeated in
 [LICENSE](LICENSE).
 
 ## Contributing
