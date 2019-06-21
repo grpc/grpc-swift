@@ -1,8 +1,8 @@
 [![Build Status](https://travis-ci.org/grpc/grpc-swift.svg?branch=nio)](https://travis-ci.org/grpc/grpc-swift)
 
-# Swift gRPC
+# gRPC Swift
 
-This repository contains a Swift gRPC API and code generator.
+This repository contains a gRPC Swift API and code generator.
 
 It is intended for use with Apple's [SwiftProtobuf][swift-protobuf] support for
 Protocol Buffers. Both projects contain code generation plugins for `protoc`,
@@ -15,12 +15,12 @@ all four gRPC API styles (Unary, Server Streaming, Client Streaming, and
 Bidirectional Streaming) and connections can be made either over secure (TLS) or
 insecure channels.
 
-Swift gRPC is built on top of [Swift NIO][swift-nio] as opposed to the core
+gRPC Swift is built on top of [Swift NIO][swift-nio] as opposed to the core
 library provided by the [gRPC project][grpc].
 
 ## Getting Started
 
-There are two parts to Swift gRPC: the gRPC library and an API code generator.
+There are two parts to gRPC Swift: the gRPC library and an API code generator.
 
 ### Getting the gRPC library
 
@@ -28,13 +28,13 @@ Note that this package requires Swift 5.
 
 #### Swift Package Manager
 
-The Swift Package Manager is the preferred way to get Swift gRPC. Simply add the
+The Swift Package Manager is the preferred way to get gRPC Swift. Simply add the
 package dependency to your `Package.swift` and depend on `"GRPC"` in the
 necessary targets:
 
 ```swift
 dependencies: [
-  .package(url: "https://github.com/grpc/grpc-swift.git", .branch("nio"))
+  .package(url: "https://github.com/grpc/grpc-swift.git", from: "1.0.0-alpha.1")
 ]
 ```
 
@@ -42,11 +42,11 @@ dependencies: [
 
 From Xcode 11 it is possible to [add Swift Package dependencies to Xcode
 projects][xcode-spm] and link targets to products of those packages; this is the
-easiest way to integrate Swift gRPC with an existing `xcodeproj`.
+easiest way to integrate gRPC Swift with an existing `xcodeproj`.
 
 ##### Manual Integration
 
-Alternatively, Swift gRPC can be manually integrated into a project:
+Alternatively, gRPC Swift can be manually integrated into a project:
 
 1. Build an Xcode project: `swift package generate-xcodeproj`,
 1. Add the generated project to your own project, and
@@ -71,11 +71,11 @@ To install these plugins, just copy the two executables (`protoc-gen-swift` and
 is part of your `PATH` environment variable. Alternatively the full path to the
 plugins can be specified when using `protoc`.
 
-## Using Swift gRPC
+## Using gRPC Swift
 
 ### Recommended
 
-The recommended way to use Swift gRPC is to first define an API using the
+The recommended way to use gRPC Swift is to first define an API using the
 [Protocol Buffer][protobuf] language and then use the [Protocol Buffer
 Compiler][protobuf] and the [Swift Protobuf][swift-protobuf] and [Swift
 gRPC](#getting-the-protoc-plugins) plugins to generate the necessary
@@ -144,7 +144,7 @@ directory:
 protoc echo.proto --swift_out=.
 ```
 
-Swift gRPC provides a plugin (`protoc-gen-swiftgrpc`) to generate the client
+gRPC Swift provides a plugin (`protoc-gen-swiftgrpc`) to generate the client
 and server for the `Echo` service defined above. It can be invoked to produce
 `echo.grpc.swift` as such:
 
@@ -197,7 +197,7 @@ let port = 8080
 ```
 
 First we need to start the server and provide the Echo service using the
-`EchoProvider` we implemented above. We create a [multhithreaded event loop
+`EchoProvider` we implemented above. We create an [event loop
 group][nio-ref-elg] which will spawn a single thread to run events on the
 server. Note that you can also use `System.coreCount` to get the number of
 logical cores on your system.
@@ -205,13 +205,13 @@ logical cores on your system.
 We also `wait` for the server to start before setting up a client.
 
 ```swift
-let serverEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-let server = try Server.start(
-  hostname: host,
-  port: port,
+let serverEventLoopGroup = GRPCNIO.makeEventLoopGroup(numberOfThreads: 1)
+let configuration = Server.Configuration(
+  target: .hostAndPort(address, port),
   eventLoopGroup: serverEventLoopGroup,
-  serviceProviders: [EchoProvider()]
-).wait()
+  serviceProviders: [EchoProvider()])
+
+let server = try Server.start(configuration: configuration).wait()
 ```
 
 Note that the at the end of the program, the `serverEventLoopGroup` whould be
@@ -226,16 +226,15 @@ means to make gRPC calls via a generated client. Note that
 `Echo_EchoServiceClient` is the client we generated from `echo.proto`.
 
 ```swift
-let clientEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+let clientEventLoopGroup = GRPCNIO.makeEventLoopGroup(loopCount: 1)
 let configuration = ClientConnection.Configuration(
   target: .hostAndPort(host, port),
   eventLoopGroup: clientEventLoopGroup
 )
 
-let echo = try ClientConnection.start(configuration).map {
-  // This is our generated client, we only need to pass it a connection.
-  Echo_EchoServiceClient(connection: $0)
-}.wait()
+let connection = ClientConnection(configuration: configuration)
+// This is our generated client, we only need to pass it a connection.
+let echo = Echo_EchoServiceClient(connection: connection)
 ```
 
 Note that the `clientEventLoopGroup` should also be shutdown when it is no
@@ -350,14 +349,14 @@ methods which have been added to the service since the client was generated.
 
 ### API Types
 
-Swift gRPC provides all four API styles: Unary, Server Streaming, Client
+gRPC Swift provides all four API styles: Unary, Server Streaming, Client
 Streaming, and Bidirectional Streaming. Calls to the generated types will return
 an object of the approriate type:
 
-- `UnaryClientCall<Request, Response>`
-- `ClientStreamingClientCall<Request, Response>`
-- `ServerStreamingClientCall<Request, Response>`
-- `BidirectionalStreamingClientCall<Request, Response>`
+- `UnaryCall<Request, Response>`
+- `ClientStreamingCall<Request, Response>`
+- `ServerStreamingCall<Request, Response>`
+- `BidirectionalStreamingCall<Request, Response>`
 
 Each call object provides [futures][nio-ref-elf] for the initial metadata,
 trailing metadata, and status. _Unary response_ calls also have a future for the
@@ -409,6 +408,29 @@ let configuration = TLSConfiguration.forServer(
 
 Note that the gRPC specification requires TLS v1.2 or later.
 
+### NIO vs. NIO Transport Services
+
+NIO offers extensions to provide first-class support for Apple platforms (iOS
+12+, macOS 10.14+, tvOS 12+, watchOS 6+) via [NIO Transport Services][nio-ts].
+NIO Transport Services uses [Network.framework][network-framework] and
+`DispatchQueue`s to schedule tasks.
+
+To use NIO Transport Services in gRPC Swift you need to provide a
+`NIOTSEventLoopGroup` to the configuration of your server or client connection.
+gRPC Swift provides a helper method to provide the correct `EventLoopGroup`
+based on the network preference:
+
+```swift
+GRPCNIO.makeEventLoopGroup(loopCount:networkPreference:) -> EventLoopGroup
+```
+
+Here `networkPreference` defaults to `.best`, which chooses the
+`.networkFramework` implementation if it is available (iOS 12+, macOS 10.14+,
+tvOS 12+, watchOS 6+) and uses `.posix` otherwise.
+
+Using the TLS provided by `Network.framework` via NIO Transport Services is not
+currently supported. Instead, TLS is provided by `NIOSSL`.
+
 ### Plugin Options
 
 To pass extra parameters to the plugin, use a comma-separated parameter list
@@ -430,7 +452,7 @@ protoc <your proto> --swiftgrpc_out=Client=true,Server=false:.
 
 ## License
 
-Swift gRPC is released under the same license as [gRPC][grpc], repeated in
+gRPC Swift is released under the same license as [gRPC][grpc], repeated in
 [LICENSE](LICENSE).
 
 ## Contributing
@@ -440,10 +462,12 @@ Please get involved! See our [guidelines for contributing](CONTRIBUTING.md).
 
 [example-echo]: Sources/Examples/Echo
 [grpc]: https://github.com/grpc/grpc
+[network-framework]: https://developer.apple.com/documentation/network
 [nio-ref-elf]: https://apple.github.io/swift-nio/docs/current/NIO/Classes/EventLoopFuture.html
-[nio-ref-elg]: https://apple.github.io/swift-nio/docs/current/NIO/Classes/MultiThreadedEventLoopGroup.html
+[nio-ref-elg]: https://apple.github.io/swift-nio/docs/current/NIO/Protocols/EventLoopGroup.html
 [nio-ref-sslcontext]: https://apple.github.io/swift-nio-ssl/docs/current/NIOSSL/Classes/NIOSSLContext.html
 [nio-ref-tlsconfig]: https://apple.github.io/swift-nio-ssl/docs/current/NIOSSL/Structs/TLSConfiguration.html
+[nio-ts]: https://github.com/apple/swift-nio-transport-services
 [protobuf-releases]: https://github.com/protocolbuffers/protobuf/releases
 [protobuf]: https://github.com/google/protobuf
 [swift-nio]: https://github.com/apple/swift-nio
