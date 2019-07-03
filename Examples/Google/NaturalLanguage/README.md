@@ -1,7 +1,7 @@
 # Calling the Google Cloud Natural Language API
 
 This directory contains a very simple sample that calls the 
-[Google Cloud Natural Language API](https://cloud.google.com/datastore/docs/reference/rpc/google.datastore.v1).
+[Google Cloud Natural Language API](https://cloud.google.com/natural-language/docs/reference/rpc/google.cloud.language.v1).
 Calls are made directly to the Cloud Natural Language RPC interface. 
 In practice, these would be wrapped in idiomatic code.
 
