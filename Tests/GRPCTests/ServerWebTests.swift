@@ -110,12 +110,8 @@ extension ServerWebTests {
     let numberOfRequests = 2_000
 
     let completionHandlerExpectation = expectation(description: "completion handler called")
-    // Linux version of Swift doesn't have the `expectedFulfillmentCount` API yet.
-    // Implemented in https://github.com/apple/swift-corelibs-xctest/pull/228 but not yet
-    // released.
-    //
-    // Wait for the expected number of responses (i.e. `numberOfRequests`) instead.
-    var responses = 0
+    completionHandlerExpectation.expectedFulfillmentCount = numberOfRequests
+    completionHandlerExpectation.assertForOverFulfill = true
 
     for i in 0..<numberOfRequests {
       let message = "foo \(i)"
@@ -125,11 +121,7 @@ extension ServerWebTests {
         XCTAssertNil(error)
         if let data = data {
           XCTAssertEqual(String(data: data, encoding: .utf8), expectedResponse)
-          responses += 1
-
-          if responses == numberOfRequests {
-            completionHandlerExpectation.fulfill()
-          }
+          completionHandlerExpectation.fulfill()
         }
       }
     }
@@ -139,7 +131,6 @@ extension ServerWebTests {
 
   func testServerStreaming() {
     let message = "foo bar baz"
-
 
     var expectedData = Data()
     var index = 0
