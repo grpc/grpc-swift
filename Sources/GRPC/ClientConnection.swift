@@ -159,6 +159,11 @@ extension ClientConnection {
     connectivityMonitor: ConnectivityStateMonitor,
     backoffIterator: ConnectionBackoff.Iterator?
   ) -> EventLoopFuture<Channel> {
+    // We could have been shutdown by the user, avoid a connection attempt if this is the case.
+    guard connectivityMonitor.state != .shutdown else {
+      return configuration.eventLoopGroup.next().makeFailedFuture(GRPCStatus.processingError)
+    }
+
     connectivityMonitor.state = .connecting
     let timeoutAndBackoff = backoffIterator?.next()
     var bootstrap = ClientConnection.makeBootstrap(configuration: configuration)
@@ -174,14 +179,12 @@ extension ClientConnection {
       } else {
         return channel.eventLoop.makeSucceededFuture(channel)
       }
-    }.always { result in
-      switch result {
-      case .success:
-        // Update the state once the channel has been assigned, when it may be used for making
-        // RPCs.
-        break
+    }
 
-      case .failure:
+    channel.whenFailure { _ in
+      // We could have been shutdown by the user whilst we were connecting. If we were then avoid
+      // the this extra state transition.
+      if connectivityMonitor.state != .shutdown {
         // We might try again in a moment.
         connectivityMonitor.state = timeoutAndBackoff == nil ? .shutdown : .transientFailure
       }
