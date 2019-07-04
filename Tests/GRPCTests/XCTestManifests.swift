@@ -108,9 +108,6 @@ extension ConnectivityStateMonitorTests {
     // to regenerate.
     static let __allTests__ConnectivityStateMonitorTests = [
         ("testDelegateOnlyCalledForChanges", testDelegateOnlyCalledForChanges),
-        ("testMultipleCallbacksRegistered", testMultipleCallbacksRegistered),
-        ("testOnNextIsOnlyInvokedOnce", testOnNextIsOnlyInvokedOnce),
-        ("testRemovingCallbacks", testRemovingCallbacks),
     ]
 }
 
