@@ -56,6 +56,7 @@ cgrpc_channel *cgrpc_channel_create_secure(const char *address,
   grpc_channel_credentials *creds = grpc_ssl_credentials_create(pem_root_certs, client_credentials_pointer, NULL, NULL);
 
   c->channel = grpc_secure_channel_create(creds, address, &channel_args, NULL);
+  grpc_channel_credentials_release(creds);
   c->completion_queue = grpc_completion_queue_create_for_next(NULL);
   return c;
 }
@@ -72,6 +73,7 @@ cgrpc_channel *cgrpc_channel_create_google(const char *address,
   grpc_channel_credentials *google_creds = grpc_google_default_credentials_create();
 
   c->channel = grpc_secure_channel_create(google_creds, address, &channel_args, NULL);
+  grpc_channel_credentials_release(google_creds);
   c->completion_queue = grpc_completion_queue_create_for_next(NULL);
   return c;
 }
