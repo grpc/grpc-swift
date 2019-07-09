@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import Foundation
+import NIOConcurrencyHelpers
 
 /// The connectivity state of a client connection. Note that this is heavily lifted from the gRPC
 /// documentation: https://github.com/grpc/grpc/blob/master/doc/connectivity-semantics-and-api.md.
@@ -53,25 +54,72 @@ public protocol ConnectivityStateDelegate: class {
 }
 
 public class ConnectivityStateMonitor {
-  public typealias Callback = () -> Void
-
   /// A delegate to call when the connectivity state changes.
   public var delegate: ConnectivityStateDelegate?
 
-  /// The current state of connectivity.
-  public internal(set) var state: ConnectivityState {
-    didSet {
-      if oldValue != self.state {
-        self.delegate?.connectivityStateDidChange(from: oldValue, to: self.state)
-      }
-    }
-  }
+  private let lock = Lock()
+  private var _state: ConnectivityState = .idle
+  private var _userInitiatedShutdown = false
 
   /// Creates a new connectivity state monitor.
   ///
   /// - Parameter delegate: A delegate to call when the connectivity state changes.
   public init(delegate: ConnectivityStateDelegate?) {
     self.delegate = delegate
-    self.state = .idle
+  }
+
+  /// The current state of connectivity.
+  public internal(set) var state: ConnectivityState {
+    get {
+      return self.lock.withLock {
+        self._state
+      }
+    }
+    set {
+      self.lock.withLockVoid {
+        self.setNewState(to: newValue)
+      }
+    }
+  }
+
+  /// Updates `_state` to `newValue`.
+  ///
+  /// If the user has initiated shutdown then state updates are _ignored_. This may happen if the
+  /// connection is being estabilshed as the user initiates shutdown.
+  ///
+  /// - Important: This is **not** thread safe.
+  private func setNewState(to newValue: ConnectivityState) {
+    if self._userInitiatedShutdown {
+      return
+    }
+
+    let oldValue = self._state
+    if oldValue != newValue {
+      self._state = newValue
+      self.delegate?.connectivityStateDidChange(from: oldValue, to: newValue)
+    }
+  }
+
+  /// Initiates a user shutdown.
+  func initiateUserShutdown() {
+    self.lock.withLockVoid {
+      self.setNewState(to: .shutdown)
+      self._userInitiatedShutdown = true
+    }
+  }
+
+  /// Whether the user has initiated a shutdown or not.
+  var userHasInitiatedShutdown: Bool {
+    return self.lock.withLock {
+      return self._userInitiatedShutdown
+    }
+  }
+
+  /// Whether we can attempt a reconnection, that is the user has not initiated a shutdown and we
+  /// are in the `.ready` state.
+  var canAttemptReconnect: Bool {
+    return self.lock.withLock {
+      return !self._userInitiatedShutdown && self._state == .ready
+    }
   }
 }
