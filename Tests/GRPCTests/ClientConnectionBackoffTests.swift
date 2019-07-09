@@ -28,8 +28,45 @@ class ConnectivityStateCollectionDelegate: ConnectivityStateDelegate {
     return self.states
   }
 
+  var idleExpectation: XCTestExpectation?
+  var connectingExpectation: XCTestExpectation?
+  var readyExpectation: XCTestExpectation?
+  var transientFailureExpectation: XCTestExpectation?
+  var shutdownExpectation: XCTestExpectation?
+
+  init(
+    idle: XCTestExpectation? = nil,
+    connecting: XCTestExpectation? = nil,
+    ready: XCTestExpectation? = nil,
+    transientFailure: XCTestExpectation? = nil,
+    shutdown: XCTestExpectation? = nil
+  ) {
+    self.idleExpectation = idle
+    self.connectingExpectation = connecting
+    self.readyExpectation = ready
+    self.transientFailureExpectation = transientFailure
+    self.shutdownExpectation = shutdown
+  }
+
   func connectivityStateDidChange(from oldState: ConnectivityState, to newState: ConnectivityState) {
     self.states.append(newState)
+
+    switch newState {
+    case .idle:
+      self.idleExpectation?.fulfill()
+
+    case .connecting:
+      self.connectingExpectation?.fulfill()
+
+    case .ready:
+      self.readyExpectation?.fulfill()
+
+    case .transientFailure:
+      self.transientFailureExpectation?.fulfill()
+
+    case .shutdown:
+      self.shutdownExpectation?.fulfill()
+    }
   }
 }
 
@@ -93,28 +130,21 @@ class ClientConnectionBackoffTests: XCTestCase {
     configuration.connectionBackoff = nil
 
     let connectionShutdown = self.expectation(description: "client shutdown")
+    self.stateDelegate.shutdownExpectation = connectionShutdown
     self.client = self.makeClientConnection(configuration)
-    self.client.connectivity.onNext(state: .shutdown) {
-      connectionShutdown.fulfill()
-    }
 
     self.wait(for: [connectionShutdown], timeout: 1.0)
     XCTAssertEqual(self.stateDelegate.states, [.connecting, .shutdown])
   }
 
   func testClientEventuallyConnects() throws {
+    let transientFailure = self.expectation(description: "connection transientFailure")
+    let connectionReady = self.expectation(description: "connection ready")
+    self.stateDelegate.transientFailureExpectation = transientFailure
+    self.stateDelegate.readyExpectation = connectionReady
+
     // Start the client first.
     self.client = self.makeClientConnection(self.makeClientConfiguration())
-
-    let transientFailure = self.expectation(description: "connection transientFailure")
-    self.client.connectivity.onNext(state: .transientFailure) {
-      transientFailure.fulfill()
-    }
-
-    let connectionReady = self.expectation(description: "connection ready")
-    self.client.connectivity.onNext(state: .ready) {
-      connectionReady.fulfill()
-    }
 
     self.wait(for: [transientFailure], timeout: 1.0)
 
@@ -128,10 +158,8 @@ class ClientConnectionBackoffTests: XCTestCase {
 
   func testClientEventuallyTimesOut() throws {
     let connectionShutdown = self.expectation(description: "connection shutdown")
+    self.stateDelegate.shutdownExpectation = connectionShutdown
     self.client = self.makeClientConnection(self.makeClientConfiguration())
-    self.client.connectivity.onNext(state: .shutdown) {
-      connectionShutdown.fulfill()
-    }
 
     self.wait(for: [connectionShutdown], timeout: 1.0)
     XCTAssertEqual(self.stateDelegate.states, [.connecting, .transientFailure, .connecting, .shutdown])
@@ -141,13 +169,15 @@ class ClientConnectionBackoffTests: XCTestCase {
     self.server = self.makeServer()
     let server = try self.server.wait()
 
-    let connectionReady = self.expectation(description: "connection ready")
     var configuration = self.makeClientConfiguration()
     configuration.connectionBackoff!.maximumBackoff = 2.0
+
+    let connectionReady = self.expectation(description: "connection ready")
+    let transientFailure = self.expectation(description: "connection transientFailure")
+    self.stateDelegate.readyExpectation = connectionReady
+    self.stateDelegate.transientFailureExpectation = transientFailure
+
     self.client = self.makeClientConnection(configuration)
-    self.client.connectivity.onNext(state: .ready) {
-      connectionReady.fulfill()
-    }
 
     // Once the connection is ready we can kill the server.
     self.wait(for: [connectionReady], timeout: 1.0)
@@ -158,18 +188,12 @@ class ClientConnectionBackoffTests: XCTestCase {
     self.server = nil
     self.serverGroup = nil
 
-    let transientFailure = self.expectation(description: "connection transientFailure")
-    self.client.connectivity.onNext(state: .transientFailure) {
-      transientFailure.fulfill()
-    }
-
     self.wait(for: [transientFailure], timeout: 1.0)
     XCTAssertEqual(self.stateDelegate.clearStates(), [.connecting, .transientFailure])
 
+    // Replace the ready expectation (since it's already been fulfilled).
     let reconnectionReady = self.expectation(description: "(re)connection ready")
-    self.client.connectivity.onNext(state: .ready) {
-      reconnectionReady.fulfill()
-    }
+    self.stateDelegate.readyExpectation = reconnectionReady
 
     let echo = Echo_EchoServiceClient(connection: self.client)
     // This should succeed once we get a connection again.

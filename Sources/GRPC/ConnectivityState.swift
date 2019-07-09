@@ -55,12 +55,6 @@ public protocol ConnectivityStateDelegate: class {
 public class ConnectivityStateMonitor {
   public typealias Callback = () -> Void
 
-  private var idleCallback: Callback?
-  private var connectingCallback: Callback?
-  private var readyCallback: Callback?
-  private var transientFailureCallback: Callback?
-  private var shutdownCallback: Callback?
-
   /// A delegate to call when the connectivity state changes.
   public var delegate: ConnectivityStateDelegate?
 
@@ -69,7 +63,6 @@ public class ConnectivityStateMonitor {
     didSet {
       if oldValue != self.state {
         self.delegate?.connectivityStateDidChange(from: oldValue, to: self.state)
-        self.triggerAndResetCallback()
       }
     }
   }
@@ -80,54 +73,5 @@ public class ConnectivityStateMonitor {
   public init(delegate: ConnectivityStateDelegate?) {
     self.delegate = delegate
     self.state = .idle
-  }
-
-  /// Registers a callback on the given state and calls it the next time that state is observed.
-  /// Subsequent transitions to that state will **not** trigger the callback.
-  ///
-  /// - Parameter state: The state on which to call the given callback.
-  /// - Parameter callback: The closure to call once the given state has been transitioned to. The
-  ///     `callback` can be removed by passing in `nil`.
-  public func onNext(state: ConnectivityState, callback: Callback?) {
-    switch state {
-    case .idle:
-      self.idleCallback = callback
-
-    case .connecting:
-      self.connectingCallback = callback
-
-    case .ready:
-      self.readyCallback = callback
-
-    case .transientFailure:
-      self.transientFailureCallback = callback
-
-    case .shutdown:
-      self.shutdownCallback = callback
-    }
-  }
-
-  private func triggerAndResetCallback() {
-    switch self.state {
-    case .idle:
-      self.idleCallback?()
-      self.idleCallback = nil
-
-    case .connecting:
-      self.connectingCallback?()
-      self.connectingCallback = nil
-
-    case .ready:
-      self.readyCallback?()
-      self.readyCallback = nil
-
-    case .transientFailure:
-      self.transientFailureCallback?()
-      self.transientFailureCallback = nil
-
-    case .shutdown:
-      self.shutdownCallback?()
-      self.shutdownCallback = nil
-    }
   }
 }

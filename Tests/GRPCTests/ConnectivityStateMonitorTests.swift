@@ -24,7 +24,7 @@ class ConnectivityStateMonitorTests: XCTestCase {
   let states: [ConnectivityState] = [.connecting, .ready, .transientFailure, .shutdown, .idle]
 
   func testDelegateOnlyCalledForChanges() {
-    let recorder = StateRecordingDelegate()
+    let recorder = ConnectivityStateCollectionDelegate()
     self.monitor.delegate = recorder
 
     self.monitor.state = .connecting
@@ -33,61 +33,5 @@ class ConnectivityStateMonitorTests: XCTestCase {
     self.monitor.state = .shutdown
 
     XCTAssertEqual(recorder.states, [.connecting, .ready, .shutdown])
-  }
-
-  func testOnNextIsOnlyInvokedOnce() {
-    for state in self.states {
-      let currentState = self.monitor.state
-
-      var calls = 0
-      self.monitor.onNext(state: state) {
-        calls += 1
-      }
-
-      // Trigger the callback.
-      self.monitor.state = state
-      XCTAssertEqual(calls, 1)
-
-      // Go back and forth; the callback should not be triggered again.
-      self.monitor.state = currentState
-      self.monitor.state = state
-      XCTAssertEqual(calls, 1)
-    }
-  }
-
-  func testRemovingCallbacks() {
-    for state in self.states {
-      self.monitor.onNext(state: state) {
-        XCTFail("Callback unexpectedly called")
-      }
-
-      self.monitor.onNext(state: state, callback: nil)
-      self.monitor.state = state
-    }
-  }
-
-  func testMultipleCallbacksRegistered() {
-    var calls = 0
-    self.states.forEach {
-      self.monitor.onNext(state: $0) {
-        calls += 1
-      }
-    }
-
-    self.states.forEach {
-      self.monitor.state = $0
-    }
-
-    XCTAssertEqual(calls, self.states.count)
-  }
-}
-
-extension ConnectivityStateMonitorTests {
-  /// A `ConnectivityStateDelegate` which each new state.
-  class StateRecordingDelegate: ConnectivityStateDelegate {
-    var states: [ConnectivityState] = []
-    func connectivityStateDidChange(from oldState: ConnectivityState, to newState: ConnectivityState) {
-      self.states.append(newState)
-    }
   }
 }

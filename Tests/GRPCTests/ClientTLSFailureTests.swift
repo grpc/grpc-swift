@@ -121,10 +121,10 @@ class ClientTLSFailureTests: XCTestCase {
     let errorRecorder = ErrorRecordingDelegate(expectation: errorExpectation)
     configuration.errorDelegate = errorRecorder
 
-    let connection = ClientConnection(configuration: configuration)
-    connection.connectivity.onNext(state: .shutdown) {
-      shutdownExpectation.fulfill()
-    }
+    let stateChangeDelegate = ConnectivityStateCollectionDelegate(shutdown: shutdownExpectation)
+    configuration.connectivityStateDelegate = stateChangeDelegate
+
+    _ = ClientConnection(configuration: configuration)
 
     self.wait(for: [shutdownExpectation, errorExpectation], timeout: self.defaultTestTimeout)
 
@@ -143,10 +143,10 @@ class ClientTLSFailureTests: XCTestCase {
     let errorRecorder = ErrorRecordingDelegate(expectation: errorExpectation)
     configuration.errorDelegate = errorRecorder
 
-    let connection = ClientConnection(configuration: configuration)
-    connection.connectivity.onNext(state: .shutdown) {
-      shutdownExpectation.fulfill()
-    }
+    let stateChangeDelegate = ConnectivityStateCollectionDelegate(shutdown: shutdownExpectation)
+    configuration.connectivityStateDelegate = stateChangeDelegate
+
+    _ = ClientConnection(configuration: configuration)
 
     self.wait(for: [shutdownExpectation, errorExpectation], timeout: self.defaultTestTimeout)
 
@@ -170,10 +170,10 @@ class ClientTLSFailureTests: XCTestCase {
     let errorRecorder = ErrorRecordingDelegate(expectation: errorExpectation)
     configuration.errorDelegate = errorRecorder
 
-    let connection = ClientConnection(configuration: configuration)
-    connection.connectivity.onNext(state: .shutdown) {
-      shutdownExpectation.fulfill()
-    }
+    let stateChangeDelegate = ConnectivityStateCollectionDelegate(shutdown: shutdownExpectation)
+    configuration.connectivityStateDelegate = stateChangeDelegate
+
+    let _ = ClientConnection(configuration: configuration)
 
     self.wait(for: [shutdownExpectation, errorExpectation], timeout: self.defaultTestTimeout)
 
