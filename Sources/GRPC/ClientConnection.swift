@@ -64,11 +64,8 @@ public class ClientConnection {
     }
   }
 
-  // This is implicitly unwrapped to avoid walking the channel twice to find the multiplexer
-  // in `init`. Specifically: we only initialize `multiplexer` in `willSetChannel(to:)` instead
-  // of explicitly initializing it in the `init` as well.
   /// HTTP multiplexer from the `channel` handling gRPC calls.
-  internal var multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>!
+  internal var multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>
 
   /// The configuration for this client.
   internal let configuration: Configuration
@@ -81,13 +78,21 @@ public class ClientConnection {
     self.configuration = configuration
     self.connectivity = ConnectivityStateMonitor(delegate: configuration.connectivityStateDelegate)
 
+    // We need to initialize `multiplexer` before we can call `willSetChannel` (which will then
+    // assign `multiplexer` to one from the created `Channel`s pipeline).
+    let eventLoop = configuration.eventLoopGroup.next()
+    let unavailable = GRPCStatus(code: .unavailable, message: nil)
+    self.multiplexer = eventLoop.makeFailedFuture(unavailable)
+
     self.channel = ClientConnection.makeChannel(
       configuration: self.configuration,
-      connectivity: self.connectivity
+      connectivity: self.connectivity,
+      backoffIterator: self.configuration.connectionBackoff?.makeIterator()
     )
 
-    self.willSetChannel(to: self.channel)
-    self.didSetChannel(to: self.channel)
+    // `willSet` and `didSet` are called on initialization, so call them explicitly now.
+    self.willSetChannel(to: channel)
+    self.didSetChannel(to: channel)
   }
 
   /// The `EventLoop` this connection is using.
@@ -128,7 +133,8 @@ extension ClientConnection {
       guard self.connectivity.canAttemptReconnect else { return }
       self.channel = ClientConnection.makeChannel(
         configuration: self.configuration,
-        connectivity: self.connectivity
+        connectivity: self.connectivity,
+        backoffIterator: self.configuration.connectionBackoff?.makeIterator()
       )
     }
 
@@ -150,21 +156,6 @@ extension ClientConnection {
         self.connectivity.state = .shutdown
       }
     }
-  }
-
-  /// Attempts to create a new `Channel` using the given configuration.
-  ///
-  /// See `makeChannel(configuration:connectivity:backoffIterator:)`.
-  private class func makeChannel(
-    configuration: Configuration,
-    connectivity: ConnectivityStateMonitor
-  ) -> EventLoopFuture<Channel> {
-    let iterator = configuration.connectionBackoff?.makeIterator()
-    return ClientConnection.makeChannel(
-      configuration: configuration,
-      connectivity: connectivity,
-      backoffIterator: iterator
-    )
   }
 
   /// Attempts to create a new `Channel` using the given configuration.
@@ -206,7 +197,7 @@ extension ClientConnection {
       return channel
     }
 
-    // If our connection attempt was unsuccessful schedule another attempt in some time.
+    // If our connection attempt was unsuccessful, schedule another attempt in some time.
     return channel.flatMapError { _ in
       // We will try to connect again: the failure is transient.
       connectivity.state = .transientFailure
