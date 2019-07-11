@@ -18,6 +18,7 @@ import NIO
 import NIOHTTP1
 import NIOHTTP2
 import SwiftProtobuf
+import Logging
 
 /// This class provides much of the boilerplate for the four types of gRPC call objects returned to framework
 /// users.
@@ -56,6 +57,8 @@ import SwiftProtobuf
 ///
 /// This class also provides much of the framework user facing functionality via conformance to `ClientCall`.
 open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
+  internal let logger: Logger
+
   /// The underlying `ClientConnection` providing the HTTP/2 channel and multiplexer.
   internal let connection: ClientConnection
 
@@ -87,8 +90,11 @@ open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
   init(
     connection: ClientConnection,
     responseHandler: ClientResponseChannelHandler<ResponseMessage>,
-    requestHandler: ClientRequestChannelHandler<RequestMessage>
+    requestHandler: ClientRequestChannelHandler<RequestMessage>,
+    logger: Logger
   ) {
+    self.logger = logger
+
     self.connection = connection
     self.responseHandler = responseHandler
     self.requestHandler = requestHandler
@@ -99,6 +105,7 @@ open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
     self.status = self.responseHandler.statusPromise.futureResult
 
     self.streamPromise.futureResult.whenFailure { error in
+      self.logger.error("failed to create http/2 stream: \(error)")
       self.responseHandler.observeError(.unknown(error, origin: .client))
     }
 
@@ -109,6 +116,7 @@ open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
   /// stream channel once it has been created.
   private func createStreamChannel() {
     self.connection.multiplexer.whenFailure { error in
+      self.logger.error("failed to get http/2 multiplexer: \(error)")
       self.streamPromise.fail(error)
     }
 
@@ -116,8 +124,8 @@ open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
       multiplexer.createStreamChannel(promise: self.streamPromise) { (subchannel, streamID) -> EventLoopFuture<Void> in
         subchannel.pipeline.addHandlers(
           HTTP2ToHTTP1ClientCodec(streamID: streamID, httpProtocol: self.connection.configuration.httpProtocol),
-          HTTP1ToRawGRPCClientCodec(),
-          GRPCClientCodec<RequestMessage, ResponseMessage>(),
+          HTTP1ToRawGRPCClientCodec(logger: self.logger),
+          GRPCClientCodec<RequestMessage, ResponseMessage>(logger: self.logger),
           self.requestHandler,
           self.responseHandler)
       }
@@ -133,9 +141,17 @@ extension BaseClientCall: ClientCall {
   }
 
   public func cancel() {
+    self.logger.info("cancelling call")
     self.connection.channel.eventLoop.execute {
-      self.subchannel.whenSuccess { channel in
-        channel.pipeline.fireUserInboundEventTriggered(GRPCClientUserEvent.cancelled)
+      self.subchannel.whenComplete { result in
+        switch result {
+        case .success(let channel):
+          self.logger.debug("firing .cancelled event")
+          channel.pipeline.fireUserInboundEventTriggered(GRPCClientUserEvent.cancelled)
+
+        case .failure(let error):
+          self.logger.debug("cancelling call will no-op because no http/2 stream was created: \(error)")
+        }
       }
     }
   }

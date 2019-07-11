@@ -16,6 +16,7 @@
 import Foundation
 import SwiftProtobuf
 import NIO
+import Logging
 
 /// A client-streaming gRPC call.
 ///
@@ -35,12 +36,21 @@ public final class ClientStreamingCall<RequestMessage: Message, ResponseMessage:
   private var messageQueue: EventLoopFuture<Void>
 
   public init(connection: ClientConnection, path: String, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?) {
+    let requestId = UUID()
+    let logger = Logger(subsystem: .clientChannelCall, requestId: requestId)
+    logger.info("making client streaming request to '\(path)'", metadata: [
+      MetadataKey.requestType: "\(RequestMessage.self)",
+      MetadataKey.responseType: "\(ResponseMessage.self)"
+    ])
+
     let responseHandler = GRPCClientUnaryResponseChannelHandler<ResponseMessage>(
       initialMetadataPromise: connection.channel.eventLoop.makePromise(),
       responsePromise: connection.channel.eventLoop.makePromise(),
       statusPromise: connection.channel.eventLoop.makePromise(),
       errorDelegate: errorDelegate,
-      timeout: callOptions.timeout)
+      timeout: callOptions.timeout,
+      logger: logger
+    )
 
     let requestHandler = StreamingRequestChannelHandler<RequestMessage>(
       requestHead: makeRequestHead(path: path, host: connection.configuration.target.host, callOptions: callOptions))
@@ -51,7 +61,9 @@ public final class ClientStreamingCall<RequestMessage: Message, ResponseMessage:
     super.init(
       connection: connection,
       responseHandler: responseHandler,
-      requestHandler: requestHandler)
+      requestHandler: requestHandler,
+      logger: logger
+    )
   }
 
   public func newMessageQueue() -> EventLoopFuture<Void> {

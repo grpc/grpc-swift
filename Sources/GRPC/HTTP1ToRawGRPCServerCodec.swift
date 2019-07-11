@@ -17,6 +17,7 @@ import Foundation
 import NIO
 import NIOHTTP1
 import NIOFoundationCompat
+import Logging
 
 /// Incoming gRPC package with an unknown message type (represented by a byte buffer).
 public enum RawGRPCServerRequestPart {
@@ -70,7 +71,11 @@ public final class HTTP1ToRawGRPCServerCodec {
   var outboundState = OutboundState.expectingHeaders
 
   var messageWriter = LengthPrefixedMessageWriter()
-  var messageReader = LengthPrefixedMessageReader(mode: .server, compressionMechanism: .none)
+  var messageReader = LengthPrefixedMessageReader(
+    mode: .server,
+    compressionMechanism: .none,
+    logger: Logger(subsystem: .messageReader)
+  )
 }
 
 extension HTTP1ToRawGRPCServerCodec {

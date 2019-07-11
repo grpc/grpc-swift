@@ -16,6 +16,7 @@
 import Foundation
 import SwiftProtobuf
 import NIO
+import Logging
 
 /// A bidirectional-streaming gRPC call. Each response is passed to the provided observer block.
 ///
@@ -33,12 +34,19 @@ public final class BidirectionalStreamingCall<RequestMessage: Message, ResponseM
 
   public init(connection: ClientConnection, path: String, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?, handler: @escaping (ResponseMessage) -> Void) {
     self.messageQueue = connection.channel.eventLoop.makeSucceededFuture(())
+    let requestId = UUID()
+    let logger = Logger(subsystem: .clientChannelCall, requestId: requestId)
+    logger.info("making bidirectional streaming request to '\(path)'", metadata: [
+      MetadataKey.requestType: "\(RequestMessage.self)",
+      MetadataKey.responseType: "\(ResponseMessage.self)"
+    ])
 
     let responseHandler = GRPCClientStreamingResponseChannelHandler(
       initialMetadataPromise: connection.channel.eventLoop.makePromise(),
       statusPromise: connection.channel.eventLoop.makePromise(),
       errorDelegate: errorDelegate,
       timeout: callOptions.timeout,
+      logger: logger,
       responseHandler: handler)
 
     let requestHandler = StreamingRequestChannelHandler<RequestMessage>(
@@ -47,7 +55,9 @@ public final class BidirectionalStreamingCall<RequestMessage: Message, ResponseM
     super.init(
       connection: connection,
       responseHandler: responseHandler,
-      requestHandler: requestHandler)
+      requestHandler: requestHandler,
+      logger: logger
+    )
   }
 
   public func newMessageQueue() -> EventLoopFuture<Void> {

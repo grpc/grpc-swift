@@ -18,6 +18,7 @@ import SwiftProtobuf
 import NIO
 import NIOHTTP1
 import NIOHTTP2
+import Logging
 
 /// A unary gRPC call. The request is sent on initialization.
 ///
@@ -32,12 +33,21 @@ public final class UnaryCall<RequestMessage: Message, ResponseMessage: Message>
   public let response: EventLoopFuture<ResponseMessage>
 
   public init(connection: ClientConnection, path: String, request: RequestMessage, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?) {
+    let requestId = UUID()
+    let logger = Logger(subsystem: .clientChannelCall, requestId: requestId)
+    logger.info("making unary request to '\(path)'", metadata: [
+      MetadataKey.requestType: "\(RequestMessage.self)",
+      MetadataKey.responseType: "\(ResponseMessage.self)"
+    ])
+
     let responseHandler = GRPCClientUnaryResponseChannelHandler<ResponseMessage>(
       initialMetadataPromise: connection.channel.eventLoop.makePromise(),
       responsePromise: connection.channel.eventLoop.makePromise(),
       statusPromise: connection.channel.eventLoop.makePromise(),
       errorDelegate: errorDelegate,
-      timeout: callOptions.timeout)
+      timeout: callOptions.timeout,
+      logger: logger
+    )
 
     let requestHandler = UnaryRequestChannelHandler<RequestMessage>(
       requestHead: makeRequestHead(path: path, host: connection.configuration.target.host, callOptions: callOptions),
@@ -47,6 +57,8 @@ public final class UnaryCall<RequestMessage: Message, ResponseMessage: Message>
     super.init(
       connection: connection,
       responseHandler: responseHandler,
-      requestHandler: requestHandler)
+      requestHandler: requestHandler,
+      logger: logger
+    )
   }
 }

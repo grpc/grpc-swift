@@ -16,6 +16,7 @@
 import Foundation
 import SwiftProtobuf
 import NIO
+import Logging
 
 /// A server-streaming gRPC call. The request is sent on initialization, each response is passed to the provided observer block.
 ///
@@ -25,11 +26,19 @@ import NIO
 /// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
 public final class ServerStreamingCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage> {
   public init(connection: ClientConnection, path: String, request: RequestMessage, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?, handler: @escaping (ResponseMessage) -> Void) {
+    let requestId = UUID()
+    let logger = Logger(subsystem: .clientChannelCall, requestId: requestId)
+    logger.info("making server streaming request to '\(path)'", metadata: [
+      MetadataKey.requestType: "\(RequestMessage.self)",
+      MetadataKey.responseType: "\(ResponseMessage.self)"
+      ])
+
     let responseHandler = GRPCClientStreamingResponseChannelHandler(
       initialMetadataPromise: connection.channel.eventLoop.makePromise(),
       statusPromise: connection.channel.eventLoop.makePromise(),
       errorDelegate: errorDelegate,
       timeout: callOptions.timeout,
+      logger: logger,
       responseHandler: handler)
 
     let requestHandler = UnaryRequestChannelHandler<RequestMessage>(
@@ -39,6 +48,8 @@ public final class ServerStreamingCall<RequestMessage: Message, ResponseMessage:
     super.init(
       connection: connection,
       responseHandler: responseHandler,
-      requestHandler: requestHandler)
+      requestHandler: requestHandler,
+      logger: logger
+    )
   }
 }

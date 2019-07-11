@@ -18,6 +18,7 @@ import NIO
 import NIOHTTP2
 import NIOSSL
 import NIOTLS
+import Logging
 
 /// Underlying channel and HTTP/2 stream multiplexer.
 ///
@@ -54,6 +55,8 @@ import NIOTLS
 ///
 /// See `BaseClientCall` for a description of the remainder of the client pipeline.
 public class ClientConnection {
+  internal static let logger = Logger(subsystem: .clientChannel)
+
   /// The channel which will handle gRPC calls.
   internal var channel: EventLoopFuture<Channel> {
     willSet {
@@ -106,6 +109,7 @@ public class ClientConnection {
       // We're already shutdown or in the process of shutting down.
       return channel.flatMap { $0.closeFuture }
     } else {
+      ClientConnection.logger.info("shutting down channel")
       self.connectivity.initiateUserShutdown()
       return channel.flatMap { $0.close() }
     }
@@ -124,13 +128,22 @@ extension ClientConnection {
     // channel was being created) then it is no longer needed.
     guard !self.connectivity.userHasInitiatedShutdown else {
       channel.whenSuccess { channel in
+        ClientConnection.logger.debug("user initiated shutdown during connection, closing channel")
         channel.close(mode: .all, promise: nil)
       }
       return
     }
 
-    channel.flatMap { $0.closeFuture }.whenComplete { _ in
+    channel.flatMap { $0.closeFuture }.whenComplete { result in
+      switch result {
+      case .success:
+        ClientConnection.logger.info("client connection shutdown successfully")
+      case .failure(let error):
+        ClientConnection.logger.warning("client connection shutdown failed with error: \(error)")
+      }
+
       guard self.connectivity.canAttemptReconnect else { return }
+      ClientConnection.logger.debug("channel closed, creating a new one")
       self.channel = ClientConnection.makeChannel(
         configuration: self.configuration,
         connectivity: self.connectivity,
@@ -174,6 +187,7 @@ extension ClientConnection {
     connectivity: ConnectivityStateMonitor,
     backoffIterator: ConnectionBackoffIterator?
   ) -> EventLoopFuture<Channel> {
+    logger.info("attempting to connect to \(configuration.target)")
     connectivity.state = .connecting
     let timeoutAndBackoff = backoffIterator?.next()
 
@@ -194,11 +208,13 @@ extension ClientConnection {
     // If we don't have backoff then we can't retry, just return the `channel` no matter what
     // state we are in.
     guard let backoff = timeoutAndBackoff?.backoff else {
+      logger.info("backoff exhausted, no more connection attempts will be made")
       return channel
     }
 
     // If our connection attempt was unsuccessful, schedule another attempt in some time.
-    return channel.flatMapError { _ in
+    return channel.flatMapError { error in
+      logger.notice("connection attempt failed: \(error)")
       // We will try to connect again: the failure is transient.
       connectivity.state = .transientFailure
       return ClientConnection.scheduleReconnectAttempt(
@@ -219,6 +235,7 @@ extension ClientConnection {
     connectivity: ConnectivityStateMonitor,
     backoffIterator: ConnectionBackoffIterator?
   ) -> EventLoopFuture<Channel> {
+    logger.info("scheduling connection attempt in \(timeout) seconds")
     // The `futureResult` of the scheduled task is of type
     // `EventLoopFuture<EventLoopFuture<Channel>>`, so we need to `flatMap` it to
     // remove a level of indirection.
@@ -264,6 +281,7 @@ extension ClientConnection {
     }
 
     if let timeout = timeout {
+      logger.info("setting connect timeout to \(timeout) seconds")
       return bootstrap.connectTimeout(.seconds(timeInterval: timeout))
     } else {
       return bootstrap

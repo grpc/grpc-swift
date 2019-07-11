@@ -40,6 +40,9 @@ let package = Package(
     // Official SwiftProtobuf library, for [de]serializing data to send on the wire.
     .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.5.0"),
 
+    // Logging API.
+    .package(url: "https://github.com/apple/swift-log", from: "1.0.0"),
+
     // Command line argument parser for our auxiliary command line tools.
     .package(url: "https://github.com/kylef/Commander.git", from: "0.8.0"),
   ],
@@ -54,7 +57,8 @@ let package = Package(
         "NIOHTTP1",
         "NIOHTTP2",
         "NIOSSL",
-        "SwiftProtobuf"
+        "SwiftProtobuf",
+        "Logging"
       ]
     ),  // and its tests.
     .testTarget(
