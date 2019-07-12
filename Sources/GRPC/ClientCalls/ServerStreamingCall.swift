@@ -32,7 +32,7 @@ public final class ServerStreamingCall<RequestMessage: Message, ResponseMessage:
       timeout: callOptions.timeout,
       responseHandler: handler)
 
-    let requestHandler = UnaryRequestChnnelHandler<RequestMessage>(
+    let requestHandler = UnaryRequestChannelHandler<RequestMessage>(
       requestHead: makeRequestHead(path: path, host: connection.configuration.target.host, callOptions: callOptions),
       request: _Box(request))
 

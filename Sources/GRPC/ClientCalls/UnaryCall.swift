@@ -39,7 +39,7 @@ public final class UnaryCall<RequestMessage: Message, ResponseMessage: Message>
       errorDelegate: errorDelegate,
       timeout: callOptions.timeout)
 
-    let requestHandler = UnaryRequestChnnelHandler<RequestMessage>(
+    let requestHandler = UnaryRequestChannelHandler<RequestMessage>(
       requestHead: makeRequestHead(path: path, host: connection.configuration.target.host, callOptions: callOptions),
       request: _Box(request))
 
