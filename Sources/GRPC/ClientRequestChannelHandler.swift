@@ -39,7 +39,7 @@ internal class ClientRequestChannelHandler<RequestMessage: Message>: ChannelInbo
 /// A channel handler for unary client requests.
 ///
 /// Sends the request head, message and end on `channelActive(context:)`.
-internal final class UnaryRequestChnnelHandler<RequestMessage: Message>: ClientRequestChannelHandler<RequestMessage> {
+internal final class UnaryRequestChannelHandler<RequestMessage: Message>: ClientRequestChannelHandler<RequestMessage> {
   /// The request to send.
   internal let request: _Box<RequestMessage>
 
