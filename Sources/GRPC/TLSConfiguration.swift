@@ -19,7 +19,7 @@ extension ClientConnection.Configuration {
   /// TLS configuration for a `ClientConnection`.
   ///
   /// Note that this configuration is a subset of `NIOSSL.TLSConfiguration` where certain options
-  /// are removed from the users control to ensure the configuration complies with the gRPC
+  /// are removed from the user's control to ensure the configuration complies with the gRPC
   /// specification.
   public struct TLS {
     public private(set) var configuration: TLSConfiguration
