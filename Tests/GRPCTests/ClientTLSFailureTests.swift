@@ -35,16 +35,15 @@ class ErrorRecordingDelegate: ClientErrorDelegate {
 }
 
 class ClientTLSFailureTests: XCTestCase {
-  let defaultServerTLSConfiguration = TLSConfiguration.forServer(
+  let defaultServerTLSConfiguration = Server.Configuration.TLS(
     certificateChain: [.certificate(SampleCertificate.server.certificate)],
-    privateKey: .privateKey(SamplePrivateKey.server),
-    applicationProtocols: GRPCApplicationProtocolIdentifier.allCases.map { $0.rawValue })
+    privateKey: .privateKey(SamplePrivateKey.server))
 
-  let defaultClientTLSConfiguration = TLSConfiguration.forClient(
-    trustRoots: .certificates([SampleCertificate.ca.certificate]),
+  let defaultClientTLSConfiguration = ClientConnection.Configuration.TLS(
     certificateChain: [.certificate(SampleCertificate.client.certificate)],
     privateKey: .privateKey(SamplePrivateKey.client),
-    applicationProtocols: GRPCApplicationProtocolIdentifier.allCases.map { $0.rawValue })
+    trustRoots: .certificates([SampleCertificate.ca.certificate]),
+    hostnameOverride: SampleCertificate.server.commonName)
 
   var defaultTestTimeout: TimeInterval = 1.0
 
@@ -54,25 +53,13 @@ class ClientTLSFailureTests: XCTestCase {
   var port: Int!
 
   func makeClientConfiguration(
-    tls: TLSConfiguration,
-    hostOverride: String? = SampleCertificate.server.commonName
-  ) throws -> ClientConnection.Configuration {
-    return ClientConnection.Configuration(
+    tls: ClientConnection.Configuration.TLS
+  ) -> ClientConnection.Configuration {
+    return .init(
       target: .hostAndPort("localhost", self.port),
       eventLoopGroup: self.clientEventLoopGroup,
-      tlsConfiguration: try .init(
-        sslContext: NIOSSLContext(configuration: tls),
-        hostnameOverride: hostOverride
-      )
+      tls: tls
     )
-  }
-
-  func makeClientTLSConfiguration(
-    tls: TLSConfiguration,
-    hostOverride: String? = SampleCertificate.server.commonName
-  ) throws -> ClientConnection.TLSConfiguration {
-    let context = try NIOSSLContext(configuration: tls)
-    return .init(sslContext: context, hostnameOverride: hostOverride)
   }
 
   func makeClientConnectionExpectation() -> XCTestExpectation {
@@ -81,14 +68,13 @@ class ClientTLSFailureTests: XCTestCase {
 
   override func setUp() {
     self.serverEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-    let sslContext = try! NIOSSLContext(configuration: self.defaultServerTLSConfiguration)
 
     let configuration = Server.Configuration(
       target: .hostAndPort("localhost", 0),
       eventLoopGroup: self.serverEventLoopGroup,
       serviceProviders: [EchoProvider()],
       errorDelegate: nil,
-      tlsConfiguration: .init(sslContext: sslContext))
+      tls: self.defaultServerTLSConfiguration)
 
     self.server = try! Server.start(configuration: configuration).wait()
 
@@ -114,10 +100,17 @@ class ClientTLSFailureTests: XCTestCase {
     let shutdownExpectation = self.expectation(description: "client shutdown")
     let errorExpectation = self.expectation(description: "error")
 
-    var tls = defaultClientTLSConfiguration
-    tls.applicationProtocols = ["not-h2", "not-grpc-ext"]
-    var configuration = try self.makeClientConfiguration(tls: tls)
+    // We use the underlying configuration because `applicationProtocols` is not user-configurable
+    // via `Configuration.TLS`.
+    var tlsConfiguration = self.defaultClientTLSConfiguration.configuration
+    tlsConfiguration.applicationProtocols = ["not-h2", "not-grpc-ext"]
 
+    let tls = ClientConnection.Configuration.TLS(
+      configuration: tlsConfiguration,
+      hostnameOverride: self.defaultClientTLSConfiguration.hostnameOverride
+    )
+
+    var configuration = self.makeClientConfiguration(tls: tls)
     let errorRecorder = ErrorRecordingDelegate(expectation: errorExpectation)
     configuration.errorDelegate = errorRecorder
 
@@ -136,9 +129,9 @@ class ClientTLSFailureTests: XCTestCase {
     let shutdownExpectation = self.expectation(description: "client shutdown")
     let errorExpectation = self.expectation(description: "error")
 
-    var tls = defaultClientTLSConfiguration
+    var tls = self.defaultClientTLSConfiguration
     tls.trustRoots = .certificates([])
-    var configuration = try self.makeClientConfiguration(tls: tls)
+    var configuration = self.makeClientConfiguration(tls: tls)
 
     let errorRecorder = ErrorRecordingDelegate(expectation: errorExpectation)
     configuration.errorDelegate = errorRecorder
@@ -162,11 +155,10 @@ class ClientTLSFailureTests: XCTestCase {
     let shutdownExpectation = self.expectation(description: "client shutdown")
     let errorExpectation = self.expectation(description: "error")
 
-    var configuration = try self.makeClientConfiguration(
-      tls: self.defaultClientTLSConfiguration,
-      hostOverride: "not-the-server-hostname"
-    )
+    var tls = self.defaultClientTLSConfiguration
+    tls.hostnameOverride = "not-the-server-hostname"
 
+    var configuration = self.makeClientConfiguration(tls: tls)
     let errorRecorder = ErrorRecordingDelegate(expectation: errorExpectation)
     configuration.errorDelegate = errorRecorder
 

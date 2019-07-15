@@ -117,8 +117,8 @@ public final class Server {
           return channel.pipeline.addHandlers(handlers)
         }
 
-        if let tlsConfiguration = configuration.tlsConfiguration {
-          return channel.configureTLS(configuration: tlsConfiguration).flatMap {
+        if let tls = configuration.tls {
+          return channel.configureTLS(configuration: tls).flatMap {
             channel.pipeline.addHandler(protocolSwitcher)
           }
         } else {
@@ -186,7 +186,7 @@ extension Server {
     public var errorDelegate: ServerErrorDelegate?
 
     /// TLS configuration for this connection. `nil` if TLS is not desired.
-    public var tlsConfiguration: TLSConfiguration?
+    public var tls: TLS?
 
     /// Create a `Configuration` with some pre-defined defaults.
     ///
@@ -201,13 +201,13 @@ extension Server {
       eventLoopGroup: EventLoopGroup,
       serviceProviders: [CallHandlerProvider],
       errorDelegate: ServerErrorDelegate? = LoggingServerErrorDelegate.shared,
-      tlsConfiguration: TLSConfiguration? = nil
+      tls: TLS? = nil
     ) {
       self.target = target
       self.eventLoopGroup = eventLoopGroup
       self.serviceProviders = serviceProviders
       self.errorDelegate = errorDelegate
-      self.tlsConfiguration = tlsConfiguration
+      self.tls = tls
     }
   }
 
@@ -234,9 +234,10 @@ fileprivate extension Channel {
   /// - Parameters:
   ///   - configuration: The configuration to use when creating the handler.
   /// - Returns: A future which will be succeeded when the pipeline has been configured.
-  func configureTLS(configuration: Server.TLSConfiguration) -> EventLoopFuture<Void> {
+  func configureTLS(configuration: Server.Configuration.TLS) -> EventLoopFuture<Void> {
     do {
-      return self.pipeline.addHandler(try NIOSSLServerHandler(context: configuration.sslContext))
+      let context = try NIOSSLContext(configuration: configuration.configuration)
+      return self.pipeline.addHandler(try NIOSSLServerHandler(context: context))
     } catch {
       return self.pipeline.eventLoop.makeFailedFuture(error)
     }
