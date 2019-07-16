@@ -177,8 +177,8 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
     }
 
     let status = GRPCStatus(
-      code: self.extractStatusCode(from: trailers[GRPCHeaderName.statusCode]),
-      message: self.extractStatusMessage(from: trailers[GRPCHeaderName.statusMessage]),
+      code: self.extractStatusCode(from: trailers),
+      message: self.extractStatusMessage(from: trailers),
       trailingMetadata: trailers
     )
 
@@ -186,7 +186,11 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
     return .ignore
   }
 
-  private func extractStatusCode(from statusCodes: [String]) -> GRPCStatus.Code {
+  /// Extracts a status code from the given headers, or `.unknown` if one isn't available or the
+  /// code is not valid. If multiple values are present, the first is taken.
+  private func extractStatusCode(from headers: HTTPHeaders) -> GRPCStatus.Code {
+    let statusCodes = headers[GRPCHeaderName.statusCode]
+
     guard !statusCodes.isEmpty else {
       self.logger.warning("no status-code header")
       return .unknown
@@ -207,7 +211,11 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
     }
   }
 
-  private func extractStatusMessage(from statusMessages: [String]) -> String? {
+  /// Extracts a status message from the given headers, or `nil` if one isn't available. If
+  /// multiple values are present, the first is taken.
+  private func extractStatusMessage(from headers: HTTPHeaders) -> String? {
+    let statusMessages = headers[GRPCHeaderName.statusMessage]
+
     guard !statusMessages.isEmpty else {
       self.logger.debug("no status-message header")
       return nil
