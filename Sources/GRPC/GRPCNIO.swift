@@ -134,7 +134,7 @@ public enum GRPCNIO {
     loopCount: Int,
     networkPreference: NetworkPreference = .best
   ) -> EventLoopGroup {
-    logger.info("making EventLoopGroup for \(networkPreference)")
+    logger.info("making EventLoopGroup for \(networkPreference) network preference")
     switch networkPreference.implementation {
     #if canImport(Network)
     case .networkFramework:

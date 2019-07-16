@@ -150,7 +150,7 @@ extension BaseClientCall: ClientCall {
           channel.pipeline.fireUserInboundEventTriggered(GRPCClientUserEvent.cancelled)
 
         case .failure(let error):
-          self.logger.debug("cancelling call will no-op because no http/2 stream was created: \(error)")
+          self.logger.debug("cancelling call will no-op because no http/2 stream creation failed: \(error)")
         }
       }
     }

@@ -143,7 +143,7 @@ extension ClientConnection {
       }
 
       guard self.connectivity.canAttemptReconnect else { return }
-      ClientConnection.logger.debug("channel closed, creating a new one")
+      ClientConnection.logger.debug("client connection channel closed, creating a new one")
       self.channel = ClientConnection.makeChannel(
         configuration: self.configuration,
         connectivity: self.connectivity,

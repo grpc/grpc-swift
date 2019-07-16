@@ -149,7 +149,7 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
     switch self.unwrapInboundIn(data) {
     case .headers(let headers):
       guard self.inboundState == .expectingHeadersOrStatus else {
-        self.logger.error("invalid state '\(self.inboundState)' which processing headers")
+        self.logger.error("invalid state '\(self.inboundState)' while processing headers")
         self.errorCaught(
           context: context,
           error: GRPCError.client(.invalidState("received headers while in state \(self.inboundState)"))
@@ -164,7 +164,7 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
 
     case .message(let boxedMessage):
       guard self.inboundState == .expectingMessageOrStatus else {
-        self.logger.error("invalid state '\(self.inboundState)' which processing message")
+        self.logger.error("invalid state '\(self.inboundState)' while processing message")
         self.errorCaught(
           context: context,
           error: GRPCError.client(.responseCardinalityViolation)
@@ -181,7 +181,7 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
 
     case .status(let status):
       guard self.inboundState.expectingStatus else {
-        self.logger.error("invalid state '\(self.inboundState)' which processing status")
+        self.logger.error("invalid state '\(self.inboundState)' while processing status")
         self.errorCaught(
           context: context,
           error: GRPCError.client(.invalidState("received status while in state \(self.inboundState)"))
@@ -253,7 +253,10 @@ final class GRPCClientUnaryResponseChannelHandler<ResponseMessage: Message>: Cli
       errorDelegate: errorDelegate,
       timeout: timeout,
       expectedResponses: .one,
-      logger: logger
+      logger: logger.addingMetadata(
+        key: MetadataKey.channelHandler,
+        value: "GRPCClientUnaryResponseChannelHandler"
+      )
     )
   }
 
@@ -296,7 +299,10 @@ final class GRPCClientStreamingResponseChannelHandler<ResponseMessage: Message>:
       errorDelegate: errorDelegate,
       timeout: timeout,
       expectedResponses: .many,
-      logger: logger
+      logger: logger.addingMetadata(
+        key: MetadataKey.channelHandler,
+        value: "GRPCClientStreamingResponseChannelHandler"
+      )
     )
   }
 

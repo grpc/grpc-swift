@@ -31,7 +31,7 @@ public final class ServerStreamingCall<RequestMessage: Message, ResponseMessage:
     logger.info("making server streaming request to '\(path)'", metadata: [
       MetadataKey.requestType: "\(RequestMessage.self)",
       MetadataKey.responseType: "\(ResponseMessage.self)"
-      ])
+    ])
 
     let responseHandler = GRPCClientStreamingResponseChannelHandler(
       initialMetadataPromise: connection.channel.eventLoop.makePromise(),

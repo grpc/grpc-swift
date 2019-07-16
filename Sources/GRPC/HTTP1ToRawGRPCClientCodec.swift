@@ -45,7 +45,10 @@ public enum RawGRPCClientResponsePart {
 /// See `HTTP1ToRawGRPCServerCodec` for the corresponding server codec.
 public final class HTTP1ToRawGRPCClientCodec {
   public init(logger: Logger) {
-    self.logger = logger
+    self.logger = logger.addingMetadata(
+      key: MetadataKey.channelHandler,
+      value: "HTTP1ToRawGRPCClientCodec"
+    )
     self.messageReader = LengthPrefixedMessageReader(
       mode: .client,
       compressionMechanism: .none,

@@ -43,7 +43,9 @@ public final class GRPCClientCodec<RequestMessage: Message, ResponseMessage: Mes
   private let logger: Logger
 
   public init(logger: Logger) {
-    self.logger = logger
+    var loggerWithMetadata = logger
+    loggerWithMetadata[metadataKey: MetadataKey.channelHandler] = "GRPCClientCodec"
+    self.logger = loggerWithMetadata
   }
 }
 

@@ -35,6 +35,13 @@ extension Logger {
     self.init(label: "io.grpc.\(suffix)")
   }
 
+  /// Creates a copy of the logger and sets metadata with the given key and value on the copy.
+  func addingMetadata(key: String, value: MetadataValue) -> Logger {
+    var newLogger = self
+    newLogger[metadataKey: key] = value
+    return newLogger
+  }
+
   /// Labels for logging subsystems.
   enum Subsystem: String {
     case connectivityState = "connectivity_state"
@@ -50,4 +57,5 @@ enum MetadataKey {
   static let requestId = "request-id"
   static let requestType = "request-type"
   static let responseType = "response-type"
+  static let channelHandler = "channel-handler"
 }
