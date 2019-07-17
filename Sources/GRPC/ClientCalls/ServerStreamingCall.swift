@@ -26,7 +26,7 @@ import Logging
 /// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
 public final class ServerStreamingCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage> {
   public init(connection: ClientConnection, path: String, request: RequestMessage, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?, handler: @escaping (ResponseMessage) -> Void) {
-    let requestId = UUID()
+    let requestId = callOptions.requestIDProvider.uuid()
     let logger = Logger(subsystem: .clientChannelCall, requestId: requestId)
     logger.info("making server streaming call to '\(path)', request type: \(RequestMessage.self), response type: \(ResponseMessage.self)")
 
@@ -39,8 +39,14 @@ public final class ServerStreamingCall<RequestMessage: Message, ResponseMessage:
       responseHandler: handler)
 
     let requestHandler = UnaryRequestChannelHandler<RequestMessage>(
-      requestHead: makeRequestHead(path: path, host: connection.configuration.target.host, callOptions: callOptions),
-      request: _Box(request))
+      requestHead: makeRequestHead(
+        path: path,
+        host: connection.configuration.target.host,
+        callOptions: callOptions,
+        requestId: requestId
+      ),
+      request: _Box(request)
+    )
 
     super.init(
       connection: connection,

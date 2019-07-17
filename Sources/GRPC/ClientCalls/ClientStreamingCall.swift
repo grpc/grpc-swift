@@ -36,7 +36,7 @@ public final class ClientStreamingCall<RequestMessage: Message, ResponseMessage:
   private var messageQueue: EventLoopFuture<Void>
 
   public init(connection: ClientConnection, path: String, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?) {
-    let requestId = UUID()
+    let requestId = callOptions.requestIDProvider.uuid()
     let logger = Logger(subsystem: .clientChannelCall, requestId: requestId)
     logger.info("making client streaming call to '\(path)', request type: \(RequestMessage.self), response type: \(ResponseMessage.self)")
 
@@ -50,7 +50,13 @@ public final class ClientStreamingCall<RequestMessage: Message, ResponseMessage:
     )
 
     let requestHandler = StreamingRequestChannelHandler<RequestMessage>(
-      requestHead: makeRequestHead(path: path, host: connection.configuration.target.host, callOptions: callOptions))
+      requestHead: makeRequestHead(
+        path: path,
+        host: connection.configuration.target.host,
+        callOptions: callOptions,
+        requestId: requestId
+      )
+    )
 
     self.response = responseHandler.responsePromise.futureResult
     self.messageQueue = connection.channel.eventLoop.makeSucceededFuture(())

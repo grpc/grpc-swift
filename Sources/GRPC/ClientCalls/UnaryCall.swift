@@ -33,7 +33,7 @@ public final class UnaryCall<RequestMessage: Message, ResponseMessage: Message>
   public let response: EventLoopFuture<ResponseMessage>
 
   public init(connection: ClientConnection, path: String, request: RequestMessage, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?) {
-    let requestId = UUID()
+    let requestId = callOptions.requestIDProvider.uuid()
     let logger = Logger(subsystem: .clientChannelCall, requestId: requestId)
     logger.info("making unary call to '\(path)', request type: \(RequestMessage.self), response type: \(ResponseMessage.self)")
 
@@ -47,8 +47,14 @@ public final class UnaryCall<RequestMessage: Message, ResponseMessage: Message>
     )
 
     let requestHandler = UnaryRequestChannelHandler<RequestMessage>(
-      requestHead: makeRequestHead(path: path, host: connection.configuration.target.host, callOptions: callOptions),
-      request: _Box(request))
+      requestHead: makeRequestHead(
+        path: path,
+        host: connection.configuration.target.host,
+        callOptions: callOptions,
+        requestId: requestId
+      ),
+      request: _Box(request)
+    )
 
     self.response = responseHandler.responsePromise.futureResult
     super.init(

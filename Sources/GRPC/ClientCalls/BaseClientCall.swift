@@ -165,7 +165,10 @@ extension BaseClientCall: ClientCall {
 /// - Parameter path: The path of the gRPC call, e.g. "/serviceName/methodName".
 /// - Parameter host: The host serving the call.
 /// - Parameter callOptions: Options used when making this call.
-internal func makeRequestHead(path: String, host: String?, callOptions: CallOptions) -> HTTPRequestHead {
+/// - Parameter requestId: The request ID used for this call. If `callOptions` specifies a
+///   non-nil `reqeuestIDHeader` then this request ID will be added to the headers with the
+///   specified header name.
+internal func makeRequestHead(path: String, host: String?, callOptions: CallOptions, requestId: UUID) -> HTTPRequestHead {
   var headers: HTTPHeaders = [
     "content-type": "application/grpc",
     // Used to detect incompatible proxies, as per https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests
@@ -185,6 +188,10 @@ internal func makeRequestHead(path: String, host: String?, callOptions: CallOpti
   }
 
   headers.add(contentsOf: callOptions.customMetadata)
+
+  if let headerName = callOptions.requestIDHeader {
+    headers.add(name: headerName, value: requestId.uuidString)
+  }
 
   let method: HTTPMethod = callOptions.cacheable ? .GET : .POST
   return HTTPRequestHead(version: .init(major: 2, minor: 0), method: method, uri: path, headers: headers)
