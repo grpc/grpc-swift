@@ -23,10 +23,10 @@ public class LoggingServerErrorDelegate: ServerErrorDelegate {
   private init() {}
 
   public func observeLibraryError(_ error: Error) {
-    self.logger.error("library: \(error)")
+    self.logger.error("library error", metadata: [MetadataKey.error: "\(error)"])
   }
 
   public func observeRequestHandlerError(_ error: Error) {
-    self.logger.error("request handler: \(error)")
+    self.logger.error("request handler error", metadata: [MetadataKey.error: "\(error)"])
   }
 }

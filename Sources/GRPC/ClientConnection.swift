@@ -139,7 +139,10 @@ extension ClientConnection {
       case .success:
         ClientConnection.logger.info("client connection shutdown successfully")
       case .failure(let error):
-        ClientConnection.logger.warning("client connection shutdown failed with error: \(error)")
+        ClientConnection.logger.warning(
+          "client connection shutdown failed",
+          metadata: [MetadataKey.error: "\(error)"]
+        )
       }
 
       guard self.connectivity.canAttemptReconnect else { return }
@@ -214,7 +217,7 @@ extension ClientConnection {
 
     // If our connection attempt was unsuccessful, schedule another attempt in some time.
     return channel.flatMapError { error in
-      logger.notice("connection attempt failed: \(error)")
+      logger.notice("connection attempt failed", metadata: [MetadataKey.error: "\(error)"])
       // We will try to connect again: the failure is transient.
       connectivity.state = .transientFailure
       return ClientConnection.scheduleReconnectAttempt(

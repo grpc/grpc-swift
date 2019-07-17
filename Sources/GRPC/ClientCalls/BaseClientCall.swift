@@ -105,7 +105,7 @@ open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
     self.status = self.responseHandler.statusPromise.futureResult
 
     self.streamPromise.futureResult.whenFailure { error in
-      self.logger.error("failed to create http/2 stream: \(error)")
+      self.logger.error("failed to create http/2 stream", metadata: [MetadataKey.error: "\(error)"])
       self.responseHandler.observeError(.unknown(error, origin: .client))
     }
 
@@ -116,7 +116,7 @@ open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
   /// stream channel once it has been created.
   private func createStreamChannel() {
     self.connection.multiplexer.whenFailure { error in
-      self.logger.error("failed to get http/2 multiplexer: \(error)")
+      self.logger.error("failed to get http/2 multiplexer", metadata: [MetadataKey.error: "\(error)"])
       self.streamPromise.fail(error)
     }
 
@@ -150,7 +150,10 @@ extension BaseClientCall: ClientCall {
           channel.pipeline.fireUserInboundEventTriggered(GRPCClientUserEvent.cancelled)
 
         case .failure(let error):
-          self.logger.debug("cancelling call will no-op because no http/2 stream creation failed: \(error)")
+          self.logger.debug(
+            "cancelling call will no-op because no http/2 stream creation",
+            metadata: [MetadataKey.error: "\(error)"]
+          )
         }
       }
     }

@@ -41,7 +41,13 @@ public class DebugOnlyLoggingClientErrorDelegate: ClientErrorDelegate {
 
   public func didCatchError(_ error: Error, file: StaticString, line: Int) {
     debugOnly {
-      self.logger.error("error: \(error), file: \(file), line: \(line)")
+      self.logger.error(
+        "client error",
+        metadata: [MetadataKey.error: "\(error)"],
+        file: "\(file)",
+        function: "<unknown>",
+        line: UInt(line)
+      )
     }
   }
 }

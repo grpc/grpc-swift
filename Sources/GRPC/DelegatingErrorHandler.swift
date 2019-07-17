@@ -35,7 +35,7 @@ public class DelegatingErrorHandler: ChannelInboundHandler {
       let grpcError = (error as? GRPCError) ?? .unknown(error, origin: .client)
       delegate.didCatchError(grpcError.wrappedError, file: grpcError.file, line: grpcError.line)
     }
-    self.logger.error("error caught in client channel: \(error)")
+    self.logger.error("caught error in client channel", metadata: [MetadataKey.error: "\(error)"])
     self.logger.info("closing client channel")
     context.close(promise: nil)
   }

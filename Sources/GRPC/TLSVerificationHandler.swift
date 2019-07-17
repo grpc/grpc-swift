@@ -69,7 +69,10 @@ public class TLSVerificationHandler: ChannelInboundHandler, RemovableChannelHand
 
   public func errorCaught(context: ChannelHandlerContext, error: Error) {
     precondition(self.verificationPromise != nil, "handler has not been added to the pipeline")
-    self.logger.error("error caught before TLS was verified: \(error)")
+    self.logger.error(
+      "error caught before TLS was verified",
+      metadata: [MetadataKey.error: "\(error)"]
+    )
     verificationPromise.fail(error)
   }
 

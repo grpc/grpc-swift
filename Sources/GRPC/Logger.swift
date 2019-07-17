@@ -58,4 +58,5 @@ enum MetadataKey {
   static let requestType = "request-type"
   static let responseType = "response-type"
   static let channelHandler = "channel-handler"
+  static let error = "error"
 }
