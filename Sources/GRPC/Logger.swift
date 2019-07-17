@@ -18,16 +18,16 @@ import Logging
 
 extension Logger {
   /// Create a logger and attach the given UUID as the request-id metadata.
-  init(label: String, requestId: UUID?) {
+  init(label: String, requestID: UUID?) {
     self.init(label: label)
-    if let requestId = requestId {
-      self[metadataKey: MetadataKey.requestId] = "\(requestId)"
+    if let requestID = requestID {
+      self[metadataKey: MetadataKey.requestID] = "\(requestID)"
     }
   }
 
   /// Create a logger for the given subsystem and attach the given UUID as the request-id metadata.
-  init(subsystem: Subsystem, requestId: UUID? = nil) {
-    self.init(label: "io.grpc.\(subsystem.rawValue)", requestId: requestId)
+  init(subsystem: Subsystem, requestID: UUID? = nil) {
+    self.init(label: "io.grpc.\(subsystem.rawValue)", requestID: requestID)
   }
 
   /// Create a logger with a label in the format: `"io.grpc.\(suffix)"`.
@@ -54,9 +54,9 @@ extension Logger {
 
 /// Keys for `Logger` metadata.
 enum MetadataKey {
-  static let requestId = "request-id"
+  static let requestID = "request-id"
   static let responseType = "response-type"
   static let channelHandler = "channel-handler"
-  static let connectionId = "connection-id"
+  static let connectionID = "connection-id"
   static let error = "error"
 }

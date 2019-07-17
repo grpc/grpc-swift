@@ -85,7 +85,7 @@ public class ClientConnection {
 
     self.uuid = UUID()
     var logger = Logger(subsystem: .clientChannel)
-    logger[metadataKey: MetadataKey.connectionId] = "\(self.uuid)"
+    logger[metadataKey: MetadataKey.connectionID] = "\(self.uuid)"
     self.logger = logger
 
     // We need to initialize `multiplexer` before we can call `willSetChannel` (which will then

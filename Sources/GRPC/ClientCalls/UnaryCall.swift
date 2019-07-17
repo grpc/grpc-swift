@@ -33,8 +33,8 @@ public final class UnaryCall<RequestMessage: Message, ResponseMessage: Message>
   public let response: EventLoopFuture<ResponseMessage>
 
   public init(connection: ClientConnection, path: String, request: RequestMessage, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?) {
-    let requestId = callOptions.requestIDProvider.uuid()
-    let logger = Logger(subsystem: .clientChannelCall, requestId: requestId)
+    let requestID = callOptions.requestIDProvider.uuid()
+    let logger = Logger(subsystem: .clientChannelCall, requestID: requestID)
     logger.info("making unary call to '\(path)', request type: \(RequestMessage.self), response type: \(ResponseMessage.self)")
 
     let responseHandler = GRPCClientUnaryResponseChannelHandler<ResponseMessage>(
@@ -51,7 +51,7 @@ public final class UnaryCall<RequestMessage: Message, ResponseMessage: Message>
         path: path,
         host: connection.configuration.target.host,
         callOptions: callOptions,
-        requestId: requestId
+        requestID: requestID
       ),
       request: _Box(request)
     )

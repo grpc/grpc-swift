@@ -34,9 +34,9 @@ public final class BidirectionalStreamingCall<RequestMessage: Message, ResponseM
 
   public init(connection: ClientConnection, path: String, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?, handler: @escaping (ResponseMessage) -> Void) {
     self.messageQueue = connection.channel.eventLoop.makeSucceededFuture(())
-    let requestId = callOptions.requestIDProvider.uuid()
+    let requestID = callOptions.requestIDProvider.uuid()
 
-    let logger = Logger(subsystem: .clientChannelCall, requestId: requestId)
+    let logger = Logger(subsystem: .clientChannelCall, requestID: requestID)
     logger.info("making bidirectional streaming call to '\(path)', request type: \(RequestMessage.self), response type: \(ResponseMessage.self)")
 
     let responseHandler = GRPCClientStreamingResponseChannelHandler(
@@ -52,7 +52,7 @@ public final class BidirectionalStreamingCall<RequestMessage: Message, ResponseM
         path: path,
         host: connection.configuration.target.host,
         callOptions: callOptions,
-        requestId: requestId
+        requestID: requestID
       )
     )
 

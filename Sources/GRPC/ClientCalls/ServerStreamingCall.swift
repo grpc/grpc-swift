@@ -26,8 +26,8 @@ import Logging
 /// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
 public final class ServerStreamingCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage> {
   public init(connection: ClientConnection, path: String, request: RequestMessage, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?, handler: @escaping (ResponseMessage) -> Void) {
-    let requestId = callOptions.requestIDProvider.uuid()
-    let logger = Logger(subsystem: .clientChannelCall, requestId: requestId)
+    let requestID = callOptions.requestIDProvider.uuid()
+    let logger = Logger(subsystem: .clientChannelCall, requestID: requestID)
     logger.info("making server streaming call to '\(path)', request type: \(RequestMessage.self), response type: \(ResponseMessage.self)")
 
     let responseHandler = GRPCClientStreamingResponseChannelHandler(
@@ -43,7 +43,7 @@ public final class ServerStreamingCall<RequestMessage: Message, ResponseMessage:
         path: path,
         host: connection.configuration.target.host,
         callOptions: callOptions,
-        requestId: requestId
+        requestID: requestID
       ),
       request: _Box(request)
     )

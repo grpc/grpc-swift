@@ -36,8 +36,8 @@ public final class ClientStreamingCall<RequestMessage: Message, ResponseMessage:
   private var messageQueue: EventLoopFuture<Void>
 
   public init(connection: ClientConnection, path: String, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?) {
-    let requestId = callOptions.requestIDProvider.uuid()
-    let logger = Logger(subsystem: .clientChannelCall, requestId: requestId)
+    let requestID = callOptions.requestIDProvider.uuid()
+    let logger = Logger(subsystem: .clientChannelCall, requestID: requestID)
     logger.info("making client streaming call to '\(path)', request type: \(RequestMessage.self), response type: \(ResponseMessage.self)")
 
     let responseHandler = GRPCClientUnaryResponseChannelHandler<ResponseMessage>(
@@ -54,7 +54,7 @@ public final class ClientStreamingCall<RequestMessage: Message, ResponseMessage:
         path: path,
         host: connection.configuration.target.host,
         callOptions: callOptions,
-        requestId: requestId
+        requestID: requestID
       )
     )
 
