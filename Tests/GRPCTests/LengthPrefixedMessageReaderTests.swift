@@ -19,7 +19,7 @@ import GRPC
 import NIO
 import Logging
 
-class LengthPrefixedMessageReaderTests: XCTestCase {
+class LengthPrefixedMessageReaderTests: GRPCTestCase {
   var reader = LengthPrefixedMessageReader(
     mode: .client,
     compressionMechanism: .none,

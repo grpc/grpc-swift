@@ -21,7 +21,7 @@ import NIOHTTP2
 import XCTest
 import Logging
 
-class GRPCStatusCodeTests: XCTestCase {
+class GRPCStatusCodeTests: GRPCTestCase {
   var channel: EmbeddedChannel!
   var metadataPromise: EventLoopPromise<HTTPHeaders>!
   var responsePromise: EventLoopPromise<Echo_EchoResponse>!

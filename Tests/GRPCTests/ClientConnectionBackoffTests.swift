@@ -70,7 +70,7 @@ class ConnectivityStateCollectionDelegate: ConnectivityStateDelegate {
   }
 }
 
-class ClientConnectionBackoffTests: XCTestCase {
+class ClientConnectionBackoffTests: GRPCTestCase {
   let port = 8080
 
   var client: ClientConnection!

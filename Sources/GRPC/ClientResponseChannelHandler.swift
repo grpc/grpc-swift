@@ -71,7 +71,7 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
   private let responseArity: ResponseArity
   private var inboundState: InboundState = .expectingHeadersOrStatus {
     didSet {
-      self.logger.debug("read state changed from \(oldValue) to \(self.inboundState)")
+      self.logger.debug("inbound state changed from \(oldValue) to \(self.inboundState)")
     }
   }
 

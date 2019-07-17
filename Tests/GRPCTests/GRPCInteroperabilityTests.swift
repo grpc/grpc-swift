@@ -20,7 +20,7 @@ import NIO
 import XCTest
 
 /// These are the gRPC interoperability tests running on the NIO client and server.
-class GRPCInsecureInteroperabilityTests: XCTestCase {
+class GRPCInsecureInteroperabilityTests: GRPCTestCase {
   var useTLS: Bool { return false }
 
   var serverEventLoopGroup: EventLoopGroup!

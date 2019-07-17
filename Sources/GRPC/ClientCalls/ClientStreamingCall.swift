@@ -38,10 +38,7 @@ public final class ClientStreamingCall<RequestMessage: Message, ResponseMessage:
   public init(connection: ClientConnection, path: String, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?) {
     let requestId = UUID()
     let logger = Logger(subsystem: .clientChannelCall, requestId: requestId)
-    logger.info("making client streaming request to '\(path)'", metadata: [
-      MetadataKey.requestType: "\(RequestMessage.self)",
-      MetadataKey.responseType: "\(ResponseMessage.self)"
-    ])
+    logger.info("making client streaming call to '\(path)', request type: \(RequestMessage.self), response type: \(ResponseMessage.self)")
 
     let responseHandler = GRPCClientUnaryResponseChannelHandler<ResponseMessage>(
       initialMetadataPromise: connection.channel.eventLoop.makePromise(),

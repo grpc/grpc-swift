@@ -55,8 +55,8 @@ extension Logger {
 /// Keys for `Logger` metadata.
 enum MetadataKey {
   static let requestId = "request-id"
-  static let requestType = "request-type"
   static let responseType = "response-type"
   static let channelHandler = "channel-handler"
+  static let connectionId = "connection-id"
   static let error = "error"
 }

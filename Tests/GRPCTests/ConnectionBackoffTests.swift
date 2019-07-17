@@ -17,7 +17,7 @@ import Foundation
 import GRPC
 import XCTest
 
-class ConnectionBackoffTests: XCTestCase {
+class ConnectionBackoffTests: GRPCTestCase {
   var backoff = ConnectionBackoff()
 
   func testExpectedValuesWithNoJitter() {

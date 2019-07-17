@@ -55,7 +55,9 @@ import Logging
 ///
 /// See `BaseClientCall` for a description of the remainder of the client pipeline.
 public class ClientConnection {
-  internal static let logger = Logger(subsystem: .clientChannel)
+  internal let logger: Logger
+  /// The UUID of this connection, used for logging.
+  internal let uuid: UUID
 
   /// The channel which will handle gRPC calls.
   internal var channel: EventLoopFuture<Channel> {
@@ -81,6 +83,11 @@ public class ClientConnection {
     self.configuration = configuration
     self.connectivity = ConnectivityStateMonitor(delegate: configuration.connectivityStateDelegate)
 
+    self.uuid = UUID()
+    var logger = Logger(subsystem: .clientChannel)
+    logger[metadataKey: MetadataKey.connectionId] = "\(self.uuid)"
+    self.logger = logger
+
     // We need to initialize `multiplexer` before we can call `willSetChannel` (which will then
     // assign `multiplexer` to one from the created `Channel`s pipeline).
     let eventLoop = configuration.eventLoopGroup.next()
@@ -90,7 +97,8 @@ public class ClientConnection {
     self.channel = ClientConnection.makeChannel(
       configuration: self.configuration,
       connectivity: self.connectivity,
-      backoffIterator: self.configuration.connectionBackoff?.makeIterator()
+      backoffIterator: self.configuration.connectionBackoff?.makeIterator(),
+      logger: self.logger
     )
 
     // `willSet` and `didSet` are called on initialization, so call them explicitly now.
@@ -109,7 +117,7 @@ public class ClientConnection {
       // We're already shutdown or in the process of shutting down.
       return channel.flatMap { $0.closeFuture }
     } else {
-      ClientConnection.logger.info("shutting down channel")
+      self.logger.info("shutting down channel")
       self.connectivity.initiateUserShutdown()
       return channel.flatMap { $0.close() }
     }
@@ -128,7 +136,7 @@ extension ClientConnection {
     // channel was being created) then it is no longer needed.
     guard !self.connectivity.userHasInitiatedShutdown else {
       channel.whenSuccess { channel in
-        ClientConnection.logger.debug("user initiated shutdown during connection, closing channel")
+        self.logger.debug("user initiated shutdown during connection, closing channel")
         channel.close(mode: .all, promise: nil)
       }
       return
@@ -137,20 +145,21 @@ extension ClientConnection {
     channel.flatMap { $0.closeFuture }.whenComplete { result in
       switch result {
       case .success:
-        ClientConnection.logger.info("client connection shutdown successfully")
+        self.logger.info("client connection shutdown successfully")
       case .failure(let error):
-        ClientConnection.logger.warning(
+        self.logger.warning(
           "client connection shutdown failed",
           metadata: [MetadataKey.error: "\(error)"]
         )
       }
 
       guard self.connectivity.canAttemptReconnect else { return }
-      ClientConnection.logger.debug("client connection channel closed, creating a new one")
+      self.logger.debug("client connection channel closed, creating a new one")
       self.channel = ClientConnection.makeChannel(
         configuration: self.configuration,
         connectivity: self.connectivity,
-        backoffIterator: self.configuration.connectionBackoff?.makeIterator()
+        backoffIterator: self.configuration.connectionBackoff?.makeIterator(),
+        logger: self.logger
       )
     }
 
@@ -188,7 +197,8 @@ extension ClientConnection {
   private class func makeChannel(
     configuration: Configuration,
     connectivity: ConnectivityStateMonitor,
-    backoffIterator: ConnectionBackoffIterator?
+    backoffIterator: ConnectionBackoffIterator?,
+    logger: Logger
   ) -> EventLoopFuture<Channel> {
     logger.info("attempting to connect to \(configuration.target)")
     connectivity.state = .connecting
@@ -197,7 +207,8 @@ extension ClientConnection {
     let bootstrap = self.makeBootstrap(
       configuration: configuration,
       group: configuration.eventLoopGroup,
-      timeout: timeoutAndBackoff?.timeout
+      timeout: timeoutAndBackoff?.timeout,
+      logger: logger
     )
 
     let channel = bootstrap.connect(to: configuration.target).flatMap { channel -> EventLoopFuture<Channel> in
@@ -225,7 +236,8 @@ extension ClientConnection {
         on: channel.eventLoop,
         configuration: configuration,
         connectivity: connectivity,
-        backoffIterator: backoffIterator
+        backoffIterator: backoffIterator,
+        logger: logger
       )
     }
   }
@@ -236,7 +248,8 @@ extension ClientConnection {
     on eventLoop: EventLoop,
     configuration: Configuration,
     connectivity: ConnectivityStateMonitor,
-    backoffIterator: ConnectionBackoffIterator?
+    backoffIterator: ConnectionBackoffIterator?,
+    logger: Logger
   ) -> EventLoopFuture<Channel> {
     logger.info("scheduling connection attempt in \(timeout) seconds")
     // The `futureResult` of the scheduled task is of type
@@ -246,7 +259,8 @@ extension ClientConnection {
       ClientConnection.makeChannel(
         configuration: configuration,
         connectivity: connectivity,
-        backoffIterator: backoffIterator
+        backoffIterator: backoffIterator,
+        logger: logger
       )
     }.futureResult.flatMap { channel in
       channel
@@ -264,7 +278,8 @@ extension ClientConnection {
   private class func makeBootstrap(
     configuration: Configuration,
     group: EventLoopGroup,
-    timeout: TimeInterval?
+    timeout: TimeInterval?,
+    logger: Logger
   ) -> ClientBootstrapProtocol {
     let bootstrap = GRPCNIO.makeClientBootstrap(group: group)
       // Enable SO_REUSEADDR and TCP_NODELAY.

@@ -16,7 +16,7 @@
 @testable import GRPC
 import XCTest
 
-class ConnectivityStateMonitorTests: XCTestCase {
+class ConnectivityStateMonitorTests: GRPCTestCase {
   var monitor = ConnectivityStateMonitor(delegate: nil)
 
   // Ensure `.idle` isn't first since it is the initial state and we only trigger callbacks

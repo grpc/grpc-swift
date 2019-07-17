@@ -17,7 +17,7 @@ import Foundation
 import GRPC
 import XCTest
 
-class GRPCStatusMessageMarshallerTests: XCTestCase {
+class GRPCStatusMessageMarshallerTests: GRPCTestCase {
   func testASCIIMarshallingAndUnmarshalling() {
     XCTAssertEqual(GRPCStatusMessageMarshaller.marshall("Hello, World!"), "Hello, World!")
     XCTAssertEqual(GRPCStatusMessageMarshaller.unmarshall("Hello, World!"), "Hello, World!")
