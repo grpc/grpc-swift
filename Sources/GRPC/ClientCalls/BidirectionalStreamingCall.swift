@@ -34,7 +34,7 @@ public final class BidirectionalStreamingCall<RequestMessage: Message, ResponseM
 
   public init(connection: ClientConnection, path: String, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?, handler: @escaping (ResponseMessage) -> Void) {
     self.messageQueue = connection.channel.eventLoop.makeSucceededFuture(())
-    let requestID = callOptions.requestIDProvider.uuid()
+    let requestID = callOptions.requestIDProvider.requestID()
 
     let logger = Logger(subsystem: .clientChannelCall, requestID: requestID)
     logger.info("making bidirectional streaming call to '\(path)', request type: \(RequestMessage.self), response type: \(ResponseMessage.self)")

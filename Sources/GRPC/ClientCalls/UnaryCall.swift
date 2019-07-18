@@ -33,7 +33,7 @@ public final class UnaryCall<RequestMessage: Message, ResponseMessage: Message>
   public let response: EventLoopFuture<ResponseMessage>
 
   public init(connection: ClientConnection, path: String, request: RequestMessage, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?) {
-    let requestID = callOptions.requestIDProvider.uuid()
+    let requestID = callOptions.requestIDProvider.requestID()
     let logger = Logger(subsystem: .clientChannelCall, requestID: requestID)
     logger.info("making unary call to '\(path)', request type: \(RequestMessage.self), response type: \(ResponseMessage.self)")
 

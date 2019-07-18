@@ -18,7 +18,7 @@ import Logging
 
 extension Logger {
   /// Create a logger and attach the given UUID as the request-id metadata.
-  init(label: String, requestID: UUID?) {
+  init(label: String, requestID: String?) {
     self.init(label: label)
     if let requestID = requestID {
       self[metadataKey: MetadataKey.requestID] = "\(requestID)"
@@ -26,7 +26,7 @@ extension Logger {
   }
 
   /// Create a logger for the given subsystem and attach the given UUID as the request-id metadata.
-  init(subsystem: Subsystem, requestID: UUID? = nil) {
+  init(subsystem: Subsystem, requestID: String? = nil) {
     self.init(label: "io.grpc.\(subsystem.rawValue)", requestID: requestID)
   }
 

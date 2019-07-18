@@ -26,7 +26,7 @@ import Logging
 /// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
 public final class ServerStreamingCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage> {
   public init(connection: ClientConnection, path: String, request: RequestMessage, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?, handler: @escaping (ResponseMessage) -> Void) {
-    let requestID = callOptions.requestIDProvider.uuid()
+    let requestID = callOptions.requestIDProvider.requestID()
     let logger = Logger(subsystem: .clientChannelCall, requestID: requestID)
     logger.info("making server streaming call to '\(path)', request type: \(RequestMessage.self), response type: \(ResponseMessage.self)")
 

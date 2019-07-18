@@ -36,7 +36,7 @@ public final class ClientStreamingCall<RequestMessage: Message, ResponseMessage:
   private var messageQueue: EventLoopFuture<Void>
 
   public init(connection: ClientConnection, path: String, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?) {
-    let requestID = callOptions.requestIDProvider.uuid()
+    let requestID = callOptions.requestIDProvider.requestID()
     let logger = Logger(subsystem: .clientChannelCall, requestID: requestID)
     logger.info("making client streaming call to '\(path)', request type: \(RequestMessage.self), response type: \(ResponseMessage.self)")
 
