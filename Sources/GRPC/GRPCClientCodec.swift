@@ -17,6 +17,7 @@ import Foundation
 import NIO
 import NIOHTTP1
 import SwiftProtobuf
+import Logging
 
 /// Outgoing gRPC package with a fixed message type.
 public enum GRPCClientRequestPart<RequestMessage: Message> {
@@ -39,7 +40,13 @@ public enum GRPCClientResponsePart<ResponseMessage: Message> {
 /// This channel handler simply encodes and decodes protobuf messages into typed messages
 /// and `Data`.
 public final class GRPCClientCodec<RequestMessage: Message, ResponseMessage: Message> {
-  public init() {}
+  private let logger: Logger
+
+  public init(logger: Logger) {
+    var loggerWithMetadata = logger
+    loggerWithMetadata[metadataKey: MetadataKey.channelHandler] = "GRPCClientCodec"
+    self.logger = loggerWithMetadata
+  }
 }
 
 extension GRPCClientCodec: ChannelInboundHandler {
@@ -51,12 +58,15 @@ extension GRPCClientCodec: ChannelInboundHandler {
 
     switch response {
     case .headers(let headers):
+      self.logger.debug("read response headers: \(headers)")
       context.fireChannelRead(self.wrapInboundOut(.headers(headers)))
 
     case .message(var messageBuffer):
+      self.logger.debug("read message \(messageBuffer)")
       // Force unwrapping is okay here; we're reading the readable bytes.
       let messageAsData = messageBuffer.readData(length: messageBuffer.readableBytes)!
       do {
+        self.logger.debug("deserializing \(messageAsData.count) bytes as \(ResponseMessage.self)")
         let box = _Box(try ResponseMessage(serializedData: messageAsData))
         context.fireChannelRead(self.wrapInboundOut(.message(box)))
       } catch {
@@ -64,6 +74,7 @@ extension GRPCClientCodec: ChannelInboundHandler {
       }
 
     case .status(let status):
+      self.logger.debug("read status \(status)")
       context.fireChannelRead(self.wrapInboundOut(.status(status)))
     }
   }
@@ -78,18 +89,22 @@ extension GRPCClientCodec: ChannelOutboundHandler {
 
     switch request {
     case .head(let head):
+      self.logger.debug("writing request head: \(head)")
       context.write(self.wrapOutboundOut(.head(head)), promise: promise)
 
     case .message(let box):
       do {
+        self.logger.debug("serializing and writing \(RequestMessage.self) protobuf")
         context.write(self.wrapOutboundOut(.message(try box.value.serializedData())), promise: promise)
       } catch {
+        self.logger.error("failed to serialize message: \(box.value)")
         let error = GRPCError.client(.requestProtoSerializationFailure)
         promise?.fail(error)
         context.fireErrorCaught(error)
       }
 
     case .end:
+      self.logger.debug("writing end")
       context.write(self.wrapOutboundOut(.end), promise: promise)
     }
   }

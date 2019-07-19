@@ -15,6 +15,7 @@
  */
 import Foundation
 import NIOConcurrencyHelpers
+import Logging
 
 /// The connectivity state of a client connection. Note that this is heavily lifted from the gRPC
 /// documentation: https://github.com/grpc/grpc/blob/master/doc/connectivity-semantics-and-api.md.
@@ -57,6 +58,7 @@ public class ConnectivityStateMonitor {
   /// A delegate to call when the connectivity state changes.
   public var delegate: ConnectivityStateDelegate?
 
+  private let logger = Logger(subsystem: .connectivityState)
   private let lock = Lock()
   private var _state: ConnectivityState = .idle
   private var _userInitiatedShutdown = false
@@ -90,11 +92,13 @@ public class ConnectivityStateMonitor {
   /// - Important: This is **not** thread safe.
   private func setNewState(to newValue: ConnectivityState) {
     if self._userInitiatedShutdown {
+      self.logger.debug("user has initiated shutdown: ignoring new state: \(newValue)")
       return
     }
 
     let oldValue = self._state
     if oldValue != newValue {
+      self.logger.info("connectivity state change: \(oldValue) to \(newValue)")
       self._state = newValue
       self.delegate?.connectivityStateDidChange(from: oldValue, to: newValue)
     }
@@ -103,6 +107,7 @@ public class ConnectivityStateMonitor {
   /// Initiates a user shutdown.
   func initiateUserShutdown() {
     self.lock.withLockVoid {
+      self.logger.debug("user has initiated shutdown")
       self.setNewState(to: .shutdown)
       self._userInitiatedShutdown = true
     }

@@ -16,6 +16,7 @@
 import Foundation
 import NIO
 import NIOHTTP1
+import Logging
 
 /// Outgoing gRPC package with an unknown message type (represented as the serialized protobuf message).
 public enum RawGRPCClientRequestPart {
@@ -43,7 +44,17 @@ public enum RawGRPCClientResponsePart {
 ///
 /// See `HTTP1ToRawGRPCServerCodec` for the corresponding server codec.
 public final class HTTP1ToRawGRPCClientCodec {
-  public init() {}
+  public init(logger: Logger) {
+    self.logger = logger.addingMetadata(
+      key: MetadataKey.channelHandler,
+      value: "HTTP1ToRawGRPCClientCodec"
+    )
+    self.messageReader = LengthPrefixedMessageReader(
+      mode: .client,
+      compressionMechanism: .none,
+      logger: logger
+    )
+  }
 
   private enum State {
     case expectingHeaders
@@ -51,8 +62,13 @@ public final class HTTP1ToRawGRPCClientCodec {
     case ignore
   }
 
-  private var state: State = .expectingHeaders
-  private let messageReader = LengthPrefixedMessageReader(mode: .client, compressionMechanism: .none)
+  private let logger: Logger
+  private var state: State = .expectingHeaders {
+    didSet {
+      self.logger.debug("read state changed from \(oldValue) to \(self.state)")
+    }
+  }
+  private let messageReader: LengthPrefixedMessageReader
   private let messageWriter = LengthPrefixedMessageWriter()
   private var inboundCompression: CompressionMechanism = .none
 }
@@ -62,7 +78,10 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
   public typealias InboundOut = RawGRPCClientResponsePart
 
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
-    if case .ignore = state { return }
+    if case .ignore = state {
+      self.logger.notice("ignoring read data: \(data)")
+      return
+    }
 
     do {
       switch self.unwrapInboundIn(data) {
@@ -85,12 +104,15 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
   ///
   /// - note: Requires the `.expectingHeaders` state.
   private func processHead(context: ChannelHandlerContext, head: HTTPResponseHead) throws -> State {
+    self.logger.debug("processing response head: \(head)")
     guard case .expectingHeaders = state else {
+      self.logger.error("invalid state '\(state)' while processing response head \(head)")
       throw GRPCError.client(.invalidState("received headers while in state \(state)"))
     }
 
     // Trailers-Only response.
     if head.headers.contains(name: GRPCHeaderName.statusCode) {
+      self.logger.info("found status-code in headers, processing response head as trailers")
       self.state = .expectingBodyOrTrailers
       return try self.processTrailers(context: context, trailers: head.headers)
     }
@@ -101,6 +123,7 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
     //
     // Source: https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md
     guard head.status == .ok else {
+      self.logger.warning("response head did not have 200 OK status: \(head.status)")
       throw GRPCError.client(.HTTPStatusNotOk(head.status))
     }
 
@@ -109,9 +132,11 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
       .map { CompressionMechanism(rawValue: $0) ?? .unknown } ?? .none
 
     guard inboundCompression.supported else {
+      self.logger.error("remote peer is using unsupported compression: \(inboundCompression)")
       throw GRPCError.client(.unsupportedCompressionMechanism(inboundCompression.rawValue))
     }
 
+    self.logger.info("using inbound compression: \(inboundCompression)")
     self.messageReader.compressionMechanism = inboundCompression
 
     context.fireChannelRead(self.wrapInboundOut(.headers(head.headers)))
@@ -124,6 +149,7 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
   /// - note: Requires the `.expectingBodyOrTrailers` state.
   private func processBody(context: ChannelHandlerContext, messageBuffer: inout ByteBuffer) throws -> State {
     guard case .expectingBodyOrTrailers = state else {
+      self.logger.error("invalid state '\(state)' while processing body \(messageBuffer)")
       throw GRPCError.client(.invalidState("received body while in state \(state)"))
     }
 
@@ -139,23 +165,70 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
   /// from the trailers if they exist; the `.unknown` status code is used if no status exists.
   private func processTrailers(context: ChannelHandlerContext, trailers: HTTPHeaders?) throws -> State {
     guard case .expectingBodyOrTrailers = state else {
+      self.logger.error("invalid state '\(state)' while processing trailers \(String(describing: trailers))")
       throw GRPCError.client(.invalidState("received trailers while in state \(state)"))
     }
 
-    let statusCode = trailers?[GRPCHeaderName.statusCode].first.flatMap {
-      Int($0)
-    }.flatMap {
-      GRPCStatus.Code(rawValue: $0)
-    } ?? .unknown
-
-    let statusMessage = trailers?[GRPCHeaderName.statusMessage].first.map {
-      GRPCStatusMessageMarshaller.unmarshall($0)
+    guard let trailers = trailers else {
+      self.logger.notice("processing trailers, but no trailers were provided")
+      let status = GRPCStatus(code: .unknown, message: nil)
+      context.fireChannelRead(self.wrapInboundOut(.status(status)))
+      return .ignore
     }
 
-    let status = GRPCStatus(code: statusCode, message: statusMessage, trailingMetadata: trailers ?? HTTPHeaders())
+    let status = GRPCStatus(
+      code: self.extractStatusCode(from: trailers),
+      message: self.extractStatusMessage(from: trailers),
+      trailingMetadata: trailers
+    )
 
     context.fireChannelRead(wrapInboundOut(.status(status)))
     return .ignore
+  }
+
+  /// Extracts a status code from the given headers, or `.unknown` if one isn't available or the
+  /// code is not valid. If multiple values are present, the first is taken.
+  private func extractStatusCode(from headers: HTTPHeaders) -> GRPCStatus.Code {
+    let statusCodes = headers[GRPCHeaderName.statusCode]
+
+    guard !statusCodes.isEmpty else {
+      self.logger.warning("no status-code header")
+      return .unknown
+    }
+
+    if statusCodes.count > 1 {
+      self.logger.notice("multiple values for status-code header: \(statusCodes), using the first")
+    }
+
+    // We have at least one value: force unwrapping is fine.
+    let statusCode = statusCodes.first!
+
+    if let code = Int(statusCode).flatMap({ GRPCStatus.Code(rawValue: $0) }) {
+      return code
+    } else {
+      self.logger.warning("no known status-code for: \(statusCode)")
+      return .unknown
+    }
+  }
+
+  /// Extracts a status message from the given headers, or `nil` if one isn't available. If
+  /// multiple values are present, the first is taken.
+  private func extractStatusMessage(from headers: HTTPHeaders) -> String? {
+    let statusMessages = headers[GRPCHeaderName.statusMessage]
+
+    guard !statusMessages.isEmpty else {
+      self.logger.debug("no status-message header")
+      return nil
+    }
+
+    if statusMessages.count > 1 {
+      self.logger.notice("multiple values for status-message header: \(statusMessages), using the first")
+    }
+
+    // We have at least one value: force unwrapping is fine.
+    let unmarshalled = statusMessages.first!
+    self.logger.debug("unmarshalling status-message: \(unmarshalled)")
+    return GRPCStatusMessageMarshaller.unmarshall(unmarshalled)
   }
 }
 
@@ -166,14 +239,17 @@ extension HTTP1ToRawGRPCClientCodec: ChannelOutboundHandler {
   public func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     switch self.unwrapOutboundIn(data) {
     case .head(let requestHead):
+      self.logger.debug("writing request head: \(requestHead)")
       context.write(self.wrapOutboundOut(.head(requestHead)), promise: promise)
 
     case .message(let message):
       var request = context.channel.allocator.buffer(capacity: LengthPrefixedMessageWriter.metadataLength)
       messageWriter.write(message, into: &request, usingCompression: .none)
+      self.logger.debug("writing length prefixed protobuf message")
       context.write(self.wrapOutboundOut(.body(.byteBuffer(request))), promise: promise)
 
     case .end:
+      self.logger.debug("writing end")
       context.write(self.wrapOutboundOut(.end(nil)), promise: promise)
     }
   }

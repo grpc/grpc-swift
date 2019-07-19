@@ -17,6 +17,7 @@ import Foundation
 import NIO
 import NIOSSL
 import NIOTLS
+import Logging
 
 /// Application protocol identifiers for ALPN.
 public enum GRPCApplicationProtocolIdentifier: String, CaseIterable {
@@ -39,6 +40,7 @@ public enum GRPCApplicationProtocolIdentifier: String, CaseIterable {
 public class TLSVerificationHandler: ChannelInboundHandler, RemovableChannelHandler {
   public typealias InboundIn = Any
 
+  private let logger = Logger(subsystem: .clientChannel)
   private var verificationPromise: EventLoopPromise<Void>!
 
   /// A future which is fulfilled when the state of the TLS handshake is known. If the handshake
@@ -67,6 +69,10 @@ public class TLSVerificationHandler: ChannelInboundHandler, RemovableChannelHand
 
   public func errorCaught(context: ChannelHandlerContext, error: Error) {
     precondition(self.verificationPromise != nil, "handler has not been added to the pipeline")
+    self.logger.error(
+      "error caught before TLS was verified",
+      metadata: [MetadataKey.error: "\(error)"]
+    )
     verificationPromise.fail(error)
   }
 
@@ -79,9 +85,12 @@ public class TLSVerificationHandler: ChannelInboundHandler, RemovableChannelHand
         return
     }
 
+    self.logger.info("TLS handshake completed, negotiated protocol: \(String(describing: negotiatedProtocol))")
     if let proto = negotiatedProtocol, GRPCApplicationProtocolIdentifier(rawValue: proto) != nil {
+      self.logger.debug("negotiated application protocol is valid")
       self.verificationPromise.succeed(())
     } else {
+      self.logger.error("negotiated application protocol is invalid: \(String(describing: negotiatedProtocol))")
       let error = GRPCError.client(.applicationLevelProtocolNegotiationFailed)
       self.verificationPromise.fail(error)
     }

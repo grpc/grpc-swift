@@ -92,7 +92,7 @@ extension TransportSecurity {
   }
 }
 
-class EchoTestCaseBase: XCTestCase {
+class EchoTestCaseBase: GRPCTestCase {
   var defaultTestTimeout: TimeInterval = 1.0
 
   var serverEventLoopGroup: EventLoopGroup!

@@ -48,7 +48,7 @@ class CollectingServerErrorDelegate: ServerErrorDelegate {
   }
 }
 
-class GRPCChannelHandlerResponseCapturingTestCase: XCTestCase {
+class GRPCChannelHandlerResponseCapturingTestCase: GRPCTestCase {
   static let echoProvider: [String: CallHandlerProvider] = ["echo.Echo": EchoProvider()]
   class var defaultServiceProvider: [String: CallHandlerProvider] {
     return echoProvider

@@ -17,6 +17,7 @@ import Foundation
 import SwiftProtobuf
 import NIO
 import NIOHTTP1
+import Logging
 
 /// A base channel handler for receiving responses.
 ///
@@ -25,6 +26,7 @@ import NIOHTTP1
 /// aforementioned promises.
 internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelInboundHandler {
   public typealias InboundIn = GRPCClientResponsePart<ResponseMessage>
+  internal let logger: Logger
 
   internal let initialMetadataPromise: EventLoopPromise<HTTPHeaders>
   internal let statusPromise: EventLoopPromise<GRPCStatus>
@@ -67,7 +69,11 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
   }
 
   private let responseArity: ResponseArity
-  private var inboundState: InboundState = .expectingHeadersOrStatus
+  private var inboundState: InboundState = .expectingHeadersOrStatus {
+    didSet {
+      self.logger.debug("inbound state changed from \(oldValue) to \(self.inboundState)")
+    }
+  }
 
   /// Creates a new `ClientResponseChannelHandler`.
   ///
@@ -82,13 +88,15 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
     statusPromise: EventLoopPromise<GRPCStatus>,
     errorDelegate: ClientErrorDelegate?,
     timeout: GRPCTimeout,
-    expectedResponses: ResponseArity
+    expectedResponses: ResponseArity,
+    logger: Logger
   ) {
     self.initialMetadataPromise = initialMetadataPromise
     self.statusPromise = statusPromise
     self.errorDelegate = errorDelegate
     self.timeout = timeout
     self.responseArity = expectedResponses
+    self.logger = logger
   }
 
   /// Observe the given status.
@@ -133,33 +141,55 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
   /// - status: the status promise is succeeded; if the status is not `ok` then the initial metadata
   ///   and response promise (if available) are failed with the status.
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
-    guard self.inboundState != .ignore else { return }
+    guard self.inboundState != .ignore else {
+      self.logger.notice("ignoring read data: \(data)")
+      return
+    }
 
     switch self.unwrapInboundIn(data) {
     case .headers(let headers):
       guard self.inboundState == .expectingHeadersOrStatus else {
-        self.errorCaught(context: context, error: GRPCError.client(.invalidState("received headers while in state \(self.inboundState)")))
+        self.logger.error("invalid state '\(self.inboundState)' while processing headers")
+        self.errorCaught(
+          context: context,
+          error: GRPCError.client(.invalidState("received headers while in state \(self.inboundState)"))
+        )
         return
       }
+
+      self.logger.info("received response headers: \(headers)")
 
       self.initialMetadataPromise.succeed(headers)
       self.inboundState = .expectingMessageOrStatus
 
     case .message(let boxedMessage):
       guard self.inboundState == .expectingMessageOrStatus else {
-        self.errorCaught(context: context, error: GRPCError.client(.responseCardinalityViolation))
+        self.logger.error("invalid state '\(self.inboundState)' while processing message")
+        self.errorCaught(
+          context: context,
+          error: GRPCError.client(.responseCardinalityViolation)
+        )
         return
       }
+
+      self.logger.info("received response message", metadata: [
+        MetadataKey.responseType: "\(ResponseMessage.self)"
+      ])
 
       self.onResponse(boxedMessage)
       self.inboundState = self.responseArity.inboundStateAfterResponse
 
     case .status(let status):
       guard self.inboundState.expectingStatus else {
-        self.errorCaught(context: context, error: GRPCError.client(.invalidState("received status while in state \(self.inboundState)")))
+        self.logger.error("invalid state '\(self.inboundState)' while processing status")
+        self.errorCaught(
+          context: context,
+          error: GRPCError.client(.invalidState("received status while in state \(self.inboundState)"))
+        )
         return
       }
 
+      self.logger.info("received respone status: \(status.code)")
       self.observeStatus(status)
       // We don't expect any more requests/responses beyond this point and we don't need to close
       // the channel since NIO's HTTP/2 channel handlers will deal with this for us.
@@ -182,7 +212,10 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
     if self.timeout != .infinite {
       let timeout = self.timeout
       self.timeoutTask = context.eventLoop.scheduleTask(in: timeout.asNIOTimeAmount) { [weak self] in
-        self?.errorCaught(context: context, error: GRPCError.client(.deadlineExceeded(timeout)))
+        self?.errorCaught(
+          context: context,
+          error: GRPCError.client(.deadlineExceeded(timeout))
+        )
       }
     }
   }
@@ -209,7 +242,8 @@ final class GRPCClientUnaryResponseChannelHandler<ResponseMessage: Message>: Cli
     responsePromise: EventLoopPromise<ResponseMessage>,
     statusPromise: EventLoopPromise<GRPCStatus>,
     errorDelegate: ClientErrorDelegate?,
-    timeout: GRPCTimeout
+    timeout: GRPCTimeout,
+    logger: Logger
   ) {
     self.responsePromise = responsePromise
 
@@ -218,7 +252,11 @@ final class GRPCClientUnaryResponseChannelHandler<ResponseMessage: Message>: Cli
       statusPromise: statusPromise,
       errorDelegate: errorDelegate,
       timeout: timeout,
-      expectedResponses: .one
+      expectedResponses: .one,
+      logger: logger.addingMetadata(
+        key: MetadataKey.channelHandler,
+        value: "GRPCClientUnaryResponseChannelHandler"
+      )
     )
   }
 
@@ -250,6 +288,7 @@ final class GRPCClientStreamingResponseChannelHandler<ResponseMessage: Message>:
     statusPromise: EventLoopPromise<GRPCStatus>,
     errorDelegate: ClientErrorDelegate?,
     timeout: GRPCTimeout,
+    logger: Logger,
     responseHandler: @escaping ResponseHandler
   ) {
     self.responseHandler = responseHandler
@@ -259,7 +298,11 @@ final class GRPCClientStreamingResponseChannelHandler<ResponseMessage: Message>:
       statusPromise: statusPromise,
       errorDelegate: errorDelegate,
       timeout: timeout,
-      expectedResponses: .many
+      expectedResponses: .many,
+      logger: logger.addingMetadata(
+        key: MetadataKey.channelHandler,
+        value: "GRPCClientStreamingResponseChannelHandler"
+      )
     )
   }
 

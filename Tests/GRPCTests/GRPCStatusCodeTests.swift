@@ -19,8 +19,9 @@ import NIO
 import NIOHTTP1
 import NIOHTTP2
 import XCTest
+import Logging
 
-class GRPCStatusCodeTests: XCTestCase {
+class GRPCStatusCodeTests: GRPCTestCase {
   var channel: EmbeddedChannel!
   var metadataPromise: EventLoopPromise<HTTPHeaders>!
   var responsePromise: EventLoopPromise<Echo_EchoResponse>!
@@ -34,15 +35,19 @@ class GRPCStatusCodeTests: XCTestCase {
     self.responsePromise = self.channel.eventLoop.makePromise()
     self.statusPromise = self.channel.eventLoop.makePromise()
 
+    let requestID = UUID().uuidString
+    let logger = Logger(subsystem: .clientChannelCall, requestID: requestID)
     try! self.channel.pipeline.addHandlers([
-      HTTP1ToRawGRPCClientCodec(),
-      GRPCClientCodec<Echo_EchoRequest, Echo_EchoResponse>(),
+      HTTP1ToRawGRPCClientCodec(logger: logger),
+      GRPCClientCodec<Echo_EchoRequest, Echo_EchoResponse>(logger: logger),
       GRPCClientUnaryResponseChannelHandler<Echo_EchoResponse>(
         initialMetadataPromise: self.metadataPromise,
         responsePromise: self.responsePromise,
         statusPromise: self.statusPromise,
         errorDelegate: nil,
-        timeout: .infinite)
+        timeout: .infinite,
+        logger: logger
+      )
     ]).wait()
   }
 

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import Foundation
+import Logging
 
 /// Delegate called when errors are caught by the client on individual HTTP/2 streams and errors in
 /// the underlying HTTP/2 connection.
@@ -34,12 +35,19 @@ public protocol ClientErrorDelegate: class {
 /// A `ClientErrorDelegate` which logs errors only in debug builds.
 public class DebugOnlyLoggingClientErrorDelegate: ClientErrorDelegate {
   public static let shared = DebugOnlyLoggingClientErrorDelegate()
+  private let logger = Logger(labelSuffix: "ClientErrorDelegate")
 
   private init() { }
 
   public func didCatchError(_ error: Error, file: StaticString, line: Int) {
     debugOnly {
-      print("[grpc-client][\(Date())] error: \(error), file: \(file), line: \(line)")
+      self.logger.error(
+        "client error",
+        metadata: [MetadataKey.error: "\(error)"],
+        file: "\(file)",
+        function: "<unknown>",
+        line: UInt(line)
+      )
     }
   }
 }

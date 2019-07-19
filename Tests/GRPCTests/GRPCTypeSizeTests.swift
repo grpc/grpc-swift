@@ -25,7 +25,7 @@ import XCTest
 /// https://github.com/apple/swift-nio-http2/commit/4097c3a807a83661f0add383edef29b426e666cb
 ///
 /// Session 416 of WWDC 2016 also provides a good explanation of existential containers.
-class GRPCTypeSizeTests: XCTestCase {
+class GRPCTypeSizeTests: GRPCTestCase {
   let existentialContainerBufferSize = 24
 
   func checkSize<T>(of: T.Type, file: StaticString = #file, line: UInt = #line) {

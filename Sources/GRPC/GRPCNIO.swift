@@ -15,6 +15,7 @@
  */
 import NIO
 import NIOTransportServices
+import Logging
 
 /// How a network implementation should be chosen.
 public enum NetworkPreference {
@@ -31,11 +32,11 @@ public enum NetworkPreference {
 /// The network implementation to use: POSIX sockets or Network.framework. This also determines
 /// which variant of NIO to use; NIO or NIOTransportServices, respectively.
 public enum NetworkImplementation {
-#if canImport(Network)
+  #if canImport(Network)
   /// Network.framework (NIOTransportServices).
   @available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
   case networkFramework
-#endif
+  #endif
   /// POSIX (NIO).
   case posix
 }
@@ -55,11 +56,14 @@ extension NetworkPreference {
     case .best:
       #if canImport(Network)
       guard #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else {
+        GRPCNIO.logger.critical("Network.framework can be imported but is not supported on this platform")
         // This is gated by the availability of `.networkFramework` so should never happen.
         fatalError(".networkFramework is being used on an unsupported platform")
       }
+      GRPCNIO.logger.info("'best' NetworkImplementation is .networkFramework")
       return .networkFramework
       #else
+      GRPCNIO.logger.info("'best' NetworkImplementation is .posix")
       return .posix
       #endif
 
@@ -117,6 +121,8 @@ extension NIOTSListenerBootstrap: ServerBootstrapProtocol {}
 // MARK: - Bootstrap / EventLoopGroup helpers
 
 public enum GRPCNIO {
+  static let logger = Logger(subsystem: .nio)
+
   /// Makes a new event loop group based on the network preference.
   ///
   /// If `.best` is chosen and `Network.framework` is available then `NIOTSEventLoopGroup` will
@@ -128,16 +134,20 @@ public enum GRPCNIO {
     loopCount: Int,
     networkPreference: NetworkPreference = .best
   ) -> EventLoopGroup {
+    logger.info("making EventLoopGroup for \(networkPreference) network preference")
     switch networkPreference.implementation {
-#if canImport(Network)
+    #if canImport(Network)
     case .networkFramework:
       guard #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else {
+        logger.critical("Network.framework can be imported but is not supported on this platform")
         // This is gated by the availability of `.networkFramework` so should never happen.
         fatalError(".networkFramework is being used on an unsupported platform")
       }
+      logger.debug("created NIOTSEventLoopGroup for \(networkPreference) preference")
       return NIOTSEventLoopGroup(loopCount: loopCount)
-#endif
+    #endif
     case .posix:
+      logger.debug("created MultiThreadedEventLoopGroup for \(networkPreference) preference")
       return MultiThreadedEventLoopGroup(numberOfThreads: loopCount)
     }
   }
@@ -149,13 +159,17 @@ public enum GRPCNIO {
   ///
   /// - Parameter group: The `EventLoopGroup` to use.
   public static func makeClientBootstrap(group: EventLoopGroup) -> ClientBootstrapProtocol {
-#if canImport(Network)
+    logger.info("making client bootstrap with event loop group of type \(type(of: group))")
+    #if canImport(Network)
     if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
       if let tsGroup = group as? NIOTSEventLoopGroup {
+        logger.debug("Network.framework is available and the group is correctly typed, creating a NIOTSConnectionBootstrap")
         return NIOTSConnectionBootstrap(group: tsGroup)
       }
+      logger.debug("Network.framework is available but the group is not typed for NIOTS, falling back to ClientBootstrap")
     }
-#endif
+    #endif
+    logger.debug("creating a ClientBootstrap")
     return ClientBootstrap(group: group)
   }
 
@@ -166,13 +180,17 @@ public enum GRPCNIO {
   ///
   /// - Parameter group: The `EventLoopGroup` to use.
   public static func makeServerBootstrap(group: EventLoopGroup) -> ServerBootstrapProtocol {
-#if canImport(Network)
+    logger.info("making server bootstrap with event loop group of type \(type(of: group))")
+    #if canImport(Network)
     if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
       if let tsGroup = group as? NIOTSEventLoopGroup {
+        logger.debug("Network.framework is available and the group is correctly typed, creating a NIOTSListenerBootstrap")
         return NIOTSListenerBootstrap(group: tsGroup)
       }
+      logger.debug("Network.framework is available but the group is not typed for NIOTS, falling back to ServerBootstrap")
     }
-#endif
+    #endif
+    logger.debug("creating a ServerBootstrap")
     return ServerBootstrap(group: group)
   }
 }

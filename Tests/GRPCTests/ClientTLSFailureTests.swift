@@ -34,7 +34,7 @@ class ErrorRecordingDelegate: ClientErrorDelegate {
   }
 }
 
-class ClientTLSFailureTests: XCTestCase {
+class ClientTLSFailureTests: GRPCTestCase {
   let defaultServerTLSConfiguration = Server.Configuration.TLS(
     certificateChain: [.certificate(SampleCertificate.server.certificate)],
     privateKey: .privateKey(SamplePrivateKey.server))

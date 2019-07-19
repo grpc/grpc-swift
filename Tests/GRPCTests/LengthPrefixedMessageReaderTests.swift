@@ -17,9 +17,14 @@ import Foundation
 import XCTest
 import GRPC
 import NIO
+import Logging
 
-class LengthPrefixedMessageReaderTests: XCTestCase {
-  var reader = LengthPrefixedMessageReader(mode: .client, compressionMechanism: .none)
+class LengthPrefixedMessageReaderTests: GRPCTestCase {
+  var reader = LengthPrefixedMessageReader(
+    mode: .client,
+    compressionMechanism: .none,
+    logger: Logger(label: "io.grpc.testing")
+  )
 
   var allocator = ByteBufferAllocator()
 

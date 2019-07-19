@@ -16,6 +16,7 @@
 import Foundation
 import NIO
 import NIOHTTP1
+import Logging
 
 /// This class reads and decodes length-prefixed gRPC messages.
 ///
@@ -31,13 +32,15 @@ import NIOHTTP1
 /// [gRPC Protocol](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md)
 public class LengthPrefixedMessageReader {
   public typealias Mode = GRPCError.Origin
+  let logger: Logger
 
   /// The mechanism that messages will be compressed with.
   public var compressionMechanism: CompressionMechanism
 
-  public init(mode: Mode, compressionMechanism: CompressionMechanism) {
+  public init(mode: Mode, compressionMechanism: CompressionMechanism, logger: Logger) {
     self.mode = mode
     self.compressionMechanism = compressionMechanism
+    self.logger = logger
   }
 
   /// The result of trying to parse a message with the bytes we currently have.
@@ -60,15 +63,22 @@ public class LengthPrefixedMessageReader {
 
   private let mode: Mode
   private var buffer: ByteBuffer!
-  private var state: ParseState = .expectingCompressedFlag
+  private var state: ParseState = .expectingCompressedFlag {
+    didSet {
+      self.logger.debug("parse state changed from \(oldValue) to \(self.state)")
+    }
+  }
 
   /// Appends data to the buffer from which messages will be read.
   public func append(buffer: inout ByteBuffer) {
+    self.logger.info("appending \(buffer.readableBytes) bytes to buffer")
     if self.buffer == nil {
+      self.logger.debug("creating new buffer from slice")
       self.buffer = buffer.slice()
       // mark the bytes as "read"
       buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
     } else {
+      self.logger.debug("copying bytes into existing buffer")
       self.buffer.writeBuffer(&buffer)
     }
   }
@@ -88,6 +98,7 @@ public class LengthPrefixedMessageReader {
       return try nextMessage()
 
     case .message(let message):
+      self.logger.info("read length-prefixed message")
       self.nilBufferIfPossible()
       return message
     }
@@ -98,31 +109,42 @@ public class LengthPrefixedMessageReader {
   /// This allows the next call to `append` to avoid writing the contents of the appended buffer.
   private func nilBufferIfPossible() {
     if self.buffer?.readableBytes == 0 {
+      self.logger.debug("no readable bytes; nilling-out buffer")
       self.buffer = nil
     }
   }
 
   private func processNextState() throws -> ParseResult {
-    guard self.buffer != nil else { return .needMoreData }
+    guard self.buffer != nil else {
+      self.logger.debug("no buffer to read from")
+      return .needMoreData
+    }
 
     switch self.state {
     case .expectingCompressedFlag:
       guard let compressionFlag: Int8 = self.buffer.readInteger() else {
+        self.logger.debug("1 more byte needed to read compression flag")
         return .needMoreData
       }
+      self.logger.debug("read 1 byte compression flag: \(compressionFlag)")
       try self.handleCompressionFlag(enabled: compressionFlag != 0)
       self.state = .expectingMessageLength
 
     case .expectingMessageLength:
       guard let messageLength: UInt32 = self.buffer.readInteger() else {
+        self.logger.debug("\(4 - buffer.readableBytes) more bytes needed to read message length")
         return .needMoreData
       }
+      self.logger.debug("read 4 byte message length: \(messageLength)")
       self.state = .expectingMessage(messageLength)
 
     case .expectingMessage(let length):
-      guard let message = self.buffer.readSlice(length: numericCast(length)) else {
+      let signedLength: Int = numericCast(length)
+      guard let message = self.buffer.readSlice(length: signedLength) else {
+        self.logger.debug("\(signedLength - buffer.readableBytes) more bytes needed to read message")
         return .needMoreData
       }
+      self.logger.debug("read \(message.readableBytes) byte message")
       self.state = .expectingCompressedFlag
       return .message(message)
     }
@@ -132,14 +154,18 @@ public class LengthPrefixedMessageReader {
 
   private func handleCompressionFlag(enabled flagEnabled: Bool) throws {
     guard flagEnabled else {
+      self.logger.debug("compression is not enabled for this message")
       return
     }
+    self.logger.info("compression is enabled for this message")
 
     guard self.compressionMechanism.requiresFlag else {
+      self.logger.error("compression flag was set but '\(self.compressionMechanism)' does not require it")
       throw GRPCError.common(.unexpectedCompression, origin: mode)
     }
 
     guard self.compressionMechanism.supported else {
+      self.logger.error("compression mechanism '\(self.compressionMechanism)' is not supported")
       throw GRPCError.common(.unsupportedCompressionMechanism(compressionMechanism.rawValue), origin: mode)
     }
   }

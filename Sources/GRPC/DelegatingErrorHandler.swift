@@ -15,6 +15,7 @@
  */
 import Foundation
 import NIO
+import Logging
 
 /// A channel handler which allows caught errors to be passed to a `ClientErrorDelegate`. This
 /// handler is intended to be used in the client channel pipeline after the HTTP/2 stream
@@ -22,6 +23,7 @@ import NIO
 public class DelegatingErrorHandler: ChannelInboundHandler {
   public typealias InboundIn = Any
 
+  private let logger = Logger(subsystem: .clientChannel)
   private let delegate: ClientErrorDelegate?
 
   public init(delegate: ClientErrorDelegate?) {
@@ -33,6 +35,8 @@ public class DelegatingErrorHandler: ChannelInboundHandler {
       let grpcError = (error as? GRPCError) ?? .unknown(error, origin: .client)
       delegate.didCatchError(grpcError.wrappedError, file: grpcError.file, line: grpcError.line)
     }
+    self.logger.error("caught error in client channel", metadata: [MetadataKey.error: "\(error)"])
+    self.logger.info("closing client channel")
     context.close(promise: nil)
   }
 }

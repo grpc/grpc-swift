@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 import Foundation
+import Logging
 
 public class LoggingServerErrorDelegate: ServerErrorDelegate {
   public static let shared = LoggingServerErrorDelegate()
+  private let logger = Logger(labelSuffix: "ServerErrorDelegate")
 
   private init() {}
 
   public func observeLibraryError(_ error: Error) {
-    print("[grpc-server][\(Date())] library: \(error)")
+    self.logger.error("library error", metadata: [MetadataKey.error: "\(error)"])
   }
 
   public func observeRequestHandlerError(_ error: Error) {
-    print("[grpc-server][\(Date())] request handler: \(error)")
+    self.logger.error("request handler error", metadata: [MetadataKey.error: "\(error)"])
   }
 }
