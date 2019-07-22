@@ -332,7 +332,7 @@ extension ClientConnection {
     timeout: TimeInterval?,
     logger: Logger
   ) -> ClientBootstrapProtocol {
-    let bootstrap = GRPCNIO.makeClientBootstrap(group: group)
+    let bootstrap = PlatformSupport.makeClientBootstrap(group: group)
       // Enable SO_REUSEADDR and TCP_NODELAY.
       .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
       .channelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)

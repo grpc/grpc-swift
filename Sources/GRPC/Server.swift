@@ -93,7 +93,7 @@ import NIOSSL
 public final class Server {
   /// Makes and configures a `ServerBootstrap` using the provided configuration.
   public class func makeBootstrap(configuration: Configuration) -> ServerBootstrapProtocol {
-    let bootstrap = GRPCNIO.makeServerBootstrap(group: configuration.eventLoopGroup)
+    let bootstrap = PlatformSupport.makeServerBootstrap(group: configuration.eventLoopGroup)
 
     // Backlog is only available on `ServerBootstrap`.
     if bootstrap is ServerBootstrap {

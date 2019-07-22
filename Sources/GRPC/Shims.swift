@@ -32,3 +32,6 @@ extension Server.Configuration {
     return nil
   }
 }
+
+@available(*, deprecated, renamed: "PlatformSupport")
+public enum GRPCNIO {}
