@@ -189,7 +189,7 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
         return
       }
 
-      self.logger.info("received respone status: \(status.code)")
+      self.logger.info("received response status: \(status.code)")
       self.observeStatus(status)
       // We don't expect any more requests/responses beyond this point and we don't need to close
       // the channel since NIO's HTTP/2 channel handlers will deal with this for us.
