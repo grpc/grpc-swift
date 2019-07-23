@@ -27,17 +27,23 @@ import NIOHTTP1
 public class BidirectionalStreamingCallHandler<RequestMessage: Message, ResponseMessage: Message>: BaseCallHandler<RequestMessage, ResponseMessage> {
   public typealias EventObserver = (StreamEvent<RequestMessage>) -> Void
   private var eventObserver: EventLoopFuture<EventObserver>?
+  private let eventObserverFactory: (StreamingResponseCallContext<ResponseMessage>) -> EventLoopFuture<EventObserver>
 
   private var callContext: StreamingResponseCallContext<ResponseMessage>?
 
   // We ask for a future of type `EventObserver` to allow the framework user to e.g. asynchronously authenticate a call.
   // If authentication fails, they can simply fail the observer future, which causes the call to be terminated.
-  public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, eventObserverFactory: (StreamingResponseCallContext<ResponseMessage>) -> EventLoopFuture<EventObserver>) {
-    super.init(errorDelegate: errorDelegate)
+  public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, eventObserverFactory: @escaping (StreamingResponseCallContext<ResponseMessage>) -> EventLoopFuture<EventObserver>) {
+    // Delay the creation of the event observer until `handlerAdded(context:)`, otherwise it is
+    // possible for the service to write into the pipeline (by fulfilling the status promise
+    // of the call context outside of the observer) before it has been configured.
+    self.eventObserverFactory = eventObserverFactory
+
     let context = StreamingResponseCallContextImpl<ResponseMessage>(channel: channel, request: request, errorDelegate: errorDelegate)
     self.callContext = context
-    let eventObserver = eventObserverFactory(context)
-    self.eventObserver = eventObserver
+
+    super.init(errorDelegate: errorDelegate)
+
     context.statusPromise.futureResult.whenComplete { _ in
       // When done, reset references to avoid retain cycles.
       self.eventObserver = nil
@@ -46,8 +52,9 @@ public class BidirectionalStreamingCallHandler<RequestMessage: Message, Response
   }
 
   public override func handlerAdded(context: ChannelHandlerContext) {
-    guard let eventObserver = self.eventObserver,
-      let callContext = self.callContext else { return }
+    guard let callContext = self.callContext else { return }
+    let eventObserver = self.eventObserverFactory(callContext)
+    self.eventObserver = eventObserver
     // Terminate the call if the future providing an observer fails.
     // This is being done _after_ we have been added as a handler to ensure that the `GRPCServerCodec` required to
     // translate our outgoing `GRPCServerResponsePart<ResponseMessage>` message is already present on the channel.
