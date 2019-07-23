@@ -14,109 +14,141 @@
  * limitations under the License.
  */
 import Foundation
-import GRPC
+@testable import GRPC
 import NIO
 import XCTest
 
-class ClientTimeoutTests: EchoTestCaseBase {
-  let optionsWithShortTimeout = CallOptions(timeout: try! GRPCTimeout.milliseconds(10))
-  let moreThanShortTimeout: TimeInterval = 0.020
+class ClientTimeoutTests: GRPCTestCase {
+  var channel: EmbeddedChannel!
+  var client: Echo_EchoServiceClient!
 
-  private func expectDeadlineExceeded(forStatus status: EventLoopFuture<GRPCStatus>,
-                                      file: StaticString = #file, line: UInt = #line) {
-    let statusExpectation = self.expectation(description: "status received")
+  let callOptions = CallOptions(timeout: try! .milliseconds(100))
+  var timeout: GRPCTimeout {
+    return self.callOptions.timeout
+  }
 
-    status.whenSuccess { status in
-      XCTAssertEqual(status.code, .deadlineExceeded, file: file, line: line)
-      statusExpectation.fulfill()
+  // Note: this is not related to the call timeout since we're using an EmbeddedChannel. We require
+  // this in case the timeout doesn't work.
+  let testTimeout: TimeInterval = 0.1
+
+  override func setUp() {
+    super.setUp()
+    let channel = EmbeddedChannel()
+
+    let configuration = ClientConnection.Configuration(
+      target: .socketAddress(try! .init(unixDomainSocketPath: "/foo")),
+      eventLoopGroup: channel.eventLoop
+    )
+
+    let connection = ClientConnection(channel: channel, configuration: configuration)
+    let client = Echo_EchoServiceClient(connection: connection, defaultCallOptions: self.callOptions)
+
+    self.channel = channel
+    self.client = client
+  }
+
+  override func tearDown() {
+    XCTAssertNoThrow(try self.channel.finish())
+  }
+
+  func assertDeadlineExceeded(_ response: EventLoopFuture<Echo_EchoResponse>, expectation: XCTestExpectation) {
+    response.whenComplete { result in
+      switch result {
+      case .success(let response):
+        XCTFail("unexpected response: \(response)")
+      case .failure(let error):
+        if let status = error as? GRPCStatus {
+          XCTAssertEqual(status.code, .deadlineExceeded)
+        } else {
+          XCTFail("unexpected error: \(error)")
+        }
+      }
+      expectation.fulfill()
     }
+  }
 
-    status.whenFailure { error in
-      XCTFail("unexpectedly received error for status: \(error)", file: file, line: line)
+  func assertDeadlineExceeded(_ status: EventLoopFuture<GRPCStatus>, expectation: XCTestExpectation) {
+    status.whenComplete { result in
+      switch result {
+      case .success(let status):
+        XCTAssertEqual(status.code, .deadlineExceeded)
+      case .failure(let error):
+        XCTFail("unexpected error: \(error)")
+      }
+      expectation.fulfill()
     }
   }
 
-  private func expectDeadlineExceeded(forResponse response: EventLoopFuture<Echo_EchoResponse>,
-                                      file: StaticString = #file, line: UInt = #line) {
-    let responseExpectation = self.expectation(description: "response received")
+  func testUnaryTimeoutAfterSending() throws {
+    let statusExpectation = self.expectation(description: "status fulfilled")
 
-    response.whenFailure { error in
-      XCTAssertEqual((error as? GRPCStatus)?.code, .deadlineExceeded, file: file, line: line)
-      responseExpectation.fulfill()
-    }
+    let call = self.client.get(Echo_EchoRequest(text: "foo"))
+    channel.embeddedEventLoop.advanceTime(by: self.timeout.asNIOTimeAmount)
 
-    response.whenSuccess { response in
-      XCTFail("response received after deadline", file: file, line: line)
-    }
-  }
-}
-
-extension ClientTimeoutTests {
-  func testUnaryTimeoutAfterSending() {
-    // The request gets fired on call creation, so we need a very short timeout.
-    let callOptions = CallOptions(timeout: try! .microseconds(100))
-    let call = client.get(Echo_EchoRequest(text: "foo"), callOptions: callOptions)
-
-    self.expectDeadlineExceeded(forStatus: call.status)
-    self.expectDeadlineExceeded(forResponse: call.response)
-
-    waitForExpectations(timeout: defaultTestTimeout)
+    self.assertDeadlineExceeded(call.status, expectation: statusExpectation)
+    self.wait(for: [statusExpectation], timeout: self.testTimeout)
   }
 
-  func testServerStreamingTimeoutAfterSending() {
-    // The request gets fired on call creation, so we need a very short timeout.
-    let callOptions = CallOptions(timeout: try! .microseconds(100))
-    let call = client.expand(Echo_EchoRequest(text: "foo bar baz"), callOptions: callOptions) { _ in }
+  func testServerStreamingTimeoutAfterSending() throws {
+    let statusExpectation = self.expectation(description: "status fulfilled")
 
-    self.expectDeadlineExceeded(forStatus: call.status)
+    let call = client.expand(Echo_EchoRequest(text: "foo bar baz")) { _ in }
+    channel.embeddedEventLoop.advanceTime(by: self.timeout.asNIOTimeAmount)
 
-    waitForExpectations(timeout: defaultTestTimeout)
+    self.assertDeadlineExceeded(call.status, expectation: statusExpectation)
+    self.wait(for: [statusExpectation], timeout: self.testTimeout)
   }
 
-  func testClientStreamingTimeoutBeforeSending() {
-    let call = client.collect(callOptions: optionsWithShortTimeout)
+  func testClientStreamingTimeoutBeforeSending() throws {
+    let responseExpectation = self.expectation(description: "response fulfilled")
+    let statusExpectation = self.expectation(description: "status fulfilled")
 
-    self.expectDeadlineExceeded(forStatus: call.status)
-    self.expectDeadlineExceeded(forResponse: call.response)
+    let call = client.collect()
+    channel.embeddedEventLoop.advanceTime(by: self.timeout.asNIOTimeAmount)
 
-    waitForExpectations(timeout: defaultTestTimeout)
+    self.assertDeadlineExceeded(call.response, expectation: responseExpectation)
+    self.assertDeadlineExceeded(call.status, expectation: statusExpectation)
+    self.wait(for: [responseExpectation, statusExpectation], timeout: self.testTimeout)
   }
 
-  func testClientStreamingTimeoutAfterSending() {
-    let call = client.collect(callOptions: optionsWithShortTimeout)
+  func testClientStreamingTimeoutAfterSending() throws {
+    let responseExpectation = self.expectation(description: "response fulfilled")
+    let statusExpectation = self.expectation(description: "status fulfilled")
 
-    self.expectDeadlineExceeded(forStatus: call.status)
-    self.expectDeadlineExceeded(forResponse: call.response)
+    let call = client.collect()
+
+    self.assertDeadlineExceeded(call.response, expectation: responseExpectation)
+    self.assertDeadlineExceeded(call.status, expectation: statusExpectation)
 
     call.sendMessage(Echo_EchoRequest(text: "foo"), promise: nil)
-
-    // Timeout before sending `.end`
-    Thread.sleep(forTimeInterval: moreThanShortTimeout)
     call.sendEnd(promise: nil)
+    channel.embeddedEventLoop.advanceTime(by: self.timeout.asNIOTimeAmount)
 
-    waitForExpectations(timeout: defaultTestTimeout)
+    self.wait(for: [responseExpectation, statusExpectation], timeout: 1.0)
   }
 
   func testBidirectionalStreamingTimeoutBeforeSending() {
-    let call = client.update(callOptions: optionsWithShortTimeout)  { _ in }
+    let statusExpectation = self.expectation(description: "status fulfilled")
 
-    self.expectDeadlineExceeded(forStatus: call.status)
+    let call = client.update { _ in }
 
-    Thread.sleep(forTimeInterval: moreThanShortTimeout)
-    waitForExpectations(timeout: defaultTestTimeout)
+    channel.embeddedEventLoop.advanceTime(by: self.timeout.asNIOTimeAmount)
+
+    self.assertDeadlineExceeded(call.status, expectation: statusExpectation)
+    self.wait(for: [statusExpectation], timeout: self.testTimeout)
   }
 
   func testBidirectionalStreamingTimeoutAfterSending() {
-    let call = client.update(callOptions: optionsWithShortTimeout) { _ in }
+    let statusExpectation = self.expectation(description: "status fulfilled")
 
-    self.expectDeadlineExceeded(forStatus: call.status)
+    let call = client.update { _ in }
+
+    self.assertDeadlineExceeded(call.status, expectation: statusExpectation)
 
     call.sendMessage(Echo_EchoRequest(text: "foo"), promise: nil)
-
-    // Timeout before sending `.end`
-    Thread.sleep(forTimeInterval: moreThanShortTimeout)
     call.sendEnd(promise: nil)
+    channel.embeddedEventLoop.advanceTime(by: self.timeout.asNIOTimeAmount)
 
-    waitForExpectations(timeout: defaultTestTimeout)
+    self.wait(for: [statusExpectation], timeout: self.testTimeout)
   }
 }
