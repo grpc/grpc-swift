@@ -79,30 +79,6 @@ func exitOnThrow<T>(block: () throws -> T) -> T {
   }
 }
 
-// MARK: - Optional extensions for Commander
-
-// "Commander" doesn't allow us to have no value for an `Option` and using a sentinel value to
-// indicate a lack of value isn't very Swift-y when we have `Optional`.
-
-extension Optional: CustomStringConvertible where Wrapped: ArgumentConvertible {
-  public var description: String {
-    guard let value = self else {
-      return "None"
-    }
-    return "Some(\(value))"
-  }
-}
-
-extension Optional: ArgumentConvertible where Wrapped: ArgumentConvertible {
-  public init(parser: ArgumentParser) throws {
-    if let wrapped = parser.shift() as? Wrapped {
-      self = wrapped
-    } else {
-      self = .none
-    }
-  }
-}
-
 // MARK: - Command line options and "main".
 
 let serverHostOption = Option(
