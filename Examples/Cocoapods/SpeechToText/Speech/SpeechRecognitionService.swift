@@ -16,7 +16,7 @@
 import Foundation
 import SwiftGRPC
 
-let API_KEY : String = "YOUR_API_KEY"
+let API_KEY = "YOUR_API_KEY"
 let HOST = "speech.googleapis.com"
 
 final class Atomic<A> {
@@ -43,12 +43,12 @@ class SpeechRecognitionService {
   var sampleRate: Int = 16000
   private var streaming = Atomic(false)
   
-  private var service : Google_Cloud_Speech_V1_SpeechServiceClient!
-  private var call : Google_Cloud_Speech_V1_SpeechStreamingRecognizeCall!
+  private var service: Google_Cloud_Speech_V1_SpeechServiceClient!
+  private var call: Google_Cloud_Speech_V1_SpeechStreamingRecognizeCall!
   
   static let sharedInstance = SpeechRecognitionService()
   
-  func streamAudioData(_ audioData: NSData, completion: @escaping SpeechRecognitionCompletionHandler) {
+  func streamAudioData(_ audioData: Data, completion: @escaping SpeechRecognitionCompletionHandler) {
     if (!streaming.value) {
       // if we aren't already streaming, set up a gRPC connection
       // Prepare the API client.
@@ -96,8 +96,6 @@ class SpeechRecognitionService {
           print("update send error > \(error)")
         }
       }
-      //    self.signal(UIColor.green);
-      //    self.signal(UIColor.red);
     }
     
     // send a request message containing the audio data

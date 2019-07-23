@@ -18,11 +18,11 @@ import AVFoundation
 
 let SAMPLE_RATE = 16000
 
-class ViewController : UIViewController, AudioControllerDelegate {
+class ViewController: UIViewController, AudioControllerDelegate {
   @IBOutlet weak var textView: UITextView!
   @IBOutlet weak var button: UIButton!
   
-  var audioData: NSMutableData!
+  var audioData: Data!
   
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -36,12 +36,8 @@ class ViewController : UIViewController, AudioControllerDelegate {
     }
     self.button.setTitle("LISTENING (tap to stop)", for: .normal)
     let audioSession = AVAudioSession.sharedInstance()
-    do {
-      try audioSession.setCategory(AVAudioSession.Category.record)
-    } catch {
-      
-    }
-    audioData = NSMutableData()
+    try! audioSession.setCategory(AVAudioSession.Category.record)
+    audioData = Data()
     _ = AudioController.sharedInstance.prepare(specifiedSampleRate: SAMPLE_RATE)
     SpeechRecognitionService.sharedInstance.sampleRate = SAMPLE_RATE
     _ = AudioController.sharedInstance.start()
@@ -57,35 +53,34 @@ class ViewController : UIViewController, AudioControllerDelegate {
     audioData.append(data)
     
     // We recommend sending samples in 100ms chunks
-    let chunkSize : Int /* bytes/chunk */ = Int(0.1 /* seconds/chunk */
+    let chunkSize: Int /* bytes/chunk */ = Int(0.1 /* seconds/chunk */
       * Double(SAMPLE_RATE) /* samples/second */
       * 2 /* bytes/sample */);
     
-    if (audioData.length > chunkSize) {
-      SpeechRecognitionService.sharedInstance.streamAudioData(audioData,
-                                                              completion:
-        { [weak self] (response, error) in
-          guard let strongSelf = self else {
-            return
-          }
-          
-          if let error = error {
-            strongSelf.textView.text = error.localizedDescription
-          } else if let response = response {
-            print(response)
-            strongSelf.textView.text = "\(response)"
-            var finished = false
-            for result in response.results {
-              if result.isFinal {
-                finished = true
-              }
-            }
-            if finished {
-              strongSelf.stopAudio(strongSelf)
+    if (audioData.count > chunkSize) {
+      SpeechRecognitionService.sharedInstance.streamAudioData(audioData)
+      { [weak self] (response, error) in
+        guard let strongSelf = self else {
+          return
+        }
+        
+        if let error = error {
+          strongSelf.textView.text = error.localizedDescription
+        } else if let response = response {
+          print(response)
+          strongSelf.textView.text = "\(response)"
+          var finished = false
+          for result in response.results {
+            if result.isFinal {
+              finished = true
             }
           }
-      })
-      self.audioData = NSMutableData()
+          if finished {
+            strongSelf.stopAudio(strongSelf)
+          }
+        }
+      }
+      self.audioData = Data()
     }
   }
 }
