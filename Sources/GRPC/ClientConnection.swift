@@ -106,6 +106,57 @@ public class ClientConnection {
     self.didSetChannel(to: channel)
   }
 
+  // This is only internal to expose it for testing.
+  /// Create a `ClientConnection` for testing using the given `EmbeddedChannel`.
+  ///
+  /// - Parameter channel: The embedded channel to create this connection on.
+  /// - Parameter configuration: How this connection should be configured. The `eventLoopGroup`
+  ///     on the configuration will _not_ be used by the call. As such the `eventLoop` of
+  ///     the given `channel` may be used in the configuration to avoid managing an additional
+  ///     event loop group.
+  ///
+  /// - Important:
+  ///   The connectivity state will not be updated using this connection and should not be
+  ///   relied on.
+  ///
+  /// - Precondition:
+  ///   The provided connection target in the `configuration` _must_ be a `SocketAddress`.
+  internal init(channel: EmbeddedChannel, configuration: Configuration) {
+    // We need a .socketAddress to connect to.
+    let socketAddress: SocketAddress
+    switch configuration.target {
+    case .socketAddress(let address):
+      socketAddress = address
+    default:
+      preconditionFailure("target must be SocketAddress when using EmbeddedChannel")
+    }
+
+    self.uuid = UUID()
+    var logger = Logger(subsystem: .clientChannel)
+    logger[metadataKey: MetadataKey.connectionID] = "\(self.uuid)"
+    self.logger = logger
+
+    self.configuration = configuration
+    self.connectivity = ConnectivityStateMonitor(delegate: configuration.connectivityStateDelegate)
+
+    // Configure the channel with the correct handlers and connect to our target.
+    let configuredChannel = ClientConnection.initializeChannel(
+      channel,
+      tls: configuration.tls,
+      errorDelegate: configuration.errorDelegate
+    ).flatMap {
+      channel.connect(to: socketAddress)
+    }.map { _ in
+      return channel as Channel
+    }
+
+    self.multiplexer = configuredChannel.flatMap {
+      $0.pipeline.handler(type: HTTP2StreamMultiplexer.self)
+    }
+
+    self.channel = configuredChannel
+  }
+
   /// The `EventLoop` this connection is using.
   public var eventLoop: EventLoop {
     return self.channel.eventLoop
@@ -286,23 +337,40 @@ extension ClientConnection {
       .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
       .channelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
       .channelInitializer { channel in
-        let tlsConfigured = configuration.tls.map { tlsConfiguration in
-          channel.configureTLS(tlsConfiguration, errorDelegate: configuration.errorDelegate)
-        }
-
-        return (tlsConfigured ?? channel.eventLoop.makeSucceededFuture(())).flatMap {
-          channel.configureHTTP2Pipeline(mode: .client)
-        }.flatMap { _ in
-          let errorHandler = DelegatingErrorHandler(delegate: configuration.errorDelegate)
-          return channel.pipeline.addHandler(errorHandler)
-        }
-    }
+        initializeChannel(
+          channel,
+          tls: configuration.tls,
+          errorDelegate: configuration.errorDelegate
+        )
+      }
 
     if let timeout = timeout {
       logger.info("setting connect timeout to \(timeout) seconds")
       return bootstrap.connectTimeout(.seconds(timeInterval: timeout))
     } else {
       return bootstrap
+    }
+  }
+
+  /// Initialize the channel with the given TLS configuration and error delegate.
+  ///
+  /// - Parameter channel: The channel to initialize.
+  /// - Parameter tls: The optional TLS configuration for the channel.
+  /// - Parameter errorDelegate: Optional client error delegate.
+  private class func initializeChannel(
+    _ channel: Channel,
+    tls: Configuration.TLS?,
+    errorDelegate: ClientErrorDelegate?
+  ) -> EventLoopFuture<Void> {
+    let tlsConfigured = tls.map { tlsConfiguration in
+      channel.configureTLS(tlsConfiguration, errorDelegate: errorDelegate)
+    }
+
+    return (tlsConfigured ?? channel.eventLoop.makeSucceededFuture(())).flatMap {
+      channel.configureHTTP2Pipeline(mode: .client)
+    }.flatMap { _ in
+      let errorHandler = DelegatingErrorHandler(delegate: errorDelegate)
+      return channel.pipeline.addHandler(errorHandler)
     }
   }
 }
@@ -318,11 +386,17 @@ public enum ConnectionTarget {
   /// A NIO socket address.
   case socketAddress(SocketAddress)
 
-  var host: String? {
-    guard case .hostAndPort(let host, _) = self else {
-      return nil
+  var host: String {
+    switch self {
+    case .hostAndPort(let host, _):
+      return host
+    case .socketAddress(.v4(let address)):
+      return address.host
+    case .socketAddress(.v6(let address)):
+      return address.host
+    case .unixDomainSocket, .socketAddress(.unixDomainSocket):
+      return "localhost"
     }
-    return host
   }
 }
 
