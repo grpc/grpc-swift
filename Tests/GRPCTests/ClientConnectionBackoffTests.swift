@@ -17,15 +17,27 @@ import Foundation
 import GRPC
 import NIO
 import XCTest
+import NIOConcurrencyHelpers
 
 class ConnectivityStateCollectionDelegate: ConnectivityStateDelegate {
-  var states: [ConnectivityState] = []
+  private var _states: [ConnectivityState] = []
+  private var lock = Lock()
+
+  var states: [ConnectivityState] {
+    get {
+      return self.lock.withLock {
+        return self._states
+      }
+    }
+  }
 
   func clearStates() -> [ConnectivityState] {
+    self.lock.lock()
     defer {
-      self.states = []
+      self._states.removeAll()
+      self.lock.unlock()
     }
-    return self.states
+    return self._states
   }
 
   var idleExpectation: XCTestExpectation?
@@ -49,7 +61,9 @@ class ConnectivityStateCollectionDelegate: ConnectivityStateDelegate {
   }
 
   func connectivityStateDidChange(from oldState: ConnectivityState, to newState: ConnectivityState) {
-    self.states.append(newState)
+    self.lock.withLockVoid {
+      self._states.append(newState)
+    }
 
     switch newState {
     case .idle:
