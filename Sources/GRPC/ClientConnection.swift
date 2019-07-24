@@ -335,12 +335,13 @@ extension ClientConnection {
   ) -> ClientBootstrapProtocol {
     // Provide a server hostname if we're using TLS. Prefer the override.
     let serverHostname: String? = configuration.tls.map {
-      if let override = $0.hostnameOverride {
-        logger.debug("using hostname override for TLS")
-        return override
+      if let hostnameOverride = $0.hostnameOverride {
+        logger.debug("using hostname override for TLS", metadata: ["hostname-override": "\(hostnameOverride)"])
+        return hostnameOverride
       } else {
-        logger.debug("using host connection target for TLS")
-        return configuration.target.host
+        let host = configuration.target.host
+        logger.debug("using host connection target for TLS", metadata: ["hostname-override": "\(host)"])
+        return host
       }
     }
 
