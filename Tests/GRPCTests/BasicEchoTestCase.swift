@@ -144,14 +144,14 @@ class EchoTestCaseBase: GRPCTestCase {
 
   override func setUp() {
     super.setUp()
-    self.serverEventLoopGroup = GRPCNIO.makeEventLoopGroup(
+    self.serverEventLoopGroup = PlatformSupport.makeEventLoopGroup(
       loopCount: 1,
       networkPreference: self.networkPreference)
     self.server = try! self.makeServer()
 
     self.port = self.server.channel.localAddress!.port!
 
-    self.clientEventLoopGroup = GRPCNIO.makeEventLoopGroup(
+    self.clientEventLoopGroup = PlatformSupport.makeEventLoopGroup(
       loopCount: 1,
       networkPreference: self.networkPreference)
     self.client = try! self.makeEchoClient(port: self.port)

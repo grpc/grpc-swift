@@ -205,7 +205,7 @@ logical cores on your system.
 We also `wait` for the server to start before setting up a client.
 
 ```swift
-let serverEventLoopGroup = GRPCNIO.makeEventLoopGroup(numberOfThreads: 1)
+let serverEventLoopGroup = PlatformSupport.makeEventLoopGroup(numberOfThreads: 1)
 let configuration = Server.Configuration(
   target: .hostAndPort(address, port),
   eventLoopGroup: serverEventLoopGroup,
@@ -226,7 +226,7 @@ means to make gRPC calls via a generated client. Note that
 `Echo_EchoServiceClient` is the client we generated from `echo.proto`.
 
 ```swift
-let clientEventLoopGroup = GRPCNIO.makeEventLoopGroup(loopCount: 1)
+let clientEventLoopGroup = PlatformSupport.makeEventLoopGroup(loopCount: 1)
 let configuration = ClientConnection.Configuration(
   target: .hostAndPort(host, port),
   eventLoopGroup: clientEventLoopGroup
@@ -421,7 +421,7 @@ gRPC Swift provides a helper method to provide the correct `EventLoopGroup`
 based on the network preference:
 
 ```swift
-GRPCNIO.makeEventLoopGroup(loopCount:networkPreference:) -> EventLoopGroup
+PlatformSupport.makeEventLoopGroup(loopCount:networkPreference:) -> EventLoopGroup
 ```
 
 Here `networkPreference` defaults to `.best`, which chooses the

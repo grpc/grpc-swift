@@ -56,14 +56,14 @@ extension NetworkPreference {
     case .best:
       #if canImport(Network)
       guard #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else {
-        GRPCNIO.logger.critical("Network.framework can be imported but is not supported on this platform")
+        PlatformSupport.logger.critical("Network.framework can be imported but is not supported on this platform")
         // This is gated by the availability of `.networkFramework` so should never happen.
         fatalError(".networkFramework is being used on an unsupported platform")
       }
-      GRPCNIO.logger.info("'best' NetworkImplementation is .networkFramework")
+      PlatformSupport.logger.info("'best' NetworkImplementation is .networkFramework")
       return .networkFramework
       #else
-      GRPCNIO.logger.info("'best' NetworkImplementation is .posix")
+      PlatformSupport.logger.info("'best' NetworkImplementation is .posix")
       return .posix
       #endif
 
@@ -120,7 +120,7 @@ extension NIOTSListenerBootstrap: ServerBootstrapProtocol {}
 
 // MARK: - Bootstrap / EventLoopGroup helpers
 
-public enum GRPCNIO {
+public enum PlatformSupport {
   static let logger = Logger(subsystem: .nio)
 
   /// Makes a new event loop group based on the network preference.
