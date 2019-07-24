@@ -87,6 +87,10 @@ class ClientConnectionBackoffTests: GRPCTestCase {
   }
 
   override func tearDown() {
+    // We have additional state changes during tear down, in some cases we can over-fulfill a test
+    // expectation which causes false negatives.
+    self.client.connectivity.delegate = nil
+
     if let server = self.server {
       XCTAssertNoThrow(try server.flatMap { $0.channel.close() }.wait())
     }
