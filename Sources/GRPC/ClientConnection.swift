@@ -109,6 +109,7 @@ public class ClientConnection {
 
     self.channel = ClientConnection.makeChannel(
       configuration: self.configuration,
+      eventLoop: self.configuration.eventLoopGroup.next(),
       connectivity: self.connectivity,
       backoffIterator: self.configuration.connectionBackoff?.makeIterator(),
       logger: self.logger
@@ -230,6 +231,7 @@ extension ClientConnection {
       self.logger.debug("client connection channel closed, creating a new one")
       self.channel = ClientConnection.makeChannel(
         configuration: self.configuration,
+        eventLoop: channel.eventLoop,
         connectivity: self.connectivity,
         backoffIterator: self.configuration.connectionBackoff?.makeIterator(),
         logger: self.logger
@@ -258,11 +260,13 @@ extension ClientConnection {
   /// `ConnectionBackoffIterator` is provided.
   ///
   /// - Parameter configuration: The configuration to start the connection with.
+  /// - Parameter eventLoop: The event loop to use for this connection.
   /// - Parameter connectivity: A connectivity state monitor.
   /// - Parameter backoffIterator: An `Iterator` for `ConnectionBackoff` providing a sequence of
   ///     connection timeouts and backoff to use when attempting to create a connection.
   private class func makeChannel(
     configuration: Configuration,
+    eventLoop: EventLoop,
     connectivity: ConnectivityStateMonitor,
     backoffIterator: ConnectionBackoffIterator?,
     logger: Logger
@@ -277,7 +281,7 @@ extension ClientConnection {
 
     let bootstrap = self.makeBootstrap(
       configuration: configuration,
-      group: configuration.eventLoopGroup,
+      eventLoop: eventLoop,
       timeout: timeoutAndBackoff?.timeout,
       connectivityMonitor: connectivity,
       logger: logger
@@ -330,6 +334,7 @@ extension ClientConnection {
     return eventLoop.scheduleTask(in: .seconds(timeInterval: timeout)) {
       ClientConnection.makeChannel(
         configuration: configuration,
+        eventLoop: eventLoop,
         connectivity: connectivity,
         backoffIterator: backoffIterator,
         logger: logger
@@ -345,12 +350,12 @@ extension ClientConnection {
   /// handlers detailed in the documentation for `ClientConnection`.
   ///
   /// - Parameter configuration: The configuration to prepare the bootstrap with.
-  /// - Parameter group: The `EventLoopGroup` to use for the bootstrap.
+  /// - Parameter eventLoop: The `EventLoop` to use for the bootstrap.
   /// - Parameter timeout: The connection timeout in seconds.
   /// - Parameter connectivityMonitor: The connectivity state monitor for the created channel.
   private class func makeBootstrap(
     configuration: Configuration,
-    group: EventLoopGroup,
+    eventLoop: EventLoop,
     timeout: TimeInterval?,
     connectivityMonitor: ConnectivityStateMonitor,
     logger: Logger
@@ -367,7 +372,7 @@ extension ClientConnection {
       }
     }
 
-    let bootstrap = PlatformSupport.makeClientBootstrap(group: group)
+    let bootstrap = PlatformSupport.makeClientBootstrap(group: eventLoop)
       // Enable SO_REUSEADDR and TCP_NODELAY.
       .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
       .channelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
@@ -385,6 +390,7 @@ extension ClientConnection {
       logger.info("setting connect timeout to \(timeout) seconds")
       return bootstrap.connectTimeout(.seconds(timeInterval: timeout))
     } else {
+      logger.info("no connect timeout provided")
       return bootstrap
     }
   }
