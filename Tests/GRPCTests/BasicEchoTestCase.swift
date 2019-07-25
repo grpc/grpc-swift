@@ -78,16 +78,14 @@ extension TransportSecurity {
       return nil
 
     case .anonymousClient:
-      return .init(
-        trustRoots: .certificates([self.caCert]),
-        certificateVerification: .noHostnameVerification)
+      return .init(trustRoots: .certificates([self.caCert]))
 
     case .mutualAuthentication:
       return .init(
         certificateChain: [.certificate(self.clientCert)],
         privateKey: .privateKey(SamplePrivateKey.client),
-        trustRoots: .certificates([self.caCert]),
-        certificateVerification: .noHostnameVerification)
+        trustRoots: .certificates([self.caCert])
+      )
     }
   }
 }
