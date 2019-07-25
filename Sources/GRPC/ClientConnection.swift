@@ -142,7 +142,8 @@ public class ClientConnection {
     // Configure the channel with the correct handlers and connect to our target.
     let configuredChannel = ClientConnection.initializeChannel(
       channel,
-      tls: configuration.tls,
+      tls: configuration.tls?.configuration,
+      serverHostname: configuration.tls?.hostnameOverride ?? configuration.target.host,
       errorDelegate: configuration.errorDelegate
     ).flatMap {
       channel.connect(to: socketAddress)
@@ -325,13 +326,25 @@ extension ClientConnection {
   ///
   /// - Parameter configuration: The configuration to prepare the bootstrap with.
   /// - Parameter group: The `EventLoopGroup` to use for the bootstrap.
-  /// - Parameter timeout: The connection timeout in seconds. 
+  /// - Parameter timeout: The connection timeout in seconds.
   private class func makeBootstrap(
     configuration: Configuration,
     group: EventLoopGroup,
     timeout: TimeInterval?,
     logger: Logger
   ) -> ClientBootstrapProtocol {
+    // Provide a server hostname if we're using TLS. Prefer the override.
+    let serverHostname: String? = configuration.tls.map {
+      if let hostnameOverride = $0.hostnameOverride {
+        logger.debug("using hostname override for TLS", metadata: ["hostname-override": "\(hostnameOverride)"])
+        return hostnameOverride
+      } else {
+        let host = configuration.target.host
+        logger.debug("using host connection target for TLS", metadata: ["hostname-override": "\(host)"])
+        return host
+      }
+    }
+
     let bootstrap = PlatformSupport.makeClientBootstrap(group: group)
       // Enable SO_REUSEADDR and TCP_NODELAY.
       .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
@@ -339,7 +352,8 @@ extension ClientConnection {
       .channelInitializer { channel in
         initializeChannel(
           channel,
-          tls: configuration.tls,
+          tls: configuration.tls?.configuration,
+          serverHostname: serverHostname,
           errorDelegate: configuration.errorDelegate
         )
       }
@@ -356,14 +370,16 @@ extension ClientConnection {
   ///
   /// - Parameter channel: The channel to initialize.
   /// - Parameter tls: The optional TLS configuration for the channel.
+  /// - Parameter serverHostname: The hostname of the server to use for TLS.
   /// - Parameter errorDelegate: Optional client error delegate.
   private class func initializeChannel(
     _ channel: Channel,
-    tls: Configuration.TLS?,
+    tls: TLSConfiguration?,
+    serverHostname: String?,
     errorDelegate: ClientErrorDelegate?
   ) -> EventLoopFuture<Void> {
-    let tlsConfigured = tls.map { tlsConfiguration in
-      channel.configureTLS(tlsConfiguration, errorDelegate: errorDelegate)
+    let tlsConfigured = tls.map {
+      channel.configureTLS($0, serverHostname: serverHostname, errorDelegate: errorDelegate)
     }
 
     return (tlsConfigured ?? channel.eventLoop.makeSucceededFuture(())).flatMap {
@@ -484,15 +500,18 @@ fileprivate extension Channel {
   /// the `TLSVerificationHandler` which verifies that a successful handshake was completed.
   ///
   /// - Parameter configuration: The configuration to configure the channel with.
+  /// - Parameter serverHostname: The server hostname to use if the hostname should be verified.
   /// - Parameter errorDelegate: The error delegate to use for the TLS verification handler.
   func configureTLS(
-    _ configuration: ClientConnection.Configuration.TLS,
+    _ configuration: TLSConfiguration,
+    serverHostname: String?,
     errorDelegate: ClientErrorDelegate?
   ) -> EventLoopFuture<Void> {
     do {
       let sslClientHandler = try NIOSSLClientHandler(
-        context: try NIOSSLContext(configuration: configuration.configuration),
-        serverHostname: configuration.hostnameOverride)
+        context: try NIOSSLContext(configuration: configuration),
+        serverHostname: serverHostname
+      )
 
       return self.pipeline.addHandlers(sslClientHandler, TLSVerificationHandler())
     } catch {
