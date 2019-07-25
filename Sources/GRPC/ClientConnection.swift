@@ -27,9 +27,20 @@ import Logging
 /// The connection is initially setup with a handler to verify that TLS was established
 /// successfully (assuming TLS is being used).
 ///
-///                          ▲                       |
-///                HTTP2Frame│                       │HTTP2Frame
-///                        ┌─┴───────────────────────▼─┐
+///               ┌──────────────────────────┐
+///               │  DelegatingErrorHandler  │
+///               └──────────▲───────────────┘
+///                HTTP2Frame│
+///               ┌──────────┴───────────────┐
+///               │ SettingsObservingHandler │
+///               └──────────▲───────────────┘
+///                HTTP2Frame│
+///                          │                ⠇ ⠇   ⠇ ⠇
+///                          │               ┌┴─▼┐ ┌┴─▼┐
+///                          │               │   | │   | HTTP/2 streams
+///                          │               └▲─┬┘ └▲─┬┘
+///                          │                │ │   │ │ HTTP2Frame
+///                        ┌─┴────── ─────────┴─▼───┴─▼┐
 ///                        │   HTTP2StreamMultiplexer  |
 ///                        └─▲───────────────────────┬─┘
 ///                HTTP2Frame│                       │HTTP2Frame
@@ -49,11 +60,13 @@ import Logging
 ///
 /// The `TLSVerificationHandler` observes the outcome of the SSL handshake and determines
 /// whether a `ClientConnection` should be returned to the user. In either eventuality, the
-/// handler removes itself from the pipeline once TLS has been verified. There is also a delegated
-/// error handler after the `HTTPStreamMultiplexer` in the main channel which uses the error
-/// delegate associated with this connection (see `DelegatingErrorHandler`).
+/// handler removes itself from the pipeline once TLS has been verified. There is also a handler
+/// after the multiplexer for observing the initial settings frame, after which it determines that
+/// the connection state is `.ready` and removes itself from the channel. Finally there is a
+/// delegated error handler which uses the error delegate associated with this connection
+/// (see `DelegatingErrorHandler`).
 ///
-/// See `BaseClientCall` for a description of the remainder of the client pipeline.
+/// See `BaseClientCall` for a description of the pipelines assoicated with each HTTP/2 stream.
 public class ClientConnection {
   internal let logger: Logger
   /// The UUID of this connection, used for logging.
@@ -144,6 +157,7 @@ public class ClientConnection {
       channel,
       tls: configuration.tls?.configuration,
       serverHostname: configuration.tls?.hostnameOverride ?? configuration.target.host,
+      connectivityMonitor: self.connectivity,
       errorDelegate: configuration.errorDelegate
     ).flatMap {
       channel.connect(to: socketAddress)
@@ -224,14 +238,8 @@ extension ClientConnection {
   ///
   /// - Parameter channel: The channel that was set.
   private func didSetChannel(to channel: EventLoopFuture<Channel>) {
-    channel.whenComplete { result in
-      switch result {
-      case .success:
-        self.connectivity.state = .ready
-
-      case .failure:
-        self.connectivity.state = .shutdown
-      }
+    channel.whenFailure { _ in
+      self.connectivity.state = .shutdown
     }
   }
 
@@ -260,6 +268,7 @@ extension ClientConnection {
       configuration: configuration,
       group: configuration.eventLoopGroup,
       timeout: timeoutAndBackoff?.timeout,
+      connectivityMonitor: connectivity,
       logger: logger
     )
 
@@ -327,10 +336,12 @@ extension ClientConnection {
   /// - Parameter configuration: The configuration to prepare the bootstrap with.
   /// - Parameter group: The `EventLoopGroup` to use for the bootstrap.
   /// - Parameter timeout: The connection timeout in seconds.
+  /// - Parameter connectivityMonitor: The connectivity state monitor for the created channel.
   private class func makeBootstrap(
     configuration: Configuration,
     group: EventLoopGroup,
     timeout: TimeInterval?,
+    connectivityMonitor: ConnectivityStateMonitor,
     logger: Logger
   ) -> ClientBootstrapProtocol {
     // Provide a server hostname if we're using TLS. Prefer the override.
@@ -354,6 +365,7 @@ extension ClientConnection {
           channel,
           tls: configuration.tls?.configuration,
           serverHostname: serverHostname,
+          connectivityMonitor: connectivityMonitor,
           errorDelegate: configuration.errorDelegate
         )
       }
@@ -376,6 +388,7 @@ extension ClientConnection {
     _ channel: Channel,
     tls: TLSConfiguration?,
     serverHostname: String?,
+    connectivityMonitor: ConnectivityStateMonitor,
     errorDelegate: ClientErrorDelegate?
   ) -> EventLoopFuture<Void> {
     let tlsConfigured = tls.map {
@@ -385,8 +398,9 @@ extension ClientConnection {
     return (tlsConfigured ?? channel.eventLoop.makeSucceededFuture(())).flatMap {
       channel.configureHTTP2Pipeline(mode: .client)
     }.flatMap { _ in
+      let settingsObserver = InitialSettingsObservingHandler(connectivityStateMonitor: connectivityMonitor)
       let errorHandler = DelegatingErrorHandler(delegate: errorDelegate)
-      return channel.pipeline.addHandler(errorHandler)
+      return channel.pipeline.addHandlers(settingsObserver, errorHandler)
     }
   }
 }
