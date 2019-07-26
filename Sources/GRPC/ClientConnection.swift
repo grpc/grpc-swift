@@ -347,11 +347,11 @@ extension ClientConnection {
     // Provide a server hostname if we're using TLS. Prefer the override.
     let serverHostname: String? = configuration.tls.map {
       if let hostnameOverride = $0.hostnameOverride {
-        logger.debug("using hostname override for TLS", metadata: ["hostname-override": "\(hostnameOverride)"])
+        logger.debug("using hostname override for TLS", metadata: ["server-hostname": "\(hostnameOverride)"])
         return hostnameOverride
       } else {
         let host = configuration.target.host
-        logger.debug("using host connection target for TLS", metadata: ["hostname-override": "\(host)"])
+        logger.debug("using host from connection target for TLS", metadata: ["server-hostname": "\(host)"])
         return host
       }
     }
