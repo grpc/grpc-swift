@@ -4,8 +4,8 @@ all:
 	cp .build/debug/protoc-gen-swiftgrpc .
 
 plugin:
-	swift build --product protoc-gen-swift -c release -Xswiftc -static-stdlib
-	swift build --product protoc-gen-swiftgrpc -c release -Xswiftc -static-stdlib
+	swift build --product protoc-gen-swift -c release
+	swift build --product protoc-gen-swiftgrpc -c release
 	cp .build/release/protoc-gen-swift .
 	cp .build/release/protoc-gen-swiftgrpc .
 
