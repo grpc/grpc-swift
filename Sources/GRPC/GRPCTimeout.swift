@@ -46,7 +46,7 @@ public struct GRPCTimeout: CustomStringConvertible, Equatable {
 
     // See "Timeout" in https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests
     let description = "\(amount)\(unit.rawValue)"
-    let nanoseconds = Int64(amount) * Int64(unit.asNanoseconds)
+    let nanoseconds = Int64(amount) * unit.asNanoseconds
 
     return GRPCTimeout(nanoseconds: nanoseconds, description: description)
   }
@@ -133,7 +133,7 @@ private enum GRPCTimeoutUnit: String {
   case microseconds = "u"
   case nanoseconds = "n"
 
-  internal var asNanoseconds: Int {
+  internal var asNanoseconds: Int64 {
     switch self {
     case .hours:
       return 60 * 60 * 1000 * 1000 * 1000
