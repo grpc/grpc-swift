@@ -76,6 +76,25 @@ public protocol StreamingRequestClientCall: ClientCall {
   ///   - flush: Whether the buffer should be flushed after writing the message.
   func sendMessage(_ message: RequestMessage, promise: EventLoopPromise<Void>?, flush: Bool)
 
+  /// Sends a sequence of messages to the service.
+  ///
+  /// - Important: Callers must terminate the stream of messages by calling `sendEnd()` or `sendEnd(promise:)`.
+  ///
+  /// - Parameters:
+  ///   - messages: The sequence of messages to send.
+  ///   - flush: Whether the buffer should be flushed after writing the message.
+  func sendMessages<S: Sequence>(_ messages: S, flush: Bool) -> EventLoopFuture<Void> where S.Element == RequestMessage
+
+  /// Sends a sequence of messages to the service.
+  ///
+  /// - Important: Callers must terminate the stream of messages by calling `sendEnd()` or `sendEnd(promise:)`.
+  ///
+  /// - Parameters:
+  ///   - messages: The sequence of messages to send.
+  ///   - promise: A promise to be fulfilled when all messages have been sent successfully.
+  ///   - flush: Whether the buffer should be flushed after writing the message.
+  func sendMessages<S: Sequence>(_ messages: S, promise: EventLoopPromise<Void>?, flush: Bool) where S.Element == RequestMessage
+
   /// Returns a future which can be used as a message queue.
   ///
   /// Callers may use this as such:
@@ -100,6 +119,9 @@ public protocol StreamingRequestClientCall: ClientCall {
   /// - Important: This should only ever be called once.
   /// - Parameter promise: A promise to be fulfilled when the end has been sent.
   func sendEnd(promise: EventLoopPromise<Void>?)
+
+  /// Flush the buffer of messages.
+  func flush()
 }
 
 /// A `ClientCall` with a unary response; i.e. unary and client-streaming.
@@ -131,6 +153,33 @@ extension StreamingRequestClientCall {
     }
   }
 
+  public func sendMessages<S: Sequence>(_ messages: S, flush: Bool = true) -> EventLoopFuture<Void> where S.Element == RequestMessage {
+    self.subchannel.flatMap { channel in
+      let writeFutures = messages.map { message in
+        channel.write(GRPCClientRequestPart.message(_Box(message)))
+      }
+      if flush {
+        channel.flush()
+      }
+      return EventLoopFuture.andAllSucceed(writeFutures, on: channel.eventLoop)
+    }
+  }
+
+  public func sendMessages<S: Sequence>(_ messages: S, promise: EventLoopPromise<Void>?, flush: Bool = true) where S.Element == RequestMessage {
+    if let promise = promise {
+      self.sendMessages(messages, flush: flush).cascade(to: promise)
+    } else {
+      self.subchannel.whenSuccess { channel in
+        for message in messages {
+          channel.write(GRPCClientRequestPart.message(_Box(message)), promise: nil)
+        }
+        if flush {
+          channel.flush()
+        }
+      }
+    }
+  }
+
   public func sendEnd() -> EventLoopFuture<Void> {
     return self.subchannel.flatMap { channel in
       return channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.end)
@@ -140,6 +189,12 @@ extension StreamingRequestClientCall {
   public func sendEnd(promise: EventLoopPromise<Void>?) {
     self.subchannel.whenSuccess { channel in
       channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.end, promise: promise)
+    }
+  }
+
+  public func flush() {
+    self.subchannel.whenSuccess { channel in
+      channel.flush()
     }
   }
 }
