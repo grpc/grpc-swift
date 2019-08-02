@@ -154,7 +154,7 @@ extension StreamingRequestClientCall {
   }
 
   public func sendMessages<S: Sequence>(_ messages: S, flush: Bool = true) -> EventLoopFuture<Void> where S.Element == RequestMessage {
-    self.subchannel.flatMap { channel in
+    return self.subchannel.flatMap { channel in
       let writeFutures = messages.map { message in
         channel.write(GRPCClientRequestPart.message(_Box(message)))
       }
