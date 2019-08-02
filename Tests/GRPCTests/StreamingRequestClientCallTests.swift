@@ -55,7 +55,7 @@ class StreamingRequestClientCallTests: EchoTestCaseBase {
     update.sendMessages(secondBatch, promise: nil, flush: false)
 
     // Wait and check that the expectation hasn't been fulfilled (because we haven't flushed).
-    self.wait(for: [secondBatchNotReceived], timeout: 0.5)
+    self.wait(for: [secondBatchNotReceived], timeout: 0.1)
 
     let secondBatchReceived = self.expectation(description: "second batch received")
     secondBatchReceived.expectedFulfillmentCount = secondBatch.count
