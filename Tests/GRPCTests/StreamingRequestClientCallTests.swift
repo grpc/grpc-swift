@@ -54,5 +54,4 @@ class StreamingRequestClientCallTests: EchoTestCaseBase {
 
     self.wait(for: [statusReceived], timeout: 0.5)
   }
-
 }
