@@ -31,47 +31,28 @@ class StreamingRequestClientCallTests: EchoTestCaseBase {
   }
 
   func testSendMessages() throws {
-    let firstBatchReceived = self.expectation(description: "first batch received")
-    let counter = ResponseCounter(expectation: firstBatchReceived)
+    let messagesReceived = self.expectation(description: "messages received")
+    let counter = ResponseCounter(expectation: messagesReceived)
 
     let update = self.client.update { _ in
       counter.increment()
     }
 
     // Send the first batch.
-    let firstBatch = ["foo", "bar", "baz"].map { Echo_EchoRequest(text: $0) }
-    firstBatchReceived.expectedFulfillmentCount = firstBatch.count
-    XCTAssertNoThrow(try update.sendMessages(firstBatch).wait())
+    let requests = ["foo", "bar", "baz"].map { Echo_EchoRequest(text: $0) }
+    messagesReceived.expectedFulfillmentCount = requests.count
+    XCTAssertNoThrow(try update.sendMessages(requests).wait())
 
-    // Wait for the first batch of resonses.
-    self.wait(for: [firstBatchReceived], timeout: 0.5)
-
-    // Send more messages, but don't flush.
-    let secondBatchNotReceived = self.expectation(description: "second batch not received")
-    secondBatchNotReceived.isInverted = true
-    counter.expectation = secondBatchNotReceived
-
-    let secondBatch = (0..<3).map { Echo_EchoRequest(text: "\($0)") }
-    update.sendMessages(secondBatch, promise: nil, flush: false)
-
-    // Wait and check that the expectation hasn't been fulfilled (because we haven't flushed).
-    self.wait(for: [secondBatchNotReceived], timeout: 0.1)
-
-    let secondBatchReceived = self.expectation(description: "second batch received")
-    secondBatchReceived.expectedFulfillmentCount = secondBatch.count
-    counter.expectation = secondBatchReceived
-
-    // Flush the messages: we should get responses now.
-    update.flush()
-    self.wait(for: [secondBatchReceived], timeout: 0.5)
-
-    // End the call.
-    update.sendEnd(promise: nil)
+    // Wait for the responses.
+    self.wait(for: [messagesReceived], timeout: 0.5)
 
     let statusReceived = self.expectation(description: "status received")
     update.status.map { $0.code }.assertEqual(.ok, fulfill: statusReceived)
 
-    self.wait(for: [statusReceived], timeout: 1.0)
+    // End the call.
+    update.sendEnd(promise: nil)
+
+    self.wait(for: [statusReceived], timeout: 0.5)
   }
 
 }
