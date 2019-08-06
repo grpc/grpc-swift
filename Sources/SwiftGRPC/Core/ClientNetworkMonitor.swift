@@ -149,8 +149,8 @@ open class ClientNetworkMonitor {
       let isUsingWifi = !flags.contains(.isWWAN)
       let isReachable = flags.contains(.reachable)
 
-      let notifyForWifi = self.isUsingWifi != nil && self.isUsingWifi != isUsingWifi
-      let notifyForReachable = self.isReachable != nil && self.isReachable != isReachable
+      let notifyForWifi = self.isUsingWifi != isUsingWifi
+      let notifyForReachable = self.isReachable != isReachable
 
       self.isUsingWifi = isUsingWifi
       self.isReachable = isReachable
