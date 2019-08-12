@@ -17,6 +17,7 @@ import Foundation
 import SwiftProtobuf
 import NIO
 import NIOHTTP1
+import Logging
 
 /// Handles unary calls. Calls the observer block with the request message.
 ///
@@ -44,6 +45,7 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
   public override func processMessage(_ message: RequestMessage) throws {
     guard let eventObserver = self.eventObserver,
       let context = self.callContext else {
+      self.logger.error("processMessage(_:) called before the call started or after the call completed")
       throw GRPCError.server(.tooManyRequests)
     }
 

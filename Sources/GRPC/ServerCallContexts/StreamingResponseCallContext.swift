@@ -17,6 +17,7 @@ import Foundation
 import SwiftProtobuf
 import NIO
 import NIOHTTP1
+import Logging
 
 /// Abstract base class exposing a method to send multiple messages over the wire and a promise for the final RPC status.
 ///

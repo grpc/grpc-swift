@@ -17,6 +17,7 @@ import Foundation
 import SwiftProtobuf
 import NIO
 import NIOHTTP1
+import Logging
 
 /// Handles server-streaming calls. Calls the observer block with the request message.
 ///
@@ -43,6 +44,7 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
   public override func processMessage(_ message: RequestMessage) throws {
     guard let eventObserver = self.eventObserver,
       let callContext = self.callContext else {
+        self.logger.error("processMessage(_:) called before the call started or after the call completed")
         throw GRPCError.server(.tooManyRequests)
     }
 

@@ -17,6 +17,7 @@ import Foundation
 import SwiftProtobuf
 import NIO
 import NIOHTTP1
+import Logging
 
 /// Abstract base class exposing a method that exposes a promise for the RPC response.
 ///

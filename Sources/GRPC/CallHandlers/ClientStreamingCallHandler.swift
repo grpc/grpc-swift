@@ -17,6 +17,7 @@ import Foundation
 import SwiftProtobuf
 import NIO
 import NIOHTTP1
+import Logging
 
 /// For calls which support client streaming we need to delay the creation of the event observer
 /// until the handler has been added to the pipeline.
@@ -37,7 +38,11 @@ public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage
   public typealias EventObserver = (StreamEvent<RequestMessage>) -> Void
   public typealias EventObserverFactory = (Context) -> EventLoopFuture<EventObserver>
 
-  private var observerState: ClientStreamingHandlerObserverState<EventObserverFactory, EventObserver>
+  private var observerState: ClientStreamingHandlerObserverState<EventObserverFactory, EventObserver> {
+    willSet(newState) {
+      self.logger.info("observerState changed from \(self.observerState) to \(newState)")
+    }
+  }
   private var callContext: UnaryResponseCallContext<ResponseMessage>?
 
   // We ask for a future of type `EventObserver` to allow the framework user to e.g. asynchronously authenticate a call.
@@ -63,6 +68,7 @@ public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage
   public override func handlerAdded(context: ChannelHandlerContext) {
     guard let callContext = self.callContext,
       case let .pendingCreation(factory) = self.observerState else {
+      self.logger.warning("handlerAdded(context:) called but handler already has a call context")
       return
     }
 
@@ -77,14 +83,20 @@ public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage
   }
 
   public override func processMessage(_ message: RequestMessage) {
-    guard case .created(let eventObserver) = self.observerState else { return }
+    guard case .created(let eventObserver) = self.observerState else {
+      self.logger.warning("expecting observerState to be .created but was \(self.observerState), ignoring message \(message)")
+      return
+    }
     eventObserver.whenSuccess { observer in
       observer(.message(message))
     }
   }
 
   public override func endOfStreamReceived() throws {
-    guard case .created(let eventObserver) = self.observerState else { return }
+    guard case .created(let eventObserver) = self.observerState else {
+      self.logger.warning("expecting observerState to be .created but was \(self.observerState), ignoring end-of-stream call")
+      return
+    }
     eventObserver.whenSuccess { observer in
       observer(.end)
     }
