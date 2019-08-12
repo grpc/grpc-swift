@@ -258,7 +258,7 @@ extension Grpc_Testing_TestServiceProvider {
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  public func handleMethod(_ methodName: String, request: HTTPRequestHead, serverHandler: GRPCChannelHandler, channel: Channel, errorDelegate: ServerErrorDelegate?) -> GRPCCallHandler? {
+  public func handleMethod(_ methodName: String, request: HTTPRequestHead, channel: Channel, errorDelegate: ServerErrorDelegate?) -> GRPCCallHandler? {
     switch methodName {
     case "EmptyCall":
       return UnaryCallHandler(channel: channel, request: request, errorDelegate: errorDelegate) { context in
@@ -318,7 +318,7 @@ extension Grpc_Testing_UnimplementedServiceProvider {
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  public func handleMethod(_ methodName: String, request: HTTPRequestHead, serverHandler: GRPCChannelHandler, channel: Channel, errorDelegate: ServerErrorDelegate?) -> GRPCCallHandler? {
+  public func handleMethod(_ methodName: String, request: HTTPRequestHead, channel: Channel, errorDelegate: ServerErrorDelegate?) -> GRPCCallHandler? {
     switch methodName {
     case "UnimplementedCall":
       return UnaryCallHandler(channel: channel, request: request, errorDelegate: errorDelegate) { context in
@@ -343,7 +343,7 @@ extension Grpc_Testing_ReconnectServiceProvider {
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  public func handleMethod(_ methodName: String, request: HTTPRequestHead, serverHandler: GRPCChannelHandler, channel: Channel, errorDelegate: ServerErrorDelegate?) -> GRPCCallHandler? {
+  public func handleMethod(_ methodName: String, request: HTTPRequestHead, channel: Channel, errorDelegate: ServerErrorDelegate?) -> GRPCCallHandler? {
     switch methodName {
     case "Start":
       return UnaryCallHandler(channel: channel, request: request, errorDelegate: errorDelegate) { context in

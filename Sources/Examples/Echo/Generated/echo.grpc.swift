@@ -119,7 +119,7 @@ extension Echo_EchoProvider {
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  internal func handleMethod(_ methodName: String, request: HTTPRequestHead, serverHandler: GRPCChannelHandler, channel: Channel, errorDelegate: ServerErrorDelegate?) -> GRPCCallHandler? {
+  internal func handleMethod(_ methodName: String, request: HTTPRequestHead, channel: Channel, errorDelegate: ServerErrorDelegate?) -> GRPCCallHandler? {
     switch methodName {
     case "Get":
       return UnaryCallHandler(channel: channel, request: request, errorDelegate: errorDelegate) { context in

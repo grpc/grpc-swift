@@ -34,7 +34,7 @@ public protocol CallHandlerProvider: class {
 
   /// Determines, calls and returns the appropriate request handler (`GRPCCallHandler`), depending on the request's
   /// method. Returns nil for methods not handled by this service.
-  func handleMethod(_ methodName: String, request: HTTPRequestHead, serverHandler: GRPCChannelHandler, channel: Channel, errorDelegate: ServerErrorDelegate?) -> GRPCCallHandler?
+  func handleMethod(_ methodName: String, request: HTTPRequestHead, channel: Channel, errorDelegate: ServerErrorDelegate?) -> GRPCCallHandler?
 }
 
 /// Listens on a newly-opened HTTP2 subchannel and yields to the sub-handler matching a call, if available.
@@ -107,7 +107,7 @@ extension GRPCChannelHandler: ChannelInboundHandler, RemovableChannelHandler {
     let uriComponents = requestHead.uri.components(separatedBy: "/")
     guard uriComponents.count >= 3 && uriComponents[0].isEmpty,
       let providerForServiceName = servicesByName[uriComponents[1]],
-      let callHandler = providerForServiceName.handleMethod(uriComponents[2], request: requestHead, serverHandler: self, channel: channel, errorDelegate: errorDelegate) else {
+      let callHandler = providerForServiceName.handleMethod(uriComponents[2], request: requestHead, channel: channel, errorDelegate: errorDelegate) else {
         return nil
     }
     return callHandler
