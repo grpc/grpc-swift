@@ -4,4 +4,4 @@
 #
 protoc echo.proto \
     --swift_out=Generated \
-    --swiftgrpc_out=Client=false,Server=true,NIO=true:Generated
+    --swiftgrpc_out=Client=true,Server=true:Generated
