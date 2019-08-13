@@ -210,16 +210,6 @@ extension Server {
       self.tls = tls
     }
   }
-
-  /// The TLS configuration for a connection.
-  public struct TLSConfiguration {
-    /// The SSL context to use.
-    public var sslContext: NIOSSLContext
-
-    public init(sslContext: NIOSSLContext) {
-      self.sslContext = sslContext
-    }
-  }
 }
 
 fileprivate extension Server.Configuration {
