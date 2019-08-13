@@ -205,11 +205,12 @@ logical cores on your system.
 We also `wait` for the server to start before setting up a client.
 
 ```swift
-let serverEventLoopGroup = PlatformSupport.makeEventLoopGroup(numberOfThreads: 1)
+let serverEventLoopGroup = PlatformSupport.makeEventLoopGroup(loopCount: 1)
 let configuration = Server.Configuration(
-  target: .hostAndPort(address, port),
+  target: .hostAndPort(host, port),
   eventLoopGroup: serverEventLoopGroup,
-  serviceProviders: [EchoProvider()])
+  serviceProviders: [EchoProvider()]
+)
 
 let server = try Server.start(configuration: configuration).wait()
 ```
@@ -337,7 +338,8 @@ let anyService = AnyServiceClient(connection: connection)
 let get = anyService.makeUnaryCall(
   path: "/echo.Echo/Get",
   request: Echo_EchoRequest.with { $0.text = "Hello!" },
-  responseType: Echo_EchoResponse.self)
+  responseType: Echo_EchoResponse.self
+)
 ```
 
 Calls for client-, server- and bidirectional-streaming are done in a similar way
@@ -363,8 +365,9 @@ trailing metadata, and status. _Unary response_ calls also have a future for the
 response whilst _streaming response_ calls will call a handler for each response.
 Calls with _unary requests_ send their message when instantiating the call,
 _streaming request_ calls include methods on the call object to send messages
-(`sendMessage(_:flush:)` and `sendMessage(_:promise:flush:)`) as well as methods
-for terminated the stream of messages (`sendEnd()` and `sendEnd(promise:)`).
+(`sendMessage(_:)`, `sendMessages(_:)`, `sendMessage(_:promise:)`,
+`sendMessages(_:promise:)`) as well as methods for terminating the stream of
+messages (`sendEnd()` and `sendEnd(promise:)`).
 
 These differences are summarised in the following table.
 
@@ -378,35 +381,31 @@ These differences are summarised in the following table.
 ### Using TLS
 
 gRPC calls can be made over a secure channel by configuring TLS. This requires
-specifying `tlsConfiguration` on `ClientConnection.Configuration` or
+specifying `tls` on `ClientConnection.Configuration` or
 `Server.Configuration`.
 
-Configuring TLS requires a [`NIOSSLContext`][nio-ref-sslcontext] which in turn
-requires a [`TLSConfiguration`][nio-ref-tlsconfig] (this is _not_ the same as
-`ClientConnection.TLSConfiguration` or `Server.TLSConfiguration`).
-
-For the client, [`TLSConfiguration`][nio-ref-tlsconfig] can be as simple as:
+For the client, `tls` can be as simple as:
 
 ```swift
-let configuration = TLSConfiguration.forClient(
-  minimumTLSVersion: TLSVersion = .tlsv12,
-  applicationProtocols: GRPCApplicationProtocolIdentifier.allCases.map { $0.rawValue }
+let tls = ClientConnection.Configuration.TLS()
+```
+
+For the server, `tls` is slightly more complicated as it requires a certificate
+chain and private key:
+
+```swift
+# Load the certificates from "cert.pem"
+let certificates: [NIOSSLCertificate] = try NIOSSLCertificate.fromPEMFile("cert.pem")
+
+let tls = Server.Configuration.TLS(
+  certificateChain: certificates.map { .certificate($0) },
+  privateKey: .file("key.pem")
 )
 ```
 
-For the server, [`TLSConfiguration`][nio-ref-tlsconfig] is slightly more
-complicated as it requires a certificate chain and private key:
-
-```swift
-let configuration = TLSConfiguration.forServer(
-  certificateChain: [.file("cert.pem")],
-  privateKey: .file("key.pem"),
-  minimumTLSVersion: TLSVersion = .tlsv12,
-  applicationProtocols: GRPCApplicationProtocolIdentifier.allCases.map { $0.rawValue }
-)
-```
-
-Note that the gRPC specification requires TLS v1.2 or later.
+The `TLS` configuration is a subset of [`TLSConfiguration`][nio-ref-tlsconfig]
+provided by `NIOSSL` to ensure it meets the gRPC specification. Users may also
+initialize `TLS` with `TLSConfiguration` should they require.
 
 ### NIO vs. NIO Transport Services
 
@@ -465,7 +464,6 @@ Please get involved! See our [guidelines for contributing](CONTRIBUTING.md).
 [network-framework]: https://developer.apple.com/documentation/network
 [nio-ref-elf]: https://apple.github.io/swift-nio/docs/current/NIO/Classes/EventLoopFuture.html
 [nio-ref-elg]: https://apple.github.io/swift-nio/docs/current/NIO/Protocols/EventLoopGroup.html
-[nio-ref-sslcontext]: https://apple.github.io/swift-nio-ssl/docs/current/NIOSSL/Classes/NIOSSLContext.html
 [nio-ref-tlsconfig]: https://apple.github.io/swift-nio-ssl/docs/current/NIOSSL/Structs/TLSConfiguration.html
 [nio-ts]: https://github.com/apple/swift-nio-transport-services
 [protobuf-releases]: https://github.com/protocolbuffers/protobuf/releases
