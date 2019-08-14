@@ -71,7 +71,11 @@ public class LengthPrefixedMessageReader {
 
   /// Appends data to the buffer from which messages will be read.
   public func append(buffer: inout ByteBuffer) {
+    guard buffer.readableBytes > 0 else {
+      return
+    }
     self.logger.info("appending \(buffer.readableBytes) bytes to buffer")
+
     if self.buffer == nil {
       self.logger.debug("creating new buffer from slice")
       self.buffer = buffer.slice()

@@ -49,7 +49,7 @@ extension Generator {
     println()
     println("/// Determines, calls and returns the appropriate request handler, depending on the request's method.")
     println("/// Returns nil for methods not handled by this service.")
-    println("\(access) func handleMethod(_ methodName: String, request: HTTPRequestHead, channel: Channel, errorDelegate: ServerErrorDelegate?) -> GRPCCallHandler? {")
+    println("\(access) func handleMethod(_ methodName: String, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {")
     indent()
     println("switch methodName {")
     for method in service.methods {
@@ -63,7 +63,7 @@ extension Generator {
         case .clientStreaming: callHandlerType = "ClientStreamingCallHandler"
         case .bidirectionalStreaming: callHandlerType = "BidirectionalStreamingCallHandler"
       }
-      println("return \(callHandlerType)(channel: channel, request: request, errorDelegate: errorDelegate) { context in")
+      println("return \(callHandlerType)(callHandlerContext: callHandlerContext) { context in")
       indent()
       switch streamingType(method) {
       case .unary, .serverStreaming:

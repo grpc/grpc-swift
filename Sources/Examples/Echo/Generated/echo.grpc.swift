@@ -119,29 +119,29 @@ extension Echo_EchoProvider {
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  internal func handleMethod(_ methodName: String, request: HTTPRequestHead, channel: Channel, errorDelegate: ServerErrorDelegate?) -> GRPCCallHandler? {
+  internal func handleMethod(_ methodName: String, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
     switch methodName {
     case "Get":
-      return UnaryCallHandler(channel: channel, request: request, errorDelegate: errorDelegate) { context in
+      return UnaryCallHandler(callHandlerContext: callHandlerContext) { context in
         return { request in
           self.get(request: request, context: context)
         }
       }
 
     case "Expand":
-      return ServerStreamingCallHandler(channel: channel, request: request, errorDelegate: errorDelegate) { context in
+      return ServerStreamingCallHandler(callHandlerContext: callHandlerContext) { context in
         return { request in
           self.expand(request: request, context: context)
         }
       }
 
     case "Collect":
-      return ClientStreamingCallHandler(channel: channel, request: request, errorDelegate: errorDelegate) { context in
+      return ClientStreamingCallHandler(callHandlerContext: callHandlerContext) { context in
         return self.collect(context: context)
       }
 
     case "Update":
-      return BidirectionalStreamingCallHandler(channel: channel, request: request, errorDelegate: errorDelegate) { context in
+      return BidirectionalStreamingCallHandler(callHandlerContext: callHandlerContext) { context in
         return self.update(context: context)
       }
 

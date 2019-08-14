@@ -258,48 +258,48 @@ extension Grpc_Testing_TestServiceProvider {
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  public func handleMethod(_ methodName: String, request: HTTPRequestHead, channel: Channel, errorDelegate: ServerErrorDelegate?) -> GRPCCallHandler? {
+  public func handleMethod(_ methodName: String, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
     switch methodName {
     case "EmptyCall":
-      return UnaryCallHandler(channel: channel, request: request, errorDelegate: errorDelegate) { context in
+      return UnaryCallHandler(callHandlerContext: callHandlerContext) { context in
         return { request in
           self.emptyCall(request: request, context: context)
         }
       }
 
     case "UnaryCall":
-      return UnaryCallHandler(channel: channel, request: request, errorDelegate: errorDelegate) { context in
+      return UnaryCallHandler(callHandlerContext: callHandlerContext) { context in
         return { request in
           self.unaryCall(request: request, context: context)
         }
       }
 
     case "CacheableUnaryCall":
-      return UnaryCallHandler(channel: channel, request: request, errorDelegate: errorDelegate) { context in
+      return UnaryCallHandler(callHandlerContext: callHandlerContext) { context in
         return { request in
           self.cacheableUnaryCall(request: request, context: context)
         }
       }
 
     case "StreamingOutputCall":
-      return ServerStreamingCallHandler(channel: channel, request: request, errorDelegate: errorDelegate) { context in
+      return ServerStreamingCallHandler(callHandlerContext: callHandlerContext) { context in
         return { request in
           self.streamingOutputCall(request: request, context: context)
         }
       }
 
     case "StreamingInputCall":
-      return ClientStreamingCallHandler(channel: channel, request: request, errorDelegate: errorDelegate) { context in
+      return ClientStreamingCallHandler(callHandlerContext: callHandlerContext) { context in
         return self.streamingInputCall(context: context)
       }
 
     case "FullDuplexCall":
-      return BidirectionalStreamingCallHandler(channel: channel, request: request, errorDelegate: errorDelegate) { context in
+      return BidirectionalStreamingCallHandler(callHandlerContext: callHandlerContext) { context in
         return self.fullDuplexCall(context: context)
       }
 
     case "HalfDuplexCall":
-      return BidirectionalStreamingCallHandler(channel: channel, request: request, errorDelegate: errorDelegate) { context in
+      return BidirectionalStreamingCallHandler(callHandlerContext: callHandlerContext) { context in
         return self.halfDuplexCall(context: context)
       }
 
@@ -318,10 +318,10 @@ extension Grpc_Testing_UnimplementedServiceProvider {
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  public func handleMethod(_ methodName: String, request: HTTPRequestHead, channel: Channel, errorDelegate: ServerErrorDelegate?) -> GRPCCallHandler? {
+  public func handleMethod(_ methodName: String, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
     switch methodName {
     case "UnimplementedCall":
-      return UnaryCallHandler(channel: channel, request: request, errorDelegate: errorDelegate) { context in
+      return UnaryCallHandler(callHandlerContext: callHandlerContext) { context in
         return { request in
           self.unimplementedCall(request: request, context: context)
         }
@@ -343,17 +343,17 @@ extension Grpc_Testing_ReconnectServiceProvider {
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  public func handleMethod(_ methodName: String, request: HTTPRequestHead, channel: Channel, errorDelegate: ServerErrorDelegate?) -> GRPCCallHandler? {
+  public func handleMethod(_ methodName: String, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
     switch methodName {
     case "Start":
-      return UnaryCallHandler(channel: channel, request: request, errorDelegate: errorDelegate) { context in
+      return UnaryCallHandler(callHandlerContext: callHandlerContext) { context in
         return { request in
           self.start(request: request, context: context)
         }
       }
 
     case "Stop":
-      return UnaryCallHandler(channel: channel, request: request, errorDelegate: errorDelegate) { context in
+      return UnaryCallHandler(callHandlerContext: callHandlerContext) { context in
         return { request in
           self.stop(request: request, context: context)
         }

@@ -35,7 +35,17 @@ public protocol CallHandlerProvider: class {
 
   /// Determines, calls and returns the appropriate request handler (`GRPCCallHandler`), depending on the request's
   /// method. Returns nil for methods not handled by this service.
-  func handleMethod(_ methodName: String, request: HTTPRequestHead, channel: Channel, errorDelegate: ServerErrorDelegate?) -> GRPCCallHandler?
+  func handleMethod(_ methodName: String, callHandlerContext: CallHandlerContext) -> GRPCCallHandler?
+}
+
+// This is public because it will be passed into generated code, all memebers are `internal` because
+// the context will get passed from generated code back into gRPC library code and all members should
+// be considered an implementation detail to the user.
+public struct CallHandlerContext {
+  internal var request: HTTPRequestHead
+  internal var channel: Channel
+  internal var errorDelegate: ServerErrorDelegate?
+  internal var logger: Logger
 }
 
 /// Listens on a newly-opened HTTP2 subchannel and yields to the sub-handler matching a call, if available.
@@ -47,10 +57,10 @@ public final class GRPCChannelHandler {
   private let servicesByName: [String: CallHandlerProvider]
   private weak var errorDelegate: ServerErrorDelegate?
 
-  public init(servicesByName: [String: CallHandlerProvider], errorDelegate: ServerErrorDelegate?) {
+  public init(servicesByName: [String: CallHandlerProvider], errorDelegate: ServerErrorDelegate?, logger: Logger) {
     self.servicesByName = servicesByName
     self.errorDelegate = errorDelegate
-    self.logger = Logger(subsystem: .serverChannelCall, metadata: [MetadataKey.channelHandler: "GRPCChannelHandler"])
+    self.logger = logger.addingMetadata(key: MetadataKey.channelHandler, value: "GRPCChannelHandler")
   }
 }
 
@@ -81,7 +91,7 @@ extension GRPCChannelHandler: ChannelInboundHandler, RemovableChannelHandler {
       let codec = callHandler.makeGRPCServerCodec()
       let handlerRemoved: EventLoopPromise<Void> = context.eventLoop.makePromise()
       handlerRemoved.futureResult.whenSuccess {
-        self.logger.info("removed handler from pipeline")
+        self.logger.info("removed GRPCChannelHandler from pipeline")
         context.pipeline.addHandler(callHandler, position: .after(codec)).whenComplete { _ in
           // Send the .headers event back to begin the headers flushing for the response.
           // At this point, which headers should be returned is not known, as the content type is
@@ -113,9 +123,21 @@ extension GRPCChannelHandler: ChannelInboundHandler, RemovableChannelHandler {
     // - uriComponents[2]: method name.
     self.logger.info("making call handler", metadata: ["path": "\(requestHead.uri)"])
     let uriComponents = requestHead.uri.components(separatedBy: "/")
+
+    var logger = self.logger
+    // Unset the channel handler: it shouldn't be used for downstream handlers.
+    logger[metadataKey: MetadataKey.channelHandler] = nil
+
+    let context = CallHandlerContext(
+      request: requestHead,
+      channel: channel,
+      errorDelegate: self.errorDelegate,
+      logger: logger
+    )
+
     guard uriComponents.count >= 3 && uriComponents[0].isEmpty,
       let providerForServiceName = servicesByName[uriComponents[1]],
-      let callHandler = providerForServiceName.handleMethod(uriComponents[2], request: requestHead, channel: channel, errorDelegate: errorDelegate) else {
+      let callHandler = providerForServiceName.handleMethod(uriComponents[2], callHandlerContext: context) else {
         self.logger.notice("could not create handler", metadata: ["path": "\(requestHead.uri)"])
         return nil
     }

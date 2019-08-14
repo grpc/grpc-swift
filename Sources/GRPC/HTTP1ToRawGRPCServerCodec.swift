@@ -44,17 +44,28 @@ public enum RawGRPCServerResponsePart {
 ///
 /// The translation from HTTP2 to HTTP1 is done by `HTTP2ToHTTP1ServerCodec`.
 public final class HTTP1ToRawGRPCServerCodec {
-  public init() {}
+  public init(logger: Logger) {
+    self.logger = logger.addingMetadata(key: MetadataKey.channelHandler, value: "HTTP1ToRawGRPCServerCodec")
+
+    var accessLog = Logger(subsystem: .serverAccess)
+    accessLog[metadataKey: MetadataKey.requestID] = logger[metadataKey: MetadataKey.requestID]
+    self.accessLog = accessLog
+
+    self.messageReader = LengthPrefixedMessageReader(
+      mode: .server,
+      compressionMechanism: .none,
+      logger: logger
+    )
+  }
 
   // 1-byte for compression flag, 4-bytes for message length.
   private let protobufMetadataSize = 5
 
   private var contentType: ContentType?
 
-  private let logger = Logger(
-    subsystem: .serverChannelCall,
-    metadata: [MetadataKey.channelHandler: "HTTP1ToRawGRPCServerCodec"]
-  )
+  private let logger: Logger
+  private let accessLog: Logger
+  private var stopwatch: Stopwatch?
 
   // The following buffers use force unwrapping explicitly. With optionals, developers
   // are encouraged to unwrap them using guard-else statements. These don't work cleanly
@@ -74,21 +85,19 @@ public final class HTTP1ToRawGRPCServerCodec {
 
   var inboundState = InboundState.expectingHeaders {
     willSet {
+      guard newValue != self.inboundState else { return }
       self.logger.info("inbound state changed from \(self.inboundState) to \(newValue)")
     }
   }
   var outboundState = OutboundState.expectingHeaders {
     willSet {
+      guard newValue != self.outboundState else { return }
       self.logger.info("outbound state changed from \(self.outboundState) to \(newValue)")
     }
   }
 
   var messageWriter = LengthPrefixedMessageWriter()
-  var messageReader = LengthPrefixedMessageReader(
-    mode: .server,
-    compressionMechanism: .none,
-    logger: Logger(subsystem: .messageReader)
-  )
+  var messageReader: LengthPrefixedMessageReader
 }
 
 extension HTTP1ToRawGRPCServerCodec {
@@ -149,6 +158,13 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
       self.logger.error("invalid state '\(inboundState)' while processing request head", metadata: ["head": "\(requestHead)"])
       throw GRPCError.server(.invalidState("expecteded state .expectingHeaders, got \(inboundState)"))
     }
+
+    self.stopwatch = .start()
+    self.accessLog.info("rpc call started", metadata: [
+      "path": "\(requestHead.uri)",
+      "method": "\(requestHead.method)",
+      "version": "\(requestHead.version)"
+    ])
 
     if let contentTypeHeader = requestHead.headers["content-type"].first {
       self.contentType = ContentType(rawValue: contentTypeHeader)
@@ -308,6 +324,17 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
         context.write(self.wrapOutboundOut(.end(nil)), promise: promise)
       } else {
         context.write(self.wrapOutboundOut(.end(trailers)), promise: promise)
+      }
+
+      // Log the call duration and status
+      if let stopwatch = self.stopwatch {
+        self.stopwatch = nil
+        let millis = stopwatch.elapsedMillis()
+
+        self.accessLog.info("rpc call finished", metadata: [
+          "duration_ms": "\(millis)",
+          "status_code": "\(status.code.rawValue)"
+        ])
       }
 
       self.outboundState = .ignore

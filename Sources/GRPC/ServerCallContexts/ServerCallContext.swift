@@ -37,9 +37,9 @@ open class ServerCallContextBase: ServerCallContext {
   public let request: HTTPRequestHead
   public let logger: Logger
 
-  public init(eventLoop: EventLoop, request: HTTPRequestHead) {
+  public init(eventLoop: EventLoop, request: HTTPRequestHead, logger: Logger) {
     self.eventLoop = eventLoop
     self.request = request
-    self.logger = Logger(subsystem: .serverChannelCall)
+    self.logger = logger
   }
 }

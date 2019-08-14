@@ -46,14 +46,19 @@ public class BaseCallHandler<RequestMessage: Message, ResponseMessage: Message>:
   /// Whether this handler can still write messages to the client.
   private var serverCanWrite = true
 
+  internal let callHandlerContext: CallHandlerContext
+
   /// Called for each error received in `errorCaught(context:error:)`.
-  private weak var errorDelegate: ServerErrorDelegate?
+  private var errorDelegate: ServerErrorDelegate? {
+    return self.callHandlerContext.errorDelegate
+  }
 
-  internal let logger: Logger
+  internal var logger: Logger {
+    return self.callHandlerContext.logger
+  }
 
-  public init(errorDelegate: ServerErrorDelegate?) {
-    self.errorDelegate = errorDelegate
-    self.logger = Logger(subsystem: .serverChannelCall, metadata: [MetadataKey.channelHandler: "\(type(of: self))"])
+  public init(callHandlerContext: CallHandlerContext) {
+    self.callHandlerContext = callHandlerContext
   }
 
   /// Sends an error status to the client while ensuring that all call context promises are fulfilled.
