@@ -20,11 +20,16 @@ import NIO
 import Logging
 
 class LengthPrefixedMessageReaderTests: GRPCTestCase {
-  var reader = LengthPrefixedMessageReader(
-    mode: .client,
-    compressionMechanism: .none,
-    logger: Logger(label: "io.grpc.testing")
-  )
+  var reader: LengthPrefixedMessageReader!
+
+  override func setUp() {
+    super.setUp()
+    self.reader = LengthPrefixedMessageReader(
+      mode: .client,
+      compressionMechanism: .none,
+      logger: Logger(label: "io.grpc.testing")
+    )
+  }
 
   var allocator = ByteBufferAllocator()
 

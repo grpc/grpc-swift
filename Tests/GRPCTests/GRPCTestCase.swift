@@ -20,12 +20,25 @@ import Logging
 ///
 /// This should be used instead of `XCTestCase`.
 class GRPCTestCase: XCTestCase {
+  // Travis will fail the CI if there is too much logging, but it can be useful when running
+  // locally; conditionally enable it based on the environment.
+  //
+  // https://docs.travis-ci.com/user/environment-variables/#default-environment-variables
+  private static var isLoggingEnabled = ProcessInfo.processInfo.environment["CI"] != "true"
+
   // `LoggingSystem.bootstrap` must be called once per process. This is the suggested approach to
   // workaround this for XCTestCase.
   //
   // See: https://github.com/apple/swift-log/issues/77
   private static let isLoggingConfigured: Bool = {
-    LoggingSystem.bootstrap { _ in BlackHole() }
+    LoggingSystem.bootstrap { label in
+      guard isLoggingEnabled else {
+        return BlackHole()
+      }
+      var handler = StreamLogHandler.standardOutput(label: label)
+      handler.logLevel = .debug
+      return handler
+    }
     return true
   }()
 
