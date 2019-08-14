@@ -6,8 +6,8 @@
         "repositoryURL": "https://github.com/kylef/Commander.git",
         "state": {
           "branch": null,
-          "revision": "e5b50ad7b2e91eeb828393e89b03577b16be7db9",
-          "version": "0.8.0"
+          "revision": "dc97e80a1cf5df6c5768528f039c65ad8c564712",
+          "version": "0.9.0"
         }
       },
       {
@@ -33,8 +33,8 @@
         "repositoryURL": "https://github.com/apple/swift-nio.git",
         "state": {
           "branch": null,
-          "revision": "ed50f8a41ece8db20afa8d1188fc0960f95263df",
-          "version": "2.2.0"
+          "revision": "26586835fd327f754efdebe3b9869f1e6f7cc298",
+          "version": "2.6.1"
         }
       },
       {
@@ -42,8 +42,8 @@
         "repositoryURL": "https://github.com/apple/swift-nio-http2.git",
         "state": {
           "branch": null,
-          "revision": "c2638ff60910a0d468ff9a882c8586a827da1a0d",
-          "version": "1.2.1"
+          "revision": "86ce1dcd0df501401eb1a0d445dbd90aaad84a64",
+          "version": "1.5.0"
         }
       },
       {
@@ -51,8 +51,8 @@
         "repositoryURL": "https://github.com/apple/swift-nio-ssl.git",
         "state": {
           "branch": null,
-          "revision": "dc23a24fbe5d59429eacf45a9add82fdf6ab90e6",
-          "version": "2.1.0"
+          "revision": "f5dd7a60ff56f501ff7bf9be753e4b1875bfaf20",
+          "version": "2.4.0"
         }
       },
       {
@@ -60,8 +60,8 @@
         "repositoryURL": "https://github.com/apple/swift-nio-transport-services.git",
         "state": {
           "branch": null,
-          "revision": "d59370d89af5e647fa14779b693cb5378602aa6d",
-          "version": "1.0.3"
+          "revision": "6cba688855180e0ebf21f40d80987556986cfe03",
+          "version": "1.1.1"
         }
       },
       {
@@ -69,8 +69,8 @@
         "repositoryURL": "https://github.com/apple/swift-protobuf.git",
         "state": {
           "branch": null,
-          "revision": "7bf52ab1f5ee87aeb89f2a6b9bfc6369408476f7",
-          "version": "1.5.0"
+          "revision": "3a3594f84b746793c84c2ab2f1e855aaa9d3a593",
+          "version": "1.6.0"
         }
       }
     ]
