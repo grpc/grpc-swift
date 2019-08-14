@@ -73,13 +73,13 @@ public final class HTTP1ToRawGRPCServerCodec {
   private var responseTextBuffer: NIO.ByteBuffer!
 
   var inboundState = InboundState.expectingHeaders {
-    didSet {
-      self.logger.info("inbound state changed from \(oldValue) to \(self.inboundState)")
+    willSet {
+      self.logger.info("inbound state changed from \(self.inboundState) to \(newValue)")
     }
   }
   var outboundState = OutboundState.expectingHeaders {
-    didSet {
-      self.logger.info("outbound state changed from \(oldValue) to \(self.outboundState)")
+    willSet {
+      self.logger.info("outbound state changed from \(self.outboundState) to \(newValue)")
     }
   }
 
