@@ -26,15 +26,12 @@ class StopwatchTests: GRPCTestCase {
     }
 
     time = 1.0
-    XCTAssertEqual(1.0, stopwatch.elapsed(), accuracy: 0.0001)
-    XCTAssertEqual(1000, stopwatch.elapsedMillis())
+    XCTAssertEqual(1.0, stopwatch.elapsed(), accuracy: 0.001)
 
     time = 42.0
-    XCTAssertEqual(42.0, stopwatch.elapsed(), accuracy: 0.0001)
-    XCTAssertEqual(42_000, stopwatch.elapsedMillis())
+    XCTAssertEqual(42.0, stopwatch.elapsed(), accuracy: 0.001)
 
     time = 3650.123
-    XCTAssertEqual(3650.123, stopwatch.elapsed(), accuracy: 0.0001)
-    XCTAssertEqual(3_650_123, stopwatch.elapsedMillis())
+    XCTAssertEqual(3650.123, stopwatch.elapsed(), accuracy: 0.001)
   }
 }
