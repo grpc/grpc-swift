@@ -167,32 +167,45 @@ class ClientConnectionBackoffTests: GRPCTestCase {
   }
 
   func testClientReconnectsAutomatically() throws {
+    // Wait for the server to start.
     self.server = self.makeServer()
     let server = try self.server.wait()
 
+    // Configure the client backoff to have a short backoff.
     var configuration = self.makeClientConfiguration()
     configuration.connectionBackoff!.maximumBackoff = 2.0
 
+    // Prepare the delegate so it expects the connection to hit `.ready`.
     let connectionReady = self.expectation(description: "connection ready")
-    let transientFailure = self.expectation(description: "connection transientFailure")
     self.stateDelegate.expectations[.ready] = connectionReady
-    self.stateDelegate.expectations[.transientFailure] = transientFailure
 
+    // Start the connection.
     self.client = ClientConnection(configuration: configuration)
 
-    // Once the connection is ready we can kill the server.
+    // Wait for the connection to be ready.
     self.wait(for: [connectionReady], timeout: 1.0)
     XCTAssertEqual(self.stateDelegate.clearStates(), [.connecting, .ready])
 
+    // Now that we have a healthy connectiony, prepare for two transient failures:
+    // 1. when the server has been killed, and
+    // 2. when the client attempts to reconnect.
+    let transientFailure = self.expectation(description: "connection transientFailure")
+    transientFailure.expectedFulfillmentCount = 2
+    self.stateDelegate.expectations[.transientFailure] = transientFailure
+    self.stateDelegate.expectations[.ready] = nil
+
+    // Okay, kill the server!
     try server.close().wait()
     try self.serverGroup.syncShutdownGracefully()
     self.server = nil
     self.serverGroup = nil
 
+    // Our connection should fail now.
     self.wait(for: [transientFailure], timeout: 1.0)
-    XCTAssertEqual(self.stateDelegate.clearStates(), [.connecting, .transientFailure])
+    XCTAssertEqual(self.stateDelegate.clearStates(), [.transientFailure, .connecting, .transientFailure])
+    self.stateDelegate.expectations[.transientFailure] = nil
 
-    // Replace the ready expectation (since it's already been fulfilled).
+    // Prepare an expectation for a new healthy connection.
     let reconnectionReady = self.expectation(description: "(re)connection ready")
     self.stateDelegate.expectations[.ready] = reconnectionReady
 

@@ -22,6 +22,7 @@ let package = Package(
   products: [
     .library(name: "GRPC", targets: ["GRPC"]),
     .executable(name: "InteroperabilityTestRunner", targets: ["GRPCInteroperabilityTests"]),
+    .executable(name: "ConnectionBackoffInteropTestRunner", targets: ["GRPCConnectionBackoffInteropTest"]),
     .executable(name: "PerformanceTestRunner", targets: ["GRPCPerformanceTests"]),
     .executable(name: "Echo", targets: ["Echo"]),
   ],
@@ -106,6 +107,15 @@ let package = Package(
       dependencies: [
         "GRPCInteroperabilityTestsImplementation",
         "Commander"
+      ]
+    ),
+
+    // The connection backoff interoperability test.
+    .target(
+      name: "GRPCConnectionBackoffInteropTest",
+      dependencies: [
+        "GRPC",
+        "GRPCInteroperabilityTestModels",
       ]
     ),
 
