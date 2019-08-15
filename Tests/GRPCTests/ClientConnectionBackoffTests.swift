@@ -44,7 +44,7 @@ class ConnectivityStateCollectionDelegate: ConnectivityStateDelegate {
 
   var expectations: [ConnectivityState: XCTestExpectation] {
     get {
-      self.lock.withLock {
+      return self.lock.withLock {
         return self._expectations
       }
     }
