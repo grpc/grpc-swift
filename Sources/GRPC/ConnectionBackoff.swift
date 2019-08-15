@@ -90,16 +90,8 @@ public class ConnectionBackoffIterator: IteratorProtocol {
   /// compute it on-the-fly.
   private var initialElement: Element?
 
-  /// Whether or not we should make another element.
-  private var shouldMakeNextElement: Bool {
-    return self.unjitteredBackoff < self.connectionBackoff.maximumBackoff
-  }
-
   /// Returns the next pair of connection timeout and backoff (in that order) to use should the
   /// connection attempt fail.
-  ///
-  /// The iterator will stop producing values _after_ the unjittered backoff is greater than or
-  /// equal to the maximum backoff set in the configuration used to create this iterator.
   public func next() -> Element? {
     if let initial = self.initialElement {
       self.initialElement = nil
@@ -109,12 +101,8 @@ public class ConnectionBackoffIterator: IteratorProtocol {
     }
   }
 
-  /// Produces the next element to return, or `nil` if no more elements should be made.
-  private func makeNextElement() -> Element? {
-    guard self.shouldMakeNextElement else {
-      return nil
-    }
-
+  /// Produces the next element to return.
+  private func makeNextElement() -> Element {
     let unjittered = self.unjitteredBackoff * self.connectionBackoff.multiplier
     self.unjitteredBackoff = min(unjittered, self.connectionBackoff.maximumBackoff)
 

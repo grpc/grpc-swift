@@ -467,15 +467,14 @@ extension ClientConnection {
     ///     on debug builds.
     /// - Parameter connectivityStateDelegate: A connectivity state delegate, defaulting to `nil`.
     /// - Parameter tlsConfiguration: TLS configuration, defaulting to `nil`.
-    /// - Parameter connectionBackoff: The connection backoff configuration to use, defaulting
-    ///     to `nil`.
+    /// - Parameter connectionBackoff: The connection backoff configuration to use.
     public init(
       target: ConnectionTarget,
       eventLoopGroup: EventLoopGroup,
       errorDelegate: ClientErrorDelegate? = DebugOnlyLoggingClientErrorDelegate.shared,
       connectivityStateDelegate: ConnectivityStateDelegate? = nil,
       tls: Configuration.TLS? = nil,
-      connectionBackoff: ConnectionBackoff? = nil
+      connectionBackoff: ConnectionBackoff? = ConnectionBackoff()
     ) {
       self.target = target
       self.eventLoopGroup = eventLoopGroup

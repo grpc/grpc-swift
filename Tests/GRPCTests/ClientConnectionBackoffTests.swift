@@ -134,13 +134,8 @@ class ClientConnectionBackoffTests: GRPCTestCase {
       target: .hostAndPort("localhost", self.port),
       eventLoopGroup: self.clientGroup,
       connectivityStateDelegate: self.stateDelegate,
-      connectionBackoff: ConnectionBackoff(maximumBackoff: 0.1))
-  }
-
-  func makeClientConnection(
-    _ configuration: ClientConnection.Configuration
-  ) -> ClientConnection {
-    return ClientConnection(configuration: configuration)
+      connectionBackoff: ConnectionBackoff(maximumBackoff: 0.1,
+                                           minimumConnectionTimeout: 0.1))
   }
 
   func testClientConnectionFailsWithNoBackoff() throws {
@@ -149,7 +144,7 @@ class ClientConnectionBackoffTests: GRPCTestCase {
 
     let connectionShutdown = self.expectation(description: "client shutdown")
     self.stateDelegate.shutdownExpectation = connectionShutdown
-    self.client = self.makeClientConnection(configuration)
+    self.client = ClientConnection(configuration: configuration)
 
     self.wait(for: [connectionShutdown], timeout: 1.0)
     XCTAssertEqual(self.stateDelegate.states, [.connecting, .shutdown])
@@ -162,25 +157,20 @@ class ClientConnectionBackoffTests: GRPCTestCase {
     self.stateDelegate.readyExpectation = connectionReady
 
     // Start the client first.
-    self.client = self.makeClientConnection(self.makeClientConfiguration())
+    self.client = ClientConnection(configuration: self.makeClientConfiguration())
 
     self.wait(for: [transientFailure], timeout: 1.0)
+    self.stateDelegate.transientFailureExpectation = nil
+    XCTAssertEqual(self.stateDelegate.clearStates(), [.connecting, .transientFailure])
 
     self.server = self.makeServer()
     let serverStarted = self.expectation(description: "server started")
     self.server.assertSuccess(fulfill: serverStarted)
 
     self.wait(for: [serverStarted, connectionReady], timeout: 2.0, enforceOrder: true)
-    XCTAssertEqual(self.stateDelegate.states, [.connecting, .transientFailure, .connecting, .ready])
-  }
-
-  func testClientEventuallyTimesOut() throws {
-    let connectionShutdown = self.expectation(description: "connection shutdown")
-    self.stateDelegate.shutdownExpectation = connectionShutdown
-    self.client = self.makeClientConnection(self.makeClientConfiguration())
-
-    self.wait(for: [connectionShutdown], timeout: 1.0)
-    XCTAssertEqual(self.stateDelegate.states, [.connecting, .transientFailure, .connecting, .shutdown])
+    // We can have other transient failures and connection attempts while the server starts, we only
+    // care about the last two.
+    XCTAssertEqual(self.stateDelegate.states.suffix(2), [.connecting, .ready])
   }
 
   func testClientReconnectsAutomatically() throws {
@@ -195,7 +185,7 @@ class ClientConnectionBackoffTests: GRPCTestCase {
     self.stateDelegate.readyExpectation = connectionReady
     self.stateDelegate.transientFailureExpectation = transientFailure
 
-    self.client = self.makeClientConnection(configuration)
+    self.client = ClientConnection(configuration: configuration)
 
     // Once the connection is ready we can kill the server.
     self.wait(for: [connectionReady], timeout: 1.0)

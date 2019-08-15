@@ -47,7 +47,6 @@ extension ClientConnectionBackoffTests {
     static let __allTests__ClientConnectionBackoffTests = [
         ("testClientConnectionFailsWithNoBackoff", testClientConnectionFailsWithNoBackoff),
         ("testClientEventuallyConnects", testClientEventuallyConnects),
-        ("testClientEventuallyTimesOut", testClientEventuallyTimesOut),
         ("testClientReconnectsAutomatically", testClientReconnectsAutomatically),
     ]
 }

@@ -27,7 +27,7 @@ class ConnectionBackoffTests: GRPCTestCase {
     self.backoff.maximumBackoff = 16.0
     self.backoff.minimumConnectionTimeout = 4.2
 
-    let timeoutAndBackoff = Array(self.backoff)
+    let timeoutAndBackoff = self.backoff.prefix(5)
 
     let expectedBackoff: [TimeInterval] = [1.0, 2.0, 4.0, 8.0, 16.0]
     XCTAssertEqual(expectedBackoff, timeoutAndBackoff.map { $0.backoff })
@@ -38,16 +38,15 @@ class ConnectionBackoffTests: GRPCTestCase {
 
   func testBackoffWithNoJitter() {
     self.backoff.jitter = 0.0
-
-    for (i, timeoutAndBackoff) in self.backoff.enumerated() {
+    for (i, backoff) in self.backoff.prefix(100).map({ $0.backoff }).enumerated() {
       let expected = min(pow(self.backoff.initialBackoff * self.backoff.multiplier, Double(i)),
                          self.backoff.maximumBackoff)
-      XCTAssertEqual(expected, timeoutAndBackoff.backoff, accuracy: 1e-6)
+      XCTAssertEqual(expected, backoff, accuracy: 1e-6)
     }
   }
 
   func testBackoffWithJitter() {
-    for (i, timeoutAndBackoff) in self.backoff.enumerated() {
+    for (i, timeoutAndBackoff) in self.backoff.prefix(100).enumerated() {
       let unjittered = min(pow(self.backoff.initialBackoff * self.backoff.multiplier, Double(i)),
                            self.backoff.maximumBackoff)
       let halfJitterRange = self.backoff.jitter * unjittered
@@ -61,13 +60,13 @@ class ConnectionBackoffTests: GRPCTestCase {
     // backoff can still be exceeded if jitter is non-zero.
     self.backoff.jitter = 0.0
 
-    for (_, backoff) in self.backoff {
+    for backoff in self.backoff.prefix(100).map({ $0.backoff }) {
       XCTAssertLessThanOrEqual(backoff, self.backoff.maximumBackoff)
     }
   }
 
   func testConnectionTimeoutAlwaysGreatherThanOrEqualToMinimum() {
-    for (connectionTimeout, _) in self.backoff {
+    for connectionTimeout in self.backoff.prefix(100).map({ $0.timeout }) {
       XCTAssertGreaterThanOrEqual(connectionTimeout, self.backoff.minimumConnectionTimeout)
     }
   }
