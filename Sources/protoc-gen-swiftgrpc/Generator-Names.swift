@@ -17,11 +17,6 @@ import Foundation
 import SwiftProtobuf
 import SwiftProtobufPluginLibrary
 
-// Transform .some.package_name.FooBarRequest -> Some_PackageName_FooBarRequest
-internal func protoMessageName(_ descriptor: SwiftProtobufPluginLibrary.Descriptor) -> String {
-  return SwiftProtobufNamer().fullName(message: descriptor)
-}
-
 internal func nameForPackageService(_ file: FileDescriptor,
                                     _ service: ServiceDescriptor) -> String {
   if !file.package.isEmpty {
@@ -61,11 +56,11 @@ extension Generator {
   }
 
   internal var methodInputName: String {
-    return protoMessageName(method.inputType)
+    return protobufNamer.fullName(message: method.inputType)
   }
 
   internal var methodOutputName: String {
-    return protoMessageName(method.outputType)
+    return protobufNamer.fullName(message: method.outputType)
   }
   
   internal var servicePath: String {
