@@ -23,10 +23,15 @@ class Generator {
   internal var service: ServiceDescriptor! // context during generation
   internal var method: MethodDescriptor!   // context during generation
 
-  init(_ file:FileDescriptor, options:GeneratorOptions) {
+  internal let protobufNamer: SwiftProtobufNamer
+
+  init(_ file: FileDescriptor, options: GeneratorOptions) {
     self.file = file
     self.options = options
     self.printer = CodePrinter()
+    self.protobufNamer = SwiftProtobufNamer(
+      currentFile: file,
+      protoFileToModuleMappings: options.protoToModuleMappings)
     printMain()
   }
 
