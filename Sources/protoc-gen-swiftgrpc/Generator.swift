@@ -25,13 +25,13 @@ class Generator {
 
   internal let protobufNamer: SwiftProtobufNamer
 
-  init(_ file:FileDescriptor, options:GeneratorOptions) {
+  init(_ file: FileDescriptor, options: GeneratorOptions) {
     self.file = file
     self.options = options
     self.printer = CodePrinter()
-    self.protobufNamer =  SwiftProtobufNamer(
+    self.protobufNamer = SwiftProtobufNamer(
       currentFile: file,
-      protoFileToModuleMappings:  options.protoToModuleMappings)
+      protoFileToModuleMappings: options.protoToModuleMappings)
     printMain()
   }
   
