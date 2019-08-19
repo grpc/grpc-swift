@@ -40,11 +40,20 @@ class ConnectivityStateCollectionDelegate: ConnectivityStateDelegate {
     return self._states
   }
 
-  var idleExpectation: XCTestExpectation?
-  var connectingExpectation: XCTestExpectation?
-  var readyExpectation: XCTestExpectation?
-  var transientFailureExpectation: XCTestExpectation?
-  var shutdownExpectation: XCTestExpectation?
+  private var _expectations: [ConnectivityState: XCTestExpectation] = [:]
+
+  var expectations: [ConnectivityState: XCTestExpectation] {
+    get {
+      return self.lock.withLock {
+       self._expectations
+      }
+    }
+    set {
+      self.lock.withLockVoid {
+        self._expectations = newValue
+      }
+    }
+  }
 
   init(
     idle: XCTestExpectation? = nil,
@@ -53,33 +62,17 @@ class ConnectivityStateCollectionDelegate: ConnectivityStateDelegate {
     transientFailure: XCTestExpectation? = nil,
     shutdown: XCTestExpectation? = nil
   ) {
-    self.idleExpectation = idle
-    self.connectingExpectation = connecting
-    self.readyExpectation = ready
-    self.transientFailureExpectation = transientFailure
-    self.shutdownExpectation = shutdown
+    self.expectations[.idle] = idle
+    self.expectations[.connecting] = connecting
+    self.expectations[.ready] = ready
+    self.expectations[.transientFailure] = transientFailure
+    self.expectations[.shutdown] = shutdown
   }
 
   func connectivityStateDidChange(from oldState: ConnectivityState, to newState: ConnectivityState) {
     self.lock.withLockVoid {
       self._states.append(newState)
-    }
-
-    switch newState {
-    case .idle:
-      self.idleExpectation?.fulfill()
-
-    case .connecting:
-      self.connectingExpectation?.fulfill()
-
-    case .ready:
-      self.readyExpectation?.fulfill()
-
-    case .transientFailure:
-      self.transientFailureExpectation?.fulfill()
-
-    case .shutdown:
-      self.shutdownExpectation?.fulfill()
+      self._expectations[newState]?.fulfill()
     }
   }
 }
@@ -143,7 +136,7 @@ class ClientConnectionBackoffTests: GRPCTestCase {
     configuration.connectionBackoff = nil
 
     let connectionShutdown = self.expectation(description: "client shutdown")
-    self.stateDelegate.shutdownExpectation = connectionShutdown
+    self.stateDelegate.expectations[.shutdown] = connectionShutdown
     self.client = ClientConnection(configuration: configuration)
 
     self.wait(for: [connectionShutdown], timeout: 1.0)
@@ -153,14 +146,14 @@ class ClientConnectionBackoffTests: GRPCTestCase {
   func testClientEventuallyConnects() throws {
     let transientFailure = self.expectation(description: "connection transientFailure")
     let connectionReady = self.expectation(description: "connection ready")
-    self.stateDelegate.transientFailureExpectation = transientFailure
-    self.stateDelegate.readyExpectation = connectionReady
+    self.stateDelegate.expectations[.transientFailure] = transientFailure
+    self.stateDelegate.expectations[.ready] = connectionReady
 
     // Start the client first.
     self.client = ClientConnection(configuration: self.makeClientConfiguration())
 
     self.wait(for: [transientFailure], timeout: 1.0)
-    self.stateDelegate.transientFailureExpectation = nil
+    self.stateDelegate.expectations[.transientFailure] = nil
     XCTAssertEqual(self.stateDelegate.clearStates(), [.connecting, .transientFailure])
 
     self.server = self.makeServer()
@@ -182,8 +175,8 @@ class ClientConnectionBackoffTests: GRPCTestCase {
 
     let connectionReady = self.expectation(description: "connection ready")
     let transientFailure = self.expectation(description: "connection transientFailure")
-    self.stateDelegate.readyExpectation = connectionReady
-    self.stateDelegate.transientFailureExpectation = transientFailure
+    self.stateDelegate.expectations[.ready] = connectionReady
+    self.stateDelegate.expectations[.transientFailure] = transientFailure
 
     self.client = ClientConnection(configuration: configuration)
 
@@ -201,7 +194,7 @@ class ClientConnectionBackoffTests: GRPCTestCase {
 
     // Replace the ready expectation (since it's already been fulfilled).
     let reconnectionReady = self.expectation(description: "(re)connection ready")
-    self.stateDelegate.readyExpectation = reconnectionReady
+    self.stateDelegate.expectations[.ready] = reconnectionReady
 
     let echo = Echo_EchoServiceClient(connection: self.client)
     // This should succeed once we get a connection again.
