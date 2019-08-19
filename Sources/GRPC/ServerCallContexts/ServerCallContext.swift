@@ -17,6 +17,7 @@ import Foundation
 import SwiftProtobuf
 import NIO
 import NIOHTTP1
+import Logging
 
 /// Protocol declaring a minimum set of properties exposed by *all* types of call contexts.
 public protocol ServerCallContext: class {
@@ -25,15 +26,20 @@ public protocol ServerCallContext: class {
 
   /// Generic metadata provided with this request.
   var request: HTTPRequestHead { get }
+
+  /// The logger used for this call.
+  var logger: Logger { get }
 }
 
 /// Base class providing data provided to the framework user for all server calls.
 open class ServerCallContextBase: ServerCallContext {
   public let eventLoop: EventLoop
   public let request: HTTPRequestHead
+  public let logger: Logger
 
-  public init(eventLoop: EventLoop, request: HTTPRequestHead) {
+  public init(eventLoop: EventLoop, request: HTTPRequestHead, logger: Logger) {
     self.eventLoop = eventLoop
     self.request = request
+    self.logger = logger
   }
 }

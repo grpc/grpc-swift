@@ -18,6 +18,7 @@ import NIO
 import NIOHTTP1
 import NIOHTTP2
 import NIOSSL
+import Logging
 
 /// Wrapper object to manage the lifecycle of a gRPC server.
 ///
@@ -107,11 +108,13 @@ public final class Server {
       // Set the handlers that are applied to the accepted Channels
       .childChannelInitializer { channel in
         let protocolSwitcher = HTTPProtocolSwitcher(errorDelegate: configuration.errorDelegate) { channel -> EventLoopFuture<Void> in
+          let logger = Logger(subsystem: .serverChannelCall, metadata: [MetadataKey.requestID: "\(UUID())"])
           let handlers: [ChannelHandler] = [
-            HTTP1ToRawGRPCServerCodec(),
+            HTTP1ToRawGRPCServerCodec(logger: logger),
             GRPCChannelHandler(
               servicesByName: configuration.serviceProvidersByName,
-              errorDelegate: configuration.errorDelegate
+              errorDelegate: configuration.errorDelegate,
+              logger: logger
             )
           ]
           return channel.pipeline.addHandlers(handlers)

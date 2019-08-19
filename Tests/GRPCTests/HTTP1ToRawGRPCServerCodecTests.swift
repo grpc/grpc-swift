@@ -18,6 +18,7 @@ import XCTest
 import NIO
 import NIOHTTP1
 @testable import GRPC
+import Logging
 
 func gRPCMessage(channel: EmbeddedChannel, compression: Bool = false, message: Data? = nil) -> ByteBuffer {
   let messageLength = message?.count ?? 0
@@ -151,7 +152,7 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
     callback: @escaping (EmbeddedChannel) throws -> Void
     ) throws -> [RawGRPCServerResponsePart] {
     return try super.waitForGRPCChannelHandlerResponses(count: count, servicesByName: servicesByName) { channel in
-      _ = channel.pipeline.addHandlers(HTTP1ToRawGRPCServerCodec(), position: .first)
+      _ = channel.pipeline.addHandlers(HTTP1ToRawGRPCServerCodec(logger: Logger(label: "io.grpc.testing")), position: .first)
         .flatMapThrowing { _ in try callback(channel) }
     }
   }

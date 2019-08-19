@@ -17,12 +17,17 @@ import Foundation
 import NIO
 import NIOHTTP1
 import NIOHTTP2
+import Logging
 
 /// Channel handler that creates different processing pipelines depending on whether
 /// the incoming request is HTTP 1 or 2.
 public class HTTPProtocolSwitcher {
   private let handlersInitializer: ((Channel) -> EventLoopFuture<Void>)
   private let errorDelegate: ServerErrorDelegate?
+  private let logger = Logger(
+    subsystem: .serverChannelCall,
+    metadata: [MetadataKey.channelHandler: "HTTPProtocolSwitcher"]
+  )
 
   // We could receive additional data after the initial data and before configuring
   // the pipeline; buffer it and fire it down the pipeline once it is configured.
@@ -32,7 +37,11 @@ public class HTTPProtocolSwitcher {
     case configured
   }
 
-  private var state: State = .notConfigured
+  private var state: State = .notConfigured {
+    willSet {
+      self.logger.info("state changed from '\(self.state)' to '\(newValue)'")
+    }
+  }
   private var bufferedData: [NIOAny] = []
 
   public init(errorDelegate: ServerErrorDelegate?, handlersInitializer: (@escaping (Channel) -> EventLoopFuture<Void>)) {
@@ -66,7 +75,9 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     switch self.state {
     case .notConfigured:
+      self.logger.info("determining http protocol version")
       self.state = .configuring
+      self.logger.info("buffering data \(data)")
       self.bufferedData.append(data)
 
       // Detect the HTTP protocol version for the incoming request, or error out if it
@@ -77,16 +88,18 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
                                          maxSplits: 1,
                                          omittingEmptySubsequences: true).first,
         let version = protocolVersion(String(preamble)) else {
+          self.logger.error("unable to determine http version")
           context.fireErrorCaught(HTTPProtocolVersionError.invalidHTTPProtocolVersion)
           return
       }
+
+      self.logger.info("determined http version", metadata: ["http_version": "\(version)"])
 
       // Once configured remove ourself from the pipeline, or handle the error.
       let pipelineConfigured: EventLoopPromise<Void> = context.eventLoop.makePromise()
       pipelineConfigured.futureResult.whenComplete { result in
         switch result {
         case .success:
-          self.state = .configuring
           context.pipeline.removeHandler(context: context, promise: nil)
 
         case .failure(let error):
@@ -118,19 +131,23 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
       }
 
     case .configuring:
+      self.logger.info("buffering data \(data)")
       self.bufferedData.append(data)
 
     case .configured:
+      self.logger.critical("unexpectedly received data; this handler should have been removed from the pipeline")
       assertionFailure("unexpectedly received data; this handler should have been removed from the pipeline")
     }
   }
 
   public func removeHandler(context: ChannelHandlerContext, removalToken: ChannelHandlerContext.RemovalToken) {
+    self.logger.info("unbuffering data")
     self.bufferedData.forEach {
       context.fireChannelRead($0)
     }
 
     context.leavePipeline(removalToken: removalToken)
+    self.state = .configured
   }
 
   public func errorCaught(context: ChannelHandlerContext, error: Error) {

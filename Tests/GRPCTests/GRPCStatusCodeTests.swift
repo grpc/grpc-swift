@@ -36,7 +36,7 @@ class GRPCStatusCodeTests: GRPCTestCase {
     self.statusPromise = self.channel.eventLoop.makePromise()
 
     let requestID = UUID().uuidString
-    let logger = Logger(subsystem: .clientChannelCall, requestID: requestID)
+    let logger = Logger(subsystem: .clientChannelCall, metadata: [MetadataKey.requestID: "\(requestID)"])
     try! self.channel.pipeline.addHandlers([
       HTTP1ToRawGRPCClientCodec(logger: logger),
       GRPCClientCodec<Echo_EchoRequest, Echo_EchoResponse>(logger: logger),

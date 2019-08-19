@@ -18,6 +18,7 @@ import NIO
 import NIOHTTP1
 @testable import GRPC
 import XCTest
+import Logging
 
 class CollectingChannelHandler<OutboundIn>: ChannelOutboundHandler {
   var responses: [OutboundIn] = []
@@ -77,7 +78,7 @@ class GRPCChannelHandlerResponseCapturingTestCase: GRPCTestCase {
     callback: @escaping (EmbeddedChannel) throws -> Void
   ) throws -> [RawGRPCServerResponsePart] {
     let collector = CollectingChannelHandler<RawGRPCServerResponsePart>()
-    try configureChannel(withHandlers: [collector, GRPCChannelHandler(servicesByName: servicesByName, errorDelegate: errorCollector)])
+    try configureChannel(withHandlers: [collector, GRPCChannelHandler(servicesByName: servicesByName, errorDelegate: errorCollector, logger: Logger(label: "io.grpc.testing"))])
       .flatMapThrowing(callback)
       .wait()
 

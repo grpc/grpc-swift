@@ -27,7 +27,7 @@ import Logging
 public final class ServerStreamingCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage> {
   public init(connection: ClientConnection, path: String, request: RequestMessage, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?, handler: @escaping (ResponseMessage) -> Void) {
     let requestID = callOptions.requestIDProvider.requestID()
-    let logger = Logger(subsystem: .clientChannelCall, requestID: requestID)
+    let logger = Logger(subsystem: .clientChannelCall, metadata: [MetadataKey.requestID: "\(requestID)"])
     logger.info("making server streaming call to '\(path)', request type: \(RequestMessage.self), response type: \(ResponseMessage.self)")
 
     let responseHandler = GRPCClientStreamingResponseChannelHandler(

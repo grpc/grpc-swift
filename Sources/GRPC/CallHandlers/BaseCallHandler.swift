@@ -17,6 +17,7 @@ import Foundation
 import SwiftProtobuf
 import NIO
 import NIOHTTP1
+import Logging
 
 /// Provides a means for decoding incoming gRPC messages into protobuf objects.
 ///
@@ -45,11 +46,19 @@ public class BaseCallHandler<RequestMessage: Message, ResponseMessage: Message>:
   /// Whether this handler can still write messages to the client.
   private var serverCanWrite = true
 
-  /// Called for each error received in `errorCaught(context:error:)`.
-  private weak var errorDelegate: ServerErrorDelegate?
+  internal let callHandlerContext: CallHandlerContext
 
-  public init(errorDelegate: ServerErrorDelegate?) {
-    self.errorDelegate = errorDelegate
+  /// Called for each error received in `errorCaught(context:error:)`.
+  private var errorDelegate: ServerErrorDelegate? {
+    return self.callHandlerContext.errorDelegate
+  }
+
+  internal var logger: Logger {
+    return self.callHandlerContext.logger
+  }
+
+  public init(callHandlerContext: CallHandlerContext) {
+    self.callHandlerContext = callHandlerContext
   }
 
   /// Sends an error status to the client while ensuring that all call context promises are fulfilled.
@@ -71,19 +80,21 @@ extension BaseCallHandler: ChannelInboundHandler {
     let status = errorDelegate?.transformLibraryError(error)
       ?? (error as? GRPCStatusTransformable)?.asGRPCStatus()
       ?? .processingError
-    sendErrorStatus(status)
+    self.sendErrorStatus(status)
   }
 
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     switch self.unwrapInboundIn(data) {
     case .head(let requestHead):
       // Head should have been handled by `GRPCChannelHandler`.
+      self.logger.error("call handler unexpectedly received request head", metadata: ["head": "\(requestHead)"])
       self.errorCaught(context: context, error: GRPCError.server(.invalidState("unexpected request head received \(requestHead)")))
 
     case .message(let message):
       do {
         try processMessage(message)
       } catch {
+        self.logger.error("error caught while user handler was processing message", metadata: [MetadataKey.error: "\(error)"])
         self.errorCaught(context: context, error: error)
       }
 
@@ -91,6 +102,7 @@ extension BaseCallHandler: ChannelInboundHandler {
       do {
         try endOfStreamReceived()
       } catch {
+        self.logger.error("error caught on receiving end of stream", metadata: [MetadataKey.error: "\(error)"])
         self.errorCaught(context: context, error: error)
       }
     }
@@ -102,14 +114,14 @@ extension BaseCallHandler: ChannelOutboundHandler {
   public typealias OutboundOut = GRPCServerResponsePart<ResponseMessage>
 
   public func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
-    guard serverCanWrite else {
+    guard self.serverCanWrite else {
       promise?.fail(GRPCError.server(.serverNotWritable))
       return
     }
 
     // We can only write one status; make sure we don't write again.
     if case .status = unwrapOutboundIn(data) {
-      serverCanWrite = false
+      self.serverCanWrite = false
       context.writeAndFlush(data, promise: promise)
     } else {
       context.write(data, promise: promise)

@@ -17,6 +17,7 @@ import Foundation
 import SwiftProtobuf
 import NIO
 import NIOHTTP1
+import Logging
 
 /// Abstract base class exposing a method to send multiple messages over the wire and a promise for the final RPC status.
 ///
@@ -29,9 +30,9 @@ open class StreamingResponseCallContext<ResponseMessage: Message>: ServerCallCon
 
   public let statusPromise: EventLoopPromise<GRPCStatus>
 
-  public override init(eventLoop: EventLoop, request: HTTPRequestHead) {
+  public override init(eventLoop: EventLoop, request: HTTPRequestHead, logger: Logger) {
     self.statusPromise = eventLoop.makePromise()
-    super.init(eventLoop: eventLoop, request: request)
+    super.init(eventLoop: eventLoop, request: request, logger: logger)
   }
 
   open func sendResponse(_ message: ResponseMessage) -> EventLoopFuture<Void> {
@@ -50,10 +51,10 @@ open class StreamingResponseCallContextImpl<ResponseMessage: Message>: Streaming
   ///     sending them to the client.
   ///
   ///     Note: `errorDelegate` is not called for status promise that are `succeeded` with a non-OK status.
-  public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?) {
+  public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, logger: Logger) {
     self.channel = channel
 
-    super.init(eventLoop: channel.eventLoop, request: request)
+    super.init(eventLoop: channel.eventLoop, request: request, logger: logger)
 
     statusPromise.futureResult
       // Ensure that any error provided can be transformed to `GRPCStatus`, using "internal server error" as a fallback.

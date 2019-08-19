@@ -17,6 +17,7 @@ import Foundation
 import SwiftProtobuf
 import NIO
 import NIOHTTP1
+import Logging
 
 /// Handles unary calls. Calls the observer block with the request message.
 ///
@@ -29,9 +30,15 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
 
   private var callContext: UnaryResponseCallContext<ResponseMessage>?
 
-  public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, eventObserverFactory: (UnaryResponseCallContext<ResponseMessage>) -> EventObserver) {
-    super.init(errorDelegate: errorDelegate)
-    let callContext = UnaryResponseCallContextImpl<ResponseMessage>(channel: channel, request: request, errorDelegate: errorDelegate)
+  public init(callHandlerContext: CallHandlerContext, eventObserverFactory: (UnaryResponseCallContext<ResponseMessage>) -> EventObserver) {
+    super.init(callHandlerContext: callHandlerContext)
+    let callContext = UnaryResponseCallContextImpl<ResponseMessage>(
+      channel: self.callHandlerContext.channel,
+      request: self.callHandlerContext.request,
+      errorDelegate: self.callHandlerContext.errorDelegate,
+      logger: self.callHandlerContext.logger
+    )
+
     self.callContext = callContext
     self.eventObserver = eventObserverFactory(callContext)
     callContext.responsePromise.futureResult.whenComplete { _ in
@@ -44,6 +51,7 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
   public override func processMessage(_ message: RequestMessage) throws {
     guard let eventObserver = self.eventObserver,
       let context = self.callContext else {
+      self.logger.error("processMessage(_:) called before the call started or after the call completed")
       throw GRPCError.server(.tooManyRequests)
     }
 

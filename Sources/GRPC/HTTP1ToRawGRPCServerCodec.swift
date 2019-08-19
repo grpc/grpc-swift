@@ -44,12 +44,28 @@ public enum RawGRPCServerResponsePart {
 ///
 /// The translation from HTTP2 to HTTP1 is done by `HTTP2ToHTTP1ServerCodec`.
 public final class HTTP1ToRawGRPCServerCodec {
-  public init() {}
+  public init(logger: Logger) {
+    self.logger = logger.addingMetadata(key: MetadataKey.channelHandler, value: "HTTP1ToRawGRPCServerCodec")
+
+    var accessLog = Logger(subsystem: .serverAccess)
+    accessLog[metadataKey: MetadataKey.requestID] = logger[metadataKey: MetadataKey.requestID]
+    self.accessLog = accessLog
+
+    self.messageReader = LengthPrefixedMessageReader(
+      mode: .server,
+      compressionMechanism: .none,
+      logger: logger
+    )
+  }
 
   // 1-byte for compression flag, 4-bytes for message length.
   private let protobufMetadataSize = 5
 
   private var contentType: ContentType?
+
+  private let logger: Logger
+  private let accessLog: Logger
+  private var stopwatch: Stopwatch?
 
   // The following buffers use force unwrapping explicitly. With optionals, developers
   // are encouraged to unwrap them using guard-else statements. These don't work cleanly
@@ -67,15 +83,21 @@ public final class HTTP1ToRawGRPCServerCodec {
   private var requestTextBuffer: NIO.ByteBuffer!
   private var responseTextBuffer: NIO.ByteBuffer!
 
-  var inboundState = InboundState.expectingHeaders
-  var outboundState = OutboundState.expectingHeaders
+  var inboundState = InboundState.expectingHeaders {
+    willSet {
+      guard newValue != self.inboundState else { return }
+      self.logger.info("inbound state changed from \(self.inboundState) to \(newValue)")
+    }
+  }
+  var outboundState = OutboundState.expectingHeaders {
+    willSet {
+      guard newValue != self.outboundState else { return }
+      self.logger.info("outbound state changed from \(self.outboundState) to \(newValue)")
+    }
+  }
 
   var messageWriter = LengthPrefixedMessageWriter()
-  var messageReader = LengthPrefixedMessageReader(
-    mode: .server,
-    compressionMechanism: .none,
-    logger: Logger(subsystem: .messageReader)
-  )
+  var messageReader: LengthPrefixedMessageReader
 }
 
 extension HTTP1ToRawGRPCServerCodec {
@@ -108,7 +130,10 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
   public typealias InboundOut = RawGRPCServerRequestPart
 
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
-    if case .ignore = inboundState { return }
+    if case .ignore = inboundState {
+      self.logger.notice("ignoring read data: \(data)")
+      return
+    }
 
     do {
       switch self.unwrapInboundIn(data) {
@@ -128,18 +153,28 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
   }
 
   func processHead(context: ChannelHandlerContext, requestHead: HTTPRequestHead) throws -> InboundState {
+    self.logger.debug("processing request head", metadata: ["head": "\(requestHead)"])
     guard case .expectingHeaders = inboundState else {
+      self.logger.error("invalid state '\(inboundState)' while processing request head", metadata: ["head": "\(requestHead)"])
       throw GRPCError.server(.invalidState("expecteded state .expectingHeaders, got \(inboundState)"))
     }
 
+    self.stopwatch = .start()
+    self.accessLog.info("rpc call started", metadata: [
+      "path": "\(requestHead.uri)",
+      "method": "\(requestHead.method)",
+      "version": "\(requestHead.version)"
+    ])
+
     if let contentTypeHeader = requestHead.headers["content-type"].first {
-      contentType = ContentType(rawValue: contentTypeHeader)
+      self.contentType = ContentType(rawValue: contentTypeHeader)
     } else {
+      self.logger.debug("no 'content-type' header, assuming content type is 'application/grpc'")
       // If the Content-Type is not present, assume the request is binary encoded gRPC.
-      contentType = .binary
+      self.contentType = .binary
     }
 
-    if contentType == .text {
+    if self.contentType == .text {
       requestTextBuffer = context.channel.allocator.buffer(capacity: 0)
     }
 
@@ -148,7 +183,9 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
   }
 
   func processBody(context: ChannelHandlerContext, body: inout ByteBuffer) throws -> InboundState {
+    self.logger.debug("processing body: \(body)")
     guard case .expectingBody = inboundState else {
+      self.logger.error("invalid state '\(inboundState)' while processing body", metadata: ["body": "\(body)"])
       throw GRPCError.server(.invalidState("expecteded state .expectingBody, got \(inboundState)"))
     }
 
@@ -156,7 +193,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
     // it to the binary buffer. If the request is chunked, this section will process the text
     // in the biggest chunk that is multiple of 4, leaving the unread bytes in the textBuffer
     // where it will expect a new incoming chunk.
-    if contentType == .text {
+    if self.contentType == .text {
       precondition(requestTextBuffer != nil)
       requestTextBuffer.writeBuffer(&body)
 
@@ -179,7 +216,9 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
   }
 
   private func processEnd(context: ChannelHandlerContext, trailers: HTTPHeaders?) throws -> InboundState {
+    self.logger.debug("processing end")
     if let trailers = trailers {
+      self.logger.error("unexpected trailers when processing stream end", metadata: ["trailers": "\(trailers)"])
       throw GRPCError.server(.invalidState("unexpected trailers received \(trailers)"))
     }
 
@@ -193,29 +232,39 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
   public typealias OutboundOut = HTTPServerResponsePart
 
   public func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
-    if case .ignore = outboundState { return }
+    if case .ignore = self.outboundState {
+      self.logger.notice("ignoring written data: \(data)")
+      promise?.fail(GRPCServerError.serverNotWritable)
+      return
+    }
 
     switch self.unwrapOutboundIn(data) {
     case .headers(var headers):
-      guard case .expectingHeaders = outboundState else { return }
+      guard case .expectingHeaders = self.outboundState else {
+        self.logger.error("invalid state '\(self.outboundState)' while writing headers", metadata: ["headers": "\(headers)"])
+        return
+      }
 
       var version = HTTPVersion(major: 2, minor: 0)
-      if let contentType = contentType {
+      if let contentType = self.contentType {
         headers.add(name: "content-type", value: contentType.rawValue)
         if contentType != .binary {
           version = .init(major: 1, minor: 1)
         }
       }
 
-      if contentType == .text {
+      if self.contentType == .text {
         responseTextBuffer = context.channel.allocator.buffer(capacity: 0)
       }
 
       context.write(self.wrapOutboundOut(.head(HTTPResponseHead(version: version, status: .ok, headers: headers))), promise: promise)
-      outboundState = .expectingBodyOrStatus
+      self.outboundState = .expectingBodyOrStatus
 
     case .message(let messageBytes):
-      guard case .expectingBodyOrStatus = outboundState else { return }
+      guard case .expectingBodyOrStatus = self.outboundState else {
+        self.logger.error("invalid state '\(self.outboundState)' while writing message", metadata: ["message": "\(messageBytes)"])
+        return
+      }
 
       if contentType == .text {
         precondition(self.responseTextBuffer != nil)
@@ -233,13 +282,13 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
         messageWriter.write(messageBytes, into: &responseBuffer, usingCompression: .none)
         context.write(self.wrapOutboundOut(.body(.byteBuffer(responseBuffer))), promise: promise)
       }
-      outboundState = .expectingBodyOrStatus
+      self.outboundState = .expectingBodyOrStatus
 
     case .status(let status):
       // If we error before sending the initial headers (e.g. unimplemented method) then we won't have sent the request head.
       // NIOHTTP2 doesn't support sending a single frame as a "Trailers-Only" response so we still need to loop back and
       // send the request head first.
-      if case .expectingHeaders = outboundState {
+      if case .expectingHeaders = self.outboundState {
         self.write(context: context, data: NIOAny(RawGRPCServerResponsePart.headers(HTTPHeaders())), promise: nil)
       }
 
@@ -277,8 +326,19 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
         context.write(self.wrapOutboundOut(.end(trailers)), promise: promise)
       }
 
-      outboundState = .ignore
-      inboundState = .ignore
+      // Log the call duration and status
+      if let stopwatch = self.stopwatch {
+        self.stopwatch = nil
+        let millis = stopwatch.elapsedMillis()
+
+        self.accessLog.info("rpc call finished", metadata: [
+          "duration_ms": "\(millis)",
+          "status_code": "\(status.code.rawValue)"
+        ])
+      }
+
+      self.outboundState = .ignore
+      self.inboundState = .ignore
     }
   }
 }

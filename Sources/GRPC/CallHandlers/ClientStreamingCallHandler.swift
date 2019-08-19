@@ -17,6 +17,7 @@ import Foundation
 import SwiftProtobuf
 import NIO
 import NIOHTTP1
+import Logging
 
 /// For calls which support client streaming we need to delay the creation of the event observer
 /// until the handler has been added to the pipeline.
@@ -37,21 +38,31 @@ public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage
   public typealias EventObserver = (StreamEvent<RequestMessage>) -> Void
   public typealias EventObserverFactory = (Context) -> EventLoopFuture<EventObserver>
 
-  private var observerState: ClientStreamingHandlerObserverState<EventObserverFactory, EventObserver>
+  private var observerState: ClientStreamingHandlerObserverState<EventObserverFactory, EventObserver> {
+    willSet(newState) {
+      self.logger.info("observerState changed from \(self.observerState) to \(newState)")
+    }
+  }
   private var callContext: UnaryResponseCallContext<ResponseMessage>?
 
   // We ask for a future of type `EventObserver` to allow the framework user to e.g. asynchronously authenticate a call.
   // If authentication fails, they can simply fail the observer future, which causes the call to be terminated.
-  public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, eventObserverFactory: @escaping EventObserverFactory) {
+  public init(callHandlerContext: CallHandlerContext, eventObserverFactory: @escaping EventObserverFactory) {
     // Delay the creation of the event observer until `handlerAdded(context:)`, otherwise it is
     // possible for the service to write into the pipeline (by fulfilling the response promise
     // of the call context outside of the observer) before it has been configured.
     self.observerState = .pendingCreation(eventObserverFactory)
 
-    let callContext = UnaryResponseCallContextImpl<ResponseMessage>(channel: channel, request: request, errorDelegate: errorDelegate)
-    self.callContext = callContext
+    super.init(callHandlerContext: callHandlerContext)
 
-    super.init(errorDelegate: errorDelegate)
+    let callContext = UnaryResponseCallContextImpl<ResponseMessage>(
+      channel: self.callHandlerContext.channel,
+      request: self.callHandlerContext.request,
+      errorDelegate: self.callHandlerContext.errorDelegate,
+      logger: self.callHandlerContext.logger
+    )
+
+    self.callContext = callContext
 
     callContext.responsePromise.futureResult.whenComplete { _ in
       // When done, reset references to avoid retain cycles.
@@ -63,6 +74,7 @@ public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage
   public override func handlerAdded(context: ChannelHandlerContext) {
     guard let callContext = self.callContext,
       case let .pendingCreation(factory) = self.observerState else {
+      self.logger.warning("handlerAdded(context:) called but handler already has a call context")
       return
     }
 
@@ -77,14 +89,20 @@ public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage
   }
 
   public override func processMessage(_ message: RequestMessage) {
-    guard case .created(let eventObserver) = self.observerState else { return }
+    guard case .created(let eventObserver) = self.observerState else {
+      self.logger.warning("expecting observerState to be .created but was \(self.observerState), ignoring message \(message)")
+      return
+    }
     eventObserver.whenSuccess { observer in
       observer(.message(message))
     }
   }
 
   public override func endOfStreamReceived() throws {
-    guard case .created(let eventObserver) = self.observerState else { return }
+    guard case .created(let eventObserver) = self.observerState else {
+      self.logger.warning("expecting observerState to be .created but was \(self.observerState), ignoring end-of-stream call")
+      return
+    }
     eventObserver.whenSuccess { observer in
       observer(.end)
     }

@@ -17,6 +17,7 @@ import Foundation
 import SwiftProtobuf
 import NIO
 import NIOHTTP1
+import Logging
 
 /// Handles server-streaming calls. Calls the observer block with the request message.
 ///
@@ -28,9 +29,15 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
 
   private var callContext: StreamingResponseCallContext<ResponseMessage>?
 
-  public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, eventObserverFactory: (StreamingResponseCallContext<ResponseMessage>) -> EventObserver) {
-    super.init(errorDelegate: errorDelegate)
-    let callContext = StreamingResponseCallContextImpl<ResponseMessage>(channel: channel, request: request, errorDelegate: errorDelegate)
+  public init(callHandlerContext: CallHandlerContext, eventObserverFactory: (StreamingResponseCallContext<ResponseMessage>) -> EventObserver) {
+    super.init(callHandlerContext: callHandlerContext)
+    let callContext = StreamingResponseCallContextImpl<ResponseMessage>(
+      channel: self.callHandlerContext.channel,
+      request: self.callHandlerContext.request,
+      errorDelegate: self.callHandlerContext.errorDelegate,
+      logger: self.callHandlerContext.logger
+    )
+
     self.callContext = callContext
     self.eventObserver = eventObserverFactory(callContext)
     callContext.statusPromise.futureResult.whenComplete { _ in
@@ -43,6 +50,7 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
   public override func processMessage(_ message: RequestMessage) throws {
     guard let eventObserver = self.eventObserver,
       let callContext = self.callContext else {
+        self.logger.error("processMessage(_:) called before the call started or after the call completed")
         throw GRPCError.server(.tooManyRequests)
     }
 

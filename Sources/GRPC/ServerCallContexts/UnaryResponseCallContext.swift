@@ -17,6 +17,7 @@ import Foundation
 import SwiftProtobuf
 import NIO
 import NIOHTTP1
+import Logging
 
 /// Abstract base class exposing a method that exposes a promise for the RPC response.
 ///
@@ -33,9 +34,9 @@ open class UnaryResponseCallContext<ResponseMessage: Message>: ServerCallContext
   public let responsePromise: EventLoopPromise<ResponseMessage>
   public var responseStatus: GRPCStatus = .ok
 
-  public override init(eventLoop: EventLoop, request: HTTPRequestHead) {
+  public override init(eventLoop: EventLoop, request: HTTPRequestHead, logger: Logger) {
     self.responsePromise = eventLoop.makePromise()
-    super.init(eventLoop: eventLoop, request: request)
+    super.init(eventLoop: eventLoop, request: request, logger: logger)
   }
 }
 
@@ -61,10 +62,10 @@ open class UnaryResponseCallContextImpl<ResponseMessage: Message>: UnaryResponse
   ///   - request: The headers provided with this call.
   ///   - errorDelegate: Provides a means for transforming response promise failures to `GRPCStatusTransformable` before
   ///     sending them to the client.
-  public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?) {
+  public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, logger: Logger) {
     self.channel = channel
 
-    super.init(eventLoop: channel.eventLoop, request: request)
+    super.init(eventLoop: channel.eventLoop, request: request, logger: logger)
 
     responsePromise.futureResult
       // Send the response provided to the promise.
