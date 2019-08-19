@@ -48,12 +48,14 @@ generate-linuxmain:
 
 # Generates protobufs and gRPC client and server for the Echo example
 generate-echo: plugins
-	protoc Sources/Examples/Echo/echo.proto \
-		--proto_path=Sources/Examples/Echo \
+	protoc Sources/Examples/Echo/Model/echo.proto \
+		--proto_path=Sources/Examples/Echo/Model \
 		--plugin=${SWIFT_BUILD_PATH}/${SWIFT_BUILD_CONFIGURATION}/protoc-gen-swift \
 		--plugin=${SWIFT_BUILD_PATH}/${SWIFT_BUILD_CONFIGURATION}/protoc-gen-swiftgrpc \
-		--swift_out=Sources/Examples/Echo/Generated \
-		--swiftgrpc_out=Sources/Examples/Echo/Generated
+		--swift_opt=Visibility=Public \
+		--swift_out=Sources/Examples/Echo/Model/Generated \
+		--swiftgrpc_opt=Visibility=Public \
+		--swiftgrpc_out=Sources/Examples/Echo/Model/Generated
 
 ### Testing ####################################################################
 
@@ -68,12 +70,13 @@ test-generate-linuxmain: generate-linuxmain
 
 # Generates code for the Echo server and client and tests them against 'golden' data.
 test-plugin: plugins
-	protoc Sources/Examples/Echo/echo.proto \
-		--proto_path=Sources/Examples/Echo \
+	protoc Sources/Examples/Echo/Model/echo.proto \
+		--proto_path=Sources/Examples/Echo/Model \
 		--plugin=${SWIFT_BUILD_PATH}/${SWIFT_BUILD_CONFIGURATION}/protoc-gen-swift \
 		--plugin=${SWIFT_BUILD_PATH}/${SWIFT_BUILD_CONFIGURATION}/protoc-gen-swiftgrpc \
+		--swiftgrpc_opt=Visibility=Public \
 		--swiftgrpc_out=/tmp
-	diff -u /tmp/echo.grpc.swift Sources/Examples/Echo/Generated/echo.grpc.swift
+	diff -u /tmp/echo.grpc.swift Sources/Examples/Echo/Model/Generated/echo.grpc.swift
 
 ### Misc. ######################################################################
 

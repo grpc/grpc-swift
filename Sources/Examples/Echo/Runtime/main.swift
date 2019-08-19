@@ -20,6 +20,8 @@ import NIO
 import NIOSSL
 import GRPC
 import GRPCSampleData
+import EchoImplementation
+import EchoModel
 
 // Common flags and options
 let sslFlag = Flag("ssl", description: "if true, use SSL for connections")
