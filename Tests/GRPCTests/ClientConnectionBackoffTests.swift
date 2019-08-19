@@ -153,7 +153,7 @@ class ClientConnectionBackoffTests: GRPCTestCase {
     self.client = ClientConnection(configuration: self.makeClientConfiguration())
 
     self.wait(for: [transientFailure], timeout: 1.0)
-    self.stateDelegate.transientFailureExpectation = nil
+    self.stateDelegate.expectations[.transientFailure] = nil
     XCTAssertEqual(self.stateDelegate.clearStates(), [.connecting, .transientFailure])
 
     self.server = self.makeServer()
