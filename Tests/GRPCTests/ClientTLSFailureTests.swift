@@ -58,7 +58,9 @@ class ClientTLSFailureTests: GRPCTestCase {
     return .init(
       target: .hostAndPort("localhost", self.port),
       eventLoopGroup: self.clientEventLoopGroup,
-      tls: tls
+      tls: tls,
+      // No need to retry connecting.
+      connectionBackoff: nil
     )
   }
 
