@@ -28,16 +28,19 @@
 cd
 mkdir -p local
 
+SWIFT_VERSION=5.0.2
+PROTOBUF_VERSION=3.9.1
+
 if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-  PROTOC_URL=https://github.com/google/protobuf/releases/download/v3.5.1/protoc-3.5.1-osx-x86_64.zip
+  PROTOC_URL=https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-osx-x86_64.zip
 else
   # Install swift
-  SWIFT_URL=https://swift.org/builds/swift-5.0-release/ubuntu1404/swift-5.0-RELEASE/swift-5.0-RELEASE-ubuntu14.04.tar.gz
+  SWIFT_URL=https://swift.org/builds/swift-${SWIFT_VERSION}-release/ubuntu1804/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu18.04.tar.gz
   echo $SWIFT_URL
   curl -fSsL $SWIFT_URL -o swift.tar.gz
   tar -xzf swift.tar.gz --strip-components=2 --directory=local
 
-  PROTOC_URL=https://github.com/google/protobuf/releases/download/v3.5.1/protoc-3.5.1-linux-x86_64.zip
+  PROTOC_URL=https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip
 fi
 
 # Install protoc

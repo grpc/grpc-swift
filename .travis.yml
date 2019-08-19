@@ -25,10 +25,10 @@ cache:
     - .build/checkouts
     - .build/repositories
 
-# Use Ubuntu 14.04
-dist: trusty
+# Use Ubuntu 18.04
+dist: bionic
 
-osx_image: xcode10.2
+osx_image: xcode10.3
 
 sudo: false
 
