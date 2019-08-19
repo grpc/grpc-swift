@@ -21,7 +21,7 @@ let package = Package(
   name: "GRPC",
   products: [
     .library(name: "GRPC", targets: ["GRPC"]),
-    .executable(name: "InteroperabilityTestRunner", targets: ["GRPCInteroperabilityTestsCLI"]),
+    .executable(name: "InteroperabilityTestRunner", targets: ["GRPCInteroperabilityTests"]),
     .executable(name: "PerformanceTestRunner", targets: ["GRPCPerformanceTests"]),
     .executable(name: "Echo", targets: ["Echo"]),
   ],
@@ -66,7 +66,7 @@ let package = Package(
       dependencies: [
         "GRPC",
         "GRPCSampleData",
-        "GRPCInteroperabilityTests"
+        "GRPCInteroperabilityTestsImplementation"
       ]
     ),
 
@@ -80,23 +80,36 @@ let package = Package(
       ]
     ),
 
-    // Interoperability tests, this target doesn't contain the CLI as the
-    // interoperability tests are reused in the main test suite.
+    // Interoperability tests implementation.
     .target(
-      name: "GRPCInteroperabilityTests",
-      dependencies: ["GRPC"]
+      name: "GRPCInteroperabilityTestsImplementation",
+      dependencies: [
+        "GRPC",
+        "GRPCInteroperabilityTestModels"
+      ]
+    ),
+
+    // Generated interoperability test models.
+    .target(
+      name: "GRPCInteroperabilityTestModels",
+      dependencies: [
+        "GRPC",
+        "NIO",
+        "NIOHTTP1",
+        "SwiftProtobuf"
+      ]
     ),
 
     // The CLI for the interoperability tests.
     .target(
-      name: "GRPCInteroperabilityTestsCLI",
+      name: "GRPCInteroperabilityTests",
       dependencies: [
-        "GRPCInteroperabilityTests",
+        "GRPCInteroperabilityTestsImplementation",
         "Commander"
       ]
     ),
 
-    // Performance tests and CLI.
+    // Performance tests implementation and CLI.
     .target(
       name: "GRPCPerformanceTests",
       dependencies: [

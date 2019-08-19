@@ -16,6 +16,7 @@
 import Foundation
 import SwiftProtobuf
 import NIOHTTP1
+import GRPCInteroperabilityTestModels
 
 // MARK: - Payload creation
 extension Grpc_Testing_Payload {
@@ -35,8 +36,10 @@ extension Grpc_Testing_Payload {
 // MARK: - Echo status creation
 extension Grpc_Testing_EchoStatus {
   init(code: Int32, message: String) {
-    self.code = code
-    self.message = message
+    self = .with {
+      $0.code = code
+      $0.message = message
+    }
   }
 }
 

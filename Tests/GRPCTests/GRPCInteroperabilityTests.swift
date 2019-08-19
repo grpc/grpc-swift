@@ -15,7 +15,7 @@
  */
 import Foundation
 import GRPC
-import GRPCInteroperabilityTests
+import GRPCInteroperabilityTestsImplementation
 import NIO
 import XCTest
 
