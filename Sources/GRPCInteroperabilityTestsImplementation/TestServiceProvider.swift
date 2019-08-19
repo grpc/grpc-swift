@@ -15,6 +15,7 @@
  */
 import Foundation
 import GRPC
+import GRPCInteroperabilityTestModels
 import NIO
 
 /// A service prodiver for the gRPC interoperaability test suite.

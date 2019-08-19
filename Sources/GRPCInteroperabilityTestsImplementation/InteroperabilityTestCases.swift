@@ -15,6 +15,7 @@
  */
 import Foundation
 import GRPC
+import GRPCInteroperabilityTestModels
 import NIOHTTP1
 
 /// This test verifies that implementations support zero-size messages. Ideally, client

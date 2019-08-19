@@ -17,7 +17,7 @@ import Foundation
 import GRPC
 import NIO
 import NIOSSL
-import GRPCInteroperabilityTests
+import GRPCInteroperabilityTestsImplementation
 import Commander
 
 enum InteroperabilityTestError: LocalizedError {
