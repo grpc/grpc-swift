@@ -28,7 +28,7 @@ public struct InteroperabilityTestCredentials {
 
   /// Self signed gRPC interoperability test CA certificate.
   public static let caCertificate = try! NIOSSLCertificate(
-    buffer: Array(caCertificatePem.utf8CString),
+    bytes: .init(caCertificatePem.utf8),
     format: .pem)
 
   /// gRPC interoperability test server certificate.
@@ -36,7 +36,7 @@ public struct InteroperabilityTestCredentials {
   /// Note: the specification refers to the certificate and key as "server1", this name is carried
   /// across here.
   public static let server1Certificate = try! NIOSSLCertificate(
-    buffer: Array(server1CertificatePem.utf8CString),
+    bytes: .init(server1CertificatePem.utf8),
     format: .pem)
 
   /// gRPC interoperability test server private key.
@@ -44,7 +44,7 @@ public struct InteroperabilityTestCredentials {
   /// Note: the specification refers to the certificate and key as "server1", this name is carried
   /// across here.
   public static let server1Key = try! NIOSSLPrivateKey(
-    buffer: Array(server1KeyPem.utf8CString),
+    bytes: .init(server1KeyPem.utf8),
     format: .pem)
 
   private static let caCertificatePem = """

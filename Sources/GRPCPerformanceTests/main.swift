@@ -217,7 +217,7 @@ func measure(description: String, benchmark: Benchmark, repeats: Int) -> Benchma
 /// - Parameter certificatePath: The path to the certificate.
 /// - Parameter privateKeyPath: The path to the private key.
 /// - Parameter server: Whether this is for the server or not.
-private func makeServerTLSConfiguration(caCertificatePath: String, certificatePath: String, privateKeyPath: String) -> Server.Configuration.TLS? {
+private func makeServerTLSConfiguration(caCertificatePath: String, certificatePath: String, privateKeyPath: String) throws -> Server.Configuration.TLS? {
   // Commander doesn't have Optional options; we use empty strings to indicate no value.
   guard certificatePath.isEmpty == privateKeyPath.isEmpty &&
     privateKeyPath.isEmpty == caCertificatePath.isEmpty else {
@@ -231,7 +231,7 @@ private func makeServerTLSConfiguration(caCertificatePath: String, certificatePa
   }
 
   return .init(
-    certificateChain: [.file(certificatePath)],
+    certificateChain: try NIOSSLCertificate.fromPEMFile(certificatePath).map { .certificate($0) },
     privateKey: .file(privateKeyPath),
     trustRoots: .file(caCertificatePath)
   )
@@ -241,7 +241,7 @@ private func makeClientTLSConfiguration(
   caCertificatePath: String,
   certificatePath: String,
   privateKeyPath: String
-) -> ClientConnection.Configuration.TLS? {
+) throws -> ClientConnection.Configuration.TLS? {
   // Commander doesn't have Optional options; we use empty strings to indicate no value.
   guard certificatePath.isEmpty == privateKeyPath.isEmpty &&
     privateKeyPath.isEmpty == caCertificatePath.isEmpty else {
@@ -255,7 +255,7 @@ private func makeClientTLSConfiguration(
   }
 
   return .init(
-    certificateChain: [.file(certificatePath)],
+    certificateChain: try NIOSSLCertificate.fromPEMFile(certificatePath).map { .certificate($0) },
     privateKey: .file(privateKeyPath),
     trustRoots: .file(caCertificatePath)
   )
@@ -363,7 +363,7 @@ Group { group in
     privateKeyOption,
     hostOverrideOption
   ) { benchmarkNames, host, port, caCertificatePath, certificatePath, privateKeyPath, hostOverride in
-    let tlsConfiguration = makeClientTLSConfiguration(
+    let tlsConfiguration = try makeClientTLSConfiguration(
       caCertificatePath: caCertificatePath,
       certificatePath: certificatePath,
       privateKeyPath: privateKeyPath)
@@ -402,7 +402,7 @@ Group { group in
   ) { host, port, caCertificatePath, certificatePath, privateKeyPath in
     let group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
 
-    let tlsConfiguration = makeServerTLSConfiguration(
+    let tlsConfiguration = try makeServerTLSConfiguration(
       caCertificatePath: caCertificatePath,
       certificatePath: certificatePath,
       privateKeyPath: privateKeyPath)

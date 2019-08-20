@@ -23,26 +23,26 @@ public struct SampleCertificate {
   public var notAfter: Date
 
   public static let ca = SampleCertificate(
-    certificate: try! NIOSSLCertificate(buffer: Array(caCert.utf8CString), format: .pem),
+    certificate: try! NIOSSLCertificate(bytes: .init(caCert.utf8), format: .pem),
     commonName: "foo",
     // 22/07/2024 16:32:23
     notAfter: Date(timeIntervalSince1970: 1721662343.0))
 
   public static let server = SampleCertificate(
-    certificate: try! NIOSSLCertificate(buffer: Array(serverCert.utf8CString), format: .pem),
+    certificate: try! NIOSSLCertificate(bytes: .init(serverCert.utf8), format: .pem),
     commonName: "localhost",
     // 22/07/2024 16:32:23
     notAfter: Date(timeIntervalSince1970: 1721662343.0))
 
   public static let exampleServer = SampleCertificate(
-    certificate: try! NIOSSLCertificate(buffer: Array(exampleServerCert.utf8CString), format: .pem),
+    certificate: try! NIOSSLCertificate(bytes: .init(exampleServerCert.utf8), format: .pem),
     commonName: "example.com",
     // 22/07/2024 16:43:12
     notAfter: Date(timeIntervalSince1970: 1721662992.0)
   )
 
   public static let client = SampleCertificate(
-    certificate: try! NIOSSLCertificate(buffer: Array(clientCert.utf8CString), format: .pem),
+    certificate: try! NIOSSLCertificate(bytes: .init(clientCert.utf8), format: .pem),
     commonName: "localhost",
     // 22/07/2024 16:32:23
     notAfter: Date(timeIntervalSince1970: 1721662343.0))
@@ -59,9 +59,9 @@ extension SampleCertificate {
 public struct SamplePrivateKey {
   private init() { }
 
-  public static let server = try! NIOSSLPrivateKey(buffer: Array(serverKey.utf8CString), format: .pem)
-  public static let exampleServer = try! NIOSSLPrivateKey(buffer: Array(exampleServerKey.utf8CString), format: .pem)
-  public static let client = try! NIOSSLPrivateKey(buffer: Array(clientKey.utf8CString), format: .pem)
+  public static let server = try! NIOSSLPrivateKey(bytes: .init(serverKey.utf8), format: .pem)
+  public static let exampleServer = try! NIOSSLPrivateKey(bytes: .init(exampleServerKey.utf8), format: .pem)
+  public static let client = try! NIOSSLPrivateKey(bytes: .init(clientKey.utf8), format: .pem)
 }
 
 // MARK: - Certificates and private keys
