@@ -25,25 +25,17 @@ cache:
     - .build/checkouts
     - .build/repositories
 
-# Use Ubuntu 14.04
-dist: trusty
+# Use Ubuntu 18.04
+dist: bionic
 
-osx_image: xcode10.2
+osx_image: xcode10.3
 
 sudo: false
 
 addons:
   apt:
     packages:
-      - clang-3.8
-      - lldb-3.8
-      - libicu-dev
-      - libtool
-      - libcurl4-openssl-dev
-      - libbsd-dev
       - build-essential
-      - libssl-dev
-      - uuid-dev
       - curl
       - unzip
 
