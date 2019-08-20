@@ -208,6 +208,7 @@ extension ClientConnection {
       return
     }
 
+    // If we get a channel and it closes then create a new one, if necessary.
     channel.flatMap { $0.closeFuture }.whenComplete { result in
       switch result {
       case .success:
@@ -219,7 +220,13 @@ extension ClientConnection {
         )
       }
 
-      guard self.connectivity.canAttemptReconnect else { return }
+      guard self.connectivity.canAttemptReconnect else {
+        return
+      }
+
+      // Something went wrong, but we'll try to fix it so let's update our state to reflect that.
+      self.connectivity.state = .transientFailure
+
       self.logger.debug("client connection channel closed, creating a new one")
       self.channel = ClientConnection.makeChannel(
         configuration: self.configuration,
@@ -260,6 +267,10 @@ extension ClientConnection {
     backoffIterator: ConnectionBackoffIterator?,
     logger: Logger
   ) -> EventLoopFuture<Channel> {
+    guard connectivity.state == .idle || connectivity.state == .transientFailure else {
+      return configuration.eventLoopGroup.next().makeFailedFuture(GRPCStatus.processingError)
+    }
+
     logger.info("attempting to connect to \(configuration.target)")
     connectivity.state = .connecting
     let timeoutAndBackoff = backoffIterator?.next()

@@ -110,6 +110,7 @@ open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
     }
 
     self.createStreamChannel()
+    self.responseHandler.scheduleTimeout(eventLoop: connection.eventLoop)
   }
 
   /// Creates and configures an HTTP/2 stream channel. The `self.subchannel` future will hold the

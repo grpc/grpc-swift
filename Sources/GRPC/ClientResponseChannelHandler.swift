@@ -35,6 +35,8 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
   internal var timeoutTask: Scheduled<Void>?
   internal let errorDelegate: ClientErrorDelegate?
 
+  internal var context: ChannelHandlerContext?
+
   internal enum InboundState {
     case expectingHeadersOrStatus
     case expectingMessageOrStatus
@@ -112,6 +114,7 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
     }
     self.statusPromise.succeed(status)
     self.timeoutTask?.cancel()
+    self.context = nil
   }
 
   /// Observe the given error.
@@ -131,6 +134,11 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
   /// - Parameter response: The received response.
   internal func onResponse(_ response: _Box<ResponseMessage>) {
     // no-op
+  }
+
+  public func handlerAdded(context: ChannelHandlerContext) {
+    // We need to hold the context in case we timeout and need to close the pipeline.
+    self.context = context
   }
 
   /// Reads inbound data.
@@ -208,18 +216,6 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
     }
   }
 
-  public func channelActive(context: ChannelHandlerContext) {
-    if self.timeout != .infinite {
-      let timeout = self.timeout
-      self.timeoutTask = context.eventLoop.scheduleTask(in: timeout.asNIOTimeAmount) { [weak self] in
-        self?.errorCaught(
-          context: context,
-          error: GRPCError.client(.deadlineExceeded(timeout))
-        )
-      }
-    }
-  }
-
   public func channelInactive(context: ChannelHandlerContext) {
     self.inboundState = .ignore
     self.observeStatus(.init(code: .unavailable, message: nil))
@@ -230,6 +226,30 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
   public func errorCaught(context: ChannelHandlerContext, error: Error) {
     self.observeError((error as? GRPCError) ?? GRPCError.unknown(error, origin: .client))
     context.close(mode: .all, promise: nil)
+  }
+
+  /// Schedules a timeout on the given event loop if the timeout is not `.infinite`.
+  /// - Parameter eventLoop: The `eventLoop` to schedule the timeout on.
+  internal func scheduleTimeout(eventLoop: EventLoop) {
+    guard self.timeout != .infinite else {
+      return
+    }
+
+    let timeout = self.timeout
+    self.timeoutTask = eventLoop.scheduleTask(in: timeout.asNIOTimeAmount) { [weak self] in
+      self?.performTimeout(error: .client(.deadlineExceeded(timeout)))
+    }
+  }
+
+  /// Called when this call times out. Any promises which have not been fulfilled will be timed out
+  /// with status `.deadlineExceeded`. If this handler has a context associated with it then the
+  /// its channel is closed.
+  ///
+  /// - Parameter error: The error to fail any promises with.
+  internal func performTimeout(error: GRPCError) {
+    self.observeError(error)
+    self.context?.close(mode: .all, promise: nil)
+    self.context = nil
   }
 }
 
