@@ -100,8 +100,8 @@ install_bazel() {
     echo "Skipping Bazel download, using cached version"
   fi
 
-  chmod +x "$BAZEL_INSTALLER_SH"
-  "$BAZEL_INSTALLER_SH" --prefix="$HOME/local"
+  chmod +x "$DOWNLOAD_CACHE/$BAZEL_INSTALLER_SH"
+  "$DOWNLOAD_CACHE/$BAZEL_INSTALLER_SH" --prefix="$HOME/local"
 
   echo -en 'travis_fold:end:install.bazel\\r'
 }
