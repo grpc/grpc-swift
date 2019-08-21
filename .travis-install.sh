@@ -32,6 +32,8 @@ PROTOBUF_VERSION=3.9.1
 BAZEL_VERSION=0.28.1
 GRPC_VERSION=1.23.0
 
+DOWNLOAD_CACHE=download_cache
+
 # Install the protoc compiler.
 install_protoc() {
   echo -en 'travis_fold:start:install.protoc\\r'
@@ -41,9 +43,16 @@ install_protoc() {
     PROTOC_URL=https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip
   fi
 
-  echo "Downloading protoc from: $PROTOC_URL"
-  curl -fSsL $PROTOC_URL -o protoc.zip
-  unzip -q protoc.zip -d local
+  PROTOC_ZIP=protoc."$PROTOBUF_VERSION".zip
+
+  if [ ! -f "$DOWNLOAD_CACHE/$PROTOC_ZIP" ]; then
+    echo "Downloading protoc from: $PROTOC_URL"
+    curl -fSsL $PROTOC_URL -o "$DOWNLOAD_CACHE/$PROTOC_ZIP"
+  else
+    echo "Skipping protoc download, using cached version"
+  fi
+
+  unzip -q "$DOWNLOAD_CACHE/$PROTOC_ZIP" -d local
   echo -en 'travis_fold:end:install.protoc\\r'
 }
 
@@ -53,9 +62,17 @@ install_swift() {
   # Use the Swift provided by Xcode on macOS.
   if [ "$TRAVIS_OS_NAME" != "osx" ]; then
     SWIFT_URL=https://swift.org/builds/swift-${SWIFT_VERSION}-release/ubuntu1804/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu18.04.tar.gz
-    echo "Downloading swift from: $SWIFT_URL"
-    curl -fSsL $SWIFT_URL -o swift.tar.gz
-    tar -xzf swift.tar.gz --strip-components=2 --directory=local
+
+    SWIFT_TAR_GZ=swift."$SWIFT_VERSION".tar.gz
+
+    if [ ! -f "$DOWNLOAD_CACHE/$SWIFT_TAR_GZ" ]; then
+      echo "Downloading swift from: $SWIFT_URL"
+      curl -fSsL $SWIFT_URL -o "$DOWNLOAD_CACHE/$SWIFT_TAR_GZ"
+    else
+      echo "Skipping Swift download, using cached version"
+    fi
+
+    tar -xzf "$DOWNLOAD_CACHE/$SWIFT_TAR_GZ" --strip-components=2 --directory=local
   fi
   echo -en 'travis_fold:end:install.swift\\r'
 }
@@ -72,10 +89,18 @@ install_bazel() {
     BAZEL_URL=https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
   fi
 
-  echo "Downloading Bazel from: $BAZEL_URL"
-  curl -fSsL $BAZEL_URL -o bazel-installer.sh
-  chmod +x bazel-installer.sh
-  ./bazel-installer.sh --prefix="$HOME/local"
+  BAZEL_INSTALLER_SH=bazel-installer."$BAZEL_VERSION".sh
+
+  if [ ! -f "$DOWNLOAD_CACHE/$BAZEL_INSTALLER_SH" ]; then
+    echo "Downloading Bazel from: $BAZEL_URL"
+    curl -fSsL $BAZEL_URL -o "$DOWNLOAD_CACHE/$BAZEL_INSTALLER_SH"
+  else
+    echo "Skipping Bazel download, using cached version"
+  fi
+
+  chmod +x "$BAZEL_INSTALLER_SH"
+  "$BAZEL_INSTALLER_SH" --prefix="$HOME/local"
+
   echo -en 'travis_fold:end:install.bazel\\r'
 }
 
@@ -83,11 +108,20 @@ install_bazel() {
 build_grpc_cpp_server() {
   echo -en 'travis_fold:start:install.grpc_cpp_server\\r'
   GRPC_URL=https://github.com/grpc/grpc/archive/v${GRPC_VERSION}.tar.gz
+
+  GRPC_TAR_GZ=grpc."$GRPC_VERSION".tar.gz
+
+  if [ ! -f "$DOWNLOAD_CACHE/$GRPC_TAR_GZ" ]; then
+    echo "Downloading Bazel from: $BAZEL_URL"
+    curl -fSsL $GRPC_URL -o "$DOWNLOAD_CACHE/$GRPC_TAR_GZ"
+  else
+    echo "Skipping Bazel download, using cached version"
+  fi
+
   echo "Downloading gRPC from: $GRPC_URL"
 
-  curl -fSsL $GRPC_URL -o grpc.tar.gz
   mkdir grpc
-  tar -xzf grpc.tar.gz --strip-components=1 --directory=grpc
+  tar -xzf "$DOWNLOAD_CACHE/$GRPC_TAR_GZ" --strip-components=1 --directory=grpc
   (
     cd grpc
     # Build the interop_server and the reconnect_interop_server
@@ -105,6 +139,7 @@ build_grpc_cpp_server() {
 
 cd
 mkdir -p local
+mkdir -p "$DOWNLOAD_CACHE"
 
 install_protoc
 install_swift
