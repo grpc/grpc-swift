@@ -1,40 +1,87 @@
+# Which Swift to use.
+SWIFT:=swift
+# Where products will be built; this is the SPM default.
+SWIFT_BUILD_PATH:=./.build
+SWIFT_BUILD_CONFIGURATION:=debug
+SWIFT_FLAGS:=--build-path=${SWIFT_BUILD_PATH} --configuration=${SWIFT_BUILD_CONFIGURATION}
+
+SWIFT_BUILD:=${SWIFT} build ${SWIFT_FLAGS}
+SWIFT_TEST:=${SWIFT} test ${SWIFT_FLAGS}
+SWIFT_PACKAGE:=${SWIFT} package ${SWIFT_FLAGS}
+
+# Name of generated xcodeproj
+XCODEPROJ:=GRPC.xcodeproj
+
+### Package and plugin build targets ###########################################
+
 all:
-	swift build
-	cp .build/debug/protoc-gen-swift .
-	cp .build/debug/protoc-gen-swiftgrpc .
+	${SWIFT_BUILD}
 
-plugin:
-	swift build --product protoc-gen-swift -c release
-	swift build --product protoc-gen-swiftgrpc -c release
-	cp .build/release/protoc-gen-swift .
-	cp .build/release/protoc-gen-swiftgrpc .
+plugins: protoc-gen-swift protoc-gen-swiftgrpc
 
-project:
-	swift package generate-xcodeproj --output GRPC.xcodeproj
-	@-ruby fix-project-settings.rb GRPC.xcodeproj || echo "Consider running 'sudo gem install xcodeproj' to automatically set correct indentation settings for the generated project."
+protoc-gen-swift:
+	${SWIFT_BUILD} --product protoc-gen-swift
 
+protoc-gen-swiftgrpc:
+	${SWIFT_BUILD} --product protoc-gen-swiftgrpc
+
+interop-test-runner:
+	${SWIFT_BUILD} --product InteroperabilityTestRunner
+
+interop-backoff-test-runner:
+	${SWIFT_BUILD} --product ConnectionBackoffInteropTestRunner
+
+### Xcodeproj and LinuxMain
+
+project: ${XCODEPROJ}
+
+${XCODEPROJ}:
+	${SWIFT_PACKAGE} generate-xcodeproj --output $@
+	@-ruby fix-project-settings.rb GRPC.xcodeproj || \
+		echo "Consider running 'sudo gem install xcodeproj' to automatically set correct indentation settings for the generated project."
+
+# Generates LinuxMain.swift, only on macOS.
+generate-linuxmain:
+	${SWIFT_TEST} --generate-linuxmain
+
+### Protobuf Generation ########################################################
+
+# Generates protobufs and gRPC client and server for the Echo example
+generate-echo: plugins
+	protoc Sources/Examples/Echo/echo.proto \
+		--proto_path=Sources/Examples/Echo \
+		--plugin=${SWIFT_BUILD_PATH}/${SWIFT_BUILD_CONFIGURATION}/protoc-gen-swift \
+		--plugin=${SWIFT_BUILD_PATH}/${SWIFT_BUILD_CONFIGURATION}/protoc-gen-swiftgrpc \
+		--swift_out=Sources/Examples/Echo/Generated \
+		--swiftgrpc_out=Sources/Examples/Echo/Generated
+
+### Testing ####################################################################
+
+# Normal test suite.
 test:
-	swift test
+	${SWIFT_TEST}
 
-test-plugin:
-	swift build --product protoc-gen-swiftgrpc
-	protoc Sources/Examples/Echo/echo.proto --proto_path=Sources/Examples/Echo --plugin=.build/debug/protoc-gen-swift --plugin=.build/debug/protoc-gen-swiftgrpc --swiftgrpc_out=/tmp
+# Checks that linuxmain has been updated: requires macOS.
+test-generate-linuxmain: generate-linuxmain
+	@git diff --exit-code Tests/LinuxMain.swift Tests/*/XCTestManifests.swift > /dev/null || \
+		{ echo "Generated tests are out-of-date; run 'swift test --generate-linuxmain' to update them!"; exit 1; }
+
+# Generates code for the Echo server and client and tests them against 'golden' data.
+test-plugin: plugins
+	protoc Sources/Examples/Echo/echo.proto \
+		--proto_path=Sources/Examples/Echo \
+		--plugin=${SWIFT_BUILD_PATH}/${SWIFT_BUILD_CONFIGURATION}/protoc-gen-swift \
+		--plugin=${SWIFT_BUILD_PATH}/${SWIFT_BUILD_CONFIGURATION}/protoc-gen-swiftgrpc \
+		--swiftgrpc_out=/tmp
 	diff -u /tmp/echo.grpc.swift Sources/Examples/Echo/Generated/echo.grpc.swift
 
-test-generate-linuxmain:
-ifeq ($(UNAME_S), Darwin)
-	swift test --generate-linuxmain
-	@git diff --exit-code */LinuxMain.swift */XCTestManifests.swift > /dev/null || { echo "Generated tests are out-of-date; run 'swift test --generate-linuxmain' to update them!"; exit 1; }
-else
-	echo "test-generate-linuxmain is only available on Darwin"
-endif
+### Misc. ######################################################################
 
 clean:
 	-rm -rf Packages
-	-rm -rf .build build
-	-rm -rf GRPC.xcodeproj
-	-rm -rf Package.pins Package.resolved
-	-rm -rf protoc-gen-swift protoc-gen-swiftgrpc
+	-rm -rf ${SWIFT_BUILD_PATH}
+	-rm -rf ${XCODEPROJ}
+	-rm -f Package.pins Package.resolved
 	-cd Examples/Google/Datastore && make clean
 	-cd Examples/Google/NaturalLanguage && make clean
 	-cd Examples/Google/Spanner && make clean

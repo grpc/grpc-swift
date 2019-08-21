@@ -106,7 +106,8 @@ let package = Package(
       name: "GRPCInteroperabilityTests",
       dependencies: [
         "GRPCInteroperabilityTestsImplementation",
-        "Commander"
+        "Commander",
+        "Logging",
       ]
     ),
 
@@ -116,6 +117,7 @@ let package = Package(
       dependencies: [
         "GRPC",
         "GRPCInteroperabilityTestModels",
+        "Logging",
       ]
     ),
 

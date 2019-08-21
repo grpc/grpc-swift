@@ -19,6 +19,10 @@ import NIO
 import NIOSSL
 import GRPCInteroperabilityTestsImplementation
 import Commander
+import Logging
+
+// Reduce stdout noise.
+LoggingSystem.bootstrap(StreamLogHandler.standardError)
 
 enum InteroperabilityTestError: LocalizedError {
   case testNotFound(String)

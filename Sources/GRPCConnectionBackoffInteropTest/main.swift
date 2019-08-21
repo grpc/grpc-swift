@@ -30,10 +30,18 @@ guard args.count == 3, let controlPort = Int(args[1]), let retryPort = Int(args[
 
 // MARK: - Setup
 
+// Since this is a long running test, print connectivity state changes to stdout with timestamps.
+// We'll redirect logs to stderr so that stdout contains information only relevant to the test.
+class PrintingConnectivityStateDelegate: ConnectivityStateDelegate {
+  func connectivityStateDidChange(from oldState: ConnectivityState, to newState: ConnectivityState) {
+    print("[\(Date())] connectivity state change: \(oldState) → \(newState)")
+  }
+}
+
 // Reduce stdout noise.
 LoggingSystem.bootstrap(StreamLogHandler.standardError)
 
-let group = MultiThreadedEventLoopGroup(numberOfThreads: 2)
+let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 defer {
   try! group.syncShutdownGracefully()
 }
@@ -49,28 +57,29 @@ let controlConfig = ClientConnection.Configuration(
 let retryConfig = ClientConnection.Configuration(
   target: .hostAndPort("localhost", retryPort),
   eventLoopGroup: group,
+  connectivityStateDelegate: PrintingConnectivityStateDelegate(),
   tls: .init(),
   connectionBackoff: .init()
 )
 
 // MARK: - Test Procedure
 
-print("Starting connection backoff interoperability test...")
+print("[\(Date())] Starting connection backoff interoperability test...")
 
 // 1. Call 'Start' on server control port with a large deadline or no deadline, wait for it to
 //    finish and check it succeeded.
 let controlConnection = ClientConnection(configuration: controlConfig)
 let controlClient = Grpc_Testing_ReconnectServiceServiceClient(connection: controlConnection)
-print("Control 'Start' call started")
+print("[\(Date())] Control 'Start' call started")
 let controlStart = controlClient.start(.init(), callOptions: .init(timeout: .infinite))
 let controlStartStatus = try controlStart.status.wait()
 assert(controlStartStatus.code == .ok, "Control Start rpc failed: \(controlStartStatus.code)")
-print("Control 'Start' call succeeded")
+print("[\(Date())] Control 'Start' call succeeded")
 
 // 2. Initiate a channel connection to server retry port, which should perform reconnections with
 //    proper backoffs. A convenient way to achieve this is to call 'Start' with a deadline of 540s.
 //    The rpc should fail with deadline exceeded.
-print("Retry 'Start' call started")
+print("[\(Date())] Retry 'Start' call started")
 let retryConnection = ClientConnection(configuration: retryConfig)
 let retryClient = Grpc_Testing_ReconnectServiceServiceClient(
   connection: retryConnection,
@@ -81,19 +90,19 @@ let retryStart = retryClient.start(.init())
 let retryStartStatus = try retryStart.status.wait()
 assert(retryStartStatus.code == .deadlineExceeded,
        "Retry Start rpc status was not 'deadlineExceeded': \(retryStartStatus.code)")
-print("Retry 'Start' call terminated with expected status")
+print("[\(Date())] Retry 'Start' call terminated with expected status")
 
 // 3. Call 'Stop' on server control port and check it succeeded.
-print("Control 'Stop' call started")
+print("[\(Date())] Control 'Stop' call started")
 let controlStop = controlClient.stop(.init())
 let controlStopStatus = try controlStop.status.wait()
 assert(controlStopStatus.code == .ok, "Control Stop rpc failed: \(controlStopStatus.code)")
-print("Control 'Stop' call succeeded")
+print("[\(Date())] Control 'Stop' call succeeded")
 
 // 4. Check the response to see whether the server thinks the backoffs passed the test.
 let controlResponse = try controlStop.response.wait()
 assert(controlResponse.passed, "TEST FAILED")
-print("TEST PASSED")
+print("[\(Date())] TEST PASSED")
 
 // MARK: - Tear down
 
@@ -101,5 +110,7 @@ print("TEST PASSED")
 
 // We expect close to fail on the retry connection because the channel should never be successfully
 // started.
+print("[\(Date())] Closing Retry connection")
 try? retryConnection.close().wait()
+print("[\(Date())] Closing Control connection")
 try controlConnection.close().wait()
