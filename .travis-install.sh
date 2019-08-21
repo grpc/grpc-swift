@@ -34,6 +34,7 @@ GRPC_VERSION=1.23.0
 
 # Install the protoc compiler.
 install_protoc() {
+  echo -en 'travis_fold:start:install.protoc\\r'
   if [ "$TRAVIS_OS_NAME" = "osx" ]; then
     PROTOC_URL=https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-osx-x86_64.zip
   else
@@ -43,10 +44,12 @@ install_protoc() {
   echo "Downloading protoc from: $PROTOC_URL"
   curl -fSsL $PROTOC_URL -o protoc.zip
   unzip -q protoc.zip -d local
+  echo -en 'travis_fold:end:install.protoc\\r'
 }
 
 # Install Swift.
 install_swift() {
+  echo -en 'travis_fold:start:install.swift\\r'
   # Use the Swift provided by Xcode on macOS.
   if [ "$TRAVIS_OS_NAME" != "osx" ]; then
     SWIFT_URL=https://swift.org/builds/swift-${SWIFT_VERSION}-release/ubuntu1804/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu18.04.tar.gz
@@ -54,10 +57,12 @@ install_swift() {
     curl -fSsL $SWIFT_URL -o swift.tar.gz
     tar -xzf swift.tar.gz --strip-components=2 --directory=local
   fi
+  echo -en 'travis_fold:end:install.swift\\r'
 }
 
 # We need to install bazel to so we can build the gRPC interop test server.
 install_bazel() {
+  echo -en 'travis_fold:start:install.bazel\\r'
   # See:
   # - https://docs.bazel.build/versions/master/install-os-x.html
   # - https://docs.bazel.build/versions/master/install-ubuntu.html
@@ -71,10 +76,12 @@ install_bazel() {
   curl -fSsL $BAZEL_URL -o bazel-installer.sh
   chmod +x bazel-installer.sh
   ./bazel-installer.sh --prefix="$HOME/local"
+  echo -en 'travis_fold:end:install.bazel\\r'
 }
 
 # Build the gRPC C++ interop test server and reconnect interop test server.
 build_grpc_cpp_server() {
+  echo -en 'travis_fold:start:install.grpc_cpp_server\\r'
   GRPC_URL=https://github.com/grpc/grpc/archive/v${GRPC_VERSION}.tar.gz
   echo "Downloading gRPC from: $GRPC_URL"
 
@@ -84,11 +91,16 @@ build_grpc_cpp_server() {
   (
     cd grpc
     # Build the interop_server and the reconnect_interop_server
-    "$HOME"/local/bin/bazel build test/cpp/interop:interop_server test/cpp/interop:reconnect_interop_server
+    # Only update progress every 5 seconds to avoid spamming the logs.
+    "$HOME"/local/bin/bazel build \
+      --show_progress_rate_limit=5 \
+      test/cpp/interop:interop_server \
+      test/cpp/interop:reconnect_interop_server
     # Put them where we can find them later.
     cp ./bazel-bin/test/cpp/interop/interop_server "$HOME"/local/bin
     cp ./bazel-bin/test/cpp/interop/reconnect_interop_server "$HOME"/local/bin
   )
+  echo -en 'travis_fold:end:install.grpc_cpp_server\\r'
 }
 
 cd

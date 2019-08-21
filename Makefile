@@ -63,8 +63,8 @@ test:
 
 # Checks that linuxmain has been updated: requires macOS.
 test-generate-linuxmain: generate-linuxmain
-	@git diff --exit-code */LinuxMain.swift */XCTestManifests.swift > /dev/null || \
-		echo "Generated tests are out-of-date; run 'swift test --generate-linuxmain' to update them!" && exit 1
+	@git diff --exit-code Tests/LinuxMain.swift Tests/*/XCTestManifests.swift > /dev/null || \
+		{ echo "Generated tests are out-of-date; run 'swift test --generate-linuxmain' to update them!"; exit 1; }
 
 # Generates code for the Echo server and client and tests them against 'golden' data.
 test-plugin: plugins
