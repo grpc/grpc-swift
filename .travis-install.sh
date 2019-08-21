@@ -32,7 +32,9 @@ PROTOBUF_VERSION=3.9.1
 BAZEL_VERSION=0.28.1
 GRPC_VERSION=1.23.0
 
+# Update .travis.yml if these change.
 DOWNLOAD_CACHE=download_cache
+BIN_CACHE=bin_cache
 
 # Install the protoc compiler.
 install_protoc() {
@@ -109,31 +111,46 @@ build_grpc_cpp_server() {
   echo -en 'travis_fold:start:install.grpc_cpp_server\\r'
   GRPC_URL=https://github.com/grpc/grpc/archive/v${GRPC_VERSION}.tar.gz
 
-  GRPC_TAR_GZ=grpc."$GRPC_VERSION".tar.gz
+  GRPC_INTEROP_SERVER=interop_server-"${GRPC_VERSION}"
+  GRPC_RECONNECT_INTEROP_SERVER=reconnect_interop_server-"${GRPC_VERSION}"
 
-  if [ ! -f "$DOWNLOAD_CACHE/$GRPC_TAR_GZ" ]; then
-    echo "Downloading Bazel from: $BAZEL_URL"
-    curl -fSsL $GRPC_URL -o "$DOWNLOAD_CACHE/$GRPC_TAR_GZ"
+  # If the servers don't exist: download and build them.
+  if [ ! -f "$BIN_CACHE/$GRPC_INTEROP_SERVER" ] || [ ! -f "$BIN_CACHE/$GRPC_RECONNECT_INTEROP_SERVER" ]; then
+    GRPC_TAR_GZ=grpc."$GRPC_VERSION".tar.gz
+
+    # Do we already have gRPC?
+    if [ ! -f "$DOWNLOAD_CACHE/$GRPC_TAR_GZ" ]; then
+      echo "Downloading Bazel from: $BAZEL_URL"
+      curl -fSsL $GRPC_URL -o "$DOWNLOAD_CACHE/$GRPC_TAR_GZ"
+    else
+      echo "Skipping Bazel download, using cached version"
+    fi
+
+    echo "Downloading gRPC from: $GRPC_URL"
+    mkdir grpc
+    tar -xzf "$DOWNLOAD_CACHE/$GRPC_TAR_GZ" --strip-components=1 --directory=grpc
+
+    # Build the servers and put them in $BIN_CACHE
+    (
+      cd grpc
+      # Build the interop_server and the reconnect_interop_server
+      # Only update progress every second to avoid spamming the logs.
+      "$HOME"/local/bin/bazel build \
+        --show_progress_rate_limit=1 \
+        test/cpp/interop:interop_server \
+        test/cpp/interop:reconnect_interop_server
+      # Put them in the $BIN_CACHE
+      cp ./bazel-bin/test/cpp/interop/interop_server "$BIN_CACHE/$GRPC_INTEROP_SERVER"
+      cp ./bazel-bin/test/cpp/interop/reconnect_interop_server "$BIN_CACHE/$GRPC_RECONNECT_INTEROP_SERVER"
+    )
   else
-    echo "Skipping Bazel download, using cached version"
+    echo "Skipping download and build of gRPC C++, using cached binaries"
   fi
 
-  echo "Downloading gRPC from: $GRPC_URL"
+  # We should have cached servers now, copy them to $HOME/local/bin
+  cp "$BIN_CACHE/$GRPC_INTEROP_SERVER" $HOME/local/bin/interop_server
+  cp "$BIN_CACHE/$GRPC_RECONNECT_INTEROP_SERVER" $HOME/local/bin/reconnect_interop_server
 
-  mkdir grpc
-  tar -xzf "$DOWNLOAD_CACHE/$GRPC_TAR_GZ" --strip-components=1 --directory=grpc
-  (
-    cd grpc
-    # Build the interop_server and the reconnect_interop_server
-    # Only update progress every 5 seconds to avoid spamming the logs.
-    "$HOME"/local/bin/bazel build \
-      --show_progress_rate_limit=5 \
-      test/cpp/interop:interop_server \
-      test/cpp/interop:reconnect_interop_server
-    # Put them where we can find them later.
-    cp ./bazel-bin/test/cpp/interop/interop_server "$HOME"/local/bin
-    cp ./bazel-bin/test/cpp/interop/reconnect_interop_server "$HOME"/local/bin
-  )
   echo -en 'travis_fold:end:install.grpc_cpp_server\\r'
 }
 

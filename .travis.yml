@@ -28,6 +28,7 @@ cache:
     - .build/checkouts
     - .build/repositories
     - download_cache
+    - bin_cache
 
 # Use Ubuntu 18.04
 dist: bionic
