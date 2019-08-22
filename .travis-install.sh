@@ -25,16 +25,21 @@
 # - $HOME/local/lib to LD_LIBRARY_PATH
 #
 
+# To speed up the CI we cache any downloads and the interop test server
+# binaries. Cached items will have their version appended to their name so that
+# the cache will be invalidated when versions change. When we copy them out of
+# the cache the version numbers should be removed.
+
+# Update .travis.yml if these change.
+DOWNLOAD_CACHE="$HOME"/download_cache
+BIN_CACHE="$HOME"/bin_cache
+
 # Only applies to Linux, we get Swift from Xcode on macOS.
 SWIFT_VERSION=5.0.2
 PROTOBUF_VERSION=3.9.1
 # We need this to build gRPC C++ for the interop test server(s).
 BAZEL_VERSION=0.28.1
 GRPC_VERSION=1.23.0
-
-# Update .travis.yml if these change.
-DOWNLOAD_CACHE=download_cache
-BIN_CACHE=bin_cache
 
 # Install the protoc compiler.
 install_protoc() {
@@ -139,6 +144,7 @@ build_grpc_cpp_server() {
         --show_progress_rate_limit=1 \
         test/cpp/interop:interop_server \
         test/cpp/interop:reconnect_interop_server
+
       # Put them in the $BIN_CACHE
       cp ./bazel-bin/test/cpp/interop/interop_server "$BIN_CACHE/$GRPC_INTEROP_SERVER"
       cp ./bazel-bin/test/cpp/interop/reconnect_interop_server "$BIN_CACHE/$GRPC_RECONNECT_INTEROP_SERVER"
@@ -148,15 +154,14 @@ build_grpc_cpp_server() {
   fi
 
   # We should have cached servers now, copy them to $HOME/local/bin
-  cp "$BIN_CACHE/$GRPC_INTEROP_SERVER" $HOME/local/bin/interop_server
-  cp "$BIN_CACHE/$GRPC_RECONNECT_INTEROP_SERVER" $HOME/local/bin/reconnect_interop_server
+  cp "$BIN_CACHE/$GRPC_INTEROP_SERVER" "$HOME"/local/bin/interop_server
+  cp "$BIN_CACHE/$GRPC_RECONNECT_INTEROP_SERVER" "$HOME"/local/bin/reconnect_interop_server
 
   echo -en 'travis_fold:end:install.grpc_cpp_server\\r'
 }
 
 cd
-mkdir -p local
-mkdir -p "$DOWNLOAD_CACHE"
+mkdir -p local "$DOWNLOAD_CACHE" "$BIN_CACHE"
 
 install_protoc
 install_swift
