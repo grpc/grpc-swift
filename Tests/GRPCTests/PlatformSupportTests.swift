@@ -110,6 +110,6 @@ class PlatformSupportTests: GRPCTestCase {
 
     let bootstrap = PlatformSupport.makeServerBootstrap(group: eventLoop)
     XCTAssertTrue(bootstrap is NIOTSListenerBootstrap)
-    #if canImport(Network)
+    #endif
   }
 }
