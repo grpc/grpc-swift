@@ -44,15 +44,17 @@ GRPC_VERSION=1.23.0
 # Install the protoc compiler.
 install_protoc() {
   echo -en 'travis_fold:start:install.protoc\\r'
-  if [ "$TRAVIS_OS_NAME" = "osx" ]; then
-    PROTOC_URL=https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-osx-x86_64.zip
-  else
-    PROTOC_URL=https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip
-  fi
 
   PROTOC_ZIP=protoc."$PROTOBUF_VERSION".zip
 
+  # Get protoc from the cache, or download it.
   if [ ! -f "$DOWNLOAD_CACHE/$PROTOC_ZIP" ]; then
+    if [ "$TRAVIS_OS_NAME" = "osx" ]; then
+      PROTOC_URL=https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-osx-x86_64.zip
+    else
+      PROTOC_URL=https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip
+    fi
+
     echo "Downloading protoc from: $PROTOC_URL"
     curl -fSsL $PROTOC_URL -o "$DOWNLOAD_CACHE/$PROTOC_ZIP"
   else
@@ -68,11 +70,10 @@ install_swift() {
   echo -en 'travis_fold:start:install.swift\\r'
   # Use the Swift provided by Xcode on macOS.
   if [ "$TRAVIS_OS_NAME" != "osx" ]; then
-    SWIFT_URL=https://swift.org/builds/swift-${SWIFT_VERSION}-release/ubuntu1804/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu18.04.tar.gz
-
     SWIFT_TAR_GZ=swift."$SWIFT_VERSION".tar.gz
 
     if [ ! -f "$DOWNLOAD_CACHE/$SWIFT_TAR_GZ" ]; then
+      SWIFT_URL=https://swift.org/builds/swift-${SWIFT_VERSION}-release/ubuntu1804/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu18.04.tar.gz
       echo "Downloading swift from: $SWIFT_URL"
       curl -fSsL $SWIFT_URL -o "$DOWNLOAD_CACHE/$SWIFT_TAR_GZ"
     else
@@ -87,18 +88,19 @@ install_swift() {
 # We need to install bazel to so we can build the gRPC interop test server.
 install_bazel() {
   echo -en 'travis_fold:start:install.bazel\\r'
-  # See:
-  # - https://docs.bazel.build/versions/master/install-os-x.html
-  # - https://docs.bazel.build/versions/master/install-ubuntu.html
-  if [ "$TRAVIS_OS_NAME" = "osx" ]; then
-    BAZEL_URL=https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-installer-darwin-x86_64.sh
-  else
-    BAZEL_URL=https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
-  fi
 
   BAZEL_INSTALLER_SH=bazel-installer."$BAZEL_VERSION".sh
 
   if [ ! -f "$DOWNLOAD_CACHE/$BAZEL_INSTALLER_SH" ]; then
+    # See:
+    # - https://docs.bazel.build/versions/master/install-os-x.html
+    # - https://docs.bazel.build/versions/master/install-ubuntu.html
+    if [ "$TRAVIS_OS_NAME" = "osx" ]; then
+      BAZEL_URL=https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-installer-darwin-x86_64.sh
+    else
+      BAZEL_URL=https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
+    fi
+
     echo "Downloading Bazel from: $BAZEL_URL"
     curl -fSsL $BAZEL_URL -o "$DOWNLOAD_CACHE/$BAZEL_INSTALLER_SH"
   else
@@ -114,31 +116,30 @@ install_bazel() {
 # Build the gRPC C++ interop test server and reconnect interop test server.
 build_grpc_cpp_server() {
   echo -en 'travis_fold:start:install.grpc_cpp_server\\r'
-  GRPC_URL=https://github.com/grpc/grpc/archive/v${GRPC_VERSION}.tar.gz
 
   GRPC_INTEROP_SERVER=interop_server-"${GRPC_VERSION}"
   GRPC_RECONNECT_INTEROP_SERVER=reconnect_interop_server-"${GRPC_VERSION}"
 
   # If the servers don't exist: download and build them.
   if [ ! -f "$BIN_CACHE/$GRPC_INTEROP_SERVER" ] || [ ! -f "$BIN_CACHE/$GRPC_RECONNECT_INTEROP_SERVER" ]; then
+    GRPC_URL=https://github.com/grpc/grpc/archive/v${GRPC_VERSION}.tar.gz
     GRPC_TAR_GZ=grpc."$GRPC_VERSION".tar.gz
 
-    # Do we already have gRPC?
+    # Get the gRPC source: from the cache if it's there, otherwise download it.
     if [ ! -f "$DOWNLOAD_CACHE/$GRPC_TAR_GZ" ]; then
-      echo "Downloading Bazel from: $BAZEL_URL"
+      echo "Downloading gRPC from: $GRPC_URL"
       curl -fSsL $GRPC_URL -o "$DOWNLOAD_CACHE/$GRPC_TAR_GZ"
     else
-      echo "Skipping Bazel download, using cached version"
+      echo "Skipping gRPC download, using cached version"
     fi
 
-    echo "Downloading gRPC from: $GRPC_URL"
+    # Extract it to grpc
     mkdir grpc
     tar -xzf "$DOWNLOAD_CACHE/$GRPC_TAR_GZ" --strip-components=1 --directory=grpc
 
-    # Build the servers and put them in $BIN_CACHE
+    # Build the interop servers and put them in $BIN_CACHE
     (
       cd grpc
-      # Build the interop_server and the reconnect_interop_server
       # Only update progress every second to avoid spamming the logs.
       "$HOME"/local/bin/bazel build \
         --show_progress_rate_limit=1 \
