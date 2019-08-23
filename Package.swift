@@ -34,9 +34,8 @@ let package = Package(
     .package(url: "https://github.com/apple/swift-nio-http2.git", from: "1.5.0"),
     // TLS via SwiftNIO
     .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.4.0"),
-    // Support for Network.framework where possible. Note: from 1.0.2 the package
-    // is essentially an empty import on platforms where it isn't supported.
-    .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.0.2"),
+    // Support for Network.framework where possible.
+    .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.1.0"),
 
     // Official SwiftProtobuf library, for [de]serializing data to send on the wire.
     .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.5.0"),

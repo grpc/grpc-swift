@@ -165,6 +165,9 @@ public enum PlatformSupport {
       if let tsGroup = group as? NIOTSEventLoopGroup {
         logger.debug("Network.framework is available and the group is correctly typed, creating a NIOTSConnectionBootstrap")
         return NIOTSConnectionBootstrap(group: tsGroup)
+      } else if let qosEventLoop = group as? QoSEventLoop {
+        logger.debug("Network.framework is available and the group is correctly typed, creating a NIOTSConnectionBootstrap")
+        return NIOTSConnectionBootstrap(group: qosEventLoop)
       }
       logger.debug("Network.framework is available but the group is not typed for NIOTS, falling back to ClientBootstrap")
     }
@@ -186,6 +189,9 @@ public enum PlatformSupport {
       if let tsGroup = group as? NIOTSEventLoopGroup {
         logger.debug("Network.framework is available and the group is correctly typed, creating a NIOTSListenerBootstrap")
         return NIOTSListenerBootstrap(group: tsGroup)
+      } else if let qosEventLoop = group as? QoSEventLoop {
+        logger.debug("Network.framework is available and the group is correctly typed, creating a NIOTSListenerBootstrap")
+        return NIOTSListenerBootstrap(group: qosEventLoop)
       }
       logger.debug("Network.framework is available but the group is not typed for NIOTS, falling back to ServerBootstrap")
     }
