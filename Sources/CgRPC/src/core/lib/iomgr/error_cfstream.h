@@ -16,27 +16,16 @@
  *
  */
 
-#ifndef GRPC_CORE_LIB_GPRPP_MUTEX_LOCK_H
-#define GRPC_CORE_LIB_GPRPP_MUTEX_LOCK_H
+#ifndef GRPC_CORE_LIB_IOMGR_ERROR_CFSTREAM_H
+#define GRPC_CORE_LIB_IOMGR_ERROR_CFSTREAM_H
 
-#include <grpc/support/port_platform.h>
+#ifdef GRPC_CFSTREAM
+// Create an error from Apple Core Foundation CFError object
+#define GRPC_ERROR_CREATE_FROM_CFERROR(error, desc)  \
+  grpc_error_create_from_cferror(__FILE__, __LINE__, \
+                                 static_cast<void*>((error)), (desc))
+grpc_error* grpc_error_create_from_cferror(const char* file, int line,
+                                           void* arg, const char* desc);
+#endif /* GRPC_CFSTREAM */
 
-#include <grpc/support/sync.h>
-
-namespace grpc_core {
-
-class MutexLock {
- public:
-  explicit MutexLock(gpr_mu* mu) : mu_(mu) { gpr_mu_lock(mu); }
-  ~MutexLock() { gpr_mu_unlock(mu_); }
-
-  MutexLock(const MutexLock&) = delete;
-  MutexLock& operator=(const MutexLock&) = delete;
-
- private:
-  gpr_mu* const mu_;
-};
-
-}  // namespace grpc_core
-
-#endif /* GRPC_CORE_LIB_GPRPP_MUTEX_LOCK_H */
+#endif /* GRPC_CORE_LIB_IOMGR_ERROR_CFSTREAM_H */

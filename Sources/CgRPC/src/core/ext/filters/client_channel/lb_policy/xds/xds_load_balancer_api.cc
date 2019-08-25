@@ -67,8 +67,12 @@ xds_grpclb_request* xds_grpclb_request_create(const char* lb_service_name) {
   req->has_client_stats = false;
   req->has_initial_request = true;
   req->initial_request.has_name = true;
-  strncpy(req->initial_request.name, lb_service_name,
-          XDS_SERVICE_NAME_MAX_LENGTH);
+  // GCC warns (-Wstringop-truncation) because the destination
+  // buffer size is identical to max-size, leading to a potential
+  // char[] with no null terminator.  nanopb can handle it fine,
+  // and parantheses around strncpy silence that compiler warning.
+  (strncpy(req->initial_request.name, lb_service_name,
+           XDS_SERVICE_NAME_MAX_LENGTH));
   return req;
 }
 
@@ -161,10 +165,10 @@ void xds_grpclb_request_destroy(xds_grpclb_request* request) {
 
 typedef grpc_lb_v1_LoadBalanceResponse xds_grpclb_response;
 xds_grpclb_initial_response* xds_grpclb_initial_response_parse(
-    grpc_slice encoded_xds_grpclb_response) {
-  pb_istream_t stream =
-      pb_istream_from_buffer(GRPC_SLICE_START_PTR(encoded_xds_grpclb_response),
-                             GRPC_SLICE_LENGTH(encoded_xds_grpclb_response));
+    const grpc_slice& encoded_xds_grpclb_response) {
+  pb_istream_t stream = pb_istream_from_buffer(
+      const_cast<uint8_t*>(GRPC_SLICE_START_PTR(encoded_xds_grpclb_response)),
+      GRPC_SLICE_LENGTH(encoded_xds_grpclb_response));
   xds_grpclb_response res;
   memset(&res, 0, sizeof(xds_grpclb_response));
   if (GPR_UNLIKELY(
@@ -185,10 +189,10 @@ xds_grpclb_initial_response* xds_grpclb_initial_response_parse(
 }
 
 xds_grpclb_serverlist* xds_grpclb_response_parse_serverlist(
-    grpc_slice encoded_xds_grpclb_response) {
-  pb_istream_t stream =
-      pb_istream_from_buffer(GRPC_SLICE_START_PTR(encoded_xds_grpclb_response),
-                             GRPC_SLICE_LENGTH(encoded_xds_grpclb_response));
+    const grpc_slice& encoded_xds_grpclb_response) {
+  pb_istream_t stream = pb_istream_from_buffer(
+      const_cast<uint8_t*>(GRPC_SLICE_START_PTR(encoded_xds_grpclb_response)),
+      GRPC_SLICE_LENGTH(encoded_xds_grpclb_response));
   pb_istream_t stream_at_start = stream;
   xds_grpclb_serverlist* sl = static_cast<xds_grpclb_serverlist*>(
       gpr_zalloc(sizeof(xds_grpclb_serverlist)));

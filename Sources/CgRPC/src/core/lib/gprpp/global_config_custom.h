@@ -1,6 +1,6 @@
 /*
  *
- * Copyright 2017 gRPC authors.
+ * Copyright 2019 gRPC authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,14 @@
  *
  */
 
-#ifndef GRPC_CORE_LIB_GPRPP_ATOMIC_WITH_STD_H
-#define GRPC_CORE_LIB_GPRPP_ATOMIC_WITH_STD_H
+#ifndef GRPC_CORE_LIB_GPRPP_GLOBAL_CONFIG_CUSTOM_H
+#define GRPC_CORE_LIB_GPRPP_GLOBAL_CONFIG_CUSTOM_H
 
-#include <grpc/support/port_platform.h>
+// This is a placeholder for custom global configuration implementation.
+// To use the custom one, please define following macros here.
+//
+//   GPR_GLOBAL_CONFIG_DEFINE_BOOL
+//   GPR_GLOBAL_CONFIG_DEFINE_INT32
+//   GPR_GLOBAL_CONFIG_DEFINE_STRING
 
-#include <atomic>
-
-namespace grpc_core {
-
-template <class T>
-using atomic = std::atomic<T>;
-
-typedef std::memory_order memory_order;
-
-}  // namespace grpc_core
-
-#endif /* GRPC_CORE_LIB_GPRPP_ATOMIC_WITH_STD_H */
+#endif /* GRPC_CORE_LIB_GPRPP_GLOBAL_CONFIG_CUSTOM_H */
