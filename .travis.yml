@@ -13,22 +13,48 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Travis CI build file for Swift gRPC.
+# Travis CI build file for gRPC Swift.
 
-os:
-  - linux
-  - osx
+jobs:
+  include:
+    # Tests for each PR.
+    - &tests
+      stage: "Test"
+      name: "Ubuntu 18.04"
+      os: linux
+      dist: bionic
+      script: ./.travis-script.sh
+      env: RUN_INTEROP_TESTS=false
+    - <<: *tests
+      name: "macOS (Xcode 10.3)"
+      os: osx
+      osx_image: xcode10.3
+    # Interop Tests.
+    - &interop_tests
+      stage: "Interoperability Tests"
+      # Linux
+      name: "Ubuntu 18.04"
+      os: linux
+      dist: bionic
+      script: ./.travis-script.sh
+      env: RUN_INTEROP_TESTS=true
+    - <<: *interop_tests
+      name: "macOS (Xcode 10.3)"
+      os: osx
+      osx_image: xcode10.3
+
+stages:
+  # Always run this stage.
+  - name: "Test"
+  # Only run when pushing (or merging) to nio.
+  - name: "Interoperability Tests"
+    if: type = push AND branch = nio
 
 cache:
   apt: true
   directories:
-    - .build/checkouts
-    - .build/repositories
-
-# Use Ubuntu 18.04
-dist: bionic
-
-osx_image: xcode10.3
+    - .build
+    - $HOME/bin_cache
 
 sudo: false
 
@@ -38,14 +64,11 @@ addons:
       - build-essential
       - curl
       - unzip
+      - zip
+      - pkg-config
+      - g++
+      - zlib1g-dev
+      - python3
 
 install: ./.travis-install.sh
-
-script:
-  - echo -en 'travis_fold:start:script.environment\\r' && export PATH=$HOME/local/bin:$PATH && export LD_LIBRARY_PATH=$HOME/local/lib && echo -en 'travis_fold:end:script.environment\\r'
-  - echo -en 'travis_fold:start:swift.resolve-deps\\r' && swift package -v resolve && echo -en 'travis_fold:end:swift.resolve-deps\\r'
-  - echo -en 'travis_fold:start:make.all\\r' && make all && echo -en 'travis_fold:end:make.all\\r'
-  - echo -en 'travis_fold:start:make.test_generate_linuxmain\\r' && make test-generate-linuxmain && echo -en 'travis_fold:end:make.test_generate_linuxmain\\r'
-  - echo -en 'travis_fold:start:make.test\\r' && make test && echo -en 'travis_fold:end:make.test\\r'
-  - echo -en 'travis_fold:start:make.test_plugin\\r' && make test-plugin && echo -en 'travis_fold:end:make.test_plugin\\r'
-  - echo -en 'travis_fold:start:make.project\\r' && if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then make project; fi && echo -en 'travis_fold:end:make.project\\r'
+script: ./.travis-script.sh

@@ -11,7 +11,7 @@ third_party/**
 /EchoNIO
 /test.out
 /echo.pid
-/SwiftGRPC.xcodeproj
+/*.xcodeproj
 /scripts/tmp/
 Examples/EchoWeb/dist
 Examples/EchoWeb/node_modules
