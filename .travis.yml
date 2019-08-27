@@ -44,10 +44,9 @@ jobs:
       osx_image: xcode10.3
 
 stages:
-  # Only run stage for PRs
+  # Always run this stage.
   - name: "Test"
-    if: type = pull_request
-  # Only run when pushing (or merging) to nio
+  # Only run when pushing (or merging) to nio.
   - name: "Interoperability Tests"
     if: type = push AND branch = nio
 
