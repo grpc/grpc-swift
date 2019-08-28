@@ -19,17 +19,23 @@ import NIO
 import NIOSSL
 import GRPC
 import GRPCSampleData
+import EchoModel
+import EchoImplementation
 import XCTest
 
 extension Echo_EchoRequest {
   init(text: String) {
-    self.text = text
+    self = .with {
+      $0.text = text
+    }
   }
 }
 
 extension Echo_EchoResponse {
   init(text: String) {
-    self.text = text
+    self = .with {
+      $0.text = text
+    }
   }
 }
 

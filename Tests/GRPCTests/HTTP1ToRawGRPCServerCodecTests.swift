@@ -18,6 +18,7 @@ import XCTest
 import NIO
 import NIOHTTP1
 @testable import GRPC
+import EchoModel
 import Logging
 
 func gRPCMessage(channel: EmbeddedChannel, compression: Bool = false, message: Data? = nil) -> ByteBuffer {

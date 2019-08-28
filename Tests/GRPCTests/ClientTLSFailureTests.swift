@@ -16,6 +16,7 @@
 import Foundation
 import GRPC
 import GRPCSampleData
+import EchoImplementation
 import NIO
 import NIOSSL
 import XCTest

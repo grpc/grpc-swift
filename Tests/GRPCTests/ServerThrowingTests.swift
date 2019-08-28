@@ -19,6 +19,7 @@ import NIO
 import NIOHTTP1
 import NIOHTTP2
 @testable import GRPC
+import EchoModel
 import XCTest
 
 let thrownError = GRPCStatus(code: .internalError, message: "expected error")

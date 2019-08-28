@@ -65,6 +65,8 @@ let package = Package(
       name: "GRPCTests",
       dependencies: [
         "GRPC",
+        "EchoModel",
+        "EchoImplementation",
         "GRPCSampleData",
         "GRPCInteroperabilityTestsImplementation"
       ]

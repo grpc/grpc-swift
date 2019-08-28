@@ -15,6 +15,7 @@
  */
 import Foundation
 import GRPC
+import EchoModel
 import NIO
 import XCTest
 

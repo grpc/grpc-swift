@@ -16,6 +16,7 @@
 import Foundation
 import NIO
 @testable import GRPC
+import EchoModel
 import XCTest
 
 // Only test Unary and ServerStreaming, as ClientStreaming is not

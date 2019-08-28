@@ -15,6 +15,7 @@
  */
 import Foundation
 import GRPC
+import EchoModel
 import XCTest
 
 /// These test check the size of types which get wrapped in `NIOAny`. If the size of the type is

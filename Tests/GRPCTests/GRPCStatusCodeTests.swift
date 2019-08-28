@@ -15,6 +15,7 @@
  */
 import Foundation
 @testable import GRPC
+import EchoModel
 import NIO
 import NIOHTTP1
 import NIOHTTP2
