@@ -42,9 +42,6 @@ let package = Package(
 
     // Logging API.
     .package(url: "https://github.com/apple/swift-log", from: "1.0.0"),
-
-    // Command line argument parser for our auxiliary command line tools.
-    .package(url: "https://github.com/kylef/Commander.git", from: "0.8.0"),
   ],
   targets: [
     // The main GRPC module.
@@ -107,7 +104,6 @@ let package = Package(
       name: "GRPCInteroperabilityTests",
       dependencies: [
         "GRPCInteroperabilityTestsImplementation",
-        "Commander",
         "Logging",
       ]
     ),
@@ -131,7 +127,6 @@ let package = Package(
         "EchoImplementation",
         "NIO",
         "NIOSSL",
-        "Commander",
       ]
     ),
 
@@ -150,7 +145,6 @@ let package = Package(
         "GRPC",
         "GRPCSampleData",
         "SwiftProtobuf",
-        "Commander"
       ],
       path: "Sources/Examples/Echo/Runtime"
     ),
