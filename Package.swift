@@ -65,6 +65,8 @@ let package = Package(
       name: "GRPCTests",
       dependencies: [
         "GRPC",
+        "EchoModel",
+        "EchoImplementation",
         "GRPCSampleData",
         "GRPCInteroperabilityTestsImplementation"
       ]
@@ -125,6 +127,8 @@ let package = Package(
       name: "GRPCPerformanceTests",
       dependencies: [
         "GRPC",
+        "EchoModel",
+        "EchoImplementation",
         "NIO",
         "NIOSSL",
         "Commander",
@@ -137,16 +141,41 @@ let package = Package(
       dependencies: ["NIOSSL"]
     ),
 
-    // Echo example.
+    // Echo example CLI.
     .target(
       name: "Echo",
       dependencies: [
+        "EchoModel",
+        "EchoImplementation",
         "GRPC",
         "GRPCSampleData",
         "SwiftProtobuf",
         "Commander"
       ],
-      path: "Sources/Examples/Echo"
+      path: "Sources/Examples/Echo/Runtime"
+    ),
+
+    // Echo example service implementation.
+    .target(
+      name: "EchoImplementation",
+      dependencies: [
+        "EchoModel",
+        "GRPC",
+        "SwiftProtobuf"
+      ],
+      path: "Sources/Examples/Echo/Implementation"
+    ),
+
+    // Model for Echo example.
+    .target(
+      name: "EchoModel",
+      dependencies: [
+        "GRPC",
+        "NIO",
+        "NIOHTTP1",
+        "SwiftProtobuf"
+      ],
+      path: "Sources/Examples/Echo/Model"
     ),
   ]
 )

@@ -18,6 +18,8 @@ import GRPC
 import NIO
 import NIOSSL
 import Commander
+import EchoImplementation
+import EchoModel
 
 struct ConnectionFactory {
   var configuration: ClientConnection.Configuration

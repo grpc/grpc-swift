@@ -17,6 +17,8 @@ import Foundation
 import NIO
 import NIOHTTP1
 @testable import GRPC
+import EchoModel
+import EchoImplementation
 import XCTest
 import Logging
 

@@ -15,6 +15,8 @@
  */
 import Foundation
 import GRPC
+import EchoModel
+import EchoImplementation
 import NIO
 import XCTest
 import NIOConcurrencyHelpers

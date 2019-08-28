@@ -1,1 +1,0 @@
-../Examples/Echo/EchoProvider.swift

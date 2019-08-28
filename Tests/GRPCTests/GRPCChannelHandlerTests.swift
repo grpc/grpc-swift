@@ -18,6 +18,7 @@ import XCTest
 import NIO
 import NIOHTTP1
 @testable import GRPC
+import EchoModel
 
 class GRPCChannelHandlerTests: GRPCChannelHandlerResponseCapturingTestCase {
   func testUnimplementedMethodReturnsUnimplementedStatus() throws {
