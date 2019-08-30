@@ -18,7 +18,6 @@ import GRPC
 import NIO
 import NIOSSL
 import GRPCInteroperabilityTestsImplementation
-import Commander
 import Logging
 
 // Reduce stdout noise.
@@ -70,116 +69,130 @@ func makeRunnableTest(name: String) throws -> InteroperabilityTest {
   return testCase.makeTest()
 }
 
-/// Runs the given block and exits with code 1 if the block throws an error.
-///
-/// The "Commander" CLI elides thrown errors in favour of its own. This function is intended purely
-/// to work around this limitation by printing any errors before exiting.
-func exitOnThrow<T>(block: () throws -> T) -> T {
-  do {
-    return try block()
-  } catch {
-    print(error)
-    exit(1)
-  }
-}
-
 // MARK: - Command line options and "main".
 
-let serverHostOption = Option(
-  "server_host",
-  default: "localhost",
-  description: "The server host to connect to.")
+func printUsageAndExit(program: String) -> Never {
+  print("""
+    Usage: \(program) COMMAND [OPTIONS...]
 
-let serverPortOption = Option(
-  "server_port",
-  default: 8080,
-  description: "The server port to connect to.")
+    Commands:
+      start_server [--tls|--notls] PORT         Starts the interoperability test server.
 
-let testCaseOption = Option(
-  "test_case",
-  default: InteroperabilityTestCase.emptyUnary.name,
-  description: "The name of the test case to execute.")
+      run_test [--tls|--notls] HOST PORT NAME   Run an interoperability test.
 
-/// The spec requires a string (as opposed to having a flag) to indicate whether TLS is enabled or
-/// disabled.
-let useTLSOption = Option(
-  "use_tls",
-  default: "false",
-  description: "Whether to use an encrypted or plaintext connection (true|false).") { value in
-  let lowercased = value.lowercased()
-  switch lowercased {
-  case "true", "false":
-    return lowercased
-  default:
-    throw ArgumentError.invalidType(value: value, type: "boolean", argument: "use_tls")
+      list_tests                                List all interoperability test names.
+    """)
+  exit(1)
+}
+
+enum Command {
+  case startServer(port: Int, useTLS: Bool)
+  case runTest(name: String, host: String, port: Int, useTLS: Bool)
+  case listTests
+
+  init?(from args: [String]) {
+    guard !args.isEmpty else {
+      return nil
+    }
+
+    var args = args
+    let command = args.removeFirst()
+    switch command {
+    case "start_server":
+      guard (args.count == 2 || args.count == 3),
+        let port = args.popLast().flatMap(Int.init),
+        let useTLS = Command.parseTLSArg(args.popLast())
+        else {
+          return nil
+      }
+      self = .startServer(port: port, useTLS: useTLS)
+
+    case "run_test":
+      guard (args.count == 3 || args.count == 4),
+        let name = args.popLast(),
+        let port = args.popLast().flatMap(Int.init),
+        let host = args.popLast(),
+        let useTLS = Command.parseTLSArg(args.popLast())
+        else {
+          return nil
+      }
+      self = .runTest(name: name, host: host, port: port, useTLS: useTLS)
+
+    case "list_tests":
+      self = .listTests
+
+    default:
+      return nil
+    }
+  }
+
+  private static func parseTLSArg(_ arg: String?) -> Bool? {
+    switch arg {
+    case .some("--tls"):
+      return true
+    case .none, .some("--notls"):
+      return false
+    default:
+      return nil
+    }
   }
 }
 
-let portOption = Option(
-  "port",
-  default: 8080,
-  description: "The port to listen on.")
-
-let group = Group { group in
-  group.command(
-    "run_test",
-    serverHostOption,
-    serverPortOption,
-    useTLSOption,
-    testCaseOption,
-    description: "Run a single test. See 'list_tests' for available test names."
-  ) { host, port, useTLS, testCaseName in
-    let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-    defer {
-      try? eventLoopGroup.syncShutdownGracefully()
-    }
-
-    exitOnThrow {
-      let instance = try makeRunnableTest(name: testCaseName)
-      let connection = try makeInteroperabilityTestClientConnection(
-        host: host,
-        port: port,
-        eventLoopGroup: eventLoopGroup,
-        useTLS: useTLS == "true")
-      try runTest(instance, name: testCaseName, connection: connection)
-    }
+func main(args: [String]) {
+  let program = args.first ?? "GRPC Interoperability Tests"
+  guard let command = Command(from: .init(args.dropFirst())) else {
+    printUsageAndExit(program: program)
   }
 
-  group.command(
-    "start_server",
-    portOption,
-    useTLSOption,
-    description: "Starts the test server."
-  ) { port, useTls in
-    let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-    defer {
-      try? eventLoopGroup.syncShutdownGracefully()
-    }
-
-    let server = exitOnThrow {
-      return try makeInteroperabilityTestServer(
-        host: "localhost",
-        port: port,
-        eventLoopGroup: eventLoopGroup,
-        useTLS: useTls == "true")
-    }
-
-    server.map { $0.channel.localAddress?.port }.whenSuccess {
-      print("Server started on port \($0!)")
-    }
-
-    // We never call close; run until we get killed.
-    try server.flatMap { $0.onClose }.wait()
-  }
-
-  group.command(
-    "list_tests",
-    description: "List available test case names."
-  ) {
+  switch command {
+  case .listTests:
     InteroperabilityTestCase.allCases.forEach {
       print($0.name)
     }
+
+  case let .startServer(port: port, useTLS: useTLS):
+    let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    defer {
+      try! group.syncShutdownGracefully()
+    }
+
+    do {
+      let server = try makeInteroperabilityTestServer(port: port, eventLoopGroup: group, useTLS: useTLS).wait()
+      print("server started: \(server.channel.localAddress!)")
+
+      // We never call close; run until we get killed.
+      try server.onClose.wait()
+    } catch {
+      print("unable to start interoperability test server")
+    }
+
+  case let .runTest(name: name, host: host, port: port, useTLS: useTLS):
+    let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    defer {
+      try! group.syncShutdownGracefully()
+    }
+
+    let test: InteroperabilityTest
+    do {
+      test = try makeRunnableTest(name: name)
+    } catch {
+      print("\(error)")
+      exit(1)
+    }
+
+    do {
+      let connection = try makeInteroperabilityTestClientConnection(
+        host: host,
+        port: port,
+        eventLoopGroup: group,
+        useTLS: useTLS
+      )
+      try runTest(test, name: name, connection: connection)
+    } catch {
+      print("Error running test: \(error)")
+      exit(1)
+    }
   }
 }
 
-group.run()
+main(args: CommandLine.arguments)

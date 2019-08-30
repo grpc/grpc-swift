@@ -17,9 +17,9 @@ import Foundation
 import GRPC
 import NIO
 import NIOSSL
-import Commander
 import EchoImplementation
 import EchoModel
+import Logging
 
 struct ConnectionFactory {
   var configuration: ClientConnection.Configuration
@@ -317,116 +317,191 @@ enum Benchmarks: String, CaseIterable {
   }
 }
 
-let hostOption = Option(
-  "host",
-  // Use IPv4 to avoid the happy eyeballs delay, this is important when we test the
-  // connection throughput.
-  default: "127.0.0.1",
-  description: "The host to connect to.")
+enum Command {
+  case listBenchmarks
+  case benchmark(name: String, host: String, port: Int, tls: (ca: String, cert: String)?)
+  case server(port: Int, tls: (ca: String, cert: String, key: String)?)
 
-let portOption = Option(
-  "port",
-  default: 8080,
-  description: "The port on the host to connect to.")
-
-let benchmarkOption = Option(
-  "benchmarks",
-  default: Benchmarks.allCases.map { $0.rawValue }.joined(separator: ","),
-  description: "A comma separated list of benchmarks to run. Defaults to all benchmarks.")
-
-let caCertificateOption = Option(
-  "ca_certificate",
-  default: "",
-  description: "The path to the CA certificate to use.")
-
-let certificateOption = Option(
-  "certificate",
-  default: "",
-  description: "The path to the certificate to use.")
-
-let privateKeyOption = Option(
-  "private_key",
-  default: "",
-  description: "The path to the private key to use.")
-
-let hostOverrideOption = Option(
-  "hostname_override",
-  default: "",
-  description: "The expected name of the server to use for TLS.")
-
-Group { group in
-  group.command(
-    "run_benchmarks",
-    benchmarkOption,
-    hostOption,
-    portOption,
-    caCertificateOption,
-    certificateOption,
-    privateKeyOption,
-    hostOverrideOption
-  ) { benchmarkNames, host, port, caCertificatePath, certificatePath, privateKeyPath, hostOverride in
-    let tlsConfiguration = try makeClientTLSConfiguration(
-      caCertificatePath: caCertificatePath,
-      certificatePath: certificatePath,
-      privateKeyPath: privateKeyPath)
-
-    let configuration = ClientConnection.Configuration(
-      target: .hostAndPort(host, port),
-      eventLoopGroup: MultiThreadedEventLoopGroup(numberOfThreads: 1),
-      tls: tlsConfiguration)
-
-    let factory = ConnectionFactory(configuration: configuration)
-
-    let names = benchmarkNames.components(separatedBy: ",")
-
-    // validate the benchmarks exist before running any
-    let benchmarks = names.map { name -> Benchmarks in
-      guard let benchnark = Benchmarks(rawValue: name) else {
-        print("unknown benchmark: \(name)")
-        exit(1)
-      }
-      return benchnark
+  init?(from args: [String]) {
+    guard !args.isEmpty else {
+      return nil
     }
 
-    benchmarks.forEach { benchmark in
-      let results = benchmark.run(using: factory)
-      print(results.asCSV)
+    var args = args
+    let command = args.removeFirst()
+    switch command {
+    case "server":
+      guard let port = args.popLast().flatMap(Int.init) else {
+        return nil
+      }
+
+      let caPath = args.suffixOfFirst(prefixedWith: "--caPath=")
+      let certPath = args.suffixOfFirst(prefixedWith: "--certPath=")
+      let keyPath = args.suffixOfFirst(prefixedWith: "--keyPath=")
+
+      // We need all or nothing here:
+      switch (caPath, certPath, keyPath) {
+      case let (.some(ca), .some(cert), .some(key)):
+        self = .server(port: port, tls: (ca: ca, cert: cert, key: key))
+      case (.none, .none, .none):
+        self = .server(port: port, tls: nil)
+      default:
+        return nil
+      }
+
+    case "benchmark":
+      guard let name = args.popLast(),
+        let port = args.popLast().flatMap(Int.init),
+        let host = args.popLast()
+        else {
+          return nil
+      }
+
+      let caPath = args.suffixOfFirst(prefixedWith: "--caPath=")
+      let certPath = args.suffixOfFirst(prefixedWith: "--certPath=")
+      // We need all or nothing here:
+      switch (caPath, certPath) {
+      case let (.some(ca), .some(cert)):
+        self = .benchmark(name: name, host: host, port: port, tls: (ca: ca, cert: cert))
+      case (.none, .none):
+        self = .benchmark(name: name, host: host, port: port, tls: nil)
+      default:
+        return nil
+      }
+
+    case "list_benchmarks":
+      self = .listBenchmarks
+
+    default:
+      return nil
     }
   }
+}
 
-  group.command(
-    "start_server",
-    hostOption,
-    portOption,
-    caCertificateOption,
-    certificateOption,
-    privateKeyOption
-  ) { host, port, caCertificatePath, certificatePath, privateKeyPath in
+func printUsageAndExit(program: String) -> Never {
+  print("""
+  Usage: \(program) COMMAND [OPTIONS...]
+
+  benchmark:
+    Run the given benchmark (see 'list_benchmarks' for possible options) against a server on the
+    specified host and port. TLS may be used by spefifying the path to the PEM formatted
+    certificate and CA certificate.
+
+      benchmark [--ca=CA --cert=CERT] HOST PORT BENCHMARK_NAME
+
+    Note: eiether all or none of CA and CERT must be provided.
+
+  list_benchmarks:
+    List the available benchmarks to run.
+
+  server:
+    Start the server on the given PORT. TLS may be used by specifying the paths to the PEM formatted
+    certificate, private key and CA certificate.
+
+      server [--ca=CA --cert=CERT --key=KEY] PORT
+
+    Note: eiether all or none of CA, CERT and KEY must be provided.
+  """)
+  exit(1)
+}
+
+fileprivate extension Array where Element == String {
+  func suffixOfFirst(prefixedWith prefix: String) -> String? {
+    return self.first {
+      $0.hasPrefix(prefix)
+    }.map {
+      String($0.dropFirst(prefix.count))
+    }
+  }
+}
+
+func main(args: [String]) {
+  var args = args
+  let program = args.removeFirst()
+  guard let command = Command(from: args) else {
+    printUsageAndExit(program: program)
+  }
+
+  switch command {
+  case let .server(port: port, tls: tls):
     let group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
+    defer {
+      try! group.syncShutdownGracefully()
+    }
 
-    let tlsConfiguration = try makeServerTLSConfiguration(
-      caCertificatePath: caCertificatePath,
-      certificatePath: certificatePath,
-      privateKeyPath: privateKeyPath)
-
-    let configuration = Server.Configuration(
-      target: .hostAndPort(host, port),
-      eventLoopGroup: group,
-      serviceProviders: [EchoProvider()],
-      tls: tlsConfiguration)
-
-    let server: Server
+    // Quieten the logs.
+    LoggingSystem.bootstrap {
+      var handler = StreamLogHandler.standardOutput(label: $0)
+      handler.logLevel = .warning
+      return handler
+    }
 
     do {
-      server = try Server.start(configuration: configuration).wait()
+      let configuration = try Server.Configuration(
+        target: .hostAndPort("localhost", port),
+        eventLoopGroup: group,
+        serviceProviders: [EchoProvider()],
+        tls: tls.map { tlsArgs in
+          return .init(
+            certificateChain: try NIOSSLCertificate.fromPEMFile(tlsArgs.cert).map { .certificate($0) },
+            privateKey: .file(tlsArgs.key),
+            trustRoots: .file(tlsArgs.ca)
+          )
+        }
+      )
+
+      let server = try Server.start(configuration: configuration).wait()
+      print("server started on port: \(server.channel.localAddress?.port ?? port)")
+
+      // Stop the program from exiting.
+      try? server.onClose.wait()
     } catch {
       print("unable to start server: \(error)")
       exit(1)
     }
 
-    print("server started on port: \(server.channel.localAddress?.port ?? port)")
+  case let .benchmark(name: name, host: host, port: port, tls: tls):
+    guard let benchmark = Benchmarks(rawValue: name) else {
+      printUsageAndExit(program: program)
+    }
 
-    // Stop the program from exiting.
-    try? server.onClose.wait()
+    // Quieten the logs.
+    LoggingSystem.bootstrap {
+      var handler = StreamLogHandler.standardOutput(label: $0)
+      handler.logLevel = .critical
+      return handler
+    }
+
+    let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    defer {
+      try! group.syncShutdownGracefully()
+    }
+
+    do {
+      let configuration = try ClientConnection.Configuration(
+        target: .hostAndPort(host, port),
+        eventLoopGroup: group,
+        tls: tls.map { tlsArgs in
+          return .init(
+            certificateChain: try NIOSSLCertificate.fromPEMFile(tlsArgs.cert).map { .certificate($0) },
+            trustRoots: .file(tlsArgs.ca)
+          )
+        }
+      )
+
+      let factory = ConnectionFactory(configuration: configuration)
+      let results = benchmark.run(using: factory)
+      print(results.asCSV)
+    } catch {
+      print("unable to run benchmark: \(error)")
+      exit(1)
+    }
+
+  case .listBenchmarks:
+    Benchmarks.allCases.forEach {
+      print($0.rawValue)
+    }
   }
-}.run()
+}
+
+main(args: CommandLine.arguments)
