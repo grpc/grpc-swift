@@ -86,10 +86,11 @@ func printUsageAndExit(program: String) -> Never {
 
     Commands:
       server [--tls|--notls] PORT                     Starts the echo server on the given port.
+
       client [--tls|--notls] HOST PORT RPC MESSAGE    Connects to the echo server on the given host
-                                                        host and port and calls the RPC with the
-                                                        provided message. See below for a list of
-                                                        possible RPCs.
+                                                      host and port and calls the RPC with the
+                                                      provided message. See below for a list of
+                                                      possible RPCs.
 
     RPCs:
       * get      (unary)

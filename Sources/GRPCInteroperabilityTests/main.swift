@@ -77,7 +77,9 @@ func printUsageAndExit(program: String) -> Never {
 
     Commands:
       start_server [--tls|--notls] PORT         Starts the interoperability test server.
+
       run_test [--tls|--notls] HOST PORT NAME   Run an interoperability test.
+
       list_tests                                List all interoperability test names.
     """)
   exit(1)
