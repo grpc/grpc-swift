@@ -99,7 +99,7 @@ enum Command {
     let command = args.removeFirst()
     switch command {
     case "start_server":
-      guard (args.count == 2 || args.count == 3),
+      guard (args.count == 1 || args.count == 2),
         let port = args.popLast().flatMap(Int.init),
         let useTLS = Command.parseTLSArg(args.popLast())
         else {

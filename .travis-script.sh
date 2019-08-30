@@ -117,8 +117,9 @@ run_interop_tests() {
   for test in "${TESTS[@]}"; do
     info "Running $test"
     $BUILD_OUTPUT/InteroperabilityTestRunner run_test \
-      --test_case "$test" \
-      --server_port $INTEROP_TEST_SERVER_PORT \
+      "localhost" \
+      "$INTEROP_TEST_SERVER_PORT" \
+      "$test" \
         2> "interop.$test.log"
     success "PASSED $test"
   done
