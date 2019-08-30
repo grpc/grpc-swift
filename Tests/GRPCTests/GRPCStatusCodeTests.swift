@@ -25,6 +25,7 @@ import Logging
 class GRPCStatusCodeTests: GRPCTestCase {
   var channel: EmbeddedChannel!
   var metadataPromise: EventLoopPromise<HTTPHeaders>!
+  var trailingMetadataPromise: EventLoopPromise<HTTPHeaders>!
   var responsePromise: EventLoopPromise<Echo_EchoResponse>!
   var statusPromise: EventLoopPromise<GRPCStatus>!
 
@@ -33,6 +34,7 @@ class GRPCStatusCodeTests: GRPCTestCase {
 
     self.channel = EmbeddedChannel()
     self.metadataPromise = self.channel.eventLoop.makePromise()
+    self.trailingMetadataPromise = self.channel.eventLoop.makePromise()
     self.responsePromise = self.channel.eventLoop.makePromise()
     self.statusPromise = self.channel.eventLoop.makePromise()
 
@@ -43,6 +45,7 @@ class GRPCStatusCodeTests: GRPCTestCase {
       GRPCClientCodec<Echo_EchoRequest, Echo_EchoResponse>(logger: logger),
       GRPCClientUnaryResponseChannelHandler<Echo_EchoResponse>(
         initialMetadataPromise: self.metadataPromise,
+        trailingMetadataPromise: self.trailingMetadataPromise,
         responsePromise: self.responsePromise,
         statusPromise: self.statusPromise,
         errorDelegate: nil,

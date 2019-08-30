@@ -26,17 +26,14 @@ import NIOHTTP2
 ///   taking an `Error`.
 /// - We aren't using value semantics (since all properties are constant).
 public final class GRPCStatus: Error {
-  /// The code to return in the `grpc-status` header.
+  /// The status code of the RPC.
   public let code: Code
-  /// The message to return in the `grpc-message` header.
+  /// The status message of the RPC.
   public let message: String?
-  /// Additional HTTP headers to return in the trailers.
-  public let trailingMetadata: HTTPHeaders
 
-  public init(code: Code, message: String?, trailingMetadata: HTTPHeaders = HTTPHeaders()) {
+  public init(code: Code, message: String?) {
     self.code = code
     self.message = message
-    self.trailingMetadata = trailingMetadata
   }
 
   // Frequently used "default" statuses.
@@ -45,6 +42,22 @@ public final class GRPCStatus: Error {
   public static let ok = GRPCStatus(code: .ok, message: "OK")
   /// "Internal server error" status.
   public static let processingError = GRPCStatus(code: .internalError, message: "unknown error processing request")
+}
+
+extension GRPCStatus: Equatable {
+  public static func == (lhs: GRPCStatus, rhs: GRPCStatus) -> Bool {
+    return lhs.code == rhs.code && lhs.message == rhs.message
+  }
+}
+
+extension GRPCStatus: CustomStringConvertible {
+  public var description: String {
+    if let message = message {
+      return "\(code) (\(code.rawValue)): \(message)"
+    } else {
+      return "\(code) (\(code.rawValue))"
+    }
+  }
 }
 
 extension GRPCStatus {

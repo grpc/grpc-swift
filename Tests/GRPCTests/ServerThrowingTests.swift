@@ -25,16 +25,6 @@ import XCTest
 let thrownError = GRPCStatus(code: .internalError, message: "expected error")
 let transformedError = GRPCStatus(code: .aborted, message: "transformed error")
 
-func assertEqualStatusIgnoringTrailers(_ status: GRPCStatus, _ otherStatus: GRPCStatus?) {
-  guard let otherStatus = otherStatus else {
-    XCTFail("status was nil")
-    return
-  }
-
-  XCTAssertEqual(status.code, otherStatus.code)
-  XCTAssertEqual(status.message, otherStatus.message)
-}
-
 // Motivation for two different providers: Throwing immediately causes the event observer future (in the
 // client-streaming and bidi-streaming cases) to throw immediately, _before_ the corresponding handler has even added
 // to the channel. We want to test that case as well as the one where we throw only _after_ the handler has been added
@@ -132,22 +122,22 @@ class ServerErrorTransformingTests: ServerThrowingTests {
 extension ServerThrowingTests {
   func testUnary() throws {
     let call = client.get(Echo_EchoRequest(text: "foo"))
-    assertEqualStatusIgnoringTrailers(expectedError, try call.status.wait())
+    XCTAssertEqual(expectedError, try call.status.wait())
     XCTAssertThrowsError(try call.response.wait()) {
-      assertEqualStatusIgnoringTrailers(expectedError, $0 as? GRPCStatus)
+      XCTAssertEqual(expectedError, $0 as? GRPCStatus)
     }
   }
 
   func testClientStreaming() throws {
     let call = client.collect()
     XCTAssertNoThrow(try call.sendEnd().wait())
-    assertEqualStatusIgnoringTrailers(expectedError, try call.status.wait())
+    XCTAssertEqual(expectedError, try call.status.wait())
 
     if type(of: makeEchoProvider()) != ErrorReturningEchoProvider.self {
       // With `ErrorReturningEchoProvider` we actually _return_ a response, which means that the `response` future
       // will _not_ fail, so in that case this test doesn't apply.
       XCTAssertThrowsError(try call.response.wait()) {
-        assertEqualStatusIgnoringTrailers(expectedError, $0 as? GRPCStatus)
+        XCTAssertEqual(expectedError, $0 as? GRPCStatus)
       }
     }
   }
@@ -155,13 +145,13 @@ extension ServerThrowingTests {
   func testServerStreaming() throws {
     let call = client.expand(Echo_EchoRequest(text: "foo")) { XCTFail("no message expected, got \($0)") }
     // Nothing to throw here, but the `status` should be the expected error.
-    assertEqualStatusIgnoringTrailers(expectedError, try call.status.wait())
+    XCTAssertEqual(expectedError, try call.status.wait())
   }
 
   func testBidirectionalStreaming() throws {
     let call = client.update() { XCTFail("no message expected, got \($0)") }
     XCTAssertNoThrow(try call.sendEnd().wait())
     // Nothing to throw here, but the `status` should be the expected error.
-    assertEqualStatusIgnoringTrailers(expectedError, try call.status.wait())
+    XCTAssertEqual(expectedError, try call.status.wait())
   }
 }

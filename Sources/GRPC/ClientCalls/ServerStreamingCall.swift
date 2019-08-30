@@ -32,6 +32,7 @@ public final class ServerStreamingCall<RequestMessage: Message, ResponseMessage:
 
     let responseHandler = GRPCClientStreamingResponseChannelHandler(
       initialMetadataPromise: connection.channel.eventLoop.makePromise(),
+      trailingMetadataPromise: connection.channel.eventLoop.makePromise(),
       statusPromise: connection.channel.eventLoop.makePromise(),
       errorDelegate: errorDelegate,
       timeout: callOptions.timeout,

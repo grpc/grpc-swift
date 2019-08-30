@@ -29,6 +29,7 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
   internal let logger: Logger
 
   internal let initialMetadataPromise: EventLoopPromise<HTTPHeaders>
+  internal let trailingMetadataPromise: EventLoopPromise<HTTPHeaders>
   internal let statusPromise: EventLoopPromise<GRPCStatus>
 
   internal let timeout: GRPCTimeout
@@ -87,6 +88,7 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
   ///   - expectedResponses: The number of responses expected.
   public init(
     initialMetadataPromise: EventLoopPromise<HTTPHeaders>,
+    trailingMetadataPromise: EventLoopPromise<HTTPHeaders>,
     statusPromise: EventLoopPromise<GRPCStatus>,
     errorDelegate: ClientErrorDelegate?,
     timeout: GRPCTimeout,
@@ -94,6 +96,7 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
     logger: Logger
   ) {
     self.initialMetadataPromise = initialMetadataPromise
+    self.trailingMetadataPromise = trailingMetadataPromise
     self.statusPromise = statusPromise
     self.errorDelegate = errorDelegate
     self.timeout = timeout
@@ -108,10 +111,11 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
   /// are failed with the given status.
   ///
   /// - Parameter status: the status to observe.
-  internal func observeStatus(_ status: GRPCStatus) {
+  internal func observeStatus(_ status: GRPCStatus, trailingMetadata: HTTPHeaders?) {
     if status.code != .ok {
       self.initialMetadataPromise.fail(status)
     }
+    self.trailingMetadataPromise.succeed(trailingMetadata ?? HTTPHeaders())
     self.statusPromise.succeed(status)
     self.timeoutTask?.cancel()
     self.context = nil
@@ -126,7 +130,7 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
   /// - Parameter error: the error to observe.
   internal func observeError(_ error: GRPCError) {
     self.errorDelegate?.didCatchError(error.wrappedError, file: error.file, line: error.line)
-    self.observeStatus(error.asGRPCStatus())
+    self.observeStatus(error.asGRPCStatus(), trailingMetadata: nil)
   }
 
   /// Called when a response is received. Subclasses should override this method.
@@ -187,7 +191,7 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
       self.onResponse(boxedMessage)
       self.inboundState = self.responseArity.inboundStateAfterResponse
 
-    case .status(let status):
+    case let .status(status, trailers):
       guard self.inboundState.expectingStatus else {
         self.logger.error("invalid state '\(self.inboundState)' while processing status")
         self.errorCaught(
@@ -198,7 +202,7 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
       }
 
       self.logger.info("received response status: \(status.code)")
-      self.observeStatus(status)
+      self.observeStatus(status, trailingMetadata: trailers)
       // We don't expect any more requests/responses beyond this point and we don't need to close
       // the channel since NIO's HTTP/2 channel handlers will deal with this for us.
     }
@@ -210,7 +214,7 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
       case .cancelled:
         // We shouldn't observe an error since this event is triggered by the user: just observe the
         // status.
-        self.observeStatus(GRPCError.client(.cancelledByClient).asGRPCStatus())
+        self.observeStatus(GRPCError.client(.cancelledByClient).asGRPCStatus(), trailingMetadata: nil)
         context.close(promise: nil)
       }
     }
@@ -218,7 +222,7 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
 
   public func channelInactive(context: ChannelHandlerContext) {
     self.inboundState = .ignore
-    self.observeStatus(.init(code: .unavailable, message: nil))
+    self.observeStatus(.init(code: .unavailable, message: nil), trailingMetadata: nil)
     context.fireChannelInactive()
   }
 
@@ -259,6 +263,7 @@ final class GRPCClientUnaryResponseChannelHandler<ResponseMessage: Message>: Cli
 
   internal init(
     initialMetadataPromise: EventLoopPromise<HTTPHeaders>,
+    trailingMetadataPromise: EventLoopPromise<HTTPHeaders>,
     responsePromise: EventLoopPromise<ResponseMessage>,
     statusPromise: EventLoopPromise<GRPCStatus>,
     errorDelegate: ClientErrorDelegate?,
@@ -269,6 +274,7 @@ final class GRPCClientUnaryResponseChannelHandler<ResponseMessage: Message>: Cli
 
     super.init(
       initialMetadataPromise: initialMetadataPromise,
+      trailingMetadataPromise: trailingMetadataPromise,
       statusPromise: statusPromise,
       errorDelegate: errorDelegate,
       timeout: timeout,
@@ -288,8 +294,8 @@ final class GRPCClientUnaryResponseChannelHandler<ResponseMessage: Message>: Cli
   }
 
   /// Fails the response promise if the given status is not `.ok`.
-  override func observeStatus(_ status: GRPCStatus) {
-    super.observeStatus(status)
+  override func observeStatus(_ status: GRPCStatus, trailingMetadata: HTTPHeaders?) {
+    super.observeStatus(status, trailingMetadata: trailingMetadata)
 
     if status.code != .ok {
       self.responsePromise.fail(status)
@@ -305,6 +311,7 @@ final class GRPCClientStreamingResponseChannelHandler<ResponseMessage: Message>:
 
   internal init(
     initialMetadataPromise: EventLoopPromise<HTTPHeaders>,
+    trailingMetadataPromise: EventLoopPromise<HTTPHeaders>,
     statusPromise: EventLoopPromise<GRPCStatus>,
     errorDelegate: ClientErrorDelegate?,
     timeout: GRPCTimeout,
@@ -315,6 +322,7 @@ final class GRPCClientStreamingResponseChannelHandler<ResponseMessage: Message>:
 
     super.init(
       initialMetadataPromise: initialMetadataPromise,
+      trailingMetadataPromise: trailingMetadataPromise,
       statusPromise: statusPromise,
       errorDelegate: errorDelegate,
       timeout: timeout,

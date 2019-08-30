@@ -34,7 +34,7 @@ public enum GRPCClientResponsePart<ResponseMessage: Message> {
   // We box the message to keep the enum small enough to fit in `NIOAny` and avoid unnecessary
   // allocations.
   case message(_Box<ResponseMessage>)
-  case status(GRPCStatus)
+  case status(GRPCStatus, HTTPHeaders?)
 }
 
 /// This channel handler simply encodes and decodes protobuf messages into typed messages
@@ -73,9 +73,9 @@ extension GRPCClientCodec: ChannelInboundHandler {
         context.fireErrorCaught(GRPCError.client(.responseProtoDeserializationFailure))
       }
 
-    case .status(let status):
+    case let .statusAndTrailers(status, trailers):
       self.logger.debug("read status \(status)")
-      context.fireChannelRead(self.wrapInboundOut(.status(status)))
+      context.fireChannelRead(self.wrapInboundOut(.status(status, trailers)))
     }
   }
 }

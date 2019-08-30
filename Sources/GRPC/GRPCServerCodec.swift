@@ -80,7 +80,7 @@ extension GRPCServerCodec: ChannelOutboundHandler {
       }
 
     case .status(let status):
-      context.writeAndFlush(self.wrapOutboundOut(.status(status)), promise: promise)
+      context.writeAndFlush(self.wrapOutboundOut(.statusAndTrailers(status, nil)), promise: promise)
     }
   }
 }
