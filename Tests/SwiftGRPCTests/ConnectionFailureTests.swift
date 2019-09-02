@@ -46,7 +46,7 @@ extension ConnectionFailureTests {
       guard case let .callError(callResult) = error as! RPCError
         else { XCTFail("unexpected error \(error)"); return }
       XCTAssertEqual(.unavailable, callResult.statusCode)
-      XCTAssertEqual("Connect Failed", callResult.statusMessage)
+      XCTAssertEqual("failed to connect to all addresses", callResult.statusMessage)
     }
   }
   

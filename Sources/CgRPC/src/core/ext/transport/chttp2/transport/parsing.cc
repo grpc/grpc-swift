@@ -28,6 +28,7 @@
 
 #include "src/core/lib/profiling/timers.h"
 #include "src/core/lib/slice/slice_string_helpers.h"
+#include "src/core/lib/slice/slice_utils.h"
 #include "src/core/lib/transport/http2_errors.h"
 #include "src/core/lib/transport/static_metadata.h"
 #include "src/core/lib/transport/status_conversion.h"
@@ -45,14 +46,14 @@ static grpc_error* init_goaway_parser(grpc_chttp2_transport* t);
 static grpc_error* init_skip_frame_parser(grpc_chttp2_transport* t,
                                           int is_header);
 
-static grpc_error* parse_frame_slice(grpc_chttp2_transport* t, grpc_slice slice,
-                                     int is_last);
+static grpc_error* parse_frame_slice(grpc_chttp2_transport* t,
+                                     const grpc_slice& slice, int is_last);
 
 grpc_error* grpc_chttp2_perform_read(grpc_chttp2_transport* t,
-                                     grpc_slice slice) {
-  uint8_t* beg = GRPC_SLICE_START_PTR(slice);
-  uint8_t* end = GRPC_SLICE_END_PTR(slice);
-  uint8_t* cur = beg;
+                                     const grpc_slice& slice) {
+  const uint8_t* beg = GRPC_SLICE_START_PTR(slice);
+  const uint8_t* end = GRPC_SLICE_END_PTR(slice);
+  const uint8_t* cur = beg;
   grpc_error* err;
 
   if (cur == end) return GRPC_ERROR_NONE;
@@ -304,7 +305,7 @@ static grpc_error* init_frame_parser(grpc_chttp2_transport* t) {
     case GRPC_CHTTP2_FRAME_GOAWAY:
       return init_goaway_parser(t);
     default:
-      if (grpc_http_trace.enabled()) {
+      if (GRPC_TRACE_FLAG_ENABLED(grpc_http_trace)) {
         gpr_log(GPR_ERROR, "Unknown frame type %02x", t->incoming_frame_type);
       }
       return init_skip_frame_parser(t, 0);
@@ -312,7 +313,7 @@ static grpc_error* init_frame_parser(grpc_chttp2_transport* t) {
 }
 
 static grpc_error* skip_parser(void* parser, grpc_chttp2_transport* t,
-                               grpc_chttp2_stream* s, grpc_slice slice,
+                               grpc_chttp2_stream* s, const grpc_slice& slice,
                                int is_last) {
   return GRPC_ERROR_NONE;
 }
@@ -381,10 +382,9 @@ error_handler:
     if (s != nullptr) {
       grpc_chttp2_mark_stream_closed(t, s, true, false, err);
     }
-    grpc_slice_buffer_add(
-        &t->qbuf, grpc_chttp2_rst_stream_create(t->incoming_stream_id,
-                                                GRPC_HTTP2_PROTOCOL_ERROR,
-                                                &s->stats.outgoing));
+    grpc_chttp2_add_rst_stream_to_next_write(t, t->incoming_stream_id,
+                                             GRPC_HTTP2_PROTOCOL_ERROR,
+                                             &s->stats.outgoing);
     return init_skip_frame_parser(t, 0);
   } else {
     return err;
@@ -393,6 +393,32 @@ error_handler:
 
 static void free_timeout(void* p) { gpr_free(p); }
 
+static bool md_key_cmp(grpc_mdelem md, const grpc_slice& reference) {
+  GPR_DEBUG_ASSERT(grpc_slice_is_interned(GRPC_MDKEY(md)));
+  return GRPC_MDKEY(md).refcount == reference.refcount;
+}
+
+static bool md_cmp(grpc_mdelem md, grpc_mdelem ref_md,
+                   const grpc_slice& ref_key) {
+  if (GPR_LIKELY(GRPC_MDELEM_IS_INTERNED(md))) {
+    return md.payload == ref_md.payload;
+  }
+  if (md_key_cmp(md, ref_key)) {
+    return grpc_slice_eq_static_interned(GRPC_MDVALUE(md),
+                                         GRPC_MDVALUE(ref_md));
+  }
+  return false;
+}
+
+static bool is_nonzero_status(grpc_mdelem md) {
+  // If md.payload == GRPC_MDELEM_GRPC_STATUS_1 or GRPC_MDELEM_GRPC_STATUS_2,
+  // then we have seen an error. In fact, if it is a GRPC_STATUS and it's
+  // not equal to GRPC_MDELEM_GRPC_STATUS_0, then we have seen an error.
+  // TODO(ctiller): check for a status like " 0"
+  return md_key_cmp(md, GRPC_MDSTR_GRPC_STATUS) &&
+         !md_cmp(md, GRPC_MDELEM_GRPC_STATUS_0, GRPC_MDSTR_GRPC_STATUS);
+}
+
 static void on_initial_header(void* tp, grpc_mdelem md) {
   GPR_TIMER_SCOPE("on_initial_header", 0);
 
@@ -400,7 +426,7 @@ static void on_initial_header(void* tp, grpc_mdelem md) {
   grpc_chttp2_stream* s = t->incoming_stream;
   GPR_ASSERT(s != nullptr);
 
-  if (grpc_http_trace.enabled()) {
+  if (GRPC_TRACE_FLAG_ENABLED(grpc_http_trace)) {
     char* key = grpc_slice_to_c_string(GRPC_MDKEY(md));
     char* value =
         grpc_dump_slice(GRPC_MDVALUE(md), GPR_DUMP_HEX | GPR_DUMP_ASCII);
@@ -410,53 +436,36 @@ static void on_initial_header(void* tp, grpc_mdelem md) {
     gpr_free(value);
   }
 
-  if (GRPC_MDELEM_STORAGE(md) == GRPC_MDELEM_STORAGE_STATIC) {
-    // We don't use grpc_mdelem_eq here to avoid executing additional
-    // instructions. The reasoning is if the payload is not equal, we already
-    // know that the metadata elements are not equal because the md is
-    // confirmed to be static. If we had used grpc_mdelem_eq here, then if the
-    // payloads are not equal, grpc_mdelem_eq executes more instructions to
-    // determine if they're equal or not.
-    if (md.payload == GRPC_MDELEM_GRPC_STATUS_1.payload ||
-        md.payload == GRPC_MDELEM_GRPC_STATUS_2.payload) {
-      s->seen_error = true;
-    }
-  } else {
-    if (grpc_slice_eq(GRPC_MDKEY(md), GRPC_MDSTR_GRPC_STATUS) &&
-        !grpc_mdelem_eq(md, GRPC_MDELEM_GRPC_STATUS_0)) {
-      /* TODO(ctiller): check for a status like " 0" */
-      s->seen_error = true;
-    }
-
-    if (grpc_slice_eq(GRPC_MDKEY(md), GRPC_MDSTR_GRPC_TIMEOUT)) {
-      grpc_millis* cached_timeout = static_cast<grpc_millis*>(
-          grpc_mdelem_get_user_data(md, free_timeout));
-      grpc_millis timeout;
-      if (cached_timeout != nullptr) {
-        timeout = *cached_timeout;
-      } else {
-        if (GPR_UNLIKELY(
-                !grpc_http2_decode_timeout(GRPC_MDVALUE(md), &timeout))) {
-          char* val = grpc_slice_to_c_string(GRPC_MDVALUE(md));
-          gpr_log(GPR_ERROR, "Ignoring bad timeout value '%s'", val);
-          gpr_free(val);
-          timeout = GRPC_MILLIS_INF_FUTURE;
-        }
-        if (GRPC_MDELEM_IS_INTERNED(md)) {
-          /* store the result */
-          cached_timeout =
-              static_cast<grpc_millis*>(gpr_malloc(sizeof(grpc_millis)));
-          *cached_timeout = timeout;
-          grpc_mdelem_set_user_data(md, free_timeout, cached_timeout);
-        }
+  if (is_nonzero_status(md)) {  // not GRPC_MDELEM_GRPC_STATUS_0?
+    s->seen_error = true;
+  } else if (md_key_cmp(md, GRPC_MDSTR_GRPC_TIMEOUT)) {
+    grpc_millis* cached_timeout =
+        static_cast<grpc_millis*>(grpc_mdelem_get_user_data(md, free_timeout));
+    grpc_millis timeout;
+    if (cached_timeout != nullptr) {
+      timeout = *cached_timeout;
+    } else {
+      if (GPR_UNLIKELY(
+              !grpc_http2_decode_timeout(GRPC_MDVALUE(md), &timeout))) {
+        char* val = grpc_slice_to_c_string(GRPC_MDVALUE(md));
+        gpr_log(GPR_ERROR, "Ignoring bad timeout value '%s'", val);
+        gpr_free(val);
+        timeout = GRPC_MILLIS_INF_FUTURE;
       }
-      if (timeout != GRPC_MILLIS_INF_FUTURE) {
-        grpc_chttp2_incoming_metadata_buffer_set_deadline(
-            &s->metadata_buffer[0], grpc_core::ExecCtx::Get()->Now() + timeout);
+      if (GRPC_MDELEM_IS_INTERNED(md)) {
+        /* store the result */
+        cached_timeout =
+            static_cast<grpc_millis*>(gpr_malloc(sizeof(grpc_millis)));
+        *cached_timeout = timeout;
+        grpc_mdelem_set_user_data(md, free_timeout, cached_timeout);
       }
-      GRPC_MDELEM_UNREF(md);
-      return;
     }
+    if (timeout != GRPC_MILLIS_INF_FUTURE) {
+      grpc_chttp2_incoming_metadata_buffer_set_deadline(
+          &s->metadata_buffer[0], grpc_core::ExecCtx::Get()->Now() + timeout);
+    }
+    GRPC_MDELEM_UNREF(md);
+    return;
   }
 
   const size_t new_size = s->metadata_buffer[0].size + GRPC_MDELEM_LENGTH(md);
@@ -496,7 +505,7 @@ static void on_trailing_header(void* tp, grpc_mdelem md) {
   grpc_chttp2_stream* s = t->incoming_stream;
   GPR_ASSERT(s != nullptr);
 
-  if (grpc_http_trace.enabled()) {
+  if (GRPC_TRACE_FLAG_ENABLED(grpc_http_trace)) {
     char* key = grpc_slice_to_c_string(GRPC_MDKEY(md));
     char* value =
         grpc_dump_slice(GRPC_MDVALUE(md), GPR_DUMP_HEX | GPR_DUMP_ASCII);
@@ -506,20 +515,7 @@ static void on_trailing_header(void* tp, grpc_mdelem md) {
     gpr_free(value);
   }
 
-  if (GRPC_MDELEM_STORAGE(md) == GRPC_MDELEM_STORAGE_STATIC) {
-    // We don't use grpc_mdelem_eq here to avoid executing additional
-    // instructions. The reasoning is if the payload is not equal, we already
-    // know that the metadata elements are not equal because the md is
-    // confirmed to be static. If we had used grpc_mdelem_eq here, then if the
-    // payloads are not equal, grpc_mdelem_eq executes more instructions to
-    // determine if they're equal or not.
-    if (md.payload == GRPC_MDELEM_GRPC_STATUS_1.payload ||
-        md.payload == GRPC_MDELEM_GRPC_STATUS_2.payload) {
-      s->seen_error = true;
-    }
-  } else if (grpc_slice_eq(GRPC_MDKEY(md), GRPC_MDSTR_GRPC_STATUS) &&
-             !grpc_mdelem_eq(md, GRPC_MDELEM_GRPC_STATUS_0)) {
-    /* TODO(ctiller): check for a status like " 0" */
+  if (is_nonzero_status(md)) {  // not GRPC_MDELEM_GRPC_STATUS_0?
     s->seen_error = true;
   }
 
@@ -753,25 +749,24 @@ static grpc_error* init_settings_frame_parser(grpc_chttp2_transport* t) {
   return GRPC_ERROR_NONE;
 }
 
-static grpc_error* parse_frame_slice(grpc_chttp2_transport* t, grpc_slice slice,
-                                     int is_last) {
+static grpc_error* parse_frame_slice(grpc_chttp2_transport* t,
+                                     const grpc_slice& slice, int is_last) {
   grpc_chttp2_stream* s = t->incoming_stream;
   grpc_error* err = t->parser(t->parser_data, t, s, slice, is_last);
   intptr_t unused;
   if (GPR_LIKELY(err == GRPC_ERROR_NONE)) {
     return err;
   } else if (grpc_error_get_int(err, GRPC_ERROR_INT_STREAM_ID, &unused)) {
-    if (grpc_http_trace.enabled()) {
+    if (GRPC_TRACE_FLAG_ENABLED(grpc_http_trace)) {
       const char* msg = grpc_error_string(err);
       gpr_log(GPR_ERROR, "%s", msg);
     }
     grpc_chttp2_parsing_become_skip_parser(t);
     if (s) {
       s->forced_close_error = err;
-      grpc_slice_buffer_add(
-          &t->qbuf, grpc_chttp2_rst_stream_create(t->incoming_stream_id,
-                                                  GRPC_HTTP2_PROTOCOL_ERROR,
-                                                  &s->stats.outgoing));
+      grpc_chttp2_add_rst_stream_to_next_write(t, t->incoming_stream_id,
+                                               GRPC_HTTP2_PROTOCOL_ERROR,
+                                               &s->stats.outgoing);
     } else {
       GRPC_ERROR_UNREF(err);
     }
