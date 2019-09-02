@@ -66,7 +66,7 @@ open class StreamingResponseCallContextImpl<ResponseMessage: Message>: Streaming
       }
       // Finish the call by returning the final status.
       .whenSuccess {
-        self.channel.writeAndFlush(NIOAny(WrappedResponse.status($0)), promise: nil)
+        self.channel.writeAndFlush(NIOAny(WrappedResponse.statusAndTrailers($0, self.trailingMetadata)), promise: nil)
     }
   }
 

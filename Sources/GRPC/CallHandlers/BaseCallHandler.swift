@@ -120,7 +120,7 @@ extension BaseCallHandler: ChannelOutboundHandler {
     }
 
     // We can only write one status; make sure we don't write again.
-    if case .status = unwrapOutboundIn(data) {
+    if case .statusAndTrailers = unwrapOutboundIn(data) {
       self.serverCanWrite = false
       context.writeAndFlush(data, promise: promise)
     } else {

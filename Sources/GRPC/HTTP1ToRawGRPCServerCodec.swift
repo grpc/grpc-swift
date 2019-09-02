@@ -30,7 +30,7 @@ public enum RawGRPCServerRequestPart {
 public enum RawGRPCServerResponsePart {
   case headers(HTTPHeaders)
   case message(Data)
-  case statusAndTrailers(GRPCStatus, HTTPHeaders?)
+  case statusAndTrailers(GRPCStatus, HTTPHeaders)
 }
 
 /// A simple channel handler that translates HTTP1 data types into gRPC packets, and vice versa.
@@ -292,7 +292,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
         self.write(context: context, data: NIOAny(RawGRPCServerResponsePart.headers(HTTPHeaders())), promise: nil)
       }
 
-      var trailers = trailers ?? HTTPHeaders()
+      var trailers = trailers
       trailers.add(name: GRPCHeaderName.statusCode, value: String(describing: status.code.rawValue))
       if let message = status.message.flatMap(GRPCStatusMessageMarshaller.marshall) {
         trailers.add(name: GRPCHeaderName.statusMessage, value: message)

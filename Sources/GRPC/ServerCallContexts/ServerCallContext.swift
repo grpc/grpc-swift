@@ -36,6 +36,7 @@ open class ServerCallContextBase: ServerCallContext {
   public let eventLoop: EventLoop
   public let request: HTTPRequestHead
   public let logger: Logger
+  public var trailingMetadata: HTTPHeaders = HTTPHeaders()
 
   public init(eventLoop: EventLoop, request: HTTPRequestHead, logger: Logger) {
     self.eventLoop = eventLoop
