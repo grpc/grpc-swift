@@ -42,6 +42,7 @@ public final class ClientStreamingCall<RequestMessage: Message, ResponseMessage:
 
     let responseHandler = GRPCClientUnaryResponseChannelHandler<ResponseMessage>(
       initialMetadataPromise: connection.channel.eventLoop.makePromise(),
+      trailingMetadataPromise: connection.channel.eventLoop.makePromise(),
       responsePromise: connection.channel.eventLoop.makePromise(),
       statusPromise: connection.channel.eventLoop.makePromise(),
       errorDelegate: errorDelegate,

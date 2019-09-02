@@ -42,8 +42,6 @@ public protocol ClientCall {
   var status: EventLoopFuture<GRPCStatus> { get }
 
   /// Trailing response metadata.
-  ///
-  /// This is the same metadata as `GRPCStatus.trailingMetadata` returned by `status`.
   var trailingMetadata: EventLoopFuture<HTTPHeaders> { get }
 
   /// Cancel the current call.

@@ -45,7 +45,7 @@ extension RawGRPCServerResponsePart {
   ///
   /// - Parameter validate: A block to further validate the status.
   func assertStatus(validate: ((GRPCStatus) -> Void)? = nil) {
-    guard case .status(let status) = self else {
+    guard case let .statusAndTrailers(status, _) = self else {
       XCTFail("Expected .status but got \(self)")
       return
     }

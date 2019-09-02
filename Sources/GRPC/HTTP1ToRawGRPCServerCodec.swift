@@ -30,7 +30,7 @@ public enum RawGRPCServerRequestPart {
 public enum RawGRPCServerResponsePart {
   case headers(HTTPHeaders)
   case message(Data)
-  case status(GRPCStatus)
+  case statusAndTrailers(GRPCStatus, HTTPHeaders)
 }
 
 /// A simple channel handler that translates HTTP1 data types into gRPC packets, and vice versa.
@@ -284,7 +284,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
       }
       self.outboundState = .expectingBodyOrStatus
 
-    case .status(let status):
+    case let .statusAndTrailers(status, trailers):
       // If we error before sending the initial headers (e.g. unimplemented method) then we won't have sent the request head.
       // NIOHTTP2 doesn't support sending a single frame as a "Trailers-Only" response so we still need to loop back and
       // send the request head first.
@@ -292,7 +292,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
         self.write(context: context, data: NIOAny(RawGRPCServerResponsePart.headers(HTTPHeaders())), promise: nil)
       }
 
-      var trailers = status.trailingMetadata
+      var trailers = trailers
       trailers.add(name: GRPCHeaderName.statusCode, value: String(describing: status.code.rawValue))
       if let message = status.message.flatMap(GRPCStatusMessageMarshaller.marshall) {
         trailers.add(name: GRPCHeaderName.statusMessage, value: message)

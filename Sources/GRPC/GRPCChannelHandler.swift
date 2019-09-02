@@ -74,7 +74,7 @@ extension GRPCChannelHandler: ChannelInboundHandler, RemovableChannelHandler {
     let status = self.errorDelegate?.transformLibraryError(error)
       ?? (error as? GRPCStatusTransformable)?.asGRPCStatus()
       ?? .processingError
-    context.writeAndFlush(wrapOutboundOut(.status(status)), promise: nil)
+    context.writeAndFlush(wrapOutboundOut(.statusAndTrailers(status, HTTPHeaders())), promise: nil)
   }
 
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {

@@ -40,8 +40,8 @@ open class UnaryResponseCallContext<ResponseMessage: Message>: ServerCallContext
   }
 }
 
-/// Protocol variant of `UnaryResponseCallContext` that only exposes the `responseStatus` field, but not
-/// `responsePromise`.
+/// Protocol variant of `UnaryResponseCallContext` that only exposes the `responseStatus` and `trailingMetadata`
+/// fields, but not `responsePromise`.
 ///
 /// Motivation: `UnaryCallHandler` already asks the call handler return an `EventLoopFuture<ResponseMessage>` which
 /// is automatically cascaded into `UnaryResponseCallContext.responsePromise`, so that promise does not (and should not)
@@ -51,6 +51,7 @@ open class UnaryResponseCallContext<ResponseMessage: Message>: ServerCallContext
 /// lets us avoid associated-type requirements on the protocol.
 public protocol StatusOnlyCallContext: ServerCallContext {
   var responseStatus: GRPCStatus { get set }
+  var trailingMetadata: HTTPHeaders { get set }
 }
 
 /// Concrete implementation of `UnaryResponseCallContext` used by our generated code.
@@ -84,7 +85,7 @@ open class UnaryResponseCallContextImpl<ResponseMessage: Message>: UnaryResponse
       }
       // Finish the call by returning the final status.
       .whenSuccess { status in
-        self.channel.writeAndFlush(NIOAny(WrappedResponse.status(status)), promise: nil)
+        self.channel.writeAndFlush(NIOAny(WrappedResponse.statusAndTrailers(status, self.trailingMetadata)), promise: nil)
       }
   }
 }

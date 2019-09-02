@@ -74,6 +74,7 @@ open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
   // Note: documentation is inherited from the `ClientCall` protocol.
   public let subchannel: EventLoopFuture<Channel>
   public let initialMetadata: EventLoopFuture<HTTPHeaders>
+  public let trailingMetadata: EventLoopFuture<HTTPHeaders>
   public let status: EventLoopFuture<GRPCStatus>
 
   /// Sets up a gRPC call.
@@ -102,6 +103,7 @@ open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
 
     self.subchannel = self.streamPromise.futureResult
     self.initialMetadata = self.responseHandler.initialMetadataPromise.futureResult
+    self.trailingMetadata = self.responseHandler.trailingMetadataPromise.futureResult
     self.status = self.responseHandler.statusPromise.futureResult
 
     self.streamPromise.futureResult.whenFailure { error in
@@ -135,12 +137,6 @@ open class BaseClientCall<RequestMessage: Message, ResponseMessage: Message> {
 }
 
 extension BaseClientCall: ClientCall {
-  // Workaround for: https://bugs.swift.org/browse/SR-10128
-  // Once resolved this can become a default implementation on `ClientCall`.
-  public var trailingMetadata: EventLoopFuture<HTTPHeaders> {
-    return status.map { $0.trailingMetadata }
-  }
-
   public func cancel() {
     self.logger.info("cancelling call")
     self.connection.channel.eventLoop.execute {

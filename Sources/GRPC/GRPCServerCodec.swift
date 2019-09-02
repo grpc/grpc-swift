@@ -30,7 +30,7 @@ public enum GRPCServerRequestPart<RequestMessage: Message> {
 public enum GRPCServerResponsePart<ResponseMessage: Message> {
   case headers(HTTPHeaders)
   case message(ResponseMessage)
-  case status(GRPCStatus)
+  case statusAndTrailers(GRPCStatus, HTTPHeaders)
 }
 
 /// A simple channel handler that translates raw gRPC packets into decoded protobuf messages, and vice versa.
@@ -79,8 +79,8 @@ extension GRPCServerCodec: ChannelOutboundHandler {
         context.fireErrorCaught(error)
       }
 
-    case .status(let status):
-      context.writeAndFlush(self.wrapOutboundOut(.status(status)), promise: promise)
+    case let .statusAndTrailers(status, trailers):
+      context.writeAndFlush(self.wrapOutboundOut(.statusAndTrailers(status, trailers)), promise: promise)
     }
   }
 }

@@ -29,7 +29,7 @@ public enum RawGRPCClientRequestPart {
 public enum RawGRPCClientResponsePart {
   case headers(HTTPHeaders)
   case message(ByteBuffer)
-  case status(GRPCStatus)
+  case statusAndTrailers(GRPCStatus, HTTPHeaders?)
 }
 
 /// Codec for translating HTTP/1 responses from the server into untyped gRPC packages
@@ -172,17 +172,16 @@ extension HTTP1ToRawGRPCClientCodec: ChannelInboundHandler {
     guard let trailers = trailers else {
       self.logger.notice("processing trailers, but no trailers were provided")
       let status = GRPCStatus(code: .unknown, message: nil)
-      context.fireChannelRead(self.wrapInboundOut(.status(status)))
+      context.fireChannelRead(self.wrapInboundOut(.statusAndTrailers(status, nil)))
       return .ignore
     }
 
     let status = GRPCStatus(
       code: self.extractStatusCode(from: trailers),
-      message: self.extractStatusMessage(from: trailers),
-      trailingMetadata: trailers
+      message: self.extractStatusMessage(from: trailers)
     )
 
-    context.fireChannelRead(wrapInboundOut(.status(status)))
+    context.fireChannelRead(wrapInboundOut(.statusAndTrailers(status, trailers)))
     return .ignore
   }
 
