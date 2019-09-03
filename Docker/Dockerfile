@@ -1,7 +1,7 @@
 FROM swift:latest
 MAINTAINER Tim Burks <timburks@google.com>
 
-ENV PROTOC_VERSION=3.5.1
+ENV PROTOC_VERSION=3.9.1
 
 # Install a few needed packages that aren't in swiftdocker/swift
 RUN apt-get -q update \
