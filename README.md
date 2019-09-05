@@ -20,7 +20,7 @@ library provided by the [gRPC project][grpc].
 
 ### Supported Platforms
 
- Swift gRPC's platform support is identical to the [platform support of Swift NIO](https://github.com/apple/swift-nio#supported-platforms).
+gRPC Swift's platform support is identical to the [platform support of Swift NIO](https://github.com/apple/swift-nio#supported-platforms).
 
 ## Getting Started
 
