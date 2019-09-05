@@ -18,6 +18,10 @@ insecure channels.
 gRPC Swift is built on top of [Swift NIO][swift-nio] as opposed to the core
 library provided by the [gRPC project][grpc].
 
+### Supported Platforms
+
+gRPC Swift's platform support is identical to the [platform support of Swift NIO](https://github.com/apple/swift-nio#supported-platforms).
+
 ## Getting Started
 
 There are two parts to gRPC Swift: the gRPC library and an API code generator.
