@@ -12,65 +12,75 @@ Swift gRPC works great within Docker. Use the Dockerfile in this directory to bu
   - [Docker for CentOS](https://hub.docker.com/editions/community/docker-ce-server-centos)
   - [Docker for Fedora](https://hub.docker.com/editions/community/docker-ce-server-fedora)
 
-## Build development environment
+## Development environment
 
-Build with the following command:
+Build docker image with the following command:
 
-    docker build -t grpc/swift --target development .
+```bash
+docker build -t grpc/swift --target development .
+```
 
-## Run development environment
+Run docker container with the following command:
 
-    docker run -it --privileged=true grpc/swift /bin/bash
+```bash
+docker run -it --privileged=true grpc/swift /bin/bash
+```
 
-### Run the grpc-swift unit tests
+Run the grpc-swift unit tests:
 
-    cd grpc-swift
-    make test
+```bash
+cd grpc-swift
+make test
+```
 
-### Run the test client and server
+Run the test client and server:
 
-    # start the server
-    .build/debug/Echo serve &
-    # run the client to test each Echo API
-    .build/debug/Echo get
-    .build/debug/Echo expand
-    .build/debug/Echo collect
-    .build/debug/Echo update
-    #stop the server
-    kill -9 `pgrep Echo`
+```bash
+# start the server
+.build/debug/Echo serve &
+# run the client to test each Echo API
+.build/debug/Echo get
+.build/debug/Echo expand
+.build/debug/Echo collect
+.build/debug/Echo update
+#stop the server
+kill -9 `pgrep Echo`
+```
 
-## Build protoc runner
+## Protoc-runner
 
-    docker build -t protoc-runner .
+Build docker image with the following command:
+
+```bash
+docker build -t protoc-runner .
+```
 
 If you plan only to use `protoc` with plugins - run `docker image prune` to remove intermediate images.
 
-## Run protoc
+To run protoc-runner container, open folder with your `.proto` files in terminal and use following command:
 
-Open folder with your `.proto` files in terminal.
+```bash
+docker run --name protoc -v `pwd`:/work_dir -w /work_dir protoc-runner \
+protoc --swift_out=. --swiftgrpc_out=. *.proto
+```
 
-    docker run --name protoc -v `pwd`:/work_dir -w /work_dir protoc-runner protoc --swift_out=. --swiftgrpc_out=. *.proto
+- `--name protoc` - container name
+- ``-v `pwd`:/work_dir`` - map current directory to container's `/work_dir`
+- `-w /work_dir` - set container's working directory
+- `protoc-runner` - docker image name
+- `protoc --swift_out=. --swiftgrpc_out=. *.proto` - command that will be run after container start
 
-`--name protoc` - container name
+To restart `protoc` start protoc container again:
 
-``-v `pwd`:/work_dir`` - map current directory to container's `/work_dir`
-
-`-w /work_dir` - set container's working directory
-
-`protoc-runner` - docker image name
-
-`protoc --swift_out=. --swiftgrpc_out=. *.proto` - command that will be run after container start
-
-## Re-run protoc
-
-To restart `protoc` start protoc container again
-
-    docker start protoc
+```bash
+docker start protoc
+```
 
 ## Google Container Registry
 
 The following commands push the image to Google Container Registry.
 
-    docker tag grpc/swift gcr.io/swift-services/grpc
-    gcloud docker -- push gcr.io/swift-services/grpc
-
+```bash
+docker tag grpc/swift gcr.io/swift-services/grpc
+gcloud docker -- push gcr.io/swift-services/grpc
+```
