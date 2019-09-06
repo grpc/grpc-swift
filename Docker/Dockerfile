@@ -1,14 +1,11 @@
-FROM swift:latest
-MAINTAINER Tim Burks <timburks@google.com>
+FROM swift:latest as development
+LABEL maintainer="Tim Burks <timburks@google.com>"
 
 ENV PROTOC_VERSION=3.9.1
 
-# Install a few needed packages that aren't in swiftdocker/swift
+# Install a few missing packages
 RUN apt-get -q update \
-    && apt-get install curl \
-    && apt-get install libz-dev \
-    && apt-get install libssl-dev \
-    && apt-get -q install -y unzip libnghttp2-dev \
+    && apt-get -q install -y curl unzip libz-dev libssl-dev libnghttp2-dev \
     && rm -r /var/lib/apt/lists/*
 
 # Install protoc
@@ -19,7 +16,12 @@ RUN curl -O -L https://github.com/google/protobuf/releases/download/v${PROTOC_VE
 # Build and install the swiftgrpc plugin
 RUN git clone https://github.com/grpc/grpc-swift \
     && cd grpc-swift \
-    && make \
-    && cp protoc-gen-swift protoc-gen-swiftgrpc /usr/bin \
-    && cd / \
-    && rm -rf grpc-swift
+    && make test-plugin && make plugin \
+    && cp protoc-gen-swift protoc-gen-swiftgrpc /usr/bin
+
+
+FROM swift:slim as protoc-runner
+# copy protoc and plugins binaries
+COPY --from=development /usr/bin/protoc /usr/bin/protoc-gen-swift /usr/bin/protoc-gen-swiftgrpc /usr/bin/
+# copy .proto well known types
+COPY --from=development /usr/include/google/ /usr/include/google/
