@@ -14,7 +14,7 @@ Swift gRPC works great within Docker. Use the Dockerfile in this directory to bu
 
 ## Development environment
 
-Build docker image with the following command:
+Build the Docker image with the following command:
 
 ```bash
 docker build -t grpc/swift --target development .
