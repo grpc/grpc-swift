@@ -47,7 +47,7 @@ Run the test client and server:
 kill -9 `pgrep Echo`
 ```
 
-## Protoc-runner
+## `protoc`-runner
 
 Build docker image with the following command:
 
