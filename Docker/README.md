@@ -49,7 +49,7 @@ kill -9 `pgrep Echo`
 
 ## `protoc`-runner
 
-Build docker image with the following command:
+Build the Docker image with the following command:
 
 ```bash
 docker build -t protoc-runner .
