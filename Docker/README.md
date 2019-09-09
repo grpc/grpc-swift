@@ -43,7 +43,7 @@ Run the test client and server:
 .build/debug/Echo expand
 .build/debug/Echo collect
 .build/debug/Echo update
-#stop the server
+# stop the server
 kill -9 `pgrep Echo`
 ```
 
