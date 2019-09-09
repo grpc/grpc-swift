@@ -20,7 +20,7 @@ Build the Docker image with the following command:
 docker build -t grpc/swift --target development .
 ```
 
-Run docker container with the following command:
+Run the development container with the following command:
 
 ```bash
 docker run -it --privileged=true grpc/swift /bin/bash
