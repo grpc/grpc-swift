@@ -24,7 +24,7 @@ The [Echo](Examples/EchoXcode/Echo) example provides a comprehensive
 demonstration of currently-supported features.
 
 Swift Package Manager builds may also be made on Linux
-systems. Please see [DOCKER.md](Docker/README.md) and
+systems. Please see [Docker/README.md](Docker/README.md) and
 [LINUX.md](LINUX.md) for details.
 
 ## CocoaPods integration
