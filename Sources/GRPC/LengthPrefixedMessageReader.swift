@@ -69,6 +69,11 @@ public class LengthPrefixedMessageReader {
     }
   }
 
+  /// Returns whether the reader has any bytes to process.
+  internal var hasBytes: Bool {
+    return self.buffer.map { $0.readableBytes > 0 } ?? false
+  }
+
   /// Appends data to the buffer from which messages will be read.
   public func append(buffer: inout ByteBuffer) {
     guard buffer.readableBytes > 0 else {
