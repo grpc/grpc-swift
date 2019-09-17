@@ -4,7 +4,7 @@
 # needed to build the example.
 #
 # Note that it requires protoc, protoc-gen-swift, and
-# protoc-gen-swiftgrpc binaries.
+# protoc-gen-grpc-swift binaries.
 
 if [ ! -d "googleapis" ]; then
   curl -L -O https://github.com/googleapis/googleapis/archive/master.zip
@@ -21,7 +21,7 @@ protoc \
  	-Igoogleapis \
 	-I../../Google/common/include \
 	--swift_out=googleapis \
-	--swiftgrpc_out=googleapis
+	--grpc-swift_out=googleapis
 
 # move Swift files to the sources directory
 find googleapis -name "*.swift" -exec mv {} NaturalLanguage \;

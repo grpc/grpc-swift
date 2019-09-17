@@ -17,13 +17,13 @@ XCODEPROJ:=GRPC.xcodeproj
 all:
 	${SWIFT_BUILD}
 
-plugins: protoc-gen-swift protoc-gen-swiftgrpc
+plugins: protoc-gen-swift protoc-gen-grpc-swift
 
 protoc-gen-swift:
 	${SWIFT_BUILD} --product protoc-gen-swift
 
-protoc-gen-swiftgrpc:
-	${SWIFT_BUILD} --product protoc-gen-swiftgrpc
+protoc-gen-grpc-swift:
+	${SWIFT_BUILD} --product protoc-gen-grpc-swift
 
 interop-test-runner:
 	${SWIFT_BUILD} --product InteroperabilityTestRunner
@@ -51,11 +51,11 @@ generate-echo: plugins
 	protoc Sources/Examples/Echo/Model/echo.proto \
 		--proto_path=Sources/Examples/Echo/Model \
 		--plugin=${SWIFT_BUILD_PATH}/${SWIFT_BUILD_CONFIGURATION}/protoc-gen-swift \
-		--plugin=${SWIFT_BUILD_PATH}/${SWIFT_BUILD_CONFIGURATION}/protoc-gen-swiftgrpc \
+		--plugin=${SWIFT_BUILD_PATH}/${SWIFT_BUILD_CONFIGURATION}/protoc-gen-grpc-swift \
 		--swift_opt=Visibility=Public \
 		--swift_out=Sources/Examples/Echo/Model/Generated \
-		--swiftgrpc_opt=Visibility=Public \
-		--swiftgrpc_out=Sources/Examples/Echo/Model/Generated
+		--grpc-swift_opt=Visibility=Public \
+		--grpc-swift_out=Sources/Examples/Echo/Model/Generated
 
 ### Testing ####################################################################
 
@@ -73,9 +73,9 @@ test-plugin: plugins
 	protoc Sources/Examples/Echo/Model/echo.proto \
 		--proto_path=Sources/Examples/Echo/Model \
 		--plugin=${SWIFT_BUILD_PATH}/${SWIFT_BUILD_CONFIGURATION}/protoc-gen-swift \
-		--plugin=${SWIFT_BUILD_PATH}/${SWIFT_BUILD_CONFIGURATION}/protoc-gen-swiftgrpc \
-		--swiftgrpc_opt=Visibility=Public \
-		--swiftgrpc_out=/tmp
+		--plugin=${SWIFT_BUILD_PATH}/${SWIFT_BUILD_CONFIGURATION}/protoc-gen-grpc-swift \
+		--grpc-swift_opt=Visibility=Public \
+		--grpc-swift_out=/tmp
 	diff -u /tmp/echo.grpc.swift Sources/Examples/Echo/Model/Generated/echo.grpc.swift
 
 ### Misc. ######################################################################

@@ -68,10 +68,10 @@ Binary releases of `protoc`, the Protocol Buffer Compiler, are available on
 To build the plugins, run `make plugin` in the main directory. This uses the
 Swift Package Manager to build both of the necessary plugins:
 `protoc-gen-swift`, which generates Protocol Buffer support code and
-`protoc-gen-swiftgrpc`, which generates gRPC interface code.
+`protoc-gen-grpc-swift`, which generates gRPC interface code.
 
 To install these plugins, just copy the two executables (`protoc-gen-swift` and
-`protoc-gen-swiftgrpc`) that show up in the main directory into a directory that
+`protoc-gen-grpc-swift`) that show up in the main directory into a directory that
 is part of your `PATH` environment variable. Alternatively the full path to the
 plugins can be specified when using `protoc`.
 
@@ -148,12 +148,12 @@ directory:
 protoc echo.proto --swift_out=.
 ```
 
-gRPC Swift provides a plugin (`protoc-gen-swiftgrpc`) to generate the client
+gRPC Swift provides a plugin (`protoc-gen-grpc-swift`) to generate the client
 and server for the `Echo` service defined above. It can be invoked to produce
 `echo.grpc.swift` as such:
 
 ```sh
-protoc echo.proto --swiftgrpc_out=.
+protoc echo.proto --grpc-swift_out=.
 ```
 
 By default both the client and service code is generated (see [Plugin
@@ -450,7 +450,7 @@ separated from the output directory by a colon.
 For example, to generate only client stubs:
 
 ```sh
-protoc <your proto> --swiftgrpc_out=Client=true,Server=false:.
+protoc <your proto> --grpc-swift_out=Client=true,Server=false:.
 ```
 
 ## License

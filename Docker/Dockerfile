@@ -17,6 +17,6 @@ RUN curl -O -L https://github.com/google/protobuf/releases/download/v${PROTOC_VE
 RUN git clone https://github.com/grpc/grpc-swift \
     && cd grpc-swift \
     && make \
-    && cp protoc-gen-swift protoc-gen-swiftgrpc /usr/bin \
+    && cp protoc-gen-swift protoc-gen-grpc-swift /usr/bin \
     && cd / \
     && rm -rf grpc-swift
