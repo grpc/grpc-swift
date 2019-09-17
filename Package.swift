@@ -25,6 +25,7 @@ let package = Package(
     .executable(name: "ConnectionBackoffInteropTestRunner", targets: ["GRPCConnectionBackoffInteropTest"]),
     .executable(name: "PerformanceTestRunner", targets: ["GRPCPerformanceTests"]),
     .executable(name: "Echo", targets: ["Echo"]),
+    .executable(name: "protoc-gen-grpc-swift", targets: ["protoc-gen-grpc-swift"]),
   ],
   dependencies: [
     // GRPC dependencies:
@@ -71,7 +72,7 @@ let package = Package(
 
     // The `protoc` plugin.
     .target(
-      name: "protoc-gen-swiftgrpc",
+      name: "protoc-gen-grpc-swift",
       dependencies: [
         "SwiftProtobuf",
         "SwiftProtobufPluginLibrary",

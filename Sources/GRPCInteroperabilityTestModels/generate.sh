@@ -1,7 +1,7 @@
 #!/bin/sh
 
 PLUGIN_SWIFT=../../.build/debug/protoc-gen-swift
-PLUGIN_SWIFTGRPC=../../.build/debug/protoc-gen-swiftgrpc
+PLUGIN_SWIFTGRPC=../../.build/debug/protoc-gen-grpc-swift
 PROTO="src/proto/grpc/testing/test.proto"
 
 OUTPUT="Generated"
@@ -13,24 +13,24 @@ protoc "src/proto/grpc/testing/test.proto" \
   --plugin=${PLUGIN_SWIFTGRPC} \
   --swift_out=${OUTPUT} \
   --swift_opt=FileNaming=${FILE_NAMING},Visibility=${VISIBILITY} \
-  --swiftgrpc_out=${OUTPUT} \
-  --swiftgrpc_opt=FileNaming=${FILE_NAMING},Visibility=${VISIBILITY}
+  --grpc-swift_out=${OUTPUT} \
+  --grpc-swift_opt=FileNaming=${FILE_NAMING},Visibility=${VISIBILITY}
 
 protoc "src/proto/grpc/testing/empty.proto" \
   --plugin=${PLUGIN_SWIFT} \
   --plugin=${PLUGIN_SWIFTGRPC} \
   --swift_out=${OUTPUT} \
   --swift_opt=FileNaming=${FILE_NAMING},Visibility=${VISIBILITY} \
-  --swiftgrpc_out=${OUTPUT} \
-  --swiftgrpc_opt=FileNaming=${FILE_NAMING},Visibility=${VISIBILITY}
+  --grpc-swift_out=${OUTPUT} \
+  --grpc-swift_opt=FileNaming=${FILE_NAMING},Visibility=${VISIBILITY}
 
 protoc "src/proto/grpc/testing/messages.proto" \
   --plugin=${PLUGIN_SWIFT} \
   --plugin=${PLUGIN_SWIFTGRPC} \
   --swift_out=${OUTPUT} \
   --swift_opt=FileNaming=${FILE_NAMING},Visibility=${VISIBILITY} \
-  --swiftgrpc_out=${OUTPUT} \
-  --swiftgrpc_opt=FileNaming=${FILE_NAMING},Visibility=${VISIBILITY}
+  --grpc-swift_out=${OUTPUT} \
+  --grpc-swift_opt=FileNaming=${FILE_NAMING},Visibility=${VISIBILITY}
 
 echo "The generated code needs to be modified to support testing an unimplemented method."
 echo "On the server side, the generated code needs to be removed so the server has no"
