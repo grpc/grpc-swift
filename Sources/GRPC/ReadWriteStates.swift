@@ -171,9 +171,15 @@ extension ReadState {
       return .failure(.deserializationFailed)
     }
 
-    // If this a unary stream we need to validate the number of messages we decoded. Zero is fine
-    // because the payload may be split across frames.
+    // We need to validate the number of messages we decoded. Zero is fine because the payload may
+    // be split across frames.
     switch (self.expectedCount, messages.count) {
+    // Always allowed:
+    case (.one, 0),
+         (.many, 0...):
+      break
+
+    // Also allowed, assuming we have no leftover bytes:
     case (.one, 1):
       self.expectedCount = .none
       // We shouldn't have any bytes leftover after reading a single message.
@@ -181,11 +187,9 @@ extension ReadState {
         return .failure(.leftOverBytes)
       }
 
-    case (.one, 2...):
-      return .failure(.cardinalityViolation)
-
+    // Anything else must be invalid.
     default:
-      break
+      return .failure(.cardinalityViolation)
     }
 
     return .success(messages)
