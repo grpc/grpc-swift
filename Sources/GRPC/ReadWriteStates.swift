@@ -150,24 +150,22 @@ extension ReadState {
   /// a message has been produced then subsequent calls will result in an error.
   ///
   /// - Parameter buffer: The buffer to read from.
-  /// - Parameter as: The type of `Message` to decode.
-  mutating func readMessage<T: Message>(
-    _ buffer: inout ByteBuffer,
-    as: T.Type = T.self
-  ) -> Result<[T], MessageReadError> {
+  mutating func readMessages<MessageType: Message>(
+    _ buffer: inout ByteBuffer
+  ) -> Result<[MessageType], MessageReadError> {
     guard self.canRead else {
       return .failure(.cardinalityViolation)
     }
 
     self.reader.append(buffer: &buffer)
-    var messages: [T] = []
+    var messages: [MessageType] = []
 
     // Pull out as many messages from the reader as possible.
     do {
       while var serializedBytes = try? self.reader.nextMessage() {
         // Force unwrapping is okay here: we will always be able to read `readableBytes`.
         let serializedData = serializedBytes.readData(length: serializedBytes.readableBytes)!
-        messages.append(try T(serializedData: serializedData))
+        messages.append(try MessageType(serializedData: serializedData))
       }
     } catch {
       return .failure(.deserializationFailed)

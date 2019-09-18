@@ -451,11 +451,11 @@ extension GRPCClientStateMachine.State {
 
     switch self {
     case .clientClosedServerStreaming(var readState):
-      result = readState.readMessage(&buffer, as: Response.self)
+      result = readState.readMessages(&buffer)
       self = .clientClosedServerStreaming(server: readState)
 
     case .clientStreamingServerStreaming(let writeState, var readState):
-      result = readState.readMessage(&buffer, as: Response.self)
+      result = readState.readMessages(&buffer)
       self = .clientStreamingServerStreaming(client: writeState, server: readState)
 
     case .clientIdleServerIdle,
