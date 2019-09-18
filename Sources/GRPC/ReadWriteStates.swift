@@ -18,6 +18,7 @@ import SwiftProtobuf
 
 /// Number of messages expected on a stream.
 enum MessageCount {
+  case none
   case one
   case many
 }
@@ -45,7 +46,9 @@ struct PendingWriteState {
 /// The write state of a stream.
 struct WriteState {
   /// Whether the stream may be written to.
-  internal private(set) var canWrite: Bool = true
+  internal var canWrite: Bool {
+    return self.expectedCount != .none
+  }
 
   /// The number of messages we expect to write to the stream.
   var expectedCount: MessageCount
@@ -99,7 +102,7 @@ extension WriteState {
 
     // If we only expect to write one message then we're no longer writable.
     if case .one = self.expectedCount {
-      self.canWrite = false
+      self.expectedCount = .none
     }
 
     return .success(buffer)
@@ -109,7 +112,9 @@ extension WriteState {
 /// The read state of a stream.
 struct ReadState {
   /// Whether the stream may read.
-  internal private(set) var canRead: Bool = true
+  internal var canRead: Bool {
+    return self.expectedCount != .none
+  }
 
   /// The expected number of messages of the reading stream.
   var expectedCount: MessageCount
@@ -173,7 +178,7 @@ extension ReadState {
     // because the payload may be split across frames.
     switch (self.expectedCount, messages.count) {
     case (.one, 1):
-      self.canRead = false
+      self.expectedCount = .none
       // We shouldn't have any bytes leftover after reading a single message.
       if self.reader.hasBytes {
         return .failure(.leftOverBytes)
