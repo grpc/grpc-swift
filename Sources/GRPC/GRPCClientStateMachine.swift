@@ -19,7 +19,7 @@ import NIOHTTP1
 import Logging
 import SwiftProtobuf
 
-enum RecieveResponseHeadError: Error, Equatable {
+enum ReceiveResponseHeadError: Error, Equatable {
   /// The 'content-type' header was missing or the value is not supported by this implementation.
   case invalidContentType
 
@@ -91,7 +91,7 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
     case clientClosedServerIdle(MessageCount)
 
     /// The client has initiated the RPC and the server has acknowledged it. Messages may have been
-    /// sent and/or recieved. Holds the request stream write state and response stream read state.
+    /// sent and/or received. Holds the request stream write state and response stream read state.
     ///
     /// Valid transitions:
     /// - `clientClosedServerStreaming`: if the client closes the request stream,
@@ -247,24 +247,24 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
     return self.state.sendEndOfRequestStream()
   }
 
-  /// Recieve an acknowledgement of the RPC from the server. This **must not** be a "trailers-only"
+  /// Receive an acknowledgement of the RPC from the server. This **must not** be a "trailers-only"
   /// response.
   ///
   /// The server must be idle in order to recive response headers. The valid state transitions are:
   /// - `.clientStreamingServerIdle` → `.clientStreamingServerStreaming`
   /// - `.clientClosedServerIdle` → `.clientClosedServerStreaming`
   ///
-  /// It is invalid and fatal for the RPC to recieve response headers from the following states:
+  /// It is invalid and fatal for the RPC to receive response headers from the following states:
   /// - `.clientIdleServerIdle`
   /// - `.clientStreamingServerStreaming`
   /// - `.clientClosedServerStreaming`
   /// - `.clientClosedServerClosed`
   ///
-  /// - Parameter headers: The headers recieved from the server.
-  mutating func recieveResponseHeaders(
+  /// - Parameter headers: The headers received from the server.
+  mutating func receiveResponseHeaders(
     _ responseHead: HTTPResponseHead
-  ) -> Result<HTTPHeaders, RecieveResponseHeadError> {
-    return self.state.recieveResponseHeaders(responseHead, logger: self.logger)
+  ) -> Result<HTTPHeaders, ReceiveResponseHeadError> {
+    return self.state.receiveResponseHeaders(responseHead, logger: self.logger)
   }
 
   /// Read a response buffer from the server and return any decoded messages.
@@ -272,24 +272,24 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   /// If the response stream has an expected count of `.one` then this function is guaranteed to
   /// produce *at most* one `Response` in the `Result`.
   ///
-  /// To recieve a response buffer the server must be streaming. Valid states are:
+  /// To receive a response buffer the server must be streaming. Valid states are:
   /// - `.clientClosedServerStreaming` → `.clientClosedServerStreaming`
   /// - `.clientStreamingServerStreaming` → `.clientStreamingServerStreaming`
   ///
-  /// It is invalid and fatal to recieve a response in the following states:
+  /// It is invalid and fatal to receive a response in the following states:
   /// - `.clientIdleServerIdle`
   /// - `.clientClosedServerStreaming`
   /// - `.clientStreamingServerStreaming`
   /// - `.clientClosedServerClosed`
   ///
   /// - Parameter buffer: A buffer of bytes received from the server.
-  mutating func recieveResponse(
+  mutating func receiveResponse(
     _ buffer: inout ByteBuffer
   ) -> Result<[Response], MessageReadError> {
-    return self.state.recieveResponse(&buffer)
+    return self.state.receiveResponse(&buffer)
   }
 
-  /// Recieve the end of the response stream from the server and parse the results into
+  /// Receive the end of the response stream from the server and parse the results into
   /// a `GRPCStatus`.
   ///
   /// To close the response stream the server must be streaming or idle (since the server may choose
@@ -299,16 +299,16 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   /// - `.clientClosedServerIdle` → `.clientClosedServerClosed`
   /// - `.clientClosedServerStreaming` → `.clientClosedServerClosed`
   ///
-  /// It is invalid to recieve an end-of-stream if the RPC has not been initiated or has already
+  /// It is invalid to receive an end-of-stream if the RPC has not been initiated or has already
   /// been terminated. That is, in one of the following states:
   /// - `.clientIdleServerIdle`
   /// - `.clientClosedServerClosed`
   ///
   /// - Parameter trailers: The trailers to parse.
-  mutating func recieveEndOfResponseStream(
+  mutating func receiveEndOfResponseStream(
     _ trailers: HTTPHeaders
   ) -> Result<GRPCStatus, InvalidStateError> {
-    return self.state.recieveEndOfResponseStream(trailers)
+    return self.state.receiveEndOfResponseStream(trailers)
   }
 }
 
@@ -392,12 +392,12 @@ extension GRPCClientStateMachine.State {
     return result
   }
 
-  /// See `GRPCClientStateMachine.recieveResponseHeaders(_:)`.
-  mutating func recieveResponseHeaders(
+  /// See `GRPCClientStateMachine.receiveResponseHeaders(_:)`.
+  mutating func receiveResponseHeaders(
     _ responseHead: HTTPResponseHead,
     logger: Logger
-  ) -> Result<HTTPHeaders, RecieveResponseHeadError> {
-    let result: Result<HTTPHeaders, RecieveResponseHeadError>
+  ) -> Result<HTTPHeaders, ReceiveResponseHeadError> {
+    let result: Result<HTTPHeaders, ReceiveResponseHeadError>
 
     switch self {
     case let .clientStreamingServerIdle(writeState, responseArity):
@@ -428,8 +428,8 @@ extension GRPCClientStateMachine.State {
     return result
   }
 
-  /// See `GRPCClientStateMachine.recieveResponse(_:)`.
-  mutating func recieveResponse(
+  /// See `GRPCClientStateMachine.receiveResponse(_:)`.
+  mutating func receiveResponse(
     _ buffer: inout ByteBuffer
   ) -> Result<[Response], MessageReadError> {
     let result: Result<[Response], MessageReadError>
@@ -453,8 +453,8 @@ extension GRPCClientStateMachine.State {
     return result
   }
 
-  /// See `GRPCClientStateMachine.recieveEndOfResponseStream(_:)`.
-  mutating func recieveEndOfResponseStream(
+  /// See `GRPCClientStateMachine.receiveEndOfResponseStream(_:)`.
+  mutating func receiveEndOfResponseStream(
     _ trailers: HTTPHeaders
   ) -> Result<GRPCStatus, InvalidStateError> {
      let result: Result<GRPCStatus, InvalidStateError>
@@ -532,7 +532,7 @@ extension GRPCClientStateMachine.State {
     _ head: HTTPResponseHead,
     responseArity: MessageCount,
     logger: Logger
-  ) -> Result<ReadState, RecieveResponseHeadError> {
+  ) -> Result<ReadState, ReceiveResponseHeadError> {
     // From: https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#responses
     //
     // "Implementations should expect broken deployments to send non-200 HTTP status codes in
