@@ -43,10 +43,7 @@ enum SendEndOfRequestStreamError: Error {
 
   /// An invalid state was encountered. This is a serious implementation error.
 struct InvalidStateError: Error {
-  let function: String
-  static func invalidState(_ function: String = #function) -> InvalidStateError {
-    return .init(function: function)
-  }
+  static let invalidState = InvalidStateError()
 }
 
 /// A state machine for a single gRPC call from the perspective of a client.
@@ -333,7 +330,7 @@ extension GRPCClientStateMachine.State {
          .clientClosedServerStreaming,
          .clientStreamingServerStreaming,
          .clientClosedServerClosed:
-      result = .failure(.invalidState())
+      result = .failure(.invalidState)
     }
 
     return result
@@ -469,7 +466,7 @@ extension GRPCClientStateMachine.State {
 
      case .clientIdleServerIdle,
           .clientClosedServerClosed:
-      result = .failure(.invalidState())
+      result = .failure(.invalidState)
      }
 
      return result
