@@ -55,8 +55,8 @@ class GRPCClientStateMachineTests: GRPCTestCase {
   /// Writes a message into the given `buffer`.
   func writeMessage<T: Message>(_ message: T, into buffer: inout ByteBuffer) throws {
     let messageData = try message.serializedData()
-    let writer = LengthPrefixedMessageWriter()
-    writer.write(messageData, into: &buffer, usingCompression: .none)
+    let writer = LengthPrefixedMessageWriter(compression: .none)
+    writer.write(messageData, into: &buffer)
   }
 
   /// Returns a minimally valid `HTTPResonseHead`.
@@ -784,7 +784,7 @@ extension WriteState {
   static func one() -> WriteState {
     return .init(
       expectedCount: .one,
-      writer: LengthPrefixedMessageWriter(),
+      writer: LengthPrefixedMessageWriter(compression: .none),
       contentType: .protobuf
     )
   }
@@ -792,7 +792,7 @@ extension WriteState {
   static func many() -> WriteState {
     return .init(
       expectedCount: .many,
-      writer: LengthPrefixedMessageWriter(),
+      writer: LengthPrefixedMessageWriter(compression: .none),
       contentType: .protobuf
     )
   }

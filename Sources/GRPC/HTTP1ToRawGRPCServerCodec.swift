@@ -96,7 +96,7 @@ public final class HTTP1ToRawGRPCServerCodec {
     }
   }
 
-  var messageWriter = LengthPrefixedMessageWriter()
+  var messageWriter = LengthPrefixedMessageWriter(compression: .none)
   var messageReader: LengthPrefixedMessageReader
 }
 
@@ -272,14 +272,14 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
         // Store the response into an independent buffer. We can't return the message directly as
         // it needs to be aggregated with all the responses plus the trailers, in order to have
         // the base64 response properly encoded in a single byte stream.
-        messageWriter.write(messageBytes, into: &self.responseTextBuffer, usingCompression: .none)
+        messageWriter.write(messageBytes, into: &self.responseTextBuffer)
 
         // Since we stored the written data, mark the write promise as successful so that the
         // ServerStreaming provider continues sending the data.
         promise?.succeed(())
       } else {
         var responseBuffer = context.channel.allocator.buffer(capacity: LengthPrefixedMessageWriter.metadataLength)
-        messageWriter.write(messageBytes, into: &responseBuffer, usingCompression: .none)
+        messageWriter.write(messageBytes, into: &responseBuffer)
         context.write(self.wrapOutboundOut(.body(.byteBuffer(responseBuffer))), promise: promise)
       }
       self.outboundState = .expectingBodyOrStatus

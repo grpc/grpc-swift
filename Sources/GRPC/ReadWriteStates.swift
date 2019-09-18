@@ -37,7 +37,7 @@ struct PendingWriteState {
   func makeWriteState() -> WriteState {
     return WriteState(
       expectedCount: self.expectedCount,
-      writer: LengthPrefixedMessageWriter(),
+      writer: LengthPrefixedMessageWriter(compression: self.encoding),
       contentType: self.contentType
     )
   }
@@ -97,8 +97,7 @@ extension WriteState {
 
     // Zero is fine: the writer will allocate the correct amount of space.
     var buffer = allocator.buffer(capacity: 0)
-    // TODO: add support for compression.
-    self.writer.write(data, into: &buffer, usingCompression: .none)
+    self.writer.write(data, into: &buffer)
 
     // If we only expect to write one message then we're no longer writable.
     if case .one = self.expectedCount {

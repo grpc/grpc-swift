@@ -69,7 +69,7 @@ public final class HTTP1ToRawGRPCClientCodec {
     }
   }
   private let messageReader: LengthPrefixedMessageReader
-  private let messageWriter = LengthPrefixedMessageWriter()
+  private let messageWriter = LengthPrefixedMessageWriter(compression: .none)
   private var inboundCompression: CompressionMechanism = .none
 }
 
@@ -243,7 +243,7 @@ extension HTTP1ToRawGRPCClientCodec: ChannelOutboundHandler {
 
     case .message(let message):
       var request = context.channel.allocator.buffer(capacity: LengthPrefixedMessageWriter.metadataLength)
-      messageWriter.write(message, into: &request, usingCompression: .none)
+      messageWriter.write(message, into: &request)
       self.logger.debug("writing length prefixed protobuf message")
       context.write(self.wrapOutboundOut(.body(.byteBuffer(request))), promise: promise)
 
