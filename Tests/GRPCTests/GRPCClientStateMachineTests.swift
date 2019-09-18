@@ -468,8 +468,8 @@ extension GRPCClientStateMachineTests {
 
 extension GRPCClientStateMachineTests {
   func testSendTooManyRequestsFromClientStreamingServerIdle() {
-    for responseArity in [MessageCount.one, MessageCount.many] {
-      var stateMachine = self.makeStateMachine(.clientStreamingServerIdle(client: .one(), server: responseArity))
+    for messageCount in [MessageCount.one, MessageCount.many] {
+      var stateMachine = self.makeStateMachine(.clientStreamingServerIdle(client: .one(), server: messageCount))
 
       // One is fine.
       stateMachine.sendRequest(.with { $0.text = "1" }, allocator: self.allocator).assertSuccess()

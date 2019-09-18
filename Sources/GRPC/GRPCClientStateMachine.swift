@@ -142,8 +142,8 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
 
   /// Creates a state machine representing a gRPC client's request and response stream state.
   ///
-  /// - Parameter requestCount: The arity of the request stream.
-  /// - Parameter responseCount: The arity of the response stream.
+  /// - Parameter requestCount: The expected number of messages on the request stream.
+  /// - Parameter responseCount: The expected number of messages on the response stream.
   /// - Parameter logger: Logger.
   init(
     requestCount: MessageCount,
@@ -338,10 +338,10 @@ extension GRPCClientStateMachine.State {
     let result: Result<HTTPRequestHead, InvalidStateError>
 
     switch self {
-    case let .clientIdleServerIdle(pendingWriteState, responseArity):
+    case let .clientIdleServerIdle(pendingWriteState, messageCount):
       let head = self.makeRequestHeaders(host: host, path: path, options: options, requestID: requestID)
       result = .success(head)
-      self = .clientStreamingServerIdle(client: pendingWriteState.makeWriteState(), server: responseArity)
+      self = .clientStreamingServerIdle(client: pendingWriteState.makeWriteState(), server: messageCount)
 
     case .clientStreamingServerIdle,
          .clientClosedServerIdle,
@@ -362,9 +362,9 @@ extension GRPCClientStateMachine.State {
     let result: Result<ByteBuffer, MessageWriteError>
 
     switch self {
-    case .clientStreamingServerIdle(var writeState, let arity):
+    case .clientStreamingServerIdle(var writeState, let messageCount):
       result = writeState.write(message, allocator: allocator)
-      self = .clientStreamingServerIdle(client: writeState, server: arity)
+      self = .clientStreamingServerIdle(client: writeState, server: messageCount)
 
     case .clientStreamingServerStreaming(var writeState, let readState):
       result = writeState.write(message, allocator: allocator)
@@ -387,9 +387,9 @@ extension GRPCClientStateMachine.State {
     let result: Result<Void, SendEndOfRequestStreamError>
 
     switch self {
-    case .clientStreamingServerIdle(_, let responseArity):
+    case .clientStreamingServerIdle(_, let messageCount):
       result = .success(())
-      self = .clientClosedServerIdle(server: responseArity)
+      self = .clientClosedServerIdle(server: messageCount)
 
     case .clientStreamingServerStreaming(_, let readState):
       result = .success(())
@@ -415,8 +415,8 @@ extension GRPCClientStateMachine.State {
     let result: Result<HTTPHeaders, ReceiveResponseHeadError>
 
     switch self {
-    case let .clientStreamingServerIdle(writeState, responseArity):
-      switch self.parseResponseHeaders(responseHead, responseArity: responseArity, logger: logger) {
+    case let .clientStreamingServerIdle(writeState, messageCount):
+      switch self.parseResponseHeaders(responseHead, responseCount: messageCount, logger: logger) {
       case .success(let readState):
         self = .clientStreamingServerStreaming(client: writeState, server: readState)
         result = .success(responseHead.headers)
@@ -424,8 +424,8 @@ extension GRPCClientStateMachine.State {
         result = .failure(error)
       }
 
-    case let .clientClosedServerIdle(responseArity):
-      switch self.parseResponseHeaders(responseHead, responseArity: responseArity, logger: logger) {
+    case let .clientClosedServerIdle(messageCount):
+      switch self.parseResponseHeaders(responseHead, responseCount: messageCount, logger: logger) {
       case .success(let readState):
         self = .clientClosedServerStreaming(server: readState)
         result = .success(responseHead.headers)
@@ -545,7 +545,7 @@ extension GRPCClientStateMachine.State {
   /// - Parameter headers: The headers to parse.
   private func parseResponseHeaders(
     _ head: HTTPResponseHead,
-    responseArity: MessageCount,
+    responseCount: MessageCount,
     logger: Logger
   ) -> Result<ReadState, ReceiveResponseHeadError> {
     // From: https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#responses
@@ -579,7 +579,7 @@ extension GRPCClientStateMachine.State {
       logger: logger
     )
 
-    return .success(.init(expectedCount: responseArity, reader: reader))
+    return .success(.init(expectedCount: responseCount, reader: reader))
   }
 
   /// Parses the response trailers ("Trailers" in the specification) from the server into

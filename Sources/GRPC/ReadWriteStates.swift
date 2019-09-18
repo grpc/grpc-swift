@@ -111,7 +111,7 @@ struct ReadState {
   /// Whether the stream may read.
   internal private(set) var canRead: Bool = true
 
-  /// The arity of the reading stream.
+  /// The expected number of messages of the reading stream.
   var expectedCount: MessageCount
 
   /// A reader which accepts bytes in the gRPC wire-format and produces sequences of bytes which
@@ -142,8 +142,8 @@ extension ReadState {
   /// Consume the given `buffer` then attempt to read and subsequently decode length-prefixed
   /// serialzed messages.
   ///
-  /// For `.unary` arity this function will produce **at most** 1 message. If a message has been
-  /// produced then subsequent calls will result in an error.
+  /// For an expected message count of `.one`, this function will produce **at most** 1 message. If
+  /// a message has been produced then subsequent calls will result in an error.
   ///
   /// - Parameter buffer: The buffer to read from.
   /// - Parameter as: The type of `Message` to decode.
