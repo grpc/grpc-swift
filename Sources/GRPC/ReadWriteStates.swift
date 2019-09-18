@@ -170,7 +170,7 @@ extension ReadState {
     }
 
     // If this a unary stream we need to validate the number of messages we decoded. Zero is fine
-    // becuase the payload may be split across frames.
+    // because the payload may be split across frames.
     switch (self.expectedCount, messages.count) {
     case (.one, 1):
       self.canRead = false

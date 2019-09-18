@@ -176,14 +176,14 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   /// The only valid state transition is:
   /// - `.clientIdleServerIdle` → `.clientStreamingServerIdle`
   ///
-  /// All other states will result in a `.fatal` error.
+  /// All other states will result in an `InvalidStateError`.
   ///
   /// On success the state will transition to `.clientStreamingServerIdle`.
   ///
   /// - Parameter host: The host which will handle the RPC.
   /// - Parameter path: The path of the RPC (e.g. '/echo.Echo/Collect').
   /// - Parameter options: Options for this RPC.
-  /// - Parameter requestID: The uniuqe ID of this request used for logging.
+  /// - Parameter requestID: The unique ID of this request used for logging.
   mutating func sendRequestHeaders(
     host: String,
     path: String,
@@ -205,14 +205,15 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   /// - `.clientStreamingServerIdle` → `.clientStreamingServerIdle`
   /// - `.clientStreamingServerStreaming` → `.clientStreamingServerStreaming`
   ///
-  /// It is invalid (but not fatal) for the client to attempt to send requests once the request
-  /// stream is closed. The states are:
+  /// The client should not to attempt to send requests once the request stream is closed, that is
+  /// from one of the following states:
   /// - `.clientClosedServerIdle`
   /// - `.clientClosedServerStreaming`
   /// - `.clientClosedServerClosed`
+  /// Doing so will result in a `.cardinalityViolation`.
   ///
-  /// Sending messages is invald, and fatal, for the following states:
-  /// - `.clientIdleServerIdle`
+  /// Sending a message when both peers are idle (in the `.clientIdleServerIdle` state) will result
+  /// in a `.invalidState` error.
   ///
   /// - Parameter message: The `Request` to send to the server.
   /// - Parameter allocator: A `ByteBufferAllocator` to allocate the buffer into which the encoded
@@ -224,37 +225,45 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
     return self.state.sendRequest(message, allocator: allocator)
   }
 
-  /// Terminates the request stream.
+  /// Closes the request stream.
   ///
   /// The client must be streaming requests in order to terminate the request stream. Valid
   /// states transitions are:
   /// - `.clientStreamingServerIdle` → `.clientClosedServerIdle`
   /// - `.clientStreamingServerStreaming` → `.clientClosedServerStreaming`
   ///
-  /// It is invalid (but not fatal) for the client to attempt to close the request stream multiple
-  /// times The states in which this is possible are:
+  /// The client should not to attempt to close the request stream if it is closed, that is from one
+  /// of the following states:
   /// - `.clientClosedServerIdle`
   /// - `.clientClosedServerStreaming`
   /// - `.clientClosedServerClosed`
+  /// Doing so will result in an `.alreadyClosed` error.
   ///
-  /// Closing the request stream is invald, and fatal, for the following states:
-  /// - `.clientIdleServerIdle`
+  /// Closing the request stream when both peers are idle (in the `.clientIdleServerIdle` state)
+  /// will result in a `.invalidState` error.
   mutating func sendEndOfRequestStream() -> Result<Void, SendEndOfRequestStreamError> {
     return self.state.sendEndOfRequestStream()
   }
 
-  /// Receive an acknowledgement of the RPC from the server. This **must not** be a "trailers-only"
+  /// Receive an acknowledgement of the RPC from the server. This **must not** be a "Trailers-Only"
   /// response.
   ///
-  /// The server must be idle in order to recive response headers. The valid state transitions are:
+  /// The server must be idle in order to receive response headers. The valid state transitions are:
   /// - `.clientStreamingServerIdle` → `.clientStreamingServerStreaming`
   /// - `.clientClosedServerIdle` → `.clientClosedServerStreaming`
   ///
-  /// It is invalid and fatal for the RPC to receive response headers from the following states:
+  /// The response head will be parsed and validated against the gRPC specification. The following
+  /// errors may be returned:
+  /// - `.invalidHTTPStatus` if the status was not "200",
+  /// - `.invalidContentType` if the "content-type" header does not start with "application/grpc",
+  /// - `.unsupportedMessageEncoding` if the "grpc-encoding" header is not supported.
+  ///
+  /// It is not possible to receive response headers from the following states:
   /// - `.clientIdleServerIdle`
   /// - `.clientStreamingServerStreaming`
   /// - `.clientClosedServerStreaming`
   /// - `.clientClosedServerClosed`
+  /// Doing so will result in a `.invalidState` error.
   ///
   /// - Parameter headers: The headers received from the server.
   mutating func receiveResponseHeaders(
@@ -272,11 +281,20 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   /// - `.clientClosedServerStreaming` → `.clientClosedServerStreaming`
   /// - `.clientStreamingServerStreaming` → `.clientStreamingServerStreaming`
   ///
-  /// It is invalid and fatal to receive a response in the following states:
+  /// This function will read all of the bytes in the `buffer` and attempt to produce as many
+  /// messages as possible. This may lead to a number of errors:
+  /// - `.cardinalityViolation` if more than one message is received when the state reader is
+  ///   expects at most one.
+  /// - `.leftOverBytes` if bytes remain in the buffer after reading one message when at most one
+  ///   message is expected.
+  /// - `.deserializationFailed` if the message could not be deserialized.
+  ///
+  /// It is not possible to receive response headers from the following states:
   /// - `.clientIdleServerIdle`
   /// - `.clientClosedServerStreaming`
   /// - `.clientStreamingServerStreaming`
   /// - `.clientClosedServerClosed`
+  /// Doing so will result in a `.invalidState` error.
   ///
   /// - Parameter buffer: A buffer of bytes received from the server.
   mutating func receiveResponse(
@@ -295,10 +313,11 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   /// - `.clientClosedServerIdle` → `.clientClosedServerClosed`
   /// - `.clientClosedServerStreaming` → `.clientClosedServerClosed`
   ///
-  /// It is invalid to receive an end-of-stream if the RPC has not been initiated or has already
-  /// been terminated. That is, in one of the following states:
+  /// It is not possible to receive an end-of-stream if the RPC has not been initiated or has
+  /// already been terminated. That is, in one of the following states:
   /// - `.clientIdleServerIdle`
   /// - `.clientClosedServerClosed`
+  /// Doing so will result in a `.invalidState` error.
   ///
   /// - Parameter trailers: The trailers to parse.
   mutating func receiveEndOfResponseStream(
