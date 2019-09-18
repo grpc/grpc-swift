@@ -490,13 +490,11 @@ extension GRPCClientStateMachine.State {
      return result
    }
 
-  /// Makes the request headers ("Request-Headers" in the specification) used to initiate an RPC
+  /// Makes the request headers (`Request-Headers` in the specification) used to initiate an RPC
   /// call.
   ///
   /// See: https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests
   ///
-  /// - Important: pseudo-headers (":method", ":scheme", ":path") are not included here and should
-  ///     be added elsewhere.
   /// - Parameter host: The host serving the RPC.
   /// - Parameter options: Any options related to the call.
   /// - Parameter requestID: A request ID associated with the call. An additional header will be
@@ -511,8 +509,8 @@ extension GRPCClientStateMachine.State {
     // encoded into the message writer.
     var headers: HTTPHeaders = [
       "content-type": "application/grpc",
-      "te": "trailers",  // Used to detect incompatible proxies.
-      "user-agent": "grpc-swift-nio",  //  TODO: Add a more specific user-agent.
+      "te": "trailers",  // Used to detect incompatible proxies, part of the gRPC specification.
+      "user-agent": "grpc-swift-nio",  // TODO: Add a more specific user-agent.
       "host": host,  // NIO's HTTP2ToHTTP1Codec replaces "host" with ":authority"
     ]
 
