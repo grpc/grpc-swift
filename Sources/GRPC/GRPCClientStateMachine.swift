@@ -297,10 +297,10 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   /// Doing so will result in a `.invalidState` error.
   ///
   /// - Parameter buffer: A buffer of bytes received from the server.
-  mutating func receiveResponse(
+  mutating func receiveResponseBuffer(
     _ buffer: inout ByteBuffer
   ) -> Result<[Response], MessageReadError> {
-    return self.state.receiveResponse(&buffer)
+    return self.state.receiveResponseBuffer(&buffer)
   }
 
   /// Receive the end of the response stream from the server and parse the results into
@@ -443,8 +443,8 @@ extension GRPCClientStateMachine.State {
     return result
   }
 
-  /// See `GRPCClientStateMachine.receiveResponse(_:)`.
-  mutating func receiveResponse(
+  /// See `GRPCClientStateMachine.receiveResponseBuffer(_:)`.
+  mutating func receiveResponseBuffer(
     _ buffer: inout ByteBuffer
   ) -> Result<[Response], MessageReadError> {
     let result: Result<[Response], MessageReadError>

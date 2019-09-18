@@ -258,7 +258,7 @@ extension GRPCClientStateMachineTests {
     let message = Response.with { $0.text = "Hello!" }
     var buffer = try self.writeMessage(message)
 
-    stateMachine.receiveResponse(&buffer).assertFailure()
+    stateMachine.receiveResponseBuffer(&buffer).assertFailure()
   }
 
   func doTestReceiveReponseFromValidState(_ state: StateMachine.State) throws {
@@ -267,7 +267,7 @@ extension GRPCClientStateMachineTests {
     let message = Response.with { $0.text = "Hello!" }
     var buffer = try self.writeMessage(message)
 
-    stateMachine.receiveResponse(&buffer).assertSuccess { messages in
+    stateMachine.receiveResponseBuffer(&buffer).assertSuccess { messages in
       XCTAssertEqual(messages, [message])
     }
   }
@@ -372,7 +372,7 @@ extension GRPCClientStateMachineTests {
 
     // Receive a response.
     var buffer = try self.writeMessage(Response.with { $0.text = "Hello!" })
-    stateMachine.receiveResponse(&buffer).assertSuccess()
+    stateMachine.receiveResponseBuffer(&buffer).assertSuccess()
 
     // Receive the status.
     stateMachine.receiveEndOfResponseStream(self.makeTrailers(status: .ok)).assertSuccess()
@@ -397,7 +397,7 @@ extension GRPCClientStateMachineTests {
 
     // Receive a response.
     var buffer = try self.writeMessage(Response.with { $0.text = "Hello!" })
-    stateMachine.receiveResponse(&buffer).assertSuccess()
+    stateMachine.receiveResponseBuffer(&buffer).assertSuccess()
 
     // Receive the status.
     stateMachine.receiveEndOfResponseStream(self.makeTrailers(status: .ok)).assertSuccess()
@@ -420,12 +420,12 @@ extension GRPCClientStateMachineTests {
 
     // Receive a response.
     var firstBuffer = try self.writeMessage(Response.with { $0.text = "1" })
-    stateMachine.receiveResponse(&firstBuffer).assertSuccess()
+    stateMachine.receiveResponseBuffer(&firstBuffer).assertSuccess()
 
     // Receive two responses in one buffer.
     var secondBuffer = try self.writeMessage(Response.with { $0.text = "2" })
     try self.writeMessage(Response.with { $0.text = "3" }, into: &secondBuffer)
-    stateMachine.receiveResponse(&secondBuffer).assertSuccess()
+    stateMachine.receiveResponseBuffer(&secondBuffer).assertSuccess()
 
     // Receive the status.
     stateMachine.receiveEndOfResponseStream(self.makeTrailers(status: .ok)).assertSuccess()
@@ -445,7 +445,7 @@ extension GRPCClientStateMachineTests {
 
     // Receive a response.
     var firstBuffer = try self.writeMessage(Response.with { $0.text = "1" })
-    stateMachine.receiveResponse(&firstBuffer).assertSuccess()
+    stateMachine.receiveResponseBuffer(&firstBuffer).assertSuccess()
 
     // Send two more requests.
     stateMachine.sendRequest(.with { $0.text = "2" }, allocator: self.allocator).assertSuccess()
@@ -454,7 +454,7 @@ extension GRPCClientStateMachineTests {
     // Receive two responses in one buffer.
     var secondBuffer = try self.writeMessage(Response.with { $0.text = "2" })
     try self.writeMessage(Response.with { $0.text = "3" }, into: &secondBuffer)
-    stateMachine.receiveResponse(&secondBuffer).assertSuccess()
+    stateMachine.receiveResponseBuffer(&secondBuffer).assertSuccess()
 
     // Close the request stream.
     stateMachine.sendEndOfRequestStream().assertSuccess()
@@ -510,10 +510,10 @@ extension GRPCClientStateMachineTests {
 
       // One response is fine.
       var firstBuffer = try self.writeMessage(response)
-      stateMachine.receiveResponse(&firstBuffer).assertSuccess()
+      stateMachine.receiveResponseBuffer(&firstBuffer).assertSuccess()
 
       var secondBuffer = try self.writeMessage(response)
-      stateMachine.receiveResponse(&secondBuffer).assertFailure {
+      stateMachine.receiveResponseBuffer(&secondBuffer).assertFailure {
         XCTAssertEqual($0, .cardinalityViolation)
       }
     }
@@ -527,7 +527,7 @@ extension GRPCClientStateMachineTests {
       let response = Response.with { $0.text = "foo" }
       var buffer = try self.writeMessages(response, response)
 
-      stateMachine.receiveResponse(&buffer).assertFailure {
+      stateMachine.receiveResponseBuffer(&buffer).assertFailure {
         XCTAssertEqual($0, .cardinalityViolation)
       }
     }
