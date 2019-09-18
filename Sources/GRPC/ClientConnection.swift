@@ -562,6 +562,6 @@ fileprivate extension TimeAmount {
   ///
   /// - Parameter timeInterval: The amount of time in seconds
   static func seconds(timeInterval: TimeInterval) -> TimeAmount {
-    return .nanoseconds(TimeAmount.Value(timeInterval * 1_000_000_000))
+    return .nanoseconds(Int64(timeInterval * 1_000_000_000))
   }
 }

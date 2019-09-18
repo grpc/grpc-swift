@@ -49,7 +49,7 @@ class ImmediateThrowingEchoProvider: Echo_EchoProvider {
 
 extension EventLoop {
   func makeFailedFuture<T>(_ error: Error, delay: TimeInterval) -> EventLoopFuture<T> {
-    return self.scheduleTask(in: .nanoseconds(TimeAmount.Value(delay * 1000 * 1000 * 1000))) { () }.futureResult
+    return self.scheduleTask(in: .nanoseconds(Int64(delay * 1000 * 1000 * 1000))) { () }.futureResult
       .flatMapThrowing { _ -> T in throw error }
   }
 }
