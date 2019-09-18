@@ -66,7 +66,7 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
     /// Valid transitions:
     /// - `clientStreamingServerIdle`: if the client initiates the RPC,
     /// - `clientClosedServerClosed`: if the client terminates the RPC.
-    case clientIdleServerIdle(PendingWriteState, MessageCount)
+    case clientIdleServerIdle(client: PendingWriteState, server: MessageCount)
 
     /// The client has initiated an RPC and has not had a response from the server. Holds the
     /// writing state for requests and expected message count for responses.
@@ -76,7 +76,7 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
     /// - `clientClosedServerIdle`: if the client closes the request stream,
     /// - `clientClosedServerClosed`: if the client terminates the RPC or the server terminates the
     ///      RPC with a "trailers-only" response.
-    case clientStreamingServerIdle(WriteState, MessageCount)
+    case clientStreamingServerIdle(client: WriteState, server: MessageCount)
 
     /// The client has indicated to the server that it has finished sending requests. The server
     /// has not yet sent response headers for the RPC. Holds the expected response message count.
@@ -85,7 +85,7 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
     /// - `clientClosedServerStreaming`: if the server acknowledges the RPC initiation,
     /// - `clientClosedServerClosed`: if the client terminates the RPC or the server terminates the
     ///      RPC with a "trailers-only" response.
-    case clientClosedServerIdle(MessageCount)
+    case clientClosedServerIdle(server: MessageCount)
 
     /// The client has initiated the RPC and the server has acknowledged it. Messages may have been
     /// sent and/or received. Holds the request stream write state and response stream read state.
@@ -93,7 +93,7 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
     /// Valid transitions:
     /// - `clientClosedServerStreaming`: if the client closes the request stream,
     /// - `clientClosedServerClosed`: if the client terminates the RPC.
-    case clientStreamingServerStreaming(WriteState, ReadState)
+    case clientStreamingServerStreaming(client: WriteState, server: ReadState)
 
     /// The client has indicated to the server that it has finished sending requests. The server
     /// has acknowledged the RPC. Holds the response stream read state.
@@ -101,7 +101,7 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
     /// Valid transitions:
     /// - `clientClosedServerClosed`: if the client terminates the RPC or the server terminates
     ///      the RPC.
-    case clientClosedServerStreaming(ReadState)
+    case clientClosedServerStreaming(server: ReadState)
 
     /// The RPC has terminated. There are no valid transitions from this state.
     case clientClosedServerClosed
@@ -156,7 +156,7 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
       encoding: .none,
       contentType: .protobuf
     )
-    self.state = .clientIdleServerIdle(pendingWriteState, responseCount)
+    self.state = .clientIdleServerIdle(client: pendingWriteState, server: responseCount)
     self.logger = logger
   }
 
@@ -323,7 +323,7 @@ extension GRPCClientStateMachine.State {
     case let .clientIdleServerIdle(pendingWriteState, responseArity):
       let head = self.makeRequestHeaders(host: host, path: path, options: options, requestID: requestID)
       result = .success(head)
-      self = .clientStreamingServerIdle(pendingWriteState.makeWriteState(), responseArity)
+      self = .clientStreamingServerIdle(client: pendingWriteState.makeWriteState(), server: responseArity)
 
     case .clientStreamingServerIdle,
          .clientClosedServerIdle,
@@ -346,11 +346,11 @@ extension GRPCClientStateMachine.State {
     switch self {
     case .clientStreamingServerIdle(var writeState, let arity):
       result = writeState.write(message, allocator: allocator)
-      self = .clientStreamingServerIdle(writeState, arity)
+      self = .clientStreamingServerIdle(client: writeState, server: arity)
 
     case .clientStreamingServerStreaming(var writeState, let readState):
       result = writeState.write(message, allocator: allocator)
-      self = .clientStreamingServerStreaming(writeState, readState)
+      self = .clientStreamingServerStreaming(client: writeState, server: readState)
 
     case .clientClosedServerIdle,
          .clientClosedServerStreaming,
@@ -371,11 +371,11 @@ extension GRPCClientStateMachine.State {
     switch self {
     case .clientStreamingServerIdle(_, let responseArity):
       result = .success(())
-      self = .clientClosedServerIdle(responseArity)
+      self = .clientClosedServerIdle(server: responseArity)
 
     case .clientStreamingServerStreaming(_, let readState):
       result = .success(())
-      self = .clientClosedServerStreaming(readState)
+      self = .clientClosedServerStreaming(server: readState)
 
     case .clientClosedServerIdle,
          .clientClosedServerStreaming,
@@ -400,7 +400,7 @@ extension GRPCClientStateMachine.State {
     case let .clientStreamingServerIdle(writeState, responseArity):
       switch self.parseResponseHeaders(responseHead, responseArity: responseArity, logger: logger) {
       case .success(let readState):
-        self = .clientStreamingServerStreaming(writeState, readState)
+        self = .clientStreamingServerStreaming(client: writeState, server: readState)
         result = .success(responseHead.headers)
       case .failure(let error):
         result = .failure(error)
@@ -409,7 +409,7 @@ extension GRPCClientStateMachine.State {
     case let .clientClosedServerIdle(responseArity):
       switch self.parseResponseHeaders(responseHead, responseArity: responseArity, logger: logger) {
       case .success(let readState):
-        self = .clientClosedServerStreaming(readState)
+        self = .clientClosedServerStreaming(server: readState)
         result = .success(responseHead.headers)
       case .failure(let error):
         result = .failure(error)
@@ -434,11 +434,11 @@ extension GRPCClientStateMachine.State {
     switch self {
     case .clientClosedServerStreaming(var readState):
       result = readState.readMessage(&buffer, as: Response.self)
-      self = .clientClosedServerStreaming(readState)
+      self = .clientClosedServerStreaming(server: readState)
 
     case .clientStreamingServerStreaming(let writeState, var readState):
       result = readState.readMessage(&buffer, as: Response.self)
-      self = .clientStreamingServerStreaming(writeState, readState)
+      self = .clientStreamingServerStreaming(client: writeState, server: readState)
 
     case .clientIdleServerIdle,
          .clientStreamingServerIdle,
