@@ -35,7 +35,7 @@ enum ReceiveResponseHeadError: Error, Equatable {
 
 enum SendEndOfRequestStreamError: Error {
   /// The request stream has already been closed.
-  case endOfStreamCardinalityViolation
+  case alreadyClosed
 
   /// An invalid state was encountered. This is a serious implementation error.
   case invalidState
@@ -383,7 +383,7 @@ extension GRPCClientStateMachine.State {
     case .clientClosedServerIdle,
          .clientClosedServerStreaming,
          .clientClosedServerClosed:
-      result = .failure(.endOfStreamCardinalityViolation)
+      result = .failure(.alreadyClosed)
 
     case .clientIdleServerIdle:
       result = .failure(.invalidState)
