@@ -68,7 +68,7 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
     /// - `clientClosedServerClosed`: if the client terminates the RPC.
     case clientIdleServerIdle(client: PendingWriteState, server: MessageCount)
 
-    /// The client has initiated an RPC and has not had a response from the server. Holds the
+    /// The client has initiated an RPC and has not initial metadata from the server. Holds the
     /// writing state for requests and expected message count for responses.
     ///
     /// Valid transitions:
@@ -92,15 +92,14 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
     ///
     /// Valid transitions:
     /// - `clientClosedServerStreaming`: if the client closes the request stream,
-    /// - `clientClosedServerClosed`: if the client terminates the RPC.
+    /// - `clientClosedServerClosed`: if the client or server terminates the RPC.
     case clientStreamingServerStreaming(client: WriteState, server: ReadState)
 
     /// The client has indicated to the server that it has finished sending requests. The server
     /// has acknowledged the RPC. Holds the response stream read state.
     ///
     /// Valid transitions:
-    /// - `clientClosedServerClosed`: if the client terminates the RPC or the server terminates
-    ///      the RPC.
+    /// - `clientClosedServerClosed`: if the client or server terminate the RPC.
     case clientClosedServerStreaming(server: ReadState)
 
     /// The RPC has terminated. There are no valid transitions from this state.
@@ -134,7 +133,7 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
         break
 
       default:
-        preconditionFailure("invalid state transition from '\(self.state)' to '\(oldValue)'")
+        preconditionFailure("invalid state transition from '\(oldValue)' to '\(self.state)'")
       }
     }
   }
