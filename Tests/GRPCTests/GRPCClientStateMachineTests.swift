@@ -596,7 +596,7 @@ extension GRPCClientStateMachineTests {
     }
   }
 
-  func testReciveResponseHeadersWithInvalidContentType() throws {
+  func testReceiveResponseHeadersWithInvalidContentType() throws {
     var stateMachine = self.makeStateMachine(.clientStreamingServerIdle(client: .one(), server: .one))
 
     var headers = HTTPHeaders()
@@ -612,7 +612,7 @@ extension GRPCClientStateMachineTests {
     }
   }
 
-  func testReciveResponseHeadersWithSupportedCompressionMechanism() throws {
+  func testReceiveResponseHeadersWithSupportedCompressionMechanism() throws {
     var stateMachine = self.makeStateMachine(.clientStreamingServerIdle(client: .one(), server: .one))
 
     var headers = HTTPHeaders()
@@ -636,7 +636,7 @@ extension GRPCClientStateMachineTests {
     }
   }
 
-  func testReciveResponseHeadersWithUnsupportedCompressionMechanism() throws {
+  func testReceiveResponseHeadersWithUnsupportedCompressionMechanism() throws {
     var stateMachine = self.makeStateMachine(.clientStreamingServerIdle(client: .one(), server: .one))
 
     var headers = HTTPHeaders()
@@ -654,7 +654,7 @@ extension GRPCClientStateMachineTests {
     }
   }
 
-  func testReciveResponseHeadersWithUnknownCompressionMechanism() throws {
+  func testReceiveResponseHeadersWithUnknownCompressionMechanism() throws {
     var stateMachine = self.makeStateMachine(.clientStreamingServerIdle(client: .one(), server: .one))
 
     var headers = HTTPHeaders()

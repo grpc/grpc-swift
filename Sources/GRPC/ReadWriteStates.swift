@@ -71,7 +71,7 @@ enum MessageWriteError: Error {
   case cardinalityViolation
 
   /// Message serialization failed.
-  case serialzationFailed
+  case serializationFailed
 
   /// An invalid state was encountered. This is a serious implementation error.
   case invalidState
@@ -92,7 +92,7 @@ extension WriteState {
     }
 
     guard let data = try? message.serializedData() else {
-      return .failure(.serialzationFailed)
+      return .failure(.serializationFailed)
     }
 
     // Zero is fine: the writer will allocate the correct amount of space.
