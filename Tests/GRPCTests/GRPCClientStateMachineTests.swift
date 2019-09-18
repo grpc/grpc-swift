@@ -216,12 +216,12 @@ extension GRPCClientStateMachineTests {
 extension GRPCClientStateMachineTests {
   func doTestReceiveResponseHeadersFromInvalidState(_ state: StateMachine.State) {
     var stateMachine = self.makeStateMachine(state)
-    stateMachine.receiveResponseHeaders(self.makeResponseHead()).assertFailure()
+    stateMachine.receiveResponseHead(self.makeResponseHead()).assertFailure()
   }
 
   func doTestReceiveResponseHeadersFromValidState(_ state: StateMachine.State) {
     var stateMachine = self.makeStateMachine(state)
-    stateMachine.receiveResponseHeaders(self.makeResponseHead()).assertSuccess()
+    stateMachine.receiveResponseHead(self.makeResponseHead()).assertSuccess()
   }
 
   func testReceiveResponseHeadersFromIdle() {
@@ -362,7 +362,7 @@ extension GRPCClientStateMachineTests {
     stateMachine.sendRequestHeaders(host: "foo", path: "/echo/Get", options: .init(), requestID: "bar").assertSuccess()
 
     // Receive acknowledgement.
-    stateMachine.receiveResponseHeaders(self.makeResponseHead()).assertSuccess()
+    stateMachine.receiveResponseHead(self.makeResponseHead()).assertSuccess()
 
     // Send a request.
     stateMachine.sendRequest(.with { $0.text = "Hello!" }, allocator: self.allocator).assertSuccess()
@@ -385,7 +385,7 @@ extension GRPCClientStateMachineTests {
     stateMachine.sendRequestHeaders(host: "foo", path: "/echo/Get", options: .init(), requestID: "bar").assertSuccess()
 
     // Receive acknowledgement.
-    stateMachine.receiveResponseHeaders(self.makeResponseHead()).assertSuccess()
+    stateMachine.receiveResponseHead(self.makeResponseHead()).assertSuccess()
 
     // Send some requests.
     stateMachine.sendRequest(.with { $0.text = "1" }, allocator: self.allocator).assertSuccess()
@@ -410,7 +410,7 @@ extension GRPCClientStateMachineTests {
     stateMachine.sendRequestHeaders(host: "foo", path: "/echo/Get", options: .init(), requestID: "bar").assertSuccess()
 
     // Receive acknowledgement.
-    stateMachine.receiveResponseHeaders(self.makeResponseHead()).assertSuccess()
+    stateMachine.receiveResponseHead(self.makeResponseHead()).assertSuccess()
 
     // Send a request.
     stateMachine.sendRequest(.with { $0.text = "1" }, allocator: self.allocator).assertSuccess()
@@ -438,7 +438,7 @@ extension GRPCClientStateMachineTests {
     stateMachine.sendRequestHeaders(host: "foo", path: "/echo/Get", options: .init(), requestID: "bar").assertSuccess()
 
     // Receive acknowledgement.
-    stateMachine.receiveResponseHeaders(self.makeResponseHead()).assertSuccess()
+    stateMachine.receiveResponseHead(self.makeResponseHead()).assertSuccess()
 
     // Interleave requests and responses:
     stateMachine.sendRequest(.with { $0.text = "1" }, allocator: self.allocator).assertSuccess()
@@ -566,7 +566,7 @@ extension GRPCClientStateMachineTests {
       headers: headers
     )
 
-    stateMachine.receiveResponseHeaders(responseHead).assertSuccess()
+    stateMachine.receiveResponseHead(responseHead).assertSuccess()
   }
 
   func testReceiveResponseHeadersWithNotOkStatus() throws {
@@ -578,7 +578,7 @@ extension GRPCClientStateMachineTests {
       headers: HTTPHeaders()
     )
 
-    stateMachine.receiveResponseHeaders(responseHead).assertFailure {
+    stateMachine.receiveResponseHead(responseHead).assertFailure {
       XCTAssertEqual($0, .invalidHTTPStatus(.imATeapot))
     }
   }
@@ -591,7 +591,7 @@ extension GRPCClientStateMachineTests {
       status: .ok
     )
 
-    stateMachine.receiveResponseHeaders(responseHead).assertFailure {
+    stateMachine.receiveResponseHead(responseHead).assertFailure {
       XCTAssertEqual($0, .invalidContentType)
     }
   }
@@ -607,7 +607,7 @@ extension GRPCClientStateMachineTests {
       headers: headers
     )
 
-    stateMachine.receiveResponseHeaders(responseHead).assertFailure {
+    stateMachine.receiveResponseHead(responseHead).assertFailure {
       XCTAssertEqual($0, .invalidContentType)
     }
   }
@@ -626,7 +626,7 @@ extension GRPCClientStateMachineTests {
       headers: headers
     )
 
-    stateMachine.receiveResponseHeaders(responseHead).assertSuccess()
+    stateMachine.receiveResponseHead(responseHead).assertSuccess()
 
     switch stateMachine.state {
     case let .clientStreamingServerStreaming(_, readState):
@@ -649,7 +649,7 @@ extension GRPCClientStateMachineTests {
       headers: headers
     )
 
-    stateMachine.receiveResponseHeaders(responseHead).assertFailure {
+    stateMachine.receiveResponseHead(responseHead).assertFailure {
       XCTAssertEqual($0, .unsupportedMessageEncoding)
     }
   }
@@ -667,7 +667,7 @@ extension GRPCClientStateMachineTests {
       headers: headers
     )
 
-    stateMachine.receiveResponseHeaders(responseHead).assertFailure {
+    stateMachine.receiveResponseHead(responseHead).assertFailure {
       XCTAssertEqual($0, .unsupportedMessageEncoding)
     }
   }

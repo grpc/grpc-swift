@@ -266,10 +266,10 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   /// Doing so will result in a `.invalidState` error.
   ///
   /// - Parameter headers: The headers received from the server.
-  mutating func receiveResponseHeaders(
+  mutating func receiveResponseHead(
     _ responseHead: HTTPResponseHead
   ) -> Result<HTTPHeaders, ReceiveResponseHeadError> {
-    return self.state.receiveResponseHeaders(responseHead, logger: self.logger)
+    return self.state.receiveResponseHead(responseHead, logger: self.logger)
   }
 
   /// Read a response buffer from the server and return any decoded messages.
@@ -407,8 +407,8 @@ extension GRPCClientStateMachine.State {
     return result
   }
 
-  /// See `GRPCClientStateMachine.receiveResponseHeaders(_:)`.
-  mutating func receiveResponseHeaders(
+  /// See `GRPCClientStateMachine.receiveResponseHead(_:)`.
+  mutating func receiveResponseHead(
     _ responseHead: HTTPResponseHead,
     logger: Logger
   ) -> Result<HTTPHeaders, ReceiveResponseHeadError> {
