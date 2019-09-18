@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 import NIO
 @testable import GRPC
 import EchoModel
