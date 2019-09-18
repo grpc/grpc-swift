@@ -144,7 +144,7 @@ enum MessageReadError: Error {
 
 extension ReadState {
   /// Consume the given `buffer` then attempt to read and subsequently decode length-prefixed
-  /// serialzed messages.
+  /// serialized messages.
   ///
   /// For an expected message count of `.one`, this function will produce **at most** 1 message. If
   /// a message has been produced then subsequent calls will result in an error.

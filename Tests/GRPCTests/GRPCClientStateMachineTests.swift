@@ -59,7 +59,7 @@ class GRPCClientStateMachineTests: GRPCTestCase {
     writer.write(messageData, into: &buffer)
   }
 
-  /// Returns a minimally valid `HTTPResonseHead`.
+  /// Returns a minimally valid `HTTPResponseHead`.
   func makeResponseHead() -> HTTPResponseHead {
     var headers = HTTPHeaders()
     headers.add(name: "content-type", value: "application/grpc")
