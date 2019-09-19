@@ -33,17 +33,22 @@ enum ReceiveResponseHeadError: Error, Equatable {
   case invalidState
 }
 
+enum ReceiveEndOfResponseStreamError: Error {
+  /// An invalid state was encountered. This is a serious implementation error.
+  case invalidState
+}
+
+enum SendRequestHeadersError: Error {
+  /// An invalid state was encountered. This is a serious implementation error.
+  case invalidState
+}
+
 enum SendEndOfRequestStreamError: Error {
   /// The request stream has already been closed.
   case alreadyClosed
 
   /// An invalid state was encountered. This is a serious implementation error.
   case invalidState
-}
-
-  /// An invalid state was encountered. This is a serious implementation error.
-struct InvalidStateError: Error {
-  static let invalidState = InvalidStateError()
 }
 
 /// A state machine for a single gRPC call from the perspective of a client.
@@ -58,6 +63,11 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   /// - `.clientIdleServerClosed`: The client must initiate the call before the server moves from
   ///   the idle state.
   /// - `.clientStreamingServerClosed`: The client may not stream if the server is closed.
+  ///
+  /// Note: when a state is "streaming" it means that messages _may_ be sent over it. That is, the
+  /// headers for the stream have been processed by the state machine and end-of-stream has not
+  /// yet been processed. A stream may expect to any number of messages (i.e. up to one for a unary
+  /// call and many for a streaming call).
   enum State {
     /// Initial state. Neither request stream nor response stream have been initiated. Holds the
     /// pending write state for the request stream and expected message count for the response
@@ -189,7 +199,7 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
     path: String,
     options: CallOptions,
     requestID: String
-  ) -> Result<HTTPRequestHead, InvalidStateError> {
+  ) -> Result<HTTPRequestHead, SendRequestHeadersError> {
     return self.state.sendRequestHeaders(
       host: host,
       path: path,
@@ -322,7 +332,7 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   /// - Parameter trailers: The trailers to parse.
   mutating func receiveEndOfResponseStream(
     _ trailers: HTTPHeaders
-  ) -> Result<GRPCStatus, InvalidStateError> {
+  ) -> Result<GRPCStatus, ReceiveEndOfResponseStreamError> {
     return self.state.receiveEndOfResponseStream(trailers)
   }
 }
@@ -334,8 +344,8 @@ extension GRPCClientStateMachine.State {
     path: String,
     options: CallOptions,
     requestID: String
-  ) -> Result<HTTPRequestHead, InvalidStateError> {
-    let result: Result<HTTPRequestHead, InvalidStateError>
+  ) -> Result<HTTPRequestHead, SendRequestHeadersError> {
+    let result: Result<HTTPRequestHead, SendRequestHeadersError>
 
     switch self {
     case let .clientIdleServerIdle(pendingWriteState, messageCount):
@@ -471,8 +481,8 @@ extension GRPCClientStateMachine.State {
   /// See `GRPCClientStateMachine.receiveEndOfResponseStream(_:)`.
   mutating func receiveEndOfResponseStream(
     _ trailers: HTTPHeaders
-  ) -> Result<GRPCStatus, InvalidStateError> {
-     let result: Result<GRPCStatus, InvalidStateError>
+  ) -> Result<GRPCStatus, ReceiveEndOfResponseStreamError> {
+     let result: Result<GRPCStatus, ReceiveEndOfResponseStreamError>
 
      switch self {
      case .clientStreamingServerStreaming,

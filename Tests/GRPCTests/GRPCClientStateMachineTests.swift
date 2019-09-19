@@ -77,7 +77,9 @@ extension GRPCClientStateMachineTests {
       path: "/echo/Get",
       options: .init(),
       requestID: "bar"
-    ).assertFailure()
+    ).assertFailure {
+      XCTAssertEqual($0, .invalidState)
+    }
   }
 
   func testSendRequestHeadersFromIdle() {
@@ -114,17 +116,10 @@ extension GRPCClientStateMachineTests {
 // MARK: - Send Request
 
 extension GRPCClientStateMachineTests {
-  func doTestSendRequestFromInvalidState(_ state: StateMachine.State) {
+  func doTestSendRequestFromInvalidState(_ state: StateMachine.State, expected: MessageWriteError) {
     var stateMachine = self.makeStateMachine(state)
     stateMachine.sendRequest(.init(text: "Hello!"), allocator: self.allocator).assertFailure {
-      XCTAssertEqual($0, .invalidState)
-    }
-  }
-
-  func doTestSendRequestFromInvalidNonFatalState(_ state: StateMachine.State) {
-    var stateMachine = self.makeStateMachine(state)
-    stateMachine.sendRequest(.init(text: "Hello!"), allocator: self.allocator).assertFailure {
-      XCTAssertEqual($0, .cardinalityViolation)
+      XCTAssertEqual($0, expected)
     }
   }
 
@@ -142,7 +137,7 @@ extension GRPCClientStateMachineTests {
   }
 
   func testSendRequestFromIdle() {
-    self.doTestSendRequestFromInvalidState(.clientIdleServerIdle(client: .one(), server: .one))
+    self.doTestSendRequestFromInvalidState(.clientIdleServerIdle(client: .one(), server: .one), expected: .invalidState)
   }
 
   func testSendRequestFromClientStreamingServerIdle() {
@@ -150,7 +145,7 @@ extension GRPCClientStateMachineTests {
   }
 
   func testSendRequestFromClientClosedServerIdle() {
-    self.doTestSendRequestFromInvalidNonFatalState(.clientClosedServerIdle(server: .one))
+    self.doTestSendRequestFromInvalidState(.clientClosedServerIdle(server: .one), expected: .cardinalityViolation)
   }
 
   func testSendRequestFromStreaming() {
@@ -158,27 +153,25 @@ extension GRPCClientStateMachineTests {
   }
 
   func testSendRequestFromClientClosedServerStreaming() {
-    self.doTestSendRequestFromInvalidNonFatalState(.clientClosedServerIdle(server: .one))
+    self.doTestSendRequestFromInvalidState(.clientClosedServerIdle(server: .one), expected: .cardinalityViolation)
   }
 
   func testSendRequestFromClosed() {
-    self.doTestSendRequestFromInvalidNonFatalState(.clientClosedServerClosed)
+    self.doTestSendRequestFromInvalidState(.clientClosedServerClosed, expected: .cardinalityViolation)
   }
 }
 
 // MARK: - Send End of Request Stream
 
 extension GRPCClientStateMachineTests {
-  func doTestSendEndOfRequestStreamFromInvalidState(_ state: StateMachine.State) {
+  func doTestSendEndOfRequestStreamFromInvalidState(
+    _ state: StateMachine.State,
+    expected: SendEndOfRequestStreamError
+  ) {
     var stateMachine = self.makeStateMachine(state)
     stateMachine.sendEndOfRequestStream().assertFailure {
-      XCTAssertEqual($0, .invalidState)
+      XCTAssertEqual($0, expected)
     }
-  }
-
-  func doTestSendEndOfRequestStreamFromInvalidNonFatalState(_ state: StateMachine.State) {
-    var stateMachine = self.makeStateMachine(state)
-    stateMachine.sendEndOfRequestStream().assertFailure()
   }
 
   func doTestSendEndOfRequestStreamFromValidState(_ state: StateMachine.State) {
@@ -187,36 +180,57 @@ extension GRPCClientStateMachineTests {
   }
 
   func testSendEndOfRequestStreamFromIdle() {
-    self.doTestSendEndOfRequestStreamFromInvalidState(.clientIdleServerIdle(client: .one(), server: .one))
+    self.doTestSendEndOfRequestStreamFromInvalidState(
+      .clientIdleServerIdle(client: .one(), server: .one),
+      expected: .invalidState
+    )
   }
 
   func testSendEndOfRequestStreamFromClientStreamingServerIdle() {
-    self.doTestSendEndOfRequestStreamFromValidState(.clientStreamingServerIdle(client: .one(), server: .one))
+    self.doTestSendEndOfRequestStreamFromValidState(
+      .clientStreamingServerIdle(client: .one(), server: .one)
+    )
   }
 
   func testSendEndOfRequestStreamFromClientClosedServerIdle() {
-    self.doTestSendEndOfRequestStreamFromInvalidNonFatalState(.clientClosedServerIdle(server: .one))
+    self.doTestSendEndOfRequestStreamFromInvalidState(
+      .clientClosedServerIdle(server: .one),
+      expected: .alreadyClosed
+    )
   }
 
   func testSendEndOfRequestStreamFromStreaming() {
-    self.doTestSendEndOfRequestStreamFromValidState(.clientStreamingServerStreaming(client: .one(), server: .one()))
+    self.doTestSendEndOfRequestStreamFromValidState(
+      .clientStreamingServerStreaming(client: .one(), server: .one())
+    )
   }
 
   func testSendEndOfRequestStreamFromClientClosedServerStreaming() {
-    self.doTestSendEndOfRequestStreamFromInvalidNonFatalState(.clientClosedServerStreaming(server: .one()))
+    self.doTestSendEndOfRequestStreamFromInvalidState(
+      .clientClosedServerStreaming(server: .one()),
+      expected: .alreadyClosed
+    )
   }
 
   func testSendEndOfRequestStreamFromClosed() {
-    self.doTestSendEndOfRequestStreamFromInvalidNonFatalState(.clientClosedServerClosed)
+    self.doTestSendEndOfRequestStreamFromInvalidState(
+      .clientClosedServerClosed,
+      expected: .alreadyClosed
+    )
   }
 }
 
 // MARK: - Receive Response Headers
 
 extension GRPCClientStateMachineTests {
-  func doTestReceiveResponseHeadersFromInvalidState(_ state: StateMachine.State) {
+  func doTestReceiveResponseHeadersFromInvalidState(
+    _ state: StateMachine.State,
+    expected: ReceiveResponseHeadError
+  ) {
     var stateMachine = self.makeStateMachine(state)
-    stateMachine.receiveResponseHead(self.makeResponseHead()).assertFailure()
+    stateMachine.receiveResponseHead(self.makeResponseHead()).assertFailure {
+      XCTAssertEqual($0, expected)
+    }
   }
 
   func doTestReceiveResponseHeadersFromValidState(_ state: StateMachine.State) {
@@ -225,43 +239,64 @@ extension GRPCClientStateMachineTests {
   }
 
   func testReceiveResponseHeadersFromIdle() {
-    self.doTestReceiveResponseHeadersFromInvalidState(.clientIdleServerIdle(client: .one(), server: .one))
+    self.doTestReceiveResponseHeadersFromInvalidState(
+      .clientIdleServerIdle(client: .one(), server: .one),
+      expected: .invalidState
+    )
   }
 
   func testReceiveResponseHeadersFromClientStreamingServerIdle() {
-    self.doTestReceiveResponseHeadersFromValidState(.clientStreamingServerIdle(client: .one(), server: .one))
+    self.doTestReceiveResponseHeadersFromValidState(
+      .clientStreamingServerIdle(client: .one(), server: .one)
+    )
   }
 
   func testReceiveResponseHeadersFromClientClosedServerIdle() {
-    self.doTestReceiveResponseHeadersFromValidState(.clientClosedServerIdle(server: .one))
+    self.doTestReceiveResponseHeadersFromValidState(
+      .clientClosedServerIdle(server: .one)
+    )
   }
 
   func testReceiveResponseHeadersFromStreaming() {
-    self.doTestReceiveResponseHeadersFromInvalidState(.clientStreamingServerStreaming(client: .one(), server: .one()))
+    self.doTestReceiveResponseHeadersFromInvalidState(
+      .clientStreamingServerStreaming(client: .one(), server: .one()),
+      expected: .invalidState
+    )
   }
 
   func testReceiveResponseHeadersFromClientClosedServerStreaming() {
-    self.doTestReceiveResponseHeadersFromInvalidState(.clientClosedServerStreaming(server: .one()))
+    self.doTestReceiveResponseHeadersFromInvalidState(
+      .clientClosedServerStreaming(server: .one()),
+      expected: .invalidState
+    )
   }
 
   func testReceiveResponseHeadersFromClosed() {
-    self.doTestReceiveResponseHeadersFromInvalidState(.clientClosedServerClosed)
+    self.doTestReceiveResponseHeadersFromInvalidState(
+      .clientClosedServerClosed,
+      expected: .invalidState
+    )
   }
 }
 
 // MARK: - Receive Response
 
 extension GRPCClientStateMachineTests {
-  func doTestReceiveReponseFromInvalidState(_ state: StateMachine.State) throws {
+  func doTestReceiveResponseFromInvalidState(
+    _ state: StateMachine.State,
+    expected: MessageReadError
+  ) throws {
     var stateMachine = self.makeStateMachine(state)
 
     let message = Response.with { $0.text = "Hello!" }
     var buffer = try self.writeMessage(message)
 
-    stateMachine.receiveResponseBuffer(&buffer).assertFailure()
+    stateMachine.receiveResponseBuffer(&buffer).assertFailure {
+      XCTAssertEqual($0, expected)
+    }
   }
 
-  func doTestReceiveReponseFromValidState(_ state: StateMachine.State) throws {
+  func doTestReceiveResponseFromValidState(_ state: StateMachine.State) throws {
     var stateMachine = self.makeStateMachine(state)
 
     let message = Response.with { $0.text = "Hello!" }
@@ -272,37 +307,56 @@ extension GRPCClientStateMachineTests {
     }
   }
 
-  func testReceiveReponseFromIdle() throws {
-    try self.doTestReceiveReponseFromInvalidState(.clientIdleServerIdle(client: .one(), server: .one))
+  func testReceiveResponseFromIdle() throws {
+    try self.doTestReceiveResponseFromInvalidState(
+      .clientIdleServerIdle(client: .one(), server: .one),
+      expected: .invalidState
+    )
   }
 
-  func testReceiveReponseFromClientStreamingServerIdle() throws {
-    try self.doTestReceiveReponseFromInvalidState(.clientStreamingServerIdle(client: .one(), server: .one))
+  func testReceiveResponseFromClientStreamingServerIdle() throws {
+    try self.doTestReceiveResponseFromInvalidState(
+      .clientStreamingServerIdle(client: .one(), server: .one),
+      expected: .invalidState
+    )
   }
 
-  func testReceiveReponseFromClientClosedServerIdle() throws {
-    try self.doTestReceiveReponseFromInvalidState(.clientClosedServerIdle(server: .one))
+  func testReceiveResponseFromClientClosedServerIdle() throws {
+    try self.doTestReceiveResponseFromInvalidState(
+      .clientClosedServerIdle(server: .one),
+      expected: .invalidState
+    )
   }
 
-  func testReceiveReponseFromStreaming() throws {
-    try self.doTestReceiveReponseFromValidState(.clientStreamingServerStreaming(client: .one(), server: .one()))
+  func testReceiveResponseFromStreaming() throws {
+    try self.doTestReceiveResponseFromValidState(
+      .clientStreamingServerStreaming(client: .one(), server: .one())
+    )
   }
 
-  func testReceiveReponseFromClientClosedServerStreaming() throws {
-    try self.doTestReceiveReponseFromValidState(.clientClosedServerStreaming(server: .one()))
+  func testReceiveResponseFromClientClosedServerStreaming() throws {
+    try self.doTestReceiveResponseFromValidState(.clientClosedServerStreaming(server: .one()))
   }
 
-  func testReceiveReponseFromClosed() throws {
-    try self.doTestReceiveReponseFromInvalidState(.clientClosedServerClosed)
+  func testReceiveResponseFromClosed() throws {
+    try self.doTestReceiveResponseFromInvalidState(
+      .clientClosedServerClosed,
+      expected: .invalidState
+    )
   }
 }
 
 // MARK: - Receive End of Response Stream
 
 extension GRPCClientStateMachineTests {
-  func doTestReceiveEndOfResponseStreamFromInvalidState(_ state: StateMachine.State) {
+  func doTestReceiveEndOfResponseStreamFromInvalidState(
+    _ state: StateMachine.State,
+    expected: ReceiveEndOfResponseStreamError
+  ) {
     var stateMachine = self.makeStateMachine(state)
-    stateMachine.receiveEndOfResponseStream(HTTPHeaders()).assertFailure()
+    stateMachine.receiveEndOfResponseStream(HTTPHeaders()).assertFailure {
+      XCTAssertEqual($0, expected)
+    }
   }
 
   func doTestReceiveEndOfResponseStreamFromValidState(_ state: StateMachine.State) {
@@ -319,27 +373,41 @@ extension GRPCClientStateMachineTests {
   }
 
   func testReceiveEndOfResponseStreamFromIdle() {
-    self.doTestReceiveEndOfResponseStreamFromInvalidState(.clientIdleServerIdle(client: .one(), server: .one))
+    self.doTestReceiveEndOfResponseStreamFromInvalidState(
+      .clientIdleServerIdle(client: .one(), server: .one),
+      expected: .invalidState
+    )
   }
 
   func testReceiveEndOfResponseStreamFromClientStreamingServerIdle() {
-    self.doTestReceiveEndOfResponseStreamFromValidState(.clientStreamingServerIdle(client: .one(), server: .one))
+    self.doTestReceiveEndOfResponseStreamFromValidState(
+      .clientStreamingServerIdle(client: .one(), server: .one)
+    )
   }
 
   func testReceiveEndOfResponseStreamFromClientClosedServerIdle() {
-    self.doTestReceiveEndOfResponseStreamFromValidState(.clientClosedServerIdle(server: .one))
+    self.doTestReceiveEndOfResponseStreamFromValidState(
+      .clientClosedServerIdle(server: .one)
+    )
   }
 
   func testReceiveEndOfResponseStreamFromStreaming() {
-    self.doTestReceiveEndOfResponseStreamFromValidState(.clientStreamingServerStreaming(client: .one(), server: .one()))
+    self.doTestReceiveEndOfResponseStreamFromValidState(
+      .clientStreamingServerStreaming(client: .one(), server: .one())
+    )
   }
 
   func testReceiveEndOfResponseStreamFromClientClosedServerStreaming() {
-    self.doTestReceiveEndOfResponseStreamFromValidState(.clientClosedServerStreaming(server: .one()))
+    self.doTestReceiveEndOfResponseStreamFromValidState(
+      .clientClosedServerStreaming(server: .one())
+    )
   }
 
   func testReceiveEndOfResponseStreamFromClosed() {
-    self.doTestReceiveEndOfResponseStreamFromInvalidState(.clientClosedServerClosed)
+    self.doTestReceiveEndOfResponseStreamFromInvalidState(
+      .clientClosedServerClosed,
+      expected: .invalidState
+    )
   }
 }
 
