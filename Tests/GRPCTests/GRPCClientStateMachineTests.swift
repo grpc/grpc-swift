@@ -536,7 +536,7 @@ extension GRPCClientStateMachineTests {
 
 extension GRPCClientStateMachineTests {
   func testSendTooManyRequestsFromClientStreamingServerIdle() {
-    for messageCount in [MessageCount.one, MessageCount.many] {
+    for messageCount in [MessageArity.one, MessageArity.many] {
       var stateMachine = self.makeStateMachine(.clientStreamingServerIdle(client: .one(), server: messageCount))
 
       // One is fine.
@@ -853,7 +853,7 @@ class ReadStateTests: GRPCTestCase {
 
     // We shouldn't be able to read anymore.
     XCTAssertFalse(state.canRead)
-    XCTAssertEqual(state.expectedCount, .none)
+    XCTAssertEqual(state.arity, .none)
   }
 
   func testReadOneMessageForManyExpectedMessages() throws {
@@ -870,7 +870,7 @@ class ReadStateTests: GRPCTestCase {
 
     // We should still be able to read.
     XCTAssertTrue(state.canRead)
-    XCTAssertEqual(state.expectedCount, .many)
+    XCTAssertEqual(state.arity, .many)
   }
 
   func testReadManyMessagesForManyExpectedMessages() throws {
@@ -889,7 +889,7 @@ class ReadStateTests: GRPCTestCase {
 
     // We should still be able to read.
     XCTAssertTrue(state.canRead)
-    XCTAssertEqual(state.expectedCount, .many)
+    XCTAssertEqual(state.arity, .many)
   }
 }
 
@@ -928,42 +928,42 @@ extension Result {
 // MARK: ReadState, PendingWriteState, and WriteState helpers
 
 extension ReadState {
-  fileprivate init(expectedCount: MessageCount) {
+  fileprivate init(arity: MessageArity) {
     let reader = LengthPrefixedMessageReader(
       mode: .client,
       compressionMechanism: .none,
       logger: Logger(label: "io.grpc.reader")
     )
-    self.init(expectedCount: expectedCount, reader: reader)
+    self.init(arity: arity, reader: reader)
   }
 
   static func none() -> ReadState {
-    return .init(expectedCount: .none)
+    return .init(arity: .none)
   }
 
   static func one() -> ReadState {
-    return .init(expectedCount: .one)
+    return .init(arity: .one)
   }
 
   static func many() -> ReadState {
-    return .init(expectedCount: .many)
+    return .init(arity: .many)
   }
 }
 
 extension PendingWriteState {
   static func one() -> PendingWriteState {
-    return .init(expectedCount: .one, encoding: .none, contentType: .protobuf)
+    return .init(arity: .one, encoding: .none, contentType: .protobuf)
   }
 
   static func many() -> PendingWriteState {
-    return .init(expectedCount: .many, encoding: .none, contentType: .protobuf)
+    return .init(arity: .many, encoding: .none, contentType: .protobuf)
   }
 }
 
 extension WriteState {
   static func one() -> WriteState {
     return .init(
-      expectedCount: .one,
+      arity: .one,
       writer: LengthPrefixedMessageWriter(compression: .none),
       contentType: .protobuf
     )
@@ -971,7 +971,7 @@ extension WriteState {
 
   static func many() -> WriteState {
     return .init(
-      expectedCount: .many,
+      arity: .many,
       writer: LengthPrefixedMessageWriter(compression: .none),
       contentType: .protobuf
     )

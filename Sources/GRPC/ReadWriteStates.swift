@@ -17,7 +17,7 @@ import NIO
 import SwiftProtobuf
 
 /// Number of messages expected on a stream.
-enum MessageCount {
+enum MessageArity {
   case none
   case one
   case many
@@ -26,7 +26,7 @@ enum MessageCount {
 /// Encapsulates the state required to create a new write state.
 struct PendingWriteState {
   /// The number of messages we expect to write to the stream.
-  var expectedCount: MessageCount
+  var arity: MessageArity
 
   /// The encoding we should use when writing the message.
   var encoding: CompressionMechanism
@@ -36,7 +36,7 @@ struct PendingWriteState {
 
   func makeWriteState() -> WriteState {
     return WriteState(
-      expectedCount: self.expectedCount,
+      arity: self.arity,
       writer: LengthPrefixedMessageWriter(compression: self.encoding),
       contentType: self.contentType
     )
@@ -47,11 +47,11 @@ struct PendingWriteState {
 struct WriteState {
   /// Whether the stream may be written to.
   internal var canWrite: Bool {
-    return self.expectedCount != .none
+    return self.arity != .none
   }
 
   /// The number of messages we expect to write to the stream.
-  var expectedCount: MessageCount
+  var arity: MessageArity
 
   /// A writer to encode `Message`s into the gRPC wire-format.
   var writer: LengthPrefixedMessageWriter
@@ -59,8 +59,8 @@ struct WriteState {
   /// The 'content-type' being written.
   var contentType: ContentType
 
-  init(expectedCount: MessageCount, writer: LengthPrefixedMessageWriter, contentType: ContentType) {
-    self.expectedCount = expectedCount
+  init(arity: MessageArity, writer: LengthPrefixedMessageWriter, contentType: ContentType) {
+    self.arity = arity
     self.writer = writer
     self.contentType = contentType
   }
@@ -100,8 +100,8 @@ extension WriteState {
     self.writer.write(data, into: &buffer)
 
     // If we only expect to write one message then we're no longer writable.
-    if case .one = self.expectedCount {
-      self.expectedCount = .none
+    if case .one = self.arity {
+      self.arity = .none
     }
 
     return .success(buffer)
@@ -112,18 +112,18 @@ extension WriteState {
 struct ReadState {
   /// Whether the stream may read.
   internal var canRead: Bool {
-    return self.expectedCount != .none
+    return self.arity != .none
   }
 
   /// The expected number of messages of the reading stream.
-  var expectedCount: MessageCount
+  var arity: MessageArity
 
   /// A reader which accepts bytes in the gRPC wire-format and produces sequences of bytes which
   /// may be decoded into protobuf `Message`s.
   var reader: LengthPrefixedMessageReader
 
-  init(expectedCount: MessageCount, reader: LengthPrefixedMessageReader) {
-    self.expectedCount = expectedCount
+  init(arity: MessageArity, reader: LengthPrefixedMessageReader) {
+    self.arity = arity
     self.reader = reader
   }
 }
@@ -174,7 +174,7 @@ extension ReadState {
 
     // We need to validate the number of messages we decoded. Zero is fine because the payload may
     // be split across frames.
-    switch (self.expectedCount, messages.count) {
+    switch (self.arity, messages.count) {
     // Always allowed:
     case (.one, 0),
          (.many, 0...):
@@ -182,7 +182,7 @@ extension ReadState {
 
     // Also allowed, assuming we have no leftover bytes:
     case (.one, 1):
-      self.expectedCount = .none
+      self.arity = .none
       // We shouldn't have any bytes leftover after reading a single message and we also should not
       // have partially read a message.
       if self.reader.unprocessedBytes != 0 || self.reader.isReading {
