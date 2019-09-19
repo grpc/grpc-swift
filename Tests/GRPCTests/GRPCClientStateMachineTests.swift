@@ -716,6 +716,115 @@ extension GRPCClientStateMachineTests {
   }
 }
 
+class ReadStateTests: GRPCTestCase {
+  var allocator = ByteBufferAllocator()
+
+  func testReadWhenNoExpectedMessages() {
+    var state: ReadState = .none()
+    var buffer = self.allocator.buffer(capacity: 0)
+    state.readMessages(&buffer, as: Echo_EchoRequest.self).assertFailure {
+      XCTAssertEqual($0, .cardinalityViolation)
+    }
+  }
+
+  func testReadWhenBufferContainsLengthPrefixedJunk() {
+    var state: ReadState = .many()
+    var buffer = self.allocator.buffer(capacity: 9)
+    let bytes: [UInt8] = [
+      0x00,                     // compression flag
+      0x00, 0x00, 0x00, 0x04,  // message length
+      0xaa, 0xbb, 0xcc, 0xdd   // message
+    ]
+    buffer.writeBytes(bytes)
+    state.readMessages(&buffer, as: Echo_EchoRequest.self).assertFailure {
+      XCTAssertEqual($0, .deserializationFailed)
+    }
+  }
+
+  func testReadWithLeftOverBytesForOneExpectedMessage() throws {
+    // Write a message into the buffer:
+    let message = Echo_EchoRequest.with { $0.text = "Hello!" }
+    let writer = LengthPrefixedMessageWriter(compression: .none)
+    var buffer = self.allocator.buffer(capacity: 0)
+    writer.write(try message.serializedData(), into: &buffer)
+    // And some extra junk bytes:
+    let bytes: [UInt8] = [0x00]
+    buffer.writeBytes(bytes)
+
+    var state: ReadState = .one()
+    state.readMessages(&buffer, as: Echo_EchoRequest.self).assertFailure {
+      XCTAssertEqual($0, .leftOverBytes)
+    }
+  }
+
+  func testReadTooManyMessagesForOneExpectedMessages() throws {
+    // Write a message into the buffer twice:
+    let message = Echo_EchoRequest.with { $0.text = "Hello!" }
+    let writer = LengthPrefixedMessageWriter(compression: .none)
+    var buffer = self.allocator.buffer(capacity: 0)
+    writer.write(try message.serializedData(), into: &buffer)
+    writer.write(try message.serializedData(), into: &buffer)
+
+    var state: ReadState = .one()
+    state.readMessages(&buffer, as: Echo_EchoRequest.self).assertFailure {
+      XCTAssertEqual($0, .cardinalityViolation)
+    }
+  }
+
+  func testReadOneMessageForOneExpectedMessages() throws {
+    // Write a message into the buffer twice:
+    let message = Echo_EchoRequest.with { $0.text = "Hello!" }
+    let writer = LengthPrefixedMessageWriter(compression: .none)
+    var buffer = self.allocator.buffer(capacity: 0)
+    writer.write(try message.serializedData(), into: &buffer)
+
+    var state: ReadState = .one()
+    state.readMessages(&buffer, as: Echo_EchoRequest.self).assertSuccess {
+      XCTAssertEqual($0, [message])
+    }
+
+    // We shouldn't be able to read anymore.
+    XCTAssertFalse(state.canRead)
+    XCTAssertEqual(state.expectedCount, .none)
+  }
+
+  func testReadOneMessageForManyExpectedMessages() throws {
+    // Write a message into the buffer twice:
+    let message = Echo_EchoRequest.with { $0.text = "Hello!" }
+    let writer = LengthPrefixedMessageWriter(compression: .none)
+    var buffer = self.allocator.buffer(capacity: 0)
+    writer.write(try message.serializedData(), into: &buffer)
+
+    var state: ReadState = .many()
+    state.readMessages(&buffer, as: Echo_EchoRequest.self).assertSuccess {
+      XCTAssertEqual($0, [message])
+    }
+
+    // We should still be able to read.
+    XCTAssertTrue(state.canRead)
+    XCTAssertEqual(state.expectedCount, .many)
+  }
+
+  func testReadManyMessagesForManyExpectedMessages() throws {
+    // Write a message into the buffer twice:
+    let message = Echo_EchoRequest.with { $0.text = "Hello!" }
+    let writer = LengthPrefixedMessageWriter(compression: .none)
+    var buffer = self.allocator.buffer(capacity: 0)
+    writer.write(try message.serializedData(), into: &buffer)
+    writer.write(try message.serializedData(), into: &buffer)
+    writer.write(try message.serializedData(), into: &buffer)
+
+    var state: ReadState = .many()
+    state.readMessages(&buffer, as: Echo_EchoRequest.self).assertSuccess {
+      XCTAssertEqual($0, [message, message, message])
+    }
+
+    // We should still be able to read.
+    XCTAssertTrue(state.canRead)
+    XCTAssertEqual(state.expectedCount, .many)
+  }
+}
+
 // MARK: Result helpers
 
 extension Result {
@@ -751,22 +860,25 @@ extension Result {
 // MARK: ReadState, PendingWriteState, and WriteState helpers
 
 extension ReadState {
-  static func one() -> ReadState {
+  fileprivate init(expectedCount: MessageCount) {
     let reader = LengthPrefixedMessageReader(
       mode: .client,
       compressionMechanism: .none,
       logger: Logger(label: "io.grpc.reader")
     )
-    return .init(expectedCount: .one, reader: reader)
+    self.init(expectedCount: expectedCount, reader: reader)
+  }
+
+  static func none() -> ReadState {
+    return .init(expectedCount: .none)
+  }
+
+  static func one() -> ReadState {
+    return .init(expectedCount: .one)
   }
 
   static func many() -> ReadState {
-    let reader = LengthPrefixedMessageReader(
-      mode: .client,
-      compressionMechanism: .none,
-      logger: Logger(label: "io.grpc.reader")
-    )
-    return .init(expectedCount: .many, reader: reader)
+    return .init(expectedCount: .many)
   }
 }
 

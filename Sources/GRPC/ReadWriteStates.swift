@@ -151,7 +151,8 @@ extension ReadState {
   ///
   /// - Parameter buffer: The buffer to read from.
   mutating func readMessages<MessageType: Message>(
-    _ buffer: inout ByteBuffer
+    _ buffer: inout ByteBuffer,
+    as: MessageType.Type = MessageType.self
   ) -> Result<[MessageType], MessageReadError> {
     guard self.canRead else {
       return .failure(.cardinalityViolation)
@@ -182,8 +183,9 @@ extension ReadState {
     // Also allowed, assuming we have no leftover bytes:
     case (.one, 1):
       self.expectedCount = .none
-      // We shouldn't have any bytes leftover after reading a single message.
-      if self.reader.hasBytes {
+      // We shouldn't have any bytes leftover after reading a single message and we also should not
+      // have partially read a message.
+      if self.reader.unprocessedBytes != 0 || self.reader.isReading {
         return .failure(.leftOverBytes)
       }
 

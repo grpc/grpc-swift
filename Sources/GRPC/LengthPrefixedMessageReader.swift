@@ -69,9 +69,19 @@ public class LengthPrefixedMessageReader {
     }
   }
 
-  /// Returns whether the reader has any bytes to process.
-  internal var hasBytes: Bool {
-    return self.buffer.map { $0.readableBytes > 0 } ?? false
+  /// Returns the number of unprocessed bytes.
+  internal var unprocessedBytes: Int {
+    return self.buffer.map { $0.readableBytes } ?? 0
+  }
+
+  /// Whether the reader is mid-way through reading a message.
+  internal var isReading: Bool {
+    switch self.state {
+    case .expectingCompressedFlag:
+      return false
+    case .expectingMessageLength, .expectingMessage:
+      return true
+    }
   }
 
   /// Appends data to the buffer from which messages will be read.
