@@ -66,7 +66,7 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   ///
   /// Note: when a state is "streaming" it means that messages _may_ be sent over it. That is, the
   /// headers for the stream have been processed by the state machine and end-of-stream has not
-  /// yet been processed. A stream may expect to any number of messages (i.e. up to one for a unary
+  /// yet been processed. A stream may expect any number of messages (i.e. up to one for a unary
   /// call and many for a streaming call).
   enum State {
     /// Initial state. Neither request stream nor response stream have been initiated. Holds the
@@ -77,8 +77,8 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
     /// - `clientClosedServerClosed`: if the client terminates the RPC.
     case clientIdleServerIdle(client: PendingWriteState, server: MessageArity)
 
-    /// The client has initiated an RPC and has not initial metadata from the server. Holds the
-    /// writing state for requests and arity for the response stream.
+    /// The client has initiated an RPC and has not received initial metadata from the server. Holds
+    /// the writing state for request stream and arity for the response stream.
     ///
     /// Valid transitions:
     /// - `clientStreamingServerStreaming`: if the server acknowledges the RPC initiation,
@@ -151,8 +151,8 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
 
   /// Creates a state machine representing a gRPC client's request and response stream state.
   ///
-  /// - Parameter requestCount: The expected number of messages on the request stream.
-  /// - Parameter responseCount: The expected number of messages on the response stream.
+  /// - Parameter requestArity: The expected number of messages on the request stream.
+  /// - Parameter responseArity: The expected number of messages on the response stream.
   /// - Parameter logger: Logger.
   init(
     requestArity: MessageArity,
@@ -185,7 +185,7 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   /// The only valid state transition is:
   /// - `.clientIdleServerIdle` → `.clientStreamingServerIdle`
   ///
-  /// All other states will result in an `InvalidStateError`.
+  /// All other states will result in an `.invalidState` error.
   ///
   /// On success the state will transition to `.clientStreamingServerIdle`.
   ///
@@ -241,8 +241,8 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   /// - `.clientStreamingServerIdle` → `.clientClosedServerIdle`
   /// - `.clientStreamingServerStreaming` → `.clientClosedServerStreaming`
   ///
-  /// The client should not to attempt to close the request stream if it is closed, that is from one
-  /// of the following states:
+  /// The client should not to attempt to close the request stream if it is already closed, that is
+  /// from one of the following states:
   /// - `.clientClosedServerIdle`
   /// - `.clientClosedServerStreaming`
   /// - `.clientClosedServerClosed`
@@ -274,7 +274,7 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   /// - `.clientClosedServerClosed`
   /// Doing so will result in a `.invalidState` error.
   ///
-  /// - Parameter headers: The headers received from the server.
+  /// - Parameter responseHead: The response head received from the server.
   mutating func receiveResponseHead(
     _ responseHead: HTTPResponseHead
   ) -> Result<HTTPHeaders, ReceiveResponseHeadError> {
