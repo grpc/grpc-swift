@@ -102,6 +102,13 @@ public enum GRPCClientError: Error, Equatable {
   /// The response status was not "200 OK".
   case HTTPStatusNotOk(HTTPResponseStatus)
 
+  /// The ":status" header was not a valid HTTP status.
+  case invalidHTTPStatus(HTTPResponseStatus?)
+
+  /// The ":status" header was not a valid HTTP status but a "grpc-status" header with a valid
+  /// value was present.
+  case invalidHTTPStatusWithGRPCStatus(GRPCStatus)
+
   /// The call was cancelled by the client.
   case cancelledByClient
 
@@ -119,6 +126,9 @@ public enum GRPCClientError: Error, Equatable {
 
   /// The protocol negotiated via ALPN was not valid.
   case applicationLevelProtocolNegotiationFailed
+
+  /// The "content-type" header was invalid.
+  case invalidContentType
 }
 
 /// An error which should be thrown by either the client or server.
@@ -167,6 +177,14 @@ extension GRPCClientError: GRPCStatusTransformable {
     case .HTTPStatusNotOk(let status):
       return GRPCStatus(code: status.grpcStatusCode, message: "\(status.code): \(status.reasonPhrase)")
 
+    case .invalidHTTPStatus(let status):
+      let code = status?.grpcStatusCode ?? .internalError
+      let reason = status?.reasonPhrase ?? ""
+      return GRPCStatus(code: code, message: "invalid HTTP status: \(reason)")
+
+    case .invalidHTTPStatusWithGRPCStatus(let status):
+      return status
+
     case .cancelledByClient:
       return GRPCStatus(code: .cancelled, message: "client cancelled the call")
 
@@ -184,6 +202,9 @@ extension GRPCClientError: GRPCStatusTransformable {
 
     case .applicationLevelProtocolNegotiationFailed:
       return GRPCStatus(code: .invalidArgument, message: "failed to negotiate application level protocol")
+
+    case .invalidContentType:
+      return GRPCStatus(code: .internalError, message: "invalid 'content-type' header")
     }
   }
 }
