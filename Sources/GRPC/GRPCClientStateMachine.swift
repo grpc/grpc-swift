@@ -347,7 +347,7 @@ extension GRPCClientStateMachine.State {
     let result: Result<HTTPRequestHead, SendRequestHeadersError>
 
     switch self {
-    case let .clientIdleServerIdle(pendingWriteState, messageArity):
+    case let .clientIdleServerIdle(client: pendingWriteState, server: messageArity):
       let head = self.makeRequestHeaders(host: host, path: path, options: options, requestID: requestID)
       result = .success(head)
       self = .clientStreamingServerIdle(client: pendingWriteState.makeWriteState(), server: messageArity)
@@ -371,11 +371,11 @@ extension GRPCClientStateMachine.State {
     let result: Result<ByteBuffer, MessageWriteError>
 
     switch self {
-    case .clientStreamingServerIdle(var writeState, let messageArity):
+    case .clientStreamingServerIdle(client: var writeState, server: let messageArity):
       result = writeState.write(message, allocator: allocator)
       self = .clientStreamingServerIdle(client: writeState, server: messageArity)
 
-    case .clientStreamingServerStreaming(var writeState, let readState):
+    case .clientStreamingServerStreaming(client: var writeState, server: let readState):
       result = writeState.write(message, allocator: allocator)
       self = .clientStreamingServerStreaming(client: writeState, server: readState)
 
@@ -396,11 +396,11 @@ extension GRPCClientStateMachine.State {
     let result: Result<Void, SendEndOfRequestStreamError>
 
     switch self {
-    case .clientStreamingServerIdle(_, let messageArity):
+    case .clientStreamingServerIdle(client: _, server: let messageArity):
       result = .success(())
       self = .clientClosedServerIdle(server: messageArity)
 
-    case .clientStreamingServerStreaming(_, let readState):
+    case .clientStreamingServerStreaming(client: _, server: let readState):
       result = .success(())
       self = .clientClosedServerStreaming(server: readState)
 
@@ -424,7 +424,7 @@ extension GRPCClientStateMachine.State {
     let result: Result<HTTPHeaders, ReceiveResponseHeadError>
 
     switch self {
-    case let .clientStreamingServerIdle(writeState, messageArity):
+    case let .clientStreamingServerIdle(client: writeState, server: messageArity):
       switch self.parseResponseHeaders(responseHead, responseArity: messageArity, logger: logger) {
       case .success(let readState):
         self = .clientStreamingServerStreaming(client: writeState, server: readState)
@@ -433,7 +433,7 @@ extension GRPCClientStateMachine.State {
         result = .failure(error)
       }
 
-    case let .clientClosedServerIdle(messageArity):
+    case let .clientClosedServerIdle(server: messageArity):
       switch self.parseResponseHeaders(responseHead, responseArity: messageArity, logger: logger) {
       case .success(let readState):
         self = .clientClosedServerStreaming(server: readState)
@@ -459,11 +459,11 @@ extension GRPCClientStateMachine.State {
     let result: Result<[Response], MessageReadError>
 
     switch self {
-    case .clientClosedServerStreaming(var readState):
+    case .clientClosedServerStreaming(server: var readState):
       result = readState.readMessages(&buffer)
       self = .clientClosedServerStreaming(server: readState)
 
-    case .clientStreamingServerStreaming(let writeState, var readState):
+    case .clientStreamingServerStreaming(client: let writeState, server: var readState):
       result = readState.readMessages(&buffer)
       self = .clientStreamingServerStreaming(client: writeState, server: readState)
 
