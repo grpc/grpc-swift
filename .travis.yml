@@ -70,5 +70,6 @@ addons:
       - zlib1g-dev
       - python3
 
+before_install: ./scripts/license-check.sh
 install: ./.travis-install.sh
 script: ./.travis-script.sh
