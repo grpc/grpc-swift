@@ -44,7 +44,7 @@ jobs:
       os: linux
       dist: bionic
       script: ./.travis-script.sh
-      env: RUN_INTEROP_TESTS=true
+      env: RUN_INTEROP_TESTS=true SWIFT_VERSION=5.1
     - <<: *interop_tests
       name: "Ubuntu 18.04 (Swift 5.0)"
       env: RUN_INTEROP_TESTS=true SWIFT_VERSION=5.0.3
