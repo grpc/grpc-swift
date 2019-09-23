@@ -32,8 +32,6 @@
 # Update .travis.yml if this changes.
 BIN_CACHE="$HOME"/bin_cache
 
-# Only applies to Linux, we get Swift from Xcode on macOS.
-SWIFT_VERSION=5.0.2
 PROTOBUF_VERSION=3.9.1
 # We need this to build gRPC C++ for the interop test server(s).
 BAZEL_VERSION=0.28.1

@@ -20,26 +20,40 @@ jobs:
     # Tests for each PR.
     - &tests
       stage: "Test"
-      name: "Ubuntu 18.04"
+      name: "Ubuntu 18.04 (Swift 5.1)"
       os: linux
       dist: bionic
       script: ./.travis-script.sh
-      env: RUN_INTEROP_TESTS=false
+      env: RUN_INTEROP_TESTS=false SWIFT_VERSION=5.1
     - <<: *tests
-      name: "macOS (Xcode 10.3)"
+      name: "Ubuntu 18.04 (Swift 5.0)"
+      env: RUN_INTEROP_TESTS=false SWIFT_VERSION=5.0.3
+    - <<: *tests
+      name: "Xcode 11 (Swift 5.1)"
+      os: osx
+      osx_image: xcode11
+    - <<: *tests
+      name: "Xcode 10.3 (Swift 5.0)"
       os: osx
       osx_image: xcode10.3
     # Interop Tests.
     - &interop_tests
       stage: "Interoperability Tests"
       # Linux
-      name: "Ubuntu 18.04"
+      name: "Ubuntu 18.04 (Swift 5.1)"
       os: linux
       dist: bionic
       script: ./.travis-script.sh
       env: RUN_INTEROP_TESTS=true
     - <<: *interop_tests
-      name: "macOS (Xcode 10.3)"
+      name: "Ubuntu 18.04 (Swift 5.0)"
+      env: RUN_INTEROP_TESTS=true SWIFT_VERSION=5.0.3
+    - <<: *interop_tests
+      name: "Xcode 11 (Swift 5.1)"
+      os: osx
+      osx_image: xcode11
+    - <<: *interop_tests
+      name: "Xcode 10.3 (Swift 5.0)"
       os: osx
       osx_image: xcode10.3
 
