@@ -213,7 +213,7 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   /// - `.clientActiveServerIdle` → `.clientActiveServerIdle`
   /// - `.clientActiveServerActive` → `.clientActiveServerActive`
   ///
-  /// The client should not to attempt to send requests once the request stream is closed, that is
+  /// The client should not attempt to send requests once the request stream is closed, that is
   /// from one of the following states:
   /// - `.clientClosedServerIdle`
   /// - `.clientClosedServerActive`
@@ -240,7 +240,7 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   /// - `.clientActiveServerIdle` → `.clientClosedServerIdle`
   /// - `.clientActiveServerActive` → `.clientClosedServerActive`
   ///
-  /// The client should not to attempt to close the request stream if it is already closed, that is
+  /// The client should not attempt to close the request stream if it is already closed, that is
   /// from one of the following states:
   /// - `.clientClosedServerIdle`
   /// - `.clientClosedServerActive`
