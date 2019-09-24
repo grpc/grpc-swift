@@ -161,7 +161,7 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
     logger: Logger
   ) {
     self.state = .clientIdleServerIdle(
-      pendingWriteState: .init(arity: requestArity, encoding: .none, contentType: .protobuf),
+      pendingWriteState: .init(arity: requestArity, compression: .none, contentType: .protobuf),
       readArity: responseArity
     )
     self.logger = logger

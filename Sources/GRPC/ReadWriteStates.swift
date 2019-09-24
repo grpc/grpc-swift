@@ -28,8 +28,8 @@ struct PendingWriteState {
   /// The number of messages we expect to write to the stream.
   var arity: MessageArity
 
-  /// The encoding we should use when writing the message.
-  var encoding: CompressionMechanism
+  /// The compression used when writing messages.
+  var compression: CompressionMechanism
 
   /// The 'content-type' being written.
   var contentType: ContentType
@@ -37,7 +37,7 @@ struct PendingWriteState {
   func makeWriteState() -> WriteState {
     return WriteState(
       arity: self.arity,
-      writer: LengthPrefixedMessageWriter(compression: self.encoding),
+      writer: LengthPrefixedMessageWriter(compression: self.compression),
       contentType: self.contentType
     )
   }

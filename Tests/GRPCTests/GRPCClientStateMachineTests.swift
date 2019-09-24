@@ -952,11 +952,11 @@ extension ReadState {
 
 extension PendingWriteState {
   static func one() -> PendingWriteState {
-    return .init(arity: .one, encoding: .none, contentType: .protobuf)
+    return .init(arity: .one, compression: .none, contentType: .protobuf)
   }
 
   static func many() -> PendingWriteState {
-    return .init(arity: .many, encoding: .none, contentType: .protobuf)
+    return .init(arity: .many, compression: .none, contentType: .protobuf)
   }
 }
 
