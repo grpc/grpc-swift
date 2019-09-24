@@ -83,7 +83,7 @@ extension GRPCClientStateMachineTests {
   }
 
   func testSendRequestHeadersFromIdle() {
-    var stateMachine = self.makeStateMachine(.clientIdleServerIdle(client: .one(), server: .one))
+    var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
     stateMachine.sendRequestHeaders(
       host: "host",
       path: "/echo/Get",
@@ -93,19 +93,19 @@ extension GRPCClientStateMachineTests {
   }
 
   func testSendRequestHeadersFromClientActiveServerIdle() {
-    self.doTestSendRequestHeadersFromInvalidState(.clientActiveServerIdle(client: .one(), server: .one))
+    self.doTestSendRequestHeadersFromInvalidState(.clientActiveServerIdle(writeState: .one(), readArity: .one))
   }
 
   func testSendRequestHeadersFromClientClosedServerIdle() {
-    self.doTestSendRequestHeadersFromInvalidState(.clientClosedServerIdle(server: .one))
+    self.doTestSendRequestHeadersFromInvalidState(.clientClosedServerIdle(readArity: .one))
   }
 
   func testSendRequestHeadersFromActive() {
-    self.doTestSendRequestHeadersFromInvalidState(.clientActiveServerActive(client: .one(), server: .one()))
+    self.doTestSendRequestHeadersFromInvalidState(.clientActiveServerActive(writeState: .one(), readState: .one()))
   }
 
   func testSendRequestHeadersFromClientClosedServerActive() {
-    self.doTestSendRequestHeadersFromInvalidState(.clientClosedServerActive(server: .one()))
+    self.doTestSendRequestHeadersFromInvalidState(.clientClosedServerActive(readState: .one()))
   }
 
   func testSendRequestHeadersFromClosed() {
@@ -137,23 +137,23 @@ extension GRPCClientStateMachineTests {
   }
 
   func testSendRequestFromIdle() {
-    self.doTestSendRequestFromInvalidState(.clientIdleServerIdle(client: .one(), server: .one), expected: .invalidState)
+    self.doTestSendRequestFromInvalidState(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one), expected: .invalidState)
   }
 
   func testSendRequestFromClientActiveServerIdle() {
-    self.doTestSendRequestFromValidState(.clientActiveServerIdle(client: .one(), server: .one))
+    self.doTestSendRequestFromValidState(.clientActiveServerIdle(writeState: .one(), readArity: .one))
   }
 
   func testSendRequestFromClientClosedServerIdle() {
-    self.doTestSendRequestFromInvalidState(.clientClosedServerIdle(server: .one), expected: .cardinalityViolation)
+    self.doTestSendRequestFromInvalidState(.clientClosedServerIdle(readArity: .one), expected: .cardinalityViolation)
   }
 
   func testSendRequestFromActive() {
-    self.doTestSendRequestFromValidState(.clientActiveServerActive(client: .one(), server: .one()))
+    self.doTestSendRequestFromValidState(.clientActiveServerActive(writeState: .one(), readState: .one()))
   }
 
   func testSendRequestFromClientClosedServerActive() {
-    self.doTestSendRequestFromInvalidState(.clientClosedServerIdle(server: .one), expected: .cardinalityViolation)
+    self.doTestSendRequestFromInvalidState(.clientClosedServerIdle(readArity: .one), expected: .cardinalityViolation)
   }
 
   func testSendRequestFromClosed() {
@@ -181,33 +181,33 @@ extension GRPCClientStateMachineTests {
 
   func testSendEndOfRequestStreamFromIdle() {
     self.doTestSendEndOfRequestStreamFromInvalidState(
-      .clientIdleServerIdle(client: .one(), server: .one),
+      .clientIdleServerIdle(pendingWriteState: .one(), readArity: .one),
       expected: .invalidState
     )
   }
 
   func testSendEndOfRequestStreamFromClientActiveServerIdle() {
     self.doTestSendEndOfRequestStreamFromValidState(
-      .clientActiveServerIdle(client: .one(), server: .one)
+      .clientActiveServerIdle(writeState: .one(), readArity: .one)
     )
   }
 
   func testSendEndOfRequestStreamFromClientClosedServerIdle() {
     self.doTestSendEndOfRequestStreamFromInvalidState(
-      .clientClosedServerIdle(server: .one),
+      .clientClosedServerIdle(readArity: .one),
       expected: .alreadyClosed
     )
   }
 
   func testSendEndOfRequestStreamFromActive() {
     self.doTestSendEndOfRequestStreamFromValidState(
-      .clientActiveServerActive(client: .one(), server: .one())
+      .clientActiveServerActive(writeState: .one(), readState: .one())
     )
   }
 
   func testSendEndOfRequestStreamFromClientClosedServerActive() {
     self.doTestSendEndOfRequestStreamFromInvalidState(
-      .clientClosedServerActive(server: .one()),
+      .clientClosedServerActive(readState: .one()),
       expected: .alreadyClosed
     )
   }
@@ -240,33 +240,33 @@ extension GRPCClientStateMachineTests {
 
   func testReceiveResponseHeadersFromIdle() {
     self.doTestReceiveResponseHeadersFromInvalidState(
-      .clientIdleServerIdle(client: .one(), server: .one),
+      .clientIdleServerIdle(pendingWriteState: .one(), readArity: .one),
       expected: .invalidState
     )
   }
 
   func testReceiveResponseHeadersFromClientActiveServerIdle() {
     self.doTestReceiveResponseHeadersFromValidState(
-      .clientActiveServerIdle(client: .one(), server: .one)
+      .clientActiveServerIdle(writeState: .one(), readArity: .one)
     )
   }
 
   func testReceiveResponseHeadersFromClientClosedServerIdle() {
     self.doTestReceiveResponseHeadersFromValidState(
-      .clientClosedServerIdle(server: .one)
+      .clientClosedServerIdle(readArity: .one)
     )
   }
 
   func testReceiveResponseHeadersFromActive() {
     self.doTestReceiveResponseHeadersFromInvalidState(
-      .clientActiveServerActive(client: .one(), server: .one()),
+      .clientActiveServerActive(writeState: .one(), readState: .one()),
       expected: .invalidState
     )
   }
 
   func testReceiveResponseHeadersFromClientClosedServerActive() {
     self.doTestReceiveResponseHeadersFromInvalidState(
-      .clientClosedServerActive(server: .one()),
+      .clientClosedServerActive(readState: .one()),
       expected: .invalidState
     )
   }
@@ -309,33 +309,33 @@ extension GRPCClientStateMachineTests {
 
   func testReceiveResponseFromIdle() throws {
     try self.doTestReceiveResponseFromInvalidState(
-      .clientIdleServerIdle(client: .one(), server: .one),
+      .clientIdleServerIdle(pendingWriteState: .one(), readArity: .one),
       expected: .invalidState
     )
   }
 
   func testReceiveResponseFromClientActiveServerIdle() throws {
     try self.doTestReceiveResponseFromInvalidState(
-      .clientActiveServerIdle(client: .one(), server: .one),
+      .clientActiveServerIdle(writeState: .one(), readArity: .one),
       expected: .invalidState
     )
   }
 
   func testReceiveResponseFromClientClosedServerIdle() throws {
     try self.doTestReceiveResponseFromInvalidState(
-      .clientClosedServerIdle(server: .one),
+      .clientClosedServerIdle(readArity: .one),
       expected: .invalidState
     )
   }
 
   func testReceiveResponseFromActive() throws {
     try self.doTestReceiveResponseFromValidState(
-      .clientActiveServerActive(client: .one(), server: .one())
+      .clientActiveServerActive(writeState: .one(), readState: .one())
     )
   }
 
   func testReceiveResponseFromClientClosedServerActive() throws {
-    try self.doTestReceiveResponseFromValidState(.clientClosedServerActive(server: .one()))
+    try self.doTestReceiveResponseFromValidState(.clientClosedServerActive(readState: .one()))
   }
 
   func testReceiveResponseFromClosed() throws {
@@ -374,32 +374,32 @@ extension GRPCClientStateMachineTests {
 
   func testReceiveEndOfResponseStreamFromIdle() {
     self.doTestReceiveEndOfResponseStreamFromInvalidState(
-      .clientIdleServerIdle(client: .one(), server: .one),
+      .clientIdleServerIdle(pendingWriteState: .one(), readArity: .one),
       expected: .invalidState
     )
   }
 
   func testReceiveEndOfResponseStreamFromClientActiveServerIdle() {
     self.doTestReceiveEndOfResponseStreamFromValidState(
-      .clientActiveServerIdle(client: .one(), server: .one)
+      .clientActiveServerIdle(writeState: .one(), readArity: .one)
     )
   }
 
   func testReceiveEndOfResponseStreamFromClientClosedServerIdle() {
     self.doTestReceiveEndOfResponseStreamFromValidState(
-      .clientClosedServerIdle(server: .one)
+      .clientClosedServerIdle(readArity: .one)
     )
   }
 
   func testReceiveEndOfResponseStreamFromActive() {
     self.doTestReceiveEndOfResponseStreamFromValidState(
-      .clientActiveServerActive(client: .one(), server: .one())
+      .clientActiveServerActive(writeState: .one(), readState: .one())
     )
   }
 
   func testReceiveEndOfResponseStreamFromClientClosedServerActive() {
     self.doTestReceiveEndOfResponseStreamFromValidState(
-      .clientClosedServerActive(server: .one())
+      .clientClosedServerActive(readState: .one())
     )
   }
 
@@ -424,7 +424,7 @@ extension GRPCClientStateMachineTests {
   }
 
   func testSimpleUnaryFlow() throws {
-    var stateMachine = self.makeStateMachine(.clientIdleServerIdle(client: .one(), server: .one))
+    var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
 
     // Initiate the RPC
     stateMachine.sendRequestHeaders(host: "foo", path: "/echo/Get", options: .init(), requestID: "bar").assertSuccess()
@@ -447,7 +447,7 @@ extension GRPCClientStateMachineTests {
   }
 
   func testSimpleClientActiveFlow() throws {
-    var stateMachine = self.makeStateMachine(.clientIdleServerIdle(client: .many(), server: .one))
+    var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .many(), readArity: .one))
 
     // Initiate the RPC
     stateMachine.sendRequestHeaders(host: "foo", path: "/echo/Get", options: .init(), requestID: "bar").assertSuccess()
@@ -472,7 +472,7 @@ extension GRPCClientStateMachineTests {
   }
 
   func testSimpleServerActiveFlow() throws {
-    var stateMachine = self.makeStateMachine(.clientIdleServerIdle(client: .one(), server: .many))
+    var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .many))
 
     // Initiate the RPC
     stateMachine.sendRequestHeaders(host: "foo", path: "/echo/Get", options: .init(), requestID: "bar").assertSuccess()
@@ -500,7 +500,7 @@ extension GRPCClientStateMachineTests {
   }
 
   func testSimpleBidirectionalActiveFlow() throws {
-    var stateMachine = self.makeStateMachine(.clientIdleServerIdle(client: .many(), server: .many))
+    var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .many(), readArity: .many))
 
     // Initiate the RPC
     stateMachine.sendRequestHeaders(host: "foo", path: "/echo/Get", options: .init(), requestID: "bar").assertSuccess()
@@ -537,7 +537,7 @@ extension GRPCClientStateMachineTests {
 extension GRPCClientStateMachineTests {
   func testSendTooManyRequestsFromClientActiveServerIdle() {
     for messageCount in [MessageArity.one, MessageArity.many] {
-      var stateMachine = self.makeStateMachine(.clientActiveServerIdle(client: .one(), server: messageCount))
+      var stateMachine = self.makeStateMachine(.clientActiveServerIdle(writeState: .one(), readArity: messageCount))
 
       // One is fine.
       stateMachine.sendRequest(.with { $0.text = "1" }, allocator: self.allocator).assertSuccess()
@@ -550,7 +550,7 @@ extension GRPCClientStateMachineTests {
 
   func testSendTooManyRequestsFromActive() {
     for readState in [ReadState.one(), ReadState.many()] {
-      var stateMachine = self.makeStateMachine(.clientActiveServerActive(client: .one(), server: readState))
+      var stateMachine = self.makeStateMachine(.clientActiveServerActive(writeState: .one(), readState: readState))
 
       // One is fine.
       stateMachine.sendRequest(.with { $0.text = "1" }, allocator: self.allocator).assertSuccess()
@@ -572,7 +572,7 @@ extension GRPCClientStateMachineTests {
 
   func testReceiveTooManyRequests() throws {
     for writeState in [WriteState.one(), WriteState.many()] {
-      var stateMachine = self.makeStateMachine(.clientActiveServerActive(client: writeState, server: .one()))
+      var stateMachine = self.makeStateMachine(.clientActiveServerActive(writeState: writeState, readState: .one()))
 
       let response = Response.with { $0.text = "foo" }
 
@@ -589,7 +589,7 @@ extension GRPCClientStateMachineTests {
 
   func testReceiveTooManyRequestsInOneBuffer() throws {
     for writeState in [WriteState.one(), WriteState.many()] {
-      var stateMachine = self.makeStateMachine(.clientActiveServerActive(client: writeState, server: .one()))
+      var stateMachine = self.makeStateMachine(.clientActiveServerActive(writeState: writeState, readState: .one()))
 
       // Write two responses into a single buffer.
       let response = Response.with { $0.text = "foo" }
@@ -605,7 +605,7 @@ extension GRPCClientStateMachineTests {
 // MARK: - Send Request Headers
 extension GRPCClientStateMachineTests {
   func testSendRequestHeaders() throws {
-    var stateMachine = self.makeStateMachine(.clientIdleServerIdle(client: .one(), server: .one))
+    var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
     stateMachine.sendRequestHeaders(
       host: "localhost",
       path: "/echo/Get",
@@ -624,7 +624,7 @@ extension GRPCClientStateMachineTests {
   }
 
   func testReceiveResponseHeadersWithOkStatus() throws {
-    var stateMachine = self.makeStateMachine(.clientActiveServerIdle(client: .one(), server: .one))
+    var stateMachine = self.makeStateMachine(.clientActiveServerIdle(writeState: .one(), readArity: .one))
 
     var headers = HTTPHeaders()
     headers.add(name: "content-type", value: "application/grpc")
@@ -638,7 +638,7 @@ extension GRPCClientStateMachineTests {
   }
 
   func testReceiveResponseHeadersWithNotOkStatus() throws {
-    var stateMachine = self.makeStateMachine(.clientActiveServerIdle(client: .one(), server: .one))
+    var stateMachine = self.makeStateMachine(.clientActiveServerIdle(writeState: .one(), readArity: .one))
 
     let responseHead = HTTPResponseHead(
       version: .init(major: 2, minor: 0),
@@ -652,7 +652,7 @@ extension GRPCClientStateMachineTests {
   }
 
   func testReceiveResponseHeadersWithoutContentType() throws {
-    var stateMachine = self.makeStateMachine(.clientActiveServerIdle(client: .one(), server: .one))
+    var stateMachine = self.makeStateMachine(.clientActiveServerIdle(writeState: .one(), readArity: .one))
 
     let responseHead = HTTPResponseHead(
       version: .init(major: 2, minor: 0),
@@ -665,7 +665,7 @@ extension GRPCClientStateMachineTests {
   }
 
   func testReceiveResponseHeadersWithInvalidContentType() throws {
-    var stateMachine = self.makeStateMachine(.clientActiveServerIdle(client: .one(), server: .one))
+    var stateMachine = self.makeStateMachine(.clientActiveServerIdle(writeState: .one(), readArity: .one))
 
     var headers = HTTPHeaders()
     headers.add(name: "content-type", value: "video/mpeg")
@@ -681,7 +681,7 @@ extension GRPCClientStateMachineTests {
   }
 
   func testReceiveResponseHeadersWithSupportedCompressionMechanism() throws {
-    var stateMachine = self.makeStateMachine(.clientActiveServerIdle(client: .one(), server: .one))
+    var stateMachine = self.makeStateMachine(.clientActiveServerIdle(writeState: .one(), readArity: .one))
 
     var headers = HTTPHeaders()
     headers.add(name: "content-type", value: "application/grpc")
@@ -705,7 +705,7 @@ extension GRPCClientStateMachineTests {
   }
 
   func testReceiveResponseHeadersWithUnsupportedCompressionMechanism() throws {
-    var stateMachine = self.makeStateMachine(.clientActiveServerIdle(client: .one(), server: .one))
+    var stateMachine = self.makeStateMachine(.clientActiveServerIdle(writeState: .one(), readArity: .one))
 
     var headers = HTTPHeaders()
     headers.add(name: "content-type", value: "application/grpc")
@@ -723,7 +723,7 @@ extension GRPCClientStateMachineTests {
   }
 
   func testReceiveResponseHeadersWithUnknownCompressionMechanism() throws {
-    var stateMachine = self.makeStateMachine(.clientActiveServerIdle(client: .one(), server: .one))
+    var stateMachine = self.makeStateMachine(.clientActiveServerIdle(writeState: .one(), readArity: .one))
 
     var headers = HTTPHeaders()
     headers.add(name: "content-type", value: "application/grpc")
@@ -741,7 +741,7 @@ extension GRPCClientStateMachineTests {
   }
 
   func testReceiveEndOfResponseStreamWithStatus() throws {
-    var stateMachine = self.makeStateMachine(.clientClosedServerActive(server: .one()))
+    var stateMachine = self.makeStateMachine(.clientClosedServerActive(readState: .one()))
 
     var trailers = HTTPHeaders()
     trailers.add(name: "grpc-status", value: "0")
@@ -752,7 +752,7 @@ extension GRPCClientStateMachineTests {
   }
 
   func testReceiveEndOfResponseStreamWithUnknownStatus() throws {
-    var stateMachine = self.makeStateMachine(.clientClosedServerActive(server: .one()))
+    var stateMachine = self.makeStateMachine(.clientClosedServerActive(readState: .one()))
 
     var trailers = HTTPHeaders()
     trailers.add(name: "grpc-status", value: "999")
@@ -762,7 +762,7 @@ extension GRPCClientStateMachineTests {
   }
 
   func testReceiveEndOfResponseStreamWithNonIntStatus() throws {
-    var stateMachine = self.makeStateMachine(.clientClosedServerActive(server: .one()))
+    var stateMachine = self.makeStateMachine(.clientClosedServerActive(readState: .one()))
 
     var trailers = HTTPHeaders()
     trailers.add(name: "grpc-status", value: "not-a-real-status-code")
@@ -772,7 +772,7 @@ extension GRPCClientStateMachineTests {
   }
 
   func testReceiveEndOfResponseStreamWithStatusAndMessage() throws {
-    var stateMachine = self.makeStateMachine(.clientClosedServerActive(server: .one()))
+    var stateMachine = self.makeStateMachine(.clientClosedServerActive(readState: .one()))
 
     var trailers = HTTPHeaders()
     trailers.add(name: "grpc-status", value: "5")

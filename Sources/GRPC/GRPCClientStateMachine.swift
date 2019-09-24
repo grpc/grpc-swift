@@ -65,10 +65,10 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   ///   the idle state.
   /// - `.clientActiveServerClosed`: The client may not stream if the server is closed.
   ///
-  /// Note: when a state is "streaming" it means that messages _may_ be sent over it. That is, the
-  /// headers for the stream have been processed by the state machine and end-of-stream has not
-  /// yet been processed. A stream may expect any number of messages (i.e. up to one for a unary
-  /// call and many for a streaming call).
+  /// Note: when a peer (client or server) state is "active" it means that messages _may_ be sent or
+  /// received. That is, the headers for the stream have been processed by the state machine and
+  /// end-of-stream has not yet been processed. A stream may expect any number of messages (i.e. up
+  /// to one for a unary call and many for a streaming call).
   enum State {
     /// Initial state. Neither request stream nor response stream have been initiated. Holds the
     /// pending write state for the request stream and arity for the response stream, respectively.
@@ -76,7 +76,7 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
     /// Valid transitions:
     /// - `clientActiveServerIdle`: if the client initiates the RPC,
     /// - `clientClosedServerClosed`: if the client terminates the RPC.
-    case clientIdleServerIdle(client: PendingWriteState, server: MessageArity)
+    case clientIdleServerIdle(pendingWriteState: PendingWriteState, readArity: MessageArity)
 
     /// The client has initiated an RPC and has not received initial metadata from the server. Holds
     /// the writing state for request stream and arity for the response stream.
@@ -86,7 +86,7 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
     /// - `clientClosedServerIdle`: if the client closes the request stream,
     /// - `clientClosedServerClosed`: if the client terminates the RPC or the server terminates the
     ///      RPC with a "trailers-only" response.
-    case clientActiveServerIdle(client: WriteState, server: MessageArity)
+    case clientActiveServerIdle(writeState: WriteState, readArity: MessageArity)
 
     /// The client has indicated to the server that it has finished sending requests. The server
     /// has not yet sent response headers for the RPC. Holds the response stream arity.
@@ -95,7 +95,7 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
     /// - `clientClosedServerActive`: if the server acknowledges the RPC initiation,
     /// - `clientClosedServerClosed`: if the client terminates the RPC or the server terminates the
     ///      RPC with a "trailers-only" response.
-    case clientClosedServerIdle(server: MessageArity)
+    case clientClosedServerIdle(readArity: MessageArity)
 
     /// The client has initiated the RPC and the server has acknowledged it. Messages may have been
     /// sent and/or received. Holds the request stream write state and response stream read state.
@@ -103,14 +103,14 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
     /// Valid transitions:
     /// - `clientClosedServerActive`: if the client closes the request stream,
     /// - `clientClosedServerClosed`: if the client or server terminates the RPC.
-    case clientActiveServerActive(client: WriteState, server: ReadState)
+    case clientActiveServerActive(writeState: WriteState, readState: ReadState)
 
     /// The client has indicated to the server that it has finished sending requests. The server
     /// has acknowledged the RPC. Holds the response stream read state.
     ///
     /// Valid transitions:
     /// - `clientClosedServerClosed`: if the client or server terminate the RPC.
-    case clientClosedServerActive(server: ReadState)
+    case clientClosedServerActive(readState: ReadState)
 
     /// The RPC has terminated. There are no valid transitions from this state.
     case clientClosedServerClosed
@@ -160,12 +160,10 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
     responseArity: MessageArity,
     logger: Logger
   ) {
-    let pendingWriteState = PendingWriteState(
-      arity: requestArity,
-      encoding: .none,
-      contentType: .protobuf
+    self.state = .clientIdleServerIdle(
+      pendingWriteState: .init(arity: requestArity, encoding: .none, contentType: .protobuf),
+      readArity: responseArity
     )
-    self.state = .clientIdleServerIdle(client: pendingWriteState, server: responseArity)
     self.logger = logger
   }
 
@@ -348,10 +346,10 @@ extension GRPCClientStateMachine.State {
     let result: Result<HTTPRequestHead, SendRequestHeadersError>
 
     switch self {
-    case let .clientIdleServerIdle(client: pendingWriteState, server: messageArity):
+    case let .clientIdleServerIdle(pendingWriteState, readArity):
       let head = self.makeRequestHeaders(host: host, path: path, options: options, requestID: requestID)
       result = .success(head)
-      self = .clientActiveServerIdle(client: pendingWriteState.makeWriteState(), server: messageArity)
+      self = .clientActiveServerIdle(writeState: pendingWriteState.makeWriteState(), readArity: readArity)
 
     case .clientActiveServerIdle,
          .clientClosedServerIdle,
@@ -372,13 +370,13 @@ extension GRPCClientStateMachine.State {
     let result: Result<ByteBuffer, MessageWriteError>
 
     switch self {
-    case .clientActiveServerIdle(client: var writeState, server: let messageArity):
+    case .clientActiveServerIdle(var writeState, let readArity):
       result = writeState.write(message, allocator: allocator)
-      self = .clientActiveServerIdle(client: writeState, server: messageArity)
+      self = .clientActiveServerIdle(writeState: writeState, readArity: readArity)
 
-    case .clientActiveServerActive(client: var writeState, server: let readState):
+    case .clientActiveServerActive(var writeState, let readState):
       result = writeState.write(message, allocator: allocator)
-      self = .clientActiveServerActive(client: writeState, server: readState)
+      self = .clientActiveServerActive(writeState: writeState, readState: readState)
 
     case .clientClosedServerIdle,
          .clientClosedServerActive,
@@ -397,13 +395,13 @@ extension GRPCClientStateMachine.State {
     let result: Result<Void, SendEndOfRequestStreamError>
 
     switch self {
-    case .clientActiveServerIdle(client: _, server: let messageArity):
+    case .clientActiveServerIdle(_, let readArity):
       result = .success(())
-      self = .clientClosedServerIdle(server: messageArity)
+      self = .clientClosedServerIdle(readArity: readArity)
 
-    case .clientActiveServerActive(client: _, server: let readState):
+    case .clientActiveServerActive(_, let readState):
       result = .success(())
-      self = .clientClosedServerActive(server: readState)
+      self = .clientClosedServerActive(readState: readState)
 
     case .clientClosedServerIdle,
          .clientClosedServerActive,
@@ -425,19 +423,19 @@ extension GRPCClientStateMachine.State {
     let result: Result<HTTPHeaders, ReceiveResponseHeadError>
 
     switch self {
-    case let .clientActiveServerIdle(client: writeState, server: messageArity):
-      switch self.parseResponseHeaders(responseHead, responseArity: messageArity, logger: logger) {
+    case let .clientActiveServerIdle(writeState, readArity):
+      switch self.parseResponseHeaders(responseHead, responseArity: readArity, logger: logger) {
       case .success(let readState):
-        self = .clientActiveServerActive(client: writeState, server: readState)
+        self = .clientActiveServerActive(writeState: writeState, readState: readState)
         result = .success(responseHead.headers)
       case .failure(let error):
         result = .failure(error)
       }
 
-    case let .clientClosedServerIdle(server: messageArity):
-      switch self.parseResponseHeaders(responseHead, responseArity: messageArity, logger: logger) {
+    case let .clientClosedServerIdle(readArity):
+      switch self.parseResponseHeaders(responseHead, responseArity: readArity, logger: logger) {
       case .success(let readState):
-        self = .clientClosedServerActive(server: readState)
+        self = .clientClosedServerActive(readState: readState)
         result = .success(responseHead.headers)
       case .failure(let error):
         result = .failure(error)
@@ -460,13 +458,13 @@ extension GRPCClientStateMachine.State {
     let result: Result<[Response], MessageReadError>
 
     switch self {
-    case .clientClosedServerActive(server: var readState):
+    case .clientClosedServerActive(var readState):
       result = readState.readMessages(&buffer)
-      self = .clientClosedServerActive(server: readState)
+      self = .clientClosedServerActive(readState: readState)
 
-    case .clientActiveServerActive(client: let writeState, server: var readState):
+    case .clientActiveServerActive(let writeState, var readState):
       result = readState.readMessages(&buffer)
-      self = .clientActiveServerActive(client: writeState, server: readState)
+      self = .clientActiveServerActive(writeState: writeState, readState: readState)
 
     case .clientIdleServerIdle,
          .clientActiveServerIdle,
