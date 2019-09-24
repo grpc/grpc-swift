@@ -192,13 +192,13 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   /// - Parameter path: The path of the RPC (e.g. '/echo.Echo/Collect').
   /// - Parameter options: Options for this RPC.
   /// - Parameter requestID: The unique ID of this request used for logging.
-  mutating func sendRequestHeaders(
+  mutating func sendRequestHead(
     host: String,
     path: String,
     options: CallOptions,
     requestID: String
   ) -> Result<HTTPRequestHead, SendRequestHeadersError> {
-    return self.state.sendRequestHeaders(
+    return self.state.sendRequestHead(
       host: host,
       path: path,
       options: options,
@@ -336,8 +336,8 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
 }
 
 extension GRPCClientStateMachine.State {
-  /// See `GRPCClientStateMachine.sendRequestHeaders(host:path:options:requestID)`.
-  mutating func sendRequestHeaders(
+  /// See `GRPCClientStateMachine.sendRequestHead(host:path:options:requestID)`.
+  mutating func sendRequestHead(
     host: String,
     path: String,
     options: CallOptions,
@@ -347,7 +347,7 @@ extension GRPCClientStateMachine.State {
 
     switch self {
     case let .clientIdleServerIdle(pendingWriteState, readArity):
-      let head = self.makeRequestHeaders(host: host, path: path, options: options, requestID: requestID)
+      let head = self.makeRequestHead(host: host, path: path, options: options, requestID: requestID)
       result = .success(head)
       self = .clientActiveServerIdle(writeState: pendingWriteState.makeWriteState(), readArity: readArity)
 
@@ -424,7 +424,7 @@ extension GRPCClientStateMachine.State {
 
     switch self {
     case let .clientActiveServerIdle(writeState, readArity):
-      switch self.parseResponseHeaders(responseHead, responseArity: readArity, logger: logger) {
+      switch self.parseResponseHead(responseHead, responseArity: readArity, logger: logger) {
       case .success(let readState):
         self = .clientActiveServerActive(writeState: writeState, readState: readState)
         result = .success(responseHead.headers)
@@ -433,7 +433,7 @@ extension GRPCClientStateMachine.State {
       }
 
     case let .clientClosedServerIdle(readArity):
-      switch self.parseResponseHeaders(responseHead, responseArity: readArity, logger: logger) {
+      switch self.parseResponseHead(responseHead, responseArity: readArity, logger: logger) {
       case .success(let readState):
         self = .clientClosedServerActive(readState: readState)
         result = .success(responseHead.headers)
@@ -498,7 +498,7 @@ extension GRPCClientStateMachine.State {
      return result
    }
 
-  /// Makes the request headers (`Request-Headers` in the specification) used to initiate an RPC
+  /// Makes the request head (`Request-Headers` in the specification) used to initiate an RPC
   /// call.
   ///
   /// See: https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests
@@ -507,7 +507,7 @@ extension GRPCClientStateMachine.State {
   /// - Parameter options: Any options related to the call.
   /// - Parameter requestID: A request ID associated with the call. An additional header will be
   ///     added using this value if `options.requestIDHeader` is specified.
-  private func makeRequestHeaders(
+  private func makeRequestHead(
     host: String,
     path: String,
     options: CallOptions,
@@ -543,13 +543,13 @@ extension GRPCClientStateMachine.State {
     )
   }
 
-  /// Parses the response headers ("Response-Headers" in the specification) from server into
+  /// Parses the response head ("Response-Headers" in the specification) from server into
   /// a `ReadState`.
   ///
   /// See: https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#responses
   ///
   /// - Parameter headers: The headers to parse.
-  private func parseResponseHeaders(
+  private func parseResponseHead(
     _ head: HTTPResponseHead,
     responseArity: MessageArity,
     logger: Logger

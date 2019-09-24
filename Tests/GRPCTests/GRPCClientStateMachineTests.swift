@@ -72,7 +72,7 @@ class GRPCClientStateMachineTests: GRPCTestCase {
 extension GRPCClientStateMachineTests {
   func doTestSendRequestHeadersFromInvalidState(_ state: StateMachine.State) {
     var stateMachine = self.makeStateMachine(state)
-    stateMachine.sendRequestHeaders(
+    stateMachine.sendRequestHead(
       host: "host",
       path: "/echo/Get",
       options: .init(),
@@ -84,7 +84,7 @@ extension GRPCClientStateMachineTests {
 
   func testSendRequestHeadersFromIdle() {
     var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
-    stateMachine.sendRequestHeaders(
+    stateMachine.sendRequestHead(
       host: "host",
       path: "/echo/Get",
       options: .init(),
@@ -427,7 +427,7 @@ extension GRPCClientStateMachineTests {
     var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
 
     // Initiate the RPC
-    stateMachine.sendRequestHeaders(host: "foo", path: "/echo/Get", options: .init(), requestID: "bar").assertSuccess()
+    stateMachine.sendRequestHead(host: "foo", path: "/echo/Get", options: .init(), requestID: "bar").assertSuccess()
 
     // Receive acknowledgement.
     stateMachine.receiveResponseHead(self.makeResponseHead()).assertSuccess()
@@ -450,7 +450,7 @@ extension GRPCClientStateMachineTests {
     var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .many(), readArity: .one))
 
     // Initiate the RPC
-    stateMachine.sendRequestHeaders(host: "foo", path: "/echo/Get", options: .init(), requestID: "bar").assertSuccess()
+    stateMachine.sendRequestHead(host: "foo", path: "/echo/Get", options: .init(), requestID: "bar").assertSuccess()
 
     // Receive acknowledgement.
     stateMachine.receiveResponseHead(self.makeResponseHead()).assertSuccess()
@@ -475,7 +475,7 @@ extension GRPCClientStateMachineTests {
     var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .many))
 
     // Initiate the RPC
-    stateMachine.sendRequestHeaders(host: "foo", path: "/echo/Get", options: .init(), requestID: "bar").assertSuccess()
+    stateMachine.sendRequestHead(host: "foo", path: "/echo/Get", options: .init(), requestID: "bar").assertSuccess()
 
     // Receive acknowledgement.
     stateMachine.receiveResponseHead(self.makeResponseHead()).assertSuccess()
@@ -503,7 +503,7 @@ extension GRPCClientStateMachineTests {
     var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .many(), readArity: .many))
 
     // Initiate the RPC
-    stateMachine.sendRequestHeaders(host: "foo", path: "/echo/Get", options: .init(), requestID: "bar").assertSuccess()
+    stateMachine.sendRequestHead(host: "foo", path: "/echo/Get", options: .init(), requestID: "bar").assertSuccess()
 
     // Receive acknowledgement.
     stateMachine.receiveResponseHead(self.makeResponseHead()).assertSuccess()
@@ -606,7 +606,7 @@ extension GRPCClientStateMachineTests {
 extension GRPCClientStateMachineTests {
   func testSendRequestHeaders() throws {
     var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
-    stateMachine.sendRequestHeaders(
+    stateMachine.sendRequestHead(
       host: "localhost",
       path: "/echo/Get",
       options: CallOptions(timeout: .hours(rounding: 1), requestIDHeader: "x-grpc-id"),
