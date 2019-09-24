@@ -59,11 +59,11 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   /// The combined state of the request (client) and response (server) streams for an RPC call.
   ///
   /// The following states are not possible:
-  /// - `.clientIdleServerStreaming`: The client must initiate the call before the server moves
+  /// - `.clientIdleServerActive`: The client must initiate the call before the server moves
   ///   from the idle state.
   /// - `.clientIdleServerClosed`: The client must initiate the call before the server moves from
   ///   the idle state.
-  /// - `.clientStreamingServerClosed`: The client may not stream if the server is closed.
+  /// - `.clientActiveServerClosed`: The client may not stream if the server is closed.
   ///
   /// Note: when a state is "streaming" it means that messages _may_ be sent over it. That is, the
   /// headers for the stream have been processed by the state machine and end-of-stream has not
@@ -74,7 +74,7 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
     /// pending write state for the request stream and arity for the response stream, respectively.
     ///
     /// Valid transitions:
-    /// - `clientStreamingServerIdle`: if the client initiates the RPC,
+    /// - `clientActiveServerIdle`: if the client initiates the RPC,
     /// - `clientClosedServerClosed`: if the client terminates the RPC.
     case clientIdleServerIdle(client: PendingWriteState, server: MessageArity)
 
@@ -82,17 +82,17 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
     /// the writing state for request stream and arity for the response stream.
     ///
     /// Valid transitions:
-    /// - `clientStreamingServerStreaming`: if the server acknowledges the RPC initiation,
+    /// - `clientActiveServerActive`: if the server acknowledges the RPC initiation,
     /// - `clientClosedServerIdle`: if the client closes the request stream,
     /// - `clientClosedServerClosed`: if the client terminates the RPC or the server terminates the
     ///      RPC with a "trailers-only" response.
-    case clientStreamingServerIdle(client: WriteState, server: MessageArity)
+    case clientActiveServerIdle(client: WriteState, server: MessageArity)
 
     /// The client has indicated to the server that it has finished sending requests. The server
     /// has not yet sent response headers for the RPC. Holds the response stream arity.
     ///
     /// Valid transitions:
-    /// - `clientClosedServerStreaming`: if the server acknowledges the RPC initiation,
+    /// - `clientClosedServerActive`: if the server acknowledges the RPC initiation,
     /// - `clientClosedServerClosed`: if the client terminates the RPC or the server terminates the
     ///      RPC with a "trailers-only" response.
     case clientClosedServerIdle(server: MessageArity)
@@ -101,16 +101,16 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
     /// sent and/or received. Holds the request stream write state and response stream read state.
     ///
     /// Valid transitions:
-    /// - `clientClosedServerStreaming`: if the client closes the request stream,
+    /// - `clientClosedServerActive`: if the client closes the request stream,
     /// - `clientClosedServerClosed`: if the client or server terminates the RPC.
-    case clientStreamingServerStreaming(client: WriteState, server: ReadState)
+    case clientActiveServerActive(client: WriteState, server: ReadState)
 
     /// The client has indicated to the server that it has finished sending requests. The server
     /// has acknowledged the RPC. Holds the response stream read state.
     ///
     /// Valid transitions:
     /// - `clientClosedServerClosed`: if the client or server terminate the RPC.
-    case clientClosedServerStreaming(server: ReadState)
+    case clientClosedServerActive(server: ReadState)
 
     /// The RPC has terminated. There are no valid transitions from this state.
     case clientClosedServerClosed
@@ -121,24 +121,24 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
     didSet {
       switch (oldValue, self.state) {
       // All valid transitions:
-      case (.clientIdleServerIdle, .clientStreamingServerIdle),
+      case (.clientIdleServerIdle, .clientActiveServerIdle),
            (.clientIdleServerIdle, .clientClosedServerClosed),
-           (.clientStreamingServerIdle, .clientStreamingServerStreaming),
-           (.clientStreamingServerIdle, .clientClosedServerIdle),
-           (.clientStreamingServerIdle, .clientClosedServerClosed),
-           (.clientClosedServerIdle, .clientClosedServerStreaming),
+           (.clientActiveServerIdle, .clientActiveServerActive),
+           (.clientActiveServerIdle, .clientClosedServerIdle),
+           (.clientActiveServerIdle, .clientClosedServerClosed),
+           (.clientClosedServerIdle, .clientClosedServerActive),
            (.clientClosedServerIdle, .clientClosedServerClosed),
-           (.clientStreamingServerStreaming, .clientClosedServerStreaming),
-           (.clientStreamingServerStreaming, .clientClosedServerClosed),
-           (.clientClosedServerStreaming, .clientClosedServerClosed):
+           (.clientActiveServerActive, .clientClosedServerActive),
+           (.clientActiveServerActive, .clientClosedServerClosed),
+           (.clientClosedServerActive, .clientClosedServerClosed):
         break
 
       // Self transitions, also valid:
       case (.clientIdleServerIdle, .clientIdleServerIdle),
-           (.clientStreamingServerIdle, .clientStreamingServerIdle),
+           (.clientActiveServerIdle, .clientActiveServerIdle),
            (.clientClosedServerIdle, .clientClosedServerIdle),
-           (.clientStreamingServerStreaming, .clientStreamingServerStreaming),
-           (.clientClosedServerStreaming, .clientClosedServerStreaming),
+           (.clientActiveServerActive, .clientActiveServerActive),
+           (.clientClosedServerActive, .clientClosedServerActive),
            (.clientClosedServerClosed, .clientClosedServerClosed):
         break
 
@@ -184,11 +184,11 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   /// Initiates an RPC.
   ///
   /// The only valid state transition is:
-  /// - `.clientIdleServerIdle` → `.clientStreamingServerIdle`
+  /// - `.clientIdleServerIdle` → `.clientActiveServerIdle`
   ///
   /// All other states will result in an `.invalidState` error.
   ///
-  /// On success the state will transition to `.clientStreamingServerIdle`.
+  /// On success the state will transition to `.clientActiveServerIdle`.
   ///
   /// - Parameter host: The host which will handle the RPC.
   /// - Parameter path: The path of the RPC (e.g. '/echo.Echo/Collect').
@@ -212,13 +212,13 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   ///
   /// The client must be streaming in order for this to return successfully. Therefore the valid
   /// state transitions are:
-  /// - `.clientStreamingServerIdle` → `.clientStreamingServerIdle`
-  /// - `.clientStreamingServerStreaming` → `.clientStreamingServerStreaming`
+  /// - `.clientActiveServerIdle` → `.clientActiveServerIdle`
+  /// - `.clientActiveServerActive` → `.clientActiveServerActive`
   ///
   /// The client should not to attempt to send requests once the request stream is closed, that is
   /// from one of the following states:
   /// - `.clientClosedServerIdle`
-  /// - `.clientClosedServerStreaming`
+  /// - `.clientClosedServerActive`
   /// - `.clientClosedServerClosed`
   /// Doing so will result in a `.cardinalityViolation`.
   ///
@@ -239,13 +239,13 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   ///
   /// The client must be streaming requests in order to terminate the request stream. Valid
   /// states transitions are:
-  /// - `.clientStreamingServerIdle` → `.clientClosedServerIdle`
-  /// - `.clientStreamingServerStreaming` → `.clientClosedServerStreaming`
+  /// - `.clientActiveServerIdle` → `.clientClosedServerIdle`
+  /// - `.clientActiveServerActive` → `.clientClosedServerActive`
   ///
   /// The client should not to attempt to close the request stream if it is already closed, that is
   /// from one of the following states:
   /// - `.clientClosedServerIdle`
-  /// - `.clientClosedServerStreaming`
+  /// - `.clientClosedServerActive`
   /// - `.clientClosedServerClosed`
   /// Doing so will result in an `.alreadyClosed` error.
   ///
@@ -259,8 +259,8 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   /// response.
   ///
   /// The server must be idle in order to receive response headers. The valid state transitions are:
-  /// - `.clientStreamingServerIdle` → `.clientStreamingServerStreaming`
-  /// - `.clientClosedServerIdle` → `.clientClosedServerStreaming`
+  /// - `.clientActiveServerIdle` → `.clientActiveServerActive`
+  /// - `.clientClosedServerIdle` → `.clientClosedServerActive`
   ///
   /// The response head will be parsed and validated against the gRPC specification. The following
   /// errors may be returned:
@@ -270,8 +270,8 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   ///
   /// It is not possible to receive response headers from the following states:
   /// - `.clientIdleServerIdle`
-  /// - `.clientStreamingServerStreaming`
-  /// - `.clientClosedServerStreaming`
+  /// - `.clientActiveServerActive`
+  /// - `.clientClosedServerActive`
   /// - `.clientClosedServerClosed`
   /// Doing so will result in a `.invalidState` error.
   ///
@@ -288,8 +288,8 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   /// produce *at most* one `Response` in the `Result`.
   ///
   /// To receive a response buffer the server must be streaming. Valid states are:
-  /// - `.clientClosedServerStreaming` → `.clientClosedServerStreaming`
-  /// - `.clientStreamingServerStreaming` → `.clientStreamingServerStreaming`
+  /// - `.clientClosedServerActive` → `.clientClosedServerActive`
+  /// - `.clientActiveServerActive` → `.clientActiveServerActive`
   ///
   /// This function will read all of the bytes in the `buffer` and attempt to produce as many
   /// messages as possible. This may lead to a number of errors:
@@ -301,8 +301,8 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   ///
   /// It is not possible to receive response headers from the following states:
   /// - `.clientIdleServerIdle`
-  /// - `.clientClosedServerStreaming`
-  /// - `.clientStreamingServerStreaming`
+  /// - `.clientClosedServerActive`
+  /// - `.clientActiveServerActive`
   /// - `.clientClosedServerClosed`
   /// Doing so will result in a `.invalidState` error.
   ///
@@ -318,10 +318,10 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   ///
   /// To close the response stream the server must be streaming or idle (since the server may choose
   /// to 'fast fail' the RPC). Valid states are:
-  /// - `.clientStreamingServerIdle` → `.clientClosedServerClosed`
-  /// - `.clientStreamingServerStreaming` → `.clientClosedServerClosed`
+  /// - `.clientActiveServerIdle` → `.clientClosedServerClosed`
+  /// - `.clientActiveServerActive` → `.clientClosedServerClosed`
   /// - `.clientClosedServerIdle` → `.clientClosedServerClosed`
-  /// - `.clientClosedServerStreaming` → `.clientClosedServerClosed`
+  /// - `.clientClosedServerActive` → `.clientClosedServerClosed`
   ///
   /// It is not possible to receive an end-of-stream if the RPC has not been initiated or has
   /// already been terminated. That is, in one of the following states:
@@ -351,12 +351,12 @@ extension GRPCClientStateMachine.State {
     case let .clientIdleServerIdle(client: pendingWriteState, server: messageArity):
       let head = self.makeRequestHeaders(host: host, path: path, options: options, requestID: requestID)
       result = .success(head)
-      self = .clientStreamingServerIdle(client: pendingWriteState.makeWriteState(), server: messageArity)
+      self = .clientActiveServerIdle(client: pendingWriteState.makeWriteState(), server: messageArity)
 
-    case .clientStreamingServerIdle,
+    case .clientActiveServerIdle,
          .clientClosedServerIdle,
-         .clientClosedServerStreaming,
-         .clientStreamingServerStreaming,
+         .clientClosedServerActive,
+         .clientActiveServerActive,
          .clientClosedServerClosed:
       result = .failure(.invalidState)
     }
@@ -372,16 +372,16 @@ extension GRPCClientStateMachine.State {
     let result: Result<ByteBuffer, MessageWriteError>
 
     switch self {
-    case .clientStreamingServerIdle(client: var writeState, server: let messageArity):
+    case .clientActiveServerIdle(client: var writeState, server: let messageArity):
       result = writeState.write(message, allocator: allocator)
-      self = .clientStreamingServerIdle(client: writeState, server: messageArity)
+      self = .clientActiveServerIdle(client: writeState, server: messageArity)
 
-    case .clientStreamingServerStreaming(client: var writeState, server: let readState):
+    case .clientActiveServerActive(client: var writeState, server: let readState):
       result = writeState.write(message, allocator: allocator)
-      self = .clientStreamingServerStreaming(client: writeState, server: readState)
+      self = .clientActiveServerActive(client: writeState, server: readState)
 
     case .clientClosedServerIdle,
-         .clientClosedServerStreaming,
+         .clientClosedServerActive,
          .clientClosedServerClosed:
       result = .failure(.cardinalityViolation)
 
@@ -397,16 +397,16 @@ extension GRPCClientStateMachine.State {
     let result: Result<Void, SendEndOfRequestStreamError>
 
     switch self {
-    case .clientStreamingServerIdle(client: _, server: let messageArity):
+    case .clientActiveServerIdle(client: _, server: let messageArity):
       result = .success(())
       self = .clientClosedServerIdle(server: messageArity)
 
-    case .clientStreamingServerStreaming(client: _, server: let readState):
+    case .clientActiveServerActive(client: _, server: let readState):
       result = .success(())
-      self = .clientClosedServerStreaming(server: readState)
+      self = .clientClosedServerActive(server: readState)
 
     case .clientClosedServerIdle,
-         .clientClosedServerStreaming,
+         .clientClosedServerActive,
          .clientClosedServerClosed:
       result = .failure(.alreadyClosed)
 
@@ -425,10 +425,10 @@ extension GRPCClientStateMachine.State {
     let result: Result<HTTPHeaders, ReceiveResponseHeadError>
 
     switch self {
-    case let .clientStreamingServerIdle(client: writeState, server: messageArity):
+    case let .clientActiveServerIdle(client: writeState, server: messageArity):
       switch self.parseResponseHeaders(responseHead, responseArity: messageArity, logger: logger) {
       case .success(let readState):
-        self = .clientStreamingServerStreaming(client: writeState, server: readState)
+        self = .clientActiveServerActive(client: writeState, server: readState)
         result = .success(responseHead.headers)
       case .failure(let error):
         result = .failure(error)
@@ -437,15 +437,15 @@ extension GRPCClientStateMachine.State {
     case let .clientClosedServerIdle(server: messageArity):
       switch self.parseResponseHeaders(responseHead, responseArity: messageArity, logger: logger) {
       case .success(let readState):
-        self = .clientClosedServerStreaming(server: readState)
+        self = .clientClosedServerActive(server: readState)
         result = .success(responseHead.headers)
       case .failure(let error):
         result = .failure(error)
       }
 
     case .clientIdleServerIdle,
-         .clientClosedServerStreaming,
-         .clientStreamingServerStreaming,
+         .clientClosedServerActive,
+         .clientActiveServerActive,
          .clientClosedServerClosed:
       result = .failure(.invalidState)
     }
@@ -460,16 +460,16 @@ extension GRPCClientStateMachine.State {
     let result: Result<[Response], MessageReadError>
 
     switch self {
-    case .clientClosedServerStreaming(server: var readState):
+    case .clientClosedServerActive(server: var readState):
       result = readState.readMessages(&buffer)
-      self = .clientClosedServerStreaming(server: readState)
+      self = .clientClosedServerActive(server: readState)
 
-    case .clientStreamingServerStreaming(client: let writeState, server: var readState):
+    case .clientActiveServerActive(client: let writeState, server: var readState):
       result = readState.readMessages(&buffer)
-      self = .clientStreamingServerStreaming(client: writeState, server: readState)
+      self = .clientActiveServerActive(client: writeState, server: readState)
 
     case .clientIdleServerIdle,
-         .clientStreamingServerIdle,
+         .clientActiveServerIdle,
          .clientClosedServerIdle,
          .clientClosedServerClosed:
       result = .failure(.invalidState)
@@ -485,10 +485,10 @@ extension GRPCClientStateMachine.State {
      let result: Result<GRPCStatus, ReceiveEndOfResponseStreamError>
 
      switch self {
-     case .clientStreamingServerStreaming,
-          .clientStreamingServerIdle,
+     case .clientActiveServerActive,
+          .clientActiveServerIdle,
           .clientClosedServerIdle,
-          .clientClosedServerStreaming:
+          .clientClosedServerActive:
        result = .success(self.parseTrailers(trailers))
        self = .clientClosedServerClosed
 
