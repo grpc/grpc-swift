@@ -18,7 +18,6 @@ import SwiftProtobuf
 
 /// Number of messages expected on a stream.
 enum MessageArity {
-  case none
   case one
   case many
 }
@@ -35,34 +34,55 @@ struct PendingWriteState {
   var contentType: ContentType
 
   func makeWriteState() -> WriteState {
-    return WriteState(
-      arity: self.arity,
-      writer: LengthPrefixedMessageWriter(compression: self.compression),
-      contentType: self.contentType
+    return .writing(
+      self.arity,
+      self.contentType,
+      LengthPrefixedMessageWriter(compression: self.compression)
     )
   }
 }
 
 /// The write state of a stream.
-struct WriteState {
-  /// Whether the stream may be written to.
-  internal var canWrite: Bool {
-    return self.arity != .none
-  }
+enum WriteState {
+  /// Writing may be attempted using the given writer.
+  case writing(MessageArity, ContentType, LengthPrefixedMessageWriter)
 
-  /// The number of messages we expect to write to the stream.
-  var arity: MessageArity
+  /// Writing may not be attempted: either a write previously failed or it is not valid for any
+  /// more messages to be written.
+  case notWriting
 
-  /// A writer to encode `Message`s into the gRPC wire-format.
-  var writer: LengthPrefixedMessageWriter
+  /// Writes a message into a buffer using the `writer` and `allocator`.
+  ///
+  /// - Parameter message: The `Message` to write.
+  /// - Parameter allocator: An allocator to provide a `ByteBuffer` into which the message will be
+  ///     written.
+  mutating func write(
+    _ message: Message,
+    allocator: ByteBufferAllocator
+  ) -> Result<ByteBuffer, MessageWriteError> {
+    switch self {
+    case .notWriting:
+      return .failure(.cardinalityViolation)
 
-  /// The 'content-type' being written.
-  var contentType: ContentType
+    case let .writing(writeArity, contentType, writer):
+      guard let data = try? message.serializedData() else {
+        self = .notWriting
+        return .failure(.serializationFailed)
+      }
 
-  init(arity: MessageArity, writer: LengthPrefixedMessageWriter, contentType: ContentType) {
-    self.arity = arity
-    self.writer = writer
-    self.contentType = contentType
+      // Zero is fine: the writer will allocate the correct amount of space.
+      var buffer = allocator.buffer(capacity: 0)
+      writer.write(data, into: &buffer)
+
+      // If we only expect to write one message then we're no longer writable.
+      if case .one = writeArity {
+        self = .notWriting
+      } else {
+        self = .writing(writeArity, contentType, writer)
+      }
+
+      return .success(buffer)
+    }
   }
 }
 
@@ -77,54 +97,72 @@ enum MessageWriteError: Error {
   case invalidState
 }
 
-extension WriteState {
-  /// Writes a message into a buffer using the `writer` and `allocator`.
-  ///
-  /// - Parameter message: The `Message` to write.
-  /// - Parameter allocator: An allocator to provide a `ByteBuffer` into which the message will be
-  ///     written.
-  mutating func write(
-    _ message: Message,
-    allocator: ByteBufferAllocator
-  ) -> Result<ByteBuffer, MessageWriteError> {
-    guard self.canWrite else {
-      return .failure(.cardinalityViolation)
-    }
-
-    guard let data = try? message.serializedData() else {
-      return .failure(.serializationFailed)
-    }
-
-    // Zero is fine: the writer will allocate the correct amount of space.
-    var buffer = allocator.buffer(capacity: 0)
-    self.writer.write(data, into: &buffer)
-
-    // If we only expect to write one message then we're no longer writable.
-    if case .one = self.arity {
-      self.arity = .none
-    }
-
-    return .success(buffer)
-  }
-}
-
 /// The read state of a stream.
-struct ReadState {
-  /// Whether the stream may read.
-  internal var canRead: Bool {
-    return self.arity != .none
-  }
+enum ReadState {
+  /// Reading may be attempted using the given reader.
+  case reading(MessageArity, LengthPrefixedMessageReader)
 
-  /// The expected number of messages of the reading stream.
-  var arity: MessageArity
+  /// Reading may not be attempted: either a read previously failed or it is not valid for any
+  /// more messages to be read.
+  case notReading
 
-  /// A reader which accepts bytes in the gRPC wire-format and produces sequences of bytes which
-  /// may be decoded into protobuf `Message`s.
-  var reader: LengthPrefixedMessageReader
+  /// Consume the given `buffer` then attempt to read and subsequently decode length-prefixed
+  /// serialized messages.
+  ///
+  /// For an expected message count of `.one`, this function will produce **at most** 1 message. If
+  /// a message has been produced then subsequent calls will result in an error.
+  ///
+  /// - Parameter buffer: The buffer to read from.
+  mutating func readMessages<MessageType: Message>(
+    _ buffer: inout ByteBuffer,
+    as: MessageType.Type = MessageType.self
+  ) -> Result<[MessageType], MessageReadError> {
+    switch self {
+    case .notReading:
+      return .failure(.cardinalityViolation)
 
-  init(arity: MessageArity, reader: LengthPrefixedMessageReader) {
-    self.arity = arity
-    self.reader = reader
+    case let .reading(readArity, reader):
+      reader.append(buffer: &buffer)
+      var messages: [MessageType] = []
+
+      do {
+        while var serializedBytes = try? reader.nextMessage() {
+          // Force unwrapping is okay here: we will always be able to read `readableBytes`.
+          let serializedData = serializedBytes.readData(length: serializedBytes.readableBytes)!
+          messages.append(try MessageType(serializedData: serializedData))
+        }
+      } catch {
+        self = .notReading
+        return .failure(.deserializationFailed)
+      }
+
+      // We need to validate the number of messages we decoded. Zero is fine because the payload may
+      // be split across frames.
+      switch (readArity, messages.count) {
+      // Always allowed:
+      case (.one, 0),
+           (.many, 0...):
+        self = .reading(readArity, reader)
+        return .success(messages)
+
+      // Also allowed, assuming we have no leftover bytes:
+      case (.one, 1):
+        // We can't read more than one message on a unary stream.
+        self = .notReading
+        // We shouldn't have any bytes leftover after reading a single message and we also should not
+        // have partially read a message.
+        if reader.unprocessedBytes != 0 || reader.isReading {
+          return .failure(.leftOverBytes)
+        } else {
+          return .success(messages)
+        }
+
+      // Anything else must be invalid.
+      default:
+        self = .notReading
+        return .failure(.cardinalityViolation)
+      }
+    }
   }
 }
 
@@ -140,60 +178,4 @@ enum MessageReadError: Error {
 
   /// An invalid state was encountered. This is a serious implementation error.
   case invalidState
-}
-
-extension ReadState {
-  /// Consume the given `buffer` then attempt to read and subsequently decode length-prefixed
-  /// serialized messages.
-  ///
-  /// For an expected message count of `.one`, this function will produce **at most** 1 message. If
-  /// a message has been produced then subsequent calls will result in an error.
-  ///
-  /// - Parameter buffer: The buffer to read from.
-  mutating func readMessages<MessageType: Message>(
-    _ buffer: inout ByteBuffer,
-    as: MessageType.Type = MessageType.self
-  ) -> Result<[MessageType], MessageReadError> {
-    guard self.canRead else {
-      return .failure(.cardinalityViolation)
-    }
-
-    self.reader.append(buffer: &buffer)
-    var messages: [MessageType] = []
-
-    // Pull out as many messages from the reader as possible.
-    do {
-      while var serializedBytes = try? self.reader.nextMessage() {
-        // Force unwrapping is okay here: we will always be able to read `readableBytes`.
-        let serializedData = serializedBytes.readData(length: serializedBytes.readableBytes)!
-        messages.append(try MessageType(serializedData: serializedData))
-      }
-    } catch {
-      return .failure(.deserializationFailed)
-    }
-
-    // We need to validate the number of messages we decoded. Zero is fine because the payload may
-    // be split across frames.
-    switch (self.arity, messages.count) {
-    // Always allowed:
-    case (.one, 0),
-         (.many, 0...):
-      break
-
-    // Also allowed, assuming we have no leftover bytes:
-    case (.one, 1):
-      self.arity = .none
-      // We shouldn't have any bytes leftover after reading a single message and we also should not
-      // have partially read a message.
-      if self.reader.unprocessedBytes != 0 || self.reader.isReading {
-        return .failure(.leftOverBytes)
-      }
-
-    // Anything else must be invalid.
-    default:
-      return .failure(.cardinalityViolation)
-    }
-
-    return .success(messages)
-  }
 }

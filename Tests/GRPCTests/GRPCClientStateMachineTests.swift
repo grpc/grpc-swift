@@ -697,8 +697,8 @@ extension GRPCClientStateMachineTests {
     stateMachine.receiveResponseHead(responseHead).assertSuccess()
 
     switch stateMachine.state {
-    case let .clientActiveServerActive(_, readState):
-      XCTAssertEqual(readState.reader.compressionMechanism, .identity)
+    case let .clientActiveServerActive(_, .reading(_, reader)):
+      XCTAssertEqual(reader.compressionMechanism, .identity)
     default:
       XCTFail("unexpected state \(stateMachine.state)")
     }
@@ -788,11 +788,12 @@ class ReadStateTests: GRPCTestCase {
   var allocator = ByteBufferAllocator()
 
   func testReadWhenNoExpectedMessages() {
-    var state: ReadState = .none()
+    var state: ReadState = .notReading
     var buffer = self.allocator.buffer(capacity: 0)
     state.readMessages(&buffer, as: Echo_EchoRequest.self).assertFailure {
       XCTAssertEqual($0, .cardinalityViolation)
     }
+    state.assertNotReading()
   }
 
   func testReadWhenBufferContainsLengthPrefixedJunk() {
@@ -807,6 +808,7 @@ class ReadStateTests: GRPCTestCase {
     state.readMessages(&buffer, as: Echo_EchoRequest.self).assertFailure {
       XCTAssertEqual($0, .deserializationFailed)
     }
+    state.assertNotReading()
   }
 
   func testReadWithLeftOverBytesForOneExpectedMessage() throws {
@@ -823,6 +825,7 @@ class ReadStateTests: GRPCTestCase {
     state.readMessages(&buffer, as: Echo_EchoRequest.self).assertFailure {
       XCTAssertEqual($0, .leftOverBytes)
     }
+    state.assertNotReading()
   }
 
   func testReadTooManyMessagesForOneExpectedMessages() throws {
@@ -837,6 +840,7 @@ class ReadStateTests: GRPCTestCase {
     state.readMessages(&buffer, as: Echo_EchoRequest.self).assertFailure {
       XCTAssertEqual($0, .cardinalityViolation)
     }
+    state.assertNotReading()
   }
 
   func testReadOneMessageForOneExpectedMessages() throws {
@@ -852,8 +856,7 @@ class ReadStateTests: GRPCTestCase {
     }
 
     // We shouldn't be able to read anymore.
-    XCTAssertFalse(state.canRead)
-    XCTAssertEqual(state.arity, .none)
+    state.assertNotReading()
   }
 
   func testReadOneMessageForManyExpectedMessages() throws {
@@ -869,8 +872,7 @@ class ReadStateTests: GRPCTestCase {
     }
 
     // We should still be able to read.
-    XCTAssertTrue(state.canRead)
-    XCTAssertEqual(state.arity, .many)
+    state.assertReading()
   }
 
   func testReadManyMessagesForManyExpectedMessages() throws {
@@ -888,8 +890,7 @@ class ReadStateTests: GRPCTestCase {
     }
 
     // We should still be able to read.
-    XCTAssertTrue(state.canRead)
-    XCTAssertEqual(state.arity, .many)
+    state.assertReading()
   }
 }
 
@@ -928,25 +929,40 @@ extension Result {
 // MARK: ReadState, PendingWriteState, and WriteState helpers
 
 extension ReadState {
-  fileprivate init(arity: MessageArity) {
+  static func one() -> ReadState {
     let reader = LengthPrefixedMessageReader(
       mode: .client,
       compressionMechanism: .none,
       logger: Logger(label: "io.grpc.reader")
     )
-    self.init(arity: arity, reader: reader)
-  }
-
-  static func none() -> ReadState {
-    return .init(arity: .none)
-  }
-
-  static func one() -> ReadState {
-    return .init(arity: .one)
+    return .reading(.one, reader)
   }
 
   static func many() -> ReadState {
-    return .init(arity: .many)
+    let reader = LengthPrefixedMessageReader(
+      mode: .client,
+      compressionMechanism: .none,
+      logger: Logger(label: "io.grpc.reader")
+    )
+    return .reading(.many, reader)
+  }
+
+  func assertReading() {
+    switch self {
+    case .reading:
+      ()
+    case .notReading:
+      XCTFail("unexpected state .notReading")
+    }
+  }
+
+  func assertNotReading() {
+    switch self {
+    case .reading:
+      XCTFail("unexpected state .reading")
+    case .notReading:
+      ()
+    }
   }
 }
 
@@ -962,18 +978,10 @@ extension PendingWriteState {
 
 extension WriteState {
   static func one() -> WriteState {
-    return .init(
-      arity: .one,
-      writer: LengthPrefixedMessageWriter(compression: .none),
-      contentType: .protobuf
-    )
+    return .writing(.one, .protobuf, LengthPrefixedMessageWriter(compression: .none))
   }
 
   static func many() -> WriteState {
-    return .init(
-      arity: .many,
-      writer: LengthPrefixedMessageWriter(compression: .none),
-      contentType: .protobuf
-    )
+    return .writing(.many, .protobuf, LengthPrefixedMessageWriter(compression: .none))
   }
 }

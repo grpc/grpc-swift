@@ -585,7 +585,7 @@ extension GRPCClientStateMachine.State {
       logger: logger
     )
 
-    return .success(.init(arity: responseArity, reader: reader))
+    return .success(.reading(responseArity, reader))
   }
 
   /// Parses the response trailers ("Trailers" in the specification) from the server into
