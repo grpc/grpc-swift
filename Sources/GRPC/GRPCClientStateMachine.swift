@@ -45,7 +45,7 @@ enum SendRequestHeadersError: Error {
 
 enum SendEndOfRequestStreamError: Error {
   /// The request stream has already been closed. This may happen if the RPC was cancelled, timed
-  /// out, or the user explicitly closed the stream multiple times.
+  /// out, the server terminated the RPC, or the user explicitly closed the stream multiple times.
   case alreadyClosed
 
   /// An invalid state was encountered. This is a serious implementation error.
