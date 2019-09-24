@@ -37,6 +37,10 @@ public enum CompressionMechanism: String, CaseIterable {
   // Compression indicated via a header, but not one listed in the specification.
   case unknown
 
+  init(value: String?) {
+    self = value.map { CompressionMechanism(rawValue: $0) ?? .unknown } ?? .none
+  }
+
   /// Whether the compression flag in gRPC length-prefixed messages should be set or not.
   ///
   /// See `LengthPrefixedMessageReader` for the message format.

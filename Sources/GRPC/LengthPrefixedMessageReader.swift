@@ -69,6 +69,21 @@ public class LengthPrefixedMessageReader {
     }
   }
 
+  /// Returns the number of unprocessed bytes.
+  internal var unprocessedBytes: Int {
+    return self.buffer.map { $0.readableBytes } ?? 0
+  }
+
+  /// Whether the reader is mid-way through reading a message.
+  internal var isReading: Bool {
+    switch self.state {
+    case .expectingCompressedFlag:
+      return false
+    case .expectingMessageLength, .expectingMessage:
+      return true
+    }
+  }
+
   /// Appends data to the buffer from which messages will be read.
   public func append(buffer: inout ByteBuffer) {
     guard buffer.readableBytes > 0 else {

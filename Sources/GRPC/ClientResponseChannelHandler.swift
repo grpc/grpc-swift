@@ -257,7 +257,7 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
   }
 }
 
-/// A channel handler for client calls which recieve a single response.
+/// A channel handler for client calls which receive a single response.
 final class GRPCClientUnaryResponseChannelHandler<ResponseMessage: Message>: ClientResponseChannelHandler<ResponseMessage> {
   let responsePromise: EventLoopPromise<ResponseMessage>
 
@@ -303,7 +303,7 @@ final class GRPCClientUnaryResponseChannelHandler<ResponseMessage: Message>: Cli
   }
 }
 
-/// A channel handler for client calls which recieve a stream of responses.
+/// A channel handler for client calls which receive a stream of responses.
 final class GRPCClientStreamingResponseChannelHandler<ResponseMessage: Message>: ClientResponseChannelHandler<ResponseMessage> {
   typealias ResponseHandler = (ResponseMessage) -> Void
 
