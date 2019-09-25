@@ -131,7 +131,7 @@ In the same directory, open
 `Sources/Examples/HelloWorld/Server/GreeterProvider.swift`. Implement the new
 method like this:
 
-```
+```swift
 class GreeterProvider: Helloworld_GreeterProvider {
   func sayHello(
     request: Helloworld_HelloRequest,
