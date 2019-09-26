@@ -115,10 +115,8 @@ run_interop_tests() {
   # Run the tests; logs are written to stderr, capture them per-test.
   for test in "${TESTS[@]}"; do
     info "Running $test"
-    swift run GRPCInteroperabilityTests run_test \
-      "localhost" \
-      "$INTEROP_TEST_SERVER_PORT" \
-      "$test" \
+    make interop-test-runner \
+      TEST_ARGS="run_test localhost $INTEROP_TEST_SERVER_PORT $test" \
         2> "interop.$test.log"
     success "PASSED $test"
   done
@@ -147,9 +145,8 @@ run_interop_reconnect_test() {
 
   info "Running connection backoff interop test"
   # Run the test; logs are written to stderr, redirect them to a file.
-  swift run GRPCConnectionBackoffInteropTest \
-    ${INTEROP_TEST_SERVER_CONTROL_PORT} \
-    ${INTEROP_TEST_SERVER_RETRY_PORT} \
+  make interop-backoff-test-runner \
+    TEST_ARGS="${INTEROP_TEST_SERVER_CONTROL_PORT} ${INTEROP_TEST_SERVER_RETRY_PORT}" \
       2> "interop.connection_backoff.log"
   success "connection backoff interop test PASSED"
 

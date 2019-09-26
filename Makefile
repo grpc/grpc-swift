@@ -6,6 +6,7 @@ SWIFT_BUILD_CONFIGURATION:=debug
 SWIFT_FLAGS:=--build-path=${SWIFT_BUILD_PATH} --configuration=${SWIFT_BUILD_CONFIGURATION}
 
 SWIFT_BUILD:=${SWIFT} build ${SWIFT_FLAGS}
+SWIFT_RUN:=${SWIFT} run ${SWIFT_FLAGS}
 SWIFT_TEST:=${SWIFT} test ${SWIFT_FLAGS}
 SWIFT_PACKAGE:=${SWIFT} package ${SWIFT_FLAGS}
 
@@ -24,6 +25,14 @@ protoc-gen-swift:
 
 protoc-gen-grpc-swift:
 	${SWIFT_BUILD} --product protoc-gen-grpc-swift
+
+.PHONY:
+interop-test-runner:
+	${SWIFT_RUN} GRPCInteroperabilityTests ${TEST_ARGS}
+
+.PHONY:
+interop-backoff-test-runner:
+	${SWIFT_RUN} GRPCConnectionBackoffInteropTest ${TEST_ARGS}
 
 ### Xcodeproj and LinuxMain
 
