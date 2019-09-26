@@ -86,7 +86,6 @@ make_project() {
 
 run_interop_tests() {
   echo -en 'travis_fold:start:test.interop_tests\\r'
-  make interop-test-runner
   INTEROP_TEST_SERVER_PORT=8080
 
   # interop_server should be on $PATH
@@ -116,7 +115,7 @@ run_interop_tests() {
   # Run the tests; logs are written to stderr, capture them per-test.
   for test in "${TESTS[@]}"; do
     info "Running $test"
-    $BUILD_OUTPUT/InteroperabilityTestRunner run_test \
+    swift run GRPCInteroperabilityTests run_test \
       "localhost" \
       "$INTEROP_TEST_SERVER_PORT" \
       "$test" \
@@ -133,7 +132,6 @@ run_interop_tests() {
 
 run_interop_reconnect_test() {
   echo -en 'travis_fold:start:test.interop_reconnect\\r'
-  make interop-backoff-test-runner
   INTEROP_TEST_SERVER_CONTROL_PORT=8081
   INTEROP_TEST_SERVER_RETRY_PORT=8082
 
@@ -149,7 +147,7 @@ run_interop_reconnect_test() {
 
   info "Running connection backoff interop test"
   # Run the test; logs are written to stderr, redirect them to a file.
-  ${BUILD_OUTPUT}/ConnectionBackoffInteropTestRunner \
+  swift run GRPCConnectionBackoffInteropTest \
     ${INTEROP_TEST_SERVER_CONTROL_PORT} \
     ${INTEROP_TEST_SERVER_RETRY_PORT} \
       2> "interop.connection_backoff.log"
