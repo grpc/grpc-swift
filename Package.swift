@@ -21,10 +21,6 @@ let package = Package(
   name: "GRPC",
   products: [
     .library(name: "GRPC", targets: ["GRPC"]),
-    .executable(name: "InteroperabilityTestRunner", targets: ["GRPCInteroperabilityTests"]),
-    .executable(name: "ConnectionBackoffInteropTestRunner", targets: ["GRPCConnectionBackoffInteropTest"]),
-    .executable(name: "PerformanceTestRunner", targets: ["GRPCPerformanceTests"]),
-    .executable(name: "Echo", targets: ["Echo"]),
     .executable(name: "protoc-gen-grpc-swift", targets: ["protoc-gen-grpc-swift"]),
   ],
   dependencies: [
