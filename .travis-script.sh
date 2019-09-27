@@ -116,7 +116,7 @@ run_interop_tests() {
   # Run the tests; logs are written to stderr, capture them per-test.
   for test in "${TESTS[@]}"; do
     info "Running $test"
-    $BUILD_OUTPUT/InteroperabilityTestRunner run_test \
+    $BUILD_OUTPUT/GRPCInteroperabilityTests run_test \
       "localhost" \
       "$INTEROP_TEST_SERVER_PORT" \
       "$test" \
@@ -149,7 +149,7 @@ run_interop_reconnect_test() {
 
   info "Running connection backoff interop test"
   # Run the test; logs are written to stderr, redirect them to a file.
-  ${BUILD_OUTPUT}/ConnectionBackoffInteropTestRunner \
+  ${BUILD_OUTPUT}/GRPCConnectionBackoffInteropTest \
     ${INTEROP_TEST_SERVER_CONTROL_PORT} \
     ${INTEROP_TEST_SERVER_RETRY_PORT} \
       2> "interop.connection_backoff.log"
