@@ -26,10 +26,10 @@ protoc-gen-grpc-swift:
 	${SWIFT_BUILD} --product protoc-gen-grpc-swift
 
 interop-test-runner:
-	${SWIFT_BUILD} --target InteroperabilityTestRunner
+	${SWIFT_BUILD} --product GRPCInteroperabilityTests
 
 interop-backoff-test-runner:
-	${SWIFT_BUILD} --target ConnectionBackoffInteropTestRunner
+	${SWIFT_BUILD} --product GRPCConnectionBackoffInteropTest
 
 ### Xcodeproj and LinuxMain
 
