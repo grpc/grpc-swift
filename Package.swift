@@ -168,5 +168,38 @@ let package = Package(
       ],
       path: "Sources/Examples/Echo/Model"
     ),
+
+    // Model for the HelloWorld example
+    .target(
+      name: "HelloWorldModel",
+      dependencies: [
+        "GRPC",
+        "NIO",
+        "NIOHTTP1",
+        "SwiftProtobuf"
+      ],
+      path: "Sources/Examples/HelloWorld/Model"
+    ),
+
+    // Client for the HelloWorld example
+    .target(
+      name: "HelloWorldClient",
+      dependencies: [
+        "GRPC",
+        "HelloWorldModel",
+      ],
+      path: "Sources/Examples/HelloWorld/Client"
+    ),
+
+    // Server for the HelloWorld example
+    .target(
+      name: "HelloWorldServer",
+      dependencies: [
+        "GRPC",
+        "NIO",
+        "HelloWorldModel",
+      ],
+      path: "Sources/Examples/HelloWorld/Server"
+    ),
   ]
 )

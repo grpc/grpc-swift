@@ -5,6 +5,10 @@ SWIFT_BUILD_PATH:=./.build
 SWIFT_BUILD_CONFIGURATION:=debug
 SWIFT_FLAGS:=--build-path=${SWIFT_BUILD_PATH} --configuration=${SWIFT_BUILD_CONFIGURATION}
 
+# protoc plugins.
+PROTOC_GEN_SWIFT=${SWIFT_BUILD_PATH}/${SWIFT_BUILD_CONFIGURATION}/protoc-gen-swift
+PROTOC_GEN_GRPC_SWIFT=${SWIFT_BUILD_PATH}/${SWIFT_BUILD_CONFIGURATION}/protoc-gen-grpc-swift
+
 SWIFT_BUILD:=${SWIFT} build ${SWIFT_FLAGS}
 SWIFT_TEST:=${SWIFT} test ${SWIFT_FLAGS}
 SWIFT_PACKAGE:=${SWIFT} package ${SWIFT_FLAGS}
@@ -17,12 +21,13 @@ XCODEPROJ:=GRPC.xcodeproj
 all:
 	${SWIFT_BUILD}
 
-plugins: protoc-gen-swift protoc-gen-grpc-swift
+.PHONY:
+plugins: ${PROTOC_GEN_SWIFT} ${PROTOC_GEN_GRPC_SWIFT}
 
-protoc-gen-swift:
+${PROTOC_GEN_SWIFT}:
 	${SWIFT_BUILD} --product protoc-gen-swift
 
-protoc-gen-grpc-swift:
+${PROTOC_GEN_GRPC_SWIFT}:
 	${SWIFT_BUILD} --product protoc-gen-grpc-swift
 
 interop-test-runner:
@@ -33,6 +38,7 @@ interop-backoff-test-runner:
 
 ### Xcodeproj and LinuxMain
 
+.PHONY:
 project: ${XCODEPROJ}
 
 ${XCODEPROJ}:
@@ -46,40 +52,62 @@ generate-linuxmain:
 
 ### Protobuf Generation ########################################################
 
-# Generates protobufs and gRPC client and server for the Echo example
-generate-echo: plugins
-	protoc Sources/Examples/Echo/Model/echo.proto \
-		--proto_path=Sources/Examples/Echo/Model \
-		--plugin=${SWIFT_BUILD_PATH}/${SWIFT_BUILD_CONFIGURATION}/protoc-gen-swift \
-		--plugin=${SWIFT_BUILD_PATH}/${SWIFT_BUILD_CONFIGURATION}/protoc-gen-grpc-swift \
+%.pb.swift: %.proto ${PROTOC_GEN_SWIFT}
+	protoc $< \
+		--proto_path=$(dir $<) \
+		--plugin=${PROTOC_GEN_SWIFT} \
 		--swift_opt=Visibility=Public \
-		--swift_out=Sources/Examples/Echo/Model/Generated \
+		--swift_out=$(dir $<)
+
+%.grpc.swift: %.proto ${PROTOC_GEN_GRPC_SWIFT}
+	protoc $< \
+		--proto_path=$(dir $<) \
+		--plugin=${PROTOC_GEN_GRPC_SWIFT} \
 		--grpc-swift_opt=Visibility=Public \
-		--grpc-swift_out=Sources/Examples/Echo/Model/Generated
+		--grpc-swift_out=$(dir $<)
+
+ECHO_PROTO=Sources/Examples/Echo/Model/echo.proto
+ECHO_PB=$(ECHO_PROTO:.proto=.pb.swift)
+ECHO_GRPC=$(ECHO_PROTO:.proto=.grpc.swift)
+
+# Generates protobufs and gRPC client and server for the Echo example
+.PHONY:
+generate-echo: ${ECHO_PB} ${ECHO_GRPC}
+
+HELLOWORLD_PROTO=Sources/Examples/HelloWorld/Model/helloworld.proto
+HELLOWORLD_PB=$(HELLOWORLD_PROTO:.proto=.pb.swift)
+HELLOWORLD_GRPC=$(HELLOWORLD_PROTO:.proto=.grpc.swift)
+
+# Generates protobufs and gRPC client and server for the Hello World example
+.PHONY:
+generate-helloworld: ${HELLOWORLD_PB} ${HELLOWORLD_GRPC}
 
 ### Testing ####################################################################
 
 # Normal test suite.
+.PHONY:
 test:
 	${SWIFT_TEST}
 
 # Checks that linuxmain has been updated: requires macOS.
+.PHONY:
 test-generate-linuxmain: generate-linuxmain
 	@git diff --exit-code Tests/LinuxMain.swift Tests/*/XCTestManifests.swift > /dev/null || \
 		{ echo "Generated tests are out-of-date; run 'swift test --generate-linuxmain' to update them!"; exit 1; }
 
 # Generates code for the Echo server and client and tests them against 'golden' data.
-test-plugin: plugins
-	protoc Sources/Examples/Echo/Model/echo.proto \
-		--proto_path=Sources/Examples/Echo/Model \
-		--plugin=${SWIFT_BUILD_PATH}/${SWIFT_BUILD_CONFIGURATION}/protoc-gen-swift \
-		--plugin=${SWIFT_BUILD_PATH}/${SWIFT_BUILD_CONFIGURATION}/protoc-gen-grpc-swift \
+.PHONY:
+test-plugin: ${ECHO_PROTO} ${PROTOC_GEN_GRPC_SWIFT} ${ECHO_GRPC}
+	protoc $< \
+		--proto_path=$(dir $<) \
+		--plugin=${PROTOC_GEN_GRPC_SWIFT} \
 		--grpc-swift_opt=Visibility=Public \
 		--grpc-swift_out=/tmp
-	diff -u /tmp/echo.grpc.swift Sources/Examples/Echo/Model/Generated/echo.grpc.swift
+	diff -u /tmp/echo.grpc.swift ${ECHO_GRPC}
 
 ### Misc. ######################################################################
 
+.PHONY:
 clean:
 	-rm -rf Packages
 	-rm -rf ${SWIFT_BUILD_PATH}
