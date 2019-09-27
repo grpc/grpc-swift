@@ -46,7 +46,7 @@ public struct Helloworld_HelloRequest {
   public init() {}
 }
 
-/// The response message containing the greetings
+/// The response message containing the greetings.
 public struct Helloworld_HelloReply {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for

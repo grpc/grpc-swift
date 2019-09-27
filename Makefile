@@ -74,7 +74,7 @@ ECHO_GRPC=$(ECHO_PROTO:.proto=.grpc.swift)
 .PHONY:
 generate-echo: ${ECHO_PB} ${ECHO_GRPC}
 
-HELLOWORLD_PROTO=Sources/Examples/Echo/Model/helloworld.proto
+HELLOWORLD_PROTO=Sources/Examples/HelloWorld/Model/helloworld.proto
 HELLOWORLD_PB=$(HELLOWORLD_PROTO:.proto=.pb.swift)
 HELLOWORLD_GRPC=$(HELLOWORLD_PROTO:.proto=.grpc.swift)
 

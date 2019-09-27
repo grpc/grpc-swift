@@ -49,6 +49,7 @@ From the `grpc-swift` directory:
 
    ```sh
    $ swift run HelloWorldClient 52200
+   Greeter received: Hello stranger!
    ```
 
 Congratulations! You've just run a client-server application with gRPC.
@@ -66,7 +67,7 @@ server, and that this method is defined like this:
 ```proto
 // The greeting service definition.
 service Greeter {
-  // Sends a greeting
+  // Sends a greeting.
   rpc SayHello (HelloRequest) returns (HelloReply) {}
 }
 
@@ -75,7 +76,7 @@ message HelloRequest {
   string name = 1;
 }
 
-// The response message containing the greetings
+// The response message containing the greetings.
 message HelloReply {
   string message = 1;
 }
@@ -88,9 +89,9 @@ Let's update this so that the `Greeter` service has two methods. Edit
 ```proto
 // The greeting service definition.
 service Greeter {
-  // Sends a greeting
+  // Sends a greeting.
   rpc SayHello (HelloRequest) returns (HelloReply) {}
-  // Sends another greeting
+  // Sends another greeting.
   rpc SayHelloAgain (HelloRequest) returns (HelloReply) {}
 }
 
@@ -99,7 +100,7 @@ message HelloRequest {
   string name = 1;
 }
 
-// The response message containing the greetings
+// The response message containing the greetings.
 message HelloReply {
   string message = 1;
 }
@@ -175,18 +176,18 @@ func greet(name: String?, client greeter: Helloworld_GreeterServiceClient) {
   // wait() on the response to stop the program from exiting before the response is received.
   do {
     let response = try sayHello.response.wait()
-    print("Greeting: \(response.message)")
+    print("Greeter received: \(response.message)")
   } catch {
-    print("Greeting failed: \(error)")
+    print("Greeter failed: \(error)")
     return
   }
 
   let sayHelloAgain = greeter.sayHelloAgain(request)
   do {
     let response = try sayHelloAgain.response.wait()
-    print("Greeting: \(response.message)")
+    print("Greeter received: \(response.message)")
   } catch {
-    print("Greeting failed: \(error)")
+    print("Greeter failed: \(error)")
     return
   }
 }
@@ -208,6 +209,8 @@ Just like we did before, from the top level `grpc-swift` directory:
 
    ```sh
    $ swift run HelloWorldClient 52416
+   Greeter received: Hello stranger!
+   Greeter received: Hello again stranger!
    ```
 
 ### What's next
