@@ -248,7 +248,7 @@ private func checkFeature(
 
 - `Routeguide_Point`: the request
 - `StatusOnlyCallContext`: a context which exposes status and trailing metadata
-  objects that you can update.
+  fields that you can change if needed.
 
 To return our response to the client and complete the call:
 
