@@ -201,5 +201,38 @@ let package = Package(
       ],
       path: "Sources/Examples/HelloWorld/Server"
     ),
+
+    // Model for the RouteGuide example
+    .target(
+      name: "RouteGuideModel",
+      dependencies: [
+        "GRPC",
+        "NIO",
+        "NIOHTTP1",
+        "SwiftProtobuf"
+      ],
+      path: "Sources/Examples/RouteGuide/Model"
+    ),
+
+    // Client for the RouteGuide example
+    .target(
+      name: "RouteGuideClient",
+      dependencies: [
+        "GRPC",
+        "RouteGuideModel",
+      ],
+      path: "Sources/Examples/RouteGuide/Client"
+    ),
+
+    // Server for the RouteGuide example
+    .target(
+      name: "RouteGuideServer",
+      dependencies: [
+        "GRPC",
+        "NIO",
+        "RouteGuideModel",
+      ],
+      path: "Sources/Examples/RouteGuide/Server"
+    ),
   ]
 )

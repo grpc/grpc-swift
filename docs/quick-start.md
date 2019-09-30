@@ -217,7 +217,9 @@ Just like we did before, from the top level `grpc-swift` directory:
 
 - Read a full explanation of how gRPC works in [What is gRPC?][grpc-guides] and
   [gRPC Concepts][grpc-concepts]
+- Work through a more detailed tutorial in [gRPC Basics: Swift][basic-tutorial]
 
 [grpc-guides]: https://grpc.io/docs/guides/
 [grpc-concepts]: https://grpc.io/docs/guides/concepts/
 [protobuf-releases]: https://github.com/google/protobuf/releases
+[basic-tutorial]: ./basic-tutorial.md

@@ -82,6 +82,14 @@ HELLOWORLD_GRPC=$(HELLOWORLD_PROTO:.proto=.grpc.swift)
 .PHONY:
 generate-helloworld: ${HELLOWORLD_PB} ${HELLOWORLD_GRPC}
 
+ROUTE_GUIDE_PROTO=Sources/Examples/RouteGuide/Model/route_guide.proto
+ROUTE_GUIDE_PB=$(ROUTE_GUIDE_PROTO:.proto=.pb.swift)
+ROUTE_GUIDE_GRPC=$(ROUTE_GUIDE_PROTO:.proto=.grpc.swift)
+
+# Generates protobufs and gRPC client and server for the Route Guide example
+.PHONY:
+generate-route-guide: ${ROUTE_GUIDE_PB} ${ROUTE_GUIDE_GRPC}
+
 ### Testing ####################################################################
 
 # Normal test suite.
