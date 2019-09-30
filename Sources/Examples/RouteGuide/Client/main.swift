@@ -133,7 +133,7 @@ public func recordRoute(
     call.sendMessage(point, promise: nil)
 
     // Sleep for a bit before sending the next one.
-    usleep(UInt32.random(in: 0...1_000_000) + 500_000)
+    Thread.sleep(forTimeInterval: TimeInterval.random(in: 0.5..<1.5))
   }
 
   call.sendEnd(promise: nil)

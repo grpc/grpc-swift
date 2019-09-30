@@ -52,15 +52,6 @@ public protocol ClientCall {
   func cancel()
 }
 
-extension ClientCall {
-  public func waitForCompletion(errorCallback: (GRPCStatus) -> Void = { _ in }) {
-    let status = (try? self.status.wait()) ?? .processingError
-    if status.code != .ok {
-      errorCallback(status)
-    }
-  }
-}
-
 /// A `ClientCall` with request streaming; i.e. client-streaming and bidirectional-streaming.
 public protocol StreamingRequestClientCall: ClientCall {
   /// Sends a message to the service.

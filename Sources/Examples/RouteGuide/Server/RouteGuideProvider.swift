@@ -54,7 +54,7 @@ class RouteGuideProvider: Routeguide_RouteGuideProvider {
     let top = max(request.lo.latitude, request.hi.latitude)
     let bottom = max(request.lo.latitude, request.hi.latitude)
 
-    self.features.filter { feature in
+    self.features.lazy.filter { feature in
       return !feature.name.isEmpty
         && feature.location.longitude >= left
         && feature.location.longitude <= right
@@ -84,7 +84,7 @@ class RouteGuideProvider: Routeguide_RouteGuideProvider {
       switch event {
       case .message(let point):
         pointCount += 1
-        if self.checkFeature(at: point).exists {
+        if !self.checkFeature(at: point).name.isEmpty {
           featureCount += 1
         }
 
