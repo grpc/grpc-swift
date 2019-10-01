@@ -54,7 +54,7 @@ $ cd grpc-swift/Sources/Examples/RouteGuide
 Our first step (as you'll know from the [Overview][grpc-docs]) is to
 define the gRPC *service* and the method *request* and *response* types using
 [protocol buffers][protocol-buffers]. You can see the complete .proto file in
-[`grpc-swift/Sources/Examples/RouteGuide/route_guide.proto`][routeguide-proto].
+[`grpc-swift/Sources/Examples/RouteGuide/Model/route_guide.proto`][routeguide-proto].
 
 To define a service, we specify a named `service` in the .proto file:
 
@@ -279,7 +279,7 @@ func listFeatures(
   let top = max(request.lo.latitude, request.hi.latitude)
   let bottom = max(request.lo.latitude, request.hi.latitude)
 
-  self.features.filter { feature in
+  self.features.lazy.filter { feature in
     return !feature.name.isEmpty
       && feature.location.longitude >= left
       && feature.location.longitude <= right
@@ -310,7 +310,7 @@ Now let's look at something a little more complicated: the client-side streaming
 method `RecordRoute`, where we get a stream of `Routeguide_Point`s from the client and
 return a single `Routeguide_RouteSummary` with information about their trip.
 
-```
+```swift
 /// A client-to-server streaming RPC.
 ///
 /// Accepts a stream of Points on a route being traversed, returning a RouteSummary when traversal
@@ -328,7 +328,7 @@ func recordRoute(
     switch event {
     case .message(let point):
       pointCount += 1
-      if self.checkFeature(at: point).exists {
+      if !self.checkFeature(at: point).name.isEmpty {
         featureCount += 1
       }
 
@@ -677,7 +677,7 @@ Follow the instructions in the Route Guide example directory
 [protobuf-releases]: https://github.com/google/protobuf/releases
 [protocol-buffers]: https://developers.google.com/protocol-buffers/docs/overview
 [routeguide-client]: ../Sources/Examples/RouteGuide/Client/main.swift
-[routeguide-proto]: ../Sources/Examples/RouteGuide/route_guide.proto
+[routeguide-proto]: ../Sources/Examples/RouteGuide/Model/route_guide.proto
 [routeguide-provider]: ../Sources/Examples/RouteGuide/Server/RouteGuideProvider.swift
 [routeguide-readme]: ../Sources/Examples/RouteGuide/README.md
 [routeguide-source]: ../Sources/Examples/RouteGuide
