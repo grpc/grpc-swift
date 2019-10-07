@@ -169,7 +169,7 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
         return
       }
 
-      self.logger.info("received response headers: \(headers)")
+      self.logger.debug("received response headers: \(headers)")
 
       self.initialMetadataPromise.succeed(headers)
       self.inboundState = .expectingMessageOrStatus
@@ -184,7 +184,7 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
         return
       }
 
-      self.logger.info("received response message", metadata: [
+      self.logger.debug("received response message", metadata: [
         MetadataKey.responseType: "\(ResponseMessage.self)"
       ])
 
@@ -201,7 +201,7 @@ internal class ClientResponseChannelHandler<ResponseMessage: Message>: ChannelIn
         return
       }
 
-      self.logger.info("received response status: \(status.code)")
+      self.logger.debug("received response status: \(status.code)")
       self.observeStatus(status, trailingMetadata: trailers)
       // We don't expect any more requests/responses beyond this point and we don't need to close
       // the channel since NIO's HTTP/2 channel handlers will deal with this for us.
