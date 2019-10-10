@@ -304,6 +304,8 @@ final class GRPCClientUnaryResponseChannelHandler<ResponseMessage: Message>: Cli
 
   // Workaround for SR-11564 (observed in Xcode 11.2 Beta).
   // See: https://bugs.swift.org/browse/SR-11564
+  //
+  // TODO: Remove this once SR-11564 is resolved.
   override internal func scheduleTimeout(eventLoop: EventLoop) {
     super.scheduleTimeout(eventLoop: eventLoop)
   }
@@ -349,6 +351,8 @@ final class GRPCClientStreamingResponseChannelHandler<ResponseMessage: Message>:
 
   // Workaround for SR-11564 (observed in Xcode 11.2 Beta).
   // See: https://bugs.swift.org/browse/SR-11564
+  //
+  // TODO: Remove this once SR-11564 is resolved.
   override internal func scheduleTimeout(eventLoop: EventLoop) {
     super.scheduleTimeout(eventLoop: eventLoop)
   }
