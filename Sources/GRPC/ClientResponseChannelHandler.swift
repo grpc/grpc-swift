@@ -301,6 +301,14 @@ final class GRPCClientUnaryResponseChannelHandler<ResponseMessage: Message>: Cli
       self.responsePromise.fail(status)
     }
   }
+
+  // Workaround for SR-11564 (observed in Xcode 11.2 Beta).
+  // See: https://bugs.swift.org/browse/SR-11564
+  //
+  // TODO: Remove this once SR-11564 is resolved.
+  override internal func scheduleTimeout(eventLoop: EventLoop) {
+    super.scheduleTimeout(eventLoop: eventLoop)
+  }
 }
 
 /// A channel handler for client calls which receive a stream of responses.
@@ -339,6 +347,14 @@ final class GRPCClientStreamingResponseChannelHandler<ResponseMessage: Message>:
   /// - Parameter response: The response received from the service.
   override func onResponse(_ response: _Box<ResponseMessage>) {
     self.responseHandler(response.value)
+  }
+
+  // Workaround for SR-11564 (observed in Xcode 11.2 Beta).
+  // See: https://bugs.swift.org/browse/SR-11564
+  //
+  // TODO: Remove this once SR-11564 is resolved.
+  override internal func scheduleTimeout(eventLoop: EventLoop) {
+    super.scheduleTimeout(eventLoop: eventLoop)
   }
 }
 
