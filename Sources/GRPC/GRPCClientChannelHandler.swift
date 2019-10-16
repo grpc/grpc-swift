@@ -34,19 +34,12 @@ public enum GRPCClientRequestPart2<Request: Message> {
 }
 
 public struct GRPCRequestHead {
+  public var method: String
   public var scheme: String
   public var path: String
   public var host: String
-  public var options: CallOptions
-  public var requestID: String
-
-  public init(scheme: String, path: String, host: String, options: CallOptions, requestID: String) {
-    self.scheme = scheme
-    self.path = path
-    self.host = host
-    self.options = options
-    self.requestID = requestID
-  }
+  public var timeout: GRPCTimeout
+  public var customMetadata: HPACKHeaders
 }
 
 // TODO: rename GRPCClientResponsePart2 to GRPCClientResponsePart once this is in-place.
@@ -276,15 +269,7 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
     switch self.unwrapOutboundIn(data) {
     case .head(let requestHead):
       // Feed the request into the state machine:
-      let result = self.stateMachine.sendRequestHeaders(
-        scheme: requestHead.scheme,
-        host: requestHead.host,
-        path: requestHead.path,
-        options: requestHead.options,
-        requestID: requestHead.requestID
-      )
-
-      switch result {
+      switch self.stateMachine.sendRequestHeaders(requestHead: requestHead) {
       case .success(let headers):
         // We're clear to write some headers. Create an appropriate frame and write it.
         let frame = HTTP2Frame(streamID: self.streamID, payload: .headers(.init(headers: headers)))

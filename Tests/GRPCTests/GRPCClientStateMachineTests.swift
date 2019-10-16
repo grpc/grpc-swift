@@ -77,26 +77,28 @@ class GRPCClientStateMachineTests: GRPCTestCase {
 extension GRPCClientStateMachineTests {
   func doTestSendRequestHeadersFromInvalidState(_ state: StateMachine.State) {
     var stateMachine = self.makeStateMachine(state)
-    stateMachine.sendRequestHeaders(
+    stateMachine.sendRequestHeaders(requestHead: .init(
+      method: "POST",
       scheme: "http",
-      host: "host",
       path: "/echo/Get",
-      options: .init(),
-      requestID: "bar"
-    ).assertFailure {
+      host: "host",
+      timeout: .infinite,
+      customMetadata: [:]
+    )).assertFailure {
       XCTAssertEqual($0, .invalidState)
     }
   }
 
   func testSendRequestHeadersFromIdle() {
     var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
-    stateMachine.sendRequestHeaders(
+    stateMachine.sendRequestHeaders(requestHead: .init(
+      method: "POST",
       scheme: "http",
-      host: "host",
       path: "/echo/Get",
-      options: .init(),
-      requestID: "bar"
-    ).assertSuccess()
+      host: "host",
+      timeout: .infinite,
+      customMetadata: [:]
+    )).assertSuccess()
   }
 
   func testSendRequestHeadersFromClientActiveServerIdle() {
@@ -444,13 +446,14 @@ extension GRPCClientStateMachineTests {
     var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
 
     // Initiate the RPC
-    stateMachine.sendRequestHeaders(
+    stateMachine.sendRequestHeaders(requestHead: .init(
+      method: "POST",
       scheme: "https",
-      host: "foo",
       path: "/echo/Get",
-      options: .init(),
-      requestID: "bar"
-    ).assertSuccess()
+      host: "foo",
+      timeout: .infinite,
+      customMetadata: [:]
+    )).assertSuccess()
 
     // Receive acknowledgement.
     stateMachine.receiveResponseHeaders(self.makeResponseHeaders()).assertSuccess()
@@ -473,13 +476,14 @@ extension GRPCClientStateMachineTests {
     var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .many(), readArity: .one))
 
     // Initiate the RPC
-    stateMachine.sendRequestHeaders(
+    stateMachine.sendRequestHeaders(requestHead: .init(
+      method: "POST",
       scheme: "https",
-      host: "foo",
       path: "/echo/Get",
-      options: .init(),
-      requestID: "bar"
-    ).assertSuccess()
+      host: "foo",
+      timeout: .infinite,
+      customMetadata: [:]
+    )).assertSuccess()
 
     // Receive acknowledgement.
     stateMachine.receiveResponseHeaders(self.makeResponseHeaders()).assertSuccess()
@@ -504,13 +508,14 @@ extension GRPCClientStateMachineTests {
     var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .many))
 
     // Initiate the RPC
-    stateMachine.sendRequestHeaders(
+    stateMachine.sendRequestHeaders(requestHead: .init(
+      method: "POST",
       scheme: "https",
-      host: "foo",
       path: "/echo/Get",
-      options: .init(),
-      requestID: "bar"
-    ).assertSuccess()
+      host: "foo",
+      timeout: .infinite,
+      customMetadata: [:]
+    )).assertSuccess()
 
     // Receive acknowledgement.
     stateMachine.receiveResponseHeaders(self.makeResponseHeaders()).assertSuccess()
@@ -538,13 +543,14 @@ extension GRPCClientStateMachineTests {
     var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .many(), readArity: .many))
 
     // Initiate the RPC
-    stateMachine.sendRequestHeaders(
+    stateMachine.sendRequestHeaders(requestHead: .init(
+      method: "POST",
       scheme: "https",
-      host: "foo",
       path: "/echo/Get",
-      options: .init(),
-      requestID: "bar"
-    ).assertSuccess()
+      host: "foo",
+      timeout: .infinite,
+      customMetadata: [:]
+    )).assertSuccess()
 
     // Receive acknowledgement.
     stateMachine.receiveResponseHeaders(self.makeResponseHeaders()).assertSuccess()
@@ -647,13 +653,14 @@ extension GRPCClientStateMachineTests {
 extension GRPCClientStateMachineTests {
   func testSendRequestHeaders() throws {
     var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
-    stateMachine.sendRequestHeaders(
+    stateMachine.sendRequestHeaders(requestHead: .init(
+      method: "POST",
       scheme: "http",
-      host: "localhost",
       path: "/echo/Get",
-      options: CallOptions(timeout: .hours(rounding: 1), requestIDHeader: "x-grpc-id"),
-      requestID: "request-id"
-    ).assertSuccess { headers in
+      host: "localhost",
+      timeout: .hours(rounding: 1),
+      customMetadata: ["x-grpc-id": "request-id"]
+    )).assertSuccess { headers in
       XCTAssertEqual(headers[":method"], ["POST"])
       XCTAssertEqual(headers[":path"], ["/echo/Get"])
       XCTAssertEqual(headers[":authority"], ["localhost"])

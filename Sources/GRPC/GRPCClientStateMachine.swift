@@ -199,24 +199,11 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   ///
   /// On success the state will transition to `.clientActiveServerIdle`.
   ///
-  /// - Parameter host: The host which will handle the RPC.
-  /// - Parameter path: The path of the RPC (e.g. '/echo.Echo/Collect').
-  /// - Parameter options: Options for this RPC.
-  /// - Parameter requestID: The unique ID of this request used for logging.
+  /// - Parameter requestHead: The client request head for the RPC.
   mutating func sendRequestHeaders(
-    scheme: String,
-    host: String,
-    path: String,
-    options: CallOptions,
-    requestID: String
+    requestHead: GRPCRequestHead
   ) -> Result<HPACKHeaders, SendRequestHeadersError> {
-    return self.state.sendRequestHeaders(
-      scheme: scheme,
-      host: host,
-      path: path,
-      options: options,
-      requestID: requestID
-    )
+    return self.state.sendRequestHeaders(requestHead: requestHead)
   }
 
   /// Formats a request to send to the server.
@@ -349,24 +336,21 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
 }
 
 extension GRPCClientStateMachine.State {
-  /// See `GRPCClientStateMachine.sendRequestHeaders(host:path:options:requestID)`.
+  /// See `GRPCClientStateMachine.sendRequestHeaders(requestHead:)`.
   mutating func sendRequestHeaders(
-    scheme: String,
-    host: String,
-    path: String,
-    options: CallOptions,
-    requestID: String
+    requestHead: GRPCRequestHead
   ) -> Result<HPACKHeaders, SendRequestHeadersError> {
     let result: Result<HPACKHeaders, SendRequestHeadersError>
 
     switch self {
     case let .clientIdleServerIdle(pendingWriteState, responseArity):
       let headers = self.makeRequestHeaders(
-        scheme: scheme,
-        host: host,
-        path: path,
-        options: options,
-        requestID: requestID
+        method: requestHead.method,
+        scheme: requestHead.scheme,
+        host: requestHead.host,
+        path: requestHead.path,
+        timeout: requestHead.timeout,
+        customMetadata: requestHead.customMetadata
       )
       result = .success(headers)
       self = .clientActiveServerIdle(
@@ -528,16 +512,17 @@ extension GRPCClientStateMachine.State {
   /// - Parameter requestID: A request ID associated with the call. An additional header will be
   ///     added using this value if `options.requestIDHeader` is specified.
   private func makeRequestHeaders(
+    method: String,
     scheme: String,
     host: String,
     path: String,
-    options: CallOptions,
-    requestID: String
+    timeout: GRPCTimeout,
+    customMetadata: HPACKHeaders
   ) -> HPACKHeaders {
     // Note: we don't currently set the 'grpc-encoding' header, if we do we will need to feed that
     // encoded into the message writer.
     var headers: HPACKHeaders = [
-      ":method": options.cacheable ? "GET" : "POST",
+      ":method": method,
       ":path": path,
       ":authority": host,
       ":scheme": scheme,
@@ -547,17 +532,12 @@ extension GRPCClientStateMachine.State {
     ]
 
     // Add the timeout header, if a timeout was specified.
-    if options.timeout != .infinite {
-      headers.add(name: GRPCHeaderName.timeout, value: String(describing: options.timeout))
+    if timeout != .infinite {
+      headers.add(name: GRPCHeaderName.timeout, value: String(describing: timeout))
     }
 
     // Add user-defined custom metadata: this should come after the call definition headers.
-    headers.add(contentsOf: options.customMetadata.map { ($0.name, $0.value) })
-
-    // Add a tracing header if the user specified it.
-    if let headerName = options.requestIDHeader {
-      headers.add(name: headerName, value: requestID)
-    }
+    headers.add(contentsOf: customMetadata)
 
     return headers
   }
