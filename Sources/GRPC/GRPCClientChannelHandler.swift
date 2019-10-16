@@ -106,9 +106,9 @@ public enum GRPCCallType {
 /// }
 /// ```
 public final class GRPCClientChannelHandler<Request: Message, Response: Message> {
-  let logger: Logger
-  let streamID: HTTP2StreamID
-  var stateMachine: GRPCClientStateMachine<Request, Response>
+  private let logger: Logger
+  private let streamID: HTTP2StreamID
+  private var stateMachine: GRPCClientStateMachine<Request, Response>
 
   /// Creates a new gRPC channel handler for clients to translate HTTP/2 frames to gRPC messages.
   ///
@@ -185,7 +185,7 @@ extension GRPCClientChannelHandler: ChannelInboundHandler {
         case .invalidHTTPStatusWithGRPCStatus(let status):
           return .client(.invalidHTTPStatusWithGRPCStatus(status))
         case .invalidState:
-          return .client(.invalidState("invalid state parsing headers as trailers-only response"))
+          return .client(.invalidState("invalid state parsing end-of-stream trailers"))
         }
       }
 
@@ -208,7 +208,7 @@ extension GRPCClientChannelHandler: ChannelInboundHandler {
         case .unsupportedMessageEncoding(let encoding):
           return .client(.unsupportedCompressionMechanism(encoding))
         case .invalidState:
-          return .client(.invalidState("invalid state parsing headers as trailers-only response"))
+          return .client(.invalidState("invalid state parsing headers"))
         }
       }
 
@@ -286,14 +286,14 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
 
       switch result {
       case .success(let headers):
-        // Great, we're clear to write the some headers. Create an appropriate frame and write it.
+        // We're clear to write some headers. Create an appropriate frame and write it.
         let frame = HTTP2Frame(streamID: self.streamID, payload: .headers(.init(headers: headers)))
         context.write(self.wrapOutboundOut(frame), promise: promise)
 
       case .failure(let sendRequestHeadersError):
         switch sendRequestHeadersError {
         case .invalidState:
-          // This is bad: we need to trigger an error and close.
+          // This is bad: we need to trigger an error and close the channel.
           promise?.fail(sendRequestHeadersError)
           context.fireErrorCaught(GRPCError.client(.invalidState("unable to initiate RPC")))
         }
@@ -314,11 +314,11 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
       case .failure(let writeError):
         switch writeError {
         case .cardinalityViolation:
-          // This is fine: we can ignore the request.
+          // This is fine: we can ignore the request. The RPC can continue as if nothing went wrong.
           promise?.fail(writeError)
 
         case .serializationFailed:
-          // This is bad: we need to trigger an error and close.
+          // This is bad: we need to trigger an error and close the channel.
           promise?.fail(writeError)
           context.fireErrorCaught(GRPCError.client(.requestProtoSerializationFailure))
 
@@ -331,8 +331,8 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
     case .end:
       // Okay: can we close the request stream?
       switch self.stateMachine.sendEndOfRequestStream() {
-      case .success(()):
-        // We can, great, send an empty DATA frame with end-stream set.
+      case .success:
+        // We can. Send an empty DATA frame with end-stream set.
         let empty = context.channel.allocator.buffer(capacity: 0)
         let frame = HTTP2Frame(
           streamID: self.streamID,
@@ -341,14 +341,14 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
         context.write(self.wrapOutboundOut(frame), promise: promise)
 
       case .failure(let error):
-        // We can't close, but why?
+        // Why can't we close the request stream?
         switch error {
         case .alreadyClosed:
-          // This is fine: we can just ignore it.
+          // This is fine: we can just ignore it. The RPC can continue as if nothing went wrong.
           promise?.fail(error)
 
         case .invalidState:
-          // This is bad: we need to trigger an error and close.
+          // This is bad: we need to trigger an error and close the channel.
           promise?.fail(error)
           context.fireErrorCaught(GRPCError.client(.invalidState("unable to close request stream")))
         }
