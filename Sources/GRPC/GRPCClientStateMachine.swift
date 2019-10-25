@@ -16,6 +16,7 @@
 import Foundation
 import NIO
 import NIOHTTP1
+import NIOHPACK
 import Logging
 import SwiftProtobuf
 
@@ -24,16 +25,26 @@ enum ReceiveResponseHeadError: Error, Equatable {
   case invalidContentType
 
   /// The HTTP response status from the server was not 200 OK.
-  case invalidHTTPStatus(HTTPResponseStatus)
+  case invalidHTTPStatus(HTTPResponseStatus?)
 
   /// The encoding used by the server is not supported.
-  case unsupportedMessageEncoding
+  case unsupportedMessageEncoding(String)
 
   /// An invalid state was encountered. This is a serious implementation error.
   case invalidState
 }
 
 enum ReceiveEndOfResponseStreamError: Error {
+  /// The 'content-type' header was missing or the value is not supported by this implementation.
+  case invalidContentType
+
+  /// The HTTP response status from the server was not 200 OK.
+  case invalidHTTPStatus(HTTPResponseStatus?)
+
+  /// The HTTP response status from the server was not 200 OK but the "grpc-status" header contained
+  /// a valid value.
+  case invalidHTTPStatusWithGRPCStatus(GRPCStatus)
+
   /// An invalid state was encountered. This is a serious implementation error.
   case invalidState
 }
@@ -188,22 +199,11 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   ///
   /// On success the state will transition to `.clientActiveServerIdle`.
   ///
-  /// - Parameter host: The host which will handle the RPC.
-  /// - Parameter path: The path of the RPC (e.g. '/echo.Echo/Collect').
-  /// - Parameter options: Options for this RPC.
-  /// - Parameter requestID: The unique ID of this request used for logging.
-  mutating func sendRequestHead(
-    host: String,
-    path: String,
-    options: CallOptions,
-    requestID: String
-  ) -> Result<HTTPRequestHead, SendRequestHeadersError> {
-    return self.state.sendRequestHead(
-      host: host,
-      path: path,
-      options: options,
-      requestID: requestID
-    )
+  /// - Parameter requestHead: The client request head for the RPC.
+  mutating func sendRequestHeaders(
+    requestHead: GRPCRequestHead
+  ) -> Result<HPACKHeaders, SendRequestHeadersError> {
+    return self.state.sendRequestHeaders(requestHead: requestHead)
   }
 
   /// Formats a request to send to the server.
@@ -273,11 +273,11 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   /// - `.clientClosedServerClosed`
   /// Doing so will result in a `.invalidState` error.
   ///
-  /// - Parameter responseHead: The response head received from the server.
-  mutating func receiveResponseHead(
-    _ responseHead: HTTPResponseHead
-  ) -> Result<HTTPHeaders, ReceiveResponseHeadError> {
-    return self.state.receiveResponseHead(responseHead, logger: self.logger)
+  /// - Parameter headers: The headers received from the server.
+  mutating func receiveResponseHeaders(
+    _ headers: HPACKHeaders
+  ) -> Result<Void, ReceiveResponseHeadError> {
+    return self.state.receiveResponseHeaders(headers, logger: self.logger)
   }
 
   /// Read a response buffer from the server and return any decoded messages.
@@ -329,27 +329,34 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   ///
   /// - Parameter trailers: The trailers to parse.
   mutating func receiveEndOfResponseStream(
-    _ trailers: HTTPHeaders
+    _ trailers: HPACKHeaders
   ) -> Result<GRPCStatus, ReceiveEndOfResponseStreamError> {
     return self.state.receiveEndOfResponseStream(trailers)
   }
 }
 
 extension GRPCClientStateMachine.State {
-  /// See `GRPCClientStateMachine.sendRequestHead(host:path:options:requestID)`.
-  mutating func sendRequestHead(
-    host: String,
-    path: String,
-    options: CallOptions,
-    requestID: String
-  ) -> Result<HTTPRequestHead, SendRequestHeadersError> {
-    let result: Result<HTTPRequestHead, SendRequestHeadersError>
+  /// See `GRPCClientStateMachine.sendRequestHeaders(requestHead:)`.
+  mutating func sendRequestHeaders(
+    requestHead: GRPCRequestHead
+  ) -> Result<HPACKHeaders, SendRequestHeadersError> {
+    let result: Result<HPACKHeaders, SendRequestHeadersError>
 
     switch self {
-    case let .clientIdleServerIdle(pendingWriteState, readArity):
-      let head = self.makeRequestHead(host: host, path: path, options: options, requestID: requestID)
-      result = .success(head)
-      self = .clientActiveServerIdle(writeState: pendingWriteState.makeWriteState(), readArity: readArity)
+    case let .clientIdleServerIdle(pendingWriteState, responseArity):
+      let headers = self.makeRequestHeaders(
+        method: requestHead.method,
+        scheme: requestHead.scheme,
+        host: requestHead.host,
+        path: requestHead.path,
+        timeout: requestHead.timeout,
+        customMetadata: requestHead.customMetadata
+      )
+      result = .success(headers)
+      self = .clientActiveServerIdle(
+        writeState: pendingWriteState.makeWriteState(),
+        readArity: responseArity
+      )
 
     case .clientActiveServerIdle,
          .clientClosedServerIdle,
@@ -415,30 +422,22 @@ extension GRPCClientStateMachine.State {
     return result
   }
 
-  /// See `GRPCClientStateMachine.receiveResponseHead(_:)`.
-  mutating func receiveResponseHead(
-    _ responseHead: HTTPResponseHead,
+  /// See `GRPCClientStateMachine.receiveResponseHeaders(_:)`.
+  mutating func receiveResponseHeaders(
+    _ headers: HPACKHeaders,
     logger: Logger
-  ) -> Result<HTTPHeaders, ReceiveResponseHeadError> {
-    let result: Result<HTTPHeaders, ReceiveResponseHeadError>
+  ) -> Result<Void, ReceiveResponseHeadError> {
+    let result: Result<Void, ReceiveResponseHeadError>
 
     switch self {
     case let .clientActiveServerIdle(writeState, readArity):
-      switch self.parseResponseHead(responseHead, responseArity: readArity, logger: logger) {
-      case .success(let readState):
+      result = self.parseResponseHeaders(headers, arity: readArity, logger: logger).map { readState in
         self = .clientActiveServerActive(writeState: writeState, readState: readState)
-        result = .success(responseHead.headers)
-      case .failure(let error):
-        result = .failure(error)
       }
 
     case let .clientClosedServerIdle(readArity):
-      switch self.parseResponseHead(responseHead, responseArity: readArity, logger: logger) {
-      case .success(let readState):
+      result = self.parseResponseHeaders(headers, arity: readArity, logger: logger).map { readState in
         self = .clientClosedServerActive(readState: readState)
-        result = .success(responseHead.headers)
-      case .failure(let error):
-        result = .failure(error)
       }
 
     case .clientIdleServerIdle,
@@ -478,27 +477,32 @@ extension GRPCClientStateMachine.State {
 
   /// See `GRPCClientStateMachine.receiveEndOfResponseStream(_:)`.
   mutating func receiveEndOfResponseStream(
-    _ trailers: HTTPHeaders
+    _ trailers: HPACKHeaders
   ) -> Result<GRPCStatus, ReceiveEndOfResponseStreamError> {
-     let result: Result<GRPCStatus, ReceiveEndOfResponseStreamError>
+    let result: Result<GRPCStatus, ReceiveEndOfResponseStreamError>
 
-     switch self {
-     case .clientActiveServerActive,
-          .clientActiveServerIdle,
-          .clientClosedServerIdle,
-          .clientClosedServerActive:
-       result = .success(self.parseTrailers(trailers))
-       self = .clientClosedServerClosed
+    switch self {
+    case .clientActiveServerIdle,
+         .clientClosedServerIdle:
+      result = self.parseTrailersOnly(trailers).map { status in
+        self = .clientClosedServerClosed
+        return status
+      }
 
-     case .clientIdleServerIdle,
-          .clientClosedServerClosed:
+    case .clientActiveServerActive,
+         .clientClosedServerActive:
+      result = .success(self.parseTrailers(trailers))
+      self = .clientClosedServerClosed
+
+    case .clientIdleServerIdle,
+         .clientClosedServerClosed:
       result = .failure(.invalidState)
-     }
+    }
 
-     return result
-   }
+    return result
+  }
 
-  /// Makes the request head (`Request-Headers` in the specification) used to initiate an RPC
+  /// Makes the request headers (`Request-Headers` in the specification) used to initiate an RPC
   /// call.
   ///
   /// See: https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#requests
@@ -507,51 +511,46 @@ extension GRPCClientStateMachine.State {
   /// - Parameter options: Any options related to the call.
   /// - Parameter requestID: A request ID associated with the call. An additional header will be
   ///     added using this value if `options.requestIDHeader` is specified.
-  private func makeRequestHead(
+  private func makeRequestHeaders(
+    method: String,
+    scheme: String,
     host: String,
     path: String,
-    options: CallOptions,
-    requestID: String
-  ) -> HTTPRequestHead {
+    timeout: GRPCTimeout,
+    customMetadata: HPACKHeaders
+  ) -> HPACKHeaders {
     // Note: we don't currently set the 'grpc-encoding' header, if we do we will need to feed that
     // encoded into the message writer.
-    var headers: HTTPHeaders = [
-      "content-type": "application/grpc",
+    var headers: HPACKHeaders = [
+      ":method": method,
+      ":path": path,
+      ":authority": host,
+      ":scheme": scheme,
+      "content-type": "application/grpc+proto",
       "te": "trailers",  // Used to detect incompatible proxies, part of the gRPC specification.
-      "user-agent": "grpc-swift-nio",  // TODO: Add a more specific user-agent.
-      "host": host,  // NIO's HTTP2ToHTTP1Codec replaces "host" with ":authority"
+      "user-agent": "grpc-swift-nio",  //  TODO: Add a more specific user-agent.
     ]
 
     // Add the timeout header, if a timeout was specified.
-    if options.timeout != .infinite {
-      headers.add(name: GRPCHeaderName.timeout, value: String(describing: options.timeout))
+    if timeout != .infinite {
+      headers.add(name: GRPCHeaderName.timeout, value: String(describing: timeout))
     }
 
     // Add user-defined custom metadata: this should come after the call definition headers.
-    headers.add(contentsOf: options.customMetadata)
+    headers.add(contentsOf: customMetadata)
 
-    // Add a tracing header if the user specified it.
-    if let headerName = options.requestIDHeader {
-      headers.add(name: headerName, value: requestID)
-    }
-
-    return HTTPRequestHead(
-      version: HTTPVersion(major: 2, minor: 0),
-      method: options.cacheable ? .GET : .POST,
-      uri: path,
-      headers: headers
-    )
+    return headers
   }
 
-  /// Parses the response head ("Response-Headers" in the specification) from server into
+  /// Parses the response headers ("Response-Headers" in the specification) from the server into
   /// a `ReadState`.
   ///
   /// See: https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#responses
   ///
   /// - Parameter headers: The headers to parse.
-  private func parseResponseHead(
-    _ head: HTTPResponseHead,
-    responseArity: MessageArity,
+  private func parseResponseHeaders(
+    _ headers: HPACKHeaders,
+    arity: MessageArity,
     logger: Logger
   ) -> Result<ReadState, ReceiveResponseHeadError> {
     // From: https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#responses
@@ -560,23 +559,28 @@ extension GRPCClientStateMachine.State {
     // responses as well as a variety of non-GRPC content-types and to omit Status & Status-Message.
     // Implementations must synthesize a Status & Status-Message to propagate to the application
     // layer when this occurs."
-    guard head.status == .ok else {
-      return .failure(.invalidHTTPStatus(head.status))
+    let statusHeader = headers[":status"].first
+    let responseStatus = statusHeader.flatMap(Int.init).map { code in
+      HTTPResponseStatus(statusCode: code)
+    } ?? .preconditionFailed
+
+    guard responseStatus == .ok else {
+      return .failure(.invalidHTTPStatus(responseStatus))
     }
 
-    guard head.headers["content-type"].first?.starts(with: "application/grpc") ?? false else {
+    guard headers["content-type"].first.flatMap(ContentType.init) != nil else {
       return .failure(.invalidContentType)
     }
 
     // What compression mechanism is the server using, if any?
-    let compression = CompressionMechanism(value: head.headers[GRPCHeaderName.encoding].first)
+    let compression = CompressionMechanism(value: headers[GRPCHeaderName.encoding].first)
 
     // From: https://github.com/grpc/grpc/blob/master/doc/compression.md
     //
     // "If a server sent data which is compressed by an algorithm that is not supported by the
     // client, an INTERNAL error status will occur on the client side."
     guard compression.supported else {
-      return .failure(.unsupportedMessageEncoding)
+      return .failure(.unsupportedMessageEncoding(compression.rawValue))
     }
 
     let reader = LengthPrefixedMessageReader(
@@ -585,7 +589,7 @@ extension GRPCClientStateMachine.State {
       logger: logger
     )
 
-    return .success(.reading(responseArity, reader))
+    return .success(.reading(arity, reader))
   }
 
   /// Parses the response trailers ("Trailers" in the specification) from the server into
@@ -594,16 +598,57 @@ extension GRPCClientStateMachine.State {
   /// See: https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#responses
   ///
   /// - Parameter trailers: Trailers to parse.
-  private func parseTrailers(_ trailers: HTTPHeaders) -> GRPCStatus {
-    // Extract the "Status"
-    let code = trailers[GRPCHeaderName.statusCode].first
-      .flatMap(Int.init)
-      .flatMap(GRPCStatus.Code.init) ?? .unknown
-
-    // Extract and unmarshall the "Status-Message"
-    let message = trailers[GRPCHeaderName.statusMessage].first
-      .map(GRPCStatusMessageMarshaller.unmarshall)
-
+  private func parseTrailers(_ trailers: HPACKHeaders) -> GRPCStatus {
+    // Extract the "Status" and "Status-Message"
+    let code = self.readStatusCode(from: trailers) ?? .unknown
+    let message = self.readStatusMessage(from: trailers)
     return .init(code: code, message: message)
+  }
+
+  private func readStatusCode(from trailers: HPACKHeaders) -> GRPCStatus.Code? {
+    return trailers[GRPCHeaderName.statusCode].first
+      .flatMap(Int.init)
+      .flatMap(GRPCStatus.Code.init)
+  }
+
+  private func readStatusMessage(from trailers: HPACKHeaders) -> String? {
+    return trailers[GRPCHeaderName.statusMessage].first
+      .map(GRPCStatusMessageMarshaller.unmarshall)
+  }
+
+  /// Parses a "Trailers-Only" response from the server into a `GRPCStatus`.
+  ///
+  /// See: https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#responses
+  ///
+  /// - Parameter trailers: Trailers to parse.
+  private func parseTrailersOnly(
+    _ trailers: HPACKHeaders
+  ) -> Result<GRPCStatus, ReceiveEndOfResponseStreamError> {
+    // We need to check whether we have a valid HTTP status in the headers, if we don't then we also
+    // need to check whether we have a gRPC status as it should take preference over a synthesising
+    // one from the ":status".
+    //
+    // See: https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md
+    let statusHeader = trailers[":status"].first
+    guard let status = statusHeader.flatMap(Int.init).map({ HTTPResponseStatus(statusCode: $0) })
+      else {
+        return .failure(.invalidHTTPStatus(nil))
+    }
+
+    guard status == .ok else {
+      if let code = self.readStatusCode(from: trailers) {
+        let message = self.readStatusMessage(from: trailers)
+        return .failure(.invalidHTTPStatusWithGRPCStatus(.init(code: code, message: message)))
+      } else {
+        return .failure(.invalidHTTPStatus(status))
+      }
+    }
+
+    guard trailers["content-type"].first.flatMap(ContentType.init) != nil else {
+      return .failure(.invalidContentType)
+    }
+
+    // We've verified the status and content type are okay: parse the trailers.
+    return .success(self.parseTrailers(trailers))
   }
 }
