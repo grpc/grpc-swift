@@ -84,13 +84,26 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
       // couldn't be detected.
       var inBuffer = self.unwrapInboundIn(data)
       guard let initialData = inBuffer.readString(length: inBuffer.readableBytes),
-        let preamble = initialData.split(separator: "\r\n",
-                                         maxSplits: 1,
-                                         omittingEmptySubsequences: true).first,
-        let version = protocolVersion(String(preamble)) else {
+        let firstLine = initialData.split(
+          separator: "\r\n",
+          maxSplits: 1,
+          omittingEmptySubsequences: true
+        ).first else {
           self.logger.error("unable to determine http version")
           context.fireErrorCaught(HTTPProtocolVersionError.invalidHTTPProtocolVersion)
           return
+      }
+
+      let version: HTTPProtocolVersion
+
+      if firstLine.contains("HTTP/2") {
+        version = .http2
+      } else if firstLine.contains("HTTP/1") {
+        version = .http1
+      } else {
+        self.logger.error("unable to determine http version")
+        context.fireErrorCaught(HTTPProtocolVersionError.invalidHTTPProtocolVersion)
+        return
       }
 
       self.logger.info("determined http version", metadata: ["http_version": "\(version)"])
@@ -159,29 +172,6 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
     case .configured:
       // If we're configured we will rely on a handler further down the pipeline.
       context.fireErrorCaught(error)
-    }
-  }
-
-  /// Peek into the first line of the packet to check which HTTP version is being used.
-  private func protocolVersion(_ preamble: String) -> HTTPProtocolVersion? {
-    let range = NSRange(location: 0, length: preamble.utf16.count)
-    let regex = try! NSRegularExpression(pattern: "^.*HTTP/(\\d)\\.\\d$")
-    guard let result = regex.firstMatch(in: preamble, options: [], range: range) else {
-      return nil
-    }
-
-    let versionRange = result.range(at: 1)
-
-    let start = String.Index(utf16Offset: versionRange.location, in: preamble)
-    let end = String.Index(utf16Offset: versionRange.location + versionRange.length, in: preamble)
-
-    switch String(preamble.utf16[start..<end])! {
-    case "1":
-      return .http1
-    case "2":
-      return .http2
-    default:
-      return nil
     }
   }
 }
