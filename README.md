@@ -2,8 +2,11 @@
 
 # ‼️ Deprecation Notice ‼️
 
-`v0.x` **will soon be deprecated in favor of a new implementation, please see
-[DEPRECATION.md](DEPRECATION.md) for more information.**
+**gRPC Swift versions** `v0.x` **based on gRPC-Core will soon be replaced with a re-implementation based on [SwiftNIO](https://github.com/apple/swift-nio).** 
+
+**We strongly suggest that new projects use [the re-implementation from the `nio` branch](https://github.com/grpc/grpc-swift/tree/nio) which we consider to be production ready.** 
+
+**Please see [DEPRECATION.md](DEPRECATION.md) for more information.**
 
 # Swift gRPC
 
