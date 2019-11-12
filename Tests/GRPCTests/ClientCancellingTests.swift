@@ -24,7 +24,7 @@ class ClientCancellingTests: EchoTestCaseBase {
     let responseReceived = self.expectation(description: "response received")
 
     let call = client.get(Echo_EchoRequest(text: "foo bar baz"))
-    call.cancel()
+    call.cancel(promise: nil)
 
     call.response.whenFailure { error in
       XCTAssertEqual((error as? GRPCStatus)?.code, .cancelled)
@@ -44,7 +44,7 @@ class ClientCancellingTests: EchoTestCaseBase {
     let responseReceived = self.expectation(description: "response received")
 
     let call = client.collect()
-    call.cancel()
+    call.cancel(promise: nil)
 
     call.response.whenFailure { error in
       XCTAssertEqual((error as? GRPCStatus)?.code, .cancelled)
@@ -65,7 +65,7 @@ class ClientCancellingTests: EchoTestCaseBase {
     let call = client.expand(Echo_EchoRequest(text: "foo bar baz")) { response in
       XCTFail("response should not be received after cancelling call")
     }
-    call.cancel()
+    call.cancel(promise: nil)
 
     call.status.whenSuccess { status in
       XCTAssertEqual(status.code, .cancelled)
@@ -81,7 +81,7 @@ class ClientCancellingTests: EchoTestCaseBase {
     let call = client.update { response in
       XCTFail("response should not be received after cancelling call")
     }
-    call.cancel()
+    call.cancel(promise: nil)
 
     call.status.whenSuccess { status in
       XCTAssertEqual(status.code, .cancelled)

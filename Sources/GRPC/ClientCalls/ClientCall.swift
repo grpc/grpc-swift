@@ -17,6 +17,7 @@ import Foundation
 import NIO
 import NIOHTTP1
 import NIOHTTP2
+import NIOHPACK
 import SwiftProtobuf
 
 /// Base protocol for a client call to a gRPC service.
@@ -30,7 +31,7 @@ public protocol ClientCall {
   var subchannel: EventLoopFuture<Channel> { get }
 
   /// Initial response metadata.
-  var initialMetadata: EventLoopFuture<HTTPHeaders> { get }
+  var initialMetadata: EventLoopFuture<HPACKHeaders> { get }
 
   /// Status of this call which may be populated by the server or client.
   ///
@@ -42,14 +43,15 @@ public protocol ClientCall {
   var status: EventLoopFuture<GRPCStatus> { get }
 
   /// Trailing response metadata.
-  var trailingMetadata: EventLoopFuture<HTTPHeaders> { get }
+  var trailingMetadata: EventLoopFuture<HPACKHeaders> { get }
 
   /// Cancel the current call.
   ///
   /// Closes the HTTP/2 stream once it becomes available. Additional writes to the channel will be ignored.
   /// Any unfulfilled promises will be failed with a cancelled status (excepting `status` which will be
   /// succeeded, if not already succeeded).
-  func cancel()
+  func cancel() -> EventLoopFuture<Void>
+  func cancel(promise: EventLoopPromise<Void>?)
 }
 
 /// A `ClientCall` with request streaming; i.e. client-streaming and bidirectional-streaming.
@@ -127,20 +129,20 @@ public protocol UnaryResponseClientCall: ClientCall {
 extension StreamingRequestClientCall {
   public func sendMessage(_ message: RequestMessage) -> EventLoopFuture<Void> {
     return self.subchannel.flatMap { channel in
-      return channel.writeAndFlush(GRPCClientRequestPart.message(_Box(message)))
+      return channel.writeAndFlush(GRPCClientRequestPart.message(.init(message)))
     }
   }
 
   public func sendMessage(_ message: RequestMessage, promise: EventLoopPromise<Void>?) {
     self.subchannel.whenSuccess { channel in
-      channel.writeAndFlush(GRPCClientRequestPart.message(_Box(message)), promise: promise)
+      channel.writeAndFlush(GRPCClientRequestPart.message(.init(message)), promise: promise)
     }
   }
 
   public func sendMessages<S: Sequence>(_ messages: S) -> EventLoopFuture<Void> where S.Element == RequestMessage {
     return self.subchannel.flatMap { channel -> EventLoopFuture<Void> in
       let writeFutures = messages.map { message in
-        channel.write(GRPCClientRequestPart.message(_Box(message)))
+        channel.write(GRPCClientRequestPart.message(.init(message)))
       }
       channel.flush()
       return EventLoopFuture.andAllSucceed(writeFutures, on: channel.eventLoop)
@@ -153,7 +155,7 @@ extension StreamingRequestClientCall {
     } else {
       self.subchannel.whenSuccess { channel in
         for message in messages {
-          channel.write(GRPCClientRequestPart.message(_Box(message)), promise: nil)
+          channel.write(GRPCClientRequestPart.message(.init(message)), promise: nil)
         }
         channel.flush()
       }

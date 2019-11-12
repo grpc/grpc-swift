@@ -20,36 +20,141 @@ import NIOHTTP2
 import SwiftProtobuf
 import Logging
 
-// TODO: rename GRPCClientRequestPart2 to GRPCClientRequestPart once this is in-place.
 /// A gRPC client request message part.
-public enum GRPCClientRequestPart2<Request: Message> {
+public enum GRPCClientRequestPart<Request: Message> {
   /// The 'head' of the request, that is, information about the initiation of the RPC.
   case head(GRPCRequestHead)
 
   /// A deserialized request message to send to the server.
-  case request(Request)
+  case message(_Box<Request>)
 
   /// Indicates that the client does not intend to send any further messages.
   case end
 }
 
 public struct GRPCRequestHead {
-  public var method: String
-  public var scheme: String
-  public var path: String
-  public var host: String
-  public var timeout: GRPCTimeout
+  private final class _Storage {
+    public var method: String
+    public var scheme: String
+    public var path: String
+    public var host: String
+    public var timeout: GRPCTimeout
+
+    init(
+      method: String,
+      scheme: String,
+      path: String,
+      host: String,
+      timeout: GRPCTimeout
+    ) {
+      self.method = method
+      self.scheme = scheme
+      self.path = path
+      self.host = host
+      self.timeout = timeout
+    }
+
+    func copy() -> _Storage {
+      return .init(
+        method: self.method,
+        scheme: self.scheme,
+        path: self.path,
+        host: self.host,
+        timeout: self.timeout
+      )
+    }
+  }
+
+  private var _storage: _Storage
+  // Don't put this in storage: it would CoW for every mutation.
   public var customMetadata: HPACKHeaders
+
+  public var method: String {
+    get {
+      return self._storage.method
+    }
+    set {
+      if !isKnownUniquelyReferenced(&self._storage) {
+        self._storage = self._storage.copy()
+      }
+      self._storage.method = newValue
+    }
+  }
+
+  public var scheme: String {
+    get {
+      return self._storage.scheme
+    }
+    set {
+      if !isKnownUniquelyReferenced(&self._storage) {
+        self._storage = self._storage.copy()
+      }
+      self._storage.scheme = newValue
+    }
+  }
+
+  public var path: String {
+    get {
+      return self._storage.path
+    }
+    set {
+      if !isKnownUniquelyReferenced(&self._storage) {
+        self._storage = self._storage.copy()
+      }
+      self._storage.path = newValue
+    }
+  }
+
+  public var host: String {
+    get {
+      return self._storage.host
+    }
+    set {
+      if !isKnownUniquelyReferenced(&self._storage) {
+        self._storage = self._storage.copy()
+      }
+      self._storage.host = newValue
+    }
+  }
+
+  public var timeout: GRPCTimeout {
+    get {
+      return self._storage.timeout
+    }
+    set {
+      if !isKnownUniquelyReferenced(&self._storage) {
+        self._storage = self._storage.copy()
+      }
+      self._storage.timeout = newValue
+    }
+  }
+
+  public init(
+    method: String,
+    scheme: String,
+    path: String,
+    host: String,
+    timeout: GRPCTimeout,
+    customMetadata: HPACKHeaders
+  ) {
+    self._storage = .init(
+      method: method,
+      scheme: scheme,
+      path: path,
+      host: host,
+      timeout: timeout
+    )
+    self.customMetadata = customMetadata
+  }
 }
 
-// TODO: rename GRPCClientResponsePart2 to GRPCClientResponsePart once this is in-place.
 /// A gRPC client response message part.
-public enum GRPCClientResponsePart2<Response: Message> {
+public enum GRPCClientResponsePart<Response: Message> {
   /// Metadata received as the server acknowledges the RPC.
   case initialMetadata(HPACKHeaders)
 
   /// A deserialized response message received from the server.
-  case response(Response)
+  case message(_Box<Response>)
 
   /// The metadata received at the end of the RPC.
   case trailingMetadata(HPACKHeaders)
@@ -78,7 +183,7 @@ public enum GRPCCallType {
 /// A channel handler for gRPC clients which translates HTTP/2 frames into gRPC messages.
 ///
 /// This channel handler should typically be used in conjunction with another handler which
-/// reads the parsed `GRPCClientResponsePart2<Response>` messages and surfaces them to the caller
+/// reads the parsed `GRPCClientResponsePart<Response>` messages and surfaces them to the caller
 /// in some fashion. Note that for unary and client streaming RPCs this handler will only emit at
 /// most one response message.
 ///
@@ -129,7 +234,7 @@ public final class GRPCClientChannelHandler<Request: Message, Response: Message>
 // MARK: - GRPCClientChannelHandler: Inbound
 extension GRPCClientChannelHandler: ChannelInboundHandler {
   public typealias InboundIn = HTTP2Frame
-  public typealias InboundOut = GRPCClientResponsePart2<Response>
+  public typealias InboundOut = GRPCClientResponsePart<Response>
 
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     let frame = self.unwrapInboundIn(data)
@@ -252,7 +357,7 @@ extension GRPCClientChannelHandler: ChannelInboundHandler {
       // Awesome: we got some messages. The state machine guarantees we only get at most a single
       // message for unary and client-streaming RPCs.
       for message in messages {
-        context.fireChannelRead(self.wrapInboundOut(.response(message)))
+        context.fireChannelRead(self.wrapInboundOut(.message(.init(message))))
       }
     case .failure(let error):
       context.fireErrorCaught(error)
@@ -262,7 +367,7 @@ extension GRPCClientChannelHandler: ChannelInboundHandler {
 
 // MARK: - GRPCClientChannelHandler: Outbound
 extension GRPCClientChannelHandler: ChannelOutboundHandler {
-  public typealias OutboundIn = GRPCClientRequestPart2<Request>
+  public typealias OutboundIn = GRPCClientRequestPart<Request>
   public typealias OutboundOut = HTTP2Frame
 
   public func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
@@ -284,9 +389,9 @@ extension GRPCClientChannelHandler: ChannelOutboundHandler {
         }
       }
 
-    case .request(let request):
+    case .message(let request):
       // Feed the request message into the state machine:
-      let result = self.stateMachine.sendRequest(request, allocator: context.channel.allocator)
+      let result = self.stateMachine.sendRequest(request.value, allocator: context.channel.allocator)
       switch result {
       case .success(let buffer):
         // We're clear to send a message; wrap it up in an HTTP/2 frame.

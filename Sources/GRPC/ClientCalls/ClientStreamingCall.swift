@@ -35,35 +35,44 @@ public final class ClientStreamingCall<RequestMessage: Message, ResponseMessage:
   public let response: EventLoopFuture<ResponseMessage>
   private var messageQueue: EventLoopFuture<Void>
 
-  public init(connection: ClientConnection, path: String, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?) {
+  public init(
+    connection: ClientConnection,
+    path: String,
+    callOptions: CallOptions,
+    errorDelegate: ClientErrorDelegate?
+  ) {
     let requestID = callOptions.requestIDProvider.requestID()
     let logger = Logger(subsystem: .clientChannelCall, metadata: [MetadataKey.requestID: "\(requestID)"])
     logger.info("making client streaming call to '\(path)', request type: \(RequestMessage.self), response type: \(ResponseMessage.self)")
 
-    let responseHandler = GRPCClientUnaryResponseChannelHandler<ResponseMessage>(
+    self.messageQueue = connection.eventLoop.makeSucceededFuture(())
+    let responsePromise = connection.eventLoop.makePromise(of: ResponseMessage.self)
+    self.response = responsePromise.futureResult
+
+    let responseHandler = GRPCClientUnaryResponseChannelHandler(
       initialMetadataPromise: connection.channel.eventLoop.makePromise(),
       trailingMetadataPromise: connection.channel.eventLoop.makePromise(),
-      responsePromise: connection.channel.eventLoop.makePromise(),
+      responsePromise: responsePromise,
       statusPromise: connection.channel.eventLoop.makePromise(),
       errorDelegate: errorDelegate,
       timeout: callOptions.timeout,
       logger: logger
     )
 
-    let requestHandler = StreamingRequestChannelHandler<RequestMessage>(
-      requestHead: makeRequestHead(
-        path: path,
-        host: connection.configuration.target.host,
-        callOptions: callOptions,
-        requestID: requestID
-      )
+    let requestHead = GRPCRequestHead(
+      scheme: connection.configuration.httpProtocol.scheme,
+      path: path,
+      host: connection.configuration.httpProtocol.scheme,
+      requestID: requestID,
+      options: callOptions
     )
 
-    self.response = responseHandler.responsePromise.futureResult
-    self.messageQueue = connection.channel.eventLoop.makeSucceededFuture(())
+    let requestHandler = StreamingRequestChannelHandler<RequestMessage>(requestHead: requestHead)
 
     super.init(
-      connection: connection,
+      eventLoop: connection.eventLoop,
+      multiplexer: connection.multiplexer,
+      callType: .clientStreaming,
       responseHandler: responseHandler,
       requestHandler: requestHandler,
       logger: logger

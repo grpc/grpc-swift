@@ -17,6 +17,7 @@ import Foundation
 import GRPC
 import GRPCInteroperabilityTestModels
 import NIOHTTP1
+import NIOHPACK
 
 /// This test verifies that implementations support zero-size messages. Ideally, client
 /// implementations would verify that the request and response were zero bytes serialized, but
@@ -69,8 +70,7 @@ class CacheableUnary: InteroperabilityTest {
     var timestamp = DispatchTime.now().rawValue
     let request = Grpc_Testing_SimpleRequest.withPayload(of: .bytes(of: &timestamp))
 
-    var headers = HTTPHeaders()
-    headers.add(name: "x-user-ip", value: "1.2.3.4")
+    let headers: HPACKHeaders = ["x-user-ip": "1.2.3.4"]
     let callOptions = CallOptions(customMetadata: headers, cacheable: true)
 
     let call1 = client.cacheableUnaryCall(request, callOptions: callOptions)
@@ -423,9 +423,10 @@ class CustomMetadata: InteroperabilityTest {
       request.payload = .zeros(count: 217_828)
     }
 
-    var customMetadata = HTTPHeaders()
-    customMetadata.add(name: self.initialMetadataName, value: self.initialMetadataValue)
-    customMetadata.add(name: self.trailingMetadataName, value: self.trailingMetadataValue)
+    let customMetadata: HPACKHeaders = [
+      self.initialMetadataName: self.initialMetadataValue,
+      self.trailingMetadataName: self.trailingMetadataValue
+    ]
 
     let callOptions = CallOptions(customMetadata: customMetadata)
 
@@ -609,7 +610,7 @@ class CancelAfterBegin: InteroperabilityTest {
   func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_TestServiceServiceClient(connection: connection)
     let call = client.streamingInputCall()
-    call.cancel()
+    call.cancel(promise: nil)
 
     try waitAndAssertEqual(call.status.map { $0.code }, .cancelled)
   }
@@ -647,7 +648,7 @@ class CancelAfterFirstResponse: InteroperabilityTest {
     }
 
     promise.futureResult.whenSuccess {
-      call.cancel()
+      call.cancel(promise: nil)
     }
 
     let request = Grpc_Testing_StreamingOutputCallRequest.with { request in

@@ -25,7 +25,14 @@ import Logging
 /// - `status`: the status of the gRPC call after it has ended,
 /// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
 public final class ServerStreamingCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage> {
-  public init(connection: ClientConnection, path: String, request: RequestMessage, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?, handler: @escaping (ResponseMessage) -> Void) {
+  public init(
+    connection: ClientConnection,
+    path: String,
+    request: RequestMessage,
+    callOptions: CallOptions,
+    errorDelegate: ClientErrorDelegate?,
+    handler: @escaping (ResponseMessage) -> Void
+  ) {
     let requestID = callOptions.requestIDProvider.requestID()
     let logger = Logger(subsystem: .clientChannelCall, metadata: [MetadataKey.requestID: "\(requestID)"])
     logger.info("making server streaming call to '\(path)', request type: \(RequestMessage.self), response type: \(ResponseMessage.self)")
@@ -37,20 +44,26 @@ public final class ServerStreamingCall<RequestMessage: Message, ResponseMessage:
       errorDelegate: errorDelegate,
       timeout: callOptions.timeout,
       logger: logger,
-      responseHandler: handler)
+      responseHandler: handler
+    )
+
+    let requestHead = GRPCRequestHead(
+      scheme: connection.configuration.httpProtocol.scheme,
+      path: path,
+      host: connection.configuration.httpProtocol.scheme,
+      requestID: requestID,
+      options: callOptions
+    )
 
     let requestHandler = UnaryRequestChannelHandler<RequestMessage>(
-      requestHead: makeRequestHead(
-        path: path,
-        host: connection.configuration.target.host,
-        callOptions: callOptions,
-        requestID: requestID
-      ),
-      request: _Box(request)
+      requestHead: requestHead,
+      request: .init(request)
     )
 
     super.init(
-      connection: connection,
+      eventLoop: connection.eventLoop,
+      multiplexer: connection.multiplexer,
+      callType: .serverStreaming,
       responseHandler: responseHandler,
       requestHandler: requestHandler,
       logger: logger

@@ -39,14 +39,6 @@ class GRPCTypeSizeTests: GRPCTestCase {
     self.checkSize(of: GRPCStatus.self)
   }
 
-  func testRawGRPCClientRequestPart() {
-    self.checkSize(of: RawGRPCClientRequestPart.self)
-  }
-
-  func testRawGRPCClientResponsePart() {
-    self.checkSize(of: RawGRPCClientResponsePart.self)
-  }
-
   func testGRPCClientRequestPart() {
     self.checkSize(of: GRPCClientRequestPart<Echo_EchoRequest>.self)
   }
