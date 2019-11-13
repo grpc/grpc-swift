@@ -27,23 +27,23 @@ open class ServiceServer {
   fileprivate let servicesByName: [String: ServiceProvider]
   
   /// Create a server that accepts insecure connections.
-  public init(address: String, serviceProviders: [ServiceProvider]) {
+  public init(address: String, serviceProviders: [ServiceProvider], loopTimeout: TimeInterval = 600) {
     gRPC.initialize()
     self.address = address
-    server = Server(address: address)
+    server = Server(address: address, loopTimeout: loopTimeout)
     servicesByName = Dictionary(uniqueKeysWithValues: serviceProviders.map { ($0.serviceName, $0) })
   }
 
   /// Create a server that accepts secure connections.
-  public init(address: String, certificateString: String, keyString: String, rootCerts: String? = nil, serviceProviders: [ServiceProvider]) {
+  public init(address: String, certificateString: String, keyString: String, rootCerts: String? = nil, serviceProviders: [ServiceProvider], loopTimeout: TimeInterval = 600) {
     gRPC.initialize()
     self.address = address
-    server = Server(address: address, key: keyString, certs: certificateString, rootCerts: rootCerts)
+    server = Server(address: address, key: keyString, certs: certificateString, rootCerts: rootCerts, loopTimeout: loopTimeout)
     servicesByName = Dictionary(uniqueKeysWithValues: serviceProviders.map { ($0.serviceName, $0) })
   }
 
   /// Create a server that accepts secure connections.
-  public init?(address: String, certificateURL: URL, keyURL: URL, rootCertsURL: URL? = nil, serviceProviders: [ServiceProvider]) {
+  public init?(address: String, certificateURL: URL, keyURL: URL, rootCertsURL: URL? = nil, serviceProviders: [ServiceProvider], loopTimeout: TimeInterval = 600) {
     guard let certificate = try? String(contentsOf: certificateURL, encoding: .utf8),
       let key = try? String(contentsOf: keyURL, encoding: .utf8)
       else { return nil }
@@ -56,7 +56,7 @@ open class ServiceServer {
     }
     gRPC.initialize()
     self.address = address
-    server = Server(address: address, key: key, certs: certificate, rootCerts: rootCerts)
+    server = Server(address: address, key: key, certs: certificate, rootCerts: rootCerts, loopTimeout: loopTimeout)
     servicesByName = Dictionary(uniqueKeysWithValues: serviceProviders.map { ($0.serviceName, $0) })
   }
 
