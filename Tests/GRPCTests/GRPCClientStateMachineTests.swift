@@ -31,10 +31,7 @@ class GRPCClientStateMachineTests: GRPCTestCase {
   var allocator = ByteBufferAllocator()
 
   func makeStateMachine(_ state: StateMachine.State) -> StateMachine {
-    return StateMachine(
-      state: state,
-      logger: Logger(label: "io.grpc.testing")
-    )
+    return StateMachine(state: state)
   }
 
   /// Writes a message into a new `ByteBuffer` (with length-prefixing).
@@ -934,8 +931,7 @@ extension ReadState {
   static func one() -> ReadState {
     let reader = LengthPrefixedMessageReader(
       mode: .client,
-      compressionMechanism: .none,
-      logger: Logger(label: "io.grpc.reader")
+      compressionMechanism: .none
     )
     return .reading(.one, reader)
   }
@@ -943,8 +939,7 @@ extension ReadState {
   static func many() -> ReadState {
     let reader = LengthPrefixedMessageReader(
       mode: .client,
-      compressionMechanism: .none,
-      logger: Logger(label: "io.grpc.reader")
+      compressionMechanism: .none
     )
     return .reading(.many, reader)
   }

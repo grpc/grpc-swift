@@ -220,13 +220,13 @@ public final class GRPCClientChannelHandler<Request: Message, Response: Message>
     self.logger = logger
     switch callType {
     case .unary:
-      self.stateMachine = .init(requestArity: .one, responseArity: .one, logger: logger)
+      self.stateMachine = .init(requestArity: .one, responseArity: .one)
     case .clientStreaming:
-      self.stateMachine = .init(requestArity: .many, responseArity: .one, logger: logger)
+      self.stateMachine = .init(requestArity: .many, responseArity: .one)
     case .serverStreaming:
-      self.stateMachine = .init(requestArity: .one, responseArity: .many, logger: logger)
+      self.stateMachine = .init(requestArity: .one, responseArity: .many)
     case .bidirectionalStreaming:
-      self.stateMachine = .init(requestArity: .many, responseArity: .many, logger: logger)
+      self.stateMachine = .init(requestArity: .many, responseArity: .many)
     }
   }
 }

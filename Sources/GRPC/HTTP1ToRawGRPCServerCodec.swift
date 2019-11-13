@@ -45,17 +45,13 @@ public enum RawGRPCServerResponsePart {
 /// The translation from HTTP2 to HTTP1 is done by `HTTP2ToHTTP1ServerCodec`.
 public final class HTTP1ToRawGRPCServerCodec {
   public init(logger: Logger) {
-    self.logger = logger.addingMetadata(key: MetadataKey.channelHandler, value: "HTTP1ToRawGRPCServerCodec")
+    self.logger = logger
 
     var accessLog = Logger(subsystem: .serverAccess)
     accessLog[metadataKey: MetadataKey.requestID] = logger[metadataKey: MetadataKey.requestID]
     self.accessLog = accessLog
 
-    self.messageReader = LengthPrefixedMessageReader(
-      mode: .server,
-      compressionMechanism: .none,
-      logger: logger
-    )
+    self.messageReader = LengthPrefixedMessageReader(mode: .server, compressionMechanism: .none)
   }
 
   // 1-byte for compression flag, 4-bytes for message length.
@@ -86,13 +82,13 @@ public final class HTTP1ToRawGRPCServerCodec {
   var inboundState = InboundState.expectingHeaders {
     willSet {
       guard newValue != self.inboundState else { return }
-      self.logger.info("inbound state changed from \(self.inboundState) to \(newValue)")
+      self.logger.debug("inbound state changed from \(self.inboundState) to \(newValue)")
     }
   }
   var outboundState = OutboundState.expectingHeaders {
     willSet {
       guard newValue != self.outboundState else { return }
-      self.logger.info("outbound state changed from \(self.outboundState) to \(newValue)")
+      self.logger.debug("outbound state changed from \(self.outboundState) to \(newValue)")
     }
   }
 

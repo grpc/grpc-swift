@@ -24,10 +24,7 @@ import Logging
 public class HTTPProtocolSwitcher {
   private let handlersInitializer: ((Channel) -> EventLoopFuture<Void>)
   private let errorDelegate: ServerErrorDelegate?
-  private let logger = Logger(
-    subsystem: .serverChannelCall,
-    metadata: [MetadataKey.channelHandler: "HTTPProtocolSwitcher"]
-  )
+  private let logger = Logger(subsystem: .serverChannelCall)
 
   // We could receive additional data after the initial data and before configuring
   // the pipeline; buffer it and fire it down the pipeline once it is configured.
@@ -39,7 +36,7 @@ public class HTTPProtocolSwitcher {
 
   private var state: State = .notConfigured {
     willSet {
-      self.logger.info("state changed from '\(self.state)' to '\(newValue)'")
+      self.logger.debug("state changed from '\(self.state)' to '\(newValue)'")
     }
   }
   private var bufferedData: [NIOAny] = []
@@ -75,9 +72,9 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     switch self.state {
     case .notConfigured:
-      self.logger.info("determining http protocol version")
+      self.logger.debug("determining http protocol version")
       self.state = .configuring
-      self.logger.info("buffering data \(data)")
+      self.logger.debug("buffering data \(data)")
       self.bufferedData.append(data)
 
       // Detect the HTTP protocol version for the incoming request, or error out if it
@@ -106,7 +103,7 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
         return
       }
 
-      self.logger.info("determined http version", metadata: ["http_version": "\(version)"])
+      self.logger.debug("determined http version", metadata: ["http_version": "\(version)"])
 
       // Once configured remove ourself from the pipeline, or handle the error.
       let pipelineConfigured: EventLoopPromise<Void> = context.eventLoop.makePromise()
@@ -144,7 +141,7 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
       }
 
     case .configuring:
-      self.logger.info("buffering data \(data)")
+      self.logger.debug("buffering data \(data)")
       self.bufferedData.append(data)
 
     case .configured:
@@ -154,7 +151,7 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
   }
 
   public func removeHandler(context: ChannelHandlerContext, removalToken: ChannelHandlerContext.RemovalToken) {
-    self.logger.info("unbuffering data")
+    self.logger.debug("unbuffering data")
     self.bufferedData.forEach {
       context.fireChannelRead($0)
     }

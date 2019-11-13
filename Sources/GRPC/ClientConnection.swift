@@ -66,7 +66,7 @@ import Logging
 /// delegated error handler which uses the error delegate associated with this connection
 /// (see `DelegatingErrorHandler`).
 ///
-/// See `BaseClientCall` for a description of the pipelines assoicated with each HTTP/2 stream.
+/// See `BaseClientCall` for a description of the pipelines associated with each HTTP/2 stream.
 public class ClientConnection {
   internal let logger: Logger
   /// The UUID of this connection, used for logging.
@@ -213,7 +213,7 @@ extension ClientConnection {
     channel.flatMap { $0.closeFuture }.whenComplete { result in
       switch result {
       case .success:
-        self.logger.info("client connection shutdown successfully")
+        self.logger.debug("client connection shutdown successfully")
       case .failure(let error):
         self.logger.warning(
           "client connection shutdown failed",
@@ -275,7 +275,7 @@ extension ClientConnection {
       return configuration.eventLoopGroup.next().makeFailedFuture(GRPCStatus.processingError)
     }
 
-    logger.info("attempting to connect to \(configuration.target)")
+    logger.debug("attempting to connect to \(configuration.target)")
     connectivity.state = .connecting
     let timeoutAndBackoff = backoffIterator?.next()
 
@@ -298,7 +298,7 @@ extension ClientConnection {
     // If we don't have backoff then we can't retry, just return the `channel` no matter what
     // state we are in.
     guard let backoff = timeoutAndBackoff?.backoff else {
-      logger.info("backoff exhausted, no more connection attempts will be made")
+      logger.debug("backoff exhausted, no more connection attempts will be made")
       return channel
     }
 
@@ -327,7 +327,7 @@ extension ClientConnection {
     backoffIterator: ConnectionBackoffIterator?,
     logger: Logger
   ) -> EventLoopFuture<Channel> {
-    logger.info("scheduling connection attempt in \(timeout) seconds")
+    logger.debug("scheduling connection attempt in \(timeout) seconds")
     // The `futureResult` of the scheduled task is of type
     // `EventLoopFuture<EventLoopFuture<Channel>>`, so we need to `flatMap` it to
     // remove a level of indirection.
@@ -387,10 +387,10 @@ extension ClientConnection {
       }
 
     if let timeout = timeout {
-      logger.info("setting connect timeout to \(timeout) seconds")
+      logger.debug("setting connect timeout to \(timeout) seconds")
       return bootstrap.connectTimeout(.seconds(timeInterval: timeout))
     } else {
-      logger.info("no connect timeout provided")
+      logger.debug("no connect timeout provided")
       return bootstrap
     }
   }

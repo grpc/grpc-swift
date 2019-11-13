@@ -87,7 +87,7 @@ public class ConnectivityStateMonitor {
   /// Updates `_state` to `newValue`.
   ///
   /// If the user has initiated shutdown then state updates are _ignored_. This may happen if the
-  /// connection is being estabilshed as the user initiates shutdown.
+  /// connection is being established as the user initiates shutdown.
   ///
   /// - Important: This is **not** thread safe.
   private func setNewState(to newValue: ConnectivityState) {

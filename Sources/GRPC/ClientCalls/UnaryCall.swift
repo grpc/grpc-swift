@@ -41,7 +41,7 @@ public final class UnaryCall<RequestMessage: Message, ResponseMessage: Message>
   ) {
     let requestID = callOptions.requestIDProvider.requestID()
     let logger = Logger(subsystem: .clientChannelCall, metadata: [MetadataKey.requestID: "\(requestID)"])
-    logger.info("making unary call to '\(path)', request type: \(RequestMessage.self), response type: \(ResponseMessage.self)")
+    logger.info("starting rpc", metadata: ["path": "\(path)"])
 
     let responsePromise = connection.channel.eventLoop.makePromise(of: ResponseMessage.self)
     self.response = responsePromise.futureResult

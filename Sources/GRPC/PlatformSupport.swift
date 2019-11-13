@@ -159,7 +159,7 @@ public enum PlatformSupport {
   ///
   /// - Parameter group: The `EventLoopGroup` to use.
   public static func makeClientBootstrap(group: EventLoopGroup) -> ClientBootstrapProtocol {
-    logger.info("making client bootstrap with event loop group of type \(type(of: group))")
+    logger.debug("making client bootstrap with event loop group of type \(type(of: group))")
     #if canImport(Network)
     if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
       if let tsGroup = group as? NIOTSEventLoopGroup {
@@ -183,7 +183,7 @@ public enum PlatformSupport {
   ///
   /// - Parameter group: The `EventLoopGroup` to use.
   public static func makeServerBootstrap(group: EventLoopGroup) -> ServerBootstrapProtocol {
-    logger.info("making server bootstrap with event loop group of type \(type(of: group))")
+    logger.debug("making server bootstrap with event loop group of type \(type(of: group))")
     #if canImport(Network)
     if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
       if let tsGroup = group as? NIOTSEventLoopGroup {

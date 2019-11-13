@@ -159,35 +159,22 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
     }
   }
 
-  private let logger: Logger
-
   /// Creates a state machine representing a gRPC client's request and response stream state.
   ///
   /// - Parameter requestArity: The expected number of messages on the request stream.
   /// - Parameter responseArity: The expected number of messages on the response stream.
-  /// - Parameter logger: Logger.
-  init(
-    requestArity: MessageArity,
-    responseArity: MessageArity,
-    logger: Logger
-  ) {
+  init(requestArity: MessageArity, responseArity: MessageArity) {
     self.state = .clientIdleServerIdle(
       pendingWriteState: .init(arity: requestArity, compression: .none, contentType: .protobuf),
       readArity: responseArity
     )
-    self.logger = logger
   }
 
   /// Creates a state machine representing a gRPC client's request and response stream state.
   ///
   /// - Parameter state: The initial state of the state machine.
-  /// - Parameter logger: Logger.
-  init(
-    state: State,
-    logger: Logger
-  ) {
+  init(state: State) {
     self.state = state
-    self.logger = logger
   }
 
   /// Initiates an RPC.
@@ -277,7 +264,7 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   mutating func receiveResponseHeaders(
     _ headers: HPACKHeaders
   ) -> Result<Void, ReceiveResponseHeadError> {
-    return self.state.receiveResponseHeaders(headers, logger: self.logger)
+    return self.state.receiveResponseHeaders(headers)
   }
 
   /// Read a response buffer from the server and return any decoded messages.
@@ -424,19 +411,18 @@ extension GRPCClientStateMachine.State {
 
   /// See `GRPCClientStateMachine.receiveResponseHeaders(_:)`.
   mutating func receiveResponseHeaders(
-    _ headers: HPACKHeaders,
-    logger: Logger
+    _ headers: HPACKHeaders
   ) -> Result<Void, ReceiveResponseHeadError> {
     let result: Result<Void, ReceiveResponseHeadError>
 
     switch self {
     case let .clientActiveServerIdle(writeState, readArity):
-      result = self.parseResponseHeaders(headers, arity: readArity, logger: logger).map { readState in
+      result = self.parseResponseHeaders(headers, arity: readArity).map { readState in
         self = .clientActiveServerActive(writeState: writeState, readState: readState)
       }
 
     case let .clientClosedServerIdle(readArity):
-      result = self.parseResponseHeaders(headers, arity: readArity, logger: logger).map { readState in
+      result = self.parseResponseHeaders(headers, arity: readArity).map { readState in
         self = .clientClosedServerActive(readState: readState)
       }
 
@@ -550,8 +536,7 @@ extension GRPCClientStateMachine.State {
   /// - Parameter headers: The headers to parse.
   private func parseResponseHeaders(
     _ headers: HPACKHeaders,
-    arity: MessageArity,
-    logger: Logger
+    arity: MessageArity
   ) -> Result<ReadState, ReceiveResponseHeadError> {
     // From: https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#responses
     //
@@ -583,12 +568,7 @@ extension GRPCClientStateMachine.State {
       return .failure(.unsupportedMessageEncoding(compression.rawValue))
     }
 
-    let reader = LengthPrefixedMessageReader(
-      mode: .client,
-      compressionMechanism: compression,
-      logger: logger
-    )
-
+    let reader = LengthPrefixedMessageReader(mode: .client, compressionMechanism: compression)
     return .success(.reading(arity, reader))
   }
 

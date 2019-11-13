@@ -24,11 +24,7 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
 
   override func setUp() {
     super.setUp()
-    self.reader = LengthPrefixedMessageReader(
-      mode: .client,
-      compressionMechanism: .none,
-      logger: Logger(label: "io.grpc.testing")
-    )
+    self.reader = LengthPrefixedMessageReader(mode: .client, compressionMechanism: .none)
   }
 
   var allocator = ByteBufferAllocator()
