@@ -45,7 +45,7 @@ public class TLSVerificationHandler: ChannelInboundHandler, RemovableChannelHand
 
   /// A future which is fulfilled when the state of the TLS handshake is known. If the handshake
   /// was successful and the negotiated application protocol is valid then the future is succeeded.
-  /// If an error occured or the application protocol is not valid then the future will have been
+  /// If an error occurred or the application protocol is not valid then the future will have been
   /// failed.
   ///
   /// - Important: The promise associated with this future is created in `handlerAdded(context:)`,

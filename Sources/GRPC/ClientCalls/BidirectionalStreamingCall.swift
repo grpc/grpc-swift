@@ -43,7 +43,7 @@ public final class BidirectionalStreamingCall<RequestMessage: Message, ResponseM
     let requestID = callOptions.requestIDProvider.requestID()
 
     let logger = Logger(subsystem: .clientChannelCall, metadata: [MetadataKey.requestID: "\(requestID)"])
-    logger.info("making bidirectional streaming call to '\(path)', request type: \(RequestMessage.self), response type: \(ResponseMessage.self)")
+    logger.info("starting rpc", metadata: ["path": "\(path)"])
 
     let responseHandler = GRPCClientStreamingResponseChannelHandler(
       initialMetadataPromise: connection.channel.eventLoop.makePromise(),

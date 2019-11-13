@@ -27,6 +27,7 @@ import Logging
 internal class GRPCClientResponseChannelHandler<ResponseMessage: Message>: ChannelInboundHandler {
   public typealias InboundIn = GRPCClientResponsePart<ResponseMessage>
   internal let logger: Logger
+  internal var stopwatch: Stopwatch?
 
   internal let initialMetadataPromise: EventLoopPromise<HPACKHeaders>
   internal let trailingMetadataPromise: EventLoopPromise<HPACKHeaders>
@@ -77,6 +78,15 @@ internal class GRPCClientResponseChannelHandler<ResponseMessage: Message>: Chann
     self.statusPromise.succeed(status)
     self.timeoutTask?.cancel()
     self.context = nil
+
+    if let stopwatch = self.stopwatch {
+      let millis = stopwatch.elapsedMillis()
+      self.logger.info("rpc call finished", metadata: [
+        "duration_ms": "\(millis)",
+        "status_code": "\(status.code.rawValue)"
+      ])
+      self.stopwatch = nil
+    }
   }
 
   /// Observe the given error.
@@ -102,6 +112,7 @@ internal class GRPCClientResponseChannelHandler<ResponseMessage: Message>: Chann
   public func handlerAdded(context: ChannelHandlerContext) {
     // We need to hold the context in case we timeout and need to close the pipeline.
     self.context = context
+    self.stopwatch = .start()
   }
 
   /// Reads inbound data.
@@ -186,10 +197,7 @@ final class GRPCClientUnaryResponseChannelHandler<ResponseMessage: Message>: GRP
       statusPromise: statusPromise,
       errorDelegate: errorDelegate,
       timeout: timeout,
-      logger: logger.addingMetadata(
-        key: MetadataKey.channelHandler,
-        value: "GRPCClientUnaryResponseChannelHandler"
-      )
+      logger: logger
     )
   }
 
@@ -241,10 +249,7 @@ final class GRPCClientStreamingResponseChannelHandler<ResponseMessage: Message>:
       statusPromise: statusPromise,
       errorDelegate: errorDelegate,
       timeout: timeout,
-      logger: logger.addingMetadata(
-        key: MetadataKey.channelHandler,
-        value: "GRPCClientStreamingResponseChannelHandler"
-      )
+      logger: logger
     )
   }
 

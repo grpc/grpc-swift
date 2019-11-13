@@ -35,7 +35,7 @@ public final class ServerStreamingCall<RequestMessage: Message, ResponseMessage:
   ) {
     let requestID = callOptions.requestIDProvider.requestID()
     let logger = Logger(subsystem: .clientChannelCall, metadata: [MetadataKey.requestID: "\(requestID)"])
-    logger.info("making server streaming call to '\(path)', request type: \(RequestMessage.self), response type: \(ResponseMessage.self)")
+    logger.info("starting rpc", metadata: ["path": "\(path)"])
 
     let responseHandler = GRPCClientStreamingResponseChannelHandler(
       initialMetadataPromise: connection.channel.eventLoop.makePromise(),

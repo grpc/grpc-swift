@@ -60,7 +60,7 @@ public final class GRPCChannelHandler {
   public init(servicesByName: [String: CallHandlerProvider], errorDelegate: ServerErrorDelegate?, logger: Logger) {
     self.servicesByName = servicesByName
     self.errorDelegate = errorDelegate
-    self.logger = logger.addingMetadata(key: MetadataKey.channelHandler, value: "GRPCChannelHandler")
+    self.logger = logger
   }
 }
 
@@ -86,12 +86,12 @@ extension GRPCChannelHandler: ChannelInboundHandler, RemovableChannelHandler {
         return
       }
 
-      logger.info("received request head, configuring pipeline")
+      logger.debug("received request head, configuring pipeline")
 
       let codec = callHandler.makeGRPCServerCodec()
       let handlerRemoved: EventLoopPromise<Void> = context.eventLoop.makePromise()
       handlerRemoved.futureResult.whenSuccess {
-        self.logger.info("removed GRPCChannelHandler from pipeline")
+        self.logger.debug("removed GRPCChannelHandler from pipeline")
         context.pipeline.addHandler(callHandler, position: .after(codec)).whenComplete { _ in
           // Send the .headers event back to begin the headers flushing for the response.
           // At this point, which headers should be returned is not known, as the content type is
@@ -103,7 +103,7 @@ extension GRPCChannelHandler: ChannelInboundHandler, RemovableChannelHandler {
         }
       }
 
-      logger.info("adding handler \(type(of: codec)) to pipeline")
+      logger.debug("adding handler \(type(of: codec)) to pipeline")
       context.pipeline.addHandler(codec, position: .after(self))
         .whenSuccess { context.pipeline.removeHandler(context: context, promise: handlerRemoved) }
 
@@ -121,7 +121,7 @@ extension GRPCChannelHandler: ChannelInboundHandler, RemovableChannelHandler {
     // - uriComponents[1]: service name (including the package name);
     //     `CallHandlerProvider`s should provide the service name including the package name.
     // - uriComponents[2]: method name.
-    self.logger.info("making call handler", metadata: ["path": "\(requestHead.uri)"])
+    self.logger.debug("making call handler", metadata: ["path": "\(requestHead.uri)"])
     let uriComponents = requestHead.uri.components(separatedBy: "/")
 
     var logger = self.logger

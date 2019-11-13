@@ -36,7 +36,7 @@ class InitialSettingsObservingHandler: ChannelInboundHandler, RemovableChannelHa
     let frame = self.unwrapInboundIn(data)
 
     if frame.streamID == .rootStream, case .settings(.settings) = frame.payload {
-      self.logger.info("observed initial settings frame on the root stream")
+      self.logger.debug("observed initial settings frame on the root stream")
       self.connectivityStateMonitor.state = .ready
 
       // We're no longer needed at this point, remove ourselves from the pipeline.

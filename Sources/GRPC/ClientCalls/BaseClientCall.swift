@@ -113,7 +113,7 @@ public class BaseClientCall<Request: Message, Response: Message>: ClientCall {
     self.subchannel.whenComplete {
       switch $0 {
       case .success(let channel):
-        self.logger.debug("firing .cancelled event")
+        self.logger.trace("firing .cancelled event")
         channel.pipeline.triggerUserOutboundEvent(GRPCClientUserEvent.cancelled, promise: promise)
       case .failure(let error):
         promise?.fail(error)
@@ -123,7 +123,7 @@ public class BaseClientCall<Request: Message, Response: Message>: ClientCall {
 
   public func cancel() -> EventLoopFuture<Void> {
     return self.subchannel.flatMap { channel in
-      self.logger.debug("firing .cancelled event")
+      self.logger.trace("firing .cancelled event")
       return channel.pipeline.triggerUserOutboundEvent(GRPCClientUserEvent.cancelled)
     }
   }

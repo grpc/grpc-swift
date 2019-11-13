@@ -40,7 +40,7 @@ public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage
 
   private var observerState: ClientStreamingHandlerObserverState<EventObserverFactory, EventObserver> {
     willSet(newState) {
-      self.logger.info("observerState changed from \(self.observerState) to \(newState)")
+      self.logger.debug("observerState changed from \(self.observerState) to \(newState)")
     }
   }
   private var callContext: UnaryResponseCallContext<ResponseMessage>?
