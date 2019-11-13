@@ -35,9 +35,8 @@ public protocol Echo_EchoService {
   func update(callOptions: CallOptions?, handler: @escaping (Echo_EchoResponse) -> Void) -> BidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse>
 }
 
-public final class Echo_EchoServiceClient: GRPCServiceClient, Echo_EchoService {
+public final class Echo_EchoServiceClient: GRPCClient, Echo_EchoService {
   public let connection: ClientConnection
-  public var serviceName: String { return "echo.Echo" }
   public var defaultCallOptions: CallOptions
 
   /// Creates a client for the echo.Echo service.
@@ -57,7 +56,7 @@ public final class Echo_EchoServiceClient: GRPCServiceClient, Echo_EchoService {
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
   public func get(_ request: Echo_EchoRequest, callOptions: CallOptions? = nil) -> UnaryCall<Echo_EchoRequest, Echo_EchoResponse> {
-    return self.makeUnaryCall(path: self.path(forMethod: "Get"),
+    return self.makeUnaryCall(path: "/echo.Echo/Get",
                               request: request,
                               callOptions: callOptions ?? self.defaultCallOptions)
   }
@@ -70,7 +69,7 @@ public final class Echo_EchoServiceClient: GRPCServiceClient, Echo_EchoService {
   ///   - handler: A closure called when each response is received from the server.
   /// - Returns: A `ServerStreamingCall` with futures for the metadata and status.
   public func expand(_ request: Echo_EchoRequest, callOptions: CallOptions? = nil, handler: @escaping (Echo_EchoResponse) -> Void) -> ServerStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
-    return self.makeServerStreamingCall(path: self.path(forMethod: "Expand"),
+    return self.makeServerStreamingCall(path: "/echo.Echo/Expand",
                                         request: request,
                                         callOptions: callOptions ?? self.defaultCallOptions,
                                         handler: handler)
@@ -85,7 +84,7 @@ public final class Echo_EchoServiceClient: GRPCServiceClient, Echo_EchoService {
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   /// - Returns: A `ClientStreamingCall` with futures for the metadata, status and response.
   public func collect(callOptions: CallOptions? = nil) -> ClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
-    return self.makeClientStreamingCall(path: self.path(forMethod: "Collect"),
+    return self.makeClientStreamingCall(path: "/echo.Echo/Collect",
                                         callOptions: callOptions ?? self.defaultCallOptions)
   }
 
@@ -99,7 +98,7 @@ public final class Echo_EchoServiceClient: GRPCServiceClient, Echo_EchoService {
   ///   - handler: A closure called when each response is received from the server.
   /// - Returns: A `ClientStreamingCall` with futures for the metadata and status.
   public func update(callOptions: CallOptions? = nil, handler: @escaping (Echo_EchoResponse) -> Void) -> BidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
-    return self.makeBidirectionalStreamingCall(path: self.path(forMethod: "Update"),
+    return self.makeBidirectionalStreamingCall(path: "/echo.Echo/Update",
                                                callOptions: callOptions ?? self.defaultCallOptions,
                                                handler: handler)
   }
