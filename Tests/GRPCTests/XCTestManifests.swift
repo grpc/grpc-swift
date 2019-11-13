@@ -425,8 +425,6 @@ extension GRPCTypeSizeTests {
         ("testGRPCClientRequestPart", testGRPCClientRequestPart),
         ("testGRPCClientResponsePart", testGRPCClientResponsePart),
         ("testGRPCStatus", testGRPCStatus),
-        ("testRawGRPCClientRequestPart", testRawGRPCClientRequestPart),
-        ("testRawGRPCClientResponsePart", testRawGRPCClientResponsePart),
     ]
 }
 

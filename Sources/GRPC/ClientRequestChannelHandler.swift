@@ -24,9 +24,9 @@ internal class ClientRequestChannelHandler<RequestMessage: Message>: ChannelInbo
   typealias OutboundOut = GRPCClientRequestPart<RequestMessage>
 
   /// The request head to send.
-  internal let requestHead: HTTPRequestHead
+  internal let requestHead: GRPCRequestHead
 
-  init(requestHead: HTTPRequestHead) {
+  init(requestHead: GRPCRequestHead) {
     self.requestHead = requestHead
   }
 
@@ -43,7 +43,7 @@ internal final class UnaryRequestChannelHandler<RequestMessage: Message>: Client
   /// The request to send.
   internal let request: _Box<RequestMessage>
 
-  init(requestHead: HTTPRequestHead, request: _Box<RequestMessage>) {
+  init(requestHead: GRPCRequestHead, request: _Box<RequestMessage>) {
     self.request = request
     super.init(requestHead: requestHead)
   }

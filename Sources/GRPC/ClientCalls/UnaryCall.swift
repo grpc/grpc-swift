@@ -32,34 +32,47 @@ public final class UnaryCall<RequestMessage: Message, ResponseMessage: Message>
     UnaryResponseClientCall {
   public let response: EventLoopFuture<ResponseMessage>
 
-  public init(connection: ClientConnection, path: String, request: RequestMessage, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?) {
+  public init(
+    connection: ClientConnection,
+    path: String,
+    request: RequestMessage,
+    callOptions: CallOptions,
+    errorDelegate: ClientErrorDelegate?
+  ) {
     let requestID = callOptions.requestIDProvider.requestID()
     let logger = Logger(subsystem: .clientChannelCall, metadata: [MetadataKey.requestID: "\(requestID)"])
     logger.info("making unary call to '\(path)', request type: \(RequestMessage.self), response type: \(ResponseMessage.self)")
 
+    let responsePromise = connection.channel.eventLoop.makePromise(of: ResponseMessage.self)
+    self.response = responsePromise.futureResult
+
     let responseHandler = GRPCClientUnaryResponseChannelHandler<ResponseMessage>(
       initialMetadataPromise: connection.channel.eventLoop.makePromise(),
       trailingMetadataPromise: connection.channel.eventLoop.makePromise(),
-      responsePromise: connection.channel.eventLoop.makePromise(),
+      responsePromise: responsePromise,
       statusPromise: connection.channel.eventLoop.makePromise(),
       errorDelegate: errorDelegate,
       timeout: callOptions.timeout,
       logger: logger
     )
 
-    let requestHandler = UnaryRequestChannelHandler<RequestMessage>(
-      requestHead: makeRequestHead(
-        path: path,
-        host: connection.configuration.target.host,
-        callOptions: callOptions,
-        requestID: requestID
-      ),
-      request: _Box(request)
+    let requestHead = GRPCRequestHead(
+      scheme: connection.configuration.httpProtocol.scheme,
+      path: path,
+      host: connection.configuration.httpProtocol.scheme,
+      requestID: requestID,
+      options: callOptions
     )
 
-    self.response = responseHandler.responsePromise.futureResult
+    let requestHandler = UnaryRequestChannelHandler<RequestMessage>(
+      requestHead: requestHead,
+      request: .init(request)
+    )
+
     super.init(
-      connection: connection,
+      eventLoop: connection.channel.eventLoop,
+      multiplexer: connection.multiplexer,
+      callType: .unary,
       responseHandler: responseHandler,
       requestHandler: requestHandler,
       logger: logger

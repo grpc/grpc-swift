@@ -32,7 +32,13 @@ public final class BidirectionalStreamingCall<RequestMessage: Message, ResponseM
     StreamingRequestClientCall {
   private var messageQueue: EventLoopFuture<Void>
 
-  public init(connection: ClientConnection, path: String, callOptions: CallOptions, errorDelegate: ClientErrorDelegate?, handler: @escaping (ResponseMessage) -> Void) {
+  public init(
+    connection: ClientConnection,
+    path: String,
+    callOptions: CallOptions,
+    errorDelegate: ClientErrorDelegate?,
+    handler: @escaping (ResponseMessage) -> Void
+  ) {
     self.messageQueue = connection.channel.eventLoop.makeSucceededFuture(())
     let requestID = callOptions.requestIDProvider.requestID()
 
@@ -46,19 +52,23 @@ public final class BidirectionalStreamingCall<RequestMessage: Message, ResponseM
       errorDelegate: errorDelegate,
       timeout: callOptions.timeout,
       logger: logger,
-      responseHandler: handler)
-
-    let requestHandler = StreamingRequestChannelHandler<RequestMessage>(
-      requestHead: makeRequestHead(
-        path: path,
-        host: connection.configuration.target.host,
-        callOptions: callOptions,
-        requestID: requestID
-      )
+      responseHandler: handler
     )
 
+    let requestHead = GRPCRequestHead(
+      scheme: connection.configuration.httpProtocol.scheme,
+      path: path,
+      host: connection.configuration.httpProtocol.scheme,
+      requestID: requestID,
+      options: callOptions
+    )
+
+    let requestHandler = StreamingRequestChannelHandler<RequestMessage>(requestHead: requestHead)
+
     super.init(
-      connection: connection,
+      eventLoop: connection.eventLoop,
+      multiplexer: connection.multiplexer,
+      callType: .bidirectionalStreaming,
       responseHandler: responseHandler,
       requestHandler: requestHandler,
       logger: logger

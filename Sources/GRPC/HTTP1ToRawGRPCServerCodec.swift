@@ -166,8 +166,8 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
       "version": "\(requestHead.version)"
     ])
 
-    if let contentTypeHeader = requestHead.headers["content-type"].first {
-      self.contentType = ContentType(rawValue: contentTypeHeader)
+    if let contentType = requestHead.headers["content-type"].first.flatMap(ContentType.init) {
+      self.contentType = contentType
     } else {
       self.logger.debug("no 'content-type' header, assuming content type is 'application/grpc'")
       // If the Content-Type is not present, assume the request is binary encoded gRPC.

@@ -565,3 +565,14 @@ fileprivate extension TimeAmount {
     return .nanoseconds(Int64(timeInterval * 1_000_000_000))
   }
 }
+
+extension HTTP2ToHTTP1ClientCodec.HTTPProtocol {
+  var scheme: String {
+    switch self {
+    case .http:
+      return "http"
+    case .https:
+      return "https"
+    }
+  }
+}
