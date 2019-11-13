@@ -94,7 +94,7 @@ public class BaseClientCall<Request: Message, Response: Message>: ClientCall {
     self.multiplexer.cascadeFailure(to: streamPromise)
     streamPromise.futureResult.whenFailure(responseHandler.onError)
 
-    // Create an http/2 stream and configure it with the gRPC handler.
+    // Create an HTTP/2 stream and configure it with the gRPC handler.
     self.multiplexer.whenSuccess { multiplexer in
       multiplexer.createStreamChannel(promise: streamPromise) { (stream, streamID) -> EventLoopFuture<Void> in
         stream.pipeline.addHandlers([
