@@ -42,6 +42,7 @@ public class Server {
   /// Initializes a Server
   ///
   /// - Parameter address: the address where the server will listen
+  /// - Parameter loopTimeout: delay for which the spin loop should wait before starting over.
   public init(address: String, loopTimeout: TimeInterval = 600) {
     underlyingServer = cgrpc_server_create(address)
     completionQueue = CompletionQueue(
@@ -55,6 +56,7 @@ public class Server {
   /// - Parameter key: the private key for the server's certificates
   /// - Parameter certs: the server's certificates
   /// - Parameter rootCerts: used to validate client certificates; will enable enforcing valid client certificates when provided
+  /// - Parameter loopTimeout: delay for which the spin loop should wait before starting over.
   public init(address: String, key: String, certs: String, rootCerts: String? = nil, loopTimeout: TimeInterval = 600) {
     underlyingServer = cgrpc_server_create_secure(address, key, certs, rootCerts, rootCerts == nil ? 0 : 1)
     completionQueue = CompletionQueue(
