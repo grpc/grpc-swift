@@ -24,14 +24,14 @@ jobs:
       os: linux
       dist: bionic
       script: ./.travis-script.sh
-      env: RUN_INTEROP_TESTS=false SWIFT_VERSION=5.1
+      env: RUN_INTEROP_TESTS=false SWIFT_VERSION=5.1.2
     - <<: *tests
       name: "Ubuntu 18.04 (Swift 5.0)"
       env: RUN_INTEROP_TESTS=false SWIFT_VERSION=5.0.3
     - <<: *tests
-      name: "Xcode 11 (Swift 5.1)"
+      name: "Xcode 11.1 (Swift 5.1)"
       os: osx
-      osx_image: xcode11
+      osx_image: xcode11.1
     - <<: *tests
       name: "Xcode 10.3 (Swift 5.0)"
       os: osx
@@ -44,14 +44,14 @@ jobs:
       os: linux
       dist: bionic
       script: ./.travis-script.sh
-      env: RUN_INTEROP_TESTS=true SWIFT_VERSION=5.1
+      env: RUN_INTEROP_TESTS=true SWIFT_VERSION=5.1.2
     - <<: *interop_tests
       name: "Ubuntu 18.04 (Swift 5.0)"
       env: RUN_INTEROP_TESTS=true SWIFT_VERSION=5.0.3
     - <<: *interop_tests
-      name: "Xcode 11 (Swift 5.1)"
+      name: "Xcode 11.1 (Swift 5.1)"
       os: osx
-      osx_image: xcode11
+      osx_image: xcode11.1
     - <<: *interop_tests
       name: "Xcode 10.3 (Swift 5.0)"
       os: osx
