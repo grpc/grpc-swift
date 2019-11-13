@@ -32,9 +32,8 @@ public protocol Helloworld_GreeterService {
   func sayHello(_ request: Helloworld_HelloRequest, callOptions: CallOptions?) -> UnaryCall<Helloworld_HelloRequest, Helloworld_HelloReply>
 }
 
-public final class Helloworld_GreeterServiceClient: GRPCServiceClient, Helloworld_GreeterService {
+public final class Helloworld_GreeterServiceClient: GRPCClient, Helloworld_GreeterService {
   public let connection: ClientConnection
-  public var serviceName: String { return "helloworld.Greeter" }
   public var defaultCallOptions: CallOptions
 
   /// Creates a client for the helloworld.Greeter service.
@@ -54,7 +53,7 @@ public final class Helloworld_GreeterServiceClient: GRPCServiceClient, Helloworl
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
   public func sayHello(_ request: Helloworld_HelloRequest, callOptions: CallOptions? = nil) -> UnaryCall<Helloworld_HelloRequest, Helloworld_HelloReply> {
-    return self.makeUnaryCall(path: self.path(forMethod: "SayHello"),
+    return self.makeUnaryCall(path: "/helloworld.Greeter/SayHello",
                               request: request,
                               callOptions: callOptions ?? self.defaultCallOptions)
   }

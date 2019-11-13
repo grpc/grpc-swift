@@ -85,27 +85,6 @@ extension GRPCClient {
   }
 }
 
-/// A GRPC client for a named service.
-public protocol GRPCServiceClient: GRPCClient {
-  /// Name of the service this client is for (e.g. "echo.Echo").
-  var serviceName: String { get }
-
-  /// Creates a path for a given method on this service.
-  ///
-  /// This defaults to "/Service-Name/Method-Name" but may be overriden if consumers
-  /// require a different path format.
-  ///
-  /// - Parameter method: name of method to return a path for.
-  /// - Returns: path for the given method used in gRPC request headers.
-  func path(forMethod method: String) -> String
-}
-
-extension GRPCServiceClient {
-  public func path(forMethod method: String) -> String {
-    return "/\(self.serviceName)/\(method)"
-  }
-}
-
 /// A client which has no generated stubs and may be used to create gRPC calls manually.
 /// See `GRPCClient` for details.
 public final class AnyServiceClient: GRPCClient {
