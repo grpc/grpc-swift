@@ -24,7 +24,10 @@ class AsyncClientTests: BasicEchoTestCase {
 
   static var allTests: [(String, (AsyncClientTests) -> () throws -> Void)] {
     return [
-      ("testAsyncUnaryRetainsClientUntilCallFinished", testAsyncUnaryRetainsClientUntilCallFinished)
+      ("testAsyncUnaryRetainsClientUntilCallFinished", testAsyncUnaryRetainsClientUntilCallFinished),
+      ("testClientStreamingRetainsClientUntilCallFinished", testClientStreamingRetainsClientUntilCallFinished),
+      ("testServerStreamingRetainsClientUntilCallFinished", testServerStreamingRetainsClientUntilCallFinished),
+      ("testBidiStreamingRetainsClientUntilCallFinished", testBidiStreamingRetainsClientUntilCallFinished),
     ]
   }
 }
