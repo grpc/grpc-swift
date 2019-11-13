@@ -1,5 +1,13 @@
 [![Build Status](https://travis-ci.org/grpc/grpc-swift.svg?branch=master)](https://travis-ci.org/grpc/grpc-swift)
 
+# ‼️ Deprecation Notice ‼️
+
+**gRPC Swift versions** `v0.x` **based on gRPC-Core will soon be replaced with a re-implementation based on [SwiftNIO](https://github.com/apple/swift-nio).** 
+
+**We strongly suggest that new projects use [the re-implementation from the `nio` branch](https://github.com/grpc/grpc-swift/tree/nio) which we consider to be production ready.** 
+
+**Please see [DEPRECATION.md](DEPRECATION.md) for more information.**
+
 # Swift gRPC
 
 This repository contains an experimental Swift gRPC API
