@@ -55,19 +55,17 @@ public protocol ConnectivityStateDelegate: class {
 }
 
 public class ConnectivityStateMonitor {
-  /// A delegate to call when the connectivity state changes.
-  public var delegate: ConnectivityStateDelegate?
-
   private let logger = Logger(subsystem: .connectivityState)
   private let lock = Lock()
   private var _state: ConnectivityState = .idle
   private var _userInitiatedShutdown = false
+  private var _delegate: ConnectivityStateDelegate?
 
   /// Creates a new connectivity state monitor.
   ///
   /// - Parameter delegate: A delegate to call when the connectivity state changes.
   public init(delegate: ConnectivityStateDelegate?) {
-    self.delegate = delegate
+    self._delegate = delegate
   }
 
   /// The current state of connectivity.
@@ -80,6 +78,20 @@ public class ConnectivityStateMonitor {
     set {
       self.lock.withLockVoid {
         self.setNewState(to: newValue)
+      }
+    }
+  }
+
+  /// A delegate to call when the connectivity state changes.
+  public var delegate: ConnectivityStateDelegate? {
+    get {
+      return self.lock.withLock {
+        return self._delegate
+      }
+    }
+    set {
+      self.lock.withLockVoid {
+        self._delegate = newValue
       }
     }
   }
@@ -100,7 +112,7 @@ public class ConnectivityStateMonitor {
     if oldValue != newValue {
       self.logger.info("connectivity state change: \(oldValue) to \(newValue)")
       self._state = newValue
-      self.delegate?.connectivityStateDidChange(from: oldValue, to: newValue)
+      self._delegate?.connectivityStateDidChange(from: oldValue, to: newValue)
     }
   }
 
