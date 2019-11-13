@@ -30,9 +30,12 @@ open class ClientCallBidirectionalStreamingBase<InputType: Message, OutputType: 
   public typealias SentType = InputType
   
   /// Call this to start a call. Nonblocking.
-  public func start(metadata: Metadata, completion: ((CallResult) -> Void)?)
-    throws -> Self {
-    try call.start(.bidiStreaming, metadata: metadata, completion: completion)
+  public func start(metadata: Metadata, completion: ((CallResult) -> Void)?) throws -> Self {
+    try call.start(.bidiStreaming, metadata: metadata) { result in
+      withExtendedLifetime(self) {  // retain `self` (and, transitively, the channel) until the call has finished.
+        completion?(result)
+      }
+    }
     return self
   }
 

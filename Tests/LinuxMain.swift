@@ -20,6 +20,7 @@ import XCTest
 XCTMain([
   // SwiftGRPC
   testCase(gRPCTests.allTests),
+  testCase(AsyncClientTests.allTests),
   testCase(ChannelArgumentTests.allTests),
   testCase(ChannelConnectivityTests.allTests),
   testCase(ChannelShutdownTests.allTests),

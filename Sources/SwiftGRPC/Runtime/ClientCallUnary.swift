@@ -47,10 +47,12 @@ open class ClientCallUnaryBase<InputType: Message, OutputType: Message>: ClientC
                     completion: @escaping ((OutputType?, CallResult) -> Void)) throws -> Self {
     let requestData = try request.serializedData()
     try call.start(.unary, metadata: metadata, message: requestData) { callResult in
-      if let responseData = callResult.resultData {
-        completion(try? OutputType(serializedData: responseData), callResult)
-      } else {
-        completion(nil, callResult)
+      withExtendedLifetime(self) {  // retain `self` (and, transitively, the channel) until the call has finished.
+        if let responseData = callResult.resultData {
+          completion(try? OutputType(serializedData: responseData), callResult)
+        } else {
+          completion(nil, callResult)
+        }
       }
     }
     return self
