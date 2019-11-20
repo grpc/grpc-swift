@@ -50,7 +50,7 @@ public final class ServerStreamingCall<RequestMessage: Message, ResponseMessage:
     let requestHead = GRPCRequestHead(
       scheme: connection.configuration.httpProtocol.scheme,
       path: path,
-      host: connection.configuration.httpProtocol.scheme,
+      host: connection.configuration.target.host,
       requestID: requestID,
       options: callOptions
     )
