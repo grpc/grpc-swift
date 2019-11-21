@@ -76,7 +76,7 @@ public class BaseClientCall<Request: Message, Response: Message>: ClientCall {
     multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
     callType: GRPCCallType,
     responseHandler: GRPCClientResponseChannelHandler<Response>,
-    requestHandler: ClientRequestChannelHandler<Request>,
+    requestHandler: _ClientRequestChannelHandler<Request>,
     logger: Logger
   ) {
     self.logger = logger

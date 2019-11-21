@@ -64,7 +64,7 @@ public final class UnaryCall<RequestMessage: Message, ResponseMessage: Message>
       options: callOptions
     )
 
-    let requestHandler = UnaryRequestChannelHandler<RequestMessage>(
+    let requestHandler = _UnaryRequestChannelHandler<RequestMessage>(
       requestHead: requestHead,
       request: .init(request)
     )

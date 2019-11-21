@@ -63,7 +63,7 @@ public final class BidirectionalStreamingCall<RequestMessage: Message, ResponseM
       options: callOptions
     )
 
-    let requestHandler = StreamingRequestChannelHandler<RequestMessage>(requestHead: requestHead)
+    let requestHandler = _StreamingRequestChannelHandler<RequestMessage>(requestHead: requestHead)
 
     super.init(
       eventLoop: connection.eventLoop,
