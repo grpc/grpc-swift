@@ -18,7 +18,7 @@ import Foundation
 @testable import SwiftGRPC
 import XCTest
 
-fileprivate class TimingOutEchoProvider: Echo_EchoProvider {
+class TimingOutEchoProvider: Echo_EchoProvider {
   func get(request: Echo_EchoRequest, session _: Echo_EchoGetSession) throws -> Echo_EchoResponse {
     Thread.sleep(forTimeInterval: 0.1)
     return Echo_EchoResponse()

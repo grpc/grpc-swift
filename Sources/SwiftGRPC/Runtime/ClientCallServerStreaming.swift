@@ -29,10 +29,11 @@ open class ClientCallServerStreamingBase<InputType: Message, OutputType: Message
   /// Call this once with the message to send. Nonblocking.
   public func start(request: InputType, metadata: Metadata, completion: ((CallResult) -> Void)?) throws -> Self {
     let requestData = try request.serializedData()
-    try call.start(.serverStreaming,
-                   metadata: metadata,
-                   message: requestData,
-                   completion: completion)
+    try call.start(.serverStreaming, metadata: metadata, message: requestData) { result in
+      withExtendedLifetime(self) {  // retain `self` (and, transitively, the channel) until the call has finished.
+        completion?(result)
+      }
+    }
     return self
   }
 }

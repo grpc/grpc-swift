@@ -30,7 +30,11 @@ open class ClientCallClientStreamingBase<InputType: Message, OutputType: Message
   
   /// Call this to start a call. Nonblocking.
   public func start(metadata: Metadata, completion: ((CallResult) -> Void)?) throws -> Self {
-    try call.start(.clientStreaming, metadata: metadata, completion: completion)
+    try call.start(.clientStreaming, metadata: metadata) { result in
+      withExtendedLifetime(self) {  // retain `self` (and, transitively, the channel) until the call has finished.
+        completion?(result)
+      }
+    }
     return self
   }
 

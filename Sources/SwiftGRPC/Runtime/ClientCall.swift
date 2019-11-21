@@ -26,10 +26,12 @@ open class ClientCallBase {
   open class var method: String { fatalError("needs to be overridden") }
 
   public let call: Call
+  internal let channel: Channel  // To ensure that the channel is not deallocated before this call has finished.
 
   /// Create a call.
   public init(_ channel: Channel) throws {
     self.call = try channel.makeCall(type(of: self).method)
+    self.channel = channel
   }
 }
 
