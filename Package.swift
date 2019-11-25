@@ -30,7 +30,7 @@ let package = Package(
     // HTTP2 via SwiftNIO
     .package(url: "https://github.com/apple/swift-nio-http2.git", from: "1.6.0"),
     // TLS via SwiftNIO
-    .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.4.0"),
+    .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.4.1"),
     // Support for Network.framework where possible.
     .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.1.0"),
 
