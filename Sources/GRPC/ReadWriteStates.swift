@@ -121,7 +121,7 @@ enum ReadState {
     case .notReading:
       return .failure(.cardinalityViolation)
 
-    case let .reading(readArity, reader):
+    case .reading(let readArity, var reader):
       reader.append(buffer: &buffer)
       var messages: [MessageType] = []
 

@@ -16,7 +16,7 @@
 import Foundation
 import NIO
 
-public class LengthPrefixedMessageWriter {
+public struct LengthPrefixedMessageWriter {
   public static let metadataLength = 5
 
   private let compression: CompressionMechanism
