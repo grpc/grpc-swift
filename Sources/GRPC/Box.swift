@@ -18,10 +18,15 @@ import Foundation
 /// Provides a "box" to put a value in.
 ///
 /// Allows large values to be passed around without being copied.
+///
+/// - Important: This is **NOT** part of the public API.
 public final class _Box<T> {
   let value: T
 
-  init(_ value: T) {
+  /// Constructs a box for a value.
+  ///
+  /// - Important: This is **NOT** part of the public API.
+  public init(_ value: T) {
     self.value = value
   }
 }

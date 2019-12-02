@@ -55,7 +55,7 @@ public final class ServerStreamingCall<RequestMessage: Message, ResponseMessage:
       options: callOptions
     )
 
-    let requestHandler = UnaryRequestChannelHandler<RequestMessage>(
+    let requestHandler = _UnaryRequestChannelHandler<RequestMessage>(
       requestHead: requestHead,
       request: .init(request)
     )

@@ -19,9 +19,11 @@ import NIO
 import NIOHTTP1
 
 /// A base channel handler for client requests.
-internal class ClientRequestChannelHandler<RequestMessage: Message>: ChannelInboundHandler {
-  typealias InboundIn = Never
-  typealias OutboundOut = GRPCClientRequestPart<RequestMessage>
+///
+/// - Important: This is **NOT** part of the public API.
+public class _ClientRequestChannelHandler<RequestMessage: Message>: ChannelInboundHandler {
+  public typealias InboundIn = Never
+  public typealias OutboundOut = GRPCClientRequestPart<RequestMessage>
 
   /// The request head to send.
   internal let requestHead: GRPCRequestHead
@@ -39,11 +41,13 @@ internal class ClientRequestChannelHandler<RequestMessage: Message>: ChannelInbo
 /// A channel handler for unary client requests.
 ///
 /// Sends the request head, message and end on `channelActive(context:)`.
-internal final class UnaryRequestChannelHandler<RequestMessage: Message>: ClientRequestChannelHandler<RequestMessage> {
+///
+/// - Important: This is **NOT** part of the public API.
+public final class _UnaryRequestChannelHandler<RequestMessage: Message>: _ClientRequestChannelHandler<RequestMessage> {
   /// The request to send.
   internal let request: _Box<RequestMessage>
 
-  init(requestHead: GRPCRequestHead, request: _Box<RequestMessage>) {
+  public init(requestHead: GRPCRequestHead, request: _Box<RequestMessage>) {
     self.request = request
     super.init(requestHead: requestHead)
   }
@@ -59,7 +63,9 @@ internal final class UnaryRequestChannelHandler<RequestMessage: Message>: Client
 /// A channel handler for client calls which stream requests.
 ///
 /// Sends the request head on `channelActive(context:)`.
-internal final class StreamingRequestChannelHandler<RequestMessage: Message>: ClientRequestChannelHandler<RequestMessage> {
+///
+/// - Important: This is **NOT** part of the public API.
+public final class _StreamingRequestChannelHandler<RequestMessage: Message>: _ClientRequestChannelHandler<RequestMessage> {
   override public func channelActive(context: ChannelHandlerContext) {
     context.writeAndFlush(self.wrapOutboundOut(.head(self.requestHead)), promise: nil)
     context.fireChannelActive()
