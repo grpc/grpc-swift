@@ -65,7 +65,12 @@ func runBenchmarks(spec: TestSpec) {
 
 struct TestSpec {
   var action: Action
-  var repeats: Int = 10
+  var repeats: Int
+
+  init(action: Action, repeats: Int = 10) {
+    self.action = action
+    self.repeats = repeats
+  }
 
   enum Action {
     /// Run the benchmark with the given filter.
