@@ -19,34 +19,23 @@ import GRPC
 import OAuth2
 import NIO
 import NIOHTTP1
+import NIOHPACK
 import NIOSSL
 
-/// Prepare an SSL context for a general SSL client that supports HTTP/2.
-func makeClientTLS() throws -> NIOSSLContext {
-  let configuration = TLSConfiguration.forClient(applicationProtocols: ["h2"])
-  return try NIOSSLContext(configuration: configuration)
-}
-
 /// Create a client and return a future to provide its value.
-func makeServiceClient(host: String,
-                       port: Int,
-                       eventLoopGroup: MultiThreadedEventLoopGroup)
-  -> EventLoopFuture<Google_Cloud_Language_V1_LanguageServiceServiceClient> {
-    let promise = eventLoopGroup.next().makePromise(of: Google_Cloud_Language_V1_LanguageServiceServiceClient.self)
-    do {
-      let configuration = ClientConnection.Configuration(
-        target: .hostAndPort(host, port),
-        eventLoopGroup: eventLoopGroup,
-        tlsConfiguration: .init(sslContext: try makeClientTLS()))
+func makeServiceClient(
+  host: String,
+  port: Int,
+  eventLoopGroup: MultiThreadedEventLoopGroup
+) -> Google_Cloud_Language_V1_LanguageServiceServiceClient {
+  let configuration = ClientConnection.Configuration(
+    target: .hostAndPort(host, port),
+    eventLoopGroup: eventLoopGroup,
+    tls: .init()
+  )
 
-      ClientConnection.start(configuration)
-        .map { client in
-          Google_Cloud_Language_V1_LanguageServiceServiceClient(connection: client)
-        }.cascade(to: promise)
-    } catch {
-      promise.fail(error)
-    }
-    return promise.futureResult
+  let connection = ClientConnection(configuration: configuration)
+  return Google_Cloud_Language_V1_LanguageServiceServiceClient(connection: connection)
 }
 
 enum AuthError: Error {
@@ -55,9 +44,10 @@ enum AuthError: Error {
 }
 
 /// Get an auth token and return a future to provide its value.
-func getAuthToken(scopes: [String],
-                  eventLoop: EventLoop)
-  -> EventLoopFuture<String> {
+func getAuthToken(
+  scopes: [String],
+  eventLoop: EventLoop
+) -> EventLoopFuture<String> {
     let promise = eventLoop.makePromise(of: String.self)
     guard let provider = DefaultTokenProvider(scopes: scopes) else {
       promise.fail(AuthError.noTokenProvider)
@@ -88,35 +78,36 @@ do {
   let scopes = ["https://www.googleapis.com/auth/cloud-language"]
   let authToken = try getAuthToken(
     scopes: scopes,
-    eventLoop: eventLoopGroup.next()).wait()
+    eventLoop: eventLoopGroup.next()
+  ).wait()
 
   // Create a service client.
-  let service = try makeServiceClient(
+  let service = makeServiceClient(
     host: "language.googleapis.com",
     port: 443,
-    eventLoopGroup: eventLoopGroup).wait()
+    eventLoopGroup: eventLoopGroup
+  )
 
   // Use CallOptions to send the auth token (necessary) and set a custom timeout (optional).
-  let headers = HTTPHeaders([("authorization", "Bearer " + authToken)])
-  let timeout = try! GRPCTimeout.seconds(30)
-  let callOptions = CallOptions(customMetadata: headers, timeout: timeout)
+  let headers: HPACKHeaders = ["authorization": "Bearer \(authToken)"]
+  let callOptions = CallOptions(customMetadata: headers, timeout: .seconds(rounding: 30))
   print("CALL OPTIONS\n\(callOptions)\n")
 
   // Construct the API request.
-  var document = Google_Cloud_Language_V1_Document()
-  document.type = .plainText
-  document.content = "The Caterpillar and Alice looked at each other for some time in silence: at last the Caterpillar took the hookah out of its mouth, and addressed her in a languid, sleepy voice. `Who are you?' said the Caterpillar."
+  let request = Google_Cloud_Language_V1_AnnotateTextRequest.with {
+    $0.document = .with {
+      $0.type = .plainText
+      $0.content = "The Caterpillar and Alice looked at each other for some time in silence: at last the Caterpillar took the hookah out of its mouth, and addressed her in a languid, sleepy voice. `Who are you?' said the Caterpillar."
+    }
 
-  var features = Google_Cloud_Language_V1_AnnotateTextRequest.Features()
-  features.extractSyntax = true
-  features.extractEntities = true
-  features.extractDocumentSentiment = true
-  features.extractEntitySentiment = true
-  features.classifyText = true
-
-  var request = Google_Cloud_Language_V1_AnnotateTextRequest()
-  request.document = document
-  request.features = features
+    $0.features = .with {
+      $0.extractSyntax = true
+      $0.extractEntities = true
+      $0.extractDocumentSentiment = true
+      $0.extractEntitySentiment = true
+      $0.classifyText = true
+    }
+  }
   print("REQUEST MESSAGE\n\(request)")
 
   // Create/start the API call.

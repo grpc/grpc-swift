@@ -15,14 +15,18 @@ if [ ! -d "googleapis" ]; then
 fi
 
 protoc \
- 	google/cloud/language/v1/language_service.proto \
+	google/cloud/language/v1/language_service.proto \
 	google/api/annotations.proto \
 	google/api/http.proto \
 	google/protobuf/descriptor.proto \
- 	-Igoogleapis \
+	-Igoogleapis \
 	-I../common/include \
 	--swift_out=googleapis \
 	--grpc-swift_out=googleapis
 
-# move Swift files to the Sources directory
-find googleapis -name "*.swift" -exec mv {} Sources \;
+# Move Swift files to the Sources directory. descriptor.pb.swift is provided
+# with SwiftProtobuf (from 1.7.0).
+find googleapis \
+  -name "*.swift" \
+  ! -name "descriptor.pb.swift" \
+  -exec mv {} Sources \;
