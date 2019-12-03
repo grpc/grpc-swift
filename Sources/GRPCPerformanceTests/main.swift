@@ -61,6 +61,12 @@ func runBenchmarks(spec: TestSpec) {
     benchmark: EmbeddedClientThroughput(requests: 10_000, text: smallRequest),
     spec: spec
   )
+
+  measureAndPrint(
+    description: "percent_encode_decode_10k_status_messages",
+    benchmark: PercentEncoding(iterations: 10_000),
+    spec: spec
+  )
 }
 
 struct TestSpec {
