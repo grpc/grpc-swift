@@ -512,7 +512,7 @@ extension GRPCClientStateMachine.State {
       ":path": path,
       ":authority": host,
       ":scheme": scheme,
-      "content-type": "application/grpc+proto",
+      "content-type": "application/grpc",
       "te": "trailers",  // Used to detect incompatible proxies, part of the gRPC specification.
       "user-agent": "grpc-swift-nio",  //  TODO: Add a more specific user-agent.
     ]
