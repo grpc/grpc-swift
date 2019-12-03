@@ -20,7 +20,7 @@ public struct GRPCStatusMessageMarshaller {
   /// - Parameter message: Message to percent encode.
   /// - Returns: Percent encoded string, or `nil` if it could not be encoded.
   public static func marshall(_ message: String) -> String? {
-    return String(decoding: percentEncode(message), as: Unicode.UTF8.self)
+    return percentEncode(message)
   }
 
   /// Removes percent encoding from the given message.
@@ -41,11 +41,18 @@ extension GRPCStatusMessageMarshaller {
   /// `0x25`). That is: `0x20`-`0x24`, `0x26`-`0x7E`.
   ///
   /// - Parameter message: The message to encode.
-  /// - Returns: An array containing the percent-encoded bytes of the given message.
-  private static func percentEncode(_ message: String) -> [UInt8] {
+  /// - Returns: Percent encoded string, or `nil` if it could not be encoded.
+  private static func percentEncode(_ message: String) -> String? {
+    let utf8 = message.utf8
+
+    let encodedLength = percentEncodedLength(for: utf8)
+    // Fast-path: all characters are valid, nothing to encode.
+    if encodedLength == utf8.count {
+      return message
+    }
+
     var bytes: [UInt8] = []
-    // In the worst case, each byte requires 3 bytes to be encoded.
-    bytes.reserveCapacity(message.utf8.count * 3)
+    bytes.reserveCapacity(encodedLength)
 
     for char in message.utf8 {
       switch char {
@@ -61,7 +68,23 @@ extension GRPCStatusMessageMarshaller {
       }
     }
 
-    return bytes
+    return String(bytes: bytes, encoding: .utf8)
+  }
+
+  /// Returns the percent encoded length of the given `UTF8View`.
+  private static func percentEncodedLength(for view: String.UTF8View) -> Int {
+    var count = view.count
+    for byte in view {
+      switch byte {
+      case 0x20...0x24,
+           0x26...0x7e:
+        ()
+
+      default:
+        count += 2
+      }
+    }
+    return count
   }
 
   /// Encode the given byte as hexadecimal.
@@ -80,16 +103,23 @@ extension GRPCStatusMessageMarshaller {
   }
 
   /// Remove gRPC percent encoding from `message`. If any portion of the string could not be decoded
-  /// then it will be replaced with '?'.
+  /// then the encoded message will be returned.
   ///
   /// - Parameter message: The message to remove percent encoding from.
   /// - Returns: The decoded message.
   private static func removePercentEncoding(_ message: String) -> String {
     let utf8 = message.utf8
 
+    let decodedLength = percentDecodedLength(for: utf8)
+    // Fast-path: no decoding to do! Note that we may also have detected that the encoding is
+    // invalid, in which case we will return the encoded message: this is fine.
+    if decodedLength == utf8.count {
+      return message
+    }
+
     var chars: [UInt8] = []
     // We can't decode more characters than are already encoded.
-    chars.reserveCapacity(utf8.count)
+    chars.reserveCapacity(decodedLength)
 
     var currentIndex = utf8.startIndex
     let endIndex = utf8.endIndex
@@ -99,22 +129,15 @@ extension GRPCStatusMessageMarshaller {
 
       switch byte {
       case UInt8(ascii: "%"):
-        guard let (nextIndex, nextNextIndex) = utf8.nextTwoIndices(after: currentIndex) else {
-          // gRPC suggests using '?' or the Unicode replacement character if it was not possible
-          // to decode portions of the text.
-          chars.append(UInt8(ascii: "?"))
-          // We didn't have two next indices, so we're done anyway.
-          currentIndex = endIndex
-          break
+        guard let (nextIndex, nextNextIndex) = utf8.nextTwoIndices(after: currentIndex),
+          let nextHex = fromHex(utf8[nextIndex]),
+          let nextNextHex = fromHex(utf8[nextNextIndex])
+          else {
+            // If we can't decode the message, aborting and returning the encoded message is fine
+            // according to the spec.
+            return message
         }
-
-        if let nextHex = fromHex(utf8[nextIndex]), let nextNextHex = fromHex(utf8[nextNextIndex]) {
-          chars.append((nextHex << 4) | nextNextHex)
-        } else {
-          // gRPC suggests using '?' or the Unicode replacement character if it was not possible
-          // to decode portions of the text.
-          chars.append(UInt8(ascii: "?"))
-        }
+        chars.append((nextHex << 4) | nextNextHex)
         currentIndex = nextNextIndex
 
       default:
@@ -125,6 +148,33 @@ extension GRPCStatusMessageMarshaller {
     }
 
     return String(decoding: chars, as: Unicode.UTF8.self)
+  }
+
+  /// Returns the expected length of the decoded `UTF8View`.
+  private static func percentDecodedLength(for view: String.UTF8View) -> Int {
+    var encoded = 0
+
+    for byte in view {
+      switch byte {
+      case UInt8(ascii: "%"):
+        // This can't overflow since it can't be larger than view.count.
+        encoded &+= 1
+
+      default:
+        ()
+      }
+    }
+
+    let notEncoded = view.count - (encoded * 3)
+
+    guard notEncoded >= 0 else {
+      // We've received gibberish: more '%' than expected. gRPC allows for the status message to
+      // be left encoded should it be incorrectly encoded. We'll do exactly that by returning
+      // the number of bytes in the view which will causes us to take the fast-path exit.
+      return view.count
+    }
+
+    return notEncoded + encoded
   }
 
   private static func fromHex(_ byte: UInt8) -> UInt8? {
