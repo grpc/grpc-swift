@@ -20,16 +20,18 @@ let package = Package(
   name: "NaturalLanguage",
   dependencies: [
     .package(url: "../../..", .branch("HEAD")),
-    .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.0.2"),
-    .package(url: "https://github.com/kylef/Commander.git", from: "0.8.0"),
+    .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.7.0"),
     .package(url: "https://github.com/googleapis/google-auth-library-swift.git", from: "0.5.0")
   ],
   targets: [
-    .target(name: "NaturalLanguage",
-            dependencies: [
-              "GRPC",
-              "SwiftProtobuf",
-              "Commander",
-              "OAuth2"],
-            path: "Sources")
-  ])
+    .target(
+      name: "NaturalLanguage",
+      dependencies: [
+        "GRPC",
+        "SwiftProtobuf",
+        "OAuth2"
+      ],
+      path: "Sources"
+    )
+  ]
+)

@@ -85,12 +85,16 @@ replace_years() {
 # a non-zero status code.
 check_copyright_headers() {
   # Exceptions:
-  # - echo.pb.swift: Google is the author of the corresponding .proto, so the
-  #   generated header has Google as the author.
+  # - {echo,annotations,language_service,http}.pb.swift: Google is the author of
+  #   the corresponding .protos, so the generated header has Google as the
+  #   author.
   # - LinuxMain.swift, XCTestManifests.swift: Both of these files are generated
   #   by SwiftPM and do not have headers.
   find . -name '*.swift' \
     ! -name 'echo.pb.swift' \
+    ! -name 'annotations.pb.swift' \
+    ! -name 'language_service.pb.swift' \
+    ! -name 'http.pb.swift' \
     ! -name 'LinuxMain.swift' \
     ! -name 'XCTestManifests.swift' \
     ! -path './.build/*' \

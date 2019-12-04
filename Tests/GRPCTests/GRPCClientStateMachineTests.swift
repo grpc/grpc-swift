@@ -662,7 +662,7 @@ extension GRPCClientStateMachineTests {
       XCTAssertEqual(headers[":path"], ["/echo/Get"])
       XCTAssertEqual(headers[":authority"], ["localhost"])
       XCTAssertEqual(headers[":scheme"], ["http"])
-      XCTAssertEqual(headers["content-type"], ["application/grpc+proto"])
+      XCTAssertEqual(headers["content-type"], ["application/grpc"])
       XCTAssertEqual(headers["te"], ["trailers"])
       XCTAssertEqual(headers["grpc-timeout"], ["1H"])
       XCTAssertEqual(headers["x-grpc-id"], ["request-id"])
