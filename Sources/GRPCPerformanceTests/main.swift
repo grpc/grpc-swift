@@ -64,7 +64,13 @@ func runBenchmarks(spec: TestSpec) {
 
   measureAndPrint(
     description: "percent_encode_decode_10k_status_messages",
-    benchmark: PercentEncoding(iterations: 10_000),
+    benchmark: PercentEncoding(iterations: 10_000, requiresEncoding: true),
+    spec: spec
+  )
+
+  measureAndPrint(
+    description: "percent_encode_decode_10k_ascii_status_messages",
+    benchmark: PercentEncoding(iterations: 10_000, requiresEncoding: false),
     spec: spec
   )
 }

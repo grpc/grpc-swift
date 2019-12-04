@@ -18,14 +18,20 @@ import GRPC
 import Foundation
 
 class PercentEncoding: Benchmark {
-  // The message is used in the interop-tests.
-  let message = "\t\ntest with whitespace\r\nand Unicode BMP ☺ and non-BMP 😈\t\n"
+  let message: String
   let allocator = ByteBufferAllocator()
 
   let iterations: Int
 
-  init(iterations: Int) {
+  init(iterations: Int, requiresEncoding: Bool) {
     self.iterations = iterations
+    if requiresEncoding {
+      // The message is used in the interop-tests.
+      self.message = "\t\ntest with whitespace\r\nand Unicode BMP ☺ and non-BMP 😈\t\n"
+    } else {
+      // The message above is 62 bytes long.
+      self.message = String(repeating: "a", count: 62)
+     }
   }
 
   func setUp() throws {
