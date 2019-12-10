@@ -15,6 +15,7 @@
  */
 import Foundation
 import NIO
+import NIOSSL
 import Logging
 
 /// A channel handler which allows caught errors to be passed to a `ClientErrorDelegate`. This
@@ -31,12 +32,20 @@ public class DelegatingErrorHandler: ChannelInboundHandler {
   }
 
   public func errorCaught(context: ChannelHandlerContext, error: Error) {
+    // We can ignore unclean shutdown since gRPC is self-terminated and therefore not prone to
+    // truncation attacks.
+    //
+    // Without this we would unnecessarily log when we're communicating with peers which don't
+    // send `close_notify`.
+    if let sslError = error as? NIOSSLError, case .uncleanShutdown = sslError {
+      return
+    }
+
     if let delegate = self.delegate {
       let grpcError = (error as? GRPCError) ?? .unknown(error, origin: .client)
       delegate.didCatchError(grpcError.wrappedError, file: grpcError.file, line: grpcError.line)
     }
     self.logger.error("caught error in client channel", metadata: [MetadataKey.error: "\(error)"])
-    self.logger.info("closing client channel")
     context.close(promise: nil)
   }
 }
