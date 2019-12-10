@@ -43,7 +43,7 @@ public final class ClientStreamingCall<RequestMessage: Message, ResponseMessage:
   ) {
     let requestID = callOptions.requestIDProvider.requestID()
     let logger = Logger(subsystem: .clientChannelCall, metadata: [MetadataKey.requestID: "\(requestID)"])
-    logger.info("starting rpc", metadata: ["path": "\(path)"])
+    logger.debug("starting rpc", metadata: ["path": "\(path)"])
 
     self.messageQueue = connection.eventLoop.makeSucceededFuture(())
     let responsePromise = connection.eventLoop.makePromise(of: ResponseMessage.self)
