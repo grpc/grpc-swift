@@ -37,7 +37,7 @@ public class DelegatingErrorHandler: ChannelInboundHandler {
     //
     // Without this we would unnecessarily log when we're communicating with peers which don't
     // send `close_notify`.
-    if case .uncleanShutdown = error as? NIOSSLError {
+    if let sslError = error as? NIOSSLError, case .uncleanShutdown = sslError {
       return
     }
 
