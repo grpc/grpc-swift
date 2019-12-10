@@ -110,7 +110,7 @@ public class ConnectivityStateMonitor {
 
     let oldValue = self._state
     if oldValue != newValue {
-      self.logger.info("connectivity state change: \(oldValue) to \(newValue)")
+      self.logger.debug("connectivity state change: \(oldValue) to \(newValue)")
       self._state = newValue
       self._delegate?.connectivityStateDidChange(from: oldValue, to: newValue)
     }

@@ -60,10 +60,10 @@ extension NetworkPreference {
         // This is gated by the availability of `.networkFramework` so should never happen.
         fatalError(".networkFramework is being used on an unsupported platform")
       }
-      PlatformSupport.logger.info("'best' NetworkImplementation is .networkFramework")
+      PlatformSupport.logger.debug("'best' NetworkImplementation is .networkFramework")
       return .networkFramework
       #else
-      PlatformSupport.logger.info("'best' NetworkImplementation is .posix")
+      PlatformSupport.logger.debug("'best' NetworkImplementation is .posix")
       return .posix
       #endif
 
@@ -134,7 +134,7 @@ public enum PlatformSupport {
     loopCount: Int,
     networkPreference: NetworkPreference = .best
   ) -> EventLoopGroup {
-    logger.info("making EventLoopGroup for \(networkPreference) network preference")
+    logger.debug("making EventLoopGroup for \(networkPreference) network preference")
     switch networkPreference.implementation {
     #if canImport(Network)
     case .networkFramework:

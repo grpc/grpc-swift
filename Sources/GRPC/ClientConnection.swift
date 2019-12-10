@@ -184,7 +184,7 @@ public class ClientConnection {
       // We're already shutdown or in the process of shutting down.
       return channel.flatMap { $0.closeFuture }
     } else {
-      self.logger.info("shutting down channel")
+      self.logger.debug("shutting down channel")
       self.connectivity.initiateUserShutdown()
       return channel.flatMap { $0.close() }
     }

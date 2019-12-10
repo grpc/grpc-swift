@@ -81,7 +81,7 @@ internal class GRPCClientResponseChannelHandler<ResponseMessage: Message>: Chann
 
     if let stopwatch = self.stopwatch {
       let millis = stopwatch.elapsedMillis()
-      self.logger.info("rpc call finished", metadata: [
+      self.logger.debug("rpc call finished", metadata: [
         "duration_ms": "\(millis)",
         "status_code": "\(status.code.rawValue)"
       ])

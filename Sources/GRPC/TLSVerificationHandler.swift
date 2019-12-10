@@ -85,7 +85,7 @@ public class TLSVerificationHandler: ChannelInboundHandler, RemovableChannelHand
         return
     }
 
-    self.logger.info("TLS handshake completed, negotiated protocol: \(String(describing: negotiatedProtocol))")
+    self.logger.debug("TLS handshake completed, negotiated protocol: \(String(describing: negotiatedProtocol))")
     if let proto = negotiatedProtocol, GRPCApplicationProtocolIdentifier(rawValue: proto) != nil {
       self.logger.debug("negotiated application protocol is valid")
       self.verificationPromise.succeed(())

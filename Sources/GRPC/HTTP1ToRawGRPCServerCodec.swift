@@ -156,7 +156,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
     }
 
     self.stopwatch = .start()
-    self.accessLog.info("rpc call started", metadata: [
+    self.accessLog.debug("rpc call started", metadata: [
       "path": "\(requestHead.uri)",
       "method": "\(requestHead.method)",
       "version": "\(requestHead.version)"
@@ -327,7 +327,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
         self.stopwatch = nil
         let millis = stopwatch.elapsedMillis()
 
-        self.accessLog.info("rpc call finished", metadata: [
+        self.accessLog.debug("rpc call finished", metadata: [
           "duration_ms": "\(millis)",
           "status_code": "\(status.code.rawValue)"
         ])
