@@ -27,36 +27,23 @@ public protocol ClientErrorDelegate: class {
   ///
   /// - Parameters:
   ///   - error: The error which was caught.
+  ///   - logger: A logger with relevant metadata for the RPC or connection the error relates to.
   ///   - file: The file where the error was raised.
   ///   - line: The line within the file where the error was raised.
-  func didCatchError(_ error: Error, file: StaticString, line: Int)
+  func didCatchError(_ error: Error, logger: Logger, file: StaticString, line: Int)
 }
 
-/// A `ClientErrorDelegate` which logs errors only in debug builds.
-public class DebugOnlyLoggingClientErrorDelegate: ClientErrorDelegate {
-  public static let shared = DebugOnlyLoggingClientErrorDelegate()
-  private let logger = Logger(labelSuffix: "ClientErrorDelegate")
+/// A `ClientErrorDelegate` which logs errors.
+public class LoggingClientErrorDelegate: ClientErrorDelegate {
+  public init() { }
 
-  private init() { }
-
-  public func didCatchError(_ error: Error, file: StaticString, line: Int) {
-    debugOnly {
-      self.logger.error(
-        "client error",
-        metadata: [MetadataKey.error: "\(error)"],
-        file: "\(file)",
-        function: "<unknown>",
-        line: UInt(line)
-      )
-    }
+  public func didCatchError(_ error: Error, logger: Logger, file: StaticString, line: Int) {
+    logger.error(
+      "grpc client error",
+      metadata: [MetadataKey.error: "\(error)"],
+      file: "\(file)",
+      function: "<unknown>",
+      line: UInt(line)
+    )
   }
-}
-
-/// A utility function that runs the body code only in debug builds, without emitting compiler
-/// warnings.
-///
-/// This is currently the only way to do this in Swift: see
-/// https://forums.swift.org/t/support-debug-only-code/11037 for a discussion.
-internal func debugOnly(_ body: () -> Void) {
-  assert({ body(); return true }())
 }

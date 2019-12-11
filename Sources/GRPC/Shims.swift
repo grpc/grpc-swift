@@ -35,3 +35,8 @@ extension Server.Configuration {
 
 @available(*, deprecated, renamed: "PlatformSupport")
 public enum GRPCNIO {}
+
+extension ClientErrorDelegate {
+  @available(*, deprecated, message: "Please use 'didCatchError(_:logger:file:line:)' instead")
+  public func didCatchError(_ error: Error, file: StaticString, line: Int) { }
+}
