@@ -544,21 +544,22 @@ extension GRPCClientStateMachine.State {
     // responses as well as a variety of non-GRPC content-types and to omit Status & Status-Message.
     // Implementations must synthesize a Status & Status-Message to propagate to the application
     // layer when this occurs."
-    let statusHeader = headers[":status"].first
-    let responseStatus = statusHeader.flatMap(Int.init).map { code in
-      HTTPResponseStatus(statusCode: code)
-    } ?? .preconditionFailed
+    let responseStatus = headers.first(name: ":status")
+      .flatMap(Int.init)
+      .map { code in
+        HTTPResponseStatus(statusCode: code)
+      } ?? .preconditionFailed
 
     guard responseStatus == .ok else {
       return .failure(.invalidHTTPStatus(responseStatus))
     }
 
-    guard headers["content-type"].first.flatMap(ContentType.init) != nil else {
+    guard headers.first(name: "content-type").flatMap(ContentType.init) != nil else {
       return .failure(.invalidContentType)
     }
 
     // What compression mechanism is the server using, if any?
-    let compression = CompressionMechanism(value: headers[GRPCHeaderName.encoding].first)
+    let compression = CompressionMechanism(value: headers.first(name: GRPCHeaderName.encoding))
 
     // From: https://github.com/grpc/grpc/blob/master/doc/compression.md
     //
@@ -586,13 +587,13 @@ extension GRPCClientStateMachine.State {
   }
 
   private func readStatusCode(from trailers: HPACKHeaders) -> GRPCStatus.Code? {
-    return trailers[GRPCHeaderName.statusCode].first
+    return trailers.first(name: GRPCHeaderName.statusCode)
       .flatMap(Int.init)
       .flatMap(GRPCStatus.Code.init)
   }
 
   private func readStatusMessage(from trailers: HPACKHeaders) -> String? {
-    return trailers[GRPCHeaderName.statusMessage].first
+    return trailers.first(name: GRPCHeaderName.statusMessage)
       .map(GRPCStatusMessageMarshaller.unmarshall)
   }
 
@@ -609,10 +610,8 @@ extension GRPCClientStateMachine.State {
     // one from the ":status".
     //
     // See: https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md
-    let statusHeader = trailers[":status"].first
-    guard let status = statusHeader.flatMap(Int.init).map({ HTTPResponseStatus(statusCode: $0) })
-      else {
-        return .failure(.invalidHTTPStatus(nil))
+    guard let status = trailers.first(name: ":status").flatMap(Int.init).map({ HTTPResponseStatus(statusCode: $0) }) else {
+      return .failure(.invalidHTTPStatus(nil))
     }
 
     guard status == .ok else {
@@ -624,7 +623,7 @@ extension GRPCClientStateMachine.State {
       }
     }
 
-    guard trailers["content-type"].first.flatMap(ContentType.init) != nil else {
+    guard trailers.first(name: "content-type").flatMap(ContentType.init) != nil else {
       return .failure(.invalidContentType)
     }
 

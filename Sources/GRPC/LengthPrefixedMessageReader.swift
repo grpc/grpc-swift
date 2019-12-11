@@ -30,7 +30,7 @@ import Logging
 ///
 /// - SeeAlso:
 /// [gRPC Protocol](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md)
-public class LengthPrefixedMessageReader {
+public struct LengthPrefixedMessageReader {
   public typealias Mode = GRPCError.Origin
 
   /// The mechanism that messages will be compressed with.
@@ -79,7 +79,7 @@ public class LengthPrefixedMessageReader {
   }
 
   /// Appends data to the buffer from which messages will be read.
-  public func append(buffer: inout ByteBuffer) {
+  public mutating func append(buffer: inout ByteBuffer) {
     guard buffer.readableBytes > 0 else {
       return
     }
@@ -98,7 +98,7 @@ public class LengthPrefixedMessageReader {
   /// - Returns: A buffer containing a message if one has been read, or `nil` if not enough
   ///   bytes have been consumed to return a message.
   /// - Throws: Throws an error if the compression algorithm is not supported.
-  public func nextMessage() throws -> ByteBuffer? {
+  public mutating func nextMessage() throws -> ByteBuffer? {
     switch try self.processNextState() {
     case .needMoreData:
       self.nilBufferIfPossible()
@@ -116,13 +116,13 @@ public class LengthPrefixedMessageReader {
   /// `nil`s out `buffer` if it exists and has no readable bytes.
   ///
   /// This allows the next call to `append` to avoid writing the contents of the appended buffer.
-  private func nilBufferIfPossible() {
+  private mutating func nilBufferIfPossible() {
     if self.buffer?.readableBytes == 0 {
       self.buffer = nil
     }
   }
 
-  private func processNextState() throws -> ParseResult {
+  private mutating func processNextState() throws -> ParseResult {
     guard self.buffer != nil else {
       return .needMoreData
     }
