@@ -488,7 +488,7 @@ extension ClientConnection {
     public init(
       target: ConnectionTarget,
       eventLoopGroup: EventLoopGroup,
-      errorDelegate: ClientErrorDelegate? = DebugOnlyLoggingClientErrorDelegate.shared,
+      errorDelegate: ClientErrorDelegate? = LoggingClientErrorDelegate(),
       connectivityStateDelegate: ConnectivityStateDelegate? = nil,
       tls: Configuration.TLS? = nil,
       connectionBackoff: ConnectionBackoff? = ConnectionBackoff()

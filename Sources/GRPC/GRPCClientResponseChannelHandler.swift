@@ -98,7 +98,7 @@ internal class GRPCClientResponseChannelHandler<ResponseMessage: Message>: Chann
   /// - Parameter error: the error to observe.
   internal func onError(_ error: Error) {
     let grpcError = (error as? GRPCError) ?? GRPCError.unknown(error, origin: .client)
-    self.errorDelegate?.didCatchError(grpcError.wrappedError, file: grpcError.file, line: grpcError.line)
+    self.errorDelegate?.didCatchError(grpcError.wrappedError, logger: self.logger, file: grpcError.file, line: grpcError.line)
     self.onStatus(grpcError.asGRPCStatus())
   }
 

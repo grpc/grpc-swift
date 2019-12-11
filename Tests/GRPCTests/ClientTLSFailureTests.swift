@@ -17,6 +17,7 @@ import Foundation
 import GRPC
 import GRPCSampleData
 import EchoImplementation
+import Logging
 import NIO
 import NIOSSL
 import XCTest
@@ -29,7 +30,7 @@ class ErrorRecordingDelegate: ClientErrorDelegate {
     self.expectation = expectation
   }
 
-  func didCatchError(_ error: Error, file: StaticString, line: Int) {
+  func didCatchError(_ error: Error, logger: Logger, file: StaticString, line: Int) {
     self.errors.append(error)
     self.expectation.fulfill()
   }

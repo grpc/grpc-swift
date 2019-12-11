@@ -17,6 +17,7 @@ import Foundation
 import GRPC
 import NIO
 import NIOSSL
+import Logging
 import XCTest
 
 class DelegatingErrorHandlerTests: GRPCTestCase {
@@ -25,7 +26,7 @@ class DelegatingErrorHandlerTests: GRPCTestCase {
 
     init() { }
 
-    func didCatchError(_ error: Error, file: StaticString, line: Int) {
+    func didCatchError(_ error: Error, logger: Logger, file: StaticString, line: Int) {
       self.errors.append(error)
     }
   }
