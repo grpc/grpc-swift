@@ -544,9 +544,11 @@ extension GRPCClientStateMachine.State {
     // responses as well as a variety of non-GRPC content-types and to omit Status & Status-Message.
     // Implementations must synthesize a Status & Status-Message to propagate to the application
     // layer when this occurs."
-    let responseStatus = headers.first(name: ":status").flatMap(Int.init).map { code in
-      HTTPResponseStatus(statusCode: code)
-    } ?? .preconditionFailed
+    let responseStatus = headers.first(name: ":status")
+      .flatMap(Int.init)
+      .map { code in
+        HTTPResponseStatus(statusCode: code)
+      } ?? .preconditionFailed
 
     guard responseStatus == .ok else {
       return .failure(.invalidHTTPStatus(responseStatus))
@@ -585,13 +587,14 @@ extension GRPCClientStateMachine.State {
   }
 
   private func readStatusCode(from trailers: HPACKHeaders) -> GRPCStatus.Code? {
-    return trailers.first(name: GRPCHeaderName.statusCode).flatMap(Int.init).flatMap(GRPCStatus.Code.init)
+    return trailers.first(name: GRPCHeaderName.statusCode)
+      .flatMap(Int.init)
+      .flatMap(GRPCStatus.Code.init)
   }
 
   private func readStatusMessage(from trailers: HPACKHeaders) -> String? {
-    return trailers.first(name: GRPCHeaderName.statusMessage).map {
-      GRPCStatusMessageMarshaller.unmarshall($0)
-    }
+    return trailers.first(name: GRPCHeaderName.statusMessage)
+      .map(GRPCStatusMessageMarshaller.unmarshall)
   }
 
   /// Parses a "Trailers-Only" response from the server into a `GRPCStatus`.
