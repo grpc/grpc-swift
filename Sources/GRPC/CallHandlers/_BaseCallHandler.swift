@@ -22,34 +22,36 @@ import Logging
 /// Provides a means for decoding incoming gRPC messages into protobuf objects.
 ///
 /// Calls through to `processMessage` for individual messages it receives, which needs to be implemented by subclasses.
-public class BaseCallHandler<RequestMessage: Message, ResponseMessage: Message>: GRPCCallHandler {
-  public func makeGRPCServerCodec() -> ChannelHandler { return GRPCServerCodec<RequestMessage, ResponseMessage>() }
+/// - Important: This is **NOT** part of the public API.
+public class _BaseCallHandler<RequestMessage: Message, ResponseMessage: Message>: GRPCCallHandler {
+  public func makeGRPCServerCodec() -> ChannelHandler {
+    return GRPCServerCodec<RequestMessage, ResponseMessage>()
+  }
 
   /// Called whenever a message has been received.
   ///
   /// Overridden by subclasses.
-  public func processMessage(_ message: RequestMessage) throws {
+  internal func processMessage(_ message: RequestMessage) throws {
     fatalError("needs to be overridden")
   }
-
-  /// Needs to be implemented by this class so that subclasses can override it.
-  ///
-  /// Otherwise, the subclass's implementation will simply never be called (probably because the protocol's default
-  /// implementation in an extension is being used instead).
-  public func handlerAdded(context: ChannelHandlerContext) { }
 
   /// Called when the client has half-closed the stream, indicating that they won't send any further data.
   ///
   /// Overridden by subclasses if the "end-of-stream" event is relevant.
-  public func endOfStreamReceived() throws { }
+  internal func endOfStreamReceived() throws { }
+
+  /// Sends an error status to the client while ensuring that all call context promises are fulfilled.
+  /// Because only the concrete call subclass knows which promises need to be fulfilled, this method needs to be overridden.
+  internal func sendErrorStatus(_ status: GRPCStatus) {
+    fatalError("needs to be overridden")
+  }
 
   /// Whether this handler can still write messages to the client.
   private var serverCanWrite = true
 
   internal let callHandlerContext: CallHandlerContext
 
-  /// Called for each error received in `errorCaught(context:error:)`.
-  private var errorDelegate: ServerErrorDelegate? {
+  internal var errorDelegate: ServerErrorDelegate? {
     return self.callHandlerContext.errorDelegate
   }
 
@@ -57,27 +59,27 @@ public class BaseCallHandler<RequestMessage: Message, ResponseMessage: Message>:
     return self.callHandlerContext.logger
   }
 
-  public init(callHandlerContext: CallHandlerContext) {
+  internal init(callHandlerContext: CallHandlerContext) {
     self.callHandlerContext = callHandlerContext
   }
 
-  /// Sends an error status to the client while ensuring that all call context promises are fulfilled.
-  /// Because only the concrete call subclass knows which promises need to be fulfilled, this method needs to be overridden.
-  func sendErrorStatus(_ status: GRPCStatus) {
-    fatalError("needs to be overridden")
-  }
+  /// Needs to be implemented by this class so that subclasses can override it.
+  ///
+  /// Otherwise, the subclass's implementation will simply never be called (probably because the protocol's default
+  /// implementation in an extension is being used instead).
+  public func handlerAdded(context: ChannelHandlerContext) { }
 }
 
-extension BaseCallHandler: ChannelInboundHandler {
+extension _BaseCallHandler: ChannelInboundHandler {
   public typealias InboundIn = GRPCServerRequestPart<RequestMessage>
 
   /// Passes errors to the user-provided `errorHandler`. After an error has been received an
   /// appropriate status is written. Errors which don't conform to `GRPCStatusTransformable`
   /// return a status with code `.internalError`.
   public func errorCaught(context: ChannelHandlerContext, error: Error) {
-    errorDelegate?.observeLibraryError(error)
+    self.errorDelegate?.observeLibraryError(error)
 
-    let status = errorDelegate?.transformLibraryError(error)
+    let status = self.errorDelegate?.transformLibraryError(error)
       ?? (error as? GRPCStatusTransformable)?.asGRPCStatus()
       ?? .processingError
     self.sendErrorStatus(status)
@@ -109,7 +111,7 @@ extension BaseCallHandler: ChannelInboundHandler {
   }
 }
 
-extension BaseCallHandler: ChannelOutboundHandler {
+extension _BaseCallHandler: ChannelOutboundHandler {
   public typealias OutboundIn = GRPCServerResponsePart<ResponseMessage>
   public typealias OutboundOut = GRPCServerResponsePart<ResponseMessage>
 

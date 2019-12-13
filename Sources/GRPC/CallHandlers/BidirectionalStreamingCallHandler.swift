@@ -25,7 +25,10 @@ import Logging
 ///   If the framework user wants to return a call error (e.g. in case of authentication failure),
 ///   they can fail the observer block future.
 /// - To close the call and send the status, complete `context.statusPromise`.
-public class BidirectionalStreamingCallHandler<RequestMessage: Message, ResponseMessage: Message>: BaseCallHandler<RequestMessage, ResponseMessage> {
+public class BidirectionalStreamingCallHandler<
+  RequestMessage: Message,
+  ResponseMessage: Message
+>: _BaseCallHandler<RequestMessage, ResponseMessage> {
   public typealias Context = StreamingResponseCallContext<ResponseMessage>
   public typealias EventObserver = (StreamEvent<RequestMessage>) -> Void
   public typealias EventObserverFactory = (Context) -> EventLoopFuture<EventObserver>
@@ -39,7 +42,10 @@ public class BidirectionalStreamingCallHandler<RequestMessage: Message, Response
 
   // We ask for a future of type `EventObserver` to allow the framework user to e.g. asynchronously authenticate a call.
   // If authentication fails, they can simply fail the observer future, which causes the call to be terminated.
-  public init(callHandlerContext: CallHandlerContext, eventObserverFactory: @escaping (StreamingResponseCallContext<ResponseMessage>) -> EventLoopFuture<EventObserver>) {
+  public init(
+    callHandlerContext: CallHandlerContext,
+    eventObserverFactory: @escaping (StreamingResponseCallContext<ResponseMessage>) -> EventLoopFuture<EventObserver>
+  ) {
     // Delay the creation of the event observer until `handlerAdded(context:)`, otherwise it is
     // possible for the service to write into the pipeline (by fulfilling the status promise
     // of the call context outside of the observer) before it has been configured.
@@ -80,7 +86,7 @@ public class BidirectionalStreamingCallHandler<RequestMessage: Message, Response
     eventObserver.cascadeFailure(to: callContext.statusPromise)
   }
 
-  public override func processMessage(_ message: RequestMessage) {
+  internal override func processMessage(_ message: RequestMessage) {
     guard case .created(let eventObserver) = self.observerState else {
       self.logger.warning("expecting observerState to be .created but was \(self.observerState), ignoring message \(message)")
       return
@@ -90,7 +96,7 @@ public class BidirectionalStreamingCallHandler<RequestMessage: Message, Response
     }
   }
 
-  public override func endOfStreamReceived() throws {
+  internal override func endOfStreamReceived() throws {
     guard case .created(let eventObserver) = self.observerState else {
       self.logger.warning("expecting observerState to be .created but was \(self.observerState), ignoring end-of-stream call")
       return
@@ -100,7 +106,7 @@ public class BidirectionalStreamingCallHandler<RequestMessage: Message, Response
     }
   }
 
-  override func sendErrorStatus(_ status: GRPCStatus) {
+  internal override func sendErrorStatus(_ status: GRPCStatus) {
     self.callContext?.statusPromise.fail(status)
   }
 }
