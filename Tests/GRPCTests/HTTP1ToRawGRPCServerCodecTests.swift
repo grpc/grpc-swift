@@ -151,7 +151,7 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
     count: Int,
     servicesByName: [String: CallHandlerProvider] = GRPCChannelHandlerResponseCapturingTestCase.echoProvider,
     callback: @escaping (EmbeddedChannel) throws -> Void
-    ) throws -> [RawGRPCServerResponsePart] {
+    ) throws -> [_RawGRPCServerResponsePart] {
     return try super.waitForGRPCChannelHandlerResponses(count: count, servicesByName: servicesByName) { channel in
       _ = channel.pipeline.addHandlers(HTTP1ToRawGRPCServerCodec(logger: Logger(label: "io.grpc.testing")), position: .first)
         .flatMapThrowing { _ in try callback(channel) }

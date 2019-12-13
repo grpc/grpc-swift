@@ -26,7 +26,7 @@ import Logging
 ///   the result of `error.asGRPCStatus()` will be returned to the client.
 /// - If `error.asGRPCStatus()` is not available, `GRPCStatus.processingError` is returned to the client.
 open class StreamingResponseCallContext<ResponseMessage: Message>: ServerCallContextBase {
-  public typealias WrappedResponse = GRPCServerResponsePart<ResponseMessage>
+  typealias WrappedResponse = _GRPCServerResponsePart<ResponseMessage>
 
   public let statusPromise: EventLoopPromise<GRPCStatus>
 

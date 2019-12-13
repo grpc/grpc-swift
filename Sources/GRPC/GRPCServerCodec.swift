@@ -20,14 +20,18 @@ import NIOFoundationCompat
 import NIOHTTP1
 
 /// Incoming gRPC package with a fixed message type.
-public enum GRPCServerRequestPart<RequestMessage: Message> {
+///
+/// - Important: This is **NOT** part of the public API.
+public enum _GRPCServerRequestPart<RequestMessage: Message> {
   case head(HTTPRequestHead)
   case message(RequestMessage)
   case end
 }
 
 /// Outgoing gRPC package with a fixed message type.
-public enum GRPCServerResponsePart<ResponseMessage: Message> {
+///
+/// - Important: This is **NOT** part of the public API.
+public enum _GRPCServerResponsePart<ResponseMessage: Message> {
   case headers(HTTPHeaders)
   case message(ResponseMessage)
   case statusAndTrailers(GRPCStatus, HTTPHeaders)
@@ -37,8 +41,8 @@ public enum GRPCServerResponsePart<ResponseMessage: Message> {
 internal final class GRPCServerCodec<RequestMessage: Message, ResponseMessage: Message> {}
 
 extension GRPCServerCodec: ChannelInboundHandler {
-  typealias InboundIn = RawGRPCServerRequestPart
-  typealias InboundOut = GRPCServerRequestPart<RequestMessage>
+  typealias InboundIn = _RawGRPCServerRequestPart
+  typealias InboundOut = _GRPCServerRequestPart<RequestMessage>
 
   func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     switch self.unwrapInboundIn(data) {
@@ -60,8 +64,8 @@ extension GRPCServerCodec: ChannelInboundHandler {
 }
 
 extension GRPCServerCodec: ChannelOutboundHandler {
-  typealias OutboundIn = GRPCServerResponsePart<ResponseMessage>
-  typealias OutboundOut = RawGRPCServerResponsePart
+  typealias OutboundIn = _GRPCServerResponsePart<ResponseMessage>
+  typealias OutboundOut = _RawGRPCServerResponsePart
 
   func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     let responsePart = self.unwrapOutboundIn(data)

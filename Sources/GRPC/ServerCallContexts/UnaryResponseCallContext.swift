@@ -29,7 +29,7 @@ import Logging
 /// For unary calls, the response is not actually provided by fulfilling `responsePromise`, but instead by completing
 /// the future returned by `UnaryCallHandler.EventObserver`.
 open class UnaryResponseCallContext<ResponseMessage: Message>: ServerCallContextBase, StatusOnlyCallContext {
-  public typealias WrappedResponse = GRPCServerResponsePart<ResponseMessage>
+  typealias WrappedResponse = _GRPCServerResponsePart<ResponseMessage>
 
   public let responsePromise: EventLoopPromise<ResponseMessage>
   public var responseStatus: GRPCStatus = .ok

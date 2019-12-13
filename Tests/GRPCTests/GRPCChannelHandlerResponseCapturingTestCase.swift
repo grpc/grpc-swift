@@ -78,8 +78,8 @@ class GRPCChannelHandlerResponseCapturingTestCase: GRPCTestCase {
     count: Int,
     servicesByName: [String: CallHandlerProvider] = defaultServiceProvider,
     callback: @escaping (EmbeddedChannel) throws -> Void
-  ) throws -> [RawGRPCServerResponsePart] {
-    let collector = CollectingChannelHandler<RawGRPCServerResponsePart>()
+  ) throws -> [_RawGRPCServerResponsePart] {
+    let collector = CollectingChannelHandler<_RawGRPCServerResponsePart>()
     try configureChannel(withHandlers: [collector, GRPCChannelHandler(servicesByName: servicesByName, errorDelegate: errorCollector, logger: Logger(label: "io.grpc.testing"))])
       .flatMapThrowing(callback)
       .wait()
