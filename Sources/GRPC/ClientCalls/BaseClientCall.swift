@@ -129,7 +129,7 @@ public class BaseClientCall<Request: Message, Response: Message>: ClientCall {
   }
 }
 
-extension GRPCRequestHead {
+extension _GRPCRequestHead {
   init(
     scheme: String,
     path: String,
@@ -142,7 +142,7 @@ extension GRPCRequestHead {
       customMetadata.add(name: requestIDHeader, value: requestID)
     }
 
-    self = GRPCRequestHead(
+    self = _GRPCRequestHead(
       method: options.cacheable ? "GET" : "POST",
       scheme: scheme,
       path: path,

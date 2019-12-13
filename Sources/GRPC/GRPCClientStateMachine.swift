@@ -188,7 +188,7 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   ///
   /// - Parameter requestHead: The client request head for the RPC.
   mutating func sendRequestHeaders(
-    requestHead: GRPCRequestHead
+    requestHead: _GRPCRequestHead
   ) -> Result<HPACKHeaders, SendRequestHeadersError> {
     return self.state.sendRequestHeaders(requestHead: requestHead)
   }
@@ -325,7 +325,7 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
 extension GRPCClientStateMachine.State {
   /// See `GRPCClientStateMachine.sendRequestHeaders(requestHead:)`.
   mutating func sendRequestHeaders(
-    requestHead: GRPCRequestHead
+    requestHead: _GRPCRequestHead
   ) -> Result<HPACKHeaders, SendRequestHeadersError> {
     let result: Result<HPACKHeaders, SendRequestHeadersError>
 

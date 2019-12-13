@@ -21,9 +21,12 @@ import SwiftProtobuf
 import Logging
 
 /// A gRPC client request message part.
-public enum GRPCClientRequestPart<Request: Message> {
+///
+/// - Important: This is **NOT** part of the public API. It is declared as
+///   `public` because it is used within performance tests.
+public enum _GRPCClientRequestPart<Request: Message> {
   /// The 'head' of the request, that is, information about the initiation of the RPC.
-  case head(GRPCRequestHead)
+  case head(_GRPCRequestHead)
 
   /// A deserialized request message to send to the server.
   case message(_Box<Request>)
@@ -32,13 +35,15 @@ public enum GRPCClientRequestPart<Request: Message> {
   case end
 }
 
-public struct GRPCRequestHead {
+/// - Important: This is **NOT** part of the public API. It is declared as
+///   `public` because it is used within performance tests.
+public struct _GRPCRequestHead {
   private final class _Storage {
-    public var method: String
-    public var scheme: String
-    public var path: String
-    public var host: String
-    public var timeout: GRPCTimeout
+    var method: String
+    var scheme: String
+    var path: String
+    var host: String
+    var timeout: GRPCTimeout
 
     init(
       method: String,
@@ -67,9 +72,9 @@ public struct GRPCRequestHead {
 
   private var _storage: _Storage
   // Don't put this in storage: it would CoW for every mutation.
-  public var customMetadata: HPACKHeaders
+  internal var customMetadata: HPACKHeaders
 
-  public var method: String {
+  internal var method: String {
     get {
       return self._storage.method
     }
@@ -81,7 +86,7 @@ public struct GRPCRequestHead {
     }
   }
 
-  public var scheme: String {
+  internal var scheme: String {
     get {
       return self._storage.scheme
     }
@@ -93,7 +98,7 @@ public struct GRPCRequestHead {
     }
   }
 
-  public var path: String {
+  internal var path: String {
     get {
       return self._storage.path
     }
@@ -105,7 +110,7 @@ public struct GRPCRequestHead {
     }
   }
 
-  public var host: String {
+  internal var host: String {
     get {
       return self._storage.host
     }
@@ -117,7 +122,7 @@ public struct GRPCRequestHead {
     }
   }
 
-  public var timeout: GRPCTimeout {
+  internal var timeout: GRPCTimeout {
     get {
       return self._storage.timeout
     }
@@ -149,7 +154,9 @@ public struct GRPCRequestHead {
 }
 
 /// A gRPC client response message part.
-public enum GRPCClientResponsePart<Response: Message> {
+///
+/// - Important: This is **NOT** part of the public API.
+public enum _GRPCClientResponsePart<Response: Message> {
   /// Metadata received as the server acknowledges the RPC.
   case initialMetadata(HPACKHeaders)
 
@@ -237,7 +244,7 @@ public final class _GRPCClientChannelHandler<Request: Message, Response: Message
 // MARK: - GRPCClientChannelHandler: Inbound
 extension _GRPCClientChannelHandler: ChannelInboundHandler {
   public typealias InboundIn = HTTP2Frame
-  public typealias InboundOut = GRPCClientResponsePart<Response>
+  public typealias InboundOut = _GRPCClientResponsePart<Response>
 
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     let frame = self.unwrapInboundIn(data)
@@ -370,7 +377,7 @@ extension _GRPCClientChannelHandler: ChannelInboundHandler {
 
 // MARK: - GRPCClientChannelHandler: Outbound
 extension _GRPCClientChannelHandler: ChannelOutboundHandler {
-  public typealias OutboundIn = GRPCClientRequestPart<Request>
+  public typealias OutboundIn = _GRPCClientRequestPart<Request>
   public typealias OutboundOut = HTTP2Frame
 
   public func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
