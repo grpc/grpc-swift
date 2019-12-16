@@ -204,7 +204,8 @@ public enum GRPCCallType {
 /// }
 /// ```
 ///
-/// - Important: This is **NOT** part of the public API.
+/// - Important: This is **NOT** part of the public API. It is declared as
+///   `public` because it is used within performance tests.
 public final class _GRPCClientChannelHandler<Request: Message, Response: Message> {
   private let logger: Logger
   private let streamID: HTTP2StreamID
