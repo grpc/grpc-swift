@@ -22,10 +22,10 @@ internal class WebCORSHandler {
 }
 
 extension WebCORSHandler: ChannelInboundHandler {
-  internal typealias InboundIn = HTTPServerRequestPart
-  internal typealias OutboundOut = HTTPServerResponsePart
+  typealias InboundIn = HTTPServerRequestPart
+  typealias OutboundOut = HTTPServerResponsePart
 
-  internal func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+  func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     // If the request is OPTIONS, the request is not propagated further.
     switch self.unwrapInboundIn(data) {
     case .head(let requestHead):
@@ -63,9 +63,9 @@ extension WebCORSHandler: ChannelInboundHandler {
 }
 
 extension WebCORSHandler: ChannelOutboundHandler {
-  internal typealias OutboundIn = HTTPServerResponsePart
+  typealias OutboundIn = HTTPServerResponsePart
 
-  internal func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+  func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     let responsePart = self.unwrapOutboundIn(data)
     switch responsePart {
     case .head(let responseHead):
