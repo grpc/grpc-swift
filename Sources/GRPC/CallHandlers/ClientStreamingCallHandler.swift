@@ -74,7 +74,7 @@ public final class ClientStreamingCallHandler<
     }
   }
 
-  override public func handlerAdded(context: ChannelHandlerContext) {
+  public override func handlerAdded(context: ChannelHandlerContext) {
     guard let callContext = self.callContext,
       case let .pendingCreation(factory) = self.observerState else {
       self.logger.warning("handlerAdded(context:) called but handler already has a call context")
