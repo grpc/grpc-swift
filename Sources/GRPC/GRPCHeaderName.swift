@@ -13,14 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Foundation
 
-public struct GRPCHeaderName {
-  private init() { }
-
-  public static let timeout = "grpc-timeout"
-  public static let encoding = "grpc-encoding"
-  public static let acceptEncoding = "grpc-accept-encoding"
-  public static let statusCode = "grpc-status"
-  public static let statusMessage = "grpc-message"
+internal enum GRPCHeaderName {
+  static let timeout = "grpc-timeout"
+  static let encoding = "grpc-encoding"
+  static let acceptEncoding = "grpc-accept-encoding"
+  static let statusCode = "grpc-status"
+  static let statusMessage = "grpc-message"
 }
