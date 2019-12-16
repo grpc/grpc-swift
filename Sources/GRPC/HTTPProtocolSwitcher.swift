@@ -21,7 +21,7 @@ import Logging
 
 /// Channel handler that creates different processing pipelines depending on whether
 /// the incoming request is HTTP 1 or 2.
-public class HTTPProtocolSwitcher {
+internal class HTTPProtocolSwitcher {
   private let handlersInitializer: ((Channel) -> EventLoopFuture<Void>)
   private let errorDelegate: ServerErrorDelegate?
   private let logger = Logger(subsystem: .serverChannelCall)
@@ -41,15 +41,15 @@ public class HTTPProtocolSwitcher {
   }
   private var bufferedData: [NIOAny] = []
 
-  public init(errorDelegate: ServerErrorDelegate?, handlersInitializer: (@escaping (Channel) -> EventLoopFuture<Void>)) {
+  init(errorDelegate: ServerErrorDelegate?, handlersInitializer: (@escaping (Channel) -> EventLoopFuture<Void>)) {
     self.errorDelegate = errorDelegate
     self.handlersInitializer = handlersInitializer
   }
 }
 
 extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
-  public typealias InboundIn = ByteBuffer
-  public typealias InboundOut = ByteBuffer
+  typealias InboundIn = ByteBuffer
+  typealias InboundOut = ByteBuffer
 
   enum HTTPProtocolVersionError: Error {
     /// Raised when it wasn't possible to detect HTTP Protocol version.
@@ -69,7 +69,7 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
     case http2
   }
 
-  public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+  func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     switch self.state {
     case .notConfigured:
       self.logger.debug("determining http protocol version")
@@ -150,7 +150,7 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
     }
   }
 
-  public func removeHandler(context: ChannelHandlerContext, removalToken: ChannelHandlerContext.RemovalToken) {
+  func removeHandler(context: ChannelHandlerContext, removalToken: ChannelHandlerContext.RemovalToken) {
     self.logger.debug("unbuffering data")
     self.bufferedData.forEach {
       context.fireChannelRead($0)
@@ -160,7 +160,7 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
     self.state = .configured
   }
 
-  public func errorCaught(context: ChannelHandlerContext, error: Error) {
+  func errorCaught(context: ChannelHandlerContext, error: Error) {
     switch self.state {
     case .notConfigured, .configuring:
       errorDelegate?.observeLibraryError(error)
