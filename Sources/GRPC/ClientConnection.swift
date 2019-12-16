@@ -416,7 +416,7 @@ extension ClientConnection {
       channel.configureHTTP2Pipeline(mode: .client)
     }.flatMap { _ in
       let settingsObserver = InitialSettingsObservingHandler(connectivityStateMonitor: connectivityMonitor)
-      let errorHandler = _DelegatingErrorHandler(delegate: errorDelegate)
+      let errorHandler = DelegatingErrorHandler(delegate: errorDelegate)
       return channel.pipeline.addHandlers(settingsObserver, errorHandler)
     }
   }

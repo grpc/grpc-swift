@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import Foundation
-import GRPC
+@testable import GRPC
 import NIO
 import NIOSSL
 import Logging
@@ -33,7 +33,7 @@ class DelegatingErrorHandlerTests: GRPCTestCase {
 
   func testUncleanShutdownIsIgnored() throws {
     let delegate = ErrorRecorder()
-    let channel = EmbeddedChannel(handler: _DelegatingErrorHandler(delegate: delegate))
+    let channel = EmbeddedChannel(handler: DelegatingErrorHandler(delegate: delegate))
     channel.pipeline.fireErrorCaught(NIOSSLError.uncleanShutdown)
     channel.pipeline.fireErrorCaught(NIOSSLError.writeDuringTLSShutdown)
 
