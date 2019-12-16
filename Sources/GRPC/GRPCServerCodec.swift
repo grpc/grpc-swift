@@ -34,13 +34,13 @@ public enum GRPCServerResponsePart<ResponseMessage: Message> {
 }
 
 /// A simple channel handler that translates raw gRPC packets into decoded protobuf messages, and vice versa.
-public final class GRPCServerCodec<RequestMessage: Message, ResponseMessage: Message> {}
+internal final class GRPCServerCodec<RequestMessage: Message, ResponseMessage: Message> {}
 
 extension GRPCServerCodec: ChannelInboundHandler {
-  public typealias InboundIn = RawGRPCServerRequestPart
-  public typealias InboundOut = GRPCServerRequestPart<RequestMessage>
+  typealias InboundIn = RawGRPCServerRequestPart
+  typealias InboundOut = GRPCServerRequestPart<RequestMessage>
 
-  public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+  func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     switch self.unwrapInboundIn(data) {
     case .head(let requestHead):
       context.fireChannelRead(self.wrapInboundOut(.head(requestHead)))
@@ -60,10 +60,10 @@ extension GRPCServerCodec: ChannelInboundHandler {
 }
 
 extension GRPCServerCodec: ChannelOutboundHandler {
-  public typealias OutboundIn = GRPCServerResponsePart<ResponseMessage>
-  public typealias OutboundOut = RawGRPCServerResponsePart
+  typealias OutboundIn = GRPCServerResponsePart<ResponseMessage>
+  typealias OutboundOut = RawGRPCServerResponsePart
 
-  public func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+  func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     let responsePart = self.unwrapOutboundIn(data)
     switch responsePart {
     case .headers(let headers):
