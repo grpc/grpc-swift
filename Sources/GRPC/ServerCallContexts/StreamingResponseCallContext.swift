@@ -25,7 +25,7 @@ import Logging
 /// - If `statusPromise` is failed and the error is of type `GRPCStatusTransformable`,
 ///   the result of `error.asGRPCStatus()` will be returned to the client.
 /// - If `error.asGRPCStatus()` is not available, `GRPCStatus.processingError` is returned to the client.
-open class StreamingResponseCallContext<ResponseMessage: Message>: ServerCallContextBase {
+public class StreamingResponseCallContext<ResponseMessage: Message>: ServerCallContextBase {
   public typealias WrappedResponse = GRPCServerResponsePart<ResponseMessage>
 
   public let statusPromise: EventLoopPromise<GRPCStatus>
@@ -41,7 +41,7 @@ open class StreamingResponseCallContext<ResponseMessage: Message>: ServerCallCon
 }
 
 /// Concrete implementation of `StreamingResponseCallContext` used by our generated code.
-open class StreamingResponseCallContextImpl<ResponseMessage: Message>: StreamingResponseCallContext<ResponseMessage> {
+internal class StreamingResponseCallContextImpl<ResponseMessage: Message>: StreamingResponseCallContext<ResponseMessage> {
   public let channel: Channel
 
   /// - Parameters:
@@ -51,7 +51,7 @@ open class StreamingResponseCallContextImpl<ResponseMessage: Message>: Streaming
   ///     sending them to the client.
   ///
   ///     Note: `errorDelegate` is not called for status promise that are `succeeded` with a non-OK status.
-  public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, logger: Logger) {
+  internal init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, logger: Logger) {
     self.channel = channel
 
     super.init(eventLoop: channel.eventLoop, request: request, logger: logger)
@@ -80,7 +80,7 @@ open class StreamingResponseCallContextImpl<ResponseMessage: Message>: Streaming
 /// Concrete implementation of `StreamingResponseCallContext` used for testing.
 ///
 /// Simply records all sent messages.
-open class StreamingResponseCallContextTestStub<ResponseMessage: Message>: StreamingResponseCallContext<ResponseMessage> {
+public class StreamingResponseCallContextTestStub<ResponseMessage: Message>: StreamingResponseCallContext<ResponseMessage> {
   open var recordedResponses: [ResponseMessage] = []
 
   open override func sendResponse(_ message: ResponseMessage) -> EventLoopFuture<Void> {

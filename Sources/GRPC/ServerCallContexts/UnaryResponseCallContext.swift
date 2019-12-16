@@ -28,7 +28,7 @@ import Logging
 ///
 /// For unary calls, the response is not actually provided by fulfilling `responsePromise`, but instead by completing
 /// the future returned by `UnaryCallHandler.EventObserver`.
-open class UnaryResponseCallContext<ResponseMessage: Message>: ServerCallContextBase, StatusOnlyCallContext {
+public class UnaryResponseCallContext<ResponseMessage: Message>: ServerCallContextBase, StatusOnlyCallContext {
   public typealias WrappedResponse = GRPCServerResponsePart<ResponseMessage>
 
   public let responsePromise: EventLoopPromise<ResponseMessage>
@@ -55,7 +55,7 @@ public protocol StatusOnlyCallContext: ServerCallContext {
 }
 
 /// Concrete implementation of `UnaryResponseCallContext` used by our generated code.
-open class UnaryResponseCallContextImpl<ResponseMessage: Message>: UnaryResponseCallContext<ResponseMessage> {
+internal class UnaryResponseCallContextImpl<ResponseMessage: Message>: UnaryResponseCallContext<ResponseMessage> {
   public let channel: Channel
 
   /// - Parameters:
@@ -63,7 +63,7 @@ open class UnaryResponseCallContextImpl<ResponseMessage: Message>: UnaryResponse
   ///   - request: The headers provided with this call.
   ///   - errorDelegate: Provides a means for transforming response promise failures to `GRPCStatusTransformable` before
   ///     sending them to the client.
-  public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, logger: Logger) {
+  internal init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, logger: Logger) {
     self.channel = channel
 
     super.init(eventLoop: channel.eventLoop, request: request, logger: logger)
@@ -93,4 +93,4 @@ open class UnaryResponseCallContextImpl<ResponseMessage: Message>: UnaryResponse
 /// Concrete implementation of `UnaryResponseCallContext` used for testing.
 ///
 /// Only provided to make it clear in tests that no "real" implementation is used.
-open class UnaryResponseCallContextTestStub<ResponseMessage: Message>: UnaryResponseCallContext<ResponseMessage> { }
+public class UnaryResponseCallContextTestStub<ResponseMessage: Message>: UnaryResponseCallContext<ResponseMessage> { }

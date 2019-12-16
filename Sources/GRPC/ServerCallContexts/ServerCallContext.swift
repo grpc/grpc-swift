@@ -32,7 +32,7 @@ public protocol ServerCallContext: class {
 }
 
 /// Base class providing data provided to the framework user for all server calls.
-open class ServerCallContextBase: ServerCallContext {
+public class ServerCallContextBase: ServerCallContext {
   public let eventLoop: EventLoop
   public let request: HTTPRequestHead
   public let logger: Logger
