@@ -16,12 +16,12 @@
 import Foundation
 import NIO
 
-public struct LengthPrefixedMessageWriter {
-  public static let metadataLength = 5
+internal struct LengthPrefixedMessageWriter {
+  internal static let metadataLength = 5
 
   private let compression: CompressionMechanism
 
-  public init(compression: CompressionMechanism) {
+  internal init(compression: CompressionMechanism) {
     precondition(compression.supported, "compression mechanism \(compression) is not supported")
     self.compression = compression
   }
@@ -34,7 +34,7 @@ public struct LengthPrefixedMessageWriter {
   /// - Returns: A `ByteBuffer` containing a gRPC length-prefixed message.
   /// - Precondition: `compression.supported` is `true`.
   /// - Note: See `LengthPrefixedMessageReader` for more details on the format.
-  func write(_ message: Data, into buffer: inout ByteBuffer) {
+  internal func write(_ message: Data, into buffer: inout ByteBuffer) {
     buffer.reserveCapacity(LengthPrefixedMessageWriter.metadataLength + message.count)
 
     //! TODO: Add compression support, use the length and compressed content.
