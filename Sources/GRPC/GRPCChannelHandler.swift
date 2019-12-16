@@ -69,11 +69,19 @@ extension GRPCChannelHandler: ChannelInboundHandler, RemovableChannelHandler {
   public typealias OutboundOut = _RawGRPCServerResponsePart
 
   public func errorCaught(context: ChannelHandlerContext, error: Error) {
-    self.errorDelegate?.observeLibraryError(error)
+    let status: GRPCStatus
 
-    let status = self.errorDelegate?.transformLibraryError(error)
-      ?? (error as? GRPCStatusTransformable)?.asGRPCStatus()
-      ?? .processingError
+    if let errorWithContext = error as? GRPCError.WithContext {
+      self.errorDelegate?.observeLibraryError(errorWithContext.error)
+      status = self.errorDelegate?.transformLibraryError(errorWithContext.error)
+          ?? errorWithContext.error.asGRPCStatus()
+    } else {
+      self.errorDelegate?.observeLibraryError(error)
+      status = self.errorDelegate?.transformLibraryError(error)
+          ?? (error as? GRPCStatusTransformable)?.asGRPCStatus()
+          ?? .processingError
+    }
+
     context.writeAndFlush(wrapOutboundOut(.statusAndTrailers(status, HTTPHeaders())), promise: nil)
   }
 
@@ -82,7 +90,7 @@ extension GRPCChannelHandler: ChannelInboundHandler, RemovableChannelHandler {
     switch requestPart {
     case .head(let requestHead):
       guard let callHandler = self.makeCallHandler(channel: context.channel, requestHead: requestHead) else {
-        self.errorCaught(context: context, error: GRPCError.server(.unimplementedMethod(requestHead.uri)))
+        self.errorCaught(context: context, error: GRPCError.RPCNotImplemented(rpc: requestHead.uri).captureContext())
         return
       }
 

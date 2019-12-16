@@ -40,8 +40,8 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
       try channel.writeInbound(HTTPServerRequestPart.body(gRPCMessage(channel: channel, compression: true)))
     }
 
-    let expectedError = GRPCCommonError.unexpectedCompression
-    XCTAssertEqual([expectedError], errorCollector.asGRPCCommonErrors)
+    let expectedError = GRPCError.CompressionUnsupported()
+    XCTAssertEqual(expectedError, errorCollector.errors.first as? GRPCError.CompressionUnsupported)
 
     responses[0].assertHeaders()
     responses[1].assertStatus { status in
@@ -87,8 +87,8 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
       try channel.writeInbound(HTTPServerRequestPart.body(buffer))
     }
 
-    let expectedError = GRPCServerError.requestProtoDeserializationFailure
-    XCTAssertEqual([expectedError], errorCollector.asGRPCServerErrors)
+    let expectedError = GRPCError.DeserializationFailure()
+    XCTAssertEqual(expectedError, errorCollector.errors.first as? GRPCError.DeserializationFailure)
 
     responses[0].assertHeaders()
     responses[1].assertStatus { status in
@@ -112,15 +112,12 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
 
     XCTAssertEqual(errorCollector.errors.count, 1)
 
-    if case .some(.invalidState(let message)) = errorCollector.asGRPCCommonErrors?.first {
-      XCTAssert(message.contains("trailers"))
-    } else {
-      XCTFail("\(String(describing: errorCollector.errors.first)) was not .invalidState")
-    }
+    let expected = GRPCError.InvalidState("unexpected trailers received")
+    XCTAssertEqual(expected, errorCollector.errors.first as? GRPCError.InvalidState)
 
     responses[0].assertHeaders()
     responses[1].assertStatus { status in
-      XCTAssertEqual(status, .processingError)
+      XCTAssertEqual(status, expected.asGRPCStatus())
     }
   }
 
@@ -132,7 +129,7 @@ class HTTP1ToRawGRPCServerCodecTests: GRPCChannelHandlerResponseCapturingTestCas
 
       // Sending trailers with `.end` should trigger an error. However, writing a message to a unary call
       // will trigger a response and status to be sent back. Since we're using `EmbeddedChannel` this will
-      // be done before the trailers are sent. If a 4th resposne were to be sent (for the error status) then
+      // be done before the trailers are sent. If a 4th response were to be sent (for the error status) then
       // the test would fail.
 
       var trailers = HTTPHeaders()

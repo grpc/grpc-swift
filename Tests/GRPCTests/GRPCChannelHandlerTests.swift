@@ -27,8 +27,8 @@ class GRPCChannelHandlerTests: GRPCChannelHandlerResponseCapturingTestCase {
       try channel.writeInbound(_RawGRPCServerRequestPart.head(requestHead))
     }
 
-    let expectedError = GRPCServerError.unimplementedMethod("unimplementedMethodName")
-    XCTAssertEqual([expectedError], errorCollector.asGRPCServerErrors)
+    let expectedError = GRPCError.RPCNotImplemented(rpc: "unimplementedMethodName")
+    XCTAssertEqual(expectedError, errorCollector.errors.first as? GRPCError.RPCNotImplemented)
 
     responses[0].assertStatus { status in
       XCTAssertEqual(status, expectedError.asGRPCStatus())
@@ -64,8 +64,8 @@ class GRPCChannelHandlerTests: GRPCChannelHandlerResponseCapturingTestCase {
       try channel.writeInbound(_RawGRPCServerRequestPart.message(buffer))
     }
 
-    let expectedError = GRPCServerError.requestProtoDeserializationFailure
-    XCTAssertEqual([expectedError], errorCollector.asGRPCServerErrors)
+    let expectedError = GRPCError.DeserializationFailure()
+    XCTAssertEqual(expectedError, errorCollector.errors.first as? GRPCError.DeserializationFailure)
 
     responses[0].assertHeaders()
     responses[1].assertStatus { status in

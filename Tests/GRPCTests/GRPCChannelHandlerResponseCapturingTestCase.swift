@@ -34,18 +34,6 @@ class CollectingChannelHandler<OutboundIn>: ChannelOutboundHandler {
 class CollectingServerErrorDelegate: ServerErrorDelegate {
   var errors: [Error] = []
 
-  var asGRPCErrors: [GRPCError]? {
-    return self.errors as? [GRPCError]
-  }
-
-  var asGRPCServerErrors: [GRPCServerError]? {
-    return (self.asGRPCErrors?.map { $0.wrappedError }) as? [GRPCServerError]
-  }
-
-  var asGRPCCommonErrors: [GRPCCommonError]? {
-    return (self.asGRPCErrors?.map { $0.wrappedError }) as? [GRPCCommonError]
-  }
-
   func observeLibraryError(_ error: Error) {
     self.errors.append(error)
   }

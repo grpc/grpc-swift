@@ -283,17 +283,17 @@ extension _GRPCClientChannelHandler: ChannelInboundHandler {
       context.fireChannelRead(self.wrapInboundOut(.trailingMetadata(content.headers)))
 
       // Are they valid headers?
-      let result = self.stateMachine.receiveEndOfResponseStream(content.headers).mapError { error -> GRPCError in
+      let result = self.stateMachine.receiveEndOfResponseStream(content.headers).mapError { error -> GRPCError.WithContext in
         // The headers aren't valid so let's figure out a reasonable error to forward:
         switch error {
-        case .invalidContentType:
-          return .client(.invalidContentType)
+        case .invalidContentType(let contentType):
+          return GRPCError.InvalidContentType(contentType).captureContext()
         case .invalidHTTPStatus(let status):
-          return .client(.invalidHTTPStatus(status))
+          return GRPCError.InvalidHTTPStatus(status).captureContext()
         case .invalidHTTPStatusWithGRPCStatus(let status):
-          return .client(.invalidHTTPStatusWithGRPCStatus(status))
+          return GRPCError.InvalidHTTPStatusWithGRPCStatus(status).captureContext()
         case .invalidState:
-          return .client(.invalidState("invalid state parsing end-of-stream trailers"))
+          return GRPCError.InvalidState("parsing end-of-stream trailers").captureContext()
         }
       }
 
@@ -306,17 +306,17 @@ extension _GRPCClientChannelHandler: ChannelInboundHandler {
       }
     } else {
       // "Normal" response headers, but are they valid?
-      let result = self.stateMachine.receiveResponseHeaders(content.headers).mapError { error -> GRPCError in
+      let result = self.stateMachine.receiveResponseHeaders(content.headers).mapError { error -> GRPCError.WithContext in
         // The headers aren't valid so let's figure out a reasonable error to forward:
         switch error {
-        case .invalidContentType:
-          return .client(.invalidContentType)
+        case .invalidContentType(let contentType):
+          return GRPCError.InvalidContentType(contentType).captureContext()
         case .invalidHTTPStatus(let status):
-          return .client(.invalidHTTPStatus(status))
-        case .unsupportedMessageEncoding(let encoding):
-          return .client(.unsupportedCompressionMechanism(encoding))
+          return GRPCError.InvalidHTTPStatus(status).captureContext()
+        case .unsupportedMessageEncoding:
+          return GRPCError.CompressionUnsupported().captureContext()
         case .invalidState:
-          return .client(.invalidState("invalid state parsing headers"))
+          return GRPCError.InvalidState("parsing headers").captureContext()
         }
       }
 
@@ -350,14 +350,14 @@ extension _GRPCClientChannelHandler: ChannelInboundHandler {
     }
 
     // Feed the buffer into the state machine.
-    let result = self.stateMachine.receiveResponseBuffer(&buffer).mapError { error -> GRPCError in
+    let result = self.stateMachine.receiveResponseBuffer(&buffer).mapError { error -> GRPCError.WithContext in
       switch error {
       case .cardinalityViolation:
-        return .client(.responseCardinalityViolation)
+        return GRPCError.StreamCardinalityViolation(stream: .response).captureContext()
       case .deserializationFailed, .leftOverBytes:
-        return .client(.responseProtoDeserializationFailure)
+        return GRPCError.DeserializationFailure().captureContext()
       case .invalidState:
-        return .client(.invalidState("invalid state when parsing data as a response message"))
+        return GRPCError.InvalidState("parsing data as a response message").captureContext()
       }
     }
 
@@ -395,7 +395,7 @@ extension _GRPCClientChannelHandler: ChannelOutboundHandler {
         case .invalidState:
           // This is bad: we need to trigger an error and close the channel.
           promise?.fail(sendRequestHeadersError)
-          context.fireErrorCaught(GRPCError.client(.invalidState("unable to initiate RPC")))
+          context.fireErrorCaught(GRPCError.InvalidState("unable to initiate RPC").captureContext())
         }
       }
 
@@ -420,11 +420,11 @@ extension _GRPCClientChannelHandler: ChannelOutboundHandler {
         case .serializationFailed:
           // This is bad: we need to trigger an error and close the channel.
           promise?.fail(writeError)
-          context.fireErrorCaught(GRPCError.client(.requestProtoSerializationFailure))
+          context.fireErrorCaught(GRPCError.SerializationFailure().captureContext())
 
         case .invalidState:
           promise?.fail(writeError)
-          context.fireErrorCaught(GRPCError.client(.invalidState("unable to write message")))
+          context.fireErrorCaught(GRPCError.InvalidState("unable to write message").captureContext())
         }
       }
 
@@ -450,7 +450,7 @@ extension _GRPCClientChannelHandler: ChannelOutboundHandler {
         case .invalidState:
           // This is bad: we need to trigger an error and close the channel.
           promise?.fail(error)
-          context.fireErrorCaught(GRPCError.client(.invalidState("unable to close request stream")))
+          context.fireErrorCaught(GRPCError.InvalidState("unable to close request stream").captureContext())
         }
       }
     }
@@ -464,7 +464,7 @@ extension _GRPCClientChannelHandler: ChannelOutboundHandler {
     if let userEvent = event as? GRPCClientUserEvent {
       switch userEvent {
       case .cancelled:
-        context.fireErrorCaught(GRPCClientError.cancelledByClient)
+        context.fireErrorCaught(GRPCError.RPCCancelledByClient().captureContext())
         context.close(mode: .all, promise: promise)
       }
     } else {

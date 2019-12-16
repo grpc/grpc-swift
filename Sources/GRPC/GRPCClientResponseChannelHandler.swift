@@ -91,15 +91,24 @@ internal class GRPCClientResponseChannelHandler<ResponseMessage: Message>: Chann
 
   /// Observe the given error.
   ///
-  /// If an `errorDelegate` has been set, the delegate's `didCatchError(error:file:line:)` method is
+  /// If an `errorDelegate` has been set, the delegate's `didCatchError(error:logger:file:line:)` method is
   /// called with the wrapped error and its source. Any unfulfilled promises are also resolved with
   /// the given error (see `observeStatus(_:)`).
   ///
   /// - Parameter error: the error to observe.
   internal func onError(_ error: Error) {
-    let grpcError = (error as? GRPCError) ?? GRPCError.unknown(error, origin: .client)
-    self.errorDelegate?.didCatchError(grpcError.wrappedError, logger: self.logger, file: grpcError.file, line: grpcError.line)
-    self.onStatus(grpcError.asGRPCStatus())
+    if let errorWithContext = error as? GRPCError.WithContext {
+      self.errorDelegate?.didCatchError(
+          errorWithContext.error,
+          logger: self.logger,
+          file: errorWithContext.file,
+          line: errorWithContext.line
+      )
+      self.onStatus(errorWithContext.error.asGRPCStatus())
+    } else {
+      self.errorDelegate?.didCatchErrorWithoutContext(error, logger: self.logger)
+      self.onStatus((error as? GRPCStatusTransformable)?.asGRPCStatus() ?? .processingError)
+    }
   }
 
   /// Called when a response is received. Subclasses should override this method.
@@ -147,7 +156,7 @@ internal class GRPCClientResponseChannelHandler<ResponseMessage: Message>: Chann
 
   /// Observe an error from the pipeline and close the channel.
   public func errorCaught(context: ChannelHandlerContext, error: Error) {
-    self.onError((error as? GRPCError) ?? GRPCError.unknown(error, origin: .client))
+    self.onError(error)
     context.close(mode: .all, promise: nil)
   }
 
@@ -160,7 +169,7 @@ internal class GRPCClientResponseChannelHandler<ResponseMessage: Message>: Chann
 
     let timeout = self.timeout
     self.timeoutTask = eventLoop.scheduleTask(in: timeout.asNIOTimeAmount) { [weak self] in
-      self?.performTimeout(error: .client(.deadlineExceeded(timeout)))
+      self?.performTimeout(error: GRPCError.RPCTimedOut(timeout).captureContext())
     }
   }
 
@@ -169,7 +178,7 @@ internal class GRPCClientResponseChannelHandler<ResponseMessage: Message>: Chann
   /// its channel is closed.
   ///
   /// - Parameter error: The error to fail any promises with.
-  internal func performTimeout(error: GRPCError) {
+  internal func performTimeout(error: GRPCError.WithContext) {
     self.onError(error)
     self.context?.close(mode: .all, promise: nil)
     self.context = nil

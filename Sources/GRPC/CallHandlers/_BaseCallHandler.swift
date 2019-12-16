@@ -77,11 +77,19 @@ extension _BaseCallHandler: ChannelInboundHandler {
   /// appropriate status is written. Errors which don't conform to `GRPCStatusTransformable`
   /// return a status with code `.internalError`.
   public func errorCaught(context: ChannelHandlerContext, error: Error) {
-    self.errorDelegate?.observeLibraryError(error)
+    let status: GRPCStatus
 
-    let status = self.errorDelegate?.transformLibraryError(error)
-      ?? (error as? GRPCStatusTransformable)?.asGRPCStatus()
-      ?? .processingError
+    if let errorWithContext = error as? GRPCError.WithContext {
+      self.errorDelegate?.observeLibraryError(errorWithContext.error)
+      status = self.errorDelegate?.transformLibraryError(errorWithContext.error)
+          ?? errorWithContext.error.asGRPCStatus()
+    } else {
+      self.errorDelegate?.observeLibraryError(error)
+      status = self.errorDelegate?.transformLibraryError(error)
+          ?? (error as? GRPCStatusTransformable)?.asGRPCStatus()
+          ?? .processingError
+    }
+
     self.sendErrorStatus(status)
   }
 
@@ -90,7 +98,7 @@ extension _BaseCallHandler: ChannelInboundHandler {
     case .head(let requestHead):
       // Head should have been handled by `GRPCChannelHandler`.
       self.logger.error("call handler unexpectedly received request head", metadata: ["head": "\(requestHead)"])
-      self.errorCaught(context: context, error: GRPCError.server(.invalidState("unexpected request head received \(requestHead)")))
+      self.errorCaught(context: context, error: GRPCError.InvalidState("unexpected request head received \(requestHead)").captureContext())
 
     case .message(let message):
       do {
@@ -117,7 +125,7 @@ extension _BaseCallHandler: ChannelOutboundHandler {
 
   public func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     guard self.serverCanWrite else {
-      promise?.fail(GRPCError.server(.serverNotWritable))
+      promise?.fail(GRPCError.InvalidState("rpc has already finished").captureContext())
       return
     }
 

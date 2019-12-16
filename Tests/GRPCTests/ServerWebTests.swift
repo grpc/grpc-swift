@@ -90,7 +90,10 @@ extension ServerWebTests {
 
   func testUnaryWithoutRequestMessage() {
     let expectedData = gRPCWebTrailers(
-      status: 12, message: "request cardinality violation; method requires exactly one request but client sent none")
+      status: 13,
+      message: "Request stream cardinality violation"
+    )
+
     let expectedResponse = expectedData.base64EncodedString()
 
     let completionHandlerExpectation = expectation(description: "completion handler called")

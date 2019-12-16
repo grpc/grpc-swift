@@ -13,8 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Foundation
-import GRPC
+@testable import GRPC
 import GRPCSampleData
 import EchoImplementation
 import Logging
@@ -99,7 +98,6 @@ class ClientTLSFailureTests: GRPCTestCase {
     self.server = nil
     self.serverEventLoopGroup = nil
   }
-
 
   func testClientConnectionFailsWhenServerIsUnknown() throws {
     let shutdownExpectation = self.expectation(description: "client shutdown")

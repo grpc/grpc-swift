@@ -13,235 +13,274 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Foundation
-import NIOHTTP1
 
-/// Wraps a gRPC error to provide contextual information about where it was thrown.
-public struct GRPCError: Error, GRPCStatusTransformable {
-  public enum Origin { case client, server }
+/// An error thrown by the gRPC library.
+///
+/// Implementation details: this is a case-less `enum` with an inner-class per error type. This
+/// allows for additional error classes to be added as a SemVer minor change.
+///
+/// Unfortunately it is not possible to use a private inner `enum` with static property 'cases' on
+/// the outer type to mirror each case of the inner `enum` as many of the errors require associated
+/// values (pattern matching is not possible).
+public enum GRPCError {
+  /// The RPC is not implemented on the server.
+  public struct RPCNotImplemented: GRPCErrorProtocol {
+    /// The path of the RPC which was called, e.g. '/echo.Echo/Get'.
+    public var rpc: String
 
-  /// The underlying error thrown by framework.
-  public let wrappedError: Error
+    public init(rpc: String) {
+      self.rpc = rpc
+    }
 
-  /// The origin of the error.
-  public let origin: Origin
+    public var description: String {
+      return "RPC '\(self.rpc)' is not implemented"
+    }
 
-  /// The file in which the error was thrown.
-  public let file: StaticString
-
-  /// The line number in the `file` where the error was thrown.
-  public let line: Int
-
-  public func asGRPCStatus() -> GRPCStatus {
-    return (wrappedError as? GRPCStatusTransformable)?.asGRPCStatus() ?? .processingError
+    public func asGRPCStatus() -> GRPCStatus {
+      return GRPCStatus(code: .unimplemented, message: self.description)
+    }
   }
 
-  private init(_ error: Error, origin: Origin, file: StaticString, line: Int) {
-    self.wrappedError = error
-    self.origin = origin
-    self.file = file
-    self.line = line
+  /// The RPC was cancelled by the client.
+  public struct RPCCancelledByClient: GRPCErrorProtocol {
+    public let description: String = "RPC was cancelled by the client"
+
+    public init() {
+    }
+
+    public func asGRPCStatus() -> GRPCStatus {
+      return GRPCStatus(code: .cancelled, message: self.description)
+    }
   }
 
-  /// Creates a `GRPCError` which may only be thrown from the client.
-  public static func client(_ error: GRPCClientError, file: StaticString = #file, line: Int = #line) -> GRPCError {
-    return GRPCError(error, origin: .client, file: file, line: line)
+/// The RPC did not complete before the timeout.
+  public struct RPCTimedOut: GRPCErrorProtocol {
+    /// The timeout used for the RPC.
+    public var timeout: GRPCTimeout
+
+    public init(_ timeout: GRPCTimeout) {
+      self.timeout = timeout
+    }
+
+    public var description: String {
+      return "RPC timed out (timeout=\(self.timeout.wireEncoding)) before completing"
+    }
+
+    public func asGRPCStatus() -> GRPCStatus {
+      return GRPCStatus(code: .deadlineExceeded, message: self.description)
+    }
   }
 
-  /// Creates a `GRPCError` which was thrown from the client.
-  public static func client(_ error: GRPCCommonError, file: StaticString = #file, line: Int = #line) -> GRPCError {
-    return GRPCError(error, origin: .client, file: file, line: line)
+  /// A message was not able to be serialized.
+  public struct SerializationFailure: GRPCErrorProtocol {
+    public let description = "Message serialization failed"
+
+    public init() {
+    }
+
+    public func asGRPCStatus() -> GRPCStatus {
+      return GRPCStatus(code: .internalError, message: self.description)
+    }
   }
 
-  /// Creates a `GRPCError` which may only be thrown from the server.
-  public static func server(_ error: GRPCServerError, file: StaticString = #file, line: Int = #line) -> GRPCError {
-    return GRPCError(error, origin: .server, file: file, line: line)
-  }
+  /// A message was not able to be deserialized.
+  public struct DeserializationFailure: GRPCErrorProtocol {
+    public let description = "Message deserialization failed"
 
-  /// Creates a `GRPCError` which was thrown from the server.
-  public static func server(_ error: GRPCCommonError, file: StaticString = #file, line: Int = #line) -> GRPCError {
-    return GRPCError(error, origin: .server, file: file, line: line)
-  }
+    public init() {
+    }
 
-  /// Creates a `GRPCError` which was may be thrown by either the server or the client.
-  public static func common(_ error: GRPCCommonError, origin: Origin, file: StaticString = #file, line: Int = #line) -> GRPCError {
-    return GRPCError(error, origin: origin, file: file, line: line)
+    public func asGRPCStatus() -> GRPCStatus {
+      return GRPCStatus(code: .internalError, message: self.description)
+    }
   }
-
-  public static func unknown(_ error: Error, origin: Origin) -> GRPCError {
-    return GRPCError(error, origin: origin, file: "<unknown>", line: 0)
-  }
-}
-
-/// An error which should only be thrown by the server.
-public enum GRPCServerError: Error, Equatable {
-  /// The RPC method is not implemented on the server.
-  case unimplementedMethod(String)
 
   /// It was not possible to decode a base64 message (gRPC-Web only).
-  case base64DecodeError
+  public struct Base64DecodeError: GRPCErrorProtocol {
+    public let description = "Base64 message decoding failed"
 
-  /// It was not possible to deserialize the request protobuf.
-  case requestProtoDeserializationFailure
+    public init() {
+    }
 
-  /// It was not possible to serialize the response protobuf.
-  case responseProtoSerializationFailure
+    public func asGRPCStatus() -> GRPCStatus {
+      return GRPCStatus(code: .internalError, message: self.description)
+    }
+  }
 
-  /// Zero requests were sent for a unary-request call.
-  case noRequestsButOneExpected
-  
-  /// More than one request was sent for a unary-request call.
-  case tooManyRequests
+  /// The compression mechanism used was not supported.
+  public struct CompressionUnsupported: GRPCErrorProtocol {
+    public let description = "The compression used is not supported"
 
-  /// The server received a message when it was not in a writable state.
-  case serverNotWritable
-}
+    public init() {
+    }
 
-/// An error which should only be thrown by the client.
-public enum GRPCClientError: Error, Equatable {
-  /// The response status was not "200 OK".
-  case HTTPStatusNotOk(HTTPResponseStatus)
+    public func asGRPCStatus() -> GRPCStatus {
+      return GRPCStatus(code: .unimplemented, message: self.description)
+    }
+  }
 
-  /// The ":status" header was not a valid HTTP status.
-  case invalidHTTPStatus(HTTPResponseStatus?)
+  /// Too many, or too few, messages were sent over the given stream.
+  public struct StreamCardinalityViolation: GRPCErrorProtocol {
+    /// The stream on which there was a cardinality violation.
+    public var stream: GRPCStreamType
 
-  /// The ":status" header was not a valid HTTP status but a "grpc-status" header with a valid
-  /// value was present.
-  case invalidHTTPStatusWithGRPCStatus(GRPCStatus)
+    public init(stream: GRPCStreamType) {
+      self.stream = stream
+    }
 
-  /// The call was cancelled by the client.
-  case cancelledByClient
+    public var description: String {
+      switch self.stream {
+      case .request:
+        return "Request stream cardinality violation"
+      case .response:
+        return "Response stream cardinality violation"
+      }
+    }
 
-  /// It was not possible to deserialize the response protobuf.
-  case responseProtoDeserializationFailure
+    public func asGRPCStatus() -> GRPCStatus {
+      return GRPCStatus(code: .internalError, message: self.description)
+    }
+  }
 
-  /// It was not possible to serialize the request protobuf.
-  case requestProtoSerializationFailure
+  /// The 'content-type' HTTP/2 header was missing or not valid.
+  public struct InvalidContentType: GRPCErrorProtocol {
+    /// The value of the 'content-type' header, if it was present.
+    public var contentType: String?
 
-  /// More than one response was received for a unary-response call.
-  case responseCardinalityViolation
+    public init(_ contentType: String?) {
+      self.contentType = contentType
+    }
 
-  /// The call deadline was exceeded.
-  case deadlineExceeded(GRPCTimeout)
+    public var description: String {
+      if let contentType = self.contentType {
+        return "Invalid 'content-type' header: '\(contentType)'"
+      } else {
+        return "Missing 'content-type' header"
+      }
+    }
 
-  /// The protocol negotiated via ALPN was not valid.
-  case applicationLevelProtocolNegotiationFailed
+    public func asGRPCStatus() -> GRPCStatus {
+      return GRPCStatus(code: .internalError, message: self.description)
+    }
+  }
 
-  /// The "content-type" header was invalid.
-  case invalidContentType
-}
+  /// The ':status' HTTP/2 header was not "200".
+  public struct InvalidHTTPStatus: GRPCErrorProtocol {
+    /// The HTTP/2 ':status' header, if it was present.
+    public var status: String?
 
-/// An error which should be thrown by either the client or server.
-public enum GRPCCommonError: Error, Equatable {
+    public init(_ status: String?) {
+      self.status = status
+    }
+
+    public var description: String {
+      if let status = status {
+        return "Invalid HTTP response status: \(status)"
+      } else {
+        return "Missing HTTP ':status' header"
+      }
+    }
+
+    public func asGRPCStatus() -> GRPCStatus {
+      return GRPCStatus(code: .init(httpStatus: self.status), message: self.description)
+    }
+  }
+
+  /// The ':status' HTTP/2 header was not "200" but the 'grpc-status' header was present and valid.
+  public struct InvalidHTTPStatusWithGRPCStatus: GRPCErrorProtocol {
+    public var status: GRPCStatus
+
+    public init(_ status: GRPCStatus) {
+      self.status = status
+    }
+
+    public var description: String {
+      return "Invalid HTTP response status, but gRPC status was present"
+    }
+
+    public func asGRPCStatus() -> GRPCStatus {
+      return self.status
+    }
+  }
+
   /// An invalid state has been reached; something has gone very wrong.
-  case invalidState(String)
+  public struct InvalidState: GRPCErrorProtocol {
+    public var message: String
 
-  /// Compression was indicated in the "grpc-message-encoding" header but not in the gRPC message compression flag, or vice versa.
-  case unexpectedCompression
+    public init(_ message: String) {
+      self.message = message
+    }
 
-  /// The given compression mechanism is not supported.
-  case unsupportedCompressionMechanism(String)
-}
+    public var description: String {
+      return self.message
+    }
 
-extension GRPCServerError: GRPCStatusTransformable {
-  public func asGRPCStatus() -> GRPCStatus {
-    // These status codes are informed by: https://github.com/grpc/grpc/blob/master/doc/statuscodes.md
-    switch self {
-    case .unimplementedMethod(let method):
-      return GRPCStatus(code: .unimplemented, message: "unknown method \(method)")
-
-    case .base64DecodeError:
-      return GRPCStatus(code: .internalError, message: "could not decode base64 message")
-
-    case .requestProtoDeserializationFailure:
-      return GRPCStatus(code: .internalError, message: "could not parse request proto")
-
-    case .responseProtoSerializationFailure:
-      return GRPCStatus(code: .internalError, message: "could not serialize response proto")
-
-    case .noRequestsButOneExpected:
-      return GRPCStatus(code: .unimplemented, message: "request cardinality violation; method requires exactly one request but client sent none")
-      
-    case .tooManyRequests:
-      return GRPCStatus(code: .unimplemented, message: "request cardinality violation; method requires exactly one request but client sent more")
-
-    case .serverNotWritable:
-      return GRPCStatus.processingError
+    public func asGRPCStatus() -> GRPCStatus {
+      return GRPCStatus(code: .internalError, message: "Invalid state: \(self.message)")
     }
   }
 }
 
-extension GRPCClientError: GRPCStatusTransformable {
-  public func asGRPCStatus() -> GRPCStatus {
-    switch self {
-    case .HTTPStatusNotOk(let status):
-      return GRPCStatus(code: status.grpcStatusCode, message: "\(status.code): \(status.reasonPhrase)")
+extension GRPCError {
+  struct WithContext: Error {
+    var error: GRPCStatusTransformable
+    var file: StaticString
+    var line: Int
+    var function: StaticString
 
-    case .invalidHTTPStatus(let status):
-      let code = status?.grpcStatusCode ?? .internalError
-      let reason = status?.reasonPhrase ?? ""
-      return GRPCStatus(code: code, message: "invalid HTTP status: \(reason)")
-
-    case .invalidHTTPStatusWithGRPCStatus(let status):
-      return status
-
-    case .cancelledByClient:
-      return GRPCStatus(code: .cancelled, message: "client cancelled the call")
-
-    case .responseCardinalityViolation:
-      return GRPCStatus(code: .unimplemented, message: "response cardinality violation; method requires exactly one response but server sent more")
-
-    case .responseProtoDeserializationFailure:
-      return GRPCStatus(code: .internalError, message: "could not parse response proto")
-
-    case .requestProtoSerializationFailure:
-      return GRPCStatus(code: .internalError, message: "could not serialize request proto")
-
-    case .deadlineExceeded(let timeout):
-      return GRPCStatus(code: .deadlineExceeded, message: "call exceeded timeout of \(timeout)")
-
-    case .applicationLevelProtocolNegotiationFailed:
-      return GRPCStatus(code: .invalidArgument, message: "failed to negotiate application level protocol")
-
-    case .invalidContentType:
-      return GRPCStatus(code: .internalError, message: "invalid 'content-type' header")
+    init(
+        _ error: GRPCStatusTransformable,
+        file: StaticString = #file,
+        line: Int = #line,
+        function: StaticString = #function
+    ) {
+      self.error = error
+      self.file = file
+      self.line = line
+      self.function = function
     }
   }
 }
 
-extension GRPCCommonError: GRPCStatusTransformable {
-  public func asGRPCStatus() -> GRPCStatus {
-    switch self {
-    case .invalidState:
-      return GRPCStatus.processingError
+/// Requirements for `GRPCError` types.
+public protocol GRPCErrorProtocol: GRPCStatusTransformable, Equatable, CustomStringConvertible {}
 
-    case .unexpectedCompression:
-      return GRPCStatus(code: .unimplemented, message: "compression was enabled for this gRPC message but not for this call")
-
-    case .unsupportedCompressionMechanism(let mechanism):
-      return GRPCStatus(code: .unimplemented, message: "unsupported compression mechanism \(mechanism)")
-    }
+extension GRPCErrorProtocol {
+  /// Creates a `GRPCError.WithContext` containing a `GRPCError` and the location of the call site.
+  internal func captureContext(
+      file: StaticString = #file,
+      line: Int = #line,
+      function: StaticString = #file
+  ) -> GRPCError.WithContext {
+    return GRPCError.WithContext(self, file: file, line: line, function: function)
   }
 }
 
-extension HTTPResponseStatus {
-  /// The gRPC status code associated with the HTTP status code.
-  ///
-  /// See: https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md
-  internal var grpcStatusCode: GRPCStatus.Code {
-    switch self {
-      case .badRequest:
-        return .internalError
-      case .unauthorized:
-        return .unauthenticated
-      case .forbidden:
-        return .permissionDenied
-      case .notFound:
-        return .unimplemented
-      case .tooManyRequests, .badGateway, .serviceUnavailable, .gatewayTimeout:
-        return .unavailable
-      default:
-        return .unknown
+/// The type of stream. Messages are sent from the client to the server on the request stream, and
+/// from the server to the client on the response stream.
+public enum GRPCStreamType {
+  case request
+  case response
+}
+
+extension GRPCStatus.Code {
+  /// The gRPC status code associated with the given HTTP status code. This should only be used if
+  /// the RPC did not return a 'grpc-status' trailer.
+  internal init(httpStatus: String?) {
+    /// See: https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md
+    switch httpStatus {
+    case "400":
+      self = .internalError
+    case "401":
+      self = .unauthenticated
+    case "403":
+      self = .permissionDenied
+    case "404":
+      self = .unimplemented
+    case "429", "502", "503", "504":
+      self = .unavailable
+    default:
+      self = .unknown
     }
   }
 }

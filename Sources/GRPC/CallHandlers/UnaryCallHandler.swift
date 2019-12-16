@@ -57,7 +57,7 @@ public final class UnaryCallHandler<
     guard let eventObserver = self.eventObserver,
       let context = self.callContext else {
       self.logger.error("processMessage(_:) called before the call started or after the call completed")
-      throw GRPCError.server(.tooManyRequests)
+      throw GRPCError.StreamCardinalityViolation(stream: .request).captureContext()
     }
 
     let resultFuture = eventObserver(message)
@@ -69,7 +69,7 @@ public final class UnaryCallHandler<
 
   internal override func endOfStreamReceived() throws {
     if self.eventObserver != nil {
-      throw GRPCError.server(.noRequestsButOneExpected)
+      throw GRPCError.StreamCardinalityViolation(stream: .request).captureContext()
     }
   }
 
