@@ -17,15 +17,15 @@ import NIO
 import NIOHTTP1
 
 /// Handler that manages the CORS protocol for requests incoming from the browser.
-public class WebCORSHandler {
+internal class WebCORSHandler {
   var requestMethod: HTTPMethod?
 }
 
 extension WebCORSHandler: ChannelInboundHandler {
-  public typealias InboundIn = HTTPServerRequestPart
-  public typealias OutboundOut = HTTPServerResponsePart
+  typealias InboundIn = HTTPServerRequestPart
+  typealias OutboundOut = HTTPServerResponsePart
 
-  public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+  func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     // If the request is OPTIONS, the request is not propagated further.
     switch self.unwrapInboundIn(data) {
     case .head(let requestHead):
@@ -63,9 +63,9 @@ extension WebCORSHandler: ChannelInboundHandler {
 }
 
 extension WebCORSHandler: ChannelOutboundHandler {
-  public typealias OutboundIn = HTTPServerResponsePart
+  typealias OutboundIn = HTTPServerResponsePart
 
-  public func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+  func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     let responsePart = self.unwrapOutboundIn(data)
     switch responsePart {
     case .head(let responseHead):
