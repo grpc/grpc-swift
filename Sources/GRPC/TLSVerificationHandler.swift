@@ -37,8 +37,8 @@ internal enum GRPCApplicationProtocolIdentifier: String, CaseIterable {
 /// Users of this handler should rely on the `verification` future held by this instance.
 ///
 /// On fulfillment of the promise this handler is removed from the channel pipeline.
-public class TLSVerificationHandler: ChannelInboundHandler, RemovableChannelHandler {
-  public typealias InboundIn = Any
+internal class TLSVerificationHandler: ChannelInboundHandler, RemovableChannelHandler {
+  typealias InboundIn = Any
 
   private let logger = Logger(subsystem: .clientChannel)
   private var verificationPromise: EventLoopPromise<Void>!
@@ -50,13 +50,13 @@ public class TLSVerificationHandler: ChannelInboundHandler, RemovableChannelHand
   ///
   /// - Important: The promise associated with this future is created in `handlerAdded(context:)`,
   ///   and as such must _not_ be accessed before the handler has be added to a pipeline.
-  public var verification: EventLoopFuture<Void>! {
+  var verification: EventLoopFuture<Void>! {
     return verificationPromise.futureResult
   }
 
-  public init() { }
+  init() { }
 
-  public func handlerAdded(context: ChannelHandlerContext) {
+  func handlerAdded(context: ChannelHandlerContext) {
     self.verificationPromise = context.eventLoop.makePromise()
     // Remove ourselves from the pipeline when the promise gets fulfilled.
     self.verificationPromise.futureResult.recover { error in
@@ -67,7 +67,7 @@ public class TLSVerificationHandler: ChannelInboundHandler, RemovableChannelHand
     }
   }
 
-  public func errorCaught(context: ChannelHandlerContext, error: Error) {
+  func errorCaught(context: ChannelHandlerContext, error: Error) {
     precondition(self.verificationPromise != nil, "handler has not been added to the pipeline")
     self.logger.error(
       "error caught before TLS was verified",
@@ -76,7 +76,7 @@ public class TLSVerificationHandler: ChannelInboundHandler, RemovableChannelHand
     verificationPromise.fail(error)
   }
 
-  public func userInboundEventTriggered(context: ChannelHandlerContext, event: Any) {
+  func userInboundEventTriggered(context: ChannelHandlerContext, event: Any) {
     precondition(self.verificationPromise != nil, "handler has not been added to the pipeline")
 
     guard let tlsEvent = event as? TLSUserEvent,
