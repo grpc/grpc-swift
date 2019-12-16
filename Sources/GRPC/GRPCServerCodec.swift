@@ -37,10 +37,10 @@ public enum GRPCServerResponsePart<ResponseMessage: Message> {
 internal final class GRPCServerCodec<RequestMessage: Message, ResponseMessage: Message> {}
 
 extension GRPCServerCodec: ChannelInboundHandler {
-  internal typealias InboundIn = RawGRPCServerRequestPart
-  internal typealias InboundOut = GRPCServerRequestPart<RequestMessage>
+  typealias InboundIn = RawGRPCServerRequestPart
+  typealias InboundOut = GRPCServerRequestPart<RequestMessage>
 
-  internal func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+  func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     switch self.unwrapInboundIn(data) {
     case .head(let requestHead):
       context.fireChannelRead(self.wrapInboundOut(.head(requestHead)))
@@ -60,10 +60,10 @@ extension GRPCServerCodec: ChannelInboundHandler {
 }
 
 extension GRPCServerCodec: ChannelOutboundHandler {
-  internal typealias OutboundIn = GRPCServerResponsePart<ResponseMessage>
-  internal typealias OutboundOut = RawGRPCServerResponsePart
+  typealias OutboundIn = GRPCServerResponsePart<ResponseMessage>
+  typealias OutboundOut = RawGRPCServerResponsePart
 
-  internal func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+  func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     let responsePart = self.unwrapOutboundIn(data)
     switch responsePart {
     case .headers(let headers):
