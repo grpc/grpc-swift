@@ -203,7 +203,10 @@ public enum GRPCCallType {
 ///   return channel.pipeline.addHandler(clientChannelHandler)
 /// }
 /// ```
-public final class GRPCClientChannelHandler<Request: Message, Response: Message> {
+///
+/// - Important: This is **NOT** part of the public API. It is declared as
+///   `public` because it is used within performance tests.
+public final class _GRPCClientChannelHandler<Request: Message, Response: Message> {
   private let logger: Logger
   private let streamID: HTTP2StreamID
   private var stateMachine: GRPCClientStateMachine<Request, Response>
@@ -232,7 +235,7 @@ public final class GRPCClientChannelHandler<Request: Message, Response: Message>
 }
 
 // MARK: - GRPCClientChannelHandler: Inbound
-extension GRPCClientChannelHandler: ChannelInboundHandler {
+extension _GRPCClientChannelHandler: ChannelInboundHandler {
   public typealias InboundIn = HTTP2Frame
   public typealias InboundOut = GRPCClientResponsePart<Response>
 
@@ -366,7 +369,7 @@ extension GRPCClientChannelHandler: ChannelInboundHandler {
 }
 
 // MARK: - GRPCClientChannelHandler: Outbound
-extension GRPCClientChannelHandler: ChannelOutboundHandler {
+extension _GRPCClientChannelHandler: ChannelOutboundHandler {
   public typealias OutboundIn = GRPCClientRequestPart<Request>
   public typealias OutboundOut = HTTP2Frame
 

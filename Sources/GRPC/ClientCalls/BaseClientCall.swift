@@ -98,7 +98,7 @@ public class BaseClientCall<Request: Message, Response: Message>: ClientCall {
     self.multiplexer.whenSuccess { multiplexer in
       multiplexer.createStreamChannel(promise: streamPromise) { (stream, streamID) -> EventLoopFuture<Void> in
         stream.pipeline.addHandlers([
-          GRPCClientChannelHandler<Request, Response>(streamID: streamID, callType: callType, logger: logger),
+          _GRPCClientChannelHandler<Request, Response>(streamID: streamID, callType: callType, logger: logger),
           responseHandler,
           requestHandler
         ])

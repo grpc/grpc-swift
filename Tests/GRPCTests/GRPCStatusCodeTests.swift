@@ -37,7 +37,7 @@ class GRPCStatusCodeTests: GRPCTestCase {
     self.status = statusPromise.futureResult
 
     try! self.channel.pipeline.addHandlers([
-      GRPCClientChannelHandler<Echo_EchoRequest, Echo_EchoResponse>(streamID: .init(1), callType: .unary, logger: logger),
+      _GRPCClientChannelHandler<Echo_EchoRequest, Echo_EchoResponse>(streamID: .init(1), callType: .unary, logger: logger),
       GRPCClientUnaryResponseChannelHandler<Echo_EchoResponse>(
         initialMetadataPromise: channel.eventLoop.makePromise(),
         trailingMetadataPromise: channel.eventLoop.makePromise(),
