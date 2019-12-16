@@ -21,17 +21,17 @@ import Logging
 /// A channel handler which allows caught errors to be passed to a `ClientErrorDelegate`. This
 /// handler is intended to be used in the client channel pipeline after the HTTP/2 stream
 /// multiplexer to handle errors which occur on the underlying connection.
-public class DelegatingErrorHandler: ChannelInboundHandler {
-  public typealias InboundIn = Any
+class DelegatingErrorHandler: ChannelInboundHandler {
+  typealias InboundIn = Any
 
   private let logger = Logger(subsystem: .clientChannel)
   private let delegate: ClientErrorDelegate?
 
-  public init(delegate: ClientErrorDelegate?) {
+  init(delegate: ClientErrorDelegate?) {
     self.delegate = delegate
   }
 
-  public func errorCaught(context: ChannelHandlerContext, error: Error) {
+  func errorCaught(context: ChannelHandlerContext, error: Error) {
     // We can ignore unclean shutdown since gRPC is self-terminated and therefore not prone to
     // truncation attacks.
     //

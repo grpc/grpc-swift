@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import Foundation
-import GRPC
+@testable import GRPC
 import NIO
 import NIOSSL
 import Logging
