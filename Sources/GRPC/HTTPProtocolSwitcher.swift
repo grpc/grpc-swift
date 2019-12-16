@@ -41,15 +41,15 @@ internal class HTTPProtocolSwitcher {
   }
   private var bufferedData: [NIOAny] = []
 
-  internal init(errorDelegate: ServerErrorDelegate?, handlersInitializer: (@escaping (Channel) -> EventLoopFuture<Void>)) {
+  init(errorDelegate: ServerErrorDelegate?, handlersInitializer: (@escaping (Channel) -> EventLoopFuture<Void>)) {
     self.errorDelegate = errorDelegate
     self.handlersInitializer = handlersInitializer
   }
 }
 
 extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
-  internal typealias InboundIn = ByteBuffer
-  internal typealias InboundOut = ByteBuffer
+  typealias InboundIn = ByteBuffer
+  typealias InboundOut = ByteBuffer
 
   enum HTTPProtocolVersionError: Error {
     /// Raised when it wasn't possible to detect HTTP Protocol version.
@@ -69,7 +69,7 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
     case http2
   }
 
-  internal func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+  func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     switch self.state {
     case .notConfigured:
       self.logger.debug("determining http protocol version")
@@ -150,7 +150,7 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
     }
   }
 
-  internal func removeHandler(context: ChannelHandlerContext, removalToken: ChannelHandlerContext.RemovalToken) {
+  func removeHandler(context: ChannelHandlerContext, removalToken: ChannelHandlerContext.RemovalToken) {
     self.logger.debug("unbuffering data")
     self.bufferedData.forEach {
       context.fireChannelRead($0)
@@ -160,7 +160,7 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
     self.state = .configured
   }
 
-  internal func errorCaught(context: ChannelHandlerContext, error: Error) {
+  func errorCaught(context: ChannelHandlerContext, error: Error) {
     switch self.state {
     case .notConfigured, .configuring:
       errorDelegate?.observeLibraryError(error)
