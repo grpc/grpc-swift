@@ -23,13 +23,19 @@ import Logging
 ///
 /// - The observer block is implemented by the framework user and calls `context.sendResponse` as needed.
 /// - To close the call and send the status, complete the status future returned by the observer block.
-public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage: Message>: BaseCallHandler<RequestMessage, ResponseMessage> {
+public final class ServerStreamingCallHandler<
+  RequestMessage: Message,
+  ResponseMessage: Message
+>: _BaseCallHandler<RequestMessage, ResponseMessage> {
   public typealias EventObserver = (RequestMessage) -> EventLoopFuture<GRPCStatus>
-  private var eventObserver: EventObserver?
 
+  private var eventObserver: EventObserver?
   private var callContext: StreamingResponseCallContext<ResponseMessage>?
 
-  public init(callHandlerContext: CallHandlerContext, eventObserverFactory: (StreamingResponseCallContext<ResponseMessage>) -> EventObserver) {
+  public init(
+    callHandlerContext: CallHandlerContext,
+    eventObserverFactory: (StreamingResponseCallContext<ResponseMessage>) -> EventObserver
+  ) {
     super.init(callHandlerContext: callHandlerContext)
     let callContext = StreamingResponseCallContextImpl<ResponseMessage>(
       channel: self.callHandlerContext.channel,
@@ -47,7 +53,7 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
     }
   }
 
-  public override func processMessage(_ message: RequestMessage) throws {
+  override internal func processMessage(_ message: RequestMessage) throws {
     guard let eventObserver = self.eventObserver,
       let callContext = self.callContext else {
         self.logger.error("processMessage(_:) called before the call started or after the call completed")
@@ -56,18 +62,18 @@ public class ServerStreamingCallHandler<RequestMessage: Message, ResponseMessage
 
     let resultFuture = eventObserver(message)
     resultFuture
-      // Fulfill the status promise with whatever status the framework user has provided.
+      // Fulfil the status promise with whatever status the framework user has provided.
       .cascade(to: callContext.statusPromise)
     self.eventObserver = nil
   }
 
-  public override func endOfStreamReceived() throws {
+  override internal func endOfStreamReceived() throws {
     if self.eventObserver != nil {
       throw GRPCError.server(.noRequestsButOneExpected)
     }
   }
 
-  override func sendErrorStatus(_ status: GRPCStatus) {
+  override internal func sendErrorStatus(_ status: GRPCStatus) {
     self.callContext?.statusPromise.fail(status)
   }
 }

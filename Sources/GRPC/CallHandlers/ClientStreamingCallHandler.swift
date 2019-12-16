@@ -33,7 +33,10 @@ enum ClientStreamingHandlerObserverState<Factory, Observer> {
 ///   If the framework user wants to return a call error (e.g. in case of authentication failure),
 ///   they can fail the observer block future.
 /// - To close the call and send the response, complete `context.responsePromise`.
-public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage: Message>: BaseCallHandler<RequestMessage, ResponseMessage> {
+public final class ClientStreamingCallHandler<
+  RequestMessage: Message,
+  ResponseMessage: Message
+>: _BaseCallHandler<RequestMessage, ResponseMessage> {
   public typealias Context = UnaryResponseCallContext<ResponseMessage>
   public typealias EventObserver = (StreamEvent<RequestMessage>) -> Void
   public typealias EventObserverFactory = (Context) -> EventLoopFuture<EventObserver>
@@ -88,7 +91,7 @@ public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage
     eventObserver.cascadeFailure(to: callContext.responsePromise)
   }
 
-  public override func processMessage(_ message: RequestMessage) {
+  internal override func processMessage(_ message: RequestMessage) {
     guard case .created(let eventObserver) = self.observerState else {
       self.logger.warning("expecting observerState to be .created but was \(self.observerState), ignoring message \(message)")
       return
@@ -98,7 +101,7 @@ public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage
     }
   }
 
-  public override func endOfStreamReceived() throws {
+  internal override func endOfStreamReceived() throws {
     guard case .created(let eventObserver) = self.observerState else {
       self.logger.warning("expecting observerState to be .created but was \(self.observerState), ignoring end-of-stream call")
       return
@@ -108,7 +111,7 @@ public class ClientStreamingCallHandler<RequestMessage: Message, ResponseMessage
     }
   }
 
-  override func sendErrorStatus(_ status: GRPCStatus) {
+  internal override func sendErrorStatus(_ status: GRPCStatus) {
     self.callContext?.responsePromise.fail(status)
   }
 }

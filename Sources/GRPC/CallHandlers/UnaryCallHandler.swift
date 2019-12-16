@@ -24,13 +24,18 @@ import Logging
 /// - The observer block is implemented by the framework user and returns a future containing the call result.
 /// - To return a response to the client, the framework user should complete that future
 ///   (similar to e.g. serving regular HTTP requests in frameworks such as Vapor).
-public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>: BaseCallHandler<RequestMessage, ResponseMessage> {
+public final class UnaryCallHandler<
+  RequestMessage: Message,
+  ResponseMessage: Message
+>: _BaseCallHandler<RequestMessage, ResponseMessage> {
   public typealias EventObserver = (RequestMessage) -> EventLoopFuture<ResponseMessage>
   private var eventObserver: EventObserver?
-
   private var callContext: UnaryResponseCallContext<ResponseMessage>?
 
-  public init(callHandlerContext: CallHandlerContext, eventObserverFactory: (UnaryResponseCallContext<ResponseMessage>) -> EventObserver) {
+  public init(
+    callHandlerContext: CallHandlerContext,
+    eventObserverFactory: (UnaryResponseCallContext<ResponseMessage>) -> EventObserver
+  ) {
     super.init(callHandlerContext: callHandlerContext)
     let callContext = UnaryResponseCallContextImpl<ResponseMessage>(
       channel: self.callHandlerContext.channel,
@@ -48,7 +53,7 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
     }
   }
 
-  public override func processMessage(_ message: RequestMessage) throws {
+  internal override func processMessage(_ message: RequestMessage) throws {
     guard let eventObserver = self.eventObserver,
       let context = self.callContext else {
       self.logger.error("processMessage(_:) called before the call started or after the call completed")
@@ -57,18 +62,18 @@ public class UnaryCallHandler<RequestMessage: Message, ResponseMessage: Message>
 
     let resultFuture = eventObserver(message)
     resultFuture
-      // Fulfill the response promise with whatever response (or error) the framework user has provided.
+      // Fulfil the response promise with whatever response (or error) the framework user has provided.
       .cascade(to: context.responsePromise)
     self.eventObserver = nil
   }
 
-  public override func endOfStreamReceived() throws {
+  internal override func endOfStreamReceived() throws {
     if self.eventObserver != nil {
       throw GRPCError.server(.noRequestsButOneExpected)
     }
   }
 
-  override func sendErrorStatus(_ status: GRPCStatus) {
+  internal override func sendErrorStatus(_ status: GRPCStatus) {
     callContext?.responsePromise.fail(status)
   }
 }
