@@ -153,7 +153,7 @@ testing with the following versions:
 - Swift 4.2 / 5.0
 - swift-protobuf 1.5.0
 
-## `SwiftGRPCNIO` package
+## `GRPC` package based on SwiftNIO
 
 `SwiftGRPCNIO` is a clean-room implementation of the gRPC protocol on top of the [`SwiftNIO`](http://github.com/apple/swift-nio) library; you can find the latest version of that implementation on the `nio` branch. We consider this implementation production-ready and are planning to sunset the gRPC-Core implementation within the next few months. We strongly recommend using the `nio` branch for all new projects.
 
