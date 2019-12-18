@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/grpc/grpc-swift.svg?branch=master)](https://travis-ci.org/grpc/grpc-swift)
 
-# ‼️ Deprecation Notice ‼️
+# ‼️ Please use the `nio` branch ‼️
 
 **gRPC Swift versions** `v0.x` **based on gRPC-Core will soon be replaced with a re-implementation based on [SwiftNIO](https://github.com/apple/swift-nio).** 
 
@@ -144,32 +144,6 @@ to directly build API clients and servers with no generated code.
 For an example of this in Swift, please see the
 [Simple](Examples/SimpleXcode) example.
 
-### Known issues
-
-The SwiftGRPC implementation that is backed by [gRPC-Core](https://github.com/grpc/grpc)
-(and not SwiftNIO) is known to have some connectivity issues on iOS clients - namely, silently
-disconnecting (making it seem like active calls/connections are hanging) when switching
-between wifi <> cellular or between cellular technologies (3G <> LTE). The root cause of these problems is that the
-backing gRPC-Core doesn't get the optimizations made by iOS' networking stack when these
-types of changes occur, and isn't able to handle them itself.
-
-There is also documentation of this behavior in [this gRPC-Core readme](https://github.com/grpc/grpc/blob/v1.19.0/src/objective-c/NetworkTransitionBehavior.md).
-
-To aid in this problem, there is a [`ClientNetworkMonitor`](./Sources/SwiftGRPC/Core/ClientNetworkMonitor.swift)
-that monitors the device for events that can cause gRPC to disconnect silently. We recommend utilizing this component to
-call `shutdown()` (or destroy) any active `Channel` instances, and start new ones when the network is reachable.
-
-Setting the [`keepAliveTimeout` argument](https://github.com/grpc/grpc-swift/blob/0.7.0/Sources/SwiftGRPC/Core/ChannelArgument.swift#L46)
-on channels is also encouraged.
-
-Details:
-- **Switching between wifi <> cellular:** Channels silently disconnect
-- **Switching between 3G <> LTE (etc.):** Channels silently disconnect
-- **Network becoming unreachable:** Most times channels will time out after a few seconds, but `ClientNetworkMonitor` will notify of these changes much faster
-- **Switching between background <> foreground:** No known issues
-
-Original SwiftGRPC issue: https://github.com/grpc/grpc-swift/issues/337.
-
 ## Having build problems?
 
 grpc-swift depends on Swift, Xcode, and swift-protobuf. We are currently
@@ -181,19 +155,9 @@ testing with the following versions:
 
 ## `SwiftGRPCNIO` package
 
-`SwiftGRPCNIO` is a clean-room implementation of the gRPC protocol on top of the [`SwiftNIO`](http://github.com/apple/swift-nio) library. This implementation is not yet production-ready as it lacks several things recommended for production use:
+`SwiftGRPCNIO` is a clean-room implementation of the gRPC protocol on top of the [`SwiftNIO`](http://github.com/apple/swift-nio) library; you can find the latest version of that implementation on the `nio` branch. We consider this implementation production-ready and are planning to sunset the gRPC-Core implementation within the next few months. We strongly recommend using the `nio` branch for all new projects.
 
-- Better test coverage
-- Full error handling
-- SSL support
-- Client support
-- Example projects
-- iOS support
-- Removal of the `libnghttp2` dependency from `SwiftNIOHTTP2`
-
-However, if you are planning to implement a gRPC service based on `SwiftNIO` or the Vapor framework, you might find this package useful. In addition, once ready, this package should provide more predictable and reliable behavior in the future, combined with an improved API and better developer experience.
-
-You may also want to have a look at [this presentation](https://docs.google.com/presentation/d/1Mnsaq4mkeagZSP4mK1k0vewZrJKynm_MCteRDyM3OX8/edit) for more details on the motivation for this package.
+You may also want to have a look at [this presentation](https://docs.google.com/presentation/d/1Mnsaq4mkeagZSP4mK1k0vewZrJKynm_MCteRDyM3OX8/edit) for more details on the motivation for switching to SwiftNIO.
 
 ## License
 
