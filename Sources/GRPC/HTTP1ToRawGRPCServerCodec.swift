@@ -122,8 +122,8 @@ extension HTTP1ToRawGRPCServerCodec {
 }
 
 extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
-  typealias InboundIn = HTTPServerRequestPart
-  typealias InboundOut = _RawGRPCServerRequestPart
+  public typealias InboundIn = HTTPServerRequestPart
+  public typealias InboundOut = _RawGRPCServerRequestPart
 
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     if case .ignore = inboundState {
@@ -224,8 +224,8 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
 }
 
 extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
-  typealias OutboundIn = _RawGRPCServerResponsePart
-  typealias OutboundOut = HTTPServerResponsePart
+  public typealias OutboundIn = _RawGRPCServerResponsePart
+  public typealias OutboundOut = HTTPServerResponsePart
 
   public func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     if case .ignore = self.outboundState {
