@@ -24,7 +24,26 @@ class GRPCTestCase: XCTestCase {
   // locally; conditionally enable it based on the environment.
   //
   // https://docs.travis-ci.com/user/environment-variables/#default-environment-variables
-  private static var isLoggingEnabled = ProcessInfo.processInfo.environment["CI"] != "true"
+  private static let isLoggingEnabled = !Bool(
+      fromTruthLike: ProcessInfo.processInfo.environment["CI"],
+      defaultingTo: false
+  )
+
+  private static let runTimeSensitiveTests = Bool(
+      fromTruthLike: ProcessInfo.processInfo.environment["ENABLE_TIMING_TESTS"],
+      defaultingTo: true
+  )
+
+  private static func bool(from value: String?, defaultingTo defaultValue: Bool) -> Bool {
+    switch value?.lowercased() {
+    case "0", "false", "no":
+      return false
+    case "1", "true", "yes":
+      return true
+    default:
+      return defaultValue
+    }
+  }
 
   // `LoggingSystem.bootstrap` must be called once per process. This is the suggested approach to
   // workaround this for XCTestCase.
@@ -46,6 +65,14 @@ class GRPCTestCase: XCTestCase {
     super.setUp()
     XCTAssertTrue(GRPCTestCase.isLoggingConfigured)
   }
+
+  var runTimeSensitiveTests: Bool {
+    let shouldRun = GRPCTestCase.runTimeSensitiveTests
+    if !shouldRun {
+      print("Skipping '\(self.name)' as ENABLE_TIMING_TESTS=false")
+    }
+    return shouldRun
+  }
 }
 
 /// A `LogHandler` which does nothing with log messages.
@@ -65,4 +92,17 @@ struct BlackHole: LogHandler {
 
   var metadata: Logger.Metadata = [:]
   var logLevel: Logger.Level = .critical
+}
+
+fileprivate extension Bool {
+  init(fromTruthLike value: String?, defaultingTo defaultValue: Bool) {
+    switch value?.lowercased() {
+    case "0", "false", "no":
+      self = false
+    case "1", "true", "yes":
+      self = true
+    default:
+      self = defaultValue
+    }
+  }
 }
