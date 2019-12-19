@@ -24,10 +24,11 @@ class GRPCTestCase: XCTestCase {
   // locally; conditionally enable it based on the environment.
   //
   // https://docs.travis-ci.com/user/environment-variables/#default-environment-variables
-  private static let isLoggingEnabled = !Bool(
+  private static let isCI = Bool(
       fromTruthLike: ProcessInfo.processInfo.environment["CI"],
       defaultingTo: false
   )
+  private static let isLoggingEnabled = !isCI
 
   private static let runTimeSensitiveTests = Bool(
       fromTruthLike: ProcessInfo.processInfo.environment["ENABLE_TIMING_TESTS"],
@@ -66,7 +67,7 @@ class GRPCTestCase: XCTestCase {
     XCTAssertTrue(GRPCTestCase.isLoggingConfigured)
   }
 
-  var runTimeSensitiveTests: Bool {
+  func runTimeSensitiveTests() -> Bool {
     let shouldRun = GRPCTestCase.runTimeSensitiveTests
     if !shouldRun {
       print("Skipping '\(self.name)' as ENABLE_TIMING_TESTS=false")
