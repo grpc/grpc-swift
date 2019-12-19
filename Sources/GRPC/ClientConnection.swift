@@ -275,7 +275,7 @@ extension ClientConnection {
       return configuration.eventLoopGroup.next().makeFailedFuture(GRPCStatus.processingError)
     }
 
-    logger.debug("attempting to connect to \(configuration.target)")
+    logger.debug("attempting to connect to \(configuration.target) on \(eventLoop)")
     connectivity.state = .connecting
     let timeoutAndBackoff = backoffIterator?.next()
 
