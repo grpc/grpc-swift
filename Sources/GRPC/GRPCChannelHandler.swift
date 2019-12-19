@@ -65,8 +65,8 @@ public final class GRPCChannelHandler {
 }
 
 extension GRPCChannelHandler: ChannelInboundHandler, RemovableChannelHandler {
-  public typealias InboundIn = RawGRPCServerRequestPart
-  public typealias OutboundOut = RawGRPCServerResponsePart
+  public typealias InboundIn = _RawGRPCServerRequestPart
+  public typealias OutboundOut = _RawGRPCServerResponsePart
 
   public func errorCaught(context: ChannelHandlerContext, error: Error) {
     self.errorDelegate?.observeLibraryError(error)

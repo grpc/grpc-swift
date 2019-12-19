@@ -18,7 +18,7 @@ import GRPC
 import NIOHTTP1
 import XCTest
 
-extension RawGRPCServerResponsePart {
+extension _RawGRPCServerResponsePart {
   /// Asserts that this value represents the headers case.
   ///
   /// - Parameter validate: A block to further validate the headers.

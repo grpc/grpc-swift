@@ -71,7 +71,7 @@ public class _BaseCallHandler<RequestMessage: Message, ResponseMessage: Message>
 }
 
 extension _BaseCallHandler: ChannelInboundHandler {
-  public typealias InboundIn = GRPCServerRequestPart<RequestMessage>
+  public typealias InboundIn = _GRPCServerRequestPart<RequestMessage>
 
   /// Passes errors to the user-provided `errorHandler`. After an error has been received an
   /// appropriate status is written. Errors which don't conform to `GRPCStatusTransformable`
@@ -112,8 +112,8 @@ extension _BaseCallHandler: ChannelInboundHandler {
 }
 
 extension _BaseCallHandler: ChannelOutboundHandler {
-  public typealias OutboundIn = GRPCServerResponsePart<ResponseMessage>
-  public typealias OutboundOut = GRPCServerResponsePart<ResponseMessage>
+  public typealias OutboundIn = _GRPCServerResponsePart<ResponseMessage>
+  public typealias OutboundOut = _GRPCServerResponsePart<ResponseMessage>
 
   public func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     guard self.serverCanWrite else {

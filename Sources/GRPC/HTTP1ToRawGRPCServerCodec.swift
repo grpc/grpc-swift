@@ -20,14 +20,14 @@ import NIOFoundationCompat
 import Logging
 
 /// Incoming gRPC package with an unknown message type (represented by a byte buffer).
-public enum RawGRPCServerRequestPart {
+public enum _RawGRPCServerRequestPart {
   case head(HTTPRequestHead)
   case message(ByteBuffer)
   case end
 }
 
 /// Outgoing gRPC package with an unknown message type (represented by `Data`).
-public enum RawGRPCServerResponsePart {
+public enum _RawGRPCServerResponsePart {
   case headers(HTTPHeaders)
   case message(Data)
   case statusAndTrailers(GRPCStatus, HTTPHeaders)
@@ -123,7 +123,7 @@ extension HTTP1ToRawGRPCServerCodec {
 
 extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
   public typealias InboundIn = HTTPServerRequestPart
-  public typealias InboundOut = RawGRPCServerRequestPart
+  public typealias InboundOut = _RawGRPCServerRequestPart
 
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     if case .ignore = inboundState {
@@ -224,7 +224,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
 }
 
 extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
-  public typealias OutboundIn = RawGRPCServerResponsePart
+  public typealias OutboundIn = _RawGRPCServerResponsePart
   public typealias OutboundOut = HTTPServerResponsePart
 
   public func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
@@ -285,7 +285,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
       // NIOHTTP2 doesn't support sending a single frame as a "Trailers-Only" response so we still need to loop back and
       // send the request head first.
       if case .expectingHeaders = self.outboundState {
-        self.write(context: context, data: NIOAny(RawGRPCServerResponsePart.headers(HTTPHeaders())), promise: nil)
+        self.write(context: context, data: NIOAny(_RawGRPCServerResponsePart.headers(HTTPHeaders())), promise: nil)
       }
 
       var trailers = trailers
