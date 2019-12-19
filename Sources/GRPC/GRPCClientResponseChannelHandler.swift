@@ -270,7 +270,7 @@ final class GRPCClientStreamingResponseChannelHandler<ResponseMessage: Message>:
 }
 
 /// Client user events.
-public enum GRPCClientUserEvent {
+internal enum GRPCClientUserEvent {
   /// The call has been cancelled.
   case cancelled
 }
