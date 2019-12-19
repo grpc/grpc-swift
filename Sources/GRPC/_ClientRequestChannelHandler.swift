@@ -23,12 +23,12 @@ import NIOHTTP1
 /// - Important: This is **NOT** part of the public API.
 public class _ClientRequestChannelHandler<RequestMessage: Message>: ChannelInboundHandler {
   public typealias InboundIn = Never
-  public typealias OutboundOut = GRPCClientRequestPart<RequestMessage>
+  public typealias OutboundOut = _GRPCClientRequestPart<RequestMessage>
 
   /// The request head to send.
-  internal let requestHead: GRPCRequestHead
+  internal let requestHead: _GRPCRequestHead
 
-  init(requestHead: GRPCRequestHead) {
+  init(requestHead: _GRPCRequestHead) {
     self.requestHead = requestHead
   }
 
@@ -47,7 +47,7 @@ public final class _UnaryRequestChannelHandler<RequestMessage: Message>: _Client
   /// The request to send.
   internal let request: _Box<RequestMessage>
 
-  public init(requestHead: GRPCRequestHead, request: _Box<RequestMessage>) {
+  public init(requestHead: _GRPCRequestHead, request: _Box<RequestMessage>) {
     self.request = request
     super.init(requestHead: requestHead)
   }

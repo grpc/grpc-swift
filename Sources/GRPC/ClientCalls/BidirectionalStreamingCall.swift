@@ -55,7 +55,7 @@ public final class BidirectionalStreamingCall<RequestMessage: Message, ResponseM
       responseHandler: handler
     )
 
-    let requestHead = GRPCRequestHead(
+    let requestHead = _GRPCRequestHead(
       scheme: connection.configuration.httpProtocol.scheme,
       path: path,
       host: connection.configuration.target.host,

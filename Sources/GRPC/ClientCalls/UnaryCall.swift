@@ -56,7 +56,7 @@ public final class UnaryCall<RequestMessage: Message, ResponseMessage: Message>
       logger: logger
     )
 
-    let requestHead = GRPCRequestHead(
+    let requestHead = _GRPCRequestHead(
       scheme: connection.configuration.httpProtocol.scheme,
       path: path,
       host: connection.configuration.target.host,

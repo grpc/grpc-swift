@@ -25,7 +25,7 @@ import Logging
 /// is also responsible for error handling, via an error delegate and by appropriately failing the
 /// aforementioned promises.
 internal class GRPCClientResponseChannelHandler<ResponseMessage: Message>: ChannelInboundHandler {
-  public typealias InboundIn = GRPCClientResponsePart<ResponseMessage>
+  public typealias InboundIn = _GRPCClientResponsePart<ResponseMessage>
   internal let logger: Logger
   internal var stopwatch: Stopwatch?
 

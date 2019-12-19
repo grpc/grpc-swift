@@ -59,7 +59,7 @@ class GRPCStatusCodeTests: GRPCTestCase {
   }
 
   func sendRequestHead() {
-    let requestHead = GRPCRequestHead(
+    let requestHead = _GRPCRequestHead(
       method: "POST",
       scheme: "http",
       path: "/foo/bar",
@@ -67,7 +67,7 @@ class GRPCStatusCodeTests: GRPCTestCase {
       timeout: .infinite,
       customMetadata: [:]
     )
-    let clientRequestHead: GRPCClientRequestPart<Echo_EchoRequest> = .head(requestHead)
+    let clientRequestHead: _GRPCClientRequestPart<Echo_EchoRequest> = .head(requestHead)
     XCTAssertNoThrow(try self.channel.writeOutbound(clientRequestHead))
   }
 

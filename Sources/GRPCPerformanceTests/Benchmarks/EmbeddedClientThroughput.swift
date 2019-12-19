@@ -29,7 +29,7 @@ class EmbeddedClientThroughput: Benchmark {
   private let requestText: String
 
   private var logger: Logger!
-  private var requestHead: GRPCRequestHead!
+  private var requestHead: _GRPCRequestHead!
   private var request: Echo_EchoRequest!
 
   init(requests: Int, text: String) {
@@ -40,7 +40,7 @@ class EmbeddedClientThroughput: Benchmark {
   func setUp() throws {
     self.logger = Logger(label: "io.grpc.testing")
 
-    self.requestHead = GRPCRequestHead(
+    self.requestHead = _GRPCRequestHead(
       method: "POST",
       scheme: "http",
       path: "/echo.Echo/Get",
@@ -106,7 +106,7 @@ class EmbeddedClientThroughput: Benchmark {
 
       // And read them back out.
       var responseParts = 0
-      while let _ = try channel.readOutbound(as: GRPCClientResponsePart<Echo_EchoResponse>.self) {
+      while let _ = try channel.readOutbound(as: _GRPCClientResponsePart<Echo_EchoResponse>.self) {
         responseParts += 1
       }
 

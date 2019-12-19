@@ -129,20 +129,20 @@ public protocol UnaryResponseClientCall: ClientCall {
 extension StreamingRequestClientCall {
   public func sendMessage(_ message: RequestMessage) -> EventLoopFuture<Void> {
     return self.subchannel.flatMap { channel in
-      return channel.writeAndFlush(GRPCClientRequestPart.message(.init(message)))
+      return channel.writeAndFlush(_GRPCClientRequestPart.message(.init(message)))
     }
   }
 
   public func sendMessage(_ message: RequestMessage, promise: EventLoopPromise<Void>?) {
     self.subchannel.whenSuccess { channel in
-      channel.writeAndFlush(GRPCClientRequestPart.message(.init(message)), promise: promise)
+      channel.writeAndFlush(_GRPCClientRequestPart.message(.init(message)), promise: promise)
     }
   }
 
   public func sendMessages<S: Sequence>(_ messages: S) -> EventLoopFuture<Void> where S.Element == RequestMessage {
     return self.subchannel.flatMap { channel -> EventLoopFuture<Void> in
       let writeFutures = messages.map { message in
-        channel.write(GRPCClientRequestPart.message(.init(message)))
+        channel.write(_GRPCClientRequestPart.message(.init(message)))
       }
       channel.flush()
       return EventLoopFuture.andAllSucceed(writeFutures, on: channel.eventLoop)
@@ -155,7 +155,7 @@ extension StreamingRequestClientCall {
     } else {
       self.subchannel.whenSuccess { channel in
         for message in messages {
-          channel.write(GRPCClientRequestPart.message(.init(message)), promise: nil)
+          channel.write(_GRPCClientRequestPart.message(.init(message)), promise: nil)
         }
         channel.flush()
       }
@@ -164,13 +164,13 @@ extension StreamingRequestClientCall {
 
   public func sendEnd() -> EventLoopFuture<Void> {
     return self.subchannel.flatMap { channel in
-      return channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.end)
+      return channel.writeAndFlush(_GRPCClientRequestPart<RequestMessage>.end)
     }
   }
 
   public func sendEnd(promise: EventLoopPromise<Void>?) {
     self.subchannel.whenSuccess { channel in
-      channel.writeAndFlush(GRPCClientRequestPart<RequestMessage>.end, promise: promise)
+      channel.writeAndFlush(_GRPCClientRequestPart<RequestMessage>.end, promise: promise)
     }
   }
 }
