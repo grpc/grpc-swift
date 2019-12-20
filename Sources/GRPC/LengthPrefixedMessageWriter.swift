@@ -16,12 +16,12 @@
 import Foundation
 import NIO
 
-public struct LengthPrefixedMessageWriter {
-  public static let metadataLength = 5
+internal struct LengthPrefixedMessageWriter {
+  static let metadataLength = 5
 
   private let compression: CompressionMechanism
 
-  public init(compression: CompressionMechanism) {
+  init(compression: CompressionMechanism) {
     precondition(compression.supported, "compression mechanism \(compression) is not supported")
     self.compression = compression
   }
