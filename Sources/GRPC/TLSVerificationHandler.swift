@@ -23,7 +23,7 @@ import Logging
 internal enum GRPCApplicationProtocolIdentifier: String, CaseIterable {
   // This is not in the IANA ALPN protocol ID registry, but may be used by servers to indicate that
   // they serve only gRPC traffic. It is part of the gRPC core implementation.
-  case gRPC = "grpc-ext"
+  case gRPC = "grpc-exp"
   case h2 = "h2"
 }
 

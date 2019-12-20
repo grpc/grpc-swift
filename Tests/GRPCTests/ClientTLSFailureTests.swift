@@ -107,7 +107,7 @@ class ClientTLSFailureTests: GRPCTestCase {
     // We use the underlying configuration because `applicationProtocols` is not user-configurable
     // via `Configuration.TLS`.
     var tlsConfiguration = self.defaultClientTLSConfiguration.configuration
-    tlsConfiguration.applicationProtocols = ["not-h2", "not-grpc-ext"]
+    tlsConfiguration.applicationProtocols = ["not-h2", "not-grpc-exp"]
 
     let tls = ClientConnection.Configuration.TLS(
       configuration: tlsConfiguration,
