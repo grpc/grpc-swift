@@ -109,6 +109,7 @@ extension ServerWebTests {
   }
 
   func testUnaryLotsOfRequests() {
+    guard self.runTimeSensitiveTests() else { return }
     // Sending that many requests at once can sometimes trip things up, it seems.
     let clockStart = clock()
     let numberOfRequests = 2_000

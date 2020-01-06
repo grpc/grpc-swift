@@ -57,6 +57,8 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
   }
 
   func testUnaryLotsOfRequests() throws {
+    guard self.runTimeSensitiveTests() else { return }
+
     // Sending that many requests at once can sometimes trip things up, it seems.
     let clockStart = clock()
     let numberOfRequests = 2_000
@@ -130,6 +132,7 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
   }
 
   func testClientStreamingLotsOfMessages() throws {
+    guard self.runTimeSensitiveTests() else { return }
     self.defaultTestTimeout = 15.0
     XCTAssertNoThrow(try doTestClientStreaming(messages: lotsOfStrings))
   }
@@ -157,6 +160,7 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
   }
 
   func testServerStreamingLotsOfMessages() {
+    guard self.runTimeSensitiveTests() else { return }
     self.defaultTestTimeout = 15.0
     XCTAssertNoThrow(try doTestServerStreaming(messages: lotsOfStrings))
   }
@@ -198,11 +202,13 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
   }
 
   func testBidirectionalStreamingLotsOfMessagesBatched() throws {
+    guard self.runTimeSensitiveTests() else { return }
     self.defaultTestTimeout = 15.0
     XCTAssertNoThrow(try doTestBidirectionalStreaming(messages: lotsOfStrings))
   }
 
   func testBidirectionalStreamingLotsOfMessagesPingPong() throws {
+    guard self.runTimeSensitiveTests() else { return }
     self.defaultTestTimeout = 15.0
     XCTAssertNoThrow(try doTestBidirectionalStreaming(messages: lotsOfStrings, waitForEachResponse: true))
   }
