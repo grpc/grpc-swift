@@ -35,17 +35,6 @@ class GRPCTestCase: XCTestCase {
       defaultingTo: true
   )
 
-  private static func bool(from value: String?, defaultingTo defaultValue: Bool) -> Bool {
-    switch value?.lowercased() {
-    case "0", "false", "no":
-      return false
-    case "1", "true", "yes":
-      return true
-    default:
-      return defaultValue
-    }
-  }
-
   // `LoggingSystem.bootstrap` must be called once per process. This is the suggested approach to
   // workaround this for XCTestCase.
   //
