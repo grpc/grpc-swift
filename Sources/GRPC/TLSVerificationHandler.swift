@@ -31,8 +31,7 @@ internal enum GRPCApplicationProtocolIdentifier: String, CaseIterable {
 /// and that the negotiated application protocol is valid.
 ///
 /// The handler holds a promise which is succeeded on successful verification of the negotiated
-/// application protocol and failed if any error is received by this handler or an invalid
-/// application protocol was negotiated.
+/// application protocol and failed if any error is received by this handler.
 ///
 /// Users of this handler should rely on the `verification` future held by this instance.
 ///
@@ -44,9 +43,8 @@ internal class TLSVerificationHandler: ChannelInboundHandler, RemovableChannelHa
   private var verificationPromise: EventLoopPromise<Void>!
 
   /// A future which is fulfilled when the state of the TLS handshake is known. If the handshake
-  /// was successful and the negotiated application protocol is valid then the future is succeeded.
-  /// If an error occurred or the application protocol is not valid then the future will have been
-  /// failed.
+  /// was successful then the future is succeeded.
+  /// If an error occurred the future will have been failed.
   ///
   /// - Important: The promise associated with this future is created in `handlerAdded(context:)`,
   ///   and as such must _not_ be accessed before the handler has be added to a pipeline.
@@ -85,14 +83,12 @@ internal class TLSVerificationHandler: ChannelInboundHandler, RemovableChannelHa
         return
     }
 
-    self.logger.debug("TLS handshake completed, negotiated protocol: \(String(describing: negotiatedProtocol))")
-    if let proto = negotiatedProtocol, GRPCApplicationProtocolIdentifier(rawValue: proto) != nil {
-      self.logger.debug("negotiated application protocol is valid")
-      self.verificationPromise.succeed(())
+    if let proto = negotiatedProtocol {
+      self.logger.debug("TLS handshake completed, negotiated protocol: \(proto)")
     } else {
-      self.logger.error("negotiated application protocol is invalid: \(String(describing: negotiatedProtocol))")
-      let error = GRPCError.client(.applicationLevelProtocolNegotiationFailed)
-      self.verificationPromise.fail(error)
+      self.logger.debug("TLS handshake completed, no protocol negotiated")
     }
+    
+    self.verificationPromise.succeed(())
   }
 }

@@ -100,34 +100,6 @@ class ClientTLSFailureTests: GRPCTestCase {
     self.serverEventLoopGroup = nil
   }
 
-  func testClientConnectionFailsWhenProtocolCanNotBeNegotiated() throws {
-    let shutdownExpectation = self.expectation(description: "client shutdown")
-    let errorExpectation = self.expectation(description: "error")
-
-    // We use the underlying configuration because `applicationProtocols` is not user-configurable
-    // via `Configuration.TLS`.
-    var tlsConfiguration = self.defaultClientTLSConfiguration.configuration
-    tlsConfiguration.applicationProtocols = ["not-h2", "not-grpc-exp"]
-
-    let tls = ClientConnection.Configuration.TLS(
-      configuration: tlsConfiguration,
-      hostnameOverride: self.defaultClientTLSConfiguration.hostnameOverride
-    )
-
-    var configuration = self.makeClientConfiguration(tls: tls)
-    let errorRecorder = ErrorRecordingDelegate(expectation: errorExpectation)
-    configuration.errorDelegate = errorRecorder
-
-    let stateChangeDelegate = ConnectivityStateCollectionDelegate(shutdown: shutdownExpectation)
-    configuration.connectivityStateDelegate = stateChangeDelegate
-
-    _ = ClientConnection(configuration: configuration)
-
-    self.wait(for: [shutdownExpectation, errorExpectation], timeout: self.defaultTestTimeout)
-
-    let clientErrors = errorRecorder.errors.compactMap { $0 as? GRPCClientError }
-    XCTAssertEqual(clientErrors, [.applicationLevelProtocolNegotiationFailed])
-  }
 
   func testClientConnectionFailsWhenServerIsUnknown() throws {
     let shutdownExpectation = self.expectation(description: "client shutdown")
