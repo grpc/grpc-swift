@@ -23,7 +23,7 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
 
   override func setUp() {
     super.setUp()
-    self.reader = LengthPrefixedMessageReader(compressionMechanism: .none)
+    self.reader = LengthPrefixedMessageReader()
   }
 
   var allocator = ByteBufferAllocator()
@@ -206,24 +206,10 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
     self.assertMessagesEqual(expected: [0x00, 0x01], actual: try reader.nextMessage())
   }
 
-  func testNextMessageThrowsWhenCompressionMechanismIsNotSupported() throws {
-    // Unknown should never be supported.
-    reader.compressionMechanism = .unknown
-    XCTAssertFalse(reader.compressionMechanism.supported)
-
-    var buffer = byteBuffer(withBytes: lengthPrefixedTwoByteMessage(withCompression: true))
-    reader.append(buffer: &buffer)
-
-    XCTAssertThrowsError(try reader.nextMessage()) { error in
-      let errorWithContext = error as? GRPCError.WithContext
-      XCTAssertTrue(errorWithContext?.error is GRPCError.CompressionUnsupported)
-    }
-  }
-
   func testNextMessageThrowsWhenCompressionFlagIsSetButNotExpected() throws {
-    // Default compression mechanism is `.none` which requires that no
+    // Default compression mechanism is `nil` which requires that no
     // compression flag is set as it indicates a lack of message encoding header.
-    XCTAssertFalse(reader.compressionMechanism.requiresFlag)
+    XCTAssertNil(self.reader.compression)
 
     var buffer = byteBuffer(withBytes: lengthPrefixedTwoByteMessage(withCompression: true))
     reader.append(buffer: &buffer)
@@ -236,9 +222,7 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
 
   func testNextMessageDoesNotThrowWhenCompressionFlagIsExpectedButNotSet() throws {
     // `.identity` should always be supported and requires a flag.
-    reader.compressionMechanism = .identity
-    XCTAssertTrue(reader.compressionMechanism.supported)
-    XCTAssertTrue(reader.compressionMechanism.requiresFlag)
+    reader.compression = .identity
 
     var buffer = byteBuffer(withBytes: lengthPrefixedTwoByteMessage())
     reader.append(buffer: &buffer)

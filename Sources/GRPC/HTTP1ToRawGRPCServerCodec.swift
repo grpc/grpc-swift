@@ -35,7 +35,7 @@ public enum _RawGRPCServerResponsePart {
 
 /// A simple channel handler that translates HTTP1 data types into gRPC packets, and vice versa.
 ///
-/// This codec allows us to use the "raw" gRPC protocol on a low level, with further handlers operationg the protocol
+/// This codec allows us to use the "raw" gRPC protocol on a low level, with further handlers operating the protocol
 /// on a "higher" level.
 ///
 /// We use HTTP1 (instead of HTTP2) primitives, as these are easier to work with than raw HTTP2
@@ -50,8 +50,7 @@ public final class HTTP1ToRawGRPCServerCodec {
     var accessLog = Logger(subsystem: .serverAccess)
     accessLog[metadataKey: MetadataKey.requestID] = logger[metadataKey: MetadataKey.requestID]
     self.accessLog = accessLog
-
-    self.messageReader = LengthPrefixedMessageReader(compressionMechanism: .none)
+    self.messageReader = LengthPrefixedMessageReader()
   }
 
   // 1-byte for compression flag, 4-bytes for message length.

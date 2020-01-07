@@ -28,7 +28,7 @@ struct PendingWriteState {
   var arity: MessageArity
 
   /// The compression used when writing messages.
-  var compression: CompressionMechanism
+  var compression: CompressionAlgorithm?
 
   /// The 'content-type' being written.
   var contentType: ContentType
