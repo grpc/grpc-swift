@@ -127,7 +127,7 @@ check_copyright_headers() {
 
   actual_sha=$(head -n "$((drop_first + expected_lines))" "$filename" \
     | tail -n "$expected_lines" \
-    | sed -e 's/201[56789]-20[12][0-9]/YEARS/' -e 's/201[56789]/YEARS/' \
+    | sed -e 's/201[56789]-20[12][0-9]/YEARS/' -e 's/20[12][0-9]/YEARS/' \
     | shasum \
     | awk '{print $1}')
 
