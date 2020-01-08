@@ -13,12 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Foundation
 import NIO
 
-public enum GRPCTimeoutError: String, Error, Equatable {
-  case negative = "GRPCTimeout must be non-negative"
-  case tooManyDigits = "GRPCTimeout must be at most 8 digits"
+/// Errors thrown when constructing a timeout.
+public struct GRPCTimeoutError: Error, Equatable, CustomStringConvertible {
+  private enum BaseError {
+    case negative
+    case tooManyDigits
+  }
+
+  private var error: BaseError
+
+  private init(_ error: BaseError) {
+    self.error = error
+  }
+
+  public var description: String {
+    switch self.error {
+    case .negative:
+      return "GRPCTimeoutError: time amount must not be negative"
+    case .tooManyDigits:
+      return "GRPCTimeoutError: too many digits to represent using the gRPC wire-format"
+    }
+  }
+
+  /// The timeout is negative.
+  public static let negative = GRPCTimeoutError(.negative)
+
+  /// The number of digits in the timeout amount is more than 8-digits and cannot be encoded in
+  /// the gRPC wire-format.
+  public static let tooManyDigits = GRPCTimeoutError(.tooManyDigits)
 }
 
 /// A timeout for a gRPC call.
