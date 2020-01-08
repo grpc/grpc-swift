@@ -19,10 +19,15 @@ import NIO
 internal struct LengthPrefixedMessageWriter {
   static let metadataLength = 5
 
-  private let compression: CompressionMechanism
+  /// The compression algorithm to use, if one should be used.
+  private let compression: CompressionAlgorithm?
 
-  init(compression: CompressionMechanism) {
-    precondition(compression.supported, "compression mechanism \(compression) is not supported")
+  /// Whether the compression message flag should be set.
+  private var shouldSetCompressionFlag: Bool {
+    return self.compression != nil
+  }
+
+  init(compression: CompressionAlgorithm? = nil) {
     self.compression = compression
   }
 
@@ -38,7 +43,7 @@ internal struct LengthPrefixedMessageWriter {
     buffer.reserveCapacity(LengthPrefixedMessageWriter.metadataLength + message.count)
 
     //! TODO: Add compression support, use the length and compressed content.
-    buffer.writeInteger(Int8(compression.requiresFlag ? 1 : 0))
+    buffer.writeInteger(Int8(self.shouldSetCompressionFlag ? 1 : 0))
     buffer.writeInteger(UInt32(message.count))
     buffer.writeBytes(message)
   }

@@ -714,7 +714,7 @@ extension GRPCClientStateMachineTests {
 
     switch stateMachine.state {
     case let .clientActiveServerActive(_, .reading(_, reader)):
-      XCTAssertEqual(reader.compressionMechanism, .identity)
+      XCTAssertEqual(reader.compression, .identity)
     default:
       XCTFail("unexpected state \(stateMachine.state)")
     }
@@ -738,7 +738,7 @@ extension GRPCClientStateMachineTests {
     headers.add(name: "grpc-encoding", value: "not-a-known-compression-(probably)")
 
     stateMachine.receiveResponseHeaders(headers).assertFailure {
-      XCTAssertEqual($0, .unsupportedMessageEncoding("unknown"))
+      XCTAssertEqual($0, .unsupportedMessageEncoding("not-a-known-compression-(probably)"))
     }
   }
 
@@ -930,12 +930,12 @@ extension Result {
 
 extension ReadState {
   static func one() -> ReadState {
-    let reader = LengthPrefixedMessageReader(compressionMechanism: .none)
+    let reader = LengthPrefixedMessageReader()
     return .reading(.one, reader)
   }
 
   static func many() -> ReadState {
-    let reader = LengthPrefixedMessageReader(compressionMechanism: .none)
+    let reader = LengthPrefixedMessageReader()
     return .reading(.many, reader)
   }
 

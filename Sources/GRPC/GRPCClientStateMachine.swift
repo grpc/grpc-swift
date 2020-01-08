@@ -561,17 +561,20 @@ extension GRPCClientStateMachine.State {
     }
 
     // What compression mechanism is the server using, if any?
-    let compression = CompressionMechanism(value: headers.first(name: GRPCHeaderName.encoding))
+    let compression: CompressionAlgorithm?
 
-    // From: https://github.com/grpc/grpc/blob/master/doc/compression.md
-    //
-    // "If a server sent data which is compressed by an algorithm that is not supported by the
-    // client, an INTERNAL error status will occur on the client side."
-    guard compression.supported else {
-      return .failure(.unsupportedMessageEncoding(compression.rawValue))
+    if let encodingHeader = headers.first(name: GRPCHeaderName.encoding) {
+      compression = CompressionAlgorithm(rawValue: encodingHeader)
+      // The algorithm isn't supported.
+      if compression == nil {
+        return .failure(.unsupportedMessageEncoding(encodingHeader))
+      }
+    } else {
+      // No compression was specified, this is fine.
+      compression = nil
     }
 
-    let reader = LengthPrefixedMessageReader(compressionMechanism: compression)
+    let reader = LengthPrefixedMessageReader(compression: compression)
     return .success(.reading(arity, reader))
   }
 
