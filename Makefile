@@ -1,8 +1,9 @@
 UNAME_S = $(shell uname -s)
 
 ifeq ($(UNAME_S),Linux)
+  CFLAGS = -Xcc -DTSI_OPENSSL_ALPN_SUPPORT=0 -Xlinker -lz
 else
-  CFLAGS = -Xcc -ISources/BoringSSL/include -Xlinker -lz
+  CFLAGS = -Xcc -ISources/BoringSSL/include
 endif
 
 all:
@@ -40,26 +41,10 @@ test-echo: all
 	kill -9 `cat echo.pid`
 	diff -u test.out Sources/Examples/Echo/test.gold
 
-test-echo-nio: all
-	cp .build/debug/EchoNIO .
-	cp .build/debug/Echo .
-	./EchoNIO serve & /bin/echo $$! > echo.pid
-	./Echo get | tee test.out
-	./Echo expand | tee -a test.out
-	./Echo collect | tee -a test.out
-	./Echo update | tee -a test.out
-	kill -9 `cat echo.pid`
-	diff -u test.out Sources/Examples/Echo/test.gold
-
 test-plugin:
 	swift build $(CFLAGS) --product protoc-gen-swiftgrpc
 	protoc Sources/Examples/Echo/echo.proto --proto_path=Sources/Examples/Echo --plugin=.build/debug/protoc-gen-swift --plugin=.build/debug/protoc-gen-swiftgrpc --swiftgrpc_out=/tmp --swiftgrpc_opt=TestStubs=true
 	diff -u /tmp/echo.grpc.swift Sources/Examples/Echo/Generated/echo.grpc.swift
-
-test-plugin-nio:
-	swift build $(CFLAGS) --product protoc-gen-swiftgrpc
-	protoc Sources/Examples/Echo/echo.proto --proto_path=Sources/Examples/Echo --plugin=.build/debug/protoc-gen-swift --plugin=.build/debug/protoc-gen-swiftgrpc --swiftgrpc_out=/tmp --swiftgrpc_opt=NIO=true
-	diff -u /tmp/echo.grpc.swift Sources/Examples/EchoNIO/Generated/echo.grpc.swift
 
 xcodebuild: project
 		xcodebuild -project SwiftGRPC.xcodeproj -configuration "Debug" -parallelizeTargets -target SwiftGRPC -target Echo -target Simple -target protoc-gen-swiftgrpc build

@@ -15,7 +15,6 @@
  */
 import XCTest
 @testable import SwiftGRPCTests
-@testable import SwiftGRPCNIOTests
 
 XCTMain([
   // SwiftGRPC
@@ -37,17 +36,5 @@ XCTMain([
   testCase(ServerTestExample.allTests),
   testCase(SwiftGRPCTests.ServerThrowingTests.allTests),
   testCase(ServerTests.allTests),
-  testCase(ServerTimeoutTests.allTests),
-
-  // SwiftGRPCNIO
-  testCase(NIOServerTests.allTests),
-  testCase(SwiftGRPCNIOTests.ServerThrowingTests.allTests),
-  testCase(SwiftGRPCNIOTests.ServerDelayedThrowingTests.allTests),
-  testCase(SwiftGRPCNIOTests.ClientThrowingWhenServerReturningErrorTests.allTests),
-  testCase(NIOClientCancellingTests.allTests),
-  testCase(NIOClientTimeoutTests.allTests),
-  testCase(NIOServerWebTests.allTests),
-  testCase(GRPCChannelHandlerTests.allTests),
-  testCase(HTTP1ToRawGRPCServerCodecTests.allTests),
-  testCase(LengthPrefixedMessageReaderTests.allTests),
+  testCase(ServerTimeoutTests.allTests)
 ])
