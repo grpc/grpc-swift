@@ -104,10 +104,10 @@ internal class GRPCClientResponseChannelHandler<ResponseMessage: Message>: Chann
           file: errorWithContext.file,
           line: errorWithContext.line
       )
-      self.onStatus(errorWithContext.error.asGRPCStatus())
+      self.onStatus(errorWithContext.error.makeGRPCStatus())
     } else {
       self.errorDelegate?.didCatchErrorWithoutContext(error, logger: self.logger)
-      self.onStatus((error as? GRPCStatusTransformable)?.asGRPCStatus() ?? .processingError)
+      self.onStatus((error as? GRPCStatusTransformable)?.makeGRPCStatus() ?? .processingError)
     }
   }
 

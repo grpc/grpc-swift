@@ -82,11 +82,11 @@ extension _BaseCallHandler: ChannelInboundHandler {
     if let errorWithContext = error as? GRPCError.WithContext {
       self.errorDelegate?.observeLibraryError(errorWithContext.error)
       status = self.errorDelegate?.transformLibraryError(errorWithContext.error)
-          ?? errorWithContext.error.asGRPCStatus()
+          ?? errorWithContext.error.makeGRPCStatus()
     } else {
       self.errorDelegate?.observeLibraryError(error)
       status = self.errorDelegate?.transformLibraryError(error)
-          ?? (error as? GRPCStatusTransformable)?.asGRPCStatus()
+          ?? (error as? GRPCStatusTransformable)?.makeGRPCStatus()
           ?? .processingError
     }
 

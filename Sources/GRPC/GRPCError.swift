@@ -36,7 +36,7 @@ public enum GRPCError {
       return "RPC '\(self.rpc)' is not implemented"
     }
 
-    public func asGRPCStatus() -> GRPCStatus {
+    public func makeGRPCStatus() -> GRPCStatus {
       return GRPCStatus(code: .unimplemented, message: self.description)
     }
   }
@@ -48,7 +48,7 @@ public enum GRPCError {
     public init() {
     }
 
-    public func asGRPCStatus() -> GRPCStatus {
+    public func makeGRPCStatus() -> GRPCStatus {
       return GRPCStatus(code: .cancelled, message: self.description)
     }
   }
@@ -66,7 +66,7 @@ public enum GRPCError {
       return "RPC timed out (timeout=\(self.timeout.wireEncoding)) before completing"
     }
 
-    public func asGRPCStatus() -> GRPCStatus {
+    public func makeGRPCStatus() -> GRPCStatus {
       return GRPCStatus(code: .deadlineExceeded, message: self.description)
     }
   }
@@ -78,7 +78,7 @@ public enum GRPCError {
     public init() {
     }
 
-    public func asGRPCStatus() -> GRPCStatus {
+    public func makeGRPCStatus() -> GRPCStatus {
       return GRPCStatus(code: .internalError, message: self.description)
     }
   }
@@ -90,7 +90,7 @@ public enum GRPCError {
     public init() {
     }
 
-    public func asGRPCStatus() -> GRPCStatus {
+    public func makeGRPCStatus() -> GRPCStatus {
       return GRPCStatus(code: .internalError, message: self.description)
     }
   }
@@ -102,7 +102,7 @@ public enum GRPCError {
     public init() {
     }
 
-    public func asGRPCStatus() -> GRPCStatus {
+    public func makeGRPCStatus() -> GRPCStatus {
       return GRPCStatus(code: .internalError, message: self.description)
     }
   }
@@ -114,7 +114,7 @@ public enum GRPCError {
     public init() {
     }
 
-    public func asGRPCStatus() -> GRPCStatus {
+    public func makeGRPCStatus() -> GRPCStatus {
       return GRPCStatus(code: .unimplemented, message: self.description)
     }
   }
@@ -137,7 +137,7 @@ public enum GRPCError {
       }
     }
 
-    public func asGRPCStatus() -> GRPCStatus {
+    public func makeGRPCStatus() -> GRPCStatus {
       return GRPCStatus(code: .internalError, message: self.description)
     }
   }
@@ -159,7 +159,7 @@ public enum GRPCError {
       }
     }
 
-    public func asGRPCStatus() -> GRPCStatus {
+    public func makeGRPCStatus() -> GRPCStatus {
       return GRPCStatus(code: .internalError, message: self.description)
     }
   }
@@ -181,7 +181,7 @@ public enum GRPCError {
       }
     }
 
-    public func asGRPCStatus() -> GRPCStatus {
+    public func makeGRPCStatus() -> GRPCStatus {
       return GRPCStatus(code: .init(httpStatus: self.status), message: self.description)
     }
   }
@@ -198,7 +198,7 @@ public enum GRPCError {
       return "Invalid HTTP response status, but gRPC status was present"
     }
 
-    public func asGRPCStatus() -> GRPCStatus {
+    public func makeGRPCStatus() -> GRPCStatus {
       return self.status
     }
   }
@@ -215,7 +215,7 @@ public enum GRPCError {
       return self.message
     }
 
-    public func asGRPCStatus() -> GRPCStatus {
+    public func makeGRPCStatus() -> GRPCStatus {
       return GRPCStatus(code: .internalError, message: "Invalid state: \(self.message)")
     }
   }
