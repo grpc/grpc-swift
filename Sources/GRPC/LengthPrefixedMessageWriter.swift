@@ -22,8 +22,8 @@ internal struct LengthPrefixedMessageWriter {
   /// The compression algorithm to use, if one should be used.
   private let compression: CompressionAlgorithm?
 
-  /// Whether the compression message bit should be written.
-  private var writeCompressionBit: Bool {
+  /// Whether the compression message flag should be set.
+  private var shouldSetCompressionFlag: Bool {
     return self.compression != nil
   }
 
@@ -43,7 +43,7 @@ internal struct LengthPrefixedMessageWriter {
     buffer.reserveCapacity(LengthPrefixedMessageWriter.metadataLength + message.count)
 
     //! TODO: Add compression support, use the length and compressed content.
-    buffer.writeInteger(Int8(self.writeCompressionBit ? 1 : 0))
+    buffer.writeInteger(Int8(self.shouldSetCompressionFlag ? 1 : 0))
     buffer.writeInteger(UInt32(message.count))
     buffer.writeBytes(message)
   }
