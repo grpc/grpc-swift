@@ -33,6 +33,14 @@ public protocol ClientErrorDelegate: class {
   func didCatchError(_ error: Error, logger: Logger, file: StaticString, line: Int)
 }
 
+extension ClientErrorDelegate {
+  /// Calls `didCatchError(_:logger:file:line:)` with appropriate context placeholders when no
+  /// context is available.
+  internal func didCatchErrorWithoutContext(_ error: Error, logger: Logger) {
+    self.didCatchError(error, logger: logger, file: "<unknown>", line: 0)
+  }
+}
+
 /// A `ClientErrorDelegate` which logs errors.
 public class LoggingClientErrorDelegate: ClientErrorDelegate {
   public init() { }

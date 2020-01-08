@@ -22,10 +22,10 @@ import SwiftProtobuf
 
 enum ReceiveResponseHeadError: Error, Equatable {
   /// The 'content-type' header was missing or the value is not supported by this implementation.
-  case invalidContentType
+  case invalidContentType(String?)
 
   /// The HTTP response status from the server was not 200 OK.
-  case invalidHTTPStatus(HTTPResponseStatus?)
+  case invalidHTTPStatus(String?)
 
   /// The encoding used by the server is not supported.
   case unsupportedMessageEncoding(String)
@@ -36,10 +36,10 @@ enum ReceiveResponseHeadError: Error, Equatable {
 
 enum ReceiveEndOfResponseStreamError: Error {
   /// The 'content-type' header was missing or the value is not supported by this implementation.
-  case invalidContentType
+  case invalidContentType(String?)
 
   /// The HTTP response status from the server was not 200 OK.
-  case invalidHTTPStatus(HTTPResponseStatus?)
+  case invalidHTTPStatus(String?)
 
   /// The HTTP response status from the server was not 200 OK but the "grpc-status" header contained
   /// a valid value.
@@ -544,18 +544,20 @@ extension GRPCClientStateMachine.State {
     // responses as well as a variety of non-GRPC content-types and to omit Status & Status-Message.
     // Implementations must synthesize a Status & Status-Message to propagate to the application
     // layer when this occurs."
-    let responseStatus = headers.first(name: ":status")
+    let statusHeader = headers.first(name: ":status")
+    let responseStatus = statusHeader
       .flatMap(Int.init)
       .map { code in
         HTTPResponseStatus(statusCode: code)
       } ?? .preconditionFailed
 
     guard responseStatus == .ok else {
-      return .failure(.invalidHTTPStatus(responseStatus))
+      return .failure(.invalidHTTPStatus(statusHeader))
     }
 
-    guard headers.first(name: "content-type").flatMap(ContentType.init) != nil else {
-      return .failure(.invalidContentType)
+    let contentTypeHeader = headers.first(name: "content-type")
+    guard contentTypeHeader.flatMap(ContentType.init) != nil else {
+      return .failure(.invalidContentType(contentTypeHeader))
     }
 
     // What compression mechanism is the server using, if any?
@@ -569,7 +571,7 @@ extension GRPCClientStateMachine.State {
       return .failure(.unsupportedMessageEncoding(compression.rawValue))
     }
 
-    let reader = LengthPrefixedMessageReader(mode: .client, compressionMechanism: compression)
+    let reader = LengthPrefixedMessageReader(compressionMechanism: compression)
     return .success(.reading(arity, reader))
   }
 
@@ -610,8 +612,9 @@ extension GRPCClientStateMachine.State {
     // one from the ":status".
     //
     // See: https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md
-    guard let status = trailers.first(name: ":status").flatMap(Int.init).map({ HTTPResponseStatus(statusCode: $0) }) else {
-      return .failure(.invalidHTTPStatus(nil))
+    let statusHeader = trailers.first(name: ":status")
+    guard let status = statusHeader.flatMap(Int.init).map({ HTTPResponseStatus(statusCode: $0) }) else {
+      return .failure(.invalidHTTPStatus(statusHeader))
     }
 
     guard status == .ok else {
@@ -619,12 +622,13 @@ extension GRPCClientStateMachine.State {
         let message = self.readStatusMessage(from: trailers)
         return .failure(.invalidHTTPStatusWithGRPCStatus(.init(code: code, message: message)))
       } else {
-        return .failure(.invalidHTTPStatus(status))
+        return .failure(.invalidHTTPStatus(statusHeader))
       }
     }
 
-    guard trailers.first(name: "content-type").flatMap(ContentType.init) != nil else {
-      return .failure(.invalidContentType)
+    let contentTypeHeader = trailers.first(name: "content-type")
+    guard contentTypeHeader.map(ContentType.init) != nil else {
+      return .failure(.invalidContentType(contentTypeHeader))
     }
 
     // We've verified the status and content type are okay: parse the trailers.

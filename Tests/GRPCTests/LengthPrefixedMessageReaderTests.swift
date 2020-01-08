@@ -23,7 +23,7 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
 
   override func setUp() {
     super.setUp()
-    self.reader = LengthPrefixedMessageReader(mode: .client, compressionMechanism: .none)
+    self.reader = LengthPrefixedMessageReader(compressionMechanism: .none)
   }
 
   var allocator = ByteBufferAllocator()
@@ -215,7 +215,8 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
     reader.append(buffer: &buffer)
 
     XCTAssertThrowsError(try reader.nextMessage()) { error in
-      XCTAssertEqual(.unsupportedCompressionMechanism("unknown"), (error as? GRPCError)?.wrappedError as? GRPCCommonError)
+      let errorWithContext = error as? GRPCError.WithContext
+      XCTAssertTrue(errorWithContext?.error is GRPCError.CompressionUnsupported)
     }
   }
 
@@ -228,7 +229,8 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
     reader.append(buffer: &buffer)
 
     XCTAssertThrowsError(try reader.nextMessage()) { error in
-      XCTAssertEqual(.unexpectedCompression, (error as? GRPCError)?.wrappedError as? GRPCCommonError)
+      let errorWithContext = error as? GRPCError.WithContext
+      XCTAssertTrue(errorWithContext?.error is GRPCError.CompressionUnsupported)
     }
   }
 

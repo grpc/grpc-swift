@@ -88,7 +88,7 @@ internal class TLSVerificationHandler: ChannelInboundHandler, RemovableChannelHa
     } else {
       self.logger.debug("TLS handshake completed, no protocol negotiated")
     }
-    
+
     self.verificationPromise.succeed(())
   }
 }

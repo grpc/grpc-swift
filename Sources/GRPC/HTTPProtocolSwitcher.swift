@@ -163,7 +163,15 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
   func errorCaught(context: ChannelHandlerContext, error: Error) {
     switch self.state {
     case .notConfigured, .configuring:
-      errorDelegate?.observeLibraryError(error)
+      let baseError: Error
+
+      if let errorWithContext = error as? GRPCError.WithContext {
+        baseError = errorWithContext.error
+      } else {
+        baseError = error
+      }
+
+      errorDelegate?.observeLibraryError(baseError)
       context.close(mode: .all, promise: nil)
 
     case .configured:

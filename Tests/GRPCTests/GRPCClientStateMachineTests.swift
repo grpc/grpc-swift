@@ -678,9 +678,10 @@ extension GRPCClientStateMachineTests {
   func testReceiveResponseHeadersWithNotOkStatus() throws {
     var stateMachine = self.makeStateMachine(.clientActiveServerIdle(writeState: .one(), readArity: .one))
 
-    let headers = self.makeResponseHeaders(status: "\(HTTPResponseStatus.paymentRequired.code)")
+    let code = "\(HTTPResponseStatus.paymentRequired.code)"
+    let headers = self.makeResponseHeaders(status: code)
     stateMachine.receiveResponseHeaders(headers).assertFailure {
-      XCTAssertEqual($0, .invalidHTTPStatus(.paymentRequired))
+      XCTAssertEqual($0, .invalidHTTPStatus(code))
     }
   }
 
@@ -689,7 +690,7 @@ extension GRPCClientStateMachineTests {
 
     let headers = self.makeResponseHeaders(contentType: nil)
     stateMachine.receiveResponseHeaders(headers).assertFailure {
-      XCTAssertEqual($0, .invalidContentType)
+      XCTAssertEqual($0, .invalidContentType(nil))
     }
   }
 
@@ -698,7 +699,7 @@ extension GRPCClientStateMachineTests {
 
     let headers = self.makeResponseHeaders(contentType: "video/mpeg")
     stateMachine.receiveResponseHeaders(headers).assertFailure {
-      XCTAssertEqual($0, .invalidContentType)
+      XCTAssertEqual($0, .invalidContentType("video/mpeg"))
     }
   }
 
@@ -929,18 +930,12 @@ extension Result {
 
 extension ReadState {
   static func one() -> ReadState {
-    let reader = LengthPrefixedMessageReader(
-      mode: .client,
-      compressionMechanism: .none
-    )
+    let reader = LengthPrefixedMessageReader(compressionMechanism: .none)
     return .reading(.one, reader)
   }
 
   static func many() -> ReadState {
-    let reader = LengthPrefixedMessageReader(
-      mode: .client,
-      compressionMechanism: .none
-    )
+    let reader = LengthPrefixedMessageReader(compressionMechanism: .none)
     return .reading(.many, reader)
   }
 

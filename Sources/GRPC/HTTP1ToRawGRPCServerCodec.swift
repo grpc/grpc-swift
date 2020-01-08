@@ -51,7 +51,7 @@ public final class HTTP1ToRawGRPCServerCodec {
     accessLog[metadataKey: MetadataKey.requestID] = logger[metadataKey: MetadataKey.requestID]
     self.accessLog = accessLog
 
-    self.messageReader = LengthPrefixedMessageReader(mode: .server, compressionMechanism: .none)
+    self.messageReader = LengthPrefixedMessageReader(compressionMechanism: .none)
   }
 
   // 1-byte for compression flag, 4-bytes for message length.
@@ -152,7 +152,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
     self.logger.debug("processing request head", metadata: ["head": "\(requestHead)"])
     guard case .expectingHeaders = inboundState else {
       self.logger.error("invalid state '\(inboundState)' while processing request head", metadata: ["head": "\(requestHead)"])
-      throw GRPCError.server(.invalidState("expecteded state .expectingHeaders, got \(inboundState)"))
+      throw GRPCError.InvalidState("expected state .expectingHeaders, got \(inboundState)").captureContext()
     }
 
     self.stopwatch = .start()
@@ -182,7 +182,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
     self.logger.debug("processing body: \(body)")
     guard case .expectingBody = inboundState else {
       self.logger.error("invalid state '\(inboundState)' while processing body", metadata: ["body": "\(body)"])
-      throw GRPCError.server(.invalidState("expecteded state .expectingBody, got \(inboundState)"))
+      throw GRPCError.InvalidState("expected state .expectingBody, got \(inboundState)").captureContext()
     }
 
     // If the contentType is text, then decode the incoming bytes as base64 encoded, and append
@@ -197,7 +197,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
       let readyBytes = requestTextBuffer.readableBytes - (requestTextBuffer.readableBytes % 4)
       guard let base64Encoded = requestTextBuffer.readString(length: readyBytes),
           let decodedData = Data(base64Encoded: base64Encoded) else {
-        throw GRPCError.server(.base64DecodeError)
+          throw GRPCError.Base64DecodeError().captureContext()
       }
 
       body.writeBytes(decodedData)
@@ -215,7 +215,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
     self.logger.debug("processing end")
     if let trailers = trailers {
       self.logger.error("unexpected trailers when processing stream end", metadata: ["trailers": "\(trailers)"])
-      throw GRPCError.server(.invalidState("unexpected trailers received \(trailers)"))
+      throw GRPCError.InvalidState("unexpected trailers received").captureContext()
     }
 
     context.fireChannelRead(self.wrapInboundOut(.end))
@@ -230,7 +230,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
   public func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     if case .ignore = self.outboundState {
       self.logger.notice("ignoring written data: \(data)")
-      promise?.fail(GRPCServerError.serverNotWritable)
+      promise?.fail(GRPCError.InvalidState("rpc has already finished").captureContext())
       return
     }
 

@@ -31,13 +31,10 @@ import Logging
 /// - SeeAlso:
 /// [gRPC Protocol](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md)
 internal struct LengthPrefixedMessageReader {
-  public typealias Mode = GRPCError.Origin
-
   /// The mechanism that messages will be compressed with.
   var compressionMechanism: CompressionMechanism
 
-  init(mode: Mode, compressionMechanism: CompressionMechanism) {
-    self.mode = mode
+  init(compressionMechanism: CompressionMechanism) {
     self.compressionMechanism = compressionMechanism
   }
 
@@ -59,7 +56,6 @@ internal struct LengthPrefixedMessageReader {
     case expectingMessage(UInt32)
   }
 
-  private let mode: Mode
   private var buffer: ByteBuffer!
   private var state: ParseState = .expectingCompressedFlag
 
@@ -154,16 +150,8 @@ internal struct LengthPrefixedMessageReader {
   }
 
   private func handleCompressionFlag(enabled flagEnabled: Bool) throws {
-    guard flagEnabled else {
-      return
-    }
-
-    guard self.compressionMechanism.requiresFlag else {
-      throw GRPCError.common(.unexpectedCompression, origin: mode)
-    }
-
-    guard self.compressionMechanism.supported else {
-      throw GRPCError.common(.unsupportedCompressionMechanism(compressionMechanism.rawValue), origin: mode)
+    if flagEnabled && !(self.compressionMechanism.requiresFlag && self.compressionMechanism.supported) {
+      throw GRPCError.CompressionUnsupported().captureContext()
     }
   }
 }

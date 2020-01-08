@@ -42,8 +42,11 @@ class DelegatingErrorHandler: ChannelInboundHandler {
     }
 
     if let delegate = self.delegate {
-      let grpcError = (error as? GRPCError) ?? .unknown(error, origin: .client)
-      delegate.didCatchError(grpcError.wrappedError, logger: self.logger, file: grpcError.file, line: grpcError.line)
+      if let context = error as? GRPCError.WithContext {
+        delegate.didCatchError(context.error, logger: self.logger, file: context.file, line: context.line)
+      } else {
+        delegate.didCatchErrorWithoutContext(error, logger: self.logger)
+      }
     }
     context.close(promise: nil)
   }

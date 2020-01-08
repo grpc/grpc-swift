@@ -57,7 +57,7 @@ public final class ServerStreamingCallHandler<
     guard let eventObserver = self.eventObserver,
       let callContext = self.callContext else {
         self.logger.error("processMessage(_:) called before the call started or after the call completed")
-        throw GRPCError.server(.tooManyRequests)
+        throw GRPCError.StreamCardinalityViolation(stream: .request).captureContext()
     }
 
     let resultFuture = eventObserver(message)
@@ -69,7 +69,7 @@ public final class ServerStreamingCallHandler<
 
   override internal func endOfStreamReceived() throws {
     if self.eventObserver != nil {
-      throw GRPCError.server(.noRequestsButOneExpected)
+      throw GRPCError.StreamCardinalityViolation(stream: .request).captureContext()
     }
   }
 
