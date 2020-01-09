@@ -78,9 +78,12 @@ install_swift() {
   if [ "$TRAVIS_OS_NAME" != "osx" ]; then
     info "Installing Swift $SWIFT_VERSION"
 
-    SWIFT_URL=https://swift.org/builds/swift-${SWIFT_VERSION}-release/ubuntu1804/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu18.04.tar.gz
+    if [ -z "${SWIFT_URL}" ]; then
+      SWIFT_URL=https://swift.org/builds/swift-${SWIFT_VERSION}-release/ubuntu1804/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu18.04.tar.gz
+    fi
+
     info "Downloading Swift from $SWIFT_URL"
-    curl -fSsL $SWIFT_URL -o swift.tar.gz
+    curl -fSsL "$SWIFT_URL" -o swift.tar.gz
 
     info "Extracting Swift from swift.tar.gz"
     tar -xzf swift.tar.gz --strip-components=2 --directory=local
