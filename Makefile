@@ -124,7 +124,5 @@ clean:
 	-rm -rf Packages
 	-rm -rf ${SWIFT_BUILD_PATH}
 	-rm -rf ${XCODEPROJ}
-	-rm -f Package.pins Package.resolved
-	-cd Examples/Google/Datastore && make clean
+	-rm -f Package.resolved
 	-cd Examples/Google/NaturalLanguage && make clean
-	-cd Examples/Google/Spanner && make clean
