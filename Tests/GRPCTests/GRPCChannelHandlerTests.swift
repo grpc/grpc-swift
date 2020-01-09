@@ -31,7 +31,7 @@ class GRPCChannelHandlerTests: GRPCChannelHandlerResponseCapturingTestCase {
     XCTAssertEqual(expectedError, errorCollector.errors.first as? GRPCError.RPCNotImplemented)
 
     responses[0].assertStatus { status in
-      XCTAssertEqual(status, expectedError.asGRPCStatus())
+      XCTAssertEqual(status, expectedError.makeGRPCStatus())
     }
   }
 
@@ -69,7 +69,7 @@ class GRPCChannelHandlerTests: GRPCChannelHandlerResponseCapturingTestCase {
 
     responses[0].assertHeaders()
     responses[1].assertStatus { status in
-      XCTAssertEqual(status, expectedError.asGRPCStatus())
+      XCTAssertEqual(status, expectedError.makeGRPCStatus())
     }
   }
 }

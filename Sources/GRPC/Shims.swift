@@ -40,3 +40,10 @@ extension ClientErrorDelegate {
   @available(*, deprecated, message: "Please use 'didCatchError(_:logger:file:line:)' instead")
   public func didCatchError(_ error: Error, file: StaticString, line: Int) { }
 }
+
+extension GRPCStatusTransformable {
+  @available(*, deprecated, renamed: "makeGRPCStatus")
+  func asGRPCStatus() -> GRPCStatus {
+    return self.makeGRPCStatus()
+  }
+}

@@ -80,7 +80,7 @@ open class UnaryResponseCallContextImpl<ResponseMessage: Message>: UnaryResponse
       .recover { [weak errorDelegate] error in
         errorDelegate?.observeRequestHandlerError(error, request: request)
         return errorDelegate?.transformRequestHandlerError(error, request: request)
-          ?? (error as? GRPCStatusTransformable)?.asGRPCStatus()
+          ?? (error as? GRPCStatusTransformable)?.makeGRPCStatus()
           ?? .processingError
       }
       // Finish the call by returning the final status.

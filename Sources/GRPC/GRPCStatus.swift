@@ -175,30 +175,35 @@ extension GRPCStatus {
   }
 }
 
+/// This protocol serves as a customisation point for error types so that gRPC calls may be
+/// terminated with an appropriate status.
 public protocol GRPCStatusTransformable: Error {
-  func asGRPCStatus() -> GRPCStatus
+  /// Make a `GRPCStatus` from the underlying error.
+  ///
+  /// - Returns: A `GRPCStatus` representing the underlying error.
+  func makeGRPCStatus() -> GRPCStatus
 }
 
 extension GRPCStatus: GRPCStatusTransformable {
-  public func asGRPCStatus() -> GRPCStatus {
+  public func makeGRPCStatus() -> GRPCStatus {
     return self
   }
 }
 
 extension NIOHTTP2Errors.StreamClosed: GRPCStatusTransformable {
-  public func asGRPCStatus() -> GRPCStatus {
+  public func makeGRPCStatus() -> GRPCStatus {
     return .init(code: .unavailable, message: self.localizedDescription)
   }
 }
 
 extension NIOHTTP2Errors.IOOnClosedConnection: GRPCStatusTransformable {
-  public func asGRPCStatus() -> GRPCStatus {
+  public func makeGRPCStatus() -> GRPCStatus {
     return .init(code: .unavailable, message: "The connection is closed")
   }
 }
 
 extension ChannelError: GRPCStatusTransformable {
-  public func asGRPCStatus() -> GRPCStatus {
+  public func makeGRPCStatus() -> GRPCStatus {
     switch self {
     case .inputClosed, .outputClosed, .ioOnClosedChannel:
       return .init(code: .unavailable, message: "The connection is closed")
