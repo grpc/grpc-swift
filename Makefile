@@ -47,7 +47,7 @@ project: ${XCODEPROJ}
 
 ${XCODEPROJ}:
 	${SWIFT_PACKAGE} generate-xcodeproj --output $@
-	@-ruby fix-project-settings.rb GRPC.xcodeproj || \
+	@-ruby scripts/fix-project-settings.rb GRPC.xcodeproj || \
 		echo "Consider running 'sudo gem install xcodeproj' to automatically set correct indentation settings for the generated project."
 
 # Generates LinuxMain.swift, only on macOS.
