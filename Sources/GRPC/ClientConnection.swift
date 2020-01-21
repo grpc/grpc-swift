@@ -361,7 +361,7 @@ extension ClientConnection {
     logger: Logger
   ) -> ClientBootstrapProtocol {
     // Provide a server hostname if we're using TLS. Prefer the override.
-    let serverHostname: String? = configuration.tls.map {
+    var serverHostname: String? = configuration.tls.map {
       if let hostnameOverride = $0.hostnameOverride {
         logger.debug("using hostname override for TLS", metadata: ["server-hostname": "\(hostnameOverride)"])
         return hostnameOverride
@@ -370,6 +370,11 @@ extension ClientConnection {
         logger.debug("using host from connection target for TLS", metadata: ["server-hostname": "\(host)"])
         return host
       }
+    }
+    
+    if let hostname = serverHostname, hostname.isIPAddress {
+      logger.debug("IP address cannot be used for TLS SNI extension. No host used", metadata: ["server-hostname": "\(hostname)"])
+      serverHostname = nil
     }
 
     let bootstrap = PlatformSupport.makeClientBootstrap(group: eventLoop)
@@ -573,6 +578,19 @@ extension HTTP2ToHTTP1ClientCodec.HTTPProtocol {
       return "http"
     case .https:
       return "https"
+    }
+  }
+}
+
+fileprivate extension String {
+  var isIPAddress: Bool {
+    // We need some scratch space to let inet_pton write into.
+    var ipv4Addr = in_addr()
+    var ipv6Addr = in6_addr()
+    
+    return self.withCString { ptr in
+      return inet_pton(AF_INET, ptr, &ipv4Addr) == 1 ||
+        inet_pton(AF_INET6, ptr, &ipv6Addr) == 1
     }
   }
 }
