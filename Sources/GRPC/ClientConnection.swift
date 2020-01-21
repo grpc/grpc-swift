@@ -373,7 +373,7 @@ extension ClientConnection {
     }
     
     if let hostname = serverHostname, hostname.isIPAddress {
-      logger.debug("IP address cannot be used for TLS SNI extension. No host used", metadata: ["server-hostname": "nil"])
+      logger.debug("IP address cannot be used for TLS SNI extension. No host used", metadata: ["server-hostname": "\(hostname)"])
       serverHostname = nil
     }
 
