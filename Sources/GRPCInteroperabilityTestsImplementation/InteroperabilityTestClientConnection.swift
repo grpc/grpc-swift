@@ -18,6 +18,29 @@ import GRPC
 import NIO
 import NIOSSL
 
+public func makeInteroperabilityTestClientConfiguration(
+  host: String,
+  port: Int,
+  eventLoopGroup: EventLoopGroup,
+  useTLS: Bool
+) -> ClientConnection.Configuration {
+  var configuration = ClientConnection.Configuration(
+    target: .hostAndPort(host, port),
+    eventLoopGroup: eventLoopGroup
+  )
+
+  if useTLS {
+    // The CA certificate has a common name of "*.test.google.fr", use the following host override
+    // so we can do full certificate verification.
+    configuration.tls = .init(
+      trustRoots: .certificates([InteroperabilityTestCredentials.caCertificate]),
+      hostnameOverride: "foo.test.google.fr"
+    )
+  }
+
+  return configuration
+}
+
 /// Makes a client connections for gRPC interoperability testing.
 ///
 /// - Parameters:
@@ -31,19 +54,12 @@ public func makeInteroperabilityTestClientConnection(
   port: Int,
   eventLoopGroup: EventLoopGroup,
   useTLS: Bool
-) throws -> ClientConnection {
-  var configuration = ClientConnection.Configuration(
-    target: .hostAndPort(host, port),
-    eventLoopGroup: eventLoopGroup)
-
-  if useTLS {
-    // The CA certificate has a common name of "*.test.google.fr", use the following host override
-    // so we can do full certificate verification.
-    configuration.tls = .init(
-      trustRoots: .certificates([InteroperabilityTestCredentials.caCertificate]),
-      hostnameOverride: "foo.test.google.fr"
-    )
-  }
-
+) -> ClientConnection {
+  let configuration = makeInteroperabilityTestClientConfiguration(
+    host: host,
+    port: port,
+    eventLoopGroup: eventLoopGroup,
+    useTLS: useTLS
+  )
   return ClientConnection(configuration: configuration)
 }

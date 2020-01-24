@@ -18,7 +18,35 @@
 ///
 /// These algorithms are indicated in the "grpc-encoding" header. As such, a lack of "grpc-encoding"
 /// header indicates that there is no message compression.
-enum CompressionAlgorithm: String {
+public struct CompressionAlgorithm: Equatable {
   /// Identity compression; "no" compression but indicated via the "grpc-encoding" header.
-  case identity
+  public static let identity = CompressionAlgorithm(.identity)
+  public static let deflate = CompressionAlgorithm(.deflate)
+  public static let gzip = CompressionAlgorithm(.gzip)
+
+  public static let all = Algorithm.allCases.map(CompressionAlgorithm.init)
+
+  /// The name of the compression algorithm.
+  public var name: String {
+    return self.algorithm.rawValue
+  }
+
+  internal enum Algorithm: String, CaseIterable {
+    case identity
+    case deflate
+    case gzip
+  }
+
+  internal let algorithm: Algorithm
+
+  private init(_ algorithm: Algorithm) {
+    self.algorithm = algorithm
+  }
+
+  internal init?(rawValue: String) {
+    guard let algorithm = Algorithm(rawValue: rawValue) else {
+      return nil
+    }
+    self.algorithm = algorithm
+  }
 }

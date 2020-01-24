@@ -46,7 +46,8 @@ class EmbeddedClientThroughput: Benchmark {
       path: "/echo.Echo/Get",
       host: "localhost",
       timeout: .infinite,
-      customMetadata: [:]
+      customMetadata: [:],
+      encoding: .none
     )
 
     self.request = .with {

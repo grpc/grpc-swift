@@ -33,6 +33,17 @@ extension Grpc_Testing_Payload {
   }
 }
 
+// MARK: - Bool value
+extension Grpc_Testing_BoolValue: ExpressibleByBooleanLiteral {
+  public typealias BooleanLiteralType = Bool
+
+  public init(booleanLiteral value: Bool) {
+    self = .with {
+      $0.value = value
+    }
+  }
+}
+
 // MARK: - Echo status creation
 extension Grpc_Testing_EchoStatus {
   init(code: Int32, message: String) {

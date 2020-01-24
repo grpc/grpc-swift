@@ -55,6 +55,7 @@ let package = Package(
         "NIOHTTP1",
         "NIOHTTP2",
         "NIOSSL",
+        "CGRPCZlib",
         "SwiftProtobuf",
         "Logging"
       ]
@@ -67,6 +68,13 @@ let package = Package(
         "EchoImplementation",
         "GRPCSampleData",
         "GRPCInteroperabilityTestsImplementation"
+      ]
+    ),
+
+    .target(
+      name: "CGRPCZlib",
+      linkerSettings: [
+        .linkedLibrary("z")
       ]
     ),
 
