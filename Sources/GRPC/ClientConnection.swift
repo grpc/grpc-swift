@@ -489,7 +489,7 @@ extension ClientConnection {
     ///
     /// Note that any disabling compression has no effect if compression is disabled on the
     /// connection.
-    public var compression: MessageEncoding
+    public var messageEncoding: MessageEncoding
 
     /// The HTTP protocol used for this connection.
     public var httpProtocol: HTTP2ToHTTP1ClientCodec.HTTPProtocol {
@@ -505,7 +505,7 @@ extension ClientConnection {
     /// - Parameter connectivityStateDelegate: A connectivity state delegate, defaulting to `nil`.
     /// - Parameter tlsConfiguration: TLS configuration, defaulting to `nil`.
     /// - Parameter connectionBackoff: The connection backoff configuration to use.
-    /// - Parameter compression: Message compression configuration, defaults to no compression.
+    /// - Parameter messageEncoding: Message compression configuration, defaults to no compression.
     public init(
       target: ConnectionTarget,
       eventLoopGroup: EventLoopGroup,
@@ -513,7 +513,7 @@ extension ClientConnection {
       connectivityStateDelegate: ConnectivityStateDelegate? = nil,
       tls: Configuration.TLS? = nil,
       connectionBackoff: ConnectionBackoff? = ConnectionBackoff(),
-      compression: MessageEncoding = .none
+      messageEncoding: MessageEncoding = .none
     ) {
       self.target = target
       self.eventLoopGroup = eventLoopGroup
@@ -521,7 +521,7 @@ extension ClientConnection {
       self.connectivityStateDelegate = connectivityStateDelegate
       self.tls = tls
       self.connectionBackoff = connectionBackoff
-      self.compression = compression
+      self.messageEncoding = messageEncoding
     }
   }
 }

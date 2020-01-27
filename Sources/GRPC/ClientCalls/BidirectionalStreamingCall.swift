@@ -60,7 +60,7 @@ public final class BidirectionalStreamingCall<RequestMessage: Message, ResponseM
       path: path,
       host: connection.configuration.target.host,
       requestID: requestID,
-      encoding: connection.configuration.compression,
+      encoding: connection.configuration.messageEncoding,
       options: callOptions
     )
 
