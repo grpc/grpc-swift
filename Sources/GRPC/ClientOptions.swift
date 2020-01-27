@@ -46,7 +46,7 @@ public struct CallOptions {
   /// messages associated with the call.
   public var requestIDHeader: String?
 
-  /// Disables request compression on this RPC. Ignored if compression is disabled at the
+  /// Disables request compression on this call. Ignored if compression is disabled at the
   /// connection level.
   public var disableCompression: Bool
 
