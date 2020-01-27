@@ -487,8 +487,7 @@ extension ClientConnection {
     /// `sendMessage(_:disableCompression)`, `sendMessage(_:disableCompression:promise)`,
     /// `sendMessages(_:disableCompression)` or `sendMessages(_:disableCompression:promise)`.
     ///
-    /// Note that any disabling compression has no effect if compression is disabled on the
-    /// connection.
+    /// Note that disabling compression has no effect if compression is disabled on the connection.
     public var messageEncoding: MessageEncoding
 
     /// The HTTP protocol used for this connection.
