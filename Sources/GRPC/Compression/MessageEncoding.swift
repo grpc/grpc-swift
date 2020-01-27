@@ -34,7 +34,7 @@ extension ClientConnection.Configuration {
     public static let none = MessageEncoding(requests: nil, responses: [.identity])
 
     /// Accept all supported compression on responses, do not compress requests.
-    public static let onlyResponses = MessageEncoding(requests: nil, responses: CompressionAlgorithm.all)
+    public static let responsesOnly = MessageEncoding(requests: nil, responses: CompressionAlgorithm.all)
   }
 }
 
