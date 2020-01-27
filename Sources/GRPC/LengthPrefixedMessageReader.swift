@@ -38,11 +38,11 @@ internal struct LengthPrefixedMessageReader {
     self.compression = compression
 
     switch compression?.algorithm {
-    case .none, .identity:
+    case .none, .some(.identity):
       self.decompressor = nil
-    case .deflate:
+    case .some(.deflate):
       self.decompressor = Zlib.Inflate(format: .deflate)
-    case .gzip:
+    case .some(.gzip):
       self.decompressor = Zlib.Inflate(format: .gzip)
     }
   }
