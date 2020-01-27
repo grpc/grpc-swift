@@ -55,7 +55,7 @@ enum WriteState {
   ///     written.
   mutating func write(
     _ message: GRPCPayload,
-    disableCompression: Bool,
+    compressed: Bool,
     allocator: ByteBufferAllocator
   ) -> Result<ByteBuffer, MessageWriteError> {
     switch self {
@@ -66,7 +66,7 @@ enum WriteState {
       // Zero is fine: the writer will allocate the correct amount of space.
       var buffer = allocator.buffer(capacity: 0)
       do {
-        try writer.write(message, into: &buffer, disableCompression: disableCompression)
+        try writer.write(message, into: &buffer, compressed: compressed)
       } catch {
         self = .notWriting
         return .failure(.serializationFailed)

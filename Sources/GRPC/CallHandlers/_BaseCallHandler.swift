@@ -25,7 +25,10 @@ import Logging
 /// - Important: This is **NOT** part of the public API.
 public class _BaseCallHandler<RequestPayload: GRPCPayload, ResponsePayload: GRPCPayload>: GRPCCallHandler {
   public func makeGRPCServerCodec() -> ChannelHandler {
-    return HTTP1ToGRPCServerCodec<RequestPayload, ResponsePayload>(logger: self.logger)
+    return HTTP1ToGRPCServerCodec<RequestPayload, ResponsePayload>(
+      encoding: self.callHandlerContext.encoding,
+      logger: self.logger
+    )
   }
 
   /// Called when the request head has been received.

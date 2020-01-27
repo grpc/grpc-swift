@@ -63,7 +63,7 @@ class EmbeddedClientThroughput: Benchmark {
       let channel = EmbeddedChannel()
       try channel.pipeline.addHandlers([
         _GRPCClientChannelHandler<Echo_EchoRequest, Echo_EchoResponse>(streamID: .init(1), callType: .unary, logger: self.logger),
-        _UnaryRequestChannelHandler(requestHead: self.requestHead, request: .init(self.request))
+        _UnaryRequestChannelHandler(requestHead: self.requestHead, request: .init(self.request, compressed: false))
       ]).wait()
 
       // Trigger the request handler.

@@ -35,7 +35,13 @@ open class StreamingResponseCallContext<ResponsePayload: GRPCPayload>: ServerCal
     super.init(eventLoop: eventLoop, request: request, logger: logger)
   }
 
-  open func sendResponse(_ message: ResponsePayload) -> EventLoopFuture<Void> {
+  /// Send a response to the client.
+  ///
+  /// - Parameter message: The message to send to the client.
+  /// - Parameter compression: Whether compression should be used for this response. If compression
+  ///   is enabled in the call context, the value passed here takes precedence. Defaults to deferring
+  ///   to the value set on the call context.
+  open func sendResponse(_ message: ResponsePayload, compression: Compression = .deferToCallDefault) -> EventLoopFuture<Void> {
     fatalError("needs to be overridden")
   }
 }
@@ -70,9 +76,10 @@ open class StreamingResponseCallContextImpl<ResponsePayload: GRPCPayload>: Strea
     }
   }
 
-  open override func sendResponse(_ message: ResponsePayload) -> EventLoopFuture<Void> {
+  open override func sendResponse(_ message: ResponsePayload, compression: Compression = .deferToCallDefault) -> EventLoopFuture<Void> {
     let promise: EventLoopPromise<Void> = eventLoop.makePromise()
-    channel.writeAndFlush(NIOAny(WrappedResponse.message(message)), promise: promise)
+    let messageContext = _MessageContext(message, compressed: compression.isEnabled(enabledOnCall: self.compressionEnabled))
+    self.channel.writeAndFlush(NIOAny(WrappedResponse.message(messageContext)), promise: promise)
     return promise.futureResult
   }
 }
@@ -83,7 +90,7 @@ open class StreamingResponseCallContextImpl<ResponsePayload: GRPCPayload>: Strea
 open class StreamingResponseCallContextTestStub<ResponsePayload: GRPCPayload>: StreamingResponseCallContext<ResponsePayload> {
   open var recordedResponses: [ResponsePayload] = []
 
-  open override func sendResponse(_ message: ResponsePayload) -> EventLoopFuture<Void> {
+  open override func sendResponse(_ message: ResponsePayload, compression: Compression = .deferToCallDefault) -> EventLoopFuture<Void> {
     recordedResponses.append(message)
     return eventLoop.makeSucceededFuture(())
   }

@@ -70,8 +70,9 @@ open class UnaryResponseCallContextImpl<ResponsePayload: GRPCPayload>: UnaryResp
 
     responsePromise.futureResult
       // Send the response provided to the promise.
-      .map { responseMessage in
-        self.channel.writeAndFlush(NIOAny(WrappedResponse.message(responseMessage)))
+      .map { responseMessage -> EventLoopFuture<Void> in
+        let message = _MessageContext<ResponsePayload>(responseMessage, compressed: self.compressionEnabled)
+        return self.channel.writeAndFlush(NIOAny(WrappedResponse.message(message)))
       }
       .map { _ in
         self.responseStatus

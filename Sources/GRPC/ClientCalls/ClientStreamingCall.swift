@@ -64,7 +64,6 @@ public final class ClientStreamingCall<RequestPayload: GRPCPayload, ResponsePayl
       path: path,
       host: connection.configuration.target.host,
       requestID: requestID,
-      encoding: connection.configuration.messageEncoding,
       options: callOptions
     )
 
@@ -74,6 +73,7 @@ public final class ClientStreamingCall<RequestPayload: GRPCPayload, ResponsePayl
       eventLoop: connection.eventLoop,
       multiplexer: connection.multiplexer,
       callType: .clientStreaming,
+      callOptions: callOptions,
       responseHandler: responseHandler,
       requestHandler: requestHandler,
       logger: logger

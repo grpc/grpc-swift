@@ -28,6 +28,7 @@ class GRPCInsecureInteroperabilityTests: GRPCTestCase {
 
   var clientEventLoopGroup: EventLoopGroup!
   var clientConnection: ClientConnection!
+  var clientDefaults: ClientConnection.Configuration!
 
   override func setUp() {
     super.setUp()
@@ -46,7 +47,7 @@ class GRPCInsecureInteroperabilityTests: GRPCTestCase {
     }
 
     self.clientEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-    self.clientConnection = makeInteroperabilityTestClientConnection(
+    self.clientDefaults = makeInteroperabilityTestClientConfiguration(
       host: "localhost",
       port: serverPort,
       eventLoopGroup: self.clientEventLoopGroup,
@@ -55,8 +56,9 @@ class GRPCInsecureInteroperabilityTests: GRPCTestCase {
   }
 
   override func tearDown() {
-    XCTAssertNoThrow(try self.clientConnection.close().wait())
+    XCTAssertNoThrow(try self.clientConnection?.close().wait())
     XCTAssertNoThrow(try self.clientEventLoopGroup.syncShutdownGracefully())
+    self.clientDefaults = nil
     self.clientConnection = nil
     self.clientEventLoopGroup = nil
 
@@ -78,6 +80,8 @@ class GRPCInsecureInteroperabilityTests: GRPCTestCase {
     }
 
     let test = testCase.makeTest()
+    let configuration = test.configure(defaults: self.clientDefaults)
+    self.clientConnection = ClientConnection(configuration: configuration)
     XCTAssertNoThrow(try test.run(using: self.clientConnection), file: file, line: line)
   }
 
@@ -93,12 +97,28 @@ class GRPCInsecureInteroperabilityTests: GRPCTestCase {
     self.doRunTest(.largeUnary)
   }
 
+  func testClientCompressedUnary() {
+    self.doRunTest(.clientCompressedUnary)
+  }
+
+  func testServerCompressedUnary() {
+    self.doRunTest(.serverCompressedUnary)
+  }
+
   func testClientStreaming() {
     self.doRunTest(.clientStreaming)
   }
 
+  func testClientCompressedStreaming() {
+    self.doRunTest(.clientCompressedStreaming)
+  }
+
   func testServerStreaming() {
     self.doRunTest(.serverStreaming)
+  }
+
+  func testServerCompressedStreaming() {
+    self.doRunTest(.serverCompressedStreaming)
   }
 
   func testPingPong() {

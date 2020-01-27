@@ -103,6 +103,7 @@ public final class Server {
           let logger = Logger(subsystem: .serverChannelCall, metadata: [MetadataKey.requestID: "\(UUID())"])
           let handler = GRPCServerRequestRoutingHandler(
             servicesByName: configuration.serviceProvidersByName,
+            encoding: configuration.messageEncoding,
             errorDelegate: configuration.errorDelegate,
             logger: logger
           )
@@ -180,6 +181,16 @@ extension Server {
     /// TLS configuration for this connection. `nil` if TLS is not desired.
     public var tls: TLS?
 
+    /// The compression configuration for requests and responses.
+    ///
+    /// If compression is enabled for the server it may be disabled for responses on any RPC by
+    /// setting `compressionEnabled` to `false` on the context of the call.
+    ///
+    /// Compression may also be disabled at the message-level for streaming responses (i.e. server
+    /// streaming and bidirectional streaming RPCs) by passing setting `compression` to `.disabled`
+    /// in `sendResponse(_:compression)`.
+    public var messageEncoding: MessageEncoding
+
     /// Create a `Configuration` with some pre-defined defaults.
     ///
     /// - Parameter target: The target to bind to.
@@ -188,18 +199,21 @@ extension Server {
     ///     to handle requests.
     /// - Parameter errorDelegate: The error delegate, defaulting to a logging delegate.
     /// - Parameter tlsConfiguration: TLS configuration, defaulting to `nil`.
+    /// - Parameter messageEncoding: Message compression configuration, defaulting to no compression.
     public init(
       target: BindTarget,
       eventLoopGroup: EventLoopGroup,
       serviceProviders: [CallHandlerProvider],
       errorDelegate: ServerErrorDelegate? = LoggingServerErrorDelegate.shared,
-      tls: TLS? = nil
+      tls: TLS? = nil,
+      messageEncoding: MessageEncoding = .none
     ) {
       self.target = target
       self.eventLoopGroup = eventLoopGroup
       self.serviceProviders = serviceProviders
       self.errorDelegate = errorDelegate
       self.tls = tls
+      self.messageEncoding = messageEncoding
     }
   }
 }

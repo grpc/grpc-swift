@@ -175,12 +175,6 @@ class LargeUnary: InteroperabilityTest {
 /// - Clients are free to assert that the response payload body contents are zeros and comparing the
 ///   entire response message against a golden response.
 class ClientCompressedUnary: InteroperabilityTest {
-  func configure(defaults: ClientConnection.Configuration) -> ClientConnection.Configuration {
-    var configuration = defaults
-    configuration.messageEncoding = .init(forRequests: .gzip, acceptableForResponses: CompressionAlgorithm.all)
-    return configuration
-  }
-
   func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_TestServiceServiceClient(connection: connection)
 
@@ -194,20 +188,19 @@ class ClientCompressedUnary: InteroperabilityTest {
     uncompressedRequest.expectCompressed = false
 
     // For unary RPCs we disable compression at the call level.
-    var options = CallOptions()
-    options.disableCompression = true
 
     // With compression expected but *disabled*.
-    let probe = client.unaryCall(compressedRequest, callOptions: options)
+    let probe = client.unaryCall(compressedRequest)
     try waitAndAssertEqual(probe.status.map { $0.code }, .invalidArgument)
 
     // With compression expected and enabled.
-    let compressed = client.unaryCall(compressedRequest)
+    let options = CallOptions(messageEncoding: .init(forRequests: .gzip))
+    let compressed = client.unaryCall(compressedRequest, callOptions: options)
     try waitAndAssertEqual(compressed.response.map { $0.payload }, .zeros(count: 314_159))
     try waitAndAssertEqual(compressed.status.map { $0.code }, .ok)
 
     // With compression not expected and disabled.
-    let uncompressed = client.unaryCall(uncompressedRequest, callOptions: options)
+    let uncompressed = client.unaryCall(uncompressedRequest)
     try waitAndAssertEqual(uncompressed.response.map { $0.payload }, .zeros(count: 314_159))
     try waitAndAssertEqual(uncompressed.status.map { $0.code }, .ok)
   }
@@ -262,12 +255,6 @@ class ClientCompressedUnary: InteroperabilityTest {
 /// - clients are free to assert that the response payload body contents are zero and comparing the
 ///   entire response message against a golden response
 class ServerCompressedUnary: InteroperabilityTest {
-  func configure(defaults: ClientConnection.Configuration) -> ClientConnection.Configuration {
-    var configuration = defaults
-    configuration.messageEncoding = .responsesOnly
-    return configuration
-  }
-
   func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_TestServiceServiceClient(connection: connection)
 
@@ -277,7 +264,8 @@ class ServerCompressedUnary: InteroperabilityTest {
       request.payload = .zeros(count: 271_828)
     }
 
-    let compressed = client.unaryCall(compressedRequest)
+    let options = CallOptions(messageEncoding: .responsesOnly)
+    let compressed = client.unaryCall(compressedRequest, callOptions: options)
     // We can't verify that the compression bit was set, instead we verify that the encoding header
     // was sent by the server. This isn't quite the same since as it can still be set but the
     // compression may be not set.
@@ -419,23 +407,22 @@ class ClientStreaming: InteroperabilityTest {
 /// - Next calls succeeds.
 /// - Response aggregated payload size is 73086.
 class ClientCompressedStreaming: InteroperabilityTest {
-  func configure(defaults: ClientConnection.Configuration) -> ClientConnection.Configuration {
-    var configuration = defaults
-    configuration.messageEncoding = .init(forRequests: .gzip, acceptableForResponses: CompressionAlgorithm.all)
-    return configuration
-  }
-
   func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_TestServiceServiceClient(connection: connection)
 
-    // Does the server support this test?
+    // Does the server support this test? To find out we need to send an uncompressed probe. However
+    // we need to disable compression at the RPC level as we don't have access to whether the
+    // compression byte is set on messages. As such the corresponding code in the service
+    // implementation checks against the 'grpc-encoding' header as a best guess. Disabling
+    // compression here will stop that header from being sent.
     let probe = client.streamingInputCall()
     let probeRequest: Grpc_Testing_StreamingInputCallRequest = .with { request in
       request.expectCompressed = true
       request.payload = .zeros(count: 27_182)
     }
 
-    probe.sendMessage(probeRequest, disableCompression: true, promise: nil)
+    // Compression is disabled at the RPC level.
+    probe.sendMessage(probeRequest, promise: nil)
     probe.sendEnd(promise: nil)
 
     // We *expect* invalid argument here. If not then the server doesn't support this test.
@@ -450,9 +437,10 @@ class ClientCompressedStreaming: InteroperabilityTest {
       request.payload = .zeros(count: 45_904)
     }
 
-    let streaming = client.streamingInputCall()
-    streaming.sendMessage(probeRequest, promise: nil)
-    streaming.sendMessage(secondMessage, disableCompression: true, promise: nil)
+    let options = CallOptions(messageEncoding: .init(forRequests: .gzip))
+    let streaming = client.streamingInputCall(callOptions: options)
+    streaming.sendMessage(probeRequest, compression: .enabled, promise: nil)
+    streaming.sendMessage(secondMessage, compression: .disabled, promise: nil)
     streaming.sendEnd(promise: nil)
 
     try waitAndAssertEqual(streaming.response.map { $0.aggregatedPayloadSize }, 73_086)
@@ -553,12 +541,6 @@ class ServerStreaming: InteroperabilityTest {
 /// - clients are free to assert that the response payload body contents are zero and comparing the
 ///   entire response messages against golden responses
 class ServerCompressedStreaming: InteroperabilityTest {
-  func configure(defaults: ClientConnection.Configuration) -> ClientConnection.Configuration {
-    var configuration = defaults
-    configuration.messageEncoding = .responsesOnly
-    return configuration
-  }
-
   func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_TestServiceServiceClient(connection: connection)
 
@@ -575,8 +557,9 @@ class ServerCompressedStreaming: InteroperabilityTest {
       ]
     }
 
+    let options = CallOptions(messageEncoding: .responsesOnly)
     var payloads: [Grpc_Testing_Payload] = []
-    let rpc = client.streamingOutputCall(request) { response in
+    let rpc = client.streamingOutputCall(request, callOptions: options) { response in
       payloads.append(response.payload)
     }
 

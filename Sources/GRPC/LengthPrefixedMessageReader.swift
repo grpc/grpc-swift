@@ -31,8 +31,8 @@ import Logging
 /// - SeeAlso:
 /// [gRPC Protocol](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md)
 internal struct LengthPrefixedMessageReader {
-  var compression: CompressionAlgorithm?
-  var decompressor: Zlib.Inflate?
+  let compression: CompressionAlgorithm?
+  private let decompressor: Zlib.Inflate?
 
   init(compression: CompressionAlgorithm? = nil) {
     self.compression = compression

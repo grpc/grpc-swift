@@ -44,7 +44,7 @@ public struct _GRPCRequestHead {
     var path: String
     var host: String
     var timeout: GRPCTimeout
-    var encoding: ClientConnection.Configuration.MessageEncoding
+    var encoding: CallOptions.MessageEncoding
 
     init(
       method: String,
@@ -52,7 +52,7 @@ public struct _GRPCRequestHead {
       path: String,
       host: String,
       timeout: GRPCTimeout,
-      encoding: ClientConnection.Configuration.MessageEncoding
+      encoding: CallOptions.MessageEncoding
     ) {
       self.method = method
       self.scheme = scheme
@@ -138,7 +138,7 @@ public struct _GRPCRequestHead {
     }
   }
 
-  internal var compression: ClientConnection.Configuration.MessageEncoding {
+  internal var compression: CallOptions.MessageEncoding {
     get {
       return self._storage.encoding
     }
@@ -157,7 +157,7 @@ public struct _GRPCRequestHead {
     host: String,
     timeout: GRPCTimeout,
     customMetadata: HPACKHeaders,
-    encoding: ClientConnection.Configuration.MessageEncoding
+    encoding: CallOptions.MessageEncoding
   ) {
     self._storage = .init(
       method: method,
@@ -385,7 +385,11 @@ extension _GRPCClientChannelHandler: ChannelInboundHandler {
       // Awesome: we got some messages. The state machine guarantees we only get at most a single
       // message for unary and client-streaming RPCs.
       for message in messages {
-        context.fireChannelRead(self.wrapInboundOut(.message(.init(message))))
+        // Note: `compressed: false` is currently just a placeholder. This is fine since the message
+        // context is not currently exposed to the user. If we implement interceptors for the client
+        // and decide to surface this information then we'll need to extract that information from
+        // the message reader.
+        context.fireChannelRead(self.wrapInboundOut(.message(.init(message, compressed: false))))
       }
     case .failure(let error):
       context.fireErrorCaught(error)
@@ -419,7 +423,7 @@ extension _GRPCClientChannelHandler: ChannelOutboundHandler {
 
     case .message(let request):
       // Feed the request message into the state machine:
-      let result = self.stateMachine.sendRequest(request.message, disableCompression: request.disableCompression, allocator: context.channel.allocator)
+      let result = self.stateMachine.sendRequest(request.message, compressed: request.compressed, allocator: context.channel.allocator)
       switch result {
       case .success(let buffer):
         // We're clear to send a message; wrap it up in an HTTP/2 frame.

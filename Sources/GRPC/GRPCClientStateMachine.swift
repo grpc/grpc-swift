@@ -215,10 +215,10 @@ struct GRPCClientStateMachine<Request: GRPCPayload, Response: GRPCPayload> {
   ///     request will be written.
   mutating func sendRequest(
     _ message: Request,
-    disableCompression: Bool,
+    compressed: Bool,
     allocator: ByteBufferAllocator
   ) -> Result<ByteBuffer, MessageWriteError> {
-    return self.state.sendRequest(message, disableCompression: disableCompression, allocator: allocator)
+    return self.state.sendRequest(message, compressed: compressed, allocator: allocator)
   }
 
   /// Closes the request stream.
@@ -361,18 +361,18 @@ extension GRPCClientStateMachine.State {
   /// See `GRPCClientStateMachine.sendRequest(_:allocator:)`.
   mutating func sendRequest(
     _ message: Request,
-    disableCompression: Bool,
+    compressed: Bool,
     allocator: ByteBufferAllocator
   ) -> Result<ByteBuffer, MessageWriteError> {
     let result: Result<ByteBuffer, MessageWriteError>
 
     switch self {
     case .clientActiveServerIdle(var writeState, let readArity):
-      result = writeState.write(message, disableCompression: disableCompression, allocator: allocator)
+      result = writeState.write(message, compressed: compressed, allocator: allocator)
       self = .clientActiveServerIdle(writeState: writeState, readArity: readArity)
 
     case .clientActiveServerActive(var writeState, let readState):
-      result = writeState.write(message, disableCompression: disableCompression, allocator: allocator)
+      result = writeState.write(message, compressed: compressed, allocator: allocator)
       self = .clientActiveServerActive(writeState: writeState, readState: readState)
 
     case .clientClosedServerIdle,
@@ -507,7 +507,7 @@ extension GRPCClientStateMachine.State {
     path: String,
     timeout: GRPCTimeout,
     customMetadata: HPACKHeaders,
-    compression: ClientConnection.Configuration.MessageEncoding
+    compression: CallOptions.MessageEncoding
   ) -> HPACKHeaders {
     // Note: we don't currently set the 'grpc-encoding' header, if we do we will need to feed that
     // encoded into the message writer.

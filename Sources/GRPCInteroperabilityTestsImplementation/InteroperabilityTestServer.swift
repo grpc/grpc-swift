@@ -40,7 +40,9 @@ public func makeInteroperabilityTestServer(
   var configuration = Server.Configuration(
     target: .hostAndPort(host, port),
     eventLoopGroup: eventLoopGroup,
-    serviceProviders: serviceProviders)
+    serviceProviders: serviceProviders,
+    messageEncoding: .init(enabled: CompressionAlgorithm.all)
+  )
 
   if useTLS {
     print("Using the gRPC interop testing CA for TLS; clients should expect the host to be '*.test.google.fr'")

@@ -15,18 +15,21 @@
  */
 import SwiftProtobuf
 
-/// Provides a context for Protobuf messages.
+/// Provides a context for gRPC payloads.
 ///
 /// - Important: This is **NOT** part of the public API.
 public final class _MessageContext<M: GRPCPayload> {
+  /// The message being sent or received.
   let message: M
-  let disableCompression: Bool
+
+  /// Whether the message was, or should be compressed.
+  let compressed: Bool
 
   /// Constructs a box for a value.
   ///
   /// - Important: This is **NOT** part of the public API.
-  public init(_ message: M, disableCompression: Bool = false) {
+  public init(_ message: M, compressed: Bool) {
     self.message = message
-    self.disableCompression = disableCompression
+    self.compressed = compressed
   }
 }

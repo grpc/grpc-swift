@@ -61,19 +61,19 @@ public final class UnaryCall<RequestPayload: GRPCPayload, ResponsePayload: GRPCP
       path: path,
       host: connection.configuration.target.host,
       requestID: requestID,
-      encoding: connection.configuration.messageEncoding,
       options: callOptions
     )
 
     let requestHandler = _UnaryRequestChannelHandler<RequestPayload>(
       requestHead: requestHead,
-      request: .init(request)
+      request: .init(request, compressed: callOptions.messageEncoding.enabledForRequests)
     )
 
     super.init(
       eventLoop: connection.channel.eventLoop,
       multiplexer: connection.multiplexer,
       callType: .unary,
+      callOptions: callOptions,
       responseHandler: responseHandler,
       requestHandler: requestHandler,
       logger: logger
