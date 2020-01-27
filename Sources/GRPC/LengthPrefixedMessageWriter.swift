@@ -53,12 +53,14 @@ internal struct LengthPrefixedMessageWriter {
     buffer.reserveCapacity(LengthPrefixedMessageWriter.metadataLength + message.count)
 
     if !disableCompression, let compressor = self.compressor {
+      // Set the compression byte.
       buffer.writeInteger(UInt8(1))
 
       // Leave a gap for the length, we'll set it in a moment.
       let payloadSizeIndex = buffer.writerIndex
       buffer.moveWriterIndex(forwardBy: MemoryLayout<UInt32>.size)
 
+      // Compress the message.
       var message = message
       let bytesWritten = try compressor.deflate(&message, into: &buffer)
 
@@ -76,7 +78,9 @@ internal struct LengthPrefixedMessageWriter {
         buffer.writeInteger(UInt8(0))
       }
 
+      // Write the message length.
       buffer.writeInteger(UInt32(message.count))
+      // And the message bytes.
       buffer.writeBytes(message)
     }
   }
