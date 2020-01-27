@@ -15,10 +15,9 @@
  */
 @testable import GRPC
 import NIO
-import EchoModel
 import XCTest
 
-class CompressorTests: GRPCTestCase {
+class ZlibTests: GRPCTestCase {
   var allocator = ByteBufferAllocator()
   var inputSize = 4_096
 
