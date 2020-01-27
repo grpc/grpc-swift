@@ -519,7 +519,7 @@ extension GRPCClientStateMachine.State {
       "content-type": "application/grpc",
       "te": "trailers",  // Used to detect incompatible proxies, part of the gRPC specification.
       "user-agent": "grpc-swift-nio",  //  TODO: Add a more specific user-agent.
-      GRPCHeaderName.acceptEncoding: compression.acceptEncoding
+      GRPCHeaderName.acceptEncoding: compression.acceptEncodingHeader
     ]
 
     // Message level encoding.

@@ -39,7 +39,7 @@ extension ClientConnection.Configuration {
 }
 
 extension ClientConnection.Configuration.MessageEncoding {
-  var acceptEncoding: String {
+  var acceptEncodingHeader: String {
     return self.inbound.map { $0.name }.joined(separator: ",")
   }
 }
