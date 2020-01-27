@@ -264,7 +264,7 @@ class ClientCompressedUnary: InteroperabilityTest {
 class ServerCompressedUnary: InteroperabilityTest {
   func configure(defaults: ClientConnection.Configuration) -> ClientConnection.Configuration {
     var configuration = defaults
-    configuration.messageEncoding = .onlyResponses
+    configuration.messageEncoding = .responsesOnly
     return configuration
   }
 
@@ -555,7 +555,7 @@ class ServerStreaming: InteroperabilityTest {
 class ServerCompressedStreaming: InteroperabilityTest {
   func configure(defaults: ClientConnection.Configuration) -> ClientConnection.Configuration {
     var configuration = defaults
-    configuration.messageEncoding = .onlyResponses
+    configuration.messageEncoding = .responsesOnly
     return configuration
   }
 
