@@ -17,6 +17,10 @@ import CGRPCZlib
 import NIO
 import struct Foundation.Data
 
+/// Provides minimally configurable wrappers around zlib's compression and decompression
+/// functionality.
+///
+/// See also: https://www.zlib.net/manual.html
 enum Zlib {
   // MARK: Deflate (compression)
 
@@ -247,6 +251,7 @@ enum Zlib {
 
   // MARK: ZStream
 
+  /// This wraps a zlib `z_stream` to provide more Swift-like access to the underlying C-struct.
   struct ZStream {
     var zstream: z_stream
 
@@ -264,6 +269,7 @@ enum Zlib {
       self.zstream.opaque = nil
     }
 
+    /// Number of bytes available to read `self.nextInputBuffer`. See also: `z_stream.avail_in`.
     var availableInputBytes: Int {
       get {
         return Int(self.zstream.avail_in)
@@ -273,6 +279,7 @@ enum Zlib {
       }
     }
 
+    /// The next input buffer that zlib should read from. See also: `z_stream.next_in`.
     var nextInputBuffer: UnsafeMutablePointer<Bytef>! {
       get {
         return self.zstream.next_in
@@ -282,6 +289,7 @@ enum Zlib {
       }
     }
 
+    /// The remaining writable space in `nextOutputBuffer`. See also: `z_stream.avail_out`.
     var availableOutputBytes: Int {
       get {
         return Int(self.zstream.avail_out)
@@ -291,6 +299,7 @@ enum Zlib {
       }
     }
 
+    /// The next output buffer where zlib should write bytes to. See also: `z_stream.next_out`.
     var nextOutputBuffer: UnsafeMutablePointer<Bytef>! {
       get {
         return self.zstream.next_out
@@ -300,6 +309,8 @@ enum Zlib {
       }
     }
 
+    /// The last error message that zlib wrote. No message is guaranteed on error, however, `nil` is
+    /// guaranteed if there is no error. See also `z_stream.msg`.
     var lastErrorMessage: String? {
       guard let bytes = self.zstream.msg else {
         return nil
@@ -320,6 +331,12 @@ enum Zlib {
       var outcome: InflateOutcome
     }
 
+    /// Decompress the stream into the given output buffer.
+    ///
+    /// - Parameter outputBuffer: The buffer into which to write the decompressed data.
+    /// - Parameter outputBufferSize: The space available in `outputBuffer`.
+    /// - Returns: The result of the `inflate`, whether it was successful or whether a larger
+    ///   output buffer is required.
     mutating func inflate(
       outputBuffer: UnsafeMutablePointer<UInt8>,
       outputBufferSize: Int
@@ -366,6 +383,16 @@ enum Zlib {
       )
     }
 
+    /// Compresses the `inputBuffer` into the `outputBuffer`.
+    ///
+    /// `outputBuffer` must be large enough to store the compressed data, `deflateBound()` provides
+    /// an upper bound for this value.
+    ///
+    /// - Parameter inputBuffer: The buffer from which to read the data.
+    /// - Parameter inputBufferSize: The number of bytes available to read in `inputBuffer`.
+    /// - Parameter outputBuffer: The buffer into which to write the compressed data.
+    /// - Parameter outputBufferSize: The space available in `outputBuffer`.
+    /// - Returns: The number of bytes written into the `outputBuffer`.
     mutating func deflate(
       inputBuffer: UnsafeMutablePointer<UInt8>,
       inputBufferSize: Int,
