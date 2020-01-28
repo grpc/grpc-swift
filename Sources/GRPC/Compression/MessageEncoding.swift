@@ -17,24 +17,30 @@
 extension ClientConnection.Configuration {
   public struct MessageEncoding {
     public init(
-      requests: CompressionAlgorithm?,
-      responses: [CompressionAlgorithm]
+      forRequests outbound: CompressionAlgorithm?,
+      acceptableForResponses inbound: [CompressionAlgorithm]
     ) {
-      self.outbound = requests
-      self.inbound = responses
+      self.outbound = outbound
+      self.inbound = inbound
     }
 
     /// The compression algorithm used for outbound messages.
-    public internal(set) var outbound: CompressionAlgorithm?
+    public var outbound: CompressionAlgorithm?
 
     /// The set of compression algorithms advertised to the remote peer that they may use.
-    public internal(set) var inbound: [CompressionAlgorithm]
+    public var inbound: [CompressionAlgorithm]
 
     /// No compression.
-    public static let none = MessageEncoding(requests: nil, responses: [.identity])
+    public static let none = MessageEncoding(
+      forRequests: nil,
+      acceptableForResponses: []
+    )
 
     /// Accept all supported compression on responses, do not compress requests.
-    public static let responsesOnly = MessageEncoding(requests: nil, responses: CompressionAlgorithm.all)
+    public static let responsesOnly = MessageEncoding(
+      forRequests: .identity,
+      acceptableForResponses: CompressionAlgorithm.all
+    )
   }
 }
 

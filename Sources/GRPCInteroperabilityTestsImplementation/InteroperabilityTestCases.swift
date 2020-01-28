@@ -177,7 +177,7 @@ class LargeUnary: InteroperabilityTest {
 class ClientCompressedUnary: InteroperabilityTest {
   func configure(defaults: ClientConnection.Configuration) -> ClientConnection.Configuration {
     var configuration = defaults
-    configuration.messageEncoding = .init(requests: .gzip, responses: CompressionAlgorithm.all)
+    configuration.messageEncoding = .init(forRequests: .gzip, acceptableForResponses: CompressionAlgorithm.all)
     return configuration
   }
 
@@ -421,7 +421,7 @@ class ClientStreaming: InteroperabilityTest {
 class ClientCompressedStreaming: InteroperabilityTest {
   func configure(defaults: ClientConnection.Configuration) -> ClientConnection.Configuration {
     var configuration = defaults
-    configuration.messageEncoding = .init(requests: .gzip, responses: CompressionAlgorithm.all)
+    configuration.messageEncoding = .init(forRequests: .gzip, acceptableForResponses: CompressionAlgorithm.all)
     return configuration
   }
 

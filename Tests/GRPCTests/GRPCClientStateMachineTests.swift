@@ -663,7 +663,7 @@ extension GRPCClientStateMachineTests {
       host: "localhost",
       timeout: .hours(rounding: 1),
       customMetadata: ["x-grpc-id": "request-id"],
-      encoding: .init(requests: .identity, responses: [.identity])
+      encoding: .init(forRequests: .identity, acceptableForResponses: [.identity])
     )).assertSuccess { headers in
       XCTAssertEqual(headers[":method"], ["POST"])
       XCTAssertEqual(headers[":path"], ["/echo/Get"])
@@ -688,7 +688,7 @@ extension GRPCClientStateMachineTests {
       host: "localhost",
       timeout: .hours(rounding: 1),
       customMetadata: ["x-grpc-id": "request-id"],
-      encoding: .init(requests: nil, responses: [])
+      encoding: .init(forRequests: nil, acceptableForResponses: [])
     )).assertSuccess { headers in
       XCTAssertFalse(headers.contains(name: "grpc-encoding"))
       XCTAssertFalse(headers.contains(name: "grpc-accept-encoding"))
@@ -704,7 +704,7 @@ extension GRPCClientStateMachineTests {
       host: "localhost",
       timeout: .hours(rounding: 1),
       customMetadata: ["x-grpc-id": "request-id"],
-      encoding: .init(requests: nil, responses: [.identity, .gzip])
+      encoding: .init(forRequests: nil, acceptableForResponses: [.identity, .gzip])
     )).assertSuccess { headers in
       XCTAssertFalse(headers.contains(name: "grpc-encoding"))
       // If we don't set request encoding then we shouldn't set the accept-encoding header. (The
@@ -722,7 +722,7 @@ extension GRPCClientStateMachineTests {
       host: "localhost",
       timeout: .hours(rounding: 1),
       customMetadata: ["x-grpc-id": "request-id"],
-      encoding: .init(requests: .gzip, responses: [])
+      encoding: .init(forRequests: .gzip, acceptableForResponses: [])
     )).assertSuccess { headers in
       XCTAssertEqual(headers["grpc-encoding"], ["gzip"])
       // This asymmetry is strange but allowed: if a client does not advertise support of the
