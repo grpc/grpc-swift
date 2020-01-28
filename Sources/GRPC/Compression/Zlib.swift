@@ -40,10 +40,10 @@ enum Zlib {
       self.end()
     }
 
-    /// Decompresses the data in `input` into the `output` buffer.
+    /// Compresses the data in `input` into the `output` buffer.
     ///
-    /// - Parameter input: The complete data to be decompressed.
-    /// - Parameter output: The `ByteBuffer` into which the decompressed message should be written.
+    /// - Parameter input: The complete data to be compressed.
+    /// - Parameter output: The `ByteBuffer` into which the compressed message should be written.
     /// - Returns: The number of bytes written into the `output` buffer.
     func deflate(_ input: inout Data, into output: inout ByteBuffer) throws -> Int {
       // Note: This is only valid because we always use Z_FINISH to flush.
