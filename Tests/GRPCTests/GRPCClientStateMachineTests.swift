@@ -679,6 +679,59 @@ extension GRPCClientStateMachineTests {
     }
   }
 
+  func testSendRequestHeadersWithNoCompressionInEitherDirection() throws {
+    var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
+    stateMachine.sendRequestHeaders(requestHead: .init(
+      method: "POST",
+      scheme: "http",
+      path: "/echo/Get",
+      host: "localhost",
+      timeout: .hours(rounding: 1),
+      customMetadata: ["x-grpc-id": "request-id"],
+      encoding: .init(requests: nil, responses: [])
+    )).assertSuccess { headers in
+      XCTAssertFalse(headers.contains(name: "grpc-encoding"))
+      XCTAssertFalse(headers.contains(name: "grpc-accept-encoding"))
+    }
+  }
+
+  func testSendRequestHeadersWithNoCompressionForRequests() throws {
+    var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
+    stateMachine.sendRequestHeaders(requestHead: .init(
+      method: "POST",
+      scheme: "http",
+      path: "/echo/Get",
+      host: "localhost",
+      timeout: .hours(rounding: 1),
+      customMetadata: ["x-grpc-id": "request-id"],
+      encoding: .init(requests: nil, responses: [.identity, .gzip])
+    )).assertSuccess { headers in
+      XCTAssertFalse(headers.contains(name: "grpc-encoding"))
+      // If we don't set request encoding then we shouldn't set the accept-encoding header. (The
+      // compression asymmetry can be achieved by setting the request compression to '.identity'.)
+      XCTAssertFalse(headers.contains(name: "grpc-accept-encoding"))
+    }
+  }
+
+  func testSendRequestHeadersWithNoCompressionForResponses() throws {
+    var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
+    stateMachine.sendRequestHeaders(requestHead: .init(
+      method: "POST",
+      scheme: "http",
+      path: "/echo/Get",
+      host: "localhost",
+      timeout: .hours(rounding: 1),
+      customMetadata: ["x-grpc-id": "request-id"],
+      encoding: .init(requests: .gzip, responses: [])
+    )).assertSuccess { headers in
+      XCTAssertEqual(headers["grpc-encoding"], ["gzip"])
+      // This asymmetry is strange but allowed: if a client does not advertise support of the
+      // compression it is using, the server may still process the message so long as it too
+      // supports the compression.
+      XCTAssertFalse(headers.contains(name: "grpc-accept-encoding"))
+    }
+  }
+
   func testReceiveResponseHeadersWithOkStatus() throws {
     var stateMachine = self.makeStateMachine(.clientActiveServerIdle(writeState: .one(), readArity: .one))
     stateMachine.receiveResponseHeaders(self.makeResponseHeaders()).assertSuccess()

@@ -519,12 +519,16 @@ extension GRPCClientStateMachine.State {
       "content-type": "application/grpc",
       "te": "trailers",  // Used to detect incompatible proxies, part of the gRPC specification.
       "user-agent": "grpc-swift-nio",  //  TODO: Add a more specific user-agent.
-      GRPCHeaderName.acceptEncoding: compression.acceptEncodingHeader
     ]
 
     // Message level encoding.
     if let outbound = compression.outbound {
       headers.add(name: GRPCHeaderName.encoding, value: outbound.name)
+
+      // Only send 'accept-encoding' if inbound and outbound are enabled.
+      if !compression.inbound.isEmpty {
+        headers.add(name: GRPCHeaderName.acceptEncoding, value: compression.acceptEncodingHeader)
+      }
     }
 
     // Add the timeout header, if a timeout was specified.
