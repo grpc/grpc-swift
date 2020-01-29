@@ -27,17 +27,14 @@ struct PendingWriteState {
   /// The number of messages we expect to write to the stream.
   var arity: MessageArity
 
-  /// The compression used when writing messages.
-  var compression: CompressionAlgorithm?
-
   /// The 'content-type' being written.
   var contentType: ContentType
 
-  func makeWriteState() -> WriteState {
+  func makeWriteState(compression: CompressionAlgorithm? = nil) -> WriteState {
     return .writing(
       self.arity,
       self.contentType,
-      LengthPrefixedMessageWriter(compression: self.compression)
+      LengthPrefixedMessageWriter(compression: compression)
     )
   }
 }
@@ -58,6 +55,7 @@ enum WriteState {
   ///     written.
   mutating func write(
     _ message: Message,
+    disableCompression: Bool,
     allocator: ByteBufferAllocator
   ) -> Result<ByteBuffer, MessageWriteError> {
     switch self {
@@ -72,7 +70,11 @@ enum WriteState {
 
       // Zero is fine: the writer will allocate the correct amount of space.
       var buffer = allocator.buffer(capacity: 0)
-      writer.write(data, into: &buffer)
+      do {
+        try writer.write(data, into: &buffer, disableCompression: disableCompression)
+      } catch {
+        return .failure(.serializationFailed)
+      }
 
       // If we only expect to write one message then we're no longer writable.
       if case .one = writeArity {

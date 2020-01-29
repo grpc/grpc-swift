@@ -29,7 +29,7 @@ public enum _GRPCClientRequestPart<Request: Message> {
   case head(_GRPCRequestHead)
 
   /// A deserialized request message to send to the server.
-  case message(_Box<Request>)
+  case message(_MessageContext<Request>)
 
   /// Indicates that the client does not intend to send any further messages.
   case end
@@ -44,19 +44,22 @@ public struct _GRPCRequestHead {
     var path: String
     var host: String
     var timeout: GRPCTimeout
+    var encoding: ClientConnection.Configuration.MessageEncoding
 
     init(
       method: String,
       scheme: String,
       path: String,
       host: String,
-      timeout: GRPCTimeout
+      timeout: GRPCTimeout,
+      encoding: ClientConnection.Configuration.MessageEncoding
     ) {
       self.method = method
       self.scheme = scheme
       self.path = path
       self.host = host
       self.timeout = timeout
+      self.encoding = encoding
     }
 
     func copy() -> _Storage {
@@ -65,7 +68,8 @@ public struct _GRPCRequestHead {
         scheme: self.scheme,
         path: self.path,
         host: self.host,
-        timeout: self.timeout
+        timeout: self.timeout,
+        encoding: self.encoding
       )
     }
   }
@@ -134,20 +138,34 @@ public struct _GRPCRequestHead {
     }
   }
 
+  internal var compression: ClientConnection.Configuration.MessageEncoding {
+    get {
+      return self._storage.encoding
+    }
+    set {
+      if !isKnownUniquelyReferenced(&self._storage) {
+        self._storage = self._storage.copy()
+      }
+      self._storage.encoding = newValue
+    }
+  }
+
   public init(
     method: String,
     scheme: String,
     path: String,
     host: String,
     timeout: GRPCTimeout,
-    customMetadata: HPACKHeaders
+    customMetadata: HPACKHeaders,
+    encoding: ClientConnection.Configuration.MessageEncoding
   ) {
     self._storage = .init(
       method: method,
       scheme: scheme,
       path: path,
       host: host,
-      timeout: timeout
+      timeout: timeout,
+      encoding: encoding
     )
     self.customMetadata = customMetadata
   }
@@ -161,7 +179,7 @@ public enum _GRPCClientResponsePart<Response: Message> {
   case initialMetadata(HPACKHeaders)
 
   /// A deserialized response message received from the server.
-  case message(_Box<Response>)
+  case message(_MessageContext<Response>)
 
   /// The metadata received at the end of the RPC.
   case trailingMetadata(HPACKHeaders)
@@ -401,7 +419,7 @@ extension _GRPCClientChannelHandler: ChannelOutboundHandler {
 
     case .message(let request):
       // Feed the request message into the state machine:
-      let result = self.stateMachine.sendRequest(request.value, allocator: context.channel.allocator)
+      let result = self.stateMachine.sendRequest(request.message, disableCompression: request.disableCompression, allocator: context.channel.allocator)
       switch result {
       case .success(let buffer):
         // We're clear to send a message; wrap it up in an HTTP/2 frame.

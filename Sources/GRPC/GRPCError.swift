@@ -95,6 +95,29 @@ public enum GRPCError {
     }
   }
 
+  /// It was not possible to compress or decompress a message with zlib.
+  public struct ZlibCompressionFailure: GRPCErrorProtocol {
+    var code: Int32
+    var message: String?
+
+    public init(code: Int32, message: String?) {
+      self.code = code
+      self.message = message
+    }
+
+    public var description: String {
+      if let message = self.message {
+        return "Zlib error: \(self.code) \(message)"
+      } else {
+        return "Zlib error: \(self.code)"
+      }
+    }
+
+    public func makeGRPCStatus() -> GRPCStatus {
+      return GRPCStatus(code: .internalError, message: self.description)
+    }
+  }
+
   /// It was not possible to decode a base64 message (gRPC-Web only).
   public struct Base64DecodeError: GRPCErrorProtocol {
     public let description = "Base64 message decoding failed"

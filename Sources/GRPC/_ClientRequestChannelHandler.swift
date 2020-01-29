@@ -45,9 +45,9 @@ public class _ClientRequestChannelHandler<RequestMessage: Message>: ChannelInbou
 /// - Important: This is **NOT** part of the public API.
 public final class _UnaryRequestChannelHandler<RequestMessage: Message>: _ClientRequestChannelHandler<RequestMessage> {
   /// The request to send.
-  internal let request: _Box<RequestMessage>
+  internal let request: _MessageContext<RequestMessage>
 
-  public init(requestHead: _GRPCRequestHead, request: _Box<RequestMessage>) {
+  public init(requestHead: _GRPCRequestHead, request: _MessageContext<RequestMessage>) {
     self.request = request
     super.init(requestHead: requestHead)
   }

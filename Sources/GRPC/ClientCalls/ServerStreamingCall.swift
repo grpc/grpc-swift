@@ -52,6 +52,7 @@ public final class ServerStreamingCall<RequestMessage: Message, ResponseMessage:
       path: path,
       host: connection.configuration.target.host,
       requestID: requestID,
+      encoding: connection.configuration.messageEncoding,
       options: callOptions
     )
 

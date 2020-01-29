@@ -46,7 +46,7 @@ class GRPCInsecureInteroperabilityTests: GRPCTestCase {
     }
 
     self.clientEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-    self.clientConnection = try! makeInteroperabilityTestClientConnection(
+    self.clientConnection = makeInteroperabilityTestClientConnection(
       host: "localhost",
       port: serverPort,
       eventLoopGroup: self.clientEventLoopGroup,

@@ -135,11 +135,19 @@ extension _GRPCRequestHead {
     path: String,
     host: String,
     requestID: String,
+    encoding: ClientConnection.Configuration.MessageEncoding,
     options: CallOptions
   ) {
     var customMetadata = options.customMetadata
     if let requestIDHeader = options.requestIDHeader {
       customMetadata.add(name: requestIDHeader, value: requestID)
+    }
+
+    var encoding = encoding
+    // Compression is disabled at the RPC level; remove outbound (request) encoding. This will stop
+    // any 'grpc-encoding' header being sent to the peer.
+    if options.disableCompression {
+      encoding.outbound = nil
     }
 
     self = _GRPCRequestHead(
@@ -148,7 +156,8 @@ extension _GRPCRequestHead {
       path: path,
       host: host,
       timeout: options.timeout,
-      customMetadata: customMetadata
+      customMetadata: customMetadata,
+      encoding: encoding
     )
   }
 }

@@ -62,3 +62,16 @@ public func waitAndAssertEqual<T: Equatable>(
 ) throws {
   try assertEqual(try future1.wait(), try future2.wait(), file: file, line: line)
 }
+
+public func waitAndAssert<T>(
+  _ future: EventLoopFuture<T>,
+  file: StaticString = #file,
+  line: UInt = #line,
+  message: String = "",
+  verify: (T) -> Bool
+) throws {
+  let value = try future.wait()
+  guard verify(value) else {
+    throw AssertionError(message: message, file: file, line: line)
+  }
+}

@@ -476,6 +476,20 @@ extension ClientConnection {
     /// be `nil`.
     public var connectionBackoff: ConnectionBackoff?
 
+    /// The compression used for requests, and the compression algorithms to advertise as acceptable
+    /// for the remote peer to use for encoding responses.
+    ///
+    /// If compression is enabled for a connection it may be disabled for requests on any RPC by
+    /// setting `CallOptions.disableCompression` to `true`.
+    ///
+    /// Compression may also be disabled at the message-level for streaming requests (i.e. client
+    /// streaming and bidirectional streaming RPCs) by setting `disableCompression` to `true` in
+    /// `sendMessage(_:disableCompression)`, `sendMessage(_:disableCompression:promise)`,
+    /// `sendMessages(_:disableCompression)` or `sendMessages(_:disableCompression:promise)`.
+    ///
+    /// Note that disabling compression has no effect if compression is disabled on the connection.
+    public var messageEncoding: MessageEncoding
+
     /// The HTTP protocol used for this connection.
     public var httpProtocol: HTTP2ToHTTP1ClientCodec.HTTPProtocol {
       return self.tls == nil ? .http : .https
@@ -490,13 +504,15 @@ extension ClientConnection {
     /// - Parameter connectivityStateDelegate: A connectivity state delegate, defaulting to `nil`.
     /// - Parameter tlsConfiguration: TLS configuration, defaulting to `nil`.
     /// - Parameter connectionBackoff: The connection backoff configuration to use.
+    /// - Parameter messageEncoding: Message compression configuration, defaults to no compression.
     public init(
       target: ConnectionTarget,
       eventLoopGroup: EventLoopGroup,
       errorDelegate: ClientErrorDelegate? = LoggingClientErrorDelegate(),
       connectivityStateDelegate: ConnectivityStateDelegate? = nil,
       tls: Configuration.TLS? = nil,
-      connectionBackoff: ConnectionBackoff? = ConnectionBackoff()
+      connectionBackoff: ConnectionBackoff? = ConnectionBackoff(),
+      messageEncoding: MessageEncoding = .none
     ) {
       self.target = target
       self.eventLoopGroup = eventLoopGroup
@@ -504,6 +520,7 @@ extension ClientConnection {
       self.connectivityStateDelegate = connectivityStateDelegate
       self.tls = tls
       self.connectionBackoff = connectionBackoff
+      self.messageEncoding = messageEncoding
     }
   }
 }

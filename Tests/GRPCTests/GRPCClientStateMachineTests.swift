@@ -54,7 +54,7 @@ class GRPCClientStateMachineTests: GRPCTestCase {
   func writeMessage<T: Message>(_ message: T, into buffer: inout ByteBuffer) throws {
     let messageData = try message.serializedData()
     let writer = LengthPrefixedMessageWriter(compression: .none)
-    writer.write(messageData, into: &buffer)
+    try writer.write(messageData, into: &buffer)
   }
 
   /// Returns a minimally valid `HPACKHeaders` for a response.
@@ -80,7 +80,8 @@ extension GRPCClientStateMachineTests {
       path: "/echo/Get",
       host: "host",
       timeout: .infinite,
-      customMetadata: [:]
+      customMetadata: [:],
+      encoding: .none
     )).assertFailure {
       XCTAssertEqual($0, .invalidState)
     }
@@ -94,7 +95,8 @@ extension GRPCClientStateMachineTests {
       path: "/echo/Get",
       host: "host",
       timeout: .infinite,
-      customMetadata: [:]
+      customMetadata: [:],
+      encoding: .none
     )).assertSuccess()
   }
 
@@ -124,7 +126,7 @@ extension GRPCClientStateMachineTests {
 extension GRPCClientStateMachineTests {
   func doTestSendRequestFromInvalidState(_ state: StateMachine.State, expected: MessageWriteError) {
     var stateMachine = self.makeStateMachine(state)
-    stateMachine.sendRequest(.init(text: "Hello!"), allocator: self.allocator).assertFailure {
+    stateMachine.sendRequest(.init(text: "Hello!"), disableCompression: false, allocator: self.allocator).assertFailure {
       XCTAssertEqual($0, expected)
     }
   }
@@ -133,7 +135,7 @@ extension GRPCClientStateMachineTests {
     var stateMachine = self.makeStateMachine(state)
 
     let request: Request = .with { $0.text = "Hello!" }
-    stateMachine.sendRequest(request, allocator: self.allocator).assertSuccess() { buffer in
+    stateMachine.sendRequest(request, disableCompression: false, allocator: self.allocator).assertSuccess() { buffer in
       var buffer = buffer
       // Remove the length and compression flag prefix.
       buffer.moveReaderIndex(forwardBy: 5)
@@ -449,14 +451,15 @@ extension GRPCClientStateMachineTests {
       path: "/echo/Get",
       host: "foo",
       timeout: .infinite,
-      customMetadata: [:]
+      customMetadata: [:],
+      encoding: .none
     )).assertSuccess()
 
     // Receive acknowledgement.
     stateMachine.receiveResponseHeaders(self.makeResponseHeaders()).assertSuccess()
 
     // Send a request.
-    stateMachine.sendRequest(.with { $0.text = "Hello!" }, allocator: self.allocator).assertSuccess()
+    stateMachine.sendRequest(.with { $0.text = "Hello!" }, disableCompression: false, allocator: self.allocator).assertSuccess()
 
     // Close the request stream.
     stateMachine.sendEndOfRequestStream().assertSuccess()
@@ -479,16 +482,17 @@ extension GRPCClientStateMachineTests {
       path: "/echo/Get",
       host: "foo",
       timeout: .infinite,
-      customMetadata: [:]
+      customMetadata: [:],
+      encoding: .none
     )).assertSuccess()
 
     // Receive acknowledgement.
     stateMachine.receiveResponseHeaders(self.makeResponseHeaders()).assertSuccess()
 
     // Send some requests.
-    stateMachine.sendRequest(.with { $0.text = "1" }, allocator: self.allocator).assertSuccess()
-    stateMachine.sendRequest(.with { $0.text = "2" }, allocator: self.allocator).assertSuccess()
-    stateMachine.sendRequest(.with { $0.text = "3" }, allocator: self.allocator).assertSuccess()
+    stateMachine.sendRequest(.with { $0.text = "1" }, disableCompression: false, allocator: self.allocator).assertSuccess()
+    stateMachine.sendRequest(.with { $0.text = "2" }, disableCompression: false, allocator: self.allocator).assertSuccess()
+    stateMachine.sendRequest(.with { $0.text = "3" }, disableCompression: false, allocator: self.allocator).assertSuccess()
 
     // Close the request stream.
     stateMachine.sendEndOfRequestStream().assertSuccess()
@@ -511,14 +515,15 @@ extension GRPCClientStateMachineTests {
       path: "/echo/Get",
       host: "foo",
       timeout: .infinite,
-      customMetadata: [:]
+      customMetadata: [:],
+      encoding: .none
     )).assertSuccess()
 
     // Receive acknowledgement.
     stateMachine.receiveResponseHeaders(self.makeResponseHeaders()).assertSuccess()
 
     // Send a request.
-    stateMachine.sendRequest(.with { $0.text = "1" }, allocator: self.allocator).assertSuccess()
+    stateMachine.sendRequest(.with { $0.text = "1" }, disableCompression: false, allocator: self.allocator).assertSuccess()
 
     // Close the request stream.
     stateMachine.sendEndOfRequestStream().assertSuccess()
@@ -546,22 +551,23 @@ extension GRPCClientStateMachineTests {
       path: "/echo/Get",
       host: "foo",
       timeout: .infinite,
-      customMetadata: [:]
+      customMetadata: [:],
+      encoding: .none
     )).assertSuccess()
 
     // Receive acknowledgement.
     stateMachine.receiveResponseHeaders(self.makeResponseHeaders()).assertSuccess()
 
     // Interleave requests and responses:
-    stateMachine.sendRequest(.with { $0.text = "1" }, allocator: self.allocator).assertSuccess()
+    stateMachine.sendRequest(.with { $0.text = "1" }, disableCompression: false, allocator: self.allocator).assertSuccess()
 
     // Receive a response.
     var firstBuffer = try self.writeMessage(Response.with { $0.text = "1" })
     stateMachine.receiveResponseBuffer(&firstBuffer).assertSuccess()
 
     // Send two more requests.
-    stateMachine.sendRequest(.with { $0.text = "2" }, allocator: self.allocator).assertSuccess()
-    stateMachine.sendRequest(.with { $0.text = "3" }, allocator: self.allocator).assertSuccess()
+    stateMachine.sendRequest(.with { $0.text = "2" }, disableCompression: false, allocator: self.allocator).assertSuccess()
+    stateMachine.sendRequest(.with { $0.text = "3" }, disableCompression: false, allocator: self.allocator).assertSuccess()
 
     // Receive two responses in one buffer.
     var secondBuffer = try self.writeMessage(Response.with { $0.text = "2" })
@@ -584,9 +590,9 @@ extension GRPCClientStateMachineTests {
       var stateMachine = self.makeStateMachine(.clientActiveServerIdle(writeState: .one(), readArity: messageCount))
 
       // One is fine.
-      stateMachine.sendRequest(.with { $0.text = "1" }, allocator: self.allocator).assertSuccess()
+      stateMachine.sendRequest(.with { $0.text = "1" }, disableCompression: false, allocator: self.allocator).assertSuccess()
       // Two is not.
-      stateMachine.sendRequest(.with { $0.text = "2" }, allocator: self.allocator).assertFailure {
+      stateMachine.sendRequest(.with { $0.text = "2" }, disableCompression: false, allocator: self.allocator).assertFailure {
         XCTAssertEqual($0, .cardinalityViolation)
       }
     }
@@ -597,9 +603,9 @@ extension GRPCClientStateMachineTests {
       var stateMachine = self.makeStateMachine(.clientActiveServerActive(writeState: .one(), readState: readState))
 
       // One is fine.
-      stateMachine.sendRequest(.with { $0.text = "1" }, allocator: self.allocator).assertSuccess()
+      stateMachine.sendRequest(.with { $0.text = "1" }, disableCompression: false, allocator: self.allocator).assertSuccess()
       // Two is not.
-      stateMachine.sendRequest(.with { $0.text = "2" }, allocator: self.allocator).assertFailure {
+      stateMachine.sendRequest(.with { $0.text = "2" }, disableCompression: false, allocator: self.allocator).assertFailure {
         XCTAssertEqual($0, .cardinalityViolation)
       }
     }
@@ -609,7 +615,7 @@ extension GRPCClientStateMachineTests {
     var stateMachine = self.makeStateMachine(.clientClosedServerClosed)
 
     // No requests allowed!
-    stateMachine.sendRequest(.with { $0.text = "1" }, allocator: self.allocator).assertFailure {
+    stateMachine.sendRequest(.with { $0.text = "1" }, disableCompression: false, allocator: self.allocator).assertFailure {
       XCTAssertEqual($0, .cardinalityViolation)
     }
   }
@@ -656,7 +662,8 @@ extension GRPCClientStateMachineTests {
       path: "/echo/Get",
       host: "localhost",
       timeout: .hours(rounding: 1),
-      customMetadata: ["x-grpc-id": "request-id"]
+      customMetadata: ["x-grpc-id": "request-id"],
+      encoding: .init(forRequests: .identity, acceptableForResponses: [.identity])
     )).assertSuccess { headers in
       XCTAssertEqual(headers[":method"], ["POST"])
       XCTAssertEqual(headers[":path"], ["/echo/Get"])
@@ -666,7 +673,60 @@ extension GRPCClientStateMachineTests {
       XCTAssertEqual(headers["te"], ["trailers"])
       XCTAssertEqual(headers["grpc-timeout"], ["1H"])
       XCTAssertEqual(headers["x-grpc-id"], ["request-id"])
+      XCTAssertEqual(headers["grpc-encoding"], ["identity"])
+      XCTAssertTrue(headers["grpc-accept-encoding"].contains("identity"))
       XCTAssertTrue(headers["user-agent"].first?.starts(with: "grpc-swift") ?? false)
+    }
+  }
+
+  func testSendRequestHeadersWithNoCompressionInEitherDirection() throws {
+    var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
+    stateMachine.sendRequestHeaders(requestHead: .init(
+      method: "POST",
+      scheme: "http",
+      path: "/echo/Get",
+      host: "localhost",
+      timeout: .hours(rounding: 1),
+      customMetadata: ["x-grpc-id": "request-id"],
+      encoding: .init(forRequests: nil, acceptableForResponses: [])
+    )).assertSuccess { headers in
+      XCTAssertFalse(headers.contains(name: "grpc-encoding"))
+      XCTAssertFalse(headers.contains(name: "grpc-accept-encoding"))
+    }
+  }
+
+  func testSendRequestHeadersWithNoCompressionForRequests() throws {
+    var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
+    stateMachine.sendRequestHeaders(requestHead: .init(
+      method: "POST",
+      scheme: "http",
+      path: "/echo/Get",
+      host: "localhost",
+      timeout: .hours(rounding: 1),
+      customMetadata: ["x-grpc-id": "request-id"],
+      encoding: .init(forRequests: nil, acceptableForResponses: [.identity, .gzip])
+    )).assertSuccess { headers in
+      XCTAssertFalse(headers.contains(name: "grpc-encoding"))
+      XCTAssertTrue(headers.contains(name: "grpc-accept-encoding"))
+    }
+  }
+
+  func testSendRequestHeadersWithNoCompressionForResponses() throws {
+    var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
+    stateMachine.sendRequestHeaders(requestHead: .init(
+      method: "POST",
+      scheme: "http",
+      path: "/echo/Get",
+      host: "localhost",
+      timeout: .hours(rounding: 1),
+      customMetadata: ["x-grpc-id": "request-id"],
+      encoding: .init(forRequests: .gzip, acceptableForResponses: [])
+    )).assertSuccess { headers in
+      XCTAssertEqual(headers["grpc-encoding"], ["gzip"])
+      // This asymmetry is strange but allowed: if a client does not advertise support of the
+      // compression it is using, the server may still process the message so long as it too
+      // supports the compression.
+      XCTAssertFalse(headers.contains(name: "grpc-accept-encoding"))
     }
   }
 
@@ -714,7 +774,7 @@ extension GRPCClientStateMachineTests {
 
     switch stateMachine.state {
     case let .clientActiveServerActive(_, .reading(_, reader)):
-      XCTAssertEqual(reader.compression, .identity)
+      XCTAssertEqual(reader.compression?.algorithm, .identity)
     default:
       XCTFail("unexpected state \(stateMachine.state)")
     }
@@ -816,7 +876,7 @@ class ReadStateTests: GRPCTestCase {
     let message = Echo_EchoRequest.with { $0.text = "Hello!" }
     let writer = LengthPrefixedMessageWriter(compression: .none)
     var buffer = self.allocator.buffer(capacity: 0)
-    writer.write(try message.serializedData(), into: &buffer)
+    try writer.write(try message.serializedData(), into: &buffer)
     // And some extra junk bytes:
     let bytes: [UInt8] = [0x00]
     buffer.writeBytes(bytes)
@@ -833,8 +893,8 @@ class ReadStateTests: GRPCTestCase {
     let message = Echo_EchoRequest.with { $0.text = "Hello!" }
     let writer = LengthPrefixedMessageWriter(compression: .none)
     var buffer = self.allocator.buffer(capacity: 0)
-    writer.write(try message.serializedData(), into: &buffer)
-    writer.write(try message.serializedData(), into: &buffer)
+    try writer.write(try message.serializedData(), into: &buffer)
+    try writer.write(try message.serializedData(), into: &buffer)
 
     var state: ReadState = .one()
     state.readMessages(&buffer, as: Echo_EchoRequest.self).assertFailure {
@@ -848,7 +908,7 @@ class ReadStateTests: GRPCTestCase {
     let message = Echo_EchoRequest.with { $0.text = "Hello!" }
     let writer = LengthPrefixedMessageWriter(compression: .none)
     var buffer = self.allocator.buffer(capacity: 0)
-    writer.write(try message.serializedData(), into: &buffer)
+    try writer.write(try message.serializedData(), into: &buffer)
 
     var state: ReadState = .one()
     state.readMessages(&buffer, as: Echo_EchoRequest.self).assertSuccess {
@@ -864,7 +924,7 @@ class ReadStateTests: GRPCTestCase {
     let message = Echo_EchoRequest.with { $0.text = "Hello!" }
     let writer = LengthPrefixedMessageWriter(compression: .none)
     var buffer = self.allocator.buffer(capacity: 0)
-    writer.write(try message.serializedData(), into: &buffer)
+    try writer.write(try message.serializedData(), into: &buffer)
 
     var state: ReadState = .many()
     state.readMessages(&buffer, as: Echo_EchoRequest.self).assertSuccess {
@@ -880,9 +940,9 @@ class ReadStateTests: GRPCTestCase {
     let message = Echo_EchoRequest.with { $0.text = "Hello!" }
     let writer = LengthPrefixedMessageWriter(compression: .none)
     var buffer = self.allocator.buffer(capacity: 0)
-    writer.write(try message.serializedData(), into: &buffer)
-    writer.write(try message.serializedData(), into: &buffer)
-    writer.write(try message.serializedData(), into: &buffer)
+    try writer.write(try message.serializedData(), into: &buffer)
+    try writer.write(try message.serializedData(), into: &buffer)
+    try writer.write(try message.serializedData(), into: &buffer)
 
     var state: ReadState = .many()
     state.readMessages(&buffer, as: Echo_EchoRequest.self).assertSuccess {
@@ -960,11 +1020,11 @@ extension ReadState {
 
 extension PendingWriteState {
   static func one() -> PendingWriteState {
-    return .init(arity: .one, compression: .none, contentType: .protobuf)
+    return .init(arity: .one, contentType: .protobuf)
   }
 
   static func many() -> PendingWriteState {
-    return .init(arity: .many, compression: .none, contentType: .protobuf)
+    return .init(arity: .many, contentType: .protobuf)
   }
 }
 

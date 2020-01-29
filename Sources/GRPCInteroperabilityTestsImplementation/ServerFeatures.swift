@@ -44,6 +44,17 @@ public enum ServerFeature {
   /// See TestServiceProvider_NIO.cacheableUnaryCall.
   case cacheableUnaryCall
 
+  /// When the client sets expect_compressed to true, the server expects the client request to be
+  /// compressed. If it's not, it fails the RPC with INVALID_ARGUMENT. Note that
+  /// `response_compressed` is present on both SimpleRequest (unary) and StreamingOutputCallRequest
+  /// (streaming).
+  case compressedRequest
+
+  /// When the client sets response_compressed to true, the server's response is sent back
+  /// compressed. Note that response_compressed is present on both SimpleRequest (unary) and
+  /// StreamingOutputCallRequest (streaming).
+  case compressedResponse
+
   /// See TestServiceProvider_NIO.streamingInputCall.
   case streamingInputCall
 

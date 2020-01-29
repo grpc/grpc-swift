@@ -47,9 +47,14 @@ enum InteroperabilityTestError: LocalizedError {
 ///   - name: the name of the test, use for logging only.
 ///   - connection: client connection to use for running the test.
 /// - Throws: `InteroperabilityTestError` if the test fails.
-func runTest(_ instance: InteroperabilityTest, name: String, connection: ClientConnection) throws {
+func runTest(_ instance: InteroperabilityTest, name: String, defaultConfiguration: ClientConnection.Configuration) throws {
   do {
     print("Running '\(name)' ... ", terminator: "")
+    let configuration = instance.configure(defaults: defaultConfiguration)
+    let connection = ClientConnection(configuration: configuration)
+    defer {
+      _ = connection.close()
+    }
     try instance.run(using: connection)
     print("PASSED")
   } catch {
@@ -181,13 +186,14 @@ func main(args: [String]) {
     }
 
     do {
-      let connection = try makeInteroperabilityTestClientConnection(
+      // Provide some basic configuration. Some tests may override this.
+      let defaults = makeInteroperabilityTestClientConfiguration(
         host: host,
         port: port,
         eventLoopGroup: group,
         useTLS: useTLS
       )
-      try runTest(test, name: name, connection: connection)
+      try runTest(test, name: name, defaultConfiguration: defaults)
     } catch {
       print("Error running test: \(error)")
       exit(1)

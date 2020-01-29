@@ -18,7 +18,7 @@ import GRPC
 import GRPCInteroperabilityTestModels
 import NIO
 
-/// A service prodiver for the gRPC interoperaability test suite.
+/// A service provider for the gRPC interoperability test suite.
 ///
 /// See: https://github.com/grpc/grpc/blob/master/doc/interop-test-descriptions.md#server
 public class TestServiceProvider: Grpc_Testing_TestServiceProvider {

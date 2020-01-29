@@ -165,7 +165,7 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   /// - Parameter responseArity: The expected number of messages on the response stream.
   init(requestArity: MessageArity, responseArity: MessageArity) {
     self.state = .clientIdleServerIdle(
-      pendingWriteState: .init(arity: requestArity, compression: .none, contentType: .protobuf),
+      pendingWriteState: .init(arity: requestArity, contentType: .protobuf),
       readArity: responseArity
     )
   }
@@ -215,9 +215,10 @@ struct GRPCClientStateMachine<Request: Message, Response: Message> {
   ///     request will be written.
   mutating func sendRequest(
     _ message: Request,
+    disableCompression: Bool,
     allocator: ByteBufferAllocator
   ) -> Result<ByteBuffer, MessageWriteError> {
-    return self.state.sendRequest(message, allocator: allocator)
+    return self.state.sendRequest(message, disableCompression: disableCompression, allocator: allocator)
   }
 
   /// Closes the request stream.
@@ -337,11 +338,12 @@ extension GRPCClientStateMachine.State {
         host: requestHead.host,
         path: requestHead.path,
         timeout: requestHead.timeout,
-        customMetadata: requestHead.customMetadata
+        customMetadata: requestHead.customMetadata,
+        compression: requestHead.compression
       )
       result = .success(headers)
       self = .clientActiveServerIdle(
-        writeState: pendingWriteState.makeWriteState(),
+        writeState: pendingWriteState.makeWriteState(compression: requestHead.compression.outbound),
         readArity: responseArity
       )
 
@@ -359,17 +361,18 @@ extension GRPCClientStateMachine.State {
   /// See `GRPCClientStateMachine.sendRequest(_:allocator:)`.
   mutating func sendRequest(
     _ message: Request,
+    disableCompression: Bool,
     allocator: ByteBufferAllocator
   ) -> Result<ByteBuffer, MessageWriteError> {
     let result: Result<ByteBuffer, MessageWriteError>
 
     switch self {
     case .clientActiveServerIdle(var writeState, let readArity):
-      result = writeState.write(message, allocator: allocator)
+      result = writeState.write(message, disableCompression: disableCompression, allocator: allocator)
       self = .clientActiveServerIdle(writeState: writeState, readArity: readArity)
 
     case .clientActiveServerActive(var writeState, let readState):
-      result = writeState.write(message, allocator: allocator)
+      result = writeState.write(message, disableCompression: disableCompression, allocator: allocator)
       self = .clientActiveServerActive(writeState: writeState, readState: readState)
 
     case .clientClosedServerIdle,
@@ -503,7 +506,8 @@ extension GRPCClientStateMachine.State {
     host: String,
     path: String,
     timeout: GRPCTimeout,
-    customMetadata: HPACKHeaders
+    customMetadata: HPACKHeaders,
+    compression: ClientConnection.Configuration.MessageEncoding
   ) -> HPACKHeaders {
     // Note: we don't currently set the 'grpc-encoding' header, if we do we will need to feed that
     // encoded into the message writer.
@@ -516,6 +520,16 @@ extension GRPCClientStateMachine.State {
       "te": "trailers",  // Used to detect incompatible proxies, part of the gRPC specification.
       "user-agent": "grpc-swift-nio",  //  TODO: Add a more specific user-agent.
     ]
+
+    // Request encoding.
+    if let outbound = compression.outbound {
+      headers.add(name: GRPCHeaderName.encoding, value: outbound.name)
+    }
+
+    // Response encoding.
+    if !compression.inbound.isEmpty {
+      headers.add(name: GRPCHeaderName.acceptEncoding, value: compression.acceptEncodingHeader)
+    }
 
     // Add the timeout header, if a timeout was specified.
     if timeout != .infinite {
@@ -564,8 +578,12 @@ extension GRPCClientStateMachine.State {
     let compression: CompressionAlgorithm?
 
     if let encodingHeader = headers.first(name: GRPCHeaderName.encoding) {
+      // Note: the server is allowed to encode messages using an algorithm which wasn't included in
+      // the 'grpc-accept-encoding' header. If the client still supports that algorithm (despite not
+      // permitting the server to use it) then it must still decode that message. Ideally we should
+      // log a message here if that was the case but we don't hold that information.
       compression = CompressionAlgorithm(rawValue: encodingHeader)
-      // The algorithm isn't supported.
+      // The algorithm isn't one we support.
       if compression == nil {
         return .failure(.unsupportedMessageEncoding(encodingHeader))
       }

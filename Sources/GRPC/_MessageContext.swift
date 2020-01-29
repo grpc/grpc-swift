@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Foundation
+import SwiftProtobuf
 
-/// Provides a "box" to put a value in.
-///
-/// Allows large values to be passed around without being copied.
+/// Provides a context for Protobuf messages.
 ///
 /// - Important: This is **NOT** part of the public API.
-public final class _Box<T> {
-  let value: T
+public final class _MessageContext<M: Message> {
+  let message: M
+  let disableCompression: Bool
 
   /// Constructs a box for a value.
   ///
   /// - Important: This is **NOT** part of the public API.
-  public init(_ value: T) {
-    self.value = value
+  public init(_ message: M, disableCompression: Bool = false) {
+    self.message = message
+    self.disableCompression = disableCompression
   }
 }

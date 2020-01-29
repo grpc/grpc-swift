@@ -31,13 +31,22 @@ import Logging
 /// - SeeAlso:
 /// [gRPC Protocol](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md)
 internal struct LengthPrefixedMessageReader {
-  /// The mechanism that messages will be compressed with.
   var compression: CompressionAlgorithm?
+  var decompressor: Zlib.Inflate?
 
   init(compression: CompressionAlgorithm? = nil) {
     self.compression = compression
-  }
 
+    switch compression?.algorithm {
+    case .none, .some(.identity):
+      self.decompressor = nil
+    case .some(.deflate):
+      self.decompressor = Zlib.Inflate(format: .deflate)
+    case .some(.gzip):
+      self.decompressor = Zlib.Inflate(format: .gzip)
+    }
+  }
+  
   /// The result of trying to parse a message with the bytes we currently have.
   ///
   /// - needMoreData: More data is required to continue reading a message.
@@ -52,8 +61,8 @@ internal struct LengthPrefixedMessageReader {
   /// The parsing state; what we expect to be reading next.
   internal enum ParseState {
     case expectingCompressedFlag
-    case expectingMessageLength
-    case expectingMessage(UInt32)
+    case expectingMessageLength(compressed: Bool)
+    case expectingMessage(UInt32, compressed: Bool)
   }
 
   private var buffer: ByteBuffer!
@@ -125,33 +134,51 @@ internal struct LengthPrefixedMessageReader {
 
     switch self.state {
     case .expectingCompressedFlag:
-      guard let compressionFlag: Int8 = self.buffer.readInteger() else {
+      guard let compressionFlag: UInt8 = self.buffer.readInteger() else {
         return .needMoreData
       }
-      try self.handleCompressionFlag(enabled: compressionFlag != 0)
-      self.state = .expectingMessageLength
 
-    case .expectingMessageLength:
+      let isCompressionEnabled = compressionFlag != 0
+      // Compression is enabled, but not expected.
+      if isCompressionEnabled && self.compression == nil {
+        throw GRPCError.CompressionUnsupported().captureContext()
+      }
+      self.state = .expectingMessageLength(compressed: isCompressionEnabled)
+
+    case .expectingMessageLength(let compressed):
       guard let messageLength: UInt32 = self.buffer.readInteger() else {
         return .needMoreData
       }
-      self.state = .expectingMessage(messageLength)
+      self.state = .expectingMessage(messageLength, compressed: compressed)
 
-    case .expectingMessage(let length):
+    case .expectingMessage(let length, let compressed):
       let signedLength: Int = numericCast(length)
-      guard let message = self.buffer.readSlice(length: signedLength) else {
+      guard var message = self.buffer.readSlice(length: signedLength) else {
         return .needMoreData
       }
+
+      let result: ParseResult
+
+      // TODO: If compression is enabled and we store the buffer slices then we can feed the slices
+      // into the decompressor. This should eliminate one buffer allocation (i.e. the buffer into
+      // which we currently accumulate the slices before decompressing it into a new buffer).
+
+      // If compression is set but the algorithm is 'identity' then we will not get a decompressor
+      // here.
+      if compressed, let decompressor = self.decompressor {
+        var decompressed = ByteBufferAllocator().buffer(capacity: 0)
+        try decompressor.inflate(&message, into: &decompressed)
+        // Compression contexts should be reset between messages.
+        decompressor.reset()
+        result = .message(decompressed)
+      } else {
+        result = .message(message)
+      }
+
       self.state = .expectingCompressedFlag
-      return .message(message)
+      return result
     }
 
     return .continue
-  }
-
-  private func handleCompressionFlag(enabled flagEnabled: Bool) throws {
-    if flagEnabled && self.compression == nil {
-      throw GRPCError.CompressionUnsupported().captureContext()
-    }
   }
 }

@@ -65,7 +65,8 @@ class GRPCStatusCodeTests: GRPCTestCase {
       path: "/foo/bar",
       host: "localhost",
       timeout: .infinite,
-      customMetadata: [:]
+      customMetadata: [:],
+      encoding: .none
     )
     let clientRequestHead: _GRPCClientRequestPart<Echo_EchoRequest> = .head(requestHead)
     XCTAssertNoThrow(try self.channel.writeOutbound(clientRequestHead))

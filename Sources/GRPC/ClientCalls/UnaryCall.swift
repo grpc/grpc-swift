@@ -61,6 +61,7 @@ public final class UnaryCall<RequestMessage: Message, ResponseMessage: Message>
       path: path,
       host: connection.configuration.target.host,
       requestID: requestID,
+      encoding: connection.configuration.messageEncoding,
       options: callOptions
     )
 
