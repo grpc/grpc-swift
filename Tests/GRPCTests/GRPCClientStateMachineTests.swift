@@ -35,14 +35,14 @@ class GRPCClientStateMachineTests: GRPCTestCase {
   }
 
   /// Writes a message into a new `ByteBuffer` (with length-prefixing).
-  func writeMessage<T: Message>(_ message: T) throws -> ByteBuffer {
+  func writeMessage<T: GRPCPayload>(_ message: T) throws -> ByteBuffer {
     var buffer = self.allocator.buffer(capacity: 0)
     try self.writeMessage(message, into: &buffer)
     return buffer
   }
 
   /// Writes the given messages into a new `ByteBuffer` (with length-prefixing).
-  func writeMessages<T: Message>(_ messages: T...) throws -> ByteBuffer {
+  func writeMessages<T: GRPCPayload>(_ messages: T...) throws -> ByteBuffer {
     var buffer = self.allocator.buffer(capacity: 0)
     try messages.forEach {
       try self.writeMessage($0, into: &buffer)
@@ -51,10 +51,9 @@ class GRPCClientStateMachineTests: GRPCTestCase {
   }
 
   /// Writes a message into the given `buffer`.
-  func writeMessage<T: Message>(_ message: T, into buffer: inout ByteBuffer) throws {
-    let messageData = try message.serializedData()
+  func writeMessage<T: GRPCPayload>(_ message: T, into buffer: inout ByteBuffer) throws {
     let writer = LengthPrefixedMessageWriter(compression: .none)
-    try writer.write(messageData, into: &buffer)
+    try writer.write(message, into: &buffer)
   }
 
   /// Returns a minimally valid `HPACKHeaders` for a response.
@@ -876,7 +875,7 @@ class ReadStateTests: GRPCTestCase {
     let message = Echo_EchoRequest.with { $0.text = "Hello!" }
     let writer = LengthPrefixedMessageWriter(compression: .none)
     var buffer = self.allocator.buffer(capacity: 0)
-    try writer.write(try message.serializedData(), into: &buffer)
+    try writer.write(message, into: &buffer)
     // And some extra junk bytes:
     let bytes: [UInt8] = [0x00]
     buffer.writeBytes(bytes)
@@ -893,9 +892,9 @@ class ReadStateTests: GRPCTestCase {
     let message = Echo_EchoRequest.with { $0.text = "Hello!" }
     let writer = LengthPrefixedMessageWriter(compression: .none)
     var buffer = self.allocator.buffer(capacity: 0)
-    try writer.write(try message.serializedData(), into: &buffer)
-    try writer.write(try message.serializedData(), into: &buffer)
-
+    try writer.write(message, into: &buffer)
+    try writer.write(message, into: &buffer)
+    
     var state: ReadState = .one()
     state.readMessages(&buffer, as: Echo_EchoRequest.self).assertFailure {
       XCTAssertEqual($0, .cardinalityViolation)
@@ -908,7 +907,7 @@ class ReadStateTests: GRPCTestCase {
     let message = Echo_EchoRequest.with { $0.text = "Hello!" }
     let writer = LengthPrefixedMessageWriter(compression: .none)
     var buffer = self.allocator.buffer(capacity: 0)
-    try writer.write(try message.serializedData(), into: &buffer)
+    try writer.write(message, into: &buffer)
 
     var state: ReadState = .one()
     state.readMessages(&buffer, as: Echo_EchoRequest.self).assertSuccess {
@@ -924,7 +923,7 @@ class ReadStateTests: GRPCTestCase {
     let message = Echo_EchoRequest.with { $0.text = "Hello!" }
     let writer = LengthPrefixedMessageWriter(compression: .none)
     var buffer = self.allocator.buffer(capacity: 0)
-    try writer.write(try message.serializedData(), into: &buffer)
+    try writer.write(message, into: &buffer)
 
     var state: ReadState = .many()
     state.readMessages(&buffer, as: Echo_EchoRequest.self).assertSuccess {
@@ -940,9 +939,9 @@ class ReadStateTests: GRPCTestCase {
     let message = Echo_EchoRequest.with { $0.text = "Hello!" }
     let writer = LengthPrefixedMessageWriter(compression: .none)
     var buffer = self.allocator.buffer(capacity: 0)
-    try writer.write(try message.serializedData(), into: &buffer)
-    try writer.write(try message.serializedData(), into: &buffer)
-    try writer.write(try message.serializedData(), into: &buffer)
+    try writer.write(message, into: &buffer)
+    try writer.write(message, into: &buffer)
+    try writer.write(message, into: &buffer)
 
     var state: ReadState = .many()
     state.readMessages(&buffer, as: Echo_EchoRequest.self).assertSuccess {

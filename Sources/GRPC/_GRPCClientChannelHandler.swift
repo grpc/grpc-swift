@@ -24,7 +24,7 @@ import Logging
 ///
 /// - Important: This is **NOT** part of the public API. It is declared as
 ///   `public` because it is used within performance tests.
-public enum _GRPCClientRequestPart<Request: Message> {
+public enum _GRPCClientRequestPart<Request: GRPCPayload> {
   /// The 'head' of the request, that is, information about the initiation of the RPC.
   case head(_GRPCRequestHead)
 
@@ -174,7 +174,7 @@ public struct _GRPCRequestHead {
 /// A gRPC client response message part.
 ///
 /// - Important: This is **NOT** part of the public API.
-public enum _GRPCClientResponsePart<Response: Message> {
+public enum _GRPCClientResponsePart<Response: GRPCPayload> {
   /// Metadata received as the server acknowledges the RPC.
   case initialMetadata(HPACKHeaders)
 
@@ -231,7 +231,7 @@ public enum GRPCCallType {
 ///
 /// - Important: This is **NOT** part of the public API. It is declared as
 ///   `public` because it is used within performance tests.
-public final class _GRPCClientChannelHandler<Request: Message, Response: Message> {
+public final class _GRPCClientChannelHandler<Request: GRPCPayload, Response: GRPCPayload> {
   private let logger: Logger
   private let streamID: HTTP2StreamID
   private var stateMachine: GRPCClientStateMachine<Request, Response>

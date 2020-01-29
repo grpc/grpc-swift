@@ -27,15 +27,15 @@ import Logging
 /// - `response`: the response from the unary call,
 /// - `status`: the status of the gRPC call after it has ended,
 /// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
-public final class UnaryCall<RequestMessage: Message, ResponseMessage: Message>
-  : BaseClientCall<RequestMessage, ResponseMessage>,
+public final class UnaryCall<RequestPayload: GRPCPayload, ResponsePayload: GRPCPayload>
+  : BaseClientCall<RequestPayload, ResponsePayload>,
     UnaryResponseClientCall {
-  public let response: EventLoopFuture<ResponseMessage>
+  public let response: EventLoopFuture<ResponsePayload>
 
   public init(
     connection: ClientConnection,
     path: String,
-    request: RequestMessage,
+    request: RequestPayload,
     callOptions: CallOptions,
     errorDelegate: ClientErrorDelegate?
   ) {
@@ -43,10 +43,10 @@ public final class UnaryCall<RequestMessage: Message, ResponseMessage: Message>
     let logger = Logger(subsystem: .clientChannelCall, metadata: [MetadataKey.requestID: "\(requestID)"])
     logger.debug("starting rpc", metadata: ["path": "\(path)"])
 
-    let responsePromise = connection.channel.eventLoop.makePromise(of: ResponseMessage.self)
+    let responsePromise = connection.channel.eventLoop.makePromise(of: ResponsePayload.self)
     self.response = responsePromise.futureResult
 
-    let responseHandler = GRPCClientUnaryResponseChannelHandler<ResponseMessage>(
+    let responseHandler = GRPCClientUnaryResponseChannelHandler<ResponsePayload>(
       initialMetadataPromise: connection.channel.eventLoop.makePromise(),
       trailingMetadataPromise: connection.channel.eventLoop.makePromise(),
       responsePromise: responsePromise,
@@ -65,7 +65,7 @@ public final class UnaryCall<RequestMessage: Message, ResponseMessage: Message>
       options: callOptions
     )
 
-    let requestHandler = _UnaryRequestChannelHandler<RequestMessage>(
+    let requestHandler = _UnaryRequestChannelHandler<RequestPayload>(
       requestHead: requestHead,
       request: .init(request)
     )

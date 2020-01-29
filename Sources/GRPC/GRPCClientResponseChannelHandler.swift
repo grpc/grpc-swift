@@ -24,8 +24,8 @@ import Logging
 /// This includes holding promises for the initial metadata and status of the gRPC call. This handler
 /// is also responsible for error handling, via an error delegate and by appropriately failing the
 /// aforementioned promises.
-internal class GRPCClientResponseChannelHandler<ResponseMessage: Message>: ChannelInboundHandler {
-  public typealias InboundIn = _GRPCClientResponsePart<ResponseMessage>
+internal class GRPCClientResponseChannelHandler<ResponsePayload: GRPCPayload>: ChannelInboundHandler {
+  public typealias InboundIn = _GRPCClientResponsePart<ResponsePayload>
   internal let logger: Logger
   internal var stopwatch: Stopwatch?
 
@@ -114,7 +114,7 @@ internal class GRPCClientResponseChannelHandler<ResponseMessage: Message>: Chann
   /// Called when a response is received. Subclasses should override this method.
   ///
   /// - Parameter response: The received response.
-  internal func onResponse(_ response: _MessageContext<ResponseMessage>) {
+  internal func onResponse(_ response: _MessageContext<ResponsePayload>) {
     // no-op
   }
 
@@ -186,13 +186,13 @@ internal class GRPCClientResponseChannelHandler<ResponseMessage: Message>: Chann
 }
 
 /// A channel handler for client calls which receive a single response.
-final class GRPCClientUnaryResponseChannelHandler<ResponseMessage: Message>: GRPCClientResponseChannelHandler<ResponseMessage> {
-  let responsePromise: EventLoopPromise<ResponseMessage>
+final class GRPCClientUnaryResponseChannelHandler<ResponsePayload: GRPCPayload>: GRPCClientResponseChannelHandler<ResponsePayload> {
+  let responsePromise: EventLoopPromise<ResponsePayload>
 
   internal init(
     initialMetadataPromise: EventLoopPromise<HPACKHeaders>,
     trailingMetadataPromise: EventLoopPromise<HPACKHeaders>,
-    responsePromise: EventLoopPromise<ResponseMessage>,
+    responsePromise: EventLoopPromise<ResponsePayload>,
     statusPromise: EventLoopPromise<GRPCStatus>,
     errorDelegate: ClientErrorDelegate?,
     timeout: GRPCTimeout,
@@ -213,7 +213,7 @@ final class GRPCClientUnaryResponseChannelHandler<ResponseMessage: Message>: GRP
   /// Succeeds the response promise with the given response.
   ///
   /// - Parameter response: The response received from the service.
-  override func onResponse(_ response: _MessageContext<ResponseMessage>) {
+  override func onResponse(_ response: _MessageContext<ResponsePayload>) {
     self.responsePromise.succeed(response.message)
   }
 
@@ -236,8 +236,8 @@ final class GRPCClientUnaryResponseChannelHandler<ResponseMessage: Message>: GRP
 }
 
 /// A channel handler for client calls which receive a stream of responses.
-final class GRPCClientStreamingResponseChannelHandler<ResponseMessage: Message>: GRPCClientResponseChannelHandler<ResponseMessage> {
-  typealias ResponseHandler = (ResponseMessage) -> Void
+final class GRPCClientStreamingResponseChannelHandler<ResponsePayload: GRPCPayload>: GRPCClientResponseChannelHandler<ResponsePayload> {
+  typealias ResponseHandler = (ResponsePayload) -> Void
 
   let responseHandler: ResponseHandler
 
@@ -265,7 +265,7 @@ final class GRPCClientStreamingResponseChannelHandler<ResponseMessage: Message>:
   /// Calls a user-provided handler with the given response.
   ///
   /// - Parameter response: The response received from the service.
-  override func onResponse(_ response: _MessageContext<ResponseMessage>) {
+  override func onResponse(_ response: _MessageContext<ResponsePayload>) {
     self.responseHandler(response.message)
   }
 

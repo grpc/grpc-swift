@@ -23,9 +23,9 @@ import SwiftProtobuf
 /// Base protocol for a client call to a gRPC service.
 public protocol ClientCall {
   /// The type of the request message for the call.
-  associatedtype RequestMessage: Message
+  associatedtype RequestPayload: GRPCPayload
   /// The type of the response message for the call.
-  associatedtype ResponseMessage: Message
+  associatedtype ResponsePayload: GRPCPayload
 
   /// HTTP/2 stream that requests and responses are sent and received on.
   var subchannel: EventLoopFuture<Channel> { get }
@@ -65,7 +65,7 @@ public protocol StreamingRequestClientCall: ClientCall {
   ///   - disableCompression: Whether compression should be disabled for this message. Ignored if
   ///     compression was not enabled for the connection or RPC.
   /// - Returns: A future which will be fullfilled when the message has been sent.
-  func sendMessage(_ message: RequestMessage, disableCompression: Bool) -> EventLoopFuture<Void>
+  func sendMessage(_ message: RequestPayload, disableCompression: Bool) -> EventLoopFuture<Void>
 
   /// Sends a message to the service.
   ///
@@ -76,7 +76,7 @@ public protocol StreamingRequestClientCall: ClientCall {
   ///   - disableCompression: Whether compression should be disabled for this message. Ignored if
   ///     compression was not enabled for the connection or RPC.
   ///   - promise: A promise to be fulfilled when the message has been sent.
-  func sendMessage(_ message: RequestMessage, disableCompression: Bool, promise: EventLoopPromise<Void>?)
+  func sendMessage(_ message: RequestPayload, disableCompression: Bool, promise: EventLoopPromise<Void>?)
 
   /// Sends a sequence of messages to the service.
   ///
@@ -86,7 +86,7 @@ public protocol StreamingRequestClientCall: ClientCall {
   ///   - messages: The sequence of messages to send.
   ///   - disableCompression: Whether compression should be disabled for these messages. Ignored if
   ///     compression was not enabled for the connection or RPC.
-  func sendMessages<S: Sequence>(_ messages: S, disableCompression: Bool) -> EventLoopFuture<Void> where S.Element == RequestMessage
+  func sendMessages<S: Sequence>(_ messages: S, disableCompression: Bool) -> EventLoopFuture<Void> where S.Element == RequestPayload
 
   /// Sends a sequence of messages to the service.
   ///
@@ -97,7 +97,7 @@ public protocol StreamingRequestClientCall: ClientCall {
   ///   - disableCompression: Whether compression should be disabled for these messages. Ignored if
   ///     compression was not enabled for the connection or RPC.
   ///   - promise: A promise to be fulfilled when all messages have been sent successfully.
-  func sendMessages<S: Sequence>(_ messages: S, disableCompression: Bool, promise: EventLoopPromise<Void>?) where S.Element == RequestMessage
+  func sendMessages<S: Sequence>(_ messages: S, disableCompression: Bool, promise: EventLoopPromise<Void>?) where S.Element == RequestPayload
 
   /// Returns a future which can be used as a message queue.
   ///
@@ -131,12 +131,12 @@ public protocol UnaryResponseClientCall: ClientCall {
   /// if the call encounters an error.
   ///
   /// Callers should rely on the `status` of the call for the canonical outcome.
-  var response: EventLoopFuture<ResponseMessage> { get }
+  var response: EventLoopFuture<ResponsePayload> { get }
 }
 
 extension StreamingRequestClientCall {
   public func sendMessage(
-    _ message: RequestMessage,
+    _ message: RequestPayload,
     disableCompression: Bool = false
   ) -> EventLoopFuture<Void> {
     return self.subchannel.flatMap { channel in
@@ -145,7 +145,7 @@ extension StreamingRequestClientCall {
   }
 
   public func sendMessage(
-    _ message: RequestMessage,
+    _ message: RequestPayload,
     disableCompression: Bool = false,
     promise: EventLoopPromise<Void>?
   ) {
@@ -157,7 +157,7 @@ extension StreamingRequestClientCall {
   public func sendMessages<S: Sequence>(
     _ messages: S,
     disableCompression: Bool = false
-  ) -> EventLoopFuture<Void> where S.Element == RequestMessage {
+  ) -> EventLoopFuture<Void> where S.Element == RequestPayload {
     return self.subchannel.flatMap { channel -> EventLoopFuture<Void> in
       let writeFutures = messages.map { message in
         channel.write(_GRPCClientRequestPart.message(.init(message, disableCompression: disableCompression)))
@@ -171,7 +171,7 @@ extension StreamingRequestClientCall {
     _ messages: S,
     disableCompression: Bool = false,
     promise: EventLoopPromise<Void>?
-  ) where S.Element == RequestMessage {
+  ) where S.Element == RequestPayload {
     if let promise = promise {
       self.sendMessages(messages).cascade(to: promise)
     } else {
@@ -186,13 +186,13 @@ extension StreamingRequestClientCall {
 
   public func sendEnd() -> EventLoopFuture<Void> {
     return self.subchannel.flatMap { channel in
-      return channel.writeAndFlush(_GRPCClientRequestPart<RequestMessage>.end)
+      return channel.writeAndFlush(_GRPCClientRequestPart<RequestPayload>.end)
     }
   }
 
   public func sendEnd(promise: EventLoopPromise<Void>?) {
     self.subchannel.whenSuccess { channel in
-      channel.writeAndFlush(_GRPCClientRequestPart<RequestMessage>.end, promise: promise)
+      channel.writeAndFlush(_GRPCClientRequestPart<RequestPayload>.end, promise: promise)
     }
   }
 }

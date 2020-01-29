@@ -361,3 +361,21 @@ extension Grpc_Testing_ReconnectServiceProvider {
   }
 }
 
+extension Grpc_Testing_SimpleRequest: GRPCProtobufPayload {}
+
+extension Grpc_Testing_SimpleResponse: GRPCProtobufPayload {}
+
+
+extension Grpc_Testing_Empty: GRPCProtobufPayload {}
+
+extension Grpc_Testing_ReconnectParams: GRPCProtobufPayload {}
+
+extension Grpc_Testing_StreamingOutputCallResponse: GRPCProtobufPayload {}
+
+extension Grpc_Testing_StreamingOutputCallRequest: GRPCProtobufPayload {}
+
+extension Grpc_Testing_ReconnectInfo: GRPCProtobufPayload {}
+
+extension Grpc_Testing_StreamingInputCallResponse: GRPCProtobufPayload {}
+
+extension Grpc_Testing_StreamingInputCallRequest: GRPCProtobufPayload {}

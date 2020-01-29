@@ -34,11 +34,11 @@ enum ClientStreamingHandlerObserverState<Factory, Observer> {
 ///   they can fail the observer block future.
 /// - To close the call and send the response, complete `context.responsePromise`.
 public final class ClientStreamingCallHandler<
-  RequestMessage: Message,
-  ResponseMessage: Message
->: _BaseCallHandler<RequestMessage, ResponseMessage> {
-  public typealias Context = UnaryResponseCallContext<ResponseMessage>
-  public typealias EventObserver = (StreamEvent<RequestMessage>) -> Void
+  RequestPayload: GRPCPayload,
+  ResponsePayload: GRPCPayload
+>: _BaseCallHandler<RequestPayload, ResponsePayload> {
+  public typealias Context = UnaryResponseCallContext<ResponsePayload>
+  public typealias EventObserver = (StreamEvent<RequestPayload>) -> Void
   public typealias EventObserverFactory = (Context) -> EventLoopFuture<EventObserver>
 
   private var observerState: ClientStreamingHandlerObserverState<EventObserverFactory, EventObserver> {
@@ -46,7 +46,7 @@ public final class ClientStreamingCallHandler<
       self.logger.debug("observerState changed from \(self.observerState) to \(newState)")
     }
   }
-  private var callContext: UnaryResponseCallContext<ResponseMessage>?
+  private var callContext: UnaryResponseCallContext<ResponsePayload>?
 
   // We ask for a future of type `EventObserver` to allow the framework user to e.g. asynchronously authenticate a call.
   // If authentication fails, they can simply fail the observer future, which causes the call to be terminated.
@@ -58,7 +58,7 @@ public final class ClientStreamingCallHandler<
 
     super.init(callHandlerContext: callHandlerContext)
 
-    let callContext = UnaryResponseCallContextImpl<ResponseMessage>(
+    let callContext = UnaryResponseCallContextImpl<ResponsePayload>(
       channel: self.callHandlerContext.channel,
       request: self.callHandlerContext.request,
       errorDelegate: self.callHandlerContext.errorDelegate,
@@ -86,12 +86,12 @@ public final class ClientStreamingCallHandler<
 
     // Terminate the call if the future providing an observer fails.
     // This is being done _after_ we have been added as a handler to ensure that the `GRPCServerCodec` required to
-    // translate our outgoing `GRPCServerResponsePart<ResponseMessage>` message is already present on the channel.
+    // translate our outgoing `GRPCServerResponsePart<ResponsePayload>` message is already present on the channel.
     // Otherwise, our `OutboundOut` type would not match the `OutboundIn` type of the next handler on the channel.
     eventObserver.cascadeFailure(to: callContext.responsePromise)
   }
 
-  internal override func processMessage(_ message: RequestMessage) {
+  internal override func processMessage(_ message: RequestPayload) {
     guard case .created(let eventObserver) = self.observerState else {
       self.logger.warning("expecting observerState to be .created but was \(self.observerState), ignoring message \(message)")
       return

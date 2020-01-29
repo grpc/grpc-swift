@@ -1,5 +1,5 @@
 /*
- * Copyright 2019, gRPC Authors All rights reserved.
+ * Copyright 2020, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import SwiftProtobuf
+import NIO
 
-/// An event that can occur on a client-streaming RPC. Provided to the event observer registered for that call.
-public enum StreamEvent<Message: GRPCPayload> {
-  case message(Message)
-  case end
-  //! FIXME: Also support errors in this type, to propagate them to the event handler.
+/// Data passed through the library is required to conform to this GRPCPayload protocol
+public protocol GRPCPayload {
+  /// Passes a pointer to the underlying buffer which can be used to decode the data
+  init(serializedByteBuffer: inout NIO.ByteBuffer) throws
+
+  /// Passes a pointer to the buffer so the data can be encoded into it
+  func serialize(into buffer: inout NIO.ByteBuffer) throws
 }

@@ -3,6 +3,7 @@ project.xcworkspace
 xcuserdata
 DerivedData/
 .build
+.swiftpm
 build
 /protoc-gen-swift
 /protoc-gen-grpc-swift

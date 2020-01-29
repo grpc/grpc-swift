@@ -66,7 +66,7 @@ enum SendEndOfRequestStreamError: Error {
 /// A state machine for a single gRPC call from the perspective of a client.
 ///
 /// See: https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md
-struct GRPCClientStateMachine<Request: Message, Response: Message> {
+struct GRPCClientStateMachine<Request: GRPCPayload, Response: GRPCPayload> {
   /// The combined state of the request (client) and response (server) streams for an RPC call.
   ///
   /// The following states are not possible:

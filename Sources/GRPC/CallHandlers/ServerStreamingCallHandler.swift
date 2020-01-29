@@ -24,20 +24,20 @@ import Logging
 /// - The observer block is implemented by the framework user and calls `context.sendResponse` as needed.
 /// - To close the call and send the status, complete the status future returned by the observer block.
 public final class ServerStreamingCallHandler<
-  RequestMessage: Message,
-  ResponseMessage: Message
->: _BaseCallHandler<RequestMessage, ResponseMessage> {
-  public typealias EventObserver = (RequestMessage) -> EventLoopFuture<GRPCStatus>
+  RequestPayload: GRPCPayload,
+  ResponsePayload: GRPCPayload
+>: _BaseCallHandler<RequestPayload, ResponsePayload> {
+  public typealias EventObserver = (RequestPayload) -> EventLoopFuture<GRPCStatus>
 
   private var eventObserver: EventObserver?
-  private var callContext: StreamingResponseCallContext<ResponseMessage>?
+  private var callContext: StreamingResponseCallContext<ResponsePayload>?
 
   public init(
     callHandlerContext: CallHandlerContext,
-    eventObserverFactory: (StreamingResponseCallContext<ResponseMessage>) -> EventObserver
+    eventObserverFactory: (StreamingResponseCallContext<ResponsePayload>) -> EventObserver
   ) {
     super.init(callHandlerContext: callHandlerContext)
-    let callContext = StreamingResponseCallContextImpl<ResponseMessage>(
+    let callContext = StreamingResponseCallContextImpl<ResponsePayload>(
       channel: self.callHandlerContext.channel,
       request: self.callHandlerContext.request,
       errorDelegate: self.callHandlerContext.errorDelegate,
@@ -53,7 +53,7 @@ public final class ServerStreamingCallHandler<
     }
   }
 
-  override internal func processMessage(_ message: RequestMessage) throws {
+  override internal func processMessage(_ message: RequestPayload) throws {
     guard let eventObserver = self.eventObserver,
       let callContext = self.callContext else {
         self.logger.error("processMessage(_:) called before the call started or after the call completed")

@@ -29,8 +29,9 @@ class ZlibTests: GRPCTestCase {
 
   @discardableResult
   func doCompressAndDecompress(of bytes: [UInt8], format: Zlib.CompressionFormat) throws -> Int  {
-    var data = Data(bytes)
-
+    var data = self.allocator.buffer(capacity: 0)
+    data.writeBytes(bytes)
+    
     // Compress it.
     let deflate = Zlib.Deflate(format: format)
     var compressed = self.allocator.buffer(capacity: 0)
@@ -96,7 +97,8 @@ class ZlibTests: GRPCTestCase {
       let inflate = Zlib.Inflate(format: format)
 
       for bytes in byteArrays {
-        var data = Data(bytes)
+        var data = self.allocator.buffer(capacity: 0)
+        data.writeBytes(bytes)
 
         // Compress it.
         var compressed = self.allocator.buffer(capacity: 0)

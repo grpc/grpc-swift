@@ -44,25 +44,30 @@ internal struct LengthPrefixedMessageWriter {
   /// Writes the data into a `ByteBuffer` as a gRPC length-prefixed message.
   ///
   /// - Parameters:
-  ///   - message: The serialized Protobuf message to write.
+  ///   - payload: The serialized Protobuf message to write.
   ///   - buffer: The buffer to write the message into.
   /// - Returns: A `ByteBuffer` containing a gRPC length-prefixed message.
   /// - Precondition: `compression.supported` is `true`.
   /// - Note: See `LengthPrefixedMessageReader` for more details on the format.
-  func write(_ message: Data, into buffer: inout ByteBuffer, disableCompression: Bool = false) throws {
-    buffer.reserveCapacity(LengthPrefixedMessageWriter.metadataLength + message.count)
-
+  func write(_ payload: GRPCPayload, into buffer: inout ByteBuffer, disableCompression: Bool = false) throws {
+    
+    buffer.reserveCapacity(LengthPrefixedMessageWriter.metadataLength)
+    
     if !disableCompression, let compressor = self.compressor {
       // Set the compression byte.
       buffer.writeInteger(UInt8(1))
-
+      
       // Leave a gap for the length, we'll set it in a moment.
       let payloadSizeIndex = buffer.writerIndex
       buffer.moveWriterIndex(forwardBy: MemoryLayout<UInt32>.size)
 
+      // Build the message by serializing it into a Buffer first
+      // Since deflate can only take a ByteBuffer
+      var messageBuf = ByteBufferAllocator().buffer(capacity: 0)
+      try payload.serialize(into: &messageBuf)
+      
       // Compress the message.
-      var message = message
-      let bytesWritten = try compressor.deflate(&message, into: &buffer)
+      let bytesWritten = try compressor.deflate(&messageBuf, into: &buffer)
 
       // Now fill in the message length.
       buffer.writePayloadLength(UInt32(bytesWritten), at: payloadSizeIndex)
@@ -70,6 +75,7 @@ internal struct LengthPrefixedMessageWriter {
       // Finally, the compression context should be reset between messages.
       compressor.reset()
     } else {
+      let startBufferIndex = buffer.readableBytes
       // 'identity' compression has no compressor but should still set the compression bit set
       // unless we explicitly disable compression.
       if self.compression?.algorithm == .identity && !disableCompression {
@@ -77,11 +83,19 @@ internal struct LengthPrefixedMessageWriter {
       } else {
         buffer.writeInteger(UInt8(0))
       }
+      
+      // Leave a gap for the length, we'll set it in a moment.
+      let payloadSizeIndex = buffer.writerIndex
+      buffer.writeInteger(UInt32(0))
+
+      // Writes the payload into the buffer
+      try payload.serialize(into: &buffer)
+      
+      // Calculates the Written bytes with respect to the prefixed ones
+      let writtenFrame = buffer.readableBytes - LengthPrefixedMessageWriter.metadataLength - startBufferIndex
 
       // Write the message length.
-      buffer.writeInteger(UInt32(message.count))
-      // And the message bytes.
-      buffer.writeBytes(message)
+      buffer.writePayloadLength(UInt32(writtenFrame), at: payloadSizeIndex)
     }
   }
 }

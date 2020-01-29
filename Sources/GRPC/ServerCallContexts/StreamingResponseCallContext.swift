@@ -25,8 +25,8 @@ import Logging
 /// - If `statusPromise` is failed and the error is of type `GRPCStatusTransformable`,
 ///   the result of `error.asGRPCStatus()` will be returned to the client.
 /// - If `error.asGRPCStatus()` is not available, `GRPCStatus.processingError` is returned to the client.
-open class StreamingResponseCallContext<ResponseMessage: Message>: ServerCallContextBase {
-  typealias WrappedResponse = _GRPCServerResponsePart<ResponseMessage>
+open class StreamingResponseCallContext<ResponsePayload: GRPCPayload>: ServerCallContextBase {
+  typealias WrappedResponse = _GRPCServerResponsePart<ResponsePayload>
 
   public let statusPromise: EventLoopPromise<GRPCStatus>
 
@@ -35,13 +35,13 @@ open class StreamingResponseCallContext<ResponseMessage: Message>: ServerCallCon
     super.init(eventLoop: eventLoop, request: request, logger: logger)
   }
 
-  open func sendResponse(_ message: ResponseMessage) -> EventLoopFuture<Void> {
+  open func sendResponse(_ message: ResponsePayload) -> EventLoopFuture<Void> {
     fatalError("needs to be overridden")
   }
 }
 
 /// Concrete implementation of `StreamingResponseCallContext` used by our generated code.
-open class StreamingResponseCallContextImpl<ResponseMessage: Message>: StreamingResponseCallContext<ResponseMessage> {
+open class StreamingResponseCallContextImpl<ResponsePayload: GRPCPayload>: StreamingResponseCallContext<ResponsePayload> {
   public let channel: Channel
 
   /// - Parameters:
@@ -70,7 +70,7 @@ open class StreamingResponseCallContextImpl<ResponseMessage: Message>: Streaming
     }
   }
 
-  open override func sendResponse(_ message: ResponseMessage) -> EventLoopFuture<Void> {
+  open override func sendResponse(_ message: ResponsePayload) -> EventLoopFuture<Void> {
     let promise: EventLoopPromise<Void> = eventLoop.makePromise()
     channel.writeAndFlush(NIOAny(WrappedResponse.message(message)), promise: promise)
     return promise.futureResult
@@ -80,10 +80,10 @@ open class StreamingResponseCallContextImpl<ResponseMessage: Message>: Streaming
 /// Concrete implementation of `StreamingResponseCallContext` used for testing.
 ///
 /// Simply records all sent messages.
-open class StreamingResponseCallContextTestStub<ResponseMessage: Message>: StreamingResponseCallContext<ResponseMessage> {
-  open var recordedResponses: [ResponseMessage] = []
+open class StreamingResponseCallContextTestStub<ResponsePayload: GRPCPayload>: StreamingResponseCallContext<ResponsePayload> {
+  open var recordedResponses: [ResponsePayload] = []
 
-  open override func sendResponse(_ message: ResponseMessage) -> EventLoopFuture<Void> {
+  open override func sendResponse(_ message: ResponsePayload) -> EventLoopFuture<Void> {
     recordedResponses.append(message)
     return eventLoop.makeSucceededFuture(())
   }

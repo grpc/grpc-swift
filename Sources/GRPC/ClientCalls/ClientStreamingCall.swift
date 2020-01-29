@@ -28,11 +28,11 @@ import Logging
 /// - `response`: the response from the call,
 /// - `status`: the status of the gRPC call after it has ended,
 /// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
-public final class ClientStreamingCall<RequestMessage: Message, ResponseMessage: Message>
-  : BaseClientCall<RequestMessage, ResponseMessage>,
+public final class ClientStreamingCall<RequestPayload: GRPCPayload, ResponsePayload: GRPCPayload>
+  : BaseClientCall<RequestPayload, ResponsePayload>,
     StreamingRequestClientCall,
     UnaryResponseClientCall {
-  public let response: EventLoopFuture<ResponseMessage>
+  public let response: EventLoopFuture<ResponsePayload>
   private var messageQueue: EventLoopFuture<Void>
 
   public init(
@@ -46,7 +46,7 @@ public final class ClientStreamingCall<RequestMessage: Message, ResponseMessage:
     logger.debug("starting rpc", metadata: ["path": "\(path)"])
 
     self.messageQueue = connection.eventLoop.makeSucceededFuture(())
-    let responsePromise = connection.eventLoop.makePromise(of: ResponseMessage.self)
+    let responsePromise = connection.eventLoop.makePromise(of: ResponsePayload.self)
     self.response = responsePromise.futureResult
 
     let responseHandler = GRPCClientUnaryResponseChannelHandler(
@@ -68,7 +68,7 @@ public final class ClientStreamingCall<RequestMessage: Message, ResponseMessage:
       options: callOptions
     )
 
-    let requestHandler = _StreamingRequestChannelHandler<RequestMessage>(requestHead: requestHead)
+    let requestHandler = _StreamingRequestChannelHandler<RequestPayload>(requestHead: requestHead)
 
     super.init(
       eventLoop: connection.eventLoop,

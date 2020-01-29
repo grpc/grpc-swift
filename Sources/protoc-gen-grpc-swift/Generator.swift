@@ -117,5 +117,26 @@ class Generator {
         printServer()
       }
     }
+    println()
+    printProtoBufExtensions()
+  }
+    
+  internal func printProtoBufExtensions() {
+    var writtenValues = Set<String>()
+    for service in file.services {
+      self.service = service
+      println("/// Provides conformance to `GRPCPayload` for the request and response messages")
+      for method in service.methods {
+        self.method = method
+        printExtension(for: methodInputName, typesSeen: &writtenValues)
+        printExtension(for: methodOutputName, typesSeen: &writtenValues)
+      }
+    }
+  }
+
+  private func printExtension(for messageType: String, typesSeen: inout Set<String>) {
+    guard !typesSeen.contains(messageType) else { return }
+    println("extension \(messageType): GRPCProtobufPayload {}")
+    typesSeen.insert(messageType)
   }
 }
