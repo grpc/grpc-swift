@@ -521,14 +521,14 @@ extension GRPCClientStateMachine.State {
       "user-agent": "grpc-swift-nio",  //  TODO: Add a more specific user-agent.
     ]
 
-    // Message level encoding.
+    // Request encoding.
     if let outbound = compression.outbound {
       headers.add(name: GRPCHeaderName.encoding, value: outbound.name)
+    }
 
-      // Only send 'accept-encoding' if inbound and outbound are enabled.
-      if !compression.inbound.isEmpty {
-        headers.add(name: GRPCHeaderName.acceptEncoding, value: compression.acceptEncodingHeader)
-      }
+    // Response encoding.
+    if !compression.inbound.isEmpty {
+      headers.add(name: GRPCHeaderName.acceptEncoding, value: compression.acceptEncodingHeader)
     }
 
     // Add the timeout header, if a timeout was specified.

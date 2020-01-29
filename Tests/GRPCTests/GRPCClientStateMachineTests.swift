@@ -707,9 +707,7 @@ extension GRPCClientStateMachineTests {
       encoding: .init(forRequests: nil, acceptableForResponses: [.identity, .gzip])
     )).assertSuccess { headers in
       XCTAssertFalse(headers.contains(name: "grpc-encoding"))
-      // If we don't set request encoding then we shouldn't set the accept-encoding header. (The
-      // compression asymmetry can be achieved by setting the request compression to '.identity'.)
-      XCTAssertFalse(headers.contains(name: "grpc-accept-encoding"))
+      XCTAssertTrue(headers.contains(name: "grpc-accept-encoding"))
     }
   }
 
