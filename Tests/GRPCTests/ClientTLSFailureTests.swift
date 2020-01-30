@@ -143,11 +143,11 @@ class ClientTLSFailureTests: GRPCTestCase {
 
     self.wait(for: [shutdownExpectation, errorExpectation], timeout: self.defaultTestTimeout)
 
-    if let nioSSLError = errorRecorder.errors.first as? NIOSSLError,
-      case .unableToValidateCertificate = nioSSLError {
+    if let nioSSLError = errorRecorder.errors.first as? NIOSSLExtraError {
+      XCTAssertEqual(nioSSLError, .failedToValidateHostname)
       // Expected case.
     } else {
-      XCTFail("Expected NIOSSLError.unableToValidateCertificate")
+      XCTFail("Expected NIOSSLExtraError.failedToValidateHostname")
     }
   }
 }
