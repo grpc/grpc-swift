@@ -39,8 +39,6 @@ public enum _GRPCServerResponsePart<ResponsePayload: GRPCPayload> {
 
 /// A simple channel handler that translates raw gRPC packets into decoded protobuf messages, and vice versa.
 internal final class GRPCServerCodec<RequestPayload: GRPCPayload, ResponsePayload: GRPCPayload> {
-  // 1-byte for compression flag, 4-bytes for message length.
-  private let protobufMetadataSize = 5
   var messageWriter = LengthPrefixedMessageWriter(compression: .none)
 }
 
@@ -78,8 +76,8 @@ extension GRPCServerCodec: ChannelOutboundHandler {
 
     case .message(let message):
       do {
-        var responseBuffer = context.channel.allocator.buffer(capacity: protobufMetadataSize)
-        try messageWriter.write(message, into: &responseBuffer)
+        var responseBuffer = context.channel.allocator.buffer(capacity: 0)
+        try self.messageWriter.write(message, into: &responseBuffer)
         context.write(self.wrapOutboundOut(.message(responseBuffer)), promise: promise)
       } catch {
         let error = GRPCError.SerializationFailure().captureContext()

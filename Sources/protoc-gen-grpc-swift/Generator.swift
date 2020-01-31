@@ -131,6 +131,7 @@ class Generator {
         printExtension(for: methodInputName, typesSeen: &writtenValues)
         printExtension(for: methodOutputName, typesSeen: &writtenValues)
       }
+      println()
     }
   }
 

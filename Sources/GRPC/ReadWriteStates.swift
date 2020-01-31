@@ -66,7 +66,7 @@ enum WriteState {
       // Zero is fine: the writer will allocate the correct amount of space.
       var buffer = allocator.buffer(capacity: 0)
       do {
-        try writer.write(message, into: &buffer)
+        try writer.write(message, into: &buffer, disableCompression: disableCompression)
       } catch {
         self = .notWriting
         return .failure(.serializationFailed)

@@ -21,13 +21,10 @@ public protocol GRPCProtobufPayload: GRPCPayload, Message {}
 
 public extension GRPCProtobufPayload {
   
-  /// Initializer that confirms the type Message to GRPCPayload by accessing the data
-  /// in the buffer into a message
   init(serializedByteBuffer: inout NIO.ByteBuffer) throws {
     try self.init(serializedData: serializedByteBuffer.readData(length: serializedByteBuffer.readableBytes)!)
   }
 
-  /// Serializes the Message into ByteBuffer
   func serialize(into buffer: inout NIO.ByteBuffer) throws {
     let data = try self.serializedData()
     buffer.writeBytes(data)

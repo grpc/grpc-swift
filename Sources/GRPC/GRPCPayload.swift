@@ -17,9 +17,17 @@ import NIO
 
 /// Data passed through the library is required to conform to this GRPCPayload protocol
 public protocol GRPCPayload {
-  /// Passes a pointer to the underlying buffer which can be used to decode the data
+  
+  /// Initializes a new payload object from a given `NIO.ByteBuffer`
+  ///
+  /// - Parameter serializedByteBuffer:
+  /// - Throws: Should throw an error if the data wasn't serialized properly
   init(serializedByteBuffer: inout NIO.ByteBuffer) throws
 
-  /// Passes a pointer to the buffer so the data can be encoded into it
+  /// serializes data into a `ByteBuffer`
+  ///
+  /// - Parameters:
+  ///   - buffer: The buffer to write the payload into.
+  /// - Note: Implementer should NOT clear `ByteBuffer`
   func serialize(into buffer: inout NIO.ByteBuffer) throws
 }

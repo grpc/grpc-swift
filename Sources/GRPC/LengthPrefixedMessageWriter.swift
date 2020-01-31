@@ -44,7 +44,7 @@ internal struct LengthPrefixedMessageWriter {
   /// Writes the data into a `ByteBuffer` as a gRPC length-prefixed message.
   ///
   /// - Parameters:
-  ///   - payload: The serialized Protobuf message to write.
+  ///   - payload: The payload to serialize and write.
   ///   - buffer: The buffer to write the message into.
   /// - Returns: A `ByteBuffer` containing a gRPC length-prefixed message.
   /// - Precondition: `compression.supported` is `true`.
@@ -61,8 +61,6 @@ internal struct LengthPrefixedMessageWriter {
       let payloadSizeIndex = buffer.writerIndex
       buffer.moveWriterIndex(forwardBy: MemoryLayout<UInt32>.size)
 
-      // Build the message by serializing it into a Buffer first
-      // Since deflate can only take a ByteBuffer
       var messageBuf = ByteBufferAllocator().buffer(capacity: 0)
       try payload.serialize(into: &messageBuf)
       
@@ -92,10 +90,10 @@ internal struct LengthPrefixedMessageWriter {
       try payload.serialize(into: &buffer)
       
       // Calculates the Written bytes with respect to the prefixed ones
-      let writtenFrame = buffer.readableBytes - LengthPrefixedMessageWriter.metadataLength - startBufferIndex
+      let bytesWritten = buffer.readableBytes - LengthPrefixedMessageWriter.metadataLength - startBufferIndex
 
       // Write the message length.
-      buffer.writePayloadLength(UInt32(writtenFrame), at: payloadSizeIndex)
+      buffer.writePayloadLength(UInt32(bytesWritten), at: payloadSizeIndex)
     }
   }
 }

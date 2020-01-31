@@ -31,7 +31,8 @@ plugins: ${PROTOC_GEN_SWIFT} ${PROTOC_GEN_GRPC_SWIFT}
 ${PROTOC_GEN_SWIFT}:
 	${SWIFT_BUILD_RELEASE} --product protoc-gen-swift
 
-${PROTOC_GEN_GRPC_SWIFT}: Sources/protoc-gen-grpc-swift/*.swift
+${PROTOC_GEN_GRPC_SWIFT}:
+	${SWIFT_BUILD_RELEASE} --product protoc-gen-grpc-swift
 
 interop-test-runner:
 	${SWIFT_BUILD} --product GRPCInteroperabilityTests
