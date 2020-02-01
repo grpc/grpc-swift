@@ -50,8 +50,7 @@ internal struct LengthPrefixedMessageWriter {
   /// - Precondition: `compression.supported` is `true`.
   /// - Note: See `LengthPrefixedMessageReader` for more details on the format.
   func write(_ payload: GRPCPayload, into buffer: inout ByteBuffer, disableCompression: Bool = false) throws {
-    
-    buffer.reserveCapacity(LengthPrefixedMessageWriter.metadataLength)
+    buffer.reserveCapacity(MemoryLayout.size(ofValue: payload) + LengthPrefixedMessageWriter.metadataLength)
     
     if !disableCompression, let compressor = self.compressor {
       // Set the compression byte.
@@ -73,7 +72,6 @@ internal struct LengthPrefixedMessageWriter {
       // Finally, the compression context should be reset between messages.
       compressor.reset()
     } else {
-      let startBufferIndex = buffer.readableBytes
       // 'identity' compression has no compressor but should still set the compression bit set
       // unless we explicitly disable compression.
       if self.compression?.algorithm == .identity && !disableCompression {
@@ -84,13 +82,14 @@ internal struct LengthPrefixedMessageWriter {
       
       // Leave a gap for the length, we'll set it in a moment.
       let payloadSizeIndex = buffer.writerIndex
-      buffer.writeInteger(UInt32(0))
-
+      buffer.moveWriterIndex(forwardBy: MemoryLayout<UInt32>.size)
+      
+      let payloadPrefixedBytes = buffer.readableBytes
       // Writes the payload into the buffer
       try payload.serialize(into: &buffer)
       
       // Calculates the Written bytes with respect to the prefixed ones
-      let bytesWritten = buffer.readableBytes - LengthPrefixedMessageWriter.metadataLength - startBufferIndex
+      let bytesWritten = buffer.readableBytes - payloadPrefixedBytes
 
       // Write the message length.
       buffer.writePayloadLength(UInt32(bytesWritten), at: payloadSizeIndex)

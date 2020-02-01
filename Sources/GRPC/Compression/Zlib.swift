@@ -57,16 +57,19 @@ enum Zlib {
       //   by deflateBound() if flush options other than Z_FINISH or Z_NO_FLUSH are used.
       let upperBound = CGRPCZlib_deflateBound(&self.stream.zstream, UInt(input.readableBytes))
 
-      return try input.withUnsafeMutableReadableBytes { inputPointer in
-        try output.writeWithUnsafeMutableBytes(minimumWritableBytes: Int(upperBound)) { outputPointer in
+      _ = input.readWithUnsafeMutableReadableBytes { inputPointer in
+        self.stream.prepareInputForDeflate(
+          inputBuffer: CGRPCZlib_castVoidToBytefPointer(inputPointer.baseAddress!),
+          inputBufferSize: inputPointer.count
+        )
+      }
+      
+      return try output.writeWithUnsafeMutableBytes(minimumWritableBytes: Int(upperBound)) { outputPointer in
           try self.stream.deflate(
-            inputBuffer: CGRPCZlib_castVoidToBytefPointer(inputPointer.baseAddress!),
-            inputBufferSize: inputPointer.count,
             outputBuffer: CGRPCZlib_castVoidToBytefPointer(outputPointer.baseAddress!),
             outputBufferSize: outputPointer.count
           )
         }
-      }
     }
 
     /// Resets compression state. This must be called after each call to `deflate` if more
@@ -382,25 +385,32 @@ enum Zlib {
         outcome: outcome
       )
     }
+    
+    /// Prepares the input buffer values to be deflated
+    ///
+    /// - Parameter inputBuffer: The buffer from which to read the data.
+    /// - Parameter inputBufferSize: The number of bytes available to read in `inputBuffer`.
+    mutating func prepareInputForDeflate(
+      inputBuffer: UnsafeMutablePointer<UInt8>,
+      inputBufferSize: Int
+    ) -> Int {
+      self.nextInputBuffer = inputBuffer
+      self.availableInputBytes = inputBufferSize
+      return inputBufferSize
+    }
 
     /// Compresses the `inputBuffer` into the `outputBuffer`.
     ///
     /// `outputBuffer` must be large enough to store the compressed data, `deflateBound()` provides
     /// an upper bound for this value.
     ///
-    /// - Parameter inputBuffer: The buffer from which to read the data.
-    /// - Parameter inputBufferSize: The number of bytes available to read in `inputBuffer`.
     /// - Parameter outputBuffer: The buffer into which to write the compressed data.
     /// - Parameter outputBufferSize: The space available in `outputBuffer`.
     /// - Returns: The number of bytes written into the `outputBuffer`.
     mutating func deflate(
-      inputBuffer: UnsafeMutablePointer<UInt8>,
-      inputBufferSize: Int,
       outputBuffer: UnsafeMutablePointer<UInt8>,
       outputBufferSize: Int
     ) throws -> Int {
-      self.nextInputBuffer = inputBuffer
-      self.availableInputBytes = inputBufferSize
       self.nextOutputBuffer = outputBuffer
       self.availableOutputBytes = outputBufferSize
 

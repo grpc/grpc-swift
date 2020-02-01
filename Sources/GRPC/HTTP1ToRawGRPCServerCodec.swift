@@ -59,9 +59,6 @@ public final class HTTP1ToRawGRPCServerCodec {
   private let accessLog: Logger
   private var stopwatch: Stopwatch?
   
-  // 1-byte for compression flag, 4-bytes for message length.
-  private let protobufMetadataSize = 5
-
   // The following buffers use force unwrapping explicitly. With optionals, developers
   // are encouraged to unwrap them using guard-else statements. These don't work cleanly
   // with structs, since the guard-else would create a new copy of the struct, which
@@ -267,14 +264,6 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
         // it needs to be aggregated with all the responses plus the trailers, in order to have
         // the base64 response properly encoded in a single byte stream.
         
-        var messageBytes = messageBytes
-        // disregards the first 5 bytes since the rewritting them to the buffer doesnt require them
-        messageBytes.moveReaderIndex(forwardBy: protobufMetadataSize)
-        // Writes the compression bit as 'Zero' since the server cant compress data
-        self.responseTextBuffer.writeInteger(UInt8(0))
-        
-        // copying the old data to the responseTextBuffer
-        self.responseTextBuffer.writeInteger(UInt32(messageBytes.readableBytes))
         self.responseTextBuffer.writeBytes(messageBytes.readableBytesView)
         
         // Since we stored the written data, mark the write promise as successful so that the
