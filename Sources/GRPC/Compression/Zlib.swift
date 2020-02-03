@@ -57,9 +57,7 @@ enum Zlib {
       //   by deflateBound() if flush options other than Z_FINISH or Z_NO_FLUSH are used.
       let upperBound = CGRPCZlib_deflateBound(&self.stream.zstream, UInt(input.readableBytes))
       
-      // Note: readWithUnsafeMutableReadableBytes leads to an assertion whenever used
-      // while the writer is bigger than the reader
-      return try input.withUnsafeMutableReadableBytes { inputPointer in
+      return try input.readWithUnsafeMutableReadableBytes { inputPointer -> (Int, Int) in
         
         self.stream.nextInputBuffer = CGRPCZlib_castVoidToBytefPointer(inputPointer.baseAddress!)
         self.stream.availableInputBytes = inputPointer.count
@@ -69,12 +67,15 @@ enum Zlib {
           self.stream.availableInputBytes = 0
         }
         
-        return try output.writeWithUnsafeMutableBytes(minimumWritableBytes: Int(upperBound)) { outputPointer in
+        let writtenBytes = try output.writeWithUnsafeMutableBytes(minimumWritableBytes: Int(upperBound)) { outputPointer in
           try self.stream.deflate(
              outputBuffer: CGRPCZlib_castVoidToBytefPointer(outputPointer.baseAddress!),
              outputBufferSize: outputPointer.count
           )
         }
+        
+        let bytesRead = inputPointer.count - self.stream.availableInputBytes
+        return (bytesRead, writtenBytes)
       }
     }
 

@@ -50,7 +50,7 @@ internal struct LengthPrefixedMessageWriter {
   /// - Precondition: `compression.supported` is `true`.
   /// - Note: See `LengthPrefixedMessageReader` for more details on the format.
   func write(_ payload: GRPCPayload, into buffer: inout ByteBuffer, disableCompression: Bool = false) throws {
-    buffer.reserveCapacity(MemoryLayout.size(ofValue: payload) + LengthPrefixedMessageWriter.metadataLength)
+    buffer.reserveCapacity(buffer.writerIndex + LengthPrefixedMessageWriter.metadataLength)
     
     if !disableCompression, let compressor = self.compressor {
       // Set the compression byte.
