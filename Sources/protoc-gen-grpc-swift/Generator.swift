@@ -123,9 +123,9 @@ class Generator {
     
   internal func printProtoBufExtensions() {
     var writtenValues = Set<String>()
+    println("/// Provides conformance to `GRPCPayload` for the request and response messages")
     for service in file.services {
       self.service = service
-      println("/// Provides conformance to `GRPCPayload` for the request and response messages")
       for method in service.methods {
         self.method = method
         printExtension(for: methodInputName, typesSeen: &writtenValues)

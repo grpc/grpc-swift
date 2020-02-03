@@ -56,20 +56,26 @@ enum Zlib {
       //   Note that it is possible for the compressed size to be larger than the value returned
       //   by deflateBound() if flush options other than Z_FINISH or Z_NO_FLUSH are used.
       let upperBound = CGRPCZlib_deflateBound(&self.stream.zstream, UInt(input.readableBytes))
-
-      _ = input.readWithUnsafeMutableReadableBytes { inputPointer in
-        self.stream.prepareInputForDeflate(
-          inputBuffer: CGRPCZlib_castVoidToBytefPointer(inputPointer.baseAddress!),
-          inputBufferSize: inputPointer.count
-        )
-      }
       
-      return try output.writeWithUnsafeMutableBytes(minimumWritableBytes: Int(upperBound)) { outputPointer in
+      // Note: readWithUnsafeMutableReadableBytes leads to an assertion whenever used
+      // while the writer is bigger than the reader
+      return try input.withUnsafeMutableReadableBytes { inputPointer in
+        
+        self.stream.nextInputBuffer = CGRPCZlib_castVoidToBytefPointer(inputPointer.baseAddress!)
+        self.stream.availableInputBytes = inputPointer.count
+        
+        defer {
+          self.stream.nextInputBuffer = nil
+          self.stream.availableInputBytes = 0
+        }
+        
+        return try output.writeWithUnsafeMutableBytes(minimumWritableBytes: Int(upperBound)) { outputPointer in
           try self.stream.deflate(
-            outputBuffer: CGRPCZlib_castVoidToBytefPointer(outputPointer.baseAddress!),
-            outputBufferSize: outputPointer.count
+             outputBuffer: CGRPCZlib_castVoidToBytefPointer(outputPointer.baseAddress!),
+             outputBufferSize: outputPointer.count
           )
         }
+      }
     }
 
     /// Resets compression state. This must be called after each call to `deflate` if more
@@ -386,19 +392,6 @@ enum Zlib {
       )
     }
     
-    /// Prepares the input buffer values to be deflated
-    ///
-    /// - Parameter inputBuffer: The buffer from which to read the data.
-    /// - Parameter inputBufferSize: The number of bytes available to read in `inputBuffer`.
-    mutating func prepareInputForDeflate(
-      inputBuffer: UnsafeMutablePointer<UInt8>,
-      inputBufferSize: Int
-    ) -> Int {
-      self.nextInputBuffer = inputBuffer
-      self.availableInputBytes = inputBufferSize
-      return inputBufferSize
-    }
-
     /// Compresses the `inputBuffer` into the `outputBuffer`.
     ///
     /// `outputBuffer` must be large enough to store the compressed data, `deflateBound()` provides
@@ -415,8 +408,6 @@ enum Zlib {
       self.availableOutputBytes = outputBufferSize
 
       defer {
-        self.nextInputBuffer = nil
-        self.availableInputBytes = 0
         self.nextOutputBuffer = nil
         self.availableOutputBytes = 0
       }
