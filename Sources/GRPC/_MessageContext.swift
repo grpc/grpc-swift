@@ -18,7 +18,7 @@ import SwiftProtobuf
 /// Provides a context for Protobuf messages.
 ///
 /// - Important: This is **NOT** part of the public API.
-public final class _MessageContext<M: Message> {
+public final class _MessageContext<M: GRPCPayload> {
   let message: M
   let disableCompression: Bool
 

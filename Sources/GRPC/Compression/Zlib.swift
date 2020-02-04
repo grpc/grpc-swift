@@ -49,23 +49,33 @@ enum Zlib {
     /// - Parameter input: The complete data to be compressed.
     /// - Parameter output: The `ByteBuffer` into which the compressed message should be written.
     /// - Returns: The number of bytes written into the `output` buffer.
-    func deflate(_ input: inout Data, into output: inout ByteBuffer) throws -> Int {
+    func deflate(_ input: inout ByteBuffer, into output: inout ByteBuffer) throws -> Int {
       // Note: This is only valid because we always use Z_FINISH to flush.
       //
       // From the documentation:
       //   Note that it is possible for the compressed size to be larger than the value returned
       //   by deflateBound() if flush options other than Z_FINISH or Z_NO_FLUSH are used.
-      let upperBound = CGRPCZlib_deflateBound(&self.stream.zstream, UInt(input.count))
-
-      return try input.withUnsafeMutableBytes { inputPointer in
-        try output.writeWithUnsafeMutableBytes(minimumWritableBytes: Int(upperBound)) { outputPointer in
+      let upperBound = CGRPCZlib_deflateBound(&self.stream.zstream, UInt(input.readableBytes))
+      
+      return try input.readWithUnsafeMutableReadableBytes { inputPointer -> (Int, Int) in
+        
+        self.stream.nextInputBuffer = CGRPCZlib_castVoidToBytefPointer(inputPointer.baseAddress!)
+        self.stream.availableInputBytes = inputPointer.count
+        
+        defer {
+          self.stream.nextInputBuffer = nil
+          self.stream.availableInputBytes = 0
+        }
+        
+        let writtenBytes = try output.writeWithUnsafeMutableBytes(minimumWritableBytes: Int(upperBound)) { outputPointer in
           try self.stream.deflate(
-            inputBuffer: CGRPCZlib_castVoidToBytefPointer(inputPointer.baseAddress!),
-            inputBufferSize: inputPointer.count,
-            outputBuffer: CGRPCZlib_castVoidToBytefPointer(outputPointer.baseAddress!),
-            outputBufferSize: outputPointer.count
+             outputBuffer: CGRPCZlib_castVoidToBytefPointer(outputPointer.baseAddress!),
+             outputBufferSize: outputPointer.count
           )
         }
+        
+        let bytesRead = inputPointer.count - self.stream.availableInputBytes
+        return (bytesRead, writtenBytes)
       }
     }
 
@@ -382,31 +392,23 @@ enum Zlib {
         outcome: outcome
       )
     }
-
+    
     /// Compresses the `inputBuffer` into the `outputBuffer`.
     ///
     /// `outputBuffer` must be large enough to store the compressed data, `deflateBound()` provides
     /// an upper bound for this value.
     ///
-    /// - Parameter inputBuffer: The buffer from which to read the data.
-    /// - Parameter inputBufferSize: The number of bytes available to read in `inputBuffer`.
     /// - Parameter outputBuffer: The buffer into which to write the compressed data.
     /// - Parameter outputBufferSize: The space available in `outputBuffer`.
     /// - Returns: The number of bytes written into the `outputBuffer`.
     mutating func deflate(
-      inputBuffer: UnsafeMutablePointer<UInt8>,
-      inputBufferSize: Int,
       outputBuffer: UnsafeMutablePointer<UInt8>,
       outputBufferSize: Int
     ) throws -> Int {
-      self.nextInputBuffer = inputBuffer
-      self.availableInputBytes = inputBufferSize
       self.nextOutputBuffer = outputBuffer
       self.availableOutputBytes = outputBufferSize
 
       defer {
-        self.nextInputBuffer = nil
-        self.availableInputBytes = 0
         self.nextOutputBuffer = nil
         self.availableOutputBytes = 0
       }

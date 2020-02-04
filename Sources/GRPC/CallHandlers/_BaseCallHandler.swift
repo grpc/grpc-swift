@@ -23,15 +23,15 @@ import Logging
 ///
 /// Calls through to `processMessage` for individual messages it receives, which needs to be implemented by subclasses.
 /// - Important: This is **NOT** part of the public API.
-public class _BaseCallHandler<RequestMessage: Message, ResponseMessage: Message>: GRPCCallHandler {
+public class _BaseCallHandler<RequestPayload: GRPCPayload, ResponsePayload: GRPCPayload>: GRPCCallHandler {
   public func makeGRPCServerCodec() -> ChannelHandler {
-    return GRPCServerCodec<RequestMessage, ResponseMessage>()
+    return GRPCServerCodec<RequestPayload, ResponsePayload>()
   }
 
   /// Called whenever a message has been received.
   ///
   /// Overridden by subclasses.
-  internal func processMessage(_ message: RequestMessage) throws {
+  internal func processMessage(_ message: RequestPayload) throws {
     fatalError("needs to be overridden")
   }
 
@@ -71,7 +71,7 @@ public class _BaseCallHandler<RequestMessage: Message, ResponseMessage: Message>
 }
 
 extension _BaseCallHandler: ChannelInboundHandler {
-  public typealias InboundIn = _GRPCServerRequestPart<RequestMessage>
+  public typealias InboundIn = _GRPCServerRequestPart<RequestPayload>
 
   /// Passes errors to the user-provided `errorHandler`. After an error has been received an
   /// appropriate status is written. Errors which don't conform to `GRPCStatusTransformable`
@@ -120,8 +120,8 @@ extension _BaseCallHandler: ChannelInboundHandler {
 }
 
 extension _BaseCallHandler: ChannelOutboundHandler {
-  public typealias OutboundIn = _GRPCServerResponsePart<ResponseMessage>
-  public typealias OutboundOut = _GRPCServerResponsePart<ResponseMessage>
+  public typealias OutboundIn = _GRPCServerResponsePart<ResponsePayload>
+  public typealias OutboundOut = _GRPCServerResponsePart<ResponsePayload>
 
   public func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     guard self.serverCanWrite else {

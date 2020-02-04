@@ -16,6 +16,7 @@
 import Foundation
 import GRPC
 import NIOHTTP1
+import NIO
 import XCTest
 
 extension _RawGRPCServerResponsePart {
@@ -33,7 +34,7 @@ extension _RawGRPCServerResponsePart {
   /// Asserts that this value represents the message case.
   ///
   /// - Parameter validate: A block to further validate the message.
-  func assertMessage(validate: ((Data) -> Void)? = nil) {
+  func assertMessage(validate: ((NIO.ByteBuffer) -> Void)? = nil) {
     guard case .message(let message) = self else {
       XCTFail("Expected .message but got \(self)")
       return

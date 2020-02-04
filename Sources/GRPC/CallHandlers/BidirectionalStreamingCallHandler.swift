@@ -26,11 +26,11 @@ import Logging
 ///   they can fail the observer block future.
 /// - To close the call and send the status, complete `context.statusPromise`.
 public class BidirectionalStreamingCallHandler<
-  RequestMessage: Message,
-  ResponseMessage: Message
->: _BaseCallHandler<RequestMessage, ResponseMessage> {
-  public typealias Context = StreamingResponseCallContext<ResponseMessage>
-  public typealias EventObserver = (StreamEvent<RequestMessage>) -> Void
+  RequestPayload: GRPCPayload,
+  ResponsePayload: GRPCPayload
+>: _BaseCallHandler<RequestPayload, ResponsePayload> {
+  public typealias Context = StreamingResponseCallContext<ResponsePayload>
+  public typealias EventObserver = (StreamEvent<RequestPayload>) -> Void
   public typealias EventObserverFactory = (Context) -> EventLoopFuture<EventObserver>
 
   private var observerState: ClientStreamingHandlerObserverState<EventObserverFactory, EventObserver> {
@@ -44,7 +44,7 @@ public class BidirectionalStreamingCallHandler<
   // If authentication fails, they can simply fail the observer future, which causes the call to be terminated.
   public init(
     callHandlerContext: CallHandlerContext,
-    eventObserverFactory: @escaping (StreamingResponseCallContext<ResponseMessage>) -> EventLoopFuture<EventObserver>
+    eventObserverFactory: @escaping (StreamingResponseCallContext<ResponsePayload>) -> EventLoopFuture<EventObserver>
   ) {
     // Delay the creation of the event observer until `handlerAdded(context:)`, otherwise it is
     // possible for the service to write into the pipeline (by fulfilling the status promise
@@ -53,7 +53,7 @@ public class BidirectionalStreamingCallHandler<
 
     super.init(callHandlerContext: callHandlerContext)
 
-    let context = StreamingResponseCallContextImpl<ResponseMessage>(
+    let context = StreamingResponseCallContextImpl<ResponsePayload>(
       channel: self.callHandlerContext.channel,
       request: self.callHandlerContext.request,
       errorDelegate: self.callHandlerContext.errorDelegate,
@@ -81,12 +81,12 @@ public class BidirectionalStreamingCallHandler<
 
     // Terminate the call if the future providing an observer fails.
     // This is being done _after_ we have been added as a handler to ensure that the `GRPCServerCodec` required to
-    // translate our outgoing `GRPCServerResponsePart<ResponseMessage>` message is already present on the channel.
+    // translate our outgoing `GRPCServerResponsePart<ResponsePayload>` message is already present on the channel.
     // Otherwise, our `OutboundOut` type would not match the `OutboundIn` type of the next handler on the channel.
     eventObserver.cascadeFailure(to: callContext.statusPromise)
   }
 
-  internal override func processMessage(_ message: RequestMessage) {
+  internal override func processMessage(_ message: RequestPayload) {
     guard case .created(let eventObserver) = self.observerState else {
       self.logger.warning("expecting observerState to be .created but was \(self.observerState), ignoring message \(message)")
       return

@@ -22,27 +22,29 @@ import NIOHTTP1
 /// Incoming gRPC package with a fixed message type.
 ///
 /// - Important: This is **NOT** part of the public API.
-public enum _GRPCServerRequestPart<RequestMessage: Message> {
+public enum _GRPCServerRequestPart<RequestPayload: GRPCPayload> {
   case head(HTTPRequestHead)
-  case message(RequestMessage)
+  case message(RequestPayload)
   case end
 }
 
 /// Outgoing gRPC package with a fixed message type.
 ///
 /// - Important: This is **NOT** part of the public API.
-public enum _GRPCServerResponsePart<ResponseMessage: Message> {
+public enum _GRPCServerResponsePart<ResponsePayload: GRPCPayload> {
   case headers(HTTPHeaders)
-  case message(ResponseMessage)
+  case message(ResponsePayload)
   case statusAndTrailers(GRPCStatus, HTTPHeaders)
 }
 
 /// A simple channel handler that translates raw gRPC packets into decoded protobuf messages, and vice versa.
-internal final class GRPCServerCodec<RequestMessage: Message, ResponseMessage: Message> {}
+internal final class GRPCServerCodec<RequestPayload: GRPCPayload, ResponsePayload: GRPCPayload> {
+  var messageWriter = LengthPrefixedMessageWriter(compression: .none)
+}
 
 extension GRPCServerCodec: ChannelInboundHandler {
   typealias InboundIn = _RawGRPCServerRequestPart
-  typealias InboundOut = _GRPCServerRequestPart<RequestMessage>
+  typealias InboundOut = _GRPCServerRequestPart<RequestPayload>
 
   func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     switch self.unwrapInboundIn(data) {
@@ -50,9 +52,8 @@ extension GRPCServerCodec: ChannelInboundHandler {
       context.fireChannelRead(self.wrapInboundOut(.head(requestHead)))
 
     case .message(var message):
-      let messageAsData = message.readData(length: message.readableBytes)!
       do {
-        context.fireChannelRead(self.wrapInboundOut(.message(try RequestMessage(serializedData: messageAsData))))
+        context.fireChannelRead(self.wrapInboundOut(.message(try RequestPayload(serializedByteBuffer: &message))))
       } catch {
         context.fireErrorCaught(GRPCError.DeserializationFailure().captureContext())
       }
@@ -64,7 +65,7 @@ extension GRPCServerCodec: ChannelInboundHandler {
 }
 
 extension GRPCServerCodec: ChannelOutboundHandler {
-  typealias OutboundIn = _GRPCServerResponsePart<ResponseMessage>
+  typealias OutboundIn = _GRPCServerResponsePart<ResponsePayload>
   typealias OutboundOut = _RawGRPCServerResponsePart
 
   func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
@@ -75,8 +76,9 @@ extension GRPCServerCodec: ChannelOutboundHandler {
 
     case .message(let message):
       do {
-        let messageData = try message.serializedData()
-        context.write(self.wrapOutboundOut(.message(messageData)), promise: promise)
+        var responseBuffer = context.channel.allocator.buffer(capacity: 0)
+        try self.messageWriter.write(message, into: &responseBuffer)
+        context.write(self.wrapOutboundOut(.message(responseBuffer)), promise: promise)
       } catch {
         let error = GRPCError.SerializationFailure().captureContext()
         promise?.fail(error)

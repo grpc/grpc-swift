@@ -48,9 +48,9 @@ import Logging
 ///
 /// This class also provides much of the framework user facing functionality via conformance to
 /// `ClientCall`.
-public class BaseClientCall<Request: Message, Response: Message>: ClientCall {
-  public typealias RequestMessage = Request
-  public typealias ResponseMessage = Response
+public class BaseClientCall<Request: GRPCPayload, Response: GRPCPayload>: ClientCall {
+  public typealias RequestPayload = Request
+  public typealias ResponsePayload = Response
 
   internal let logger: Logger
 

@@ -29,7 +29,7 @@ public enum _RawGRPCServerRequestPart {
 /// Outgoing gRPC package with an unknown message type (represented by `Data`).
 public enum _RawGRPCServerResponsePart {
   case headers(HTTPHeaders)
-  case message(Data)
+  case message(ByteBuffer)
   case statusAndTrailers(GRPCStatus, HTTPHeaders)
 }
 
@@ -53,15 +53,12 @@ public final class HTTP1ToRawGRPCServerCodec {
     self.messageReader = LengthPrefixedMessageReader()
   }
 
-  // 1-byte for compression flag, 4-bytes for message length.
-  private let protobufMetadataSize = 5
-
   private var contentType: ContentType?
 
   private let logger: Logger
   private let accessLog: Logger
   private var stopwatch: Stopwatch?
-
+  
   // The following buffers use force unwrapping explicitly. With optionals, developers
   // are encouraged to unwrap them using guard-else statements. These don't work cleanly
   // with structs, since the guard-else would create a new copy of the struct, which
@@ -91,7 +88,6 @@ public final class HTTP1ToRawGRPCServerCodec {
     }
   }
 
-  var messageWriter = LengthPrefixedMessageWriter(compression: .none)
   var messageReader: LengthPrefixedMessageReader
 }
 
@@ -260,27 +256,22 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
         self.logger.error("invalid state '\(self.outboundState)' while writing message", metadata: ["message": "\(messageBytes)"])
         return
       }
-
+      
       if contentType == .text {
         precondition(self.responseTextBuffer != nil)
 
         // Store the response into an independent buffer. We can't return the message directly as
         // it needs to be aggregated with all the responses plus the trailers, in order to have
         // the base64 response properly encoded in a single byte stream.
-        //
-        // We can try! here because the server does not support compression at the moment and this
-        // only throws when compression fails.
-        try! messageWriter.write(messageBytes, into: &self.responseTextBuffer)
-
+        
+        var messageBytes = messageBytes
+        self.responseTextBuffer.writeBuffer(&messageBytes)
+        
         // Since we stored the written data, mark the write promise as successful so that the
         // ServerStreaming provider continues sending the data.
         promise?.succeed(())
       } else {
-        var responseBuffer = context.channel.allocator.buffer(capacity: LengthPrefixedMessageWriter.metadataLength)
-        // We can try! here because the server does not support compression at the moment and this
-        // only throws when compression fails.
-        try! messageWriter.write(messageBytes, into: &responseBuffer)
-        context.write(self.wrapOutboundOut(.body(.byteBuffer(responseBuffer))), promise: promise)
+        context.write(self.wrapOutboundOut(.body(.byteBuffer(messageBytes))), promise: promise)
       }
       self.outboundState = .expectingBodyOrStatus
 

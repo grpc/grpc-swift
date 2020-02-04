@@ -27,8 +27,8 @@ import Logging
 /// - `initialMetadata`: the initial metadata returned from the server,
 /// - `status`: the status of the gRPC call after it has ended,
 /// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
-public final class BidirectionalStreamingCall<RequestMessage: Message, ResponseMessage: Message>
-  : BaseClientCall<RequestMessage, ResponseMessage>,
+public final class BidirectionalStreamingCall<RequestPayload: GRPCPayload, ResponsePayload: GRPCPayload>
+  : BaseClientCall<RequestPayload, ResponsePayload>,
     StreamingRequestClientCall {
   private var messageQueue: EventLoopFuture<Void>
 
@@ -37,7 +37,7 @@ public final class BidirectionalStreamingCall<RequestMessage: Message, ResponseM
     path: String,
     callOptions: CallOptions,
     errorDelegate: ClientErrorDelegate?,
-    handler: @escaping (ResponseMessage) -> Void
+    handler: @escaping (ResponsePayload) -> Void
   ) {
     self.messageQueue = connection.channel.eventLoop.makeSucceededFuture(())
     let requestID = callOptions.requestIDProvider.requestID()
@@ -64,7 +64,7 @@ public final class BidirectionalStreamingCall<RequestMessage: Message, ResponseM
       options: callOptions
     )
 
-    let requestHandler = _StreamingRequestChannelHandler<RequestMessage>(requestHead: requestHead)
+    let requestHandler = _StreamingRequestChannelHandler<RequestPayload>(requestHead: requestHead)
 
     super.init(
       eventLoop: connection.eventLoop,

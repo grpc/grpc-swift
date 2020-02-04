@@ -24,14 +24,14 @@ import Logging
 /// - `initialMetadata`: the initial metadata returned from the server,
 /// - `status`: the status of the gRPC call after it has ended,
 /// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
-public final class ServerStreamingCall<RequestMessage: Message, ResponseMessage: Message>: BaseClientCall<RequestMessage, ResponseMessage> {
+public final class ServerStreamingCall<RequestPayload: GRPCPayload, ResponsePayload: GRPCPayload>: BaseClientCall<RequestPayload, ResponsePayload> {
   public init(
     connection: ClientConnection,
     path: String,
-    request: RequestMessage,
+    request: RequestPayload,
     callOptions: CallOptions,
     errorDelegate: ClientErrorDelegate?,
-    handler: @escaping (ResponseMessage) -> Void
+    handler: @escaping (ResponsePayload) -> Void
   ) {
     let requestID = callOptions.requestIDProvider.requestID()
     let logger = Logger(subsystem: .clientChannelCall, metadata: [MetadataKey.requestID: "\(requestID)"])
@@ -56,7 +56,7 @@ public final class ServerStreamingCall<RequestMessage: Message, ResponseMessage:
       options: callOptions
     )
 
-    let requestHandler = _UnaryRequestChannelHandler<RequestMessage>(
+    let requestHandler = _UnaryRequestChannelHandler<RequestPayload>(
       requestHead: requestHead,
       request: .init(request)
     )

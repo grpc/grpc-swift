@@ -28,10 +28,10 @@ import Logging
 ///
 /// For unary calls, the response is not actually provided by fulfilling `responsePromise`, but instead by completing
 /// the future returned by `UnaryCallHandler.EventObserver`.
-open class UnaryResponseCallContext<ResponseMessage: Message>: ServerCallContextBase, StatusOnlyCallContext {
-  typealias WrappedResponse = _GRPCServerResponsePart<ResponseMessage>
+open class UnaryResponseCallContext<ResponsePayload: GRPCPayload>: ServerCallContextBase, StatusOnlyCallContext {
+  typealias WrappedResponse = _GRPCServerResponsePart<ResponsePayload>
 
-  public let responsePromise: EventLoopPromise<ResponseMessage>
+  public let responsePromise: EventLoopPromise<ResponsePayload>
   public var responseStatus: GRPCStatus = .ok
 
   public override init(eventLoop: EventLoop, request: HTTPRequestHead, logger: Logger) {
@@ -43,7 +43,7 @@ open class UnaryResponseCallContext<ResponseMessage: Message>: ServerCallContext
 /// Protocol variant of `UnaryResponseCallContext` that only exposes the `responseStatus` and `trailingMetadata`
 /// fields, but not `responsePromise`.
 ///
-/// Motivation: `UnaryCallHandler` already asks the call handler return an `EventLoopFuture<ResponseMessage>` which
+/// Motivation: `UnaryCallHandler` already asks the call handler return an `EventLoopFuture<ResponsePayload>` which
 /// is automatically cascaded into `UnaryResponseCallContext.responsePromise`, so that promise does not (and should not)
 /// be fulfilled by the user.
 ///
@@ -55,7 +55,7 @@ public protocol StatusOnlyCallContext: ServerCallContext {
 }
 
 /// Concrete implementation of `UnaryResponseCallContext` used by our generated code.
-open class UnaryResponseCallContextImpl<ResponseMessage: Message>: UnaryResponseCallContext<ResponseMessage> {
+open class UnaryResponseCallContextImpl<ResponsePayload: GRPCPayload>: UnaryResponseCallContext<ResponsePayload> {
   public let channel: Channel
 
   /// - Parameters:
@@ -93,4 +93,4 @@ open class UnaryResponseCallContextImpl<ResponseMessage: Message>: UnaryResponse
 /// Concrete implementation of `UnaryResponseCallContext` used for testing.
 ///
 /// Only provided to make it clear in tests that no "real" implementation is used.
-open class UnaryResponseCallContextTestStub<ResponseMessage: Message>: UnaryResponseCallContext<ResponseMessage> { }
+open class UnaryResponseCallContextTestStub<ResponsePayload: GRPCPayload>: UnaryResponseCallContext<ResponsePayload> { }

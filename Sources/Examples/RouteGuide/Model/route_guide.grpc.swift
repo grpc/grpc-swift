@@ -149,3 +149,10 @@ extension Routeguide_RouteGuideProvider {
   }
 }
 
+
+/// Provides conformance to `GRPCPayload` for the request and response messages
+extension Routeguide_Point: GRPCProtobufPayload {}
+extension Routeguide_Feature: GRPCProtobufPayload {}
+extension Routeguide_Rectangle: GRPCProtobufPayload {}
+extension Routeguide_RouteSummary: GRPCProtobufPayload {}
+extension Routeguide_RouteNote: GRPCProtobufPayload {}

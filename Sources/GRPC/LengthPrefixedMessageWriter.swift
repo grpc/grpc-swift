@@ -44,25 +44,27 @@ internal struct LengthPrefixedMessageWriter {
   /// Writes the data into a `ByteBuffer` as a gRPC length-prefixed message.
   ///
   /// - Parameters:
-  ///   - message: The serialized Protobuf message to write.
+  ///   - payload: The payload to serialize and write.
   ///   - buffer: The buffer to write the message into.
   /// - Returns: A `ByteBuffer` containing a gRPC length-prefixed message.
   /// - Precondition: `compression.supported` is `true`.
   /// - Note: See `LengthPrefixedMessageReader` for more details on the format.
-  func write(_ message: Data, into buffer: inout ByteBuffer, disableCompression: Bool = false) throws {
-    buffer.reserveCapacity(LengthPrefixedMessageWriter.metadataLength + message.count)
-
+  func write(_ payload: GRPCPayload, into buffer: inout ByteBuffer, disableCompression: Bool = false) throws {
+    buffer.reserveCapacity(buffer.writerIndex + LengthPrefixedMessageWriter.metadataLength)
+    
     if !disableCompression, let compressor = self.compressor {
       // Set the compression byte.
       buffer.writeInteger(UInt8(1))
-
+      
       // Leave a gap for the length, we'll set it in a moment.
       let payloadSizeIndex = buffer.writerIndex
       buffer.moveWriterIndex(forwardBy: MemoryLayout<UInt32>.size)
 
+      var messageBuf = ByteBufferAllocator().buffer(capacity: 0)
+      try payload.serialize(into: &messageBuf)
+      
       // Compress the message.
-      var message = message
-      let bytesWritten = try compressor.deflate(&message, into: &buffer)
+      let bytesWritten = try compressor.deflate(&messageBuf, into: &buffer)
 
       // Now fill in the message length.
       buffer.writePayloadLength(UInt32(bytesWritten), at: payloadSizeIndex)
@@ -77,11 +79,20 @@ internal struct LengthPrefixedMessageWriter {
       } else {
         buffer.writeInteger(UInt8(0))
       }
+      
+      // Leave a gap for the length, we'll set it in a moment.
+      let payloadSizeIndex = buffer.writerIndex
+      buffer.moveWriterIndex(forwardBy: MemoryLayout<UInt32>.size)
+      
+      let payloadPrefixedBytes = buffer.readableBytes
+      // Writes the payload into the buffer
+      try payload.serialize(into: &buffer)
+      
+      // Calculates the Written bytes with respect to the prefixed ones
+      let bytesWritten = buffer.readableBytes - payloadPrefixedBytes
 
       // Write the message length.
-      buffer.writeInteger(UInt32(message.count))
-      // And the message bytes.
-      buffer.writeBytes(message)
+      buffer.writePayloadLength(UInt32(bytesWritten), at: payloadSizeIndex)
     }
   }
 }

@@ -26,7 +26,7 @@ public protocol GRPCClient {
 }
 
 extension GRPCClient {
-  public func makeUnaryCall<Request: Message, Response: Message>(
+  public func makeUnaryCall<Request: GRPCPayload, Response: GRPCPayload>(
     path: String,
     request: Request,
     callOptions: CallOptions? = nil,
@@ -40,7 +40,7 @@ extension GRPCClient {
       errorDelegate: self.connection.configuration.errorDelegate)
   }
 
-  public func makeServerStreamingCall<Request: Message, Response: Message>(
+  public func makeServerStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
     path: String,
     request: Request,
     callOptions: CallOptions? = nil,
@@ -56,7 +56,7 @@ extension GRPCClient {
       handler: handler)
   }
 
-  public func makeClientStreamingCall<Request: Message, Response: Message>(
+  public func makeClientStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
     path: String,
     callOptions: CallOptions? = nil,
     requestType: Request.Type = Request.self,
@@ -69,7 +69,7 @@ extension GRPCClient {
       errorDelegate: self.connection.configuration.errorDelegate)
   }
 
-  public func makeBidirectionalStreamingCall<Request: Message, Response: Message>(
+  public func makeBidirectionalStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
     path: String,
     callOptions: CallOptions? = nil,
     requestType: Request.Type = Request.self,

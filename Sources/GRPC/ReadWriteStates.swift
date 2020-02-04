@@ -54,7 +54,7 @@ enum WriteState {
   /// - Parameter allocator: An allocator to provide a `ByteBuffer` into which the message will be
   ///     written.
   mutating func write(
-    _ message: Message,
+    _ message: GRPCPayload,
     disableCompression: Bool,
     allocator: ByteBufferAllocator
   ) -> Result<ByteBuffer, MessageWriteError> {
@@ -63,16 +63,12 @@ enum WriteState {
       return .failure(.cardinalityViolation)
 
     case let .writing(writeArity, contentType, writer):
-      guard let data = try? message.serializedData() else {
-        self = .notWriting
-        return .failure(.serializationFailed)
-      }
-
       // Zero is fine: the writer will allocate the correct amount of space.
       var buffer = allocator.buffer(capacity: 0)
       do {
-        try writer.write(data, into: &buffer, disableCompression: disableCompression)
+        try writer.write(message, into: &buffer, disableCompression: disableCompression)
       } catch {
+        self = .notWriting
         return .failure(.serializationFailed)
       }
 
@@ -115,7 +111,7 @@ enum ReadState {
   /// a message has been produced then subsequent calls will result in an error.
   ///
   /// - Parameter buffer: The buffer to read from.
-  mutating func readMessages<MessageType: Message>(
+  mutating func readMessages<MessageType: GRPCPayload>(
     _ buffer: inout ByteBuffer,
     as: MessageType.Type = MessageType.self
   ) -> Result<[MessageType], MessageReadError> {
@@ -130,8 +126,7 @@ enum ReadState {
       do {
         while var serializedBytes = try? reader.nextMessage() {
           // Force unwrapping is okay here: we will always be able to read `readableBytes`.
-          let serializedData = serializedBytes.readData(length: serializedBytes.readableBytes)!
-          messages.append(try MessageType(serializedData: serializedData))
+          messages.append(try MessageType(serializedByteBuffer: &serializedBytes))
         }
       } catch {
         self = .notReading

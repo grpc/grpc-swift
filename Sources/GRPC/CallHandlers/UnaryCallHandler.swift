@@ -25,19 +25,19 @@ import Logging
 /// - To return a response to the client, the framework user should complete that future
 ///   (similar to e.g. serving regular HTTP requests in frameworks such as Vapor).
 public final class UnaryCallHandler<
-  RequestMessage: Message,
-  ResponseMessage: Message
->: _BaseCallHandler<RequestMessage, ResponseMessage> {
-  public typealias EventObserver = (RequestMessage) -> EventLoopFuture<ResponseMessage>
+  RequestPayload: GRPCPayload,
+  ResponsePayload: GRPCPayload
+>: _BaseCallHandler<RequestPayload, ResponsePayload> {
+  public typealias EventObserver = (RequestPayload) -> EventLoopFuture<ResponsePayload>
   private var eventObserver: EventObserver?
-  private var callContext: UnaryResponseCallContext<ResponseMessage>?
+  private var callContext: UnaryResponseCallContext<ResponsePayload>?
 
   public init(
     callHandlerContext: CallHandlerContext,
-    eventObserverFactory: (UnaryResponseCallContext<ResponseMessage>) -> EventObserver
+    eventObserverFactory: (UnaryResponseCallContext<ResponsePayload>) -> EventObserver
   ) {
     super.init(callHandlerContext: callHandlerContext)
-    let callContext = UnaryResponseCallContextImpl<ResponseMessage>(
+    let callContext = UnaryResponseCallContextImpl<ResponsePayload>(
       channel: self.callHandlerContext.channel,
       request: self.callHandlerContext.request,
       errorDelegate: self.callHandlerContext.errorDelegate,
@@ -53,7 +53,7 @@ public final class UnaryCallHandler<
     }
   }
 
-  internal override func processMessage(_ message: RequestMessage) throws {
+  internal override func processMessage(_ message: RequestPayload) throws {
     guard let eventObserver = self.eventObserver,
       let context = self.callContext else {
       self.logger.error("processMessage(_:) called before the call started or after the call completed")

@@ -361,3 +361,19 @@ extension Grpc_Testing_ReconnectServiceProvider {
   }
 }
 
+
+/// Provides conformance to `GRPCPayload` for the request and response messages
+extension Grpc_Testing_Empty: GRPCProtobufPayload {}
+extension Grpc_Testing_SimpleRequest: GRPCProtobufPayload {}
+extension Grpc_Testing_SimpleResponse: GRPCProtobufPayload {}
+extension Grpc_Testing_StreamingOutputCallRequest: GRPCProtobufPayload {}
+extension Grpc_Testing_StreamingOutputCallResponse: GRPCProtobufPayload {}
+extension Grpc_Testing_StreamingInputCallRequest: GRPCProtobufPayload {}
+extension Grpc_Testing_StreamingInputCallResponse: GRPCProtobufPayload {}
+
+/// Provides conformance to `GRPCPayload` for the request and response messages
+
+/// Provides conformance to `GRPCPayload` for the request and response messages
+extension Grpc_Testing_ReconnectParams: GRPCProtobufPayload {}
+extension Grpc_Testing_ReconnectInfo: GRPCProtobufPayload {}
+

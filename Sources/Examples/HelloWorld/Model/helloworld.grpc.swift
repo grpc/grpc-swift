@@ -84,3 +84,7 @@ extension Helloworld_GreeterProvider {
   }
 }
 
+
+/// Provides conformance to `GRPCPayload` for the request and response messages
+extension Helloworld_HelloRequest: GRPCProtobufPayload {}
+extension Helloworld_HelloReply: GRPCProtobufPayload {}

@@ -21,9 +21,9 @@ import NIOHTTP1
 /// A base channel handler for client requests.
 ///
 /// - Important: This is **NOT** part of the public API.
-public class _ClientRequestChannelHandler<RequestMessage: Message>: ChannelInboundHandler {
+public class _ClientRequestChannelHandler<RequestPayload: GRPCPayload>: ChannelInboundHandler {
   public typealias InboundIn = Never
-  public typealias OutboundOut = _GRPCClientRequestPart<RequestMessage>
+  public typealias OutboundOut = _GRPCClientRequestPart<RequestPayload>
 
   /// The request head to send.
   internal let requestHead: _GRPCRequestHead
@@ -43,11 +43,11 @@ public class _ClientRequestChannelHandler<RequestMessage: Message>: ChannelInbou
 /// Sends the request head, message and end on `channelActive(context:)`.
 ///
 /// - Important: This is **NOT** part of the public API.
-public final class _UnaryRequestChannelHandler<RequestMessage: Message>: _ClientRequestChannelHandler<RequestMessage> {
+public final class _UnaryRequestChannelHandler<RequestPayload: GRPCPayload>: _ClientRequestChannelHandler<RequestPayload> {
   /// The request to send.
-  internal let request: _MessageContext<RequestMessage>
+  internal let request: _MessageContext<RequestPayload>
 
-  public init(requestHead: _GRPCRequestHead, request: _MessageContext<RequestMessage>) {
+  public init(requestHead: _GRPCRequestHead, request: _MessageContext<RequestPayload>) {
     self.request = request
     super.init(requestHead: requestHead)
   }
@@ -65,7 +65,7 @@ public final class _UnaryRequestChannelHandler<RequestMessage: Message>: _Client
 /// Sends the request head on `channelActive(context:)`.
 ///
 /// - Important: This is **NOT** part of the public API.
-public final class _StreamingRequestChannelHandler<RequestMessage: Message>: _ClientRequestChannelHandler<RequestMessage> {
+public final class _StreamingRequestChannelHandler<RequestPayload: GRPCPayload>: _ClientRequestChannelHandler<RequestPayload> {
   override public func channelActive(context: ChannelHandlerContext) {
     context.writeAndFlush(self.wrapOutboundOut(.head(self.requestHead)), promise: nil)
     context.fireChannelActive()
