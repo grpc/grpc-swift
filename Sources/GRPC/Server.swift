@@ -45,51 +45,43 @@ import Logging
 ///    HTTPProtocolSwitcher. All of these handlers are provided by NIO except for the
 ///    WebCORSHandler which is used for HTTP/1.
 ///
-///                           ┌───────────────────────────┐
-///                           │    GRPCChannelHandler*    │
-///                           └─▲───────────────────────┬─┘
-///     RawGRPCServerRequestPart│                       │RawGRPCServerResponsePart
-///                           ┌─┴───────────────────────▼─┐
-///                           │ HTTP1ToRawGRPCServerCodec │
-///                           └─▲───────────────────────┬─┘
-///        HTTPServerRequestPart│                       │HTTPServerResponsePart
-///                           ┌─┴───────────────────────▼─┐
-///                           │       HTTP Handlers       │
-///                           └─▲───────────────────────┬─┘
-///                   ByteBuffer│                       │ByteBuffer
-///                           ┌─┴───────────────────────▼─┐
-///                           │       NIOSSLHandler       │
-///                           └─▲───────────────────────┬─┘
-///                   ByteBuffer│                       │ByteBuffer
-///                             │                       ▼
+///                           ┌─────────────────────────────────┐
+///                           │ GRPCServerRequestRoutingHandler │
+///                           └─▲─────────────────────────────┬─┘
+///        HTTPServerRequestPart│                             │HTTPServerResponsePart
+///                           ┌─┴─────────────────────────────▼─┐
+///                           │          HTTP Handlers          │
+///                           └─▲─────────────────────────────┬─┘
+///                   ByteBuffer│                             │ByteBuffer
+///                           ┌─┴─────────────────────────────▼─┐
+///                           │          NIOSSLHandler          │
+///                           └─▲─────────────────────────────┬─┘
+///                   ByteBuffer│                             │ByteBuffer
+///                             │                             ▼
 ///
-///    The GPRCChannelHandler resolves the request head and configures the rest of the pipeline
-///    based on the RPC call being made.
+///    The GRPCServerRequestRoutingHandler resolves the request head and configures the rest of the
+///    pipeline based on the RPC call being made.
 ///
 /// 3. The call has been resolved and is a function that this server can handle. Responses are
 ///    written into `BaseCallHandler` by a user-implemented `CallHandlerProvider`.
 ///
-///                           ┌───────────────────────────┐
-///                           │     BaseCallHandler*      │
-///                           └─▲───────────────────────┬─┘
-///    GRPCServerRequestPart<T1>│                       │GRPCServerResponsePart<T2>
-///                           ┌─┴───────────────────────▼─┐
-///                           │      GRPCServerCodec      │
-///                           └─▲───────────────────────┬─┘
-///     RawGRPCServerRequestPart│                       │RawGRPCServerResponsePart
-///                           ┌─┴───────────────────────▼─┐
-///                           │ HTTP1ToRawGRPCServerCodec │
-///                           └─▲───────────────────────┬─┘
-///        HTTPServerRequestPart│                       │HTTPServerResponsePart
-///                           ┌─┴───────────────────────▼─┐
-///                           │       HTTP Handlers       │
-///                           └─▲───────────────────────┬─┘
-///                   ByteBuffer│                       │ByteBuffer
-///                           ┌─┴───────────────────────▼─┐
-///                           │       NIOSSLHandler       │
-///                           └─▲───────────────────────┬─┘
-///                   ByteBuffer│                       │ByteBuffer
-///                             │                       ▼
+///                           ┌─────────────────────────────────┐
+///                           │         BaseCallHandler*        │
+///                           └─▲─────────────────────────────┬─┘
+///    GRPCServerRequestPart<T1>│                             │GRPCServerResponsePart<T2>
+///                           ┌─┴─────────────────────────────▼─┐
+///                           │      HTTP1ToGRPCServerCodec     │
+///                           └─▲─────────────────────────────┬─┘
+///        HTTPServerRequestPart│                             │HTTPServerResponsePart
+///                           ┌─┴─────────────────────────────▼─┐
+///                           │          HTTP Handlers          │
+///                           └─▲─────────────────────────────┬─┘
+///                   ByteBuffer│                             │ByteBuffer
+///                           ┌─┴─────────────────────────────▼─┐
+///                           │          NIOSSLHandler          │
+///                           └─▲─────────────────────────────┬─┘
+///                   ByteBuffer│                             │ByteBuffer
+///                             │                             ▼
 ///
 public final class Server {
   /// Makes and configures a `ServerBootstrap` using the provided configuration.
@@ -109,15 +101,12 @@ public final class Server {
       .childChannelInitializer { channel in
         let protocolSwitcher = HTTPProtocolSwitcher(errorDelegate: configuration.errorDelegate) { channel -> EventLoopFuture<Void> in
           let logger = Logger(subsystem: .serverChannelCall, metadata: [MetadataKey.requestID: "\(UUID())"])
-          let handlers: [ChannelHandler] = [
-            HTTP1ToRawGRPCServerCodec(logger: logger),
-            GRPCChannelHandler(
-              servicesByName: configuration.serviceProvidersByName,
-              errorDelegate: configuration.errorDelegate,
-              logger: logger
-            )
-          ]
-          return channel.pipeline.addHandlers(handlers)
+          let handler = GRPCServerRequestRoutingHandler(
+            servicesByName: configuration.serviceProvidersByName,
+            errorDelegate: configuration.errorDelegate,
+            logger: logger
+          )
+          return channel.pipeline.addHandler(handler)
         }
 
         if let tls = configuration.tls {

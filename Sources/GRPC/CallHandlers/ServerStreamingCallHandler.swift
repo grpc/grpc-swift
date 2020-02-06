@@ -31,15 +31,20 @@ public final class ServerStreamingCallHandler<
 
   private var eventObserver: EventObserver?
   private var callContext: StreamingResponseCallContext<ResponsePayload>?
+  private let eventObserverFactory: (StreamingResponseCallContext<ResponsePayload>) -> EventObserver
 
   public init(
     callHandlerContext: CallHandlerContext,
-    eventObserverFactory: (StreamingResponseCallContext<ResponsePayload>) -> EventObserver
+    eventObserverFactory: @escaping (StreamingResponseCallContext<ResponsePayload>) -> EventObserver
   ) {
+    self.eventObserverFactory = eventObserverFactory
     super.init(callHandlerContext: callHandlerContext)
+  }
+
+  override internal func processHead(_ head: HTTPRequestHead, context: ChannelHandlerContext) {
     let callContext = StreamingResponseCallContextImpl<ResponsePayload>(
-      channel: self.callHandlerContext.channel,
-      request: self.callHandlerContext.request,
+      channel: context.channel,
+      request: head,
       errorDelegate: self.callHandlerContext.errorDelegate,
       logger: self.callHandlerContext.logger
     )
@@ -51,6 +56,8 @@ public final class ServerStreamingCallHandler<
       self.eventObserver = nil
       self.callContext = nil
     }
+
+    context.writeAndFlush(self.wrapOutboundOut(.headers([:])), promise: nil)
   }
 
   override internal func processMessage(_ message: RequestPayload) throws {
