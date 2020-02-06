@@ -37,13 +37,13 @@ import Logging
 ///                   ByteBuffer│                       │ByteBuffer
 ///                             │                       ▼
 ///
-///    The NIOSSLHandler is optional and depends on how the framework user has configured
-///    their server. The HTTPProtocolSwitched detects which HTTP version is being used and
+///    The `NIOSSLHandler` is optional and depends on how the framework user has configured
+///    their server. The `HTTPProtocolSwitcher` detects which HTTP version is being used and
 ///    configures the pipeline accordingly.
 ///
 /// 2. HTTP version detected. "HTTP Handlers" depends on the HTTP version determined by
-///    HTTPProtocolSwitcher. All of these handlers are provided by NIO except for the
-///    WebCORSHandler which is used for HTTP/1.
+///    `HTTPProtocolSwitcher`. All of these handlers are provided by NIO except for the
+///    `WebCORSHandler` which is used for HTTP/1.
 ///
 ///                           ┌─────────────────────────────────┐
 ///                           │ GRPCServerRequestRoutingHandler │
@@ -59,8 +59,8 @@ import Logging
 ///                   ByteBuffer│                             │ByteBuffer
 ///                             │                             ▼
 ///
-///    The GRPCServerRequestRoutingHandler resolves the request head and configures the rest of the
-///    pipeline based on the RPC call being made.
+///    The `GRPCServerRequestRoutingHandler` resolves the request head and configures the rest of
+///    the pipeline based on the RPC call being made.
 ///
 /// 3. The call has been resolved and is a function that this server can handle. Responses are
 ///    written into `BaseCallHandler` by a user-implemented `CallHandlerProvider`.

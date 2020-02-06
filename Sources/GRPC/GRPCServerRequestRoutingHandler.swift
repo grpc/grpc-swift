@@ -19,7 +19,7 @@ import NIO
 import NIOHTTP1
 import Logging
 
-/// Processes individual gRPC messages and stream-close events on a HTTP2 channel.
+/// Processes individual gRPC messages and stream-close events on an HTTP2 channel.
 public protocol GRPCCallHandler: ChannelHandler {
   func makeGRPCServerCodec() -> ChannelHandler
 }
@@ -50,9 +50,9 @@ public struct CallHandlerContext {
 /// a suitable 'content-type' for gRPC.
 ///
 /// Once the request headers are available, asks the `CallHandlerProvider` corresponding to the request's service name
-/// for an `GRPCCallHandler` object. That object is then forwarded the individual gRPC messages.
+/// for a `GRPCCallHandler` object. That object is then forwarded the individual gRPC messages.
 ///
-/// After the pipeline has been configured with the `GRPCCallHandler` this handler removes itself
+/// After the pipeline has been configured with the `GRPCCallHandler`, this handler removes itself
 /// from the pipeline.
 public final class GRPCServerRequestRoutingHandler {
   private let logger: Logger
@@ -122,10 +122,10 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
       precondition(.notConfigured == self.state)
 
       // Validate the 'content-type' is related to gRPC before proceeding.
-      let maybeContentType = requestHead.headers.first(name: "content-type")
-      guard let contentType = maybeContentType, contentType.starts(with: "application/grpc") else {
+      let maybeContentType = requestHead.headers.first(name: GRPCHeaderName.contentType)
+      guard let contentType = maybeContentType, contentType.starts(with: ContentType.commonPrefix) else {
         self.logger.warning(
-          "received request whose 'content-type' does not exist or start with 'application/grpc'",
+          "received request whose 'content-type' does not exist or start with '\(ContentType.commonPrefix)'",
           metadata: ["content-type": "\(String(describing: maybeContentType))"]
         )
 
@@ -228,7 +228,7 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
 
   private func makeResponseHead(requestHead: HTTPRequestHead, status: GRPCStatus) -> HTTPResponseHead {
     var headers: HTTPHeaders = [
-      "content-type": "application/grpc",
+      GRPCHeaderName.contentType: ContentType.protobuf.canonicalValue,
       GRPCHeaderName.statusCode: "\(status.code.rawValue)",
     ]
 

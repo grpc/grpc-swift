@@ -43,7 +43,7 @@ class HTTP1ToGRPCServerCodecTests: GRPCTestCase {
       version: .init(major: 2, minor: 0),
       method: .POST,
       uri: "/echo.Echo/Get"
-      )
+    )
   }
 
   func testDeserializationErrorOnInvalidMessageBytes() throws {
@@ -56,6 +56,46 @@ class HTTP1ToGRPCServerCodecTests: GRPCTestCase {
       let withContext = error as? GRPCError.WithContext
       XCTAssertTrue(withContext?.error is GRPCError.DeserializationFailure)
       XCTAssertEqual(withContext?.error.makeGRPCStatus().code, .internalError)
+    }
+  }
+
+  func testSingleMessageFromMultipleBodyParts() throws {
+    XCTAssertNoThrow(try self.channel.writeInbound(HTTPServerRequestPart.head(self.makeRequestHead())))
+    let requestPart = try self.channel.readInbound(as: _GRPCServerRequestPart<Echo_EchoRequest>.self)
+
+    switch requestPart {
+    case .some(.head):
+      ()
+    default:
+      XCTFail("Unexpected request part: \(String(describing: requestPart))")
+    }
+
+    // Write a message across multiple buffers.
+    let message = Echo_EchoRequest.with { $0.text = String(repeating: "x", count: 42) }
+    let data = try message.serializedData()
+
+    // Split the payload into two parts.
+    let halfIndex = data.count / 2
+    let firstChunk = data[0..<halfIndex]
+    let secondChunk = data[halfIndex...]
+
+    // Frame the message; send it in 2 parts.
+    var firstBuffer = self.channel.allocator.buffer(capacity: firstChunk.count + 5)
+    firstBuffer.writeInteger(UInt8(0))
+    firstBuffer.writeInteger(UInt32(data.count))
+    firstBuffer.writeBytes(firstChunk)
+    XCTAssertNoThrow(try self.channel.writeInbound(HTTPServerRequestPart.body(firstBuffer)))
+
+    var secondBuffer = self.channel.allocator.buffer(capacity: secondChunk.count)
+    secondBuffer.writeBytes(secondChunk)
+    XCTAssertNoThrow(try self.channel.writeInbound(HTTPServerRequestPart.body(secondBuffer)))
+
+    let messagePart = try self.channel.readInbound(as: _GRPCServerRequestPart<Echo_EchoRequest>.self)
+    switch messagePart {
+    case .message(let actual):
+      XCTAssertEqual(message, actual)
+    default:
+      XCTFail("Unexpected request part: \(String(describing: requestPart))")
     }
   }
 
@@ -95,5 +135,4 @@ class HTTP1ToGRPCServerCodecTests: GRPCTestCase {
       }
     }
   }
-
 }

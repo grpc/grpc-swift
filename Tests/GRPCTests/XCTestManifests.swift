@@ -446,6 +446,7 @@ extension HTTP1ToGRPCServerCodecTests {
     static let __allTests__HTTP1ToGRPCServerCodecTests = [
         ("testDeserializationErrorOnInvalidMessageBytes", testDeserializationErrorOnInvalidMessageBytes),
         ("testMultipleMessagesFromSingleBodyPart", testMultipleMessagesFromSingleBodyPart),
+        ("testSingleMessageFromMultipleBodyParts", testSingleMessageFromMultipleBodyParts),
     ]
 }
 

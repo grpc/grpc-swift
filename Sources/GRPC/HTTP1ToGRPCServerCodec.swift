@@ -150,7 +150,7 @@ extension HTTP1ToGRPCServerCodec: ChannelInboundHandler {
       "version": "\(requestHead.version)"
     ])
 
-    if let contentType = requestHead.headers.first(name: "content-type").flatMap(ContentType.init) {
+    if let contentType = requestHead.headers.first(name: GRPCHeaderName.contentType).flatMap(ContentType.init) {
       self.contentType = contentType
     } else {
       self.logger.debug("no 'content-type' header, assuming content type is 'application/grpc'")
@@ -241,7 +241,7 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
 
       var version = HTTPVersion(major: 2, minor: 0)
       if let contentType = self.contentType {
-        headers.add(name: "content-type", value: contentType.canonicalValue)
+        headers.add(name: GRPCHeaderName.contentType, value: contentType.canonicalValue)
         if contentType != .protobuf {
           version = .init(major: 1, minor: 1)
         }

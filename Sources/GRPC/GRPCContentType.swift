@@ -44,6 +44,7 @@ internal enum ContentType {
   var canonicalValue: String {
     switch self {
     case .protobuf:
+      // This is more widely supported than "application/grpc+proto"
       return "application/grpc"
 
     case .webProtobuf:
@@ -53,4 +54,6 @@ internal enum ContentType {
       return "application/grpc-web-text+proto"
     }
   }
+
+  static let commonPrefix = "application/grpc"
 }
