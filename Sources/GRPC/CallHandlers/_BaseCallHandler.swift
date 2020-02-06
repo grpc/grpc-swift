@@ -25,7 +25,14 @@ import Logging
 /// - Important: This is **NOT** part of the public API.
 public class _BaseCallHandler<RequestPayload: GRPCPayload, ResponsePayload: GRPCPayload>: GRPCCallHandler {
   public func makeGRPCServerCodec() -> ChannelHandler {
-    return GRPCServerCodec<RequestPayload, ResponsePayload>()
+    return HTTP1ToGRPCServerCodec<RequestPayload, ResponsePayload>(logger: self.logger)
+  }
+
+  /// Called when the request head has been received.
+  ///
+  /// Overridden by subclasses.
+  internal func processHead(_ head: HTTPRequestHead, context: ChannelHandlerContext) {
+    fatalError("needs to be overridden")
   }
 
   /// Called whenever a message has been received.
@@ -62,12 +69,6 @@ public class _BaseCallHandler<RequestPayload: GRPCPayload, ResponsePayload: GRPC
   internal init(callHandlerContext: CallHandlerContext) {
     self.callHandlerContext = callHandlerContext
   }
-
-  /// Needs to be implemented by this class so that subclasses can override it.
-  ///
-  /// Otherwise, the subclass's implementation will simply never be called (probably because the protocol's default
-  /// implementation in an extension is being used instead).
-  public func handlerAdded(context: ChannelHandlerContext) { }
 }
 
 extension _BaseCallHandler: ChannelInboundHandler {
@@ -95,10 +96,8 @@ extension _BaseCallHandler: ChannelInboundHandler {
 
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     switch self.unwrapInboundIn(data) {
-    case .head(let requestHead):
-      // Head should have been handled by `GRPCChannelHandler`.
-      self.logger.error("call handler unexpectedly received request head", metadata: ["head": "\(requestHead)"])
-      self.errorCaught(context: context, error: GRPCError.InvalidState("unexpected request head received \(requestHead)").captureContext())
+    case .head(let head):
+      self.processHead(head, context: context)
 
     case .message(let message):
       do {

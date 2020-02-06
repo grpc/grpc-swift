@@ -31,26 +31,33 @@ public final class UnaryCallHandler<
   public typealias EventObserver = (RequestPayload) -> EventLoopFuture<ResponsePayload>
   private var eventObserver: EventObserver?
   private var callContext: UnaryResponseCallContext<ResponsePayload>?
+  private let eventObserverFactory: (UnaryResponseCallContext<ResponsePayload>) -> EventObserver
 
   public init(
     callHandlerContext: CallHandlerContext,
-    eventObserverFactory: (UnaryResponseCallContext<ResponsePayload>) -> EventObserver
+    eventObserverFactory: @escaping (UnaryResponseCallContext<ResponsePayload>) -> EventObserver
   ) {
+    self.eventObserverFactory = eventObserverFactory
     super.init(callHandlerContext: callHandlerContext)
+  }
+
+  internal override func processHead(_ head: HTTPRequestHead, context: ChannelHandlerContext) {
     let callContext = UnaryResponseCallContextImpl<ResponsePayload>(
-      channel: self.callHandlerContext.channel,
-      request: self.callHandlerContext.request,
-      errorDelegate: self.callHandlerContext.errorDelegate,
-      logger: self.callHandlerContext.logger
+      channel: context.channel,
+      request: head,
+      errorDelegate: self.errorDelegate,
+      logger: self.logger
     )
 
     self.callContext = callContext
-    self.eventObserver = eventObserverFactory(callContext)
+    self.eventObserver = self.eventObserverFactory(callContext)
     callContext.responsePromise.futureResult.whenComplete { _ in
       // When done, reset references to avoid retain cycles.
       self.eventObserver = nil
       self.callContext = nil
     }
+
+    context.writeAndFlush(self.wrapOutboundOut(.headers([:])), promise: nil)
   }
 
   internal override func processMessage(_ message: RequestPayload) throws {

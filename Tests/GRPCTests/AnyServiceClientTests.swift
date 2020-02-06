@@ -19,7 +19,6 @@ import EchoModel
 import XCTest
 
 class AnyServiceClientTests: EchoTestCaseBase {
-
   var anyServiceClient: AnyServiceClient {
     return AnyServiceClient(connection: self.client.connection)
   }

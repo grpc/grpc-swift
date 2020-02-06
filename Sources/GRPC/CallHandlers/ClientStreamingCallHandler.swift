@@ -19,14 +19,6 @@ import NIO
 import NIOHTTP1
 import Logging
 
-/// For calls which support client streaming we need to delay the creation of the event observer
-/// until the handler has been added to the pipeline.
-enum ClientStreamingHandlerObserverState<Factory, Observer> {
-  case pendingCreation(Factory)
-  case created(EventLoopFuture<Observer>)
-  case notRequired
-}
-
 /// Handles client-streaming calls. Forwards incoming messages and end-of-stream events to the observer block.
 ///
 /// - The observer block is implemented by the framework user and fulfills `context.responsePromise` when done.
@@ -41,59 +33,44 @@ public final class ClientStreamingCallHandler<
   public typealias EventObserver = (StreamEvent<RequestPayload>) -> Void
   public typealias EventObserverFactory = (Context) -> EventLoopFuture<EventObserver>
 
-  private var observerState: ClientStreamingHandlerObserverState<EventObserverFactory, EventObserver> {
-    willSet(newState) {
-      self.logger.debug("observerState changed from \(self.observerState) to \(newState)")
-    }
-  }
   private var callContext: UnaryResponseCallContext<ResponsePayload>?
+  private var eventObserver: EventLoopFuture<EventObserver>?
+  private let eventObserverFactory: EventObserverFactory
 
   // We ask for a future of type `EventObserver` to allow the framework user to e.g. asynchronously authenticate a call.
   // If authentication fails, they can simply fail the observer future, which causes the call to be terminated.
   public init(callHandlerContext: CallHandlerContext, eventObserverFactory: @escaping EventObserverFactory) {
-    // Delay the creation of the event observer until `handlerAdded(context:)`, otherwise it is
-    // possible for the service to write into the pipeline (by fulfilling the response promise
-    // of the call context outside of the observer) before it has been configured.
-    self.observerState = .pendingCreation(eventObserverFactory)
-
+    self.eventObserverFactory = eventObserverFactory
     super.init(callHandlerContext: callHandlerContext)
+  }
 
+  internal override func processHead(_ head: HTTPRequestHead, context: ChannelHandlerContext) {
     let callContext = UnaryResponseCallContextImpl<ResponsePayload>(
-      channel: self.callHandlerContext.channel,
-      request: self.callHandlerContext.request,
-      errorDelegate: self.callHandlerContext.errorDelegate,
-      logger: self.callHandlerContext.logger
+      channel: context.channel,
+      request: head,
+      errorDelegate: self.errorDelegate,
+      logger: self.logger
     )
 
     self.callContext = callContext
 
+    let eventObserver = self.eventObserverFactory(callContext)
+    eventObserver.cascadeFailure(to: callContext.responsePromise)
+
+    self.eventObserver = eventObserver
+
     callContext.responsePromise.futureResult.whenComplete { _ in
       // When done, reset references to avoid retain cycles.
+      self.eventObserver = nil
       self.callContext = nil
-      self.observerState = .notRequired
-    }
-  }
-
-  public override func handlerAdded(context: ChannelHandlerContext) {
-    guard let callContext = self.callContext,
-      case let .pendingCreation(factory) = self.observerState else {
-      self.logger.warning("handlerAdded(context:) called but handler already has a call context")
-      return
     }
 
-    let eventObserver = factory(callContext)
-    self.observerState = .created(eventObserver)
-
-    // Terminate the call if the future providing an observer fails.
-    // This is being done _after_ we have been added as a handler to ensure that the `GRPCServerCodec` required to
-    // translate our outgoing `GRPCServerResponsePart<ResponsePayload>` message is already present on the channel.
-    // Otherwise, our `OutboundOut` type would not match the `OutboundIn` type of the next handler on the channel.
-    eventObserver.cascadeFailure(to: callContext.responsePromise)
+    context.writeAndFlush(self.wrapOutboundOut(.headers([:])), promise: nil)
   }
 
   internal override func processMessage(_ message: RequestPayload) {
-    guard case .created(let eventObserver) = self.observerState else {
-      self.logger.warning("expecting observerState to be .created but was \(self.observerState), ignoring message \(message)")
+    guard let eventObserver = self.eventObserver else {
+      self.logger.warning("eventObserver is nil; ignoring message")
       return
     }
     eventObserver.whenSuccess { observer in
@@ -102,8 +79,8 @@ public final class ClientStreamingCallHandler<
   }
 
   internal override func endOfStreamReceived() throws {
-    guard case .created(let eventObserver) = self.observerState else {
-      self.logger.warning("expecting observerState to be .created but was \(self.observerState), ignoring end-of-stream call")
+    guard let eventObserver = self.eventObserver else {
+      self.logger.warning("eventObserver is nil; ignoring end-of-stream")
       return
     }
     eventObserver.whenSuccess { observer in

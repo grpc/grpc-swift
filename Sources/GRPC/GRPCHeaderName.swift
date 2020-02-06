@@ -20,4 +20,5 @@ internal enum GRPCHeaderName {
   static let acceptEncoding = "grpc-accept-encoding"
   static let statusCode = "grpc-status"
   static let statusMessage = "grpc-message"
+  static let contentType = "content-type"
 }

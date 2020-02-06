@@ -19,31 +19,32 @@ import NIOHTTP1
 import NIOFoundationCompat
 import Logging
 
-/// Incoming gRPC package with an unknown message type (represented by a byte buffer).
-public enum _RawGRPCServerRequestPart {
+/// Incoming gRPC package with a fixed message type.
+///
+/// - Important: This is **NOT** part of the public API.
+public enum _GRPCServerRequestPart<RequestPayload: GRPCPayload> {
   case head(HTTPRequestHead)
-  case message(ByteBuffer)
+  case message(RequestPayload)
   case end
 }
 
-/// Outgoing gRPC package with an unknown message type (represented by `Data`).
-public enum _RawGRPCServerResponsePart {
+/// Outgoing gRPC package with a fixed message type.
+///
+/// - Important: This is **NOT** part of the public API.
+public enum _GRPCServerResponsePart<ResponsePayload: GRPCPayload> {
   case headers(HTTPHeaders)
-  case message(ByteBuffer)
+  case message(ResponsePayload)
   case statusAndTrailers(GRPCStatus, HTTPHeaders)
 }
 
 /// A simple channel handler that translates HTTP1 data types into gRPC packets, and vice versa.
 ///
-/// This codec allows us to use the "raw" gRPC protocol on a low level, with further handlers operating the protocol
-/// on a "higher" level.
-///
 /// We use HTTP1 (instead of HTTP2) primitives, as these are easier to work with than raw HTTP2
-/// primitives while providing all the functionality we need. In addition, this should make implementing gRPC-over-HTTP1
-/// (sometimes also called pPRC) easier in the future.
+/// primitives while providing all the functionality we need. In addition, it allows us to support
+/// gRPC-Web (gRPC over HTTP1).
 ///
 /// The translation from HTTP2 to HTTP1 is done by `HTTP2ToHTTP1ServerCodec`.
-public final class HTTP1ToRawGRPCServerCodec {
+public final class HTTP1ToGRPCServerCodec<Request: GRPCPayload, Response: GRPCPayload> {
   public init(logger: Logger) {
     self.logger = logger
 
@@ -51,6 +52,7 @@ public final class HTTP1ToRawGRPCServerCodec {
     accessLog[metadataKey: MetadataKey.requestID] = logger[metadataKey: MetadataKey.requestID]
     self.accessLog = accessLog
     self.messageReader = LengthPrefixedMessageReader()
+    self.messageWriter = LengthPrefixedMessageWriter()
   }
 
   private var contentType: ContentType?
@@ -89,19 +91,10 @@ public final class HTTP1ToRawGRPCServerCodec {
   }
 
   var messageReader: LengthPrefixedMessageReader
+  var messageWriter: LengthPrefixedMessageWriter
 }
 
-extension HTTP1ToRawGRPCServerCodec {
-  /// Expected content types for incoming requests.
-  private enum ContentType: String {
-    /// Binary encoded gRPC request.
-    case binary = "application/grpc"
-    /// Base64 encoded gRPC-Web request.
-    case text = "application/grpc-web-text"
-    /// Binary encoded gRPC-Web request.
-    case web = "application/grpc-web"
-  }
-
+extension HTTP1ToGRPCServerCodec {
   enum InboundState {
     case expectingHeaders
     case expectingBody
@@ -116,9 +109,9 @@ extension HTTP1ToRawGRPCServerCodec {
   }
 }
 
-extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
+extension HTTP1ToGRPCServerCodec: ChannelInboundHandler {
   public typealias InboundIn = HTTPServerRequestPart
-  public typealias InboundOut = _RawGRPCServerRequestPart
+  public typealias InboundOut = _GRPCServerRequestPart<Request>
 
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     if case .ignore = inboundState {
@@ -157,15 +150,15 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
       "version": "\(requestHead.version)"
     ])
 
-    if let contentType = requestHead.headers["content-type"].first.flatMap(ContentType.init) {
+    if let contentType = requestHead.headers.first(name: GRPCHeaderName.contentType).flatMap(ContentType.init) {
       self.contentType = contentType
     } else {
       self.logger.debug("no 'content-type' header, assuming content type is 'application/grpc'")
       // If the Content-Type is not present, assume the request is binary encoded gRPC.
-      self.contentType = .binary
+      self.contentType = .protobuf
     }
 
-    if self.contentType == .text {
+    if self.contentType == .webTextProtobuf {
       requestTextBuffer = context.channel.allocator.buffer(capacity: 0)
     }
 
@@ -184,7 +177,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
     // it to the binary buffer. If the request is chunked, this section will process the text
     // in the biggest chunk that is multiple of 4, leaving the unread bytes in the textBuffer
     // where it will expect a new incoming chunk.
-    if self.contentType == .text {
+    if self.contentType == .webTextProtobuf {
       precondition(requestTextBuffer != nil)
       requestTextBuffer.writeBuffer(&body)
 
@@ -199,8 +192,18 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
     }
 
     self.messageReader.append(buffer: &body)
-    while let message = try self.messageReader.nextMessage() {
-      context.fireChannelRead(self.wrapInboundOut(.message(message)))
+    var requests: [Request] = []
+    do {
+      while var buffer = try self.messageReader.nextMessage() {
+        requests.append(try Request(serializedByteBuffer: &buffer))
+      }
+    } catch {
+      context.fireErrorCaught(GRPCError.DeserializationFailure().captureContext())
+      return .ignore
+    }
+
+    requests.forEach {
+      context.fireChannelRead(self.wrapInboundOut(.message($0)))
     }
 
     return .expectingBody
@@ -218,8 +221,8 @@ extension HTTP1ToRawGRPCServerCodec: ChannelInboundHandler {
   }
 }
 
-extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
-  public typealias OutboundIn = _RawGRPCServerResponsePart
+extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
+  public typealias OutboundIn = _GRPCServerResponsePart<Response>
   public typealias OutboundOut = HTTPServerResponsePart
 
   public func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
@@ -238,49 +241,57 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
 
       var version = HTTPVersion(major: 2, minor: 0)
       if let contentType = self.contentType {
-        headers.add(name: "content-type", value: contentType.rawValue)
-        if contentType != .binary {
+        headers.add(name: GRPCHeaderName.contentType, value: contentType.canonicalValue)
+        if contentType != .protobuf {
           version = .init(major: 1, minor: 1)
         }
       }
 
-      if self.contentType == .text {
+      if self.contentType == .webTextProtobuf {
         responseTextBuffer = context.channel.allocator.buffer(capacity: 0)
       }
 
       context.write(self.wrapOutboundOut(.head(HTTPResponseHead(version: version, status: .ok, headers: headers))), promise: promise)
       self.outboundState = .expectingBodyOrStatus
 
-    case .message(let messageBytes):
+    case .message(let message):
       guard case .expectingBodyOrStatus = self.outboundState else {
-        self.logger.error("invalid state '\(self.outboundState)' while writing message", metadata: ["message": "\(messageBytes)"])
+        self.logger.error("invalid state '\(self.outboundState)' while writing message")
         return
       }
       
-      if contentType == .text {
-        precondition(self.responseTextBuffer != nil)
+      do {
+        if contentType == .webTextProtobuf {
+          // Store the response into an independent buffer. We can't return the message directly as
+          // it needs to be aggregated with all the responses plus the trailers, in order to have
+          // the base64 response properly encoded in a single byte stream.
+          precondition(self.responseTextBuffer != nil)
+          try self.messageWriter.write(message, into: &self.responseTextBuffer)
 
-        // Store the response into an independent buffer. We can't return the message directly as
-        // it needs to be aggregated with all the responses plus the trailers, in order to have
-        // the base64 response properly encoded in a single byte stream.
-        
-        var messageBytes = messageBytes
-        self.responseTextBuffer.writeBuffer(&messageBytes)
-        
-        // Since we stored the written data, mark the write promise as successful so that the
-        // ServerStreaming provider continues sending the data.
-        promise?.succeed(())
-      } else {
-        context.write(self.wrapOutboundOut(.body(.byteBuffer(messageBytes))), promise: promise)
+          // Since we stored the written data, mark the write promise as successful so that the
+          // ServerStreaming provider continues sending the data.
+          promise?.succeed(())
+        } else {
+          var lengthPrefixedMessageBuffer = context.channel.allocator.buffer(capacity: 0)
+          try self.messageWriter.write(message, into: &lengthPrefixedMessageBuffer)
+          context.write(self.wrapOutboundOut(.body(.byteBuffer(lengthPrefixedMessageBuffer))), promise: promise)
+        }
+      } catch {
+        let error = GRPCError.SerializationFailure().captureContext()
+        promise?.fail(error)
+        context.fireErrorCaught(error)
+        self.outboundState = .ignore
+        return
       }
+
       self.outboundState = .expectingBodyOrStatus
 
     case let .statusAndTrailers(status, trailers):
-      // If we error before sending the initial headers (e.g. unimplemented method) then we won't have sent the request head.
-      // NIOHTTP2 doesn't support sending a single frame as a "Trailers-Only" response so we still need to loop back and
-      // send the request head first.
+      // If we error before sending the initial headers then we won't have sent the request head.
+      // NIOHTTP2 doesn't support sending a single frame as a "Trailers-Only" response so we still
+      // need to loop back and send the request head first.
       if case .expectingHeaders = self.outboundState {
-        self.write(context: context, data: NIOAny(_RawGRPCServerResponsePart.headers(HTTPHeaders())), promise: nil)
+        self.write(context: context, data: NIOAny(OutboundIn.headers(HTTPHeaders())), promise: nil)
       }
 
       var trailers = trailers
@@ -289,7 +300,7 @@ extension HTTP1ToRawGRPCServerCodec: ChannelOutboundHandler {
         trailers.add(name: GRPCHeaderName.statusMessage, value: message)
       }
 
-      if contentType == .text {
+      if contentType == .webTextProtobuf {
         precondition(responseTextBuffer != nil)
 
         // Encode the trailers into the response byte stream as a length delimited message, as per
