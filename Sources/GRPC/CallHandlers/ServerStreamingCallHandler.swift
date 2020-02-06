@@ -37,6 +37,9 @@ public final class ServerStreamingCallHandler<
     callHandlerContext: CallHandlerContext,
     eventObserverFactory: @escaping (StreamingResponseCallContext<ResponsePayload>) -> EventObserver
   ) {
+    // Delay the creation of the event observer until we actually get a request head, otherwise it
+    // would be possible for the observer to write into the pipeline (by completing the status
+    // promise) before the pipeline is configured.
     self.eventObserverFactory = eventObserverFactory
     super.init(callHandlerContext: callHandlerContext)
   }

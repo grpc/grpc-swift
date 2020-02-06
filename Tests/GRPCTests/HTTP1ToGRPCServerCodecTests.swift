@@ -92,7 +92,7 @@ class HTTP1ToGRPCServerCodecTests: GRPCTestCase {
 
     let messagePart = try self.channel.readInbound(as: _GRPCServerRequestPart<Echo_EchoRequest>.self)
     switch messagePart {
-    case .message(let actual):
+    case .some(.message(let actual)):
       XCTAssertEqual(message, actual)
     default:
       XCTFail("Unexpected request part: \(String(describing: requestPart))")
@@ -128,7 +128,7 @@ class HTTP1ToGRPCServerCodecTests: GRPCTestCase {
     for message in messages {
       let requestPart = try self.channel.readInbound(as: _GRPCServerRequestPart<Echo_EchoRequest>.self)
       switch requestPart {
-      case .message(let actual):
+      case .some(.message(let actual)):
         XCTAssertEqual(message, actual)
       default:
         XCTFail("Unexpected request part: \(String(describing: requestPart))")
