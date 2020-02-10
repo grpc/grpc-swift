@@ -39,7 +39,7 @@ let package = Package(
     .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.3.0"),
 
     // Official SwiftProtobuf library, for [de]serializing data to send on the wire.
-    .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.7.0"),
+    .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.8.0"),
 
     // Logging API.
     .package(url: "https://github.com/apple/swift-log", from: "1.0.0"),

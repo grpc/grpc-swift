@@ -16,13 +16,12 @@
 import NIO
 import SwiftProtobuf
 
-/// GRPCProtobufPayload which allows Protobuf Messages to be passed into the library
+/// Provides default implementations of `GRPCPayload` for `SwiftProtobuf.Message`s.
 public protocol GRPCProtobufPayload: GRPCPayload, Message {}
 
 public extension GRPCProtobufPayload {
-  
   init(serializedByteBuffer: inout NIO.ByteBuffer) throws {
-    try self.init(serializedData: serializedByteBuffer.readData(length: serializedByteBuffer.readableBytes)!)
+    try self.init(contiguousBytes: serializedByteBuffer.readableBytesView)
   }
 
   func serialize(into buffer: inout NIO.ByteBuffer) throws {
