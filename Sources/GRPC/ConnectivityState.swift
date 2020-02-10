@@ -104,13 +104,13 @@ public class ConnectivityStateMonitor {
   /// - Important: This is **not** thread safe.
   private func setNewState(to newValue: ConnectivityState) {
     if self._userInitiatedShutdown {
-      self.logger.debug("user has initiated shutdown: ignoring new state: \(newValue)")
+      self.logger.debug("user has initiated shutdown: ignoring new state", metadata: ["new_state": "\(newValue)"])
       return
     }
 
     let oldValue = self._state
     if oldValue != newValue {
-      self.logger.debug("connectivity state change: \(oldValue) to \(newValue)")
+      self.logger.debug("connectivity state change", metadata: ["old_state": "\(oldValue)", "new_state": "\(newValue)"])
       self._state = newValue
       self._delegate?.connectivityStateDidChange(from: oldValue, to: newValue)
     }

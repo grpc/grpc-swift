@@ -80,13 +80,13 @@ public final class HTTP1ToGRPCServerCodec<Request: GRPCPayload, Response: GRPCPa
   var inboundState = InboundState.expectingHeaders {
     willSet {
       guard newValue != self.inboundState else { return }
-      self.logger.debug("inbound state changed from \(self.inboundState) to \(newValue)")
+      self.logger.debug("inbound state changed", metadata: ["old_state": "\(self.inboundState)", "new_state": "\(newValue)"])
     }
   }
   var outboundState = OutboundState.expectingHeaders {
     willSet {
       guard newValue != self.outboundState else { return }
-      self.logger.debug("outbound state changed from \(self.outboundState) to \(newValue)")
+      self.logger.debug("outbound state changed", metadata: ["old_state": "\(self.outboundState)", "new_state": "\(newValue)"])
     }
   }
 
@@ -115,7 +115,7 @@ extension HTTP1ToGRPCServerCodec: ChannelInboundHandler {
 
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     if case .ignore = inboundState {
-      self.logger.notice("ignoring read data: \(data)")
+      self.logger.notice("ignoring read data", metadata: ["data": "\(data)"])
       return
     }
 
@@ -139,7 +139,8 @@ extension HTTP1ToGRPCServerCodec: ChannelInboundHandler {
   func processHead(context: ChannelHandlerContext, requestHead: HTTPRequestHead) throws -> InboundState {
     self.logger.debug("processing request head", metadata: ["head": "\(requestHead)"])
     guard case .expectingHeaders = inboundState else {
-      self.logger.error("invalid state '\(inboundState)' while processing request head", metadata: ["head": "\(requestHead)"])
+      self.logger.error("invalid state while processing request head",
+                        metadata: ["state": "\(inboundState)", "head": "\(requestHead)"])
       throw GRPCError.InvalidState("expected state .expectingHeaders, got \(inboundState)").captureContext()
     }
 
@@ -169,7 +170,8 @@ extension HTTP1ToGRPCServerCodec: ChannelInboundHandler {
   func processBody(context: ChannelHandlerContext, body: inout ByteBuffer) throws -> InboundState {
     self.logger.debug("processing body: \(body)")
     guard case .expectingBody = inboundState else {
-      self.logger.error("invalid state '\(inboundState)' while processing body", metadata: ["body": "\(body)"])
+      self.logger.error("invalid state while processing body",
+                        metadata: ["state": "\(inboundState)", "body": "\(body)"])
       throw GRPCError.InvalidState("expected state .expectingBody, got \(inboundState)").captureContext()
     }
 
@@ -235,7 +237,8 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
     switch self.unwrapOutboundIn(data) {
     case .headers(var headers):
       guard case .expectingHeaders = self.outboundState else {
-        self.logger.error("invalid state '\(self.outboundState)' while writing headers", metadata: ["headers": "\(headers)"])
+        self.logger.error("invalid state while writing headers",
+                          metadata: ["state": "\(self.outboundState)", "headers": "\(headers)"])
         return
       }
 
@@ -256,7 +259,7 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
 
     case .message(let message):
       guard case .expectingBodyOrStatus = self.outboundState else {
-        self.logger.error("invalid state '\(self.outboundState)' while writing message")
+        self.logger.error("invalid state while writing message", metadata: ["state": "\(self.outboundState)"])
         return
       }
       
