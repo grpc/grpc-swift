@@ -14,11 +14,39 @@
  * limitations under the License.
  */
 
-extension ClientConnection.Configuration {
+
+/// Whether compression should be enabled for the message.
+public enum Compression {
+  /// Enable compression. Note that this will be ignored if compression has not been enabled or is
+  /// not supported on the call.
+  case enabled
+
+  /// Disable compression.
+  case disabled
+
+  /// Defer to the call (the `CallOptions` for the client, and the context for the server) to
+  /// determine whether compression should be used for the message.
+  case deferToCallDefault
+}
+
+extension Compression {
+  func isEnabled(enabledOnCall: Bool) -> Bool {
+    switch self {
+    case .enabled:
+      return enabledOnCall
+    case .disabled:
+      return false
+    case .deferToCallDefault:
+      return enabledOnCall
+    }
+  }
+}
+
+extension CallOptions {
   public struct MessageEncoding {
     public init(
       forRequests outbound: CompressionAlgorithm?,
-      acceptableForResponses inbound: [CompressionAlgorithm]
+      acceptableForResponses inbound: [CompressionAlgorithm] = CompressionAlgorithm.all
     ) {
       self.outbound = outbound
       self.inbound = inbound
@@ -41,11 +69,36 @@ extension ClientConnection.Configuration {
       forRequests: .identity,
       acceptableForResponses: CompressionAlgorithm.all
     )
+
+    /// Whether compression is enabled for requests.
+    internal var enabledForRequests: Bool {
+      return self.outbound != nil
+    }
   }
 }
 
-extension ClientConnection.Configuration.MessageEncoding {
+extension CallOptions.MessageEncoding {
   var acceptEncodingHeader: String {
     return self.inbound.map { $0.name }.joined(separator: ",")
   }
+}
+
+extension Server.Configuration {
+  public struct MessageEncoding {
+    /// The set of compression algorithms advertised that we will accept from clients. Note that
+    /// clients may send us messages compressed with algorithms not included in this list; if we
+    /// support it then we still accept the message.
+    public var enabled: [CompressionAlgorithm]
+
+    public init(enabled: [CompressionAlgorithm]) {
+      self.enabled = enabled
+    }
+
+    // All supported algorithms are enabled.
+    public static let enabled = MessageEncoding(enabled: CompressionAlgorithm.all)
+
+    /// No compression.
+    public static let none = MessageEncoding(enabled: [.identity])
+  }
+
 }

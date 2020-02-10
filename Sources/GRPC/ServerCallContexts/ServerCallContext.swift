@@ -29,6 +29,11 @@ public protocol ServerCallContext: class {
 
   /// The logger used for this call.
   var logger: Logger { get }
+
+  /// Whether compression should be enabled for responses, defaulting to `true`. Note that for
+  /// this value to take effect compression must have been enabled on the server and a compression
+  /// algorithm must have been negotiated with the client.
+  var compressionEnabled: Bool { get set }
 }
 
 /// Base class providing data provided to the framework user for all server calls.
@@ -36,6 +41,7 @@ open class ServerCallContextBase: ServerCallContext {
   public let eventLoop: EventLoop
   public let request: HTTPRequestHead
   public let logger: Logger
+  public var compressionEnabled: Bool = true
 
   /// Metadata to return at the end of the RPC. If this is required it should be updated before
   /// the `responsePromise` or `statusPromise` is fulfilled.

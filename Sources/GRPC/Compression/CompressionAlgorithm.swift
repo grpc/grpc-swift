@@ -24,14 +24,15 @@ public struct CompressionAlgorithm: Equatable {
   public static let deflate = CompressionAlgorithm(.deflate)
   public static let gzip = CompressionAlgorithm(.gzip)
 
-  public static let all = Algorithm.allCases.map(CompressionAlgorithm.init)
+  // The order here is important: most compression to least.
+  public static let all: [CompressionAlgorithm] = [.gzip, .deflate, .identity]
 
   /// The name of the compression algorithm.
   public var name: String {
     return self.algorithm.rawValue
   }
 
-  internal enum Algorithm: String, CaseIterable {
+  internal enum Algorithm: String {
     case identity
     case deflate
     case gzip

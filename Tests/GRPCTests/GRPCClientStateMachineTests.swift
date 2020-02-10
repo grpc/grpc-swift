@@ -125,7 +125,7 @@ extension GRPCClientStateMachineTests {
 extension GRPCClientStateMachineTests {
   func doTestSendRequestFromInvalidState(_ state: StateMachine.State, expected: MessageWriteError) {
     var stateMachine = self.makeStateMachine(state)
-    stateMachine.sendRequest(.init(text: "Hello!"), disableCompression: false, allocator: self.allocator).assertFailure {
+    stateMachine.sendRequest(.init(text: "Hello!"), compressed: false, allocator: self.allocator).assertFailure {
       XCTAssertEqual($0, expected)
     }
   }
@@ -134,7 +134,7 @@ extension GRPCClientStateMachineTests {
     var stateMachine = self.makeStateMachine(state)
 
     let request: Request = .with { $0.text = "Hello!" }
-    stateMachine.sendRequest(request, disableCompression: false, allocator: self.allocator).assertSuccess() { buffer in
+    stateMachine.sendRequest(request, compressed: false, allocator: self.allocator).assertSuccess() { buffer in
       var buffer = buffer
       // Remove the length and compression flag prefix.
       buffer.moveReaderIndex(forwardBy: 5)
@@ -458,7 +458,7 @@ extension GRPCClientStateMachineTests {
     stateMachine.receiveResponseHeaders(self.makeResponseHeaders()).assertSuccess()
 
     // Send a request.
-    stateMachine.sendRequest(.with { $0.text = "Hello!" }, disableCompression: false, allocator: self.allocator).assertSuccess()
+    stateMachine.sendRequest(.with { $0.text = "Hello!" }, compressed: false, allocator: self.allocator).assertSuccess()
 
     // Close the request stream.
     stateMachine.sendEndOfRequestStream().assertSuccess()
@@ -489,9 +489,9 @@ extension GRPCClientStateMachineTests {
     stateMachine.receiveResponseHeaders(self.makeResponseHeaders()).assertSuccess()
 
     // Send some requests.
-    stateMachine.sendRequest(.with { $0.text = "1" }, disableCompression: false, allocator: self.allocator).assertSuccess()
-    stateMachine.sendRequest(.with { $0.text = "2" }, disableCompression: false, allocator: self.allocator).assertSuccess()
-    stateMachine.sendRequest(.with { $0.text = "3" }, disableCompression: false, allocator: self.allocator).assertSuccess()
+    stateMachine.sendRequest(.with { $0.text = "1" }, compressed: false, allocator: self.allocator).assertSuccess()
+    stateMachine.sendRequest(.with { $0.text = "2" }, compressed: false, allocator: self.allocator).assertSuccess()
+    stateMachine.sendRequest(.with { $0.text = "3" }, compressed: false, allocator: self.allocator).assertSuccess()
 
     // Close the request stream.
     stateMachine.sendEndOfRequestStream().assertSuccess()
@@ -522,7 +522,7 @@ extension GRPCClientStateMachineTests {
     stateMachine.receiveResponseHeaders(self.makeResponseHeaders()).assertSuccess()
 
     // Send a request.
-    stateMachine.sendRequest(.with { $0.text = "1" }, disableCompression: false, allocator: self.allocator).assertSuccess()
+    stateMachine.sendRequest(.with { $0.text = "1" }, compressed: false, allocator: self.allocator).assertSuccess()
 
     // Close the request stream.
     stateMachine.sendEndOfRequestStream().assertSuccess()
@@ -558,15 +558,15 @@ extension GRPCClientStateMachineTests {
     stateMachine.receiveResponseHeaders(self.makeResponseHeaders()).assertSuccess()
 
     // Interleave requests and responses:
-    stateMachine.sendRequest(.with { $0.text = "1" }, disableCompression: false, allocator: self.allocator).assertSuccess()
+    stateMachine.sendRequest(.with { $0.text = "1" }, compressed: false, allocator: self.allocator).assertSuccess()
 
     // Receive a response.
     var firstBuffer = try self.writeMessage(Response.with { $0.text = "1" })
     stateMachine.receiveResponseBuffer(&firstBuffer).assertSuccess()
 
     // Send two more requests.
-    stateMachine.sendRequest(.with { $0.text = "2" }, disableCompression: false, allocator: self.allocator).assertSuccess()
-    stateMachine.sendRequest(.with { $0.text = "3" }, disableCompression: false, allocator: self.allocator).assertSuccess()
+    stateMachine.sendRequest(.with { $0.text = "2" }, compressed: false, allocator: self.allocator).assertSuccess()
+    stateMachine.sendRequest(.with { $0.text = "3" }, compressed: false, allocator: self.allocator).assertSuccess()
 
     // Receive two responses in one buffer.
     var secondBuffer = try self.writeMessage(Response.with { $0.text = "2" })
@@ -589,9 +589,9 @@ extension GRPCClientStateMachineTests {
       var stateMachine = self.makeStateMachine(.clientActiveServerIdle(writeState: .one(), readArity: messageCount))
 
       // One is fine.
-      stateMachine.sendRequest(.with { $0.text = "1" }, disableCompression: false, allocator: self.allocator).assertSuccess()
+      stateMachine.sendRequest(.with { $0.text = "1" }, compressed: false, allocator: self.allocator).assertSuccess()
       // Two is not.
-      stateMachine.sendRequest(.with { $0.text = "2" }, disableCompression: false, allocator: self.allocator).assertFailure {
+      stateMachine.sendRequest(.with { $0.text = "2" }, compressed: false, allocator: self.allocator).assertFailure {
         XCTAssertEqual($0, .cardinalityViolation)
       }
     }
@@ -602,9 +602,9 @@ extension GRPCClientStateMachineTests {
       var stateMachine = self.makeStateMachine(.clientActiveServerActive(writeState: .one(), readState: readState))
 
       // One is fine.
-      stateMachine.sendRequest(.with { $0.text = "1" }, disableCompression: false, allocator: self.allocator).assertSuccess()
+      stateMachine.sendRequest(.with { $0.text = "1" }, compressed: false, allocator: self.allocator).assertSuccess()
       // Two is not.
-      stateMachine.sendRequest(.with { $0.text = "2" }, disableCompression: false, allocator: self.allocator).assertFailure {
+      stateMachine.sendRequest(.with { $0.text = "2" }, compressed: false, allocator: self.allocator).assertFailure {
         XCTAssertEqual($0, .cardinalityViolation)
       }
     }
@@ -614,7 +614,7 @@ extension GRPCClientStateMachineTests {
     var stateMachine = self.makeStateMachine(.clientClosedServerClosed)
 
     // No requests allowed!
-    stateMachine.sendRequest(.with { $0.text = "1" }, disableCompression: false, allocator: self.allocator).assertFailure {
+    stateMachine.sendRequest(.with { $0.text = "1" }, compressed: false, allocator: self.allocator).assertFailure {
       XCTAssertEqual($0, .cardinalityViolation)
     }
   }

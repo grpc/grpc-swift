@@ -20,7 +20,7 @@ internal struct LengthPrefixedMessageWriter {
   static let metadataLength = 5
 
   /// The compression algorithm to use, if one should be used.
-  private let compression: CompressionAlgorithm?
+  let compression: CompressionAlgorithm?
   private let compressor: Zlib.Deflate?
 
   /// Whether the compression message flag should be set.
@@ -49,10 +49,10 @@ internal struct LengthPrefixedMessageWriter {
   /// - Returns: A `ByteBuffer` containing a gRPC length-prefixed message.
   /// - Precondition: `compression.supported` is `true`.
   /// - Note: See `LengthPrefixedMessageReader` for more details on the format.
-  func write(_ payload: GRPCPayload, into buffer: inout ByteBuffer, disableCompression: Bool = false) throws {
+  func write(_ payload: GRPCPayload, into buffer: inout ByteBuffer, compressed: Bool = true) throws {
     buffer.reserveCapacity(buffer.writerIndex + LengthPrefixedMessageWriter.metadataLength)
     
-    if !disableCompression, let compressor = self.compressor {
+    if compressed, let compressor = self.compressor {
       // Set the compression byte.
       buffer.writeInteger(UInt8(1))
       
@@ -72,14 +72,10 @@ internal struct LengthPrefixedMessageWriter {
       // Finally, the compression context should be reset between messages.
       compressor.reset()
     } else {
-      // 'identity' compression has no compressor but should still set the compression bit set
-      // unless we explicitly disable compression.
-      if self.compression?.algorithm == .identity && !disableCompression {
-        buffer.writeInteger(UInt8(1))
-      } else {
-        buffer.writeInteger(UInt8(0))
-      }
-      
+      // We could be using 'identity' compression, but since the result is the same we'll just
+      // say it isn't compressed.
+      buffer.writeInteger(UInt8(0))
+
       // Leave a gap for the length, we'll set it in a moment.
       let payloadSizeIndex = buffer.writerIndex
       buffer.moveWriterIndex(forwardBy: MemoryLayout<UInt32>.size)

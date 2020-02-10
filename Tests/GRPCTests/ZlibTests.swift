@@ -80,7 +80,6 @@ class ZlibTests: GRPCTestCase {
     for format in [Zlib.CompressionFormat.deflate, .gzip] {
       // Is the compressed size larger than the input size?
       let compressedSize = try self.doCompressAndDecompress(of: bytes, format: format)
-      print(compressedSize)
       XCTAssertGreaterThan(compressedSize, bytes.count)
     }
 

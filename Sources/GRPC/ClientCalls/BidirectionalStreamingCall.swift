@@ -60,7 +60,6 @@ public final class BidirectionalStreamingCall<RequestPayload: GRPCPayload, Respo
       path: path,
       host: connection.configuration.target.host,
       requestID: requestID,
-      encoding: connection.configuration.messageEncoding,
       options: callOptions
     )
 
@@ -70,6 +69,7 @@ public final class BidirectionalStreamingCall<RequestPayload: GRPCPayload, Respo
       eventLoop: connection.eventLoop,
       multiplexer: connection.multiplexer,
       callType: .bidirectionalStreaming,
+      callOptions: callOptions,
       responseHandler: responseHandler,
       requestHandler: requestHandler,
       logger: logger

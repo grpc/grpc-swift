@@ -44,6 +44,7 @@ public protocol CallHandlerProvider: class {
 public struct CallHandlerContext {
   internal var errorDelegate: ServerErrorDelegate?
   internal var logger: Logger
+  internal var encoding: Server.Configuration.MessageEncoding
 }
 
 /// Attempts to route a request to a user-provided call handler. Also validates that the request has
@@ -57,6 +58,7 @@ public struct CallHandlerContext {
 public final class GRPCServerRequestRoutingHandler {
   private let logger: Logger
   private let servicesByName: [String: CallHandlerProvider]
+  private let encoding: Server.Configuration.MessageEncoding
   private weak var errorDelegate: ServerErrorDelegate?
 
   private enum State: Equatable {
@@ -66,10 +68,17 @@ public final class GRPCServerRequestRoutingHandler {
 
   private var state: State = .notConfigured
 
-  public init(servicesByName: [String: CallHandlerProvider], errorDelegate: ServerErrorDelegate?, logger: Logger) {
+  public init(
+    servicesByName: [String: CallHandlerProvider],
+    encoding: Server.Configuration.MessageEncoding,
+    errorDelegate: ServerErrorDelegate?,
+    logger: Logger
+  ) {
     self.servicesByName = servicesByName
+    self.encoding = encoding
     self.errorDelegate = errorDelegate
     self.logger = logger
+
   }
 }
 
@@ -215,7 +224,11 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
     // Unset the channel handler: it shouldn't be used for downstream handlers.
     logger[metadataKey: MetadataKey.channelHandler] = nil
 
-    let context = CallHandlerContext(errorDelegate: self.errorDelegate, logger: logger)
+    let context = CallHandlerContext(
+      errorDelegate: self.errorDelegate,
+      logger: logger,
+      encoding: self.encoding
+    )
 
     guard uriComponents.count >= 3 && uriComponents[0].isEmpty,
       let providerForServiceName = servicesByName[uriComponents[1]],

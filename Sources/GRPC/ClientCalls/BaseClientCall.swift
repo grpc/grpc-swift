@@ -58,6 +58,7 @@ public class BaseClientCall<Request: GRPCPayload, Response: GRPCPayload>: Client
   internal let multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>
 
   // Note: documentation is inherited from the `ClientCall` protocol.
+  public let options: CallOptions
   public let subchannel: EventLoopFuture<Channel>
   public let initialMetadata: EventLoopFuture<HPACKHeaders>
   public let trailingMetadata: EventLoopFuture<HPACKHeaders>
@@ -75,12 +76,14 @@ public class BaseClientCall<Request: GRPCPayload, Response: GRPCPayload>: Client
     eventLoop: EventLoop,
     multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
     callType: GRPCCallType,
+    callOptions: CallOptions,
     responseHandler: GRPCClientResponseChannelHandler<Response>,
     requestHandler: _ClientRequestChannelHandler<Request>,
     logger: Logger
   ) {
     self.logger = logger
     self.multiplexer = multiplexer
+    self.options = callOptions
 
     let streamPromise = eventLoop.makePromise(of: Channel.self)
 
@@ -135,19 +138,11 @@ extension _GRPCRequestHead {
     path: String,
     host: String,
     requestID: String,
-    encoding: ClientConnection.Configuration.MessageEncoding,
     options: CallOptions
   ) {
     var customMetadata = options.customMetadata
     if let requestIDHeader = options.requestIDHeader {
       customMetadata.add(name: requestIDHeader, value: requestID)
-    }
-
-    var encoding = encoding
-    // Compression is disabled at the RPC level; remove outbound (request) encoding. This will stop
-    // any 'grpc-encoding' header being sent to the peer.
-    if options.disableCompression {
-      encoding.outbound = nil
     }
 
     self = _GRPCRequestHead(
@@ -157,7 +152,7 @@ extension _GRPCRequestHead {
       host: host,
       timeout: options.timeout,
       customMetadata: customMetadata,
-      encoding: encoding
+      encoding: options.messageEncoding
     )
   }
 }

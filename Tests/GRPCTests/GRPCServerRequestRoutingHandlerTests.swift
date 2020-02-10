@@ -32,6 +32,7 @@ class GRPCServerRequestRoutingHandlerTests: GRPCTestCase {
     let provider = EchoProvider()
     let handler = GRPCServerRequestRoutingHandler(
       servicesByName: [provider.serviceName: provider],
+      encoding: .none,
       errorDelegate: nil,
       logger: logger
     )

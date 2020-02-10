@@ -32,7 +32,7 @@ public class TestServiceProvider: Grpc_Testing_TestServiceProvider {
   ///
   /// Some 'features' are methods, whilst others optionally modify the outcome of those methods. The
   /// specification is not explicit about where these modifying features should be implemented (i.e.
-  /// which methods should support them) and they are not listed in the individual metdod
+  /// which methods should support them) and they are not listed in the individual method
   /// descriptions. As such implementation of these modifying features within each method is
   /// determined by the features required by each test.
   public static var implementedFeatures: Set<ServerFeature> {
@@ -42,7 +42,9 @@ public class TestServiceProvider: Grpc_Testing_TestServiceProvider {
       .streamingOutputCall,
       .streamingInputCall,
       .fullDuplexCall,
-      .echoStatus
+      .echoStatus,
+      .compressedResponse,
+      .compressedRequest
     ]
   }
 
@@ -64,6 +66,21 @@ public class TestServiceProvider: Grpc_Testing_TestServiceProvider {
     request: Grpc_Testing_SimpleRequest,
     context: StatusOnlyCallContext
   ) -> EventLoopFuture<Grpc_Testing_SimpleResponse> {
+    // We can't validate messages at the wire-encoding layer (i.e. where the compression byte is
+    // set), so we have to check via the encoding header. Note that it is possible for the header
+    // to be set and for the message to not be compressed.
+    if request.expectCompressed.value && !context.request.headers.contains(name: "grpc-encoding") {
+      let status = GRPCStatus(
+        code: .invalidArgument,
+        message: "Expected compressed request, but 'grpc-encoding' was missing"
+      )
+      return context.eventLoop.makeFailedFuture(status)
+    }
+
+    // Should we enable compression? The C++ interoperability client only expects compression if
+    // explicitly requested; we'll do the same.
+    context.compressionEnabled = request.responseCompressed.value
+
     if request.shouldEchoStatus {
       let code = GRPCStatus.Code(rawValue: numericCast(request.responseStatus.code)) ?? .unknown
       return context.eventLoop.makeFailedFuture(GRPCStatus(code: code, message: request.responseStatus.message))
@@ -125,7 +142,10 @@ public class TestServiceProvider: Grpc_Testing_TestServiceProvider {
           }
         }
 
-        return context.sendResponse(response)
+        // Should we enable compression? The C++ interoperability client only expects compression if
+        // explicitly requested; we'll do the same.
+        let compression: Compression = responseParameter.compressed.value ? .enabled : .disabled
+        return context.sendResponse(response, compression: compression)
       }
     }
 
@@ -143,7 +163,15 @@ public class TestServiceProvider: Grpc_Testing_TestServiceProvider {
     return context.eventLoop.makeSucceededFuture({ event in
       switch event {
       case .message(let request):
-        aggregatePayloadSize += request.payload.body.count
+        if request.expectCompressed.value && !context.request.headers.contains(name: "grpc-encoding") {
+          context.responseStatus = GRPCStatus(
+            code: .invalidArgument,
+            message: "Expected compressed request, but 'grpc-encoding' was missing"
+          )
+          context.responsePromise.fail(context.responseStatus)
+        } else {
+          aggregatePayloadSize += request.payload.body.count
+        }
 
       case .end:
         context.responsePromise.succeed(Grpc_Testing_StreamingInputCallResponse.with { response in

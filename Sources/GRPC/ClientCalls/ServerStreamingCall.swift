@@ -52,19 +52,19 @@ public final class ServerStreamingCall<RequestPayload: GRPCPayload, ResponsePayl
       path: path,
       host: connection.configuration.target.host,
       requestID: requestID,
-      encoding: connection.configuration.messageEncoding,
       options: callOptions
     )
 
     let requestHandler = _UnaryRequestChannelHandler<RequestPayload>(
       requestHead: requestHead,
-      request: .init(request)
+      request: .init(request, compressed: callOptions.messageEncoding.enabledForRequests)
     )
 
     super.init(
       eventLoop: connection.eventLoop,
       multiplexer: connection.multiplexer,
       callType: .serverStreaming,
+      callOptions: callOptions,
       responseHandler: responseHandler,
       requestHandler: requestHandler,
       logger: logger
