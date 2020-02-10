@@ -36,7 +36,7 @@ internal class HTTPProtocolSwitcher {
 
   private var state: State = .notConfigured {
     willSet {
-      self.logger.debug("state changed from '\(self.state)' to '\(newValue)'")
+      self.logger.debug("state changed", metadata: ["old_state": "\(self.state)", "new_state": "\(newValue)"])
     }
   }
   private var bufferedData: [NIOAny] = []
@@ -74,7 +74,7 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
     case .notConfigured:
       self.logger.debug("determining http protocol version")
       self.state = .configuring
-      self.logger.debug("buffering data \(data)")
+      self.logger.debug("buffering data", metadata: ["data": "\(data)"])
       self.bufferedData.append(data)
 
       // Detect the HTTP protocol version for the incoming request, or error out if it
@@ -141,7 +141,7 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
       }
 
     case .configuring:
-      self.logger.debug("buffering data \(data)")
+      self.logger.debug("buffering data", metadata: ["data": "\(data)"])
       self.bufferedData.append(data)
 
     case .configured:

@@ -275,7 +275,7 @@ extension ClientConnection {
       return configuration.eventLoopGroup.next().makeFailedFuture(GRPCStatus.processingError)
     }
 
-    logger.debug("attempting to connect to \(configuration.target) on \(eventLoop)")
+    logger.debug("attempting to connect", metadata: ["target": "\(configuration.target)", "event_loop": "\(eventLoop)"])
     connectivity.state = .connecting
     let timeoutAndBackoff = backoffIterator?.next()
 
@@ -327,7 +327,7 @@ extension ClientConnection {
     backoffIterator: ConnectionBackoffIterator?,
     logger: Logger
   ) -> EventLoopFuture<Channel> {
-    logger.debug("scheduling connection attempt in \(timeout) seconds")
+    logger.debug("scheduling connection attempt", metadata: ["delay_seconds": "\(timeout)"])
     // The `futureResult` of the scheduled task is of type
     // `EventLoopFuture<EventLoopFuture<Channel>>`, so we need to `flatMap` it to
     // remove a level of indirection.
@@ -392,7 +392,7 @@ extension ClientConnection {
       }
 
     if let timeout = timeout {
-      logger.debug("setting connect timeout to \(timeout) seconds")
+      logger.debug("setting connect timeout", metadata: ["timeout_seconds" : "\(timeout)"])
       return bootstrap.connectTimeout(.seconds(timeInterval: timeout))
     } else {
       logger.debug("no connect timeout provided")

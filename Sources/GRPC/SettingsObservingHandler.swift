@@ -40,7 +40,9 @@ class InitialSettingsObservingHandler: ChannelInboundHandler, RemovableChannelHa
       self.connectivityStateMonitor.state = .ready
 
       let remoteAddressDescription = context.channel.remoteAddress.map { "\($0)" } ?? "n/a"
-      self.logger.info("gRPC connection to \(remoteAddressDescription) on \(context.eventLoop) ready")
+      self.logger.info("gRPC connection ready", metadata: [
+        "remote_address": "\(remoteAddressDescription)",
+        "event_loop": "\(context.eventLoop)"])
 
       // We're no longer needed at this point, remove ourselves from the pipeline.
       self.logger.debug("removing 'InitialSettingsObservingHandler' from the channel")
