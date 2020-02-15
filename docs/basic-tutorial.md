@@ -464,7 +464,7 @@ program from exiting (since `close()` is never called on the server).
 
 In this section, we'll look at creating a Swift client for our `RouteGuide`
 service. You can see our complete example client code in
-[grpc-swift/Sources/Examples/RouteGuide/Client/main.java][routeguide-client].
+[grpc-swift/Sources/Examples/RouteGuide/Client/main.swift][routeguide-client].
 
 #### Creating a stub
 
