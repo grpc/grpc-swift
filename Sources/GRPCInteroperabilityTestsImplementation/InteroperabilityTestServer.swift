@@ -41,7 +41,7 @@ public func makeInteroperabilityTestServer(
     target: .hostAndPort(host, port),
     eventLoopGroup: eventLoopGroup,
     serviceProviders: serviceProviders,
-    messageEncoding: .init(enabled: CompressionAlgorithm.all)
+    messageEncoding: .enabled(.init(decompressionLimit: .absolute(1024 * 1024)))
   )
 
   if useTLS {

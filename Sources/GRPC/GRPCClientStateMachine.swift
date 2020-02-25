@@ -97,7 +97,7 @@ struct GRPCClientStateMachine<Request: GRPCPayload, Response: GRPCPayload> {
     /// - `clientClosedServerIdle`: if the client closes the request stream,
     /// - `clientClosedServerClosed`: if the client terminates the RPC or the server terminates the
     ///      RPC with a "trailers-only" response.
-    case clientActiveServerIdle(writeState: WriteState, readArity: MessageArity)
+    case clientActiveServerIdle(writeState: WriteState, pendingReadState: PendingReadState)
 
     /// The client has indicated to the server that it has finished sending requests. The server
     /// has not yet sent response headers for the RPC. Holds the response stream arity.
@@ -106,7 +106,7 @@ struct GRPCClientStateMachine<Request: GRPCPayload, Response: GRPCPayload> {
     /// - `clientClosedServerActive`: if the server acknowledges the RPC initiation,
     /// - `clientClosedServerClosed`: if the client terminates the RPC or the server terminates the
     ///      RPC with a "trailers-only" response.
-    case clientClosedServerIdle(readArity: MessageArity)
+    case clientClosedServerIdle(pendingReadState: PendingReadState)
 
     /// The client has initiated the RPC and the server has acknowledged it. Messages may have been
     /// sent and/or received. Holds the request stream write state and response stream read state.
@@ -339,12 +339,13 @@ extension GRPCClientStateMachine.State {
         path: requestHead.path,
         timeout: requestHead.timeout,
         customMetadata: requestHead.customMetadata,
-        compression: requestHead.compression
+        compression: requestHead.encoding
       )
       result = .success(headers)
+
       self = .clientActiveServerIdle(
-        writeState: pendingWriteState.makeWriteState(compression: requestHead.compression.outbound),
-        readArity: responseArity
+        writeState: pendingWriteState.makeWriteState(messageEncoding: requestHead.encoding),
+        pendingReadState: .init(arity: responseArity, messageEncoding: requestHead.encoding)
       )
 
     case .clientActiveServerIdle,
@@ -367,9 +368,9 @@ extension GRPCClientStateMachine.State {
     let result: Result<ByteBuffer, MessageWriteError>
 
     switch self {
-    case .clientActiveServerIdle(var writeState, let readArity):
+    case .clientActiveServerIdle(var writeState, let pendingReadState):
       result = writeState.write(message, compressed: compressed, allocator: allocator)
-      self = .clientActiveServerIdle(writeState: writeState, readArity: readArity)
+      self = .clientActiveServerIdle(writeState: writeState, pendingReadState: pendingReadState)
 
     case .clientActiveServerActive(var writeState, let readState):
       result = writeState.write(message, compressed: compressed, allocator: allocator)
@@ -392,9 +393,9 @@ extension GRPCClientStateMachine.State {
     let result: Result<Void, SendEndOfRequestStreamError>
 
     switch self {
-    case .clientActiveServerIdle(_, let readArity):
+    case .clientActiveServerIdle(_, let pendingReadState):
       result = .success(())
-      self = .clientClosedServerIdle(readArity: readArity)
+      self = .clientClosedServerIdle(pendingReadState: pendingReadState)
 
     case .clientActiveServerActive(_, let readState):
       result = .success(())
@@ -419,13 +420,13 @@ extension GRPCClientStateMachine.State {
     let result: Result<Void, ReceiveResponseHeadError>
 
     switch self {
-    case let .clientActiveServerIdle(writeState, readArity):
-      result = self.parseResponseHeaders(headers, arity: readArity).map { readState in
+    case let .clientActiveServerIdle(writeState, pendingReadState):
+      result = self.parseResponseHeaders(headers, pendingReadState: pendingReadState).map { readState in
         self = .clientActiveServerActive(writeState: writeState, readState: readState)
       }
 
-    case let .clientClosedServerIdle(readArity):
-      result = self.parseResponseHeaders(headers, arity: readArity).map { readState in
+    case let .clientClosedServerIdle(pendingReadState):
+      result = self.parseResponseHeaders(headers, pendingReadState: pendingReadState).map { readState in
         self = .clientClosedServerActive(readState: readState)
       }
 
@@ -507,7 +508,7 @@ extension GRPCClientStateMachine.State {
     path: String,
     timeout: GRPCTimeout,
     customMetadata: HPACKHeaders,
-    compression: CallOptions.MessageEncoding
+    compression: ClientMessageEncoding
   ) -> HPACKHeaders {
     // Note: we don't currently set the 'grpc-encoding' header, if we do we will need to feed that
     // encoded into the message writer.
@@ -521,14 +522,20 @@ extension GRPCClientStateMachine.State {
       "user-agent": "grpc-swift-nio",  //  TODO: Add a more specific user-agent.
     ]
 
-    // Request encoding.
-    if let outbound = compression.outbound {
-      headers.add(name: GRPCHeaderName.encoding, value: outbound.name)
-    }
+    switch compression {
+    case .enabled(let configuration):
+      // Request encoding.
+      if let outbound = configuration.outbound {
+        headers.add(name: GRPCHeaderName.encoding, value: outbound.name)
+      }
 
-    // Response encoding.
-    if !compression.inbound.isEmpty {
-      headers.add(name: GRPCHeaderName.acceptEncoding, value: compression.acceptEncodingHeader)
+      // Response encoding.
+      if !configuration.inbound.isEmpty {
+        headers.add(name: GRPCHeaderName.acceptEncoding, value: configuration.acceptEncodingHeader)
+      }
+
+    case .disabled:
+      ()
     }
 
     // Add the timeout header, if a timeout was specified.
@@ -550,7 +557,7 @@ extension GRPCClientStateMachine.State {
   /// - Parameter headers: The headers to parse.
   private func parseResponseHeaders(
     _ headers: HPACKHeaders,
-    arity: MessageArity
+    pendingReadState: PendingReadState
   ) -> Result<ReadState, ReceiveResponseHeadError> {
     // From: https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#responses
     //
@@ -574,26 +581,26 @@ extension GRPCClientStateMachine.State {
       return .failure(.invalidContentType(contentTypeHeader))
     }
 
-    // What compression mechanism is the server using, if any?
-    let compression: CompressionAlgorithm?
+    let result: Result<ReadState, ReceiveResponseHeadError>
 
+    // What compression mechanism is the server using, if any?
     if let encodingHeader = headers.first(name: GRPCHeaderName.encoding) {
       // Note: the server is allowed to encode messages using an algorithm which wasn't included in
       // the 'grpc-accept-encoding' header. If the client still supports that algorithm (despite not
       // permitting the server to use it) then it must still decode that message. Ideally we should
       // log a message here if that was the case but we don't hold that information.
-      compression = CompressionAlgorithm(rawValue: encodingHeader)
-      // The algorithm isn't one we support.
-      if compression == nil {
-        return .failure(.unsupportedMessageEncoding(encodingHeader))
+      if let compression = CompressionAlgorithm(rawValue: encodingHeader) {
+        result = .success(pendingReadState.makeReadState(compression: compression))
+      } else {
+        // The algorithm isn't one we support.
+        result = .failure(.unsupportedMessageEncoding(encodingHeader))
       }
     } else {
       // No compression was specified, this is fine.
-      compression = nil
+      result = .success(pendingReadState.makeReadState(compression: nil))
     }
 
-    let reader = LengthPrefixedMessageReader(compression: compression)
-    return .success(.reading(arity, reader))
+    return result
   }
 
   /// Parses the response trailers ("Trailers" in the specification) from the server into

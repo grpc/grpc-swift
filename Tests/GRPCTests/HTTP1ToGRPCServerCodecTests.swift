@@ -28,7 +28,7 @@ class HTTP1ToGRPCServerCodecTests: GRPCTestCase {
 
   override func setUp() {
     super.setUp()
-    let handler = HTTP1ToGRPCServerCodec<Echo_EchoRequest, Echo_EchoResponse>(encoding: .none, logger: self.logger)
+    let handler = HTTP1ToGRPCServerCodec<Echo_EchoRequest, Echo_EchoResponse>(encoding: .disabled, logger: self.logger)
     self.channel = EmbeddedChannel(handler: handler)
   }
 

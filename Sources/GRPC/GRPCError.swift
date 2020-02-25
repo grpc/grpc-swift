@@ -118,6 +118,23 @@ public enum GRPCError {
     }
   }
 
+  /// The decompression limit was exceeded while decompressing a message.
+  public struct DecompressionLimitExceeded: GRPCErrorProtocol {
+    var compressedSize: Int
+
+    public init(compressedSize: Int) {
+      self.compressedSize = compressedSize
+    }
+
+    public var description: String {
+      return "Decompression limit exceeded with \(self.compressedSize) compressed bytes"
+    }
+
+    public func makeGRPCStatus() -> GRPCStatus {
+      return GRPCStatus(code: .resourceExhausted, message: nil)
+    }
+  }
+
   /// It was not possible to decode a base64 message (gRPC-Web only).
   public struct Base64DecodeError: GRPCErrorProtocol {
     public let description = "Base64 message decoding failed"

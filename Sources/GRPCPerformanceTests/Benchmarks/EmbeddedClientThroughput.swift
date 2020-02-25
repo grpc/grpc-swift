@@ -47,7 +47,7 @@ class EmbeddedClientThroughput: Benchmark {
       host: "localhost",
       timeout: .infinite,
       customMetadata: [:],
-      encoding: .none
+      encoding: .disabled
     )
 
     self.request = .with {

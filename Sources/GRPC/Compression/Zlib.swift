@@ -145,12 +145,82 @@ enum Zlib {
   ///
   /// - Parameter format:The expected compression type.
   class Inflate {
+    enum InflationState {
+      /// Inflation is in progress.
+      case inflating(InflatingState)
+
+      /// Inflation completed successfully.
+      case inflated
+
+      init(compressedSize: Int, limit: DecompressionLimit) {
+        self = .inflating(InflatingState(compressedSize: compressedSize, limit: limit))
+      }
+
+      /// Update the state with the result of `Zlib.ZStream.inflate(outputBuffer:outputBufferSize:)`.
+      mutating func update(with result: Zlib.ZStream.InflateResult) throws {
+        switch (result.outcome, self) {
+        case (.outputBufferTooSmall, var .inflating(state)):
+          guard state.outputBufferSize < state.maxDecompressedSize else {
+            // We hit the decompression limit and last time we clamped our output buffer size; we
+            // can't use a larger buffer without exceeding the limit.
+            throw GRPCError.DecompressionLimitExceeded(compressedSize: state.compressedSize).captureContext()
+          }
+          state.increaseOutputBufferSize()
+          self = .inflating(state)
+
+        case (.complete, .inflating(let state)):
+          // Since we request a _minimum_ output buffer size from `ByteBuffer` it's possible that
+          // the decompressed size exceeded the decompression limit.
+          guard result.totalBytesWritten <= state.maxDecompressedSize else {
+            throw GRPCError.DecompressionLimitExceeded(compressedSize: state.compressedSize).captureContext()
+          }
+          self = .inflated
+
+        case (.complete, .inflated),
+             (.outputBufferTooSmall, .inflated):
+          preconditionFailure("invalid outcome '\(result.outcome)'; inflation is already complete")
+        }
+      }
+    }
+
+    struct InflatingState {
+      /// The compressed size of the data to inflate.
+      let compressedSize: Int
+
+      /// The maximum size the decompressed data may be, according to the user-defined
+      /// decompression limit.
+      let maxDecompressedSize: Int
+
+      /// The minimum size requested for the output buffer.
+      private(set) var outputBufferSize: Int
+
+      init(compressedSize: Int, limit: DecompressionLimit) {
+        self.compressedSize = compressedSize
+        self.maxDecompressedSize = limit.maximumDecompressedSize(compressedSize: compressedSize)
+        self.outputBufferSize = compressedSize
+        self.increaseOutputBufferSize()
+      }
+
+      /// Increase the output buffer size without exceeding `maxDecompressedSize`.
+      mutating func increaseOutputBufferSize() {
+        let nextOutputBufferSize = 2 * self.outputBufferSize
+
+        if nextOutputBufferSize > self.maxDecompressedSize {
+          self.outputBufferSize = self.maxDecompressedSize
+        } else {
+          self.outputBufferSize = nextOutputBufferSize
+        }
+      }
+    }
+
     private var stream: ZStream
     private let format: CompressionFormat
+    private let limit: DecompressionLimit
 
-    init(format: CompressionFormat) {
+    init(format: CompressionFormat, limit: DecompressionLimit) {
       self.stream = ZStream()
       self.format = format
+      self.limit = limit
       self.initialize()
     }
 
@@ -200,31 +270,23 @@ enum Zlib {
           self.stream.nextInputBuffer = nil
         }
 
-        // We don't know how large the output will be; we'll try 2x the input size.
-        var outBufferSize = inputPointer.count * 2
-
-        var inflated = false
         var bytesWritten = 0
-
-        while !inflated {
-          bytesWritten = try output.writeWithUnsafeMutableBytes(minimumWritableBytes: outBufferSize) { outputPointer in
+        var state = InflationState(compressedSize: inputPointer.count, limit: self.limit)
+        while case .inflating(let inflationState) = state {
+          // Each call to inflate writes into the buffer, so we need to take the writer index into
+          // account here.
+          let writerIndex = output.writerIndex
+          let minimumWritableBytes = inflationState.outputBufferSize - writerIndex
+          bytesWritten = try output.writeWithUnsafeMutableBytes(minimumWritableBytes: minimumWritableBytes) { outputPointer in
             let inflateResult = try self.stream.inflate(
               outputBuffer: CGRPCZlib_castVoidToBytefPointer(outputPointer.baseAddress!),
               outputBufferSize: outputPointer.count
             )
 
-            switch inflateResult.outcome {
-            case .complete:
-              inflated = true
-            case .outputBufferTooSmall:
-              outBufferSize *= 2
-            }
-
+            try state.update(with: inflateResult)
             return inflateResult.bytesWritten
           }
         }
-
-        assert(inflated)
 
         let bytesRead = inputPointer.count - self.stream.availableInputBytes
         return (bytesRead, bytesWritten)
@@ -252,11 +314,6 @@ enum Zlib {
       //
       // Since we're going away there's no reason to fail here.
     }
-  }
-
-  enum InflateResult {
-    case complete
-    case outputBufferTooSmall
   }
 
   // MARK: ZStream
@@ -319,6 +376,13 @@ enum Zlib {
       }
     }
 
+    /// The total number of bytes written to the output buffer. See also: `z_stream.total_out`.
+    var totalOutputBytes: Int {
+      get {
+        return Int(self.zstream.total_out)
+      }
+    }
+
     /// The last error message that zlib wrote. No message is guaranteed on error, however, `nil` is
     /// guaranteed if there is no error. See also `z_stream.msg`.
     var lastErrorMessage: String? {
@@ -338,6 +402,7 @@ enum Zlib {
 
     struct InflateResult {
       var bytesWritten: Int
+      var totalBytesWritten: Int
       var outcome: InflateOutcome
     }
 
@@ -389,6 +454,7 @@ enum Zlib {
 
       return InflateResult(
         bytesWritten: outputBufferSize - self.availableOutputBytes,
+        totalBytesWritten: self.totalOutputBytes,
         outcome: outcome
       )
     }

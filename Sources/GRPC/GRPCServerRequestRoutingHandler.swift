@@ -44,7 +44,7 @@ public protocol CallHandlerProvider: class {
 public struct CallHandlerContext {
   internal var errorDelegate: ServerErrorDelegate?
   internal var logger: Logger
-  internal var encoding: Server.Configuration.MessageEncoding
+  internal var encoding: ServerMessageEncoding
 }
 
 /// Attempts to route a request to a user-provided call handler. Also validates that the request has
@@ -58,7 +58,7 @@ public struct CallHandlerContext {
 public final class GRPCServerRequestRoutingHandler {
   private let logger: Logger
   private let servicesByName: [String: CallHandlerProvider]
-  private let encoding: Server.Configuration.MessageEncoding
+  private let encoding: ServerMessageEncoding
   private weak var errorDelegate: ServerErrorDelegate?
 
   private enum State: Equatable {
@@ -70,7 +70,7 @@ public final class GRPCServerRequestRoutingHandler {
 
   public init(
     servicesByName: [String: CallHandlerProvider],
-    encoding: Server.Configuration.MessageEncoding,
+    encoding: ServerMessageEncoding,
     errorDelegate: ServerErrorDelegate?,
     logger: Logger
   ) {

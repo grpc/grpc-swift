@@ -44,7 +44,7 @@ public struct _GRPCRequestHead {
     var path: String
     var host: String
     var timeout: GRPCTimeout
-    var encoding: CallOptions.MessageEncoding
+    var encoding: ClientMessageEncoding
 
     init(
       method: String,
@@ -52,7 +52,7 @@ public struct _GRPCRequestHead {
       path: String,
       host: String,
       timeout: GRPCTimeout,
-      encoding: CallOptions.MessageEncoding
+      encoding: ClientMessageEncoding
     ) {
       self.method = method
       self.scheme = scheme
@@ -138,7 +138,7 @@ public struct _GRPCRequestHead {
     }
   }
 
-  internal var compression: CallOptions.MessageEncoding {
+  internal var encoding: ClientMessageEncoding {
     get {
       return self._storage.encoding
     }
@@ -157,7 +157,7 @@ public struct _GRPCRequestHead {
     host: String,
     timeout: GRPCTimeout,
     customMetadata: HPACKHeaders,
-    encoding: CallOptions.MessageEncoding
+    encoding: ClientMessageEncoding
   ) {
     self._storage = .init(
       method: method,
@@ -374,6 +374,8 @@ extension _GRPCClientChannelHandler: ChannelInboundHandler {
         return GRPCError.StreamCardinalityViolation(stream: .response).captureContext()
       case .deserializationFailed, .leftOverBytes:
         return GRPCError.DeserializationFailure().captureContext()
+      case .decompressionLimitExceeded(let compressedSize):
+        return GRPCError.DecompressionLimitExceeded(compressedSize: compressedSize).captureContext()
       case .invalidState:
         return GRPCError.InvalidState("parsing data as a response message").captureContext()
       }

@@ -30,12 +30,17 @@ struct PendingWriteState {
   /// The 'content-type' being written.
   var contentType: ContentType
 
-  func makeWriteState(compression: CompressionAlgorithm? = nil) -> WriteState {
-    return .writing(
-      self.arity,
-      self.contentType,
-      LengthPrefixedMessageWriter(compression: compression)
-    )
+  func makeWriteState(messageEncoding: ClientMessageEncoding) -> WriteState {
+    let compression: CompressionAlgorithm?
+    switch messageEncoding {
+    case .enabled(let configuration):
+      compression = configuration.outbound
+    case .disabled:
+      compression = nil
+    }
+
+    let writer = LengthPrefixedMessageWriter(compression: compression)
+    return .writing(self.arity, self.contentType, writer)
   }
 }
 
@@ -95,6 +100,31 @@ enum MessageWriteError: Error {
   case invalidState
 }
 
+/// Encapsulates the state required to create a new read state.
+struct PendingReadState {
+  /// The number of messages we expect to read from the stream.
+  var arity: MessageArity
+
+  /// The message encoding configuration, and whether it's enabled or not.
+  var messageEncoding: ClientMessageEncoding
+
+  func makeReadState(compression: CompressionAlgorithm? = nil) -> ReadState {
+    let reader: LengthPrefixedMessageReader
+    switch (self.messageEncoding, compression) {
+    case (.enabled(let configuration), .some(let compression)):
+      reader = LengthPrefixedMessageReader(
+        compression: compression,
+        decompressionLimit: configuration.decompressionLimit
+      )
+
+    case (.enabled, .none),
+         (.disabled, _):
+      reader = LengthPrefixedMessageReader()
+    }
+    return .reading(self.arity, reader)
+  }
+}
+
 /// The read state of a stream.
 enum ReadState {
   /// Reading may be attempted using the given reader.
@@ -124,13 +154,18 @@ enum ReadState {
       var messages: [MessageType] = []
 
       do {
-        while var serializedBytes = try? reader.nextMessage() {
+        while var serializedBytes = try reader.nextMessage() {
           // Force unwrapping is okay here: we will always be able to read `readableBytes`.
           messages.append(try MessageType(serializedByteBuffer: &serializedBytes))
         }
       } catch {
         self = .notReading
-        return .failure(.deserializationFailed)
+        if let grpcError = error as? GRPCError.WithContext,
+          let limitExceeded = grpcError.error as? GRPCError.DecompressionLimitExceeded {
+          return .failure(.decompressionLimitExceeded(limitExceeded.compressedSize))
+        } else {
+          return .failure(.deserializationFailed)
+        }
       }
 
       // We need to validate the number of messages we decoded. Zero is fine because the payload may
@@ -163,7 +198,7 @@ enum ReadState {
   }
 }
 
-enum MessageReadError: Error {
+enum MessageReadError: Error, Equatable {
   /// Too many messages were read.
   case cardinalityViolation
 
@@ -172,6 +207,9 @@ enum MessageReadError: Error {
 
   /// Message deserialization failed.
   case deserializationFailed
+
+  /// The limit for decompression was exceeded.
+  case decompressionLimitExceeded(Int)
 
   /// An invalid state was encountered. This is a serious implementation error.
   case invalidState
