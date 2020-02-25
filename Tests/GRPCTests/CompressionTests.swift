@@ -57,7 +57,7 @@ class MessageCompressionTests: GRPCTestCase {
 
     self.client = ClientConnection(configuration: configuration)
     self.echo = Echo_EchoServiceClient(
-      connection: self.client,
+      channel: self.client,
       defaultCallOptions: CallOptions(messageEncoding: encoding)
     )
   }

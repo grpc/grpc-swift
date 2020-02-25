@@ -34,17 +34,12 @@ class ClientTimeoutTests: GRPCTestCase {
 
   override func setUp() {
     super.setUp()
-    let channel = EmbeddedChannel()
 
-    let configuration = ClientConnection.Configuration(
-      target: .socketAddress(try! .init(unixDomainSocketPath: "/foo")),
-      eventLoopGroup: channel.eventLoop
-    )
+    let connection = EmbeddedGRPCChannel()
+    XCTAssertNoThrow(try connection.embeddedChannel.connect(to: SocketAddress(unixDomainSocketPath: "/foo")))
+    let client = Echo_EchoServiceClient(channel: connection, defaultCallOptions: self.callOptions)
 
-    let connection = ClientConnection(channel: channel, configuration: configuration)
-    let client = Echo_EchoServiceClient(connection: connection, defaultCallOptions: self.callOptions)
-
-    self.channel = channel
+    self.channel = connection.embeddedChannel
     self.client = client
   }
 

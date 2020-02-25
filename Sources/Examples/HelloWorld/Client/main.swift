@@ -76,7 +76,7 @@ func main(args: [String]) {
     let connection = ClientConnection(configuration: configuration)
 
     // Provide the connection to the generated client.
-    let greeter = Helloworld_GreeterServiceClient(connection: connection)
+    let greeter = Helloworld_GreeterServiceClient(channel: connection)
 
     // Do the greeting.
     greet(name: name, client: greeter)

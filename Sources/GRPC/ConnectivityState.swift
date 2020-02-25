@@ -55,7 +55,7 @@ public protocol ConnectivityStateDelegate: class {
 }
 
 public class ConnectivityStateMonitor {
-  private let logger = Logger(subsystem: .connectivityState)
+  private let logger: Logger
   private let lock = Lock()
   private var _state: ConnectivityState = .idle
   private var _userInitiatedShutdown = false
@@ -64,8 +64,9 @@ public class ConnectivityStateMonitor {
   /// Creates a new connectivity state monitor.
   ///
   /// - Parameter delegate: A delegate to call when the connectivity state changes.
-  public init(delegate: ConnectivityStateDelegate?) {
+  init(delegate: ConnectivityStateDelegate?, logger: Logger) {
     self._delegate = delegate
+    self.logger = logger
   }
 
   /// The current state of connectivity.

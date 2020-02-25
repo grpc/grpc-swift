@@ -1,7 +1,7 @@
 #!/bin/sh
 
-PLUGIN_SWIFT=../../.build/debug/protoc-gen-swift
-PLUGIN_SWIFTGRPC=../../.build/debug/protoc-gen-grpc-swift
+PLUGIN_SWIFT=../../.build/release/protoc-gen-swift
+PLUGIN_SWIFTGRPC=../../.build/release/protoc-gen-grpc-swift
 PROTO="src/proto/grpc/testing/test.proto"
 
 OUTPUT="Generated"

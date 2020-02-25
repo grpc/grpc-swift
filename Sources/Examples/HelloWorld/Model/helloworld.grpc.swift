@@ -33,16 +33,16 @@ public protocol Helloworld_GreeterService {
 }
 
 public final class Helloworld_GreeterServiceClient: GRPCClient, Helloworld_GreeterService {
-  public let connection: ClientConnection
+  public let channel: GRPCChannel
   public var defaultCallOptions: CallOptions
 
   /// Creates a client for the helloworld.Greeter service.
   ///
   /// - Parameters:
-  ///   - connection: `ClientConnection` to the service host.
+  ///   - channel: `GRPCChannel` to the service host.
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
-  public init(connection: ClientConnection, defaultCallOptions: CallOptions = CallOptions()) {
-    self.connection = connection
+  public init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
+    self.channel = channel
     self.defaultCallOptions = defaultCallOptions
   }
 
@@ -88,3 +88,4 @@ extension Helloworld_GreeterProvider {
 /// Provides conformance to `GRPCPayload` for the request and response messages
 extension Helloworld_HelloRequest: GRPCProtobufPayload {}
 extension Helloworld_HelloReply: GRPCProtobufPayload {}
+

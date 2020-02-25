@@ -24,10 +24,11 @@ import Logging
 class DelegatingErrorHandler: ChannelInboundHandler {
   typealias InboundIn = Any
 
-  private let logger = Logger(subsystem: .clientChannel)
+  private let logger: Logger
   private let delegate: ClientErrorDelegate?
 
-  init(delegate: ClientErrorDelegate?) {
+  init(logger: Logger, delegate: ClientErrorDelegate?) {
+    self.logger = logger
     self.delegate = delegate
   }
 

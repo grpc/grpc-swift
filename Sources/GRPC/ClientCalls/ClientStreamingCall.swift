@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Foundation
-import SwiftProtobuf
 import NIO
+import NIOHTTP2
 import Logging
 
 /// A client-streaming gRPC call.
@@ -35,34 +34,39 @@ public final class ClientStreamingCall<RequestPayload: GRPCPayload, ResponsePayl
   public let response: EventLoopFuture<ResponsePayload>
   private var messageQueue: EventLoopFuture<Void>
 
-  public init(
-    connection: ClientConnection,
+  init(
     path: String,
+    scheme: String,
+    authority: String,
     callOptions: CallOptions,
-    errorDelegate: ClientErrorDelegate?
+    eventLoop: EventLoop,
+    multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
+    errorDelegate: ClientErrorDelegate?,
+    logger: Logger
   ) {
     let requestID = callOptions.requestIDProvider.requestID()
-    let logger = Logger(subsystem: .clientChannelCall, metadata: [MetadataKey.requestID: "\(requestID)"])
+    var logger = logger
+    logger[metadataKey: MetadataKey.requestID] = "\(requestID)"
     logger.debug("starting rpc", metadata: ["path": "\(path)"])
 
-    self.messageQueue = connection.eventLoop.makeSucceededFuture(())
-    let responsePromise = connection.eventLoop.makePromise(of: ResponsePayload.self)
+    self.messageQueue = eventLoop.makeSucceededFuture(())
+    let responsePromise = eventLoop.makePromise(of: ResponsePayload.self)
     self.response = responsePromise.futureResult
 
     let responseHandler = GRPCClientUnaryResponseChannelHandler(
-      initialMetadataPromise: connection.channel.eventLoop.makePromise(),
-      trailingMetadataPromise: connection.channel.eventLoop.makePromise(),
+      initialMetadataPromise: eventLoop.makePromise(),
+      trailingMetadataPromise: eventLoop.makePromise(),
       responsePromise: responsePromise,
-      statusPromise: connection.channel.eventLoop.makePromise(),
+      statusPromise: eventLoop.makePromise(),
       errorDelegate: errorDelegate,
       timeout: callOptions.timeout,
       logger: logger
     )
 
     let requestHead = _GRPCRequestHead(
-      scheme: connection.configuration.httpProtocol.scheme,
+      scheme: scheme,
       path: path,
-      host: connection.configuration.target.host,
+      host: authority,
       requestID: requestID,
       options: callOptions
     )
@@ -70,8 +74,8 @@ public final class ClientStreamingCall<RequestPayload: GRPCPayload, ResponsePayl
     let requestHandler = _StreamingRequestChannelHandler<RequestPayload>(requestHead: requestHead)
 
     super.init(
-      eventLoop: connection.eventLoop,
-      multiplexer: connection.multiplexer,
+      eventLoop: eventLoop,
+      multiplexer: multiplexer,
       callType: .clientStreaming,
       callOptions: callOptions,
       responseHandler: responseHandler,

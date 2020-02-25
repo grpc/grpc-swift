@@ -63,6 +63,10 @@ class GRPCTestCase: XCTestCase {
     }
     return shouldRun
   }
+
+  var logger: Logger {
+    return Logger(label: "io.grpc.testing")
+  }
 }
 
 /// A `LogHandler` which does nothing with log messages.

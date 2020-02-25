@@ -198,7 +198,7 @@ func makeClient(group: EventLoopGroup, host: String, port: Int, useTLS: Bool) ->
 
   // Start the connection and create the client:
   let connection = ClientConnection(configuration: configuration)
-  return Echo_EchoServiceClient(connection: connection)
+  return Echo_EchoServiceClient(channel: connection)
 }
 
 func callRPC(_ rpc: RPC, using client: Echo_EchoServiceClient, message: String) {

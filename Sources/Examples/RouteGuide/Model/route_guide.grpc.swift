@@ -36,16 +36,16 @@ public protocol Routeguide_RouteGuideService {
 }
 
 public final class Routeguide_RouteGuideServiceClient: GRPCClient, Routeguide_RouteGuideService {
-  public let connection: ClientConnection
+  public let channel: GRPCChannel
   public var defaultCallOptions: CallOptions
 
   /// Creates a client for the routeguide.RouteGuide service.
   ///
   /// - Parameters:
-  ///   - connection: `ClientConnection` to the service host.
+  ///   - channel: `GRPCChannel` to the service host.
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
-  public init(connection: ClientConnection, defaultCallOptions: CallOptions = CallOptions()) {
-    self.connection = connection
+  public init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
+    self.channel = channel
     self.defaultCallOptions = defaultCallOptions
   }
 
@@ -156,3 +156,4 @@ extension Routeguide_Feature: GRPCProtobufPayload {}
 extension Routeguide_Rectangle: GRPCProtobufPayload {}
 extension Routeguide_RouteSummary: GRPCProtobufPayload {}
 extension Routeguide_RouteNote: GRPCProtobufPayload {}
+

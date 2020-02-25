@@ -47,3 +47,15 @@ extension GRPCStatusTransformable {
     return self.makeGRPCStatus()
   }
 }
+
+extension GRPCClient {
+  @available(*, deprecated, renamed: "init(channel:defaultCallOptions:)", message: "You may also need to regenerate your client code")
+  public init(connection: ClientConnection, defaultCallOptions: CallOptions = CallOptions()) {
+    self.init(channel: connection, defaultCallOptions: defaultCallOptions)
+  }
+
+  @available(*, deprecated, renamed: "channel")
+  public var connection: GRPCChannel {
+    return self.channel
+  }
+}

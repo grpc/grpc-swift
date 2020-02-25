@@ -28,13 +28,12 @@ class GRPCServerRequestRoutingHandlerTests: GRPCTestCase {
   override func setUp() {
     super.setUp()
 
-    let logger = Logger(label: "io.grpc.testing")
     let provider = EchoProvider()
     let handler = GRPCServerRequestRoutingHandler(
       servicesByName: [provider.serviceName: provider],
       encoding: .none,
       errorDelegate: nil,
-      logger: logger
+      logger: self.logger
     )
 
     self.channel = EmbeddedChannel(handler: handler)

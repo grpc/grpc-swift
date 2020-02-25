@@ -25,7 +25,7 @@ class ClientClosedChannelTests: EchoTestCaseBase {
     let responseExpectation = self.makeResponseExpectation()
     let statusExpectation = self.makeStatusExpectation()
 
-    self.client.connection.close().map {
+    self.client.channel.close().map {
       self.client.get(Echo_EchoRequest(text: "foo"))
     }.whenSuccess { get in
       get.initialMetadata.assertError(fulfill: initialMetadataExpectation)
@@ -42,7 +42,7 @@ class ClientClosedChannelTests: EchoTestCaseBase {
     let responseExpectation = self.makeResponseExpectation()
     let statusExpectation = self.makeStatusExpectation()
 
-    self.client.connection.close().map {
+    self.client.channel.close().map {
       self.client.collect()
     }.whenSuccess { collect in
       collect.initialMetadata.assertError(fulfill: initialMetadataExpectation)
@@ -70,7 +70,7 @@ class ClientClosedChannelTests: EchoTestCaseBase {
     }.peek {
       requestExpectation.fulfill()
     }.flatMap {
-      self.client.connection.close()
+      self.client.channel.close()
     }.peekError { error in
       XCTFail("Encountered error before or during closing the connection: \(error)")
     }.flatMap {
@@ -88,7 +88,7 @@ class ClientClosedChannelTests: EchoTestCaseBase {
     let initialMetadataExpectation = self.makeInitialMetadataExpectation()
     let statusExpectation = self.makeStatusExpectation()
 
-    self.client.connection.close().map {
+    self.client.channel.close().map {
       self.client.expand(Echo_EchoRequest(text: "foo")) { response in
         XCTFail("No response expected but got: \(response)")
       }
@@ -105,7 +105,7 @@ class ClientClosedChannelTests: EchoTestCaseBase {
     let initialMetadataExpectation = self.makeInitialMetadataExpectation()
     let statusExpectation = self.makeStatusExpectation()
 
-    self.client.connection.close().map {
+    self.client.channel.close().map {
       self.client.update { response in
         XCTFail("No response expected but got: \(response)")
       }
@@ -135,7 +135,7 @@ class ClientClosedChannelTests: EchoTestCaseBase {
     }.peek {
       requestExpectation.fulfill()
     }.flatMap {
-      self.client.connection.close()
+      self.client.channel.close()
     }.peekError { error in
       XCTFail("Encountered error before or during closing the connection: \(error)")
     }.flatMap {
@@ -155,7 +155,7 @@ class ClientClosedChannelTests: EchoTestCaseBase {
     }
 
     update.newMessageQueue().flatMap {
-      self.client.connection.close()
+      self.client.channel.close()
     }.peekError { error in
       XCTFail("Encountered error before or during closing the connection: \(error)")
     }.whenSuccess {

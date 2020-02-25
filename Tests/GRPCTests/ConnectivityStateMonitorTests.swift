@@ -15,13 +15,18 @@
  */
 @testable import GRPC
 import XCTest
+import Logging
 
 class ConnectivityStateMonitorTests: GRPCTestCase {
-  var monitor = ConnectivityStateMonitor(delegate: nil)
+  var monitor: ConnectivityStateMonitor!
 
   // Ensure `.idle` isn't first since it is the initial state and we only trigger callbacks
   // when the state changes, not when the state is set.
   let states: [ConnectivityState] = [.connecting, .ready, .transientFailure, .shutdown, .idle]
+
+  override func setUp() {
+    self.monitor = ConnectivityStateMonitor(delegate: nil, logger: self.logger)
+  }
 
   func testDelegateOnlyCalledForChanges() {
     let recorder = ConnectivityStateCollectionDelegate()

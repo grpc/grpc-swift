@@ -34,7 +34,7 @@ func makeClient(port: Int, group: EventLoopGroup) -> Routeguide_RouteGuideServic
   )
 
   let connection = ClientConnection(configuration: config)
-  return Routeguide_RouteGuideServiceClient(connection: connection)
+  return Routeguide_RouteGuideServiceClient(channel: connection)
 }
 
 /// Unary call example. Calls `getFeature` and prints the response.
@@ -214,7 +214,7 @@ func main(args: [String]) throws {
   // Make a client, make sure we close it when we're done.
   let routeGuide = makeClient(port: port, group: group)
   defer {
-    try? routeGuide.connection.close().wait()
+    try? routeGuide.channel.close().wait()
   }
 
   // Look for a valid feature.

@@ -13,13 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Foundation
-import SwiftProtobuf
+import NIO
+import NIOHTTP2
 
-/// A GRPC client.
+/// A gRPC client.
 public protocol GRPCClient {
-  /// The connection providing the underlying HTTP/2 channel for this client.
-  var connection: ClientConnection { get }
+  /// Initialize the client with the given channel and default call options.
+  init(channel: GRPCChannel, defaultCallOptions: CallOptions)
+
+  /// The gRPC channel over which RPCs are sent and received. Note that this is distinct
+  /// from `NIO.Channel`.
+  var channel: GRPCChannel { get }
 
   /// The call options to use should the user not provide per-call options.
   var defaultCallOptions: CallOptions { get set }
@@ -32,12 +36,11 @@ extension GRPCClient {
     callOptions: CallOptions? = nil,
     responseType: Response.Type = Response.self
   ) -> UnaryCall<Request, Response> {
-    return UnaryCall(
-      connection: self.connection,
+    return self.channel.makeUnaryCall(
       path: path,
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions,
-      errorDelegate: self.connection.configuration.errorDelegate)
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
   }
 
   public func makeServerStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
@@ -47,13 +50,12 @@ extension GRPCClient {
     responseType: Response.Type = Response.self,
     handler: @escaping (Response) -> Void
   ) -> ServerStreamingCall<Request, Response> {
-    return ServerStreamingCall(
-      connection: self.connection,
+    return self.channel.makeServerStreamingCall(
       path: path,
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
-      errorDelegate: self.connection.configuration.errorDelegate,
-      handler: handler)
+      handler: handler
+    )
   }
 
   public func makeClientStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
@@ -62,11 +64,10 @@ extension GRPCClient {
     requestType: Request.Type = Request.self,
     responseType: Response.Type = Response.self
   ) -> ClientStreamingCall<Request, Response> {
-    return ClientStreamingCall(
-      connection: self.connection,
+    return self.channel.makeClientStreamingCall(
       path: path,
-      callOptions: callOptions ?? self.defaultCallOptions,
-      errorDelegate: self.connection.configuration.errorDelegate)
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
   }
 
   public func makeBidirectionalStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
@@ -76,19 +77,18 @@ extension GRPCClient {
     responseType: Response.Type = Response.self,
     handler: @escaping (Response) -> Void
   ) -> BidirectionalStreamingCall<Request, Response> {
-    return BidirectionalStreamingCall(
-      connection: self.connection,
+    return self.channel.makeBidirectionalStreamingCall(
       path: path,
       callOptions: callOptions ?? self.defaultCallOptions,
-      errorDelegate: self.connection.configuration.errorDelegate,
-      handler: handler)
+      handler: handler
+    )
   }
 }
 
 /// A client which has no generated stubs and may be used to create gRPC calls manually.
 /// See `GRPCClient` for details.
 public final class AnyServiceClient: GRPCClient {
-  public let connection: ClientConnection
+  public let channel: GRPCChannel
   public var defaultCallOptions: CallOptions
 
   /// Creates a client which may be used to call any service.
@@ -96,8 +96,8 @@ public final class AnyServiceClient: GRPCClient {
   /// - Parameters:
   ///   - connection: `ClientConnection` to the service host.
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
-  public init(connection: ClientConnection, defaultCallOptions: CallOptions = CallOptions()) {
-    self.connection = connection
+  public init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
+    self.channel = channel
     self.defaultCallOptions = defaultCallOptions
   }
 }

@@ -41,12 +41,12 @@ class GRPCCustomPayloadTests: GRPCTestCase {
       eventLoopGroup: self.group
     )
 
-    self.client = AnyServiceClient(connection: .init(configuration: clientConfig))
+    self.client = AnyServiceClient(channel: ClientConnection(configuration: clientConfig))
   }
 
   override func tearDown() {
     XCTAssertNoThrow(try self.server.close().wait())
-    XCTAssertNoThrow(try self.client.connection.close().wait())
+    XCTAssertNoThrow(try self.client.channel.close().wait())
     XCTAssertNoThrow(try self.group.syncShutdownGracefully())
   }
 
