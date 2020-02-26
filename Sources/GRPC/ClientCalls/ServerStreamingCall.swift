@@ -24,7 +24,6 @@ import Logging
 /// - `status`: the status of the gRPC call after it has ended,
 /// - `trailingMetadata`: any metadata returned from the server alongside the `status`.
 public final class ServerStreamingCall<RequestPayload: GRPCPayload, ResponsePayload: GRPCPayload>: BaseClientCall<RequestPayload, ResponsePayload> {
-
   init(
     path: String,
     scheme: String,

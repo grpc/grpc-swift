@@ -296,7 +296,7 @@ extension ClientConnection {
   /// - Parameter backoffIterator: An `Iterator` for `ConnectionBackoff` providing a sequence of
   ///     connection timeouts and backoff to use when attempting to create a connection.
   private class func makeChannel(
-    configuration: ClientConnection.Configuration,
+    configuration: Configuration,
     eventLoop: EventLoop,
     connectivity: ConnectivityStateMonitor,
     backoffIterator: ConnectionBackoffIterator?,
@@ -353,7 +353,7 @@ extension ClientConnection {
   private class func scheduleReconnectAttempt(
     in timeout: TimeInterval,
     on eventLoop: EventLoop,
-    configuration: ClientConnection.Configuration,
+    configuration: Configuration,
     connectivity: ConnectivityStateMonitor,
     backoffIterator: ConnectionBackoffIterator?,
     logger: Logger
@@ -385,7 +385,7 @@ extension ClientConnection {
   /// - Parameter timeout: The connection timeout in seconds.
   /// - Parameter connectivityMonitor: The connectivity state monitor for the created channel.
   private class func makeBootstrap(
-    configuration: ClientConnection.Configuration,
+    configuration: Configuration,
     eventLoop: EventLoop,
     timeout: TimeInterval?,
     connectivityMonitor: ConnectivityStateMonitor,
