@@ -39,7 +39,7 @@ internal enum GRPCApplicationProtocolIdentifier: String, CaseIterable {
 internal class TLSVerificationHandler: ChannelInboundHandler, RemovableChannelHandler {
   typealias InboundIn = Any
 
-  private let logger = Logger(subsystem: .clientChannel)
+  private let logger: Logger
   private var verificationPromise: EventLoopPromise<Void>!
 
   /// A future which is fulfilled when the state of the TLS handshake is known. If the handshake
@@ -52,7 +52,9 @@ internal class TLSVerificationHandler: ChannelInboundHandler, RemovableChannelHa
     return verificationPromise.futureResult
   }
 
-  init() { }
+  init(logger: Logger) {
+    self.logger = logger
+  }
 
   func handlerAdded(context: ChannelHandlerContext) {
     self.verificationPromise = context.eventLoop.makePromise()

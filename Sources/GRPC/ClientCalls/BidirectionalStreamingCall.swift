@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Foundation
-import SwiftProtobuf
 import NIO
+import NIOHTTP2
 import Logging
 
 /// A bidirectional-streaming gRPC call. Each response is passed to the provided observer block.
@@ -32,23 +31,27 @@ public final class BidirectionalStreamingCall<RequestPayload: GRPCPayload, Respo
     StreamingRequestClientCall {
   private var messageQueue: EventLoopFuture<Void>
 
-  public init(
-    connection: ClientConnection,
+  init(
     path: String,
+    scheme: String,
+    authority: String,
     callOptions: CallOptions,
+    eventLoop: EventLoop,
+    multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
     errorDelegate: ClientErrorDelegate?,
+    logger: Logger,
     handler: @escaping (ResponsePayload) -> Void
   ) {
-    self.messageQueue = connection.channel.eventLoop.makeSucceededFuture(())
+    self.messageQueue = eventLoop.makeSucceededFuture(())
     let requestID = callOptions.requestIDProvider.requestID()
-
-    let logger = Logger(subsystem: .clientChannelCall, metadata: [MetadataKey.requestID: "\(requestID)"])
+    var logger = logger
+    logger[metadataKey: MetadataKey.requestID] = "\(requestID)"
     logger.debug("starting rpc", metadata: ["path": "\(path)"])
 
     let responseHandler = GRPCClientStreamingResponseChannelHandler(
-      initialMetadataPromise: connection.channel.eventLoop.makePromise(),
-      trailingMetadataPromise: connection.channel.eventLoop.makePromise(),
-      statusPromise: connection.channel.eventLoop.makePromise(),
+      initialMetadataPromise: eventLoop.makePromise(),
+      trailingMetadataPromise: eventLoop.makePromise(),
+      statusPromise: eventLoop.makePromise(),
       errorDelegate: errorDelegate,
       timeout: callOptions.timeout,
       logger: logger,
@@ -56,9 +59,9 @@ public final class BidirectionalStreamingCall<RequestPayload: GRPCPayload, Respo
     )
 
     let requestHead = _GRPCRequestHead(
-      scheme: connection.configuration.httpProtocol.scheme,
+      scheme: scheme,
       path: path,
-      host: connection.configuration.target.host,
+      host: authority,
       requestID: requestID,
       options: callOptions
     )
@@ -66,8 +69,8 @@ public final class BidirectionalStreamingCall<RequestPayload: GRPCPayload, Respo
     let requestHandler = _StreamingRequestChannelHandler<RequestPayload>(requestHead: requestHead)
 
     super.init(
-      eventLoop: connection.eventLoop,
-      multiplexer: connection.multiplexer,
+      eventLoop: eventLoop,
+      multiplexer: multiplexer,
       callType: .bidirectionalStreaming,
       callOptions: callOptions,
       responseHandler: responseHandler,

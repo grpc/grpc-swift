@@ -30,14 +30,12 @@ class GRPCStatusCodeTests: GRPCTestCase {
   override func setUp() {
     super.setUp()
 
-    let logger = Logger(label: "io.grpc.testing")
-
     self.channel = EmbeddedChannel()
     let statusPromise = self.channel.eventLoop.makePromise(of: GRPCStatus.self)
     self.status = statusPromise.futureResult
 
     try! self.channel.pipeline.addHandlers([
-      _GRPCClientChannelHandler<Echo_EchoRequest, Echo_EchoResponse>(streamID: .init(1), callType: .unary, logger: logger),
+      _GRPCClientChannelHandler<Echo_EchoRequest, Echo_EchoResponse>(streamID: .init(1), callType: .unary, logger: self.logger),
       GRPCClientUnaryResponseChannelHandler<Echo_EchoResponse>(
         initialMetadataPromise: channel.eventLoop.makePromise(),
         trailingMetadataPromise: channel.eventLoop.makePromise(),
@@ -45,7 +43,7 @@ class GRPCStatusCodeTests: GRPCTestCase {
         statusPromise: statusPromise,
         errorDelegate: nil,
         timeout: .infinite,
-        logger: logger
+        logger: self.logger
       )
     ]).wait()
   }

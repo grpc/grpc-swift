@@ -32,34 +32,39 @@ public final class UnaryCall<RequestPayload: GRPCPayload, ResponsePayload: GRPCP
     UnaryResponseClientCall {
   public let response: EventLoopFuture<ResponsePayload>
 
-  public init(
-    connection: ClientConnection,
+  init(
     path: String,
-    request: RequestPayload,
+    scheme: String,
+    authority: String,
     callOptions: CallOptions,
-    errorDelegate: ClientErrorDelegate?
+    eventLoop: EventLoop,
+    multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
+    errorDelegate: ClientErrorDelegate?,
+    logger: Logger,
+    request: RequestPayload
   ) {
     let requestID = callOptions.requestIDProvider.requestID()
-    let logger = Logger(subsystem: .clientChannelCall, metadata: [MetadataKey.requestID: "\(requestID)"])
+    var logger = logger
+    logger[metadataKey: MetadataKey.requestID] = "\(requestID)"
     logger.debug("starting rpc", metadata: ["path": "\(path)"])
 
-    let responsePromise = connection.channel.eventLoop.makePromise(of: ResponsePayload.self)
+    let responsePromise = eventLoop.makePromise(of: ResponsePayload.self)
     self.response = responsePromise.futureResult
 
     let responseHandler = GRPCClientUnaryResponseChannelHandler<ResponsePayload>(
-      initialMetadataPromise: connection.channel.eventLoop.makePromise(),
-      trailingMetadataPromise: connection.channel.eventLoop.makePromise(),
+      initialMetadataPromise: eventLoop.makePromise(),
+      trailingMetadataPromise: eventLoop.makePromise(),
       responsePromise: responsePromise,
-      statusPromise: connection.channel.eventLoop.makePromise(),
+      statusPromise: eventLoop.makePromise(),
       errorDelegate: errorDelegate,
       timeout: callOptions.timeout,
       logger: logger
     )
 
     let requestHead = _GRPCRequestHead(
-      scheme: connection.configuration.httpProtocol.scheme,
+      scheme: scheme,
       path: path,
-      host: connection.configuration.target.host,
+      host: authority,
       requestID: requestID,
       options: callOptions
     )
@@ -70,8 +75,8 @@ public final class UnaryCall<RequestPayload: GRPCPayload, ResponsePayload: GRPCP
     )
 
     super.init(
-      eventLoop: connection.channel.eventLoop,
-      multiplexer: connection.multiplexer,
+      eventLoop: eventLoop,
+      multiplexer: multiplexer,
       callType: .unary,
       callOptions: callOptions,
       responseHandler: responseHandler,

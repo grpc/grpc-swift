@@ -20,9 +20,11 @@ import NIOSSL
 import NIOTLS
 import Logging
 
-/// Underlying channel and HTTP/2 stream multiplexer.
+/// Provides a single, managed connection to a server.
 ///
-/// Different service clients implementing `GRPCClient` may share an instance of this class.
+/// The connection to the server is provided by a single channel which will attempt to reconnect
+/// to the server if the connection is dropped. This connection is guaranteed to always use the same
+/// event loop.
 ///
 /// The connection is initially setup with a handler to verify that TLS was established
 /// successfully (assuming TLS is being used).
@@ -40,7 +42,7 @@ import Logging
 ///                          │               │   | │   | HTTP/2 streams
 ///                          │               └▲─┬┘ └▲─┬┘
 ///                          │                │ │   │ │ HTTP2Frame
-///                        ┌─┴────── ─────────┴─▼───┴─▼┐
+///                        ┌─┴────────────────┴─▼───┴─▼┐
 ///                        │   HTTP2StreamMultiplexer  |
 ///                        └─▲───────────────────────┬─┘
 ///                HTTP2Frame│                       │HTTP2Frame
@@ -68,9 +70,8 @@ import Logging
 ///
 /// See `BaseClientCall` for a description of the pipelines associated with each HTTP/2 stream.
 public class ClientConnection {
-  internal let logger: Logger
-  /// The UUID of this connection, used for logging.
-  internal let uuid: UUID
+  private let id: String
+  private let logger: Logger
 
   /// The channel which will handle gRPC calls.
   internal var channel: EventLoopFuture<Channel> {
@@ -88,110 +89,63 @@ public class ClientConnection {
   /// The configuration for this client.
   internal let configuration: Configuration
 
+  internal let scheme: String
+  internal let authority: String
+
   /// A monitor for the connectivity state.
   public let connectivity: ConnectivityStateMonitor
-
-  /// Creates a new connection from the given configuration.
-  public init(configuration: Configuration) {
-    self.configuration = configuration
-    self.connectivity = ConnectivityStateMonitor(delegate: configuration.connectivityStateDelegate)
-
-    self.uuid = UUID()
-    var logger = Logger(subsystem: .clientChannel)
-    logger[metadataKey: MetadataKey.connectionID] = "\(self.uuid)"
-    self.logger = logger
-
-    // We need to initialize `multiplexer` before we can call `willSetChannel` (which will then
-    // assign `multiplexer` to one from the created `Channel`s pipeline).
-    let eventLoop = configuration.eventLoopGroup.next()
-    let unavailable = GRPCStatus(code: .unavailable, message: nil)
-    self.multiplexer = eventLoop.makeFailedFuture(unavailable)
-
-    self.channel = ClientConnection.makeChannel(
-      configuration: self.configuration,
-      eventLoop: self.configuration.eventLoopGroup.next(),
-      connectivity: self.connectivity,
-      backoffIterator: self.configuration.connectionBackoff?.makeIterator(),
-      logger: self.logger
-    )
-
-    // `willSet` and `didSet` are called on initialization, so call them explicitly now.
-    self.willSetChannel(to: channel)
-    self.didSetChannel(to: channel)
-  }
-
-  // This is only internal to expose it for testing.
-  /// Create a `ClientConnection` for testing using the given `EmbeddedChannel`.
-  ///
-  /// - Parameter channel: The embedded channel to create this connection on.
-  /// - Parameter configuration: How this connection should be configured. The `eventLoopGroup`
-  ///     on the configuration will _not_ be used by the call. As such the `eventLoop` of
-  ///     the given `channel` may be used in the configuration to avoid managing an additional
-  ///     event loop group.
-  ///
-  /// - Important:
-  ///   The connectivity state will not be updated using this connection and should not be
-  ///   relied on.
-  ///
-  /// - Precondition:
-  ///   The provided connection target in the `configuration` _must_ be a `SocketAddress`.
-  internal init(channel: EmbeddedChannel, configuration: Configuration) {
-    // We need a .socketAddress to connect to.
-    let socketAddress: SocketAddress
-    switch configuration.target {
-    case .socketAddress(let address):
-      socketAddress = address
-    default:
-      preconditionFailure("target must be SocketAddress when using EmbeddedChannel")
-    }
-
-    self.uuid = UUID()
-    var logger = Logger(subsystem: .clientChannel)
-    logger[metadataKey: MetadataKey.connectionID] = "\(self.uuid)"
-    self.logger = logger
-
-    self.configuration = configuration
-    self.connectivity = ConnectivityStateMonitor(delegate: configuration.connectivityStateDelegate)
-
-    // Configure the channel with the correct handlers and connect to our target.
-    let configuredChannel = ClientConnection.initializeChannel(
-      channel,
-      tls: configuration.tls?.configuration,
-      serverHostname: configuration.tls?.hostnameOverride ?? configuration.target.host,
-      connectivityMonitor: self.connectivity,
-      errorDelegate: configuration.errorDelegate
-    ).flatMap {
-      channel.connect(to: socketAddress)
-    }.map { _ in
-      return channel as Channel
-    }
-
-    self.multiplexer = configuredChannel.flatMap {
-      $0.pipeline.handler(type: HTTP2StreamMultiplexer.self)
-    }
-
-    self.channel = configuredChannel
-  }
 
   /// The `EventLoop` this connection is using.
   public var eventLoop: EventLoop {
     return self.channel.eventLoop
   }
 
+  /// Creates a new connection from the given configuration.
+  public init(configuration: Configuration) {
+    self.configuration = configuration
+    self.scheme = configuration.tls == nil ? "http" : "https"
+    self.authority = configuration.target.host
+
+    let id = String(describing: UUID())
+    self.id = id
+    var logger = Logger(subsystem: .clientChannel)
+    logger[metadataKey: MetadataKey.connectionID] = "\(id)"
+    self.logger = logger
+
+    self.connectivity = ConnectivityStateMonitor(
+      delegate: configuration.connectivityStateDelegate,
+      logger: logger
+    )
+
+    let eventLoop = configuration.eventLoopGroup.next()
+    self.channel = ClientConnection.makeChannel(
+      configuration: self.configuration,
+      eventLoop: eventLoop,
+      connectivity: self.connectivity,
+      backoffIterator: configuration.connectionBackoff?.makeIterator(),
+      logger: logger
+    )
+
+    self.multiplexer = self.channel.flatMap {
+      $0.pipeline.handler(type: HTTP2StreamMultiplexer.self)
+    }
+
+    // `willSet` and `didSet` are *not* called on initialization, call them explicitly now.
+    self.willSetChannel(to: self.channel)
+    self.didSetChannel(to: self.channel)
+  }
+
   /// Closes the connection to the server.
   public func close() -> EventLoopFuture<Void> {
     if self.connectivity.state == .shutdown {
       // We're already shutdown or in the process of shutting down.
-      return channel.flatMap { $0.closeFuture }
+      return self.channel.flatMap { $0.closeFuture }
     } else {
-      self.logger.debug("shutting down channel")
       self.connectivity.initiateUserShutdown()
-      return channel.flatMap { $0.close() }
+      return self.channel.flatMap { $0.close() }
     }
   }
 }
-
-// MARK: - Channel creation
 
 extension ClientConnection {
   /// Register a callback on the close future of the given `channel` to replace the channel (if
@@ -251,7 +205,84 @@ extension ClientConnection {
       self.connectivity.state = .shutdown
     }
   }
+}
 
+// Note: documentation is inherited.
+extension ClientConnection: GRPCChannel {
+  public func makeUnaryCall<Request: GRPCPayload, Response: GRPCPayload>(
+    path: String,
+    request: Request,
+    callOptions: CallOptions
+  ) -> UnaryCall<Request, Response> where Request : GRPCPayload, Response : GRPCPayload {
+    return UnaryCall(
+      path: path,
+      scheme: self.scheme,
+      authority: self.authority,
+      callOptions: callOptions,
+      eventLoop: self.eventLoop,
+      multiplexer: self.multiplexer,
+      errorDelegate: self.configuration.errorDelegate,
+      logger: self.logger,
+      request: request
+    )
+  }
+
+  public func makeClientStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
+    path: String,
+    callOptions: CallOptions
+  ) -> ClientStreamingCall<Request, Response> {
+    return ClientStreamingCall(
+      path: path,
+      scheme: self.scheme,
+      authority: self.authority,
+      callOptions: callOptions,
+      eventLoop: self.eventLoop,
+      multiplexer: self.multiplexer,
+      errorDelegate: self.configuration.errorDelegate,
+      logger: self.logger
+    )
+  }
+
+  public func makeServerStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
+    path: String,
+    request: Request,
+    callOptions: CallOptions,
+    handler: @escaping (Response) -> Void
+  ) -> ServerStreamingCall<Request, Response> {
+    return ServerStreamingCall(
+      path: path,
+      scheme: self.scheme,
+      authority: self.authority,
+      callOptions: callOptions,
+      eventLoop: self.eventLoop,
+      multiplexer: self.multiplexer,
+      errorDelegate: self.configuration.errorDelegate,
+      logger: self.logger,
+      request: request,
+      handler: handler
+    )
+  }
+
+  public func makeBidirectionalStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
+    path: String,
+    callOptions: CallOptions,
+    handler: @escaping (Response) -> Void
+  ) -> BidirectionalStreamingCall<Request, Response> {
+    return BidirectionalStreamingCall(
+      path: path,
+      scheme: self.scheme,
+      authority: self.authority,
+      callOptions: callOptions,
+      eventLoop: self.eventLoop,
+      multiplexer: self.multiplexer,
+      errorDelegate: self.configuration.errorDelegate,
+      logger: self.logger,
+      handler: handler
+    )
+  }
+}
+
+extension ClientConnection {
   /// Attempts to create a new `Channel` using the given configuration.
   ///
   /// This involves: creating a `ClientBootstrapProtocol`, connecting to a target and verifying that
@@ -377,17 +408,17 @@ extension ClientConnection {
       serverHostname = nil
     }
 
-    let bootstrap = PlatformSupport.makeClientBootstrap(group: eventLoop)
+    let bootstrap = PlatformSupport.makeClientBootstrap(group: eventLoop, logger: logger)
       // Enable SO_REUSEADDR and TCP_NODELAY.
       .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
       .channelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
       .channelInitializer { channel in
-        initializeChannel(
-          channel,
-          tls: configuration.tls?.configuration,
-          serverHostname: serverHostname,
+        channel.configureGRPCClient(
+          tlsConfiguration: configuration.tls?.configuration,
+          tlsServerHostname: serverHostname,
           connectivityMonitor: connectivityMonitor,
-          errorDelegate: configuration.errorDelegate
+          errorDelegate: configuration.errorDelegate,
+          logger: logger
         )
       }
 
@@ -397,32 +428,6 @@ extension ClientConnection {
     } else {
       logger.debug("no connect timeout provided")
       return bootstrap
-    }
-  }
-
-  /// Initialize the channel with the given TLS configuration and error delegate.
-  ///
-  /// - Parameter channel: The channel to initialize.
-  /// - Parameter tls: The optional TLS configuration for the channel.
-  /// - Parameter serverHostname: The hostname of the server to use for TLS.
-  /// - Parameter errorDelegate: Optional client error delegate.
-  private class func initializeChannel(
-    _ channel: Channel,
-    tls: TLSConfiguration?,
-    serverHostname: String?,
-    connectivityMonitor: ConnectivityStateMonitor,
-    errorDelegate: ClientErrorDelegate?
-  ) -> EventLoopFuture<Void> {
-    let tlsConfigured = tls.map {
-      channel.configureTLS($0, serverHostname: serverHostname, errorDelegate: errorDelegate)
-    }
-
-    return (tlsConfigured ?? channel.eventLoop.makeSucceededFuture(())).flatMap {
-      channel.configureHTTP2Pipeline(mode: .client)
-    }.flatMap { _ in
-      let settingsObserver = InitialSettingsObservingHandler(connectivityStateMonitor: connectivityMonitor)
-      let errorHandler = DelegatingErrorHandler(delegate: errorDelegate)
-      return channel.pipeline.addHandlers(settingsObserver, errorHandler)
     }
   }
 }
@@ -529,7 +534,7 @@ fileprivate extension ClientBootstrapProtocol {
   }
 }
 
-fileprivate extension Channel {
+extension Channel {
   /// Configure the channel with TLS.
   ///
   /// This function adds two handlers to the pipeline: the `NIOSSLClientHandler` to handle TLS, and
@@ -541,7 +546,8 @@ fileprivate extension Channel {
   func configureTLS(
     _ configuration: TLSConfiguration,
     serverHostname: String?,
-    errorDelegate: ClientErrorDelegate?
+    errorDelegate: ClientErrorDelegate?,
+    logger: Logger
   ) -> EventLoopFuture<Void> {
     do {
       let sslClientHandler = try NIOSSLClientHandler(
@@ -549,7 +555,7 @@ fileprivate extension Channel {
         serverHostname: serverHostname
       )
 
-      return self.pipeline.addHandlers(sslClientHandler, TLSVerificationHandler())
+      return self.pipeline.addHandlers(sslClientHandler, TLSVerificationHandler(logger: logger))
     } catch {
       return self.eventLoop.makeFailedFuture(error)
     }
@@ -561,6 +567,41 @@ fileprivate extension Channel {
       $0.verification
     }
   }
+
+  func configureGRPCClient(
+    tlsConfiguration: TLSConfiguration?,
+    tlsServerHostname: String?,
+    connectivityMonitor: ConnectivityStateMonitor,
+    errorDelegate: ClientErrorDelegate?,
+    logger: Logger
+  ) -> EventLoopFuture<Void> {
+    let tlsConfigured = tlsConfiguration.map {
+      self.configureTLS($0, serverHostname: tlsServerHostname, errorDelegate: errorDelegate, logger: logger)
+    }
+
+    return (tlsConfigured ?? self.eventLoop.makeSucceededFuture(())).flatMap {
+      self.configureHTTP2Pipeline(mode: .client)
+    }.flatMap { _ in
+      let settingsObserver = InitialSettingsObservingHandler(
+        connectivityStateMonitor: connectivityMonitor,
+        logger: logger
+      )
+      let errorHandler = DelegatingErrorHandler(
+        logger: logger,
+        delegate: errorDelegate
+      )
+      return self.pipeline.addHandlers(settingsObserver, errorHandler)
+    }
+  }
+
+  func configureGRPCClient(
+    errorDelegate: ClientErrorDelegate?,
+    logger: Logger
+  ) -> EventLoopFuture<Void> {
+    return self.configureHTTP2Pipeline(mode: .client).flatMap { _ in
+      self.pipeline.addHandler(DelegatingErrorHandler(logger: logger, delegate: errorDelegate))
+    }
+  }
 }
 
 fileprivate extension TimeAmount {
@@ -569,17 +610,6 @@ fileprivate extension TimeAmount {
   /// - Parameter timeInterval: The amount of time in seconds
   static func seconds(timeInterval: TimeInterval) -> TimeAmount {
     return .nanoseconds(Int64(timeInterval * 1_000_000_000))
-  }
-}
-
-extension HTTP2ToHTTP1ClientCodec.HTTPProtocol {
-  var scheme: String {
-    switch self {
-    case .http:
-      return "http"
-    case .https:
-      return "https"
-    }
   }
 }
 

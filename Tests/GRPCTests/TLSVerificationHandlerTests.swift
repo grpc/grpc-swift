@@ -23,7 +23,7 @@ import NIOTLS
 class TLSVerificationHandlerTests: GRPCTestCase {
   func testTLSValidationSucceededWithUnspecifiedProtocol() {
     let expectation = self.expectation(description: "tls handshake success")
-    let tlsVerificationHandler = TLSVerificationHandler()
+    let tlsVerificationHandler = TLSVerificationHandler(logger: self.logger)
     let handshakeEvent = TLSUserEvent.handshakeCompleted(negotiatedProtocol: nil)
     let channel = EmbeddedChannel(handler: tlsVerificationHandler)
     channel.pipeline.fireUserInboundEventTriggered(handshakeEvent)
@@ -37,7 +37,7 @@ class TLSVerificationHandlerTests: GRPCTestCase {
     GRPCApplicationProtocolIdentifier.allCases.forEach {
       let exp = self.expectation(description: "tls \(String(describing:$0)) protocol success")
       expectations.append(exp)
-      let tlsVerificationHandler = TLSVerificationHandler()
+      let tlsVerificationHandler = TLSVerificationHandler(logger: self.logger)
       let channel = EmbeddedChannel(handler: tlsVerificationHandler)
       let handshakeEvent = TLSUserEvent.handshakeCompleted(negotiatedProtocol: $0.rawValue)
       channel.pipeline.fireUserInboundEventTriggered(handshakeEvent)
@@ -49,7 +49,7 @@ class TLSVerificationHandlerTests: GRPCTestCase {
   
   func testTLSValidationSucceededWithCustomProtocol() {
     let expectation = self.expectation(description: "tls custom protocol success")
-    let tlsVerificationHandler = TLSVerificationHandler()
+    let tlsVerificationHandler = TLSVerificationHandler(logger: self.logger)
     let handshakeEvent = TLSUserEvent.handshakeCompleted(negotiatedProtocol: "some-protocol")
     let channel = EmbeddedChannel(handler: tlsVerificationHandler)
     channel.pipeline.fireUserInboundEventTriggered(handshakeEvent)

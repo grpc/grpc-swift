@@ -143,7 +143,7 @@ class EchoTestCaseBase: GRPCTestCase {
   func makeErrorDelegate() -> ServerErrorDelegate? { return nil }
 
   func makeEchoClient(port: Int) throws -> Echo_EchoServiceClient {
-    return Echo_EchoServiceClient(connection: try self.makeClientConnection(port: port))
+    return Echo_EchoServiceClient(channel: try self.makeClientConnection(port: port))
   }
 
   override func setUp() {
@@ -163,7 +163,7 @@ class EchoTestCaseBase: GRPCTestCase {
 
   override func tearDown() {
     // Some tests close the channel, so would throw here if called twice.
-    try? self.client.connection.close().wait()
+    try? self.client.channel.close().wait()
     XCTAssertNoThrow(try self.clientEventLoopGroup.syncShutdownGracefully())
     self.client = nil
     self.clientEventLoopGroup = nil

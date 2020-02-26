@@ -69,7 +69,7 @@ print("[\(Date())] Starting connection backoff interoperability test...")
 // 1. Call 'Start' on server control port with a large deadline or no deadline, wait for it to
 //    finish and check it succeeded.
 let controlConnection = ClientConnection(configuration: controlConfig)
-let controlClient = Grpc_Testing_ReconnectServiceServiceClient(connection: controlConnection)
+let controlClient = Grpc_Testing_ReconnectServiceServiceClient(channel: controlConnection)
 print("[\(Date())] Control 'Start' call started")
 let controlStart = controlClient.start(.init(), callOptions: .init(timeout: .infinite))
 let controlStartStatus = try controlStart.status.wait()
@@ -82,7 +82,7 @@ print("[\(Date())] Control 'Start' call succeeded")
 print("[\(Date())] Retry 'Start' call started")
 let retryConnection = ClientConnection(configuration: retryConfig)
 let retryClient = Grpc_Testing_ReconnectServiceServiceClient(
-  connection: retryConnection,
+  channel: retryConnection,
   defaultCallOptions: CallOptions(timeout: try! .seconds(540))
 )
 let retryStart = retryClient.start(.init())

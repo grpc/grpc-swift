@@ -40,16 +40,16 @@ public protocol Grpc_Testing_TestServiceService {
 }
 
 public final class Grpc_Testing_TestServiceServiceClient: GRPCClient, Grpc_Testing_TestServiceService {
-  public let connection: ClientConnection
+  public let channel: GRPCChannel
   public var defaultCallOptions: CallOptions
 
   /// Creates a client for the grpc.testing.TestService service.
   ///
   /// - Parameters:
-  ///   - connection: `ClientConnection` to the service host.
+  ///   - channel: `GRPCChannel` to the service host.
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
-  public init(connection: ClientConnection, defaultCallOptions: CallOptions = CallOptions()) {
-    self.connection = connection
+  public init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
+    self.channel = channel
     self.defaultCallOptions = defaultCallOptions
   }
 
@@ -166,16 +166,16 @@ public protocol Grpc_Testing_UnimplementedServiceService {
 }
 
 public final class Grpc_Testing_UnimplementedServiceServiceClient: GRPCClient, Grpc_Testing_UnimplementedServiceService {
-  public let connection: ClientConnection
+  public let channel: GRPCChannel
   public var defaultCallOptions: CallOptions
 
   /// Creates a client for the grpc.testing.UnimplementedService service.
   ///
   /// - Parameters:
-  ///   - connection: `ClientConnection` to the service host.
+  ///   - channel: `GRPCChannel` to the service host.
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
-  public init(connection: ClientConnection, defaultCallOptions: CallOptions = CallOptions()) {
-    self.connection = connection
+  public init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
+    self.channel = channel
     self.defaultCallOptions = defaultCallOptions
   }
 
@@ -200,16 +200,16 @@ public protocol Grpc_Testing_ReconnectServiceService {
 }
 
 public final class Grpc_Testing_ReconnectServiceServiceClient: GRPCClient, Grpc_Testing_ReconnectServiceService {
-  public let connection: ClientConnection
+  public let channel: GRPCChannel
   public var defaultCallOptions: CallOptions
 
   /// Creates a client for the grpc.testing.ReconnectService service.
   ///
   /// - Parameters:
-  ///   - connection: `ClientConnection` to the service host.
+  ///   - channel: `GRPCChannel` to the service host.
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
-  public init(connection: ClientConnection, defaultCallOptions: CallOptions = CallOptions()) {
-    self.connection = connection
+  public init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
+    self.channel = channel
     self.defaultCallOptions = defaultCallOptions
   }
 
@@ -371,9 +371,7 @@ extension Grpc_Testing_StreamingOutputCallResponse: GRPCProtobufPayload {}
 extension Grpc_Testing_StreamingInputCallRequest: GRPCProtobufPayload {}
 extension Grpc_Testing_StreamingInputCallResponse: GRPCProtobufPayload {}
 
-/// Provides conformance to `GRPCPayload` for the request and response messages
 
-/// Provides conformance to `GRPCPayload` for the request and response messages
 extension Grpc_Testing_ReconnectParams: GRPCProtobufPayload {}
 extension Grpc_Testing_ReconnectInfo: GRPCProtobufPayload {}
 

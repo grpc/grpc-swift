@@ -46,7 +46,7 @@ class Unary: ServerProvidingBenchmark {
     )
 
     let connection = ClientConnection(configuration: configuration)
-    self.client = .init(connection: connection)
+    self.client = .init(channel: connection)
   }
 
   override func run() throws {
@@ -59,12 +59,12 @@ class Unary: ServerProvidingBenchmark {
         client.get(Echo_EchoRequest.with { $0.text = self.requestText }).response
       }
 
-      try EventLoopFuture.andAllSucceed(requests, on: self.client.connection.eventLoop).wait()
+      try EventLoopFuture.andAllSucceed(requests, on: self.group.next()).wait()
     }
   }
 
   override func tearDown() throws {
-    try self.client.connection.close().wait()
+    try self.client.channel.close().wait()
     try self.group.syncShutdownGracefully()
     try super.tearDown()
   }

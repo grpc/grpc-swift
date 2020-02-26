@@ -26,10 +26,11 @@ class InitialSettingsObservingHandler: ChannelInboundHandler, RemovableChannelHa
   typealias InboundOut = HTTP2Frame
 
   private let connectivityStateMonitor: ConnectivityStateMonitor
-  private let logger = Logger(subsystem: .clientChannel)
+  private let logger: Logger
 
-  init(connectivityStateMonitor: ConnectivityStateMonitor) {
+  init(connectivityStateMonitor: ConnectivityStateMonitor, logger: Logger) {
     self.connectivityStateMonitor = connectivityStateMonitor
+    self.logger = logger
   }
 
   func channelRead(context: ChannelHandlerContext, data: NIOAny) {

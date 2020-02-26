@@ -44,12 +44,9 @@ extension Logger {
 
   /// Labels for logging subsystems.
   enum Subsystem: String {
-    case connectivityState = "connectivity_state"
     case clientChannel = "client_channel"
-    case clientChannelCall = "client_channel_call"
     case serverChannelCall = "server_channel_call"
     case serverAccess = "server_access"
-    case messageReader = "message_reader"
     case nio = "nio"
   }
 }

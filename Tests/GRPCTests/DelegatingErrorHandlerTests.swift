@@ -33,7 +33,7 @@ class DelegatingErrorHandlerTests: GRPCTestCase {
 
   func testUncleanShutdownIsIgnored() throws {
     let delegate = ErrorRecorder()
-    let channel = EmbeddedChannel(handler: DelegatingErrorHandler(delegate: delegate))
+    let channel = EmbeddedChannel(handler: DelegatingErrorHandler(logger: self.logger, delegate: delegate))
     channel.pipeline.fireErrorCaught(NIOSSLError.uncleanShutdown)
     channel.pipeline.fireErrorCaught(NIOSSLError.writeDuringTLSShutdown)
 
