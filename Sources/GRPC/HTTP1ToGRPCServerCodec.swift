@@ -445,7 +445,7 @@ struct MessageEncodingHeaderValidator {
 
   enum ValidationResult {
     /// The requested compression is supported.
-    case supported(CompressionAlgorithm, DecompressionLimit, acceptEncoding: [String])
+    case supported(algorithm: CompressionAlgorithm, decompressionLimit: DecompressionLimit, acceptEncoding: [String])
 
     /// The `requestEncoding` is not supported; `acceptEncoding` contains all algorithms we do
     /// support.
@@ -471,7 +471,11 @@ struct MessageEncodingHeaderValidator {
       }
 
       if configuration.enabledAlgorithms.contains(algorithm) {
-        return .supported(algorithm, configuration.decompressionLimit, acceptEncoding: [])
+        return .supported(
+          algorithm: algorithm,
+          decompressionLimit: configuration.decompressionLimit,
+          acceptEncoding: []
+        )
       } else {
         // From: https://github.com/grpc/grpc/blob/master/doc/compression.md
         //
@@ -479,8 +483,8 @@ struct MessageEncodingHeaderValidator {
         //   it receives a message compressed in an undisclosed but supported encoding, it MUST
         //   include said encoding in the response's grpc-accept-encoding header.
         return .supported(
-          algorithm,
-          configuration.decompressionLimit,
+          algorithm: algorithm,
+          decompressionLimit: configuration.decompressionLimit,
           acceptEncoding: configuration.enabledAlgorithms.map { $0.name } + CollectionOfOne(header)
         )
       }

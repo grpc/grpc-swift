@@ -25,14 +25,18 @@ public struct DecompressionLimit: Equatable {
   /// and `ratio`.
   ///
   /// - Parameter ratio: The decompression ratio.
+  /// - Precondition: `ratio` must be greater than zero.
   public static func ratio(_ ratio: Int) -> DecompressionLimit {
+    precondition(ratio > 0, "ratio must be greater than zero")
     return DecompressionLimit(limit: .ratio(ratio))
   }
 
   /// Limits decompressed payloads to be no larger than the given `size`.
   ///
   /// - Parameter size: The absolute size limit of decompressed payloads.
+  /// - Precondition: `size` must not be negative.
   public static func absolute(_ size: Int) -> DecompressionLimit {
+    precondition(size >= 0, "absolute size must be non-negative")
     return DecompressionLimit(limit: .absolute(size))
   }
 }

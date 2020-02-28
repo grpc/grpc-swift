@@ -120,7 +120,8 @@ public enum GRPCError {
 
   /// The decompression limit was exceeded while decompressing a message.
   public struct DecompressionLimitExceeded: GRPCErrorProtocol {
-    var compressedSize: Int
+    /// The size of the compressed payload whose decompressed size exceeded the decompression limit.
+    public let compressedSize: Int
 
     public init(compressedSize: Int) {
       self.compressedSize = compressedSize
