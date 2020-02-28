@@ -45,8 +45,9 @@ public enum _GRPCServerResponsePart<ResponsePayload: GRPCPayload> {
 ///
 /// The translation from HTTP2 to HTTP1 is done by `HTTP2ToHTTP1ServerCodec`.
 public final class HTTP1ToGRPCServerCodec<Request: GRPCPayload, Response: GRPCPayload> {
-  public init(encoding: Server.Configuration.MessageEncoding, logger: Logger) {
+  public init(encoding: ServerMessageEncoding, logger: Logger) {
     self.encoding = encoding
+    self.encodingHeaderValidator = MessageEncodingHeaderValidator(encoding: encoding)
     self.logger = logger
 
     var accessLog = Logger(subsystem: .serverAccess)
@@ -58,7 +59,8 @@ public final class HTTP1ToGRPCServerCodec<Request: GRPCPayload, Response: GRPCPa
 
   private var contentType: ContentType?
 
-  private let encoding: Server.Configuration.MessageEncoding
+  private let encoding: ServerMessageEncoding
+  private let encodingHeaderValidator: MessageEncodingHeaderValidator
   private var acceptEncodingHeader: String? = nil
   private var responseEncodingHeader: String? = nil
 
@@ -169,45 +171,39 @@ extension HTTP1ToGRPCServerCodec: ChannelInboundHandler {
     }
 
     // What compression was used for sending requests?
-    if let encodingHeader = requestHead.headers.first(name: GRPCHeaderName.encoding) {
-      switch self.validate(requestEncoding: encodingHeader) {
-      case .unsupported:
-        // We don't support this encoding, we must let the client know what we do support.
-        self.acceptEncodingHeader = self.makeAcceptEncodingHeader()
-
-        let message: String
-        let headers: HTTPHeaders
-        if let advertised = self.acceptEncodingHeader {
-          message = "'\(encodingHeader)' compression is not supported, supported: \(advertised)"
-          headers = [GRPCHeaderName.acceptEncoding: advertised]
-        } else {
-          message = "'\(encodingHeader)' compression is not supported"
-          headers = .init()
-        }
-
-        let status = GRPCStatus(code: .unimplemented, message: message)
-        defer {
-          self.write(context: context, data: NIOAny(OutboundIn.statusAndTrailers(status, headers)), promise: nil)
-          self.flush(context: context)
-        }
-        // We're about to fast-fail, so ignore any following inbound messages.
-        return .ignore
-
-      case .supported(let algorithm):
-        self.messageReader = LengthPrefixedMessageReader(compression: algorithm)
-
-      case .supportedButNotDisclosed(let algorithm):
-        self.messageReader = LengthPrefixedMessageReader(compression: algorithm)
-        // From: https://github.com/grpc/grpc/blob/master/doc/compression.md
-        //
-        //   Note that a peer MAY choose to not disclose all the encodings it supports. However, if
-        //   it receives a message compressed in an undisclosed but supported encoding, it MUST
-        //   include said encoding in the response's grpc-accept-encoding header.
-        self.acceptEncodingHeader = self.makeAcceptEncodingHeader(includeExtra: algorithm)
+    let encodingHeader = requestHead.headers.first(name: GRPCHeaderName.encoding)
+    switch self.encodingHeaderValidator.validate(requestEncoding: encodingHeader) {
+    case let .supported(algorithm, limit, acceptableEncoding):
+      self.messageReader = LengthPrefixedMessageReader(compression: algorithm, decompressionLimit: limit)
+      if acceptableEncoding.isEmpty {
+        self.acceptEncodingHeader = nil
+      } else {
+        self.acceptEncodingHeader = acceptableEncoding.joined(separator: ",")
       }
-    } else {
-      self.messageReader = LengthPrefixedMessageReader(compression: .none)
+
+    case .noCompression:
+      self.messageReader = LengthPrefixedMessageReader()
       self.acceptEncodingHeader = nil
+
+    case let .unsupported(header, acceptableEncoding):
+      let message: String
+      let headers: HTTPHeaders
+      if acceptableEncoding.isEmpty {
+        message = "compression is not supported"
+        headers = .init()
+      } else {
+        let advertised = acceptableEncoding.joined(separator: ",")
+        message = "'\(header)' compression is not supported, supported: \(advertised)"
+        headers = [GRPCHeaderName.acceptEncoding: advertised]
+      }
+
+      let status = GRPCStatus(code: .unimplemented, message: message)
+      defer {
+        self.write(context: context, data: NIOAny(OutboundIn.statusAndTrailers(status, headers)), promise: nil)
+        self.flush(context: context)
+      }
+      // We're about to fast-fail, so ignore any following inbound messages.
+      return .ignore
     }
 
     // What compression should we use for writing responses?
@@ -256,6 +252,9 @@ extension HTTP1ToGRPCServerCodec: ChannelInboundHandler {
       while var buffer = try self.messageReader.nextMessage() {
         requests.append(try Request(serializedByteBuffer: &buffer))
       }
+    } catch let grpcError as GRPCError.WithContext {
+      context.fireErrorCaught(grpcError)
+      return .ignore
     } catch {
       context.fireErrorCaught(GRPCError.DeserializationFailure().captureContext())
       return .ignore
@@ -424,60 +423,81 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
   }
 }
 
-private extension HTTP1ToGRPCServerCodec {
-  enum RequestEncodingValidation {
-    /// The compression is not supported. The RPC should fail with an appropriate status and include
-    /// our supported algorithms in the trailers.
-    case unsupported
+fileprivate extension HTTP1ToGRPCServerCodec {
+  /// Selects an appropriate response encoding from the list of encodings sent to us by the client.
+  /// Returns `nil` if there were no appropriate algorithms, in which case the server will send
+  /// messages uncompressed.
+  func selectResponseEncoding(from acceptableEncoding: [Substring]) -> CompressionAlgorithm? {
+    guard case .enabled(let configuration) = self.encoding else {
+      return nil
+    }
 
-    /// Compression is supported.
-    case supported(CompressionAlgorithm)
+    return acceptableEncoding.compactMap {
+      CompressionAlgorithm(rawValue: String($0))
+    }.first {
+      configuration.enabledAlgorithms.contains($0)
+    }
+  }
+}
 
-    /// Compression is supported but we did not disclose our support for it. We should continue but
-    /// also send the acceptable compression methods (including the encoding the client specified)
-    /// in the initial response metadata.
-    case supportedButNotDisclosed(CompressionAlgorithm)
+struct MessageEncodingHeaderValidator {
+  var encoding: ServerMessageEncoding
+
+  enum ValidationResult {
+    /// The requested compression is supported.
+    case supported(algorithm: CompressionAlgorithm, decompressionLimit: DecompressionLimit, acceptEncoding: [String])
+
+    /// The `requestEncoding` is not supported; `acceptEncoding` contains all algorithms we do
+    /// support.
+    case unsupported(requestEncoding: String, acceptEncoding: [String])
+
+    /// No compression was requested.
+    case noCompression
   }
 
   /// Validates the value of the 'grpc-encoding' header against compression algorithms supported and
   /// advertised by this peer.
   ///
   /// - Parameter requestEncoding: The value of the 'grpc-encoding' header.
-  func validate(requestEncoding: String) -> RequestEncodingValidation {
-    guard let algorithm = CompressionAlgorithm(rawValue: requestEncoding) else {
-      return .unsupported
-    }
+  func validate(requestEncoding: String?) -> ValidationResult {
+    switch (self.encoding, requestEncoding) {
+    // Compression is enabled and the client sent a message encoding header. Do we support it?
+    case (.enabled(let configuration), .some(let header)):
+      guard let algorithm = CompressionAlgorithm(rawValue: header) else {
+        return .unsupported(
+          requestEncoding: header,
+          acceptEncoding: configuration.enabledAlgorithms.map { $0.name }
+        )
+      }
 
-    if self.encoding.enabled.contains(algorithm) {
-      return .supported(algorithm)
-    } else {
-      return .supportedButNotDisclosed(algorithm)
-    }
-  }
+      if configuration.enabledAlgorithms.contains(algorithm) {
+        return .supported(
+          algorithm: algorithm,
+          decompressionLimit: configuration.decompressionLimit,
+          acceptEncoding: []
+        )
+      } else {
+        // From: https://github.com/grpc/grpc/blob/master/doc/compression.md
+        //
+        //   Note that a peer MAY choose to not disclose all the encodings it supports. However, if
+        //   it receives a message compressed in an undisclosed but supported encoding, it MUST
+        //   include said encoding in the response's grpc-accept-encoding header.
+        return .supported(
+          algorithm: algorithm,
+          decompressionLimit: configuration.decompressionLimit,
+          acceptEncoding: configuration.enabledAlgorithms.map { $0.name } + CollectionOfOne(header)
+        )
+      }
 
-  /// Makes a 'grpc-accept-encoding' header from the advertised encodings and an additional value
-  /// if one is specified.
-  func makeAcceptEncodingHeader(includeExtra extra: CompressionAlgorithm? = nil) -> String? {
-    switch (self.encoding.enabled.isEmpty, extra) {
-    case (false, .some(let extra)):
-      return (self.encoding.enabled + CollectionOfOne(extra)).map { $0.name }.joined(separator: ",")
-    case (false, .none):
-      return self.encoding.enabled.map { $0.name }.joined(separator: ",")
-    case (true, .some(let extra)):
-      return extra.name
-    case (true, .none):
-      return nil
-    }
-  }
+    // Compression is disabled and the client sent a message encoding header. We clearly don't
+    // support this. Note this is different to the supported but not advertised case since we have
+    // explicitly not enabled compression.
+    case (.disabled, .some(let header)):
+      return .unsupported(requestEncoding: header, acceptEncoding: [])
 
-  /// Selects an appropriate response encoding from the list of encodings sent to us by the client.
-  /// Returns `nil` if there were no appropriate algorithms, in which case the server will send
-  /// messages uncompressed.
-  func selectResponseEncoding(from acceptableEncoding: [Substring]) -> CompressionAlgorithm? {
-    return acceptableEncoding.compactMap {
-      CompressionAlgorithm(rawValue: String($0))
-    }.first {
-      self.encoding.enabled.contains($0)
+    // The client didn't send a message encoding header.
+    case (_, .none):
+      return .noCompression
     }
   }
 }

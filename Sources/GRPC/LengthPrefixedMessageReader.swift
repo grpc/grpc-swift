@@ -34,16 +34,21 @@ internal struct LengthPrefixedMessageReader {
   let compression: CompressionAlgorithm?
   private let decompressor: Zlib.Inflate?
 
-  init(compression: CompressionAlgorithm? = nil) {
+  init() {
+    self.compression = nil
+    self.decompressor = nil
+  }
+
+  init(compression: CompressionAlgorithm, decompressionLimit: DecompressionLimit) {
     self.compression = compression
 
-    switch compression?.algorithm {
-    case .none, .some(.identity):
+    switch compression.algorithm {
+    case .identity:
       self.decompressor = nil
-    case .some(.deflate):
-      self.decompressor = Zlib.Inflate(format: .deflate)
-    case .some(.gzip):
-      self.decompressor = Zlib.Inflate(format: .gzip)
+    case .deflate:
+      self.decompressor = Zlib.Inflate(format: .deflate, limit: decompressionLimit)
+    case .gzip:
+      self.decompressor = Zlib.Inflate(format: .gzip, limit: decompressionLimit)
     }
   }
   

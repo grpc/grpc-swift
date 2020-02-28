@@ -189,7 +189,7 @@ extension Server {
     /// Compression may also be disabled at the message-level for streaming responses (i.e. server
     /// streaming and bidirectional streaming RPCs) by passing setting `compression` to `.disabled`
     /// in `sendResponse(_:compression)`.
-    public var messageEncoding: MessageEncoding
+    public var messageEncoding: ServerMessageEncoding
 
     /// Create a `Configuration` with some pre-defined defaults.
     ///
@@ -206,7 +206,7 @@ extension Server {
       serviceProviders: [CallHandlerProvider],
       errorDelegate: ServerErrorDelegate? = LoggingServerErrorDelegate.shared,
       tls: TLS? = nil,
-      messageEncoding: MessageEncoding = .none
+      messageEncoding: ServerMessageEncoding = .disabled
     ) {
       self.target = target
       self.eventLoopGroup = eventLoopGroup

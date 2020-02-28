@@ -28,7 +28,11 @@ class ZlibTests: GRPCTestCase {
   }
 
   @discardableResult
-  func doCompressAndDecompress(of bytes: [UInt8], format: Zlib.CompressionFormat) throws -> Int  {
+  func doCompressAndDecompress(
+    of bytes: [UInt8],
+    format: Zlib.CompressionFormat,
+    initialInflateBufferSize: Int? = nil
+  ) throws -> Int  {
     var data = self.allocator.buffer(capacity: 0)
     data.writeBytes(bytes)
     
@@ -40,8 +44,8 @@ class ZlibTests: GRPCTestCase {
     XCTAssertEqual(compressedBytesWritten, compressed.readableBytes)
 
     // Decompress it.
-    let inflate = Zlib.Inflate(format: format)
-    var decompressed = self.allocator.buffer(capacity: self.inputSize)
+    let inflate = Zlib.Inflate(format: format, limit: .absolute(bytes.count * 2))
+    var decompressed = self.allocator.buffer(capacity: initialInflateBufferSize ?? self.inputSize)
     let decompressedBytesWritten = try inflate.inflate(&compressed, into: &decompressed)
     // Did we write the right number of bytes?
     XCTAssertEqual(decompressedBytesWritten, decompressed.readableBytes)
@@ -82,7 +86,14 @@ class ZlibTests: GRPCTestCase {
       let compressedSize = try self.doCompressAndDecompress(of: bytes, format: format)
       XCTAssertGreaterThan(compressedSize, bytes.count)
     }
+  }
 
+  func testDecompressionAutomaticallyResizesOutputBuffer() throws {
+    let bytes = self.makeBytes(count: self.inputSize)
+
+    for format in [Zlib.CompressionFormat.deflate, .gzip] {
+      try self.doCompressAndDecompress(of: bytes, format: format, initialInflateBufferSize: 0)
+    }
   }
 
   func testCompressionAndDecompressionWithResets() throws {
@@ -93,7 +104,7 @@ class ZlibTests: GRPCTestCase {
 
     for format in [Zlib.CompressionFormat.deflate, .gzip] {
       let deflate = Zlib.Deflate(format: format)
-      let inflate = Zlib.Inflate(format: format)
+      let inflate = Zlib.Inflate(format: format, limit: .absolute(self.inputSize * 2))
 
       for bytes in byteArrays {
         var data = self.allocator.buffer(capacity: 0)
@@ -128,7 +139,7 @@ class ZlibTests: GRPCTestCase {
       var buffer = self.allocator.buffer(capacity: bytes.count)
       buffer.writeBytes(bytes)
 
-      let inflate = Zlib.Inflate(format: format)
+      let inflate = Zlib.Inflate(format: format, limit: .ratio(1))
 
       var output = self.allocator.buffer(capacity: 0)
       XCTAssertThrowsError(try inflate.inflate(&buffer, into: &output)) { error in
@@ -136,5 +147,62 @@ class ZlibTests: GRPCTestCase {
         XCTAssert(withContext?.error is GRPCError.ZlibCompressionFailure)
       }
     }
+  }
+
+  func testAbsoluteDecompressionLimit() throws {
+    let bytes = self.makeBytes(count: self.inputSize)
+
+    for format in [Zlib.CompressionFormat.deflate, .gzip] {
+      var data = self.allocator.buffer(capacity: 0)
+      data.writeBytes(bytes)
+
+      // Compress it.
+      let deflate = Zlib.Deflate(format: format)
+      var compressed = self.allocator.buffer(capacity: 0)
+      let compressedBytesWritten = try deflate.deflate(&data, into: &compressed)
+      // Did we write the right number of bytes?
+      XCTAssertEqual(compressedBytesWritten, compressed.readableBytes)
+
+      let inflate = Zlib.Inflate(format: format, limit: .absolute(compressedBytesWritten - 1))
+      var output = self.allocator.buffer(capacity: 0)
+      XCTAssertThrowsError(try inflate.inflate(&compressed, into: &output)) { error in
+        let withContext = error as? GRPCError.WithContext
+        XCTAssert(withContext?.error is GRPCError.DecompressionLimitExceeded)
+      }
+    }
+  }
+
+  func testRatioDecompressionLimit() throws {
+    let bytes = self.makeBytes(count: self.inputSize)
+
+    for format in [Zlib.CompressionFormat.deflate, .gzip] {
+      var data = self.allocator.buffer(capacity: 0)
+      data.writeBytes(bytes)
+
+      // Compress it.
+      let deflate = Zlib.Deflate(format: format)
+      var compressed = self.allocator.buffer(capacity: 0)
+      let compressedBytesWritten = try deflate.deflate(&data, into: &compressed)
+      // Did we write the right number of bytes?
+      XCTAssertEqual(compressedBytesWritten, compressed.readableBytes)
+
+      let inflate = Zlib.Inflate(format: format, limit: .ratio(1))
+      var output = self.allocator.buffer(capacity: 0)
+      XCTAssertThrowsError(try inflate.inflate(&compressed, into: &output)) { error in
+        let withContext = error as? GRPCError.WithContext
+        XCTAssert(withContext?.error is GRPCError.DecompressionLimitExceeded)
+      }
+    }
+  }
+
+  func testAbsoluteDecompressionLimitMaximumSize() throws {
+    let absolute: DecompressionLimit = .absolute(1234)
+    // The compressed size is ignored here.
+    XCTAssertEqual(absolute.maximumDecompressedSize(compressedSize: -42), 1234)
+  }
+
+  func testRatioDecompressionLimitMaximumSize() throws {
+    let ratio: DecompressionLimit = .ratio(2)
+    XCTAssertEqual(ratio.maximumDecompressedSize(compressedSize: 10), 20)
   }
 }

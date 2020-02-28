@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 /// Whether compression should be enabled for the message.
 public enum Compression {
   /// Enable compression. Note that this will be ignored if compression has not been enabled or is
@@ -42,14 +41,32 @@ extension Compression {
   }
 }
 
-extension CallOptions {
-  public struct MessageEncoding {
+public enum ClientMessageEncoding {
+  case enabled(Configuration)
+  case disabled
+}
+
+extension ClientMessageEncoding {
+  var enabledForRequests: Bool {
+    switch self {
+    case .enabled(let configuration):
+      return configuration.outbound != nil
+    case .disabled:
+      return false
+    }
+  }
+}
+
+extension ClientMessageEncoding {
+  public struct Configuration {
     public init(
       forRequests outbound: CompressionAlgorithm?,
-      acceptableForResponses inbound: [CompressionAlgorithm] = CompressionAlgorithm.all
+      acceptableForResponses inbound: [CompressionAlgorithm] = CompressionAlgorithm.all,
+      decompressionLimit: DecompressionLimit
     ) {
       self.outbound = outbound
       self.inbound = inbound
+      self.decompressionLimit = decompressionLimit
     }
 
     /// The compression algorithm used for outbound messages.
@@ -58,47 +75,57 @@ extension CallOptions {
     /// The set of compression algorithms advertised to the remote peer that they may use.
     public var inbound: [CompressionAlgorithm]
 
-    /// No compression.
-    public static let none = MessageEncoding(
-      forRequests: nil,
-      acceptableForResponses: []
-    )
+    /// The decompression limit acceptable for responses. RPCs which receive a message whose
+    /// decompressed size exceeds the limit will be cancelled.
+    public var decompressionLimit: DecompressionLimit
 
     /// Accept all supported compression on responses, do not compress requests.
-    public static let responsesOnly = MessageEncoding(
-      forRequests: .identity,
-      acceptableForResponses: CompressionAlgorithm.all
-    )
+    public static func responsesOnly(
+      acceptable: [CompressionAlgorithm] = CompressionAlgorithm.all,
+      decompressionLimit: DecompressionLimit
+    ) -> Configuration {
+      return Configuration(
+        forRequests: .identity,
+        acceptableForResponses: acceptable,
+        decompressionLimit: decompressionLimit
+      )
+    }
 
-    /// Whether compression is enabled for requests.
-    internal var enabledForRequests: Bool {
-      return self.outbound != nil
+    internal var acceptEncodingHeader: String {
+      return self.inbound.map { $0.name }.joined(separator: ",")
     }
   }
 }
 
-extension CallOptions.MessageEncoding {
-  var acceptEncodingHeader: String {
-    return self.inbound.map { $0.name }.joined(separator: ",")
-  }
+public enum ServerMessageEncoding {
+  case enabled(Configuration)
+  case disabled
 }
 
-extension Server.Configuration {
-  public struct MessageEncoding {
-    /// The set of compression algorithms advertised that we will accept from clients. Note that
-    /// clients may send us messages compressed with algorithms not included in this list; if we
-    /// support it then we still accept the message.
-    public var enabled: [CompressionAlgorithm]
+extension ServerMessageEncoding {
+  public struct Configuration {
+    /// The set of compression algorithms advertised that we will accept from clients for requests.
+    /// Note that clients may send us messages compressed with algorithms not included in this list;
+    /// if we support it then we still accept the message.
+    ///
+    /// All cases of `CompressionAlgorithm` are supported.
+    public var enabledAlgorithms: [CompressionAlgorithm]
 
-    public init(enabled: [CompressionAlgorithm]) {
-      self.enabled = enabled
+    /// The decompression limit acceptable for requests. RPCs which receive a message whose
+    /// decompressed size exceeds the limit will be cancelled.
+    public var decompressionLimit: DecompressionLimit
+
+    /// Create a configuration for server message encoding.
+    ///
+    /// - Parameters:
+    ///   - enabledAlgorithms: The list of algorithms which are enabled.
+    ///   - decompressionLimit: Decompression limit acceptable for requests.
+    public init(
+      enabledAlgorithms: [CompressionAlgorithm] = CompressionAlgorithm.all,
+      decompressionLimit: DecompressionLimit
+    ) {
+      self.enabledAlgorithms = enabledAlgorithms
+      self.decompressionLimit = decompressionLimit
     }
-
-    // All supported algorithms are enabled.
-    public static let enabled = MessageEncoding(enabled: CompressionAlgorithm.all)
-
-    /// No compression.
-    public static let none = MessageEncoding(enabled: [.identity])
   }
-
 }

@@ -222,7 +222,7 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
 
   func testNextMessageDoesNotThrowWhenCompressionFlagIsExpectedButNotSet() throws {
     // `.identity` should always be supported and requires a flag.
-    self.reader = LengthPrefixedMessageReader(compression: .identity)
+    self.reader = LengthPrefixedMessageReader(compression: .identity, decompressionLimit: .ratio(1))
 
     var buffer = byteBuffer(withBytes: lengthPrefixedTwoByteMessage())
     self.reader.append(buffer: &buffer)
