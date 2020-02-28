@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/grpc/grpc-swift.svg?branch=nio)](https://travis-ci.org/grpc/grpc-swift)
+[![sswg:sandbox|94x20](https://img.shields.io/badge/sswg-sandbox-lightgrey.svg)](https://github.com/swift-server/sswg/blob/master/process/incubation.md#sandbox-level)
 
 # gRPC Swift
 
