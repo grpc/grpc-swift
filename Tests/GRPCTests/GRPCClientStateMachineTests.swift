@@ -678,6 +678,43 @@ extension GRPCClientStateMachineTests {
     }
   }
 
+  func testSendRequestHeadersNormalizesCustomMetadata() throws {
+    // `HPACKHeaders` uses case-insensitive lookup for header names so we can't check the equality
+    // for individual headers. We'll pull out the entries we care about by matching a sentinel value
+    // and then compare `HPACKHeaders` instances (since the equality check *is* case sensitive).
+    let filterKey = "a-key-for-filtering"
+    let customMetadata: HPACKHeaders = [
+      "partiallyLower": filterKey,
+      "ALLUPPER": filterKey
+    ]
+
+    var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
+    stateMachine.sendRequestHeaders(requestHead: .init(
+      method: "POST",
+      scheme: "http",
+      path: "/echo/Get",
+      host: "localhost",
+      timeout: .infinite,
+      customMetadata: customMetadata,
+      encoding: .disabled
+    )).assertSuccess { headers in
+      // Pull out the entries we care about by matching values
+      let filtered = headers.filter { (name, value, indexing) in
+        return value == filterKey
+      }.map { name, value, indexing in
+        return (name, value)
+      }
+
+      let justCustomMetadata = HPACKHeaders(filtered)
+      let expected: HPACKHeaders = [
+        "partiallylower": filterKey,
+        "allupper": filterKey
+      ]
+
+      XCTAssertEqual(justCustomMetadata, expected)
+    }
+  }
+
   func testSendRequestHeadersWithNoCompressionInEitherDirection() throws {
     var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
     stateMachine.sendRequestHeaders(requestHead: .init(

@@ -544,7 +544,10 @@ extension GRPCClientStateMachine.State {
     }
 
     // Add user-defined custom metadata: this should come after the call definition headers.
-    headers.add(contentsOf: customMetadata)
+    // TODO: make header normalization user-configurable.
+    headers.add(contentsOf: customMetadata.map { (name, value, indexing) in
+      return (name.lowercased(), value, indexing)
+    })
 
     return headers
   }
