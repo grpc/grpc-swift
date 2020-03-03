@@ -50,12 +50,9 @@ class MessageCompressionTests: GRPCTestCase {
   }
 
   func setupClient(encoding: ClientMessageEncoding) {
-    let configuration = ClientConnection.Configuration(
-      target: .hostAndPort("localhost", self.server.channel.localAddress!.port!),
-      eventLoopGroup: self.group
-    )
+    self.client = ClientConnection.insecure(group: self.group)
+      .connect(host: "localhost", port: self.server.channel.localAddress!.port!)
 
-    self.client = ClientConnection(configuration: configuration)
     self.echo = Echo_EchoServiceClient(
       channel: self.client,
       defaultCallOptions: CallOptions(messageEncoding: encoding)

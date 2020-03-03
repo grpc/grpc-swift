@@ -101,6 +101,9 @@ public class ClientConnection {
   }
 
   /// Creates a new connection from the given configuration.
+  ///
+  /// - Important: Users should prefer using `ClientConnection.secure(group:)` to build a connection
+  ///   with TLS, or `ClientConnection.insecure(group:)` to build a connection without TLS.
   public init(configuration: Configuration) {
     self.configuration = configuration
     self.scheme = configuration.tls == nil ? "http" : "https"
