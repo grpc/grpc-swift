@@ -28,11 +28,11 @@ jobs:
       env: RUN_INTEROP_TESTS=false SWIFT_VERSION=5.1.4
     - &development
       <<: *tests
-      name: "Unit Tests: Ubuntu 18.04 (Swift 5.2 Development Snapshot 2020-02-23)"
+      name: "Unit Tests: Ubuntu 18.04 (Swift 5.2 Development Snapshot 2020-03-03)"
       env: >-
         RUN_INTEROP_TESTS=false
         SWIFT_VERSION=5.2
-        SWIFT_URL=https://swift.org/builds/swift-5.2-branch/ubuntu1804/swift-5.2-DEVELOPMENT-SNAPSHOT-2020-02-23-a/swift-5.2-DEVELOPMENT-SNAPSHOT-2020-02-23-a-ubuntu18.04.tar.gz
+        SWIFT_URL=https://swift.org/builds/swift-5.2-branch/ubuntu1804/swift-5.2-DEVELOPMENT-SNAPSHOT-2020-03-03-a/swift-5.2-DEVELOPMENT-SNAPSHOT-2020-03-03-a-ubuntu18.04.tar.gz
     - <<: *tests
       name: "Unit Tests: Ubuntu 18.04 (Swift 5.0)"
       env: RUN_INTEROP_TESTS=false SWIFT_VERSION=5.0.3
