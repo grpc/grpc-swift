@@ -70,7 +70,7 @@ extension ClientConnection.Builder {
   /// 1 second if not set.
   @discardableResult
   public func withConnectionBackoff(initial amount: TimeAmount) -> Self {
-    self.connectionBackoff.initialBackoff = Double(amount.nanoseconds) / Double(1_000_000_000)
+    self.connectionBackoff.initialBackoff = .seconds(from: amount)
     return self
   }
 
@@ -79,7 +79,7 @@ extension ClientConnection.Builder {
   /// backoff *before* jitter is applied. Defaults to 120 seconds if not set.
   @discardableResult
   public func withConnectionBackoff(maximum amount: TimeAmount) -> Self {
-    self.connectionBackoff.maximumBackoff = Double(amount.nanoseconds) / Double(1_000_000_000)
+    self.connectionBackoff.maximumBackoff = .seconds(from: amount)
     return self
   }
 
@@ -107,7 +107,7 @@ extension ClientConnection.Builder {
   /// timeout. Defaults to 20 seconds if not set.
   @discardableResult
   public func withConnectionTimeout(minimum amount: TimeAmount) -> Self {
-    self.connectionBackoff.minimumConnectionTimeout = Double(amount.nanoseconds) / Double(1_000_000_000)
+    self.connectionBackoff.minimumConnectionTimeout = .seconds(from: amount)
     return self
   }
 
@@ -115,7 +115,7 @@ extension ClientConnection.Builder {
   /// multiplier to 1.0.
   @discardableResult
   public func withConnectionBackoff(fixed amount: TimeAmount) -> Self {
-    let seconds = Double(amount.nanoseconds) / Double(1_000_000_000)
+    let seconds = Double.seconds(from: amount)
     self.connectionBackoff.initialBackoff = seconds
     self.connectionBackoff.maximumBackoff = seconds
     self.connectionBackoff.multiplier = 1.0
@@ -184,5 +184,11 @@ extension ClientConnection.Builder.Secure {
   public func withTLS(trustRoots: NIOSSLTrustRoots) -> Self {
     self.tls.trustRoots = trustRoots
     return self
+  }
+}
+
+fileprivate extension Double {
+  static func seconds(from amount: TimeAmount) -> Double {
+    return Double(amount.nanoseconds) / 1_000_000_000
   }
 }
