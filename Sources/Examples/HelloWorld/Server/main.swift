@@ -30,15 +30,11 @@ defer {
   try! group.syncShutdownGracefully()
 }
 
-// Create some configuration for the server:
-let configuration = Server.Configuration(
-  target: .hostAndPort("localhost", 0),
-  eventLoopGroup: group,
-  serviceProviders: [GreeterProvider()]
-)
-
 // Start the server and print its address once it has started.
-let server = Server.start(configuration: configuration)
+let server = Server.insecure(group: group)
+  .withServiceProviders([GreeterProvider()])
+  .bind(host: "localhost", port: 0)
+
 server.map {
   $0.channel.localAddress
 }.whenSuccess { address in

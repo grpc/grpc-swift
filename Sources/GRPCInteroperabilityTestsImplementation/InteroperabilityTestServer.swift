@@ -37,12 +37,7 @@ public func makeInteroperabilityTestServer(
   serviceProviders: [CallHandlerProvider] = [TestServiceProvider()],
   useTLS: Bool
 ) throws -> EventLoopFuture<Server> {
-  var configuration = Server.Configuration(
-    target: .hostAndPort(host, port),
-    eventLoopGroup: eventLoopGroup,
-    serviceProviders: serviceProviders,
-    messageEncoding: .enabled(.init(decompressionLimit: .absolute(1024 * 1024)))
-  )
+  let builder: Server.Builder
 
   if useTLS {
     print("Using the gRPC interop testing CA for TLS; clients should expect the host to be '*.test.google.fr'")
@@ -51,12 +46,14 @@ public func makeInteroperabilityTestServer(
     let serverCert = InteroperabilityTestCredentials.server1Certificate
     let serverKey = InteroperabilityTestCredentials.server1Key
 
-    configuration.tls = .init(
-      certificateChain: [.certificate(serverCert)],
-      privateKey: .privateKey(serverKey),
-      trustRoots: .certificates([caCert])
-    )
+    builder = Server.secure(group: eventLoopGroup, certificateChain: [serverCert], privateKey: serverKey)
+      .withTLS(trustRoots: .certificates([caCert]))
+  } else {
+    builder = Server.insecure(group: eventLoopGroup)
   }
 
-  return Server.start(configuration: configuration)
+  return builder
+    .withMessageCompression(.enabled(.init(decompressionLimit: .absolute(1024 * 1024))))
+    .withServiceProviders(serviceProviders)
+    .bind(host: host, port: port)
 }

@@ -72,14 +72,13 @@ class ClientTLSFailureTests: GRPCTestCase {
   override func setUp() {
     self.serverEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
-    let configuration = Server.Configuration(
-      target: .hostAndPort("localhost", 0),
-      eventLoopGroup: self.serverEventLoopGroup,
-      serviceProviders: [EchoProvider()],
-      errorDelegate: nil,
-      tls: self.defaultServerTLSConfiguration)
-
-    self.server = try! Server.start(configuration: configuration).wait()
+    self.server = try! Server.secure(
+      group: self.serverEventLoopGroup,
+      certificateChain: [SampleCertificate.server.certificate],
+      privateKey: SamplePrivateKey.server
+    ).withServiceProviders([EchoProvider()])
+      .bind(host: "localhost", port: 0)
+      .wait()
 
     self.port = self.server.channel.localAddress?.port
 

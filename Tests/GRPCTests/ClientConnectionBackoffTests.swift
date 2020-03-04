@@ -116,12 +116,9 @@ class ClientConnectionBackoffTests: GRPCTestCase {
   }
 
   func makeServer() -> EventLoopFuture<Server> {
-    let configuration = Server.Configuration(
-      target: .hostAndPort("localhost", self.port),
-      eventLoopGroup: self.serverGroup,
-      serviceProviders: [EchoProvider()])
-
-    return Server.start(configuration: configuration)
+    return Server.insecure(group: self.serverGroup)
+      .withServiceProviders([EchoProvider()])
+      .bind(host: "localhost", port: self.port)
   }
 
   func connectionBuilder() -> ClientConnection.Builder {

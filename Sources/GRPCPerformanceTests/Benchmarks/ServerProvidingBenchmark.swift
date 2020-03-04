@@ -30,12 +30,10 @@ class ServerProvidingBenchmark: Benchmark {
 
   func setUp() throws {
     self.group = MultiThreadedEventLoopGroup(numberOfThreads: self.threadCount)
-    let configuration = Server.Configuration(
-      target: .hostAndPort("127.0.0.1", 0),
-      eventLoopGroup: self.group,
-      serviceProviders: self.providers
-    )
-    self.server = try Server.start(configuration: configuration).wait()
+    self.server = try Server.insecure(group: self.group)
+      .withServiceProviders(self.providers)
+      .bind(host: "127.0.0.1", port: 0)
+      .wait()
   }
 
   func tearDown() throws {

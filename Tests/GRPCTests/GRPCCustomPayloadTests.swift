@@ -28,13 +28,10 @@ class GRPCCustomPayloadTests: GRPCTestCase {
     super.setUp()
     self.group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
-    let serverConfig: Server.Configuration = .init(
-      target: .hostAndPort("localhost", 0),
-      eventLoopGroup: self.group,
-      serviceProviders: [CustomPayloadProvider()]
-    )
-
-    self.server = try! Server.start(configuration: serverConfig).wait()
+    self.server = try! Server.insecure(group: self.group)
+      .withServiceProviders([CustomPayloadProvider()])
+      .bind(host: "localhost", port: 0)
+      .wait()
 
     let channel = ClientConnection.insecure(group: self.group)
       .connect(host: "localhost", port: server.channel.localAddress!.port!)

@@ -51,15 +51,11 @@ func main(args: [String]) throws {
   // Create a provider using the features we read.
   let provider = RouteGuideProvider(features: features)
 
-  // Tie these together in some configuration:
-  let configuration = Server.Configuration(
-    target: .hostAndPort("localhost", 0),
-    eventLoopGroup: group,
-    serviceProviders: [provider]
-  )
-
   // Start the server and print its address once it has started.
-  let server = Server.start(configuration: configuration)
+  let server = Server.insecure(group: group)
+    .withServiceProviders([provider])
+    .bind(host: "localhost", port: 0)
+
   server.map {
     $0.channel.localAddress
   }.whenSuccess { address in

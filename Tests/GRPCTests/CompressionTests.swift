@@ -39,14 +39,11 @@ class MessageCompressionTests: GRPCTestCase {
   }
 
   func setupServer(encoding: ServerMessageEncoding) throws {
-    let configuration = Server.Configuration(
-      target: .hostAndPort("localhost", 0),
-      eventLoopGroup: self.group,
-      serviceProviders: [EchoProvider()],
-      messageEncoding: encoding
-    )
-
-    self.server = try Server.start(configuration: configuration).wait()
+    self.server = try Server.insecure(group: self.group)
+      .withServiceProviders([EchoProvider()])
+      .withMessageCompression(encoding)
+      .bind(host: "localhost", port: 0)
+      .wait()
   }
 
   func setupClient(encoding: ClientMessageEncoding) {
