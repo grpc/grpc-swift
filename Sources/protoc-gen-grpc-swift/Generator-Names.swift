@@ -46,6 +46,14 @@ extension Generator {
     return nameForPackageService(file, service) + "Provider"
   }
 
+  internal var clientClassName: String {
+    return nameForPackageService(file, service) + "Client"
+  }
+
+  internal var clientProtocolName: String {
+    return nameForPackageService(file, service) + "ClientProtocol"
+  }
+
   internal var callName: String {
     return nameForPackageServiceMethod(file, service, method) + "Call"
   }

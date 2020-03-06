@@ -21,7 +21,7 @@ import XCTest
 
 class ClientTimeoutTests: GRPCTestCase {
   var channel: EmbeddedChannel!
-  var client: Echo_EchoServiceClient!
+  var client: Echo_EchoClient!
 
   let callOptions = CallOptions(timeout: try! .milliseconds(100))
   var timeout: GRPCTimeout {
@@ -37,7 +37,7 @@ class ClientTimeoutTests: GRPCTestCase {
 
     let connection = EmbeddedGRPCChannel()
     XCTAssertNoThrow(try connection.embeddedChannel.connect(to: SocketAddress(unixDomainSocketPath: "/foo")))
-    let client = Echo_EchoServiceClient(channel: connection, defaultCallOptions: self.callOptions)
+    let client = Echo_EchoClient(channel: connection, defaultCallOptions: self.callOptions)
 
     self.channel = connection.embeddedChannel
     self.client = client

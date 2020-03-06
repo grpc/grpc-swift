@@ -27,12 +27,12 @@ import NIOHTTP1
 import SwiftProtobuf
 
 
-/// Usage: instantiate Helloworld_GreeterServiceClient, then call methods of this protocol to make API calls.
-public protocol Helloworld_GreeterService {
+/// Usage: instantiate Helloworld_GreeterClient, then call methods of this protocol to make API calls.
+public protocol Helloworld_GreeterClientProtocol {
   func sayHello(_ request: Helloworld_HelloRequest, callOptions: CallOptions?) -> UnaryCall<Helloworld_HelloRequest, Helloworld_HelloReply>
 }
 
-public final class Helloworld_GreeterServiceClient: GRPCClient, Helloworld_GreeterService {
+public final class Helloworld_GreeterClient: GRPCClient, Helloworld_GreeterClientProtocol {
   public let channel: GRPCChannel
   public var defaultCallOptions: CallOptions
 

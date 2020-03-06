@@ -27,8 +27,8 @@ import NIOHTTP1
 import SwiftProtobuf
 
 
-/// Usage: instantiate Grpc_Testing_TestServiceServiceClient, then call methods of this protocol to make API calls.
-public protocol Grpc_Testing_TestServiceService {
+/// Usage: instantiate Grpc_Testing_TestServiceClient, then call methods of this protocol to make API calls.
+public protocol Grpc_Testing_TestServiceClientProtocol {
   func emptyCall(_ request: Grpc_Testing_Empty, callOptions: CallOptions?) -> UnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty>
   func unaryCall(_ request: Grpc_Testing_SimpleRequest, callOptions: CallOptions?) -> UnaryCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>
   func cacheableUnaryCall(_ request: Grpc_Testing_SimpleRequest, callOptions: CallOptions?) -> UnaryCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>
@@ -39,7 +39,7 @@ public protocol Grpc_Testing_TestServiceService {
   func unimplementedCall(_ request: Grpc_Testing_Empty, callOptions: CallOptions?) -> UnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty>
 }
 
-public final class Grpc_Testing_TestServiceServiceClient: GRPCClient, Grpc_Testing_TestServiceService {
+public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_TestServiceClientProtocol {
   public let channel: GRPCChannel
   public var defaultCallOptions: CallOptions
 
@@ -160,12 +160,12 @@ public final class Grpc_Testing_TestServiceServiceClient: GRPCClient, Grpc_Testi
 
 }
 
-/// Usage: instantiate Grpc_Testing_UnimplementedServiceServiceClient, then call methods of this protocol to make API calls.
-public protocol Grpc_Testing_UnimplementedServiceService {
+/// Usage: instantiate Grpc_Testing_UnimplementedServiceClient, then call methods of this protocol to make API calls.
+public protocol Grpc_Testing_UnimplementedServiceClientProtocol {
   func unimplementedCall(_ request: Grpc_Testing_Empty, callOptions: CallOptions?) -> UnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty>
 }
 
-public final class Grpc_Testing_UnimplementedServiceServiceClient: GRPCClient, Grpc_Testing_UnimplementedServiceService {
+public final class Grpc_Testing_UnimplementedServiceClient: GRPCClient, Grpc_Testing_UnimplementedServiceClientProtocol {
   public let channel: GRPCChannel
   public var defaultCallOptions: CallOptions
 
@@ -193,13 +193,13 @@ public final class Grpc_Testing_UnimplementedServiceServiceClient: GRPCClient, G
 
 }
 
-/// Usage: instantiate Grpc_Testing_ReconnectServiceServiceClient, then call methods of this protocol to make API calls.
-public protocol Grpc_Testing_ReconnectServiceService {
+/// Usage: instantiate Grpc_Testing_ReconnectServiceClient, then call methods of this protocol to make API calls.
+public protocol Grpc_Testing_ReconnectServiceClientProtocol {
   func start(_ request: Grpc_Testing_ReconnectParams, callOptions: CallOptions?) -> UnaryCall<Grpc_Testing_ReconnectParams, Grpc_Testing_Empty>
   func stop(_ request: Grpc_Testing_Empty, callOptions: CallOptions?) -> UnaryCall<Grpc_Testing_Empty, Grpc_Testing_ReconnectInfo>
 }
 
-public final class Grpc_Testing_ReconnectServiceServiceClient: GRPCClient, Grpc_Testing_ReconnectServiceService {
+public final class Grpc_Testing_ReconnectServiceClient: GRPCClient, Grpc_Testing_ReconnectServiceClientProtocol {
   public let channel: GRPCChannel
   public var defaultCallOptions: CallOptions
 
