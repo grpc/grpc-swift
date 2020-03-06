@@ -27,18 +27,18 @@ LoggingSystem.bootstrap {
 }
 
 /// Makes a `RouteGuide` client for a service hosted on "localhost" and listening on the given port.
-func makeClient(port: Int, group: EventLoopGroup) -> Routeguide_RouteGuideServiceClient {
+func makeClient(port: Int, group: EventLoopGroup) -> Routeguide_RouteGuideClient {
   let config = ClientConnection.Configuration(
     target: .hostAndPort("localhost", port),
     eventLoopGroup: group
   )
 
   let connection = ClientConnection(configuration: config)
-  return Routeguide_RouteGuideServiceClient(channel: connection)
+  return Routeguide_RouteGuideClient(channel: connection)
 }
 
 /// Unary call example. Calls `getFeature` and prints the response.
-func getFeature(using client: Routeguide_RouteGuideServiceClient, latitude: Int, longitude: Int) {
+func getFeature(using client: Routeguide_RouteGuideClient, latitude: Int, longitude: Int) {
   print("→ GetFeature: lat=\(latitude) lon=\(longitude)")
 
   let point: Routeguide_Point = .with {
@@ -69,7 +69,7 @@ func getFeature(using client: Routeguide_RouteGuideServiceClient, latitude: Int,
 /// Server-streaming example. Calls `listFeatures` with a rectangle of interest. Prints each
 /// response feature as it arrives.
 func listFeatures(
-  using client: Routeguide_RouteGuideServiceClient,
+  using client: Routeguide_RouteGuideClient,
   lowLatitude: Int,
   lowLongitude: Int,
   highLatitude: Int,
@@ -103,7 +103,7 @@ func listFeatures(
 /// Client-streaming example. Sends `featuresToVisit` randomly chosen points from `features` with
 /// a variable delay in between. Prints the statistics when they are sent from the server.
 public func recordRoute(
-  using client: Routeguide_RouteGuideServiceClient,
+  using client: Routeguide_RouteGuideClient,
   features: [Routeguide_Feature],
   featuresToVisit: Int
 ) {
@@ -144,7 +144,7 @@ public func recordRoute(
 
 /// Bidirectional example. Send some chat messages, and print any chat messages that are sent from
 /// the server.
-func routeChat(using client: Routeguide_RouteGuideServiceClient) {
+func routeChat(using client: Routeguide_RouteGuideClient) {
   print("→ RouteChat")
 
   let call = client.routeChat { note in

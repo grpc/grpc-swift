@@ -51,7 +51,7 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
   }
 
   func doTestUnary() throws {
-    let client = Echo_EchoServiceClient(channel: self.connection)
+    let client = Echo_EchoClient(channel: self.connection)
     let get = client.get(.with { $0.text = "foo" })
 
     let response = try get.response.wait()

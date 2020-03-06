@@ -26,8 +26,8 @@ extension Generator {
   }
 
   private func printServiceClientProtocol() {
-    println("/// Usage: instantiate \(serviceClassName)Client, then call methods of this protocol to make API calls.")
-    println("\(options.visibility.sourceSnippet) protocol \(serviceClassName) {")
+    println("/// Usage: instantiate \(clientClassName), then call methods of this protocol to make API calls.")
+    println("\(options.visibility.sourceSnippet) protocol \(clientProtocolName) {")
     indent()
     for method in service.methods {
       self.method = method
@@ -50,7 +50,7 @@ extension Generator {
   }
 
   private func printServiceClientImplementation() {
-    println("\(access) final class \(serviceClassName)Client: GRPCClient, \(serviceClassName) {")
+    println("\(access) final class \(clientClassName): GRPCClient, \(clientProtocolName) {")
     indent()
     println("\(access) let channel: GRPCChannel")
     println("\(access) var defaultCallOptions: CallOptions")

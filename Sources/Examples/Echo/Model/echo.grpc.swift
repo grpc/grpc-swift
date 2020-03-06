@@ -27,15 +27,15 @@ import NIOHTTP1
 import SwiftProtobuf
 
 
-/// Usage: instantiate Echo_EchoServiceClient, then call methods of this protocol to make API calls.
-public protocol Echo_EchoService {
+/// Usage: instantiate Echo_EchoClient, then call methods of this protocol to make API calls.
+public protocol Echo_EchoClientProtocol {
   func get(_ request: Echo_EchoRequest, callOptions: CallOptions?) -> UnaryCall<Echo_EchoRequest, Echo_EchoResponse>
   func expand(_ request: Echo_EchoRequest, callOptions: CallOptions?, handler: @escaping (Echo_EchoResponse) -> Void) -> ServerStreamingCall<Echo_EchoRequest, Echo_EchoResponse>
   func collect(callOptions: CallOptions?) -> ClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse>
   func update(callOptions: CallOptions?, handler: @escaping (Echo_EchoResponse) -> Void) -> BidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse>
 }
 
-public final class Echo_EchoServiceClient: GRPCClient, Echo_EchoService {
+public final class Echo_EchoClient: GRPCClient, Echo_EchoClientProtocol {
   public let channel: GRPCChannel
   public var defaultCallOptions: CallOptions
 

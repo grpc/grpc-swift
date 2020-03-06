@@ -211,7 +211,7 @@ class ClientConnectionBackoffTests: GRPCTestCase {
     let reconnectionReady = self.expectation(description: "(re)connection ready")
     self.stateDelegate.expectations[.ready] = reconnectionReady
 
-    let echo = Echo_EchoServiceClient(channel: self.client)
+    let echo = Echo_EchoClient(channel: self.client)
     // This should succeed once we get a connection again.
     let get = echo.get(.with { $0.text = "hello" })
 

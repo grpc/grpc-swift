@@ -86,7 +86,7 @@ class HeaderNormalizationTests: GRPCTestCase {
   var group: EventLoopGroup!
   var server: Server!
   var channel: GRPCChannel!
-  var client: Echo_EchoServiceClient!
+  var client: Echo_EchoClient!
 
   override func setUp() {
     super.setUp()
@@ -107,7 +107,7 @@ class HeaderNormalizationTests: GRPCTestCase {
     )
 
     self.channel = ClientConnection(configuration: clientConfig)
-    self.client = Echo_EchoServiceClient(channel: self.channel)
+    self.client = Echo_EchoClient(channel: self.channel)
   }
 
   override func tearDown() {

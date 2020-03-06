@@ -173,7 +173,7 @@ func startEchoServer(group: EventLoopGroup, port: Int, useTLS: Bool) throws {
   try server.onClose.wait()
 }
 
-func makeClient(group: EventLoopGroup, host: String, port: Int, useTLS: Bool) -> Echo_EchoServiceClient {
+func makeClient(group: EventLoopGroup, host: String, port: Int, useTLS: Bool) -> Echo_EchoClient {
   // Configure the connection:
   var configuration = ClientConnection.Configuration(
     target: .hostAndPort(host, port),
@@ -198,10 +198,10 @@ func makeClient(group: EventLoopGroup, host: String, port: Int, useTLS: Bool) ->
 
   // Start the connection and create the client:
   let connection = ClientConnection(configuration: configuration)
-  return Echo_EchoServiceClient(channel: connection)
+  return Echo_EchoClient(channel: connection)
 }
 
-func callRPC(_ rpc: RPC, using client: Echo_EchoServiceClient, message: String) {
+func callRPC(_ rpc: RPC, using client: Echo_EchoClient, message: String) {
   do {
     switch rpc {
     case .get:
@@ -218,7 +218,7 @@ func callRPC(_ rpc: RPC, using client: Echo_EchoServiceClient, message: String) 
   }
 }
 
-func echoGet(client: Echo_EchoServiceClient, message: String) throws {
+func echoGet(client: Echo_EchoClient, message: String) throws {
   // Get is a unary call.
   let get = client.get(.with { $0.text = message })
 
@@ -237,7 +237,7 @@ func echoGet(client: Echo_EchoServiceClient, message: String) throws {
   print("get completed with status: \(status.code)")
 }
 
-func echoCollect(client: Echo_EchoServiceClient, message: String) throws {
+func echoCollect(client: Echo_EchoClient, message: String) throws {
   // Collect is a client streaming call
   let collect = client.collect()
 
@@ -266,7 +266,7 @@ func echoCollect(client: Echo_EchoServiceClient, message: String) throws {
   print("collect completed with status: \(status.code)")
 }
 
-func echoExpand(client: Echo_EchoServiceClient, message: String) throws {
+func echoExpand(client: Echo_EchoClient, message: String) throws {
   // Expand is a server streaming call; provide a response handler.
   let expand = client.expand(.with { $0.text = message}) { response in
     print("expand received: \(response.text)")
@@ -277,7 +277,7 @@ func echoExpand(client: Echo_EchoServiceClient, message: String) throws {
   print("expand completed with status: \(status.code)")
 }
 
-func echoUpdate(client: Echo_EchoServiceClient, message: String) throws {
+func echoUpdate(client: Echo_EchoClient, message: String) throws {
   // Update is a bidirectional streaming call; provide a response handler.
   let update = client.update { response in
     print("update received: \(response.text)")

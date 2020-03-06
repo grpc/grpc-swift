@@ -25,7 +25,7 @@ LoggingSystem.bootstrap {
   return handler
 }
 
-func greet(name: String?, client greeter: Helloworld_GreeterServiceClient) {
+func greet(name: String?, client greeter: Helloworld_GreeterClient) {
   // Form the request with the name, if one was provided.
   let request = Helloworld_HelloRequest.with {
     $0.name = name ?? ""
@@ -76,7 +76,7 @@ func main(args: [String]) {
     let connection = ClientConnection(configuration: configuration)
 
     // Provide the connection to the generated client.
-    let greeter = Helloworld_GreeterServiceClient(channel: connection)
+    let greeter = Helloworld_GreeterClient(channel: connection)
 
     // Do the greeting.
     greet(name: name, client: greeter)

@@ -25,7 +25,7 @@ import NIO
 /// https://github.com/apple/swift-nio-http2/issues/87#issuecomment-483542401.
 class Unary: ServerProvidingBenchmark {
   private var group: EventLoopGroup!
-  private(set) var client: Echo_EchoServiceClient!
+  private(set) var client: Echo_EchoClient!
 
   let requestCount: Int
   let requestText: String

@@ -26,7 +26,7 @@ class MessageCompressionTests: GRPCTestCase {
   var client: ClientConnection!
   var defaultTimeout: TimeInterval = 0.1
 
-  var echo: Echo_EchoServiceClient!
+  var echo: Echo_EchoClient!
 
   override func setUp() {
     self.group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
@@ -53,7 +53,7 @@ class MessageCompressionTests: GRPCTestCase {
     self.client = ClientConnection.insecure(group: self.group)
       .connect(host: "localhost", port: self.server.channel.localAddress!.port!)
 
-    self.echo = Echo_EchoServiceClient(
+    self.echo = Echo_EchoClient(
       channel: self.client,
       defaultCallOptions: CallOptions(messageEncoding: encoding)
     )

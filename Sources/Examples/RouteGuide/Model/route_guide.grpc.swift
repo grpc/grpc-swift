@@ -27,15 +27,15 @@ import NIOHTTP1
 import SwiftProtobuf
 
 
-/// Usage: instantiate Routeguide_RouteGuideServiceClient, then call methods of this protocol to make API calls.
-public protocol Routeguide_RouteGuideService {
+/// Usage: instantiate Routeguide_RouteGuideClient, then call methods of this protocol to make API calls.
+public protocol Routeguide_RouteGuideClientProtocol {
   func getFeature(_ request: Routeguide_Point, callOptions: CallOptions?) -> UnaryCall<Routeguide_Point, Routeguide_Feature>
   func listFeatures(_ request: Routeguide_Rectangle, callOptions: CallOptions?, handler: @escaping (Routeguide_Feature) -> Void) -> ServerStreamingCall<Routeguide_Rectangle, Routeguide_Feature>
   func recordRoute(callOptions: CallOptions?) -> ClientStreamingCall<Routeguide_Point, Routeguide_RouteSummary>
   func routeChat(callOptions: CallOptions?, handler: @escaping (Routeguide_RouteNote) -> Void) -> BidirectionalStreamingCall<Routeguide_RouteNote, Routeguide_RouteNote>
 }
 
-public final class Routeguide_RouteGuideServiceClient: GRPCClient, Routeguide_RouteGuideService {
+public final class Routeguide_RouteGuideClient: GRPCClient, Routeguide_RouteGuideClientProtocol {
   public let channel: GRPCChannel
   public var defaultCallOptions: CallOptions
 
