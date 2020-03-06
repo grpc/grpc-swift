@@ -50,16 +50,6 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
     return try Server.start(configuration: configuration).wait()
   }
 
-  func makeConnection(port: Int, tls: ClientConnection.Configuration.TLS) -> ClientConnection {
-    let configuration: ClientConnection.Configuration = .init(
-      target: .hostAndPort("localhost", port),
-      eventLoopGroup: self.eventLoopGroup,
-      tls: tls
-    )
-
-    return ClientConnection(configuration: configuration)
-  }
-
   func doTestUnary() throws {
     let client = Echo_EchoServiceClient(channel: self.connection)
     let get = client.get(.with { $0.text = "foo" })
@@ -85,12 +75,11 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
       return
     }
 
-    let clientTLS: ClientConnection.Configuration.TLS = .init(
-      trustRoots: .certificates([SampleCertificate.ca.certificate]),
-      hostnameOverride: "example.com"
-    )
+    self.connection = ClientConnection.secure(group: self.eventLoopGroup)
+      .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
+      .withTLS(serverHostnameOverride: "example.com")
+      .connect(host: "localhost", port: port)
 
-    self.connection = self.makeConnection(port: port, tls: clientTLS)
     try self.doTestUnary()
   }
 
@@ -108,11 +97,10 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
       return
     }
 
-    let clientTLS: ClientConnection.Configuration.TLS = .init(
-      trustRoots: .certificates([SampleCertificate.ca.certificate])
-    )
+    self.connection = ClientConnection.secure(group: self.eventLoopGroup)
+      .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
+      .connect(host: "localhost", port: port)
 
-    self.connection = self.makeConnection(port: port, tls: clientTLS)
     try self.doTestUnary()
   }
 }
