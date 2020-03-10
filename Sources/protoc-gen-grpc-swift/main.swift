@@ -106,8 +106,9 @@ func main() throws {
   // types we've seen to avoid generating the conformance multiple times.
   var observedMessages = Set<String>()
 
-  // process each .proto file separately
-  for fileDescriptor in descriptorSet.files {
+  // process each .proto file in filename order in an attempt to stabilise the output (i.e. where
+  // conformance to `GRPCPayload` is generated)
+  for fileDescriptor in descriptorSet.files.sorted(by: { $0.name < $1.name }) {
     if fileDescriptor.services.count > 0 {
       let grpcFileName = uniqueOutputFileName(component: "grpc", fileDescriptor: fileDescriptor, fileNamingOption: options.fileNaming)
       let grpcGenerator = Generator(fileDescriptor, options: options, observedMessages: observedMessages)
