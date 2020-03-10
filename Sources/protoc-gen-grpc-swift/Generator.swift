@@ -23,11 +23,13 @@ class Generator {
   internal var service: ServiceDescriptor! // context during generation
   internal var method: MethodDescriptor!   // context during generation
 
+  internal var observedMessages: Set<String>
   internal let protobufNamer: SwiftProtobufNamer
 
-  init(_ file: FileDescriptor, options: GeneratorOptions) {
+  init(_ file: FileDescriptor, options: GeneratorOptions, observedMessages: Set<String>) {
     self.file = file
     self.options = options
+    self.observedMessages = observedMessages
     self.printer = CodePrinter()
     self.protobufNamer = SwiftProtobufNamer(
       currentFile: file,
@@ -117,27 +119,8 @@ class Generator {
         printServer()
       }
     }
-    println()
-    printProtoBufExtensions()
-  }
-    
-  internal func printProtoBufExtensions() {
-    var writtenValues = Set<String>()
-    println("/// Provides conformance to `GRPCPayload` for the request and response messages")
-    for service in file.services {
-      self.service = service
-      for method in service.methods {
-        self.method = method
-        printExtension(for: methodInputName, typesSeen: &writtenValues)
-        printExtension(for: methodOutputName, typesSeen: &writtenValues)
-      }
-      println()
-    }
+    self.println()
+    self.printProtobufExtensions()
   }
 
-  private func printExtension(for messageType: String, typesSeen: inout Set<String>) {
-    guard !typesSeen.contains(messageType) else { return }
-    println("extension \(messageType): GRPCProtobufPayload {}")
-    typesSeen.insert(messageType)
-  }
 }
