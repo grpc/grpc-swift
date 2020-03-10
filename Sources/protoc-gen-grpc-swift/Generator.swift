@@ -120,7 +120,7 @@ class Generator {
       }
     }
     self.println()
-    self.printProtoBufExtensions()
+    self.printProtobufExtensions()
   }
 
 }

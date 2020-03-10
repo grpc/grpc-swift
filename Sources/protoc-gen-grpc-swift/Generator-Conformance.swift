@@ -17,7 +17,7 @@ import SwiftProtobuf
 import SwiftProtobufPluginLibrary
 
 extension Generator {
-  internal func printProtoBufExtensions() {
+  internal func printProtobufExtensions() {
     println("// Provides conformance to `GRPCPayload` for request and response messages")
     for service in self.file.services {
       self.service = service
