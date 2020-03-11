@@ -49,7 +49,12 @@ public final class Routeguide_RouteGuideClient: GRPCClient, Routeguide_RouteGuid
     self.defaultCallOptions = defaultCallOptions
   }
 
-  /// Asynchronous unary call to GetFeature.
+  /// A simple RPC.
+  ///
+  /// Obtains the feature at a given position.
+  ///
+  /// A feature with an empty name is returned if there's no feature at the given
+  /// position.
   ///
   /// - Parameters:
   ///   - request: Request to send to GetFeature.
@@ -61,7 +66,12 @@ public final class Routeguide_RouteGuideClient: GRPCClient, Routeguide_RouteGuid
                               callOptions: callOptions ?? self.defaultCallOptions)
   }
 
-  /// Asynchronous server-streaming call to ListFeatures.
+  /// A server-to-client streaming RPC.
+  ///
+  /// Obtains the Features available within the given Rectangle.  Results are
+  /// streamed rather than returned at once (e.g. in a response message with a
+  /// repeated field), as the rectangle may cover a large area and contain a
+  /// huge number of features.
   ///
   /// - Parameters:
   ///   - request: Request to send to ListFeatures.
@@ -75,7 +85,10 @@ public final class Routeguide_RouteGuideClient: GRPCClient, Routeguide_RouteGuid
                                         handler: handler)
   }
 
-  /// Asynchronous client-streaming call to RecordRoute.
+  /// A client-to-server streaming RPC.
+  ///
+  /// Accepts a stream of Points on a route being traversed, returning a
+  /// RouteSummary when traversal is completed.
   ///
   /// Callers should use the `send` method on the returned object to send messages
   /// to the server. The caller should send an `.end` after the final message has been sent.
@@ -88,7 +101,10 @@ public final class Routeguide_RouteGuideClient: GRPCClient, Routeguide_RouteGuid
                                         callOptions: callOptions ?? self.defaultCallOptions)
   }
 
-  /// Asynchronous bidirectional-streaming call to RouteChat.
+  /// A Bidirectional streaming RPC.
+  ///
+  /// Accepts a stream of RouteNotes sent while a route is being traversed,
+  /// while receiving other RouteNotes (e.g. from other users).
   ///
   /// Callers should use the `send` method on the returned object to send messages
   /// to the server. The caller should send an `.end` after the final message has been sent.
@@ -107,9 +123,29 @@ public final class Routeguide_RouteGuideClient: GRPCClient, Routeguide_RouteGuid
 
 /// To build a server, implement a class that conforms to this protocol.
 public protocol Routeguide_RouteGuideProvider: CallHandlerProvider {
+  /// A simple RPC.
+  ///
+  /// Obtains the feature at a given position.
+  ///
+  /// A feature with an empty name is returned if there's no feature at the given
+  /// position.
   func getFeature(request: Routeguide_Point, context: StatusOnlyCallContext) -> EventLoopFuture<Routeguide_Feature>
+  /// A server-to-client streaming RPC.
+  ///
+  /// Obtains the Features available within the given Rectangle.  Results are
+  /// streamed rather than returned at once (e.g. in a response message with a
+  /// repeated field), as the rectangle may cover a large area and contain a
+  /// huge number of features.
   func listFeatures(request: Routeguide_Rectangle, context: StreamingResponseCallContext<Routeguide_Feature>) -> EventLoopFuture<GRPCStatus>
+  /// A client-to-server streaming RPC.
+  ///
+  /// Accepts a stream of Points on a route being traversed, returning a
+  /// RouteSummary when traversal is completed.
   func recordRoute(context: UnaryResponseCallContext<Routeguide_RouteSummary>) -> EventLoopFuture<(StreamEvent<Routeguide_Point>) -> Void>
+  /// A Bidirectional streaming RPC.
+  ///
+  /// Accepts a stream of RouteNotes sent while a route is being traversed,
+  /// while receiving other RouteNotes (e.g. from other users).
   func routeChat(context: StreamingResponseCallContext<Routeguide_RouteNote>) -> EventLoopFuture<(StreamEvent<Routeguide_RouteNote>) -> Void>
 }
 

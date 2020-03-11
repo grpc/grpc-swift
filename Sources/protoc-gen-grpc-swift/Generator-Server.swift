@@ -31,12 +31,16 @@ extension Generator {
       
       switch streamingType(method) {
       case .unary:
+        println(self.method.protoSourceComments(), newline: false)
         println("func \(methodFunctionName)(request: \(methodInputName), context: StatusOnlyCallContext) -> EventLoopFuture<\(methodOutputName)>")
       case .serverStreaming:
+        println(self.method.protoSourceComments(), newline: false)
         println("func \(methodFunctionName)(request: \(methodInputName), context: StreamingResponseCallContext<\(methodOutputName)>) -> EventLoopFuture<GRPCStatus>")
       case .clientStreaming:
+        println(self.method.protoSourceComments(), newline: false)
         println("func \(methodFunctionName)(context: UnaryResponseCallContext<\(methodOutputName)>) -> EventLoopFuture<(StreamEvent<\(methodInputName)>) -> Void>")
       case .bidirectionalStreaming:
+        println(self.method.protoSourceComments(), newline: false)
         println("func \(methodFunctionName)(context: StreamingResponseCallContext<\(methodOutputName)>) -> EventLoopFuture<(StreamEvent<\(methodInputName)>) -> Void>")
       }
     }

@@ -70,9 +70,10 @@ extension Generator {
 
     for method in service.methods {
       self.method = method
-      switch streamingType(method) {
+      let streamType = streamingType(self.method)
+      switch streamType {
       case .unary:
-        println("/// Asynchronous unary call to \(method.name).")
+        println(self.method.documentation(streamingType: streamType), newline: false)
         println("///")
         printParameters()
         printRequestParameter()
@@ -87,7 +88,7 @@ extension Generator {
         println("}")
 
       case .serverStreaming:
-        println("/// Asynchronous server-streaming call to \(method.name).")
+        println(self.method.documentation(streamingType: streamType), newline: false)
         println("///")
         printParameters()
         printRequestParameter()
@@ -104,7 +105,7 @@ extension Generator {
         println("}")
 
       case .clientStreaming:
-        println("/// Asynchronous client-streaming call to \(method.name).")
+        println(self.method.documentation(streamingType: streamType), newline: false)
         println("///")
         printClientStreamingDetails()
         println("///")
@@ -119,7 +120,7 @@ extension Generator {
         println("}")
 
       case .bidirectionalStreaming:
-        println("/// Asynchronous bidirectional-streaming call to \(method.name).")
+        println(self.method.documentation(streamingType: streamType), newline: false)
         println("///")
         printClientStreamingDetails()
         println("///")
@@ -160,5 +161,37 @@ extension Generator {
 
   private func printHandlerParameter() {
     println("///   - handler: A closure called when each response is received from the server.")
+  }
+}
+
+fileprivate extension StreamingType {
+  var name: String {
+    switch self {
+    case .unary:
+      return "Unary"
+    case .clientStreaming:
+      return "Client streaming"
+    case .serverStreaming:
+      return "Server streaming"
+    case .bidirectionalStreaming:
+      return "Bidirectional streaming"
+    }
+  }
+}
+
+extension MethodDescriptor {
+  var documentation: String? {
+    let comments = self.protoSourceComments(commentPrefix: "")
+    return comments.isEmpty ? nil : comments
+  }
+
+  fileprivate func documentation(streamingType: StreamingType) -> String {
+    let sourceComments = self.protoSourceComments()
+
+    if sourceComments.isEmpty {
+      return "/// \(streamingType.name) call to \(self.name)\n"  // comments end with "\n" already.
+    } else {
+      return sourceComments  // already prefixed with "///"
+    }
   }
 }

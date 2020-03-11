@@ -49,7 +49,7 @@ public final class Echo_EchoClient: GRPCClient, Echo_EchoClientProtocol {
     self.defaultCallOptions = defaultCallOptions
   }
 
-  /// Asynchronous unary call to Get.
+  /// Immediately returns an echo of a request.
   ///
   /// - Parameters:
   ///   - request: Request to send to Get.
@@ -61,7 +61,7 @@ public final class Echo_EchoClient: GRPCClient, Echo_EchoClientProtocol {
                               callOptions: callOptions ?? self.defaultCallOptions)
   }
 
-  /// Asynchronous server-streaming call to Expand.
+  /// Splits a request into words and returns each word in a stream of messages.
   ///
   /// - Parameters:
   ///   - request: Request to send to Expand.
@@ -75,7 +75,7 @@ public final class Echo_EchoClient: GRPCClient, Echo_EchoClientProtocol {
                                         handler: handler)
   }
 
-  /// Asynchronous client-streaming call to Collect.
+  /// Collects a stream of messages and returns them concatenated when the caller closes.
   ///
   /// Callers should use the `send` method on the returned object to send messages
   /// to the server. The caller should send an `.end` after the final message has been sent.
@@ -88,7 +88,7 @@ public final class Echo_EchoClient: GRPCClient, Echo_EchoClientProtocol {
                                         callOptions: callOptions ?? self.defaultCallOptions)
   }
 
-  /// Asynchronous bidirectional-streaming call to Update.
+  /// Streams back messages as they are received in an input stream.
   ///
   /// Callers should use the `send` method on the returned object to send messages
   /// to the server. The caller should send an `.end` after the final message has been sent.
@@ -107,9 +107,13 @@ public final class Echo_EchoClient: GRPCClient, Echo_EchoClientProtocol {
 
 /// To build a server, implement a class that conforms to this protocol.
 public protocol Echo_EchoProvider: CallHandlerProvider {
+  /// Immediately returns an echo of a request.
   func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse>
+  /// Splits a request into words and returns each word in a stream of messages.
   func expand(request: Echo_EchoRequest, context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<GRPCStatus>
+  /// Collects a stream of messages and returns them concatenated when the caller closes.
   func collect(context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void>
+  /// Streams back messages as they are received in an input stream.
   func update(context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void>
 }
 

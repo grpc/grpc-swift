@@ -41,9 +41,11 @@ class Generator {
     return printer.content
   }
 
-  internal func println(_ text: String = "") {
+  internal func println(_ text: String = "", newline: Bool = true) {
     printer.print(text)
-    printer.print("\n")
+    if newline {
+      printer.print("\n")
+    }
   }
 
   internal func indent() {
@@ -122,5 +124,4 @@ class Generator {
     self.println()
     self.printProtobufExtensions()
   }
-
 }
