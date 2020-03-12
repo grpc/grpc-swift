@@ -1,10 +1,10 @@
-[![Build Status](https://travis-ci.org/grpc/grpc-swift.svg?branch=master)](https://travis-ci.org/grpc/grpc-swift)
+[![Build Status](https://travis-ci.org/grpc/grpc-swift.svg?branch=cgrpc)](https://travis-ci.org/grpc/grpc-swift)
 
 # ‼️ Deprecation Notice ‼️
 
-**gRPC Swift versions** `v0.x` **based on gRPC-Core will soon be replaced with a re-implementation based on [SwiftNIO](https://github.com/apple/swift-nio).** 
+**gRPC Swift versions** `v0.x` **based on gRPC-Core will soon be replaced with a re-implementation based on [SwiftNIO](https://github.com/apple/swift-nio).**
 
-**We strongly suggest that new projects use [the re-implementation from the `nio` branch](https://github.com/grpc/grpc-swift/tree/nio) which we consider to be production ready.** 
+**We strongly suggest that new projects use [the re-implementation from the `master` branch](https://github.com/grpc/grpc-swift/tree/master) which we consider to be production ready.**
 
 **Please see [DEPRECATION.md](DEPRECATION.md) for more information.**
 
