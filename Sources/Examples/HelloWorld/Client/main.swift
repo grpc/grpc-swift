@@ -65,18 +65,12 @@ func main(args: [String]) {
       try! group.syncShutdownGracefully()
     }
 
-    // Provide some basic configuration for the connection, in this case we connect to an endpoint on
-    // localhost at the given port.
-    let configuration = ClientConnection.Configuration(
-      target: .hostAndPort("localhost", port),
-      eventLoopGroup: group
-    )
-
-    // Create a connection using the configuration.
-    let connection = ClientConnection(configuration: configuration)
+    // Configure the channel, we're not using TLS so the connection is `insecure`.
+    let channel = ClientConnection.insecure(group: group)
+      .connect(host: "localhost", port: port)
 
     // Provide the connection to the generated client.
-    let greeter = Helloworld_GreeterClient(channel: connection)
+    let greeter = Helloworld_GreeterClient(channel: channel)
 
     // Do the greeting.
     greet(name: name, client: greeter)

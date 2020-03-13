@@ -45,13 +45,21 @@ enum InteroperabilityTestError: LocalizedError {
 /// - Parameters:
 ///   - instance: `InteroperabilityTest` instance to run.
 ///   - name: the name of the test, use for logging only.
-///   - connection: client connection to use for running the test.
+///   - host: host of the test server.
+///   - port: port of the test server.
+///   - useTLS: whether to use TLS when connecting to the test server.
 /// - Throws: `InteroperabilityTestError` if the test fails.
-func runTest(_ instance: InteroperabilityTest, name: String, defaultConfiguration: ClientConnection.Configuration) throws {
+func runTest(_ instance: InteroperabilityTest, name: String, host: String, port: Int, useTLS: Bool) throws {
+  let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+  defer {
+    try! group.syncShutdownGracefully()
+  }
+
   do {
     print("Running '\(name)' ... ", terminator: "")
-    let configuration = instance.configure(defaults: defaultConfiguration)
-    let connection = ClientConnection(configuration: configuration)
+    let builder = makeInteroperabilityTestClientBuilder(group: group, useTLS: useTLS)
+    instance.configure(builder: builder)
+    let connection = builder.connect(host: host, port: port)
     defer {
       _ = connection.close()
     }
@@ -172,11 +180,6 @@ func main(args: [String]) {
     }
 
   case let .runTest(name: name, host: host, port: port, useTLS: useTLS):
-    let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-    defer {
-      try! group.syncShutdownGracefully()
-    }
-
     let test: InteroperabilityTest
     do {
       test = try makeRunnableTest(name: name)
@@ -187,13 +190,7 @@ func main(args: [String]) {
 
     do {
       // Provide some basic configuration. Some tests may override this.
-      let defaults = makeInteroperabilityTestClientConfiguration(
-        host: host,
-        port: port,
-        eventLoopGroup: group,
-        useTLS: useTLS
-      )
-      try runTest(test, name: name, defaultConfiguration: defaults)
+      try runTest(test, name: name, host: host, port: port, useTLS: useTLS)
     } catch {
       print("Error running test: \(error)")
       exit(1)

@@ -124,22 +124,19 @@ class ClientConnectionBackoffTests: GRPCTestCase {
     return Server.start(configuration: configuration)
   }
 
-  func makeClientConfiguration() -> ClientConnection.Configuration {
-    return .init(
-      target: .hostAndPort("localhost", self.port),
-      eventLoopGroup: self.clientGroup,
-      connectivityStateDelegate: self.stateDelegate,
-      connectionBackoff: ConnectionBackoff(maximumBackoff: 0.1,
-                                           minimumConnectionTimeout: 0.1))
+  func connectionBuilder() -> ClientConnection.Builder {
+    return ClientConnection.insecure(group: self.clientGroup)
+      .withConnectivityStateDelegate(self.stateDelegate)
+      .withConnectionBackoff(maximum: .milliseconds(100))
+      .withConnectionTimeout(minimum: .milliseconds(100))
   }
 
   func testClientConnectionFailsWithNoBackoff() throws {
-    var configuration = self.makeClientConfiguration()
-    configuration.connectionBackoff = nil
-
     let connectionShutdown = self.expectation(description: "client shutdown")
     self.stateDelegate.expectations[.shutdown] = connectionShutdown
-    self.client = ClientConnection(configuration: configuration)
+    self.client = self.connectionBuilder()
+      .withConnectionReestablishment(enabled: false)
+      .connect(host: "localhost", port: self.port)
 
     self.wait(for: [connectionShutdown], timeout: 1.0)
     XCTAssertEqual(self.stateDelegate.states, [.connecting, .shutdown])
@@ -152,7 +149,8 @@ class ClientConnectionBackoffTests: GRPCTestCase {
     self.stateDelegate.expectations[.ready] = connectionReady
 
     // Start the client first.
-    self.client = ClientConnection(configuration: self.makeClientConfiguration())
+    self.client = self.connectionBuilder()
+      .connect(host: "localhost", port: self.port)
 
     self.wait(for: [transientFailure], timeout: 1.0)
     self.stateDelegate.expectations[.transientFailure] = nil
@@ -173,16 +171,14 @@ class ClientConnectionBackoffTests: GRPCTestCase {
     self.server = self.makeServer()
     let server = try self.server.wait()
 
-    // Configure the client backoff to have a short backoff.
-    var configuration = self.makeClientConfiguration()
-    configuration.connectionBackoff!.maximumBackoff = 2.0
-
     // Prepare the delegate so it expects the connection to hit `.ready`.
     let connectionReady = self.expectation(description: "connection ready")
     self.stateDelegate.expectations[.ready] = connectionReady
 
-    // Start the connection.
-    self.client = ClientConnection(configuration: configuration)
+    // Configure the client backoff to have a short backoff.
+    self.client = self.connectionBuilder()
+      .withConnectionBackoff(maximum: .seconds(2))
+      .connect(host: "localhost", port: self.port)
 
     // Wait for the connection to be ready.
     self.wait(for: [connectionReady], timeout: 1.0)

@@ -28,13 +28,10 @@ LoggingSystem.bootstrap {
 
 /// Makes a `RouteGuide` client for a service hosted on "localhost" and listening on the given port.
 func makeClient(port: Int, group: EventLoopGroup) -> Routeguide_RouteGuideClient {
-  let config = ClientConnection.Configuration(
-    target: .hostAndPort("localhost", port),
-    eventLoopGroup: group
-  )
+  let channel = ClientConnection.insecure(group: group)
+    .connect(host: "localhost", port: port)
 
-  let connection = ClientConnection(configuration: config)
-  return Routeguide_RouteGuideClient(channel: connection)
+  return Routeguide_RouteGuideClient(channel: channel)
 }
 
 /// Unary call example. Calls `getFeature` and prints the response.

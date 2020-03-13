@@ -18,48 +18,21 @@ import GRPC
 import NIO
 import NIOSSL
 
-public func makeInteroperabilityTestClientConfiguration(
-  host: String,
-  port: Int,
-  eventLoopGroup: EventLoopGroup,
+public func makeInteroperabilityTestClientBuilder(
+  group: EventLoopGroup,
   useTLS: Bool
-) -> ClientConnection.Configuration {
-  var configuration = ClientConnection.Configuration(
-    target: .hostAndPort(host, port),
-    eventLoopGroup: eventLoopGroup
-  )
+) -> ClientConnection.Builder {
+  let builder: ClientConnection.Builder
 
   if useTLS {
     // The CA certificate has a common name of "*.test.google.fr", use the following host override
     // so we can do full certificate verification.
-    configuration.tls = .init(
-      trustRoots: .certificates([InteroperabilityTestCredentials.caCertificate]),
-      hostnameOverride: "foo.test.google.fr"
-    )
+    builder = ClientConnection.secure(group: group)
+      .withTLS(trustRoots: .certificates([InteroperabilityTestCredentials.caCertificate]))
+      .withTLS(serverHostnameOverride: "foo.test.google.fr")
+  } else {
+    builder = ClientConnection.insecure(group: group)
   }
 
-  return configuration
-}
-
-/// Makes a client connections for gRPC interoperability testing.
-///
-/// - Parameters:
-///   - host: The host to connect to.
-///   - port: The port to connect to.
-///   - eventLoopGroup: Event loop group to run client connection on.
-///   - useTLS: Whether to use TLS or not.
-/// - Returns: A future of a `ClientConnection`.
-public func makeInteroperabilityTestClientConnection(
-  host: String,
-  port: Int,
-  eventLoopGroup: EventLoopGroup,
-  useTLS: Bool
-) -> ClientConnection {
-  let configuration = makeInteroperabilityTestClientConfiguration(
-    host: host,
-    port: port,
-    eventLoopGroup: eventLoopGroup,
-    useTLS: useTLS
-  )
-  return ClientConnection(configuration: configuration)
+  return builder
 }
