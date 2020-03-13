@@ -101,12 +101,8 @@ class HeaderNormalizationTests: GRPCTestCase {
 
     self.server = try! Server.start(configuration: serverConfig).wait()
 
-    let clientConfig = ClientConnection.Configuration(
-      target: .hostAndPort("localhost", self.server.channel.localAddress!.port!),
-      eventLoopGroup: self.group
-    )
-
-    self.channel = ClientConnection(configuration: clientConfig)
+    self.channel = ClientConnection.insecure(group: self.group)
+      .connect(host: "localhost", port: self.server.channel.localAddress!.port!)
     self.client = Echo_EchoClient(channel: self.channel)
   }
 

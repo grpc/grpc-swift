@@ -100,7 +100,9 @@ public class ClientConnection {
     return self.channel.eventLoop
   }
 
-  /// Creates a new connection from the given configuration.
+  /// Creates a new connection from the given configuration. Prefer using
+  /// `ClientConnection.secure(group:)` to build a connection secured with TLS or
+  /// `ClientConnection.insecure(group:)` to build a plaintext connection.
   ///
   /// - Important: Users should prefer using `ClientConnection.secure(group:)` to build a connection
   ///   with TLS, or `ClientConnection.insecure(group:)` to build a connection without TLS.
@@ -489,7 +491,9 @@ extension ClientConnection {
       return self.tls == nil ? .http : .https
     }
 
-    /// Create a `Configuration` with some pre-defined defaults.
+    /// Create a `Configuration` with some pre-defined defaults. Prefer using
+    /// `ClientConnection.secure(group:)` to build a connection secured with TLS or
+    /// `ClientConnection.insecure(group:)` to build a plaintext connection.
     ///
     /// - Parameter target: The target to connect to.
     /// - Parameter eventLoopGroup: The event loop group to run the connection on.

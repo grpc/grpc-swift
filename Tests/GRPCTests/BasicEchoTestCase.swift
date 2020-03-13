@@ -114,11 +114,20 @@ class EchoTestCaseBase: GRPCTestCase {
     return .userDefined(.posix)
   }
 
-  func makeClientConfiguration(port: Int) throws -> ClientConnection.Configuration {
-    return .init(
-      target: .hostAndPort("localhost", port),
-      eventLoopGroup: self.clientEventLoopGroup,
-      tls: self.transportSecurity.makeClientTLSConfiguration())
+  func connectionBuilder() -> ClientConnection.Builder {
+    switch self.transportSecurity {
+    case .none:
+      return ClientConnection.insecure(group: self.clientEventLoopGroup)
+    case .anonymousClient:
+      return ClientConnection.secure(group: self.clientEventLoopGroup)
+        .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
+
+    case .mutualAuthentication:
+      return ClientConnection.secure(group: self.clientEventLoopGroup)
+        .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
+        .withTLS(certificateChain: [SampleCertificate.client.certificate])
+        .withTLS(privateKey: SamplePrivateKey.client)
+    }
   }
 
   func makeServerConfiguration() throws -> Server.Configuration {
@@ -135,7 +144,10 @@ class EchoTestCaseBase: GRPCTestCase {
   }
 
   func makeClientConnection(port: Int) throws -> ClientConnection {
-    return try ClientConnection(configuration: self.makeClientConfiguration(port: port))
+    return self.connectionBuilder().connect(
+      host: "localhost",
+      port: port
+    )
   }
 
   func makeEchoProvider() -> Echo_EchoProvider { return EchoProvider() }

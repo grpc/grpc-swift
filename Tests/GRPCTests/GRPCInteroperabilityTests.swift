@@ -25,10 +25,10 @@ class GRPCInsecureInteroperabilityTests: GRPCTestCase {
 
   var serverEventLoopGroup: EventLoopGroup!
   var server: Server!
+  var serverPort: Int!
 
   var clientEventLoopGroup: EventLoopGroup!
   var clientConnection: ClientConnection!
-  var clientDefaults: ClientConnection.Configuration!
 
   override func setUp() {
     super.setUp()
@@ -46,25 +46,21 @@ class GRPCInsecureInteroperabilityTests: GRPCTestCase {
       return
     }
 
+    self.serverPort = serverPort
+
     self.clientEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-    self.clientDefaults = makeInteroperabilityTestClientConfiguration(
-      host: "localhost",
-      port: serverPort,
-      eventLoopGroup: self.clientEventLoopGroup,
-      useTLS: self.useTLS
-    )
   }
 
   override func tearDown() {
     XCTAssertNoThrow(try self.clientConnection?.close().wait())
     XCTAssertNoThrow(try self.clientEventLoopGroup.syncShutdownGracefully())
-    self.clientDefaults = nil
     self.clientConnection = nil
     self.clientEventLoopGroup = nil
 
     XCTAssertNoThrow(try self.server.close().wait())
     XCTAssertNoThrow(try self.serverEventLoopGroup.syncShutdownGracefully())
     self.server = nil
+    self.serverPort = nil
     self.serverEventLoopGroup = nil
 
     super.tearDown()
@@ -80,8 +76,12 @@ class GRPCInsecureInteroperabilityTests: GRPCTestCase {
     }
 
     let test = testCase.makeTest()
-    let configuration = test.configure(defaults: self.clientDefaults)
-    self.clientConnection = ClientConnection(configuration: configuration)
+    let builder = makeInteroperabilityTestClientBuilder(
+      group: self.clientEventLoopGroup,
+      useTLS: self.useTLS
+    )
+    test.configure(builder: builder)
+    self.clientConnection = builder.connect(host: "localhost", port: self.serverPort)
     XCTAssertNoThrow(try test.run(using: self.clientConnection), file: file, line: line)
   }
 

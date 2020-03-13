@@ -39,14 +39,10 @@ class Unary: ServerProvidingBenchmark {
   override func setUp() throws {
     try super.setUp()
     self.group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    let channel = ClientConnection.insecure(group: self.group)
+      .connect(host: "127.0.0.1", port: self.server.channel.localAddress!.port!)
 
-    let configuration = ClientConnection.Configuration(
-      target: .socketAddress(self.server.channel.localAddress!),
-      eventLoopGroup: self.group
-    )
-
-    let connection = ClientConnection(configuration: configuration)
-    self.client = .init(channel: connection)
+    self.client = .init(channel: channel)
   }
 
   override func run() throws {

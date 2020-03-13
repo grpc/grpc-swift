@@ -174,11 +174,7 @@ func startEchoServer(group: EventLoopGroup, port: Int, useTLS: Bool) throws {
 }
 
 func makeClient(group: EventLoopGroup, host: String, port: Int, useTLS: Bool) -> Echo_EchoClient {
-  // Configure the connection:
-  var configuration = ClientConnection.Configuration(
-    target: .hostAndPort(host, port),
-    eventLoopGroup: group
-  )
+  let builder: ClientConnection.Builder
 
   if useTLS {
     // We're using some self-signed certs here: check they aren't expired.
@@ -189,15 +185,16 @@ func makeClient(group: EventLoopGroup, host: String, port: Int, useTLS: Bool) ->
       "SSL certificates are expired. Please submit an issue at https://github.com/grpc/grpc-swift."
     )
 
-    configuration.tls = .init(
-      certificateChain: [.certificate(clientCert.certificate)],
-      privateKey: .privateKey(SamplePrivateKey.client),
-      trustRoots: .certificates([caCert.certificate])
-    )
+    builder = ClientConnection.secure(group: group)
+      .withTLS(certificateChain: [clientCert.certificate])
+      .withTLS(privateKey: SamplePrivateKey.client)
+      .withTLS(trustRoots: .certificates([caCert.certificate]))
+  } else {
+    builder = ClientConnection.insecure(group: group)
   }
 
   // Start the connection and create the client:
-  let connection = ClientConnection(configuration: configuration)
+  let connection = builder.connect(host: host, port: port)
   return Echo_EchoClient(channel: connection)
 }
 

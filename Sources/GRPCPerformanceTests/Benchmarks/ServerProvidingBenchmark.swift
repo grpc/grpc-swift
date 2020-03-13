@@ -31,7 +31,7 @@ class ServerProvidingBenchmark: Benchmark {
   func setUp() throws {
     self.group = MultiThreadedEventLoopGroup(numberOfThreads: self.threadCount)
     let configuration = Server.Configuration(
-      target: .hostAndPort("", 0),
+      target: .hostAndPort("127.0.0.1", 0),
       eventLoopGroup: self.group,
       serviceProviders: self.providers
     )

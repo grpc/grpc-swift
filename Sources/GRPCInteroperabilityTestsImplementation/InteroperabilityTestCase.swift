@@ -34,12 +34,11 @@ public protocol InteroperabilityTest {
   /// per-test basis.
   ///
   /// - Parameter defaults: The default configuration for the test run.
-  func configure(defaults: ClientConnection.Configuration) -> ClientConnection.Configuration
+  func configure(builder: ClientConnection.Builder)
 }
 
 extension InteroperabilityTest {
-  func configure(defaults: ClientConnection.Configuration) -> ClientConnection.Configuration {
-    return defaults
+  func configure(builder: ClientConnection.Builder) {
   }
 }
 

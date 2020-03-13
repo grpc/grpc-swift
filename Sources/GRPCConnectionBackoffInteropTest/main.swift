@@ -46,29 +46,14 @@ defer {
   try! group.syncShutdownGracefully()
 }
 
-// The client must connect to the control port without TLS.
-let controlConfig = ClientConnection.Configuration(
-  target: .hostAndPort("localhost", controlPort),
-  eventLoopGroup: group,
-  connectionBackoff: .init()
-)
-
-// The client must connect to the retry port with TLS.
-let retryConfig = ClientConnection.Configuration(
-  target: .hostAndPort("localhost", retryPort),
-  eventLoopGroup: group,
-  connectivityStateDelegate: PrintingConnectivityStateDelegate(),
-  tls: .init(),
-  connectionBackoff: .init()
-)
-
 // MARK: - Test Procedure
 
 print("[\(Date())] Starting connection backoff interoperability test...")
 
 // 1. Call 'Start' on server control port with a large deadline or no deadline, wait for it to
 //    finish and check it succeeded.
-let controlConnection = ClientConnection(configuration: controlConfig)
+let controlConnection = ClientConnection.insecure(group: group)
+  .connect(host: "localhost", port: controlPort)
 let controlClient = Grpc_Testing_ReconnectServiceClient(channel: controlConnection)
 print("[\(Date())] Control 'Start' call started")
 let controlStart = controlClient.start(.init(), callOptions: .init(timeout: .infinite))
@@ -80,7 +65,9 @@ print("[\(Date())] Control 'Start' call succeeded")
 //    proper backoffs. A convenient way to achieve this is to call 'Start' with a deadline of 540s.
 //    The rpc should fail with deadline exceeded.
 print("[\(Date())] Retry 'Start' call started")
-let retryConnection = ClientConnection(configuration: retryConfig)
+let retryConnection = ClientConnection.secure(group: group)
+  .withConnectivityStateDelegate(PrintingConnectivityStateDelegate())
+  .connect(host: "localhost", port: retryPort)
 let retryClient = Grpc_Testing_ReconnectServiceClient(
   channel: retryConnection,
   defaultCallOptions: CallOptions(timeout: try! .seconds(540))
