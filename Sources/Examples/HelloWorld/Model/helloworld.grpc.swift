@@ -46,7 +46,7 @@ public final class Helloworld_GreeterClient: GRPCClient, Helloworld_GreeterClien
     self.defaultCallOptions = defaultCallOptions
   }
 
-  /// Asynchronous unary call to SayHello.
+  /// Sends a greeting.
   ///
   /// - Parameters:
   ///   - request: Request to send to SayHello.
@@ -62,6 +62,7 @@ public final class Helloworld_GreeterClient: GRPCClient, Helloworld_GreeterClien
 
 /// To build a server, implement a class that conforms to this protocol.
 public protocol Helloworld_GreeterProvider: CallHandlerProvider {
+  /// Sends a greeting.
   func sayHello(request: Helloworld_HelloRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Helloworld_HelloReply>
 }
 

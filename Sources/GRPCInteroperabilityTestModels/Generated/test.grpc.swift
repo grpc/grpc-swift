@@ -53,7 +53,7 @@ public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_Test
     self.defaultCallOptions = defaultCallOptions
   }
 
-  /// Asynchronous unary call to EmptyCall.
+  /// One empty request followed by one empty response.
   ///
   /// - Parameters:
   ///   - request: Request to send to EmptyCall.
@@ -65,7 +65,7 @@ public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_Test
                               callOptions: callOptions ?? self.defaultCallOptions)
   }
 
-  /// Asynchronous unary call to UnaryCall.
+  /// One request followed by one response.
   ///
   /// - Parameters:
   ///   - request: Request to send to UnaryCall.
@@ -77,7 +77,9 @@ public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_Test
                               callOptions: callOptions ?? self.defaultCallOptions)
   }
 
-  /// Asynchronous unary call to CacheableUnaryCall.
+  /// One request followed by one response. Response has cache control
+  /// headers set such that a caching HTTP proxy (such as GFE) can
+  /// satisfy subsequent requests.
   ///
   /// - Parameters:
   ///   - request: Request to send to CacheableUnaryCall.
@@ -89,7 +91,8 @@ public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_Test
                               callOptions: callOptions ?? self.defaultCallOptions)
   }
 
-  /// Asynchronous server-streaming call to StreamingOutputCall.
+  /// One request followed by a sequence of responses (streamed download).
+  /// The server returns the payload with client desired type and sizes.
   ///
   /// - Parameters:
   ///   - request: Request to send to StreamingOutputCall.
@@ -103,7 +106,8 @@ public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_Test
                                         handler: handler)
   }
 
-  /// Asynchronous client-streaming call to StreamingInputCall.
+  /// A sequence of requests followed by one response (streamed upload).
+  /// The server returns the aggregated size of client payload as the result.
   ///
   /// Callers should use the `send` method on the returned object to send messages
   /// to the server. The caller should send an `.end` after the final message has been sent.
@@ -116,7 +120,9 @@ public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_Test
                                         callOptions: callOptions ?? self.defaultCallOptions)
   }
 
-  /// Asynchronous bidirectional-streaming call to FullDuplexCall.
+  /// A sequence of requests with each request served by the server immediately.
+  /// As one request could lead to multiple responses, this interface
+  /// demonstrates the idea of full duplexing.
   ///
   /// Callers should use the `send` method on the returned object to send messages
   /// to the server. The caller should send an `.end` after the final message has been sent.
@@ -131,7 +137,10 @@ public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_Test
                                                handler: handler)
   }
 
-  /// Asynchronous bidirectional-streaming call to HalfDuplexCall.
+  /// A sequence of requests followed by a sequence of responses.
+  /// The server buffers all the client requests and then serves them in order. A
+  /// stream of responses are returned to the client when the server starts with
+  /// first request.
   ///
   /// Callers should use the `send` method on the returned object to send messages
   /// to the server. The caller should send an `.end` after the final message has been sent.
@@ -146,7 +155,8 @@ public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_Test
                                                handler: handler)
   }
 
-  /// Asynchronous unary call to UnimplementedCall.
+  /// The test server will not implement this method. It will be used
+  /// to test the behavior when clients call unimplemented methods.
   ///
   /// - Parameters:
   ///   - request: Request to send to UnimplementedCall.
@@ -179,7 +189,7 @@ public final class Grpc_Testing_UnimplementedServiceClient: GRPCClient, Grpc_Tes
     self.defaultCallOptions = defaultCallOptions
   }
 
-  /// Asynchronous unary call to UnimplementedCall.
+  /// A call that no server should implement
   ///
   /// - Parameters:
   ///   - request: Request to send to UnimplementedCall.
@@ -213,7 +223,7 @@ public final class Grpc_Testing_ReconnectServiceClient: GRPCClient, Grpc_Testing
     self.defaultCallOptions = defaultCallOptions
   }
 
-  /// Asynchronous unary call to Start.
+  /// Unary call to Start
   ///
   /// - Parameters:
   ///   - request: Request to send to Start.
@@ -225,7 +235,7 @@ public final class Grpc_Testing_ReconnectServiceClient: GRPCClient, Grpc_Testing
                               callOptions: callOptions ?? self.defaultCallOptions)
   }
 
-  /// Asynchronous unary call to Stop.
+  /// Unary call to Stop
   ///
   /// - Parameters:
   ///   - request: Request to send to Stop.
@@ -241,12 +251,28 @@ public final class Grpc_Testing_ReconnectServiceClient: GRPCClient, Grpc_Testing
 
 /// To build a server, implement a class that conforms to this protocol.
 public protocol Grpc_Testing_TestServiceProvider: CallHandlerProvider {
+  /// One empty request followed by one empty response.
   func emptyCall(request: Grpc_Testing_Empty, context: StatusOnlyCallContext) -> EventLoopFuture<Grpc_Testing_Empty>
+  /// One request followed by one response.
   func unaryCall(request: Grpc_Testing_SimpleRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Grpc_Testing_SimpleResponse>
+  /// One request followed by one response. Response has cache control
+  /// headers set such that a caching HTTP proxy (such as GFE) can
+  /// satisfy subsequent requests.
   func cacheableUnaryCall(request: Grpc_Testing_SimpleRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Grpc_Testing_SimpleResponse>
+  /// One request followed by a sequence of responses (streamed download).
+  /// The server returns the payload with client desired type and sizes.
   func streamingOutputCall(request: Grpc_Testing_StreamingOutputCallRequest, context: StreamingResponseCallContext<Grpc_Testing_StreamingOutputCallResponse>) -> EventLoopFuture<GRPCStatus>
+  /// A sequence of requests followed by one response (streamed upload).
+  /// The server returns the aggregated size of client payload as the result.
   func streamingInputCall(context: UnaryResponseCallContext<Grpc_Testing_StreamingInputCallResponse>) -> EventLoopFuture<(StreamEvent<Grpc_Testing_StreamingInputCallRequest>) -> Void>
+  /// A sequence of requests with each request served by the server immediately.
+  /// As one request could lead to multiple responses, this interface
+  /// demonstrates the idea of full duplexing.
   func fullDuplexCall(context: StreamingResponseCallContext<Grpc_Testing_StreamingOutputCallResponse>) -> EventLoopFuture<(StreamEvent<Grpc_Testing_StreamingOutputCallRequest>) -> Void>
+  /// A sequence of requests followed by a sequence of responses.
+  /// The server buffers all the client requests and then serves them in order. A
+  /// stream of responses are returned to the client when the server starts with
+  /// first request.
   func halfDuplexCall(context: StreamingResponseCallContext<Grpc_Testing_StreamingOutputCallResponse>) -> EventLoopFuture<(StreamEvent<Grpc_Testing_StreamingOutputCallRequest>) -> Void>
 }
 
@@ -307,6 +333,7 @@ extension Grpc_Testing_TestServiceProvider {
 
 /// To build a server, implement a class that conforms to this protocol.
 public protocol Grpc_Testing_UnimplementedServiceProvider: CallHandlerProvider {
+  /// A call that no server should implement
   func unimplementedCall(request: Grpc_Testing_Empty, context: StatusOnlyCallContext) -> EventLoopFuture<Grpc_Testing_Empty>
 }
 
@@ -362,7 +389,7 @@ extension Grpc_Testing_ReconnectServiceProvider {
 }
 
 
-/// Provides conformance to `GRPCPayload` for the request and response messages
+// Provides conformance to `GRPCPayload` for request and response messages
 extension Grpc_Testing_Empty: GRPCProtobufPayload {}
 extension Grpc_Testing_SimpleRequest: GRPCProtobufPayload {}
 extension Grpc_Testing_SimpleResponse: GRPCProtobufPayload {}
