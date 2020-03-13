@@ -45,6 +45,27 @@ dependencies: [
 ]
 ```
 
+The syntax for target dependencies changed in Swift 5.2 and requires the package
+of each dependency to be specified.
+
+For Swift 5.2 (`swift-tools-version:5.2`):
+
+```swift
+.target(
+  name: ...,
+  dependencies: [.product(name: "GRPC", package: "grpc-swift")]
+)
+```
+
+For Swift 5.0 (`swift-tools-version:5.0`) and 5.1 (`swift-tools-version:5.1`):
+
+```swift
+.target(
+  name: ...,
+  dependencies: ["GRPC"]
+)
+```
+
 ##### Xcode
 
 From Xcode 11 it is possible to [add Swift Package dependencies to Xcode
