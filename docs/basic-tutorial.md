@@ -426,15 +426,11 @@ let features = try loadFeatures()
 // Create a provider using the features we read.
 let provider = RouteGuideProvider(features: features)
 
-// Tie these together in some configuration:
-let configuration = Server.Configuration(
-  target: .hostAndPort("localhost", 0),
-  eventLoopGroup: group,
-  serviceProviders: [provider]
-)
+// Start the server and print its address once it has started.
+let server = Server.insecure(group: group)
+  .withServiceProviders([provider])
+  .bind(host: "localhost", port: 0)
 
-// Start the server and print its port once it has started.
-let server = Server.start(configuration: configuration)
 server.map {
   $0.channel.localAddress
 }.whenSuccess { address in
@@ -446,15 +442,16 @@ _ = try server.flatMap {
   $0.onClose
 }.wait()
 ```
-As you can see, we build and start our server using some `Configuration`.
+As you can see, we configure and start our server using a builder.
 
 To do this, we:
 
-1. Specify the address and port we want to use to listen for client requests
-   using the `target` argument.
+1. Create an insecure server builder; it's insecure because it does not use
+   TLS.
 1. Create an instance of our service implementation class `RouteGuideProvider`
-   and pass it to the configuration's `serviceProviders` argument.
-1. Pass the configuration the `Server` class's static `start` method.
+   and configure the builder to use it with `withServiceProviders(_:)`,
+1. Call `bind(host:port:)` on the builder with the address and port we
+   want to use to listen for client requests, this starts the server.
 
 Once the server has started succesfully we print out the port the server is
 listening on. We then `wait()` on the server's `onClose` future to stop the

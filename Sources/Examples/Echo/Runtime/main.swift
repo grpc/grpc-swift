@@ -139,12 +139,7 @@ func main(args: [String]) {
 // MARK: - Server / Client
 
 func startEchoServer(group: EventLoopGroup, port: Int, useTLS: Bool) throws {
-  // Configure the server:
-  var configuration = Server.Configuration(
-    target: .hostAndPort("localhost", port),
-    eventLoopGroup: group,
-    serviceProviders: [EchoProvider()]
-  )
+  let builder: Server.Builder
 
   if useTLS {
     // We're using some self-signed certs here: check they aren't expired.
@@ -155,17 +150,18 @@ func startEchoServer(group: EventLoopGroup, port: Int, useTLS: Bool) throws {
       "SSL certificates are expired. Please submit an issue at https://github.com/grpc/grpc-swift."
     )
 
-    configuration.tls = .init(
-      certificateChain: [.certificate(serverCert.certificate)],
-      privateKey: .privateKey(SamplePrivateKey.server),
-      trustRoots: .certificates([caCert.certificate])
-    )
+    builder = Server.secure(group: group, certificateChain: [serverCert.certificate], privateKey: SamplePrivateKey.server)
+      .withTLS(trustRoots: .certificates([caCert.certificate]))
     print("starting secure server")
   } else {
     print("starting insecure server")
+    builder = Server.insecure(group: group)
   }
 
-  let server = try Server.start(configuration: configuration).wait()
+  let server = try builder.withServiceProviders([EchoProvider()])
+    .bind(host: "localhost", port: port)
+    .wait()
+
   print("started server: \(server.channel.localAddress!)")
 
   // This blocks to keep the main thread from finishing while the server runs,

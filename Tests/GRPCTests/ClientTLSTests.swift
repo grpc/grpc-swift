@@ -39,16 +39,6 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
     XCTAssertNoThrow(try self.eventLoopGroup.syncShutdownGracefully())
   }
 
-  func makeEchoServer(tls: Server.Configuration.TLS) throws -> Server {
-    let configuration: Server.Configuration = .init(
-      target: .hostAndPort("localhost", 0),
-      eventLoopGroup: self.eventLoopGroup,
-      serviceProviders: [EchoProvider()],
-      tls: tls
-    )
-
-    return try Server.start(configuration: configuration).wait()
-  }
 
   func doTestUnary() throws {
     let client = Echo_EchoClient(channel: self.connection)
@@ -63,13 +53,15 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
 
   func testTLSWithHostnameOverride() throws {
     // Run a server presenting a certificate for example.com on localhost.
-    let serverTLS: Server.Configuration.TLS = .init(
-      certificateChain: [.certificate(SampleCertificate.exampleServer.certificate)],
-      privateKey: .privateKey(SamplePrivateKey.exampleServer),
-      trustRoots: .certificates([SampleCertificate.ca.certificate])
-    )
+    let cert = SampleCertificate.exampleServer.certificate
+    let key = SamplePrivateKey.exampleServer
 
-    self.server = try makeEchoServer(tls: serverTLS)
+    self.server = try Server.secure(group: self.eventLoopGroup, certificateChain: [cert], privateKey: key)
+      .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
+      .withServiceProviders([EchoProvider()])
+      .bind(host: "localhost", port: 0)
+      .wait()
+
     guard let port = self.server.channel.localAddress?.port else {
       XCTFail("could not get server port")
       return
@@ -85,13 +77,15 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
 
   func testTLSWithoutHostnameOverride() throws {
     // Run a server presenting a certificate for localhost on localhost.
-    let serverTLS: Server.Configuration.TLS = .init(
-      certificateChain: [.certificate(SampleCertificate.server.certificate)],
-      privateKey: .privateKey(SamplePrivateKey.server),
-      trustRoots: .certificates([SampleCertificate.ca.certificate])
-    )
+    let cert = SampleCertificate.server.certificate
+    let key = SamplePrivateKey.server
 
-    self.server = try makeEchoServer(tls: serverTLS)
+    self.server = try Server.secure(group: self.eventLoopGroup, certificateChain: [cert], privateKey: key)
+      .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
+      .withServiceProviders([EchoProvider()])
+      .bind(host: "localhost", port: 0)
+      .wait()
+
     guard let port = self.server.channel.localAddress?.port else {
       XCTFail("could not get server port")
       return

@@ -45,57 +45,6 @@ enum TransportSecurity {
   case mutualAuthentication
 }
 
-extension TransportSecurity {
-  var caCert: NIOSSLCertificate {
-    let cert = SampleCertificate.ca
-    cert.assertNotExpired()
-    return cert.certificate
-  }
-
-  var clientCert: NIOSSLCertificate {
-    let cert = SampleCertificate.client
-    cert.assertNotExpired()
-    return cert.certificate
-  }
-
-  var serverCert: NIOSSLCertificate {
-    let cert = SampleCertificate.server
-    cert.assertNotExpired()
-    return cert.certificate
-  }
-}
-
-extension TransportSecurity {
-  func makeServerTLSConfiguration() -> Server.Configuration.TLS? {
-    switch self {
-    case .none:
-      return nil
-
-    case .anonymousClient, .mutualAuthentication:
-      return .init(certificateChain: [.certificate(self.serverCert)],
-                   privateKey: .privateKey(SamplePrivateKey.server),
-                   trustRoots: .certificates ([self.caCert]))
-    }
-  }
-
-  func makeClientTLSConfiguration() -> ClientConnection.Configuration.TLS? {
-    switch self {
-    case .none:
-      return nil
-
-    case .anonymousClient:
-      return .init(trustRoots: .certificates([self.caCert]))
-
-    case .mutualAuthentication:
-      return .init(
-        certificateChain: [.certificate(self.clientCert)],
-        privateKey: .privateKey(SamplePrivateKey.client),
-        trustRoots: .certificates([self.caCert])
-      )
-    }
-  }
-}
-
 class EchoTestCaseBase: GRPCTestCase {
   var defaultTestTimeout: TimeInterval = 1.0
 
@@ -118,6 +67,7 @@ class EchoTestCaseBase: GRPCTestCase {
     switch self.transportSecurity {
     case .none:
       return ClientConnection.insecure(group: self.clientEventLoopGroup)
+
     case .anonymousClient:
       return ClientConnection.secure(group: self.clientEventLoopGroup)
         .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
@@ -130,17 +80,26 @@ class EchoTestCaseBase: GRPCTestCase {
     }
   }
 
-  func makeServerConfiguration() throws -> Server.Configuration {
-    return .init(
-      target: .hostAndPort("localhost", 0),
-      eventLoopGroup: self.serverEventLoopGroup,
-      serviceProviders: [makeEchoProvider()],
-      errorDelegate: self.makeErrorDelegate(),
-      tls: self.transportSecurity.makeServerTLSConfiguration())
+  func serverBuilder() -> Server.Builder {
+    switch self.transportSecurity {
+    case .none:
+      return Server.insecure(group: self.serverEventLoopGroup)
+
+    case .anonymousClient, .mutualAuthentication:
+      return Server.secure(
+        group: self.serverEventLoopGroup,
+        certificateChain: [SampleCertificate.server.certificate],
+        privateKey: SamplePrivateKey.server
+      ).withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
+    }
   }
 
   func makeServer() throws -> Server {
-    return try Server.start(configuration: self.makeServerConfiguration()).wait()
+    return try self.serverBuilder()
+      .withErrorDelegate(makeErrorDelegate())
+      .withServiceProviders([makeEchoProvider()])
+      .bind(host: "localhost", port: 0)
+      .wait()
   }
 
   func makeClientConnection(port: Int) throws -> ClientConnection {

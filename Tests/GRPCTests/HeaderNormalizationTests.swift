@@ -93,13 +93,10 @@ class HeaderNormalizationTests: GRPCTestCase {
 
     self.group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
-    let serverConfig = Server.Configuration(
-      target: .hostAndPort("localhost", 0),
-      eventLoopGroup: self.group,
-      serviceProviders: [EchoMetadataValidator()]
-    )
-
-    self.server = try! Server.start(configuration: serverConfig).wait()
+    self.server = try! Server.insecure(group: self.group)
+      .withServiceProviders([EchoMetadataValidator()])
+      .bind(host: "localhost", port: 0)
+      .wait()
 
     self.channel = ClientConnection.insecure(group: self.group)
       .connect(host: "localhost", port: self.server.channel.localAddress!.port!)
