@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/grpc/grpc-swift.svg?branch=cgrpc)](https://travis-ci.org/grpc/grpc-swift)
 
-# ‼️ Please use the `nio` branch ‼️
+# ‼️ Please use the `master` branch ‼️
 
 **gRPC Swift versions** `v0.x` **based on gRPC-Core will soon be replaced with a re-implementation based on [SwiftNIO](https://github.com/apple/swift-nio).**
 
