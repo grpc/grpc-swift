@@ -71,9 +71,9 @@ jobs:
 stages:
   # Always run this stage.
   - name: "Test"
-  # Only run when pushing (or merging) to nio.
+  # Only run when pushing (or merging) to master
   - name: "Interoperability Tests"
-    if: type = push AND branch = nio
+    if: type = push AND branch = master
 
 cache:
   apt: true
