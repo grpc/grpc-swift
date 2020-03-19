@@ -1,6 +1,16 @@
 [![Build Status](https://travis-ci.org/grpc/grpc-swift.svg?branch=nio)](https://travis-ci.org/grpc/grpc-swift)
 [![sswg:sandbox|94x20](https://img.shields.io/badge/sswg-sandbox-lightgrey.svg)](https://github.com/swift-server/sswg/blob/master/process/incubation.md#sandbox-level)
 
+# ‼️ Notice ‼️
+
+**What was previously the `nio` branch will continue development on
+[`master`][master]. The old `master` branch has been renamed to `cgrpc`.**
+
+Version                         | Old Branch | Current Branch     | Notes
+--------------------------------|------------|--------------------|-------------------
+SwiftNIO based version          | `nio`      | [`master`][master] | Actively developed
+gRPC Core Library based version | `master`   | [`cgrpc`][cgrpc]   | Deprecated
+
 # gRPC Swift
 
 This repository contains a gRPC Swift API and code generator.
@@ -136,3 +146,5 @@ Please get involved! See our [guidelines for contributing](CONTRIBUTING.md).
 [swift-nio]: https://github.com/apple/swift-nio
 [swift-protobuf]: https://github.com/apple/swift-protobuf
 [xcode-spm]: https://help.apple.com/xcode/mac/current/#/devb83d64851
+[master]: https://github.com/grpc/grpc-swift/tree/master
+[cgrpc]: https://github.com/grpc/grpc-swift/tree/cgrpc
