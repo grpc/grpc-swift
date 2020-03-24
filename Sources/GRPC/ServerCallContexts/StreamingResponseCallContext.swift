@@ -63,16 +63,29 @@ open class StreamingResponseCallContextImpl<ResponsePayload: GRPCPayload>: Strea
     super.init(eventLoop: channel.eventLoop, request: request, logger: logger)
 
     statusPromise.futureResult
+      .map {
+        ($0, nil)
+      }
       // Ensure that any error provided can be transformed to `GRPCStatus`, using "internal server error" as a fallback.
       .recover { [weak errorDelegate] error in
         errorDelegate?.observeRequestHandlerError(error, request: request)
-        return errorDelegate?.transformRequestHandlerError(error, request: request)
-          ?? (error as? GRPCStatusTransformable)?.makeGRPCStatus()
-          ?? .processingError
+        
+        if let transformed = errorDelegate?.transformRequestHandlerError(error, request: request) {
+          return transformed
+        }
+        
+        if let grpcStatusTransformable = error as? GRPCStatusTransformable {
+          return (grpcStatusTransformable.makeGRPCStatus(), nil)
+        }
+
+        return (.processingError, nil)
       }
       // Finish the call by returning the final status.
-      .whenSuccess {
-        self.channel.writeAndFlush(NIOAny(WrappedResponse.statusAndTrailers($0, self.trailingMetadata)), promise: nil)
+      .whenSuccess { (status, headers: HTTPHeaders?) in
+        if let headers = headers {
+          self.trailingMetadata.add(contentsOf: headers)
+        }
+        self.channel.writeAndFlush(NIOAny(WrappedResponse.statusAndTrailers(status, self.trailingMetadata)), promise: nil)
     }
   }
 

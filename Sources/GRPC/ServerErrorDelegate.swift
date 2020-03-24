@@ -34,7 +34,7 @@ public protocol ServerErrorDelegate: class {
   /// This defaults to returning `nil`. In that case, if the original error conforms to `GRPCStatusTransformable`,
   /// that error's `asGRPCStatus()` result will be sent to the user. If that's not the case, either,
   /// `GRPCStatus.processingError` is returned.
-  func transformLibraryError(_ error: Error) -> GRPCStatus?
+  func transformLibraryError(_ error: Error) -> (GRPCStatus, HTTPHeaders?)?
 
   /// Called when a request's status or response promise is failed somewhere in the user-provided request handler code.
   /// - Parameters:
@@ -58,13 +58,13 @@ public protocol ServerErrorDelegate: class {
   /// - Parameters:
   ///   - error: The original error the status/response promise was failed with.
   ///   - request: The headers of the request whose status/response promise was failed.
-  func transformRequestHandlerError(_ error: Error, request: HTTPRequestHead) -> GRPCStatus?
+  func transformRequestHandlerError(_ error: Error, request: HTTPRequestHead) -> (GRPCStatus, HTTPHeaders?)?
 }
 
 public extension ServerErrorDelegate {
   func observeLibraryError(_ error: Error) { }
-  func transformLibraryError(_ error: Error) -> GRPCStatus? { return nil }
+  func transformLibraryError(_ error: Error) -> (GRPCStatus, HTTPHeaders?)? { return nil }
 
   func observeRequestHandlerError(_ error: Error, request: HTTPRequestHead) { }
-  func transformRequestHandlerError(_ error: Error, request: HTTPRequestHead) -> GRPCStatus? { return nil }
+  func transformRequestHandlerError(_ error: Error, request: HTTPRequestHead) -> (GRPCStatus, HTTPHeaders?)? { return nil }
 }

@@ -52,7 +52,7 @@ public class _BaseCallHandler<RequestPayload: GRPCPayload, ResponsePayload: GRPC
 
   /// Sends an error status to the client while ensuring that all call context promises are fulfilled.
   /// Because only the concrete call subclass knows which promises need to be fulfilled, this method needs to be overridden.
-  internal func sendErrorStatus(_ status: GRPCStatus) {
+  internal func sendErrorStatus(_ status: GRPCStatus, trailers: HTTPHeaders?) {
     fatalError("needs to be overridden")
   }
 
@@ -81,20 +81,27 @@ extension _BaseCallHandler: ChannelInboundHandler {
   /// appropriate status is written. Errors which don't conform to `GRPCStatusTransformable`
   /// return a status with code `.internalError`.
   public func errorCaught(context: ChannelHandlerContext, error: Error) {
-    let status: GRPCStatus
+    let (status): (GRPCStatus, HTTPHeaders?)
 
     if let errorWithContext = error as? GRPCError.WithContext {
       self.errorDelegate?.observeLibraryError(errorWithContext.error)
       status = self.errorDelegate?.transformLibraryError(errorWithContext.error)
-          ?? errorWithContext.error.makeGRPCStatus()
+          ?? (errorWithContext.error.makeGRPCStatus(), nil)
     } else {
       self.errorDelegate?.observeLibraryError(error)
-      status = self.errorDelegate?.transformLibraryError(error)
-          ?? (error as? GRPCStatusTransformable)?.makeGRPCStatus()
-          ?? .processingError
+      
+      if let transformed = self.errorDelegate?.transformLibraryError(error) {
+        status = transformed
+      }
+      else if let grpcStatusTransformable = error as? GRPCStatusTransformable {
+        status = (grpcStatusTransformable.makeGRPCStatus(), nil)
+      }
+      else {
+        status = (.processingError, nil)
+      }
     }
 
-    self.sendErrorStatus(status)
+    self.sendErrorStatus(status.0, trailers: status.1)
   }
 
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {

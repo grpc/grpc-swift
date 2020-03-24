@@ -75,17 +75,27 @@ open class UnaryResponseCallContextImpl<ResponsePayload: GRPCPayload>: UnaryResp
         return self.channel.writeAndFlush(NIOAny(WrappedResponse.message(message)))
       }
       .map { _ in
-        self.responseStatus
+        (self.responseStatus, nil)
       }
       // Ensure that any error provided can be transformed to `GRPCStatus`, using "internal server error" as a fallback.
       .recover { [weak errorDelegate] error in
         errorDelegate?.observeRequestHandlerError(error, request: request)
-        return errorDelegate?.transformRequestHandlerError(error, request: request)
-          ?? (error as? GRPCStatusTransformable)?.makeGRPCStatus()
-          ?? .processingError
+        
+        if let transformed = errorDelegate?.transformRequestHandlerError(error, request: request) {
+          return transformed
+        }
+        
+        if let grpcStatusTransformable = error as? GRPCStatusTransformable {
+          return (grpcStatusTransformable.makeGRPCStatus(), nil)
+        }
+        
+        return (.processingError, nil)
       }
       // Finish the call by returning the final status.
-      .whenSuccess { status in
+      .whenSuccess { (status, headers: HTTPHeaders?) in
+        if let headers = headers {
+          self.trailingMetadata.add(contentsOf: headers)
+        }
         self.channel.writeAndFlush(NIOAny(WrappedResponse.statusAndTrailers(status, self.trailingMetadata)), promise: nil)
       }
   }
