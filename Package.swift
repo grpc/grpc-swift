@@ -19,10 +19,6 @@ import Foundation
 
 let package = Package(
   name: "grpc-swift",
-  platforms: [
-    // We can't use `.watchOS(.v6)` since it isn't available with `swift-tools-version:5.0`.
-    .macOS(.v10_12), .iOS(.v10), .tvOS(.v10), .watchOS("6.0")
-  ],
   products: [
     .library(name: "GRPC", targets: ["GRPC"]),
     .executable(name: "protoc-gen-grpc-swift", targets: ["protoc-gen-grpc-swift"]),

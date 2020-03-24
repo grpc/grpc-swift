@@ -291,7 +291,7 @@ extension GRPCErrorProtocol {
   internal func captureContext(
       file: StaticString = #file,
       line: Int = #line,
-      function: StaticString = #file
+      function: StaticString = #function
   ) -> GRPCError.WithContext {
     return GRPCError.WithContext(self, file: file, line: line, function: function)
   }
