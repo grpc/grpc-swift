@@ -42,7 +42,7 @@ let package = Package(
     .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.8.0"),
 
     // Logging API.
-    .package(url: "https://github.com/apple/swift-log", from: "1.0.0"),
+    .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
   ],
   targets: [
     // The main GRPC module.
