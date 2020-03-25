@@ -21,18 +21,14 @@ jobs:
     # Tests for each PR.
     - &tests
       stage: "Test"
-      name: "Unit Tests: Ubuntu 18.04 (Swift 5.1)"
+      name: "Unit Tests: Ubuntu 18.04 (Swift 5.2)"
       os: linux
       dist: bionic
       script: ./.travis-script.sh
+      env: RUN_INTEROP_TESTS=false SWIFT_VERSION=5.2
+    - <<: *tests
+      name: "Unit Tests: Ubuntu 18.04 (Swift 5.1)"
       env: RUN_INTEROP_TESTS=false SWIFT_VERSION=5.1.5
-    - &development
-      <<: *tests
-      name: "Unit Tests: Ubuntu 18.04 (Swift 5.2 Development Snapshot 2020-03-12)"
-      env: >-
-        RUN_INTEROP_TESTS=false
-        SWIFT_VERSION=5.2
-        SWIFT_URL=https://swift.org/builds/swift-5.2-branch/ubuntu1804/swift-5.2-DEVELOPMENT-SNAPSHOT-2020-03-12-a/swift-5.2-DEVELOPMENT-SNAPSHOT-2020-03-12-a-ubuntu18.04.tar.gz
     - <<: *tests
       name: "Unit Tests: Ubuntu 18.04 (Swift 5.0)"
       env: RUN_INTEROP_TESTS=false SWIFT_VERSION=5.0.3
@@ -48,11 +44,14 @@ jobs:
     - &interop_tests
       stage: "Interoperability Tests"
       # Linux
-      name: "Interoperability Tests: Ubuntu 18.04 (Swift 5.1)"
+      name: "Interoperability Tests: Ubuntu 18.04 (Swift 5.2)"
       os: linux
       dist: bionic
       script: ./.travis-script.sh
-      env: RUN_INTEROP_TESTS=true SWIFT_VERSION=5.1.4
+      env: RUN_INTEROP_TESTS=true SWIFT_VERSION=5.2
+    - <<: *interop_tests
+      name: "Interoperability Tests: Ubuntu 18.04 (Swift 5.1)"
+      env: RUN_INTEROP_TESTS=true SWIFT_VERSION=5.1.5
     - <<: *interop_tests
       name: "Interoperability Tests: Ubuntu 18.04 (Swift 5.0)"
       env: RUN_INTEROP_TESTS=true SWIFT_VERSION=5.0.3
