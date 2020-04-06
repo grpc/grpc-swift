@@ -19,10 +19,6 @@ import Foundation
 
 let package = Package(
   name: "grpc-swift",
-  platforms: [
-    // We can't use `.watchOS(.v6)` since it isn't available with `swift-tools-version:5.0`.
-    .macOS(.v10_12), .iOS(.v10), .tvOS(.v10), .watchOS("6.0")
-  ],
   products: [
     .library(name: "GRPC", targets: ["GRPC"]),
     .library(name: "CGRPCZlib", targets: ["CGRPCZlib"]),
@@ -43,7 +39,7 @@ let package = Package(
     .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.8.0"),
 
     // Logging API.
-    .package(url: "https://github.com/apple/swift-log", from: "1.0.0"),
+    .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
   ],
   targets: [
     // The main GRPC module.
