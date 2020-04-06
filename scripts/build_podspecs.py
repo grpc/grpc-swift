@@ -33,10 +33,14 @@ class Dependency:
             return "    s.dependency '%s', '%s'\n" % (self.name, self.version)
 
 class Pod:
-    def __init__(self, name, module_name, version, dependencies=[]):
+    def __init__(self, name, module_name, version, dependencies=None):
         self.name = name
         self.module_name = module_name
         self.version = version
+
+        if dependencies is None:
+            dependencies = []
+
         self.dependencies = dependencies
     
     def add_dependency(self, dependency):
