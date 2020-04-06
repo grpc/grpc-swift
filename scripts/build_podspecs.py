@@ -151,7 +151,7 @@ def main():
         '-p',
         '--path',
         type=dir_path,
-        help='The directory where generated podspec files will be saved. If not passed, defaults to place podspecs in a temp directory.'
+        help='The directory where generated podspec files will be saved. If not passed, defaults to place in the current working directory.'
     )
     
     parser.add_argument(
