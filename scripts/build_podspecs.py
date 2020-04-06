@@ -98,8 +98,7 @@ class PodManager:
         GRPCPod = Pod('gRPC-Swift', 'GRPC', self.version, get_grpc_deps())
         GRPCPod.add_dependency(Dependency('CGRPCZlib'))
 
-        self.pods.append(CGRPCZlibPod)
-        self.pods.append(GRPCPod)
+        self.pods += [CGRPCZlibPod, GRPCPod]
 
     def go(self):
         self.build_pods()
@@ -137,10 +136,23 @@ def get_grpc_deps():
 
     return deps
 
+def dir_path(string):
+    if os.path.isdir(string):
+        return string
+    else:
+        raise NotADirectoryError(string)
+
 def main():
     # Setup
 
     parser = argparse.ArgumentParser(description='Build Podspec files for SwiftGRPC')
+    
+    parser.add_argument(
+        '-p',
+        '--path',
+        type=dir_path,
+        help='The directory where generated podspec files will be saved. If not passed, defaults to place podspecs in a temp directory.'
+    )
     
     parser.add_argument(
         '-u', 
@@ -155,11 +167,10 @@ def main():
 
     should_publish = args.upload
     version = args.version
+    path = args.path
 
-    # Creates temp folder /tmp/.argonaut_podspecsXXXXXX for storage
-    #    XXXXXX is a random alpha numeric string to ensure we don't have duplicates
-    path = "/tmp/.build_podspecs" + ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(6))
-    os.mkdir(path)
+    if not path:
+        path = os.getcwd()
 
     pod_manager = PodManager(path, version, should_publish)
     pod_manager.go()
