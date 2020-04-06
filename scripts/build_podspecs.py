@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Copyright 2020, gRPC Authors All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -82,9 +84,8 @@ class PodManager:
 
     def write(self, pod, contents):
         print("    Writing to %s/%s.podspec " % (self.directory, pod))
-        f = open("%s/%s.podspec" % (self.directory, pod), "w")
-        f.write(contents)
-        f.close
+        with open("%s/%s.podspec" % (self.directory, pod), "w") as f: 
+            f.write(contents)
     
     def publish(self, pod_name):
         os.system('pod repo update')
@@ -111,20 +112,16 @@ class PodManager:
                 print("    Skipping Publishing...")
 
 def process_package(string):
-    if string == "swift-log":
-        return "Logging"
+    pod_mappings = {
+        'swift-log': 'Logging',
+        'swift-nio': 'SwiftNIO',
+        'swift-nio-http2': 'SwiftNIOHTTP2',
+        'swift-nio-ssl': 'SwiftNIOSSL',
+        'swift-nio-transport-services': 'SwiftNIOTransportServices',
+        'SwiftProtobuf': 'SwiftProtobuf'
+    }
 
-    if len(string.split('-')) > 1:
-        tempList = string.split('-')
-        returnStr = ""
-        for item in tempList:
-            if item == 'nio' or item == 'ssl' or item == 'http2':
-                returnStr += item.upper()
-            else:
-                returnStr += item.title()
-        return returnStr
-    
-    return string
+    return pod_mappings[string]
 
 def get_grpc_deps():
     with open('Package.resolved') as f:
@@ -141,7 +138,6 @@ def get_grpc_deps():
     return deps
 
 def main():
-
     # Setup
 
     parser = argparse.ArgumentParser(description='Build Podspec files for SwiftGRPC')
@@ -151,7 +147,7 @@ def main():
         '--upload',
         action='store_true',
         help='Determines if the newly built Podspec files should be pushed.'
-        )
+    )
     
     parser.add_argument('version')
 
