@@ -21,13 +21,13 @@ import string
 import argparse
 
 class Dependency:
-    def __init__(self, name, version="s.version.to_s", internal=True):
+    def __init__(self, name, version='s.version.to_s', useVerbatimVersion=True):
         self.name = name
         self.version = version
-        self.internal = internal
+        self.useVerbatimVersion = useVerbatimVersion
 
     def as_podspec(self):
-        if self.internal:
+        if self.useVerbatimVersion:
             return "    s.dependency '%s', %s\n" % (self.name, self.version)
         else: 
             return "    s.dependency '%s', '%s'\n" % (self.name, self.version)
@@ -65,7 +65,7 @@ class Pod:
         podspec += "    s.swift_version = '5.0'\n"
 
         podspec += "    s.ios.deployment_target = '10.0'\n"
-        podspec += "    s.osx.deployment_target = '10.12'\n"
+        podspec += "    s.osx.deployment_target = '10.10'\n"
         podspec += "    s.tvos.deployment_target = '10.0'\n"
         
         podspec += "    s.source_files = 'Sources/%s/**/*.{swift,c,h}'\n" % (self.module_name)
@@ -87,13 +87,13 @@ class PodManager:
         self.should_publish = should_publish
 
     def write(self, pod, contents):
-        print("    Writing to %s/%s.podspec " % (self.directory, pod))
-        with open("%s/%s.podspec" % (self.directory, pod), "w") as f: 
+        print('    Writing to %s/%s.podspec ' % (self.directory, pod))
+        with open('%s/%s.podspec' % (self.directory, pod), 'w') as f: 
             f.write(contents)
     
     def publish(self, pod_name):
         os.system('pod repo update')
-        print("    Publishing %s.podspec" % (pod_name))
+        print('    Publishing %s.podspec' % (pod_name))
         os.system('pod repo push %s/%s.podspec' % (self.directory, pod_name))
     
     def build_pods(self):
@@ -112,7 +112,7 @@ class PodManager:
             if self.should_publish:
                 self.publish(target.name)
             else:
-                print("    Skipping Publishing...")
+                print('    Skipping Publishing...')
 
 def process_package(string):
     pod_mappings = {
@@ -132,9 +132,9 @@ def get_grpc_deps():
 
     deps = []
 
-    for obj in data["object"]["pins"]:
-        package = process_package(obj["package"])
-        version = obj["state"]["version"]
+    for obj in data['object']['pins']:
+        package = process_package(obj['package'])
+        version = obj['state']['version']
 
         deps.append(Dependency(package, version, False))
 

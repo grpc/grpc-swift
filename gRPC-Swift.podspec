@@ -12,7 +12,7 @@ Pod::Spec.new do |s|
 
     s.swift_version = '5.0'
     s.ios.deployment_target = '10.0'
-    s.osx.deployment_target = '10.12'
+    s.osx.deployment_target = '10.10'
     s.tvos.deployment_target = '10.0'
     s.source_files = 'Sources/GRPC/**/*.{swift,c,h}'
 
