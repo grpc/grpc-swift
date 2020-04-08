@@ -29,7 +29,7 @@ class Dependency:
     def as_podspec(self):
         if self.useVerbatimVersion:
             return "    s.dependency '%s', %s\n" % (self.name, self.version)
-        else: 
+        else:
             return "    s.dependency '%s', '%s'\n" % (self.name, self.version)
 
 class Pod:
@@ -42,10 +42,10 @@ class Pod:
             dependencies = []
 
         self.dependencies = dependencies
-    
+
     def add_dependency(self, dependency):
         self.dependencies.append(dependency)
-    
+
     def as_podspec(self):
         print('\n')
         print('Building Podspec for %s' % self.name)
@@ -65,9 +65,9 @@ class Pod:
         podspec += "    s.swift_version = '5.0'\n"
 
         podspec += "    s.ios.deployment_target = '10.0'\n"
-        podspec += "    s.osx.deployment_target = '10.10'\n"
+        podspec += "    s.osx.deployment_target = '10.12'\n"
         podspec += "    s.tvos.deployment_target = '10.0'\n"
-        
+
         podspec += "    s.source_files = 'Sources/%s/**/*.{swift,c,h}'\n" % (self.module_name)
 
         podspec += "\n" if len(self.dependencies) > 0 else ""
@@ -75,7 +75,7 @@ class Pod:
         for dep in self.dependencies:
             podspec += dep.as_podspec()
 
-        podspec += "\nend"
+        podspec += "\nend\n"
         return podspec
 
 class PodManager:
@@ -88,14 +88,14 @@ class PodManager:
 
     def write(self, pod, contents):
         print('    Writing to %s/%s.podspec ' % (self.directory, pod))
-        with open('%s/%s.podspec' % (self.directory, pod), 'w') as f: 
+        with open('%s/%s.podspec' % (self.directory, pod), 'w') as f:
             f.write(contents)
-    
+
     def publish(self, pod_name):
         os.system('pod repo update')
         print('    Publishing %s.podspec' % (pod_name))
         os.system('pod repo push %s/%s.podspec' % (self.directory, pod_name))
-    
+
     def build_pods(self):
         CGRPCZlibPod = Pod('CGRPCZlib', 'CGRPCZlib', self.version)
 
@@ -150,21 +150,21 @@ def main():
     # Setup
 
     parser = argparse.ArgumentParser(description='Build Podspec files for SwiftGRPC')
-    
+
     parser.add_argument(
         '-p',
         '--path',
         type=dir_path,
         help='The directory where generated podspec files will be saved. If not passed, defaults to place in the current working directory.'
     )
-    
+
     parser.add_argument(
-        '-u', 
+        '-u',
         '--upload',
         action='store_true',
         help='Determines if the newly built Podspec files should be pushed.'
     )
-    
+
     parser.add_argument('version')
 
     args = parser.parse_args()
