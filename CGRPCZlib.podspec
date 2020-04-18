@@ -4,7 +4,7 @@ Pod::Spec.new do |s|
     s.module_name = 'CGRPCZlib'
     s.version = '1.0.0-alpha.11'
     s.license = { :type => 'Apache 2.0', :file => 'LICENSE' }
-    s.summary = 'Swift gRPC code generator plugin and runtime library'
+    s.summary = 'Compression library that provides in-memory compression and decompression functions'
     s.homepage = 'https://www.grpc.io'
     s.authors  = { 'The gRPC contributors' => 'grpc-packages@google.com' }
 
