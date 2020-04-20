@@ -82,7 +82,14 @@ Alternatively, gRPC Swift can be manually integrated into a project:
 
 #### CocoaPods
 
-CocoaPods support will be added in v1.0.
+gRPC Swift is currently available [from CocoaPods](https://cocoapods.org/pods/gRPC-Swift).
+To integrate, add the following line to your `Podfile`:
+```ruby
+    pod 'gRPC-Swift', '1.0.0-alpha.11'
+```
+
+Then, run `pod install` from command line and use your project's generated
+`.xcworkspace` file.
 
 ### Getting the `protoc` Plugins
 

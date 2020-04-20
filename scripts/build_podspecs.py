@@ -14,6 +14,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Script for generating the gRPC-Swift and CGRPCZlib Podspec files.
+
+    Usage:
+        usage: build_podspecs.py [-h] [-p PATH] [-u] version
+
+        Build Podspec files for SwiftGRPC
+
+        positional arguments:
+        version
+
+        optional arguments:
+        -h, --help            show this help message and exit
+        -p PATH, --path PATH  The directory where generated podspec files will be
+                                saved. If not passed, defaults to place in the current
+                                working directory.
+        -u, --upload          Determines if the newly built Podspec files should be
+                                pushed.
+
+    Example:
+        'python scripts/build_podspecs.py -u 1.0.0-alpha.11'
+"""
+
 import os
 import json
 import random
@@ -21,19 +44,19 @@ import string
 import argparse
 
 class Dependency:
-    def __init__(self, name, version='s.version.to_s', useVerbatimVersion=True):
+    def __init__(self, name, version='s.version.to_s', use_verbatim_version=True):
         self.name = name
         self.version = version
-        self.useVerbatimVersion = useVerbatimVersion
+        self.use_verbatim_version = use_verbatim_version
 
     def as_podspec(self):
-        if self.useVerbatimVersion:
+        if self.use_verbatim_version:
             return "    s.dependency '%s', %s\n" % (self.name, self.version)
-        else: 
-            return "    s.dependency '%s', '%s'\n" % (self.name, self.version)
+
+        return "    s.dependency '%s', '%s'\n" % (self.name, self.version)
 
 class Pod:
-    def __init__(self, name, module_name, version, dependencies=None):
+    def __init__(self, name, module_name, version, description, dependencies=None):
         self.name = name
         self.module_name = module_name
         self.version = version
@@ -42,10 +65,11 @@ class Pod:
             dependencies = []
 
         self.dependencies = dependencies
-    
+        self.description = description
+
     def add_dependency(self, dependency):
         self.dependencies.append(dependency)
-    
+
     def as_podspec(self):
         print('\n')
         print('Building Podspec for %s' % self.name)
@@ -56,9 +80,9 @@ class Pod:
         podspec += "    s.module_name = '%s'\n" % self.module_name
         podspec += "    s.version = '%s'\n" % self.version
         podspec += "    s.license = { :type => 'Apache 2.0', :file => 'LICENSE' }\n"
-        podspec += "    s.summary = 'Swift gRPC code generator plugin and runtime library'\n"
+        podspec += "    s.summary = '%s'\n" % self.description
         podspec += "    s.homepage = 'https://www.grpc.io'\n"
-        podspec += "    s.authors  = { 'The gRPC contributors' => 'grpc-packages@google.com' }\n\n"
+        podspec += "    s.authors  = { 'The gRPC contributors' => \'grpc-packages@google.com' }\n\n"
 
         podspec += "    s.source = { :git => 'https://github.com/grpc/grpc-swift.git', :tag => s.version }\n\n"
 
@@ -67,7 +91,7 @@ class Pod:
         podspec += "    s.ios.deployment_target = '10.0'\n"
         podspec += "    s.osx.deployment_target = '10.10'\n"
         podspec += "    s.tvos.deployment_target = '10.0'\n"
-        
+
         podspec += "    s.source_files = 'Sources/%s/**/*.{swift,c,h}'\n" % (self.module_name)
 
         podspec += "\n" if len(self.dependencies) > 0 else ""
@@ -88,24 +112,37 @@ class PodManager:
 
     def write(self, pod, contents):
         print('    Writing to %s/%s.podspec ' % (self.directory, pod))
-        with open('%s/%s.podspec' % (self.directory, pod), 'w') as f: 
-            f.write(contents)
-    
+        with open('%s/%s.podspec' % (self.directory, pod), 'w') as podspec_file:
+            podspec_file.write(contents)
+
     def publish(self, pod_name):
         os.system('pod repo update')
         print('    Publishing %s.podspec' % (pod_name))
         os.system('pod repo push %s/%s.podspec' % (self.directory, pod_name))
-    
+
     def build_pods(self):
-        CGRPCZlibPod = Pod('CGRPCZlib', 'CGRPCZlib', self.version)
+        cgrpczlib_pod = Pod(
+            'CGRPCZlib', 
+            'CGRPCZlib', 
+            self.version,
+            'Compression library that provides in-memory compression and decompression functions'
+        )
 
-        GRPCPod = Pod('gRPC-Swift', 'GRPC', self.version, get_grpc_deps())
-        GRPCPod.add_dependency(Dependency('CGRPCZlib'))
+        grpc_pod = Pod(
+            'gRPC-Swift', 
+            'GRPC', 
+            self.version, 
+            'Swift gRPC code generator plugin and runtime library',
+            get_grpc_deps()
+        )
 
-        self.pods += [CGRPCZlibPod, GRPCPod]
+        grpc_pod.add_dependency(Dependency('CGRPCZlib'))
+
+        self.pods += [cgrpczlib_pod, grpc_pod]
 
     def go(self):
         self.build_pods()
+
         # Create .podspec files and publish
         for target in self.pods:
             self.write(target.name, target.as_podspec())
@@ -127,8 +164,8 @@ def process_package(string):
     return pod_mappings[string]
 
 def get_grpc_deps():
-    with open('Package.resolved') as f:
-        data = json.load(f)
+    with open('Package.resolved') as package:
+        data = json.load(package)
 
     deps = []
 
@@ -140,31 +177,31 @@ def get_grpc_deps():
 
     return deps
 
-def dir_path(string):
-    if os.path.isdir(string):
-        return string
-    else:
-        raise NotADirectoryError(string)
+def dir_path(path):
+    if os.path.isdir(path):
+        return path
+
+    raise NotADirectoryError(path)
 
 def main():
     # Setup
 
     parser = argparse.ArgumentParser(description='Build Podspec files for SwiftGRPC')
-    
+
     parser.add_argument(
         '-p',
         '--path',
         type=dir_path,
         help='The directory where generated podspec files will be saved. If not passed, defaults to place in the current working directory.'
     )
-    
+
     parser.add_argument(
-        '-u', 
+        '-u',
         '--upload',
         action='store_true',
         help='Determines if the newly built Podspec files should be pushed.'
     )
-    
+
     parser.add_argument('version')
 
     args = parser.parse_args()
@@ -178,6 +215,8 @@ def main():
 
     pod_manager = PodManager(path, version, should_publish)
     pod_manager.go()
+
+    return 0
 
 if __name__ == "__main__":
     main()
