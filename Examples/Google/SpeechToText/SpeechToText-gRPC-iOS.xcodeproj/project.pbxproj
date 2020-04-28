@@ -1,0 +1,469 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 51;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		45600AC42445365000180DCE /* AudioStreamManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45600AC32445365000180DCE /* AudioStreamManager.swift */; };
+		458EDDB32444997700BEBFD3 /* SpeechService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 458EDDB22444997700BEBFD3 /* SpeechService.swift */; };
+		45A6D4F82457CA700038EA68 /* operations.grpc.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45A6D4F02457CA700038EA68 /* operations.grpc.swift */; };
+		45A6D4F92457CA700038EA68 /* cloud_speech.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45A6D4F12457CA700038EA68 /* cloud_speech.pb.swift */; };
+		45A6D4FA2457CA700038EA68 /* annotations.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45A6D4F22457CA700038EA68 /* annotations.pb.swift */; };
+		45A6D4FB2457CA700038EA68 /* operations.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45A6D4F32457CA700038EA68 /* operations.pb.swift */; };
+		45A6D4FC2457CA700038EA68 /* status.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45A6D4F42457CA700038EA68 /* status.pb.swift */; };
+		45A6D4FD2457CA700038EA68 /* http.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45A6D4F52457CA700038EA68 /* http.pb.swift */; };
+		45A6D4FE2457CA700038EA68 /* client.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45A6D4F62457CA700038EA68 /* client.pb.swift */; };
+		45A6D4FF2457CA700038EA68 /* cloud_speech.grpc.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45A6D4F72457CA700038EA68 /* cloud_speech.grpc.swift */; };
+		45A75D542446506000ACB73B /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45A75D532446506000ACB73B /* Constants.swift */; };
+		45EA4F3024439C2300622606 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45EA4F2F24439C2300622606 /* AppDelegate.swift */; };
+		45EA4F3224439C2300622606 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45EA4F3124439C2300622606 /* SceneDelegate.swift */; };
+		45EA4F3424439C2300622606 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45EA4F3324439C2300622606 /* ViewController.swift */; };
+		45EA4F3924439C2400622606 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 45EA4F3824439C2400622606 /* Assets.xcassets */; };
+		45EA4F3C24439C2400622606 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 45EA4F3A24439C2400622606 /* LaunchScreen.storyboard */; };
+		90F12C7BFCE27B60F4C455D5 /* Pods_SpeechToText_gRPC_iOS.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8BB47463A962540B72022723 /* Pods_SpeechToText_gRPC_iOS.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		45600AC32445365000180DCE /* AudioStreamManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioStreamManager.swift; sourceTree = "<group>"; };
+		458EDDB22444997700BEBFD3 /* SpeechService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechService.swift; sourceTree = "<group>"; };
+		45A6D4F02457CA700038EA68 /* operations.grpc.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = operations.grpc.swift; sourceTree = "<group>"; };
+		45A6D4F12457CA700038EA68 /* cloud_speech.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = cloud_speech.pb.swift; sourceTree = "<group>"; };
+		45A6D4F22457CA700038EA68 /* annotations.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = annotations.pb.swift; sourceTree = "<group>"; };
+		45A6D4F32457CA700038EA68 /* operations.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = operations.pb.swift; sourceTree = "<group>"; };
+		45A6D4F42457CA700038EA68 /* status.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = status.pb.swift; sourceTree = "<group>"; };
+		45A6D4F52457CA700038EA68 /* http.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = http.pb.swift; sourceTree = "<group>"; };
+		45A6D4F62457CA700038EA68 /* client.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = client.pb.swift; sourceTree = "<group>"; };
+		45A6D4F72457CA700038EA68 /* cloud_speech.grpc.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = cloud_speech.grpc.swift; sourceTree = "<group>"; };
+		45A75D532446506000ACB73B /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
+		45EA4F2C24439C2300622606 /* gRPC Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "gRPC Example.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		45EA4F2F24439C2300622606 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		45EA4F3124439C2300622606 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		45EA4F3324439C2300622606 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		45EA4F3824439C2400622606 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		45EA4F3B24439C2400622606 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		45EA4F3D24439C2400622606 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		8BB47463A962540B72022723 /* Pods_SpeechToText_gRPC_iOS.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_SpeechToText_gRPC_iOS.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		B4D057349E6BFEE6BE2D0FFE /* Pods-SpeechToText-gRPC-iOS.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SpeechToText-gRPC-iOS.debug.xcconfig"; path = "Target Support Files/Pods-SpeechToText-gRPC-iOS/Pods-SpeechToText-gRPC-iOS.debug.xcconfig"; sourceTree = "<group>"; };
+		E8E493D0DC00CC6697CDDB7B /* Pods-SpeechToText-gRPC-iOS.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SpeechToText-gRPC-iOS.release.xcconfig"; path = "Target Support Files/Pods-SpeechToText-gRPC-iOS/Pods-SpeechToText-gRPC-iOS.release.xcconfig"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		45EA4F2924439C2300622606 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				90F12C7BFCE27B60F4C455D5 /* Pods_SpeechToText_gRPC_iOS.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		4524351E244495D800EF8317 /* Configuration */ = {
+			isa = PBXGroup;
+			children = (
+				45EA4F3D24439C2400622606 /* Info.plist */,
+				45EA4F3824439C2400622606 /* Assets.xcassets */,
+			);
+			path = Configuration;
+			sourceTree = "<group>";
+		};
+		4524351F244495EC00EF8317 /* Launch */ = {
+			isa = PBXGroup;
+			children = (
+				45EA4F3A24439C2400622606 /* LaunchScreen.storyboard */,
+				45EA4F2F24439C2300622606 /* AppDelegate.swift */,
+				45EA4F3124439C2300622606 /* SceneDelegate.swift */,
+			);
+			path = Launch;
+			sourceTree = "<group>";
+		};
+		45A6D4E12457C7780038EA68 /* Generated */ = {
+			isa = PBXGroup;
+			children = (
+				45A6D4F22457CA700038EA68 /* annotations.pb.swift */,
+				45A6D4F62457CA700038EA68 /* client.pb.swift */,
+				45A6D4F72457CA700038EA68 /* cloud_speech.grpc.swift */,
+				45A6D4F12457CA700038EA68 /* cloud_speech.pb.swift */,
+				45A6D4F52457CA700038EA68 /* http.pb.swift */,
+				45A6D4F02457CA700038EA68 /* operations.grpc.swift */,
+				45A6D4F32457CA700038EA68 /* operations.pb.swift */,
+				45A6D4F42457CA700038EA68 /* status.pb.swift */,
+			);
+			path = Generated;
+			sourceTree = "<group>";
+		};
+		45EA4F2324439C2300622606 = {
+			isa = PBXGroup;
+			children = (
+				45EA4F2E24439C2300622606 /* Sources */,
+				45EA4F2D24439C2300622606 /* Products */,
+				962026E13832C719518050CA /* Pods */,
+				D32D774F4BFD3DE348FECF6C /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		45EA4F2D24439C2300622606 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				45EA4F2C24439C2300622606 /* gRPC Example.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		45EA4F2E24439C2300622606 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				4524351F244495EC00EF8317 /* Launch */,
+				4524351E244495D800EF8317 /* Configuration */,
+				45A6D4E12457C7780038EA68 /* Generated */,
+				45EA4F3324439C2300622606 /* ViewController.swift */,
+				458EDDB22444997700BEBFD3 /* SpeechService.swift */,
+				45600AC32445365000180DCE /* AudioStreamManager.swift */,
+				45A75D532446506000ACB73B /* Constants.swift */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		962026E13832C719518050CA /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				B4D057349E6BFEE6BE2D0FFE /* Pods-SpeechToText-gRPC-iOS.debug.xcconfig */,
+				E8E493D0DC00CC6697CDDB7B /* Pods-SpeechToText-gRPC-iOS.release.xcconfig */,
+			);
+			path = Pods;
+			sourceTree = "<group>";
+		};
+		D32D774F4BFD3DE348FECF6C /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				8BB47463A962540B72022723 /* Pods_SpeechToText_gRPC_iOS.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		45EA4F2B24439C2300622606 /* SpeechToText-gRPC-iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 45EA4F4024439C2400622606 /* Build configuration list for PBXNativeTarget "SpeechToText-gRPC-iOS" */;
+			buildPhases = (
+				DFF4D2B80023A85872DBD34B /* [CP] Check Pods Manifest.lock */,
+				45EA4F2824439C2300622606 /* Sources */,
+				45EA4F2924439C2300622606 /* Frameworks */,
+				45EA4F2A24439C2300622606 /* Resources */,
+				BF340858D237F347B150C34C /* [CP] Embed Pods Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "SpeechToText-gRPC-iOS";
+			productName = "SpeechToText-gRPC-iOS";
+			productReference = 45EA4F2C24439C2300622606 /* gRPC Example.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		45EA4F2424439C2300622606 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 1130;
+				LastUpgradeCheck = 1130;
+				ORGANIZATIONNAME = "Prickett, Jacob (J.A.)";
+				TargetAttributes = {
+					45EA4F2B24439C2300622606 = {
+						CreatedOnToolsVersion = 11.3;
+					};
+				};
+			};
+			buildConfigurationList = 45EA4F2724439C2300622606 /* Build configuration list for PBXProject "SpeechToText-gRPC-iOS" */;
+			compatibilityVersion = "Xcode 9.3";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 45EA4F2324439C2300622606;
+			productRefGroup = 45EA4F2D24439C2300622606 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				45EA4F2B24439C2300622606 /* SpeechToText-gRPC-iOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		45EA4F2A24439C2300622606 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				45EA4F3C24439C2400622606 /* LaunchScreen.storyboard in Resources */,
+				45EA4F3924439C2400622606 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		BF340858D237F347B150C34C /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-SpeechToText-gRPC-iOS/Pods-SpeechToText-gRPC-iOS-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-SpeechToText-gRPC-iOS/Pods-SpeechToText-gRPC-iOS-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-SpeechToText-gRPC-iOS/Pods-SpeechToText-gRPC-iOS-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		DFF4D2B80023A85872DBD34B /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-SpeechToText-gRPC-iOS-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		45EA4F2824439C2300622606 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				45600AC42445365000180DCE /* AudioStreamManager.swift in Sources */,
+				45A6D4FC2457CA700038EA68 /* status.pb.swift in Sources */,
+				45EA4F3424439C2300622606 /* ViewController.swift in Sources */,
+				45A6D4FB2457CA700038EA68 /* operations.pb.swift in Sources */,
+				45A6D4FD2457CA700038EA68 /* http.pb.swift in Sources */,
+				45EA4F3024439C2300622606 /* AppDelegate.swift in Sources */,
+				45A6D4F82457CA700038EA68 /* operations.grpc.swift in Sources */,
+				458EDDB32444997700BEBFD3 /* SpeechService.swift in Sources */,
+				45A6D4FE2457CA700038EA68 /* client.pb.swift in Sources */,
+				45EA4F3224439C2300622606 /* SceneDelegate.swift in Sources */,
+				45A6D4F92457CA700038EA68 /* cloud_speech.pb.swift in Sources */,
+				45A75D542446506000ACB73B /* Constants.swift in Sources */,
+				45A6D4FF2457CA700038EA68 /* cloud_speech.grpc.swift in Sources */,
+				45A6D4FA2457CA700038EA68 /* annotations.pb.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		45EA4F3A24439C2400622606 /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				45EA4F3B24439C2400622606 /* Base */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		45EA4F3E24439C2400622606 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		45EA4F3F24439C2400622606 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		45EA4F4124439C2400622606 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = B4D057349E6BFEE6BE2D0FFE /* Pods-SpeechToText-gRPC-iOS.debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 24DLJQTAR9;
+				INFOPLIST_FILE = "$(SRCROOT)/Sources/Configuration/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.ford.SpeechToText-gRPC-iOS";
+				PRODUCT_NAME = "gRPC Example";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		45EA4F4224439C2400622606 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = E8E493D0DC00CC6697CDDB7B /* Pods-SpeechToText-gRPC-iOS.release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 24DLJQTAR9;
+				INFOPLIST_FILE = "$(SRCROOT)/Sources/Configuration/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.ford.SpeechToText-gRPC-iOS";
+				PRODUCT_NAME = "gRPC Example";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		45EA4F2724439C2300622606 /* Build configuration list for PBXProject "SpeechToText-gRPC-iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				45EA4F3E24439C2400622606 /* Debug */,
+				45EA4F3F24439C2400622606 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		45EA4F4024439C2400622606 /* Build configuration list for PBXNativeTarget "SpeechToText-gRPC-iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				45EA4F4124439C2400622606 /* Debug */,
+				45EA4F4224439C2400622606 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 45EA4F2424439C2300622606 /* Project object */;
+}
