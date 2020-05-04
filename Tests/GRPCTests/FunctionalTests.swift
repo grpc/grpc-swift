@@ -137,21 +137,21 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
     XCTAssertNoThrow(try doTestClientStreaming(messages: lotsOfStrings))
   }
 
-  func doTestServerStreaming(messages: [String], file: StaticString = #file, line: UInt = #line) throws {
+  private func doTestServerStreaming(messages: [String], line: UInt = #line) throws {
     let responseExpectation = self.makeResponseExpectation(expectedFulfillmentCount: messages.count)
     let statusExpectation = self.makeStatusExpectation()
 
     var iterator = messages.enumerated().makeIterator()
     let call = client.expand(Echo_EchoRequest(text: messages.joined(separator: " "))) { response in
       if let (index, message) = iterator.next() {
-        XCTAssertEqual(Echo_EchoResponse(text: "Swift echo expand (\(index)): \(message)"), response, file: file, line: line)
+        XCTAssertEqual(Echo_EchoResponse(text: "Swift echo expand (\(index)): \(message)"), response, line: line)
         responseExpectation.fulfill()
       } else {
-        XCTFail("Too many responses received", file: file, line: line)
+        XCTFail("Too many responses received", line: line)
       }
     }
 
-    call.status.map { $0.code }.assertEqual(.ok, fulfill: statusExpectation, file: file, line: line)
+    call.status.map { $0.code }.assertEqual(.ok, fulfill: statusExpectation, line: line)
     self.wait(for: [responseExpectation, statusExpectation], timeout: self.defaultTestTimeout)
   }
 
@@ -165,7 +165,7 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
     XCTAssertNoThrow(try doTestServerStreaming(messages: lotsOfStrings))
   }
 
-  private func doTestBidirectionalStreaming(messages: [String], waitForEachResponse: Bool = false, file: StaticString = #file, line: UInt = #line) throws {
+  private func doTestBidirectionalStreaming(messages: [String], waitForEachResponse: Bool = false, line: UInt = #line) throws {
     let responseExpectation = self.makeResponseExpectation(expectedFulfillmentCount: messages.count)
     let statusExpectation = self.makeStatusExpectation()
 
@@ -174,19 +174,19 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
     var iterator = messages.enumerated().makeIterator()
     let call = client.update { response in
       if let (index, message) = iterator.next() {
-        XCTAssertEqual(Echo_EchoResponse(text: "Swift echo update (\(index)): \(message)"), response, file: file, line: line)
+        XCTAssertEqual(Echo_EchoResponse(text: "Swift echo update (\(index)): \(message)"), response, line: line)
         responseExpectation.fulfill()
         responseReceived?.signal()
       } else {
-        XCTFail("Too many responses received", file: file, line: line)
+        XCTFail("Too many responses received", line: line)
       }
     }
 
-    call.status.map { $0.code }.assertEqual(.ok, fulfill: statusExpectation, file: file, line: line)
+    call.status.map { $0.code }.assertEqual(.ok, fulfill: statusExpectation, line: line)
 
     messages.forEach { part in
       call.sendMessage(Echo_EchoRequest(text: part), promise: nil)
-      XCTAssertNotEqual(responseReceived?.wait(timeout: .now() + .seconds(1)), .some(.timedOut), file: file, line: line)
+      XCTAssertNotEqual(responseReceived?.wait(timeout: .now() + .seconds(1)), .some(.timedOut), line: line)
     }
     call.sendEnd(promise: nil)
 

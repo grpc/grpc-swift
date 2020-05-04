@@ -29,8 +29,8 @@ import XCTest
 class GRPCTypeSizeTests: GRPCTestCase {
   let existentialContainerBufferSize = 24
 
-  func checkSize<T>(of: T.Type, file: StaticString = #file, line: UInt = #line) {
-    XCTAssertLessThanOrEqual(MemoryLayout<T>.size, self.existentialContainerBufferSize, file: file, line: line)
+  private func checkSize<T>(of: T.Type, line: UInt = #line) {
+    XCTAssertLessThanOrEqual(MemoryLayout<T>.size, self.existentialContainerBufferSize, line: line)
   }
 
   // `GRPCStatus` isn't wrapped in `NIOAny` but is passed around through functions taking a type

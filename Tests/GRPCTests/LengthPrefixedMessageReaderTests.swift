@@ -42,18 +42,18 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
     ] + twoByteMessage
   }
 
-  func assertMessagesEqual(expected expectedBytes: [UInt8], actual buffer: ByteBuffer?, file: StaticString = #file, line: UInt = #line) {
+  private func assertMessagesEqual(expected expectedBytes: [UInt8], actual buffer: ByteBuffer?, line: UInt = #line) {
     guard let buffer = buffer else {
-      XCTFail("buffer is nil", file: file, line: line)
+      XCTFail("buffer is nil", line: line)
       return
     }
 
     guard let bytes = buffer.getBytes(at: buffer.readerIndex, length: expectedBytes.count) else {
-      XCTFail("Expected \(expectedBytes.count) bytes, but only \(buffer.readableBytes) bytes are readable", file: file, line: line)
+      XCTFail("Expected \(expectedBytes.count) bytes, but only \(buffer.readableBytes) bytes are readable", line: line)
       return
     }
 
-    XCTAssertEqual(expectedBytes, bytes, file: file, line: line)
+    XCTAssertEqual(expectedBytes, bytes, line: line)
   }
 
   func testNextMessageReturnsNilWhenNoBytesAppended() throws {
