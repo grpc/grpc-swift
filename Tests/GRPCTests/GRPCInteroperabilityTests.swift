@@ -66,7 +66,7 @@ class GRPCInsecureInteroperabilityTests: GRPCTestCase {
     super.tearDown()
   }
 
-  func doRunTest(_ testCase: InteroperabilityTestCase, file: StaticString = #file, line: UInt = #line) {
+  private func doRunTest(_ testCase: InteroperabilityTestCase, line: UInt = #line) {
     // Does the server support the test?
     let implementedFeatures = TestServiceProvider.implementedFeatures
     let missingFeatures = testCase.requiredServerFeatures.subtracting(implementedFeatures)
@@ -82,7 +82,7 @@ class GRPCInsecureInteroperabilityTests: GRPCTestCase {
     )
     test.configure(builder: builder)
     self.clientConnection = builder.connect(host: "localhost", port: self.serverPort)
-    XCTAssertNoThrow(try test.run(using: self.clientConnection), file: file, line: line)
+    XCTAssertNoThrow(try test.run(using: self.clientConnection), line: line)
   }
 
   func testEmptyUnary() {

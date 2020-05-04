@@ -63,7 +63,7 @@ class ServerWebTests: EchoTestCaseBase {
       handler(data, error)
       sem.signal()
     }.resume()
-    _ = sem.wait()
+    sem.wait()
   }
 }
 
