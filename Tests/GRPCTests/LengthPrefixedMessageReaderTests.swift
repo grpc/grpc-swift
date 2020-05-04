@@ -236,4 +236,28 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
 
     XCTAssertEqual(0, buffer.readableBytes)
   }
+
+  func testExcessiveBytesAreDiscarded() throws {
+    // We're going to use a 1kB message here for ease of testing.
+    let message = Array(repeating: UInt8(0), count: 1024)
+    let largeMessage: [UInt8] = [
+        0x00,                       // 1-byte compression flag
+        0x00, 0x00, 0x04, 0x00,     // 4-byte message length (1024)
+    ] + message
+    var buffer = byteBuffer(withBytes: largeMessage)
+    buffer.writeBytes(largeMessage)
+    buffer.writeBytes(largeMessage)
+    reader.append(buffer: &buffer)
+
+    XCTAssertEqual(reader.unprocessedBytes, (1024 + 5) * 3)
+    XCTAssertEqual(reader._consumedNonDiscardedBytes, 0)
+
+    self.assertMessagesEqual(expected: message, actual: try reader.nextMessage())
+    XCTAssertEqual(reader.unprocessedBytes, (1024 + 5) * 2)
+    XCTAssertEqual(reader._consumedNonDiscardedBytes, 1024 + 5)
+
+    self.assertMessagesEqual(expected: message, actual: try reader.nextMessage())
+    XCTAssertEqual(reader.unprocessedBytes, 1024 + 5)
+    XCTAssertEqual(reader._consumedNonDiscardedBytes, 0)
+  }
 }
