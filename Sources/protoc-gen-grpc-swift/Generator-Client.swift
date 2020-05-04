@@ -23,6 +23,11 @@ extension Generator {
     printServiceClientProtocol()
     println()
     printServiceClientImplementation()
+
+    if self.options.testClient {
+      self.println()
+      self.printTestClient()
+    }
   }
 
   private func printServiceClientProtocol() {
@@ -161,6 +166,192 @@ extension Generator {
 
   private func printHandlerParameter() {
     println("///   - handler: A closure called when each response is received from the server.")
+  }
+}
+
+extension Generator {
+  fileprivate func printTestClientResponseArrays() {
+    for method in self.service.methods {
+      self.method = method
+      self.println("private var \(self.testResponseArray): [\(self.testResponseType)] = []")
+    }
+  }
+
+  fileprivate func printTestClientResponseGetter() {
+    for method in self.service.methods {
+      self.method = method
+
+      self.println()
+      self.println("private func next\(self.methodNameWithUppercasedFirstCharacter)Response() -> \(self.testResponseType) {")
+      self.withIndentation {
+        self.println("if self.\(self.testResponseArray).isEmpty {")
+        self.withIndentation {
+          self.println("return .makeFailed()")
+        }
+        self.println("} else {")
+        self.withIndentation {
+          self.println("return self.\(self.testResponseArray).removeFirst()")
+        }
+        self.println("}")
+      }
+      self.println("}")
+    }
+  }
+
+  fileprivate func printTestClientResponseFactories() {
+    for method in self.service.methods {
+      self.method = method
+
+      // Uppercase the first character.
+      let name = self.method.name.prefix(1).uppercased() + self.method.name.dropFirst()
+
+      self.println()
+      self.println("\(self.access) func make\(name)TestResponse(on eventLoop: EventLoop) -> \(self.testResponseType) {")
+      self.withIndentation {
+        self.println("let response = \(self.testResponseType)(eventLoop: eventLoop)")
+        self.println("self.\(self.testResponseArray).append(response)")
+        self.println("return response")
+      }
+      self.println("}")
+    }
+  }
+
+  fileprivate func printTestClientRPCs() {
+    for method in self.service.methods {
+      self.method = method
+
+      // Signature
+      self.println()
+      self.println("\(self.access) func \(self.methodFunctionName)(")
+      switch self.streamType {
+      case .unary:
+        self.withIndentation {
+          self.println("_ request: \(self.methodInputName),")
+          self.println("callOptions: CallOptions? = nil")
+        }
+        self.println(") -> \(self.callType) {")
+        self.withIndentation {
+          self.println("return \(self.callType)(")
+          self.withIndentation {
+            self.println("testResponse: self.next\(self.methodNameWithUppercasedFirstCharacter)Response(),")
+            self.println("callOptions: callOptions ?? CallOptions()")
+          }
+          self.println(")")
+        }
+
+
+      case .clientStreaming:
+        self.withIndentation {
+          self.println("callOptions: CallOptions? = nil")
+        }
+        self.println(") -> \(self.callType) {")
+        self.withIndentation {
+          self.println("return \(self.callType)(")
+          self.withIndentation {
+            self.println("testResponse: self.next\(self.methodNameWithUppercasedFirstCharacter)Response(),")
+            self.println("callOptions: callOptions ?? CallOptions()")
+          }
+          self.println(")")
+        }
+
+      case .serverStreaming:
+        self.withIndentation {
+          self.println("_ request: \(self.methodInputName),")
+          self.println("callOptions: CallOptions? = nil,")
+          self.println("handler: @escaping (\(self.methodOutputName)) -> Void")
+        }
+        self.println(") -> \(self.callType) {")
+        self.withIndentation {
+          self.println("return \(self.callType)(")
+          self.withIndentation {
+            self.println("testResponse: self.next\(self.methodNameWithUppercasedFirstCharacter)Response(),")
+            self.println("callOptions: callOptions ?? CallOptions(),")
+            self.println("handler: handler")
+          }
+          self.println(")")
+        }
+
+      case .bidirectionalStreaming:
+        self.withIndentation {
+          self.println("callOptions: CallOptions? = nil,")
+          self.println("handler: @escaping (\(self.methodOutputName)) -> Void")
+        }
+        self.println(") -> \(self.callType) {")
+        self.withIndentation {
+          self.println("return \(self.callType)(")
+          self.withIndentation {
+            self.println("testResponse: self.next\(self.methodNameWithUppercasedFirstCharacter)Response(),")
+            self.println("callOptions: callOptions ?? CallOptions(),")
+            self.println("handler: handler")
+          }
+          self.println(")")
+        }
+      }
+
+      self.println("}")
+    }
+  }
+
+  fileprivate func printTestClient() {
+    self.println("\(self.access) final class \(self.testClientClassName): \(self.clientProtocolName) {")
+    self.withIndentation {
+      self.printTestClientResponseArrays()
+      self.printTestClientResponseGetter()
+
+      self.println("\(self.access) init() {")
+      self.println("}")
+
+      self.printTestClientResponseFactories()
+      self.printTestClientRPCs()
+    }
+
+    self.println("}")  // end class
+  }
+}
+
+fileprivate extension Generator {
+  var streamType: StreamingType {
+    return streamingType(self.method)
+  }
+
+  var methodNameWithUppercasedFirstCharacter: String {
+    return self.method.name.prefix(1).uppercased() + self.method.name.dropFirst()
+  }
+
+  var testResponseTypeGeneric: String {
+    switch self.streamType {
+    case .unary, .clientStreaming:
+      return "UnaryTestResponse"
+    case .serverStreaming, .bidirectionalStreaming:
+      return "StreamingTestResponse"
+    }
+  }
+
+  var testResponseType: String {
+    return "\(self.testResponseTypeGeneric)<\(self.methodOutputName)>"
+  }
+
+  var testResponseArray: String {
+    return "\(self.methodFunctionName)Responses"
+  }
+
+  var callType: String {
+    return "\(self.streamType.callType)<\(self.methodInputName), \(self.methodOutputName)>"
+  }
+}
+
+fileprivate extension StreamingType {
+  var callType: String {
+    switch self {
+    case .unary:
+      return "UnaryCall"
+    case .clientStreaming:
+      return "ClientStreamingCall"
+    case .serverStreaming:
+      return "ServerStreamingCall"
+    case .bidirectionalStreaming:
+      return "BidirectionalStreamingCall"
+    }
   }
 }
 

@@ -130,7 +130,26 @@ public class BaseClientCall<Request: GRPCPayload, Response: GRPCPayload>: Client
       return channel.pipeline.triggerUserOutboundEvent(GRPCClientUserEvent.cancelled)
     }
   }
+
+  init(
+    eventLoop: EventLoop,
+    callOptions: CallOptions,
+    initialMetadata: EventLoopFuture<HPACKHeaders>,
+    trailingMetadata: EventLoopFuture<HPACKHeaders>,
+    status: EventLoopFuture<GRPCStatus>
+  ) {
+    self.logger = Logger(label: "io.grpc.test.stub")
+    self.subchannel = eventLoop.makeFailedFuture(StubError())
+    self.multiplexer = eventLoop.makeFailedFuture(StubError())
+
+    self.options = callOptions
+    self.initialMetadata = initialMetadata
+    self.trailingMetadata = trailingMetadata
+    self.status = status
+  }
 }
+
+private struct StubError: Error {}
 
 extension _GRPCRequestHead {
   init(

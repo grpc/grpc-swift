@@ -79,6 +79,22 @@ public final class BidirectionalStreamingCall<RequestPayload: GRPCPayload, Respo
     )
   }
 
+  public init(
+    testResponse: StreamingTestResponse<ResponsePayload>,
+    callOptions: CallOptions,
+    handler: @escaping (ResponsePayload) -> Void
+  ) {
+    testResponse.provideCallback(handler)
+    self.messageQueue = testResponse.eventLoop.makeSucceededFuture(())
+    super.init(
+      eventLoop: testResponse.eventLoop,
+      callOptions: callOptions,
+      initialMetadata: testResponse.initialMetadata,
+      trailingMetadata: testResponse.trailingMetadata.futureResult,
+      status: testResponse.status.futureResult
+    )
+  }
+
   public func newMessageQueue() -> EventLoopFuture<Void> {
     return self.messageQueue
   }

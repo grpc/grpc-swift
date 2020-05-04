@@ -54,6 +54,7 @@ final class GeneratorOptions {
   private(set) var visibility = Visibility.internal
   private(set) var generateServer = true
   private(set) var generateClient = true
+  private(set) var testClient = false
   private(set) var protoToModuleMappings = ProtoFileToModuleMappings()
   private(set) var fileNaming = FileNaming.FullPath
   private(set) var extraModuleImports: [String] = []
@@ -78,6 +79,13 @@ final class GeneratorOptions {
       case "Client":
         if let value = Bool(pair.value) {
           generateClient = value
+        } else {
+          throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
+        }
+
+      case "TestClients":
+        if let value = Bool(pair.value) {
+          self.testClient = value
         } else {
           throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }

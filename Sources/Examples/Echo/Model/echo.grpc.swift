@@ -105,6 +105,113 @@ public final class Echo_EchoClient: GRPCClient, Echo_EchoClientProtocol {
 
 }
 
+public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
+  private var getResponses: [UnaryTestResponse<Echo_EchoResponse>] = []
+  private var expandResponses: [StreamingTestResponse<Echo_EchoResponse>] = []
+  private var collectResponses: [UnaryTestResponse<Echo_EchoResponse>] = []
+  private var updateResponses: [StreamingTestResponse<Echo_EchoResponse>] = []
+
+  private func nextGetResponse() -> UnaryTestResponse<Echo_EchoResponse> {
+    if self.getResponses.isEmpty {
+      return .makeFailed()
+    } else {
+      return self.getResponses.removeFirst()
+    }
+  }
+
+  private func nextExpandResponse() -> StreamingTestResponse<Echo_EchoResponse> {
+    if self.expandResponses.isEmpty {
+      return .makeFailed()
+    } else {
+      return self.expandResponses.removeFirst()
+    }
+  }
+
+  private func nextCollectResponse() -> UnaryTestResponse<Echo_EchoResponse> {
+    if self.collectResponses.isEmpty {
+      return .makeFailed()
+    } else {
+      return self.collectResponses.removeFirst()
+    }
+  }
+
+  private func nextUpdateResponse() -> StreamingTestResponse<Echo_EchoResponse> {
+    if self.updateResponses.isEmpty {
+      return .makeFailed()
+    } else {
+      return self.updateResponses.removeFirst()
+    }
+  }
+  public init() {
+  }
+
+  public func makeGetTestResponse(on eventLoop: EventLoop) -> UnaryTestResponse<Echo_EchoResponse> {
+    let response = UnaryTestResponse<Echo_EchoResponse>(eventLoop: eventLoop)
+    self.getResponses.append(response)
+    return response
+  }
+
+  public func makeExpandTestResponse(on eventLoop: EventLoop) -> StreamingTestResponse<Echo_EchoResponse> {
+    let response = StreamingTestResponse<Echo_EchoResponse>(eventLoop: eventLoop)
+    self.expandResponses.append(response)
+    return response
+  }
+
+  public func makeCollectTestResponse(on eventLoop: EventLoop) -> UnaryTestResponse<Echo_EchoResponse> {
+    let response = UnaryTestResponse<Echo_EchoResponse>(eventLoop: eventLoop)
+    self.collectResponses.append(response)
+    return response
+  }
+
+  public func makeUpdateTestResponse(on eventLoop: EventLoop) -> StreamingTestResponse<Echo_EchoResponse> {
+    let response = StreamingTestResponse<Echo_EchoResponse>(eventLoop: eventLoop)
+    self.updateResponses.append(response)
+    return response
+  }
+
+  public func get(
+    _ request: Echo_EchoRequest,
+    callOptions: CallOptions? = nil
+  ) -> UnaryCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return UnaryCall<Echo_EchoRequest, Echo_EchoResponse>(
+      testResponse: self.nextGetResponse(),
+      callOptions: callOptions ?? CallOptions()
+    )
+  }
+
+  public func expand(
+    _ request: Echo_EchoRequest,
+    callOptions: CallOptions? = nil,
+    handler: @escaping (Echo_EchoResponse) -> Void
+  ) -> ServerStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return ServerStreamingCall<Echo_EchoRequest, Echo_EchoResponse>(
+      testResponse: self.nextExpandResponse(),
+      callOptions: callOptions ?? CallOptions(),
+      handler: handler
+    )
+  }
+
+  public func collect(
+    callOptions: CallOptions? = nil
+  ) -> ClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return ClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse>(
+      testResponse: self.nextCollectResponse(),
+      callOptions: callOptions ?? CallOptions()
+    )
+  }
+
+  public func update(
+    callOptions: CallOptions? = nil,
+    handler: @escaping (Echo_EchoResponse) -> Void
+  ) -> BidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return BidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse>(
+      testResponse: self.nextUpdateResponse(),
+      callOptions: callOptions ?? CallOptions(),
+      handler: handler
+    )
+  }
+}
+
 /// To build a server, implement a class that conforms to this protocol.
 public protocol Echo_EchoProvider: CallHandlerProvider {
   /// Immediately returns an echo of a request.

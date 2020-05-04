@@ -84,6 +84,21 @@ public final class ClientStreamingCall<RequestPayload: GRPCPayload, ResponsePayl
     )
   }
 
+  public init(
+    testResponse: UnaryTestResponse<ResponsePayload>,
+    callOptions: CallOptions
+  ) {
+    self.response = testResponse.response.futureResult
+    self.messageQueue = testResponse.eventLoop.makeSucceededFuture(())
+    super.init(
+      eventLoop: testResponse.eventLoop,
+      callOptions: callOptions,
+      initialMetadata: testResponse.initialMetadata,
+      trailingMetadata: testResponse.trailingMetadata.futureResult,
+      status: testResponse.status.futureResult
+    )
+  }
+
   public func newMessageQueue() -> EventLoopFuture<Void> {
     return self.messageQueue
   }

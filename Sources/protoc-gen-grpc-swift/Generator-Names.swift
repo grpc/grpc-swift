@@ -50,6 +50,10 @@ extension Generator {
     return nameForPackageService(file, service) + "Client"
   }
 
+  internal var testClientClassName: String {
+    return nameForPackageService(self.file, self.service) + "TestClient"
+  }
+
   internal var clientProtocolName: String {
     return nameForPackageService(file, service) + "ClientProtocol"
   }

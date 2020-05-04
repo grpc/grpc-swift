@@ -75,4 +75,20 @@ public final class ServerStreamingCall<RequestPayload: GRPCPayload, ResponsePayl
       logger: logger
     )
   }
+
+  public init(
+    testResponse: StreamingTestResponse<ResponsePayload>,
+    callOptions: CallOptions,
+    handler: @escaping (ResponsePayload) -> Void
+  ) {
+    testResponse.provideCallback(handler)
+    super.init(
+      eventLoop: testResponse.eventLoop,
+      callOptions: callOptions,
+      initialMetadata: testResponse.initialMetadata,
+      trailingMetadata: testResponse.trailingMetadata.futureResult,
+      status: testResponse.status.futureResult
+    )
+  }
+  
 }

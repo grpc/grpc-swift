@@ -18,6 +18,7 @@ import SwiftProtobuf
 import NIO
 import NIOHTTP1
 import NIOHTTP2
+import NIOHPACK
 import Logging
 
 /// A unary gRPC call. The request is sent on initialization.
@@ -82,6 +83,20 @@ public final class UnaryCall<RequestPayload: GRPCPayload, ResponsePayload: GRPCP
       responseHandler: responseHandler,
       requestHandler: requestHandler,
       logger: logger
+    )
+  }
+
+  public init(
+    testResponse: UnaryTestResponse<ResponsePayload>,
+    callOptions: CallOptions
+  ) {
+    self.response = testResponse.response.futureResult
+    super.init(
+      eventLoop: testResponse.eventLoop,
+      callOptions: callOptions,
+      initialMetadata: testResponse.initialMetadata,
+      trailingMetadata: testResponse.trailingMetadata.futureResult,
+      status: testResponse.status.futureResult
     )
   }
 }
