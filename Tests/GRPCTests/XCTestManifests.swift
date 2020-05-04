@@ -499,6 +499,7 @@ extension LengthPrefixedMessageReaderTests {
     // to regenerate.
     static let __allTests__LengthPrefixedMessageReaderTests = [
         ("testAppendReadsAllBytes", testAppendReadsAllBytes),
+        ("testExcessiveBytesAreDiscarded", testExcessiveBytesAreDiscarded),
         ("testNextMessageDeliveredAcrossMultipleByteBuffers", testNextMessageDeliveredAcrossMultipleByteBuffers),
         ("testNextMessageDoesNotThrowWhenCompressionFlagIsExpectedButNotSet", testNextMessageDoesNotThrowWhenCompressionFlagIsExpectedButNotSet),
         ("testNextMessageReturnsMessageForZeroLengthMessage", testNextMessageReturnsMessageForZeroLengthMessage),

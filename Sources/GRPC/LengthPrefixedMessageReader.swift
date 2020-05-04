@@ -78,6 +78,11 @@ internal struct LengthPrefixedMessageReader {
     return self.buffer.map { $0.readableBytes } ?? 0
   }
 
+  /// Returns the number of bytes that have been consumed and not discarded.
+  internal var _consumedNonDiscardedBytes: Int {
+    return self.buffer.map { $0.readerIndex } ?? 0
+  }
+
   /// Whether the reader is mid-way through reading a message.
   internal var isReading: Bool {
     switch self.state {
@@ -127,8 +132,18 @@ internal struct LengthPrefixedMessageReader {
   ///
   /// This allows the next call to `append` to avoid writing the contents of the appended buffer.
   private mutating func nilBufferIfPossible() {
-    if self.buffer?.readableBytes == 0 {
+    let readableBytes = self.buffer?.readableBytes ?? 0
+    let readerIndex = self.buffer?.readerIndex ?? 0
+    let capacity = self.buffer?.capacity ?? 0
+
+    if readableBytes == 0 {
       self.buffer = nil
+    } else if readerIndex > 1024 && readerIndex > (capacity / 2) {
+      // A rough-heuristic: if there is a kilobyte of read data, and there is more data that
+      // has been read than there is space in the rest of the buffer, we'll try to discard some
+      // read bytes here. We're trying to avoid doing this if there is loads of writable bytes that
+      // we'll have to shift.
+      self.buffer?.discardReadBytes()
     }
   }
 
