@@ -41,8 +41,8 @@ public struct ConnectionBackoff: Sequence {
   /// A limit on the number of times to attempt reconnection.
   public var retries: Retries
 
-  public struct Retries {
-    fileprivate enum Limit {
+  public struct Retries: Hashable {
+    fileprivate enum Limit: Hashable {
       case limited(Int)
       case unlimited
     }
@@ -60,7 +60,7 @@ public struct ConnectionBackoff: Sequence {
 
     /// A limited number of retry attempts. `limit` must be positive. Note that a limit of zero is
     /// identical to `.none`.
-    public static func limited(to limit: Int) -> Retries {
+    public static func upTo(_ limit: Int) -> Retries {
       precondition(limit >= 0)
       return Retries(.limited(limit))
     }

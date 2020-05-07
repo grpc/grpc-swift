@@ -73,14 +73,14 @@ class ConnectionBackoffTests: GRPCTestCase {
 
   func testConnectionBackoffHasLimitedRetries() {
     for limit in [1, 3, 5] {
-      let backoff = ConnectionBackoff(retries: .limited(to: limit))
+      let backoff = ConnectionBackoff(retries: .upTo(limit))
       let values = Array(backoff)
       XCTAssertEqual(values.count, limit)
     }
   }
 
   func testConnectionBackoffWhenLimitedToZeroRetries() {
-    let backoff = ConnectionBackoff(retries: .limited(to: 0))
+    let backoff = ConnectionBackoff(retries: .upTo(0))
     let values = Array(backoff)
     XCTAssertTrue(values.isEmpty)
   }

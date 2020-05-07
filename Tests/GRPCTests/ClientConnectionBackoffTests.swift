@@ -146,7 +146,7 @@ class ClientConnectionBackoffTests: GRPCTestCase {
     self.stateDelegate.expectations[.transientFailure] = failures
 
     self.client = self.connectionBuilder()
-      .withConnectionBackoff(retries: .limited(to: 1))
+      .withConnectionBackoff(retries: .upTo(1))
       .connect(host: "localhost", port: self.port)
 
     self.wait(for: [connectionShutdown, failures], timeout: 1.0)
