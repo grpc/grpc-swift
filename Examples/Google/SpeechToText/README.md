@@ -20,7 +20,7 @@ This project requires a Google Cloud API Key. Please [register](https://cloud.go
 4. run `make generate` to leverage the `protoc` plugin to generate the Swift interfaces
     - Note: Please refer to [Getting the `protoc` Plugins](https://github.com/grpc/grpc-swift#getting-the-protoc-plugins). For this tutorial, the Makefile requires that the `protoc-gen-grpc-swift` and `protoc-gen-swift` are on the users PATH.
 5. Open the `.xcworkspace`
-6. Open the `Constants.swift` file and assign your generated Google Cloud API Key to the `kAPIKey` variable.
+6. Open the `Constants.swift` file and assign your generated Google Cloud API Key to the `apiKey` variable.
     - Note: Once you add the API Key, feel free to remove the forced warning/reminder on line 23.
 7. Run the application!
 

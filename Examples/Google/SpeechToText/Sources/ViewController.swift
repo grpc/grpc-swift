@@ -20,7 +20,6 @@ import SnapKit
 import AVFoundation
 
 final class ViewController: UIViewController {
-  
   private lazy var recordButton: UIButton = {
     var button = UIButton()
     button.setTitle("Record", for: .normal)
@@ -42,7 +41,15 @@ final class ViewController: UIViewController {
     return textView
   }()
   
-  private var isRecording: Bool = false
+  private var isRecording: Bool = false {
+    didSet {
+      if isRecording {
+        startRecording()
+      } else {
+        stopRecording()
+      }
+    }
+  }
   private var audioData: Data = Data()
   
   private let speechService: SpeechService
@@ -122,11 +129,6 @@ final class ViewController: UIViewController {
   
   @objc
   func recordTapped() {
-    if isRecording {
-      stopRecording()
-    } else {
-      startRecording()
-    }
     isRecording.toggle()
   }
   
@@ -175,7 +177,7 @@ extension ViewController: StreamDelegate {
               if self.textView.text != text {
                 self.textView.text = text
               }
-          },
+            },
             completion: nil
           )
         }

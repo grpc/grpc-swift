@@ -31,14 +31,13 @@ protocol StreamDelegate: AnyObject {
 }
 
 class AudioStreamManager {
-  
   var microphoneUnit: AudioComponentInstance?
   weak var delegate: StreamDelegate?
 
   static var shared = AudioStreamManager()
 
+  // Type used for audio unit elements. Bus 1 is input scope, element 1.
   private let bus1: AudioUnitElement = 1
-  private var oneFlag: UInt32 = 1
 
   deinit {
     if let microphoneUnit = microphoneUnit {
@@ -47,8 +46,7 @@ class AudioStreamManager {
   }
 
   func configure() throws {
-
-    self.configureAudioSession()
+    try self.configureAudioSession()
     
     var audioComponentDescription = self.describeComponent()
     
@@ -82,10 +80,10 @@ class AudioStreamManager {
     AudioOutputUnitStop(microphoneUnit)
   }
   
-  private func configureAudioSession() {
+  private func configureAudioSession() throws {
     let session = AVAudioSession.sharedInstance()
-    try? session.setCategory(.record)
-    try? session.setPreferredIOBufferDuration(10)
+    try session.setCategory(.record)
+    try session.setPreferredIOBufferDuration(10)
   }
   
   private func describeComponent() -> AudioComponentDescription {
@@ -102,13 +100,15 @@ class AudioStreamManager {
     guard let microphoneUnit = self.microphoneUnit else {
       throw AudioStreamError.failedToFindMicrophoneUnit
     }
+
+    var oneFlag: UInt32 = 1
     
     let status = AudioUnitSetProperty(microphoneUnit,
-                         kAudioOutputUnitProperty_EnableIO,
-                         kAudioUnitScope_Input,
-                         self.bus1,
-                         &self.oneFlag,
-                         UInt32(MemoryLayout<UInt32>.size))
+                                      kAudioOutputUnitProperty_EnableIO,
+                                      kAudioUnitScope_Input,
+                                      self.bus1,
+                                      &oneFlag,
+                                      UInt32(MemoryLayout<UInt32>.size))
     if status != noErr {
       throw AudioStreamError.failedToConfigure
     }

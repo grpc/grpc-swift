@@ -15,19 +15,11 @@
  */
 
 import UIKit
-import GRPC
-import Logging
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
   
   func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-    LoggingSystem.bootstrap {
-      var handler = StreamLogHandler.standardOutput(label: $0)
-      handler.logLevel = .critical
-      return handler
-    }
-    
     return true
   }
   

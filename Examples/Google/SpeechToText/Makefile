@@ -1,6 +1,6 @@
-.PHONY : log protos generate clean help
+.PHONY: log protos generate clean help
 
-log:help
+log: help
 
 ## protos              : Pull protos from Google Repository
 protos:
