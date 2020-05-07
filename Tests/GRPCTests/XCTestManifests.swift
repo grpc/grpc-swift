@@ -46,6 +46,7 @@ extension ClientConnectionBackoffTests {
     // to regenerate.
     static let __allTests__ClientConnectionBackoffTests = [
         ("testClientConnectionFailsWithNoBackoff", testClientConnectionFailsWithNoBackoff),
+        ("testClientConnectionFailureIsLimited", testClientConnectionFailureIsLimited),
         ("testClientEventuallyConnects", testClientEventuallyConnects),
         ("testClientReconnectsAutomatically", testClientReconnectsAutomatically),
     ]
@@ -105,7 +106,10 @@ extension ConnectionBackoffTests {
         ("testBackoffDoesNotExceedMaximum", testBackoffDoesNotExceedMaximum),
         ("testBackoffWithJitter", testBackoffWithJitter),
         ("testBackoffWithNoJitter", testBackoffWithNoJitter),
-        ("testConnectionTimeoutAlwaysGreatherThanOrEqualToMinimum", testConnectionTimeoutAlwaysGreatherThanOrEqualToMinimum),
+        ("testConnectionBackoffHasLimitedRetries", testConnectionBackoffHasLimitedRetries),
+        ("testConnectionBackoffWhenLimitedToZeroRetries", testConnectionBackoffWhenLimitedToZeroRetries),
+        ("testConnectionBackoffWithNoRetries", testConnectionBackoffWithNoRetries),
+        ("testConnectionTimeoutAlwaysGreaterThanOrEqualToMinimum", testConnectionTimeoutAlwaysGreaterThanOrEqualToMinimum),
         ("testExpectedValuesWithNoJitter", testExpectedValuesWithNoJitter),
     ]
 }
