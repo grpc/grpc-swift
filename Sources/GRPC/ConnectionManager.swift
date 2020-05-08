@@ -555,6 +555,7 @@ extension ConnectionManager {
       .channelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
       .channelInitializer { channel in
         channel.configureGRPCClient(
+          httpTargetWindowSize: configuration.httpTargetWindowSize,
           tlsConfiguration: configuration.tls?.configuration,
           tlsServerHostname: serverHostname,
           connectionManager: self,
