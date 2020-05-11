@@ -15,6 +15,7 @@
  */
 @testable import GRPC
 import GRPCSampleData
+import EchoModel
 import EchoImplementation
 import Logging
 import NIO
@@ -103,7 +104,12 @@ class ServerTLSErrorTests: GRPCTestCase {
     let stateChangeDelegate = ConnectivityStateCollectionDelegate(shutdown: clientShutdownExpectation)
     configuration.connectivityStateDelegate = stateChangeDelegate
 
-    _ = ClientConnection(configuration: configuration)
+    // Start an RPC to trigger creating a channel.
+    let echo = Echo_EchoClient(channel: ClientConnection(configuration: configuration))
+    defer {
+      XCTAssertNoThrow(try echo.channel.close().wait())
+    }
+    _ = echo.get(.with { $0.text = "foo" })
 
     self.wait(for: [clientShutdownExpectation, errorExpectation], timeout: self.defaultTestTimeout)
 

@@ -15,6 +15,7 @@
  */
 @testable import GRPC
 import GRPCSampleData
+import EchoModel
 import EchoImplementation
 import Logging
 import NIO
@@ -101,6 +102,9 @@ class ClientTLSFailureTests: GRPCTestCase {
   func testClientConnectionFailsWhenServerIsUnknown() throws {
     let shutdownExpectation = self.expectation(description: "client shutdown")
     let errorExpectation = self.expectation(description: "error")
+    // 2 errors: one for the failed handshake, and another for failing the ready-channel promise
+    // (because the handshake failed).
+    errorExpectation.expectedFulfillmentCount = 2
 
     var tls = self.defaultClientTLSConfiguration
     tls.trustRoots = .certificates([])
@@ -112,7 +116,9 @@ class ClientTLSFailureTests: GRPCTestCase {
     let stateChangeDelegate = ConnectivityStateCollectionDelegate(shutdown: shutdownExpectation)
     configuration.connectivityStateDelegate = stateChangeDelegate
 
-    _ = ClientConnection(configuration: configuration)
+    // Start an RPC to trigger creating a channel.
+    let echo = Echo_EchoClient(channel: ClientConnection(configuration: configuration))
+    _ = echo.get(.with { $0.text = "foo" })
 
     self.wait(for: [shutdownExpectation, errorExpectation], timeout: self.defaultTestTimeout)
 
@@ -127,6 +133,9 @@ class ClientTLSFailureTests: GRPCTestCase {
   func testClientConnectionFailsWhenHostnameIsNotValid() throws {
     let shutdownExpectation = self.expectation(description: "client shutdown")
     let errorExpectation = self.expectation(description: "error")
+    // 2 errors: one for the failed handshake, and another for failing the ready-channel promise
+    // (because the handshake failed).
+    errorExpectation.expectedFulfillmentCount = 2
 
     var tls = self.defaultClientTLSConfiguration
     tls.hostnameOverride = "not-the-server-hostname"
@@ -138,7 +147,9 @@ class ClientTLSFailureTests: GRPCTestCase {
     let stateChangeDelegate = ConnectivityStateCollectionDelegate(shutdown: shutdownExpectation)
     configuration.connectivityStateDelegate = stateChangeDelegate
 
-    let _ = ClientConnection(configuration: configuration)
+    // Start an RPC to trigger creating a channel.
+    let echo = Echo_EchoClient(channel: ClientConnection(configuration: configuration))
+    _ = echo.get(.with { $0.text = "foo" })
 
     self.wait(for: [shutdownExpectation, errorExpectation], timeout: self.defaultTestTimeout)
 

@@ -27,70 +27,26 @@ internal enum GRPCApplicationProtocolIdentifier: String, CaseIterable {
   case h2 = "h2"
 }
 
-/// A helper `ChannelInboundHandler` to verify that a TLS handshake was completed successfully
-/// and that the negotiated application protocol is valid.
-///
-/// The handler holds a promise which is succeeded on successful verification of the negotiated
-/// application protocol and failed if any error is received by this handler.
-///
-/// Users of this handler should rely on the `verification` future held by this instance.
-///
-/// On fulfillment of the promise this handler is removed from the channel pipeline.
 internal class TLSVerificationHandler: ChannelInboundHandler, RemovableChannelHandler {
   typealias InboundIn = Any
-
   private let logger: Logger
-  private var verificationPromise: EventLoopPromise<Void>!
-
-  /// A future which is fulfilled when the state of the TLS handshake is known. If the handshake
-  /// was successful then the future is succeeded.
-  /// If an error occurred the future will have been failed.
-  ///
-  /// - Important: The promise associated with this future is created in `handlerAdded(context:)`,
-  ///   and as such must _not_ be accessed before the handler has be added to a pipeline.
-  var verification: EventLoopFuture<Void>! {
-    return verificationPromise.futureResult
-  }
 
   init(logger: Logger) {
     self.logger = logger
   }
 
-  func handlerAdded(context: ChannelHandlerContext) {
-    self.verificationPromise = context.eventLoop.makePromise()
-    // Remove ourselves from the pipeline when the promise gets fulfilled.
-    self.verificationPromise.futureResult.recover { error in
-      // If we have an error we should let the rest of the pipeline know.
-      context.fireErrorCaught(error)
-    }.whenComplete { _ in
-      context.pipeline.removeHandler(self, promise: nil)
-    }
-  }
-
-  func errorCaught(context: ChannelHandlerContext, error: Error) {
-    precondition(self.verificationPromise != nil, "handler has not been added to the pipeline")
-    self.logger.error(
-      "error caught before TLS was verified",
-      metadata: [MetadataKey.error: "\(error)"]
-    )
-    verificationPromise.fail(error)
-  }
-
   func userInboundEventTriggered(context: ChannelHandlerContext, event: Any) {
-    precondition(self.verificationPromise != nil, "handler has not been added to the pipeline")
-
-    guard let tlsEvent = event as? TLSUserEvent,
-      case .handshakeCompleted(negotiatedProtocol: let negotiatedProtocol) = tlsEvent else {
-        context.fireUserInboundEventTriggered(event)
-        return
+    if let tlsEvent = event as? TLSUserEvent {
+      switch tlsEvent {
+      case .handshakeCompleted(negotiatedProtocol: .some(let `protocol`)):
+        self.logger.debug("TLS handshake completed, negotiated protocol: \(`protocol`)")
+      case .handshakeCompleted(negotiatedProtocol: nil):
+        self.logger.debug("TLS handshake completed, no protocol negotiated")
+      case .shutdownCompleted:
+        ()
+      }
     }
 
-    if let proto = negotiatedProtocol {
-      self.logger.debug("TLS handshake completed, negotiated protocol: \(proto)")
-    } else {
-      self.logger.debug("TLS handshake completed, no protocol negotiated")
-    }
-
-    self.verificationPromise.succeed(())
+    context.fireUserInboundEventTriggered(event)
   }
 }

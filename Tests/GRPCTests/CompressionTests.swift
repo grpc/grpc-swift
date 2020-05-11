@@ -24,7 +24,7 @@ class MessageCompressionTests: GRPCTestCase {
   var group: EventLoopGroup!
   var server: Server!
   var client: ClientConnection!
-  var defaultTimeout: TimeInterval = 0.1
+  var defaultTimeout: TimeInterval = 1.0
 
   var echo: Echo_EchoClient!
 
@@ -54,11 +54,6 @@ class MessageCompressionTests: GRPCTestCase {
       channel: self.client,
       defaultCallOptions: CallOptions(messageEncoding: encoding)
     )
-  }
-
-  func doUnaryRPC() -> UnaryCall<Echo_EchoRequest, Echo_EchoResponse> {
-    let get = self.echo.get(.with { $0.text = "foo" })
-    return get
   }
 
   func testCompressedRequestsUncompressedResponses() throws {

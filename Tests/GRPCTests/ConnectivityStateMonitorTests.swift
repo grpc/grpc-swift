@@ -18,25 +18,24 @@ import XCTest
 import Logging
 
 class ConnectivityStateMonitorTests: GRPCTestCase {
-  var monitor: ConnectivityStateMonitor!
-
   // Ensure `.idle` isn't first since it is the initial state and we only trigger callbacks
   // when the state changes, not when the state is set.
   let states: [ConnectivityState] = [.connecting, .ready, .transientFailure, .shutdown, .idle]
 
-  override func setUp() {
-    self.monitor = ConnectivityStateMonitor(delegate: nil, logger: self.logger)
-  }
-
   func testDelegateOnlyCalledForChanges() {
     let recorder = ConnectivityStateCollectionDelegate()
-    self.monitor.delegate = recorder
+    let shutdown = self.expectation(description: "shutdown")
+    recorder.expectations[.shutdown] = shutdown
 
-    self.monitor.state = .connecting
-    self.monitor.state = .ready
-    self.monitor.state = .ready
-    self.monitor.state = .shutdown
+    let monitor = ConnectivityStateMonitor(delegate: recorder)
+    monitor.delegate = recorder
 
+    monitor.updateState(to: .connecting, logger: self.logger)
+    monitor.updateState(to: .ready, logger: self.logger)
+    monitor.updateState(to: .ready, logger: self.logger)
+    monitor.updateState(to: .shutdown, logger: self.logger)
+
+    self.wait(for: [shutdown], timeout: 1.0)
     XCTAssertEqual(recorder.states, [.connecting, .ready, .shutdown])
   }
 }

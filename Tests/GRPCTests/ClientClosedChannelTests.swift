@@ -150,16 +150,14 @@ class ClientClosedChannelTests: EchoTestCaseBase {
   func testBidirectionalStreamingWithNoPromiseWhenConnectionIsClosedBetweenMessages() throws {
     let statusExpectation = self.makeStatusExpectation()
 
-    let update = self.client.update() { response in
+    let update = self.client.update { response in
       XCTFail("No response expected but got: \(response)")
     }
 
-    update.newMessageQueue().flatMap {
+    update.sendMessage(.with { $0.text = "0"}).flatMap {
       self.client.channel.close()
-    }.peekError { error in
-      XCTFail("Encountered error before or during closing the connection: \(error)")
     }.whenSuccess {
-      update.sendMessage(Echo_EchoRequest(text: "foo"), promise: nil)
+      update.sendMessage(.with { $0.text = "1" }, promise: nil)
     }
 
     update.status.map { $0.code }.assertEqual(.unavailable, fulfill: statusExpectation)

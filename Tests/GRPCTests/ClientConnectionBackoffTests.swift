@@ -135,6 +135,10 @@ class ClientConnectionBackoffTests: GRPCTestCase {
       .withConnectionReestablishment(enabled: false)
       .connect(host: "localhost", port: self.port)
 
+    // Start an RPC to trigger creating a channel.
+    let echo = Echo_EchoClient(channel: self.client)
+    _ = echo.get(.with { $0.text = "foo" })
+
     self.wait(for: [connectionShutdown], timeout: 1.0)
     XCTAssertEqual(self.stateDelegate.states, [.connecting, .shutdown])
   }
@@ -149,6 +153,10 @@ class ClientConnectionBackoffTests: GRPCTestCase {
       .withConnectionBackoff(retries: .upTo(1))
       .connect(host: "localhost", port: self.port)
 
+    // Start an RPC to trigger creating a channel.
+    let echo = Echo_EchoClient(channel: self.client)
+    _ = echo.get(.with { $0.text = "foo" })
+
     self.wait(for: [connectionShutdown, failures], timeout: 1.0)
     XCTAssertEqual(self.stateDelegate.states, [.connecting, .transientFailure, .connecting, .shutdown])
   }
@@ -162,6 +170,10 @@ class ClientConnectionBackoffTests: GRPCTestCase {
     // Start the client first.
     self.client = self.connectionBuilder()
       .connect(host: "localhost", port: self.port)
+
+    // Start an RPC to trigger creating a channel.
+    let echo = Echo_EchoClient(channel: self.client)
+    _ = echo.get(.with { $0.text = "foo" })
 
     self.wait(for: [transientFailure], timeout: 1.0)
     self.stateDelegate.expectations[.transientFailure] = nil
@@ -191,11 +203,15 @@ class ClientConnectionBackoffTests: GRPCTestCase {
       .withConnectionBackoff(maximum: .seconds(2))
       .connect(host: "localhost", port: self.port)
 
+    // Start an RPC to trigger creating a channel.
+    let echo = Echo_EchoClient(channel: self.client)
+    _ = echo.get(.with { $0.text = "foo" })
+
     // Wait for the connection to be ready.
     self.wait(for: [connectionReady], timeout: 1.0)
     XCTAssertEqual(self.stateDelegate.clearStates(), [.connecting, .ready])
 
-    // Now that we have a healthy connectiony, prepare for two transient failures:
+    // Now that we have a healthy connection, prepare for two transient failures:
     // 1. when the server has been killed, and
     // 2. when the client attempts to reconnect.
     let transientFailure = self.expectation(description: "connection transientFailure")
@@ -218,7 +234,6 @@ class ClientConnectionBackoffTests: GRPCTestCase {
     let reconnectionReady = self.expectation(description: "(re)connection ready")
     self.stateDelegate.expectations[.ready] = reconnectionReady
 
-    let echo = Echo_EchoClient(channel: self.client)
     // This should succeed once we get a connection again.
     let get = echo.get(.with { $0.text = "hello" })
 
