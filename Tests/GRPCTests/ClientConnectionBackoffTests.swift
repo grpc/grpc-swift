@@ -139,6 +139,20 @@ class ClientConnectionBackoffTests: GRPCTestCase {
     XCTAssertEqual(self.stateDelegate.states, [.connecting, .shutdown])
   }
 
+  func testClientConnectionFailureIsLimited() throws {
+    let connectionShutdown = self.expectation(description: "client shutdown")
+    let failures = self.expectation(description: "connection failed")
+    self.stateDelegate.expectations[.shutdown] = connectionShutdown
+    self.stateDelegate.expectations[.transientFailure] = failures
+
+    self.client = self.connectionBuilder()
+      .withConnectionBackoff(retries: .upTo(1))
+      .connect(host: "localhost", port: self.port)
+
+    self.wait(for: [connectionShutdown, failures], timeout: 1.0)
+    XCTAssertEqual(self.stateDelegate.states, [.connecting, .transientFailure, .connecting, .shutdown])
+  }
+
   func testClientEventuallyConnects() throws {
     let transientFailure = self.expectation(description: "connection transientFailure")
     let connectionReady = self.expectation(description: "connection ready")

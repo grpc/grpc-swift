@@ -65,9 +65,29 @@ class ConnectionBackoffTests: GRPCTestCase {
     }
   }
 
-  func testConnectionTimeoutAlwaysGreatherThanOrEqualToMinimum() {
+  func testConnectionTimeoutAlwaysGreaterThanOrEqualToMinimum() {
     for connectionTimeout in self.backoff.prefix(100).map({ $0.timeout }) {
       XCTAssertGreaterThanOrEqual(connectionTimeout, self.backoff.minimumConnectionTimeout)
     }
+  }
+
+  func testConnectionBackoffHasLimitedRetries() {
+    for limit in [1, 3, 5] {
+      let backoff = ConnectionBackoff(retries: .upTo(limit))
+      let values = Array(backoff)
+      XCTAssertEqual(values.count, limit)
+    }
+  }
+
+  func testConnectionBackoffWhenLimitedToZeroRetries() {
+    let backoff = ConnectionBackoff(retries: .upTo(0))
+    let values = Array(backoff)
+    XCTAssertTrue(values.isEmpty)
+  }
+
+  func testConnectionBackoffWithNoRetries() {
+    let backoff = ConnectionBackoff(retries: .none)
+    let values = Array(backoff)
+    XCTAssertTrue(values.isEmpty)
   }
 }

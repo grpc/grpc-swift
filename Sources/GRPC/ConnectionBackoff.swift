@@ -38,6 +38,34 @@ public struct ConnectionBackoff: Sequence {
   /// The minimum amount of time in seconds to try connecting.
   public var minimumConnectionTimeout: TimeInterval
 
+  /// A limit on the number of times to attempt reconnection.
+  public var retries: Retries
+
+  public struct Retries: Hashable {
+    fileprivate enum Limit: Hashable {
+      case limited(Int)
+      case unlimited
+    }
+
+    fileprivate var limit: Limit
+    private init(_ limit: Limit) {
+      self.limit = limit
+    }
+
+    /// An unlimited number of retry attempts.
+    public static let unlimited = Retries(.unlimited)
+
+    /// No retry attempts will be made.
+    public static let none = Retries(.limited(0))
+
+    /// A limited number of retry attempts. `limit` must be positive. Note that a limit of zero is
+    /// identical to `.none`.
+    public static func upTo(_ limit: Int) -> Retries {
+      precondition(limit >= 0)
+      return Retries(.limited(limit))
+    }
+  }
+
   /// Creates a `ConnectionBackoff`.
   ///
   /// - Parameters:
@@ -46,18 +74,22 @@ public struct ConnectionBackoff: Sequence {
   ///   - multiplier: Backoff multiplier, defaults to 1.6.
   ///   - jitter: Backoff jitter, defaults to 0.2.
   ///   - minimumConnectionTimeout: Minimum connection timeout in seconds, defaults to 20.0.
+  ///   - retries: A limit on the number of times to retry establishing a connection.
+  ///       Defaults to `.unlimited`.
   public init(
     initialBackoff: TimeInterval = 1.0,
     maximumBackoff: TimeInterval = 120.0,
     multiplier: Double = 1.6,
     jitter: Double = 0.2,
-    minimumConnectionTimeout: TimeInterval = 20.0
+    minimumConnectionTimeout: TimeInterval = 20.0,
+    retries: Retries = .unlimited
   ) {
     self.initialBackoff = initialBackoff
     self.maximumBackoff = maximumBackoff
     self.multiplier = multiplier
     self.jitter = jitter
     self.minimumConnectionTimeout = minimumConnectionTimeout
+    self.retries = retries
   }
 
   public func makeIterator() -> ConnectionBackoff.Iterator {
@@ -81,7 +113,7 @@ public class ConnectionBackoffIterator: IteratorProtocol {
   }
 
   /// The configuration being used.
-  private let connectionBackoff: ConnectionBackoff
+  private var connectionBackoff: ConnectionBackoff
 
   /// The backoff in seconds, without jitter.
   private var unjitteredBackoff: TimeInterval
@@ -93,6 +125,21 @@ public class ConnectionBackoffIterator: IteratorProtocol {
   /// Returns the next pair of connection timeout and backoff (in that order) to use should the
   /// connection attempt fail.
   public func next() -> Element? {
+    // Should we make another element?
+    switch self.connectionBackoff.retries.limit {
+    // Always make a new element.
+    case .unlimited:
+      ()
+
+    // Use up one from our remaining limit.
+    case .limited(let limit) where limit > 0:
+      self.connectionBackoff.retries.limit = .limited(limit - 1)
+
+    // limit must be <= 0, no new element.
+    case .limited:
+      return nil
+    }
+
     if let initial = self.initialElement {
       self.initialElement = nil
       return initial

@@ -123,6 +123,14 @@ extension ClientConnection.Builder {
     return self
   }
 
+  /// Sets the limit on the number of times to attempt to re-establish a connection. Defaults
+  /// to `.unlimited` if not set.
+  @discardableResult
+  public func withConnectionBackoff(retries: ConnectionBackoff.Retries) -> Self {
+    self.connectionBackoff.retries = retries
+    return self
+  }
+
   /// Sets whether the connection should be re-established automatically if it is dropped. Defaults
   /// to `true` if not set.
   @discardableResult
