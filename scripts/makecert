@@ -31,3 +31,7 @@ openssl x509 -req -days 365 -in client.csr -CA ca.crt -CAkey ca.key -set_serial 
 # http://netty.io/wiki/sslcontextbuilder-and-private-key.html
 openssl pkcs8 -topk8 -nocrypt -in client.key -out client.pem
 openssl pkcs8 -topk8 -nocrypt -in server.key -out server.pem
+
+# Server cert with explicit EC parameters (not supported)
+openssl ecparam -name prime256v1 -genkey -param_enc explicit -out server-explicit.key
+openssl req -new -x509 -days 365 -key server-explicit.key -out server-explicit.crt -subj "/CN=${CN_SERVER}"
