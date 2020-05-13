@@ -89,7 +89,7 @@ class Pod:
         podspec += "    s.swift_version = '5.0'\n"
 
         podspec += "    s.ios.deployment_target = '10.0'\n"
-        podspec += "    s.osx.deployment_target = '10.10'\n"
+        podspec += "    s.osx.deployment_target = '10.12'\n"
         podspec += "    s.tvos.deployment_target = '10.0'\n"
 
         podspec += "    s.source_files = 'Sources/%s/**/*.{swift,c,h}'\n" % (self.module_name)
@@ -122,16 +122,16 @@ class PodManager:
 
     def build_pods(self):
         cgrpczlib_pod = Pod(
-            'CGRPCZlib', 
-            'CGRPCZlib', 
+            'CGRPCZlib',
+            'CGRPCZlib',
             self.version,
             'Compression library that provides in-memory compression and decompression functions'
         )
 
         grpc_pod = Pod(
-            'gRPC-Swift', 
-            'GRPC', 
-            self.version, 
+            'gRPC-Swift',
+            'GRPC',
+            self.version,
             'Swift gRPC code generator plugin and runtime library',
             get_grpc_deps()
         )
