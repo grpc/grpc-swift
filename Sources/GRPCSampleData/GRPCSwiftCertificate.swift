@@ -46,6 +46,12 @@ public struct SampleCertificate {
     commonName: "localhost",
     // 22/07/2024 16:32:23
     notAfter: Date(timeIntervalSince1970: 1721662343.0))
+
+  public static let exampleServerWithExplicitCurve = SampleCertificate(
+    certificate: try! NIOSSLCertificate(bytes: .init(serverExplicitCurveCert.utf8), format :.pem),
+    commonName: "localhost",
+    // 13/05/2021 12:32:03
+    notAfter: Date(timeIntervalSince1970: 1620909123.0))
 }
 
 extension SampleCertificate {
@@ -62,6 +68,7 @@ public struct SamplePrivateKey {
   public static let server = try! NIOSSLPrivateKey(bytes: .init(serverKey.utf8), format: .pem)
   public static let exampleServer = try! NIOSSLPrivateKey(bytes: .init(exampleServerKey.utf8), format: .pem)
   public static let client = try! NIOSSLPrivateKey(bytes: .init(clientKey.utf8), format: .pem)
+  public static let exampleServerWithExplicitCurve = try! NIOSSLPrivateKey(bytes: .init(serverExplicitCurveKey.utf8), format: .pem)
 }
 
 // MARK: - Certificates and private keys
@@ -233,4 +240,34 @@ private let clientKey = """
     8xVRJeuUgN4pK9Qdh261IKWhHTQo1Fe1cAVxuHJEMLNlMraJoLK1RUiDvDV4pUzt
     eEv8+Pr/GzzyAHdlESmPYdKjasD734+DL+c0imj7lmlt4d8kQs/oaQ==
     -----END RSA PRIVATE KEY-----
+    """
+
+private let serverExplicitCurveCert = """
+    -----BEGIN CERTIFICATE-----
+    MIICEDCCAbYCCQDOr0V8CUAs8TAKBggqhkjOPQQDAjAWMRQwEgYDVQQDDAtleGFt
+    cGxlLmNvbTAeFw0yMDA1MTMxMjMyMDNaFw0yMTA1MTMxMjMyMDNaMBYxFDASBgNV
+    BAMMC2V4YW1wbGUuY29tMIIBSzCCAQMGByqGSM49AgEwgfcCAQEwLAYHKoZIzj0B
+    AQIhAP////8AAAABAAAAAAAAAAAAAAAA////////////////MFsEIP////8AAAAB
+    AAAAAAAAAAAAAAAA///////////////8BCBaxjXYqjqT57PrvVV2mIa8ZR0GsMxT
+    sPY7zjw+J9JgSwMVAMSdNgiG5wSTamZ44ROdJreBn36QBEEEaxfR8uEsQkf4vObl
+    Y6RA8ncDfYEt6zOg9KE5RdiYwpZP40Li/hp/m47n60p8D54WK84zV2sxXs7LtkBo
+    N79R9QIhAP////8AAAAA//////////+85vqtpxeehPO5ysL8YyVRAgEBA0IABChr
+    XwTLM3T1C0aA+8pJMVJOyVDP0Scd38OdqBISYvHLaNPRuIaMFA2KTE25pMqsqNe9
+    YNfgimABp6HUG7xKTMwwCgYIKoZIzj0EAwIDSAAwRQIhAM6ihMqgQ3Rr/w7oBhG6
+    uuA2+wn2KhZgSqgqTTtyo/ImAiBLrG/b76/7eaZ4t6xWHtKWH4y2e1zrxLDDpcjD
+    0zglag==
+    -----END CERTIFICATE-----
+    """
+
+private let serverExplicitCurveKey = """
+    -----BEGIN EC PRIVATE KEY-----
+    MIIBaAIBAQQgZeJYnJVaOdltFsUs6KatYy9XFmX6ujfUSkOR69RoyRWggfowgfcC
+    AQEwLAYHKoZIzj0BAQIhAP////8AAAABAAAAAAAAAAAAAAAA////////////////
+    MFsEIP////8AAAABAAAAAAAAAAAAAAAA///////////////8BCBaxjXYqjqT57Pr
+    vVV2mIa8ZR0GsMxTsPY7zjw+J9JgSwMVAMSdNgiG5wSTamZ44ROdJreBn36QBEEE
+    axfR8uEsQkf4vOblY6RA8ncDfYEt6zOg9KE5RdiYwpZP40Li/hp/m47n60p8D54W
+    K84zV2sxXs7LtkBoN79R9QIhAP////8AAAAA//////////+85vqtpxeehPO5ysL8
+    YyVRAgEBoUQDQgAEKGtfBMszdPULRoD7ykkxUk7JUM/RJx3fw52oEhJi8cto09G4
+    howUDYpMTbmkyqyo171g1+CKYAGnodQbvEpMzA==
+    -----END EC PRIVATE KEY-----
     """

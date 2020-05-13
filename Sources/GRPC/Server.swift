@@ -143,6 +143,12 @@ public final class Server {
     // Maintain a strong reference to ensure it lives as long as the server.
     self.errorDelegate = errorDelegate
 
+    // If we have an error delegate, add a server channel error handler as well. We don't need to wait for the handler to
+    // be added.
+    if let errorDelegate = errorDelegate {
+      _ = channel.pipeline.addHandler(ServerChannelErrorHandler(errorDelegate: errorDelegate))
+    }
+
     // nil out errorDelegate to avoid retain cycles.
     onClose.whenComplete { _ in
       self.errorDelegate = nil
