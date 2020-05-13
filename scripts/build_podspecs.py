@@ -118,7 +118,7 @@ class PodManager:
     def publish(self, pod_name):
         os.system('pod repo update')
         print('    Publishing %s.podspec' % (pod_name))
-        os.system('pod repo push %s/%s.podspec' % (self.directory, pod_name))
+        os.system('pod trunk push %s/%s.podspec' % (self.directory, pod_name))
 
     def build_pods(self):
         cgrpczlib_pod = Pod(
