@@ -26,13 +26,14 @@ when invoking `protoc`.
 The table below lists the options available to the `protoc-gen-grpc-swift`
 plugin:
 
-| Flag                 | Values                                    | Default    | Description
-|:---------------------|:------------------------------------------|:-----------|:----------------------------------------------------------------------------------------------------------------------
-| `Visibility`         | `Internal`/`Public`                       | `Internal` | ACL of generated code
-| `Server`             | `true`/`false`                            | `true`     | Whether to generate server code
-| `Client`             | `true`/`false`                            | `true`     | Whether to generate client code
-| `FileNaming`         | `FullPath`/`PathToUnderscores`/`DropPath` | `FullPath` | How to handle the naming of generated sources, see [documentation][swift-protobuf-filenaming]
-| `ExtraModuleImports` | `String`                                  |            | Extra module to import in generated code. This parameter may be included multiple times to import more than one module
+| Flag                      | Values                                    | Default    | Description
+|:--------------------------|:------------------------------------------|:-----------|:----------------------------------------------------------------------------------------------------------------------
+| `Visibility`              | `Internal`/`Public`                       | `Internal` | ACL of generated code
+| `Server`                  | `true`/`false`                            | `true`     | Whether to generate server code
+| `Client`                  | `true`/`false`                            | `true`     | Whether to generate client code
+| `FileNaming`              | `FullPath`/`PathToUnderscores`/`DropPath` | `FullPath` | How to handle the naming of generated sources, see [documentation][swift-protobuf-filenaming]
+| `ExtraModuleImports`      | `String`                                  |            | Extra module to import in generated code. This parameter may be included multiple times to import more than one module
+| `ProtoPathModuleMappings` | `String`                                  |            | The path of the file that contains the module mappings for the generated code, see [swift-protobuf documentation](https://github.com/apple/swift-protobuf/blob/master/Documentation/PLUGIN.md#generation-option-protopathmodulemappings---swift-module-names-for-proto-paths)
 
 To pass extra parameters to the plugin, use a comma-separated parameter list
 separated from the output directory by a colon. Alternatively use the
