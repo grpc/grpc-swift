@@ -2,7 +2,7 @@
 
 ## Description
 
-This application demonstrates Bidirectional Streaming to convert streamed audio data into text and display the Server processing live using gRPC Swift, built on top of SwiftNIO.
+This application demonstrates Bidirectional Streaming to convert streamed audio data into text and display the Server processing live using gRPC Swift, built on top of SwiftNIO. Much of the gRPC specific logic can be found in `Sources/SpeechService.swift`.
 
 ## Technologies
 
