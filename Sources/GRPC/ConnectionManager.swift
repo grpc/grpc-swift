@@ -302,7 +302,8 @@ internal class ConnectionManager {
       // do the same but also cancel any scheduled connection attempts and deal with any fallout
       // if we cancelled too late.
       case .transientFailure(let state):
-        // Stop the creation of a new channel, if we can.
+        // Stop the creation of a new channel, if we can. If we can't then the task to
+        // `startConnecting()` will see our new `shutdown` state and ignore the request to connect.
         state.scheduled.cancel()
         shutdown = ShutdownState(closeFuture: self.eventLoop.makeSucceededFuture(()))
         self.state = .shutdown(shutdown)
@@ -330,9 +331,9 @@ internal class ConnectionManager {
     case .connecting(let connecting):
       self.state = .active(ConnectedState(from: connecting, candidate: channel))
 
-    // Application called shutdown before the channel become active.
+    // Application called shutdown before the channel become active; we should close it.
     case .shutdown:
-      ()
+      channel.close(mode: .all, promise: nil)
 
     case .idle, .active, .ready, .transientFailure:
       self.invalidState()
