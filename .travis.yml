@@ -31,7 +31,11 @@ jobs:
       env: RUN_INTEROP_TESTS=false SWIFT_VERSION=5.1.5
     - <<: *tests
       name: "Unit Tests: Ubuntu 18.04 (Swift 5.0)"
-      env: RUN_INTEROP_TESTS=false SWIFT_VERSION=5.0.3
+      env: RUN_INTEROP_TESTS=false SWIFT_VERSION=5.0.3 NO_TSAN=true
+    - <<: *tests
+      name: "Unit Tests: Xcode 11.4 (Swift 5.2)"
+      os: osx
+      osx_image: xcode11.4
     - <<: *tests
       name: "Unit Tests: Xcode 11.3 (Swift 5.1)"
       os: osx
@@ -55,6 +59,10 @@ jobs:
     - <<: *interop_tests
       name: "Interoperability Tests: Ubuntu 18.04 (Swift 5.0)"
       env: RUN_INTEROP_TESTS=true SWIFT_VERSION=5.0.3
+    - <<: *interop_tests
+      name: "Interoperability Tests: Xcode 11.4 (Swift 5.2)"
+      os: osx
+      osx_image: xcode11.4
     - <<: *interop_tests
       name: "Interoperability Tests: Xcode 11.3 (Swift 5.1)"
       os: osx

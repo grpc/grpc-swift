@@ -101,6 +101,11 @@ generate-route-guide: ${ROUTE_GUIDE_PB} ${ROUTE_GUIDE_GRPC}
 test:
 	${SWIFT_TEST}
 
+# Normal test suite with TSAN enabled.
+.PHONY:
+test-tsan:
+	${SWIFT_TEST} --sanitize=thread
+
 # Checks that linuxmain has been updated: requires macOS.
 .PHONY:
 test-generate-linuxmain: generate-linuxmain
