@@ -1,0 +1,10 @@
+platform :ios, '13.0'
+
+inhibit_all_warnings!
+
+target 'SpeechToText-gRPC-iOS' do
+  use_frameworks!
+
+  pod 'SnapKit'
+  pod 'gRPC-Swift', '1.0.0-alpha.11'
+end
