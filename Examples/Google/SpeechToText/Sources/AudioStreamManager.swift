@@ -174,7 +174,7 @@ func recordingCallback(
   
   var status = noErr
   
-  let channelCount : UInt32 = 1
+  let channelCount: UInt32 = 1
   
   var bufferList = AudioBufferList()
   bufferList.mNumberBuffers = channelCount
