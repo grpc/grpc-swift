@@ -24,7 +24,18 @@ internal class ClientConnectivityHandler: ChannelInboundHandler {
 
   private var activeStreams = 0
   private var scheduledIdle: Scheduled<Void>? = nil
-  private var isReady = false
+  private var state: State = .notReady
+
+  private enum State {
+    // We haven't marked the connection as "ready" yet.
+    case notReady
+
+    // The connection has been marked as "ready".
+    case ready
+
+    // We called close on the channel.
+    case closed
+  }
 
   init(connectionManager: ConnectionManager, idleTimeout: TimeAmount = .minutes(5)) {
     self.connectionManager = connectionManager
@@ -40,9 +51,7 @@ internal class ClientConnectivityHandler: ChannelInboundHandler {
       self.activeStreams -= 1
       // No active streams: go idle soon.
       if self.activeStreams == 0 {
-        self.scheduledIdle = context.eventLoop.scheduleTask(in: self.idleTimeout) {
-          self.idle(context: context)
-        }
+        self.scheduleIdleTimeout(context: context)
       }
     }
 
@@ -50,13 +59,26 @@ internal class ClientConnectivityHandler: ChannelInboundHandler {
   }
 
   func channelActive(context: ChannelHandlerContext) {
-    self.connectionManager.channelActive(channel: context.channel)
+    switch self.state {
+    case .notReady:
+      self.connectionManager.channelActive(channel: context.channel)
+    case .ready, .closed:
+      ()
+    }
+
     context.fireChannelActive()
   }
 
   func channelInactive(context: ChannelHandlerContext) {
     self.scheduledIdle?.cancel()
-    self.connectionManager.channelInactive()
+
+    switch self.state {
+    case .notReady, .ready:
+      self.connectionManager.channelInactive()
+    case .closed:
+      ()
+    }
+
     context.fireChannelInactive()
   }
 
@@ -64,9 +86,10 @@ internal class ClientConnectivityHandler: ChannelInboundHandler {
     let frame = self.unwrapInboundIn(data)
 
     if frame.streamID == .rootStream {
-      switch frame.payload {
-      case .settings where !self.isReady:
-        self.isReady = true
+      switch (self.state, frame.payload) {
+      // We only care about SETTINGS before we're `.ready`
+      case (.notReady, .settings):
+        self.state = .ready
 
         let remoteAddressDescription = context.channel.remoteAddress.map { "\($0)" } ?? "n/a"
         self.connectionManager.logger.info("gRPC connection ready", metadata: [
@@ -75,13 +98,13 @@ internal class ClientConnectivityHandler: ChannelInboundHandler {
         ])
 
         // Start the idle timeout.
-        self.scheduledIdle = context.eventLoop.scheduleTask(in: self.idleTimeout) {
-          self.idle(context: context)
-        }
+        self.scheduleIdleTimeout(context: context)
 
+        // Let the manager know we're ready.
         self.connectionManager.ready()
 
-      case .goAway where self.activeStreams == 0:
+      case (.notReady, .goAway),
+           (.ready, .goAway):
         self.idle(context: context)
 
       default:
@@ -92,8 +115,22 @@ internal class ClientConnectivityHandler: ChannelInboundHandler {
     context.fireChannelRead(data)
   }
 
+  private func scheduleIdleTimeout(context: ChannelHandlerContext) {
+    guard self.activeStreams == 0 else {
+      return
+    }
+
+    self.scheduledIdle = context.eventLoop.scheduleTask(in: self.idleTimeout) {
+      self.idle(context: context)
+    }
+  }
+
   private func idle(context: ChannelHandlerContext) {
-    assert(self.activeStreams == 0)
+    guard self.activeStreams == 0 else {
+      return
+    }
+
+    self.state = .closed
     self.connectionManager.idle()
     context.close(mode: .all, promise: nil)
   }
