@@ -90,7 +90,7 @@ internal class ClientConnectivityHandler: ChannelInboundHandler {
 
     if frame.streamID == .rootStream {
       switch (self.state, frame.payload) {
-      // We only care about SETTINGS if we're `.notReady` yet
+      // We only care about SETTINGS as long as we are in state `.notReady`.
       case (.notReady, .settings):
         self.state = .ready
 
