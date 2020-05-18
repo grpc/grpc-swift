@@ -33,7 +33,7 @@ internal class ClientConnectivityHandler: ChannelInboundHandler {
     // The connection has been marked as "ready".
     case ready
 
-    // We called close on the channel.
+    // We called `close` on the channel.
     case closed
   }
 
@@ -46,6 +46,8 @@ internal class ClientConnectivityHandler: ChannelInboundHandler {
     if event is NIOHTTP2StreamCreatedEvent {
       // We have a stream: don't go idle
       self.scheduledIdle?.cancel()
+      self.scheduledIdle = nil
+
       self.activeStreams += 1
     } else if event is StreamClosedEvent {
       self.activeStreams -= 1
@@ -71,6 +73,7 @@ internal class ClientConnectivityHandler: ChannelInboundHandler {
 
   func channelInactive(context: ChannelHandlerContext) {
     self.scheduledIdle?.cancel()
+    self.scheduledIdle = nil
 
     switch self.state {
     case .notReady, .ready:
@@ -87,7 +90,7 @@ internal class ClientConnectivityHandler: ChannelInboundHandler {
 
     if frame.streamID == .rootStream {
       switch (self.state, frame.payload) {
-      // We only care about SETTINGS before we're `.ready`
+      // We only care about SETTINGS if we're `.notReady` yet
       case (.notReady, .settings):
         self.state = .ready
 
