@@ -43,18 +43,24 @@ internal class ClientConnectivityHandler: ChannelInboundHandler {
   }
 
   func userInboundEventTriggered(context: ChannelHandlerContext, event: Any) {
-    if event is NIOHTTP2StreamCreatedEvent {
-      // We have a stream: don't go idle
-      self.scheduledIdle?.cancel()
-      self.scheduledIdle = nil
+    switch self.state {
+    case .notReady, .ready:
+      if event is NIOHTTP2StreamCreatedEvent {
+        // We have a stream: don't go idle
+        self.scheduledIdle?.cancel()
+        self.scheduledIdle = nil
 
-      self.activeStreams += 1
-    } else if event is StreamClosedEvent {
-      self.activeStreams -= 1
-      // No active streams: go idle soon.
-      if self.activeStreams == 0 {
-        self.scheduleIdleTimeout(context: context)
+        self.activeStreams += 1
+      } else if event is StreamClosedEvent {
+        self.activeStreams -= 1
+        // No active streams: go idle soon.
+        if self.activeStreams == 0 {
+          self.scheduleIdleTimeout(context: context)
+        }
       }
+
+    case .closed:
+      ()
     }
 
     context.fireUserInboundEventTriggered(event)
