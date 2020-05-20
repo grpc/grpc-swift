@@ -107,15 +107,10 @@ test-generate-linuxmain: generate-linuxmain
 	@git diff --exit-code Tests/LinuxMain.swift Tests/*/XCTestManifests.swift > /dev/null || \
 		{ echo "Generated tests are out-of-date; run 'swift test --generate-linuxmain' to update them!"; exit 1; }
 
-# Generates code for the Echo server and client and tests them against 'golden' data.
+# Runs codegen tests.
 .PHONY:
-test-plugin: ${ECHO_PROTO} ${PROTOC_GEN_GRPC_SWIFT} ${ECHO_GRPC}
-	protoc $< \
-		--proto_path=$(dir $<) \
-		--plugin=${PROTOC_GEN_GRPC_SWIFT} \
-		--grpc-swift_opt=Visibility=Public \
-		--grpc-swift_out=/tmp
-	diff -u /tmp/echo.grpc.swift ${ECHO_GRPC}
+test-plugin: ${PROTOC_GEN_GRPC_SWIFT}
+	PROTOC_GEN_GRPC_SWIFT=${PROTOC_GEN_GRPC_SWIFT} ./dev/codegen-tests/run-tests.sh
 
 ### Misc. ######################################################################
 

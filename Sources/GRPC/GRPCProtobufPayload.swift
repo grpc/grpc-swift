@@ -29,3 +29,56 @@ public extension GRPCProtobufPayload {
     buffer.writeBytes(data)
   }
 }
+
+// SwiftProtobuf ships a bunch of different messages. We'll provide conformance to them here to
+// avoid having to generate the conformance.
+//
+// See: https://github.com/grpc/grpc-swift/issues/801
+
+extension Google_Protobuf_Any: GRPCProtobufPayload {}
+extension Google_Protobuf_Api: GRPCProtobufPayload {}
+extension Google_Protobuf_BoolValue: GRPCProtobufPayload {}
+extension Google_Protobuf_BytesValue: GRPCProtobufPayload {}
+extension Google_Protobuf_DescriptorProto: GRPCProtobufPayload {}
+extension Google_Protobuf_DoubleValue: GRPCProtobufPayload {}
+extension Google_Protobuf_Duration: GRPCProtobufPayload {}
+extension Google_Protobuf_Empty: GRPCProtobufPayload {}
+extension Google_Protobuf_Enum: GRPCProtobufPayload {}
+extension Google_Protobuf_EnumDescriptorProto: GRPCProtobufPayload {}
+extension Google_Protobuf_EnumOptions: GRPCProtobufPayload {}
+extension Google_Protobuf_EnumValue: GRPCProtobufPayload {}
+extension Google_Protobuf_EnumValueDescriptorProto: GRPCProtobufPayload {}
+extension Google_Protobuf_EnumValueOptions: GRPCProtobufPayload {}
+extension Google_Protobuf_ExtensionRangeOptions: GRPCProtobufPayload {}
+extension Google_Protobuf_Field: GRPCProtobufPayload {}
+extension Google_Protobuf_FieldDescriptorProto: GRPCProtobufPayload {}
+extension Google_Protobuf_FieldMask: GRPCProtobufPayload {}
+extension Google_Protobuf_FieldOptions: GRPCProtobufPayload {}
+extension Google_Protobuf_FileDescriptorProto: GRPCProtobufPayload {}
+extension Google_Protobuf_FileDescriptorSet: GRPCProtobufPayload {}
+extension Google_Protobuf_FileOptions: GRPCProtobufPayload {}
+extension Google_Protobuf_FloatValue: GRPCProtobufPayload {}
+extension Google_Protobuf_GeneratedCodeInfo: GRPCProtobufPayload {}
+extension Google_Protobuf_Int32Value: GRPCProtobufPayload {}
+extension Google_Protobuf_Int64Value: GRPCProtobufPayload {}
+extension Google_Protobuf_ListValue: GRPCProtobufPayload {}
+extension Google_Protobuf_MessageOptions: GRPCProtobufPayload {}
+extension Google_Protobuf_Method: GRPCProtobufPayload {}
+extension Google_Protobuf_MethodDescriptorProto: GRPCProtobufPayload {}
+extension Google_Protobuf_MethodOptions: GRPCProtobufPayload {}
+extension Google_Protobuf_Mixin: GRPCProtobufPayload {}
+extension Google_Protobuf_OneofDescriptorProto: GRPCProtobufPayload {}
+extension Google_Protobuf_OneofOptions: GRPCProtobufPayload {}
+extension Google_Protobuf_Option: GRPCProtobufPayload {}
+extension Google_Protobuf_ServiceDescriptorProto: GRPCProtobufPayload {}
+extension Google_Protobuf_ServiceOptions: GRPCProtobufPayload {}
+extension Google_Protobuf_SourceCodeInfo: GRPCProtobufPayload {}
+extension Google_Protobuf_SourceContext: GRPCProtobufPayload {}
+extension Google_Protobuf_StringValue: GRPCProtobufPayload {}
+extension Google_Protobuf_Struct: GRPCProtobufPayload {}
+extension Google_Protobuf_Timestamp: GRPCProtobufPayload {}
+extension Google_Protobuf_Type: GRPCProtobufPayload {}
+extension Google_Protobuf_UInt32Value: GRPCProtobufPayload {}
+extension Google_Protobuf_UInt64Value: GRPCProtobufPayload {}
+extension Google_Protobuf_UninterpretedOption: GRPCProtobufPayload {}
+extension Google_Protobuf_Value: GRPCProtobufPayload {}
