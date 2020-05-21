@@ -52,7 +52,8 @@ class GRPCInsecureInteroperabilityTests: GRPCTestCase {
   }
 
   override func tearDown() {
-    XCTAssertNoThrow(try self.clientConnection?.close().wait())
+    // This may throw if we shutdown before the channel was ready.
+    try? self.clientConnection?.close().wait()
     XCTAssertNoThrow(try self.clientEventLoopGroup.syncShutdownGracefully())
     self.clientConnection = nil
     self.clientEventLoopGroup = nil

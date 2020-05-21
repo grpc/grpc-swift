@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import Foundation
+import NIO
 import NIOConcurrencyHelpers
 import Logging
 
@@ -55,30 +56,26 @@ public protocol ConnectivityStateDelegate: class {
 }
 
 public class ConnectivityStateMonitor {
-  private let logger: Logger
-  private let lock = Lock()
+  private let stateLock = Lock()
   private var _state: ConnectivityState = .idle
-  private var _userInitiatedShutdown = false
+
+  private let delegateLock = Lock()
   private var _delegate: ConnectivityStateDelegate?
+  private let delegateCallbackQueue: DispatchQueue
 
   /// Creates a new connectivity state monitor.
   ///
   /// - Parameter delegate: A delegate to call when the connectivity state changes.
-  init(delegate: ConnectivityStateDelegate?, logger: Logger) {
+  init(delegate: ConnectivityStateDelegate?) {
     self._delegate = delegate
-    self.logger = logger
+    self.delegateCallbackQueue = DispatchQueue(label: "io.grpc.connectivity")
   }
 
   /// The current state of connectivity.
-  public internal(set) var state: ConnectivityState {
+  public var state: ConnectivityState {
     get {
-      return self.lock.withLock {
+      return self.stateLock.withLock {
         self._state
-      }
-    }
-    set {
-      self.lock.withLockVoid {
-        self.setNewState(to: newValue)
       }
     }
   }
@@ -86,58 +83,40 @@ public class ConnectivityStateMonitor {
   /// A delegate to call when the connectivity state changes.
   public var delegate: ConnectivityStateDelegate? {
     get {
-      return self.lock.withLock {
+      return self.delegateLock.withLock {
         return self._delegate
       }
     }
     set {
-      self.lock.withLockVoid {
+      self.delegateLock.withLockVoid {
         self._delegate = newValue
       }
     }
   }
 
-  /// Updates `_state` to `newValue`.
-  ///
-  /// If the user has initiated shutdown then state updates are _ignored_. This may happen if the
-  /// connection is being established as the user initiates shutdown.
-  ///
-  /// - Important: This is **not** thread safe.
-  private func setNewState(to newValue: ConnectivityState) {
-    if self._userInitiatedShutdown {
-      self.logger.debug("user has initiated shutdown: ignoring new state", metadata: ["new_state": "\(newValue)"])
-      return
+  internal func updateState(to newValue: ConnectivityState, logger: Logger) {
+    let change: (ConnectivityState, ConnectivityState)? = self.stateLock.withLock {
+      let oldValue = self._state
+
+      if oldValue != newValue {
+        self._state = newValue
+        return (oldValue, newValue)
+      } else {
+        return nil
+      }
     }
 
-    let oldValue = self._state
-    if oldValue != newValue {
-      self.logger.debug("connectivity state change", metadata: ["old_state": "\(oldValue)", "new_state": "\(newValue)"])
-      self._state = newValue
-      self._delegate?.connectivityStateDidChange(from: oldValue, to: newValue)
-    }
-  }
+    if let (oldState, newState) = change {
+      logger.info("connectivity state change", metadata: [
+        "old_state": "\(oldState)",
+        "new_state": "\(newState)"
+      ])
 
-  /// Initiates a user shutdown.
-  func initiateUserShutdown() {
-    self.lock.withLockVoid {
-      self.logger.debug("user has initiated shutdown")
-      self.setNewState(to: .shutdown)
-      self._userInitiatedShutdown = true
-    }
-  }
-
-  /// Whether the user has initiated a shutdown or not.
-  var userHasInitiatedShutdown: Bool {
-    return self.lock.withLock {
-      return self._userInitiatedShutdown
-    }
-  }
-
-  /// Whether we can attempt a reconnection, that is the user has not initiated a shutdown and we
-  /// are in the `.ready` state.
-  var canAttemptReconnect: Bool {
-    return self.lock.withLock {
-      return !self._userInitiatedShutdown && self._state == .ready
+      self.delegateCallbackQueue.async {
+        if let delegate = self.delegate {
+          delegate.connectivityStateDidChange(from: oldState, to: newState)
+        }
+      }
     }
   }
 }
