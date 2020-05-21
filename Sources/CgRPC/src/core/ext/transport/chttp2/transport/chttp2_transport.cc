@@ -1167,10 +1167,12 @@ void grpc_chttp2_add_incoming_goaway(grpc_chttp2_transport* t,
   GRPC_CHTTP2_IF_TRACING(
       gpr_log(GPR_INFO, "transport %p got goaway with last stream id %d", t,
               last_stream_id));
-  /* We want to log this irrespective of whether http tracing is enabled */
-  gpr_log(GPR_INFO, "%s: Got goaway [%d] err=%s", t->peer_string, goaway_error,
-          grpc_error_string(t->goaway_error));
-
+  /* We want to log this irrespective of whether http tracing is enabled if we
+   * received a GOAWAY with a non NO_ERROR code. */
+  if (goaway_error != GRPC_HTTP2_NO_ERROR) {
+    gpr_log(GPR_INFO, "%s: Got goaway [%d] err=%s", t->peer_string,
+            goaway_error, grpc_error_string(t->goaway_error));
+  }
   /* When a client receives a GOAWAY with error code ENHANCE_YOUR_CALM and debug
    * data equal to "too_many_pings", it should log the occurrence at a log level
    * that is enabled by default and double the configured KEEPALIVE_TIME used
@@ -1196,6 +1198,17 @@ void grpc_chttp2_add_incoming_goaway(grpc_chttp2_transport* t,
 
 static void maybe_start_some_streams(grpc_chttp2_transport* t) {
   grpc_chttp2_stream* s;
+  /* cancel out streams that haven't yet started if we have received a GOAWAY */
+  if (t->goaway_error != GRPC_ERROR_NONE) {
+    while (grpc_chttp2_list_pop_waiting_for_concurrency(t, &s)) {
+      grpc_chttp2_cancel_stream(
+          t, s,
+          grpc_error_set_int(
+              GRPC_ERROR_CREATE_FROM_STATIC_STRING("GOAWAY received"),
+              GRPC_ERROR_INT_GRPC_STATUS, GRPC_STATUS_UNAVAILABLE));
+    }
+    return;
+  }
   /* start streams where we have free grpc_chttp2_stream ids and free
    * concurrency */
   while (t->next_stream_id <= MAX_CLIENT_STREAM_ID &&
@@ -1224,13 +1237,14 @@ static void maybe_start_some_streams(grpc_chttp2_transport* t) {
     grpc_chttp2_initiate_write(t, GRPC_CHTTP2_INITIATE_WRITE_START_NEW_STREAM);
   }
   /* cancel out streams that will never be started */
-  while (t->next_stream_id >= MAX_CLIENT_STREAM_ID &&
-         grpc_chttp2_list_pop_waiting_for_concurrency(t, &s)) {
-    grpc_chttp2_cancel_stream(
-        t, s,
-        grpc_error_set_int(
-            GRPC_ERROR_CREATE_FROM_STATIC_STRING("Stream IDs exhausted"),
-            GRPC_ERROR_INT_GRPC_STATUS, GRPC_STATUS_UNAVAILABLE));
+  if (t->next_stream_id >= MAX_CLIENT_STREAM_ID) {
+    while (grpc_chttp2_list_pop_waiting_for_concurrency(t, &s)) {
+      grpc_chttp2_cancel_stream(
+          t, s,
+          grpc_error_set_int(
+              GRPC_ERROR_CREATE_FROM_STATIC_STRING("Stream IDs exhausted"),
+              GRPC_ERROR_INT_GRPC_STATUS, GRPC_STATUS_UNAVAILABLE));
+    }
   }
 }
 
@@ -1545,19 +1559,13 @@ static void perform_stream_op_locked(void* stream_op,
     on_complete->next_data.scratch |= CLOSURE_BARRIER_MAY_COVER_WRITE;
     s->fetching_send_message_finished = add_closure_barrier(op->on_complete);
     if (s->write_closed) {
-      // Return an error unless the client has already received trailing
-      // metadata from the server, since an application using a
-      // streaming call might send another message before getting a
-      // recv_message failure, breaking out of its loop, and then
-      // starting recv_trailing_metadata.
+      op->payload->send_message.stream_write_closed = true;
+      // We should NOT return an error here, so as to avoid a cancel OP being
+      // started. The surface layer will notice that the stream has been closed
+      // for writes and fail the send message op.
       op->payload->send_message.send_message.reset();
       grpc_chttp2_complete_closure_step(
-          t, s, &s->fetching_send_message_finished,
-          t->is_client && s->received_trailing_metadata
-              ? GRPC_ERROR_NONE
-              : GRPC_ERROR_CREATE_REFERENCING_FROM_STATIC_STRING(
-                    "Attempt to send message after stream was closed",
-                    &s->write_closed_error, 1),
+          t, s, &s->fetching_send_message_finished, GRPC_ERROR_NONE,
           "fetching_send_message_finished");
     } else {
       GPR_ASSERT(s->fetching_send_message == nullptr);
@@ -2457,6 +2465,13 @@ static void cancel_stream_cb(void* user_data, uint32_t key, void* stream) {
 }
 
 static void end_all_the_calls(grpc_chttp2_transport* t, grpc_error* error) {
+  intptr_t http2_error;
+  // If there is no explicit grpc or HTTP/2 error, set to UNAVAILABLE on server.
+  if (!t->is_client && !grpc_error_has_clear_grpc_status(error) &&
+      !grpc_error_get_int(error, GRPC_ERROR_INT_HTTP2_ERROR, &http2_error)) {
+    error = grpc_error_set_int(error, GRPC_ERROR_INT_GRPC_STATUS,
+                               GRPC_STATUS_UNAVAILABLE);
+  }
   cancel_stream_cb_args args = {error, t};
   grpc_chttp2_stream_map_for_each(&t->stream_map, cancel_stream_cb, &args);
   GRPC_ERROR_UNREF(error);
@@ -2601,7 +2616,6 @@ static void read_action_locked(void* tp, grpc_error* error) {
     t->endpoint_reading = 0;
   } else if (t->closed_with_error == GRPC_ERROR_NONE) {
     keep_reading = true;
-    GRPC_CHTTP2_REF_TRANSPORT(t, "keep_reading");
     /* Since we have read a byte, reset the keepalive timer */
     if (t->keepalive_state == GRPC_CHTTP2_KEEPALIVE_STATE_WAITING) {
       grpc_timer_cancel(&t->keepalive_ping_timer);
@@ -2620,7 +2634,6 @@ static void read_action_locked(void* tp, grpc_error* error) {
     } else {
       continue_read_action_locked(t);
     }
-    GRPC_CHTTP2_UNREF_TRANSPORT(t, "keep_reading");
   } else {
     GRPC_CHTTP2_UNREF_TRANSPORT(t, "reading_action");
   }

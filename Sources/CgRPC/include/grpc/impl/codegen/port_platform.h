@@ -27,6 +27,14 @@
  *  - some syscalls to be made directly
  */
 
+/*
+ * Defines GRPC_USE_CPP_STD_LIB to use standard C++ library instead of
+ * in-house library if possible. (e.g. std::map)
+ */
+#ifndef GRPC_USE_CPP_STD_LIB
+#define GRPC_USE_CPP_STD_LIB 1
+#endif
+
 /* Get windows.h included everywhere (we need it) */
 #if defined(_WIN64) || defined(WIN64) || defined(_WIN32) || defined(WIN32)
 #ifndef WIN32_LEAN_AND_MEAN
@@ -462,6 +470,23 @@ typedef unsigned __int64 uint64_t;
 #else
 #include <stdint.h>
 #endif /* _MSC_VER */
+
+/* Type of cycle clock implementation */
+#ifdef GPR_LINUX
+/* Disable cycle clock by default.
+   TODO(soheil): enable when we support fallback for unstable cycle clocks.
+#if defined(__i386__)
+#define GPR_CYCLE_COUNTER_RDTSC_32 1
+#elif defined(__x86_64__) || defined(__amd64__)
+#define GPR_CYCLE_COUNTER_RDTSC_64 1
+#else
+#define GPR_CYCLE_COUNTER_FALLBACK 1
+#endif
+*/
+#define GPR_CYCLE_COUNTER_FALLBACK 1
+#else
+#define GPR_CYCLE_COUNTER_FALLBACK 1
+#endif /* GPR_LINUX */
 
 /* Cache line alignment */
 #ifndef GPR_CACHELINE_SIZE_LOG
