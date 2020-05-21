@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Copyright 2019, gRPC Authors All rights reserved.
 #
@@ -18,6 +18,7 @@
 # suitable for building with the Swift Package Manager.
 #
 # For usage, see `vendor-all.sh`.
+set -eu
 
 SRCROOT=./tmp/grpc/third_party/boringssl
 DSTROOT=../Sources/BoringSSL
@@ -54,14 +55,11 @@ do
   for i in $SRCROOT/$pattern; do
     path=${i#$SRCROOT}
     dest="$DSTROOT$path"
-    dest_dir=$(dirname $dest)
-    mkdir -p $dest_dir
-    cp $SRCROOT/$path $dest
+    dest_dir=$(dirname "$dest")
+    mkdir -p "$dest_dir"
+    cp "$SRCROOT/$path" "$dest"
   done
 done
-
-echo "COPYING err_data.c from gRPC project"
-cp ./third_party/grpc/src/boringssl/err_data.c $DSTROOT
 
 for exclude in "${EXCLUDES[@]}"
 do

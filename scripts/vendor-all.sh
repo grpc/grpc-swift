@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Copyright 2019, gRPC Authors All rights reserved.
 #
@@ -34,15 +34,12 @@ mkdir -p $TMP_DIR
 rm -rf $TMP_DIR/grpc
 cd $TMP_DIR
 
-# Clone gRPC Core, update its submodules, and check out the specified version.
+# Clone gRPC Core, check out the specified version, and update its submodules.
 git clone git@github.com:grpc/grpc.git
 cd grpc
+git checkout "$GRPC_VERSION"
 git submodule update --init --recursive
-git checkout $GRPC_VERSION
 cd ../..
-
-# Update the vendored version of BoringSSL (removing previous versions).
-./vendor-boringssl.sh
 
 # Copy the vendoring template into the gRPC Core's directory of templates.
 # Then, run the gRPC Core's generator on that template.
@@ -53,5 +50,8 @@ cd ../..
 
 # Finish copying the vendored version of the gRPC Core.
 ./vendor-grpc.sh
+
+# Update the vendored version of BoringSSL (removing previous versions).
+./vendor-boringssl.sh
 
 echo "UPDATED vendored dependencies to $GRPC_VERSION"
