@@ -8,7 +8,7 @@ about: If something isn't working as expected 🤔
 
 ### New Issue Checklist
 
-- [ ] Updated grpc-swift to the latest version
+- [ ] Updated grpc-swift *and protoc-gen-swiftgrpc* to the latest version
 - [ ] I read the [Contribution Guidelines](https://github.com/grpc/grpc-swift/blob/master/CONTRIBUTING.md)
 - [ ] I searched for [existing GitHub issues](https://github.com/grpc/grpc-swift/issues)(especially, there are many [resolved issues related to SSL](https://github.com/grpc/grpc-swift/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aclosed+ssl))
 
@@ -32,7 +32,7 @@ export GRPC_VERBOSITY="DEBUG"
 
 ### Environment
 
-<!-- Please input your environment. -->
+<!-- Please provide your environment below. This is important to help you. -->
 
 <details>
   <pre>
@@ -42,7 +42,6 @@ export GRPC_VERBOSITY="DEBUG"
 | OS Version                    |   x.x.x                                                       |
 | Swift Version                 |   x.x.x                                                       |
 | Xcode Version                 |   x.x.x                                                       |
-| gRPC-Swift Version            |   x.x.x                                                       |
 | gRPC-Swift Version            |   x.x.x                                                       |
 | protoc Version                |   x.x.x                                                       |
 | protoc-gen-swift Version      |   x.x.x                                                       |
