@@ -46,7 +46,9 @@ enum TransportSecurity {
 }
 
 class EchoTestCaseBase: GRPCTestCase {
-  var defaultTestTimeout: TimeInterval = 1.0
+  // Things can be slow when running under TSAN; bias towards a really long timeout so that we know
+  // for sure a test is wedged rather than simply slow.
+  var defaultTestTimeout: TimeInterval = 120.0
 
   var serverEventLoopGroup: EventLoopGroup!
   var clientEventLoopGroup: EventLoopGroup!

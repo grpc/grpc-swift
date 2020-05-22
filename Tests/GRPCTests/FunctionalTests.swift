@@ -72,7 +72,7 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
 
     // Instead of setting a timeout out on the test we'll set one for each batch, if any of them
     // timeout then we'll bail out of the test.
-    let batchTimeout: TimeInterval = 5.0
+    let batchTimeout: TimeInterval = 30.0
     self.continueAfterFailure = false
 
     for lowerBound in stride(from: 0, to: numberOfRequests, by: batchSize) {
@@ -133,7 +133,6 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
 
   func testClientStreamingLotsOfMessages() throws {
     guard self.runTimeSensitiveTests() else { return }
-    self.defaultTestTimeout = 15.0
     XCTAssertNoThrow(try doTestClientStreaming(messages: lotsOfStrings))
   }
 
@@ -161,7 +160,6 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
 
   func testServerStreamingLotsOfMessages() {
     guard self.runTimeSensitiveTests() else { return }
-    self.defaultTestTimeout = 15.0
     XCTAssertNoThrow(try doTestServerStreaming(messages: lotsOfStrings))
   }
 
@@ -203,13 +201,11 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
 
   func testBidirectionalStreamingLotsOfMessagesBatched() throws {
     guard self.runTimeSensitiveTests() else { return }
-    self.defaultTestTimeout = 15.0
     XCTAssertNoThrow(try doTestBidirectionalStreaming(messages: lotsOfStrings))
   }
 
   func testBidirectionalStreamingLotsOfMessagesPingPong() throws {
     guard self.runTimeSensitiveTests() else { return }
-    self.defaultTestTimeout = 15.0
     XCTAssertNoThrow(try doTestBidirectionalStreaming(messages: lotsOfStrings, waitForEachResponse: true))
   }
 }
