@@ -18,23 +18,10 @@ import SwiftProtobufPluginLibrary
 
 extension Generator {
   internal func printProtobufExtensions() {
-    println("// Provides conformance to `GRPCPayload` for request and response messages")
-    for service in self.file.services {
-      self.service = service
-      for method in self.service.methods {
-        self.method = method
-        self.printExtension(for: self.methodInputName)
-        self.printExtension(for: self.methodOutputName)
-      }
-      println()
+    println("// Provides conformance to `GRPCPayload`")
+    for message in self.file.messages {
+      let name = self.protobufNamer.fullName(message: message)
+      self.println("extension \(name): GRPCProtobufPayload {}")
     }
-  }
-
-  private func printExtension(for messageType: String) {
-    guard !self.observedMessages.contains(messageType) else {
-      return
-    }
-    self.println("extension \(messageType): GRPCProtobufPayload {}")
-    self.observedMessages.insert(messageType)
   }
 }

@@ -1,0 +1,8 @@
+mapping {
+  module_name: "ModuleA"
+  proto_file_path: "a.proto"
+}
+mapping {
+  module_name: "ModuleB"
+  proto_file_path: "b.proto"
+}

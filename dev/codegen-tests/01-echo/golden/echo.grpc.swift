@@ -28,23 +28,23 @@ import SwiftProtobuf
 
 
 /// Usage: instantiate Echo_EchoClient, then call methods of this protocol to make API calls.
-public protocol Echo_EchoClientProtocol {
+internal protocol Echo_EchoClientProtocol {
   func get(_ request: Echo_EchoRequest, callOptions: CallOptions?) -> UnaryCall<Echo_EchoRequest, Echo_EchoResponse>
   func expand(_ request: Echo_EchoRequest, callOptions: CallOptions?, handler: @escaping (Echo_EchoResponse) -> Void) -> ServerStreamingCall<Echo_EchoRequest, Echo_EchoResponse>
   func collect(callOptions: CallOptions?) -> ClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse>
   func update(callOptions: CallOptions?, handler: @escaping (Echo_EchoResponse) -> Void) -> BidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse>
 }
 
-public final class Echo_EchoClient: GRPCClient, Echo_EchoClientProtocol {
-  public let channel: GRPCChannel
-  public var defaultCallOptions: CallOptions
+internal final class Echo_EchoClient: GRPCClient, Echo_EchoClientProtocol {
+  internal let channel: GRPCChannel
+  internal var defaultCallOptions: CallOptions
 
   /// Creates a client for the echo.Echo service.
   ///
   /// - Parameters:
   ///   - channel: `GRPCChannel` to the service host.
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
-  public init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
+  internal init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
     self.channel = channel
     self.defaultCallOptions = defaultCallOptions
   }
@@ -55,7 +55,7 @@ public final class Echo_EchoClient: GRPCClient, Echo_EchoClientProtocol {
   ///   - request: Request to send to Get.
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
-  public func get(_ request: Echo_EchoRequest, callOptions: CallOptions? = nil) -> UnaryCall<Echo_EchoRequest, Echo_EchoResponse> {
+  internal func get(_ request: Echo_EchoRequest, callOptions: CallOptions? = nil) -> UnaryCall<Echo_EchoRequest, Echo_EchoResponse> {
     return self.makeUnaryCall(path: "/echo.Echo/Get",
                               request: request,
                               callOptions: callOptions ?? self.defaultCallOptions)
@@ -68,7 +68,7 @@ public final class Echo_EchoClient: GRPCClient, Echo_EchoClientProtocol {
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   ///   - handler: A closure called when each response is received from the server.
   /// - Returns: A `ServerStreamingCall` with futures for the metadata and status.
-  public func expand(_ request: Echo_EchoRequest, callOptions: CallOptions? = nil, handler: @escaping (Echo_EchoResponse) -> Void) -> ServerStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
+  internal func expand(_ request: Echo_EchoRequest, callOptions: CallOptions? = nil, handler: @escaping (Echo_EchoResponse) -> Void) -> ServerStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
     return self.makeServerStreamingCall(path: "/echo.Echo/Expand",
                                         request: request,
                                         callOptions: callOptions ?? self.defaultCallOptions,
@@ -83,7 +83,7 @@ public final class Echo_EchoClient: GRPCClient, Echo_EchoClientProtocol {
   /// - Parameters:
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   /// - Returns: A `ClientStreamingCall` with futures for the metadata, status and response.
-  public func collect(callOptions: CallOptions? = nil) -> ClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
+  internal func collect(callOptions: CallOptions? = nil) -> ClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
     return self.makeClientStreamingCall(path: "/echo.Echo/Collect",
                                         callOptions: callOptions ?? self.defaultCallOptions)
   }
@@ -97,7 +97,7 @@ public final class Echo_EchoClient: GRPCClient, Echo_EchoClientProtocol {
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   ///   - handler: A closure called when each response is received from the server.
   /// - Returns: A `ClientStreamingCall` with futures for the metadata and status.
-  public func update(callOptions: CallOptions? = nil, handler: @escaping (Echo_EchoResponse) -> Void) -> BidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
+  internal func update(callOptions: CallOptions? = nil, handler: @escaping (Echo_EchoResponse) -> Void) -> BidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
     return self.makeBidirectionalStreamingCall(path: "/echo.Echo/Update",
                                                callOptions: callOptions ?? self.defaultCallOptions,
                                                handler: handler)
@@ -106,7 +106,7 @@ public final class Echo_EchoClient: GRPCClient, Echo_EchoClientProtocol {
 }
 
 /// To build a server, implement a class that conforms to this protocol.
-public protocol Echo_EchoProvider: CallHandlerProvider {
+internal protocol Echo_EchoProvider: CallHandlerProvider {
   /// Immediately returns an echo of a request.
   func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse>
   /// Splits a request into words and returns each word in a stream of messages.
@@ -118,11 +118,11 @@ public protocol Echo_EchoProvider: CallHandlerProvider {
 }
 
 extension Echo_EchoProvider {
-  public var serviceName: String { return "echo.Echo" }
+  internal var serviceName: String { return "echo.Echo" }
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  public func handleMethod(_ methodName: String, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
+  internal func handleMethod(_ methodName: String, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
     switch methodName {
     case "Get":
       return UnaryCallHandler(callHandlerContext: callHandlerContext) { context in
