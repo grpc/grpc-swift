@@ -619,7 +619,7 @@ extension ConnectionManagerTests {
   }
 }
 
-private struct Change: Hashable, CustomStringConvertible {
+internal struct Change: Hashable, CustomStringConvertible {
   var from: ConnectivityState
   var to: ConnectivityState
 
@@ -628,7 +628,7 @@ private struct Change: Hashable, CustomStringConvertible {
   }
 }
 
-private class RecordingConnectivityDelegate: ConnectivityStateDelegate {
+internal class RecordingConnectivityDelegate: ConnectivityStateDelegate {
   private let serialQueue = DispatchQueue(label: "io.grpc.testing")
   private let semaphore = DispatchSemaphore(value: 0)
 

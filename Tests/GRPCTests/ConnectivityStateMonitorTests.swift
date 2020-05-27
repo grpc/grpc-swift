@@ -23,9 +23,15 @@ class ConnectivityStateMonitorTests: GRPCTestCase {
   let states: [ConnectivityState] = [.connecting, .ready, .transientFailure, .shutdown, .idle]
 
   func testDelegateOnlyCalledForChanges() {
-    let recorder = ConnectivityStateCollectionDelegate()
-    let shutdown = self.expectation(description: "shutdown")
-    recorder.expectations[.shutdown] = shutdown
+    let recorder = RecordingConnectivityDelegate()
+
+    recorder.expectChanges(3) { changes in
+      XCTAssertEqual(changes, [
+        Change(from: .idle, to: .connecting),
+        Change(from: .connecting, to: .ready),
+        Change(from: .ready, to: .shutdown)
+      ])
+    }
 
     let monitor = ConnectivityStateMonitor(delegate: recorder)
     monitor.delegate = recorder
@@ -35,7 +41,6 @@ class ConnectivityStateMonitorTests: GRPCTestCase {
     monitor.updateState(to: .ready, logger: self.logger)
     monitor.updateState(to: .shutdown, logger: self.logger)
 
-    self.wait(for: [shutdown], timeout: 1.0)
-    XCTAssertEqual(recorder.states, [.connecting, .ready, .shutdown])
+    recorder.waitForExpectedChanges(timeout: .seconds(1))
   }
 }
