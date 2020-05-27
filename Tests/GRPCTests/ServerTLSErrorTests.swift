@@ -79,7 +79,6 @@ class ServerTLSErrorTests: GRPCTestCase {
   }
 
   func testErrorIsLoggedWhenSSLContextErrors() throws {
-    let clientShutdownExpectation = self.expectation(description: "client shutdown")
     let errorExpectation = self.expectation(description: "error")
     let errorDelegate = ServerErrorRecordingDelegate(expectation: errorExpectation)
 
@@ -101,7 +100,14 @@ class ServerTLSErrorTests: GRPCTestCase {
     tls.trustRoots = .certificates([SampleCertificate.exampleServerWithExplicitCurve.certificate])
     var configuration = self.makeClientConfiguration(tls: tls, port: port)
 
-    let stateChangeDelegate = ConnectivityStateCollectionDelegate(shutdown: clientShutdownExpectation)
+    let stateChangeDelegate = RecordingConnectivityDelegate()
+    stateChangeDelegate.expectChanges(2) { changes in
+      XCTAssertEqual(changes, [
+        Change(from: .idle, to: .connecting),
+        Change(from: .connecting, to: .shutdown)
+      ])
+    }
+
     configuration.connectivityStateDelegate = stateChangeDelegate
 
     // Start an RPC to trigger creating a channel.
@@ -111,7 +117,8 @@ class ServerTLSErrorTests: GRPCTestCase {
     }
     _ = echo.get(.with { $0.text = "foo" })
 
-    self.wait(for: [clientShutdownExpectation, errorExpectation], timeout: self.defaultTestTimeout)
+    self.wait(for: [errorExpectation], timeout: self.defaultTestTimeout)
+    stateChangeDelegate.waitForExpectedChanges(timeout: .seconds(1))
 
     if let nioSSLError = errorDelegate.errors.first as? NIOSSLError,
       case .failedToLoadCertificate = nioSSLError {

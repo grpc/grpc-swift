@@ -100,7 +100,6 @@ class ClientTLSFailureTests: GRPCTestCase {
   }
 
   func testClientConnectionFailsWhenServerIsUnknown() throws {
-    let shutdownExpectation = self.expectation(description: "client shutdown")
     let errorExpectation = self.expectation(description: "error")
     // 2 errors: one for the failed handshake, and another for failing the ready-channel promise
     // (because the handshake failed).
@@ -113,14 +112,21 @@ class ClientTLSFailureTests: GRPCTestCase {
     let errorRecorder = ErrorRecordingDelegate(expectation: errorExpectation)
     configuration.errorDelegate = errorRecorder
 
-    let stateChangeDelegate = ConnectivityStateCollectionDelegate(shutdown: shutdownExpectation)
+    let stateChangeDelegate = RecordingConnectivityDelegate()
+    stateChangeDelegate.expectChanges(2) { changes in
+      XCTAssertEqual(changes, [
+        Change(from: .idle, to: .connecting),
+        Change(from: .connecting, to: .shutdown)
+      ])
+    }
     configuration.connectivityStateDelegate = stateChangeDelegate
 
     // Start an RPC to trigger creating a channel.
     let echo = Echo_EchoClient(channel: ClientConnection(configuration: configuration))
     _ = echo.get(.with { $0.text = "foo" })
 
-    self.wait(for: [shutdownExpectation, errorExpectation], timeout: self.defaultTestTimeout)
+    self.wait(for: [errorExpectation], timeout: self.defaultTestTimeout)
+    stateChangeDelegate.waitForExpectedChanges(timeout: .seconds(5))
 
     if let nioSSLError = errorRecorder.errors.first as? NIOSSLError,
       case .handshakeFailed(.sslError) = nioSSLError {
@@ -131,7 +137,6 @@ class ClientTLSFailureTests: GRPCTestCase {
   }
 
   func testClientConnectionFailsWhenHostnameIsNotValid() throws {
-    let shutdownExpectation = self.expectation(description: "client shutdown")
     let errorExpectation = self.expectation(description: "error")
     // 2 errors: one for the failed handshake, and another for failing the ready-channel promise
     // (because the handshake failed).
@@ -144,14 +149,21 @@ class ClientTLSFailureTests: GRPCTestCase {
     let errorRecorder = ErrorRecordingDelegate(expectation: errorExpectation)
     configuration.errorDelegate = errorRecorder
 
-    let stateChangeDelegate = ConnectivityStateCollectionDelegate(shutdown: shutdownExpectation)
+    let stateChangeDelegate = RecordingConnectivityDelegate()
+    stateChangeDelegate.expectChanges(2) { changes in
+      XCTAssertEqual(changes, [
+        Change(from: .idle, to: .connecting),
+        Change(from: .connecting, to: .shutdown)
+      ])
+    }
     configuration.connectivityStateDelegate = stateChangeDelegate
 
     // Start an RPC to trigger creating a channel.
     let echo = Echo_EchoClient(channel: ClientConnection(configuration: configuration))
     _ = echo.get(.with { $0.text = "foo" })
 
-    self.wait(for: [shutdownExpectation, errorExpectation], timeout: self.defaultTestTimeout)
+    self.wait(for: [errorExpectation], timeout: self.defaultTestTimeout)
+    stateChangeDelegate.waitForExpectedChanges(timeout: .seconds(5))
 
     if let nioSSLError = errorRecorder.errors.first as? NIOSSLExtraError {
       XCTAssertEqual(nioSSLError, .failedToValidateHostname)
