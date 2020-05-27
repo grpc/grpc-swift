@@ -14,7 +14,8 @@ For troubleshooting or new feature requests please use one of the other template
 
 ### Describe the bug
 
-Describe the bug as clearly and as concisely as you can.
+Describe the bug as clearly and as concisely as you can. Without enough
+information, we will not be able to help you.
 
 Include the version of `grpc-swift` and `protoc-gen-grpc-swift` you are using
 (or the Podspec version if you are using CocoaPods) as well as the platform(s)
@@ -33,6 +34,6 @@ Describe what you expect to happen when the steps above are followed.
 
 ### Additional information
 
-Include any more information that you think might help us to diagnose and
-resolve this more quickly, such as logs, code snippets, or similar cases where
-the bug does not reproduce. (Please wrap code snippets and logs in backticks though!)
+Include any information that you think might help us to diagnose and resolve
+this more quickly, such as logs, code snippets, or similar cases where the bug
+does not reproduce. (Please wrap code snippets and logs in backticks though!)
