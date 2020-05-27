@@ -1,5 +1,6 @@
 [![Build Status](https://travis-ci.org/grpc/grpc-swift.svg?branch=master)](https://travis-ci.org/grpc/grpc-swift)
 [![sswg:sandbox|94x20](https://img.shields.io/badge/sswg-sandbox-lightgrey.svg)](https://github.com/swift-server/sswg/blob/master/process/incubation.md#sandbox-level)
+[![Latest Version](https://img.shields.io/github/v/release/grpc/grpc-swift?include_prereleases&sort=semver)](https://img.shields.io/github/v/release/grpc/grpc-swift?include_prereleases&sort=semver)
 
 # gRPC Swift
 
@@ -16,8 +17,17 @@ all four gRPC API styles (Unary, Server Streaming, Client Streaming, and
 Bidirectional Streaming) and connections can be made either over secure (TLS) or
 insecure channels.
 
-gRPC Swift is built on top of [Swift NIO][swift-nio] as opposed to the core
-library provided by the [gRPC project][grpc].
+## Versions
+
+gRPC Swift has recently been rewritten on top of [SwiftNIO][swift-nio] as
+opposed to the core library provided by the [gRPC project][grpc].
+
+Version | Implementation | Branch                 | `protoc` Plugin         | CocoaPod              | Support
+--------|----------------|------------------------|-------------------------|-----------------------|-----------------------------------------
+1.x     | SwiftNIO       | [`master`][branch-new] | `protoc-gen-grpc-swift` | [gRPC-Swift][pod-new] | Actively developed and supported
+0.x     | gRPC C library | [`cgrpc`][branch-old]  | `proroc-gen-swiftgrpc`  | [SwiftGRPC][pod-old]  | No longer developed; security fixes only
+
+The remainder of this README refers to the 1.x version of gRPC Swift.
 
 ## Supported Platforms
 
@@ -82,8 +92,9 @@ Alternatively, gRPC Swift can be manually integrated into a project:
 
 #### CocoaPods
 
-gRPC Swift is currently available [from CocoaPods](https://cocoapods.org/pods/gRPC-Swift).
-To integrate, add the following line to your `Podfile`:
+gRPC Swift is currently available [from CocoaPods][pod-new]. To integrate, add
+the following line to your `Podfile`:
+
 ```ruby
     pod 'gRPC-Swift', '1.0.0-alpha.12'
 ```
@@ -106,17 +117,28 @@ To install these plugins, just copy the two executables (`protoc-gen-swift` and
 that is part of your `PATH` environment variable. Alternatively the full path to
 the plugins can be specified when using `protoc`.
 
-## Using gRPC Swift
+## Examples
 
-gRPC Swift has a number of tutorials and examples available:
+gRPC Swift has a number of tutorials and examples available. They are split
+across two directorys:
 
+- [`/Sources/Examples`][examples-in-source] contains examples which do not
+  require additional depenedencies and may be built using the Swift Package
+  Manager.
+- [`/Examples`][examples-out-of-source] contains examples which rely on
+  external dependencies or may not be built by the Swift Package Manager (such
+  as an iOS app).
+
+Some of the examples are accompanied by tutorials, including:
 - A [quick start guide][docs-quickstart] for creating and running your first
   gRPC service.
 - A [basic tutorial][docs-tutorial] covering the creation and implementation of
   a gRPC service using all four call types as well as the code required to setup
   and run a server and make calls to it using a generated client.
 
-The `docs` directory contains other documenation, including:
+## Documentation
+
+The `docs` directory contains documenation, including:
 
 - Options for the `protoc` plugin in [`docs/plugin.md`][docs-plugin]
 - How to configure TLS in [`docs/tls.md`][docs-tls]
@@ -143,3 +165,9 @@ Please get involved! See our [guidelines for contributing](CONTRIBUTING.md).
 [swift-nio]: https://github.com/apple/swift-nio
 [swift-protobuf]: https://github.com/apple/swift-protobuf
 [xcode-spm]: https://help.apple.com/xcode/mac/current/#/devb83d64851
+[pod-new]: https://cocoapods.org/pods/gRPC-Swift
+[pod-old]: https://cocoapods.org/pods/SwiftGRPC
+[branch-new]: https://github.com/grpc/grpc-swift/tree/master
+[branch-old]: https://github.com/grpc/grpc-swift/tree/cgrpc
+[examples-out-of-source]: https://github.com/grpc/grpc-swift/tree/master/Examples
+[examples-in-source]: https://github.com/grpc/grpc-swift/tree/master/Sources/Examples
