@@ -1,51 +1,39 @@
 ---
 name: 🐛 Bug Report
 about: If something isn't working as expected 🤔
-
+labels: bug, nio
 ---
 
-<!-- Thanks for helping grpc-swift! Before you submit your issue, please make sure to check the following boxes by putting an x in the [ ] (don't: [x ], [ x], do: [x]) -->
+<!--
+Please check the README, docs/ directory and other issues before filing an issue.
 
-### New Issue Checklist
+This form is for submitting BUG REPORTS only.
 
-- [ ] Updated grpc-swift *and protoc-gen-swiftgrpc* to the latest version
-- [ ] I read the [Contribution Guidelines](https://github.com/grpc/grpc-swift/blob/master/CONTRIBUTING.md)
-- [ ] I searched for [existing GitHub issues](https://github.com/grpc/grpc-swift/issues)(especially, there are many [resolved issues related to SSL](https://github.com/grpc/grpc-swift/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aclosed+ssl))
-
-### Issue Description
-<!-- Please include what's happening, expected behavior, and any relevant code samples. 
-Please wrap log statements and code in triple backticks (```) so they get printed correctly on GitHub.
+For troubleshooting or new feature requests please use one of the other templates.
 -->
 
-##### Complete output when running grpc-swift, including the stack trace and command used
-<!-- You can use environment variables for debug 
-e.g. 
-export GRPC_TRACE=all
-export GRPC_VERBOSITY="DEBUG"
--->
+### Describe the bug
 
-<!-- The output of `GRPC_VERBOSITY` could contain sensitive data, Please make sure you double check the output and replace anything sensitive you don't wish to submit in the issue -->
+Describe the bug as clearly and as concisely as you can. Without enough
+information, we will not be able to help you.
 
-<details>
-  <pre>[INSERT OUTPUT HERE]</pre>
-</details>
+Include the version of `grpc-swift` and `protoc-gen-grpc-swift` you are using
+(or the Podspec version if you are using CocoaPods) as well as the platform(s)
+on which you experienced the bug.
 
-### Environment
+### To reproduce
 
-<!-- Please provide your environment below. This is important to help you. -->
+Steps to reproduce the bug you've found:
+1. Set compression to ...
+2. Make a bidirectional RPC to ...
+3. ...
 
-<details>
-  <pre>
-  
-| Key                           | Value                                                         |
-| ----------------------------- | --------------------------------------------------------------|
-| OS Version                    |   x.x.x                                                       |
-| Swift Version                 |   x.x.x                                                       |
-| Xcode Version                 |   x.x.x                                                       |
-| gRPC-Swift Version            |   x.x.x                                                       |
-| protoc Version                |   x.x.x                                                       |
-| protoc-gen-swift Version      |   x.x.x                                                       |
-| protoc-gen-swiftgrpc Version  |   x.x.x                                                       |
-  </pre>
-</details>
+### Expected behaviour
 
+Describe what you expect to happen when the steps above are followed.
+
+### Additional information
+
+Include any information that you think might help us to diagnose and resolve
+this more quickly, such as logs, code snippets, or similar cases where the bug
+does not reproduce. (Please wrap code snippets and logs in backticks though!)

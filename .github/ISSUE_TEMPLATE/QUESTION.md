@@ -1,39 +1,25 @@
 ---
 name: ❓ Support Question
-about: Not sure how something works or how to implement some functionality? Ask us here! (But please check the README or issues first 🙃)
+about: Not sure how something works? Ask us here. (But please check the README and issues first 🙃.)
+labels: question, nio
 ---
 
-### Question Checklist
+<!--
+Please check the README, docs/ directory and other issues before filing an issue.
 
-- [ ] Updated grpc-swift *and protoc-gen-swiftgrpc* to the latest version
-- [ ] I read the [Contribution Guidelines](https://github.com/grpc/grpc-swift/blob/master/CONTRIBUTING.md)
-- [ ] I read [README](https://github.com/grpc/grpc-swift/blob/master/README.md)
-- [ ] I searched for [existing GitHub issues](https://github.com/grpc/grpc-swift/issues) (especially, there are many [resolved issues related to SSL](https://github.com/grpc/grpc-swift/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aclosed+ssl))
+This form is for submitting QUESTIONS only.
 
-### Question Subject
-<!-- Is this a question about documentation? -->
-<!-- Is this a question about a third party plugin? (If so, please go to the plugin repository first) -->
+For bug reports or new feature requests please use one of the other templates.
+-->
 
-#### Question Description
-<!-- Please include expected behavior and any relevant code samples with your question if possible -->
-<!-- Please wrap log statements and code in triple backticks (```) so they get printed correctly on GitHub. -->
+### What are you trying to achieve?
 
+Describe your problem at a high level. Include code snippets if you think that
+would help better illustrate your problem. Without enough information, we will
+not be able to help you.
 
-### Environment
+### What have you tried so far?
 
-<!-- If you are encountering issues, please provide your environment below. This is important to help you. -->
-
-<details>
-  <pre>
-  
-| Key                           | Value                                                         |
-| ----------------------------- | --------------------------------------------------------------|
-| OS Version                    |   x.x.x                                                       |
-| Swift Version                 |   x.x.x                                                       |
-| Xcode Version                 |   x.x.x                                                       |
-| gRPC-Swift Version            |   x.x.x                                                       |
-| protoc Version                |   x.x.x                                                       |
-| protoc-gen-swift Version      |   x.x.x                                                       |
-| protoc-gen-swiftgrpc Version  |   x.x.x                                                       |
-  </pre>
-</details>
+Describe what you've tried to do so far to solve your problem. Include any
+relevant information such as the library and protoc plugin versions and any
+logs or error messages.
