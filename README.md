@@ -107,10 +107,10 @@ Then, run `pod install` from command line and use your project's generated
 Binary releases of `protoc`, the Protocol Buffer Compiler, are available on
 [GitHub][protobuf-releases].
 
-To build the plugins, run `make plugins` in the main directory. This uses the
-Swift Package Manager to build both of the necessary plugins:
-`protoc-gen-swift`, which generates Protocol Buffer support code and
-`protoc-gen-grpc-swift`, which generates gRPC interface code.
+To build the plugins, run `make plugins` in the root directory of a checkout of
+the grpc-swift git repo. This uses the Swift Package Manager to build both of the
+necessary plugins: `protoc-gen-swift`, which generates Protocol Buffer support
+code and `protoc-gen-grpc-swift`, which generates gRPC interface code.
 
 To install these plugins, just copy the two executables (`protoc-gen-swift` and
 `protoc-gen-grpc-swift`) that show up in the main directory into a directory
