@@ -25,30 +25,17 @@ import Logging
 
 class GRPCStatusCodeTests: GRPCTestCase {
   var channel: EmbeddedChannel!
-  var status: EventLoopFuture<GRPCStatus>!
 
   override func setUp() {
     super.setUp()
 
-    self.channel = EmbeddedChannel()
-    let statusPromise = self.channel.eventLoop.makePromise(of: GRPCStatus.self)
-    self.status = statusPromise.futureResult
+    let handler = _GRPCClientChannelHandler<Echo_EchoRequest, Echo_EchoResponse>(
+      streamID: .init(1),
+      callType: .unary,
+      logger: self.logger
+    )
 
-    try! self.channel.pipeline.addHandlers([
-      _GRPCClientChannelHandler<Echo_EchoRequest, Echo_EchoResponse>(streamID: .init(1), callType: .unary, logger: self.logger),
-      GRPCClientUnaryResponseChannelHandler<Echo_EchoResponse>(
-        initialMetadataPromise: channel.eventLoop.makePromise(),
-        trailingMetadataPromise: channel.eventLoop.makePromise(),
-        responsePromise: channel.eventLoop.makePromise(),
-        statusPromise: statusPromise,
-        errorDelegate: nil,
-        timeout: .infinite,
-        logger: self.logger
-      )
-    ]).wait()
-  }
-
-  override func tearDown() {
+    self.channel = EmbeddedChannel(handler: handler)
   }
 
   func headersFrame(status: HTTPResponseStatus) -> HTTP2Frame {
@@ -73,8 +60,15 @@ class GRPCStatusCodeTests: GRPCTestCase {
   func doTestResponseStatus(_ status: HTTPResponseStatus, expected: GRPCStatus.Code) throws {
     // Send the request head so we're in a valid state to receive headers.
     self.sendRequestHead()
-    XCTAssertNoThrow(try self.channel.writeInbound(self.headersFrame(status: status)))
-    XCTAssertEqual(try self.status.map { $0.code }.wait(), expected)
+    XCTAssertThrowsError(try self.channel.writeInbound(self.headersFrame(status: status))) { error in
+      guard let withContext = error as? GRPCError.WithContext,
+            let invalidHTTPStatus = withContext.error as? GRPCError.InvalidHTTPStatus  else {
+        XCTFail("Unexpected error: \(error)")
+        return
+      }
+
+      XCTAssertEqual(invalidHTTPStatus.makeGRPCStatus().code, expected)
+    }
   }
 
   func testTooManyRequests() throws {
@@ -110,21 +104,23 @@ class GRPCStatusCodeTests: GRPCTestCase {
   }
 
   func testStatusCodeAndMessageAreRespectedForNon200Responses() throws {
-    let statusCode: GRPCStatus.Code = .doNotUse
-    let statusMessage = "Not the HTTP error phrase"
+    let status = GRPCStatus(code: .doNotUse, message: "Not the HTTP error phrase")
 
     let headers: HPACKHeaders = [
       ":status": "\(HTTPResponseStatus.imATeapot.code)",
-      GRPCHeaderName.statusCode: "\(statusCode.rawValue)",
-      GRPCHeaderName.statusMessage: statusMessage
+      GRPCHeaderName.statusCode: "\(status.code.rawValue)",
+      GRPCHeaderName.statusMessage: status.message!
     ]
 
     self.sendRequestHead()
     let headerFrame = HTTP2Frame(streamID: .init(1), payload: .headers(.init(headers: headers)))
-    XCTAssertNoThrow(try self.channel.writeInbound(headerFrame))
-    let status = try self.status.wait()
-
-    XCTAssertEqual(status.code, statusCode)
-    XCTAssertEqual(status.message, statusMessage)
+    XCTAssertThrowsError(try self.channel.writeInbound(headerFrame)) { error in
+      guard let withContext = error as? GRPCError.WithContext,
+            let invalidHTTPStatus = withContext.error as? GRPCError.InvalidHTTPStatusWithGRPCStatus  else {
+        XCTFail("Unexpected error: \(error)")
+        return
+      }
+      XCTAssertEqual(invalidHTTPStatus.makeGRPCStatus(), status)
+    }
   }
 }

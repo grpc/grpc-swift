@@ -171,6 +171,31 @@ public struct _GRPCRequestHead {
   }
 }
 
+extension _GRPCRequestHead {
+  internal init(
+    scheme: String,
+    path: String,
+    host: String,
+    requestID: String,
+    options: CallOptions
+  ) {
+    var customMetadata = options.customMetadata
+    if let requestIDHeader = options.requestIDHeader {
+      customMetadata.add(name: requestIDHeader, value: requestID)
+    }
+
+    self = _GRPCRequestHead(
+      method: options.cacheable ? "GET" : "POST",
+      scheme: scheme,
+      path: path,
+      host: host,
+      timeout: options.timeout,
+      customMetadata: customMetadata,
+      encoding: options.messageEncoding
+    )
+  }
+}
+
 /// A gRPC client response message part.
 ///
 /// - Important: This is **NOT** part of the public API.
@@ -477,22 +502,6 @@ extension _GRPCClientChannelHandler: ChannelOutboundHandler {
           context.fireErrorCaught(GRPCError.InvalidState("unable to close request stream").captureContext())
         }
       }
-    }
-  }
-
-  public func triggerUserOutboundEvent(
-    context: ChannelHandlerContext,
-    event: Any,
-    promise: EventLoopPromise<Void>?
-  ) {
-    if let userEvent = event as? GRPCClientUserEvent {
-      switch userEvent {
-      case .cancelled:
-        context.fireErrorCaught(GRPCError.RPCCancelledByClient().captureContext())
-        context.close(mode: .all, promise: promise)
-      }
-    } else {
-      context.triggerUserOutboundEvent(event, promise: promise)
     }
   }
 }
