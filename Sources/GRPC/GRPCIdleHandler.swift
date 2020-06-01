@@ -16,14 +16,29 @@
 import NIO
 import NIOHTTP2
 
-internal class ClientConnectivityHandler: ChannelInboundHandler {
+internal class GRPCIdleHandler: ChannelInboundHandler {
   typealias InboundIn = HTTP2Frame
 
-  private var connectionManager: ConnectionManager
+  /// The amount of time to wait before closing the channel when there are no active streams.
   private let idleTimeout: TimeAmount
 
+  /// The number of active streams.
   private var activeStreams = 0
+
+  /// The scheduled task which will close the channel.
   private var scheduledIdle: Scheduled<Void>? = nil
+
+  /// Client and server have slightly different behaviours; track which we are following.
+  private var mode: Mode
+
+  /// The mode of operation: the client tracks additional connection state in the connection
+  /// manager.
+  internal enum Mode {
+    case client(ConnectionManager)
+    case server
+  }
+
+  /// The current connection state.
   private var state: State = .notReady
 
   private enum State {
@@ -37,8 +52,8 @@ internal class ClientConnectivityHandler: ChannelInboundHandler {
     case closed
   }
 
-  init(connectionManager: ConnectionManager, idleTimeout: TimeAmount = .minutes(5)) {
-    self.connectionManager = connectionManager
+  init(mode: Mode, idleTimeout: TimeAmount = .minutes(5)) {
+    self.mode = mode
     self.idleTimeout = idleTimeout
   }
 
@@ -67,10 +82,15 @@ internal class ClientConnectivityHandler: ChannelInboundHandler {
   }
 
   func channelActive(context: ChannelHandlerContext) {
-    switch self.state {
-    case .notReady:
-      self.connectionManager.channelActive(channel: context.channel)
-    case .ready, .closed:
+    switch (self.mode, self.state) {
+    // The client should become active: we'll only schedule the idling when the channel
+    // becomes 'ready'.
+    case (.client(let manager), .notReady):
+      manager.channelActive(channel: context.channel)
+
+    case (.server, .notReady),
+         (_, .ready),
+         (_, .closed):
       ()
     }
 
@@ -81,11 +101,16 @@ internal class ClientConnectivityHandler: ChannelInboundHandler {
     self.scheduledIdle?.cancel()
     self.scheduledIdle = nil
 
-    switch self.state {
-    case .notReady, .ready:
-      self.connectionManager.channelInactive()
-    case .closed:
+    switch (self.mode, self.state) {
+    case (.client(let manager), .notReady),
+         (.client(let manager), .ready):
+      manager.channelInactive()
+
+    case (.server, .notReady),
+         (.server, .ready),
+         (_, .closed):
       ()
+
     }
 
     context.fireChannelInactive()
@@ -100,17 +125,23 @@ internal class ClientConnectivityHandler: ChannelInboundHandler {
       case (.notReady, .settings):
         self.state = .ready
 
-        let remoteAddressDescription = context.channel.remoteAddress.map { "\($0)" } ?? "n/a"
-        self.connectionManager.logger.info("gRPC connection ready", metadata: [
-          "remote_address": "\(remoteAddressDescription)",
-          "event_loop": "\(context.eventLoop)"
-        ])
+        switch self.mode {
+        case .client(let manager):
+          let remoteAddressDescription = context.channel.remoteAddress.map { "\($0)" } ?? "n/a"
+          manager.logger.info("gRPC connection ready", metadata: [
+            "remote_address": "\(remoteAddressDescription)",
+            "event_loop": "\(context.eventLoop)"
+          ])
+
+          // Let the manager know we're ready.
+          manager.ready()
+
+        case .server:
+          ()
+        }
 
         // Start the idle timeout.
         self.scheduleIdleTimeout(context: context)
-
-        // Let the manager know we're ready.
-        self.connectionManager.ready()
 
       case (.notReady, .goAway),
            (.ready, .goAway):
@@ -140,7 +171,13 @@ internal class ClientConnectivityHandler: ChannelInboundHandler {
     }
 
     self.state = .closed
-    self.connectionManager.idle()
+    switch self.mode {
+    case .client(let manager):
+      manager.idle()
+    case .server:
+      ()
+    }
+
     context.close(mode: .all, promise: nil)
   }
 }

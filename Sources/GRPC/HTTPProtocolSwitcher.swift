@@ -135,8 +135,10 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
         context.channel.configureHTTP2Pipeline(mode: .server) { (streamChannel, streamID) in
             streamChannel.pipeline.addHandler(HTTP2ToHTTP1ServerCodec(streamID: streamID, normalizeHTTPHeaders: true))
               .flatMap { self.handlersInitializer(streamChannel) }
+          }.flatMap { multiplexer in
+            // Add an idle handler between the two HTTP2 handlers.
+            context.channel.pipeline.addHandler(GRPCIdleHandler(mode: .server), position: .before(multiplexer))
           }
-          .map { _ in }
           .cascade(to: pipelineConfigured)
       }
 
