@@ -240,6 +240,9 @@ extension ClientConnection {
     /// The connection backoff configuration. If no connection retrying is required then this should
     /// be `nil`.
     public var connectionBackoff: ConnectionBackoff?
+    
+    /// The HTTP/2 flow control target window size.
+    public var httpTargetWindowSize: Int
 
     /// The HTTP protocol used for this connection.
     public var httpProtocol: HTTP2ToHTTP1ClientCodec.HTTPProtocol {
@@ -258,13 +261,15 @@ extension ClientConnection {
     /// - Parameter tlsConfiguration: TLS configuration, defaulting to `nil`.
     /// - Parameter connectionBackoff: The connection backoff configuration to use.
     /// - Parameter messageEncoding: Message compression configuration, defaults to no compression.
+    /// - Parameter targetWindowSize: The HTTP/2 flow control target window size.
     public init(
       target: ConnectionTarget,
       eventLoopGroup: EventLoopGroup,
       errorDelegate: ClientErrorDelegate? = LoggingClientErrorDelegate(),
       connectivityStateDelegate: ConnectivityStateDelegate? = nil,
       tls: Configuration.TLS? = nil,
-      connectionBackoff: ConnectionBackoff? = ConnectionBackoff()
+      connectionBackoff: ConnectionBackoff? = ConnectionBackoff(),
+      httpTargetWindowSize: Int = 65535
     ) {
       self.target = target
       self.eventLoopGroup = eventLoopGroup
@@ -272,6 +277,7 @@ extension ClientConnection {
       self.connectivityStateDelegate = connectivityStateDelegate
       self.tls = tls
       self.connectionBackoff = connectionBackoff
+      self.httpTargetWindowSize = httpTargetWindowSize
     }
   }
 }
@@ -324,6 +330,7 @@ extension Channel {
   }
 
   func configureGRPCClient(
+    httpTargetWindowSize: Int,
     tlsConfiguration: TLSConfiguration?,
     tlsServerHostname: String?,
     connectionManager: ConnectionManager,
@@ -335,7 +342,7 @@ extension Channel {
     }
 
     return (tlsConfigured ?? self.eventLoop.makeSucceededFuture(())).flatMap {
-      self.configureHTTP2Pipeline(mode: .client)
+      self.configureHTTP2Pipeline(mode: .client, targetWindowSize: httpTargetWindowSize)
     }.flatMap { _ in
       return self.pipeline.handler(type: NIOHTTP2Handler.self).flatMap { http2Handler in
         self.pipeline.addHandler(

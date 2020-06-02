@@ -23,6 +23,7 @@ extension Server {
     private var providers: [CallHandlerProvider] = []
     private var errorDelegate: ServerErrorDelegate?
     private var messageEncoding: ServerMessageEncoding = .disabled
+    private var httpTargetWindowSize: Int = 65535
 
     fileprivate init(group: EventLoopGroup) {
       self.group = group
@@ -50,7 +51,8 @@ extension Server {
         serviceProviders: self.providers,
         errorDelegate: self.errorDelegate,
         tls: self.maybeTLS,
-        messageEncoding: self.messageEncoding
+        messageEncoding: self.messageEncoding,
+        httpTargetWindowSize: self.httpTargetWindowSize
       )
       return Server.start(configuration: configuration)
     }
@@ -98,6 +100,15 @@ extension Server.Builder.Secure {
   @discardableResult
   public func withTLS(certificateVerification: CertificateVerification) -> Self {
     self.tls.certificateVerification = certificateVerification
+    return self
+  }
+}
+
+extension Server.Builder {
+  /// Sets the HTTP/2 flow control target window size. Defaults to 65,535 if not explicitly set.
+  @discardableResult
+  public func withHTTPTargetWindowSize(_ httpTargetWindowSize: Int) -> Self {
+    self.httpTargetWindowSize = httpTargetWindowSize
     return self
   }
 }

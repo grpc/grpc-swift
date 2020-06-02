@@ -36,6 +36,7 @@ extension ClientConnection {
     private var connectionBackoffIsEnabled = true
     private var errorDelegate: ClientErrorDelegate?
     private var connectivityStateDelegate: ConnectivityStateDelegate?
+    private var httpTargetWindowSize: Int = 65535
 
     fileprivate init(group: EventLoopGroup) {
       self.group = group
@@ -48,7 +49,8 @@ extension ClientConnection {
         errorDelegate: self.errorDelegate,
         connectivityStateDelegate: self.connectivityStateDelegate,
         tls: self.maybeTLS,
-        connectionBackoff: self.connectionBackoffIsEnabled ? self.connectionBackoff : nil
+        connectionBackoff: self.connectionBackoffIsEnabled ? self.connectionBackoff : nil,
+        httpTargetWindowSize: self.httpTargetWindowSize
       )
       return ClientConnection(configuration: configuration)
     }
@@ -191,6 +193,15 @@ extension ClientConnection.Builder.Secure {
   @discardableResult
   public func withTLS(trustRoots: NIOSSLTrustRoots) -> Self {
     self.tls.trustRoots = trustRoots
+    return self
+  }
+}
+
+extension ClientConnection.Builder {
+  /// Sets the HTTP/2 flow control target window size. Defaults to 65,535 if not explicitly set.
+  @discardableResult
+  public func withHTTPTargetWindowSize(_ httpTargetWindowSize: Int) -> Self {
+    self.httpTargetWindowSize = httpTargetWindowSize
     return self
   }
 }

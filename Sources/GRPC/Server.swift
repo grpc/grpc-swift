@@ -99,7 +99,10 @@ public final class Server {
       .serverChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
       // Set the handlers that are applied to the accepted Channels
       .childChannelInitializer { channel in
-        let protocolSwitcher = HTTPProtocolSwitcher(errorDelegate: configuration.errorDelegate) { channel -> EventLoopFuture<Void> in
+        let protocolSwitcher = HTTPProtocolSwitcher(
+          errorDelegate: configuration.errorDelegate,
+          httpTargetWindowSize: configuration.httpTargetWindowSize
+        ) { channel -> EventLoopFuture<Void> in
           let logger = Logger(subsystem: .serverChannelCall, metadata: [MetadataKey.requestID: "\(UUID())"])
           let handler = GRPCServerRequestRoutingHandler(
             servicesByName: configuration.serviceProvidersByName,
@@ -173,7 +176,6 @@ extension Server {
   public struct Configuration {
     /// The target to bind to.
     public var target: BindTarget
-
     /// The event loop group to run the connection on.
     public var eventLoopGroup: EventLoopGroup
 
@@ -196,6 +198,9 @@ extension Server {
     /// streaming and bidirectional streaming RPCs) by passing setting `compression` to `.disabled`
     /// in `sendResponse(_:compression)`.
     public var messageEncoding: ServerMessageEncoding
+    
+    /// The HTTP/2 flow control target window size.
+    public var httpTargetWindowSize: Int
 
     /// Create a `Configuration` with some pre-defined defaults.
     ///
@@ -212,7 +217,8 @@ extension Server {
       serviceProviders: [CallHandlerProvider],
       errorDelegate: ServerErrorDelegate? = LoggingServerErrorDelegate.shared,
       tls: TLS? = nil,
-      messageEncoding: ServerMessageEncoding = .disabled
+      messageEncoding: ServerMessageEncoding = .disabled,
+      httpTargetWindowSize: Int = 65535
     ) {
       self.target = target
       self.eventLoopGroup = eventLoopGroup
@@ -220,6 +226,7 @@ extension Server {
       self.errorDelegate = errorDelegate
       self.tls = tls
       self.messageEncoding = messageEncoding
+      self.httpTargetWindowSize = httpTargetWindowSize
     }
   }
 }

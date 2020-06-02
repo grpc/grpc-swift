@@ -25,6 +25,7 @@ internal class HTTPProtocolSwitcher {
   private let handlersInitializer: ((Channel) -> EventLoopFuture<Void>)
   private let errorDelegate: ServerErrorDelegate?
   private let logger = Logger(subsystem: .serverChannelCall)
+  private let httpTargetWindowSize: Int
 
   // We could receive additional data after the initial data and before configuring
   // the pipeline; buffer it and fire it down the pipeline once it is configured.
@@ -41,8 +42,13 @@ internal class HTTPProtocolSwitcher {
   }
   private var bufferedData: [NIOAny] = []
 
-  init(errorDelegate: ServerErrorDelegate?, handlersInitializer: (@escaping (Channel) -> EventLoopFuture<Void>)) {
+  init(
+    errorDelegate: ServerErrorDelegate?,
+    httpTargetWindowSize: Int = 65535,
+    handlersInitializer: (@escaping (Channel) -> EventLoopFuture<Void>)
+  ) {
     self.errorDelegate = errorDelegate
+    self.httpTargetWindowSize = httpTargetWindowSize
     self.handlersInitializer = handlersInitializer
   }
 }
@@ -132,7 +138,10 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
           .cascade(to: pipelineConfigured)
 
       case .http2:
-        context.channel.configureHTTP2Pipeline(mode: .server) { (streamChannel, streamID) in
+        context.channel.configureHTTP2Pipeline(
+          mode: .server,
+          targetWindowSize: httpTargetWindowSize
+        ) { (streamChannel, streamID) in
             streamChannel.pipeline.addHandler(HTTP2ToHTTP1ServerCodec(streamID: streamID, normalizeHTTPHeaders: true))
               .flatMap { self.handlersInitializer(streamChannel) }
           }
