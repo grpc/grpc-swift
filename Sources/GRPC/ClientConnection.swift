@@ -241,7 +241,7 @@ extension ClientConnection {
     /// be `nil`.
     public var connectionBackoff: ConnectionBackoff?
     
-    ///The HTTP/2 flow control target window size.
+    /// The HTTP/2 flow control target window size.
     public var httpTargetWindowSize: Int
 
     /// The HTTP protocol used for this connection.

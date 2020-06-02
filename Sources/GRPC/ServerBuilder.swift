@@ -105,9 +105,9 @@ extension Server.Builder.Secure {
 }
 
 extension Server.Builder {
-  /// Sets the HTTP/2 flow control target window size.
+  /// Sets the HTTP/2 flow control target window size. Defaults to 65,535 if not explicitly set.
   @discardableResult
-  public func withHttpTargetWindowSize(_ httpTargetWindowSize: Int) -> Self {
+  public func withHTTPTargetWindowSize(_ httpTargetWindowSize: Int) -> Self {
     self.httpTargetWindowSize = httpTargetWindowSize
     return self
   }

@@ -176,7 +176,6 @@ extension Server {
   public struct Configuration {
     /// The target to bind to.
     public var target: BindTarget
-    
     /// The event loop group to run the connection on.
     public var eventLoopGroup: EventLoopGroup
 
