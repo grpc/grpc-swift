@@ -346,7 +346,7 @@ extension Channel {
     }.flatMap { _ in
       return self.pipeline.handler(type: NIOHTTP2Handler.self).flatMap { http2Handler in
         self.pipeline.addHandler(
-          ClientConnectivityHandler(connectionManager: connectionManager),
+          GRPCIdleHandler(mode: .client(connectionManager)),
           position: .after(http2Handler)
         )
       }.flatMap {
