@@ -36,6 +36,7 @@ extension ClientConnection {
     private var connectionBackoffIsEnabled = true
     private var errorDelegate: ClientErrorDelegate?
     private var connectivityStateDelegate: ConnectivityStateDelegate?
+    private var connectionIdleTimeout: TimeAmount = .minutes(5)
     private var httpTargetWindowSize: Int = 65535
 
     fileprivate init(group: EventLoopGroup) {
@@ -50,6 +51,7 @@ extension ClientConnection {
         connectivityStateDelegate: self.connectivityStateDelegate,
         tls: self.maybeTLS,
         connectionBackoff: self.connectionBackoffIsEnabled ? self.connectionBackoff : nil,
+        connectionIdleTimeout: self.connectionIdleTimeout,
         httpTargetWindowSize: self.httpTargetWindowSize
       )
       return ClientConnection(configuration: configuration)
@@ -138,6 +140,16 @@ extension ClientConnection.Builder {
   @discardableResult
   public func withConnectionReestablishment(enabled: Bool) -> Self {
     self.connectionBackoffIsEnabled = enabled
+    return self
+  }
+
+  /// The amount of time to wait before closing the connection. The idle timeout will start only
+  /// if there are no RPCs in progress and will be cancelled as soon as any RPCs start. If a
+  /// connection becomes idle, starting a new RPC will automatically create a new connection.
+  /// Defaults to 5 minutes if not set.
+  @discardableResult
+  public func withConnectionIdleTimeout(_ timeout: TimeAmount) -> Self {
+    self.connectionIdleTimeout = timeout
     return self
   }
 }

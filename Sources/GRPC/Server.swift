@@ -101,7 +101,8 @@ public final class Server {
       .childChannelInitializer { channel in
         let protocolSwitcher = HTTPProtocolSwitcher(
           errorDelegate: configuration.errorDelegate,
-          httpTargetWindowSize: configuration.httpTargetWindowSize
+          httpTargetWindowSize: configuration.httpTargetWindowSize,
+          idleTimeout: configuration.connectionIdleTimeout
         ) { channel -> EventLoopFuture<Void> in
           let logger = Logger(subsystem: .serverChannelCall, metadata: [MetadataKey.requestID: "\(UUID())"])
           let handler = GRPCServerRequestRoutingHandler(
@@ -189,6 +190,10 @@ extension Server {
     /// TLS configuration for this connection. `nil` if TLS is not desired.
     public var tls: TLS?
 
+    /// The amount of time to wait before closing connections. The idle timeout will start only
+    /// if there are no RPCs in progress and will be cancelled as soon as any RPCs start.
+    public var connectionIdleTimeout: TimeAmount
+
     /// The compression configuration for requests and responses.
     ///
     /// If compression is enabled for the server it may be disabled for responses on any RPC by
@@ -217,6 +222,7 @@ extension Server {
       serviceProviders: [CallHandlerProvider],
       errorDelegate: ServerErrorDelegate? = LoggingServerErrorDelegate.shared,
       tls: TLS? = nil,
+      connectionIdleTimeout: TimeAmount = .minutes(5),
       messageEncoding: ServerMessageEncoding = .disabled,
       httpTargetWindowSize: Int = 65535
     ) {
@@ -225,6 +231,7 @@ extension Server {
       self.serviceProviders = serviceProviders
       self.errorDelegate = errorDelegate
       self.tls = tls
+      self.connectionIdleTimeout = connectionIdleTimeout
       self.messageEncoding = messageEncoding
       self.httpTargetWindowSize = httpTargetWindowSize
     }

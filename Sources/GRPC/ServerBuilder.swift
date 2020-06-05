@@ -23,6 +23,7 @@ extension Server {
     private var providers: [CallHandlerProvider] = []
     private var errorDelegate: ServerErrorDelegate?
     private var messageEncoding: ServerMessageEncoding = .disabled
+    private var connectionIdleTimeout: TimeAmount = .minutes(5)
     private var httpTargetWindowSize: Int = 65535
 
     fileprivate init(group: EventLoopGroup) {
@@ -51,6 +52,7 @@ extension Server {
         serviceProviders: self.providers,
         errorDelegate: self.errorDelegate,
         tls: self.maybeTLS,
+        connectionIdleTimeout: self.connectionIdleTimeout,
         messageEncoding: self.messageEncoding,
         httpTargetWindowSize: self.httpTargetWindowSize
       )
@@ -71,6 +73,7 @@ extension Server.Builder {
 extension Server.Builder {
   /// Sets the service providers that this server should offer. Note that calling this multiple
   /// times will override any previously set providers.
+  @discardableResult
   public func withServiceProviders(_ providers: [CallHandlerProvider]) -> Self {
     self.providers = providers
     return self
@@ -78,8 +81,20 @@ extension Server.Builder {
 }
 
 extension Server.Builder {
+  /// The amount of time to wait before closing connections. The idle timeout will start only
+  /// if there are no RPCs in progress and will be cancelled as soon as any RPCs start. Defaults to
+  /// 5 minutes if not set.
+  @discardableResult
+  public func withConnectionIdleTimeout(_ timeout: TimeAmount) -> Self {
+    self.connectionIdleTimeout = timeout
+    return self
+  }
+}
+
+extension Server.Builder {
   /// Sets the message compression configuration. Compression is disabled if this is not configured
   /// and any RPCs using compression will not be accepted.
+  @discardableResult
   public func withMessageCompression(_ encoding: ServerMessageEncoding) -> Self {
     self.messageEncoding = encoding
     return self

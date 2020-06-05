@@ -240,6 +240,12 @@ extension ClientConnection {
     /// The connection backoff configuration. If no connection retrying is required then this should
     /// be `nil`.
     public var connectionBackoff: ConnectionBackoff?
+
+    /// The amount of time to wait before closing the connection. The idle timeout will start only
+    /// if there are no RPCs in progress and will be cancelled as soon as any RPCs start.
+    ///
+    /// If a connection becomes idle, starting a new RPC will automatically create a new connection.
+    public var connectionIdleTimeout: TimeAmount
     
     /// The HTTP/2 flow control target window size.
     public var httpTargetWindowSize: Int
@@ -269,6 +275,7 @@ extension ClientConnection {
       connectivityStateDelegate: ConnectivityStateDelegate? = nil,
       tls: Configuration.TLS? = nil,
       connectionBackoff: ConnectionBackoff? = ConnectionBackoff(),
+      connectionIdleTimeout: TimeAmount = .minutes(5),
       httpTargetWindowSize: Int = 65535
     ) {
       self.target = target
@@ -277,6 +284,7 @@ extension ClientConnection {
       self.connectivityStateDelegate = connectivityStateDelegate
       self.tls = tls
       self.connectionBackoff = connectionBackoff
+      self.connectionIdleTimeout = connectionIdleTimeout
       self.httpTargetWindowSize = httpTargetWindowSize
     }
   }
@@ -334,6 +342,7 @@ extension Channel {
     tlsConfiguration: TLSConfiguration?,
     tlsServerHostname: String?,
     connectionManager: ConnectionManager,
+    connectionIdleTimeout: TimeAmount,
     errorDelegate: ClientErrorDelegate?,
     logger: Logger
   ) -> EventLoopFuture<Void> {
@@ -346,7 +355,7 @@ extension Channel {
     }.flatMap { _ in
       return self.pipeline.handler(type: NIOHTTP2Handler.self).flatMap { http2Handler in
         self.pipeline.addHandler(
-          GRPCIdleHandler(mode: .client(connectionManager)),
+          GRPCIdleHandler(mode: .client(connectionManager), idleTimeout: connectionIdleTimeout),
           position: .after(http2Handler)
         )
       }.flatMap {
