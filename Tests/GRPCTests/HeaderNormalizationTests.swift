@@ -24,13 +24,12 @@ import XCTest
 class EchoMetadataValidator: Echo_EchoProvider {
   private func assertCustomMetadataIsLowercased(
     _ headers: HTTPHeaders,
-    file: StaticString = #file,
     line: UInt = #line
   ) {
     // Header lookup is case-insensitive so we need to pull out the values we know the client sent
     // as custom-metadata and then compare a new set of headers.
     let customMetadata = HTTPHeaders(headers.filter { name, value in value == "client" })
-    XCTAssertEqual(customMetadata, ["client": "client"], file: file, line: line)
+    XCTAssertEqual(customMetadata, ["client": "client"], line: line)
   }
 
   func get(
