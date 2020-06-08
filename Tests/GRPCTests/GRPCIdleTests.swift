@@ -42,7 +42,7 @@ class GRPCIdleTests: GRPCTestCase {
     let server = try Server.insecure(group: group)
       .withServiceProviders([EchoProvider()])
       .withConnectionIdleTimeout(serverIdle)
-      .bind(host: "::1", port: 0)
+      .bind(host: "localhost", port: 0)
       .wait()
     defer {
       XCTAssertNoThrow(try server.close().wait())
@@ -62,7 +62,7 @@ class GRPCIdleTests: GRPCTestCase {
     let connection = ClientConnection.insecure(group: group)
       .withConnectivityStateDelegate(stateRecorder)
       .withConnectionIdleTimeout(clientIdle)
-      .connect(host: "::1", port: server.channel.localAddress!.port!)
+      .connect(host: "localhost", port: server.channel.localAddress!.port!)
     defer {
       XCTAssertNoThrow(try connection.close().wait())
     }
