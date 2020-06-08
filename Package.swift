@@ -27,19 +27,19 @@ let package = Package(
   dependencies: [
     // GRPC dependencies:
     // Main SwiftNIO package
-    .package(url: "https://github.com/apple/swift-nio.git", from: "2.14.0"),
+    .package(url: "https://github.com/apple/swift-nio.git", from: "2.18.0"),
     // HTTP2 via SwiftNIO
     .package(url: "https://github.com/apple/swift-nio-http2.git", from: "1.12.1"),
     // TLS via SwiftNIO
-    .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.6.2"),
+    .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.7.4"),
     // Support for Network.framework where possible.
-    .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.3.0"),
+    .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.6.0"),
 
     // Official SwiftProtobuf library, for [de]serializing data to send on the wire.
-    .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.8.0"),
+    .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.9.0"),
 
     // Logging API.
-    .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
+    .package(url: "https://github.com/apple/swift-log.git", from: "1.2.0"),
   ],
   targets: [
     // The main GRPC module.
