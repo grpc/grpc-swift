@@ -46,8 +46,15 @@ make_all() {
 
 make_test() {
   echo -en 'travis_fold:start:make.test\\r'
-  info "Running Swift tests"
-  make test
+
+  if [[ ${NO_TSAN} == "true" ]]; then
+    info "Running Swift tests"
+    make test
+  else
+    info "Running Swift tests with TSAN"
+    make test-tsan
+  fi
+
   success "Swift tests passed"
   echo -en 'travis_fold:end:make.test\\r'
 }

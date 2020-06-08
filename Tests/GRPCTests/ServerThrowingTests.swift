@@ -130,7 +130,8 @@ extension ServerThrowingTests {
 
   func testClientStreaming() throws {
     let call = client.collect()
-    XCTAssertNoThrow(try call.sendEnd().wait())
+    // This is racing with the server error; it might fail, it might not.
+    try? call.sendEnd().wait()
     XCTAssertEqual(expectedError, try call.status.wait())
 
     if type(of: makeEchoProvider()) != ErrorReturningEchoProvider.self {
@@ -150,7 +151,8 @@ extension ServerThrowingTests {
 
   func testBidirectionalStreaming() throws {
     let call = client.update() { XCTFail("no message expected, got \($0)") }
-    XCTAssertNoThrow(try call.sendEnd().wait())
+    // This is racing with the server error; it might fail, it might not.
+    try? call.sendEnd().wait()
     // Nothing to throw here, but the `status` should be the expected error.
     XCTAssertEqual(expectedError, try call.status.wait())
   }
