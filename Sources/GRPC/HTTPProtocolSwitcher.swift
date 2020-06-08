@@ -26,6 +26,7 @@ internal class HTTPProtocolSwitcher {
   private let errorDelegate: ServerErrorDelegate?
   private let logger = Logger(subsystem: .serverChannelCall)
   private let httpTargetWindowSize: Int
+  private let idleTimeout: TimeAmount
 
   // We could receive additional data after the initial data and before configuring
   // the pipeline; buffer it and fire it down the pipeline once it is configured.
@@ -45,10 +46,12 @@ internal class HTTPProtocolSwitcher {
   init(
     errorDelegate: ServerErrorDelegate?,
     httpTargetWindowSize: Int = 65535,
+    idleTimeout: TimeAmount,
     handlersInitializer: (@escaping (Channel) -> EventLoopFuture<Void>)
   ) {
     self.errorDelegate = errorDelegate
     self.httpTargetWindowSize = httpTargetWindowSize
+    self.idleTimeout = idleTimeout
     self.handlersInitializer = handlersInitializer
   }
 }
@@ -146,7 +149,8 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
               .flatMap { self.handlersInitializer(streamChannel) }
           }.flatMap { multiplexer in
             // Add an idle handler between the two HTTP2 handlers.
-            context.channel.pipeline.addHandler(GRPCIdleHandler(mode: .server), position: .before(multiplexer))
+            let idleHandler = GRPCIdleHandler(mode: .server, idleTimeout: self.idleTimeout)
+            return context.channel.pipeline.addHandler(idleHandler, position: .before(multiplexer))
           }
           .cascade(to: pipelineConfigured)
       }
