@@ -87,8 +87,8 @@ stages:
 cache:
   apt: true
   directories:
-    - .build
     - $HOME/bin_cache
+    - $HOME/zip_cache
 
 addons:
   apt:

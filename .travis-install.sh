@@ -31,6 +31,7 @@
 
 # Update .travis.yml if this changes.
 BIN_CACHE="$HOME"/bin_cache
+ZIP_CACHE="$HOME"/zip_cache
 
 PROTOBUF_VERSION=3.9.1
 # We need this to build gRPC C++ for the interop test server(s).
@@ -54,18 +55,33 @@ install_protoc() {
   echo -en 'travis_fold:start:install.protoc\\r'
   info "Installing protoc $PROTOBUF_VERSION"
 
-  # Install protoc
+  # Which protoc are we using?
   if [ "$TRAVIS_OS_NAME" = "osx" ]; then
-    PROTOC_URL=https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-osx-x86_64.zip
+    PROTOC_ZIP=protoc-${PROTOBUF_VERSION}-osx-x86_64.zip
   else
-    PROTOC_URL=https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip
+    PROTOC_ZIP=protoc-${PROTOBUF_VERSION}-linux-x86_64.zip
   fi
 
-  info "Downloading protoc from: $PROTOC_URL"
-  curl -fSsL $PROTOC_URL -o protoc.zip
+  CACHED_PROTOC_ZIP="$ZIP_CACHE/$PROTOC_ZIP"
 
-  info "Extracting protoc from protoc.zip"
-  unzip -q protoc.zip -d local
+  # Is it cached?
+  if [ ! -f "$CACHED_PROTOC_ZIP" ]; then
+    # No: download it.
+    PROTOC_URL=https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/${PROTOC_ZIP}
+    info "Downloading protoc from: $PROTOC_URL"
+    if curl -fSsL "$PROTOC_URL" -o "$CACHED_PROTOC_ZIP"; then
+      info "Downloaded protoc from: $PROTOC_URL"
+    else
+      info "Downloading protoc failed, removing artifacts"
+      rm "$CACHED_PROTOC_ZIP"
+      exit 1
+    fi
+  else
+    info "Using cached protoc"
+  fi
+
+  info "Extracting protoc from $CACHED_PROTOC_ZIP"
+  unzip -q "$CACHED_PROTOC_ZIP" -d local
   success "Installed protoc $PROTOBUF_VERSION"
   echo -en 'travis_fold:end:install.protoc\\r'
 }
@@ -169,6 +185,7 @@ build_grpc_cpp_server() {
 main() {
   cd
   mkdir -p local "$BIN_CACHE"
+  mkdir -p local "$ZIP_CACHE"
 
   install_protoc
   install_swift
