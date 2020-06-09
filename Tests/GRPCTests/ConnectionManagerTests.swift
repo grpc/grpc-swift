@@ -631,47 +631,71 @@ internal struct Change: Hashable, CustomStringConvertible {
 internal class RecordingConnectivityDelegate: ConnectivityStateDelegate {
   private let serialQueue = DispatchQueue(label: "io.grpc.testing")
   private let semaphore = DispatchSemaphore(value: 0)
+  private var expectation: Expectation = .noExpectation
 
-  private var changes: [Change] = []
-  private var expectedChanges = 0
+  private enum Expectation {
+    /// We have no expectation of any changes. We'll just ignore any changes.
+    case noExpectation
 
-  private var verifyOne: ((Change) -> ())? = nil
-  private var verifyMany: (([Change]) -> ())? = nil
+    /// We expect one change.
+    case one((Change) -> ())
 
+    /// We expect 'count' changes.
+    case some(count: Int, recorded: [Change], ([Change]) -> ())
+
+    var count: Int {
+      switch self {
+      case .noExpectation:
+        return 0
+      case .one:
+        return 1
+      case .some(let count, _, _):
+        return count
+      }
+    }
+  }
 
   func connectivityStateDidChange(from oldState: ConnectivityState, to newState: ConnectivityState) {
     self.serialQueue.async {
-      self.changes.append(Change(from: oldState, to: newState))
+      switch self.expectation {
+      case .one(let verify):
+        // We don't care about future changes.
+        self.expectation = .noExpectation
 
-      if self.changes.count == self.expectedChanges {
-        if let verifyOne = self.verifyOne {
-          verifyOne(self.changes[0])
-        } else if let verifyMany = self.verifyMany {
-          verifyMany(self.changes)
+        // Verify and notify.
+        verify(Change(from: oldState, to: newState))
+        self.semaphore.signal()
+
+      case .some(let count, var recorded, let verify):
+        recorded.append(Change(from: oldState, to: newState))
+        if recorded.count == count {
+          // We don't care about future changes.
+          self.expectation = .noExpectation
+
+          // Verify and notify.
+          verify(recorded)
+          self.semaphore.signal()
         } else {
-          XCTFail("Invalid state: no verifier set")
+          // Still need more responses.
+          self.expectation = .some(count: count, recorded: recorded, verify)
         }
 
-        self.verifyMany = nil
-        self.verifyOne = nil
-        self.changes = []
-
-        self.semaphore.signal()
+      case .noExpectation:
+        // Ignore any changes.
+        ()
       }
     }
   }
 
   func expectChanges(_ count: Int, verify: @escaping ([Change]) -> ()) {
     self.serialQueue.async {
-      self.expectedChanges = count
-      self.verifyMany = verify
+      self.expectation = .some(count: count, recorded: [], verify)
     }
   }
 
   func expectChange(verify: @escaping (Change) -> ()) {
     self.serialQueue.async {
-      self.expectedChanges = 1
-      self.verifyOne = verify
+      self.expectation = .one(verify)
     }
   }
 
@@ -681,7 +705,7 @@ internal class RecordingConnectivityDelegate: ConnectivityStateDelegate {
     case .success:
       ()
     case .timedOut:
-      XCTFail("Timed out before verifying \(self.expectedChanges) change(s)")
+      XCTFail("Timed out before verifying \(self.expectation.count) change(s)")
     }
   }
 }
