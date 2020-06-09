@@ -33,19 +33,13 @@ jobs:
       name: "Unit Tests: Ubuntu 18.04 (Swift 5.0)"
       env: RUN_INTEROP_TESTS=false SWIFT_VERSION=5.0.3 NO_TSAN=true
     - <<: *tests
-      name: "Unit Tests: Xcode 11.4 (Swift 5.2)"
+      name: "Unit Tests: Xcode 11.5"
+      os: osx
+      osx_image: xcode11.5
+    - <<: *tests
+      name: "Unit Tests: Xcode 11.4"
       os: osx
       osx_image: xcode11.4
-    - <<: *tests
-      name: "Unit Tests: Xcode 11.3 (Swift 5.1)"
-      os: osx
-      osx_image: xcode11.3
-      env: NO_TSAN=true
-    - <<: *tests
-      name: "Unit Tests: Xcode 10.3 (Swift 5.0)"
-      os: osx
-      osx_image: xcode10.3
-      env: NO_TSAN=true
     # Interop Tests.
     - &interop_tests
       stage: "Interoperability Tests"
@@ -62,17 +56,13 @@ jobs:
       name: "Interoperability Tests: Ubuntu 18.04 (Swift 5.0)"
       env: RUN_INTEROP_TESTS=true SWIFT_VERSION=5.0.3
     - <<: *interop_tests
-      name: "Interoperability Tests: Xcode 11.4 (Swift 5.2)"
+      name: "Interoperability Tests: Xcode 11.5"
+      os: osx
+      osx_image: xcode11.5
+    - <<: *interop_tests
+      name: "Interoperability Tests: Xcode 11.4"
       os: osx
       osx_image: xcode11.4
-    - <<: *interop_tests
-      name: "Interoperability Tests: Xcode 11.3 (Swift 5.1)"
-      os: osx
-      osx_image: xcode11.3
-    - <<: *interop_tests
-      name: "Interoperability Tests: Xcode 10.3 (Swift 5.0)"
-      os: osx
-      osx_image: xcode10.3
   allow_failures:
     # Swift Development builds are allowed to fail since they're pre-release.
     - <<: *development
