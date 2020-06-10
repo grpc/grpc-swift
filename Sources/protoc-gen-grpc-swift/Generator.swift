@@ -23,13 +23,11 @@ class Generator {
   internal var service: ServiceDescriptor! // context during generation
   internal var method: MethodDescriptor!   // context during generation
 
-  internal var observedMessages: Set<String>
   internal let protobufNamer: SwiftProtobufNamer
 
-  init(_ file: FileDescriptor, options: GeneratorOptions, observedMessages: Set<String>) {
+  init(_ file: FileDescriptor, options: GeneratorOptions) {
     self.file = file
     self.options = options
-    self.observedMessages = observedMessages
     self.printer = CodePrinter()
     self.protobufNamer = SwiftProtobufNamer(
       currentFile: file,
