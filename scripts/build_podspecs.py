@@ -53,8 +53,7 @@ class Dependency:
         if self.use_verbatim_version:
             return "    s.dependency '%s', %s\n" % (self.name, self.version)
 
-        # The '~>' allows users to use any patch update for the given version.
-        return "    s.dependency '%s', '~> %s'\n" % (self.name, self.version)
+        return "    s.dependency '%s', '%s'\n" % (self.name, self.version)
 
 class Pod:
     def __init__(self, name, module_name, version, description, dependencies=None):
@@ -173,10 +172,9 @@ def get_grpc_deps():
     for obj in data['object']['pins']:
         package = process_package(obj['package'])
         version = obj['state']['version']
-        # Strip the "patch" part of the version, as we want to allow users to use any patch version.
-        version = '.'.join(version.split('.')[0:2])
+        next_major_version = int(version.split('.')[0]) + 1
 
-        deps.append(Dependency(package, version, False))
+        deps.append(Dependency(package, '\'>= {}\', \'< {}\''.format(version, next_major_version)))
 
     return deps
 
