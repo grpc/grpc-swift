@@ -18,6 +18,9 @@ import SwiftProtobufPluginLibrary
 
 extension Generator {
   internal func printProtobufExtensions() {
+    if self.file.messages.isEmpty {
+      return
+    }
     println("// Provides conformance to `GRPCPayload`")
     for message in self.file.messages {
       let name = self.protobufNamer.fullName(message: message)
