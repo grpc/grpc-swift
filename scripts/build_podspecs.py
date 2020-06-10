@@ -118,7 +118,7 @@ class PodManager:
     def publish(self, pod_name):
         os.system('pod repo update')
         print('    Publishing %s.podspec' % (pod_name))
-        os.system('pod trunk push %s/%s.podspec' % (self.directory, pod_name))
+        os.system('pod trunk push --synchronous %s/%s.podspec' % (self.directory, pod_name))
 
     def build_pods(self):
         cgrpczlib_pod = Pod(
@@ -172,8 +172,9 @@ def get_grpc_deps():
     for obj in data['object']['pins']:
         package = process_package(obj['package'])
         version = obj['state']['version']
+        next_major_version = int(version.split('.')[0]) + 1
 
-        deps.append(Dependency(package, version, False))
+        deps.append(Dependency(package, '\'>= {}\', \'< {}\''.format(version, next_major_version)))
 
     return deps
 

@@ -16,12 +16,12 @@ Pod::Spec.new do |s|
     s.tvos.deployment_target = '10.0'
     s.source_files = 'Sources/GRPC/**/*.{swift,c,h}'
 
-    s.dependency 'Logging', '1.2.0'
-    s.dependency 'SwiftNIO', '2.18.0'
-    s.dependency 'SwiftNIOHTTP2', '1.12.1'
-    s.dependency 'SwiftNIOSSL', '2.7.4'
-    s.dependency 'SwiftNIOTransportServices', '1.6.0'
-    s.dependency 'SwiftProtobuf', '1.9.0'
+    s.dependency 'Logging', '>= 1.2.0', '< 2'
+    s.dependency 'SwiftNIO', '>= 2.18.0', '< 3'
+    s.dependency 'SwiftNIOHTTP2', '>= 1.12.1', '< 2'
+    s.dependency 'SwiftNIOSSL', '>= 2.7.4', '< 3'
+    s.dependency 'SwiftNIOTransportServices', '>= 1.6.0', '< 2'
+    s.dependency 'SwiftProtobuf', '>= 1.9.0', '< 2'
     s.dependency 'CGRPCZlib', s.version.to_s
 
 end
