@@ -31,6 +31,11 @@ public final class GRPCStatus: Error {
   /// The status message of the RPC.
   public let message: String?
 
+  /// Whether the status is '.ok'.
+  public var isOk: Bool {
+    return self.code == .ok
+  }
+
   public init(code: Code, message: String?) {
     self.code = code
     self.message = message
@@ -39,6 +44,9 @@ public final class GRPCStatus: Error {
   // Frequently used "default" statuses.
 
   /// The default status to return for succeeded calls.
+  ///
+  /// - Important: This should *not* be used when checking whether a returned status has an 'ok'
+  ///   status code. Use `GRPCStatus.isOk` or check the code directly.
   public static let ok = GRPCStatus(code: .ok, message: "OK")
   /// "Internal server error" status.
   public static let processingError = GRPCStatus(code: .internalError, message: "unknown error processing request")
