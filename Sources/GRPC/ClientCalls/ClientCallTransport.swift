@@ -475,7 +475,7 @@ extension ChannelTransport: ClientCallInbound {
 
       switch part {
       case .initialMetadata(let metadata):
-        self.responseContainer.initialMetadataPromise.succeed(metadata)
+        self.responseContainer.lazyInitialMetadataPromise.completeWith(.success(metadata))
 
       case .message(let messageContext):
         switch self.responseContainer.responseHandler {
@@ -486,7 +486,7 @@ extension ChannelTransport: ClientCallInbound {
         }
 
       case .trailingMetadata(let metadata):
-        self.responseContainer.trailingMetadataPromise.succeed(metadata)
+        self.responseContainer.lazyTrailingMetadataPromise.succeed(metadata)
 
       case .status(let status):
         // We're done; cancel the timeout.

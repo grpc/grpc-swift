@@ -24,58 +24,46 @@ internal struct ResponsePartContainer<Response: GRPCPayload> {
     case stream((Response) -> Void)
   }
 
-  /// A promise for the initial metadata.
-  let initialMetadataPromise: EventLoopPromise<HPACKHeaders>
+  var lazyInitialMetadataPromise: LazyEventLoopPromise<HPACKHeaders>
 
   /// A handler for response messages.
   let responseHandler: ResponseHandler
 
   /// A promise for the trailing metadata.
-  let trailingMetadataPromise: EventLoopPromise<HPACKHeaders>
+  var lazyTrailingMetadataPromise: LazyEventLoopPromise<HPACKHeaders>
 
   /// A promise for the call status.
-  let statusPromise: EventLoopPromise<GRPCStatus>
-
-  var initialMetadata: EventLoopFuture<HPACKHeaders> {
-    return self.initialMetadataPromise.futureResult
-  }
-
-  var trailingMetadata: EventLoopFuture<HPACKHeaders> {
-    return self.trailingMetadataPromise.futureResult
-  }
-
-  var status: EventLoopFuture<GRPCStatus> {
-    return self.statusPromise.futureResult
-  }
+  var lazyStatusPromise: LazyEventLoopPromise<GRPCStatus>
 
   /// Fail all promises - except for the status promise - with the given error status. Succeed the
   /// status promise.
-  func fail(with status: GRPCStatus) {
-    self.initialMetadataPromise.fail(status)
+  mutating func fail(with status: GRPCStatus) {
+    self.lazyInitialMetadataPromise.fail(status)
+
     switch self.responseHandler {
     case .unary(let response):
       response.fail(status)
     case .stream:
       ()
     }
-    self.trailingMetadataPromise.fail(status)
+    self.lazyTrailingMetadataPromise.fail(status)
     // We always succeed the status.
-    self.statusPromise.succeed(status)
+    self.lazyStatusPromise.succeed(status)
   }
 
   /// Make a response container for a unary response.
   init(eventLoop: EventLoop, unaryResponsePromise: EventLoopPromise<Response>) {
-    self.initialMetadataPromise = eventLoop.makePromise()
-    self.trailingMetadataPromise = eventLoop.makePromise()
-    self.statusPromise = eventLoop.makePromise()
+    self.lazyInitialMetadataPromise = eventLoop.makeLazyPromise()
+    self.lazyTrailingMetadataPromise = eventLoop.makeLazyPromise()
+    self.lazyStatusPromise = eventLoop.makeLazyPromise()
     self.responseHandler = .unary(unaryResponsePromise)
   }
 
   /// Make a response container for a response which is streamed.
   init(eventLoop: EventLoop, streamingResponseHandler: @escaping (Response) -> Void) {
-    self.initialMetadataPromise = eventLoop.makePromise()
-    self.trailingMetadataPromise = eventLoop.makePromise()
-    self.statusPromise = eventLoop.makePromise()
+    self.lazyInitialMetadataPromise = eventLoop.makeLazyPromise()
+    self.lazyTrailingMetadataPromise = eventLoop.makeLazyPromise()
+    self.lazyStatusPromise = eventLoop.makeLazyPromise()
     self.responseHandler = .stream(streamingResponseHandler)
   }
 }

@@ -47,14 +47,38 @@ public final class ServerStreamingCall<
   // MARK: - Response Parts
 
   /// The initial metadata returned from the server.
-  public let initialMetadata: EventLoopFuture<HPACKHeaders>
+  public var initialMetadata: EventLoopFuture<HPACKHeaders> {
+    if self.eventLoop.inEventLoop {
+      return self.transport.responseContainer.lazyInitialMetadataPromise.getFutureResult()
+    } else {
+      return self.eventLoop.flatSubmit {
+        return self.transport.responseContainer.lazyInitialMetadataPromise.getFutureResult()
+      }
+    }
+  }
 
   /// The trailing metadata returned from the server.
-  public let trailingMetadata: EventLoopFuture<HPACKHeaders>
+  public var trailingMetadata: EventLoopFuture<HPACKHeaders> {
+    if self.eventLoop.inEventLoop {
+      return self.transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult()
+    } else {
+      return self.eventLoop.flatSubmit {
+        return self.transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult()
+      }
+    }
+  }
 
   /// The final status of the the RPC.
-  public let status: EventLoopFuture<GRPCStatus>
-
+  public var status: EventLoopFuture<GRPCStatus> {
+    if self.eventLoop.inEventLoop {
+      return self.transport.responseContainer.lazyStatusPromise.getFutureResult()
+    } else {
+      return self.eventLoop.flatSubmit {
+        return self.transport.responseContainer.lazyStatusPromise.getFutureResult()
+      }
+    }
+  }
+  
   init(
     path: String,
     scheme: String,
@@ -82,9 +106,6 @@ public final class ServerStreamingCall<
     )
 
     self.options = callOptions
-    self.initialMetadata = self.transport.responseContainer.initialMetadata
-    self.trailingMetadata = self.transport.responseContainer.trailingMetadata
-    self.status = self.transport.responseContainer.status
 
     let requestHead = _GRPCRequestHead(
       scheme: scheme,

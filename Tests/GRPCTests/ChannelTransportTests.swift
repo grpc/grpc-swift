@@ -97,10 +97,10 @@ class ChannelTransportTests: GRPCTestCase {
     transport.receiveResponse(.trailingMetadata([:]))
     transport.receiveResponse(.status(.ok))
 
-    XCTAssertNoThrow(try container.initialMetadata.wait())
+    XCTAssertNoThrow(try transport.responseContainer.lazyInitialMetadataPromise.getFutureResult().wait())
     XCTAssertNoThrow(try responsePromise.futureResult.wait())
-    XCTAssertNoThrow(try container.trailingMetadata.wait())
-    XCTAssertNoThrow(try container.status.wait())
+    XCTAssertNoThrow(try transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult().wait())
+    XCTAssertNoThrow(try transport.responseContainer.lazyStatusPromise.getFutureResult().wait())
   }
 
   func testBidirectionalHappyPath() throws {
@@ -139,9 +139,9 @@ class ChannelTransportTests: GRPCTestCase {
     XCTAssertNoThrow(try channel.writeInbound(ResponsePart.status(.ok)))
 
     // Check the responses.
-    XCTAssertNoThrow(try container.initialMetadata.wait())
-    XCTAssertNoThrow(try container.trailingMetadata.wait())
-    XCTAssertNoThrow(try container.status.wait())
+    XCTAssertNoThrow(try transport.responseContainer.lazyInitialMetadataPromise.getFutureResult().wait())
+    XCTAssertNoThrow(try transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult().wait())
+    XCTAssertNoThrow(try transport.responseContainer.lazyStatusPromise.getFutureResult().wait())
   }
 
   // MARK: - Timeout
@@ -156,10 +156,10 @@ class ChannelTransportTests: GRPCTestCase {
     // Advance time beyond the timeout.
     channel.embeddedEventLoop.advanceTime(by: timeout.asNIOTimeAmount)
 
-    XCTAssertThrowsError(try container.initialMetadata.wait())
+    XCTAssertThrowsError(try transport.responseContainer.lazyInitialMetadataPromise.getFutureResult().wait())
     XCTAssertThrowsError(try responsePromise.futureResult.wait())
-    XCTAssertThrowsError(try container.trailingMetadata.wait())
-    XCTAssertEqual(try container.status.wait().code, .deadlineExceeded)
+    XCTAssertThrowsError(try transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult().wait())
+    XCTAssertEqual(try transport.responseContainer.lazyStatusPromise.getFutureResult().map { $0.code }.wait(), .deadlineExceeded)
 
     // Writing should fail.
     let sendPromise = channel.eventLoop.makePromise(of: Void.self)
@@ -181,10 +181,10 @@ class ChannelTransportTests: GRPCTestCase {
     // Advance time beyond the timeout.
     channel.embeddedEventLoop.advanceTime(by: timeout.asNIOTimeAmount)
 
-    XCTAssertThrowsError(try container.initialMetadata.wait())
+    XCTAssertThrowsError(try transport.responseContainer.lazyInitialMetadataPromise.getFutureResult().wait())
     XCTAssertThrowsError(try responsePromise.futureResult.wait())
-    XCTAssertThrowsError(try container.trailingMetadata.wait())
-    XCTAssertEqual(try container.status.wait().code, .deadlineExceeded)
+    XCTAssertThrowsError(try transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult().wait())
+    XCTAssertEqual(try transport.responseContainer.lazyStatusPromise.getFutureResult().map { $0.code }.wait(), .deadlineExceeded)
 
     // Writing should fail.
     let sendPromise = channel.eventLoop.makePromise(of: Void.self)
@@ -216,14 +216,14 @@ class ChannelTransportTests: GRPCTestCase {
 
     // We'll send back the initial metadata.
     XCTAssertNoThrow(try channel.writeInbound(ResponsePart.initialMetadata([:])))
-    XCTAssertNoThrow(try container.initialMetadata.wait())
+    XCTAssertNoThrow(try transport.responseContainer.lazyInitialMetadataPromise.getFutureResult().wait())
 
     // Advance time beyond the timeout.
     channel.embeddedEventLoop.advanceTime(by: timeout.asNIOTimeAmount)
 
     // Check the remaining response parts.
-    XCTAssertThrowsError(try container.trailingMetadata.wait())
-    XCTAssertEqual(try container.status.wait().code, .deadlineExceeded)
+    XCTAssertThrowsError(try transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult().wait())
+    XCTAssertEqual(try transport.responseContainer.lazyStatusPromise.getFutureResult().map { $0.code }.wait(), .deadlineExceeded)
   }
 
   // MARK: - Channel errors
@@ -234,17 +234,17 @@ class ChannelTransportTests: GRPCTestCase {
       XCTFail("No response expected but got: \(response)")
     }
 
-    _ = self.makeEmbeddedTransport(channel: channel, container: container)
+    let transport = self.makeEmbeddedTransport(channel: channel, container: container)
 
     // Activate and deactivate the channel.
     channel.pipeline.fireChannelActive()
     channel.pipeline.fireChannelInactive()
 
     // Everything should fail.
-    XCTAssertThrowsError(try container.initialMetadata.wait())
-    XCTAssertThrowsError(try container.trailingMetadata.wait())
+    XCTAssertThrowsError(try transport.responseContainer.lazyInitialMetadataPromise.getFutureResult().wait())
+    XCTAssertThrowsError(try transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult().wait())
     // Except the status, that will never fail.
-    XCTAssertNoThrow(try container.status.wait())
+    XCTAssertNoThrow(try transport.responseContainer.lazyStatusPromise.getFutureResult().wait())
   }
 
   func testChannelError() throws {
@@ -253,7 +253,7 @@ class ChannelTransportTests: GRPCTestCase {
       XCTFail("No response expected but got: \(response)")
     }
 
-    _ = self.makeEmbeddedTransport(channel: channel, container: container)
+    let transport = self.makeEmbeddedTransport(channel: channel, container: container)
 
     // Activate the channel.
     channel.pipeline.fireChannelActive()
@@ -262,10 +262,10 @@ class ChannelTransportTests: GRPCTestCase {
     channel.pipeline.fireErrorCaught(GRPCStatus.processingError)
 
     // Everything should fail.
-    XCTAssertThrowsError(try container.initialMetadata.wait())
-    XCTAssertThrowsError(try container.trailingMetadata.wait())
+    XCTAssertThrowsError(try transport.responseContainer.lazyInitialMetadataPromise.getFutureResult().wait())
+    XCTAssertThrowsError(try transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult().wait())
     // Except the status, that will never fail.
-    XCTAssertNoThrow(try container.status.wait())
+    XCTAssertNoThrow(try transport.responseContainer.lazyStatusPromise.getFutureResult().wait())
   }
 
   // MARK: - Test Transport after Shutdown

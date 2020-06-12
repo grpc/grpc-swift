@@ -49,17 +49,40 @@ public final class UnaryCall<
   // MARK: - Response Parts
 
   /// The initial metadata returned from the server.
-  public let initialMetadata: EventLoopFuture<HPACKHeaders>
+  public var initialMetadata: EventLoopFuture<HPACKHeaders> {
+    if self.eventLoop.inEventLoop {
+      return self.transport.responseContainer.lazyInitialMetadataPromise.getFutureResult()
+    } else {
+      return self.eventLoop.flatSubmit {
+        return self.transport.responseContainer.lazyInitialMetadataPromise.getFutureResult()
+      }
+    }
+  }
 
   /// The response returned by the server.
   public let response: EventLoopFuture<ResponsePayload>
 
   /// The trailing metadata returned from the server.
-  public let trailingMetadata: EventLoopFuture<HPACKHeaders>
+  public var trailingMetadata: EventLoopFuture<HPACKHeaders> {
+    if self.eventLoop.inEventLoop {
+      return self.transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult()
+    } else {
+      return self.eventLoop.flatSubmit {
+        return self.transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult()
+      }
+    }
+  }
 
   /// The final status of the the RPC.
-  public let status: EventLoopFuture<GRPCStatus>
-
+  public var status: EventLoopFuture<GRPCStatus> {
+    if self.eventLoop.inEventLoop {
+      return self.transport.responseContainer.lazyStatusPromise.getFutureResult()
+    } else {
+      return self.eventLoop.flatSubmit {
+        return self.transport.responseContainer.lazyStatusPromise.getFutureResult()
+      }
+    }
+  }
 
   internal init(
     path: String,
@@ -88,10 +111,7 @@ public final class UnaryCall<
     )
 
     self.options = callOptions
-    self.initialMetadata = self.transport.responseContainer.initialMetadata
-    self.trailingMetadata = self.transport.responseContainer.trailingMetadata
     self.response = responsePromise.futureResult
-    self.status = self.transport.responseContainer.status
 
     let requestHead = _GRPCRequestHead(
       scheme: scheme,
