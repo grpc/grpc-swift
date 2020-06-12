@@ -29,7 +29,7 @@ public final class ServerStreamingCall<
   /// The options used to make the RPC.
   public let options: CallOptions
 
-  /// The `Channel` user to transport messages for this RPC.
+  /// The `Channel` used to transport messages for this RPC.
   public var subchannel: EventLoopFuture<Channel> {
     return self.transport.streamChannel()
   }
