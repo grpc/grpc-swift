@@ -133,10 +133,6 @@ public final class BidirectionalStreamingCall<
     self.transport.sendRequest(.end, promise: promise)
   }
 
-  public func newMessageQueue() -> EventLoopFuture<Void> {
-    return self.eventLoop.makeSucceededFuture(())
-  }
-
   internal init(
     path: String,
     scheme: String,

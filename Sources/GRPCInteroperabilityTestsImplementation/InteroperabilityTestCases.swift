@@ -334,19 +334,11 @@ class ClientStreaming: InteroperabilityTest {
     let client = Grpc_Testing_TestServiceClient(channel: connection)
     let call = client.streamingInputCall()
 
-    let messagesSent = call.newMessageQueue().flatMap {
-      call.sendMessage(.withPayload(of: .zeros(count: 27_182)))
-    }.flatMap {
-      call.sendMessage(.withPayload(of: .zeros(count: 8)))
-    }.flatMap {
-      call.sendMessage(.withPayload(of: .zeros(count: 1_828)))
-    }.flatMap {
-      call.sendMessage(.withPayload(of: .zeros(count: 45_904)))
-    }.flatMap {
-      call.sendEnd()
+    let requests = [27_182, 8, 1_828, 45_904].map { zeros in
+      Grpc_Testing_StreamingInputCallRequest.withPayload(of: .zeros(count: zeros))
     }
-
-    try messagesSent.wait()
+    call.sendMessages(requests, promise: nil)
+    call.sendEnd(promise: nil)
 
     try waitAndAssertEqual(call.response.map { $0.aggregatedPayloadSize }, 74_922)
     try waitAndAssertEqual(call.status.map { $0.code }, .ok)
@@ -777,13 +769,8 @@ class CustomMetadata: InteroperabilityTest {
       request.payload = .zeros(count: 271_828)
     }
 
-    let messagesSent = duplexCall.newMessageQueue().flatMap {
-      duplexCall.sendMessage(duplexRequest)
-    }.flatMap {
-      duplexCall.sendEnd()
-    }
-
-    try messagesSent.wait()
+    duplexCall.sendMessage(duplexRequest, promise: nil)
+    duplexCall.sendEnd(promise: nil)
 
     try self.checkMetadata(call: duplexCall)
   }
@@ -843,9 +830,8 @@ class StatusCodeAndMessage: InteroperabilityTest {
       responses.append(response)
     }
 
-    try duplexCall.newMessageQueue().flatMap {
-      duplexCall.sendMessage(.withStatus(of: echoStatus))
-    }.wait()
+    duplexCall.sendMessage(.withStatus(of: echoStatus), promise: nil)
+    duplexCall.sendEnd(promise: nil)
 
     try self.checkStatus(call: duplexCall)
     try assertEqual(responses, [])

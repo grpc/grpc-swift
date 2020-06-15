@@ -118,11 +118,8 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
     call.status.map { $0.code }.assertEqual(.ok, fulfill: statusExpectation, file: file, line: line)
     call.response.assertEqual(Echo_EchoResponse(text: "Swift echo collect: \(messages.joined(separator: " "))"), fulfill: responseExpectation)
 
-    var queue = call.newMessageQueue()
-    for message in messages {
-      queue = queue.flatMap { call.sendMessage(Echo_EchoRequest(text: message)) }
-    }
-    queue.whenSuccess { call.sendEnd(promise: nil) }
+    call.sendMessages(messages.map { .init(text: $0) }, promise: nil)
+    call.sendEnd(promise: nil)
 
     self.wait(for: [responseExpectation, statusExpectation], timeout: self.defaultTestTimeout)
   }

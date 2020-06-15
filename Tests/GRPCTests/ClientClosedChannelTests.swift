@@ -61,9 +61,7 @@ class ClientClosedChannelTests: EchoTestCaseBase {
 
     let collect = self.client.collect()
 
-    collect.newMessageQueue().flatMap {
-      collect.sendMessage(Echo_EchoRequest(text: "foo"))
-    }.peek {
+    collect.sendMessage(Echo_EchoRequest(text: "foo")).peek {
       requestExpectation.fulfill()
     }.flatMap {
       collect.sendMessage(Echo_EchoRequest(text: "bar"))
@@ -126,9 +124,7 @@ class ClientClosedChannelTests: EchoTestCaseBase {
     // the connection; just ignore all responses.
     let update = self.client.update() { _ in }
 
-    update.newMessageQueue().flatMap {
-      update.sendMessage(Echo_EchoRequest(text: "foo"))
-    }.peek {
+    update.sendMessage(Echo_EchoRequest(text: "foo")).peek {
       requestExpectation.fulfill()
     }.flatMap {
       update.sendMessage(Echo_EchoRequest(text: "bar"))
