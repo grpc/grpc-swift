@@ -101,8 +101,8 @@ struct TestSpec {
       switch self {
       case .all:
         return true
-      case .some(let whitelist):
-        return whitelist.contains(description)
+      case .some(let selectedTests):
+        return selectedTests.contains(description)
       }
     }
   }
