@@ -19,6 +19,7 @@ extension ChannelTransportTests {
     // to regenerate.
     static let __allTests__ChannelTransportTests = [
         ("testBidirectionalHappyPath", testBidirectionalHappyPath),
+        ("testBufferedWritesAreFailedOnClose", testBufferedWritesAreFailedOnClose),
         ("testChannelBecomesInactive", testChannelBecomesInactive),
         ("testChannelError", testChannelError),
         ("testInboundMethodsAfterShutdown", testInboundMethodsAfterShutdown),
