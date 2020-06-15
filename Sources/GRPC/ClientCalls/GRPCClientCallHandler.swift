@@ -26,6 +26,7 @@ internal class GRPCClientCallHandler<Request: GRPCPayload, Response: GRPCPayload
 
   func errorCaught(context: ChannelHandlerContext, error: Error) {
     self.call.receiveError(error)
+    context.fireErrorCaught(error)
   }
 
   func channelActive(context: ChannelHandlerContext) {
