@@ -422,6 +422,12 @@ extension ChannelTransport {
       // Fail any outstanding promises.
       self.responseContainer.fail(with: status)
 
+      // Fail any buffered writes.
+      while !self.requestBuffer.isEmpty {
+        let write = self.requestBuffer.removeFirst()
+        write.promise?.fail(status)
+      }
+
       // Close the channel, if it comes up.
       streamFuture.whenSuccess {
         $0.close(mode: .all, promise: nil)
@@ -552,6 +558,8 @@ extension ChannelTransport: ClientCallInbound {
 
 extension ChannelTransport {
   private func describeCallState() -> String {
+    self.eventLoop.preconditionInEventLoop()
+
     switch self.state {
     case .buffering:
       return "waiting for connection; \(self.requestBuffer.count) request part(s) buffered"
@@ -569,6 +577,8 @@ extension ChannelTransport {
   }
 
   private func stopTimer(status: GRPCStatus) {
+    self.eventLoop.preconditionInEventLoop()
+
     if let stopwatch = self.stopwatch {
       let millis = stopwatch.elapsedMillis()
       self.logger.debug("rpc call finished", metadata: [

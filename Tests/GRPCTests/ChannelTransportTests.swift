@@ -321,6 +321,24 @@ class ChannelTransportTests: GRPCTestCase {
     transport.receiveResponse(.message(self.makeResponse("ignored!")))
     transport.receiveError(GRPCStatus.processingError)
   }
+
+  func testBufferedWritesAreFailedOnClose() throws {
+    let channel = EmbeddedChannel()
+    let container = ResponsePartContainer<Response>(eventLoop: channel.eventLoop) { (response: Response) in
+      XCTFail("No response expected but got: \(response)")
+    }
+
+    let transport = self.makeEmbeddedTransport(channel: channel, container: container)
+
+    let requestHeadPromise = channel.eventLoop.makePromise(of: Void.self)
+    transport.sendRequest(.head(self.makeRequestHead()), promise: requestHeadPromise)
+
+    // Close the channel.
+    XCTAssertNoThrow(try channel.close().wait())
+
+    // Promise should fail.
+    XCTAssertThrowsError(try requestHeadPromise.futureResult.wait())
+  }
 }
 
 extension _GRPCClientRequestPart {
