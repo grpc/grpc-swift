@@ -156,7 +156,7 @@ public final class ClientStreamingCall<
       multiplexer: multiplexer,
       responseContainer: .init(eventLoop: eventLoop, unaryResponsePromise: responsePromise),
       callType: .clientStreaming,
-      timeout: callOptions.timeout,
+      timeLimit: callOptions.timeLimit,
       errorDelegate: errorDelegate,
       logger: logger
     )

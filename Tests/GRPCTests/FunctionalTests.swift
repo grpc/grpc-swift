@@ -114,7 +114,7 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
     let responseExpectation = self.makeResponseExpectation()
     let statusExpectation = self.makeStatusExpectation()
 
-    let call = client.collect(callOptions: CallOptions(timeout: .infinite))
+    let call = client.collect(callOptions: CallOptions(timeLimit: .none))
     call.status.map { $0.code }.assertEqual(.ok, fulfill: statusExpectation, file: file, line: line)
     call.response.assertEqual(Echo_EchoResponse(text: "Swift echo collect: \(messages.joined(separator: " "))"), fulfill: responseExpectation)
 

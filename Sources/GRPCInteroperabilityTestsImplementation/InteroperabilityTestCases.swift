@@ -1008,7 +1008,7 @@ class TimeoutOnSleepingServer: InteroperabilityTest {
   func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_TestServiceClient(channel: connection)
 
-    let callOptions = CallOptions(timeout: try .milliseconds(1))
+    let callOptions = CallOptions(timeLimit: .timeout(.milliseconds(1)))
     let call = client.fullDuplexCall(callOptions: callOptions) { _ in }
 
     try waitAndAssertEqual(call.status.map { $0.code }, .deadlineExceeded)

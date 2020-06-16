@@ -337,7 +337,7 @@ extension GRPCClientStateMachine.State {
         scheme: requestHead.scheme,
         host: requestHead.host,
         path: requestHead.path,
-        timeout: requestHead.timeout,
+        timeout: GRPCTimeout(deadline: requestHead.deadline),
         customMetadata: requestHead.customMetadata,
         compression: requestHead.encoding
       )

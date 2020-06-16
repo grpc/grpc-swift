@@ -55,15 +55,15 @@ public enum GRPCError {
 
 /// The RPC did not complete before the timeout.
   public struct RPCTimedOut: GRPCErrorProtocol {
-    /// The timeout used for the RPC.
-    public var timeout: GRPCTimeout
+    /// The time limit which was exceeded by the RPC.
+    public var timeLimit: TimeLimit
 
-    public init(_ timeout: GRPCTimeout) {
-      self.timeout = timeout
+    public init(_ timeLimit: TimeLimit) {
+      self.timeLimit = timeLimit
     }
 
     public var description: String {
-      return "RPC timed out (timeout=\(self.timeout.wireEncoding)) before completing"
+      return "RPC timed out before completing (\(self.timeLimit))"
     }
 
     public func makeGRPCStatus() -> GRPCStatus {
