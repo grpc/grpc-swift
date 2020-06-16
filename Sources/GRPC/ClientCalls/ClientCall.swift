@@ -27,6 +27,9 @@ public protocol ClientCall {
   /// The type of the response message for the call.
   associatedtype ResponsePayload: GRPCPayload
 
+  /// The event loop this call is running on.
+  var eventLoop: EventLoop { get }
+
   /// The options used to make the RPC.
   var options: CallOptions { get }
 
@@ -53,8 +56,15 @@ public protocol ClientCall {
   /// Closes the HTTP/2 stream once it becomes available. Additional writes to the channel will be ignored.
   /// Any unfulfilled promises will be failed with a cancelled status (excepting `status` which will be
   /// succeeded, if not already succeeded).
-  func cancel() -> EventLoopFuture<Void>
   func cancel(promise: EventLoopPromise<Void>?)
+}
+
+extension ClientCall {
+  func cancel() -> EventLoopFuture<Void> {
+    let promise = self.eventLoop.makePromise(of: Void.self)
+    self.cancel(promise: promise)
+    return promise.futureResult
+  }
 }
 
 /// A `ClientCall` with request streaming; i.e. client-streaming and bidirectional-streaming.
@@ -102,19 +112,6 @@ public protocol StreamingRequestClientCall: ClientCall {
   ///   - promise: A promise to be fulfilled when all messages have been sent successfully.
   func sendMessages<S: Sequence>(_ messages: S, compression: Compression, promise: EventLoopPromise<Void>?) where S.Element == RequestPayload
 
-  /// Returns a future which can be used as a message queue.
-  ///
-  /// Callers may use this as such:
-  /// ```
-  /// var queue = call.newMessageQueue()
-  /// for message in messagesToSend {
-  ///   queue = queue.then { call.sendMessage(message) }
-  /// }
-  /// ```
-  ///
-  /// - Returns: A future which may be used as the head of a message queue.
-  func newMessageQueue() -> EventLoopFuture<Void>
-
   /// Terminates a stream of messages sent to the service.
   ///
   /// - Important: This should only ever be called once.
@@ -128,6 +125,26 @@ public protocol StreamingRequestClientCall: ClientCall {
   func sendEnd(promise: EventLoopPromise<Void>?)
 }
 
+extension StreamingRequestClientCall {
+  public func sendMessage(_ message: RequestPayload, compression: Compression = .deferToCallDefault) -> EventLoopFuture<Void> {
+    let promise = self.eventLoop.makePromise(of: Void.self)
+    self.sendMessage(message, compression: compression, promise: promise)
+    return promise.futureResult
+  }
+  
+  public func sendMessages<S: Sequence>(_ messages: S, compression: Compression = .deferToCallDefault) -> EventLoopFuture<Void> where S.Element == RequestPayload {
+    let promise = self.eventLoop.makePromise(of: Void.self)
+    self.sendMessages(messages, compression: compression, promise: promise)
+    return promise.futureResult
+  }
+
+  public func sendEnd() -> EventLoopFuture<Void> {
+    let promise = self.eventLoop.makePromise(of: Void.self)
+    self.sendEnd(promise: promise)
+    return promise.futureResult
+  }
+}
+
 /// A `ClientCall` with a unary response; i.e. unary and client-streaming.
 public protocol UnaryResponseClientCall: ClientCall {
   /// The response message returned from the service if the call is successful. This may be failed
@@ -137,81 +154,43 @@ public protocol UnaryResponseClientCall: ClientCall {
   var response: EventLoopFuture<ResponsePayload> { get }
 }
 
-extension StreamingRequestClientCall {
-  public func sendMessage(
-    _ message: RequestPayload,
-    compression: Compression = .deferToCallDefault
-  ) -> EventLoopFuture<Void> {
-    return self.subchannel.flatMap { channel in
-      let context = _MessageContext<RequestPayload>(
-        message,
-        compressed: compression.isEnabled(enabledOnCall: self.options.messageEncoding.enabledForRequests)
-      )
-      return channel.writeAndFlush(_GRPCClientRequestPart.message(context))
-    }
-  }
+// These protocols sit between a `*ClientCall` and the channel. The intention behind them is to
+// allow the `*ClientCall` types to use a different transport mechanisms. Normally this will be
+// a NIO HTTP/2 stream channel.
 
-  public func sendMessage(
-    _ message: RequestPayload,
-    compression: Compression = .deferToCallDefault,
-    promise: EventLoopPromise<Void>?
-  ) {
-    self.subchannel.whenSuccess { channel in
-      let context = _MessageContext<RequestPayload>(
-        message,
-        compressed: compression.isEnabled(enabledOnCall: self.options.messageEncoding.enabledForRequests)
-      )
-      channel.writeAndFlush(_GRPCClientRequestPart.message(context), promise: promise)
-    }
-  }
+internal protocol ClientCallInbound {
+  associatedtype Response: GRPCPayload
+  typealias ResponsePart = _GRPCClientResponsePart<Response>
 
-  public func sendMessages<S: Sequence>(
-    _ messages: S,
-    compression: Compression = .deferToCallDefault
-  ) -> EventLoopFuture<Void> where S.Element == RequestPayload {
-    return self.subchannel.flatMap { channel -> EventLoopFuture<Void> in
-      let writeFutures = messages.map { message -> EventLoopFuture<Void> in
-        let context = _MessageContext<RequestPayload>(
-          message,
-          compressed: compression.isEnabled(enabledOnCall: self.options.messageEncoding.enabledForRequests)
-        )
-        return channel.write(_GRPCClientRequestPart.message(context))
-      }
-      channel.flush()
-      return EventLoopFuture.andAllSucceed(writeFutures, on: channel.eventLoop)
-    }
-  }
+  /// Receive an error.
+  func receiveError(_ error: Error)
 
-  public func sendMessages<S: Sequence>(
-    _ messages: S,
-    compression: Compression = .deferToCallDefault,
-    promise: EventLoopPromise<Void>?
-  ) where S.Element == RequestPayload {
-    if let promise = promise {
-      self.sendMessages(messages).cascade(to: promise)
-    } else {
-      self.subchannel.whenSuccess { channel in
-        for message in messages {
-          let context = _MessageContext<RequestPayload>(
-            message,
-            compressed: compression.isEnabled(enabledOnCall: self.options.messageEncoding.enabledForRequests)
-          )
-          channel.write(_GRPCClientRequestPart.message(context), promise: nil)
-        }
-        channel.flush()
-      }
-    }
-  }
+  /// Receive a response part.
+  func receiveResponse(_ part: ResponsePart)
+}
 
-  public func sendEnd() -> EventLoopFuture<Void> {
-    return self.subchannel.flatMap { channel in
-      return channel.writeAndFlush(_GRPCClientRequestPart<RequestPayload>.end)
-    }
-  }
+internal protocol ClientCallOutbound {
+  associatedtype Request: GRPCPayload
+  typealias RequestPart = _GRPCClientRequestPart<Request>
 
-  public func sendEnd(promise: EventLoopPromise<Void>?) {
-    self.subchannel.whenSuccess { channel in
-      channel.writeAndFlush(_GRPCClientRequestPart<RequestPayload>.end, promise: promise)
-    }
+  /// Send a single request part and complete the promise once the part has been sent.
+  func sendRequest(_ part: RequestPart, promise: EventLoopPromise<Void>?)
+
+  /// Send the given request parts and complete the promise once all parts have been sent.
+  func sendRequests<S: Sequence>(_ parts: S, promise: EventLoopPromise<Void>?) where S.Element == RequestPart
+
+  /// Cancel the call and complete the promise once the cancellation has been completed.
+  func cancel(promise: EventLoopPromise<Void>?)
+}
+
+extension ClientCallOutbound {
+  /// Convenience method for sending all parts of a unary-request RPC.
+  internal func sendUnary(_ head: _GRPCRequestHead, request: Request, compressed: Bool) {
+    let parts: [RequestPart] = [
+      .head(head),
+      .message(_MessageContext(request, compressed: compressed)),
+      .end
+    ]
+    self.sendRequests(parts, promise: nil)
   }
 }
