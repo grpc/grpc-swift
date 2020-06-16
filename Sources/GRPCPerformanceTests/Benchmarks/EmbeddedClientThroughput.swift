@@ -45,7 +45,7 @@ class EmbeddedClientThroughput: Benchmark {
       scheme: "http",
       path: "/echo.Echo/Get",
       host: "localhost",
-      timeout: .infinite,
+      deadline: .distantFuture,
       customMetadata: [:],
       encoding: .disabled
     )

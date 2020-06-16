@@ -14,31 +14,21 @@
  * limitations under the License.
  */
 import Foundation
-import GRPC
+import Dispatch
+@testable import GRPC
+import NIO
 import XCTest
 
 class GRPCTimeoutTests: GRPCTestCase {
-  func testNegativeTimeoutThrows() throws {
-    XCTAssertThrowsError(try GRPCTimeout.seconds(-10)) { error in
-      XCTAssertEqual(error as? GRPCTimeoutError, GRPCTimeoutError.negative)
-    }
-  }
-
-  func testTooLargeTimeout() throws {
-    XCTAssertThrowsError(try GRPCTimeout.seconds(100_000_000)) { error in
-      XCTAssertEqual(error as? GRPCTimeoutError, GRPCTimeoutError.tooManyDigits)
-    }
-  }
-
   func testRoundingNegativeTimeout() {
-    let timeout: GRPCTimeout = .seconds(rounding: -10)
+    let timeout = GRPCTimeout(rounding: -10, unit: .seconds)
     XCTAssertEqual(String(describing: timeout), "0S")
     XCTAssertEqual(timeout.nanoseconds, 0)
   }
 
   func testRoundingNanosecondsTimeout() throws {
-    let timeout: GRPCTimeout = .nanoseconds(rounding: 123_456_789)
-    XCTAssertEqual(timeout, try .microseconds(123457))
+    let timeout = GRPCTimeout(rounding: 123_456_789, unit: .nanoseconds)
+    XCTAssertEqual(timeout, GRPCTimeout(amount: 123457, unit: .microseconds))
 
     // 123_456_789 (nanoseconds) / 1_000
     //   = 123_456.789
@@ -51,8 +41,8 @@ class GRPCTimeoutTests: GRPCTestCase {
   }
 
   func testRoundingMicrosecondsTimeout() throws {
-    let timeout: GRPCTimeout = .microseconds(rounding: 123_456_789)
-    XCTAssertEqual(timeout, try .milliseconds(123457))
+    let timeout = GRPCTimeout(rounding: 123_456_789, unit: .microseconds)
+    XCTAssertEqual(timeout, GRPCTimeout(amount: 123457, unit: .milliseconds))
 
     // 123_456_789 (microseconds) / 1_000
     //   = 123_456.789
@@ -65,8 +55,8 @@ class GRPCTimeoutTests: GRPCTestCase {
   }
 
   func testRoundingMillisecondsTimeout() throws {
-    let timeout: GRPCTimeout = .milliseconds(rounding: 123_456_789)
-    XCTAssertEqual(timeout, try .seconds(123457))
+    let timeout = GRPCTimeout(rounding: 123_456_789, unit: .milliseconds)
+    XCTAssertEqual(timeout, GRPCTimeout(amount: 123457, unit: .seconds))
 
     // 123_456_789 (milliseconds) / 1_000
     //   = 123_456.789
@@ -79,8 +69,8 @@ class GRPCTimeoutTests: GRPCTestCase {
   }
 
   func testRoundingSecondsTimeout() throws {
-    let timeout: GRPCTimeout = .seconds(rounding: 123_456_789)
-    XCTAssertEqual(timeout, try .minutes(2057614))
+    let timeout = GRPCTimeout(rounding: 123_456_789, unit: .seconds)
+    XCTAssertEqual(timeout, GRPCTimeout(amount: 2057614, unit: .minutes))
 
     // 123_456_789 (seconds) / 60
     //   = 2_057_613.15
@@ -93,8 +83,8 @@ class GRPCTimeoutTests: GRPCTestCase {
   }
 
   func testRoundingMinutesTimeout() throws {
-    let timeout: GRPCTimeout = .minutes(rounding: 123_456_789)
-    XCTAssertEqual(timeout, try .hours(2057614))
+    let timeout = GRPCTimeout(rounding: 123_456_789, unit: .minutes)
+    XCTAssertEqual(timeout, GRPCTimeout(amount: 2057614, unit: .hours))
 
     // 123_456_789 (minutes) / 60
     //   = 2_057_613.15
@@ -107,8 +97,8 @@ class GRPCTimeoutTests: GRPCTestCase {
   }
 
   func testRoundingHoursTimeout() throws {
-    let timeout: GRPCTimeout = .hours(rounding: 123_456_789)
-    XCTAssertEqual(timeout, try .hours(99_999_999))
+    let timeout = GRPCTimeout(rounding: 123_456_789, unit: .hours)
+    XCTAssertEqual(timeout, GRPCTimeout(amount: 99_999_999, unit: .hours))
 
     // Hours are the largest unit of time we have (as per the gRPC spec) so we can't round to a
     // different unit. In this case we clamp to the largest value.
@@ -116,5 +106,22 @@ class GRPCTimeoutTests: GRPCTestCase {
     // Unfortunately the largest value representable by the specification is too long to represent
     // in nanoseconds within 64 bits, again the value is clamped.
     XCTAssertEqual(timeout.nanoseconds, Int64.max)
+  }
+
+  func testTimeoutFromDeadline() throws {
+    let deadline = NIODeadline.uptimeNanoseconds(0) + .seconds(42)
+    let timeout = GRPCTimeout(deadline: deadline, testingOnlyNow: .uptimeNanoseconds(0))
+    XCTAssertEqual(timeout.nanoseconds, 42_000_000_000)
+
+    // Wire encoding may have at most 8 digits, we should automatically coarsen the resolution until
+    // we're within that limit.
+    XCTAssertEqual(timeout.wireEncoding, "42000000u")
+  }
+
+  func testTimeoutFromPastDeadline() throws {
+    let deadline = NIODeadline.uptimeNanoseconds(100) + .nanoseconds(50)
+    // testingOnlyNow >= deadline: timeout should be zero.
+    let timeout = GRPCTimeout(deadline: deadline, testingOnlyNow: .uptimeNanoseconds(200))
+    XCTAssertEqual(timeout.nanoseconds, 0)
   }
 }

@@ -43,7 +43,7 @@ public struct _GRPCRequestHead {
     var scheme: String
     var path: String
     var host: String
-    var timeout: GRPCTimeout
+    var deadline: NIODeadline
     var encoding: ClientMessageEncoding
 
     init(
@@ -51,14 +51,14 @@ public struct _GRPCRequestHead {
       scheme: String,
       path: String,
       host: String,
-      timeout: GRPCTimeout,
+      deadline: NIODeadline,
       encoding: ClientMessageEncoding
     ) {
       self.method = method
       self.scheme = scheme
       self.path = path
       self.host = host
-      self.timeout = timeout
+      self.deadline = deadline
       self.encoding = encoding
     }
 
@@ -68,7 +68,7 @@ public struct _GRPCRequestHead {
         scheme: self.scheme,
         path: self.path,
         host: self.host,
-        timeout: self.timeout,
+        deadline: self.deadline,
         encoding: self.encoding
       )
     }
@@ -126,15 +126,15 @@ public struct _GRPCRequestHead {
     }
   }
 
-  internal var timeout: GRPCTimeout {
+  internal var deadline: NIODeadline {
     get {
-      return self._storage.timeout
+      return self._storage.deadline
     }
     set {
       if !isKnownUniquelyReferenced(&self._storage) {
         self._storage = self._storage.copy()
       }
-      self._storage.timeout = newValue
+      self._storage.deadline = newValue
     }
   }
 
@@ -155,7 +155,7 @@ public struct _GRPCRequestHead {
     scheme: String,
     path: String,
     host: String,
-    timeout: GRPCTimeout,
+    deadline: NIODeadline,
     customMetadata: HPACKHeaders,
     encoding: ClientMessageEncoding
   ) {
@@ -164,7 +164,7 @@ public struct _GRPCRequestHead {
       scheme: scheme,
       path: path,
       host: host,
-      timeout: timeout,
+      deadline: deadline,
       encoding: encoding
     )
     self.customMetadata = customMetadata
@@ -189,7 +189,7 @@ extension _GRPCRequestHead {
       scheme: scheme,
       path: path,
       host: host,
-      timeout: options.timeout,
+      deadline: options.timeLimit.makeDeadline(),
       customMetadata: customMetadata,
       encoding: options.messageEncoding
     )

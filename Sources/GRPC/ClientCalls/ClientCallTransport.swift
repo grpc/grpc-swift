@@ -120,7 +120,7 @@ internal class ChannelTransport<Request: GRPCPayload, Response: GRPCPayload> {
   internal convenience init(
     eventLoop: EventLoop,
     responseContainer: ResponsePartContainer<Response>,
-    timeout: GRPCTimeout,
+    timeLimit: TimeLimit,
     errorDelegate: ClientErrorDelegate?,
     logger: Logger,
     channelProvider: (ChannelTransport<Request, Response>, EventLoopPromise<Channel>) -> ()
@@ -142,9 +142,10 @@ internal class ChannelTransport<Request: GRPCPayload, Response: GRPCPayload> {
     }
 
     // Schedule the timeout.
-    if timeout != .infinite {
-      self.scheduledTimeout = eventLoop.scheduleTask(in: timeout.asNIOTimeAmount) {
-        self.timedOut(after: timeout)
+    let deadline = timeLimit.makeDeadline()
+    if deadline != .distantFuture {
+      self.scheduledTimeout = eventLoop.scheduleTask(deadline: deadline) {
+        self.timedOut(after: timeLimit)
       }
     }
 
@@ -156,14 +157,14 @@ internal class ChannelTransport<Request: GRPCPayload, Response: GRPCPayload> {
     multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
     responseContainer: ResponsePartContainer<Response>,
     callType: GRPCCallType,
-    timeout: GRPCTimeout,
+    timeLimit: TimeLimit,
     errorDelegate: ClientErrorDelegate?,
     logger: Logger
   ) {
     self.init(
       eventLoop: multiplexer.eventLoop,
       responseContainer: responseContainer,
-      timeout: timeout,
+      timeLimit: timeLimit,
       errorDelegate: errorDelegate,
       logger: logger
     ) { call, streamPromise in
@@ -357,10 +358,10 @@ extension ChannelTransport {
   /// The scheduled timeout triggered: timeout the RPC if it's not yet finished.
   ///
   /// Must be called from the event loop.
-  private func timedOut(after timeout: GRPCTimeout) {
+  private func timedOut(after timeLimit: TimeLimit) {
     self.eventLoop.preconditionInEventLoop()
 
-    let error = GRPCError.RPCTimedOut(timeout).captureContext()
+    let error = GRPCError.RPCTimedOut(timeLimit).captureContext()
     self.handleError(error, promise: nil)
   }
 

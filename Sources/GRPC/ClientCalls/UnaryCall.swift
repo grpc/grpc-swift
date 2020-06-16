@@ -105,7 +105,7 @@ public final class UnaryCall<
       multiplexer: multiplexer,
       responseContainer: .init(eventLoop: eventLoop, unaryResponsePromise: responsePromise),
       callType: .unary,
-      timeout: callOptions.timeout,
+      timeLimit: callOptions.timeLimit,
       errorDelegate: errorDelegate,
       logger: logger
     )

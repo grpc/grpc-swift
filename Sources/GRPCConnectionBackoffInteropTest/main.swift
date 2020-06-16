@@ -56,7 +56,7 @@ let controlConnection = ClientConnection.insecure(group: group)
   .connect(host: "localhost", port: controlPort)
 let controlClient = Grpc_Testing_ReconnectServiceClient(channel: controlConnection)
 print("[\(Date())] Control 'Start' call started")
-let controlStart = controlClient.start(.init(), callOptions: .init(timeout: .infinite))
+let controlStart = controlClient.start(.init(), callOptions: .init(timeLimit: .none))
 let controlStartStatus = try controlStart.status.wait()
 assert(controlStartStatus.code == .ok, "Control Start rpc failed: \(controlStartStatus.code)")
 print("[\(Date())] Control 'Start' call succeeded")
@@ -70,7 +70,7 @@ let retryConnection = ClientConnection.secure(group: group)
   .connect(host: "localhost", port: retryPort)
 let retryClient = Grpc_Testing_ReconnectServiceClient(
   channel: retryConnection,
-  defaultCallOptions: CallOptions(timeout: try! .seconds(540))
+  defaultCallOptions: CallOptions(timeLimit: .timeout(.seconds(540)))
 )
 let retryStart = retryClient.start(.init())
 // We expect this to take some time!

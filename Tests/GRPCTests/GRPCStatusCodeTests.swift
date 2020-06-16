@@ -49,7 +49,7 @@ class GRPCStatusCodeTests: GRPCTestCase {
       scheme: "http",
       path: "/foo/bar",
       host: "localhost",
-      timeout: .infinite,
+      deadline: .distantFuture,
       customMetadata: [:],
       encoding: .disabled
     )

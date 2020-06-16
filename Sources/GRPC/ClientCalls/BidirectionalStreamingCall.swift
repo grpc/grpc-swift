@@ -153,7 +153,7 @@ public final class BidirectionalStreamingCall<
       multiplexer: multiplexer,
       responseContainer: .init(eventLoop: eventLoop, streamingResponseHandler: handler),
       callType: .bidirectionalStreaming,
-      timeout: callOptions.timeout,
+      timeLimit: callOptions.timeLimit,
       errorDelegate: errorDelegate,
       logger: logger
     )

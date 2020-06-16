@@ -78,7 +78,7 @@ extension GRPCClientStateMachineTests {
       scheme: "http",
       path: "/echo/Get",
       host: "host",
-      timeout: .infinite,
+      deadline: .distantFuture,
       customMetadata: [:],
       encoding: .disabled
     )).assertFailure {
@@ -93,7 +93,7 @@ extension GRPCClientStateMachineTests {
       scheme: "http",
       path: "/echo/Get",
       host: "host",
-      timeout: .infinite,
+      deadline: .distantFuture,
       customMetadata: [:],
       encoding: .disabled
     )).assertSuccess()
@@ -449,7 +449,7 @@ extension GRPCClientStateMachineTests {
       scheme: "https",
       path: "/echo/Get",
       host: "foo",
-      timeout: .infinite,
+      deadline: .distantFuture,
       customMetadata: [:],
       encoding: .disabled
     )).assertSuccess()
@@ -480,7 +480,7 @@ extension GRPCClientStateMachineTests {
       scheme: "https",
       path: "/echo/Get",
       host: "foo",
-      timeout: .infinite,
+      deadline: .distantFuture,
       customMetadata: [:],
       encoding: .disabled
     )).assertSuccess()
@@ -513,7 +513,7 @@ extension GRPCClientStateMachineTests {
       scheme: "https",
       path: "/echo/Get",
       host: "foo",
-      timeout: .infinite,
+      deadline: .distantFuture,
       customMetadata: [:],
       encoding: .disabled
     )).assertSuccess()
@@ -549,7 +549,7 @@ extension GRPCClientStateMachineTests {
       scheme: "https",
       path: "/echo/Get",
       host: "foo",
-      timeout: .infinite,
+      deadline: .distantFuture,
       customMetadata: [:],
       encoding: .disabled
     )).assertSuccess()
@@ -660,7 +660,7 @@ extension GRPCClientStateMachineTests {
       scheme: "http",
       path: "/echo/Get",
       host: "localhost",
-      timeout: .hours(rounding: 1),
+      deadline: .now() + .hours(1),
       customMetadata: ["x-grpc-id": "request-id"],
       encoding: .enabled(.init(forRequests: .identity, acceptableForResponses: [.identity], decompressionLimit: .ratio(10)))
     )).assertSuccess { headers in
@@ -670,7 +670,8 @@ extension GRPCClientStateMachineTests {
       XCTAssertEqual(headers[":scheme"], ["http"])
       XCTAssertEqual(headers["content-type"], ["application/grpc"])
       XCTAssertEqual(headers["te"], ["trailers"])
-      XCTAssertEqual(headers["grpc-timeout"], ["1H"])
+      // We convert the deadline into a timeout, we can't be exactly sure what that timeout is.
+      XCTAssertTrue(headers.contains(name: "grpc-timeout"))
       XCTAssertEqual(headers["x-grpc-id"], ["request-id"])
       XCTAssertEqual(headers["grpc-encoding"], ["identity"])
       XCTAssertTrue(headers["grpc-accept-encoding"].contains("identity"))
@@ -694,7 +695,7 @@ extension GRPCClientStateMachineTests {
       scheme: "http",
       path: "/echo/Get",
       host: "localhost",
-      timeout: .infinite,
+      deadline: .distantFuture,
       customMetadata: customMetadata,
       encoding: .disabled
     )).assertSuccess { headers in
@@ -722,7 +723,7 @@ extension GRPCClientStateMachineTests {
       scheme: "http",
       path: "/echo/Get",
       host: "localhost",
-      timeout: .hours(rounding: 1),
+      deadline: .distantFuture,
       customMetadata: ["x-grpc-id": "request-id"],
       encoding: .enabled(.init(forRequests: nil, acceptableForResponses: [], decompressionLimit: .ratio(10)))
     )).assertSuccess { headers in
@@ -738,7 +739,7 @@ extension GRPCClientStateMachineTests {
       scheme: "http",
       path: "/echo/Get",
       host: "localhost",
-      timeout: .hours(rounding: 1),
+      deadline: .distantFuture,
       customMetadata: ["x-grpc-id": "request-id"],
       encoding: .enabled(.init(forRequests: nil, acceptableForResponses: [.identity, .gzip], decompressionLimit: .ratio(10)))
     )).assertSuccess { headers in
@@ -754,7 +755,7 @@ extension GRPCClientStateMachineTests {
       scheme: "http",
       path: "/echo/Get",
       host: "localhost",
-      timeout: .hours(rounding: 1),
+      deadline: .distantFuture,
       customMetadata: ["x-grpc-id": "request-id"],
       encoding: .enabled(.init(forRequests: .gzip, acceptableForResponses: [], decompressionLimit: .ratio(10)))
     )).assertSuccess { headers in

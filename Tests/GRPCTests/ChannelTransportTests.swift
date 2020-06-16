@@ -29,12 +29,12 @@ class ChannelTransportTests: GRPCTestCase {
   private func makeEmbeddedTransport(
     channel: EmbeddedChannel,
     container: ResponsePartContainer<Response>,
-    timeout: GRPCTimeout = .infinite
+    deadline: NIODeadline = .distantFuture
   ) -> ChannelTransport<Request, Response> {
     let transport = ChannelTransport<Request, Response>(
       eventLoop: channel.eventLoop,
       responseContainer: container,
-      timeout: timeout,
+      timeLimit: .deadline(deadline),
       errorDelegate: nil,
       logger: self.logger
     ) { call, promise in
@@ -57,7 +57,7 @@ class ChannelTransportTests: GRPCTestCase {
       scheme: "http",
       path: "/foo/bar",
       host: "localhost",
-      timeout: .infinite,
+      deadline: .distantFuture,
       customMetadata: [:],
       encoding: .disabled
     )
@@ -147,14 +147,14 @@ class ChannelTransportTests: GRPCTestCase {
   // MARK: - Timeout
 
   func testTimeoutBeforeActivating() throws {
-    let timeout = try GRPCTimeout.minutes(42)
+    let deadline = NIODeadline.uptimeNanoseconds(0) + .minutes(42)
     let channel = EmbeddedChannel()
     let responsePromise = channel.eventLoop.makePromise(of: Response.self)
     let container = ResponsePartContainer<Response>(eventLoop: channel.eventLoop, unaryResponsePromise: responsePromise)
-    let transport = self.makeEmbeddedTransport(channel: channel, container: container, timeout: timeout)
+    let transport = self.makeEmbeddedTransport(channel: channel, container: container, deadline: deadline)
 
     // Advance time beyond the timeout.
-    channel.embeddedEventLoop.advanceTime(by: timeout.asNIOTimeAmount)
+    channel.embeddedEventLoop.advanceTime(by: .minutes(42))
 
     XCTAssertThrowsError(try transport.responseContainer.lazyInitialMetadataPromise.getFutureResult().wait())
     XCTAssertThrowsError(try responsePromise.futureResult.wait())
@@ -169,17 +169,18 @@ class ChannelTransportTests: GRPCTestCase {
   }
 
   func testTimeoutAfterActivating() throws {
-    let timeout = try GRPCTimeout.minutes(42)
+    let deadline = NIODeadline.uptimeNanoseconds(0) + .minutes(42)
     let channel = EmbeddedChannel()
+    
     let responsePromise = channel.eventLoop.makePromise(of: Response.self)
     let container = ResponsePartContainer<Response>(eventLoop: channel.eventLoop, unaryResponsePromise: responsePromise)
-    let transport = self.makeEmbeddedTransport(channel: channel, container: container, timeout: timeout)
+    let transport = self.makeEmbeddedTransport(channel: channel, container: container, deadline: deadline)
 
     // Activate the channel.
     channel.pipeline.fireChannelActive()
 
     // Advance time beyond the timeout.
-    channel.embeddedEventLoop.advanceTime(by: timeout.asNIOTimeAmount)
+    channel.embeddedEventLoop.advanceTime(by: .minutes(42))
 
     XCTAssertThrowsError(try transport.responseContainer.lazyInitialMetadataPromise.getFutureResult().wait())
     XCTAssertThrowsError(try responsePromise.futureResult.wait())
@@ -193,13 +194,13 @@ class ChannelTransportTests: GRPCTestCase {
   }
 
   func testTimeoutMidRPC() throws {
-    let timeout = try GRPCTimeout.minutes(42)
+    let deadline = NIODeadline.uptimeNanoseconds(0) + .minutes(42)
     let channel = EmbeddedChannel()
     let container = ResponsePartContainer<Response>(eventLoop: channel.eventLoop) { (response: Response) in
       XCTFail("No response expected but got: \(response)")
     }
 
-    let transport = self.makeEmbeddedTransport(channel: channel, container: container, timeout: timeout)
+    let transport = self.makeEmbeddedTransport(channel: channel, container: container, deadline: deadline)
 
     // Activate the channel.
     channel.pipeline.fireChannelActive()
@@ -219,7 +220,7 @@ class ChannelTransportTests: GRPCTestCase {
     XCTAssertNoThrow(try transport.responseContainer.lazyInitialMetadataPromise.getFutureResult().wait())
 
     // Advance time beyond the timeout.
-    channel.embeddedEventLoop.advanceTime(by: timeout.asNIOTimeAmount)
+    channel.embeddedEventLoop.advanceTime(by: .minutes(42))
 
     // Check the remaining response parts.
     XCTAssertThrowsError(try transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult().wait())

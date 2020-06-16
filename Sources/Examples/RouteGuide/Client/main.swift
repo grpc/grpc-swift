@@ -105,7 +105,7 @@ public func recordRoute(
   featuresToVisit: Int
 ) {
   print("→ RecordRoute")
-  let options = CallOptions(timeout: .minutes(rounding: 1))
+  let options = CallOptions(timeLimit: .timeout(.minutes(1)))
   let call = client.recordRoute(callOptions: options)
 
   call.response.whenSuccess { summary in

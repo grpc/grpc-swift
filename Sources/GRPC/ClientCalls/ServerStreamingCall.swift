@@ -100,7 +100,7 @@ public final class ServerStreamingCall<
       multiplexer: multiplexer,
       responseContainer: .init(eventLoop: eventLoop, streamingResponseHandler: handler),
       callType: .serverStreaming,
-      timeout: callOptions.timeout,
+      timeLimit: callOptions.timeLimit,
       errorDelegate: errorDelegate,
       logger: logger
     )

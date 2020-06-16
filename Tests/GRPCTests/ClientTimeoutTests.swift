@@ -23,9 +23,12 @@ class ClientTimeoutTests: GRPCTestCase {
   var channel: EmbeddedChannel!
   var client: Echo_EchoClient!
 
-  let callOptions = CallOptions(timeout: try! .milliseconds(100))
-  var timeout: GRPCTimeout {
-    return self.callOptions.timeout
+  let timeout = TimeAmount.milliseconds(100)
+  var callOptions: CallOptions {
+    // We use a deadline here because internally we convert timeouts into deadlines by diffing
+    // with `DispatchTime.now()`. We therefore need the deadline to be known in advance. Note we
+    // use zero because `EmbeddedEventLoop`s time starts at zero.
+    return CallOptions(timeLimit: .deadline(.uptimeNanoseconds(0) + timeout))
   }
 
   // Note: this is not related to the call timeout since we're using an EmbeddedChannel. We require
@@ -79,7 +82,7 @@ class ClientTimeoutTests: GRPCTestCase {
     let statusExpectation = self.expectation(description: "status fulfilled")
 
     let call = self.client.get(Echo_EchoRequest(text: "foo"))
-    channel.embeddedEventLoop.advanceTime(by: self.timeout.asNIOTimeAmount)
+    channel.embeddedEventLoop.advanceTime(by: self.timeout)
 
     self.assertDeadlineExceeded(call.status, expectation: statusExpectation)
     self.wait(for: [statusExpectation], timeout: self.testTimeout)
@@ -89,7 +92,7 @@ class ClientTimeoutTests: GRPCTestCase {
     let statusExpectation = self.expectation(description: "status fulfilled")
 
     let call = client.expand(Echo_EchoRequest(text: "foo bar baz")) { _ in }
-    channel.embeddedEventLoop.advanceTime(by: self.timeout.asNIOTimeAmount)
+    channel.embeddedEventLoop.advanceTime(by: self.timeout)
 
     self.assertDeadlineExceeded(call.status, expectation: statusExpectation)
     self.wait(for: [statusExpectation], timeout: self.testTimeout)
@@ -100,7 +103,7 @@ class ClientTimeoutTests: GRPCTestCase {
     let statusExpectation = self.expectation(description: "status fulfilled")
 
     let call = client.collect()
-    channel.embeddedEventLoop.advanceTime(by: self.timeout.asNIOTimeAmount)
+    channel.embeddedEventLoop.advanceTime(by: self.timeout)
 
     self.assertDeadlineExceeded(call.response, expectation: responseExpectation)
     self.assertDeadlineExceeded(call.status, expectation: statusExpectation)
@@ -118,7 +121,7 @@ class ClientTimeoutTests: GRPCTestCase {
 
     call.sendMessage(Echo_EchoRequest(text: "foo"), promise: nil)
     call.sendEnd(promise: nil)
-    channel.embeddedEventLoop.advanceTime(by: self.timeout.asNIOTimeAmount)
+    channel.embeddedEventLoop.advanceTime(by: self.timeout)
 
     self.wait(for: [responseExpectation, statusExpectation], timeout: 1.0)
   }
@@ -128,7 +131,7 @@ class ClientTimeoutTests: GRPCTestCase {
 
     let call = client.update { _ in }
 
-    channel.embeddedEventLoop.advanceTime(by: self.timeout.asNIOTimeAmount)
+    channel.embeddedEventLoop.advanceTime(by: self.timeout)
 
     self.assertDeadlineExceeded(call.status, expectation: statusExpectation)
     self.wait(for: [statusExpectation], timeout: self.testTimeout)
@@ -143,7 +146,7 @@ class ClientTimeoutTests: GRPCTestCase {
 
     call.sendMessage(Echo_EchoRequest(text: "foo"), promise: nil)
     call.sendEnd(promise: nil)
-    channel.embeddedEventLoop.advanceTime(by: self.timeout.asNIOTimeAmount)
+    channel.embeddedEventLoop.advanceTime(by: self.timeout)
 
     self.wait(for: [statusExpectation], timeout: self.testTimeout)
   }
