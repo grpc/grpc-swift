@@ -18,9 +18,6 @@ import NIOHTTP2
 
 /// A gRPC client.
 public protocol GRPCClient {
-  /// Initialize the client with the given channel and default call options.
-  init(channel: GRPCChannel, defaultCallOptions: CallOptions)
-
   /// The gRPC channel over which RPCs are sent and received. Note that this is distinct
   /// from `NIO.Channel`.
   var channel: GRPCChannel { get }

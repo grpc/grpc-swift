@@ -25,6 +25,11 @@ extension Generator {
     printClientProtocolExtension()
     println()
     printServiceClientImplementation()
+
+    if self.options.generateTestClient {
+      self.println()
+      self.printTestClient()
+    }
   }
 
   private func printFunction(name: String, arguments: [String], returnType: String, access: String? = nil, bodyBuilder: (() -> ())?) {
@@ -280,6 +285,82 @@ extension Generator {
 
   private func printHandlerParameter() {
     println("///   - handler: A closure called when each response is received from the server.")
+  }
+}
+
+extension Generator {
+  fileprivate func printFakeResponseStreams() {
+    for method in self.service.methods {
+      self.println()
+
+      self.method = method
+      switch self.streamType {
+      case .unary, .clientStreaming:
+        self.printUnaryResponse()
+
+      case .serverStreaming, .bidirectionalStreaming:
+        self.printStreamingResponse()
+      }
+    }
+  }
+
+  fileprivate func printUnaryResponse() {
+    self.printResponseStream(isUnary: true)
+  }
+
+  fileprivate func printStreamingResponse() {
+    self.printResponseStream(isUnary: false)
+  }
+
+  private func printResponseStream(isUnary: Bool) {
+    let type = isUnary ? "FakeUnaryResponse" : "FakeStreamingResponse"
+    let factory = isUnary ? "makeFakeUnaryResponse" : "makeFakeStreamingResponse"
+
+    self.println("/// Make a \(isUnary ? "unary" : "streaming") response for the \(self.method.name) RPC. This must be called")
+    self.println("/// before calling '\(self.methodFunctionName)'. See also '\(type)'.")
+    self.println("///")
+    self.println("/// - Parameter requestHandler: a handler for request parts sent by the RPC.")
+    self.printFunction(
+      name: "make\(self.method.name)ResponseStream",
+      arguments: ["_ requestHandler: @escaping (FakeRequestPart<\(self.methodInputName)>) -> () = { _ in }"],
+      returnType: "\(type)<\(self.methodInputName), \(self.methodOutputName)>",
+      access: self.access
+    ) {
+      self.println("self.fakeChannel.\(factory)(path: \(self.methodPath), requestHandler: requestHandler)")
+    }
+  }
+
+  fileprivate func printTestClient() {
+    self.println("\(self.access) final class \(self.testClientClassName): \(self.clientProtocolName) {")
+    self.withIndentation {
+      self.println("private let fakeChannel: FakeChannel")
+      self.println("\(self.access) var defaultCallOptions: CallOptions")
+
+      self.println()
+      self.println("\(self.access) var channel: GRPCChannel {")
+      self.withIndentation {
+        self.println("return self.fakeChannel")
+      }
+      self.println("}")
+      self.println()
+
+      self.println("\(self.access) init(")
+      self.withIndentation {
+        self.println("fakeChannel: FakeChannel = FakeChannel(),")
+        self.println("defaultCallOptions callOptions: CallOptions = CallOptions()")
+      }
+      self.println(") {")
+      self.withIndentation {
+        self.println("self.fakeChannel = fakeChannel")
+        self.println("self.defaultCallOptions = callOptions")
+      }
+      self.println("}")
+
+      self.printMethods()
+      self.printFakeResponseStreams()
+    }
+
+    self.println("}")  // end class
   }
 }
 
