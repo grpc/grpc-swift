@@ -519,7 +519,6 @@ extension GRPCClientStateMachine.State {
       ":scheme": scheme,
       "content-type": "application/grpc",
       "te": "trailers",  // Used to detect incompatible proxies, part of the gRPC specification.
-      "user-agent": "grpc-swift-nio",  //  TODO: Add a more specific user-agent.
     ]
 
     switch compression {
@@ -548,6 +547,11 @@ extension GRPCClientStateMachine.State {
     headers.add(contentsOf: customMetadata.map { (name, value, indexing) in
       return (name.lowercased(), value, indexing)
     })
+
+    // Add default user-agent value, if `customMetadata` didn't contain user-agent
+    if headers["user-agent"].isEmpty {
+      headers.add(name: "user-agent", value: "grpc-swift-nio")  // TODO: Add a more specific user-agent.
+    }
 
     return headers
   }

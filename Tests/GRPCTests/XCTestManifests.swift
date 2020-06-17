@@ -348,6 +348,7 @@ extension GRPCClientStateMachineTests {
         ("testSendRequestHeadersFromClosed", testSendRequestHeadersFromClosed),
         ("testSendRequestHeadersFromIdle", testSendRequestHeadersFromIdle),
         ("testSendRequestHeadersNormalizesCustomMetadata", testSendRequestHeadersNormalizesCustomMetadata),
+        ("testSendRequestHeadersWithCustomUserAgent", testSendRequestHeadersWithCustomUserAgent),
         ("testSendRequestHeadersWithNoCompressionForRequests", testSendRequestHeadersWithNoCompressionForRequests),
         ("testSendRequestHeadersWithNoCompressionForResponses", testSendRequestHeadersWithNoCompressionForResponses),
         ("testSendRequestHeadersWithNoCompressionInEitherDirection", testSendRequestHeadersWithNoCompressionInEitherDirection),

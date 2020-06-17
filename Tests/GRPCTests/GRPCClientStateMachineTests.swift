@@ -716,6 +716,25 @@ extension GRPCClientStateMachineTests {
     }
   }
 
+  func testSendRequestHeadersWithCustomUserAgent() throws {
+    let customMetadata: HPACKHeaders = [
+      "user-agent": "test-user-agent"
+    ]
+
+    var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
+    stateMachine.sendRequestHeaders(requestHead: .init(
+      method: "POST",
+      scheme: "http",
+      path: "/echo/Get",
+      host: "localhost",
+      deadline: .distantFuture,
+      customMetadata: customMetadata,
+      encoding: .enabled(.init(forRequests: nil, acceptableForResponses: [], decompressionLimit: .ratio(10)))
+    )).assertSuccess { headers in
+      XCTAssertEqual(headers["user-agent"], ["test-user-agent"])
+    }
+  }
+
   func testSendRequestHeadersWithNoCompressionInEitherDirection() throws {
     var stateMachine = self.makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
     stateMachine.sendRequestHeaders(requestHead: .init(
