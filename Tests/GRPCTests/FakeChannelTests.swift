@@ -129,4 +129,12 @@ class FakeChannelTests: GRPCTestCase {
     XCTAssertThrowsError(try failedCall.trailingMetadata.wait())
     XCTAssertFalse(try failedCall.status.map { $0.isOk }.wait())
   }
+
+  func testHasResponseStreamsEnqueued() {
+    XCTAssertFalse(self.channel.hasFakeResponseEnqueued(forPath: "whatever"))
+    _ = self.makeUnaryResponse(path: "whatever")
+    XCTAssertTrue(self.channel.hasFakeResponseEnqueued(forPath: "whatever"))
+    _ = self.makeUnaryCall(request: .init(), path: "whatever")
+    XCTAssertFalse(self.channel.hasFakeResponseEnqueued(forPath: "whatever"))
+  }
 }
