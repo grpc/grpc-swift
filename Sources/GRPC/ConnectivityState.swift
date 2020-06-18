@@ -66,9 +66,10 @@ public class ConnectivityStateMonitor {
   /// Creates a new connectivity state monitor.
   ///
   /// - Parameter delegate: A delegate to call when the connectivity state changes.
-  init(delegate: ConnectivityStateDelegate?) {
+  /// - Parameter queue: The `DispatchQueue` on which the delegate will be called.
+  init(delegate: ConnectivityStateDelegate?, queue: DispatchQueue?) {
     self._delegate = delegate
-    self.delegateCallbackQueue = DispatchQueue(label: "io.grpc.connectivity")
+    self.delegateCallbackQueue = queue ?? DispatchQueue(label: "io.grpc.connectivity")
   }
 
   /// The current state of connectivity.

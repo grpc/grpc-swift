@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import Dispatch
 import NIO
 import NIOSSL
 
@@ -36,6 +37,7 @@ extension ClientConnection {
     private var connectionBackoffIsEnabled = true
     private var errorDelegate: ClientErrorDelegate?
     private var connectivityStateDelegate: ConnectivityStateDelegate?
+    private var connectivityStateDelegateQueue: DispatchQueue?
     private var connectionIdleTimeout: TimeAmount = .minutes(5)
     private var httpTargetWindowSize: Int = 65535
 
@@ -49,6 +51,7 @@ extension ClientConnection {
         eventLoopGroup: self.group,
         errorDelegate: self.errorDelegate,
         connectivityStateDelegate: self.connectivityStateDelegate,
+        connectivityStateDelegateQueue: self.connectivityStateDelegateQueue,
         tls: self.maybeTLS,
         connectionBackoff: self.connectionBackoffIsEnabled ? self.connectionBackoff : nil,
         connectionIdleTimeout: self.connectionIdleTimeout,
@@ -164,10 +167,16 @@ extension ClientConnection.Builder {
 }
 
 extension ClientConnection.Builder {
-  /// Sets the client connectivity state delegate.
+  /// Sets the client connectivity state delegate and the `DispatchQueue` on which the delegate
+  /// should be called. If no `queue` is provided then gRPC will create a `DispatchQueue` on which
+  /// to run the delegate.
   @discardableResult
-  public func withConnectivityStateDelegate(_ delegate: ConnectivityStateDelegate?) -> Self {
+  public func withConnectivityStateDelegate(
+    _ delegate: ConnectivityStateDelegate?,
+    executingOn queue: DispatchQueue? = nil
+  ) -> Self {
     self.connectivityStateDelegate = delegate
+    self.connectivityStateDelegateQueue = queue
     return self
   }
 }

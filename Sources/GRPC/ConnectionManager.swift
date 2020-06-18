@@ -212,7 +212,10 @@ internal class ConnectionManager {
     let eventLoop = configuration.eventLoopGroup.next()
     self.eventLoop = eventLoop
     self.state = .idle(IdleState(configuration: configuration))
-    self.monitor = ConnectivityStateMonitor(delegate: configuration.connectivityStateDelegate)
+    self.monitor = ConnectivityStateMonitor(
+      delegate: configuration.connectivityStateDelegate,
+      queue: configuration.connectivityStateDelegateQueue
+    )
 
     self.channelProvider = channelProvider
 

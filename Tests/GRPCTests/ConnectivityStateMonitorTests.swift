@@ -33,7 +33,7 @@ class ConnectivityStateMonitorTests: GRPCTestCase {
       ])
     }
 
-    let monitor = ConnectivityStateMonitor(delegate: recorder)
+    let monitor = ConnectivityStateMonitor(delegate: recorder, queue: nil)
     monitor.delegate = recorder
 
     monitor.updateState(to: .connecting, logger: self.logger)
