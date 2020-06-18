@@ -26,7 +26,7 @@ public final class UnaryCall<
   RequestPayload: GRPCPayload,
   ResponsePayload: GRPCPayload
 >: UnaryResponseClientCall {
-  private let transport: ChannelTransport<RequestPayload, ResponsePayload>
+  internal let transport: ChannelTransport<RequestPayload, ResponsePayload>
 
   /// The options used to make the RPC.
   public let options: CallOptions
@@ -85,23 +85,26 @@ public final class UnaryCall<
   }
 
   internal init(
-    path: String,
-    scheme: String,
-    authority: String,
-    callOptions: CallOptions,
-    eventLoop: EventLoop,
-    multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
-    errorDelegate: ClientErrorDelegate?,
-    logger: Logger,
-    request: RequestPayload
+    response: EventLoopFuture<ResponsePayload>,
+    transport: ChannelTransport<RequestPayload, ResponsePayload>,
+    options: CallOptions
   ) {
-    let requestID = callOptions.requestIDProvider.requestID()
-    var logger = logger
-    logger[metadataKey: MetadataKey.requestID] = "\(requestID)"
-    logger[metadataKey: "path"] = "\(path)"
+    self.response = response
+    self.transport = transport
+    self.options = options
+  }
+}
 
+extension UnaryCall {
+  internal static func makeOnHTTP2Stream(
+    multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
+    callOptions: CallOptions,
+    errorDelegate: ClientErrorDelegate?,
+    logger: Logger
+  ) -> UnaryCall<RequestPayload, ResponsePayload> {
+    let eventLoop = multiplexer.eventLoop
     let responsePromise: EventLoopPromise<ResponsePayload> = eventLoop.makePromise()
-    self.transport = ChannelTransport(
+    let transport = ChannelTransport<RequestPayload, ResponsePayload>(
       multiplexer: multiplexer,
       responseContainer: .init(eventLoop: eventLoop, unaryResponsePromise: responsePromise),
       callType: .unary,
@@ -109,22 +112,6 @@ public final class UnaryCall<
       errorDelegate: errorDelegate,
       logger: logger
     )
-
-    self.options = callOptions
-    self.response = responsePromise.futureResult
-
-    let requestHead = _GRPCRequestHead(
-      scheme: scheme,
-      path: path,
-      host: authority,
-      requestID: requestID,
-      options: callOptions
-    )
-
-    self.transport.sendUnary(
-      requestHead,
-      request: request,
-      compressed: callOptions.messageEncoding.enabledForRequests
-    )
+    return UnaryCall(response: responsePromise.futureResult, transport: transport, options: callOptions)
   }
 }
