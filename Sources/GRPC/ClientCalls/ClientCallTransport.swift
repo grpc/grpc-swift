@@ -142,12 +142,7 @@ internal class ChannelTransport<Request: GRPCPayload, Response: GRPCPayload> {
     }
 
     // Schedule the timeout.
-    let deadline = timeLimit.makeDeadline()
-    if deadline != .distantFuture {
-      self.scheduledTimeout = eventLoop.scheduleTask(deadline: deadline) {
-        self.timedOut(after: timeLimit)
-      }
-    }
+    self.setUpTimeLimit(timeLimit)
 
     // Now attempt to make the channel.
     channelProvider(self, channelPromise)
@@ -588,6 +583,29 @@ extension ChannelTransport {
         "status_message": "\(status.message ?? "nil")"
       ])
       self.stopwatch = nil
+    }
+  }
+
+  /// Sets a time limit for the RPC.
+  private func setUpTimeLimit(_ timeLimit: TimeLimit) {
+    let deadline = timeLimit.makeDeadline()
+
+    guard deadline != .distantFuture else {
+      // This is too distant to worry about.
+      return
+    }
+
+    let timedOutTask = {
+      self.timedOut(after: timeLimit)
+    }
+
+    // 'scheduledTimeout' must only be accessed from the event loop.
+    if self.eventLoop.inEventLoop {
+      self.scheduledTimeout = self.eventLoop.scheduleTask(deadline: deadline, timedOutTask)
+    } else {
+      self.eventLoop.execute {
+        self.scheduledTimeout = self.eventLoop.scheduleTask(deadline: deadline, timedOutTask)
+      }
     }
   }
 }
