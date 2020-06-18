@@ -262,7 +262,7 @@ fileprivate extension Channel {
 
 fileprivate extension ServerBootstrapProtocol {
   func bind(to target: BindTarget) -> EventLoopFuture<Channel> {
-    switch target {
+    switch target.wrapped {
     case .hostAndPort(let host, let port):
       return self.bind(host: host, port: port)
 

@@ -225,16 +225,35 @@ extension ClientConnection: GRPCChannel {
 // MARK: - Configuration structures
 
 /// A target to connect to.
-public enum ConnectionTarget {
+public struct ConnectionTarget {
+  internal enum Wrapped {
+    case hostAndPort(String, Int)
+    case unixDomainSocket(String)
+    case socketAddress(SocketAddress)
+  }
+
+  internal var wrapped: Wrapped
+  private init(_ wrapped: Wrapped) {
+    self.wrapped = wrapped
+  }
+
   /// The host and port.
-  case hostAndPort(String, Int)
+  public static func hostAndPort(_ host: String, _ port: Int) -> ConnectionTarget {
+    return ConnectionTarget(.hostAndPort(host, port))
+  }
+
   /// The path of a Unix domain socket.
-  case unixDomainSocket(String)
+  public static func unixDomainSocket(_ path: String) -> ConnectionTarget {
+    return ConnectionTarget(.unixDomainSocket(path))
+  }
+
   /// A NIO socket address.
-  case socketAddress(SocketAddress)
+  public static func socketAddress(_ address: SocketAddress) -> ConnectionTarget {
+    return ConnectionTarget(.socketAddress(address))
+  }
 
   var host: String {
-    switch self {
+    switch self.wrapped {
     case .hostAndPort(let host, _):
       return host
     case .socketAddress(.v4(let address)):
@@ -335,7 +354,7 @@ extension ClientBootstrapProtocol {
   ///
   /// - Parameter target: The target to connect to.
   func connect(to target: ConnectionTarget) -> EventLoopFuture<Channel> {
-    switch target {
+    switch target.wrapped {
     case .hostAndPort(let host, let port):
       return self.connect(host: host, port: port)
 
