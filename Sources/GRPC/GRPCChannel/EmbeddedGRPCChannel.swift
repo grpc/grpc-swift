@@ -73,8 +73,7 @@ class EmbeddedGRPCChannel: GRPCChannel {
       logger: self.logger
     )
 
-    let head = self.makeRequestHead(path: path, options: callOptions)
-    call.transport.sendUnary(head, request: request, compressed: callOptions.messageEncoding.enabledForRequests)
+    call.send(self.makeRequestHead(path: path, options: callOptions), request: request)
 
     return call
   }
@@ -90,8 +89,7 @@ class EmbeddedGRPCChannel: GRPCChannel {
       logger: self.logger
     )
 
-    let head = self.makeRequestHead(path: path, options: callOptions)
-    call.transport.sendRequest(.head(head), promise: nil)
+    call.sendHead(self.makeRequestHead(path: path, options: callOptions))
 
     return call
   }
@@ -110,8 +108,7 @@ class EmbeddedGRPCChannel: GRPCChannel {
       responseHandler: handler
     )
 
-    let head = self.makeRequestHead(path: path, options: callOptions)
-    call.transport.sendUnary(head, request: request, compressed: callOptions.messageEncoding.enabledForRequests)
+    call.send(self.makeRequestHead(path: path, options: callOptions), request: request)
 
     return call
   }
@@ -129,8 +126,7 @@ class EmbeddedGRPCChannel: GRPCChannel {
       responseHandler: handler
     )
 
-    let head = self.makeRequestHead(path: path, options: callOptions)
-    call.transport.sendRequest(.head(head), promise: nil)
+    call.sendHead(self.makeRequestHead(path: path, options: callOptions))
 
     return call
   }

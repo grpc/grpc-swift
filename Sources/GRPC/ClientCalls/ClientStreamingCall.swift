@@ -26,7 +26,7 @@ public final class ClientStreamingCall<
   RequestPayload: GRPCPayload,
   ResponsePayload: GRPCPayload
 > : StreamingRequestClientCall, UnaryResponseClientCall {
-  internal let transport: ChannelTransport<RequestPayload, ResponsePayload>
+  private let transport: ChannelTransport<RequestPayload, ResponsePayload>
 
   /// The options used to make the RPC.
   public let options: CallOptions
@@ -144,6 +144,10 @@ public final class ClientStreamingCall<
     self.response = response
     self.transport = transport
     self.options = options
+  }
+
+  internal func sendHead(_ head: _GRPCRequestHead) {
+    self.transport.sendRequest(.head(head), promise: nil)
   }
 }
 

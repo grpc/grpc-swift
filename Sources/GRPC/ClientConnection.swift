@@ -151,8 +151,7 @@ extension ClientConnection: GRPCChannel {
       logger: logger
     )
 
-    let head = self.makeRequestHead(path: path, options: callOptions, requestID: requestID)
-    call.transport.sendUnary(head, request: request, compressed: callOptions.messageEncoding.enabledForRequests)
+    call.send(self.makeRequestHead(path: path, options: callOptions, requestID: requestID), request: request)
 
     return call
   }
@@ -172,8 +171,7 @@ extension ClientConnection: GRPCChannel {
       logger: logger
     )
 
-    let head = self.makeRequestHead(path: path, options: callOptions, requestID: requestID)
-    call.transport.sendRequest(.head(head), promise: nil)
+    call.sendHead(self.makeRequestHead(path: path, options: callOptions, requestID: requestID))
 
     return call
   }
@@ -196,8 +194,7 @@ extension ClientConnection: GRPCChannel {
       responseHandler: handler
     )
 
-    let head = self.makeRequestHead(path: path, options: callOptions, requestID: requestID)
-    call.transport.sendUnary(head, request: request, compressed: callOptions.messageEncoding.enabledForRequests)
+    call.send(self.makeRequestHead(path: path, options: callOptions, requestID: requestID), request: request)
 
     return call
   }
@@ -219,8 +216,7 @@ extension ClientConnection: GRPCChannel {
       responseHandler: handler
     )
 
-    let head = self.makeRequestHead(path: path, options: callOptions, requestID: requestID)
-    call.transport.sendRequest(.head(head), promise: nil)
+    call.sendHead(self.makeRequestHead(path: path, options: callOptions, requestID: requestID))
 
     return call
   }
@@ -280,7 +276,7 @@ extension ClientConnection {
     ///
     /// If a connection becomes idle, starting a new RPC will automatically create a new connection.
     public var connectionIdleTimeout: TimeAmount
-    
+
     /// The HTTP/2 flow control target window size.
     public var httpTargetWindowSize: Int
 
@@ -426,7 +422,7 @@ extension String {
     // We need some scratch space to let inet_pton write into.
     var ipv4Addr = in_addr()
     var ipv6Addr = in6_addr()
-    
+
     return self.withCString { ptr in
       return inet_pton(AF_INET, ptr, &ipv4Addr) == 1 ||
         inet_pton(AF_INET6, ptr, &ipv6Addr) == 1

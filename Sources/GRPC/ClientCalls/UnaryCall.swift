@@ -26,7 +26,7 @@ public final class UnaryCall<
   RequestPayload: GRPCPayload,
   ResponsePayload: GRPCPayload
 >: UnaryResponseClientCall {
-  internal let transport: ChannelTransport<RequestPayload, ResponsePayload>
+  private let transport: ChannelTransport<RequestPayload, ResponsePayload>
 
   /// The options used to make the RPC.
   public let options: CallOptions
@@ -92,6 +92,10 @@ public final class UnaryCall<
     self.response = response
     self.transport = transport
     self.options = options
+  }
+
+  internal func send(_ head: _GRPCRequestHead, request: RequestPayload) {
+    self.transport.sendUnary(head, request: request, compressed: self.options.messageEncoding.enabledForRequests)
   }
 }
 
