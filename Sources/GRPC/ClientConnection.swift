@@ -234,6 +234,10 @@ extension ClientConnection {
     /// A delegate which is called when the connectivity state is changed.
     public var connectivityStateDelegate: ConnectivityStateDelegate?
 
+    /// The `DispatchQueue` on which to call the connectivity state delegate. If a delegate is
+    /// provided but the queue is `nil` then one will be created by gRPC.
+    public var connectivityStateDelegateQueue: DispatchQueue?
+
     /// TLS configuration for this connection. `nil` if TLS is not desired.
     public var tls: TLS?
 
@@ -264,6 +268,8 @@ extension ClientConnection {
     /// - Parameter errorDelegate: The error delegate, defaulting to a delegate which will log only
     ///     on debug builds.
     /// - Parameter connectivityStateDelegate: A connectivity state delegate, defaulting to `nil`.
+    /// - Parameter connectivityStateDelegateQueue: A `DispatchQueue` on which to call the
+    ///     `connectivityStateDelegate`.
     /// - Parameter tlsConfiguration: TLS configuration, defaulting to `nil`.
     /// - Parameter connectionBackoff: The connection backoff configuration to use.
     /// - Parameter messageEncoding: Message compression configuration, defaults to no compression.
@@ -273,6 +279,7 @@ extension ClientConnection {
       eventLoopGroup: EventLoopGroup,
       errorDelegate: ClientErrorDelegate? = LoggingClientErrorDelegate(),
       connectivityStateDelegate: ConnectivityStateDelegate? = nil,
+      connectivityStateDelegateQueue: DispatchQueue? = nil,
       tls: Configuration.TLS? = nil,
       connectionBackoff: ConnectionBackoff? = ConnectionBackoff(),
       connectionIdleTimeout: TimeAmount = .minutes(5),
@@ -282,6 +289,7 @@ extension ClientConnection {
       self.eventLoopGroup = eventLoopGroup
       self.errorDelegate = errorDelegate
       self.connectivityStateDelegate = connectivityStateDelegate
+      self.connectivityStateDelegateQueue = connectivityStateDelegateQueue
       self.tls = tls
       self.connectionBackoff = connectionBackoff
       self.connectionIdleTimeout = connectionIdleTimeout
