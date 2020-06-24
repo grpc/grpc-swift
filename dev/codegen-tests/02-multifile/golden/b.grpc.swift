@@ -52,12 +52,16 @@ internal final class B_ServiceBClient: GRPCClient, B_ServiceBClientProtocol {
   ///   - request: Request to send to CallServiceB.
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
-  internal func callServiceB(_ request: B_MessageB, callOptions: CallOptions? = nil) -> UnaryCall<B_MessageB, SwiftProtobuf.Google_Protobuf_Empty> {
-    return self.makeUnaryCall(path: "/b.ServiceB/CallServiceB",
-                              request: request,
-                              callOptions: callOptions ?? self.defaultCallOptions)
+  internal func callServiceB(
+    _ request: B_MessageB,
+    callOptions: CallOptions? = nil
+  ) -> UnaryCall<B_MessageB, SwiftProtobuf.Google_Protobuf_Empty> {
+    return self.makeUnaryCall(
+      path: "/b.ServiceB/CallServiceB",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
   }
-
 }
 
 /// To build a server, implement a class that conforms to this protocol.

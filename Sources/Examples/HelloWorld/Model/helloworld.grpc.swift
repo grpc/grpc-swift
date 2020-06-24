@@ -52,12 +52,16 @@ public final class Helloworld_GreeterClient: GRPCClient, Helloworld_GreeterClien
   ///   - request: Request to send to SayHello.
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
-  public func sayHello(_ request: Helloworld_HelloRequest, callOptions: CallOptions? = nil) -> UnaryCall<Helloworld_HelloRequest, Helloworld_HelloReply> {
-    return self.makeUnaryCall(path: "/helloworld.Greeter/SayHello",
-                              request: request,
-                              callOptions: callOptions ?? self.defaultCallOptions)
+  public func sayHello(
+    _ request: Helloworld_HelloRequest,
+    callOptions: CallOptions? = nil
+  ) -> UnaryCall<Helloworld_HelloRequest, Helloworld_HelloReply> {
+    return self.makeUnaryCall(
+      path: "/helloworld.Greeter/SayHello",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
   }
-
 }
 
 /// To build a server, implement a class that conforms to this protocol.

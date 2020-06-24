@@ -54,6 +54,12 @@ class Generator {
     printer.outdent()
   }
 
+  internal func withIndentation(body: () -> ()) {
+    self.indent()
+    body()
+    self.outdent()
+  }
+
   private func printMain() {
     printer.print("""
       //

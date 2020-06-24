@@ -55,10 +55,15 @@ internal final class Echo_EchoClient: GRPCClient, Echo_EchoClientProtocol {
   ///   - request: Request to send to Get.
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
-  internal func get(_ request: Echo_EchoRequest, callOptions: CallOptions? = nil) -> UnaryCall<Echo_EchoRequest, Echo_EchoResponse> {
-    return self.makeUnaryCall(path: "/echo.Echo/Get",
-                              request: request,
-                              callOptions: callOptions ?? self.defaultCallOptions)
+  internal func get(
+    _ request: Echo_EchoRequest,
+    callOptions: CallOptions? = nil
+  ) -> UnaryCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return self.makeUnaryCall(
+      path: "/echo.Echo/Get",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
   }
 
   /// Splits a request into words and returns each word in a stream of messages.
@@ -68,11 +73,17 @@ internal final class Echo_EchoClient: GRPCClient, Echo_EchoClientProtocol {
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   ///   - handler: A closure called when each response is received from the server.
   /// - Returns: A `ServerStreamingCall` with futures for the metadata and status.
-  internal func expand(_ request: Echo_EchoRequest, callOptions: CallOptions? = nil, handler: @escaping (Echo_EchoResponse) -> Void) -> ServerStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
-    return self.makeServerStreamingCall(path: "/echo.Echo/Expand",
-                                        request: request,
-                                        callOptions: callOptions ?? self.defaultCallOptions,
-                                        handler: handler)
+  internal func expand(
+    _ request: Echo_EchoRequest,
+    callOptions: CallOptions? = nil,
+    handler: @escaping (Echo_EchoResponse) -> Void
+  ) -> ServerStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return self.makeServerStreamingCall(
+      path: "/echo.Echo/Expand",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      handler: handler
+    )
   }
 
   /// Collects a stream of messages and returns them concatenated when the caller closes.
@@ -83,9 +94,13 @@ internal final class Echo_EchoClient: GRPCClient, Echo_EchoClientProtocol {
   /// - Parameters:
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   /// - Returns: A `ClientStreamingCall` with futures for the metadata, status and response.
-  internal func collect(callOptions: CallOptions? = nil) -> ClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
-    return self.makeClientStreamingCall(path: "/echo.Echo/Collect",
-                                        callOptions: callOptions ?? self.defaultCallOptions)
+  internal func collect(
+    callOptions: CallOptions? = nil
+  ) -> ClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return self.makeClientStreamingCall(
+      path: "/echo.Echo/Collect",
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
   }
 
   /// Streams back messages as they are received in an input stream.
@@ -97,12 +112,16 @@ internal final class Echo_EchoClient: GRPCClient, Echo_EchoClientProtocol {
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   ///   - handler: A closure called when each response is received from the server.
   /// - Returns: A `ClientStreamingCall` with futures for the metadata and status.
-  internal func update(callOptions: CallOptions? = nil, handler: @escaping (Echo_EchoResponse) -> Void) -> BidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
-    return self.makeBidirectionalStreamingCall(path: "/echo.Echo/Update",
-                                               callOptions: callOptions ?? self.defaultCallOptions,
-                                               handler: handler)
+  internal func update(
+    callOptions: CallOptions? = nil,
+    handler: @escaping (Echo_EchoResponse) -> Void
+  ) -> BidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return self.makeBidirectionalStreamingCall(
+      path: "/echo.Echo/Update",
+      callOptions: callOptions ?? self.defaultCallOptions,
+      handler: handler
+    )
   }
-
 }
 
 /// To build a server, implement a class that conforms to this protocol.
