@@ -115,6 +115,22 @@ public class ClientConnection {
   public func close() -> EventLoopFuture<Void> {
     return self.connectionManager.shutdown()
   }
+
+  private func loggerWithRequestID(_ requestID: String) -> Logger {
+    var logger = self.connectionManager.logger
+    logger[metadataKey: MetadataKey.requestID] = "\(requestID)"
+    return logger
+  }
+
+  private func makeRequestHead(path: String, options: CallOptions, requestID: String) -> _GRPCRequestHead {
+    return _GRPCRequestHead(
+      scheme: self.scheme,
+      path: path,
+      host: self.authority,
+      requestID: requestID,
+      options: options
+    )
+  }
 }
 
 // Note: documentation is inherited.
@@ -124,33 +140,40 @@ extension ClientConnection: GRPCChannel {
     request: Request,
     callOptions: CallOptions
   ) -> UnaryCall<Request, Response> where Request : GRPCPayload, Response : GRPCPayload {
-    return UnaryCall(
-      path: path,
-      scheme: self.scheme,
-      authority: self.authority,
-      callOptions: callOptions,
-      eventLoop: self.eventLoop,
+    let requestID = callOptions.requestIDProvider.requestID()
+    let logger = self.loggerWithRequestID(requestID)
+    logger.debug("starting rpc", metadata: ["path": "\(path)"])
+
+    let call = UnaryCall<Request, Response>.makeOnHTTP2Stream(
       multiplexer: self.multiplexer,
+      callOptions: callOptions,
       errorDelegate: self.configuration.errorDelegate,
-      logger: self.connectionManager.logger,
-      request: request
+      logger: logger
     )
+
+    call.send(self.makeRequestHead(path: path, options: callOptions, requestID: requestID), request: request)
+
+    return call
   }
 
   public func makeClientStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
     path: String,
     callOptions: CallOptions
   ) -> ClientStreamingCall<Request, Response> {
-    return ClientStreamingCall(
-      path: path,
-      scheme: self.scheme,
-      authority: self.authority,
-      callOptions: callOptions,
-      eventLoop: self.eventLoop,
+    let requestID = callOptions.requestIDProvider.requestID()
+    let logger = self.loggerWithRequestID(requestID)
+    logger.debug("starting rpc", metadata: ["path": "\(path)"])
+
+    let call = ClientStreamingCall<Request, Response>.makeOnHTTP2Stream(
       multiplexer: self.multiplexer,
+      callOptions: callOptions,
       errorDelegate: self.configuration.errorDelegate,
-      logger: self.connectionManager.logger
+      logger: logger
     )
+
+    call.sendHead(self.makeRequestHead(path: path, options: callOptions, requestID: requestID))
+
+    return call
   }
 
   public func makeServerStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
@@ -159,18 +182,21 @@ extension ClientConnection: GRPCChannel {
     callOptions: CallOptions,
     handler: @escaping (Response) -> Void
   ) -> ServerStreamingCall<Request, Response> {
-    return ServerStreamingCall(
-      path: path,
-      scheme: self.scheme,
-      authority: self.authority,
+    let requestID = callOptions.requestIDProvider.requestID()
+    let logger = self.loggerWithRequestID(requestID)
+    logger.debug("starting rpc", metadata: ["path": "\(path)"])
+
+    let call = ServerStreamingCall<Request, Response>.makeOnHTTP2Stream(
+      multiplexer: multiplexer,
       callOptions: callOptions,
-      eventLoop: self.eventLoop,
-      multiplexer: self.multiplexer,
       errorDelegate: self.configuration.errorDelegate,
-      logger: self.connectionManager.logger,
-      request: request,
-      handler: handler
+      logger: logger,
+      responseHandler: handler
     )
+
+    call.send(self.makeRequestHead(path: path, options: callOptions, requestID: requestID), request: request)
+
+    return call
   }
 
   public func makeBidirectionalStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
@@ -178,17 +204,21 @@ extension ClientConnection: GRPCChannel {
     callOptions: CallOptions,
     handler: @escaping (Response) -> Void
   ) -> BidirectionalStreamingCall<Request, Response> {
-    return BidirectionalStreamingCall(
-      path: path,
-      scheme: self.scheme,
-      authority: self.authority,
+    let requestID = callOptions.requestIDProvider.requestID()
+    let logger = self.loggerWithRequestID(requestID)
+    logger.debug("starting rpc", metadata: ["path": "\(path)"])
+
+    let call = BidirectionalStreamingCall<Request, Response>.makeOnHTTP2Stream(
+      multiplexer: multiplexer,
       callOptions: callOptions,
-      eventLoop: self.eventLoop,
-      multiplexer: self.multiplexer,
       errorDelegate: self.configuration.errorDelegate,
-      logger: self.connectionManager.logger,
-      handler: handler
+      logger: logger,
+      responseHandler: handler
     )
+
+    call.sendHead(self.makeRequestHead(path: path, options: callOptions, requestID: requestID))
+
+    return call
   }
 }
 
@@ -250,7 +280,7 @@ extension ClientConnection {
     ///
     /// If a connection becomes idle, starting a new RPC will automatically create a new connection.
     public var connectionIdleTimeout: TimeAmount
-    
+
     /// The HTTP/2 flow control target window size.
     public var httpTargetWindowSize: Int
 
@@ -400,7 +430,7 @@ extension String {
     // We need some scratch space to let inet_pton write into.
     var ipv4Addr = in_addr()
     var ipv6Addr = in6_addr()
-    
+
     return self.withCString { ptr in
       return inet_pton(AF_INET, ptr, &ipv4Addr) == 1 ||
         inet_pton(AF_INET6, ptr, &ipv6Addr) == 1

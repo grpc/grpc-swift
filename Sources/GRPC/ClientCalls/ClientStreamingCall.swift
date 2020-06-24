@@ -137,22 +137,30 @@ public final class ClientStreamingCall<
   }
 
   internal init(
-    path: String,
-    scheme: String,
-    authority: String,
-    callOptions: CallOptions,
-    eventLoop: EventLoop,
+    response: EventLoopFuture<ResponsePayload>,
+    transport: ChannelTransport<RequestPayload, ResponsePayload>,
+    options: CallOptions
+  ) {
+    self.response = response
+    self.transport = transport
+    self.options = options
+  }
+
+  internal func sendHead(_ head: _GRPCRequestHead) {
+    self.transport.sendRequest(.head(head), promise: nil)
+  }
+}
+
+extension ClientStreamingCall {
+  internal static func makeOnHTTP2Stream(
     multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
+    callOptions: CallOptions,
     errorDelegate: ClientErrorDelegate?,
     logger: Logger
-  ) {
-    let requestID = callOptions.requestIDProvider.requestID()
-    var logger = logger
-    logger[metadataKey: MetadataKey.requestID] = "\(requestID)"
-    logger.debug("starting rpc", metadata: ["path": "\(path)"])
-
+  ) -> ClientStreamingCall<RequestPayload, ResponsePayload> {
+    let eventLoop = multiplexer.eventLoop
     let responsePromise: EventLoopPromise<ResponsePayload> = eventLoop.makePromise()
-    self.transport = ChannelTransport(
+    let transport = ChannelTransport<RequestPayload, ResponsePayload>(
       multiplexer: multiplexer,
       responseContainer: .init(eventLoop: eventLoop, unaryResponsePromise: responsePromise),
       callType: .clientStreaming,
@@ -160,17 +168,6 @@ public final class ClientStreamingCall<
       errorDelegate: errorDelegate,
       logger: logger
     )
-    self.options = callOptions
-    self.response = responsePromise.futureResult
-
-    let requestHead = _GRPCRequestHead(
-      scheme: scheme,
-      path: path,
-      host: authority,
-      requestID: requestID,
-      options: callOptions
-    )
-
-    self.transport.sendRequest(.head(requestHead), promise: nil)
+    return ClientStreamingCall(response: responsePromise.futureResult, transport: transport, options: callOptions)
   }
 }

@@ -134,40 +134,37 @@ public final class BidirectionalStreamingCall<
   }
 
   internal init(
-    path: String,
-    scheme: String,
-    authority: String,
-    callOptions: CallOptions,
-    eventLoop: EventLoop,
+    transport: ChannelTransport<RequestPayload, ResponsePayload>,
+    options: CallOptions
+  ) {
+    self.transport = transport
+    self.options = options
+  }
+
+  internal func sendHead(_ head: _GRPCRequestHead) {
+    self.transport.sendRequest(.head(head), promise: nil)
+  }
+}
+
+extension BidirectionalStreamingCall {
+  internal static func makeOnHTTP2Stream(
     multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
+    callOptions: CallOptions,
     errorDelegate: ClientErrorDelegate?,
     logger: Logger,
-    handler: @escaping (ResponsePayload) -> Void
-  ) {
-    let requestID = callOptions.requestIDProvider.requestID()
-    var logger = logger
-    logger[metadataKey: MetadataKey.requestID] = "\(requestID)"
-    logger.debug("starting rpc", metadata: ["path": "\(path)"])
-
-    self.transport = ChannelTransport(
+    responseHandler: @escaping (ResponsePayload) -> Void
+  ) -> BidirectionalStreamingCall<RequestPayload, ResponsePayload> {
+    let eventLoop = multiplexer.eventLoop
+    let transport = ChannelTransport<RequestPayload, ResponsePayload>(
       multiplexer: multiplexer,
-      responseContainer: .init(eventLoop: eventLoop, streamingResponseHandler: handler),
+      responseContainer: .init(eventLoop: eventLoop, streamingResponseHandler: responseHandler),
       callType: .bidirectionalStreaming,
       timeLimit: callOptions.timeLimit,
       errorDelegate: errorDelegate,
       logger: logger
     )
 
-    self.options = callOptions
-
-    let requestHead = _GRPCRequestHead(
-      scheme: scheme,
-      path: path,
-      host: authority,
-      requestID: requestID,
-      options: callOptions
-    )
-
-    self.transport.sendRequest(.head(requestHead), promise: nil)
+    return BidirectionalStreamingCall(transport: transport, options: callOptions)
   }
 }
+
