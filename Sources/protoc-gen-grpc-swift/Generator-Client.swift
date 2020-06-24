@@ -66,80 +66,136 @@ extension Generator {
     println("self.defaultCallOptions = defaultCallOptions")
     outdent()
     println("}")
-    println()
 
-    for method in service.methods {
-      self.method = method
-      let streamType = streamingType(self.method)
-      switch streamType {
-      case .unary:
-        println(self.method.documentation(streamingType: streamType), newline: false)
-        println("///")
-        printParameters()
-        printRequestParameter()
-        printCallOptionsParameter()
-        println("/// - Returns: A `UnaryCall` with futures for the metadata, status and response.")
-        println("\(access) func \(methodFunctionName)(_ request: \(methodInputName), callOptions: CallOptions? = nil) -> UnaryCall<\(methodInputName), \(methodOutputName)> {")
-        indent()
-        println("return self.makeUnaryCall(path: \"/\(servicePath)/\(method.name)\",")
-        println("                          request: request,")
-        println("                          callOptions: callOptions ?? self.defaultCallOptions)")
-        outdent()
-        println("}")
+    self.printMethods()
 
-      case .serverStreaming:
-        println(self.method.documentation(streamingType: streamType), newline: false)
-        println("///")
-        printParameters()
-        printRequestParameter()
-        printCallOptionsParameter()
-        printHandlerParameter()
-        println("/// - Returns: A `ServerStreamingCall` with futures for the metadata and status.")
-        println("\(access) func \(methodFunctionName)(_ request: \(methodInputName), callOptions: CallOptions? = nil, handler: @escaping (\(methodOutputName)) -> Void) -> ServerStreamingCall<\(methodInputName), \(methodOutputName)> {")
-        indent()
-        println("return self.makeServerStreamingCall(path: \"/\(servicePath)/\(method.name)\",")
-        println("                                    request: request,")
-        println("                                    callOptions: callOptions ?? self.defaultCallOptions,")
-        println("                                    handler: handler)")
-        outdent()
-        println("}")
-
-      case .clientStreaming:
-        println(self.method.documentation(streamingType: streamType), newline: false)
-        println("///")
-        printClientStreamingDetails()
-        println("///")
-        printParameters()
-        printCallOptionsParameter()
-        println("/// - Returns: A `ClientStreamingCall` with futures for the metadata, status and response.")
-        println("\(access) func \(methodFunctionName)(callOptions: CallOptions? = nil) -> ClientStreamingCall<\(methodInputName), \(methodOutputName)> {")
-        indent()
-        println("return self.makeClientStreamingCall(path: \"/\(servicePath)/\(method.name)\",")
-        println("                                    callOptions: callOptions ?? self.defaultCallOptions)")
-        outdent()
-        println("}")
-
-      case .bidirectionalStreaming:
-        println(self.method.documentation(streamingType: streamType), newline: false)
-        println("///")
-        printClientStreamingDetails()
-        println("///")
-        printParameters()
-        printCallOptionsParameter()
-        printHandlerParameter()
-        println("/// - Returns: A `ClientStreamingCall` with futures for the metadata and status.")
-        println("\(access) func \(methodFunctionName)(callOptions: CallOptions? = nil, handler: @escaping (\(methodOutputName)) -> Void) -> BidirectionalStreamingCall<\(methodInputName), \(methodOutputName)> {")
-        indent()
-        println("return self.makeBidirectionalStreamingCall(path: \"/\(servicePath)/\(method.name)\",")
-        println("                                           callOptions: callOptions ?? self.defaultCallOptions,")
-        println("                                           handler: handler)")
-        outdent()
-        println("}")
-      }
-      println()
-    }
     outdent()
     println("}")
+  }
+
+  private func printMethods(callFactory: String = "self") {
+    for method in self.service.methods {
+      self.println()
+
+      self.method = method
+      switch self.streamType {
+      case .unary:
+        self.printUnaryCall(callFactory: callFactory)
+
+      case .serverStreaming:
+        self.printServerStreamingCall(callFactory: callFactory)
+
+      case .clientStreaming:
+        self.printClientStreamingCall(callFactory: callFactory)
+
+      case .bidirectionalStreaming:
+        self.printBidirectionalStreamingCall(callFactory: callFactory)
+      }
+    }
+  }
+
+  private func printUnaryCall(callFactory: String) {
+    self.println(self.method.documentation(streamingType: self.streamType), newline: false)
+    self.println("///")
+    self.printParameters()
+    self.printRequestParameter()
+    self.printCallOptionsParameter()
+    self.println("/// - Returns: A `UnaryCall` with futures for the metadata, status and response.")
+    self.println("\(self.access) func \(self.methodFunctionName)(")
+    self.withIndentation {
+      self.println("_ request: \(self.methodInputName),")
+      self.println("callOptions: CallOptions? = nil")
+    }
+    self.println(") -> UnaryCall<\(self.methodInputName), \(self.methodOutputName)> {")
+    self.withIndentation {
+      self.println("return \(callFactory).makeUnaryCall(")
+      self.withIndentation {
+        self.println("path: \(self.methodPath),")
+        self.println("request: request,")
+        self.println("callOptions: callOptions ?? self.defaultCallOptions")
+      }
+      self.println(")")
+    }
+    self.println("}")
+  }
+
+  private func printServerStreamingCall(callFactory: String) {
+    self.println(self.method.documentation(streamingType: self.streamType), newline: false)
+    self.println("///")
+    self.printParameters()
+    self.printRequestParameter()
+    self.printCallOptionsParameter()
+    self.printHandlerParameter()
+    self.println("/// - Returns: A `ServerStreamingCall` with futures for the metadata and status.")
+    self.println("\(self.access) func \(self.methodFunctionName)(")
+    self.withIndentation {
+      self.println("_ request: \(self.methodInputName),")
+      self.println("callOptions: CallOptions? = nil,")
+      self.println("handler: @escaping (\(methodOutputName)) -> Void")
+    }
+    self.println(") -> ServerStreamingCall<\(methodInputName), \(methodOutputName)> {")
+    self.withIndentation {
+      self.println("return \(callFactory).makeServerStreamingCall(") // path: \"/\(servicePath)/\(method.name)\",")
+      self.withIndentation {
+        self.println("path: \(self.methodPath),")
+        self.println("request: request,")
+        self.println("callOptions: callOptions ?? self.defaultCallOptions,")
+        self.println("handler: handler")
+      }
+      self.println(")")
+    }
+    self.println("}")
+  }
+
+  private func printClientStreamingCall(callFactory: String) {
+    self.println(self.method.documentation(streamingType: self.streamType), newline: false)
+    self.println("///")
+    self.printClientStreamingDetails()
+    self.println("///")
+    self.printParameters()
+    self.printCallOptionsParameter()
+    self.println("/// - Returns: A `ClientStreamingCall` with futures for the metadata, status and response.")
+    self.println("\(self.access) func \(self.methodFunctionName)(")
+    self.withIndentation {
+      self.println("callOptions: CallOptions? = nil")
+    }
+    self.println(") -> ClientStreamingCall<\(self.methodInputName), \(self.methodOutputName)> {")
+    self.withIndentation {
+      self.println("return \(callFactory).makeClientStreamingCall(")
+      self.withIndentation {
+        self.println("path: \(self.methodPath),")
+        self.println("callOptions: callOptions ?? self.defaultCallOptions")
+      }
+      self.println(")")
+    }
+    self.println("}")
+  }
+
+  private func printBidirectionalStreamingCall(callFactory: String) {
+    self.println(self.method.documentation(streamingType: self.streamType), newline: false)
+    self.println("///")
+    self.printClientStreamingDetails()
+    self.println("///")
+    self.printParameters()
+    self.printCallOptionsParameter()
+    self.printHandlerParameter()
+    self.println("/// - Returns: A `ClientStreamingCall` with futures for the metadata and status.")
+    self.println("\(self.access) func \(self.methodFunctionName)(")
+    self.withIndentation {
+      self.println("callOptions: CallOptions? = nil,")
+      self.println("handler: @escaping (\(self.methodOutputName)) -> Void")
+    }
+    self.println(") -> BidirectionalStreamingCall<\(self.methodInputName), \(self.methodOutputName)> {")
+    self.withIndentation {
+      self.println("return \(callFactory).makeBidirectionalStreamingCall(")
+      self.withIndentation {
+        self.println("path: \(self.methodPath),")
+        self.println("callOptions: callOptions ?? self.defaultCallOptions,")
+        self.println("handler: handler")
+      }
+      self.println(")")
+    }
+    self.println("}")
   }
 
   private func printClientStreamingDetails() {
@@ -161,6 +217,12 @@ extension Generator {
 
   private func printHandlerParameter() {
     println("///   - handler: A closure called when each response is received from the server.")
+  }
+}
+
+fileprivate extension Generator {
+  var streamType: StreamingType {
+    return streamingType(self.method)
   }
 }
 
