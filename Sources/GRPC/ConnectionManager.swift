@@ -254,6 +254,39 @@ internal class ConnectionManager {
     }
   }
 
+  /// Returns a future for the current channel, or future channel from the current connection
+  /// attempt, or if the state is 'idle' returns the future for the next connection attempt.
+  ///
+  /// Note: if the state is 'transientFailure' or 'shutdown' then a failed future will be returned.
+  internal func getOptimisticChannel() -> EventLoopFuture<Channel> {
+    return self.eventLoop.flatSubmit {
+      switch self.state {
+      case .idle:
+        self.startConnecting()
+        // We started connecting so we must transition to the `connecting` state.
+        guard case .connecting(let connecting) = self.state else {
+          self.invalidState()
+        }
+        return connecting.candidate
+
+      case .connecting(let state):
+        return state.candidate
+
+      case .active(let state):
+        return state.candidate.eventLoop.makeSucceededFuture(state.candidate)
+
+      case .ready(let state):
+        return state.channel.eventLoop.makeSucceededFuture(state.channel)
+
+      case .transientFailure:
+        return self.eventLoop.makeFailedFuture(ChannelError.ioOnClosedChannel)
+
+      case .shutdown:
+        return self.eventLoop.makeFailedFuture(GRPCStatus(code: .unavailable, message: nil))
+      }
+    }
+  }
+
   /// Shutdown any connection which exists. This is a request from the application.
   internal func shutdown() -> EventLoopFuture<Void> {
     return self.eventLoop.flatSubmit {
