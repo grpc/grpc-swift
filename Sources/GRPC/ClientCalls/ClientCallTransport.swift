@@ -373,9 +373,11 @@ extension ChannelTransport {
       var loggerWithState = self.logger
       loggerWithState[metadataKey: "call_state"] = "\(self.describeCallState())"
       let errorStatus: GRPCStatus
+      let errorWithoutContext: Error
 
       if let errorWithContext = error as? GRPCError.WithContext {
         errorStatus = errorWithContext.error.makeGRPCStatus()
+        errorWithoutContext = errorWithContext.error
         self.errorDelegate?.didCatchError(
           errorWithContext.error,
           logger: loggerWithState,
@@ -384,14 +386,16 @@ extension ChannelTransport {
         )
       } else if let transformable = error as? GRPCStatusTransformable {
         errorStatus = transformable.makeGRPCStatus()
+        errorWithoutContext = error
         self.errorDelegate?.didCatchErrorWithoutContext(error, logger: loggerWithState)
       } else {
         errorStatus = .processingError
+        errorWithoutContext = error
         self.errorDelegate?.didCatchErrorWithoutContext(error, logger: loggerWithState)
       }
 
       // Update our state: we're closing.
-      self.close(withStatus: errorStatus)
+      self.close(error: errorWithoutContext, status: errorStatus)
       promise?.fail(errorStatus)
 
     case .closed:
@@ -402,7 +406,7 @@ extension ChannelTransport {
   /// Close the call, if it's not yet closed with the given status.
   ///
   /// Must be called from the event loop.
-  private func close(withStatus status: GRPCStatus) {
+  private func close(error: Error, status: GRPCStatus) {
     self.eventLoop.preconditionInEventLoop()
 
     switch self.state {
@@ -416,7 +420,7 @@ extension ChannelTransport {
       self.scheduledTimeout = nil
 
       // Fail any outstanding promises.
-      self.responseContainer.fail(with: status)
+      self.responseContainer.fail(with: error, status: status)
 
       // Fail any buffered writes.
       while !self.requestBuffer.isEmpty {
@@ -439,7 +443,7 @@ extension ChannelTransport {
       self.scheduledTimeout = nil
 
       // Fail any outstanding promises.
-      self.responseContainer.fail(with: status)
+      self.responseContainer.fail(with: error, status: status)
 
       // Close the channel.
       channel.close(mode: .all, promise: nil)
@@ -502,7 +506,7 @@ extension ChannelTransport: ClientCallInbound {
         // We're not really failing the status here; in some cases the server may fast fail, in which
         // case we'll only see trailing metadata and status: we should fail the initial metadata and
         // response in that case.
-        self.responseContainer.fail(with: status)
+        self.responseContainer.fail(with: status, status: status)
       }
 
     case .closed:

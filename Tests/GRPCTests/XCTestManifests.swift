@@ -22,6 +22,7 @@ extension ChannelTransportTests {
         ("testBufferedWritesAreFailedOnClose", testBufferedWritesAreFailedOnClose),
         ("testChannelBecomesInactive", testChannelBecomesInactive),
         ("testChannelError", testChannelError),
+        ("testErrorsAreNotAlwaysStatus", testErrorsAreNotAlwaysStatus),
         ("testInboundMethodsAfterShutdown", testInboundMethodsAfterShutdown),
         ("testOutboundMethodsAfterShutdown", testOutboundMethodsAfterShutdown),
         ("testTimeoutAfterActivating", testTimeoutAfterActivating),
