@@ -110,7 +110,7 @@ check_copyright_headers() {
       ;;
     *.pb.swift)
       expected_sha="$SWIFT_GRPC_PB"
-      drop_first=8
+      drop_first=9
       expected_lines=13
       ;;
     */Package.swift)
@@ -131,11 +131,13 @@ check_copyright_headers() {
     | shasum \
     | awk '{print $1}')
 
+  rc=0
   if [ "$actual_sha" != "$expected_sha" ]; then
     printf "\033[0;31mMissing or invalid copyright headers in '$filename'\033[0m\n"
-    exit 1
+    rc=1
   fi
   done
+  exit $rc
 }
 
 check_copyright_headers

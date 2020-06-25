@@ -59,10 +59,15 @@ public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_Test
   ///   - request: Request to send to EmptyCall.
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
-  public func emptyCall(_ request: Grpc_Testing_Empty, callOptions: CallOptions? = nil) -> UnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty> {
-    return self.makeUnaryCall(path: "/grpc.testing.TestService/EmptyCall",
-                              request: request,
-                              callOptions: callOptions ?? self.defaultCallOptions)
+  public func emptyCall(
+    _ request: Grpc_Testing_Empty,
+    callOptions: CallOptions? = nil
+  ) -> UnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty> {
+    return self.makeUnaryCall(
+      path: "/grpc.testing.TestService/EmptyCall",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
   }
 
   /// One request followed by one response.
@@ -71,10 +76,15 @@ public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_Test
   ///   - request: Request to send to UnaryCall.
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
-  public func unaryCall(_ request: Grpc_Testing_SimpleRequest, callOptions: CallOptions? = nil) -> UnaryCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse> {
-    return self.makeUnaryCall(path: "/grpc.testing.TestService/UnaryCall",
-                              request: request,
-                              callOptions: callOptions ?? self.defaultCallOptions)
+  public func unaryCall(
+    _ request: Grpc_Testing_SimpleRequest,
+    callOptions: CallOptions? = nil
+  ) -> UnaryCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse> {
+    return self.makeUnaryCall(
+      path: "/grpc.testing.TestService/UnaryCall",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
   }
 
   /// One request followed by one response. Response has cache control
@@ -85,10 +95,15 @@ public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_Test
   ///   - request: Request to send to CacheableUnaryCall.
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
-  public func cacheableUnaryCall(_ request: Grpc_Testing_SimpleRequest, callOptions: CallOptions? = nil) -> UnaryCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse> {
-    return self.makeUnaryCall(path: "/grpc.testing.TestService/CacheableUnaryCall",
-                              request: request,
-                              callOptions: callOptions ?? self.defaultCallOptions)
+  public func cacheableUnaryCall(
+    _ request: Grpc_Testing_SimpleRequest,
+    callOptions: CallOptions? = nil
+  ) -> UnaryCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse> {
+    return self.makeUnaryCall(
+      path: "/grpc.testing.TestService/CacheableUnaryCall",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
   }
 
   /// One request followed by a sequence of responses (streamed download).
@@ -99,11 +114,17 @@ public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_Test
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   ///   - handler: A closure called when each response is received from the server.
   /// - Returns: A `ServerStreamingCall` with futures for the metadata and status.
-  public func streamingOutputCall(_ request: Grpc_Testing_StreamingOutputCallRequest, callOptions: CallOptions? = nil, handler: @escaping (Grpc_Testing_StreamingOutputCallResponse) -> Void) -> ServerStreamingCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse> {
-    return self.makeServerStreamingCall(path: "/grpc.testing.TestService/StreamingOutputCall",
-                                        request: request,
-                                        callOptions: callOptions ?? self.defaultCallOptions,
-                                        handler: handler)
+  public func streamingOutputCall(
+    _ request: Grpc_Testing_StreamingOutputCallRequest,
+    callOptions: CallOptions? = nil,
+    handler: @escaping (Grpc_Testing_StreamingOutputCallResponse) -> Void
+  ) -> ServerStreamingCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse> {
+    return self.makeServerStreamingCall(
+      path: "/grpc.testing.TestService/StreamingOutputCall",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      handler: handler
+    )
   }
 
   /// A sequence of requests followed by one response (streamed upload).
@@ -115,9 +136,13 @@ public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_Test
   /// - Parameters:
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   /// - Returns: A `ClientStreamingCall` with futures for the metadata, status and response.
-  public func streamingInputCall(callOptions: CallOptions? = nil) -> ClientStreamingCall<Grpc_Testing_StreamingInputCallRequest, Grpc_Testing_StreamingInputCallResponse> {
-    return self.makeClientStreamingCall(path: "/grpc.testing.TestService/StreamingInputCall",
-                                        callOptions: callOptions ?? self.defaultCallOptions)
+  public func streamingInputCall(
+    callOptions: CallOptions? = nil
+  ) -> ClientStreamingCall<Grpc_Testing_StreamingInputCallRequest, Grpc_Testing_StreamingInputCallResponse> {
+    return self.makeClientStreamingCall(
+      path: "/grpc.testing.TestService/StreamingInputCall",
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
   }
 
   /// A sequence of requests with each request served by the server immediately.
@@ -131,10 +156,15 @@ public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_Test
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   ///   - handler: A closure called when each response is received from the server.
   /// - Returns: A `ClientStreamingCall` with futures for the metadata and status.
-  public func fullDuplexCall(callOptions: CallOptions? = nil, handler: @escaping (Grpc_Testing_StreamingOutputCallResponse) -> Void) -> BidirectionalStreamingCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse> {
-    return self.makeBidirectionalStreamingCall(path: "/grpc.testing.TestService/FullDuplexCall",
-                                               callOptions: callOptions ?? self.defaultCallOptions,
-                                               handler: handler)
+  public func fullDuplexCall(
+    callOptions: CallOptions? = nil,
+    handler: @escaping (Grpc_Testing_StreamingOutputCallResponse) -> Void
+  ) -> BidirectionalStreamingCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse> {
+    return self.makeBidirectionalStreamingCall(
+      path: "/grpc.testing.TestService/FullDuplexCall",
+      callOptions: callOptions ?? self.defaultCallOptions,
+      handler: handler
+    )
   }
 
   /// A sequence of requests followed by a sequence of responses.
@@ -149,10 +179,15 @@ public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_Test
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   ///   - handler: A closure called when each response is received from the server.
   /// - Returns: A `ClientStreamingCall` with futures for the metadata and status.
-  public func halfDuplexCall(callOptions: CallOptions? = nil, handler: @escaping (Grpc_Testing_StreamingOutputCallResponse) -> Void) -> BidirectionalStreamingCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse> {
-    return self.makeBidirectionalStreamingCall(path: "/grpc.testing.TestService/HalfDuplexCall",
-                                               callOptions: callOptions ?? self.defaultCallOptions,
-                                               handler: handler)
+  public func halfDuplexCall(
+    callOptions: CallOptions? = nil,
+    handler: @escaping (Grpc_Testing_StreamingOutputCallResponse) -> Void
+  ) -> BidirectionalStreamingCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse> {
+    return self.makeBidirectionalStreamingCall(
+      path: "/grpc.testing.TestService/HalfDuplexCall",
+      callOptions: callOptions ?? self.defaultCallOptions,
+      handler: handler
+    )
   }
 
   /// The test server will not implement this method. It will be used
@@ -162,12 +197,16 @@ public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_Test
   ///   - request: Request to send to UnimplementedCall.
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
-  public func unimplementedCall(_ request: Grpc_Testing_Empty, callOptions: CallOptions? = nil) -> UnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty> {
-    return self.makeUnaryCall(path: "/grpc.testing.TestService/UnimplementedCall",
-                              request: request,
-                              callOptions: callOptions ?? self.defaultCallOptions)
+  public func unimplementedCall(
+    _ request: Grpc_Testing_Empty,
+    callOptions: CallOptions? = nil
+  ) -> UnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty> {
+    return self.makeUnaryCall(
+      path: "/grpc.testing.TestService/UnimplementedCall",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
   }
-
 }
 
 /// Usage: instantiate Grpc_Testing_UnimplementedServiceClient, then call methods of this protocol to make API calls.
@@ -195,12 +234,16 @@ public final class Grpc_Testing_UnimplementedServiceClient: GRPCClient, Grpc_Tes
   ///   - request: Request to send to UnimplementedCall.
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
-  public func unimplementedCall(_ request: Grpc_Testing_Empty, callOptions: CallOptions? = nil) -> UnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty> {
-    return self.makeUnaryCall(path: "/grpc.testing.UnimplementedService/UnimplementedCall",
-                              request: request,
-                              callOptions: callOptions ?? self.defaultCallOptions)
+  public func unimplementedCall(
+    _ request: Grpc_Testing_Empty,
+    callOptions: CallOptions? = nil
+  ) -> UnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty> {
+    return self.makeUnaryCall(
+      path: "/grpc.testing.UnimplementedService/UnimplementedCall",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
   }
-
 }
 
 /// Usage: instantiate Grpc_Testing_ReconnectServiceClient, then call methods of this protocol to make API calls.
@@ -229,10 +272,15 @@ public final class Grpc_Testing_ReconnectServiceClient: GRPCClient, Grpc_Testing
   ///   - request: Request to send to Start.
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
-  public func start(_ request: Grpc_Testing_ReconnectParams, callOptions: CallOptions? = nil) -> UnaryCall<Grpc_Testing_ReconnectParams, Grpc_Testing_Empty> {
-    return self.makeUnaryCall(path: "/grpc.testing.ReconnectService/Start",
-                              request: request,
-                              callOptions: callOptions ?? self.defaultCallOptions)
+  public func start(
+    _ request: Grpc_Testing_ReconnectParams,
+    callOptions: CallOptions? = nil
+  ) -> UnaryCall<Grpc_Testing_ReconnectParams, Grpc_Testing_Empty> {
+    return self.makeUnaryCall(
+      path: "/grpc.testing.ReconnectService/Start",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
   }
 
   /// Unary call to Stop
@@ -241,12 +289,16 @@ public final class Grpc_Testing_ReconnectServiceClient: GRPCClient, Grpc_Testing
   ///   - request: Request to send to Stop.
   ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
   /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
-  public func stop(_ request: Grpc_Testing_Empty, callOptions: CallOptions? = nil) -> UnaryCall<Grpc_Testing_Empty, Grpc_Testing_ReconnectInfo> {
-    return self.makeUnaryCall(path: "/grpc.testing.ReconnectService/Stop",
-                              request: request,
-                              callOptions: callOptions ?? self.defaultCallOptions)
+  public func stop(
+    _ request: Grpc_Testing_Empty,
+    callOptions: CallOptions? = nil
+  ) -> UnaryCall<Grpc_Testing_Empty, Grpc_Testing_ReconnectInfo> {
+    return self.makeUnaryCall(
+      path: "/grpc.testing.ReconnectService/Stop",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
   }
-
 }
 
 /// To build a server, implement a class that conforms to this protocol.
@@ -388,17 +440,4 @@ extension Grpc_Testing_ReconnectServiceProvider {
   }
 }
 
-
-// Provides conformance to `GRPCPayload` for request and response messages
-extension Grpc_Testing_Empty: GRPCProtobufPayload {}
-extension Grpc_Testing_SimpleRequest: GRPCProtobufPayload {}
-extension Grpc_Testing_SimpleResponse: GRPCProtobufPayload {}
-extension Grpc_Testing_StreamingOutputCallRequest: GRPCProtobufPayload {}
-extension Grpc_Testing_StreamingOutputCallResponse: GRPCProtobufPayload {}
-extension Grpc_Testing_StreamingInputCallRequest: GRPCProtobufPayload {}
-extension Grpc_Testing_StreamingInputCallResponse: GRPCProtobufPayload {}
-
-
-extension Grpc_Testing_ReconnectParams: GRPCProtobufPayload {}
-extension Grpc_Testing_ReconnectInfo: GRPCProtobufPayload {}
 
