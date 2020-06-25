@@ -37,16 +37,16 @@ internal struct ResponsePartContainer<Response: GRPCPayload> {
 
   /// Fail all promises - except for the status promise - with the given error status. Succeed the
   /// status promise.
-  mutating func fail(with status: GRPCStatus) {
-    self.lazyInitialMetadataPromise.fail(status)
+  mutating func fail(with error: Error, status: GRPCStatus) {
+    self.lazyInitialMetadataPromise.fail(error)
 
     switch self.responseHandler {
     case .unary(let response):
-      response.fail(status)
+      response.fail(error)
     case .stream:
       ()
     }
-    self.lazyTrailingMetadataPromise.fail(status)
+    self.lazyTrailingMetadataPromise.fail(error)
     // We always succeed the status.
     self.lazyStatusPromise.succeed(status)
   }

@@ -340,6 +340,36 @@ class ChannelTransportTests: GRPCTestCase {
     // Promise should fail.
     XCTAssertThrowsError(try requestHeadPromise.futureResult.wait())
   }
+
+  func testErrorsAreNotAlwaysStatus() throws {
+    let channel = EmbeddedChannel()
+    let responsePromise = channel.eventLoop.makePromise(of: Response.self)
+    let container = ResponsePartContainer<Response>(
+      eventLoop: channel.eventLoop,
+      unaryResponsePromise: responsePromise
+    )
+
+    let transport = self.makeEmbeddedTransport(channel: channel, container: container)
+    transport.activate(stream: channel)
+
+    // Send an error
+    transport.receiveError(GRPCError.RPCCancelledByClient())
+
+    XCTAssertThrowsError(try transport.responseContainer.lazyInitialMetadataPromise.getFutureResult().wait()) { error in
+      XCTAssertTrue(error is GRPCError.RPCCancelledByClient)
+    }
+
+    XCTAssertThrowsError(try transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult().wait()) { error in
+      XCTAssertTrue(error is GRPCError.RPCCancelledByClient)
+    }
+
+    XCTAssertThrowsError(try responsePromise.futureResult.wait()) { error in
+      XCTAssertTrue(error is GRPCError.RPCCancelledByClient)
+    }
+
+    // Status never fails.
+    XCTAssertNoThrow(try transport.responseContainer.lazyStatusPromise.getFutureResult().wait())
+  }
 }
 
 extension _GRPCClientRequestPart {
