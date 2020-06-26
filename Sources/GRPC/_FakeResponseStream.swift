@@ -16,6 +16,12 @@
 import NIO
 import NIOHPACK
 
+public enum FakeRequestPart<Request: GRPCPayload> {
+  case metadata(HPACKHeaders)
+  case message(Request)
+  case end
+}
+
 /// Sending on a fake response stream would have resulted in a protocol violation (such as
 /// sending initial metadata multiple times or sending messages after the stream has closed).
 public struct FakeResponseProtocolViolation: Error, Hashable {
@@ -70,11 +76,11 @@ public class _FakeResponseStream<Request: GRPCPayload, Response: GRPCPayload> {
     case closed
   }
 
-  internal init() {
+  internal init(requestHandler: @escaping (FakeRequestPart<Request>) -> ()) {
     self.activeState = .inactive
     self.sendState = .idle
     self.responseBuffer = CircularBuffer()
-    self.channel = EmbeddedChannel()
+    self.channel = EmbeddedChannel(handler: WriteCapturingHandler(requestHandler: requestHandler))
   }
 
   /// Activate the test proxy; this should be called
@@ -227,8 +233,8 @@ public class _FakeResponseStream<Request: GRPCPayload, Response: GRPCPayload> {
 /// `sendError` may be used to terminate an RPC without providing a response. As for `sendMessage`,
 /// the `trailingMetadata` defaults to being empty.
 public class FakeUnaryResponse<Request: GRPCPayload, Response: GRPCPayload>: _FakeResponseStream<Request, Response> {
-  public override init() {
-    super.init()
+  public override init(requestHandler: @escaping (FakeRequestPart<Request>) -> () = { _ in }) {
+    super.init(requestHandler: requestHandler)
   }
 
   /// Send a response message to the client.
@@ -290,8 +296,8 @@ public class FakeUnaryResponse<Request: GRPCPayload, Response: GRPCPayload>: _Fa
 /// `sendError` may be called at any time to indicate an error on the response stream.
 /// Like `sendEnd`, `trailingMetadata` is empty by default.
 public class FakeStreamingResponse<Request: GRPCPayload, Response: GRPCPayload>: _FakeResponseStream<Request, Response> {
-  public override init() {
-    super.init()
+  public override init(requestHandler: @escaping (FakeRequestPart<Request>) -> () = { _ in }) {
+    super.init(requestHandler: requestHandler)
   }
 
   /// Send initial metadata to the client.

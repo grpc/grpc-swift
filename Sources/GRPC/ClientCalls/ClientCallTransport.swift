@@ -179,6 +179,46 @@ internal class ChannelTransport<Request: GRPCPayload, Response: GRPCPayload> {
       }
     }
   }
+
+  internal convenience init(
+    fakeResponse: _FakeResponseStream<Request, Response>,
+    responseContainer: ResponsePartContainer<Response>,
+    timeLimit: TimeLimit,
+    logger: Logger
+  ) {
+    self.init(
+      eventLoop: fakeResponse.channel.eventLoop,
+      responseContainer: responseContainer,
+      timeLimit: timeLimit,
+      errorDelegate: nil,
+      logger: logger
+    ) { call, streamPromise in
+      fakeResponse.channel.pipeline.addHandler(GRPCClientCallHandler(call: call)).map {
+        fakeResponse.channel
+      }.cascade(to: streamPromise)
+    }
+  }
+
+  /// Makes a transport whose channel promise is failed immediately.
+  internal static func makeTransportForMissingFakeResponse(
+    eventLoop: EventLoop,
+    responseContainer: ResponsePartContainer<Response>,
+    logger: Logger
+  ) -> ChannelTransport<Request, Response> {
+    return .init(
+      eventLoop: eventLoop,
+      responseContainer: responseContainer,
+      timeLimit: .none,
+      errorDelegate: nil,
+      logger: logger
+    ) { call, promise in
+      let error = GRPCStatus(
+        code: .unavailable,
+        message: "No fake response was registered before starting an RPC."
+      )
+      promise.fail(error)
+    }
+  }
 }
 
 // MARK: - Call API (i.e. called from {Unary,ClientStreaming,...}Call)

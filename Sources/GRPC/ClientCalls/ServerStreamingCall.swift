@@ -112,4 +112,34 @@ extension ServerStreamingCall {
 
     return ServerStreamingCall(transport: transport, options: callOptions)
   }
+
+  internal static func make(
+    fakeResponse: FakeStreamingResponse<RequestPayload, ResponsePayload>?,
+    callOptions: CallOptions,
+    logger: Logger,
+    responseHandler: @escaping (ResponsePayload) -> Void
+  ) -> ServerStreamingCall<RequestPayload, ResponsePayload> {
+    let eventLoop = fakeResponse?.channel.eventLoop ?? EmbeddedEventLoop()
+    let responseContainer = ResponsePartContainer(eventLoop: eventLoop, streamingResponseHandler: responseHandler)
+
+    let transport: ChannelTransport<RequestPayload, ResponsePayload>
+    if let callProxy = fakeResponse {
+      transport = .init(
+        fakeResponse: callProxy,
+        responseContainer: responseContainer,
+        timeLimit: callOptions.timeLimit,
+        logger: logger
+      )
+
+      callProxy.activate()
+    } else {
+      transport = .makeTransportForMissingFakeResponse(
+        eventLoop: eventLoop,
+        responseContainer: responseContainer,
+        logger: logger
+      )
+    }
+
+    return ServerStreamingCall(transport: transport, options: callOptions)
+  }
 }
