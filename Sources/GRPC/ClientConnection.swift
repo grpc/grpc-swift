@@ -72,9 +72,19 @@ import Logging
 public class ClientConnection {
   private let connectionManager: ConnectionManager
 
+  private func getChannel() -> EventLoopFuture<Channel> {
+    switch self.configuration.callStartBehavior.wrapped {
+    case .waitsForConnectivity:
+      return self.connectionManager.getChannel()
+
+    case .fastFailure:
+      return self.connectionManager.getOptimisticChannel()
+    }
+  }
+
   /// HTTP multiplexer from the `channel` handling gRPC calls.
   internal var multiplexer: EventLoopFuture<HTTP2StreamMultiplexer> {
-    return self.connectionManager.getChannel().flatMap {
+    return self.getChannel().flatMap {
       $0.pipeline.handler(type: HTTP2StreamMultiplexer.self)
     }
   }
@@ -266,6 +276,38 @@ public struct ConnectionTarget {
   }
 }
 
+/// The connectivity behavior to use when starting an RPC.
+public struct CallStartBehavior: Hashable {
+  internal enum Behavior: Hashable {
+    case waitsForConnectivity
+    case fastFailure
+  }
+
+  internal var wrapped: Behavior
+  private init(_ wrapped: Behavior) {
+    self.wrapped = wrapped
+  }
+
+  /// Waits for connectivity (that is, the 'ready' connectivity state) before attempting to start
+  /// an RPC. Doing so may involve multiple connection attempts.
+  ///
+  /// This is the preferred, and default, behaviour.
+  public static let waitsForConnectivity = CallStartBehavior(.waitsForConnectivity)
+
+  /// The 'fast failure' behaviour is intended for cases where users would rather their RPC failed
+  /// quickly rather than waiting for an active connection. The behaviour depends on the current
+  /// connectivity state:
+  ///
+  /// - Idle: a connection attempt will be started and the RPC will fail if that attempt fails.
+  /// - Connecting: a connection attempt is already in progress, the RPC will fail if that attempt
+  ///     fails.
+  /// - Ready: a connection is already active: the RPC will be started using that connection.
+  /// - Transient failure: the last connection or connection attempt failed and gRPC is waiting to
+  ///     connect again. The RPC will fail immediately.
+  /// - Shutdown: the connection is shutdown, the RPC will fail immediately.
+  public static let fastFailure = CallStartBehavior(.fastFailure)
+}
+
 extension ClientConnection {
   /// The configuration for a connection.
   public struct Configuration {
@@ -300,6 +342,10 @@ extension ClientConnection {
     /// If a connection becomes idle, starting a new RPC will automatically create a new connection.
     public var connectionIdleTimeout: TimeAmount
 
+    /// The behavior used to determine when an RPC should start. That is, whether it should wait for
+    /// an active connection or fail quickly if no connection is currently available.
+    public var callStartBehavior: CallStartBehavior
+
     /// The HTTP/2 flow control target window size.
     public var httpTargetWindowSize: Int
 
@@ -321,6 +367,8 @@ extension ClientConnection {
     ///     `connectivityStateDelegate`.
     /// - Parameter tlsConfiguration: TLS configuration, defaulting to `nil`.
     /// - Parameter connectionBackoff: The connection backoff configuration to use.
+    /// - Parameter callStartBehavior: The behavior used to determine when a call should start in
+    ///     relation to its underlying connection. Defaults to `waitsForConnectivity`.
     /// - Parameter messageEncoding: Message compression configuration, defaults to no compression.
     /// - Parameter targetWindowSize: The HTTP/2 flow control target window size.
     public init(
@@ -332,6 +380,7 @@ extension ClientConnection {
       tls: Configuration.TLS? = nil,
       connectionBackoff: ConnectionBackoff? = ConnectionBackoff(),
       connectionIdleTimeout: TimeAmount = .minutes(5),
+      callStartBehavior: CallStartBehavior = .waitsForConnectivity,
       httpTargetWindowSize: Int = 65535
     ) {
       self.target = target
@@ -342,6 +391,7 @@ extension ClientConnection {
       self.tls = tls
       self.connectionBackoff = connectionBackoff
       self.connectionIdleTimeout = connectionIdleTimeout
+      self.callStartBehavior = callStartBehavior
       self.httpTargetWindowSize = httpTargetWindowSize
     }
   }

@@ -617,6 +617,76 @@ extension ConnectionManagerTests {
       XCTAssertNoThrow(try shutdown.wait())
     }
   }
+
+  func testDoomedOptimisticChannelFromIdle() {
+    let manager = ConnectionManager.testingOnly(configuration: self.defaultConfiguration, logger: self.logger) {
+      return self.loop.makeFailedFuture(DoomedChannelError())
+    }
+    let candidate = manager.getOptimisticChannel()
+    self.loop.run()
+    XCTAssertThrowsError(try candidate.wait())
+  }
+
+  func testDoomedOptimisticChannelFromConnecting() throws {
+    let promise = self.loop.makePromise(of: Channel.self)
+    let manager = ConnectionManager.testingOnly(configuration: self.defaultConfiguration, logger: self.logger) {
+      return promise.futureResult
+    }
+
+    self.waitForStateChange(from: .idle, to: .connecting) {
+      // Trigger channel creation, and a connection attempt, we don't care about the channel.
+      _ = manager.getChannel()
+      self.loop.run()
+    }
+
+    // We're connecting: get an optimistic channel.
+    let optimisticChannel = manager.getOptimisticChannel()
+    self.loop.run()
+
+    // Fail the promise.
+    promise.fail(DoomedChannelError())
+
+    XCTAssertThrowsError(try optimisticChannel.wait())
+  }
+
+  func testOptimisticChannelFromTransientFailure() throws {
+    var configuration = self.defaultConfiguration
+    configuration.connectionBackoff = ConnectionBackoff()
+
+    let manager = ConnectionManager.testingOnly(configuration: configuration, logger: self.logger) {
+      return self.loop.makeFailedFuture(DoomedChannelError())
+    }
+
+    self.waitForStateChanges([
+      Change(from: .idle, to: .connecting),
+      Change(from: .connecting, to: .transientFailure)
+    ]) {
+      // Trigger channel creation, and a connection attempt, we don't care about the channel.
+      _ = manager.getChannel()
+      self.loop.run()
+    }
+
+    // Now we're sitting in transient failure. Get a channel optimistically.
+    let optimisticChannel = manager.getOptimisticChannel()
+    self.loop.run()
+
+    XCTAssertThrowsError(try optimisticChannel.wait())
+  }
+
+  func testOptimisticChannelFromShutdown() throws {
+    let manager = ConnectionManager.testingOnly(configuration: self.defaultConfiguration, logger: self.logger) {
+      return self.loop.makeFailedFuture(DoomedChannelError())
+    }
+
+    let shutdown = manager.shutdown()
+    self.loop.run()
+    XCTAssertNoThrow(try shutdown.wait())
+
+    // Get a channel optimistically. It'll fail, obviously.
+    let channel = manager.getOptimisticChannel()
+    self.loop.run()
+    XCTAssertThrowsError(try channel.wait())
+  }
 }
 
 internal struct Change: Hashable, CustomStringConvertible {

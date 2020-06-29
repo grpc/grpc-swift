@@ -39,6 +39,7 @@ extension ClientConnection {
     private var connectivityStateDelegate: ConnectivityStateDelegate?
     private var connectivityStateDelegateQueue: DispatchQueue?
     private var connectionIdleTimeout: TimeAmount = .minutes(5)
+    private var callStartBehavior: CallStartBehavior = .waitsForConnectivity
     private var httpTargetWindowSize: Int = 65535
 
     fileprivate init(group: EventLoopGroup) {
@@ -55,6 +56,7 @@ extension ClientConnection {
         tls: self.maybeTLS,
         connectionBackoff: self.connectionBackoffIsEnabled ? self.connectionBackoff : nil,
         connectionIdleTimeout: self.connectionIdleTimeout,
+        callStartBehavior: self.callStartBehavior,
         httpTargetWindowSize: self.httpTargetWindowSize
       )
       return ClientConnection(configuration: configuration)
@@ -153,6 +155,15 @@ extension ClientConnection.Builder {
   @discardableResult
   public func withConnectionIdleTimeout(_ timeout: TimeAmount) -> Self {
     self.connectionIdleTimeout = timeout
+    return self
+  }
+
+  /// The behavior used to determine when an RPC should start. That is, whether it should wait for
+  /// an active connection or fail quickly if no connection is currently available. Calls will
+  /// use `.waitsForConnectivity` by default.
+  @discardableResult
+  public func withCallStartBehavior(_ behavior: CallStartBehavior) -> Self {
+    self.callStartBehavior = behavior
     return self
   }
 }
