@@ -118,4 +118,34 @@ extension UnaryCall {
     )
     return UnaryCall(response: responsePromise.futureResult, transport: transport, options: callOptions)
   }
+
+  internal static func make(
+    fakeResponse: FakeUnaryResponse<RequestPayload, ResponsePayload>?,
+    callOptions: CallOptions,
+    logger: Logger
+  ) -> UnaryCall<RequestPayload, ResponsePayload> {
+    let eventLoop = fakeResponse?.channel.eventLoop ?? EmbeddedEventLoop()
+    let responsePromise: EventLoopPromise<ResponsePayload> = eventLoop.makePromise()
+    let responseContainer = ResponsePartContainer(eventLoop: eventLoop, unaryResponsePromise: responsePromise)
+
+    let transport: ChannelTransport<RequestPayload, ResponsePayload>
+    if let fakeResponse = fakeResponse {
+      transport = .init(
+        fakeResponse: fakeResponse,
+        responseContainer: responseContainer,
+        timeLimit: callOptions.timeLimit,
+        logger: logger
+      )
+
+      fakeResponse.activate()
+    } else {
+      transport = .makeTransportForMissingFakeResponse(
+        eventLoop: eventLoop,
+        responseContainer: responseContainer,
+        logger: logger
+      )
+    }
+
+    return UnaryCall(response: responsePromise.futureResult, transport: transport, options: callOptions)
+  }
 }

@@ -166,5 +166,34 @@ extension BidirectionalStreamingCall {
 
     return BidirectionalStreamingCall(transport: transport, options: callOptions)
   }
-}
 
+  internal static func make(
+    fakeResponse: FakeStreamingResponse<RequestPayload, ResponsePayload>?,
+    callOptions: CallOptions,
+    logger: Logger,
+    responseHandler: @escaping (ResponsePayload) -> Void
+  ) -> BidirectionalStreamingCall<RequestPayload, ResponsePayload> {
+    let eventLoop = fakeResponse?.channel.eventLoop ?? EmbeddedEventLoop()
+    let responseContainer = ResponsePartContainer(eventLoop: eventLoop, streamingResponseHandler: responseHandler)
+
+    let transport: ChannelTransport<RequestPayload, ResponsePayload>
+    if let fakeResponse = fakeResponse {
+      transport = .init(
+        fakeResponse: fakeResponse,
+        responseContainer: responseContainer,
+        timeLimit: callOptions.timeLimit,
+        logger: logger
+      )
+
+      fakeResponse.activate()
+    } else {
+      transport = .makeTransportForMissingFakeResponse(
+        eventLoop: eventLoop,
+        responseContainer: responseContainer,
+        logger: logger
+      )
+    }
+
+    return BidirectionalStreamingCall(transport: transport, options: callOptions)
+  }
+}
