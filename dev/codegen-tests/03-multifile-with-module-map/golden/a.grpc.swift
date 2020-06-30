@@ -29,11 +29,24 @@ import ModuleB
 
 
 /// Usage: instantiate A_ServiceAClient, then call methods of this protocol to make API calls.
-internal protocol A_ServiceAClientProtocol {
-  func callServiceA(_ request: A_MessageA, callOptions: CallOptions?) -> UnaryCall<A_MessageA, SwiftProtobuf.Google_Protobuf_Empty>
+internal protocol A_ServiceAClientProtocol: GRPCClient {
+  func callServiceA(
+    _ request: A_MessageA,
+    callOptions: CallOptions
+  ) -> UnaryCall<A_MessageA, SwiftProtobuf.Google_Protobuf_Empty>
+
 }
 
-internal final class A_ServiceAClient: GRPCClient, A_ServiceAClientProtocol {
+extension A_ServiceAClientProtocol {
+  internal func callServiceA(
+    _ request: A_MessageA
+  ) -> UnaryCall<A_MessageA, SwiftProtobuf.Google_Protobuf_Empty> {
+    return self.callServiceA(request, callOptions: self.defaultCallOptions)
+  }
+
+}
+
+internal final class A_ServiceAClient: A_ServiceAClientProtocol {
   internal let channel: GRPCChannel
   internal var defaultCallOptions: CallOptions
 
@@ -51,16 +64,16 @@ internal final class A_ServiceAClient: GRPCClient, A_ServiceAClientProtocol {
   ///
   /// - Parameters:
   ///   - request: Request to send to CallServiceA.
-  ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
+  ///   - callOptions: Call options.
   /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
   internal func callServiceA(
     _ request: A_MessageA,
-    callOptions: CallOptions? = nil
+    callOptions: CallOptions
   ) -> UnaryCall<A_MessageA, SwiftProtobuf.Google_Protobuf_Empty> {
     return self.makeUnaryCall(
       path: "/a.ServiceA/CallServiceA",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions
     )
   }
 }
