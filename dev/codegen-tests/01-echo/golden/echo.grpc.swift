@@ -28,14 +28,56 @@ import SwiftProtobuf
 
 
 /// Usage: instantiate Echo_EchoClient, then call methods of this protocol to make API calls.
-internal protocol Echo_EchoClientProtocol {
-  func get(_ request: Echo_EchoRequest, callOptions: CallOptions?) -> UnaryCall<Echo_EchoRequest, Echo_EchoResponse>
-  func expand(_ request: Echo_EchoRequest, callOptions: CallOptions?, handler: @escaping (Echo_EchoResponse) -> Void) -> ServerStreamingCall<Echo_EchoRequest, Echo_EchoResponse>
-  func collect(callOptions: CallOptions?) -> ClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse>
-  func update(callOptions: CallOptions?, handler: @escaping (Echo_EchoResponse) -> Void) -> BidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse>
+internal protocol Echo_EchoClientProtocol: GRPCClient {
+  func get(
+    _ request: Echo_EchoRequest,
+    callOptions: CallOptions
+  ) -> UnaryCall<Echo_EchoRequest, Echo_EchoResponse>
+
+  func expand(
+    _ request: Echo_EchoRequest,
+    callOptions: CallOptions,
+    handler: @escaping (Echo_EchoResponse) -> Void
+  ) -> ServerStreamingCall<Echo_EchoRequest, Echo_EchoResponse>
+
+  func collect(
+    callOptions: CallOptions
+  ) -> ClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse>
+
+  func update(
+    callOptions: CallOptions,
+    handler: @escaping (Echo_EchoResponse) -> Void
+  ) -> BidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse>
+
 }
 
-internal final class Echo_EchoClient: GRPCClient, Echo_EchoClientProtocol {
+extension Echo_EchoClientProtocol {
+  internal func get(
+    _ request: Echo_EchoRequest
+  ) -> UnaryCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return self.get(request, callOptions: self.defaultCallOptions)
+  }
+
+  internal func expand(
+    _ request: Echo_EchoRequest,
+    handler: @escaping (Echo_EchoResponse) -> Void
+  ) -> ServerStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return self.expand(request, callOptions: self.defaultCallOptions, handler: handler)
+  }
+
+  internal func collect() -> ClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return self.collect(callOptions: self.defaultCallOptions)
+  }
+
+  internal func update(
+    handler: @escaping (Echo_EchoResponse) -> Void
+  ) -> BidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return self.update(callOptions: self.defaultCallOptions, handler: handler)
+  }
+
+}
+
+internal final class Echo_EchoClient: Echo_EchoClientProtocol {
   internal let channel: GRPCChannel
   internal var defaultCallOptions: CallOptions
 
@@ -53,16 +95,16 @@ internal final class Echo_EchoClient: GRPCClient, Echo_EchoClientProtocol {
   ///
   /// - Parameters:
   ///   - request: Request to send to Get.
-  ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
+  ///   - callOptions: Call options.
   /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
   internal func get(
     _ request: Echo_EchoRequest,
-    callOptions: CallOptions? = nil
+    callOptions: CallOptions
   ) -> UnaryCall<Echo_EchoRequest, Echo_EchoResponse> {
     return self.makeUnaryCall(
       path: "/echo.Echo/Get",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions
     )
   }
 
@@ -70,18 +112,18 @@ internal final class Echo_EchoClient: GRPCClient, Echo_EchoClientProtocol {
   ///
   /// - Parameters:
   ///   - request: Request to send to Expand.
-  ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
+  ///   - callOptions: Call options.
   ///   - handler: A closure called when each response is received from the server.
   /// - Returns: A `ServerStreamingCall` with futures for the metadata and status.
   internal func expand(
     _ request: Echo_EchoRequest,
-    callOptions: CallOptions? = nil,
+    callOptions: CallOptions,
     handler: @escaping (Echo_EchoResponse) -> Void
   ) -> ServerStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
     return self.makeServerStreamingCall(
       path: "/echo.Echo/Expand",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions,
+      callOptions: callOptions,
       handler: handler
     )
   }
@@ -92,14 +134,14 @@ internal final class Echo_EchoClient: GRPCClient, Echo_EchoClientProtocol {
   /// to the server. The caller should send an `.end` after the final message has been sent.
   ///
   /// - Parameters:
-  ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
+  ///   - callOptions: Call options.
   /// - Returns: A `ClientStreamingCall` with futures for the metadata, status and response.
   internal func collect(
-    callOptions: CallOptions? = nil
+    callOptions: CallOptions
   ) -> ClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
     return self.makeClientStreamingCall(
       path: "/echo.Echo/Collect",
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions
     )
   }
 
@@ -109,16 +151,16 @@ internal final class Echo_EchoClient: GRPCClient, Echo_EchoClientProtocol {
   /// to the server. The caller should send an `.end` after the final message has been sent.
   ///
   /// - Parameters:
-  ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
+  ///   - callOptions: Call options.
   ///   - handler: A closure called when each response is received from the server.
   /// - Returns: A `ClientStreamingCall` with futures for the metadata and status.
   internal func update(
-    callOptions: CallOptions? = nil,
+    callOptions: CallOptions,
     handler: @escaping (Echo_EchoResponse) -> Void
   ) -> BidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
     return self.makeBidirectionalStreamingCall(
       path: "/echo.Echo/Update",
-      callOptions: callOptions ?? self.defaultCallOptions,
+      callOptions: callOptions,
       handler: handler
     )
   }

@@ -28,11 +28,24 @@ import SwiftProtobuf
 
 
 /// Usage: instantiate Helloworld_GreeterClient, then call methods of this protocol to make API calls.
-public protocol Helloworld_GreeterClientProtocol {
-  func sayHello(_ request: Helloworld_HelloRequest, callOptions: CallOptions?) -> UnaryCall<Helloworld_HelloRequest, Helloworld_HelloReply>
+public protocol Helloworld_GreeterClientProtocol: GRPCClient {
+  func sayHello(
+    _ request: Helloworld_HelloRequest,
+    callOptions: CallOptions
+  ) -> UnaryCall<Helloworld_HelloRequest, Helloworld_HelloReply>
+
 }
 
-public final class Helloworld_GreeterClient: GRPCClient, Helloworld_GreeterClientProtocol {
+extension Helloworld_GreeterClientProtocol {
+  public func sayHello(
+    _ request: Helloworld_HelloRequest
+  ) -> UnaryCall<Helloworld_HelloRequest, Helloworld_HelloReply> {
+    return self.sayHello(request, callOptions: self.defaultCallOptions)
+  }
+
+}
+
+public final class Helloworld_GreeterClient: Helloworld_GreeterClientProtocol {
   public let channel: GRPCChannel
   public var defaultCallOptions: CallOptions
 
@@ -50,16 +63,16 @@ public final class Helloworld_GreeterClient: GRPCClient, Helloworld_GreeterClien
   ///
   /// - Parameters:
   ///   - request: Request to send to SayHello.
-  ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
+  ///   - callOptions: Call options.
   /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
   public func sayHello(
     _ request: Helloworld_HelloRequest,
-    callOptions: CallOptions? = nil
+    callOptions: CallOptions
   ) -> UnaryCall<Helloworld_HelloRequest, Helloworld_HelloReply> {
     return self.makeUnaryCall(
       path: "/helloworld.Greeter/SayHello",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions
     )
   }
 }
