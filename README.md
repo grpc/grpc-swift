@@ -117,6 +117,29 @@ To install these plugins, just copy the two executables (`protoc-gen-swift` and
 that is part of your `PATH` environment variable. Alternatively the full path to
 the plugins can be specified when using `protoc`.
 
+Alternatively, you can get the latest precompiled version of the plugins by adding
+the following line to your `Podfile`:
+
+```ruby
+    pod 'gRPC-Swift-Plugins'
+```
+
+and running
+
+```
+  protoc <Protobuf Definition File> \
+		--plugin=Pods/gRPC-Swift-Plugins/protoc-gen-swift \
+		--swift_out=ProtobufGeneratedCode/
+```
+
+and
+
+```
+protoc <Protobuf Definition File> \
+ --plugin=Pods/gRPC-Swift-Plugins/protoc-gen-grpc-swift \
+ --grpc-swift_out=GRPCGeneratedCode/
+```
+
 ## Examples
 
 gRPC Swift has a number of tutorials and examples available. They are split
