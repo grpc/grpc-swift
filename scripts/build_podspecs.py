@@ -58,10 +58,11 @@ class Dependency:
         return indent + "s.dependency '%s', '%s'\n" % (self.name, self.version)
 
 class Pod:
-    def __init__(self, name, module_name, version, description, dependencies=None):
+    def __init__(self, name, module_name, version, description, dependencies=None, is_plugins_pod=False):
         self.name = name
         self.module_name = module_name
         self.version = version
+        self.is_plugins_pod = is_plugins_pod
 
         if dependencies is None:
             dependencies = []
@@ -81,7 +82,7 @@ class Pod:
         
         podspec = "Pod::Spec.new do |s|\n\n"
         podspec += indent + "s.name = '%s'\n" % self.name
-        if self.module_name:
+        if not self.is_plugins_pod:
             podspec += indent + "s.module_name = '%s'\n" % self.module_name
         podspec += indent + "s.version = '%s'\n" % self.version
         podspec += indent + "s.license = { :type => 'Apache 2.0', :file => 'LICENSE' }\n"
@@ -89,12 +90,12 @@ class Pod:
         podspec += indent + "s.homepage = 'https://www.grpc.io'\n"
         podspec += indent + "s.authors  = { 'The gRPC contributors' => \'grpc-packages@google.com' }\n\n"
 
-        if self.module_name:
-            podspec += indent + "s.source = { :git => \"https://github.com/grpc/grpc-swift.git\", :tag => s.version }\n\n"
+        if self.is_plugins_pod:
+            podspec += indent + "s.source = { :http => \"https://github.com/grpc/grpc-swift/releases/download/#{s.version}/protoc-swift-plugins-#{s.version}-macOS-x86_64.zip\"}\n\n"
         else:
-            podspec += indent + "s.source = { :http => \"https://github.com/grpc/grpc-swift/releases/download/#{s.version}/protoc-swift-plugins-#{s.version}.zip\"}\n\n"
+            podspec += indent + "s.source = { :git => \"https://github.com/grpc/grpc-swift.git\", :tag => s.version }\n\n"
         
-        if self.module_name:
+        if not self.is_plugins_pod:
             podspec += indent + "s.swift_version = '5.0'\n"
 
             podspec += indent + "s.ios.deployment_target = '10.0'\n"
@@ -107,9 +108,8 @@ class Pod:
         for dep in self.dependencies:
             podspec += dep.as_podspec()
                 
-        if not self.module_name:
+        if self.is_plugins_pod:
             podspec += indent + "s.preserve_paths = '*'\n"
-            podspec += indent + "s.exclude_files = '**/file.zip'\n"
 
         podspec += "\nend"
         return podspec
@@ -153,7 +153,8 @@ class PodManager:
             '',
             self.version,
             'Swift gRPC code generator plugin binaries',
-            []
+            [],
+            True
         )
 
         grpc_pod.add_dependency(Dependency(cgrpczlib_pod.name))
