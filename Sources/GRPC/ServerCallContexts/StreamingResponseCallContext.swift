@@ -78,7 +78,7 @@ open class StreamingResponseCallContextImpl<ResponsePayload: GRPCPayload>: Strea
 
   open override func sendResponse(_ message: ResponsePayload, compression: Compression = .deferToCallDefault) -> EventLoopFuture<Void> {
     let promise: EventLoopPromise<Void> = eventLoop.makePromise()
-    let messageContext = _MessageContext(message, compressed: compression.isEnabled(enabledOnCall: self.compressionEnabled))
+    let messageContext = _MessageContext(message, compressed: compression.isEnabled(callDefault: self.compressionEnabled))
     self.channel.writeAndFlush(NIOAny(WrappedResponse.message(messageContext)), promise: promise)
     return promise.futureResult
   }

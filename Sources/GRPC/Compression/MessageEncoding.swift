@@ -15,28 +15,39 @@
  */
 
 /// Whether compression should be enabled for the message.
-public enum Compression {
+public struct Compression: Hashable {
+  private enum Wrapped: Hashable {
+    case enabled
+    case disabled
+    case deferToCallDefault
+  }
+
+  private var wrapped: Wrapped
+  private init(_ wrapped: Wrapped) {
+    self.wrapped = wrapped
+  }
+
   /// Enable compression. Note that this will be ignored if compression has not been enabled or is
   /// not supported on the call.
-  case enabled
+  public static let enabled = Compression(.enabled)
 
   /// Disable compression.
-  case disabled
+  public static let disabled = Compression(.disabled)
 
   /// Defer to the call (the `CallOptions` for the client, and the context for the server) to
   /// determine whether compression should be used for the message.
-  case deferToCallDefault
+  public static let deferToCallDefault = Compression(.deferToCallDefault)
 }
 
 extension Compression {
-  func isEnabled(enabledOnCall: Bool) -> Bool {
-    switch self {
+  internal func isEnabled(callDefault: Bool) -> Bool {
+    switch self.wrapped {
     case .enabled:
-      return enabledOnCall
+      return callDefault
     case .disabled:
       return false
     case .deferToCallDefault:
-      return enabledOnCall
+      return callDefault
     }
   }
 }

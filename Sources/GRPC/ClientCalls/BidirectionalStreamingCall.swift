@@ -98,7 +98,7 @@ public final class BidirectionalStreamingCall<
     compression: Compression = .deferToCallDefault,
     promise: EventLoopPromise<Void>?
   ) {
-    let compressed = compression.isEnabled(enabledOnCall: self.options.messageEncoding.enabledForRequests)
+    let compressed = compression.isEnabled(callDefault: self.options.messageEncoding.enabledForRequests)
     let messageContext = _MessageContext(message, compressed: compressed)
     self.transport.sendRequest(.message(messageContext), promise: promise)
   }
@@ -119,7 +119,7 @@ public final class BidirectionalStreamingCall<
     compression: Compression = .deferToCallDefault,
     promise: EventLoopPromise<Void>?
   ) where S: Sequence, S.Element == RequestPayload {
-    let compressed = compression.isEnabled(enabledOnCall: self.options.messageEncoding.enabledForRequests)
+    let compressed = compression.isEnabled(callDefault: self.options.messageEncoding.enabledForRequests)
     self.transport.sendRequests(messages.map {
       .message(_MessageContext($0, compressed: compressed))
     }, promise: promise)
