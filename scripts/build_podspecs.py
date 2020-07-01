@@ -50,10 +50,12 @@ class Dependency:
         self.use_verbatim_version = use_verbatim_version
 
     def as_podspec(self):
+        indent='    '
+        
         if self.use_verbatim_version:
-            return "    s.dependency '%s', %s\n" % (self.name, self.version)
+            return indent + "s.dependency '%s', %s\n" % (self.name, self.version)
 
-        return "    s.dependency '%s', '%s'\n" % (self.name, self.version)
+        return indent + "s.dependency '%s', '%s'\n" % (self.name, self.version)
 
 class Pod:
     def __init__(self, name, module_name, version, description, dependencies=None):
@@ -75,29 +77,39 @@ class Pod:
         print('Building Podspec for %s' % self.name)
         print('-----------------------------------------------------------')
 
+        indent='    '
+        
         podspec = "Pod::Spec.new do |s|\n\n"
-        podspec += "    s.name = '%s'\n" % self.name
-        podspec += "    s.module_name = '%s'\n" % self.module_name
-        podspec += "    s.version = '%s'\n" % self.version
-        podspec += "    s.license = { :type => 'Apache 2.0', :file => 'LICENSE' }\n"
-        podspec += "    s.summary = '%s'\n" % self.description
-        podspec += "    s.homepage = 'https://www.grpc.io'\n"
-        podspec += "    s.authors  = { 'The gRPC contributors' => \'grpc-packages@google.com' }\n\n"
+        podspec += indent + "s.name = '%s'\n" % self.name
+        if self.module_name:
+            podspec += indent + "s.module_name = '%s'\n" % self.module_name
+        podspec += indent + "s.version = '%s'\n" % self.version
+        podspec += indent + "s.license = { :type => 'Apache 2.0', :file => 'LICENSE' }\n"
+        podspec += indent + "s.summary = '%s'\n" % self.description
+        podspec += indent + "s.homepage = 'https://www.grpc.io'\n"
+        podspec += indent + "s.authors  = { 'The gRPC contributors' => \'grpc-packages@google.com' }\n\n"
 
-        podspec += "    s.source = { :git => 'https://github.com/grpc/grpc-swift.git', :tag => s.version }\n\n"
+        if self.module_name:
+            podspec += indent + "s.source = { :git => \"https://github.com/grpc/grpc-swift.git\", :tag => s.version }\n\n"
+        else:
+            podspec += indent + "s.source = { :http => \"https://github.com/grpc/grpc-swift/releases/download/#{s.version}/protoc-swift-plugins-#{s.version}.zip\"}\n\n"
+        
+        if self.module_name:
+            podspec += indent + "s.swift_version = '5.0'\n"
 
-        podspec += "    s.swift_version = '5.0'\n"
+            podspec += indent + "s.ios.deployment_target = '10.0'\n"
+            podspec += indent + "s.osx.deployment_target = '10.12'\n"
+            podspec += indent + "s.tvos.deployment_target = '10.0'\n"
+            podspec += indent + "s.source_files = 'Sources/%s/**/*.{swift,c,h}'\n" % (self.module_name)
 
-        podspec += "    s.ios.deployment_target = '10.0'\n"
-        podspec += "    s.osx.deployment_target = '10.12'\n"
-        podspec += "    s.tvos.deployment_target = '10.0'\n"
-
-        podspec += "    s.source_files = 'Sources/%s/**/*.{swift,c,h}'\n" % (self.module_name)
-
-        podspec += "\n" if len(self.dependencies) > 0 else ""
+            podspec += "\n" if len(self.dependencies) > 0 else ""
 
         for dep in self.dependencies:
             podspec += dep.as_podspec()
+                
+        if not self.module_name:
+            podspec += indent + "s.preserve_paths = '*'\n"
+            podspec += indent + "s.exclude_files = '**/file.zip'\n"
 
         podspec += "\nend"
         return podspec
@@ -135,10 +147,19 @@ class PodManager:
             'Swift gRPC code generator plugin and runtime library',
             get_grpc_deps()
         )
+        
+        grpc_plugins_pod = Pod(
+            'gRPC-Swift-Plugins',
+            '',
+            self.version,
+            'Swift gRPC code generator plugin binaries',
+            []
+        )
 
-        grpc_pod.add_dependency(Dependency('CGRPCZlib'))
+        grpc_pod.add_dependency(Dependency(cgrpczlib_pod.name))
+        grpc_plugins_pod.add_dependency(Dependency(grpc_pod.name))
 
-        self.pods += [cgrpczlib_pod, grpc_pod]
+        self.pods += [cgrpczlib_pod, grpc_pod, grpc_plugins_pod]
 
     def go(self):
         self.build_pods()
