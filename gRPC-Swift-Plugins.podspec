@@ -7,9 +7,9 @@ Pod::Spec.new do |s|
     s.homepage = 'https://www.grpc.io'
     s.authors  = { 'The gRPC contributors' => 'grpc-packages@google.com' }
 
-    s.source = { :http => "https://github.com/grpc/grpc-swift/releases/download/#{s.version}/protoc-swift-plugins-#{s.version}-macOS-x86_64.zip"}
+    s.source = { :http => "https://github.com/grpc/grpc-swift/releases/download/#{s.version}/protoc-swift-plugins-#{s.version}.zip"}
 
-    s.dependency 'gRPC-Swift', s.version.to_s
     s.preserve_paths = '*'
+    s.dependency 'gRPC-Swift', s.version.to_s
 
 end
