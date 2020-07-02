@@ -253,7 +253,7 @@ fileprivate extension Channel {
   func configureTLS(configuration: Server.Configuration.TLS) -> EventLoopFuture<Void> {
     do {
       let context = try NIOSSLContext(configuration: configuration.configuration)
-      return self.pipeline.addHandler(try NIOSSLServerHandler(context: context))
+      return self.pipeline.addHandler(NIOSSLServerHandler(context: context))
     } catch {
       return self.pipeline.eventLoop.makeFailedFuture(error)
     }
