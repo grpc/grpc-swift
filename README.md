@@ -129,10 +129,10 @@ The plugins are available in the `Pods/gRPC-Swift-Plugins/` folder afterwards.
 ## Examples
 
 gRPC Swift has a number of tutorials and examples available. They are split
-across two directorys:
+across two directories:
 
 - [`/Sources/Examples`][examples-in-source] contains examples which do not
-  require additional depenedencies and may be built using the Swift Package
+  require additional dependencies and may be built using the Swift Package
   Manager.
 - [`/Examples`][examples-out-of-source] contains examples which rely on
   external dependencies or may not be built by the Swift Package Manager (such
@@ -147,7 +147,7 @@ Some of the examples are accompanied by tutorials, including:
 
 ## Documentation
 
-The `docs` directory contains documenation, including:
+The `docs` directory contains documentation, including:
 
 - Options for the `protoc` plugin in [`docs/plugin.md`][docs-plugin]
 - How to configure TLS in [`docs/tls.md`][docs-tls]
