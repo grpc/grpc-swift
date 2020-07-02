@@ -92,12 +92,10 @@ class Pod:
 
         if self.is_plugins_pod:
             podspec += indent + "s.source = { :http => \"https://github.com/grpc/grpc-swift/releases/download/#{s.version}/protoc-swift-plugins-#{s.version}-macOS-x86_64.zip\"}\n\n"
+            podspec += indent + "s.preserve_paths = '*'\n"
         else:
             podspec += indent + "s.source = { :git => \"https://github.com/grpc/grpc-swift.git\", :tag => s.version }\n\n"
-        
-        if not self.is_plugins_pod:
             podspec += indent + "s.swift_version = '5.0'\n"
-
             podspec += indent + "s.ios.deployment_target = '10.0'\n"
             podspec += indent + "s.osx.deployment_target = '10.12'\n"
             podspec += indent + "s.tvos.deployment_target = '10.0'\n"
@@ -107,9 +105,6 @@ class Pod:
 
         for dep in self.dependencies:
             podspec += dep.as_podspec()
-                
-        if self.is_plugins_pod:
-            podspec += indent + "s.preserve_paths = '*'\n"
 
         podspec += "\nend"
         return podspec
