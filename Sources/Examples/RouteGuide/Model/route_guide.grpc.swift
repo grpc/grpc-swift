@@ -31,65 +31,27 @@ import SwiftProtobuf
 public protocol Routeguide_RouteGuideClientProtocol: GRPCClient {
   func getFeature(
     _ request: Routeguide_Point,
-    callOptions: CallOptions
+    callOptions: CallOptions?
   ) -> UnaryCall<Routeguide_Point, Routeguide_Feature>
 
   func listFeatures(
     _ request: Routeguide_Rectangle,
-    callOptions: CallOptions,
+    callOptions: CallOptions?,
     handler: @escaping (Routeguide_Feature) -> Void
   ) -> ServerStreamingCall<Routeguide_Rectangle, Routeguide_Feature>
 
   func recordRoute(
-    callOptions: CallOptions
+    callOptions: CallOptions?
   ) -> ClientStreamingCall<Routeguide_Point, Routeguide_RouteSummary>
 
   func routeChat(
-    callOptions: CallOptions,
+    callOptions: CallOptions?,
     handler: @escaping (Routeguide_RouteNote) -> Void
   ) -> BidirectionalStreamingCall<Routeguide_RouteNote, Routeguide_RouteNote>
 
 }
 
 extension Routeguide_RouteGuideClientProtocol {
-  public func getFeature(
-    _ request: Routeguide_Point
-  ) -> UnaryCall<Routeguide_Point, Routeguide_Feature> {
-    return self.getFeature(request, callOptions: self.defaultCallOptions)
-  }
-
-  public func listFeatures(
-    _ request: Routeguide_Rectangle,
-    handler: @escaping (Routeguide_Feature) -> Void
-  ) -> ServerStreamingCall<Routeguide_Rectangle, Routeguide_Feature> {
-    return self.listFeatures(request, callOptions: self.defaultCallOptions, handler: handler)
-  }
-
-  public func recordRoute() -> ClientStreamingCall<Routeguide_Point, Routeguide_RouteSummary> {
-    return self.recordRoute(callOptions: self.defaultCallOptions)
-  }
-
-  public func routeChat(
-    handler: @escaping (Routeguide_RouteNote) -> Void
-  ) -> BidirectionalStreamingCall<Routeguide_RouteNote, Routeguide_RouteNote> {
-    return self.routeChat(callOptions: self.defaultCallOptions, handler: handler)
-  }
-
-}
-
-public final class Routeguide_RouteGuideClient: Routeguide_RouteGuideClientProtocol {
-  public let channel: GRPCChannel
-  public var defaultCallOptions: CallOptions
-
-  /// Creates a client for the routeguide.RouteGuide service.
-  ///
-  /// - Parameters:
-  ///   - channel: `GRPCChannel` to the service host.
-  ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
-  public init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
-    self.channel = channel
-    self.defaultCallOptions = defaultCallOptions
-  }
 
   /// A simple RPC.
   ///
@@ -104,12 +66,12 @@ public final class Routeguide_RouteGuideClient: Routeguide_RouteGuideClientProto
   /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
   public func getFeature(
     _ request: Routeguide_Point,
-    callOptions: CallOptions
+    callOptions: CallOptions? = nil
   ) -> UnaryCall<Routeguide_Point, Routeguide_Feature> {
     return self.makeUnaryCall(
       path: "/routeguide.RouteGuide/GetFeature",
       request: request,
-      callOptions: callOptions
+      callOptions: callOptions ?? self.defaultCallOptions
     )
   }
 
@@ -127,13 +89,13 @@ public final class Routeguide_RouteGuideClient: Routeguide_RouteGuideClientProto
   /// - Returns: A `ServerStreamingCall` with futures for the metadata and status.
   public func listFeatures(
     _ request: Routeguide_Rectangle,
-    callOptions: CallOptions,
+    callOptions: CallOptions? = nil,
     handler: @escaping (Routeguide_Feature) -> Void
   ) -> ServerStreamingCall<Routeguide_Rectangle, Routeguide_Feature> {
     return self.makeServerStreamingCall(
       path: "/routeguide.RouteGuide/ListFeatures",
       request: request,
-      callOptions: callOptions,
+      callOptions: callOptions ?? self.defaultCallOptions,
       handler: handler
     )
   }
@@ -150,11 +112,11 @@ public final class Routeguide_RouteGuideClient: Routeguide_RouteGuideClientProto
   ///   - callOptions: Call options.
   /// - Returns: A `ClientStreamingCall` with futures for the metadata, status and response.
   public func recordRoute(
-    callOptions: CallOptions
+    callOptions: CallOptions? = nil
   ) -> ClientStreamingCall<Routeguide_Point, Routeguide_RouteSummary> {
     return self.makeClientStreamingCall(
       path: "/routeguide.RouteGuide/RecordRoute",
-      callOptions: callOptions
+      callOptions: callOptions ?? self.defaultCallOptions
     )
   }
 
@@ -171,14 +133,29 @@ public final class Routeguide_RouteGuideClient: Routeguide_RouteGuideClientProto
   ///   - handler: A closure called when each response is received from the server.
   /// - Returns: A `ClientStreamingCall` with futures for the metadata and status.
   public func routeChat(
-    callOptions: CallOptions,
+    callOptions: CallOptions? = nil,
     handler: @escaping (Routeguide_RouteNote) -> Void
   ) -> BidirectionalStreamingCall<Routeguide_RouteNote, Routeguide_RouteNote> {
     return self.makeBidirectionalStreamingCall(
       path: "/routeguide.RouteGuide/RouteChat",
-      callOptions: callOptions,
+      callOptions: callOptions ?? self.defaultCallOptions,
       handler: handler
     )
+  }
+}
+
+public final class Routeguide_RouteGuideClient: Routeguide_RouteGuideClientProtocol {
+  public let channel: GRPCChannel
+  public var defaultCallOptions: CallOptions
+
+  /// Creates a client for the routeguide.RouteGuide service.
+  ///
+  /// - Parameters:
+  ///   - channel: `GRPCChannel` to the service host.
+  ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
+  public init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
+    self.channel = channel
+    self.defaultCallOptions = defaultCallOptions
   }
 }
 

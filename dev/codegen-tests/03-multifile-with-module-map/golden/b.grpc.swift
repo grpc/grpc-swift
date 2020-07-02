@@ -31,18 +31,29 @@ import SwiftProtobuf
 internal protocol B_ServiceBClientProtocol: GRPCClient {
   func callServiceB(
     _ request: B_MessageB,
-    callOptions: CallOptions
+    callOptions: CallOptions?
   ) -> UnaryCall<B_MessageB, SwiftProtobuf.Google_Protobuf_Empty>
 
 }
 
 extension B_ServiceBClientProtocol {
-  internal func callServiceB(
-    _ request: B_MessageB
-  ) -> UnaryCall<B_MessageB, SwiftProtobuf.Google_Protobuf_Empty> {
-    return self.callServiceB(request, callOptions: self.defaultCallOptions)
-  }
 
+  /// Unary call to CallServiceB
+  ///
+  /// - Parameters:
+  ///   - request: Request to send to CallServiceB.
+  ///   - callOptions: Call options.
+  /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
+  internal func callServiceB(
+    _ request: B_MessageB,
+    callOptions: CallOptions? = nil
+  ) -> UnaryCall<B_MessageB, SwiftProtobuf.Google_Protobuf_Empty> {
+    return self.makeUnaryCall(
+      path: "/b.ServiceB/CallServiceB",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
 }
 
 internal final class B_ServiceBClient: B_ServiceBClientProtocol {
@@ -57,23 +68,6 @@ internal final class B_ServiceBClient: B_ServiceBClientProtocol {
   internal init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
     self.channel = channel
     self.defaultCallOptions = defaultCallOptions
-  }
-
-  /// Unary call to CallServiceB
-  ///
-  /// - Parameters:
-  ///   - request: Request to send to CallServiceB.
-  ///   - callOptions: Call options.
-  /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
-  internal func callServiceB(
-    _ request: B_MessageB,
-    callOptions: CallOptions
-  ) -> UnaryCall<B_MessageB, SwiftProtobuf.Google_Protobuf_Empty> {
-    return self.makeUnaryCall(
-      path: "/b.ServiceB/CallServiceB",
-      request: request,
-      callOptions: callOptions
-    )
   }
 }
 

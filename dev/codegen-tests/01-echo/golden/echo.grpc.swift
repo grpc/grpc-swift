@@ -31,50 +31,101 @@ import SwiftProtobuf
 internal protocol Echo_EchoClientProtocol: GRPCClient {
   func get(
     _ request: Echo_EchoRequest,
-    callOptions: CallOptions
+    callOptions: CallOptions?
   ) -> UnaryCall<Echo_EchoRequest, Echo_EchoResponse>
 
   func expand(
     _ request: Echo_EchoRequest,
-    callOptions: CallOptions,
+    callOptions: CallOptions?,
     handler: @escaping (Echo_EchoResponse) -> Void
   ) -> ServerStreamingCall<Echo_EchoRequest, Echo_EchoResponse>
 
   func collect(
-    callOptions: CallOptions
+    callOptions: CallOptions?
   ) -> ClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse>
 
   func update(
-    callOptions: CallOptions,
+    callOptions: CallOptions?,
     handler: @escaping (Echo_EchoResponse) -> Void
   ) -> BidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse>
 
 }
 
 extension Echo_EchoClientProtocol {
+
+  /// Immediately returns an echo of a request.
+  ///
+  /// - Parameters:
+  ///   - request: Request to send to Get.
+  ///   - callOptions: Call options.
+  /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
   internal func get(
-    _ request: Echo_EchoRequest
+    _ request: Echo_EchoRequest,
+    callOptions: CallOptions? = nil
   ) -> UnaryCall<Echo_EchoRequest, Echo_EchoResponse> {
-    return self.get(request, callOptions: self.defaultCallOptions)
+    return self.makeUnaryCall(
+      path: "/echo.Echo/Get",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
   }
 
+  /// Splits a request into words and returns each word in a stream of messages.
+  ///
+  /// - Parameters:
+  ///   - request: Request to send to Expand.
+  ///   - callOptions: Call options.
+  ///   - handler: A closure called when each response is received from the server.
+  /// - Returns: A `ServerStreamingCall` with futures for the metadata and status.
   internal func expand(
     _ request: Echo_EchoRequest,
+    callOptions: CallOptions? = nil,
     handler: @escaping (Echo_EchoResponse) -> Void
   ) -> ServerStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
-    return self.expand(request, callOptions: self.defaultCallOptions, handler: handler)
+    return self.makeServerStreamingCall(
+      path: "/echo.Echo/Expand",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      handler: handler
+    )
   }
 
-  internal func collect() -> ClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
-    return self.collect(callOptions: self.defaultCallOptions)
+  /// Collects a stream of messages and returns them concatenated when the caller closes.
+  ///
+  /// Callers should use the `send` method on the returned object to send messages
+  /// to the server. The caller should send an `.end` after the final message has been sent.
+  ///
+  /// - Parameters:
+  ///   - callOptions: Call options.
+  /// - Returns: A `ClientStreamingCall` with futures for the metadata, status and response.
+  internal func collect(
+    callOptions: CallOptions? = nil
+  ) -> ClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return self.makeClientStreamingCall(
+      path: "/echo.Echo/Collect",
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
   }
 
+  /// Streams back messages as they are received in an input stream.
+  ///
+  /// Callers should use the `send` method on the returned object to send messages
+  /// to the server. The caller should send an `.end` after the final message has been sent.
+  ///
+  /// - Parameters:
+  ///   - callOptions: Call options.
+  ///   - handler: A closure called when each response is received from the server.
+  /// - Returns: A `ClientStreamingCall` with futures for the metadata and status.
   internal func update(
+    callOptions: CallOptions? = nil,
     handler: @escaping (Echo_EchoResponse) -> Void
   ) -> BidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
-    return self.update(callOptions: self.defaultCallOptions, handler: handler)
+    return self.makeBidirectionalStreamingCall(
+      path: "/echo.Echo/Update",
+      callOptions: callOptions ?? self.defaultCallOptions,
+      handler: handler
+    )
   }
-
 }
 
 internal final class Echo_EchoClient: Echo_EchoClientProtocol {
@@ -89,80 +140,6 @@ internal final class Echo_EchoClient: Echo_EchoClientProtocol {
   internal init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
     self.channel = channel
     self.defaultCallOptions = defaultCallOptions
-  }
-
-  /// Immediately returns an echo of a request.
-  ///
-  /// - Parameters:
-  ///   - request: Request to send to Get.
-  ///   - callOptions: Call options.
-  /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
-  internal func get(
-    _ request: Echo_EchoRequest,
-    callOptions: CallOptions
-  ) -> UnaryCall<Echo_EchoRequest, Echo_EchoResponse> {
-    return self.makeUnaryCall(
-      path: "/echo.Echo/Get",
-      request: request,
-      callOptions: callOptions
-    )
-  }
-
-  /// Splits a request into words and returns each word in a stream of messages.
-  ///
-  /// - Parameters:
-  ///   - request: Request to send to Expand.
-  ///   - callOptions: Call options.
-  ///   - handler: A closure called when each response is received from the server.
-  /// - Returns: A `ServerStreamingCall` with futures for the metadata and status.
-  internal func expand(
-    _ request: Echo_EchoRequest,
-    callOptions: CallOptions,
-    handler: @escaping (Echo_EchoResponse) -> Void
-  ) -> ServerStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
-    return self.makeServerStreamingCall(
-      path: "/echo.Echo/Expand",
-      request: request,
-      callOptions: callOptions,
-      handler: handler
-    )
-  }
-
-  /// Collects a stream of messages and returns them concatenated when the caller closes.
-  ///
-  /// Callers should use the `send` method on the returned object to send messages
-  /// to the server. The caller should send an `.end` after the final message has been sent.
-  ///
-  /// - Parameters:
-  ///   - callOptions: Call options.
-  /// - Returns: A `ClientStreamingCall` with futures for the metadata, status and response.
-  internal func collect(
-    callOptions: CallOptions
-  ) -> ClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
-    return self.makeClientStreamingCall(
-      path: "/echo.Echo/Collect",
-      callOptions: callOptions
-    )
-  }
-
-  /// Streams back messages as they are received in an input stream.
-  ///
-  /// Callers should use the `send` method on the returned object to send messages
-  /// to the server. The caller should send an `.end` after the final message has been sent.
-  ///
-  /// - Parameters:
-  ///   - callOptions: Call options.
-  ///   - handler: A closure called when each response is received from the server.
-  /// - Returns: A `ClientStreamingCall` with futures for the metadata and status.
-  internal func update(
-    callOptions: CallOptions,
-    handler: @escaping (Echo_EchoResponse) -> Void
-  ) -> BidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
-    return self.makeBidirectionalStreamingCall(
-      path: "/echo.Echo/Update",
-      callOptions: callOptions,
-      handler: handler
-    )
   }
 }
 
