@@ -124,21 +124,7 @@ the following line to your `Podfile`:
     pod 'gRPC-Swift-Plugins'
 ```
 
-and running
-
-```
-  protoc <Protobuf Definition File> \
-		--plugin=Pods/gRPC-Swift-Plugins/protoc-gen-swift \
-		--swift_out=ProtobufGeneratedCode/
-```
-
-and
-
-```
-protoc <Protobuf Definition File> \
- --plugin=Pods/gRPC-Swift-Plugins/protoc-gen-grpc-swift \
- --grpc-swift_out=GRPCGeneratedCode/
-```
+The plugins are available in the `Pods/gRPC-Swift-Plugins/` folder afterwards.
 
 ## Examples
 
