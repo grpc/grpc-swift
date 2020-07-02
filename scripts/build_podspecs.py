@@ -149,7 +149,7 @@ class PodManager:
             self.version,
             'Swift gRPC code generator plugin binaries',
             [],
-            True
+            is_plugins_pod=True
         )
 
         grpc_pod.add_dependency(Dependency(cgrpczlib_pod.name))
