@@ -179,7 +179,7 @@ public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
   }
 
   /// Returns true if there are response streams enqueued for 'Get'
-  public var hasGetResponses: Bool {
+  public var hasGetResponsesRemaining: Bool {
     return self.fakeChannel.hasFakeResponseEnqueued(forPath: "/echo.Echo/Get")
   }
 
@@ -204,7 +204,7 @@ public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
   }
 
   /// Returns true if there are response streams enqueued for 'Expand'
-  public var hasExpandResponses: Bool {
+  public var hasExpandResponsesRemaining: Bool {
     return self.fakeChannel.hasFakeResponseEnqueued(forPath: "/echo.Echo/Expand")
   }
 
@@ -228,7 +228,7 @@ public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
   }
 
   /// Returns true if there are response streams enqueued for 'Collect'
-  public var hasCollectResponses: Bool {
+  public var hasCollectResponsesRemaining: Bool {
     return self.fakeChannel.hasFakeResponseEnqueued(forPath: "/echo.Echo/Collect")
   }
 
@@ -253,7 +253,7 @@ public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
   }
 
   /// Returns true if there are response streams enqueued for 'Update'
-  public var hasUpdateResponses: Bool {
+  public var hasUpdateResponsesRemaining: Bool {
     return self.fakeChannel.hasFakeResponseEnqueued(forPath: "/echo.Echo/Update")
   }
 }

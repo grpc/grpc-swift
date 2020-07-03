@@ -341,7 +341,7 @@ extension Generator {
 
   private func printHasResponseStreamEnqueued() {
     self.println("/// Returns true if there are response streams enqueued for '\(self.method.name)'")
-    self.println("\(self.access) var has\(self.method.name)Responses: Bool {")
+    self.println("\(self.access) var has\(self.method.name)ResponsesRemaining: Bool {")
     self.withIndentation {
       self.println("return self.fakeChannel.hasFakeResponseEnqueued(forPath: \(self.methodPath))")
     }

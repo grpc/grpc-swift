@@ -37,7 +37,7 @@ class FakeResponseStreamExampleTests: GRPCTestCase {
     let get = self.client.get(.with { $0.text = "Foo!" })
 
     // The response stream has been consumed by the call.
-    XCTAssertFalse(self.client.hasGetResponses)
+    XCTAssertFalse(self.client.hasGetResponsesRemaining)
 
     // Check the response values:
     XCTAssertEqual(try get.response.wait(), .with { $0.text = "Bar!" })
@@ -53,7 +53,7 @@ class FakeResponseStreamExampleTests: GRPCTestCase {
     let get = self.client.get(.with { $0.text = "Foo!" })
 
     // The response stream has been consumed by the call.
-    XCTAssertFalse(self.client.hasGetResponses)
+    XCTAssertFalse(self.client.hasGetResponsesRemaining)
 
     // Now send the response on the stream we made.
     XCTAssertNoThrow(try stream.sendMessage(.with { $0.text = "Bar!" }))
@@ -73,7 +73,7 @@ class FakeResponseStreamExampleTests: GRPCTestCase {
     let collect = self.client.collect()
 
     // The response stream has been consumed by the call.
-    XCTAssertFalse(self.client.hasCollectResponses)
+    XCTAssertFalse(self.client.hasCollectResponsesRemaining)
 
     XCTAssertEqual(try collect.response.wait(), .with { $0.text = "Foo" })
     XCTAssertTrue(try collect.status.map { $0.isOk }.wait())
@@ -88,7 +88,7 @@ class FakeResponseStreamExampleTests: GRPCTestCase {
     let collect = self.client.collect()
 
     // The response stream has been consumed by the call.
-    XCTAssertFalse(self.client.hasCollectResponses)
+    XCTAssertFalse(self.client.hasCollectResponsesRemaining)
 
     // Send the response on the stream we made.
     XCTAssertNoThrow(try stream.sendMessage(.with { $0.text = "Foo" }))
@@ -115,7 +115,7 @@ class FakeResponseStreamExampleTests: GRPCTestCase {
     }
 
     // The response stream has been consumed by the call.
-    XCTAssertFalse(self.client.hasExpandResponses)
+    XCTAssertFalse(self.client.hasExpandResponsesRemaining)
 
     XCTAssertTrue(try expand.status.map { $0.isOk }.wait())
     XCTAssertEqual(responses, fooBarBaz)
@@ -137,7 +137,7 @@ class FakeResponseStreamExampleTests: GRPCTestCase {
     }
 
     // The response stream has been consumed by the call.
-    XCTAssertFalse(self.client.hasExpandResponses)
+    XCTAssertFalse(self.client.hasExpandResponsesRemaining)
 
     // Send some responses.
     let fooBarBaz = ["Foo", "Bar", "Baz"]
@@ -169,7 +169,7 @@ class FakeResponseStreamExampleTests: GRPCTestCase {
     }
 
     // The response stream has been consumed by the call.
-    XCTAssertFalse(self.client.hasUpdateResponses)
+    XCTAssertFalse(self.client.hasUpdateResponsesRemaining)
 
     XCTAssertTrue(try update.status.map { $0.isOk }.wait())
     XCTAssertEqual(responses, fooBarBaz)
@@ -191,7 +191,7 @@ class FakeResponseStreamExampleTests: GRPCTestCase {
     }
 
     // The response stream has been consumed by the call.
-    XCTAssertFalse(self.client.hasUpdateResponses)
+    XCTAssertFalse(self.client.hasUpdateResponsesRemaining)
 
     // Send some responses.
     let fooBarBaz = ["Foo", "Bar", "Baz"]
