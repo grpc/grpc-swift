@@ -91,7 +91,7 @@ class Pod:
         podspec += indent + "s.authors  = { 'The gRPC contributors' => \'grpc-packages@google.com' }\n\n"
 
         if self.is_plugins_pod:
-            podspec += indent + "s.source = { :http => \"https://github.com/grpc/grpc-swift/releases/download/#{s.version}/protoc-swift-plugins-#{s.version}.zip\"}\n\n"
+            podspec += indent + "s.source = { :http => \"https://github.com/grpc/grpc-swift/releases/download/#{s.version}/protoc-grpc-swift-plugins-#{s.version}.zip\"}\n\n"
             podspec += indent + "s.preserve_paths = '*'\n"
         else:
             podspec += indent + "s.source = { :git => \"https://github.com/grpc/grpc-swift.git\", :tag => s.version }\n\n"
