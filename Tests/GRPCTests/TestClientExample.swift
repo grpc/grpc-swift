@@ -300,10 +300,13 @@ extension FakeResponseStreamExampleTests {
       responses.append(response)
     }
 
+    // We should have two responses already.
+    XCTAssertEqual(responses.count, 2)
+
     // We can also send responses after starting the RPC.
     XCTAssertNoThrow(try updateResponseStream.sendMessage(.with { $0.text = "3" }))
 
-    // And interleave with requests with responses.
+    // And interleave requests with responses.
     XCTAssertNoThrow(try update.sendMessage(.with { $0.text = "a" }).wait())
     XCTAssertNoThrow(try update.sendMessage(.with { $0.text = "b" }).wait())
     XCTAssertNoThrow(try update.sendMessage(.with { $0.text = "c" }).wait())
