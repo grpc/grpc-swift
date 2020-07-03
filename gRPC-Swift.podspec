@@ -8,7 +8,7 @@ Pod::Spec.new do |s|
     s.homepage = 'https://www.grpc.io'
     s.authors  = { 'The gRPC contributors' => 'grpc-packages@google.com' }
 
-    s.source = { :git => 'https://github.com/grpc/grpc-swift.git', :tag => s.version }
+    s.source = { :git => "https://github.com/grpc/grpc-swift.git", :tag => s.version }
 
     s.swift_version = '5.0'
     s.ios.deployment_target = '10.0'
