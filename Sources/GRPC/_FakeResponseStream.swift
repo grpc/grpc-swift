@@ -22,6 +22,8 @@ public enum FakeRequestPart<Request: GRPCPayload> {
   case end
 }
 
+extension FakeRequestPart: Equatable where Request: Equatable {}
+
 /// Sending on a fake response stream would have resulted in a protocol violation (such as
 /// sending initial metadata multiple times or sending messages after the stream has closed).
 public struct FakeResponseProtocolViolation: Error, Hashable {

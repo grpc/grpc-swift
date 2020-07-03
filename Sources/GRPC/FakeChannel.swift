@@ -60,6 +60,14 @@ public class FakeChannel: GRPCChannel {
     return proxy
   }
 
+  /// Returns true if there are fake responses enqueued for the given path.
+  public func hasFakeResponseEnqueued(forPath path: String) -> Bool {
+    guard let noStreamsForPath = self.responseStreams[path]?.isEmpty else {
+      return false
+    }
+    return !noStreamsForPath
+  }
+
   // (Docs inherited from `GRPCChannel`)
   public func makeUnaryCall<Request: GRPCPayload, Response: GRPCPayload>(
     path: String,

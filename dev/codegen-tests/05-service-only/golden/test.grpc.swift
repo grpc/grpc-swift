@@ -31,18 +31,29 @@ import SwiftProtobuf
 internal protocol Codegentest_FooClientProtocol: GRPCClient {
   func bar(
     _ request: SwiftProtobuf.Google_Protobuf_Empty,
-    callOptions: CallOptions
+    callOptions: CallOptions?
   ) -> UnaryCall<SwiftProtobuf.Google_Protobuf_Empty, SwiftProtobuf.Google_Protobuf_Empty>
 
 }
 
 extension Codegentest_FooClientProtocol {
-  internal func bar(
-    _ request: SwiftProtobuf.Google_Protobuf_Empty
-  ) -> UnaryCall<SwiftProtobuf.Google_Protobuf_Empty, SwiftProtobuf.Google_Protobuf_Empty> {
-    return self.bar(request, callOptions: self.defaultCallOptions)
-  }
 
+  /// Unary call to Bar
+  ///
+  /// - Parameters:
+  ///   - request: Request to send to Bar.
+  ///   - callOptions: Call options.
+  /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
+  internal func bar(
+    _ request: SwiftProtobuf.Google_Protobuf_Empty,
+    callOptions: CallOptions? = nil
+  ) -> UnaryCall<SwiftProtobuf.Google_Protobuf_Empty, SwiftProtobuf.Google_Protobuf_Empty> {
+    return self.makeUnaryCall(
+      path: "/codegentest.Foo/Bar",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
 }
 
 internal final class Codegentest_FooClient: Codegentest_FooClientProtocol {
@@ -57,23 +68,6 @@ internal final class Codegentest_FooClient: Codegentest_FooClientProtocol {
   internal init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
     self.channel = channel
     self.defaultCallOptions = defaultCallOptions
-  }
-
-  /// Unary call to Bar
-  ///
-  /// - Parameters:
-  ///   - request: Request to send to Bar.
-  ///   - callOptions: Call options.
-  /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
-  internal func bar(
-    _ request: SwiftProtobuf.Google_Protobuf_Empty,
-    callOptions: CallOptions
-  ) -> UnaryCall<SwiftProtobuf.Google_Protobuf_Empty, SwiftProtobuf.Google_Protobuf_Empty> {
-    return self.makeUnaryCall(
-      path: "/codegentest.Foo/Bar",
-      request: request,
-      callOptions: callOptions
-    )
   }
 }
 
