@@ -19,12 +19,14 @@ import SwiftProtobufPluginLibrary
 
 extension Generator {
   internal func printClient() {
-    println()
-    printServiceClientProtocol()
-    println()
-    printClientProtocolExtension()
-    println()
-    printServiceClientImplementation()
+    if self.options.generateClient {
+      self.println()
+      self.printServiceClientProtocol()
+      self.println()
+      self.printClientProtocolExtension()
+      self.println()
+      self.printServiceClientImplementation()
+    }
 
     if self.options.generateTestClient {
       self.println()
