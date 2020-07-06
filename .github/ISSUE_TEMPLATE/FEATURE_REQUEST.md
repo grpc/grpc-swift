@@ -1,7 +1,7 @@
 ---
 name: 🚀 Feature Request
 about: Suggest an idea to improve gRPC Swift
-labels: enhancement, nio
+labels: enhancement
 ---
 
 <!--
