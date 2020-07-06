@@ -1,7 +1,7 @@
 ---
 name: ❓ Support Question
 about: Not sure how something works? Ask us here. (But please check the README and issues first 🙃.)
-labels: question, nio
+labels: question
 ---
 
 <!--
