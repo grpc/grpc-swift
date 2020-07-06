@@ -687,6 +687,61 @@ extension ConnectionManagerTests {
     self.loop.run()
     XCTAssertThrowsError(try channel.wait())
   }
+
+  func testDoubleIdle() throws {
+    class CloseDroppingHandler: ChannelOutboundHandler {
+      typealias OutboundIn = Any
+      func close(context: ChannelHandlerContext, mode: CloseMode, promise: EventLoopPromise<Void>?) {
+        promise?.fail(GRPCStatus(code: .unavailable, message: "Purposefully dropping channel close"))
+      }
+    }
+
+    let channelPromise = self.loop.makePromise(of: Channel.self)
+    let manager = ConnectionManager.testingOnly(configuration: self.defaultConfiguration, logger: self.logger) {
+      return channelPromise.futureResult
+    }
+
+    // Start the connection.
+    let readyChannel: EventLoopFuture<Channel> = self.waitForStateChange(from: .idle, to: .connecting) {
+      let readyChannel = manager.getChannel()
+      self.loop.run()
+      return readyChannel
+    }
+
+    // Setup the real channel and activate it.
+    let channel = EmbeddedChannel(loop: self.loop)
+    XCTAssertNoThrow(try channel.pipeline.addHandlers([
+      CloseDroppingHandler(),
+      GRPCIdleHandler(mode: .client(manager))
+    ]).wait())
+    channelPromise.succeed(channel)
+    self.loop.run()
+    XCTAssertNoThrow(try channel.connect(to: SocketAddress(unixDomainSocketPath: "/ignored")).wait())
+
+    // Write a SETTINGS frame on the root stream.
+    try self.waitForStateChange(from: .connecting, to: .ready) {
+      let frame = HTTP2Frame(streamID: .rootStream, payload: .settings(.settings([])))
+      XCTAssertNoThrow(try channel.writeInbound(frame))
+    }
+
+    // The channel should now be ready.
+    XCTAssertNoThrow(try readyChannel.wait())
+
+    // Send a GO_AWAY; the details don't matter. This will cause the connection to go idle and the
+    // channel to close.
+    try self.waitForStateChange(from: .ready, to: .idle) {
+      let goAway = HTTP2Frame(
+        streamID: .rootStream,
+        payload: .goAway(lastStreamID: 1, errorCode: .noError, opaqueData: nil)
+      )
+      XCTAssertNoThrow(try channel.writeInbound(goAway))
+    }
+
+    // We dropped the close; now wait for the scheduled idle to fire.
+    //
+    // Previously doing this this would fail a precondition.
+    self.loop.advanceTime(by: .minutes(5))
+  }
 }
 
 internal struct Change: Hashable, CustomStringConvertible {

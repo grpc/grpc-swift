@@ -97,6 +97,10 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
     context.fireChannelActive()
   }
 
+  func handlerRemoved(context: ChannelHandlerContext) {
+    self.scheduledIdle?.cancel()
+  }
+
   func channelInactive(context: ChannelHandlerContext) {
     self.scheduledIdle?.cancel()
     self.scheduledIdle = nil
@@ -166,18 +170,26 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
   }
 
   private func idle(context: ChannelHandlerContext) {
+    // Don't idle if there are active streams.
     guard self.activeStreams == 0 else {
       return
     }
 
-    self.state = .closed
-    switch self.mode {
-    case .client(let manager):
-      manager.idle()
-    case .server:
+    switch self.state {
+    case .notReady, .ready:
+      self.state = .closed
+      switch self.mode {
+      case .client(let manager):
+        manager.idle()
+      case .server:
+        ()
+      }
+      context.close(mode: .all, promise: nil)
+
+    // We need to guard against double closure here. We may go idle as a result of receiving a
+    // GOAWAY frame or because our scheduled idle timeout fired. 
+    case .closed:
       ()
     }
-
-    context.close(mode: .all, promise: nil)
   }
 }
