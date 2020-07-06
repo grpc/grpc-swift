@@ -396,7 +396,7 @@ extension _GRPCClientChannelHandler: ChannelInboundHandler {
     let result = self.stateMachine.receiveResponseBuffer(&buffer).mapError { error -> GRPCError.WithContext in
       switch error {
       case .cardinalityViolation:
-        return GRPCError.StreamCardinalityViolation(stream: .response).captureContext()
+        return GRPCError.StreamCardinalityViolation.response.captureContext()
       case .deserializationFailed, .leftOverBytes:
         return GRPCError.DeserializationFailure().captureContext()
       case .decompressionLimitExceeded(let compressedSize):
