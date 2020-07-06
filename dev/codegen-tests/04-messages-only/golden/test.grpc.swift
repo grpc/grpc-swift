@@ -30,3 +30,7 @@ import SwiftProtobuf
 
 // Provides conformance to `GRPCPayload`
 extension Codegentest_Foo: GRPCProtobufPayload {}
+extension Codegentest_Foo.FooA: GRPCProtobufPayload {}
+extension Codegentest_Foo.FooA.FooAA: GRPCProtobufPayload {}
+extension Codegentest_Foo.FooA.FooAA.FooAAA: GRPCProtobufPayload {}
+extension Codegentest_Foo.FooB: GRPCProtobufPayload {}
