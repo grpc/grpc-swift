@@ -154,6 +154,7 @@ extension ConnectionManagerTests {
         ("testConnectOnSecondAttempt", testConnectOnSecondAttempt),
         ("testDoomedOptimisticChannelFromConnecting", testDoomedOptimisticChannelFromConnecting),
         ("testDoomedOptimisticChannelFromIdle", testDoomedOptimisticChannelFromIdle),
+        ("testDoubleIdle", testDoubleIdle),
         ("testGoAwayWhenReady", testGoAwayWhenReady),
         ("testIdleShutdown", testIdleShutdown),
         ("testIdleTimeoutWhenThereAreActiveStreams", testIdleTimeoutWhenThereAreActiveStreams),
