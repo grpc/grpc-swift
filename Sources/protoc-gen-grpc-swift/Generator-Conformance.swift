@@ -23,8 +23,17 @@ extension Generator {
     }
     println("// Provides conformance to `GRPCPayload`")
     for message in self.file.messages {
-      let name = self.protobufNamer.fullName(message: message)
-      self.println("extension \(name): GRPCProtobufPayload {}")
+      self.printProtobufExtensions(for: message)
+    }
+  }
+
+  internal func printProtobufExtensions(for message: Descriptor) {
+    let name = self.protobufNamer.fullName(message: message)
+    self.println("extension \(name): GRPCProtobufPayload {}")
+
+    // Messages may be nested.
+    for message in message.messages {
+      self.printProtobufExtensions(for: message)
     }
   }
 }

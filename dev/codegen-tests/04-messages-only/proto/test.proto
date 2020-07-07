@@ -16,5 +16,22 @@ syntax = "proto3";
 package codegentest;
 
 message Foo {
-  string bar = 1;
+  FooA fooA = 1;
+  FooB fooB = 2;
+
+  message FooA {
+    FooAA fooAA = 1;
+
+    message FooAA {
+      FooAAA fooAAA = 1;
+
+      message FooAAA {
+        string bar = 1;
+      }
+    }
+  }
+
+  message FooB {
+    FooA fooA = 1;
+  }
 }
