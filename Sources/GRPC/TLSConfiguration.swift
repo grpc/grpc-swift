@@ -160,7 +160,7 @@ extension Server.Configuration {
       }
     }
 
-    /// TLS Configuration with suitable defaults for clients.
+    /// TLS Configuration with suitable defaults for servers.
     ///
     /// This is a wrapper around `NIOSSL.TLSConfiguration` to restrict input to values which comply
     /// with the gRPC protocol.
