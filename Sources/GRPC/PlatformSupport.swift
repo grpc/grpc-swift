@@ -18,27 +18,50 @@ import NIOTransportServices
 import Logging
 
 /// How a network implementation should be chosen.
-public enum NetworkPreference {
+public struct NetworkPreference: Hashable {
+  private enum Wrapped: Hashable {
+    case best
+    case userDefined(NetworkImplementation)
+  }
+
+  private var wrapped: Wrapped
+  private init(_ wrapped: Wrapped) {
+    self.wrapped = wrapped
+  }
+
   /// Use the best available, that is, Network.framework (and NIOTransportServices) when it is
   /// available on Darwin platforms (macOS 10.14+, iOS 12.0+, tvOS 12.0+, watchOS 6.0+), and
   /// falling back to the POSIX network model otherwise.
-  case best
+  public static let best = NetworkPreference(.best)
 
   /// Use the given implementation. Doing so may require additional availability checks depending
   /// on the implementation.
-  case userDefined(NetworkImplementation)
+  public static func userDefined(_ implementation: NetworkImplementation) -> NetworkPreference {
+    return NetworkPreference(.userDefined(implementation))
+  }
 }
 
 /// The network implementation to use: POSIX sockets or Network.framework. This also determines
 /// which variant of NIO to use; NIO or NIOTransportServices, respectively.
-public enum NetworkImplementation {
+public struct NetworkImplementation: Hashable {
+  fileprivate enum Wrapped: Hashable {
+    case networkFramework
+    case posix
+  }
+
+  fileprivate var wrapped: Wrapped
+  private init(_ wrapped: Wrapped) {
+    self.wrapped = wrapped
+  }
+
   #if canImport(Network)
   /// Network.framework (NIOTransportServices).
   @available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
-  case networkFramework
+  public static let networkFramework = NetworkImplementation(.networkFramework)
   #endif
+
   /// POSIX (NIO).
-  case posix
+  public static let posix = NetworkImplementation(.posix)
 }
 
 extension NetworkPreference {
@@ -52,7 +75,7 @@ extension NetworkPreference {
   /// - `@available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)`, or
   /// - `#available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)`.
   public var implementation: NetworkImplementation {
-    switch self {
+    switch self.wrapped {
     case .best:
       #if canImport(Network)
       guard #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else {
@@ -134,9 +157,9 @@ public enum PlatformSupport {
   ) -> EventLoopGroup {
     let logger = logger ?? PlatformSupport.logger
     logger.debug("making EventLoopGroup for \(networkPreference) network preference")
-    switch networkPreference.implementation {
-    #if canImport(Network)
+    switch networkPreference.implementation.wrapped {
     case .networkFramework:
+      #if canImport(Network)
       guard #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else {
         logger.critical("Network.framework can be imported but is not supported on this platform")
         // This is gated by the availability of `.networkFramework` so should never happen.
@@ -144,7 +167,9 @@ public enum PlatformSupport {
       }
       logger.debug("created NIOTSEventLoopGroup for \(networkPreference) preference")
       return NIOTSEventLoopGroup(loopCount: loopCount)
-    #endif
+      #else
+      fatalError(".networkFramework is being used on an unsupported platform")
+      #endif
     case .posix:
       logger.debug("created MultiThreadedEventLoopGroup for \(networkPreference) preference")
       return MultiThreadedEventLoopGroup(numberOfThreads: loopCount)
