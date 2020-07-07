@@ -111,7 +111,7 @@ extension Server.Builder.Secure {
     return self
   }
 
-  /// Sets whether certificates should be verified. Defaults to `.fullVerification` if not set.
+  /// Sets whether certificates should be verified. Defaults to `.none` if not set.
   @discardableResult
   public func withTLS(certificateVerification: CertificateVerification) -> Self {
     self.tls.certificateVerification = certificateVerification
