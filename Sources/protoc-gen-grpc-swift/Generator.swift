@@ -104,11 +104,11 @@ class Generator {
     }
     println()
 
-    if options.generateClient {
-      for service in file.services {
-        self.service = service
-        printClient()
-      }
+    // We defer the check for printing clients to `printClient()` since this could be the 'real'
+    // client or the test client.
+    for service in file.services {
+      self.service = service
+      self.printClient()
     }
     println()
 
@@ -118,7 +118,10 @@ class Generator {
         printServer()
       }
     }
-    self.println()
-    self.printProtobufExtensions()
+
+    if options.generatePayloadConformance {
+      self.println()
+      self.printProtobufExtensions()
+    }
   }
 }
