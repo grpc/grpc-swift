@@ -38,6 +38,7 @@ extension ClientConnection {
     private var errorDelegate: ClientErrorDelegate?
     private var connectivityStateDelegate: ConnectivityStateDelegate?
     private var connectivityStateDelegateQueue: DispatchQueue?
+    private var connectionKeepalive = ClientConnectionKeepalive()
     private var connectionIdleTimeout: TimeAmount = .minutes(5)
     private var callStartBehavior: CallStartBehavior = .waitsForConnectivity
     private var httpTargetWindowSize: Int = 65535
@@ -55,6 +56,7 @@ extension ClientConnection {
         connectivityStateDelegateQueue: self.connectivityStateDelegateQueue,
         tls: self.maybeTLS,
         connectionBackoff: self.connectionBackoffIsEnabled ? self.connectionBackoff : nil,
+        connectionKeepalive: self.connectionKeepalive,
         connectionIdleTimeout: self.connectionIdleTimeout,
         callStartBehavior: self.callStartBehavior,
         httpTargetWindowSize: self.httpTargetWindowSize
@@ -145,6 +147,15 @@ extension ClientConnection.Builder {
   @discardableResult
   public func withConnectionReestablishment(enabled: Bool) -> Self {
     self.connectionBackoffIsEnabled = enabled
+    return self
+  }
+
+  /// Sets a custom configuration for keepalive
+  /// The defaults for client and server are determined by the gRPC keepalive
+  /// [documentation] (https://github.com/grpc/grpc/blob/master/doc/keepalive.md).
+  @discardableResult
+  public func withKeepalive(_ keepalive: ClientConnectionKeepalive) -> Self {
+    self.connectionKeepalive = keepalive
     return self
   }
 

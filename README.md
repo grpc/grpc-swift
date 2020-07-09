@@ -151,6 +151,7 @@ The `docs` directory contains documentation, including:
 
 - Options for the `protoc` plugin in [`docs/plugin.md`][docs-plugin]
 - How to configure TLS in [`docs/tls.md`][docs-tls]
+- How to configure keepalive in [`docs/keepalive.md`][docs-keepalive]
 - Support for Apple Platforms and NIO Transport Services in
   [`docs/apple-platforms.md`][docs-apple]
 
@@ -167,6 +168,7 @@ Please get involved! See our [guidelines for contributing](CONTRIBUTING.md).
 [docs-plugin]: ./docs/plugin.md
 [docs-quickstart]: ./docs/quick-start.md
 [docs-tls]: ./docs/tls.md
+[docs-keepalive]: ./docs/keepalive.md
 [docs-tutorial]: ./docs/basic-tutorial.md
 [grpc]: https://github.com/grpc/grpc
 [protobuf-releases]: https://github.com/protocolbuffers/protobuf/releases

@@ -26,6 +26,7 @@ internal class HTTPProtocolSwitcher {
   private let errorDelegate: ServerErrorDelegate?
   private let logger = Logger(subsystem: .serverChannelCall)
   private let httpTargetWindowSize: Int
+  private let keepAlive: ServerConnectionKeepalive
   private let idleTimeout: TimeAmount
 
   // We could receive additional data after the initial data and before configuring
@@ -46,11 +47,13 @@ internal class HTTPProtocolSwitcher {
   init(
     errorDelegate: ServerErrorDelegate?,
     httpTargetWindowSize: Int = 65535,
+    keepAlive: ServerConnectionKeepalive,
     idleTimeout: TimeAmount,
     handlersInitializer: (@escaping (Channel) -> EventLoopFuture<Void>)
   ) {
     self.errorDelegate = errorDelegate
     self.httpTargetWindowSize = httpTargetWindowSize
+    self.keepAlive = keepAlive
     self.idleTimeout = idleTimeout
     self.handlersInitializer = handlersInitializer
   }
@@ -148,9 +151,10 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
             streamChannel.pipeline.addHandler(HTTP2ToHTTP1ServerCodec(streamID: streamID, normalizeHTTPHeaders: true))
               .flatMap { self.handlersInitializer(streamChannel) }
           }.flatMap { multiplexer in
-            // Add an idle handler between the two HTTP2 handlers.
+            // Add a keepalive and idle handlers between the two HTTP2 handlers.
+            let keepaliveHandler = GRPCServerKeepaliveHandler(configuration: self.keepAlive)
             let idleHandler = GRPCIdleHandler(mode: .server, idleTimeout: self.idleTimeout)
-            return context.channel.pipeline.addHandler(idleHandler, position: .before(multiplexer))
+            return context.channel.pipeline.addHandlers([keepaliveHandler, idleHandler], position: .before(multiplexer))
           }
           .cascade(to: pipelineConfigured)
       }

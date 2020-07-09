@@ -595,6 +595,7 @@ extension ConnectionManager {
           tlsConfiguration: configuration.tls?.configuration,
           tlsServerHostname: serverHostname,
           connectionManager: self,
+          connectionKeepalive: configuration.connectionKeepalive,
           connectionIdleTimeout: configuration.connectionIdleTimeout,
           errorDelegate: configuration.errorDelegate,
           logger: self.logger

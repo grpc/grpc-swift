@@ -23,6 +23,7 @@ extension Server {
     private var providers: [CallHandlerProvider] = []
     private var errorDelegate: ServerErrorDelegate?
     private var messageEncoding: ServerMessageEncoding = .disabled
+    private var connectionKeepalive: ServerConnectionKeepalive = ServerConnectionKeepalive()
     private var connectionIdleTimeout: TimeAmount = .minutes(5)
     private var httpTargetWindowSize: Int = 65535
 
@@ -52,6 +53,7 @@ extension Server {
         serviceProviders: self.providers,
         errorDelegate: self.errorDelegate,
         tls: self.maybeTLS,
+        connectionKeepalive: self.connectionKeepalive,
         connectionIdleTimeout: self.connectionIdleTimeout,
         messageEncoding: self.messageEncoding,
         httpTargetWindowSize: self.httpTargetWindowSize
@@ -76,6 +78,14 @@ extension Server.Builder {
   @discardableResult
   public func withServiceProviders(_ providers: [CallHandlerProvider]) -> Self {
     self.providers = providers
+    return self
+  }
+}
+
+extension Server.Builder {
+  @discardableResult
+  public func withKeepalive(_ keepalive: ServerConnectionKeepalive) -> Self {
+    self.connectionKeepalive = keepalive
     return self
   }
 }
