@@ -46,6 +46,8 @@ internal struct LengthPrefixedMessageWriter {
     into output: inout ByteBuffer,
     using compressor: Zlib.Deflate
   ) throws {
+    let save = output
+
     // Set the compression byte.
     output.writeInteger(UInt8(1))
 
@@ -57,7 +59,15 @@ internal struct LengthPrefixedMessageWriter {
     // bytes must exist.
     var buffer = buffer
     buffer.moveReaderIndex(forwardBy: 5)
-    let bytesWritten = try compressor.deflate(&buffer, into: &output)
+
+    let bytesWritten: Int
+    
+    do {
+      bytesWritten = try compressor.deflate(&buffer, into: &output)
+    } catch {
+      output = save
+      throw error
+    }
 
     // Now fill in the message length.
     output.writePayloadLength(UInt32(bytesWritten), at: payloadSizeIndex)

@@ -292,7 +292,7 @@ public struct GRPCTimeoutError: Error, Equatable, CustomStringConvertible {
 
 
 extension UnaryCallHandler {
-  @available(*, deprecated, message: "Please regenerate your code or use 'CallHandler.makeUnary'")
+  @available(*, unavailable, message: "Please regenerate your code or use 'CallHandler.makeUnary'")
   public convenience init(
     callHandlerContext: CallHandlerContext,
     eventObserverFactory: @escaping (UnaryResponseCallContext<ResponsePayload>) -> EventObserver
@@ -302,7 +302,7 @@ extension UnaryCallHandler {
 }
 
 extension ServerStreamingCallHandler {
-  @available(*, deprecated, message: "Please regenerate your code or use 'CallHandler.makeServerStreaming'")
+  @available(*, unavailable, message: "Please regenerate your code or use 'CallHandler.makeServerStreaming'")
   public convenience init(
     callHandlerContext: CallHandlerContext,
     eventObserverFactory: @escaping (StreamingResponseCallContext<ResponsePayload>) -> EventObserver
@@ -312,7 +312,7 @@ extension ServerStreamingCallHandler {
 }
 
 extension ClientStreamingCallHandler {
-  @available(*, deprecated, message: "Please regenerate your code or use 'CallHandler.makeClientStreaming'")
+  @available(*, unavailable, message: "Please regenerate your code or use 'CallHandler.makeClientStreaming'")
   public convenience init(
     callHandlerContext: CallHandlerContext,
     eventObserverFactory: @escaping EventObserverFactory
@@ -322,7 +322,7 @@ extension ClientStreamingCallHandler {
 }
 
 extension BidirectionalStreamingCallHandler {
-  @available(*, deprecated, message: "Please regenerate your code or use 'CallHandler.makeBidirectionalStreaming'")
+  @available(*, unavailable, message: "Please regenerate your code or use 'CallHandler.makeBidirectionalStreaming'")
   public convenience init(
     callHandlerContext: CallHandlerContext,
     eventObserverFactory: @escaping (StreamingResponseCallContext<ResponsePayload>) -> EventLoopFuture<EventObserver>
