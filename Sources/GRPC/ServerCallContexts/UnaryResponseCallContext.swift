@@ -28,7 +28,7 @@ import Logging
 ///
 /// For unary calls, the response is not actually provided by fulfilling `responsePromise`, but instead by completing
 /// the future returned by `UnaryCallHandler.EventObserver`.
-open class UnaryResponseCallContext<ResponsePayload: GRPCPayload>: ServerCallContextBase, StatusOnlyCallContext {
+open class UnaryResponseCallContext<ResponsePayload>: ServerCallContextBase, StatusOnlyCallContext {
   typealias WrappedResponse = _GRPCServerResponsePart<ResponsePayload>
 
   public let responsePromise: EventLoopPromise<ResponsePayload>
@@ -55,7 +55,7 @@ public protocol StatusOnlyCallContext: ServerCallContext {
 }
 
 /// Concrete implementation of `UnaryResponseCallContext` used by our generated code.
-open class UnaryResponseCallContextImpl<ResponsePayload: GRPCPayload>: UnaryResponseCallContext<ResponsePayload> {
+open class UnaryResponseCallContextImpl<ResponsePayload>: UnaryResponseCallContext<ResponsePayload> {
   public let channel: Channel
 
   /// - Parameters:
@@ -71,8 +71,7 @@ open class UnaryResponseCallContextImpl<ResponsePayload: GRPCPayload>: UnaryResp
     responsePromise.futureResult
       // Send the response provided to the promise.
       .map { responseMessage -> EventLoopFuture<Void> in
-        let message = _MessageContext<ResponsePayload>(responseMessage, compressed: self.compressionEnabled)
-        return self.channel.writeAndFlush(NIOAny(WrappedResponse.message(message)))
+        return self.channel.writeAndFlush(NIOAny(WrappedResponse.message(.init(responseMessage, compressed: self.compressionEnabled))))
       }
       .map { _ in
         self.responseStatus
@@ -94,4 +93,4 @@ open class UnaryResponseCallContextImpl<ResponsePayload: GRPCPayload>: UnaryResp
 /// Concrete implementation of `UnaryResponseCallContext` used for testing.
 ///
 /// Only provided to make it clear in tests that no "real" implementation is used.
-open class UnaryResponseCallContextTestStub<ResponsePayload: GRPCPayload>: UnaryResponseCallContext<ResponsePayload> { }
+open class UnaryResponseCallContextTestStub<ResponsePayload>: UnaryResponseCallContext<ResponsePayload> { }

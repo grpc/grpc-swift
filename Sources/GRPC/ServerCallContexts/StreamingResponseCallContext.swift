@@ -25,7 +25,7 @@ import Logging
 /// - If `statusPromise` is failed and the error is of type `GRPCStatusTransformable`,
 ///   the result of `error.asGRPCStatus()` will be returned to the client.
 /// - If `error.asGRPCStatus()` is not available, `GRPCStatus.processingError` is returned to the client.
-open class StreamingResponseCallContext<ResponsePayload: GRPCPayload>: ServerCallContextBase {
+open class StreamingResponseCallContext<ResponsePayload>: ServerCallContextBase {
   typealias WrappedResponse = _GRPCServerResponsePart<ResponsePayload>
 
   public let statusPromise: EventLoopPromise<GRPCStatus>
@@ -47,7 +47,7 @@ open class StreamingResponseCallContext<ResponsePayload: GRPCPayload>: ServerCal
 }
 
 /// Concrete implementation of `StreamingResponseCallContext` used by our generated code.
-open class StreamingResponseCallContextImpl<ResponsePayload: GRPCPayload>: StreamingResponseCallContext<ResponsePayload> {
+open class StreamingResponseCallContextImpl<ResponsePayload>: StreamingResponseCallContext<ResponsePayload> {
   public let channel: Channel
 
   /// - Parameters:
@@ -77,17 +77,15 @@ open class StreamingResponseCallContextImpl<ResponsePayload: GRPCPayload>: Strea
   }
 
   open override func sendResponse(_ message: ResponsePayload, compression: Compression = .deferToCallDefault) -> EventLoopFuture<Void> {
-    let promise: EventLoopPromise<Void> = eventLoop.makePromise()
     let messageContext = _MessageContext(message, compressed: compression.isEnabled(callDefault: self.compressionEnabled))
-    self.channel.writeAndFlush(NIOAny(WrappedResponse.message(messageContext)), promise: promise)
-    return promise.futureResult
+    return self.channel.writeAndFlush(NIOAny(WrappedResponse.message(messageContext)))
   }
 }
 
 /// Concrete implementation of `StreamingResponseCallContext` used for testing.
 ///
 /// Simply records all sent messages.
-open class StreamingResponseCallContextTestStub<ResponsePayload: GRPCPayload>: StreamingResponseCallContext<ResponsePayload> {
+open class StreamingResponseCallContextTestStub<ResponsePayload>: StreamingResponseCallContext<ResponsePayload> {
   open var recordedResponses: [ResponsePayload] = []
 
   open override func sendResponse(_ message: ResponsePayload, compression: Compression = .deferToCallDefault) -> EventLoopFuture<Void> {

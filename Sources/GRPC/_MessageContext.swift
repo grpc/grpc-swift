@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import SwiftProtobuf
 
 /// Provides a context for gRPC payloads.
 ///
 /// - Important: This is **NOT** part of the public API.
-public final class _MessageContext<M: GRPCPayload> {
+public final class _MessageContext<Message> {
   /// The message being sent or received.
-  let message: M
+  let message: Message
 
   /// Whether the message was, or should be compressed.
   let compressed: Bool
@@ -28,7 +27,7 @@ public final class _MessageContext<M: GRPCPayload> {
   /// Constructs a box for a value.
   ///
   /// - Important: This is **NOT** part of the public API.
-  public init(_ message: M, compressed: Bool) {
+  public init(_ message: Message, compressed: Bool) {
     self.message = message
     self.compressed = compressed
   }

@@ -178,8 +178,9 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
       self.state = .configuring([requestPart])
 
       // Configure the rest of the pipeline to serve the RPC.
+      let httpToGRPC = HTTP1ToGRPCServerCodec(encoding: self.encoding, logger: self.logger)
       let codec = callHandler.makeGRPCServerCodec()
-      context.pipeline.addHandlers([codec, callHandler], position: .after(self)).whenSuccess {
+      context.pipeline.addHandlers([httpToGRPC, codec, callHandler], position: .after(self)).whenSuccess {
         context.pipeline.removeHandler(self, promise: nil)
       }
 

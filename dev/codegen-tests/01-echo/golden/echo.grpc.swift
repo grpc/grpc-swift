@@ -163,26 +163,26 @@ extension Echo_EchoProvider {
   internal func handleMethod(_ methodName: String, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
     switch methodName {
     case "Get":
-      return UnaryCallHandler(callHandlerContext: callHandlerContext) { context in
+      return CallHandler.makeUnary(callHandlerContext: callHandlerContext) { context in
         return { request in
           self.get(request: request, context: context)
         }
       }
 
     case "Expand":
-      return ServerStreamingCallHandler(callHandlerContext: callHandlerContext) { context in
+      return CallHandler.makeServerStreaming(callHandlerContext: callHandlerContext) { context in
         return { request in
           self.expand(request: request, context: context)
         }
       }
 
     case "Collect":
-      return ClientStreamingCallHandler(callHandlerContext: callHandlerContext) { context in
+      return CallHandler.makeClientStreaming(callHandlerContext: callHandlerContext) { context in
         return self.collect(context: context)
       }
 
     case "Update":
-      return BidirectionalStreamingCallHandler(callHandlerContext: callHandlerContext) { context in
+      return CallHandler.makeBidirectionalStreaming(callHandlerContext: callHandlerContext) { context in
         return self.update(context: context)
       }
 

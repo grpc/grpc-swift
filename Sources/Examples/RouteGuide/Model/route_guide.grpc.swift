@@ -195,26 +195,26 @@ extension Routeguide_RouteGuideProvider {
   public func handleMethod(_ methodName: String, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
     switch methodName {
     case "GetFeature":
-      return UnaryCallHandler(callHandlerContext: callHandlerContext) { context in
+      return CallHandlerFactory.makeUnary(callHandlerContext: callHandlerContext) { context in
         return { request in
           self.getFeature(request: request, context: context)
         }
       }
 
     case "ListFeatures":
-      return ServerStreamingCallHandler(callHandlerContext: callHandlerContext) { context in
+      return CallHandlerFactory.makeServerStreaming(callHandlerContext: callHandlerContext) { context in
         return { request in
           self.listFeatures(request: request, context: context)
         }
       }
 
     case "RecordRoute":
-      return ClientStreamingCallHandler(callHandlerContext: callHandlerContext) { context in
+      return CallHandlerFactory.makeClientStreaming(callHandlerContext: callHandlerContext) { context in
         return self.recordRoute(context: context)
       }
 
     case "RouteChat":
-      return BidirectionalStreamingCallHandler(callHandlerContext: callHandlerContext) { context in
+      return CallHandlerFactory.makeBidirectionalStreaming(callHandlerContext: callHandlerContext) { context in
         return self.routeChat(context: context)
       }
 

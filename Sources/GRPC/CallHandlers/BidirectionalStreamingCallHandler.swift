@@ -25,10 +25,7 @@ import Logging
 ///   If the framework user wants to return a call error (e.g. in case of authentication failure),
 ///   they can fail the observer block future.
 /// - To close the call and send the status, complete `context.statusPromise`.
-public class BidirectionalStreamingCallHandler<
-  RequestPayload: GRPCPayload,
-  ResponsePayload: GRPCPayload
->: _BaseCallHandler<RequestPayload, ResponsePayload> {
+public class BidirectionalStreamingCallHandler<RequestPayload, ResponsePayload>: _BaseCallHandler<RequestPayload, ResponsePayload> {
   public typealias Context = StreamingResponseCallContext<ResponsePayload>
   public typealias EventObserver = (StreamEvent<RequestPayload>) -> Void
   public typealias EventObserverFactory = (Context) -> EventLoopFuture<EventObserver>
@@ -39,15 +36,17 @@ public class BidirectionalStreamingCallHandler<
 
   // We ask for a future of type `EventObserver` to allow the framework user to e.g. asynchronously authenticate a call.
   // If authentication fails, they can simply fail the observer future, which causes the call to be terminated.
-  public init(
+  internal init<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+    serializer: Serializer,
+    deserializer: Deserializer,
     callHandlerContext: CallHandlerContext,
     eventObserverFactory: @escaping (StreamingResponseCallContext<ResponsePayload>) -> EventLoopFuture<EventObserver>
-  ) {
-    // Delay the creation of the event observer until we actually get a request head, otherwise it
-    // would be possible for the observer to write into the pipeline (by completing the status
-    // promise) before the pipeline is configured.
+  ) where Serializer.Input == ResponsePayload, Deserializer.Output == RequestPayload {
     self.eventObserverFactory = eventObserverFactory
-    super.init(callHandlerContext: callHandlerContext)
+    super.init(
+      callHandlerContext: callHandlerContext,
+      codec: GRPCServerCodecHandler(serializer: serializer, deserializer: deserializer)
+    )
   }
 
   internal override func processHead(_ head: HTTPRequestHead, context: ChannelHandlerContext) {

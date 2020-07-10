@@ -28,36 +28,56 @@ import SwiftProtobuf
 
 
 /// Usage: instantiate Grpc_Testing_TestServiceClient, then call methods of this protocol to make API calls.
-public protocol Grpc_Testing_TestServiceClientProtocol {
-  func emptyCall(_ request: Grpc_Testing_Empty, callOptions: CallOptions?) -> UnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty>
-  func unaryCall(_ request: Grpc_Testing_SimpleRequest, callOptions: CallOptions?) -> UnaryCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>
-  func cacheableUnaryCall(_ request: Grpc_Testing_SimpleRequest, callOptions: CallOptions?) -> UnaryCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>
-  func streamingOutputCall(_ request: Grpc_Testing_StreamingOutputCallRequest, callOptions: CallOptions?, handler: @escaping (Grpc_Testing_StreamingOutputCallResponse) -> Void) -> ServerStreamingCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse>
-  func streamingInputCall(callOptions: CallOptions?) -> ClientStreamingCall<Grpc_Testing_StreamingInputCallRequest, Grpc_Testing_StreamingInputCallResponse>
-  func fullDuplexCall(callOptions: CallOptions?, handler: @escaping (Grpc_Testing_StreamingOutputCallResponse) -> Void) -> BidirectionalStreamingCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse>
-  func halfDuplexCall(callOptions: CallOptions?, handler: @escaping (Grpc_Testing_StreamingOutputCallResponse) -> Void) -> BidirectionalStreamingCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse>
-  func unimplementedCall(_ request: Grpc_Testing_Empty, callOptions: CallOptions?) -> UnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty>
+public protocol Grpc_Testing_TestServiceClientProtocol: GRPCClient {
+  func emptyCall(
+    _ request: Grpc_Testing_Empty,
+    callOptions: CallOptions?
+  ) -> UnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty>
+
+  func unaryCall(
+    _ request: Grpc_Testing_SimpleRequest,
+    callOptions: CallOptions?
+  ) -> UnaryCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>
+
+  func cacheableUnaryCall(
+    _ request: Grpc_Testing_SimpleRequest,
+    callOptions: CallOptions?
+  ) -> UnaryCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>
+
+  func streamingOutputCall(
+    _ request: Grpc_Testing_StreamingOutputCallRequest,
+    callOptions: CallOptions?,
+    handler: @escaping (Grpc_Testing_StreamingOutputCallResponse) -> Void
+  ) -> ServerStreamingCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse>
+
+  func streamingInputCall(
+    callOptions: CallOptions?
+  ) -> ClientStreamingCall<Grpc_Testing_StreamingInputCallRequest, Grpc_Testing_StreamingInputCallResponse>
+
+  func fullDuplexCall(
+    callOptions: CallOptions?,
+    handler: @escaping (Grpc_Testing_StreamingOutputCallResponse) -> Void
+  ) -> BidirectionalStreamingCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse>
+
+  func halfDuplexCall(
+    callOptions: CallOptions?,
+    handler: @escaping (Grpc_Testing_StreamingOutputCallResponse) -> Void
+  ) -> BidirectionalStreamingCall<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse>
+
+  func unimplementedCall(
+    _ request: Grpc_Testing_Empty,
+    callOptions: CallOptions?
+  ) -> UnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty>
+
 }
 
-public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_TestServiceClientProtocol {
-  public let channel: GRPCChannel
-  public var defaultCallOptions: CallOptions
-
-  /// Creates a client for the grpc.testing.TestService service.
-  ///
-  /// - Parameters:
-  ///   - channel: `GRPCChannel` to the service host.
-  ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
-  public init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
-    self.channel = channel
-    self.defaultCallOptions = defaultCallOptions
-  }
+extension Grpc_Testing_TestServiceClientProtocol {
 
   /// One empty request followed by one empty response.
   ///
   /// - Parameters:
   ///   - request: Request to send to EmptyCall.
-  ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
+  ///   - callOptions: Call options.
   /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
   public func emptyCall(
     _ request: Grpc_Testing_Empty,
@@ -74,7 +94,7 @@ public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_Test
   ///
   /// - Parameters:
   ///   - request: Request to send to UnaryCall.
-  ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
+  ///   - callOptions: Call options.
   /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
   public func unaryCall(
     _ request: Grpc_Testing_SimpleRequest,
@@ -93,7 +113,7 @@ public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_Test
   ///
   /// - Parameters:
   ///   - request: Request to send to CacheableUnaryCall.
-  ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
+  ///   - callOptions: Call options.
   /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
   public func cacheableUnaryCall(
     _ request: Grpc_Testing_SimpleRequest,
@@ -111,7 +131,7 @@ public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_Test
   ///
   /// - Parameters:
   ///   - request: Request to send to StreamingOutputCall.
-  ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
+  ///   - callOptions: Call options.
   ///   - handler: A closure called when each response is received from the server.
   /// - Returns: A `ServerStreamingCall` with futures for the metadata and status.
   public func streamingOutputCall(
@@ -134,7 +154,7 @@ public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_Test
   /// to the server. The caller should send an `.end` after the final message has been sent.
   ///
   /// - Parameters:
-  ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
+  ///   - callOptions: Call options.
   /// - Returns: A `ClientStreamingCall` with futures for the metadata, status and response.
   public func streamingInputCall(
     callOptions: CallOptions? = nil
@@ -153,7 +173,7 @@ public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_Test
   /// to the server. The caller should send an `.end` after the final message has been sent.
   ///
   /// - Parameters:
-  ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
+  ///   - callOptions: Call options.
   ///   - handler: A closure called when each response is received from the server.
   /// - Returns: A `ClientStreamingCall` with futures for the metadata and status.
   public func fullDuplexCall(
@@ -176,7 +196,7 @@ public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_Test
   /// to the server. The caller should send an `.end` after the final message has been sent.
   ///
   /// - Parameters:
-  ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
+  ///   - callOptions: Call options.
   ///   - handler: A closure called when each response is received from the server.
   /// - Returns: A `ClientStreamingCall` with futures for the metadata and status.
   public func halfDuplexCall(
@@ -195,7 +215,7 @@ public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_Test
   ///
   /// - Parameters:
   ///   - request: Request to send to UnimplementedCall.
-  ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
+  ///   - callOptions: Call options.
   /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
   public func unimplementedCall(
     _ request: Grpc_Testing_Empty,
@@ -209,16 +229,11 @@ public final class Grpc_Testing_TestServiceClient: GRPCClient, Grpc_Testing_Test
   }
 }
 
-/// Usage: instantiate Grpc_Testing_UnimplementedServiceClient, then call methods of this protocol to make API calls.
-public protocol Grpc_Testing_UnimplementedServiceClientProtocol {
-  func unimplementedCall(_ request: Grpc_Testing_Empty, callOptions: CallOptions?) -> UnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty>
-}
-
-public final class Grpc_Testing_UnimplementedServiceClient: GRPCClient, Grpc_Testing_UnimplementedServiceClientProtocol {
+public final class Grpc_Testing_TestServiceClient: Grpc_Testing_TestServiceClientProtocol {
   public let channel: GRPCChannel
   public var defaultCallOptions: CallOptions
 
-  /// Creates a client for the grpc.testing.UnimplementedService service.
+  /// Creates a client for the grpc.testing.TestService service.
   ///
   /// - Parameters:
   ///   - channel: `GRPCChannel` to the service host.
@@ -227,12 +242,24 @@ public final class Grpc_Testing_UnimplementedServiceClient: GRPCClient, Grpc_Tes
     self.channel = channel
     self.defaultCallOptions = defaultCallOptions
   }
+}
+
+/// Usage: instantiate Grpc_Testing_UnimplementedServiceClient, then call methods of this protocol to make API calls.
+public protocol Grpc_Testing_UnimplementedServiceClientProtocol: GRPCClient {
+  func unimplementedCall(
+    _ request: Grpc_Testing_Empty,
+    callOptions: CallOptions?
+  ) -> UnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty>
+
+}
+
+extension Grpc_Testing_UnimplementedServiceClientProtocol {
 
   /// A call that no server should implement
   ///
   /// - Parameters:
   ///   - request: Request to send to UnimplementedCall.
-  ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
+  ///   - callOptions: Call options.
   /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
   public func unimplementedCall(
     _ request: Grpc_Testing_Empty,
@@ -246,17 +273,11 @@ public final class Grpc_Testing_UnimplementedServiceClient: GRPCClient, Grpc_Tes
   }
 }
 
-/// Usage: instantiate Grpc_Testing_ReconnectServiceClient, then call methods of this protocol to make API calls.
-public protocol Grpc_Testing_ReconnectServiceClientProtocol {
-  func start(_ request: Grpc_Testing_ReconnectParams, callOptions: CallOptions?) -> UnaryCall<Grpc_Testing_ReconnectParams, Grpc_Testing_Empty>
-  func stop(_ request: Grpc_Testing_Empty, callOptions: CallOptions?) -> UnaryCall<Grpc_Testing_Empty, Grpc_Testing_ReconnectInfo>
-}
-
-public final class Grpc_Testing_ReconnectServiceClient: GRPCClient, Grpc_Testing_ReconnectServiceClientProtocol {
+public final class Grpc_Testing_UnimplementedServiceClient: Grpc_Testing_UnimplementedServiceClientProtocol {
   public let channel: GRPCChannel
   public var defaultCallOptions: CallOptions
 
-  /// Creates a client for the grpc.testing.ReconnectService service.
+  /// Creates a client for the grpc.testing.UnimplementedService service.
   ///
   /// - Parameters:
   ///   - channel: `GRPCChannel` to the service host.
@@ -265,12 +286,29 @@ public final class Grpc_Testing_ReconnectServiceClient: GRPCClient, Grpc_Testing
     self.channel = channel
     self.defaultCallOptions = defaultCallOptions
   }
+}
+
+/// Usage: instantiate Grpc_Testing_ReconnectServiceClient, then call methods of this protocol to make API calls.
+public protocol Grpc_Testing_ReconnectServiceClientProtocol: GRPCClient {
+  func start(
+    _ request: Grpc_Testing_ReconnectParams,
+    callOptions: CallOptions?
+  ) -> UnaryCall<Grpc_Testing_ReconnectParams, Grpc_Testing_Empty>
+
+  func stop(
+    _ request: Grpc_Testing_Empty,
+    callOptions: CallOptions?
+  ) -> UnaryCall<Grpc_Testing_Empty, Grpc_Testing_ReconnectInfo>
+
+}
+
+extension Grpc_Testing_ReconnectServiceClientProtocol {
 
   /// Unary call to Start
   ///
   /// - Parameters:
   ///   - request: Request to send to Start.
-  ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
+  ///   - callOptions: Call options.
   /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
   public func start(
     _ request: Grpc_Testing_ReconnectParams,
@@ -287,7 +325,7 @@ public final class Grpc_Testing_ReconnectServiceClient: GRPCClient, Grpc_Testing
   ///
   /// - Parameters:
   ///   - request: Request to send to Stop.
-  ///   - callOptions: Call options; `self.defaultCallOptions` is used if `nil`.
+  ///   - callOptions: Call options.
   /// - Returns: A `UnaryCall` with futures for the metadata, status and response.
   public func stop(
     _ request: Grpc_Testing_Empty,
@@ -298,6 +336,21 @@ public final class Grpc_Testing_ReconnectServiceClient: GRPCClient, Grpc_Testing
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions
     )
+  }
+}
+
+public final class Grpc_Testing_ReconnectServiceClient: Grpc_Testing_ReconnectServiceClientProtocol {
+  public let channel: GRPCChannel
+  public var defaultCallOptions: CallOptions
+
+  /// Creates a client for the grpc.testing.ReconnectService service.
+  ///
+  /// - Parameters:
+  ///   - channel: `GRPCChannel` to the service host.
+  ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
+  public init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
+    self.channel = channel
+    self.defaultCallOptions = defaultCallOptions
   }
 }
 
@@ -336,45 +389,45 @@ extension Grpc_Testing_TestServiceProvider {
   public func handleMethod(_ methodName: String, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
     switch methodName {
     case "EmptyCall":
-      return UnaryCallHandler(callHandlerContext: callHandlerContext) { context in
+      return CallHandlerFactory.makeUnary(callHandlerContext: callHandlerContext) { context in
         return { request in
           self.emptyCall(request: request, context: context)
         }
       }
 
     case "UnaryCall":
-      return UnaryCallHandler(callHandlerContext: callHandlerContext) { context in
+      return CallHandlerFactory.makeUnary(callHandlerContext: callHandlerContext) { context in
         return { request in
           self.unaryCall(request: request, context: context)
         }
       }
 
     case "CacheableUnaryCall":
-      return UnaryCallHandler(callHandlerContext: callHandlerContext) { context in
+      return CallHandlerFactory.makeUnary(callHandlerContext: callHandlerContext) { context in
         return { request in
           self.cacheableUnaryCall(request: request, context: context)
         }
       }
 
     case "StreamingOutputCall":
-      return ServerStreamingCallHandler(callHandlerContext: callHandlerContext) { context in
+      return CallHandlerFactory.makeServerStreaming(callHandlerContext: callHandlerContext) { context in
         return { request in
           self.streamingOutputCall(request: request, context: context)
         }
       }
 
     case "StreamingInputCall":
-      return ClientStreamingCallHandler(callHandlerContext: callHandlerContext) { context in
+      return CallHandlerFactory.makeClientStreaming(callHandlerContext: callHandlerContext) { context in
         return self.streamingInputCall(context: context)
       }
 
     case "FullDuplexCall":
-      return BidirectionalStreamingCallHandler(callHandlerContext: callHandlerContext) { context in
+      return CallHandlerFactory.makeBidirectionalStreaming(callHandlerContext: callHandlerContext) { context in
         return self.fullDuplexCall(context: context)
       }
 
     case "HalfDuplexCall":
-      return BidirectionalStreamingCallHandler(callHandlerContext: callHandlerContext) { context in
+      return CallHandlerFactory.makeBidirectionalStreaming(callHandlerContext: callHandlerContext) { context in
         return self.halfDuplexCall(context: context)
       }
 
@@ -397,7 +450,7 @@ extension Grpc_Testing_UnimplementedServiceProvider {
   public func handleMethod(_ methodName: String, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
     switch methodName {
     case "UnimplementedCall":
-      return UnaryCallHandler(callHandlerContext: callHandlerContext) { context in
+      return CallHandlerFactory.makeUnary(callHandlerContext: callHandlerContext) { context in
         return { request in
           self.unimplementedCall(request: request, context: context)
         }
@@ -422,14 +475,14 @@ extension Grpc_Testing_ReconnectServiceProvider {
   public func handleMethod(_ methodName: String, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
     switch methodName {
     case "Start":
-      return UnaryCallHandler(callHandlerContext: callHandlerContext) { context in
+      return CallHandlerFactory.makeUnary(callHandlerContext: callHandlerContext) { context in
         return { request in
           self.start(request: request, context: context)
         }
       }
 
     case "Stop":
-      return UnaryCallHandler(callHandlerContext: callHandlerContext) { context in
+      return CallHandlerFactory.makeUnary(callHandlerContext: callHandlerContext) { context in
         return { request in
           self.stop(request: request, context: context)
         }
