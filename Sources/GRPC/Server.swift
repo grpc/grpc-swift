@@ -102,6 +102,7 @@ public final class Server {
         let protocolSwitcher = HTTPProtocolSwitcher(
           errorDelegate: configuration.errorDelegate,
           httpTargetWindowSize: configuration.httpTargetWindowSize,
+          keepAlive: configuration.connectionKeepalive,
           idleTimeout: configuration.connectionIdleTimeout
         ) { channel -> EventLoopFuture<Void> in
           let logger = Logger(subsystem: .serverChannelCall, metadata: [MetadataKey.requestID: "\(UUID())"])
@@ -122,7 +123,7 @@ public final class Server {
           return channel.pipeline.addHandler(protocolSwitcher)
         }
       }
-
+      
       // Enable TCP_NODELAY and SO_REUSEADDR for the accepted Channels
       .childChannelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
       .childChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
@@ -190,6 +191,9 @@ extension Server {
     /// TLS configuration for this connection. `nil` if TLS is not desired.
     public var tls: TLS?
 
+    /// The connection keepalive configuration.
+    public var connectionKeepalive: ServerConnectionKeepalive
+
     /// The amount of time to wait before closing connections. The idle timeout will start only
     /// if there are no RPCs in progress and will be cancelled as soon as any RPCs start.
     public var connectionIdleTimeout: TimeAmount
@@ -214,14 +218,18 @@ extension Server {
     /// - Parameter serviceProviders: An array of `CallHandlerProvider`s which the server should use
     ///     to handle requests.
     /// - Parameter errorDelegate: The error delegate, defaulting to a logging delegate.
-    /// - Parameter tlsConfiguration: TLS configuration, defaulting to `nil`.
+    /// - Parameter tls: TLS configuration, defaulting to `nil`.
+    /// - Parameter connectionKeepalive: The keepalive configuration to use.
+    /// - Parameter connectionIdleTimeout: The amount of time to wait before closing the connection, defaulting to 5 minutes.
     /// - Parameter messageEncoding: Message compression configuration, defaulting to no compression.
+    /// - Parameter httpTargetWindowSize: The HTTP/2 flow control target window size.
     public init(
       target: BindTarget,
       eventLoopGroup: EventLoopGroup,
       serviceProviders: [CallHandlerProvider],
       errorDelegate: ServerErrorDelegate? = LoggingServerErrorDelegate.shared,
       tls: TLS? = nil,
+      connectionKeepalive: ServerConnectionKeepalive = ServerConnectionKeepalive(),
       connectionIdleTimeout: TimeAmount = .minutes(5),
       messageEncoding: ServerMessageEncoding = .disabled,
       httpTargetWindowSize: Int = 65535
@@ -231,6 +239,7 @@ extension Server {
       self.serviceProviders = serviceProviders
       self.errorDelegate = errorDelegate
       self.tls = tls
+      self.connectionKeepalive = connectionKeepalive
       self.connectionIdleTimeout = connectionIdleTimeout
       self.messageEncoding = messageEncoding
       self.httpTargetWindowSize = httpTargetWindowSize

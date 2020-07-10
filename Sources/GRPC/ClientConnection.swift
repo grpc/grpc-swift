@@ -336,6 +336,9 @@ extension ClientConnection {
     /// be `nil`.
     public var connectionBackoff: ConnectionBackoff?
 
+    /// The connection keepalive configuration.
+    public var connectionKeepalive: ClientConnectionKeepalive
+
     /// The amount of time to wait before closing the connection. The idle timeout will start only
     /// if there are no RPCs in progress and will be cancelled as soon as any RPCs start.
     ///
@@ -365,12 +368,13 @@ extension ClientConnection {
     /// - Parameter connectivityStateDelegate: A connectivity state delegate, defaulting to `nil`.
     /// - Parameter connectivityStateDelegateQueue: A `DispatchQueue` on which to call the
     ///     `connectivityStateDelegate`.
-    /// - Parameter tlsConfiguration: TLS configuration, defaulting to `nil`.
+    /// - Parameter tls: TLS configuration, defaulting to `nil`.
     /// - Parameter connectionBackoff: The connection backoff configuration to use.
+    /// - Parameter connectionKeepalive: The keepalive configuration to use.
+    /// - Parameter connectionIdleTimeout: The amount of time to wait before closing the connection, defaulting to 5 minutes.
     /// - Parameter callStartBehavior: The behavior used to determine when a call should start in
     ///     relation to its underlying connection. Defaults to `waitsForConnectivity`.
-    /// - Parameter messageEncoding: Message compression configuration, defaults to no compression.
-    /// - Parameter targetWindowSize: The HTTP/2 flow control target window size.
+    /// - Parameter httpTargetWindowSize: The HTTP/2 flow control target window size.
     public init(
       target: ConnectionTarget,
       eventLoopGroup: EventLoopGroup,
@@ -379,6 +383,7 @@ extension ClientConnection {
       connectivityStateDelegateQueue: DispatchQueue? = nil,
       tls: Configuration.TLS? = nil,
       connectionBackoff: ConnectionBackoff? = ConnectionBackoff(),
+      connectionKeepalive: ClientConnectionKeepalive = ClientConnectionKeepalive(),
       connectionIdleTimeout: TimeAmount = .minutes(5),
       callStartBehavior: CallStartBehavior = .waitsForConnectivity,
       httpTargetWindowSize: Int = 65535
@@ -390,6 +395,7 @@ extension ClientConnection {
       self.connectivityStateDelegateQueue = connectivityStateDelegateQueue
       self.tls = tls
       self.connectionBackoff = connectionBackoff
+      self.connectionKeepalive = connectionKeepalive
       self.connectionIdleTimeout = connectionIdleTimeout
       self.callStartBehavior = callStartBehavior
       self.httpTargetWindowSize = httpTargetWindowSize
@@ -449,6 +455,7 @@ extension Channel {
     tlsConfiguration: TLSConfiguration?,
     tlsServerHostname: String?,
     connectionManager: ConnectionManager,
+    connectionKeepalive: ClientConnectionKeepalive,
     connectionIdleTimeout: TimeAmount,
     errorDelegate: ClientErrorDelegate?,
     logger: Logger
@@ -461,8 +468,9 @@ extension Channel {
       self.configureHTTP2Pipeline(mode: .client, targetWindowSize: httpTargetWindowSize)
     }.flatMap { _ in
       return self.pipeline.handler(type: NIOHTTP2Handler.self).flatMap { http2Handler in
-        self.pipeline.addHandler(
-          GRPCIdleHandler(mode: .client(connectionManager), idleTimeout: connectionIdleTimeout),
+        self.pipeline.addHandlers([
+          GRPCClientKeepaliveHandler(configuration: connectionKeepalive),
+          GRPCIdleHandler(mode: .client(connectionManager), idleTimeout: connectionIdleTimeout)],
           position: .after(http2Handler)
         )
       }.flatMap {

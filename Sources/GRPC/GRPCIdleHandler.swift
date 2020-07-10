@@ -72,6 +72,9 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
         if self.activeStreams == 0 {
           self.scheduleIdleTimeout(context: context)
         }
+      } else if event is ConnectionIdledEvent {
+        // Force idle (closing) because we received a `ConnectionIdledEvent` from a keepalive handler
+        self.idle(context: context, force: true)
       }
 
     case .closed:
@@ -169,9 +172,10 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
     }
   }
 
-  private func idle(context: ChannelHandlerContext) {
-    // Don't idle if there are active streams.
-    guard self.activeStreams == 0 else {
+  private func idle(context: ChannelHandlerContext, force: Bool = false) {
+    // Don't idle if there are active streams unless we manually request
+    // example: keepalive handler sends a `ConnectionIdledEvent` event
+    guard self.activeStreams == 0 || force else {
       return
     }
 
