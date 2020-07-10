@@ -24,10 +24,7 @@ import Logging
 /// - The observer block is implemented by the framework user and returns a future containing the call result.
 /// - To return a response to the client, the framework user should complete that future
 ///   (similar to e.g. serving regular HTTP requests in frameworks such as Vapor).
-public final class UnaryCallHandler<
-  RequestPayload: GRPCPayload,
-  ResponsePayload: GRPCPayload
->: _BaseCallHandler<RequestPayload, ResponsePayload> {
+public final class UnaryCallHandler<RequestPayload, ResponsePayload>: _BaseCallHandler<RequestPayload, ResponsePayload> {
   public typealias EventObserver = (RequestPayload) -> EventLoopFuture<ResponsePayload>
   private var eventObserver: EventObserver?
   private var callContext: UnaryResponseCallContext<ResponsePayload>?
@@ -36,9 +33,13 @@ public final class UnaryCallHandler<
   public init(
     callHandlerContext: CallHandlerContext,
     eventObserverFactory: @escaping (UnaryResponseCallContext<ResponsePayload>) -> EventObserver
-  ) {
+  ) where RequestPayload: SwiftProtobuf.Message, ResponsePayload: SwiftProtobuf.Message {
     self.eventObserverFactory = eventObserverFactory
-    super.init(callHandlerContext: callHandlerContext)
+    super.init(
+      protobufRequest: RequestPayload.self,
+      protobufResponse: ResponsePayload.self,
+      callHandlerContext: callHandlerContext
+    )
   }
 
   internal override func processHead(_ head: HTTPRequestHead, context: ChannelHandlerContext) {

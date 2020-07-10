@@ -25,10 +25,7 @@ import Logging
 ///   If the framework user wants to return a call error (e.g. in case of authentication failure),
 ///   they can fail the observer block future.
 /// - To close the call and send the status, complete `context.statusPromise`.
-public class BidirectionalStreamingCallHandler<
-  RequestPayload: GRPCPayload,
-  ResponsePayload: GRPCPayload
->: _BaseCallHandler<RequestPayload, ResponsePayload> {
+public class BidirectionalStreamingCallHandler<RequestPayload, ResponsePayload>: _BaseCallHandler<RequestPayload, ResponsePayload> {
   public typealias Context = StreamingResponseCallContext<ResponsePayload>
   public typealias EventObserver = (StreamEvent<RequestPayload>) -> Void
   public typealias EventObserverFactory = (Context) -> EventLoopFuture<EventObserver>
@@ -42,12 +39,16 @@ public class BidirectionalStreamingCallHandler<
   public init(
     callHandlerContext: CallHandlerContext,
     eventObserverFactory: @escaping (StreamingResponseCallContext<ResponsePayload>) -> EventLoopFuture<EventObserver>
-  ) {
+  ) where RequestPayload: SwiftProtobuf.Message, ResponsePayload: SwiftProtobuf.Message {
     // Delay the creation of the event observer until we actually get a request head, otherwise it
     // would be possible for the observer to write into the pipeline (by completing the status
     // promise) before the pipeline is configured.
     self.eventObserverFactory = eventObserverFactory
-    super.init(callHandlerContext: callHandlerContext)
+    super.init(
+      protobufRequest: RequestPayload.self,
+      protobufResponse: ResponsePayload.self,
+      callHandlerContext: callHandlerContext
+    )
   }
 
   internal override func processHead(_ head: HTTPRequestHead, context: ChannelHandlerContext) {

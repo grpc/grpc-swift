@@ -23,10 +23,7 @@ import Logging
 ///
 /// - The observer block is implemented by the framework user and calls `context.sendResponse` as needed.
 /// - To close the call and send the status, complete the status future returned by the observer block.
-public final class ServerStreamingCallHandler<
-  RequestPayload: GRPCPayload,
-  ResponsePayload: GRPCPayload
->: _BaseCallHandler<RequestPayload, ResponsePayload> {
+public final class ServerStreamingCallHandler<RequestPayload, ResponsePayload>: _BaseCallHandler<RequestPayload, ResponsePayload> {
   public typealias EventObserver = (RequestPayload) -> EventLoopFuture<GRPCStatus>
 
   private var eventObserver: EventObserver?
@@ -36,12 +33,16 @@ public final class ServerStreamingCallHandler<
   public init(
     callHandlerContext: CallHandlerContext,
     eventObserverFactory: @escaping (StreamingResponseCallContext<ResponsePayload>) -> EventObserver
-  ) {
+  ) where RequestPayload: SwiftProtobuf.Message, ResponsePayload: SwiftProtobuf.Message {
     // Delay the creation of the event observer until we actually get a request head, otherwise it
     // would be possible for the observer to write into the pipeline (by completing the status
     // promise) before the pipeline is configured.
     self.eventObserverFactory = eventObserverFactory
-    super.init(callHandlerContext: callHandlerContext)
+    super.init(
+      protobufRequest: RequestPayload.self,
+      protobufResponse: ResponsePayload.self,
+      callHandlerContext: callHandlerContext
+    )
   }
 
   override internal func processHead(_ head: HTTPRequestHead, context: ChannelHandlerContext) {

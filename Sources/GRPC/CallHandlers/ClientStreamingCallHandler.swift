@@ -25,10 +25,7 @@ import Logging
 ///   If the framework user wants to return a call error (e.g. in case of authentication failure),
 ///   they can fail the observer block future.
 /// - To close the call and send the response, complete `context.responsePromise`.
-public final class ClientStreamingCallHandler<
-  RequestPayload: GRPCPayload,
-  ResponsePayload: GRPCPayload
->: _BaseCallHandler<RequestPayload, ResponsePayload> {
+public final class ClientStreamingCallHandler<RequestPayload, ResponsePayload>: _BaseCallHandler<RequestPayload, ResponsePayload> {
   public typealias Context = UnaryResponseCallContext<ResponsePayload>
   public typealias EventObserver = (StreamEvent<RequestPayload>) -> Void
   public typealias EventObserverFactory = (Context) -> EventLoopFuture<EventObserver>
@@ -39,9 +36,16 @@ public final class ClientStreamingCallHandler<
 
   // We ask for a future of type `EventObserver` to allow the framework user to e.g. asynchronously authenticate a call.
   // If authentication fails, they can simply fail the observer future, which causes the call to be terminated.
-  public init(callHandlerContext: CallHandlerContext, eventObserverFactory: @escaping EventObserverFactory) {
+  public init(
+    callHandlerContext: CallHandlerContext,
+    eventObserverFactory: @escaping EventObserverFactory
+  ) where RequestPayload: SwiftProtobuf.Message, ResponsePayload: SwiftProtobuf.Message {
     self.eventObserverFactory = eventObserverFactory
-    super.init(callHandlerContext: callHandlerContext)
+    super.init(
+      protobufRequest: RequestPayload.self,
+      protobufResponse: ResponsePayload.self,
+      callHandlerContext: callHandlerContext
+    )
   }
 
   internal override func processHead(_ head: HTTPRequestHead, context: ChannelHandlerContext) {
