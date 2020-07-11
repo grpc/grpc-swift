@@ -19,6 +19,7 @@ import Foundation
 
 let package = Package(
   name: "grpc-swift",
+  platforms: [.iOS("13.5")],
   products: [
     .library(name: "GRPC", targets: ["GRPC"]),
     .library(name: "CGRPCZlib", targets: ["CGRPCZlib"]),
