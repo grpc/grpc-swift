@@ -24,7 +24,7 @@ import Logging
 ///
 /// - Important: This is **NOT** part of the public API. It is declared as
 ///   `public` because it is used within performance tests.
-public enum _GRPCClientRequestPart<Request: GRPCPayload> {
+public enum _GRPCClientRequestPart<Request> {
   /// The 'head' of the request, that is, information about the initiation of the RPC.
   case head(_GRPCRequestHead)
 
@@ -34,6 +34,29 @@ public enum _GRPCClientRequestPart<Request: GRPCPayload> {
   /// Indicates that the client does not intend to send any further messages.
   case end
 }
+
+/// As `_GRPCClientRequestPart` but messages are serialized.
+public typealias _RawGRPCClientRequestPart = _GRPCClientRequestPart<ByteBuffer>
+
+/// A gRPC client response message part.
+///
+/// - Important: This is **NOT** part of the public API.
+public enum _GRPCClientResponsePart<Response> {
+  /// Metadata received as the server acknowledges the RPC.
+  case initialMetadata(HPACKHeaders)
+
+  /// A deserialized response message received from the server.
+  case message(_MessageContext<Response>)
+
+  /// The metadata received at the end of the RPC.
+  case trailingMetadata(HPACKHeaders)
+
+  /// The final status of the RPC.
+  case status(GRPCStatus)
+}
+
+/// As `_GRPCClientResponsePart` but messages are serialized.
+public typealias _RawGRPCClientResponsePart = _GRPCClientResponsePart<ByteBuffer>
 
 /// - Important: This is **NOT** part of the public API. It is declared as
 ///   `public` because it is used within performance tests.
@@ -196,23 +219,6 @@ extension _GRPCRequestHead {
   }
 }
 
-/// A gRPC client response message part.
-///
-/// - Important: This is **NOT** part of the public API.
-public enum _GRPCClientResponsePart<Response: GRPCPayload> {
-  /// Metadata received as the server acknowledges the RPC.
-  case initialMetadata(HPACKHeaders)
-
-  /// A deserialized response message received from the server.
-  case message(_MessageContext<Response>)
-
-  /// The metadata received at the end of the RPC.
-  case trailingMetadata(HPACKHeaders)
-
-  /// The final status of the RPC.
-  case status(GRPCStatus)
-}
-
 /// The type of gRPC call.
 public enum GRPCCallType {
   /// Unary: a single request and a single response.
@@ -256,10 +262,10 @@ public enum GRPCCallType {
 ///
 /// - Important: This is **NOT** part of the public API. It is declared as
 ///   `public` because it is used within performance tests.
-public final class _GRPCClientChannelHandler<Request: GRPCPayload, Response: GRPCPayload> {
+public final class _GRPCClientChannelHandler {
   private let logger: Logger
   private let streamID: HTTP2StreamID
-  private var stateMachine: GRPCClientStateMachine<Request, Response>
+  private var stateMachine: GRPCClientStateMachine
 
   /// Creates a new gRPC channel handler for clients to translate HTTP/2 frames to gRPC messages.
   ///
@@ -287,7 +293,7 @@ public final class _GRPCClientChannelHandler<Request: GRPCPayload, Response: GRP
 // MARK: - GRPCClientChannelHandler: Inbound
 extension _GRPCClientChannelHandler: ChannelInboundHandler {
   public typealias InboundIn = HTTP2Frame
-  public typealias InboundOut = _GRPCClientResponsePart<Response>
+  public typealias InboundOut = _RawGRPCClientResponsePart
 
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     let frame = self.unwrapInboundIn(data)
@@ -426,7 +432,7 @@ extension _GRPCClientChannelHandler: ChannelInboundHandler {
 
 // MARK: - GRPCClientChannelHandler: Outbound
 extension _GRPCClientChannelHandler: ChannelOutboundHandler {
-  public typealias OutboundIn = _GRPCClientRequestPart<Request>
+  public typealias OutboundIn = _RawGRPCClientRequestPart
   public typealias OutboundOut = HTTP2Frame
 
   public func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {

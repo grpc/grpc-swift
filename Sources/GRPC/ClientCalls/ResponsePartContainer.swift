@@ -17,7 +17,7 @@ import NIO
 import NIOHPACK
 
 /// A container for RPC response parts.
-internal struct ResponsePartContainer<Response: GRPCPayload> {
+internal struct ResponsePartContainer<Response> {
   /// The type of handler for response message part.
   enum ResponseHandler {
     case unary(EventLoopPromise<Response>)

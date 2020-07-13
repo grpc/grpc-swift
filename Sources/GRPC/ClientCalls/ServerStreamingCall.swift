@@ -20,10 +20,7 @@ import Logging
 
 /// A server-streaming gRPC call. The request is sent on initialization, each response is passed to
 /// the provided observer block.
-public final class ServerStreamingCall<
-  RequestPayload: GRPCPayload,
-  ResponsePayload: GRPCPayload
->: ClientCall {
+public final class ServerStreamingCall<RequestPayload, ResponsePayload>: ClientCall {
   private let transport: ChannelTransport<RequestPayload, ResponsePayload>
 
   /// The options used to make the RPC.
@@ -93,16 +90,20 @@ public final class ServerStreamingCall<
 }
 
 extension ServerStreamingCall {
-  internal static func makeOnHTTP2Stream(
+  internal static func makeOnHTTP2Stream<S: MessageSerializer, D: MessageDeserializer>(
     multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
+    serializer: S,
+    deserializer: D,
     callOptions: CallOptions,
     errorDelegate: ClientErrorDelegate?,
     logger: Logger,
     responseHandler: @escaping (ResponsePayload) -> Void
-  ) -> ServerStreamingCall<RequestPayload, ResponsePayload> {
+  ) -> ServerStreamingCall<RequestPayload, ResponsePayload> where S.Input == RequestPayload, D.Output == ResponsePayload {
     let eventLoop = multiplexer.eventLoop
     let transport = ChannelTransport<RequestPayload, ResponsePayload>(
       multiplexer: multiplexer,
+      serializer: serializer,
+      deserializer: deserializer,
       responseContainer: .init(eventLoop: eventLoop, streamingResponseHandler: responseHandler),
       callType: .serverStreaming,
       timeLimit: callOptions.timeLimit,
@@ -113,12 +114,14 @@ extension ServerStreamingCall {
     return ServerStreamingCall(transport: transport, options: callOptions)
   }
 
-  internal static func make(
+  internal static func make<S: MessageSerializer, D: MessageDeserializer>(
+    serializer: S,
+    deserializer: D,
     fakeResponse: FakeStreamingResponse<RequestPayload, ResponsePayload>?,
     callOptions: CallOptions,
     logger: Logger,
     responseHandler: @escaping (ResponsePayload) -> Void
-  ) -> ServerStreamingCall<RequestPayload, ResponsePayload> {
+  ) -> ServerStreamingCall<RequestPayload, ResponsePayload> where S.Input == RequestPayload, D.Output == ResponsePayload {
     let eventLoop = fakeResponse?.channel.eventLoop ?? EmbeddedEventLoop()
     let responseContainer = ResponsePartContainer(eventLoop: eventLoop, streamingResponseHandler: responseHandler)
 

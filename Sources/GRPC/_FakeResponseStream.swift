@@ -16,7 +16,7 @@
 import NIO
 import NIOHPACK
 
-public enum FakeRequestPart<Request: GRPCPayload> {
+public enum FakeRequestPart<Request> {
   case metadata(HPACKHeaders)
   case message(Request)
   case end
@@ -39,7 +39,7 @@ public struct FakeResponseProtocolViolation: Error, Hashable {
 ///
 /// Users may not interact with this class directly but may do so via one of its subclasses
 /// `FakeUnaryResponse` and `FakeStreamingResponse`.
-public class _FakeResponseStream<Request: GRPCPayload, Response: GRPCPayload> {
+public class _FakeResponseStream<Request, Response> {
   private enum StreamEvent {
     case responsePart(_GRPCClientResponsePart<Response>)
     case error(Error)
@@ -234,7 +234,7 @@ public class _FakeResponseStream<Request: GRPCPayload, Response: GRPCPayload> {
 ///
 /// `sendError` may be used to terminate an RPC without providing a response. As for `sendMessage`,
 /// the `trailingMetadata` defaults to being empty.
-public class FakeUnaryResponse<Request: GRPCPayload, Response: GRPCPayload>: _FakeResponseStream<Request, Response> {
+public class FakeUnaryResponse<Request, Response>: _FakeResponseStream<Request, Response> {
   public override init(requestHandler: @escaping (FakeRequestPart<Request>) -> () = { _ in }) {
     super.init(requestHandler: requestHandler)
   }
@@ -297,7 +297,7 @@ public class FakeUnaryResponse<Request: GRPCPayload, Response: GRPCPayload>: _Fa
 ///
 /// `sendError` may be called at any time to indicate an error on the response stream.
 /// Like `sendEnd`, `trailingMetadata` is empty by default.
-public class FakeStreamingResponse<Request: GRPCPayload, Response: GRPCPayload>: _FakeResponseStream<Request, Response> {
+public class FakeStreamingResponse<Request, Response>: _FakeResponseStream<Request, Response> {
   public override init(requestHandler: @escaping (FakeRequestPart<Request>) -> () = { _ in }) {
     super.init(requestHandler: requestHandler)
   }

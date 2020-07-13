@@ -29,7 +29,7 @@ class GRPCStatusCodeTests: GRPCTestCase {
   override func setUp() {
     super.setUp()
 
-    let handler = _GRPCClientChannelHandler<Echo_EchoRequest, Echo_EchoResponse>(
+    let handler = _GRPCClientChannelHandler(
       streamID: .init(1),
       callType: .unary,
       logger: self.logger
@@ -53,7 +53,7 @@ class GRPCStatusCodeTests: GRPCTestCase {
       customMetadata: [:],
       encoding: .disabled
     )
-    let clientRequestHead: _GRPCClientRequestPart<Echo_EchoRequest> = .head(requestHead)
+    let clientRequestHead: _RawGRPCClientRequestPart = .head(requestHead)
     XCTAssertNoThrow(try self.channel.writeOutbound(clientRequestHead))
   }
 

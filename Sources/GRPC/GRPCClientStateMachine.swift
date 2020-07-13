@@ -66,7 +66,7 @@ enum SendEndOfRequestStreamError: Error {
 /// A state machine for a single gRPC call from the perspective of a client.
 ///
 /// See: https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md
-struct GRPCClientStateMachine<Request: GRPCPayload, Response: GRPCPayload> {
+struct GRPCClientStateMachine {
   /// The combined state of the request (client) and response (server) streams for an RPC call.
   ///
   /// The following states are not possible:
@@ -210,11 +210,12 @@ struct GRPCClientStateMachine<Request: GRPCPayload, Response: GRPCPayload> {
   /// Sending a message when both peers are idle (in the `.clientIdleServerIdle` state) will result
   /// in a `.invalidState` error.
   ///
-  /// - Parameter message: The `Request` to send to the server.
+  /// - Parameter message: The serialized request to send to the server.
+  /// - Parameter compressed: Whether the request should be compressed.
   /// - Parameter allocator: A `ByteBufferAllocator` to allocate the buffer into which the encoded
   ///     request will be written.
   mutating func sendRequest(
-    _ message: Request,
+    _ message: ByteBuffer,
     compressed: Bool,
     allocator: ByteBufferAllocator
   ) -> Result<ByteBuffer, MessageWriteError> {
@@ -295,7 +296,7 @@ struct GRPCClientStateMachine<Request: GRPCPayload, Response: GRPCPayload> {
   /// - Parameter buffer: A buffer of bytes received from the server.
   mutating func receiveResponseBuffer(
     _ buffer: inout ByteBuffer
-  ) -> Result<[Response], MessageReadError> {
+  ) -> Result<[ByteBuffer], MessageReadError> {
     return self.state.receiveResponseBuffer(&buffer)
   }
 
@@ -361,7 +362,7 @@ extension GRPCClientStateMachine.State {
 
   /// See `GRPCClientStateMachine.sendRequest(_:allocator:)`.
   mutating func sendRequest(
-    _ message: Request,
+    _ message: ByteBuffer,
     compressed: Bool,
     allocator: ByteBufferAllocator
   ) -> Result<ByteBuffer, MessageWriteError> {
@@ -443,8 +444,8 @@ extension GRPCClientStateMachine.State {
   /// See `GRPCClientStateMachine.receiveResponseBuffer(_:)`.
   mutating func receiveResponseBuffer(
     _ buffer: inout ByteBuffer
-  ) -> Result<[Response], MessageReadError> {
-    let result: Result<[Response], MessageReadError>
+  ) -> Result<[ByteBuffer], MessageReadError> {
+    let result: Result<[ByteBuffer], MessageReadError>
 
     switch self {
     case .clientClosedServerActive(var readState):

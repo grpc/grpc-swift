@@ -19,7 +19,7 @@ import NIO
 /// all writes will be failed.
 ///
 /// This handler is intended for use with 'fake' response streams the 'FakeChannel'.
-internal final class WriteCapturingHandler<Request: GRPCPayload>: ChannelOutboundHandler {
+internal final class WriteCapturingHandler<Request>: ChannelOutboundHandler {
   typealias OutboundIn = _GRPCClientRequestPart<Request>
   typealias RequestHandler = (FakeRequestPart<Request>) -> ()
 

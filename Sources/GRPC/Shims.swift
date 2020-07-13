@@ -330,3 +330,6 @@ extension BidirectionalStreamingCallHandler {
     fatalError("Unimplemented: please regenerate your code.")
   }
 }
+
+@available(*, deprecated, message: "This protocol is longer required. Please regenerate your code.")
+public protocol GRPCProtobufPayload {}

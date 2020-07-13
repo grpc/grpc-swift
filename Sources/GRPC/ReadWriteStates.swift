@@ -59,7 +59,7 @@ enum WriteState {
   /// - Parameter allocator: An allocator to provide a `ByteBuffer` into which the message will be
   ///     written.
   mutating func write(
-    _ message: GRPCPayload,
+    _ message: ByteBuffer,
     compressed: Bool,
     allocator: ByteBufferAllocator
   ) -> Result<ByteBuffer, MessageWriteError> {
@@ -68,10 +68,10 @@ enum WriteState {
       return .failure(.cardinalityViolation)
 
     case let .writing(writeArity, contentType, writer):
-      // Zero is fine: the writer will allocate the correct amount of space.
-      var buffer = allocator.buffer(capacity: 0)
+      let buffer: ByteBuffer
+      
       do {
-        try writer.write(message, into: &buffer, compressed: compressed)
+        buffer = try writer.write(buffer: message, allocator: allocator, compressed: compressed)
       } catch {
         self = .notWriting
         return .failure(.serializationFailed)
@@ -134,29 +134,24 @@ enum ReadState {
   /// more messages to be read.
   case notReading
 
-  /// Consume the given `buffer` then attempt to read and subsequently decode length-prefixed
-  /// serialized messages.
+  /// Consume the given `buffer` then attempt to read length-prefixed serialized messages.
   ///
   /// For an expected message count of `.one`, this function will produce **at most** 1 message. If
   /// a message has been produced then subsequent calls will result in an error.
   ///
   /// - Parameter buffer: The buffer to read from.
-  mutating func readMessages<MessageType: GRPCPayload>(
-    _ buffer: inout ByteBuffer,
-    as: MessageType.Type = MessageType.self
-  ) -> Result<[MessageType], MessageReadError> {
+  mutating func readMessages(_ buffer: inout ByteBuffer) -> Result<[ByteBuffer], MessageReadError> {
     switch self {
     case .notReading:
       return .failure(.cardinalityViolation)
 
     case .reading(let readArity, var reader):
       reader.append(buffer: &buffer)
-      var messages: [MessageType] = []
+      var messages: [ByteBuffer] = []
 
       do {
-        while var serializedBytes = try reader.nextMessage() {
-          // Force unwrapping is okay here: we will always be able to read `readableBytes`.
-          messages.append(try MessageType(serializedByteBuffer: &serializedBytes))
+        while let serializedBytes = try reader.nextMessage() {
+          messages.append(serializedBytes)
         }
       } catch {
         self = .notReading
