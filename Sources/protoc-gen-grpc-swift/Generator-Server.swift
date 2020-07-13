@@ -62,10 +62,10 @@ extension Generator {
       indent()
       let callHandlerType: String
       switch streamingType(method) {
-        case .unary: callHandlerType = "UnaryCallHandler"
-        case .serverStreaming: callHandlerType = "ServerStreamingCallHandler"
-        case .clientStreaming: callHandlerType = "ClientStreamingCallHandler"
-        case .bidirectionalStreaming: callHandlerType = "BidirectionalStreamingCallHandler"
+        case .unary: callHandlerType = "CallHandlerFactory.makeUnary"
+        case .serverStreaming: callHandlerType = "CallHandlerFactory.makeServerStreaming"
+        case .clientStreaming: callHandlerType = "CallHandlerFactory.makeClientStreaming"
+        case .bidirectionalStreaming: callHandlerType = "CallHandlerFactory.makeBidirectionalStreaming"
       }
       println("return \(callHandlerType)(callHandlerContext: callHandlerContext) { context in")
       indent()

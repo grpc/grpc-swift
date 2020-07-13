@@ -41,6 +41,73 @@ internal struct LengthPrefixedMessageWriter {
     }
   }
 
+  private func compress(
+    buffer: ByteBuffer,
+    into output: inout ByteBuffer,
+    using compressor: Zlib.Deflate
+  ) throws {
+    let save = output
+
+    // Set the compression byte.
+    output.writeInteger(UInt8(1))
+
+    // Leave a gap for the length, we'll set it in a moment.
+    let payloadSizeIndex = output.writerIndex
+    output.moveWriterIndex(forwardBy: MemoryLayout<UInt32>.size)
+
+    // Compress the message. We know that we need to drop the first 5 bytes, and we know that these
+    // bytes must exist.
+    var buffer = buffer
+    buffer.moveReaderIndex(forwardBy: 5)
+
+    let bytesWritten: Int
+    
+    do {
+      bytesWritten = try compressor.deflate(&buffer, into: &output)
+    } catch {
+      output = save
+      throw error
+    }
+
+    // Now fill in the message length.
+    output.writePayloadLength(UInt32(bytesWritten), at: payloadSizeIndex)
+
+    // Finally, the compression context should be reset between messages.
+    compressor.reset()
+  }
+
+  func write(buffer: ByteBuffer, into output: inout ByteBuffer, compressed: Bool = true) throws {
+    // We expect the message to be prefixed with the compression flag and length. Let's double check.
+    assert(buffer.readableBytes >= 5, "Buffer does not contain the 5-byte head (compression byte and length)")
+    assert(buffer.getInteger(at: buffer.readerIndex, as: UInt8.self) == 0, "Compression byte was unexpectedly non-zero")
+    assert(Int(buffer.getInteger(at: buffer.readerIndex + 1, as: UInt32.self)!) + 5 == buffer.readableBytes, "Incorrect message length")
+
+    if compressed, let compressor = self.compressor {
+      try self.compress(buffer: buffer, into: &output, using: compressor)
+    } else {
+      // A straight copy.
+      var buffer = buffer
+      output.writeBuffer(&buffer)
+    }
+  }
+
+  func write(buffer: ByteBuffer, allocator: ByteBufferAllocator, compressed: Bool = true) throws -> ByteBuffer {
+    // We expect the message to be prefixed with the compression flag and length. Let's double check.
+    assert(buffer.readableBytes >= 5, "Buffer does not contain the 5-byte preamble (compression byte and length)")
+    assert(buffer.getInteger(at: buffer.readerIndex, as: UInt8.self) == 0, "Compression byte was unexpectedly non-zero")
+    assert(Int(buffer.getInteger(at: buffer.readerIndex + 1, as: UInt32.self)!) + 5 == buffer.readableBytes, "Incorrect message length")
+
+    if compressed, let compressor = self.compressor {
+      // Darn, we need another buffer. We'll assume it'll need to at least the size of the input buffer.
+      var compressed = allocator.buffer(capacity: buffer.readableBytes)
+      try self.compress(buffer: buffer, into: &compressed, using: compressor)
+      return compressed
+    } else {
+      // We're not using compression and our preamble is already in place; easy!
+      return buffer
+    }
+  }
+
   /// Writes the data into a `ByteBuffer` as a gRPC length-prefixed message.
   ///
   /// - Parameters:

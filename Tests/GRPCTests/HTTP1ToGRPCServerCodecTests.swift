@@ -22,13 +22,12 @@ import EchoModel
 import EchoImplementation
 import Logging
 
-
 class HTTP1ToGRPCServerCodecTests: GRPCTestCase {
   var channel: EmbeddedChannel!
 
   override func setUp() {
     super.setUp()
-    let handler = HTTP1ToGRPCServerCodec<Echo_EchoRequest, Echo_EchoResponse>(encoding: .disabled, logger: self.logger)
+    let handler = HTTP1ToGRPCServerCodec(encoding: .disabled, logger: self.logger)
     self.channel = EmbeddedChannel(handler: handler)
   }
 
@@ -45,22 +44,9 @@ class HTTP1ToGRPCServerCodecTests: GRPCTestCase {
     )
   }
 
-  func testDeserializationErrorOnInvalidMessageBytes() throws {
-    XCTAssertNoThrow(try self.channel.writeInbound(HTTPServerRequestPart.head(self.makeRequestHead())))
-    var buffer = self.channel.allocator.buffer(capacity: 0)
-    buffer.writeInteger(UInt8(0))  // not compressed
-    buffer.writeInteger(UInt32(3)) // message is 3 bytes
-    buffer.writeBytes([42, 42, 42])
-    XCTAssertThrowsError(try self.channel.writeInbound(HTTPServerRequestPart.body(buffer))) { error in
-      let withContext = error as? GRPCError.WithContext
-      XCTAssertTrue(withContext?.error is GRPCError.DeserializationFailure)
-      XCTAssertEqual(withContext?.error.makeGRPCStatus().code, .internalError)
-    }
-  }
-
   func testSingleMessageFromMultipleBodyParts() throws {
     XCTAssertNoThrow(try self.channel.writeInbound(HTTPServerRequestPart.head(self.makeRequestHead())))
-    let requestPart = try self.channel.readInbound(as: _GRPCServerRequestPart<Echo_EchoRequest>.self)
+    let requestPart = try self.channel.readInbound(as: _RawGRPCServerRequestPart.self)
 
     switch requestPart {
     case .some(.head):
@@ -89,10 +75,10 @@ class HTTP1ToGRPCServerCodecTests: GRPCTestCase {
     secondBuffer.writeBytes(secondChunk)
     XCTAssertNoThrow(try self.channel.writeInbound(HTTPServerRequestPart.body(secondBuffer)))
 
-    let messagePart = try self.channel.readInbound(as: _GRPCServerRequestPart<Echo_EchoRequest>.self)
+    let messagePart = try self.channel.readInbound(as: _RawGRPCServerRequestPart.self)
     switch messagePart {
-    case .some(.message(let actual)):
-      XCTAssertEqual(message, actual)
+    case .some(.message(var buffer)):
+      XCTAssertEqual(data, buffer.readData(length: buffer.readableBytes)!)
     default:
       XCTFail("Unexpected request part: \(String(describing: requestPart))")
     }
@@ -100,7 +86,7 @@ class HTTP1ToGRPCServerCodecTests: GRPCTestCase {
 
   func testMultipleMessagesFromSingleBodyPart() throws {
     XCTAssertNoThrow(try self.channel.writeInbound(HTTPServerRequestPart.head(self.makeRequestHead())))
-    let requestPart = try self.channel.readInbound(as: _GRPCServerRequestPart<Echo_EchoRequest>.self)
+    let requestPart = try self.channel.readInbound(as: _RawGRPCServerRequestPart.self)
 
     switch requestPart {
     case .some(.head):
@@ -111,12 +97,13 @@ class HTTP1ToGRPCServerCodecTests: GRPCTestCase {
 
     // Write three messages into a single body.
     var buffer = self.channel.allocator.buffer(capacity: 0)
-    let messages = ["foo", "bar", "baz"].map { text in
+    let serializedMessages: [Data] = try ["foo", "bar", "baz"].map { text in
       Echo_EchoRequest.with { $0.text = text }
+    }.map { request in
+      try request.serializedData()
     }
 
-    for message in messages {
-      let data = try message.serializedData()
+    for data in serializedMessages {
       buffer.writeInteger(UInt8(0))
       buffer.writeInteger(UInt32(data.count))
       buffer.writeBytes(data)
@@ -124,11 +111,11 @@ class HTTP1ToGRPCServerCodecTests: GRPCTestCase {
 
     XCTAssertNoThrow(try self.channel.writeInbound(HTTPServerRequestPart.body(buffer)))
 
-    for message in messages {
-      let requestPart = try self.channel.readInbound(as: _GRPCServerRequestPart<Echo_EchoRequest>.self)
+    for message in serializedMessages {
+      let requestPart = try self.channel.readInbound(as: _RawGRPCServerRequestPart.self)
       switch requestPart {
-      case .some(.message(let actual)):
-        XCTAssertEqual(message, actual)
+      case .some(.message(var buffer)):
+        XCTAssertEqual(message, buffer.readData(length: buffer.readableBytes)!)
       default:
         XCTFail("Unexpected request part: \(String(describing: requestPart))")
       }

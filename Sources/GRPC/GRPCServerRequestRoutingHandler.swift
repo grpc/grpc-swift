@@ -21,7 +21,7 @@ import Logging
 
 /// Processes individual gRPC messages and stream-close events on an HTTP2 channel.
 public protocol GRPCCallHandler: ChannelHandler {
-  func makeGRPCServerCodec() -> ChannelHandler
+  var _codec: ChannelHandler { get }
 }
 
 /// Provides `GRPCCallHandler` objects for the methods on a particular service name.
@@ -178,8 +178,9 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
       self.state = .configuring([requestPart])
 
       // Configure the rest of the pipeline to serve the RPC.
-      let codec = callHandler.makeGRPCServerCodec()
-      context.pipeline.addHandlers([codec, callHandler], position: .after(self)).whenSuccess {
+      let httpToGRPC = HTTP1ToGRPCServerCodec(encoding: self.encoding, logger: self.logger)
+      let codec = callHandler._codec
+      context.pipeline.addHandlers([httpToGRPC, codec, callHandler], position: .after(self)).whenSuccess {
         context.pipeline.removeHandler(self, promise: nil)
       }
 

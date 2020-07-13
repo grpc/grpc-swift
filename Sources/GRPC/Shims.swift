@@ -16,6 +16,7 @@
 import NIO
 import NIOSSL
 import NIOHPACK
+import SwiftProtobuf
 
 // This file contains shims to notify users of API changes between v1.0.0-alpha.1 and v1.0.0.
 
@@ -287,4 +288,45 @@ public struct GRPCTimeoutError: Error, Equatable, CustomStringConvertible {
   /// The number of digits in the timeout amount is more than 8-digits and cannot be encoded in
   /// the gRPC wire-format.
   public static let tooManyDigits = GRPCTimeoutError(.tooManyDigits)
+}
+
+
+extension UnaryCallHandler {
+  @available(*, unavailable, message: "Please regenerate your code or use 'CallHandler.makeUnary'")
+  public convenience init(
+    callHandlerContext: CallHandlerContext,
+    eventObserverFactory: @escaping (UnaryResponseCallContext<ResponsePayload>) -> EventObserver
+  ) {
+    fatalError("Unimplemented: please regenerate your code.")
+  }
+}
+
+extension ServerStreamingCallHandler {
+  @available(*, unavailable, message: "Please regenerate your code or use 'CallHandler.makeServerStreaming'")
+  public convenience init(
+    callHandlerContext: CallHandlerContext,
+    eventObserverFactory: @escaping (StreamingResponseCallContext<ResponsePayload>) -> EventObserver
+  ) {
+    fatalError("Unimplemented: please regenerate your code.")
+  }
+}
+
+extension ClientStreamingCallHandler {
+  @available(*, unavailable, message: "Please regenerate your code or use 'CallHandler.makeClientStreaming'")
+  public convenience init(
+    callHandlerContext: CallHandlerContext,
+    eventObserverFactory: @escaping EventObserverFactory
+  ) {
+    fatalError("Unimplemented: please regenerate your code.")
+  }
+}
+
+extension BidirectionalStreamingCallHandler {
+  @available(*, unavailable, message: "Please regenerate your code or use 'CallHandler.makeBidirectionalStreaming'")
+  public convenience init(
+    callHandlerContext: CallHandlerContext,
+    eventObserverFactory: @escaping (StreamingResponseCallContext<ResponsePayload>) -> EventLoopFuture<EventObserver>
+  ) {
+    fatalError("Unimplemented: please regenerate your code.")
+  }
 }
