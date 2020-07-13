@@ -95,4 +95,3 @@ extension Codegentest_FooProvider {
   }
 }
 
-
