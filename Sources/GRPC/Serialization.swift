@@ -22,10 +22,6 @@ internal protocol MessageSerializer {
 
   /// Serializes `input` into a `ByteBuffer` allocated using the provided `allocator`.
   ///
-  /// The serialized buffer should have 5 leading bytes: the first must be zero, the following
-  /// four bytes are the `UInt32` encoded length of the serialized message. The bytes of the
-  /// serialized message follow.
-  ///
   /// - Parameters:
   ///   - input: The element to serialize.
   ///   - allocator: A `ByteBufferAllocator`.
@@ -48,15 +44,14 @@ internal struct ProtobufSerializer<Message: SwiftProtobuf.Message>: MessageSeria
     // Serialize the message.
     let serialized = try message.serializedData()
 
+    // Allocate enough space and an extra 5 leading bytes. This a minor optimisation win: the length
+    // prefixed message writer can re-use the leading 5 bytes without needing to allocate a new
+    // buffer and copy over the serialized message.
     var buffer = allocator.buffer(capacity: serialized.count + 5)
+    buffer.writeBytes(Array(repeating: 0, count: 5))
+    buffer.moveReaderIndex(forwardBy: 5)
 
-    // The compression byte. This will be modified later, if necessary.
-    buffer.writeInteger(UInt8(0))
-
-    // The length of the serialized message.
-    buffer.writeInteger(UInt32(serialized.count))
-
-    // The serialized message.
+    // Now write the serialized message.
     buffer.writeBytes(serialized)
 
     return buffer
@@ -76,7 +71,9 @@ internal struct ProtobufDeserializer<Message: SwiftProtobuf.Message>: MessageDes
 
 internal struct GRPCPayloadSerializer<Message: GRPCPayload>: MessageSerializer {
   internal func serialize(_ message: Message, allocator: ByteBufferAllocator) throws -> ByteBuffer {
-    // Reserve 5 leading bytes.
+    // Reserve 5 leading bytes. This a minor optimisation win: the length prefixed message writer
+    // can re-use the leading 5 bytes without needing to allocate a new buffer and copy over the
+    // serialized message.
     var buffer = allocator.buffer(repeating: 0, count: 5)
 
     let readerIndex = buffer.readerIndex
@@ -91,9 +88,9 @@ internal struct GRPCPayloadSerializer<Message: GRPCPayload>: MessageSerializer {
     assert(buffer.getBytes(at: readerIndex, length: 5) == Array(repeating: 0, count: 5),
            "serialize(into:) must not write over existing written bytes")
 
-    // The first byte is already zero. Set the length.
-    let messageSize = buffer.writerIndex - writerIndex
-    buffer.setInteger(UInt32(messageSize), at: readerIndex + 1)
+    // 'read' the first 5 bytes so that the buffer's readable bytes are only the bytes of the
+    // serialized message.
+    buffer.moveReaderIndex(forwardBy: 5)
 
     return buffer
   }
