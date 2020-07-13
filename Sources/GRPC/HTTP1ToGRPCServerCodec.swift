@@ -379,28 +379,35 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
       }
 
       if contentType == .webTextProtobuf {
-        var responseTextBuffer = self.responseTextBuffers.popFirst() ?? context.channel.allocator.buffer(capacity: 5)
-
-        // Append the rest of the buffers.
-        let requiredExtraCapacity = self.responseTextBuffers.map { $0.readableBytes }.reduce(0, +)
-        responseTextBuffer.reserveCapacity(minimumWritableBytes: requiredExtraCapacity)
-        while var buffer = self.responseTextBuffers.popFirst() {
-          responseTextBuffer.writeBuffer(&buffer)
-        }
-
         // Encode the trailers into the response byte stream as a length delimited message, as per
         // https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-WEB.md
         let textTrailers = trailers.map { name, value in "\(name): \(value)" }.joined(separator: "\r\n")
-        responseTextBuffer.writeInteger(UInt8(0x80))
-        responseTextBuffer.writeInteger(UInt32(textTrailers.utf8.count))
-        responseTextBuffer.writeString(textTrailers)
+        var trailersBuffer = context.channel.allocator.buffer(capacity: 5 + textTrailers.utf8.count)
+        trailersBuffer.writeInteger(UInt8(0x80))
+        trailersBuffer.writeInteger(UInt32(textTrailers.utf8.count))
+        trailersBuffer.writeString(textTrailers)
+        self.responseTextBuffers.append(trailersBuffer)
+
+        // The '!' is fine, we know it's not empty since we just added a buffer.
+        var responseTextBuffer = self.responseTextBuffers.popFirst()!
+
+        // Read the data from the first buffer.
+        var accumulatedData = responseTextBuffer.readData(length: responseTextBuffer.readableBytes)!
+
+        // Reserve enough capacity and append the remaining buffers.
+        let requiredExtraCapacity = self.responseTextBuffers.lazy.map { $0.readableBytes }.reduce(0, +)
+        accumulatedData.reserveCapacity(accumulatedData.count + requiredExtraCapacity)
+        while let buffer = self.responseTextBuffers.popFirst() {
+          accumulatedData.append(contentsOf: buffer.readableBytesView)
+        }
 
         // TODO: Binary responses that are non multiples of 3 will end = or == when encoded in
         // base64. Investigate whether this might have any effect on the transport mechanism and
         // client decoding. Initial results say that they are innocuous, but we might have to keep
         // an eye on this in case something trips up.
-        let binaryData = responseTextBuffer.readData(length: responseTextBuffer.readableBytes)!
-        let encodedData = binaryData.base64EncodedString()
+        let encodedData = accumulatedData.base64EncodedString()
+
+        // Reuse our first buffer.
         responseTextBuffer.clear(minimumCapacity: numericCast(encodedData.utf8.count))
         responseTextBuffer.writeString(encodedData)
 
