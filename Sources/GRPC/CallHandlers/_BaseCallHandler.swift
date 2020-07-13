@@ -24,7 +24,7 @@ import Logging
 /// Calls through to `processMessage` for individual messages it receives, which needs to be implemented by subclasses.
 /// - Important: This is **NOT** part of the public API.
 public class _BaseCallHandler<Request, Response>: GRPCCallHandler {
-  public let codec: ChannelHandler
+  public let _codec: ChannelHandler
 
   /// Called when the request head has been received.
   ///
@@ -69,7 +69,7 @@ public class _BaseCallHandler<Request, Response>: GRPCCallHandler {
     codec: ChannelHandler
   ) {
     self.callHandlerContext = callHandlerContext
-    self.codec = codec
+    self._codec = codec
   }
 }
 
