@@ -147,18 +147,18 @@ public class ClientConnection {
 // MARK: - Unary
 
 extension ClientConnection: GRPCChannel {
-  private func makeUnaryCall<S: MessageSerializer, D: MessageDeserializer>(
-    serializer: S,
-    deserialiser: D,
+  private func makeUnaryCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+    serializer: Serializer,
+    deserialiser: Deserializer,
     path: String,
-    request: S.Input,
+    request: Serializer.Input,
     callOptions: CallOptions
-  ) -> UnaryCall<S.Input, D.Output> {
+  ) -> UnaryCall<Serializer.Input, Deserializer.Output> {
     let requestID = callOptions.requestIDProvider.requestID()
     let logger = self.loggerWithRequestID(requestID)
     logger.debug("starting rpc", metadata: ["path": "\(path)"])
 
-    let call = UnaryCall<S.Input, D.Output>.makeOnHTTP2Stream(
+    let call = UnaryCall<Serializer.Input, Deserializer.Output>.makeOnHTTP2Stream(
       multiplexer: self.multiplexer,
       serializer: serializer,
       deserializer: deserialiser,
@@ -206,17 +206,17 @@ extension ClientConnection: GRPCChannel {
 // MARK: - Client Streaming
 
 extension ClientConnection {
-  private func makeClientStreamingCall<S: MessageSerializer, D: MessageDeserializer>(
-    serializer: S,
-    deserialiser: D,
+  private func makeClientStreamingCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+    serializer: Serializer,
+    deserialiser: Deserializer,
     path: String,
     callOptions: CallOptions
-  ) -> ClientStreamingCall<S.Input, D.Output> {
+  ) -> ClientStreamingCall<Serializer.Input, Deserializer.Output> {
     let requestID = callOptions.requestIDProvider.requestID()
     let logger = self.loggerWithRequestID(requestID)
     logger.debug("starting rpc", metadata: ["path": "\(path)"])
 
-    let call = ClientStreamingCall<S.Input, D.Output>.makeOnHTTP2Stream(
+    let call = ClientStreamingCall<Serializer.Input, Deserializer.Output>.makeOnHTTP2Stream(
       multiplexer: self.multiplexer,
       serializer: serializer,
       deserializer: deserialiser,
@@ -260,19 +260,19 @@ extension ClientConnection {
 // MARK: - Server Streaming
 
 extension ClientConnection {
-  private func makeServerStreamingCall<S: MessageSerializer, D: MessageDeserializer>(
-    serializer: S,
-    deserialiser: D,
+  private func makeServerStreamingCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+    serializer: Serializer,
+    deserialiser: Deserializer,
     path: String,
-    request: S.Input,
+    request: Serializer.Input,
     callOptions: CallOptions,
-    handler: @escaping (D.Output) -> Void
-  ) -> ServerStreamingCall<S.Input, D.Output> {
+    handler: @escaping (Deserializer.Output) -> Void
+  ) -> ServerStreamingCall<Serializer.Input, Deserializer.Output> {
     let requestID = callOptions.requestIDProvider.requestID()
     let logger = self.loggerWithRequestID(requestID)
     logger.debug("starting rpc", metadata: ["path": "\(path)"])
 
-    let call = ServerStreamingCall<S.Input, D.Output>.makeOnHTTP2Stream(
+    let call = ServerStreamingCall<Serializer.Input, Deserializer.Output>.makeOnHTTP2Stream(
       multiplexer: multiplexer,
       serializer: serializer,
       deserializer: deserialiser,
@@ -325,18 +325,18 @@ extension ClientConnection {
 // MARK: - Bidirectional Streaming
 
 extension ClientConnection {
-  private func makeBidirectionalStreamingCall<S: MessageSerializer, D: MessageDeserializer>(
-    serializer: S,
-    deserialiser: D,
+  private func makeBidirectionalStreamingCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+    serializer: Serializer,
+    deserialiser: Deserializer,
     path: String,
     callOptions: CallOptions,
-    handler: @escaping (D.Output) -> Void
-  ) -> BidirectionalStreamingCall<S.Input, D.Output> {
+    handler: @escaping (Deserializer.Output) -> Void
+  ) -> BidirectionalStreamingCall<Serializer.Input, Deserializer.Output> {
     let requestID = callOptions.requestIDProvider.requestID()
     let logger = self.loggerWithRequestID(requestID)
     logger.debug("starting rpc", metadata: ["path": "\(path)"])
 
-    let call = BidirectionalStreamingCall<S.Input, D.Output>.makeOnHTTP2Stream(
+    let call = BidirectionalStreamingCall<Serializer.Input, Deserializer.Output>.makeOnHTTP2Stream(
       multiplexer: multiplexer,
       serializer: serializer,
       deserializer: deserialiser,

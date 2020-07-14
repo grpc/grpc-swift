@@ -144,15 +144,15 @@ public final class BidirectionalStreamingCall<RequestPayload, ResponsePayload>: 
 }
 
 extension BidirectionalStreamingCall {
-  internal static func makeOnHTTP2Stream<S: MessageSerializer, D: MessageDeserializer>(
+  internal static func makeOnHTTP2Stream<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
     multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
-    serializer: S,
-    deserializer: D,
+    serializer: Serializer,
+    deserializer: Deserializer,
     callOptions: CallOptions,
     errorDelegate: ClientErrorDelegate?,
     logger: Logger,
     responseHandler: @escaping (ResponsePayload) -> Void
-  ) -> BidirectionalStreamingCall<RequestPayload, ResponsePayload> where S.Input == RequestPayload, D.Output == ResponsePayload {
+  ) -> BidirectionalStreamingCall<RequestPayload, ResponsePayload> where Serializer.Input == RequestPayload, Deserializer.Output == ResponsePayload {
     let eventLoop = multiplexer.eventLoop
     let transport = ChannelTransport<RequestPayload, ResponsePayload>(
       multiplexer: multiplexer,
@@ -168,14 +168,14 @@ extension BidirectionalStreamingCall {
     return BidirectionalStreamingCall(transport: transport, options: callOptions)
   }
 
-  internal static func make<S: MessageSerializer, D: MessageDeserializer>(
-    serializer: S,
-    deserializer: D,
+  internal static func make<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+    serializer: Serializer,
+    deserializer: Deserializer,
     fakeResponse: FakeStreamingResponse<RequestPayload, ResponsePayload>?,
     callOptions: CallOptions,
     logger: Logger,
     responseHandler: @escaping (ResponsePayload) -> Void
-  ) -> BidirectionalStreamingCall<RequestPayload, ResponsePayload> where S.Input == RequestPayload, D.Output == ResponsePayload {
+  ) -> BidirectionalStreamingCall<RequestPayload, ResponsePayload> where Serializer.Input == RequestPayload, Deserializer.Output == ResponsePayload {
     let eventLoop = fakeResponse?.channel.eventLoop ?? EmbeddedEventLoop()
     let responseContainer = ResponsePartContainer(eventLoop: eventLoop, streamingResponseHandler: responseHandler)
 

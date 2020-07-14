@@ -97,14 +97,14 @@ public final class UnaryCall<RequestPayload, ResponsePayload>: UnaryResponseClie
 }
 
 extension UnaryCall {
-  internal static func makeOnHTTP2Stream<S: MessageSerializer, D: MessageDeserializer>(
+  internal static func makeOnHTTP2Stream<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
     multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
-    serializer: S,
-    deserializer: D,
+    serializer: Serializer,
+    deserializer: Deserializer,
     callOptions: CallOptions,
     errorDelegate: ClientErrorDelegate?,
     logger: Logger
-  ) -> UnaryCall<RequestPayload, ResponsePayload> where S.Input == RequestPayload, D.Output == ResponsePayload {
+  ) -> UnaryCall<RequestPayload, ResponsePayload> where Serializer.Input == RequestPayload, Deserializer.Output == ResponsePayload {
     let eventLoop = multiplexer.eventLoop
     let responsePromise: EventLoopPromise<ResponsePayload> = eventLoop.makePromise()
     let transport = ChannelTransport<RequestPayload, ResponsePayload>(
@@ -120,13 +120,13 @@ extension UnaryCall {
     return UnaryCall(response: responsePromise.futureResult, transport: transport, options: callOptions)
   }
 
-  internal static func make<S: MessageSerializer, D: MessageDeserializer>(
-    serializer: S,
-    deserializer: D,
+  internal static func make<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+    serializer: Serializer,
+    deserializer: Deserializer,
     fakeResponse: FakeUnaryResponse<RequestPayload, ResponsePayload>?,
     callOptions: CallOptions,
     logger: Logger
-  ) -> UnaryCall<RequestPayload, ResponsePayload> where S.Input == RequestPayload, D.Output == ResponsePayload {
+  ) -> UnaryCall<RequestPayload, ResponsePayload> where Serializer.Input == RequestPayload, Deserializer.Output == ResponsePayload {
     let eventLoop = fakeResponse?.channel.eventLoop ?? EmbeddedEventLoop()
     let responsePromise: EventLoopPromise<ResponsePayload> = eventLoop.makePromise()
     let responseContainer = ResponsePartContainer(eventLoop: eventLoop, unaryResponsePromise: responsePromise)

@@ -224,14 +224,14 @@ extension FakeChannel {
 }
 
 extension FakeChannel {
-  private func makeUnaryCall<S: MessageSerializer, D: MessageDeserializer>(
-    serializer: S,
-    deserialiser: D,
+  private func makeUnaryCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+    serializer: Serializer,
+    deserialiser: Deserializer,
     path: String,
-    request: S.Input,
+    request: Serializer.Input,
     callOptions: CallOptions
-  ) -> UnaryCall<S.Input, D.Output> {
-    let call = UnaryCall<S.Input, D.Output>.make(
+  ) -> UnaryCall<Serializer.Input, Deserializer.Output> {
+    let call = UnaryCall<Serializer.Input, Deserializer.Output>.make(
       serializer: serializer,
       deserializer: deserialiser,
       fakeResponse: self.dequeueResponseStream(forPath: path),
@@ -244,13 +244,13 @@ extension FakeChannel {
     return call
   }
 
-  private func makeClientStreamingCall<S: MessageSerializer, D: MessageDeserializer>(
-    serializer: S,
-    deserialiser: D,
+  private func makeClientStreamingCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+    serializer: Serializer,
+    deserialiser: Deserializer,
     path: String,
     callOptions: CallOptions
-  ) -> ClientStreamingCall<S.Input, D.Output> {
-    let call = ClientStreamingCall<S.Input, D.Output>.make(
+  ) -> ClientStreamingCall<Serializer.Input, Deserializer.Output> {
+    let call = ClientStreamingCall<Serializer.Input, Deserializer.Output>.make(
       serializer: serializer,
       deserializer: deserialiser,
       fakeResponse: self.dequeueResponseStream(forPath: path),
@@ -263,15 +263,15 @@ extension FakeChannel {
     return call
   }
 
-  private func makeServerStreamingCall<S: MessageSerializer, D: MessageDeserializer>(
-    serializer: S,
-    deserialiser: D,
+  private func makeServerStreamingCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+    serializer: Serializer,
+    deserialiser: Deserializer,
     path: String,
-    request: S.Input,
+    request: Serializer.Input,
     callOptions: CallOptions,
-    handler: @escaping (D.Output) -> Void
-  ) -> ServerStreamingCall<S.Input, D.Output> {
-    let call = ServerStreamingCall<S.Input, D.Output>.make(
+    handler: @escaping (Deserializer.Output) -> Void
+  ) -> ServerStreamingCall<Serializer.Input, Deserializer.Output> {
+    let call = ServerStreamingCall<Serializer.Input, Deserializer.Output>.make(
       serializer: serializer,
       deserializer: deserialiser,
       fakeResponse: self.dequeueResponseStream(forPath: path),
@@ -285,14 +285,14 @@ extension FakeChannel {
     return call
   }
 
-  private func makeBidirectionalStreamingCall<S: MessageSerializer, D: MessageDeserializer>(
-    serializer: S,
-    deserialiser: D,
+  private func makeBidirectionalStreamingCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+    serializer: Serializer,
+    deserialiser: Deserializer,
     path: String,
     callOptions: CallOptions,
-    handler: @escaping (D.Output) -> Void
-  ) -> BidirectionalStreamingCall<S.Input, D.Output> {
-    let call = BidirectionalStreamingCall<S.Input, D.Output>.make(
+    handler: @escaping (Deserializer.Output) -> Void
+  ) -> BidirectionalStreamingCall<Serializer.Input, Deserializer.Output> {
+    let call = BidirectionalStreamingCall<Serializer.Input, Deserializer.Output>.make(
       serializer: serializer,
       deserializer: deserialiser,
       fakeResponse: self.dequeueResponseStream(forPath: path),

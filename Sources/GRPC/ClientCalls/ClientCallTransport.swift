@@ -148,16 +148,16 @@ internal class ChannelTransport<Request, Response> {
     channelProvider(self, channelPromise)
   }
 
-  internal convenience init<S: MessageSerializer, D: MessageDeserializer>(
+  internal convenience init<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
     multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
-    serializer: S,
-    deserializer: D,
+    serializer: Serializer,
+    deserializer: Deserializer,
     responseContainer: ResponsePartContainer<Response>,
     callType: GRPCCallType,
     timeLimit: TimeLimit,
     errorDelegate: ClientErrorDelegate?,
     logger: Logger
-  ) where S.Input == Request, D.Output == Response {
+  ) where Serializer.Input == Request, Deserializer.Output == Response {
     self.init(
       eventLoop: multiplexer.eventLoop,
       responseContainer: responseContainer,

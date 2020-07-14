@@ -149,14 +149,14 @@ public final class ClientStreamingCall<RequestPayload, ResponsePayload>: Streami
 }
 
 extension ClientStreamingCall {
-  internal static func makeOnHTTP2Stream<S: MessageSerializer, D: MessageDeserializer>(
+  internal static func makeOnHTTP2Stream<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
     multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
-    serializer: S,
-    deserializer: D,
+    serializer: Serializer,
+    deserializer: Deserializer,
     callOptions: CallOptions,
     errorDelegate: ClientErrorDelegate?,
     logger: Logger
-  ) -> ClientStreamingCall<RequestPayload, ResponsePayload> where S.Input == RequestPayload, D.Output == ResponsePayload {
+  ) -> ClientStreamingCall<RequestPayload, ResponsePayload> where Serializer.Input == RequestPayload, Deserializer.Output == ResponsePayload {
     let eventLoop = multiplexer.eventLoop
     let responsePromise: EventLoopPromise<ResponsePayload> = eventLoop.makePromise()
     let transport = ChannelTransport<RequestPayload, ResponsePayload>(
@@ -172,13 +172,13 @@ extension ClientStreamingCall {
     return ClientStreamingCall(response: responsePromise.futureResult, transport: transport, options: callOptions)
   }
 
-  internal static func make<S: MessageSerializer, D: MessageDeserializer>(
-    serializer: S,
-    deserializer: D,
+  internal static func make<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+    serializer: Serializer,
+    deserializer: Deserializer,
     fakeResponse: FakeUnaryResponse<RequestPayload, ResponsePayload>?,
     callOptions: CallOptions,
     logger: Logger
-  ) -> ClientStreamingCall<RequestPayload, ResponsePayload> where S.Input == RequestPayload, D.Output == ResponsePayload {
+  ) -> ClientStreamingCall<RequestPayload, ResponsePayload> where Serializer.Input == RequestPayload, Deserializer.Output == ResponsePayload {
     let eventLoop = fakeResponse?.channel.eventLoop ?? EmbeddedEventLoop()
     let responsePromise: EventLoopPromise<ResponsePayload> = eventLoop.makePromise()
     let responseContainer = ResponsePartContainer(eventLoop: eventLoop, unaryResponsePromise: responsePromise)
