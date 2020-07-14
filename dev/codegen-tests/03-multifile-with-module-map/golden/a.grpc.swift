@@ -96,6 +96,3 @@ extension A_ServiceAProvider {
   }
 }
 
-
-// Provides conformance to `GRPCPayload`
-extension A_MessageA: GRPCProtobufPayload {}

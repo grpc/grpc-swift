@@ -23,9 +23,9 @@ import SwiftProtobuf
 /// Base protocol for a client call to a gRPC service.
 public protocol ClientCall {
   /// The type of the request message for the call.
-  associatedtype RequestPayload: GRPCPayload
+  associatedtype RequestPayload
   /// The type of the response message for the call.
-  associatedtype ResponsePayload: GRPCPayload
+  associatedtype ResponsePayload
 
   /// The event loop this call is running on.
   var eventLoop: EventLoop { get }
@@ -159,7 +159,7 @@ public protocol UnaryResponseClientCall: ClientCall {
 // a NIO HTTP/2 stream channel.
 
 internal protocol ClientCallInbound {
-  associatedtype Response: GRPCPayload
+  associatedtype Response
   typealias ResponsePart = _GRPCClientResponsePart<Response>
 
   /// Receive an error.
@@ -170,7 +170,7 @@ internal protocol ClientCallInbound {
 }
 
 internal protocol ClientCallOutbound {
-  associatedtype Request: GRPCPayload
+  associatedtype Request
   typealias RequestPart = _GRPCClientRequestPart<Request>
 
   /// Send a single request part and complete the promise once the part has been sent.

@@ -44,7 +44,7 @@ import Logging
 ///```
 ///
 /// Note: the "main" pipeline provided by the channel in `ClientConnection`.
-internal class ChannelTransport<Request: GRPCPayload, Response: GRPCPayload> {
+internal class ChannelTransport<Request, Response> {
   internal typealias RequestPart = _GRPCClientRequestPart<Request>
   internal typealias ResponsePart = _GRPCClientResponsePart<Response>
 
@@ -148,14 +148,16 @@ internal class ChannelTransport<Request: GRPCPayload, Response: GRPCPayload> {
     channelProvider(self, channelPromise)
   }
 
-  internal convenience init(
+  internal convenience init<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
     multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
+    serializer: Serializer,
+    deserializer: Deserializer,
     responseContainer: ResponsePartContainer<Response>,
     callType: GRPCCallType,
     timeLimit: TimeLimit,
     errorDelegate: ClientErrorDelegate?,
     logger: Logger
-  ) {
+  ) where Serializer.Input == Request, Deserializer.Output == Response {
     self.init(
       eventLoop: multiplexer.eventLoop,
       responseContainer: responseContainer,
@@ -168,7 +170,8 @@ internal class ChannelTransport<Request: GRPCPayload, Response: GRPCPayload> {
         case .success(let mux):
           mux.createStreamChannel(promise: streamPromise) { stream, streamID in
             stream.pipeline.addHandlers([
-              _GRPCClientChannelHandler<Request, Response>(streamID: streamID, callType: callType, logger: logger),
+              _GRPCClientChannelHandler(streamID: streamID, callType: callType, logger: logger),
+              GRPCClientCodecHandler(serializer: serializer, deserializer: deserializer),
               GRPCClientCallHandler(call: call)
             ])
           }

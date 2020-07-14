@@ -102,10 +102,8 @@ func main() throws {
   // Build the SwiftProtobufPluginLibrary model of the plugin input
   let descriptorSet = DescriptorSet(protos: request.protoFile)
 
-  // process each .proto file in filename order in an attempt to stabilise the output (i.e. where
-  // conformance to `GRPCPayload` is generated)
-  for name in request.fileToGenerate.sorted() {
-    let fileDescriptor = descriptorSet.lookupFileDescriptor(protoName: name)
+  // Only generate output for services.
+  for fileDescriptor in descriptorSet.files where !fileDescriptor.services.isEmpty {
     let grpcFileName = uniqueOutputFileName(component: "grpc", fileDescriptor: fileDescriptor, fileNamingOption: options.fileNaming)
     let grpcGenerator = Generator(fileDescriptor, options: options)
     var grpcFile = Google_Protobuf_Compiler_CodeGeneratorResponse.File()

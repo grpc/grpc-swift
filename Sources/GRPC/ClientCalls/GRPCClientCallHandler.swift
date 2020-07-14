@@ -16,7 +16,7 @@
 import NIO
 
 /// An inbound channel handler which forwards events and messages to a client call.
-internal class GRPCClientCallHandler<Request: GRPCPayload, Response: GRPCPayload>: ChannelInboundHandler {
+internal class GRPCClientCallHandler<Request, Response>: ChannelInboundHandler {
   typealias InboundIn = _GRPCClientResponsePart<Response>
   private var call: ChannelTransport<Request, Response>
 

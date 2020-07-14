@@ -191,7 +191,3 @@ extension Echo_EchoProvider {
   }
 }
 
-
-// Provides conformance to `GRPCPayload`
-extension Echo_EchoRequest: GRPCProtobufPayload {}
-extension Echo_EchoResponse: GRPCProtobufPayload {}

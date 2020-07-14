@@ -753,7 +753,6 @@ extension ReadStateTests {
         ("testReadOneMessageForManyExpectedMessages", testReadOneMessageForManyExpectedMessages),
         ("testReadOneMessageForOneExpectedMessages", testReadOneMessageForOneExpectedMessages),
         ("testReadTooManyMessagesForOneExpectedMessages", testReadTooManyMessagesForOneExpectedMessages),
-        ("testReadWhenBufferContainsLengthPrefixedJunk", testReadWhenBufferContainsLengthPrefixedJunk),
         ("testReadWhenNoExpectedMessages", testReadWhenNoExpectedMessages),
         ("testReadWithLeftOverBytesForOneExpectedMessage", testReadWithLeftOverBytesForOneExpectedMessage),
     ]

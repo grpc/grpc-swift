@@ -16,8 +16,21 @@
 import NIO
 import NIOHTTP2
 import NIOSSL
+import SwiftProtobuf
 
 public protocol GRPCChannel {
+  /// Make a unary gRPC call.
+  ///
+  /// - Parameters:
+  ///   - path: Path of the RPC, e.g. "/echo.Echo/Get"
+  ///   - request: The request to send.
+  ///   - callOptions: Options for the RPC.
+  func makeUnaryCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+    path: String,
+    request: Request,
+    callOptions: CallOptions
+  ) -> UnaryCall<Request, Response>
+
   /// Make a unary gRPC call.
   ///
   /// - Parameters:
@@ -29,6 +42,20 @@ public protocol GRPCChannel {
     request: Request,
     callOptions: CallOptions
   ) -> UnaryCall<Request, Response>
+
+  /// Make a server-streaming gRPC call.
+  ///
+  /// - Parameters:
+  ///   - path: Path of the RPC, e.g. "/echo.Echo/Get"
+  ///   - request: The request to send.
+  ///   - callOptions: Options for the RPC.
+  ///   - handler: Response handler; called for every response received from the server.
+  func makeServerStreamingCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+    path: String,
+    request: Request,
+    callOptions: CallOptions,
+    handler: @escaping (Response) -> Void
+  ) -> ServerStreamingCall<Request, Response>
 
   /// Make a server-streaming gRPC call.
   ///
@@ -49,10 +76,32 @@ public protocol GRPCChannel {
   /// - Parameters:
   ///   - path: Path of the RPC, e.g. "/echo.Echo/Get"
   ///   - callOptions: Options for the RPC.
+  func makeClientStreamingCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+    path: String,
+    callOptions: CallOptions
+  ) -> ClientStreamingCall<Request, Response>
+
+  /// Makes a client-streaming gRPC call.
+  ///
+  /// - Parameters:
+  ///   - path: Path of the RPC, e.g. "/echo.Echo/Get"
+  ///   - callOptions: Options for the RPC.
   func makeClientStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
     path: String,
     callOptions: CallOptions
   ) -> ClientStreamingCall<Request, Response>
+
+  /// Makes a bidirectional-streaming gRPC call.
+  ///
+  /// - Parameters:
+  ///   - path: Path of the RPC, e.g. "/echo.Echo/Get"
+  ///   - callOptions: Options for the RPC.
+  ///   - handler: Response handler; called for every response received from the server.
+  func makeBidirectionalStreamingCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+    path: String,
+    callOptions: CallOptions,
+    handler: @escaping (Response) -> Void
+  ) -> BidirectionalStreamingCall<Request, Response>
 
   /// Makes a bidirectional-streaming gRPC call.
   ///

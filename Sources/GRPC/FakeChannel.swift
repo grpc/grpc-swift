@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import NIO
+import SwiftProtobuf
 import Logging
 
 /// A fake channel for use with generated test clients.
@@ -39,7 +40,7 @@ public class FakeChannel: GRPCChannel {
 
   /// Make and store a fake unary response for the given path. Users should prefer making a response
   /// stream for their RPC directly via the appropriate method on their generated test client.
-  public func makeFakeUnaryResponse<Request: GRPCPayload, Response: GRPCPayload>(
+  public func makeFakeUnaryResponse<Request, Response>(
     path: String,
     requestHandler: @escaping (FakeRequestPart<Request>) -> ()
   ) -> FakeUnaryResponse<Request, Response> {
@@ -51,7 +52,7 @@ public class FakeChannel: GRPCChannel {
   /// Make and store a fake streaming response for the given path. Users should prefer making a
   /// response stream for their RPC directly via the appropriate method on their generated test
   /// client.
-  public func makeFakeStreamingResponse<Request: GRPCPayload, Response: GRPCPayload>(
+  public func makeFakeStreamingResponse<Request, Response>(
     path: String,
     requestHandler: @escaping (FakeRequestPart<Request>) -> ()
   ) -> FakeStreamingResponse<Request, Response> {
@@ -69,20 +70,50 @@ public class FakeChannel: GRPCChannel {
   }
 
   // (Docs inherited from `GRPCChannel`)
+  public func makeUnaryCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+    path: String,
+    request: Request,
+    callOptions: CallOptions
+  ) -> UnaryCall<Request, Response> {
+    return self.makeUnaryCall(
+      serializer: ProtobufSerializer(),
+      deserializer: ProtobufDeserializer(),
+      path: path,
+      request: request,
+      callOptions: callOptions
+    )
+  }
+
+  // (Docs inherited from `GRPCChannel`)
   public func makeUnaryCall<Request: GRPCPayload, Response: GRPCPayload>(
     path: String,
     request: Request,
     callOptions: CallOptions
   ) -> UnaryCall<Request, Response> {
-    let call = UnaryCall<Request, Response>.make(
-      fakeResponse: self.dequeueResponseStream(forPath: path),
-      callOptions: callOptions,
-      logger: self.logger
+    return self.makeUnaryCall(
+      serializer: GRPCPayloadSerializer(),
+      deserializer: GRPCPayloadDeserializer(),
+      path: path,
+      request: request,
+      callOptions: callOptions
     )
+  }
 
-    call.send(self.makeRequestHead(path: path, callOptions: callOptions), request: request)
-
-    return call
+  // (Docs inherited from `GRPCChannel`)
+  public func makeServerStreamingCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+    path: String,
+    request: Request,
+    callOptions: CallOptions,
+    handler: @escaping (Response) -> Void
+  ) -> ServerStreamingCall<Request, Response> {
+    return self.makeServerStreamingCall(
+      serializer: ProtobufSerializer(),
+      deserializer: ProtobufDeserializer(),
+      path: path,
+      request: request,
+      callOptions: callOptions,
+      handler: handler
+    )
   }
 
   // (Docs inherited from `GRPCChannel`)
@@ -92,16 +123,27 @@ public class FakeChannel: GRPCChannel {
     callOptions: CallOptions,
     handler: @escaping (Response) -> Void
   ) -> ServerStreamingCall<Request, Response> {
-    let call = ServerStreamingCall<Request, Response>.make(
-      fakeResponse: self.dequeueResponseStream(forPath: path),
+    return self.makeServerStreamingCall(
+      serializer: GRPCPayloadSerializer(),
+      deserializer: GRPCPayloadDeserializer(),
+      path: path,
+      request: request,
       callOptions: callOptions,
-      logger: self.logger,
-      responseHandler: handler
+      handler: handler
     )
+  }
 
-    call.send(self.makeRequestHead(path: path, callOptions: callOptions), request: request)
-
-    return call
+  // (Docs inherited from `GRPCChannel`)
+  public func makeClientStreamingCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+    path: String,
+    callOptions: CallOptions
+  ) -> ClientStreamingCall<Request, Response> {
+    return self.makeClientStreamingCall(
+      serializer: ProtobufSerializer(),
+      deserializer: ProtobufDeserializer(),
+      path: path,
+      callOptions: callOptions
+    )
   }
 
   // (Docs inherited from `GRPCChannel`)
@@ -109,15 +151,27 @@ public class FakeChannel: GRPCChannel {
     path: String,
     callOptions: CallOptions
   ) -> ClientStreamingCall<Request, Response> {
-    let call = ClientStreamingCall<Request, Response>.make(
-      fakeResponse: self.dequeueResponseStream(forPath: path),
-      callOptions: callOptions,
-      logger: self.logger
+    return self.makeClientStreamingCall(
+      serializer: GRPCPayloadSerializer(),
+      deserializer: GRPCPayloadDeserializer(),
+      path: path,
+      callOptions: callOptions
     )
+  }
 
-    call.sendHead(self.makeRequestHead(path: path, callOptions: callOptions))
-
-    return call
+  // (Docs inherited from `GRPCChannel`)
+  public func makeBidirectionalStreamingCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+    path: String,
+    callOptions: CallOptions,
+    handler: @escaping (Response) -> Void
+  ) -> BidirectionalStreamingCall<Request, Response> {
+    return self.makeBidirectionalStreamingCall(
+      serializer: ProtobufSerializer(),
+      deserializer: ProtobufDeserializer(),
+      path: path,
+      callOptions: callOptions,
+      handler: handler
+    )
   }
 
   // (Docs inherited from `GRPCChannel`)
@@ -126,16 +180,13 @@ public class FakeChannel: GRPCChannel {
     callOptions: CallOptions,
     handler: @escaping (Response) -> Void
   ) -> BidirectionalStreamingCall<Request, Response> {
-    let call = BidirectionalStreamingCall<Request, Response>.make(
-      fakeResponse: self.dequeueResponseStream(forPath: path),
+    return self.makeBidirectionalStreamingCall(
+      serializer: GRPCPayloadSerializer(),
+      deserializer: GRPCPayloadDeserializer(),
+      path: path,
       callOptions: callOptions,
-      logger: self.logger,
-      responseHandler: handler
+      handler: handler
     )
-
-    call.sendHead(self.makeRequestHead(path: path, callOptions: callOptions))
-
-    return call
   }
 
   public func close() -> EventLoopFuture<Void> {
@@ -169,5 +220,89 @@ extension FakeChannel {
       requestID: callOptions.requestIDProvider.requestID(),
       options: callOptions
     )
+  }
+}
+
+extension FakeChannel {
+  private func makeUnaryCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+    serializer: Serializer,
+    deserializer: Deserializer,
+    path: String,
+    request: Serializer.Input,
+    callOptions: CallOptions
+  ) -> UnaryCall<Serializer.Input, Deserializer.Output> {
+    let call = UnaryCall<Serializer.Input, Deserializer.Output>.make(
+      serializer: serializer,
+      deserializer: deserializer,
+      fakeResponse: self.dequeueResponseStream(forPath: path),
+      callOptions: callOptions,
+      logger: self.logger
+    )
+
+    call.send(self.makeRequestHead(path: path, callOptions: callOptions), request: request)
+
+    return call
+  }
+
+  private func makeClientStreamingCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+    serializer: Serializer,
+    deserializer: Deserializer,
+    path: String,
+    callOptions: CallOptions
+  ) -> ClientStreamingCall<Serializer.Input, Deserializer.Output> {
+    let call = ClientStreamingCall<Serializer.Input, Deserializer.Output>.make(
+      serializer: serializer,
+      deserializer: deserializer,
+      fakeResponse: self.dequeueResponseStream(forPath: path),
+      callOptions: callOptions,
+      logger: self.logger
+    )
+
+    call.sendHead(self.makeRequestHead(path: path, callOptions: callOptions))
+
+    return call
+  }
+
+  private func makeServerStreamingCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+    serializer: Serializer,
+    deserializer: Deserializer,
+    path: String,
+    request: Serializer.Input,
+    callOptions: CallOptions,
+    handler: @escaping (Deserializer.Output) -> Void
+  ) -> ServerStreamingCall<Serializer.Input, Deserializer.Output> {
+    let call = ServerStreamingCall<Serializer.Input, Deserializer.Output>.make(
+      serializer: serializer,
+      deserializer: deserializer,
+      fakeResponse: self.dequeueResponseStream(forPath: path),
+      callOptions: callOptions,
+      logger: self.logger,
+      responseHandler: handler
+    )
+
+    call.send(self.makeRequestHead(path: path, callOptions: callOptions), request: request)
+
+    return call
+  }
+
+  private func makeBidirectionalStreamingCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+    serializer: Serializer,
+    deserializer: Deserializer,
+    path: String,
+    callOptions: CallOptions,
+    handler: @escaping (Deserializer.Output) -> Void
+  ) -> BidirectionalStreamingCall<Serializer.Input, Deserializer.Output> {
+    let call = BidirectionalStreamingCall<Serializer.Input, Deserializer.Output>.make(
+      serializer: serializer,
+      deserializer: deserializer,
+      fakeResponse: self.dequeueResponseStream(forPath: path),
+      callOptions: callOptions,
+      logger: self.logger,
+      responseHandler: handler
+    )
+
+    call.sendHead(self.makeRequestHead(path: path, callOptions: callOptions))
+
+    return call
   }
 }

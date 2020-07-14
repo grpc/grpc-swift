@@ -22,10 +22,7 @@ import Logging
 ///
 /// Messages should be sent via the `sendMessage` and `sendMessages` methods; the stream of messages
 /// must be terminated by calling `sendEnd` to indicate the final message has been sent.
-public final class ClientStreamingCall<
-  RequestPayload: GRPCPayload,
-  ResponsePayload: GRPCPayload
-> : StreamingRequestClientCall, UnaryResponseClientCall {
+public final class ClientStreamingCall<RequestPayload, ResponsePayload>: StreamingRequestClientCall, UnaryResponseClientCall {
   private let transport: ChannelTransport<RequestPayload, ResponsePayload>
 
   /// The options used to make the RPC.
@@ -152,16 +149,20 @@ public final class ClientStreamingCall<
 }
 
 extension ClientStreamingCall {
-  internal static func makeOnHTTP2Stream(
+  internal static func makeOnHTTP2Stream<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
     multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
+    serializer: Serializer,
+    deserializer: Deserializer,
     callOptions: CallOptions,
     errorDelegate: ClientErrorDelegate?,
     logger: Logger
-  ) -> ClientStreamingCall<RequestPayload, ResponsePayload> {
+  ) -> ClientStreamingCall<RequestPayload, ResponsePayload> where Serializer.Input == RequestPayload, Deserializer.Output == ResponsePayload {
     let eventLoop = multiplexer.eventLoop
     let responsePromise: EventLoopPromise<ResponsePayload> = eventLoop.makePromise()
     let transport = ChannelTransport<RequestPayload, ResponsePayload>(
       multiplexer: multiplexer,
+      serializer: serializer,
+      deserializer: deserializer,
       responseContainer: .init(eventLoop: eventLoop, unaryResponsePromise: responsePromise),
       callType: .clientStreaming,
       timeLimit: callOptions.timeLimit,
@@ -171,11 +172,13 @@ extension ClientStreamingCall {
     return ClientStreamingCall(response: responsePromise.futureResult, transport: transport, options: callOptions)
   }
 
-  internal static func make(
+  internal static func make<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+    serializer: Serializer,
+    deserializer: Deserializer,
     fakeResponse: FakeUnaryResponse<RequestPayload, ResponsePayload>?,
     callOptions: CallOptions,
     logger: Logger
-  ) -> ClientStreamingCall<RequestPayload, ResponsePayload> {
+  ) -> ClientStreamingCall<RequestPayload, ResponsePayload> where Serializer.Input == RequestPayload, Deserializer.Output == ResponsePayload {
     let eventLoop = fakeResponse?.channel.eventLoop ?? EmbeddedEventLoop()
     let responsePromise: EventLoopPromise<ResponsePayload> = eventLoop.makePromise()
     let responseContainer = ResponsePartContainer(eventLoop: eventLoop, unaryResponsePromise: responsePromise)

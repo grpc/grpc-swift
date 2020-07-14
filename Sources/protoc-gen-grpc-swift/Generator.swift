@@ -118,10 +118,5 @@ class Generator {
         printServer()
       }
     }
-
-    if options.generatePayloadConformance {
-      self.println()
-      self.printProtobufExtensions()
-    }
   }
 }

@@ -95,6 +95,3 @@ extension B_ServiceBProvider {
   }
 }
 
-
-// Provides conformance to `GRPCPayload`
-extension B_MessageB: GRPCProtobufPayload {}

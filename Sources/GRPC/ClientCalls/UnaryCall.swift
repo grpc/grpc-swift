@@ -22,10 +22,7 @@ import NIOHPACK
 import Logging
 
 /// A unary gRPC call. The request is sent on initialization.
-public final class UnaryCall<
-  RequestPayload: GRPCPayload,
-  ResponsePayload: GRPCPayload
->: UnaryResponseClientCall {
+public final class UnaryCall<RequestPayload, ResponsePayload>: UnaryResponseClientCall {
   private let transport: ChannelTransport<RequestPayload, ResponsePayload>
 
   /// The options used to make the RPC.
@@ -100,16 +97,20 @@ public final class UnaryCall<
 }
 
 extension UnaryCall {
-  internal static func makeOnHTTP2Stream(
+  internal static func makeOnHTTP2Stream<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
     multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
+    serializer: Serializer,
+    deserializer: Deserializer,
     callOptions: CallOptions,
     errorDelegate: ClientErrorDelegate?,
     logger: Logger
-  ) -> UnaryCall<RequestPayload, ResponsePayload> {
+  ) -> UnaryCall<RequestPayload, ResponsePayload> where Serializer.Input == RequestPayload, Deserializer.Output == ResponsePayload {
     let eventLoop = multiplexer.eventLoop
     let responsePromise: EventLoopPromise<ResponsePayload> = eventLoop.makePromise()
     let transport = ChannelTransport<RequestPayload, ResponsePayload>(
       multiplexer: multiplexer,
+      serializer: serializer,
+      deserializer: deserializer,
       responseContainer: .init(eventLoop: eventLoop, unaryResponsePromise: responsePromise),
       callType: .unary,
       timeLimit: callOptions.timeLimit,
@@ -119,11 +120,13 @@ extension UnaryCall {
     return UnaryCall(response: responsePromise.futureResult, transport: transport, options: callOptions)
   }
 
-  internal static func make(
+  internal static func make<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+    serializer: Serializer,
+    deserializer: Deserializer,
     fakeResponse: FakeUnaryResponse<RequestPayload, ResponsePayload>?,
     callOptions: CallOptions,
     logger: Logger
-  ) -> UnaryCall<RequestPayload, ResponsePayload> {
+  ) -> UnaryCall<RequestPayload, ResponsePayload> where Serializer.Input == RequestPayload, Deserializer.Output == ResponsePayload {
     let eventLoop = fakeResponse?.channel.eventLoop ?? EmbeddedEventLoop()
     let responsePromise: EventLoopPromise<ResponsePayload> = eventLoop.makePromise()
     let responseContainer = ResponsePartContainer(eventLoop: eventLoop, unaryResponsePromise: responsePromise)

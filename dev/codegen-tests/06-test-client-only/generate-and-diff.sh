@@ -27,7 +27,7 @@ function all_at_once {
   protoc \
     --proto_path="${PROTO_DIR}" \
     --plugin="${PROTOC_GEN_GRPC_SWIFT}" \
-    --grpc-swift_opt=Server=false,Client=false,TestClient=true,PayloadConformance=false \
+    --grpc-swift_opt=Server=false,Client=false,TestClient=true \
     --grpc-swift_out="${OUTPUT_DIR}" \
     "${PROTO_DIR}"/*
 

@@ -60,13 +60,14 @@ class EmbeddedClientThroughput: Benchmark {
 
   func run() throws {
     for _ in 0..<self.requestCount {
-      let handler = _GRPCClientChannelHandler<Echo_EchoRequest, Echo_EchoResponse>(
-        streamID: .init(1),
-        callType: .unary,
-        logger: self.logger
-      )
+      let channel = EmbeddedChannel()
 
-      let channel = EmbeddedChannel(handler: handler)
+      try channel._configureForEmbeddedThroughputTest(
+        callType: .unary,
+        logger: self.logger,
+        requestType: Echo_EchoRequest.self,
+        responseType: Echo_EchoResponse.self
+      ).wait()
 
       // Trigger the request handler.
       channel.pipeline.fireChannelActive()

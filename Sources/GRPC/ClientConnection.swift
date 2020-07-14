@@ -19,6 +19,7 @@ import NIOHTTP2
 import NIOSSL
 import NIOTLS
 import Logging
+import SwiftProtobuf
 
 /// Provides a single, managed connection to a server.
 ///
@@ -143,19 +144,24 @@ public class ClientConnection {
   }
 }
 
-// Note: documentation is inherited.
+// MARK: - Unary
+
 extension ClientConnection: GRPCChannel {
-  public func makeUnaryCall<Request: GRPCPayload, Response: GRPCPayload>(
+  private func makeUnaryCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+    serializer: Serializer,
+    deserializer: Deserializer,
     path: String,
-    request: Request,
+    request: Serializer.Input,
     callOptions: CallOptions
-  ) -> UnaryCall<Request, Response> where Request : GRPCPayload, Response : GRPCPayload {
+  ) -> UnaryCall<Serializer.Input, Deserializer.Output> {
     let requestID = callOptions.requestIDProvider.requestID()
     let logger = self.loggerWithRequestID(requestID)
     logger.debug("starting rpc", metadata: ["path": "\(path)"])
 
-    let call = UnaryCall<Request, Response>.makeOnHTTP2Stream(
+    let call = UnaryCall<Serializer.Input, Deserializer.Output>.makeOnHTTP2Stream(
       multiplexer: self.multiplexer,
+      serializer: serializer,
+      deserializer: deserializer,
       callOptions: callOptions,
       errorDelegate: self.configuration.errorDelegate,
       logger: logger
@@ -166,16 +172,54 @@ extension ClientConnection: GRPCChannel {
     return call
   }
 
-  public func makeClientStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
+  /// A unary call using `SwiftProtobuf.Message` messages.
+  public func makeUnaryCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+    path: String,
+    request: Request,
+    callOptions: CallOptions
+  ) -> UnaryCall<Request, Response> {
+    return self.makeUnaryCall(
+      serializer: ProtobufSerializer(),
+      deserializer: ProtobufDeserializer(),
+      path: path,
+      request: request,
+      callOptions: callOptions
+    )
+  }
+
+  /// A unary call using `GRPCPayload` messages.
+  public func makeUnaryCall<Request: GRPCPayload, Response: GRPCPayload>(
+    path: String,
+    request: Request,
+    callOptions: CallOptions
+  ) -> UnaryCall<Request, Response> {
+    return self.makeUnaryCall(
+      serializer: GRPCPayloadSerializer(),
+      deserializer: GRPCPayloadDeserializer(),
+      path: path,
+      request: request,
+      callOptions: callOptions
+    )
+  }
+}
+
+// MARK: - Client Streaming
+
+extension ClientConnection {
+  private func makeClientStreamingCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+    serializer: Serializer,
+    deserializer: Deserializer,
     path: String,
     callOptions: CallOptions
-  ) -> ClientStreamingCall<Request, Response> {
+  ) -> ClientStreamingCall<Serializer.Input, Deserializer.Output> {
     let requestID = callOptions.requestIDProvider.requestID()
     let logger = self.loggerWithRequestID(requestID)
     logger.debug("starting rpc", metadata: ["path": "\(path)"])
 
-    let call = ClientStreamingCall<Request, Response>.makeOnHTTP2Stream(
+    let call = ClientStreamingCall<Serializer.Input, Deserializer.Output>.makeOnHTTP2Stream(
       multiplexer: self.multiplexer,
+      serializer: serializer,
+      deserializer: deserializer,
       callOptions: callOptions,
       errorDelegate: self.configuration.errorDelegate,
       logger: logger
@@ -186,40 +230,116 @@ extension ClientConnection: GRPCChannel {
     return call
   }
 
+  /// A client streaming call using `SwiftProtobuf.Message` messages.
+  public func makeClientStreamingCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+    path: String,
+    callOptions: CallOptions
+  ) -> ClientStreamingCall<Request, Response> {
+    return self.makeClientStreamingCall(
+      serializer: ProtobufSerializer(),
+      deserializer: ProtobufDeserializer(),
+      path: path,
+      callOptions: callOptions
+    )
+  }
+
+  /// A client streaming call using `GRPCPayload` messages.
+  public func makeClientStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
+    path: String,
+    callOptions: CallOptions
+  ) -> ClientStreamingCall<Request, Response> {
+    return self.makeClientStreamingCall(
+      serializer: GRPCPayloadSerializer(),
+      deserializer: GRPCPayloadDeserializer(),
+      path: path,
+      callOptions: callOptions
+    )
+  }
+}
+
+// MARK: - Server Streaming
+
+extension ClientConnection {
+  private func makeServerStreamingCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+    serializer: Serializer,
+    deserializer: Deserializer,
+    path: String,
+    request: Serializer.Input,
+    callOptions: CallOptions,
+    handler: @escaping (Deserializer.Output) -> Void
+  ) -> ServerStreamingCall<Serializer.Input, Deserializer.Output> {
+    let requestID = callOptions.requestIDProvider.requestID()
+    let logger = self.loggerWithRequestID(requestID)
+    logger.debug("starting rpc", metadata: ["path": "\(path)"])
+
+    let call = ServerStreamingCall<Serializer.Input, Deserializer.Output>.makeOnHTTP2Stream(
+      multiplexer: multiplexer,
+      serializer: serializer,
+      deserializer: deserializer,
+      callOptions: callOptions,
+      errorDelegate: self.configuration.errorDelegate,
+      logger: logger,
+      responseHandler: handler
+    )
+
+    call.send(self.makeRequestHead(path: path, options: callOptions, requestID: requestID), request: request)
+
+    return call
+  }
+
+  /// A server streaming call using `SwiftProtobuf.Message` messages.
+  public func makeServerStreamingCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+    path: String,
+    request: Request,
+    callOptions: CallOptions,
+    handler: @escaping (Response) -> Void
+  ) -> ServerStreamingCall<Request, Response> {
+    return self.makeServerStreamingCall(
+      serializer: ProtobufSerializer(),
+      deserializer: ProtobufDeserializer(),
+      path: path,
+      request: request,
+      callOptions: callOptions,
+      handler: handler
+    )
+  }
+
+  /// A server streaming call using `GRPCPayload` messages.
   public func makeServerStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
     path: String,
     request: Request,
     callOptions: CallOptions,
     handler: @escaping (Response) -> Void
   ) -> ServerStreamingCall<Request, Response> {
-    let requestID = callOptions.requestIDProvider.requestID()
-    let logger = self.loggerWithRequestID(requestID)
-    logger.debug("starting rpc", metadata: ["path": "\(path)"])
-
-    let call = ServerStreamingCall<Request, Response>.makeOnHTTP2Stream(
-      multiplexer: multiplexer,
+    return self.makeServerStreamingCall(
+      serializer: GRPCPayloadSerializer(),
+      deserializer: GRPCPayloadDeserializer(),
+      path: path,
+      request: request,
       callOptions: callOptions,
-      errorDelegate: self.configuration.errorDelegate,
-      logger: logger,
-      responseHandler: handler
+      handler: handler
     )
-
-    call.send(self.makeRequestHead(path: path, options: callOptions, requestID: requestID), request: request)
-
-    return call
   }
+}
 
-  public func makeBidirectionalStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
+// MARK: - Bidirectional Streaming
+
+extension ClientConnection {
+  private func makeBidirectionalStreamingCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+    serializer: Serializer,
+    deserializer: Deserializer,
     path: String,
     callOptions: CallOptions,
-    handler: @escaping (Response) -> Void
-  ) -> BidirectionalStreamingCall<Request, Response> {
+    handler: @escaping (Deserializer.Output) -> Void
+  ) -> BidirectionalStreamingCall<Serializer.Input, Deserializer.Output> {
     let requestID = callOptions.requestIDProvider.requestID()
     let logger = self.loggerWithRequestID(requestID)
     logger.debug("starting rpc", metadata: ["path": "\(path)"])
 
-    let call = BidirectionalStreamingCall<Request, Response>.makeOnHTTP2Stream(
+    let call = BidirectionalStreamingCall<Serializer.Input, Deserializer.Output>.makeOnHTTP2Stream(
       multiplexer: multiplexer,
+      serializer: serializer,
+      deserializer: deserializer,
       callOptions: callOptions,
       errorDelegate: self.configuration.errorDelegate,
       logger: logger,
@@ -229,6 +349,36 @@ extension ClientConnection: GRPCChannel {
     call.sendHead(self.makeRequestHead(path: path, options: callOptions, requestID: requestID))
 
     return call
+  }
+
+  /// A bidirectional streaming call using `SwiftProtobuf.Message` messages.
+  public func makeBidirectionalStreamingCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+    path: String,
+    callOptions: CallOptions,
+    handler: @escaping (Response) -> Void
+  ) -> BidirectionalStreamingCall<Request, Response> {
+    return self.makeBidirectionalStreamingCall(
+      serializer: ProtobufSerializer(),
+      deserializer: ProtobufDeserializer(),
+      path: path,
+      callOptions: callOptions,
+      handler: handler
+    )
+  }
+
+  /// A bidirectional streaming call using `GRPCPayload` messages.
+  public func makeBidirectionalStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
+    path: String,
+    callOptions: CallOptions,
+    handler: @escaping (Response) -> Void
+  ) -> BidirectionalStreamingCall<Request, Response> {
+    return self.makeBidirectionalStreamingCall(
+      serializer: GRPCPayloadSerializer(),
+      deserializer: GRPCPayloadDeserializer(),
+      path: path,
+      callOptions: callOptions,
+      handler: handler
+    )
   }
 }
 

@@ -22,10 +22,7 @@ import Logging
 ///
 /// Messages should be sent via the `sendMessage` and `sendMessages` methods; the stream of messages
 /// must be terminated by calling `sendEnd` to indicate the final message has been sent.
-public final class BidirectionalStreamingCall<
-  RequestPayload: GRPCPayload,
-  ResponsePayload: GRPCPayload
->: StreamingRequestClientCall {
+public final class BidirectionalStreamingCall<RequestPayload, ResponsePayload>: StreamingRequestClientCall {
   private let transport: ChannelTransport<RequestPayload, ResponsePayload>
 
   /// The options used to make the RPC.
@@ -147,16 +144,20 @@ public final class BidirectionalStreamingCall<
 }
 
 extension BidirectionalStreamingCall {
-  internal static func makeOnHTTP2Stream(
+  internal static func makeOnHTTP2Stream<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
     multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
+    serializer: Serializer,
+    deserializer: Deserializer,
     callOptions: CallOptions,
     errorDelegate: ClientErrorDelegate?,
     logger: Logger,
     responseHandler: @escaping (ResponsePayload) -> Void
-  ) -> BidirectionalStreamingCall<RequestPayload, ResponsePayload> {
+  ) -> BidirectionalStreamingCall<RequestPayload, ResponsePayload> where Serializer.Input == RequestPayload, Deserializer.Output == ResponsePayload {
     let eventLoop = multiplexer.eventLoop
     let transport = ChannelTransport<RequestPayload, ResponsePayload>(
       multiplexer: multiplexer,
+      serializer: serializer,
+      deserializer: deserializer,
       responseContainer: .init(eventLoop: eventLoop, streamingResponseHandler: responseHandler),
       callType: .bidirectionalStreaming,
       timeLimit: callOptions.timeLimit,
@@ -167,12 +168,14 @@ extension BidirectionalStreamingCall {
     return BidirectionalStreamingCall(transport: transport, options: callOptions)
   }
 
-  internal static func make(
+  internal static func make<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+    serializer: Serializer,
+    deserializer: Deserializer,
     fakeResponse: FakeStreamingResponse<RequestPayload, ResponsePayload>?,
     callOptions: CallOptions,
     logger: Logger,
     responseHandler: @escaping (ResponsePayload) -> Void
-  ) -> BidirectionalStreamingCall<RequestPayload, ResponsePayload> {
+  ) -> BidirectionalStreamingCall<RequestPayload, ResponsePayload> where Serializer.Input == RequestPayload, Deserializer.Output == ResponsePayload {
     let eventLoop = fakeResponse?.channel.eventLoop ?? EmbeddedEventLoop()
     let responseContainer = ResponsePartContainer(eventLoop: eventLoop, streamingResponseHandler: responseHandler)
 
