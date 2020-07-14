@@ -77,7 +77,7 @@ public class FakeChannel: GRPCChannel {
   ) -> UnaryCall<Request, Response> {
     return self.makeUnaryCall(
       serializer: ProtobufSerializer(),
-      deserialiser: ProtobufDeserializer(),
+      deserializer: ProtobufDeserializer(),
       path: path,
       request: request,
       callOptions: callOptions
@@ -92,7 +92,7 @@ public class FakeChannel: GRPCChannel {
   ) -> UnaryCall<Request, Response> {
     return self.makeUnaryCall(
       serializer: GRPCPayloadSerializer(),
-      deserialiser: GRPCPayloadDeserializer(),
+      deserializer: GRPCPayloadDeserializer(),
       path: path,
       request: request,
       callOptions: callOptions
@@ -108,7 +108,7 @@ public class FakeChannel: GRPCChannel {
   ) -> ServerStreamingCall<Request, Response> {
     return self.makeServerStreamingCall(
       serializer: ProtobufSerializer(),
-      deserialiser: ProtobufDeserializer(),
+      deserializer: ProtobufDeserializer(),
       path: path,
       request: request,
       callOptions: callOptions,
@@ -125,7 +125,7 @@ public class FakeChannel: GRPCChannel {
   ) -> ServerStreamingCall<Request, Response> {
     return self.makeServerStreamingCall(
       serializer: GRPCPayloadSerializer(),
-      deserialiser: GRPCPayloadDeserializer(),
+      deserializer: GRPCPayloadDeserializer(),
       path: path,
       request: request,
       callOptions: callOptions,
@@ -140,7 +140,7 @@ public class FakeChannel: GRPCChannel {
   ) -> ClientStreamingCall<Request, Response> {
     return self.makeClientStreamingCall(
       serializer: ProtobufSerializer(),
-      deserialiser: ProtobufDeserializer(),
+      deserializer: ProtobufDeserializer(),
       path: path,
       callOptions: callOptions
     )
@@ -153,7 +153,7 @@ public class FakeChannel: GRPCChannel {
   ) -> ClientStreamingCall<Request, Response> {
     return self.makeClientStreamingCall(
       serializer: GRPCPayloadSerializer(),
-      deserialiser: GRPCPayloadDeserializer(),
+      deserializer: GRPCPayloadDeserializer(),
       path: path,
       callOptions: callOptions
     )
@@ -167,7 +167,7 @@ public class FakeChannel: GRPCChannel {
   ) -> BidirectionalStreamingCall<Request, Response> {
     return self.makeBidirectionalStreamingCall(
       serializer: ProtobufSerializer(),
-      deserialiser: ProtobufDeserializer(),
+      deserializer: ProtobufDeserializer(),
       path: path,
       callOptions: callOptions,
       handler: handler
@@ -182,7 +182,7 @@ public class FakeChannel: GRPCChannel {
   ) -> BidirectionalStreamingCall<Request, Response> {
     return self.makeBidirectionalStreamingCall(
       serializer: GRPCPayloadSerializer(),
-      deserialiser: GRPCPayloadDeserializer(),
+      deserializer: GRPCPayloadDeserializer(),
       path: path,
       callOptions: callOptions,
       handler: handler
@@ -226,14 +226,14 @@ extension FakeChannel {
 extension FakeChannel {
   private func makeUnaryCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
     serializer: Serializer,
-    deserialiser: Deserializer,
+    deserializer: Deserializer,
     path: String,
     request: Serializer.Input,
     callOptions: CallOptions
   ) -> UnaryCall<Serializer.Input, Deserializer.Output> {
     let call = UnaryCall<Serializer.Input, Deserializer.Output>.make(
       serializer: serializer,
-      deserializer: deserialiser,
+      deserializer: deserializer,
       fakeResponse: self.dequeueResponseStream(forPath: path),
       callOptions: callOptions,
       logger: self.logger
@@ -246,13 +246,13 @@ extension FakeChannel {
 
   private func makeClientStreamingCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
     serializer: Serializer,
-    deserialiser: Deserializer,
+    deserializer: Deserializer,
     path: String,
     callOptions: CallOptions
   ) -> ClientStreamingCall<Serializer.Input, Deserializer.Output> {
     let call = ClientStreamingCall<Serializer.Input, Deserializer.Output>.make(
       serializer: serializer,
-      deserializer: deserialiser,
+      deserializer: deserializer,
       fakeResponse: self.dequeueResponseStream(forPath: path),
       callOptions: callOptions,
       logger: self.logger
@@ -265,7 +265,7 @@ extension FakeChannel {
 
   private func makeServerStreamingCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
     serializer: Serializer,
-    deserialiser: Deserializer,
+    deserializer: Deserializer,
     path: String,
     request: Serializer.Input,
     callOptions: CallOptions,
@@ -273,7 +273,7 @@ extension FakeChannel {
   ) -> ServerStreamingCall<Serializer.Input, Deserializer.Output> {
     let call = ServerStreamingCall<Serializer.Input, Deserializer.Output>.make(
       serializer: serializer,
-      deserializer: deserialiser,
+      deserializer: deserializer,
       fakeResponse: self.dequeueResponseStream(forPath: path),
       callOptions: callOptions,
       logger: self.logger,
@@ -287,14 +287,14 @@ extension FakeChannel {
 
   private func makeBidirectionalStreamingCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
     serializer: Serializer,
-    deserialiser: Deserializer,
+    deserializer: Deserializer,
     path: String,
     callOptions: CallOptions,
     handler: @escaping (Deserializer.Output) -> Void
   ) -> BidirectionalStreamingCall<Serializer.Input, Deserializer.Output> {
     let call = BidirectionalStreamingCall<Serializer.Input, Deserializer.Output>.make(
       serializer: serializer,
-      deserializer: deserialiser,
+      deserializer: deserializer,
       fakeResponse: self.dequeueResponseStream(forPath: path),
       callOptions: callOptions,
       logger: self.logger,

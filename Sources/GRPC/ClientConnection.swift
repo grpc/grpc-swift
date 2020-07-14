@@ -149,7 +149,7 @@ public class ClientConnection {
 extension ClientConnection: GRPCChannel {
   private func makeUnaryCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
     serializer: Serializer,
-    deserialiser: Deserializer,
+    deserializer: Deserializer,
     path: String,
     request: Serializer.Input,
     callOptions: CallOptions
@@ -161,7 +161,7 @@ extension ClientConnection: GRPCChannel {
     let call = UnaryCall<Serializer.Input, Deserializer.Output>.makeOnHTTP2Stream(
       multiplexer: self.multiplexer,
       serializer: serializer,
-      deserializer: deserialiser,
+      deserializer: deserializer,
       callOptions: callOptions,
       errorDelegate: self.configuration.errorDelegate,
       logger: logger
@@ -180,7 +180,7 @@ extension ClientConnection: GRPCChannel {
   ) -> UnaryCall<Request, Response> {
     return self.makeUnaryCall(
       serializer: ProtobufSerializer(),
-      deserialiser: ProtobufDeserializer(),
+      deserializer: ProtobufDeserializer(),
       path: path,
       request: request,
       callOptions: callOptions
@@ -195,7 +195,7 @@ extension ClientConnection: GRPCChannel {
   ) -> UnaryCall<Request, Response> {
     return self.makeUnaryCall(
       serializer: GRPCPayloadSerializer(),
-      deserialiser: GRPCPayloadDeserializer(),
+      deserializer: GRPCPayloadDeserializer(),
       path: path,
       request: request,
       callOptions: callOptions
@@ -208,7 +208,7 @@ extension ClientConnection: GRPCChannel {
 extension ClientConnection {
   private func makeClientStreamingCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
     serializer: Serializer,
-    deserialiser: Deserializer,
+    deserializer: Deserializer,
     path: String,
     callOptions: CallOptions
   ) -> ClientStreamingCall<Serializer.Input, Deserializer.Output> {
@@ -219,7 +219,7 @@ extension ClientConnection {
     let call = ClientStreamingCall<Serializer.Input, Deserializer.Output>.makeOnHTTP2Stream(
       multiplexer: self.multiplexer,
       serializer: serializer,
-      deserializer: deserialiser,
+      deserializer: deserializer,
       callOptions: callOptions,
       errorDelegate: self.configuration.errorDelegate,
       logger: logger
@@ -237,7 +237,7 @@ extension ClientConnection {
   ) -> ClientStreamingCall<Request, Response> {
     return self.makeClientStreamingCall(
       serializer: ProtobufSerializer(),
-      deserialiser: ProtobufDeserializer(),
+      deserializer: ProtobufDeserializer(),
       path: path,
       callOptions: callOptions
     )
@@ -250,7 +250,7 @@ extension ClientConnection {
   ) -> ClientStreamingCall<Request, Response> {
     return self.makeClientStreamingCall(
       serializer: GRPCPayloadSerializer(),
-      deserialiser: GRPCPayloadDeserializer(),
+      deserializer: GRPCPayloadDeserializer(),
       path: path,
       callOptions: callOptions
     )
@@ -262,7 +262,7 @@ extension ClientConnection {
 extension ClientConnection {
   private func makeServerStreamingCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
     serializer: Serializer,
-    deserialiser: Deserializer,
+    deserializer: Deserializer,
     path: String,
     request: Serializer.Input,
     callOptions: CallOptions,
@@ -275,7 +275,7 @@ extension ClientConnection {
     let call = ServerStreamingCall<Serializer.Input, Deserializer.Output>.makeOnHTTP2Stream(
       multiplexer: multiplexer,
       serializer: serializer,
-      deserializer: deserialiser,
+      deserializer: deserializer,
       callOptions: callOptions,
       errorDelegate: self.configuration.errorDelegate,
       logger: logger,
@@ -296,7 +296,7 @@ extension ClientConnection {
   ) -> ServerStreamingCall<Request, Response> {
     return self.makeServerStreamingCall(
       serializer: ProtobufSerializer(),
-      deserialiser: ProtobufDeserializer(),
+      deserializer: ProtobufDeserializer(),
       path: path,
       request: request,
       callOptions: callOptions,
@@ -313,7 +313,7 @@ extension ClientConnection {
   ) -> ServerStreamingCall<Request, Response> {
     return self.makeServerStreamingCall(
       serializer: GRPCPayloadSerializer(),
-      deserialiser: GRPCPayloadDeserializer(),
+      deserializer: GRPCPayloadDeserializer(),
       path: path,
       request: request,
       callOptions: callOptions,
@@ -327,7 +327,7 @@ extension ClientConnection {
 extension ClientConnection {
   private func makeBidirectionalStreamingCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
     serializer: Serializer,
-    deserialiser: Deserializer,
+    deserializer: Deserializer,
     path: String,
     callOptions: CallOptions,
     handler: @escaping (Deserializer.Output) -> Void
@@ -339,7 +339,7 @@ extension ClientConnection {
     let call = BidirectionalStreamingCall<Serializer.Input, Deserializer.Output>.makeOnHTTP2Stream(
       multiplexer: multiplexer,
       serializer: serializer,
-      deserializer: deserialiser,
+      deserializer: deserializer,
       callOptions: callOptions,
       errorDelegate: self.configuration.errorDelegate,
       logger: logger,
@@ -359,7 +359,7 @@ extension ClientConnection {
   ) -> BidirectionalStreamingCall<Request, Response> {
     return self.makeBidirectionalStreamingCall(
       serializer: ProtobufSerializer(),
-      deserialiser: ProtobufDeserializer(),
+      deserializer: ProtobufDeserializer(),
       path: path,
       callOptions: callOptions,
       handler: handler
@@ -374,7 +374,7 @@ extension ClientConnection {
   ) -> BidirectionalStreamingCall<Request, Response> {
     return self.makeBidirectionalStreamingCall(
       serializer: GRPCPayloadSerializer(),
-      deserialiser: GRPCPayloadDeserializer(),
+      deserializer: GRPCPayloadDeserializer(),
       path: path,
       callOptions: callOptions,
       handler: handler
