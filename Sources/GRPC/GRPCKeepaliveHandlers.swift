@@ -212,7 +212,10 @@ struct PingHandler {
     }
   }
 
-  private static let goAwayFrame = HTTP2Frame.FramePayload.goAway(lastStreamID: .rootStream, errorCode: .enhanceYourCalm, opaqueData: nil)
+  private static let goAwayFrame = HTTP2Frame.FramePayload.goAway(
+    lastStreamID: .rootStream,
+    errorCode: .enhanceYourCalm, opaqueData: nil
+  )
 
   // For testing only
   var _testingOnlyNow: NIODeadline?
@@ -248,7 +251,7 @@ struct PingHandler {
     self.activeStreams += 1
 
     if self.startedAt == nil {
-      self.startedAt = self.now
+      self.startedAt = self.now()
       return .schedulePing(delay: self.interval, timeout: self.timeout)
     } else {
       return .none
@@ -261,37 +264,55 @@ struct PingHandler {
   }
 
   mutating func read(pingData: HTTP2PingData, ack: Bool) -> Action {
-    let isPong = ack && pingData.integer == self.pingCode
-    let isIllegalWithoutCalls = !ack && self.activeStreams == 0 && !self.permitWithoutCalls
-    let isInvalidPing = !ack && self.isPingStrike
-    let isValidPing = !ack && !self.isPingStrike
+    if ack {
+      return self.handlePong(pingData)
+    } else {
+      return self.handlePing(pingData)
+    }
+  }
 
-    if isPong {
+  private func handlePong(_ pingData: HTTP2PingData) -> Action {
+    if pingData.integer == self.pingCode {
       return .cancelScheduledTimeout
-    } else if isIllegalWithoutCalls {
-      return .reply(PingHandler.goAwayFrame)
-    } else if isInvalidPing, let maximumPingStrikes = self.maximumPingStrikes {
-      self.pingStrikes += 1
-
-      if self.pingStrikes > maximumPingStrikes && maximumPingStrikes > 0 {
-        return .reply(PingHandler.goAwayFrame)
-      } else {
-        return .none
-      }
-    } else if isValidPing {
-      self.pingStrikes = 0
-      self.lastReceivedPingDate = self.now
-      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
     } else {
       return .none
     }
   }
 
+  private mutating func handlePing(_ pingData: HTTP2PingData) -> Action {
+    // Do we support ping strikes (only servers support ping strikes)?
+    if let maximumPingStrikes = self.maximumPingStrikes {
+      // Is this a ping strike?
+      if self.isPingStrike {
+        self.pingStrikes += 1
+
+        // A maximum ping strike of zero indicates that we tolerate any number of strikes.
+        if maximumPingStrikes != 0, self.pingStrikes > maximumPingStrikes {
+          return .reply(PingHandler.goAwayFrame)
+        } else {
+          return .none
+        }
+      } else {
+        // This is a valid ping, reset our strike count and reply with a pong.
+        self.pingStrikes = 0
+        self.lastReceivedPingDate = self.now()
+        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+      }
+    } else {
+      // We don't support ping strikes. We'll just reply with a pong.
+      //
+      // Note: we don't need to update `pingStrikes` or `lastReceivedPingDate` as we don't
+      // support ping strikes.
+      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+    }
+  }
+
+
   mutating func pingFired() -> Action {
     if self.shouldBlockPing {
       return .none
     } else {
-      return .reply(self.generatePingFrame(code: pingCode, ack: false))
+      return .reply(self.generatePingFrame(code: self.pingCode, ack: false))
     }
   }
 
@@ -300,18 +321,27 @@ struct PingHandler {
       self.sentPingsWithoutData += 1
     }
 
-    self.lastSentPingDate = self.now
+    self.lastSentPingDate = self.now()
     return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)
   }
 
+  /// Returns true if, on receipt of a ping, the ping should be regarded as a ping strike.
+  ///
+  /// A ping is considered a 'strike' if:
+  /// - There are no active streams.
+  /// - We allow pings to be sent when there are no active streams (i.e. `self.permitWithoutCalls`).
+  /// - The time since the last ping we received is less than the minimum allowed interval.
+  ///
+  /// - Precondition: Ping strikes are supported (i.e. `self.maximumPingStrikes != nil`)
   private var isPingStrike: Bool {
+    assert(self.maximumPingStrikes != nil, "Ping strikes are not supported but we're checking for one")
     guard self.activeStreams == 0 && self.permitWithoutCalls,
       let lastReceivedPingDate = self.lastReceivedPingDate,
       let minimumReceivedPingIntervalWithoutData = self.minimumReceivedPingIntervalWithoutData else {
         return false
     }
 
-    return self.now - lastReceivedPingDate < minimumReceivedPingIntervalWithoutData
+    return self.now() - lastReceivedPingDate < minimumReceivedPingIntervalWithoutData
   }
 
   private var shouldBlockPing: Bool {
@@ -328,7 +358,7 @@ struct PingHandler {
       }
 
       // The time elapsed since the previous ping is less than the minimum required
-      if let lastSentPingDate = self.lastSentPingDate, self.now - lastSentPingDate < self.minimumSentPingIntervalWithoutData {
+      if let lastSentPingDate = self.lastSentPingDate, self.now() - lastSentPingDate < self.minimumSentPingIntervalWithoutData {
         return true
       }
 
@@ -338,7 +368,7 @@ struct PingHandler {
     return false
   }
 
-  private var now: NIODeadline {
+  private func now() -> NIODeadline {
     return self._testingOnlyNow ?? .now()
   }
 }

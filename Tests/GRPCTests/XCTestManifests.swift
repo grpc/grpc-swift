@@ -496,6 +496,8 @@ extension GRPCPingHandlerTests {
         ("testIntervalWithoutCallsInFlightButPermitted", testIntervalWithoutCallsInFlightButPermitted),
         ("testPingStrikesOnClientShouldHaveNoEffect", testPingStrikesOnClientShouldHaveNoEffect),
         ("testPingStrikesOnServer", testPingStrikesOnServer),
+        ("testPingWithoutDataResultsInPongForClient", testPingWithoutDataResultsInPongForClient),
+        ("testPingWithoutDataResultsInPongForServer", testPingWithoutDataResultsInPongForServer),
     ]
 }
 
