@@ -224,6 +224,28 @@ class GRPCPingHandlerTests: GRPCTestCase {
     XCTAssertEqual(response, .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: true)))
   }
 
+  func testPingWithoutDataResultsInPongForClient() {
+    // Don't allow _sending_ pings when no calls are active (receiving pings should be tolerated).
+    self.setupPingHandler(permitWithoutCalls: false)
+
+    let action = self.pingHandler.read(pingData: HTTP2PingData(withInteger: 1), ack: false)
+    XCTAssertEqual(action, .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: true)))
+  }
+
+  func testPingWithoutDataResultsInPongForServer() {
+    // Don't allow _sending_ pings when no calls are active (receiving pings should be tolerated).
+    // Set 'minimumReceivedPingIntervalWithoutData' and 'maximumPingStrikes' so that we enable
+    // support for ping strikes.
+    self.setupPingHandler(
+      permitWithoutCalls: false,
+      minimumReceivedPingIntervalWithoutData: .seconds(5),
+      maximumPingStrikes: 1
+    )
+
+    let action = self.pingHandler.read(pingData: HTTP2PingData(withInteger: 1), ack: false)
+    XCTAssertEqual(action, .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: true)))
+  }
+
   func testPingStrikesOnServer() {
     // Set a maximum ping strikes of 1 without a minimum of 1 second between pings
     self.setupPingHandler(interval: .seconds(2), timeout: .seconds(1), permitWithoutCalls: true, minimumReceivedPingIntervalWithoutData: .seconds(1), maximumPingStrikes: 1)
