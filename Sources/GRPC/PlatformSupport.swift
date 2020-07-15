@@ -78,11 +78,12 @@ extension NetworkPreference {
     switch self.wrapped {
     case .best:
       #if canImport(Network)
-      guard #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else {
-        // This is gated by the availability of `.networkFramework` so should never happen.
-        fatalError(".networkFramework is being used on an unsupported platform")
+      if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
+        return .networkFramework
+      } else {
+        // Older platforms must use the POSIX loop.
+        return .posix
       }
-      return .networkFramework
       #else
       return .posix
       #endif
