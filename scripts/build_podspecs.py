@@ -90,15 +90,16 @@ class Pod:
         podspec += indent + "s.homepage = 'https://www.grpc.io'\n"
         podspec += indent + "s.authors  = { 'The gRPC contributors' => \'grpc-packages@google.com' }\n\n"
 
+        podspec += indent + "s.swift_version = '5.0'\n"
+        podspec += indent + "s.ios.deployment_target = '10.0'\n"
+        podspec += indent + "s.osx.deployment_target = '10.12'\n"
+        podspec += indent + "s.tvos.deployment_target = '10.0'\n"
+        
         if self.is_plugins_pod:
             podspec += indent + "s.source = { :http => \"https://github.com/grpc/grpc-swift/releases/download/#{s.version}/protoc-grpc-swift-plugins-#{s.version}.zip\"}\n\n"
             podspec += indent + "s.preserve_paths = '*'\n"
         else:
             podspec += indent + "s.source = { :git => \"https://github.com/grpc/grpc-swift.git\", :tag => s.version }\n\n"
-            podspec += indent + "s.swift_version = '5.0'\n"
-            podspec += indent + "s.ios.deployment_target = '10.0'\n"
-            podspec += indent + "s.osx.deployment_target = '10.12'\n"
-            podspec += indent + "s.tvos.deployment_target = '10.0'\n"
             podspec += indent + "s.source_files = 'Sources/%s/**/*.{swift,c,h}'\n" % (self.module_name)
 
             podspec += "\n" if len(self.dependencies) > 0 else ""
