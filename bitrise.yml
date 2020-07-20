@@ -1,0 +1,26 @@
+---
+format_version: '6'
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+project_type: ios
+
+workflows:
+  deploy:
+    steps:
+    - script:
+        deps:
+          brew:
+          - name: node
+          - name: streamlayer/formulas/carthage
+          - name: streamlayer/formulas/prefixify
+        inputs:
+        - content: |-
+            #!/bin/bash
+            set -ex
+            rm -rf Carthage ~/Library/Caches/org.carthage.CarthageKit/build
+            yarn
+            # 5.1.3+d6c4ba50e84722a815542bda2b6e8a42 is xcode 11.3.1 vesion
+            if [ "$(carthage swift-version)" !=  "5.1.3+d6c4ba50e84722a815542bda2b6e8a42" ]; then
+              echo "Invalid swift version" 1>&2
+              exit 1
+            fi
+            yarn semantic-release

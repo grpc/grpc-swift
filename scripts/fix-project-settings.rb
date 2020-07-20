@@ -17,6 +17,7 @@ end
 project.targets.each do |target|
   target.build_configurations.each do |config|
     config.build_settings["IPHONEOS_DEPLOYMENT_TARGET"] = "10.0"
+    config.build_settings["TVOS_DEPLOYMENT_TARGET"] = "10.0"
     if config.build_settings["PRODUCT_BUNDLE_IDENTIFIER"] then
       config.build_settings["PRODUCT_BUNDLE_IDENTIFIER"] = "io.grpc." + config.build_settings["PRODUCT_BUNDLE_IDENTIFIER"]
     end

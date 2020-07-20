@@ -18,3 +18,6 @@ Examples/EchoWeb/dist
 Examples/EchoWeb/node_modules
 Examples/EchoWeb/package-lock.json
 dev/codegen-tests/**/generated/*
+node_modules
+*.framework.zip
+Carthage/

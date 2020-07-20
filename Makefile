@@ -25,6 +25,12 @@ all:
 	${SWIFT_BUILD}
 
 .PHONY:
+carthage_project:
+	${SWIFT_PACKAGE} generate-xcodeproj --output ${XCODEPROJ}
+	ruby scripts/fix-project-settings.rb ${XCODEPROJ} || echo "xcodeproj ('sudo gem install xcodeproj') is required in order to generate the Carthage-compatible project!"
+	ruby scripts/patch-carthage-project.rb ${XCODEPROJ} || echo "xcodeproj ('sudo gem install xcodeproj') is required in order to generate the Carthage-compatible project!"
+
+.PHONY:
 plugins: ${PROTOC_GEN_SWIFT} ${PROTOC_GEN_GRPC_SWIFT}
 	cp $^ .
 

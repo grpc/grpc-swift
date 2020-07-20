@@ -1,0 +1,7 @@
+grpc-swift-Package:
+  project: GRPC.xcodeproj
+  sdks:
+  - iphoneos
+  - iphonesimulator
+  - appletvos
+  - appletvsimulator

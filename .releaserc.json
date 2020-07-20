@@ -1,0 +1,23 @@
+{
+  "branches": ["next", { "name": "5.0.1-swift", "prerelease": true }],
+  "plugins": [
+    ["@semantic-release/commit-analyzer", {
+      "preset": "angular"
+    }],
+    ["@semantic-release/exec", {
+      "prepareCmd": "carthage build --commitish v${nextRelease.version} --cache-builds --archive --archive-output GRPCSwift.framework.zip"
+    }],
+    ["@semantic-release/npm", {
+      "npmPublish": false
+    }],
+    ["@semantic-release/git", {
+      "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}",
+      "assets": ["package.json"]
+    }],
+    ["@semantic-release/github", {
+      "assets": [
+        { "path": "GRPCSwift.framework.zip" }
+      ]
+    }]
+  ]
+}
