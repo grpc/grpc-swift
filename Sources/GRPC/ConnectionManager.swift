@@ -149,8 +149,10 @@ internal class ConnectionManager {
         self.monitor.updateState(to: .idle, logger: self.logger)
 
         // Create a new id; it'll be used for the *next* channel we create.
-        self.channelNumber &+= 1
-        self.logger[metadataKey: MetadataKey.connectionID] = "\(self.connectionId)/\(self.channelNumber)"
+        self.channelNumberLock.withLockVoid {
+          self.channelNumber &+= 1
+        }
+        self.logger[metadataKey: MetadataKey.connectionID] = "\(self.connectionIDAndNumber)"
 
       case .connecting:
         self.monitor.updateState(to: .connecting, logger: self.logger)
@@ -175,8 +177,19 @@ internal class ConnectionManager {
   internal let monitor: ConnectivityStateMonitor
   internal var logger: Logger
 
-  private let connectionId: String
+  private let connectionID: String
   private var channelNumber: UInt64
+  private var channelNumberLock = Lock()
+
+  private var connectionIDAndNumber: String {
+    return self.channelNumberLock.withLock {
+      return "\(self.connectionID)/\(self.channelNumber)"
+    }
+  }
+
+  internal func appendMetadata(to logger: inout Logger) {
+    logger[metadataKey: MetadataKey.connectionID] = "\(self.connectionIDAndNumber)"
+  }
 
   // Only used for testing.
   private var channelProvider: (() -> EventLoopFuture<Channel>)?
@@ -205,9 +218,9 @@ internal class ConnectionManager {
   ) {
     // Setup the logger.
     var logger = logger
-    let connectionId = UUID().uuidString
+    let connectionID = UUID().uuidString
     let channelNumber: UInt64 = 0
-    logger[metadataKey: MetadataKey.connectionID] = "\(connectionId)/\(channelNumber)"
+    logger[metadataKey: MetadataKey.connectionID] = "\(connectionID)/\(channelNumber)"
 
     let eventLoop = configuration.eventLoopGroup.next()
     self.eventLoop = eventLoop
@@ -219,7 +232,7 @@ internal class ConnectionManager {
 
     self.channelProvider = channelProvider
 
-    self.connectionId = connectionId
+    self.connectionID = connectionID
     self.channelNumber = channelNumber
     self.logger = logger
   }

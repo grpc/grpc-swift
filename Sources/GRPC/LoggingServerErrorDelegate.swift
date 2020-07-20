@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Foundation
 import Logging
 
 public class LoggingServerErrorDelegate: ServerErrorDelegate {
-  public static let shared = LoggingServerErrorDelegate()
-  private let logger = Logger(labelSuffix: "ServerErrorDelegate")
+  private let logger: Logger
 
-  private init() {}
+  public init(logger: Logger) {
+    self.logger = logger
+  }
 
   public func observeLibraryError(_ error: Error) {
     self.logger.error("library error", metadata: [MetadataKey.error: "\(error)"])

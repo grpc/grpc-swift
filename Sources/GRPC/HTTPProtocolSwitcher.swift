@@ -22,9 +22,9 @@ import Logging
 /// Channel handler that creates different processing pipelines depending on whether
 /// the incoming request is HTTP 1 or 2.
 internal class HTTPProtocolSwitcher {
-  private let handlersInitializer: ((Channel) -> EventLoopFuture<Void>)
+  private let handlersInitializer: ((Channel, Logger) -> EventLoopFuture<Void>)
   private let errorDelegate: ServerErrorDelegate?
-  private let logger = Logger(subsystem: .serverChannelCall)
+  private let logger: Logger
   private let httpTargetWindowSize: Int
   private let keepAlive: ServerConnectionKeepalive
   private let idleTimeout: TimeAmount
@@ -37,11 +37,7 @@ internal class HTTPProtocolSwitcher {
     case configured
   }
 
-  private var state: State = .notConfigured {
-    willSet {
-      self.logger.debug("state changed", metadata: ["old_state": "\(self.state)", "new_state": "\(newValue)"])
-    }
-  }
+  private var state: State = .notConfigured
   private var bufferedData: [NIOAny] = []
 
   init(
@@ -49,12 +45,14 @@ internal class HTTPProtocolSwitcher {
     httpTargetWindowSize: Int = 65535,
     keepAlive: ServerConnectionKeepalive,
     idleTimeout: TimeAmount,
-    handlersInitializer: (@escaping (Channel) -> EventLoopFuture<Void>)
+    logger: Logger,
+    handlersInitializer: (@escaping (Channel, Logger) -> EventLoopFuture<Void>)
   ) {
     self.errorDelegate = errorDelegate
     self.httpTargetWindowSize = httpTargetWindowSize
     self.keepAlive = keepAlive
     self.idleTimeout = idleTimeout
+    self.logger = logger
     self.handlersInitializer = handlersInitializer
   }
 }
@@ -140,7 +138,7 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
         // to support this.
         context.pipeline.configureHTTPServerPipeline(withErrorHandling: true)
           .flatMap { context.pipeline.addHandler(WebCORSHandler()) }
-          .flatMap { self.handlersInitializer(context.channel) }
+          .flatMap { self.handlersInitializer(context.channel, self.logger) }
           .cascade(to: pipelineConfigured)
 
       case .http2:
@@ -148,15 +146,18 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
           mode: .server,
           targetWindowSize: httpTargetWindowSize
         ) { (streamChannel, streamID) in
-            streamChannel.pipeline.addHandler(HTTP2ToHTTP1ServerCodec(streamID: streamID, normalizeHTTPHeaders: true))
-              .flatMap { self.handlersInitializer(streamChannel) }
-          }.flatMap { multiplexer in
-            // Add a keepalive and idle handlers between the two HTTP2 handlers.
-            let keepaliveHandler = GRPCServerKeepaliveHandler(configuration: self.keepAlive)
-            let idleHandler = GRPCIdleHandler(mode: .server, idleTimeout: self.idleTimeout)
-            return context.channel.pipeline.addHandlers([keepaliveHandler, idleHandler], position: .before(multiplexer))
+          var logger = self.logger
+          logger[metadataKey: MetadataKey.streamID] = "\(streamID)"
+          return streamChannel.pipeline.addHandler(HTTP2ToHTTP1ServerCodec(streamID: streamID, normalizeHTTPHeaders: true)).flatMap {
+            self.handlersInitializer(streamChannel, logger)
           }
-          .cascade(to: pipelineConfigured)
+        }.flatMap { multiplexer in
+          // Add a keepalive and idle handlers between the two HTTP2 handlers.
+          let keepaliveHandler = GRPCServerKeepaliveHandler(configuration: self.keepAlive)
+          let idleHandler = GRPCIdleHandler(mode: .server, idleTimeout: self.idleTimeout)
+          return context.channel.pipeline.addHandlers([keepaliveHandler, idleHandler], position: .before(multiplexer))
+        }
+        .cascade(to: pipelineConfigured)
       }
 
     case .configuring:
