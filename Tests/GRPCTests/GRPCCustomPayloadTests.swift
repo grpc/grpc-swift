@@ -30,19 +30,22 @@ class GRPCCustomPayloadTests: GRPCTestCase {
 
     self.server = try! Server.insecure(group: self.group)
       .withServiceProviders([CustomPayloadProvider()])
+      .withLogger(self.serverLogger)
       .bind(host: "localhost", port: 0)
       .wait()
 
     let channel = ClientConnection.insecure(group: self.group)
+      .withBackgroundActivityLogger(self.clientLogger)
       .connect(host: "localhost", port: server.channel.localAddress!.port!)
 
-    self.client = AnyServiceClient(channel: channel)
+    self.client = AnyServiceClient(channel: channel, defaultCallOptions: self.callOptionsWithLogger)
   }
 
   override func tearDown() {
     XCTAssertNoThrow(try self.server.close().wait())
     XCTAssertNoThrow(try self.client.channel.close().wait())
     XCTAssertNoThrow(try self.group.syncShutdownGracefully())
+    super.tearDown()
   }
 
   func testCustomPayload() throws {

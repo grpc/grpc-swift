@@ -38,7 +38,8 @@ class GRPCInsecureInteroperabilityTests: GRPCTestCase {
       host: "localhost",
       port: 0,
       eventLoopGroup: self.serverEventLoopGroup!,
-      useTLS: self.useTLS
+      useTLS: self.useTLS,
+      logger: self.serverLogger
     ).wait()
 
     guard let serverPort = self.server.channel.localAddress?.port else {
@@ -80,7 +81,7 @@ class GRPCInsecureInteroperabilityTests: GRPCTestCase {
     let builder = makeInteroperabilityTestClientBuilder(
       group: self.clientEventLoopGroup,
       useTLS: self.useTLS
-    )
+    ).withBackgroundActivityLogger(self.clientLogger)
     test.configure(builder: builder)
     self.clientConnection = builder.connect(host: "localhost", port: self.serverPort)
     XCTAssertNoThrow(try test.run(using: self.clientConnection), line: line)

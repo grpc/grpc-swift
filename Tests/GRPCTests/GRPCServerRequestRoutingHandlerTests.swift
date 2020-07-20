@@ -41,6 +41,7 @@ class GRPCServerRequestRoutingHandlerTests: GRPCTestCase {
 
   override func tearDown() {
     XCTAssertNoThrow(try self.channel.finish())
+    super.tearDown()
   }
 
   func testInvalidGRPCContentTypeReturnsUnsupportedMediaType() throws {

@@ -27,7 +27,8 @@ class ConnectionManagerTests: GRPCTestCase {
       target: .unixDomainSocket("/ignored"),
       eventLoopGroup: self.loop,
       connectivityStateDelegate: self.recorder,
-      connectionBackoff: nil
+      connectionBackoff: nil,
+      backgroundActivityLogger: self.clientLogger
     )
   }
 

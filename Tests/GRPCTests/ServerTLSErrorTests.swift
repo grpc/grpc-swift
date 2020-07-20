@@ -66,6 +66,7 @@ class ServerTLSErrorTests: GRPCTestCase {
   }
 
   override func setUp() {
+    super.setUp()
     self.serverEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     self.clientEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
   }
@@ -76,6 +77,7 @@ class ServerTLSErrorTests: GRPCTestCase {
 
     XCTAssertNoThrow(try self.serverEventLoopGroup.syncShutdownGracefully())
     self.serverEventLoopGroup = nil
+    super.tearDown()
   }
 
   func testErrorIsLoggedWhenSSLContextErrors() throws {
