@@ -10,7 +10,7 @@ workflows:
         deps:
           brew:
           - name: node
-          - name: streamlayer/formulas/carthage
+          - name: nsoperations/formulas/carthage
           - name: streamlayer/formulas/prefixify
         inputs:
         - content: |-
@@ -23,4 +23,5 @@ workflows:
               echo "Invalid swift version" 1>&2
               exit 1
             fi
+            carthage bootstrap
             yarn semantic-release
