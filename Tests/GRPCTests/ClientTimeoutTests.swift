@@ -28,7 +28,9 @@ class ClientTimeoutTests: GRPCTestCase {
     // We use a deadline here because internally we convert timeouts into deadlines by diffing
     // with `DispatchTime.now()`. We therefore need the deadline to be known in advance. Note we
     // use zero because `EmbeddedEventLoop`s time starts at zero.
-    return CallOptions(timeLimit: .deadline(.uptimeNanoseconds(0) + timeout))
+    var options = self.callOptionsWithLogger
+    options.timeLimit = .deadline(.uptimeNanoseconds(0) + timeout)
+    return options
   }
 
   // Note: this is not related to the call timeout since we're using an EmbeddedChannel. We require
@@ -38,7 +40,7 @@ class ClientTimeoutTests: GRPCTestCase {
   override func setUp() {
     super.setUp()
 
-    let connection = EmbeddedGRPCChannel()
+    let connection = EmbeddedGRPCChannel(logger: self.clientLogger)
     XCTAssertNoThrow(try connection.embeddedChannel.connect(to: SocketAddress(unixDomainSocketPath: "/foo")))
     let client = Echo_EchoClient(channel: connection, defaultCallOptions: self.callOptions)
 
@@ -48,6 +50,7 @@ class ClientTimeoutTests: GRPCTestCase {
 
   override func tearDown() {
     XCTAssertNoThrow(try self.channel.finish())
+    super.tearDown()
   }
 
   func assertRPCTimedOut(_ response: EventLoopFuture<Echo_EchoResponse>, expectation: XCTestExpectation) {

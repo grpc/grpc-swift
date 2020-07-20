@@ -33,15 +33,14 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
   }
 
   override func tearDown() {
-    super.tearDown()
     XCTAssertNoThrow(try self.server.close().wait())
     XCTAssertNoThrow(try connection.close().wait())
     XCTAssertNoThrow(try self.eventLoopGroup.syncShutdownGracefully())
+    super.tearDown()
   }
 
-
   func doTestUnary() throws {
-    let client = Echo_EchoClient(channel: self.connection)
+    let client = Echo_EchoClient(channel: self.connection, defaultCallOptions: self.callOptionsWithLogger)
     let get = client.get(.with { $0.text = "foo" })
 
     let response = try get.response.wait()
@@ -59,6 +58,7 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
     self.server = try Server.secure(group: self.eventLoopGroup, certificateChain: [cert], privateKey: key)
       .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
       .withServiceProviders([EchoProvider()])
+      .withLogger(self.serverLogger)
       .bind(host: "localhost", port: 0)
       .wait()
 
@@ -70,6 +70,7 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
     self.connection = ClientConnection.secure(group: self.eventLoopGroup)
       .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
       .withTLS(serverHostnameOverride: "example.com")
+      .withBackgroundActivityLogger(self.clientLogger)
       .connect(host: "localhost", port: port)
 
     try self.doTestUnary()
@@ -83,6 +84,7 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
     self.server = try Server.secure(group: self.eventLoopGroup, certificateChain: [cert], privateKey: key)
       .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
       .withServiceProviders([EchoProvider()])
+      .withLogger(self.serverLogger)
       .bind(host: "localhost", port: 0)
       .wait()
 
@@ -93,6 +95,7 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
 
     self.connection = ClientConnection.secure(group: self.eventLoopGroup)
       .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
+      .withBackgroundActivityLogger(self.clientLogger)
       .connect(host: "localhost", port: port)
 
     try self.doTestUnary()

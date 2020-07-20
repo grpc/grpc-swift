@@ -142,8 +142,6 @@ extension NIOTSListenerBootstrap: ServerBootstrapProtocol {}
 // MARK: - Bootstrap / EventLoopGroup helpers
 
 public enum PlatformSupport {
-  static let logger = Logger(subsystem: .nio)
-
   /// Makes a new event loop group based on the network preference.
   ///
   /// If `.best` is chosen and `Network.framework` is available then `NIOTSEventLoopGroup` will
@@ -154,9 +152,8 @@ public enum PlatformSupport {
   public static func makeEventLoopGroup(
     loopCount: Int,
     networkPreference: NetworkPreference = .best,
-    logger: Logger? = nil
+    logger: Logger = Logger(label: "io.grpc", factory: { _ in SwiftLogNoOpLogHandler() })
   ) -> EventLoopGroup {
-    let logger = logger ?? PlatformSupport.logger
     logger.debug("making EventLoopGroup for \(networkPreference) network preference")
     switch networkPreference.implementation.wrapped {
     case .networkFramework:
@@ -183,8 +180,10 @@ public enum PlatformSupport {
   /// `NIOTSConnectionBootstrap`, otherwise it will be a `ClientBootstrap`.
   ///
   /// - Parameter group: The `EventLoopGroup` to use.
-  public static func makeClientBootstrap(group: EventLoopGroup, logger: Logger? = nil) -> ClientBootstrapProtocol {
-    let logger = logger ?? PlatformSupport.logger
+  public static func makeClientBootstrap(
+    group: EventLoopGroup,
+    logger: Logger = Logger(label: "io.grpc", factory: { _ in SwiftLogNoOpLogHandler() })
+  ) -> ClientBootstrapProtocol {
     logger.debug("making client bootstrap with event loop group of type \(type(of: group))")
     #if canImport(Network)
     if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
@@ -208,8 +207,10 @@ public enum PlatformSupport {
   /// `NIOTSListenerBootstrap`, otherwise it will be a `ServerBootstrap`.
   ///
   /// - Parameter group: The `EventLoopGroup` to use.
-  public static func makeServerBootstrap(group: EventLoopGroup, logger: Logger? = nil) -> ServerBootstrapProtocol {
-    let logger = logger ?? PlatformSupport.logger
+  public static func makeServerBootstrap(
+    group: EventLoopGroup,
+    logger: Logger = Logger(label: "io.grpc", factory: { _ in SwiftLogNoOpLogHandler() })
+  ) -> ServerBootstrapProtocol {
     logger.debug("making server bootstrap with event loop group of type \(type(of: group))")
     #if canImport(Network)
     if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {

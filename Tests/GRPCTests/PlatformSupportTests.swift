@@ -24,6 +24,7 @@ class PlatformSupportTests: GRPCTestCase {
 
   override func tearDown() {
     XCTAssertNoThrow(try self.group?.syncShutdownGracefully())
+    super.tearDown()
   }
 
   func testMakeEventLoopGroupReturnsMultiThreadedGroupForPosix() {

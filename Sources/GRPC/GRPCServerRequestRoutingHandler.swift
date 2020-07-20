@@ -221,13 +221,9 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
     self.logger.debug("making call handler", metadata: ["path": "\(requestHead.uri)"])
     let uriComponents = requestHead.uri.components(separatedBy: "/")
 
-    var logger = self.logger
-    // Unset the channel handler: it shouldn't be used for downstream handlers.
-    logger[metadataKey: MetadataKey.channelHandler] = nil
-
     let context = CallHandlerContext(
       errorDelegate: self.errorDelegate,
-      logger: logger,
+      logger: self.logger,
       encoding: self.encoding
     )
 

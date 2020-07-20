@@ -17,6 +17,7 @@ import Foundation
 import GRPC
 import NIO
 import NIOSSL
+import Logging
 
 /// Makes a server for gRPC interoperability testing.
 ///
@@ -35,7 +36,8 @@ public func makeInteroperabilityTestServer(
   port: Int,
   eventLoopGroup: EventLoopGroup,
   serviceProviders: [CallHandlerProvider] = [TestServiceProvider()],
-  useTLS: Bool
+  useTLS: Bool,
+  logger: Logger? = nil
 ) throws -> EventLoopFuture<Server> {
   let builder: Server.Builder
 
@@ -50,6 +52,10 @@ public func makeInteroperabilityTestServer(
       .withTLS(trustRoots: .certificates([caCert]))
   } else {
     builder = Server.insecure(group: eventLoopGroup)
+  }
+
+  if let logger = logger {
+    builder.withLogger(logger)
   }
 
   return builder

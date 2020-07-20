@@ -33,6 +33,7 @@ class ClientConnectionBackoffTests: GRPCTestCase {
   var connectionStateRecorder = RecordingConnectivityDelegate()
 
   override func setUp() {
+    super.setUp()
     self.serverGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     self.clientGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
   }
@@ -55,11 +56,14 @@ class ClientConnectionBackoffTests: GRPCTestCase {
     XCTAssertNoThrow(try self.clientGroup.syncShutdownGracefully())
     self.client = nil
     self.clientGroup = nil
+
+    super.tearDown()
   }
 
   func makeServer() -> EventLoopFuture<Server> {
     return Server.insecure(group: self.serverGroup)
       .withServiceProviders([EchoProvider()])
+      .withLogger(self.serverLogger)
       .bind(host: "localhost", port: self.port)
   }
 
@@ -68,6 +72,7 @@ class ClientConnectionBackoffTests: GRPCTestCase {
       .withConnectivityStateDelegate(self.connectionStateRecorder)
       .withConnectionBackoff(maximum: .milliseconds(100))
       .withConnectionTimeout(minimum: .milliseconds(100))
+      .withBackgroundActivityLogger(self.clientLogger)
   }
 
   func testClientConnectionFailsWithNoBackoff() throws {
@@ -83,7 +88,7 @@ class ClientConnectionBackoffTests: GRPCTestCase {
       .connect(host: "localhost", port: self.port)
 
     // Start an RPC to trigger creating a channel.
-    let echo = Echo_EchoClient(channel: self.client)
+    let echo = Echo_EchoClient(channel: self.client, defaultCallOptions: self.callOptionsWithLogger)
     _ = echo.get(.with { $0.text = "foo" })
 
     self.connectionStateRecorder.waitForExpectedChanges(timeout: .seconds(5))
@@ -104,7 +109,7 @@ class ClientConnectionBackoffTests: GRPCTestCase {
       .connect(host: "localhost", port: self.port)
 
     // Start an RPC to trigger creating a channel.
-    let echo = Echo_EchoClient(channel: self.client)
+    let echo = Echo_EchoClient(channel: self.client, defaultCallOptions: self.callOptionsWithLogger)
     _ = echo.get(.with { $0.text = "foo" })
 
     self.connectionStateRecorder.waitForExpectedChanges(timeout: .seconds(5))
@@ -123,7 +128,7 @@ class ClientConnectionBackoffTests: GRPCTestCase {
       .connect(host: "localhost", port: self.port)
 
     // Start an RPC to trigger creating a channel.
-    let echo = Echo_EchoClient(channel: self.client)
+    let echo = Echo_EchoClient(channel: self.client, defaultCallOptions: self.callOptionsWithLogger)
     _ = echo.get(.with { $0.text = "foo" })
 
     self.connectionStateRecorder.waitForExpectedChanges(timeout: .seconds(5))
@@ -162,7 +167,7 @@ class ClientConnectionBackoffTests: GRPCTestCase {
       .connect(host: "localhost", port: self.port)
 
     // Start an RPC to trigger creating a channel.
-    let echo = Echo_EchoClient(channel: self.client)
+    let echo = Echo_EchoClient(channel: self.client, defaultCallOptions: self.callOptionsWithLogger)
     _ = echo.get(.with { $0.text = "foo" })
 
     // Wait for the connection to be ready.

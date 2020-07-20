@@ -36,10 +36,12 @@ class EmbeddedGRPCChannel: GRPCChannel {
     return self.embeddedChannel.eventLoop
   }
 
-  init(errorDelegate: ClientErrorDelegate? = nil) {
+  init(
+    logger: Logger = Logger(label: "io.grpc", factory: { _ in SwiftLogNoOpLogHandler() }),
+    errorDelegate: ClientErrorDelegate? = nil
+  ) {
     let embeddedChannel = EmbeddedChannel()
     self.embeddedChannel = embeddedChannel
-    let logger = Logger(subsystem: .clientChannel)
     self.logger = logger
     self.multiplexer = embeddedChannel.configureGRPCClient(
       errorDelegate: errorDelegate,
@@ -57,8 +59,8 @@ class EmbeddedGRPCChannel: GRPCChannel {
       scheme: self.scheme,
       path: path,
       host: self.authority,
-      requestID: options.requestIDProvider.requestID(),
-      options: options
+      options: options,
+      requestID: nil
     )
   }
 

@@ -25,7 +25,8 @@ class FakeChannelTests: GRPCTestCase {
   var channel: FakeChannel!
 
   override func setUp() {
-    self.channel = FakeChannel()
+    super.setUp()
+    self.channel = FakeChannel(logger: self.clientLogger)
   }
 
   private func makeUnaryResponse(

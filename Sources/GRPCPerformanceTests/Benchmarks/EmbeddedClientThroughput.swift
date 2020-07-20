@@ -38,7 +38,7 @@ class EmbeddedClientThroughput: Benchmark {
   }
 
   func setUp() throws {
-    self.logger = Logger(label: "io.grpc.testing")
+    self.logger = Logger(label: "io.grpc.testing", factory: { _ in SwiftLogNoOpLogHandler() })
 
     self.requestHead = _GRPCRequestHead(
       method: "POST",

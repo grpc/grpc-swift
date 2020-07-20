@@ -106,6 +106,7 @@ class HeaderNormalizationTests: GRPCTestCase {
     XCTAssertNoThrow(try self.channel.close().wait())
     XCTAssertNoThrow(try self.server.close().wait())
     XCTAssertNoThrow(try self.group.syncShutdownGracefully())
+    super.tearDown()
   }
 
   private func assertCustomMetadataIsLowercased(

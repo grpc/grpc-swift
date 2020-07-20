@@ -62,7 +62,8 @@ class ClientTLSFailureTests: GRPCTestCase {
       eventLoopGroup: self.clientEventLoopGroup,
       tls: tls,
       // No need to retry connecting.
-      connectionBackoff: nil
+      connectionBackoff: nil,
+      backgroundActivityLogger: self.clientLogger
     )
   }
 
@@ -71,6 +72,8 @@ class ClientTLSFailureTests: GRPCTestCase {
   }
 
   override func setUp() {
+    super.setUp()
+
     self.serverEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
     self.server = try! Server.secure(
@@ -78,6 +81,7 @@ class ClientTLSFailureTests: GRPCTestCase {
       certificateChain: [SampleCertificate.server.certificate],
       privateKey: SamplePrivateKey.server
     ).withServiceProviders([EchoProvider()])
+      .withLogger(self.serverLogger)
       .bind(host: "localhost", port: 0)
       .wait()
 
@@ -97,6 +101,8 @@ class ClientTLSFailureTests: GRPCTestCase {
     XCTAssertNoThrow(try self.serverEventLoopGroup.syncShutdownGracefully())
     self.server = nil
     self.serverEventLoopGroup = nil
+
+    super.tearDown()
   }
 
   func testClientConnectionFailsWhenServerIsUnknown() throws {

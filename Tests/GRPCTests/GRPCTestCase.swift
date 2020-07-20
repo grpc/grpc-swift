@@ -13,47 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import GRPC
 import XCTest
 import Logging
 
-/// A test case which initializes the logging system once.
-///
 /// This should be used instead of `XCTestCase`.
 class GRPCTestCase: XCTestCase {
-  // Travis will fail the CI if there is too much logging, but it can be useful when running
-  // locally; conditionally enable it based on the environment.
-  //
-  // https://docs.travis-ci.com/user/environment-variables/#default-environment-variables
-  private static let isCI = Bool(
-      fromTruthLike: ProcessInfo.processInfo.environment["CI"],
-      defaultingTo: false
+  /// Unless `GRPC_ALWAYS_LOG` is set, logs will only be printed if a test case fails.
+  private static let alwaysLog = Bool(
+    fromTruthLike: ProcessInfo.processInfo.environment["GRPC_ALWAYS_LOG"],
+    defaultingTo: false
   )
-  private static let isLoggingEnabled = !isCI
 
   private static let runTimeSensitiveTests = Bool(
-      fromTruthLike: ProcessInfo.processInfo.environment["ENABLE_TIMING_TESTS"],
-      defaultingTo: true
+    fromTruthLike: ProcessInfo.processInfo.environment["ENABLE_TIMING_TESTS"],
+    defaultingTo: true
   )
 
-  // `LoggingSystem.bootstrap` must be called once per process. This is the suggested approach to
-  // workaround this for XCTestCase.
-  //
-  // See: https://github.com/apple/swift-log/issues/77
-  private static let isLoggingConfigured: Bool = {
-    LoggingSystem.bootstrap { label in
-      guard isLoggingEnabled else {
-        return BlackHole()
-      }
-      var handler = StreamLogHandler.standardOutput(label: label)
-      handler.logLevel = .debug
-      return handler
-    }
-    return true
-  }()
-
-  override class func setUp() {
+  override func setUp() {
     super.setUp()
-    XCTAssertTrue(GRPCTestCase.isLoggingConfigured)
+    self.logFactory = CapturingLogHandlerFactory()
+  }
+
+  override func tearDown() {
+    if GRPCTestCase.alwaysLog || (self.testRun.map { $0.totalFailureCount > 0 } ?? false) {
+      self.printCapturedLogs()
+    }
+
+    super.tearDown()
   }
 
   func runTimeSensitiveTests() -> Bool {
@@ -64,32 +51,70 @@ class GRPCTestCase: XCTestCase {
     return shouldRun
   }
 
+  private(set) var logFactory: CapturingLogHandlerFactory!
+
+  /// A general-use logger.
   var logger: Logger {
-    return Logger(label: "io.grpc.testing")
+    return Logger(label: "grpc", factory: self.logFactory.make)
+  }
+
+  /// A logger for clients to use.
+  var clientLogger: Logger {
+    // Label is ignored; we already have a handler.
+    return Logger(label: "client", factory: self.logFactory.make)
+  }
+
+  /// A logger for servers to use.
+  var serverLogger: Logger {
+    // Label is ignored; we already have a handler.
+    return Logger(label: "server", factory: self.logFactory.make)
+  }
+
+  /// The default client call options using `self.clientLogger`.
+  var callOptionsWithLogger: CallOptions {
+    return CallOptions(logger: self.clientLogger)
+  }
+
+  /// Returns all captured logs sorted by date.
+  private func capturedLogs() -> [CapturedLog] {
+    assert(self.logFactory != nil, "Missing call to super.setUp()")
+
+    var logs = self.logFactory.clearCapturedLogs()
+    logs.sort(by: { $0.date < $1.date })
+
+    return logs
+  }
+
+  /// Prints all captured logs.
+  private func printCapturedLogs() {
+    let logs = self.capturedLogs()
+
+    let formatter = DateFormatter()
+    // We don't care about the date.
+    formatter.dateFormat = "HH:mm:ss.SSS"
+
+    print("Test Case '\(self.name)' logs started")
+
+    // The logs are already sorted by date.
+    for log in logs {
+      let date = formatter.string(from: log.date)
+      let level = log.level.short
+
+      // Format the metadata.
+      let formattedMetadata = log.metadata
+        .sorted(by: { $0.key < $1.key })
+        .map { key, value in "\(key)=\(value)" }
+        .joined(separator: " ")
+
+      print("\(date) \(log.label) \(level):", log.message, formattedMetadata)
+    }
+
+    print("Test Case '\(self.name)' logs finished")
   }
 }
 
-/// A `LogHandler` which does nothing with log messages.
-struct BlackHole: LogHandler {
-  func log(level: Logger.Level, message: Logger.Message, metadata: Logger.Metadata?, file: String, function: String, line: UInt) {
-    ()
-  }
-
-  subscript(metadataKey key: String) -> Logger.Metadata.Value? {
-    get {
-      return metadata[key]
-    }
-    set(newValue) {
-      self.metadata[key] = newValue
-    }
-  }
-
-  var metadata: Logger.Metadata = [:]
-  var logLevel: Logger.Level = .critical
-}
-
-fileprivate extension Bool {
-  init(fromTruthLike value: String?, defaultingTo defaultValue: Bool) {
+extension Bool {
+  fileprivate init(fromTruthLike value: String?, defaultingTo defaultValue: Bool) {
     switch value?.lowercased() {
     case "0", "false", "no":
       self = false
@@ -97,6 +122,27 @@ fileprivate extension Bool {
       self = true
     default:
       self = defaultValue
+    }
+  }
+}
+
+extension Logger.Level {
+  fileprivate var short: String {
+    switch self {
+    case .info:
+      return "I"
+    case .debug:
+      return "D"
+    case .warning:
+      return "W"
+    case .error:
+      return "E"
+    case .critical:
+      return "C"
+    case .trace:
+      return "T"
+    case .notice:
+      return "N"
     }
   }
 }

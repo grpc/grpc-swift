@@ -32,8 +32,8 @@ class HTTP1ToGRPCServerCodecTests: GRPCTestCase {
   }
 
   override func tearDown() {
-    super.tearDown()
     XCTAssertNoThrow(try self.channel.finish())
+    super.tearDown()
   }
 
   func makeRequestHead() -> HTTPRequestHead {

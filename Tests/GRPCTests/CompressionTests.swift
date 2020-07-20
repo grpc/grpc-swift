@@ -29,6 +29,7 @@ class MessageCompressionTests: GRPCTestCase {
   var echo: Echo_EchoClient!
 
   override func setUp() {
+    super.setUp()
     self.group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
   }
 
@@ -36,23 +37,26 @@ class MessageCompressionTests: GRPCTestCase {
     XCTAssertNoThrow(try self.client.close().wait())
     XCTAssertNoThrow(try self.server.close().wait())
     XCTAssertNoThrow(try self.group.syncShutdownGracefully())
+    super.tearDown()
   }
 
   func setupServer(encoding: ServerMessageEncoding) throws {
     self.server = try Server.insecure(group: self.group)
       .withServiceProviders([EchoProvider()])
       .withMessageCompression(encoding)
+      .withLogger(self.serverLogger)
       .bind(host: "localhost", port: 0)
       .wait()
   }
 
   func setupClient(encoding: ClientMessageEncoding) {
     self.client = ClientConnection.insecure(group: self.group)
+      .withBackgroundActivityLogger(self.clientLogger)
       .connect(host: "localhost", port: self.server.channel.localAddress!.port!)
 
     self.echo = Echo_EchoClient(
       channel: self.client,
-      defaultCallOptions: CallOptions(messageEncoding: encoding)
+      defaultCallOptions: CallOptions(messageEncoding: encoding, logger: self.clientLogger)
     )
   }
 
