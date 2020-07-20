@@ -103,9 +103,9 @@ public final class Server {
           errorDelegate: configuration.errorDelegate,
           httpTargetWindowSize: configuration.httpTargetWindowSize,
           keepAlive: configuration.connectionKeepalive,
-          idleTimeout: configuration.connectionIdleTimeout
-        ) { channel -> EventLoopFuture<Void> in
-          let logger = Logger(subsystem: .serverChannelCall, metadata: [MetadataKey.requestID: "\(UUID())"])
+          idleTimeout: configuration.connectionIdleTimeout,
+          logger: configuration.logger
+        ) { (channel, logger) -> EventLoopFuture<Void> in
           let handler = GRPCServerRequestRoutingHandler(
             servicesByName: configuration.serviceProvidersByName,
             encoding: configuration.messageEncoding,
@@ -123,7 +123,7 @@ public final class Server {
           return channel.pipeline.addHandler(protocolSwitcher)
         }
       }
-      
+
       // Enable TCP_NODELAY and SO_REUSEADDR for the accepted Channels
       .childChannelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
       .childChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
@@ -207,9 +207,14 @@ extension Server {
     /// streaming and bidirectional streaming RPCs) by passing setting `compression` to `.disabled`
     /// in `sendResponse(_:compression)`.
     public var messageEncoding: ServerMessageEncoding
-    
+
     /// The HTTP/2 flow control target window size.
     public var httpTargetWindowSize: Int
+
+    /// The root server logger. Accepted connections will branch from this logger and RPCs on
+    /// each connection will use a logger branched from the connections logger. This logger is made
+    /// available to service providers via `context`. Defaults to a no-op logger.
+    public var logger: Logger
 
     /// Create a `Configuration` with some pre-defined defaults.
     ///
@@ -223,16 +228,18 @@ extension Server {
     /// - Parameter connectionIdleTimeout: The amount of time to wait before closing the connection, defaulting to 5 minutes.
     /// - Parameter messageEncoding: Message compression configuration, defaulting to no compression.
     /// - Parameter httpTargetWindowSize: The HTTP/2 flow control target window size.
+    /// - Parameter logger: A logger. Defaults to a no-op logger.
     public init(
       target: BindTarget,
       eventLoopGroup: EventLoopGroup,
       serviceProviders: [CallHandlerProvider],
-      errorDelegate: ServerErrorDelegate? = LoggingServerErrorDelegate.shared,
+      errorDelegate: ServerErrorDelegate? = nil,
       tls: TLS? = nil,
       connectionKeepalive: ServerConnectionKeepalive = ServerConnectionKeepalive(),
       connectionIdleTimeout: TimeAmount = .minutes(5),
       messageEncoding: ServerMessageEncoding = .disabled,
-      httpTargetWindowSize: Int = 65535
+      httpTargetWindowSize: Int = 65535,
+      logger: Logger = Logger(label: "io.grpc", factory: { _ in SwiftLogNoOpLogHandler() })
     ) {
       self.target = target
       self.eventLoopGroup = eventLoopGroup
@@ -243,6 +250,7 @@ extension Server {
       self.connectionIdleTimeout = connectionIdleTimeout
       self.messageEncoding = messageEncoding
       self.httpTargetWindowSize = httpTargetWindowSize
+      self.logger = logger
     }
   }
 }

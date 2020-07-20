@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import Dispatch
+import Logging
 import NIO
 import NIOSSL
 
@@ -42,6 +43,7 @@ extension ClientConnection {
     private var connectionIdleTimeout: TimeAmount = .minutes(5)
     private var callStartBehavior: CallStartBehavior = .waitsForConnectivity
     private var httpTargetWindowSize: Int = 65535
+    private var logger: Logger = Logger(label: "io.grpc", factory: { _ in SwiftLogNoOpLogHandler() })
 
     fileprivate init(group: EventLoopGroup) {
       self.group = group
@@ -59,7 +61,8 @@ extension ClientConnection {
         connectionKeepalive: self.connectionKeepalive,
         connectionIdleTimeout: self.connectionIdleTimeout,
         callStartBehavior: self.callStartBehavior,
-        httpTargetWindowSize: self.httpTargetWindowSize
+        httpTargetWindowSize: self.httpTargetWindowSize,
+        backgroundActivityLogger: self.logger
       )
       return ClientConnection(configuration: configuration)
     }
@@ -245,6 +248,19 @@ extension ClientConnection.Builder {
   @discardableResult
   public func withHTTPTargetWindowSize(_ httpTargetWindowSize: Int) -> Self {
     self.httpTargetWindowSize = httpTargetWindowSize
+    return self
+  }
+}
+
+extension ClientConnection.Builder {
+  /// Sets a logger to be used for background activity such as connection state changes. Defaults
+  /// to a no-op logger if not explicitly set.
+  ///
+  /// Note that individual RPCs will use the logger from `CallOptions`, not the logger specified
+  /// here.
+  @discardableResult
+  public func withBackgroundActivityLogger(_ logger: Logger) -> Self {
+    self.logger = logger
     return self
   }
 }

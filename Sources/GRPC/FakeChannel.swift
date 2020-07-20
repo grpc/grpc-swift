@@ -33,7 +33,7 @@ public class FakeChannel: GRPCChannel {
   /// A logger.
   public let logger: Logger
 
-  public init(logger: Logger = Logger(label: "io.grpc.testing")) {
+  public init(logger: Logger = Logger(label: "io.grpc", factory: { _ in SwiftLogNoOpLogHandler() })) {
     self.responseStreams = [:]
     self.logger = logger
   }
@@ -217,8 +217,8 @@ extension FakeChannel {
       scheme: "http",
       path: path,
       host: "localhost",
-      requestID: callOptions.requestIDProvider.requestID(),
-      options: callOptions
+      options: callOptions,
+      requestID: nil
     )
   }
 }

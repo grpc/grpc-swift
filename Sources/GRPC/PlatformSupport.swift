@@ -141,8 +141,6 @@ extension NIOTSListenerBootstrap: ServerBootstrapProtocol {}
 // MARK: - Bootstrap / EventLoopGroup helpers
 
 public enum PlatformSupport {
-  static let logger = Logger(subsystem: .nio)
-
   /// Makes a new event loop group based on the network preference.
   ///
   /// If `.best` is chosen and `Network.framework` is available then `NIOTSEventLoopGroup` will
@@ -155,23 +153,22 @@ public enum PlatformSupport {
     networkPreference: NetworkPreference = .best,
     logger: Logger? = nil
   ) -> EventLoopGroup {
-    let logger = logger ?? PlatformSupport.logger
-    logger.debug("making EventLoopGroup for \(networkPreference) network preference")
+    logger?.debug("making EventLoopGroup for \(networkPreference) network preference")
     switch networkPreference.implementation.wrapped {
     case .networkFramework:
       #if canImport(Network)
       guard #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else {
-        logger.critical("Network.framework can be imported but is not supported on this platform")
+        logger?.critical("Network.framework can be imported but is not supported on this platform")
         // This is gated by the availability of `.networkFramework` so should never happen.
         fatalError(".networkFramework is being used on an unsupported platform")
       }
-      logger.debug("created NIOTSEventLoopGroup for \(networkPreference) preference")
+      logger?.debug("created NIOTSEventLoopGroup for \(networkPreference) preference")
       return NIOTSEventLoopGroup(loopCount: loopCount)
       #else
       fatalError(".networkFramework is being used on an unsupported platform")
       #endif
     case .posix:
-      logger.debug("created MultiThreadedEventLoopGroup for \(networkPreference) preference")
+      logger?.debug("created MultiThreadedEventLoopGroup for \(networkPreference) preference")
       return MultiThreadedEventLoopGroup(numberOfThreads: loopCount)
     }
   }
@@ -182,22 +179,24 @@ public enum PlatformSupport {
   /// `NIOTSConnectionBootstrap`, otherwise it will be a `ClientBootstrap`.
   ///
   /// - Parameter group: The `EventLoopGroup` to use.
-  public static func makeClientBootstrap(group: EventLoopGroup, logger: Logger? = nil) -> ClientBootstrapProtocol {
-    let logger = logger ?? PlatformSupport.logger
-    logger.debug("making client bootstrap with event loop group of type \(type(of: group))")
+  public static func makeClientBootstrap(
+    group: EventLoopGroup,
+    logger: Logger? = nil
+  ) -> ClientBootstrapProtocol {
+    logger?.debug("making client bootstrap with event loop group of type \(type(of: group))")
     #if canImport(Network)
     if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
       if let tsGroup = group as? NIOTSEventLoopGroup {
-        logger.debug("Network.framework is available and the group is correctly typed, creating a NIOTSConnectionBootstrap")
+        logger?.debug("Network.framework is available and the group is correctly typed, creating a NIOTSConnectionBootstrap")
         return NIOTSConnectionBootstrap(group: tsGroup)
       } else if let qosEventLoop = group as? QoSEventLoop {
-        logger.debug("Network.framework is available and the group is correctly typed, creating a NIOTSConnectionBootstrap")
+        logger?.debug("Network.framework is available and the group is correctly typed, creating a NIOTSConnectionBootstrap")
         return NIOTSConnectionBootstrap(group: qosEventLoop)
       }
-      logger.debug("Network.framework is available but the group is not typed for NIOTS, falling back to ClientBootstrap")
+      logger?.debug("Network.framework is available but the group is not typed for NIOTS, falling back to ClientBootstrap")
     }
     #endif
-    logger.debug("creating a ClientBootstrap")
+    logger?.debug("creating a ClientBootstrap")
     return ClientBootstrap(group: group)
   }
 
@@ -207,22 +206,24 @@ public enum PlatformSupport {
   /// `NIOTSListenerBootstrap`, otherwise it will be a `ServerBootstrap`.
   ///
   /// - Parameter group: The `EventLoopGroup` to use.
-  public static func makeServerBootstrap(group: EventLoopGroup, logger: Logger? = nil) -> ServerBootstrapProtocol {
-    let logger = logger ?? PlatformSupport.logger
-    logger.debug("making server bootstrap with event loop group of type \(type(of: group))")
+  public static func makeServerBootstrap(
+    group: EventLoopGroup,
+    logger: Logger? = nil
+  ) -> ServerBootstrapProtocol {
+    logger?.debug("making server bootstrap with event loop group of type \(type(of: group))")
     #if canImport(Network)
     if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
       if let tsGroup = group as? NIOTSEventLoopGroup {
-        logger.debug("Network.framework is available and the group is correctly typed, creating a NIOTSListenerBootstrap")
+        logger?.debug("Network.framework is available and the group is correctly typed, creating a NIOTSListenerBootstrap")
         return NIOTSListenerBootstrap(group: tsGroup)
       } else if let qosEventLoop = group as? QoSEventLoop {
-        logger.debug("Network.framework is available and the group is correctly typed, creating a NIOTSListenerBootstrap")
+        logger?.debug("Network.framework is available and the group is correctly typed, creating a NIOTSListenerBootstrap")
         return NIOTSListenerBootstrap(group: qosEventLoop)
       }
-      logger.debug("Network.framework is available but the group is not typed for NIOTS, falling back to ServerBootstrap")
+      logger?.debug("Network.framework is available but the group is not typed for NIOTS, falling back to ServerBootstrap")
     }
     #endif
-    logger.debug("creating a ServerBootstrap")
+    logger?.debug("creating a ServerBootstrap")
     return ServerBootstrap(group: group)
   }
 }

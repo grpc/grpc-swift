@@ -15,6 +15,7 @@
  */
 import NIO
 import NIOSSL
+import Logging
 
 extension Server {
   public class Builder {
@@ -26,6 +27,7 @@ extension Server {
     private var connectionKeepalive: ServerConnectionKeepalive = ServerConnectionKeepalive()
     private var connectionIdleTimeout: TimeAmount = .minutes(5)
     private var httpTargetWindowSize: Int = 65535
+    private var logger: Logger = Logger(label: "io.grpc", factory: { _ in SwiftLogNoOpLogHandler() })
 
     fileprivate init(group: EventLoopGroup) {
       self.group = group
@@ -56,7 +58,8 @@ extension Server {
         connectionKeepalive: self.connectionKeepalive,
         connectionIdleTimeout: self.connectionIdleTimeout,
         messageEncoding: self.messageEncoding,
-        httpTargetWindowSize: self.httpTargetWindowSize
+        httpTargetWindowSize: self.httpTargetWindowSize,
+        logger: self.logger
       )
       return Server.start(configuration: configuration)
     }
@@ -134,6 +137,17 @@ extension Server.Builder {
   @discardableResult
   public func withHTTPTargetWindowSize(_ httpTargetWindowSize: Int) -> Self {
     self.httpTargetWindowSize = httpTargetWindowSize
+    return self
+  }
+}
+
+extension Server.Builder {
+  /// Sets the root server logger. Accepted connections will branch from this logger and RPCs on
+  /// each connection will use a logger branched from the connections logger. This logger is made
+  /// available to service providers via `context`. Defaults to a no-op logger.
+  @discardableResult
+  public func withLogger(_ logger: Logger) -> Self {
+    self.logger = logger
     return self
   }
 }

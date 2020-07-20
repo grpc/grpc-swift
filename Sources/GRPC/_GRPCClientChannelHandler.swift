@@ -199,12 +199,16 @@ extension _GRPCRequestHead {
     scheme: String,
     path: String,
     host: String,
-    requestID: String,
-    options: CallOptions
+    options: CallOptions,
+    requestID: String?
   ) {
-    var customMetadata = options.customMetadata
-    if let requestIDHeader = options.requestIDHeader {
+    let metadata: HPACKHeaders
+    if let requestID = requestID, let requestIDHeader = options.requestIDHeader {
+      var customMetadata = options.customMetadata
       customMetadata.add(name: requestIDHeader, value: requestID)
+      metadata = customMetadata
+    } else {
+      metadata = options.customMetadata
     }
 
     self = _GRPCRequestHead(
@@ -213,7 +217,7 @@ extension _GRPCRequestHead {
       path: path,
       host: host,
       deadline: options.timeLimit.makeDeadline(),
-      customMetadata: customMetadata,
+      customMetadata: metadata,
       encoding: options.messageEncoding
     )
   }

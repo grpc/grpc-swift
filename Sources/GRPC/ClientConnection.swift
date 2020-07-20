@@ -118,7 +118,7 @@ public class ClientConnection {
     self.authority = configuration.target.host
     self.connectionManager = ConnectionManager(
       configuration: configuration,
-      logger: Logger(subsystem: .clientChannel)
+      logger: configuration.backgroundActivityLogger
     )
   }
 
@@ -127,19 +127,28 @@ public class ClientConnection {
     return self.connectionManager.shutdown()
   }
 
-  private func loggerWithRequestID(_ requestID: String) -> Logger {
-    var logger = self.connectionManager.logger
-    logger[metadataKey: MetadataKey.requestID] = "\(requestID)"
-    return logger
+  /// Extracts a logger and request ID from the call options and returns them. The logger will
+  /// be populated with the request ID (if applicable) and any metadata from the connection manager.
+  private func populatedLoggerAndRequestID(from callOptions: CallOptions) -> (Logger, String?) {
+    var logger = callOptions.logger
+    self.connectionManager.appendMetadata(to: &logger)
+
+    // Attach the request ID.
+    let requestID = callOptions.requestIDProvider.requestID()
+    if let requestID = requestID {
+      logger[metadataKey: MetadataKey.requestID] = "\(requestID)"
+    }
+
+    return (logger, requestID)
   }
 
-  private func makeRequestHead(path: String, options: CallOptions, requestID: String) -> _GRPCRequestHead {
+  private func makeRequestHead(path: String, options: CallOptions, requestID: String?) -> _GRPCRequestHead {
     return _GRPCRequestHead(
       scheme: self.scheme,
       path: path,
       host: self.authority,
-      requestID: requestID,
-      options: options
+      options: options,
+      requestID: requestID
     )
   }
 }
@@ -154,8 +163,7 @@ extension ClientConnection: GRPCChannel {
     request: Serializer.Input,
     callOptions: CallOptions
   ) -> UnaryCall<Serializer.Input, Deserializer.Output> {
-    let requestID = callOptions.requestIDProvider.requestID()
-    let logger = self.loggerWithRequestID(requestID)
+    let (logger, requestID) = self.populatedLoggerAndRequestID(from: callOptions)
     logger.debug("starting rpc", metadata: ["path": "\(path)"])
 
     let call = UnaryCall<Serializer.Input, Deserializer.Output>.makeOnHTTP2Stream(
@@ -212,8 +220,7 @@ extension ClientConnection {
     path: String,
     callOptions: CallOptions
   ) -> ClientStreamingCall<Serializer.Input, Deserializer.Output> {
-    let requestID = callOptions.requestIDProvider.requestID()
-    let logger = self.loggerWithRequestID(requestID)
+    let (logger, requestID) = self.populatedLoggerAndRequestID(from: callOptions)
     logger.debug("starting rpc", metadata: ["path": "\(path)"])
 
     let call = ClientStreamingCall<Serializer.Input, Deserializer.Output>.makeOnHTTP2Stream(
@@ -268,8 +275,7 @@ extension ClientConnection {
     callOptions: CallOptions,
     handler: @escaping (Deserializer.Output) -> Void
   ) -> ServerStreamingCall<Serializer.Input, Deserializer.Output> {
-    let requestID = callOptions.requestIDProvider.requestID()
-    let logger = self.loggerWithRequestID(requestID)
+    let (logger, requestID) = self.populatedLoggerAndRequestID(from: callOptions)
     logger.debug("starting rpc", metadata: ["path": "\(path)"])
 
     let call = ServerStreamingCall<Serializer.Input, Deserializer.Output>.makeOnHTTP2Stream(
@@ -332,8 +338,7 @@ extension ClientConnection {
     callOptions: CallOptions,
     handler: @escaping (Deserializer.Output) -> Void
   ) -> BidirectionalStreamingCall<Serializer.Input, Deserializer.Output> {
-    let requestID = callOptions.requestIDProvider.requestID()
-    let logger = self.loggerWithRequestID(requestID)
+    let (logger, requestID) = self.populatedLoggerAndRequestID(from: callOptions)
     logger.debug("starting rpc", metadata: ["path": "\(path)"])
 
     let call = BidirectionalStreamingCall<Serializer.Input, Deserializer.Output>.makeOnHTTP2Stream(
@@ -507,6 +512,12 @@ extension ClientConnection {
       return self.tls == nil ? .http : .https
     }
 
+    /// A logger for background information (such as connectivity state). A separate logger for
+    /// requests may be provided in the `CallOptions`.
+    ///
+    /// Defaults to a no-op logger.
+    public var backgroundActivityLogger: Logger
+
     /// Create a `Configuration` with some pre-defined defaults. Prefer using
     /// `ClientConnection.secure(group:)` to build a connection secured with TLS or
     /// `ClientConnection.insecure(group:)` to build a plaintext connection.
@@ -525,6 +536,8 @@ extension ClientConnection {
     /// - Parameter callStartBehavior: The behavior used to determine when a call should start in
     ///     relation to its underlying connection. Defaults to `waitsForConnectivity`.
     /// - Parameter httpTargetWindowSize: The HTTP/2 flow control target window size.
+    /// - Parameter logger: A logger for background information (such as connectivity state).
+    ///     Defaults to a no-op logger.
     public init(
       target: ConnectionTarget,
       eventLoopGroup: EventLoopGroup,
@@ -536,7 +549,8 @@ extension ClientConnection {
       connectionKeepalive: ClientConnectionKeepalive = ClientConnectionKeepalive(),
       connectionIdleTimeout: TimeAmount = .minutes(5),
       callStartBehavior: CallStartBehavior = .waitsForConnectivity,
-      httpTargetWindowSize: Int = 65535
+      httpTargetWindowSize: Int = 65535,
+      backgroundActivityLogger: Logger = Logger(label: "io.grpc", factory: { _ in SwiftLogNoOpLogHandler() })
     ) {
       self.target = target
       self.eventLoopGroup = eventLoopGroup
@@ -549,6 +563,7 @@ extension ClientConnection {
       self.connectionIdleTimeout = connectionIdleTimeout
       self.callStartBehavior = callStartBehavior
       self.httpTargetWindowSize = httpTargetWindowSize
+      self.backgroundActivityLogger = backgroundActivityLogger
     }
   }
 }

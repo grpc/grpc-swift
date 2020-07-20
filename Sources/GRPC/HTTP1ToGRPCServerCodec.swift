@@ -54,10 +54,6 @@ public final class HTTP1ToGRPCServerCodec {
     self.encoding = encoding
     self.encodingHeaderValidator = MessageEncodingHeaderValidator(encoding: encoding)
     self.logger = logger
-
-    var accessLog = Logger(subsystem: .serverAccess)
-    accessLog[metadataKey: MetadataKey.requestID] = logger[metadataKey: MetadataKey.requestID]
-    self.accessLog = accessLog
     self.messageReader = LengthPrefixedMessageReader()
     self.messageWriter = LengthPrefixedMessageWriter()
   }
@@ -70,7 +66,6 @@ public final class HTTP1ToGRPCServerCodec {
   private var responseEncodingHeader: String? = nil
 
   private let logger: Logger
-  private let accessLog: Logger
   private var stopwatch: Stopwatch?
 
   // The following buffers use force unwrapping explicitly. With optionals, developers
@@ -157,7 +152,7 @@ extension HTTP1ToGRPCServerCodec: ChannelInboundHandler {
     }
 
     self.stopwatch = .start()
-    self.accessLog.debug("rpc call started", metadata: [
+    self.logger.debug("rpc call started", metadata: [
       "path": "\(requestHead.uri)",
       "method": "\(requestHead.method)",
       "version": "\(requestHead.version)"
@@ -424,7 +419,7 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
         self.stopwatch = nil
         let millis = stopwatch.elapsedMillis()
 
-        self.accessLog.debug("rpc call finished", metadata: [
+        self.logger.debug("rpc call finished", metadata: [
           "duration_ms": "\(millis)",
           "status_code": "\(status.code.rawValue)"
         ])
