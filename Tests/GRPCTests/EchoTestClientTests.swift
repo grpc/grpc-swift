@@ -74,12 +74,14 @@ class EchoTestClientTests: GRPCTestCase {
 
     let server = try Server.insecure(group: group)
       .withServiceProviders([EchoProvider()])
+      .withLogger(self.serverLogger)
       .bind(host: "127.0.0.1", port: 0)
       .wait()
 
     self.server = server
 
     let channel = ClientConnection.insecure(group: group)
+      .withBackgroundActivityLogger(self.clientLogger)
       .connect(host: "127.0.0.1", port: server.channel.localAddress!.port!)
 
     self.channel = channel
@@ -102,7 +104,7 @@ class EchoTestClientTests: GRPCTestCase {
   }
 
   func testGetWithTestClient() {
-    let client = Echo_EchoTestClient()
+    let client = Echo_EchoTestClient(defaultCallOptions: self.callOptionsWithLogger)
     let model = EchoModel(client: client)
 
     let completed = self.expectation(description: "'Get' completed")
@@ -126,7 +128,7 @@ class EchoTestClientTests: GRPCTestCase {
 
   func testGetWithRealClientAndServer() throws {
     let channel = try self.setUpServerAndChannel()
-    let client = Echo_EchoClient(channel: channel)
+    let client = Echo_EchoClient(channel: channel, defaultCallOptions: self.callOptionsWithLogger)
     let model = EchoModel(client: client)
 
     let completed = self.expectation(description: "'Get' completed")
@@ -146,7 +148,7 @@ class EchoTestClientTests: GRPCTestCase {
   }
 
   func testUpdateWithTestClient() {
-    let client = Echo_EchoTestClient()
+    let client = Echo_EchoTestClient(defaultCallOptions: self.callOptionsWithLogger)
     let model = EchoModel(client: client)
 
     let completed = self.expectation(description: "'Update' completed")
@@ -175,7 +177,7 @@ class EchoTestClientTests: GRPCTestCase {
 
   func testUpdateWithRealClientAndServer() throws {
     let channel = try self.setUpServerAndChannel()
-    let client = Echo_EchoClient(channel: channel)
+    let client = Echo_EchoClient(channel: channel, defaultCallOptions: self.callOptionsWithLogger)
     let model = EchoModel(client: client)
 
     let completed = self.expectation(description: "'Update' completed")

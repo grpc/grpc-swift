@@ -24,7 +24,7 @@ class FakeResponseStreamExampleTests: GRPCTestCase {
 
   override func setUp() {
     super.setUp()
-    self.client = Echo_EchoTestClient()
+    self.client = Echo_EchoTestClient(defaultCallOptions: self.callOptionsWithLogger)
   }
 
   func testUnary() {

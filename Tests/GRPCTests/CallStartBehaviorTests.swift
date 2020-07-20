@@ -29,12 +29,13 @@ class CallStartBehaviorTests: GRPCTestCase {
     // and the RPC wouldn't complete until we call shutdown (because we're not setting a timeout).
     let channel = ClientConnection.insecure(group: group)
       .withCallStartBehavior(.fastFailure)
+      .withBackgroundActivityLogger(self.clientLogger)
       .connect(host: "http://unreachable.invalid", port: 0)
     defer {
       XCTAssertNoThrow(try channel.close().wait())
     }
 
-    let echo = Echo_EchoClient(channel: channel)
+    let echo = Echo_EchoClient(channel: channel, defaultCallOptions: self.callOptionsWithLogger)
     let get = echo.get(.with { $0.text = "Is anyone out there?" })
 
     XCTAssertThrowsError(try get.response.wait())

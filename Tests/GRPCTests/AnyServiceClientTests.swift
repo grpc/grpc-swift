@@ -20,7 +20,10 @@ import XCTest
 
 class AnyServiceClientTests: EchoTestCaseBase {
   var anyServiceClient: AnyServiceClient {
-    return AnyServiceClient(channel: self.client.channel)
+    return AnyServiceClient(
+      channel: self.client.channel,
+      defaultCallOptions: self.callOptionsWithLogger
+    )
   }
 
   func testUnary() throws {

@@ -100,15 +100,15 @@ class EchoTestCaseBase: GRPCTestCase {
     return try self.serverBuilder()
       .withErrorDelegate(makeErrorDelegate())
       .withServiceProviders([makeEchoProvider()])
+      .withLogger(self.serverLogger)
       .bind(host: "localhost", port: 0)
       .wait()
   }
 
   func makeClientConnection(port: Int) throws -> ClientConnection {
-    return self.connectionBuilder().connect(
-      host: "localhost",
-      port: port
-    )
+    return self.connectionBuilder()
+      .withBackgroundActivityLogger(self.clientLogger)
+      .connect(host: "localhost", port: port)
   }
 
   func makeEchoProvider() -> Echo_EchoProvider { return EchoProvider() }
@@ -116,7 +116,10 @@ class EchoTestCaseBase: GRPCTestCase {
   func makeErrorDelegate() -> ServerErrorDelegate? { return nil }
 
   func makeEchoClient(port: Int) throws -> Echo_EchoClient {
-    return Echo_EchoClient(channel: try self.makeClientConnection(port: port))
+    return Echo_EchoClient(
+      channel: try self.makeClientConnection(port: port),
+      defaultCallOptions: self.callOptionsWithLogger
+    )
   }
 
   override func setUp() {
