@@ -104,6 +104,19 @@ internal struct LengthPrefixedMessageReader {
       // mark the bytes as "read"
       buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
     } else {
+      switch self.state {
+      case .expectingMessage(let length, _):
+        // We need to reserve enough space for the message or the incoming buffer, whichever
+        // is larger.
+        let remainingMessageBytes = Int(length) - self.buffer.readableBytes
+        self.buffer.reserveCapacity(minimumWritableBytes: max(remainingMessageBytes, buffer.readableBytes))
+
+      case .expectingCompressedFlag,
+           .expectingMessageLength:
+        // Just append the buffer; these parts are too small to make a meaningful difference.
+        ()
+      }
+
       self.buffer.writeBuffer(&buffer)
     }
   }

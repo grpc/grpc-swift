@@ -63,6 +63,22 @@ func runBenchmarks(spec: TestSpec) {
   )
 
   measureAndPrint(
+    description: "embedded_client_unary_10k_large_requests",
+    benchmark: EmbeddedClientThroughput(requests: 10_00, text: largeRequest),
+    spec: spec
+  )
+
+  measureAndPrint(
+    description: "embedded_client_unary_10k_large_requests_1k_frames",
+    benchmark: EmbeddedClientThroughput(
+      requests: 10_00,
+      text: largeRequest,
+      maxResponseFrameSize: 1024
+    ),
+    spec: spec
+  )
+
+  measureAndPrint(
     description: "percent_encode_decode_10k_status_messages",
     benchmark: PercentEncoding(iterations: 10_000, requiresEncoding: true),
     spec: spec
