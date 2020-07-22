@@ -82,7 +82,10 @@ public final class UnaryCallHandler<RequestPayload, ResponsePayload>: _BaseCallH
     }
   }
 
-  internal override func sendErrorStatus(_ status: GRPCStatus) {
-    callContext?.responsePromise.fail(status)
+  internal override func sendErrorStatusAndMetadata(_ statusAndMetadata: GRPCStatusAndMetadata) {
+    if let metadata = statusAndMetadata.metadata {
+      self.callContext?.trailingMetadata.add(contentsOf: metadata)
+    }
+    self.callContext?.responsePromise.fail(statusAndMetadata.status)
   }
 }

@@ -47,7 +47,7 @@ public class _BaseCallHandler<Request, Response>: GRPCCallHandler {
 
   /// Sends an error status to the client while ensuring that all call context promises are fulfilled.
   /// Because only the concrete call subclass knows which promises need to be fulfilled, this method needs to be overridden.
-  internal func sendErrorStatus(_ status: GRPCStatus) {
+  internal func sendErrorStatusAndMetadata(_ statusAndMetadata: GRPCStatusAndMetadata) {
     fatalError("needs to be overridden")
   }
 
@@ -80,20 +80,25 @@ extension _BaseCallHandler: ChannelInboundHandler {
   /// appropriate status is written. Errors which don't conform to `GRPCStatusTransformable`
   /// return a status with code `.internalError`.
   public func errorCaught(context: ChannelHandlerContext, error: Error) {
-    let status: GRPCStatus
+    let statusAndMetadata: GRPCStatusAndMetadata
 
     if let errorWithContext = error as? GRPCError.WithContext {
       self.errorDelegate?.observeLibraryError(errorWithContext.error)
-      status = self.errorDelegate?.transformLibraryError(errorWithContext.error)
-          ?? errorWithContext.error.makeGRPCStatus()
+      statusAndMetadata = self.errorDelegate?.transformLibraryError(errorWithContext.error)
+          ?? GRPCStatusAndMetadata(status: errorWithContext.error.makeGRPCStatus(), metadata: nil)
     } else {
       self.errorDelegate?.observeLibraryError(error)
-      status = self.errorDelegate?.transformLibraryError(error)
-          ?? (error as? GRPCStatusTransformable)?.makeGRPCStatus()
-          ?? .processingError
+      
+      if let transformed: GRPCStatusAndMetadata = self.errorDelegate?.transformLibraryError(error) {
+        statusAndMetadata = transformed
+      } else if let grpcStatusTransformable = error as? GRPCStatusTransformable {
+        statusAndMetadata = GRPCStatusAndMetadata(status: grpcStatusTransformable.makeGRPCStatus(), metadata: nil)
+      } else {
+        statusAndMetadata = GRPCStatusAndMetadata(status: .processingError, metadata: nil)
+      }
     }
 
-    self.sendErrorStatus(status)
+    self.sendErrorStatusAndMetadata(statusAndMetadata)
   }
 
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {

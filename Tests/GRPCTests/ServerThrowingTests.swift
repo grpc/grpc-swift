@@ -18,12 +18,14 @@ import Foundation
 import NIO
 import NIOHTTP1
 import NIOHTTP2
+import NIOHPACK
 @testable import GRPC
 import EchoModel
 import XCTest
 
 let thrownError = GRPCStatus(code: .internalError, message: "expected error")
 let transformedError = GRPCStatus(code: .aborted, message: "transformed error")
+let transformedMetadata = HTTPHeaders([("transformed", "header")])
 
 // Motivation for two different providers: Throwing immediately causes the event observer future (in the
 // client-streaming and bidi-streaming cases) to throw immediately, _before_ the corresponding handler has even added
@@ -96,11 +98,14 @@ class ErrorReturningEchoProvider: ImmediateThrowingEchoProvider {
 }
 
 private class ErrorTransformingDelegate: ServerErrorDelegate {
-  func transformRequestHandlerError(_ error: Error, request: HTTPRequestHead) -> GRPCStatus? { return transformedError }
+  func transformRequestHandlerError(_ error: Error, request: HTTPRequestHead) -> GRPCStatusAndMetadata? {
+    return GRPCStatusAndMetadata(status: transformedError, metadata: transformedMetadata)
+  }
 }
 
 class ServerThrowingTests: EchoTestCaseBase {
   var expectedError: GRPCStatus { return thrownError }
+  var expectedMetadata: HPACKHeaders? { return HPACKHeaders([("grpc-status", "13"), ("grpc-message", "expected error")]) }
 
   override func makeEchoProvider() -> Echo_EchoProvider { return ImmediateThrowingEchoProvider() }
 }
@@ -115,6 +120,9 @@ class ClientThrowingWhenServerReturningErrorTests: ServerThrowingTests {
 
 class ServerErrorTransformingTests: ServerThrowingTests {
   override var expectedError: GRPCStatus { return transformedError }
+  override var expectedMetadata: HPACKHeaders? {
+    return HPACKHeaders([("grpc-status", "10"), ("grpc-message", "transformed error"), ("transformed", "header")])
+  }
 
   override func makeErrorDelegate() -> ServerErrorDelegate? { return ErrorTransformingDelegate() }
 }
@@ -123,6 +131,7 @@ extension ServerThrowingTests {
   func testUnary() throws {
     let call = client.get(Echo_EchoRequest(text: "foo"))
     XCTAssertEqual(expectedError, try call.status.wait())
+    XCTAssertEqual(expectedMetadata, try call.trailingMetadata.wait())
     XCTAssertThrowsError(try call.response.wait()) {
       XCTAssertEqual(expectedError, $0 as? GRPCStatus)
     }
@@ -133,6 +142,7 @@ extension ServerThrowingTests {
     // This is racing with the server error; it might fail, it might not.
     try? call.sendEnd().wait()
     XCTAssertEqual(expectedError, try call.status.wait())
+    XCTAssertEqual(expectedMetadata, try call.trailingMetadata.wait())
 
     if type(of: makeEchoProvider()) != ErrorReturningEchoProvider.self {
       // With `ErrorReturningEchoProvider` we actually _return_ a response, which means that the `response` future
@@ -147,6 +157,7 @@ extension ServerThrowingTests {
     let call = client.expand(Echo_EchoRequest(text: "foo")) { XCTFail("no message expected, got \($0)") }
     // Nothing to throw here, but the `status` should be the expected error.
     XCTAssertEqual(expectedError, try call.status.wait())
+    XCTAssertEqual(expectedMetadata, try call.trailingMetadata.wait())
   }
 
   func testBidirectionalStreaming() throws {
@@ -155,5 +166,6 @@ extension ServerThrowingTests {
     try? call.sendEnd().wait()
     // Nothing to throw here, but the `status` should be the expected error.
     XCTAssertEqual(expectedError, try call.status.wait())
+    XCTAssertEqual(expectedMetadata, try call.trailingMetadata.wait())
   }
 }

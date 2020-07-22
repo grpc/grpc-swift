@@ -82,7 +82,10 @@ public final class ServerStreamingCallHandler<RequestPayload, ResponsePayload>: 
     }
   }
 
-  override internal func sendErrorStatus(_ status: GRPCStatus) {
-    self.callContext?.statusPromise.fail(status)
+  internal override func sendErrorStatusAndMetadata(_ statusAndMetadata: GRPCStatusAndMetadata) {
+    if let metadata = statusAndMetadata.metadata {
+      self.callContext?.trailingMetadata.add(contentsOf: metadata)
+    }
+    self.callContext?.statusPromise.fail(statusAndMetadata.status)
   }
 }

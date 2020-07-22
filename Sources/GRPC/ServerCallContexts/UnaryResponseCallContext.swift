@@ -74,18 +74,28 @@ open class UnaryResponseCallContextImpl<ResponsePayload>: UnaryResponseCallConte
         return self.channel.writeAndFlush(NIOAny(WrappedResponse.message(.init(responseMessage, compressed: self.compressionEnabled))))
       }
       .map { _ in
-        self.responseStatus
+        GRPCStatusAndMetadata(status: self.responseStatus, metadata: nil)
       }
       // Ensure that any error provided can be transformed to `GRPCStatus`, using "internal server error" as a fallback.
       .recover { [weak errorDelegate] error in
         errorDelegate?.observeRequestHandlerError(error, request: request)
-        return errorDelegate?.transformRequestHandlerError(error, request: request)
-          ?? (error as? GRPCStatusTransformable)?.makeGRPCStatus()
-          ?? .processingError
+        
+        if let transformed: GRPCStatusAndMetadata = errorDelegate?.transformRequestHandlerError(error, request: request) {
+          return transformed
+        }
+        
+        if let grpcStatusTransformable = error as? GRPCStatusTransformable {
+          return GRPCStatusAndMetadata(status: grpcStatusTransformable.makeGRPCStatus(), metadata: nil)
+        }
+        
+        return GRPCStatusAndMetadata(status: .processingError, metadata: nil)
       }
       // Finish the call by returning the final status.
-      .whenSuccess { status in
-        self.channel.writeAndFlush(NIOAny(WrappedResponse.statusAndTrailers(status, self.trailingMetadata)), promise: nil)
+      .whenSuccess { statusAndMetadata in
+        if let metadata = statusAndMetadata.metadata {
+          self.trailingMetadata.add(contentsOf: metadata)
+        }
+        self.channel.writeAndFlush(NIOAny(WrappedResponse.statusAndTrailers(statusAndMetadata.status, self.trailingMetadata)), promise: nil)
       }
   }
 }
