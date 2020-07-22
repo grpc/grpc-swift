@@ -90,54 +90,61 @@ check_copyright_headers() {
   #   author.
   # - LinuxMain.swift, XCTestManifests.swift: Both of these files are generated
   #   by SwiftPM and do not have headers.
-  find . -name '*.swift' \
+  while read -r filename; do
+    case $filename in
+      # The .grpc.swift and .pb.swift files have additional generated headers with
+      # warnings that they have been generated and should not be edited.
+      # Package.swift is preceeded by a "swift-tools-version" line.
+      *.grpc.swift)
+        expected_sha="$SWIFT_GRPC_SHA"
+        drop_first=8
+        expected_lines=13
+        ;;
+      *.pb.swift)
+        expected_sha="$SWIFT_GRPC_PB"
+        drop_first=9
+        expected_lines=13
+        ;;
+      */Package.swift)
+        expected_sha="$SWIFT_SHA"
+        drop_first=1
+        expected_lines=15
+        ;;
+      *)
+        expected_sha="$SWIFT_SHA"
+        drop_first=0
+        expected_lines=15
+        ;;
+    esac
+
+    actual_sha=$(head -n "$((drop_first + expected_lines))" "$filename" \
+      | tail -n "$expected_lines" \
+      | sed -e 's/201[56789]-20[12][0-9]/YEARS/' -e 's/20[12][0-9]/YEARS/' \
+      | shasum \
+      | awk '{print $1}')
+
+    if [ "$actual_sha" != "$expected_sha" ]; then
+      printf "\033[0;31mMissing or invalid copyright headers in '%s'\033[0m\n" "$filename"
+      errors=$(( errors + 1 ))
+    fi
+
+  done < <(find . -name '*.swift' \
     ! -name 'echo.pb.swift' \
     ! -name 'annotations.pb.swift' \
     ! -name 'language_service.pb.swift' \
     ! -name 'http.pb.swift' \
     ! -name 'LinuxMain.swift' \
     ! -name 'XCTestManifests.swift' \
-    ! -path './.build/*' \
-    | while read -r filename; do
-  case $filename in
-    # The .grpc.swift and .pb.swift files have additional generated headers with
-    # warnings that they have been generated and should not be edited.
-    # Package.swift is preceeded by a "swift-tools-version" line.
-    *.grpc.swift)
-      expected_sha="$SWIFT_GRPC_SHA"
-      drop_first=8
-      expected_lines=13
-      ;;
-    *.pb.swift)
-      expected_sha="$SWIFT_GRPC_PB"
-      drop_first=9
-      expected_lines=13
-      ;;
-    */Package.swift)
-      expected_sha="$SWIFT_SHA"
-      drop_first=1
-      expected_lines=15
-      ;;
-    *)
-      expected_sha="$SWIFT_SHA"
-      drop_first=0
-      expected_lines=15
-      ;;
-  esac
-
-  actual_sha=$(head -n "$((drop_first + expected_lines))" "$filename" \
-    | tail -n "$expected_lines" \
-    | sed -e 's/201[56789]-20[12][0-9]/YEARS/' -e 's/20[12][0-9]/YEARS/' \
-    | shasum \
-    | awk '{print $1}')
-
-  rc=0
-  if [ "$actual_sha" != "$expected_sha" ]; then
-    printf "\033[0;31mMissing or invalid copyright headers in '$filename'\033[0m\n"
-    rc=1
-  fi
-  done
-  exit $rc
+    ! -path './.build/*')
 }
 
+errors=0
 check_copyright_headers
+
+if [[ "$errors" == 0 ]]; then
+  echo "License headers: OK"
+else
+  echo "License headers: found $errors issue(s)."
+fi
+
+exit $errors
