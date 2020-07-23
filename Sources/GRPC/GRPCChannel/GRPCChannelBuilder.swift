@@ -250,6 +250,20 @@ extension ClientConnection.Builder {
   }
 }
 
+extension ClientConnection.Builder {
+  /// A channel initializer which will be run after gRPC has initialized each channel. This may be
+  /// used to add additional handlers to the pipeline and is intended for debugging.
+  ///
+  /// - Warning: The initializer closure may be invoked *multiple times*.
+  @discardableResult
+  public func withDebugChannelInitializer(
+    _ debugChannelInitializer: @escaping (Channel) -> EventLoopFuture<Void>
+  ) -> Self {
+    self.configuration.debugChannelInitializer = debugChannelInitializer
+    return self
+  }
+}
+
 fileprivate extension Double {
   static func seconds(from amount: TimeAmount) -> Double {
     return Double(amount.nanoseconds) / 1_000_000_000

@@ -603,7 +603,7 @@ extension ConnectionManager {
       .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
       .channelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
       .channelInitializer { channel in
-        channel.configureGRPCClient(
+        let initialized = channel.configureGRPCClient(
           httpTargetWindowSize: configuration.httpTargetWindowSize,
           tlsConfiguration: configuration.tls?.configuration,
           tlsServerHostname: serverHostname,
@@ -613,6 +613,15 @@ extension ConnectionManager {
           errorDelegate: configuration.errorDelegate,
           logger: self.logger
         )
+
+        // Run the debug initializer, if there is one.
+        if let debugInitializer = configuration.debugChannelInitializer {
+          return initialized.flatMap {
+            debugInitializer(channel)
+          }
+        } else {
+          return initialized
+        }
       }
 
     if let connectTimeout = connectTimeout {
