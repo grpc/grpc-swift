@@ -125,12 +125,20 @@ struct GRPCClientStateMachine {
 
     /// The RPC has terminated. There are no valid transitions from this state.
     case clientClosedServerClosed
+
+    /// This isn't a real state. See `withStateAvoidingCoWs`.
+    case modifying
   }
 
   /// The current state of the state machine.
   internal private(set) var state: State {
     didSet {
       switch (oldValue, self.state) {
+      // Any modifying transitions are fine.
+      case (.modifying, _),
+           (_, .modifying):
+        break
+
       // All valid transitions:
       case (.clientIdleServerIdle, .clientActiveServerIdle),
            (.clientIdleServerIdle, .clientClosedServerClosed),
@@ -190,7 +198,9 @@ struct GRPCClientStateMachine {
   mutating func sendRequestHeaders(
     requestHead: _GRPCRequestHead
   ) -> Result<HPACKHeaders, SendRequestHeadersError> {
-    return self.state.sendRequestHeaders(requestHead: requestHead)
+    return self.withStateAvoidingCoWs { state in
+      return state.sendRequestHeaders(requestHead: requestHead)
+    }
   }
 
   /// Formats a request to send to the server.
@@ -219,7 +229,9 @@ struct GRPCClientStateMachine {
     compressed: Bool,
     allocator: ByteBufferAllocator
   ) -> Result<ByteBuffer, MessageWriteError> {
-    return self.state.sendRequest(message, compressed: compressed, allocator: allocator)
+    return self.withStateAvoidingCoWs { state in
+      return state.sendRequest(message, compressed: compressed, allocator: allocator)
+    }
   }
 
   /// Closes the request stream.
@@ -239,7 +251,9 @@ struct GRPCClientStateMachine {
   /// Closing the request stream when both peers are idle (in the `.clientIdleServerIdle` state)
   /// will result in a `.invalidState` error.
   mutating func sendEndOfRequestStream() -> Result<Void, SendEndOfRequestStreamError> {
-    return self.state.sendEndOfRequestStream()
+    return self.withStateAvoidingCoWs { state in
+      return state.sendEndOfRequestStream()
+    }
   }
 
   /// Receive an acknowledgement of the RPC from the server. This **must not** be a "Trailers-Only"
@@ -266,7 +280,9 @@ struct GRPCClientStateMachine {
   mutating func receiveResponseHeaders(
     _ headers: HPACKHeaders
   ) -> Result<Void, ReceiveResponseHeadError> {
-    return self.state.receiveResponseHeaders(headers)
+    return self.withStateAvoidingCoWs { state in
+      return state.receiveResponseHeaders(headers)
+    }
   }
 
   /// Read a response buffer from the server and return any decoded messages.
@@ -297,7 +313,9 @@ struct GRPCClientStateMachine {
   mutating func receiveResponseBuffer(
     _ buffer: inout ByteBuffer
   ) -> Result<[ByteBuffer], MessageReadError> {
-    return self.state.receiveResponseBuffer(&buffer)
+    return self.withStateAvoidingCoWs { state in
+      state.receiveResponseBuffer(&buffer)
+    }
   }
 
   /// Receive the end of the response stream from the server and parse the results into
@@ -320,7 +338,28 @@ struct GRPCClientStateMachine {
   mutating func receiveEndOfResponseStream(
     _ trailers: HPACKHeaders
   ) -> Result<GRPCStatus, ReceiveEndOfResponseStreamError> {
-    return self.state.receiveEndOfResponseStream(trailers)
+    return self.withStateAvoidingCoWs { state in
+      return state.receiveEndOfResponseStream(trailers)
+    }
+  }
+
+  /// Temporarily sets `self.state` to `.modifying` before calling the provided block and setting
+  /// `self.state` to the `State` modified by the block.
+  ///
+  /// Since we hold state as associated data on our `State` enum, any modification to that state
+  /// will trigger a copy on write for its heap allocated data. Temporarily setting the `self.state`
+  /// to `.modifying` allows us to avoid an extra reference to any heap allocated data and therefore
+  /// avoid a copy on write.
+  @inline(__always)
+  private mutating func withStateAvoidingCoWs<ResultType>(
+    _ body: (inout State) -> ResultType
+  ) -> ResultType {
+    var state = State.modifying
+    swap(&self.state, &state)
+    defer {
+      swap(&self.state, &state)
+    }
+    return body(&state)
   }
 }
 
@@ -355,6 +394,9 @@ extension GRPCClientStateMachine.State {
          .clientActiveServerActive,
          .clientClosedServerClosed:
       result = .failure(.invalidState)
+
+    case .modifying:
+      preconditionFailure("State left as 'modifying'")
     }
 
     return result
@@ -384,6 +426,9 @@ extension GRPCClientStateMachine.State {
 
     case .clientIdleServerIdle:
       result = .failure(.invalidState)
+
+    case .modifying:
+      preconditionFailure("State left as 'modifying'")
     }
 
     return result
@@ -409,6 +454,9 @@ extension GRPCClientStateMachine.State {
 
     case .clientIdleServerIdle:
       result = .failure(.invalidState)
+
+    case .modifying:
+      preconditionFailure("State left as 'modifying'")
     }
 
     return result
@@ -436,6 +484,9 @@ extension GRPCClientStateMachine.State {
          .clientActiveServerActive,
          .clientClosedServerClosed:
       result = .failure(.invalidState)
+
+    case .modifying:
+      preconditionFailure("State left as 'modifying'")
     }
 
     return result
@@ -461,6 +512,9 @@ extension GRPCClientStateMachine.State {
          .clientClosedServerIdle,
          .clientClosedServerClosed:
       result = .failure(.invalidState)
+
+    case .modifying:
+      preconditionFailure("State left as 'modifying'")
     }
 
     return result
@@ -488,6 +542,9 @@ extension GRPCClientStateMachine.State {
     case .clientIdleServerIdle,
          .clientClosedServerClosed:
       result = .failure(.invalidState)
+
+    case .modifying:
+      preconditionFailure("State left as 'modifying'")
     }
 
     return result
