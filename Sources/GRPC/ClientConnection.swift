@@ -518,6 +518,12 @@ extension ClientConnection {
     /// Defaults to a no-op logger.
     public var backgroundActivityLogger: Logger
 
+    /// A channel initializer which will be run after gRPC has initialized each channel. This may be
+    /// used to add additional handlers to the pipeline and is intended for debugging.
+    ///
+    /// - Warning: The initializer closure may be invoked *multiple times*.
+    public var debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)?
+
     /// Create a `Configuration` with some pre-defined defaults. Prefer using
     /// `ClientConnection.secure(group:)` to build a connection secured with TLS or
     /// `ClientConnection.insecure(group:)` to build a plaintext connection.
@@ -538,6 +544,8 @@ extension ClientConnection {
     /// - Parameter httpTargetWindowSize: The HTTP/2 flow control target window size.
     /// - Parameter backgroundActivityLogger: A logger for background information (such as
     ///     connectivity state). Defaults to a no-op logger.
+    /// - Parameter debugChannelInitializer: A channel initializer will be called after gRPC has
+    ///     initialized the channel. Defaults to `nil`.
     public init(
       target: ConnectionTarget,
       eventLoopGroup: EventLoopGroup,
@@ -550,7 +558,8 @@ extension ClientConnection {
       connectionIdleTimeout: TimeAmount = .minutes(5),
       callStartBehavior: CallStartBehavior = .waitsForConnectivity,
       httpTargetWindowSize: Int = 65535,
-      backgroundActivityLogger: Logger = Logger(label: "io.grpc", factory: { _ in SwiftLogNoOpLogHandler() })
+      backgroundActivityLogger: Logger = Logger(label: "io.grpc", factory: { _ in SwiftLogNoOpLogHandler() }),
+      debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)? = nil
     ) {
       self.target = target
       self.eventLoopGroup = eventLoopGroup
@@ -564,6 +573,7 @@ extension ClientConnection {
       self.callStartBehavior = callStartBehavior
       self.httpTargetWindowSize = httpTargetWindowSize
       self.backgroundActivityLogger = backgroundActivityLogger
+      self.debugChannelInitializer = debugChannelInitializer
     }
   }
 }
