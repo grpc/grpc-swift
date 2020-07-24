@@ -19,18 +19,17 @@ import Logging
 
 extension Server {
   public class Builder {
-    private let group: EventLoopGroup
+    private var configuration: Server.Configuration
     private var maybeTLS: Server.Configuration.TLS? { return nil }
-    private var providers: [CallHandlerProvider] = []
-    private var errorDelegate: ServerErrorDelegate?
-    private var messageEncoding: ServerMessageEncoding = .disabled
-    private var connectionKeepalive: ServerConnectionKeepalive = ServerConnectionKeepalive()
-    private var connectionIdleTimeout: TimeAmount = .minutes(5)
-    private var httpTargetWindowSize: Int = 65535
-    private var logger: Logger = Logger(label: "io.grpc", factory: { _ in SwiftLogNoOpLogHandler() })
 
     fileprivate init(group: EventLoopGroup) {
-      self.group = group
+      self.configuration = Configuration(
+        // This is okay: the configuration is only consumed on a call to `bind` which sets the host
+        // and port.
+        target: .hostAndPort("", .max),
+        eventLoopGroup: group,
+        serviceProviders: []
+      )
     }
 
     public class Secure: Builder {
@@ -49,19 +48,10 @@ extension Server {
     }
 
     public func bind(host: String, port: Int) -> EventLoopFuture<Server> {
-      let configuration = Server.Configuration(
-        target: .hostAndPort(host, port),
-        eventLoopGroup: self.group,
-        serviceProviders: self.providers,
-        errorDelegate: self.errorDelegate,
-        tls: self.maybeTLS,
-        connectionKeepalive: self.connectionKeepalive,
-        connectionIdleTimeout: self.connectionIdleTimeout,
-        messageEncoding: self.messageEncoding,
-        httpTargetWindowSize: self.httpTargetWindowSize,
-        logger: self.logger
-      )
-      return Server.start(configuration: configuration)
+      // Finish setting up the configuration.
+      self.configuration.target = .hostAndPort(host, port)
+      self.configuration.tls = self.maybeTLS
+      return Server.start(configuration: self.configuration)
     }
   }
 }
@@ -70,7 +60,7 @@ extension Server.Builder {
   /// Sets the server error delegate.
   @discardableResult
   public func withErrorDelegate(_ delegate: ServerErrorDelegate?) -> Self {
-    self.errorDelegate = delegate
+    self.configuration.errorDelegate = delegate
     return self
   }
 }
@@ -80,7 +70,7 @@ extension Server.Builder {
   /// times will override any previously set providers.
   @discardableResult
   public func withServiceProviders(_ providers: [CallHandlerProvider]) -> Self {
-    self.providers = providers
+    self.configuration.serviceProviders = providers
     return self
   }
 }
@@ -88,7 +78,7 @@ extension Server.Builder {
 extension Server.Builder {
   @discardableResult
   public func withKeepalive(_ keepalive: ServerConnectionKeepalive) -> Self {
-    self.connectionKeepalive = keepalive
+    self.configuration.connectionKeepalive = keepalive
     return self
   }
 }
@@ -99,7 +89,7 @@ extension Server.Builder {
   /// 5 minutes if not set.
   @discardableResult
   public func withConnectionIdleTimeout(_ timeout: TimeAmount) -> Self {
-    self.connectionIdleTimeout = timeout
+    self.configuration.connectionIdleTimeout = timeout
     return self
   }
 }
@@ -109,7 +99,7 @@ extension Server.Builder {
   /// and any RPCs using compression will not be accepted.
   @discardableResult
   public func withMessageCompression(_ encoding: ServerMessageEncoding) -> Self {
-    self.messageEncoding = encoding
+    self.configuration.messageEncoding = encoding
     return self
   }
 }
@@ -136,7 +126,7 @@ extension Server.Builder {
   /// Sets the HTTP/2 flow control target window size. Defaults to 65,535 if not explicitly set.
   @discardableResult
   public func withHTTPTargetWindowSize(_ httpTargetWindowSize: Int) -> Self {
-    self.httpTargetWindowSize = httpTargetWindowSize
+    self.configuration.httpTargetWindowSize = httpTargetWindowSize
     return self
   }
 }
@@ -147,7 +137,7 @@ extension Server.Builder {
   /// available to service providers via `context`. Defaults to a no-op logger.
   @discardableResult
   public func withLogger(_ logger: Logger) -> Self {
-    self.logger = logger
+    self.configuration.logger = logger
     return self
   }
 }

@@ -32,39 +32,24 @@ extension ClientConnection {
 
 extension ClientConnection {
   public class Builder {
-    private let group: EventLoopGroup
+    private var configuration: ClientConnection.Configuration
     private var maybeTLS: ClientConnection.Configuration.TLS? { return nil }
+
     private var connectionBackoff = ConnectionBackoff()
     private var connectionBackoffIsEnabled = true
-    private var errorDelegate: ClientErrorDelegate?
-    private var connectivityStateDelegate: ConnectivityStateDelegate?
-    private var connectivityStateDelegateQueue: DispatchQueue?
-    private var connectionKeepalive = ClientConnectionKeepalive()
-    private var connectionIdleTimeout: TimeAmount = .minutes(5)
-    private var callStartBehavior: CallStartBehavior = .waitsForConnectivity
-    private var httpTargetWindowSize: Int = 65535
-    private var logger: Logger = Logger(label: "io.grpc", factory: { _ in SwiftLogNoOpLogHandler() })
 
     fileprivate init(group: EventLoopGroup) {
-      self.group = group
+      // This is okay: the configuration is only consumed on a call to `connect` which sets the host
+      // and port.
+      self.configuration = Configuration(target: .hostAndPort("", .max), eventLoopGroup: group)
     }
 
     public func connect(host: String, port: Int) -> ClientConnection {
-      let configuration = ClientConnection.Configuration(
-        target: .hostAndPort(host, port),
-        eventLoopGroup: self.group,
-        errorDelegate: self.errorDelegate,
-        connectivityStateDelegate: self.connectivityStateDelegate,
-        connectivityStateDelegateQueue: self.connectivityStateDelegateQueue,
-        tls: self.maybeTLS,
-        connectionBackoff: self.connectionBackoffIsEnabled ? self.connectionBackoff : nil,
-        connectionKeepalive: self.connectionKeepalive,
-        connectionIdleTimeout: self.connectionIdleTimeout,
-        callStartBehavior: self.callStartBehavior,
-        httpTargetWindowSize: self.httpTargetWindowSize,
-        backgroundActivityLogger: self.logger
-      )
-      return ClientConnection(configuration: configuration)
+      // Finish setting up the configuration.
+      self.configuration.target = .hostAndPort(host, port)
+      self.configuration.connectionBackoff = self.connectionBackoffIsEnabled ? self.connectionBackoff : nil
+      self.configuration.tls = maybeTLS
+      return ClientConnection(configuration: self.configuration)
     }
   }
 }
@@ -158,7 +143,7 @@ extension ClientConnection.Builder {
   /// [documentation] (https://github.com/grpc/grpc/blob/master/doc/keepalive.md).
   @discardableResult
   public func withKeepalive(_ keepalive: ClientConnectionKeepalive) -> Self {
-    self.connectionKeepalive = keepalive
+    self.configuration.connectionKeepalive = keepalive
     return self
   }
 
@@ -168,7 +153,7 @@ extension ClientConnection.Builder {
   /// Defaults to 5 minutes if not set.
   @discardableResult
   public func withConnectionIdleTimeout(_ timeout: TimeAmount) -> Self {
-    self.connectionIdleTimeout = timeout
+    self.configuration.connectionIdleTimeout = timeout
     return self
   }
 
@@ -177,7 +162,7 @@ extension ClientConnection.Builder {
   /// use `.waitsForConnectivity` by default.
   @discardableResult
   public func withCallStartBehavior(_ behavior: CallStartBehavior) -> Self {
-    self.callStartBehavior = behavior
+    self.configuration.callStartBehavior = behavior
     return self
   }
 }
@@ -186,7 +171,7 @@ extension ClientConnection.Builder {
   /// Sets the client error delegate.
   @discardableResult
   public func withErrorDelegate(_ delegate: ClientErrorDelegate?) -> Self {
-    self.errorDelegate = delegate
+    self.configuration.errorDelegate = delegate
     return self
   }
 }
@@ -200,8 +185,8 @@ extension ClientConnection.Builder {
     _ delegate: ConnectivityStateDelegate?,
     executingOn queue: DispatchQueue? = nil
   ) -> Self {
-    self.connectivityStateDelegate = delegate
-    self.connectivityStateDelegateQueue = queue
+    self.configuration.connectivityStateDelegate = delegate
+    self.configuration.connectivityStateDelegateQueue = queue
     return self
   }
 }
@@ -247,7 +232,7 @@ extension ClientConnection.Builder {
   /// Sets the HTTP/2 flow control target window size. Defaults to 65,535 if not explicitly set.
   @discardableResult
   public func withHTTPTargetWindowSize(_ httpTargetWindowSize: Int) -> Self {
-    self.httpTargetWindowSize = httpTargetWindowSize
+    self.configuration.httpTargetWindowSize = httpTargetWindowSize
     return self
   }
 }
@@ -260,7 +245,7 @@ extension ClientConnection.Builder {
   /// here.
   @discardableResult
   public func withBackgroundActivityLogger(_ logger: Logger) -> Self {
-    self.logger = logger
+    self.configuration.backgroundActivityLogger = logger
     return self
   }
 }

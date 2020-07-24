@@ -536,8 +536,8 @@ extension ClientConnection {
     /// - Parameter callStartBehavior: The behavior used to determine when a call should start in
     ///     relation to its underlying connection. Defaults to `waitsForConnectivity`.
     /// - Parameter httpTargetWindowSize: The HTTP/2 flow control target window size.
-    /// - Parameter logger: A logger for background information (such as connectivity state).
-    ///     Defaults to a no-op logger.
+    /// - Parameter backgroundActivityLogger: A logger for background information (such as
+    ///     connectivity state). Defaults to a no-op logger.
     public init(
       target: ConnectionTarget,
       eventLoopGroup: EventLoopGroup,
