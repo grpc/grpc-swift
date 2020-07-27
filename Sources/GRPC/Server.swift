@@ -115,12 +115,23 @@ public final class Server {
           return channel.pipeline.addHandler(handler)
         }
 
+        let configured: EventLoopFuture<Void>
+
         if let tls = configuration.tls {
-          return channel.configureTLS(configuration: tls).flatMap {
+          configured = channel.configureTLS(configuration: tls).flatMap {
             channel.pipeline.addHandler(protocolSwitcher)
           }
         } else {
-          return channel.pipeline.addHandler(protocolSwitcher)
+          configured = channel.pipeline.addHandler(protocolSwitcher)
+        }
+
+        // Add the debug initializer, if there is one.
+        if let debugAcceptedChannelInitializer = configuration.debugChannelInitializer {
+          return configured.flatMap {
+            debugAcceptedChannelInitializer(channel)
+          }
+        } else {
+          return configured
         }
       }
 
@@ -216,19 +227,30 @@ extension Server {
     /// available to service providers via `context`. Defaults to a no-op logger.
     public var logger: Logger
 
+    /// A channel initializer which will be run after gRPC has initialized each accepted channel.
+    /// This may be used to add additional handlers to the pipeline and is intended for debugging.
+    /// This is analogous to `NIO.ServerBootstrap.childChannelInitializer`.
+    ///
+    /// - Warning: The initializer closure may be invoked *multiple times*. More precisely: it will
+    ///   be invoked at most once per accepted connection.
+    public var debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)?
+
     /// Create a `Configuration` with some pre-defined defaults.
     ///
-    /// - Parameter target: The target to bind to.
-    /// - Parameter eventLoopGroup: The event loop group to run the server on.
-    /// - Parameter serviceProviders: An array of `CallHandlerProvider`s which the server should use
-    ///     to handle requests.
-    /// - Parameter errorDelegate: The error delegate, defaulting to a logging delegate.
-    /// - Parameter tls: TLS configuration, defaulting to `nil`.
-    /// - Parameter connectionKeepalive: The keepalive configuration to use.
-    /// - Parameter connectionIdleTimeout: The amount of time to wait before closing the connection, defaulting to 5 minutes.
-    /// - Parameter messageEncoding: Message compression configuration, defaulting to no compression.
-    /// - Parameter httpTargetWindowSize: The HTTP/2 flow control target window size.
-    /// - Parameter logger: A logger. Defaults to a no-op logger.
+    /// - Parameters:
+    ///   - target: The target to bind to.
+    ///   -  eventLoopGroup: The event loop group to run the server on.
+    ///   - serviceProviders: An array of `CallHandlerProvider`s which the server should use
+    ///       to handle requests.
+    ///   - errorDelegate: The error delegate, defaulting to a logging delegate.
+    ///   - tls: TLS configuration, defaulting to `nil`.
+    ///   - connectionKeepalive: The keepalive configuration to use.
+    ///   - connectionIdleTimeout: The amount of time to wait before closing the connection, defaulting to 5 minutes.
+    ///   - messageEncoding: Message compression configuration, defaulting to no compression.
+    ///   - httpTargetWindowSize: The HTTP/2 flow control target window size.
+    ///   - logger: A logger. Defaults to a no-op logger.
+    ///   - debugChannelInitializer: A channel initializer which will be called for each connection
+    ///     the server accepts after gRPC has initialized the channel. Defaults to `nil`.
     public init(
       target: BindTarget,
       eventLoopGroup: EventLoopGroup,
@@ -239,7 +261,8 @@ extension Server {
       connectionIdleTimeout: TimeAmount = .minutes(5),
       messageEncoding: ServerMessageEncoding = .disabled,
       httpTargetWindowSize: Int = 65535,
-      logger: Logger = Logger(label: "io.grpc", factory: { _ in SwiftLogNoOpLogHandler() })
+      logger: Logger = Logger(label: "io.grpc", factory: { _ in SwiftLogNoOpLogHandler() }),
+      debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)? = nil
     ) {
       self.target = target
       self.eventLoopGroup = eventLoopGroup
@@ -251,6 +274,7 @@ extension Server {
       self.messageEncoding = messageEncoding
       self.httpTargetWindowSize = httpTargetWindowSize
       self.logger = logger
+      self.debugChannelInitializer = debugChannelInitializer
     }
   }
 }
