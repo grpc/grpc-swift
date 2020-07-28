@@ -142,6 +142,22 @@ extension Server.Builder {
   }
 }
 
+extension Server.Builder {
+  /// A channel initializer which will be run after gRPC has initialized each accepted channel.
+  /// This may be used to add additional handlers to the pipeline and is intended for debugging.
+  /// This is analogous to `NIO.ServerBootstrap.childChannelInitializer`.
+  ///
+  /// - Warning: The initializer closure may be invoked *multiple times*. More precisely: it will
+  ///   be invoked at most once per accepted connection.
+  @discardableResult
+  public func withDebugChannelInitializer(
+    _ debugChannelInitializer: @escaping (Channel) -> EventLoopFuture<Void>
+  ) -> Self {
+    self.configuration.debugChannelInitializer = debugChannelInitializer
+    return self
+  }
+}
+
 extension Server {
   /// Returns an insecure `Server` builder which is *not configured with TLS*.
   public static func insecure(group: EventLoopGroup) -> Builder {

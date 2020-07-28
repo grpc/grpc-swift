@@ -20,26 +20,31 @@ import NIO
 import NIOConcurrencyHelpers
 import XCTest
 
-class ClientDebugChannelInitializerTests: GRPCTestCase {
+class DebugChannelInitializerTests: GRPCTestCase {
   func testDebugChannelInitializerIsCalled() throws {
     let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     defer {
       XCTAssertNoThrow(try group.syncShutdownGracefully())
     }
 
+    let serverDebugInitializerCalled = group.next().makePromise(of: Void.self)
     let server = try Server.insecure(group: group)
       .withServiceProviders([EchoProvider()])
+      .withDebugChannelInitializer { channel in
+        serverDebugInitializerCalled.succeed(())
+        return channel.eventLoop.makeSucceededFuture(())
+      }
       .bind(host: "localhost", port: 0)
       .wait()
     defer {
       XCTAssertNoThrow(try server.close().wait())
     }
 
-    let debugInitializerCalled = group.next().makePromise(of: Void.self)
+    let clientDebugInitializerCalled = group.next().makePromise(of: Void.self)
     let connection = ClientConnection.insecure(group: group)
       .withBackgroundActivityLogger(self.clientLogger)
       .withDebugChannelInitializer { channel in
-        debugInitializerCalled.succeed(())
+        clientDebugInitializerCalled.succeed(())
         return channel.eventLoop.makeSucceededFuture(())
       }
       .connect(host: "localhost", port: server.channel.localAddress!.port!)
@@ -52,7 +57,8 @@ class ClientDebugChannelInitializerTests: GRPCTestCase {
     let get = echo.get(.with { $0.text = "Hello!" })
     XCTAssertTrue(try get.status.map { $0.isOk }.wait())
 
-    // Check the initializer was called.
-    XCTAssertNoThrow(try debugInitializerCalled.futureResult.wait())
+    // Check the initializers were called.
+    XCTAssertNoThrow(try clientDebugInitializerCalled.futureResult.wait())
+    XCTAssertNoThrow(try serverDebugInitializerCalled.futureResult.wait())
   }
 }
