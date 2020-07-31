@@ -62,27 +62,32 @@ class ChannelArgumentTests: BasicEchoTestCase {
 extension ChannelArgumentTests {
   func testArgumentKey() {
     let argument = Channel.Argument.defaultAuthority("default")
-    XCTAssertEqual(String(cString: argument.toCArg().wrapped.key), "grpc.default_authority")
+    let cArg = argument.toCArg()  // Needs to be stored in a variable to ensure it doesn't get deallocated too early.
+    XCTAssertEqual(String(cString: cArg.wrapped.key), "grpc.default_authority")
   }
 
   func testStringArgument() {
     let argument = Channel.Argument.primaryUserAgent("Primary/0.1")
-    XCTAssertEqual(String(cString: argument.toCArg().wrapped.value.string), "Primary/0.1")
+    let cArg = argument.toCArg()
+    XCTAssertEqual(String(cString: cArg.wrapped.value.string), "Primary/0.1")
   }
 
   func testIntegerArgument() {
     let argument = Channel.Argument.http2MaxPingsWithoutData(5)
-    XCTAssertEqual(argument.toCArg().wrapped.value.integer, 5)
+    let cArg = argument.toCArg()
+    XCTAssertEqual(cArg.wrapped.value.integer, 5)
   }
 
   func testBoolArgument() {
     let argument = Channel.Argument.keepAlivePermitWithoutCalls(true)
-    XCTAssertEqual(argument.toCArg().wrapped.value.integer, 1)
+    let cArg = argument.toCArg()
+    XCTAssertEqual(cArg.wrapped.value.integer, 1)
   }
 
   func testTimeIntervalArgument() {
     let argument = Channel.Argument.keepAliveTime(2.5)
-    XCTAssertEqual(argument.toCArg().wrapped.value.integer, 2500) // in ms
+    let cArg = argument.toCArg()
+    XCTAssertEqual(cArg.wrapped.value.integer, 2500) // in ms
   }
 }
 
