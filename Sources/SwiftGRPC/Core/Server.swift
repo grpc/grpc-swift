@@ -85,46 +85,51 @@ public class Server {
         var handler = Handler(underlyingServer: self.underlyingServer)
         // Tell gRPC to store the next call's information in this handler object.
         try handler.requestCall(tag: Server.handlerCallTag)
-        spinloop: while true {
-          // block while waiting for an incoming request
-          let event = self.completionQueue.wait(timeout: self.loopTimeout)
+        var spinloopActive = true
+        while spinloopActive {
+          try withAutoReleasePool {
+            // block while waiting for an incoming request
+            let event = self.completionQueue.wait(timeout: self.loopTimeout)
 
-          if event.type == .complete {
-            if event.tag == Server.handlerCallTag {
-              // run the handler and remove it when it finishes
-              if event.success != 0 {
-                // hold onto the handler while it runs
-                var strongHandlerReference: Handler?
-                strongHandlerReference = handler
-                // To prevent the "Variable 'strongHandlerReference' was written to, but never read" warning.
-                _ = strongHandlerReference
-                // this will start the completion queue on a new thread
-                handler.completionQueue.runToCompletion {
-                  // release the handler when it finishes
-                  strongHandlerReference = nil
+            if event.type == .complete {
+              if event.tag == Server.handlerCallTag {
+                // run the handler and remove it when it finishes
+                if event.success != 0 {
+                  // hold onto the handler while it runs
+                  var strongHandlerReference: Handler?
+                  strongHandlerReference = handler
+                  // To prevent the "Variable 'strongHandlerReference' was written to, but never read" warning.
+                  _ = strongHandlerReference
+                  // this will start the completion queue on a new thread
+                  handler.completionQueue.runToCompletion {
+                    // release the handler when it finishes
+                    strongHandlerReference = nil
+                  }
+
+                  // Dispatch the handler function on a separate thread.
+                  let handlerDispatchThreadQueue = DispatchQueue(label: "SwiftGRPC.Server.run.dispatchHandlerThread")
+                  // Needs to be copied, because we will change the value of `handler` right after this.
+                  let handlerCopy = handler
+                  handlerDispatchThreadQueue.async {
+                    handlerFunction(handlerCopy)
+                  }
                 }
-                
-                // Dispatch the handler function on a separate thread.
-                let handlerDispatchThreadQueue = DispatchQueue(label: "SwiftGRPC.Server.run.dispatchHandlerThread")
-                // Needs to be copied, because we will change the value of `handler` right after this.
-                let handlerCopy = handler
-                handlerDispatchThreadQueue.async {
-                  handlerFunction(handlerCopy)
-                }
+
+                // This handler has now been "used up" for the current call; replace it with a fresh one for the next
+                // loop iteration.
+                handler = Handler(underlyingServer: self.underlyingServer)
+                try handler.requestCall(tag: Server.handlerCallTag)
+              } else if event.tag == Server.stopTag || event.tag == Server.destroyTag {
+                spinloopActive = false
+                return
               }
-
-              // This handler has now been "used up" for the current call; replace it with a fresh one for the next
-              // loop iteration.
-              handler = Handler(underlyingServer: self.underlyingServer)
-              try handler.requestCall(tag: Server.handlerCallTag)
-            } else if event.tag == Server.stopTag || event.tag == Server.destroyTag {
-              break spinloop
+            } else if event.type == .queueTimeout {
+              // Everything is fine, just start over *while continuing to use the existing handler*.
+              return
+            } else if event.type == .queueShutdown {
+              spinloopActive = false
+              return
             }
-          } else if event.type == .queueTimeout {
-            // Everything is fine, just start over *while continuing to use the existing handler*.
-            continue
-          } else if event.type == .queueShutdown {
-            break spinloop
           }
         }
       } catch {
