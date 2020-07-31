@@ -122,38 +122,40 @@ class CompletionQueue {
     let spinloopThreadQueue = DispatchQueue(label: threadLabel)
     spinloopThreadQueue.async {
       spinloop: while true {
-        let event = cgrpc_completion_queue_get_next_event(self.underlyingCompletionQueue, 600)
-        switch event.type {
-        case GRPC_OP_COMPLETE:
-          let tag = Int(bitPattern:cgrpc_event_tag(event))
-          self.operationGroupsMutex.lock()
-          let operationGroup = self.operationGroups[tag]
-          self.operationGroupsMutex.unlock()
-          if let operationGroup = operationGroup {
-            // call the operation group completion handler
-            operationGroup.success = (event.success == 1)
-            operationGroup.completion?(operationGroup)
-            self.operationGroupsMutex.synchronize {
-              self.operationGroups[tag] = nil
+        autoreleasepool {
+          let event = cgrpc_completion_queue_get_next_event(self.underlyingCompletionQueue, 600)
+          switch event.type {
+          case GRPC_OP_COMPLETE:
+            let tag = Int(bitPattern:cgrpc_event_tag(event))
+            self.operationGroupsMutex.lock()
+            let operationGroup = self.operationGroups[tag]
+            self.operationGroupsMutex.unlock()
+            if let operationGroup = operationGroup {
+              // call the operation group completion handler
+              operationGroup.success = (event.success == 1)
+              operationGroup.completion?(operationGroup)
+              self.operationGroupsMutex.synchronize {
+                self.operationGroups[tag] = nil
+              }
+            } else {
+              print("CompletionQueue.runToCompletion error: operation group with tag \(tag) not found")
             }
-          } else {
-            print("CompletionQueue.runToCompletion error: operation group with tag \(tag) not found")
+          case GRPC_QUEUE_SHUTDOWN:
+            self.operationGroupsMutex.lock()
+            let currentOperationGroups = self.operationGroups
+            self.operationGroups = [:]
+            self.operationGroupsMutex.unlock()
+            
+            for operationGroup in currentOperationGroups.values {
+              operationGroup.success = false
+              operationGroup.completion?(operationGroup)
+            }
+            break spinloop
+          case GRPC_QUEUE_TIMEOUT:
+            continue spinloop
+          default:
+            break spinloop
           }
-        case GRPC_QUEUE_SHUTDOWN:
-          self.operationGroupsMutex.lock()
-          let currentOperationGroups = self.operationGroups
-          self.operationGroups = [:]
-          self.operationGroupsMutex.unlock()
-          
-          for operationGroup in currentOperationGroups.values {
-            operationGroup.success = false
-            operationGroup.completion?(operationGroup)
-          }
-          break spinloop
-        case GRPC_QUEUE_TIMEOUT:
-          continue spinloop
-        default:
-          break spinloop
         }
       }
       // when the queue stops running, call the queue completion handler
