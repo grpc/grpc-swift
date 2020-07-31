@@ -87,7 +87,7 @@ public class Server {
         try handler.requestCall(tag: Server.handlerCallTag)
         var spinloopActive = true
         while spinloopActive {
-          try autoreleasepool {
+          try withAutoReleasePool {
             // block while waiting for an incoming request
             let event = self.completionQueue.wait(timeout: self.loopTimeout)
 

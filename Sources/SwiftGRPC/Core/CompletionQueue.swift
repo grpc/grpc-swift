@@ -19,6 +19,17 @@
 #endif
 import Foundation
 
+/// Execute the given closure and ensure we release all auto pools if needed.
+@inlinable
+internal func withAutoReleasePool<T>(_ execute: () throws -> T) rethrows -> T {
+  #if os(iOS) || os(macOS) || os(tvOS) || os(watchOS)
+  return try autoreleasepool {
+    try execute()
+  }
+  #else
+  return try execute()
+  #endif
+}
 /// A type indicating the kind of event returned by the completion queue
 enum CompletionType {
   case queueShutdown
@@ -123,7 +134,7 @@ class CompletionQueue {
     spinloopThreadQueue.async {
       var spinloopActive = true
       while spinloopActive {
-        autoreleasepool {
+        withAutoReleasePool {
           let event = cgrpc_completion_queue_get_next_event(self.underlyingCompletionQueue, 600)
           switch event.type {
           case GRPC_OP_COMPLETE:
