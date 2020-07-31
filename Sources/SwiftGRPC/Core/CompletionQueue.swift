@@ -121,7 +121,8 @@ class CompletionQueue {
     }
     let spinloopThreadQueue = DispatchQueue(label: threadLabel)
     spinloopThreadQueue.async {
-      spinloop: while true {
+      var spinloopActive = true
+      while spinloopActive {
         autoreleasepool {
           let event = cgrpc_completion_queue_get_next_event(self.underlyingCompletionQueue, 600)
           switch event.type {
@@ -145,16 +146,18 @@ class CompletionQueue {
             let currentOperationGroups = self.operationGroups
             self.operationGroups = [:]
             self.operationGroupsMutex.unlock()
-            
+
             for operationGroup in currentOperationGroups.values {
               operationGroup.success = false
               operationGroup.completion?(operationGroup)
             }
-            break spinloop
+            spinloopActive = false
+            return
           case GRPC_QUEUE_TIMEOUT:
-            continue spinloop
+            return
           default:
-            break spinloop
+            spinloopActive = false
+            return
           }
         }
       }
