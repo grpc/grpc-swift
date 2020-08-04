@@ -29,18 +29,13 @@ class GRPCStatusCodeTests: GRPCTestCase {
   override func setUp() {
     super.setUp()
 
-    let handler = _GRPCClientChannelHandler(
-      streamID: .init(1),
-      callType: .unary,
-      logger: self.logger
-    )
-
+    let handler = _GRPCClientChannelHandler(callType: .unary, logger: self.logger)
     self.channel = EmbeddedChannel(handler: handler)
   }
 
-  func headersFrame(status: HTTPResponseStatus) -> HTTP2Frame {
+  func headersFramePayload(status: HTTPResponseStatus) -> HTTP2Frame.FramePayload {
     let headers: HPACKHeaders = [":status": "\(status.code)"]
-    return .init(streamID: .init(1), payload: .headers(.init(headers: headers)))
+    return .headers(.init(headers: headers))
   }
 
   func sendRequestHead() {
@@ -60,7 +55,7 @@ class GRPCStatusCodeTests: GRPCTestCase {
   func doTestResponseStatus(_ status: HTTPResponseStatus, expected: GRPCStatus.Code) throws {
     // Send the request head so we're in a valid state to receive headers.
     self.sendRequestHead()
-    XCTAssertThrowsError(try self.channel.writeInbound(self.headersFrame(status: status))) { error in
+    XCTAssertThrowsError(try self.channel.writeInbound(self.headersFramePayload(status: status))) { error in
       guard let withContext = error as? GRPCError.WithContext,
             let invalidHTTPStatus = withContext.error as? GRPCError.InvalidHTTPStatus  else {
         XCTFail("Unexpected error: \(error)")
@@ -113,8 +108,8 @@ class GRPCStatusCodeTests: GRPCTestCase {
     ]
 
     self.sendRequestHead()
-    let headerFrame = HTTP2Frame(streamID: .init(1), payload: .headers(.init(headers: headers)))
-    XCTAssertThrowsError(try self.channel.writeInbound(headerFrame)) { error in
+    let headerFramePayload = HTTP2Frame.FramePayload.headers(.init(headers: headers))
+    XCTAssertThrowsError(try self.channel.writeInbound(headerFramePayload)) { error in
       guard let withContext = error as? GRPCError.WithContext,
             let invalidHTTPStatus = withContext.error as? GRPCError.InvalidHTTPStatusWithGRPCStatus  else {
         XCTFail("Unexpected error: \(error)")

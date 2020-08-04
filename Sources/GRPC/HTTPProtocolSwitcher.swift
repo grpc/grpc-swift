@@ -145,13 +145,22 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
         context.channel.configureHTTP2Pipeline(
           mode: .server,
           targetWindowSize: httpTargetWindowSize
-        ) { (streamChannel, streamID) in
+        ) { streamChannel in
           var logger = self.logger
-          logger[metadataKey: MetadataKey.streamID] = "\(streamID)"
-          return streamChannel.pipeline.addHandler(HTTP2ToHTTP1ServerCodec(streamID: streamID, normalizeHTTPHeaders: true)).flatMap {
-            self.handlersInitializer(streamChannel, logger)
+
+          // Grab the streamID from the channel.
+          return streamChannel.getOption(HTTP2StreamChannelOptions.streamID).map { streamID in
+            logger[metadataKey: MetadataKey.streamID] = "\(streamID)"
+            return logger
+          }.recover { _ in
+            logger[metadataKey: MetadataKey.streamID] = "<unknown>"
+            return logger
+          }.flatMap { logger in
+            return streamChannel.pipeline.addHandler(HTTP2FramePayloadToHTTP1ServerCodec()).flatMap {
+              self.handlersInitializer(streamChannel, logger)
+            }
           }
-        }.flatMap { multiplexer in
+        }.flatMap { multiplexer -> EventLoopFuture<Void> in
           // Add a keepalive and idle handlers between the two HTTP2 handlers.
           let keepaliveHandler = GRPCServerKeepaliveHandler(configuration: self.keepAlive)
           let idleHandler = GRPCIdleHandler(mode: .server, idleTimeout: self.idleTimeout)
