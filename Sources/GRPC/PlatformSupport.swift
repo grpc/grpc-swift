@@ -227,4 +227,24 @@ public enum PlatformSupport {
     logger.debug("creating a ServerBootstrap")
     return ServerBootstrap(group: group)
   }
+
+  /// Determines whether we may need to work around an issue in Network.framework with zero-length writes.
+  ///
+  /// See https://github.com/apple/swift-nio-transport-services/pull/72 for more.
+  static func requiresZeroLengthWriteWorkaround(group: EventLoopGroup, hasTLS: Bool) -> Bool {
+    #if canImport(Network)
+    if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
+      if group is NIOTSEventLoopGroup || group is QoSEventLoop {
+        // We need the zero-length write workaround on NIOTS when not using TLS.
+        return !hasTLS
+      } else {
+        return false
+      }
+    } else {
+      return false
+    }
+    #else
+    return false
+    #endif
+  }
 }

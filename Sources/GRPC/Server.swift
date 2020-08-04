@@ -15,6 +15,7 @@
  */
 import Foundation
 import NIO
+import NIOTransportServices
 import NIOHTTP1
 import NIOHTTP2
 import NIOSSL
@@ -115,7 +116,7 @@ public final class Server {
           return channel.pipeline.addHandler(handler)
         }
 
-        let configured: EventLoopFuture<Void>
+        var configured: EventLoopFuture<Void>
 
         if let tls = configuration.tls {
           configured = channel.configureTLS(configuration: tls).flatMap {
@@ -123,6 +124,14 @@ public final class Server {
           }
         } else {
           configured = channel.pipeline.addHandler(protocolSwitcher)
+        }
+
+        // Work around the zero length write issue, if needed.
+        let requiresZeroLengthWorkaround = PlatformSupport.requiresZeroLengthWriteWorkaround(group: configuration.eventLoopGroup, hasTLS: configuration.tls != nil)
+        if requiresZeroLengthWorkaround, #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
+          configured = configured.flatMap {
+            channel.pipeline.addHandler(NIOFilterEmptyWritesHandler())
+          }
         }
 
         // Add the debug initializer, if there is one.

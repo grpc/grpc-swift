@@ -15,6 +15,7 @@
  */
 import Foundation
 import NIO
+import NIOTransportServices
 import NIOHTTP2
 import NIOSSL
 import NIOTLS
@@ -633,13 +634,14 @@ extension Channel {
     connectionKeepalive: ClientConnectionKeepalive,
     connectionIdleTimeout: TimeAmount,
     errorDelegate: ClientErrorDelegate?,
+    requiresZeroLengthWriteWorkaround: Bool,
     logger: Logger
   ) -> EventLoopFuture<Void> {
     let tlsConfigured = tlsConfiguration.map {
       self.configureTLS($0, serverHostname: tlsServerHostname, errorDelegate: errorDelegate, logger: logger)
     }
 
-    return (tlsConfigured ?? self.eventLoop.makeSucceededFuture(())).flatMap {
+    let configuration: EventLoopFuture<Void> = (tlsConfigured ?? self.eventLoop.makeSucceededFuture(())).flatMap {
       self.configureHTTP2Pipeline(mode: .client, targetWindowSize: httpTargetWindowSize)
     }.flatMap { _ in
       return self.pipeline.handler(type: NIOHTTP2Handler.self).flatMap { http2Handler in
@@ -656,6 +658,19 @@ extension Channel {
         return self.pipeline.addHandler(errorHandler)
       }
     }
+
+    #if canImport(Network)
+    // This availability guard is arguably unnecessary, but we add it anyway.
+    if requiresZeroLengthWriteWorkaround, #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
+      return configuration.flatMap {
+        self.pipeline.addHandler(NIOFilterEmptyWritesHandler(), position: .first)
+      }
+    } else {
+      return configuration
+    }
+    #else
+    return configuration
+    #endif
   }
 
   func configureGRPCClient(

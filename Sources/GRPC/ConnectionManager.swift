@@ -611,6 +611,7 @@ extension ConnectionManager {
           connectionKeepalive: configuration.connectionKeepalive,
           connectionIdleTimeout: configuration.connectionIdleTimeout,
           errorDelegate: configuration.errorDelegate,
+          requiresZeroLengthWriteWorkaround: PlatformSupport.requiresZeroLengthWriteWorkaround(group: self.eventLoop, hasTLS: configuration.tls != nil),
           logger: self.logger
         )
 
