@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/grpc/grpc-swift.svg?branch=master)](https://travis-ci.org/grpc/grpc-swift)
+[![Build Status](https://travis-ci.org/grpc/grpc-swift.svg?branch=main)](https://travis-ci.org/grpc/grpc-swift)
 [![sswg:sandbox|94x20](https://img.shields.io/badge/sswg-sandbox-lightgrey.svg)](https://github.com/swift-server/sswg/blob/master/process/incubation.md#sandbox-level)
 [![Latest Version](https://img.shields.io/github/v/release/grpc/grpc-swift?include_prereleases&sort=semver)](https://img.shields.io/github/v/release/grpc/grpc-swift?include_prereleases&sort=semver)
 
@@ -24,7 +24,7 @@ opposed to the core library provided by the [gRPC project][grpc].
 
 Version | Implementation | Branch                 | `protoc` Plugin         | CocoaPod              | Support
 --------|----------------|------------------------|-------------------------|-----------------------|-----------------------------------------
-1.x     | SwiftNIO       | [`master`][branch-new] | `protoc-gen-grpc-swift` | [gRPC-Swift][pod-new] | Actively developed and supported
+1.x     | SwiftNIO       | [`main`][branch-new]   | `protoc-gen-grpc-swift` | [gRPC-Swift][pod-new] | Actively developed and supported
 0.x     | gRPC C library | [`cgrpc`][branch-old]  | `proroc-gen-swiftgrpc`  | [SwiftGRPC][pod-old]  | No longer developed; security fixes only
 
 The remainder of this README refers to the 1.x version of gRPC Swift.
@@ -178,7 +178,7 @@ Please get involved! See our [guidelines for contributing](CONTRIBUTING.md).
 [xcode-spm]: https://help.apple.com/xcode/mac/current/#/devb83d64851
 [pod-new]: https://cocoapods.org/pods/gRPC-Swift
 [pod-old]: https://cocoapods.org/pods/SwiftGRPC
-[branch-new]: https://github.com/grpc/grpc-swift/tree/master
+[branch-new]: https://github.com/grpc/grpc-swift/tree/main
 [branch-old]: https://github.com/grpc/grpc-swift/tree/cgrpc
-[examples-out-of-source]: https://github.com/grpc/grpc-swift/tree/master/Examples
-[examples-in-source]: https://github.com/grpc/grpc-swift/tree/master/Sources/Examples
+[examples-out-of-source]: https://github.com/grpc/grpc-swift/tree/main/Examples
+[examples-in-source]: https://github.com/grpc/grpc-swift/tree/main/Sources/Examples

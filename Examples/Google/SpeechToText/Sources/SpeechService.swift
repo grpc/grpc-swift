@@ -37,7 +37,7 @@ final class SpeechService {
     precondition(!Constants.apiKey.isEmpty, "Please refer to the README on how to configure your API Key properly.")
 
     // Make EventLoopGroup for the specific platform (NIOTSEventLoopGroup for iOS)
-    // see https://github.com/grpc/grpc-swift/blob/master/docs/apple-platforms.md for more details
+    // see https://github.com/grpc/grpc-swift/blob/main/docs/apple-platforms.md for more details
     let group = PlatformSupport.makeEventLoopGroup(loopCount: 1)
 
     // Create a connection secured with TLS to Google's speech service running on our `EventLoopGroup`

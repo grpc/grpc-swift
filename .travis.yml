@@ -70,9 +70,9 @@ jobs:
 stages:
   # Always run this stage.
   - name: "Test"
-  # Only run when pushing (or merging) to master
+  # Only run when pushing (or merging) to main
   - name: "Interoperability Tests"
-    if: type = push AND branch = master
+    if: type = push AND branch = main
 
 cache:
   apt: true
