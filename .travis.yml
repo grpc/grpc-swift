@@ -18,20 +18,32 @@
 language: minimal
 jobs:
   include:
+    # Sanity checks for PRs.
+    - &sanity
+      stage: "Preflight Checks"
+      name: "Sanity (license headers and formatting)"
+      os: linux
+      dist: bionic
+      install: ./.travis-install.sh -f  # install swiftformat
+      script: ./.travis-script.sh -s  # just sanity
+      env: SWIFT_VERSION=5.2
     # Tests for each PR.
     - &tests
       stage: "Test"
       name: "Unit Tests: Ubuntu 18.04 (Swift 5.2)"
       os: linux
       dist: bionic
-      script: ./.travis-script.sh
-      env: RUN_INTEROP_TESTS=false SWIFT_VERSION=5.2
+      install: ./.travis-install.sh -p  # install protoc
+      script: ./.travis-script.sh -t  # with tsan
+      env: SWIFT_VERSION=5.2
     - <<: *tests
       name: "Unit Tests: Ubuntu 18.04 (Swift 5.1)"
-      env: RUN_INTEROP_TESTS=false SWIFT_VERSION=5.1.5 NO_TSAN=true
+      script: ./.travis-script.sh
+      env: SWIFT_VERSION=5.1.5
     - <<: *tests
       name: "Unit Tests: Ubuntu 18.04 (Swift 5.0)"
-      env: RUN_INTEROP_TESTS=false SWIFT_VERSION=5.0.3 NO_TSAN=true
+      script: ./.travis-script.sh
+      env: SWIFT_VERSION=5.0.3
     - <<: *tests
       name: "Unit Tests: Xcode 11.5"
       os: osx
@@ -47,14 +59,15 @@ jobs:
       name: "Interoperability Tests: Ubuntu 18.04 (Swift 5.2)"
       os: linux
       dist: bionic
-      script: ./.travis-script.sh
-      env: RUN_INTEROP_TESTS=true SWIFT_VERSION=5.2
+      install: ./.travis-install.sh -p -i # install protoc and interop server
+      script: ./.travis-script.sh -i  # interop tests
+      env: SWIFT_VERSION=5.2
     - <<: *interop_tests
       name: "Interoperability Tests: Ubuntu 18.04 (Swift 5.1)"
-      env: RUN_INTEROP_TESTS=true SWIFT_VERSION=5.1.5
+      env: SWIFT_VERSION=5.1.5
     - <<: *interop_tests
       name: "Interoperability Tests: Ubuntu 18.04 (Swift 5.0)"
-      env: RUN_INTEROP_TESTS=true SWIFT_VERSION=5.0.3
+      env: SWIFT_VERSION=5.0.3
     - <<: *interop_tests
       name: "Interoperability Tests: Xcode 11.5"
       os: osx
@@ -68,6 +81,7 @@ jobs:
     - <<: *development
 
 stages:
+  - name: "Preflight Checks"
   # Always run this stage.
   - name: "Test"
   # Only run when pushing (or merging) to main
@@ -91,7 +105,3 @@ addons:
       - g++
       - zlib1g-dev
       - python3
-
-before_install: ./scripts/license-check.sh
-install: ./.travis-install.sh
-script: ./.travis-script.sh
