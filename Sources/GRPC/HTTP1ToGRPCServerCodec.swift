@@ -403,7 +403,7 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
         let encodedData = accumulatedData.base64EncodedString()
 
         // Reuse our first buffer.
-        responseTextBuffer.clear(minimumCapacity: numericCast(encodedData.utf8.count))
+        responseTextBuffer.clear(minimumCapacity: UInt32(encodedData.utf8.count))
         responseTextBuffer.writeString(encodedData)
 
         // After collecting all response for gRPC Web connections, send one final aggregated
