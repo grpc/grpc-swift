@@ -268,18 +268,14 @@ public enum GRPCCallType {
 ///   `public` because it is used within performance tests.
 public final class _GRPCClientChannelHandler {
   private let logger: Logger
-  private let streamID: HTTP2StreamID
   private var stateMachine: GRPCClientStateMachine
 
   /// Creates a new gRPC channel handler for clients to translate HTTP/2 frames to gRPC messages.
   ///
   /// - Parameters:
-  ///   - streamID: The ID of the HTTP/2 stream that this handler will read and write HTTP/2
-  ///     frames on.
   ///   - callType: Type of RPC call being made.
   ///   - logger: Logger.
-  public init(streamID: HTTP2StreamID, callType: GRPCCallType, logger: Logger) {
-    self.streamID = streamID
+  public init(callType: GRPCCallType, logger: Logger) {
     self.logger = logger
     switch callType {
     case .unary:
@@ -296,12 +292,12 @@ public final class _GRPCClientChannelHandler {
 
 // MARK: - GRPCClientChannelHandler: Inbound
 extension _GRPCClientChannelHandler: ChannelInboundHandler {
-  public typealias InboundIn = HTTP2Frame
+  public typealias InboundIn = HTTP2Frame.FramePayload
   public typealias InboundOut = _RawGRPCClientResponsePart
 
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
-    let frame = self.unwrapInboundIn(data)
-    switch frame.payload {
+    let payload = self.unwrapInboundIn(data)
+    switch payload {
     case .headers(let content):
       self.readHeaders(content: content, context: context)
 
@@ -437,7 +433,7 @@ extension _GRPCClientChannelHandler: ChannelInboundHandler {
 // MARK: - GRPCClientChannelHandler: Outbound
 extension _GRPCClientChannelHandler: ChannelOutboundHandler {
   public typealias OutboundIn = _RawGRPCClientRequestPart
-  public typealias OutboundOut = HTTP2Frame
+  public typealias OutboundOut = HTTP2Frame.FramePayload
 
   public func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     switch self.unwrapOutboundIn(data) {
@@ -446,8 +442,8 @@ extension _GRPCClientChannelHandler: ChannelOutboundHandler {
       switch self.stateMachine.sendRequestHeaders(requestHead: requestHead) {
       case .success(let headers):
         // We're clear to write some headers. Create an appropriate frame and write it.
-        let frame = HTTP2Frame(streamID: self.streamID, payload: .headers(.init(headers: headers)))
-        context.write(self.wrapOutboundOut(frame), promise: promise)
+        let framePayload = HTTP2Frame.FramePayload.headers(.init(headers: headers))
+        context.write(self.wrapOutboundOut(framePayload), promise: promise)
 
       case .failure(let sendRequestHeadersError):
         switch sendRequestHeadersError {
@@ -464,11 +460,8 @@ extension _GRPCClientChannelHandler: ChannelOutboundHandler {
       switch result {
       case .success(let buffer):
         // We're clear to send a message; wrap it up in an HTTP/2 frame.
-        let frame = HTTP2Frame(
-          streamID: self.streamID,
-          payload: .data(.init(data: .byteBuffer(buffer)))
-        )
-        context.write(self.wrapOutboundOut(frame), promise: promise)
+        let framePayload = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer)))
+        context.write(self.wrapOutboundOut(framePayload), promise: promise)
 
       case .failure(let writeError):
         switch writeError {
@@ -493,11 +486,8 @@ extension _GRPCClientChannelHandler: ChannelOutboundHandler {
       case .success:
         // We can. Send an empty DATA frame with end-stream set.
         let empty = context.channel.allocator.buffer(capacity: 0)
-        let frame = HTTP2Frame(
-          streamID: self.streamID,
-          payload: .data(.init(data: .byteBuffer(empty), endStream: true))
-        )
-        context.write(self.wrapOutboundOut(frame), promise: promise)
+        let framePayload = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(empty), endStream: true))
+        context.write(self.wrapOutboundOut(framePayload), promise: promise)
 
       case .failure(let error):
         // Why can't we close the request stream?

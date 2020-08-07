@@ -509,7 +509,7 @@ extension ClientConnection {
     public var httpTargetWindowSize: Int
 
     /// The HTTP protocol used for this connection.
-    public var httpProtocol: HTTP2ToHTTP1ClientCodec.HTTPProtocol {
+    public var httpProtocol: HTTP2FramePayloadToHTTP1ClientCodec.HTTPProtocol {
       return self.tls == nil ? .http : .https
     }
 
@@ -642,7 +642,7 @@ extension Channel {
     }
 
     let configuration: EventLoopFuture<Void> = (tlsConfigured ?? self.eventLoop.makeSucceededFuture(())).flatMap {
-      self.configureHTTP2Pipeline(mode: .client, targetWindowSize: httpTargetWindowSize)
+      self.configureHTTP2Pipeline(mode: .client, targetWindowSize: httpTargetWindowSize, inboundStreamInitializer: nil)
     }.flatMap { _ in
       return self.pipeline.handler(type: NIOHTTP2Handler.self).flatMap { http2Handler in
         self.pipeline.addHandlers([
@@ -677,7 +677,7 @@ extension Channel {
     errorDelegate: ClientErrorDelegate?,
     logger: Logger
   ) -> EventLoopFuture<Void> {
-    return self.configureHTTP2Pipeline(mode: .client).flatMap { _ in
+    return self.configureHTTP2Pipeline(mode: .client, inboundStreamInitializer: nil).flatMap { _ in
       self.pipeline.addHandler(DelegatingErrorHandler(logger: logger, delegate: errorDelegate))
     }
   }

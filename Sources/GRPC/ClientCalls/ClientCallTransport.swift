@@ -168,13 +168,11 @@ internal class ChannelTransport<Request, Response> {
       multiplexer.whenComplete { result in
         switch result {
         case .success(let mux):
-          mux.createStreamChannel(promise: streamPromise) { stream, streamID in
-            var logger = logger
-            logger[metadataKey: MetadataKey.streamID] = "\(streamID)"
+          mux.createStreamChannel(promise: streamPromise) { stream in
             logger.trace("created http/2 stream")
 
             return stream.pipeline.addHandlers([
-              _GRPCClientChannelHandler(streamID: streamID, callType: callType, logger: logger),
+              _GRPCClientChannelHandler(callType: callType, logger: logger),
               GRPCClientCodecHandler(serializer: serializer, deserializer: deserializer),
               GRPCClientCallHandler(call: call)
             ])
