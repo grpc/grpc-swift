@@ -82,7 +82,7 @@ public final class HTTP1ToGRPCServerCodec {
   // TODO(kaipi): Extract all gRPC Web processing logic into an independent handler only added on
   // the HTTP1.1 pipeline, as it's starting to get in the way of readability.
   private var requestTextBuffer: NIO.ByteBuffer!
-  private var responseTextBuffers: CircularBuffer<ByteBuffer> = []
+  private var responseTextBuffers: CircularBuffer<ByteBuffer>?
 
   var inboundState = InboundState.expectingHeaders {
     willSet {
@@ -336,7 +336,7 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
             allocator: context.channel.allocator,
             compressed: messageContext.compressed
           )
-          self.responseTextBuffers.append(buffer)
+          self.appendResponseText(buffer)
 
           // Since we stored the written data, mark the write promise as successful so that the
           // ServerStreaming provider continues sending the data.
@@ -381,20 +381,30 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
         trailersBuffer.writeInteger(UInt8(0x80))
         trailersBuffer.writeInteger(UInt32(textTrailers.utf8.count))
         trailersBuffer.writeString(textTrailers)
-        self.responseTextBuffers.append(trailersBuffer)
+        self.appendResponseText(trailersBuffer)
 
-        // The '!' is fine, we know it's not empty since we just added a buffer.
-        var responseTextBuffer = self.responseTextBuffers.popFirst()!
+        // This code can only be called on the grpc-web path, so we know the response text buffers must be non-nil
+        // and must contain at least one element.
+        guard var buffers = self.responseTextBuffers else {
+          preconditionFailure("Building web response text but responseTextBuffers are nil")
+        }
+
+        // Avoid a CoW
+        self.responseTextBuffers = nil
+        var responseTextBuffer = buffers.popFirst()!
 
         // Read the data from the first buffer.
         var accumulatedData = responseTextBuffer.readData(length: responseTextBuffer.readableBytes)!
 
         // Reserve enough capacity and append the remaining buffers.
-        let requiredExtraCapacity = self.responseTextBuffers.lazy.map { $0.readableBytes }.reduce(0, +)
+        let requiredExtraCapacity = buffers.lazy.map { $0.readableBytes }.reduce(0, +)
         accumulatedData.reserveCapacity(accumulatedData.count + requiredExtraCapacity)
-        while let buffer = self.responseTextBuffers.popFirst() {
+        while let buffer = buffers.popFirst() {
           accumulatedData.append(contentsOf: buffer.readableBytesView)
         }
+
+        // Restore the buffers.
+        self.responseTextBuffers = buffers
 
         // TODO: Binary responses that are non multiples of 3 will end = or == when encoded in
         // base64. Investigate whether this might have any effect on the transport mechanism and
@@ -428,6 +438,13 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
       self.outboundState = .ignore
       self.inboundState = .ignore
     }
+  }
+
+  private func appendResponseText(_ buffer: ByteBuffer) {
+    if self.responseTextBuffers == nil {
+      self.responseTextBuffers = CircularBuffer()
+    }
+    self.responseTextBuffers!.append(buffer)
   }
 }
 
