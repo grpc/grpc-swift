@@ -38,16 +38,12 @@ PROTOBUF_VERSION=3.9.1
 BAZEL_VERSION=0.28.1
 GRPC_VERSION=1.23.0
 
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-NO_COLOR='\033[0m'
-
 info() {
-  printf "${BLUE}$1${NO_COLOR}\n"
+  printf '\033[0;34m%s\033[0m\n' "$1"
 }
 
 success() {
-  printf "${GREEN}$1${NO_COLOR}\n"
+  printf '\033[0;32m%s\033[0m\n' "$1"
 }
 
 # Install the protoc compiler.
@@ -182,24 +178,74 @@ build_grpc_cpp_server() {
   echo -en 'travis_fold:end:install.grpc_cpp_server\\r'
 }
 
-main() {
-  cd
-  mkdir -p local "$BIN_CACHE"
-  mkdir -p local "$ZIP_CACHE"
+function install_swiftformat() {
+  echo -en 'travis_fold:start:install.swiftformat\\r'
+  info "Installing swiftformat"
 
-  install_protoc
-  install_swift
 
-  if [ "$RUN_INTEROP_TESTS" = "true" ]; then
-    install_bazel
-    build_grpc_cpp_server
+  if [ ! -f "$BIN_CACHE/swiftformat" ]; then
+    git clone --depth 1 "https://github.com/nicklockwood/SwiftFormat"
+
+    info "Building swiftformat"
+    cd SwiftFormat
+    swift build --product swiftformat
+
+    cp "$(swift build --show-bin-path)/swiftformat" "$BIN_CACHE/swiftformat"
+  else
+    info "Skipping download and build of SwiftFormat, using cached binaries"
   fi
 
-  # Verify installation
-  info "Contents of $HOME/local:"
-  find local
-  success "Install script completed"
+  # We should have cached swiftformat now, copy it to $HOME/local/bin
+  cp "$BIN_CACHE/swiftformat" "$HOME"/local/bin/swiftformat
+
+  success "Installed swiftformat"
+  echo -en 'travis_fold:end:install.swiftformat\\r'
 }
 
-# Run the installation.
-main
+cd
+mkdir -p local/bin "$BIN_CACHE" "$ZIP_CACHE"
+
+should_install_protoc=false
+should_install_interop_server=false
+should_install_swiftformat=false
+
+while getopts "pif" optname; do
+  case $optname in
+    p)
+      should_install_protoc=true
+      ;;
+    i)
+      should_install_interop_server=true
+      ;;
+    f)
+      should_install_swiftformat=true
+      ;;
+    \?)
+      echo "Uknown option $optname"
+      exit 2
+      ;;
+  esac
+done
+
+# Always install Swift.
+install_swift
+
+if $should_install_protoc; then
+  install_protoc
+fi
+
+if $should_install_interop_server; then
+  install_bazel
+  build_grpc_cpp_server
+fi
+
+if $should_install_swiftformat; then
+  # If we're building SwiftFormat we need to know where Swift lives.
+  export PATH=$HOME/local/bin:$PATH
+  install_swiftformat
+fi
+
+# Verify installation
+info "Contents of $HOME/local:"
+find "$HOME"/local
+success "Install script completed"

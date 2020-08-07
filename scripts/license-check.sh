@@ -140,11 +140,4 @@ check_copyright_headers() {
 
 errors=0
 check_copyright_headers
-
-if [[ "$errors" == 0 ]]; then
-  echo "License headers: OK"
-else
-  echo "License headers: found $errors issue(s)."
-fi
-
 exit $errors

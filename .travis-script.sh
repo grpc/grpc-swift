@@ -17,16 +17,12 @@
 # See: Makefile
 BUILD_OUTPUT=./.build/debug
 
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-NO_COLOR='\033[0m'
-
 info() {
-  printf "${BLUE}$1${NO_COLOR}\n"
+  printf '\033[0;34m%s\033[0m\n' "$1"
 }
 
 success() {
-  printf "${GREEN}$1${NO_COLOR}\n"
+  printf '\033[0;32m%s\033[0m\n' "$1"
 }
 
 setup_environment() {
@@ -45,14 +41,15 @@ make_all() {
 }
 
 make_test() {
+  local tsan=$1
   echo -en 'travis_fold:start:make.test\\r'
 
-  if [[ ${NO_TSAN} == "true" ]]; then
-    info "Running Swift tests"
-    make test
-  else
+  if $tsan; then
     info "Running Swift tests with TSAN"
     make test-tsan
+  else
+    info "Running Swift tests"
+    make test
   fi
 
   success "Swift tests passed"
@@ -168,21 +165,39 @@ run_interop_reconnect_test() {
   echo -en 'travis_fold:end:test.interop_reconnect\\r'
 }
 
-main() {
-  setup_environment
+just_sanity=false
+just_interop_tests=false
+tsan=false
 
-  # If we're running interop tests don't bother with the other stuff.
-  if [ "$RUN_INTEROP_TESTS" = "true" ]; then
-    run_interop_tests
-    run_interop_reconnect_test
-  else
-    make_all
-    make_check_linuxmain
-    make_test
-    make_test_plugin
-    make_project
-  fi
-}
+while getopts "sit" optname; do
+  case $optname in
+    s)
+      just_sanity=true
+      ;;
+    i)
+      just_interop_tests=true
+      ;;
+    t)
+      tsan=true
+      ;;
+    \?)
+      echo "Uknown option $optname"
+      exit 2
+      ;;
+  esac
+done
 
-# Run the thing!
-main
+setup_environment
+
+if $just_sanity; then
+  ./scripts/sanity.sh
+elif $just_interop_tests; then
+  run_interop_tests
+  run_interop_reconnect_test
+else
+  make_all
+  make_check_linuxmain
+  make_test $tsan
+  make_test_plugin
+  make_project
+fi
