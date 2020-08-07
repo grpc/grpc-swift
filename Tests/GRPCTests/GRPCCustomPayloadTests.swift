@@ -156,7 +156,7 @@ class GRPCCustomPayloadTests: GRPCTestCase {
 // MARK: Custom Payload Service
 
 fileprivate class CustomPayloadProvider: CallHandlerProvider {
-  var serviceName: String = "CustomPayload"
+  var serviceName: Substring = "CustomPayload"
 
   fileprivate func reverseString(
     request: StringPayload,
@@ -214,7 +214,7 @@ fileprivate class CustomPayloadProvider: CallHandlerProvider {
     })
   }
 
-  func handleMethod(_ methodName: String, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
+  func handleMethod(_ methodName: Substring, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
     switch methodName {
     case "Reverse":
       return CallHandlerFactory.makeUnary(callHandlerContext: callHandlerContext) { context in

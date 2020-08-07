@@ -289,7 +289,7 @@ extension Server {
 }
 
 fileprivate extension Server.Configuration {
-  var serviceProvidersByName: [String: CallHandlerProvider] {
+  var serviceProvidersByName: [Substring: CallHandlerProvider] {
     return Dictionary(uniqueKeysWithValues: self.serviceProviders.map { ($0.serviceName, $0) })
   }
 }

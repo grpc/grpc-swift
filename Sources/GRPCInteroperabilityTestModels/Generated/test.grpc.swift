@@ -382,11 +382,11 @@ public protocol Grpc_Testing_TestServiceProvider: CallHandlerProvider {
 }
 
 extension Grpc_Testing_TestServiceProvider {
-  public var serviceName: String { return "grpc.testing.TestService" }
+  public var serviceName: Substring { return "grpc.testing.TestService" }
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  public func handleMethod(_ methodName: String, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
+  public func handleMethod(_ methodName: Substring, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
     switch methodName {
     case "EmptyCall":
       return CallHandlerFactory.makeUnary(callHandlerContext: callHandlerContext) { context in
@@ -443,11 +443,11 @@ public protocol Grpc_Testing_UnimplementedServiceProvider: CallHandlerProvider {
 }
 
 extension Grpc_Testing_UnimplementedServiceProvider {
-  public var serviceName: String { return "grpc.testing.UnimplementedService" }
+  public var serviceName: Substring { return "grpc.testing.UnimplementedService" }
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  public func handleMethod(_ methodName: String, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
+  public func handleMethod(_ methodName: Substring, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
     switch methodName {
     case "UnimplementedCall":
       return CallHandlerFactory.makeUnary(callHandlerContext: callHandlerContext) { context in
@@ -468,11 +468,11 @@ public protocol Grpc_Testing_ReconnectServiceProvider: CallHandlerProvider {
 }
 
 extension Grpc_Testing_ReconnectServiceProvider {
-  public var serviceName: String { return "grpc.testing.ReconnectService" }
+  public var serviceName: Substring { return "grpc.testing.ReconnectService" }
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  public func handleMethod(_ methodName: String, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
+  public func handleMethod(_ methodName: Substring, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
     switch methodName {
     case "Start":
       return CallHandlerFactory.makeUnary(callHandlerContext: callHandlerContext) { context in

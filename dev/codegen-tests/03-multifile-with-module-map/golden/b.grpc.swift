@@ -77,11 +77,11 @@ internal protocol B_ServiceBProvider: CallHandlerProvider {
 }
 
 extension B_ServiceBProvider {
-  internal var serviceName: String { return "b.ServiceB" }
+  internal var serviceName: Substring { return "b.ServiceB" }
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  internal func handleMethod(_ methodName: String, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
+  internal func handleMethod(_ methodName: Substring, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
     switch methodName {
     case "CallServiceB":
       return CallHandlerFactory.makeUnary(callHandlerContext: callHandlerContext) { context in

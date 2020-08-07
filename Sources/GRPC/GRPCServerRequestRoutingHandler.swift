@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Foundation
 import SwiftProtobuf
 import NIO
 import NIOHTTP1
@@ -31,11 +30,11 @@ public protocol CallHandlerProvider: class {
   /// The name of the service this object is providing methods for, including the package path.
   ///
   /// - Example: "io.grpc.Echo.EchoService"
-  var serviceName: String { get }
+  var serviceName: Substring { get }
 
   /// Determines, calls and returns the appropriate request handler (`GRPCCallHandler`), depending on the request's
   /// method. Returns nil for methods not handled by this service.
-  func handleMethod(_ methodName: String, callHandlerContext: CallHandlerContext) -> GRPCCallHandler?
+  func handleMethod(_ methodName: Substring, callHandlerContext: CallHandlerContext) -> GRPCCallHandler?
 }
 
 // This is public because it will be passed into generated code, all members are `internal` because
@@ -57,7 +56,7 @@ public struct CallHandlerContext {
 /// from the pipeline.
 public final class GRPCServerRequestRoutingHandler {
   private let logger: Logger
-  private let servicesByName: [String: CallHandlerProvider]
+  private let servicesByName: [Substring: CallHandlerProvider]
   private let encoding: ServerMessageEncoding
   private weak var errorDelegate: ServerErrorDelegate?
 
@@ -69,7 +68,7 @@ public final class GRPCServerRequestRoutingHandler {
   private var state: State = .notConfigured
 
   public init(
-    servicesByName: [String: CallHandlerProvider],
+    servicesByName: [Substring: CallHandlerProvider],
     encoding: ServerMessageEncoding,
     errorDelegate: ServerErrorDelegate?,
     logger: Logger
@@ -219,7 +218,7 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
     //     `CallHandlerProvider`s should provide the service name including the package name.
     // - uriComponents[2]: method name.
     self.logger.debug("making call handler", metadata: ["path": "\(requestHead.uri)"])
-    let uriComponents = requestHead.uri.components(separatedBy: "/")
+    let uriComponents = requestHead.uri.split(separator: "/")
 
     let context = CallHandlerContext(
       errorDelegate: self.errorDelegate,
@@ -227,9 +226,9 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
       encoding: self.encoding
     )
 
-    guard uriComponents.count >= 3 && uriComponents[0].isEmpty,
-      let providerForServiceName = servicesByName[uriComponents[1]],
-      let callHandler = providerForServiceName.handleMethod(uriComponents[2], callHandlerContext: context) else {
+    guard uriComponents.count >= 2,
+      let providerForServiceName = servicesByName[uriComponents[0]],
+      let callHandler = providerForServiceName.handleMethod(uriComponents[1], callHandlerContext: context) else {
         self.logger.notice("could not create handler", metadata: ["path": "\(requestHead.uri)"])
         return nil
     }

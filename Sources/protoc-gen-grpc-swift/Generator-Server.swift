@@ -49,11 +49,11 @@ extension Generator {
     println()
     println("extension \(providerName) {")
     indent()
-    println("\(access) var serviceName: String { return \"\(servicePath)\" }")
+    println("\(access) var serviceName: Substring { return \"\(servicePath)\" }")
     println()
     println("/// Determines, calls and returns the appropriate request handler, depending on the request's method.")
     println("/// Returns nil for methods not handled by this service.")
-    println("\(access) func handleMethod(_ methodName: String, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {")
+    println("\(access) func handleMethod(_ methodName: Substring, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {")
     indent()
     println("switch methodName {")
     for method in service.methods {
