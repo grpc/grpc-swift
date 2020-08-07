@@ -156,11 +156,11 @@ internal protocol Echo_EchoProvider: CallHandlerProvider {
 }
 
 extension Echo_EchoProvider {
-  internal var serviceName: String { return "echo.Echo" }
+  internal var serviceName: Substring { return "echo.Echo" }
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  internal func handleMethod(_ methodName: String, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
+  internal func handleMethod(_ methodName: Substring, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
     switch methodName {
     case "Get":
       return CallHandlerFactory.makeUnary(callHandlerContext: callHandlerContext) { context in
