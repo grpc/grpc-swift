@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 import PackageDescription
-import Foundation
 
 let package = Package(
   name: "grpc-swift",
