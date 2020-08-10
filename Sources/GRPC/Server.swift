@@ -202,7 +202,14 @@ extension Server {
     public var eventLoopGroup: EventLoopGroup
 
     /// Providers the server should use to handle gRPC requests.
-    public var serviceProviders: [CallHandlerProvider]
+    public var serviceProviders: [CallHandlerProvider] {
+        get {
+            return Array(self.serviceProvidersByName.values)
+        }
+        set {
+            self.serviceProvidersByName = Dictionary(uniqueKeysWithValues: newValue.map { ($0.serviceName, $0) })
+        }
+    }
 
     /// An error delegate which is called when errors are caught. Provided delegates **must not
     /// maintain a strong reference to this `Server`**. Doing so will cause a retain cycle.
@@ -244,6 +251,12 @@ extension Server {
     ///   be invoked at most once per accepted connection.
     public var debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)?
 
+    /// A calculated private cache of the service providers by name.
+    ///
+    /// This is how gRPC consumes the service providers internally. Caching this as stored data avoids
+    /// the need to recalculate this dictionary each time we receive an rpc.
+    fileprivate private(set) var serviceProvidersByName: [Substring: CallHandlerProvider]
+
     /// Create a `Configuration` with some pre-defined defaults.
     ///
     /// - Parameters:
@@ -275,7 +288,7 @@ extension Server {
     ) {
       self.target = target
       self.eventLoopGroup = eventLoopGroup
-      self.serviceProviders = serviceProviders
+      self.serviceProvidersByName = Dictionary(uniqueKeysWithValues: serviceProviders.map { ($0.serviceName, $0) })
       self.errorDelegate = errorDelegate
       self.tls = tls
       self.connectionKeepalive = connectionKeepalive
@@ -285,12 +298,6 @@ extension Server {
       self.logger = logger
       self.debugChannelInitializer = debugChannelInitializer
     }
-  }
-}
-
-fileprivate extension Server.Configuration {
-  var serviceProvidersByName: [Substring: CallHandlerProvider] {
-    return Dictionary(uniqueKeysWithValues: self.serviceProviders.map { ($0.serviceName, $0) })
   }
 }
 
