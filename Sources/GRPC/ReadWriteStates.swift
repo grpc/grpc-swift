@@ -33,7 +33,7 @@ struct PendingWriteState {
   func makeWriteState(messageEncoding: ClientMessageEncoding) -> WriteState {
     let compression: CompressionAlgorithm?
     switch messageEncoding {
-    case .enabled(let configuration):
+    case let .enabled(configuration):
       compression = configuration.outbound
     case .disabled:
       compression = nil
@@ -69,7 +69,7 @@ enum WriteState {
 
     case let .writing(writeArity, contentType, writer):
       let buffer: ByteBuffer
-      
+
       do {
         buffer = try writer.write(buffer: message, allocator: allocator, compressed: compressed)
       } catch {
@@ -111,7 +111,7 @@ struct PendingReadState {
   func makeReadState(compression: CompressionAlgorithm? = nil) -> ReadState {
     let reader: LengthPrefixedMessageReader
     switch (self.messageEncoding, compression) {
-    case (.enabled(let configuration), .some(let compression)):
+    case let (.enabled(configuration), .some(compression)):
       reader = LengthPrefixedMessageReader(
         compression: compression,
         decompressionLimit: configuration.decompressionLimit

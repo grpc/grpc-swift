@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 import Foundation
-import SwiftProtobuf
+import Logging
 import NIO
 import NIOHTTP1
-import Logging
+import SwiftProtobuf
 
 /// Handles bidirectional streaming calls. Forwards incoming messages and end-of-stream events to the observer block.
 ///
@@ -25,14 +25,18 @@ import Logging
 ///   If the framework user wants to return a call error (e.g. in case of authentication failure),
 ///   they can fail the observer block future.
 /// - To close the call and send the status, complete `context.statusPromise`.
-public class BidirectionalStreamingCallHandler<RequestPayload, ResponsePayload>: _BaseCallHandler<RequestPayload, ResponsePayload> {
+public class BidirectionalStreamingCallHandler<
+  RequestPayload,
+  ResponsePayload
+>: _BaseCallHandler<RequestPayload, ResponsePayload> {
   public typealias Context = StreamingResponseCallContext<ResponsePayload>
   public typealias EventObserver = (StreamEvent<RequestPayload>) -> Void
   public typealias EventObserverFactory = (Context) -> EventLoopFuture<EventObserver>
 
   private var callContext: Context?
   private var eventObserver: EventLoopFuture<EventObserver>?
-  private let eventObserverFactory: (StreamingResponseCallContext<ResponsePayload>) -> EventLoopFuture<EventObserver>
+  private let eventObserverFactory: (StreamingResponseCallContext<ResponsePayload>)
+    -> EventLoopFuture<EventObserver>
 
   // We ask for a future of type `EventObserver` to allow the framework user to e.g. asynchronously authenticate a call.
   // If authentication fails, they can simply fail the observer future, which causes the call to be terminated.
@@ -40,7 +44,8 @@ public class BidirectionalStreamingCallHandler<RequestPayload, ResponsePayload>:
     serializer: Serializer,
     deserializer: Deserializer,
     callHandlerContext: CallHandlerContext,
-    eventObserverFactory: @escaping (StreamingResponseCallContext<ResponsePayload>) -> EventLoopFuture<EventObserver>
+    eventObserverFactory: @escaping (StreamingResponseCallContext<ResponsePayload>)
+      -> EventLoopFuture<EventObserver>
   ) where Serializer.Input == ResponsePayload, Deserializer.Output == RequestPayload {
     self.eventObserverFactory = eventObserverFactory
     super.init(
@@ -49,7 +54,7 @@ public class BidirectionalStreamingCallHandler<RequestPayload, ResponsePayload>:
     )
   }
 
-  internal override func processHead(_ head: HTTPRequestHead, context: ChannelHandlerContext) {
+  override internal func processHead(_ head: HTTPRequestHead, context: ChannelHandlerContext) {
     let callContext = StreamingResponseCallContextImpl<ResponsePayload>(
       channel: context.channel,
       request: head,
@@ -71,7 +76,7 @@ public class BidirectionalStreamingCallHandler<RequestPayload, ResponsePayload>:
     context.writeAndFlush(self.wrapOutboundOut(.headers([:])), promise: nil)
   }
 
-  internal override func processMessage(_ message: RequestPayload) {
+  override internal func processMessage(_ message: RequestPayload) {
     guard let eventObserver = self.eventObserver else {
       self.logger.warning("eventObserver is nil; ignoring message")
       return
@@ -81,7 +86,7 @@ public class BidirectionalStreamingCallHandler<RequestPayload, ResponsePayload>:
     }
   }
 
-  internal override func endOfStreamReceived() throws {
+  override internal func endOfStreamReceived() throws {
     guard let eventObserver = self.eventObserver else {
       self.logger.warning("eventObserver is nil; ignoring end-of-stream")
       return
@@ -91,7 +96,7 @@ public class BidirectionalStreamingCallHandler<RequestPayload, ResponsePayload>:
     }
   }
 
-  internal override func sendErrorStatusAndMetadata(_ statusAndMetadata: GRPCStatusAndMetadata) {
+  override internal func sendErrorStatusAndMetadata(_ statusAndMetadata: GRPCStatusAndMetadata) {
     if let metadata = statusAndMetadata.metadata {
       self.callContext?.trailingMetadata.add(contentsOf: metadata)
     }

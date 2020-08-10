@@ -15,7 +15,7 @@
  */
 import Dispatch
 
-protocol Benchmark: class {
+protocol Benchmark: AnyObject {
   func setUp() throws
   func tearDown() throws
   func run() throws
@@ -46,7 +46,7 @@ func measureAndPrint(description: String, benchmark: Benchmark, spec: TestSpec) 
   switch spec.action {
   case .list:
     print(description)
-  case .run(let filter):
+  case let .run(filter):
     guard filter.shouldRun(description) else {
       return
     }
@@ -62,7 +62,7 @@ func measureAndPrint(description: String, benchmark: Benchmark, spec: TestSpec) 
 ///   - repeats: the number of times to run the benchmark.
 func measure(_ description: String, benchmark: Benchmark, repeats: Int) -> BenchmarkResults {
   var milliseconds: [UInt64] = []
-  for _ in 0..<repeats {
+  for _ in 0 ..< repeats {
     do {
       try benchmark.setUp()
 

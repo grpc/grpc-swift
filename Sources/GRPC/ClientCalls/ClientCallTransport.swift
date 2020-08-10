@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import NIO
-import NIOHTTP2
-import NIOHPACK
 import Logging
+import NIO
+import NIOHPACK
+import NIOHTTP2
 
 /// This class provides much of the boilerplate for the four types of gRPC call objects returned to
 /// framework users. It is the glue between a call object and the underlying transport (typically a
@@ -41,7 +41,7 @@ import Logging
 ///                               └─▲───────────────────────┬─┘
 ///                       HTTP2Frame│                       │HTTP2Frame
 ///                                 |                       |
-///```
+/// ```
 ///
 /// Note: the "main" pipeline provided by the channel in `ClientConnection`.
 internal class ChannelTransport<Request, Response> {
@@ -123,7 +123,7 @@ internal class ChannelTransport<Request, Response> {
     timeLimit: TimeLimit,
     errorDelegate: ClientErrorDelegate?,
     logger: Logger,
-    channelProvider: (ChannelTransport<Request, Response>, EventLoopPromise<Channel>) -> ()
+    channelProvider: (ChannelTransport<Request, Response>, EventLoopPromise<Channel>) -> Void
   ) {
     let channelPromise = eventLoop.makePromise(of: Channel.self)
 
@@ -167,18 +167,18 @@ internal class ChannelTransport<Request, Response> {
     ) { call, streamPromise in
       multiplexer.whenComplete { result in
         switch result {
-        case .success(let mux):
+        case let .success(mux):
           mux.createStreamChannel(promise: streamPromise) { stream in
             logger.trace("created http/2 stream")
 
             return stream.pipeline.addHandlers([
               _GRPCClientChannelHandler(callType: callType, logger: logger),
               GRPCClientCodecHandler(serializer: serializer, deserializer: deserializer),
-              GRPCClientCallHandler(call: call)
+              GRPCClientCallHandler(call: call),
             ])
           }
 
-        case .failure(let error):
+        case let .failure(error):
           streamPromise.fail(error)
         }
       }
@@ -216,7 +216,7 @@ internal class ChannelTransport<Request, Response> {
       timeLimit: .none,
       errorDelegate: nil,
       logger: logger
-    ) { call, promise in
+    ) { _, promise in
       let error = GRPCStatus(
         code: .unavailable,
         message: "No fake response was registered before starting an RPC."
@@ -293,10 +293,10 @@ extension ChannelTransport {
     self.eventLoop.preconditionInEventLoop()
 
     switch self.state {
-    case .buffering(let future):
+    case let .buffering(future):
       return future
 
-    case .active(let channel):
+    case let .active(channel):
       return self.eventLoop.makeSucceededFuture(channel)
 
     case .closed:
@@ -346,7 +346,7 @@ extension ChannelTransport {
     case .buffering:
       self.requestBuffer.mark()
 
-    case .active(let stream):
+    case let .active(stream):
       stream.flush()
 
     case .closed:
@@ -370,7 +370,7 @@ extension ChannelTransport {
     case .buffering:
       self.logger.debug("buffering request part", metadata: [
         "request_part": "\(part.name)",
-        "call_state": "\(self.describeCallState())"
+        "call_state": "\(self.describeCallState())",
       ])
       self.requestBuffer.append(BufferedRequest(message: part, promise: promise))
       if flush {
@@ -378,7 +378,7 @@ extension ChannelTransport {
       }
 
     // We have an active stream, just pass the write and promise through.
-    case .active(let stream):
+    case let .active(stream):
       self.logger.debug("writing request part", metadata: ["request_part": "\(part.name)"])
       stream.write(part, promise: promise)
       if flush {
@@ -389,7 +389,7 @@ extension ChannelTransport {
     case .closed:
       self.logger.debug("dropping request part", metadata: [
         "request_part": "\(part.name)",
-        "call_state": "\(self.describeCallState())"
+        "call_state": "\(self.describeCallState())",
       ])
       promise?.fail(ChannelError.ioOnClosedChannel)
     }
@@ -455,7 +455,7 @@ extension ChannelTransport {
     self.eventLoop.preconditionInEventLoop()
 
     switch self.state {
-    case .buffering(let streamFuture):
+    case let .buffering(streamFuture):
       // We're closed now.
       self.state = .closed
       self.stopTimer(status: status)
@@ -478,7 +478,7 @@ extension ChannelTransport {
         $0.close(mode: .all, promise: nil)
       }
 
-    case .active(let channel):
+    case let .active(channel):
       // We're closed now.
       self.state = .closed
       self.stopTimer(status: status)
@@ -497,7 +497,6 @@ extension ChannelTransport {
       ()
     }
   }
-
 }
 
 // MARK: - Channel Inbound
@@ -525,21 +524,21 @@ extension ChannelTransport: ClientCallInbound {
       self.logger.debug("received response part", metadata: ["response_part": "\(part.name)"])
 
       switch part {
-      case .initialMetadata(let metadata):
+      case let .initialMetadata(metadata):
         self.responseContainer.lazyInitialMetadataPromise.completeWith(.success(metadata))
 
-      case .message(let messageContext):
+      case let .message(messageContext):
         switch self.responseContainer.responseHandler {
-        case .unary(let responsePromise):
+        case let .unary(responsePromise):
           responsePromise.succeed(messageContext.message)
-        case .stream(let handler):
+        case let .stream(handler):
           handler(messageContext.message)
         }
 
-      case .trailingMetadata(let metadata):
+      case let .trailingMetadata(metadata):
         self.responseContainer.lazyTrailingMetadataPromise.succeed(metadata)
 
-      case .status(let status):
+      case let .status(status):
         // We're done; cancel the timeout.
         self.scheduledTimeout?.cancel()
         self.scheduledTimeout = nil
@@ -557,7 +556,7 @@ extension ChannelTransport: ClientCallInbound {
     case .closed:
       self.logger.debug("dropping response part", metadata: [
         "response_part": "\(part.name)",
-        "call_state": "\(self.describeCallState())"
+        "call_state": "\(self.describeCallState())",
       ])
     }
   }
@@ -578,7 +577,10 @@ extension ChannelTransport: ClientCallInbound {
         // We became unmarked: we need to flush.
         let shouldFlush = hadMark && !self.requestBuffer.hasMark
 
-        self.logger.debug("unbuffering request part", metadata: ["request_part": "\(request.message.name)"])
+        self.logger.debug(
+          "unbuffering request part",
+          metadata: ["request_part": "\(request.message.name)"]
+        )
         stream.write(request.message, promise: request.promise)
         if shouldFlush {
           stream.flush()
@@ -629,7 +631,7 @@ extension ChannelTransport {
       self.logger.debug("rpc call finished", metadata: [
         "duration_ms": "\(millis)",
         "status_code": "\(status.code.rawValue)",
-        "status_message": "\(status.message ?? "nil")"
+        "status_message": "\(status.message ?? "nil")",
       ])
       self.stopwatch = nil
     }
@@ -658,7 +660,6 @@ extension ChannelTransport {
     }
   }
 }
-
 
 extension _GRPCClientRequestPart {
   fileprivate var name: String {

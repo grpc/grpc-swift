@@ -15,9 +15,9 @@
  */
 import Foundation
 import GRPC
-import RouteGuideModel
-import NIO
 import Logging
+import NIO
+import RouteGuideModel
 import SwiftProtobuf
 
 // Quieten the logs.
@@ -30,8 +30,8 @@ LoggingSystem.bootstrap {
 /// Loads the features from `route_guide_db.json`, assumed to be in the directory above this file.
 func loadFeatures() throws -> [Routeguide_Feature] {
   let url = URL(fileURLWithPath: #file)
-    .deletingLastPathComponent()  // main.swift
-    .deletingLastPathComponent()  // Server/
+    .deletingLastPathComponent() // main.swift
+    .deletingLastPathComponent() // Server/
     .appendingPathComponent("route_guide_db.json")
 
   let data = try Data(contentsOf: url)

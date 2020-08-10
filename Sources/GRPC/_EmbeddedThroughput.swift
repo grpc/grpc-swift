@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import NIO
 import Logging
+import NIO
 import SwiftProtobuf
 
 extension EmbeddedChannel {
@@ -32,7 +32,7 @@ extension EmbeddedChannel {
       GRPCClientCodecHandler(
         serializer: ProtobufSerializer<Request>(),
         deserializer: ProtobufDeserializer<Response>()
-      )
+      ),
     ])
   }
 }

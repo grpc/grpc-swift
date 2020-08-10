@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import NIO
-import NIOHTTP2
-import NIOHPACK
 import Logging
+import NIO
+import NIOHPACK
+import NIOHTTP2
 
 /// A server-streaming gRPC call. The request is sent on initialization, each response is passed to
 /// the provided observer block.
@@ -85,12 +85,19 @@ public final class ServerStreamingCall<RequestPayload, ResponsePayload>: ClientC
   }
 
   internal func send(_ head: _GRPCRequestHead, request: RequestPayload) {
-    self.transport.sendUnary(head, request: request, compressed: self.options.messageEncoding.enabledForRequests)
+    self.transport.sendUnary(
+      head,
+      request: request,
+      compressed: self.options.messageEncoding.enabledForRequests
+    )
   }
 }
 
 extension ServerStreamingCall {
-  internal static func makeOnHTTP2Stream<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+  internal static func makeOnHTTP2Stream<
+    Serializer: MessageSerializer,
+    Deserializer: MessageDeserializer
+  >(
     multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
     serializer: Serializer,
     deserializer: Deserializer,
@@ -98,7 +105,9 @@ extension ServerStreamingCall {
     errorDelegate: ClientErrorDelegate?,
     logger: Logger,
     responseHandler: @escaping (ResponsePayload) -> Void
-  ) -> ServerStreamingCall<RequestPayload, ResponsePayload> where Serializer.Input == RequestPayload, Deserializer.Output == ResponsePayload {
+  ) -> ServerStreamingCall<RequestPayload, ResponsePayload>
+    where Serializer.Input == RequestPayload,
+    Deserializer.Output == ResponsePayload {
     let eventLoop = multiplexer.eventLoop
     let transport = ChannelTransport<RequestPayload, ResponsePayload>(
       multiplexer: multiplexer,
@@ -121,9 +130,14 @@ extension ServerStreamingCall {
     callOptions: CallOptions,
     logger: Logger,
     responseHandler: @escaping (ResponsePayload) -> Void
-  ) -> ServerStreamingCall<RequestPayload, ResponsePayload> where Serializer.Input == RequestPayload, Deserializer.Output == ResponsePayload {
+  ) -> ServerStreamingCall<RequestPayload, ResponsePayload>
+    where Serializer.Input == RequestPayload,
+    Deserializer.Output == ResponsePayload {
     let eventLoop = fakeResponse?.channel.eventLoop ?? EmbeddedEventLoop()
-    let responseContainer = ResponsePartContainer(eventLoop: eventLoop, streamingResponseHandler: responseHandler)
+    let responseContainer = ResponsePartContainer(
+      eventLoop: eventLoop,
+      streamingResponseHandler: responseHandler
+    )
 
     let transport: ChannelTransport<RequestPayload, ResponsePayload>
     if let callProxy = fakeResponse {

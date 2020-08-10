@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import Logging
 import NIO
 import NIOHTTP2
-import Logging
 import SwiftProtobuf
 
 // This is currently intended for internal testing only.
@@ -29,7 +29,7 @@ class EmbeddedGRPCChannel: GRPCChannel {
   let errorDelegate: ClientErrorDelegate?
 
   func close() -> EventLoopFuture<Void> {
-    return embeddedChannel.close()
+    return self.embeddedChannel.close()
   }
 
   var eventLoop: EventLoop {
@@ -83,7 +83,10 @@ class EmbeddedGRPCChannel: GRPCChannel {
     return call
   }
 
-  internal func makeClientStreamingCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+  internal func makeClientStreamingCall<
+    Request: SwiftProtobuf.Message,
+    Response: SwiftProtobuf.Message
+  >(
     path: String,
     callOptions: CallOptions
   ) -> ClientStreamingCall<Request, Response> {
@@ -101,7 +104,10 @@ class EmbeddedGRPCChannel: GRPCChannel {
     return call
   }
 
-  internal func makeServerStreamingCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+  internal func makeServerStreamingCall<
+    Request: SwiftProtobuf.Message,
+    Response: SwiftProtobuf.Message
+  >(
     path: String,
     request: Request,
     callOptions: CallOptions,
@@ -122,7 +128,10 @@ class EmbeddedGRPCChannel: GRPCChannel {
     return call
   }
 
-  internal func makeBidirectionalStreamingCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+  internal func makeBidirectionalStreamingCall<
+    Request: SwiftProtobuf.Message,
+    Response: SwiftProtobuf.Message
+  >(
     path: String,
     callOptions: CallOptions,
     handler: @escaping (Response) -> Void

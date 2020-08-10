@@ -16,13 +16,15 @@
 import Dispatch
 import NIO
 
-
 /// A timeout for a gRPC call.
 ///
 /// Timeouts must be positive and at most 8-digits long.
 public struct GRPCTimeout: CustomStringConvertible, Equatable {
   /// Creates an infinite timeout. This is a sentinel value which must __not__ be sent to a gRPC service.
-  public static let infinite: GRPCTimeout = GRPCTimeout(nanoseconds: Int64.max, wireEncoding: "infinite")
+  public static let infinite: GRPCTimeout = GRPCTimeout(
+    nanoseconds: Int64.max,
+    wireEncoding: "infinite"
+  )
 
   /// The largest amount of any unit of time which may be represented by a gRPC timeout.
   internal static let maxAmount: Int64 = 99_999_999
@@ -33,7 +35,7 @@ public struct GRPCTimeout: CustomStringConvertible, Equatable {
   public let nanoseconds: Int64
 
   public var description: String {
-    return wireEncoding
+    return self.wireEncoding
   }
 
   /// Creates a timeout from the given deadline.
@@ -42,7 +44,6 @@ public struct GRPCTimeout: CustomStringConvertible, Equatable {
   internal init(deadline: NIODeadline, testingOnlyNow: NIODeadline? = nil) {
     let timeAmountUntilDeadline = deadline - (testingOnlyNow ?? .now())
     self.init(rounding: timeAmountUntilDeadline.nanoseconds, unit: .nanoseconds)
-
   }
 
   private init(nanoseconds: Int64, wireEncoding: String) {
@@ -81,13 +82,13 @@ public struct GRPCTimeout: CustomStringConvertible, Equatable {
       while roundedAmount > GRPCTimeout.maxAmount {
         switch roundedUnit {
         case .nanoseconds:
-          roundedAmount = roundedAmount.quotientRoundedUp(dividingBy: 1_000)
+          roundedAmount = roundedAmount.quotientRoundedUp(dividingBy: 1000)
           roundedUnit = .microseconds
         case .microseconds:
-          roundedAmount = roundedAmount.quotientRoundedUp(dividingBy: 1_000)
+          roundedAmount = roundedAmount.quotientRoundedUp(dividingBy: 1000)
           roundedUnit = .milliseconds
         case .milliseconds:
-          roundedAmount = roundedAmount.quotientRoundedUp(dividingBy: 1_000)
+          roundedAmount = roundedAmount.quotientRoundedUp(dividingBy: 1000)
           roundedUnit = .seconds
         case .seconds:
           roundedAmount = roundedAmount.quotientRoundedUp(dividingBy: 60)
@@ -106,7 +107,7 @@ public struct GRPCTimeout: CustomStringConvertible, Equatable {
   }
 }
 
-fileprivate extension Int64 {
+private extension Int64 {
   /// Returns the quotient of this value when divided by `divisor` rounded up to the nearest
   /// multiple of `divisor` if the remainder is non-zero.
   ///

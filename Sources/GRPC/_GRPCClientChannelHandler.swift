@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import Logging
 import NIO
-import NIOHTTP1
 import NIOHPACK
+import NIOHTTP1
 import NIOHTTP2
 import SwiftProtobuf
-import Logging
 
 /// A gRPC client request message part.
 ///
@@ -291,6 +291,7 @@ public final class _GRPCClientChannelHandler {
 }
 
 // MARK: - GRPCClientChannelHandler: Inbound
+
 extension _GRPCClientChannelHandler: ChannelInboundHandler {
   public typealias InboundIn = HTTP2Frame.FramePayload
   public typealias InboundOut = _RawGRPCClientResponsePart
@@ -298,10 +299,10 @@ extension _GRPCClientChannelHandler: ChannelInboundHandler {
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     let payload = self.unwrapInboundIn(data)
     switch payload {
-    case .headers(let content):
+    case let .headers(content):
       self.readHeaders(content: content, context: context)
 
-    case .data(let content):
+    case let .data(content):
       self.readData(content: content, context: context)
 
     // We don't need to handle other frame type, just drop them instead.
@@ -323,7 +324,10 @@ extension _GRPCClientChannelHandler: ChannelInboundHandler {
   ///
   /// - Parameter content: Content of the headers frame.
   /// - Parameter context: Channel handler context.
-  private func readHeaders(content: HTTP2Frame.FramePayload.Headers, context: ChannelHandlerContext) {
+  private func readHeaders(
+    content: HTTP2Frame.FramePayload.Headers,
+    context: ChannelHandlerContext
+  ) {
     // In the case of a "Trailers-Only" response there's no guarantee that end-of-stream will be set
     // on the headers frame: end stream may be sent on an empty data frame as well. If the headers
     // contain a gRPC status code then they must be for a "Trailers-Only" response.
@@ -332,48 +336,50 @@ extension _GRPCClientChannelHandler: ChannelInboundHandler {
       context.fireChannelRead(self.wrapInboundOut(.trailingMetadata(content.headers)))
 
       // Are they valid headers?
-      let result = self.stateMachine.receiveEndOfResponseStream(content.headers).mapError { error -> GRPCError.WithContext in
-        // The headers aren't valid so let's figure out a reasonable error to forward:
-        switch error {
-        case .invalidContentType(let contentType):
-          return GRPCError.InvalidContentType(contentType).captureContext()
-        case .invalidHTTPStatus(let status):
-          return GRPCError.InvalidHTTPStatus(status).captureContext()
-        case .invalidHTTPStatusWithGRPCStatus(let status):
-          return GRPCError.InvalidHTTPStatusWithGRPCStatus(status).captureContext()
-        case .invalidState:
-          return GRPCError.InvalidState("parsing end-of-stream trailers").captureContext()
+      let result = self.stateMachine.receiveEndOfResponseStream(content.headers)
+        .mapError { error -> GRPCError.WithContext in
+          // The headers aren't valid so let's figure out a reasonable error to forward:
+          switch error {
+          case let .invalidContentType(contentType):
+            return GRPCError.InvalidContentType(contentType).captureContext()
+          case let .invalidHTTPStatus(status):
+            return GRPCError.InvalidHTTPStatus(status).captureContext()
+          case let .invalidHTTPStatusWithGRPCStatus(status):
+            return GRPCError.InvalidHTTPStatusWithGRPCStatus(status).captureContext()
+          case .invalidState:
+            return GRPCError.InvalidState("parsing end-of-stream trailers").captureContext()
+          }
         }
-      }
 
       // Okay, what should we tell the next handler?
       switch result {
-      case .success(let status):
+      case let .success(status):
         context.fireChannelRead(self.wrapInboundOut(.status(status)))
-      case .failure(let error):
+      case let .failure(error):
         context.fireErrorCaught(error)
       }
     } else {
       // "Normal" response headers, but are they valid?
-      let result = self.stateMachine.receiveResponseHeaders(content.headers).mapError { error -> GRPCError.WithContext in
-        // The headers aren't valid so let's figure out a reasonable error to forward:
-        switch error {
-        case .invalidContentType(let contentType):
-          return GRPCError.InvalidContentType(contentType).captureContext()
-        case .invalidHTTPStatus(let status):
-          return GRPCError.InvalidHTTPStatus(status).captureContext()
-        case .unsupportedMessageEncoding:
-          return GRPCError.CompressionUnsupported().captureContext()
-        case .invalidState:
-          return GRPCError.InvalidState("parsing headers").captureContext()
+      let result = self.stateMachine.receiveResponseHeaders(content.headers)
+        .mapError { error -> GRPCError.WithContext in
+          // The headers aren't valid so let's figure out a reasonable error to forward:
+          switch error {
+          case let .invalidContentType(contentType):
+            return GRPCError.InvalidContentType(contentType).captureContext()
+          case let .invalidHTTPStatus(status):
+            return GRPCError.InvalidHTTPStatus(status).captureContext()
+          case .unsupportedMessageEncoding:
+            return GRPCError.CompressionUnsupported().captureContext()
+          case .invalidState:
+            return GRPCError.InvalidState("parsing headers").captureContext()
+          }
         }
-      }
 
       // Okay, what should we tell the next handler?
       switch result {
       case .success:
         context.fireChannelRead(self.wrapInboundOut(.initialMetadata(content.headers)))
-      case .failure(let error):
+      case let .failure(error):
         context.fireErrorCaught(error)
       }
     }
@@ -386,7 +392,7 @@ extension _GRPCClientChannelHandler: ChannelInboundHandler {
   /// - Parameter context: Channel handler context.
   private func readData(content: HTTP2Frame.FramePayload.Data, context: ChannelHandlerContext) {
     // Note: this is replicated from NIO's HTTP2ToHTTP1ClientCodec.
-    guard case .byteBuffer(var buffer) = content.data else {
+    guard case var .byteBuffer(buffer) = content.data else {
       preconditionFailure("Received DATA frame with non-ByteBuffer IOData")
     }
 
@@ -399,22 +405,24 @@ extension _GRPCClientChannelHandler: ChannelInboundHandler {
     }
 
     // Feed the buffer into the state machine.
-    let result = self.stateMachine.receiveResponseBuffer(&buffer).mapError { error -> GRPCError.WithContext in
-      switch error {
-      case .cardinalityViolation:
-        return GRPCError.StreamCardinalityViolation.response.captureContext()
-      case .deserializationFailed, .leftOverBytes:
-        return GRPCError.DeserializationFailure().captureContext()
-      case .decompressionLimitExceeded(let compressedSize):
-        return GRPCError.DecompressionLimitExceeded(compressedSize: compressedSize).captureContext()
-      case .invalidState:
-        return GRPCError.InvalidState("parsing data as a response message").captureContext()
+    let result = self.stateMachine.receiveResponseBuffer(&buffer)
+      .mapError { error -> GRPCError.WithContext in
+        switch error {
+        case .cardinalityViolation:
+          return GRPCError.StreamCardinalityViolation.response.captureContext()
+        case .deserializationFailed, .leftOverBytes:
+          return GRPCError.DeserializationFailure().captureContext()
+        case let .decompressionLimitExceeded(compressedSize):
+          return GRPCError.DecompressionLimitExceeded(compressedSize: compressedSize)
+            .captureContext()
+        case .invalidState:
+          return GRPCError.InvalidState("parsing data as a response message").captureContext()
+        }
       }
-    }
 
     // Did we get any messages?
     switch result {
-    case .success(let messages):
+    case let .success(messages):
       // Awesome: we got some messages. The state machine guarantees we only get at most a single
       // message for unary and client-streaming RPCs.
       for message in messages {
@@ -424,28 +432,30 @@ extension _GRPCClientChannelHandler: ChannelInboundHandler {
         // the message reader.
         context.fireChannelRead(self.wrapInboundOut(.message(.init(message, compressed: false))))
       }
-    case .failure(let error):
+    case let .failure(error):
       context.fireErrorCaught(error)
     }
   }
 }
 
 // MARK: - GRPCClientChannelHandler: Outbound
+
 extension _GRPCClientChannelHandler: ChannelOutboundHandler {
   public typealias OutboundIn = _RawGRPCClientRequestPart
   public typealias OutboundOut = HTTP2Frame.FramePayload
 
-  public func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+  public func write(context: ChannelHandlerContext, data: NIOAny,
+                    promise: EventLoopPromise<Void>?) {
     switch self.unwrapOutboundIn(data) {
-    case .head(let requestHead):
+    case let .head(requestHead):
       // Feed the request into the state machine:
       switch self.stateMachine.sendRequestHeaders(requestHead: requestHead) {
-      case .success(let headers):
+      case let .success(headers):
         // We're clear to write some headers. Create an appropriate frame and write it.
         let framePayload = HTTP2Frame.FramePayload.headers(.init(headers: headers))
         context.write(self.wrapOutboundOut(framePayload), promise: promise)
 
-      case .failure(let sendRequestHeadersError):
+      case let .failure(sendRequestHeadersError):
         switch sendRequestHeadersError {
         case .invalidState:
           // This is bad: we need to trigger an error and close the channel.
@@ -454,16 +464,20 @@ extension _GRPCClientChannelHandler: ChannelOutboundHandler {
         }
       }
 
-    case .message(let request):
+    case let .message(request):
       // Feed the request message into the state machine:
-      let result = self.stateMachine.sendRequest(request.message, compressed: request.compressed, allocator: context.channel.allocator)
+      let result = self.stateMachine.sendRequest(
+        request.message,
+        compressed: request.compressed,
+        allocator: context.channel.allocator
+      )
       switch result {
-      case .success(let buffer):
+      case let .success(buffer):
         // We're clear to send a message; wrap it up in an HTTP/2 frame.
         let framePayload = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer)))
         context.write(self.wrapOutboundOut(framePayload), promise: promise)
 
-      case .failure(let writeError):
+      case let .failure(writeError):
         switch writeError {
         case .cardinalityViolation:
           // This is fine: we can ignore the request. The RPC can continue as if nothing went wrong.
@@ -476,7 +490,8 @@ extension _GRPCClientChannelHandler: ChannelOutboundHandler {
 
         case .invalidState:
           promise?.fail(writeError)
-          context.fireErrorCaught(GRPCError.InvalidState("unable to write message").captureContext())
+          context
+            .fireErrorCaught(GRPCError.InvalidState("unable to write message").captureContext())
         }
       }
 
@@ -486,10 +501,11 @@ extension _GRPCClientChannelHandler: ChannelOutboundHandler {
       case .success:
         // We can. Send an empty DATA frame with end-stream set.
         let empty = context.channel.allocator.buffer(capacity: 0)
-        let framePayload = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(empty), endStream: true))
+        let framePayload = HTTP2Frame.FramePayload
+          .data(.init(data: .byteBuffer(empty), endStream: true))
         context.write(self.wrapOutboundOut(framePayload), promise: promise)
 
-      case .failure(let error):
+      case let .failure(error):
         // Why can't we close the request stream?
         switch error {
         case .alreadyClosed:
@@ -499,7 +515,11 @@ extension _GRPCClientChannelHandler: ChannelOutboundHandler {
         case .invalidState:
           // This is bad: we need to trigger an error and close the channel.
           promise?.fail(error)
-          context.fireErrorCaught(GRPCError.InvalidState("unable to close request stream").captureContext())
+          context
+            .fireErrorCaught(
+              GRPCError.InvalidState("unable to close request stream")
+                .captureContext()
+            )
         }
       }
     }

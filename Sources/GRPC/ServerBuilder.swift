@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import Logging
 import NIO
 import NIOSSL
-import Logging
 
 extension Server {
   public class Builder {
@@ -38,7 +38,11 @@ extension Server {
         return self.tls
       }
 
-      fileprivate init(group: EventLoopGroup, certificateChain: [NIOSSLCertificate], privateKey: NIOSSLPrivateKey) {
+      fileprivate init(
+        group: EventLoopGroup,
+        certificateChain: [NIOSSLCertificate],
+        privateKey: NIOSSLPrivateKey
+      ) {
         self.tls = .init(
           certificateChain: certificateChain.map { .certificate($0) },
           privateKey: .privateKey(privateKey)

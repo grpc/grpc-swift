@@ -44,4 +44,3 @@ internal class GRPCClientCallHandler<Request, Response>: ChannelInboundHandler {
     self.call.receiveResponse(part)
   }
 }
-

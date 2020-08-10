@@ -36,7 +36,7 @@ class GRPCCustomPayloadTests: GRPCTestCase {
 
     let channel = ClientConnection.insecure(group: self.group)
       .withBackgroundActivityLogger(self.clientLogger)
-      .connect(host: "localhost", port: server.channel.localAddress!.port!)
+      .connect(host: "localhost", port: self.server.channel.localAddress!.port!)
 
     self.client = AnyServiceClient(channel: channel, defaultCallOptions: self.callOptionsWithLogger)
   }
@@ -57,16 +57,17 @@ class GRPCCustomPayloadTests: GRPCTestCase {
     // Make a bidirectional stream using `CustomPayload` as the request and response type.
     // The service defined below is called "CustomPayload", and the method we call on it
     // is "AddOneAndReverseMessage"
-    let rpc: BidirectionalStreamingCall<CustomPayload, CustomPayload> = self.client.makeBidirectionalStreamingCall(
-      path: "/CustomPayload/AddOneAndReverseMessage",
-      handler: { responses.append($0) }
-    )
+    let rpc: BidirectionalStreamingCall<CustomPayload, CustomPayload> = self.client
+      .makeBidirectionalStreamingCall(
+        path: "/CustomPayload/AddOneAndReverseMessage",
+        handler: { responses.append($0) }
+      )
 
     // Make and send some requests:
     let requests: [CustomPayload] = [
-      CustomPayload(message: "one", number: .random(in: Int64.min..<Int64.max)),
-      CustomPayload(message: "two", number: .random(in: Int64.min..<Int64.max)),
-      CustomPayload(message: "three", number: .random(in: Int64.min..<Int64.max))
+      CustomPayload(message: "one", number: .random(in: Int64.min ..< Int64.max)),
+      CustomPayload(message: "two", number: .random(in: Int64.min ..< Int64.max)),
+      CustomPayload(message: "three", number: .random(in: Int64.min ..< Int64.max)),
     ]
     rpc.sendMessages(requests, promise: nil)
     rpc.sendEnd(promise: nil)
@@ -90,10 +91,11 @@ class GRPCCustomPayloadTests: GRPCTestCase {
     var responses: [IdentityPayload] = []
     // Here we use `IdentityPayload` for our response type: we define it below such that it does
     // not deserialize the bytes provided to it by gRPC.
-    let rpc: BidirectionalStreamingCall<CustomPayload, IdentityPayload> = self.client.makeBidirectionalStreamingCall(
-      path: "/CustomPayload/AddOneAndReverseMessage",
-      handler: { responses.append($0) }
-    )
+    let rpc: BidirectionalStreamingCall<CustomPayload, IdentityPayload> = self.client
+      .makeBidirectionalStreamingCall(
+        path: "/CustomPayload/AddOneAndReverseMessage",
+        handler: { responses.append($0) }
+      )
 
     let request = CustomPayload(message: "message", number: 42)
     rpc.sendMessage(request, promise: nil)
@@ -126,7 +128,8 @@ class GRPCCustomPayloadTests: GRPCTestCase {
   }
 
   func testCustomPayloadClientStreaming() throws {
-    let rpc: ClientStreamingCall<StringPayload, StringPayload> = self.client.makeClientStreamingCall(path: "/CustomPayload/ReverseThenJoin")
+    let rpc: ClientStreamingCall<StringPayload, StringPayload> = self.client
+      .makeClientStreamingCall(path: "/CustomPayload/ReverseThenJoin")
     rpc.sendMessages(["foo", "bar", "baz"].map(StringPayload.init(message:)), promise: nil)
     rpc.sendEnd(promise: nil)
 
@@ -138,16 +141,17 @@ class GRPCCustomPayloadTests: GRPCTestCase {
     let message = "abc"
     var expectedIterator = message.reversed().makeIterator()
 
-    let rpc: ServerStreamingCall<StringPayload, StringPayload> = self.client.makeServerStreamingCall(
-      path: "/CustomPayload/ReverseThenSplit",
-      request: StringPayload(message: message)
-    ) { response in
-      if let next = expectedIterator.next() {
-        XCTAssertEqual(String(next), response.message)
-      } else {
-        XCTFail("Unexpected message: \(response.message)")
+    let rpc: ServerStreamingCall<StringPayload, StringPayload> = self.client
+      .makeServerStreamingCall(
+        path: "/CustomPayload/ReverseThenSplit",
+        request: StringPayload(message: message)
+      ) { response in
+        if let next = expectedIterator.next() {
+          XCTAssertEqual(String(next), response.message)
+        } else {
+          XCTFail("Unexpected message: \(response.message)")
+        }
       }
-    }
 
     XCTAssertEqual(try rpc.status.map { $0.code }.wait(), .ok)
   }
@@ -155,7 +159,7 @@ class GRPCCustomPayloadTests: GRPCTestCase {
 
 // MARK: Custom Payload Service
 
-fileprivate class CustomPayloadProvider: CallHandlerProvider {
+private class CustomPayloadProvider: CallHandlerProvider {
   var serviceName: Substring = "CustomPayload"
 
   fileprivate func reverseString(
@@ -173,7 +177,7 @@ fileprivate class CustomPayloadProvider: CallHandlerProvider {
 
     return context.eventLoop.makeSucceededFuture({ event in
       switch event {
-      case .message(let request):
+      case let .message(request):
         messages.append(request.message)
 
       case .end:
@@ -201,7 +205,7 @@ fileprivate class CustomPayloadProvider: CallHandlerProvider {
   ) -> EventLoopFuture<(StreamEvent<CustomPayload>) -> Void> {
     return context.eventLoop.makeSucceededFuture({ event in
       switch event {
-      case .message(let payload):
+      case let .message(payload):
         let response = CustomPayload(
           message: String(payload.message.reversed()),
           number: payload.number + 1
@@ -214,31 +218,35 @@ fileprivate class CustomPayloadProvider: CallHandlerProvider {
     })
   }
 
-  func handleMethod(_ methodName: Substring, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
+  func handleMethod(_ methodName: Substring,
+                    callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
     switch methodName {
     case "Reverse":
       return CallHandlerFactory.makeUnary(callHandlerContext: callHandlerContext) { context in
-        return { request in
-          return self.reverseString(request: request, context: context)
+        { request in
+          self.reverseString(request: request, context: context)
         }
       }
 
     case "ReverseThenJoin":
-      return CallHandlerFactory.makeClientStreaming(callHandlerContext: callHandlerContext) { context in
-        return self.reverseThenJoin(context: context)
-      }
+      return CallHandlerFactory
+        .makeClientStreaming(callHandlerContext: callHandlerContext) { context in
+          self.reverseThenJoin(context: context)
+        }
 
     case "ReverseThenSplit":
-      return CallHandlerFactory.makeServerStreaming(callHandlerContext: callHandlerContext) { context in
-        return { request in
-          return self.reverseThenSplit(request: request, context: context)
+      return CallHandlerFactory
+        .makeServerStreaming(callHandlerContext: callHandlerContext) { context in
+          { request in
+            self.reverseThenSplit(request: request, context: context)
+          }
         }
-      }
 
     case "AddOneAndReverseMessage":
-      return CallHandlerFactory.makeBidirectionalStreaming(callHandlerContext: callHandlerContext) { context in
-        return self.addOneAndReverseMessage(context: context)
-      }
+      return CallHandlerFactory
+        .makeBidirectionalStreaming(callHandlerContext: callHandlerContext) { context in
+          self.addOneAndReverseMessage(context: context)
+        }
 
     default:
       return nil
@@ -246,7 +254,7 @@ fileprivate class CustomPayloadProvider: CallHandlerProvider {
   }
 }
 
-fileprivate struct IdentityPayload: GRPCPayload {
+private struct IdentityPayload: GRPCPayload {
   var buffer: ByteBuffer
 
   init(serializedByteBuffer: inout ByteBuffer) throws {
@@ -269,7 +277,7 @@ fileprivate struct IdentityPayload: GRPCPayload {
 /// - the `UInt32` encoded length of the message,
 /// - the UTF-8 encoded bytes of the message, and
 /// - the `Int64` bytes of the number.
-fileprivate struct CustomPayload: GRPCPayload, Equatable {
+private struct CustomPayload: GRPCPayload, Equatable {
   var message: String
   var number: Int64
 
@@ -282,7 +290,7 @@ fileprivate struct CustomPayload: GRPCPayload, Equatable {
     guard let messageLength = serializedByteBuffer.readInteger(as: UInt32.self),
       let message = serializedByteBuffer.readString(length: Int(messageLength)),
       let number = serializedByteBuffer.readInteger(as: Int64.self) else {
-        throw GRPCError.DeserializationFailure()
+      throw GRPCError.DeserializationFailure()
     }
 
     self.message = message
@@ -296,7 +304,7 @@ fileprivate struct CustomPayload: GRPCPayload, Equatable {
   }
 }
 
-fileprivate struct StringPayload: GRPCPayload {
+private struct StringPayload: GRPCPayload {
   var message: String
 
   init(message: String) {

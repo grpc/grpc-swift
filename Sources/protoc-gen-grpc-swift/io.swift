@@ -20,9 +20,9 @@ import Foundation
 // BEGIN swift-protobuf derivation
 
 #if os(Linux)
-  import Glibc
+import Glibc
 #else
-  import Darwin.C
+import Darwin.C
 #endif
 
 enum PluginError: Error {
@@ -45,7 +45,7 @@ class Stdin {
         throw PluginError.readFailure
       }
       if count < buffSize {
-        buff += fragment[0..<count]
+        buff += fragment[0 ..< count]
         return Data(buff)
       }
       buff += fragment

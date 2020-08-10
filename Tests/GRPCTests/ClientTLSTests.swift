@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import EchoImplementation
+import EchoModel
 import Foundation
 import GRPC
 import GRPCSampleData
-import EchoModel
-import EchoImplementation
 import NIO
 import NIOSSL
 import XCTest
@@ -34,13 +34,16 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
 
   override func tearDown() {
     XCTAssertNoThrow(try self.server.close().wait())
-    XCTAssertNoThrow(try connection.close().wait())
+    XCTAssertNoThrow(try self.connection.close().wait())
     XCTAssertNoThrow(try self.eventLoopGroup.syncShutdownGracefully())
     super.tearDown()
   }
 
   func doTestUnary() throws {
-    let client = Echo_EchoClient(channel: self.connection, defaultCallOptions: self.callOptionsWithLogger)
+    let client = Echo_EchoClient(
+      channel: self.connection,
+      defaultCallOptions: self.callOptionsWithLogger
+    )
     let get = client.get(.with { $0.text = "foo" })
 
     let response = try get.response.wait()
@@ -55,12 +58,16 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
     let cert = SampleCertificate.exampleServer.certificate
     let key = SamplePrivateKey.exampleServer
 
-    self.server = try Server.secure(group: self.eventLoopGroup, certificateChain: [cert], privateKey: key)
-      .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
-      .withServiceProviders([EchoProvider()])
-      .withLogger(self.serverLogger)
-      .bind(host: "localhost", port: 0)
-      .wait()
+    self.server = try Server.secure(
+      group: self.eventLoopGroup,
+      certificateChain: [cert],
+      privateKey: key
+    )
+    .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
+    .withServiceProviders([EchoProvider()])
+    .withLogger(self.serverLogger)
+    .bind(host: "localhost", port: 0)
+    .wait()
 
     guard let port = self.server.channel.localAddress?.port else {
       XCTFail("could not get server port")
@@ -81,12 +88,16 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
     let cert = SampleCertificate.server.certificate
     let key = SamplePrivateKey.server
 
-    self.server = try Server.secure(group: self.eventLoopGroup, certificateChain: [cert], privateKey: key)
-      .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
-      .withServiceProviders([EchoProvider()])
-      .withLogger(self.serverLogger)
-      .bind(host: "localhost", port: 0)
-      .wait()
+    self.server = try Server.secure(
+      group: self.eventLoopGroup,
+      certificateChain: [cert],
+      privateKey: key
+    )
+    .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
+    .withServiceProviders([EchoProvider()])
+    .withLogger(self.serverLogger)
+    .bind(host: "localhost", port: 0)
+    .wait()
 
     guard let port = self.server.channel.localAddress?.port else {
       XCTFail("could not get server port")

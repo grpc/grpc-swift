@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import EchoModel
 import Foundation
 @testable import GRPC
-import EchoModel
 import NIO
 import XCTest
 
@@ -29,7 +29,7 @@ class ClientTimeoutTests: GRPCTestCase {
     // with `DispatchTime.now()`. We therefore need the deadline to be known in advance. Note we
     // use zero because `EmbeddedEventLoop`s time starts at zero.
     var options = self.callOptionsWithLogger
-    options.timeLimit = .deadline(.uptimeNanoseconds(0) + timeout)
+    options.timeLimit = .deadline(.uptimeNanoseconds(0) + self.timeout)
     return options
   }
 
@@ -41,7 +41,10 @@ class ClientTimeoutTests: GRPCTestCase {
     super.setUp()
 
     let connection = EmbeddedGRPCChannel(logger: self.clientLogger)
-    XCTAssertNoThrow(try connection.embeddedChannel.connect(to: SocketAddress(unixDomainSocketPath: "/foo")))
+    XCTAssertNoThrow(
+      try connection.embeddedChannel
+        .connect(to: SocketAddress(unixDomainSocketPath: "/foo"))
+    )
     let client = Echo_EchoClient(channel: connection, defaultCallOptions: self.callOptions)
 
     self.channel = connection.embeddedChannel
@@ -53,24 +56,30 @@ class ClientTimeoutTests: GRPCTestCase {
     super.tearDown()
   }
 
-  func assertRPCTimedOut(_ response: EventLoopFuture<Echo_EchoResponse>, expectation: XCTestExpectation) {
+  func assertRPCTimedOut(
+    _ response: EventLoopFuture<Echo_EchoResponse>,
+    expectation: XCTestExpectation
+  ) {
     response.whenComplete { result in
       switch result {
-      case .success(let response):
+      case let .success(response):
         XCTFail("unexpected response: \(response)")
-      case .failure(let error):
+      case let .failure(error):
         XCTAssertTrue(error is GRPCError.RPCTimedOut)
       }
       expectation.fulfill()
     }
   }
 
-  func assertDeadlineExceeded(_ status: EventLoopFuture<GRPCStatus>, expectation: XCTestExpectation) {
+  func assertDeadlineExceeded(
+    _ status: EventLoopFuture<GRPCStatus>,
+    expectation: XCTestExpectation
+  ) {
     status.whenComplete { result in
       switch result {
-      case .success(let status):
+      case let .success(status):
         XCTAssertEqual(status.code, .deadlineExceeded)
-      case .failure(let error):
+      case let .failure(error):
         XCTFail("unexpected error: \(error)")
       }
       expectation.fulfill()
@@ -81,7 +90,7 @@ class ClientTimeoutTests: GRPCTestCase {
     let statusExpectation = self.expectation(description: "status fulfilled")
 
     let call = self.client.get(Echo_EchoRequest(text: "foo"))
-    channel.embeddedEventLoop.advanceTime(by: self.timeout)
+    self.channel.embeddedEventLoop.advanceTime(by: self.timeout)
 
     self.assertDeadlineExceeded(call.status, expectation: statusExpectation)
     self.wait(for: [statusExpectation], timeout: self.testTimeout)
@@ -90,8 +99,8 @@ class ClientTimeoutTests: GRPCTestCase {
   func testServerStreamingTimeoutAfterSending() throws {
     let statusExpectation = self.expectation(description: "status fulfilled")
 
-    let call = client.expand(Echo_EchoRequest(text: "foo bar baz")) { _ in }
-    channel.embeddedEventLoop.advanceTime(by: self.timeout)
+    let call = self.client.expand(Echo_EchoRequest(text: "foo bar baz")) { _ in }
+    self.channel.embeddedEventLoop.advanceTime(by: self.timeout)
 
     self.assertDeadlineExceeded(call.status, expectation: statusExpectation)
     self.wait(for: [statusExpectation], timeout: self.testTimeout)
@@ -101,8 +110,8 @@ class ClientTimeoutTests: GRPCTestCase {
     let responseExpectation = self.expectation(description: "response fulfilled")
     let statusExpectation = self.expectation(description: "status fulfilled")
 
-    let call = client.collect()
-    channel.embeddedEventLoop.advanceTime(by: self.timeout)
+    let call = self.client.collect()
+    self.channel.embeddedEventLoop.advanceTime(by: self.timeout)
 
     self.assertRPCTimedOut(call.response, expectation: responseExpectation)
     self.assertDeadlineExceeded(call.status, expectation: statusExpectation)
@@ -113,14 +122,14 @@ class ClientTimeoutTests: GRPCTestCase {
     let responseExpectation = self.expectation(description: "response fulfilled")
     let statusExpectation = self.expectation(description: "status fulfilled")
 
-    let call = client.collect()
+    let call = self.client.collect()
 
     self.assertRPCTimedOut(call.response, expectation: responseExpectation)
     self.assertDeadlineExceeded(call.status, expectation: statusExpectation)
 
     call.sendMessage(Echo_EchoRequest(text: "foo"), promise: nil)
     call.sendEnd(promise: nil)
-    channel.embeddedEventLoop.advanceTime(by: self.timeout)
+    self.channel.embeddedEventLoop.advanceTime(by: self.timeout)
 
     self.wait(for: [responseExpectation, statusExpectation], timeout: 1.0)
   }
@@ -128,9 +137,9 @@ class ClientTimeoutTests: GRPCTestCase {
   func testBidirectionalStreamingTimeoutBeforeSending() {
     let statusExpectation = self.expectation(description: "status fulfilled")
 
-    let call = client.update { _ in }
+    let call = self.client.update { _ in }
 
-    channel.embeddedEventLoop.advanceTime(by: self.timeout)
+    self.channel.embeddedEventLoop.advanceTime(by: self.timeout)
 
     self.assertDeadlineExceeded(call.status, expectation: statusExpectation)
     self.wait(for: [statusExpectation], timeout: self.testTimeout)
@@ -139,13 +148,13 @@ class ClientTimeoutTests: GRPCTestCase {
   func testBidirectionalStreamingTimeoutAfterSending() {
     let statusExpectation = self.expectation(description: "status fulfilled")
 
-    let call = client.update { _ in }
+    let call = self.client.update { _ in }
 
     self.assertDeadlineExceeded(call.status, expectation: statusExpectation)
 
     call.sendMessage(Echo_EchoRequest(text: "foo"), promise: nil)
     call.sendEnd(promise: nil)
-    channel.embeddedEventLoop.advanceTime(by: self.timeout)
+    self.channel.embeddedEventLoop.advanceTime(by: self.timeout)
 
     self.wait(for: [statusExpectation], timeout: self.testTimeout)
   }

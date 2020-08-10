@@ -33,6 +33,6 @@ internal class Stopwatch {
   }
 
   func elapsedMillis() -> Int64 {
-    return Int64(self.elapsed() * 1_000)
+    return Int64(self.elapsed() * 1000)
   }
 }

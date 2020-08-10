@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import EchoModel
 import Foundation
 import GRPC
-import EchoModel
 import XCTest
 
 class ClientCancellingTests: EchoTestCaseBase {
@@ -62,7 +62,7 @@ class ClientCancellingTests: EchoTestCaseBase {
   func testServerStreaming() {
     let statusReceived = self.expectation(description: "status received")
 
-    let call = client.expand(Echo_EchoRequest(text: "foo bar baz")) { response in
+    let call = client.expand(Echo_EchoRequest(text: "foo bar baz")) { _ in
       XCTFail("response should not be received after cancelling call")
     }
     call.cancel(promise: nil)
@@ -78,7 +78,7 @@ class ClientCancellingTests: EchoTestCaseBase {
   func testBidirectionalStreaming() {
     let statusReceived = self.expectation(description: "status received")
 
-    let call = client.update { response in
+    let call = client.update { _ in
       XCTFail("response should not be received after cancelling call")
     }
     call.cancel(promise: nil)

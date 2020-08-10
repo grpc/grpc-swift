@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 import Foundation
+import Logging
 import NIO
-import NIOTransportServices
 import NIOHTTP1
 import NIOHTTP2
 import NIOSSL
-import Logging
+import NIOTransportServices
 
 /// Wrapper object to manage the lifecycle of a gRPC server.
 ///
@@ -97,7 +97,10 @@ public final class Server {
 
     return bootstrap
       // Enable `SO_REUSEADDR` to avoid "address already in use" error.
-      .serverChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
+      .serverChannelOption(
+        ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR),
+        value: 1
+      )
       // Set the handlers that are applied to the accepted Channels
       .childChannelInitializer { channel in
         let protocolSwitcher = HTTPProtocolSwitcher(
@@ -127,8 +130,12 @@ public final class Server {
         }
 
         // Work around the zero length write issue, if needed.
-        let requiresZeroLengthWorkaround = PlatformSupport.requiresZeroLengthWriteWorkaround(group: configuration.eventLoopGroup, hasTLS: configuration.tls != nil)
-        if requiresZeroLengthWorkaround, #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
+        let requiresZeroLengthWorkaround = PlatformSupport.requiresZeroLengthWriteWorkaround(
+          group: configuration.eventLoopGroup,
+          hasTLS: configuration.tls != nil
+        )
+        if requiresZeroLengthWorkaround,
+          #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
           configured = configured.flatMap {
             channel.pipeline.addHandler(NIOFilterEmptyWritesHandler())
           }
@@ -146,13 +153,16 @@ public final class Server {
 
       // Enable TCP_NODELAY and SO_REUSEADDR for the accepted Channels
       .childChannelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
-      .childChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
+      .childChannelOption(
+        ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR),
+        value: 1
+      )
   }
 
   /// Starts a server with the given configuration. See `Server.Configuration` for the options
   /// available to configure the server.
   public static func start(configuration: Configuration) -> EventLoopFuture<Server> {
-    return makeBootstrap(configuration: configuration)
+    return self.makeBootstrap(configuration: configuration)
       .bind(to: configuration.target)
       .map { channel in
         Server(channel: channel, errorDelegate: configuration.errorDelegate)
@@ -175,19 +185,19 @@ public final class Server {
     }
 
     // nil out errorDelegate to avoid retain cycles.
-    onClose.whenComplete { _ in
+    self.onClose.whenComplete { _ in
       self.errorDelegate = nil
     }
   }
 
   /// Fired when the server shuts down.
   public var onClose: EventLoopFuture<Void> {
-    return channel.closeFuture
+    return self.channel.closeFuture
   }
 
   /// Shut down the server; this should be called to avoid leaking resources.
   public func close() -> EventLoopFuture<Void> {
-    return channel.close(mode: .all)
+    return self.channel.close(mode: .all)
   }
 }
 
@@ -203,12 +213,16 @@ extension Server {
 
     /// Providers the server should use to handle gRPC requests.
     public var serviceProviders: [CallHandlerProvider] {
-        get {
-            return Array(self.serviceProvidersByName.values)
-        }
-        set {
-            self.serviceProvidersByName = Dictionary(uniqueKeysWithValues: newValue.map { ($0.serviceName, $0) })
-        }
+      get {
+        return Array(self.serviceProvidersByName.values)
+      }
+      set {
+        self
+          .serviceProvidersByName = Dictionary(
+            uniqueKeysWithValues: newValue
+              .map { ($0.serviceName, $0) }
+          )
+      }
     }
 
     /// An error delegate which is called when errors are caught. Provided delegates **must not
@@ -288,7 +302,11 @@ extension Server {
     ) {
       self.target = target
       self.eventLoopGroup = eventLoopGroup
-      self.serviceProvidersByName = Dictionary(uniqueKeysWithValues: serviceProviders.map { ($0.serviceName, $0) })
+      self
+        .serviceProvidersByName = Dictionary(
+          uniqueKeysWithValues: serviceProviders
+            .map { ($0.serviceName, $0) }
+        )
       self.errorDelegate = errorDelegate
       self.tls = tls
       self.connectionKeepalive = connectionKeepalive
@@ -301,7 +319,7 @@ extension Server {
   }
 }
 
-fileprivate extension Channel {
+private extension Channel {
   /// Configure an SSL handler on the channel.
   ///
   /// - Parameters:
@@ -317,16 +335,16 @@ fileprivate extension Channel {
   }
 }
 
-fileprivate extension ServerBootstrapProtocol {
+private extension ServerBootstrapProtocol {
   func bind(to target: BindTarget) -> EventLoopFuture<Channel> {
     switch target.wrapped {
-    case .hostAndPort(let host, let port):
+    case let .hostAndPort(host, port):
       return self.bind(host: host, port: port)
 
-    case .unixDomainSocket(let path):
+    case let .unixDomainSocket(path):
       return self.bind(unixDomainSocketPath: path)
 
-    case .socketAddress(let address):
+    case let .socketAddress(address):
       return self.bind(to: address)
     }
   }

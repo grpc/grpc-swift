@@ -15,16 +15,16 @@
  */
 import Foundation
 @testable import GRPC
+import Logging
 import NIO
 import NIOSSL
-import Logging
 import XCTest
 
 class DelegatingErrorHandlerTests: GRPCTestCase {
   class ErrorRecorder: ClientErrorDelegate {
     var errors: [Error] = []
 
-    init() { }
+    init() {}
 
     func didCatchError(_ error: Error, logger: Logger, file: StaticString, line: Int) {
       self.errors.append(error)
@@ -33,7 +33,8 @@ class DelegatingErrorHandlerTests: GRPCTestCase {
 
   func testUncleanShutdownIsIgnored() throws {
     let delegate = ErrorRecorder()
-    let channel = EmbeddedChannel(handler: DelegatingErrorHandler(logger: self.logger, delegate: delegate))
+    let channel =
+      EmbeddedChannel(handler: DelegatingErrorHandler(logger: self.logger, delegate: delegate))
     channel.pipeline.fireErrorCaught(NIOSSLError.uncleanShutdown)
     channel.pipeline.fireErrorCaught(NIOSSLError.writeDuringTLSShutdown)
 

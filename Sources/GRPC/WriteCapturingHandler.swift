@@ -21,7 +21,7 @@ import NIO
 /// This handler is intended for use with 'fake' response streams the 'FakeChannel'.
 internal final class WriteCapturingHandler<Request>: ChannelOutboundHandler {
   typealias OutboundIn = _GRPCClientRequestPart<Request>
-  typealias RequestHandler = (FakeRequestPart<Request>) -> ()
+  typealias RequestHandler = (FakeRequestPart<Request>) -> Void
 
   private var state: State
   private enum State {
@@ -33,17 +33,21 @@ internal final class WriteCapturingHandler<Request>: ChannelOutboundHandler {
     self.state = .active(requestHandler)
   }
 
-  internal func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+  internal func write(
+    context: ChannelHandlerContext,
+    data: NIOAny,
+    promise: EventLoopPromise<Void>?
+  ) {
     guard case let .active(handler) = self.state else {
       promise?.fail(ChannelError.ioOnClosedChannel)
       return
     }
 
     switch self.unwrapOutboundIn(data) {
-    case .head(let requestHead):
+    case let .head(requestHead):
       handler(.metadata(requestHead.customMetadata))
 
-    case .message(let messageContext):
+    case let .message(messageContext):
       handler(.message(messageContext.message))
 
     case .end:

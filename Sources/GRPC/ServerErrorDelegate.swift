@@ -17,7 +17,7 @@ import Foundation
 import NIO
 import NIOHTTP1
 
-public protocol ServerErrorDelegate: class {
+public protocol ServerErrorDelegate: AnyObject {
   //! FIXME: Provide more context about where the error was thrown, i.e. using `GRPCError`.
   /// Called when an error is thrown in the channel pipeline.
   func observeLibraryError(_ error: Error)
@@ -36,7 +36,11 @@ public protocol ServerErrorDelegate: class {
   /// `GRPCStatus.processingError` is returned.
   func transformLibraryError(_ error: Error) -> GRPCStatusAndMetadata?
 
-  @available(*, deprecated, message: "Please use the new transformLibraryError that returns a GRPCStatusAndMetadata instead.")
+  @available(
+    *,
+    deprecated,
+    message: "Please use the new transformLibraryError that returns a GRPCStatusAndMetadata instead."
+  )
   func transformLibraryError(_ error: Error) -> GRPCStatus?
 
   /// Called when a request's status or response promise is failed somewhere in the user-provided request handler code.
@@ -61,18 +65,27 @@ public protocol ServerErrorDelegate: class {
   /// - Parameters:
   ///   - error: The original error the status/response promise was failed with.
   ///   - request: The headers of the request whose status/response promise was failed.
-  func transformRequestHandlerError(_ error: Error, request: HTTPRequestHead) -> GRPCStatusAndMetadata?
+  func transformRequestHandlerError(_ error: Error, request: HTTPRequestHead)
+    -> GRPCStatusAndMetadata?
 
-  @available(*, deprecated, message: "Please use the new transformLibraryError that returns a GRPCStatusAndMetadata instead.")
+  @available(
+    *,
+    deprecated,
+    message: "Please use the new transformLibraryError that returns a GRPCStatusAndMetadata instead."
+  )
   func transformRequestHandlerError(_ error: Error, request: HTTPRequestHead) -> GRPCStatus?
 }
 
 public extension ServerErrorDelegate {
-  func observeLibraryError(_ error: Error) { }
+  func observeLibraryError(_ error: Error) {}
   func transformLibraryError(_ error: Error) -> GRPCStatusAndMetadata? { return nil }
   func transformLibraryError(_ error: Error) -> GRPCStatus? { return nil }
 
-  func observeRequestHandlerError(_ error: Error, request: HTTPRequestHead) { }
-  func transformRequestHandlerError(_ error: Error, request: HTTPRequestHead) -> GRPCStatusAndMetadata? { return nil }
-  func transformRequestHandlerError(_ error: Error, request: HTTPRequestHead) -> GRPCStatus? { return nil }
+  func observeRequestHandlerError(_ error: Error, request: HTTPRequestHead) {}
+  func transformRequestHandlerError(
+    _ error: Error,
+    request: HTTPRequestHead
+  ) -> GRPCStatusAndMetadata? { return nil }
+  func transformRequestHandlerError(_ error: Error,
+                                    request: HTTPRequestHead) -> GRPCStatus? { return nil }
 }

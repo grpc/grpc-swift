@@ -36,7 +36,8 @@ class GRPCStatusMessageMarshallerTests: GRPCTestCase {
     XCTAssertEqual(GRPCStatusMessageMarshaller.unmarshall("%F0%9F%9A%80"), "🚀")
 
     let message = "\t\ntest with whitespace\r\nand Unicode BMP ☺ and non-BMP 😈\t\n"
-    let marshalled = "%09%0Atest with whitespace%0D%0Aand Unicode BMP %E2%98%BA and non-BMP %F0%9F%98%88%09%0A"
+    let marshalled =
+      "%09%0Atest with whitespace%0D%0Aand Unicode BMP %E2%98%BA and non-BMP %F0%9F%98%88%09%0A"
     XCTAssertEqual(GRPCStatusMessageMarshaller.marshall(message), marshalled)
     XCTAssertEqual(GRPCStatusMessageMarshaller.unmarshall(marshalled), message)
   }

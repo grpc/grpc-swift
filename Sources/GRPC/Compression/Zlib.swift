@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 import CGRPCZlib
-import NIO
 import struct Foundation.Data
+import NIO
 
 /// Provides minimally configurable wrappers around zlib's compression and decompression
 /// functionality.
@@ -56,24 +56,25 @@ enum Zlib {
       //   Note that it is possible for the compressed size to be larger than the value returned
       //   by deflateBound() if flush options other than Z_FINISH or Z_NO_FLUSH are used.
       let upperBound = CGRPCZlib_deflateBound(&self.stream.zstream, UInt(input.readableBytes))
-      
+
       return try input.readWithUnsafeMutableReadableBytes { inputPointer -> (Int, Int) in
-        
+
         self.stream.nextInputBuffer = CGRPCZlib_castVoidToBytefPointer(inputPointer.baseAddress!)
         self.stream.availableInputBytes = inputPointer.count
-        
+
         defer {
           self.stream.nextInputBuffer = nil
           self.stream.availableInputBytes = 0
         }
-        
-        let writtenBytes = try output.writeWithUnsafeMutableBytes(minimumWritableBytes: Int(upperBound)) { outputPointer in
-          try self.stream.deflate(
-             outputBuffer: CGRPCZlib_castVoidToBytefPointer(outputPointer.baseAddress!),
-             outputBufferSize: outputPointer.count
-          )
-        }
-        
+
+        let writtenBytes = try output
+          .writeWithUnsafeMutableBytes(minimumWritableBytes: Int(upperBound)) { outputPointer in
+            try self.stream.deflate(
+              outputBuffer: CGRPCZlib_castVoidToBytefPointer(outputPointer.baseAddress!),
+              outputBufferSize: outputPointer.count
+            )
+          }
+
         let bytesRead = inputPointer.count - self.stream.availableInputBytes
         return (bytesRead, writtenBytes)
       }
@@ -107,11 +108,11 @@ enum Zlib {
     private func initialize() {
       let rc = CGRPCZlib_deflateInit2(
         &self.stream.zstream,
-        Z_DEFAULT_COMPRESSION,  // compression level
-        Z_DEFLATED,             // compression method (this must be Z_DEFLATED)
+        Z_DEFAULT_COMPRESSION, // compression level
+        Z_DEFLATED, // compression method (this must be Z_DEFLATED)
         self.format.windowBits, // window size, i.e. deflate/gzip
-        8,                      // memory level (this is the default value in the docs)
-        Z_DEFAULT_STRATEGY      // compression strategy
+        8, // memory level (this is the default value in the docs)
+        Z_DEFAULT_STRATEGY // compression strategy
       )
 
       // Possible return codes:
@@ -126,7 +127,7 @@ enum Zlib {
 
     /// Calls `deflateEnd` on the underlying `z_stream` to deallocate resources allocated by zlib.
     private func end() {
-      let _ = CGRPCZlib_deflateEnd(&self.stream.zstream)
+      _ = CGRPCZlib_deflateEnd(&self.stream.zstream)
 
       // Possible return codes:
       // - Z_OK
@@ -159,20 +160,22 @@ enum Zlib {
       /// Update the state with the result of `Zlib.ZStream.inflate(outputBuffer:outputBufferSize:)`.
       mutating func update(with result: Zlib.ZStream.InflateResult) throws {
         switch (result.outcome, self) {
-        case (.outputBufferTooSmall, var .inflating(state)):
+        case var (.outputBufferTooSmall, .inflating(state)):
           guard state.outputBufferSize < state.maxDecompressedSize else {
             // We hit the decompression limit and last time we clamped our output buffer size; we
             // can't use a larger buffer without exceeding the limit.
-            throw GRPCError.DecompressionLimitExceeded(compressedSize: state.compressedSize).captureContext()
+            throw GRPCError.DecompressionLimitExceeded(compressedSize: state.compressedSize)
+              .captureContext()
           }
           state.increaseOutputBufferSize()
           self = .inflating(state)
 
-        case (.complete, .inflating(let state)):
+        case let (.complete, .inflating(state)):
           // Since we request a _minimum_ output buffer size from `ByteBuffer` it's possible that
           // the decompressed size exceeded the decompression limit.
           guard result.totalBytesWritten <= state.maxDecompressedSize else {
-            throw GRPCError.DecompressionLimitExceeded(compressedSize: state.compressedSize).captureContext()
+            throw GRPCError.DecompressionLimitExceeded(compressedSize: state.compressedSize)
+              .captureContext()
           }
           self = .inflated
 
@@ -272,20 +275,21 @@ enum Zlib {
 
         var bytesWritten = 0
         var state = InflationState(compressedSize: inputPointer.count, limit: self.limit)
-        while case .inflating(let inflationState) = state {
+        while case let .inflating(inflationState) = state {
           // Each call to inflate writes into the buffer, so we need to take the writer index into
           // account here.
           let writerIndex = output.writerIndex
           let minimumWritableBytes = inflationState.outputBufferSize - writerIndex
-          bytesWritten = try output.writeWithUnsafeMutableBytes(minimumWritableBytes: minimumWritableBytes) { outputPointer in
-            let inflateResult = try self.stream.inflate(
-              outputBuffer: CGRPCZlib_castVoidToBytefPointer(outputPointer.baseAddress!),
-              outputBufferSize: outputPointer.count
-            )
+          bytesWritten = try output
+            .writeWithUnsafeMutableBytes(minimumWritableBytes: minimumWritableBytes) { outputPointer in
+              let inflateResult = try self.stream.inflate(
+                outputBuffer: CGRPCZlib_castVoidToBytefPointer(outputPointer.baseAddress!),
+                outputBufferSize: outputPointer.count
+              )
 
-            try state.update(with: inflateResult)
-            return inflateResult.bytesWritten
-          }
+              try state.update(with: inflateResult)
+              return inflateResult.bytesWritten
+            }
         }
 
         let bytesRead = inputPointer.count - self.stream.availableInputBytes
@@ -306,7 +310,7 @@ enum Zlib {
     }
 
     func end() {
-      let _ = CGRPCZlib_inflateEnd(&self.stream.zstream)
+      _ = CGRPCZlib_inflateEnd(&self.stream.zstream)
 
       // Possible return codes:
       // - Z_OK
@@ -378,9 +382,7 @@ enum Zlib {
 
     /// The total number of bytes written to the output buffer. See also: `z_stream.total_out`.
     var totalOutputBytes: Int {
-      get {
-        return Int(self.zstream.total_out)
-      }
+      return Int(self.zstream.total_out)
     }
 
     /// The last error message that zlib wrote. No message is guaranteed on error, however, `nil` is
@@ -449,7 +451,8 @@ enum Zlib {
         outcome = .outputBufferTooSmall
 
       default:
-        throw GRPCError.ZlibCompressionFailure(code: rc, message: self.lastErrorMessage).captureContext()
+        throw GRPCError.ZlibCompressionFailure(code: rc, message: self.lastErrorMessage)
+          .captureContext()
       }
 
       return InflateResult(
@@ -458,7 +461,7 @@ enum Zlib {
         outcome: outcome
       )
     }
-    
+
     /// Compresses the `inputBuffer` into the `outputBuffer`.
     ///
     /// `outputBuffer` must be large enough to store the compressed data, `deflateBound()` provides
@@ -494,7 +497,8 @@ enum Zlib {
       // larger than the value returned by `deflateBound()` if `Z_FINISH` flush is used. As such,
       // the only acceptable outcome is `Z_STREAM_END`.
       guard rc == Z_STREAM_END else {
-        throw GRPCError.ZlibCompressionFailure(code: rc, message: self.lastErrorMessage).captureContext()
+        throw GRPCError.ZlibCompressionFailure(code: rc, message: self.lastErrorMessage)
+          .captureContext()
       }
 
       return outputBufferSize - self.availableOutputBytes

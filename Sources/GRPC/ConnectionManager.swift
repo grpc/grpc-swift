@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import Foundation
+import Logging
 import NIO
 import NIOConcurrencyHelpers
-import Logging
-import Foundation
 
 internal class ConnectionManager {
   internal struct IdleState {
@@ -244,21 +244,21 @@ internal class ConnectionManager {
       case .idle:
         self.startConnecting()
         // We started connecting so we must transition to the `connecting` state.
-        guard case .connecting(let connecting) = self.state else {
+        guard case let .connecting(connecting) = self.state else {
           self.invalidState()
         }
         return connecting.readyChannelPromise.futureResult
 
-      case .connecting(let state):
+      case let .connecting(state):
         return state.readyChannelPromise.futureResult
 
-      case .active(let state):
+      case let .active(state):
         return state.readyChannelPromise.futureResult
 
-      case .ready(let state):
+      case let .ready(state):
         return state.channel.eventLoop.makeSucceededFuture(state.channel)
 
-      case .transientFailure(let state):
+      case let .transientFailure(state):
         return state.readyChannelPromise.futureResult
 
       case .shutdown:
@@ -277,18 +277,18 @@ internal class ConnectionManager {
       case .idle:
         self.startConnecting()
         // We started connecting so we must transition to the `connecting` state.
-        guard case .connecting(let connecting) = self.state else {
+        guard case let .connecting(connecting) = self.state else {
           self.invalidState()
         }
         return connecting.candidate
 
-      case .connecting(let state):
+      case let .connecting(state):
         return state.candidate
 
-      case .active(let state):
+      case let .active(state):
         return state.candidate.eventLoop.makeSucceededFuture(state.candidate)
 
-      case .ready(let state):
+      case let .ready(state):
         return state.channel.eventLoop.makeSucceededFuture(state.channel)
 
       case .transientFailure:
@@ -314,7 +314,7 @@ internal class ConnectionManager {
       // We're mid-connection: the application doesn't have any 'ready' channels so we'll succeed
       // the shutdown future and deal with any fallout from the connecting channel without the
       // application knowing.
-      case .connecting(let state):
+      case let .connecting(state):
         shutdown = ShutdownState(closeFuture: self.eventLoop.makeSucceededFuture(()))
         self.state = .shutdown(shutdown)
 
@@ -328,7 +328,7 @@ internal class ConnectionManager {
 
       // We have an active channel but the application doesn't know about it yet. We'll do the same
       // as for `.connecting`.
-      case .active(let state):
+      case let .active(state):
         shutdown = ShutdownState(closeFuture: self.eventLoop.makeSucceededFuture(()))
         self.state = .shutdown(shutdown)
 
@@ -340,7 +340,7 @@ internal class ConnectionManager {
 
       // The channel is up and running: the application could be using it. We can close it and
       // return the `closeFuture`.
-      case .ready(let state):
+      case let .ready(state):
         shutdown = ShutdownState(closeFuture: state.channel.closeFuture)
         self.state = .shutdown(shutdown)
 
@@ -350,7 +350,7 @@ internal class ConnectionManager {
       // Like `.connecting` and `.active` the application does not have a `.ready` channel. We'll
       // do the same but also cancel any scheduled connection attempts and deal with any fallout
       // if we cancelled too late.
-      case .transientFailure(let state):
+      case let .transientFailure(state):
         // Stop the creation of a new channel, if we can. If we can't then the task to
         // `startConnecting()` will see our new `shutdown` state and ignore the request to connect.
         state.scheduled.cancel()
@@ -362,7 +362,7 @@ internal class ConnectionManager {
         state.readyChannelPromise.fail(GRPCStatus(code: .unavailable, message: nil))
 
       // We're already shutdown; nothing to do.
-      case .shutdown(let state):
+      case let .shutdown(state):
         shutdown = state
       }
 
@@ -377,7 +377,7 @@ internal class ConnectionManager {
     self.eventLoop.preconditionInEventLoop()
 
     switch self.state {
-    case .connecting(let connecting):
+    case let .connecting(connecting):
       self.state = .active(ConnectedState(from: connecting, candidate: channel))
 
     // Application called shutdown before the channel become active; we should close it.
@@ -396,7 +396,7 @@ internal class ConnectionManager {
 
     switch self.state {
     // The channel is `active` but not `ready`. Should we try again?
-    case .active(let active):
+    case let .active(active):
       switch active.reconnect {
       // No, shutdown instead.
       case .none:
@@ -404,7 +404,7 @@ internal class ConnectionManager {
         active.readyChannelPromise.fail(GRPCStatus(code: .unavailable, message: nil))
 
       // Yes, after some time.
-      case .after(let delay):
+      case let .after(delay):
         let scheduled = self.eventLoop.scheduleTask(in: .seconds(timeInterval: delay)) {
           self.startConnecting()
         }
@@ -413,7 +413,7 @@ internal class ConnectionManager {
 
     // The channel was ready and working fine but something went wrong. Should we try to replace
     // the channel?
-    case .ready(let ready):
+    case let .ready(ready):
       // No, no backoff is configured.
       if ready.configuration.connectionBackoff == nil {
         self.state = .shutdown(ShutdownState(closeFuture: ready.channel.closeFuture))
@@ -444,7 +444,7 @@ internal class ConnectionManager {
     self.eventLoop.preconditionInEventLoop()
 
     switch self.state {
-    case .active(let connected):
+    case let .active(connected):
       self.state = .ready(ReadyState(from: connected))
       connected.readyChannelPromise.succeed(connected.candidate)
 
@@ -462,7 +462,7 @@ internal class ConnectionManager {
     self.eventLoop.preconditionInEventLoop()
 
     switch self.state {
-    case .ready(let state):
+    case let .ready(state):
       self.state = .idle(IdleState(configuration: state.configuration))
 
     case .idle, .connecting, .transientFailure, .active, .shutdown:
@@ -477,7 +477,7 @@ extension ConnectionManager {
     self.eventLoop.preconditionInEventLoop()
 
     switch self.state {
-    case .connecting(let connecting):
+    case let .connecting(connecting):
       // Should we reconnect?
       switch connecting.reconnect {
       // No, shutdown.
@@ -486,11 +486,12 @@ extension ConnectionManager {
         self.state = .shutdown(ShutdownState(closeFuture: self.eventLoop.makeSucceededFuture(())))
 
       // Yes, after a delay.
-      case .after(let delay):
+      case let .after(delay):
         let scheduled = self.eventLoop.scheduleTask(in: .seconds(timeInterval: delay)) {
           self.startConnecting()
         }
-        self.state = .transientFailure(TransientFailureState(from: connecting, scheduled: scheduled))
+        self
+          .state = .transientFailure(TransientFailureState(from: connecting, scheduled: scheduled))
       }
 
     // The application must have called shutdown while we were trying to establish a connection
@@ -510,7 +511,7 @@ extension ConnectionManager {
   // states. Must be called on the `EventLoop`.
   private func startConnecting() {
     switch self.state {
-    case .idle(let state):
+    case let .idle(state):
       let iterator = state.configuration.connectionBackoff?.makeIterator()
       self.startConnecting(
         configuration: state.configuration,
@@ -518,7 +519,7 @@ extension ConnectionManager {
         channelPromise: self.eventLoop.makePromise()
       )
 
-    case .transientFailure(let pending):
+    case let .transientFailure(pending):
       self.startConnecting(
         configuration: pending.configuration,
         backoffIterator: pending.backoffIterator,
@@ -611,7 +612,10 @@ extension ConnectionManager {
           connectionKeepalive: configuration.connectionKeepalive,
           connectionIdleTimeout: configuration.connectionIdleTimeout,
           errorDelegate: configuration.errorDelegate,
-          requiresZeroLengthWriteWorkaround: PlatformSupport.requiresZeroLengthWriteWorkaround(group: self.eventLoop, hasTLS: configuration.tls != nil),
+          requiresZeroLengthWriteWorkaround: PlatformSupport.requiresZeroLengthWriteWorkaround(
+            group: self.eventLoop,
+            hasTLS: configuration.tls != nil
+          ),
           logger: self.logger
         )
 

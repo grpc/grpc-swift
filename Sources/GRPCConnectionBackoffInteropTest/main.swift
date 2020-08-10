@@ -16,8 +16,8 @@
 import Foundation
 import GRPC
 import GRPCInteroperabilityTestModels
-import NIO
 import Logging
+import NIO
 
 let args = CommandLine.arguments
 guard args.count == 3, let controlPort = Int(args[1]), let retryPort = Int(args[2]) else {
@@ -33,7 +33,8 @@ guard args.count == 3, let controlPort = Int(args[1]), let retryPort = Int(args[
 // Since this is a long running test, print connectivity state changes to stdout with timestamps.
 // We'll redirect logs to stderr so that stdout contains information only relevant to the test.
 class PrintingConnectivityStateDelegate: ConnectivityStateDelegate {
-  func connectivityStateDidChange(from oldState: ConnectivityState, to newState: ConnectivityState) {
+  func connectivityStateDidChange(from oldState: ConnectivityState,
+                                  to newState: ConnectivityState) {
     print("[\(Date())] connectivity state change: \(oldState) → \(newState)")
   }
 }
@@ -75,8 +76,10 @@ let retryClient = Grpc_Testing_ReconnectServiceClient(
 let retryStart = retryClient.start(.init())
 // We expect this to take some time!
 let retryStartStatus = try retryStart.status.wait()
-assert(retryStartStatus.code == .deadlineExceeded,
-       "Retry Start rpc status was not 'deadlineExceeded': \(retryStartStatus.code)")
+assert(
+  retryStartStatus.code == .deadlineExceeded,
+  "Retry Start rpc status was not 'deadlineExceeded': \(retryStartStatus.code)"
+)
 print("[\(Date())] Retry 'Start' call terminated with expected status")
 
 // 3. Call 'Stop' on server control port and check it succeeded.

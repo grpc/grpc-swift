@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import EchoImplementation
+import EchoModel
 import Foundation
-import XCTest
+@testable import GRPC
+import Logging
 import NIO
 import NIOHTTP1
-@testable import GRPC
-import EchoModel
-import EchoImplementation
-import Logging
+import XCTest
 
 class HTTP1ToGRPCServerCodecTests: GRPCTestCase {
   var channel: EmbeddedChannel!
@@ -45,7 +45,10 @@ class HTTP1ToGRPCServerCodecTests: GRPCTestCase {
   }
 
   func testSingleMessageFromMultipleBodyParts() throws {
-    XCTAssertNoThrow(try self.channel.writeInbound(HTTPServerRequestPart.head(self.makeRequestHead())))
+    XCTAssertNoThrow(
+      try self.channel
+        .writeInbound(HTTPServerRequestPart.head(self.makeRequestHead()))
+    )
     let requestPart = try self.channel.readInbound(as: _RawGRPCServerRequestPart.self)
 
     switch requestPart {
@@ -61,7 +64,7 @@ class HTTP1ToGRPCServerCodecTests: GRPCTestCase {
 
     // Split the payload into two parts.
     let halfIndex = data.count / 2
-    let firstChunk = data[0..<halfIndex]
+    let firstChunk = data[0 ..< halfIndex]
     let secondChunk = data[halfIndex...]
 
     // Frame the message; send it in 2 parts.
@@ -77,7 +80,7 @@ class HTTP1ToGRPCServerCodecTests: GRPCTestCase {
 
     let messagePart = try self.channel.readInbound(as: _RawGRPCServerRequestPart.self)
     switch messagePart {
-    case .some(.message(var buffer)):
+    case var .some(.message(buffer)):
       XCTAssertEqual(data, buffer.readData(length: buffer.readableBytes)!)
     default:
       XCTFail("Unexpected request part: \(String(describing: requestPart))")
@@ -85,7 +88,10 @@ class HTTP1ToGRPCServerCodecTests: GRPCTestCase {
   }
 
   func testMultipleMessagesFromSingleBodyPart() throws {
-    XCTAssertNoThrow(try self.channel.writeInbound(HTTPServerRequestPart.head(self.makeRequestHead())))
+    XCTAssertNoThrow(
+      try self.channel
+        .writeInbound(HTTPServerRequestPart.head(self.makeRequestHead()))
+    )
     let requestPart = try self.channel.readInbound(as: _RawGRPCServerRequestPart.self)
 
     switch requestPart {
@@ -114,7 +120,7 @@ class HTTP1ToGRPCServerCodecTests: GRPCTestCase {
     for message in serializedMessages {
       let requestPart = try self.channel.readInbound(as: _RawGRPCServerRequestPart.self)
       switch requestPart {
-      case .some(.message(var buffer)):
+      case var .some(.message(buffer)):
         XCTAssertEqual(message, buffer.readData(length: buffer.readableBytes)!)
       default:
         XCTFail("Unexpected request part: \(String(describing: requestPart))")

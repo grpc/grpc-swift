@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import SwiftProtobuf
+import Logging
 import NIO
 import NIOHTTP1
-import Logging
+import SwiftProtobuf
 
 /// Processes individual gRPC messages and stream-close events on an HTTP2 channel.
 public protocol GRPCCallHandler: ChannelHandler {
@@ -26,7 +26,7 @@ public protocol GRPCCallHandler: ChannelHandler {
 /// Provides `GRPCCallHandler` objects for the methods on a particular service name.
 ///
 /// Implemented by the generated code.
-public protocol CallHandlerProvider: class {
+public protocol CallHandlerProvider: AnyObject {
   /// The name of the service this object is providing methods for, including the package path.
   ///
   /// - Example: "io.grpc.Echo.EchoService"
@@ -34,7 +34,8 @@ public protocol CallHandlerProvider: class {
 
   /// Determines, calls and returns the appropriate request handler (`GRPCCallHandler`), depending on the request's
   /// method. Returns nil for methods not handled by this service.
-  func handleMethod(_ methodName: Substring, callHandlerContext: CallHandlerContext) -> GRPCCallHandler?
+  func handleMethod(_ methodName: Substring, callHandlerContext: CallHandlerContext)
+    -> GRPCCallHandler?
 }
 
 // This is public because it will be passed into generated code, all members are `internal` because
@@ -77,7 +78,6 @@ public final class GRPCServerRequestRoutingHandler {
     self.encoding = encoding
     self.errorDelegate = errorDelegate
     self.logger = logger
-
   }
 }
 
@@ -102,12 +102,12 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
       // channel.
       ()
 
-    case .configuring(let messages):
+    case let .configuring(messages):
       // first! is fine here: we only go from `.notConfigured` to `.configuring` when we receive
       // and validate the request head.
       let head = messages.compactMap { part -> HTTPRequestHead? in
         switch part {
-        case .head(let head):
+        case let .head(head):
           return head
         default:
           return nil
@@ -126,12 +126,13 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     let requestPart = self.unwrapInboundIn(data)
     switch self.unwrapInboundIn(data) {
-    case .head(let requestHead):
-      precondition(.notConfigured == self.state)
+    case let .head(requestHead):
+      precondition(self.state == .notConfigured)
 
       // Validate the 'content-type' is related to gRPC before proceeding.
       let maybeContentType = requestHead.headers.first(name: GRPCHeaderName.contentType)
-      guard let contentType = maybeContentType, contentType.starts(with: ContentType.commonPrefix) else {
+      guard let contentType = maybeContentType,
+        contentType.starts(with: ContentType.commonPrefix) else {
         self.logger.warning(
           "received request whose 'content-type' does not exist or start with '\(ContentType.commonPrefix)'",
           metadata: ["content-type": "\(String(describing: maybeContentType))"]
@@ -155,7 +156,10 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
       }
 
       // Do we know how to handle this RPC?
-      guard let callHandler = self.makeCallHandler(channel: context.channel, requestHead: requestHead) else {
+      guard let callHandler = self.makeCallHandler(
+        channel: context.channel,
+        requestHead: requestHead
+      ) else {
         self.logger.warning(
           "unable to make call handler; the RPC is not implemented on this server",
           metadata: ["uri": "\(requestHead.uri)"]
@@ -179,9 +183,10 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
       // Configure the rest of the pipeline to serve the RPC.
       let httpToGRPC = HTTP1ToGRPCServerCodec(encoding: self.encoding, logger: self.logger)
       let codec = callHandler._codec
-      context.pipeline.addHandlers([httpToGRPC, codec, callHandler], position: .after(self)).whenSuccess {
-        context.pipeline.removeHandler(self, promise: nil)
-      }
+      context.pipeline.addHandlers([httpToGRPC, codec, callHandler], position: .after(self))
+        .whenSuccess {
+          context.pipeline.removeHandler(self, promise: nil)
+        }
 
     case .body, .end:
       switch self.state {
@@ -190,7 +195,7 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
         // in which case we just drop the messages; our response should already be in-flight.
         ()
 
-      case .configuring(var buffer):
+      case var .configuring(buffer):
         // We received a message while the pipeline was being configured; hold on to it while we
         // finish configuring the pipeline.
         buffer.append(requestPart)
@@ -204,7 +209,7 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
     case .notConfigured:
       ()
 
-    case .configuring(let messages):
+    case let .configuring(messages):
       for message in messages {
         context.fireChannelRead(self.wrapInboundOut(message))
       }
@@ -228,14 +233,18 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
 
     guard uriComponents.count >= 2,
       let providerForServiceName = servicesByName[uriComponents[0]],
-      let callHandler = providerForServiceName.handleMethod(uriComponents[1], callHandlerContext: context) else {
-        self.logger.notice("could not create handler", metadata: ["path": "\(requestHead.uri)"])
-        return nil
+      let callHandler = providerForServiceName.handleMethod(
+        uriComponents[1],
+        callHandlerContext: context
+      ) else {
+      self.logger.notice("could not create handler", metadata: ["path": "\(requestHead.uri)"])
+      return nil
     }
     return callHandler
   }
 
-  private func makeResponseHead(requestHead: HTTPRequestHead, status: GRPCStatus) -> HTTPResponseHead {
+  private func makeResponseHead(requestHead: HTTPRequestHead,
+                                status: GRPCStatus) -> HTTPResponseHead {
     var headers: HTTPHeaders = [
       GRPCHeaderName.contentType: ContentType.protobuf.canonicalValue,
       GRPCHeaderName.statusCode: "\(status.code.rawValue)",

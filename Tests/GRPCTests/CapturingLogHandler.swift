@@ -61,7 +61,7 @@ internal struct CapturingLogHandler: LogHandler {
   internal var metadata: Logger.Metadata = [:]
   internal var logLevel: Logger.Level = .trace
 
-  fileprivate init(label: String, capture: @escaping (CapturedLog) -> ()) {
+  fileprivate init(label: String, capture: @escaping (CapturedLog) -> Void) {
     self.label = label
     self.capture = capture
   }
@@ -77,7 +77,7 @@ internal struct CapturingLogHandler: LogHandler {
     let merged: Logger.Metadata
 
     if let metadata = metadata {
-      merged = self.metadata.merging(metadata, uniquingKeysWith: { old, new in return new })
+      merged = self.metadata.merging(metadata, uniquingKeysWith: { _, new in new })
     } else {
       merged = self.metadata
     }

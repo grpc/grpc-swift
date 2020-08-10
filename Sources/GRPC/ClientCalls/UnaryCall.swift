@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 import Foundation
-import SwiftProtobuf
+import Logging
 import NIO
+import NIOHPACK
 import NIOHTTP1
 import NIOHTTP2
-import NIOHPACK
-import Logging
+import SwiftProtobuf
 
 /// A unary gRPC call. The request is sent on initialization.
 public final class UnaryCall<RequestPayload, ResponsePayload>: UnaryResponseClientCall {
@@ -92,19 +92,27 @@ public final class UnaryCall<RequestPayload, ResponsePayload>: UnaryResponseClie
   }
 
   internal func send(_ head: _GRPCRequestHead, request: RequestPayload) {
-    self.transport.sendUnary(head, request: request, compressed: self.options.messageEncoding.enabledForRequests)
+    self.transport.sendUnary(
+      head,
+      request: request,
+      compressed: self.options.messageEncoding.enabledForRequests
+    )
   }
 }
 
 extension UnaryCall {
-  internal static func makeOnHTTP2Stream<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+  internal static func makeOnHTTP2Stream<
+    Serializer: MessageSerializer,
+    Deserializer: MessageDeserializer
+  >(
     multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
     serializer: Serializer,
     deserializer: Deserializer,
     callOptions: CallOptions,
     errorDelegate: ClientErrorDelegate?,
     logger: Logger
-  ) -> UnaryCall<RequestPayload, ResponsePayload> where Serializer.Input == RequestPayload, Deserializer.Output == ResponsePayload {
+  ) -> UnaryCall<RequestPayload, ResponsePayload> where Serializer.Input == RequestPayload,
+    Deserializer.Output == ResponsePayload {
     let eventLoop = multiplexer.eventLoop
     let responsePromise: EventLoopPromise<ResponsePayload> = eventLoop.makePromise()
     let transport = ChannelTransport<RequestPayload, ResponsePayload>(
@@ -117,7 +125,11 @@ extension UnaryCall {
       errorDelegate: errorDelegate,
       logger: logger
     )
-    return UnaryCall(response: responsePromise.futureResult, transport: transport, options: callOptions)
+    return UnaryCall(
+      response: responsePromise.futureResult,
+      transport: transport,
+      options: callOptions
+    )
   }
 
   internal static func make<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
@@ -126,10 +138,14 @@ extension UnaryCall {
     fakeResponse: FakeUnaryResponse<RequestPayload, ResponsePayload>?,
     callOptions: CallOptions,
     logger: Logger
-  ) -> UnaryCall<RequestPayload, ResponsePayload> where Serializer.Input == RequestPayload, Deserializer.Output == ResponsePayload {
+  ) -> UnaryCall<RequestPayload, ResponsePayload> where Serializer.Input == RequestPayload,
+    Deserializer.Output == ResponsePayload {
     let eventLoop = fakeResponse?.channel.eventLoop ?? EmbeddedEventLoop()
     let responsePromise: EventLoopPromise<ResponsePayload> = eventLoop.makePromise()
-    let responseContainer = ResponsePartContainer(eventLoop: eventLoop, unaryResponsePromise: responsePromise)
+    let responseContainer = ResponsePartContainer(
+      eventLoop: eventLoop,
+      unaryResponsePromise: responsePromise
+    )
 
     let transport: ChannelTransport<RequestPayload, ResponsePayload>
     if let fakeResponse = fakeResponse {
@@ -149,6 +165,10 @@ extension UnaryCall {
       )
     }
 
-    return UnaryCall(response: responsePromise.futureResult, transport: transport, options: callOptions)
+    return UnaryCall(
+      response: responsePromise.futureResult,
+      transport: transport,
+      options: callOptions
+    )
   }
 }

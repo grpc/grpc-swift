@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 import Foundation
-import SwiftProtobuf
+import Logging
 import NIO
 import NIOHTTP1
-import Logging
+import SwiftProtobuf
 
 /// Abstract base class exposing a method to send multiple messages over the wire and a promise for the final RPC status.
 ///
@@ -30,7 +30,7 @@ open class StreamingResponseCallContext<ResponsePayload>: ServerCallContextBase 
 
   public let statusPromise: EventLoopPromise<GRPCStatus>
 
-  public override init(eventLoop: EventLoop, request: HTTPRequestHead, logger: Logger) {
+  override public init(eventLoop: EventLoop, request: HTTPRequestHead, logger: Logger) {
     self.statusPromise = eventLoop.makePromise()
     super.init(eventLoop: eventLoop, request: request, logger: logger)
   }
@@ -41,7 +41,8 @@ open class StreamingResponseCallContext<ResponsePayload>: ServerCallContextBase 
   /// - Parameter compression: Whether compression should be used for this response. If compression
   ///   is enabled in the call context, the value passed here takes precedence. Defaults to deferring
   ///   to the value set on the call context.
-  open func sendResponse(_ message: ResponsePayload, compression: Compression = .deferToCallDefault) -> EventLoopFuture<Void> {
+  open func sendResponse(_ message: ResponsePayload,
+                         compression: Compression = .deferToCallDefault) -> EventLoopFuture<Void> {
     fatalError("needs to be overridden")
   }
 }
@@ -57,7 +58,12 @@ open class StreamingResponseCallContextImpl<ResponsePayload>: StreamingResponseC
   ///     sending them to the client.
   ///
   ///     Note: `errorDelegate` is not called for status promise that are `succeeded` with a non-OK status.
-  public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, logger: Logger) {
+  public init(
+    channel: Channel,
+    request: HTTPRequestHead,
+    errorDelegate: ServerErrorDelegate?,
+    logger: Logger
+  ) {
     self.channel = channel
 
     super.init(eventLoop: channel.eventLoop, request: request, logger: logger)
@@ -69,13 +75,19 @@ open class StreamingResponseCallContextImpl<ResponsePayload>: StreamingResponseC
       // Ensure that any error provided can be transformed to `GRPCStatus`, using "internal server error" as a fallback.
       .recover { [weak errorDelegate] error in
         errorDelegate?.observeRequestHandlerError(error, request: request)
-        
-        if let transformed: GRPCStatusAndMetadata = errorDelegate?.transformRequestHandlerError(error, request: request) {
+
+        if let transformed: GRPCStatusAndMetadata = errorDelegate?.transformRequestHandlerError(
+          error,
+          request: request
+        ) {
           return transformed
         }
-        
+
         if let grpcStatusTransformable = error as? GRPCStatusTransformable {
-          return GRPCStatusAndMetadata(status: grpcStatusTransformable.makeGRPCStatus(), metadata: nil)
+          return GRPCStatusAndMetadata(
+            status: grpcStatusTransformable.makeGRPCStatus(),
+            metadata: nil
+          )
         }
 
         return GRPCStatusAndMetadata(status: .processingError, metadata: nil)
@@ -85,12 +97,24 @@ open class StreamingResponseCallContextImpl<ResponsePayload>: StreamingResponseC
         if let metadata = statusAndMetadata.metadata {
           self.trailingMetadata.add(contentsOf: metadata)
         }
-        self.channel.writeAndFlush(NIOAny(WrappedResponse.statusAndTrailers(statusAndMetadata.status, self.trailingMetadata)), promise: nil)
-    }
+        self.channel.writeAndFlush(
+          NIOAny(
+            WrappedResponse
+              .statusAndTrailers(statusAndMetadata.status, self.trailingMetadata)
+          ),
+          promise: nil
+        )
+      }
   }
 
-  open override func sendResponse(_ message: ResponsePayload, compression: Compression = .deferToCallDefault) -> EventLoopFuture<Void> {
-    let messageContext = _MessageContext(message, compressed: compression.isEnabled(callDefault: self.compressionEnabled))
+  override open func sendResponse(
+    _ message: ResponsePayload,
+    compression: Compression = .deferToCallDefault
+  ) -> EventLoopFuture<Void> {
+    let messageContext = _MessageContext(
+      message,
+      compressed: compression.isEnabled(callDefault: self.compressionEnabled)
+    )
     return self.channel.writeAndFlush(NIOAny(WrappedResponse.message(messageContext)))
   }
 }
@@ -101,8 +125,11 @@ open class StreamingResponseCallContextImpl<ResponsePayload>: StreamingResponseC
 open class StreamingResponseCallContextTestStub<ResponsePayload>: StreamingResponseCallContext<ResponsePayload> {
   open var recordedResponses: [ResponsePayload] = []
 
-  open override func sendResponse(_ message: ResponsePayload, compression: Compression = .deferToCallDefault) -> EventLoopFuture<Void> {
-    recordedResponses.append(message)
+  override open func sendResponse(
+    _ message: ResponsePayload,
+    compression: Compression = .deferToCallDefault
+  ) -> EventLoopFuture<Void> {
+    self.recordedResponses.append(message)
     return eventLoop.makeSucceededFuture(())
   }
 }

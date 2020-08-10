@@ -17,16 +17,18 @@
 import XCTest
 
 class MessageEncodingHeaderValidatorTests: GRPCTestCase {
-
   func testSupportedAlgorithm() throws {
     let validator = MessageEncodingHeaderValidator(
-      encoding: .enabled(.init(enabledAlgorithms: [.deflate, .gzip], decompressionLimit: .absolute(10)))
+      encoding: .enabled(.init(
+        enabledAlgorithms: [.deflate, .gzip],
+        decompressionLimit: .absolute(10)
+      ))
     )
 
     let validation = validator.validate(requestEncoding: "gzip")
     switch validation {
     case .supported(.gzip, .absolute(10), acceptEncoding: []):
-      ()  // Expected
+      () // Expected
     default:
       XCTFail("Expected .supported but was \(validation)")
     }
@@ -40,7 +42,7 @@ class MessageEncodingHeaderValidatorTests: GRPCTestCase {
     let validation = validator.validate(requestEncoding: "gzip")
     switch validation {
     case .supported(.gzip, .absolute(10), acceptEncoding: ["deflate", "gzip"]):
-      ()  // Expected
+      () // Expected
     default:
       XCTFail("Expected .supported but was \(validation)")
     }
@@ -52,21 +54,22 @@ class MessageEncodingHeaderValidatorTests: GRPCTestCase {
     let validation = validator.validate(requestEncoding: "gzip")
     switch validation {
     case .unsupported(requestEncoding: "gzip", acceptEncoding: []):
-      ()  // Expected
+      () // Expected
     default:
       XCTFail("Expected .unsupported but was \(validation)")
     }
   }
 
   func testUnsupportedButEnabled() throws {
-    let validator = MessageEncodingHeaderValidator(encoding:
+    let validator = MessageEncodingHeaderValidator(
+      encoding:
       .enabled(.init(enabledAlgorithms: [.gzip], decompressionLimit: .absolute(10)))
     )
 
     let validation = validator.validate(requestEncoding: "not-supported")
     switch validation {
     case .unsupported(requestEncoding: "not-supported", acceptEncoding: ["gzip"]):
-      ()  // Expected
+      () // Expected
     default:
       XCTFail("Expected .unsupported but was \(validation)")
     }
@@ -78,21 +81,25 @@ class MessageEncodingHeaderValidatorTests: GRPCTestCase {
     let validation = validator.validate(requestEncoding: nil)
     switch validation {
     case .noCompression:
-      ()  // Expected
+      () // Expected
     default:
       XCTFail("Expected .noCompression but was \(validation)")
     }
   }
 
   func testNoCompressionWhenEnabled() throws {
-    let validator = MessageEncodingHeaderValidator(encoding:
-      .enabled(.init(enabledAlgorithms: CompressionAlgorithm.all, decompressionLimit: .absolute(10)))
+    let validator = MessageEncodingHeaderValidator(
+      encoding:
+      .enabled(.init(
+        enabledAlgorithms: CompressionAlgorithm.all,
+        decompressionLimit: .absolute(10)
+      ))
     )
 
     let validation = validator.validate(requestEncoding: nil)
     switch validation {
     case .noCompression:
-      ()  // Expected
+      () // Expected
     default:
       XCTFail("Expected .noCompression but was \(validation)")
     }

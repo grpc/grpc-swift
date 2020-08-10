@@ -26,11 +26,11 @@ enum GenerationError: Error {
 
   var localizedDescription: String {
     switch self {
-    case .unknownParameter(let name):
+    case let .unknownParameter(name):
       return "Unknown generation parameter '\(name)'"
-    case .invalidParameterValue(let name, let value):
+    case let .invalidParameterValue(name, value):
       return "Unknown value for generation parameter '\(name)': '\(value)'"
-    case .wrappedError(let message, let error):
+    case let .wrappedError(message, error):
       return "\(message): \(error.localizedDescription)"
     }
   }
@@ -64,21 +64,21 @@ final class GeneratorOptions {
       switch pair.key {
       case "Visibility":
         if let value = Visibility(rawValue: pair.value) {
-          visibility = value
+          self.visibility = value
         } else {
           throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }
 
       case "Server":
         if let value = Bool(pair.value) {
-          generateServer = value
+          self.generateServer = value
         } else {
           throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }
 
       case "Client":
         if let value = Bool(pair.value) {
-          generateClient = value
+          self.generateClient = value
         } else {
           throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }
@@ -93,24 +93,25 @@ final class GeneratorOptions {
       case "ProtoPathModuleMappings":
         if !pair.value.isEmpty {
           do {
-            protoToModuleMappings = try ProtoFileToModuleMappings(path: pair.value)
+            self.protoToModuleMappings = try ProtoFileToModuleMappings(path: pair.value)
           } catch let e {
             throw GenerationError.wrappedError(
               message: "Parameter 'ProtoPathModuleMappings=\(pair.value)'",
-              error: e)
+              error: e
+            )
           }
         }
 
       case "FileNaming":
         if let value = FileNaming(rawValue: pair.value) {
-          fileNaming = value
+          self.fileNaming = value
         } else {
           throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }
 
       case "ExtraModuleImports":
         if !pair.value.isEmpty {
-          extraModuleImports.append(pair.value)
+          self.extraModuleImports.append(pair.value)
         } else {
           throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }

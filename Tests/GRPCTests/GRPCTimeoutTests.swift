@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Foundation
 import Dispatch
+import Foundation
 @testable import GRPC
 import NIO
 import XCTest
@@ -28,7 +28,7 @@ class GRPCTimeoutTests: GRPCTestCase {
 
   func testRoundingNanosecondsTimeout() throws {
     let timeout = GRPCTimeout(rounding: 123_456_789, unit: .nanoseconds)
-    XCTAssertEqual(timeout, GRPCTimeout(amount: 123457, unit: .microseconds))
+    XCTAssertEqual(timeout, GRPCTimeout(amount: 123_457, unit: .microseconds))
 
     // 123_456_789 (nanoseconds) / 1_000
     //   = 123_456.789
@@ -42,7 +42,7 @@ class GRPCTimeoutTests: GRPCTestCase {
 
   func testRoundingMicrosecondsTimeout() throws {
     let timeout = GRPCTimeout(rounding: 123_456_789, unit: .microseconds)
-    XCTAssertEqual(timeout, GRPCTimeout(amount: 123457, unit: .milliseconds))
+    XCTAssertEqual(timeout, GRPCTimeout(amount: 123_457, unit: .milliseconds))
 
     // 123_456_789 (microseconds) / 1_000
     //   = 123_456.789
@@ -56,7 +56,7 @@ class GRPCTimeoutTests: GRPCTestCase {
 
   func testRoundingMillisecondsTimeout() throws {
     let timeout = GRPCTimeout(rounding: 123_456_789, unit: .milliseconds)
-    XCTAssertEqual(timeout, GRPCTimeout(amount: 123457, unit: .seconds))
+    XCTAssertEqual(timeout, GRPCTimeout(amount: 123_457, unit: .seconds))
 
     // 123_456_789 (milliseconds) / 1_000
     //   = 123_456.789
@@ -70,7 +70,7 @@ class GRPCTimeoutTests: GRPCTestCase {
 
   func testRoundingSecondsTimeout() throws {
     let timeout = GRPCTimeout(rounding: 123_456_789, unit: .seconds)
-    XCTAssertEqual(timeout, GRPCTimeout(amount: 2057614, unit: .minutes))
+    XCTAssertEqual(timeout, GRPCTimeout(amount: 2_057_614, unit: .minutes))
 
     // 123_456_789 (seconds) / 60
     //   = 2_057_613.15
@@ -84,7 +84,7 @@ class GRPCTimeoutTests: GRPCTestCase {
 
   func testRoundingMinutesTimeout() throws {
     let timeout = GRPCTimeout(rounding: 123_456_789, unit: .minutes)
-    XCTAssertEqual(timeout, GRPCTimeout(amount: 2057614, unit: .hours))
+    XCTAssertEqual(timeout, GRPCTimeout(amount: 2_057_614, unit: .hours))
 
     // 123_456_789 (minutes) / 60
     //   = 2_057_613.15

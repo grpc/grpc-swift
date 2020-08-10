@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import NIO
-import NIOHTTP2
-import NIOHPACK
 import Logging
+import NIO
+import NIOHPACK
+import NIOHTTP2
 
 /// A client-streaming gRPC call.
 ///
 /// Messages should be sent via the `sendMessage` and `sendMessages` methods; the stream of messages
 /// must be terminated by calling `sendEnd` to indicate the final message has been sent.
-public final class ClientStreamingCall<RequestPayload, ResponsePayload>: StreamingRequestClientCall, UnaryResponseClientCall {
+public final class ClientStreamingCall<RequestPayload, ResponsePayload>: StreamingRequestClientCall,
+  UnaryResponseClientCall {
   private let transport: ChannelTransport<RequestPayload, ResponsePayload>
 
   /// The options used to make the RPC.
@@ -80,7 +81,7 @@ public final class ClientStreamingCall<RequestPayload, ResponsePayload>: Streami
       }
     }
   }
-  
+
   // MARK: - Request
 
   /// Sends a message to the service.
@@ -98,7 +99,8 @@ public final class ClientStreamingCall<RequestPayload, ResponsePayload>: Streami
     compression: Compression = .deferToCallDefault,
     promise: EventLoopPromise<Void>?
   ) {
-    let compressed = compression.isEnabled(callDefault: self.options.messageEncoding.enabledForRequests)
+    let compressed = compression
+      .isEnabled(callDefault: self.options.messageEncoding.enabledForRequests)
     let messageContext = _MessageContext(message, compressed: compressed)
     self.transport.sendRequest(.message(messageContext), promise: promise)
   }
@@ -119,7 +121,8 @@ public final class ClientStreamingCall<RequestPayload, ResponsePayload>: Streami
     compression: Compression = .deferToCallDefault,
     promise: EventLoopPromise<Void>?
   ) where S: Sequence, S.Element == RequestPayload {
-    let compressed = compression.isEnabled(callDefault: self.options.messageEncoding.enabledForRequests)
+    let compressed = compression
+      .isEnabled(callDefault: self.options.messageEncoding.enabledForRequests)
     self.transport.sendRequests(messages.map {
       .message(_MessageContext($0, compressed: compressed))
     }, promise: promise)
@@ -149,14 +152,19 @@ public final class ClientStreamingCall<RequestPayload, ResponsePayload>: Streami
 }
 
 extension ClientStreamingCall {
-  internal static func makeOnHTTP2Stream<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+  internal static func makeOnHTTP2Stream<
+    Serializer: MessageSerializer,
+    Deserializer: MessageDeserializer
+  >(
     multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
     serializer: Serializer,
     deserializer: Deserializer,
     callOptions: CallOptions,
     errorDelegate: ClientErrorDelegate?,
     logger: Logger
-  ) -> ClientStreamingCall<RequestPayload, ResponsePayload> where Serializer.Input == RequestPayload, Deserializer.Output == ResponsePayload {
+  ) -> ClientStreamingCall<RequestPayload, ResponsePayload>
+    where Serializer.Input == RequestPayload,
+    Deserializer.Output == ResponsePayload {
     let eventLoop = multiplexer.eventLoop
     let responsePromise: EventLoopPromise<ResponsePayload> = eventLoop.makePromise()
     let transport = ChannelTransport<RequestPayload, ResponsePayload>(
@@ -169,7 +177,11 @@ extension ClientStreamingCall {
       errorDelegate: errorDelegate,
       logger: logger
     )
-    return ClientStreamingCall(response: responsePromise.futureResult, transport: transport, options: callOptions)
+    return ClientStreamingCall(
+      response: responsePromise.futureResult,
+      transport: transport,
+      options: callOptions
+    )
   }
 
   internal static func make<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
@@ -178,10 +190,15 @@ extension ClientStreamingCall {
     fakeResponse: FakeUnaryResponse<RequestPayload, ResponsePayload>?,
     callOptions: CallOptions,
     logger: Logger
-  ) -> ClientStreamingCall<RequestPayload, ResponsePayload> where Serializer.Input == RequestPayload, Deserializer.Output == ResponsePayload {
+  ) -> ClientStreamingCall<RequestPayload, ResponsePayload>
+    where Serializer.Input == RequestPayload,
+    Deserializer.Output == ResponsePayload {
     let eventLoop = fakeResponse?.channel.eventLoop ?? EmbeddedEventLoop()
     let responsePromise: EventLoopPromise<ResponsePayload> = eventLoop.makePromise()
-    let responseContainer = ResponsePartContainer(eventLoop: eventLoop, unaryResponsePromise: responsePromise)
+    let responseContainer = ResponsePartContainer(
+      eventLoop: eventLoop,
+      unaryResponsePromise: responsePromise
+    )
 
     let transport: ChannelTransport<RequestPayload, ResponsePayload>
     if let fakeResponse = fakeResponse {
@@ -201,7 +218,10 @@ extension ClientStreamingCall {
       )
     }
 
-    return ClientStreamingCall(response: responsePromise.futureResult, transport: transport, options: callOptions)
+    return ClientStreamingCall(
+      response: responsePromise.futureResult,
+      transport: transport,
+      options: callOptions
+    )
   }
-
 }

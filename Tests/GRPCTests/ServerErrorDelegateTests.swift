@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import EchoImplementation
+import EchoModel
 import Foundation
-import XCTest
+import GRPC
+import Logging
 import NIO
 import NIOHTTP1
-import GRPC
-import EchoModel
-import EchoImplementation
-import Logging
+import XCTest
 
 private class ServerErrorDelegateMock: ServerErrorDelegate {
-  private let transformLibraryErrorHandler: ((Error) -> (GRPCStatusAndMetadata?))
+  private let transformLibraryErrorHandler: (Error) -> (GRPCStatusAndMetadata?)
 
   init(transformLibraryErrorHandler: @escaping ((Error) -> (GRPCStatusAndMetadata?))) {
     self.transformLibraryErrorHandler = transformLibraryErrorHandler
@@ -44,19 +44,19 @@ class ServerErrorDelegateTests: GRPCTestCase {
   }
 
   func testTransformLibraryError_whenTransformingErrorToStatus_unary() throws {
-    try testTransformLibraryError_whenTransformingErrorToStatus(uri: "/echo.Echo/Get")
+    try self.testTransformLibraryError_whenTransformingErrorToStatus(uri: "/echo.Echo/Get")
   }
 
   func testTransformLibraryError_whenTransformingErrorToStatus_clientStreaming() throws {
-    try testTransformLibraryError_whenTransformingErrorToStatus(uri: "/echo.Echo/Collect")
+    try self.testTransformLibraryError_whenTransformingErrorToStatus(uri: "/echo.Echo/Collect")
   }
 
   func testTransformLibraryError_whenTransformingErrorToStatus_serverStreaming() throws {
-    try testTransformLibraryError_whenTransformingErrorToStatus(uri: "/echo.Echo/Expand")
+    try self.testTransformLibraryError_whenTransformingErrorToStatus(uri: "/echo.Echo/Expand")
   }
 
   func testTransformLibraryError_whenTransformingErrorToStatus_bidirectionalStreaming() throws {
-    try testTransformLibraryError_whenTransformingErrorToStatus(uri: "/echo.Echo/Update")
+    try self.testTransformLibraryError_whenTransformingErrorToStatus(uri: "/echo.Echo/Update")
   }
 
   private func testTransformLibraryError_whenTransformingErrorToStatus(uri: String) throws {
@@ -86,22 +86,29 @@ class ServerErrorDelegateTests: GRPCTestCase {
   }
 
   func testTransformLibraryError_whenTransformingErrorToStatusAndMetadata_unary() throws {
-    try testTransformLibraryError_whenTransformingErrorToStatusAndMetadata(uri: "/echo.Echo/Get")
+    try self
+      .testTransformLibraryError_whenTransformingErrorToStatusAndMetadata(uri: "/echo.Echo/Get")
   }
 
   func testTransformLibraryError_whenTransformingErrorToStatusAndMetadata_clientStreaming() throws {
-    try testTransformLibraryError_whenTransformingErrorToStatusAndMetadata(uri: "/echo.Echo/Collect")
+    try self
+      .testTransformLibraryError_whenTransformingErrorToStatusAndMetadata(uri: "/echo.Echo/Collect")
   }
 
   func testTransformLibraryError_whenTransformingErrorToStatusAndMetadata_serverStreaming() throws {
-    try testTransformLibraryError_whenTransformingErrorToStatusAndMetadata(uri: "/echo.Echo/Expand")
+    try self
+      .testTransformLibraryError_whenTransformingErrorToStatusAndMetadata(uri: "/echo.Echo/Expand")
   }
 
-  func testTransformLibraryError_whenTransformingErrorToStatusAndMetadata_bidirectionalStreaming() throws {
-    try testTransformLibraryError_whenTransformingErrorToStatusAndMetadata(uri: "/echo.Echo/Update")
+  func testTransformLibraryError_whenTransformingErrorToStatusAndMetadata_bidirectionalStreaming(
+  ) throws {
+    try self
+      .testTransformLibraryError_whenTransformingErrorToStatusAndMetadata(uri: "/echo.Echo/Update")
   }
 
-  private func testTransformLibraryError_whenTransformingErrorToStatusAndMetadata(uri: String) throws {
+  private func testTransformLibraryError_whenTransformingErrorToStatusAndMetadata(
+    uri: String
+  ) throws {
     self.setupChannelAndDelegate { _ in
       GRPCStatusAndMetadata(
         status: .init(code: .notFound, message: "some error"),
@@ -131,17 +138,21 @@ class ServerErrorDelegateTests: GRPCTestCase {
     XCTAssertEqual(headers?.first(name: "some-metadata"), "test")
   }
 
-  private func setupChannelAndDelegate(transformLibraryErrorHandler: @escaping ((Error) -> (GRPCStatusAndMetadata?))) {
-      let provider = EchoProvider()
-      self.errorDelegate = ServerErrorDelegateMock(transformLibraryErrorHandler: transformLibraryErrorHandler)
-      let handler = GRPCServerRequestRoutingHandler(
-        servicesByName: [provider.serviceName: provider],
-        encoding: .disabled,
-        errorDelegate: self.errorDelegate,
-        logger: self.logger
-      )
+  private func setupChannelAndDelegate(transformLibraryErrorHandler: @escaping (
+    (Error)
+      -> (GRPCStatusAndMetadata?)
+  )) {
+    let provider = EchoProvider()
+    self
+      .errorDelegate =
+      ServerErrorDelegateMock(transformLibraryErrorHandler: transformLibraryErrorHandler)
+    let handler = GRPCServerRequestRoutingHandler(
+      servicesByName: [provider.serviceName: provider],
+      encoding: .disabled,
+      errorDelegate: self.errorDelegate,
+      logger: self.logger
+    )
 
-      self.channel = EmbeddedChannel(handler: handler)
-    }
+    self.channel = EmbeddedChannel(handler: handler)
+  }
 }
-

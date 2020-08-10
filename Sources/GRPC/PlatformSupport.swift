@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import Logging
 import NIO
 import NIOTransportServices
-import Logging
 
 /// How a network implementation should be chosen.
 public struct NetworkPreference: Hashable {
@@ -88,7 +88,7 @@ extension NetworkPreference {
       return .posix
       #endif
 
-    case .userDefined(let implementation):
+    case let .userDefined(implementation):
       return implementation
     }
   }
@@ -188,13 +188,22 @@ public enum PlatformSupport {
     #if canImport(Network)
     if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
       if let tsGroup = group as? NIOTSEventLoopGroup {
-        logger.debug("Network.framework is available and the group is correctly typed, creating a NIOTSConnectionBootstrap")
+        logger
+          .debug(
+            "Network.framework is available and the group is correctly typed, creating a NIOTSConnectionBootstrap"
+          )
         return NIOTSConnectionBootstrap(group: tsGroup)
       } else if let qosEventLoop = group as? QoSEventLoop {
-        logger.debug("Network.framework is available and the group is correctly typed, creating a NIOTSConnectionBootstrap")
+        logger
+          .debug(
+            "Network.framework is available and the group is correctly typed, creating a NIOTSConnectionBootstrap"
+          )
         return NIOTSConnectionBootstrap(group: qosEventLoop)
       }
-      logger.debug("Network.framework is available but the group is not typed for NIOTS, falling back to ClientBootstrap")
+      logger
+        .debug(
+          "Network.framework is available but the group is not typed for NIOTS, falling back to ClientBootstrap"
+        )
     }
     #endif
     logger.debug("creating a ClientBootstrap")
@@ -215,13 +224,22 @@ public enum PlatformSupport {
     #if canImport(Network)
     if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
       if let tsGroup = group as? NIOTSEventLoopGroup {
-        logger.debug("Network.framework is available and the group is correctly typed, creating a NIOTSListenerBootstrap")
+        logger
+          .debug(
+            "Network.framework is available and the group is correctly typed, creating a NIOTSListenerBootstrap"
+          )
         return NIOTSListenerBootstrap(group: tsGroup)
       } else if let qosEventLoop = group as? QoSEventLoop {
-        logger.debug("Network.framework is available and the group is correctly typed, creating a NIOTSListenerBootstrap")
+        logger
+          .debug(
+            "Network.framework is available and the group is correctly typed, creating a NIOTSListenerBootstrap"
+          )
         return NIOTSListenerBootstrap(group: qosEventLoop)
       }
-      logger.debug("Network.framework is available but the group is not typed for NIOTS, falling back to ServerBootstrap")
+      logger
+        .debug(
+          "Network.framework is available but the group is not typed for NIOTS, falling back to ServerBootstrap"
+        )
     }
     #endif
     logger.debug("creating a ServerBootstrap")

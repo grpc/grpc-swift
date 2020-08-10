@@ -13,16 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import Logging
 import NIO
 import NIOHPACK
 import NIOHTTP2
-import Logging
 
 /// A bidirectional-streaming gRPC call. Each response is passed to the provided observer block.
 ///
 /// Messages should be sent via the `sendMessage` and `sendMessages` methods; the stream of messages
 /// must be terminated by calling `sendEnd` to indicate the final message has been sent.
-public final class BidirectionalStreamingCall<RequestPayload, ResponsePayload>: StreamingRequestClientCall {
+public final class BidirectionalStreamingCall<
+  RequestPayload,
+  ResponsePayload
+>: StreamingRequestClientCall {
   private let transport: ChannelTransport<RequestPayload, ResponsePayload>
 
   /// The options used to make the RPC.
@@ -77,7 +80,7 @@ public final class BidirectionalStreamingCall<RequestPayload, ResponsePayload>: 
       }
     }
   }
-  
+
   // MARK: - Requests
 
   /// Sends a message to the service.
@@ -95,7 +98,8 @@ public final class BidirectionalStreamingCall<RequestPayload, ResponsePayload>: 
     compression: Compression = .deferToCallDefault,
     promise: EventLoopPromise<Void>?
   ) {
-    let compressed = compression.isEnabled(callDefault: self.options.messageEncoding.enabledForRequests)
+    let compressed = compression
+      .isEnabled(callDefault: self.options.messageEncoding.enabledForRequests)
     let messageContext = _MessageContext(message, compressed: compressed)
     self.transport.sendRequest(.message(messageContext), promise: promise)
   }
@@ -116,7 +120,8 @@ public final class BidirectionalStreamingCall<RequestPayload, ResponsePayload>: 
     compression: Compression = .deferToCallDefault,
     promise: EventLoopPromise<Void>?
   ) where S: Sequence, S.Element == RequestPayload {
-    let compressed = compression.isEnabled(callDefault: self.options.messageEncoding.enabledForRequests)
+    let compressed = compression
+      .isEnabled(callDefault: self.options.messageEncoding.enabledForRequests)
     self.transport.sendRequests(messages.map {
       .message(_MessageContext($0, compressed: compressed))
     }, promise: promise)
@@ -144,7 +149,10 @@ public final class BidirectionalStreamingCall<RequestPayload, ResponsePayload>: 
 }
 
 extension BidirectionalStreamingCall {
-  internal static func makeOnHTTP2Stream<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+  internal static func makeOnHTTP2Stream<
+    Serializer: MessageSerializer,
+    Deserializer: MessageDeserializer
+  >(
     multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
     serializer: Serializer,
     deserializer: Deserializer,
@@ -152,7 +160,8 @@ extension BidirectionalStreamingCall {
     errorDelegate: ClientErrorDelegate?,
     logger: Logger,
     responseHandler: @escaping (ResponsePayload) -> Void
-  ) -> BidirectionalStreamingCall<RequestPayload, ResponsePayload> where Serializer.Input == RequestPayload, Deserializer.Output == ResponsePayload {
+  ) -> BidirectionalStreamingCall<RequestPayload, ResponsePayload>
+    where Serializer.Input == RequestPayload, Deserializer.Output == ResponsePayload {
     let eventLoop = multiplexer.eventLoop
     let transport = ChannelTransport<RequestPayload, ResponsePayload>(
       multiplexer: multiplexer,
@@ -175,9 +184,13 @@ extension BidirectionalStreamingCall {
     callOptions: CallOptions,
     logger: Logger,
     responseHandler: @escaping (ResponsePayload) -> Void
-  ) -> BidirectionalStreamingCall<RequestPayload, ResponsePayload> where Serializer.Input == RequestPayload, Deserializer.Output == ResponsePayload {
+  ) -> BidirectionalStreamingCall<RequestPayload, ResponsePayload>
+    where Serializer.Input == RequestPayload, Deserializer.Output == ResponsePayload {
     let eventLoop = fakeResponse?.channel.eventLoop ?? EmbeddedEventLoop()
-    let responseContainer = ResponsePartContainer(eventLoop: eventLoop, streamingResponseHandler: responseHandler)
+    let responseContainer = ResponsePartContainer(
+      eventLoop: eventLoop,
+      streamingResponseHandler: responseHandler
+    )
 
     let transport: ChannelTransport<RequestPayload, ResponsePayload>
     if let fakeResponse = fakeResponse {

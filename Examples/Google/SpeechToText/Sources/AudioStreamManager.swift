@@ -17,8 +17,8 @@
 // NOTE: Implementation based off of Google's for Audio Streaming:
 // https://github.com/GoogleCloudPlatform/ios-docs-samples/blob/master/speech/Swift/Speech-gRPC-Streaming/Speech/AudioController.swift
 
-import Foundation
 import AVFoundation
+import Foundation
 
 enum AudioStreamError: Error {
   case failedToConfigure
@@ -47,21 +47,21 @@ class AudioStreamManager {
 
   func configure() throws {
     try self.configureAudioSession()
-    
+
     var audioComponentDescription = self.describeComponent()
-    
+
     guard let remoteIOComponent = AudioComponentFindNext(nil, &audioComponentDescription) else {
       throw AudioStreamError.failedToFindAudioComponent
     }
-    
+
     AudioComponentInstanceNew(remoteIOComponent, &self.microphoneUnit)
-    
+
     try self.configureMicrophoneForInput()
-    
+
     try self.setFormatForMicrophone()
-    
+
     try self.setCallback()
-    
+
     if let microphoneUnit = self.microphoneUnit {
       let status = AudioUnitInitialize(microphoneUnit)
       if status != noErr {
@@ -69,23 +69,23 @@ class AudioStreamManager {
       }
     }
   }
-  
+
   func start() {
     guard let microphoneUnit = self.microphoneUnit else { return }
     AudioOutputUnitStart(microphoneUnit)
   }
-  
+
   func stop() {
     guard let microphoneUnit = self.microphoneUnit else { return }
     AudioOutputUnitStop(microphoneUnit)
   }
-  
+
   private func configureAudioSession() throws {
     let session = AVAudioSession.sharedInstance()
     try session.setCategory(.record)
     try session.setPreferredIOBufferDuration(10)
   }
-  
+
   private func describeComponent() -> AudioComponentDescription {
     var description = AudioComponentDescription()
     description.componentType = kAudioUnitType_Output
@@ -95,30 +95,32 @@ class AudioStreamManager {
     description.componentFlagsMask = 0
     return description
   }
-  
+
   private func configureMicrophoneForInput() throws {
     guard let microphoneUnit = self.microphoneUnit else {
       throw AudioStreamError.failedToFindMicrophoneUnit
     }
 
     var oneFlag: UInt32 = 1
-    
-    let status = AudioUnitSetProperty(microphoneUnit,
-                                      kAudioOutputUnitProperty_EnableIO,
-                                      kAudioUnitScope_Input,
-                                      self.bus1,
-                                      &oneFlag,
-                                      UInt32(MemoryLayout<UInt32>.size))
+
+    let status = AudioUnitSetProperty(
+      microphoneUnit,
+      kAudioOutputUnitProperty_EnableIO,
+      kAudioUnitScope_Input,
+      self.bus1,
+      &oneFlag,
+      UInt32(MemoryLayout<UInt32>.size)
+    )
     if status != noErr {
       throw AudioStreamError.failedToConfigure
     }
   }
-  
+
   private func setFormatForMicrophone() throws {
     guard let microphoneUnit = self.microphoneUnit else {
       throw AudioStreamError.failedToFindMicrophoneUnit
     }
-    
+
     /*
      Configure Audio format to match initial message sent
      over bidirectional stream. Config and below must match.
@@ -132,31 +134,35 @@ class AudioStreamManager {
     asbd.mBytesPerFrame = 2
     asbd.mChannelsPerFrame = 1
     asbd.mBitsPerChannel = 16
-    let status = AudioUnitSetProperty(microphoneUnit,
-                                      kAudioUnitProperty_StreamFormat,
-                                      kAudioUnitScope_Output,
-                                      self.bus1,
-                                      &asbd,
-                                      UInt32(MemoryLayout<AudioStreamBasicDescription>.size))
+    let status = AudioUnitSetProperty(
+      microphoneUnit,
+      kAudioUnitProperty_StreamFormat,
+      kAudioUnitScope_Output,
+      self.bus1,
+      &asbd,
+      UInt32(MemoryLayout<AudioStreamBasicDescription>.size)
+    )
     if status != noErr {
       throw AudioStreamError.failedToConfigure
     }
   }
-  
+
   private func setCallback() throws {
     guard let microphoneUnit = self.microphoneUnit else {
       throw AudioStreamError.failedToFindMicrophoneUnit
     }
-    
+
     var callbackStruct = AURenderCallbackStruct()
     callbackStruct.inputProc = recordingCallback
     callbackStruct.inputProcRefCon = nil
-    let status = AudioUnitSetProperty(microphoneUnit,
-                                      kAudioOutputUnitProperty_SetInputCallback,
-                                      kAudioUnitScope_Global,
-                                      self.bus1,
-                                      &callbackStruct,
-                                      UInt32(MemoryLayout<AURenderCallbackStruct>.size))
+    let status = AudioUnitSetProperty(
+      microphoneUnit,
+      kAudioOutputUnitProperty_SetInputCallback,
+      kAudioUnitScope_Global,
+      self.bus1,
+      &callbackStruct,
+      UInt32(MemoryLayout<AURenderCallbackStruct>.size)
+    )
     if status != noErr {
       throw AudioStreamError.failedToConfigure
     }
@@ -171,39 +177,42 @@ func recordingCallback(
   inNumberFrames: UInt32,
   ioData: UnsafeMutablePointer<AudioBufferList>?
 ) -> OSStatus {
-  
   var status = noErr
-  
+
   let channelCount: UInt32 = 1
-  
+
   var bufferList = AudioBufferList()
   bufferList.mNumberBuffers = channelCount
-  let buffers = UnsafeMutableBufferPointer<AudioBuffer>(start: &bufferList.mBuffers,
-                                                        count: Int(bufferList.mNumberBuffers))
+  let buffers = UnsafeMutableBufferPointer<AudioBuffer>(
+    start: &bufferList.mBuffers,
+    count: Int(bufferList.mNumberBuffers)
+  )
   buffers[0].mNumberChannels = 1
   buffers[0].mDataByteSize = inNumberFrames * 2
   buffers[0].mData = nil
-  
+
   // get the recorded samples
   guard let remoteIOUnit = AudioStreamManager.shared.microphoneUnit else { fatalError() }
-  status = AudioUnitRender(remoteIOUnit,
-                           ioActionFlags,
-                           inTimeStamp,
-                           inBusNumber,
-                           inNumberFrames,
-                           UnsafeMutablePointer<AudioBufferList>(&bufferList))
-  if (status != noErr) {
+  status = AudioUnitRender(
+    remoteIOUnit,
+    ioActionFlags,
+    inTimeStamp,
+    inBusNumber,
+    inNumberFrames,
+    UnsafeMutablePointer<AudioBufferList>(&bufferList)
+  )
+  if status != noErr {
     return status
   }
-  
+
   guard let bytes = buffers[0].mData else {
     fatalError("Unable to find pointer to the buffer audio data")
   }
-  
-  let data = Data(bytes:  bytes, count: Int(buffers[0].mDataByteSize))
+
+  let data = Data(bytes: bytes, count: Int(buffers[0].mDataByteSize))
   DispatchQueue.main.async {
     AudioStreamManager.shared.delegate?.processAudio(data)
   }
-  
+
   return noErr
 }

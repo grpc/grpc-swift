@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@testable import GRPC
 import EchoModel
+@testable import GRPC
 import NIO
 import NIOHPACK
 import XCTest
@@ -28,7 +28,7 @@ class FakeResponseStreamTests: GRPCTestCase {
   func testUnarySendMessage() {
     let unary = FakeUnaryResponse<Request, Response>()
     unary.activate()
-    XCTAssertNoThrow(try unary.sendMessage(.with { $0.text = "foo"}))
+    XCTAssertNoThrow(try unary.sendMessage(.with { $0.text = "foo" }))
 
     unary.channel.verifyInbound(as: ResponsePart.self) { part in
       part.assertInitialMetadata()
@@ -148,7 +148,6 @@ class FakeResponseStreamTests: GRPCTestCase {
     }
   }
 
-
   func streamingSendError() {
     let streaming = FakeStreamingResponse<Request, Response>()
     streaming.activate()
@@ -200,8 +199,9 @@ class FakeResponseStreamTests: GRPCTestCase {
   }
 }
 
-fileprivate extension EmbeddedChannel {
-  func verifyInbound<Inbound>(as: Inbound.Type = Inbound.self, _ verify: (Inbound) -> () = { _ in }) {
+private extension EmbeddedChannel {
+  func verifyInbound<Inbound>(as: Inbound.Type = Inbound.self, _ verify: (Inbound) -> Void = { _ in
+    }) {
     do {
       if let inbound = try self.readInbound(as: Inbound.self) {
         verify(inbound)
@@ -214,37 +214,37 @@ fileprivate extension EmbeddedChannel {
   }
 }
 
-fileprivate extension _GRPCClientResponsePart {
-  func assertInitialMetadata(_ verify: (HPACKHeaders) -> () = { _ in }) {
+private extension _GRPCClientResponsePart {
+  func assertInitialMetadata(_ verify: (HPACKHeaders) -> Void = { _ in }) {
     switch self {
-    case .initialMetadata(let headers):
+    case let .initialMetadata(headers):
       verify(headers)
     default:
       XCTFail("Expected initial metadata but got: \(self)")
     }
   }
 
-  func assertMessage(_ verify: (Response) -> () = { _ in }) {
+  func assertMessage(_ verify: (Response) -> Void = { _ in }) {
     switch self {
-    case .message(let context):
+    case let .message(context):
       verify(context.message)
     default:
       XCTFail("Expected message but got: \(self)")
     }
   }
 
-  func assertTrailingMetadata(_ verify: (HPACKHeaders) -> () = { _ in }) {
+  func assertTrailingMetadata(_ verify: (HPACKHeaders) -> Void = { _ in }) {
     switch self {
-    case .trailingMetadata(let headers):
+    case let .trailingMetadata(headers):
       verify(headers)
     default:
       XCTFail("Expected trailing metadata but got: \(self)")
     }
   }
 
-  func assertStatus(_ verify: (GRPCStatus) -> () = { _ in }) {
+  func assertStatus(_ verify: (GRPCStatus) -> Void = { _ in }) {
     switch self {
-    case .status(let status):
+    case let .status(status):
       verify(status)
     default:
       XCTFail("Expected status but got: \(self)")

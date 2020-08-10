@@ -47,8 +47,9 @@ extension ClientConnection {
     public func connect(host: String, port: Int) -> ClientConnection {
       // Finish setting up the configuration.
       self.configuration.target = .hostAndPort(host, port)
-      self.configuration.connectionBackoff = self.connectionBackoffIsEnabled ? self.connectionBackoff : nil
-      self.configuration.tls = maybeTLS
+      self.configuration.connectionBackoff = self.connectionBackoffIsEnabled ? self
+        .connectionBackoff : nil
+      self.configuration.tls = self.maybeTLS
       return ClientConnection(configuration: self.configuration)
     }
   }
@@ -264,7 +265,7 @@ extension ClientConnection.Builder {
   }
 }
 
-fileprivate extension Double {
+private extension Double {
   static func seconds(from amount: TimeAmount) -> Double {
     return Double(amount.nanoseconds) / 1_000_000_000
   }

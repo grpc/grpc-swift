@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 import Foundation
-import NIO
-import NIOHTTP1
-import NIOHPACK
 import Logging
+import NIO
+import NIOHPACK
+import NIOHTTP1
 import SwiftProtobuf
 
 enum ReceiveResponseHeadError: Error, Equatable {
@@ -199,7 +199,7 @@ struct GRPCClientStateMachine {
     requestHead: _GRPCRequestHead
   ) -> Result<HPACKHeaders, SendRequestHeadersError> {
     return self.withStateAvoidingCoWs { state in
-      return state.sendRequestHeaders(requestHead: requestHead)
+      state.sendRequestHeaders(requestHead: requestHead)
     }
   }
 
@@ -230,7 +230,7 @@ struct GRPCClientStateMachine {
     allocator: ByteBufferAllocator
   ) -> Result<ByteBuffer, MessageWriteError> {
     return self.withStateAvoidingCoWs { state in
-      return state.sendRequest(message, compressed: compressed, allocator: allocator)
+      state.sendRequest(message, compressed: compressed, allocator: allocator)
     }
   }
 
@@ -252,7 +252,7 @@ struct GRPCClientStateMachine {
   /// will result in a `.invalidState` error.
   mutating func sendEndOfRequestStream() -> Result<Void, SendEndOfRequestStreamError> {
     return self.withStateAvoidingCoWs { state in
-      return state.sendEndOfRequestStream()
+      state.sendEndOfRequestStream()
     }
   }
 
@@ -281,7 +281,7 @@ struct GRPCClientStateMachine {
     _ headers: HPACKHeaders
   ) -> Result<Void, ReceiveResponseHeadError> {
     return self.withStateAvoidingCoWs { state in
-      return state.receiveResponseHeaders(headers)
+      state.receiveResponseHeaders(headers)
     }
   }
 
@@ -339,7 +339,7 @@ struct GRPCClientStateMachine {
     _ trailers: HPACKHeaders
   ) -> Result<GRPCStatus, ReceiveEndOfResponseStreamError> {
     return self.withStateAvoidingCoWs { state in
-      return state.receiveEndOfResponseStream(trailers)
+      state.receiveEndOfResponseStream(trailers)
     }
   }
 
@@ -439,11 +439,11 @@ extension GRPCClientStateMachine.State {
     let result: Result<Void, SendEndOfRequestStreamError>
 
     switch self {
-    case .clientActiveServerIdle(_, let pendingReadState):
+    case let .clientActiveServerIdle(_, pendingReadState):
       result = .success(())
       self = .clientClosedServerIdle(pendingReadState: pendingReadState)
 
-    case .clientActiveServerActive(_, let readState):
+    case let .clientActiveServerActive(_, readState):
       result = .success(())
       self = .clientClosedServerActive(readState: readState)
 
@@ -470,14 +470,16 @@ extension GRPCClientStateMachine.State {
 
     switch self {
     case let .clientActiveServerIdle(writeState, pendingReadState):
-      result = self.parseResponseHeaders(headers, pendingReadState: pendingReadState).map { readState in
-        self = .clientActiveServerActive(writeState: writeState, readState: readState)
-      }
+      result = self.parseResponseHeaders(headers, pendingReadState: pendingReadState)
+        .map { readState in
+          self = .clientActiveServerActive(writeState: writeState, readState: readState)
+        }
 
     case let .clientClosedServerIdle(pendingReadState):
-      result = self.parseResponseHeaders(headers, pendingReadState: pendingReadState).map { readState in
-        self = .clientClosedServerActive(readState: readState)
-      }
+      result = self.parseResponseHeaders(headers, pendingReadState: pendingReadState)
+        .map { readState in
+          self = .clientClosedServerActive(readState: readState)
+        }
 
     case .clientIdleServerIdle,
          .clientClosedServerActive,
@@ -499,7 +501,7 @@ extension GRPCClientStateMachine.State {
     let result: Result<[ByteBuffer], MessageReadError>
 
     switch self {
-    case .clientClosedServerActive(var readState):
+    case var .clientClosedServerActive(readState):
       result = readState.readMessages(&buffer)
       self = .clientClosedServerActive(readState: readState)
 
@@ -576,11 +578,11 @@ extension GRPCClientStateMachine.State {
       ":authority": host,
       ":scheme": scheme,
       "content-type": "application/grpc",
-      "te": "trailers",  // Used to detect incompatible proxies, part of the gRPC specification.
+      "te": "trailers", // Used to detect incompatible proxies, part of the gRPC specification.
     ]
 
     switch compression {
-    case .enabled(let configuration):
+    case let .enabled(configuration):
       // Request encoding.
       if let outbound = configuration.outbound {
         headers.add(name: GRPCHeaderName.encoding, value: outbound.name)
@@ -602,13 +604,14 @@ extension GRPCClientStateMachine.State {
 
     // Add user-defined custom metadata: this should come after the call definition headers.
     // TODO: make header normalization user-configurable.
-    headers.add(contentsOf: customMetadata.map { (name, value, indexing) in
-      return (name.lowercased(), value, indexing)
+    headers.add(contentsOf: customMetadata.map { name, value, indexing in
+      (name.lowercased(), value, indexing)
     })
 
     // Add default user-agent value, if `customMetadata` didn't contain user-agent
     if headers["user-agent"].isEmpty {
-      headers.add(name: "user-agent", value: "grpc-swift-nio")  // TODO: Add a more specific user-agent.
+      headers
+        .add(name: "user-agent", value: "grpc-swift-nio") // TODO: Add a more specific user-agent.
     }
 
     return headers
@@ -706,7 +709,8 @@ extension GRPCClientStateMachine.State {
     //
     // See: https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md
     let statusHeader = trailers.first(name: ":status")
-    guard let status = statusHeader.flatMap(Int.init).map({ HTTPResponseStatus(statusCode: $0) }) else {
+    guard let status = statusHeader.flatMap(Int.init).map({ HTTPResponseStatus(statusCode: $0) })
+    else {
       return .failure(.invalidHTTPStatus(statusHeader))
     }
 
@@ -723,7 +727,8 @@ extension GRPCClientStateMachine.State {
     // spec as the content-type is meant to be sent in "Trailers-Only" responses. However, if it's
     // missing then we should avoid the error and propagate the status code and message sent by
     // the server instead.
-    if let contentTypeHeader = trailers.first(name: "content-type"), ContentType(value: contentTypeHeader) == nil {
+    if let contentTypeHeader = trailers.first(name: "content-type"),
+      ContentType(value: contentTypeHeader) == nil {
       return .failure(.invalidContentType(contentTypeHeader))
     }
 

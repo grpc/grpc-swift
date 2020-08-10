@@ -19,11 +19,11 @@ import XCTest
 
 class ZlibTests: GRPCTestCase {
   var allocator = ByteBufferAllocator()
-  var inputSize = 4_096
+  var inputSize = 4096
 
   func makeBytes(count: Int) -> [UInt8] {
-    return (0..<count).map { _ in
-      UInt8.random(in: UInt8(ascii: "a")...UInt8(ascii: "z"))
+    return (0 ..< count).map { _ in
+      UInt8.random(in: UInt8(ascii: "a") ... UInt8(ascii: "z"))
     }
   }
 
@@ -32,10 +32,10 @@ class ZlibTests: GRPCTestCase {
     of bytes: [UInt8],
     format: Zlib.CompressionFormat,
     initialInflateBufferSize: Int? = nil
-  ) throws -> Int  {
+  ) throws -> Int {
     var data = self.allocator.buffer(capacity: 0)
     data.writeBytes(bytes)
-    
+
     // Compress it.
     let deflate = Zlib.Deflate(format: format)
     var compressed = self.allocator.buffer(capacity: 0)
@@ -77,8 +77,8 @@ class ZlibTests: GRPCTestCase {
   }
 
   func testCompressionAndDecompressionOfHardToCompressData() throws {
-    let bytes: [UInt8] = (0..<self.inputSize).map { _ in
-      return UInt8.random(in: UInt8.min...UInt8.max)
+    let bytes: [UInt8] = (0 ..< self.inputSize).map { _ in
+      UInt8.random(in: UInt8.min ... UInt8.max)
     }
 
     for format in [Zlib.CompressionFormat.deflate, .gzip] {
@@ -98,7 +98,7 @@ class ZlibTests: GRPCTestCase {
 
   func testCompressionAndDecompressionWithResets() throws {
     // Generate some input.
-    let byteArrays = (0..<5).map { _ in
+    let byteArrays = (0 ..< 5).map { _ in
       self.makeBytes(count: self.inputSize)
     }
 

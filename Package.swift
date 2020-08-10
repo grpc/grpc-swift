@@ -53,9 +53,9 @@ let package = Package(
         "NIOSSL",
         "CGRPCZlib",
         "SwiftProtobuf",
-        "Logging"
+        "Logging",
       ]
-    ),  // and its tests.
+    ), // and its tests.
     .testTarget(
       name: "GRPCTests",
       dependencies: [
@@ -63,14 +63,14 @@ let package = Package(
         "EchoModel",
         "EchoImplementation",
         "GRPCSampleData",
-        "GRPCInteroperabilityTestsImplementation"
+        "GRPCInteroperabilityTestsImplementation",
       ]
     ),
 
     .target(
       name: "CGRPCZlib",
       linkerSettings: [
-        .linkedLibrary("z")
+        .linkedLibrary("z"),
       ]
     ),
 
@@ -80,7 +80,7 @@ let package = Package(
       dependencies: [
         "SwiftProtobuf",
         "SwiftProtobufPluginLibrary",
-        "protoc-gen-swift"
+        "protoc-gen-swift",
       ]
     ),
 
@@ -89,7 +89,7 @@ let package = Package(
       name: "GRPCInteroperabilityTestsImplementation",
       dependencies: [
         "GRPC",
-        "GRPCInteroperabilityTestModels"
+        "GRPCInteroperabilityTestModels",
       ]
     ),
 
@@ -100,7 +100,7 @@ let package = Package(
         "GRPC",
         "NIO",
         "NIOHTTP1",
-        "SwiftProtobuf"
+        "SwiftProtobuf",
       ]
     ),
 
@@ -160,7 +160,7 @@ let package = Package(
       dependencies: [
         "EchoModel",
         "GRPC",
-        "SwiftProtobuf"
+        "SwiftProtobuf",
       ],
       path: "Sources/Examples/Echo/Implementation"
     ),
@@ -172,7 +172,7 @@ let package = Package(
         "GRPC",
         "NIO",
         "NIOHTTP1",
-        "SwiftProtobuf"
+        "SwiftProtobuf",
       ],
       path: "Sources/Examples/Echo/Model"
     ),
@@ -184,7 +184,7 @@ let package = Package(
         "GRPC",
         "NIO",
         "NIOHTTP1",
-        "SwiftProtobuf"
+        "SwiftProtobuf",
       ],
       path: "Sources/Examples/HelloWorld/Model"
     ),
@@ -217,7 +217,7 @@ let package = Package(
         "GRPC",
         "NIO",
         "NIOHTTP1",
-        "SwiftProtobuf"
+        "SwiftProtobuf",
       ],
       path: "Sources/Examples/RouteGuide/Model"
     ),

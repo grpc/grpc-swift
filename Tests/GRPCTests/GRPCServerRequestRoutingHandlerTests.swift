@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import EchoImplementation
+import EchoModel
 import Foundation
-import XCTest
+import GRPC
+import Logging
 import NIO
 import NIOHTTP1
-import GRPC
-import EchoModel
-import EchoImplementation
-import Logging
+import XCTest
 
 class GRPCServerRequestRoutingHandlerTests: GRPCTestCase {
   var channel: EmbeddedChannel!
@@ -56,7 +56,7 @@ class GRPCServerRequestRoutingHandlerTests: GRPCTestCase {
 
     let firstResponsePart = try self.channel.readOutbound(as: HTTPServerResponsePart.self)
     switch firstResponsePart {
-    case .some(.head(let head)):
+    case let .some(.head(head)):
       XCTAssertEqual(head.status, .unsupportedMediaType)
     default:
       XCTFail("Unexpected response part: \(String(describing: firstResponsePart))")
@@ -83,9 +83,12 @@ class GRPCServerRequestRoutingHandlerTests: GRPCTestCase {
 
     let firstResponsePart = try self.channel.readOutbound(as: HTTPServerResponsePart.self)
     switch firstResponsePart {
-    case .some(.head(let head)):
+    case let .some(.head(head)):
       XCTAssertEqual(head.status, .ok)
-      XCTAssertEqual(head.headers.first(name: "grpc-status"), "\(GRPCStatus.Code.unimplemented.rawValue)")
+      XCTAssertEqual(
+        head.headers.first(name: "grpc-status"),
+        "\(GRPCStatus.Code.unimplemented.rawValue)"
+      )
     default:
       XCTFail("Unexpected response part: \(String(describing: firstResponsePart))")
     }
@@ -114,7 +117,8 @@ class GRPCServerRequestRoutingHandlerTests: GRPCTestCase {
     XCTAssertThrowsError(try router.wait())
 
     // There should now be a unary call handler.
-    let unary = self.channel.pipeline.handler(type: UnaryCallHandler<Echo_EchoRequest, Echo_EchoResponse>.self)
+    let unary = self.channel.pipeline
+      .handler(type: UnaryCallHandler<Echo_EchoRequest, Echo_EchoResponse>.self)
     XCTAssertNoThrow(try unary.wait())
   }
 }

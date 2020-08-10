@@ -15,9 +15,9 @@
  */
 import Foundation
 import NIO
+import NIOHPACK
 import NIOHTTP1
 import NIOHTTP2
-import NIOHPACK
 import SwiftProtobuf
 
 /// Base protocol for a client call to a gRPC service.
@@ -89,7 +89,11 @@ public protocol StreamingRequestClientCall: ClientCall {
   ///   - compression: Whether compression should be used for this message. Ignored if compression
   ///     was not enabled for the RPC.
   ///   - promise: A promise to be fulfilled when the message has been sent.
-  func sendMessage(_ message: RequestPayload, compression: Compression, promise: EventLoopPromise<Void>?)
+  func sendMessage(
+    _ message: RequestPayload,
+    compression: Compression,
+    promise: EventLoopPromise<Void>?
+  )
 
   /// Sends a sequence of messages to the service.
   ///
@@ -99,7 +103,8 @@ public protocol StreamingRequestClientCall: ClientCall {
   ///   - messages: The sequence of messages to send.
   ///   - compression: Whether compression should be used for this message. Ignored if compression
   ///     was not enabled for the RPC.
-  func sendMessages<S: Sequence>(_ messages: S, compression: Compression) -> EventLoopFuture<Void> where S.Element == RequestPayload
+  func sendMessages<S: Sequence>(_ messages: S, compression: Compression) -> EventLoopFuture<Void>
+    where S.Element == RequestPayload
 
   /// Sends a sequence of messages to the service.
   ///
@@ -110,7 +115,8 @@ public protocol StreamingRequestClientCall: ClientCall {
   ///   - compression: Whether compression should be used for this message. Ignored if compression
   ///     was not enabled for the RPC.
   ///   - promise: A promise to be fulfilled when all messages have been sent successfully.
-  func sendMessages<S: Sequence>(_ messages: S, compression: Compression, promise: EventLoopPromise<Void>?) where S.Element == RequestPayload
+  func sendMessages<S: Sequence>(_ messages: S, compression: Compression,
+                                 promise: EventLoopPromise<Void>?) where S.Element == RequestPayload
 
   /// Terminates a stream of messages sent to the service.
   ///
@@ -126,13 +132,18 @@ public protocol StreamingRequestClientCall: ClientCall {
 }
 
 extension StreamingRequestClientCall {
-  public func sendMessage(_ message: RequestPayload, compression: Compression = .deferToCallDefault) -> EventLoopFuture<Void> {
+  public func sendMessage(_ message: RequestPayload,
+                          compression: Compression = .deferToCallDefault) -> EventLoopFuture<Void> {
     let promise = self.eventLoop.makePromise(of: Void.self)
     self.sendMessage(message, compression: compression, promise: promise)
     return promise.futureResult
   }
-  
-  public func sendMessages<S: Sequence>(_ messages: S, compression: Compression = .deferToCallDefault) -> EventLoopFuture<Void> where S.Element == RequestPayload {
+
+  public func sendMessages<S: Sequence>(
+    _ messages: S,
+    compression: Compression = .deferToCallDefault
+  ) -> EventLoopFuture<Void>
+    where S.Element == RequestPayload {
     let promise = self.eventLoop.makePromise(of: Void.self)
     self.sendMessages(messages, compression: compression, promise: promise)
     return promise.futureResult
@@ -177,7 +188,8 @@ internal protocol ClientCallOutbound {
   func sendRequest(_ part: RequestPart, promise: EventLoopPromise<Void>?)
 
   /// Send the given request parts and complete the promise once all parts have been sent.
-  func sendRequests<S: Sequence>(_ parts: S, promise: EventLoopPromise<Void>?) where S.Element == RequestPart
+  func sendRequests<S: Sequence>(_ parts: S, promise: EventLoopPromise<Void>?)
+    where S.Element == RequestPart
 
   /// Cancel the call and complete the promise once the cancellation has been completed.
   func cancel(promise: EventLoopPromise<Void>?)
@@ -189,7 +201,7 @@ extension ClientCallOutbound {
     let parts: [RequestPart] = [
       .head(head),
       .message(_MessageContext(request, compressed: compressed)),
-      .end
+      .end,
     ]
     self.sendRequests(parts, promise: nil)
   }

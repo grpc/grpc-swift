@@ -60,21 +60,21 @@ internal struct LazyEventLoopPromise<Value> {
       self.state = .unresolvedPromise(promise)
       return promise.futureResult
 
-    case .resolvedResult(let result):
+    case let .resolvedResult(result):
       let future: EventLoopFuture<Value>
       switch result {
-      case .success(let value):
+      case let .success(value):
         future = self.eventLoop.makeSucceededFuture(value)
-      case .failure(let error):
+      case let .failure(error):
         future = self.eventLoop.makeFailedFuture(error)
       }
       self.state = .resolvedFuture(future)
       return future
 
-    case .unresolvedPromise(let promise):
+    case let .unresolvedPromise(promise):
       return promise.futureResult
 
-    case .resolvedFuture(let future):
+    case let .resolvedFuture(future):
       return future
     }
   }
@@ -97,7 +97,7 @@ internal struct LazyEventLoopPromise<Value> {
     case .idle:
       self.state = .resolvedResult(result)
 
-    case .unresolvedPromise(let promise):
+    case let .unresolvedPromise(promise):
       promise.completeWith(result)
       self.state = .resolvedFuture(promise.futureResult)
 

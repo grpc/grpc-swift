@@ -34,7 +34,13 @@ extension Generator {
     }
   }
 
-  private func printFunction(name: String, arguments: [String], returnType: String?, access: String? = nil, bodyBuilder: (() -> ())?) {
+  private func printFunction(
+    name: String,
+    arguments: [String],
+    returnType: String?,
+    access: String? = nil,
+    bodyBuilder: (() -> Void)?
+  ) {
     // Add a space after access, if it exists.
     let accessOrEmpty = access.map { $0 + " " } ?? ""
     let `return` = returnType.map { "-> " + $0 } ?? ""
@@ -67,7 +73,10 @@ extension Generator {
   }
 
   private func printServiceClientProtocol() {
-    self.println("/// Usage: instantiate \(self.clientClassName), then call methods of this protocol to make API calls.")
+    self
+      .println(
+        "/// Usage: instantiate \(self.clientClassName), then call methods of this protocol to make API calls."
+      )
     self.println("\(self.access) protocol \(self.clientProtocolName): GRPCClient {")
     self.withIndentation {
       for method in service.methods {
@@ -104,10 +113,14 @@ extension Generator {
     println()
     println("/// Creates a client for the \(servicePath) service.")
     println("///")
-    printParameters()
+    self.printParameters()
     println("///   - channel: `GRPCChannel` to the service host.")
-    println("///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.")
-    println("\(access) init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {")
+    println(
+      "///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them."
+    )
+    println(
+      "\(access) init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {"
+    )
     indent()
     println("self.channel = channel")
     println("self.defaultCallOptions = defaultCallOptions")
@@ -175,7 +188,8 @@ extension Generator {
       returnType: self.methodReturnType,
       access: self.access
     ) {
-      self.println("return self.makeServerStreamingCall(") // path: \"/\(servicePath)/\(method.name)\",")
+      self
+        .println("return self.makeServerStreamingCall(") // path: \"/\(servicePath)/\(method.name)\",")
       self.withIndentation {
         self.println("path: \(self.methodPath),")
         self.println("request: request,")
@@ -193,7 +207,10 @@ extension Generator {
     self.println("///")
     self.printParameters()
     self.printCallOptionsParameter()
-    self.println("/// - Returns: A `ClientStreamingCall` with futures for the metadata, status and response.")
+    self
+      .println(
+        "/// - Returns: A `ClientStreamingCall` with futures for the metadata, status and response."
+      )
     self.printFunction(
       name: self.methodFunctionName,
       arguments: self.methodArguments,
@@ -236,7 +253,9 @@ extension Generator {
 
   private func printClientStreamingDetails() {
     println("/// Callers should use the `send` method on the returned object to send messages")
-    println("/// to the server. The caller should send an `.end` after the final message has been sent.")
+    println(
+      "/// to the server. The caller should send an `.end` after the final message has been sent."
+    )
   }
 
   private func printParameters() {
@@ -306,7 +325,7 @@ extension Generator {
       name: name,
       arguments: [
         responseArgAndType,
-        "_ requestHandler: @escaping (FakeRequestPart<\(self.methodInputName)>) -> () = { _ in }"
+        "_ requestHandler: @escaping (FakeRequestPart<\(self.methodInputName)>) -> () = { _ in }",
       ],
       returnType: nil,
       access: self.access
@@ -327,22 +346,31 @@ extension Generator {
     let type = isUnary ? "FakeUnaryResponse" : "FakeStreamingResponse"
     let factory = isUnary ? "makeFakeUnaryResponse" : "makeFakeStreamingResponse"
 
-    self.println("/// Make a \(isUnary ? "unary" : "streaming") response for the \(self.method.name) RPC. This must be called")
+    self
+      .println(
+        "/// Make a \(isUnary ? "unary" : "streaming") response for the \(self.method.name) RPC. This must be called"
+      )
     self.println("/// before calling '\(self.methodFunctionName)'. See also '\(type)'.")
     self.println("///")
     self.println("/// - Parameter requestHandler: a handler for request parts sent by the RPC.")
     self.printFunction(
       name: "make\(self.method.name)ResponseStream",
-      arguments: ["_ requestHandler: @escaping (FakeRequestPart<\(self.methodInputName)>) -> () = { _ in }"],
+      arguments: [
+        "_ requestHandler: @escaping (FakeRequestPart<\(self.methodInputName)>) -> () = { _ in }",
+      ],
       returnType: "\(type)<\(self.methodInputName), \(self.methodOutputName)>",
       access: self.access
     ) {
-      self.println("return self.fakeChannel.\(factory)(path: \(self.methodPath), requestHandler: requestHandler)")
+      self
+        .println(
+          "return self.fakeChannel.\(factory)(path: \(self.methodPath), requestHandler: requestHandler)"
+        )
     }
   }
 
   private func printHasResponseStreamEnqueued() {
-    self.println("/// Returns true if there are response streams enqueued for '\(self.method.name)'")
+    self
+      .println("/// Returns true if there are response streams enqueued for '\(self.method.name)'")
     self.println("\(self.access) var has\(self.method.name)ResponsesRemaining: Bool {")
     self.withIndentation {
       self.println("return self.fakeChannel.hasFakeResponseEnqueued(forPath: \(self.methodPath))")
@@ -351,7 +379,10 @@ extension Generator {
   }
 
   fileprivate func printTestClient() {
-    self.println("\(self.access) final class \(self.testClientClassName): \(self.clientProtocolName) {")
+    self
+      .println(
+        "\(self.access) final class \(self.testClientClassName): \(self.clientProtocolName) {"
+      )
     self.withIndentation {
       self.println("private let fakeChannel: FakeChannel")
       self.println("\(self.access) var defaultCallOptions: CallOptions")
@@ -379,11 +410,11 @@ extension Generator {
       self.printFakeResponseStreams()
     }
 
-    self.println("}")  // end class
+    self.println("}") // end class
   }
 }
 
-fileprivate extension Generator {
+private extension Generator {
   var streamType: StreamingType {
     return streamingType(self.method)
   }
@@ -395,13 +426,13 @@ extension Generator {
     case .unary:
       return [
         "_ request: \(self.methodInputName)",
-        "callOptions: CallOptions? = nil"
+        "callOptions: CallOptions? = nil",
       ]
     case .serverStreaming:
       return [
         "_ request: \(self.methodInputName)",
         "callOptions: CallOptions? = nil",
-        "handler: @escaping (\(methodOutputName)) -> Void"
+        "handler: @escaping (\(methodOutputName)) -> Void",
       ]
 
     case .clientStreaming:
@@ -410,7 +441,7 @@ extension Generator {
     case .bidirectionalStreaming:
       return [
         "callOptions: CallOptions? = nil",
-        "handler: @escaping (\(methodOutputName)) -> Void"
+        "handler: @escaping (\(methodOutputName)) -> Void",
       ]
     }
   }
@@ -446,11 +477,10 @@ extension Generator {
     case .bidirectionalStreaming:
       return "BidirectionalStreamingCall<\(self.methodInputName), \(self.methodOutputName)>"
     }
-
   }
 }
 
-fileprivate extension StreamingType {
+private extension StreamingType {
   var name: String {
     switch self {
     case .unary:
@@ -475,9 +505,9 @@ extension MethodDescriptor {
     let sourceComments = self.protoSourceComments()
 
     if sourceComments.isEmpty {
-      return "/// \(streamingType.name) call to \(self.name)\n"  // comments end with "\n" already.
+      return "/// \(streamingType.name) call to \(self.name)\n" // comments end with "\n" already.
     } else {
-      return sourceComments  // already prefixed with "///"
+      return sourceComments // already prefixed with "///"
     }
   }
 }
@@ -485,7 +515,7 @@ extension MethodDescriptor {
 extension Array {
   /// Like `forEach` except that the `body` closure operates on all elements except for the last,
   /// and the `last` closure only operates on the last element.
-  fileprivate func forEach(beforeLast body: (Element) -> (), onLast last: (Element) -> ()) {
+  fileprivate func forEach(beforeLast body: (Element) -> Void, onLast last: (Element) -> Void) {
     for element in self.dropLast() {
       body(element)
     }

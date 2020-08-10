@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 import NIO
-import NIOSSL
 import NIOHPACK
+import NIOSSL
 import SwiftProtobuf
 
 // This file contains shims to notify users of API changes between v1.0.0-alpha.1 and v1.0.0.
@@ -41,7 +41,7 @@ public enum GRPCNIO {}
 
 extension ClientErrorDelegate {
   @available(*, deprecated, message: "Please use 'didCatchError(_:logger:file:line:)' instead")
-  public func didCatchError(_ error: Error, file: StaticString, line: Int) { }
+  public func didCatchError(_ error: Error, file: StaticString, line: Int) {}
 }
 
 extension GRPCStatusTransformable {
@@ -59,7 +59,11 @@ extension GRPCClient {
 }
 
 extension CallOptions {
-  @available(*, deprecated, renamed: "init(customMetadata:timeLimit:messageEncoding:requestIDProvider:requestIDHeader:cacheable:)")
+  @available(
+    *,
+    deprecated,
+    renamed: "init(customMetadata:timeLimit:messageEncoding:requestIDProvider:requestIDHeader:cacheable:)"
+  )
   public init(
     customMetadata: HPACKHeaders = HPACKHeaders(),
     timeout: GRPCTimeout,
@@ -86,16 +90,16 @@ extension CallOptions {
       case .none:
         return .infinite
 
-      case .timeout(let timeout) where timeout.nanoseconds == .max:
+      case let .timeout(timeout) where timeout.nanoseconds == .max:
         return .infinite
 
-      case .deadline(let deadline) where deadline == .distantFuture:
+      case let .deadline(deadline) where deadline == .distantFuture:
         return .infinite
 
-      case .timeout(let timeout):
+      case let .timeout(timeout):
         return GRPCTimeout.nanoseconds(rounding: Int(timeout.nanoseconds))
 
-      case .deadline(let deadline):
+      case let .deadline(deadline):
         return GRPCTimeout(deadline: deadline)
       }
     }
@@ -113,7 +117,11 @@ extension GRPCTimeout {
   /// - Parameter amount: the amount of hours this `GRPCTimeout` represents.
   /// - Returns: A `GRPCTimeout` representing the given number of hours.
   /// - Throws: `GRPCTimeoutError` if the amount was negative or more than 8 digits long.
-  @available(*, deprecated, message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead.")
+  @available(
+    *,
+    deprecated,
+    message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead."
+  )
   public static func hours(_ amount: Int) throws -> GRPCTimeout {
     return try makeTimeout(Int64(amount), .hours)
   }
@@ -123,7 +131,11 @@ extension GRPCTimeout {
   /// The timeout will be rounded up if it may not be represented in the wire format.
   ///
   /// - Parameter amount: The number of hours to represent.
-  @available(*, deprecated, message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead.")
+  @available(
+    *,
+    deprecated,
+    message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead."
+  )
   public static func hours(rounding amount: Int) -> GRPCTimeout {
     return .init(rounding: Int64(amount), unit: .hours)
   }
@@ -135,7 +147,11 @@ extension GRPCTimeout {
   /// - Parameter amount: the amount of minutes this `GRPCTimeout` represents.
   /// - Returns: A `GRPCTimeout` representing the given number of minutes.
   /// - Throws: `GRPCTimeoutError` if the amount was negative or more than 8 digits long.
-  @available(*, deprecated, message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead.")
+  @available(
+    *,
+    deprecated,
+    message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead."
+  )
   public static func minutes(_ amount: Int) throws -> GRPCTimeout {
     return try makeTimeout(Int64(amount), .minutes)
   }
@@ -145,7 +161,11 @@ extension GRPCTimeout {
   /// The timeout will be rounded up if it may not be represented in the wire format.
   ///
   /// - Parameter amount: The number of minutes to represent.
-  @available(*, deprecated, message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead.")
+  @available(
+    *,
+    deprecated,
+    message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead."
+  )
   public static func minutes(rounding amount: Int) -> GRPCTimeout {
     return .init(rounding: Int64(amount), unit: .minutes)
   }
@@ -157,7 +177,11 @@ extension GRPCTimeout {
   /// - Parameter amount: the amount of seconds this `GRPCTimeout` represents.
   /// - Returns: A `GRPCTimeout` representing the given number of seconds.
   /// - Throws: `GRPCTimeoutError` if the amount was negative or more than 8 digits long.
-  @available(*, deprecated, message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead.")
+  @available(
+    *,
+    deprecated,
+    message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead."
+  )
   public static func seconds(_ amount: Int) throws -> GRPCTimeout {
     return try makeTimeout(Int64(amount), .seconds)
   }
@@ -167,7 +191,11 @@ extension GRPCTimeout {
   /// The timeout will be rounded up if it may not be represented in the wire format.
   ///
   /// - Parameter amount: The number of seconds to represent.
-  @available(*, deprecated, message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead.")
+  @available(
+    *,
+    deprecated,
+    message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead."
+  )
   public static func seconds(rounding amount: Int) -> GRPCTimeout {
     return .init(rounding: Int64(amount), unit: .seconds)
   }
@@ -179,7 +207,11 @@ extension GRPCTimeout {
   /// - Parameter amount: the amount of milliseconds this `GRPCTimeout` represents.
   /// - Returns: A `GRPCTimeout` representing the given number of milliseconds.
   /// - Throws: `GRPCTimeoutError` if the amount was negative or more than 8 digits long.
-  @available(*, deprecated, message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead.")
+  @available(
+    *,
+    deprecated,
+    message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead."
+  )
   public static func milliseconds(_ amount: Int) throws -> GRPCTimeout {
     return try makeTimeout(Int64(amount), .milliseconds)
   }
@@ -189,7 +221,11 @@ extension GRPCTimeout {
   /// The timeout will be rounded up if it may not be represented in the wire format.
   ///
   /// - Parameter amount: The number of milliseconds to represent.
-  @available(*, deprecated, message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead.")
+  @available(
+    *,
+    deprecated,
+    message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead."
+  )
   public static func milliseconds(rounding amount: Int) -> GRPCTimeout {
     return .init(rounding: Int64(amount), unit: .milliseconds)
   }
@@ -201,7 +237,11 @@ extension GRPCTimeout {
   /// - Parameter amount: the amount of microseconds this `GRPCTimeout` represents.
   /// - Returns: A `GRPCTimeout` representing the given number of microseconds.
   /// - Throws: `GRPCTimeoutError` if the amount was negative or more than 8 digits long.
-  @available(*, deprecated, message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead.")
+  @available(
+    *,
+    deprecated,
+    message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead."
+  )
   public static func microseconds(_ amount: Int) throws -> GRPCTimeout {
     return try makeTimeout(Int64(amount), .microseconds)
   }
@@ -211,7 +251,11 @@ extension GRPCTimeout {
   /// The timeout will be rounded up if it may not be represented in the wire format.
   ///
   /// - Parameter amount: The number of microseconds to represent.
-  @available(*, deprecated, message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead.")
+  @available(
+    *,
+    deprecated,
+    message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead."
+  )
   public static func microseconds(rounding amount: Int) -> GRPCTimeout {
     return .init(rounding: Int64(amount), unit: .microseconds)
   }
@@ -223,7 +267,11 @@ extension GRPCTimeout {
   /// - Parameter amount: the amount of nanoseconds this `GRPCTimeout` represents.
   /// - Returns: A `GRPCTimeout` representing the given number of nanoseconds.
   /// - Throws: `GRPCTimeoutError` if the amount was negative or more than 8 digits long.
-  @available(*, deprecated, message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead.")
+  @available(
+    *,
+    deprecated,
+    message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead."
+  )
   public static func nanoseconds(_ amount: Int) throws -> GRPCTimeout {
     return try makeTimeout(Int64(amount), .nanoseconds)
   }
@@ -233,7 +281,11 @@ extension GRPCTimeout {
   /// The timeout will be rounded up if it may not be represented in the wire format.
   ///
   /// - Parameter amount: The number of nanoseconds to represent.
-  @available(*, deprecated, message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead.")
+  @available(
+    *,
+    deprecated,
+    message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead."
+  )
   public static func nanoseconds(rounding amount: Int) -> GRPCTimeout {
     return .init(rounding: Int64(amount), unit: .nanoseconds)
   }
@@ -241,7 +293,11 @@ extension GRPCTimeout {
 
 extension GRPCTimeout {
   /// Returns a NIO `TimeAmount` representing the amount of time as this timeout.
-  @available(*, deprecated, message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead.")
+  @available(
+    *,
+    deprecated,
+    message: "Use 'TimeLimit.timeout(_:)' or 'TimeLimit.deadline(_:)' instead."
+  )
   public var asNIOTimeAmount: TimeAmount {
     return TimeAmount.nanoseconds(numericCast(nanoseconds))
   }
@@ -290,7 +346,6 @@ public struct GRPCTimeoutError: Error, Equatable, CustomStringConvertible {
   public static let tooManyDigits = GRPCTimeoutError(.tooManyDigits)
 }
 
-
 extension UnaryCallHandler {
   @available(*, unavailable, message: "Please regenerate your code or use 'CallHandler.makeUnary'")
   public convenience init(
@@ -302,7 +357,11 @@ extension UnaryCallHandler {
 }
 
 extension ServerStreamingCallHandler {
-  @available(*, unavailable, message: "Please regenerate your code or use 'CallHandler.makeServerStreaming'")
+  @available(
+    *,
+    unavailable,
+    message: "Please regenerate your code or use 'CallHandler.makeServerStreaming'"
+  )
   public convenience init(
     callHandlerContext: CallHandlerContext,
     eventObserverFactory: @escaping (StreamingResponseCallContext<ResponsePayload>) -> EventObserver
@@ -312,7 +371,11 @@ extension ServerStreamingCallHandler {
 }
 
 extension ClientStreamingCallHandler {
-  @available(*, unavailable, message: "Please regenerate your code or use 'CallHandler.makeClientStreaming'")
+  @available(
+    *,
+    unavailable,
+    message: "Please regenerate your code or use 'CallHandler.makeClientStreaming'"
+  )
   public convenience init(
     callHandlerContext: CallHandlerContext,
     eventObserverFactory: @escaping EventObserverFactory
@@ -322,10 +385,15 @@ extension ClientStreamingCallHandler {
 }
 
 extension BidirectionalStreamingCallHandler {
-  @available(*, unavailable, message: "Please regenerate your code or use 'CallHandler.makeBidirectionalStreaming'")
+  @available(
+    *,
+    unavailable,
+    message: "Please regenerate your code or use 'CallHandler.makeBidirectionalStreaming'"
+  )
   public convenience init(
     callHandlerContext: CallHandlerContext,
-    eventObserverFactory: @escaping (StreamingResponseCallContext<ResponsePayload>) -> EventLoopFuture<EventObserver>
+    eventObserverFactory: @escaping (StreamingResponseCallContext<ResponsePayload>)
+      -> EventLoopFuture<EventObserver>
   ) {
     fatalError("Unimplemented: please regenerate your code.")
   }
