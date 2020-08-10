@@ -82,6 +82,8 @@ class Pod:
 
         podspec = "Pod::Spec.new do |s|\n\n"
         podspec += indent + "s.name = '%s'\n" % self.name
+        if not self.is_plugins_pod:
+            podspec += indent + "s.module_name = '%s'\n" % self.module_name
         podspec += indent + "s.version = '%s'\n" % self.version
         podspec += indent + "s.license = { :type => 'Apache 2.0', :file => 'LICENSE' }\n"
         podspec += indent + "s.summary = '%s'\n" % self.description
