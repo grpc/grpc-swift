@@ -890,6 +890,55 @@ extension GRPCClientStateMachineTests {
       XCTAssertEqual(status.message, "foo bar 🚀")
     }
   }
+
+  func testReceiveTrailersOnlyEndOfResponseStreamWithoutContentType() throws {
+    var stateMachine = self.makeStateMachine(.clientActiveServerIdle(writeState: .one(), pendingReadState: .init(arity: .one, messageEncoding: .disabled)))
+
+    let trailers: HPACKHeaders = [
+      ":status": "200",
+      "grpc-status": "5",
+      "grpc-message": "foo bar 🚀"
+    ]
+    stateMachine.receiveEndOfResponseStream(trailers).assertSuccess { status in
+      XCTAssertEqual(status.code, GRPCStatus.Code(rawValue: 5))
+      XCTAssertEqual(status.message, "foo bar 🚀")
+    }
+  }
+
+  func testReceiveTrailersOnlyEndOfResponseStreamWithInvalidContentType() throws {
+    var stateMachine = self.makeStateMachine(.clientActiveServerIdle(writeState: .one(), pendingReadState: .init(arity: .one, messageEncoding: .disabled)))
+
+    let trailers: HPACKHeaders = [
+      ":status": "200",
+      "grpc-status": "5",
+      "grpc-message": "foo bar 🚀",
+      "content-type": "invalid"
+    ]
+    stateMachine.receiveEndOfResponseStream(trailers).assertFailure { error in
+      XCTAssertEqual(error, .invalidContentType("invalid"))
+    }
+  }
+
+  func testReceiveTrailersOnlyEndOfResponseStreamWithInvalidHTTPStatusAndValidGRPCStatus() throws {
+    var stateMachine = self.makeStateMachine(.clientActiveServerIdle(writeState: .one(), pendingReadState: .init(arity: .one, messageEncoding: .disabled)))
+
+    let trailers: HPACKHeaders = [
+      ":status": "418",
+      "grpc-status": "5",
+    ]
+    stateMachine.receiveEndOfResponseStream(trailers).assertFailure { error in
+      XCTAssertEqual(error, .invalidHTTPStatusWithGRPCStatus(GRPCStatus(code: GRPCStatus.Code(rawValue: 5)!, message: nil)))
+    }
+  }
+
+  func testReceiveTrailersOnlyEndOfResponseStreamWithInvalidHTTPStatusAndNoGRPCStatus() throws {
+    var stateMachine = self.makeStateMachine(.clientActiveServerIdle(writeState: .one(), pendingReadState: .init(arity: .one, messageEncoding: .disabled)))
+
+    let trailers: HPACKHeaders = [":status": "418"]
+    stateMachine.receiveEndOfResponseStream(trailers).assertFailure { error in
+      XCTAssertEqual(error, .invalidHTTPStatus("418"))
+    }
+  }
 }
 
 class ReadStateTests: GRPCTestCase {
