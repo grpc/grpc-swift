@@ -34,7 +34,7 @@ enum ReceiveResponseHeadError: Error, Equatable {
   case invalidState
 }
 
-enum ReceiveEndOfResponseStreamError: Error {
+enum ReceiveEndOfResponseStreamError: Error, Equatable {
   /// The 'content-type' header was missing or the value is not supported by this implementation.
   case invalidContentType(String?)
 
@@ -719,8 +719,11 @@ extension GRPCClientStateMachine.State {
       }
     }
 
-    let contentTypeHeader = trailers.first(name: "content-type")
-    guard contentTypeHeader.map(ContentType.init) != nil else {
+    // Only validate the content-type header if it's present. This is a small deviation from the
+    // spec as the content-type is meant to be sent in "Trailers-Only" responses. However, if it's
+    // missing then we should avoid the error and propagate the status code and message sent by
+    // the server instead.
+    if let contentTypeHeader = trailers.first(name: "content-type"), ContentType(value: contentTypeHeader) == nil {
       return .failure(.invalidContentType(contentTypeHeader))
     }
 
