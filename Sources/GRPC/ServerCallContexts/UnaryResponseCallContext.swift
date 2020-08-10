@@ -69,29 +69,25 @@ open class UnaryResponseCallContextImpl<ResponsePayload>: UnaryResponseCallConte
     super.init(eventLoop: channel.eventLoop, request: request, logger: logger)
 
     responsePromise.futureResult
-      // Send the response provided to the promise.
-      .map { responseMessage -> EventLoopFuture<Void> in
-        return self.channel.writeAndFlush(NIOAny(WrappedResponse.message(.init(responseMessage, compressed: self.compressionEnabled))))
-      }
-      .map { _ in
-        GRPCStatusAndMetadata(status: self.responseStatus, metadata: nil)
-      }
-      // Ensure that any error provided can be transformed to `GRPCStatus`, using "internal server error" as a fallback.
-      .recover { [weak errorDelegate] error in
-        errorDelegate?.observeRequestHandlerError(error, request: request)
-        
-        if let transformed: GRPCStatusAndMetadata = errorDelegate?.transformRequestHandlerError(error, request: request) {
-          return transformed
+      .whenComplete { [self, weak errorDelegate] result in
+        let statusAndMetadata: GRPCStatusAndMetadata
+
+        switch result {
+        case .success(let responseMessage):
+          self.channel.write(NIOAny(WrappedResponse.message(.init(responseMessage, compressed: self.compressionEnabled))), promise: nil)
+          statusAndMetadata = GRPCStatusAndMetadata(status: self.responseStatus, metadata: nil)
+        case .failure(let error):
+          errorDelegate?.observeRequestHandlerError(error, request: request)
+
+          if let transformed: GRPCStatusAndMetadata = errorDelegate?.transformRequestHandlerError(error, request: request) {
+            statusAndMetadata = transformed
+          } else if let grpcStatusTransformable = error as? GRPCStatusTransformable {
+            statusAndMetadata = GRPCStatusAndMetadata(status: grpcStatusTransformable.makeGRPCStatus(), metadata: nil)
+          } else {
+            statusAndMetadata = GRPCStatusAndMetadata(status: .processingError, metadata: nil)
+          }
         }
-        
-        if let grpcStatusTransformable = error as? GRPCStatusTransformable {
-          return GRPCStatusAndMetadata(status: grpcStatusTransformable.makeGRPCStatus(), metadata: nil)
-        }
-        
-        return GRPCStatusAndMetadata(status: .processingError, metadata: nil)
-      }
-      // Finish the call by returning the final status.
-      .whenSuccess { statusAndMetadata in
+
         if let metadata = statusAndMetadata.metadata {
           self.trailingMetadata.add(contentsOf: metadata)
         }
