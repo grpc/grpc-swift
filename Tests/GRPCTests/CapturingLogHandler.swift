@@ -47,6 +47,7 @@ internal struct CapturedLog {
   var level: Logger.Level
   var message: Logger.Message
   var metadata: Logger.Metadata
+  var source: String
   var file: String
   var function: String
   var line: UInt
@@ -70,6 +71,7 @@ internal struct CapturingLogHandler: LogHandler {
     level: Logger.Level,
     message: Logger.Message,
     metadata: Logger.Metadata?,
+    source: String,
     file: String,
     function: String,
     line: UInt
@@ -87,6 +89,7 @@ internal struct CapturingLogHandler: LogHandler {
       level: level,
       message: message,
       metadata: merged,
+      source: source,
       file: file,
       function: function,
       line: line,

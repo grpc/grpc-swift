@@ -68,8 +68,10 @@ public final class ServerStreamingCallHandler<
   override internal func processMessage(_ message: RequestPayload) throws {
     guard let eventObserver = self.eventObserver,
       let callContext = self.callContext else {
-      self.logger
-        .error("processMessage(_:) called before the call started or after the call completed")
+      self.logger.error(
+        "processMessage(_:) called before the call started or after the call completed",
+        source: "GRPC"
+      )
       throw GRPCError.StreamCardinalityViolation.request.captureContext()
     }
 

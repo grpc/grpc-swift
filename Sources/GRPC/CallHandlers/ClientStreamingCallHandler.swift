@@ -78,7 +78,7 @@ public final class ClientStreamingCallHandler<
 
   override internal func processMessage(_ message: RequestPayload) {
     guard let eventObserver = self.eventObserver else {
-      self.logger.warning("eventObserver is nil; ignoring message")
+      self.logger.warning("eventObserver is nil; ignoring message", source: "GRPC")
       return
     }
     eventObserver.whenSuccess { observer in
@@ -88,7 +88,7 @@ public final class ClientStreamingCallHandler<
 
   override internal func endOfStreamReceived() throws {
     guard let eventObserver = self.eventObserver else {
-      self.logger.warning("eventObserver is nil; ignoring end-of-stream")
+      self.logger.warning("eventObserver is nil; ignoring end-of-stream", source: "GRPC")
       return
     }
     eventObserver.whenSuccess { observer in
