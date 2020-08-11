@@ -49,6 +49,7 @@ public class LoggingClientErrorDelegate: ClientErrorDelegate {
     logger.error(
       "grpc client error",
       metadata: [MetadataKey.error: "\(error)"],
+      source: "GRPC",
       file: "\(file)",
       function: "<unknown>",
       line: UInt(line)

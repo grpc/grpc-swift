@@ -115,7 +115,8 @@ extension _BaseCallHandler: ChannelInboundHandler {
       } catch {
         self.logger.error(
           "error caught while user handler was processing message",
-          metadata: [MetadataKey.error: "\(error)"]
+          metadata: [MetadataKey.error: "\(error)"],
+          source: "GRPC"
         )
         self.errorCaught(context: context, error: error)
       }
@@ -126,7 +127,8 @@ extension _BaseCallHandler: ChannelInboundHandler {
       } catch {
         self.logger.error(
           "error caught on receiving end of stream",
-          metadata: [MetadataKey.error: "\(error)"]
+          metadata: [MetadataKey.error: "\(error)"],
+          source: "GRPC"
         )
         self.errorCaught(context: context, error: error)
       }

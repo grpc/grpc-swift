@@ -36,8 +36,20 @@ class GRPCTestCase: XCTestCase {
   }
 
   override func tearDown() {
+    let logs = self.capturedLogs()
+
+    // The default source emitted by swift-log is the directory containing the '#file' in which the
+    // log was emitted. It's meant to represent the system which emitted the log, typically the
+    // module name. In most cases it's right but in a few places, i.e. where the source lives in
+    // child directories below 'GRPC', it isn't. We'll use this as a sanity check.
+    //
+    // See also: https://github.com/apple/swift-log/issues/145
+    for log in logs {
+      XCTAssertEqual(log.source, "GRPC", "Incorrect log source in \(log.file) on line \(log.line)")
+    }
+
     if GRPCTestCase.alwaysLog || (self.testRun.map { $0.totalFailureCount > 0 } ?? false) {
-      self.printCapturedLogs()
+      self.printCapturedLogs(logs)
     }
 
     super.tearDown()
@@ -86,9 +98,7 @@ class GRPCTestCase: XCTestCase {
   }
 
   /// Prints all captured logs.
-  private func printCapturedLogs() {
-    let logs = self.capturedLogs()
-
+  private func printCapturedLogs(_ logs: [CapturedLog]) {
     let formatter = DateFormatter()
     // We don't care about the date.
     formatter.dateFormat = "HH:mm:ss.SSS"
