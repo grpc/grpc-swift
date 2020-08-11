@@ -29,6 +29,7 @@ function run_logged() {
   if $command > "$log" 2>&1; then
     printf "\033[0;32mOK\033[0m\n"
   else
+    errors=$(( errors + 1))
     printf "\033[0;31mFAILED\033[0m\n"
     echo "=== Captured output:"
     cat "$log"
@@ -45,5 +46,7 @@ function check_formatting() {
   run_logged "Checking formatting" "swiftformat --lint $HERE/.."
 }
 
+errors=0
 check_license_headers
 check_formatting
+exit $errors

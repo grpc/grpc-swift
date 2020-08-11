@@ -37,6 +37,7 @@ PROTOBUF_VERSION=3.9.1
 # We need this to build gRPC C++ for the interop test server(s).
 BAZEL_VERSION=0.28.1
 GRPC_VERSION=1.23.0
+SWIFTFORMAT_VERSION=0.44.13
 
 info() {
   printf '\033[0;34m%s\033[0m\n' "$1"
@@ -182,21 +183,20 @@ function install_swiftformat() {
   echo -en 'travis_fold:start:install.swiftformat\\r'
   info "Installing swiftformat"
 
-
-  if [ ! -f "$BIN_CACHE/swiftformat" ]; then
-    git clone --depth 1 "https://github.com/nicklockwood/SwiftFormat"
+  if [ ! -f "$BIN_CACHE/swiftformat-$SWIFTFORMAT_VERSION" ]; then
+    git clone -b "$SWIFTFORMAT_VERSION" --depth 1 "https://github.com/nicklockwood/SwiftFormat"
 
     info "Building swiftformat"
     cd SwiftFormat
     swift build --product swiftformat
 
-    cp "$(swift build --show-bin-path)/swiftformat" "$BIN_CACHE/swiftformat"
+    cp "$(swift build --show-bin-path)/swiftformat" "$BIN_CACHE/swiftformat-$SWIFTFORMAT_VERSION"
   else
     info "Skipping download and build of SwiftFormat, using cached binaries"
   fi
 
   # We should have cached swiftformat now, copy it to $HOME/local/bin
-  cp "$BIN_CACHE/swiftformat" "$HOME"/local/bin/swiftformat
+  cp "$BIN_CACHE/swiftformat-$SWIFTFORMAT_VERSION" "$HOME"/local/bin/swiftformat
 
   success "Installed swiftformat"
   echo -en 'travis_fold:end:install.swiftformat\\r'
