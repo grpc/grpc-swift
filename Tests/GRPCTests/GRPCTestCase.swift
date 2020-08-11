@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 import GRPC
-import XCTest
 import Logging
+import XCTest
 
 /// This should be used instead of `XCTestCase`.
 class GRPCTestCase: XCTestCase {

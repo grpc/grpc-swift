@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import XCTest
 @testable import GRPC
-import NIO
 import Logging
+import NIO
+import XCTest
 
 class LengthPrefixedMessageReaderTests: GRPCTestCase {
   var reader: LengthPrefixedMessageReader!
@@ -29,7 +29,7 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
   var allocator = ByteBufferAllocator()
 
   func byteBuffer(withBytes bytes: [UInt8]) -> ByteBuffer {
-    var buffer = allocator.buffer(capacity: bytes.count)
+    var buffer = self.allocator.buffer(capacity: bytes.count)
     buffer.writeBytes(bytes)
     return buffer
   }
@@ -37,19 +37,26 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
   final let twoByteMessage: [UInt8] = [0x01, 0x02]
   func lengthPrefixedTwoByteMessage(withCompression compression: Bool = false) -> [UInt8] {
     return [
-      compression ? 0x01 : 0x00,  // 1-byte compression flag
-      0x00, 0x00, 0x00, 0x02,     // 4-byte message length (2)
-    ] + twoByteMessage
+      compression ? 0x01 : 0x00, // 1-byte compression flag
+      0x00, 0x00, 0x00, 0x02, // 4-byte message length (2)
+    ] + self.twoByteMessage
   }
 
-  private func assertMessagesEqual(expected expectedBytes: [UInt8], actual buffer: ByteBuffer?, line: UInt = #line) {
+  private func assertMessagesEqual(
+    expected expectedBytes: [UInt8],
+    actual buffer: ByteBuffer?,
+    line: UInt = #line
+  ) {
     guard let buffer = buffer else {
       XCTFail("buffer is nil", line: line)
       return
     }
 
     guard let bytes = buffer.getBytes(at: buffer.readerIndex, length: expectedBytes.count) else {
-      XCTFail("Expected \(expectedBytes.count) bytes, but only \(buffer.readableBytes) bytes are readable", line: line)
+      XCTFail(
+        "Expected \(expectedBytes.count) bytes, but only \(buffer.readableBytes) bytes are readable",
+        line: line
+      )
       return
     }
 
@@ -57,153 +64,155 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
   }
 
   func testNextMessageReturnsNilWhenNoBytesAppended() throws {
-    XCTAssertNil(try reader.nextMessage())
+    XCTAssertNil(try self.reader.nextMessage())
   }
 
   func testNextMessageReturnsMessageIsAppendedInOneBuffer() throws {
-    var buffer = byteBuffer(withBytes: lengthPrefixedTwoByteMessage())
-    reader.append(buffer: &buffer)
+    var buffer = self.byteBuffer(withBytes: self.lengthPrefixedTwoByteMessage())
+    self.reader.append(buffer: &buffer)
 
-    self.assertMessagesEqual(expected: twoByteMessage, actual: try reader.nextMessage())
+    self.assertMessagesEqual(expected: self.twoByteMessage, actual: try self.reader.nextMessage())
   }
 
   func testNextMessageReturnsMessageForZeroLengthMessage() throws {
     let bytes: [UInt8] = [
-      0x00,                    // 1-byte compression flag
-      0x00, 0x00, 0x00, 0x00,  // 4-byte message length (0)
-                               // 0-byte message
+      0x00, // 1-byte compression flag
+      0x00, 0x00, 0x00, 0x00, // 4-byte message length (0)
+      // 0-byte message
     ]
 
-    var buffer = byteBuffer(withBytes: bytes)
-    reader.append(buffer: &buffer)
+    var buffer = self.byteBuffer(withBytes: bytes)
+    self.reader.append(buffer: &buffer)
 
-    self.assertMessagesEqual(expected: [], actual: try reader.nextMessage())
+    self.assertMessagesEqual(expected: [], actual: try self.reader.nextMessage())
   }
 
   func testNextMessageDeliveredAcrossMultipleByteBuffers() throws {
     let firstBytes: [UInt8] = [
-      0x00,              // 1-byte compression flag
-      0x00, 0x00, 0x00,  // first 3 bytes of 4-byte message length
+      0x00, // 1-byte compression flag
+      0x00, 0x00, 0x00, // first 3 bytes of 4-byte message length
     ]
 
     let secondBytes: [UInt8] = [
-      0x02,              // fourth byte of 4-byte message length (2)
-      0xf0, 0xba,        // 2-byte message
+      0x02, // fourth byte of 4-byte message length (2)
+      0xF0, 0xBA, // 2-byte message
     ]
 
-    var firstBuffer = byteBuffer(withBytes: firstBytes)
-    reader.append(buffer: &firstBuffer)
-    var secondBuffer = byteBuffer(withBytes: secondBytes)
-    reader.append(buffer: &secondBuffer)
+    var firstBuffer = self.byteBuffer(withBytes: firstBytes)
+    self.reader.append(buffer: &firstBuffer)
+    var secondBuffer = self.byteBuffer(withBytes: secondBytes)
+    self.reader.append(buffer: &secondBuffer)
 
-    self.assertMessagesEqual(expected: [0xf0, 0xba], actual: try reader.nextMessage())
+    self.assertMessagesEqual(expected: [0xF0, 0xBA], actual: try self.reader.nextMessage())
   }
 
   func testNextMessageWhenMultipleMessagesAreBuffered() throws {
     let bytes: [UInt8] = [
       // 1st message
-      0x00,                    // 1-byte compression flag
-      0x00, 0x00, 0x00, 0x02,  // 4-byte message length (2)
-      0x0f, 0x00,              // 2-byte message
+      0x00, // 1-byte compression flag
+      0x00, 0x00, 0x00, 0x02, // 4-byte message length (2)
+      0x0F, 0x00, // 2-byte message
       // 2nd message
-      0x00,                    // 1-byte compression flag
-      0x00, 0x00, 0x00, 0x04,  // 4-byte message length (4)
-      0xde, 0xad, 0xbe, 0xef,  // 4-byte message
+      0x00, // 1-byte compression flag
+      0x00, 0x00, 0x00, 0x04, // 4-byte message length (4)
+      0xDE, 0xAD, 0xBE, 0xEF, // 4-byte message
       // 3rd message
-      0x00,                    // 1-byte compression flag
-      0x00, 0x00, 0x00, 0x01,  // 4-byte message length (1)
-      0x01,                    // 1-byte message
+      0x00, // 1-byte compression flag
+      0x00, 0x00, 0x00, 0x01, // 4-byte message length (1)
+      0x01, // 1-byte message
     ]
 
-    var buffer = byteBuffer(withBytes: bytes)
-    reader.append(buffer: &buffer)
+    var buffer = self.byteBuffer(withBytes: bytes)
+    self.reader.append(buffer: &buffer)
 
-    self.assertMessagesEqual(expected: [0x0f, 0x00], actual: try reader.nextMessage())
-    self.assertMessagesEqual(expected: [0xde, 0xad, 0xbe, 0xef], actual: try reader.nextMessage())
-    self.assertMessagesEqual(expected: [0x01], actual: try reader.nextMessage())
+    self.assertMessagesEqual(expected: [0x0F, 0x00], actual: try self.reader.nextMessage())
+    self.assertMessagesEqual(
+      expected: [0xDE, 0xAD, 0xBE, 0xEF],
+      actual: try self.reader.nextMessage()
+    )
+    self.assertMessagesEqual(expected: [0x01], actual: try self.reader.nextMessage())
   }
 
   func testNextMessageReturnsNilWhenNoMessageLengthIsAvailable() throws {
     let bytes: [UInt8] = [
-      0x00,  // 1-byte compression flag
+      0x00, // 1-byte compression flag
     ]
 
-    var buffer = byteBuffer(withBytes: bytes)
-    reader.append(buffer: &buffer)
+    var buffer = self.byteBuffer(withBytes: bytes)
+    self.reader.append(buffer: &buffer)
 
-    XCTAssertNil(try reader.nextMessage())
+    XCTAssertNil(try self.reader.nextMessage())
 
     // Ensure we can read a message when the rest of the bytes are delivered
     let restOfBytes: [UInt8] = [
-      0x00, 0x00, 0x00, 0x01,  // 4-byte message length (1)
-      0x00,                    // 1-byte message
+      0x00, 0x00, 0x00, 0x01, // 4-byte message length (1)
+      0x00, // 1-byte message
     ]
 
-    var secondBuffer = byteBuffer(withBytes: restOfBytes)
-    reader.append(buffer: &secondBuffer)
-    self.assertMessagesEqual(expected: [0x00], actual: try reader.nextMessage())
+    var secondBuffer = self.byteBuffer(withBytes: restOfBytes)
+    self.reader.append(buffer: &secondBuffer)
+    self.assertMessagesEqual(expected: [0x00], actual: try self.reader.nextMessage())
   }
 
   func testNextMessageReturnsNilWhenNotAllMessageLengthIsAvailable() throws {
     let bytes: [UInt8] = [
-      0x00,        // 1-byte compression flag
-      0x00, 0x00,  // 2-bytes of message length (should be 4)
+      0x00, // 1-byte compression flag
+      0x00, 0x00, // 2-bytes of message length (should be 4)
     ]
 
-    var buffer = byteBuffer(withBytes: bytes)
-    reader.append(buffer: &buffer)
+    var buffer = self.byteBuffer(withBytes: bytes)
+    self.reader.append(buffer: &buffer)
 
-    XCTAssertNil(try reader.nextMessage())
+    XCTAssertNil(try self.reader.nextMessage())
 
     // Ensure we can read a message when the rest of the bytes are delivered
     let restOfBytes: [UInt8] = [
-      0x00, 0x01,  // 4-byte message length (1)
-      0x00,        // 1-byte message
+      0x00, 0x01, // 4-byte message length (1)
+      0x00, // 1-byte message
     ]
 
-    var secondBuffer = byteBuffer(withBytes: restOfBytes)
-    reader.append(buffer: &secondBuffer)
-    self.assertMessagesEqual(expected: [0x00], actual: try reader.nextMessage())
+    var secondBuffer = self.byteBuffer(withBytes: restOfBytes)
+    self.reader.append(buffer: &secondBuffer)
+    self.assertMessagesEqual(expected: [0x00], actual: try self.reader.nextMessage())
   }
-
 
   func testNextMessageReturnsNilWhenNoMessageBytesAreAvailable() throws {
     let bytes: [UInt8] = [
-      0x00,                    // 1-byte compression flag
-      0x00, 0x00, 0x00, 0x02,  // 4-byte message length (2)
+      0x00, // 1-byte compression flag
+      0x00, 0x00, 0x00, 0x02, // 4-byte message length (2)
     ]
 
-    var buffer = byteBuffer(withBytes: bytes)
-    reader.append(buffer: &buffer)
+    var buffer = self.byteBuffer(withBytes: bytes)
+    self.reader.append(buffer: &buffer)
 
-    XCTAssertNil(try reader.nextMessage())
+    XCTAssertNil(try self.reader.nextMessage())
 
     // Ensure we can read a message when the rest of the bytes are delivered
-    var secondBuffer = byteBuffer(withBytes: twoByteMessage)
-    reader.append(buffer: &secondBuffer)
-    self.assertMessagesEqual(expected: twoByteMessage, actual: try reader.nextMessage())
+    var secondBuffer = self.byteBuffer(withBytes: self.twoByteMessage)
+    self.reader.append(buffer: &secondBuffer)
+    self.assertMessagesEqual(expected: self.twoByteMessage, actual: try self.reader.nextMessage())
   }
 
   func testNextMessageReturnsNilWhenNotAllMessageBytesAreAvailable() throws {
     let bytes: [UInt8] = [
-      0x00,                    // 1-byte compression flag
-      0x00, 0x00, 0x00, 0x02,  // 4-byte message length (2)
-      0x00,                    // 1-byte of message
+      0x00, // 1-byte compression flag
+      0x00, 0x00, 0x00, 0x02, // 4-byte message length (2)
+      0x00, // 1-byte of message
     ]
 
-    var buffer = byteBuffer(withBytes: bytes)
-    reader.append(buffer: &buffer)
+    var buffer = self.byteBuffer(withBytes: bytes)
+    self.reader.append(buffer: &buffer)
 
-    XCTAssertNil(try reader.nextMessage())
+    XCTAssertNil(try self.reader.nextMessage())
 
     // Ensure we can read a message when the rest of the bytes are delivered
     let restOfBytes: [UInt8] = [
-      0x01  // final byte of message
+      0x01, // final byte of message
     ]
 
-    var secondBuffer = byteBuffer(withBytes: restOfBytes)
-    reader.append(buffer: &secondBuffer)
-    self.assertMessagesEqual(expected: [0x00, 0x01], actual: try reader.nextMessage())
+    var secondBuffer = self.byteBuffer(withBytes: restOfBytes)
+    self.reader.append(buffer: &secondBuffer)
+    self.assertMessagesEqual(expected: [0x00, 0x01], actual: try self.reader.nextMessage())
   }
 
   func testNextMessageThrowsWhenCompressionFlagIsSetButNotExpected() throws {
@@ -211,10 +220,11 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
     // compression flag is set as it indicates a lack of message encoding header.
     XCTAssertNil(self.reader.compression)
 
-    var buffer = byteBuffer(withBytes: lengthPrefixedTwoByteMessage(withCompression: true))
-    reader.append(buffer: &buffer)
+    var buffer = self
+      .byteBuffer(withBytes: self.lengthPrefixedTwoByteMessage(withCompression: true))
+    self.reader.append(buffer: &buffer)
 
-    XCTAssertThrowsError(try reader.nextMessage()) { error in
+    XCTAssertThrowsError(try self.reader.nextMessage()) { error in
       let errorWithContext = error as? GRPCError.WithContext
       XCTAssertTrue(errorWithContext?.error is GRPCError.CompressionUnsupported)
     }
@@ -224,15 +234,15 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
     // `.identity` should always be supported and requires a flag.
     self.reader = LengthPrefixedMessageReader(compression: .identity, decompressionLimit: .ratio(1))
 
-    var buffer = byteBuffer(withBytes: lengthPrefixedTwoByteMessage())
+    var buffer = self.byteBuffer(withBytes: self.lengthPrefixedTwoByteMessage())
     self.reader.append(buffer: &buffer)
 
-    self.assertMessagesEqual(expected: twoByteMessage, actual: try reader.nextMessage())
+    self.assertMessagesEqual(expected: self.twoByteMessage, actual: try self.reader.nextMessage())
   }
 
   func testAppendReadsAllBytes() throws {
-    var buffer = byteBuffer(withBytes: lengthPrefixedTwoByteMessage())
-    reader.append(buffer: &buffer)
+    var buffer = self.byteBuffer(withBytes: self.lengthPrefixedTwoByteMessage())
+    self.reader.append(buffer: &buffer)
 
     XCTAssertEqual(0, buffer.readableBytes)
   }
@@ -241,23 +251,23 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
     // We're going to use a 1kB message here for ease of testing.
     let message = Array(repeating: UInt8(0), count: 1024)
     let largeMessage: [UInt8] = [
-        0x00,                       // 1-byte compression flag
-        0x00, 0x00, 0x04, 0x00,     // 4-byte message length (1024)
+      0x00, // 1-byte compression flag
+      0x00, 0x00, 0x04, 0x00, // 4-byte message length (1024)
     ] + message
-    var buffer = byteBuffer(withBytes: largeMessage)
+    var buffer = self.byteBuffer(withBytes: largeMessage)
     buffer.writeBytes(largeMessage)
     buffer.writeBytes(largeMessage)
-    reader.append(buffer: &buffer)
+    self.reader.append(buffer: &buffer)
 
-    XCTAssertEqual(reader.unprocessedBytes, (1024 + 5) * 3)
-    XCTAssertEqual(reader._consumedNonDiscardedBytes, 0)
+    XCTAssertEqual(self.reader.unprocessedBytes, (1024 + 5) * 3)
+    XCTAssertEqual(self.reader._consumedNonDiscardedBytes, 0)
 
-    self.assertMessagesEqual(expected: message, actual: try reader.nextMessage())
-    XCTAssertEqual(reader.unprocessedBytes, (1024 + 5) * 2)
-    XCTAssertEqual(reader._consumedNonDiscardedBytes, 1024 + 5)
+    self.assertMessagesEqual(expected: message, actual: try self.reader.nextMessage())
+    XCTAssertEqual(self.reader.unprocessedBytes, (1024 + 5) * 2)
+    XCTAssertEqual(self.reader._consumedNonDiscardedBytes, 1024 + 5)
 
-    self.assertMessagesEqual(expected: message, actual: try reader.nextMessage())
-    XCTAssertEqual(reader.unprocessedBytes, 1024 + 5)
-    XCTAssertEqual(reader._consumedNonDiscardedBytes, 0)
+    self.assertMessagesEqual(expected: message, actual: try self.reader.nextMessage())
+    XCTAssertEqual(self.reader.unprocessedBytes, 1024 + 5)
+    XCTAssertEqual(self.reader._consumedNonDiscardedBytes, 0)
   }
 }

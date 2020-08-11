@@ -133,10 +133,22 @@ class PlatformSupportTests: GRPCTestCase {
     self.group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
     // No MTELG or individual loop requires the workaround.
-    XCTAssertFalse(PlatformSupport.requiresZeroLengthWriteWorkaround(group: self.group, hasTLS: true))
-    XCTAssertFalse(PlatformSupport.requiresZeroLengthWriteWorkaround(group: self.group, hasTLS: false))
-    XCTAssertFalse(PlatformSupport.requiresZeroLengthWriteWorkaround(group: self.group.next(), hasTLS: true))
-    XCTAssertFalse(PlatformSupport.requiresZeroLengthWriteWorkaround(group: self.group.next(), hasTLS: false))
+    XCTAssertFalse(
+      PlatformSupport
+        .requiresZeroLengthWriteWorkaround(group: self.group, hasTLS: true)
+    )
+    XCTAssertFalse(
+      PlatformSupport
+        .requiresZeroLengthWriteWorkaround(group: self.group, hasTLS: false)
+    )
+    XCTAssertFalse(
+      PlatformSupport
+        .requiresZeroLengthWriteWorkaround(group: self.group.next(), hasTLS: true)
+    )
+    XCTAssertFalse(
+      PlatformSupport
+        .requiresZeroLengthWriteWorkaround(group: self.group.next(), hasTLS: false)
+    )
   }
 
   func testRequiresZeroLengthWorkaroundWithNetworkFramework() {
@@ -146,10 +158,22 @@ class PlatformSupportTests: GRPCTestCase {
     self.group = NIOTSEventLoopGroup(loopCount: 1)
 
     // We require the workaround for any of these loops when TLS is not enabled.
-    XCTAssertFalse(PlatformSupport.requiresZeroLengthWriteWorkaround(group: self.group, hasTLS: true))
-    XCTAssertTrue(PlatformSupport.requiresZeroLengthWriteWorkaround(group: self.group, hasTLS: false))
-    XCTAssertFalse(PlatformSupport.requiresZeroLengthWriteWorkaround(group: self.group.next(), hasTLS: true))
-    XCTAssertTrue(PlatformSupport.requiresZeroLengthWriteWorkaround(group: self.group.next(), hasTLS: false))
+    XCTAssertFalse(
+      PlatformSupport
+        .requiresZeroLengthWriteWorkaround(group: self.group, hasTLS: true)
+    )
+    XCTAssertTrue(
+      PlatformSupport
+        .requiresZeroLengthWriteWorkaround(group: self.group, hasTLS: false)
+    )
+    XCTAssertFalse(
+      PlatformSupport
+        .requiresZeroLengthWriteWorkaround(group: self.group.next(), hasTLS: true)
+    )
+    XCTAssertTrue(
+      PlatformSupport
+        .requiresZeroLengthWriteWorkaround(group: self.group.next(), hasTLS: false)
+    )
     #endif
   }
 }

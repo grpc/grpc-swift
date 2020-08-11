@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import EchoImplementation
+import EchoModel
 import Foundation
 import GRPC
-import EchoModel
-import EchoImplementation
 import NIO
-import XCTest
 import NIOConcurrencyHelpers
+import XCTest
 
 class ClientConnectionBackoffTests: GRPCTestCase {
   let port = 8080
@@ -79,7 +79,7 @@ class ClientConnectionBackoffTests: GRPCTestCase {
     self.connectionStateRecorder.expectChanges(2) { changes in
       XCTAssertEqual(changes, [
         Change(from: .idle, to: .connecting),
-        Change(from: .connecting, to: .shutdown)
+        Change(from: .connecting, to: .shutdown),
       ])
     }
 
@@ -119,7 +119,7 @@ class ClientConnectionBackoffTests: GRPCTestCase {
     self.connectionStateRecorder.expectChanges(2) { changes in
       XCTAssertEqual(changes, [
         Change(from: .idle, to: .connecting),
-        Change(from: .connecting, to: .transientFailure)
+        Change(from: .connecting, to: .transientFailure),
       ])
     }
 
@@ -136,7 +136,7 @@ class ClientConnectionBackoffTests: GRPCTestCase {
     self.connectionStateRecorder.expectChanges(2) { changes in
       XCTAssertEqual(changes, [
         Change(from: .transientFailure, to: .connecting),
-        Change(from: .connecting, to: .ready)
+        Change(from: .connecting, to: .ready),
       ])
     }
 
@@ -157,7 +157,7 @@ class ClientConnectionBackoffTests: GRPCTestCase {
     self.connectionStateRecorder.expectChanges(2) { changes in
       XCTAssertEqual(changes, [
         Change(from: .idle, to: .connecting),
-        Change(from: .connecting, to: .ready)
+        Change(from: .connecting, to: .ready),
       ])
     }
 
@@ -197,7 +197,7 @@ class ClientConnectionBackoffTests: GRPCTestCase {
     self.connectionStateRecorder.expectChanges(2) { changes in
       XCTAssertEqual(changes, [
         Change(from: .transientFailure, to: .connecting),
-        Change(from: .connecting, to: .ready)
+        Change(from: .connecting, to: .ready),
       ])
     }
 

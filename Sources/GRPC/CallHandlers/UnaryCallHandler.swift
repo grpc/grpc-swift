@@ -14,17 +14,20 @@
  * limitations under the License.
  */
 import Foundation
-import SwiftProtobuf
+import Logging
 import NIO
 import NIOHTTP1
-import Logging
+import SwiftProtobuf
 
 /// Handles unary calls. Calls the observer block with the request message.
 ///
 /// - The observer block is implemented by the framework user and returns a future containing the call result.
 /// - To return a response to the client, the framework user should complete that future
 ///   (similar to e.g. serving regular HTTP requests in frameworks such as Vapor).
-public final class UnaryCallHandler<RequestPayload, ResponsePayload>: _BaseCallHandler<RequestPayload, ResponsePayload> {
+public final class UnaryCallHandler<
+  RequestPayload,
+  ResponsePayload
+>: _BaseCallHandler<RequestPayload, ResponsePayload> {
   public typealias EventObserver = (RequestPayload) -> EventLoopFuture<ResponsePayload>
   private var eventObserver: EventObserver?
   private var callContext: UnaryResponseCallContext<ResponsePayload>?
@@ -43,7 +46,7 @@ public final class UnaryCallHandler<RequestPayload, ResponsePayload>: _BaseCallH
     )
   }
 
-  internal override func processHead(_ head: HTTPRequestHead, context: ChannelHandlerContext) {
+  override internal func processHead(_ head: HTTPRequestHead, context: ChannelHandlerContext) {
     let callContext = UnaryResponseCallContextImpl<ResponsePayload>(
       channel: context.channel,
       request: head,
@@ -62,10 +65,11 @@ public final class UnaryCallHandler<RequestPayload, ResponsePayload>: _BaseCallH
     context.writeAndFlush(self.wrapOutboundOut(.headers([:])), promise: nil)
   }
 
-  internal override func processMessage(_ message: RequestPayload) throws {
+  override internal func processMessage(_ message: RequestPayload) throws {
     guard let eventObserver = self.eventObserver,
       let context = self.callContext else {
-      self.logger.error("processMessage(_:) called before the call started or after the call completed")
+      self.logger
+        .error("processMessage(_:) called before the call started or after the call completed")
       throw GRPCError.StreamCardinalityViolation.request.captureContext()
     }
 
@@ -76,13 +80,13 @@ public final class UnaryCallHandler<RequestPayload, ResponsePayload>: _BaseCallH
     self.eventObserver = nil
   }
 
-  internal override func endOfStreamReceived() throws {
+  override internal func endOfStreamReceived() throws {
     if self.eventObserver != nil {
       throw GRPCError.StreamCardinalityViolation.request.captureContext()
     }
   }
 
-  internal override func sendErrorStatusAndMetadata(_ statusAndMetadata: GRPCStatusAndMetadata) {
+  override internal func sendErrorStatusAndMetadata(_ statusAndMetadata: GRPCStatusAndMetadata) {
     if let metadata = statusAndMetadata.metadata {
       self.callContext?.trailingMetadata.add(contentsOf: metadata)
     }

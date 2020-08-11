@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import EchoModel
 import Foundation
 @testable import GRPC
-import EchoModel
+import Logging
 import NIO
 import NIOHPACK
 import NIOHTTP1
 import NIOHTTP2
 import XCTest
-import Logging
 
 class GRPCStatusCodeTests: GRPCTestCase {
   var channel: EmbeddedChannel!
@@ -55,9 +55,12 @@ class GRPCStatusCodeTests: GRPCTestCase {
   func doTestResponseStatus(_ status: HTTPResponseStatus, expected: GRPCStatus.Code) throws {
     // Send the request head so we're in a valid state to receive headers.
     self.sendRequestHead()
-    XCTAssertThrowsError(try self.channel.writeInbound(self.headersFramePayload(status: status))) { error in
+    XCTAssertThrowsError(
+      try self.channel
+        .writeInbound(self.headersFramePayload(status: status))
+    ) { error in
       guard let withContext = error as? GRPCError.WithContext,
-            let invalidHTTPStatus = withContext.error as? GRPCError.InvalidHTTPStatus  else {
+        let invalidHTTPStatus = withContext.error as? GRPCError.InvalidHTTPStatus else {
         XCTFail("Unexpected error: \(error)")
         return
       }
@@ -104,14 +107,15 @@ class GRPCStatusCodeTests: GRPCTestCase {
     let headers: HPACKHeaders = [
       ":status": "\(HTTPResponseStatus.imATeapot.code)",
       GRPCHeaderName.statusCode: "\(status.code.rawValue)",
-      GRPCHeaderName.statusMessage: status.message!
+      GRPCHeaderName.statusMessage: status.message!,
     ]
 
     self.sendRequestHead()
     let headerFramePayload = HTTP2Frame.FramePayload.headers(.init(headers: headers))
     XCTAssertThrowsError(try self.channel.writeInbound(headerFramePayload)) { error in
       guard let withContext = error as? GRPCError.WithContext,
-            let invalidHTTPStatus = withContext.error as? GRPCError.InvalidHTTPStatusWithGRPCStatus  else {
+        let invalidHTTPStatus = withContext.error as? GRPCError.InvalidHTTPStatusWithGRPCStatus
+      else {
         XCTFail("Unexpected error: \(error)")
         return
       }

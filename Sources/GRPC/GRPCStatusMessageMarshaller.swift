@@ -45,7 +45,7 @@ extension GRPCStatusMessageMarshaller {
   private static func percentEncode(_ message: String) -> String? {
     let utf8 = message.utf8
 
-    let encodedLength = percentEncodedLength(for: utf8)
+    let encodedLength = self.percentEncodedLength(for: utf8)
     // Fast-path: all characters are valid, nothing to encode.
     if encodedLength == utf8.count {
       return message
@@ -57,14 +57,14 @@ extension GRPCStatusMessageMarshaller {
     for char in message.utf8 {
       switch char {
       // See: https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#responses
-      case 0x20...0x24,
-           0x26...0x7e:
+      case 0x20 ... 0x24,
+           0x26 ... 0x7E:
         bytes.append(char)
 
       default:
         bytes.append(UInt8(ascii: "%"))
-        bytes.append(toHex(char >> 4))
-        bytes.append(toHex(char & 0xf))
+        bytes.append(self.toHex(char >> 4))
+        bytes.append(self.toHex(char & 0xF))
       }
     }
 
@@ -76,8 +76,8 @@ extension GRPCStatusMessageMarshaller {
     var count = view.count
     for byte in view {
       switch byte {
-      case 0x20...0x24,
-           0x26...0x7e:
+      case 0x20 ... 0x24,
+           0x26 ... 0x7E:
         ()
 
       default:
@@ -92,10 +92,10 @@ extension GRPCStatusMessageMarshaller {
   /// - Precondition: Only the four least significant bits may be set.
   /// - Parameter nibble: The nibble to convert to hexadecimal.
   private static func toHex(_ nibble: UInt8) -> UInt8 {
-    assert(nibble & 0xf == nibble)
+    assert(nibble & 0xF == nibble)
 
     switch nibble {
-    case 0...9:
+    case 0 ... 9:
       return nibble &+ UInt8(ascii: "0")
     default:
       return nibble &+ (UInt8(ascii: "A") &- 10)
@@ -110,7 +110,7 @@ extension GRPCStatusMessageMarshaller {
   private static func removePercentEncoding(_ message: String) -> String {
     let utf8 = message.utf8
 
-    let decodedLength = percentDecodedLength(for: utf8)
+    let decodedLength = self.percentDecodedLength(for: utf8)
     // Fast-path: no decoding to do! Note that we may also have detected that the encoding is
     // invalid, in which case we will return the encoded message: this is fine.
     if decodedLength == utf8.count {
@@ -132,10 +132,10 @@ extension GRPCStatusMessageMarshaller {
         guard let (nextIndex, nextNextIndex) = utf8.nextTwoIndices(after: currentIndex),
           let nextHex = fromHex(utf8[nextIndex]),
           let nextNextHex = fromHex(utf8[nextNextIndex])
-          else {
-            // If we can't decode the message, aborting and returning the encoded message is fine
-            // according to the spec.
-            return message
+        else {
+          // If we can't decode the message, aborting and returning the encoded message is fine
+          // according to the spec.
+          return message
         }
         chars.append((nextHex << 4) | nextNextHex)
         currentIndex = nextNextIndex
@@ -179,11 +179,11 @@ extension GRPCStatusMessageMarshaller {
 
   private static func fromHex(_ byte: UInt8) -> UInt8? {
     switch byte {
-    case UInt8(ascii: "0")...UInt8(ascii: "9"):
+    case UInt8(ascii: "0") ... UInt8(ascii: "9"):
       return byte &- UInt8(ascii: "0")
-    case UInt8(ascii: "A")...UInt8(ascii: "Z"):
+    case UInt8(ascii: "A") ... UInt8(ascii: "Z"):
       return byte &- (UInt8(ascii: "A") &- 10)
-    case UInt8(ascii: "a")...UInt8(ascii: "z"):
+    case UInt8(ascii: "a") ... UInt8(ascii: "z"):
       return byte &- (UInt8(ascii: "a") &- 10)
     default:
       return nil

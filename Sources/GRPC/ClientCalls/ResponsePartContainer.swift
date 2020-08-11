@@ -41,7 +41,7 @@ internal struct ResponsePartContainer<Response> {
     self.lazyInitialMetadataPromise.fail(error)
 
     switch self.responseHandler {
-    case .unary(let response):
+    case let .unary(response):
       response.fail(error)
     case .stream:
       ()

@@ -84,9 +84,14 @@ internal struct GRPCPayloadSerializer<Message: GRPCPayload>: MessageSerializer {
 
     // Ensure 'serialize(into:)' didn't do anything strange.
     assert(buffer.readerIndex == readerIndex, "serialize(into:) must not move the readerIndex")
-    assert(buffer.writerIndex >= writerIndex, "serialize(into:) must not move the writerIndex backwards")
-    assert(buffer.getBytes(at: readerIndex, length: 5) == Array(repeating: 0, count: 5),
-           "serialize(into:) must not write over existing written bytes")
+    assert(
+      buffer.writerIndex >= writerIndex,
+      "serialize(into:) must not move the writerIndex backwards"
+    )
+    assert(
+      buffer.getBytes(at: readerIndex, length: 5) == Array(repeating: 0, count: 5),
+      "serialize(into:) must not write over existing written bytes"
+    )
 
     // 'read' the first 5 bytes so that the buffer's readable bytes are only the bytes of the
     // serialized message.
@@ -102,4 +107,3 @@ internal struct GRPCPayloadDeserializer<Message: GRPCPayload>: MessageDeserializ
     return try Message(serializedByteBuffer: &buffer)
   }
 }
-

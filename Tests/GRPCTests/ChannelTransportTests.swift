@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@testable import GRPC
 import EchoModel
+@testable import GRPC
 import NIO
 import NIOHTTP2
 import XCTest
@@ -42,7 +42,7 @@ class ChannelTransportTests: GRPCTestCase {
         switch result {
         case .success:
           promise.succeed(channel)
-        case .failure(let error):
+        case let .failure(error):
           promise.fail(error)
         }
       }
@@ -76,11 +76,18 @@ class ChannelTransportTests: GRPCTestCase {
   func testUnaryHappyPath() throws {
     let channel = EmbeddedChannel()
     let responsePromise = channel.eventLoop.makePromise(of: Response.self)
-    let container = ResponsePartContainer<Response>(eventLoop: channel.eventLoop, unaryResponsePromise: responsePromise)
+    let container = ResponsePartContainer<Response>(
+      eventLoop: channel.eventLoop,
+      unaryResponsePromise: responsePromise
+    )
     let transport = self.makeEmbeddedTransport(channel: channel, container: container)
 
     // Okay, let's send a unary request.
-    transport.sendUnary(self.makeRequestHead(), request: .with { $0.text = "hello" }, compressed: false)
+    transport.sendUnary(
+      self.makeRequestHead(),
+      request: .with { $0.text = "hello" },
+      compressed: false
+    )
 
     // We haven't activated yet so the transport should buffer the message.
     XCTAssertNil(try channel.readOutbound(as: _GRPCClientRequestPart<Request>.self))
@@ -97,15 +104,24 @@ class ChannelTransportTests: GRPCTestCase {
     transport.receiveResponse(.trailingMetadata([:]))
     transport.receiveResponse(.status(.ok))
 
-    XCTAssertNoThrow(try transport.responseContainer.lazyInitialMetadataPromise.getFutureResult().wait())
+    XCTAssertNoThrow(
+      try transport.responseContainer.lazyInitialMetadataPromise.getFutureResult()
+        .wait()
+    )
     XCTAssertNoThrow(try responsePromise.futureResult.wait())
-    XCTAssertNoThrow(try transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult().wait())
+    XCTAssertNoThrow(
+      try transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult()
+        .wait()
+    )
     XCTAssertNoThrow(try transport.responseContainer.lazyStatusPromise.getFutureResult().wait())
   }
 
   func testBidirectionalHappyPath() throws {
     let channel = EmbeddedChannel()
-    let container = ResponsePartContainer<Response>(eventLoop: channel.eventLoop) { (response: Response) in
+    let container = ResponsePartContainer<Response>(
+      eventLoop: channel
+        .eventLoop
+    ) { (response: Response) in
       XCTFail("No response expected but got: \(response)")
     }
 
@@ -117,7 +133,7 @@ class ChannelTransportTests: GRPCTestCase {
       .message(self.makeRequest("1")),
       .message(self.makeRequest("2")),
       .message(self.makeRequest("3")),
-      .end
+      .end,
     ], promise: nil)
 
     // We haven't activated yet so the transport should buffer the messages.
@@ -139,8 +155,14 @@ class ChannelTransportTests: GRPCTestCase {
     XCTAssertNoThrow(try channel.writeInbound(ResponsePart.status(.ok)))
 
     // Check the responses.
-    XCTAssertNoThrow(try transport.responseContainer.lazyInitialMetadataPromise.getFutureResult().wait())
-    XCTAssertNoThrow(try transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult().wait())
+    XCTAssertNoThrow(
+      try transport.responseContainer.lazyInitialMetadataPromise.getFutureResult()
+        .wait()
+    )
+    XCTAssertNoThrow(
+      try transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult()
+        .wait()
+    )
     XCTAssertNoThrow(try transport.responseContainer.lazyStatusPromise.getFutureResult().wait())
   }
 
@@ -150,16 +172,32 @@ class ChannelTransportTests: GRPCTestCase {
     let deadline = NIODeadline.uptimeNanoseconds(0) + .minutes(42)
     let channel = EmbeddedChannel()
     let responsePromise = channel.eventLoop.makePromise(of: Response.self)
-    let container = ResponsePartContainer<Response>(eventLoop: channel.eventLoop, unaryResponsePromise: responsePromise)
-    let transport = self.makeEmbeddedTransport(channel: channel, container: container, deadline: deadline)
+    let container = ResponsePartContainer<Response>(
+      eventLoop: channel.eventLoop,
+      unaryResponsePromise: responsePromise
+    )
+    let transport = self.makeEmbeddedTransport(
+      channel: channel,
+      container: container,
+      deadline: deadline
+    )
 
     // Advance time beyond the timeout.
     channel.embeddedEventLoop.advanceTime(by: .minutes(42))
 
-    XCTAssertThrowsError(try transport.responseContainer.lazyInitialMetadataPromise.getFutureResult().wait())
+    XCTAssertThrowsError(
+      try transport.responseContainer.lazyInitialMetadataPromise
+        .getFutureResult().wait()
+    )
     XCTAssertThrowsError(try responsePromise.futureResult.wait())
-    XCTAssertThrowsError(try transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult().wait())
-    XCTAssertEqual(try transport.responseContainer.lazyStatusPromise.getFutureResult().map { $0.code }.wait(), .deadlineExceeded)
+    XCTAssertThrowsError(
+      try transport.responseContainer.lazyTrailingMetadataPromise
+        .getFutureResult().wait()
+    )
+    XCTAssertEqual(
+      try transport.responseContainer.lazyStatusPromise.getFutureResult().map { $0.code }.wait(),
+      .deadlineExceeded
+    )
 
     // Writing should fail.
     let sendPromise = channel.eventLoop.makePromise(of: Void.self)
@@ -171,10 +209,17 @@ class ChannelTransportTests: GRPCTestCase {
   func testTimeoutAfterActivating() throws {
     let deadline = NIODeadline.uptimeNanoseconds(0) + .minutes(42)
     let channel = EmbeddedChannel()
-    
+
     let responsePromise = channel.eventLoop.makePromise(of: Response.self)
-    let container = ResponsePartContainer<Response>(eventLoop: channel.eventLoop, unaryResponsePromise: responsePromise)
-    let transport = self.makeEmbeddedTransport(channel: channel, container: container, deadline: deadline)
+    let container = ResponsePartContainer<Response>(
+      eventLoop: channel.eventLoop,
+      unaryResponsePromise: responsePromise
+    )
+    let transport = self.makeEmbeddedTransport(
+      channel: channel,
+      container: container,
+      deadline: deadline
+    )
 
     // Activate the channel.
     channel.pipeline.fireChannelActive()
@@ -182,10 +227,19 @@ class ChannelTransportTests: GRPCTestCase {
     // Advance time beyond the timeout.
     channel.embeddedEventLoop.advanceTime(by: .minutes(42))
 
-    XCTAssertThrowsError(try transport.responseContainer.lazyInitialMetadataPromise.getFutureResult().wait())
+    XCTAssertThrowsError(
+      try transport.responseContainer.lazyInitialMetadataPromise
+        .getFutureResult().wait()
+    )
     XCTAssertThrowsError(try responsePromise.futureResult.wait())
-    XCTAssertThrowsError(try transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult().wait())
-    XCTAssertEqual(try transport.responseContainer.lazyStatusPromise.getFutureResult().map { $0.code }.wait(), .deadlineExceeded)
+    XCTAssertThrowsError(
+      try transport.responseContainer.lazyTrailingMetadataPromise
+        .getFutureResult().wait()
+    )
+    XCTAssertEqual(
+      try transport.responseContainer.lazyStatusPromise.getFutureResult().map { $0.code }.wait(),
+      .deadlineExceeded
+    )
 
     // Writing should fail.
     let sendPromise = channel.eventLoop.makePromise(of: Void.self)
@@ -196,11 +250,18 @@ class ChannelTransportTests: GRPCTestCase {
   func testTimeoutMidRPC() throws {
     let deadline = NIODeadline.uptimeNanoseconds(0) + .minutes(42)
     let channel = EmbeddedChannel()
-    let container = ResponsePartContainer<Response>(eventLoop: channel.eventLoop) { (response: Response) in
+    let container = ResponsePartContainer<Response>(
+      eventLoop: channel
+        .eventLoop
+    ) { (response: Response) in
       XCTFail("No response expected but got: \(response)")
     }
 
-    let transport = self.makeEmbeddedTransport(channel: channel, container: container, deadline: deadline)
+    let transport = self.makeEmbeddedTransport(
+      channel: channel,
+      container: container,
+      deadline: deadline
+    )
 
     // Activate the channel.
     channel.pipeline.fireChannelActive()
@@ -208,7 +269,7 @@ class ChannelTransportTests: GRPCTestCase {
     // Okay, send some requests.
     transport.sendRequests([
       .head(self.makeRequestHead()),
-      .message(self.makeRequest("1"))
+      .message(self.makeRequest("1")),
     ], promise: nil)
 
     // Read the parts.
@@ -217,21 +278,33 @@ class ChannelTransportTests: GRPCTestCase {
 
     // We'll send back the initial metadata.
     XCTAssertNoThrow(try channel.writeInbound(ResponsePart.initialMetadata([:])))
-    XCTAssertNoThrow(try transport.responseContainer.lazyInitialMetadataPromise.getFutureResult().wait())
+    XCTAssertNoThrow(
+      try transport.responseContainer.lazyInitialMetadataPromise.getFutureResult()
+        .wait()
+    )
 
     // Advance time beyond the timeout.
     channel.embeddedEventLoop.advanceTime(by: .minutes(42))
 
     // Check the remaining response parts.
-    XCTAssertThrowsError(try transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult().wait())
-    XCTAssertEqual(try transport.responseContainer.lazyStatusPromise.getFutureResult().map { $0.code }.wait(), .deadlineExceeded)
+    XCTAssertThrowsError(
+      try transport.responseContainer.lazyTrailingMetadataPromise
+        .getFutureResult().wait()
+    )
+    XCTAssertEqual(
+      try transport.responseContainer.lazyStatusPromise.getFutureResult().map { $0.code }.wait(),
+      .deadlineExceeded
+    )
   }
 
   // MARK: - Channel errors
 
   func testChannelBecomesInactive() throws {
     let channel = EmbeddedChannel()
-    let container = ResponsePartContainer<Response>(eventLoop: channel.eventLoop) { (response: Response) in
+    let container = ResponsePartContainer<Response>(
+      eventLoop: channel
+        .eventLoop
+    ) { (response: Response) in
       XCTFail("No response expected but got: \(response)")
     }
 
@@ -242,15 +315,24 @@ class ChannelTransportTests: GRPCTestCase {
     channel.pipeline.fireChannelInactive()
 
     // Everything should fail.
-    XCTAssertThrowsError(try transport.responseContainer.lazyInitialMetadataPromise.getFutureResult().wait())
-    XCTAssertThrowsError(try transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult().wait())
+    XCTAssertThrowsError(
+      try transport.responseContainer.lazyInitialMetadataPromise
+        .getFutureResult().wait()
+    )
+    XCTAssertThrowsError(
+      try transport.responseContainer.lazyTrailingMetadataPromise
+        .getFutureResult().wait()
+    )
     // Except the status, that will never fail.
     XCTAssertNoThrow(try transport.responseContainer.lazyStatusPromise.getFutureResult().wait())
   }
 
   func testChannelError() throws {
     let channel = EmbeddedChannel()
-    let container = ResponsePartContainer<Response>(eventLoop: channel.eventLoop) { (response: Response) in
+    let container = ResponsePartContainer<Response>(
+      eventLoop: channel
+        .eventLoop
+    ) { (response: Response) in
       XCTFail("No response expected but got: \(response)")
     }
 
@@ -263,8 +345,14 @@ class ChannelTransportTests: GRPCTestCase {
     channel.pipeline.fireErrorCaught(GRPCStatus.processingError)
 
     // Everything should fail.
-    XCTAssertThrowsError(try transport.responseContainer.lazyInitialMetadataPromise.getFutureResult().wait())
-    XCTAssertThrowsError(try transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult().wait())
+    XCTAssertThrowsError(
+      try transport.responseContainer.lazyInitialMetadataPromise
+        .getFutureResult().wait()
+    )
+    XCTAssertThrowsError(
+      try transport.responseContainer.lazyTrailingMetadataPromise
+        .getFutureResult().wait()
+    )
     // Except the status, that will never fail.
     XCTAssertNoThrow(try transport.responseContainer.lazyStatusPromise.getFutureResult().wait())
   }
@@ -273,7 +361,10 @@ class ChannelTransportTests: GRPCTestCase {
 
   func testOutboundMethodsAfterShutdown() throws {
     let channel = EmbeddedChannel()
-    let container = ResponsePartContainer<Response>(eventLoop: channel.eventLoop) { (response: Response) in
+    let container = ResponsePartContainer<Response>(
+      eventLoop: channel
+        .eventLoop
+    ) { (response: Response) in
       XCTFail("No response expected but got: \(response)")
     }
 
@@ -310,7 +401,10 @@ class ChannelTransportTests: GRPCTestCase {
 
   func testInboundMethodsAfterShutdown() throws {
     let channel = EmbeddedChannel()
-    let container = ResponsePartContainer<Response>(eventLoop: channel.eventLoop) { (response: Response) in
+    let container = ResponsePartContainer<Response>(
+      eventLoop: channel
+        .eventLoop
+    ) { (response: Response) in
       XCTFail("No response expected but got: \(response)")
     }
 
@@ -325,7 +419,10 @@ class ChannelTransportTests: GRPCTestCase {
 
   func testBufferedWritesAreFailedOnClose() throws {
     let channel = EmbeddedChannel()
-    let container = ResponsePartContainer<Response>(eventLoop: channel.eventLoop) { (response: Response) in
+    let container = ResponsePartContainer<Response>(
+      eventLoop: channel
+        .eventLoop
+    ) { (response: Response) in
       XCTFail("No response expected but got: \(response)")
     }
 
@@ -355,11 +452,17 @@ class ChannelTransportTests: GRPCTestCase {
     // Send an error
     transport.receiveError(GRPCError.RPCCancelledByClient())
 
-    XCTAssertThrowsError(try transport.responseContainer.lazyInitialMetadataPromise.getFutureResult().wait()) { error in
+    XCTAssertThrowsError(
+      try transport.responseContainer.lazyInitialMetadataPromise
+        .getFutureResult().wait()
+    ) { error in
       XCTAssertTrue(error is GRPCError.RPCCancelledByClient)
     }
 
-    XCTAssertThrowsError(try transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult().wait()) { error in
+    XCTAssertThrowsError(
+      try transport.responseContainer.lazyTrailingMetadataPromise
+        .getFutureResult().wait()
+    ) { error in
       XCTAssertTrue(error is GRPCError.RPCCancelledByClient)
     }
 
@@ -375,7 +478,7 @@ class ChannelTransportTests: GRPCTestCase {
 extension _GRPCClientRequestPart {
   var requestHead: _GRPCRequestHead? {
     switch self {
-    case .head(let head):
+    case let .head(head):
       return head
     case .message, .end:
       return nil
@@ -384,7 +487,7 @@ extension _GRPCClientRequestPart {
 
   var message: Request? {
     switch self {
-    case .message(let message):
+    case let .message(message):
       return message.message
     case .head, .end:
       return nil

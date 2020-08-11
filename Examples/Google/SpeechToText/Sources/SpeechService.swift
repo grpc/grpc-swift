@@ -34,7 +34,10 @@ final class SpeechService {
   private var state: State = .idle
 
   init() {
-    precondition(!Constants.apiKey.isEmpty, "Please refer to the README on how to configure your API Key properly.")
+    precondition(
+      !Constants.apiKey.isEmpty,
+      "Please refer to the README on how to configure your API Key properly."
+    )
 
     // Make EventLoopGroup for the specific platform (NIOTSEventLoopGroup for iOS)
     // see https://github.com/grpc/grpc-swift/blob/main/docs/apple-platforms.md for more details
@@ -47,11 +50,14 @@ final class SpeechService {
 
     // Specify call options to be used for gRPC calls
     let callOptions = CallOptions(customMetadata: [
-      "x-goog-api-key": Constants.apiKey
+      "x-goog-api-key": Constants.apiKey,
     ])
 
     // Now we have a client!
-    self.client = Google_Cloud_Speech_V1_SpeechClient(channel: channel, defaultCallOptions: callOptions)
+    self.client = Google_Cloud_Speech_V1_SpeechClient(
+      channel: channel,
+      defaultCallOptions: callOptions
+    )
   }
 
   func stream(_ data: Data,
@@ -97,7 +103,7 @@ final class SpeechService {
       // Send audio data
       call.sendMessage(streamAudioDataRequest, promise: nil)
 
-    case .streaming(let call):
+    case let .streaming(call):
       // Stream request to send that contains the audio details
       let streamAudioDataRequest = Google_Cloud_Speech_V1_StreamingRecognizeRequest.with {
         $0.audioContent = data
@@ -113,7 +119,7 @@ final class SpeechService {
     switch self.state {
     case .idle:
       return
-    case .streaming(let stream):
+    case let .streaming(stream):
       stream.sendEnd(promise: nil)
       self.state = .idle
     }

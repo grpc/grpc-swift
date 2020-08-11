@@ -15,8 +15,8 @@
  */
 import GRPC
 import HelloWorldModel
-import NIO
 import Logging
+import NIO
 
 // Quieten the logs.
 LoggingSystem.bootstrap {

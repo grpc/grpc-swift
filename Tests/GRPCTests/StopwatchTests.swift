@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 import Foundation
-import XCTest
 @testable import GRPC
+import XCTest
 
 class StopwatchTests: GRPCTestCase {
   func testElapsed() {
     var time: TimeInterval = 0.0
 
     let stopwatch = Stopwatch {
-      return Date(timeIntervalSinceNow: time)
+      Date(timeIntervalSinceNow: time)
     }
 
     time = 1.0

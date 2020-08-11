@@ -60,7 +60,10 @@ class GRPCPingHandlerTests: GRPCTestCase {
 
     // Send ping, which is valid
     response = self.pingHandler.pingFired()
-    XCTAssertEqual(response, .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: false)))
+    XCTAssertEqual(
+      response,
+      .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: false))
+    )
 
     // Received valid pong, scheduled timeout should be cancelled
     response = self.pingHandler.read(pingData: HTTP2PingData(withInteger: 1), ack: true)
@@ -106,7 +109,10 @@ class GRPCPingHandlerTests: GRPCTestCase {
 
     // Send ping, which is valid
     var response: PingHandler.Action = self.pingHandler.pingFired()
-    XCTAssertEqual(response, .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: false)))
+    XCTAssertEqual(
+      response,
+      .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: false))
+    )
 
     // Received valid pong, scheduled timeout should be cancelled
     response = self.pingHandler.read(pingData: HTTP2PingData(withInteger: 1), ack: true)
@@ -130,7 +136,10 @@ class GRPCPingHandlerTests: GRPCTestCase {
 
     // Send ping, which is valid
     response = self.pingHandler.pingFired()
-    XCTAssertEqual(response, .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: false)))
+    XCTAssertEqual(
+      response,
+      .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: false))
+    )
 
     // Received valid pong, scheduled timeout should be cancelled
     response = self.pingHandler.read(pingData: HTTP2PingData(withInteger: 1), ack: true)
@@ -147,14 +156,20 @@ class GRPCPingHandlerTests: GRPCTestCase {
 
     // Send first ping
     response = self.pingHandler.pingFired()
-    XCTAssertEqual(response, .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: false)))
+    XCTAssertEqual(
+      response,
+      .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: false))
+    )
 
     // Move time to 1 second in the future
     self.pingHandler._testingOnlyNow = .now() + .seconds(1)
 
     // Send another ping, which is valid since client do not check ping strikes
     response = self.pingHandler.pingFired()
-    XCTAssertEqual(response, .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: false)))
+    XCTAssertEqual(
+      response,
+      .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: false))
+    )
 
     // Stream closed
     response = self.pingHandler.streamClosed()
@@ -163,11 +178,20 @@ class GRPCPingHandlerTests: GRPCTestCase {
 
   func testIntervalTooEarlyWithoutCallsInFlight() {
     // Allow pings without calls with a maximum pings of 2
-    self.setupPingHandler(interval: .seconds(2), timeout: .seconds(1), permitWithoutCalls: true, maximumPingsWithoutData: 2, minimumSentPingIntervalWithoutData: .seconds(5))
+    self.setupPingHandler(
+      interval: .seconds(2),
+      timeout: .seconds(1),
+      permitWithoutCalls: true,
+      maximumPingsWithoutData: 2,
+      minimumSentPingIntervalWithoutData: .seconds(5)
+    )
 
     // Send first ping
     var response: PingHandler.Action = self.pingHandler.pingFired()
-    XCTAssertEqual(response, .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: false)))
+    XCTAssertEqual(
+      response,
+      .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: false))
+    )
 
     // Move time to 1 second in the future
     self.pingHandler._testingOnlyNow = .now() + .seconds(1)
@@ -181,14 +205,20 @@ class GRPCPingHandlerTests: GRPCTestCase {
 
     // Send another ping, which is valid since we waited `minimumSentPingIntervalWithoutData`
     response = self.pingHandler.pingFired()
-    XCTAssertEqual(response, .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: false)))
+    XCTAssertEqual(
+      response,
+      .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: false))
+    )
 
     // Move time to 10 seconds in the future
     self.pingHandler._testingOnlyNow = .now() + .seconds(10)
 
     // Send another ping, which is valid since we waited `minimumSentPingIntervalWithoutData`
     response = self.pingHandler.pingFired()
-    XCTAssertEqual(response, .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: false)))
+    XCTAssertEqual(
+      response,
+      .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: false))
+    )
 
     // Send another ping, but we've exceeded `maximumPingsWithoutData` so response should be no action
     response = self.pingHandler.pingFired()
@@ -200,7 +230,10 @@ class GRPCPingHandlerTests: GRPCTestCase {
 
     // Send another ping, now that there is call, ping is valid
     response = self.pingHandler.pingFired()
-    XCTAssertEqual(response, .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: false)))
+    XCTAssertEqual(
+      response,
+      .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: false))
+    )
 
     // Stream closed
     response = self.pingHandler.streamClosed()
@@ -212,16 +245,28 @@ class GRPCPingHandlerTests: GRPCTestCase {
     self.setupPingHandler(interval: .seconds(2), timeout: .seconds(1), permitWithoutCalls: true)
 
     // Received first ping, response should be a pong
-    var response: PingHandler.Action = self.pingHandler.read(pingData: HTTP2PingData(withInteger: 1), ack: false)
-    XCTAssertEqual(response, .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: true)))
+    var response: PingHandler.Action = self.pingHandler.read(
+      pingData: HTTP2PingData(withInteger: 1),
+      ack: false
+    )
+    XCTAssertEqual(
+      response,
+      .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: true))
+    )
 
     // Received another ping, response should be a pong (ping strikes not in effect)
     response = self.pingHandler.read(pingData: HTTP2PingData(withInteger: 1), ack: false)
-    XCTAssertEqual(response, .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: true)))
+    XCTAssertEqual(
+      response,
+      .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: true))
+    )
 
     // Received another ping, response should be a pong (ping strikes not in effect)
     response = self.pingHandler.read(pingData: HTTP2PingData(withInteger: 1), ack: false)
-    XCTAssertEqual(response, .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: true)))
+    XCTAssertEqual(
+      response,
+      .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: true))
+    )
   }
 
   func testPingWithoutDataResultsInPongForClient() {
@@ -229,7 +274,10 @@ class GRPCPingHandlerTests: GRPCTestCase {
     self.setupPingHandler(permitWithoutCalls: false)
 
     let action = self.pingHandler.read(pingData: HTTP2PingData(withInteger: 1), ack: false)
-    XCTAssertEqual(action, .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: true)))
+    XCTAssertEqual(
+      action,
+      .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: true))
+    )
   }
 
   func testPingWithoutDataResultsInPongForServer() {
@@ -243,16 +291,31 @@ class GRPCPingHandlerTests: GRPCTestCase {
     )
 
     let action = self.pingHandler.read(pingData: HTTP2PingData(withInteger: 1), ack: false)
-    XCTAssertEqual(action, .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: true)))
+    XCTAssertEqual(
+      action,
+      .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: true))
+    )
   }
 
   func testPingStrikesOnServer() {
     // Set a maximum ping strikes of 1 without a minimum of 1 second between pings
-    self.setupPingHandler(interval: .seconds(2), timeout: .seconds(1), permitWithoutCalls: true, minimumReceivedPingIntervalWithoutData: .seconds(1), maximumPingStrikes: 1)
+    self.setupPingHandler(
+      interval: .seconds(2),
+      timeout: .seconds(1),
+      permitWithoutCalls: true,
+      minimumReceivedPingIntervalWithoutData: .seconds(1),
+      maximumPingStrikes: 1
+    )
 
     // Received first ping, response should be a pong
-    var response: PingHandler.Action = self.pingHandler.read(pingData: HTTP2PingData(withInteger: 1), ack: false)
-    XCTAssertEqual(response, .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: true)))
+    var response: PingHandler.Action = self.pingHandler.read(
+      pingData: HTTP2PingData(withInteger: 1),
+      ack: false
+    )
+    XCTAssertEqual(
+      response,
+      .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: true))
+    )
 
     // Received another ping, which is invalid (ping strike), response should be no action
     response = self.pingHandler.read(pingData: HTTP2PingData(withInteger: 1), ack: false)
@@ -263,7 +326,10 @@ class GRPCPingHandlerTests: GRPCTestCase {
 
     // Received another ping, which is valid now, response should be a pong
     response = self.pingHandler.read(pingData: HTTP2PingData(withInteger: 1), ack: false)
-    XCTAssertEqual(response, .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: true)))
+    XCTAssertEqual(
+      response,
+      .reply(HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: 1), ack: true))
+    )
 
     // Received another ping, which is invalid (ping strike), response should be no action
     response = self.pingHandler.read(pingData: HTTP2PingData(withInteger: 1), ack: false)
@@ -271,7 +337,14 @@ class GRPCPingHandlerTests: GRPCTestCase {
 
     // Received another ping, which is invalid (ping strike), since number of ping strikes is over the limit, response should be go away
     response = self.pingHandler.read(pingData: HTTP2PingData(withInteger: 1), ack: false)
-    XCTAssertEqual(response, .reply(HTTP2Frame.FramePayload.goAway(lastStreamID: .rootStream, errorCode: .enhanceYourCalm, opaqueData: nil)))
+    XCTAssertEqual(
+      response,
+      .reply(HTTP2Frame.FramePayload.goAway(
+        lastStreamID: .rootStream,
+        errorCode: .enhanceYourCalm,
+        opaqueData: nil
+      ))
+    )
   }
 
   private func setupPingHandler(
@@ -292,7 +365,8 @@ class GRPCPingHandlerTests: GRPCTestCase {
       maximumPingsWithoutData: maximumPingsWithoutData,
       minimumSentPingIntervalWithoutData: minimumSentPingIntervalWithoutData,
       minimumReceivedPingIntervalWithoutData: minimumReceivedPingIntervalWithoutData,
-      maximumPingStrikes: maximumPingStrikes)
+      maximumPingStrikes: maximumPingStrikes
+    )
   }
 }
 
@@ -305,7 +379,7 @@ extension PingHandler.Action: Equatable {
       return lhsDelay == rhsDelay && lhsTimeout == rhsTimeout
     case (.cancelScheduledTimeout, .cancelScheduledTimeout):
       return true
-    case (let .reply(lhsPayload), let .reply(rhsPayload)):
+    case let (.reply(lhsPayload), .reply(rhsPayload)):
       switch (lhsPayload, rhsPayload) {
       case (let .ping(lhsData, ack: lhsAck), let .ping(rhsData, ack: rhsAck)):
         return lhsData == rhsData && lhsAck == rhsAck

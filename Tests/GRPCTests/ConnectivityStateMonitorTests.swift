@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 @testable import GRPC
-import XCTest
 import Logging
+import XCTest
 
 class ConnectivityStateMonitorTests: GRPCTestCase {
   // Ensure `.idle` isn't first since it is the initial state and we only trigger callbacks
@@ -29,7 +29,7 @@ class ConnectivityStateMonitorTests: GRPCTestCase {
       XCTAssertEqual(changes, [
         Change(from: .idle, to: .connecting),
         Change(from: .connecting, to: .ready),
-        Change(from: .ready, to: .shutdown)
+        Change(from: .ready, to: .shutdown),
       ])
     }
 

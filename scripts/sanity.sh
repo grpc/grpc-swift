@@ -46,6 +46,4 @@ function check_formatting() {
 }
 
 check_license_headers
-
-# We won't run this just yet.
-# check_formatting
+check_formatting

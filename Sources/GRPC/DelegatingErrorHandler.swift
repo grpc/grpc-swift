@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 import Foundation
+import Logging
 import NIO
 import NIOSSL
-import Logging
 
 /// A channel handler which allows caught errors to be passed to a `ClientErrorDelegate`. This
 /// handler is intended to be used in the client channel pipeline after the HTTP/2 stream
@@ -44,7 +44,12 @@ class DelegatingErrorHandler: ChannelInboundHandler {
 
     if let delegate = self.delegate {
       if let context = error as? GRPCError.WithContext {
-        delegate.didCatchError(context.error, logger: self.logger, file: context.file, line: context.line)
+        delegate.didCatchError(
+          context.error,
+          logger: self.logger,
+          file: context.file,
+          line: context.line
+        )
       } else {
         delegate.didCatchErrorWithoutContext(error, logger: self.logger)
       }

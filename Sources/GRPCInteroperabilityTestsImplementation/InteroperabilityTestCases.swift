@@ -16,8 +16,8 @@
 import Foundation
 import GRPC
 import GRPCInteroperabilityTestModels
-import NIOHTTP1
 import NIOHPACK
+import NIOHTTP1
 
 /// This test verifies that implementations support zero-size messages. Ideally, client
 /// implementations would verify that the request and response were zero bytes serialized, but
@@ -194,7 +194,11 @@ class ClientCompressedUnary: InteroperabilityTest {
     try waitAndAssertEqual(probe.status.map { $0.code }, .invalidArgument)
 
     // With compression expected and enabled.
-    let options = CallOptions(messageEncoding: .enabled(.init(forRequests: .gzip, decompressionLimit: .absolute(1024 * 1024))))
+    let options =
+      CallOptions(messageEncoding: .enabled(.init(
+        forRequests: .gzip,
+        decompressionLimit: .absolute(1024 * 1024)
+      )))
     let compressed = client.unaryCall(compressedRequest, callOptions: options)
     try waitAndAssertEqual(compressed.response.map { $0.payload }, .zeros(count: 314_159))
     try waitAndAssertEqual(compressed.status.map { $0.code }, .ok)
@@ -264,13 +268,17 @@ class ServerCompressedUnary: InteroperabilityTest {
       request.payload = .zeros(count: 271_828)
     }
 
-    let options = CallOptions(messageEncoding: .enabled(.responsesOnly(decompressionLimit: .absolute(1024 * 1024))))
+    let options =
+      CallOptions(messageEncoding: .enabled(.responsesOnly(decompressionLimit: .absolute(
+        1024 *
+          1024
+      ))))
     let compressed = client.unaryCall(compressedRequest, callOptions: options)
     // We can't verify that the compression bit was set, instead we verify that the encoding header
     // was sent by the server. This isn't quite the same since as it can still be set but the
     // compression may be not set.
     try waitAndAssert(compressed.initialMetadata) { headers in
-      return headers.first(name: "grpc-encoding") != nil
+      headers.first(name: "grpc-encoding") != nil
     }
     try waitAndAssertEqual(compressed.response.map { $0.payload }, .zeros(count: 314_159))
     try waitAndAssertEqual(compressed.status.map { $0.code }, .ok)
@@ -334,13 +342,13 @@ class ClientStreaming: InteroperabilityTest {
     let client = Grpc_Testing_TestServiceClient(channel: connection)
     let call = client.streamingInputCall()
 
-    let requests = [27_182, 8, 1_828, 45_904].map { zeros in
+    let requests = [27182, 8, 1828, 45904].map { zeros in
       Grpc_Testing_StreamingInputCallRequest.withPayload(of: .zeros(count: zeros))
     }
     call.sendMessages(requests, promise: nil)
     call.sendEnd(promise: nil)
 
-    try waitAndAssertEqual(call.response.map { $0.aggregatedPayloadSize }, 74_922)
+    try waitAndAssertEqual(call.response.map { $0.aggregatedPayloadSize }, 74922)
     try waitAndAssertEqual(call.status.map { $0.code }, .ok)
   }
 }
@@ -410,7 +418,7 @@ class ClientCompressedStreaming: InteroperabilityTest {
     let probe = client.streamingInputCall()
     let probeRequest: Grpc_Testing_StreamingInputCallRequest = .with { request in
       request.expectCompressed = true
-      request.payload = .zeros(count: 27_182)
+      request.payload = .zeros(count: 27182)
     }
 
     // Compression is disabled at the RPC level.
@@ -426,16 +434,20 @@ class ClientCompressedStreaming: InteroperabilityTest {
     // The second should not be compressed.
     let secondMessage: Grpc_Testing_StreamingInputCallRequest = .with { request in
       request.expectCompressed = false
-      request.payload = .zeros(count: 45_904)
+      request.payload = .zeros(count: 45904)
     }
 
-    let options = CallOptions(messageEncoding: .enabled(.init(forRequests: .gzip, decompressionLimit: .ratio(10))))
+    let options =
+      CallOptions(messageEncoding: .enabled(.init(
+        forRequests: .gzip,
+        decompressionLimit: .ratio(10)
+      )))
     let streaming = client.streamingInputCall(callOptions: options)
     streaming.sendMessage(probeRequest, compression: .enabled, promise: nil)
     streaming.sendMessage(secondMessage, compression: .disabled, promise: nil)
     streaming.sendEnd(promise: nil)
 
-    try waitAndAssertEqual(streaming.response.map { $0.aggregatedPayloadSize }, 73_086)
+    try waitAndAssertEqual(streaming.response.map { $0.aggregatedPayloadSize }, 73086)
     try waitAndAssertEqual(streaming.status.map { $0.code }, .ok)
   }
 }
@@ -474,7 +486,7 @@ class ServerStreaming: InteroperabilityTest {
   func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_TestServiceClient(channel: connection)
 
-    let responseSizes = [31_415, 9, 2_653, 58_979]
+    let responseSizes = [31415, 9, 2653, 58979]
     let request = Grpc_Testing_StreamingOutputCallRequest.with { request in
       request.responseParameters = responseSizes.map { .size($0) }
     }
@@ -540,16 +552,20 @@ class ServerCompressedStreaming: InteroperabilityTest {
       request.responseParameters = [
         .with {
           $0.compressed = true
-          $0.size = 31_415
+          $0.size = 31415
         },
         .with {
           $0.compressed = false
-          $0.size = 92_653
-        }
+          $0.size = 92653
+        },
       ]
     }
 
-    let options = CallOptions(messageEncoding: .enabled(.responsesOnly(decompressionLimit: .absolute(1024 * 1024))))
+    let options =
+      CallOptions(messageEncoding: .enabled(.responsesOnly(decompressionLimit: .absolute(
+        1024 *
+          1024
+      ))))
     var payloads: [Grpc_Testing_Payload] = []
     let rpc = client.streamingOutputCall(request, callOptions: options) { response in
       payloads.append(response.payload)
@@ -559,10 +575,10 @@ class ServerCompressedStreaming: InteroperabilityTest {
     // was sent by the server. This isn't quite the same since as it can still be set but the
     // compression may be not set.
     try waitAndAssert(rpc.initialMetadata) { headers in
-      return headers.first(name: "grpc-encoding") != nil
+      headers.first(name: "grpc-encoding") != nil
     }
 
-    let responseSizes = [31_415, 92_653]
+    let responseSizes = [31415, 92653]
     // Wait for the status first to ensure we've finished collecting responses.
     try waitAndAssertEqual(rpc.status.map { $0.code }, .ok)
     try assertEqual(payloads, responseSizes.map { .zeros(count: $0) })
@@ -631,8 +647,8 @@ class PingPong: InteroperabilityTest {
   func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_TestServiceClient(channel: connection)
 
-    let requestSizes = [27_182, 8, 1_828, 45_904]
-    let responseSizes = [31_415, 9, 2_653, 58_979]
+    let requestSizes = [27182, 8, 1828, 45904]
+    let responseSizes = [31415, 9, 2653, 58979]
 
     let responseReceived = DispatchSemaphore(value: 0)
 
@@ -733,9 +749,10 @@ class CustomMetadata: InteroperabilityTest {
   let initialMetadataValue = "test_initial_metadata_value"
 
   let trailingMetadataName = "x-grpc-test-echo-trailing-bin"
-  let trailingMetadataValue = Data([0xab, 0xab, 0xab]).base64EncodedString()
+  let trailingMetadataValue = Data([0xAB, 0xAB, 0xAB]).base64EncodedString()
 
-  func checkMetadata<SpecificClientCall>(call: SpecificClientCall) throws where SpecificClientCall: ClientCall {
+  func checkMetadata<SpecificClientCall>(call: SpecificClientCall) throws
+    where SpecificClientCall: ClientCall {
     let initialName = call.initialMetadata.map { $0[self.initialMetadataName] }
     try waitAndAssertEqual(initialName, [self.initialMetadataValue])
 
@@ -755,7 +772,7 @@ class CustomMetadata: InteroperabilityTest {
 
     let customMetadata: HPACKHeaders = [
       self.initialMetadataName: self.initialMetadataValue,
-      self.trailingMetadataName: self.trailingMetadataValue
+      self.trailingMetadataName: self.trailingMetadataValue,
     ]
 
     let callOptions = CallOptions(customMetadata: customMetadata)
@@ -812,7 +829,8 @@ class StatusCodeAndMessage: InteroperabilityTest {
   let expectedCode = 2
   let expectedMessage = "test status message"
 
-  func checkStatus<SpecificClientCall>(call: SpecificClientCall) throws where SpecificClientCall: ClientCall {
+  func checkStatus<SpecificClientCall>(call: SpecificClientCall) throws
+    where SpecificClientCall: ClientCall {
     try waitAndAssertEqual(call.status.map { $0.code.rawValue }, self.expectedCode)
     try waitAndAssertEqual(call.status.map { $0.message }, self.expectedMessage)
   }
@@ -820,7 +838,10 @@ class StatusCodeAndMessage: InteroperabilityTest {
   func run(using connection: ClientConnection) throws {
     let client = Grpc_Testing_TestServiceClient(channel: connection)
 
-    let echoStatus = Grpc_Testing_EchoStatus(code: Int32(self.expectedCode), message: self.expectedMessage)
+    let echoStatus = Grpc_Testing_EchoStatus(
+      code: Int32(self.expectedCode),
+      message: self.expectedMessage
+    )
 
     let unaryCall = client.unaryCall(.withStatus(of: echoStatus))
     try self.checkStatus(call: unaryCall)
@@ -975,8 +996,8 @@ class CancelAfterFirstResponse: InteroperabilityTest {
     }
 
     let request = Grpc_Testing_StreamingOutputCallRequest.with { request in
-      request.responseParameters = [.size(31_415)]
-      request.payload = .zeros(count: 27_182)
+      request.responseParameters = [.size(31415)]
+      request.payload = .zeros(count: 27182)
     }
 
     call.sendMessage(request, promise: nil)

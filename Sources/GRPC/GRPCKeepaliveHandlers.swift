@@ -39,10 +39,10 @@ internal class GRPCClientKeepaliveHandler: ChannelInboundHandler, _ChannelKeepal
   var pingHandler: PingHandler
 
   /// The scheduled task which will ping.
-  var scheduledPing: RepeatedTask? = nil
+  var scheduledPing: RepeatedTask?
 
   /// The scheduled task which will close the connection.
-  var scheduledClose: Scheduled<Void>? = nil
+  var scheduledClose: Scheduled<Void>?
 }
 
 internal class GRPCServerKeepaliveHandler: ChannelInboundHandler, _ChannelKeepaliveHandler {
@@ -66,13 +66,14 @@ internal class GRPCServerKeepaliveHandler: ChannelInboundHandler, _ChannelKeepal
   var pingHandler: PingHandler
 
   /// The scheduled task which will ping.
-  var scheduledPing: RepeatedTask? = nil
+  var scheduledPing: RepeatedTask?
 
   /// The scheduled task which will close the connection.
-  var scheduledClose: Scheduled<Void>? = nil
+  var scheduledClose: Scheduled<Void>?
 }
 
-protocol _ChannelKeepaliveHandler: ChannelInboundHandler where OutboundOut == HTTP2Frame, InboundIn == HTTP2Frame {
+protocol _ChannelKeepaliveHandler: ChannelInboundHandler where OutboundOut == HTTP2Frame,
+  InboundIn == HTTP2Frame {
   var pingHandler: PingHandler { get set }
   var scheduledPing: RepeatedTask? { get set }
   var scheduledClose: Scheduled<Void>? { get set }
@@ -123,16 +124,18 @@ extension _ChannelKeepaliveHandler {
     context.writeAndFlush(frame, promise: nil)
   }
 
-  private func schedulePing(delay: TimeAmount, timeout: TimeAmount, context: ChannelHandlerContext) {
+  private func schedulePing(delay: TimeAmount, timeout: TimeAmount,
+                            context: ChannelHandlerContext) {
     guard delay != .nanoseconds(Int64.max) else { return }
 
-    self.scheduledPing = context.eventLoop.scheduleRepeatedTask(initialDelay: delay, delay: delay) { _ in
-      self.perform(action: self.pingHandler.pingFired(), context: context)
-      // `timeout` is less than `interval`, guaranteeing that the close task
-      // will be fired before a new ping is triggered.
-      assert(timeout < delay, "`timeout` must be less than `interval`")
-      self.scheduleClose(timeout: timeout, context: context)
-    }
+    self.scheduledPing = context.eventLoop
+      .scheduleRepeatedTask(initialDelay: delay, delay: delay) { _ in
+        self.perform(action: self.pingHandler.pingFired(), context: context)
+        // `timeout` is less than `interval`, guaranteeing that the close task
+        // will be fired before a new ping is triggered.
+        assert(timeout < delay, "`timeout` must be less than `interval`")
+        self.scheduleClose(timeout: timeout, context: context)
+      }
   }
 
   private func scheduleClose(timeout: TimeAmount, context: ChannelHandlerContext) {
@@ -186,13 +189,13 @@ struct PingHandler {
   private let maximumPingStrikes: UInt?
 
   /// When the handler started pinging
-  private var startedAt: NIODeadline? = nil
+  private var startedAt: NIODeadline?
 
   /// When the last ping was received
-  private var lastReceivedPingDate: NIODeadline? = nil
+  private var lastReceivedPingDate: NIODeadline?
 
   /// When the last ping was sent
-  private var lastSentPingDate: NIODeadline? = nil
+  private var lastSentPingDate: NIODeadline?
 
   /// The number of pings sent on the transport without any data
   private var sentPingsWithoutData = 0
@@ -201,7 +204,7 @@ struct PingHandler {
   private var pingStrikes: UInt = 0
 
   /// The scheduled task which will close the connection.
-  private var scheduledClose: Scheduled<Void>? = nil
+  private var scheduledClose: Scheduled<Void>?
 
   /// Number of active streams
   private var activeStreams = 0 {
@@ -307,7 +310,6 @@ struct PingHandler {
     }
   }
 
-
   mutating func pingFired() -> Action {
     if self.shouldBlockPing {
       return .none
@@ -334,11 +336,15 @@ struct PingHandler {
   ///
   /// - Precondition: Ping strikes are supported (i.e. `self.maximumPingStrikes != nil`)
   private var isPingStrike: Bool {
-    assert(self.maximumPingStrikes != nil, "Ping strikes are not supported but we're checking for one")
-    guard self.activeStreams == 0 && self.permitWithoutCalls,
+    assert(
+      self.maximumPingStrikes != nil,
+      "Ping strikes are not supported but we're checking for one"
+    )
+    guard self.activeStreams == 0, self.permitWithoutCalls,
       let lastReceivedPingDate = self.lastReceivedPingDate,
-      let minimumReceivedPingIntervalWithoutData = self.minimumReceivedPingIntervalWithoutData else {
-        return false
+      let minimumReceivedPingIntervalWithoutData = self.minimumReceivedPingIntervalWithoutData
+    else {
+      return false
     }
 
     return self.now() - lastReceivedPingDate < minimumReceivedPingIntervalWithoutData
@@ -349,16 +355,17 @@ struct PingHandler {
     guard self.activeStreams > 0 || self.permitWithoutCalls else {
       return true
     }
-  
+
     // There is no active call on the transport but pings should be sent
-    if self.activeStreams == 0 && self.permitWithoutCalls {
+    if self.activeStreams == 0, self.permitWithoutCalls {
       // The number of pings already sent on the transport without any data has already exceeded the limit
       if self.sentPingsWithoutData > self.maximumPingsWithoutData {
         return true
       }
 
       // The time elapsed since the previous ping is less than the minimum required
-      if let lastSentPingDate = self.lastSentPingDate, self.now() - lastSentPingDate < self.minimumSentPingIntervalWithoutData {
+      if let lastSentPingDate = self.lastSentPingDate,
+        self.now() - lastSentPingDate < self.minimumSentPingIntervalWithoutData {
         return true
       }
 

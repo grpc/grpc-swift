@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 import Dispatch
+import EchoModel
 import Foundation
+@testable import GRPC
 import NIO
+import NIOHPACK
 import NIOHTTP1
 import NIOHTTP2
-import NIOHPACK
-@testable import GRPC
-import EchoModel
 import XCTest
 
 let thrownError = GRPCStatus(code: .internalError, message: "expected error")
@@ -32,45 +32,58 @@ let transformedMetadata = HTTPHeaders([("transformed", "header")])
 // to the channel. We want to test that case as well as the one where we throw only _after_ the handler has been added
 // to the channel.
 class ImmediateThrowingEchoProvider: Echo_EchoProvider {
-  func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
+  func get(request: Echo_EchoRequest,
+           context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
     return context.eventLoop.makeFailedFuture(thrownError)
   }
 
-  func expand(request: Echo_EchoRequest, context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<GRPCStatus> {
+  func expand(
+    request: Echo_EchoRequest,
+    context: StreamingResponseCallContext<Echo_EchoResponse>
+  ) -> EventLoopFuture<GRPCStatus> {
     return context.eventLoop.makeFailedFuture(thrownError)
   }
 
-  func collect(context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
+  func collect(context: UnaryResponseCallContext<Echo_EchoResponse>)
+    -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     return context.eventLoop.makeFailedFuture(thrownError)
   }
 
-  func update(context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
+  func update(context: StreamingResponseCallContext<Echo_EchoResponse>)
+    -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     return context.eventLoop.makeFailedFuture(thrownError)
   }
 }
 
 extension EventLoop {
   func makeFailedFuture<T>(_ error: Error, delay: TimeInterval) -> EventLoopFuture<T> {
-    return self.scheduleTask(in: .nanoseconds(Int64(delay * 1000 * 1000 * 1000))) { () }.futureResult
+    return self.scheduleTask(in: .nanoseconds(Int64(delay * 1000 * 1000 * 1000))) { () }
+      .futureResult
       .flatMapThrowing { _ -> T in throw error }
   }
 }
 
 /// See `ImmediateThrowingEchoProvider`.
 class DelayedThrowingEchoProvider: Echo_EchoProvider {
-  func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
+  func get(request: Echo_EchoRequest,
+           context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
     return context.eventLoop.makeFailedFuture(thrownError, delay: 0.01)
   }
 
-  func expand(request: Echo_EchoRequest, context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<GRPCStatus> {
+  func expand(
+    request: Echo_EchoRequest,
+    context: StreamingResponseCallContext<Echo_EchoResponse>
+  ) -> EventLoopFuture<GRPCStatus> {
     return context.eventLoop.makeFailedFuture(thrownError, delay: 0.01)
   }
 
-  func collect(context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
+  func collect(context: UnaryResponseCallContext<Echo_EchoResponse>)
+    -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     return context.eventLoop.makeFailedFuture(thrownError, delay: 0.01)
   }
 
-  func update(context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
+  func update(context: StreamingResponseCallContext<Echo_EchoResponse>)
+    -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     return context.eventLoop.makeFailedFuture(thrownError, delay: 0.01)
   }
 }
@@ -79,18 +92,23 @@ class DelayedThrowingEchoProvider: Echo_EchoProvider {
 class ErrorReturningEchoProvider: ImmediateThrowingEchoProvider {
   // There's no status promise to fulfill for unary calls (only the response promise), so that case is omitted.
 
-  override func expand(request: Echo_EchoRequest, context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<GRPCStatus> {
+  override func expand(
+    request: Echo_EchoRequest,
+    context: StreamingResponseCallContext<Echo_EchoResponse>
+  ) -> EventLoopFuture<GRPCStatus> {
     return context.eventLoop.makeSucceededFuture(thrownError)
   }
 
-  override func collect(context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
+  override func collect(context: UnaryResponseCallContext<Echo_EchoResponse>)
+    -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     return context.eventLoop.makeSucceededFuture({ _ in
       context.responseStatus = thrownError
       context.responsePromise.succeed(Echo_EchoResponse())
     })
   }
 
-  override func update(context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
+  override func update(context: StreamingResponseCallContext<Echo_EchoResponse>)
+    -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     return context.eventLoop.makeSucceededFuture({ _ in
       context.statusPromise.succeed(thrownError)
     })
@@ -98,14 +116,17 @@ class ErrorReturningEchoProvider: ImmediateThrowingEchoProvider {
 }
 
 private class ErrorTransformingDelegate: ServerErrorDelegate {
-  func transformRequestHandlerError(_ error: Error, request: HTTPRequestHead) -> GRPCStatusAndMetadata? {
+  func transformRequestHandlerError(_ error: Error,
+                                    request: HTTPRequestHead) -> GRPCStatusAndMetadata? {
     return GRPCStatusAndMetadata(status: transformedError, metadata: transformedMetadata)
   }
 }
 
 class ServerThrowingTests: EchoTestCaseBase {
   var expectedError: GRPCStatus { return thrownError }
-  var expectedMetadata: HPACKHeaders? { return HPACKHeaders([("grpc-status", "13"), ("grpc-message", "expected error")]) }
+  var expectedMetadata: HPACKHeaders? {
+    return HPACKHeaders([("grpc-status", "13"), ("grpc-message", "expected error")])
+  }
 
   override func makeEchoProvider() -> Echo_EchoProvider { return ImmediateThrowingEchoProvider() }
 }
@@ -121,7 +142,8 @@ class ClientThrowingWhenServerReturningErrorTests: ServerThrowingTests {
 class ServerErrorTransformingTests: ServerThrowingTests {
   override var expectedError: GRPCStatus { return transformedError }
   override var expectedMetadata: HPACKHeaders? {
-    return HPACKHeaders([("grpc-status", "10"), ("grpc-message", "transformed error"), ("transformed", "header")])
+    return HPACKHeaders([("grpc-status", "10"), ("grpc-message", "transformed error"),
+                         ("transformed", "header")])
   }
 
   override func makeErrorDelegate() -> ServerErrorDelegate? { return ErrorTransformingDelegate() }
@@ -130,8 +152,8 @@ class ServerErrorTransformingTests: ServerThrowingTests {
 extension ServerThrowingTests {
   func testUnary() throws {
     let call = client.get(Echo_EchoRequest(text: "foo"))
-    XCTAssertEqual(expectedError, try call.status.wait())
-    XCTAssertEqual(expectedMetadata, try call.trailingMetadata.wait())
+    XCTAssertEqual(self.expectedError, try call.status.wait())
+    XCTAssertEqual(self.expectedMetadata, try call.trailingMetadata.wait())
     XCTAssertThrowsError(try call.response.wait()) {
       XCTAssertEqual(expectedError, $0 as? GRPCStatus)
     }
@@ -141,10 +163,10 @@ extension ServerThrowingTests {
     let call = client.collect()
     // This is racing with the server error; it might fail, it might not.
     try? call.sendEnd().wait()
-    XCTAssertEqual(expectedError, try call.status.wait())
-    XCTAssertEqual(expectedMetadata, try call.trailingMetadata.wait())
+    XCTAssertEqual(self.expectedError, try call.status.wait())
+    XCTAssertEqual(self.expectedMetadata, try call.trailingMetadata.wait())
 
-    if type(of: makeEchoProvider()) != ErrorReturningEchoProvider.self {
+    if type(of: self.makeEchoProvider()) != ErrorReturningEchoProvider.self {
       // With `ErrorReturningEchoProvider` we actually _return_ a response, which means that the `response` future
       // will _not_ fail, so in that case this test doesn't apply.
       XCTAssertThrowsError(try call.response.wait()) {
@@ -154,18 +176,19 @@ extension ServerThrowingTests {
   }
 
   func testServerStreaming() throws {
-    let call = client.expand(Echo_EchoRequest(text: "foo")) { XCTFail("no message expected, got \($0)") }
+    let call = client
+      .expand(Echo_EchoRequest(text: "foo")) { XCTFail("no message expected, got \($0)") }
     // Nothing to throw here, but the `status` should be the expected error.
-    XCTAssertEqual(expectedError, try call.status.wait())
-    XCTAssertEqual(expectedMetadata, try call.trailingMetadata.wait())
+    XCTAssertEqual(self.expectedError, try call.status.wait())
+    XCTAssertEqual(self.expectedMetadata, try call.trailingMetadata.wait())
   }
 
   func testBidirectionalStreaming() throws {
-    let call = client.update() { XCTFail("no message expected, got \($0)") }
+    let call = client.update { XCTFail("no message expected, got \($0)") }
     // This is racing with the server error; it might fail, it might not.
     try? call.sendEnd().wait()
     // Nothing to throw here, but the `status` should be the expected error.
-    XCTAssertEqual(expectedError, try call.status.wait())
-    XCTAssertEqual(expectedMetadata, try call.trailingMetadata.wait())
+    XCTAssertEqual(self.expectedError, try call.status.wait())
+    XCTAssertEqual(self.expectedMetadata, try call.trailingMetadata.wait())
   }
 }

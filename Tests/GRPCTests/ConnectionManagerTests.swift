@@ -83,8 +83,11 @@ extension ConnectionManagerTests {
 
   func testConnectFromIdleFailsWithNoReconnect() {
     let channelPromise = self.loop.makePromise(of: Channel.self)
-    let manager = ConnectionManager.testingOnly(configuration: self.defaultConfiguration, logger: self.logger) {
-      return channelPromise.futureResult
+    let manager = ConnectionManager.testingOnly(
+      configuration: self.defaultConfiguration,
+      logger: self.logger
+    ) {
+      channelPromise.futureResult
     }
 
     let channel: EventLoopFuture<Channel> = self.waitForStateChange(from: .idle, to: .connecting) {
@@ -104,16 +107,20 @@ extension ConnectionManagerTests {
 
   func testConnectAndDisconnect() throws {
     let channelPromise = self.loop.makePromise(of: Channel.self)
-    let manager = ConnectionManager.testingOnly(configuration: self.defaultConfiguration, logger: self.logger) {
-      return channelPromise.futureResult
+    let manager = ConnectionManager.testingOnly(
+      configuration: self.defaultConfiguration,
+      logger: self.logger
+    ) {
+      channelPromise.futureResult
     }
 
     // Start the connection.
-    let readyChannel: EventLoopFuture<Channel> = self.waitForStateChange(from: .idle, to: .connecting) {
-      let readyChannel = manager.getChannel()
-      self.loop.run()
-      return readyChannel
-    }
+    let readyChannel: EventLoopFuture<Channel> = self
+      .waitForStateChange(from: .idle, to: .connecting) {
+        let readyChannel = manager.getChannel()
+        self.loop.run()
+        return readyChannel
+      }
 
     // Setup the real channel and activate it.
     let channel = EmbeddedChannel(
@@ -121,7 +128,10 @@ extension ConnectionManagerTests {
       loop: self.loop
     )
     channelPromise.succeed(channel)
-    XCTAssertNoThrow(try channel.connect(to: SocketAddress(unixDomainSocketPath: "/ignored")).wait())
+    XCTAssertNoThrow(
+      try channel.connect(to: SocketAddress(unixDomainSocketPath: "/ignored"))
+        .wait()
+    )
 
     // Write a settings frame on the root stream; this'll make the channel 'ready'.
     try self.waitForStateChange(from: .connecting, to: .ready) {
@@ -138,16 +148,20 @@ extension ConnectionManagerTests {
 
   func testConnectAndIdle() throws {
     let channelPromise = self.loop.makePromise(of: Channel.self)
-    let manager = ConnectionManager.testingOnly(configuration: self.defaultConfiguration, logger: self.logger) {
-      return channelPromise.futureResult
+    let manager = ConnectionManager.testingOnly(
+      configuration: self.defaultConfiguration,
+      logger: self.logger
+    ) {
+      channelPromise.futureResult
     }
 
     // Start the connection.
-    let readyChannel: EventLoopFuture<Channel> = self.waitForStateChange(from: .idle, to: .connecting) {
-      let readyChannel = manager.getChannel()
-      self.loop.run()
-      return readyChannel
-    }
+    let readyChannel: EventLoopFuture<Channel> = self
+      .waitForStateChange(from: .idle, to: .connecting) {
+        let readyChannel = manager.getChannel()
+        self.loop.run()
+        return readyChannel
+      }
 
     // Setup the channel.
     let channel = EmbeddedChannel(
@@ -155,7 +169,10 @@ extension ConnectionManagerTests {
       loop: self.loop
     )
     channelPromise.succeed(channel)
-    XCTAssertNoThrow(try channel.connect(to: SocketAddress(unixDomainSocketPath: "/ignored")).wait())
+    XCTAssertNoThrow(
+      try channel.connect(to: SocketAddress(unixDomainSocketPath: "/ignored"))
+        .wait()
+    )
 
     // Write a settings frame on the root stream; this'll make the channel 'ready'.
     try self.waitForStateChange(from: .connecting, to: .ready) {
@@ -181,16 +198,20 @@ extension ConnectionManagerTests {
 
   func testIdleTimeoutWhenThereAreActiveStreams() throws {
     let channelPromise = self.loop.makePromise(of: Channel.self)
-    let manager = ConnectionManager.testingOnly(configuration: self.defaultConfiguration, logger: self.logger) {
-      return channelPromise.futureResult
+    let manager = ConnectionManager.testingOnly(
+      configuration: self.defaultConfiguration,
+      logger: self.logger
+    ) {
+      channelPromise.futureResult
     }
 
     // Start the connection.
-    let readyChannel: EventLoopFuture<Channel> = self.waitForStateChange(from: .idle, to: .connecting) {
-      let readyChannel = manager.getChannel()
-      self.loop.run()
-      return readyChannel
-    }
+    let readyChannel: EventLoopFuture<Channel> = self
+      .waitForStateChange(from: .idle, to: .connecting) {
+        let readyChannel = manager.getChannel()
+        self.loop.run()
+        return readyChannel
+      }
 
     // Setup the channel.
     let channel = EmbeddedChannel(
@@ -198,7 +219,10 @@ extension ConnectionManagerTests {
       loop: self.loop
     )
     channelPromise.succeed(channel)
-    XCTAssertNoThrow(try channel.connect(to: SocketAddress(unixDomainSocketPath: "/ignored")).wait())
+    XCTAssertNoThrow(
+      try channel.connect(to: SocketAddress(unixDomainSocketPath: "/ignored"))
+        .wait()
+    )
 
     // Write a settings frame on the root stream; this'll make the channel 'ready'.
     try self.waitForStateChange(from: .connecting, to: .ready) {
@@ -238,15 +262,19 @@ extension ConnectionManagerTests {
 
   func testConnectAndThenBecomeInactive() throws {
     let channelPromise = self.loop.makePromise(of: Channel.self)
-    let manager = ConnectionManager.testingOnly(configuration: self.defaultConfiguration, logger: self.logger) {
-      return channelPromise.futureResult
+    let manager = ConnectionManager.testingOnly(
+      configuration: self.defaultConfiguration,
+      logger: self.logger
+    ) {
+      channelPromise.futureResult
     }
 
-    let readyChannel: EventLoopFuture<Channel> = self.waitForStateChange(from: .idle, to: .connecting) {
-      let readyChannel = manager.getChannel()
-      self.loop.run()
-      return readyChannel
-    }
+    let readyChannel: EventLoopFuture<Channel> = self
+      .waitForStateChange(from: .idle, to: .connecting) {
+        let readyChannel = manager.getChannel()
+        self.loop.run()
+        return readyChannel
+      }
 
     // Setup the channel.
     let channel = EmbeddedChannel(
@@ -254,7 +282,10 @@ extension ConnectionManagerTests {
       loop: self.loop
     )
     channelPromise.succeed(channel)
-    XCTAssertNoThrow(try channel.connect(to: SocketAddress(unixDomainSocketPath: "/ignored")).wait())
+    XCTAssertNoThrow(
+      try channel.connect(to: SocketAddress(unixDomainSocketPath: "/ignored"))
+        .wait()
+    )
 
     try self.waitForStateChange(from: .connecting, to: .shutdown) {
       // Okay: now close the channel; the `readyChannel` future has not been completed yet.
@@ -270,7 +301,7 @@ extension ConnectionManagerTests {
     let channelPromise: EventLoopPromise<Channel> = self.loop.makePromise()
     let channelFutures: [EventLoopFuture<Channel>] = [
       self.loop.makeFailedFuture(DoomedChannelError()),
-      channelPromise.futureResult
+      channelPromise.futureResult,
     ]
     var channelFutureIterator = channelFutures.makeIterator()
 
@@ -287,7 +318,7 @@ extension ConnectionManagerTests {
 
     let readyChannel: EventLoopFuture<Channel> = self.waitForStateChanges([
       Change(from: .idle, to: .connecting),
-      Change(from: .connecting, to: .transientFailure)
+      Change(from: .connecting, to: .transientFailure),
     ]) {
       // Get a channel.
       let readyChannel = manager.getChannel()
@@ -310,7 +341,10 @@ extension ConnectionManagerTests {
       loop: self.loop
     )
     channelPromise.succeed(channel)
-    XCTAssertNoThrow(try channel.connect(to: SocketAddress(unixDomainSocketPath: "/ignored")).wait())
+    XCTAssertNoThrow(
+      try channel.connect(to: SocketAddress(unixDomainSocketPath: "/ignored"))
+        .wait()
+    )
 
     // Write a SETTINGS frame on the root stream.
     try self.waitForStateChange(from: .connecting, to: .ready) {
@@ -332,15 +366,19 @@ extension ConnectionManagerTests {
 
   func testShutdownWhileConnecting() throws {
     let channelPromise = self.loop.makePromise(of: Channel.self)
-    let manager = ConnectionManager.testingOnly(configuration: self.defaultConfiguration, logger: self.logger) {
-      return channelPromise.futureResult
+    let manager = ConnectionManager.testingOnly(
+      configuration: self.defaultConfiguration,
+      logger: self.logger
+    ) {
+      channelPromise.futureResult
     }
 
-    let readyChannel: EventLoopFuture<Channel> = self.waitForStateChange(from: .idle, to: .connecting) {
-      let readyChannel = manager.getChannel()
-      self.loop.run()
-      return readyChannel
-    }
+    let readyChannel: EventLoopFuture<Channel> = self
+      .waitForStateChange(from: .idle, to: .connecting) {
+        let readyChannel = manager.getChannel()
+        self.loop.run()
+        return readyChannel
+      }
 
     // Now shutdown.
     try self.waitForStateChange(from: .connecting, to: .shutdown) {
@@ -364,12 +402,12 @@ extension ConnectionManagerTests {
     configuration.connectionBackoff = .oneSecondFixed
 
     let manager = ConnectionManager.testingOnly(configuration: configuration, logger: self.logger) {
-      return self.loop.makeFailedFuture(DoomedChannelError())
+      self.loop.makeFailedFuture(DoomedChannelError())
     }
 
     let readyChannel: EventLoopFuture<Channel> = self.waitForStateChanges([
       Change(from: .idle, to: .connecting),
-      Change(from: .connecting, to: .transientFailure)
+      Change(from: .connecting, to: .transientFailure),
     ]) {
       // Get a channel.
       let readyChannel = manager.getChannel()
@@ -390,15 +428,19 @@ extension ConnectionManagerTests {
 
   func testShutdownWhileActive() throws {
     let channelPromise = self.loop.makePromise(of: Channel.self)
-    let manager = ConnectionManager.testingOnly(configuration: self.defaultConfiguration, logger: self.logger) {
-      return channelPromise.futureResult
+    let manager = ConnectionManager.testingOnly(
+      configuration: self.defaultConfiguration,
+      logger: self.logger
+    ) {
+      channelPromise.futureResult
     }
 
-    let readyChannel: EventLoopFuture<Channel> = self.waitForStateChange(from: .idle, to: .connecting) {
-      let readyChannel = manager.getChannel()
-      self.loop.run()
-      return readyChannel
-    }
+    let readyChannel: EventLoopFuture<Channel> = self
+      .waitForStateChange(from: .idle, to: .connecting) {
+        let readyChannel = manager.getChannel()
+        self.loop.run()
+        return readyChannel
+      }
 
     // Prepare the channel
     let channel = EmbeddedChannel(
@@ -406,7 +448,10 @@ extension ConnectionManagerTests {
       loop: self.loop
     )
     channelPromise.succeed(channel)
-    XCTAssertNoThrow(try channel.connect(to: SocketAddress(unixDomainSocketPath: "/ignored")).wait())
+    XCTAssertNoThrow(
+      try channel.connect(to: SocketAddress(unixDomainSocketPath: "/ignored"))
+        .wait()
+    )
 
     // (No state change expected here: active is an internal state.)
 
@@ -442,7 +487,7 @@ extension ConnectionManagerTests {
     let channelPromise: EventLoopPromise<Channel> = self.loop.makePromise()
     let channelFutures: [EventLoopFuture<Channel>] = [
       channelPromise.futureResult,
-      self.loop.makeFailedFuture(DoomedChannelError())
+      self.loop.makeFailedFuture(DoomedChannelError()),
     ]
     var channelFutureIterator = channelFutures.makeIterator()
 
@@ -454,11 +499,12 @@ extension ConnectionManagerTests {
       return next
     }
 
-    let readyChannel: EventLoopFuture<Channel> = self.waitForStateChange(from: .idle, to: .connecting) {
-      let readyChannel = manager.getChannel()
-      self.loop.run()
-      return readyChannel
-    }
+    let readyChannel: EventLoopFuture<Channel> = self
+      .waitForStateChange(from: .idle, to: .connecting) {
+        let readyChannel = manager.getChannel()
+        self.loop.run()
+        return readyChannel
+      }
 
     // Prepare the channel
     let firstChannel = EmbeddedChannel(
@@ -466,7 +512,10 @@ extension ConnectionManagerTests {
       loop: self.loop
     )
     channelPromise.succeed(firstChannel)
-    XCTAssertNoThrow(try firstChannel.connect(to: SocketAddress(unixDomainSocketPath: "/ignored")).wait())
+    XCTAssertNoThrow(
+      try firstChannel.connect(to: SocketAddress(unixDomainSocketPath: "/ignored"))
+        .wait()
+    )
 
     // (No state change expected here: active is an internal state.)
 
@@ -478,7 +527,7 @@ extension ConnectionManagerTests {
     // Start connecting again.
     self.waitForStateChanges([
       Change(from: .transientFailure, to: .connecting),
-      Change(from: .connecting, to: .transientFailure)
+      Change(from: .connecting, to: .transientFailure),
     ]) {
       self.loop.advanceTime(by: .seconds(1))
     }
@@ -502,7 +551,7 @@ extension ConnectionManagerTests {
     let secondChannelPromise: EventLoopPromise<Channel> = self.loop.makePromise()
     let channelFutures: [EventLoopFuture<Channel>] = [
       firstChannelPromise.futureResult,
-      secondChannelPromise.futureResult
+      secondChannelPromise.futureResult,
     ]
     var channelFutureIterator = channelFutures.makeIterator()
 
@@ -514,11 +563,12 @@ extension ConnectionManagerTests {
       return next
     }
 
-    let readyChannel: EventLoopFuture<Channel> = self.waitForStateChange(from: .idle, to: .connecting) {
-      let readyChannel = manager.getChannel()
-      self.loop.run()
-      return readyChannel
-    }
+    let readyChannel: EventLoopFuture<Channel> = self
+      .waitForStateChange(from: .idle, to: .connecting) {
+        let readyChannel = manager.getChannel()
+        self.loop.run()
+        return readyChannel
+      }
 
     // Prepare the first channel
     let firstChannel = EmbeddedChannel(
@@ -526,7 +576,10 @@ extension ConnectionManagerTests {
       loop: self.loop
     )
     firstChannelPromise.succeed(firstChannel)
-    XCTAssertNoThrow(try firstChannel.connect(to: SocketAddress(unixDomainSocketPath: "/ignored")).wait())
+    XCTAssertNoThrow(
+      try firstChannel.connect(to: SocketAddress(unixDomainSocketPath: "/ignored"))
+        .wait()
+    )
 
     // Write a SETTINGS frame on the root stream.
     try self.waitForStateChange(from: .connecting, to: .ready) {
@@ -553,7 +606,10 @@ extension ConnectionManagerTests {
       loop: self.loop
     )
     secondChannelPromise.succeed(secondChannel)
-    XCTAssertNoThrow(try secondChannel.connect(to: SocketAddress(unixDomainSocketPath: "/ignored")).wait())
+    XCTAssertNoThrow(
+      try secondChannel.connect(to: SocketAddress(unixDomainSocketPath: "/ignored"))
+        .wait()
+    )
 
     // Write a SETTINGS frame on the root stream.
     try self.waitForStateChange(from: .connecting, to: .ready) {
@@ -571,15 +627,19 @@ extension ConnectionManagerTests {
 
   func testGoAwayWhenReady() throws {
     let channelPromise = self.loop.makePromise(of: Channel.self)
-    let manager = ConnectionManager.testingOnly(configuration: self.defaultConfiguration, logger: self.logger) {
-      return channelPromise.futureResult
+    let manager = ConnectionManager.testingOnly(
+      configuration: self.defaultConfiguration,
+      logger: self.logger
+    ) {
+      channelPromise.futureResult
     }
 
-    let readyChannel: EventLoopFuture<Channel> = self.waitForStateChange(from: .idle, to: .connecting) {
-      let readyChannel = manager.getChannel()
-      self.loop.run()
-      return readyChannel
-    }
+    let readyChannel: EventLoopFuture<Channel> = self
+      .waitForStateChange(from: .idle, to: .connecting) {
+        let readyChannel = manager.getChannel()
+        self.loop.run()
+        return readyChannel
+      }
 
     // Setup the channel.
     let channel = EmbeddedChannel(
@@ -587,7 +647,10 @@ extension ConnectionManagerTests {
       loop: self.loop
     )
     channelPromise.succeed(channel)
-    XCTAssertNoThrow(try channel.connect(to: SocketAddress(unixDomainSocketPath: "/ignored")).wait())
+    XCTAssertNoThrow(
+      try channel.connect(to: SocketAddress(unixDomainSocketPath: "/ignored"))
+        .wait()
+    )
 
     try self.waitForStateChange(from: .connecting, to: .ready) {
       // Write a SETTINGS frame on the root stream.
@@ -620,8 +683,11 @@ extension ConnectionManagerTests {
   }
 
   func testDoomedOptimisticChannelFromIdle() {
-    let manager = ConnectionManager.testingOnly(configuration: self.defaultConfiguration, logger: self.logger) {
-      return self.loop.makeFailedFuture(DoomedChannelError())
+    let manager = ConnectionManager.testingOnly(
+      configuration: self.defaultConfiguration,
+      logger: self.logger
+    ) {
+      self.loop.makeFailedFuture(DoomedChannelError())
     }
     let candidate = manager.getOptimisticChannel()
     self.loop.run()
@@ -630,8 +696,11 @@ extension ConnectionManagerTests {
 
   func testDoomedOptimisticChannelFromConnecting() throws {
     let promise = self.loop.makePromise(of: Channel.self)
-    let manager = ConnectionManager.testingOnly(configuration: self.defaultConfiguration, logger: self.logger) {
-      return promise.futureResult
+    let manager = ConnectionManager.testingOnly(
+      configuration: self.defaultConfiguration,
+      logger: self.logger
+    ) {
+      promise.futureResult
     }
 
     self.waitForStateChange(from: .idle, to: .connecting) {
@@ -655,12 +724,12 @@ extension ConnectionManagerTests {
     configuration.connectionBackoff = ConnectionBackoff()
 
     let manager = ConnectionManager.testingOnly(configuration: configuration, logger: self.logger) {
-      return self.loop.makeFailedFuture(DoomedChannelError())
+      self.loop.makeFailedFuture(DoomedChannelError())
     }
 
     self.waitForStateChanges([
       Change(from: .idle, to: .connecting),
-      Change(from: .connecting, to: .transientFailure)
+      Change(from: .connecting, to: .transientFailure),
     ]) {
       // Trigger channel creation, and a connection attempt, we don't care about the channel.
       _ = manager.getChannel()
@@ -675,8 +744,11 @@ extension ConnectionManagerTests {
   }
 
   func testOptimisticChannelFromShutdown() throws {
-    let manager = ConnectionManager.testingOnly(configuration: self.defaultConfiguration, logger: self.logger) {
-      return self.loop.makeFailedFuture(DoomedChannelError())
+    let manager = ConnectionManager.testingOnly(
+      configuration: self.defaultConfiguration,
+      logger: self.logger
+    ) {
+      self.loop.makeFailedFuture(DoomedChannelError())
     }
 
     let shutdown = manager.shutdown()
@@ -692,32 +764,41 @@ extension ConnectionManagerTests {
   func testDoubleIdle() throws {
     class CloseDroppingHandler: ChannelOutboundHandler {
       typealias OutboundIn = Any
-      func close(context: ChannelHandlerContext, mode: CloseMode, promise: EventLoopPromise<Void>?) {
-        promise?.fail(GRPCStatus(code: .unavailable, message: "Purposefully dropping channel close"))
+      func close(context: ChannelHandlerContext, mode: CloseMode,
+                 promise: EventLoopPromise<Void>?) {
+        promise?
+          .fail(GRPCStatus(code: .unavailable, message: "Purposefully dropping channel close"))
       }
     }
 
     let channelPromise = self.loop.makePromise(of: Channel.self)
-    let manager = ConnectionManager.testingOnly(configuration: self.defaultConfiguration, logger: self.logger) {
-      return channelPromise.futureResult
+    let manager = ConnectionManager.testingOnly(
+      configuration: self.defaultConfiguration,
+      logger: self.logger
+    ) {
+      channelPromise.futureResult
     }
 
     // Start the connection.
-    let readyChannel: EventLoopFuture<Channel> = self.waitForStateChange(from: .idle, to: .connecting) {
-      let readyChannel = manager.getChannel()
-      self.loop.run()
-      return readyChannel
-    }
+    let readyChannel: EventLoopFuture<Channel> = self
+      .waitForStateChange(from: .idle, to: .connecting) {
+        let readyChannel = manager.getChannel()
+        self.loop.run()
+        return readyChannel
+      }
 
     // Setup the real channel and activate it.
     let channel = EmbeddedChannel(loop: self.loop)
     XCTAssertNoThrow(try channel.pipeline.addHandlers([
       CloseDroppingHandler(),
-      GRPCIdleHandler(mode: .client(manager))
+      GRPCIdleHandler(mode: .client(manager)),
     ]).wait())
     channelPromise.succeed(channel)
     self.loop.run()
-    XCTAssertNoThrow(try channel.connect(to: SocketAddress(unixDomainSocketPath: "/ignored")).wait())
+    XCTAssertNoThrow(
+      try channel.connect(to: SocketAddress(unixDomainSocketPath: "/ignored"))
+        .wait()
+    )
 
     // Write a SETTINGS frame on the root stream.
     try self.waitForStateChange(from: .connecting, to: .ready) {
@@ -764,10 +845,10 @@ internal class RecordingConnectivityDelegate: ConnectivityStateDelegate {
     case noExpectation
 
     /// We expect one change.
-    case one((Change) -> ())
+    case one((Change) -> Void)
 
     /// We expect 'count' changes.
-    case some(count: Int, recorded: [Change], ([Change]) -> ())
+    case some(count: Int, recorded: [Change], ([Change]) -> Void)
 
     var count: Int {
       switch self {
@@ -775,16 +856,17 @@ internal class RecordingConnectivityDelegate: ConnectivityStateDelegate {
         return 0
       case .one:
         return 1
-      case .some(let count, _, _):
+      case let .some(count, _, _):
         return count
       }
     }
   }
 
-  func connectivityStateDidChange(from oldState: ConnectivityState, to newState: ConnectivityState) {
+  func connectivityStateDidChange(from oldState: ConnectivityState,
+                                  to newState: ConnectivityState) {
     self.serialQueue.async {
       switch self.expectation {
-      case .one(let verify):
+      case let .one(verify):
         // We don't care about future changes.
         self.expectation = .noExpectation
 
@@ -813,13 +895,13 @@ internal class RecordingConnectivityDelegate: ConnectivityStateDelegate {
     }
   }
 
-  func expectChanges(_ count: Int, verify: @escaping ([Change]) -> ()) {
+  func expectChanges(_ count: Int, verify: @escaping ([Change]) -> Void) {
     self.serialQueue.async {
       self.expectation = .some(count: count, recorded: [], verify)
     }
   }
 
-  func expectChange(verify: @escaping (Change) -> ()) {
+  func expectChange(verify: @escaping (Change) -> Void) {
     self.serialQueue.async {
       self.expectation = .one(verify)
     }
@@ -836,7 +918,7 @@ internal class RecordingConnectivityDelegate: ConnectivityStateDelegate {
   }
 }
 
-fileprivate extension ConnectionBackoff {
+private extension ConnectionBackoff {
   static let oneSecondFixed = ConnectionBackoff(
     initialBackoff: 1.0,
     maximumBackoff: 1.0,
@@ -845,4 +927,4 @@ fileprivate extension ConnectionBackoff {
   )
 }
 
-fileprivate struct DoomedChannelError: Error {}
+private struct DoomedChannelError: Error {}

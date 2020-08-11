@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Foundation
-import NIO
-import NIOSSL
-import GRPC
-import GRPCSampleData
 import EchoImplementation
 import EchoModel
+import Foundation
+import GRPC
+import GRPCSampleData
 import Logging
+import NIO
+import NIOSSL
 
 // MARK: - Argument parsing
 
@@ -43,23 +43,23 @@ enum Command {
     var args = args
     switch args.removeFirst() {
     case "server":
-      guard (args.count == 1 || args.count == 2),
+      guard args.count == 1 || args.count == 2,
         let port = args.popLast().flatMap(Int.init),
         let useTLS = Command.parseTLSArg(args.popLast())
-        else {
-          return nil
+      else {
+        return nil
       }
       self = .server(port: port, useTLS: useTLS)
 
     case "client":
-      guard (args.count == 4 || args.count == 5),
+      guard args.count == 4 || args.count == 5,
         let message = args.popLast(),
         let rpc = args.popLast().flatMap(RPC.init),
         let port = args.popLast().flatMap(Int.init),
         let host = args.popLast(),
         let useTLS = Command.parseTLSArg(args.popLast())
-        else {
-          return nil
+      else {
+        return nil
       }
       self = .client(host: host, port: port, useTLS: useTLS, rpc: rpc, message: message)
 
@@ -82,22 +82,22 @@ enum Command {
 
 func printUsageAndExit(program: String) -> Never {
   print("""
-    Usage: \(program) COMMAND [OPTIONS...]
+  Usage: \(program) COMMAND [OPTIONS...]
 
-    Commands:
-      server [--tls|--notls] PORT                     Starts the echo server on the given port.
+  Commands:
+    server [--tls|--notls] PORT                     Starts the echo server on the given port.
 
-      client [--tls|--notls] HOST PORT RPC MESSAGE    Connects to the echo server on the given host
-                                                      host and port and calls the RPC with the
-                                                      provided message. See below for a list of
-                                                      possible RPCs.
+    client [--tls|--notls] HOST PORT RPC MESSAGE    Connects to the echo server on the given host
+                                                    host and port and calls the RPC with the
+                                                    provided message. See below for a list of
+                                                    possible RPCs.
 
-    RPCs:
-      * get      (unary)
-      * collect  (client streaming)
-      * expand   (server streaming)
-      * update   (bidirectional streaming)
-    """)
+  RPCs:
+    * get      (unary)
+    * collect  (client streaming)
+    * expand   (server streaming)
+    * update   (bidirectional streaming)
+  """)
   exit(1)
 }
 
@@ -150,8 +150,12 @@ func startEchoServer(group: EventLoopGroup, port: Int, useTLS: Bool) throws {
       "SSL certificates are expired. Please submit an issue at https://github.com/grpc/grpc-swift."
     )
 
-    builder = Server.secure(group: group, certificateChain: [serverCert.certificate], privateKey: SamplePrivateKey.server)
-      .withTLS(trustRoots: .certificates([caCert.certificate]))
+    builder = Server.secure(
+      group: group,
+      certificateChain: [serverCert.certificate],
+      privateKey: SamplePrivateKey.server
+    )
+    .withTLS(trustRoots: .certificates([caCert.certificate]))
     print("starting secure server")
   } else {
     print("starting insecure server")
@@ -218,9 +222,9 @@ func echoGet(client: Echo_EchoClient, message: String) throws {
   // Register a callback for the response:
   get.response.whenComplete { result in
     switch result {
-    case .success(let response):
+    case let .success(response):
       print("get receieved: \(response.text)")
-    case .failure(let error):
+    case let .failure(error):
       print("get failed with error: \(error)")
     }
   }
@@ -247,9 +251,9 @@ func echoCollect(client: Echo_EchoClient, message: String) throws {
   // Register a callback for the response:
   collect.response.whenComplete { result in
     switch result {
-    case .success(let response):
+    case let .success(response):
       print("collect receieved: \(response.text)")
-    case .failure(let error):
+    case let .failure(error):
       print("collect failed with error: \(error)")
     }
   }
@@ -261,7 +265,7 @@ func echoCollect(client: Echo_EchoClient, message: String) throws {
 
 func echoExpand(client: Echo_EchoClient, message: String) throws {
   // Expand is a server streaming call; provide a response handler.
-  let expand = client.expand(.with { $0.text = message}) { response in
+  let expand = client.expand(.with { $0.text = message }) { response in
     print("expand received: \(response.text)")
   }
 

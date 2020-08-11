@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 import Foundation
-import NIO
-import NIOHTTP1
-import NIOFoundationCompat
 import Logging
+import NIO
+import NIOFoundationCompat
+import NIOHTTP1
 import SwiftProtobuf
 
 /// Incoming gRPC package with a fixed message type.
@@ -62,8 +62,8 @@ public final class HTTP1ToGRPCServerCodec {
 
   private let encoding: ServerMessageEncoding
   private let encodingHeaderValidator: MessageEncodingHeaderValidator
-  private var acceptEncodingHeader: String? = nil
-  private var responseEncodingHeader: String? = nil
+  private var acceptEncodingHeader: String?
+  private var responseEncodingHeader: String?
 
   private let logger: Logger
   private var stopwatch: Stopwatch?
@@ -87,13 +87,20 @@ public final class HTTP1ToGRPCServerCodec {
   var inboundState = InboundState.expectingHeaders {
     willSet {
       guard newValue != self.inboundState else { return }
-      self.logger.debug("inbound state changed", metadata: ["old_state": "\(self.inboundState)", "new_state": "\(newValue)"])
+      self.logger.debug(
+        "inbound state changed",
+        metadata: ["old_state": "\(self.inboundState)", "new_state": "\(newValue)"]
+      )
     }
   }
+
   var outboundState = OutboundState.expectingHeaders {
     willSet {
       guard newValue != self.outboundState else { return }
-      self.logger.debug("outbound state changed", metadata: ["old_state": "\(self.outboundState)", "new_state": "\(newValue)"])
+      self.logger.debug(
+        "outbound state changed",
+        metadata: ["old_state": "\(self.outboundState)", "new_state": "\(newValue)"]
+      )
     }
   }
 
@@ -121,44 +128,49 @@ extension HTTP1ToGRPCServerCodec: ChannelInboundHandler {
   public typealias InboundOut = _RawGRPCServerRequestPart
 
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
-    if case .ignore = inboundState {
+    if case .ignore = self.inboundState {
       self.logger.notice("ignoring read data", metadata: ["data": "\(data)"])
       return
     }
 
     do {
       switch self.unwrapInboundIn(data) {
-      case .head(let requestHead):
-        inboundState = try processHead(context: context, requestHead: requestHead)
+      case let .head(requestHead):
+        self.inboundState = try self.processHead(context: context, requestHead: requestHead)
 
-      case .body(var body):
-        inboundState = try processBody(context: context, body: &body)
+      case var .body(body):
+        self.inboundState = try self.processBody(context: context, body: &body)
 
-      case .end(let trailers):
-        inboundState = try processEnd(context: context, trailers: trailers)
+      case let .end(trailers):
+        self.inboundState = try self.processEnd(context: context, trailers: trailers)
       }
     } catch {
       context.fireErrorCaught(error)
-      inboundState = .ignore
+      self.inboundState = .ignore
     }
   }
 
-  func processHead(context: ChannelHandlerContext, requestHead: HTTPRequestHead) throws -> InboundState {
+  func processHead(context: ChannelHandlerContext,
+                   requestHead: HTTPRequestHead) throws -> InboundState {
     self.logger.debug("processing request head", metadata: ["head": "\(requestHead)"])
-    guard case .expectingHeaders = inboundState else {
-      self.logger.error("invalid state while processing request head",
-                        metadata: ["state": "\(inboundState)", "head": "\(requestHead)"])
-      throw GRPCError.InvalidState("expected state .expectingHeaders, got \(inboundState)").captureContext()
+    guard case .expectingHeaders = self.inboundState else {
+      self.logger.error(
+        "invalid state while processing request head",
+        metadata: ["state": "\(self.inboundState)", "head": "\(requestHead)"]
+      )
+      throw GRPCError.InvalidState("expected state .expectingHeaders, got \(self.inboundState)")
+        .captureContext()
     }
 
     self.stopwatch = .start()
     self.logger.debug("rpc call started", metadata: [
       "path": "\(requestHead.uri)",
       "method": "\(requestHead.method)",
-      "version": "\(requestHead.version)"
+      "version": "\(requestHead.version)",
     ])
 
-    if let contentType = requestHead.headers.first(name: GRPCHeaderName.contentType).flatMap(ContentType.init) {
+    if let contentType = requestHead.headers.first(name: GRPCHeaderName.contentType)
+      .flatMap(ContentType.init) {
       self.contentType = contentType
     } else {
       self.logger.debug("no 'content-type' header, assuming content type is 'application/grpc'")
@@ -167,14 +179,17 @@ extension HTTP1ToGRPCServerCodec: ChannelInboundHandler {
     }
 
     if self.contentType == .webTextProtobuf {
-      requestTextBuffer = context.channel.allocator.buffer(capacity: 0)
+      self.requestTextBuffer = context.channel.allocator.buffer(capacity: 0)
     }
 
     // What compression was used for sending requests?
     let encodingHeader = requestHead.headers.first(name: GRPCHeaderName.encoding)
     switch self.encodingHeaderValidator.validate(requestEncoding: encodingHeader) {
     case let .supported(algorithm, limit, acceptableEncoding):
-      self.messageReader = LengthPrefixedMessageReader(compression: algorithm, decompressionLimit: limit)
+      self.messageReader = LengthPrefixedMessageReader(
+        compression: algorithm,
+        decompressionLimit: limit
+      )
       if acceptableEncoding.isEmpty {
         self.acceptEncodingHeader = nil
       } else {
@@ -199,7 +214,11 @@ extension HTTP1ToGRPCServerCodec: ChannelInboundHandler {
 
       let status = GRPCStatus(code: .unimplemented, message: message)
       defer {
-        self.write(context: context, data: NIOAny(OutboundIn.statusAndTrailers(status, headers)), promise: nil)
+        self.write(
+          context: context,
+          data: NIOAny(OutboundIn.statusAndTrailers(status, headers)),
+          promise: nil
+        )
         self.flush(context: context)
       }
       // We're about to fast-fail, so ignore any following inbound messages.
@@ -222,10 +241,13 @@ extension HTTP1ToGRPCServerCodec: ChannelInboundHandler {
 
   func processBody(context: ChannelHandlerContext, body: inout ByteBuffer) throws -> InboundState {
     self.logger.debug("processing body: \(body)")
-    guard case .expectingBody = inboundState else {
-      self.logger.error("invalid state while processing body",
-                        metadata: ["state": "\(inboundState)", "body": "\(body)"])
-      throw GRPCError.InvalidState("expected state .expectingBody, got \(inboundState)").captureContext()
+    guard case .expectingBody = self.inboundState else {
+      self.logger.error(
+        "invalid state while processing body",
+        metadata: ["state": "\(self.inboundState)", "body": "\(body)"]
+      )
+      throw GRPCError.InvalidState("expected state .expectingBody, got \(self.inboundState)")
+        .captureContext()
     }
 
     // If the contentType is text, then decode the incoming bytes as base64 encoded, and append
@@ -233,14 +255,15 @@ extension HTTP1ToGRPCServerCodec: ChannelInboundHandler {
     // in the biggest chunk that is multiple of 4, leaving the unread bytes in the textBuffer
     // where it will expect a new incoming chunk.
     if self.contentType == .webTextProtobuf {
-      precondition(requestTextBuffer != nil)
-      requestTextBuffer.writeBuffer(&body)
+      precondition(self.requestTextBuffer != nil)
+      self.requestTextBuffer.writeBuffer(&body)
 
       // Read in chunks of 4 bytes as base64 encoded strings will always be multiples of 4.
-      let readyBytes = requestTextBuffer.readableBytes - (requestTextBuffer.readableBytes % 4)
+      let readyBytes = self.requestTextBuffer
+        .readableBytes - (self.requestTextBuffer.readableBytes % 4)
       guard let base64Encoded = requestTextBuffer.readString(length: readyBytes),
-          let decodedData = Data(base64Encoded: base64Encoded) else {
-          throw GRPCError.Base64DecodeError().captureContext()
+        let decodedData = Data(base64Encoded: base64Encoded) else {
+        throw GRPCError.Base64DecodeError().captureContext()
       }
 
       body.writeBytes(decodedData)
@@ -267,10 +290,14 @@ extension HTTP1ToGRPCServerCodec: ChannelInboundHandler {
     return .expectingBody
   }
 
-  private func processEnd(context: ChannelHandlerContext, trailers: HTTPHeaders?) throws -> InboundState {
+  private func processEnd(context: ChannelHandlerContext,
+                          trailers: HTTPHeaders?) throws -> InboundState {
     self.logger.debug("processing end")
     if let trailers = trailers {
-      self.logger.error("unexpected trailers when processing stream end", metadata: ["trailers": "\(trailers)"])
+      self.logger.error(
+        "unexpected trailers when processing stream end",
+        metadata: ["trailers": "\(trailers)"]
+      )
       throw GRPCError.InvalidState("unexpected trailers received").captureContext()
     }
 
@@ -283,7 +310,8 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
   public typealias OutboundIn = _RawGRPCServerResponsePart
   public typealias OutboundOut = HTTPServerResponsePart
 
-  public func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+  public func write(context: ChannelHandlerContext, data: NIOAny,
+                    promise: EventLoopPromise<Void>?) {
     if case .ignore = self.outboundState {
       self.logger.notice("ignoring written data: \(data)")
       promise?.fail(GRPCError.InvalidState("rpc has already finished").captureContext())
@@ -291,10 +319,12 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
     }
 
     switch self.unwrapOutboundIn(data) {
-    case .headers(var headers):
+    case var .headers(headers):
       guard case .expectingHeaders = self.outboundState else {
-        self.logger.error("invalid state while writing headers",
-                          metadata: ["state": "\(self.outboundState)", "headers": "\(headers)"])
+        self.logger.error(
+          "invalid state while writing headers",
+          metadata: ["state": "\(self.outboundState)", "headers": "\(headers)"]
+        )
         return
       }
 
@@ -317,17 +347,28 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
         headers.add(name: GRPCHeaderName.acceptEncoding, value: acceptEncoding)
       }
 
-      context.write(self.wrapOutboundOut(.head(HTTPResponseHead(version: version, status: .ok, headers: headers))), promise: promise)
+      context.write(
+        self
+          .wrapOutboundOut(.head(HTTPResponseHead(
+            version: version,
+            status: .ok,
+            headers: headers
+          ))),
+        promise: promise
+      )
       self.outboundState = .expectingBodyOrStatus
 
-    case .message(let messageContext):
+    case let .message(messageContext):
       guard case .expectingBodyOrStatus = self.outboundState else {
-        self.logger.error("invalid state while writing message", metadata: ["state": "\(self.outboundState)"])
+        self.logger.error(
+          "invalid state while writing message",
+          metadata: ["state": "\(self.outboundState)"]
+        )
         return
       }
 
       do {
-        if contentType == .webTextProtobuf {
+        if self.contentType == .webTextProtobuf {
           // Store the response into an independent buffer. We can't return the message directly as
           // it needs to be aggregated with all the responses plus the trailers, in order to have
           // the base64 response properly encoded in a single byte stream.
@@ -373,10 +414,11 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
         trailers.add(name: GRPCHeaderName.statusMessage, value: message)
       }
 
-      if contentType == .webTextProtobuf {
+      if self.contentType == .webTextProtobuf {
         // Encode the trailers into the response byte stream as a length delimited message, as per
         // https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-WEB.md
-        let textTrailers = trailers.map { name, value in "\(name): \(value)" }.joined(separator: "\r\n")
+        let textTrailers = trailers.map { name, value in "\(name): \(value)" }
+          .joined(separator: "\r\n")
         var trailersBuffer = context.channel.allocator.buffer(capacity: 5 + textTrailers.utf8.count)
         trailersBuffer.writeInteger(UInt8(0x80))
         trailersBuffer.writeInteger(UInt32(textTrailers.utf8.count))
@@ -418,7 +460,10 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
 
         // After collecting all response for gRPC Web connections, send one final aggregated
         // response.
-        context.write(self.wrapOutboundOut(.body(.byteBuffer(responseTextBuffer))), promise: promise)
+        context.write(
+          self.wrapOutboundOut(.body(.byteBuffer(responseTextBuffer))),
+          promise: promise
+        )
         context.write(self.wrapOutboundOut(.end(nil)), promise: promise)
       } else {
         context.write(self.wrapOutboundOut(.end(trailers)), promise: promise)
@@ -431,7 +476,7 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
 
         self.logger.debug("rpc call finished", metadata: [
           "duration_ms": "\(millis)",
-          "status_code": "\(status.code.rawValue)"
+          "status_code": "\(status.code.rawValue)",
         ])
       }
 
@@ -448,12 +493,12 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
   }
 }
 
-fileprivate extension HTTP1ToGRPCServerCodec {
+private extension HTTP1ToGRPCServerCodec {
   /// Selects an appropriate response encoding from the list of encodings sent to us by the client.
   /// Returns `nil` if there were no appropriate algorithms, in which case the server will send
   /// messages uncompressed.
   func selectResponseEncoding(from acceptableEncoding: [Substring]) -> CompressionAlgorithm? {
-    guard case .enabled(let configuration) = self.encoding else {
+    guard case let .enabled(configuration) = self.encoding else {
       return nil
     }
 
@@ -470,7 +515,11 @@ struct MessageEncodingHeaderValidator {
 
   enum ValidationResult {
     /// The requested compression is supported.
-    case supported(algorithm: CompressionAlgorithm, decompressionLimit: DecompressionLimit, acceptEncoding: [String])
+    case supported(
+      algorithm: CompressionAlgorithm,
+      decompressionLimit: DecompressionLimit,
+      acceptEncoding: [String]
+    )
 
     /// The `requestEncoding` is not supported; `acceptEncoding` contains all algorithms we do
     /// support.
@@ -487,7 +536,7 @@ struct MessageEncodingHeaderValidator {
   func validate(requestEncoding: String?) -> ValidationResult {
     switch (self.encoding, requestEncoding) {
     // Compression is enabled and the client sent a message encoding header. Do we support it?
-    case (.enabled(let configuration), .some(let header)):
+    case let (.enabled(configuration), .some(header)):
       guard let algorithm = CompressionAlgorithm(rawValue: header) else {
         return .unsupported(
           requestEncoding: header,
@@ -517,7 +566,7 @@ struct MessageEncodingHeaderValidator {
     // Compression is disabled and the client sent a message encoding header. We clearly don't
     // support this. Note this is different to the supported but not advertised case since we have
     // explicitly not enabled compression.
-    case (.disabled, .some(let header)):
+    case let (.disabled, .some(header)):
       return .unsupported(requestEncoding: header, acceptEncoding: [])
 
     // The client didn't send a message encoding header.

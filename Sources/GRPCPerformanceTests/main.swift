@@ -13,65 +13,65 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Foundation
-import GRPC
-import NIO
-import NIOSSL
 import EchoImplementation
 import EchoModel
+import Foundation
+import GRPC
 import Logging
+import NIO
+import NIOSSL
 
 // Add benchmarks here!
 func runBenchmarks(spec: TestSpec) {
   let smallRequest = String(repeating: "x", count: 8)
-  let largeRequest = String(repeating: "x", count: 1 << 16)  // 65k
+  let largeRequest = String(repeating: "x", count: 1 << 16) // 65k
 
   measureAndPrint(
     description: "unary_10k_small_requests",
-    benchmark: Unary(requests: 10_000, text: smallRequest),
+    benchmark: Unary(requests: 10000, text: smallRequest),
     spec: spec
   )
 
   measureAndPrint(
     description: "unary_10k_long_requests",
-    benchmark: Unary(requests: 10_000, text: largeRequest),
+    benchmark: Unary(requests: 10000, text: largeRequest),
     spec: spec
   )
 
   measureAndPrint(
     description: "bidi_10k_small_requests_in_batches_of_1",
-    benchmark: Bidi(requests: 10_000, text: smallRequest, batchSize: 1),
+    benchmark: Bidi(requests: 10000, text: smallRequest, batchSize: 1),
     spec: spec
   )
 
   measureAndPrint(
     description: "bidi_10k_small_requests_in_batches_of_5",
-    benchmark: Bidi(requests: 10_000, text: smallRequest, batchSize: 5),
+    benchmark: Bidi(requests: 10000, text: smallRequest, batchSize: 5),
     spec: spec
   )
 
   measureAndPrint(
     description: "bidi_1k_large_requests_in_batches_of_5",
-    benchmark: Bidi(requests: 1_000, text: largeRequest, batchSize: 1),
+    benchmark: Bidi(requests: 1000, text: largeRequest, batchSize: 1),
     spec: spec
   )
 
   measureAndPrint(
     description: "embedded_client_unary_10k_small_requests",
-    benchmark: EmbeddedClientThroughput(requests: 10_000, text: smallRequest),
+    benchmark: EmbeddedClientThroughput(requests: 10000, text: smallRequest),
     spec: spec
   )
 
   measureAndPrint(
     description: "embedded_client_unary_10k_large_requests",
-    benchmark: EmbeddedClientThroughput(requests: 10_00, text: largeRequest),
+    benchmark: EmbeddedClientThroughput(requests: 1000, text: largeRequest),
     spec: spec
   )
 
   measureAndPrint(
     description: "embedded_client_unary_10k_large_requests_1k_frames",
     benchmark: EmbeddedClientThroughput(
-      requests: 10_00,
+      requests: 1000,
       text: largeRequest,
       maxResponseFrameSize: 1024
     ),
@@ -80,13 +80,13 @@ func runBenchmarks(spec: TestSpec) {
 
   measureAndPrint(
     description: "percent_encode_decode_10k_status_messages",
-    benchmark: PercentEncoding(iterations: 10_000, requiresEncoding: true),
+    benchmark: PercentEncoding(iterations: 10000, requiresEncoding: true),
     spec: spec
   )
 
   measureAndPrint(
     description: "percent_encode_decode_10k_ascii_status_messages",
-    benchmark: PercentEncoding(iterations: 10_000, requiresEncoding: false),
+    benchmark: PercentEncoding(iterations: 10000, requiresEncoding: false),
     spec: spec
   )
 }
@@ -117,7 +117,7 @@ struct TestSpec {
       switch self {
       case .all:
         return true
-      case .some(let selectedTests):
+      case let .some(selectedTests):
         return selectedTests.contains(description)
       }
     }

@@ -78,7 +78,7 @@ public class _FakeResponseStream<Request, Response> {
     case closed
   }
 
-  internal init(requestHandler: @escaping (FakeRequestPart<Request>) -> ()) {
+  internal init(requestHandler: @escaping (FakeRequestPart<Request>) -> Void) {
     self.activeState = .inactive
     self.sendState = .idle
     self.responseBuffer = CircularBuffer()
@@ -119,11 +119,11 @@ public class _FakeResponseStream<Request, Response> {
     case .valid:
       self.writeOrBuffer(event)
 
-    case .validIfSentAfter(let extraPart):
+    case let .validIfSentAfter(extraPart):
       self.writeOrBuffer(extraPart)
       self.writeOrBuffer(event)
 
-    case .invalid(let reason):
+    case let .invalid(reason):
       throw FakeResponseProtocolViolation(reason)
     }
   }
@@ -205,10 +205,10 @@ public class _FakeResponseStream<Request, Response> {
 
   private func write(_ part: StreamEvent) {
     switch part {
-    case .error(let error):
+    case let .error(error):
       self.channel.pipeline.fireErrorCaught(error)
 
-    case .responsePart(let responsePart):
+    case let .responsePart(responsePart):
       // We tolerate errors here: an error will be thrown if the write results in an error which
       // isn't caught in the channel. Errors in the channel get funnelled into the transport held
       // by the actual call object and handled there.
@@ -235,7 +235,7 @@ public class _FakeResponseStream<Request, Response> {
 /// `sendError` may be used to terminate an RPC without providing a response. As for `sendMessage`,
 /// the `trailingMetadata` defaults to being empty.
 public class FakeUnaryResponse<Request, Response>: _FakeResponseStream<Request, Response> {
-  public override init(requestHandler: @escaping (FakeRequestPart<Request>) -> () = { _ in }) {
+  override public init(requestHandler: @escaping (FakeRequestPart<Request>) -> Void = { _ in }) {
     super.init(requestHandler: requestHandler)
   }
 
@@ -298,7 +298,7 @@ public class FakeUnaryResponse<Request, Response>: _FakeResponseStream<Request, 
 /// `sendError` may be called at any time to indicate an error on the response stream.
 /// Like `sendEnd`, `trailingMetadata` is empty by default.
 public class FakeStreamingResponse<Request, Response>: _FakeResponseStream<Request, Response> {
-  public override init(requestHandler: @escaping (FakeRequestPart<Request>) -> () = { _ in }) {
+  override public init(requestHandler: @escaping (FakeRequestPart<Request>) -> Void = { _ in }) {
     super.init(requestHandler: requestHandler)
   }
 

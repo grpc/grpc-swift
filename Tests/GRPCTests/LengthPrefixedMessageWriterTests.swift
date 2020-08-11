@@ -34,7 +34,7 @@ class LengthPrefixedMessageWriterTests: GRPCTestCase {
     let writer = LengthPrefixedMessageWriter()
     let allocator = ByteBufferAllocator()
 
-    var buffer = allocator.buffer(bytes: Array(repeating: 0, count: 5) +  [1, 2, 3])
+    var buffer = allocator.buffer(bytes: Array(repeating: 0, count: 5) + [1, 2, 3])
     buffer.moveReaderIndex(forwardBy: 5)
 
     var prefixed = try writer.write(buffer: buffer, allocator: allocator)
@@ -62,7 +62,7 @@ class LengthPrefixedMessageWriterTests: GRPCTestCase {
     let writer = LengthPrefixedMessageWriter(compression: .gzip)
     let allocator = ByteBufferAllocator()
 
-    var buffer = allocator.buffer(bytes: Array(repeating: 0, count: 5) +  [1, 2, 3])
+    var buffer = allocator.buffer(bytes: Array(repeating: 0, count: 5) + [1, 2, 3])
     buffer.moveReaderIndex(forwardBy: 5)
     var prefixed = try writer.write(buffer: buffer, allocator: allocator)
 

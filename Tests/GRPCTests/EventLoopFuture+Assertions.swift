@@ -24,18 +24,25 @@ extension EventLoopFuture where Value: Equatable {
   /// - Parameters:
   ///   - expected: The expected value.
   ///   - expectation: A test expectation to fulfill once the future has completed.
-  func assertEqual(_ expected: Value, fulfill expectation: XCTestExpectation, file: StaticString = (#file), line: UInt = #line) {
+  func assertEqual(
+    _ expected: Value,
+    fulfill expectation: XCTestExpectation,
+    file: StaticString = #file,
+    line: UInt = #line
+  ) {
     self.whenComplete { result in
       defer {
         expectation.fulfill()
       }
 
       switch result {
-      case .success(let actual):
-        XCTAssertEqual(expected, actual, file: file, line: line)
+      case let .success(actual):
+        // swiftformat:disable:next redundantParens
+        XCTAssertEqual(expected, actual, file: (file), line: line)
 
-      case .failure(let error):
-        XCTFail("Expecteded '\(expected)' but received error: \(error)", file: file, line: line)
+      case let .failure(error):
+        // swiftformat:disable:next redundantParens
+        XCTFail("Expecteded '\(expected)' but received error: \(error)", file: (file), line: line)
       }
     }
   }
@@ -50,7 +57,12 @@ extension EventLoopFuture {
   /// - Parameters:
   ///   - expectation: A test expectation to fulfill once the future has completed.
   ///   - handler: A block to run additional verification on the error. Defaults to no-op.
-  func assertError(fulfill expectation: XCTestExpectation, file: StaticString = (#file), line: UInt = #line, handler: @escaping (Error) -> Void = { _ in }) {
+  func assertError(
+    fulfill expectation: XCTestExpectation,
+    file: StaticString = #file,
+    line: UInt = #line,
+    handler: @escaping (Error) -> Void = { _ in }
+  ) {
     self.whenComplete { result in
       defer {
         expectation.fulfill()
@@ -58,9 +70,10 @@ extension EventLoopFuture {
 
       switch result {
       case .success:
-        XCTFail("Unexpectedly received \(Value.self), expected an error", file: file, line: line)
+        // swiftformat:disable:next redundantParens
+        XCTFail("Unexpectedly received \(Value.self), expected an error", file: (file), line: line)
 
-      case .failure(let error):
+      case let .failure(error):
         handler(error)
       }
     }
@@ -69,7 +82,11 @@ extension EventLoopFuture {
   /// Registers a callback which fulfills an expectation when the future succeeds.
   ///
   /// - Parameter expectation: The expectation to fulfill.
-  func assertSuccess(fulfill expectation: XCTestExpectation, file: StaticString = #file, line: UInt = #line) {
+  func assertSuccess(
+    fulfill expectation: XCTestExpectation,
+    file: StaticString = #file,
+    line: UInt = #line
+  ) {
     self.whenSuccess { _ in
       expectation.fulfill()
     }
@@ -78,13 +95,13 @@ extension EventLoopFuture {
 
 extension EventLoopFuture {
   // TODO: Replace with `always` once https://github.com/apple/swift-nio/pull/981 is released.
-  func peekError(callback: @escaping (Error) -> ()) -> EventLoopFuture<Value> {
+  func peekError(callback: @escaping (Error) -> Void) -> EventLoopFuture<Value> {
     self.whenFailure(callback)
     return self
   }
 
   // TODO: Replace with `always` once https://github.com/apple/swift-nio/pull/981 is released.
-  func peek(callback: @escaping (Value) -> ()) -> EventLoopFuture<Value> {
+  func peek(callback: @escaping (Value) -> Void) -> EventLoopFuture<Value> {
     self.whenSuccess(callback)
     return self
   }

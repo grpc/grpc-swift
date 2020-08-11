@@ -26,7 +26,7 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
   private var activeStreams = 0
 
   /// The scheduled task which will close the channel.
-  private var scheduledIdle: Scheduled<Void>? = nil
+  private var scheduledIdle: Scheduled<Void>?
 
   /// Client and server have slightly different behaviours; track which we are following.
   private var mode: Mode
@@ -88,7 +88,7 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
     switch (self.mode, self.state) {
     // The client should become active: we'll only schedule the idling when the channel
     // becomes 'ready'.
-    case (.client(let manager), .notReady):
+    case let (.client(manager), .notReady):
       manager.channelActive(channel: context.channel)
 
     case (.server, .notReady),
@@ -109,15 +109,14 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
     self.scheduledIdle = nil
 
     switch (self.mode, self.state) {
-    case (.client(let manager), .notReady),
-         (.client(let manager), .ready):
+    case let (.client(manager), .notReady),
+         let (.client(manager), .ready):
       manager.channelInactive()
 
     case (.server, .notReady),
          (.server, .ready),
          (_, .closed):
       ()
-
     }
 
     context.fireChannelInactive()
@@ -133,11 +132,11 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
         self.state = .ready
 
         switch self.mode {
-        case .client(let manager):
+        case let .client(manager):
           let remoteAddressDescription = context.channel.remoteAddress.map { "\($0)" } ?? "n/a"
           manager.logger.info("gRPC connection ready", metadata: [
             "remote_address": "\(remoteAddressDescription)",
-            "event_loop": "\(context.eventLoop)"
+            "event_loop": "\(context.eventLoop)",
           ])
 
           // Let the manager know we're ready.
@@ -183,7 +182,7 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
     case .notReady, .ready:
       self.state = .closed
       switch self.mode {
-      case .client(let manager):
+      case let .client(manager):
         manager.idle()
       case .server:
         ()
@@ -191,7 +190,7 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
       context.close(mode: .all, promise: nil)
 
     // We need to guard against double closure here. We may go idle as a result of receiving a
-    // GOAWAY frame or because our scheduled idle timeout fired. 
+    // GOAWAY frame or because our scheduled idle timeout fired.
     case .closed:
       ()
     }

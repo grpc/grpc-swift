@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import GRPC
-import EchoModel
 import EchoImplementation
+import EchoModel
+import GRPC
 import NIO
 import NIOConcurrencyHelpers
 import XCTest

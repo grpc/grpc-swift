@@ -19,6 +19,7 @@ public struct DecompressionLimit: Equatable {
     case ratio(Int)
     case absolute(Int)
   }
+
   private let limit: Limit
 
   /// Limits decompressed payloads to be no larger than the product of the compressed size
@@ -45,9 +46,9 @@ extension DecompressionLimit {
   /// The largest allowed decompressed size for this limit.
   func maximumDecompressedSize(compressedSize: Int) -> Int {
     switch self.limit {
-    case .ratio(let ratio):
+    case let .ratio(ratio):
       return ratio * compressedSize
-    case .absolute(let size):
+    case let .absolute(size):
       return size
     }
   }

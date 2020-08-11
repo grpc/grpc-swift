@@ -16,5 +16,4 @@
 import NIOHTTP2
 
 /// A `ConnectionIdledEvent` is fired whenever a connection has expired (keepalive).
-struct ConnectionIdledEvent: Hashable {
-}
+struct ConnectionIdledEvent: Hashable {}

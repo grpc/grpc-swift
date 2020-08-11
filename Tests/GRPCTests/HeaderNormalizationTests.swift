@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@testable import GRPC
-import EchoModel
 import EchoImplementation
+import EchoModel
+@testable import GRPC
 import NIO
-import NIOHTTP1
 import NIOHPACK
+import NIOHTTP1
 import XCTest
 
 class EchoMetadataValidator: Echo_EchoProvider {
@@ -28,7 +28,7 @@ class EchoMetadataValidator: Echo_EchoProvider {
   ) {
     // Header lookup is case-insensitive so we need to pull out the values we know the client sent
     // as custom-metadata and then compare a new set of headers.
-    let customMetadata = HTTPHeaders(headers.filter { name, value in value == "client" })
+    let customMetadata = HTTPHeaders(headers.filter { _, value in value == "client" })
     XCTAssertEqual(customMetadata, ["client": "client"], line: line)
   }
 
@@ -120,8 +120,8 @@ class HeaderNormalizationTests: GRPCTestCase {
     headers.map { trailers -> HPACKHeaders in
       let filtered = trailers.filter {
         $0.value == "server"
-      }.map { (name, value, indexing) in
-        return (name, value)
+      }.map { name, value, _ in
+        (name, value)
       }
       return HPACKHeaders(filtered)
     }.assertEqual(["server": "server"], fulfill: expectation, file: file, line: line)

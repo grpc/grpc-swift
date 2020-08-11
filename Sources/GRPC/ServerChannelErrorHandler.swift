@@ -39,7 +39,7 @@ extension ServerChannelErrorHandler: ChannelInboundHandler {
   func errorCaught(context: ChannelHandlerContext, error: Error) {
     // This handler does not treat errors as fatal to the listening socket, as it's possible they were transiently
     // occurring in a single connection setup attempt.
-    errorDelegate.observeLibraryError(error)
+    self.errorDelegate.observeLibraryError(error)
     context.fireErrorCaught(error)
   }
 }

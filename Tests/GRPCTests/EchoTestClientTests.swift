@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import EchoImplementation
+import EchoModel
 import GRPC
 import NIO
-import EchoModel
-import EchoImplementation
 import XCTest
 
 /// An example model using a generated client for the 'Echo' service.
@@ -31,13 +31,13 @@ class EchoModel {
   }
 
   /// Call 'get' with the given word and call the `callback` with the result.
-  func getWord(_ text: String, _ callback: @escaping (Result<String, Error>) -> ()) {
+  func getWord(_ text: String, _ callback: @escaping (Result<String, Error>) -> Void) {
     let get = self.client.get(.with { $0.text = text })
     get.response.whenComplete { result in
       switch result {
-      case .success(let response):
+      case let .success(response):
         callback(.success(response.text))
-      case .failure(let error):
+      case let .failure(error):
         callback(.failure(error))
       }
     }
@@ -47,8 +47,8 @@ class EchoModel {
   /// the RPC has completed.
   func updateWords(
     _ words: [String],
-    onResponse: @escaping (String) -> (),
-    onEnd: @escaping (GRPCStatus) -> ()
+    onResponse: @escaping (String) -> Void,
+    onEnd: @escaping (GRPCStatus) -> Void
   ) {
     let update = self.client.update { response in
       onResponse(response.text)
@@ -114,9 +114,9 @@ class EchoTestClientTests: GRPCTestCase {
 
     model.getWord("Hello") { result in
       switch result {
-      case .success(let text):
+      case let .success(text):
         XCTAssertEqual(text, "Expected response")
-      case .failure(let error):
+      case let .failure(error):
         XCTFail("Unexpected error \(error)")
       }
 
@@ -135,9 +135,9 @@ class EchoTestClientTests: GRPCTestCase {
 
     model.getWord("Hello") { result in
       switch result {
-      case .success(let text):
+      case let .success(text):
         XCTAssertEqual(text, "Swift echo get: Hello")
-      case .failure(let error):
+      case let .failure(error):
         XCTFail("Unexpected error \(error)")
       }
 

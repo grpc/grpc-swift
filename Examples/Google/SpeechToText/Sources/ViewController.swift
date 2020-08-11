@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import GRPC
-import UIKit
-import SnapKit
 import AVFoundation
+import GRPC
+import SnapKit
+import UIKit
 
 final class ViewController: UIViewController {
   private lazy var recordButton: UIButton = {
@@ -30,7 +30,7 @@ final class ViewController: UIViewController {
     button.addTarget(self, action: #selector(recordTapped), for: .touchUpInside)
     return button
   }()
-  
+
   private lazy var textView: UITextView = {
     var textView = UITextView()
     textView.isEditable = false
@@ -40,48 +40,51 @@ final class ViewController: UIViewController {
     textView.font = UIFont.systemFont(ofSize: 30)
     return textView
   }()
-  
+
   private var isRecording: Bool = false {
     didSet {
-      if isRecording {
-        startRecording()
+      if self.isRecording {
+        self.startRecording()
       } else {
-        stopRecording()
+        self.stopRecording()
       }
     }
   }
+
   private var audioData: Data = Data()
-  
+
   private let speechService: SpeechService
   private let audioStreamManager: AudioStreamManager
-  
+
   init(speechService: SpeechService,
        audioStreamManager: AudioStreamManager) {
     self.speechService = speechService
     self.audioStreamManager = audioStreamManager
-    
+
     super.init(nibName: nil, bundle: nil)
   }
-  
+
   convenience init() {
-    self.init(speechService: SpeechService(),
-              audioStreamManager: AudioStreamManager.shared)
+    self.init(
+      speechService: SpeechService(),
+      audioStreamManager: AudioStreamManager.shared
+    )
   }
-  
+
   required init?(coder: NSCoder) {
     return nil
   }
-  
+
   override func viewDidLoad() {
     super.viewDidLoad()
-    
+
     view.backgroundColor = .black
     title = "gRPC Speech To Text"
-    
-    audioStreamManager.delegate = self
-    
+
+    self.audioStreamManager.delegate = self
+
     let recordingSession = AVAudioSession.sharedInstance()
-    
+
     recordingSession.requestRecordPermission { [weak self] allowed in
       DispatchQueue.main.async {
         if allowed {
@@ -97,18 +100,18 @@ final class ViewController: UIViewController {
       }
     }
   }
-  
+
   func setupRecordingLayout() {
-    view.addSubview(textView)
-    view.addSubview(recordButton)
-    
-    textView.snp.makeConstraints { make in
+    view.addSubview(self.textView)
+    view.addSubview(self.recordButton)
+
+    self.textView.snp.makeConstraints { make in
       make.top.equalTo(view.safeAreaLayoutGuide.snp.topMargin)
       make.left.right.equalToSuperview()
       make.bottom.equalTo(recordButton.snp.top)
     }
-    
-    recordButton.snp.makeConstraints { make in
+
+    self.recordButton.snp.makeConstraints { make in
       make.height.equalTo(50)
       make.left.equalTo(40)
       make.right.equalTo(-40)
@@ -116,35 +119,35 @@ final class ViewController: UIViewController {
       make.centerX.equalToSuperview()
     }
   }
-  
+
   func setupErrorLayout() {
-    textView.text = "Microphone Permissions are required in order to use this App."
-    recordButton.isEnabled = false
+    self.textView.text = "Microphone Permissions are required in order to use this App."
+    self.recordButton.isEnabled = false
   }
 
   func setupConfigurationFailedLayout() {
-    textView.text = "An error occured while configuring your device for audio streaming."
-    recordButton.isEnabled = false
+    self.textView.text = "An error occured while configuring your device for audio streaming."
+    self.recordButton.isEnabled = false
   }
-  
+
   @objc
   func recordTapped() {
-    isRecording.toggle()
+    self.isRecording.toggle()
   }
-  
+
   func startRecording() {
-    audioData = Data()
-    audioStreamManager.start()
-    
+    self.audioData = Data()
+    self.audioStreamManager.start()
+
     UIView.animate(withDuration: 0.02) { [weak self] in
       self?.recordButton.backgroundColor = .red
     }
   }
-  
+
   func stopRecording() {
-    audioStreamManager.stop()
-    speechService.stopStreaming()
-    
+    self.audioStreamManager.stop()
+    self.speechService.stopStreaming()
+
     UIView.animate(withDuration: 0.02) { [weak self] in
       self?.recordButton.backgroundColor = .darkGray
     }
@@ -153,17 +156,17 @@ final class ViewController: UIViewController {
 
 extension ViewController: StreamDelegate {
   func processAudio(_ data: Data) {
-    audioData.append(data)
-    
+    self.audioData.append(data)
+
     // 100 ms chunk size
     let chunkSize: Int = Int(0.1 * Constants.sampleRate * 2)
-    
+
     // When the audio data gets big enough
-    if audioData.count > chunkSize {
+    if self.audioData.count > chunkSize {
       // Send to server
-      speechService.stream(audioData) { [weak self] response in
+      self.speechService.stream(self.audioData) { [weak self] response in
         guard let self = self else { return }
-        
+
         DispatchQueue.main.async {
           UIView.transition(
             with: self.textView,
@@ -173,7 +176,7 @@ extension ViewController: StreamDelegate {
               guard
                 let results = response.results.first,
                 let text = results.alternatives.first?.transcript else { return }
-              
+
               if self.textView.text != text {
                 self.textView.text = text
               }

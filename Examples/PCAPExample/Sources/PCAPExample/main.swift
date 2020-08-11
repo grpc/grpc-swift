@@ -15,9 +15,9 @@
  */
 import Dispatch
 import GRPC
+import Logging
 import NIO
 import NIOExtras
-import Logging
 
 // Parse the command line args.
 var args = CommandLine.arguments
@@ -32,6 +32,7 @@ guard args.count == 3, let port = Int(args[2]) else {
   print(usage)
   exit(1)
 }
+
 let host = args[1]
 
 // Create a logger.
@@ -64,9 +65,10 @@ func addPCAPHandler(toChannel channel: Channel) -> EventLoopFuture<Void> {
 
   do {
     // Create a file sink.
-    let fileSink = try NIOWritePCAPHandler.SynchronizedFileSink.fileSinkWritingToFile(path: path) { error in
-      logger.error("💥 Failed to write with error '\(error)' for path '\(path)'")
-    }
+    let fileSink = try NIOWritePCAPHandler.SynchronizedFileSink
+      .fileSinkWritingToFile(path: path) { error in
+        logger.error("💥 Failed to write with error '\(error)' for path '\(path)'")
+      }
 
     logger.info("✅ Successfully created fileSink for path '\(path)'")
 
@@ -124,6 +126,7 @@ for text in ["foo", "bar", "baz", "thud", "grunt", "gorp"] {
     logger.info("Sent request '\(text)'")
   }
 }
+
 // Close the request stream.
 update.sendEnd(promise: nil)
 

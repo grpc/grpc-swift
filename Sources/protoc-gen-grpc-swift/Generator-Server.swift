@@ -19,7 +19,7 @@ import SwiftProtobufPluginLibrary
 
 extension Generator {
   internal func printServer() {
-    printServerProtocol()
+    self.printServerProtocol()
   }
 
   private func printServerProtocol() {
@@ -28,20 +28,28 @@ extension Generator {
     indent()
     for method in service.methods {
       self.method = method
-      
+
       switch streamingType(method) {
       case .unary:
         println(self.method.protoSourceComments(), newline: false)
-        println("func \(methodFunctionName)(request: \(methodInputName), context: StatusOnlyCallContext) -> EventLoopFuture<\(methodOutputName)>")
+        println(
+          "func \(methodFunctionName)(request: \(methodInputName), context: StatusOnlyCallContext) -> EventLoopFuture<\(methodOutputName)>"
+        )
       case .serverStreaming:
         println(self.method.protoSourceComments(), newline: false)
-        println("func \(methodFunctionName)(request: \(methodInputName), context: StreamingResponseCallContext<\(methodOutputName)>) -> EventLoopFuture<GRPCStatus>")
+        println(
+          "func \(methodFunctionName)(request: \(methodInputName), context: StreamingResponseCallContext<\(methodOutputName)>) -> EventLoopFuture<GRPCStatus>"
+        )
       case .clientStreaming:
         println(self.method.protoSourceComments(), newline: false)
-        println("func \(methodFunctionName)(context: UnaryResponseCallContext<\(methodOutputName)>) -> EventLoopFuture<(StreamEvent<\(methodInputName)>) -> Void>")
+        println(
+          "func \(methodFunctionName)(context: UnaryResponseCallContext<\(methodOutputName)>) -> EventLoopFuture<(StreamEvent<\(methodInputName)>) -> Void>"
+        )
       case .bidirectionalStreaming:
         println(self.method.protoSourceComments(), newline: false)
-        println("func \(methodFunctionName)(context: StreamingResponseCallContext<\(methodOutputName)>) -> EventLoopFuture<(StreamEvent<\(methodInputName)>) -> Void>")
+        println(
+          "func \(methodFunctionName)(context: StreamingResponseCallContext<\(methodOutputName)>) -> EventLoopFuture<(StreamEvent<\(methodInputName)>) -> Void>"
+        )
       }
     }
     outdent()
@@ -51,9 +59,13 @@ extension Generator {
     indent()
     println("\(access) var serviceName: Substring { return \"\(servicePath)\" }")
     println()
-    println("/// Determines, calls and returns the appropriate request handler, depending on the request's method.")
+    println(
+      "/// Determines, calls and returns the appropriate request handler, depending on the request's method."
+    )
     println("/// Returns nil for methods not handled by this service.")
-    println("\(access) func handleMethod(_ methodName: Substring, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {")
+    println(
+      "\(access) func handleMethod(_ methodName: Substring, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {"
+    )
     indent()
     println("switch methodName {")
     for method in service.methods {
@@ -62,10 +74,11 @@ extension Generator {
       indent()
       let callHandlerType: String
       switch streamingType(method) {
-        case .unary: callHandlerType = "CallHandlerFactory.makeUnary"
-        case .serverStreaming: callHandlerType = "CallHandlerFactory.makeServerStreaming"
-        case .clientStreaming: callHandlerType = "CallHandlerFactory.makeClientStreaming"
-        case .bidirectionalStreaming: callHandlerType = "CallHandlerFactory.makeBidirectionalStreaming"
+      case .unary: callHandlerType = "CallHandlerFactory.makeUnary"
+      case .serverStreaming: callHandlerType = "CallHandlerFactory.makeServerStreaming"
+      case .clientStreaming: callHandlerType = "CallHandlerFactory.makeClientStreaming"
+      case .bidirectionalStreaming: callHandlerType =
+        "CallHandlerFactory.makeBidirectionalStreaming"
       }
       println("return \(callHandlerType)(callHandlerContext: callHandlerContext) { context in")
       indent()

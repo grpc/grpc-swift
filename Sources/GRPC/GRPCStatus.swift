@@ -49,7 +49,10 @@ public final class GRPCStatus: Error {
   ///   status code. Use `GRPCStatus.isOk` or check the code directly.
   public static let ok = GRPCStatus(code: .ok, message: "OK")
   /// "Internal server error" status.
-  public static let processingError = GRPCStatus(code: .internalError, message: "unknown error processing request")
+  public static let processingError = GRPCStatus(
+    code: .internalError,
+    message: "unknown error processing request"
+  )
 }
 
 extension GRPCStatus: Equatable {
@@ -61,9 +64,9 @@ extension GRPCStatus: Equatable {
 extension GRPCStatus: CustomStringConvertible {
   public var description: String {
     if let message = message {
-      return "\(code) (\(code.rawValue)): \(message)"
+      return "\(self.code) (\(self.code.rawValue)): \(message)"
     } else {
-      return "\(code) (\(code.rawValue))"
+      return "\(self.code) (\(self.code.rawValue))"
     }
   }
 }
