@@ -24,3 +24,6 @@
 # treated as a trailing closure. This is relevant because the service provider
 # API for client streaming RPCs has this exact shape.
 --disable trailingClosures
+
+# Don't wrap the opening brace of multiline statements.
+--disable wrapMultilineStatementBraces
