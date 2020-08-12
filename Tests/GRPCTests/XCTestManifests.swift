@@ -646,7 +646,9 @@ extension HTTP1ToGRPCServerCodecTests {
     //   `swift test --generate-linuxmain`
     // to regenerate.
     static let __allTests__HTTP1ToGRPCServerCodecTests = [
+        ("testErrorsOnlyHappenOnce", testErrorsOnlyHappenOnce),
         ("testMultipleMessagesFromSingleBodyPart", testMultipleMessagesFromSingleBodyPart),
+        ("testReentrantMessageDelivery", testReentrantMessageDelivery),
         ("testSingleMessageFromMultipleBodyParts", testSingleMessageFromMultipleBodyParts),
     ]
 }

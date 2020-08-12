@@ -270,10 +270,12 @@ extension HTTP1ToGRPCServerCodec: ChannelInboundHandler {
     }
 
     self.messageReader.append(buffer: &body)
-    var requests: [ByteBuffer] = []
     do {
-      while let buffer = try self.messageReader.nextMessage() {
-        requests.append(buffer)
+      // We may be re-entrantly called, and that re-entrant call may error. If the state changed for any reason,
+      // stop looping.
+      while self.inboundState == .expectingBody,
+        let buffer = try self.messageReader.nextMessage() {
+        context.fireChannelRead(self.wrapInboundOut(.message(buffer)))
       }
     } catch let grpcError as GRPCError.WithContext {
       context.fireErrorCaught(grpcError)
@@ -283,11 +285,9 @@ extension HTTP1ToGRPCServerCodec: ChannelInboundHandler {
       return .ignore
     }
 
-    requests.forEach {
-      context.fireChannelRead(self.wrapInboundOut(.message($0)))
-    }
-
-    return .expectingBody
+    // We may have been called re-entrantly and transitioned out of the state we were in (e.g. because of an
+    // error). In all cases, if we get here we want to persist the current state.
+    return self.inboundState
   }
 
   private func processEnd(context: ChannelHandlerContext,
