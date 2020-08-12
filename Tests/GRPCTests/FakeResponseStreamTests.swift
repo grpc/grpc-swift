@@ -201,7 +201,7 @@ class FakeResponseStreamTests: GRPCTestCase {
 
 private extension EmbeddedChannel {
   func verifyInbound<Inbound>(as: Inbound.Type = Inbound.self, _ verify: (Inbound) -> Void = { _ in
-    }) {
+  }) {
     do {
       if let inbound = try self.readInbound(as: Inbound.self) {
         verify(inbound)
