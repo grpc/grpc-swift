@@ -328,6 +328,12 @@ extension _GRPCClientChannelHandler: ChannelInboundHandler {
     content: HTTP2Frame.FramePayload.Headers,
     context: ChannelHandlerContext
   ) {
+    self.logger.trace("received HTTP2 frame", metadata: [
+      MetadataKey.h2Payload: "HEADERS",
+      MetadataKey.h2Headers: "\(content.headers)",
+      MetadataKey.h2EndStream: "\(content.endStream)",
+    ])
+
     // In the case of a "Trailers-Only" response there's no guarantee that end-of-stream will be set
     // on the headers frame: end stream may be sent on an empty data frame as well. If the headers
     // contain a gRPC status code then they must be for a "Trailers-Only" response.
@@ -396,6 +402,12 @@ extension _GRPCClientChannelHandler: ChannelInboundHandler {
       preconditionFailure("Received DATA frame with non-ByteBuffer IOData")
     }
 
+    self.logger.trace("received HTTP2 frame", metadata: [
+      MetadataKey.h2Payload: "DATA",
+      MetadataKey.h2DataBytes: "\(content.data.readableBytes)",
+      MetadataKey.h2EndStream: "\(content.endStream)",
+    ])
+
     // Do we have bytes to read? If there are no bytes to read then we can't do anything. This may
     // happen if the end-of-stream flag is not set on the trailing headers frame (i.e. the one
     // containing the gRPC status code) and an additional empty data frame is sent with the
@@ -453,6 +465,11 @@ extension _GRPCClientChannelHandler: ChannelOutboundHandler {
       case let .success(headers):
         // We're clear to write some headers. Create an appropriate frame and write it.
         let framePayload = HTTP2Frame.FramePayload.headers(.init(headers: headers))
+        self.logger.trace("writing HTTP2 frame", metadata: [
+          MetadataKey.h2Payload: "HEADERS",
+          MetadataKey.h2Headers: "\(headers)",
+          MetadataKey.h2EndStream: "false",
+        ])
         context.write(self.wrapOutboundOut(framePayload), promise: promise)
 
       case let .failure(sendRequestHeadersError):
@@ -475,6 +492,11 @@ extension _GRPCClientChannelHandler: ChannelOutboundHandler {
       case let .success(buffer):
         // We're clear to send a message; wrap it up in an HTTP/2 frame.
         let framePayload = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer)))
+        self.logger.trace("writing HTTP2 frame", metadata: [
+          MetadataKey.h2Payload: "DATA",
+          MetadataKey.h2DataBytes: "\(buffer.readableBytes)",
+          MetadataKey.h2EndStream: "false",
+        ])
         context.write(self.wrapOutboundOut(framePayload), promise: promise)
 
       case let .failure(writeError):
@@ -503,6 +525,11 @@ extension _GRPCClientChannelHandler: ChannelOutboundHandler {
         let empty = context.channel.allocator.buffer(capacity: 0)
         let framePayload = HTTP2Frame.FramePayload
           .data(.init(data: .byteBuffer(empty), endStream: true))
+        self.logger.trace("writing HTTP2 frame", metadata: [
+          MetadataKey.h2Payload: "DATA",
+          MetadataKey.h2DataBytes: "0",
+          MetadataKey.h2EndStream: "true",
+        ])
         context.write(self.wrapOutboundOut(framePayload), promise: promise)
 
       case let .failure(error):

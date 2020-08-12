@@ -626,6 +626,7 @@ extension GRPCTimeoutTests {
         ("testRoundingNegativeTimeout", testRoundingNegativeTimeout),
         ("testRoundingSecondsTimeout", testRoundingSecondsTimeout),
         ("testTimeoutFromDeadline", testTimeoutFromDeadline),
+        ("testTimeoutFromDistantFuture", testTimeoutFromDistantFuture),
         ("testTimeoutFromPastDeadline", testTimeoutFromPastDeadline),
     ]
 }

@@ -166,7 +166,6 @@ extension ClientConnection: GRPCChannel {
     callOptions: CallOptions
   ) -> UnaryCall<Serializer.Input, Deserializer.Output> {
     let (logger, requestID) = self.populatedLoggerAndRequestID(from: callOptions)
-    logger.debug("starting rpc", metadata: ["path": "\(path)"])
 
     let call = UnaryCall<Serializer.Input, Deserializer.Output>.makeOnHTTP2Stream(
       multiplexer: self.multiplexer,
@@ -229,7 +228,6 @@ extension ClientConnection {
     callOptions: CallOptions
   ) -> ClientStreamingCall<Serializer.Input, Deserializer.Output> {
     let (logger, requestID) = self.populatedLoggerAndRequestID(from: callOptions)
-    logger.debug("starting rpc", metadata: ["path": "\(path)"])
 
     let call = ClientStreamingCall<Serializer.Input, Deserializer.Output>.makeOnHTTP2Stream(
       multiplexer: self.multiplexer,
@@ -290,7 +288,6 @@ extension ClientConnection {
     handler: @escaping (Deserializer.Output) -> Void
   ) -> ServerStreamingCall<Serializer.Input, Deserializer.Output> {
     let (logger, requestID) = self.populatedLoggerAndRequestID(from: callOptions)
-    logger.debug("starting rpc", metadata: ["path": "\(path)"])
 
     let call = ServerStreamingCall<Serializer.Input, Deserializer.Output>.makeOnHTTP2Stream(
       multiplexer: self.multiplexer,
@@ -362,7 +359,6 @@ extension ClientConnection {
     handler: @escaping (Deserializer.Output) -> Void
   ) -> BidirectionalStreamingCall<Serializer.Input, Deserializer.Output> {
     let (logger, requestID) = self.populatedLoggerAndRequestID(from: callOptions)
-    logger.debug("starting rpc", metadata: ["path": "\(path)"])
 
     let call = BidirectionalStreamingCall<Serializer.Input, Deserializer.Output>.makeOnHTTP2Stream(
       multiplexer: self.multiplexer,
@@ -688,7 +684,11 @@ extension Channel {
         self.pipeline.addHandlers(
           [
             GRPCClientKeepaliveHandler(configuration: connectionKeepalive),
-            GRPCIdleHandler(mode: .client(connectionManager), idleTimeout: connectionIdleTimeout),
+            GRPCIdleHandler(
+              mode: .client(connectionManager),
+              logger: logger,
+              idleTimeout: connectionIdleTimeout
+            ),
           ],
           position: .after(http2Handler)
         )

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import Logging
 import NIO
 import NIOHTTP2
 
@@ -30,6 +31,9 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
 
   /// Client and server have slightly different behaviours; track which we are following.
   private var mode: Mode
+
+  /// A logger.
+  private let logger: Logger
 
   /// The mode of operation: the client tracks additional connection state in the connection
   /// manager.
@@ -52,22 +56,33 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
     case closed
   }
 
-  init(mode: Mode, idleTimeout: TimeAmount = .minutes(5)) {
+  init(mode: Mode, logger: Logger, idleTimeout: TimeAmount = .minutes(5)) {
     self.mode = mode
     self.idleTimeout = idleTimeout
+    self.logger = logger
   }
 
   func userInboundEventTriggered(context: ChannelHandlerContext, event: Any) {
     switch self.state {
     case .notReady, .ready:
-      if event is NIOHTTP2StreamCreatedEvent {
+      if let created = event as? NIOHTTP2StreamCreatedEvent {
         // We have a stream: don't go idle
         self.scheduledIdle?.cancel()
         self.scheduledIdle = nil
-
         self.activeStreams += 1
-      } else if event is StreamClosedEvent {
+
+        self.logger.debug("HTTP2 stream created", metadata: [
+          MetadataKey.h2StreamID: "\(created.streamID)",
+          MetadataKey.h2ActiveStreams: "\(self.activeStreams)",
+        ])
+      } else if let closed = event as? StreamClosedEvent {
         self.activeStreams -= 1
+
+        self.logger.debug("HTTP2 stream closed", metadata: [
+          MetadataKey.h2StreamID: "\(closed.streamID)",
+          MetadataKey.h2ActiveStreams: "\(self.activeStreams)",
+        ])
+
         // No active streams: go idle soon.
         if self.activeStreams == 0 {
           self.scheduleIdleTimeout(context: context)
@@ -128,15 +143,15 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
     if frame.streamID == .rootStream {
       switch (self.state, frame.payload) {
       // We only care about SETTINGS as long as we are in state `.notReady`.
-      case (.notReady, .settings):
+      case let (.notReady, .settings(content)):
         self.state = .ready
 
         switch self.mode {
         case let .client(manager):
           let remoteAddressDescription = context.channel.remoteAddress.map { "\($0)" } ?? "n/a"
           manager.logger.info("gRPC connection ready", metadata: [
-            "remote_address": "\(remoteAddressDescription)",
-            "event_loop": "\(context.eventLoop)",
+            MetadataKey.remoteAddress: "\(remoteAddressDescription)",
+            MetadataKey.eventLoop: "\(context.eventLoop)",
           ])
 
           // Let the manager know we're ready.
@@ -144,6 +159,15 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
 
         case .server:
           ()
+        }
+
+        if case let .settings(settings) = content {
+          self.logger.debug(
+            "received initial HTTP2 settings",
+            metadata: Dictionary(settings.map {
+              ("\($0.parameter.loggingMetadataKey)", "\($0.value)")
+            }, uniquingKeysWith: { a, _ in a })
+          )
         }
 
         // Start the idle timeout.
@@ -187,12 +211,37 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
       case .server:
         ()
       }
+
+      self.logger.debug("Closing idle channel")
       context.close(mode: .all, promise: nil)
 
     // We need to guard against double closure here. We may go idle as a result of receiving a
     // GOAWAY frame or because our scheduled idle timeout fired.
     case .closed:
       ()
+    }
+  }
+}
+
+extension HTTP2SettingsParameter {
+  fileprivate var loggingMetadataKey: String {
+    switch self {
+    case .headerTableSize:
+      return "h2_settings_header_table_size"
+    case .enablePush:
+      return "h2_settings_enable_push"
+    case .maxConcurrentStreams:
+      return "h2_settings_max_concurrent_streams"
+    case .initialWindowSize:
+      return "h2_settings_initial_window_size"
+    case .maxFrameSize:
+      return "h2_settings_max_frame_size"
+    case .maxHeaderListSize:
+      return "h2_settings_max_header_list_size"
+    case .enableConnectProtocol:
+      return "h2_settings_enable_connect_protocol"
+    default:
+      return String(describing: self)
     }
   }
 }
