@@ -19,6 +19,7 @@ import NIO
 import NIOFoundationCompat
 import NIOHTTP1
 import SwiftProtobuf
+import TracingInstrumentation
 
 /// Incoming gRPC package with a fixed message type.
 ///
@@ -50,10 +51,11 @@ public typealias _RawGRPCServerResponsePart = _GRPCServerResponsePart<ByteBuffer
 ///
 /// The translation from HTTP2 to HTTP1 is done by `HTTP2ToHTTP1ServerCodec`.
 public final class HTTP1ToGRPCServerCodec {
-  public init(encoding: ServerMessageEncoding, logger: Logger) {
+  public init(encoding: ServerMessageEncoding, logger: Logger, span: inout Span) {
     self.encoding = encoding
     self.encodingHeaderValidator = MessageEncodingHeaderValidator(encoding: encoding)
     self.logger = logger
+    self.span = span
     self.messageReader = LengthPrefixedMessageReader()
     self.messageWriter = LengthPrefixedMessageWriter()
   }
@@ -67,6 +69,7 @@ public final class HTTP1ToGRPCServerCodec {
 
   private let logger: Logger
   private var stopwatch: Stopwatch?
+  private var span: Span
 
   // The following buffers use force unwrapping explicitly. With optionals, developers
   // are encouraged to unwrap them using guard-else statements. These don't work cleanly
@@ -395,6 +398,7 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
         promise?.fail(error)
         context.fireErrorCaught(error)
         self.outboundState = .ignore
+        self.span.recordError(error)
         return
       }
 
@@ -480,6 +484,8 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
         ])
       }
 
+      self.span.status = SpanStatus(status)
+      self.span.end()
       self.outboundState = .ignore
       self.inboundState = .ignore
     }

@@ -13,10 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import Instrumentation
 import Logging
 import NIO
 import NIOHTTP1
+import NIOInstrumentation
 import SwiftProtobuf
+import TracingInstrumentation
 
 /// Processes individual gRPC messages and stream-close events on an HTTP2 channel.
 public protocol GRPCCallHandler: ChannelHandler {
@@ -124,10 +127,24 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
   }
 
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+    var span: Span
+
     let requestPart = self.unwrapInboundIn(data)
     switch self.unwrapInboundIn(data) {
     case let .head(requestHead):
       precondition(self.state == .notConfigured)
+
+      span = InstrumentationSystem.tracingInstrument.startSpan(
+        named: String(requestHead.uri.dropFirst()),
+        context: context.baggage,
+        ofKind: .server
+      )
+
+      InstrumentationSystem.instrument.extract(
+        requestHead.headers,
+        into: &context.baggage,
+        using: HTTPHeadersExtractor()
+      )
 
       // Validate the 'content-type' is related to gRPC before proceeding.
       let maybeContentType = requestHead.headers.first(name: GRPCHeaderName.contentType)
@@ -181,7 +198,11 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
       self.state = .configuring([requestPart])
 
       // Configure the rest of the pipeline to serve the RPC.
-      let httpToGRPC = HTTP1ToGRPCServerCodec(encoding: self.encoding, logger: self.logger)
+      let httpToGRPC = HTTP1ToGRPCServerCodec(
+        encoding: self.encoding,
+        logger: self.logger,
+        span: &span
+      )
       let codec = callHandler._codec
       context.pipeline.addHandlers([httpToGRPC, codec, callHandler], position: .after(self))
         .whenSuccess {

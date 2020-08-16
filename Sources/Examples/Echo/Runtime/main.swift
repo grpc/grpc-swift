@@ -13,14 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import Baggage
 import EchoImplementation
 import EchoModel
 import Foundation
 import GRPC
 import GRPCSampleData
+import Instrumentation
 import Logging
 import NIO
 import NIOSSL
+import TracingInstrumentation
 
 // MARK: - Argument parsing
 
@@ -107,6 +110,15 @@ func main(args: [String]) {
   guard let command = Command(from: args) else {
     printUsageAndExit(program: program)
   }
+
+  // Reduce the logging verbosity.
+  LoggingSystem.bootstrap {
+    var handler = StreamLogHandler.standardOutput(label: $0)
+    handler.logLevel = .warning
+    return handler
+  }
+
+  InstrumentationSystem.bootstrap(FakeTracer())
 
   // Okay, we're nearly ready to start, create an `EventLoopGroup` most suitable for our platform.
   let group = PlatformSupport.makeEventLoopGroup(loopCount: 1)
@@ -289,6 +301,86 @@ func echoUpdate(client: Echo_EchoClient, message: String) throws {
   // wait() for the call to terminate
   let status = try update.status.wait()
   print("update completed with status: \(status.code)")
+}
+
+final class FakeTracer: TracingInstrument {
+  func extract<Carrier, Extractor>(
+    _ carrier: Carrier,
+    into context: inout BaggageContext,
+    using extractor: Extractor
+  )
+    where
+    Carrier == Extractor.Carrier,
+    Extractor: ExtractorProtocol {
+    print(carrier)
+  }
+
+  func inject<Carrier, Injector>(
+    _ context: BaggageContext,
+    into carrier: inout Carrier,
+    using injector: Injector
+  )
+    where
+    Carrier == Injector.Carrier,
+    Injector: InjectorProtocol {
+    print(context)
+  }
+
+  func startSpan(
+    named operationName: String,
+    context: BaggageContextCarrier,
+    ofKind kind: SpanKind,
+    at timestamp: Timestamp
+  ) -> Span {
+    let span = FakeSpan(
+      operationName: operationName,
+      kind: kind,
+      startTimestamp: timestamp,
+      context: context.baggage
+    )
+    print(#"Starting span "\#(operationName)" at timestamp: \#(timestamp)""#)
+    return span
+  }
+
+  func forceFlush() {}
+
+  final class FakeSpan: Span {
+    let operationName: String
+    let kind: SpanKind
+    var status: SpanStatus?
+
+    let startTimestamp: Timestamp
+    private(set) var endTimestamp: Timestamp?
+
+    let context: BaggageContext
+
+    var attributes: SpanAttributes = [:]
+    private(set) var isRecording: Bool = false
+
+    init(operationName: String, kind: SpanKind, startTimestamp: Timestamp,
+         context: BaggageContext) {
+      self.operationName = operationName
+      self.kind = kind
+      self.startTimestamp = startTimestamp
+      self.context = context
+    }
+
+    func addEvent(_ event: SpanEvent) {
+      print(event)
+    }
+
+    func addLink(_ link: SpanLink) {
+      print(link)
+    }
+
+    func recordError(_ error: Error) {
+      print(error)
+    }
+
+    func end(at timestamp: Timestamp) {
+      print(#"Ending span "\#(self.operationName)" at timestamp: \#(timestamp)""#)
+    }
+  }
 }
 
 main(args: CommandLine.arguments)

@@ -26,7 +26,7 @@ let package = Package(
   dependencies: [
     // GRPC dependencies:
     // Main SwiftNIO package
-    .package(url: "https://github.com/apple/swift-nio.git", from: "2.22.0"),
+    .package(url: "https://github.com/slashmo/swift-nio.git", .branch("feature/baggage-context")),
     // HTTP2 via SwiftNIO
     .package(url: "https://github.com/apple/swift-nio-http2.git", from: "1.14.1"),
     // TLS via SwiftNIO
@@ -39,6 +39,8 @@ let package = Package(
 
     // Logging API.
     .package(url: "https://github.com/apple/swift-log.git", from: "1.4.0"),
+
+    .package(url: "https://github.com/slashmo/gsoc-swift-tracing.git", .branch("main")),
   ],
   targets: [
     // The main GRPC module.
@@ -54,6 +56,8 @@ let package = Package(
         "CGRPCZlib",
         "SwiftProtobuf",
         "Logging",
+        .product(name: "TracingInstrumentation", package: "gsoc-swift-tracing"),
+        .product(name: "NIOInstrumentation", package: "gsoc-swift-tracing"),
       ]
     ), // and its tests.
     .testTarget(
