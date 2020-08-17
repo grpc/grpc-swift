@@ -58,6 +58,7 @@ final class GeneratorOptions {
   private(set) var protoToModuleMappings = ProtoFileToModuleMappings()
   private(set) var fileNaming = FileNaming.FullPath
   private(set) var extraModuleImports: [String] = []
+  private(set) var gRPCModuleName = "GRPC"
 
   init(parameter: String?) throws {
     for pair in GeneratorOptions.parseParameter(string: parameter) {
@@ -112,6 +113,13 @@ final class GeneratorOptions {
       case "ExtraModuleImports":
         if !pair.value.isEmpty {
           self.extraModuleImports.append(pair.value)
+        } else {
+          throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
+        }
+
+      case "GRPCModuleName":
+        if !pair.value.isEmpty {
+          self.gRPCModuleName = pair.value
         } else {
           throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }
