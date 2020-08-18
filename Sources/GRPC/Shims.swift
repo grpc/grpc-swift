@@ -401,3 +401,8 @@ extension BidirectionalStreamingCallHandler {
 
 @available(*, deprecated, message: "This protocol is longer required. Please regenerate your code.")
 public protocol GRPCProtobufPayload {}
+
+extension GRPCStatus.Code {
+  @available(*, deprecated, message: "Use a 'default' branch")
+  public static let doNotUse = GRPCStatus.Code.unknown
+}

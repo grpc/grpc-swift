@@ -102,7 +102,7 @@ class GRPCStatusCodeTests: GRPCTestCase {
   }
 
   func testStatusCodeAndMessageAreRespectedForNon200Responses() throws {
-    let status = GRPCStatus(code: .doNotUse, message: "Not the HTTP error phrase")
+    let status = GRPCStatus(code: .unknown, message: "Not the HTTP error phrase")
 
     let headers: HPACKHeaders = [
       ":status": "\(HTTPResponseStatus.imATeapot.code)",
@@ -121,5 +121,28 @@ class GRPCStatusCodeTests: GRPCTestCase {
       }
       XCTAssertEqual(invalidHTTPStatus.makeGRPCStatus(), status)
     }
+  }
+
+  func testCodeFromRawValue() {
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 0), .ok)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 1), .cancelled)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 2), .unknown)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 3), .invalidArgument)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 4), .deadlineExceeded)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 5), .notFound)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 6), .alreadyExists)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 7), .permissionDenied)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 8), .resourceExhausted)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 9), .failedPrecondition)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 10), .aborted)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 11), .outOfRange)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 12), .unimplemented)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 13), .internalError)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 14), .unavailable)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 15), .dataLoss)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 16), .unauthenticated)
+
+    XCTAssertNil(GRPCStatus.Code(rawValue: -1))
+    XCTAssertNil(GRPCStatus.Code(rawValue: 17))
   }
 }
