@@ -33,7 +33,7 @@
         "repositoryURL": "https://github.com/slashmo/swift-nio.git",
         "state": {
           "branch": "feature/baggage-context",
-          "revision": "884697b82dc36bbce342a3e3ba52f8963811d2e5",
+          "revision": "f604a10a368ba3cf998b3e5b8557900ea1e5e9fa",
           "version": null
         }
       },
