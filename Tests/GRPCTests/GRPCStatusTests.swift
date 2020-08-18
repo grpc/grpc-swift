@@ -29,7 +29,7 @@ class GRPCStatusTests: GRPCTestCase {
     )
 
     XCTAssertEqual(
-      "internalError (13)",
+      "internal error (13)",
       String(describing: GRPCStatus(code: .internalError, message: nil))
     )
   }
@@ -41,12 +41,12 @@ class GRPCStatusTests: GRPCTestCase {
     )
 
     XCTAssertEqual(
-      "resourceExhausted (8): a resource was exhausted",
+      "resource exhausted (8): a resource was exhausted",
       String(describing: GRPCStatus(code: .resourceExhausted, message: "a resource was exhausted"))
     )
 
     XCTAssertEqual(
-      "failedPrecondition (9): invalid state",
+      "failed precondition (9): invalid state",
       String(describing: GRPCStatus(code: .failedPrecondition, message: "invalid state"))
     )
   }

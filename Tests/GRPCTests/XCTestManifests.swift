@@ -582,6 +582,7 @@ extension GRPCStatusCodeTests {
     static let __allTests__GRPCStatusCodeTests = [
         ("testBadGateway", testBadGateway),
         ("testBadRequest", testBadRequest),
+        ("testCodeFromRawValue", testCodeFromRawValue),
         ("testForbidden", testForbidden),
         ("testGatewayTimeout", testGatewayTimeout),
         ("testNotFound", testNotFound),
