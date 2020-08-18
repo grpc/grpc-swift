@@ -56,8 +56,7 @@ extension SpanStatus {
       canonicalCode = .dataLoss
     case .unauthenticated:
       canonicalCode = .unauthenticated
-    case .doNotUse:
-      // TODO: Not part of OTel spec, add anyways?
+    default:
       canonicalCode = .unknown
     }
 
