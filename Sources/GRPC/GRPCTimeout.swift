@@ -42,8 +42,13 @@ public struct GRPCTimeout: CustomStringConvertible, Equatable {
   ///
   /// - Parameter deadline: The deadline to create a timeout from.
   internal init(deadline: NIODeadline, testingOnlyNow: NIODeadline? = nil) {
-    let timeAmountUntilDeadline = deadline - (testingOnlyNow ?? .now())
-    self.init(rounding: timeAmountUntilDeadline.nanoseconds, unit: .nanoseconds)
+    switch deadline {
+    case .distantFuture:
+      self = .infinite
+    default:
+      let timeAmountUntilDeadline = deadline - (testingOnlyNow ?? .now())
+      self.init(rounding: timeAmountUntilDeadline.nanoseconds, unit: .nanoseconds)
+    }
   }
 
   private init(nanoseconds: Int64, wireEncoding: String) {

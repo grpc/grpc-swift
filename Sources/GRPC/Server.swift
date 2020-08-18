@@ -103,12 +103,17 @@ public final class Server {
       )
       // Set the handlers that are applied to the accepted Channels
       .childChannelInitializer { channel in
+        var logger = configuration.logger
+        logger[metadataKey: MetadataKey.connectionID] = "\(UUID().uuidString)"
+        logger[metadataKey: MetadataKey.remoteAddress] = channel.remoteAddress
+          .map { "\($0)" } ?? "n/a"
+
         let protocolSwitcher = HTTPProtocolSwitcher(
           errorDelegate: configuration.errorDelegate,
           httpTargetWindowSize: configuration.httpTargetWindowSize,
           keepAlive: configuration.connectionKeepalive,
           idleTimeout: configuration.connectionIdleTimeout,
-          logger: configuration.logger
+          logger: logger
         ) { (channel, logger) -> EventLoopFuture<Void> in
           let handler = GRPCServerRequestRoutingHandler(
             servicesByName: configuration.serviceProvidersByName,

@@ -124,4 +124,8 @@ class GRPCTimeoutTests: GRPCTestCase {
     let timeout = GRPCTimeout(deadline: deadline, testingOnlyNow: .uptimeNanoseconds(200))
     XCTAssertEqual(timeout.nanoseconds, 0)
   }
+
+  func testTimeoutFromDistantFuture() throws {
+    XCTAssertEqual(GRPCTimeout(deadline: .distantFuture), .infinite)
+  }
 }

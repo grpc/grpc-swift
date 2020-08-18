@@ -124,7 +124,7 @@ extension ConnectionManagerTests {
 
     // Setup the real channel and activate it.
     let channel = EmbeddedChannel(
-      handler: GRPCIdleHandler(mode: .client(manager)),
+      handler: GRPCIdleHandler(mode: .client(manager), logger: self.logger),
       loop: self.loop
     )
     channelPromise.succeed(channel)
@@ -165,7 +165,7 @@ extension ConnectionManagerTests {
 
     // Setup the channel.
     let channel = EmbeddedChannel(
-      handler: GRPCIdleHandler(mode: .client(manager)),
+      handler: GRPCIdleHandler(mode: .client(manager), logger: self.logger),
       loop: self.loop
     )
     channelPromise.succeed(channel)
@@ -215,7 +215,7 @@ extension ConnectionManagerTests {
 
     // Setup the channel.
     let channel = EmbeddedChannel(
-      handler: GRPCIdleHandler(mode: .client(manager)),
+      handler: GRPCIdleHandler(mode: .client(manager), logger: self.logger),
       loop: self.loop
     )
     channelPromise.succeed(channel)
@@ -278,7 +278,7 @@ extension ConnectionManagerTests {
 
     // Setup the channel.
     let channel = EmbeddedChannel(
-      handler: GRPCIdleHandler(mode: .client(manager)),
+      handler: GRPCIdleHandler(mode: .client(manager), logger: self.logger),
       loop: self.loop
     )
     channelPromise.succeed(channel)
@@ -337,7 +337,7 @@ extension ConnectionManagerTests {
 
     // Setup the actual channel and complete the promise.
     let channel = EmbeddedChannel(
-      handler: GRPCIdleHandler(mode: .client(manager)),
+      handler: GRPCIdleHandler(mode: .client(manager), logger: self.logger),
       loop: self.loop
     )
     channelPromise.succeed(channel)
@@ -444,7 +444,7 @@ extension ConnectionManagerTests {
 
     // Prepare the channel
     let channel = EmbeddedChannel(
-      handler: GRPCIdleHandler(mode: .client(manager)),
+      handler: GRPCIdleHandler(mode: .client(manager), logger: self.logger),
       loop: self.loop
     )
     channelPromise.succeed(channel)
@@ -508,7 +508,7 @@ extension ConnectionManagerTests {
 
     // Prepare the channel
     let firstChannel = EmbeddedChannel(
-      handler: GRPCIdleHandler(mode: .client(manager)),
+      handler: GRPCIdleHandler(mode: .client(manager), logger: self.logger),
       loop: self.loop
     )
     channelPromise.succeed(firstChannel)
@@ -572,7 +572,7 @@ extension ConnectionManagerTests {
 
     // Prepare the first channel
     let firstChannel = EmbeddedChannel(
-      handler: GRPCIdleHandler(mode: .client(manager)),
+      handler: GRPCIdleHandler(mode: .client(manager), logger: self.logger),
       loop: self.loop
     )
     firstChannelPromise.succeed(firstChannel)
@@ -602,7 +602,7 @@ extension ConnectionManagerTests {
 
     // Prepare the second channel
     let secondChannel = EmbeddedChannel(
-      handler: GRPCIdleHandler(mode: .client(manager)),
+      handler: GRPCIdleHandler(mode: .client(manager), logger: self.logger),
       loop: self.loop
     )
     secondChannelPromise.succeed(secondChannel)
@@ -643,7 +643,7 @@ extension ConnectionManagerTests {
 
     // Setup the channel.
     let channel = EmbeddedChannel(
-      handler: GRPCIdleHandler(mode: .client(manager)),
+      handler: GRPCIdleHandler(mode: .client(manager), logger: self.logger),
       loop: self.loop
     )
     channelPromise.succeed(channel)
@@ -791,7 +791,7 @@ extension ConnectionManagerTests {
     let channel = EmbeddedChannel(loop: self.loop)
     XCTAssertNoThrow(try channel.pipeline.addHandlers([
       CloseDroppingHandler(),
-      GRPCIdleHandler(mode: .client(manager)),
+      GRPCIdleHandler(mode: .client(manager), logger: manager.logger),
     ]).wait())
     channelPromise.succeed(channel)
     self.loop.run()

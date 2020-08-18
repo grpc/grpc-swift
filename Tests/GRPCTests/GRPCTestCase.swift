@@ -116,7 +116,7 @@ class GRPCTestCase: XCTestCase {
         .map { key, value in "\(key)=\(value)" }
         .joined(separator: " ")
 
-      print("\(date) \(log.label) \(level):", log.message, formattedMetadata)
+      print("\(date) \(log.label) \(level):", log.message, "{", formattedMetadata, "}")
     }
 
     print("Test Case '\(self.name)' logs finished")

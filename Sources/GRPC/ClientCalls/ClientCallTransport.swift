@@ -169,9 +169,7 @@ internal class ChannelTransport<Request, Response> {
         switch result {
         case let .success(mux):
           mux.createStreamChannel(promise: streamPromise) { stream in
-            logger.trace("created http/2 stream", source: "GRPC")
-
-            return stream.pipeline.addHandlers([
+            stream.pipeline.addHandlers([
               _GRPCClientChannelHandler(callType: callType, logger: logger),
               GRPCClientCodecHandler(serializer: serializer, deserializer: deserializer),
               GRPCClientCallHandler(call: call),
@@ -574,6 +572,7 @@ extension ChannelTransport: ClientCallInbound {
   /// Must be called on the event loop.
   internal func activate(stream: Channel) {
     self.eventLoop.preconditionInEventLoop()
+    self.logger.debug("activated stream channel", source: "GRPC")
 
     // The channel has become active: what now?
     switch self.state {

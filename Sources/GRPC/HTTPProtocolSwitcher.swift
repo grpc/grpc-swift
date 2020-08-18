@@ -150,10 +150,10 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
 
           // Grab the streamID from the channel.
           return streamChannel.getOption(HTTP2StreamChannelOptions.streamID).map { streamID in
-            logger[metadataKey: MetadataKey.streamID] = "\(streamID)"
+            logger[metadataKey: MetadataKey.h2StreamID] = "\(streamID)"
             return logger
           }.recover { _ in
-            logger[metadataKey: MetadataKey.streamID] = "<unknown>"
+            logger[metadataKey: MetadataKey.h2StreamID] = "<unknown>"
             return logger
           }.flatMap { logger in
             streamChannel.pipeline.addHandler(HTTP2FramePayloadToHTTP1ServerCodec()).flatMap {
@@ -163,7 +163,11 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
         }.flatMap { multiplexer -> EventLoopFuture<Void> in
           // Add a keepalive and idle handlers between the two HTTP2 handlers.
           let keepaliveHandler = GRPCServerKeepaliveHandler(configuration: self.keepAlive)
-          let idleHandler = GRPCIdleHandler(mode: .server, idleTimeout: self.idleTimeout)
+          let idleHandler = GRPCIdleHandler(
+            mode: .server,
+            logger: self.logger,
+            idleTimeout: self.idleTimeout
+          )
           return context.channel.pipeline.addHandlers(
             [keepaliveHandler, idleHandler],
             position: .before(multiplexer)

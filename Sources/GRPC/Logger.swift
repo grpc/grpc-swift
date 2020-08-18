@@ -17,8 +17,18 @@ import Logging
 
 /// Keys for `Logger` metadata.
 enum MetadataKey {
-  static let streamID = "http2_stream_id"
-  static let requestID = "request_id"
-  static let connectionID = "connection_id"
+  static let requestID = "grpc_request_id"
+  static let connectionID = "grpc_connection_id"
+
+  static let eventLoop = "event_loop"
+  static let remoteAddress = "remote_address"
+
+  static let h2StreamID = "h2_stream_id"
+  static let h2ActiveStreams = "h2_active_streams"
+  static let h2EndStream = "h2_end_stream"
+  static let h2Payload = "h2_payload"
+  static let h2Headers = "h2_headers"
+  static let h2DataBytes = "h2_data_bytes"
+
   static let error = "error"
 }
