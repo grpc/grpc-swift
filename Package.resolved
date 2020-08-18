@@ -6,8 +6,8 @@
         "repositoryURL": "https://github.com/slashmo/gsoc-swift-baggage-context.git",
         "state": {
           "branch": null,
-          "revision": "71ef1080972a1cac47ab80d995d6bdc370fb20f2",
-          "version": "0.2.0"
+          "revision": "744d984ac940535287cb036e44e6970c2a93f012",
+          "version": "0.3.0"
         }
       },
       {
@@ -15,7 +15,7 @@
         "repositoryURL": "https://github.com/slashmo/gsoc-swift-tracing.git",
         "state": {
           "branch": "main",
-          "revision": "8e483480a9994563219d6380247aa8c4897fb9cb",
+          "revision": "1986c52e6bba970c5de30fd2a679e3c388b08a72",
           "version": null
         }
       },
@@ -51,8 +51,8 @@
         "repositoryURL": "https://github.com/apple/swift-nio-ssl.git",
         "state": {
           "branch": null,
-          "revision": "d381bc53edd9de88a75480a2b969bfc26d61ee76",
-          "version": "2.8.0"
+          "revision": "8a137b72a9339f295bc8bb95cd2fafe207f1df0d",
+          "version": "2.9.0"
         }
       },
       {
@@ -60,8 +60,8 @@
         "repositoryURL": "https://github.com/apple/swift-nio-transport-services.git",
         "state": {
           "branch": null,
-          "revision": "2ac8fde712c1b1a147ecb7065824a40d2c09d0cb",
-          "version": "1.6.0"
+          "revision": "d40a5e34e5b35f4f961cb34aeb2e0a02f42a945f",
+          "version": "1.8.0"
         }
       },
       {
@@ -69,8 +69,8 @@
         "repositoryURL": "https://github.com/apple/swift-protobuf.git",
         "state": {
           "branch": null,
-          "revision": "7f36441e3372665b1b414f8ac93b5905cc42a405",
-          "version": "1.9.0"
+          "revision": "cc10a0a3149579d36bc546d97064884cb818f324",
+          "version": "1.11.0"
         }
       }
     ]
