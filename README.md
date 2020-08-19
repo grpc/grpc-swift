@@ -102,6 +102,9 @@ the following line to your `Podfile`:
 Then, run `pod install` from command line and use your project's generated
 `.xcworkspace` file. You might also need to add `use_frameworks!` to your `Podfile`.
 
+*⚠️ If you have conficting modules as a result of having a transitive
+dependency on '[gRPC-Core][grpc-core-pod]' see [grpc/grpc-swift#945][grpc-swift-945].*
+
 ### Getting the `protoc` Plugins
 
 Binary releases of `protoc`, the Protocol Buffer Compiler, are available on
@@ -171,6 +174,8 @@ Please get involved! See our [guidelines for contributing](CONTRIBUTING.md).
 [docs-keepalive]: ./docs/keepalive.md
 [docs-tutorial]: ./docs/basic-tutorial.md
 [grpc]: https://github.com/grpc/grpc
+[grpc-core-pod]: https://cocoapods.org/pods/gRPC-Core
+[grpc-swift-945]: https://github.com/grpc/grpc-swift/pull/945
 [protobuf-releases]: https://github.com/protocolbuffers/protobuf/releases
 [swift-nio-platforms]: https://github.com/apple/swift-nio#supported-platforms
 [swift-nio]: https://github.com/apple/swift-nio
