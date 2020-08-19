@@ -74,6 +74,15 @@ The **FileNaming** option determines how generated source files should be named.
 The **ProtoPathModuleMappings** option allows module mappings to be specified.
 See the [SwiftProtobuf documentation][swift-protobuf-module-mappings].
 
+### GRPCModuleName
+
+The **GRPCModuleName** option allows the name of the gRPC Swift runtime module
+to be specified. The value, if not specified, defaults to "GRPC".
+
+*Note: most users will not need to use this option. It is intended as a
+workaround for CocoaPods users who may end up with a transitive dependency on
+the gRPC core C library whose module name is also "GRPC".*
+
 ## Specifying Options
 
 To pass extra parameters to the plugin, use a comma-separated parameter list

@@ -88,11 +88,8 @@ class Generator {
     """)
 
     let moduleNames = [
-      "Foundation",
+      self.options.gRPCModuleName,
       "NIO",
-      "NIOHTTP1",
-      "GRPC",
-      "SwiftProtobuf",
     ]
 
     for moduleName in (moduleNames + self.options.extraModuleImports).sorted() {
