@@ -26,9 +26,9 @@ let package = Package(
   dependencies: [
     // GRPC dependencies:
     // Main SwiftNIO package
-    .package(url: "https://github.com/apple/swift-nio.git", from: "2.19.0"),
+    .package(url: "https://github.com/apple/swift-nio.git", from: "2.22.0"),
     // HTTP2 via SwiftNIO
-    .package(url: "https://github.com/apple/swift-nio-http2.git", from: "1.13.0"),
+    .package(url: "https://github.com/apple/swift-nio-http2.git", from: "1.14.1"),
     // TLS via SwiftNIO
     .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.8.0"),
     // Support for Network.framework where possible.

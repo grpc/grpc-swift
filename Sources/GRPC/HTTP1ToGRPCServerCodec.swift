@@ -266,7 +266,7 @@ extension HTTP1ToGRPCServerCodec: ChannelInboundHandler {
         throw GRPCError.Base64DecodeError().captureContext()
       }
 
-      body.writeBytes(decodedData)
+      body.writeContiguousBytes(decodedData)
     }
 
     self.messageReader.append(buffer: &body)
@@ -455,7 +455,7 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
         let encodedData = accumulatedData.base64EncodedString()
 
         // Reuse our first buffer.
-        responseTextBuffer.clear(minimumCapacity: UInt32(encodedData.utf8.count))
+        responseTextBuffer.clear(minimumCapacity: Int(encodedData.utf8.count))
         responseTextBuffer.writeString(encodedData)
 
         // After collecting all response for gRPC Web connections, send one final aggregated
