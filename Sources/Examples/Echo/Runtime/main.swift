@@ -312,7 +312,7 @@ final class FakeTracer: TracingInstrument {
     where
     Carrier == Extractor.Carrier,
     Extractor: ExtractorProtocol {
-    print(carrier)
+    print("Extracting trace information")
   }
 
   func inject<Carrier, Injector>(
@@ -323,7 +323,7 @@ final class FakeTracer: TracingInstrument {
     where
     Carrier == Injector.Carrier,
     Injector: InjectorProtocol {
-    print(context)
+    print("Injecting trace information")
   }
 
   func startSpan(
@@ -345,9 +345,9 @@ final class FakeTracer: TracingInstrument {
   func forceFlush() {}
 
   final class FakeSpan: Span {
-    let operationName: String
-    let kind: SpanKind
-    var status: SpanStatus?
+    private let operationName: String
+    private let kind: SpanKind
+    private var status: SpanStatus?
 
     let startTimestamp: Timestamp
     private(set) var endTimestamp: Timestamp?
@@ -379,6 +379,10 @@ final class FakeTracer: TracingInstrument {
 
     func end(at timestamp: Timestamp) {
       print(#"Ending span "\#(self.operationName)" at timestamp: \#(timestamp)""#)
+    }
+
+    func setStatus(_ status: SpanStatus) {
+      self.status = status
     }
   }
 }

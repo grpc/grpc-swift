@@ -484,7 +484,7 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
         ])
       }
 
-      self.span.status = SpanStatus(status)
+      self.span.setStatus(SpanStatus(status))
       self.span.end()
       self.outboundState = .ignore
       self.inboundState = .ignore
