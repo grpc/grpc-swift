@@ -102,7 +102,7 @@ class EmbeddedClientThroughput: Benchmark {
 
       // Read out the request frames.
       var requestFrames = 0
-      while let _ = try channel.readOutbound(as: HTTP2Frame.self) {
+      while let _ = try channel.readOutbound(as: HTTP2Frame.FramePayload.self) {
         requestFrames += 1
       }
       precondition(requestFrames == 3) // headers, data, empty data (end-stream)
@@ -114,15 +114,13 @@ class EmbeddedClientThroughput: Benchmark {
         ":status": "200",
         "content-type": "application/grpc+proto",
       ]
-      let headerFrame = HTTP2Frame(
-        streamID: .init(1),
-        payload: .headers(.init(headers: responseHeaders))
-      )
+
+      let headerFrame = HTTP2Frame.FramePayload.headers(.init(headers: responseHeaders))
       try channel.writeInbound(headerFrame)
 
       // The response data.
       for chunk in self.responseDataChunks {
-        let frame = HTTP2Frame(streamID: 1, payload: .data(.init(data: .byteBuffer(chunk))))
+        let frame = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(chunk)))
         try channel.writeInbound(frame)
       }
 
@@ -131,10 +129,7 @@ class EmbeddedClientThroughput: Benchmark {
         "grpc-status": "0",
         "grpc-message": "ok",
       ]
-      let trailersFrame = HTTP2Frame(
-        streamID: .init(1),
-        payload: .headers(.init(headers: responseTrailers))
-      )
+      let trailersFrame = HTTP2Frame.FramePayload.headers(.init(headers: responseTrailers))
       try channel.writeInbound(trailersFrame)
 
       // And read them back out.
