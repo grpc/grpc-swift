@@ -60,6 +60,7 @@ let package = Package(
         "Baggage",
         "TracingInstrumentation",
         "NIOInstrumentation",
+        "OpenTelemetryInstrumentationSupport",
       ]
     ), // and its tests.
     .testTarget(

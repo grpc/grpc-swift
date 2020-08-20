@@ -18,6 +18,7 @@ import Logging
 import NIO
 import NIOHTTP1
 import NIOInstrumentation
+import OpenTelemetryInstrumentationSupport
 import SwiftProtobuf
 import TracingInstrumentation
 
@@ -140,6 +141,8 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
         ofKind: .server
       )
 
+      span.attributes[SpanAttributeName.RPC.system] = "grpc"
+
       InstrumentationSystem.instrument.extract(
         requestHead.headers,
         into: &context.baggage,
@@ -173,10 +176,11 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
       }
 
       // Do we know how to handle this RPC?
-      guard let callHandler = self.makeCallHandler(
-        channel: context.channel,
-        requestHead: requestHead
-      ) else {
+      guard let requestInfo = GRPCRequestInfo(parsing: requestHead.uri),
+        let callHandler = self.makeCallHandler(
+          channel: context.channel,
+          requestInfo: requestInfo
+        ) else {
         self.logger.warning(
           "unable to make call handler; the RPC is not implemented on this server",
           metadata: ["uri": "\(requestHead.uri)"]
@@ -190,6 +194,9 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
         context.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
         return
       }
+
+      span.attributes[SpanAttributeName.RPC.service] = .string(String(requestInfo.service))
+      span.attributes[SpanAttributeName.RPC.method] = .string(String(requestInfo.method))
 
       self.logger.debug("received request head, configuring pipeline")
 
@@ -237,14 +244,13 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
     }
   }
 
-  private func makeCallHandler(channel: Channel, requestHead: HTTPRequestHead) -> GRPCCallHandler? {
+  private func makeCallHandler(channel: Channel, requestInfo: GRPCRequestInfo) -> GRPCCallHandler? {
     // URI format: "/package.Servicename/MethodName", resulting in the following components separated by a slash:
     // - uriComponents[0]: empty
     // - uriComponents[1]: service name (including the package name);
     //     `CallHandlerProvider`s should provide the service name including the package name.
     // - uriComponents[2]: method name.
-    self.logger.debug("making call handler", metadata: ["path": "\(requestHead.uri)"])
-    let uriComponents = requestHead.uri.split(separator: "/")
+    self.logger.debug("making call handler", metadata: ["path": "\(requestInfo.uri)"])
 
     let context = CallHandlerContext(
       errorDelegate: self.errorDelegate,
@@ -252,13 +258,12 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
       encoding: self.encoding
     )
 
-    guard uriComponents.count >= 2,
-      let providerForServiceName = servicesByName[uriComponents[0]],
+    guard let providerForServiceName = servicesByName[requestInfo.service],
       let callHandler = providerForServiceName.handleMethod(
-        uriComponents[1],
+        requestInfo.method,
         callHandlerContext: context
       ) else {
-      self.logger.notice("could not create handler", metadata: ["path": "\(requestHead.uri)"])
+      self.logger.notice("could not create handler", metadata: ["path": "\(requestInfo.uri)"])
       return nil
     }
     return callHandler

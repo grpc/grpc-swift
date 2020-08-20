@@ -379,6 +379,8 @@ final class FakeTracer: TracingInstrument {
 
     func end(at timestamp: Timestamp) {
       print(#"Ending span "\#(self.operationName)" at timestamp: \#(timestamp)""#)
+      print(self.status ?? "No status was set")
+      print(self.attributes)
     }
 
     func setStatus(_ status: SpanStatus) {
