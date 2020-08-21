@@ -18,6 +18,7 @@ import Logging
 import NIO
 import NIOFoundationCompat
 import NIOHTTP1
+import OpenTelemetryInstrumentationSupport
 import SwiftProtobuf
 import TracingInstrumentation
 
@@ -350,15 +351,18 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
         headers.add(name: GRPCHeaderName.acceptEncoding, value: acceptEncoding)
       }
 
+      let responseStatus = HTTPResponseStatus.ok
       context.write(
         self
           .wrapOutboundOut(.head(HTTPResponseHead(
             version: version,
-            status: .ok,
+            status: responseStatus,
             headers: headers
           ))),
         promise: promise
       )
+      self.span.attributes[SpanAttributeName.HTTP.statusCode] = .int(Int(responseStatus.code))
+      self.span.attributes[SpanAttributeName.HTTP.statusText] = .string(responseStatus.reasonPhrase)
       self.outboundState = .expectingBodyOrStatus
 
     case let .message(messageContext):
@@ -392,6 +396,11 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
             compressed: messageContext.compressed
           )
           context.write(self.wrapOutboundOut(.body(.byteBuffer(messageBuffer))), promise: promise)
+          self.span
+            .attributes[SpanAttributeName.HTTP.responseContentLength] = .int(
+              messageBuffer
+                .readableBytes
+            )
         }
       } catch {
         let error = GRPCError.SerializationFailure().captureContext()
@@ -462,6 +471,8 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
         responseTextBuffer.clear(minimumCapacity: Int(encodedData.utf8.count))
         responseTextBuffer.writeString(encodedData)
 
+        self.span
+          .attributes[SpanAttributeName.HTTP.responseContentLength] = .int(encodedData.utf8.count)
         // After collecting all response for gRPC Web connections, send one final aggregated
         // response.
         context.write(

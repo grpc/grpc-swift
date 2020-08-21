@@ -131,7 +131,7 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
     var span: Span
 
     let requestPart = self.unwrapInboundIn(data)
-    switch self.unwrapInboundIn(data) {
+    switch requestPart {
     case let .head(requestHead):
       precondition(self.state == .notConfigured)
 
@@ -141,6 +141,14 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
         ofKind: .server
       )
 
+      if let userAgent = requestHead.headers.first(name: "User-Agent") {
+        span.attributes[SpanAttributeName.HTTP.userAgent] = .string(userAgent)
+      }
+      span.attributes[SpanAttributeName.HTTP.method] = .string(requestHead.method.rawValue)
+      span
+        .attributes[SpanAttributeName.HTTP.flavor] =
+        "\(requestHead.version.major).\(requestHead.version.minor)"
+      span.attributes[SpanAttributeName.HTTP.target] = .string(requestHead.uri)
       span.attributes[SpanAttributeName.RPC.system] = "grpc"
 
       InstrumentationSystem.instrument.extract(
@@ -245,11 +253,6 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
   }
 
   private func makeCallHandler(channel: Channel, requestInfo: GRPCRequestInfo) -> GRPCCallHandler? {
-    // URI format: "/package.Servicename/MethodName", resulting in the following components separated by a slash:
-    // - uriComponents[0]: empty
-    // - uriComponents[1]: service name (including the package name);
-    //     `CallHandlerProvider`s should provide the service name including the package name.
-    // - uriComponents[2]: method name.
     self.logger.debug("making call handler", metadata: ["path": "\(requestInfo.uri)"])
 
     let context = CallHandlerContext(
