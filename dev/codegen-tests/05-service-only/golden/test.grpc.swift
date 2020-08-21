@@ -20,11 +20,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-import Foundation
 import GRPC
 import NIO
-import NIOHTTP1
-import SwiftProtobuf
 
 
 /// Usage: instantiate Codegentest_FooClient, then call methods of this protocol to make API calls.
@@ -77,11 +74,11 @@ internal protocol Codegentest_FooProvider: CallHandlerProvider {
 }
 
 extension Codegentest_FooProvider {
-  internal var serviceName: String { return "codegentest.Foo" }
+  internal var serviceName: Substring { return "codegentest.Foo" }
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  internal func handleMethod(_ methodName: String, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
+  internal func handleMethod(_ methodName: Substring, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
     switch methodName {
     case "Bar":
       return CallHandlerFactory.makeUnary(callHandlerContext: callHandlerContext) { context in

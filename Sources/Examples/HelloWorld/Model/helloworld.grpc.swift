@@ -20,11 +20,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-import Foundation
 import GRPC
 import NIO
-import NIOHTTP1
-import SwiftProtobuf
 
 
 /// Usage: instantiate Helloworld_GreeterClient, then call methods of this protocol to make API calls.
@@ -78,11 +75,11 @@ public protocol Helloworld_GreeterProvider: CallHandlerProvider {
 }
 
 extension Helloworld_GreeterProvider {
-  public var serviceName: String { return "helloworld.Greeter" }
+  public var serviceName: Substring { return "helloworld.Greeter" }
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  public func handleMethod(_ methodName: String, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
+  public func handleMethod(_ methodName: Substring, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
     switch methodName {
     case "SayHello":
       return CallHandlerFactory.makeUnary(callHandlerContext: callHandlerContext) { context in

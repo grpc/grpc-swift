@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import GRPC
 import EchoModel
+import GRPC
 import NIO
 import XCTest
 
@@ -31,14 +31,14 @@ class FakeChannelTests: GRPCTestCase {
 
   private func makeUnaryResponse(
     path: String = "/foo/bar",
-    requestHandler: @escaping (FakeRequestPart<Request>) -> () = { _ in }
+    requestHandler: @escaping (FakeRequestPart<Request>) -> Void = { _ in }
   ) -> FakeUnaryResponse<Request, Response> {
     return self.channel.makeFakeUnaryResponse(path: path, requestHandler: requestHandler)
   }
 
   private func makeStreamingResponse(
     path: String = "/foo/bar",
-    requestHandler: @escaping (FakeRequestPart<Request>) -> () = { _ in }
+    requestHandler: @escaping (FakeRequestPart<Request>) -> Void = { _ in }
   ) -> FakeStreamingResponse<Request, Response> {
     return self.channel.makeFakeStreamingResponse(path: path, requestHandler: requestHandler)
   }
@@ -54,15 +54,19 @@ class FakeChannelTests: GRPCTestCase {
   private func makeBidirectionalStreamingCall(
     path: String = "/foo/bar",
     callOptions: CallOptions = CallOptions(),
-    handler: @escaping (Response) -> ()
+    handler: @escaping (Response) -> Void
   ) -> BidirectionalStreamingCall<Request, Response> {
-    return self.channel.makeBidirectionalStreamingCall(path: path, callOptions: callOptions, handler: handler)
+    return self.channel.makeBidirectionalStreamingCall(
+      path: path,
+      callOptions: callOptions,
+      handler: handler
+    )
   }
 
   func testUnary() {
     let response = self.makeUnaryResponse { part in
       switch part {
-      case .message(let request):
+      case let .message(request):
         XCTAssertEqual(request, Request.with { $0.text = "Foo" })
       default:
         ()
@@ -72,7 +76,7 @@ class FakeChannelTests: GRPCTestCase {
     let call = self.makeUnaryCall(request: .with { $0.text = "Foo" })
 
     XCTAssertNoThrow(try response.sendMessage(.with { $0.text = "Bar" }))
-    XCTAssertEqual(try call.response.wait(), .with { $0.text = "Bar"} )
+    XCTAssertEqual(try call.response.wait(), .with { $0.text = "Bar" })
     XCTAssertTrue(try call.status.map { $0.isOk }.wait())
   }
 
@@ -80,7 +84,7 @@ class FakeChannelTests: GRPCTestCase {
     var requests: [Request] = []
     let response = self.makeStreamingResponse { part in
       switch part {
-      case .message(let request):
+      case let .message(request):
         requests.append(request)
       default:
         ()
@@ -97,14 +101,14 @@ class FakeChannelTests: GRPCTestCase {
     XCTAssertNoThrow(try call.sendMessage(.with { $0.text = "3" }).wait())
     XCTAssertNoThrow(try call.sendEnd().wait())
 
-    XCTAssertEqual(requests, (1...3).map { number in .with { $0.text = "\(number)" }})
+    XCTAssertEqual(requests, (1 ... 3).map { number in .with { $0.text = "\(number)" } })
 
     XCTAssertNoThrow(try response.sendMessage(.with { $0.text = "4" }))
     XCTAssertNoThrow(try response.sendMessage(.with { $0.text = "5" }))
     XCTAssertNoThrow(try response.sendMessage(.with { $0.text = "6" }))
     XCTAssertNoThrow(try response.sendEnd())
 
-    XCTAssertEqual(responses, (4...6).map { number in .with { $0.text = "\(number)" }})
+    XCTAssertEqual(responses, (4 ... 6).map { number in .with { $0.text = "\(number)" } })
     XCTAssertTrue(try call.status.map { $0.isOk }.wait())
   }
 

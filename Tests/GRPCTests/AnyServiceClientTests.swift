@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import EchoModel
 import Foundation
 import GRPC
-import EchoModel
 import XCTest
 
 class AnyServiceClientTests: EchoTestCaseBase {
@@ -30,7 +30,8 @@ class AnyServiceClientTests: EchoTestCaseBase {
     let get = self.anyServiceClient.makeUnaryCall(
       path: "/echo.Echo/Get",
       request: Echo_EchoRequest.with { $0.text = "foo" },
-      responseType: Echo_EchoResponse.self)
+      responseType: Echo_EchoResponse.self
+    )
 
     XCTAssertEqual(try get.status.map { $0.code }.wait(), .ok)
   }
@@ -39,7 +40,8 @@ class AnyServiceClientTests: EchoTestCaseBase {
     let collect = self.anyServiceClient.makeClientStreamingCall(
       path: "/echo.Echo/Collect",
       requestType: Echo_EchoRequest.self,
-      responseType: Echo_EchoResponse.self)
+      responseType: Echo_EchoResponse.self
+    )
 
     collect.sendEnd(promise: nil)
 
@@ -51,7 +53,8 @@ class AnyServiceClientTests: EchoTestCaseBase {
       path: "/echo.Echo/Expand",
       request: Echo_EchoRequest.with { $0.text = "foo" },
       responseType: Echo_EchoResponse.self,
-      handler: { _ in })
+      handler: { _ in }
+    )
 
     XCTAssertEqual(try expand.status.map { $0.code }.wait(), .ok)
   }
@@ -61,7 +64,8 @@ class AnyServiceClientTests: EchoTestCaseBase {
       path: "/echo.Echo/Update",
       requestType: Echo_EchoRequest.self,
       responseType: Echo_EchoResponse.self,
-      handler: { _ in })
+      handler: { _ in }
+    )
 
     update.sendEnd(promise: nil)
 

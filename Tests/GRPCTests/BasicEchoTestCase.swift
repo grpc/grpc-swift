@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 import Dispatch
+import EchoImplementation
+import EchoModel
 import Foundation
-import NIO
-import NIOSSL
 import GRPC
 import GRPCSampleData
-import EchoModel
-import EchoImplementation
+import NIO
+import NIOSSL
 import XCTest
 
 extension Echo_EchoRequest {
@@ -98,8 +98,8 @@ class EchoTestCaseBase: GRPCTestCase {
 
   func makeServer() throws -> Server {
     return try self.serverBuilder()
-      .withErrorDelegate(makeErrorDelegate())
-      .withServiceProviders([makeEchoProvider()])
+      .withErrorDelegate(self.makeErrorDelegate())
+      .withServiceProviders([self.makeEchoProvider()])
       .withLogger(self.serverLogger)
       .bind(host: "localhost", port: 0)
       .wait()
@@ -126,14 +126,16 @@ class EchoTestCaseBase: GRPCTestCase {
     super.setUp()
     self.serverEventLoopGroup = PlatformSupport.makeEventLoopGroup(
       loopCount: 1,
-      networkPreference: self.networkPreference)
+      networkPreference: self.networkPreference
+    )
     self.server = try! self.makeServer()
 
     self.port = self.server.channel.localAddress!.port!
 
     self.clientEventLoopGroup = PlatformSupport.makeEventLoopGroup(
       loopCount: 1,
-      networkPreference: self.networkPreference)
+      networkPreference: self.networkPreference
+    )
     self.client = try! self.makeEchoClient(port: self.port)
   }
 
@@ -155,7 +157,11 @@ class EchoTestCaseBase: GRPCTestCase {
 }
 
 extension EchoTestCaseBase {
-  func makeExpectation(description: String, expectedFulfillmentCount: Int = 1, assertForOverFulfill: Bool = true) -> XCTestExpectation {
+  func makeExpectation(
+    description: String,
+    expectedFulfillmentCount: Int = 1,
+    assertForOverFulfill: Bool = true
+  ) -> XCTestExpectation {
     let expectation = self.expectation(description: description)
     expectation.expectedFulfillmentCount = expectedFulfillmentCount
     expectation.assertForOverFulfill = assertForOverFulfill
@@ -163,22 +169,27 @@ extension EchoTestCaseBase {
   }
 
   func makeStatusExpectation(expectedFulfillmentCount: Int = 1) -> XCTestExpectation {
-    return makeExpectation(description: "Expecting status received",
-                           expectedFulfillmentCount: expectedFulfillmentCount)
+    return self.makeExpectation(
+      description: "Expecting status received",
+      expectedFulfillmentCount: expectedFulfillmentCount
+    )
   }
 
   func makeResponseExpectation(expectedFulfillmentCount: Int = 1) -> XCTestExpectation {
-    return makeExpectation(description: "Expecting \(expectedFulfillmentCount) response(s)",
-      expectedFulfillmentCount: expectedFulfillmentCount)
+    return self.makeExpectation(
+      description: "Expecting \(expectedFulfillmentCount) response(s)",
+      expectedFulfillmentCount: expectedFulfillmentCount
+    )
   }
 
   func makeRequestExpectation(expectedFulfillmentCount: Int = 1) -> XCTestExpectation {
-    return makeExpectation(
+    return self.makeExpectation(
       description: "Expecting \(expectedFulfillmentCount) request(s) to have been sent",
-      expectedFulfillmentCount: expectedFulfillmentCount)
+      expectedFulfillmentCount: expectedFulfillmentCount
+    )
   }
 
   func makeInitialMetadataExpectation() -> XCTestExpectation {
-    return makeExpectation(description: "Expecting initial metadata")
+    return self.makeExpectation(description: "Expecting initial metadata")
   }
 }

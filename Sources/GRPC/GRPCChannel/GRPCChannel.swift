@@ -97,7 +97,10 @@ public protocol GRPCChannel {
   ///   - path: Path of the RPC, e.g. "/echo.Echo/Get"
   ///   - callOptions: Options for the RPC.
   ///   - handler: Response handler; called for every response received from the server.
-  func makeBidirectionalStreamingCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+  func makeBidirectionalStreamingCall<
+    Request: SwiftProtobuf.Message,
+    Response: SwiftProtobuf.Message
+  >(
     path: String,
     callOptions: CallOptions,
     handler: @escaping (Response) -> Void

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 import Foundation
-import SwiftProtobuf
+import Logging
 import NIO
 import NIOHTTP1
-import Logging
+import SwiftProtobuf
 
 /// Abstract base class exposing a method that exposes a promise for the RPC response.
 ///
@@ -34,7 +34,7 @@ open class UnaryResponseCallContext<ResponsePayload>: ServerCallContextBase, Sta
   public let responsePromise: EventLoopPromise<ResponsePayload>
   public var responseStatus: GRPCStatus = .ok
 
-  public override init(eventLoop: EventLoop, request: HTTPRequestHead, logger: Logger) {
+  override public init(eventLoop: EventLoop, request: HTTPRequestHead, logger: Logger) {
     self.responsePromise = eventLoop.makePromise()
     super.init(eventLoop: eventLoop, request: request, logger: logger)
   }
@@ -63,29 +63,58 @@ open class UnaryResponseCallContextImpl<ResponsePayload>: UnaryResponseCallConte
   ///   - request: The headers provided with this call.
   ///   - errorDelegate: Provides a means for transforming response promise failures to `GRPCStatusTransformable` before
   ///     sending them to the client.
-  public init(channel: Channel, request: HTTPRequestHead, errorDelegate: ServerErrorDelegate?, logger: Logger) {
+  public init(
+    channel: Channel,
+    request: HTTPRequestHead,
+    errorDelegate: ServerErrorDelegate?,
+    logger: Logger
+  ) {
     self.channel = channel
 
     super.init(eventLoop: channel.eventLoop, request: request, logger: logger)
 
     responsePromise.futureResult
-      // Send the response provided to the promise.
-      .map { responseMessage -> EventLoopFuture<Void> in
-        return self.channel.writeAndFlush(NIOAny(WrappedResponse.message(.init(responseMessage, compressed: self.compressionEnabled))))
-      }
-      .map { _ in
-        self.responseStatus
-      }
-      // Ensure that any error provided can be transformed to `GRPCStatus`, using "internal server error" as a fallback.
-      .recover { [weak errorDelegate] error in
-        errorDelegate?.observeRequestHandlerError(error, request: request)
-        return errorDelegate?.transformRequestHandlerError(error, request: request)
-          ?? (error as? GRPCStatusTransformable)?.makeGRPCStatus()
-          ?? .processingError
-      }
-      // Finish the call by returning the final status.
-      .whenSuccess { status in
-        self.channel.writeAndFlush(NIOAny(WrappedResponse.statusAndTrailers(status, self.trailingMetadata)), promise: nil)
+      .whenComplete { [self, weak errorDelegate] result in
+        let statusAndMetadata: GRPCStatusAndMetadata
+
+        switch result {
+        case let .success(responseMessage):
+          self.channel.write(
+            NIOAny(
+              WrappedResponse
+                .message(.init(responseMessage, compressed: self.compressionEnabled))
+            ),
+            promise: nil
+          )
+          statusAndMetadata = GRPCStatusAndMetadata(status: self.responseStatus, metadata: nil)
+        case let .failure(error):
+          errorDelegate?.observeRequestHandlerError(error, request: request)
+
+          if let transformed: GRPCStatusAndMetadata = errorDelegate?.transformRequestHandlerError(
+            error,
+            request: request
+          ) {
+            statusAndMetadata = transformed
+          } else if let grpcStatusTransformable = error as? GRPCStatusTransformable {
+            statusAndMetadata = GRPCStatusAndMetadata(
+              status: grpcStatusTransformable.makeGRPCStatus(),
+              metadata: nil
+            )
+          } else {
+            statusAndMetadata = GRPCStatusAndMetadata(status: .processingError, metadata: nil)
+          }
+        }
+
+        if let metadata = statusAndMetadata.metadata {
+          self.trailingMetadata.add(contentsOf: metadata)
+        }
+        self.channel.writeAndFlush(
+          NIOAny(
+            WrappedResponse
+              .statusAndTrailers(statusAndMetadata.status, self.trailingMetadata)
+          ),
+          promise: nil
+        )
       }
   }
 }
@@ -93,4 +122,4 @@ open class UnaryResponseCallContextImpl<ResponsePayload>: UnaryResponseCallConte
 /// Concrete implementation of `UnaryResponseCallContext` used for testing.
 ///
 /// Only provided to make it clear in tests that no "real" implementation is used.
-open class UnaryResponseCallContextTestStub<ResponsePayload>: UnaryResponseCallContext<ResponsePayload> { }
+open class UnaryResponseCallContextTestStub<ResponsePayload>: UnaryResponseCallContext<ResponsePayload> {}

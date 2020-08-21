@@ -15,9 +15,9 @@
  */
 import Foundation
 import GRPC
+import Logging
 import NIO
 import NIOSSL
-import Logging
 
 /// Makes a server for gRPC interoperability testing.
 ///
@@ -42,14 +42,20 @@ public func makeInteroperabilityTestServer(
   let builder: Server.Builder
 
   if useTLS {
-    print("Using the gRPC interop testing CA for TLS; clients should expect the host to be '*.test.google.fr'")
+    print(
+      "Using the gRPC interop testing CA for TLS; clients should expect the host to be '*.test.google.fr'"
+    )
 
     let caCert = InteroperabilityTestCredentials.caCertificate
     let serverCert = InteroperabilityTestCredentials.server1Certificate
     let serverKey = InteroperabilityTestCredentials.server1Key
 
-    builder = Server.secure(group: eventLoopGroup, certificateChain: [serverCert], privateKey: serverKey)
-      .withTLS(trustRoots: .certificates([caCert]))
+    builder = Server.secure(
+      group: eventLoopGroup,
+      certificateChain: [serverCert],
+      privateKey: serverKey
+    )
+    .withTLS(trustRoots: .certificates([caCert]))
   } else {
     builder = Server.insecure(group: eventLoopGroup)
   }

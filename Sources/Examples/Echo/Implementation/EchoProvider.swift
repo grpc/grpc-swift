@@ -13,21 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Foundation
-import NIO
-import GRPC
 import EchoModel
+import Foundation
+import GRPC
+import NIO
 
 public class EchoProvider: Echo_EchoProvider {
   public init() {}
 
-  public func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
+  public func get(request: Echo_EchoRequest,
+                  context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
     var response = Echo_EchoResponse()
     response.text = "Swift echo get: " + request.text
     return context.eventLoop.makeSucceededFuture(response)
   }
 
-  public func expand(request: Echo_EchoRequest, context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<GRPCStatus> {
+  public func expand(
+    request: Echo_EchoRequest,
+    context: StreamingResponseCallContext<Echo_EchoResponse>
+  ) -> EventLoopFuture<GRPCStatus> {
     var endOfSendOperationQueue = context.eventLoop.makeSucceededFuture(())
     let parts = request.text.components(separatedBy: " ")
     for (i, part) in parts.enumerated() {
@@ -38,11 +42,12 @@ public class EchoProvider: Echo_EchoProvider {
     return endOfSendOperationQueue.map { GRPCStatus.ok }
   }
 
-  public func collect(context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
+  public func collect(context: UnaryResponseCallContext<Echo_EchoResponse>)
+    -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     var parts: [String] = []
     return context.eventLoop.makeSucceededFuture({ event in
       switch event {
-      case .message(let message):
+      case let .message(message):
         parts.append(message.text)
 
       case .end:
@@ -53,12 +58,13 @@ public class EchoProvider: Echo_EchoProvider {
     })
   }
 
-  public func update(context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
+  public func update(context: StreamingResponseCallContext<Echo_EchoResponse>)
+    -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
     var endOfSendOperationQueue = context.eventLoop.makeSucceededFuture(())
     var count = 0
     return context.eventLoop.makeSucceededFuture({ event in
       switch event {
-      case .message(let message):
+      case let .message(message):
         var response = Echo_EchoResponse()
         response.text = "Swift echo update (\(count)): \(message.text)"
         endOfSendOperationQueue = endOfSendOperationQueue.flatMap { context.sendResponse(response) }

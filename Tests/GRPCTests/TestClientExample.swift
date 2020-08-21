@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import EchoModel
 import EchoImplementation
+import EchoModel
 import GRPC
 import NIO
 import XCTest
@@ -102,7 +102,7 @@ class FakeResponseStreamExampleTests: GRPCTestCase {
     //
     // We can also use a response stream, see 'testServerStreamingResponseStream'.
     let fooBarBaz = ["Foo", "Bar", "Baz"]
-    self.client.enqueueExpandResponses(fooBarBaz.map { text in .with { $0.text = text }})
+    self.client.enqueueExpandResponses(fooBarBaz.map { text in .with { $0.text = text } })
 
     // Start the 'Expand' RPC. We'll create a handler which records responses.
     //
@@ -156,7 +156,7 @@ class FakeResponseStreamExampleTests: GRPCTestCase {
     //
     // We can also use a response stream, see 'testBidirectionalStreamingResponseStream'.
     let fooBarBaz = ["Foo", "Bar", "Baz"]
-    self.client.enqueueUpdateResponses(fooBarBaz.map { text in .with { $0.text = text }})
+    self.client.enqueueUpdateResponses(fooBarBaz.map { text in .with { $0.text = text } })
 
     // Start the 'Update' RPC. We'll create a handler which records responses.
     //
@@ -204,7 +204,6 @@ class FakeResponseStreamExampleTests: GRPCTestCase {
     XCTAssertTrue(try update.status.map { $0.isOk }.wait())
     XCTAssertEqual(responses, fooBarBaz)
   }
-
 }
 
 // These tests demonstrate the finer grained control enabled by the response streams.
@@ -217,7 +216,10 @@ extension FakeResponseStreamExampleTests {
     let get = self.client.get(.with { $0.text = "Hello!" })
 
     // Send the response as well as some trailing metadata.
-    XCTAssertNoThrow(try getResponseStream.sendMessage(.with { $0.text = "Goodbye!" }, trailingMetadata: ["bar": "baz"]))
+    XCTAssertNoThrow(try getResponseStream.sendMessage(
+      .with { $0.text = "Goodbye!" },
+      trailingMetadata: ["bar": "baz"]
+    ))
 
     // Check the response values:
     XCTAssertEqual(try get.response.wait(), .with { $0.text = "Goodbye!" })
@@ -250,10 +252,10 @@ extension FakeResponseStreamExampleTests {
     // Create a response stream for the RPC we want to make, we'll specify a *request* handler as well.
     let getResponseStream = self.client.makeGetResponseStream { requestPart in
       switch requestPart {
-      case .metadata(let headers):
+      case let .metadata(headers):
         XCTAssertTrue(headers.contains(name: "a-test-key"))
 
-      case .message(let request):
+      case let .message(request):
         XCTAssertEqual(request, .with { $0.text = "Hello!" })
 
       case .end:
@@ -266,7 +268,7 @@ extension FakeResponseStreamExampleTests {
     let get = self.client.get(.with { $0.text = "Hello!" }, callOptions: callOptions)
 
     // Send the response.
-    XCTAssertNoThrow(try getResponseStream.sendMessage(.with{ $0.text = "Goodbye!" }))
+    XCTAssertNoThrow(try getResponseStream.sendMessage(.with { $0.text = "Goodbye!" }))
     XCTAssertEqual(try get.response.wait(), .with { $0.text = "Goodbye!" })
     XCTAssertTrue(try get.status.map { $0.isOk }.wait())
   }
@@ -317,7 +319,7 @@ extension FakeResponseStreamExampleTests {
     XCTAssertNoThrow(try updateResponseStream.sendEnd())
 
     // Check the response values.
-    let expected = (1...4).map { number in
+    let expected = (1 ... 4).map { number in
       Echo_EchoResponse.with { $0.text = "\(number)" }
     }
     XCTAssertEqual(responses, expected)
@@ -334,7 +336,7 @@ extension FakeResponseStreamExampleTests {
     }
 
     // Since the RPC has already completed (the status promise has been fulfilled), send will fail.
-    XCTAssertThrowsError(try update.sendMessage(.with { $0.text = "Kaboom!"}).wait())
+    XCTAssertThrowsError(try update.sendMessage(.with { $0.text = "Kaboom!" }).wait())
     XCTAssertThrowsError(try update.sendEnd().wait())
 
     // The call completed *before* we tried to send "Kaboom!".
@@ -405,7 +407,7 @@ extension FakeResponseStreamExampleTests {
     XCTAssertEqual(requestParts, [
       .metadata(["foo": "bar"]),
       .message(.with { $0.text = "foo" }),
-      .end
+      .end,
     ])
 
     // Send close from the server.

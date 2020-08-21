@@ -21,7 +21,7 @@ let package = Package(
   dependencies: [
     .package(url: "../../..", .branch("HEAD")),
     .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.7.0"),
-    .package(url: "https://github.com/googleapis/google-auth-library-swift.git", from: "0.5.0")
+    .package(url: "https://github.com/googleapis/google-auth-library-swift.git", from: "0.5.0"),
   ],
   targets: [
     .target(
@@ -29,9 +29,9 @@ let package = Package(
       dependencies: [
         "GRPC",
         "SwiftProtobuf",
-        "OAuth2"
+        "OAuth2",
       ],
       path: "Sources"
-    )
+    ),
   ]
 )

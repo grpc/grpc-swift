@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import Logging
 import NIO
 import SwiftProtobuf
-import Logging
 
 /// A fake channel for use with generated test clients.
 ///
@@ -33,7 +33,9 @@ public class FakeChannel: GRPCChannel {
   /// A logger.
   public let logger: Logger
 
-  public init(logger: Logger = Logger(label: "io.grpc", factory: { _ in SwiftLogNoOpLogHandler() })) {
+  public init(logger: Logger = Logger(label: "io.grpc", factory: { _ in
+    SwiftLogNoOpLogHandler()
+  })) {
     self.responseStreams = [:]
     self.logger = logger
   }
@@ -42,7 +44,7 @@ public class FakeChannel: GRPCChannel {
   /// stream for their RPC directly via the appropriate method on their generated test client.
   public func makeFakeUnaryResponse<Request, Response>(
     path: String,
-    requestHandler: @escaping (FakeRequestPart<Request>) -> ()
+    requestHandler: @escaping (FakeRequestPart<Request>) -> Void
   ) -> FakeUnaryResponse<Request, Response> {
     let proxy = FakeUnaryResponse<Request, Response>(requestHandler: requestHandler)
     self.responseStreams[path, default: []].append(proxy)
@@ -54,7 +56,7 @@ public class FakeChannel: GRPCChannel {
   /// client.
   public func makeFakeStreamingResponse<Request, Response>(
     path: String,
-    requestHandler: @escaping (FakeRequestPart<Request>) -> ()
+    requestHandler: @escaping (FakeRequestPart<Request>) -> Void
   ) -> FakeStreamingResponse<Request, Response> {
     let proxy = FakeStreamingResponse<Request, Response>(requestHandler: requestHandler)
     self.responseStreams[path, default: []].append(proxy)
@@ -100,7 +102,10 @@ public class FakeChannel: GRPCChannel {
   }
 
   // (Docs inherited from `GRPCChannel`)
-  public func makeServerStreamingCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+  public func makeServerStreamingCall<
+    Request: SwiftProtobuf.Message,
+    Response: SwiftProtobuf.Message
+  >(
     path: String,
     request: Request,
     callOptions: CallOptions,
@@ -134,7 +139,10 @@ public class FakeChannel: GRPCChannel {
   }
 
   // (Docs inherited from `GRPCChannel`)
-  public func makeClientStreamingCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+  public func makeClientStreamingCall<
+    Request: SwiftProtobuf.Message,
+    Response: SwiftProtobuf.Message
+  >(
     path: String,
     callOptions: CallOptions
   ) -> ClientStreamingCall<Request, Response> {
@@ -160,7 +168,10 @@ public class FakeChannel: GRPCChannel {
   }
 
   // (Docs inherited from `GRPCChannel`)
-  public func makeBidirectionalStreamingCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+  public func makeBidirectionalStreamingCall<
+    Request: SwiftProtobuf.Message,
+    Response: SwiftProtobuf.Message
+  >(
     path: String,
     callOptions: CallOptions,
     handler: @escaping (Response) -> Void
@@ -244,7 +255,10 @@ extension FakeChannel {
     return call
   }
 
-  private func makeClientStreamingCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+  private func makeClientStreamingCall<
+    Serializer: MessageSerializer,
+    Deserializer: MessageDeserializer
+  >(
     serializer: Serializer,
     deserializer: Deserializer,
     path: String,
@@ -263,7 +277,10 @@ extension FakeChannel {
     return call
   }
 
-  private func makeServerStreamingCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+  private func makeServerStreamingCall<
+    Serializer: MessageSerializer,
+    Deserializer: MessageDeserializer
+  >(
     serializer: Serializer,
     deserializer: Deserializer,
     path: String,
@@ -285,7 +302,10 @@ extension FakeChannel {
     return call
   }
 
-  private func makeBidirectionalStreamingCall<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+  private func makeBidirectionalStreamingCall<
+    Serializer: MessageSerializer,
+    Deserializer: MessageDeserializer
+  >(
     serializer: Serializer,
     deserializer: Deserializer,
     path: String,

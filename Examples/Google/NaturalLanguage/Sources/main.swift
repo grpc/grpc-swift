@@ -16,11 +16,11 @@
 import Dispatch
 import Foundation
 import GRPC
-import OAuth2
 import NIO
-import NIOHTTP1
 import NIOHPACK
+import NIOHTTP1
 import NIOSSL
+import OAuth2
 
 /// Create a client and return a future to provide its value.
 func makeServiceClient(
@@ -48,26 +48,26 @@ func getAuthToken(
   scopes: [String],
   eventLoop: EventLoop
 ) -> EventLoopFuture<String> {
-    let promise = eventLoop.makePromise(of: String.self)
-    guard let provider = DefaultTokenProvider(scopes: scopes) else {
-      promise.fail(AuthError.noTokenProvider)
-      return promise.futureResult
-    }
-    do {
-      try provider.withToken { (token, error) in
-        if let token = token,
-          let accessToken = token.AccessToken {
-          promise.succeed(accessToken)
-        } else if let error = error {
-          promise.fail(error)
-        } else {
-          promise.fail(AuthError.tokenProviderFailed)
-        }
-      }
-    } catch {
-      promise.fail(error)
-    }
+  let promise = eventLoop.makePromise(of: String.self)
+  guard let provider = DefaultTokenProvider(scopes: scopes) else {
+    promise.fail(AuthError.noTokenProvider)
     return promise.futureResult
+  }
+  do {
+    try provider.withToken { token, error in
+      if let token = token,
+        let accessToken = token.AccessToken {
+        promise.succeed(accessToken)
+      } else if let error = error {
+        promise.fail(error)
+      } else {
+        promise.fail(AuthError.tokenProviderFailed)
+      }
+    }
+  } catch {
+    promise.fail(error)
+  }
+  return promise.futureResult
 }
 
 /// Main program. Make a sample API request.
@@ -97,7 +97,9 @@ do {
   let request = Google_Cloud_Language_V1_AnnotateTextRequest.with {
     $0.document = .with {
       $0.type = .plainText
-      $0.content = "The Caterpillar and Alice looked at each other for some time in silence: at last the Caterpillar took the hookah out of its mouth, and addressed her in a languid, sleepy voice. `Who are you?' said the Caterpillar."
+      $0
+        .content =
+        "The Caterpillar and Alice looked at each other for some time in silence: at last the Caterpillar took the hookah out of its mouth, and addressed her in a languid, sleepy voice. `Who are you?' said the Caterpillar."
     }
 
     $0.features = .with {

@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 import Foundation
-import SwiftProtobuf
-import NIOHTTP1
 import GRPCInteroperabilityTestModels
+import NIOHTTP1
+import SwiftProtobuf
 
 // MARK: - Payload creation
+
 extension Grpc_Testing_Payload {
   static func bytes<T>(of body: inout T) -> Grpc_Testing_Payload {
     return Grpc_Testing_Payload.with { payload in
@@ -34,6 +35,7 @@ extension Grpc_Testing_Payload {
 }
 
 // MARK: - Bool value
+
 extension Grpc_Testing_BoolValue: ExpressibleByBooleanLiteral {
   public typealias BooleanLiteralType = Bool
 
@@ -45,6 +47,7 @@ extension Grpc_Testing_BoolValue: ExpressibleByBooleanLiteral {
 }
 
 // MARK: - Echo status creation
+
 extension Grpc_Testing_EchoStatus {
   init(code: Int32, message: String) {
     self = .with {
@@ -55,6 +58,7 @@ extension Grpc_Testing_EchoStatus {
 }
 
 // MARK: - Response Parameter creation
+
 extension Grpc_Testing_ResponseParameters {
   static func size(_ size: Int) -> Grpc_Testing_ResponseParameters {
     return Grpc_Testing_ResponseParameters.with { parameters in
@@ -83,8 +87,8 @@ extension EchoStatusRequest {
   }
 }
 
-extension Grpc_Testing_SimpleRequest: EchoStatusRequest { }
-extension Grpc_Testing_StreamingOutputCallRequest: EchoStatusRequest { }
+extension Grpc_Testing_SimpleRequest: EchoStatusRequest {}
+extension Grpc_Testing_StreamingOutputCallRequest: EchoStatusRequest {}
 
 // MARK: - Payload request
 
@@ -100,15 +104,16 @@ extension PayloadRequest {
   }
 }
 
-extension Grpc_Testing_SimpleRequest: PayloadRequest { }
-extension Grpc_Testing_StreamingOutputCallRequest: PayloadRequest { }
-extension Grpc_Testing_StreamingInputCallRequest: PayloadRequest { }
+extension Grpc_Testing_SimpleRequest: PayloadRequest {}
+extension Grpc_Testing_StreamingOutputCallRequest: PayloadRequest {}
+extension Grpc_Testing_StreamingInputCallRequest: PayloadRequest {}
 
 // MARK: - Echo metadata
 
 extension HTTPHeaders {
   /// See `ServerFeatures.echoMetadata`.
   var shouldEchoMetadata: Bool {
-    return self.contains(name: "x-grpc-test-echo-initial") || self.contains(name: "x-grpc-test-echo-trailing-bin")
+    return self.contains(name: "x-grpc-test-echo-initial") || self
+      .contains(name: "x-grpc-test-echo-trailing-bin")
   }
 }

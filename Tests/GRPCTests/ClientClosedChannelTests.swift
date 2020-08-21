@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import EchoModel
 import Foundation
 import GRPC
-import EchoModel
 import NIO
 import XCTest
 
@@ -33,8 +33,10 @@ class ClientClosedChannelTests: EchoTestCaseBase {
       get.status.map { $0.code }.assertEqual(.unavailable, fulfill: statusExpectation)
     }
 
-    self.wait(for: [initialMetadataExpectation, responseExpectation, statusExpectation],
-              timeout: self.defaultTestTimeout)
+    self.wait(
+      for: [initialMetadataExpectation, responseExpectation, statusExpectation],
+      timeout: self.defaultTestTimeout
+    )
   }
 
   func testClientStreamingOnClosedConnection() throws {
@@ -50,8 +52,10 @@ class ClientClosedChannelTests: EchoTestCaseBase {
       collect.status.map { $0.code }.assertEqual(.unavailable, fulfill: statusExpectation)
     }
 
-    self.wait(for: [initialMetadataExpectation, responseExpectation, statusExpectation],
-              timeout: self.defaultTestTimeout)
+    self.wait(
+      for: [initialMetadataExpectation, responseExpectation, statusExpectation],
+      timeout: self.defaultTestTimeout
+    )
   }
 
   func testClientStreamingWhenConnectionIsClosedBetweenMessages() throws {
@@ -78,10 +82,12 @@ class ClientClosedChannelTests: EchoTestCaseBase {
     collect.response.assertError(fulfill: responseExpectation)
     collect.status.map { $0.code }.assertEqual(.unavailable, fulfill: statusExpectation)
 
-    self.wait(for: [statusExpectation, responseExpectation, requestExpectation],
-              timeout: self.defaultTestTimeout)
+    self.wait(
+      for: [statusExpectation, responseExpectation, requestExpectation],
+      timeout: self.defaultTestTimeout
+    )
   }
-  
+
   func testServerStreamingOnClosedConnection() throws {
     let initialMetadataExpectation = self.makeInitialMetadataExpectation()
     let statusExpectation = self.makeStatusExpectation()
@@ -95,8 +101,10 @@ class ClientClosedChannelTests: EchoTestCaseBase {
       expand.status.map { $0.code }.assertEqual(.unavailable, fulfill: statusExpectation)
     }
 
-    self.wait(for: [initialMetadataExpectation, statusExpectation],
-              timeout: self.defaultTestTimeout)
+    self.wait(
+      for: [initialMetadataExpectation, statusExpectation],
+      timeout: self.defaultTestTimeout
+    )
   }
 
   func testBidirectionalStreamingOnClosedConnection() throws {
@@ -112,8 +120,10 @@ class ClientClosedChannelTests: EchoTestCaseBase {
       update.status.map { $0.code }.assertEqual(.unavailable, fulfill: statusExpectation)
     }
 
-    self.wait(for: [initialMetadataExpectation, statusExpectation],
-              timeout: self.defaultTestTimeout)
+    self.wait(
+      for: [initialMetadataExpectation, statusExpectation],
+      timeout: self.defaultTestTimeout
+    )
   }
 
   func testBidirectionalStreamingWhenConnectionIsClosedBetweenMessages() throws {
@@ -122,7 +132,7 @@ class ClientClosedChannelTests: EchoTestCaseBase {
 
     // We can't make any assertions about the number of responses we will receive before closing
     // the connection; just ignore all responses.
-    let update = self.client.update() { _ in }
+    let update = self.client.update { _ in }
 
     update.sendMessage(Echo_EchoRequest(text: "foo")).peek {
       requestExpectation.fulfill()
@@ -150,7 +160,7 @@ class ClientClosedChannelTests: EchoTestCaseBase {
       XCTFail("No response expected but got: \(response)")
     }
 
-    update.sendMessage(.with { $0.text = "0"}).flatMap {
+    update.sendMessage(.with { $0.text = "0" }).flatMap {
       self.client.channel.close()
     }.whenSuccess {
       update.sendMessage(.with { $0.text = "1" }, promise: nil)

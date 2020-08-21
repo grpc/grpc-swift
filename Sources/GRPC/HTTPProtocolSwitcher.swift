@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 import Foundation
+import Logging
 import NIO
 import NIOHTTP1
 import NIOHTTP2
-import Logging
 
 /// Channel handler that creates different processing pipelines depending on whether
 /// the incoming request is HTTP 1 or 2.
 internal class HTTPProtocolSwitcher {
-  private let handlersInitializer: ((Channel, Logger) -> EventLoopFuture<Void>)
+  private let handlersInitializer: (Channel, Logger) -> EventLoopFuture<Void>
   private let errorDelegate: ServerErrorDelegate?
   private let logger: Logger
   private let httpTargetWindowSize: Int
@@ -46,7 +46,7 @@ internal class HTTPProtocolSwitcher {
     keepAlive: ServerConnectionKeepalive,
     idleTimeout: TimeAmount,
     logger: Logger,
-    handlersInitializer: (@escaping (Channel, Logger) -> EventLoopFuture<Void>)
+    handlersInitializer: @escaping (Channel, Logger) -> EventLoopFuture<Void>
   ) {
     self.errorDelegate = errorDelegate
     self.httpTargetWindowSize = httpTargetWindowSize
@@ -96,9 +96,9 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
           maxSplits: 1,
           omittingEmptySubsequences: true
         ).first else {
-          self.logger.error("unable to determine http version")
-          context.fireErrorCaught(HTTPProtocolVersionError.invalidHTTPProtocolVersion)
-          return
+        self.logger.error("unable to determine http version")
+        context.fireErrorCaught(HTTPProtocolVersionError.invalidHTTPProtocolVersion)
+        return
       }
 
       let version: HTTPProtocolVersion
@@ -122,7 +122,7 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
         case .success:
           context.pipeline.removeHandler(context: context, promise: nil)
 
-        case .failure(let error):
+        case let .failure(error):
           self.state = .notConfigured
           self.errorCaught(context: context, error: error)
         }
@@ -144,18 +144,34 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
       case .http2:
         context.channel.configureHTTP2Pipeline(
           mode: .server,
-          targetWindowSize: httpTargetWindowSize
-        ) { (streamChannel, streamID) in
+          targetWindowSize: self.httpTargetWindowSize
+        ) { streamChannel in
           var logger = self.logger
-          logger[metadataKey: MetadataKey.streamID] = "\(streamID)"
-          return streamChannel.pipeline.addHandler(HTTP2ToHTTP1ServerCodec(streamID: streamID, normalizeHTTPHeaders: true)).flatMap {
-            self.handlersInitializer(streamChannel, logger)
+
+          // Grab the streamID from the channel.
+          return streamChannel.getOption(HTTP2StreamChannelOptions.streamID).map { streamID in
+            logger[metadataKey: MetadataKey.h2StreamID] = "\(streamID)"
+            return logger
+          }.recover { _ in
+            logger[metadataKey: MetadataKey.h2StreamID] = "<unknown>"
+            return logger
+          }.flatMap { logger in
+            streamChannel.pipeline.addHandler(HTTP2FramePayloadToHTTP1ServerCodec()).flatMap {
+              self.handlersInitializer(streamChannel, logger)
+            }
           }
-        }.flatMap { multiplexer in
+        }.flatMap { multiplexer -> EventLoopFuture<Void> in
           // Add a keepalive and idle handlers between the two HTTP2 handlers.
           let keepaliveHandler = GRPCServerKeepaliveHandler(configuration: self.keepAlive)
-          let idleHandler = GRPCIdleHandler(mode: .server, idleTimeout: self.idleTimeout)
-          return context.channel.pipeline.addHandlers([keepaliveHandler, idleHandler], position: .before(multiplexer))
+          let idleHandler = GRPCIdleHandler(
+            mode: .server,
+            logger: self.logger,
+            idleTimeout: self.idleTimeout
+          )
+          return context.channel.pipeline.addHandlers(
+            [keepaliveHandler, idleHandler],
+            position: .before(multiplexer)
+          )
         }
         .cascade(to: pipelineConfigured)
       }
@@ -165,12 +181,20 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
       self.bufferedData.append(data)
 
     case .configured:
-      self.logger.critical("unexpectedly received data; this handler should have been removed from the pipeline")
-      assertionFailure("unexpectedly received data; this handler should have been removed from the pipeline")
+      self.logger
+        .critical(
+          "unexpectedly received data; this handler should have been removed from the pipeline"
+        )
+      assertionFailure(
+        "unexpectedly received data; this handler should have been removed from the pipeline"
+      )
     }
   }
 
-  func removeHandler(context: ChannelHandlerContext, removalToken: ChannelHandlerContext.RemovalToken) {
+  func removeHandler(
+    context: ChannelHandlerContext,
+    removalToken: ChannelHandlerContext.RemovalToken
+  ) {
     self.logger.debug("unbuffering data")
     self.bufferedData.forEach {
       context.fireChannelRead($0)
@@ -191,7 +215,7 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
         baseError = error
       }
 
-      errorDelegate?.observeLibraryError(baseError)
+      self.errorDelegate?.observeLibraryError(baseError)
       context.close(mode: .all, promise: nil)
 
     case .configured:

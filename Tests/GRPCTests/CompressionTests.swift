@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import GRPC
 import EchoImplementation
 import EchoModel
+import GRPC
 import NIO
 import NIOHPACK
 import XCTest
@@ -63,8 +63,13 @@ class MessageCompressionTests: GRPCTestCase {
   func testCompressedRequestsUncompressedResponses() throws {
     // Enable compression, but don't advertise that it's enabled.
     // The spec says that servers should handle compression they support but don't advertise.
-    try self.setupServer(encoding: .enabled(.init(enabledAlgorithms: [], decompressionLimit: .ratio(10))))
-    self.setupClient(encoding: .enabled(.init(forRequests: .gzip, acceptableForResponses: [.deflate, .gzip], decompressionLimit: .ratio(10))))
+    try self
+      .setupServer(encoding: .enabled(.init(enabledAlgorithms: [], decompressionLimit: .ratio(10))))
+    self.setupClient(encoding: .enabled(.init(
+      forRequests: .gzip,
+      acceptableForResponses: [.deflate, .gzip],
+      decompressionLimit: .ratio(10)
+    )))
 
     let get = self.echo.get(.with { $0.text = "foo" })
 
@@ -83,7 +88,11 @@ class MessageCompressionTests: GRPCTestCase {
 
   func testUncompressedRequestsCompressedResponses() throws {
     try self.setupServer(encoding: .enabled(.init(decompressionLimit: .ratio(10))))
-    self.setupClient(encoding: .enabled(.init(forRequests: .none, acceptableForResponses: [.deflate, .gzip], decompressionLimit: .ratio(10))))
+    self.setupClient(encoding: .enabled(.init(
+      forRequests: .none,
+      acceptableForResponses: [.deflate, .gzip],
+      decompressionLimit: .ratio(10)
+    )))
 
     let get = self.echo.get(.with { $0.text = "foo" })
 
@@ -104,8 +113,17 @@ class MessageCompressionTests: GRPCTestCase {
     // Server should be able to decompress a format it supports but does not advertise. In doing
     // so it must also return a "grpc-accept-encoding" header which includes the value it did not
     // advertise.
-    try self.setupServer(encoding: .enabled(.init(enabledAlgorithms: [.gzip], decompressionLimit: .ratio(10))))
-    self.setupClient(encoding: .enabled(.init(forRequests: .deflate, acceptableForResponses: [], decompressionLimit: .ratio(10))))
+    try self
+      .setupServer(encoding: .enabled(.init(
+        enabledAlgorithms: [.gzip],
+        decompressionLimit: .ratio(10)
+      )))
+    self
+      .setupClient(encoding: .enabled(.init(
+        forRequests: .deflate,
+        acceptableForResponses: [],
+        decompressionLimit: .ratio(10)
+      )))
 
     let get = self.echo.get(.with { $0.text = "foo" })
 
@@ -125,8 +143,16 @@ class MessageCompressionTests: GRPCTestCase {
   func testServerCompressesResponseWithDifferentAlgorithmToRequest() throws {
     // Server should be able to compress responses with a different method to the client, providing
     // the client supports it.
-    try self.setupServer(encoding: .enabled(.init(enabledAlgorithms: [.gzip], decompressionLimit: .ratio(10))))
-    self.setupClient(encoding: .enabled(.init(forRequests: .deflate, acceptableForResponses: [.deflate, .gzip], decompressionLimit: .ratio(10))))
+    try self
+      .setupServer(encoding: .enabled(.init(
+        enabledAlgorithms: [.gzip],
+        decompressionLimit: .ratio(10)
+      )))
+    self.setupClient(encoding: .enabled(.init(
+      forRequests: .deflate,
+      acceptableForResponses: [.deflate, .gzip],
+      decompressionLimit: .ratio(10)
+    )))
 
     let get = self.echo.get(.with { $0.text = "foo" })
 
@@ -144,13 +170,24 @@ class MessageCompressionTests: GRPCTestCase {
   }
 
   func testCompressedRequestWithCompressionNotSupportedOnServer() throws {
-    try self.setupServer(encoding: .enabled(.init(enabledAlgorithms: [.gzip, .deflate], decompressionLimit: .ratio(10))))
+    try self
+      .setupServer(encoding: .enabled(.init(
+        enabledAlgorithms: [.gzip, .deflate],
+        decompressionLimit: .ratio(10)
+      )))
     // We can't specify a compression we don't support, so we'll specify no compression and then
     // send a 'grpc-encoding' with our initial metadata.
-    self.setupClient(encoding: .enabled(.init(forRequests: .none, acceptableForResponses: [.deflate, .gzip], decompressionLimit: .ratio(10))))
+    self.setupClient(encoding: .enabled(.init(
+      forRequests: .none,
+      acceptableForResponses: [.deflate, .gzip],
+      decompressionLimit: .ratio(10)
+    )))
 
     let headers: HPACKHeaders = ["grpc-encoding": "you-don't-support-this"]
-    let get = self.echo.get(.with { $0.text = "foo" }, callOptions: CallOptions(customMetadata: headers))
+    let get = self.echo.get(
+      .with { $0.text = "foo" },
+      callOptions: CallOptions(customMetadata: headers)
+    )
 
     let response = self.expectation(description: "received response")
     get.response.assertError(fulfill: response)
@@ -170,7 +207,11 @@ class MessageCompressionTests: GRPCTestCase {
 
   func testDecompressionLimitIsRespectedByServerForUnaryCall() throws {
     try self.setupServer(encoding: .enabled(.init(decompressionLimit: .absolute(1))))
-    self.setupClient(encoding: .enabled(.init(forRequests: .gzip, decompressionLimit: .absolute(1024))))
+    self
+      .setupClient(encoding: .enabled(.init(
+        forRequests: .gzip,
+        decompressionLimit: .absolute(1024)
+      )))
 
     let get = self.echo.get(.with { $0.text = "foo" })
     let status = self.expectation(description: "received status")
@@ -184,7 +225,11 @@ class MessageCompressionTests: GRPCTestCase {
 
   func testDecompressionLimitIsRespectedByServerForStreamingCall() throws {
     try self.setupServer(encoding: .enabled(.init(decompressionLimit: .absolute(1024))))
-    self.setupClient(encoding: .enabled(.init(forRequests: .gzip, decompressionLimit: .absolute(2048))))
+    self
+      .setupClient(encoding: .enabled(.init(
+        forRequests: .gzip,
+        decompressionLimit: .absolute(2048)
+      )))
 
     let collect = self.echo.collect()
     let status = self.expectation(description: "received status")
@@ -192,7 +237,7 @@ class MessageCompressionTests: GRPCTestCase {
     // Smaller than limit.
     collect.sendMessage(.with { $0.text = "foo" }, promise: nil)
     // Should be just over the limit.
-    collect.sendMessage(.with { $0.text = String(repeating: "x", count: 1024)}, promise: nil)
+    collect.sendMessage(.with { $0.text = String(repeating: "x", count: 1024) }, promise: nil)
     collect.sendEnd(promise: nil)
 
     collect.status.map {
@@ -203,7 +248,11 @@ class MessageCompressionTests: GRPCTestCase {
   }
 
   func testDecompressionLimitIsRespectedByClientForUnaryCall() throws {
-    try self.setupServer(encoding: .enabled(.init(enabledAlgorithms: [.gzip], decompressionLimit: .absolute(1024))))
+    try self
+      .setupServer(encoding: .enabled(.init(
+        enabledAlgorithms: [.gzip],
+        decompressionLimit: .absolute(1024)
+      )))
     self.setupClient(encoding: .enabled(.responsesOnly(decompressionLimit: .absolute(1))))
 
     let get = self.echo.get(.with { $0.text = "foo" })
@@ -218,7 +267,11 @@ class MessageCompressionTests: GRPCTestCase {
 
   func testDecompressionLimitIsRespectedByClientForStreamingCall() throws {
     try self.setupServer(encoding: .enabled(.init(decompressionLimit: .absolute(2048))))
-    self.setupClient(encoding: .enabled(.init(forRequests: .gzip, decompressionLimit: .absolute(1024))))
+    self
+      .setupClient(encoding: .enabled(.init(
+        forRequests: .gzip,
+        decompressionLimit: .absolute(1024)
+      )))
 
     var responses: [Echo_EchoResponse] = []
     let update = self.echo.update {
@@ -230,7 +283,7 @@ class MessageCompressionTests: GRPCTestCase {
     // Smaller than limit.
     update.sendMessage(.with { $0.text = "foo" }, promise: nil)
     // Should be just over the limit.
-    update.sendMessage(.with { $0.text = String(repeating: "x", count: 1024)}, promise: nil)
+    update.sendMessage(.with { $0.text = String(repeating: "x", count: 1024) }, promise: nil)
     update.sendEnd(promise: nil)
 
     update.status.map {

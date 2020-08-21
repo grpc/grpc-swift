@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 import Foundation
-import SwiftProtobuf
+import Logging
 import NIO
 import NIOHTTP1
-import Logging
+import SwiftProtobuf
 
 /// Handles client-streaming calls. Forwards incoming messages and end-of-stream events to the observer block.
 ///
@@ -25,7 +25,10 @@ import Logging
 ///   If the framework user wants to return a call error (e.g. in case of authentication failure),
 ///   they can fail the observer block future.
 /// - To close the call and send the response, complete `context.responsePromise`.
-public final class ClientStreamingCallHandler<RequestPayload, ResponsePayload>: _BaseCallHandler<RequestPayload, ResponsePayload> {
+public final class ClientStreamingCallHandler<
+  RequestPayload,
+  ResponsePayload
+>: _BaseCallHandler<RequestPayload, ResponsePayload> {
   public typealias Context = UnaryResponseCallContext<ResponsePayload>
   public typealias EventObserver = (StreamEvent<RequestPayload>) -> Void
   public typealias EventObserverFactory = (Context) -> EventLoopFuture<EventObserver>
@@ -49,7 +52,7 @@ public final class ClientStreamingCallHandler<RequestPayload, ResponsePayload>: 
     )
   }
 
-  internal override func processHead(_ head: HTTPRequestHead, context: ChannelHandlerContext) {
+  override internal func processHead(_ head: HTTPRequestHead, context: ChannelHandlerContext) {
     let callContext = UnaryResponseCallContextImpl<ResponsePayload>(
       channel: context.channel,
       request: head,
@@ -73,9 +76,9 @@ public final class ClientStreamingCallHandler<RequestPayload, ResponsePayload>: 
     context.writeAndFlush(self.wrapOutboundOut(.headers([:])), promise: nil)
   }
 
-  internal override func processMessage(_ message: RequestPayload) {
+  override internal func processMessage(_ message: RequestPayload) {
     guard let eventObserver = self.eventObserver else {
-      self.logger.warning("eventObserver is nil; ignoring message")
+      self.logger.warning("eventObserver is nil; ignoring message", source: "GRPC")
       return
     }
     eventObserver.whenSuccess { observer in
@@ -83,9 +86,9 @@ public final class ClientStreamingCallHandler<RequestPayload, ResponsePayload>: 
     }
   }
 
-  internal override func endOfStreamReceived() throws {
+  override internal func endOfStreamReceived() throws {
     guard let eventObserver = self.eventObserver else {
-      self.logger.warning("eventObserver is nil; ignoring end-of-stream")
+      self.logger.warning("eventObserver is nil; ignoring end-of-stream", source: "GRPC")
       return
     }
     eventObserver.whenSuccess { observer in
@@ -93,7 +96,10 @@ public final class ClientStreamingCallHandler<RequestPayload, ResponsePayload>: 
     }
   }
 
-  internal override func sendErrorStatus(_ status: GRPCStatus) {
-    self.callContext?.responsePromise.fail(status)
+  override internal func sendErrorStatusAndMetadata(_ statusAndMetadata: GRPCStatusAndMetadata) {
+    if let metadata = statusAndMetadata.metadata {
+      self.callContext?.trailingMetadata.add(contentsOf: metadata)
+    }
+    self.callContext?.responsePromise.fail(statusAndMetadata.status)
   }
 }

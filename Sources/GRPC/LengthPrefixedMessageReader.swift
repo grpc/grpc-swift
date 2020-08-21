@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 import Foundation
+import Logging
 import NIO
 import NIOHTTP1
-import Logging
 
 /// This class reads and decodes length-prefixed gRPC messages.
 ///
@@ -51,7 +51,7 @@ internal struct LengthPrefixedMessageReader {
       self.decompressor = Zlib.Inflate(format: .gzip, limit: decompressionLimit)
     }
   }
-  
+
   /// The result of trying to parse a message with the bytes we currently have.
   ///
   /// - needMoreData: More data is required to continue reading a message.
@@ -104,6 +104,20 @@ internal struct LengthPrefixedMessageReader {
       // mark the bytes as "read"
       buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
     } else {
+      switch self.state {
+      case let .expectingMessage(length, _):
+        // We need to reserve enough space for the message or the incoming buffer, whichever
+        // is larger.
+        let remainingMessageBytes = Int(length) - self.buffer.readableBytes
+        self.buffer
+          .reserveCapacity(minimumWritableBytes: max(remainingMessageBytes, buffer.readableBytes))
+
+      case .expectingCompressedFlag,
+           .expectingMessageLength:
+        // Just append the buffer; these parts are too small to make a meaningful difference.
+        ()
+      }
+
       self.buffer.writeBuffer(&buffer)
     }
   }
@@ -120,9 +134,9 @@ internal struct LengthPrefixedMessageReader {
       return nil
 
     case .continue:
-      return try nextMessage()
+      return try self.nextMessage()
 
-    case .message(let message):
+    case let .message(message):
       self.nilBufferIfPossible()
       return message
     }
@@ -138,7 +152,7 @@ internal struct LengthPrefixedMessageReader {
 
     if readableBytes == 0 {
       self.buffer = nil
-    } else if readerIndex > 1024 && readerIndex > (capacity / 2) {
+    } else if readerIndex > 1024, readerIndex > (capacity / 2) {
       // A rough-heuristic: if there is a kilobyte of read data, and there is more data that
       // has been read than there is space in the rest of the buffer, we'll try to discard some
       // read bytes here. We're trying to avoid doing this if there is loads of writable bytes that
@@ -160,18 +174,18 @@ internal struct LengthPrefixedMessageReader {
 
       let isCompressionEnabled = compressionFlag != 0
       // Compression is enabled, but not expected.
-      if isCompressionEnabled && self.compression == nil {
+      if isCompressionEnabled, self.compression == nil {
         throw GRPCError.CompressionUnsupported().captureContext()
       }
       self.state = .expectingMessageLength(compressed: isCompressionEnabled)
 
-    case .expectingMessageLength(let compressed):
+    case let .expectingMessageLength(compressed):
       guard let messageLength: UInt32 = self.buffer.readInteger() else {
         return .needMoreData
       }
       self.state = .expectingMessage(messageLength, compressed: compressed)
 
-    case .expectingMessage(let length, let compressed):
+    case let .expectingMessage(length, compressed):
       let signedLength: Int = numericCast(length)
       guard var message = self.buffer.readSlice(length: signedLength) else {
         return .needMoreData

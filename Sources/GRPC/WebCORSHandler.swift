@@ -28,32 +28,38 @@ extension WebCORSHandler: ChannelInboundHandler {
   func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     // If the request is OPTIONS, the request is not propagated further.
     switch self.unwrapInboundIn(data) {
-    case .head(let requestHead):
-      requestMethod = requestHead.method
-      if requestMethod == .OPTIONS {
+    case let .head(requestHead):
+      self.requestMethod = requestHead.method
+      if self.requestMethod == .OPTIONS {
         var headers = HTTPHeaders()
         headers.add(name: "Access-Control-Allow-Origin", value: "*")
         headers.add(name: "Access-Control-Allow-Methods", value: "POST")
-        headers.add(name: "Access-Control-Allow-Headers",
-                    value: "content-type,x-grpc-web,x-user-agent")
+        headers.add(
+          name: "Access-Control-Allow-Headers",
+          value: "content-type,x-grpc-web,x-user-agent"
+        )
         headers.add(name: "Access-Control-Max-Age", value: "86400")
-        context.write(self.wrapOutboundOut(.head(HTTPResponseHead(version: requestHead.version,
-                                                                  status: .ok,
-                                                                  headers: headers))),
-                      promise: nil)
+        context.write(
+          self.wrapOutboundOut(.head(HTTPResponseHead(
+            version: requestHead.version,
+            status: .ok,
+            headers: headers
+          ))),
+          promise: nil
+        )
         return
       }
     case .body:
-      if requestMethod == .OPTIONS {
+      if self.requestMethod == .OPTIONS {
         // OPTIONS requests do not have a body, but still handle this case to be
         // cautious.
         return
       }
 
     case .end:
-      if requestMethod == .OPTIONS {
+      if self.requestMethod == .OPTIONS {
         context.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
-        requestMethod = nil
+        self.requestMethod = nil
         return
       }
     }
@@ -68,7 +74,7 @@ extension WebCORSHandler: ChannelOutboundHandler {
   func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     let responsePart = self.unwrapOutboundIn(data)
     switch responsePart {
-    case .head(let responseHead):
+    case let .head(responseHead):
       var headers = responseHead.headers
       // CORS requires all requests to have an Allow-Origin header.
       headers.add(name: "Access-Control-Allow-Origin", value: "*")
@@ -77,10 +83,14 @@ extension WebCORSHandler: ChannelOutboundHandler {
       // inject the gRPC call handler.
       headers.add(name: "Connection", value: "close")
 
-      context.write(self.wrapOutboundOut(.head(HTTPResponseHead(version: responseHead.version,
-                                                                status: responseHead.status,
-                                                                headers: headers))),
-                    promise: promise)
+      context.write(
+        self.wrapOutboundOut(.head(HTTPResponseHead(
+          version: responseHead.version,
+          status: responseHead.status,
+          headers: headers
+        ))),
+        promise: promise
+      )
     default:
       context.write(data, promise: promise)
     }

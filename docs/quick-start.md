@@ -164,7 +164,7 @@ In the same directory, open
 `Sources/Examples/HelloWorld/Client/main.swift`. Call the new method like this:
 
 ```swift
-func greet(name: String?, client greeter: Helloworld_GreeterServiceClient) {
+func greet(name: String?, client greeter: Helloworld_GreeterClient) {
   // Form the request with the name, if one was provided.
   let request = Helloworld_HelloRequest.with {
     $0.name = name ?? ""

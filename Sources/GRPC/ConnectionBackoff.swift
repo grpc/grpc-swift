@@ -132,7 +132,7 @@ public class ConnectionBackoffIterator: IteratorProtocol {
       ()
 
     // Use up one from our remaining limit.
-    case .limited(let limit) where limit > 0:
+    case let .limited(limit) where limit > 0:
       self.connectionBackoff.retries.limit = .limited(limit - 1)
 
     // limit must be <= 0, no new element.
@@ -168,6 +168,6 @@ public class ConnectionBackoffIterator: IteratorProtocol {
   private func jittered(value: TimeInterval) -> TimeInterval {
     let lower = -self.connectionBackoff.jitter * value
     let upper = self.connectionBackoff.jitter * value
-    return value + TimeInterval.random(in: lower...upper)
+    return value + TimeInterval.random(in: lower ... upper)
   }
 }

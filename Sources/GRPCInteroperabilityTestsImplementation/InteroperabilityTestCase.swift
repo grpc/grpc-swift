@@ -38,8 +38,7 @@ public protocol InteroperabilityTest {
 }
 
 extension InteroperabilityTest {
-  func configure(builder: ClientConnection.Builder) {
-  }
+  func configure(builder: ClientConnection.Builder) {}
 }
 
 /// Test cases as listed by the [gRPC interoperability test description

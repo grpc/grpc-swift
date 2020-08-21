@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import EchoModel
 import Foundation
 @testable import GRPC
-import EchoModel
+import Logging
 import NIO
 import NIOHPACK
 import NIOHTTP1
 import NIOHTTP2
 import XCTest
-import Logging
 
 class GRPCStatusCodeTests: GRPCTestCase {
   var channel: EmbeddedChannel!
@@ -29,18 +29,13 @@ class GRPCStatusCodeTests: GRPCTestCase {
   override func setUp() {
     super.setUp()
 
-    let handler = _GRPCClientChannelHandler(
-      streamID: .init(1),
-      callType: .unary,
-      logger: self.logger
-    )
-
+    let handler = _GRPCClientChannelHandler(callType: .unary, logger: self.logger)
     self.channel = EmbeddedChannel(handler: handler)
   }
 
-  func headersFrame(status: HTTPResponseStatus) -> HTTP2Frame {
+  func headersFramePayload(status: HTTPResponseStatus) -> HTTP2Frame.FramePayload {
     let headers: HPACKHeaders = [":status": "\(status.code)"]
-    return .init(streamID: .init(1), payload: .headers(.init(headers: headers)))
+    return .headers(.init(headers: headers))
   }
 
   func sendRequestHead() {
@@ -60,9 +55,12 @@ class GRPCStatusCodeTests: GRPCTestCase {
   func doTestResponseStatus(_ status: HTTPResponseStatus, expected: GRPCStatus.Code) throws {
     // Send the request head so we're in a valid state to receive headers.
     self.sendRequestHead()
-    XCTAssertThrowsError(try self.channel.writeInbound(self.headersFrame(status: status))) { error in
+    XCTAssertThrowsError(
+      try self.channel
+        .writeInbound(self.headersFramePayload(status: status))
+    ) { error in
       guard let withContext = error as? GRPCError.WithContext,
-            let invalidHTTPStatus = withContext.error as? GRPCError.InvalidHTTPStatus  else {
+        let invalidHTTPStatus = withContext.error as? GRPCError.InvalidHTTPStatus else {
         XCTFail("Unexpected error: \(error)")
         return
       }
@@ -104,23 +102,47 @@ class GRPCStatusCodeTests: GRPCTestCase {
   }
 
   func testStatusCodeAndMessageAreRespectedForNon200Responses() throws {
-    let status = GRPCStatus(code: .doNotUse, message: "Not the HTTP error phrase")
+    let status = GRPCStatus(code: .unknown, message: "Not the HTTP error phrase")
 
     let headers: HPACKHeaders = [
       ":status": "\(HTTPResponseStatus.imATeapot.code)",
       GRPCHeaderName.statusCode: "\(status.code.rawValue)",
-      GRPCHeaderName.statusMessage: status.message!
+      GRPCHeaderName.statusMessage: status.message!,
     ]
 
     self.sendRequestHead()
-    let headerFrame = HTTP2Frame(streamID: .init(1), payload: .headers(.init(headers: headers)))
-    XCTAssertThrowsError(try self.channel.writeInbound(headerFrame)) { error in
+    let headerFramePayload = HTTP2Frame.FramePayload.headers(.init(headers: headers))
+    XCTAssertThrowsError(try self.channel.writeInbound(headerFramePayload)) { error in
       guard let withContext = error as? GRPCError.WithContext,
-            let invalidHTTPStatus = withContext.error as? GRPCError.InvalidHTTPStatusWithGRPCStatus  else {
+        let invalidHTTPStatus = withContext.error as? GRPCError.InvalidHTTPStatusWithGRPCStatus
+      else {
         XCTFail("Unexpected error: \(error)")
         return
       }
       XCTAssertEqual(invalidHTTPStatus.makeGRPCStatus(), status)
     }
+  }
+
+  func testCodeFromRawValue() {
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 0), .ok)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 1), .cancelled)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 2), .unknown)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 3), .invalidArgument)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 4), .deadlineExceeded)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 5), .notFound)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 6), .alreadyExists)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 7), .permissionDenied)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 8), .resourceExhausted)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 9), .failedPrecondition)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 10), .aborted)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 11), .outOfRange)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 12), .unimplemented)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 13), .internalError)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 14), .unavailable)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 15), .dataLoss)
+    XCTAssertEqual(GRPCStatus.Code(rawValue: 16), .unauthenticated)
+
+    XCTAssertNil(GRPCStatus.Code(rawValue: -1))
+    XCTAssertNil(GRPCStatus.Code(rawValue: 17))
   }
 }

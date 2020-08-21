@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 import Foundation
-import SwiftProtobuf
+import Logging
 import NIO
 import NIOHTTP1
-import Logging
+import SwiftProtobuf
 
 /// Provides a means for decoding incoming gRPC messages into protobuf objects.
 ///
@@ -43,11 +43,11 @@ public class _BaseCallHandler<Request, Response>: GRPCCallHandler {
   /// Called when the client has half-closed the stream, indicating that they won't send any further data.
   ///
   /// Overridden by subclasses if the "end-of-stream" event is relevant.
-  internal func endOfStreamReceived() throws { }
+  internal func endOfStreamReceived() throws {}
 
   /// Sends an error status to the client while ensuring that all call context promises are fulfilled.
   /// Because only the concrete call subclass knows which promises need to be fulfilled, this method needs to be overridden.
-  internal func sendErrorStatus(_ status: GRPCStatus) {
+  internal func sendErrorStatusAndMetadata(_ statusAndMetadata: GRPCStatusAndMetadata) {
     fatalError("needs to be overridden")
   }
 
@@ -80,40 +80,56 @@ extension _BaseCallHandler: ChannelInboundHandler {
   /// appropriate status is written. Errors which don't conform to `GRPCStatusTransformable`
   /// return a status with code `.internalError`.
   public func errorCaught(context: ChannelHandlerContext, error: Error) {
-    let status: GRPCStatus
+    let statusAndMetadata: GRPCStatusAndMetadata
 
     if let errorWithContext = error as? GRPCError.WithContext {
       self.errorDelegate?.observeLibraryError(errorWithContext.error)
-      status = self.errorDelegate?.transformLibraryError(errorWithContext.error)
-          ?? errorWithContext.error.makeGRPCStatus()
+      statusAndMetadata = self.errorDelegate?.transformLibraryError(errorWithContext.error)
+        ?? GRPCStatusAndMetadata(status: errorWithContext.error.makeGRPCStatus(), metadata: nil)
     } else {
       self.errorDelegate?.observeLibraryError(error)
-      status = self.errorDelegate?.transformLibraryError(error)
-          ?? (error as? GRPCStatusTransformable)?.makeGRPCStatus()
-          ?? .processingError
+
+      if let transformed: GRPCStatusAndMetadata = self.errorDelegate?.transformLibraryError(error) {
+        statusAndMetadata = transformed
+      } else if let grpcStatusTransformable = error as? GRPCStatusTransformable {
+        statusAndMetadata = GRPCStatusAndMetadata(
+          status: grpcStatusTransformable.makeGRPCStatus(),
+          metadata: nil
+        )
+      } else {
+        statusAndMetadata = GRPCStatusAndMetadata(status: .processingError, metadata: nil)
+      }
     }
 
-    self.sendErrorStatus(status)
+    self.sendErrorStatusAndMetadata(statusAndMetadata)
   }
 
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     switch self.unwrapInboundIn(data) {
-    case .head(let head):
+    case let .head(head):
       self.processHead(head, context: context)
 
-    case .message(let message):
+    case let .message(message):
       do {
-        try processMessage(message)
+        try self.processMessage(message)
       } catch {
-        self.logger.error("error caught while user handler was processing message", metadata: [MetadataKey.error: "\(error)"])
+        self.logger.error(
+          "error caught while user handler was processing message",
+          metadata: [MetadataKey.error: "\(error)"],
+          source: "GRPC"
+        )
         self.errorCaught(context: context, error: error)
       }
 
     case .end:
       do {
-        try endOfStreamReceived()
+        try self.endOfStreamReceived()
       } catch {
-        self.logger.error("error caught on receiving end of stream", metadata: [MetadataKey.error: "\(error)"])
+        self.logger.error(
+          "error caught on receiving end of stream",
+          metadata: [MetadataKey.error: "\(error)"],
+          source: "GRPC"
+        )
         self.errorCaught(context: context, error: error)
       }
     }
@@ -124,7 +140,8 @@ extension _BaseCallHandler: ChannelOutboundHandler {
   public typealias OutboundIn = _GRPCServerResponsePart<Response>
   public typealias OutboundOut = _GRPCServerResponsePart<Response>
 
-  public func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+  public func write(context: ChannelHandlerContext, data: NIOAny,
+                    promise: EventLoopPromise<Void>?) {
     guard self.serverCanWrite else {
       promise?.fail(GRPCError.InvalidState("rpc has already finished").captureContext())
       return

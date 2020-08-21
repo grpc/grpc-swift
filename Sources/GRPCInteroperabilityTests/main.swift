@@ -15,10 +15,10 @@
  */
 import Foundation
 import GRPC
-import NIO
-import NIOSSL
 import GRPCInteroperabilityTestsImplementation
 import Logging
+import NIO
+import NIOSSL
 
 // Reduce stdout noise.
 LoggingSystem.bootstrap(StreamLogHandler.standardError)
@@ -29,10 +29,10 @@ enum InteroperabilityTestError: LocalizedError {
 
   var errorDescription: String? {
     switch self {
-    case .testNotFound(let name):
+    case let .testNotFound(name):
       return "No test named '\(name)' was found"
 
-    case .testFailed(let error):
+    case let .testFailed(error):
       return "Test failed with error: \(error)"
     }
   }
@@ -49,7 +49,13 @@ enum InteroperabilityTestError: LocalizedError {
 ///   - port: port of the test server.
 ///   - useTLS: whether to use TLS when connecting to the test server.
 /// - Throws: `InteroperabilityTestError` if the test fails.
-func runTest(_ instance: InteroperabilityTest, name: String, host: String, port: Int, useTLS: Bool) throws {
+func runTest(
+  _ instance: InteroperabilityTest,
+  name: String,
+  host: String,
+  port: Int,
+  useTLS: Bool
+) throws {
   let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
   defer {
     try! group.syncShutdownGracefully()
@@ -86,15 +92,15 @@ func makeRunnableTest(name: String) throws -> InteroperabilityTest {
 
 func printUsageAndExit(program: String) -> Never {
   print("""
-    Usage: \(program) COMMAND [OPTIONS...]
+  Usage: \(program) COMMAND [OPTIONS...]
 
-    Commands:
-      start_server [--tls|--notls] PORT         Starts the interoperability test server.
+  Commands:
+    start_server [--tls|--notls] PORT         Starts the interoperability test server.
 
-      run_test [--tls|--notls] HOST PORT NAME   Run an interoperability test.
+    run_test [--tls|--notls] HOST PORT NAME   Run an interoperability test.
 
-      list_tests                                List all interoperability test names.
-    """)
+    list_tests                                List all interoperability test names.
+  """)
   exit(1)
 }
 
@@ -112,22 +118,22 @@ enum Command {
     let command = args.removeFirst()
     switch command {
     case "start_server":
-      guard (args.count == 1 || args.count == 2),
+      guard args.count == 1 || args.count == 2,
         let port = args.popLast().flatMap(Int.init),
         let useTLS = Command.parseTLSArg(args.popLast())
-        else {
-          return nil
+      else {
+        return nil
       }
       self = .startServer(port: port, useTLS: useTLS)
 
     case "run_test":
-      guard (args.count == 3 || args.count == 4),
+      guard args.count == 3 || args.count == 4,
         let name = args.popLast(),
         let port = args.popLast().flatMap(Int.init),
         let host = args.popLast(),
         let useTLS = Command.parseTLSArg(args.popLast())
-        else {
-          return nil
+      else {
+        return nil
       }
       self = .runTest(name: name, host: host, port: port, useTLS: useTLS)
 
@@ -170,7 +176,11 @@ func main(args: [String]) {
     }
 
     do {
-      let server = try makeInteroperabilityTestServer(port: port, eventLoopGroup: group, useTLS: useTLS).wait()
+      let server = try makeInteroperabilityTestServer(
+        port: port,
+        eventLoopGroup: group,
+        useTLS: useTLS
+      ).wait()
       print("server started: \(server.channel.localAddress!)")
 
       // We never call close; run until we get killed.

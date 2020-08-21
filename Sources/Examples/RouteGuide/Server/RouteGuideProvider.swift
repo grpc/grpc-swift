@@ -55,7 +55,7 @@ class RouteGuideProvider: Routeguide_RouteGuideProvider {
     let bottom = max(request.lo.latitude, request.hi.latitude)
 
     self.features.lazy.filter { feature in
-      return !feature.name.isEmpty
+      !feature.name.isEmpty
         && feature.location.longitude >= left
         && feature.location.longitude <= right
         && feature.location.latitude >= bottom
@@ -82,7 +82,7 @@ class RouteGuideProvider: Routeguide_RouteGuideProvider {
 
     return context.eventLoop.makeSucceededFuture({ event in
       switch event {
-      case .message(let point):
+      case let .message(point):
         pointCount += 1
         if !self.checkFeature(at: point).name.isEmpty {
           featureCount += 1
@@ -117,7 +117,7 @@ class RouteGuideProvider: Routeguide_RouteGuideProvider {
   ) -> EventLoopFuture<(StreamEvent<Routeguide_RouteNote>) -> Void> {
     return context.eventLoop.makeSucceededFuture({ event in
       switch event {
-      case .message(let note):
+      case let .message(note):
         // Get any notes at the location of request note.
         var notes = self.lock.withLock {
           self.notes[note.location, default: []]
@@ -151,7 +151,7 @@ extension RouteGuideProvider {
   /// Returns a feature at the given location or an unnamed feature if none exist at that location.
   private func checkFeature(at location: Routeguide_Point) -> Routeguide_Feature {
     return self.features.first(where: {
-      return $0.location.latitude == location.latitude && $0.location.longitude == location.longitude
+      $0.location.latitude == location.latitude && $0.location.longitude == location.longitude
     }) ?? Routeguide_Feature.with {
       $0.name = ""
       $0.location = location
@@ -159,11 +159,11 @@ extension RouteGuideProvider {
   }
 }
 
-fileprivate func degreesToRadians(_ degrees: Double) -> Double {
+private func degreesToRadians(_ degrees: Double) -> Double {
   return degrees * .pi / 180.0
 }
 
-fileprivate extension Routeguide_Point {
+private extension Routeguide_Point {
   func distance(to other: Routeguide_Point) -> Double {
     // Radius of Earth in meters
     let radius = 6_371_000.0
@@ -186,4 +186,3 @@ fileprivate extension Routeguide_Point {
     return radius * c
   }
 }
-

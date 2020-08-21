@@ -15,9 +15,9 @@
  */
 import Foundation
 import GRPC
+import Logging
 import NIO
 import RouteGuideModel
-import Logging
 
 // Quieten the logs.
 LoggingSystem.bootstrap {
@@ -72,7 +72,9 @@ func listFeatures(
   highLatitude: Int,
   highLongitude: Int
 ) {
-  print("→ ListFeatures: lowLat=\(lowLatitude) lowLon=\(lowLongitude), hiLat=\(highLatitude) hiLon=\(highLongitude)")
+  print(
+    "→ ListFeatures: lowLat=\(lowLatitude) lowLon=\(lowLongitude), hiLat=\(highLatitude) hiLon=\(highLongitude)"
+  )
 
   let rectangle: Routeguide_Rectangle = .with {
     $0.lo = .with {
@@ -111,7 +113,7 @@ public func recordRoute(
   call.response.whenSuccess { summary in
     print(
       "Finished trip with \(summary.pointCount) points. Passed \(summary.featureCount) features. " +
-      "Travelled \(summary.distance) meters. It took \(summary.elapsedTime) seconds."
+        "Travelled \(summary.distance) meters. It took \(summary.elapsedTime) seconds."
     )
   }
 
@@ -123,14 +125,14 @@ public func recordRoute(
     print("Finished RecordRoute")
   }
 
-  for _ in 0..<featuresToVisit {
-    let index = Int.random(in: 0..<features.count)
+  for _ in 0 ..< featuresToVisit {
+    let index = Int.random(in: 0 ..< features.count)
     let point = features[index].location
     print("Visiting point \(point.latitude), \(point.longitude)")
     call.sendMessage(point, promise: nil)
 
     // Sleep for a bit before sending the next one.
-    Thread.sleep(forTimeInterval: TimeInterval.random(in: 0.5..<1.5))
+    Thread.sleep(forTimeInterval: TimeInterval.random(in: 0.5 ..< 1.5))
   }
 
   call.sendEnd(promise: nil)
@@ -145,7 +147,9 @@ func routeChat(using client: Routeguide_RouteGuideClient) {
   print("→ RouteChat")
 
   let call = client.routeChat { note in
-    print("Got message \"\(note.message)\" at \(note.location.latitude), \(note.location.longitude)")
+    print(
+      "Got message \"\(note.message)\" at \(note.location.latitude), \(note.location.longitude)"
+    )
   }
 
   call.status.whenSuccess { status in
@@ -160,7 +164,7 @@ func routeChat(using client: Routeguide_RouteGuideClient) {
     ("First message", 0, 0),
     ("Second message", 0, 1),
     ("Third message", 1, 0),
-    ("Fourth message", 1, 1)
+    ("Fourth message", 1, 1),
   ]
 
   for (message, latitude, longitude) in noteContent {
@@ -172,7 +176,9 @@ func routeChat(using client: Routeguide_RouteGuideClient) {
       }
     }
 
-    print("Sending message \"\(note.message)\" at \(note.location.latitude), \(note.location.longitude)")
+    print(
+      "Sending message \"\(note.message)\" at \(note.location.latitude), \(note.location.longitude)"
+    )
     call.sendMessage(note, promise: nil)
   }
   // Mark the end of the stream.
@@ -185,8 +191,8 @@ func routeChat(using client: Routeguide_RouteGuideClient) {
 /// Loads the features from `route_guide_db.json`, assumed to be in the directory above this file.
 func loadFeatures() throws -> [Routeguide_Feature] {
   let url = URL(fileURLWithPath: #file)
-    .deletingLastPathComponent()  // main.swift
-    .deletingLastPathComponent()  // Client/
+    .deletingLastPathComponent() // main.swift
+    .deletingLastPathComponent() // Client/
     .appendingPathComponent("route_guide_db.json")
 
   let data = try Data(contentsOf: url)
@@ -195,7 +201,7 @@ func loadFeatures() throws -> [Routeguide_Feature] {
 
 func main(args: [String]) throws {
   // arg0 (dropped) is the program name. We expect arg1 to be the port.
-  guard case .some(let port) = args.dropFirst(1).first.flatMap(Int.init) else {
+  guard case let .some(port) = args.dropFirst(1).first.flatMap(Int.init) else {
     print("Usage: \(args[0]) PORT")
     exit(1)
   }
@@ -215,7 +221,7 @@ func main(args: [String]) throws {
   }
 
   // Look for a valid feature.
-  getFeature(using: routeGuide, latitude: 409146138, longitude: -746188906)
+  getFeature(using: routeGuide, latitude: 409_146_138, longitude: -746_188_906)
 
   // Look for a missing feature.
   getFeature(using: routeGuide, latitude: 0, longitude: 0)
@@ -223,10 +229,10 @@ func main(args: [String]) throws {
   // Looking for features between 40, -75 and 42, -73.
   listFeatures(
     using: routeGuide,
-    lowLatitude: 400000000,
-    lowLongitude: -750000000,
-    highLatitude: 420000000,
-    highLongitude: -730000000
+    lowLatitude: 400_000_000,
+    lowLongitude: -750_000_000,
+    highLatitude: 420_000_000,
+    highLongitude: -730_000_000
   )
 
   // Record a few randomly selected points from the features file.

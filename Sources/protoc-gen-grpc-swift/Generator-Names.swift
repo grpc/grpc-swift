@@ -20,7 +20,7 @@ import SwiftProtobufPluginLibrary
 internal func nameForPackageService(_ file: FileDescriptor,
                                     _ service: ServiceDescriptor) -> String {
   if !file.package.isEmpty {
-    return SwiftProtobufNamer().typePrefix(forFile:file) + service.name
+    return SwiftProtobufNamer().typePrefix(forFile: file) + service.name
   } else {
     return service.name
   }
@@ -33,8 +33,7 @@ internal func nameForPackageServiceMethod(_ file: FileDescriptor,
 }
 
 extension Generator {
-
-  internal var access : String {
+  internal var access: String {
     return options.visibility.sourceSnippet
   }
 
@@ -74,7 +73,7 @@ extension Generator {
   internal var methodOutputName: String {
     return protobufNamer.fullName(message: method.outputType)
   }
-  
+
   internal var servicePath: String {
     if !file.package.isEmpty {
       return file.package + "." + service.name
@@ -84,6 +83,6 @@ extension Generator {
   }
 
   internal var methodPath: String {
-    return "\"/" + servicePath + "/" + method.name + "\""
+    return "\"/" + self.servicePath + "/" + method.name + "\""
   }
 }

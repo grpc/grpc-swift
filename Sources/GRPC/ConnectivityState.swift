@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 import Foundation
+import Logging
 import NIO
 import NIOConcurrencyHelpers
-import Logging
 
 /// The connectivity state of a client connection. Note that this is heavily lifted from the gRPC
 /// documentation: https://github.com/grpc/grpc/blob/master/doc/connectivity-semantics-and-api.md.
@@ -47,7 +47,7 @@ public enum ConnectivityState {
   case shutdown
 }
 
-public protocol ConnectivityStateDelegate: class {
+public protocol ConnectivityStateDelegate: AnyObject {
   /// Called when a change in `ConnectivityState` has occurred.
   ///
   /// - Parameter oldState: The old connectivity state.
@@ -74,10 +74,8 @@ public class ConnectivityStateMonitor {
 
   /// The current state of connectivity.
   public var state: ConnectivityState {
-    get {
-      return self.stateLock.withLock {
-        self._state
-      }
+    return self.stateLock.withLock {
+      self._state
     }
   }
 
@@ -110,7 +108,7 @@ public class ConnectivityStateMonitor {
     if let (oldState, newState) = change {
       logger.info("connectivity state change", metadata: [
         "old_state": "\(oldState)",
-        "new_state": "\(newState)"
+        "new_state": "\(newState)",
       ])
 
       self.delegateCallbackQueue.async {

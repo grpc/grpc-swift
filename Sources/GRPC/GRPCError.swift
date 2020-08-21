@@ -45,15 +45,14 @@ public enum GRPCError {
   public struct RPCCancelledByClient: GRPCErrorProtocol {
     public let description: String = "RPC was cancelled by the client"
 
-    public init() {
-    }
+    public init() {}
 
     public func makeGRPCStatus() -> GRPCStatus {
       return GRPCStatus(code: .cancelled, message: self.description)
     }
   }
 
-/// The RPC did not complete before the timeout.
+  /// The RPC did not complete before the timeout.
   public struct RPCTimedOut: GRPCErrorProtocol {
     /// The time limit which was exceeded by the RPC.
     public var timeLimit: TimeLimit
@@ -75,8 +74,7 @@ public enum GRPCError {
   public struct SerializationFailure: GRPCErrorProtocol {
     public let description = "Message serialization failed"
 
-    public init() {
-    }
+    public init() {}
 
     public func makeGRPCStatus() -> GRPCStatus {
       return GRPCStatus(code: .internalError, message: self.description)
@@ -87,8 +85,7 @@ public enum GRPCError {
   public struct DeserializationFailure: GRPCErrorProtocol {
     public let description = "Message deserialization failed"
 
-    public init() {
-    }
+    public init() {}
 
     public func makeGRPCStatus() -> GRPCStatus {
       return GRPCStatus(code: .internalError, message: self.description)
@@ -140,8 +137,7 @@ public enum GRPCError {
   public struct Base64DecodeError: GRPCErrorProtocol {
     public let description = "Base64 message decoding failed"
 
-    public init() {
-    }
+    public init() {}
 
     public func makeGRPCStatus() -> GRPCStatus {
       return GRPCStatus(code: .internalError, message: self.description)
@@ -152,8 +148,7 @@ public enum GRPCError {
   public struct CompressionUnsupported: GRPCErrorProtocol {
     public let description = "The compression used is not supported"
 
-    public init() {
-    }
+    public init() {}
 
     public func makeGRPCStatus() -> GRPCStatus {
       return GRPCStatus(code: .unimplemented, message: self.description)
@@ -267,10 +262,10 @@ extension GRPCError {
     var function: StaticString
 
     init(
-        _ error: GRPCStatusTransformable,
-        file: StaticString = #file,
-        line: Int = #line,
-        function: StaticString = #function
+      _ error: GRPCStatusTransformable,
+      file: StaticString = #file,
+      line: Int = #line,
+      function: StaticString = #function
     ) {
       self.error = error
       self.file = file
@@ -286,9 +281,9 @@ public protocol GRPCErrorProtocol: GRPCStatusTransformable, Equatable, CustomStr
 extension GRPCErrorProtocol {
   /// Creates a `GRPCError.WithContext` containing a `GRPCError` and the location of the call site.
   internal func captureContext(
-      file: StaticString = #file,
-      line: Int = #line,
-      function: StaticString = #function
+    file: StaticString = #file,
+    line: Int = #line,
+    function: StaticString = #function
   ) -> GRPCError.WithContext {
     return GRPCError.WithContext(self, file: file, line: line, function: function)
   }

@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 import PackageDescription
-import Foundation
 
 let package = Package(
   name: "grpc-swift",
@@ -29,7 +28,7 @@ let package = Package(
     // Main SwiftNIO package
     .package(url: "https://github.com/apple/swift-nio.git", from: "2.19.0"),
     // HTTP2 via SwiftNIO
-    .package(url: "https://github.com/apple/swift-nio-http2.git", from: "1.12.1"),
+    .package(url: "https://github.com/apple/swift-nio-http2.git", from: "1.13.0"),
     // TLS via SwiftNIO
     .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.8.0"),
     // Support for Network.framework where possible.
@@ -54,9 +53,9 @@ let package = Package(
         "NIOSSL",
         "CGRPCZlib",
         "SwiftProtobuf",
-        "Logging"
+        "Logging",
       ]
-    ),  // and its tests.
+    ), // and its tests.
     .testTarget(
       name: "GRPCTests",
       dependencies: [
@@ -64,14 +63,14 @@ let package = Package(
         "EchoModel",
         "EchoImplementation",
         "GRPCSampleData",
-        "GRPCInteroperabilityTestsImplementation"
+        "GRPCInteroperabilityTestsImplementation",
       ]
     ),
 
     .target(
       name: "CGRPCZlib",
       linkerSettings: [
-        .linkedLibrary("z")
+        .linkedLibrary("z"),
       ]
     ),
 
@@ -81,7 +80,7 @@ let package = Package(
       dependencies: [
         "SwiftProtobuf",
         "SwiftProtobufPluginLibrary",
-        "protoc-gen-swift"
+        "protoc-gen-swift",
       ]
     ),
 
@@ -90,7 +89,7 @@ let package = Package(
       name: "GRPCInteroperabilityTestsImplementation",
       dependencies: [
         "GRPC",
-        "GRPCInteroperabilityTestModels"
+        "GRPCInteroperabilityTestModels",
       ]
     ),
 
@@ -101,7 +100,7 @@ let package = Package(
         "GRPC",
         "NIO",
         "NIOHTTP1",
-        "SwiftProtobuf"
+        "SwiftProtobuf",
       ]
     ),
 
@@ -161,7 +160,7 @@ let package = Package(
       dependencies: [
         "EchoModel",
         "GRPC",
-        "SwiftProtobuf"
+        "SwiftProtobuf",
       ],
       path: "Sources/Examples/Echo/Implementation"
     ),
@@ -173,7 +172,7 @@ let package = Package(
         "GRPC",
         "NIO",
         "NIOHTTP1",
-        "SwiftProtobuf"
+        "SwiftProtobuf",
       ],
       path: "Sources/Examples/Echo/Model"
     ),
@@ -185,7 +184,7 @@ let package = Package(
         "GRPC",
         "NIO",
         "NIOHTTP1",
-        "SwiftProtobuf"
+        "SwiftProtobuf",
       ],
       path: "Sources/Examples/HelloWorld/Model"
     ),
@@ -218,7 +217,7 @@ let package = Package(
         "GRPC",
         "NIO",
         "NIOHTTP1",
-        "SwiftProtobuf"
+        "SwiftProtobuf",
       ],
       path: "Sources/Examples/RouteGuide/Model"
     ),

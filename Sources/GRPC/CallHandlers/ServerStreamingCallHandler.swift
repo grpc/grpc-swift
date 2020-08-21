@@ -14,16 +14,19 @@
  * limitations under the License.
  */
 import Foundation
-import SwiftProtobuf
+import Logging
 import NIO
 import NIOHTTP1
-import Logging
+import SwiftProtobuf
 
 /// Handles server-streaming calls. Calls the observer block with the request message.
 ///
 /// - The observer block is implemented by the framework user and calls `context.sendResponse` as needed.
 /// - To close the call and send the status, complete the status future returned by the observer block.
-public final class ServerStreamingCallHandler<RequestPayload, ResponsePayload>: _BaseCallHandler<RequestPayload, ResponsePayload> {
+public final class ServerStreamingCallHandler<
+  RequestPayload,
+  ResponsePayload
+>: _BaseCallHandler<RequestPayload, ResponsePayload> {
   public typealias EventObserver = (RequestPayload) -> EventLoopFuture<GRPCStatus>
 
   private var eventObserver: EventObserver?
@@ -52,7 +55,7 @@ public final class ServerStreamingCallHandler<RequestPayload, ResponsePayload>: 
     )
 
     self.callContext = callContext
-    self.eventObserver = eventObserverFactory(callContext)
+    self.eventObserver = self.eventObserverFactory(callContext)
     callContext.statusPromise.futureResult.whenComplete { _ in
       // When done, reset references to avoid retain cycles.
       self.eventObserver = nil
@@ -65,8 +68,11 @@ public final class ServerStreamingCallHandler<RequestPayload, ResponsePayload>: 
   override internal func processMessage(_ message: RequestPayload) throws {
     guard let eventObserver = self.eventObserver,
       let callContext = self.callContext else {
-        self.logger.error("processMessage(_:) called before the call started or after the call completed")
-        throw GRPCError.StreamCardinalityViolation.request.captureContext()
+      self.logger.error(
+        "processMessage(_:) called before the call started or after the call completed",
+        source: "GRPC"
+      )
+      throw GRPCError.StreamCardinalityViolation.request.captureContext()
     }
 
     let resultFuture = eventObserver(message)
@@ -82,7 +88,10 @@ public final class ServerStreamingCallHandler<RequestPayload, ResponsePayload>: 
     }
   }
 
-  override internal func sendErrorStatus(_ status: GRPCStatus) {
-    self.callContext?.statusPromise.fail(status)
+  override internal func sendErrorStatusAndMetadata(_ statusAndMetadata: GRPCStatusAndMetadata) {
+    if let metadata = statusAndMetadata.metadata {
+      self.callContext?.trailingMetadata.add(contentsOf: metadata)
+    }
+    self.callContext?.statusPromise.fail(statusAndMetadata.status)
   }
 }

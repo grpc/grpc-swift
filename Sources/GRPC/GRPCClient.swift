@@ -56,7 +56,10 @@ extension GRPCClient {
     )
   }
 
-  public func makeServerStreamingCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+  public func makeServerStreamingCall<
+    Request: SwiftProtobuf.Message,
+    Response: SwiftProtobuf.Message
+  >(
     path: String,
     request: Request,
     callOptions: CallOptions? = nil,
@@ -86,7 +89,10 @@ extension GRPCClient {
     )
   }
 
-  public func makeClientStreamingCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+  public func makeClientStreamingCall<
+    Request: SwiftProtobuf.Message,
+    Response: SwiftProtobuf.Message
+  >(
     path: String,
     callOptions: CallOptions? = nil,
     requestType: Request.Type = Request.self,
@@ -110,7 +116,10 @@ extension GRPCClient {
     )
   }
 
-  public func makeBidirectionalStreamingCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+  public func makeBidirectionalStreamingCall<
+    Request: SwiftProtobuf.Message,
+    Response: SwiftProtobuf.Message
+  >(
     path: String,
     callOptions: CallOptions? = nil,
     requestType: Request.Type = Request.self,

@@ -39,18 +39,22 @@ class ConnectionBackoffTests: GRPCTestCase {
   func testBackoffWithNoJitter() {
     self.backoff.jitter = 0.0
     for (i, backoff) in self.backoff.prefix(100).map({ $0.backoff }).enumerated() {
-      let expected = min(pow(self.backoff.initialBackoff * self.backoff.multiplier, Double(i)),
-                         self.backoff.maximumBackoff)
+      let expected = min(
+        pow(self.backoff.initialBackoff * self.backoff.multiplier, Double(i)),
+        self.backoff.maximumBackoff
+      )
       XCTAssertEqual(expected, backoff, accuracy: 1e-6)
     }
   }
 
   func testBackoffWithJitter() {
     for (i, timeoutAndBackoff) in self.backoff.prefix(100).enumerated() {
-      let unjittered = min(pow(self.backoff.initialBackoff * self.backoff.multiplier, Double(i)),
-                           self.backoff.maximumBackoff)
+      let unjittered = min(
+        pow(self.backoff.initialBackoff * self.backoff.multiplier, Double(i)),
+        self.backoff.maximumBackoff
+      )
       let halfJitterRange = self.backoff.jitter * unjittered
-      let jitteredRange = (unjittered-halfJitterRange)...(unjittered+halfJitterRange)
+      let jitteredRange = (unjittered - halfJitterRange) ... (unjittered + halfJitterRange)
       XCTAssert(jitteredRange.contains(timeoutAndBackoff.backoff))
     }
   }

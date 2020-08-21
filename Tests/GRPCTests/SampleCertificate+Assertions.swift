@@ -14,11 +14,17 @@
  * limitations under the License.
  */
 import Foundation
-import XCTest
 import GRPCSampleData
+import XCTest
 
 extension SampleCertificate {
-  func assertNotExpired(file: StaticString = (#file), line: UInt = #line) {
-    XCTAssertFalse(self.isExpired, "Certificate expired at \(self.notAfter)", file: file, line: line)
+  func assertNotExpired(file: StaticString = #file, line: UInt = #line) {
+    XCTAssertFalse(
+      self.isExpired,
+      "Certificate expired at \(self.notAfter)",
+      // swiftformat:disable:next redundantParens
+      file: (file),
+      line: line
+    )
   }
 }

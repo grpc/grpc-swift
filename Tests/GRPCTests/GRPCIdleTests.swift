@@ -13,19 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import EchoImplementation
+import EchoModel
 @testable import GRPC
 import NIO
-import EchoModel
-import EchoImplementation
 import XCTest
 
 class GRPCIdleTests: GRPCTestCase {
   func testClientIdleTimeout() {
-    XCTAssertNoThrow(try self.doTestIdleTimeout(serverIdle: .minutes(5), clientIdle: .milliseconds(100)))
+    XCTAssertNoThrow(
+      try self
+        .doTestIdleTimeout(serverIdle: .minutes(5), clientIdle: .milliseconds(100))
+    )
   }
 
   func testServerIdleTimeout() throws {
-    XCTAssertNoThrow(try self.doTestIdleTimeout(serverIdle: .milliseconds(100), clientIdle: .minutes(5)))
+    XCTAssertNoThrow(
+      try self
+        .doTestIdleTimeout(serverIdle: .milliseconds(100), clientIdle: .minutes(5))
+    )
   }
 
   func doTestIdleTimeout(serverIdle: TimeAmount, clientIdle: TimeAmount) throws {
@@ -55,7 +61,7 @@ class GRPCIdleTests: GRPCTestCase {
       XCTAssertEqual(changes, [
         Change(from: .idle, to: .connecting),
         Change(from: .connecting, to: .ready),
-        Change(from: .ready, to: isServerIdleFirst ? .transientFailure : .idle)
+        Change(from: .ready, to: isServerIdleFirst ? .transientFailure : .idle),
       ])
     }
 

@@ -60,7 +60,7 @@ public enum ClientMessageEncoding {
 extension ClientMessageEncoding {
   var enabledForRequests: Bool {
     switch self {
-    case .enabled(let configuration):
+    case let .enabled(configuration):
       return configuration.outbound != nil
     case .disabled:
       return false

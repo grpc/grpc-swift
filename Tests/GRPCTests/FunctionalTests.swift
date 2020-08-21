@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 import Dispatch
+import EchoModel
 import Foundation
+@testable import GRPC
 import NIO
 import NIOHTTP1
 import NIOHTTP2
-@testable import GRPC
-import EchoModel
 import XCTest
 
 class FunctionalTestsInsecureTransport: EchoTestCaseBase {
@@ -32,12 +32,17 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
   }
 
   var lotsOfStrings: [String] {
-    return (0..<500).map {
+    return (0 ..< 500).map {
       String(describing: $0)
     }
   }
 
-  func doTestUnary(request: Echo_EchoRequest, expect response: Echo_EchoResponse, file: StaticString = #file, line: UInt = #line) {
+  func doTestUnary(
+    request: Echo_EchoRequest,
+    expect response: Echo_EchoResponse,
+    file: StaticString = #file,
+    line: UInt = #line
+  ) {
     let responseExpectation = self.makeResponseExpectation()
     let statusExpectation = self.makeStatusExpectation()
 
@@ -49,7 +54,12 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
   }
 
   func doTestUnary(message: String, file: StaticString = #file, line: UInt = #line) {
-    self.doTestUnary(request: Echo_EchoRequest(text: message), expect: Echo_EchoResponse(text: "Swift echo get: \(message)"), file: file, line: line)
+    self.doTestUnary(
+      request: Echo_EchoRequest(text: message),
+      expect: Echo_EchoResponse(text: "Swift echo get: \(message)"),
+      file: file,
+      line: line
+    )
   }
 
   func testUnary() throws {
@@ -78,10 +88,11 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
     for lowerBound in stride(from: 0, to: numberOfRequests, by: batchSize) {
       let upperBound = min(lowerBound + batchSize, numberOfRequests)
       let numberOfCalls = upperBound - lowerBound
-      let responseExpectation = self.makeResponseExpectation(expectedFulfillmentCount: numberOfCalls)
+      let responseExpectation = self
+        .makeResponseExpectation(expectedFulfillmentCount: numberOfCalls)
       let statusExpectation = self.makeStatusExpectation(expectedFulfillmentCount: numberOfCalls)
 
-      for i in lowerBound..<upperBound {
+      for i in lowerBound ..< upperBound {
         let request = Echo_EchoRequest(text: "foo \(i)")
         let response = Echo_EchoResponse(text: "Swift echo get: foo \(i)")
 
@@ -91,32 +102,46 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
       }
 
       if upperBound % 100 == 0 {
-        print("\(upperBound) requests sent so far, elapsed time: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))")
+        print(
+          "\(upperBound) requests sent so far, elapsed time: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))"
+        )
       }
 
       self.wait(for: [responseExpectation, statusExpectation], timeout: batchTimeout)
     }
 
-    print("total time to receive \(numberOfRequests) responses: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))")
+    print(
+      "total time to receive \(numberOfRequests) responses: \(Double(clock() - clockStart) / Double(CLOCKS_PER_SEC))"
+    )
   }
 
   func testUnaryWithLargeData() throws {
     // Default max frame size is: 16,384. We'll exceed this as we also have to send the size and compression flag.
-    let longMessage = String(repeating: "e", count: 16_384)
+    let longMessage = String(repeating: "e", count: 16384)
     self.doTestUnary(message: longMessage)
   }
 
   func testUnaryEmptyRequest() throws {
-    self.doTestUnary(request: Echo_EchoRequest(), expect: Echo_EchoResponse(text: "Swift echo get: "))
+    self.doTestUnary(
+      request: Echo_EchoRequest(),
+      expect: Echo_EchoResponse(text: "Swift echo get: ")
+    )
   }
 
-  func doTestClientStreaming(messages: [String], file: StaticString = #file, line: UInt = #line) throws {
+  func doTestClientStreaming(
+    messages: [String],
+    file: StaticString = #file,
+    line: UInt = #line
+  ) throws {
     let responseExpectation = self.makeResponseExpectation()
     let statusExpectation = self.makeStatusExpectation()
 
     let call = client.collect(callOptions: CallOptions(timeLimit: .none))
     call.status.map { $0.code }.assertEqual(.ok, fulfill: statusExpectation, file: file, line: line)
-    call.response.assertEqual(Echo_EchoResponse(text: "Swift echo collect: \(messages.joined(separator: " "))"), fulfill: responseExpectation)
+    call.response.assertEqual(
+      Echo_EchoResponse(text: "Swift echo collect: \(messages.joined(separator: " "))"),
+      fulfill: responseExpectation
+    )
 
     call.sendMessages(messages.map { .init(text: $0) }, promise: nil)
     call.sendEnd(promise: nil)
@@ -125,12 +150,12 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
   }
 
   func testClientStreaming() {
-    XCTAssertNoThrow(try doTestClientStreaming(messages: aFewStrings))
+    XCTAssertNoThrow(try self.doTestClientStreaming(messages: self.aFewStrings))
   }
 
   func testClientStreamingLotsOfMessages() throws {
     guard self.runTimeSensitiveTests() else { return }
-    XCTAssertNoThrow(try doTestClientStreaming(messages: lotsOfStrings))
+    XCTAssertNoThrow(try self.doTestClientStreaming(messages: self.lotsOfStrings))
   }
 
   private func doTestServerStreaming(messages: [String], line: UInt = #line) throws {
@@ -140,7 +165,11 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
     var iterator = messages.enumerated().makeIterator()
     let call = client.expand(Echo_EchoRequest(text: messages.joined(separator: " "))) { response in
       if let (index, message) = iterator.next() {
-        XCTAssertEqual(Echo_EchoResponse(text: "Swift echo expand (\(index)): \(message)"), response, line: line)
+        XCTAssertEqual(
+          Echo_EchoResponse(text: "Swift echo expand (\(index)): \(message)"),
+          response,
+          line: line
+        )
         responseExpectation.fulfill()
       } else {
         XCTFail("Too many responses received", line: line)
@@ -152,15 +181,19 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
   }
 
   func testServerStreaming() {
-    XCTAssertNoThrow(try doTestServerStreaming(messages: aFewStrings))
+    XCTAssertNoThrow(try self.doTestServerStreaming(messages: self.aFewStrings))
   }
 
   func testServerStreamingLotsOfMessages() {
     guard self.runTimeSensitiveTests() else { return }
-    XCTAssertNoThrow(try doTestServerStreaming(messages: lotsOfStrings))
+    XCTAssertNoThrow(try self.doTestServerStreaming(messages: self.lotsOfStrings))
   }
 
-  private func doTestBidirectionalStreaming(messages: [String], waitForEachResponse: Bool = false, line: UInt = #line) throws {
+  private func doTestBidirectionalStreaming(
+    messages: [String],
+    waitForEachResponse: Bool = false,
+    line: UInt = #line
+  ) throws {
     let responseExpectation = self.makeResponseExpectation(expectedFulfillmentCount: messages.count)
     let statusExpectation = self.makeStatusExpectation()
 
@@ -169,7 +202,11 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
     var iterator = messages.enumerated().makeIterator()
     let call = client.update { response in
       if let (index, message) = iterator.next() {
-        XCTAssertEqual(Echo_EchoResponse(text: "Swift echo update (\(index)): \(message)"), response, line: line)
+        XCTAssertEqual(
+          Echo_EchoResponse(text: "Swift echo update (\(index)): \(message)"),
+          response,
+          line: line
+        )
         responseExpectation.fulfill()
         responseReceived?.signal()
       } else {
@@ -181,7 +218,11 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
 
     messages.forEach { part in
       call.sendMessage(Echo_EchoRequest(text: part), promise: nil)
-      XCTAssertNotEqual(responseReceived?.wait(timeout: .now() + .seconds(30)), .some(.timedOut), line: line)
+      XCTAssertNotEqual(
+        responseReceived?.wait(timeout: .now() + .seconds(30)),
+        .some(.timedOut),
+        line: line
+      )
     }
     call.sendEnd(promise: nil)
 
@@ -189,21 +230,27 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
   }
 
   func testBidirectionalStreamingBatched() throws {
-    XCTAssertNoThrow(try doTestBidirectionalStreaming(messages: aFewStrings))
+    XCTAssertNoThrow(try self.doTestBidirectionalStreaming(messages: self.aFewStrings))
   }
 
   func testBidirectionalStreamingPingPong() throws {
-    XCTAssertNoThrow(try doTestBidirectionalStreaming(messages: aFewStrings, waitForEachResponse: true))
+    XCTAssertNoThrow(
+      try self
+        .doTestBidirectionalStreaming(messages: self.aFewStrings, waitForEachResponse: true)
+    )
   }
 
   func testBidirectionalStreamingLotsOfMessagesBatched() throws {
     guard self.runTimeSensitiveTests() else { return }
-    XCTAssertNoThrow(try doTestBidirectionalStreaming(messages: lotsOfStrings))
+    XCTAssertNoThrow(try self.doTestBidirectionalStreaming(messages: self.lotsOfStrings))
   }
 
   func testBidirectionalStreamingLotsOfMessagesPingPong() throws {
     guard self.runTimeSensitiveTests() else { return }
-    XCTAssertNoThrow(try doTestBidirectionalStreaming(messages: lotsOfStrings, waitForEachResponse: true))
+    XCTAssertNoThrow(
+      try self
+        .doTestBidirectionalStreaming(messages: self.lotsOfStrings, waitForEachResponse: true)
+    )
   }
 }
 
@@ -307,7 +354,6 @@ class FunctionalTestsInsecureTransportNIOTS: FunctionalTestsInsecureTransport {
     try super.testUnaryWithLargeData()
     #endif
   }
-
 }
 
 @available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)

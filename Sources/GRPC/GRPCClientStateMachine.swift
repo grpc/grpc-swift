@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 import Foundation
-import NIO
-import NIOHTTP1
-import NIOHPACK
 import Logging
+import NIO
+import NIOHPACK
+import NIOHTTP1
 import SwiftProtobuf
 
 enum ReceiveResponseHeadError: Error, Equatable {
@@ -34,7 +34,7 @@ enum ReceiveResponseHeadError: Error, Equatable {
   case invalidState
 }
 
-enum ReceiveEndOfResponseStreamError: Error {
+enum ReceiveEndOfResponseStreamError: Error, Equatable {
   /// The 'content-type' header was missing or the value is not supported by this implementation.
   case invalidContentType(String?)
 
@@ -125,12 +125,20 @@ struct GRPCClientStateMachine {
 
     /// The RPC has terminated. There are no valid transitions from this state.
     case clientClosedServerClosed
+
+    /// This isn't a real state. See `withStateAvoidingCoWs`.
+    case modifying
   }
 
   /// The current state of the state machine.
   internal private(set) var state: State {
     didSet {
       switch (oldValue, self.state) {
+      // Any modifying transitions are fine.
+      case (.modifying, _),
+           (_, .modifying):
+        break
+
       // All valid transitions:
       case (.clientIdleServerIdle, .clientActiveServerIdle),
            (.clientIdleServerIdle, .clientClosedServerClosed),
@@ -190,7 +198,9 @@ struct GRPCClientStateMachine {
   mutating func sendRequestHeaders(
     requestHead: _GRPCRequestHead
   ) -> Result<HPACKHeaders, SendRequestHeadersError> {
-    return self.state.sendRequestHeaders(requestHead: requestHead)
+    return self.withStateAvoidingCoWs { state in
+      state.sendRequestHeaders(requestHead: requestHead)
+    }
   }
 
   /// Formats a request to send to the server.
@@ -219,7 +229,9 @@ struct GRPCClientStateMachine {
     compressed: Bool,
     allocator: ByteBufferAllocator
   ) -> Result<ByteBuffer, MessageWriteError> {
-    return self.state.sendRequest(message, compressed: compressed, allocator: allocator)
+    return self.withStateAvoidingCoWs { state in
+      state.sendRequest(message, compressed: compressed, allocator: allocator)
+    }
   }
 
   /// Closes the request stream.
@@ -239,7 +251,9 @@ struct GRPCClientStateMachine {
   /// Closing the request stream when both peers are idle (in the `.clientIdleServerIdle` state)
   /// will result in a `.invalidState` error.
   mutating func sendEndOfRequestStream() -> Result<Void, SendEndOfRequestStreamError> {
-    return self.state.sendEndOfRequestStream()
+    return self.withStateAvoidingCoWs { state in
+      state.sendEndOfRequestStream()
+    }
   }
 
   /// Receive an acknowledgement of the RPC from the server. This **must not** be a "Trailers-Only"
@@ -266,7 +280,9 @@ struct GRPCClientStateMachine {
   mutating func receiveResponseHeaders(
     _ headers: HPACKHeaders
   ) -> Result<Void, ReceiveResponseHeadError> {
-    return self.state.receiveResponseHeaders(headers)
+    return self.withStateAvoidingCoWs { state in
+      state.receiveResponseHeaders(headers)
+    }
   }
 
   /// Read a response buffer from the server and return any decoded messages.
@@ -297,7 +313,9 @@ struct GRPCClientStateMachine {
   mutating func receiveResponseBuffer(
     _ buffer: inout ByteBuffer
   ) -> Result<[ByteBuffer], MessageReadError> {
-    return self.state.receiveResponseBuffer(&buffer)
+    return self.withStateAvoidingCoWs { state in
+      state.receiveResponseBuffer(&buffer)
+    }
   }
 
   /// Receive the end of the response stream from the server and parse the results into
@@ -320,7 +338,28 @@ struct GRPCClientStateMachine {
   mutating func receiveEndOfResponseStream(
     _ trailers: HPACKHeaders
   ) -> Result<GRPCStatus, ReceiveEndOfResponseStreamError> {
-    return self.state.receiveEndOfResponseStream(trailers)
+    return self.withStateAvoidingCoWs { state in
+      state.receiveEndOfResponseStream(trailers)
+    }
+  }
+
+  /// Temporarily sets `self.state` to `.modifying` before calling the provided block and setting
+  /// `self.state` to the `State` modified by the block.
+  ///
+  /// Since we hold state as associated data on our `State` enum, any modification to that state
+  /// will trigger a copy on write for its heap allocated data. Temporarily setting the `self.state`
+  /// to `.modifying` allows us to avoid an extra reference to any heap allocated data and therefore
+  /// avoid a copy on write.
+  @inline(__always)
+  private mutating func withStateAvoidingCoWs<ResultType>(
+    _ body: (inout State) -> ResultType
+  ) -> ResultType {
+    var state = State.modifying
+    swap(&self.state, &state)
+    defer {
+      swap(&self.state, &state)
+    }
+    return body(&state)
   }
 }
 
@@ -355,6 +394,9 @@ extension GRPCClientStateMachine.State {
          .clientActiveServerActive,
          .clientClosedServerClosed:
       result = .failure(.invalidState)
+
+    case .modifying:
+      preconditionFailure("State left as 'modifying'")
     }
 
     return result
@@ -384,6 +426,9 @@ extension GRPCClientStateMachine.State {
 
     case .clientIdleServerIdle:
       result = .failure(.invalidState)
+
+    case .modifying:
+      preconditionFailure("State left as 'modifying'")
     }
 
     return result
@@ -394,11 +439,11 @@ extension GRPCClientStateMachine.State {
     let result: Result<Void, SendEndOfRequestStreamError>
 
     switch self {
-    case .clientActiveServerIdle(_, let pendingReadState):
+    case let .clientActiveServerIdle(_, pendingReadState):
       result = .success(())
       self = .clientClosedServerIdle(pendingReadState: pendingReadState)
 
-    case .clientActiveServerActive(_, let readState):
+    case let .clientActiveServerActive(_, readState):
       result = .success(())
       self = .clientClosedServerActive(readState: readState)
 
@@ -409,6 +454,9 @@ extension GRPCClientStateMachine.State {
 
     case .clientIdleServerIdle:
       result = .failure(.invalidState)
+
+    case .modifying:
+      preconditionFailure("State left as 'modifying'")
     }
 
     return result
@@ -422,20 +470,25 @@ extension GRPCClientStateMachine.State {
 
     switch self {
     case let .clientActiveServerIdle(writeState, pendingReadState):
-      result = self.parseResponseHeaders(headers, pendingReadState: pendingReadState).map { readState in
-        self = .clientActiveServerActive(writeState: writeState, readState: readState)
-      }
+      result = self.parseResponseHeaders(headers, pendingReadState: pendingReadState)
+        .map { readState in
+          self = .clientActiveServerActive(writeState: writeState, readState: readState)
+        }
 
     case let .clientClosedServerIdle(pendingReadState):
-      result = self.parseResponseHeaders(headers, pendingReadState: pendingReadState).map { readState in
-        self = .clientClosedServerActive(readState: readState)
-      }
+      result = self.parseResponseHeaders(headers, pendingReadState: pendingReadState)
+        .map { readState in
+          self = .clientClosedServerActive(readState: readState)
+        }
 
     case .clientIdleServerIdle,
          .clientClosedServerActive,
          .clientActiveServerActive,
          .clientClosedServerClosed:
       result = .failure(.invalidState)
+
+    case .modifying:
+      preconditionFailure("State left as 'modifying'")
     }
 
     return result
@@ -448,7 +501,7 @@ extension GRPCClientStateMachine.State {
     let result: Result<[ByteBuffer], MessageReadError>
 
     switch self {
-    case .clientClosedServerActive(var readState):
+    case var .clientClosedServerActive(readState):
       result = readState.readMessages(&buffer)
       self = .clientClosedServerActive(readState: readState)
 
@@ -461,6 +514,9 @@ extension GRPCClientStateMachine.State {
          .clientClosedServerIdle,
          .clientClosedServerClosed:
       result = .failure(.invalidState)
+
+    case .modifying:
+      preconditionFailure("State left as 'modifying'")
     }
 
     return result
@@ -488,6 +544,9 @@ extension GRPCClientStateMachine.State {
     case .clientIdleServerIdle,
          .clientClosedServerClosed:
       result = .failure(.invalidState)
+
+    case .modifying:
+      preconditionFailure("State left as 'modifying'")
     }
 
     return result
@@ -519,11 +578,11 @@ extension GRPCClientStateMachine.State {
       ":authority": host,
       ":scheme": scheme,
       "content-type": "application/grpc",
-      "te": "trailers",  // Used to detect incompatible proxies, part of the gRPC specification.
+      "te": "trailers", // Used to detect incompatible proxies, part of the gRPC specification.
     ]
 
     switch compression {
-    case .enabled(let configuration):
+    case let .enabled(configuration):
       // Request encoding.
       if let outbound = configuration.outbound {
         headers.add(name: GRPCHeaderName.encoding, value: outbound.name)
@@ -545,13 +604,14 @@ extension GRPCClientStateMachine.State {
 
     // Add user-defined custom metadata: this should come after the call definition headers.
     // TODO: make header normalization user-configurable.
-    headers.add(contentsOf: customMetadata.map { (name, value, indexing) in
-      return (name.lowercased(), value, indexing)
+    headers.add(contentsOf: customMetadata.map { name, value, indexing in
+      (name.lowercased(), value, indexing)
     })
 
     // Add default user-agent value, if `customMetadata` didn't contain user-agent
     if headers["user-agent"].isEmpty {
-      headers.add(name: "user-agent", value: "grpc-swift-nio")  // TODO: Add a more specific user-agent.
+      headers
+        .add(name: "user-agent", value: "grpc-swift-nio") // TODO: Add a more specific user-agent.
     }
 
     return headers
@@ -649,7 +709,8 @@ extension GRPCClientStateMachine.State {
     //
     // See: https://github.com/grpc/grpc/blob/master/doc/http-grpc-status-mapping.md
     let statusHeader = trailers.first(name: ":status")
-    guard let status = statusHeader.flatMap(Int.init).map({ HTTPResponseStatus(statusCode: $0) }) else {
+    guard let status = statusHeader.flatMap(Int.init).map({ HTTPResponseStatus(statusCode: $0) })
+    else {
       return .failure(.invalidHTTPStatus(statusHeader))
     }
 
@@ -662,8 +723,12 @@ extension GRPCClientStateMachine.State {
       }
     }
 
-    let contentTypeHeader = trailers.first(name: "content-type")
-    guard contentTypeHeader.map(ContentType.init) != nil else {
+    // Only validate the content-type header if it's present. This is a small deviation from the
+    // spec as the content-type is meant to be sent in "Trailers-Only" responses. However, if it's
+    // missing then we should avoid the error and propagate the status code and message sent by
+    // the server instead.
+    if let contentTypeHeader = trailers.first(name: "content-type"),
+      ContentType(value: contentTypeHeader) == nil {
       return .failure(.invalidContentType(contentTypeHeader))
     }
 

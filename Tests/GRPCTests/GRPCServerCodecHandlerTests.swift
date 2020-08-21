@@ -37,16 +37,25 @@ class GRPCServerCodecHandlerTests: GRPCTestCase {
   }
 
   func testSerializationFailure() throws {
-    let handler = GRPCServerCodecHandler(serializer: BlowUpSerializer(), deserializer: BlowUpDeserializer())
+    let handler = GRPCServerCodecHandler(
+      serializer: BlowUpSerializer(),
+      deserializer: BlowUpDeserializer()
+    )
     let channel = EmbeddedChannel(handler: handler)
     XCTAssertThrowsError(try channel.writeInbound(_RawGRPCServerRequestPart.message(ByteBuffer())))
     XCTAssertNil(try channel.readInbound(as: Any.self))
   }
 
   func testDeserializationFailure() throws {
-    let handler = GRPCServerCodecHandler(serializer: BlowUpSerializer(), deserializer: BlowUpDeserializer())
+    let handler = GRPCServerCodecHandler(
+      serializer: BlowUpSerializer(),
+      deserializer: BlowUpDeserializer()
+    )
     let channel = EmbeddedChannel(handler: handler)
-    XCTAssertThrowsError(try channel.writeOutbound(_GRPCServerResponsePart<Any>.message(.init(ByteBuffer(), compressed: false))))
+    XCTAssertThrowsError(
+      try channel
+        .writeOutbound(_GRPCServerResponsePart<Any>.message(.init(ByteBuffer(), compressed: false)))
+    )
     XCTAssertNil(try channel.readOutbound(as: Any.self))
   }
 }

@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 import Foundation
-import SwiftProtobuf
+import Logging
 import NIO
 import NIOHTTP1
-import Logging
+import SwiftProtobuf
 
 /// Protocol declaring a minimum set of properties exposed by *all* types of call contexts.
-public protocol ServerCallContext: class {
+public protocol ServerCallContext: AnyObject {
   /// The event loop this call is served on.
   var eventLoop: EventLoop { get }
 

@@ -22,11 +22,12 @@ import NIO
 ///
 /// See: https://github.com/grpc/grpc/blob/master/doc/interop-test-descriptions.md#server
 public class TestServiceProvider: Grpc_Testing_TestServiceProvider {
-  public init() { }
+  public init() {}
 
   private static let echoMetadataNotImplemented = GRPCStatus(
     code: .unimplemented,
-    message: "Echoing metadata is not yet supported")
+    message: "Echoing metadata is not yet supported"
+  )
 
   /// Features that this server implements.
   ///
@@ -44,7 +45,7 @@ public class TestServiceProvider: Grpc_Testing_TestServiceProvider {
       .fullDuplexCall,
       .echoStatus,
       .compressedResponse,
-      .compressedRequest
+      .compressedRequest,
     ]
   }
 
@@ -69,7 +70,7 @@ public class TestServiceProvider: Grpc_Testing_TestServiceProvider {
     // We can't validate messages at the wire-encoding layer (i.e. where the compression byte is
     // set), so we have to check via the encoding header. Note that it is possible for the header
     // to be set and for the message to not be compressed.
-    if request.expectCompressed.value && !context.request.headers.contains(name: "grpc-encoding") {
+    if request.expectCompressed.value, !context.request.headers.contains(name: "grpc-encoding") {
       let status = GRPCStatus(
         code: .invalidArgument,
         message: "Expected compressed request, but 'grpc-encoding' was missing"
@@ -83,7 +84,8 @@ public class TestServiceProvider: Grpc_Testing_TestServiceProvider {
 
     if request.shouldEchoStatus {
       let code = GRPCStatus.Code(rawValue: numericCast(request.responseStatus.code)) ?? .unknown
-      return context.eventLoop.makeFailedFuture(GRPCStatus(code: code, message: request.responseStatus.message))
+      return context.eventLoop
+        .makeFailedFuture(GRPCStatus(code: code, message: request.responseStatus.message))
     }
 
     if context.request.headers.shouldEchoMetadata {
@@ -162,8 +164,9 @@ public class TestServiceProvider: Grpc_Testing_TestServiceProvider {
 
     return context.eventLoop.makeSucceededFuture({ event in
       switch event {
-      case .message(let request):
-        if request.expectCompressed.value && !context.request.headers.contains(name: "grpc-encoding") {
+      case let .message(request):
+        if request.expectCompressed.value,
+          !context.request.headers.contains(name: "grpc-encoding") {
           context.responseStatus = GRPCStatus(
             code: .invalidArgument,
             message: "Expected compressed request, but 'grpc-encoding' was missing"
@@ -198,7 +201,7 @@ public class TestServiceProvider: Grpc_Testing_TestServiceProvider {
 
     func streamHandler(_ event: StreamEvent<Grpc_Testing_StreamingOutputCallRequest>) {
       switch event {
-      case .message(let message):
+      case let .message(message):
         if message.shouldEchoStatus {
           let code = GRPCStatus.Code(rawValue: numericCast(message.responseStatus.code))
           let status = GRPCStatus(code: code ?? .unknown, message: message.responseStatus.message)

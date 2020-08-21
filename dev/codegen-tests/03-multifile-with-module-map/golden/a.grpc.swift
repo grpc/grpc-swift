@@ -20,11 +20,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-import Foundation
 import GRPC
 import NIO
-import NIOHTTP1
-import SwiftProtobuf
 import ModuleB
 
 
@@ -78,11 +75,11 @@ internal protocol A_ServiceAProvider: CallHandlerProvider {
 }
 
 extension A_ServiceAProvider {
-  internal var serviceName: String { return "a.ServiceA" }
+  internal var serviceName: Substring { return "a.ServiceA" }
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  internal func handleMethod(_ methodName: String, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
+  internal func handleMethod(_ methodName: Substring, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
     switch methodName {
     case "CallServiceA":
       return CallHandlerFactory.makeUnary(callHandlerContext: callHandlerContext) { context in

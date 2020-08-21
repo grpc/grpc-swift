@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import NIO
-import GRPC
 import Foundation
+import GRPC
+import NIO
 
 class PercentEncoding: Benchmark {
   let message: String
@@ -31,19 +31,17 @@ class PercentEncoding: Benchmark {
     } else {
       // The message above is 62 bytes long.
       self.message = String(repeating: "a", count: 62)
-     }
+    }
   }
 
-  func setUp() throws {
-  }
+  func setUp() throws {}
 
-  func tearDown() throws {
-  }
+  func tearDown() throws {}
 
   func run() throws {
     var totalLength: Int = 0
 
-    for _ in 0..<self.iterations {
+    for _ in 0 ..< self.iterations {
       var buffer = self.allocator.buffer(capacity: 0)
 
       let marshalled = GRPCStatusMessageMarshaller.marshall(self.message)!

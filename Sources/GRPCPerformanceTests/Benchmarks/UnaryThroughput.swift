@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Foundation
-import EchoModel
 import EchoImplementation
+import EchoModel
+import Foundation
 import GRPC
 import NIO
 
@@ -51,7 +51,7 @@ class Unary: ServerProvidingBenchmark {
     for lowerBound in stride(from: 0, to: self.requestCount, by: batchSize) {
       let upperBound = min(lowerBound + batchSize, self.requestCount)
 
-      let requests = (lowerBound..<upperBound).map { _ in
+      let requests = (lowerBound ..< upperBound).map { _ in
         client.get(Echo_EchoRequest.with { $0.text = self.requestText }).response
       }
 
@@ -66,7 +66,6 @@ class Unary: ServerProvidingBenchmark {
   }
 }
 
-
 /// Tests bidirectional throughput by sending requests over a single stream.
 class Bidi: Unary {
   let batchSize: Int
@@ -80,7 +79,7 @@ class Bidi: Unary {
     let update = self.client.update { _ in }
 
     for _ in stride(from: 0, to: self.requestCount, by: self.batchSize) {
-      let batch = (0..<self.batchSize).map { _ in
+      let batch = (0 ..< self.batchSize).map { _ in
         Echo_EchoRequest.with { $0.text = self.requestText }
       }
       update.sendMessages(batch, promise: nil)

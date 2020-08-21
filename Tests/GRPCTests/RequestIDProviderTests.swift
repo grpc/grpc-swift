@@ -30,7 +30,7 @@ class RequestIDProviderTests: GRPCTestCase {
 
   func testGenerator() {
     let provider = CallOptions.RequestIDProvider.generated {
-      return "foo"
+      "foo"
     }
     XCTAssertEqual(provider.requestID(), "foo")
   }

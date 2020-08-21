@@ -34,10 +34,10 @@ extension GRPCServerCodecHandler: ChannelInboundHandler {
 
   internal func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     switch self.unwrapInboundIn(data) {
-    case .head(let head):
+    case let .head(head):
       context.fireChannelRead(self.wrapInboundOut(.head(head)))
 
-    case .message(let buffer):
+    case let .message(buffer):
       do {
         let deserialized = try self.deserializer.deserialize(byteBuffer: buffer)
         context.fireChannelRead(self.wrapInboundOut(.message(deserialized)))
@@ -55,22 +55,32 @@ extension GRPCServerCodecHandler: ChannelOutboundHandler {
   typealias OutboundIn = _GRPCServerResponsePart<Serializer.Input>
   typealias OutboundOut = _RawGRPCServerResponsePart
 
-  internal func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+  internal func write(
+    context: ChannelHandlerContext,
+    data: NIOAny,
+    promise: EventLoopPromise<Void>?
+  ) {
     switch self.unwrapOutboundIn(data) {
-    case .headers(let headers):
+    case let .headers(headers):
       context.write(self.wrapOutboundOut(.headers(headers)), promise: promise)
 
-    case .message(let messageContext):
+    case let .message(messageContext):
       do {
-        let buffer = try self.serializer.serialize(messageContext.message, allocator: context.channel.allocator)
-        context.write(self.wrapOutboundOut(.message(.init(buffer, compressed: messageContext.compressed))), promise: promise)
+        let buffer = try self.serializer.serialize(
+          messageContext.message,
+          allocator: context.channel.allocator
+        )
+        context.write(
+          self.wrapOutboundOut(.message(.init(buffer, compressed: messageContext.compressed))),
+          promise: promise
+        )
       } catch {
         let error = GRPCError.SerializationFailure().captureContext()
         promise?.fail(error)
         context.fireErrorCaught(error)
       }
 
-    case .statusAndTrailers(let status, let trailers):
+    case let .statusAndTrailers(status, trailers):
       context.write(self.wrapOutboundOut(.statusAndTrailers(status, trailers)), promise: promise)
     }
   }

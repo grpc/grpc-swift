@@ -51,7 +51,7 @@ class Dependency:
 
     def as_podspec(self):
         indent='    '
-        
+
         if self.use_verbatim_version:
             return indent + "s.dependency '%s', %s\n" % (self.name, self.version)
 
@@ -79,7 +79,7 @@ class Pod:
         print('-----------------------------------------------------------')
 
         indent='    '
-        
+
         podspec = "Pod::Spec.new do |s|\n\n"
         podspec += indent + "s.name = '%s'\n" % self.name
         if not self.is_plugins_pod:
@@ -94,7 +94,7 @@ class Pod:
         podspec += indent + "s.ios.deployment_target = '10.0'\n"
         podspec += indent + "s.osx.deployment_target = '10.12'\n"
         podspec += indent + "s.tvos.deployment_target = '10.0'\n"
-        
+
         if self.is_plugins_pod:
             podspec += indent + "s.source = { :http => \"https://github.com/grpc/grpc-swift/releases/download/#{s.version}/protoc-grpc-swift-plugins-#{s.version}.zip\"}\n\n"
             podspec += indent + "s.preserve_paths = '*'\n"
@@ -143,7 +143,7 @@ class PodManager:
             'Swift gRPC code generator plugin and runtime library',
             get_grpc_deps()
         )
-        
+
         grpc_plugins_pod = Pod(
             'gRPC-Swift-Plugins',
             '',

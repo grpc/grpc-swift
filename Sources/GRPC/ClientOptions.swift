@@ -15,9 +15,9 @@
  */
 import struct Foundation.UUID
 import Logging
+import NIOHPACK
 import NIOHTTP1
 import NIOHTTP2
-import NIOHPACK
 
 /// Options to use for GRPC calls.
 public struct CallOptions {
@@ -101,9 +101,9 @@ public struct CallOptions {
       switch self.source {
       case .none:
         return nil
-      case .static(let requestID):
+      case let .static(requestID):
         return requestID
-      case .generated(let generator):
+      case let .generated(generator):
         return generator()
       }
     }

@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import EchoImplementation
+import EchoModel
 @testable import GRPC
 import GRPCSampleData
-import EchoModel
-import EchoImplementation
 import Logging
 import NIO
 import NIOSSL
@@ -41,7 +41,8 @@ class ServerTLSErrorTests: GRPCTestCase {
     certificateChain: [.certificate(SampleCertificate.client.certificate)],
     privateKey: .privateKey(SamplePrivateKey.client),
     trustRoots: .certificates([SampleCertificate.ca.certificate]),
-    hostnameOverride: SampleCertificate.server.commonName)
+    hostnameOverride: SampleCertificate.server.commonName
+  )
 
   var defaultTestTimeout: TimeInterval = 1.0
 
@@ -106,7 +107,7 @@ class ServerTLSErrorTests: GRPCTestCase {
     stateChangeDelegate.expectChanges(2) { changes in
       XCTAssertEqual(changes, [
         Change(from: .idle, to: .connecting),
-        Change(from: .connecting, to: .shutdown)
+        Change(from: .connecting, to: .shutdown),
       ])
     }
 

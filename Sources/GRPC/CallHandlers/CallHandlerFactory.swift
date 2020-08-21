@@ -24,7 +24,8 @@ public enum CallHandlerFactory {
 
   public static func makeUnary<Request: Message, Response: Message>(
     callHandlerContext: CallHandlerContext,
-    eventObserverFactory: @escaping (UnaryContext<Response>) -> UnaryEventObserver<Request, Response>
+    eventObserverFactory: @escaping (UnaryContext<Response>)
+      -> UnaryEventObserver<Request, Response>
   ) -> UnaryCallHandler<Request, Response> {
     return UnaryCallHandler(
       serializer: ProtobufSerializer(),
@@ -36,7 +37,8 @@ public enum CallHandlerFactory {
 
   public static func makeUnary<Request: GRPCPayload, Response: GRPCPayload>(
     callHandlerContext: CallHandlerContext,
-    eventObserverFactory: @escaping (UnaryContext<Response>) -> UnaryEventObserver<Request, Response>
+    eventObserverFactory: @escaping (UnaryContext<Response>)
+      -> UnaryEventObserver<Request, Response>
   ) -> UnaryCallHandler<Request, Response> {
     return UnaryCallHandler(
       serializer: GRPCPayloadSerializer(),
@@ -47,11 +49,13 @@ public enum CallHandlerFactory {
   }
 
   public typealias ClientStreamingContext<Response> = UnaryResponseCallContext<Response>
-  public typealias ClientStreamingEventObserver<Request> = EventLoopFuture<(StreamEvent<Request>) -> Void>
+  public typealias ClientStreamingEventObserver<Request> =
+    EventLoopFuture<(StreamEvent<Request>) -> Void>
 
   public static func makeClientStreaming<Request: Message, Response: Message>(
     callHandlerContext: CallHandlerContext,
-    eventObserverFactory: @escaping (ClientStreamingContext<Response>) -> ClientStreamingEventObserver<Request>
+    eventObserverFactory: @escaping (ClientStreamingContext<Response>)
+      -> ClientStreamingEventObserver<Request>
   ) -> ClientStreamingCallHandler<Request, Response> {
     return ClientStreamingCallHandler(
       serializer: ProtobufSerializer(),
@@ -63,7 +67,8 @@ public enum CallHandlerFactory {
 
   public static func makeClientStreaming<Request: GRPCPayload, Response: GRPCPayload>(
     callHandlerContext: CallHandlerContext,
-    eventObserverFactory: @escaping (ClientStreamingContext<Response>) -> ClientStreamingEventObserver<Request>
+    eventObserverFactory: @escaping (ClientStreamingContext<Response>)
+      -> ClientStreamingEventObserver<Request>
   ) -> ClientStreamingCallHandler<Request, Response> {
     return ClientStreamingCallHandler(
       serializer: GRPCPayloadSerializer(),
@@ -78,7 +83,8 @@ public enum CallHandlerFactory {
 
   public static func makeServerStreaming<Request: Message, Response: Message>(
     callHandlerContext: CallHandlerContext,
-    eventObserverFactory: @escaping (ServerStreamingContext<Response>) -> ServerStreamingEventObserver<Request>
+    eventObserverFactory: @escaping (ServerStreamingContext<Response>)
+      -> ServerStreamingEventObserver<Request>
   ) -> ServerStreamingCallHandler<Request, Response> {
     return ServerStreamingCallHandler(
       serializer: ProtobufSerializer(),
@@ -90,7 +96,8 @@ public enum CallHandlerFactory {
 
   public static func makeServerStreaming<Request: GRPCPayload, Response: GRPCPayload>(
     callHandlerContext: CallHandlerContext,
-    eventObserverFactory: @escaping (ServerStreamingContext<Response>) -> ServerStreamingEventObserver<Request>
+    eventObserverFactory: @escaping (ServerStreamingContext<Response>)
+      -> ServerStreamingEventObserver<Request>
   ) -> ServerStreamingCallHandler<Request, Response> {
     return ServerStreamingCallHandler(
       serializer: GRPCPayloadSerializer(),
@@ -101,11 +108,13 @@ public enum CallHandlerFactory {
   }
 
   public typealias BidirectionalStreamingContext<Response> = StreamingResponseCallContext<Response>
-  public typealias BidirectionalStreamingEventObserver<Request> = EventLoopFuture<(StreamEvent<Request>) -> Void>
+  public typealias BidirectionalStreamingEventObserver<Request> =
+    EventLoopFuture<(StreamEvent<Request>) -> Void>
 
   public static func makeBidirectionalStreaming<Request: Message, Response: Message>(
     callHandlerContext: CallHandlerContext,
-    eventObserverFactory: @escaping (BidirectionalStreamingContext<Response>) -> BidirectionalStreamingEventObserver<Request>
+    eventObserverFactory: @escaping (BidirectionalStreamingContext<Response>)
+      -> BidirectionalStreamingEventObserver<Request>
   ) -> BidirectionalStreamingCallHandler<Request, Response> {
     return BidirectionalStreamingCallHandler(
       serializer: ProtobufSerializer(),
@@ -117,7 +126,8 @@ public enum CallHandlerFactory {
 
   public static func makeBidirectionalStreaming<Request: GRPCPayload, Response: GRPCPayload>(
     callHandlerContext: CallHandlerContext,
-    eventObserverFactory: @escaping (BidirectionalStreamingContext<Response>) -> BidirectionalStreamingEventObserver<Request>
+    eventObserverFactory: @escaping (BidirectionalStreamingContext<Response>)
+      -> BidirectionalStreamingEventObserver<Request>
   ) -> BidirectionalStreamingCallHandler<Request, Response> {
     return BidirectionalStreamingCallHandler(
       serializer: GRPCPayloadSerializer(),
