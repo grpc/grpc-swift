@@ -144,11 +144,19 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
       if let userAgent = requestHead.headers.first(name: "User-Agent") {
         span.attributes[SpanAttributeName.HTTP.userAgent] = .string(userAgent)
       }
+      if let host = requestHead.headers.first(name: "Host") {
+        span.attributes[SpanAttributeName.HTTP.host] = .string(host)
+      }
+      if let port = context.channel.localAddress?.port {
+        span.attributes[SpanAttributeName.Net.hostPort] = .int(port)
+      }
+      if let peerIP = context.channel.remoteAddress?.ipAddress {
+        span.attributes[SpanAttributeName.Net.peerIP] = .string(peerIP)
+      }
       span.attributes[SpanAttributeName.HTTP.method] = .string(requestHead.method.rawValue)
-      span
-        .attributes[SpanAttributeName.HTTP.flavor] =
-        "\(requestHead.version.major).\(requestHead.version.minor)"
-      span.attributes[SpanAttributeName.HTTP.target] = .string(requestHead.uri)
+
+      let flavor = "\(requestHead.version.major).\(requestHead.version.minor)"
+      span.attributes[SpanAttributeName.HTTP.flavor] = .string(flavor)
       span.attributes[SpanAttributeName.RPC.system] = "grpc"
 
       InstrumentationSystem.instrument.extract(
