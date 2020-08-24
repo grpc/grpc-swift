@@ -514,10 +514,16 @@ internal class ConnectionManager {
     ])
 
     switch self.state {
+    case let .active(state):
+      // This state is reachable if the keepalive timer fires before we reach the ready state.
+      self.state = .idle(IdleState(configuration: state.configuration))
+      state.readyChannelPromise
+        .fail(GRPCStatus(code: .unavailable, message: "Idled before reaching ready state"))
+
     case let .ready(state):
       self.state = .idle(IdleState(configuration: state.configuration))
 
-    case .idle, .connecting, .transientFailure, .active, .shutdown:
+    case .idle, .connecting, .transientFailure, .shutdown:
       self.invalidState()
     }
   }
