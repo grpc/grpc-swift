@@ -22,6 +22,7 @@
 //
 import GRPC
 import NIO
+import SwiftProtobuf
 import ModuleB
 
 

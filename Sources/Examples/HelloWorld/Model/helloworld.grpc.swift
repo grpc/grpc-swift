@@ -22,6 +22,7 @@
 //
 import GRPC
 import NIO
+import SwiftProtobuf
 
 
 /// Usage: instantiate Helloworld_GreeterClient, then call methods of this protocol to make API calls.
