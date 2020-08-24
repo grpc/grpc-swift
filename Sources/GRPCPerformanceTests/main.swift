@@ -63,13 +63,13 @@ func runBenchmarks(spec: TestSpec) {
   )
 
   measureAndPrint(
-    description: "embedded_client_unary_10k_large_requests",
+    description: "embedded_client_unary_1k_large_requests",
     benchmark: EmbeddedClientThroughput(requests: 1000, text: largeRequest),
     spec: spec
   )
 
   measureAndPrint(
-    description: "embedded_client_unary_10k_large_requests_1k_frames",
+    description: "embedded_client_unary_1k_large_requests_1k_frames",
     benchmark: EmbeddedClientThroughput(
       requests: 1000,
       text: largeRequest,
