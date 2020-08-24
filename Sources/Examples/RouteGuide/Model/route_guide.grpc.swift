@@ -22,6 +22,7 @@
 //
 import GRPC
 import NIO
+import SwiftProtobuf
 
 
 /// Usage: instantiate Routeguide_RouteGuideClient, then call methods of this protocol to make API calls.
