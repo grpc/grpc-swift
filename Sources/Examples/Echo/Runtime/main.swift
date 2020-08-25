@@ -312,7 +312,7 @@ final class FakeTracer: TracingInstrument {
     where
     Carrier == Extractor.Carrier,
     Extractor: ExtractorProtocol {
-    if let traceID = extractor.extract(key: "x-trace-id", from: carrier).flatMap(UUID.init) {
+    if let traceID = extractor.extract(key: "x-trace-id", from: carrier) {
       print("Extracted trace-id: \(traceID)")
       context[FakeTraceID.self] = traceID
     }
@@ -326,8 +326,8 @@ final class FakeTracer: TracingInstrument {
     where
     Carrier == Injector.Carrier,
     Injector: InjectorProtocol {
-    let traceID = context[FakeTraceID] ?? UUID()
-    injector.inject(traceID.uuidString, forKey: "x-trace-id", into: &carrier)
+    let traceID = context[FakeTraceID.self] ?? "default-trace-id"
+    injector.inject(traceID, forKey: "x-trace-id", into: &carrier)
     print("Injected trace-id: \(traceID)")
   }
 
@@ -394,7 +394,7 @@ final class FakeTracer: TracingInstrument {
   }
 
   enum FakeTraceID: BaggageContextKey {
-    typealias Value = UUID
+    typealias Value = String
   }
 }
 
