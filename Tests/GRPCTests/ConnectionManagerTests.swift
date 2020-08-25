@@ -824,6 +824,55 @@ extension ConnectionManagerTests {
     // Previously doing this this would fail a precondition.
     self.loop.advanceTime(by: .minutes(5))
   }
+
+  func testForceIdleAfterInactive() throws {
+    let channelPromise = self.loop.makePromise(of: Channel.self)
+    let manager = ConnectionManager.testingOnly(
+      configuration: self.defaultConfiguration,
+      logger: self.logger
+    ) {
+      channelPromise.futureResult
+    }
+
+    // Start the connection.
+    let readyChannel: EventLoopFuture<Channel> = self.waitForStateChange(
+      from: .idle,
+      to: .connecting
+    ) {
+      let readyChannel = manager.getChannel()
+      self.loop.run()
+      return readyChannel
+    }
+
+    // Setup the real channel and activate it.
+    let channel = EmbeddedChannel(loop: self.loop)
+    XCTAssertNoThrow(try channel.pipeline.addHandlers([
+      GRPCIdleHandler(mode: .client(manager), logger: manager.logger),
+    ]).wait())
+    channelPromise.succeed(channel)
+    self.loop.run()
+
+    let connect = channel.connect(to: try SocketAddress(unixDomainSocketPath: "/ignored"))
+    XCTAssertNoThrow(try connect.wait())
+
+    // Write a SETTINGS frame on the root stream.
+    try self.waitForStateChange(from: .connecting, to: .ready) {
+      let frame = HTTP2Frame(streamID: .rootStream, payload: .settings(.settings([])))
+      XCTAssertNoThrow(try channel.writeInbound(frame))
+    }
+
+    // The channel should now be ready.
+    XCTAssertNoThrow(try readyChannel.wait())
+
+    // Now drop the connection.
+    self.waitForStateChange(from: .ready, to: .shutdown) {
+      channel.pipeline.fireChannelInactive()
+    }
+
+    // Fire a connection idled event, i.e. keepalive timeout has fired. This should be a no-op.
+    // Previously this would hit a precondition failure.
+    channel.pipeline.fireUserInboundEventTriggered(ConnectionIdledEvent())
+  }
 }
 
 internal struct Change: Hashable, CustomStringConvertible {

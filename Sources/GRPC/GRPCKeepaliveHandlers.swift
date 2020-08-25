@@ -101,6 +101,12 @@ extension _ChannelKeepaliveHandler {
     context.fireChannelRead(data)
   }
 
+  func channelInactive(context: ChannelHandlerContext) {
+    self.cancelScheduledPing()
+    self.cancelScheduledTimeout()
+    context.fireChannelInactive()
+  }
+
   func handlerRemoved(context: ChannelHandlerContext) {
     self.cancelScheduledPing()
     self.cancelScheduledTimeout()
