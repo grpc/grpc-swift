@@ -117,6 +117,8 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
 
   func handlerRemoved(context: ChannelHandlerContext) {
     self.scheduledIdle?.cancel()
+    self.scheduledIdle = nil
+    self.state = .closed
   }
 
   func channelInactive(context: ChannelHandlerContext) {
@@ -126,12 +128,13 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
     switch (self.mode, self.state) {
     case let (.client(manager), .notReady),
          let (.client(manager), .ready):
+      self.state = .closed
       manager.channelInactive()
 
     case (.server, .notReady),
          (.server, .ready),
          (_, .closed):
-      ()
+      self.state = .closed
     }
 
     context.fireChannelInactive()
