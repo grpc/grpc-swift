@@ -13,12 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import Baggage
+import Instrumentation
 import Logging
 import NIO
 import NIOHPACK
 import NIOHTTP1
 import NIOHTTP2
+import OpenTelemetryInstrumentationSupport
 import SwiftProtobuf
+import TracingInstrumentation
 
 /// A gRPC client request message part.
 ///
@@ -269,6 +273,7 @@ public enum GRPCCallType {
 public final class _GRPCClientChannelHandler {
   private let logger: Logger
   private var stateMachine: GRPCClientStateMachine
+  private var span: Span?
 
   /// Creates a new gRPC channel handler for clients to translate HTTP/2 frames to gRPC messages.
   ///
@@ -361,6 +366,7 @@ extension _GRPCClientChannelHandler: ChannelInboundHandler {
       switch result {
       case let .success(status):
         context.fireChannelRead(self.wrapInboundOut(.status(status)))
+        self.span?.end()
       case let .failure(error):
         context.fireErrorCaught(error)
       }
@@ -460,16 +466,44 @@ extension _GRPCClientChannelHandler: ChannelOutboundHandler {
                     promise: EventLoopPromise<Void>?) {
     switch self.unwrapOutboundIn(data) {
     case let .head(requestHead):
+      // TODO: Don't force unwrap request info
+      let requestInfo = GRPCRequestInfo(parsing: requestHead.path)!
+      var span = InstrumentationSystem.tracingInstrument.startSpan(
+        named: String(requestInfo.uri.dropFirst()),
+        context: context.baggage,
+        ofKind: .client
+      )
+      self.span = span
+      span.attributes[SpanAttributeName.RPC.system] = "grpc"
+      span.attributes[SpanAttributeName.RPC.method] = .string(String(requestInfo.method))
+      if let port = context.channel.localAddress?.port {
+        span.attributes[SpanAttributeName.Net.hostPort] = .int(port)
+      }
+      if let peerIP = context.channel.remoteAddress?.ipAddress {
+        span.attributes[SpanAttributeName.Net.peerIP] = .string(peerIP)
+      }
       // Feed the request into the state machine:
       switch self.stateMachine.sendRequestHeaders(requestHead: requestHead) {
       case let .success(headers):
         // We're clear to write some headers. Create an appropriate frame and write it.
+        var headers = headers
+        InstrumentationSystem.instrument.inject(
+          context.baggage,
+          into: &headers,
+          using: HPACKHeadersInjector()
+        )
         let framePayload = HTTP2Frame.FramePayload.headers(.init(headers: headers))
         self.logger.trace("writing HTTP2 frame", metadata: [
           MetadataKey.h2Payload: "HEADERS",
           MetadataKey.h2Headers: "\(headers)",
           MetadataKey.h2EndStream: "false",
         ])
+        if let userAgent = headers.first(name: "User-Agent") {
+          span.attributes[SpanAttributeName.HTTP.userAgent] = .string(userAgent)
+        }
+        if let host = headers.first(name: "Host") {
+          span.attributes[SpanAttributeName.HTTP.host] = .string(host)
+        }
         context.write(self.wrapOutboundOut(framePayload), promise: promise)
 
       case let .failure(sendRequestHeadersError):
@@ -550,5 +584,15 @@ extension _GRPCClientChannelHandler: ChannelOutboundHandler {
         }
       }
     }
+  }
+}
+
+// TODO: Extract type
+public struct HPACKHeadersInjector: InjectorProtocol {
+  public init() {}
+
+  public func inject(_ value: String, forKey key: String, into headers: inout HPACKHeaders) {
+    // TODO: Replace or add?
+    headers.add(name: key, value: value)
   }
 }

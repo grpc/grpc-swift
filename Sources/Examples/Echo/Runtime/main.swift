@@ -312,7 +312,10 @@ final class FakeTracer: TracingInstrument {
     where
     Carrier == Extractor.Carrier,
     Extractor: ExtractorProtocol {
-    print("Extracting trace information")
+    if let traceID = extractor.extract(key: "x-trace-id", from: carrier).flatMap(UUID.init) {
+      print("Extracted trace-id: \(traceID)")
+      context[FakeTraceID.self] = traceID
+    }
   }
 
   func inject<Carrier, Injector>(
@@ -323,7 +326,9 @@ final class FakeTracer: TracingInstrument {
     where
     Carrier == Injector.Carrier,
     Injector: InjectorProtocol {
-    print("Injecting trace information")
+    let traceID = context[FakeTraceID] ?? UUID()
+    injector.inject(traceID.uuidString, forKey: "x-trace-id", into: &carrier)
+    print("Injected trace-id: \(traceID)")
   }
 
   func startSpan(
@@ -338,7 +343,7 @@ final class FakeTracer: TracingInstrument {
       startTimestamp: timestamp,
       context: context.baggage
     )
-    print(#"Starting span "\#(operationName)" at timestamp: \#(timestamp)""#)
+    print(#"Starting span "\#(operationName)" at timestamp: \#(timestamp)"#)
     return span
   }
 
@@ -378,7 +383,7 @@ final class FakeTracer: TracingInstrument {
     }
 
     func end(at timestamp: Timestamp) {
-      print(#"Ending span "\#(self.operationName)" at timestamp: \#(timestamp)""#)
+      print(#"Ending span "\#(self.operationName)" at timestamp: \#(timestamp)"#)
       print(self.status ?? "No status was set")
       print(self.attributes)
     }
@@ -386,6 +391,10 @@ final class FakeTracer: TracingInstrument {
     func setStatus(_ status: SpanStatus) {
       self.status = status
     }
+  }
+
+  enum FakeTraceID: BaggageContextKey {
+    typealias Value = UUID
   }
 }
 

@@ -135,6 +135,12 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
     case let .head(requestHead):
       precondition(self.state == .notConfigured)
 
+      InstrumentationSystem.instrument.extract(
+        requestHead.headers,
+        into: &context.baggage,
+        using: HTTPHeadersExtractor()
+      )
+
       span = InstrumentationSystem.tracingInstrument.startSpan(
         named: String(requestHead.uri.dropFirst()),
         context: context.baggage,
@@ -158,12 +164,6 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
       let flavor = "\(requestHead.version.major).\(requestHead.version.minor)"
       span.attributes[SpanAttributeName.HTTP.flavor] = .string(flavor)
       span.attributes[SpanAttributeName.RPC.system] = "grpc"
-
-      InstrumentationSystem.instrument.extract(
-        requestHead.headers,
-        into: &context.baggage,
-        using: HTTPHeadersExtractor()
-      )
 
       // Validate the 'content-type' is related to gRPC before proceeding.
       let maybeContentType = requestHead.headers.first(name: GRPCHeaderName.contentType)
