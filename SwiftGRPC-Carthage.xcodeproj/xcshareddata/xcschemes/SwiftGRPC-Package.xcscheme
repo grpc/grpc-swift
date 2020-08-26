@@ -10,7 +10,7 @@
             ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
             <ActionContent
                title = "Run Script"
-               scriptText = "cd ${PROJECT_DIR}; swift package resolve; ruby fix-carthage-paths.rb SwiftGRPC-Carthage.xcodeproj">
+               scriptText = "cd ${PROJECT_DIR}; env -i PATH=/usr/bin swift package resolve; ruby fix-carthage-paths.rb SwiftGRPC-Carthage.xcodeproj&#10;">
                <EnvironmentBuildable>
                   <BuildableReference
                      BuildableIdentifier = "primary"
