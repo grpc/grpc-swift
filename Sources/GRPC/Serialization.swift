@@ -48,11 +48,11 @@ internal struct ProtobufSerializer<Message: SwiftProtobuf.Message>: MessageSeria
     // prefixed message writer can re-use the leading 5 bytes without needing to allocate a new
     // buffer and copy over the serialized message.
     var buffer = allocator.buffer(capacity: serialized.count + 5)
-    buffer.writeBytes(Array(repeating: 0, count: 5))
+    buffer.writeRepeatingByte(0, count: 5)
     buffer.moveReaderIndex(forwardBy: 5)
 
     // Now write the serialized message.
-    buffer.writeBytes(serialized)
+    buffer.writeContiguousBytes(serialized)
 
     return buffer
   }

@@ -570,16 +570,20 @@ extension GRPCClientStateMachine.State {
     customMetadata: HPACKHeaders,
     compression: ClientMessageEncoding
   ) -> HPACKHeaders {
-    // Note: we don't currently set the 'grpc-encoding' header, if we do we will need to feed that
-    // encoded into the message writer.
-    var headers: HPACKHeaders = [
-      ":method": method,
-      ":path": path,
-      ":authority": host,
-      ":scheme": scheme,
-      "content-type": "application/grpc",
-      "te": "trailers", // Used to detect incompatible proxies, part of the gRPC specification.
-    ]
+    var headers = HPACKHeaders()
+    // The 10 is:
+    // - 6 which are required and added just below, and
+    // - 4 which are possibly added, depending on conditions.
+    headers.reserveCapacity(10 + customMetadata.count)
+
+    // Add the required headers.
+    headers.add(name: ":method", value: method)
+    headers.add(name: ":path", value: path)
+    headers.add(name: ":authority", value: host)
+    headers.add(name: ":scheme", value: scheme)
+    headers.add(name: "content-type", value: "application/grpc")
+    // Used to detect incompatible proxies, part of the gRPC specification.
+    headers.add(name: "te", value: "trailers")
 
     switch compression {
     case let .enabled(configuration):
@@ -604,14 +608,14 @@ extension GRPCClientStateMachine.State {
 
     // Add user-defined custom metadata: this should come after the call definition headers.
     // TODO: make header normalization user-configurable.
-    headers.add(contentsOf: customMetadata.map { name, value, indexing in
+    headers.add(contentsOf: customMetadata.lazy.map { name, value, indexing in
       (name.lowercased(), value, indexing)
     })
 
     // Add default user-agent value, if `customMetadata` didn't contain user-agent
-    if headers["user-agent"].isEmpty {
-      headers
-        .add(name: "user-agent", value: "grpc-swift-nio") // TODO: Add a more specific user-agent.
+    if !headers.contains(name: "user-agent") {
+      // TODO: Add a more specific user-agent.
+      headers.add(name: "user-agent", value: "grpc-swift-nio")
     }
 
     return headers

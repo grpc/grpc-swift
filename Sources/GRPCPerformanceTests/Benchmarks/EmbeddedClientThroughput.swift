@@ -66,7 +66,7 @@ class EmbeddedClientThroughput: Benchmark {
     var buffer = ByteBufferAllocator().buffer(capacity: serializedResponse.count + 5)
     buffer.writeInteger(UInt8(0)) // compression byte
     buffer.writeInteger(UInt32(serializedResponse.count))
-    buffer.writeBytes(serializedResponse)
+    buffer.writeContiguousBytes(serializedResponse)
 
     self.responseDataChunks = []
     while buffer.readableBytes > 0,
