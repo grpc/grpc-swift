@@ -1,7 +1,8 @@
 Pod::Spec.new do |s|
 
     s.name = 'CGRPCZlib'
-    s.version = '1.0.0-alpha.18'
+    s.module_name = 'CGRPCZlib'
+    s.version = '1.0.0-alpha.19'
     s.license = { :type => 'Apache 2.0', :file => 'LICENSE' }
     s.summary = 'Compression library that provides in-memory compression and decompression functions'
     s.homepage = 'https://www.grpc.io'
