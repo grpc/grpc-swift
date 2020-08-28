@@ -215,7 +215,7 @@ struct PingHandler {
   /// Number of active streams
   private var activeStreams = 0 {
     didSet {
-      if activeStreams > 0 {
+      if self.activeStreams > 0 {
         self.sentPingsWithoutData = 0
       }
     }

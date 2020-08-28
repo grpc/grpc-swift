@@ -51,7 +51,7 @@ final class ViewController: UIViewController {
     }
   }
 
-  private var audioData: Data = Data()
+  private var audioData = Data()
 
   private let speechService: SpeechService
   private let audioStreamManager: AudioStreamManager
@@ -159,7 +159,7 @@ extension ViewController: StreamDelegate {
     self.audioData.append(data)
 
     // 100 ms chunk size
-    let chunkSize: Int = Int(0.1 * Constants.sampleRate * 2)
+    let chunkSize = Int(0.1 * Constants.sampleRate * 2)
 
     // When the audio data gets big enough
     if self.audioData.count > chunkSize {
