@@ -45,7 +45,7 @@ open class ServerCallContextBase: ServerCallContext {
 
   /// Metadata to return at the end of the RPC. If this is required it should be updated before
   /// the `responsePromise` or `statusPromise` is fulfilled.
-  public var trailingMetadata: HTTPHeaders = HTTPHeaders()
+  public var trailingMetadata = HTTPHeaders()
 
   public init(eventLoop: EventLoop, request: HTTPRequestHead, logger: Logger) {
     self.eventLoop = eventLoop
