@@ -18,13 +18,6 @@ import HelloWorldModel
 import Logging
 import NIO
 
-// Quieten the logs.
-LoggingSystem.bootstrap {
-  var handler = StreamLogHandler.standardOutput(label: $0)
-  handler.logLevel = .critical
-  return handler
-}
-
 let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 defer {
   try! group.syncShutdownGracefully()

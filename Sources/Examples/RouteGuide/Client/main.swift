@@ -19,13 +19,6 @@ import Logging
 import NIO
 import RouteGuideModel
 
-// Quieten the logs.
-LoggingSystem.bootstrap {
-  var handler = StreamLogHandler.standardOutput(label: $0)
-  handler.logLevel = .critical
-  return handler
-}
-
 /// Makes a `RouteGuide` client for a service hosted on "localhost" and listening on the given port.
 func makeClient(port: Int, group: EventLoopGroup) -> Routeguide_RouteGuideClient {
   let channel = ClientConnection.insecure(group: group)
