@@ -20,13 +20,6 @@ import NIO
 import RouteGuideModel
 import SwiftProtobuf
 
-// Quieten the logs.
-LoggingSystem.bootstrap {
-  var handler = StreamLogHandler.standardOutput(label: $0)
-  handler.logLevel = .critical
-  return handler
-}
-
 /// Loads the features from `route_guide_db.json`, assumed to be in the directory above this file.
 func loadFeatures() throws -> [Routeguide_Feature] {
   let url = URL(fileURLWithPath: #file)

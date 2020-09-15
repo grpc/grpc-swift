@@ -18,13 +18,6 @@ import HelloWorldModel
 import Logging
 import NIO
 
-// Quieten the logs.
-LoggingSystem.bootstrap {
-  var handler = StreamLogHandler.standardOutput(label: $0)
-  handler.logLevel = .critical
-  return handler
-}
-
 func greet(name: String?, client greeter: Helloworld_GreeterClient) {
   // Form the request with the name, if one was provided.
   let request = Helloworld_HelloRequest.with {
@@ -68,6 +61,11 @@ func main(args: [String]) {
     // Configure the channel, we're not using TLS so the connection is `insecure`.
     let channel = ClientConnection.insecure(group: group)
       .connect(host: "localhost", port: port)
+
+    // Close the connection when we're done with it.
+    defer {
+      try! channel.close().wait()
+    }
 
     // Provide the connection to the generated client.
     let greeter = Helloworld_GreeterClient(channel: channel)

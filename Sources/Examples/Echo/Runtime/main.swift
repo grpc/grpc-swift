@@ -108,13 +108,6 @@ func main(args: [String]) {
     printUsageAndExit(program: program)
   }
 
-  // Reduce the logging verbosity.
-  LoggingSystem.bootstrap {
-    var handler = StreamLogHandler.standardOutput(label: $0)
-    handler.logLevel = .warning
-    return handler
-  }
-
   // Okay, we're nearly ready to start, create an `EventLoopGroup` most suitable for our platform.
   let group = PlatformSupport.makeEventLoopGroup(loopCount: 1)
   defer {
@@ -132,6 +125,9 @@ func main(args: [String]) {
 
   case let .client(host: host, port: port, useTLS: useTLS, rpc: rpc, message: message):
     let client = makeClient(group: group, host: host, port: port, useTLS: useTLS)
+    defer {
+      try! client.channel.close().wait()
+    }
     callRPC(rpc, using: client, message: message)
   }
 }
