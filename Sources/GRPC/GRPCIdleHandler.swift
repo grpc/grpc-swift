@@ -56,7 +56,7 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
     case closed
   }
 
-  init(mode: Mode, logger: Logger, idleTimeout: TimeAmount = .minutes(5)) {
+  init(mode: Mode, logger: Logger, idleTimeout: TimeAmount) {
     self.mode = mode
     self.idleTimeout = idleTimeout
     self.logger = logger
@@ -199,7 +199,7 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
   }
 
   private func scheduleIdleTimeout(context: ChannelHandlerContext) {
-    guard self.activeStreams == 0 else {
+    guard self.activeStreams == 0, self.idleTimeout.nanoseconds != .max else {
       return
     }
 
