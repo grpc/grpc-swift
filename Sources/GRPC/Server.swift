@@ -286,7 +286,8 @@ extension Server {
     ///   - errorDelegate: The error delegate, defaulting to a logging delegate.
     ///   - tls: TLS configuration, defaulting to `nil`.
     ///   - connectionKeepalive: The keepalive configuration to use.
-    ///   - connectionIdleTimeout: The amount of time to wait before closing the connection, defaulting to 5 minutes.
+    ///   - connectionIdleTimeout: The amount of time to wait before closing the connection, this is
+    ///       indefinite by default.
     ///   - messageEncoding: Message compression configuration, defaulting to no compression.
     ///   - httpTargetWindowSize: The HTTP/2 flow control target window size.
     ///   - logger: A logger. Defaults to a no-op logger.
@@ -299,7 +300,7 @@ extension Server {
       errorDelegate: ServerErrorDelegate? = nil,
       tls: TLS? = nil,
       connectionKeepalive: ServerConnectionKeepalive = ServerConnectionKeepalive(),
-      connectionIdleTimeout: TimeAmount = .minutes(5),
+      connectionIdleTimeout: TimeAmount = .nanoseconds(.max),
       messageEncoding: ServerMessageEncoding = .disabled,
       httpTargetWindowSize: Int = 65535,
       logger: Logger = Logger(label: "io.grpc", factory: { _ in SwiftLogNoOpLogHandler() }),

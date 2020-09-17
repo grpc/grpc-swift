@@ -151,7 +151,7 @@ extension ClientConnection.Builder {
   /// The amount of time to wait before closing the connection. The idle timeout will start only
   /// if there are no RPCs in progress and will be cancelled as soon as any RPCs start. If a
   /// connection becomes idle, starting a new RPC will automatically create a new connection.
-  /// Defaults to 5 minutes if not set.
+  /// Defaults to 30 minutes if not set.
   @discardableResult
   public func withConnectionIdleTimeout(_ timeout: TimeAmount) -> Self {
     self.configuration.connectionIdleTimeout = timeout

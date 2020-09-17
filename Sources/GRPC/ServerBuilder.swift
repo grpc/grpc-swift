@@ -89,8 +89,8 @@ extension Server.Builder {
 
 extension Server.Builder {
   /// The amount of time to wait before closing connections. The idle timeout will start only
-  /// if there are no RPCs in progress and will be cancelled as soon as any RPCs start. Defaults to
-  /// 5 minutes if not set.
+  /// if there are no RPCs in progress and will be cancelled as soon as any RPCs start. Unless a
+  /// an idle timeout it set connections will not be idled by default.
   @discardableResult
   public func withConnectionIdleTimeout(_ timeout: TimeAmount) -> Self {
     self.configuration.connectionIdleTimeout = timeout

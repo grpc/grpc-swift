@@ -560,7 +560,7 @@ extension ClientConnection {
     /// - Parameter tls: TLS configuration, defaulting to `nil`.
     /// - Parameter connectionBackoff: The connection backoff configuration to use.
     /// - Parameter connectionKeepalive: The keepalive configuration to use.
-    /// - Parameter connectionIdleTimeout: The amount of time to wait before closing the connection, defaulting to 5 minutes.
+    /// - Parameter connectionIdleTimeout: The amount of time to wait before closing the connection, defaulting to 30 minutes.
     /// - Parameter callStartBehavior: The behavior used to determine when a call should start in
     ///     relation to its underlying connection. Defaults to `waitsForConnectivity`.
     /// - Parameter httpTargetWindowSize: The HTTP/2 flow control target window size.
@@ -577,7 +577,7 @@ extension ClientConnection {
       tls: Configuration.TLS? = nil,
       connectionBackoff: ConnectionBackoff? = ConnectionBackoff(),
       connectionKeepalive: ClientConnectionKeepalive = ClientConnectionKeepalive(),
-      connectionIdleTimeout: TimeAmount = .minutes(5),
+      connectionIdleTimeout: TimeAmount = .minutes(30),
       callStartBehavior: CallStartBehavior = .waitsForConnectivity,
       httpTargetWindowSize: Int = 65535,
       backgroundActivityLogger: Logger = Logger(
