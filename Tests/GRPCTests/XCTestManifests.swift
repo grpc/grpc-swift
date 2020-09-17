@@ -147,6 +147,7 @@ extension ConnectionManagerTests {
     //   `swift test --generate-linuxmain`
     // to regenerate.
     static let __allTests__ConnectionManagerTests = [
+        ("testCloseWithoutActiveRPCs", testCloseWithoutActiveRPCs),
         ("testConnectAndDisconnect", testConnectAndDisconnect),
         ("testConnectAndIdle", testConnectAndIdle),
         ("testConnectAndThenBecomeInactive", testConnectAndThenBecomeInactive),

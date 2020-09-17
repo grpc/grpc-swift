@@ -126,10 +126,20 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
     self.scheduledIdle = nil
 
     switch (self.mode, self.state) {
-    case let (.client(manager), .notReady),
-         let (.client(manager), .ready):
+    case let (.client(manager), .notReady):
       self.state = .closed
       manager.channelInactive()
+
+    case let (.client(manager), .ready):
+      self.state = .closed
+
+      if self.activeStreams == 0 {
+        // We're ready and there are no active streams: we can treat this as the server idling our
+        // connection.
+        manager.idle()
+      } else {
+        manager.channelInactive()
+      }
 
     case (.server, .notReady),
          (.server, .ready),

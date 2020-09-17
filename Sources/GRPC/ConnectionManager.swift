@@ -423,7 +423,19 @@ internal class ConnectionManager {
     case .shutdown:
       channel.close(mode: .all, promise: nil)
 
-    case .idle, .active, .ready, .transientFailure:
+    // These cases are purposefully separated: some crash reporting services provide stack traces
+    // which don't include the precondition failure message (which contain the invalid state we were
+    // in). Keeping the cases separate allows us work out the state from the line number.
+    case .idle:
+      self.invalidState()
+
+    case .active:
+      self.invalidState()
+
+    case .ready:
+      self.invalidState()
+
+    case .transientFailure:
       self.invalidState()
     }
   }
@@ -479,7 +491,13 @@ internal class ConnectionManager {
     case .shutdown:
       ()
 
-    case .connecting, .transientFailure:
+    // These cases are purposefully separated: some crash reporting services provide stack traces
+    // which don't include the precondition failure message (which contain the invalid state we were
+    // in). Keeping the cases separate allows us work out the state from the line number.
+    case .connecting:
+      self.invalidState()
+
+    case .transientFailure:
       self.invalidState()
     }
   }
@@ -500,7 +518,19 @@ internal class ConnectionManager {
     case .shutdown:
       ()
 
-    case .idle, .transientFailure, .connecting, .ready:
+    // These cases are purposefully separated: some crash reporting services provide stack traces
+    // which don't include the precondition failure message (which contain the invalid state we were
+    // in). Keeping the cases separate allows us work out the state from the line number.
+    case .idle:
+      self.invalidState()
+
+    case .transientFailure:
+      self.invalidState()
+
+    case .connecting:
+      self.invalidState()
+
+    case .ready:
       self.invalidState()
     }
   }
@@ -523,7 +553,22 @@ internal class ConnectionManager {
     case let .ready(state):
       self.state = .idle(IdleState(configuration: state.configuration))
 
-    case .idle, .connecting, .transientFailure, .shutdown:
+    case .shutdown:
+      // This is expected when the connection is closed by the user: when the channel becomes
+      // inactive and there are no outstanding RPCs, 'idle()' will be called instead of
+      // 'channelInactive()'.
+      ()
+
+    // These cases are purposefully separated: some crash reporting services provide stack traces
+    // which don't include the precondition failure message (which contain the invalid state we were
+    // in). Keeping the cases separate allows us work out the state from the line number.
+    case .idle:
+      self.invalidState()
+
+    case .connecting:
+      self.invalidState()
+
+    case .transientFailure:
       self.invalidState()
     }
   }
@@ -560,7 +605,20 @@ extension ConnectionManager {
       ()
 
     // We can't fail to connect if we aren't trying.
-    case .idle, .active, .ready, .transientFailure:
+    //
+    // These cases are purposefully separated: some crash reporting services provide stack traces
+    // which don't include the precondition failure message (which contain the invalid state we were
+    // in). Keeping the cases separate allows us work out the state from the line number.
+    case .idle:
+      self.invalidState()
+
+    case .active:
+      self.invalidState()
+
+    case .ready:
+      self.invalidState()
+
+    case .transientFailure:
       self.invalidState()
     }
   }
@@ -590,7 +648,16 @@ extension ConnectionManager {
     case .shutdown:
       ()
 
-    case .connecting, .active, .ready:
+    // These cases are purposefully separated: some crash reporting services provide stack traces
+    // which don't include the precondition failure message (which contain the invalid state we were
+    // in). Keeping the cases separate allows us work out the state from the line number.
+    case .connecting:
+      self.invalidState()
+
+    case .active:
+      self.invalidState()
+
+    case .ready:
       self.invalidState()
     }
   }

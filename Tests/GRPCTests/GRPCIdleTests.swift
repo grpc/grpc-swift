@@ -35,10 +35,6 @@ class GRPCIdleTests: GRPCTestCase {
   }
 
   func doTestIdleTimeout(serverIdle: TimeAmount, clientIdle: TimeAmount) throws {
-    // Is the server idling first? This determines what state change the client should see when the
-    // idle happens.
-    let isServerIdleFirst = serverIdle < clientIdle
-
     let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     defer {
       XCTAssertNoThrow(try group.syncShutdownGracefully())
@@ -61,7 +57,7 @@ class GRPCIdleTests: GRPCTestCase {
       XCTAssertEqual(changes, [
         Change(from: .idle, to: .connecting),
         Change(from: .connecting, to: .ready),
-        Change(from: .ready, to: isServerIdleFirst ? .transientFailure : .idle),
+        Change(from: .ready, to: .idle),
       ])
     }
 
