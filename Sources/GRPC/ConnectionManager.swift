@@ -164,12 +164,7 @@ internal class ConnectionManager {
       switch self.state {
       case .idle:
         self.monitor.updateState(to: .idle, logger: self.logger)
-
-        // Create a new id; it'll be used for the *next* channel we create.
-        self.channelNumberLock.withLockVoid {
-          self.channelNumber &+= 1
-        }
-        self.logger[metadataKey: MetadataKey.connectionID] = "\(self.connectionIDAndNumber)"
+        self.updateConnectionID()
 
       case .connecting:
         self.monitor.updateState(to: .connecting, logger: self.logger)
@@ -183,6 +178,7 @@ internal class ConnectionManager {
 
       case .transientFailure:
         self.monitor.updateState(to: .transientFailure, logger: self.logger)
+        self.updateConnectionID()
 
       case .shutdown:
         self.monitor.updateState(to: .shutdown, logger: self.logger)
@@ -198,9 +194,20 @@ internal class ConnectionManager {
   private var channelNumber: UInt64
   private var channelNumberLock = Lock()
 
+  private var _connectionIDAndNumber: String {
+    return "\(self.connectionID)/\(self.channelNumber)"
+  }
+
   private var connectionIDAndNumber: String {
     return self.channelNumberLock.withLock {
-      return "\(self.connectionID)/\(self.channelNumber)"
+      return self._connectionIDAndNumber
+    }
+  }
+
+  private func updateConnectionID() {
+    self.channelNumberLock.withLockVoid {
+      self.channelNumber &+= 1
+      self.logger[metadataKey: MetadataKey.connectionID] = "\(self._connectionIDAndNumber)"
     }
   }
 
