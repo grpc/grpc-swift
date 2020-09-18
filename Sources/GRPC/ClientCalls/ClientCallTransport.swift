@@ -545,13 +545,13 @@ extension ChannelTransport: ClientCallInbound {
         self.responseContainer.lazyTrailingMetadataPromise.succeed(metadata)
 
       case let .status(status):
-        // We're done; cancel the timeout.
-        self.scheduledTimeout?.cancel()
-        self.scheduledTimeout = nil
-
         // We're closed now.
         self.state = .closed
         self.stopTimer(status: status)
+
+        // We're done; cancel the timeout.
+        self.scheduledTimeout?.cancel()
+        self.scheduledTimeout = nil
 
         // We're not really failing the status here; in some cases the server may fast fail, in which
         // case we'll only see trailing metadata and status: we should fail the initial metadata and
