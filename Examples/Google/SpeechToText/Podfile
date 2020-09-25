@@ -6,5 +6,5 @@ target 'SpeechToText-gRPC-iOS' do
   use_frameworks!
 
   pod 'SnapKit'
-  pod 'gRPC-Swift', '1.0.0-alpha.14'
+  pod 'gRPC-Swift', '1.0.0-alpha.19'
 end

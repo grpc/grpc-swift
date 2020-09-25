@@ -51,7 +51,7 @@ necessary targets:
 
 ```swift
 dependencies: [
-  .package(url: "https://github.com/grpc/grpc-swift.git", from: "1.0.0-alpha.12")
+  .package(url: "https://github.com/grpc/grpc-swift.git", from: "1.0.0-alpha.19")
 ]
 ```
 
@@ -96,7 +96,7 @@ gRPC Swift is currently available [from CocoaPods][pod-new]. To integrate, add
 the following line to your `Podfile`:
 
 ```ruby
-    pod 'gRPC-Swift', '~> 1.0.0-alpha.18'
+    pod 'gRPC-Swift', '~> 1.0.0-alpha.19'
 ```
 
 Then, run `pod install` from command line and use your project's generated
