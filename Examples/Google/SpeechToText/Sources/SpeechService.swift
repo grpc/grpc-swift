@@ -15,6 +15,7 @@
  */
 
 import GRPC
+import Logging
 
 typealias Request = Google_Cloud_Speech_V1_StreamingRecognizeRequest
 typealias Response = Google_Cloud_Speech_V1_StreamingRecognizeResponse
@@ -43,15 +44,20 @@ final class SpeechService {
     // see https://github.com/grpc/grpc-swift/blob/main/docs/apple-platforms.md for more details
     let group = PlatformSupport.makeEventLoopGroup(loopCount: 1)
 
+    // Setup a logger for debugging.
+    var logger = Logger(label: "gRPC", factory: StreamLogHandler.standardOutput(label:))
+    logger.logLevel = .debug
+
     // Create a connection secured with TLS to Google's speech service running on our `EventLoopGroup`
     let channel = ClientConnection
       .secure(group: group)
+      .withBackgroundActivityLogger(logger)
       .connect(host: "speech.googleapis.com", port: 443)
 
     // Specify call options to be used for gRPC calls
     let callOptions = CallOptions(customMetadata: [
       "x-goog-api-key": Constants.apiKey,
-    ])
+    ], logger: logger)
 
     // Now we have a client!
     self.client = Google_Cloud_Speech_V1_SpeechClient(
