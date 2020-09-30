@@ -111,4 +111,29 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
 
     try self.doTestUnary()
   }
+
+  func testTLSWithNoCertificateVerification() throws {
+    self.server = try Server.secure(
+      group: self.eventLoopGroup,
+      certificateChain: [SampleCertificate.server.certificate],
+      privateKey: SamplePrivateKey.server
+    )
+    .withServiceProviders([EchoProvider()])
+    .withLogger(self.serverLogger)
+    .bind(host: "localhost", port: 0)
+    .wait()
+
+    guard let port = self.server.channel.localAddress?.port else {
+      XCTFail("could not get server port")
+      return
+    }
+
+    self.connection = ClientConnection.secure(group: self.eventLoopGroup)
+      .withTLS(trustRoots: .certificates([]))
+      .withTLS(certificateVerification: .none)
+      .withBackgroundActivityLogger(self.clientLogger)
+      .connect(host: "localhost", port: port)
+
+    try self.doTestUnary()
+  }
 }

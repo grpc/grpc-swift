@@ -96,6 +96,7 @@ extension ClientTLSHostnameOverrideTests {
     // to regenerate.
     static let __allTests__ClientTLSHostnameOverrideTests = [
         ("testTLSWithHostnameOverride", testTLSWithHostnameOverride),
+        ("testTLSWithNoCertificateVerification", testTLSWithNoCertificateVerification),
         ("testTLSWithoutHostnameOverride", testTLSWithoutHostnameOverride),
     ]
 }
