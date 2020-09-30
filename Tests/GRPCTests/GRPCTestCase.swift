@@ -32,7 +32,7 @@ class GRPCTestCase: XCTestCase {
 
   override func setUp() {
     super.setUp()
-    self.logFactory = CapturingLogHandlerFactory()
+    self.logFactory = CapturingLogHandlerFactory(printWhenCaptured: GRPCTestCase.alwaysLog)
   }
 
   override func tearDown() {
@@ -48,7 +48,9 @@ class GRPCTestCase: XCTestCase {
       XCTAssertEqual(log.source, "GRPC", "Incorrect log source in \(log.file) on line \(log.line)")
     }
 
-    if GRPCTestCase.alwaysLog || (self.testRun.map { $0.totalFailureCount > 0 } ?? false) {
+    // Only print logs when there's a failure and we're *not* always logging (when we are always
+    // logging, logs will be printed as they're caught).
+    if !GRPCTestCase.alwaysLog, (self.testRun.map { $0.totalFailureCount > 0 } ?? false) {
       self.printCapturedLogs(logs)
     }
 
@@ -99,24 +101,12 @@ class GRPCTestCase: XCTestCase {
 
   /// Prints all captured logs.
   private func printCapturedLogs(_ logs: [CapturedLog]) {
-    let formatter = DateFormatter()
-    // We don't care about the date.
-    formatter.dateFormat = "HH:mm:ss.SSS"
-
     print("Test Case '\(self.name)' logs started")
 
     // The logs are already sorted by date.
+    let formatter = CapturedLogFormatter()
     for log in logs {
-      let date = formatter.string(from: log.date)
-      let level = log.level.short
-
-      // Format the metadata.
-      let formattedMetadata = log.metadata
-        .sorted(by: { $0.key < $1.key })
-        .map { key, value in "\(key)=\(value)" }
-        .joined(separator: " ")
-
-      print("\(date) \(log.label) \(level):", log.message, "{", formattedMetadata, "}")
+      print(formatter.string(for: log))
     }
 
     print("Test Case '\(self.name)' logs finished")
@@ -132,27 +122,6 @@ extension Bool {
       self = true
     default:
       self = defaultValue
-    }
-  }
-}
-
-extension Logger.Level {
-  fileprivate var short: String {
-    switch self {
-    case .info:
-      return "I"
-    case .debug:
-      return "D"
-    case .warning:
-      return "W"
-    case .error:
-      return "E"
-    case .critical:
-      return "C"
-    case .trace:
-      return "T"
-    case .notice:
-      return "N"
     }
   }
 }

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import struct Foundation.Date
+import class Foundation.DateFormatter
 import Logging
 import NIOConcurrencyHelpers
 
@@ -21,6 +22,16 @@ import NIOConcurrencyHelpers
 internal class CapturingLogHandlerFactory {
   private var lock = Lock()
   private var _logs: [CapturedLog] = []
+
+  private var logFormatter: CapturedLogFormatter?
+
+  init(printWhenCaptured: Bool) {
+    if printWhenCaptured {
+      self.logFormatter = CapturedLogFormatter()
+    } else {
+      self.logFormatter = nil
+    }
+  }
 
   /// Returns all captured logs and empties the store of captured logs.
   func clearCapturedLogs() -> [CapturedLog] {
@@ -36,6 +47,11 @@ internal class CapturingLogHandlerFactory {
     return CapturingLogHandler(label: label) { log in
       self.lock.withLockVoid {
         self._logs.append(log)
+      }
+
+      // If we have a formatter, print the log as well.
+      if let formatter = self.logFormatter {
+        print(formatter.string(for: log))
       }
     }
   }
@@ -105,6 +121,50 @@ internal struct CapturingLogHandler: LogHandler {
     }
     set {
       self.metadata[metadataKey] = newValue
+    }
+  }
+}
+
+struct CapturedLogFormatter {
+  private var dateFormatter: DateFormatter
+
+  init() {
+    self.dateFormatter = DateFormatter()
+    // We don't care about the date.
+    self.dateFormatter.dateFormat = "HH:mm:ss.SSS"
+  }
+
+  func string(for log: CapturedLog) -> String {
+    let date = self.dateFormatter.string(from: log.date)
+    let level = log.level.short
+
+    // Format the metadata.
+    let formattedMetadata = log.metadata
+      .sorted(by: { $0.key < $1.key })
+      .map { key, value in "\(key)=\(value)" }
+      .joined(separator: " ")
+
+    return "\(date) \(level) \(log.label): \(log.message) { \(formattedMetadata) }"
+  }
+}
+
+extension Logger.Level {
+  fileprivate var short: String {
+    switch self {
+    case .info:
+      return "I"
+    case .debug:
+      return "D"
+    case .warning:
+      return "W"
+    case .error:
+      return "E"
+    case .critical:
+      return "C"
+    case .trace:
+      return "T"
+    case .notice:
+      return "N"
     }
   }
 }
