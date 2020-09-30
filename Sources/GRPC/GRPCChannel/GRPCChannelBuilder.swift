@@ -227,6 +227,14 @@ extension ClientConnection.Builder.Secure {
     self.tls.trustRoots = trustRoots
     return self
   }
+
+  /// Whether to verify remote certificates. Defaults to `.fullVerification` if not otherwise
+  /// configured.
+  @discardableResult
+  public func withTLS(certificateVerification: CertificateVerification) -> Self {
+    self.tls.certificateVerification = certificateVerification
+    return self
+  }
 }
 
 extension ClientConnection.Builder {
