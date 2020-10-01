@@ -22,7 +22,7 @@ import NIOHTTP1
 import NIOHTTP2
 import OpenTelemetryInstrumentationSupport
 import SwiftProtobuf
-import TracingInstrumentation
+import Tracing
 
 /// A gRPC client request message part.
 ///
@@ -468,9 +468,9 @@ extension _GRPCClientChannelHandler: ChannelOutboundHandler {
     case let .head(requestHead):
       // TODO: Don't force unwrap request info
       let requestInfo = GRPCRequestInfo(parsing: requestHead.path)!
-      var span = InstrumentationSystem.tracingInstrument.startSpan(
+      let span = InstrumentationSystem.tracer.startSpan(
         named: String(requestInfo.uri.dropFirst()),
-        context: context.baggage,
+        baggage: context.baggage,
         ofKind: .client
       )
       self.span = span

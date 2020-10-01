@@ -20,7 +20,7 @@ import NIOFoundationCompat
 import NIOHTTP1
 import OpenTelemetryInstrumentationSupport
 import SwiftProtobuf
-import TracingInstrumentation
+import Tracing
 
 /// Incoming gRPC package with a fixed message type.
 ///
@@ -52,7 +52,7 @@ public typealias _RawGRPCServerResponsePart = _GRPCServerResponsePart<ByteBuffer
 ///
 /// The translation from HTTP2 to HTTP1 is done by `HTTP2ToHTTP1ServerCodec`.
 public final class HTTP1ToGRPCServerCodec {
-  public init(encoding: ServerMessageEncoding, logger: Logger, span: inout Span) {
+  public init(encoding: ServerMessageEncoding, logger: Logger, span: Span) {
     self.encoding = encoding
     self.encodingHeaderValidator = MessageEncodingHeaderValidator(encoding: encoding)
     self.logger = logger

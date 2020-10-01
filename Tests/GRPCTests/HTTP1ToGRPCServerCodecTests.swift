@@ -22,7 +22,7 @@ import Instrumentation
 import Logging
 import NIO
 import NIOHTTP1
-import TracingInstrumentation
+import Tracing
 import XCTest
 
 /// A trivial channel handler that invokes a callback once, the first time it sees
@@ -63,12 +63,12 @@ class HTTP1ToGRPCServerCodecTests: GRPCTestCase {
 
   override func setUp() {
     super.setUp()
-    var span = InstrumentationSystem.tracingInstrument.startSpan(
+    let span = InstrumentationSystem.tracer.startSpan(
       named: "test",
-      context: BaggageContext(),
+      baggage: .topLevel,
       ofKind: .server
     )
-    let handler = HTTP1ToGRPCServerCodec(encoding: .disabled, logger: self.logger, span: &span)
+    let handler = HTTP1ToGRPCServerCodec(encoding: .disabled, logger: self.logger, span: span)
     self.channel = EmbeddedChannel(handler: handler)
   }
 

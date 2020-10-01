@@ -20,7 +20,7 @@ import NIOHTTP1
 import NIOInstrumentation
 import OpenTelemetryInstrumentationSupport
 import SwiftProtobuf
-import TracingInstrumentation
+import Tracing
 
 /// Processes individual gRPC messages and stream-close events on an HTTP2 channel.
 public protocol GRPCCallHandler: ChannelHandler {
@@ -141,9 +141,9 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
         using: HTTPHeadersExtractor()
       )
 
-      span = InstrumentationSystem.tracingInstrument.startSpan(
+      span = InstrumentationSystem.tracer.startSpan(
         named: String(requestHead.uri.dropFirst()),
-        context: context.baggage,
+        baggage: context.baggage,
         ofKind: .server
       )
 
@@ -224,7 +224,7 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
       let httpToGRPC = HTTP1ToGRPCServerCodec(
         encoding: self.encoding,
         logger: self.logger,
-        span: &span
+        span: span
       )
       let codec = callHandler._codec
       context.pipeline.addHandlers([httpToGRPC, codec, callHandler], position: .after(self))

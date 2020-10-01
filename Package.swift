@@ -40,7 +40,7 @@ let package = Package(
     // Logging API.
     .package(url: "https://github.com/apple/swift-log.git", from: "1.4.0"),
 
-    .package(url: "https://github.com/slashmo/gsoc-swift-baggage-context.git", from: "0.3.0"),
+    .package(url: "https://github.com/slashmo/gsoc-swift-baggage-context.git", from: "0.5.0"),
     .package(url: "https://github.com/slashmo/gsoc-swift-tracing.git", .branch("main")),
   ],
   targets: [
@@ -58,7 +58,7 @@ let package = Package(
         "SwiftProtobuf",
         "Logging",
         "Baggage",
-        "TracingInstrumentation",
+        "Tracing",
         "NIOInstrumentation",
         "OpenTelemetryInstrumentationSupport",
       ]

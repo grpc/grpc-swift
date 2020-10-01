@@ -23,7 +23,7 @@ import Instrumentation
 import Logging
 import NIO
 import NIOSSL
-import TracingInstrumentation
+import Tracing
 
 // MARK: - Argument parsing
 
@@ -303,37 +303,31 @@ func echoUpdate(client: Echo_EchoClient, message: String) throws {
   print("update completed with status: \(status.code)")
 }
 
-final class FakeTracer: TracingInstrument {
-  func extract<Carrier, Extractor>(
-    _ carrier: Carrier,
-    into context: inout BaggageContext,
-    using extractor: Extractor
-  )
+final class FakeTracer: Tracer {
+  func extract<Carrier, Extractor>(_ carrier: Carrier, into baggage: inout Baggage,
+                                   using extractor: Extractor)
     where
     Carrier == Extractor.Carrier,
     Extractor: ExtractorProtocol {
     if let traceID = extractor.extract(key: "x-trace-id", from: carrier) {
       print("Extracted trace-id: \(traceID)")
-      context[FakeTraceID.self] = traceID
+      baggage[FakeTraceID.self] = traceID
     }
   }
 
-  func inject<Carrier, Injector>(
-    _ context: BaggageContext,
-    into carrier: inout Carrier,
-    using injector: Injector
-  )
+  func inject<Carrier, Injector>(_ baggage: Baggage, into carrier: inout Carrier,
+                                 using injector: Injector)
     where
     Carrier == Injector.Carrier,
     Injector: InjectorProtocol {
-    let traceID = context[FakeTraceID.self] ?? "default-trace-id"
+    let traceID = baggage[FakeTraceID.self] ?? "default-trace-id"
     injector.inject(traceID, forKey: "x-trace-id", into: &carrier)
     print("Injected trace-id: \(traceID)")
   }
 
   func startSpan(
     named operationName: String,
-    context: BaggageContextCarrier,
+    baggage: Baggage,
     ofKind kind: SpanKind,
     at timestamp: Timestamp
   ) -> Span {
@@ -341,7 +335,7 @@ final class FakeTracer: TracingInstrument {
       operationName: operationName,
       kind: kind,
       startTimestamp: timestamp,
-      context: context.baggage
+      baggage: baggage
     )
     print(#"Starting span "\#(operationName)" at timestamp: \#(timestamp)"#)
     return span
@@ -357,17 +351,16 @@ final class FakeTracer: TracingInstrument {
     let startTimestamp: Timestamp
     private(set) var endTimestamp: Timestamp?
 
-    let context: BaggageContext
+    let baggage: Baggage
 
     var attributes: SpanAttributes = [:]
     private(set) var isRecording: Bool = false
 
-    init(operationName: String, kind: SpanKind, startTimestamp: Timestamp,
-         context: BaggageContext) {
+    init(operationName: String, kind: SpanKind, startTimestamp: Timestamp, baggage: Baggage) {
       self.operationName = operationName
       self.kind = kind
       self.startTimestamp = startTimestamp
-      self.context = context
+      self.baggage = baggage
     }
 
     func addEvent(_ event: SpanEvent) {
@@ -393,7 +386,7 @@ final class FakeTracer: TracingInstrument {
     }
   }
 
-  enum FakeTraceID: BaggageContextKey {
+  enum FakeTraceID: Baggage.Key {
     typealias Value = String
   }
 }
