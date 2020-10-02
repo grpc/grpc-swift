@@ -39,7 +39,7 @@ To download the example, clone the latest release in `grpc-swift` repository by
 running the following command:
 
 ```sh
-$ git clone -b 1.0.0-alpha.9 https://github.com/grpc/grpc-swift
+$ git clone -b 1.0.0-alpha.20 https://github.com/grpc/grpc-swift
 ```
 
 Then change your current directory to `grpc-swift/Sources/Examples/RouteGuide`:

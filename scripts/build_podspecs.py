@@ -14,29 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Script for generating the gRPC-Swift and CGRPCZlib Podspec files.
-
-    Usage:
-        usage: build_podspecs.py [-h] [-p PATH] [-u] version
-
-        Build Podspec files for SwiftGRPC
-
-        positional arguments:
-        version
-
-        optional arguments:
-        -h, --help            show this help message and exit
-        -p PATH, --path PATH  The directory where generated podspec files will be
-                                saved. If not passed, defaults to place in the current
-                                working directory.
-        -u, --upload          Determines if the newly built Podspec files should be
-                                pushed.
-
-    Example:
-        'python scripts/build_podspecs.py -u 1.0.0-alpha.11'
-"""
-
 import os
 import json
 import random
@@ -76,9 +53,9 @@ class Pod:
     def as_podspec(self):
         print('\n')
         print('Building Podspec for %s' % self.name)
-        print('-----------------------------------------------------------')
+        print('-' * 80)
 
-        indent='    '
+        indent=' ' * 4
 
         podspec = "Pod::Spec.new do |s|\n\n"
         podspec += indent + "s.name = '%s'\n" % self.name
@@ -111,8 +88,6 @@ class Pod:
         return podspec
 
 class PodManager:
-    pods = []
-
     def __init__(self, directory, version, should_publish):
         self.directory = directory
         self.version = version
@@ -156,13 +131,16 @@ class PodManager:
         grpc_pod.add_dependency(Dependency(cgrpczlib_pod.name))
         grpc_plugins_pod.add_dependency(Dependency(grpc_pod.name))
 
-        self.pods += [cgrpczlib_pod, grpc_pod, grpc_plugins_pod]
+        return [cgrpczlib_pod, grpc_pod, grpc_plugins_pod]
 
-    def go(self):
-        self.build_pods()
+    def go(self, start_from):
+        pods = self.build_pods()
+
+        if start_from:
+            pods = pods[list(pod.name for pod in pods).index(start_from):]
 
         # Create .podspec files and publish
-        for target in self.pods:
+        for target in pods:
             self.write(target.name, target.as_podspec())
             if self.should_publish:
                 self.publish(target.name)
@@ -203,15 +181,13 @@ def dir_path(path):
     raise NotADirectoryError(path)
 
 def main():
-    # Setup
-
-    parser = argparse.ArgumentParser(description='Build Podspec files for SwiftGRPC')
+    parser = argparse.ArgumentParser(description='Build Podspec files for gRPC Swift')
 
     parser.add_argument(
         '-p',
         '--path',
         type=dir_path,
-        help='The directory where generated podspec files will be saved. If not passed, defaults to place in the current working directory.'
+        help='The directory where generated podspec files will be saved. If not passed, defaults to the current working directory.'
     )
 
     parser.add_argument(
@@ -221,6 +197,12 @@ def main():
         help='Determines if the newly built Podspec files should be pushed.'
     )
 
+    parser.add_argument(
+        '-f',
+        '--start-from',
+        help='The name of the Podspec to start from.'
+    )
+
     parser.add_argument('version')
 
     args = parser.parse_args()
@@ -228,12 +210,13 @@ def main():
     should_publish = args.upload
     version = args.version
     path = args.path
+    start_from = args.start_from
 
     if not path:
         path = os.getcwd()
 
     pod_manager = PodManager(path, version, should_publish)
-    pod_manager.go()
+    pod_manager.go(start_from)
 
     return 0
 
