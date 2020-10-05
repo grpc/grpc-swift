@@ -51,6 +51,24 @@ class ChannelTransportTests: GRPCTestCase {
     return transport
   }
 
+  private func makeTransport(
+    on eventLoop: EventLoop,
+    container: ResponsePartContainer<Response>,
+    deadline: NIODeadline = .distantFuture,
+    channelProvider: @escaping (ChannelTransport<Request, Response>, EventLoopPromise<Channel>)
+      -> Void
+  ) -> ChannelTransport<Request, Response> {
+    let transport = ChannelTransport<Request, Response>(
+      eventLoop: eventLoop,
+      responseContainer: container,
+      timeLimit: .deadline(deadline),
+      errorDelegate: nil,
+      logger: self.logger,
+      channelProvider: channelProvider
+    )
+    return transport
+  }
+
   private func makeRequestHead() -> _GRPCRequestHead {
     return _GRPCRequestHead(
       method: "POST",
@@ -355,6 +373,21 @@ class ChannelTransportTests: GRPCTestCase {
     )
     // Except the status, that will never fail.
     XCTAssertNoThrow(try transport.responseContainer.lazyStatusPromise.getFutureResult().wait())
+  }
+
+  func testChannelFutureError() throws {
+    let channel = EmbeddedChannel()
+    let container = ResponsePartContainer<Response>(eventLoop: channel.eventLoop) {
+      XCTFail("No response expected but got: \($0)")
+    }
+
+    struct DoomedChannelError: Error {}
+    let transport = self.makeTransport(on: channel.eventLoop, container: container) { _, promise in
+      promise.fail(GRPCStatus(code: .unavailable, message: "\(DoomedChannelError())"))
+    }
+
+    let status = try transport.responseContainer.lazyStatusPromise.getFutureResult().wait()
+    XCTAssertEqual(status, GRPCStatus(code: .unavailable, message: "\(DoomedChannelError())"))
   }
 
   // MARK: - Test Transport after Shutdown

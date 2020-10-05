@@ -116,6 +116,21 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
     context.fireUserInboundEventTriggered(event)
   }
 
+  func errorCaught(context: ChannelHandlerContext, error: Error) {
+    switch (self.mode, self.state) {
+    case let (.client(manager), .notReady),
+         let (.client(manager), .ready):
+      // We're most likely about to become inactive: let the manager know the reason why.
+      manager.channelError(error)
+
+    case (.client, .closed),
+         (.server, _):
+      ()
+    }
+
+    context.fireErrorCaught(error)
+  }
+
   func channelActive(context: ChannelHandlerContext) {
     switch (self.mode, self.state) {
     // The client should become active: we'll only schedule the idling when the channel
