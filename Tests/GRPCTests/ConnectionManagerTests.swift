@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import EchoModel
 @testable import GRPC
 import NIO
 import NIOHTTP2
@@ -793,7 +794,9 @@ extension ConnectionManagerTests {
     let optimisticChannel = manager.getOptimisticChannel()
     self.loop.run()
 
-    XCTAssertThrowsError(try optimisticChannel.wait())
+    XCTAssertThrowsError(try optimisticChannel.wait()) { error in
+      XCTAssertTrue(error is DoomedChannelError)
+    }
   }
 
   func testOptimisticChannelFromShutdown() throws {
