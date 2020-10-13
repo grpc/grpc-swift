@@ -15,21 +15,21 @@
  */
 
 extension Grpc_Testing_ServerType: CustomStringConvertible {
-    /// Text descriptions for the server types.
-    public var description: String {
-        switch self {
-        case .syncServer:
-            return "syncServer"
-        case .asyncServer:
-            return "asyncServer"
-        case .asyncGenericServer:
-            return "asyncGenericServer"
-        case .otherServer:
-            return "otherServer"
-        case .callbackServer:
-            return "callbackServer"
-        case .UNRECOGNIZED(let value):
-            return "unrecognised\(value)"
-        }
+  /// Text descriptions for the server types.
+  public var description: String {
+    switch self {
+    case .syncServer:
+      return "syncServer"
+    case .asyncServer:
+      return "asyncServer"
+    case .asyncGenericServer:
+      return "asyncGenericServer"
+    case .otherServer:
+      return "otherServer"
+    case .callbackServer:
+      return "callbackServer"
+    case let .UNRECOGNIZED(value):
+      return "unrecognised\(value)"
     }
+  }
 }

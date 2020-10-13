@@ -19,105 +19,105 @@ import GRPC
 import XCTest
 
 class StatusCountsTests: XCTestCase {
-    func testIgnoreOK() {
-        var statusCounts = StatusCounts()
-        statusCounts.add(status: .ok)
-        XCTAssertEqual(statusCounts.counts.count, 0)
+  func testIgnoreOK() {
+    var statusCounts = StatusCounts()
+    statusCounts.add(status: .ok)
+    XCTAssertEqual(statusCounts.counts.count, 0)
+  }
+
+  func testMessageBuilding() {
+    var statusCounts = StatusCounts()
+    statusCounts.add(status: .aborted)
+    statusCounts.add(status: .aborted)
+    statusCounts.add(status: .alreadyExists)
+
+    let counts = statusCounts.counts
+    XCTAssertEqual(counts.count, 2)
+    for stat in counts {
+      switch stat.key {
+      case GRPCStatus.Code.aborted.rawValue:
+        XCTAssertEqual(stat.value, 2)
+      case GRPCStatus.Code.alreadyExists.rawValue:
+        XCTAssertEqual(stat.value, 1)
+      default:
+        XCTAssertTrue(false)
+      }
     }
+  }
 
-    func testMessageBuilding() {
-        var statusCounts = StatusCounts()
-        statusCounts.add(status: .aborted)
-        statusCounts.add(status: .aborted)
-        statusCounts.add(status: .alreadyExists)
+  func testMergeEmpty() {
+    var statusCounts = StatusCounts()
+    statusCounts.add(status: .aborted)
+    statusCounts.add(status: .aborted)
+    statusCounts.add(status: .alreadyExists)
 
-        let counts = statusCounts.counts
-        XCTAssertEqual(counts.count, 2)
-        for stat in counts {
-            switch stat.key {
-            case GRPCStatus.Code.aborted.rawValue:
-                XCTAssertEqual(stat.value, 2)
-            case GRPCStatus.Code.alreadyExists.rawValue:
-                XCTAssertEqual(stat.value, 1)
-            default:
-                XCTAssertTrue(false)
-            }
-        }
+    let otherCounts = StatusCounts()
+
+    statusCounts.merge(source: otherCounts)
+
+    let counts = statusCounts.counts
+    XCTAssertEqual(counts.count, 2)
+    for stat in counts {
+      switch stat.key {
+      case GRPCStatus.Code.aborted.rawValue:
+        XCTAssertEqual(stat.value, 2)
+      case GRPCStatus.Code.alreadyExists.rawValue:
+        XCTAssertEqual(stat.value, 1)
+      default:
+        XCTAssertTrue(false)
+      }
     }
+  }
 
-    func testMergeEmpty() {
-        var statusCounts = StatusCounts()
-        statusCounts.add(status: .aborted)
-        statusCounts.add(status: .aborted)
-        statusCounts.add(status: .alreadyExists)
+  func testMergeToEmpty() {
+    var statusCounts = StatusCounts()
 
-        let otherCounts = StatusCounts()
+    var otherCounts = StatusCounts()
+    otherCounts.add(status: .aborted)
+    otherCounts.add(status: .aborted)
+    otherCounts.add(status: .alreadyExists)
 
-        statusCounts.merge(source: otherCounts)
+    statusCounts.merge(source: otherCounts)
 
-        let counts = statusCounts.counts
-        XCTAssertEqual(counts.count, 2)
-        for stat in counts {
-            switch stat.key {
-            case GRPCStatus.Code.aborted.rawValue:
-                XCTAssertEqual(stat.value, 2)
-            case GRPCStatus.Code.alreadyExists.rawValue:
-                XCTAssertEqual(stat.value, 1)
-            default:
-                XCTAssertTrue(false)
-            }
-        }
+    let counts = statusCounts.counts
+    XCTAssertEqual(counts.count, 2)
+    for stat in counts {
+      switch stat.key {
+      case GRPCStatus.Code.aborted.rawValue:
+        XCTAssertEqual(stat.value, 2)
+      case GRPCStatus.Code.alreadyExists.rawValue:
+        XCTAssertEqual(stat.value, 1)
+      default:
+        XCTAssertTrue(false)
+      }
     }
+  }
 
-    func testMergeToEmpty() {
-        var statusCounts = StatusCounts()
+  func testMerge() {
+    var statusCounts = StatusCounts()
+    statusCounts.add(status: .aborted)
+    statusCounts.add(status: .aborted)
+    statusCounts.add(status: .alreadyExists)
 
-        var otherCounts = StatusCounts()
-        otherCounts.add(status: .aborted)
-        otherCounts.add(status: .aborted)
-        otherCounts.add(status: .alreadyExists)
+    var otherCounts = StatusCounts()
+    otherCounts.add(status: .alreadyExists)
+    otherCounts.add(status: .dataLoss)
 
-        statusCounts.merge(source: otherCounts)
+    statusCounts.merge(source: otherCounts)
 
-        let counts = statusCounts.counts
-        XCTAssertEqual(counts.count, 2)
-        for stat in counts {
-            switch stat.key {
-            case GRPCStatus.Code.aborted.rawValue:
-                XCTAssertEqual(stat.value, 2)
-            case GRPCStatus.Code.alreadyExists.rawValue:
-                XCTAssertEqual(stat.value, 1)
-            default:
-                XCTAssertTrue(false)
-            }
-        }
+    let counts = statusCounts.counts
+    XCTAssertEqual(counts.count, 3)
+    for stat in counts {
+      switch stat.key {
+      case GRPCStatus.Code.aborted.rawValue:
+        XCTAssertEqual(stat.value, 2)
+      case GRPCStatus.Code.alreadyExists.rawValue:
+        XCTAssertEqual(stat.value, 2)
+      case GRPCStatus.Code.dataLoss.rawValue:
+        XCTAssertEqual(stat.value, 1)
+      default:
+        XCTAssertTrue(false)
+      }
     }
-
-    func testMerge() {
-        var statusCounts = StatusCounts()
-        statusCounts.add(status: .aborted)
-        statusCounts.add(status: .aborted)
-        statusCounts.add(status: .alreadyExists)
-
-        var otherCounts = StatusCounts()
-        otherCounts.add(status: .alreadyExists)
-        otherCounts.add(status: .dataLoss)
-
-        statusCounts.merge(source: otherCounts)
-
-        let counts = statusCounts.counts
-        XCTAssertEqual(counts.count, 3)
-        for stat in counts {
-            switch stat.key {
-            case GRPCStatus.Code.aborted.rawValue:
-                XCTAssertEqual(stat.value, 2)
-            case GRPCStatus.Code.alreadyExists.rawValue:
-                XCTAssertEqual(stat.value, 2)
-            case GRPCStatus.Code.dataLoss.rawValue:
-                XCTAssertEqual(stat.value, 1)
-            default:
-                XCTAssertTrue(false)
-            }
-        }
-    }
+  }
 }

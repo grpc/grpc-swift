@@ -16,101 +16,108 @@
 
 import Foundation
 
-struct HistorgramShapeMismatch: Error {
-}
+struct HistorgramShapeMismatch: Error {}
 
 /// Histograms are stored with exponentially increasing bucket sizes.
 /// The first bucket is [0, `multiplier`) where `multiplier` = 1 + resolution
 /// Bucket n (n>=1) contains [`multiplier`**n, `multiplier`**(n+1))
 /// There are sufficient buckets to reach max_bucket_start
 public struct Histogram {
-    public private(set) var sum: Double
-    public private(set) var sumOfSquares: Double
-    public private(set) var countOfValuesSeen: Double
-    private var multiplier: Double
-    private var oneOnLogMultiplier: Double
-    public private(set) var minSeen: Double
-    public private(set) var maxSeen: Double
-    private var maxPossible: Double
-    public private(set) var buckets: [UInt32]
+  public private(set) var sum: Double
+  public private(set) var sumOfSquares: Double
+  public private(set) var countOfValuesSeen: Double
+  private var multiplier: Double
+  private var oneOnLogMultiplier: Double
+  public private(set) var minSeen: Double
+  public private(set) var maxSeen: Double
+  private var maxPossible: Double
+  public private(set) var buckets: [UInt32]
 
-    /// Initialise a histogram.
-    /// - parameters:
-    ///     - resolution: Defines the with of the buckets - see the description of this structure.
-    ///     - maxBucketStart: Defines the start of the greatest valued bucket.
-    public init(resolution: Double = 0.01, maxBucketStart: Double = 60e9) {
-        precondition(resolution > 0.0)
-        precondition(maxBucketStart > resolution)
-        self.sum = 0.0
-        self.sumOfSquares = 0.0
-        self.multiplier = 1.0 + resolution
-        self.oneOnLogMultiplier = 1.0 / log(1.0 + resolution)
-        self.maxPossible = maxBucketStart
-        self.countOfValuesSeen = 0.0
-        self.minSeen = maxBucketStart
-        self.maxSeen = 0.0
-        let numBuckets = Histogram.bucketForUnchecked(value: maxBucketStart,
-                                                      oneOnLogMultiplier: self.oneOnLogMultiplier) + 1
-        precondition(numBuckets > 1)
-        precondition(numBuckets < 100000000)
-        self.buckets = .init(repeating: 0, count: numBuckets)
+  /// Initialise a histogram.
+  /// - parameters:
+  ///     - resolution: Defines the with of the buckets - see the description of this structure.
+  ///     - maxBucketStart: Defines the start of the greatest valued bucket.
+  public init(resolution: Double = 0.01, maxBucketStart: Double = 60e9) {
+    precondition(resolution > 0.0)
+    precondition(maxBucketStart > resolution)
+    self.sum = 0.0
+    self.sumOfSquares = 0.0
+    self.multiplier = 1.0 + resolution
+    self.oneOnLogMultiplier = 1.0 / log(1.0 + resolution)
+    self.maxPossible = maxBucketStart
+    self.countOfValuesSeen = 0.0
+    self.minSeen = maxBucketStart
+    self.maxSeen = 0.0
+    let numBuckets = Histogram.bucketForUnchecked(
+      value: maxBucketStart,
+      oneOnLogMultiplier: self.oneOnLogMultiplier
+    ) + 1
+    precondition(numBuckets > 1)
+    precondition(numBuckets < 100_000_000)
+    self.buckets = .init(repeating: 0, count: numBuckets)
+  }
+
+  /// Determine a bucket index given a value - does no bounds checking
+  private static func bucketForUnchecked(value: Double, oneOnLogMultiplier: Double) -> Int {
+    return Int(log(value) * oneOnLogMultiplier)
+  }
+
+  private func bucketFor(value: Double) -> Int {
+    let bucket = Histogram.bucketForUnchecked(
+      value: Histogram.clamp(
+        value: value,
+        minAllowed: 0,
+        maxAllowed: self
+          .maxPossible
+      ),
+      oneOnLogMultiplier: self.oneOnLogMultiplier
+    )
+    assert(bucket < self.buckets.count)
+    assert(bucket >= 0)
+    return bucket
+  }
+
+  private static func clamp(value: Double, minAllowed: Double, maxAllowed: Double) -> Double {
+    return min(maxAllowed, max(minAllowed, value))
+  }
+
+  /// Add a value to this histogram, updating buckets and stats
+  /// - parameters:
+  ///     - value: The value to add.
+  public mutating func add(value: Double) {
+    self.sum += value
+    self.sumOfSquares += value * value
+    self.countOfValuesSeen += 1
+    if value < self.minSeen {
+      self.minSeen = value
+    }
+    if value > self.maxSeen {
+      self.maxSeen = value
+    }
+    self.buckets[self.bucketFor(value: value)] += 1
+  }
+
+  /// Merge two histograms together updating `self`
+  /// - parameters:
+  ///    - source: the other histogram to merge into this.
+  public mutating func merge(source: Histogram) throws {
+    guard (self.buckets.count == source.buckets.count) ||
+      (self.multiplier == source.multiplier) else {
+      // Fail because these histograms don't match.
+      throw HistorgramShapeMismatch()
     }
 
-    /// Determine a bucket index given a value - does no bounds checking
-    private static func bucketForUnchecked(value: Double, oneOnLogMultiplier: Double) -> Int {
-        return Int(log(value) * oneOnLogMultiplier)
+    self.sum += source.sum
+    self.sumOfSquares += source.sumOfSquares
+    self.countOfValuesSeen += source.countOfValuesSeen
+    if source.minSeen < self.minSeen {
+      self.minSeen = source.minSeen
     }
-
-    private func bucketFor(value: Double) -> Int {
-        let bucket = Histogram.bucketForUnchecked(value: Histogram.clamp(value: value,
-                                                                         minAllowed: 0,
-                                                                         maxAllowed: self.maxPossible),
-                                                  oneOnLogMultiplier: self.oneOnLogMultiplier)
-        assert(bucket < self.buckets.count)
-        assert(bucket >= 0)
-        return bucket
+    if source.maxSeen > self.maxSeen {
+      self.maxSeen = source.maxSeen
     }
-
-    private static func clamp(value: Double, minAllowed: Double, maxAllowed: Double) -> Double {
-        return min(maxAllowed, max(minAllowed, value))
+    for bucket in 0 ..< self.buckets.count {
+      self.buckets[bucket] += source.buckets[bucket]
     }
-
-    /// Add a value to this histogram, updating buckets and stats
-    /// - parameters:
-    ///     - value: The value to add.
-    public mutating func add(value: Double) {
-        self.sum += value
-        self.sumOfSquares += value * value
-        self.countOfValuesSeen += 1
-        if (value < self.minSeen) {
-            self.minSeen = value
-        }
-        if (value > self.maxSeen) {
-            self.maxSeen = value
-        }
-        self.buckets[self.bucketFor(value: value)] += 1
-    }
-
-    /// Merge two histograms together updating `self`
-    /// - parameters:
-    ///    - source: the other histogram to merge into this.
-    public mutating func merge(source: Histogram) throws {
-        guard (self.buckets.count == source.buckets.count) || (self.multiplier == source.multiplier) else {
-            // Fail because these histograms don't match.
-            throw HistorgramShapeMismatch()
-        }
-
-        self.sum += source.sum
-        self.sumOfSquares += source.sumOfSquares
-        self.countOfValuesSeen += source.countOfValuesSeen
-        if (source.minSeen < self.minSeen) {
-            self.minSeen = source.minSeen
-        }
-        if (source.maxSeen > self.maxSeen) {
-            self.maxSeen = source.maxSeen
-        }
-        for bucket in 0..<self.buckets.count {
-            self.buckets[bucket] += source.buckets[bucket]
-        }
-    }
+  }
 }

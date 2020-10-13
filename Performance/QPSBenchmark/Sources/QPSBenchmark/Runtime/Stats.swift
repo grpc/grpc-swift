@@ -19,37 +19,37 @@ import NIOConcurrencyHelpers
 
 /// Convenience holder for collected statistics.
 struct Stats {
-    /// Latency statistics.
-    var latencies = Histogram()
-    /// Error status counts.
-    var statuses = StatusCounts()
+  /// Latency statistics.
+  var latencies = Histogram()
+  /// Error status counts.
+  var statuses = StatusCounts()
 }
 
 /// Stats with access controlled by a lock -
 /// Needs locking rather than event loop hopping as the driver refuses to wait shutting
 /// the connection immediately after the request.
 struct StatsWithLock {
-    private var data = Stats()
-    private let lock = Lock()
+  private var data = Stats()
+  private let lock = Lock()
 
-    /// Record a latency value into the stats.
-    /// - parameters:
-    ///     - latency: The value to record.
-    mutating func add(latency: Double) {
-        self.lock.withLock { self.data.latencies.add(value: latency) }
-    }
+  /// Record a latency value into the stats.
+  /// - parameters:
+  ///     - latency: The value to record.
+  mutating func add(latency: Double) {
+    self.lock.withLock { self.data.latencies.add(value: latency) }
+  }
 
-    /// Copy the data out.
-    /// - parameters:
-    ///     - reset: If the statistics should be reset after collection or not.
-    /// - returns: A copy of the statistics.
-    mutating func copyData(reset: Bool) -> Stats {
-        return self.lock.withLock {
-            let result = self.data
-            if reset {
-                self.data = Stats()
-            }
-            return result
-        }
+  /// Copy the data out.
+  /// - parameters:
+  ///     - reset: If the statistics should be reset after collection or not.
+  /// - returns: A copy of the statistics.
+  mutating func copyData(reset: Bool) -> Stats {
+    return self.lock.withLock {
+      let result = self.data
+      if reset {
+        self.data = Stats()
+      }
+      return result
     }
+  }
 }

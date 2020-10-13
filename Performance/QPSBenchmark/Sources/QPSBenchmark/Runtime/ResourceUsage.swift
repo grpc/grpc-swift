@@ -25,26 +25,29 @@ let badOS = { fatalError("unsupported OS") }()
 import Foundation
 
 extension TimeInterval {
-    init(_ value: timeval) {
-        self.init(Double(value.tv_sec) + Double(value.tv_usec) * 1e-9)
-    }
+  init(_ value: timeval) {
+    self.init(Double(value.tv_sec) + Double(value.tv_usec) * 1e-9)
+  }
 }
 
 /// Holder for CPU time consumed.
 struct CPUTime {
-    /// Amount of user process time consumed.
-    var userTime: TimeInterval
-    /// Amount of system time consumed.
-    var systemTime: TimeInterval
+  /// Amount of user process time consumed.
+  var userTime: TimeInterval
+  /// Amount of system time consumed.
+  var systemTime: TimeInterval
 }
 
 /// Get resource usage for this process.
 /// - returns: The amount of CPU resource consumed.
 func getResourceUsage() -> CPUTime {
-    var usage = rusage()
-    if getrusage(RUSAGE_SELF, &usage) == 0 {
-        return CPUTime(userTime: TimeInterval(usage.ru_utime), systemTime: TimeInterval(usage.ru_stime))
-    } else {
-        return CPUTime(userTime: 0, systemTime: 0)
-    }
+  var usage = rusage()
+  if getrusage(RUSAGE_SELF, &usage) == 0 {
+    return CPUTime(
+      userTime: TimeInterval(usage.ru_utime),
+      systemTime: TimeInterval(usage.ru_stime)
+    )
+  } else {
+    return CPUTime(userTime: 0, systemTime: 0)
+  }
 }

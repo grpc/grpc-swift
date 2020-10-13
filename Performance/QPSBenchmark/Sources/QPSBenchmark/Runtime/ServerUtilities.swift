@@ -16,8 +16,8 @@
 
 /// Convenient set of information about a server.
 struct ServerInfo {
-    /// Number of threads.
-    var threadCount: Int
-    /// The port bound to.
-    var port: Int
+  /// Number of threads.
+  var threadCount: Int
+  /// The port bound to.
+  var port: Int
 }

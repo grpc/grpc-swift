@@ -15,52 +15,57 @@
  */
 
 import ArgumentParser
-import Logging
 import Lifecycle
+import Logging
 
 /// Main entry point to the QPS worker application.
 final class QPSWorkerApp: ParsableCommand {
-    @Option(name: .customLong("driver_port"), help: "Port for communication with driver.")
-    var driverPort: Int
+  @Option(name: .customLong("driver_port"), help: "Port for communication with driver.")
+  var driverPort: Int
 
-    @Option(name: .customLong("server_port"), help: "Port for operation as a server.")
-    var serverPort: Int?
+  @Option(name: .customLong("server_port"), help: "Port for operation as a server.")
+  var serverPort: Int?
 
-    @Option(name: .customLong("credential_type"), help: "Credential type for communication with driver.")
-    var credentialType: String = "todo"  // TODO:  Default to kInsecureCredentialsType
+  @Option(
+    name: .customLong("credential_type"),
+    help: "Credential type for communication with driver."
+  )
+  var credentialType: String = "todo" // TODO: Default to kInsecureCredentialsType
 
-    /// Run the application and wait for completion to be signalled.
-    func run() throws {
-        let logger = Logger(label: "QPSWorker")
-        logger.info("Starting...")
+  /// Run the application and wait for completion to be signalled.
+  func run() throws {
+    let logger = Logger(label: "QPSWorker")
+    logger.info("Starting...")
 
-        logger.info("Initializing the lifecycle container")
-        // This installs backtrace.
-        let lifecycle = ServiceLifecycle()
+    logger.info("Initializing the lifecycle container")
+    // This installs backtrace.
+    let lifecycle = ServiceLifecycle()
 
-        let qpsWorker = QPSWorker(driverPort: self.driverPort,
-                                  serverPort: self.serverPort)
-                                 // credentialType: self.credentialType)
-        qpsWorker.start(onQuit: { () in lifecycle.shutdown() })
+    let qpsWorker = QPSWorker(
+      driverPort: self.driverPort,
+      serverPort: self.serverPort
+    )
+    // credentialType: self.credentialType)
+    qpsWorker.start(onQuit: { () in lifecycle.shutdown() })
 
-        lifecycle.registerShutdown(label: "QPSWorker", .sync {
-            () in try qpsWorker.syncShutdown()
-        })
+    lifecycle.registerShutdown(label: "QPSWorker", .sync {
+      () in try qpsWorker.syncShutdown()
+    })
 
-        lifecycle.start { error in
-            // Start completion handler.
-            // if a startup error occurred you can capture it here
-            if let error = error {
-                logger.error("failed starting \(self) ☠️: \(error)")
-            } else {
-                logger.info("\(self) started successfully 🚀")
-            }
-        }
-
-        lifecycle.wait()
-
-        logger.info("Worker has finished.")
+    lifecycle.start { error in
+      // Start completion handler.
+      // if a startup error occurred you can capture it here
+      if let error = error {
+        logger.error("failed starting \(self) ☠️: \(error)")
+      } else {
+        logger.info("\(self) started successfully 🚀")
+      }
     }
+
+    lifecycle.wait()
+
+    logger.info("Worker has finished.")
+  }
 }
 
 QPSWorkerApp.main()

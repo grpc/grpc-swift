@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-import NIO
 import GRPC
+import NIO
 
 /// Interface server types must implement.
 protocol QpsServer {
-    /// Send the status of the current test
-    /// - parameters:
-    ///     - reset: Indicates if the stats collection should be reset after publication or not.
-    ///     - context: Context to describe where to send the status to.
-    func sendStatus(reset: Bool, context: StreamingResponseCallContext<Grpc_Testing_ServerStatus>)
+  /// Send the status of the current test
+  /// - parameters:
+  ///     - reset: Indicates if the stats collection should be reset after publication or not.
+  ///     - context: Context to describe where to send the status to.
+  func sendStatus(reset: Bool, context: StreamingResponseCallContext<Grpc_Testing_ServerStatus>)
 
-    /// Shutdown the service.
-    /// - parameters:
-    ///     - callbackLoop: Which eventloop should be called back on completion.
-    /// - returns: A future on the `callbackLoop` which will succeed on completion of shutdown.
-    func shutdown(callbackLoop: EventLoop) -> EventLoopFuture<Void>
+  /// Shutdown the service.
+  /// - parameters:
+  ///     - callbackLoop: Which eventloop should be called back on completion.
+  /// - returns: A future on the `callbackLoop` which will succeed on completion of shutdown.
+  func shutdown(callbackLoop: EventLoop) -> EventLoopFuture<Void>
 }

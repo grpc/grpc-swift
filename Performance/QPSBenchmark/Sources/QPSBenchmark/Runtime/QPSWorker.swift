@@ -14,57 +14,60 @@
  * limitations under the License.
  */
 
-import NIO
 import GRPC
 import Logging
+import NIO
 
 /// Sets up and runs a worker service which listens for instructions on what tests to run.
 /// Currently doesn't understand TLS.
 class QPSWorker {
-    private var driverPort: Int
-    private var serverPort: Int?
+  private var driverPort: Int
+  private var serverPort: Int?
 
-    /// Initialise.
-    /// - parameters:
-    ///     - driverPort: Port to listen for instructions on.
-    ///     - serverPort: Possible override for the port the testing will actually occur on - usually supplied by the driver process.
-    init(driverPort: Int, serverPort: Int?) {
-        self.driverPort = driverPort
-        self.serverPort = serverPort
-    }
+  /// Initialise.
+  /// - parameters:
+  ///     - driverPort: Port to listen for instructions on.
+  ///     - serverPort: Possible override for the port the testing will actually occur on - usually supplied by the driver process.
+  init(driverPort: Int, serverPort: Int?) {
+    self.driverPort = driverPort
+    self.serverPort = serverPort
+  }
 
-    private let logger = Logger(label: "QPSWorker")
+  private let logger = Logger(label: "QPSWorker")
 
-    private var eventLoopGroup: MultiThreadedEventLoopGroup?
-    private var server: EventLoopFuture<Server>?
-    private var workEndFuture: EventLoopFuture<Void>? = nil
+  private var eventLoopGroup: MultiThreadedEventLoopGroup?
+  private var server: EventLoopFuture<Server>?
+  private var workEndFuture: EventLoopFuture<Void>?
 
-    /// Start up the server which listens for instructions from the driver.
-    /// - parameters:
-    ///     - onQuit: Function to call when the driver has indicated that the server should exit.
-    func start(onQuit: @escaping () -> ()) {
-        precondition(self.eventLoopGroup == nil)
-        self.logger.info("Starting")
-        let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-        self.eventLoopGroup = eventLoopGroup
+  /// Start up the server which listens for instructions from the driver.
+  /// - parameters:
+  ///     - onQuit: Function to call when the driver has indicated that the server should exit.
+  func start(onQuit: @escaping () -> Void) {
+    precondition(self.eventLoopGroup == nil)
+    self.logger.info("Starting")
+    let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    self.eventLoopGroup = eventLoopGroup
 
-        let workEndPromise: EventLoopPromise<Void> = eventLoopGroup.next().makePromise()
-        workEndPromise.futureResult.whenSuccess(onQuit)
-        let workerService = WorkerServiceImpl(finishedPromise: workEndPromise, serverPortOverride: self.serverPort)
+    let workEndPromise: EventLoopPromise<Void> = eventLoopGroup.next().makePromise()
+    workEndPromise.futureResult.whenSuccess(onQuit)
+    let workerService = WorkerServiceImpl(
+      finishedPromise: workEndPromise,
+      serverPortOverride: self.serverPort
+    )
 
-        // Start the server.
-        self.logger.info("Binding to localhost", metadata: ["driverPort": "\(self.driverPort)"])
-        self.server = Server.insecure(group: eventLoopGroup)
-          .withServiceProviders([workerService])
-            .withLogger(Logger(label: "GRPC"))
-            .bind(host: "localhost", port: self.driverPort)
-    }
+    // Start the server.
+    self.logger.info("Binding to localhost", metadata: ["driverPort": "\(self.driverPort)"])
+    self.server = Server.insecure(group: eventLoopGroup)
+      .withServiceProviders([workerService])
+      .withLogger(Logger(label: "GRPC"))
+      .bind(host: "localhost", port: self.driverPort)
+  }
 
-    /// Shutdown waiting for completion.
-    func syncShutdown() throws {
-        precondition(self.eventLoopGroup != nil)
-        self.logger.info("Stopping")
-        try self.eventLoopGroup?.syncShutdownGracefully()
-        self.logger.info("Stopped")
-    }
+  /// Shutdown waiting for completion.
+  func syncShutdown() throws {
+    precondition(self.eventLoopGroup != nil)
+    self.logger.info("Stopping")
+    try self.eventLoopGroup?.syncShutdownGracefully()
+    self.logger.info("Stopped")
+  }
 }

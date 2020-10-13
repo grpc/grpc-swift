@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-import Foundation
 import BenchmarkUtils
+import Foundation
 
 extension Grpc_Testing_HistogramData {
-    /// Construct a RPC histogram suitable for sending.
-    /// - parameters:
-    ///     - from: The internal histogram representation.
-    init(from: Histogram) {
-        self.init()
-        self.bucket = from.buckets
-        self.minSeen = from.minSeen
-        self.maxSeen = from.maxSeen
-        self.sum = from.sum
-        self.sumOfSquares = from.sumOfSquares
-        self.count = from.countOfValuesSeen
-    }
+  /// Construct a RPC histogram suitable for sending.
+  /// - parameters:
+  ///     - from: The internal histogram representation.
+  init(from: Histogram) {
+    self.init()
+    self.bucket = from.buckets
+    self.minSeen = from.minSeen
+    self.maxSeen = from.maxSeen
+    self.sum = from.sum
+    self.sumOfSquares = from.sumOfSquares
+    self.count = from.countOfValuesSeen
+  }
 }

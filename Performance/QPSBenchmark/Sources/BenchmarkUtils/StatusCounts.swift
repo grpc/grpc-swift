@@ -18,37 +18,34 @@ import GRPC
 
 /// Count the number seen of each status code.
 public struct StatusCounts {
-    public private(set) var counts: [Int: Int64] = [:]
+  public private(set) var counts: [Int: Int64] = [:]
 
-    public init() {
-    }
+  public init() {}
 
-    /// Add one to the count of this sort of status code.
-    /// - parameters:
-    ///     - status: The code to count.
-    public mutating func add(status: GRPCStatus.Code) {
-        // Only record failures
-        if status != .ok {
-            if let previousCount = self.counts[status.rawValue] {
-                self.counts[status.rawValue] = previousCount + 1
-            } else {
-                self.counts[status.rawValue] = 1
-            }
-        }
+  /// Add one to the count of this sort of status code.
+  /// - parameters:
+  ///     - status: The code to count.
+  public mutating func add(status: GRPCStatus.Code) {
+    // Only record failures
+    if status != .ok {
+      if let previousCount = self.counts[status.rawValue] {
+        self.counts[status.rawValue] = previousCount + 1
+      } else {
+        self.counts[status.rawValue] = 1
+      }
     }
+  }
 
-    /// Merge another set of counts into this one.
-    /// - parameters:
-    ///     - source: The other set of counts to merge into this.
-    public mutating func merge(source: StatusCounts) {
-        for sourceCount in source.counts {
-            if let existingCount = self.counts[sourceCount.key] {
-                self.counts[sourceCount.key] = existingCount + sourceCount.value
-            } else {
-                self.counts[sourceCount.key] = sourceCount.value
-            }
-        }
+  /// Merge another set of counts into this one.
+  /// - parameters:
+  ///     - source: The other set of counts to merge into this.
+  public mutating func merge(source: StatusCounts) {
+    for sourceCount in source.counts {
+      if let existingCount = self.counts[sourceCount.key] {
+        self.counts[sourceCount.key] = existingCount + sourceCount.value
+      } else {
+        self.counts[sourceCount.key] = sourceCount.value
+      }
     }
+  }
 }
-
-
