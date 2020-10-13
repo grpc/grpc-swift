@@ -19,17 +19,12 @@ import NIOHTTP1
 import NIOHTTP2
 
 /// Encapsulates the result of a gRPC call.
-///
-/// We use a `class` here for a couple of reasons:
-/// - The size of the equivalent `struct` is larger than the value buffer in an existential
-///   container so would incur a heap allocation each time a `GRPCStatus` is passed to a function
-///   taking an `Error`.
-/// - We aren't using value semantics (since all properties are constant).
-public final class GRPCStatus: Error {
-  /// The status code of the RPC.
-  public let code: Code
+public struct GRPCStatus: Error {
   /// The status message of the RPC.
-  public let message: String?
+  public var message: String?
+
+  /// The status code of the RPC.
+  public var code: Code
 
   /// Whether the status is '.ok'.
   public var isOk: Bool {
@@ -75,19 +70,25 @@ extension GRPCStatus {
   /// Status codes for gRPC operations (replicated from `status_code_enum.h` in the
   /// [gRPC core library](https://github.com/grpc/grpc)).
   public struct Code: Hashable, CustomStringConvertible {
-    public let rawValue: Int
+    // `rawValue` must be an `Int` for API reasons and we don't need (or want) to store anything so
+    // wide, a `UInt8` is fine.
+    private let _rawValue: UInt8
+
+    public var rawValue: Int {
+      return Int(self._rawValue)
+    }
 
     public init?(rawValue: Int) {
       switch rawValue {
       case 0 ... 16:
-        self.rawValue = rawValue
+        self._rawValue = UInt8(truncatingIfNeeded: rawValue)
       default:
         return nil
       }
     }
 
-    private init(_ code: Int) {
-      self.rawValue = code
+    private init(_ code: UInt8) {
+      self._rawValue = code
     }
 
     /// Not an error; returned on success.
@@ -199,41 +200,41 @@ extension GRPCStatus {
     public var description: String {
       switch self {
       case .ok:
-        return "ok (\(self.rawValue))"
+        return "ok (\(self._rawValue))"
       case .cancelled:
-        return "cancelled (\(self.rawValue))"
+        return "cancelled (\(self._rawValue))"
       case .unknown:
-        return "unknown (\(self.rawValue))"
+        return "unknown (\(self._rawValue))"
       case .invalidArgument:
-        return "invalid argument (\(self.rawValue))"
+        return "invalid argument (\(self._rawValue))"
       case .deadlineExceeded:
-        return "deadline exceeded (\(self.rawValue))"
+        return "deadline exceeded (\(self._rawValue))"
       case .notFound:
-        return "not found (\(self.rawValue))"
+        return "not found (\(self._rawValue))"
       case .alreadyExists:
-        return "already exists (\(self.rawValue))"
+        return "already exists (\(self._rawValue))"
       case .permissionDenied:
-        return "permission denied (\(self.rawValue))"
+        return "permission denied (\(self._rawValue))"
       case .resourceExhausted:
-        return "resource exhausted (\(self.rawValue))"
+        return "resource exhausted (\(self._rawValue))"
       case .failedPrecondition:
-        return "failed precondition (\(self.rawValue))"
+        return "failed precondition (\(self._rawValue))"
       case .aborted:
-        return "aborted (\(self.rawValue))"
+        return "aborted (\(self._rawValue))"
       case .outOfRange:
-        return "out of range (\(self.rawValue))"
+        return "out of range (\(self._rawValue))"
       case .unimplemented:
-        return "unimplemented (\(self.rawValue))"
+        return "unimplemented (\(self._rawValue))"
       case .internalError:
-        return "internal error (\(self.rawValue))"
+        return "internal error (\(self._rawValue))"
       case .unavailable:
-        return "unavailable (\(self.rawValue))"
+        return "unavailable (\(self._rawValue))"
       case .dataLoss:
-        return "data loss (\(self.rawValue))"
+        return "data loss (\(self._rawValue))"
       case .unauthenticated:
-        return "unauthenticated (\(self.rawValue))"
+        return "unauthenticated (\(self._rawValue))"
       default:
-        return String(describing: self.rawValue)
+        return String(describing: self._rawValue)
       }
     }
   }
