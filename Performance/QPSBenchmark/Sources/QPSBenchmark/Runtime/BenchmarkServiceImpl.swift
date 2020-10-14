@@ -19,14 +19,14 @@ import GRPC
 import NIO
 
 /// Implementation of asynchronous service for benchmarking.
-final class AsyncQpsServerImpl: Grpc_Testing_BenchmarkServiceProvider {
+final class AsyncQPSServerImpl: Grpc_Testing_BenchmarkServiceProvider {
   /// One request followed by one response.
   /// The server returns the client payload as-is.
   func unaryCall(request: Grpc_Testing_SimpleRequest,
                  context: StatusOnlyCallContext) -> EventLoopFuture<Grpc_Testing_SimpleResponse> {
     do {
       return context.eventLoop
-        .makeSucceededFuture(try AsyncQpsServerImpl.processSimpleRPC(request: request))
+        .makeSucceededFuture(try AsyncQPSServerImpl.processSimpleRPC(request: request))
     } catch {
       return context.eventLoop.makeFailedFuture(error)
     }
@@ -83,6 +83,8 @@ final class AsyncQpsServerImpl: Grpc_Testing_BenchmarkServiceProvider {
   private static func makePayload(type: Grpc_Testing_PayloadType,
                                   size: Int) throws -> Grpc_Testing_Payload {
     if type != .compressable {
+        // Making a payload which is not compressable is hard - and not implemented in
+        // other implementations too.
       throw GRPCStatus(code: .internalError, message: "Failed to make payload")
     }
     var payload = Grpc_Testing_Payload()

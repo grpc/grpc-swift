@@ -18,7 +18,7 @@ import GRPC
 import NIO
 
 /// Protocol which clients must implement.
-protocol QpsClient {
+protocol QPSClient {
   /// Send the status of the current test
   /// - parameters:
   ///     - reset: Indicates if the stats collection should be reset after publication or not.

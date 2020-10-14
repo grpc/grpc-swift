@@ -21,11 +21,11 @@ import Logging
 import NIO
 
 /// Client to make a series of asynchronous unary calls.
-final class AsyncUnaryQpsClient: QpsClient {
+final class AsyncUnaryQPSClient: QPSClient {
   private let eventLoopGroup: MultiThreadedEventLoopGroup
   private let threadCount: Int
 
-  private let logger = Logger(label: "AsyncQpsClient")
+  private let logger = Logger(label: "AsyncQPSClient")
 
   private let channelRepeaters: [ChannelRepeater]
 
@@ -38,29 +38,27 @@ final class AsyncUnaryQpsClient: QpsClient {
   init(config: Grpc_Testing_ClientConfig) throws {
     // Parse possible invalid targets before code with side effects.
     let serverTargets = try config.parsedServerTargets()
+    precondition(serverTargets.count > 0)
 
     // Setup threads
     let threadCount = config.threadsToUse()
     self.threadCount = threadCount
-    self.logger.info("Sizing AsyncQpsClient", metadata: ["threads": "\(threadCount)"])
-    self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: threadCount)
+    self.logger.info("Sizing AsyncQPSClient", metadata: ["threads": "\(threadCount)"])
+    let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: threadCount)
+    self.eventLoopGroup = eventLoopGroup
 
     // Start recording stats.
     self.statsPeriodStart = grpcTimeNow()
     self.cpuStatsPeriodStart = getResourceUsage()
 
     // Start the requested number of channels.
-    precondition(serverTargets.count > 0)
-    var channelRepeaters: [ChannelRepeater] = []
-    for channelNumber in 0 ..< Int(config.clientChannels) {
-      channelRepeaters
-        .append(ChannelRepeater(
+    self.channelRepeaters = (0..<Int(config.clientChannels)).map { channelNumber in
+        ChannelRepeater(
           target: serverTargets[channelNumber % serverTargets.count],
           config: config,
-          eventLoopGroup: self.eventLoopGroup
-        ))
+          eventLoopGroup: eventLoopGroup
+        )
     }
-    self.channelRepeaters = channelRepeaters
 
     // Start the train.
     for channelRepeater in self.channelRepeaters {
@@ -108,13 +106,8 @@ final class AsyncUnaryQpsClient: QpsClient {
   func shutdown(callbackLoop: EventLoop) -> EventLoopFuture<Void> {
     let promise: EventLoopPromise<Void> = callbackLoop.makePromise()
     let stoppedFutures = self.channelRepeaters.map { repeater in repeater.stop() }
-    let allStopped = EventLoopFuture<Void>.reduce(
-      (),
-      stoppedFutures,
-      on: callbackLoop,
-      { (_, _) -> Void in () }
-    )
-    _ = allStopped.always { _ in
+    let allStopped = EventLoopFuture.andAllComplete(stoppedFutures, on: callbackLoop)
+    return allStopped.flatMap { _ in
       self.eventLoopGroup.shutdownGracefully { error in
         if let error = error {
           promise.fail(error)
@@ -122,8 +115,8 @@ final class AsyncUnaryQpsClient: QpsClient {
           promise.succeed(())
         }
       }
+      return promise.futureResult
     }
-    return promise.futureResult
   }
 
   /// Class to manage a channel.  Repeatedly makes requests on that channel and records what happens.
@@ -169,12 +162,12 @@ final class AsyncUnaryQpsClient: QpsClient {
         return
       }
       let startTime = grpcTimeNow()
-      let request = try ChannelRepeater.createClientRequest(payloadConfig: self.payloadConfig)
+      let request = try ChannelRepeater.makeClientRequest(payloadConfig: self.payloadConfig)
       self.numberOfOutstandingRequests += 1
       let result = self.client.unaryCall(request)
 
       // Wait for the request to complete.
-      _ = result.status.map { status in
+      result.status.whenSuccess { status in
         self.numberOfOutstandingRequests -= 1
         if status.isOk {
           let endTime = grpcTimeNow()
@@ -206,7 +199,7 @@ final class AsyncUnaryQpsClient: QpsClient {
       return self.stats.copyData(reset: reset)
     }
 
-    private static func createClientRequest(payloadConfig: Grpc_Testing_PayloadConfig) throws
+    private static func makeClientRequest(payloadConfig: Grpc_Testing_PayloadConfig) throws
       -> Grpc_Testing_SimpleRequest {
       if let payload = payloadConfig.payload {
         switch payload {
@@ -273,10 +266,10 @@ final class AsyncUnaryQpsClient: QpsClient {
 /// - parameters:
 ///     - config: Description of the client required.
 /// - returns: The client created.
-func createAsyncClient(config: Grpc_Testing_ClientConfig) throws -> QpsClient {
+func makeAsyncClient(config: Grpc_Testing_ClientConfig) throws -> QPSClient {
   switch config.rpcType {
   case .unary:
-    return try AsyncUnaryQpsClient(config: config)
+    return try AsyncUnaryQPSClient(config: config)
   case .streaming:
     throw GRPCStatus(code: .unimplemented, message: "Client Type not implemented")
   case .streamingFromClient:

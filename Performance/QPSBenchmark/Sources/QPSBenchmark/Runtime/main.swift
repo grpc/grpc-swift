@@ -46,10 +46,12 @@ final class QPSWorkerApp: ParsableCommand {
       serverPort: self.serverPort
     )
     // credentialType: self.credentialType)
-    qpsWorker.start(onQuit: { () in lifecycle.shutdown() })
+    qpsWorker.start {
+        lifecycle.shutdown()
+    }
 
     lifecycle.registerShutdown(label: "QPSWorker", .sync {
-      () in try qpsWorker.syncShutdown()
+      try qpsWorker.syncShutdown()
     })
 
     lifecycle.start { error in

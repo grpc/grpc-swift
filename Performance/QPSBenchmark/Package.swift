@@ -38,7 +38,7 @@ let package = Package(
     .target(name: "QPSBenchmark", dependencies: [
       "GRPC",
       "NIO",
-      .product(name: "ArgumentParser", package: "swift-argument-parser"),
+      "ArgumentParser",
       "Logging",
       "Lifecycle",
       "SwiftProtobuf",

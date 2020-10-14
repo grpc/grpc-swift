@@ -20,7 +20,7 @@ import Logging
 import NIO
 
 /// Server setup for asynchronous requests.
-final class AsyncQpsServer: QpsServer {
+final class AsyncQPSServer: QPSServer {
   private let eventLoopGroup: MultiThreadedEventLoopGroup
   private let server: EventLoopFuture<Server>
   private let threadCount: Int
@@ -28,7 +28,7 @@ final class AsyncQpsServer: QpsServer {
   private var statsPeriodStart: Date
   private var cpuStatsPeriodStart: CPUTime
 
-  private let logger = Logger(label: "AsyncQpsServer")
+  private let logger = Logger(label: "AsyncQPSServer")
 
   /// Initialisation.
   /// - parameters:
@@ -39,14 +39,14 @@ final class AsyncQpsServer: QpsServer {
     let threadCount = config.asyncServerThreads > 0 ? Int(config.asyncServerThreads) : System
       .coreCount
     self.threadCount = threadCount
-    self.logger.info("Sizing AsyncQpsServer", metadata: ["threads": "\(threadCount)"])
+    self.logger.info("Sizing AsyncQPSServer", metadata: ["threads": "\(threadCount)"])
     self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: threadCount)
 
     // Start stats gathering.
     self.statsPeriodStart = grpcTimeNow()
     self.cpuStatsPeriodStart = getResourceUsage()
 
-    let workerService = AsyncQpsServerImpl()
+    let workerService = AsyncQPSServerImpl()
 
     // Start the server.
     self.server = Server.insecure(group: self.eventLoopGroup)
@@ -90,9 +90,9 @@ final class AsyncQpsServer: QpsServer {
   func shutdown(callbackLoop: EventLoop) -> EventLoopFuture<Void> {
     let promise: EventLoopPromise<Void> = callbackLoop.makePromise()
 
-    _ = self.server.map {
+    return self.server.map {
       server in server.close()
-    }.always { _ in
+    }.flatMap { _ in
       self.eventLoopGroup.shutdownGracefully { error in
         if let error = error {
           promise.fail(error)
@@ -100,7 +100,7 @@ final class AsyncQpsServer: QpsServer {
           promise.succeed(())
         }
       }
+      return promise.futureResult
     }
-    return promise.futureResult
   }
 }

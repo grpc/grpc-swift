@@ -50,7 +50,7 @@ class HistogramTests: XCTestCase {
         XCTAssertFalse(twoSeen)
         twoSeen = true
       default:
-        XCTAssertTrue(false)
+        XCTAssertFail()
       }
     }
     XCTAssertTrue(oneSeen)
@@ -93,7 +93,7 @@ class HistogramTests: XCTestCase {
         XCTAssertFalse(threeSeen)
         threeSeen = true
       default:
-        XCTAssertTrue(false)
+        XCTAssertFail()
       }
     }
     XCTAssertTrue(oneSeen)

@@ -22,8 +22,8 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
   private let finishedPromise: EventLoopPromise<Void>
   private let serverPortOverride: Int?
 
-  private var runningServer: QpsServer?
-  private var runningClient: QpsClient?
+  private var runningServer: QPSServer?
+  private var runningClient: QPSClient?
 
   /// Initialise.
   /// - parameters:
@@ -46,9 +46,8 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
     return context.eventLoop.makeSucceededFuture({ event in
       switch event {
       case let .message(serverArgs):
-        if let argType = serverArgs.argtype {
-          switch argType {
-          case let .setup(serverConfig):
+          switch serverArgs.argtype {
+          case .some(.setup(let serverConfig)):
             context.logger.info("server setup requested")
             guard self.runningServer == nil else {
               context.logger.error("server already running")
@@ -60,7 +59,7 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
               return
             }
             self.runServerBody(context: context, serverConfig: serverConfig)
-          case let .mark(mark):
+          case .some(.mark(let mark)):
             context.logger.info("server mark requested")
             guard let runningServer = self.runningServer else {
               context.logger.error("server not running")
@@ -72,8 +71,9 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
               return
             }
             runningServer.sendStatus(reset: mark.reset, context: context)
+          case .none:
+            ()
           }
-        }
       case .end:
         context.logger.info("runServer stream ended.")
         if let runningServer = self.runningServer {
@@ -102,9 +102,8 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
     return context.eventLoop.makeSucceededFuture({ event in
       switch event {
       case let .message(clientArgs):
-        if let argType = clientArgs.argtype {
-          switch argType {
-          case let .setup(clientConfig):
+          switch clientArgs.argtype {
+          case .some(.setup(let clientConfig)):
             context.logger.info("client setup requested")
             guard self.runningClient == nil else {
               context.logger.error("client already running")
@@ -118,7 +117,7 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
             self.runClientBody(context: context, clientConfig: clientConfig)
             // Initial status is the default (in C++)
             _ = context.sendResponse(Grpc_Testing_ClientStatus())
-          case let .mark(mark):
+          case .some(.mark(let mark)):
             // Capture stats
             context.logger.info("client mark requested")
             guard let runningClient = self.runningClient else {
@@ -131,8 +130,9 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
               return
             }
             runningClient.sendStatus(reset: mark.reset, context: context)
+          case .none:
+            ()
           }
-        }
       case .end:
         context.logger.info("runClient ended")
         // Shutdown
@@ -185,7 +185,7 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
   private static func createServer(
     context: StreamingResponseCallContext<Grpc_Testing_ServerStatus>,
     config: Grpc_Testing_ServerConfig
-  ) throws -> QpsServer {
+  ) throws -> QPSServer {
     context.logger.info(
       "Starting server",
       metadata: ["type": .stringConvertible(config.serverType)]
@@ -195,7 +195,7 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
     case .syncServer:
       throw GRPCStatus(code: .unimplemented, message: "Server Type not implemented")
     case .asyncServer:
-      let asyncServer = AsyncQpsServer(
+      let asyncServer = AsyncQPSServer(
         config: config,
         whenBound: { serverInfo in
           var response = Grpc_Testing_ServerStatus()
@@ -233,7 +233,7 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
   private static func createClient(
     context: StreamingResponseCallContext<Grpc_Testing_ClientStatus>,
     clientConfig: Grpc_Testing_ClientConfig
-  ) throws -> QpsClient {
+  ) throws -> QPSClient {
     switch clientConfig.clientType {
     case .syncClient:
       throw GRPCStatus(code: .unimplemented, message: "Client Type not implemented")
@@ -243,13 +243,13 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
         case .bytebufParams:
           throw GRPCStatus(code: .unimplemented, message: "Client Type not implemented")
         case .simpleParams:
-          return try createAsyncClient(config: clientConfig)
+          return try makeAsyncClient(config: clientConfig)
         case .complexParams:
-          return try createAsyncClient(config: clientConfig)
+          return try makeAsyncClient(config: clientConfig)
         }
       } else {
         // If there are no parameters assume simple.
-        return try createAsyncClient(config: clientConfig)
+        return try makeAsyncClient(config: clientConfig)
       }
     case .otherClient:
       throw GRPCStatus(code: .unimplemented, message: "Client Type not implemented")

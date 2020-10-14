@@ -64,12 +64,7 @@ public struct Histogram {
 
   private func bucketFor(value: Double) -> Int {
     let bucket = Histogram.bucketForUnchecked(
-      value: Histogram.clamp(
-        value: value,
-        minAllowed: 0,
-        maxAllowed: self
-          .maxPossible
-      ),
+      value: clamp(value: value),
       oneOnLogMultiplier: self.oneOnLogMultiplier
     )
     assert(bucket < self.buckets.count)
@@ -77,8 +72,12 @@ public struct Histogram {
     return bucket
   }
 
-  private static func clamp(value: Double, minAllowed: Double, maxAllowed: Double) -> Double {
-    return min(maxAllowed, max(minAllowed, value))
+  /// Force a value to be within the bounds of 0 and `self.maxPossible`
+  /// - parameters:
+  ///     - value: The value to force within bounds
+  /// - returns: The value forced into the bounds for buckets.
+  private func clamp(value: Double) -> Double {
+    return min(self.maxPossible, max(0, value))
   }
 
   /// Add a value to this histogram, updating buckets and stats

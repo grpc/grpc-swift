@@ -36,7 +36,7 @@ struct StatsWithLock {
   /// - parameters:
   ///     - latency: The value to record.
   mutating func add(latency: Double) {
-    self.lock.withLock { self.data.latencies.add(value: latency) }
+    self.lock.withLockVoid { self.data.latencies.add(value: latency) }
   }
 
   /// Copy the data out.
