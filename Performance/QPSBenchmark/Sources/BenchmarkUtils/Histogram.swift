@@ -35,7 +35,7 @@ public struct Histogram {
 
   /// Initialise a histogram.
   /// - parameters:
-  ///     - resolution: Defines the with of the buckets - see the description of this structure.
+  ///     - resolution: Defines the width of the buckets - see the description of this structure.
   ///     - maxBucketStart: Defines the start of the greatest valued bucket.
   public init(resolution: Double = 0.01, maxBucketStart: Double = 60e9) {
     precondition(resolution > 0.0)
