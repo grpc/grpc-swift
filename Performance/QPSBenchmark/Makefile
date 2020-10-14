@@ -3,10 +3,8 @@ SWIFT:=swift
 # Where products will be built; this is the SPM default.
 GRPC_SWIFT_PATH:=../..
 SWIFT_BUILD_PATH:=./.build
-SWIFT_BUILD_CONFIGURATION=debug
+SWIFT_BUILD_CONFIGURATION=release
 SWIFT_FLAGS=--build-path=${SWIFT_BUILD_PATH} --configuration=${SWIFT_BUILD_CONFIGURATION}
-# Force release configuration (for plugins)
-SWIFT_FLAGS_RELEASE=$(patsubst --configuration=%,--configuration=release,$(SWIFT_FLAGS))
 
 # protoc plugins.
 PROTOC_GEN_SWIFT=${GRPC_SWIFT_PATH}/${SWIFT_BUILD_PATH}/release/protoc-gen-swift
@@ -17,17 +15,10 @@ SWIFT_BUILD_RELEASE:=${SWIFT} build ${SWIFT_FLAGS_RELEASE}
 SWIFT_TEST:=${SWIFT} test ${SWIFT_FLAGS}
 SWIFT_PACKAGE:=${SWIFT} package ${SWIFT_FLAGS}
 
-# Name of generated xcodeproj
-XCODEPROJ:=GRPC.xcodeproj
-
 ### Package and plugin build targets ###########################################
 
 all:
 	${SWIFT_BUILD}
-
-.PHONY:
-plugins: ${PROTOC_GEN_SWIFT} ${PROTOC_GEN_GRPC_SWIFT}
-	cp $^ .
 
 ${PROTOC_GEN_SWIFT}: ${GRPC_SWIFT_PATH}/Package.resolved
 	${SWIFT_BUILD_RELEASE} --product protoc-gen-swift --package-path ${GRPC_SWIFT_PATH}
