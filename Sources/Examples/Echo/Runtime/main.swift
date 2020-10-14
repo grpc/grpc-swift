@@ -13,14 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import Baggage
 import EchoImplementation
 import EchoModel
 import Foundation
 import GRPC
 import GRPCSampleData
+import Instrumentation
 import Logging
 import NIO
 import NIOSSL
+import Tracing
 
 // MARK: - Argument parsing
 
@@ -107,6 +110,15 @@ func main(args: [String]) {
   guard let command = Command(from: args) else {
     printUsageAndExit(program: program)
   }
+
+  // Reduce the logging verbosity.
+  LoggingSystem.bootstrap {
+    var handler = StreamLogHandler.standardOutput(label: $0)
+    handler.logLevel = .warning
+    return handler
+  }
+
+  InstrumentationSystem.bootstrap(FakeTracer())
 
   // Okay, we're nearly ready to start, create an `EventLoopGroup` most suitable for our platform.
   let group = PlatformSupport.makeEventLoopGroup(loopCount: 1)
@@ -289,6 +301,94 @@ func echoUpdate(client: Echo_EchoClient, message: String) throws {
   // wait() for the call to terminate
   let status = try update.status.wait()
   print("update completed with status: \(status.code)")
+}
+
+final class FakeTracer: Tracer {
+  func extract<Carrier, Extractor>(_ carrier: Carrier, into baggage: inout Baggage,
+                                   using extractor: Extractor)
+    where
+    Carrier == Extractor.Carrier,
+    Extractor: ExtractorProtocol {
+    if let traceID = extractor.extract(key: "x-trace-id", from: carrier) {
+      print("Extracted trace-id: \(traceID)")
+      baggage[FakeTraceID.self] = traceID
+    }
+  }
+
+  func inject<Carrier, Injector>(_ baggage: Baggage, into carrier: inout Carrier,
+                                 using injector: Injector)
+    where
+    Carrier == Injector.Carrier,
+    Injector: InjectorProtocol {
+    let traceID = baggage[FakeTraceID.self] ?? "default-trace-id"
+    injector.inject(traceID, forKey: "x-trace-id", into: &carrier)
+    print("Injected trace-id: \(traceID)")
+  }
+
+  func startSpan(
+    named operationName: String,
+    baggage: Baggage,
+    ofKind kind: SpanKind,
+    at timestamp: Timestamp
+  ) -> Span {
+    let span = FakeSpan(
+      operationName: operationName,
+      kind: kind,
+      startTimestamp: timestamp,
+      baggage: baggage
+    )
+    print(#"Starting span "\#(operationName)" at timestamp: \#(timestamp)"#)
+    return span
+  }
+
+  func forceFlush() {}
+
+  final class FakeSpan: Span {
+    private let operationName: String
+    private let kind: SpanKind
+    private var status: SpanStatus?
+
+    let startTimestamp: Timestamp
+    private(set) var endTimestamp: Timestamp?
+
+    let baggage: Baggage
+
+    var attributes: SpanAttributes = [:]
+    private(set) var isRecording: Bool = false
+
+    init(operationName: String, kind: SpanKind, startTimestamp: Timestamp, baggage: Baggage) {
+      self.operationName = operationName
+      self.kind = kind
+      self.startTimestamp = startTimestamp
+      self.baggage = baggage
+    }
+
+    func addEvent(_ event: SpanEvent) {
+      print(event)
+    }
+
+    func addLink(_ link: SpanLink) {
+      print(link)
+    }
+
+    func recordError(_ error: Error) {
+      print(error)
+    }
+
+    func end(at timestamp: Timestamp) {
+      print(#"Ending span "\#(self.operationName)" at timestamp: \#(timestamp)"#)
+      print(self.status ?? "No status was set")
+      print(self.attributes)
+    }
+
+    func setStatus(_ status: SpanStatus) {
+      self.status = status
+    }
+  }
+
+  enum FakeTraceID: Baggage.Key {
+    typealias Value = String
+  }
 }
 
 main(args: CommandLine.arguments)

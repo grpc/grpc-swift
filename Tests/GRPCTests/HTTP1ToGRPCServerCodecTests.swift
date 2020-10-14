@@ -13,13 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import Baggage
 import EchoImplementation
 import EchoModel
 import Foundation
 @testable import GRPC
+import Instrumentation
 import Logging
 import NIO
 import NIOHTTP1
+import Tracing
 import XCTest
 
 /// A trivial channel handler that invokes a callback once, the first time it sees
@@ -60,7 +63,12 @@ class HTTP1ToGRPCServerCodecTests: GRPCTestCase {
 
   override func setUp() {
     super.setUp()
-    let handler = HTTP1ToGRPCServerCodec(encoding: .disabled, logger: self.logger)
+    let span = InstrumentationSystem.tracer.startSpan(
+      named: "test",
+      baggage: .topLevel,
+      ofKind: .server
+    )
+    let handler = HTTP1ToGRPCServerCodec(encoding: .disabled, logger: self.logger, span: span)
     self.channel = EmbeddedChannel(handler: handler)
   }
 

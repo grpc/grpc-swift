@@ -18,7 +18,9 @@ import Logging
 import NIO
 import NIOFoundationCompat
 import NIOHTTP1
+import OpenTelemetryInstrumentationSupport
 import SwiftProtobuf
+import Tracing
 
 /// Incoming gRPC package with a fixed message type.
 ///
@@ -50,10 +52,11 @@ public typealias _RawGRPCServerResponsePart = _GRPCServerResponsePart<ByteBuffer
 ///
 /// The translation from HTTP2 to HTTP1 is done by `HTTP2ToHTTP1ServerCodec`.
 public final class HTTP1ToGRPCServerCodec {
-  public init(encoding: ServerMessageEncoding, logger: Logger) {
+  public init(encoding: ServerMessageEncoding, logger: Logger, span: Span) {
     self.encoding = encoding
     self.encodingHeaderValidator = MessageEncodingHeaderValidator(encoding: encoding)
     self.logger = logger
+    self.span = span
     self.messageReader = LengthPrefixedMessageReader()
     self.messageWriter = LengthPrefixedMessageWriter()
   }
@@ -67,6 +70,7 @@ public final class HTTP1ToGRPCServerCodec {
 
   private let logger: Logger
   private var stopwatch: Stopwatch?
+  private var span: Span
 
   // The following buffers use force unwrapping explicitly. With optionals, developers
   // are encouraged to unwrap them using guard-else statements. These don't work cleanly
@@ -347,15 +351,18 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
         headers.add(name: GRPCHeaderName.acceptEncoding, value: acceptEncoding)
       }
 
+      let responseStatus = HTTPResponseStatus.ok
       context.write(
         self
           .wrapOutboundOut(.head(HTTPResponseHead(
             version: version,
-            status: .ok,
+            status: responseStatus,
             headers: headers
           ))),
         promise: promise
       )
+      self.span.attributes[SpanAttributeName.HTTP.statusCode] = .int(Int(responseStatus.code))
+      self.span.attributes[SpanAttributeName.HTTP.statusText] = .string(responseStatus.reasonPhrase)
       self.outboundState = .expectingBodyOrStatus
 
     case let .message(messageContext):
@@ -389,12 +396,18 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
             compressed: messageContext.compressed
           )
           context.write(self.wrapOutboundOut(.body(.byteBuffer(messageBuffer))), promise: promise)
+          self.span
+            .attributes[SpanAttributeName.HTTP.responseContentLength] = .int(
+              messageBuffer
+                .readableBytes
+            )
         }
       } catch {
         let error = GRPCError.SerializationFailure().captureContext()
         promise?.fail(error)
         context.fireErrorCaught(error)
         self.outboundState = .ignore
+        self.span.recordError(error)
         return
       }
 
@@ -458,6 +471,8 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
         responseTextBuffer.clear(minimumCapacity: Int(encodedData.utf8.count))
         responseTextBuffer.writeString(encodedData)
 
+        self.span
+          .attributes[SpanAttributeName.HTTP.responseContentLength] = .int(encodedData.utf8.count)
         // After collecting all response for gRPC Web connections, send one final aggregated
         // response.
         context.write(
@@ -480,6 +495,8 @@ extension HTTP1ToGRPCServerCodec: ChannelOutboundHandler {
         ])
       }
 
+      self.span.setStatus(SpanStatus(status))
+      self.span.end()
       self.outboundState = .ignore
       self.inboundState = .ignore
     }

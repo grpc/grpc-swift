@@ -13,10 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import Instrumentation
 import Logging
 import NIO
 import NIOHTTP1
+import NIOInstrumentation
+import OpenTelemetryInstrumentationSupport
 import SwiftProtobuf
+import Tracing
 
 /// Processes individual gRPC messages and stream-close events on an HTTP2 channel.
 public protocol GRPCCallHandler: ChannelHandler {
@@ -124,10 +128,42 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
   }
 
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+    var span: Span
+
     let requestPart = self.unwrapInboundIn(data)
-    switch self.unwrapInboundIn(data) {
+    switch requestPart {
     case let .head(requestHead):
       precondition(self.state == .notConfigured)
+
+      InstrumentationSystem.instrument.extract(
+        requestHead.headers,
+        into: &context.baggage,
+        using: HTTPHeadersExtractor()
+      )
+
+      span = InstrumentationSystem.tracer.startSpan(
+        named: String(requestHead.uri.dropFirst()),
+        baggage: context.baggage,
+        ofKind: .server
+      )
+
+      if let userAgent = requestHead.headers.first(name: "User-Agent") {
+        span.attributes[SpanAttributeName.HTTP.userAgent] = .string(userAgent)
+      }
+      if let host = requestHead.headers.first(name: "Host") {
+        span.attributes[SpanAttributeName.HTTP.host] = .string(host)
+      }
+      if let port = context.channel.localAddress?.port {
+        span.attributes[SpanAttributeName.Net.hostPort] = .int(port)
+      }
+      if let peerIP = context.channel.remoteAddress?.ipAddress {
+        span.attributes[SpanAttributeName.Net.peerIP] = .string(peerIP)
+      }
+      span.attributes[SpanAttributeName.HTTP.method] = .string(requestHead.method.rawValue)
+
+      let flavor = "\(requestHead.version.major).\(requestHead.version.minor)"
+      span.attributes[SpanAttributeName.HTTP.flavor] = .string(flavor)
+      span.attributes[SpanAttributeName.RPC.system] = "grpc"
 
       // Validate the 'content-type' is related to gRPC before proceeding.
       let maybeContentType = requestHead.headers.first(name: GRPCHeaderName.contentType)
@@ -156,10 +192,11 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
       }
 
       // Do we know how to handle this RPC?
-      guard let callHandler = self.makeCallHandler(
-        channel: context.channel,
-        requestHead: requestHead
-      ) else {
+      guard let requestInfo = GRPCRequestInfo(parsing: requestHead.uri),
+        let callHandler = self.makeCallHandler(
+          channel: context.channel,
+          requestInfo: requestInfo
+        ) else {
         self.logger.warning(
           "unable to make call handler; the RPC is not implemented on this server",
           metadata: ["uri": "\(requestHead.uri)"]
@@ -174,6 +211,9 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
         return
       }
 
+      span.attributes[SpanAttributeName.RPC.service] = .string(String(requestInfo.service))
+      span.attributes[SpanAttributeName.RPC.method] = .string(String(requestInfo.method))
+
       self.logger.debug("received request head, configuring pipeline")
 
       // Buffer the request head; we'll replay it in the next handler when we're removed from the
@@ -181,7 +221,11 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
       self.state = .configuring([requestPart])
 
       // Configure the rest of the pipeline to serve the RPC.
-      let httpToGRPC = HTTP1ToGRPCServerCodec(encoding: self.encoding, logger: self.logger)
+      let httpToGRPC = HTTP1ToGRPCServerCodec(
+        encoding: self.encoding,
+        logger: self.logger,
+        span: span
+      )
       let codec = callHandler._codec
       context.pipeline.addHandlers([httpToGRPC, codec, callHandler], position: .after(self))
         .whenSuccess {
@@ -216,14 +260,8 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
     }
   }
 
-  private func makeCallHandler(channel: Channel, requestHead: HTTPRequestHead) -> GRPCCallHandler? {
-    // URI format: "/package.Servicename/MethodName", resulting in the following components separated by a slash:
-    // - uriComponents[0]: empty
-    // - uriComponents[1]: service name (including the package name);
-    //     `CallHandlerProvider`s should provide the service name including the package name.
-    // - uriComponents[2]: method name.
-    self.logger.debug("making call handler", metadata: ["path": "\(requestHead.uri)"])
-    let uriComponents = requestHead.uri.split(separator: "/")
+  private func makeCallHandler(channel: Channel, requestInfo: GRPCRequestInfo) -> GRPCCallHandler? {
+    self.logger.debug("making call handler", metadata: ["path": "\(requestInfo.uri)"])
 
     let context = CallHandlerContext(
       errorDelegate: self.errorDelegate,
@@ -231,13 +269,12 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
       encoding: self.encoding
     )
 
-    guard uriComponents.count >= 2,
-      let providerForServiceName = servicesByName[uriComponents[0]],
+    guard let providerForServiceName = servicesByName[requestInfo.service],
       let callHandler = providerForServiceName.handleMethod(
-        uriComponents[1],
+        requestInfo.method,
         callHandlerContext: context
       ) else {
-      self.logger.notice("could not create handler", metadata: ["path": "\(requestHead.uri)"])
+      self.logger.notice("could not create handler", metadata: ["path": "\(requestInfo.uri)"])
       return nil
     }
     return callHandler
