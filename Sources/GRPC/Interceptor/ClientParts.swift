@@ -26,7 +26,7 @@ public enum ClientRequestPart<Request> {
   case end
 
   /// Metadata associated with a request message.
-  public struct Metadata {
+  public struct Metadata: Equatable {
     /// Whether the message should be compressed. If compression has not been enabled on the RPC
     /// then setting is ignored.
     public var compress: Bool
