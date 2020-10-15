@@ -40,7 +40,7 @@ class StatusCountsTests: XCTestCase {
       case GRPCStatus.Code.alreadyExists.rawValue:
         XCTAssertEqual(stat.value, 1)
       default:
-        XCTAssertFail()
+        XCTFail()
       }
     }
   }
@@ -64,7 +64,7 @@ class StatusCountsTests: XCTestCase {
       case GRPCStatus.Code.alreadyExists.rawValue:
         XCTAssertEqual(stat.value, 1)
       default:
-        XCTAssertFail()
+        XCTFail()
       }
     }
   }
@@ -88,7 +88,7 @@ class StatusCountsTests: XCTestCase {
       case GRPCStatus.Code.alreadyExists.rawValue:
         XCTAssertEqual(stat.value, 1)
       default:
-        XCTAssertFail()
+        XCTFail()
       }
     }
   }
@@ -116,7 +116,7 @@ class StatusCountsTests: XCTestCase {
       case GRPCStatus.Code.dataLoss.rawValue:
         XCTAssertEqual(stat.value, 1)
       default:
-        XCTAssertFail()
+        XCTFail()
       }
     }
   }

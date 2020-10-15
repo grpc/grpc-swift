@@ -50,7 +50,7 @@ class HistogramTests: XCTestCase {
         XCTAssertFalse(twoSeen)
         twoSeen = true
       default:
-        XCTAssertFail()
+        XCTFail()
       }
     }
     XCTAssertTrue(oneSeen)
@@ -63,7 +63,7 @@ class HistogramTests: XCTestCase {
     histogram.add(value: 2)
     histogram.add(value: 3)
 
-    var histogram2 = Histogram()
+    let histogram2 = Histogram()
     histogram.add(value: 1)
     histogram.add(value: 1)
     histogram.add(value: 3)
@@ -93,7 +93,7 @@ class HistogramTests: XCTestCase {
         XCTAssertFalse(threeSeen)
         threeSeen = true
       default:
-        XCTAssertFail()
+        XCTFail()
       }
     }
     XCTAssertTrue(oneSeen)
