@@ -155,36 +155,40 @@ internal struct TailClientInterceptor<Request, Response>: ClientInterceptorProto
   ) {
     switch part {
     case .metadata, .message:
-      ()
+      self.onResponsePart(part)
 
     case .end:
       // We're about to complete, close the pipeline before calling out via `onResponsePart`.
       self.pipeline.close()
+      self.onResponsePart(part)
 
     case let .error(error):
       // We're about to complete, close the pipeline before calling out via the error delegate
       // or `onResponsePart`.
       self.pipeline.close()
 
-      if let delegate = self.errorDelegate {
-        // If we have an error delegate then provide any location information from the error.
-        if let errorContext = error as? GRPCError.WithContext {
-          delegate.didCatchError(
-            errorContext.error,
-            logger: context.logger,
-            file: errorContext.file,
-            line: errorContext.line
-          )
-        } else {
-          delegate.didCatchErrorWithoutContext(
-            error,
-            logger: context.logger
-          )
-        }
-      }
-    }
+      var unwrappedError: Error
 
-    self.onResponsePart(part)
+      // Unwrap the error, if possible.
+      if let errorContext = error as? GRPCError.WithContext {
+        unwrappedError = errorContext.error
+        self.errorDelegate?.didCatchError(
+          errorContext.error,
+          logger: context.logger,
+          file: errorContext.file,
+          line: errorContext.line
+        )
+      } else {
+        unwrappedError = error
+        self.errorDelegate?.didCatchErrorWithoutContext(
+          error,
+          logger: context.logger
+        )
+      }
+
+      // Emit the unwrapped error.
+      self.onResponsePart(.error(unwrappedError))
+    }
   }
 
   internal func write(
