@@ -17,6 +17,9 @@ import Logging
 import NIO
 
 public struct ClientInterceptorContext<Request, Response> {
+  /// The interceptor this context is for.
+  private let interceptor: AnyClientInterceptor<Request, Response>
+
   /// The pipeline this context is associated with.
   private let pipeline: ClientInterceptorPipeline<Request, Response>
 
@@ -25,12 +28,12 @@ public struct ClientInterceptorContext<Request, Response> {
 
   // The next context in the inbound direction, if one exists.
   private var nextInbound: ClientInterceptorContext<Request, Response>? {
-    return self.pipeline.context(atIndex: self.index + 1)
+    return self.pipeline.nextInboundContext(forIndex: self.index)
   }
 
   // The next context in the outbound direction, if one exists.
   private var nextOutbound: ClientInterceptorContext<Request, Response>? {
-    return self.pipeline.context(atIndex: self.index - 1)
+    return self.pipeline.nextOutboundContext(forIndex: self.index)
   }
 
   /// The `EventLoop` this interceptor pipeline is being executed on.
@@ -45,7 +48,12 @@ public struct ClientInterceptorContext<Request, Response> {
 
   /// Construct a `ClientInterceptorContext` for the interceptor at the given index within in
   /// interceptor pipeline.
-  internal init(pipeline: ClientInterceptorPipeline<Request, Response>, index: Int) {
+  internal init(
+    for interceptor: AnyClientInterceptor<Request, Response>,
+    atIndex index: Int,
+    in pipeline: ClientInterceptorPipeline<Request, Response>
+  ) {
+    self.interceptor = interceptor
     self.pipeline = pipeline
     self.index = index
   }
@@ -112,16 +120,16 @@ extension ClientInterceptorContext {
 
   internal func invokeRead(_ part: ClientResponsePart<Response>) {
     self.eventLoop.assertInEventLoop()
-    fatalError("TODO: call the interceptor")
+    self.interceptor.read(part, context: self)
   }
 
   internal func invokeWrite(_ part: ClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
     self.eventLoop.assertInEventLoop()
-    fatalError("TODO: call the interceptor")
+    self.interceptor.write(part, promise: promise, context: self)
   }
 
   internal func invokeCancel(promise: EventLoopPromise<Void>?) {
     self.eventLoop.assertInEventLoop()
-    fatalError("TODO: call the interceptor")
+    self.interceptor.cancel(promise: promise, context: self)
   }
 }

@@ -15,7 +15,7 @@
  */
 import NIO
 
-internal protocol ClientInterceptor {
+internal protocol ClientInterceptorProtocol {
   associatedtype Request
   associatedtype Response
 
