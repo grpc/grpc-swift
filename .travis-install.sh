@@ -182,7 +182,8 @@ function install_swiftformat() {
   echo -en 'travis_fold:start:install.swiftformat\\r'
   info "Installing swiftformat"
 
-  git clone --depth 1 "https://github.com/nicklockwood/SwiftFormat"
+  # If this version is updated, update the version in scripts/format.sh too.
+  git clone --depth 1 --branch 0.46.3 "https://github.com/nicklockwood/SwiftFormat"
   cd SwiftFormat
   version=$(git rev-parse HEAD)
 
