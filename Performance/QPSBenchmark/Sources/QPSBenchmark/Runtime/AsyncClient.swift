@@ -104,10 +104,10 @@ final class AsyncUnaryQPSClient: QPSClient {
   ///     - callbackLoop: Which eventloop should be called back on completion.
   /// - returns: A future on the `callbackLoop` which will succeed on completion of shutdown.
   func shutdown(callbackLoop: EventLoop) -> EventLoopFuture<Void> {
-    let promise: EventLoopPromise<Void> = callbackLoop.makePromise()
     let stoppedFutures = self.channelRepeaters.map { repeater in repeater.stop() }
     let allStopped = EventLoopFuture.andAllComplete(stoppedFutures, on: callbackLoop)
-    return allStopped.flatMap { _ in
+    return allStopped.hop(to: callbackLoop).flatMap { _ in
+        let promise: EventLoopPromise<Void> = callbackLoop.makePromise()
       self.eventLoopGroup.shutdownGracefully { error in
         if let error = error {
           promise.fail(error)
@@ -136,7 +136,7 @@ final class AsyncUnaryQPSClient: QPSClient {
     init(target: HostAndPort,
          config: Grpc_Testing_ClientConfig,
          eventLoopGroup: EventLoopGroup) {
-        // TODO:  Support TLS is requested.
+        // TODO:  Support TLS if requested.
         self.connection = ClientConnection.insecure(group: eventLoopGroup)
         .connect(host: target.host, port: target.port)
       self.client = Grpc_Testing_BenchmarkServiceClient(channel: self.connection)
