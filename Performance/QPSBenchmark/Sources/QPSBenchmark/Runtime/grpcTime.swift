@@ -38,7 +38,7 @@ struct Nanoseconds {
 extension Nanoseconds {
     /// Convert to a potentially fractional number of seconds.
     func asSeconds() -> Double {
-        return Double(self.value) * 1e9
+        return Double(self.value) * 1e-9
     }
 }
 
