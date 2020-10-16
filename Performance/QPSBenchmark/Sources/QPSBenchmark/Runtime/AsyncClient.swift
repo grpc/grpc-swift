@@ -197,7 +197,7 @@ final class AsyncUnaryQPSClient: QPSClient {
     }
 
     private func recordLatency(_ latency: Nanoseconds) {
-        self.stats.add(latency: latency.asSeconds())
+        self.stats.add(latency: Double(latency.value))
     }
 
     /// Get stats for sending to the driver.
