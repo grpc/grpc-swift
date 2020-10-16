@@ -29,7 +29,7 @@ final class AsyncUnaryQPSClient: QPSClient {
 
   private let channelRepeaters: [ChannelRepeater]
 
-  private var statsPeriodStart: Date
+  private var statsPeriodStart: DispatchTime
   private var cpuStatsPeriodStart: CPUTime
 
   /// Initialise a client to send unary requests.
@@ -74,7 +74,7 @@ final class AsyncUnaryQPSClient: QPSClient {
     let currentTime = grpcTimeNow()
     let currentResourceUsage = getResourceUsage()
     var result = Grpc_Testing_ClientStatus()
-    result.stats.timeElapsed = currentTime.timeIntervalSince(self.statsPeriodStart)
+    result.stats.timeElapsed = (currentTime - self.statsPeriodStart).asSeconds()
     result.stats.timeSystem = currentResourceUsage.systemTime - self.cpuStatsPeriodStart
       .systemTime
     result.stats.timeUser = currentResourceUsage.userTime - self.cpuStatsPeriodStart.userTime
@@ -171,7 +171,7 @@ final class AsyncUnaryQPSClient: QPSClient {
         self.numberOfOutstandingRequests -= 1
         if status.isOk {
           let endTime = grpcTimeNow()
-          self.recordLatency(endTime.timeIntervalSince(startTime))
+            self.recordLatency(endTime - startTime)
         } else {
           self.logger.error(
             "Bad status from unary request",
@@ -187,8 +187,8 @@ final class AsyncUnaryQPSClient: QPSClient {
       }
     }
 
-    private func recordLatency(_ latency: TimeInterval) {
-      self.stats.add(latency: latency * 1e9)
+    private func recordLatency(_ latency: Nanoseconds) {
+        self.stats.add(latency: latency.asSeconds())
     }
 
     /// Get stats for sending to the driver.

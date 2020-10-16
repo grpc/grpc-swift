@@ -25,7 +25,7 @@ final class AsyncQPSServer: QPSServer {
   private let server: EventLoopFuture<Server>
   private let threadCount: Int
 
-  private var statsPeriodStart: Date
+  private var statsPeriodStart: DispatchTime
   private var cpuStatsPeriodStart: CPUTime
 
   private let logger = Logger(label: "AsyncQPSServer")
@@ -68,7 +68,7 @@ final class AsyncQPSServer: QPSServer {
     let currentTime = grpcTimeNow()
     let currentResourceUsage = getResourceUsage()
     var result = Grpc_Testing_ServerStatus()
-    result.stats.timeElapsed = currentTime.timeIntervalSince(self.statsPeriodStart)
+    result.stats.timeElapsed = (currentTime - self.statsPeriodStart).asSeconds()
     result.stats.timeSystem = currentResourceUsage.systemTime - self.cpuStatsPeriodStart
       .systemTime
     result.stats.timeUser = currentResourceUsage.userTime - self.cpuStatsPeriodStart.userTime
