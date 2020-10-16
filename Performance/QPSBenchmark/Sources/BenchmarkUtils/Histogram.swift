@@ -64,7 +64,7 @@ public struct Histogram {
 
   private func bucketFor(value: Double) -> Int {
     let bucket = Histogram.bucketForUnchecked(
-      value: clamp(value: value),
+      value: self.clamp(value: value),
       oneOnLogMultiplier: self.oneOnLogMultiplier
     )
     assert(bucket < self.buckets.count)

@@ -19,32 +19,32 @@ import Foundation
 /// Get the current time.
 /// - returns: The current time (in nanoseconds of system liveness since boot)
 func grpcTimeNow() -> DispatchTime {
-    return DispatchTime.now()
+  return DispatchTime.now()
 }
 
 extension DispatchTime {
-    /// Subtraction between two DispatchTimes giving the result in Nanoseconds
-    static func - (_ a: DispatchTime, _ b: DispatchTime) -> Nanoseconds {
-        return Nanoseconds(value: a.uptimeNanoseconds - b.uptimeNanoseconds)
-    }
+  /// Subtraction between two DispatchTimes giving the result in Nanoseconds
+  static func - (_ a: DispatchTime, _ b: DispatchTime) -> Nanoseconds {
+    return Nanoseconds(value: a.uptimeNanoseconds - b.uptimeNanoseconds)
+  }
 }
 
 /// A number of nanoseconds
 struct Nanoseconds {
-    /// The actual number of nanoseconds
-    var value: UInt64
+  /// The actual number of nanoseconds
+  var value: UInt64
 }
 
 extension Nanoseconds {
-    /// Convert to a potentially fractional number of seconds.
-    func asSeconds() -> Double {
-        return Double(self.value) * 1e-9
-    }
+  /// Convert to a potentially fractional number of seconds.
+  func asSeconds() -> Double {
+    return Double(self.value) * 1e-9
+  }
 }
 
 extension Nanoseconds: CustomStringConvertible {
-    /// Description to aid debugging.
-    var description: String {
-        return String(self.value)
-    }
+  /// Description to aid debugging.
+  var description: String {
+    return String(self.value)
+  }
 }

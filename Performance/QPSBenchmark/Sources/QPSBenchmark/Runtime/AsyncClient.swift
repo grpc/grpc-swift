@@ -52,12 +52,12 @@ final class AsyncUnaryQPSClient: QPSClient {
     self.cpuStatsPeriodStart = getResourceUsage()
 
     // Start the requested number of channels.
-    self.channelRepeaters = (0..<Int(config.clientChannels)).map { channelNumber in
-        ChannelRepeater(
-          target: serverTargets[channelNumber % serverTargets.count],
-          config: config,
-          eventLoopGroup: eventLoopGroup
-        )
+    self.channelRepeaters = (0 ..< Int(config.clientChannels)).map { channelNumber in
+      ChannelRepeater(
+        target: serverTargets[channelNumber % serverTargets.count],
+        config: config,
+        eventLoopGroup: eventLoopGroup
+      )
     }
 
     // Start the train.
@@ -107,7 +107,7 @@ final class AsyncUnaryQPSClient: QPSClient {
     let stoppedFutures = self.channelRepeaters.map { repeater in repeater.stop() }
     let allStopped = EventLoopFuture.andAllComplete(stoppedFutures, on: callbackLoop)
     return allStopped.hop(to: callbackLoop).flatMap { _ in
-        let promise: EventLoopPromise<Void> = callbackLoop.makePromise()
+      let promise: EventLoopPromise<Void> = callbackLoop.makePromise()
       self.eventLoopGroup.shutdownGracefully { error in
         if let error = error {
           promise.fail(error)
@@ -136,8 +136,8 @@ final class AsyncUnaryQPSClient: QPSClient {
     init(target: HostAndPort,
          config: Grpc_Testing_ClientConfig,
          eventLoopGroup: EventLoopGroup) {
-        // TODO:  Support TLS if requested.
-        self.connection = ClientConnection.insecure(group: eventLoopGroup)
+      // TODO: Support TLS if requested.
+      self.connection = ClientConnection.insecure(group: eventLoopGroup)
         .connect(host: target.host, port: target.port)
       self.client = Grpc_Testing_BenchmarkServiceClient(channel: self.connection)
       self.payloadConfig = config.payloadConfig
@@ -169,35 +169,35 @@ final class AsyncUnaryQPSClient: QPSClient {
       let result = self.client.unaryCall(request)
 
       // Wait for the request to complete.
-        result.status.whenSuccess { status in
-            self.requestCompleted(status: status, startTime: startTime)
-        }
+      result.status.whenSuccess { status in
+        self.requestCompleted(status: status, startTime: startTime)
+      }
     }
 
     /// Call when a request has completed.
     /// Records stats and attempts to make more requests if there is available capacity.
     private func requestCompleted(status: GRPCStatus, startTime: DispatchTime) {
-        precondition(self.connection.eventLoop.inEventLoop)
-        self.numberOfOutstandingRequests -= 1
-        if status.isOk {
-          let endTime = grpcTimeNow()
-            self.recordLatency(endTime - startTime)
-        } else {
-          self.logger.error(
-            "Bad status from unary request",
-            metadata: ["status": "\(status)"]
-          )
-        }
-        if self.stopRequested, self.numberOfOutstandingRequests == 0 {
-          self.stopIsComplete()
-        } else {
-          // Try scheduling another request.
-          try! self.launchRequests()
-        }
+      precondition(self.connection.eventLoop.inEventLoop)
+      self.numberOfOutstandingRequests -= 1
+      if status.isOk {
+        let endTime = grpcTimeNow()
+        self.recordLatency(endTime - startTime)
+      } else {
+        self.logger.error(
+          "Bad status from unary request",
+          metadata: ["status": "\(status)"]
+        )
+      }
+      if self.stopRequested, self.numberOfOutstandingRequests == 0 {
+        self.stopIsComplete()
+      } else {
+        // Try scheduling another request.
+        try! self.launchRequests()
+      }
     }
 
     private func recordLatency(_ latency: Nanoseconds) {
-        self.stats.add(latency: Double(latency.value))
+      self.stats.add(latency: Double(latency.value))
     }
 
     /// Get stats for sending to the driver.

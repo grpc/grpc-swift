@@ -49,7 +49,7 @@ final class AsyncQPSServer: QPSServer {
     let workerService = AsyncQPSServerImpl()
 
     // Start the server.
-    // TODO:  Support TLS is requested.
+    // TODO: Support TLS is requested.
     self.server = Server.insecure(group: self.eventLoopGroup)
       .withServiceProviders([workerService])
       .withLogger(self.logger)
@@ -89,18 +89,18 @@ final class AsyncQPSServer: QPSServer {
   ///     - callbackLoop: Which eventloop should be called back on completion.
   /// - returns: A future on the `callbackLoop` which will succeed on completion of shutdown.
   func shutdown(callbackLoop: EventLoop) -> EventLoopFuture<Void> {
-      return self.server.flatMap { server in
-          server.close()
-      }.hop(to: callbackLoop).flatMap { _ in
-        let promise: EventLoopPromise<Void> = callbackLoop.makePromise()
-        self.eventLoopGroup.shutdownGracefully { error in
-            if let error = error {
-                promise.fail(error)
-            } else {
-                promise.succeed(())
-            }
+    return self.server.flatMap { server in
+      server.close()
+    }.hop(to: callbackLoop).flatMap { _ in
+      let promise: EventLoopPromise<Void> = callbackLoop.makePromise()
+      self.eventLoopGroup.shutdownGracefully { error in
+        if let error = error {
+          promise.fail(error)
+        } else {
+          promise.succeed(())
         }
-        return promise.futureResult
+      }
+      return promise.futureResult
     }
   }
 }

@@ -47,7 +47,7 @@ final class QPSWorkerApp: ParsableCommand {
     )
     // credentialType: self.credentialType)
     qpsWorker.start {
-        lifecycle.shutdown()
+      lifecycle.shutdown()
     }
 
     lifecycle.registerShutdown(label: "QPSWorker", .sync {
