@@ -147,6 +147,7 @@ final class AsyncUnaryQPSClient: QPSClient {
     }
 
     /// Launch as many requests as allowed on the channel.
+    /// This must be called from the connection eventLoop.
     private func launchRequests() throws {
       precondition(self.connection.eventLoop.inEventLoop)
       while !self.stopRequested,
@@ -168,7 +169,15 @@ final class AsyncUnaryQPSClient: QPSClient {
       let result = self.client.unaryCall(request)
 
       // Wait for the request to complete.
-      result.status.whenSuccess { status in
+        result.status.whenSuccess { status in
+            self.requestCompleted(status: status, startTime: startTime)
+        }
+    }
+
+    /// Call when a request has completed.
+    /// Records stats and attempts to make more requests if there is available capacity.
+    private func requestCompleted(status: GRPCStatus, startTime: DispatchTime) {
+        precondition(self.connection.eventLoop.inEventLoop)
         self.numberOfOutstandingRequests -= 1
         if status.isOk {
           let endTime = grpcTimeNow()
@@ -185,7 +194,6 @@ final class AsyncUnaryQPSClient: QPSClient {
           // Try scheduling another request.
           try! self.launchRequests()
         }
-      }
     }
 
     private func recordLatency(_ latency: Nanoseconds) {

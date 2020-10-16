@@ -46,46 +46,9 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
     return context.eventLoop.makeSucceededFuture({ event in
       switch event {
       case let .message(serverArgs):
-          switch serverArgs.argtype {
-          case .some(.setup(let serverConfig)):
-            context.logger.info("server setup requested")
-            guard self.runningServer == nil else {
-              context.logger.error("server already running")
-              context.statusPromise
-                .fail(GRPCStatus(
-                  code: GRPCStatus.Code.resourceExhausted,
-                  message: "Server worker busy"
-                ))
-              return
-            }
-            self.runServerBody(context: context, serverConfig: serverConfig)
-          case .some(.mark(let mark)):
-            context.logger.info("server mark requested")
-            guard let runningServer = self.runningServer else {
-              context.logger.error("server not running")
-              context.statusPromise
-                .fail(GRPCStatus(
-                  code: GRPCStatus.Code.failedPrecondition,
-                  message: "Server not running"
-                ))
-              return
-            }
-            runningServer.sendStatus(reset: mark.reset, context: context)
-          case .none:
-            ()
-          }
+        self.handleServerMessage(context: context, args: serverArgs)
       case .end:
-        context.logger.info("runServer stream ended.")
-        if let runningServer = self.runningServer {
-          self.runningServer = nil
-          let shutdownFuture = runningServer.shutdown(callbackLoop: context.eventLoop)
-          shutdownFuture.map { () -> GRPCStatus in
-            return GRPCStatus(code: .ok, message: nil)
-          }.cascade(to: context.statusPromise)
-
-        } else {
-          context.statusPromise.succeed(.ok)
-        }
+        self.handleServerEnd(context: context)
       }
     })
   }
@@ -102,49 +65,9 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
     return context.eventLoop.makeSucceededFuture({ event in
       switch event {
       case let .message(clientArgs):
-          switch clientArgs.argtype {
-          case .some(.setup(let clientConfig)):
-            context.logger.info("client setup requested")
-            guard self.runningClient == nil else {
-              context.logger.error("client already running")
-              context.statusPromise
-                .fail(GRPCStatus(
-                  code: GRPCStatus.Code.resourceExhausted,
-                  message: "Client worker busy"
-                ))
-              return
-            }
-            self.runClientBody(context: context, clientConfig: clientConfig)
-            // Initial status is the default (in C++)
-            _ = context.sendResponse(Grpc_Testing_ClientStatus())
-          case .some(.mark(let mark)):
-            // Capture stats
-            context.logger.info("client mark requested")
-            guard let runningClient = self.runningClient else {
-              context.logger.error("client not running")
-              context.statusPromise
-                .fail(GRPCStatus(
-                  code: GRPCStatus.Code.failedPrecondition,
-                  message: "Client not running"
-                ))
-              return
-            }
-            runningClient.sendStatus(reset: mark.reset, context: context)
-          case .none:
-            ()
-          }
+        self.handleClientMessage(context: context, args: clientArgs)
       case .end:
-        context.logger.info("runClient ended")
-        // Shutdown
-        if let runningClient = self.runningClient {
-          self.runningClient = nil
-          let shutdownFuture = runningClient.shutdown(callbackLoop: context.eventLoop)
-          shutdownFuture.map { () in
-            GRPCStatus(code: .ok, message: nil)
-          }.cascade(to: context.statusPromise)
-        } else {
-          context.statusPromise.succeed(.ok)
-        }
+        self.handleClientEnd(context: context)
       }
     })
   }
@@ -164,6 +87,69 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
     self.finishedPromise.succeed(())
     return context.eventLoop.makeSucceededFuture(Grpc_Testing_Void())
   }
+
+    // MARK: Run Server
+
+    /// Handle a message received from the driver about operating as a server.
+    private func handleServerMessage(context: StreamingResponseCallContext<Grpc_Testing_ServerStatus>,
+                                     args: Grpc_Testing_ServerArgs) {
+        switch args.argtype {
+        case .some(.setup(let serverConfig)):
+            self.handleServerSetup(context: context, config: serverConfig)
+        case .some(.mark(let mark)):
+            self.handleServerMarkRequested(context: context, mark: mark)
+        case .none:
+          ()
+        }
+    }
+
+    /// Handle a request to setup a server.
+    /// Makes a new server and sets it running.
+    private func handleServerSetup(context: StreamingResponseCallContext<Grpc_Testing_ServerStatus>,
+                                   config: Grpc_Testing_ServerConfig) {
+        context.logger.info("server setup requested")
+        guard self.runningServer == nil else {
+          context.logger.error("server already running")
+          context.statusPromise
+            .fail(GRPCStatus(
+              code: GRPCStatus.Code.resourceExhausted,
+              message: "Server worker busy"
+            ))
+          return
+        }
+        self.runServerBody(context: context, serverConfig: config)
+    }
+
+    /// Gathers stats and returns them to the driver process.
+    private func handleServerMarkRequested(context: StreamingResponseCallContext<Grpc_Testing_ServerStatus>,
+                                           mark: Grpc_Testing_Mark) {
+        context.logger.info("server mark requested")
+        guard let runningServer = self.runningServer else {
+          context.logger.error("server not running")
+          context.statusPromise
+            .fail(GRPCStatus(
+              code: GRPCStatus.Code.failedPrecondition,
+              message: "Server not running"
+            ))
+          return
+        }
+        runningServer.sendStatus(reset: mark.reset, context: context)
+    }
+
+    // Handle a message from the driver asking this server function to stop running.
+    private func handleServerEnd(context: StreamingResponseCallContext<Grpc_Testing_ServerStatus>) {
+        context.logger.info("runServer stream ended.")
+        if let runningServer = self.runningServer {
+          self.runningServer = nil
+          let shutdownFuture = runningServer.shutdown(callbackLoop: context.eventLoop)
+          shutdownFuture.map { () -> GRPCStatus in
+            return GRPCStatus(code: .ok, message: nil)
+          }.cascade(to: context.statusPromise)
+        } else {
+          context.statusPromise.succeed(.ok)
+        }
+      }
+
 
   // MARK: Create Server
 
@@ -215,6 +201,71 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
       throw GRPCStatus(code: .invalidArgument, message: "Unrecognised server type")
     }
   }
+
+    // MARK:  Run Client
+
+    /// Handle a message from the driver about operating as a client.
+    private func handleClientMessage(context: StreamingResponseCallContext<Grpc_Testing_ClientStatus>,
+                                     args: Grpc_Testing_ClientArgs) {
+        switch args.argtype {
+        case .some(.setup(let clientConfig)):
+            self.handleClientSetup(context: context, config: clientConfig)
+        case .some(.mark(let mark)):
+          // Capture stats
+            self.handleClientMarkRequested(context: context, mark: mark)
+        case .none:
+          ()
+        }
+    }
+
+    private func handleClientSetup(context: StreamingResponseCallContext<Grpc_Testing_ClientStatus>,
+                                   config: Grpc_Testing_ClientConfig) {
+        context.logger.info("client setup requested")
+        guard self.runningClient == nil else {
+          context.logger.error("client already running")
+          context.statusPromise
+            .fail(GRPCStatus(
+              code: GRPCStatus.Code.resourceExhausted,
+              message: "Client worker busy"
+            ))
+          return
+        }
+        self.runClientBody(context: context, clientConfig: config)
+        // Initial status is the default (in C++)
+        _ = context.sendResponse(Grpc_Testing_ClientStatus())
+    }
+
+    /// Captures stats and send back to driver process.
+    private func handleClientMarkRequested(context: StreamingResponseCallContext<Grpc_Testing_ClientStatus>,
+                                           mark: Grpc_Testing_Mark) {
+        context.logger.info("client mark requested")
+        guard let runningClient = self.runningClient else {
+          context.logger.error("client not running")
+          context.statusPromise
+            .fail(GRPCStatus(
+              code: GRPCStatus.Code.failedPrecondition,
+              message: "Client not running"
+            ))
+          return
+        }
+        runningClient.sendStatus(reset: mark.reset, context: context)
+    }
+
+    /// Call when an end message has been received.
+    /// Causes the running client to shutdown.
+    private func handleClientEnd(context: StreamingResponseCallContext<Grpc_Testing_ClientStatus>) {
+        context.logger.info("runClient ended")
+        // Shutdown
+        if let runningClient = self.runningClient {
+          self.runningClient = nil
+          let shutdownFuture = runningClient.shutdown(callbackLoop: context.eventLoop)
+          shutdownFuture.map { () in
+            GRPCStatus(code: .ok, message: nil)
+          }.cascade(to: context.statusPromise)
+        } else {
+          context.statusPromise.succeed(.ok)
+        }
+    }
 
   // MARK: Create Client
 
