@@ -79,8 +79,8 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
         if let runningServer = self.runningServer {
           self.runningServer = nil
           let shutdownFuture = runningServer.shutdown(callbackLoop: context.eventLoop)
-          shutdownFuture.map { () in
-            GRPCStatus(code: .ok, message: nil)
+          shutdownFuture.map { () -> GRPCStatus in
+            return GRPCStatus(code: .ok, message: nil)
           }.cascade(to: context.statusPromise)
 
         } else {

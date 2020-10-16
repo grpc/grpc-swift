@@ -89,19 +89,18 @@ final class AsyncQPSServer: QPSServer {
   ///     - callbackLoop: Which eventloop should be called back on completion.
   /// - returns: A future on the `callbackLoop` which will succeed on completion of shutdown.
   func shutdown(callbackLoop: EventLoop) -> EventLoopFuture<Void> {
-    let promise: EventLoopPromise<Void> = callbackLoop.makePromise()
-
-    return self.server.map {
-      server in server.close()
-    }.flatMap { _ in
-      self.eventLoopGroup.shutdownGracefully { error in
-        if let error = error {
-          promise.fail(error)
-        } else {
-          promise.succeed(())
+      return self.server.flatMap { server in
+          server.close()
+      }.hop(to: callbackLoop).flatMap { _ in
+        let promise: EventLoopPromise<Void> = callbackLoop.makePromise()
+        self.eventLoopGroup.shutdownGracefully { error in
+            if let error = error {
+                promise.fail(error)
+            } else {
+                promise.succeed(())
+            }
         }
-      }
-      return promise.futureResult
+        return promise.futureResult
     }
   }
 }
