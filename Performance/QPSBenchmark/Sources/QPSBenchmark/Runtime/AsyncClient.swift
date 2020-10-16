@@ -136,7 +136,8 @@ final class AsyncUnaryQPSClient: QPSClient {
     init(target: HostAndPort,
          config: Grpc_Testing_ClientConfig,
          eventLoopGroup: EventLoopGroup) {
-      self.connection = ClientConnection.insecure(group: eventLoopGroup)
+        // TODO:  Support TLS is requested.
+        self.connection = ClientConnection.insecure(group: eventLoopGroup)
         .connect(host: target.host, port: target.port)
       self.client = Grpc_Testing_BenchmarkServiceClient(channel: self.connection)
       self.payloadConfig = config.payloadConfig

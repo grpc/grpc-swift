@@ -19,7 +19,7 @@ import Logging
 import NIO
 
 /// Sets up and runs a worker service which listens for instructions on what tests to run.
-/// Currently doesn't understand TLS.
+/// Currently doesn't understand TLS for communication with the driver.
 class QPSWorker {
   private var driverPort: Int
   private var serverPort: Int?
