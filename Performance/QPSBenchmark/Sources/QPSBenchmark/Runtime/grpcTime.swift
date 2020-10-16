@@ -17,7 +17,7 @@
 import Foundation
 
 /// Get the current time.
-/// - returns: The current time (in nanoseconds of system liveness since boot)
+/// - returns: The current time.
 func grpcTimeNow() -> DispatchTime {
   return DispatchTime.now()
 }

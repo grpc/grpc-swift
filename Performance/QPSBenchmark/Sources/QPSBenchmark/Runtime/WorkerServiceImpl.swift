@@ -140,7 +140,7 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
     runningServer.sendStatus(reset: mark.reset, context: context)
   }
 
-  // Handle a message from the driver asking this server function to stop running.
+  /// Handle a message from the driver asking this server function to stop running.
   private func handleServerEnd(context: StreamingResponseCallContext<Grpc_Testing_ServerStatus>) {
     context.logger.info("runServer stream ended.")
     if let runningServer = self.runningServer {
@@ -156,6 +156,7 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
 
   // MARK: Create Server
 
+  /// Start a server running of the requested type.
   private func runServerBody(context: StreamingResponseCallContext<Grpc_Testing_ServerStatus>,
                              serverConfig: Grpc_Testing_ServerConfig) {
     var serverConfig = serverConfig
@@ -171,6 +172,7 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
     }
   }
 
+  /// Create a server of the requested type.
   private static func createServer(
     context: StreamingResponseCallContext<Grpc_Testing_ServerStatus>,
     config: Grpc_Testing_ServerConfig
@@ -223,6 +225,7 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
     }
   }
 
+  /// Setup a client as described by the message from the driver.
   private func handleClientSetup(context: StreamingResponseCallContext<Grpc_Testing_ClientStatus>,
                                  config: Grpc_Testing_ClientConfig) {
     context.logger.info("client setup requested")
@@ -276,6 +279,7 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
 
   // MARK: Create Client
 
+  /// Setup and run a client of the requested type.
   private func runClientBody(context: StreamingResponseCallContext<Grpc_Testing_ClientStatus>,
                              clientConfig: Grpc_Testing_ClientConfig) {
     do {
@@ -288,6 +292,7 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
     }
   }
 
+  /// Create a client of the requested type.
   private static func createClient(
     context: StreamingResponseCallContext<Grpc_Testing_ClientStatus>,
     clientConfig: Grpc_Testing_ClientConfig
