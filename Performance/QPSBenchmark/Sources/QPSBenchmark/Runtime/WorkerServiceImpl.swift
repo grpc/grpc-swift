@@ -283,7 +283,7 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
   private func runClientBody(context: StreamingResponseCallContext<Grpc_Testing_ClientStatus>,
                              clientConfig: Grpc_Testing_ClientConfig) {
     do {
-      self.runningClient = try WorkerServiceImpl.createClient(
+      self.runningClient = try WorkerServiceImpl.makeClient(
         context: context,
         clientConfig: clientConfig
       )
@@ -293,7 +293,7 @@ class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
   }
 
   /// Create a client of the requested type.
-  private static func createClient(
+  private static func makeClient(
     context: StreamingResponseCallContext<Grpc_Testing_ClientStatus>,
     clientConfig: Grpc_Testing_ClientConfig
   ) throws -> QPSClient {

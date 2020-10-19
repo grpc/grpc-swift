@@ -36,8 +36,9 @@ final class AsyncQPSServer: QPSServer {
   ///     - whenBound: Called when the server has successful bound to a port.
   init(config: Grpc_Testing_ServerConfig, whenBound: @escaping (ServerInfo) -> Void) {
     // Setup threads as requested.
-    let threadCount = config.asyncServerThreads > 0 ? Int(config.asyncServerThreads) : System
-      .coreCount
+    let threadCount = config.asyncServerThreads > 0
+        ? Int(config.asyncServerThreads)
+        : System.coreCount
     self.threadCount = threadCount
     self.logger.info("Sizing AsyncQPSServer", metadata: ["threads": "\(threadCount)"])
     self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: threadCount)
@@ -76,7 +77,7 @@ final class AsyncQPSServer: QPSServer {
     result.stats.totalCpuTime = 0
     result.stats.idleCpuTime = 0
     result.stats.cqPollCount = 0
-    self.logger.info("Sending response")
+    self.logger.info("Sending server status")
     _ = context.sendResponse(result)
     if reset {
       self.statsPeriodStart = currentTime
@@ -91,6 +92,11 @@ final class AsyncQPSServer: QPSServer {
   func shutdown(callbackLoop: EventLoop) -> EventLoopFuture<Void> {
     return self.server.flatMap { server in
       server.close()
+    }.recover { error in
+        self.logger.error("Error closing server", metadata: ["error": "\(error)"])
+        // May as well plough on anyway -
+        // we will hopefully sort outselves out shutting down the eventloops
+        return ()
     }.hop(to: callbackLoop).flatMap { _ in
       let promise: EventLoopPromise<Void> = callbackLoop.makePromise()
       self.eventLoopGroup.shutdownGracefully { error in

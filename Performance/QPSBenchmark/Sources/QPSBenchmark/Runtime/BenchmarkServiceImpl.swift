@@ -35,8 +35,9 @@ final class AsyncQPSServerImpl: Grpc_Testing_BenchmarkServiceProvider {
   /// Repeated sequence of one request followed by one response.
   /// Should be called streaming ping-pong
   /// The server returns the client payload as-is on each response
-  func streamingCall(context: StreamingResponseCallContext<Grpc_Testing_SimpleResponse>)
-    -> EventLoopFuture<(StreamEvent<Grpc_Testing_SimpleRequest>) -> Void> {
+  func streamingCall(
+    context: StreamingResponseCallContext<Grpc_Testing_SimpleResponse>
+  ) -> EventLoopFuture<(StreamEvent<Grpc_Testing_SimpleRequest>) -> Void> {
     context.logger.warning("streamingCall not implemented yet")
     return context.eventLoop.makeFailedFuture(GRPCStatus(
       code: GRPCStatus.Code.unimplemented,
@@ -46,8 +47,9 @@ final class AsyncQPSServerImpl: Grpc_Testing_BenchmarkServiceProvider {
 
   /// Single-sided unbounded streaming from client to server
   /// The server returns the client payload as-is once the client does WritesDone
-  func streamingFromClient(context: UnaryResponseCallContext<Grpc_Testing_SimpleResponse>)
-    -> EventLoopFuture<(StreamEvent<Grpc_Testing_SimpleRequest>) -> Void> {
+  func streamingFromClient(
+    context: UnaryResponseCallContext<Grpc_Testing_SimpleResponse>
+  ) -> EventLoopFuture<(StreamEvent<Grpc_Testing_SimpleRequest>) -> Void> {
     context.logger.warning("streamingFromClient not implemented yet")
     return context.eventLoop.makeFailedFuture(GRPCStatus(
       code: GRPCStatus.Code.unimplemented,
@@ -70,8 +72,9 @@ final class AsyncQPSServerImpl: Grpc_Testing_BenchmarkServiceProvider {
 
   /// Two-sided unbounded streaming between server to client
   /// Both sides send the content of their own choice to the other
-  func streamingBothWays(context: StreamingResponseCallContext<Grpc_Testing_SimpleResponse>)
-    -> EventLoopFuture<(StreamEvent<Grpc_Testing_SimpleRequest>) -> Void> {
+  func streamingBothWays(
+    context: StreamingResponseCallContext<Grpc_Testing_SimpleResponse>
+  ) -> EventLoopFuture<(StreamEvent<Grpc_Testing_SimpleRequest>) -> Void> {
     context.logger.warning("streamingBothWays not implemented yet")
     return context.eventLoop.makeFailedFuture(GRPCStatus(
       code: GRPCStatus.Code.unimplemented,
@@ -97,8 +100,9 @@ final class AsyncQPSServerImpl: Grpc_Testing_BenchmarkServiceProvider {
   /// - parameters:
   ///     - request: The request from the client.
   /// - returns: A response to send back to the client.
-  private static func processSimpleRPC(request: Grpc_Testing_SimpleRequest) throws
-    -> Grpc_Testing_SimpleResponse {
+  private static func processSimpleRPC(
+    request: Grpc_Testing_SimpleRequest
+  ) throws -> Grpc_Testing_SimpleResponse {
     var response = Grpc_Testing_SimpleResponse()
     if request.responseSize > 0 {
       response.payload = try self.makePayload(
