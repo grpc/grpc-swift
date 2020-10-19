@@ -35,6 +35,12 @@ final class QPSWorkerApp: ParsableCommand {
   /// Run the application and wait for completion to be signalled.
   func run() throws {
     let logger = Logger(label: "QPSWorker")
+
+    assert({
+      logger.warning("⚠️ WARNING: YOU ARE RUNNING IN DEBUG MODE ⚠️")
+      return true
+    }())
+
     logger.info("Starting...")
 
     logger.info("Initializing the lifecycle container")

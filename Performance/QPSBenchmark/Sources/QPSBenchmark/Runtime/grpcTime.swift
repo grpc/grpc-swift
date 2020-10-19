@@ -45,6 +45,6 @@ extension Nanoseconds {
 extension Nanoseconds: CustomStringConvertible {
   /// Description to aid debugging.
   var description: String {
-    return String(self.value)
+    return "\(self.value) ns"
   }
 }
