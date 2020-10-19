@@ -189,25 +189,23 @@ final class AsyncUnaryQPSClient: QPSClient {
 
     /// Launch as many requests as allowed on the channel.
     /// This must be called from the connection eventLoop.
-    private func launchRequests() throws {
+    private func launchRequests() {
       precondition(self.connection.eventLoop.inEventLoop)
-      while self.canMakeRequest() {
-        try self.makeRequestAndRepeat()
+      while self.canMakeRequest {
+        self.makeRequestAndRepeat()
       }
     }
 
     /// Returns if it is permissible to make another request - ie we've not been asked to stop, and we're not at the limit of outstanding requests.
-    private func canMakeRequest() -> Bool {
-      return !(
-        self.stopRequested || self.numberOfOutstandingRequests >= self
-          .maxPermittedOutstandingRequests
-      )
+    private var canMakeRequest: Bool {
+      return !self.stopRequested
+        && self.numberOfOutstandingRequests < self.maxPermittedOutstandingRequests
     }
 
     /// If there is spare permitted capacity make a request and repeat when it is done.
-    private func makeRequestAndRepeat() throws {
+    private func makeRequestAndRepeat() {
       // Check for capacity.
-      if !self.canMakeRequest() {
+      if !self.canMakeRequest {
         return
       }
       let startTime = grpcTimeNow()
@@ -238,7 +236,7 @@ final class AsyncUnaryQPSClient: QPSClient {
         self.stopIsComplete()
       } else {
         // Try scheduling another request.
-        try! self.makeRequestAndRepeat()
+        self.makeRequestAndRepeat()
       }
     }
 
@@ -257,10 +255,10 @@ final class AsyncUnaryQPSClient: QPSClient {
     /// Start sending requests to the server.
     func start() {
       if self.connection.eventLoop.inEventLoop {
-        try! self.launchRequests()
+        self.launchRequests()
       } else {
         self.connection.eventLoop.execute {
-          try! self.launchRequests()
+          self.launchRequests()
         }
       }
     }
