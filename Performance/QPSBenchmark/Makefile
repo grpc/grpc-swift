@@ -12,8 +12,6 @@ PROTOC_GEN_GRPC_SWIFT=${GRPC_SWIFT_PATH}/${SWIFT_BUILD_PATH}/release/protoc-gen-
 
 SWIFT_BUILD:=${SWIFT} build ${SWIFT_FLAGS}
 SWIFT_BUILD_RELEASE:=${SWIFT} build ${SWIFT_FLAGS_RELEASE}
-SWIFT_TEST:=${SWIFT} test ${SWIFT_FLAGS}
-SWIFT_PACKAGE:=${SWIFT} package ${SWIFT_FLAGS}
 
 ### Package and plugin build targets ###########################################
 
