@@ -51,7 +51,8 @@ final class AsyncUnaryQPSClient: QPSClient {
     self.statsPeriodStart = grpcTimeNow()
     self.cpuStatsPeriodStart = getResourceUsage()
 
-    let requestMessage = try AsyncUnaryQPSClient.makeClientRequest(payloadConfig: config.payloadConfig)
+    let requestMessage = try AsyncUnaryQPSClient
+      .makeClientRequest(payloadConfig: config.payloadConfig)
 
     // Start the requested number of channels.
     self.channelRepeaters = (0 ..< Int(config.clientChannels)).map { channelNumber in
@@ -122,37 +123,37 @@ final class AsyncUnaryQPSClient: QPSClient {
     }
   }
 
-    /// Make a request which can be sent to the server.
-    private static func makeClientRequest(payloadConfig: Grpc_Testing_PayloadConfig) throws
-      -> Grpc_Testing_SimpleRequest {
-      if let payload = payloadConfig.payload {
-        switch payload {
-        case .bytebufParams:
-          throw GRPCStatus(code: .invalidArgument, message: "Byte buffer not supported.")
-        case let .simpleParams(simpleParams):
-          var result = Grpc_Testing_SimpleRequest()
-          result.responseType = .compressable
-          result.responseSize = simpleParams.respSize
-          result.payload.type = .compressable
-          let size = Int(simpleParams.reqSize)
-          let body = Data(count: size)
-          result.payload.body = body
-          return result
-        case .complexParams:
-          throw GRPCStatus(
-            code: .invalidArgument,
-            message: "Complex params not supported."
-          )
-        }
-      } else {
-        // Default - simple proto without payloads.
+  /// Make a request which can be sent to the server.
+  private static func makeClientRequest(payloadConfig: Grpc_Testing_PayloadConfig) throws
+    -> Grpc_Testing_SimpleRequest {
+    if let payload = payloadConfig.payload {
+      switch payload {
+      case .bytebufParams:
+        throw GRPCStatus(code: .invalidArgument, message: "Byte buffer not supported.")
+      case let .simpleParams(simpleParams):
         var result = Grpc_Testing_SimpleRequest()
         result.responseType = .compressable
-        result.responseSize = 0
+        result.responseSize = simpleParams.respSize
         result.payload.type = .compressable
+        let size = Int(simpleParams.reqSize)
+        let body = Data(count: size)
+        result.payload.body = body
         return result
+      case .complexParams:
+        throw GRPCStatus(
+          code: .invalidArgument,
+          message: "Complex params not supported."
+        )
       }
+    } else {
+      // Default - simple proto without payloads.
+      var result = Grpc_Testing_SimpleRequest()
+      result.responseType = .compressable
+      result.responseSize = 0
+      result.payload.type = .compressable
+      return result
     }
+  }
 
   /// Class to manage a channel.  Repeatedly makes requests on that channel and records what happens.
   private class ChannelRepeater {
@@ -197,7 +198,10 @@ final class AsyncUnaryQPSClient: QPSClient {
 
     /// Returns if it is permissible to make another request - ie we've not been asked to stop, and we're not at the limit of outstanding requests.
     private func canMakeRequest() -> Bool {
-        return !(self.stopRequested || self.numberOfOutstandingRequests >= self.maxPermittedOutstandingRequests)
+      return !(
+        self.stopRequested || self.numberOfOutstandingRequests >= self
+          .maxPermittedOutstandingRequests
+      )
     }
 
     /// If there is spare permitted capacity make a request and repeat when it is done.
@@ -208,7 +212,7 @@ final class AsyncUnaryQPSClient: QPSClient {
       }
       let startTime = grpcTimeNow()
       self.numberOfOutstandingRequests += 1
-        let result = self.client.unaryCall(self.requestMessage)
+      let result = self.client.unaryCall(self.requestMessage)
 
       // Wait for the request to complete.
       result.status.whenSuccess { status in
@@ -249,7 +253,6 @@ final class AsyncUnaryQPSClient: QPSClient {
     func getStats(reset: Bool) -> Stats {
       return self.stats.copyData(reset: reset)
     }
-
 
     /// Start sending requests to the server.
     func start() {
