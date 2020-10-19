@@ -59,10 +59,15 @@ import NIOHTTP2
 /// ```
 internal final class ClientInterceptorPipeline<Request, Response> {
   /// A logger.
-  internal let logger: Logger
+  internal var logger: Logger {
+    return self.details.options.logger
+  }
 
   /// The `EventLoop` this RPC is being executed on.
   internal let eventLoop: EventLoop
+
+  /// The details of the call.
+  internal let details: CallDetails
 
   /// The contexts associated with the interceptors stored in this pipeline. Context will be removed
   /// once the RPC has completed. Contexts are ordered from outbound to inbound, that is, the tail
@@ -111,8 +116,8 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   }
 
   internal init(
-    logger: Logger,
     eventLoop: EventLoop,
+    details: CallDetails,
     interceptors: [ClientInterceptor<Request, Response>],
     errorDelegate: ClientErrorDelegate?,
     onCancel: @escaping (EventLoopPromise<Void>?) -> Void,
@@ -120,7 +125,7 @@ internal final class ClientInterceptorPipeline<Request, Response> {
     onResponsePart: @escaping (ClientResponsePart<Response>) -> Void
   ) {
     self.eventLoop = eventLoop
-    self.logger = logger
+    self.details = details
 
     // We know we'll have at least a head and a tail as well as any user provided interceptors.
     var contexts: [ClientInterceptorContext<Request, Response>] = []

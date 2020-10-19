@@ -46,6 +46,16 @@ public struct ClientInterceptorContext<Request, Response> {
     return self.pipeline.logger
   }
 
+  /// The type of the RPC, e.g. "unary".
+  public var type: GRPCCallType {
+    return self.pipeline.details.type
+  }
+
+  /// The path of the RPC in the format "/Service/Method", e.g. "/echo.Echo/Get".
+  public var path: String {
+    return self.pipeline.details.path
+  }
+
   /// Construct a `ClientInterceptorContext` for the interceptor at the given index within in
   /// interceptor pipeline.
   internal init(

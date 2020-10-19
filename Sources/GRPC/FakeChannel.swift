@@ -71,6 +71,52 @@ public class FakeChannel: GRPCChannel {
     return !noStreamsForPath
   }
 
+  public func makeCall<Request: Message, Response: Message>(
+    path: String,
+    type: GRPCCallType,
+    callOptions: CallOptions,
+    interceptors: [ClientInterceptor<Request, Response>]
+  ) -> Call<Request, Response> {
+    return self._makeCall(
+      path: path,
+      type: type,
+      callOptions: callOptions,
+      interceptors: interceptors
+    )
+  }
+
+  public func makeCall<Request: GRPCPayload, Response: GRPCPayload>(
+    path: String,
+    type: GRPCCallType,
+    callOptions: CallOptions,
+    interceptors: [ClientInterceptor<Request, Response>]
+  ) -> Call<Request, Response> {
+    return self._makeCall(
+      path: path,
+      type: type,
+      callOptions: callOptions,
+      interceptors: interceptors
+    )
+  }
+
+  private func _makeCall<Request, Response>(
+    path: String,
+    type: GRPCCallType,
+    callOptions: CallOptions,
+    interceptors: [ClientInterceptor<Request, Response>]
+  ) -> Call<Request, Response> {
+    let stream: _FakeResponseStream<Request, Response>? = self.dequeueResponseStream(forPath: path)
+    let eventLoop = stream?.channel.eventLoop ?? EmbeddedEventLoop()
+    return Call(
+      path: path,
+      type: type,
+      eventLoop: eventLoop,
+      options: callOptions,
+      interceptors: interceptors,
+      transportFactory: .fake(stream, on: eventLoop)
+    )
+  }
+
   // (Docs inherited from `GRPCChannel`)
   public func makeUnaryCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
     path: String,

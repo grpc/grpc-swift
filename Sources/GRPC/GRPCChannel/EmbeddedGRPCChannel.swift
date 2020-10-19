@@ -54,6 +54,48 @@ class EmbeddedGRPCChannel: GRPCChannel {
     self.errorDelegate = errorDelegate
   }
 
+  internal func makeCall<Request: Message, Response: Message>(
+    path: String,
+    type: GRPCCallType,
+    callOptions: CallOptions,
+    interceptors: [ClientInterceptor<Request, Response>]
+  ) -> Call<Request, Response> {
+    return Call(
+      path: path,
+      type: type,
+      eventLoop: self.eventLoop,
+      options: callOptions,
+      interceptors: interceptors,
+      transportFactory: .http2(
+        multiplexer: self.multiplexer,
+        authority: self.authority,
+        scheme: self.scheme,
+        errorDelegate: self.errorDelegate
+      )
+    )
+  }
+
+  internal func makeCall<Request: GRPCPayload, Response: GRPCPayload>(
+    path: String,
+    type: GRPCCallType,
+    callOptions: CallOptions,
+    interceptors: [ClientInterceptor<Request, Response>]
+  ) -> Call<Request, Response> {
+    return Call(
+      path: path,
+      type: type,
+      eventLoop: self.eventLoop,
+      options: callOptions,
+      interceptors: interceptors,
+      transportFactory: .http2(
+        multiplexer: self.multiplexer,
+        authority: self.authority,
+        scheme: self.scheme,
+        errorDelegate: self.errorDelegate
+      )
+    )
+  }
+
   private func makeRequestHead(path: String, options: CallOptions) -> _GRPCRequestHead {
     return _GRPCRequestHead(
       scheme: self.scheme,

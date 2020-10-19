@@ -53,10 +53,10 @@ internal final class ClientTransport<Request, Response> {
   }
 
   /// Details about the call.
-  private let callDetails: CallDetails
+  internal let callDetails: CallDetails
 
   /// A logger.
-  private var logger: Logger {
+  internal var logger: Logger {
     return self.callDetails.options.logger
   }
 
@@ -98,8 +98,8 @@ internal final class ClientTransport<Request, Response> {
     self.eventLoop = eventLoop
     self.callDetails = details
     self.pipeline = ClientInterceptorPipeline(
-      logger: details.options.logger,
       eventLoop: eventLoop,
+      details: details,
       interceptors: interceptors,
       errorDelegate: errorDelegate,
       onCancel: self.cancelFromPipeline(promise:),
@@ -125,7 +125,11 @@ internal final class ClientTransport<Request, Response> {
   /// - Important: This *must* to be called from the `eventLoop`.
   internal func send(_ part: ClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
     self.eventLoop.assertInEventLoop()
-    self.pipeline?.write(part, promise: promise)
+    if let pipeline = self.pipeline {
+      pipeline.write(part, promise: promise)
+    } else {
+      promise?.fail(GRPCError.AlreadyComplete())
+    }
   }
 
   /// Attempt to cancel the RPC notifying any interceptors.
@@ -133,7 +137,11 @@ internal final class ClientTransport<Request, Response> {
   ///   been handled.
   internal func cancel(promise: EventLoopPromise<Void>?) {
     self.eventLoop.assertInEventLoop()
-    self.pipeline?.cancel(promise: promise)
+    if let pipeline = self.pipeline {
+      pipeline.cancel(promise: promise)
+    } else {
+      promise?.fail(GRPCError.AlreadyComplete())
+    }
   }
 }
 
@@ -735,7 +743,7 @@ extension ClientTransport {
       method: self.callDetails.options.cacheable ? "GET" : "POST",
       scheme: self.callDetails.scheme,
       path: self.callDetails.path,
-      host: self.callDetails.host,
+      host: self.callDetails.authority,
       deadline: self.callDetails.options.timeLimit.makeDeadline(),
       customMetadata: metadata,
       encoding: self.callDetails.options.messageEncoding

@@ -30,8 +30,14 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
     onResponsePart: @escaping (ClientResponsePart<Response>) -> Void
   ) -> ClientInterceptorPipeline<Request, Response> {
     return ClientInterceptorPipeline(
-      logger: self.clientLogger,
       eventLoop: EmbeddedEventLoop(),
+      details: CallDetails(
+        type: .unary,
+        path: "ignored",
+        authority: "ignored",
+        scheme: "ignored",
+        options: .init(logger: self.clientLogger)
+      ),
       interceptors: interceptors,
       errorDelegate: errorDelegate,
       onCancel: onCancel,

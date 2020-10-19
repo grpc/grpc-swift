@@ -29,7 +29,7 @@ class ClientTransportTests: GRPCTestCase {
     return CallDetails(
       type: type,
       path: "/echo.Echo/Get",
-      host: "localhost",
+      authority: "localhost",
       scheme: "https",
       options: .init(logger: self.logger)
     )
