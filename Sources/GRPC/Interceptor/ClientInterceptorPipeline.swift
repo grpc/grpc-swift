@@ -183,7 +183,7 @@ internal final class ClientInterceptorPipeline<Request, Response> {
     if let tail = self.tail {
       tail.invokeWrite(part, promise: promise)
     } else {
-      promise?.fail(GRPCStatus(code: .unavailable, message: "The RPC has already completed"))
+      promise?.fail(GRPCError.AlreadyComplete())
     }
   }
 
@@ -199,7 +199,7 @@ internal final class ClientInterceptorPipeline<Request, Response> {
     if let tail = self.tail {
       tail.invokeCancel(promise: promise)
     } else {
-      promise?.fail(GRPCStatus(code: .unavailable, message: "The RPC has already completed"))
+      promise?.fail(GRPCError.AlreadyComplete())
     }
   }
 }
