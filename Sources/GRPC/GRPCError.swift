@@ -236,6 +236,19 @@ public enum GRPCError {
     }
   }
 
+  /// Action was taken after the RPC had already completed.
+  public struct AlreadyComplete: GRPCErrorProtocol {
+    public var description: String {
+      return "The RPC has already completed"
+    }
+
+    public init() {}
+
+    public func makeGRPCStatus() -> GRPCStatus {
+      return GRPCStatus(code: .unavailable, message: self.description)
+    }
+  }
+
   /// An invalid state has been reached; something has gone very wrong.
   public struct InvalidState: GRPCErrorProtocol {
     public var message: String
