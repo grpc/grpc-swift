@@ -38,11 +38,19 @@ final class AsyncQPSServerImpl: Grpc_Testing_BenchmarkServiceProvider {
   func streamingCall(
     context: StreamingResponseCallContext<Grpc_Testing_SimpleResponse>
   ) -> EventLoopFuture<(StreamEvent<Grpc_Testing_SimpleRequest>) -> Void> {
-    context.logger.warning("streamingCall not implemented yet")
-    return context.eventLoop.makeFailedFuture(GRPCStatus(
-      code: GRPCStatus.Code.unimplemented,
-      message: "Not implemented"
-    ))
+    return context.eventLoop.makeSucceededFuture({ event in
+      switch event {
+      case let .message(request):
+        do {
+          let response = try AsyncQPSServerImpl.processSimpleRPC(request: request)
+          _ = context.sendResponse(response)
+        } catch {
+          context.statusPromise.fail(error)
+        }
+      case .end:
+        context.statusPromise.succeed(.ok)
+      }
+    })
   }
 
   /// Single-sided unbounded streaming from client to server
