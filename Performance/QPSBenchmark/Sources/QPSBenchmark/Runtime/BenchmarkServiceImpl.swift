@@ -39,17 +39,17 @@ final class AsyncQPSServerImpl: Grpc_Testing_BenchmarkServiceProvider {
     context: StreamingResponseCallContext<Grpc_Testing_SimpleResponse>
   ) -> EventLoopFuture<(StreamEvent<Grpc_Testing_SimpleRequest>) -> Void> {
     return context.eventLoop.makeSucceededFuture({ event in
-        switch event {
-        case .message(let request):
-            do {
-                let response = try AsyncQPSServerImpl.processSimpleRPC(request: request)
-                _ = context.sendResponse(response)
-            } catch {
-                context.statusPromise.fail(error)
-            }
-        case .end:
-            context.statusPromise.succeed(.ok)
+      switch event {
+      case let .message(request):
+        do {
+          let response = try AsyncQPSServerImpl.processSimpleRPC(request: request)
+          _ = context.sendResponse(response)
+        } catch {
+          context.statusPromise.fail(error)
         }
+      case .end:
+        context.statusPromise.succeed(.ok)
+      }
     })
   }
 
