@@ -704,7 +704,7 @@ extension _GRPCClientResponsePart {
 
 // A wrapper for connection errors: we need to be able to preserve the underlying error as
 // well as extract a 'GRPCStatus' with code '.unavailable'.
-private struct ConnectionFailure: Error, GRPCStatusTransformable, CustomStringConvertible {
+internal struct ConnectionFailure: Error, GRPCStatusTransformable, CustomStringConvertible {
   /// The reason the connection failed.
   var reason: Error
 
