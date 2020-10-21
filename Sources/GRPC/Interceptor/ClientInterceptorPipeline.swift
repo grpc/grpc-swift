@@ -57,12 +57,19 @@ import NIOHTTP2
 /// │                           ClientTransport                         │
 /// │                       (a NIO.ChannelHandler)                      │
 /// ```
+@usableFromInline
 internal final class ClientInterceptorPipeline<Request, Response> {
   /// A logger.
-  internal let logger: Logger
+  internal var logger: Logger {
+    return self.details.options.logger
+  }
 
   /// The `EventLoop` this RPC is being executed on.
+  @usableFromInline
   internal let eventLoop: EventLoop
+
+  /// The details of the call.
+  internal let details: CallDetails
 
   /// The contexts associated with the interceptors stored in this pipeline. Context will be removed
   /// once the RPC has completed. Contexts are ordered from outbound to inbound, that is, the tail
@@ -100,19 +107,21 @@ internal final class ClientInterceptorPipeline<Request, Response> {
 
   /// The context closest to the `NIO.Channel`, i.e. where inbound events originate. This will be
   /// `nil` once the RPC has completed.
-  private var head: ClientInterceptorContext<Request, Response>? {
+  @usableFromInline
+  internal var _head: ClientInterceptorContext<Request, Response>? {
     return self.contexts?.last
   }
 
   /// The context closest to the application, i.e. where outbound events originate. This will be
   /// `nil` once the RPC has completed.
-  private var tail: ClientInterceptorContext<Request, Response>? {
+  @usableFromInline
+  internal var _tail: ClientInterceptorContext<Request, Response>? {
     return self.contexts?.first
   }
 
   internal init(
-    logger: Logger,
     eventLoop: EventLoop,
+    details: CallDetails,
     interceptors: [ClientInterceptor<Request, Response>],
     errorDelegate: ClientErrorDelegate?,
     onCancel: @escaping (EventLoopPromise<Void>?) -> Void,
@@ -120,7 +129,7 @@ internal final class ClientInterceptorPipeline<Request, Response> {
     onResponsePart: @escaping (ClientResponsePart<Response>) -> Void
   ) {
     self.eventLoop = eventLoop
-    self.logger = logger
+    self.details = details
 
     // We know we'll have at least a head and a tail as well as any user provided interceptors.
     var contexts: [ClientInterceptorContext<Request, Response>] = []
@@ -166,7 +175,7 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   /// - Important: This *must* to be called from the `eventLoop`.
   internal func read(_ part: ClientResponsePart<Response>) {
     self.eventLoop.assertInEventLoop()
-    self.head?.invokeRead(part)
+    self._head?.invokeRead(part)
   }
 
   /// Writes a request message into the interceptor pipeline.
@@ -177,10 +186,11 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   ///   - part: The request part to write.
   ///   - promise: A promise to complete when the request part has been successfully written.
   /// - Important: This *must* to be called from the `eventLoop`.
+  @inlinable
   internal func write(_ part: ClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
     self.eventLoop.assertInEventLoop()
 
-    if let tail = self.tail {
+    if let tail = self._tail {
       tail.invokeWrite(part, promise: promise)
     } else {
       promise?.fail(GRPCError.AlreadyComplete())
@@ -196,7 +206,7 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   internal func cancel(promise: EventLoopPromise<Void>?) {
     self.eventLoop.assertInEventLoop()
 
-    if let tail = self.tail {
+    if let tail = self._tail {
       tail.invokeCancel(promise: promise)
     } else {
       promise?.fail(GRPCError.AlreadyComplete())

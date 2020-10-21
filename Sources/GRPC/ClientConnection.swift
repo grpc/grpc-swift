@@ -143,6 +143,24 @@ public class ClientConnection {
     return (logger, requestID)
   }
 
+  /// Populates the logger in `options` and appends a request ID header to the metadata, if
+  /// configured.
+  /// - Parameter options: The options containing the logger to populate.
+  private func populateLogger(in options: inout CallOptions) {
+    // Get connection metadata.
+    self.connectionManager.appendMetadata(to: &options.logger)
+
+    // Attach a request ID.
+    let requestID = options.requestIDProvider.requestID()
+    if let requestID = requestID {
+      options.logger[metadataKey: MetadataKey.requestID] = "\(requestID)"
+      // Add the request ID header too.
+      if let requestIDHeader = options.requestIDHeader {
+        options.customMetadata.add(name: requestIDHeader, value: requestID)
+      }
+    }
+  }
+
   private func makeRequestHead(path: String, options: CallOptions,
                                requestID: String?) -> _GRPCRequestHead {
     return _GRPCRequestHead(
@@ -151,6 +169,56 @@ public class ClientConnection {
       host: self.authority,
       options: options,
       requestID: requestID
+    )
+  }
+}
+
+extension ClientConnection {
+  public func makeCall<Request: Message, Response: Message>(
+    path: String,
+    type: GRPCCallType,
+    callOptions: CallOptions,
+    interceptors: [ClientInterceptor<Request, Response>]
+  ) -> Call<Request, Response> {
+    var options = callOptions
+    self.populateLogger(in: &options)
+
+    return Call(
+      path: path,
+      type: type,
+      eventLoop: self.multiplexer.eventLoop,
+      options: options,
+      interceptors: interceptors,
+      transportFactory: .http2(
+        multiplexer: self.multiplexer,
+        authority: self.authority,
+        scheme: self.scheme,
+        errorDelegate: self.configuration.errorDelegate
+      )
+    )
+  }
+
+  public func makeCall<Request: GRPCPayload, Response: GRPCPayload>(
+    path: String,
+    type: GRPCCallType,
+    callOptions: CallOptions,
+    interceptors: [ClientInterceptor<Request, Response>]
+  ) -> Call<Request, Response> {
+    var options = callOptions
+    self.populateLogger(in: &options)
+
+    return Call(
+      path: path,
+      type: type,
+      eventLoop: self.multiplexer.eventLoop,
+      options: options,
+      interceptors: interceptors,
+      transportFactory: .http2(
+        multiplexer: self.multiplexer,
+        authority: self.authority,
+        scheme: self.scheme,
+        errorDelegate: self.configuration.errorDelegate
+      )
     )
   }
 }

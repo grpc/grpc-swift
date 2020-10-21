@@ -18,7 +18,8 @@ import NIO
 
 public struct ClientInterceptorContext<Request, Response> {
   /// The interceptor this context is for.
-  private let interceptor: AnyClientInterceptor<Request, Response>
+  @usableFromInline
+  internal let interceptor: AnyClientInterceptor<Request, Response>
 
   /// The pipeline this context is associated with.
   private let pipeline: ClientInterceptorPipeline<Request, Response>
@@ -44,6 +45,16 @@ public struct ClientInterceptorContext<Request, Response> {
   /// A logger.
   public var logger: Logger {
     return self.pipeline.logger
+  }
+
+  /// The type of the RPC, e.g. "unary".
+  public var type: GRPCCallType {
+    return self.pipeline.details.type
+  }
+
+  /// The path of the RPC in the format "/Service/Method", e.g. "/echo.Echo/Get".
+  public var path: String {
+    return self.pipeline.details.path
   }
 
   /// Construct a `ClientInterceptorContext` for the interceptor at the given index within in
@@ -123,6 +134,7 @@ extension ClientInterceptorContext {
     self.interceptor.read(part, context: self)
   }
 
+  @inlinable
   internal func invokeWrite(_ part: ClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
     self.eventLoop.assertInEventLoop()
     self.interceptor.write(part, promise: promise, context: self)
