@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import GRPC
 import XCTest
 
 struct UnwrapError: Error {}
@@ -149,6 +150,16 @@ struct Matcher<Value> {
         : .noMatch(actual: "has count \(actual)", expected: "count of \(count)")
     }
   }
+
+  // MARK: gRPC matchers
+
+  static func hasCode(_ code: GRPCStatus.Code) -> Matcher<GRPCStatus> {
+    return .init { actual in
+      actual.code == code
+        ? .match
+        : .noMatch(actual: "has status code \(actual)", expected: "\(code)")
+    }
+  }
 }
 
 struct ExpressionMatcher<Value> {
@@ -172,7 +183,7 @@ struct ExpressionMatcher<Value> {
         let value = try expression()
         return matcher?.evaluate(value) ?? .match
       } catch {
-        return .noMatch(actual: "threw \(error)", expected: "should not throw error")
+        return .noMatch(actual: "threw '\(error)'", expected: "should not throw error")
       }
     }
   }
@@ -183,7 +194,7 @@ struct ExpressionMatcher<Value> {
     return .init { expression in
       do {
         let value = try expression()
-        return .noMatch(actual: "returned \(value)", expected: "should throw error")
+        return .noMatch(actual: "returned '\(value)'", expected: "should throw error")
       } catch {
         return matcher?.evaluate(error) ?? .match
       }

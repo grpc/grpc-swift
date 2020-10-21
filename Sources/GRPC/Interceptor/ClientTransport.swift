@@ -34,9 +34,11 @@ import NIOHTTP2
 /// ### Thread Safety
 ///
 /// This class is not thread safe. All methods **must** be executed on the transport's `eventLoop`.
+@usableFromInline
 internal final class ClientTransport<Request, Response> {
   /// The `EventLoop` this transport is running on.
-  private let eventLoop: EventLoop
+  @usableFromInline
+  internal let eventLoop: EventLoop
 
   /// The current state of the transport.
   private var state: State = .idle
@@ -53,10 +55,10 @@ internal final class ClientTransport<Request, Response> {
   }
 
   /// Details about the call.
-  private let callDetails: CallDetails
+  internal let callDetails: CallDetails
 
   /// A logger.
-  private var logger: Logger {
+  internal var logger: Logger {
     return self.callDetails.options.logger
   }
 
@@ -77,7 +79,8 @@ internal final class ClientTransport<Request, Response> {
 
   /// The interceptor pipeline connected to this transport. This must be set to `nil` when removed
   /// from the `ChannelPipeline` in order to break reference cycles.
-  private var pipeline: ClientInterceptorPipeline<Request, Response>?
+  @usableFromInline
+  internal var _pipeline: ClientInterceptorPipeline<Request, Response>?
 
   /// Our current state as logging metadata.
   private var stateForLogging: Logger.MetadataValue {
@@ -97,9 +100,9 @@ internal final class ClientTransport<Request, Response> {
   ) {
     self.eventLoop = eventLoop
     self.callDetails = details
-    self.pipeline = ClientInterceptorPipeline(
-      logger: details.options.logger,
+    self._pipeline = ClientInterceptorPipeline(
       eventLoop: eventLoop,
+      details: details,
       interceptors: interceptors,
       errorDelegate: errorDelegate,
       onCancel: self.cancelFromPipeline(promise:),
@@ -123,9 +126,14 @@ internal final class ClientTransport<Request, Response> {
   ///   - part: The part to send.
   ///   - promise: A promise which will be completed when the request part has been handled.
   /// - Important: This *must* to be called from the `eventLoop`.
+  @inlinable
   internal func send(_ part: ClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
     self.eventLoop.assertInEventLoop()
-    self.pipeline?.write(part, promise: promise)
+    if let pipeline = self._pipeline {
+      pipeline.write(part, promise: promise)
+    } else {
+      promise?.fail(GRPCError.AlreadyComplete())
+    }
   }
 
   /// Attempt to cancel the RPC notifying any interceptors.
@@ -133,7 +141,11 @@ internal final class ClientTransport<Request, Response> {
   ///   been handled.
   internal func cancel(promise: EventLoopPromise<Void>?) {
     self.eventLoop.assertInEventLoop()
-    self.pipeline?.cancel(promise: promise)
+    if let pipeline = self._pipeline {
+      pipeline.cancel(promise: promise)
+    } else {
+      promise?.fail(GRPCError.AlreadyComplete())
+    }
   }
 }
 
@@ -165,13 +177,17 @@ extension ClientTransport {
 // MARK: - ChannelHandler API
 
 extension ClientTransport: ChannelInboundHandler {
+  @usableFromInline
   typealias InboundIn = _GRPCClientResponsePart<Response>
+
+  @usableFromInline
   typealias OutboundOut = _GRPCClientRequestPart<Request>
 
+  @usableFromInline
   internal func handlerRemoved(context: ChannelHandlerContext) {
     self.eventLoop.assertInEventLoop()
     // Break the reference cycle.
-    self.pipeline = nil
+    self._pipeline = nil
   }
 
   internal func channelError(_ error: Error) {
@@ -179,21 +195,25 @@ extension ClientTransport: ChannelInboundHandler {
     self.act(on: self.state.channelError(error))
   }
 
+  @usableFromInline
   internal func errorCaught(context: ChannelHandlerContext, error: Error) {
     self.channelError(error)
   }
 
+  @usableFromInline
   internal func channelActive(context: ChannelHandlerContext) {
     self.eventLoop.assertInEventLoop()
     self.logger.debug("activated stream channel", source: "GRPC")
     self.act(on: self.state.channelActive(context: context))
   }
 
+  @usableFromInline
   internal func channelInactive(context: ChannelHandlerContext) {
     self.eventLoop.assertInEventLoop()
     self.act(on: self.state.channelInactive(context: context))
   }
 
+  @usableFromInline
   internal func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     self.eventLoop.assertInEventLoop()
     let part = self.unwrapInboundIn(data)
@@ -685,10 +705,10 @@ extension ClientTransport {
   private func forwardToInterceptors(_ part: _GRPCClientResponsePart<Response>) {
     switch part {
     case let .initialMetadata(metadata):
-      self.pipeline?.read(.metadata(metadata))
+      self._pipeline?.read(.metadata(metadata))
 
     case let .message(context):
-      self.pipeline?.read(.message(context.message))
+      self._pipeline?.read(.message(context.message))
 
     case let .trailingMetadata(trailers):
       // The `Channel` delivers trailers and `GRPCStatus`, we want to emit them together in the
@@ -698,14 +718,14 @@ extension ClientTransport {
     case let .status(status):
       let trailers = self.trailers ?? [:]
       self.trailers = nil
-      self.pipeline?.read(.end(status, trailers))
+      self._pipeline?.read(.end(status, trailers))
     }
   }
 
   /// Forward the error to the interceptor pipeline.
   /// - Parameter error: The error to forward.
   private func forwardErrorToInterceptors(_ error: Error) {
-    self.pipeline?.read(.error(error))
+    self._pipeline?.read(.error(error))
   }
 }
 
@@ -735,7 +755,7 @@ extension ClientTransport {
       method: self.callDetails.options.cacheable ? "GET" : "POST",
       scheme: self.callDetails.scheme,
       path: self.callDetails.path,
-      host: self.callDetails.host,
+      host: self.callDetails.authority,
       deadline: self.callDetails.options.timeLimit.makeDeadline(),
       customMetadata: metadata,
       encoding: self.callDetails.options.messageEncoding
