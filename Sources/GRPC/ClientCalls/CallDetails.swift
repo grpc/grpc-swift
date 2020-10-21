@@ -22,7 +22,7 @@ internal struct CallDetails {
   internal var path: String
 
   /// The host, used for the ":authority" pseudo header.
-  internal var host: String
+  internal var authority: String
 
   /// Value used for the ":scheme" pseudo header, e.g. "https".
   internal var scheme: String
