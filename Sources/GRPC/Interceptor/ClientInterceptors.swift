@@ -87,27 +87,30 @@ open class ClientInterceptor<Request, Response> {
 
 /// An interceptor which offloads requests to the transport and forwards any response parts to the
 /// rest of the pipeline.
+@usableFromInline
 internal struct HeadClientInterceptor<Request, Response>: ClientInterceptorProtocol {
   /// Called when a cancellation has been requested.
   private let onCancel: (EventLoopPromise<Void>?) -> Void
 
   /// Called when a request part has been written.
-  private let onRequestPart: (ClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void
+  @usableFromInline
+  internal let _onRequestPart: (ClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void
 
   init(
     onCancel: @escaping (EventLoopPromise<Void>?) -> Void,
     onRequestPart: @escaping (ClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void
   ) {
     self.onCancel = onCancel
-    self.onRequestPart = onRequestPart
+    self._onRequestPart = onRequestPart
   }
 
+  @inlinable
   internal func write(
     _ part: ClientRequestPart<Request>,
     promise: EventLoopPromise<Void>?,
     context: ClientInterceptorContext<Request, Response>
   ) {
-    self.onRequestPart(part, promise)
+    self._onRequestPart(part, promise)
   }
 
   internal func cancel(
@@ -127,6 +130,7 @@ internal struct HeadClientInterceptor<Request, Response>: ClientInterceptorProto
 
 /// An interceptor which offloads responses to a provided callback and forwards any requests parts
 /// and cancellation requests to rest of the pipeline.
+@usableFromInline
 internal struct TailClientInterceptor<Request, Response>: ClientInterceptorProtocol {
   /// The pipeline this interceptor belongs to.
   private let pipeline: ClientInterceptorPipeline<Request, Response>
@@ -191,6 +195,7 @@ internal struct TailClientInterceptor<Request, Response>: ClientInterceptorProto
     }
   }
 
+  @inlinable
   internal func write(
     _ part: ClientRequestPart<Request>,
     promise: EventLoopPromise<Void>?,
@@ -210,15 +215,18 @@ internal struct TailClientInterceptor<Request, Response>: ClientInterceptorProto
 // MARK: - Any Interceptor
 
 /// A wrapping interceptor which delegates to the implementation of an underlying interceptor.
+@usableFromInline
 internal struct AnyClientInterceptor<Request, Response>: ClientInterceptorProtocol {
-  private enum Implementation {
+  @usableFromInline
+  internal enum Implementation {
     case head(HeadClientInterceptor<Request, Response>)
     case tail(TailClientInterceptor<Request, Response>)
     case base(ClientInterceptor<Request, Response>)
   }
 
   /// The underlying interceptor implementation.
-  private let implementation: Implementation
+  @usableFromInline
+  internal let _implementation: Implementation
 
   /// Makes a head interceptor.
   /// - Returns: An `AnyClientInterceptor` which wraps a `HeadClientInterceptor`.
@@ -254,14 +262,14 @@ internal struct AnyClientInterceptor<Request, Response>: ClientInterceptorProtoc
   }
 
   private init(_ implementation: Implementation) {
-    self.implementation = implementation
+    self._implementation = implementation
   }
 
   internal func read(
     _ part: ClientResponsePart<Response>,
     context: ClientInterceptorContext<Request, Response>
   ) {
-    switch self.implementation {
+    switch self._implementation {
     case let .head(handler):
       handler.read(part, context: context)
     case let .tail(handler):
@@ -271,12 +279,13 @@ internal struct AnyClientInterceptor<Request, Response>: ClientInterceptorProtoc
     }
   }
 
+  @inlinable
   internal func write(
     _ part: ClientRequestPart<Request>,
     promise: EventLoopPromise<Void>?,
     context: ClientInterceptorContext<Request, Response>
   ) {
-    switch self.implementation {
+    switch self._implementation {
     case let .head(handler):
       handler.write(part, promise: promise, context: context)
     case let .tail(handler):
@@ -290,7 +299,7 @@ internal struct AnyClientInterceptor<Request, Response>: ClientInterceptorProtoc
     promise: EventLoopPromise<Void>?,
     context: ClientInterceptorContext<Request, Response>
   ) {
-    switch self.implementation {
+    switch self._implementation {
     case let .head(handler):
       handler.cancel(promise: promise, context: context)
     case let .tail(handler):
