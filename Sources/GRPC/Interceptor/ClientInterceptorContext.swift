@@ -18,7 +18,8 @@ import NIO
 
 public struct ClientInterceptorContext<Request, Response> {
   /// The interceptor this context is for.
-  private let interceptor: AnyClientInterceptor<Request, Response>
+  @usableFromInline
+  internal let interceptor: AnyClientInterceptor<Request, Response>
 
   /// The pipeline this context is associated with.
   private let pipeline: ClientInterceptorPipeline<Request, Response>
@@ -133,6 +134,7 @@ extension ClientInterceptorContext {
     self.interceptor.read(part, context: self)
   }
 
+  @inlinable
   internal func invokeWrite(_ part: ClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
     self.eventLoop.assertInEventLoop()
     self.interceptor.write(part, promise: promise, context: self)

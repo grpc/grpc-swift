@@ -38,7 +38,8 @@ import protocol SwiftProtobuf.Message
 /// Callers are not able to create `Call` objects directly, rather they must be created via an
 /// object conforming to `GRPCChannel` such as `ClientConnection`.
 public class Call<Request, Response> {
-  private enum State {
+  @usableFromInline
+  internal enum State {
     /// Idle, waiting to be invoked.
     case idle(ClientTransportFactory<Request, Response>)
 
@@ -48,7 +49,8 @@ public class Call<Request, Response> {
   }
 
   /// The current state of the call.
-  private var state: State
+  @usableFromInline
+  internal var _state: State
 
   /// User provided interceptors for the call.
   private let interceptors: [ClientInterceptor<Request, Response>]
@@ -82,7 +84,7 @@ public class Call<Request, Response> {
     self.path = path
     self.type = type
     self.options = options
-    self.state = .idle(transportFactory)
+    self._state = .idle(transportFactory)
     self.eventLoop = eventLoop
     self.interceptors = interceptors
   }
@@ -94,6 +96,7 @@ public class Call<Request, Response> {
   ///
   /// - Parameter onResponsePart: A callback which is invoked on every response part.
   /// - Important: This function should only be called once. Subsequent calls will be ignored.
+  @inlinable
   public func invoke(_ onResponsePart: @escaping (ClientResponsePart<Response>) -> Void) {
     self.options.logger.debug("starting rpc", metadata: ["path": "\(self.path)"], source: "GRPC")
 
@@ -111,6 +114,7 @@ public class Call<Request, Response> {
   ///   - part: The request part to send.
   ///   - promise: A promise which will be completed when the request part has been handled.
   /// - Note: Sending will always fail if `invoke(_:)` has not been called.
+  @inlinable
   public func send(_ part: ClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
     if self.eventLoop.inEventLoop {
       self._send(part, promise: promise)
@@ -141,6 +145,7 @@ extension Call {
   /// - Parameter part: The request part to send.
   /// - Returns: A future which will be resolved when the request has been handled.
   /// - Note: Sending will always fail if `invoke(_:)` has not been called.
+  @inlinable
   public func send(_ part: ClientRequestPart<Request>) -> EventLoopFuture<Void> {
     let promise = self.eventLoop.makePromise(of: Void.self)
     self.send(part, promise: promise)
@@ -160,12 +165,13 @@ extension Call {
 extension Call {
   /// Invoke the RPC with this response part handler.
   /// - Important: This *must* to be called from the `eventLoop`.
-  private func _invoke(
+  @usableFromInline
+  internal func _invoke(
     _ onResponsePart: @escaping (ClientResponsePart<Response>) -> Void
   ) {
     self.eventLoop.assertInEventLoop()
 
-    switch self.state {
+    switch self._state {
     case let .idle(factory):
       let transport = factory.makeConfiguredTransport(
         to: self.path,
@@ -174,7 +180,7 @@ extension Call {
         interceptedBy: self.interceptors,
         onResponsePart
       )
-      self.state = .invoked(transport)
+      self._state = .invoked(transport)
 
     case .invoked:
       // We can't be invoked twice. Just ignore this.
@@ -184,10 +190,11 @@ extension Call {
 
   /// Send a request part on the transport.
   /// - Important: This *must* to be called from the `eventLoop`.
-  private func _send(_ part: ClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
+  @inlinable
+  internal func _send(_ part: ClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
     self.eventLoop.assertInEventLoop()
 
-    switch self.state {
+    switch self._state {
     case .idle:
       promise?.fail(GRPCError.InvalidState("Call must be invoked before sending request parts"))
 
@@ -201,7 +208,7 @@ extension Call {
   private func _cancel(promise: EventLoopPromise<Void>?) {
     self.eventLoop.assertInEventLoop()
 
-    switch self.state {
+    switch self._state {
     case .idle:
       // This is weird: does it make sense to cancel before invoking it?
       promise?.fail(GRPCError.InvalidState("Call must be invoked before cancelling it"))
@@ -220,6 +227,7 @@ extension Call {
   /// - Parameters:
   ///   - request: The request to send.
   ///   - onResponsePart: A callback invoked for each response part received.
+  @inlinable
   internal func invokeUnaryRequest(
     _ request: Request,
     _ onResponsePart: @escaping (ClientResponsePart<Response>) -> Void
@@ -237,6 +245,7 @@ extension Call {
   /// additional messages and end the stream by calling `send(_:promise:)`.
   /// - Parameters:
   ///   - onResponsePart: A callback invoked for each response part received.
+  @inlinable
   internal func invokeStreamingRequests(
     _ onResponsePart: @escaping (ClientResponsePart<Response>) -> Void
   ) {
@@ -250,7 +259,8 @@ extension Call {
   }
 
   /// On-`EventLoop` implementation of `invokeUnaryRequest(request:_:)`.
-  private func _invokeUnaryRequest(
+  @usableFromInline
+  internal func _invokeUnaryRequest(
     request: Request,
     _ onResponsePart: @escaping (ClientResponsePart<Response>) -> Void
   ) {
@@ -267,7 +277,8 @@ extension Call {
   }
 
   /// On-`EventLoop` implementation of `invokeStreamingRequests(_:)`.
-  private func _invokeStreamingRequests(
+  @usableFromInline
+  internal func _invokeStreamingRequests(
     _ onResponsePart: @escaping (ClientResponsePart<Response>) -> Void
   ) {
     self.eventLoop.assertInEventLoop()

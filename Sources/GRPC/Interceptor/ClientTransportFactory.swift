@@ -18,6 +18,7 @@ import NIOHTTP2
 import protocol SwiftProtobuf.Message
 
 /// A `ClientTransport` factory for an RPC.
+@usableFromInline
 internal struct ClientTransportFactory<Request, Response> {
   /// The underlying transport factory.
   private var factory: Factory<Request, Response>
