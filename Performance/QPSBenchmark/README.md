@@ -16,7 +16,9 @@ You can easily run the tests locally using the C++ driver program from gRPC - no
 of running the C++ tests which can be done in a gRPC checkout with 
 `./tools/run_tests/run_performance_tests.py -l c++ -r cpp_protobuf_async_unary_qps_unconstrained_insecure`
 
-For an example of running a benchmarking tests proceed as follows
+For a examples of running benchmarking tests proceed as follows
+
+### Unary Benchmark
 1. Open a terminal window and run the QPSBenchmark - `swift run -c release QPSBenchmark --driver_port 10400`.  
 This will become the server when instructed by the driver.
 2. Open another terminal window and run QPSBenchmark - `swift run -c release QPSBenchmark --driver_port 10410`.
