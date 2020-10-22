@@ -16,7 +16,9 @@ You can easily run the tests locally using the C++ driver program from gRPC - no
 of running the C++ tests which can be done in a gRPC checkout with 
 `./tools/run_tests/run_performance_tests.py -l c++ -r cpp_protobuf_async_unary_qps_unconstrained_insecure`
 
-For an example of running a benchmarking tests proceed as follows
+For examples of running benchmarking tests proceed as follows
+
+### Unary Benchmark
 1. Open a terminal window and run the QPSBenchmark - `swift run -c release QPSBenchmark --driver_port 10400`.  
 This will become the server when instructed by the driver.
 2. Open another terminal window and run QPSBenchmark - `swift run -c release QPSBenchmark --driver_port 10410`.
@@ -26,3 +28,7 @@ configure the environment with `export QPS_WORKERS="localhost:10400,localhost:10
 `cmake/build/qps_json_driver '--scenarios_json={"scenarios": [{"name": "swift_protobuf_async_unary_qps_unconstrained_insecure", "warmup_seconds": 5, "benchmark_seconds": 30, "num_servers": 1, "server_config": {"async_server_threads": 0, "channel_args": [{"str_value": "throughput", "name": "grpc.optimization_target"}], "server_type": "ASYNC_SERVER", "security_params": null, "threads_per_cq": 0, "server_processes": 0}, "client_config": {"security_params": null, "channel_args": [{"str_value": "throughput", "name": "grpc.optimization_target"}], "async_client_threads": 0, "outstanding_rpcs_per_channel": 100, "rpc_type": "UNARY", "payload_config": {"simple_params": {"resp_size": 0, "req_size": 0}}, "client_channels": 64, "threads_per_cq": 0, "load_params": {"closed_loop": {}}, "client_type": "ASYNC_CLIENT", "histogram_params": {"max_possible": 60000000000.0, "resolution": 0.01}, "client_processes": 0}, "num_clients": 0}]}' --scenario_result_file=scenario_result.json`
 This will run a test of asynchronous unary client and server, using all the cores on the machine.  
 64 channels each with 100 outstanding requests.
+
+### Ping Pong Benchmark
+
+As above but drive with `cmake/build/qps_json_driver '--scenarios_json={"scenarios": [{"name": "swift_protobuf_async_streaming_ping_pong_insecure", "warmup_seconds": 5, "benchmark_seconds": 30, "num_servers": 1, "server_config": {"async_server_threads": 1, "channel_args": [{"str_value": "latency", "name": "grpc.optimization_target"}, {"int_value": 1, "name": "grpc.minimal_stack"}], "server_type": "ASYNC_SERVER", "security_params": null, "threads_per_cq": 0, "server_processes": 0}, "client_config": {"security_params": null, "channel_args": [{"str_value": "latency", "name": "grpc.optimization_target"}, {"int_value": 1, "name": "grpc.minimal_stack"}], "async_client_threads": 1, "outstanding_rpcs_per_channel": 1, "rpc_type": "STREAMING", "payload_config": {"simple_params": {"resp_size": 0, "req_size": 0}}, "client_channels": 1, "threads_per_cq": 0, "load_params": {"closed_loop": {}}, "client_type": "ASYNC_CLIENT", "histogram_params": {"max_possible": 60000000000.0, "resolution": 0.01}, "client_processes": 0}, "num_clients": 1}]}' --scenario_result_file=scenario_result.json`
