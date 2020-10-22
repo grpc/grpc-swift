@@ -207,12 +207,14 @@ final class AsyncQPSClient<RequestMakerType: RequestMaker>: QPSClient {
 
     /// Returns if it is permissible to make another request - ie we've not been asked to stop, and we're not at the limit of outstanding requests.
     private var canMakeRequest: Bool {
+      assert(self.connection.eventLoop.inEventLoop)
       return !self.stopRequested
         && self.numberOfOutstandingRequests < self.maxPermittedOutstandingRequests
     }
 
     /// If there is spare permitted capacity make a request and repeat when it is done.
     private func makeRequestAndRepeat() {
+      precondition(self.connection.eventLoop.inEventLoop)
       // Check for capacity.
       if !self.canMakeRequest {
         return

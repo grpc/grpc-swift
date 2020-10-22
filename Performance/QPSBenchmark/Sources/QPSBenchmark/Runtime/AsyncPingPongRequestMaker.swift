@@ -64,14 +64,16 @@ final class AsyncPingPongRequestMaker: RequestMaker {
     >?
 
     /// Handle a response from the server - potentially triggers making another request.
+    /// Will execute on the event loop which deals with thread safety concerns.
     func handleResponse(response: Grpc_Testing_SimpleResponse) {
+      precondition(streamingCall!.eventLoop.inEventLoop)
       let endTime = grpcTimeNow()
       self.stats.add(latency: endTime - startTime)
       if !self.stopRequested,
         self.messagesPerStream == 0 || messagesSent < self.messagesPerStream {
         messagesSent += 1
         startTime = endTime // Use end of previous request as the start of the next.
-        _ = streamingCall!.sendMessage(self.requestMessage)
+        streamingCall!.sendMessage(self.requestMessage, promise: nil)
       } else {
         streamingCall!.sendEnd(promise: nil)
       }
@@ -80,7 +82,7 @@ final class AsyncPingPongRequestMaker: RequestMaker {
     // Setup the call.
     streamingCall = self.client.streamingCall(handler: handleResponse)
     // Kick start with initial request
-    _ = streamingCall!.sendMessage(self.requestMessage)
+    streamingCall!.sendMessage(self.requestMessage, promise: nil)
 
     return streamingCall!.status
   }
