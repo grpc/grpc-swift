@@ -64,6 +64,7 @@ let package = Package(
         "EchoImplementation",
         "GRPCSampleData",
         "GRPCInteroperabilityTestsImplementation",
+        "HelloWorldModel",
       ]
     ),
 
