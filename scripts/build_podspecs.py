@@ -71,6 +71,7 @@ class Pod:
         podspec += indent + "s.ios.deployment_target = '10.0'\n"
         podspec += indent + "s.osx.deployment_target = '10.12'\n"
         podspec += indent + "s.tvos.deployment_target = '10.0'\n"
+        podspec += indent + "s.watchos.deployment_target = '6.0'\n"
 
         if self.is_plugins_pod:
             podspec += indent + "s.source = { :http => \"https://github.com/grpc/grpc-swift/releases/download/#{s.version}/protoc-grpc-swift-plugins-#{s.version}.zip\"}\n\n"

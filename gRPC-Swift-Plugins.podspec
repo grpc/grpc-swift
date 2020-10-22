@@ -11,6 +11,7 @@ Pod::Spec.new do |s|
     s.ios.deployment_target = '10.0'
     s.osx.deployment_target = '10.12'
     s.tvos.deployment_target = '10.0'
+    s.watchos.deployment_target = '6.0'
     s.source = { :http => "https://github.com/grpc/grpc-swift/releases/download/#{s.version}/protoc-grpc-swift-plugins-#{s.version}.zip"}
 
     s.preserve_paths = '*'
