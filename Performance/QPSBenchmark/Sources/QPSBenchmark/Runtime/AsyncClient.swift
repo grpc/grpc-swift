@@ -198,7 +198,7 @@ final class AsyncQPSClient<RequestMakerType: RequestMaker>: QPSClient {
     /// Launch as many requests as allowed on the channel.
     /// This must be called from the connection eventLoop.
     private func launchRequests() {
-      precondition(self.connection.eventLoop.inEventLoop)
+      self.connection.eventLoop.preconditionInEventLoop()
 
       while self.canMakeRequest {
         self.makeRequestAndRepeat()
@@ -207,14 +207,14 @@ final class AsyncQPSClient<RequestMakerType: RequestMaker>: QPSClient {
 
     /// Returns if it is permissible to make another request - ie we've not been asked to stop, and we're not at the limit of outstanding requests.
     private var canMakeRequest: Bool {
-      assert(self.connection.eventLoop.inEventLoop)
+      self.connection.eventLoop.assertInEventLoop()
       return !self.stopRequested
         && self.numberOfOutstandingRequests < self.maxPermittedOutstandingRequests
     }
 
     /// If there is spare permitted capacity make a request and repeat when it is done.
     private func makeRequestAndRepeat() {
-      precondition(self.connection.eventLoop.inEventLoop)
+      self.connection.eventLoop.preconditionInEventLoop()
       // Check for capacity.
       if !self.canMakeRequest {
         return
@@ -231,7 +231,7 @@ final class AsyncQPSClient<RequestMakerType: RequestMaker>: QPSClient {
     /// Call when a request has completed.
     /// Records stats and attempts to make more requests if there is available capacity.
     private func requestCompleted(status: GRPCStatus) {
-      precondition(self.connection.eventLoop.inEventLoop)
+      self.connection.eventLoop.preconditionInEventLoop()
       self.numberOfOutstandingRequests -= 1
       if self.stopRequested, self.numberOfOutstandingRequests == 0 {
         self.stopIsComplete()
