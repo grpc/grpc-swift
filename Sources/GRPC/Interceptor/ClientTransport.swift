@@ -636,23 +636,39 @@ extension ClientTransport {
       "request_parts": "\(self.writeBuffer.count)",
     ], source: "GRPC")
 
-    while self.state.isUnbuffering, let write = self.writeBuffer.popFirst() {
-      self.logger.debug("unbuffering request part", metadata: [
-        "request_part": "\(write.request.name)",
-      ], source: "GRPC")
+    // Why the double loop? A promise completed as a result of the flush may enqueue more writes,
+    // or causes us to change state (i.e. we may have to close). If we didn't loop around then we
+    // may miss more buffered writes.
+    while self.state.isUnbuffering, !self.writeBuffer.isEmpty {
+      // Pull out as many writes as possible.
+      while let write = self.writeBuffer.popFirst() {
+        self.logger.debug("unbuffering request part", metadata: [
+          "request_part": "\(write.request.name)",
+        ], source: "GRPC")
 
-      if !shouldFlush {
-        shouldFlush = self.shouldFlush(after: write.request)
+        if !shouldFlush {
+          shouldFlush = self.shouldFlush(after: write.request)
+        }
+
+        self.write(write.request, to: channel, promise: write.promise, flush: false)
       }
-      self.write(write.request, to: channel, promise: write.promise, flush: false)
+
+      // Okay, flush now.
+      if shouldFlush {
+        shouldFlush = false
+        channel.flush()
+      }
     }
 
-    // Okay, flush now.
-    if shouldFlush {
-      channel.flush()
+    if self.writeBuffer.isEmpty {
+      self.logger.debug("request buffer drained", source: "GRPC")
+    } else {
+      self.logger.notice(
+        "unbuffering aborted",
+        metadata: ["call_state": self.stateForLogging],
+        source: "GRPC"
+      )
     }
-
-    self.logger.debug("request buffer drained", source: "GRPC")
 
     // We're unbuffered. What now?
     self.act(on: self.state.unbuffered())
