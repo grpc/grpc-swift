@@ -62,7 +62,7 @@ public enum GRPCError {
     }
 
     public var description: String {
-      return "RPC timed out before completing (\(self.timeLimit))"
+      return "RPC timed out before completing"
     }
 
     public func makeGRPCStatus() -> GRPCStatus {
