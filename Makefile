@@ -24,6 +24,9 @@ XCODEPROJ:=GRPC.xcodeproj
 all:
 	${SWIFT_BUILD}
 
+Package.resolved:
+	${SWIFT_PACKAGE} resolve
+
 .PHONY:
 plugins: ${PROTOC_GEN_SWIFT} ${PROTOC_GEN_GRPC_SWIFT}
 	cp $^ .

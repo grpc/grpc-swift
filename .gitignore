@@ -19,3 +19,4 @@ Examples/EchoWeb/node_modules
 Examples/EchoWeb/package-lock.json
 dev/codegen-tests/**/generated/*
 /scripts/.swiftformat-source/
+Package.resolved
