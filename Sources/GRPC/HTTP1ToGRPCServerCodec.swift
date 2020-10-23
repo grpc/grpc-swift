@@ -130,12 +130,14 @@ extension HTTP1ToGRPCServerCodec: ChannelInboundHandler {
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     let unwrappedData = self.unwrapInboundIn(data)
     if case .ignore = self.inboundState {
-        if case let .body(body) = unwrappedData, body.readableBytes == 0 {
-            return // Ignoring a read of zero bytes is always fine.
-        } else if case .end = unwrappedData {
-            return // Ignoring an end stream is not an event worth reporting.
-        }
-      self.logger.notice("ignoring read data", metadata: ["data": "\(data)"])
+      switch unwrappedData {
+      case let .body(body) where body.readableBytes == 0:
+        break // Ignoring a read of zero bytes is always fine.
+      case .end:
+        break // Ignoring an end stream is not an event worth reporting.
+      default:
+        self.logger.notice("ignoring read data", metadata: ["data": "\(unwrappedData)"])
+      }
       return
     }
 
