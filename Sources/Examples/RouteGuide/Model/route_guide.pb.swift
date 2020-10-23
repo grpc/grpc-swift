@@ -181,9 +181,12 @@ extension Routeguide_Point: SwiftProtobuf.Message, SwiftProtobuf._MessageImpleme
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
-      case 1: try decoder.decodeSingularInt32Field(value: &self.latitude)
-      case 2: try decoder.decodeSingularInt32Field(value: &self.longitude)
+      case 1: try { try decoder.decodeSingularInt32Field(value: &self.latitude) }()
+      case 2: try { try decoder.decodeSingularInt32Field(value: &self.longitude) }()
       default: break
       }
     }
@@ -216,9 +219,12 @@ extension Routeguide_Rectangle: SwiftProtobuf.Message, SwiftProtobuf._MessageImp
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
-      case 1: try decoder.decodeSingularMessageField(value: &self._lo)
-      case 2: try decoder.decodeSingularMessageField(value: &self._hi)
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._lo) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._hi) }()
       default: break
       }
     }
@@ -251,9 +257,12 @@ extension Routeguide_Feature: SwiftProtobuf.Message, SwiftProtobuf._MessageImple
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
-      case 1: try decoder.decodeSingularStringField(value: &self.name)
-      case 2: try decoder.decodeSingularMessageField(value: &self._location)
+      case 1: try { try decoder.decodeSingularStringField(value: &self.name) }()
+      case 2: try { try decoder.decodeSingularMessageField(value: &self._location) }()
       default: break
       }
     }
@@ -286,9 +295,12 @@ extension Routeguide_RouteNote: SwiftProtobuf.Message, SwiftProtobuf._MessageImp
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
-      case 1: try decoder.decodeSingularMessageField(value: &self._location)
-      case 2: try decoder.decodeSingularStringField(value: &self.message)
+      case 1: try { try decoder.decodeSingularMessageField(value: &self._location) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.message) }()
       default: break
       }
     }
@@ -323,11 +335,14 @@ extension Routeguide_RouteSummary: SwiftProtobuf.Message, SwiftProtobuf._Message
 
   public mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
-      case 1: try decoder.decodeSingularInt32Field(value: &self.pointCount)
-      case 2: try decoder.decodeSingularInt32Field(value: &self.featureCount)
-      case 3: try decoder.decodeSingularInt32Field(value: &self.distance)
-      case 4: try decoder.decodeSingularInt32Field(value: &self.elapsedTime)
+      case 1: try { try decoder.decodeSingularInt32Field(value: &self.pointCount) }()
+      case 2: try { try decoder.decodeSingularInt32Field(value: &self.featureCount) }()
+      case 3: try { try decoder.decodeSingularInt32Field(value: &self.distance) }()
+      case 4: try { try decoder.decodeSingularInt32Field(value: &self.elapsedTime) }()
       default: break
       }
     }
