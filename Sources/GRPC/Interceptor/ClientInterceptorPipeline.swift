@@ -71,6 +71,9 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   /// The details of the call.
   internal let details: CallDetails
 
+  /// A task for closing the RPC in case of a timeout.
+  private var scheduledClose: Scheduled<Void>?
+
   /// The contexts associated with the interceptors stored in this pipeline. Context will be removed
   /// once the RPC has completed. Contexts are ordered from outbound to inbound, that is, the tail
   /// is first and the head is last.
@@ -165,6 +168,7 @@ internal final class ClientInterceptorPipeline<Request, Response> {
     )
 
     self.contexts = contexts
+    self.setupDeadline()
   }
 
   /// Emit a response part message into the interceptor pipeline.
@@ -223,7 +227,48 @@ extension ClientInterceptorPipeline {
   internal func close() {
     self.eventLoop.assertInEventLoop()
 
-    // TODO: make sure the transport is closed (in case a user interceptor emits an error).
+    // Grab the head, we'll use it to cancel the transport. This is most likely already closed,
+    // but there's nothing to stop an interceptor from emitting its own error and leaving the
+    // transport open.
+    let head = self._head
     self.contexts = nil
+
+    // Cancel the timeout.
+    self.scheduledClose?.cancel()
+    self.scheduledClose = nil
+
+    // Cancel the transport.
+    head?.invokeCancel(promise: nil)
+  }
+
+  /// Sets up a deadline for the pipeline.
+  private func setupDeadline() {
+    if self.eventLoop.inEventLoop {
+      self._setupDeadline()
+    } else {
+      self.eventLoop.execute {
+        self._setupDeadline()
+      }
+    }
+  }
+
+  /// Sets up a deadline for the pipeline.
+  /// - Important: This *must* to be called from the `eventLoop`.
+  private func _setupDeadline() {
+    self.eventLoop.assertInEventLoop()
+
+    let timeLimit = self.details.options.timeLimit
+    let deadline = timeLimit.makeDeadline()
+
+    // There's no point scheduling this.
+    if deadline == .distantFuture {
+      return
+    }
+
+    self.scheduledClose = self.eventLoop.scheduleTask(deadline: deadline) {
+      // When the error hits the tail we'll call 'close()', this will cancel the transport if
+      // necessary.
+      self.read(.error(GRPCError.RPCTimedOut(timeLimit)))
+    }
   }
 }

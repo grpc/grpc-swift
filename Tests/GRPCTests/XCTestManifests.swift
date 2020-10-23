@@ -116,6 +116,8 @@ extension ClientInterceptorPipelineTests {
         ("testErrorDelegateIsCalled", testErrorDelegateIsCalled),
         ("testPipelineWhenClosed", testPipelineWhenClosed),
         ("testPipelineWithInterceptor", testPipelineWithInterceptor),
+        ("testPipelineWithTimeout", testPipelineWithTimeout),
+        ("testTimeoutIsCancelledOnCompletion", testTimeoutIsCancelledOnCompletion),
     ]
 }
 

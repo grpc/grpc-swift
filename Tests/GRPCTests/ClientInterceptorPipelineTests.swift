@@ -20,29 +20,41 @@ import NIOHPACK
 import XCTest
 
 class ClientInterceptorPipelineTests: GRPCTestCase {
+  override func setUp() {
+    super.setUp()
+    self.embeddedEventLoop = EmbeddedEventLoop()
+  }
+
+  private var embeddedEventLoop: EmbeddedEventLoop!
+
   private func makePipeline<Request, Response>(
     requests: Request.Type = Request.self,
     responses: Response.Type = Response.self,
+    details: CallDetails? = nil,
     interceptors: [ClientInterceptor<Request, Response>] = [],
     errorDelegate: ClientErrorDelegate? = nil,
-    onCancel: @escaping (EventLoopPromise<Void>?) -> Void = { _ in XCTFail("Unexpected cancel") },
+    onCancel: @escaping (EventLoopPromise<Void>?) -> Void = { _ in },
     onRequestPart: @escaping (ClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void,
     onResponsePart: @escaping (ClientResponsePart<Response>) -> Void
   ) -> ClientInterceptorPipeline<Request, Response> {
     return ClientInterceptorPipeline(
-      eventLoop: EmbeddedEventLoop(),
-      details: CallDetails(
-        type: .unary,
-        path: "ignored",
-        authority: "ignored",
-        scheme: "ignored",
-        options: .init(logger: self.clientLogger)
-      ),
+      eventLoop: self.embeddedEventLoop,
+      details: details ?? self.makeCallDetails(),
       interceptors: interceptors,
       errorDelegate: errorDelegate,
       onCancel: onCancel,
       onRequestPart: onRequestPart,
       onResponsePart: onResponsePart
+    )
+  }
+
+  private func makeCallDetails(timeLimit: TimeLimit = .none) -> CallDetails {
+    return CallDetails(
+      type: .unary,
+      path: "ignored",
+      authority: "ignored",
+      scheme: "ignored",
+      options: CallOptions(timeLimit: timeLimit, logger: self.clientLogger)
     )
   }
 
@@ -113,6 +125,97 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
 
     // And reads should be ignored. (We only expect errors in the response handler.)
     pipeline.read(.metadata([:]))
+  }
+
+  func testPipelineWithTimeout() throws {
+    var cancelled = false
+    var timedOut = false
+
+    class FailOnCancel<Request, Response>: ClientInterceptor<Request, Response> {
+      override func cancel(
+        promise: EventLoopPromise<Void>?,
+        context: ClientInterceptorContext<Request, Response>
+      ) {
+        XCTFail("Unexpected cancellation")
+        context.cancel(promise: promise)
+      }
+    }
+
+    let deadline = NIODeadline.uptimeNanoseconds(100)
+    let pipeline = self.makePipeline(
+      requests: String.self,
+      responses: String.self,
+      details: self.makeCallDetails(timeLimit: .deadline(deadline)),
+      interceptors: [FailOnCancel()],
+      onCancel: { promise in
+        assertThat(cancelled, .is(false))
+        cancelled = true
+        // We don't expect a promise: this cancellation is fired by the pipeline.
+        assertThat(promise, .is(.nil()))
+      },
+      onRequestPart: { _, _ in
+        XCTFail("Unexpected request part")
+      },
+      onResponsePart: { part in
+        assertThat(part.error, .is(.instanceOf(GRPCError.RPCTimedOut.self)))
+        assertThat(timedOut, .is(false))
+        timedOut = true
+      }
+    )
+
+    // Trigger the timeout.
+    self.embeddedEventLoop.advanceTime(to: deadline)
+    assertThat(timedOut, .is(true))
+
+    // We'll receive a cancellation; we only get this 'onCancel' callback. We'll fail in the
+    // interceptor if a cancellation is received.
+    assertThat(cancelled, .is(true))
+
+    // Pipeline should be torn down. Writes and cancellation should fail.
+    let p1 = pipeline.eventLoop.makePromise(of: Void.self)
+    pipeline.write(.end, promise: p1)
+    assertThat(try p1.futureResult.wait(), .throws(.instanceOf(GRPCError.AlreadyComplete.self)))
+
+    let p2 = pipeline.eventLoop.makePromise(of: Void.self)
+    pipeline.cancel(promise: p2)
+    assertThat(try p2.futureResult.wait(), .throws(.instanceOf(GRPCError.AlreadyComplete.self)))
+
+    // Reads should be ignored too. (We'll fail in `onRequestPart` if this goes through.)
+    pipeline.read(.metadata([:]))
+  }
+
+  func testTimeoutIsCancelledOnCompletion() throws {
+    let deadline = NIODeadline.uptimeNanoseconds(100)
+    var cancellations = 0
+
+    let pipeline = self.makePipeline(
+      requests: String.self,
+      responses: String.self,
+      details: self.makeCallDetails(timeLimit: .deadline(deadline)),
+      onCancel: { promise in
+        assertThat(cancellations, .is(0))
+        cancellations += 1
+        // We don't expect a promise: this cancellation is fired by the pipeline.
+        assertThat(promise, .is(.nil()))
+      },
+      onRequestPart: { _, _ in
+        XCTFail("Unexpected request part")
+      },
+      onResponsePart: { part in
+        // We only expect the end.
+        assertThat(part.end, .is(.notNil()))
+      }
+    )
+
+    // Read the end part.
+    pipeline.read(.end(.ok, [:]))
+    // Just a single cancellation.
+    assertThat(cancellations, .is(1))
+
+    // Pass the deadline.
+    self.embeddedEventLoop.advanceTime(to: deadline)
+    // We should still have just the one cancellation.
+    assertThat(cancellations, .is(1))
   }
 
   func testPipelineWithInterceptor() throws {
