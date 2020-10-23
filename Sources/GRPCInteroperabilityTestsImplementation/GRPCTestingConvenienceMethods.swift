@@ -15,7 +15,7 @@
  */
 import Foundation
 import GRPCInteroperabilityTestModels
-import NIOHTTP1
+import NIOHPACK
 import SwiftProtobuf
 
 // MARK: - Payload creation
@@ -110,7 +110,7 @@ extension Grpc_Testing_StreamingInputCallRequest: PayloadRequest {}
 
 // MARK: - Echo metadata
 
-extension HTTPHeaders {
+extension HPACKHeaders {
   /// See `ServerFeatures.echoMetadata`.
   var shouldEchoMetadata: Bool {
     return self.contains(name: "x-grpc-test-echo-initial") || self

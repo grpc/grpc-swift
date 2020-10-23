@@ -25,7 +25,7 @@ import XCTest
 
 let thrownError = GRPCStatus(code: .internalError, message: "expected error")
 let transformedError = GRPCStatus(code: .aborted, message: "transformed error")
-let transformedMetadata = HTTPHeaders([("transformed", "header")])
+let transformedMetadata = HPACKHeaders([("transformed", "header")])
 
 // Motivation for two different providers: Throwing immediately causes the event observer future (in the
 // client-streaming and bidi-streaming cases) to throw immediately, _before_ the corresponding handler has even added
@@ -117,8 +117,8 @@ class ErrorReturningEchoProvider: ImmediateThrowingEchoProvider {
 
 private class ErrorTransformingDelegate: ServerErrorDelegate {
   func transformRequestHandlerError(_ error: Error,
-                                    request: HTTPRequestHead) -> GRPCStatusAndMetadata? {
-    return GRPCStatusAndMetadata(status: transformedError, metadata: transformedMetadata)
+                                    headers: HPACKHeaders) -> GRPCStatusAndTrailers? {
+    return GRPCStatusAndTrailers(status: transformedError, trailers: transformedMetadata)
   }
 }
 

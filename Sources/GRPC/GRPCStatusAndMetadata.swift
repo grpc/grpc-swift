@@ -13,18 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import NIOHPACK
 import NIOHTTP1
 
-/// A simple struct holding a `GRPCStatus` and optionally metadata in the form of
-/// `HTTPHeaders`.
-public struct GRPCStatusAndMetadata: Equatable {
+/// A simple struct holding a `GRPCStatus` and optionally trailers in the form of
+/// `HPACKHeaders`.
+public struct GRPCStatusAndTrailers: Equatable {
   /// The status.
   public var status: GRPCStatus
-  /// The optional metadata.
-  public var metadata: HTTPHeaders?
 
-  public init(status: GRPCStatus, metadata: HTTPHeaders? = nil) {
+  /// The trailers.
+  public var trailers: HPACKHeaders?
+
+  public init(status: GRPCStatus, trailers: HPACKHeaders? = nil) {
     self.status = status
-    self.metadata = metadata
+    self.trailers = trailers
   }
 }

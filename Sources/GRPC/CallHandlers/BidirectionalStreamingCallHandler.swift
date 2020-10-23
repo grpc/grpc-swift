@@ -16,7 +16,7 @@
 import Foundation
 import Logging
 import NIO
-import NIOHTTP1
+import NIOHPACK
 import SwiftProtobuf
 
 /// Handles bidirectional streaming calls. Forwards incoming messages and end-of-stream events to the observer block.
@@ -54,10 +54,10 @@ public class BidirectionalStreamingCallHandler<
     )
   }
 
-  override internal func processHead(_ head: HTTPRequestHead, context: ChannelHandlerContext) {
+  override internal func processHeaders(_ headers: HPACKHeaders, context: ChannelHandlerContext) {
     let callContext = StreamingResponseCallContextImpl<ResponsePayload>(
       channel: context.channel,
-      request: head,
+      headers: headers,
       errorDelegate: self.callHandlerContext.errorDelegate,
       logger: self.callHandlerContext.logger
     )
@@ -96,9 +96,9 @@ public class BidirectionalStreamingCallHandler<
     }
   }
 
-  override internal func sendErrorStatusAndMetadata(_ statusAndMetadata: GRPCStatusAndMetadata) {
-    if let metadata = statusAndMetadata.metadata {
-      self.callContext?.trailingMetadata.add(contentsOf: metadata)
+  override internal func sendErrorStatusAndMetadata(_ statusAndMetadata: GRPCStatusAndTrailers) {
+    if let trailers = statusAndMetadata.trailers {
+      self.callContext?.trailers.add(contentsOf: trailers)
     }
     self.callContext?.statusPromise.fail(statusAndMetadata.status)
   }

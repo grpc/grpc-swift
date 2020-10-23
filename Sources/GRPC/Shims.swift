@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import Logging
 import NIO
 import NIOHPACK
+import NIOHTTP1
 import NIOSSL
 import SwiftProtobuf
 
@@ -405,4 +407,58 @@ public protocol GRPCProtobufPayload {}
 extension GRPCStatus.Code {
   @available(*, deprecated, message: "Use a 'default' branch")
   public static let doNotUse = GRPCStatus.Code.unknown
+}
+
+@available(*, deprecated, renamed: "GRPCStatusAndTrailers")
+public typealias GRPCStatusAndMetadata = GRPCStatusAndTrailers
+
+extension GRPCStatusAndTrailers {
+  @available(*, deprecated, renamed: "init(status:trailers:)")
+  public init(status: GRPCStatus, metadata: HTTPHeaders?) {
+    self.status = status
+    self.trailers = metadata.map { httpHeaders in
+      HPACKHeaders(httpHeaders: httpHeaders, normalizeHTTPHeaders: false)
+    }
+  }
+
+  @available(*, deprecated, renamed: "trailers")
+  public var metadata: HTTPHeaders? {
+    get {
+      return self.trailers.map {
+        HTTPHeaders($0.map { ($0.name, $0.value) })
+      }
+    }
+    set {
+      self.trailers = newValue.map {
+        // We'll normalize these before sending them.
+        HPACKHeaders(httpHeaders: $0, normalizeHTTPHeaders: false)
+      }
+    }
+  }
+}
+
+extension ServerCallContext {
+  /// Generic metadata provided with this request.
+  @available(*, deprecated, message: "Use 'headers' to get information found in 'request'")
+  public var request: HTTPRequestHead {
+    return HTTPRequestHead(
+      version: .init(major: 2, minor: 0),
+      method: .POST,
+      uri: self.headers.first(name: ":path") ?? "",
+      headers: HTTPHeaders(self.headers.map { ($0.name, $0.value) })
+    )
+  }
+}
+
+extension ServerCallContextBase {
+  @available(*, deprecated, renamed: "trailers")
+  public var trailingMetadata: HTTPHeaders {
+    get {
+      return HTTPHeaders(self.trailers.map { ($0.name, $0.value) })
+    }
+    set {
+      // No need to normalize; we'll do it in the 2-to-1 handler.
+      self.trailers = HPACKHeaders(httpHeaders: newValue, normalizeHTTPHeaders: false)
+    }
+  }
 }

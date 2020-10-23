@@ -16,6 +16,7 @@
 import Foundation
 import Logging
 import NIO
+import NIOHPACK
 import NIOHTTP1
 import SwiftProtobuf
 
@@ -34,6 +35,12 @@ open class UnaryResponseCallContext<ResponsePayload>: ServerCallContextBase, Sta
   public let responsePromise: EventLoopPromise<ResponsePayload>
   public var responseStatus: GRPCStatus = .ok
 
+  override public init(eventLoop: EventLoop, headers: HPACKHeaders, logger: Logger) {
+    self.responsePromise = eventLoop.makePromise()
+    super.init(eventLoop: eventLoop, headers: headers, logger: logger)
+  }
+
+  @available(*, deprecated, renamed: "init(eventLoop:headers:logger:)")
   override public init(eventLoop: EventLoop, request: HTTPRequestHead, logger: Logger) {
     self.responsePromise = eventLoop.makePromise()
     super.init(eventLoop: eventLoop, request: request, logger: logger)
@@ -51,7 +58,19 @@ open class UnaryResponseCallContext<ResponsePayload>: ServerCallContextBase, Sta
 /// lets us avoid associated-type requirements on the protocol.
 public protocol StatusOnlyCallContext: ServerCallContext {
   var responseStatus: GRPCStatus { get set }
-  var trailingMetadata: HTTPHeaders { get set }
+  var trailers: HPACKHeaders { get set }
+}
+
+extension StatusOnlyCallContext {
+  @available(*, deprecated, renamed: "trailers")
+  public var trailingMetadata: HTTPHeaders {
+    get {
+      return HTTPHeaders(self.trailers.map { ($0.name, $0.value) })
+    }
+    set {
+      self.trailers = HPACKHeaders(httpHeaders: newValue)
+    }
+  }
 }
 
 /// Concrete implementation of `UnaryResponseCallContext` used by our generated code.
@@ -60,22 +79,22 @@ open class UnaryResponseCallContextImpl<ResponsePayload>: UnaryResponseCallConte
 
   /// - Parameters:
   ///   - channel: The NIO channel the call is handled on.
-  ///   - request: The headers provided with this call.
+  ///   - headers: The headers provided with this call.
   ///   - errorDelegate: Provides a means for transforming response promise failures to `GRPCStatusTransformable` before
   ///     sending them to the client.
+  ///   - logger: A logger.
   public init(
     channel: Channel,
-    request: HTTPRequestHead,
+    headers: HPACKHeaders,
     errorDelegate: ServerErrorDelegate?,
     logger: Logger
   ) {
     self.channel = channel
+    super.init(eventLoop: channel.eventLoop, headers: headers, logger: logger)
 
-    super.init(eventLoop: channel.eventLoop, request: request, logger: logger)
-
-    responsePromise.futureResult
+    self.responsePromise.futureResult
       .whenComplete { [self, weak errorDelegate] result in
-        let statusAndMetadata: GRPCStatusAndMetadata
+        let statusAndMetadata: GRPCStatusAndTrailers
 
         switch result {
         case let .success(responseMessage):
@@ -86,36 +105,51 @@ open class UnaryResponseCallContextImpl<ResponsePayload>: UnaryResponseCallConte
             ),
             promise: nil
           )
-          statusAndMetadata = GRPCStatusAndMetadata(status: self.responseStatus, metadata: nil)
+          statusAndMetadata = GRPCStatusAndTrailers(status: self.responseStatus, trailers: nil)
         case let .failure(error):
-          errorDelegate?.observeRequestHandlerError(error, request: request)
+          errorDelegate?.observeRequestHandlerError(error, headers: headers)
 
-          if let transformed: GRPCStatusAndMetadata = errorDelegate?.transformRequestHandlerError(
+          if let transformed: GRPCStatusAndTrailers = errorDelegate?.transformRequestHandlerError(
             error,
-            request: request
+            headers: headers
           ) {
             statusAndMetadata = transformed
           } else if let grpcStatusTransformable = error as? GRPCStatusTransformable {
-            statusAndMetadata = GRPCStatusAndMetadata(
+            statusAndMetadata = GRPCStatusAndTrailers(
               status: grpcStatusTransformable.makeGRPCStatus(),
-              metadata: nil
+              trailers: nil
             )
           } else {
-            statusAndMetadata = GRPCStatusAndMetadata(status: .processingError, metadata: nil)
+            statusAndMetadata = GRPCStatusAndTrailers(status: .processingError, trailers: nil)
           }
         }
 
-        if let metadata = statusAndMetadata.metadata {
-          self.trailingMetadata.add(contentsOf: metadata)
+        if let trailers = statusAndMetadata.trailers {
+          self.trailers.add(contentsOf: trailers)
         }
         self.channel.writeAndFlush(
           NIOAny(
             WrappedResponse
-              .statusAndTrailers(statusAndMetadata.status, self.trailingMetadata)
+              .statusAndTrailers(statusAndMetadata.status, self.trailers)
           ),
           promise: nil
         )
       }
+  }
+
+  @available(*, deprecated, renamed: "init(channel:headers:errorDelegate:logger:)")
+  public convenience init(
+    channel: Channel,
+    request: HTTPRequestHead,
+    errorDelegate: ServerErrorDelegate?,
+    logger: Logger
+  ) {
+    self.init(
+      channel: channel,
+      headers: HPACKHeaders(httpHeaders: request.headers, normalizeHTTPHeaders: false),
+      errorDelegate: errorDelegate,
+      logger: logger
+    )
   }
 }
 

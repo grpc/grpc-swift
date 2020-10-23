@@ -16,7 +16,7 @@
 import Foundation
 import Logging
 import NIO
-import NIOHTTP1
+import NIOHPACK
 import SwiftProtobuf
 
 /// Provides a means for decoding incoming gRPC messages into protobuf objects.
@@ -29,7 +29,7 @@ public class _BaseCallHandler<Request, Response>: GRPCCallHandler {
   /// Called when the request head has been received.
   ///
   /// Overridden by subclasses.
-  internal func processHead(_ head: HTTPRequestHead, context: ChannelHandlerContext) {
+  internal func processHeaders(_ headers: HPACKHeaders, context: ChannelHandlerContext) {
     fatalError("needs to be overridden")
   }
 
@@ -47,7 +47,7 @@ public class _BaseCallHandler<Request, Response>: GRPCCallHandler {
 
   /// Sends an error status to the client while ensuring that all call context promises are fulfilled.
   /// Because only the concrete call subclass knows which promises need to be fulfilled, this method needs to be overridden.
-  internal func sendErrorStatusAndMetadata(_ statusAndMetadata: GRPCStatusAndMetadata) {
+  internal func sendErrorStatusAndMetadata(_ statusAndMetadata: GRPCStatusAndTrailers) {
     fatalError("needs to be overridden")
   }
 
@@ -80,24 +80,24 @@ extension _BaseCallHandler: ChannelInboundHandler {
   /// appropriate status is written. Errors which don't conform to `GRPCStatusTransformable`
   /// return a status with code `.internalError`.
   public func errorCaught(context: ChannelHandlerContext, error: Error) {
-    let statusAndMetadata: GRPCStatusAndMetadata
+    let statusAndMetadata: GRPCStatusAndTrailers
 
     if let errorWithContext = error as? GRPCError.WithContext {
       self.errorDelegate?.observeLibraryError(errorWithContext.error)
       statusAndMetadata = self.errorDelegate?.transformLibraryError(errorWithContext.error)
-        ?? GRPCStatusAndMetadata(status: errorWithContext.error.makeGRPCStatus(), metadata: nil)
+        ?? GRPCStatusAndTrailers(status: errorWithContext.error.makeGRPCStatus(), trailers: nil)
     } else {
       self.errorDelegate?.observeLibraryError(error)
 
-      if let transformed: GRPCStatusAndMetadata = self.errorDelegate?.transformLibraryError(error) {
+      if let transformed: GRPCStatusAndTrailers = self.errorDelegate?.transformLibraryError(error) {
         statusAndMetadata = transformed
       } else if let grpcStatusTransformable = error as? GRPCStatusTransformable {
-        statusAndMetadata = GRPCStatusAndMetadata(
+        statusAndMetadata = GRPCStatusAndTrailers(
           status: grpcStatusTransformable.makeGRPCStatus(),
-          metadata: nil
+          trailers: nil
         )
       } else {
-        statusAndMetadata = GRPCStatusAndMetadata(status: .processingError, metadata: nil)
+        statusAndMetadata = GRPCStatusAndTrailers(status: .processingError, trailers: nil)
       }
     }
 
@@ -106,8 +106,8 @@ extension _BaseCallHandler: ChannelInboundHandler {
 
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     switch self.unwrapInboundIn(data) {
-    case let .head(head):
-      self.processHead(head, context: context)
+    case let .headers(headers):
+      self.processHeaders(headers, context: context)
 
     case let .message(message):
       do {

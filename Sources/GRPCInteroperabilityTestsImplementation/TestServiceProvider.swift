@@ -70,7 +70,7 @@ public class TestServiceProvider: Grpc_Testing_TestServiceProvider {
     // We can't validate messages at the wire-encoding layer (i.e. where the compression byte is
     // set), so we have to check via the encoding header. Note that it is possible for the header
     // to be set and for the message to not be compressed.
-    if request.expectCompressed.value, !context.request.headers.contains(name: "grpc-encoding") {
+    if request.expectCompressed.value, !context.headers.contains(name: "grpc-encoding") {
       let status = GRPCStatus(
         code: .invalidArgument,
         message: "Expected compressed request, but 'grpc-encoding' was missing"
@@ -88,7 +88,7 @@ public class TestServiceProvider: Grpc_Testing_TestServiceProvider {
         .makeFailedFuture(GRPCStatus(code: code, message: request.responseStatus.message))
     }
 
-    if context.request.headers.shouldEchoMetadata {
+    if context.headers.shouldEchoMetadata {
       return context.eventLoop.makeFailedFuture(TestServiceProvider.echoMetadataNotImplemented)
     }
 
@@ -166,7 +166,7 @@ public class TestServiceProvider: Grpc_Testing_TestServiceProvider {
       switch event {
       case let .message(request):
         if request.expectCompressed.value,
-          !context.request.headers.contains(name: "grpc-encoding") {
+          !context.headers.contains(name: "grpc-encoding") {
           context.responseStatus = GRPCStatus(
             code: .invalidArgument,
             message: "Expected compressed request, but 'grpc-encoding' was missing"
@@ -193,7 +193,7 @@ public class TestServiceProvider: Grpc_Testing_TestServiceProvider {
     context: StreamingResponseCallContext<Grpc_Testing_StreamingOutputCallResponse>
   ) -> EventLoopFuture<(StreamEvent<Grpc_Testing_StreamingOutputCallRequest>) -> Void> {
     // We don't have support for this yet so just fail the call.
-    if context.request.headers.shouldEchoMetadata {
+    if context.headers.shouldEchoMetadata {
       return context.eventLoop.makeFailedFuture(TestServiceProvider.echoMetadataNotImplemented)
     }
 

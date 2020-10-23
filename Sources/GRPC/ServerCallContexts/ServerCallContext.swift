@@ -16,6 +16,7 @@
 import Foundation
 import Logging
 import NIO
+import NIOHPACK
 import NIOHTTP1
 import SwiftProtobuf
 
@@ -24,8 +25,8 @@ public protocol ServerCallContext: AnyObject {
   /// The event loop this call is served on.
   var eventLoop: EventLoop { get }
 
-  /// Generic metadata provided with this request.
-  var request: HTTPRequestHead { get }
+  /// Request headers for this request.
+  var headers: HPACKHeaders { get }
 
   /// The logger used for this call.
   var logger: Logger { get }
@@ -39,17 +40,24 @@ public protocol ServerCallContext: AnyObject {
 /// Base class providing data provided to the framework user for all server calls.
 open class ServerCallContextBase: ServerCallContext {
   public let eventLoop: EventLoop
-  public let request: HTTPRequestHead
+  public let headers: HPACKHeaders
   public let logger: Logger
   public var compressionEnabled: Bool = true
 
   /// Metadata to return at the end of the RPC. If this is required it should be updated before
   /// the `responsePromise` or `statusPromise` is fulfilled.
-  public var trailingMetadata = HTTPHeaders()
+  public var trailers = HPACKHeaders()
 
+  public init(eventLoop: EventLoop, headers: HPACKHeaders, logger: Logger) {
+    self.eventLoop = eventLoop
+    self.headers = headers
+    self.logger = logger
+  }
+
+  @available(*, deprecated, renamed: "init(eventLoop:headers:logger:)")
   public init(eventLoop: EventLoop, request: HTTPRequestHead, logger: Logger) {
     self.eventLoop = eventLoop
-    self.request = request
+    self.headers = HPACKHeaders(httpHeaders: request.headers, normalizeHTTPHeaders: false)
     self.logger = logger
   }
 }
