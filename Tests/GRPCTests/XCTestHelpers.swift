@@ -124,6 +124,24 @@ struct Matcher<Value> {
     }
   }
 
+  /// Matches if the value is `nil`.
+  static func `nil`<Value>() -> Matcher<Value?> {
+    return .init { actual in
+      actual == nil
+        ? .match
+        : .noMatch(actual: String(describing: actual), expected: "nil")
+    }
+  }
+
+  /// Matches if the value is not `nil`.
+  static func notNil<Value>() -> Matcher<Value?> {
+    return .init { actual in
+      actual != nil
+        ? .match
+        : .noMatch(actual: "nil", expected: "not nil")
+    }
+  }
+
   // MARK: Type
 
   /// Checks that the actual value is an instance of the given type.
