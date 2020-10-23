@@ -128,13 +128,19 @@ extension HTTP1ToGRPCServerCodec: ChannelInboundHandler {
   public typealias InboundOut = _RawGRPCServerRequestPart
 
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+    let unwrappedData = self.unwrapInboundIn(data)
     if case .ignore = self.inboundState {
+        if case let .body(body) = unwrappedData, body.readableBytes == 0 {
+            return // Ignoring a read of zero bytes is always fine.
+        } else if case .end = unwrappedData {
+            return // Ignoring an end stream is not an event worth reporting.
+        }
       self.logger.notice("ignoring read data", metadata: ["data": "\(data)"])
       return
     }
 
     do {
-      switch self.unwrapInboundIn(data) {
+      switch unwrappedData {
       case let .head(requestHead):
         self.inboundState = try self.processHead(context: context, requestHead: requestHead)
 
