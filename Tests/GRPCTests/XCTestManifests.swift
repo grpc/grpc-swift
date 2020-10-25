@@ -756,10 +756,12 @@ extension MessageCompressionTests {
     static let __allTests__MessageCompressionTests = [
         ("testCompressedRequestsUncompressedResponses", testCompressedRequestsUncompressedResponses),
         ("testCompressedRequestWithCompressionNotSupportedOnServer", testCompressedRequestWithCompressionNotSupportedOnServer),
+        ("testCompressedRequestWithDisabledServerCompressionAndUnknownCompressionAlgorithm", testCompressedRequestWithDisabledServerCompressionAndUnknownCompressionAlgorithm),
         ("testDecompressionLimitIsRespectedByClientForStreamingCall", testDecompressionLimitIsRespectedByClientForStreamingCall),
         ("testDecompressionLimitIsRespectedByClientForUnaryCall", testDecompressionLimitIsRespectedByClientForUnaryCall),
         ("testDecompressionLimitIsRespectedByServerForStreamingCall", testDecompressionLimitIsRespectedByServerForStreamingCall),
         ("testDecompressionLimitIsRespectedByServerForUnaryCall", testDecompressionLimitIsRespectedByServerForUnaryCall),
+        ("testIdentityCompressionIsntCompression", testIdentityCompressionIsntCompression),
         ("testServerCanDecompressNonAdvertisedButSupportedCompression", testServerCanDecompressNonAdvertisedButSupportedCompression),
         ("testServerCompressesResponseWithDifferentAlgorithmToRequest", testServerCompressesResponseWithDifferentAlgorithmToRequest),
         ("testUncompressedRequestsCompressedResponses", testUncompressedRequestsCompressedResponses),

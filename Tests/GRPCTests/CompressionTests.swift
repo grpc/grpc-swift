@@ -293,4 +293,64 @@ class MessageCompressionTests: GRPCTestCase {
     self.wait(for: [status], timeout: self.defaultTimeout)
     XCTAssertEqual(responses.count, 1)
   }
+
+  func testIdentityCompressionIsntCompression() throws {
+    // The client offers "identity" compression, the server doesn't support compression. We should
+    // tolerate this, as "identity" is no compression at all.
+    try self
+      .setupServer(encoding: .disabled)
+    // We can't specify a compression we don't support, like identity, so we'll specify no compression and then
+    // send a 'grpc-encoding' with our initial metadata.
+    self.setupClient(encoding: .disabled)
+
+    let headers: HPACKHeaders = ["grpc-encoding": "identity"]
+    let get = self.echo.get(
+      .with { $0.text = "foo" },
+      callOptions: CallOptions(customMetadata: headers)
+    )
+
+    let initialMetadata = self.expectation(description: "received initial metadata")
+    get.initialMetadata.map {
+      $0.contains(name: "grpc-encoding")
+    }.assertEqual(false, fulfill: initialMetadata)
+
+    let status = self.expectation(description: "received status")
+    get.status.map {
+      $0.code
+    }.assertEqual(.ok, fulfill: status)
+
+    self.wait(for: [initialMetadata, status], timeout: self.defaultTimeout)
+  }
+
+  func testCompressedRequestWithDisabledServerCompressionAndUnknownCompressionAlgorithm() throws {
+    try self.setupServer(encoding: .disabled)
+    // We can't specify a compression we don't support, so we'll specify no compression and then
+    // send a 'grpc-encoding' with our initial metadata.
+    self.setupClient(encoding: .enabled(.init(
+      forRequests: .none,
+      acceptableForResponses: [.deflate, .gzip],
+      decompressionLimit: .ratio(10)
+    )))
+
+    let headers: HPACKHeaders = ["grpc-encoding": "you-don't-support-this"]
+    let get = self.echo.get(
+      .with { $0.text = "foo" },
+      callOptions: CallOptions(customMetadata: headers)
+    )
+
+    let response = self.expectation(description: "received response")
+    get.response.assertError(fulfill: response)
+
+    let trailers = self.expectation(description: "received trailing metadata")
+    get.trailingMetadata.map {
+      $0.contains(name: "grpc-accept-encoding")
+    }.assertEqual(false, fulfill: trailers)
+
+    let status = self.expectation(description: "received status")
+    get.status.map {
+      $0.code
+    }.assertEqual(.unimplemented, fulfill: status)
+
+    self.wait(for: [response, trailers, status], timeout: self.defaultTimeout)
+  }
 }

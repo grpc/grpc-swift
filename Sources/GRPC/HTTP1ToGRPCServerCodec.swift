@@ -563,11 +563,22 @@ struct MessageEncodingHeaderValidator {
         )
       }
 
-    // Compression is disabled and the client sent a message encoding header. We clearly don't
-    // support this. Note this is different to the supported but not advertised case since we have
-    // explicitly not enabled compression.
+    // Compression is disabled and the client sent a message encoding header. We don't support this
+    // unless the header is "identity", which is no compression. Note this is different to the
+    // supported but not advertised case since we have explicitly not enabled compression.
     case let (.disabled, .some(header)):
-      return .unsupported(requestEncoding: header, acceptEncoding: [])
+      guard let algorithm = CompressionAlgorithm(rawValue: header) else {
+        return .unsupported(
+          requestEncoding: header,
+          acceptEncoding: []
+        )
+      }
+
+      if algorithm == .identity {
+        return .noCompression
+      } else {
+        return .unsupported(requestEncoding: header, acceptEncoding: [])
+      }
 
     // The client didn't send a message encoding header.
     case (_, .none):
