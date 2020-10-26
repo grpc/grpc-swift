@@ -125,7 +125,7 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
 
   public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     let requestPart = self.unwrapInboundIn(data)
-    switch self.unwrapInboundIn(data) {
+    switch requestPart {
     case let .head(requestHead):
       precondition(self.state == .notConfigured)
 
