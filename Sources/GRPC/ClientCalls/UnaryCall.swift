@@ -22,153 +22,61 @@ import NIOHTTP2
 import SwiftProtobuf
 
 /// A unary gRPC call. The request is sent on initialization.
-public final class UnaryCall<RequestPayload, ResponsePayload>: UnaryResponseClientCall {
-  private let transport: ChannelTransport<RequestPayload, ResponsePayload>
+///
+/// Note: while this object is a `struct`, its implementation delegates to `Call`. It therefore
+/// has reference semantics.
+public struct UnaryCall<RequestPayload, ResponsePayload>: UnaryResponseClientCall {
+  private let call: Call<RequestPayload, ResponsePayload>
+  private let responseParts: UnaryResponseParts<ResponsePayload>
 
   /// The options used to make the RPC.
-  public let options: CallOptions
+  public var options: CallOptions {
+    return self.call.options
+  }
 
   /// The `Channel` used to transport messages for this RPC.
   public var subchannel: EventLoopFuture<Channel> {
-    return self.transport.streamChannel()
+    return self.call.channel
   }
 
   /// The `EventLoop` this call is running on.
   public var eventLoop: EventLoop {
-    return self.transport.eventLoop
+    return self.call.eventLoop
   }
 
   /// Cancel this RPC if it hasn't already completed.
   public func cancel(promise: EventLoopPromise<Void>?) {
-    self.transport.cancel(promise: promise)
+    self.call.cancel(promise: promise)
   }
 
   // MARK: - Response Parts
 
   /// The initial metadata returned from the server.
   public var initialMetadata: EventLoopFuture<HPACKHeaders> {
-    if self.eventLoop.inEventLoop {
-      return self.transport.responseContainer.lazyInitialMetadataPromise.getFutureResult()
-    } else {
-      return self.eventLoop.flatSubmit {
-        return self.transport.responseContainer.lazyInitialMetadataPromise.getFutureResult()
-      }
-    }
+    return self.responseParts.initialMetadata
   }
 
   /// The response returned by the server.
-  public let response: EventLoopFuture<ResponsePayload>
+  public var response: EventLoopFuture<ResponsePayload> {
+    return self.responseParts.response
+  }
 
   /// The trailing metadata returned from the server.
   public var trailingMetadata: EventLoopFuture<HPACKHeaders> {
-    if self.eventLoop.inEventLoop {
-      return self.transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult()
-    } else {
-      return self.eventLoop.flatSubmit {
-        return self.transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult()
-      }
-    }
+    return self.responseParts.trailingMetadata
   }
 
   /// The final status of the the RPC.
   public var status: EventLoopFuture<GRPCStatus> {
-    if self.eventLoop.inEventLoop {
-      return self.transport.responseContainer.lazyStatusPromise.getFutureResult()
-    } else {
-      return self.eventLoop.flatSubmit {
-        return self.transport.responseContainer.lazyStatusPromise.getFutureResult()
-      }
-    }
+    return self.responseParts.status
   }
 
-  internal init(
-    response: EventLoopFuture<ResponsePayload>,
-    transport: ChannelTransport<RequestPayload, ResponsePayload>,
-    options: CallOptions
-  ) {
-    self.response = response
-    self.transport = transport
-    self.options = options
+  internal init(call: Call<RequestPayload, ResponsePayload>) {
+    self.call = call
+    self.responseParts = UnaryResponseParts(on: call.eventLoop)
   }
 
-  internal func send(_ head: _GRPCRequestHead, request: RequestPayload) {
-    self.transport.sendUnary(
-      head,
-      request: request,
-      compressed: self.options.messageEncoding.enabledForRequests
-    )
-  }
-}
-
-extension UnaryCall {
-  internal static func makeOnHTTP2Stream<
-    Serializer: MessageSerializer,
-    Deserializer: MessageDeserializer
-  >(
-    multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
-    serializer: Serializer,
-    deserializer: Deserializer,
-    callOptions: CallOptions,
-    errorDelegate: ClientErrorDelegate?,
-    logger: Logger
-  ) -> UnaryCall<RequestPayload, ResponsePayload> where Serializer.Input == RequestPayload,
-    Deserializer.Output == ResponsePayload {
-    let eventLoop = multiplexer.eventLoop
-    let responsePromise: EventLoopPromise<ResponsePayload> = eventLoop.makePromise()
-    let transport = ChannelTransport<RequestPayload, ResponsePayload>(
-      multiplexer: multiplexer,
-      serializer: serializer,
-      deserializer: deserializer,
-      responseContainer: .init(eventLoop: eventLoop, unaryResponsePromise: responsePromise),
-      callType: .unary,
-      timeLimit: callOptions.timeLimit,
-      errorDelegate: errorDelegate,
-      logger: logger
-    )
-    return UnaryCall(
-      response: responsePromise.futureResult,
-      transport: transport,
-      options: callOptions
-    )
-  }
-
-  internal static func make<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
-    serializer: Serializer,
-    deserializer: Deserializer,
-    fakeResponse: FakeUnaryResponse<RequestPayload, ResponsePayload>?,
-    callOptions: CallOptions,
-    logger: Logger
-  ) -> UnaryCall<RequestPayload, ResponsePayload> where Serializer.Input == RequestPayload,
-    Deserializer.Output == ResponsePayload {
-    let eventLoop = fakeResponse?.channel.eventLoop ?? EmbeddedEventLoop()
-    let responsePromise: EventLoopPromise<ResponsePayload> = eventLoop.makePromise()
-    let responseContainer = ResponsePartContainer(
-      eventLoop: eventLoop,
-      unaryResponsePromise: responsePromise
-    )
-
-    let transport: ChannelTransport<RequestPayload, ResponsePayload>
-    if let fakeResponse = fakeResponse {
-      transport = .init(
-        fakeResponse: fakeResponse,
-        responseContainer: responseContainer,
-        timeLimit: callOptions.timeLimit,
-        logger: logger
-      )
-
-      fakeResponse.activate()
-    } else {
-      transport = .makeTransportForMissingFakeResponse(
-        eventLoop: eventLoop,
-        responseContainer: responseContainer,
-        logger: logger
-      )
-    }
-
-    return UnaryCall(
-      response: responsePromise.futureResult,
-      transport: transport,
-      options: callOptions
-    )
+  internal func invoke(_ request: RequestPayload) {
+    self.call.invokeUnaryRequest(request, self.responseParts.handle(_:))
   }
 }

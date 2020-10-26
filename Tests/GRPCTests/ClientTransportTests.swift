@@ -295,7 +295,8 @@ extension ClientTransportTests {
 
   func testConfigurationFails() throws {
     self.setUpTransport { part in
-      assertThat(part.error, .is(.instanceOf(DummyError.self)))
+      // We wrap the configuration error up, so we can't assert on its type.
+      assertThat(part.error, .is(.notNil()))
     }
 
     let p1 = self.eventLoop.makePromise(of: Void.self)
@@ -310,8 +311,8 @@ extension ClientTransportTests {
     }
 
     // The promises should fail.
-    assertThat(try p1.futureResult.wait(), .throws(.instanceOf(DummyError.self)))
-    assertThat(try p2.futureResult.wait(), .throws(.instanceOf(DummyError.self)))
+    assertThat(try p1.futureResult.wait(), .throws())
+    assertThat(try p2.futureResult.wait(), .throws())
 
     // Cancellation should also fail because we're already closed.
     let p3 = self.eventLoop.makePromise(of: Void.self)
