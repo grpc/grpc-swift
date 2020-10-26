@@ -92,49 +92,40 @@ open class UnaryResponseCallContextImpl<ResponsePayload>: UnaryResponseCallConte
     self.channel = channel
     super.init(eventLoop: channel.eventLoop, headers: headers, logger: logger)
 
-    self.responsePromise.futureResult
-      .whenComplete { [self, weak errorDelegate] result in
-        let statusAndMetadata: GRPCStatusAndTrailers
+    self.responsePromise.futureResult.whenComplete { [self, weak errorDelegate] result in
+      switch result {
+      case let .success(message):
+        self.handleResponse(message)
 
-        switch result {
-        case let .success(responseMessage):
-          self.channel.write(
-            NIOAny(
-              WrappedResponse
-                .message(.init(responseMessage, compressed: self.compressionEnabled))
-            ),
-            promise: nil
-          )
-          statusAndMetadata = GRPCStatusAndTrailers(status: self.responseStatus, trailers: nil)
-        case let .failure(error):
-          errorDelegate?.observeRequestHandlerError(error, headers: headers)
-
-          if let transformed: GRPCStatusAndTrailers = errorDelegate?.transformRequestHandlerError(
-            error,
-            headers: headers
-          ) {
-            statusAndMetadata = transformed
-          } else if let grpcStatusTransformable = error as? GRPCStatusTransformable {
-            statusAndMetadata = GRPCStatusAndTrailers(
-              status: grpcStatusTransformable.makeGRPCStatus(),
-              trailers: nil
-            )
-          } else {
-            statusAndMetadata = GRPCStatusAndTrailers(status: .processingError, trailers: nil)
-          }
-        }
-
-        if let trailers = statusAndMetadata.trailers {
-          self.trailers.add(contentsOf: trailers)
-        }
-        self.channel.writeAndFlush(
-          NIOAny(
-            WrappedResponse
-              .statusAndTrailers(statusAndMetadata.status, self.trailers)
-          ),
-          promise: nil
-        )
+      case let .failure(error):
+        self.handleError(error, delegate: errorDelegate)
       }
+    }
+  }
+
+  /// Handle the response from the service provider.
+  private func handleResponse(_ response: ResponsePayload) {
+    self.channel.write(
+      self.wrap(.message(.init(response, compressed: self.compressionEnabled))),
+      promise: nil
+    )
+
+    self.channel.writeAndFlush(
+      self.wrap(.statusAndTrailers(self.responseStatus, self.trailers)),
+      promise: nil
+    )
+  }
+
+  /// Handle an error from the service provider.
+  private func handleError(_ error: Error, delegate: ServerErrorDelegate?) {
+    let (status, trailers) = self.processError(error, delegate: delegate)
+    self.channel.writeAndFlush(self.wrap(.statusAndTrailers(status, trailers)), promise: nil)
+  }
+
+  /// Wrap the response part in a `NIOAny`. This is useful in order to avoid explicitly spelling
+  /// out `NIOAny(WrappedResponse(...))`.
+  private func wrap(_ response: WrappedResponse) -> NIOAny {
+    return NIOAny(response)
   }
 
   @available(*, deprecated, renamed: "init(channel:headers:errorDelegate:logger:)")
