@@ -151,7 +151,7 @@ struct Matcher<Value> {
         return .match
       } else {
         return .noMatch(
-          actual: String(describing: type(of: actual)),
+          actual: String(describing: type(of: actual)) + " (\(actual))",
           expected: "value of type \(Expected.self)"
         )
       }
