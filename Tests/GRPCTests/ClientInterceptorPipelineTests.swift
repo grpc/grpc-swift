@@ -341,7 +341,7 @@ extension ClientRequestPart {
     }
   }
 
-  var message: (Request, Metadata)? {
+  var message: (Request, MessageMetadata)? {
     switch self {
     case let .message(request, metadata):
       return (request, metadata)
