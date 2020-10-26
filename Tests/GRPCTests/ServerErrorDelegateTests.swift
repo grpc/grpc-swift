@@ -23,13 +23,13 @@ import NIOHTTP1
 import XCTest
 
 private class ServerErrorDelegateMock: ServerErrorDelegate {
-  private let transformLibraryErrorHandler: (Error) -> (GRPCStatusAndMetadata?)
+  private let transformLibraryErrorHandler: (Error) -> (GRPCStatusAndTrailers?)
 
-  init(transformLibraryErrorHandler: @escaping ((Error) -> (GRPCStatusAndMetadata?))) {
+  init(transformLibraryErrorHandler: @escaping ((Error) -> (GRPCStatusAndTrailers?))) {
     self.transformLibraryErrorHandler = transformLibraryErrorHandler
   }
 
-  func transformLibraryError(_ error: Error) -> GRPCStatusAndMetadata? {
+  func transformLibraryError(_ error: Error) -> GRPCStatusAndTrailers? {
     return self.transformLibraryErrorHandler(error)
   }
 }
@@ -61,7 +61,7 @@ class ServerErrorDelegateTests: GRPCTestCase {
 
   private func testTransformLibraryError_whenTransformingErrorToStatus(uri: String) throws {
     self.setupChannelAndDelegate { _ in
-      GRPCStatusAndMetadata(status: .init(code: .notFound, message: "some error"))
+      GRPCStatusAndTrailers(status: .init(code: .notFound, message: "some error"))
     }
     let requestHead = HTTPRequestHead(
       version: .init(major: 2, minor: 0),
@@ -110,9 +110,9 @@ class ServerErrorDelegateTests: GRPCTestCase {
     uri: String
   ) throws {
     self.setupChannelAndDelegate { _ in
-      GRPCStatusAndMetadata(
+      GRPCStatusAndTrailers(
         status: .init(code: .notFound, message: "some error"),
-        metadata: ["some-metadata": "test"]
+        trailers: ["some-metadata": "test"]
       )
     }
     let requestHead = HTTPRequestHead(
@@ -140,7 +140,7 @@ class ServerErrorDelegateTests: GRPCTestCase {
 
   private func setupChannelAndDelegate(transformLibraryErrorHandler: @escaping (
     (Error)
-      -> (GRPCStatusAndMetadata?)
+      -> (GRPCStatusAndTrailers?)
   )) {
     let provider = EchoProvider()
     self

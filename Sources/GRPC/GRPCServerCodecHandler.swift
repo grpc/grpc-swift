@@ -34,8 +34,8 @@ extension GRPCServerCodecHandler: ChannelInboundHandler {
 
   internal func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     switch self.unwrapInboundIn(data) {
-    case let .head(head):
-      context.fireChannelRead(self.wrapInboundOut(.head(head)))
+    case let .headers(head):
+      context.fireChannelRead(self.wrapInboundOut(.headers(head)))
 
     case let .message(buffer):
       do {

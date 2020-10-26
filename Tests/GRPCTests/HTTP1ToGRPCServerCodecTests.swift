@@ -85,7 +85,7 @@ class HTTP1ToGRPCServerCodecTests: GRPCTestCase {
     let requestPart = try self.channel.readInbound(as: _RawGRPCServerRequestPart.self)
 
     switch requestPart {
-    case .some(.head):
+    case .some(.headers):
       ()
     default:
       XCTFail("Unexpected request part: \(String(describing: requestPart))")
@@ -128,7 +128,7 @@ class HTTP1ToGRPCServerCodecTests: GRPCTestCase {
     let requestPart = try self.channel.readInbound(as: _RawGRPCServerRequestPart.self)
 
     switch requestPart {
-    case .some(.head):
+    case .some(.headers):
       ()
     default:
       XCTFail("Unexpected request part: \(String(describing: requestPart))")
@@ -169,7 +169,7 @@ class HTTP1ToGRPCServerCodecTests: GRPCTestCase {
     let requestPart = try self.channel.readInbound(as: _RawGRPCServerRequestPart.self)
 
     switch requestPart {
-    case .some(.head):
+    case .some(.headers):
       ()
     default:
       XCTFail("Unexpected request part: \(String(describing: requestPart))")
@@ -219,7 +219,7 @@ class HTTP1ToGRPCServerCodecTests: GRPCTestCase {
     let requestPart = try self.channel.readInbound(as: _RawGRPCServerRequestPart.self)
 
     switch requestPart {
-    case .some(.head):
+    case .some(.headers):
       ()
     default:
       XCTFail("Unexpected request part: \(String(describing: requestPart))")

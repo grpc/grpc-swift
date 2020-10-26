@@ -16,6 +16,7 @@
 import Foundation
 import Logging
 import NIO
+import NIOHPACK
 import NIOHTTP1
 import SwiftProtobuf
 
@@ -30,6 +31,12 @@ open class StreamingResponseCallContext<ResponsePayload>: ServerCallContextBase 
 
   public let statusPromise: EventLoopPromise<GRPCStatus>
 
+  override public init(eventLoop: EventLoop, headers: HPACKHeaders, logger: Logger) {
+    self.statusPromise = eventLoop.makePromise()
+    super.init(eventLoop: eventLoop, headers: headers, logger: logger)
+  }
+
+  @available(*, deprecated, renamed: "init(eventLoop:path:headers:logger:)")
   override public init(eventLoop: EventLoop, request: HTTPRequestHead, logger: Logger) {
     self.statusPromise = eventLoop.makePromise()
     super.init(eventLoop: eventLoop, request: request, logger: logger)
@@ -53,58 +60,73 @@ open class StreamingResponseCallContextImpl<ResponsePayload>: StreamingResponseC
 
   /// - Parameters:
   ///   - channel: The NIO channel the call is handled on.
-  ///   - request: The headers provided with this call.
+  ///   - headers: The headers provided with this call.
   ///   - errorDelegate: Provides a means for transforming status promise failures to `GRPCStatusTransformable` before
   ///     sending them to the client.
+  ///   - logger: A logger.
   ///
   ///     Note: `errorDelegate` is not called for status promise that are `succeeded` with a non-OK status.
   public init(
     channel: Channel,
-    request: HTTPRequestHead,
+    headers: HPACKHeaders,
     errorDelegate: ServerErrorDelegate?,
     logger: Logger
   ) {
     self.channel = channel
-
-    super.init(eventLoop: channel.eventLoop, request: request, logger: logger)
+    super.init(eventLoop: channel.eventLoop, headers: headers, logger: logger)
 
     statusPromise.futureResult
       .map {
-        GRPCStatusAndMetadata(status: $0, metadata: nil)
+        GRPCStatusAndTrailers(status: $0, trailers: nil)
       }
       // Ensure that any error provided can be transformed to `GRPCStatus`, using "internal server error" as a fallback.
       .recover { [weak errorDelegate] error in
-        errorDelegate?.observeRequestHandlerError(error, request: request)
+        errorDelegate?.observeRequestHandlerError(error, headers: headers)
 
-        if let transformed: GRPCStatusAndMetadata = errorDelegate?.transformRequestHandlerError(
+        if let transformed = errorDelegate?.transformRequestHandlerError(
           error,
-          request: request
+          headers: headers
         ) {
           return transformed
         }
 
         if let grpcStatusTransformable = error as? GRPCStatusTransformable {
-          return GRPCStatusAndMetadata(
+          return GRPCStatusAndTrailers(
             status: grpcStatusTransformable.makeGRPCStatus(),
-            metadata: nil
+            trailers: nil
           )
         }
 
-        return GRPCStatusAndMetadata(status: .processingError, metadata: nil)
+        return GRPCStatusAndTrailers(status: .processingError, trailers: nil)
       }
       // Finish the call by returning the final status.
       .whenSuccess { statusAndMetadata in
-        if let metadata = statusAndMetadata.metadata {
-          self.trailingMetadata.add(contentsOf: metadata)
+        if let trailers = statusAndMetadata.trailers {
+          self.trailers.add(contentsOf: trailers)
         }
         self.channel.writeAndFlush(
           NIOAny(
             WrappedResponse
-              .statusAndTrailers(statusAndMetadata.status, self.trailingMetadata)
+              .statusAndTrailers(statusAndMetadata.status, self.trailers)
           ),
           promise: nil
         )
       }
+  }
+
+  @available(*, deprecated, renamed: "init(channel:headers:errorDelegate:logger:)")
+  public convenience init(
+    channel: Channel,
+    request: HTTPRequestHead,
+    errorDelegate: ServerErrorDelegate?,
+    logger: Logger
+  ) {
+    self.init(
+      channel: channel,
+      headers: HPACKHeaders(httpHeaders: request.headers, normalizeHTTPHeaders: false),
+      errorDelegate: errorDelegate,
+      logger: logger
+    )
   }
 
   override open func sendResponse(

@@ -15,6 +15,7 @@
  */
 import Foundation
 import NIO
+import NIOHPACK
 import NIOHTTP1
 
 public protocol ServerErrorDelegate: AnyObject {
@@ -34,20 +35,13 @@ public protocol ServerErrorDelegate: AnyObject {
   /// This defaults to returning `nil`. In that case, if the original error conforms to `GRPCStatusTransformable`,
   /// that error's `asGRPCStatus()` result will be sent to the user. If that's not the case, either,
   /// `GRPCStatus.processingError` is returned.
-  func transformLibraryError(_ error: Error) -> GRPCStatusAndMetadata?
-
-  @available(
-    *,
-    deprecated,
-    message: "Please use the new transformLibraryError that returns a GRPCStatusAndMetadata instead."
-  )
-  func transformLibraryError(_ error: Error) -> GRPCStatus?
+  func transformLibraryError(_ error: Error) -> GRPCStatusAndTrailers?
 
   /// Called when a request's status or response promise is failed somewhere in the user-provided request handler code.
   /// - Parameters:
   ///   - error: The original error the status/response promise was failed with.
-  ///   - request: The headers of the request whose status/response promise was failed.
-  func observeRequestHandlerError(_ error: Error, request: HTTPRequestHead)
+  ///   - headers: The headers of the request whose status/response promise was failed.
+  func observeRequestHandlerError(_ error: Error, headers: HPACKHeaders)
 
   /// Transforms the given status or response promise failure into a new error.
   ///
@@ -64,28 +58,26 @@ public protocol ServerErrorDelegate: AnyObject {
   ///
   /// - Parameters:
   ///   - error: The original error the status/response promise was failed with.
-  ///   - request: The headers of the request whose status/response promise was failed.
-  func transformRequestHandlerError(_ error: Error, request: HTTPRequestHead)
-    -> GRPCStatusAndMetadata?
-
-  @available(
-    *,
-    deprecated,
-    message: "Please use the new transformLibraryError that returns a GRPCStatusAndMetadata instead."
-  )
-  func transformRequestHandlerError(_ error: Error, request: HTTPRequestHead) -> GRPCStatus?
+  ///   - headers: The headers of the request whose status/response promise was failed.
+  func transformRequestHandlerError(
+    _ error: Error,
+    headers: HPACKHeaders
+  ) -> GRPCStatusAndTrailers?
 }
 
 public extension ServerErrorDelegate {
   func observeLibraryError(_ error: Error) {}
-  func transformLibraryError(_ error: Error) -> GRPCStatusAndMetadata? { return nil }
-  func transformLibraryError(_ error: Error) -> GRPCStatus? { return nil }
 
-  func observeRequestHandlerError(_ error: Error, request: HTTPRequestHead) {}
+  func transformLibraryError(_ error: Error) -> GRPCStatusAndTrailers? {
+    return nil
+  }
+
+  func observeRequestHandlerError(_ error: Error, headers: HPACKHeaders) {}
+
   func transformRequestHandlerError(
     _ error: Error,
-    request: HTTPRequestHead
-  ) -> GRPCStatusAndMetadata? { return nil }
-  func transformRequestHandlerError(_ error: Error,
-                                    request: HTTPRequestHead) -> GRPCStatus? { return nil }
+    headers: HPACKHeaders
+  ) -> GRPCStatusAndTrailers? {
+    return nil
+  }
 }

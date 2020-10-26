@@ -23,12 +23,16 @@ import XCTest
 
 class EchoMetadataValidator: Echo_EchoProvider {
   private func assertCustomMetadataIsLowercased(
-    _ headers: HTTPHeaders,
+    _ headers: HPACKHeaders,
     line: UInt = #line
   ) {
     // Header lookup is case-insensitive so we need to pull out the values we know the client sent
     // as custom-metadata and then compare a new set of headers.
-    let customMetadata = HTTPHeaders(headers.filter { _, value in value == "client" })
+    let customMetadata = HPACKHeaders(headers.filter { _, value, _ in
+      value == "client"
+    }.map {
+      ($0.name, $0.value)
+    })
     XCTAssertEqual(customMetadata, ["client": "client"], line: line)
   }
 
@@ -36,8 +40,8 @@ class EchoMetadataValidator: Echo_EchoProvider {
     request: Echo_EchoRequest,
     context: StatusOnlyCallContext
   ) -> EventLoopFuture<Echo_EchoResponse> {
-    self.assertCustomMetadataIsLowercased(context.request.headers)
-    context.trailingMetadata.add(name: "SERVER", value: "server")
+    self.assertCustomMetadataIsLowercased(context.headers)
+    context.trailers.add(name: "SERVER", value: "server")
     return context.eventLoop.makeSucceededFuture(.with { $0.text = request.text })
   }
 
@@ -45,16 +49,16 @@ class EchoMetadataValidator: Echo_EchoProvider {
     request: Echo_EchoRequest,
     context: StreamingResponseCallContext<Echo_EchoResponse>
   ) -> EventLoopFuture<GRPCStatus> {
-    self.assertCustomMetadataIsLowercased(context.request.headers)
-    context.trailingMetadata.add(name: "SERVER", value: "server")
+    self.assertCustomMetadataIsLowercased(context.headers)
+    context.trailers.add(name: "SERVER", value: "server")
     return context.eventLoop.makeSucceededFuture(.ok)
   }
 
   func collect(
     context: UnaryResponseCallContext<Echo_EchoResponse>
   ) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
-    self.assertCustomMetadataIsLowercased(context.request.headers)
-    context.trailingMetadata.add(name: "SERVER", value: "server")
+    self.assertCustomMetadataIsLowercased(context.headers)
+    context.trailers.add(name: "SERVER", value: "server")
     return context.eventLoop.makeSucceededFuture({ event in
       switch event {
       case .message:
@@ -68,8 +72,8 @@ class EchoMetadataValidator: Echo_EchoProvider {
   func update(
     context: StreamingResponseCallContext<Echo_EchoResponse>
   ) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
-    self.assertCustomMetadataIsLowercased(context.request.headers)
-    context.trailingMetadata.add(name: "SERVER", value: "server")
+    self.assertCustomMetadataIsLowercased(context.headers)
+    context.trailers.add(name: "SERVER", value: "server")
     return context.eventLoop.makeSucceededFuture({ event in
       switch event {
       case .message:

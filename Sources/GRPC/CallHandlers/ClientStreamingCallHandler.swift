@@ -16,6 +16,7 @@
 import Foundation
 import Logging
 import NIO
+import NIOHPACK
 import NIOHTTP1
 import SwiftProtobuf
 
@@ -52,10 +53,10 @@ public final class ClientStreamingCallHandler<
     )
   }
 
-  override internal func processHead(_ head: HTTPRequestHead, context: ChannelHandlerContext) {
+  override internal func processHeaders(_ headers: HPACKHeaders, context: ChannelHandlerContext) {
     let callContext = UnaryResponseCallContextImpl<ResponsePayload>(
       channel: context.channel,
-      request: head,
+      headers: headers,
       errorDelegate: self.errorDelegate,
       logger: self.logger
     )
@@ -96,9 +97,9 @@ public final class ClientStreamingCallHandler<
     }
   }
 
-  override internal func sendErrorStatusAndMetadata(_ statusAndMetadata: GRPCStatusAndMetadata) {
-    if let metadata = statusAndMetadata.metadata {
-      self.callContext?.trailingMetadata.add(contentsOf: metadata)
+  override internal func sendErrorStatusAndMetadata(_ statusAndMetadata: GRPCStatusAndTrailers) {
+    if let trailers = statusAndMetadata.trailers {
+      self.callContext?.trailers.add(contentsOf: trailers)
     }
     self.callContext?.responsePromise.fail(statusAndMetadata.status)
   }
