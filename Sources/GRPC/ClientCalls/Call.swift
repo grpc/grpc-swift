@@ -72,6 +72,21 @@ public class Call<Request, Response> {
   /// Options used to invoke the call.
   public let options: CallOptions
 
+  /// A promise for the underlying `Channel`. We only allocate this if the user asks for
+  /// the `Channel` and we haven't invoked the transport yet. It's a bit unfortunate.
+  private var channelPromise: EventLoopPromise<Channel>?
+
+  /// Returns a future for the underlying `Channel`.
+  internal var channel: EventLoopFuture<Channel> {
+    if self.eventLoop.inEventLoop {
+      return self._channel()
+    } else {
+      return self.eventLoop.flatSubmit {
+        return self._channel()
+      }
+    }
+  }
+
   // Calls can't be constructed directly: users must make them using a `GRPCChannel`.
   internal init(
     path: String,
@@ -163,6 +178,79 @@ extension Call {
 }
 
 extension Call {
+  internal func compress(_ compression: Compression) -> Bool {
+    return compression.isEnabled(callDefault: self.isCompressionEnabled)
+  }
+
+  internal func sendMessages<Messages>(
+    _ messages: Messages,
+    compression: Compression,
+    promise: EventLoopPromise<Void>?
+  ) where Messages: Sequence, Messages.Element == Request {
+    if self.eventLoop.inEventLoop {
+      if let promise = promise {
+        self._sendMessages(messages, compression: compression, promise: promise)
+      } else {
+        self._sendMessages(messages, compression: compression)
+      }
+    } else {
+      self.eventLoop.execute {
+        if let promise = promise {
+          self._sendMessages(messages, compression: compression, promise: promise)
+        } else {
+          self._sendMessages(messages, compression: compression)
+        }
+      }
+    }
+  }
+
+  // Provide a few convenience methods we need from the wrapped call objects.
+  private func _sendMessages<Messages>(
+    _ messages: Messages,
+    compression: Compression
+  ) where Messages: Sequence, Messages.Element == Request {
+    self.eventLoop.assertInEventLoop()
+    let compress = self.compress(compression)
+
+    var iterator = messages.makeIterator()
+    var maybeNext = iterator.next()
+    while let current = maybeNext {
+      let next = iterator.next()
+      // If there's no next message, then we'll flush.
+      let flush = next == nil
+      self._send(.message(current, .init(compress: compress, flush: flush)), promise: nil)
+      maybeNext = next
+    }
+  }
+
+  private func _sendMessages<Messages>(
+    _ messages: Messages,
+    compression: Compression,
+    promise: EventLoopPromise<Void>
+  ) where Messages: Sequence, Messages.Element == Request {
+    self.eventLoop.assertInEventLoop()
+    let compress = self.compress(compression)
+
+    var iterator = messages.makeIterator()
+    var maybeNext = iterator.next()
+    while let current = maybeNext {
+      let next = iterator.next()
+      let isLast = next == nil
+
+      // We're already on the event loop, use the `_` send.
+      if isLast {
+        // Only flush and attach the promise to the last message.
+        self._send(.message(current, .init(compress: compress, flush: true)), promise: promise)
+      } else {
+        self._send(.message(current, .init(compress: compress, flush: false)), promise: nil)
+      }
+
+      maybeNext = next
+    }
+  }
+}
+
+extension Call {
   /// Invoke the RPC with this response part handler.
   /// - Important: This *must* to be called from the `eventLoop`.
   @usableFromInline
@@ -211,10 +299,35 @@ extension Call {
     switch self._state {
     case .idle:
       // This is weird: does it make sense to cancel before invoking it?
-      promise?.fail(GRPCError.InvalidState("Call must be invoked before cancelling it"))
+      let error = GRPCError.InvalidState("Call must be invoked before cancelling it")
+      promise?.fail(error)
+      self.channelPromise?.fail(error)
 
     case let .invoked(transport):
       transport.cancel(promise: promise)
+    }
+  }
+
+  /// Get the underlying `Channel` for this call.
+  /// - Important: This *must* to be called from the `eventLoop`.
+  private func _channel() -> EventLoopFuture<Channel> {
+    self.eventLoop.assertInEventLoop()
+
+    switch (self.channelPromise, self._state) {
+    case let (.some(promise), .idle),
+         let (.some(promise), .invoked):
+      // We already have a promise, just use that.
+      return promise.futureResult
+
+    case (.none, .idle):
+      // We need to allocate a promise and ask the transport for the channel later.
+      let promise = self.eventLoop.makePromise(of: Channel.self)
+      self.channelPromise = promise
+      return promise.futureResult
+
+    case let (.none, .invoked(transport)):
+      // Just ask the transport.
+      return transport.channel()
     }
   }
 }

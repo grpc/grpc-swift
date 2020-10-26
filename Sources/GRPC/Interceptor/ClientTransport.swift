@@ -43,6 +43,10 @@ internal final class ClientTransport<Request, Response> {
   /// The current state of the transport.
   private var state: State = .idle
 
+  /// A promise for the underlying `Channel`. We'll succeed this when we transition to `active`
+  /// and fail it when we transition to `closed`.
+  private var channelPromise: EventLoopPromise<Channel>?
+
   // Note: initial capacity is 4 because it's a power of 2 and most calls are unary so will
   // have 3 parts.
   /// A buffer to store request parts and promises in before the channel has become active.
@@ -145,6 +149,25 @@ internal final class ClientTransport<Request, Response> {
       pipeline.cancel(promise: promise)
     } else {
       promise?.fail(GRPCError.AlreadyComplete())
+    }
+  }
+
+  /// A request for the underlying `Channel`.
+  internal func channel() -> EventLoopFuture<Channel> {
+    self.eventLoop.assertInEventLoop()
+
+    // Do we already have a promise?
+    if let promise = self.channelPromise {
+      return promise.futureResult
+    } else {
+      // Make and store the promise.
+      let promise = self.eventLoop.makePromise(of: Channel.self)
+      self.channelPromise = promise
+
+      // Ask the state machine if we can have it.
+      self.act(on: self.state.getChannel())
+
+      return promise.futureResult
     }
   }
 }
@@ -329,6 +352,9 @@ extension ClientTransport.State {
     /// Fail the given promise with the error provided.
     case completePromise(EventLoopPromise<Void>?, with: Result<Void, Error>)
 
+    /// Complete the lazy channel promise with this result.
+    case completeChannelPromise(with: Result<Channel, Error>)
+
     /// Perform multiple actions.
     indirect case multiple([Action])
   }
@@ -382,7 +408,7 @@ extension ClientTransport.State {
     // active.
     case let .activatingTransport(channel):
       self = .active(channel)
-      return .none
+      return .completeChannelPromise(with: .success(channel))
 
     case .active:
       preconditionFailure("Unbuffering completed but the transport is already active")
@@ -406,6 +432,7 @@ extension ClientTransport.State {
         .forwardErrorToInterceptors(error),
         .failBufferedWrites(with: error.error),
         .completePromise(promise, with: .success(())),
+        .completeChannelPromise(with: .failure(GRPCError.AlreadyComplete())),
       ])
 
     case .awaitingTransport:
@@ -488,12 +515,13 @@ extension ClientTransport.State {
       return .multiple([
         .forwardErrorToInterceptors(status),
         .failBufferedWrites(with: status),
+        .completeChannelPromise(with: .failure(status)),
       ])
 
     case .closing:
       // We were already closing, now we're fully closed.
       self = .closed
-      return .none
+      return .completeChannelPromise(with: .failure(GRPCError.AlreadyComplete()))
 
     case .closed:
       // We're already closed.
@@ -557,6 +585,29 @@ extension ClientTransport.State {
       return .none
     }
   }
+
+  /// The caller has asked for the underlying `Channel`.
+  mutating func getChannel() -> Action {
+    switch self {
+    case .idle, .awaitingTransport, .activatingTransport:
+      // Do nothing, we'll complete the promise when we become active or closed.
+      return .none
+
+    case let .active(channel):
+      // We're already active, so there was no promise to succeed when we made this transition. We
+      // can complete it now.
+      return .completeChannelPromise(with: .success(channel))
+
+    case .closing:
+      // We'll complete the promise when we transition to closed.
+      return .none
+
+    case .closed:
+      // We're already closed; there was no promise to fail when we made this transition. We can go
+      // ahead and fail it now though.
+      return .completeChannelPromise(with: .failure(GRPCError.AlreadyComplete()))
+    }
+  }
 }
 
 // MARK: - State Actions
@@ -593,6 +644,9 @@ extension ClientTransport {
     case let .completePromise(promise, result):
       promise?.completeWith(result)
 
+    case let .completeChannelPromise(result):
+      self.channelPromise?.completeWith(result)
+
     case let .close(channel):
       channel.close(mode: .all, promise: nil)
 
@@ -606,8 +660,12 @@ extension ClientTransport {
   /// Configures this transport with the `configurator`.
   private func configure(using configurator: (ChannelHandler) -> EventLoopFuture<Void>) {
     configurator(self).whenFailure { error in
-      // We failed to configure; we need to handle this.
-      self.channelError(error)
+      if error is GRPCStatus || error is GRPCStatusTransformable {
+        self.channelError(error)
+      } else {
+        // Fallback to something which will mark the RPC as 'unavailable'.
+        self.channelError(ConnectionFailure(reason: error))
+      }
     }
   }
 

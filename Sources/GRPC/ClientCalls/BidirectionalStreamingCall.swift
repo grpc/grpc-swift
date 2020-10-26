@@ -22,63 +22,63 @@ import NIOHTTP2
 ///
 /// Messages should be sent via the `sendMessage` and `sendMessages` methods; the stream of messages
 /// must be terminated by calling `sendEnd` to indicate the final message has been sent.
-public final class BidirectionalStreamingCall<
+///
+/// Note: while this object is a `struct`, its implementation delegates to `Call`. It therefore
+/// has reference semantics.
+public struct BidirectionalStreamingCall<
   RequestPayload,
   ResponsePayload
 >: StreamingRequestClientCall {
-  private let transport: ChannelTransport<RequestPayload, ResponsePayload>
+  private let call: Call<RequestPayload, ResponsePayload>
+  private let responseParts: StreamingResponseParts<ResponsePayload>
 
   /// The options used to make the RPC.
-  public let options: CallOptions
+  public var options: CallOptions {
+    return self.call.options
+  }
 
   /// The `Channel` used to transport messages for this RPC.
   public var subchannel: EventLoopFuture<Channel> {
-    return self.transport.streamChannel()
+    return self.call.channel
   }
 
   /// The `EventLoop` this call is running on.
   public var eventLoop: EventLoop {
-    return self.transport.eventLoop
+    return self.call.eventLoop
   }
 
   /// Cancel this RPC if it hasn't already completed.
   public func cancel(promise: EventLoopPromise<Void>?) {
-    self.transport.cancel(promise: promise)
+    self.call.cancel(promise: promise)
   }
 
   // MARK: - Response Parts
 
   /// The initial metadata returned from the server.
   public var initialMetadata: EventLoopFuture<HPACKHeaders> {
-    if self.eventLoop.inEventLoop {
-      return self.transport.responseContainer.lazyInitialMetadataPromise.getFutureResult()
-    } else {
-      return self.eventLoop.flatSubmit {
-        return self.transport.responseContainer.lazyInitialMetadataPromise.getFutureResult()
-      }
-    }
+    return self.responseParts.initialMetadata
   }
 
   /// The trailing metadata returned from the server.
   public var trailingMetadata: EventLoopFuture<HPACKHeaders> {
-    if self.eventLoop.inEventLoop {
-      return self.transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult()
-    } else {
-      return self.eventLoop.flatSubmit {
-        return self.transport.responseContainer.lazyTrailingMetadataPromise.getFutureResult()
-      }
-    }
+    return self.responseParts.trailingMetadata
   }
 
   /// The final status of the the RPC.
   public var status: EventLoopFuture<GRPCStatus> {
-    if self.eventLoop.inEventLoop {
-      return self.transport.responseContainer.lazyStatusPromise.getFutureResult()
-    } else {
-      return self.eventLoop.flatSubmit {
-        return self.transport.responseContainer.lazyStatusPromise.getFutureResult()
-      }
-    }
+    return self.responseParts.status
+  }
+
+  internal init(
+    call: Call<RequestPayload, ResponsePayload>,
+    callback: @escaping (ResponsePayload) -> Void
+  ) {
+    self.call = call
+    self.responseParts = StreamingResponseParts(on: call.eventLoop, callback)
+  }
+
+  internal func invoke() {
+    self.call.invokeStreamingRequests(self.responseParts.handle(_:))
   }
 
   // MARK: - Requests
@@ -98,10 +98,8 @@ public final class BidirectionalStreamingCall<
     compression: Compression = .deferToCallDefault,
     promise: EventLoopPromise<Void>?
   ) {
-    let compressed = compression
-      .isEnabled(callDefault: self.options.messageEncoding.enabledForRequests)
-    let messageContext = _MessageContext(message, compressed: compressed)
-    self.transport.sendRequest(.message(messageContext), promise: promise)
+    let compress = self.call.compress(compression)
+    self.call.send(.message(message, .init(compress: compress, flush: true)), promise: promise)
   }
 
   /// Sends a sequence of messages to the service.
@@ -120,11 +118,7 @@ public final class BidirectionalStreamingCall<
     compression: Compression = .deferToCallDefault,
     promise: EventLoopPromise<Void>?
   ) where S: Sequence, S.Element == RequestPayload {
-    let compressed = compression
-      .isEnabled(callDefault: self.options.messageEncoding.enabledForRequests)
-    self.transport.sendRequests(messages.map {
-      .message(_MessageContext($0, compressed: compressed))
-    }, promise: promise)
+    self.call.sendMessages(messages, compression: compression, promise: promise)
   }
 
   /// Terminates a stream of messages sent to the service.
@@ -132,84 +126,6 @@ public final class BidirectionalStreamingCall<
   /// - Important: This should only ever be called once.
   /// - Parameter promise: A promise to be fulfilled when the end has been sent.
   public func sendEnd(promise: EventLoopPromise<Void>?) {
-    self.transport.sendRequest(.end, promise: promise)
-  }
-
-  internal init(
-    transport: ChannelTransport<RequestPayload, ResponsePayload>,
-    options: CallOptions
-  ) {
-    self.transport = transport
-    self.options = options
-  }
-
-  internal func sendHead(_ head: _GRPCRequestHead) {
-    self.transport.sendRequest(.head(head), promise: nil)
-  }
-}
-
-extension BidirectionalStreamingCall {
-  internal static func makeOnHTTP2Stream<
-    Serializer: MessageSerializer,
-    Deserializer: MessageDeserializer
-  >(
-    multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
-    serializer: Serializer,
-    deserializer: Deserializer,
-    callOptions: CallOptions,
-    errorDelegate: ClientErrorDelegate?,
-    logger: Logger,
-    responseHandler: @escaping (ResponsePayload) -> Void
-  ) -> BidirectionalStreamingCall<RequestPayload, ResponsePayload>
-    where Serializer.Input == RequestPayload, Deserializer.Output == ResponsePayload {
-    let eventLoop = multiplexer.eventLoop
-    let transport = ChannelTransport<RequestPayload, ResponsePayload>(
-      multiplexer: multiplexer,
-      serializer: serializer,
-      deserializer: deserializer,
-      responseContainer: .init(eventLoop: eventLoop, streamingResponseHandler: responseHandler),
-      callType: .bidirectionalStreaming,
-      timeLimit: callOptions.timeLimit,
-      errorDelegate: errorDelegate,
-      logger: logger
-    )
-
-    return BidirectionalStreamingCall(transport: transport, options: callOptions)
-  }
-
-  internal static func make<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
-    serializer: Serializer,
-    deserializer: Deserializer,
-    fakeResponse: FakeStreamingResponse<RequestPayload, ResponsePayload>?,
-    callOptions: CallOptions,
-    logger: Logger,
-    responseHandler: @escaping (ResponsePayload) -> Void
-  ) -> BidirectionalStreamingCall<RequestPayload, ResponsePayload>
-    where Serializer.Input == RequestPayload, Deserializer.Output == ResponsePayload {
-    let eventLoop = fakeResponse?.channel.eventLoop ?? EmbeddedEventLoop()
-    let responseContainer = ResponsePartContainer(
-      eventLoop: eventLoop,
-      streamingResponseHandler: responseHandler
-    )
-
-    let transport: ChannelTransport<RequestPayload, ResponsePayload>
-    if let fakeResponse = fakeResponse {
-      transport = .init(
-        fakeResponse: fakeResponse,
-        responseContainer: responseContainer,
-        timeLimit: callOptions.timeLimit,
-        logger: logger
-      )
-
-      fakeResponse.activate()
-    } else {
-      transport = .makeTransportForMissingFakeResponse(
-        eventLoop: eventLoop,
-        responseContainer: responseContainer,
-        logger: logger
-      )
-    }
-
-    return BidirectionalStreamingCall(transport: transport, options: callOptions)
+    self.call.send(.end, promise: promise)
   }
 }
