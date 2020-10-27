@@ -43,7 +43,7 @@ final class AsyncQPSServerImpl: Grpc_Testing_BenchmarkServiceProvider {
       case let .message(request):
         do {
           let response = try AsyncQPSServerImpl.processSimpleRPC(request: request)
-          _ = context.sendResponse(response)
+          context.sendResponse(response, promise: nil)
         } catch {
           context.statusPromise.fail(error)
         }
