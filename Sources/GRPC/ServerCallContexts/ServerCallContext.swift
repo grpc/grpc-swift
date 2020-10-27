@@ -60,4 +60,41 @@ open class ServerCallContextBase: ServerCallContext {
     self.headers = HPACKHeaders(httpHeaders: request.headers, normalizeHTTPHeaders: false)
     self.logger = logger
   }
+
+  /// Processes an error, transforming it into a 'GRPCStatus' and any trailers to send to the peer.
+  internal func processError(
+    _ error: Error,
+    delegate: ServerErrorDelegate?
+  ) -> (GRPCStatus, HPACKHeaders) {
+    // Observe the error if we have a delegate.
+    delegate?.observeRequestHandlerError(error, headers: self.headers)
+
+    // What status are we terminating this RPC with?
+    // - If we have a delegate, try transforming the error. If the delegate returns trailers, merge
+    //   them with any on the call context.
+    // - If we don't have a delegate, then try to transform the error to a status.
+    // - Fallback to a generic error.
+    let status: GRPCStatus
+    let trailers: HPACKHeaders
+
+    if let transformed = delegate?.transformRequestHandlerError(error, headers: self.headers) {
+      status = transformed.status
+      if var transformedTrailers = transformed.trailers {
+        // The delegate returned trailers: merge in those from the context as well.
+        transformedTrailers.add(contentsOf: self.trailers)
+        trailers = transformedTrailers
+      } else {
+        trailers = self.trailers
+      }
+    } else if let grpcStatusTransformable = error as? GRPCStatusTransformable {
+      status = grpcStatusTransformable.makeGRPCStatus()
+      trailers = self.trailers
+    } else {
+      // Eh... well, we don't what status to use. Use a generic one.
+      status = .processingError
+      trailers = self.trailers
+    }
+
+    return (status, trailers)
+  }
 }

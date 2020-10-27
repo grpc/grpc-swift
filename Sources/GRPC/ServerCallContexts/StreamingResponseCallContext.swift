@@ -75,43 +75,25 @@ open class StreamingResponseCallContextImpl<ResponsePayload>: StreamingResponseC
     self.channel = channel
     super.init(eventLoop: channel.eventLoop, headers: headers, logger: logger)
 
-    statusPromise.futureResult
-      .map {
-        GRPCStatusAndTrailers(status: $0, trailers: nil)
-      }
-      // Ensure that any error provided can be transformed to `GRPCStatus`, using "internal server error" as a fallback.
-      .recover { [weak errorDelegate] error in
-        errorDelegate?.observeRequestHandlerError(error, headers: headers)
-
-        if let transformed = errorDelegate?.transformRequestHandlerError(
-          error,
-          headers: headers
-        ) {
-          return transformed
-        }
-
-        if let grpcStatusTransformable = error as? GRPCStatusTransformable {
-          return GRPCStatusAndTrailers(
-            status: grpcStatusTransformable.makeGRPCStatus(),
-            trailers: nil
-          )
-        }
-
-        return GRPCStatusAndTrailers(status: .processingError, trailers: nil)
-      }
-      // Finish the call by returning the final status.
-      .whenSuccess { statusAndMetadata in
-        if let trailers = statusAndMetadata.trailers {
-          self.trailers.add(contentsOf: trailers)
-        }
+    self.statusPromise.futureResult.whenComplete { result in
+      switch result {
+      case let .success(status):
         self.channel.writeAndFlush(
-          NIOAny(
-            WrappedResponse
-              .statusAndTrailers(statusAndMetadata.status, self.trailers)
-          ),
+          self.wrap(.statusAndTrailers(status, self.trailers)),
           promise: nil
         )
+
+      case let .failure(error):
+        let (status, trailers) = self.processError(error, delegate: errorDelegate)
+        self.channel.writeAndFlush(self.wrap(.statusAndTrailers(status, trailers)), promise: nil)
       }
+    }
+  }
+
+  /// Wrap the response part in a `NIOAny`. This is useful in order to avoid explicitly spelling
+  /// out `NIOAny(WrappedResponse(...))`.
+  private func wrap(_ response: WrappedResponse) -> NIOAny {
+    return NIOAny(response)
   }
 
   @available(*, deprecated, renamed: "init(channel:headers:errorDelegate:logger:)")
