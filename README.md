@@ -25,7 +25,7 @@ opposed to the core library provided by the [gRPC project][grpc].
 Version | Implementation | Branch                 | `protoc` Plugin         | CocoaPod              | Support
 --------|----------------|------------------------|-------------------------|-----------------------|-----------------------------------------
 1.x     | SwiftNIO       | [`main`][branch-new]   | `protoc-gen-grpc-swift` | [gRPC-Swift][pod-new] | Actively developed and supported
-0.x     | gRPC C library | [`cgrpc`][branch-old]  | `proroc-gen-swiftgrpc`  | [SwiftGRPC][pod-old]  | No longer developed; security fixes only
+0.x     | gRPC C library | [`cgrpc`][branch-old]  | `protoc-gen-swiftgrpc`  | [SwiftGRPC][pod-old]  | No longer developed; security fixes only
 
 The remainder of this README refers to the 1.x version of gRPC Swift.
 
