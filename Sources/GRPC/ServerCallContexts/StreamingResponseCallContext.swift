@@ -46,7 +46,7 @@ open class StreamingResponseCallContext<ResponsePayload>: ServerCallContextBase 
   ///
   /// - Parameters:
   ///   - message: The message to send to the client.
-  ///   - compression: Whether compression should be used for this response. If compression is
+  ///   - compression: Whether compression should be used for this response. If compression
   ///     is enabled in the call context, the value passed here takes precedence. Defaults to
   ///     deferring to the value set on the call context.
   ///   - promise: A promise to complete once the message has been sent.
@@ -62,7 +62,7 @@ open class StreamingResponseCallContext<ResponsePayload>: ServerCallContextBase 
   ///
   /// - Parameters:
   ///   - message: The message to send to the client.
-  ///   - compression: Whether compression should be used for this response. If compression is
+  ///   - compression: Whether compression should be used for this response. If compression
   ///     is enabled in the call context, the value passed here takes precedence. Defaults to
   ///     deferring to the value set on the call context.
   open func sendResponse(
@@ -77,7 +77,7 @@ open class StreamingResponseCallContext<ResponsePayload>: ServerCallContextBase 
   /// Sends a sequence of responses to the client.
   /// - Parameters:
   ///   - messages: The messages to send to the client.
-  ///   - compression: Whether compression should be used for this response. If compression is
+  ///   - compression: Whether compression should be used for this response. If compression
   ///     is enabled in the call context, the value passed here takes precedence. Defaults to
   ///     deferring to the value set on the call context.
   ///   - promise: A promise to complete once the messages have been sent.
@@ -92,7 +92,7 @@ open class StreamingResponseCallContext<ResponsePayload>: ServerCallContextBase 
   /// Sends a sequence of responses to the client.
   /// - Parameters:
   ///   - messages: The messages to send to the client.
-  ///   - compression: Whether compression should be used for this response. If compression is
+  ///   - compression: Whether compression should be used for this response. If compression
   ///     is enabled in the call context, the value passed here takes precedence. Defaults to
   ///     deferring to the value set on the call context.
   open func sendResponses<Messages: Sequence>(
