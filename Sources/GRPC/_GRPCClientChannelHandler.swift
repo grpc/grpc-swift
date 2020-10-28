@@ -236,6 +236,24 @@ public enum GRPCCallType {
 
   /// Bidirectional streaming: many request and many responses.
   case bidirectionalStreaming
+
+  public var isStreamingRequests: Bool {
+    switch self {
+    case .clientStreaming, .bidirectionalStreaming:
+      return true
+    case .unary, .serverStreaming:
+      return false
+    }
+  }
+
+  public var isStreamingResponses: Bool {
+    switch self {
+    case .serverStreaming, .bidirectionalStreaming:
+      return true
+    case .unary, .clientStreaming:
+      return false
+    }
+  }
 }
 
 // MARK: - GRPCClientChannelHandler

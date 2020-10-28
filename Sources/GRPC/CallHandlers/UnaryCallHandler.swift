@@ -29,70 +29,260 @@ public final class UnaryCallHandler<
   RequestPayload,
   ResponsePayload
 >: _BaseCallHandler<RequestPayload, ResponsePayload> {
-  public typealias EventObserver = (RequestPayload) -> EventLoopFuture<ResponsePayload>
-  private var eventObserver: EventObserver?
-  private var callContext: UnaryResponseCallContext<ResponsePayload>?
-  private let eventObserverFactory: (UnaryResponseCallContext<ResponsePayload>) -> EventObserver
+  private typealias Context = UnaryResponseCallContext<ResponsePayload>
+  private typealias Observer = (RequestPayload) -> EventLoopFuture<ResponsePayload>
+
+  private var state: State
+
+  private enum State {
+    // We don't have the following states (which we do have in the main state machine):
+    // - 'requestOpenResponseIdle',
+    // - 'requestClosedResponseIdle'
+    //
+    // We'll send headers back when we transition away from 'requestIdleResponseIdle' so the
+    // response stream can never be less idle than the request stream.
+
+    /// Fully idle, we haven't seen the request headers yet and we haven't made an event observer
+    /// yet.
+    case requestIdleResponseIdle((Context) -> Observer)
+
+    /// Received the request headers, created an observer and have sent back response headers.
+    /// We may or may not have observer the request message yet.
+    case requestOpenResponseOpen(Context, ObserverState)
+
+    /// Received the request headers, a message and the end of the request stream. The observer has
+    /// been invoked but it hasn't yet finished processing the request.
+    ///
+    /// Note: we know we've received a message if we're in this state, if we had seen the request
+    /// headers followed by end we'd fully close.
+    case requestClosedResponseOpen(Context)
+
+    /// We're done.
+    case requestClosedResponseClosed
+
+    /// The state of the event observer.
+    enum ObserverState {
+      /// We have an event observer, but haven't yet received a request.
+      case notObserved(Observer)
+      /// We've invoked the event observer with a request.
+      case observed
+    }
+  }
 
   internal init<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
     serializer: Serializer,
     deserializer: Deserializer,
     callHandlerContext: CallHandlerContext,
-    eventObserverFactory: @escaping (UnaryResponseCallContext<ResponsePayload>) -> EventObserver
+    interceptors: [ServerInterceptor<Deserializer.Output, Serializer.Input>],
+    eventObserverFactory: @escaping (UnaryResponseCallContext<ResponsePayload>)
+      -> (RequestPayload) -> EventLoopFuture<ResponsePayload>
   ) where Serializer.Input == ResponsePayload, Deserializer.Output == RequestPayload {
-    self.eventObserverFactory = eventObserverFactory
+    self.state = .requestIdleResponseIdle(eventObserverFactory)
     super.init(
       callHandlerContext: callHandlerContext,
-      codec: GRPCServerCodecHandler(serializer: serializer, deserializer: deserializer)
+      codec: GRPCServerCodecHandler(serializer: serializer, deserializer: deserializer),
+      callType: .unary,
+      interceptors: interceptors
     )
   }
 
-  override internal func processHeaders(_ headers: HPACKHeaders, context: ChannelHandlerContext) {
-    let callContext = UnaryResponseCallContextImpl<ResponsePayload>(
-      channel: context.channel,
-      headers: headers,
-      errorDelegate: self.errorDelegate,
-      logger: self.logger
-    )
+  override public func channelInactive(context: ChannelHandlerContext) {
+    super.channelInactive(context: context)
 
-    self.callContext = callContext
-    self.eventObserver = self.eventObserverFactory(callContext)
-    callContext.responsePromise.futureResult.whenComplete { _ in
-      // When done, reset references to avoid retain cycles.
-      self.eventObserver = nil
-      self.callContext = nil
+    // Fail any remaining promise.
+    switch self.state {
+    case .requestIdleResponseIdle,
+         .requestClosedResponseClosed:
+      self.state = .requestClosedResponseClosed
+
+    case let .requestOpenResponseOpen(context, _),
+         let .requestClosedResponseOpen(context):
+      self.state = .requestClosedResponseClosed
+      context.responsePromise.fail(GRPCError.AlreadyComplete())
     }
-
-    context.writeAndFlush(self.wrapOutboundOut(.headers([:])), promise: nil)
   }
 
-  override internal func processMessage(_ message: RequestPayload) throws {
-    guard let eventObserver = self.eventObserver,
-      let context = self.callContext else {
-      self.logger.error(
-        "processMessage(_:) called before the call started or after the call completed",
-        source: "GRPC"
+  /// Handle an error from the event observer.
+  private func handleObserverError(_ error: Error) {
+    switch self.state {
+    case .requestIdleResponseIdle:
+      preconditionFailure("Invalid state: request observer hasn't been created")
+
+    case let .requestOpenResponseOpen(context, _),
+         let .requestClosedResponseOpen(context):
+      let (status, trailers) = self.processObserverError(
+        error,
+        headers: context.headers,
+        trailers: context.trailers
       )
-      throw GRPCError.StreamCardinalityViolation.request.captureContext()
-    }
+      // This will handle the response promise as well.
+      self.sendEnd(status: status, trailers: trailers)
 
-    let resultFuture = eventObserver(message)
-    resultFuture
-      // Fulfil the response promise with whatever response (or error) the framework user has provided.
-      .cascade(to: context.responsePromise)
-    self.eventObserver = nil
-  }
-
-  override internal func endOfStreamReceived() throws {
-    if self.eventObserver != nil {
-      throw GRPCError.StreamCardinalityViolation.request.captureContext()
+    case .requestClosedResponseClosed:
+      // We hit an error, but we're already closed (i.e. we hit a library error first). Ignore
+      // the error.
+      ()
     }
   }
 
-  override internal func sendErrorStatusAndMetadata(_ statusAndMetadata: GRPCStatusAndTrailers) {
-    if let trailers = statusAndMetadata.trailers {
-      self.callContext?.trailers.add(contentsOf: trailers)
+  /// Handle a 'library' error, i.e. an error emanating from the `Channel`.
+  private func handleLibraryError(_ error: Error) {
+    switch self.state {
+    case .requestIdleResponseIdle,
+         .requestOpenResponseOpen(_, .notObserved):
+      // We haven't seen a message, we'll send end to close the stream.
+      let (status, trailers) = self.processLibraryError(error)
+      self.sendEnd(status: status, trailers: trailers)
+
+    case .requestOpenResponseOpen(_, .observed),
+         .requestClosedResponseOpen:
+      // We've seen a message, the observer is in flight, we'll let it play out.
+      ()
+
+    case .requestClosedResponseClosed:
+      // We're already closed, we can just ignore this.
+      ()
     }
-    self.callContext?.responsePromise.fail(statusAndMetadata.status)
+  }
+
+  // MARK: - Inbound
+
+  override internal func observeLibraryError(_ error: Error) {
+    self.handleLibraryError(error)
+  }
+
+  override internal func observeHeaders(_ headers: HPACKHeaders) {
+    switch self.state {
+    case let .requestIdleResponseIdle(factory):
+      // This allocates a promise, but the observer is provided with 'StatusOnlyCallContext' and
+      // doesn't get access to the promise. The observer must return a response future instead
+      // which we cascade to this promise. We can avoid this extra allocation by using a different
+      // context here.
+      //
+      // TODO: provide a new context without a promise.
+      let context = UnaryResponseCallContext<ResponsePayload>(
+        eventLoop: self.eventLoop,
+        headers: headers,
+        logger: self.logger
+      )
+      let observer = factory(context)
+
+      // We're fully open now (we'll send the response headers back in a moment).
+      self.state = .requestOpenResponseOpen(context, .notObserved(observer))
+
+      // Register callbacks for the response promise.
+      context.responsePromise.futureResult.whenComplete { result in
+        switch result {
+        case let .success(response):
+          self.sendResponse(response)
+        case let .failure(error):
+          self.handleObserverError(error)
+        }
+      }
+
+      // Write back the response headers.
+      self.sendResponsePartFromObserver(.metadata([:]), promise: nil)
+
+    // The main state machine guards against these states.
+    case .requestOpenResponseOpen,
+         .requestClosedResponseOpen,
+         .requestClosedResponseClosed:
+      preconditionFailure("Invalid state: request headers already received")
+    }
+  }
+
+  override internal func observeRequest(_ message: RequestPayload) {
+    switch self.state {
+    case .requestIdleResponseIdle:
+      preconditionFailure("Invalid state: request received before headers")
+
+    case let .requestOpenResponseOpen(context, request):
+      switch request {
+      case .observed:
+        // We've already observed the request message. The main state machine doesn't guard against
+        // too many messages for unary streams. Assuming downstream handlers protect against this
+        // then this must be an errant interceptor, we'll ignore it.
+        ()
+
+      case let .notObserved(observer):
+        self.state = .requestOpenResponseOpen(context, .observed)
+        // Complete the promise with the observer block.
+        context.responsePromise.completeWith(observer(message))
+      }
+
+    case .requestClosedResponseOpen,
+         .requestClosedResponseClosed:
+      preconditionFailure("Invalid state: the request stream has already been closed")
+    }
+  }
+
+  override internal func observeEnd() {
+    switch self.state {
+    case .requestIdleResponseIdle:
+      preconditionFailure("Invalid state: no request headers received")
+
+    case let .requestOpenResponseOpen(context, request):
+      switch request {
+      case .observed:
+        // Close the request stream.
+        self.state = .requestClosedResponseOpen(context)
+
+      case .notObserved:
+        // We haven't received a request: this is an empty stream, the observer will never be
+        // invoked.
+        context.responsePromise.fail(GRPCError.StreamCardinalityViolation.request)
+      }
+
+    case .requestClosedResponseOpen,
+         .requestClosedResponseClosed:
+      preconditionFailure("Invalid state: request stream is already closed")
+    }
+  }
+
+  // MARK: - Outbound
+
+  private func sendResponse(_ message: ResponsePayload) {
+    switch self.state {
+    case .requestIdleResponseIdle:
+      preconditionFailure("Invalid state: can't send response before receiving headers and request")
+
+    case .requestOpenResponseOpen(_, .notObserved):
+      preconditionFailure("Invalid state: can't send response before receiving request")
+
+    case let .requestOpenResponseOpen(context, .observed),
+         let .requestClosedResponseOpen(context):
+      self.state = .requestClosedResponseClosed
+      self.sendResponsePartFromObserver(
+        .message(message, .init(compress: context.compressionEnabled, flush: false)),
+        promise: nil
+      )
+      self.sendResponsePartFromObserver(
+        .end(context.responseStatus, context.trailers),
+        promise: nil
+      )
+
+    case .requestClosedResponseClosed:
+      // Already closed, do nothing.
+      ()
+    }
+  }
+
+  private func sendEnd(status: GRPCStatus, trailers: HPACKHeaders) {
+    switch self.state {
+    case .requestIdleResponseIdle,
+         .requestClosedResponseOpen:
+      self.state = .requestClosedResponseClosed
+      self.sendResponsePartFromObserver(.end(status, trailers), promise: nil)
+
+    case let .requestOpenResponseOpen(context, _):
+      self.state = .requestClosedResponseClosed
+      self.sendResponsePartFromObserver(.end(status, trailers), promise: nil)
+      // Fail the promise.
+      context.responsePromise.fail(status)
+
+    case .requestClosedResponseClosed:
+      // Already closed, do nothing.
+      ()
+    }
   }
 }

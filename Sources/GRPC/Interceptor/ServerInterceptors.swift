@@ -70,16 +70,99 @@ open class ServerInterceptor<Request, Response> {
   }
 }
 
+// MARK: Head/Tail
+
+/// An interceptor which offloads requests to the service provider and forwards any response parts
+/// to the rest of the pipeline.
+internal struct TailServerInterceptor<Request, Response> {
+  /// Called when a request part has been received.
+  private let onRequestPart: (ServerRequestPart<Request>) -> Void
+
+  init(
+    _ onRequestPart: @escaping (ServerRequestPart<Request>) -> Void
+  ) {
+    self.onRequestPart = onRequestPart
+  }
+
+  internal func receive(
+    _ part: ServerRequestPart<Request>,
+    context: ServerInterceptorContext<Request, Response>
+  ) {
+    self.onRequestPart(part)
+  }
+
+  internal func send(
+    _ part: ServerResponsePart<Response>,
+    promise: EventLoopPromise<Void>?,
+    context: ServerInterceptorContext<Request, Response>
+  ) {
+    context.send(part, promise: promise)
+  }
+}
+
+internal struct HeadServerInterceptor<Request, Response> {
+  /// The pipeline this interceptor belongs to.
+  private let pipeline: ServerInterceptorPipeline<Request, Response>
+
+  /// Called when a response part has been received.
+  private let onResponsePart: (ServerResponsePart<Response>, EventLoopPromise<Void>?) -> Void
+
+  internal init(
+    for pipeline: ServerInterceptorPipeline<Request, Response>,
+    _ onResponsePart: @escaping (ServerResponsePart<Response>, EventLoopPromise<Void>?) -> Void
+  ) {
+    self.pipeline = pipeline
+    self.onResponsePart = onResponsePart
+  }
+
+  internal func receive(
+    _ part: ServerRequestPart<Request>,
+    context: ServerInterceptorContext<Request, Response>
+  ) {
+    context.receive(part)
+  }
+
+  internal func send(
+    _ part: ServerResponsePart<Response>,
+    promise: EventLoopPromise<Void>?,
+    context: ServerInterceptorContext<Request, Response>
+  ) {
+    // Close the pipeline on end.
+    switch part {
+    case .metadata, .message:
+      ()
+    case .end:
+      self.pipeline.close()
+    }
+    self.onResponsePart(part, promise)
+  }
+}
+
 // MARK: - Any Interceptor
 
 /// A wrapping interceptor which delegates to the implementation of an underlying interceptor.
 internal struct AnyServerInterceptor<Request, Response> {
   internal enum Implementation {
+    case head(HeadServerInterceptor<Request, Response>)
+    case tail(TailServerInterceptor<Request, Response>)
     case base(ServerInterceptor<Request, Response>)
   }
 
   /// The underlying interceptor implementation.
   internal let _implementation: Implementation
+
+  internal static func head(
+    for pipeline: ServerInterceptorPipeline<Request, Response>,
+    _ onResponsePart: @escaping (ServerResponsePart<Response>, EventLoopPromise<Void>?) -> Void
+  ) -> AnyServerInterceptor<Request, Response> {
+    return .init(.head(.init(for: pipeline, onResponsePart)))
+  }
+
+  internal static func tail(
+    _ onRequestPart: @escaping (ServerRequestPart<Request>) -> Void
+  ) -> AnyServerInterceptor<Request, Response> {
+    return .init(.tail(.init(onRequestPart)))
+  }
 
   /// A user provided interceptor.
   /// - Parameter interceptor: The interceptor to wrap.
@@ -99,8 +182,12 @@ internal struct AnyServerInterceptor<Request, Response> {
     context: ServerInterceptorContext<Request, Response>
   ) {
     switch self._implementation {
-    case let .base(handler):
-      handler.receive(part, context: context)
+    case let .head(interceptor):
+      interceptor.receive(part, context: context)
+    case let .tail(interceptor):
+      interceptor.receive(part, context: context)
+    case let .base(interceptor):
+      interceptor.receive(part, context: context)
     }
   }
 
@@ -110,8 +197,12 @@ internal struct AnyServerInterceptor<Request, Response> {
     context: ServerInterceptorContext<Request, Response>
   ) {
     switch self._implementation {
-    case let .base(handler):
-      handler.send(part, promise: promise, context: context)
+    case let .head(interceptor):
+      interceptor.send(part, promise: promise, context: context)
+    case let .tail(interceptor):
+      interceptor.send(part, promise: promise, context: context)
+    case let .base(interceptor):
+      interceptor.send(part, promise: promise, context: context)
     }
   }
 }

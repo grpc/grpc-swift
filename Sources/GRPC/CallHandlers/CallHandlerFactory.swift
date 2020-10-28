@@ -24,6 +24,7 @@ public enum CallHandlerFactory {
 
   public static func makeUnary<Request: Message, Response: Message>(
     callHandlerContext: CallHandlerContext,
+    interceptors: [ServerInterceptor<Request, Response>] = [],
     eventObserverFactory: @escaping (UnaryContext<Response>)
       -> UnaryEventObserver<Request, Response>
   ) -> UnaryCallHandler<Request, Response> {
@@ -31,12 +32,14 @@ public enum CallHandlerFactory {
       serializer: ProtobufSerializer(),
       deserializer: ProtobufDeserializer(),
       callHandlerContext: callHandlerContext,
+      interceptors: interceptors,
       eventObserverFactory: eventObserverFactory
     )
   }
 
   public static func makeUnary<Request: GRPCPayload, Response: GRPCPayload>(
     callHandlerContext: CallHandlerContext,
+    interceptors: [ServerInterceptor<Request, Response>] = [],
     eventObserverFactory: @escaping (UnaryContext<Response>)
       -> UnaryEventObserver<Request, Response>
   ) -> UnaryCallHandler<Request, Response> {
@@ -44,6 +47,7 @@ public enum CallHandlerFactory {
       serializer: GRPCPayloadSerializer(),
       deserializer: GRPCPayloadDeserializer(),
       callHandlerContext: callHandlerContext,
+      interceptors: interceptors,
       eventObserverFactory: eventObserverFactory
     )
   }
@@ -54,6 +58,7 @@ public enum CallHandlerFactory {
 
   public static func makeClientStreaming<Request: Message, Response: Message>(
     callHandlerContext: CallHandlerContext,
+    interceptors: [ServerInterceptor<Request, Response>] = [],
     eventObserverFactory: @escaping (ClientStreamingContext<Response>)
       -> ClientStreamingEventObserver<Request>
   ) -> ClientStreamingCallHandler<Request, Response> {
@@ -61,12 +66,14 @@ public enum CallHandlerFactory {
       serializer: ProtobufSerializer(),
       deserializer: ProtobufDeserializer(),
       callHandlerContext: callHandlerContext,
+      interceptors: interceptors,
       eventObserverFactory: eventObserverFactory
     )
   }
 
   public static func makeClientStreaming<Request: GRPCPayload, Response: GRPCPayload>(
     callHandlerContext: CallHandlerContext,
+    interceptors: [ServerInterceptor<Request, Response>] = [],
     eventObserverFactory: @escaping (ClientStreamingContext<Response>)
       -> ClientStreamingEventObserver<Request>
   ) -> ClientStreamingCallHandler<Request, Response> {
@@ -74,6 +81,7 @@ public enum CallHandlerFactory {
       serializer: GRPCPayloadSerializer(),
       deserializer: GRPCPayloadDeserializer(),
       callHandlerContext: callHandlerContext,
+      interceptors: interceptors,
       eventObserverFactory: eventObserverFactory
     )
   }
@@ -83,6 +91,7 @@ public enum CallHandlerFactory {
 
   public static func makeServerStreaming<Request: Message, Response: Message>(
     callHandlerContext: CallHandlerContext,
+    interceptors: [ServerInterceptor<Request, Response>] = [],
     eventObserverFactory: @escaping (ServerStreamingContext<Response>)
       -> ServerStreamingEventObserver<Request>
   ) -> ServerStreamingCallHandler<Request, Response> {
@@ -90,12 +99,14 @@ public enum CallHandlerFactory {
       serializer: ProtobufSerializer(),
       deserializer: ProtobufDeserializer(),
       callHandlerContext: callHandlerContext,
+      interceptors: interceptors,
       eventObserverFactory: eventObserverFactory
     )
   }
 
   public static func makeServerStreaming<Request: GRPCPayload, Response: GRPCPayload>(
     callHandlerContext: CallHandlerContext,
+    interceptors: [ServerInterceptor<Request, Response>] = [],
     eventObserverFactory: @escaping (ServerStreamingContext<Response>)
       -> ServerStreamingEventObserver<Request>
   ) -> ServerStreamingCallHandler<Request, Response> {
@@ -103,6 +114,7 @@ public enum CallHandlerFactory {
       serializer: GRPCPayloadSerializer(),
       deserializer: GRPCPayloadDeserializer(),
       callHandlerContext: callHandlerContext,
+      interceptors: interceptors,
       eventObserverFactory: eventObserverFactory
     )
   }
@@ -113,6 +125,7 @@ public enum CallHandlerFactory {
 
   public static func makeBidirectionalStreaming<Request: Message, Response: Message>(
     callHandlerContext: CallHandlerContext,
+    interceptors: [ServerInterceptor<Request, Response>] = [],
     eventObserverFactory: @escaping (BidirectionalStreamingContext<Response>)
       -> BidirectionalStreamingEventObserver<Request>
   ) -> BidirectionalStreamingCallHandler<Request, Response> {
@@ -120,12 +133,14 @@ public enum CallHandlerFactory {
       serializer: ProtobufSerializer(),
       deserializer: ProtobufDeserializer(),
       callHandlerContext: callHandlerContext,
+      interceptors: interceptors,
       eventObserverFactory: eventObserverFactory
     )
   }
 
   public static func makeBidirectionalStreaming<Request: GRPCPayload, Response: GRPCPayload>(
     callHandlerContext: CallHandlerContext,
+    interceptors: [ServerInterceptor<Request, Response>] = [],
     eventObserverFactory: @escaping (BidirectionalStreamingContext<Response>)
       -> BidirectionalStreamingEventObserver<Request>
   ) -> BidirectionalStreamingCallHandler<Request, Response> {
@@ -133,6 +148,7 @@ public enum CallHandlerFactory {
       serializer: GRPCPayloadSerializer(),
       deserializer: GRPCPayloadDeserializer(),
       callHandlerContext: callHandlerContext,
+      interceptors: interceptors,
       eventObserverFactory: eventObserverFactory
     )
   }
