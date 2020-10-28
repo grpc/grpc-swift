@@ -134,7 +134,7 @@ internal final class ClientTransport<Request, Response> {
   internal func send(_ part: ClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
     self.eventLoop.assertInEventLoop()
     if let pipeline = self._pipeline {
-      pipeline.write(part, promise: promise)
+      pipeline.send(part, promise: promise)
     } else {
       promise?.fail(GRPCError.AlreadyComplete())
     }
@@ -779,10 +779,10 @@ extension ClientTransport {
   private func forwardToInterceptors(_ part: _GRPCClientResponsePart<Response>) {
     switch part {
     case let .initialMetadata(metadata):
-      self._pipeline?.read(.metadata(metadata))
+      self._pipeline?.receive(.metadata(metadata))
 
     case let .message(context):
-      self._pipeline?.read(.message(context.message))
+      self._pipeline?.receive(.message(context.message))
 
     case let .trailingMetadata(trailers):
       // The `Channel` delivers trailers and `GRPCStatus`, we want to emit them together in the
@@ -792,14 +792,14 @@ extension ClientTransport {
     case let .status(status):
       let trailers = self.trailers ?? [:]
       self.trailers = nil
-      self._pipeline?.read(.end(status, trailers))
+      self._pipeline?.receive(.end(status, trailers))
     }
   }
 
   /// Forward the error to the interceptor pipeline.
   /// - Parameter error: The error to forward.
   private func forwardErrorToInterceptors(_ error: Error) {
-    self._pipeline?.read(.error(error))
+    self._pipeline?.receive(.error(error))
   }
 }
 
