@@ -44,13 +44,64 @@ open class StreamingResponseCallContext<ResponsePayload>: ServerCallContextBase 
 
   /// Send a response to the client.
   ///
-  /// - Parameter message: The message to send to the client.
-  /// - Parameter compression: Whether compression should be used for this response. If compression
-  ///   is enabled in the call context, the value passed here takes precedence. Defaults to deferring
-  ///   to the value set on the call context.
-  open func sendResponse(_ message: ResponsePayload,
-                         compression: Compression = .deferToCallDefault) -> EventLoopFuture<Void> {
+  /// - Parameters:
+  ///   - message: The message to send to the client.
+  ///   - compression: Whether compression should be used for this response. If compression
+  ///     is enabled in the call context, the value passed here takes precedence. Defaults to
+  ///     deferring to the value set on the call context.
+  ///   - promise: A promise to complete once the message has been sent.
+  open func sendResponse(
+    _ message: ResponsePayload,
+    compression: Compression = .deferToCallDefault,
+    promise: EventLoopPromise<Void>?
+  ) {
     fatalError("needs to be overridden")
+  }
+
+  /// Send a response to the client.
+  ///
+  /// - Parameters:
+  ///   - message: The message to send to the client.
+  ///   - compression: Whether compression should be used for this response. If compression
+  ///     is enabled in the call context, the value passed here takes precedence. Defaults to
+  ///     deferring to the value set on the call context.
+  open func sendResponse(
+    _ message: ResponsePayload,
+    compression: Compression = .deferToCallDefault
+  ) -> EventLoopFuture<Void> {
+    let promise = self.eventLoop.makePromise(of: Void.self)
+    self.sendResponse(message, compression: compression, promise: promise)
+    return promise.futureResult
+  }
+
+  /// Sends a sequence of responses to the client.
+  /// - Parameters:
+  ///   - messages: The messages to send to the client.
+  ///   - compression: Whether compression should be used for this response. If compression
+  ///     is enabled in the call context, the value passed here takes precedence. Defaults to
+  ///     deferring to the value set on the call context.
+  ///   - promise: A promise to complete once the messages have been sent.
+  open func sendResponses<Messages: Sequence>(
+    _ messages: Messages,
+    compression: Compression = .deferToCallDefault,
+    promise: EventLoopPromise<Void>?
+  ) where Messages.Element == ResponsePayload {
+    fatalError("needs to be overridden")
+  }
+
+  /// Sends a sequence of responses to the client.
+  /// - Parameters:
+  ///   - messages: The messages to send to the client.
+  ///   - compression: Whether compression should be used for this response. If compression
+  ///     is enabled in the call context, the value passed here takes precedence. Defaults to
+  ///     deferring to the value set on the call context.
+  open func sendResponses<Messages: Sequence>(
+    _ messages: Messages,
+    compression: Compression = .deferToCallDefault
+  ) -> EventLoopFuture<Void> where Messages.Element == ResponsePayload {
+    let promise = self.eventLoop.makePromise(of: Void.self)
+    self.sendResponses(messages, compression: compression, promise: promise)
+    return promise.futureResult
   }
 }
 
@@ -113,13 +164,37 @@ open class StreamingResponseCallContextImpl<ResponsePayload>: StreamingResponseC
 
   override open func sendResponse(
     _ message: ResponsePayload,
-    compression: Compression = .deferToCallDefault
-  ) -> EventLoopFuture<Void> {
-    let messageContext = _MessageContext(
+    compression: Compression = .deferToCallDefault,
+    promise: EventLoopPromise<Void>?
+  ) {
+    let response = _MessageContext(
       message,
       compressed: compression.isEnabled(callDefault: self.compressionEnabled)
     )
-    return self.channel.writeAndFlush(NIOAny(WrappedResponse.message(messageContext)))
+    self.channel.writeAndFlush(self.wrap(.message(response)), promise: promise)
+  }
+
+  override open func sendResponses<Messages: Sequence>(
+    _ messages: Messages,
+    compression: Compression = .deferToCallDefault,
+    promise: EventLoopPromise<Void>?
+  ) where ResponsePayload == Messages.Element {
+    let compress = compression.isEnabled(callDefault: self.compressionEnabled)
+
+    var iterator = messages.makeIterator()
+    var next = iterator.next()
+
+    while let current = next {
+      next = iterator.next()
+      // Attach the promise, if present, to the last message.
+      let isLast = next == nil
+      self.channel.write(
+        self.wrap(.message(.init(current, compressed: compress))),
+        promise: isLast ? promise : nil
+      )
+    }
+
+    self.channel.flush()
   }
 }
 
@@ -131,9 +206,19 @@ open class StreamingResponseCallContextTestStub<ResponsePayload>: StreamingRespo
 
   override open func sendResponse(
     _ message: ResponsePayload,
-    compression: Compression = .deferToCallDefault
-  ) -> EventLoopFuture<Void> {
+    compression: Compression = .deferToCallDefault,
+    promise: EventLoopPromise<Void>?
+  ) {
     self.recordedResponses.append(message)
-    return eventLoop.makeSucceededFuture(())
+    promise?.succeed(())
+  }
+
+  override open func sendResponses<Messages: Sequence>(
+    _ messages: Messages,
+    compression: Compression = .deferToCallDefault,
+    promise: EventLoopPromise<Void>?
+  ) where ResponsePayload == Messages.Element {
+    self.recordedResponses.append(contentsOf: messages)
+    promise?.succeed(())
   }
 }

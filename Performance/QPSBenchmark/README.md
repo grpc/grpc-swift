@@ -1,34 +1,69 @@
 #  QPS Benchmark worker
 
-An implementation of the QPS worker for benchmarking described in the  
+An implementation of the QPS worker for benchmarking described in the
 [gRPC benchmarking guide](https://grpc.io/docs/guides/benchmarking/)
 
 ## Building
+
 To rebuild the proto files run `make generate-qps-worker`.
 
-The benchmarks can be built in the usual SPM way but release mode is strongly recommended - `swift build -c release`
+The benchmarks can be built in the usual Swift Package Manager way but release
+mode is strongly recommended: `swift build -c release`
 
 ## Running the benchmarks
 
-To date the changes to gRPC to run the tests automatically have not been pushed upstream.
+To date the changes to gRPC to run the tests automatically have not been pushed
+upstream. You can easily run the tests locally using the C++ driver program.
 
-You can easily run the tests locally using the C++ driver program from gRPC - note this is built as a side effect 
-of running the C++ tests which can be done in a gRPC checkout with 
-`./tools/run_tests/run_performance_tests.py -l c++ -r cpp_protobuf_async_unary_qps_unconstrained_insecure`
+This can be built using Bazel from the root of a checkout of the
+[grpc/grpc](https://github.com/grpc/grpc) repository with:
 
-For examples of running benchmarking tests proceed as follows
+```sh
+bazel build test/cpp/qps:qps_json_driver
+```
 
-### Unary Benchmark
-1. Open a terminal window and run the QPSBenchmark - `swift run -c release QPSBenchmark --driver_port 10400`.  
-This will become the server when instructed by the driver.
-2. Open another terminal window and run QPSBenchmark - `swift run -c release QPSBenchmark --driver_port 10410`.
-This will become the client when instructed by the driver.
-3. Use the driver to control the test.  In your checkout of [gRPC](https://github.com/grpc/grpc) 
-configure the environment with `export QPS_WORKERS="localhost:10400,localhost:10410"` then run
-`cmake/build/qps_json_driver '--scenarios_json={"scenarios": [{"name": "swift_protobuf_async_unary_qps_unconstrained_insecure", "warmup_seconds": 5, "benchmark_seconds": 30, "num_servers": 1, "server_config": {"async_server_threads": 0, "channel_args": [{"str_value": "throughput", "name": "grpc.optimization_target"}], "server_type": "ASYNC_SERVER", "security_params": null, "threads_per_cq": 0, "server_processes": 0}, "client_config": {"security_params": null, "channel_args": [{"str_value": "throughput", "name": "grpc.optimization_target"}], "async_client_threads": 0, "outstanding_rpcs_per_channel": 100, "rpc_type": "UNARY", "payload_config": {"simple_params": {"resp_size": 0, "req_size": 0}}, "client_channels": 64, "threads_per_cq": 0, "load_params": {"closed_loop": {}}, "client_type": "ASYNC_CLIENT", "histogram_params": {"max_possible": 60000000000.0, "resolution": 0.01}, "client_processes": 0}, "num_clients": 0}]}' --scenario_result_file=scenario_result.json`
-This will run a test of asynchronous unary client and server, using all the cores on the machine.  
-64 channels each with 100 outstanding requests.
+The `qps_json_driver` binary will be in `bazel-bin/test/cpp/qps/`.
 
-### Ping Pong Benchmark
+For examples of running benchmarking tests proceed as follows.
 
-As above but drive with `cmake/build/qps_json_driver '--scenarios_json={"scenarios": [{"name": "swift_protobuf_async_streaming_ping_pong_insecure", "warmup_seconds": 5, "benchmark_seconds": 30, "num_servers": 1, "server_config": {"async_server_threads": 1, "channel_args": [{"str_value": "latency", "name": "grpc.optimization_target"}, {"int_value": 1, "name": "grpc.minimal_stack"}], "server_type": "ASYNC_SERVER", "security_params": null, "threads_per_cq": 0, "server_processes": 0}, "client_config": {"security_params": null, "channel_args": [{"str_value": "latency", "name": "grpc.optimization_target"}, {"int_value": 1, "name": "grpc.minimal_stack"}], "async_client_threads": 1, "outstanding_rpcs_per_channel": 1, "rpc_type": "STREAMING", "payload_config": {"simple_params": {"resp_size": 0, "req_size": 0}}, "client_channels": 1, "threads_per_cq": 0, "load_params": {"closed_loop": {}}, "client_type": "ASYNC_CLIENT", "histogram_params": {"max_possible": 60000000000.0, "resolution": 0.01}, "client_processes": 0}, "num_clients": 1}]}' --scenario_result_file=scenario_result.json`
+> **Note:** the driver may also be built (via CMake) as a side effect of
+> running the performance testing script (`./tools/run_tests/run_performance_tests.py`)
+> from [grpc/grpc](https://github.com/grpc/grpc).
+>
+> The script is also the source of the scenarios listed below.
+
+### Setting Up the Environment
+
+1. Open a terminal window and run the QPSBenchmark, this will become the server when instructed by the driver.
+
+   ```sh
+   swift run -c release QPSBenchmark --driver_port 10400
+   ```
+
+
+2. Open another terminal window and run QPSBenchmark, this will become the client when instructed by the driver.
+
+   ```sh
+   swift run -c release QPSBenchmark --driver_port 10410
+   ```
+
+3. Configure the environment for the driver:
+
+   ```sh
+   export QPS_WORKERS="localhost:10400,localhost:10410"
+   ```
+
+4. Invoke the driver with a scenario file, for example:
+
+   ```sh
+   /path/to/qps_json_driver --scenario_file=/path/to/scenario.json
+   ```
+
+### Scenarios
+
+- `scenarios/unary-unconstrained.json`: will run a test with unary RPCs
+  using all cores on the machine. 64 clients will connect to the server, each
+  enqueuing up to 100 requests.
+- `scenarios/bidirectional-ping-pong.json`: will run bidirectional streaming
+  RPCs.
+
