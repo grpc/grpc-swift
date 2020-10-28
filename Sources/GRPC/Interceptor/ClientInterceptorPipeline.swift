@@ -29,7 +29,7 @@ import NIOHTTP2
 /// ┌───────────────────────────────────────────────────────────────────┐
 /// │                                Call                               │
 /// └────────────────────────────────────────────────────────┬──────────┘
-///                                                          │ write(_:promise) /
+///                                                          │ send(_:promise) /
 ///                                                          │ cancel(promise:)
 /// ┌────────────────────────────────────────────────────────▼──────────┐
 /// │                         InterceptorPipeline            ╎          │
@@ -49,9 +49,9 @@ import NIOHTTP2
 /// │ ┌────────┴─────────────────────────────────────────────▼────────┐ │
 /// │ │          Head Interceptor (interacts with transport)          │ │
 /// │ └────────▲─────────────────────────────────────────────┬────────┘ │
-/// │  read(_:)╎                                             │          │
+/// │          ╎ receive(_:)                                 │          │
 /// └──────────▲─────────────────────────────────────────────┼──────────┘
-///    read(_:)│                                             │ write(_:promise:) /
+///            │ receive(_:)                                 │ send(_:promise:) /
 ///            │                                             │ cancel(promise:)
 /// ┌──────────┴─────────────────────────────────────────────▼──────────┐
 /// │                           ClientTransport                         │
@@ -177,9 +177,9 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   ///
   /// - Parameter part: The part to emit into the pipeline.
   /// - Important: This *must* to be called from the `eventLoop`.
-  internal func read(_ part: ClientResponsePart<Response>) {
+  internal func receive(_ part: ClientResponsePart<Response>) {
     self.eventLoop.assertInEventLoop()
-    self._head?.invokeRead(part)
+    self._head?.invokeReceive(part)
   }
 
   /// Writes a request message into the interceptor pipeline.
@@ -191,11 +191,11 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   ///   - promise: A promise to complete when the request part has been successfully written.
   /// - Important: This *must* to be called from the `eventLoop`.
   @inlinable
-  internal func write(_ part: ClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
+  internal func send(_ part: ClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
     self.eventLoop.assertInEventLoop()
 
     if let tail = self._tail {
-      tail.invokeWrite(part, promise: promise)
+      tail.invokeSend(part, promise: promise)
     } else {
       promise?.fail(GRPCError.AlreadyComplete())
     }
@@ -268,7 +268,7 @@ extension ClientInterceptorPipeline {
     self.scheduledClose = self.eventLoop.scheduleTask(deadline: deadline) {
       // When the error hits the tail we'll call 'close()', this will cancel the transport if
       // necessary.
-      self.read(.error(GRPCError.RPCTimedOut(timeLimit)))
+      self.receive(.error(GRPCError.RPCTimedOut(timeLimit)))
     }
   }
 }
