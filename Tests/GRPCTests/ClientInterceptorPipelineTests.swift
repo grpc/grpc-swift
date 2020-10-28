@@ -73,9 +73,9 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
     )
 
     // Write some request parts.
-    pipeline.write(.metadata([:]), promise: nil)
-    pipeline.write(.message("foo", .init(compress: false, flush: false)), promise: nil)
-    pipeline.write(.end, promise: nil)
+    pipeline.send(.metadata([:]), promise: nil)
+    pipeline.send(.message("foo", .init(compress: false, flush: false)), promise: nil)
+    pipeline.send(.end, promise: nil)
 
     XCTAssertEqual(requestParts.count, 3)
     XCTAssertEqual(requestParts[0].metadata, [:])
@@ -85,9 +85,9 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
     XCTAssertTrue(requestParts[2].isEnd)
 
     // Write some responses parts.
-    pipeline.read(.metadata([:]))
-    pipeline.read(.message("bar"))
-    pipeline.read(.end(.ok, [:]))
+    pipeline.receive(.metadata([:]))
+    pipeline.receive(.message("bar"))
+    pipeline.receive(.end(.ok, [:]))
 
     XCTAssertEqual(responseParts.count, 3)
     XCTAssertEqual(responseParts[0].metadata, [:])
@@ -111,11 +111,11 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
 
     // Fire an error; this should close the pipeline.
     struct DummyError: Error {}
-    pipeline.read(.error(DummyError()))
+    pipeline.receive(.error(DummyError()))
 
     // We're closed, writes should fail.
     let writePromise = pipeline.eventLoop.makePromise(of: Void.self)
-    pipeline.write(.end, promise: writePromise)
+    pipeline.send(.end, promise: writePromise)
     XCTAssertThrowsError(try writePromise.futureResult.wait())
 
     // As should cancellation.
@@ -124,7 +124,7 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
     XCTAssertThrowsError(try cancelPromise.futureResult.wait())
 
     // And reads should be ignored. (We only expect errors in the response handler.)
-    pipeline.read(.metadata([:]))
+    pipeline.receive(.metadata([:]))
   }
 
   func testPipelineWithTimeout() throws {
@@ -173,7 +173,7 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
 
     // Pipeline should be torn down. Writes and cancellation should fail.
     let p1 = pipeline.eventLoop.makePromise(of: Void.self)
-    pipeline.write(.end, promise: p1)
+    pipeline.send(.end, promise: p1)
     assertThat(try p1.futureResult.wait(), .throws(.instanceOf(GRPCError.AlreadyComplete.self)))
 
     let p2 = pipeline.eventLoop.makePromise(of: Void.self)
@@ -181,7 +181,7 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
     assertThat(try p2.futureResult.wait(), .throws(.instanceOf(GRPCError.AlreadyComplete.self)))
 
     // Reads should be ignored too. (We'll fail in `onRequestPart` if this goes through.)
-    pipeline.read(.metadata([:]))
+    pipeline.receive(.metadata([:]))
   }
 
   func testTimeoutIsCancelledOnCompletion() throws {
@@ -208,7 +208,7 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
     )
 
     // Read the end part.
-    pipeline.read(.end(.ok, [:]))
+    pipeline.receive(.end(.ok, [:]))
     // Just a single cancellation.
     assertThat(cancellations, .is(1))
 
@@ -228,7 +228,7 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
       onResponsePart: { _ in }
     )
 
-    pipeline.write(.message("foo", .init(compress: false, flush: false)), promise: nil)
+    pipeline.send(.message("foo", .init(compress: false, flush: false)), promise: nil)
     XCTAssertEqual(recorder.requestParts.count, 1)
     let (message, _) = try assertNotNil(recorder.requestParts[0].message)
     XCTAssertEqual(message, "oof")
@@ -270,7 +270,7 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
         onRequestPart: { _, _ in },
         onResponsePart: { _ in }
       )
-      pipeline.read(.error(error))
+      pipeline.receive(.error(error))
     }
 
     let invalidState = GRPCError.InvalidState("invalid state")
@@ -295,36 +295,36 @@ class RecordingInterceptor<Request, Response>: ClientInterceptor<Request, Respon
   var requestParts: [ClientRequestPart<Request>] = []
   var responseParts: [ClientResponsePart<Response>] = []
 
-  override func write(
+  override func send(
     _ part: ClientRequestPart<Request>,
     promise: EventLoopPromise<Void>?,
     context: ClientInterceptorContext<Request, Response>
   ) {
     self.requestParts.append(part)
-    context.write(part, promise: promise)
+    context.send(part, promise: promise)
   }
 
-  override func read(
+  override func receive(
     _ part: ClientResponsePart<Response>,
     context: ClientInterceptorContext<Request, Response>
   ) {
     self.responseParts.append(part)
-    context.read(part)
+    context.receive(part)
   }
 }
 
 /// An interceptor which reverses string request messages.
 class StringRequestReverser: ClientInterceptor<String, String> {
-  override func write(
+  override func send(
     _ part: ClientRequestPart<String>,
     promise: EventLoopPromise<Void>?,
     context: ClientInterceptorContext<String, String>
   ) {
     switch part {
     case let .message(value, metadata):
-      context.write(.message(String(value.reversed()), metadata), promise: promise)
+      context.send(.message(String(value.reversed()), metadata), promise: promise)
     default:
-      context.write(part, promise: promise)
+      context.send(part, promise: promise)
     }
   }
 }

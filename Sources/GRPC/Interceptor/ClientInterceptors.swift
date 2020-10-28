@@ -22,22 +22,23 @@ import NIO
 /// interceptor.
 ///
 /// Interceptors may observe three different types of event:
-/// - reading response parts with `read(_:context:)`,
-/// - writing request parts with `write(_:promise:context:)`, and
+/// - receiving response parts with `receive(_:context:)`,
+/// - sending request parts with `send(_:promise:context:)`, and
 /// - RPC cancellation with `cancel(context:)`.
 ///
 /// These events flow through a pipeline of interceptors for each RPC. Request parts sent from the
 /// call object (such as `UnaryCall` and `BidirectionalStreamingCall`) will traverse the pipeline
-/// from its tail via `write(_:context:)` eventually reaching the head of the pipeline where it will
+/// from its tail via `send(_:context:)` eventually reaching the head of the pipeline where it will
 /// be sent sent to the server.
 ///
 /// Response parts, or errors, received from the transport fill be fired back through the
-/// interceptor pipeline via `read(_:context:)`. Note that the `end` and `error` response parts are
-/// terminal: the pipeline will be torn down once these parts reach the the tail of the pipeline.
+/// interceptor pipeline via `receive(_:context:)`. Note that the `end` and `error` response parts
+/// are terminal: the pipeline will be torn down once these parts reach the the tail of the
+/// pipeline.
 ///
-/// Each of interceptor functions is provided with a `context` which exposes analogous functions
-/// (`read(_:)`, `write(_:promise:)`, and `cancel(promise:)`) which may be called to forward events
-/// to the next interceptor.
+/// Each of the interceptor functions is provided with a `context` which exposes analogous functions
+/// (`receive(_:)`, `send(_:promise:)`, and `cancel(promise:)`) which may be called to forward
+/// events to the next interceptor.
 ///
 /// ### Thread Safety
 ///
@@ -47,15 +48,17 @@ import NIO
 /// `EventLoop` then implementers should be ensure that they use `context` from the correct
 /// `EventLoop`.
 open class ClientInterceptor<Request, Response> {
+  public init() {}
+
   /// Called when the interceptor has received a response part to handle.
   /// - Parameters:
   ///   - part: The response part which has been received from the server.
   ///   - context: An interceptor context which may be used to forward the response part.
-  public func read(
+  open func receive(
     _ part: ClientResponsePart<Response>,
     context: ClientInterceptorContext<Request, Response>
   ) {
-    context.read(part)
+    context.receive(part)
   }
 
   /// Called when the interceptor has received a request part to handle.
@@ -63,12 +66,12 @@ open class ClientInterceptor<Request, Response> {
   ///   - part: The request part which should be sent to the server.
   ///   - promise: A promise which should be completed when the response part has been handled.
   ///   - context: An interceptor context which may be used to forward the request part.
-  public func write(
+  open func send(
     _ part: ClientRequestPart<Request>,
     promise: EventLoopPromise<Void>?,
     context: ClientInterceptorContext<Request, Response>
   ) {
-    context.write(part, promise: promise)
+    context.send(part, promise: promise)
   }
 
   /// Called when the interceptor has received a request to cancel the RPC.
@@ -105,7 +108,7 @@ internal struct HeadClientInterceptor<Request, Response>: ClientInterceptorProto
   }
 
   @inlinable
-  internal func write(
+  internal func send(
     _ part: ClientRequestPart<Request>,
     promise: EventLoopPromise<Void>?,
     context: ClientInterceptorContext<Request, Response>
@@ -120,11 +123,11 @@ internal struct HeadClientInterceptor<Request, Response>: ClientInterceptorProto
     self.onCancel(promise)
   }
 
-  internal func read(
+  internal func receive(
     _ part: ClientResponsePart<Response>,
     context: ClientInterceptorContext<Request, Response>
   ) {
-    context.read(part)
+    context.receive(part)
   }
 }
 
@@ -153,7 +156,7 @@ internal struct TailClientInterceptor<Request, Response>: ClientInterceptorProto
     self.onResponsePart = onResponsePart
   }
 
-  internal func read(
+  internal func receive(
     _ part: ClientResponsePart<Response>,
     context: ClientInterceptorContext<Request, Response>
   ) {
@@ -196,12 +199,12 @@ internal struct TailClientInterceptor<Request, Response>: ClientInterceptorProto
   }
 
   @inlinable
-  internal func write(
+  internal func send(
     _ part: ClientRequestPart<Request>,
     promise: EventLoopPromise<Void>?,
     context: ClientInterceptorContext<Request, Response>
   ) {
-    context.write(part, promise: promise)
+    context.send(part, promise: promise)
   }
 
   internal func cancel(
@@ -265,33 +268,33 @@ internal struct AnyClientInterceptor<Request, Response>: ClientInterceptorProtoc
     self._implementation = implementation
   }
 
-  internal func read(
+  internal func receive(
     _ part: ClientResponsePart<Response>,
     context: ClientInterceptorContext<Request, Response>
   ) {
     switch self._implementation {
     case let .head(handler):
-      handler.read(part, context: context)
+      handler.receive(part, context: context)
     case let .tail(handler):
-      handler.read(part, context: context)
+      handler.receive(part, context: context)
     case let .base(handler):
-      handler.read(part, context: context)
+      handler.receive(part, context: context)
     }
   }
 
   @inlinable
-  internal func write(
+  internal func send(
     _ part: ClientRequestPart<Request>,
     promise: EventLoopPromise<Void>?,
     context: ClientInterceptorContext<Request, Response>
   ) {
     switch self._implementation {
     case let .head(handler):
-      handler.write(part, promise: promise, context: context)
+      handler.send(part, promise: promise, context: context)
     case let .tail(handler):
-      handler.write(part, promise: promise, context: context)
+      handler.send(part, promise: promise, context: context)
     case let .base(handler):
-      handler.write(part, promise: promise, context: context)
+      handler.send(part, promise: promise, context: context)
     }
   }
 

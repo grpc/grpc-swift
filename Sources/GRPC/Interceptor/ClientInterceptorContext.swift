@@ -73,8 +73,9 @@ public struct ClientInterceptorContext<Request, Response> {
   ///
   /// - Parameter part: The response part to forward.
   /// - Important: This *must* to be called from the `eventLoop`.
-  public func read(_ part: ClientResponsePart<Response>) {
-    self._read(part)
+  public func receive(_ part: ClientResponsePart<Response>) {
+    self.eventLoop.assertInEventLoop()
+    self.nextInbound?.invokeReceive(part)
   }
 
   /// Forwards the request part to the next outbound interceptor in the pipeline, if there is one.
@@ -83,11 +84,17 @@ public struct ClientInterceptorContext<Request, Response> {
   ///   - part: The request part to forward.
   ///   - promise: The promise the complete when the part has been written.
   /// - Important: This *must* to be called from the `eventLoop`.
-  public func write(
+  public func send(
     _ part: ClientRequestPart<Request>,
     promise: EventLoopPromise<Void>?
   ) {
-    self._write(part, promise: promise)
+    self.eventLoop.assertInEventLoop()
+
+    if let outbound = self.nextOutbound {
+      outbound.invokeSend(part, promise: promise)
+    } else {
+      promise?.fail(GRPCStatus(code: .unavailable, message: "The RPC has already completed"))
+    }
   }
 
   /// Forwards a request to cancel the RPC to the next outbound interceptor in the pipeline.
@@ -95,30 +102,6 @@ public struct ClientInterceptorContext<Request, Response> {
   /// - Parameter promise: The promise to complete with the outcome of the cancellation request.
   /// - Important: This *must* to be called from the `eventLoop`.
   public func cancel(promise: EventLoopPromise<Void>?) {
-    self._cancel(promise: promise)
-  }
-}
-
-extension ClientInterceptorContext {
-  private func _read(_ part: ClientResponsePart<Response>) {
-    self.eventLoop.assertInEventLoop()
-    self.nextInbound?.invokeRead(part)
-  }
-
-  private func _write(
-    _ part: ClientRequestPart<Request>,
-    promise: EventLoopPromise<Void>?
-  ) {
-    self.eventLoop.assertInEventLoop()
-
-    if let outbound = self.nextOutbound {
-      outbound.invokeWrite(part, promise: promise)
-    } else {
-      promise?.fail(GRPCStatus(code: .unavailable, message: "The RPC has already completed"))
-    }
-  }
-
-  private func _cancel(promise: EventLoopPromise<Void>?) {
     self.eventLoop.assertInEventLoop()
 
     if let outbound = self.nextOutbound {
@@ -128,16 +111,18 @@ extension ClientInterceptorContext {
       promise?.succeed(())
     }
   }
+}
 
-  internal func invokeRead(_ part: ClientResponsePart<Response>) {
+extension ClientInterceptorContext {
+  internal func invokeReceive(_ part: ClientResponsePart<Response>) {
     self.eventLoop.assertInEventLoop()
-    self.interceptor.read(part, context: self)
+    self.interceptor.receive(part, context: self)
   }
 
   @inlinable
-  internal func invokeWrite(_ part: ClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
+  internal func invokeSend(_ part: ClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
     self.eventLoop.assertInEventLoop()
-    self.interceptor.write(part, promise: promise, context: self)
+    self.interceptor.send(part, promise: promise, context: self)
   }
 
   internal func invokeCancel(promise: EventLoopPromise<Void>?) {
