@@ -94,7 +94,7 @@ final class AsyncQPSClient<RequestMakerType: RequestMaker>: QPSClient {
     }
     result.stats.latencies = Grpc_Testing_HistogramData(from: latencyHistogram)
     result.stats.requestResults = statusCounts.toRequestResultCounts()
-    self.logger.info("Sending response")
+    self.logger.info("Sending client status")
     _ = context.sendResponse(result)
 
     if reset {
