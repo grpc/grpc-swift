@@ -27,6 +27,8 @@ import SwiftProtobuf
 
 /// Usage: instantiate Routeguide_RouteGuideClient, then call methods of this protocol to make API calls.
 public protocol Routeguide_RouteGuideClientProtocol: GRPCClient {
+  var interceptors: Routeguide_RouteGuideClientInterceptorFactoryProtocol? { get }
+
   func getFeature(
     _ request: Routeguide_Point,
     callOptions: CallOptions?
@@ -46,7 +48,6 @@ public protocol Routeguide_RouteGuideClientProtocol: GRPCClient {
     callOptions: CallOptions?,
     handler: @escaping (Routeguide_RouteNote) -> Void
   ) -> BidirectionalStreamingCall<Routeguide_RouteNote, Routeguide_RouteNote>
-
 }
 
 extension Routeguide_RouteGuideClientProtocol {
@@ -69,7 +70,8 @@ extension Routeguide_RouteGuideClientProtocol {
     return self.makeUnaryCall(
       path: "/routeguide.RouteGuide/GetFeature",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeGetFeatureInterceptors() ?? []
     )
   }
 
@@ -94,6 +96,7 @@ extension Routeguide_RouteGuideClientProtocol {
       path: "/routeguide.RouteGuide/ListFeatures",
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeListFeaturesInterceptors() ?? [],
       handler: handler
     )
   }
@@ -114,7 +117,8 @@ extension Routeguide_RouteGuideClientProtocol {
   ) -> ClientStreamingCall<Routeguide_Point, Routeguide_RouteSummary> {
     return self.makeClientStreamingCall(
       path: "/routeguide.RouteGuide/RecordRoute",
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeRecordRouteInterceptors() ?? []
     )
   }
 
@@ -137,23 +141,78 @@ extension Routeguide_RouteGuideClientProtocol {
     return self.makeBidirectionalStreamingCall(
       path: "/routeguide.RouteGuide/RouteChat",
       callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeRouteChatInterceptors() ?? [],
       handler: handler
     )
+  }
+}
+
+public protocol Routeguide_RouteGuideClientInterceptorFactoryProtocol {
+  /// Makes an array of generic interceptors. The per-method interceptor
+  /// factories default to calling this function and it therefore provides a
+  /// convenient way of setting interceptors for all methods on a client.
+  /// - Returns: An array of interceptors generic over `Request` and `Response`.
+  ///   Defaults to an empty array.
+  func makeInterceptors<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>() -> [ClientInterceptor<Request, Response>]
+
+  /// - Returns: Interceptors to use when invoking 'getFeature'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeGetFeatureInterceptors() -> [ClientInterceptor<Routeguide_Point, Routeguide_Feature>]
+
+  /// - Returns: Interceptors to use when invoking 'listFeatures'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeListFeaturesInterceptors() -> [ClientInterceptor<Routeguide_Rectangle, Routeguide_Feature>]
+
+  /// - Returns: Interceptors to use when invoking 'recordRoute'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeRecordRouteInterceptors() -> [ClientInterceptor<Routeguide_Point, Routeguide_RouteSummary>]
+
+  /// - Returns: Interceptors to use when invoking 'routeChat'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeRouteChatInterceptors() -> [ClientInterceptor<Routeguide_RouteNote, Routeguide_RouteNote>]
+}
+
+extension Routeguide_RouteGuideClientInterceptorFactoryProtocol {
+  public func makeInterceptors<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>() -> [ClientInterceptor<Request, Response>] {
+    return []
+  }
+
+  public func makeGetFeatureInterceptors() -> [ClientInterceptor<Routeguide_Point, Routeguide_Feature>] {
+    return self.makeInterceptors()
+  }
+
+  public func makeListFeaturesInterceptors() -> [ClientInterceptor<Routeguide_Rectangle, Routeguide_Feature>] {
+    return self.makeInterceptors()
+  }
+
+  public func makeRecordRouteInterceptors() -> [ClientInterceptor<Routeguide_Point, Routeguide_RouteSummary>] {
+    return self.makeInterceptors()
+  }
+
+  public func makeRouteChatInterceptors() -> [ClientInterceptor<Routeguide_RouteNote, Routeguide_RouteNote>] {
+    return self.makeInterceptors()
   }
 }
 
 public final class Routeguide_RouteGuideClient: Routeguide_RouteGuideClientProtocol {
   public let channel: GRPCChannel
   public var defaultCallOptions: CallOptions
+  public var interceptors: Routeguide_RouteGuideClientInterceptorFactoryProtocol?
 
   /// Creates a client for the routeguide.RouteGuide service.
   ///
   /// - Parameters:
   ///   - channel: `GRPCChannel` to the service host.
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
-  public init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
+  ///   - interceptors: A factory providing interceptors for each RPC.
+  public init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Routeguide_RouteGuideClientInterceptorFactoryProtocol? = nil
+  ) {
     self.channel = channel
     self.defaultCallOptions = defaultCallOptions
+    self.interceptors = interceptors
   }
 }
 

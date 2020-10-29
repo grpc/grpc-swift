@@ -57,6 +57,11 @@ public struct ClientInterceptorContext<Request, Response> {
     return self.pipeline.details.path
   }
 
+  /// The options used to invoke the call.
+  public var options: CallOptions {
+    return self.pipeline.details.options
+  }
+
   /// Construct a `ClientInterceptorContext` for the interceptor at the given index within in
   /// interceptor pipeline.
   internal init(

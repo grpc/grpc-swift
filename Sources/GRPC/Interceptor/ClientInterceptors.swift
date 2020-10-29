@@ -78,7 +78,7 @@ open class ClientInterceptor<Request, Response> {
   /// - Parameters:
   ///   - promise: A promise which should be cancellation request has been handled.
   ///   - context: An interceptor context which may be used to forward the cancellation request.
-  public func cancel(
+  open func cancel(
     promise: EventLoopPromise<Void>?,
     context: ClientInterceptorContext<Request, Response>
   ) {

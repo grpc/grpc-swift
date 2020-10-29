@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import GRPC
+import NIOHPACK
 import XCTest
 
 struct UnwrapError: Error {}
@@ -176,6 +177,23 @@ struct Matcher<Value> {
       actual.code == code
         ? .match
         : .noMatch(actual: "has status code \(actual)", expected: "\(code)")
+    }
+  }
+
+  // MARK: HTTP/2
+
+  static func contains(
+    _ name: String,
+    _ matcher: Matcher<[String]>? = nil
+  ) -> Matcher<HPACKHeaders> {
+    return .init { actual in
+      let headers = actual[name]
+
+      if headers.isEmpty {
+        return .noMatch(actual: "does not contain '\(name)'", expected: "contains '\(name)'")
+      } else {
+        return matcher?.evaluate(headers) ?? .match
+      }
     }
   }
 }

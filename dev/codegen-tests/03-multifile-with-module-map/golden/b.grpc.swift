@@ -27,11 +27,12 @@ import SwiftProtobuf
 
 /// Usage: instantiate B_ServiceBClient, then call methods of this protocol to make API calls.
 internal protocol B_ServiceBClientProtocol: GRPCClient {
+  var interceptors: B_ServiceBClientInterceptorFactoryProtocol? { get }
+
   func callServiceB(
     _ request: B_MessageB,
     callOptions: CallOptions?
   ) -> UnaryCall<B_MessageB, SwiftProtobuf.Google_Protobuf_Empty>
-
 }
 
 extension B_ServiceBClientProtocol {
@@ -49,23 +50,54 @@ extension B_ServiceBClientProtocol {
     return self.makeUnaryCall(
       path: "/b.ServiceB/CallServiceB",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeCallServiceBInterceptors() ?? []
     )
+  }
+}
+
+internal protocol B_ServiceBClientInterceptorFactoryProtocol {
+  /// Makes an array of generic interceptors. The per-method interceptor
+  /// factories default to calling this function and it therefore provides a
+  /// convenient way of setting interceptors for all methods on a client.
+  /// - Returns: An array of interceptors generic over `Request` and `Response`.
+  ///   Defaults to an empty array.
+  func makeInterceptors<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>() -> [ClientInterceptor<Request, Response>]
+
+  /// - Returns: Interceptors to use when invoking 'callServiceB'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeCallServiceBInterceptors() -> [ClientInterceptor<B_MessageB, SwiftProtobuf.Google_Protobuf_Empty>]
+}
+
+extension B_ServiceBClientInterceptorFactoryProtocol {
+  internal func makeInterceptors<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>() -> [ClientInterceptor<Request, Response>] {
+    return []
+  }
+
+  internal func makeCallServiceBInterceptors() -> [ClientInterceptor<B_MessageB, SwiftProtobuf.Google_Protobuf_Empty>] {
+    return self.makeInterceptors()
   }
 }
 
 internal final class B_ServiceBClient: B_ServiceBClientProtocol {
   internal let channel: GRPCChannel
   internal var defaultCallOptions: CallOptions
+  internal var interceptors: B_ServiceBClientInterceptorFactoryProtocol?
 
   /// Creates a client for the b.ServiceB service.
   ///
   /// - Parameters:
   ///   - channel: `GRPCChannel` to the service host.
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
-  internal init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
+  ///   - interceptors: A factory providing interceptors for each RPC.
+  internal init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: B_ServiceBClientInterceptorFactoryProtocol? = nil
+  ) {
     self.channel = channel
     self.defaultCallOptions = defaultCallOptions
+    self.interceptors = interceptors
   }
 }
 

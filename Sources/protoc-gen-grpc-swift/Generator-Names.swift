@@ -57,6 +57,10 @@ extension Generator {
     return nameForPackageService(file, service) + "ClientProtocol"
   }
 
+  internal var clientInterceptorProtocolName: String {
+    return nameForPackageService(file, service) + "ClientInterceptorFactoryProtocol"
+  }
+
   internal var callName: String {
     return nameForPackageServiceMethod(file, service, method) + "Call"
   }
@@ -72,6 +76,10 @@ extension Generator {
 
   internal var methodOutputName: String {
     return protobufNamer.fullName(message: method.outputType)
+  }
+
+  internal var methodInterceptorFactoryName: String {
+    return "make\(self.method.name)Interceptors"
   }
 
   internal var servicePath: String {
