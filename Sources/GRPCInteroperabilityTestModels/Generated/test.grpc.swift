@@ -22,10 +22,13 @@
 //
 import GRPC
 import NIO
+import SwiftProtobuf
 
 
 /// Usage: instantiate Grpc_Testing_TestServiceClient, then call methods of this protocol to make API calls.
 public protocol Grpc_Testing_TestServiceClientProtocol: GRPCClient {
+  var interceptors: Grpc_Testing_TestServiceClientInterceptorFactoryProtocol? { get }
+
   func emptyCall(
     _ request: Grpc_Testing_Empty,
     callOptions: CallOptions?
@@ -65,7 +68,6 @@ public protocol Grpc_Testing_TestServiceClientProtocol: GRPCClient {
     _ request: Grpc_Testing_Empty,
     callOptions: CallOptions?
   ) -> UnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty>
-
 }
 
 extension Grpc_Testing_TestServiceClientProtocol {
@@ -83,7 +85,8 @@ extension Grpc_Testing_TestServiceClientProtocol {
     return self.makeUnaryCall(
       path: "/grpc.testing.TestService/EmptyCall",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeEmptyCallInterceptors() ?? []
     )
   }
 
@@ -100,7 +103,8 @@ extension Grpc_Testing_TestServiceClientProtocol {
     return self.makeUnaryCall(
       path: "/grpc.testing.TestService/UnaryCall",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeUnaryCallInterceptors() ?? []
     )
   }
 
@@ -119,7 +123,8 @@ extension Grpc_Testing_TestServiceClientProtocol {
     return self.makeUnaryCall(
       path: "/grpc.testing.TestService/CacheableUnaryCall",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeCacheableUnaryCallInterceptors() ?? []
     )
   }
 
@@ -140,6 +145,7 @@ extension Grpc_Testing_TestServiceClientProtocol {
       path: "/grpc.testing.TestService/StreamingOutputCall",
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStreamingOutputCallInterceptors() ?? [],
       handler: handler
     )
   }
@@ -158,7 +164,8 @@ extension Grpc_Testing_TestServiceClientProtocol {
   ) -> ClientStreamingCall<Grpc_Testing_StreamingInputCallRequest, Grpc_Testing_StreamingInputCallResponse> {
     return self.makeClientStreamingCall(
       path: "/grpc.testing.TestService/StreamingInputCall",
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStreamingInputCallInterceptors() ?? []
     )
   }
 
@@ -180,6 +187,7 @@ extension Grpc_Testing_TestServiceClientProtocol {
     return self.makeBidirectionalStreamingCall(
       path: "/grpc.testing.TestService/FullDuplexCall",
       callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeFullDuplexCallInterceptors() ?? [],
       handler: handler
     )
   }
@@ -203,6 +211,7 @@ extension Grpc_Testing_TestServiceClientProtocol {
     return self.makeBidirectionalStreamingCall(
       path: "/grpc.testing.TestService/HalfDuplexCall",
       callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeHalfDuplexCallInterceptors() ?? [],
       handler: handler
     )
   }
@@ -221,33 +230,121 @@ extension Grpc_Testing_TestServiceClientProtocol {
     return self.makeUnaryCall(
       path: "/grpc.testing.TestService/UnimplementedCall",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeUnimplementedCallInterceptors() ?? []
     )
+  }
+}
+
+public protocol Grpc_Testing_TestServiceClientInterceptorFactoryProtocol {
+  /// Makes an array of generic interceptors. The per-method interceptor
+  /// factories default to calling this function and it therefore provides a
+  /// convenient way of setting interceptors for all methods on a client.
+  /// - Returns: An array of interceptors generic over `Request` and `Response`.
+  ///   Defaults to an empty array.
+  func makeInterceptors<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>() -> [ClientInterceptor<Request, Response>]
+
+  /// - Returns: Interceptors to use when invoking 'emptyCall'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeEmptyCallInterceptors() -> [ClientInterceptor<Grpc_Testing_Empty, Grpc_Testing_Empty>]
+
+  /// - Returns: Interceptors to use when invoking 'unaryCall'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeUnaryCallInterceptors() -> [ClientInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]
+
+  /// - Returns: Interceptors to use when invoking 'cacheableUnaryCall'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeCacheableUnaryCallInterceptors() -> [ClientInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]
+
+  /// - Returns: Interceptors to use when invoking 'streamingOutputCall'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeStreamingOutputCallInterceptors() -> [ClientInterceptor<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse>]
+
+  /// - Returns: Interceptors to use when invoking 'streamingInputCall'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeStreamingInputCallInterceptors() -> [ClientInterceptor<Grpc_Testing_StreamingInputCallRequest, Grpc_Testing_StreamingInputCallResponse>]
+
+  /// - Returns: Interceptors to use when invoking 'fullDuplexCall'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeFullDuplexCallInterceptors() -> [ClientInterceptor<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse>]
+
+  /// - Returns: Interceptors to use when invoking 'halfDuplexCall'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeHalfDuplexCallInterceptors() -> [ClientInterceptor<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse>]
+
+  /// - Returns: Interceptors to use when invoking 'unimplementedCall'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeUnimplementedCallInterceptors() -> [ClientInterceptor<Grpc_Testing_Empty, Grpc_Testing_Empty>]
+}
+
+extension Grpc_Testing_TestServiceClientInterceptorFactoryProtocol {
+  public func makeInterceptors<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>() -> [ClientInterceptor<Request, Response>] {
+    return []
+  }
+
+  public func makeEmptyCallInterceptors() -> [ClientInterceptor<Grpc_Testing_Empty, Grpc_Testing_Empty>] {
+    return self.makeInterceptors()
+  }
+
+  public func makeUnaryCallInterceptors() -> [ClientInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>] {
+    return self.makeInterceptors()
+  }
+
+  public func makeCacheableUnaryCallInterceptors() -> [ClientInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>] {
+    return self.makeInterceptors()
+  }
+
+  public func makeStreamingOutputCallInterceptors() -> [ClientInterceptor<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse>] {
+    return self.makeInterceptors()
+  }
+
+  public func makeStreamingInputCallInterceptors() -> [ClientInterceptor<Grpc_Testing_StreamingInputCallRequest, Grpc_Testing_StreamingInputCallResponse>] {
+    return self.makeInterceptors()
+  }
+
+  public func makeFullDuplexCallInterceptors() -> [ClientInterceptor<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse>] {
+    return self.makeInterceptors()
+  }
+
+  public func makeHalfDuplexCallInterceptors() -> [ClientInterceptor<Grpc_Testing_StreamingOutputCallRequest, Grpc_Testing_StreamingOutputCallResponse>] {
+    return self.makeInterceptors()
+  }
+
+  public func makeUnimplementedCallInterceptors() -> [ClientInterceptor<Grpc_Testing_Empty, Grpc_Testing_Empty>] {
+    return self.makeInterceptors()
   }
 }
 
 public final class Grpc_Testing_TestServiceClient: Grpc_Testing_TestServiceClientProtocol {
   public let channel: GRPCChannel
   public var defaultCallOptions: CallOptions
+  public var interceptors: Grpc_Testing_TestServiceClientInterceptorFactoryProtocol?
 
   /// Creates a client for the grpc.testing.TestService service.
   ///
   /// - Parameters:
   ///   - channel: `GRPCChannel` to the service host.
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
-  public init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
+  ///   - interceptors: A factory providing interceptors for each RPC.
+  public init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Grpc_Testing_TestServiceClientInterceptorFactoryProtocol? = nil
+  ) {
     self.channel = channel
     self.defaultCallOptions = defaultCallOptions
+    self.interceptors = interceptors
   }
 }
 
 /// Usage: instantiate Grpc_Testing_UnimplementedServiceClient, then call methods of this protocol to make API calls.
 public protocol Grpc_Testing_UnimplementedServiceClientProtocol: GRPCClient {
+  var interceptors: Grpc_Testing_UnimplementedServiceClientInterceptorFactoryProtocol? { get }
+
   func unimplementedCall(
     _ request: Grpc_Testing_Empty,
     callOptions: CallOptions?
   ) -> UnaryCall<Grpc_Testing_Empty, Grpc_Testing_Empty>
-
 }
 
 extension Grpc_Testing_UnimplementedServiceClientProtocol {
@@ -265,28 +362,61 @@ extension Grpc_Testing_UnimplementedServiceClientProtocol {
     return self.makeUnaryCall(
       path: "/grpc.testing.UnimplementedService/UnimplementedCall",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeUnimplementedCallInterceptors() ?? []
     )
+  }
+}
+
+public protocol Grpc_Testing_UnimplementedServiceClientInterceptorFactoryProtocol {
+  /// Makes an array of generic interceptors. The per-method interceptor
+  /// factories default to calling this function and it therefore provides a
+  /// convenient way of setting interceptors for all methods on a client.
+  /// - Returns: An array of interceptors generic over `Request` and `Response`.
+  ///   Defaults to an empty array.
+  func makeInterceptors<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>() -> [ClientInterceptor<Request, Response>]
+
+  /// - Returns: Interceptors to use when invoking 'unimplementedCall'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeUnimplementedCallInterceptors() -> [ClientInterceptor<Grpc_Testing_Empty, Grpc_Testing_Empty>]
+}
+
+extension Grpc_Testing_UnimplementedServiceClientInterceptorFactoryProtocol {
+  public func makeInterceptors<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>() -> [ClientInterceptor<Request, Response>] {
+    return []
+  }
+
+  public func makeUnimplementedCallInterceptors() -> [ClientInterceptor<Grpc_Testing_Empty, Grpc_Testing_Empty>] {
+    return self.makeInterceptors()
   }
 }
 
 public final class Grpc_Testing_UnimplementedServiceClient: Grpc_Testing_UnimplementedServiceClientProtocol {
   public let channel: GRPCChannel
   public var defaultCallOptions: CallOptions
+  public var interceptors: Grpc_Testing_UnimplementedServiceClientInterceptorFactoryProtocol?
 
   /// Creates a client for the grpc.testing.UnimplementedService service.
   ///
   /// - Parameters:
   ///   - channel: `GRPCChannel` to the service host.
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
-  public init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
+  ///   - interceptors: A factory providing interceptors for each RPC.
+  public init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Grpc_Testing_UnimplementedServiceClientInterceptorFactoryProtocol? = nil
+  ) {
     self.channel = channel
     self.defaultCallOptions = defaultCallOptions
+    self.interceptors = interceptors
   }
 }
 
 /// Usage: instantiate Grpc_Testing_ReconnectServiceClient, then call methods of this protocol to make API calls.
 public protocol Grpc_Testing_ReconnectServiceClientProtocol: GRPCClient {
+  var interceptors: Grpc_Testing_ReconnectServiceClientInterceptorFactoryProtocol? { get }
+
   func start(
     _ request: Grpc_Testing_ReconnectParams,
     callOptions: CallOptions?
@@ -296,7 +426,6 @@ public protocol Grpc_Testing_ReconnectServiceClientProtocol: GRPCClient {
     _ request: Grpc_Testing_Empty,
     callOptions: CallOptions?
   ) -> UnaryCall<Grpc_Testing_Empty, Grpc_Testing_ReconnectInfo>
-
 }
 
 extension Grpc_Testing_ReconnectServiceClientProtocol {
@@ -314,7 +443,8 @@ extension Grpc_Testing_ReconnectServiceClientProtocol {
     return self.makeUnaryCall(
       path: "/grpc.testing.ReconnectService/Start",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStartInterceptors() ?? []
     )
   }
 
@@ -331,23 +461,62 @@ extension Grpc_Testing_ReconnectServiceClientProtocol {
     return self.makeUnaryCall(
       path: "/grpc.testing.ReconnectService/Stop",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStopInterceptors() ?? []
     )
+  }
+}
+
+public protocol Grpc_Testing_ReconnectServiceClientInterceptorFactoryProtocol {
+  /// Makes an array of generic interceptors. The per-method interceptor
+  /// factories default to calling this function and it therefore provides a
+  /// convenient way of setting interceptors for all methods on a client.
+  /// - Returns: An array of interceptors generic over `Request` and `Response`.
+  ///   Defaults to an empty array.
+  func makeInterceptors<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>() -> [ClientInterceptor<Request, Response>]
+
+  /// - Returns: Interceptors to use when invoking 'start'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeStartInterceptors() -> [ClientInterceptor<Grpc_Testing_ReconnectParams, Grpc_Testing_Empty>]
+
+  /// - Returns: Interceptors to use when invoking 'stop'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeStopInterceptors() -> [ClientInterceptor<Grpc_Testing_Empty, Grpc_Testing_ReconnectInfo>]
+}
+
+extension Grpc_Testing_ReconnectServiceClientInterceptorFactoryProtocol {
+  public func makeInterceptors<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>() -> [ClientInterceptor<Request, Response>] {
+    return []
+  }
+
+  public func makeStartInterceptors() -> [ClientInterceptor<Grpc_Testing_ReconnectParams, Grpc_Testing_Empty>] {
+    return self.makeInterceptors()
+  }
+
+  public func makeStopInterceptors() -> [ClientInterceptor<Grpc_Testing_Empty, Grpc_Testing_ReconnectInfo>] {
+    return self.makeInterceptors()
   }
 }
 
 public final class Grpc_Testing_ReconnectServiceClient: Grpc_Testing_ReconnectServiceClientProtocol {
   public let channel: GRPCChannel
   public var defaultCallOptions: CallOptions
+  public var interceptors: Grpc_Testing_ReconnectServiceClientInterceptorFactoryProtocol?
 
   /// Creates a client for the grpc.testing.ReconnectService service.
   ///
   /// - Parameters:
   ///   - channel: `GRPCChannel` to the service host.
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
-  public init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
+  ///   - interceptors: A factory providing interceptors for each RPC.
+  public init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Grpc_Testing_ReconnectServiceClientInterceptorFactoryProtocol? = nil
+  ) {
     self.channel = channel
     self.defaultCallOptions = defaultCallOptions
+    self.interceptors = interceptors
   }
 }
 

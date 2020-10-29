@@ -27,11 +27,12 @@ import SwiftProtobuf
 
 /// Usage: instantiate Codegentest_FooClient, then call methods of this protocol to make API calls.
 internal protocol Codegentest_FooClientProtocol: GRPCClient {
+  var interceptors: Codegentest_FooClientInterceptorFactoryProtocol? { get }
+
   func get(
     _ request: Codegentest_FooMessage,
     callOptions: CallOptions?
   ) -> UnaryCall<Codegentest_FooMessage, Codegentest_FooMessage>
-
 }
 
 extension Codegentest_FooClientProtocol {
@@ -49,23 +50,54 @@ extension Codegentest_FooClientProtocol {
     return self.makeUnaryCall(
       path: "/codegentest.Foo/Get",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeGetInterceptors() ?? []
     )
+  }
+}
+
+internal protocol Codegentest_FooClientInterceptorFactoryProtocol {
+  /// Makes an array of generic interceptors. The per-method interceptor
+  /// factories default to calling this function and it therefore provides a
+  /// convenient way of setting interceptors for all methods on a client.
+  /// - Returns: An array of interceptors generic over `Request` and `Response`.
+  ///   Defaults to an empty array.
+  func makeInterceptors<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>() -> [ClientInterceptor<Request, Response>]
+
+  /// - Returns: Interceptors to use when invoking 'get'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeGetInterceptors() -> [ClientInterceptor<Codegentest_FooMessage, Codegentest_FooMessage>]
+}
+
+extension Codegentest_FooClientInterceptorFactoryProtocol {
+  internal func makeInterceptors<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>() -> [ClientInterceptor<Request, Response>] {
+    return []
+  }
+
+  internal func makeGetInterceptors() -> [ClientInterceptor<Codegentest_FooMessage, Codegentest_FooMessage>] {
+    return self.makeInterceptors()
   }
 }
 
 internal final class Codegentest_FooClient: Codegentest_FooClientProtocol {
   internal let channel: GRPCChannel
   internal var defaultCallOptions: CallOptions
+  internal var interceptors: Codegentest_FooClientInterceptorFactoryProtocol?
 
   /// Creates a client for the codegentest.Foo service.
   ///
   /// - Parameters:
   ///   - channel: `GRPCChannel` to the service host.
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
-  internal init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
+  ///   - interceptors: A factory providing interceptors for each RPC.
+  internal init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Codegentest_FooClientInterceptorFactoryProtocol? = nil
+  ) {
     self.channel = channel
     self.defaultCallOptions = defaultCallOptions
+    self.interceptors = interceptors
   }
 }
 

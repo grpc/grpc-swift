@@ -27,6 +27,8 @@ import SwiftProtobuf
 
 /// Usage: instantiate Echo_EchoClient, then call methods of this protocol to make API calls.
 internal protocol Echo_EchoClientProtocol: GRPCClient {
+  var interceptors: Echo_EchoClientInterceptorFactoryProtocol? { get }
+
   func get(
     _ request: Echo_EchoRequest,
     callOptions: CallOptions?
@@ -46,7 +48,6 @@ internal protocol Echo_EchoClientProtocol: GRPCClient {
     callOptions: CallOptions?,
     handler: @escaping (Echo_EchoResponse) -> Void
   ) -> BidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse>
-
 }
 
 extension Echo_EchoClientProtocol {
@@ -64,7 +65,8 @@ extension Echo_EchoClientProtocol {
     return self.makeUnaryCall(
       path: "/echo.Echo/Get",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeGetInterceptors() ?? []
     )
   }
 
@@ -84,6 +86,7 @@ extension Echo_EchoClientProtocol {
       path: "/echo.Echo/Expand",
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeExpandInterceptors() ?? [],
       handler: handler
     )
   }
@@ -101,7 +104,8 @@ extension Echo_EchoClientProtocol {
   ) -> ClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
     return self.makeClientStreamingCall(
       path: "/echo.Echo/Collect",
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeCollectInterceptors() ?? []
     )
   }
 
@@ -121,23 +125,78 @@ extension Echo_EchoClientProtocol {
     return self.makeBidirectionalStreamingCall(
       path: "/echo.Echo/Update",
       callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeUpdateInterceptors() ?? [],
       handler: handler
     )
+  }
+}
+
+internal protocol Echo_EchoClientInterceptorFactoryProtocol {
+  /// Makes an array of generic interceptors. The per-method interceptor
+  /// factories default to calling this function and it therefore provides a
+  /// convenient way of setting interceptors for all methods on a client.
+  /// - Returns: An array of interceptors generic over `Request` and `Response`.
+  ///   Defaults to an empty array.
+  func makeInterceptors<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>() -> [ClientInterceptor<Request, Response>]
+
+  /// - Returns: Interceptors to use when invoking 'get'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeGetInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
+
+  /// - Returns: Interceptors to use when invoking 'expand'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeExpandInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
+
+  /// - Returns: Interceptors to use when invoking 'collect'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeCollectInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
+
+  /// - Returns: Interceptors to use when invoking 'update'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeUpdateInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
+}
+
+extension Echo_EchoClientInterceptorFactoryProtocol {
+  internal func makeInterceptors<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>() -> [ClientInterceptor<Request, Response>] {
+    return []
+  }
+
+  internal func makeGetInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>] {
+    return self.makeInterceptors()
+  }
+
+  internal func makeExpandInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>] {
+    return self.makeInterceptors()
+  }
+
+  internal func makeCollectInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>] {
+    return self.makeInterceptors()
+  }
+
+  internal func makeUpdateInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>] {
+    return self.makeInterceptors()
   }
 }
 
 internal final class Echo_EchoClient: Echo_EchoClientProtocol {
   internal let channel: GRPCChannel
   internal var defaultCallOptions: CallOptions
+  internal var interceptors: Echo_EchoClientInterceptorFactoryProtocol?
 
   /// Creates a client for the echo.Echo service.
   ///
   /// - Parameters:
   ///   - channel: `GRPCChannel` to the service host.
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
-  internal init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
+  ///   - interceptors: A factory providing interceptors for each RPC.
+  internal init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Echo_EchoClientInterceptorFactoryProtocol? = nil
+  ) {
     self.channel = channel
     self.defaultCallOptions = defaultCallOptions
+    self.interceptors = interceptors
   }
 }
 
