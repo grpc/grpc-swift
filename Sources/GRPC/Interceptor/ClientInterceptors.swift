@@ -45,7 +45,7 @@ import NIO
 /// Functions on `context` are not thread safe and **must** be called on the `EventLoop` found on
 /// the `context`. Since each interceptor is invoked on the same `EventLoop` this does not usually
 /// require any extra attention. However, if work is done on a `DispatchQueue` or _other_
-/// `EventLoop` then implementers should be ensure that they use `context` from the correct
+/// `EventLoop` then implementers should ensure that they use `context` from the correct
 /// `EventLoop`.
 open class ClientInterceptor<Request, Response> {
   public init() {}
