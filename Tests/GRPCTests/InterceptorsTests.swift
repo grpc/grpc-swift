@@ -128,13 +128,13 @@ class HelloWorldAuthProvider: Helloworld_GreeterProvider {
     context: StatusOnlyCallContext
   ) -> EventLoopFuture<Helloworld_HelloReply> {
     // TODO: do this in a server interceptor, when we have one.
-    if context.request.headers.first(name: "authorization") == "Magic" {
+    if context.headers.first(name: "authorization") == "Magic" {
       let response = Helloworld_HelloReply.with {
         $0.message = "Hello, \(request.name), you're authorized!"
       }
       return context.eventLoop.makeSucceededFuture(response)
     } else {
-      context.trailingMetadata.add(name: "www-authenticate", value: "Magic")
+      context.trailers.add(name: "www-authenticate", value: "Magic")
       return context.eventLoop.makeFailedFuture(GRPCStatus(code: .unauthenticated, message: nil))
     }
   }
