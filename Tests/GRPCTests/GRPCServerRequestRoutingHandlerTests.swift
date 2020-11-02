@@ -16,7 +16,7 @@
 import EchoImplementation
 import EchoModel
 import Foundation
-import GRPC
+@testable import GRPC
 import Logging
 import NIO
 import NIOHTTP1
@@ -121,4 +121,29 @@ class GRPCServerRequestRoutingHandlerTests: GRPCTestCase {
       .handler(type: UnaryCallHandler<Echo_EchoRequest, Echo_EchoResponse>.self)
     XCTAssertNoThrow(try unary.wait())
   }
+
+    func testSplitPathNormal() {
+        let path = "/server/method"
+        let parsedPath  = GRPCServerRequestRoutingHandler.CallPath(requestUri: path)
+        let splitPath = path.split(separator: "/")
+
+        XCTAssertEqual(splitPath[0], String.SubSequence(parsedPath!.service))
+        XCTAssertEqual(splitPath[1], String.SubSequence(parsedPath!.method))
+    }
+
+    func testSplitPathTooShort() {
+        let path = "/badPath"
+        let parsedPath  = GRPCServerRequestRoutingHandler.CallPath(requestUri: path)
+
+        XCTAssertNil(parsedPath)
+    }
+
+    func testSplitPathTooLong() {
+        let path = "/server/method/discard"
+        let parsedPath  = GRPCServerRequestRoutingHandler.CallPath(requestUri: path)
+        let splitPath = path.split(separator: "/")
+
+        XCTAssertEqual(splitPath[0], String.SubSequence(parsedPath!.service))
+        XCTAssertEqual(splitPath[1], String.SubSequence(parsedPath!.method))
+    }
 }
