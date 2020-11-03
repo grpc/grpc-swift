@@ -224,18 +224,18 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
         var method: String.UTF8View.SubSequence
 
         /// Charater used to split the path into components.
-        private let pathSplitDelimiter = "/".utf8.first!
+        private let pathSplitDelimiter = UInt8(ascii: "/")
 
         /// Split a path into service and method.
         /// Split is done in UTF8 as this turns out to be approximately 10x faster than a simple split.
         /// URI format: "/package.Servicename/MethodName"
-        init?(requestUri: String) {
+        init?(requestURI: String) {
             let requestUriUTF8 = requestUri.utf8
             let maybeFirstIndex = requestUriUTF8.firstIndex(of: pathSplitDelimiter)
             guard let firstIndex = maybeFirstIndex else {
                 return nil
             }
-            let afterFirstDelimiter = requestUriUTF8[requestUriUTF8.index(after:firstIndex)...]
+            let afterFirstDelimiter = requestUriUTF8[requestUriUTF8.index(after: firstIndex)...]
             if let secondIndex = afterFirstDelimiter.firstIndex(of: pathSplitDelimiter) {
                 self.service = afterFirstDelimiter[..<secondIndex]
                 let afterSecondDelimiter = afterFirstDelimiter[afterFirstDelimiter.index(after: secondIndex)...]
