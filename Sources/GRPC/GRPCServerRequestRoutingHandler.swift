@@ -216,38 +216,39 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
     }
   }
 
-    /// A call URI split into components.
-    struct CallPath {
-        /// The name of the service to call.
-        var service: String.UTF8View.SubSequence
-        /// The name of the method to call.
-        var method: String.UTF8View.SubSequence
+  /// A call URI split into components.
+  struct CallPath {
+    /// The name of the service to call.
+    var service: String.UTF8View.SubSequence
+    /// The name of the method to call.
+    var method: String.UTF8View.SubSequence
 
-        /// Charater used to split the path into components.
-        private let pathSplitDelimiter = UInt8(ascii: "/")
+    /// Charater used to split the path into components.
+    private let pathSplitDelimiter = UInt8(ascii: "/")
 
-        /// Split a path into service and method.
-        /// Split is done in UTF8 as this turns out to be approximately 10x faster than a simple split.
-        /// URI format: "/package.Servicename/MethodName"
-        init?(requestURI: String) {
-            let utf8View = requestURI.utf8
-            guard let firstIndex = utf8View.firstIndex(of: pathSplitDelimiter) else {
-                return nil
-            }
-            let afterFirstDelimiter = utf8View[utf8View.index(after: firstIndex)...]
-            guard let secondIndex = afterFirstDelimiter.firstIndex(of: pathSplitDelimiter) else {
-                return nil
-            }
+    /// Split a path into service and method.
+    /// Split is done in UTF8 as this turns out to be approximately 10x faster than a simple split.
+    /// URI format: "/package.Servicename/MethodName"
+    init?(requestURI: String) {
+      let utf8View = requestURI.utf8
+      guard let firstIndex = utf8View.firstIndex(of: pathSplitDelimiter) else {
+        return nil
+      }
+      let afterFirstDelimiter = utf8View[utf8View.index(after: firstIndex)...]
+      guard let secondIndex = afterFirstDelimiter.firstIndex(of: pathSplitDelimiter) else {
+        return nil
+      }
 
-            self.service = afterFirstDelimiter[..<secondIndex]
-            let afterSecondDelimiter = afterFirstDelimiter[afterFirstDelimiter.index(after: secondIndex)...]
-            if let thirdIndex = afterSecondDelimiter.firstIndex(of: pathSplitDelimiter) {
-                self.method = afterSecondDelimiter[..<thirdIndex]
-            } else {
-                self.method = afterSecondDelimiter
-            }
-        }
+      self.service = afterFirstDelimiter[..<secondIndex]
+      let afterSecondDelimiter =
+        afterFirstDelimiter[afterFirstDelimiter.index(after: secondIndex)...]
+      if let thirdIndex = afterSecondDelimiter.firstIndex(of: pathSplitDelimiter) {
+        self.method = afterSecondDelimiter[..<thirdIndex]
+      } else {
+        self.method = afterSecondDelimiter
+      }
     }
+  }
 
   private func makeCallHandler(channel: Channel, requestHead: HTTPRequestHead) -> GRPCCallHandler? {
     // URI format: "/package.Servicename/MethodName", resulting in the following components separated by a slash:
@@ -265,7 +266,7 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
     )
 
     guard let callPath = uriComponents,
-          let providerForServiceName = servicesByName[String.SubSequence(callPath.service)],
+      let providerForServiceName = servicesByName[String.SubSequence(callPath.service)],
       let callHandler = providerForServiceName.handleMethod(
         String.SubSequence(callPath.method),
         callHandlerContext: context

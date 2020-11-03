@@ -122,28 +122,28 @@ class GRPCServerRequestRoutingHandlerTests: GRPCTestCase {
     XCTAssertNoThrow(try unary.wait())
   }
 
-    func testSplitPathNormal() {
-        let path = "/server/method"
-        let parsedPath  = GRPCServerRequestRoutingHandler.CallPath(requestUri: path)
-        let splitPath = path.split(separator: "/")
+  func testSplitPathNormal() {
+    let path = "/server/method"
+    let parsedPath = GRPCServerRequestRoutingHandler.CallPath(requestUri: path)
+    let splitPath = path.split(separator: "/")
 
-        XCTAssertEqual(splitPath[0], String.SubSequence(parsedPath!.service))
-        XCTAssertEqual(splitPath[1], String.SubSequence(parsedPath!.method))
-    }
+    XCTAssertEqual(splitPath[0], String.SubSequence(parsedPath!.service))
+    XCTAssertEqual(splitPath[1], String.SubSequence(parsedPath!.method))
+  }
 
-    func testSplitPathTooShort() {
-        let path = "/badPath"
-        let parsedPath  = GRPCServerRequestRoutingHandler.CallPath(requestUri: path)
+  func testSplitPathTooShort() {
+    let path = "/badPath"
+    let parsedPath = GRPCServerRequestRoutingHandler.CallPath(requestUri: path)
 
-        XCTAssertNil(parsedPath)
-    }
+    XCTAssertNil(parsedPath)
+  }
 
-    func testSplitPathTooLong() {
-        let path = "/server/method/discard"
-        let parsedPath  = GRPCServerRequestRoutingHandler.CallPath(requestUri: path)
-        let splitPath = path.split(separator: "/")
+  func testSplitPathTooLong() {
+    let path = "/server/method/discard"
+    let parsedPath = GRPCServerRequestRoutingHandler.CallPath(requestUri: path)
+    let splitPath = path.split(separator: "/")
 
-        XCTAssertEqual(splitPath[0], String.SubSequence(parsedPath!.service))
-        XCTAssertEqual(splitPath[1], String.SubSequence(parsedPath!.method))
-    }
+    XCTAssertEqual(splitPath[0], String.SubSequence(parsedPath!.service))
+    XCTAssertEqual(splitPath[1], String.SubSequence(parsedPath!.method))
+  }
 }
