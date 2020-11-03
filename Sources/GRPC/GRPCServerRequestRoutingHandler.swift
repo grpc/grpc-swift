@@ -230,23 +230,19 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
     /// Split is done in UTF8 as this turns out to be approximately 10x faster than a simple split.
     /// URI format: "/package.Servicename/MethodName"
     init?(requestURI: String) {
-      let utf8View = requestURI.utf8
-      guard let firstIndex = utf8View.firstIndex(of: pathSplitDelimiter) else {
+      var utf8View = requestURI.utf8[...]
+      guard utf8View.splitFirst(separator: self.pathSplitDelimiter)?.count == 0 else {
         return nil
       }
-      let afterFirstDelimiter = utf8View[utf8View.index(after: firstIndex)...]
-      guard let secondIndex = afterFirstDelimiter.firstIndex(of: pathSplitDelimiter) else {
+      guard let service = utf8View.splitFirst(separator: pathSplitDelimiter) else {
+        return nil
+      }
+      guard let method = utf8View.splitFirst(separator: pathSplitDelimiter) else {
         return nil
       }
 
-      self.service = afterFirstDelimiter[..<secondIndex]
-      let afterSecondDelimiter =
-        afterFirstDelimiter[afterFirstDelimiter.index(after: secondIndex)...]
-      if let thirdIndex = afterSecondDelimiter.firstIndex(of: pathSplitDelimiter) {
-        self.method = afterSecondDelimiter[..<thirdIndex]
-      } else {
-        self.method = afterSecondDelimiter
-      }
+      self.service = service
+      self.method = method
     }
   }
 
@@ -289,5 +285,29 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
     }
 
     return HTTPResponseHead(version: requestHead.version, status: .ok, headers: headers)
+  }
+}
+
+extension Collection where Self == Self.SubSequence, Self.Element: Equatable {
+  /// Trims out the prefix up to `separator`, and returns it.
+  /// Sets self to the subsequence after the separator, and returns the subsequence before the separator.
+  /// If the self is emtpy returns `nil`
+  /// - parameters:
+  ///     - separator : The Element between the head which is returned and the rest which is left in self.
+  /// - returns: SubSequence containing everything between the beginnning and the first occurance of
+  /// `separator`.  If `separator` is not found this will be the entire Collection. If the collection is empty
+  /// returns `nil`
+  mutating func splitFirst(separator: Element) -> SubSequence? {
+    guard !self.isEmpty else {
+      return nil
+    }
+    if let separatorIndex = self.firstIndex(of: separator) {
+      let indexAfterSeparator = self.index(after: separatorIndex)
+      defer { self = self[indexAfterSeparator...] }
+      return self[..<separatorIndex]
+    } else {
+      defer { self = self[self.endIndex...] }
+      return self[...]
+    }
   }
 }
