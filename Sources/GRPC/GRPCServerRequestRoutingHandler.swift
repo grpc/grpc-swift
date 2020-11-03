@@ -230,22 +230,21 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
         /// Split is done in UTF8 as this turns out to be approximately 10x faster than a simple split.
         /// URI format: "/package.Servicename/MethodName"
         init?(requestURI: String) {
-            let requestUriUTF8 = requestUri.utf8
-            let maybeFirstIndex = requestUriUTF8.firstIndex(of: pathSplitDelimiter)
-            guard let firstIndex = maybeFirstIndex else {
+            let utf8View = requestURI.utf8
+            guard let firstIndex = utf8View.firstIndex(of: pathSplitDelimiter) else {
                 return nil
             }
-            let afterFirstDelimiter = requestUriUTF8[requestUriUTF8.index(after: firstIndex)...]
-            if let secondIndex = afterFirstDelimiter.firstIndex(of: pathSplitDelimiter) {
-                self.service = afterFirstDelimiter[..<secondIndex]
-                let afterSecondDelimiter = afterFirstDelimiter[afterFirstDelimiter.index(after: secondIndex)...]
-                if let thirdIndex = afterSecondDelimiter.firstIndex(of: pathSplitDelimiter) {
-                    self.method = afterSecondDelimiter[..<thirdIndex]
-                } else {
-                    self.method = afterSecondDelimiter
-                }
-            } else {
+            let afterFirstDelimiter = utf8View[utf8View.index(after: firstIndex)...]
+            guard let secondIndex = afterFirstDelimiter.firstIndex(of: pathSplitDelimiter) else {
                 return nil
+            }
+
+            self.service = afterFirstDelimiter[..<secondIndex]
+            let afterSecondDelimiter = afterFirstDelimiter[afterFirstDelimiter.index(after: secondIndex)...]
+            if let thirdIndex = afterSecondDelimiter.firstIndex(of: pathSplitDelimiter) {
+                self.method = afterSecondDelimiter[..<thirdIndex]
+            } else {
+                self.method = afterSecondDelimiter
             }
         }
     }
@@ -257,7 +256,7 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
     //     `CallHandlerProvider`s should provide the service name including the package name.
     // - uriComponents[2]: method name.
     self.logger.debug("making call handler", metadata: ["path": "\(requestHead.uri)"])
-    let uriComponents = CallPath(requestUri: requestHead.uri)
+    let uriComponents = CallPath(requestURI: requestHead.uri)
 
     let context = CallHandlerContext(
       errorDelegate: self.errorDelegate,
