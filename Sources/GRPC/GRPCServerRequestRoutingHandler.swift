@@ -291,7 +291,7 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
 extension Collection where Self == Self.SubSequence, Self.Element: Equatable {
   /// Trims out the prefix up to `separator`, and returns it.
   /// Sets self to the subsequence after the separator, and returns the subsequence before the separator.
-  /// If the self is emtpy returns `nil`
+  /// If self is emtpy returns `nil`
   /// - parameters:
   ///     - separator : The Element between the head which is returned and the rest which is left in self.
   /// - returns: SubSequence containing everything between the beginnning and the first occurance of
