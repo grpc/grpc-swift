@@ -22,6 +22,8 @@ import NIO
 ///
 /// See: https://github.com/grpc/grpc/blob/master/doc/interop-test-descriptions.md#server
 public class TestServiceProvider: Grpc_Testing_TestServiceProvider {
+  public var interceptors: Grpc_Testing_TestServiceServerInterceptorFactoryProtocol?
+
   public init() {}
 
   private static let echoMetadataNotImplemented = GRPCStatus(

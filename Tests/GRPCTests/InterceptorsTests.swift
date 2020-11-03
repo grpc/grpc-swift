@@ -18,6 +18,7 @@ import EchoModel
 import GRPC
 import HelloWorldModel
 import NIO
+import NIOHPACK
 import SwiftProtobuf
 import XCTest
 
@@ -32,7 +33,10 @@ class InterceptorsTests: GRPCTestCase {
     self.group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
     self.server = try! Server.insecure(group: self.group)
-      .withServiceProviders([EchoProvider(), HelloWorldAuthProvider()])
+      .withServiceProviders([
+        EchoProvider(),
+        HelloWorldProvider(interceptors: HelloWorldServerInterceptorFactory()),
+      ])
       .withLogger(self.serverLogger)
       .bind(host: "localhost", port: 0)
       .wait()
@@ -104,7 +108,7 @@ class InterceptorsTests: GRPCTestCase {
     assertThat(try notAuthed.status.wait(), .hasCode(.unauthenticated))
 
     // Add an interceptor factory.
-    greeter.interceptors = HelloWorldInterceptorFactory(client: greeter)
+    greeter.interceptors = HelloWorldClientInterceptorFactory(client: greeter)
     // Make sure we break the reference cycle.
     defer {
       greeter.interceptors = nil
@@ -122,38 +126,70 @@ class InterceptorsTests: GRPCTestCase {
 
 // MARK: - Helpers
 
-class HelloWorldAuthProvider: Helloworld_GreeterProvider {
+class HelloWorldProvider: Helloworld_GreeterProvider {
+  var interceptors: Helloworld_GreeterServerInterceptorFactoryProtocol?
+
+  init(interceptors: Helloworld_GreeterServerInterceptorFactoryProtocol? = nil) {
+    self.interceptors = interceptors
+  }
+
   func sayHello(
     request: Helloworld_HelloRequest,
     context: StatusOnlyCallContext
   ) -> EventLoopFuture<Helloworld_HelloReply> {
-    // TODO: do this in a server interceptor, when we have one.
-    if context.headers.first(name: "authorization") == "Magic" {
-      let response = Helloworld_HelloReply.with {
-        $0.message = "Hello, \(request.name), you're authorized!"
-      }
-      return context.eventLoop.makeSucceededFuture(response)
-    } else {
-      context.trailers.add(name: "www-authenticate", value: "Magic")
-      return context.eventLoop.makeFailedFuture(GRPCStatus(code: .unauthenticated, message: nil))
+    let response = Helloworld_HelloReply.with {
+      $0.message = "Hello, \(request.name), you're authorized!"
     }
+    return context.eventLoop.makeSucceededFuture(response)
   }
 }
 
-private class HelloWorldInterceptorFactory: Helloworld_GreeterClientInterceptorFactoryProtocol {
+private class HelloWorldClientInterceptorFactory:
+  Helloworld_GreeterClientInterceptorFactoryProtocol {
   var client: Helloworld_GreeterClient
 
   init(client: Helloworld_GreeterClient) {
     self.client = client
   }
 
-  func makeInterceptors<Request: Message, Response: Message>(
-  ) -> [ClientInterceptor<Request, Response>] {
-    return [NotReallyAuth(client: self.client)]
+  func makeSayHelloInterceptors(
+  ) -> [ClientInterceptor<Helloworld_HelloRequest, Helloworld_HelloReply>] {
+    return [NotReallyAuthClientInterceptor(client: self.client)]
   }
 }
 
-class NotReallyAuth<Request: Message, Response: Message>: ClientInterceptor<Request, Response> {
+class NotReallyAuthServerInterceptor<Request: Message, Response: Message>:
+  ServerInterceptor<Request, Response> {
+  override func receive(
+    _ part: ServerRequestPart<Request>,
+    context: ServerInterceptorContext<Request, Response>
+  ) {
+    switch part {
+    case let .metadata(headers):
+      if headers.first(name: "authorization") == "Magic" {
+        context.receive(part)
+      } else {
+        // Not auth'd. Fail the RPC.
+        let status = GRPCStatus(code: .unauthenticated, message: "You need some magic auth!")
+        let trailers = HPACKHeaders([("www-authenticate", "Magic")])
+        context.send(.end(status, trailers), promise: nil)
+      }
+
+    case .message, .end:
+      context.receive(part)
+    }
+  }
+}
+
+class HelloWorldServerInterceptorFactory: Helloworld_GreeterServerInterceptorFactoryProtocol {
+  func makeSayHelloInterceptors(
+  ) -> [ServerInterceptor<Helloworld_HelloRequest, Helloworld_HelloReply>] {
+    return [NotReallyAuthServerInterceptor()]
+  }
+}
+
+class NotReallyAuthClientInterceptor<Request: Message, Response: Message>:
+  ClientInterceptor<Request, Response> {
   private let client: Helloworld_GreeterClient
 
   private enum State {

@@ -20,6 +20,8 @@ import NIOConcurrencyHelpers
 import RouteGuideModel
 
 class RouteGuideProvider: Routeguide_RouteGuideProvider {
+  internal var interceptors: Routeguide_RouteGuideServerInterceptorFactoryProtocol?
+
   private let features: [Routeguide_Feature]
   private var notes: [Routeguide_Point: [Routeguide_RouteNote]] = [:]
   private var lock = Lock()
