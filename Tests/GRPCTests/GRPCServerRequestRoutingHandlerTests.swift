@@ -147,25 +147,25 @@ class GRPCServerRequestRoutingHandlerTests: GRPCTestCase {
     XCTAssertEqual(splitPath[1], String.SubSequence(parsedPath!.method))
   }
 
-  func testSplitFirstEmpty() {
+  func testTrimPrefixEmpty() {
     var toSplit = "".utf8[...]
-    let head = toSplit.splitFirst(separator: UInt8(ascii: "/"))
+    let head = toSplit.trimPrefix(to: UInt8(ascii: "/"))
     XCTAssertNil(head)
     XCTAssertEqual(toSplit.count, 0)
   }
 
-  func testSplitFirstAll() {
+  func testTrimPrefixAll() {
     let source = "words"
     var toSplit = source.utf8[...]
-    let head = toSplit.splitFirst(separator: UInt8(ascii: "/"))
+    let head = toSplit.trimPrefix(to: UInt8(ascii: "/"))
     XCTAssertEqual(head?.count, source.utf8.count)
     XCTAssertEqual(toSplit.count, 0)
   }
 
-  func testSplitFirstAndRest() {
+  func testTrimPrefixAndRest() {
     let source = "words/moreWords"
     var toSplit = source.utf8[...]
-    let head = toSplit.splitFirst(separator: UInt8(ascii: "/"))
+    let head = toSplit.trimPrefix(to: UInt8(ascii: "/"))
     XCTAssertEqual(head?.count, "words".utf8.count)
     XCTAssertEqual(toSplit.count, "moreWords".utf8.count)
   }

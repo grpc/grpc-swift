@@ -231,13 +231,14 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
     /// URI format: "/package.Servicename/MethodName"
     init?(requestURI: String) {
       var utf8View = requestURI.utf8[...]
-      guard utf8View.splitFirst(separator: self.pathSplitDelimiter)?.count == 0 else {
+      // Check and remove the split character at the beginning.
+      guard utf8View.trimPrefix(to: self.pathSplitDelimiter)?.isEmpty == true else {
         return nil
       }
-      guard let service = utf8View.splitFirst(separator: pathSplitDelimiter) else {
+      guard let service = utf8View.trimPrefix(to: pathSplitDelimiter) else {
         return nil
       }
-      guard let method = utf8View.splitFirst(separator: pathSplitDelimiter) else {
+      guard let method = utf8View.trimPrefix(to: pathSplitDelimiter) else {
         return nil
       }
 
@@ -297,7 +298,7 @@ extension Collection where Self == Self.SubSequence, Self.Element: Equatable {
   /// - returns: SubSequence containing everything between the beginnning and the first occurance of
   /// `separator`.  If `separator` is not found this will be the entire Collection. If the collection is empty
   /// returns `nil`
-  mutating func splitFirst(separator: Element) -> SubSequence? {
+  mutating func trimPrefix(to separator: Element) -> SubSequence? {
     guard !self.isEmpty else {
       return nil
     }
