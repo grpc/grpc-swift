@@ -27,8 +27,6 @@ extension Generator {
       self.println()
       self.printServiceClientInterceptorFactoryProtocol()
       self.println()
-      self.printServiceClientInterceptorFactoryProtocolExtension()
-      self.println()
       self.printServiceClientImplementation()
     }
 
@@ -38,7 +36,7 @@ extension Generator {
     }
   }
 
-  private func printFunction(
+  internal func printFunction(
     name: String,
     arguments: [String],
     returnType: String?,
@@ -113,19 +111,6 @@ extension Generator {
   private func printServiceClientInterceptorFactoryProtocol() {
     self.println("\(self.access) protocol \(self.clientInterceptorProtocolName) {")
     self.withIndentation {
-      // Generic interceptor.
-      self.println("/// Makes an array of generic interceptors. The per-method interceptor")
-      self.println("/// factories default to calling this function and it therefore provides a")
-      self.println("/// convenient way of setting interceptors for all methods on a client.")
-      self.println("/// - Returns: An array of interceptors generic over `Request` and `Response`.")
-      self.println("///   Defaults to an empty array.")
-      self.printFunction(
-        name: "makeInterceptors<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>",
-        arguments: [],
-        returnType: "[ClientInterceptor<Request, Response>]",
-        bodyBuilder: nil
-      )
-
       // Method specific interceptors.
       for method in service.methods {
         self.println()
@@ -133,7 +118,6 @@ extension Generator {
         self.println(
           "/// - Returns: Interceptors to use when invoking '\(self.methodFunctionName)'."
         )
-        self.println("///   Defaults to calling `self.makeInterceptors()`.")
         // Skip the access, we're defining a protocol.
         self.printMethodInterceptorFactory(access: nil)
       }
@@ -152,33 +136,6 @@ extension Generator {
       access: access,
       bodyBuilder: bodyBuilder
     )
-  }
-
-  private func printServiceClientInterceptorFactoryProtocolExtension() {
-    self.println("extension \(self.clientInterceptorProtocolName) {")
-
-    self.withIndentation {
-      // Default interceptor factory.
-      self.printFunction(
-        name: "makeInterceptors<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>",
-        arguments: [],
-        returnType: "[ClientInterceptor<Request, Response>]",
-        access: self.access
-      ) {
-        self.println("return []")
-      }
-
-      for method in self.service.methods {
-        self.println()
-
-        self.method = method
-        self.printMethodInterceptorFactory(access: self.access) {
-          self.println("return self.makeInterceptors()")
-        }
-      }
-    }
-
-    self.println("}")
   }
 
   private func printServiceClientImplementation() {

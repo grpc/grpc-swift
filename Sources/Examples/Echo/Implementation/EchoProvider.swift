@@ -17,9 +17,14 @@ import EchoModel
 import Foundation
 import GRPC
 import NIO
+import SwiftProtobuf
 
 public class EchoProvider: Echo_EchoProvider {
-  public init() {}
+  public let interceptors: Echo_EchoServerInterceptorFactoryProtocol?
+
+  public init(interceptors: Echo_EchoServerInterceptorFactoryProtocol? = nil) {
+    self.interceptors = interceptors
+  }
 
   public func get(
     request: Echo_EchoRequest,

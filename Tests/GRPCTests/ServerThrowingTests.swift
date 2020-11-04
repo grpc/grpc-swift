@@ -32,6 +32,8 @@ let transformedMetadata = HPACKHeaders([("transformed", "header")])
 // to the channel. We want to test that case as well as the one where we throw only _after_ the handler has been added
 // to the channel.
 class ImmediateThrowingEchoProvider: Echo_EchoProvider {
+  var interceptors: Echo_EchoServerInterceptorFactoryProtocol? { return nil }
+
   func get(request: Echo_EchoRequest,
            context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
     return context.eventLoop.makeFailedFuture(thrownError)
@@ -65,6 +67,8 @@ extension EventLoop {
 
 /// See `ImmediateThrowingEchoProvider`.
 class DelayedThrowingEchoProvider: Echo_EchoProvider {
+  let interceptors: Echo_EchoServerInterceptorFactoryProtocol? = nil
+
   func get(request: Echo_EchoRequest,
            context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse> {
     return context.eventLoop.makeFailedFuture(thrownError, delay: 0.01)
