@@ -268,7 +268,7 @@ public enum GRPCError {
 }
 
 extension GRPCError {
-  struct WithContext: Error {
+  struct WithContext: Error, GRPCStatusTransformable {
     var error: GRPCStatusTransformable
     var file: StaticString
     var line: Int
@@ -284,6 +284,10 @@ extension GRPCError {
       self.file = file
       self.line = line
       self.function = function
+    }
+
+    func makeGRPCStatus() -> GRPCStatus {
+      return self.error.makeGRPCStatus()
     }
   }
 }

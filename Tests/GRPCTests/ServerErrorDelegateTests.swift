@@ -39,7 +39,7 @@ class ServerErrorDelegateTests: GRPCTestCase {
   private var errorDelegate: ServerErrorDelegate!
 
   override func tearDown() {
-    XCTAssertNoThrow(try self.channel.finish())
+    XCTAssertNoThrow(try self.channel.finish(acceptAlreadyClosed: true))
     super.tearDown()
   }
 
@@ -107,7 +107,8 @@ class ServerErrorDelegateTests: GRPCTestCase {
   }
 
   private func testTransformLibraryError_whenTransformingErrorToStatusAndMetadata(
-    uri: String
+    uri: String,
+    line: UInt = #line
   ) throws {
     self.setupChannelAndDelegate { _ in
       GRPCStatusAndTrailers(
@@ -133,19 +134,19 @@ class ServerErrorDelegateTests: GRPCTestCase {
       return
     }
 
-    XCTAssertEqual(headers?.first(name: "grpc-status"), "5")
-    XCTAssertEqual(headers?.first(name: "grpc-message"), "some error")
-    XCTAssertEqual(headers?.first(name: "some-metadata"), "test")
+    XCTAssertEqual(headers?.first(name: "grpc-status"), "5", line: line)
+    XCTAssertEqual(headers?.first(name: "grpc-message"), "some error", line: line)
+    XCTAssertEqual(headers?.first(name: "some-metadata"), "test", line: line)
   }
 
-  private func setupChannelAndDelegate(transformLibraryErrorHandler: @escaping (
-    (Error)
-      -> (GRPCStatusAndTrailers?)
-  )) {
+  private func setupChannelAndDelegate(
+    transformLibraryErrorHandler: @escaping (Error) -> GRPCStatusAndTrailers?
+  ) {
     let provider = EchoProvider()
-    self
-      .errorDelegate =
-      ServerErrorDelegateMock(transformLibraryErrorHandler: transformLibraryErrorHandler)
+    self.errorDelegate = ServerErrorDelegateMock(
+      transformLibraryErrorHandler: transformLibraryErrorHandler
+    )
+
     let handler = GRPCServerRequestRoutingHandler(
       servicesByName: [provider.serviceName: provider],
       encoding: .disabled,

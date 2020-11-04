@@ -75,8 +75,54 @@ internal final class ServerInterceptorPipeline<Request, Response> {
     return self.contexts?.last
   }
 
-  internal init() {
-    fatalError("Not implemented yet")
+  internal init(
+    logger: Logger,
+    eventLoop: EventLoop,
+    path: String,
+    callType: GRPCCallType,
+    interceptors: [ServerInterceptor<Request, Response>],
+    onRequestPart: @escaping (ServerRequestPart<Request>) -> Void,
+    onResponsePart: @escaping (ServerResponsePart<Response>, EventLoopPromise<Void>?) -> Void
+  ) {
+    self.logger = logger
+    self.eventLoop = eventLoop
+    self.path = path
+    self.type = callType
+
+    // We need space for the head and tail as well as any user provided interceptors.
+    var contexts: [ServerInterceptorContext<Request, Response>] = []
+    contexts.reserveCapacity(interceptors.count + 2)
+
+    // Start with the head.
+    contexts.append(
+      ServerInterceptorContext(
+        for: .head(for: self, onResponsePart),
+        atIndex: contexts.count,
+        in: self
+      )
+    )
+
+    // User provided interceptors.
+    for interceptor in interceptors {
+      contexts.append(
+        ServerInterceptorContext(
+          for: .userProvided(interceptor),
+          atIndex: contexts.count,
+          in: self
+        )
+      )
+    }
+
+    // Now the tail.
+    contexts.append(
+      ServerInterceptorContext(
+        for: .tail(onRequestPart),
+        atIndex: contexts.count,
+        in: self
+      )
+    )
+
+    self.contexts = contexts
   }
 
   /// Emit a request part message into the interceptor pipeline.
@@ -102,5 +148,10 @@ internal final class ServerInterceptorPipeline<Request, Response> {
     } else {
       promise?.fail(GRPCError.AlreadyComplete())
     }
+  }
+
+  internal func close() {
+    self.eventLoop.assertInEventLoop()
+    self.contexts = nil
   }
 }

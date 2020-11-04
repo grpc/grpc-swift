@@ -105,6 +105,47 @@ open class StreamingResponseCallContext<ResponsePayload>: ServerCallContextBase 
   }
 }
 
+internal final class _StreamingResponseCallContext<Request, Response>:
+  StreamingResponseCallContext<Response> {
+  private let _sendResponse: (Response, MessageMetadata, EventLoopPromise<Void>?) -> Void
+
+  internal init(
+    eventLoop: EventLoop,
+    headers: HPACKHeaders,
+    logger: Logger,
+    sendResponse: @escaping (Response, MessageMetadata, EventLoopPromise<Void>?) -> Void
+  ) {
+    self._sendResponse = sendResponse
+    super.init(eventLoop: eventLoop, headers: headers, logger: logger)
+  }
+
+  override func sendResponse(
+    _ message: Response,
+    compression: Compression = .deferToCallDefault,
+    promise: EventLoopPromise<Void>?
+  ) {
+    let compress = compression.isEnabled(callDefault: self.compressionEnabled)
+    self._sendResponse(message, .init(compress: compress, flush: true), promise)
+  }
+
+  override func sendResponses<Messages: Sequence>(
+    _ messages: Messages,
+    compression: Compression = .deferToCallDefault,
+    promise: EventLoopPromise<Void>?
+  ) where Response == Messages.Element {
+    let compress = compression.isEnabled(callDefault: self.compressionEnabled)
+    var iterator = messages.makeIterator()
+    var next = iterator.next()
+
+    while let current = next {
+      next = iterator.next()
+      // Attach the promise, if present, to the last message.
+      let isLast = next == nil
+      self._sendResponse(current, .init(compress: compress, flush: isLast), isLast ? promise : nil)
+    }
+  }
+}
+
 /// Concrete implementation of `StreamingResponseCallContext` used by our generated code.
 open class StreamingResponseCallContextImpl<ResponsePayload>: StreamingResponseCallContext<ResponsePayload> {
   public let channel: Channel
@@ -135,7 +176,7 @@ open class StreamingResponseCallContextImpl<ResponsePayload>: StreamingResponseC
         )
 
       case let .failure(error):
-        let (status, trailers) = self.processError(error, delegate: errorDelegate)
+        let (status, trailers) = self.processObserverError(error, delegate: errorDelegate)
         self.channel.writeAndFlush(self.wrap(.statusAndTrailers(status, trailers)), promise: nil)
       }
     }

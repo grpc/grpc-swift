@@ -170,6 +170,14 @@ struct Matcher<Value> {
     }
   }
 
+  static func isEmpty<C: Collection>() -> Matcher<C> {
+    return .init { actual in
+      actual.isEmpty
+        ? .match
+        : .noMatch(actual: "has \(actual.count) items", expected: "is empty")
+    }
+  }
+
   // MARK: gRPC matchers
 
   static func hasCode(_ code: GRPCStatus.Code) -> Matcher<GRPCStatus> {

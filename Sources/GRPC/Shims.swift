@@ -352,7 +352,8 @@ extension UnaryCallHandler {
   @available(*, unavailable, message: "Please regenerate your code or use 'CallHandler.makeUnary'")
   public convenience init(
     callHandlerContext: CallHandlerContext,
-    eventObserverFactory: @escaping (UnaryResponseCallContext<ResponsePayload>) -> EventObserver
+    eventObserverFactory: @escaping (UnaryResponseCallContext<ResponsePayload>)
+      -> (RequestPayload) -> EventLoopFuture<ResponsePayload>
   ) {
     fatalError("Unimplemented: please regenerate your code.")
   }
@@ -366,7 +367,8 @@ extension ServerStreamingCallHandler {
   )
   public convenience init(
     callHandlerContext: CallHandlerContext,
-    eventObserverFactory: @escaping (StreamingResponseCallContext<ResponsePayload>) -> EventObserver
+    eventObserverFactory: @escaping (StreamingResponseCallContext<ResponsePayload>)
+      -> (RequestPayload) -> EventLoopFuture<GRPCStatus>
   ) {
     fatalError("Unimplemented: please regenerate your code.")
   }
@@ -380,7 +382,8 @@ extension ClientStreamingCallHandler {
   )
   public convenience init(
     callHandlerContext: CallHandlerContext,
-    eventObserverFactory: @escaping EventObserverFactory
+    eventObserverFactory: @escaping (UnaryResponseCallContext<ResponsePayload>)
+      -> EventLoopFuture<(StreamEvent<RequestPayload>) -> Void>
   ) {
     fatalError("Unimplemented: please regenerate your code.")
   }
@@ -395,7 +398,7 @@ extension BidirectionalStreamingCallHandler {
   public convenience init(
     callHandlerContext: CallHandlerContext,
     eventObserverFactory: @escaping (StreamingResponseCallContext<ResponsePayload>)
-      -> EventLoopFuture<EventObserver>
+      -> EventLoopFuture<(StreamEvent<RequestPayload>) -> Void>
   ) {
     fatalError("Unimplemented: please regenerate your code.")
   }
