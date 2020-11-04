@@ -96,6 +96,7 @@ extension ClientTLSHostnameOverrideTests {
     //   `swift test --generate-linuxmain`
     // to regenerate.
     static let __allTests__ClientTLSHostnameOverrideTests = [
+        ("testAuthorityUsesTLSHostnameOverride", testAuthorityUsesTLSHostnameOverride),
         ("testTLSWithHostnameOverride", testTLSWithHostnameOverride),
         ("testTLSWithNoCertificateVerification", testTLSWithNoCertificateVerification),
         ("testTLSWithoutHostnameOverride", testTLSWithoutHostnameOverride),

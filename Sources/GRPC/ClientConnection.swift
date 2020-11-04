@@ -116,7 +116,7 @@ public class ClientConnection {
   public init(configuration: Configuration) {
     self.configuration = configuration
     self.scheme = configuration.tls == nil ? "http" : "https"
-    self.authority = configuration.target.host
+    self.authority = configuration.tls?.hostnameOverride ?? configuration.target.host
     self.connectionManager = ConnectionManager(
       configuration: configuration,
       logger: configuration.backgroundActivityLogger
