@@ -22,6 +22,8 @@ import NIOHTTP1
 import XCTest
 
 class EchoMetadataValidator: Echo_EchoProvider {
+  let interceptors: Echo_EchoServerInterceptorFactoryProtocol? = nil
+
   private func assertCustomMetadataIsLowercased(
     _ headers: HPACKHeaders,
     line: UInt = #line

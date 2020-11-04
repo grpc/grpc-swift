@@ -20,6 +20,8 @@ import NIO
 import XCTest
 
 class ImmediatelyFailingEchoProvider: Echo_EchoProvider {
+  let interceptors: Echo_EchoServerInterceptorFactoryProtocol? = nil
+
   static let status: GRPCStatus = .init(code: .unavailable, message: nil)
 
   func get(

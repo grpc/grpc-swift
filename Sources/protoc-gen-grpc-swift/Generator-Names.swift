@@ -61,6 +61,10 @@ extension Generator {
     return nameForPackageService(file, service) + "ClientInterceptorFactoryProtocol"
   }
 
+  internal var serverInterceptorProtocolName: String {
+    return nameForPackageService(file, service) + "ServerInterceptorFactoryProtocol"
+  }
+
   internal var callName: String {
     return nameForPackageServiceMethod(file, service, method) + "Call"
   }
