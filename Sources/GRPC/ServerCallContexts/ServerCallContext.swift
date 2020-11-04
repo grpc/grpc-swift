@@ -62,7 +62,7 @@ open class ServerCallContextBase: ServerCallContext {
   }
 
   /// Processes an error, transforming it into a 'GRPCStatus' and any trailers to send to the peer.
-  internal func processError(
+  internal func processObserverError(
     _ error: Error,
     delegate: ServerErrorDelegate?
   ) -> (GRPCStatus, HPACKHeaders) {

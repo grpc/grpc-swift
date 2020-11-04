@@ -118,7 +118,7 @@ open class UnaryResponseCallContextImpl<ResponsePayload>: UnaryResponseCallConte
 
   /// Handle an error from the service provider.
   private func handleError(_ error: Error, delegate: ServerErrorDelegate?) {
-    let (status, trailers) = self.processError(error, delegate: delegate)
+    let (status, trailers) = self.processObserverError(error, delegate: delegate)
     self.channel.writeAndFlush(self.wrap(.statusAndTrailers(status, trailers)), promise: nil)
   }
 

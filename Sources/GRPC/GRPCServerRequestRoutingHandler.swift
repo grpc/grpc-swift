@@ -45,6 +45,8 @@ public struct CallHandlerContext {
   internal var errorDelegate: ServerErrorDelegate?
   internal var logger: Logger
   internal var encoding: ServerMessageEncoding
+  internal var eventLoop: EventLoop
+  internal var path: String
 }
 
 /// Attempts to route a request to a user-provided call handler. Also validates that the request has
@@ -259,7 +261,9 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
     let context = CallHandlerContext(
       errorDelegate: self.errorDelegate,
       logger: self.logger,
-      encoding: self.encoding
+      encoding: self.encoding,
+      eventLoop: channel.eventLoop,
+      path: requestHead.uri
     )
 
     guard let callPath = uriComponents,
