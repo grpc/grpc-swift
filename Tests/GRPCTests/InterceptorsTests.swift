@@ -137,6 +137,9 @@ class HelloWorldProvider: Helloworld_GreeterProvider {
     request: Helloworld_HelloRequest,
     context: StatusOnlyCallContext
   ) -> EventLoopFuture<Helloworld_HelloReply> {
+    // Since we're auth'd, the 'userInfo' should have some magic set.
+    assertThat(context.userInfo.magic, .is("Magic"))
+
     let response = Helloworld_HelloReply.with {
       $0.message = "Hello, \(request.name), you're authorized!"
     }
@@ -166,7 +169,8 @@ class NotReallyAuthServerInterceptor<Request: Message, Response: Message>:
   ) {
     switch part {
     case let .metadata(headers):
-      if headers.first(name: "authorization") == "Magic" {
+      if let auth = headers.first(name: "authorization"), auth == "Magic" {
+        context.userInfo.magic = auth
         context.receive(part)
       } else {
         // Not auth'd. Fail the RPC.
@@ -338,5 +342,20 @@ private class ReversingInterceptors: Echo_EchoClientInterceptorFactoryProtocol {
 
   func makeUpdateInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>] {
     return self.interceptors
+  }
+}
+
+private enum MagicKey: UserInfo.Key {
+  typealias Value = String
+}
+
+extension UserInfo {
+  fileprivate var magic: MagicKey.Value? {
+    get {
+      return self[MagicKey.self]
+    }
+    set {
+      self[MagicKey.self] = newValue
+    }
   }
 }

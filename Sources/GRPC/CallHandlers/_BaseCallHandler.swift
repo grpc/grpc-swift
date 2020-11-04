@@ -56,20 +56,27 @@ public class _BaseCallHandler<Request, Response>: GRPCCallHandler, ChannelInboun
     return self.callHandlerContext.logger
   }
 
+  /// A reference to `UserInfo`.
+  internal var userInfoRef: Ref<UserInfo>
+
   internal init(
     callHandlerContext: CallHandlerContext,
     codec: ChannelHandler,
     callType: GRPCCallType,
     interceptors: [ServerInterceptor<Request, Response>]
   ) {
+    let userInfoRef = Ref(UserInfo())
+
     self.callHandlerContext = callHandlerContext
     self._codec = codec
     self.callType = callType
+    self.userInfoRef = userInfoRef
     self.pipeline = ServerInterceptorPipeline(
       logger: callHandlerContext.logger,
       eventLoop: callHandlerContext.eventLoop,
       path: callHandlerContext.path,
       callType: callType,
+      userInfoRef: userInfoRef,
       interceptors: interceptors,
       onRequestPart: self.receiveRequestPartFromInterceptors(_:),
       onResponsePart: self.sendResponsePartFromInterceptors(_:promise:)

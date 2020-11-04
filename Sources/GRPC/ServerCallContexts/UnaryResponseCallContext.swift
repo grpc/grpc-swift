@@ -35,12 +35,26 @@ open class UnaryResponseCallContext<ResponsePayload>: ServerCallContextBase, Sta
   public let responsePromise: EventLoopPromise<ResponsePayload>
   public var responseStatus: GRPCStatus = .ok
 
-  override public init(eventLoop: EventLoop, headers: HPACKHeaders, logger: Logger) {
-    self.responsePromise = eventLoop.makePromise()
-    super.init(eventLoop: eventLoop, headers: headers, logger: logger)
+  public convenience init(
+    eventLoop: EventLoop,
+    headers: HPACKHeaders,
+    logger: Logger,
+    userInfo: UserInfo = UserInfo()
+  ) {
+    self.init(eventLoop: eventLoop, headers: headers, logger: logger, userInfoRef: .init(userInfo))
   }
 
-  @available(*, deprecated, renamed: "init(eventLoop:headers:logger:)")
+  override internal init(
+    eventLoop: EventLoop,
+    headers: HPACKHeaders,
+    logger: Logger,
+    userInfoRef: Ref<UserInfo>
+  ) {
+    self.responsePromise = eventLoop.makePromise()
+    super.init(eventLoop: eventLoop, headers: headers, logger: logger, userInfoRef: userInfoRef)
+  }
+
+  @available(*, deprecated, renamed: "init(eventLoop:headers:logger:userInfo:)")
   override public init(eventLoop: EventLoop, request: HTTPRequestHead, logger: Logger) {
     self.responsePromise = eventLoop.makePromise()
     super.init(eventLoop: eventLoop, request: request, logger: logger)
@@ -90,7 +104,12 @@ open class UnaryResponseCallContextImpl<ResponsePayload>: UnaryResponseCallConte
     logger: Logger
   ) {
     self.channel = channel
-    super.init(eventLoop: channel.eventLoop, headers: headers, logger: logger)
+    super.init(
+      eventLoop: channel.eventLoop,
+      headers: headers,
+      logger: logger,
+      userInfoRef: .init(UserInfo())
+    )
 
     self.responsePromise.futureResult.whenComplete { [self, weak errorDelegate] result in
       switch result {
