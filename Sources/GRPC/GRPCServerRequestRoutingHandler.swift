@@ -232,7 +232,7 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
     init?(requestURI: String) {
       var utf8View = requestURI.utf8[...]
       // Check and remove the split character at the beginning.
-      guard utf8View.trimPrefix(to: self.pathSplitDelimiter)?.isEmpty == true else {
+      guard let prefix = utf8View.trimPrefix(to: self.pathSplitDelimiter), prefix.isEmpty else {
         return nil
       }
       guard let service = utf8View.trimPrefix(to: pathSplitDelimiter) else {
