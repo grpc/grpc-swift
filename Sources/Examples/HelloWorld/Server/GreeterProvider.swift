@@ -18,6 +18,8 @@ import HelloWorldModel
 import NIO
 
 class GreeterProvider: Helloworld_GreeterProvider {
+  var interceptors: Helloworld_GreeterServerInterceptorFactoryProtocol?
+
   func sayHello(
     request: Helloworld_HelloRequest,
     context: StatusOnlyCallContext

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import GRPC
+@testable import GRPC
 import NIOHPACK
 import XCTest
 
@@ -135,11 +135,13 @@ struct Matcher<Value> {
   }
 
   /// Matches if the value is not `nil`.
-  static func notNil<Value>() -> Matcher<Value?> {
+  static func notNil<Value>(_ matcher: Matcher<Value>? = nil) -> Matcher<Value?> {
     return .init { actual in
-      actual != nil
-        ? .match
-        : .noMatch(actual: "nil", expected: "not nil")
+      if let actual = actual {
+        return matcher?.evaluate(actual) ?? .match
+      } else {
+        return .noMatch(actual: "nil", expected: "not nil")
+      }
     }
   }
 
@@ -166,7 +168,7 @@ struct Matcher<Value> {
     return .init { actual in
       actual.count == count
         ? .match
-        : .noMatch(actual: "has count \(actual)", expected: "count of \(count)")
+        : .noMatch(actual: "has count \(actual.count)", expected: "count of \(count)")
     }
   }
 
@@ -185,6 +187,117 @@ struct Matcher<Value> {
       actual.code == code
         ? .match
         : .noMatch(actual: "has status code \(actual)", expected: "\(code)")
+    }
+  }
+
+  static func metadata<Request>(
+    _ matcher: Matcher<HPACKHeaders>? = nil
+  ) -> Matcher<ServerRequestPart<Request>> {
+    return .init { actual in
+      switch actual {
+      case let .metadata(headers):
+        return matcher?.evaluate(headers) ?? .match
+      default:
+        return .noMatch(actual: String(describing: actual), expected: "metadata")
+      }
+    }
+  }
+
+  static func message<Request>(
+    _ matcher: Matcher<Request>? = nil
+  ) -> Matcher<ServerRequestPart<Request>> {
+    return .init { actual in
+      switch actual {
+      case let .message(message):
+        return matcher?.evaluate(message) ?? .match
+      default:
+        return .noMatch(actual: String(describing: actual), expected: "message")
+      }
+    }
+  }
+
+  static func metadata<Response>(
+    _ matcher: Matcher<HPACKHeaders>? = nil
+  ) -> Matcher<ServerResponsePart<Response>> {
+    return .init { actual in
+      switch actual {
+      case let .metadata(headers):
+        return matcher?.evaluate(headers) ?? .match
+      default:
+        return .noMatch(actual: String(describing: actual), expected: "metadata")
+      }
+    }
+  }
+
+  static func message<Response>(
+    _ matcher: Matcher<Response>? = nil
+  ) -> Matcher<ServerResponsePart<Response>> {
+    return .init { actual in
+      switch actual {
+      case let .message(message, _):
+        return matcher?.evaluate(message) ?? .match
+      default:
+        return .noMatch(actual: String(describing: actual), expected: "message")
+      }
+    }
+  }
+
+  static func end<Response>(
+    status statusMatcher: Matcher<GRPCStatus>? = nil,
+    trailers trailersMatcher: Matcher<HPACKHeaders>? = nil
+  ) -> Matcher<ServerResponsePart<Response>> {
+    return .init { actual in
+      switch actual {
+      case let .end(status, trailers):
+        let statusMatch = (statusMatcher?.evaluate(status) ?? .match)
+        switch statusMatcher?.evaluate(status) ?? .match {
+        case .match:
+          return trailersMatcher?.evaluate(trailers) ?? .match
+        case .noMatch:
+          return statusMatch
+        }
+      default:
+        return .noMatch(actual: String(describing: actual), expected: "end")
+      }
+    }
+  }
+
+  static func headers<Response>(
+    _ matcher: Matcher<HPACKHeaders>? = nil
+  ) -> Matcher<_GRPCServerResponsePart<Response>> {
+    return .init { actual in
+      switch actual {
+      case let .headers(headers):
+        return matcher?.evaluate(headers) ?? .match
+      default:
+        return .noMatch(actual: String(describing: actual), expected: "headers")
+      }
+    }
+  }
+
+  static func message<Response>(
+    _ matcher: Matcher<Response>? = nil
+  ) -> Matcher<_GRPCServerResponsePart<Response>> {
+    return .init { actual in
+      switch actual {
+      case let .message(message):
+        return matcher?.evaluate(message.message) ?? .match
+      default:
+        return .noMatch(actual: String(describing: actual), expected: "message")
+      }
+    }
+  }
+
+  static func end<Response>(
+    _ matcher: Matcher<GRPCStatus>? = nil
+  ) -> Matcher<_GRPCServerResponsePart<Response>> {
+    return .init { actual in
+      switch actual {
+      case let .statusAndTrailers(status, _):
+        return matcher?.evaluate(status) ?? .match
+      default:
+        return .noMatch(actual: String(describing: actual), expected: "end")
+      }
     }
   }
 
