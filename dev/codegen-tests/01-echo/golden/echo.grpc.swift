@@ -132,50 +132,18 @@ extension Echo_EchoClientProtocol {
 }
 
 internal protocol Echo_EchoClientInterceptorFactoryProtocol {
-  /// Makes an array of generic interceptors. The per-method interceptor
-  /// factories default to calling this function and it therefore provides a
-  /// convenient way of setting interceptors for all methods on a client.
-  /// - Returns: An array of interceptors generic over `Request` and `Response`.
-  ///   Defaults to an empty array.
-  func makeInterceptors<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>() -> [ClientInterceptor<Request, Response>]
 
   /// - Returns: Interceptors to use when invoking 'get'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeGetInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
 
   /// - Returns: Interceptors to use when invoking 'expand'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeExpandInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
 
   /// - Returns: Interceptors to use when invoking 'collect'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeCollectInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
 
   /// - Returns: Interceptors to use when invoking 'update'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeUpdateInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
-}
-
-extension Echo_EchoClientInterceptorFactoryProtocol {
-  internal func makeInterceptors<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>() -> [ClientInterceptor<Request, Response>] {
-    return []
-  }
-
-  internal func makeGetInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>] {
-    return self.makeInterceptors()
-  }
-
-  internal func makeExpandInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>] {
-    return self.makeInterceptors()
-  }
-
-  internal func makeCollectInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>] {
-    return self.makeInterceptors()
-  }
-
-  internal func makeUpdateInterceptors() -> [ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse>] {
-    return self.makeInterceptors()
-  }
 }
 
 internal final class Echo_EchoClient: Echo_EchoClientProtocol {
@@ -202,12 +170,17 @@ internal final class Echo_EchoClient: Echo_EchoClientProtocol {
 
 /// To build a server, implement a class that conforms to this protocol.
 internal protocol Echo_EchoProvider: CallHandlerProvider {
+  var interceptors: Echo_EchoServerInterceptorFactoryProtocol? { get }
+
   /// Immediately returns an echo of a request.
   func get(request: Echo_EchoRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Echo_EchoResponse>
+
   /// Splits a request into words and returns each word in a stream of messages.
   func expand(request: Echo_EchoRequest, context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<GRPCStatus>
+
   /// Collects a stream of messages and returns them concatenated when the caller closes.
   func collect(context: UnaryResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void>
+
   /// Streams back messages as they are received in an input stream.
   func update(context: StreamingResponseCallContext<Echo_EchoResponse>) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void>
 }
@@ -217,34 +190,68 @@ extension Echo_EchoProvider {
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  internal func handleMethod(_ methodName: Substring, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
+  internal func handleMethod(
+    _ methodName: Substring,
+    callHandlerContext: CallHandlerContext
+  ) -> GRPCCallHandler? {
     switch methodName {
     case "Get":
-      return CallHandlerFactory.makeUnary(callHandlerContext: callHandlerContext) { context in
+      return CallHandlerFactory.makeUnary(
+        callHandlerContext: callHandlerContext,
+        interceptors: self.interceptors?.makeGetInterceptors() ?? []
+      ) { context in
         return { request in
           self.get(request: request, context: context)
         }
       }
 
     case "Expand":
-      return CallHandlerFactory.makeServerStreaming(callHandlerContext: callHandlerContext) { context in
+      return CallHandlerFactory.makeServerStreaming(
+        callHandlerContext: callHandlerContext,
+        interceptors: self.interceptors?.makeExpandInterceptors() ?? []
+      ) { context in
         return { request in
           self.expand(request: request, context: context)
         }
       }
 
     case "Collect":
-      return CallHandlerFactory.makeClientStreaming(callHandlerContext: callHandlerContext) { context in
-        return self.collect(context: context)
+      return CallHandlerFactory.makeClientStreaming(
+        callHandlerContext: callHandlerContext,
+        interceptors: self.interceptors?.makeCollectInterceptors() ?? []
+      ) { context in
+        self.collect(context: context)
       }
 
     case "Update":
-      return CallHandlerFactory.makeBidirectionalStreaming(callHandlerContext: callHandlerContext) { context in
-        return self.update(context: context)
+      return CallHandlerFactory.makeBidirectionalStreaming(
+        callHandlerContext: callHandlerContext,
+        interceptors: self.interceptors?.makeUpdateInterceptors() ?? []
+      ) { context in
+        self.update(context: context)
       }
 
-    default: return nil
+    default:
+      return nil
     }
   }
 }
 
+internal protocol Echo_EchoServerInterceptorFactoryProtocol {
+
+  /// - Returns: Interceptors to use when handling 'get'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeGetInterceptors() -> [ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
+
+  /// - Returns: Interceptors to use when handling 'expand'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeExpandInterceptors() -> [ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
+
+  /// - Returns: Interceptors to use when handling 'collect'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeCollectInterceptors() -> [ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
+
+  /// - Returns: Interceptors to use when handling 'update'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeUpdateInterceptors() -> [ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
+}

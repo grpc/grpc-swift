@@ -58,26 +58,9 @@ extension A_ServiceAClientProtocol {
 }
 
 internal protocol A_ServiceAClientInterceptorFactoryProtocol {
-  /// Makes an array of generic interceptors. The per-method interceptor
-  /// factories default to calling this function and it therefore provides a
-  /// convenient way of setting interceptors for all methods on a client.
-  /// - Returns: An array of interceptors generic over `Request` and `Response`.
-  ///   Defaults to an empty array.
-  func makeInterceptors<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>() -> [ClientInterceptor<Request, Response>]
 
   /// - Returns: Interceptors to use when invoking 'callServiceA'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeCallServiceAInterceptors() -> [ClientInterceptor<A_MessageA, SwiftProtobuf.Google_Protobuf_Empty>]
-}
-
-extension A_ServiceAClientInterceptorFactoryProtocol {
-  internal func makeInterceptors<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>() -> [ClientInterceptor<Request, Response>] {
-    return []
-  }
-
-  internal func makeCallServiceAInterceptors() -> [ClientInterceptor<A_MessageA, SwiftProtobuf.Google_Protobuf_Empty>] {
-    return self.makeInterceptors()
-  }
 }
 
 internal final class A_ServiceAClient: A_ServiceAClientProtocol {
@@ -104,6 +87,8 @@ internal final class A_ServiceAClient: A_ServiceAClientProtocol {
 
 /// To build a server, implement a class that conforms to this protocol.
 internal protocol A_ServiceAProvider: CallHandlerProvider {
+  var interceptors: A_ServiceAServerInterceptorFactoryProtocol? { get }
+
   func callServiceA(request: A_MessageA, context: StatusOnlyCallContext) -> EventLoopFuture<SwiftProtobuf.Google_Protobuf_Empty>
 }
 
@@ -112,17 +97,30 @@ extension A_ServiceAProvider {
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  internal func handleMethod(_ methodName: Substring, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
+  internal func handleMethod(
+    _ methodName: Substring,
+    callHandlerContext: CallHandlerContext
+  ) -> GRPCCallHandler? {
     switch methodName {
     case "CallServiceA":
-      return CallHandlerFactory.makeUnary(callHandlerContext: callHandlerContext) { context in
+      return CallHandlerFactory.makeUnary(
+        callHandlerContext: callHandlerContext,
+        interceptors: self.interceptors?.makeCallServiceAInterceptors() ?? []
+      ) { context in
         return { request in
           self.callServiceA(request: request, context: context)
         }
       }
 
-    default: return nil
+    default:
+      return nil
     }
   }
 }
 
+internal protocol A_ServiceAServerInterceptorFactoryProtocol {
+
+  /// - Returns: Interceptors to use when handling 'callServiceA'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeCallServiceAInterceptors() -> [ServerInterceptor<A_MessageA, SwiftProtobuf.Google_Protobuf_Empty>]
+}

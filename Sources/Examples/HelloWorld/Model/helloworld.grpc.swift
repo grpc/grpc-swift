@@ -57,26 +57,9 @@ extension Helloworld_GreeterClientProtocol {
 }
 
 public protocol Helloworld_GreeterClientInterceptorFactoryProtocol {
-  /// Makes an array of generic interceptors. The per-method interceptor
-  /// factories default to calling this function and it therefore provides a
-  /// convenient way of setting interceptors for all methods on a client.
-  /// - Returns: An array of interceptors generic over `Request` and `Response`.
-  ///   Defaults to an empty array.
-  func makeInterceptors<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>() -> [ClientInterceptor<Request, Response>]
 
   /// - Returns: Interceptors to use when invoking 'sayHello'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeSayHelloInterceptors() -> [ClientInterceptor<Helloworld_HelloRequest, Helloworld_HelloReply>]
-}
-
-extension Helloworld_GreeterClientInterceptorFactoryProtocol {
-  public func makeInterceptors<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>() -> [ClientInterceptor<Request, Response>] {
-    return []
-  }
-
-  public func makeSayHelloInterceptors() -> [ClientInterceptor<Helloworld_HelloRequest, Helloworld_HelloReply>] {
-    return self.makeInterceptors()
-  }
 }
 
 public final class Helloworld_GreeterClient: Helloworld_GreeterClientProtocol {
@@ -103,6 +86,8 @@ public final class Helloworld_GreeterClient: Helloworld_GreeterClientProtocol {
 
 /// To build a server, implement a class that conforms to this protocol.
 public protocol Helloworld_GreeterProvider: CallHandlerProvider {
+  var interceptors: Helloworld_GreeterServerInterceptorFactoryProtocol? { get }
+
   /// Sends a greeting.
   func sayHello(request: Helloworld_HelloRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Helloworld_HelloReply>
 }
@@ -112,17 +97,30 @@ extension Helloworld_GreeterProvider {
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  public func handleMethod(_ methodName: Substring, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
+  public func handleMethod(
+    _ methodName: Substring,
+    callHandlerContext: CallHandlerContext
+  ) -> GRPCCallHandler? {
     switch methodName {
     case "SayHello":
-      return CallHandlerFactory.makeUnary(callHandlerContext: callHandlerContext) { context in
+      return CallHandlerFactory.makeUnary(
+        callHandlerContext: callHandlerContext,
+        interceptors: self.interceptors?.makeSayHelloInterceptors() ?? []
+      ) { context in
         return { request in
           self.sayHello(request: request, context: context)
         }
       }
 
-    default: return nil
+    default:
+      return nil
     }
   }
 }
 
+public protocol Helloworld_GreeterServerInterceptorFactoryProtocol {
+
+  /// - Returns: Interceptors to use when handling 'sayHello'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeSayHelloInterceptors() -> [ServerInterceptor<Helloworld_HelloRequest, Helloworld_HelloReply>]
+}

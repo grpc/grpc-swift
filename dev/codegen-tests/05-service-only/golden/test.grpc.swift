@@ -57,26 +57,9 @@ extension Codegentest_FooClientProtocol {
 }
 
 internal protocol Codegentest_FooClientInterceptorFactoryProtocol {
-  /// Makes an array of generic interceptors. The per-method interceptor
-  /// factories default to calling this function and it therefore provides a
-  /// convenient way of setting interceptors for all methods on a client.
-  /// - Returns: An array of interceptors generic over `Request` and `Response`.
-  ///   Defaults to an empty array.
-  func makeInterceptors<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>() -> [ClientInterceptor<Request, Response>]
 
   /// - Returns: Interceptors to use when invoking 'bar'.
-  ///   Defaults to calling `self.makeInterceptors()`.
   func makeBarInterceptors() -> [ClientInterceptor<SwiftProtobuf.Google_Protobuf_Empty, SwiftProtobuf.Google_Protobuf_Empty>]
-}
-
-extension Codegentest_FooClientInterceptorFactoryProtocol {
-  internal func makeInterceptors<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>() -> [ClientInterceptor<Request, Response>] {
-    return []
-  }
-
-  internal func makeBarInterceptors() -> [ClientInterceptor<SwiftProtobuf.Google_Protobuf_Empty, SwiftProtobuf.Google_Protobuf_Empty>] {
-    return self.makeInterceptors()
-  }
 }
 
 internal final class Codegentest_FooClient: Codegentest_FooClientProtocol {
@@ -103,6 +86,8 @@ internal final class Codegentest_FooClient: Codegentest_FooClientProtocol {
 
 /// To build a server, implement a class that conforms to this protocol.
 internal protocol Codegentest_FooProvider: CallHandlerProvider {
+  var interceptors: Codegentest_FooServerInterceptorFactoryProtocol? { get }
+
   func bar(request: SwiftProtobuf.Google_Protobuf_Empty, context: StatusOnlyCallContext) -> EventLoopFuture<SwiftProtobuf.Google_Protobuf_Empty>
 }
 
@@ -111,17 +96,30 @@ extension Codegentest_FooProvider {
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  internal func handleMethod(_ methodName: Substring, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
+  internal func handleMethod(
+    _ methodName: Substring,
+    callHandlerContext: CallHandlerContext
+  ) -> GRPCCallHandler? {
     switch methodName {
     case "Bar":
-      return CallHandlerFactory.makeUnary(callHandlerContext: callHandlerContext) { context in
+      return CallHandlerFactory.makeUnary(
+        callHandlerContext: callHandlerContext,
+        interceptors: self.interceptors?.makeBarInterceptors() ?? []
+      ) { context in
         return { request in
           self.bar(request: request, context: context)
         }
       }
 
-    default: return nil
+    default:
+      return nil
     }
   }
 }
 
+internal protocol Codegentest_FooServerInterceptorFactoryProtocol {
+
+  /// - Returns: Interceptors to use when handling 'bar'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeBarInterceptors() -> [ServerInterceptor<SwiftProtobuf.Google_Protobuf_Empty, SwiftProtobuf.Google_Protobuf_Empty>]
+}
