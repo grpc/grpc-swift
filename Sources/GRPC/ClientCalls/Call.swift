@@ -112,7 +112,7 @@ public class Call<Request, Response> {
   /// - Parameter onResponsePart: A callback which is invoked on every response part.
   /// - Important: This function should only be called once. Subsequent calls will be ignored.
   @inlinable
-  public func invoke(_ onResponsePart: @escaping (ClientResponsePart<Response>) -> Void) {
+  public func invoke(_ onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void) {
     self.options.logger.debug("starting rpc", metadata: ["path": "\(self.path)"], source: "GRPC")
 
     if self.eventLoop.inEventLoop {
@@ -130,7 +130,7 @@ public class Call<Request, Response> {
   ///   - promise: A promise which will be completed when the request part has been handled.
   /// - Note: Sending will always fail if `invoke(_:)` has not been called.
   @inlinable
-  public func send(_ part: ClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
+  public func send(_ part: GRPCClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
     if self.eventLoop.inEventLoop {
       self._send(part, promise: promise)
     } else {
@@ -161,7 +161,7 @@ extension Call {
   /// - Returns: A future which will be resolved when the request has been handled.
   /// - Note: Sending will always fail if `invoke(_:)` has not been called.
   @inlinable
-  public func send(_ part: ClientRequestPart<Request>) -> EventLoopFuture<Void> {
+  public func send(_ part: GRPCClientRequestPart<Request>) -> EventLoopFuture<Void> {
     let promise = self.eventLoop.makePromise(of: Void.self)
     self.send(part, promise: promise)
     return promise.futureResult
@@ -255,7 +255,7 @@ extension Call {
   /// - Important: This *must* to be called from the `eventLoop`.
   @usableFromInline
   internal func _invoke(
-    _ onResponsePart: @escaping (ClientResponsePart<Response>) -> Void
+    _ onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) {
     self.eventLoop.assertInEventLoop()
 
@@ -279,7 +279,7 @@ extension Call {
   /// Send a request part on the transport.
   /// - Important: This *must* to be called from the `eventLoop`.
   @inlinable
-  internal func _send(_ part: ClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
+  internal func _send(_ part: GRPCClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
     self.eventLoop.assertInEventLoop()
 
     switch self._state {
@@ -343,7 +343,7 @@ extension Call {
   @inlinable
   internal func invokeUnaryRequest(
     _ request: Request,
-    _ onResponsePart: @escaping (ClientResponsePart<Response>) -> Void
+    _ onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) {
     if self.eventLoop.inEventLoop {
       self._invokeUnaryRequest(request: request, onResponsePart)
@@ -360,7 +360,7 @@ extension Call {
   ///   - onResponsePart: A callback invoked for each response part received.
   @inlinable
   internal func invokeStreamingRequests(
-    _ onResponsePart: @escaping (ClientResponsePart<Response>) -> Void
+    _ onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) {
     if self.eventLoop.inEventLoop {
       self._invokeStreamingRequests(onResponsePart)
@@ -375,7 +375,7 @@ extension Call {
   @usableFromInline
   internal func _invokeUnaryRequest(
     request: Request,
-    _ onResponsePart: @escaping (ClientResponsePart<Response>) -> Void
+    _ onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) {
     self.eventLoop.assertInEventLoop()
     assert(self.type == .unary || self.type == .serverStreaming)
@@ -392,7 +392,7 @@ extension Call {
   /// On-`EventLoop` implementation of `invokeStreamingRequests(_:)`.
   @usableFromInline
   internal func _invokeStreamingRequests(
-    _ onResponsePart: @escaping (ClientResponsePart<Response>) -> Void
+    _ onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) {
     self.eventLoop.assertInEventLoop()
     assert(self.type == .clientStreaming || self.type == .bidirectionalStreaming)

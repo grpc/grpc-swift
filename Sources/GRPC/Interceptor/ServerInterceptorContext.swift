@@ -72,7 +72,7 @@ public struct ServerInterceptorContext<Request, Response> {
   ///
   /// - Parameter part: The request part to forward.
   /// - Important: This *must* to be called from the `eventLoop`.
-  public func receive(_ part: ServerRequestPart<Request>) {
+  public func receive(_ part: GRPCServerRequestPart<Request>) {
     self.nextInbound?.invokeReceive(part)
   }
 
@@ -83,7 +83,7 @@ public struct ServerInterceptorContext<Request, Response> {
   ///   - promise: The promise the complete when the part has been written.
   /// - Important: This *must* to be called from the `eventLoop`.
   public func send(
-    _ part: ServerResponsePart<Response>,
+    _ part: GRPCServerResponsePart<Response>,
     promise: EventLoopPromise<Void>?
   ) {
     if let outbound = self.nextOutbound {
@@ -95,12 +95,15 @@ public struct ServerInterceptorContext<Request, Response> {
 }
 
 extension ServerInterceptorContext {
-  internal func invokeReceive(_ part: ServerRequestPart<Request>) {
+  internal func invokeReceive(_ part: GRPCServerRequestPart<Request>) {
     self.eventLoop.assertInEventLoop()
     self.interceptor.receive(part, context: self)
   }
 
-  internal func invokeSend(_ part: ServerResponsePart<Response>, promise: EventLoopPromise<Void>?) {
+  internal func invokeSend(
+    _ part: GRPCServerResponsePart<Response>,
+    promise: EventLoopPromise<Void>?
+  ) {
     self.eventLoop.assertInEventLoop()
     self.interceptor.send(part, promise: promise, context: self)
   }

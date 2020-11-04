@@ -192,7 +192,7 @@ struct Matcher<Value> {
 
   static func metadata<Request>(
     _ matcher: Matcher<HPACKHeaders>? = nil
-  ) -> Matcher<ServerRequestPart<Request>> {
+  ) -> Matcher<GRPCServerRequestPart<Request>> {
     return .init { actual in
       switch actual {
       case let .metadata(headers):
@@ -205,7 +205,7 @@ struct Matcher<Value> {
 
   static func message<Request>(
     _ matcher: Matcher<Request>? = nil
-  ) -> Matcher<ServerRequestPart<Request>> {
+  ) -> Matcher<GRPCServerRequestPart<Request>> {
     return .init { actual in
       switch actual {
       case let .message(message):
@@ -218,7 +218,7 @@ struct Matcher<Value> {
 
   static func metadata<Response>(
     _ matcher: Matcher<HPACKHeaders>? = nil
-  ) -> Matcher<ServerResponsePart<Response>> {
+  ) -> Matcher<GRPCServerResponsePart<Response>> {
     return .init { actual in
       switch actual {
       case let .metadata(headers):
@@ -231,7 +231,7 @@ struct Matcher<Value> {
 
   static func message<Response>(
     _ matcher: Matcher<Response>? = nil
-  ) -> Matcher<ServerResponsePart<Response>> {
+  ) -> Matcher<GRPCServerResponsePart<Response>> {
     return .init { actual in
       switch actual {
       case let .message(message, _):
@@ -245,7 +245,7 @@ struct Matcher<Value> {
   static func end<Response>(
     status statusMatcher: Matcher<GRPCStatus>? = nil,
     trailers trailersMatcher: Matcher<HPACKHeaders>? = nil
-  ) -> Matcher<ServerResponsePart<Response>> {
+  ) -> Matcher<GRPCServerResponsePart<Response>> {
     return .init { actual in
       switch actual {
       case let .end(status, trailers):
