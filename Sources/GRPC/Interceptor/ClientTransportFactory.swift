@@ -107,7 +107,7 @@ internal struct ClientTransportFactory<Request, Response> {
     for type: GRPCCallType,
     withOptions options: CallOptions,
     interceptedBy interceptors: [ClientInterceptor<Request, Response>],
-    _ onResponsePart: @escaping (ClientResponsePart<Response>) -> Void
+    _ onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) -> ClientTransport<Request, Response> {
     switch self.factory {
     case let .http2(factory):
@@ -170,7 +170,7 @@ private struct HTTP2ClientTransportFactory<Request, Response> {
     for type: GRPCCallType,
     withOptions options: CallOptions,
     interceptedBy interceptors: [ClientInterceptor<Request, Response>],
-    _ onResponsePart: @escaping (ClientResponsePart<Response>) -> Void
+    _ onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) -> ClientTransport<Request, Response> {
     return ClientTransport(
       details: self.makeCallDetails(type: type, path: path, options: options),
@@ -240,7 +240,7 @@ private struct FakeClientTransportFactory<Request, Response> {
     for type: GRPCCallType,
     withOptions options: CallOptions,
     interceptedBy interceptors: [ClientInterceptor<Request, Response>],
-    _ onResponsePart: @escaping (ClientResponsePart<Response>) -> Void
+    _ onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) -> ClientTransport<Request, Response> {
     return ClientTransport(
       details: CallDetails(

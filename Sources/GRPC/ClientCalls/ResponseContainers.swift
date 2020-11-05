@@ -61,7 +61,7 @@ internal class UnaryResponseParts<Response> {
 
   /// Handle the response part, completing any promises as necessary.
   /// - Important: This *must* be called on `eventLoop`.
-  internal func handle(_ part: ClientResponsePart<Response>) {
+  internal func handle(_ part: GRPCClientResponsePart<Response>) {
     self.eventLoop.assertInEventLoop()
 
     switch part {
@@ -130,7 +130,7 @@ internal class StreamingResponseParts<Response> {
     self.statusPromise = eventLoop.makeLazyPromise()
   }
 
-  internal func handle(_ part: ClientResponsePart<Response>) {
+  internal func handle(_ part: GRPCClientResponsePart<Response>) {
     self.eventLoop.assertInEventLoop()
 
     switch part {

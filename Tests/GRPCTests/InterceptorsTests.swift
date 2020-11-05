@@ -161,7 +161,7 @@ private class HelloWorldClientInterceptorFactory:
 class NotReallyAuthServerInterceptor<Request: Message, Response: Message>:
   ServerInterceptor<Request, Response> {
   override func receive(
-    _ part: ServerRequestPart<Request>,
+    _ part: GRPCServerRequestPart<Request>,
     context: ServerInterceptorContext<Request, Response>
   ) {
     switch part {
@@ -194,7 +194,7 @@ class NotReallyAuthClientInterceptor<Request: Message, Response: Message>:
 
   private enum State {
     // We're trying the call, these are the parts we've sent so far.
-    case trying([ClientRequestPart<Request>])
+    case trying([GRPCClientRequestPart<Request>])
     // We're retrying using this call.
     case retrying(Call<Request, Response>)
   }
@@ -220,7 +220,7 @@ class NotReallyAuthClientInterceptor<Request: Message, Response: Message>:
   }
 
   override func send(
-    _ part: ClientRequestPart<Request>,
+    _ part: GRPCClientRequestPart<Request>,
     promise: EventLoopPromise<Void>?,
     context: ClientInterceptorContext<Request, Response>
   ) {
@@ -239,7 +239,7 @@ class NotReallyAuthClientInterceptor<Request: Message, Response: Message>:
   }
 
   override func receive(
-    _ part: ClientResponsePart<Response>,
+    _ part: GRPCClientResponsePart<Response>,
     context: ClientInterceptorContext<Request, Response>
   ) {
     switch self.state {
@@ -293,7 +293,7 @@ class NotReallyAuthClientInterceptor<Request: Message, Response: Message>:
 
 class EchoReverseInterceptor: ClientInterceptor<Echo_EchoRequest, Echo_EchoResponse> {
   override func send(
-    _ part: ClientRequestPart<Echo_EchoRequest>,
+    _ part: GRPCClientRequestPart<Echo_EchoRequest>,
     promise: EventLoopPromise<Void>?,
     context: ClientInterceptorContext<Echo_EchoRequest, Echo_EchoResponse>
   ) {
@@ -307,7 +307,7 @@ class EchoReverseInterceptor: ClientInterceptor<Echo_EchoRequest, Echo_EchoRespo
   }
 
   override func receive(
-    _ part: ClientResponsePart<Echo_EchoResponse>,
+    _ part: GRPCClientResponsePart<Echo_EchoResponse>,
     context: ClientInterceptorContext<Echo_EchoRequest, Echo_EchoResponse>
   ) {
     switch part {

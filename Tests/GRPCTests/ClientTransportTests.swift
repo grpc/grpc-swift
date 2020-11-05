@@ -45,7 +45,7 @@ class ClientTransportTests: GRPCTestCase {
   private func setUpTransport(
     details: CallDetails? = nil,
     interceptors: [ClientInterceptor<String, String>] = [],
-    onResponsePart: @escaping (ClientResponsePart<String>) -> Void = { _ in }
+    onResponsePart: @escaping (GRPCClientResponsePart<String>) -> Void = { _ in }
   ) {
     self.transport = .init(
       details: details ?? self.makeDetails(),
@@ -79,7 +79,7 @@ class ClientTransportTests: GRPCTestCase {
   }
 
   private func sendRequest(
-    _ part: ClientRequestPart<String>,
+    _ part: GRPCClientRequestPart<String>,
     promise: EventLoopPromise<Void>? = nil
   ) {
     self.transport.send(part, promise: promise)

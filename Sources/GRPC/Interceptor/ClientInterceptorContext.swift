@@ -78,7 +78,7 @@ public struct ClientInterceptorContext<Request, Response> {
   ///
   /// - Parameter part: The response part to forward.
   /// - Important: This *must* to be called from the `eventLoop`.
-  public func receive(_ part: ClientResponsePart<Response>) {
+  public func receive(_ part: GRPCClientResponsePart<Response>) {
     self.eventLoop.assertInEventLoop()
     self.nextInbound?.invokeReceive(part)
   }
@@ -90,7 +90,7 @@ public struct ClientInterceptorContext<Request, Response> {
   ///   - promise: The promise the complete when the part has been written.
   /// - Important: This *must* to be called from the `eventLoop`.
   public func send(
-    _ part: ClientRequestPart<Request>,
+    _ part: GRPCClientRequestPart<Request>,
     promise: EventLoopPromise<Void>?
   ) {
     self.eventLoop.assertInEventLoop()
@@ -119,13 +119,16 @@ public struct ClientInterceptorContext<Request, Response> {
 }
 
 extension ClientInterceptorContext {
-  internal func invokeReceive(_ part: ClientResponsePart<Response>) {
+  internal func invokeReceive(_ part: GRPCClientResponsePart<Response>) {
     self.eventLoop.assertInEventLoop()
     self.interceptor.receive(part, context: self)
   }
 
   @inlinable
-  internal func invokeSend(_ part: ClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
+  internal func invokeSend(
+    _ part: GRPCClientRequestPart<Request>,
+    promise: EventLoopPromise<Void>?
+  ) {
     self.eventLoop.assertInEventLoop()
     self.interceptor.send(part, promise: promise, context: self)
   }
