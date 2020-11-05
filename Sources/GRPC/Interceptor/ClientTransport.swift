@@ -54,7 +54,7 @@ internal final class ClientTransport<Request, Response> {
 
   /// A request part and a promise.
   private struct RequestAndPromise {
-    var request: ClientRequestPart<Request>
+    var request: GRPCClientRequestPart<Request>
     var promise: EventLoopPromise<Void>?
   }
 
@@ -100,7 +100,7 @@ internal final class ClientTransport<Request, Response> {
     eventLoop: EventLoop,
     interceptors: [ClientInterceptor<Request, Response>],
     errorDelegate: ClientErrorDelegate?,
-    _ onResponsePart: @escaping (ClientResponsePart<Response>) -> Void
+    _ onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) {
     self.eventLoop = eventLoop
     self.callDetails = details
@@ -131,7 +131,7 @@ internal final class ClientTransport<Request, Response> {
   ///   - promise: A promise which will be completed when the request part has been handled.
   /// - Important: This *must* to be called from the `eventLoop`.
   @inlinable
-  internal func send(_ part: ClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
+  internal func send(_ part: GRPCClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
     self.eventLoop.assertInEventLoop()
     if let pipeline = self._pipeline {
       pipeline.send(part, promise: promise)
@@ -181,7 +181,7 @@ extension ClientTransport {
   ///   - promise: A promise which will be completed when the part has been handled.
   /// - Important: This *must* to be called from the `eventLoop`.
   private func sendFromPipeline(
-    _ part: ClientRequestPart<Request>,
+    _ part: GRPCClientRequestPart<Request>,
     promise: EventLoopPromise<Void>?
   ) {
     self.eventLoop.assertInEventLoop()
@@ -329,7 +329,7 @@ extension ClientTransport.State {
     case configure(with: (ChannelHandler) -> EventLoopFuture<Void>)
 
     /// Append the request part and promise to the write buffer.
-    case buffer(ClientRequestPart<Request>, EventLoopPromise<Void>?)
+    case buffer(GRPCClientRequestPart<Request>, EventLoopPromise<Void>?)
 
     /// Write - and flush if necessary – any request parts in the buffer to the `Channel`.
     case unbufferToChannel(Channel)
@@ -338,7 +338,7 @@ extension ClientTransport.State {
     case failBufferedWrites(with: Error)
 
     /// Write the given operation to the channel.
-    case writeToChannel(Channel, ClientRequestPart<Request>, EventLoopPromise<Void>?)
+    case writeToChannel(Channel, GRPCClientRequestPart<Request>, EventLoopPromise<Void>?)
 
     /// Write the response part to the RPC.
     case forwardToInterceptors(_GRPCClientResponsePart<Response>)
@@ -378,7 +378,7 @@ extension ClientTransport.State {
 
   /// The pipeline would like to send a request part to the transport.
   mutating func send(
-    _ part: ClientRequestPart<Request>,
+    _ part: GRPCClientRequestPart<Request>,
     promise: EventLoopPromise<Void>?
   ) -> Action {
     switch self {
@@ -674,7 +674,7 @@ extension ClientTransport {
   ///   - part: The request part to buffer.
   ///   - promise: A promise to complete when the request part has been sent.
   private func buffer(
-    _ part: ClientRequestPart<Request>,
+    _ part: GRPCClientRequestPart<Request>,
     promise: EventLoopPromise<Void>?
   ) {
     self.logger.debug("buffering request part", metadata: [
@@ -751,7 +751,7 @@ extension ClientTransport {
   ///   - promise: A promise to complete once the write has been completed.
   ///   - flush: Whether to flush the `Channel` after writing.
   private func write(
-    _ part: ClientRequestPart<Request>,
+    _ part: GRPCClientRequestPart<Request>,
     to channel: Channel,
     promise: EventLoopPromise<Void>?,
     flush: Bool
@@ -807,7 +807,7 @@ extension ClientTransport {
 
 extension ClientTransport {
   /// Returns whether the `Channel` should be flushed after writing the given part to it.
-  private func shouldFlush(after part: ClientRequestPart<Request>) -> Bool {
+  private func shouldFlush(after part: GRPCClientRequestPart<Request>) -> Bool {
     switch part {
     case .metadata:
       // If we're not streaming requests then we hold off on the flush until we see end.
@@ -837,7 +837,7 @@ extension ClientTransport {
   }
 }
 
-extension ClientRequestPart {
+extension GRPCClientRequestPart {
   /// The name of the request part, used for logging.
   fileprivate var name: String {
     switch self {

@@ -312,7 +312,7 @@ class ExtraRequestPartEmitter: ServerInterceptor<Echo_EchoRequest, Echo_EchoResp
   }
 
   override func receive(
-    _ part: ServerRequestPart<Echo_EchoRequest>,
+    _ part: GRPCServerRequestPart<Echo_EchoRequest>,
     context: ServerInterceptorContext<Echo_EchoRequest, Echo_EchoResponse>
   ) {
     let count: Int
@@ -389,7 +389,7 @@ class EchoFromInterceptor: Echo_EchoProvider {
     private var collectedRequests: [Echo_EchoRequest] = []
 
     override func receive(
-      _ part: ServerRequestPart<Echo_EchoRequest>,
+      _ part: GRPCServerRequestPart<Echo_EchoRequest>,
       context: ServerInterceptorContext<Echo_EchoRequest, Echo_EchoResponse>
     ) {
       switch part {

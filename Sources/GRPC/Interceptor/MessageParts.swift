@@ -15,7 +15,7 @@
  */
 import NIOHPACK
 
-public enum ClientRequestPart<Request> {
+public enum GRPCClientRequestPart<Request> {
   /// User provided metadata sent at the start of the request stream.
   case metadata(HPACKHeaders)
 
@@ -26,7 +26,7 @@ public enum ClientRequestPart<Request> {
   case end
 }
 
-public enum ClientResponsePart<Response> {
+public enum GRPCClientResponsePart<Response> {
   /// The metadata returned by the server at the start of the RPC.
   case metadata(HPACKHeaders)
 
@@ -40,7 +40,7 @@ public enum ClientResponsePart<Response> {
   case error(Error)
 }
 
-public enum ServerRequestPart<Request> {
+public enum GRPCServerRequestPart<Request> {
   /// Metadata received from the client at the start of the RPC.
   case metadata(HPACKHeaders)
 
@@ -51,7 +51,7 @@ public enum ServerRequestPart<Request> {
   case end
 }
 
-public enum ServerResponsePart<Response> {
+public enum GRPCServerResponsePart<Response> {
   /// The metadata to send to the client at the start of the response stream.
   case metadata(HPACKHeaders)
 

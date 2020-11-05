@@ -55,7 +55,7 @@ open class ClientInterceptor<Request, Response> {
   ///   - part: The response part which has been received from the server.
   ///   - context: An interceptor context which may be used to forward the response part.
   open func receive(
-    _ part: ClientResponsePart<Response>,
+    _ part: GRPCClientResponsePart<Response>,
     context: ClientInterceptorContext<Request, Response>
   ) {
     context.receive(part)
@@ -67,7 +67,7 @@ open class ClientInterceptor<Request, Response> {
   ///   - promise: A promise which should be completed when the response part has been handled.
   ///   - context: An interceptor context which may be used to forward the request part.
   open func send(
-    _ part: ClientRequestPart<Request>,
+    _ part: GRPCClientRequestPart<Request>,
     promise: EventLoopPromise<Void>?,
     context: ClientInterceptorContext<Request, Response>
   ) {
@@ -97,11 +97,11 @@ internal struct HeadClientInterceptor<Request, Response>: ClientInterceptorProto
 
   /// Called when a request part has been written.
   @usableFromInline
-  internal let _onRequestPart: (ClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void
+  internal let _onRequestPart: (GRPCClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void
 
   init(
     onCancel: @escaping (EventLoopPromise<Void>?) -> Void,
-    onRequestPart: @escaping (ClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void
+    onRequestPart: @escaping (GRPCClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void
   ) {
     self.onCancel = onCancel
     self._onRequestPart = onRequestPart
@@ -109,7 +109,7 @@ internal struct HeadClientInterceptor<Request, Response>: ClientInterceptorProto
 
   @inlinable
   internal func send(
-    _ part: ClientRequestPart<Request>,
+    _ part: GRPCClientRequestPart<Request>,
     promise: EventLoopPromise<Void>?,
     context: ClientInterceptorContext<Request, Response>
   ) {
@@ -124,7 +124,7 @@ internal struct HeadClientInterceptor<Request, Response>: ClientInterceptorProto
   }
 
   internal func receive(
-    _ part: ClientResponsePart<Response>,
+    _ part: GRPCClientResponsePart<Response>,
     context: ClientInterceptorContext<Request, Response>
   ) {
     context.receive(part)
@@ -144,12 +144,12 @@ internal struct TailClientInterceptor<Request, Response>: ClientInterceptorProto
   /// A response part handler; typically this will complete some promises, for streaming responses
   /// it will also invoke a user-supplied handler. This closure may also be provided by the user.
   /// We need to be careful about re-entrancy.
-  private let onResponsePart: (ClientResponsePart<Response>) -> Void
+  private let onResponsePart: (GRPCClientResponsePart<Response>) -> Void
 
   internal init(
     for pipeline: ClientInterceptorPipeline<Request, Response>,
     errorDelegate: ClientErrorDelegate?,
-    _ onResponsePart: @escaping (ClientResponsePart<Response>) -> Void
+    _ onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) {
     self.pipeline = pipeline
     self.errorDelegate = errorDelegate
@@ -157,7 +157,7 @@ internal struct TailClientInterceptor<Request, Response>: ClientInterceptorProto
   }
 
   internal func receive(
-    _ part: ClientResponsePart<Response>,
+    _ part: GRPCClientResponsePart<Response>,
     context: ClientInterceptorContext<Request, Response>
   ) {
     switch part {
@@ -200,7 +200,7 @@ internal struct TailClientInterceptor<Request, Response>: ClientInterceptorProto
 
   @inlinable
   internal func send(
-    _ part: ClientRequestPart<Request>,
+    _ part: GRPCClientRequestPart<Request>,
     promise: EventLoopPromise<Void>?,
     context: ClientInterceptorContext<Request, Response>
   ) {
@@ -235,7 +235,7 @@ internal struct AnyClientInterceptor<Request, Response>: ClientInterceptorProtoc
   /// - Returns: An `AnyClientInterceptor` which wraps a `HeadClientInterceptor`.
   internal static func head(
     onCancel: @escaping (EventLoopPromise<Void>?) -> Void,
-    onRequestPart: @escaping (ClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void
+    onRequestPart: @escaping (GRPCClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void
   ) -> AnyClientInterceptor<Request, Response> {
     return .init(.head(.init(onCancel: onCancel, onRequestPart: onRequestPart)))
   }
@@ -249,7 +249,7 @@ internal struct AnyClientInterceptor<Request, Response>: ClientInterceptorProtoc
   internal static func tail(
     for pipeline: ClientInterceptorPipeline<Request, Response>,
     errorDelegate: ClientErrorDelegate?,
-    _ onResponsePart: @escaping (ClientResponsePart<Response>) -> Void
+    _ onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) -> AnyClientInterceptor<Request, Response> {
     let tail = TailClientInterceptor(for: pipeline, errorDelegate: errorDelegate, onResponsePart)
     return .init(.tail(tail))
@@ -269,7 +269,7 @@ internal struct AnyClientInterceptor<Request, Response>: ClientInterceptorProtoc
   }
 
   internal func receive(
-    _ part: ClientResponsePart<Response>,
+    _ part: GRPCClientResponsePart<Response>,
     context: ClientInterceptorContext<Request, Response>
   ) {
     switch self._implementation {
@@ -284,7 +284,7 @@ internal struct AnyClientInterceptor<Request, Response>: ClientInterceptorProtoc
 
   @inlinable
   internal func send(
-    _ part: ClientRequestPart<Request>,
+    _ part: GRPCClientRequestPart<Request>,
     promise: EventLoopPromise<Void>?,
     context: ClientInterceptorContext<Request, Response>
   ) {

@@ -124,7 +124,7 @@ public class _BaseCallHandler<Request, Response>: GRPCCallHandler, ChannelInboun
   ///   - part: The response part to send.
   ///   - promise: A promise to complete once the response part has been written.
   internal func sendResponsePartFromObserver(
-    _ part: ServerResponsePart<Response>,
+    _ part: GRPCServerResponsePart<Response>,
     promise: EventLoopPromise<Void>?
   ) {
     self.act(on: self.state.sendResponsePartFromObserver(part, promise: promise))
@@ -204,7 +204,7 @@ public class _BaseCallHandler<Request, Response>: GRPCCallHandler, ChannelInboun
 extension _BaseCallHandler {
   /// Receive a request part from the interceptors pipeline to forward to the event observer.
   /// - Parameter part: The request part to forward.
-  private func receiveRequestPartFromInterceptors(_ part: ServerRequestPart<Request>) {
+  private func receiveRequestPartFromInterceptors(_ part: GRPCServerRequestPart<Request>) {
     self.act(on: self.state.receiveRequestPartFromInterceptors(part))
   }
 
@@ -214,7 +214,7 @@ extension _BaseCallHandler {
   ///   - part: The response part to send.
   ///   - promise: A promise to complete once the response part has been written.
   private func sendResponsePartFromInterceptors(
-    _ part: ServerResponsePart<Response>,
+    _ part: GRPCServerResponsePart<Response>,
     promise: EventLoopPromise<Void>?
   ) {
     self.act(on: self.state.sendResponsePartFromInterceptors(part, promise: promise))
@@ -374,21 +374,21 @@ extension _BaseCallHandler.State {
     case none
 
     /// Receive the request part in the interceptor pipeline.
-    case receiveRequestPartInInterceptors(ServerRequestPart<Request>)
+    case receiveRequestPartInInterceptors(GRPCServerRequestPart<Request>)
 
     /// Receive the request part in the observer.
-    case receiveRequestPartInObserver(ServerRequestPart<Request>)
+    case receiveRequestPartInObserver(GRPCServerRequestPart<Request>)
 
     /// Receive an error in the observer.
     case receiveLibraryErrorInObserver(Error)
 
     /// Send a response part to the interceptor pipeline.
-    case sendResponsePartToInterceptors(ServerResponsePart<Response>, EventLoopPromise<Void>?)
+    case sendResponsePartToInterceptors(GRPCServerResponsePart<Response>, EventLoopPromise<Void>?)
 
     /// Write the response part to the `Channel`.
     case writeResponsePartToChannel(
       ChannelHandlerContext,
-      ServerResponsePart<Response>,
+      GRPCServerResponsePart<Response>,
       promise: EventLoopPromise<Void>?
     )
 
@@ -441,7 +441,7 @@ extension _BaseCallHandler.State {
       self = .idle
 
       let filter: StreamState.Filter
-      let part: ServerRequestPart<Request>
+      let part: GRPCServerRequestPart<Request>
 
       switch requestPart {
       case let .headers(headers):
@@ -472,7 +472,7 @@ extension _BaseCallHandler.State {
 
   /// Send a response part from the observer to the interceptors.
   internal mutating func sendResponsePartFromObserver(
-    _ part: ServerResponsePart<Response>,
+    _ part: GRPCServerResponsePart<Response>,
     promise: EventLoopPromise<Void>?
   ) -> Action {
     switch self {
@@ -511,7 +511,7 @@ extension _BaseCallHandler.State {
 
   /// Send a response part from the interceptors to the `Channel`.
   internal mutating func sendResponsePartFromInterceptors(
-    _ part: ServerResponsePart<Response>,
+    _ part: GRPCServerResponsePart<Response>,
     promise: EventLoopPromise<Void>?
   ) -> Action {
     switch self {
@@ -552,7 +552,7 @@ extension _BaseCallHandler.State {
 
   /// A request part has traversed the interceptor pipeline, now send it to the observer.
   internal mutating func receiveRequestPartFromInterceptors(
-    _ part: ServerRequestPart<Request>
+    _ part: GRPCServerRequestPart<Request>
   ) -> Action {
     switch self {
     case .idle:
@@ -625,13 +625,13 @@ extension _BaseCallHandler {
   }
 
   /// Receives a request part in the interceptor pipeline.
-  private func receiveRequestPartInInterceptors(_ part: ServerRequestPart<Request>) {
+  private func receiveRequestPartInInterceptors(_ part: GRPCServerRequestPart<Request>) {
     self.pipeline?.receive(part)
   }
 
   /// Observe a request part. This just farms out to the subclass implementation for the
   /// appropriate part.
-  private func receiveRequestPartInObserver(_ part: ServerRequestPart<Request>) {
+  private func receiveRequestPartInObserver(_ part: GRPCServerRequestPart<Request>) {
     switch part {
     case let .metadata(headers):
       self.observeHeaders(headers)
@@ -644,7 +644,7 @@ extension _BaseCallHandler {
 
   /// Sends a response part into the interceptor pipeline.
   private func sendResponsePartToInterceptors(
-    _ part: ServerResponsePart<Response>,
+    _ part: GRPCServerResponsePart<Response>,
     promise: EventLoopPromise<Void>?
   ) {
     if let pipeline = self.pipeline {
@@ -657,7 +657,7 @@ extension _BaseCallHandler {
   /// Writes a response part to the `Channel`.
   private func writeResponsePartToChannel(
     context: ChannelHandlerContext,
-    part: ServerResponsePart<Response>,
+    part: GRPCServerResponsePart<Response>,
     promise: EventLoopPromise<Void>?
   ) {
     let flush: Bool
