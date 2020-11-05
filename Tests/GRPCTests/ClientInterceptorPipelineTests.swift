@@ -34,8 +34,8 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
     interceptors: [ClientInterceptor<Request, Response>] = [],
     errorDelegate: ClientErrorDelegate? = nil,
     onCancel: @escaping (EventLoopPromise<Void>?) -> Void = { _ in },
-    onRequestPart: @escaping (ClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void,
-    onResponsePart: @escaping (ClientResponsePart<Response>) -> Void
+    onRequestPart: @escaping (GRPCClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void,
+    onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) -> ClientInterceptorPipeline<Request, Response> {
     return ClientInterceptorPipeline(
       eventLoop: self.embeddedEventLoop,
@@ -59,8 +59,8 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
   }
 
   func testEmptyPipeline() throws {
-    var requestParts: [ClientRequestPart<String>] = []
-    var responseParts: [ClientResponsePart<String>] = []
+    var requestParts: [GRPCClientRequestPart<String>] = []
+    var responseParts: [GRPCClientResponsePart<String>] = []
 
     let pipeline = self.makePipeline(
       requests: String.self,
@@ -292,11 +292,11 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
 
 /// A simple interceptor which records and then forwards and request and response parts it sees.
 class RecordingInterceptor<Request, Response>: ClientInterceptor<Request, Response> {
-  var requestParts: [ClientRequestPart<Request>] = []
-  var responseParts: [ClientResponsePart<Response>] = []
+  var requestParts: [GRPCClientRequestPart<Request>] = []
+  var responseParts: [GRPCClientResponsePart<Response>] = []
 
   override func send(
-    _ part: ClientRequestPart<Request>,
+    _ part: GRPCClientRequestPart<Request>,
     promise: EventLoopPromise<Void>?,
     context: ClientInterceptorContext<Request, Response>
   ) {
@@ -305,7 +305,7 @@ class RecordingInterceptor<Request, Response>: ClientInterceptor<Request, Respon
   }
 
   override func receive(
-    _ part: ClientResponsePart<Response>,
+    _ part: GRPCClientResponsePart<Response>,
     context: ClientInterceptorContext<Request, Response>
   ) {
     self.responseParts.append(part)
@@ -316,7 +316,7 @@ class RecordingInterceptor<Request, Response>: ClientInterceptor<Request, Respon
 /// An interceptor which reverses string request messages.
 class StringRequestReverser: ClientInterceptor<String, String> {
   override func send(
-    _ part: ClientRequestPart<String>,
+    _ part: GRPCClientRequestPart<String>,
     promise: EventLoopPromise<Void>?,
     context: ClientInterceptorContext<String, String>
   ) {
@@ -331,7 +331,7 @@ class StringRequestReverser: ClientInterceptor<String, String> {
 
 // MARK: - Request/Response part helpers
 
-extension ClientRequestPart {
+extension GRPCClientRequestPart {
   var metadata: HPACKHeaders? {
     switch self {
     case let .metadata(headers):
@@ -360,7 +360,7 @@ extension ClientRequestPart {
   }
 }
 
-extension ClientResponsePart {
+extension GRPCClientResponsePart {
   var metadata: HPACKHeaders? {
     switch self {
     case let .metadata(headers):

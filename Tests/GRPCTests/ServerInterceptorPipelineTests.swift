@@ -32,8 +32,8 @@ class ServerInterceptorPipelineTests: GRPCTestCase {
     path: String = "/foo/bar",
     callType: GRPCCallType = .unary,
     interceptors: [ServerInterceptor<Request, Response>] = [],
-    onRequestPart: @escaping (ServerRequestPart<Request>) -> Void,
-    onResponsePart: @escaping (ServerResponsePart<Response>, EventLoopPromise<Void>?) -> Void
+    onRequestPart: @escaping (GRPCServerRequestPart<Request>) -> Void,
+    onResponsePart: @escaping (GRPCServerResponsePart<Response>, EventLoopPromise<Void>?) -> Void
   ) -> ServerInterceptorPipeline<Request, Response> {
     return ServerInterceptorPipeline(
       logger: self.logger,
@@ -47,8 +47,8 @@ class ServerInterceptorPipelineTests: GRPCTestCase {
   }
 
   func testEmptyPipeline() {
-    var requestParts: [ServerRequestPart<String>] = []
-    var responseParts: [ServerResponsePart<String>] = []
+    var requestParts: [GRPCServerRequestPart<String>] = []
+    var responseParts: [GRPCServerResponsePart<String>] = []
 
     let pipeline = self.makePipeline(
       requests: String.self,
@@ -120,11 +120,11 @@ class ServerInterceptorPipelineTests: GRPCTestCase {
 
 internal class RecordingServerInterceptor<Request, Response>:
   ServerInterceptor<Request, Response> {
-  var requestParts: [ServerRequestPart<Request>] = []
-  var responseParts: [ServerResponsePart<Response>] = []
+  var requestParts: [GRPCServerRequestPart<Request>] = []
+  var responseParts: [GRPCServerResponsePart<Response>] = []
 
   override func receive(
-    _ part: ServerRequestPart<Request>,
+    _ part: GRPCServerRequestPart<Request>,
     context: ServerInterceptorContext<Request, Response>
   ) {
     self.requestParts.append(part)
@@ -132,7 +132,7 @@ internal class RecordingServerInterceptor<Request, Response>:
   }
 
   override func send(
-    _ part: ServerResponsePart<Response>,
+    _ part: GRPCServerResponsePart<Response>,
     promise: EventLoopPromise<Void>?,
     context: ServerInterceptorContext<Request, Response>
   ) {
@@ -141,7 +141,7 @@ internal class RecordingServerInterceptor<Request, Response>:
   }
 }
 
-extension ServerRequestPart {
+extension GRPCServerRequestPart {
   var metadata: HPACKHeaders? {
     switch self {
     case let .metadata(metadata):
@@ -170,7 +170,7 @@ extension ServerRequestPart {
   }
 }
 
-extension ServerResponsePart {
+extension GRPCServerResponsePart {
   var metadata: HPACKHeaders? {
     switch self {
     case let .metadata(metadata):

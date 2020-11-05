@@ -50,7 +50,7 @@ open class ServerInterceptor<Request, Response> {
   ///   - part: The request part which has been received from the client.
   ///   - context: An interceptor context which may be used to forward the response part.
   open func receive(
-    _ part: ServerRequestPart<Request>,
+    _ part: GRPCServerRequestPart<Request>,
     context: ServerInterceptorContext<Request, Response>
   ) {
     context.receive(part)
@@ -62,7 +62,7 @@ open class ServerInterceptor<Request, Response> {
   ///   - promise: A promise which should be completed when the response part has been written.
   ///   - context: An interceptor context which may be used to forward the request part.
   open func send(
-    _ part: ServerResponsePart<Response>,
+    _ part: GRPCServerResponsePart<Response>,
     promise: EventLoopPromise<Void>?,
     context: ServerInterceptorContext<Request, Response>
   ) {
@@ -76,23 +76,23 @@ open class ServerInterceptor<Request, Response> {
 /// to the rest of the pipeline.
 internal struct TailServerInterceptor<Request, Response> {
   /// Called when a request part has been received.
-  private let onRequestPart: (ServerRequestPart<Request>) -> Void
+  private let onRequestPart: (GRPCServerRequestPart<Request>) -> Void
 
   init(
-    _ onRequestPart: @escaping (ServerRequestPart<Request>) -> Void
+    _ onRequestPart: @escaping (GRPCServerRequestPart<Request>) -> Void
   ) {
     self.onRequestPart = onRequestPart
   }
 
   internal func receive(
-    _ part: ServerRequestPart<Request>,
+    _ part: GRPCServerRequestPart<Request>,
     context: ServerInterceptorContext<Request, Response>
   ) {
     self.onRequestPart(part)
   }
 
   internal func send(
-    _ part: ServerResponsePart<Response>,
+    _ part: GRPCServerResponsePart<Response>,
     promise: EventLoopPromise<Void>?,
     context: ServerInterceptorContext<Request, Response>
   ) {
@@ -105,25 +105,25 @@ internal struct HeadServerInterceptor<Request, Response> {
   private let pipeline: ServerInterceptorPipeline<Request, Response>
 
   /// Called when a response part has been received.
-  private let onResponsePart: (ServerResponsePart<Response>, EventLoopPromise<Void>?) -> Void
+  private let onResponsePart: (GRPCServerResponsePart<Response>, EventLoopPromise<Void>?) -> Void
 
   internal init(
     for pipeline: ServerInterceptorPipeline<Request, Response>,
-    _ onResponsePart: @escaping (ServerResponsePart<Response>, EventLoopPromise<Void>?) -> Void
+    _ onResponsePart: @escaping (GRPCServerResponsePart<Response>, EventLoopPromise<Void>?) -> Void
   ) {
     self.pipeline = pipeline
     self.onResponsePart = onResponsePart
   }
 
   internal func receive(
-    _ part: ServerRequestPart<Request>,
+    _ part: GRPCServerRequestPart<Request>,
     context: ServerInterceptorContext<Request, Response>
   ) {
     context.receive(part)
   }
 
   internal func send(
-    _ part: ServerResponsePart<Response>,
+    _ part: GRPCServerResponsePart<Response>,
     promise: EventLoopPromise<Void>?,
     context: ServerInterceptorContext<Request, Response>
   ) {
@@ -153,13 +153,13 @@ internal struct AnyServerInterceptor<Request, Response> {
 
   internal static func head(
     for pipeline: ServerInterceptorPipeline<Request, Response>,
-    _ onResponsePart: @escaping (ServerResponsePart<Response>, EventLoopPromise<Void>?) -> Void
+    _ onResponsePart: @escaping (GRPCServerResponsePart<Response>, EventLoopPromise<Void>?) -> Void
   ) -> AnyServerInterceptor<Request, Response> {
     return .init(.head(.init(for: pipeline, onResponsePart)))
   }
 
   internal static func tail(
-    _ onRequestPart: @escaping (ServerRequestPart<Request>) -> Void
+    _ onRequestPart: @escaping (GRPCServerRequestPart<Request>) -> Void
   ) -> AnyServerInterceptor<Request, Response> {
     return .init(.tail(.init(onRequestPart)))
   }
@@ -178,7 +178,7 @@ internal struct AnyServerInterceptor<Request, Response> {
   }
 
   internal func receive(
-    _ part: ServerRequestPart<Request>,
+    _ part: GRPCServerRequestPart<Request>,
     context: ServerInterceptorContext<Request, Response>
   ) {
     switch self._implementation {
@@ -192,7 +192,7 @@ internal struct AnyServerInterceptor<Request, Response> {
   }
 
   internal func send(
-    _ part: ServerResponsePart<Response>,
+    _ part: GRPCServerResponsePart<Response>,
     promise: EventLoopPromise<Void>?,
     context: ServerInterceptorContext<Request, Response>
   ) {

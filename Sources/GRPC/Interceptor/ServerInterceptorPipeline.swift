@@ -81,8 +81,8 @@ internal final class ServerInterceptorPipeline<Request, Response> {
     path: String,
     callType: GRPCCallType,
     interceptors: [ServerInterceptor<Request, Response>],
-    onRequestPart: @escaping (ServerRequestPart<Request>) -> Void,
-    onResponsePart: @escaping (ServerResponsePart<Response>, EventLoopPromise<Void>?) -> Void
+    onRequestPart: @escaping (GRPCServerRequestPart<Request>) -> Void,
+    onResponsePart: @escaping (GRPCServerResponsePart<Response>, EventLoopPromise<Void>?) -> Void
   ) {
     self.logger = logger
     self.eventLoop = eventLoop
@@ -129,7 +129,7 @@ internal final class ServerInterceptorPipeline<Request, Response> {
   ///
   /// - Parameter part: The part to emit into the pipeline.
   /// - Important: This *must* to be called from the `eventLoop`.
-  internal func receive(_ part: ServerRequestPart<Request>) {
+  internal func receive(_ part: GRPCServerRequestPart<Request>) {
     self.eventLoop.assertInEventLoop()
     self.head?.invokeReceive(part)
   }
@@ -140,7 +140,7 @@ internal final class ServerInterceptorPipeline<Request, Response> {
   ///   - part: The response part to sent.
   ///   - promise: A promise to complete when the response part has been successfully written.
   /// - Important: This *must* to be called from the `eventLoop`.
-  internal func send(_ part: ServerResponsePart<Response>, promise: EventLoopPromise<Void>?) {
+  internal func send(_ part: GRPCServerResponsePart<Response>, promise: EventLoopPromise<Void>?) {
     self.eventLoop.assertInEventLoop()
 
     if let tail = self.tail {

@@ -128,8 +128,8 @@ internal final class ClientInterceptorPipeline<Request, Response> {
     interceptors: [ClientInterceptor<Request, Response>],
     errorDelegate: ClientErrorDelegate?,
     onCancel: @escaping (EventLoopPromise<Void>?) -> Void,
-    onRequestPart: @escaping (ClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void,
-    onResponsePart: @escaping (ClientResponsePart<Response>) -> Void
+    onRequestPart: @escaping (GRPCClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void,
+    onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) {
     self.eventLoop = eventLoop
     self.details = details
@@ -177,7 +177,7 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   ///
   /// - Parameter part: The part to emit into the pipeline.
   /// - Important: This *must* to be called from the `eventLoop`.
-  internal func receive(_ part: ClientResponsePart<Response>) {
+  internal func receive(_ part: GRPCClientResponsePart<Response>) {
     self.eventLoop.assertInEventLoop()
     self._head?.invokeReceive(part)
   }
@@ -191,7 +191,7 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   ///   - promise: A promise to complete when the request part has been successfully written.
   /// - Important: This *must* to be called from the `eventLoop`.
   @inlinable
-  internal func send(_ part: ClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
+  internal func send(_ part: GRPCClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
     self.eventLoop.assertInEventLoop()
 
     if let tail = self._tail {

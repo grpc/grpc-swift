@@ -21,13 +21,13 @@ internal protocol ClientInterceptorProtocol {
 
   /// Called when the interceptor has received a response part to handle.
   func receive(
-    _ part: ClientResponsePart<Response>,
+    _ part: GRPCClientResponsePart<Response>,
     context: ClientInterceptorContext<Request, Response>
   )
 
   /// Called when the interceptor has received a request part to handle.
   func send(
-    _ part: ClientRequestPart<Request>,
+    _ part: GRPCClientRequestPart<Request>,
     promise: EventLoopPromise<Void>?,
     context: ClientInterceptorContext<Request, Response>
   )

@@ -80,7 +80,7 @@ class ClientCallTests: GRPCTestCase {
   private func makeResponsePartHandler<Response>(
     for: Response.Type = Response.self,
     completing promise: EventLoopPromise<GRPCStatus>
-  ) -> (ClientResponsePart<Response>) -> Void {
+  ) -> (GRPCClientResponsePart<Response>) -> Void {
     return { part in
       switch part {
       case .metadata, .message:
