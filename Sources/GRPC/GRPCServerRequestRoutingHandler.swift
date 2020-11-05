@@ -216,6 +216,37 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
     }
   }
 
+  /// A call URI split into components.
+  struct CallPath {
+    /// The name of the service to call.
+    var service: String.UTF8View.SubSequence
+    /// The name of the method to call.
+    var method: String.UTF8View.SubSequence
+
+    /// Charater used to split the path into components.
+    private let pathSplitDelimiter = UInt8(ascii: "/")
+
+    /// Split a path into service and method.
+    /// Split is done in UTF8 as this turns out to be approximately 10x faster than a simple split.
+    /// URI format: "/package.Servicename/MethodName"
+    init?(requestURI: String) {
+      var utf8View = requestURI.utf8[...]
+      // Check and remove the split character at the beginning.
+      guard let prefix = utf8View.trimPrefix(to: self.pathSplitDelimiter), prefix.isEmpty else {
+        return nil
+      }
+      guard let service = utf8View.trimPrefix(to: pathSplitDelimiter) else {
+        return nil
+      }
+      guard let method = utf8View.trimPrefix(to: pathSplitDelimiter) else {
+        return nil
+      }
+
+      self.service = service
+      self.method = method
+    }
+  }
+
   private func makeCallHandler(channel: Channel, requestHead: HTTPRequestHead) -> GRPCCallHandler? {
     // URI format: "/package.Servicename/MethodName", resulting in the following components separated by a slash:
     // - uriComponents[0]: empty
@@ -223,7 +254,7 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
     //     `CallHandlerProvider`s should provide the service name including the package name.
     // - uriComponents[2]: method name.
     self.logger.debug("making call handler", metadata: ["path": "\(requestHead.uri)"])
-    let uriComponents = requestHead.uri.split(separator: "/")
+    let uriComponents = CallPath(requestURI: requestHead.uri)
 
     let context = CallHandlerContext(
       errorDelegate: self.errorDelegate,
@@ -231,10 +262,10 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
       encoding: self.encoding
     )
 
-    guard uriComponents.count >= 2,
-      let providerForServiceName = servicesByName[uriComponents[0]],
+    guard let callPath = uriComponents,
+      let providerForServiceName = servicesByName[String.SubSequence(callPath.service)],
       let callHandler = providerForServiceName.handleMethod(
-        uriComponents[1],
+        String.SubSequence(callPath.method),
         callHandlerContext: context
       ) else {
       self.logger.notice("could not create handler", metadata: ["path": "\(requestHead.uri)"])
@@ -255,5 +286,29 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
     }
 
     return HTTPResponseHead(version: requestHead.version, status: .ok, headers: headers)
+  }
+}
+
+extension Collection where Self == Self.SubSequence, Self.Element: Equatable {
+  /// Trims out the prefix up to `separator`, and returns it.
+  /// Sets self to the subsequence after the separator, and returns the subsequence before the separator.
+  /// If self is emtpy returns `nil`
+  /// - parameters:
+  ///     - separator : The Element between the head which is returned and the rest which is left in self.
+  /// - returns: SubSequence containing everything between the beginnning and the first occurance of
+  /// `separator`.  If `separator` is not found this will be the entire Collection. If the collection is empty
+  /// returns `nil`
+  mutating func trimPrefix(to separator: Element) -> SubSequence? {
+    guard !self.isEmpty else {
+      return nil
+    }
+    if let separatorIndex = self.firstIndex(of: separator) {
+      let indexAfterSeparator = self.index(after: separatorIndex)
+      defer { self = self[indexAfterSeparator...] }
+      return self[..<separatorIndex]
+    } else {
+      defer { self = self[self.endIndex...] }
+      return self[...]
+    }
   }
 }

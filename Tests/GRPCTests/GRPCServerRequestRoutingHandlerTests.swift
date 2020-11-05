@@ -16,7 +16,7 @@
 import EchoImplementation
 import EchoModel
 import Foundation
-import GRPC
+@testable import GRPC
 import Logging
 import NIO
 import NIOHTTP1
@@ -120,5 +120,53 @@ class GRPCServerRequestRoutingHandlerTests: GRPCTestCase {
     let unary = self.channel.pipeline
       .handler(type: UnaryCallHandler<Echo_EchoRequest, Echo_EchoResponse>.self)
     XCTAssertNoThrow(try unary.wait())
+  }
+
+  func testSplitPathNormal() {
+    let path = "/server/method"
+    let parsedPath = GRPCServerRequestRoutingHandler.CallPath(requestURI: path)
+    let splitPath = path.split(separator: "/")
+
+    XCTAssertEqual(splitPath[0], String.SubSequence(parsedPath!.service))
+    XCTAssertEqual(splitPath[1], String.SubSequence(parsedPath!.method))
+  }
+
+  func testSplitPathTooShort() {
+    let path = "/badPath"
+    let parsedPath = GRPCServerRequestRoutingHandler.CallPath(requestURI: path)
+
+    XCTAssertNil(parsedPath)
+  }
+
+  func testSplitPathTooLong() {
+    let path = "/server/method/discard"
+    let parsedPath = GRPCServerRequestRoutingHandler.CallPath(requestURI: path)
+    let splitPath = path.split(separator: "/")
+
+    XCTAssertEqual(splitPath[0], String.SubSequence(parsedPath!.service))
+    XCTAssertEqual(splitPath[1], String.SubSequence(parsedPath!.method))
+  }
+
+  func testTrimPrefixEmpty() {
+    var toSplit = "".utf8[...]
+    let head = toSplit.trimPrefix(to: UInt8(ascii: "/"))
+    XCTAssertNil(head)
+    XCTAssertEqual(toSplit.count, 0)
+  }
+
+  func testTrimPrefixAll() {
+    let source = "words"
+    var toSplit = source.utf8[...]
+    let head = toSplit.trimPrefix(to: UInt8(ascii: "/"))
+    XCTAssertEqual(head?.count, source.utf8.count)
+    XCTAssertEqual(toSplit.count, 0)
+  }
+
+  func testTrimPrefixAndRest() {
+    let source = "words/moreWords"
+    var toSplit = source.utf8[...]
+    let head = toSplit.trimPrefix(to: UInt8(ascii: "/"))
+    XCTAssertEqual(head?.count, "words".utf8.count)
+    XCTAssertEqual(toSplit.count, "moreWords".utf8.count)
   }
 }

@@ -594,6 +594,12 @@ extension GRPCServerRequestRoutingHandlerTests {
     static let __allTests__GRPCServerRequestRoutingHandlerTests = [
         ("testImplementedMethodReconfiguresPipeline", testImplementedMethodReconfiguresPipeline),
         ("testInvalidGRPCContentTypeReturnsUnsupportedMediaType", testInvalidGRPCContentTypeReturnsUnsupportedMediaType),
+        ("testSplitPathNormal", testSplitPathNormal),
+        ("testSplitPathTooLong", testSplitPathTooLong),
+        ("testSplitPathTooShort", testSplitPathTooShort),
+        ("testTrimPrefixAll", testTrimPrefixAll),
+        ("testTrimPrefixAndRest", testTrimPrefixAndRest),
+        ("testTrimPrefixEmpty", testTrimPrefixEmpty),
         ("testUnimplementedMethodReturnsUnimplementedStatus", testUnimplementedMethodReturnsUnimplementedStatus),
     ]
 }
