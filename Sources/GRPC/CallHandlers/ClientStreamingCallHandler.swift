@@ -132,7 +132,8 @@ public final class ClientStreamingCallHandler<
       let context = UnaryResponseCallContext<ResponsePayload>(
         eventLoop: self.eventLoop,
         headers: headers,
-        logger: self.logger
+        logger: self.logger,
+        userInfoRef: self.userInfoRef
       )
 
       let observer = factory(context)

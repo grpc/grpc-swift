@@ -28,6 +28,9 @@ public protocol ServerCallContext: AnyObject {
   /// Request headers for this request.
   var headers: HPACKHeaders { get }
 
+  /// A 'UserInfo' dictionary.
+  var userInfo: UserInfo { get set }
+
   /// The logger used for this call.
   var logger: Logger { get }
 
@@ -44,21 +47,53 @@ open class ServerCallContextBase: ServerCallContext {
   public let logger: Logger
   public var compressionEnabled: Bool = true
 
+  /// - Important: While `UserInfo` has value-semantics, this property retrieves from, and sets a
+  ///   reference wrapped `UserInfo`. The contexts passed to interceptors provide the same
+  ///   reference. As such this may be used as a mechanism to pass information between interceptors
+  ///   and service providers.
+  public var userInfo: UserInfo {
+    get {
+      return self.userInfoRef.value
+    }
+    set {
+      self.userInfoRef.value = newValue
+    }
+  }
+
+  /// A reference to an underlying `UserInfo`. We share this with the interceptors.
+  private let userInfoRef: Ref<UserInfo>
+
   /// Metadata to return at the end of the RPC. If this is required it should be updated before
   /// the `responsePromise` or `statusPromise` is fulfilled.
   public var trailers = HPACKHeaders()
 
-  public init(eventLoop: EventLoop, headers: HPACKHeaders, logger: Logger) {
+  public convenience init(
+    eventLoop: EventLoop,
+    headers: HPACKHeaders,
+    logger: Logger,
+    userInfo: UserInfo = UserInfo()
+  ) {
+    self.init(eventLoop: eventLoop, headers: headers, logger: logger, userInfoRef: .init(userInfo))
+  }
+
+  internal init(
+    eventLoop: EventLoop,
+    headers: HPACKHeaders,
+    logger: Logger,
+    userInfoRef: Ref<UserInfo>
+  ) {
     self.eventLoop = eventLoop
     self.headers = headers
+    self.userInfoRef = userInfoRef
     self.logger = logger
   }
 
-  @available(*, deprecated, renamed: "init(eventLoop:headers:logger:)")
+  @available(*, deprecated, renamed: "init(eventLoop:headers:logger:userInfo:)")
   public init(eventLoop: EventLoop, request: HTTPRequestHead, logger: Logger) {
     self.eventLoop = eventLoop
     self.headers = HPACKHeaders(httpHeaders: request.headers, normalizeHTTPHeaders: false)
     self.logger = logger
+    self.userInfoRef = .init(UserInfo())
   }
 
   /// Processes an error, transforming it into a 'GRPCStatus' and any trailers to send to the peer.
