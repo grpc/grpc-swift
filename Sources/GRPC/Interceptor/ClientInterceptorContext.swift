@@ -83,6 +83,15 @@ public struct ClientInterceptorContext<Request, Response> {
     self.nextInbound?.invokeReceive(part)
   }
 
+  /// Forwards the error to the next inbound interceptor in the pipeline, if there is one.
+  ///
+  /// - Parameter error: The error to forward.
+  /// - Important: This *must* to be called from the `eventLoop`.
+  public func errorCaught(_ error: Error) {
+    self.eventLoop.assertInEventLoop()
+    self.nextInbound?.invokeErrorCaught(error)
+  }
+
   /// Forwards the request part to the next outbound interceptor in the pipeline, if there is one.
   ///
   /// - Parameters:
@@ -136,5 +145,10 @@ extension ClientInterceptorContext {
   internal func invokeCancel(promise: EventLoopPromise<Void>?) {
     self.eventLoop.assertInEventLoop()
     self.interceptor.cancel(promise: promise, context: self)
+  }
+
+  internal func invokeErrorCaught(_ error: Error) {
+    self.eventLoop.assertInEventLoop()
+    self.interceptor.errorCaught(error, context: self)
   }
 }

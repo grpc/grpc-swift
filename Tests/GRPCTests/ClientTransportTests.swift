@@ -45,6 +45,7 @@ class ClientTransportTests: GRPCTestCase {
   private func setUpTransport(
     details: CallDetails? = nil,
     interceptors: [ClientInterceptor<String, String>] = [],
+    onError: @escaping (Error) -> Void = { _ in },
     onResponsePart: @escaping (GRPCClientResponsePart<String>) -> Void = { _ in }
   ) {
     self.transport = .init(
@@ -52,7 +53,8 @@ class ClientTransportTests: GRPCTestCase {
       eventLoop: self.eventLoop,
       interceptors: interceptors,
       errorDelegate: nil,
-      onResponsePart
+      onError: onError,
+      onResponsePart: onResponsePart
     )
   }
 
@@ -133,9 +135,9 @@ extension ClientTransportTests {
 
   func testCancelWhenIdle() throws {
     // Set up the transport, configure it and connect.
-    self.setUpTransport { part in
-      assertThat(part.error, .is(.instanceOf(GRPCError.RPCCancelledByClient.self)))
-    }
+    self.setUpTransport(onError: { error in
+      assertThat(error, .is(.instanceOf(GRPCError.RPCCancelledByClient.self)))
+    })
 
     // Cancellation should succeed.
     let promise = self.eventLoop.makePromise(of: Void.self)
@@ -145,9 +147,9 @@ extension ClientTransportTests {
 
   func testCancelWhenAwaitingTransport() throws {
     // Set up the transport, configure it and connect.
-    self.setUpTransport { part in
-      assertThat(part.error, .is(.instanceOf(GRPCError.RPCCancelledByClient.self)))
-    }
+    self.setUpTransport(onError: { error in
+      assertThat(error, .is(.instanceOf(GRPCError.RPCCancelledByClient.self)))
+    })
 
     // Start configuring the transport.
     let transportActivatedPromise = self.eventLoop.makePromise(of: Void.self)
@@ -179,9 +181,12 @@ extension ClientTransportTests {
   func testCancelWhenActivating() throws {
     // Set up the transport, configure it and connect.
     // We use bidirectional streaming here so that we also flush after writing the metadata.
-    self.setUpTransport(details: self.makeDetails(type: .bidirectionalStreaming)) { part in
-      assertThat(part.error, .is(.instanceOf(GRPCError.RPCCancelledByClient.self)))
-    }
+    self.setUpTransport(
+      details: self.makeDetails(type: .bidirectionalStreaming),
+      onError: { error in
+        assertThat(error, .is(.instanceOf(GRPCError.RPCCancelledByClient.self)))
+      }
+    )
 
     // Write a request. This will buffer.
     let writePromise1 = self.eventLoop.makePromise(of: Void.self)
@@ -268,9 +273,10 @@ extension ClientTransportTests {
 
   func testErrorWhenActive() throws {
     // Setup the transport, we only expect an error back.
-    self.setUpTransport { part in
-      assertThat(part.error, .is(.instanceOf(DummyError.self)))
-    }
+    self.setUpTransport(onError: { error in
+      assertThat(error, .is(.instanceOf(DummyError.self)))
+    })
+
     // Configure and activate.
     self.configureTransport()
     try self.connect()
@@ -294,10 +300,7 @@ extension ClientTransportTests {
   }
 
   func testConfigurationFails() throws {
-    self.setUpTransport { part in
-      // We wrap the configuration error up, so we can't assert on its type.
-      assertThat(part.error, .is(.notNil()))
-    }
+    self.setUpTransport()
 
     let p1 = self.eventLoop.makePromise(of: Void.self)
     self.sendRequest(.metadata([:]), promise: p1)

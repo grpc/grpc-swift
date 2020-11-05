@@ -100,7 +100,8 @@ internal final class ClientTransport<Request, Response> {
     eventLoop: EventLoop,
     interceptors: [ClientInterceptor<Request, Response>],
     errorDelegate: ClientErrorDelegate?,
-    _ onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
+    onError: @escaping (Error) -> Void,
+    onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) {
     self.eventLoop = eventLoop
     self.callDetails = details
@@ -109,6 +110,7 @@ internal final class ClientTransport<Request, Response> {
       details: details,
       interceptors: interceptors,
       errorDelegate: errorDelegate,
+      onError: onError,
       onCancel: self.cancelFromPipeline(promise:),
       onRequestPart: self.sendFromPipeline(_:promise:),
       onResponsePart: onResponsePart
@@ -799,7 +801,7 @@ extension ClientTransport {
   /// Forward the error to the interceptor pipeline.
   /// - Parameter error: The error to forward.
   private func forwardErrorToInterceptors(_ error: Error) {
-    self._pipeline?.receive(.error(error))
+    self._pipeline?.errorCaught(error)
   }
 }
 

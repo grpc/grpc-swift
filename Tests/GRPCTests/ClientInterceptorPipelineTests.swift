@@ -33,6 +33,7 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
     details: CallDetails? = nil,
     interceptors: [ClientInterceptor<Request, Response>] = [],
     errorDelegate: ClientErrorDelegate? = nil,
+    onError: @escaping (Error) -> Void = { _ in },
     onCancel: @escaping (EventLoopPromise<Void>?) -> Void = { _ in },
     onRequestPart: @escaping (GRPCClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void,
     onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
@@ -42,6 +43,7 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
       details: details ?? self.makeCallDetails(),
       interceptors: interceptors,
       errorDelegate: errorDelegate,
+      onError: onError,
       onCancel: onCancel,
       onRequestPart: onRequestPart,
       onResponsePart: onResponsePart
@@ -104,14 +106,12 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
       onRequestPart: { _, promise in
         XCTAssertNil(promise)
       },
-      onResponsePart: {
-        XCTAssertNotNil($0.error)
-      }
+      onResponsePart: { _ in }
     )
 
     // Fire an error; this should close the pipeline.
     struct DummyError: Error {}
-    pipeline.receive(.error(DummyError()))
+    pipeline.errorCaught(DummyError())
 
     // We're closed, writes should fail.
     let writePromise = pipeline.eventLoop.makePromise(of: Void.self)
@@ -147,6 +147,11 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
       responses: String.self,
       details: self.makeCallDetails(timeLimit: .deadline(deadline)),
       interceptors: [FailOnCancel()],
+      onError: { error in
+        assertThat(error, .is(.instanceOf(GRPCError.RPCTimedOut.self)))
+        assertThat(timedOut, .is(false))
+        timedOut = true
+      },
       onCancel: { promise in
         assertThat(cancelled, .is(false))
         cancelled = true
@@ -156,10 +161,8 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
       onRequestPart: { _, _ in
         XCTFail("Unexpected request part")
       },
-      onResponsePart: { part in
-        assertThat(part.error, .is(.instanceOf(GRPCError.RPCTimedOut.self)))
-        assertThat(timedOut, .is(false))
-        timedOut = true
+      onResponsePart: { _ in
+        XCTFail("Unexpected response part")
       }
     )
 
@@ -270,7 +273,7 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
         onRequestPart: { _, _ in },
         onResponsePart: { _ in }
       )
-      pipeline.receive(.error(error))
+      pipeline.errorCaught(error)
     }
 
     let invalidState = GRPCError.InvalidState("invalid state")
@@ -365,7 +368,7 @@ extension GRPCClientResponsePart {
     switch self {
     case let .metadata(headers):
       return headers
-    case .message, .end, .error:
+    case .message, .end:
       return nil
     }
   }
@@ -374,7 +377,7 @@ extension GRPCClientResponsePart {
     switch self {
     case let .message(response):
       return response
-    case .metadata, .end, .error:
+    case .metadata, .end:
       return nil
     }
   }
@@ -383,16 +386,7 @@ extension GRPCClientResponsePart {
     switch self {
     case let .end(status, trailers):
       return (status, trailers)
-    case .metadata, .message, .error:
-      return nil
-    }
-  }
-
-  var error: Error? {
-    switch self {
-    case let .error(error):
-      return error
-    case .metadata, .message, .end:
+    case .metadata, .message:
       return nil
     }
   }

@@ -127,6 +127,7 @@ internal final class ClientInterceptorPipeline<Request, Response> {
     details: CallDetails,
     interceptors: [ClientInterceptor<Request, Response>],
     errorDelegate: ClientErrorDelegate?,
+    onError: @escaping (Error) -> Void,
     onCancel: @escaping (EventLoopPromise<Void>?) -> Void,
     onRequestPart: @escaping (GRPCClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void,
     onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
@@ -141,7 +142,12 @@ internal final class ClientInterceptorPipeline<Request, Response> {
     // Start with the tail.
     contexts.append(
       ClientInterceptorContext(
-        for: .tail(for: self, errorDelegate: errorDelegate, onResponsePart),
+        for: .tail(
+          for: self,
+          errorDelegate: errorDelegate,
+          onError: onError,
+          onResponsePart: onResponsePart
+        ),
         atIndex: contexts.count,
         in: self
       )
@@ -180,6 +186,17 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   internal func receive(_ part: GRPCClientResponsePart<Response>) {
     self.eventLoop.assertInEventLoop()
     self._head?.invokeReceive(part)
+  }
+
+  /// Emit an error into the interceptor pipeline.
+  ///
+  /// This should be called by the transport layer when receiving an error.
+  ///
+  /// - Parameter error: The error to emit.
+  /// - Important: This *must* to be called from the `eventLoop`.
+  internal func errorCaught(_ error: Error) {
+    self.eventLoop.assertInEventLoop()
+    self._head?.invokeErrorCaught(error)
   }
 
   /// Writes a request message into the interceptor pipeline.
@@ -268,7 +285,7 @@ extension ClientInterceptorPipeline {
     self.scheduledClose = self.eventLoop.scheduleTask(deadline: deadline) {
       // When the error hits the tail we'll call 'close()', this will cancel the transport if
       // necessary.
-      self.receive(.error(GRPCError.RPCTimedOut(timeLimit)))
+      self.errorCaught(GRPCError.RPCTimedOut(timeLimit))
     }
   }
 }
