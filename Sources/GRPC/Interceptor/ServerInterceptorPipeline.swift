@@ -29,6 +29,9 @@ internal final class ServerInterceptorPipeline<Request, Response> {
   /// A logger.
   internal let logger: Logger
 
+  /// A reference to a 'UserInfo'.
+  internal let userInfoRef: Ref<UserInfo>
+
   /// The contexts associated with the interceptors stored in this pipeline. Contexts will be
   /// removed once the RPC has completed. Contexts are ordered from inbound to outbound, that is,
   /// the head is first and the tail is last.
@@ -80,6 +83,7 @@ internal final class ServerInterceptorPipeline<Request, Response> {
     eventLoop: EventLoop,
     path: String,
     callType: GRPCCallType,
+    userInfoRef: Ref<UserInfo>,
     interceptors: [ServerInterceptor<Request, Response>],
     onRequestPart: @escaping (GRPCServerRequestPart<Request>) -> Void,
     onResponsePart: @escaping (GRPCServerResponsePart<Response>, EventLoopPromise<Void>?) -> Void
@@ -88,6 +92,7 @@ internal final class ServerInterceptorPipeline<Request, Response> {
     self.eventLoop = eventLoop
     self.path = path
     self.type = callType
+    self.userInfoRef = userInfoRef
 
     // We need space for the head and tail as well as any user provided interceptors.
     var contexts: [ServerInterceptorContext<Request, Response>] = []

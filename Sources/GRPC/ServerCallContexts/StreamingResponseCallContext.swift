@@ -31,12 +31,26 @@ open class StreamingResponseCallContext<ResponsePayload>: ServerCallContextBase 
 
   public let statusPromise: EventLoopPromise<GRPCStatus>
 
-  override public init(eventLoop: EventLoop, headers: HPACKHeaders, logger: Logger) {
-    self.statusPromise = eventLoop.makePromise()
-    super.init(eventLoop: eventLoop, headers: headers, logger: logger)
+  public convenience init(
+    eventLoop: EventLoop,
+    headers: HPACKHeaders,
+    logger: Logger,
+    userInfo: UserInfo = UserInfo()
+  ) {
+    self.init(eventLoop: eventLoop, headers: headers, logger: logger, userInfoRef: .init(userInfo))
   }
 
-  @available(*, deprecated, renamed: "init(eventLoop:path:headers:logger:)")
+  override internal init(
+    eventLoop: EventLoop,
+    headers: HPACKHeaders,
+    logger: Logger,
+    userInfoRef: Ref<UserInfo>
+  ) {
+    self.statusPromise = eventLoop.makePromise()
+    super.init(eventLoop: eventLoop, headers: headers, logger: logger, userInfoRef: userInfoRef)
+  }
+
+  @available(*, deprecated, renamed: "init(eventLoop:path:headers:logger:userInfo:)")
   override public init(eventLoop: EventLoop, request: HTTPRequestHead, logger: Logger) {
     self.statusPromise = eventLoop.makePromise()
     super.init(eventLoop: eventLoop, request: request, logger: logger)
@@ -113,10 +127,11 @@ internal final class _StreamingResponseCallContext<Request, Response>:
     eventLoop: EventLoop,
     headers: HPACKHeaders,
     logger: Logger,
+    userInfoRef: Ref<UserInfo>,
     sendResponse: @escaping (Response, MessageMetadata, EventLoopPromise<Void>?) -> Void
   ) {
     self._sendResponse = sendResponse
-    super.init(eventLoop: eventLoop, headers: headers, logger: logger)
+    super.init(eventLoop: eventLoop, headers: headers, logger: logger, userInfoRef: userInfoRef)
   }
 
   override func sendResponse(
@@ -165,7 +180,12 @@ open class StreamingResponseCallContextImpl<ResponsePayload>: StreamingResponseC
     logger: Logger
   ) {
     self.channel = channel
-    super.init(eventLoop: channel.eventLoop, headers: headers, logger: logger)
+    super.init(
+      eventLoop: channel.eventLoop,
+      headers: headers,
+      logger: logger,
+      userInfoRef: Ref(UserInfo())
+    )
 
     self.statusPromise.futureResult.whenComplete { result in
       switch result {
