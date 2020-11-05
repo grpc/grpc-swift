@@ -56,6 +56,23 @@ public struct ServerInterceptorContext<Request, Response> {
     return self.pipeline.path
   }
 
+  /// A 'UserInfo' dictionary.
+  ///
+  /// - Important: While `UserInfo` has value-semantics, this property retrieves from, and sets a
+  ///   reference wrapped `UserInfo`. The contexts passed to the service provider share the same
+  ///   reference. As such this may be used as a mechanism to pass information between interceptors
+  ///   and service providers.
+  /// - Important: `userInfo` *must* be accessed from the context's `eventLoop` in order to ensure
+  ///   thread-safety.
+  public var userInfo: UserInfo {
+    get {
+      return self.pipeline.userInfoRef.value
+    }
+    nonmutating set {
+      self.pipeline.userInfoRef.value = newValue
+    }
+  }
+
   /// Construct a `ServerInterceptorContext` for the interceptor at the given index within the
   /// interceptor pipeline.
   internal init(

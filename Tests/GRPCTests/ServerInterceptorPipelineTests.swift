@@ -40,6 +40,7 @@ class ServerInterceptorPipelineTests: GRPCTestCase {
       eventLoop: self.embeddedEventLoop,
       path: path,
       callType: callType,
+      userInfoRef: Ref(UserInfo()),
       interceptors: interceptors,
       onRequestPart: onRequestPart,
       onResponsePart: onResponsePart

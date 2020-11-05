@@ -132,6 +132,7 @@ public class BidirectionalStreamingCallHandler<
         eventLoop: self.eventLoop,
         headers: headers,
         logger: self.logger,
+        userInfoRef: self.userInfoRef,
         sendResponse: self.sendResponse(_:metadata:promise:)
       )
       let observer = factory(context)
