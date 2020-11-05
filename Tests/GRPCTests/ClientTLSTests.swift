@@ -136,4 +136,76 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
 
     try self.doTestUnary()
   }
+
+  func testAuthorityUsesTLSHostnameOverride() throws {
+    // This test validates that when suppled with a server hostname override, the client uses it
+    // as the ":authority" pseudo-header.
+
+    self.server = try Server.secure(
+      group: self.eventLoopGroup,
+      certificateChain: [SampleCertificate.exampleServer.certificate],
+      privateKey: SamplePrivateKey.exampleServer
+    )
+    .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
+    .withServiceProviders([AuthorityCheckingEcho()])
+    .withLogger(self.serverLogger)
+    .bind(host: "localhost", port: 0)
+    .wait()
+
+    guard let port = self.server.channel.localAddress?.port else {
+      XCTFail("could not get server port")
+      return
+    }
+
+    self.connection = ClientConnection.secure(group: self.eventLoopGroup)
+      .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
+      .withTLS(serverHostnameOverride: "example.com")
+      .withBackgroundActivityLogger(self.clientLogger)
+      .connect(host: "localhost", port: port)
+
+    try self.doTestUnary()
+  }
+}
+
+private class AuthorityCheckingEcho: Echo_EchoProvider {
+  func get(
+    request: Echo_EchoRequest,
+    context: StatusOnlyCallContext
+  ) -> EventLoopFuture<Echo_EchoResponse> {
+    // Since we currently go via the HTTP 2-to-1 handler, ':authority' gets normalized to 'host'.
+    // TODO: Use ':authority' when we fully switch to HTTP/2
+    guard let authority = context.headers.first(name: "host") else {
+      let status = GRPCStatus(
+        code: .failedPrecondition,
+        message: "Missing ':authority' pseudo header"
+      )
+      return context.eventLoop.makeFailedFuture(status)
+    }
+
+    XCTAssertEqual(authority, SampleCertificate.exampleServer.commonName)
+    XCTAssertNotEqual(authority, "localhost")
+
+    return context.eventLoop.makeSucceededFuture(.with {
+      $0.text = "Swift echo get: \(request.text)"
+    })
+  }
+
+  func expand(
+    request: Echo_EchoRequest,
+    context: StreamingResponseCallContext<Echo_EchoResponse>
+  ) -> EventLoopFuture<GRPCStatus> {
+    preconditionFailure("Not implemented")
+  }
+
+  func collect(
+    context: UnaryResponseCallContext<Echo_EchoResponse>
+  ) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
+    preconditionFailure("Not implemented")
+  }
+
+  func update(
+    context: StreamingResponseCallContext<Echo_EchoResponse>
+  ) -> EventLoopFuture<(StreamEvent<Echo_EchoRequest>) -> Void> {
+    preconditionFailure("Not implemented")
+  }
 }
