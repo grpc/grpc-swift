@@ -168,6 +168,8 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
 }
 
 private class AuthorityCheckingEcho: Echo_EchoProvider {
+  var interceptors: Echo_EchoServerInterceptorFactoryProtocol?
+
   func get(
     request: Echo_EchoRequest,
     context: StatusOnlyCallContext
