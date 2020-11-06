@@ -25,6 +25,12 @@ internal protocol ClientInterceptorProtocol {
     context: ClientInterceptorContext<Request, Response>
   )
 
+  /// Called when the interceptor has received an error to handle.
+  func errorCaught(
+    _ error: Error,
+    context: ClientInterceptorContext<Request, Response>
+  )
+
   /// Called when the interceptor has received a request part to handle.
   func send(
     _ part: GRPCClientRequestPart<Request>,

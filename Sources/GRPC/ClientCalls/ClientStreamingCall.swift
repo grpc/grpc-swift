@@ -78,7 +78,10 @@ public struct ClientStreamingCall<RequestPayload, ResponsePayload>: StreamingReq
   }
 
   internal func invoke() {
-    self.call.invokeStreamingRequests(self.responseParts.handle(_:))
+    self.call.invokeStreamingRequests(
+      onError: self.responseParts.handleError(_:),
+      onResponsePart: self.responseParts.handle(_:)
+    )
   }
 
   // MARK: - Request

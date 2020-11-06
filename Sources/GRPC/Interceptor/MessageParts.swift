@@ -35,9 +35,6 @@ public enum GRPCClientResponsePart<Response> {
 
   /// The end of response stream sent by the server.
   case end(GRPCStatus, HPACKHeaders)
-
-  /// Error.
-  case error(Error)
 }
 
 public enum GRPCServerRequestPart<Request> {
