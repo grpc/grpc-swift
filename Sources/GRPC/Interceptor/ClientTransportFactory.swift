@@ -100,6 +100,7 @@ internal struct ClientTransportFactory<Request, Response> {
   ///   - type: The type of RPC, e.g. `.unary`.
   ///   - options: Options for the RPC.
   ///   - interceptors: Interceptors to use for the RPC.
+  ///   - onError: A callback invoked when an error is received.
   ///   - onResponsePart: A closure called for each response part received.
   /// - Returns: A configured transport.
   internal func makeConfiguredTransport<Request, Response>(
@@ -107,7 +108,8 @@ internal struct ClientTransportFactory<Request, Response> {
     for type: GRPCCallType,
     withOptions options: CallOptions,
     interceptedBy interceptors: [ClientInterceptor<Request, Response>],
-    _ onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
+    onError: @escaping (Error) -> Void,
+    onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) -> ClientTransport<Request, Response> {
     switch self.factory {
     case let .http2(factory):
@@ -116,7 +118,8 @@ internal struct ClientTransportFactory<Request, Response> {
         for: type,
         withOptions: options,
         interceptedBy: interceptors,
-        onResponsePart
+        onError: onError,
+        onResponsePart: onResponsePart
       )
       factory.configure(transport)
       return transport
@@ -126,6 +129,7 @@ internal struct ClientTransportFactory<Request, Response> {
         for: type,
         withOptions: options,
         interceptedBy: interceptors,
+        onError: onError,
         onResponsePart
       )
       factory.configure(transport)
@@ -170,14 +174,16 @@ private struct HTTP2ClientTransportFactory<Request, Response> {
     for type: GRPCCallType,
     withOptions options: CallOptions,
     interceptedBy interceptors: [ClientInterceptor<Request, Response>],
-    _ onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
+    onError: @escaping (Error) -> Void,
+    onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) -> ClientTransport<Request, Response> {
     return ClientTransport(
       details: self.makeCallDetails(type: type, path: path, options: options),
       eventLoop: self.multiplexer.eventLoop,
       interceptors: interceptors,
       errorDelegate: self.errorDelegate,
-      onResponsePart
+      onError: onError,
+      onResponsePart: onResponsePart
     )
   }
 
@@ -240,6 +246,7 @@ private struct FakeClientTransportFactory<Request, Response> {
     for type: GRPCCallType,
     withOptions options: CallOptions,
     interceptedBy interceptors: [ClientInterceptor<Request, Response>],
+    onError: @escaping (Error) -> Void,
     _ onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) -> ClientTransport<Request, Response> {
     return ClientTransport(
@@ -253,7 +260,8 @@ private struct FakeClientTransportFactory<Request, Response> {
       eventLoop: self.eventLoop,
       interceptors: interceptors,
       errorDelegate: nil,
-      onResponsePart
+      onError: onError,
+      onResponsePart: onResponsePart
     )
   }
 

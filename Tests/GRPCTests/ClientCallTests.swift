@@ -87,8 +87,6 @@ class ClientCallTests: GRPCTestCase {
         ()
       case let .end(status, _):
         promise.succeed(status)
-      case let .error(error):
-        promise.fail(error)
       }
     }
   }
@@ -99,7 +97,10 @@ class ClientCallTests: GRPCTestCase {
     let get = self.get()
 
     let statusPromise = self.makeStatusPromise()
-    get.invoke(self.makeResponsePartHandler(completing: statusPromise))
+    get.invoke(
+      onError: statusPromise.fail(_:),
+      onResponsePart: self.makeResponsePartHandler(completing: statusPromise)
+    )
 
     let f1 = get.send(.metadata(get.options.customMetadata))
     let f2 = get.send(.message(.with { $0.text = "get" }, .init(compress: false, flush: false)))
@@ -120,7 +121,8 @@ class ClientCallTests: GRPCTestCase {
     let promise = self.makeStatusPromise()
     get.invokeUnaryRequest(
       .with { $0.text = "get" },
-      self.makeResponsePartHandler(completing: promise)
+      onError: promise.fail(_:),
+      onResponsePart: self.makeResponsePartHandler(completing: promise)
     )
 
     assertThat(try promise.futureResult.wait(), .hasCode(.ok))
@@ -130,7 +132,10 @@ class ClientCallTests: GRPCTestCase {
     let collect = self.collect()
 
     let promise = self.makeStatusPromise()
-    collect.invokeStreamingRequests(self.makeResponsePartHandler(completing: promise))
+    collect.invokeStreamingRequests(
+      onError: promise.fail(_:),
+      onResponsePart: self.makeResponsePartHandler(completing: promise)
+    )
     collect.send(
       .message(.with { $0.text = "collect" }, .init(compress: false, flush: false)),
       promise: nil
@@ -146,7 +151,8 @@ class ClientCallTests: GRPCTestCase {
     let promise = self.makeStatusPromise()
     expand.invokeUnaryRequest(
       .with { $0.text = "expand" },
-      self.makeResponsePartHandler(completing: promise)
+      onError: promise.fail(_:),
+      onResponsePart: self.makeResponsePartHandler(completing: promise)
     )
 
     assertThat(try promise.futureResult.wait(), .hasCode(.ok))
@@ -156,7 +162,10 @@ class ClientCallTests: GRPCTestCase {
     let update = self.update()
 
     let promise = self.makeStatusPromise()
-    update.invokeStreamingRequests(self.makeResponsePartHandler(completing: promise))
+    update.invokeStreamingRequests(
+      onError: promise.fail(_:),
+      onResponsePart: self.makeResponsePartHandler(completing: promise)
+    )
     update.send(
       .message(.with { $0.text = "update" }, .init(compress: false, flush: false)),
       promise: nil
@@ -179,7 +188,10 @@ class ClientCallTests: GRPCTestCase {
   func testCancelMidRPC() throws {
     let get = self.get()
     let promise = self.makeStatusPromise()
-    get.invoke(self.makeResponsePartHandler(completing: promise))
+    get.invoke(
+      onError: promise.fail(_:),
+      onResponsePart: self.makeResponsePartHandler(completing: promise)
+    )
 
     // Cancellation should succeed.
     assertThat(try get.cancel().wait(), .doesNotThrow())

@@ -79,15 +79,16 @@ internal class UnaryResponseParts<Response> {
 
       self.trailingMetadataPromise.succeed(trailers)
       self.statusPromise.succeed(status)
-
-    case let .error(error):
-      let withoutContext = error.removingContext()
-      let status = withoutContext.makeGRPCStatus()
-      self.initialMetadataPromise.fail(withoutContext)
-      self.responsePromise.fail(withoutContext)
-      self.trailingMetadataPromise.fail(withoutContext)
-      self.statusPromise.succeed(status)
     }
+  }
+
+  internal func handleError(_ error: Error) {
+    let withoutContext = error.removingContext()
+    let status = withoutContext.makeGRPCStatus()
+    self.initialMetadataPromise.fail(withoutContext)
+    self.responsePromise.fail(withoutContext)
+    self.trailingMetadataPromise.fail(withoutContext)
+    self.statusPromise.succeed(status)
   }
 }
 
@@ -144,14 +145,15 @@ internal class StreamingResponseParts<Response> {
       self.initialMetadataPromise.fail(status)
       self.trailingMetadataPromise.succeed(trailers)
       self.statusPromise.succeed(status)
-
-    case let .error(error):
-      let withoutContext = error.removingContext()
-      let status = withoutContext.makeGRPCStatus()
-      self.initialMetadataPromise.fail(withoutContext)
-      self.trailingMetadataPromise.fail(withoutContext)
-      self.statusPromise.succeed(status)
     }
+  }
+
+  internal func handleError(_ error: Error) {
+    let withoutContext = error.removingContext()
+    let status = withoutContext.makeGRPCStatus()
+    self.initialMetadataPromise.fail(withoutContext)
+    self.trailingMetadataPromise.fail(withoutContext)
+    self.statusPromise.succeed(status)
   }
 }
 

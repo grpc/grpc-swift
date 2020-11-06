@@ -17,28 +17,29 @@ import NIO
 
 /// A base class for client interceptors.
 ///
-/// Interceptors allow request and response and response parts to be observed, mutated or dropped
-/// as necessary. The default behaviour for this base class is to forward any events to the next
-/// interceptor.
+/// Interceptors allow request and response parts to be observed, mutated or dropped as necessary.
+/// The default behaviour for this base class is to forward any events to the next interceptor.
 ///
-/// Interceptors may observe three different types of event:
+/// Interceptors may observe a number of different events:
 /// - receiving response parts with `receive(_:context:)`,
+/// - receiving errors with `errorCaught(_:context:)`,
 /// - sending request parts with `send(_:promise:context:)`, and
 /// - RPC cancellation with `cancel(context:)`.
 ///
 /// These events flow through a pipeline of interceptors for each RPC. Request parts sent from the
-/// call object (such as `UnaryCall` and `BidirectionalStreamingCall`) will traverse the pipeline
-/// from its tail via `send(_:context:)` eventually reaching the head of the pipeline where it will
-/// be sent sent to the server.
+/// call object (e.g. `UnaryCall`, `BidirectionalStreamingCall`) will traverse the pipeline in the
+/// outbound direction from its tail via `send(_:context:)` eventually reaching the head of the
+/// pipeline where it will be sent sent to the server.
 ///
-/// Response parts, or errors, received from the transport fill be fired back through the
-/// interceptor pipeline via `receive(_:context:)`. Note that the `end` and `error` response parts
-/// are terminal: the pipeline will be torn down once these parts reach the the tail of the
-/// pipeline.
+/// Response parts, or errors, received from the transport fill be fired in the inbound direction
+/// back through the interceptor pipeline via `receive(_:context:)` and `errorCaught(_:context:)`,
+/// respectively. Note that the `end` response part and any error received are terminal: the
+/// pipeline will be torn down once these parts reach the the tail and are a signal that the
+/// interceptor should free up any resources it may be using.
 ///
 /// Each of the interceptor functions is provided with a `context` which exposes analogous functions
-/// (`receive(_:)`, `send(_:promise:)`, and `cancel(promise:)`) which may be called to forward
-/// events to the next interceptor.
+/// (`receive(_:)`, `errorCaught(_:)`, `send(_:promise:)`, and `cancel(promise:)`) which may be
+/// called to forward events to the next interceptor in the appropriate direction.
 ///
 /// ### Thread Safety
 ///
@@ -59,6 +60,17 @@ open class ClientInterceptor<Request, Response> {
     context: ClientInterceptorContext<Request, Response>
   ) {
     context.receive(part)
+  }
+
+  /// Called when the interceptor has received an error.
+  /// - Parameters:
+  ///   - error: The error.
+  ///   - context: An interceptor context which may be used to forward the error.
+  open func errorCaught(
+    _ error: Error,
+    context: ClientInterceptorContext<Request, Response>
+  ) {
+    context.errorCaught(error)
   }
 
   /// Called when the interceptor has received a request part to handle.
@@ -129,6 +141,13 @@ internal struct HeadClientInterceptor<Request, Response>: ClientInterceptorProto
   ) {
     context.receive(part)
   }
+
+  internal func errorCaught(
+    _ error: Error,
+    context: ClientInterceptorContext<Request, Response>
+  ) {
+    context.errorCaught(error)
+  }
 }
 
 /// An interceptor which offloads responses to a provided callback and forwards any requests parts
@@ -141,6 +160,9 @@ internal struct TailClientInterceptor<Request, Response>: ClientInterceptorProto
   /// A user-provided error delegate.
   private let errorDelegate: ClientErrorDelegate?
 
+  /// A callback invoked when an error is received.
+  private let onErrorCaught: (Error) -> Void
+
   /// A response part handler; typically this will complete some promises, for streaming responses
   /// it will also invoke a user-supplied handler. This closure may also be provided by the user.
   /// We need to be careful about re-entrancy.
@@ -149,10 +171,12 @@ internal struct TailClientInterceptor<Request, Response>: ClientInterceptorProto
   internal init(
     for pipeline: ClientInterceptorPipeline<Request, Response>,
     errorDelegate: ClientErrorDelegate?,
+    _ onErrorCaught: @escaping (Error) -> Void,
     _ onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) {
     self.pipeline = pipeline
     self.errorDelegate = errorDelegate
+    self.onErrorCaught = onErrorCaught
     self.onResponsePart = onResponsePart
   }
 
@@ -162,40 +186,44 @@ internal struct TailClientInterceptor<Request, Response>: ClientInterceptorProto
   ) {
     switch part {
     case .metadata, .message:
-      self.onResponsePart(part)
-
+      ()
     case .end:
       // We're about to complete, close the pipeline before calling out via `onResponsePart`.
       self.pipeline.close()
-      self.onResponsePart(part)
-
-    case let .error(error):
-      // We're about to complete, close the pipeline before calling out via the error delegate
-      // or `onResponsePart`.
-      self.pipeline.close()
-
-      var unwrappedError: Error
-
-      // Unwrap the error, if possible.
-      if let errorContext = error as? GRPCError.WithContext {
-        unwrappedError = errorContext.error
-        self.errorDelegate?.didCatchError(
-          errorContext.error,
-          logger: context.logger,
-          file: errorContext.file,
-          line: errorContext.line
-        )
-      } else {
-        unwrappedError = error
-        self.errorDelegate?.didCatchErrorWithoutContext(
-          error,
-          logger: context.logger
-        )
-      }
-
-      // Emit the unwrapped error.
-      self.onResponsePart(.error(unwrappedError))
     }
+
+    self.onResponsePart(part)
+  }
+
+  internal func errorCaught(
+    _ error: Error,
+    context: ClientInterceptorContext<Request, Response>
+  ) {
+    // We're about to complete, close the pipeline before calling out via the error delegate
+    // or `onResponsePart`.
+    self.pipeline.close()
+
+    var unwrappedError: Error
+
+    // Unwrap the error, if possible.
+    if let errorContext = error as? GRPCError.WithContext {
+      unwrappedError = errorContext.error
+      self.errorDelegate?.didCatchError(
+        errorContext.error,
+        logger: context.logger,
+        file: errorContext.file,
+        line: errorContext.line
+      )
+    } else {
+      unwrappedError = error
+      self.errorDelegate?.didCatchErrorWithoutContext(
+        error,
+        logger: context.logger
+      )
+    }
+
+    // Emit the unwrapped error.
+    self.onErrorCaught(unwrappedError)
   }
 
   @inlinable
@@ -244,14 +272,21 @@ internal struct AnyClientInterceptor<Request, Response>: ClientInterceptorProtoc
   /// - Parameters:
   ///   - pipeline: The pipeline the tail interceptor belongs to.
   ///   - errorDelegate: An error delegate.
+  ///   - onError: A callback invoked when an error is received.
   ///   - onResponsePart: A handler called for each response part received from the pipeline.
   /// - Returns: An `AnyClientInterceptor` which wraps a `TailClientInterceptor`.
   internal static func tail(
     for pipeline: ClientInterceptorPipeline<Request, Response>,
     errorDelegate: ClientErrorDelegate?,
-    _ onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
+    onError: @escaping (Error) -> Void,
+    onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) -> AnyClientInterceptor<Request, Response> {
-    let tail = TailClientInterceptor(for: pipeline, errorDelegate: errorDelegate, onResponsePart)
+    let tail = TailClientInterceptor(
+      for: pipeline,
+      errorDelegate: errorDelegate,
+      onError,
+      onResponsePart
+    )
     return .init(.tail(tail))
   }
 
@@ -279,6 +314,20 @@ internal struct AnyClientInterceptor<Request, Response>: ClientInterceptorProtoc
       handler.receive(part, context: context)
     case let .base(handler):
       handler.receive(part, context: context)
+    }
+  }
+
+  internal func errorCaught(
+    _ error: Error,
+    context: ClientInterceptorContext<Request, Response>
+  ) {
+    switch self._implementation {
+    case let .head(handler):
+      handler.errorCaught(error, context: context)
+    case let .tail(handler):
+      handler.errorCaught(error, context: context)
+    case let .base(handler):
+      handler.errorCaught(error, context: context)
     }
   }
 

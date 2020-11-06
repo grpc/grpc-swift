@@ -271,7 +271,7 @@ class NotReallyAuthClientInterceptor<Request: Message, Response: Message>:
         self.state = .retrying(call)
 
         // Invoke the call and redirect responses here.
-        call.invoke(context.receive(_:))
+        call.invoke(onError: context.errorCaught(_:), onResponsePart: context.receive(_:))
 
         // Parts must contain the metadata as the first item if we got that first response.
         if case var .some(.metadata(metadata)) = parts.first {
