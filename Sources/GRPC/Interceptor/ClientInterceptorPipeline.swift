@@ -77,7 +77,7 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   /// The contexts associated with the interceptors stored in this pipeline. Context will be removed
   /// once the RPC has completed. Contexts are ordered from outbound to inbound, that is, the tail
   /// is first and the head is last.
-  private var contexts: [ClientInterceptorContext<Request, Response>]?
+  private var contexts: InterceptorContextList<ClientInterceptorContext<Request, Response>>?
 
   /// Returns the next context in the outbound direction for the context at the given index, if one
   /// exists.
@@ -134,46 +134,16 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   ) {
     self.eventLoop = eventLoop
     self.details = details
-
-    // We know we'll have at least a head and a tail as well as any user provided interceptors.
-    var contexts: [ClientInterceptorContext<Request, Response>] = []
-    contexts.reserveCapacity(interceptors.count + 2)
-
-    // Start with the tail.
-    contexts.append(
-      ClientInterceptorContext(
-        for: .tail(
-          for: self,
-          errorDelegate: errorDelegate,
-          onError: onError,
-          onResponsePart: onResponsePart
-        ),
-        atIndex: contexts.count,
-        in: self
-      )
+    self.contexts = InterceptorContextList(
+      for: self,
+      interceptors: interceptors,
+      errorDelegate: errorDelegate,
+      onError: onError,
+      onCancel: onCancel,
+      onRequestPart: onRequestPart,
+      onResponsePart: onResponsePart
     )
 
-    // Now the user interceptors.
-    for interceptor in interceptors {
-      contexts.append(
-        ClientInterceptorContext(
-          for: .userProvided(interceptor),
-          atIndex: contexts.count,
-          in: self
-        )
-      )
-    }
-
-    // Finally, the head.
-    contexts.append(
-      ClientInterceptorContext(
-        for: .head(onCancel: onCancel, onRequestPart: onRequestPart),
-        atIndex: contexts.count,
-        in: self
-      )
-    )
-
-    self.contexts = contexts
     self.setupDeadline()
   }
 
@@ -287,5 +257,44 @@ extension ClientInterceptorPipeline {
       // necessary.
       self.errorCaught(GRPCError.RPCTimedOut(timeLimit))
     }
+  }
+}
+
+private extension InterceptorContextList {
+  init<Request, Response>(
+    for pipeline: ClientInterceptorPipeline<Request, Response>,
+    interceptors: [ClientInterceptor<Request, Response>],
+    errorDelegate: ClientErrorDelegate?,
+    onError: @escaping (Error) -> Void,
+    onCancel: @escaping (EventLoopPromise<Void>?) -> Void,
+    onRequestPart: @escaping (GRPCClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void,
+    onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
+  ) where Element == ClientInterceptorContext<Request, Response> {
+    let middle = interceptors.enumerated().map { index, interceptor in
+      ClientInterceptorContext(
+        for: .userProvided(interceptor),
+        atIndex: index,
+        in: pipeline
+      )
+    }
+
+    let first = ClientInterceptorContext<Request, Response>(
+      for: .tail(
+        for: pipeline,
+        errorDelegate: errorDelegate,
+        onError: onError,
+        onResponsePart: onResponsePart
+      ),
+      atIndex: middle.startIndex - 1,
+      in: pipeline
+    )
+
+    let last = ClientInterceptorContext<Request, Response>(
+      for: .head(onCancel: onCancel, onRequestPart: onRequestPart),
+      atIndex: middle.endIndex,
+      in: pipeline
+    )
+
+    self.init(first: first, middle: middle, last: last)
   }
 }

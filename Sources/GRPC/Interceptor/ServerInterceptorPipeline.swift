@@ -35,7 +35,7 @@ internal final class ServerInterceptorPipeline<Request, Response> {
   /// The contexts associated with the interceptors stored in this pipeline. Contexts will be
   /// removed once the RPC has completed. Contexts are ordered from inbound to outbound, that is,
   /// the head is first and the tail is last.
-  private var contexts: [ServerInterceptorContext<Request, Response>]?
+  private var contexts: InterceptorContextList<ServerInterceptorContext<Request, Response>>?
 
   /// Returns the next context in the outbound direction for the context at the given index, if one
   /// exists.
@@ -95,39 +95,12 @@ internal final class ServerInterceptorPipeline<Request, Response> {
     self.userInfoRef = userInfoRef
 
     // We need space for the head and tail as well as any user provided interceptors.
-    var contexts: [ServerInterceptorContext<Request, Response>] = []
-    contexts.reserveCapacity(interceptors.count + 2)
-
-    // Start with the head.
-    contexts.append(
-      ServerInterceptorContext(
-        for: .head(for: self, onResponsePart),
-        atIndex: contexts.count,
-        in: self
-      )
+    self.contexts = InterceptorContextList(
+      for: self,
+      interceptors: interceptors,
+      onRequestPart: onRequestPart,
+      onResponsePart: onResponsePart
     )
-
-    // User provided interceptors.
-    for interceptor in interceptors {
-      contexts.append(
-        ServerInterceptorContext(
-          for: .userProvided(interceptor),
-          atIndex: contexts.count,
-          in: self
-        )
-      )
-    }
-
-    // Now the tail.
-    contexts.append(
-      ServerInterceptorContext(
-        for: .tail(onRequestPart),
-        atIndex: contexts.count,
-        in: self
-      )
-    )
-
-    self.contexts = contexts
   }
 
   /// Emit a request part message into the interceptor pipeline.
@@ -158,5 +131,36 @@ internal final class ServerInterceptorPipeline<Request, Response> {
   internal func close() {
     self.eventLoop.assertInEventLoop()
     self.contexts = nil
+  }
+}
+
+private extension InterceptorContextList {
+  init<Request, Response>(
+    for pipeline: ServerInterceptorPipeline<Request, Response>,
+    interceptors: [ServerInterceptor<Request, Response>],
+    onRequestPart: @escaping (GRPCServerRequestPart<Request>) -> Void,
+    onResponsePart: @escaping (GRPCServerResponsePart<Response>, EventLoopPromise<Void>?) -> Void
+  ) where Element == ServerInterceptorContext<Request, Response> {
+    let middle = interceptors.enumerated().map { index, interceptor in
+      ServerInterceptorContext(
+        for: .userProvided(interceptor),
+        atIndex: index,
+        in: pipeline
+      )
+    }
+
+    let first = ServerInterceptorContext<Request, Response>(
+      for: .head(for: pipeline, onResponsePart),
+      atIndex: middle.startIndex - 1,
+      in: pipeline
+    )
+
+    let last = ServerInterceptorContext<Request, Response>(
+      for: .tail(onRequestPart),
+      atIndex: middle.endIndex,
+      in: pipeline
+    )
+
+    self.init(first: first, middle: middle, last: last)
   }
 }
