@@ -15,6 +15,7 @@
  */
 @testable import GRPC
 import NIOHPACK
+import NIOHTTP2
 import XCTest
 
 struct UnwrapError: Error {}
@@ -79,10 +80,10 @@ enum MatchResult {
 }
 
 struct Matcher<Value> {
-  private typealias Evaluator = (Value) -> MatchResult
+  fileprivate typealias Evaluator = (Value) -> MatchResult
   private var matcher: Evaluator
 
-  private init(_ matcher: @escaping Evaluator) {
+  fileprivate init(_ matcher: @escaping Evaluator) {
     self.matcher = matcher
   }
 
@@ -142,6 +143,60 @@ struct Matcher<Value> {
       } else {
         return .noMatch(actual: "nil", expected: "not nil")
       }
+    }
+  }
+
+  // MARK: Result
+
+  static func success<Value>(_ matcher: Matcher<Value>? = nil) -> Matcher<Result<Value, Error>> {
+    return .init { actual in
+      switch actual {
+      case let .success(value):
+        return matcher?.evaluate(value) ?? .match
+      case let .failure(error):
+        return .noMatch(actual: "\(error)", expected: "success")
+      }
+    }
+  }
+
+  static func success() -> Matcher<Result<Void, Error>> {
+    return .init { actual in
+      switch actual {
+      case .success:
+        return .match
+      case let .failure(error):
+        return .noMatch(actual: "\(error)", expected: "success")
+      }
+    }
+  }
+
+  static func failure<Success, Failure: Error>(
+    _ matcher: Matcher<Failure>? = nil
+  ) -> Matcher<Result<Success, Failure>> {
+    return .init { actual in
+      switch actual {
+      case let .success(value):
+        return .noMatch(actual: "\(value)", expected: "failure")
+      case let .failure(error):
+        return matcher?.evaluate(error) ?? .match
+      }
+    }
+  }
+
+  // MARK: Utility
+
+  static func all<Value>(_ matchers: Matcher<Value>...) -> Matcher<Value> {
+    return .init { actual in
+      for matcher in matchers {
+        let result = matcher.evaluate(actual)
+        switch result {
+        case .noMatch:
+          return result
+        case .match:
+          ()
+        }
+      }
+      return .match
     }
   }
 
@@ -305,15 +360,232 @@ struct Matcher<Value> {
 
   static func contains(
     _ name: String,
-    _ matcher: Matcher<[String]>? = nil
+    _ values: [String]? = nil
   ) -> Matcher<HPACKHeaders> {
     return .init { actual in
-      let headers = actual[name]
+      let headers = actual[canonicalForm: name]
 
       if headers.isEmpty {
         return .noMatch(actual: "does not contain '\(name)'", expected: "contains '\(name)'")
       } else {
-        return matcher?.evaluate(headers) ?? .match
+        return values.map { Matcher.equalTo($0).evaluate(headers) } ?? .match
+      }
+    }
+  }
+
+  static func contains(
+    caseSensitive caseSensitiveName: String
+  ) -> Matcher<HPACKHeaders> {
+    return .init { actual in
+      for (name, _, _) in actual {
+        if name == caseSensitiveName {
+          return .match
+        }
+      }
+
+      return .noMatch(
+        actual: "does not contain '\(caseSensitiveName)'",
+        expected: "contains '\(caseSensitiveName)'"
+      )
+    }
+  }
+
+  static func headers(
+    _ headers: Matcher<HPACKHeaders>? = nil,
+    endStream: Bool? = nil
+  ) -> Matcher<HTTP2Frame.FramePayload> {
+    return .init { actual in
+      switch actual {
+      case let .headers(payload):
+        let headersMatch = headers?.evaluate(payload.headers)
+
+        switch headersMatch {
+        case .none,
+             .some(.match):
+          return endStream.map { Matcher.is($0).evaluate(payload.endStream) } ?? .match
+        case .some(.noMatch):
+          return headersMatch!
+        }
+      default:
+        return .noMatch(actual: "\(actual)", expected: "headers")
+      }
+    }
+  }
+
+  static func data(endStream: Bool? = nil) -> Matcher<HTTP2Frame.FramePayload> {
+    return .init { actual in
+      switch actual {
+      case let .data(payload):
+        return endStream.map { Matcher.is($0).evaluate(payload.endStream) } ?? .match
+      default:
+        return .noMatch(actual: "\(actual)", expected: "data")
+      }
+    }
+  }
+
+  static func trailersOnly(
+    code: GRPCStatus.Code,
+    contentType: String = "application/grpc"
+  ) -> Matcher<HTTP2Frame.FramePayload> {
+    return .headers(
+      .all(
+        .contains(":status", ["200"]),
+        .contains("content-type", [contentType]),
+        .contains("grpc-status", ["\(code.rawValue)"])
+      ),
+      endStream: true
+    )
+  }
+
+  static func trailers(code: GRPCStatus.Code, message: String) -> Matcher<HTTP2Frame.FramePayload> {
+    return .headers(
+      .all(
+        .contains("grpc-status", ["\(code.rawValue)"]),
+        .contains("grpc-message", [message])
+      ),
+      endStream: true
+    )
+  }
+
+  // MARK: HTTP2ToRawGRPCStateMachine.Action
+
+  static func errorCaught() -> Matcher<HTTP2ToRawGRPCStateMachine.Action> {
+    return .init { actual in
+      switch actual {
+      case .errorCaught:
+        return .match
+      default:
+        return .noMatch(actual: "\(actual)", expected: "errorCaught")
+      }
+    }
+  }
+
+  static func none() -> Matcher<HTTP2ToRawGRPCStateMachine.Action> {
+    return .init { actual in
+      switch actual {
+      case .none:
+        return .match
+      default:
+        return .noMatch(actual: "\(actual)", expected: "none")
+      }
+    }
+  }
+
+  static func configure() -> Matcher<HTTP2ToRawGRPCStateMachine.Action> {
+    return .init { actual in
+      switch actual {
+      case .configure:
+        return .match
+      default:
+        return .noMatch(actual: "\(actual)", expected: "configure")
+      }
+    }
+  }
+
+  static func completePromise(
+    with matcher: Matcher<Result<Void, Error>>? = nil
+  ) -> Matcher<HTTP2ToRawGRPCStateMachine.Action> {
+    return .init { actual in
+      switch actual {
+      case let .completePromise(_, result):
+        return matcher?.evaluate(result) ?? .match
+      default:
+        return .noMatch(actual: "\(actual)", expected: "completePromise")
+      }
+    }
+  }
+
+  static func forwardHeaders() -> Matcher<HTTP2ToRawGRPCStateMachine.Action> {
+    return .init { actual in
+      switch actual {
+      case .forwardHeaders:
+        return .match
+      default:
+        return .noMatch(actual: "\(actual)", expected: "forwardHeaders")
+      }
+    }
+  }
+
+  static func forwardMessage() -> Matcher<HTTP2ToRawGRPCStateMachine.Action> {
+    return .init { actual in
+      switch actual {
+      case .forwardMessage:
+        return .match
+      default:
+        return .noMatch(actual: "\(actual)", expected: "forwardMessage")
+      }
+    }
+  }
+
+  static func forwardEnd() -> Matcher<HTTP2ToRawGRPCStateMachine.Action> {
+    return .init { actual in
+      switch actual {
+      case .forwardEnd:
+        return .match
+      default:
+        return .noMatch(actual: "\(actual)", expected: "forwardEnd")
+      }
+    }
+  }
+
+  static func forwardMessageAndEnd() -> Matcher<HTTP2ToRawGRPCStateMachine.Action> {
+    return .init { actual in
+      switch actual {
+      case .forwardMessageAndEnd:
+        return .match
+      default:
+        return .noMatch(actual: "\(actual)", expected: "forwardMessageAndEnd")
+      }
+    }
+  }
+
+  static func forwardHeadersThenRead() -> Matcher<HTTP2ToRawGRPCStateMachine.Action> {
+    return .init { actual in
+      switch actual {
+      case .forwardHeadersThenReadNextMessage:
+        return .match
+      default:
+        return .noMatch(actual: "\(actual)", expected: "forwardHeadersThenReadNextMessage")
+      }
+    }
+  }
+
+  static func forwardMessageThenRead() -> Matcher<HTTP2ToRawGRPCStateMachine.Action> {
+    return .init { actual in
+      switch actual {
+      case .forwardMessageThenReadNextMessage:
+        return .match
+      default:
+        return .noMatch(actual: "\(actual)", expected: "forwardMessageThenReadNextMessage")
+      }
+    }
+  }
+
+  static func readNextRequest() -> Matcher<HTTP2ToRawGRPCStateMachine.Action> {
+    return .init { actual in
+      switch actual {
+      case .readNextRequest:
+        return .match
+      default:
+        return .noMatch(actual: "\(actual)", expected: "readNextRequest")
+      }
+    }
+  }
+
+  static func write(
+    _ matcher: Matcher<HTTP2Frame.FramePayload>? = nil,
+    flush: Bool = false
+  ) -> Matcher<HTTP2ToRawGRPCStateMachine.Action> {
+    return .init { actual in
+      switch actual {
+      case let .write(payload, _, insertFlush):
+        if flush == insertFlush {
+          return matcher.map { $0.evaluate(payload) } ?? .match
+        } else {
+          return .noMatch(actual: "write(_,_,\(insertFlush))", expected: "write(_,_,\(flush))")
+        }
+      default:
+        return .noMatch(actual: "\(actual)", expected: "write")
       }
     }
   }

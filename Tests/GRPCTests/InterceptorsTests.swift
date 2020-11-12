@@ -103,7 +103,7 @@ class InterceptorsTests: GRPCTestCase {
     assertThat(try notAuthed.response.wait(), .throws())
     assertThat(
       try notAuthed.trailingMetadata.wait(),
-      .contains("www-authenticate", .equalTo(["Magic"]))
+      .contains("www-authenticate", ["Magic"])
     )
     assertThat(try notAuthed.status.wait(), .hasCode(.unauthenticated))
 
