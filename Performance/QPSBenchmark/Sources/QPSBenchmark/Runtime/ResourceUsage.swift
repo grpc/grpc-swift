@@ -38,11 +38,17 @@ struct CPUTime {
   var systemTime: TimeInterval
 }
 
+#if os(macOS) || os(iOS) || os(watchOS) || os(tvOS)
+fileprivate let OUR_RUSAGE_SELF: Int32 = RUSAGE_SELF
+#elseif os(Linux) || os(FreeBSD) || os(Android)
+fileprivate let OUR_RUSAGE_SELF: Int32 = RUSAGE_SELF.rawValue
+#endif
+
 /// Get resource usage for this process.
 /// - returns: The amount of CPU resource consumed.
 func getResourceUsage() -> CPUTime {
   var usage = rusage()
-  if getrusage(RUSAGE_SELF, &usage) == 0 {
+  if getrusage(OUR_RUSAGE_SELF, &usage) == 0 {
     return CPUTime(
       userTime: TimeInterval(usage.ru_utime),
       systemTime: TimeInterval(usage.ru_stime)

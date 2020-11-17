@@ -56,7 +56,7 @@ For examples of running benchmarking tests proceed as follows.
 4. Invoke the driver with a scenario file, for example:
 
    ```sh
-   /path/to/qps_json_driver --scenario_file=/path/to/scenario.json
+   /path/to/qps_json_driver --scenarios_file=/path/to/scenario.json
    ```
 
 ### Scenarios
