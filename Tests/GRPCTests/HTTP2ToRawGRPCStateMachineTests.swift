@@ -231,6 +231,18 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
     assertThat(action, .is(.write(.trailersOnly(code: .unimplemented), flush: true)))
   }
 
+  func testReceiveHeadersWithMultipleEncodings() {
+    var machine = StateMachine(services: self.services, encoding: .disabled)
+    // We can't have multiple encodings.
+    let action = machine.receive(
+      headers: self.makeHeaders(contentType: "application/grpc", encoding: "gzip,identity"),
+      eventLoop: self.eventLoop,
+      errorDelegate: nil,
+      logger: self.logger
+    )
+    assertThat(action, .is(.write(.trailersOnly(code: .invalidArgument), flush: true)))
+  }
+
   func testReceiveHeadersWithUnsupportedEncodingWhenCompressionIsEnabled() {
     var machine = StateMachine(services: self.services, encoding: .enabled(.deflate, .identity))
 
