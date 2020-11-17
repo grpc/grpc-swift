@@ -755,6 +755,7 @@ extension HTTP2ToRawGRPCStateMachineTests {
         ("testReceiveDataWhenResponseStreamIsOpen", testReceiveDataWhenResponseStreamIsOpen),
         ("testReceiveHeadersNegotiatesResponseEncoding", testReceiveHeadersNegotiatesResponseEncoding),
         ("testReceiveHeadersWithIdentityCompressionWhenCompressionIsDisabled", testReceiveHeadersWithIdentityCompressionWhenCompressionIsDisabled),
+        ("testReceiveHeadersWithMultipleEncodings", testReceiveHeadersWithMultipleEncodings),
         ("testReceiveHeadersWithSupportedButNotAdvertisedEncoding", testReceiveHeadersWithSupportedButNotAdvertisedEncoding),
         ("testReceiveHeadersWithUnsupportedEncodingWhenCompressionIsDisabled", testReceiveHeadersWithUnsupportedEncodingWhenCompressionIsDisabled),
         ("testReceiveHeadersWithUnsupportedEncodingWhenCompressionIsEnabled", testReceiveHeadersWithUnsupportedEncodingWhenCompressionIsEnabled),

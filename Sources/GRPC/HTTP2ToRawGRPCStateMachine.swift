@@ -457,7 +457,18 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
   ///   and an accept encoding response header if the request encoding was valid, or a pair of
   ///     `GRPCStatus` and trailers to close the RPC with.
   private func extractRequestEncoding(from headers: HPACKHeaders) -> RequestEncodingValidation {
-    let encodingHeader = headers.first(name: GRPCHeaderName.encoding)
+    let encodings = headers[canonicalForm: GRPCHeaderName.encoding]
+
+    // Fail if there's more than one encoding header.
+    if encodings.count > 1 {
+      let status = GRPCStatus(
+        code: .invalidArgument,
+        message: "'\(GRPCHeaderName.encoding)' must contain no more than one value but was '\(encodings.joined(separator: ", "))'"
+      )
+      return .invalid(status: status, acceptEncoding: nil)
+    }
+
+    let encodingHeader = encodings.first
     let result: RequestEncodingValidation
 
     let validator = MessageEncodingHeaderValidator(encoding: self.encoding)
@@ -1176,10 +1187,9 @@ extension HTTP2ToRawGRPCStateMachine {
     userProvidedHeaders: HPACKHeaders,
     normalizeUserProvidedHeaders: Bool
   ) -> HPACKHeaders {
-    let capacity = 2 // :status, content-type
-      + (responseEncoding == nil ? 0 : 1)
-      + (acceptableRequestEncoding == nil ? 0 : 1)
-      + userProvidedHeaders.count
+    // 4 because ':status' and 'content-type' are required. We may send back 'grpc-encoding' and
+    // 'grpc-accept-encoding' as well.
+    let capacity = 4 + userProvidedHeaders.count
 
     var headers = HPACKHeaders()
     headers.reserveCapacity(capacity)
@@ -1208,10 +1218,9 @@ extension HTTP2ToRawGRPCStateMachine {
     userProvidedHeaders: HPACKHeaders?,
     normalizeUserProvidedHeaders: Bool
   ) -> HPACKHeaders {
-    let capacity = 3 // :status, status-code, content-type
-      + (status.message == nil ? 0 : 1)
-      + (acceptableRequestEncoding == nil ? 0 : 1)
-      + (userProvidedHeaders.map { $0.count } ?? 0)
+    // 5 because ':status', 'content-type', 'grpc-status' are required. We may also send back
+    // 'grpc-message' and 'grpc-accept-encoding'.
+    let capacity = 5 + (userProvidedHeaders.map { $0.count } ?? 0)
 
     var headers = HPACKHeaders()
     headers.reserveCapacity(capacity)
@@ -1242,9 +1251,8 @@ extension HTTP2ToRawGRPCStateMachine {
     userProvidedHeaders: HPACKHeaders,
     normalizeUserProvidedHeaders: Bool
   ) -> HPACKHeaders {
-    let capacity = 1 // status-code
-      + (status.message == nil ? 0 : 1)
-      + userProvidedHeaders.count
+    // 2 because 'grpc-status' is required, we may also send back 'grpc-message'.
+    let capacity = 2 + userProvidedHeaders.count
 
     var trailers = HPACKHeaders()
     trailers.reserveCapacity(capacity)
