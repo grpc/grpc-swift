@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 @testable import GRPC
+import NIO
 import NIOHPACK
+import NIOHTTP1
 import NIOHTTP2
 import XCTest
 
@@ -356,6 +358,51 @@ struct Matcher<Value> {
     }
   }
 
+  // MARK: HTTP/1
+
+  static func head(
+    status: HTTPResponseStatus,
+    headers: HTTPHeaders? = nil
+  ) -> Matcher<HTTPServerResponsePart> {
+    return .init { actual in
+      switch actual {
+      case let .head(head):
+        let statusMatches = Matcher.is(status).evaluate(head.status)
+        switch statusMatches {
+        case .match:
+          return headers.map { Matcher.is($0).evaluate(head.headers) } ?? .match
+        case .noMatch:
+          return statusMatches
+        }
+
+      case .body, .end:
+        return .noMatch(actual: "\(actual)", expected: "head")
+      }
+    }
+  }
+
+  static func body(_ matcher: Matcher<ByteBuffer>? = nil) -> Matcher<HTTPServerResponsePart> {
+    return .init { actual in
+      switch actual {
+      case let .body(.byteBuffer(buffer)):
+        return matcher.map { $0.evaluate(buffer) } ?? .match
+      default:
+        return .noMatch(actual: "\(actual)", expected: "body")
+      }
+    }
+  }
+
+  static func end() -> Matcher<HTTPServerResponsePart> {
+    return .init { actual in
+      switch actual {
+      case .end:
+        return .match
+      default:
+        return .noMatch(actual: "\(actual)", expected: "end")
+      }
+    }
+  }
+
   // MARK: HTTP/2
 
   static func contains(
@@ -412,11 +459,27 @@ struct Matcher<Value> {
     }
   }
 
-  static func data(endStream: Bool? = nil) -> Matcher<HTTP2Frame.FramePayload> {
+  static func data(
+    buffer: ByteBuffer? = nil,
+    endStream: Bool? = nil
+  ) -> Matcher<HTTP2Frame.FramePayload> {
     return .init { actual in
       switch actual {
       case let .data(payload):
-        return endStream.map { Matcher.is($0).evaluate(payload.endStream) } ?? .match
+        let endStreamMatches = endStream.map { Matcher.is($0).evaluate(payload.endStream) }
+
+        switch (endStreamMatches, payload.data) {
+        case let (.none, .byteBuffer(b)),
+             let (.some(.match), .byteBuffer(b)):
+          return buffer.map { Matcher.is($0).evaluate(b) } ?? .match
+
+        case (.some(.noMatch), .byteBuffer):
+          return endStreamMatches!
+
+        case (_, .fileRegion):
+          preconditionFailure("Unexpected IOData.fileRegion")
+        }
+
       default:
         return .noMatch(actual: "\(actual)", expected: "data")
       }
