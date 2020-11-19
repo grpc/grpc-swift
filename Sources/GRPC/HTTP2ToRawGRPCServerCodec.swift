@@ -27,14 +27,17 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelDuplexHandler {
 
   private var logger: Logger
   private var state: HTTP2ToRawGRPCStateMachine
+  private let errorDelegate: ServerErrorDelegate?
 
   init(
     servicesByName: [Substring: CallHandlerProvider],
     encoding: ServerMessageEncoding,
+    errorDelegate: ServerErrorDelegate?,
     normalizeHeaders: Bool,
     logger: Logger
   ) {
     self.logger = logger
+    self.errorDelegate = errorDelegate
     self.state = HTTP2ToRawGRPCStateMachine(
       services: servicesByName,
       encoding: encoding,
@@ -107,7 +110,7 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelDuplexHandler {
       let action = self.state.receive(
         headers: payload.headers,
         eventLoop: context.eventLoop,
-        errorDelegate: nil,
+        errorDelegate: self.errorDelegate,
         logger: self.logger
       )
       self.act(on: action, with: context)

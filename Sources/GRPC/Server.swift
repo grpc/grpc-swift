@@ -113,12 +113,14 @@ public final class Server {
           httpTargetWindowSize: configuration.httpTargetWindowSize,
           keepAlive: configuration.connectionKeepalive,
           idleTimeout: configuration.connectionIdleTimeout,
+          scheme: configuration.tls == nil ? "http" : "https",
           logger: logger
         ) { (channel, logger) -> EventLoopFuture<Void> in
-          let handler = GRPCServerRequestRoutingHandler(
+          let handler = HTTP2ToRawGRPCServerCodec(
             servicesByName: configuration.serviceProvidersByName,
             encoding: configuration.messageEncoding,
             errorDelegate: configuration.errorDelegate,
+            normalizeHeaders: true,
             logger: logger
           )
           return channel.pipeline.addHandler(handler)

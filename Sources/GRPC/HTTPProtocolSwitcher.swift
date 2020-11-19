@@ -28,6 +28,7 @@ internal class HTTPProtocolSwitcher {
   private let httpTargetWindowSize: Int
   private let keepAlive: ServerConnectionKeepalive
   private let idleTimeout: TimeAmount
+  private let scheme: String
 
   // We could receive additional data after the initial data and before configuring
   // the pipeline; buffer it and fire it down the pipeline once it is configured.
@@ -45,6 +46,7 @@ internal class HTTPProtocolSwitcher {
     httpTargetWindowSize: Int = 65535,
     keepAlive: ServerConnectionKeepalive,
     idleTimeout: TimeAmount,
+    scheme: String,
     logger: Logger,
     handlersInitializer: @escaping (Channel, Logger) -> EventLoopFuture<Void>
   ) {
@@ -52,6 +54,7 @@ internal class HTTPProtocolSwitcher {
     self.httpTargetWindowSize = httpTargetWindowSize
     self.keepAlive = keepAlive
     self.idleTimeout = idleTimeout
+    self.scheme = scheme
     self.logger = logger
     self.handlersInitializer = handlersInitializer
   }
@@ -136,10 +139,14 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
         // Upgrade connections are not handled since gRPC connections already arrive in HTTP2,
         // while gRPC-Web does not support HTTP2 at all, so there are no compelling use cases
         // to support this.
-        context.pipeline.configureHTTPServerPipeline(withErrorHandling: true)
-          .flatMap { context.pipeline.addHandler(WebCORSHandler()) }
-          .flatMap { self.handlersInitializer(context.channel, self.logger) }
-          .cascade(to: pipelineConfigured)
+        context.pipeline.configureHTTPServerPipeline(withErrorHandling: true).flatMap {
+          context.pipeline.addHandlers([
+            WebCORSHandler(),
+            GRPCWebToHTTP2ServerCodec(scheme: self.scheme),
+          ])
+        }.flatMap {
+          self.handlersInitializer(context.channel, self.logger)
+        }.cascade(to: pipelineConfigured)
 
       case .http2:
         context.channel.configureHTTP2Pipeline(
@@ -156,9 +163,7 @@ extension HTTPProtocolSwitcher: ChannelInboundHandler, RemovableChannelHandler {
             logger[metadataKey: MetadataKey.h2StreamID] = "<unknown>"
             return logger
           }.flatMap { logger in
-            streamChannel.pipeline.addHandler(HTTP2FramePayloadToHTTP1ServerCodec()).flatMap {
-              self.handlersInitializer(streamChannel, logger)
-            }
+            self.handlersInitializer(streamChannel, logger)
           }
         }.flatMap { multiplexer -> EventLoopFuture<Void> in
           // Add a keepalive and idle handlers between the two HTTP2 handlers.

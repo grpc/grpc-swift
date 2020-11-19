@@ -27,7 +27,7 @@ import SwiftProtobuf
 ///   the result of `error.asGRPCStatus()` will be returned to the client.
 /// - If `error.asGRPCStatus()` is not available, `GRPCStatus.processingError` is returned to the client.
 open class StreamingResponseCallContext<ResponsePayload>: ServerCallContextBase {
-  typealias WrappedResponse = _GRPCServerResponsePart<ResponsePayload>
+  typealias WrappedResponse = GRPCServerResponsePart<ResponsePayload>
 
   public let statusPromise: EventLoopPromise<GRPCStatus>
 
@@ -191,13 +191,13 @@ open class StreamingResponseCallContextImpl<ResponsePayload>: StreamingResponseC
       switch result {
       case let .success(status):
         self.channel.writeAndFlush(
-          self.wrap(.statusAndTrailers(status, self.trailers)),
+          self.wrap(.end(status, self.trailers)),
           promise: nil
         )
 
       case let .failure(error):
         let (status, trailers) = self.processObserverError(error, delegate: errorDelegate)
-        self.channel.writeAndFlush(self.wrap(.statusAndTrailers(status, trailers)), promise: nil)
+        self.channel.writeAndFlush(self.wrap(.end(status, trailers)), promise: nil)
       }
     }
   }
@@ -228,11 +228,11 @@ open class StreamingResponseCallContextImpl<ResponsePayload>: StreamingResponseC
     compression: Compression = .deferToCallDefault,
     promise: EventLoopPromise<Void>?
   ) {
-    let response = _MessageContext(
-      message,
-      compressed: compression.isEnabled(callDefault: self.compressionEnabled)
+    let compress = compression.isEnabled(callDefault: self.compressionEnabled)
+    self.channel.write(
+      self.wrap(.message(message, .init(compress: compress, flush: true))),
+      promise: promise
     )
-    self.channel.writeAndFlush(self.wrap(.message(response)), promise: promise)
   }
 
   override open func sendResponses<Messages: Sequence>(
@@ -250,12 +250,10 @@ open class StreamingResponseCallContextImpl<ResponsePayload>: StreamingResponseC
       // Attach the promise, if present, to the last message.
       let isLast = next == nil
       self.channel.write(
-        self.wrap(.message(.init(current, compressed: compress))),
+        self.wrap(.message(current, .init(compress: compress, flush: isLast))),
         promise: isLast ? promise : nil
       )
     }
-
-    self.channel.flush()
   }
 }
 
