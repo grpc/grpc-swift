@@ -25,9 +25,9 @@ import SwiftProtobuf
 /// - The observer block is implemented by the framework user and calls `context.sendResponse` as needed.
 /// - To close the call and send the status, complete the status future returned by the observer block.
 public final class ServerStreamingCallHandler<
-  RequestPayload,
-  ResponsePayload
->: _BaseCallHandler<RequestPayload, ResponsePayload> {
+  RequestDeserializer: MessageDeserializer,
+  ResponseSerializer: MessageSerializer
+>: _BaseCallHandler<RequestDeserializer, ResponseSerializer> {
   private typealias Context = StreamingResponseCallContext<ResponsePayload>
   private typealias Observer = (RequestPayload) -> EventLoopFuture<GRPCStatus>
 
@@ -46,18 +46,19 @@ public final class ServerStreamingCallHandler<
     }
   }
 
-  internal init<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
-    serializer: Serializer,
-    deserializer: Deserializer,
+  internal init(
+    serializer: ResponseSerializer,
+    deserializer: RequestDeserializer,
     callHandlerContext: CallHandlerContext,
-    interceptors: [ServerInterceptor<Deserializer.Output, Serializer.Input>],
+    interceptors: [ServerInterceptor<RequestDeserializer.Output, ResponseSerializer.Input>],
     eventObserverFactory: @escaping (StreamingResponseCallContext<ResponsePayload>)
       -> (RequestPayload) -> EventLoopFuture<GRPCStatus>
-  ) where Serializer.Input == ResponsePayload, Deserializer.Output == RequestPayload {
+  ) {
     self.state = .requestIdleResponseIdle(eventObserverFactory)
     super.init(
       callHandlerContext: callHandlerContext,
-      codec: GRPCServerCodecHandler(serializer: serializer, deserializer: deserializer),
+      requestDeserializr: deserializer,
+      responseSerializer: serializer,
       callType: .serverStreaming,
       interceptors: interceptors
     )

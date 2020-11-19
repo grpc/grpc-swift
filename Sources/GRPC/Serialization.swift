@@ -17,7 +17,7 @@ import NIO
 import NIOFoundationCompat
 import SwiftProtobuf
 
-internal protocol MessageSerializer {
+public protocol MessageSerializer {
   associatedtype Input
 
   /// Serializes `input` into a `ByteBuffer` allocated using the provided `allocator`.
@@ -28,7 +28,7 @@ internal protocol MessageSerializer {
   func serialize(_ input: Input, allocator: ByteBufferAllocator) throws -> ByteBuffer
 }
 
-internal protocol MessageDeserializer {
+public protocol MessageDeserializer {
   associatedtype Output
 
   /// Deserializes `byteBuffer` to produce a single `Output`.
@@ -39,8 +39,8 @@ internal protocol MessageDeserializer {
 
 // MARK: Protobuf
 
-internal struct ProtobufSerializer<Message: SwiftProtobuf.Message>: MessageSerializer {
-  internal func serialize(_ message: Message, allocator: ByteBufferAllocator) throws -> ByteBuffer {
+public struct ProtobufSerializer<Message: SwiftProtobuf.Message>: MessageSerializer {
+  public func serialize(_ message: Message, allocator: ByteBufferAllocator) throws -> ByteBuffer {
     // Serialize the message.
     let serialized = try message.serializedData()
 
@@ -58,8 +58,8 @@ internal struct ProtobufSerializer<Message: SwiftProtobuf.Message>: MessageSeria
   }
 }
 
-internal struct ProtobufDeserializer<Message: SwiftProtobuf.Message>: MessageDeserializer {
-  internal func deserialize(byteBuffer: ByteBuffer) throws -> Message {
+public struct ProtobufDeserializer<Message: SwiftProtobuf.Message>: MessageDeserializer {
+  public func deserialize(byteBuffer: ByteBuffer) throws -> Message {
     var buffer = byteBuffer
     // '!' is okay; we can always read 'readableBytes'.
     let data = buffer.readData(length: buffer.readableBytes)!
@@ -69,8 +69,8 @@ internal struct ProtobufDeserializer<Message: SwiftProtobuf.Message>: MessageDes
 
 // MARK: GRPCPayload
 
-internal struct GRPCPayloadSerializer<Message: GRPCPayload>: MessageSerializer {
-  internal func serialize(_ message: Message, allocator: ByteBufferAllocator) throws -> ByteBuffer {
+public struct GRPCPayloadSerializer<Message: GRPCPayload>: MessageSerializer {
+  public func serialize(_ message: Message, allocator: ByteBufferAllocator) throws -> ByteBuffer {
     // Reserve 5 leading bytes. This a minor optimisation win: the length prefixed message writer
     // can re-use the leading 5 bytes without needing to allocate a new buffer and copy over the
     // serialized message.
@@ -101,8 +101,8 @@ internal struct GRPCPayloadSerializer<Message: GRPCPayload>: MessageSerializer {
   }
 }
 
-internal struct GRPCPayloadDeserializer<Message: GRPCPayload>: MessageDeserializer {
-  internal func deserialize(byteBuffer: ByteBuffer) throws -> Message {
+public struct GRPCPayloadDeserializer<Message: GRPCPayload>: MessageDeserializer {
+  public func deserialize(byteBuffer: ByteBuffer) throws -> Message {
     var buffer = byteBuffer
     return try Message(serializedByteBuffer: &buffer)
   }

@@ -19,9 +19,7 @@ import NIOHTTP1
 import SwiftProtobuf
 
 /// Processes individual gRPC messages and stream-close events on an HTTP2 channel.
-public protocol GRPCCallHandler: ChannelHandler {
-  var _codec: ChannelHandler { get }
-}
+public protocol GRPCCallHandler: ChannelHandler {}
 
 /// Provides `GRPCCallHandler` objects for the methods on a particular service name.
 ///
@@ -184,8 +182,7 @@ extension GRPCServerRequestRoutingHandler: ChannelInboundHandler, RemovableChann
 
       // Configure the rest of the pipeline to serve the RPC.
       let httpToGRPC = HTTP1ToGRPCServerCodec(encoding: self.encoding, logger: self.logger)
-      let codec = callHandler._codec
-      context.pipeline.addHandlers([httpToGRPC, codec, callHandler], position: .after(self))
+      context.pipeline.addHandlers([httpToGRPC, callHandler], position: .after(self))
         .whenSuccess {
           context.pipeline.removeHandler(self, promise: nil)
         }
