@@ -1,0 +1,53 @@
+{
+  "scenarios": [
+    {
+      "name": "swift_protobuf_async_unary_qps_unconstrained_insecure",
+      "warmup_seconds": 5,
+      "benchmark_seconds": 30,
+      "num_servers": 1,
+      "server_config": {
+        "async_server_threads": 0,
+        "channel_args": [
+          {
+            "str_value": "throughput",
+            "name": "grpc.optimization_target"
+          }
+        ],
+        "server_type": "ASYNC_SERVER",
+        "security_params": null,
+        "threads_per_cq": 0,
+        "server_processes": 0
+      },
+      "client_config": {
+        "security_params": null,
+        "channel_args": [
+          {
+            "str_value": "throughput",
+            "name": "grpc.optimization_target"
+          }
+        ],
+        "async_client_threads": 0,
+        "outstanding_rpcs_per_channel": 100,
+        "rpc_type": "UNARY",
+        "payload_config": {
+          "simple_params": {
+            "resp_size": 0,
+            "req_size": 0
+          }
+        },
+        "client_channels": 1,
+        "threads_per_cq": 0,
+        "load_params": {
+          "closed_loop": {}
+        },
+        "client_type": "ASYNC_CLIENT",
+        "histogram_params": {
+          "max_possible": 60000000000,
+          "resolution": 0.01
+        },
+        "client_processes": 0
+      },
+      "num_clients": 0
+    }
+  ]
+}
