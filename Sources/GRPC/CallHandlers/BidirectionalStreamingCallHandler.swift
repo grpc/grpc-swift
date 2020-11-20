@@ -26,9 +26,9 @@ import SwiftProtobuf
 ///   they can fail the observer block future.
 /// - To close the call and send the status, complete `context.statusPromise`.
 public class BidirectionalStreamingCallHandler<
-  RequestPayload,
-  ResponsePayload
->: _BaseCallHandler<RequestPayload, ResponsePayload> {
+  RequestDeserializer: MessageDeserializer,
+  ResponseSerializer: MessageSerializer
+>: _BaseCallHandler<RequestDeserializer, ResponseSerializer> {
   private typealias Context = StreamingResponseCallContext<ResponsePayload>
   private typealias Observer = EventLoopFuture<(StreamEvent<RequestPayload>) -> Void>
 
@@ -44,18 +44,19 @@ public class BidirectionalStreamingCallHandler<
 
   // We ask for a future of type `EventObserver` to allow the framework user to e.g. asynchronously authenticate a call.
   // If authentication fails, they can simply fail the observer future, which causes the call to be terminated.
-  internal init<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
-    serializer: Serializer,
-    deserializer: Deserializer,
+  internal init(
+    serializer: ResponseSerializer,
+    deserializer: RequestDeserializer,
     callHandlerContext: CallHandlerContext,
-    interceptors: [ServerInterceptor<Deserializer.Output, Serializer.Input>],
+    interceptors: [ServerInterceptor<RequestDeserializer.Output, ResponseSerializer.Input>],
     eventObserverFactory: @escaping (StreamingResponseCallContext<ResponsePayload>)
       -> EventLoopFuture<(StreamEvent<RequestPayload>) -> Void>
-  ) where Serializer.Input == ResponsePayload, Deserializer.Output == RequestPayload {
+  ) {
     self.state = .requestIdleResponseIdle(eventObserverFactory)
     super.init(
       callHandlerContext: callHandlerContext,
-      codec: GRPCServerCodecHandler(serializer: serializer, deserializer: deserializer),
+      requestDeserializr: deserializer,
+      responseSerializer: serializer,
       callType: .bidirectionalStreaming,
       interceptors: interceptors
     )

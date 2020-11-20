@@ -26,9 +26,9 @@ import SwiftProtobuf
 /// - To return a response to the client, the framework user should complete that future
 ///   (similar to e.g. serving regular HTTP requests in frameworks such as Vapor).
 public final class UnaryCallHandler<
-  RequestPayload,
-  ResponsePayload
->: _BaseCallHandler<RequestPayload, ResponsePayload> {
+  RequestDeserializer: MessageDeserializer,
+  ResponseSerializer: MessageSerializer
+>: _BaseCallHandler<RequestDeserializer, ResponseSerializer> {
   private typealias Context = UnaryResponseCallContext<ResponsePayload>
   private typealias Observer = (RequestPayload) -> EventLoopFuture<ResponsePayload>
 
@@ -69,18 +69,19 @@ public final class UnaryCallHandler<
     }
   }
 
-  internal init<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
-    serializer: Serializer,
-    deserializer: Deserializer,
+  internal init(
+    serializer: ResponseSerializer,
+    deserializer: RequestDeserializer,
     callHandlerContext: CallHandlerContext,
-    interceptors: [ServerInterceptor<Deserializer.Output, Serializer.Input>],
+    interceptors: [ServerInterceptor<RequestDeserializer.Output, ResponseSerializer.Input>],
     eventObserverFactory: @escaping (UnaryResponseCallContext<ResponsePayload>)
       -> (RequestPayload) -> EventLoopFuture<ResponsePayload>
-  ) where Serializer.Input == ResponsePayload, Deserializer.Output == RequestPayload {
+  ) {
     self.state = .requestIdleResponseIdle(eventObserverFactory)
     super.init(
       callHandlerContext: callHandlerContext,
-      codec: GRPCServerCodecHandler(serializer: serializer, deserializer: deserializer),
+      requestDeserializr: deserializer,
+      responseSerializer: serializer,
       callType: .unary,
       interceptors: interceptors
     )

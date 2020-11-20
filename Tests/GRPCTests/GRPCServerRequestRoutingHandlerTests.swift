@@ -117,8 +117,12 @@ class GRPCServerRequestRoutingHandlerTests: GRPCTestCase {
     XCTAssertThrowsError(try router.wait())
 
     // There should now be a unary call handler.
-    let unary = self.channel.pipeline
-      .handler(type: UnaryCallHandler<Echo_EchoRequest, Echo_EchoResponse>.self)
+    let unary = self.channel.pipeline.handler(
+      type: UnaryCallHandler<
+        ProtobufDeserializer<Echo_EchoRequest>,
+        ProtobufSerializer<Echo_EchoResponse>
+      >.self
+    )
     XCTAssertNoThrow(try unary.wait())
   }
 

@@ -27,7 +27,7 @@ public enum CallHandlerFactory {
     interceptors: [ServerInterceptor<Request, Response>] = [],
     eventObserverFactory: @escaping (UnaryContext<Response>)
       -> UnaryEventObserver<Request, Response>
-  ) -> UnaryCallHandler<Request, Response> {
+  ) -> UnaryCallHandler<ProtobufDeserializer<Request>, ProtobufSerializer<Response>> {
     return UnaryCallHandler(
       serializer: ProtobufSerializer(),
       deserializer: ProtobufDeserializer(),
@@ -42,7 +42,7 @@ public enum CallHandlerFactory {
     interceptors: [ServerInterceptor<Request, Response>] = [],
     eventObserverFactory: @escaping (UnaryContext<Response>)
       -> UnaryEventObserver<Request, Response>
-  ) -> UnaryCallHandler<Request, Response> {
+  ) -> UnaryCallHandler<GRPCPayloadDeserializer<Request>, GRPCPayloadSerializer<Response>> {
     return UnaryCallHandler(
       serializer: GRPCPayloadSerializer(),
       deserializer: GRPCPayloadDeserializer(),
@@ -61,7 +61,7 @@ public enum CallHandlerFactory {
     interceptors: [ServerInterceptor<Request, Response>] = [],
     eventObserverFactory: @escaping (ClientStreamingContext<Response>)
       -> ClientStreamingEventObserver<Request>
-  ) -> ClientStreamingCallHandler<Request, Response> {
+  ) -> ClientStreamingCallHandler<ProtobufDeserializer<Request>, ProtobufSerializer<Response>> {
     return ClientStreamingCallHandler(
       serializer: ProtobufSerializer(),
       deserializer: ProtobufDeserializer(),
@@ -76,7 +76,10 @@ public enum CallHandlerFactory {
     interceptors: [ServerInterceptor<Request, Response>] = [],
     eventObserverFactory: @escaping (ClientStreamingContext<Response>)
       -> ClientStreamingEventObserver<Request>
-  ) -> ClientStreamingCallHandler<Request, Response> {
+  ) -> ClientStreamingCallHandler<
+    GRPCPayloadDeserializer<Request>,
+    GRPCPayloadSerializer<Response>
+  > {
     return ClientStreamingCallHandler(
       serializer: GRPCPayloadSerializer(),
       deserializer: GRPCPayloadDeserializer(),
@@ -94,7 +97,7 @@ public enum CallHandlerFactory {
     interceptors: [ServerInterceptor<Request, Response>] = [],
     eventObserverFactory: @escaping (ServerStreamingContext<Response>)
       -> ServerStreamingEventObserver<Request>
-  ) -> ServerStreamingCallHandler<Request, Response> {
+  ) -> ServerStreamingCallHandler<ProtobufDeserializer<Request>, ProtobufSerializer<Response>> {
     return ServerStreamingCallHandler(
       serializer: ProtobufSerializer(),
       deserializer: ProtobufDeserializer(),
@@ -109,7 +112,10 @@ public enum CallHandlerFactory {
     interceptors: [ServerInterceptor<Request, Response>] = [],
     eventObserverFactory: @escaping (ServerStreamingContext<Response>)
       -> ServerStreamingEventObserver<Request>
-  ) -> ServerStreamingCallHandler<Request, Response> {
+  ) -> ServerStreamingCallHandler<
+    GRPCPayloadDeserializer<Request>,
+    GRPCPayloadSerializer<Response>
+  > {
     return ServerStreamingCallHandler(
       serializer: GRPCPayloadSerializer(),
       deserializer: GRPCPayloadDeserializer(),
@@ -128,7 +134,10 @@ public enum CallHandlerFactory {
     interceptors: [ServerInterceptor<Request, Response>] = [],
     eventObserverFactory: @escaping (BidirectionalStreamingContext<Response>)
       -> BidirectionalStreamingEventObserver<Request>
-  ) -> BidirectionalStreamingCallHandler<Request, Response> {
+  ) -> BidirectionalStreamingCallHandler<
+    ProtobufDeserializer<Request>,
+    ProtobufSerializer<Response>
+  > {
     return BidirectionalStreamingCallHandler(
       serializer: ProtobufSerializer(),
       deserializer: ProtobufDeserializer(),
@@ -143,7 +152,10 @@ public enum CallHandlerFactory {
     interceptors: [ServerInterceptor<Request, Response>] = [],
     eventObserverFactory: @escaping (BidirectionalStreamingContext<Response>)
       -> BidirectionalStreamingEventObserver<Request>
-  ) -> BidirectionalStreamingCallHandler<Request, Response> {
+  ) -> BidirectionalStreamingCallHandler<
+    GRPCPayloadDeserializer<Request>,
+    GRPCPayloadSerializer<Response>
+  > {
     return BidirectionalStreamingCallHandler(
       serializer: GRPCPayloadSerializer(),
       deserializer: GRPCPayloadDeserializer(),
