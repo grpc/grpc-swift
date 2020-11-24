@@ -140,12 +140,32 @@ internal final class _StreamingResponseCallContext<Request, Response>:
     promise: EventLoopPromise<Void>?
   ) {
     let compress = compression.isEnabled(callDefault: self.compressionEnabled)
-    self._sendResponse(message, .init(compress: compress, flush: true), promise)
+    if self.eventLoop.inEventLoop {
+      self._sendResponse(message, .init(compress: compress, flush: true), promise)
+    } else {
+      self.eventLoop.execute {
+        self._sendResponse(message, .init(compress: compress, flush: true), promise)
+      }
+    }
   }
 
   override func sendResponses<Messages: Sequence>(
     _ messages: Messages,
     compression: Compression = .deferToCallDefault,
+    promise: EventLoopPromise<Void>?
+  ) where Response == Messages.Element {
+    if self.eventLoop.inEventLoop {
+      self._sendResponses(messages, compression: compression, promise: promise)
+    } else {
+      self.eventLoop.execute {
+        self._sendResponses(messages, compression: compression, promise: promise)
+      }
+    }
+  }
+
+  private func _sendResponses<Messages: Sequence>(
+    _ messages: Messages,
+    compression: Compression,
     promise: EventLoopPromise<Void>?
   ) where Response == Messages.Element {
     let compress = compression.isEnabled(callDefault: self.compressionEnabled)
