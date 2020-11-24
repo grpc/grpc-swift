@@ -52,8 +52,8 @@ class ServerInterceptorTests: GRPCTestCase {
 
   // This is only useful for the type inference.
   private func request(
-    _ request: _GRPCServerRequestPart<Echo_EchoRequest>
-  ) -> _GRPCServerRequestPart<Echo_EchoRequest> {
+    _ request: GRPCServerRequestPart<Echo_EchoRequest>
+  ) -> GRPCServerRequestPart<Echo_EchoRequest> {
     return request
   }
 
@@ -66,7 +66,7 @@ class ServerInterceptorTests: GRPCTestCase {
     return provider.handleMethod(method, callHandlerContext: context)
   }
 
-  fileprivate typealias ResponsePart = _GRPCServerResponsePart<Echo_EchoResponse>
+  fileprivate typealias ResponsePart = GRPCServerResponsePart<Echo_EchoResponse>
 
   func testPassThroughInterceptor() throws {
     let recorder = self.makeRecorder()
@@ -76,7 +76,7 @@ class ServerInterceptorTests: GRPCTestCase {
     assertThat(try self.channel.pipeline.addHandlers([Codec(), handler]).wait(), .doesNotThrow())
 
     // Send requests.
-    assertThat(try self.channel.writeInbound(self.request(.headers([:]))), .doesNotThrow())
+    assertThat(try self.channel.writeInbound(self.request(.metadata([:]))), .doesNotThrow())
     assertThat(
       try self.channel.writeInbound(self.request(.message(.with { $0.text = "" }))),
       .doesNotThrow()
@@ -84,7 +84,7 @@ class ServerInterceptorTests: GRPCTestCase {
     assertThat(try self.channel.writeInbound(self.request(.end)), .doesNotThrow())
 
     // Expect responses.
-    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.headers()))
+    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.metadata()))
     assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.message()))
     assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.end()))
 
@@ -123,12 +123,12 @@ class ServerInterceptorTests: GRPCTestCase {
     assertThat(try self.channel.pipeline.addHandlers([Codec(), handler]).wait(), .doesNotThrow())
 
     // Send the requests.
-    assertThat(try self.channel.writeInbound(self.request(.headers([:]))), .doesNotThrow())
+    assertThat(try self.channel.writeInbound(self.request(.metadata([:]))), .doesNotThrow())
     assertThat(try self.channel.writeInbound(self.request(.message(.init()))), .doesNotThrow())
     assertThat(try self.channel.writeInbound(self.request(.end)), .doesNotThrow())
 
     // Expect the responses.
-    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.headers()))
+    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.metadata()))
     assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.message()))
     assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.end()))
     // No more response parts.
@@ -181,7 +181,7 @@ class ServerInterceptorTests: GRPCTestCase {
     assertThat(try self.channel.pipeline.addHandlers([Codec(), handler]).wait(), .doesNotThrow())
 
     // Send the requests.
-    assertThat(try self.channel.writeInbound(self.request(.headers([:]))), .doesNotThrow())
+    assertThat(try self.channel.writeInbound(self.request(.metadata([:]))), .doesNotThrow())
     assertThat(
       try self.channel.writeInbound(self.request(.message(.init(text: "foo")))),
       .doesNotThrow()
@@ -189,7 +189,7 @@ class ServerInterceptorTests: GRPCTestCase {
     assertThat(try self.channel.writeInbound(self.request(.end)), .doesNotThrow())
 
     // Get the responses.
-    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.headers()))
+    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.metadata()))
     assertThat(
       try self.channel.readOutbound(as: ResponsePart.self),
       .notNil(.message(.equalTo(.with { $0.text = "echo: foo" })))
@@ -203,7 +203,7 @@ class ServerInterceptorTests: GRPCTestCase {
     assertThat(try self.channel.pipeline.addHandlers([Codec(), handler]).wait(), .doesNotThrow())
 
     // Send the requests.
-    assertThat(try self.channel.writeInbound(self.request(.headers([:]))), .doesNotThrow())
+    assertThat(try self.channel.writeInbound(self.request(.metadata([:]))), .doesNotThrow())
     for text in ["a", "b", "c"] {
       let message = self.request(.message(.init(text: text)))
       assertThat(try self.channel.writeInbound(message), .doesNotThrow())
@@ -211,7 +211,7 @@ class ServerInterceptorTests: GRPCTestCase {
     assertThat(try self.channel.writeInbound(self.request(.end)), .doesNotThrow())
 
     // Receive responses.
-    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.headers()))
+    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.metadata()))
     assertThat(
       try self.channel.readOutbound(as: ResponsePart.self),
       .notNil(.message(.equalTo(.with { $0.text = "echo: a b c" })))
@@ -225,7 +225,7 @@ class ServerInterceptorTests: GRPCTestCase {
     assertThat(try self.channel.pipeline.addHandlers([Codec(), handler]).wait(), .doesNotThrow())
 
     // Send the requests.
-    assertThat(try self.channel.writeInbound(self.request(.headers([:]))), .doesNotThrow())
+    assertThat(try self.channel.writeInbound(self.request(.metadata([:]))), .doesNotThrow())
     assertThat(
       try self.channel.writeInbound(self.request(.message(.with { $0.text = "a b c" }))),
       .doesNotThrow()
@@ -233,7 +233,7 @@ class ServerInterceptorTests: GRPCTestCase {
     assertThat(try self.channel.writeInbound(self.request(.end)), .doesNotThrow())
 
     // Receive responses.
-    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.headers()))
+    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.metadata()))
     for text in ["a", "b", "c"] {
       let expected = Echo_EchoResponse(text: "echo: " + text)
       assertThat(
@@ -250,7 +250,7 @@ class ServerInterceptorTests: GRPCTestCase {
     assertThat(try self.channel.pipeline.addHandlers([Codec(), handler]).wait(), .doesNotThrow())
 
     // Send the requests.
-    assertThat(try self.channel.writeInbound(self.request(.headers([:]))), .doesNotThrow())
+    assertThat(try self.channel.writeInbound(self.request(.metadata([:]))), .doesNotThrow())
     for text in ["a", "b", "c"] {
       assertThat(
         try self.channel.writeInbound(self.request(.message(.init(text: text)))),
@@ -260,7 +260,7 @@ class ServerInterceptorTests: GRPCTestCase {
     assertThat(try self.channel.writeInbound(self.request(.end)), .doesNotThrow())
 
     // Receive responses.
-    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.headers()))
+    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.metadata()))
     for text in ["a", "b", "c"] {
       let expected = Echo_EchoResponse(text: "echo: " + text)
       assertThat(
@@ -440,19 +440,19 @@ class EchoFromInterceptor: Echo_EchoProvider {
 
 // Avoid having to serialize/deserialize messages in test cases.
 private class Codec: ChannelDuplexHandler {
-  typealias InboundIn = _GRPCServerRequestPart<Echo_EchoRequest>
-  typealias InboundOut = _RawGRPCServerRequestPart
+  typealias InboundIn = GRPCServerRequestPart<Echo_EchoRequest>
+  typealias InboundOut = GRPCServerRequestPart<ByteBuffer>
 
-  typealias OutboundIn = _RawGRPCServerResponsePart
-  typealias OutboundOut = _GRPCServerResponsePart<Echo_EchoResponse>
+  typealias OutboundIn = GRPCServerResponsePart<ByteBuffer>
+  typealias OutboundOut = GRPCServerResponsePart<Echo_EchoResponse>
 
   private let serializer = ProtobufSerializer<Echo_EchoRequest>()
   private let deserializer = ProtobufDeserializer<Echo_EchoResponse>()
 
   func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     switch self.unwrapInboundIn(data) {
-    case let .headers(headers):
-      context.fireChannelRead(self.wrapInboundOut(.headers(headers)))
+    case let .metadata(headers):
+      context.fireChannelRead(self.wrapInboundOut(.metadata(headers)))
 
     case let .message(message):
       let serialized = try! self.serializer.serialize(message, allocator: context.channel.allocator)
@@ -465,18 +465,15 @@ private class Codec: ChannelDuplexHandler {
 
   func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     switch self.unwrapOutboundIn(data) {
-    case let .headers(headers):
-      context.write(self.wrapOutboundOut(.headers(headers)), promise: promise)
+    case let .metadata(headers):
+      context.write(self.wrapOutboundOut(.metadata(headers)), promise: promise)
 
-    case let .message(message):
-      let deserialzed = try! self.deserializer.deserialize(byteBuffer: message.message)
-      context.write(
-        self.wrapOutboundOut(.message(.init(deserialzed, compressed: message.compressed))),
-        promise: promise
-      )
+    case let .message(message, metadata):
+      let deserialzed = try! self.deserializer.deserialize(byteBuffer: message)
+      context.write(self.wrapOutboundOut(.message(deserialzed, metadata)), promise: promise)
 
-    case let .statusAndTrailers(status, trailers):
-      context.write(self.wrapOutboundOut(.statusAndTrailers(status, trailers)), promise: promise)
+    case let .end(status, trailers):
+      context.write(self.wrapOutboundOut(.end(status, trailers)), promise: promise)
     }
   }
 }

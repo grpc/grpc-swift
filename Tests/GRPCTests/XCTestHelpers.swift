@@ -319,45 +319,6 @@ struct Matcher<Value> {
     }
   }
 
-  static func headers<Response>(
-    _ matcher: Matcher<HPACKHeaders>? = nil
-  ) -> Matcher<_GRPCServerResponsePart<Response>> {
-    return .init { actual in
-      switch actual {
-      case let .headers(headers):
-        return matcher?.evaluate(headers) ?? .match
-      default:
-        return .noMatch(actual: String(describing: actual), expected: "headers")
-      }
-    }
-  }
-
-  static func message<Response>(
-    _ matcher: Matcher<Response>? = nil
-  ) -> Matcher<_GRPCServerResponsePart<Response>> {
-    return .init { actual in
-      switch actual {
-      case let .message(message):
-        return matcher?.evaluate(message.message) ?? .match
-      default:
-        return .noMatch(actual: String(describing: actual), expected: "message")
-      }
-    }
-  }
-
-  static func end<Response>(
-    _ matcher: Matcher<GRPCStatus>? = nil
-  ) -> Matcher<_GRPCServerResponsePart<Response>> {
-    return .init { actual in
-      switch actual {
-      case let .statusAndTrailers(status, _):
-        return matcher?.evaluate(status) ?? .match
-      default:
-        return .noMatch(actual: String(describing: actual), expected: "end")
-      }
-    }
-  }
-
   // MARK: HTTP/1
 
   static func head(

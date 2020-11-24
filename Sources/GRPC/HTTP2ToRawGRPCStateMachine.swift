@@ -311,7 +311,7 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
       return self.methodNotImplemented("", contentType: contentType)
     }
 
-    guard let callPath = GRPCServerRequestRoutingHandler.CallPath(requestURI: path),
+    guard let callPath = CallPath(requestURI: path),
       let service = self.services[Substring(callPath.service)] else {
       return self.methodNotImplemented(path, contentType: contentType)
     }

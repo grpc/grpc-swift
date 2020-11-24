@@ -16,10 +16,11 @@
 import EchoImplementation
 import EchoModel
 import Foundation
-import GRPC
+@testable import GRPC
 import Logging
 import NIO
-import NIOHTTP1
+import NIOHPACK
+import NIOHTTP2
 import XCTest
 
 private class ServerErrorDelegateMock: ServerErrorDelegate {
@@ -63,26 +64,28 @@ class ServerErrorDelegateTests: GRPCTestCase {
     self.setupChannelAndDelegate { _ in
       GRPCStatusAndTrailers(status: .init(code: .notFound, message: "some error"))
     }
-    let requestHead = HTTPRequestHead(
-      version: .init(major: 2, minor: 0),
-      method: .POST,
-      uri: uri,
-      headers: ["content-type": "application/grpc"]
-    )
+    let requestHeaders: HPACKHeaders = [
+      ":method": "POST",
+      ":path": uri,
+      "content-type": "application/grpc",
+    ]
 
-    XCTAssertNoThrow(try self.channel.writeInbound(HTTPServerRequestPart.head(requestHead)))
+    let headersPayload: HTTP2Frame.FramePayload = .headers(.init(headers: requestHeaders))
+    XCTAssertNoThrow(try self.channel.writeInbound(headersPayload))
     self.channel.pipeline.fireErrorCaught(GRPCStatus(code: .aborted, message: nil))
-    // This is the head
-    XCTAssertNoThrow(try self.channel.readOutbound(as: HTTPServerResponsePart.self))
-    let end = try self.channel.readOutbound(as: HTTPServerResponsePart.self)
 
-    guard case let .some(.end(headers)) = end else {
+    // Read out the response headers.
+    XCTAssertNoThrow(try self.channel.readOutbound(as: HTTP2Frame.FramePayload.self))
+    let end = try self.channel.readOutbound(as: HTTP2Frame.FramePayload.self)
+
+    guard case let .some(.headers(trailers)) = end else {
       XCTFail("Expected headers but got \(end.debugDescription)")
       return
     }
 
-    XCTAssertEqual(headers?.first(name: "grpc-status"), "5")
-    XCTAssertEqual(headers?.first(name: "grpc-message"), "some error")
+    XCTAssertEqual(trailers.headers.first(name: "grpc-status"), "5")
+    XCTAssertEqual(trailers.headers.first(name: "grpc-message"), "some error")
+    XCTAssertTrue(trailers.endStream)
   }
 
   func testTransformLibraryError_whenTransformingErrorToStatusAndMetadata_unary() throws {
@@ -116,27 +119,30 @@ class ServerErrorDelegateTests: GRPCTestCase {
         trailers: ["some-metadata": "test"]
       )
     }
-    let requestHead = HTTPRequestHead(
-      version: .init(major: 2, minor: 0),
-      method: .POST,
-      uri: uri,
-      headers: ["content-type": "application/grpc"]
-    )
 
-    XCTAssertNoThrow(try self.channel.writeInbound(HTTPServerRequestPart.head(requestHead)))
+    let requestHeaders: HPACKHeaders = [
+      ":method": "POST",
+      ":path": uri,
+      "content-type": "application/grpc",
+    ]
+
+    let headersPayload: HTTP2Frame.FramePayload = .headers(.init(headers: requestHeaders))
+    XCTAssertNoThrow(try self.channel.writeInbound(headersPayload))
     self.channel.pipeline.fireErrorCaught(GRPCStatus(code: .aborted, message: nil))
-    // This is the head
-    XCTAssertNoThrow(try self.channel.readOutbound(as: HTTPServerResponsePart.self))
-    let end = try self.channel.readOutbound(as: HTTPServerResponsePart.self)
 
-    guard case let .some(.end(headers)) = end else {
+    // Read out the response headers.
+    XCTAssertNoThrow(try self.channel.readOutbound(as: HTTP2Frame.FramePayload.self))
+    let end = try self.channel.readOutbound(as: HTTP2Frame.FramePayload.self)
+
+    guard case let .some(.headers(trailers)) = end else {
       XCTFail("Expected headers but got \(end.debugDescription)")
       return
     }
 
-    XCTAssertEqual(headers?.first(name: "grpc-status"), "5", line: line)
-    XCTAssertEqual(headers?.first(name: "grpc-message"), "some error", line: line)
-    XCTAssertEqual(headers?.first(name: "some-metadata"), "test", line: line)
+    XCTAssertEqual(trailers.headers.first(name: "grpc-status"), "5", line: line)
+    XCTAssertEqual(trailers.headers.first(name: "grpc-message"), "some error", line: line)
+    XCTAssertEqual(trailers.headers.first(name: "some-metadata"), "test", line: line)
+    XCTAssertTrue(trailers.endStream)
   }
 
   private func setupChannelAndDelegate(
@@ -147,10 +153,11 @@ class ServerErrorDelegateTests: GRPCTestCase {
       transformLibraryErrorHandler: transformLibraryErrorHandler
     )
 
-    let handler = GRPCServerRequestRoutingHandler(
+    let handler = HTTP2ToRawGRPCServerCodec(
       servicesByName: [provider.serviceName: provider],
       encoding: .disabled,
       errorDelegate: self.errorDelegate,
+      normalizeHeaders: true,
       logger: self.logger
     )
 

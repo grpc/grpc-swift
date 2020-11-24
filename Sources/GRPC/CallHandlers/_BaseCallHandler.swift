@@ -30,8 +30,8 @@ public class _BaseCallHandler<
   public typealias RequestPayload = RequestDeserializer.Output
   public typealias ResponsePayload = ResponseSerializer.Input
 
-  public typealias InboundIn = _RawGRPCServerRequestPart
-  public typealias OutboundOut = _RawGRPCServerResponsePart
+  public typealias InboundIn = GRPCServerRequestPart<ByteBuffer>
+  public typealias OutboundOut = GRPCServerResponsePart<ByteBuffer>
 
   /// An interceptor pipeline.
   private var pipeline: ServerInterceptorPipeline<RequestPayload, ResponsePayload>?
@@ -117,8 +117,8 @@ public class _BaseCallHandler<
     let part = self.unwrapInboundIn(data)
 
     switch part {
-    case let .headers(headers):
-      self.act(on: self.state.channelRead(.headers(headers)))
+    case let .metadata(headers):
+      self.act(on: self.state.channelRead(.metadata(headers)))
     case let .message(buffer):
       do {
         let request = try self.requestDeserializer.deserialize(byteBuffer: buffer)
@@ -466,7 +466,7 @@ extension _BaseCallHandler.State {
   /// Receive a request part from the `Channel`. If we're active we just forward these through the
   /// pipeline. We validate at the other end.
   internal mutating func channelRead(
-    _ requestPart: _GRPCServerRequestPart<_BaseCallHandler.RequestPayload>
+    _ requestPart: GRPCServerRequestPart<_BaseCallHandler.RequestPayload>
   ) -> Action {
     switch self {
     case .idle:
@@ -480,7 +480,7 @@ extension _BaseCallHandler.State {
       let part: GRPCServerRequestPart<_BaseCallHandler.RequestPayload>
 
       switch requestPart {
-      case let .headers(headers):
+      case let .metadata(headers):
         filter = state.channelStreamState.receiveHeaders()
         part = .metadata(headers)
       case let .message(message):
@@ -703,7 +703,7 @@ extension _BaseCallHandler {
       // Only flush if we're streaming responses, if we're not streaming responses then we'll wait
       // for the response and end before emitting the flush.
       flush = self.callType.isStreamingResponses
-      context.write(self.wrapOutboundOut(.headers(headers)), promise: promise)
+      context.write(self.wrapOutboundOut(.metadata(headers)), promise: promise)
 
     case let .message(message, metadata):
       do {
@@ -712,7 +712,7 @@ extension _BaseCallHandler {
           allocator: context.channel.allocator
         )
         context.write(
-          self.wrapOutboundOut(.message(.init(serializedResponse, compressed: metadata.compress))),
+          self.wrapOutboundOut(.message(serializedResponse, metadata)),
           promise: promise
         )
         // Flush if we've been told to flush.
@@ -724,7 +724,7 @@ extension _BaseCallHandler {
       }
 
     case let .end(status, trailers):
-      context.write(self.wrapOutboundOut(.statusAndTrailers(status, trailers)), promise: promise)
+      context.write(self.wrapOutboundOut(.end(status, trailers)), promise: promise)
       // Always flush on end.
       flush = true
     }

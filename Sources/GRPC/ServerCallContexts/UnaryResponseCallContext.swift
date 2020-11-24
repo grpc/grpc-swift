@@ -30,7 +30,7 @@ import SwiftProtobuf
 /// For unary calls, the response is not actually provided by fulfilling `responsePromise`, but instead by completing
 /// the future returned by `UnaryCallHandler.EventObserver`.
 open class UnaryResponseCallContext<ResponsePayload>: ServerCallContextBase, StatusOnlyCallContext {
-  typealias WrappedResponse = _GRPCServerResponsePart<ResponsePayload>
+  typealias WrappedResponse = GRPCServerResponsePart<ResponsePayload>
 
   public let responsePromise: EventLoopPromise<ResponsePayload>
   public var responseStatus: GRPCStatus = .ok
@@ -125,12 +125,12 @@ open class UnaryResponseCallContextImpl<ResponsePayload>: UnaryResponseCallConte
   /// Handle the response from the service provider.
   private func handleResponse(_ response: ResponsePayload) {
     self.channel.write(
-      self.wrap(.message(.init(response, compressed: self.compressionEnabled))),
+      self.wrap(.message(response, .init(compress: self.compressionEnabled, flush: false))),
       promise: nil
     )
 
     self.channel.writeAndFlush(
-      self.wrap(.statusAndTrailers(self.responseStatus, self.trailers)),
+      self.wrap(.end(self.responseStatus, self.trailers)),
       promise: nil
     )
   }
@@ -138,7 +138,7 @@ open class UnaryResponseCallContextImpl<ResponsePayload>: UnaryResponseCallConte
   /// Handle an error from the service provider.
   private func handleError(_ error: Error, delegate: ServerErrorDelegate?) {
     let (status, trailers) = self.processObserverError(error, delegate: delegate)
-    self.channel.writeAndFlush(self.wrap(.statusAndTrailers(status, trailers)), promise: nil)
+    self.channel.writeAndFlush(self.wrap(.end(status, trailers)), promise: nil)
   }
 
   /// Wrap the response part in a `NIOAny`. This is useful in order to avoid explicitly spelling

@@ -174,9 +174,7 @@ private class AuthorityCheckingEcho: Echo_EchoProvider {
     request: Echo_EchoRequest,
     context: StatusOnlyCallContext
   ) -> EventLoopFuture<Echo_EchoResponse> {
-    // Since we currently go via the HTTP 2-to-1 handler, ':authority' gets normalized to 'host'.
-    // TODO: Use ':authority' when we fully switch to HTTP/2
-    guard let authority = context.headers.first(name: "host") else {
+    guard let authority = context.headers.first(name: ":authority") else {
       let status = GRPCStatus(
         code: .failedPrecondition,
         message: "Missing ':authority' pseudo header"
