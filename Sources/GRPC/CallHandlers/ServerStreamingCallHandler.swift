@@ -57,7 +57,7 @@ public final class ServerStreamingCallHandler<
     self.state = .requestIdleResponseIdle(eventObserverFactory)
     super.init(
       callHandlerContext: callHandlerContext,
-      requestDeserializr: deserializer,
+      requestDeserializer: deserializer,
       responseSerializer: serializer,
       callType: .serverStreaming,
       interceptors: interceptors
