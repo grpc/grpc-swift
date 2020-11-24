@@ -55,7 +55,7 @@ public class BidirectionalStreamingCallHandler<
     self.state = .requestIdleResponseIdle(eventObserverFactory)
     super.init(
       callHandlerContext: callHandlerContext,
-      requestDeserializr: deserializer,
+      requestDeserializer: deserializer,
       responseSerializer: serializer,
       callType: .bidirectionalStreaming,
       interceptors: interceptors

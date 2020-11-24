@@ -80,7 +80,7 @@ public final class UnaryCallHandler<
     self.state = .requestIdleResponseIdle(eventObserverFactory)
     super.init(
       callHandlerContext: callHandlerContext,
-      requestDeserializr: deserializer,
+      requestDeserializer: deserializer,
       responseSerializer: serializer,
       callType: .unary,
       interceptors: interceptors

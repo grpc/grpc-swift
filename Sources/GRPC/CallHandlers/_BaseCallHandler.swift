@@ -71,13 +71,13 @@ public class _BaseCallHandler<
 
   internal init(
     callHandlerContext: CallHandlerContext,
-    requestDeserializr: RequestDeserializer,
+    requestDeserializer: RequestDeserializer,
     responseSerializer: ResponseSerializer,
     callType: GRPCCallType,
     interceptors: [ServerInterceptor<RequestPayload, ResponsePayload>]
   ) {
     let userInfoRef = Ref(UserInfo())
-    self.requestDeserializer = requestDeserializr
+    self.requestDeserializer = requestDeserializer
     self.responseSerializer = responseSerializer
     self.callHandlerContext = callHandlerContext
     self.callType = callType
