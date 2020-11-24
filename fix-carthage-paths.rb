@@ -8,7 +8,7 @@ project = Xcodeproj::Project.open(project_path)
 dependenciesGroup = project["Dependencies"]
 
 #Open dependencies-state.json file
-file = File.read(".build/dependencies-state.json")
+file = File.read(".build/workspace-state.json")
 json = JSON.parse(file)
 
 dependenciesGroup.recursive_children_groups.each do |child|
@@ -40,6 +40,6 @@ dependenciesGroup.recursive_children_groups.each do |child|
     end
 end
 
-File.open(".build/dependencies-state.json","w") do |f|
+File.open(".build/workspace-state.json","w") do |f|
     f.write(json.to_json)
 end
