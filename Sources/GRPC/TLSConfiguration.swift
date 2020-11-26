@@ -96,7 +96,7 @@ extension ClientConnection.Configuration {
         trustRoots: trustRoots,
         certificateChain: certificateChain,
         privateKey: privateKey,
-        applicationProtocols: GRPCApplicationProtocolIdentifier.allCases.map { $0.rawValue }
+        applicationProtocols: GRPCApplicationProtocolIdentifier.client
       )
       self.hostnameOverride = hostnameOverride
     }
@@ -117,6 +117,10 @@ extension Server.Configuration {
   /// specification.
   public struct TLS {
     public private(set) var configuration: TLSConfiguration
+
+    /// Whether ALPN is required. Disabling this option may be useful in cases where ALPN is not
+    /// supported.
+    public var requireALPN: Bool = true
 
     /// The certificates to offer during negotiation. If not present, no certificates will be
     /// offered.
@@ -171,11 +175,13 @@ extension Server.Configuration {
     ///     root provided by the platform.
     /// - Parameter certificateVerification: Whether to verify the remote certificate. Defaults to
     ///     `.none`.
+    /// - Parameter requireALPN: Whether ALPN is required or not.
     public init(
       certificateChain: [NIOSSLCertificateSource],
       privateKey: NIOSSLPrivateKeySource,
       trustRoots: NIOSSLTrustRoots = .default,
-      certificateVerification: CertificateVerification = .none
+      certificateVerification: CertificateVerification = .none,
+      requireALPN: Bool = true
     ) {
       self.configuration = .forServer(
         certificateChain: certificateChain,
@@ -183,13 +189,15 @@ extension Server.Configuration {
         minimumTLSVersion: .tlsv12,
         certificateVerification: certificateVerification,
         trustRoots: trustRoots,
-        applicationProtocols: GRPCApplicationProtocolIdentifier.allCases.map { $0.rawValue }
+        applicationProtocols: GRPCApplicationProtocolIdentifier.server
       )
+      self.requireALPN = requireALPN
     }
 
     /// Creates a TLS Configuration using the given `NIOSSL.TLSConfiguration`.
-    public init(configuration: TLSConfiguration) {
+    public init(configuration: TLSConfiguration, requireALPN: Bool = true) {
       self.configuration = configuration
+      self.requireALPN = requireALPN
     }
   }
 }

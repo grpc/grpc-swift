@@ -124,6 +124,18 @@ extension Server.Builder.Secure {
     self.tls.certificateVerification = certificateVerification
     return self
   }
+
+  /// Sets whether the server's TLS handshake requires a protocol to be negotiated via ALPN. This
+  /// defaults to `true` if not otherwise set.
+  ///
+  /// If this option is set to `false` and no protocol is negotiated via ALPN then the server will
+  /// parse the initial bytes on the connection to determine whether HTTP/2 or HTTP/1.1 (gRPC-Web)
+  /// is being used and configure the connection appropriately.
+  @discardableResult
+  public func withTLS(requiringALPN: Bool) -> Self {
+    self.tls.requireALPN = requiringALPN
+    return self
+  }
 }
 
 extension Server.Builder {
