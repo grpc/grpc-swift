@@ -75,11 +75,18 @@ extension Generator {
   }
 
   private func printServiceClientProtocol() {
+    let comments = self.service.protoSourceComments()
+    if !comments.isEmpty {
+      // Source comments already have the leading '///'
+      self.println(comments, newline: false)
+      self.println("///")
+    }
     self.println(
-      "/// Usage: instantiate \(self.clientClassName), then call methods of this protocol to make API calls."
+      "/// Usage: instantiate `\(self.clientClassName)`, then call methods of this protocol to make API calls."
     )
     self.println("\(self.access) protocol \(self.clientProtocolName): GRPCClient {")
     self.withIndentation {
+      self.println("var serviceName: String { get }")
       self.println("var interceptors: \(self.clientInterceptorProtocolName)? { get }")
 
       for method in service.methods {
@@ -100,8 +107,15 @@ extension Generator {
   private func printClientProtocolExtension() {
     self.println("extension \(self.clientProtocolName) {")
 
-    // Default method implementations.
     self.withIndentation {
+      // Service name.
+      self.println("\(self.access) var serviceName: String {")
+      self.withIndentation {
+        self.println("return \"\(self.servicePath)\"")
+      }
+      self.println("}")
+
+      // Default method implementations.
       self.printMethods()
     }
 
