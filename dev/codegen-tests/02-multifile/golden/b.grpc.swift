@@ -25,8 +25,9 @@ import NIO
 import SwiftProtobuf
 
 
-/// Usage: instantiate B_ServiceBClient, then call methods of this protocol to make API calls.
+/// Usage: instantiate `B_ServiceBClient`, then call methods of this protocol to make API calls.
 internal protocol B_ServiceBClientProtocol: GRPCClient {
+  var serviceName: String { get }
   var interceptors: B_ServiceBClientInterceptorFactoryProtocol? { get }
 
   func callServiceB(
@@ -36,6 +37,9 @@ internal protocol B_ServiceBClientProtocol: GRPCClient {
 }
 
 extension B_ServiceBClientProtocol {
+  internal var serviceName: String {
+    return "b.ServiceB"
+  }
 
   /// Unary call to CallServiceB
   ///

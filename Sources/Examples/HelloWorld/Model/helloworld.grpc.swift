@@ -25,8 +25,11 @@ import NIO
 import SwiftProtobuf
 
 
-/// Usage: instantiate Helloworld_GreeterClient, then call methods of this protocol to make API calls.
+/// The greeting service definition.
+///
+/// Usage: instantiate `Helloworld_GreeterClient`, then call methods of this protocol to make API calls.
 public protocol Helloworld_GreeterClientProtocol: GRPCClient {
+  var serviceName: String { get }
   var interceptors: Helloworld_GreeterClientInterceptorFactoryProtocol? { get }
 
   func sayHello(
@@ -36,6 +39,9 @@ public protocol Helloworld_GreeterClientProtocol: GRPCClient {
 }
 
 extension Helloworld_GreeterClientProtocol {
+  public var serviceName: String {
+    return "helloworld.Greeter"
+  }
 
   /// Sends a greeting.
   ///
@@ -84,6 +90,8 @@ public final class Helloworld_GreeterClient: Helloworld_GreeterClientProtocol {
   }
 }
 
+/// The greeting service definition.
+///
 /// To build a server, implement a class that conforms to this protocol.
 public protocol Helloworld_GreeterProvider: CallHandlerProvider {
   var interceptors: Helloworld_GreeterServerInterceptorFactoryProtocol? { get }

@@ -25,8 +25,12 @@ import NIO
 import SwiftProtobuf
 
 
-/// Usage: instantiate Grpc_Testing_TestServiceClient, then call methods of this protocol to make API calls.
+/// A simple service to test the various types of RPCs and experiment with
+/// performance with various types of payload.
+///
+/// Usage: instantiate `Grpc_Testing_TestServiceClient`, then call methods of this protocol to make API calls.
 public protocol Grpc_Testing_TestServiceClientProtocol: GRPCClient {
+  var serviceName: String { get }
   var interceptors: Grpc_Testing_TestServiceClientInterceptorFactoryProtocol? { get }
 
   func emptyCall(
@@ -71,6 +75,9 @@ public protocol Grpc_Testing_TestServiceClientProtocol: GRPCClient {
 }
 
 extension Grpc_Testing_TestServiceClientProtocol {
+  public var serviceName: String {
+    return "grpc.testing.TestService"
+  }
 
   /// One empty request followed by one empty response.
   ///
@@ -285,8 +292,12 @@ public final class Grpc_Testing_TestServiceClient: Grpc_Testing_TestServiceClien
   }
 }
 
-/// Usage: instantiate Grpc_Testing_UnimplementedServiceClient, then call methods of this protocol to make API calls.
+/// A simple service NOT implemented at servers so clients can test for
+/// that case.
+///
+/// Usage: instantiate `Grpc_Testing_UnimplementedServiceClient`, then call methods of this protocol to make API calls.
 public protocol Grpc_Testing_UnimplementedServiceClientProtocol: GRPCClient {
+  var serviceName: String { get }
   var interceptors: Grpc_Testing_UnimplementedServiceClientInterceptorFactoryProtocol? { get }
 
   func unimplementedCall(
@@ -296,6 +307,9 @@ public protocol Grpc_Testing_UnimplementedServiceClientProtocol: GRPCClient {
 }
 
 extension Grpc_Testing_UnimplementedServiceClientProtocol {
+  public var serviceName: String {
+    return "grpc.testing.UnimplementedService"
+  }
 
   /// A call that no server should implement
   ///
@@ -344,8 +358,11 @@ public final class Grpc_Testing_UnimplementedServiceClient: Grpc_Testing_Unimple
   }
 }
 
-/// Usage: instantiate Grpc_Testing_ReconnectServiceClient, then call methods of this protocol to make API calls.
+/// A service used to control reconnect server.
+///
+/// Usage: instantiate `Grpc_Testing_ReconnectServiceClient`, then call methods of this protocol to make API calls.
 public protocol Grpc_Testing_ReconnectServiceClientProtocol: GRPCClient {
+  var serviceName: String { get }
   var interceptors: Grpc_Testing_ReconnectServiceClientInterceptorFactoryProtocol? { get }
 
   func start(
@@ -360,6 +377,9 @@ public protocol Grpc_Testing_ReconnectServiceClientProtocol: GRPCClient {
 }
 
 extension Grpc_Testing_ReconnectServiceClientProtocol {
+  public var serviceName: String {
+    return "grpc.testing.ReconnectService"
+  }
 
   /// Unary call to Start
   ///
@@ -429,6 +449,9 @@ public final class Grpc_Testing_ReconnectServiceClient: Grpc_Testing_ReconnectSe
   }
 }
 
+/// A simple service to test the various types of RPCs and experiment with
+/// performance with various types of payload.
+///
 /// To build a server, implement a class that conforms to this protocol.
 public protocol Grpc_Testing_TestServiceProvider: CallHandlerProvider {
   var interceptors: Grpc_Testing_TestServiceServerInterceptorFactoryProtocol? { get }
@@ -578,6 +601,9 @@ public protocol Grpc_Testing_TestServiceServerInterceptorFactoryProtocol {
   ///   Defaults to calling `self.makeInterceptors()`.
   func makeUnimplementedCallInterceptors() -> [ServerInterceptor<Grpc_Testing_Empty, Grpc_Testing_Empty>]
 }
+/// A simple service NOT implemented at servers so clients can test for
+/// that case.
+///
 /// To build a server, implement a class that conforms to this protocol.
 public protocol Grpc_Testing_UnimplementedServiceProvider: CallHandlerProvider {
   var interceptors: Grpc_Testing_UnimplementedServiceServerInterceptorFactoryProtocol? { get }
@@ -618,6 +644,8 @@ public protocol Grpc_Testing_UnimplementedServiceServerInterceptorFactoryProtoco
   ///   Defaults to calling `self.makeInterceptors()`.
   func makeUnimplementedCallInterceptors() -> [ServerInterceptor<Grpc_Testing_Empty, Grpc_Testing_Empty>]
 }
+/// A service used to control reconnect server.
+///
 /// To build a server, implement a class that conforms to this protocol.
 public protocol Grpc_Testing_ReconnectServiceProvider: CallHandlerProvider {
   var interceptors: Grpc_Testing_ReconnectServiceServerInterceptorFactoryProtocol? { get }
