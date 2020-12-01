@@ -25,8 +25,11 @@ import NIO
 import SwiftProtobuf
 
 
-/// Usage: instantiate Routeguide_RouteGuideClient, then call methods of this protocol to make API calls.
+/// Interface exported by the server.
+///
+/// Usage: instantiate `Routeguide_RouteGuideClient`, then call methods of this protocol to make API calls.
 public protocol Routeguide_RouteGuideClientProtocol: GRPCClient {
+  var serviceName: String { get }
   var interceptors: Routeguide_RouteGuideClientInterceptorFactoryProtocol? { get }
 
   func getFeature(
@@ -51,6 +54,9 @@ public protocol Routeguide_RouteGuideClientProtocol: GRPCClient {
 }
 
 extension Routeguide_RouteGuideClientProtocol {
+  public var serviceName: String {
+    return "routeguide.RouteGuide"
+  }
 
   /// A simple RPC.
   ///
@@ -184,6 +190,8 @@ public final class Routeguide_RouteGuideClient: Routeguide_RouteGuideClientProto
   }
 }
 
+/// Interface exported by the server.
+///
 /// To build a server, implement a class that conforms to this protocol.
 public protocol Routeguide_RouteGuideProvider: CallHandlerProvider {
   var interceptors: Routeguide_RouteGuideServerInterceptorFactoryProtocol? { get }

@@ -25,8 +25,9 @@ import NIO
 import SwiftProtobuf
 
 
-/// Usage: instantiate Codegentest_FooClient, then call methods of this protocol to make API calls.
+/// Usage: instantiate `Codegentest_FooClient`, then call methods of this protocol to make API calls.
 internal protocol Codegentest_FooClientProtocol: GRPCClient {
+  var serviceName: String { get }
   var interceptors: Codegentest_FooClientInterceptorFactoryProtocol? { get }
 
   func get(
@@ -36,6 +37,9 @@ internal protocol Codegentest_FooClientProtocol: GRPCClient {
 }
 
 extension Codegentest_FooClientProtocol {
+  internal var serviceName: String {
+    return "codegentest.Foo"
+  }
 
   /// Unary call to Get
   ///

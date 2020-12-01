@@ -1,0 +1,32 @@
+diff --git a/Sources/GRPCInteroperabilityTestModels/Generated/test.grpc.swift b/Sources/GRPCInteroperabilityTestModels/Generated/test.grpc.swift
+index 6a5f3099..ae0ba123 100644
+--- a/Sources/GRPCInteroperabilityTestModels/Generated/test.grpc.swift
++++ b/Sources/GRPCInteroperabilityTestModels/Generated/test.grpc.swift
+@@ -485,10 +485,6 @@ public protocol Grpc_Testing_TestServiceProvider: CallHandlerProvider {
+   /// stream of responses are returned to the client when the server starts with
+   /// first request.
+   func halfDuplexCall(context: StreamingResponseCallContext<Grpc_Testing_StreamingOutputCallResponse>) -> EventLoopFuture<(StreamEvent<Grpc_Testing_StreamingOutputCallRequest>) -> Void>
+-
+-  /// The test server will not implement this method. It will be used
+-  /// to test the behavior when clients call unimplemented methods.
+-  func unimplementedCall(request: Grpc_Testing_Empty, context: StatusOnlyCallContext) -> EventLoopFuture<Grpc_Testing_Empty>
+ }
+ 
+ extension Grpc_Testing_TestServiceProvider {
+@@ -565,16 +561,6 @@ extension Grpc_Testing_TestServiceProvider {
+         self.halfDuplexCall(context: context)
+       }
+ 
+-    case "UnimplementedCall":
+-      return CallHandlerFactory.makeUnary(
+-        callHandlerContext: callHandlerContext,
+-        interceptors: self.interceptors?.makeUnimplementedCallInterceptors() ?? []
+-      ) { context in
+-        return { request in
+-          self.unimplementedCall(request: request, context: context)
+-        }
+-      }
+-
+     default:
+       return nil
+     }

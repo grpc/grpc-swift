@@ -25,8 +25,9 @@ import NIO
 import SwiftProtobuf
 
 
-/// Usage: instantiate Echo_EchoClient, then call methods of this protocol to make API calls.
+/// Usage: instantiate `Echo_EchoClient`, then call methods of this protocol to make API calls.
 internal protocol Echo_EchoClientProtocol: GRPCClient {
+  var serviceName: String { get }
   var interceptors: Echo_EchoClientInterceptorFactoryProtocol? { get }
 
   func get(
@@ -51,6 +52,9 @@ internal protocol Echo_EchoClientProtocol: GRPCClient {
 }
 
 extension Echo_EchoClientProtocol {
+  internal var serviceName: String {
+    return "echo.Echo"
+  }
 
   /// Immediately returns an echo of a request.
   ///

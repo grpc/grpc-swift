@@ -32,11 +32,8 @@ protoc "src/proto/grpc/testing/messages.proto" \
   --grpc-swift_out=${OUTPUT} \
   --grpc-swift_opt=FileNaming=${FILE_NAMING},Visibility=${VISIBILITY}
 
-echo "The generated code needs to be modified to support testing an unimplemented method."
-echo "On the server side, the generated code needs to be removed so the server has no"
-echo "knowledge of it. Client code requires no modification, since it is required to call"
-echo "the unimplemented method.\n"
-
-echo "In the generated 'Grpc_Testing_TestServiceProvider' protocol code in ${OUTPUT}/test.grpc.swift:"
-echo "1. remove 'unimplementedCall(request:context:)'"
-echo "2. remove the 'UnimplementedCall' case from 'handleMethod(:request:serverHandler:GRPCChannelHandler:channel:errorDelegate)'"
+# The generated code needs to be modified to support testing an unimplemented method.
+# On the server side, the generated code needs to be removed so the server has no
+# knowledge of it. Client code requires no modification, since it is required to call
+# the unimplemented method.
+patch -p3 < unimplemented_call.patch

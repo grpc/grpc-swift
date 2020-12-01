@@ -27,6 +27,12 @@ extension Generator {
   }
 
   private func printServerProtocol() {
+    let comments = self.service.protoSourceComments()
+    if !comments.isEmpty {
+      // Source comments already have the leading '///'
+      self.println(comments, newline: false)
+      self.println("///")
+    }
     println("/// To build a server, implement a class that conforms to this protocol.")
     println("\(access) protocol \(providerName): CallHandlerProvider {")
     self.withIndentation {
