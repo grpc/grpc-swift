@@ -41,7 +41,7 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
   /// The mode of operation: the client tracks additional connection state in the connection
   /// manager.
   internal enum Mode {
-    case client(ConnectionManager)
+    case client(ConnectionManager, HTTP2StreamMultiplexer)
     case server
   }
 
@@ -118,8 +118,8 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
 
   func errorCaught(context: ChannelHandlerContext, error: Error) {
     switch (self.mode, self.state) {
-    case let (.client(manager), .notReady),
-         let (.client(manager), .ready):
+    case let (.client(manager, _), .notReady),
+         let (.client(manager, _), .ready):
       // We're most likely about to become inactive: let the manager know the reason why.
       manager.channelError(error)
 
@@ -135,8 +135,8 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
     switch (self.mode, self.state) {
     // The client should become active: we'll only schedule the idling when the channel
     // becomes 'ready'.
-    case let (.client(manager), .notReady):
-      manager.channelActive(channel: context.channel)
+    case let (.client(manager, multiplexer), .notReady):
+      manager.channelActive(channel: context.channel, multiplexer: multiplexer)
 
     case (.server, .notReady),
          (_, .ready),
@@ -158,11 +158,11 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
     self.scheduledIdle = nil
 
     switch (self.mode, self.state) {
-    case let (.client(manager), .notReady):
+    case let (.client(manager, _), .notReady):
       self.state = .closed
       manager.channelInactive()
 
-    case let (.client(manager), .ready):
+    case let (.client(manager, _), .ready):
       self.state = .closed
 
       if self.activeStreams == 0 {
@@ -207,7 +207,7 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
           self.state = .ready
 
           switch self.mode {
-          case let .client(manager):
+          case let .client(manager, _):
             let remoteAddressDescription = context.channel.remoteAddress.map { "\($0)" } ?? "n/a"
             manager.logger.info("gRPC connection ready", metadata: [
               MetadataKey.remoteAddress: "\(remoteAddressDescription)",
@@ -266,7 +266,7 @@ internal class GRPCIdleHandler: ChannelInboundHandler {
     case .notReady, .ready:
       self.state = .closed
       switch self.mode {
-      case let .client(manager):
+      case let .client(manager, _):
         manager.idle()
       case .server:
         ()

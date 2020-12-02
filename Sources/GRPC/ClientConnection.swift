@@ -74,21 +74,9 @@ import SwiftProtobuf
 public class ClientConnection {
   private let connectionManager: ConnectionManager
 
-  private func getChannel() -> EventLoopFuture<Channel> {
-    switch self.configuration.callStartBehavior.wrapped {
-    case .waitsForConnectivity:
-      return self.connectionManager.getChannel()
-
-    case .fastFailure:
-      return self.connectionManager.getOptimisticChannel()
-    }
-  }
-
-  /// HTTP multiplexer from the `channel` handling gRPC calls.
+  /// HTTP multiplexer from the underlying channel handling gRPC calls.
   internal var multiplexer: EventLoopFuture<HTTP2StreamMultiplexer> {
-    return self.getChannel().flatMap {
-      $0.pipeline.handler(type: HTTP2StreamMultiplexer.self)
-    }
+    return self.connectionManager.getHTTP2Multiplexer()
   }
 
   /// The configuration for this client.
@@ -467,13 +455,16 @@ extension Channel {
         targetWindowSize: httpTargetWindowSize,
         inboundStreamInitializer: nil
       )
-    }.flatMap { _ in
+    }.flatMap { h2multiplexer in
+      // The multiplexer is passed through the idle handler so it is only reported on
+      // successful channel activation - with happy eyeballs multiple pipelines can
+      // be constructed so it's not safe to report just yet.
       self.pipeline.handler(type: NIOHTTP2Handler.self).flatMap { http2Handler in
         self.pipeline.addHandlers(
           [
             GRPCClientKeepaliveHandler(configuration: connectionKeepalive),
             GRPCIdleHandler(
-              mode: .client(connectionManager),
+              mode: .client(connectionManager, h2multiplexer),
               logger: logger,
               idleTimeout: connectionIdleTimeout
             ),
