@@ -20,8 +20,6 @@ import NIOConcurrencyHelpers
 import NIOHTTP2
 
 internal class ConnectionManager {
-  internal struct IdleState {}
-
   internal enum Reconnect {
     case none
     case after(TimeInterval)
@@ -120,7 +118,7 @@ internal class ConnectionManager {
     /// Valid next states:
     /// - `connecting`
     /// - `shutdown`
-    case idle(IdleState)
+    case idle
 
     /// We're actively trying to establish a connection.
     ///
@@ -267,7 +265,7 @@ internal class ConnectionManager {
 
     let eventLoop = configuration.eventLoopGroup.next()
     self.eventLoop = eventLoop
-    self.state = .idle(IdleState())
+    self.state = .idle
     self.monitor = ConnectivityStateMonitor(
       delegate: configuration.connectivityStateDelegate,
       queue: configuration.connectivityStateDelegateQueue
@@ -330,7 +328,7 @@ internal class ConnectionManager {
     return multiplexer
   }
 
-  /// Returns a future for the current channel multiplexer, or future channel multiplexer from the current connection
+  /// Returns a future for the current HTTP/2 stream multiplexer, or future HTTP/2 stream multiplexer from the current connection
   /// attempt, or if the state is 'idle' returns the future for the next connection attempt.
   ///
   /// Note: if the state is 'transientFailure' or 'shutdown' then a failed future will be returned.
@@ -338,10 +336,12 @@ internal class ConnectionManager {
     func fulfillMuxPromiseGivenState(promise: EventLoopPromise<HTTP2StreamMultiplexer>) {
       switch self.state {
       case .idle:
-        // Unexpected to get here.
+        // Unexpected to get here -
+        // we shouldn't be fulfilling if we've not yet worked out if we're succeeding or failing.
         self.invalidState()
       case .connecting:
-        // Unexpected to get here.
+        // Unexpected to get here -
+        // we shouldn't be fulfilling if we've not yet worked out if we're succeeding or failing.
         self.invalidState()
       case let .active(state):
         promise.succeed(state.multiplexer)
@@ -510,9 +510,8 @@ internal class ConnectionManager {
 
     switch self.state {
     case let .connecting(connecting):
-      self
-        .state =
-        .active(ConnectedState(from: connecting, candidate: channel, multiplexer: multiplexer))
+      let connected = ConnectedState(from: connecting, candidate: channel, multiplexer: multiplexer)
+      self.state = .active(connected)
 
     // Application called shutdown before the channel become active; we should close it.
     case .shutdown:
@@ -665,12 +664,12 @@ internal class ConnectionManager {
     switch self.state {
     case let .active(state):
       // This state is reachable if the keepalive timer fires before we reach the ready state.
-      self.state = .idle(IdleState())
+      self.state = .idle
       state.readyChannelMuxPromise
         .fail(GRPCStatus(code: .unavailable, message: "Idled before reaching ready state"))
 
     case .ready:
-      self.state = .idle(IdleState())
+      self.state = .idle
 
     case .shutdown:
       // This is expected when the connection is closed by the user: when the channel becomes

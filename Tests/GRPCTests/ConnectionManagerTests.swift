@@ -133,13 +133,13 @@ extension ConnectionManagerTests {
       channel: channel,
       inboundStreamInitializer: nil
     )
-    _ = channel.pipeline.addHandler(
+    try channel.pipeline.addHandler(
       GRPCIdleHandler(
         mode: .client(manager, h2mux),
         logger: self.logger,
         idleTimeout: .minutes(5)
       )
-    )
+    ).wait()
     channelPromise.succeed(channel)
     XCTAssertNoThrow(
       try channel.connect(to: SocketAddress(unixDomainSocketPath: "/ignored"))
@@ -262,7 +262,7 @@ extension ConnectionManagerTests {
     try self.waitForStateChange(from: .connecting, to: .ready) {
       let frame = HTTP2Frame(streamID: .rootStream, payload: .settings(.settings([])))
       XCTAssertNoThrow(try channel.writeInbound(frame))
-      // Wait for the channel multiplexer, it _must_ be ready now.
+      // Wait for the HTTP/2 stream multiplexer, it _must_ be ready now.
       XCTAssertNoThrow(try readyChannelMux.wait())
     }
 
@@ -365,13 +365,13 @@ extension ConnectionManagerTests {
       Change(from: .idle, to: .connecting),
       Change(from: .connecting, to: .transientFailure),
     ]) {
-      // Get a channel multiplexer.
+      // Get a HTTP/2 stream multiplexer.
       let readyChannelMux = manager.getHTTP2Multiplexer()
       self.loop.run()
       return readyChannelMux
     }
 
-    // Get a channel mux from the manager - it is a future for the one we made earlier.
+    // Get a HTTP/2 stream mux from the manager - it is a future for the one we made earlier.
     let anotherReadyChannelMux = manager.getHTTP2Multiplexer()
     self.loop.run()
 
@@ -406,7 +406,7 @@ extension ConnectionManagerTests {
       XCTAssertNoThrow(try channel.writeInbound(frame))
     }
 
-    // Wait for the channel multiplexer, it _must_ be ready now.
+    // Wait for the HTTP/2 stream multiplexer, it _must_ be ready now.
     XCTAssertNoThrow(try readyChannelMux.wait())
     XCTAssertNoThrow(try anotherReadyChannelMux.wait())
 
@@ -463,7 +463,7 @@ extension ConnectionManagerTests {
       Change(from: .idle, to: .connecting),
       Change(from: .connecting, to: .transientFailure),
     ]) {
-      // Get a channel multiplexer.
+      // Get a HTTP/2 stream multiplexer.
       let readyChannelMux = manager.getHTTP2Multiplexer()
       self.loop.run()
       return readyChannelMux
@@ -476,7 +476,7 @@ extension ConnectionManagerTests {
       XCTAssertNoThrow(try shutdown.wait())
     }
 
-    // The channel mux we were requesting should fail.
+    // The HTTP/2 stream mux we were requesting should fail.
     XCTAssertThrowsError(try readyChannelMux.wait())
   }
 
@@ -525,7 +525,7 @@ extension ConnectionManagerTests {
       XCTAssertNoThrow(try shutdown.wait())
     }
 
-    // The channel multiplexer we were requesting should fail.
+    // The HTTP/2 stream multiplexer we were requesting should fail.
     XCTAssertThrowsError(try readyChannelMux.wait())
   }
 
@@ -765,7 +765,7 @@ extension ConnectionManagerTests {
       XCTAssertNoThrow(try channel.writeInbound(frame))
     }
 
-    // Wait for the channel multiplexer, it _must_ be ready now.
+    // Wait for the HTTP/2 stream multiplexer, it _must_ be ready now.
     XCTAssertNoThrow(try readyChannelMux.wait())
 
     // Send a GO_AWAY; the details don't matter. This will cause the connection to go idle and the
@@ -815,12 +815,12 @@ extension ConnectionManagerTests {
     }
 
     self.waitForStateChange(from: .idle, to: .connecting) {
-      // Trigger channel creation, and a connection attempt, we don't care about the channel multiplexer.
+      // Trigger channel creation, and a connection attempt, we don't care about the HTTP/2 stream multiplexer.
       _ = manager.getHTTP2Multiplexer()
       self.loop.run()
     }
 
-    // We're connecting: get an optimistic channel multiplexer - this was selected in config.
+    // We're connecting: get an optimistic HTTP/2 stream multiplexer - this was selected in config.
     let optimisticChannelMux = manager.getHTTP2Multiplexer()
     self.loop.run()
 
@@ -843,12 +843,12 @@ extension ConnectionManagerTests {
       Change(from: .idle, to: .connecting),
       Change(from: .connecting, to: .transientFailure),
     ]) {
-      // Trigger channel creation, and a connection attempt, we don't care about the channel multiplexer.
+      // Trigger channel creation, and a connection attempt, we don't care about the HTTP/2 stream multiplexer.
       _ = manager.getHTTP2Multiplexer()
       self.loop.run()
     }
 
-    // Now we're sitting in transient failure. Get a channel mux optimistically - selected in config.
+    // Now we're sitting in transient failure. Get a HTTP/2 stream mux optimistically - selected in config.
     let optimisticChannelMux = manager.getHTTP2Multiplexer()
     self.loop.run()
 
@@ -931,7 +931,7 @@ extension ConnectionManagerTests {
       XCTAssertNoThrow(try channel.writeInbound(frame))
     }
 
-    // The channel mux should now be ready.
+    // The HTTP/2 stream mux should now be ready.
     XCTAssertNoThrow(try readyChannelMux.wait())
 
     // Send a GO_AWAY; the details don't matter. This will cause the connection to go idle and the
@@ -1055,7 +1055,7 @@ extension ConnectionManagerTests {
       XCTAssertNoThrow(try channel.writeInbound(frame))
     }
 
-    // The channel multiplexer should now be ready.
+    // The HTTP/2 stream multiplexer should now be ready.
     XCTAssertNoThrow(try readyChannelMux.wait())
 
     // Close the channel. There are no active RPCs so we should idle rather than be in the transient
