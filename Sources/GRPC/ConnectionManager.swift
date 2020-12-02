@@ -283,11 +283,21 @@ internal class ConnectionManager {
   /// if the `ConnectionManager` was configured to be `fastFailure` this will have
   /// one chance to connect - if not reconnections are managed here.
   internal func getHTTP2Multiplexer() -> EventLoopFuture<HTTP2StreamMultiplexer> {
-    switch self.configuration.callStartBehavior.wrapped {
-    case .waitsForConnectivity:
-      return self.getHTTP2MultiplexerPatient()
-    case .fastFailure:
-      return self.getHTTP2MultiplexerOptimistic()
+    func getHTTP2Multiplexer0() -> EventLoopFuture<HTTP2StreamMultiplexer> {
+      switch self.configuration.callStartBehavior.wrapped {
+      case .waitsForConnectivity:
+        return self.getHTTP2MultiplexerPatient()
+      case .fastFailure:
+        return self.getHTTP2MultiplexerOptimistic()
+      }
+    }
+
+    if self.eventLoop.inEventLoop {
+      return getHTTP2Multiplexer0()
+    } else {
+      return self.eventLoop.flatSubmit {
+        getHTTP2Multiplexer0()
+      }
     }
   }
 
