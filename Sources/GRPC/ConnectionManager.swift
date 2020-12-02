@@ -375,16 +375,7 @@ internal class ConnectionManager {
       case let .connecting(state):
         state.candidate.whenComplete { _ in fulfillMuxPromiseGivenState(promise: muxPromise) }
 
-      case .active:
-        fulfillMuxPromiseGivenState(promise: muxPromise)
-
-      case .ready:
-        fulfillMuxPromiseGivenState(promise: muxPromise)
-
-      case .transientFailure:
-        fulfillMuxPromiseGivenState(promise: muxPromise)
-
-      case .shutdown:
+      case .active, .ready, .transientFailure, .shutdown:
         fulfillMuxPromiseGivenState(promise: muxPromise)
       }
 
