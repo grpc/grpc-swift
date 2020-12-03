@@ -348,30 +348,30 @@ internal class ConnectionManager {
     self.eventLoop.preconditionInEventLoop()
 
     let muxFuture: EventLoopFuture<HTTP2StreamMultiplexer> = { () in
-    switch self.state {
-    case .idle:
-      self.startConnecting()
-      // We started connecting so we must transition to the `connecting` state.
-      guard case let .connecting(connecting) = self.state else {
-        self.invalidState()
-      }
+      switch self.state {
+      case .idle:
+        self.startConnecting()
+        // We started connecting so we must transition to the `connecting` state.
+        guard case let .connecting(connecting) = self.state else {
+          self.invalidState()
+        }
         return connecting.candidateMuxPromise.futureResult
-    case let .connecting(state):
+      case let .connecting(state):
         return state.candidateMuxPromise.futureResult
-    case let .active(active):
+      case let .active(active):
         return self.eventLoop.makeSucceededFuture(active.multiplexer)
-    case let .ready(ready):
+      case let .ready(ready):
         return self.eventLoop.makeSucceededFuture(ready.multiplexer)
-    case let .transientFailure(state):
-      // Provide the reason we failed transiently, if we can.
-      let error = state.reason ?? GRPCStatus(
-        code: .unavailable,
-        message: "Connection multiplexer requested while backing off"
-      )
+      case let .transientFailure(state):
+        // Provide the reason we failed transiently, if we can.
+        let error = state.reason ?? GRPCStatus(
+          code: .unavailable,
+          message: "Connection multiplexer requested while backing off"
+        )
         return self.eventLoop.makeFailedFuture(error)
-    case let .shutdown(state):
+      case let .shutdown(state):
         return self.eventLoop.makeFailedFuture(state.reason)
-    }
+      }
     }()
 
     self.logger.debug("vending fast-failing multiplexer future", metadata: [
@@ -497,8 +497,8 @@ internal class ConnectionManager {
     case let .connecting(connecting):
       let connected = ConnectedState(from: connecting, candidate: channel, multiplexer: multiplexer)
       self.state = .active(connected)
-        // Optimistic connections are happy this this level of setup.
-        connecting.candidateMuxPromise.succeed(multiplexer)
+      // Optimistic connections are happy this this level of setup.
+      connecting.candidateMuxPromise.succeed(multiplexer)
 
     // Application called shutdown before the channel become active; we should close it.
     case .shutdown:
@@ -532,10 +532,10 @@ internal class ConnectionManager {
     switch self.state {
     // The channel is `active` but not `ready`. Should we try again?
     case let .active(active):
-        let error = GRPCStatus(
-          code: .unavailable,
-          message: "The connection was dropped and connection re-establishment is disabled"
-        )
+      let error = GRPCStatus(
+        code: .unavailable,
+        message: "The connection was dropped and connection re-establishment is disabled"
+      )
       switch active.reconnect {
       // No, shutdown instead.
       case .none:
@@ -798,7 +798,7 @@ extension ConnectionManager {
       reconnect: reconnect,
       candidate: candidate,
       readyChannelMuxPromise: muxPromise,
-        candidateMuxPromise: self.eventLoop.makePromise()
+      candidateMuxPromise: self.eventLoop.makePromise()
     )
 
     self.state = .connecting(connecting)
@@ -819,7 +819,7 @@ extension ConnectionManager {
   private func makeBootstrap(
     connectTimeout: TimeInterval?
   ) -> ClientBootstrapProtocol {
-    let serverHostname: String? = configuration.tls.flatMap { tls -> String? in
+    let serverHostname: String? = self.configuration.tls.flatMap { tls -> String? in
       if let hostnameOverride = tls.hostnameOverride {
         return hostnameOverride
       } else {
@@ -838,13 +838,13 @@ extension ConnectionManager {
       .channelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
       .channelInitializer { channel in
         let initialized = channel.configureGRPCClient(
-            httpTargetWindowSize: self.configuration.httpTargetWindowSize,
-            tlsConfiguration: self.configuration.tls?.configuration,
+          httpTargetWindowSize: self.configuration.httpTargetWindowSize,
+          tlsConfiguration: self.configuration.tls?.configuration,
           tlsServerHostname: serverHostname,
           connectionManager: self,
-            connectionKeepalive: self.configuration.connectionKeepalive,
-            connectionIdleTimeout: self.configuration.connectionIdleTimeout,
-            errorDelegate: self.configuration.errorDelegate,
+          connectionKeepalive: self.configuration.connectionKeepalive,
+          connectionIdleTimeout: self.configuration.connectionIdleTimeout,
+          errorDelegate: self.configuration.errorDelegate,
           requiresZeroLengthWriteWorkaround: PlatformSupport.requiresZeroLengthWriteWorkaround(
             group: self.eventLoop,
             hasTLS: self.configuration.tls != nil
@@ -878,7 +878,7 @@ extension ConnectionManager {
       let bootstrap = self.makeBootstrap(
         connectTimeout: connectTimeout
       )
-      return bootstrap.connect(to: configuration.target)
+      return bootstrap.connect(to: self.configuration.target)
     }
   }
 }
