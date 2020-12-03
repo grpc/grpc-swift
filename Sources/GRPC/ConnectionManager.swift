@@ -370,32 +370,32 @@ internal class ConnectionManager {
     }
 
     // `getHTTP2Multiplexer` makes sure we're on the event loop but let's just be sure.
-    eventLoop.preconditionInEventLoop()
+    self.eventLoop.preconditionInEventLoop()
 
-      let muxPromise: EventLoopPromise<HTTP2StreamMultiplexer> = self.eventLoop.makePromise()
+    let muxPromise: EventLoopPromise<HTTP2StreamMultiplexer> = self.eventLoop.makePromise()
 
-      switch self.state {
-      case .idle:
-        self.startConnecting()
-        // We started connecting so we must transition to the `connecting` state.
-        guard case let .connecting(connecting) = self.state else {
-          self.invalidState()
-        }
-        connecting.candidate
-          .whenComplete { _ in fulfillMuxPromiseGivenState(promise: muxPromise) }
-
-      case let .connecting(state):
-        state.candidate.whenComplete { _ in fulfillMuxPromiseGivenState(promise: muxPromise) }
-
-      case .active, .ready, .transientFailure, .shutdown:
-        fulfillMuxPromiseGivenState(promise: muxPromise)
+    switch self.state {
+    case .idle:
+      self.startConnecting()
+      // We started connecting so we must transition to the `connecting` state.
+      guard case let .connecting(connecting) = self.state else {
+        self.invalidState()
       }
+      connecting.candidate
+        .whenComplete { _ in fulfillMuxPromiseGivenState(promise: muxPromise) }
 
-      self.logger.debug("vending fast-failing multiplexer future", metadata: [
-        "connectivity_state": "\(self.state.label)",
-      ])
+    case let .connecting(state):
+      state.candidate.whenComplete { _ in fulfillMuxPromiseGivenState(promise: muxPromise) }
 
-      return muxPromise.futureResult
+    case .active, .ready, .transientFailure, .shutdown:
+      fulfillMuxPromiseGivenState(promise: muxPromise)
+    }
+
+    self.logger.debug("vending fast-failing multiplexer future", metadata: [
+      "connectivity_state": "\(self.state.label)",
+    ])
+
+    return muxPromise.futureResult
   }
 
   /// Shutdown any connection which exists. This is a request from the application.
