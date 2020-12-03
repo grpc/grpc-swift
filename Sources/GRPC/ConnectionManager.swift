@@ -369,7 +369,9 @@ internal class ConnectionManager {
       }
     }
 
-    return self.eventLoop.flatSubmit {
+    // `getHTTP2Multiplexer` makes sure we're on the event loop but let's just be sure.
+    eventLoop.preconditionInEventLoop()
+
       let muxPromise: EventLoopPromise<HTTP2StreamMultiplexer> = self.eventLoop.makePromise()
 
       switch self.state {
@@ -394,7 +396,6 @@ internal class ConnectionManager {
       ])
 
       return muxPromise.futureResult
-    }
   }
 
   /// Shutdown any connection which exists. This is a request from the application.
