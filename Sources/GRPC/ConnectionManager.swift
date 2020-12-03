@@ -795,7 +795,6 @@ extension ConnectionManager {
 
     let candidate: EventLoopFuture<Channel> = self.eventLoop.flatSubmit {
       let channel = self.makeChannel(
-        configuration: self.configuration,
         connectTimeout: timeoutAndBackoff?.timeout
       )
       channel.whenFailure { error in
@@ -829,7 +828,6 @@ extension ConnectionManager {
 
 extension ConnectionManager {
   private func makeBootstrap(
-    configuration: ClientConnection.Configuration,
     connectTimeout: TimeInterval?
   ) -> ClientBootstrapProtocol {
     let serverHostname: String? = configuration.tls.flatMap { tls -> String? in
@@ -851,22 +849,22 @@ extension ConnectionManager {
       .channelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
       .channelInitializer { channel in
         let initialized = channel.configureGRPCClient(
-          httpTargetWindowSize: configuration.httpTargetWindowSize,
-          tlsConfiguration: configuration.tls?.configuration,
+            httpTargetWindowSize: self.configuration.httpTargetWindowSize,
+            tlsConfiguration: self.configuration.tls?.configuration,
           tlsServerHostname: serverHostname,
           connectionManager: self,
-          connectionKeepalive: configuration.connectionKeepalive,
-          connectionIdleTimeout: configuration.connectionIdleTimeout,
-          errorDelegate: configuration.errorDelegate,
+            connectionKeepalive: self.configuration.connectionKeepalive,
+            connectionIdleTimeout: self.configuration.connectionIdleTimeout,
+            errorDelegate: self.configuration.errorDelegate,
           requiresZeroLengthWriteWorkaround: PlatformSupport.requiresZeroLengthWriteWorkaround(
             group: self.eventLoop,
-            hasTLS: configuration.tls != nil
+            hasTLS: self.configuration.tls != nil
           ),
           logger: self.logger
         )
 
         // Run the debug initializer, if there is one.
-        if let debugInitializer = configuration.debugChannelInitializer {
+        if let debugInitializer = self.configuration.debugChannelInitializer {
           return initialized.flatMap {
             debugInitializer(channel)
           }
@@ -883,14 +881,12 @@ extension ConnectionManager {
   }
 
   private func makeChannel(
-    configuration: ClientConnection.Configuration,
     connectTimeout: TimeInterval?
   ) -> EventLoopFuture<Channel> {
     if let provider = self.channelProvider {
       return provider()
     } else {
       let bootstrap = self.makeBootstrap(
-        configuration: configuration,
         connectTimeout: connectTimeout
       )
       return bootstrap.connect(to: configuration.target)
