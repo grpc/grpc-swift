@@ -39,7 +39,6 @@ internal class ConnectionManager {
     var reconnect: Reconnect
     var candidate: Channel
     var readyChannelMuxPromise: EventLoopPromise<HTTP2StreamMultiplexer>
-    var candidateMuxPromise: EventLoopPromise<HTTP2StreamMultiplexer>
     var multiplexer: HTTP2StreamMultiplexer
     var error: Error?
 
@@ -49,7 +48,6 @@ internal class ConnectionManager {
       self.candidate = candidate
       self.readyChannelMuxPromise = state.readyChannelMuxPromise
       self.multiplexer = multiplexer
-      self.candidateMuxPromise = state.candidateMuxPromise
     }
   }
 
@@ -358,12 +356,10 @@ internal class ConnectionManager {
         self.invalidState()
       }
         return connecting.candidateMuxPromise.futureResult
-
     case let .connecting(state):
         return state.candidateMuxPromise.futureResult
-
     case let .active(active):
-        return active.candidateMuxPromise.futureResult
+        return self.eventLoop.makeSucceededFuture(active.multiplexer)
     case let .ready(ready):
         return self.eventLoop.makeSucceededFuture(ready.multiplexer)
     case let .transientFailure(state):
@@ -423,7 +419,6 @@ internal class ConnectionManager {
         // Fail the ready channel mux promise: we're shutting down so even if we manage to successfully
         // connect the application shouldn't should have access to the channel or multiplexer.
         state.readyChannelMuxPromise.fail(GRPCStatus(code: .unavailable, message: nil))
-        state.candidateMuxPromise.fail(GRPCStatus(code: .unavailable, message: nil))
         // We have a channel, close it.
         state.candidate.close(mode: .all, promise: nil)
 
@@ -502,6 +497,8 @@ internal class ConnectionManager {
     case let .connecting(connecting):
       let connected = ConnectedState(from: connecting, candidate: channel, multiplexer: multiplexer)
       self.state = .active(connected)
+        // Optimistic connections are happy this this level of setup.
+        connecting.candidateMuxPromise.succeed(multiplexer)
 
     // Application called shutdown before the channel become active; we should close it.
     case .shutdown:
@@ -551,7 +548,6 @@ internal class ConnectionManager {
 
         self.state = .shutdown(shutdownState)
         active.readyChannelMuxPromise.fail(error)
-        active.candidateMuxPromise.fail(error)
 
       // Yes, after some time.
       case let .after(delay):
@@ -561,7 +557,6 @@ internal class ConnectionManager {
         self.logger.debug("scheduling connection attempt", metadata: ["delay_secs": "\(delay)"])
         self.state = .transientFailure(TransientFailureState(from: active, scheduled: scheduled))
         // candidate mux needs to fail as they didn't sign up to reconnect.
-        active.candidateMuxPromise.fail(error)
       }
 
     // The channel was ready and working fine but something went wrong. Should we try to replace
@@ -624,7 +619,6 @@ internal class ConnectionManager {
     case let .active(connected):
       self.state = .ready(ReadyState(from: connected))
       connected.readyChannelMuxPromise.succeed(connected.multiplexer)
-      connected.candidateMuxPromise.succeed(connected.multiplexer)
 
     case .shutdown:
       ()
@@ -659,8 +653,6 @@ internal class ConnectionManager {
       // This state is reachable if the keepalive timer fires before we reach the ready state.
       self.state = .idle
       state.readyChannelMuxPromise
-        .fail(GRPCStatus(code: .unavailable, message: "Idled before reaching ready state"))
-      state.candidateMuxPromise
         .fail(GRPCStatus(code: .unavailable, message: "Idled before reaching ready state"))
 
     case .ready:
