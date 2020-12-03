@@ -556,7 +556,6 @@ internal class ConnectionManager {
         }
         self.logger.debug("scheduling connection attempt", metadata: ["delay_secs": "\(delay)"])
         self.state = .transientFailure(TransientFailureState(from: active, scheduled: scheduled))
-        // candidate mux needs to fail as they didn't sign up to reconnect.
       }
 
     // The channel was ready and working fine but something went wrong. Should we try to replace
