@@ -75,7 +75,7 @@ public class ClientConnection {
   private let connectionManager: ConnectionManager
 
   /// HTTP multiplexer from the underlying channel handling gRPC calls.
-  internal var multiplexer: EventLoopFuture<HTTP2StreamMultiplexer> {
+  internal func getMultiplexer() -> EventLoopFuture<HTTP2StreamMultiplexer> {
     return self.connectionManager.getHTTP2Multiplexer()
   }
 
@@ -144,15 +144,16 @@ extension ClientConnection: GRPCChannel {
   ) -> Call<Request, Response> {
     var options = callOptions
     self.populateLogger(in: &options)
+    let multiplexer = self.getMultiplexer()
 
     return Call(
       path: path,
       type: type,
-      eventLoop: self.multiplexer.eventLoop,
+      eventLoop: multiplexer.eventLoop,
       options: options,
       interceptors: interceptors,
       transportFactory: .http2(
-        multiplexer: self.multiplexer,
+        multiplexer: multiplexer,
         authority: self.authority,
         scheme: self.scheme,
         errorDelegate: self.configuration.errorDelegate
@@ -168,15 +169,16 @@ extension ClientConnection: GRPCChannel {
   ) -> Call<Request, Response> {
     var options = callOptions
     self.populateLogger(in: &options)
+    let multiplexer = self.getMultiplexer()
 
     return Call(
       path: path,
       type: type,
-      eventLoop: self.multiplexer.eventLoop,
+      eventLoop: multiplexer.eventLoop,
       options: options,
       interceptors: interceptors,
       transportFactory: .http2(
-        multiplexer: self.multiplexer,
+        multiplexer: multiplexer,
         authority: self.authority,
         scheme: self.scheme,
         errorDelegate: self.configuration.errorDelegate
