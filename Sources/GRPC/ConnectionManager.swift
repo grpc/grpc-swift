@@ -323,7 +323,7 @@ internal class ConnectionManager {
       multiplexer = state.readyChannelMuxPromise.futureResult
 
     case let .ready(state):
-      multiplexer = state.channel.eventLoop.makeSucceededFuture(state.multiplexer)
+      multiplexer = self.eventLoop.makeSucceededFuture(state.multiplexer)
 
     case let .transientFailure(state):
       multiplexer = state.readyChannelMuxPromise.futureResult
