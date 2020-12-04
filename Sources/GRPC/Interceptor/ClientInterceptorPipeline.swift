@@ -270,19 +270,18 @@ private extension InterceptorContextList {
     onRequestPart: @escaping (GRPCClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void,
     onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) where Element == ClientInterceptorContext<Request, Response> {
-    let middle = { () -> [Element] in
-      if interceptors.count == 0 {
-        return [] // Special case 0 to reduce cost.
-      } else {
-        return interceptors.enumerated().map { index, interceptor in
-          ClientInterceptorContext(
-            for: .userProvided(interceptor),
-            atIndex: index,
-            in: pipeline
-          )
-        }
+    let middle: [Element]
+    if interceptors.count == 0 {
+      middle = [] // Special case 0 to reduce cost.
+    } else {
+      middle = interceptors.enumerated().map { index, interceptor in
+        ClientInterceptorContext(
+          for: .userProvided(interceptor),
+          atIndex: index,
+          in: pipeline
+        )
       }
-    }()
+    }
 
     let first = ClientInterceptorContext<Request, Response>(
       for: .tail(
