@@ -412,32 +412,6 @@ extension ClientBootstrapProtocol {
 }
 
 extension Channel {
-  /// Configure the channel with TLS.
-  ///
-  /// This function adds two handlers to the pipeline: the `NIOSSLClientHandler` to handle TLS, and
-  /// the `TLSVerificationHandler` which verifies that a successful handshake was completed.
-  ///
-  /// - Parameter configuration: The configuration to configure the channel with.
-  /// - Parameter serverHostname: The server hostname to use if the hostname should be verified.
-  /// - Parameter errorDelegate: The error delegate to use for the TLS verification handler.
-  func configureTLS(
-    _ configuration: TLSConfiguration,
-    serverHostname: String?,
-    errorDelegate: ClientErrorDelegate?,
-    logger: Logger
-  ) -> EventLoopFuture<Void> {
-    do {
-      let sslClientHandler = try NIOSSLClientHandler(
-        context: try NIOSSLContext(configuration: configuration),
-        serverHostname: serverHostname
-      )
-
-      return self.pipeline.addHandlers(sslClientHandler, TLSVerificationHandler(logger: logger))
-    } catch {
-      return self.eventLoop.makeFailedFuture(error)
-    }
-  }
-
   func configureGRPCClient(
     httpTargetWindowSize: Int,
     tlsConfiguration: TLSConfiguration?,
@@ -449,64 +423,53 @@ extension Channel {
     requiresZeroLengthWriteWorkaround: Bool,
     logger: Logger
   ) -> EventLoopFuture<Void> {
-    let tlsConfigured = tlsConfiguration.map {
-      self.configureTLS(
-        $0,
-        serverHostname: tlsServerHostname,
-        errorDelegate: errorDelegate,
-        logger: logger
-      )
-    }
-
-    let configuration: EventLoopFuture<Void> = (
-      tlsConfigured ?? self.eventLoop
-        .makeSucceededFuture(())
-    ).flatMap {
-      self.configureHTTP2Pipeline(
-        mode: .client,
-        targetWindowSize: httpTargetWindowSize,
-        inboundStreamInitializer: nil
-      )
-    }.flatMap { _ in
-      self.pipeline.handler(type: NIOHTTP2Handler.self).flatMap { http2Handler in
-        self.pipeline.addHandlers(
-          [
-            GRPCClientKeepaliveHandler(configuration: connectionKeepalive),
-            GRPCIdleHandler(
-              mode: .client(connectionManager),
-              logger: logger,
-              idleTimeout: connectionIdleTimeout
-            ),
-          ],
-          position: .after(http2Handler)
-        )
-      }.flatMap {
-        let errorHandler = DelegatingErrorHandler(
-          logger: logger,
-          delegate: errorDelegate
-        )
-        return self.pipeline.addHandler(errorHandler)
-      }
-    }
+    // We add at most 8 handlers to the pipeline.
+    var handlers: [ChannelHandler] = []
+    handlers.reserveCapacity(8)
 
     #if canImport(Network)
     // This availability guard is arguably unnecessary, but we add it anyway.
-    if requiresZeroLengthWriteWorkaround, #available(
-      OSX 10.14,
-      iOS 12.0,
-      tvOS 12.0,
-      watchOS 6.0,
-      *
-    ) {
-      return configuration.flatMap {
-        self.pipeline.addHandler(NIOFilterEmptyWritesHandler(), position: .first)
-      }
-    } else {
-      return configuration
+    if requiresZeroLengthWriteWorkaround,
+      #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
+      handlers.append(NIOFilterEmptyWritesHandler())
     }
-    #else
-    return configuration
     #endif
+
+    if let tlsConfiguration = tlsConfiguration {
+      do {
+        let sslClientHandler = try NIOSSLClientHandler(
+          context: try NIOSSLContext(configuration: tlsConfiguration),
+          serverHostname: tlsServerHostname
+        )
+        handlers.append(sslClientHandler)
+        handlers.append(TLSVerificationHandler(logger: logger))
+      } catch {
+        return self.eventLoop.makeFailedFuture(error)
+      }
+    }
+
+    // We could use 'configureHTTP2Pipeline' here, but we need to add a few handlers between the
+    // two HTTP/2 handlers so we'll do it manually instead.
+    handlers.append(NIOHTTP2Handler(mode: .client))
+    handlers.append(GRPCClientKeepaliveHandler(configuration: connectionKeepalive))
+    handlers.append(
+      GRPCIdleHandler(
+        mode: .client(connectionManager),
+        logger: logger,
+        idleTimeout: connectionIdleTimeout
+      )
+    )
+    handlers.append(
+      HTTP2StreamMultiplexer(
+        mode: .client,
+        channel: self,
+        targetWindowSize: httpTargetWindowSize,
+        inboundStreamInitializer: nil
+      )
+    )
+    handlers.append(DelegatingErrorHandler(logger: logger, delegate: errorDelegate))
+
+    return self.pipeline.addHandlers(handlers)
   }
 
   func configureGRPCClient(
