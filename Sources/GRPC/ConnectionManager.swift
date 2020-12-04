@@ -417,7 +417,7 @@ internal class ConnectionManager {
         self.state = .shutdown(shutdown)
 
         // Fail the ready channel mux promise: we're shutting down so even if we manage to successfully
-        // connect the application shouldn't should have access to the channel or multiplexer.
+        // connect the application shouldn't have access to the channel or multiplexer.
         state.readyChannelMuxPromise.fail(GRPCStatus(code: .unavailable, message: nil))
         // We have a channel, close it.
         state.candidate.close(mode: .all, promise: nil)
