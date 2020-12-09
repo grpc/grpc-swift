@@ -33,7 +33,7 @@ enum RPC: String {
 
 enum Command {
   case server(port: Int, useTLS: Bool)
-  case client(host: String, port: Int, useTLS: Bool, rpc: RPC, message: String)
+  case client(port: Int, useTLS: Bool, rpc: RPC, message: String, useInterceptors: Bool)
 
   init?(from args: [String]) {
     guard !args.isEmpty else {
@@ -52,16 +52,32 @@ enum Command {
       self = .server(port: port, useTLS: useTLS)
 
     case "client":
-      guard args.count == 4 || args.count == 5,
+      guard (3 ... 5).contains(args.count),
         let message = args.popLast(),
         let rpc = args.popLast().flatMap(RPC.init),
-        let port = args.popLast().flatMap(Int.init),
-        let host = args.popLast(),
-        let useTLS = Command.parseTLSArg(args.popLast())
+        let port = args.popLast().flatMap(Int.init)
       else {
         return nil
       }
-      self = .client(host: host, port: port, useTLS: useTLS, rpc: rpc, message: message)
+
+      var useTLS = false
+      var useInterceptors = false
+
+      while let arg = args.popLast() {
+        if let tls = Command.parseTLSArg(arg) {
+          useTLS = tls
+        } else if arg == "--intercept" {
+          useInterceptors = true
+        }
+      }
+
+      self = .client(
+        port: port,
+        useTLS: useTLS,
+        rpc: rpc,
+        message: message,
+        useInterceptors: useInterceptors
+      )
 
     default:
       return nil
@@ -87,8 +103,9 @@ func printUsageAndExit(program: String) -> Never {
   Commands:
     server [--tls|--notls] PORT                     Starts the echo server on the given port.
 
-    client [--tls|--notls] HOST PORT RPC MESSAGE    Connects to the echo server on the given host
-                                                    host and port and calls the RPC with the
+    client [--tls|--notls] [--intercept] PORT RPC MESSAGE
+                                                    Connects to the echo server running on localhost
+                                                    and the given port and calls the RPC with the
                                                     provided message. See below for a list of
                                                     possible RPCs.
 
@@ -123,8 +140,13 @@ func main(args: [String]) {
       print("Error running server: \(error)")
     }
 
-  case let .client(host: host, port: port, useTLS: useTLS, rpc: rpc, message: message):
-    let client = makeClient(group: group, host: host, port: port, useTLS: useTLS)
+  case let .client(port, useTLS, rpc, message, useInterceptor):
+    let client = makeClient(
+      group: group,
+      port: port,
+      useTLS: useTLS,
+      useInterceptor: useInterceptor
+    )
     defer {
       try! client.channel.close().wait()
     }
@@ -169,7 +191,12 @@ func startEchoServer(group: EventLoopGroup, port: Int, useTLS: Bool) throws {
   try server.onClose.wait()
 }
 
-func makeClient(group: EventLoopGroup, host: String, port: Int, useTLS: Bool) -> Echo_EchoClient {
+func makeClient(
+  group: EventLoopGroup,
+  port: Int,
+  useTLS: Bool,
+  useInterceptor: Bool
+) -> Echo_EchoClient {
   let builder: ClientConnection.Builder
 
   if useTLS {
@@ -190,8 +217,12 @@ func makeClient(group: EventLoopGroup, host: String, port: Int, useTLS: Bool) ->
   }
 
   // Start the connection and create the client:
-  let connection = builder.connect(host: host, port: port)
-  return Echo_EchoClient(channel: connection)
+  let connection = builder.connect(host: "localhost", port: port)
+
+  return Echo_EchoClient(
+    channel: connection,
+    interceptors: useInterceptor ? ExampleClientInterceptorFactory() : nil
+  )
 }
 
 func callRPC(_ rpc: RPC, using client: Echo_EchoClient, message: String) {

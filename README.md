@@ -147,6 +147,8 @@ Some of the examples are accompanied by tutorials, including:
 - A [basic tutorial][docs-tutorial] covering the creation and implementation of
   a gRPC service using all four call types as well as the code required to setup
   and run a server and make calls to it using a generated client.
+- An [interceptors][docs-interceptors-tutorial] tutorial covering how to create
+  and use interceptors with gRPC Swift.
 
 ## Documentation
 
@@ -173,6 +175,7 @@ Please get involved! See our [guidelines for contributing](CONTRIBUTING.md).
 [docs-tls]: ./docs/tls.md
 [docs-keepalive]: ./docs/keepalive.md
 [docs-tutorial]: ./docs/basic-tutorial.md
+[docs-interceptors-tutorial]: ./docs/interceptors-tutorial.md
 [grpc]: https://github.com/grpc/grpc
 [grpc-core-pod]: https://cocoapods.org/pods/gRPC-Core
 [grpc-swift-945]: https://github.com/grpc/grpc-swift/pull/945
