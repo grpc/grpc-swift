@@ -34,44 +34,56 @@ public class _BaseCallHandler<
   public typealias OutboundOut = GRPCServerResponsePart<ByteBuffer>
 
   /// An interceptor pipeline.
-  private var pipeline: ServerInterceptorPipeline<RequestPayload, ResponsePayload>?
+  @usableFromInline
+  internal var _pipeline: ServerInterceptorPipeline<RequestPayload, ResponsePayload>?
 
   /// Our current state.
-  private var state: State = .idle
+  @usableFromInline
+  internal var _state: State = .idle
 
   /// The type of this RPC, e.g. 'unary'.
-  private let callType: GRPCCallType
+  @usableFromInline
+  internal let _callType: GRPCCallType
 
   /// Some context provided to us from the routing handler.
-  private let callHandlerContext: CallHandlerContext
+  @usableFromInline
+  internal let _callHandlerContext: CallHandlerContext
 
   /// A request deserializer.
-  private let requestDeserializer: RequestDeserializer
+  @usableFromInline
+  internal let _requestDeserializer: RequestDeserializer
 
   /// A response serializer.
-  private let responseSerializer: ResponseSerializer
+  @usableFromInline
+  internal let _responseSerializer: ResponseSerializer
 
   /// The `ChannelHandlerContext`.
-  private var context: ChannelHandlerContext?
+  @usableFromInline
+  internal var _context: ChannelHandlerContext?
 
   /// The event loop this call is being handled on.
+  @usableFromInline
   internal var eventLoop: EventLoop {
-    return self.callHandlerContext.eventLoop
+    return self._callHandlerContext.eventLoop
   }
 
   /// An error delegate.
+  @usableFromInline
   internal var errorDelegate: ServerErrorDelegate? {
-    return self.callHandlerContext.errorDelegate
+    return self._callHandlerContext.errorDelegate
   }
 
   /// A logger.
+  @usableFromInline
   internal var logger: Logger {
-    return self.callHandlerContext.logger
+    return self._callHandlerContext.logger
   }
 
   /// A reference to `UserInfo`.
-  internal var userInfoRef: Ref<UserInfo>
+  @usableFromInline
+  internal var _userInfoRef: Ref<UserInfo>
 
+  @inlinable
   internal init(
     callHandlerContext: CallHandlerContext,
     requestDeserializer: RequestDeserializer,
@@ -80,42 +92,42 @@ public class _BaseCallHandler<
     interceptors: [ServerInterceptor<RequestPayload, ResponsePayload>]
   ) {
     let userInfoRef = Ref(UserInfo())
-    self.requestDeserializer = requestDeserializer
-    self.responseSerializer = responseSerializer
-    self.callHandlerContext = callHandlerContext
-    self.callType = callType
-    self.userInfoRef = userInfoRef
-    self.pipeline = ServerInterceptorPipeline(
+    self._requestDeserializer = requestDeserializer
+    self._responseSerializer = responseSerializer
+    self._callHandlerContext = callHandlerContext
+    self._callType = callType
+    self._userInfoRef = userInfoRef
+    self._pipeline = ServerInterceptorPipeline(
       logger: callHandlerContext.logger,
       eventLoop: callHandlerContext.eventLoop,
       path: callHandlerContext.path,
       callType: callType,
       userInfoRef: userInfoRef,
       interceptors: interceptors,
-      onRequestPart: self.receiveRequestPartFromInterceptors(_:),
-      onResponsePart: self.sendResponsePartFromInterceptors(_:promise:)
+      onRequestPart: self._receiveRequestPartFromInterceptors(_:),
+      onResponsePart: self._sendResponsePartFromInterceptors(_:promise:)
     )
   }
 
   // MARK: - ChannelHandler
 
   public func handlerAdded(context: ChannelHandlerContext) {
-    self.state.handlerAdded()
-    self.context = context
+    self._state.handlerAdded()
+    self._context = context
   }
 
   public func handlerRemoved(context: ChannelHandlerContext) {
-    self.pipeline = nil
-    self.context = nil
+    self._pipeline = nil
+    self._context = nil
   }
 
   public func channelInactive(context: ChannelHandlerContext) {
-    self.pipeline = nil
+    self._pipeline = nil
     context.fireChannelInactive()
   }
 
   public func errorCaught(context: ChannelHandlerContext, error: Error) {
-    if self.state.errorCaught() {
+    if self._state.errorCaught() {
       self.observeLibraryError(error)
     }
   }
@@ -125,23 +137,23 @@ public class _BaseCallHandler<
 
     switch part {
     case let .metadata(headers):
-      if self.state.channelReadMetadata() {
-        self.receiveRequestPartInInterceptors(.metadata(headers))
+      if self._state.channelReadMetadata() {
+        self._receiveRequestPartInInterceptors(.metadata(headers))
       }
 
     case let .message(buffer):
-      if self.state.channelReadMessage() {
+      if self._state.channelReadMessage() {
         do {
-          let request = try self.requestDeserializer.deserialize(byteBuffer: buffer)
-          self.receiveRequestPartInInterceptors(.message(request))
+          let request = try self._requestDeserializer.deserialize(byteBuffer: buffer)
+          self._receiveRequestPartInInterceptors(.message(request))
         } catch {
           self.errorCaught(context: context, error: error)
         }
       }
 
     case .end:
-      if self.state.channelReadEnd() {
-        self.receiveRequestPartInInterceptors(.end)
+      if self._state.channelReadEnd() {
+        self._receiveRequestPartInInterceptors(.end)
       }
     }
 
@@ -150,18 +162,22 @@ public class _BaseCallHandler<
 
   // MARK: - Event Observer
 
+  @inlinable
   internal func observeHeaders(_ headers: HPACKHeaders) {
     fatalError("must be overridden by subclasses")
   }
 
+  @inlinable
   internal func observeRequest(_ message: RequestPayload) {
     fatalError("must be overridden by subclasses")
   }
 
+  @inlinable
   internal func observeEnd() {
     fatalError("must be overridden by subclasses")
   }
 
+  @inlinable
   internal func observeLibraryError(_ error: Error) {
     fatalError("must be overridden by subclasses")
   }
@@ -170,7 +186,8 @@ public class _BaseCallHandler<
   /// - Parameters:
   ///   - part: The response part to send.
   ///   - promise: A promise to complete once the response part has been written.
-  internal func sendResponsePartFromObserver(
+  @inlinable
+  internal final func sendResponsePartFromObserver(
     _ part: GRPCServerResponsePart<ResponsePayload>,
     promise: EventLoopPromise<Void>?
   ) {
@@ -178,15 +195,15 @@ public class _BaseCallHandler<
 
     switch part {
     case .metadata:
-      forward = self.state.sendResponsePartFromObserver(.metadata)
+      forward = self._state.sendResponsePartFromObserver(.metadata)
     case .message:
-      forward = self.state.sendResponsePartFromObserver(.message)
+      forward = self._state.sendResponsePartFromObserver(.message)
     case .end:
-      forward = self.state.sendResponsePartFromObserver(.end)
+      forward = self._state.sendResponsePartFromObserver(.end)
     }
 
     if forward {
-      self.sendResponsePartToInterceptors(part, promise: promise)
+      self._sendResponsePartToInterceptors(part, promise: promise)
     } else {
       promise?.fail(GRPCError.AlreadyComplete())
     }
@@ -266,20 +283,21 @@ public class _BaseCallHandler<
 extension _BaseCallHandler {
   /// Receive a request part from the interceptors pipeline to forward to the event observer.
   /// - Parameter part: The request part to forward.
-  private func receiveRequestPartFromInterceptors(_ part: GRPCServerRequestPart<RequestPayload>) {
+  @inlinable
+  internal func _receiveRequestPartFromInterceptors(_ part: GRPCServerRequestPart<RequestPayload>) {
     let forward: Bool
 
     switch part {
     case .metadata:
-      forward = self.state.receiveRequestPartFromInterceptors(.metadata)
+      forward = self._state.receiveRequestPartFromInterceptors(.metadata)
     case .message:
-      forward = self.state.receiveRequestPartFromInterceptors(.message)
+      forward = self._state.receiveRequestPartFromInterceptors(.message)
     case .end:
-      forward = self.state.receiveRequestPartFromInterceptors(.end)
+      forward = self._state.receiveRequestPartFromInterceptors(.end)
     }
 
     if forward {
-      self.receiveRequestPartInObserver(part)
+      self._receiveRequestPartInObserver(part)
     }
   }
 
@@ -288,7 +306,8 @@ extension _BaseCallHandler {
   /// - Parameters:
   ///   - part: The response part to send.
   ///   - promise: A promise to complete once the response part has been written.
-  private func sendResponsePartFromInterceptors(
+  @inlinable
+  internal func _sendResponsePartFromInterceptors(
     _ part: GRPCServerResponsePart<ResponsePayload>,
     promise: EventLoopPromise<Void>?
   ) {
@@ -296,15 +315,15 @@ extension _BaseCallHandler {
 
     switch part {
     case .metadata:
-      forward = self.state.sendResponsePartFromInterceptors(.metadata)
+      forward = self._state.sendResponsePartFromInterceptors(.metadata)
     case .message:
-      forward = self.state.sendResponsePartFromInterceptors(.message)
+      forward = self._state.sendResponsePartFromInterceptors(.message)
     case .end:
-      forward = self.state.sendResponsePartFromInterceptors(.end)
+      forward = self._state.sendResponsePartFromInterceptors(.end)
     }
 
-    if forward, let context = self.context {
-      self.writeResponsePartToChannel(context: context, part: part, promise: promise)
+    if forward, let context = self._context {
+      self._writeResponsePartToChannel(context: context, part: part, promise: promise)
     } else {
       promise?.fail(GRPCError.AlreadyComplete())
     }
@@ -313,7 +332,8 @@ extension _BaseCallHandler {
 
 // MARK: - State
 
-private enum State {
+@usableFromInline
+internal enum State {
   /// Idle. We're waiting to be added to a pipeline.
   case idle
 
@@ -324,7 +344,8 @@ private enum State {
   case closed
 }
 
-private enum RPCStreamPart {
+@usableFromInline
+internal enum RPCStreamPart {
   case metadata
   case message
   case end
@@ -335,7 +356,8 @@ extension State {
   ///
   /// We track the stream state twice: between the 'Channel' and interceptor pipeline, and between
   /// the interceptor pipeline and event observer.
-  fileprivate enum StreamState {
+  @usableFromInline
+  enum StreamState {
     case requestIdleResponseIdle
     case requestOpenResponseIdle
     case requestOpenResponseOpen
@@ -343,6 +365,7 @@ extension State {
     case requestClosedResponseOpen
     case requestClosedResponseClosed
 
+    @inlinable
     mutating func receiveHeaders() -> Bool {
       switch self {
       case .requestIdleResponseIdle:
@@ -358,6 +381,7 @@ extension State {
       }
     }
 
+    @inlinable
     func receiveMessage() -> Bool {
       switch self {
       case .requestOpenResponseIdle,
@@ -372,6 +396,7 @@ extension State {
       }
     }
 
+    @inlinable
     mutating func receiveEnd() -> Bool {
       switch self {
       case .requestOpenResponseIdle:
@@ -390,6 +415,7 @@ extension State {
       }
     }
 
+    @inlinable
     mutating func sendHeaders() -> Bool {
       switch self {
       case .requestOpenResponseIdle:
@@ -408,6 +434,7 @@ extension State {
       }
     }
 
+    @inlinable
     func sendMessage() -> Bool {
       switch self {
       case .requestOpenResponseOpen,
@@ -422,6 +449,7 @@ extension State {
       }
     }
 
+    @inlinable
     mutating func sendEnd() -> Bool {
       switch self {
       case .requestIdleResponseIdle:
@@ -440,13 +468,17 @@ extension State {
     }
   }
 
-  fileprivate struct ActiveState {
+  @usableFromInline
+  struct ActiveState {
     /// The stream state between the 'Channel' and interceptor pipeline.
+    @usableFromInline
     var channelStreamState: StreamState
 
     /// The stream state between the interceptor pipeline and event observer.
+    @usableFromInline
     var observerStreamState: StreamState
 
+    @inlinable
     init() {
       self.channelStreamState = .requestIdleResponseIdle
       self.observerStreamState = .requestIdleResponseIdle
@@ -526,6 +558,7 @@ extension State {
 
   /// Send a response part from the observer to the interceptors.
   /// - Returns: True if the part should be forwarded to the interceptor pipeline, false otherwise.
+  @inlinable
   internal mutating func sendResponsePartFromObserver(_ part: RPCStreamPart) -> Bool {
     switch self {
     case .idle:
@@ -557,6 +590,7 @@ extension State {
 
   /// Send a response part from the interceptors to the `Channel`.
   /// - Returns: True if the part should be forwarded to the `Channel`, false otherwise.
+  @inlinable
   internal mutating func sendResponsePartFromInterceptors(_ part: RPCStreamPart) -> Bool {
     switch self {
     case .idle:
@@ -591,6 +625,7 @@ extension State {
 
   /// A request part has traversed the interceptor pipeline, now send it to the observer.
   /// - Returns: True if the part should be forwarded to the observer, false otherwise.
+  @inlinable
   internal mutating func receiveRequestPartFromInterceptors(_ part: RPCStreamPart) -> Bool {
     switch self {
     case .idle:
@@ -627,13 +662,15 @@ extension State {
 
 extension _BaseCallHandler {
   /// Receives a request part in the interceptor pipeline.
-  private func receiveRequestPartInInterceptors(_ part: GRPCServerRequestPart<RequestPayload>) {
-    self.pipeline?.receive(part)
+  @inlinable
+  internal func _receiveRequestPartInInterceptors(_ part: GRPCServerRequestPart<RequestPayload>) {
+    self._pipeline?.receive(part)
   }
 
   /// Observe a request part. This just farms out to the subclass implementation for the
   /// appropriate part.
-  private func receiveRequestPartInObserver(_ part: GRPCServerRequestPart<RequestPayload>) {
+  @inlinable
+  internal func _receiveRequestPartInObserver(_ part: GRPCServerRequestPart<RequestPayload>) {
     switch part {
     case let .metadata(headers):
       self.observeHeaders(headers)
@@ -645,11 +682,12 @@ extension _BaseCallHandler {
   }
 
   /// Sends a response part into the interceptor pipeline.
-  private func sendResponsePartToInterceptors(
+  @inlinable
+  internal func _sendResponsePartToInterceptors(
     _ part: GRPCServerResponsePart<ResponsePayload>,
     promise: EventLoopPromise<Void>?
   ) {
-    if let pipeline = self.pipeline {
+    if let pipeline = self._pipeline {
       pipeline.send(part, promise: promise)
     } else {
       promise?.fail(GRPCError.AlreadyComplete())
@@ -657,7 +695,8 @@ extension _BaseCallHandler {
   }
 
   /// Writes a response part to the `Channel`.
-  private func writeResponsePartToChannel(
+  @inlinable
+  internal func _writeResponsePartToChannel(
     context: ChannelHandlerContext,
     part: GRPCServerResponsePart<ResponsePayload>,
     promise: EventLoopPromise<Void>?
@@ -668,12 +707,12 @@ extension _BaseCallHandler {
     case let .metadata(headers):
       // Only flush if we're not unary: if we're unary we'll wait for the response and end before
       // emitting the flush.
-      flush = self.callType != .unary
+      flush = self._callType != .unary
       context.write(self.wrapOutboundOut(.metadata(headers)), promise: promise)
 
     case let .message(message, metadata):
       do {
-        let serializedResponse = try self.responseSerializer.serialize(
+        let serializedResponse = try self._responseSerializer.serialize(
           message,
           allocator: context.channel.allocator
         )

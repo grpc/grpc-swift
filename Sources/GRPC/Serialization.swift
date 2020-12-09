@@ -25,6 +25,7 @@ public protocol MessageSerializer {
   /// - Parameters:
   ///   - input: The element to serialize.
   ///   - allocator: A `ByteBufferAllocator`.
+  @inlinable
   func serialize(_ input: Input, allocator: ByteBufferAllocator) throws -> ByteBuffer
 }
 
@@ -34,12 +35,17 @@ public protocol MessageDeserializer {
   /// Deserializes `byteBuffer` to produce a single `Output`.
   ///
   /// - Parameter byteBuffer: The `ByteBuffer` to deserialize.
+  @inlinable
   func deserialize(byteBuffer: ByteBuffer) throws -> Output
 }
 
 // MARK: Protobuf
 
 public struct ProtobufSerializer<Message: SwiftProtobuf.Message>: MessageSerializer {
+  @inlinable
+  public init() {}
+
+  @inlinable
   public func serialize(_ message: Message, allocator: ByteBufferAllocator) throws -> ByteBuffer {
     // Serialize the message.
     let serialized = try message.serializedData()
@@ -59,6 +65,10 @@ public struct ProtobufSerializer<Message: SwiftProtobuf.Message>: MessageSeriali
 }
 
 public struct ProtobufDeserializer<Message: SwiftProtobuf.Message>: MessageDeserializer {
+  @inlinable
+  public init() {}
+
+  @inlinable
   public func deserialize(byteBuffer: ByteBuffer) throws -> Message {
     var buffer = byteBuffer
     // '!' is okay; we can always read 'readableBytes'.
@@ -70,6 +80,10 @@ public struct ProtobufDeserializer<Message: SwiftProtobuf.Message>: MessageDeser
 // MARK: GRPCPayload
 
 public struct GRPCPayloadSerializer<Message: GRPCPayload>: MessageSerializer {
+  @inlinable
+  public init() {}
+
+  @inlinable
   public func serialize(_ message: Message, allocator: ByteBufferAllocator) throws -> ByteBuffer {
     // Reserve 5 leading bytes. This a minor optimisation win: the length prefixed message writer
     // can re-use the leading 5 bytes without needing to allocate a new buffer and copy over the
@@ -102,6 +116,10 @@ public struct GRPCPayloadSerializer<Message: GRPCPayload>: MessageSerializer {
 }
 
 public struct GRPCPayloadDeserializer<Message: GRPCPayload>: MessageDeserializer {
+  @inlinable
+  public init() {}
+
+  @inlinable
   public func deserialize(byteBuffer: ByteBuffer) throws -> Message {
     var buffer = byteBuffer
     return try Message(serializedByteBuffer: &buffer)

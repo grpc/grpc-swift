@@ -14,8 +14,12 @@
  * limitations under the License.
  */
 
+@usableFromInline
 internal final class Ref<Value> {
+  @usableFromInline
   internal var value: Value
+
+  @inlinable
   internal init(_ value: Value) {
     self.value = value
   }

@@ -18,42 +18,47 @@ import NIO
 
 public struct ServerInterceptorContext<Request, Response> {
   /// The interceptor this context is for.
+  @usableFromInline
   internal let interceptor: AnyServerInterceptor<Request, Response>
 
   /// The pipeline this context is associated with.
-  private let pipeline: ServerInterceptorPipeline<Request, Response>
+  @usableFromInline
+  internal let _pipeline: ServerInterceptorPipeline<Request, Response>
 
   /// The index of this context's interceptor within the pipeline.
-  private let index: Int
+  @usableFromInline
+  internal let _index: Int
 
   // The next context in the inbound direction, if one exists.
-  private var nextInbound: ServerInterceptorContext<Request, Response>? {
-    return self.pipeline.nextInboundContext(forIndex: self.index)
+  @inlinable
+  internal var _nextInbound: ServerInterceptorContext<Request, Response>? {
+    return self._pipeline.nextInboundContext(forIndex: self._index)
   }
 
   // The next context in the outbound direction, if one exists.
-  private var nextOutbound: ServerInterceptorContext<Request, Response>? {
-    return self.pipeline.nextOutboundContext(forIndex: self.index)
+  @inlinable
+  internal var _nextOutbound: ServerInterceptorContext<Request, Response>? {
+    return self._pipeline.nextOutboundContext(forIndex: self._index)
   }
 
   /// The `EventLoop` this interceptor pipeline is being executed on.
   public var eventLoop: EventLoop {
-    return self.pipeline.eventLoop
+    return self._pipeline.eventLoop
   }
 
   /// A logger.
   public var logger: Logger {
-    return self.pipeline.logger
+    return self._pipeline.logger
   }
 
   /// The type of the RPC, e.g. "unary".
   public var type: GRPCCallType {
-    return self.pipeline.type
+    return self._pipeline.type
   }
 
   /// The path of the RPC in the format "/Service/Method", e.g. "/echo.Echo/Get".
   public var path: String {
-    return self.pipeline.path
+    return self._pipeline.path
   }
 
   /// A 'UserInfo' dictionary.
@@ -66,23 +71,24 @@ public struct ServerInterceptorContext<Request, Response> {
   ///   thread-safety.
   public var userInfo: UserInfo {
     get {
-      return self.pipeline.userInfoRef.value
+      return self._pipeline.userInfoRef.value
     }
     nonmutating set {
-      self.pipeline.userInfoRef.value = newValue
+      self._pipeline.userInfoRef.value = newValue
     }
   }
 
   /// Construct a `ServerInterceptorContext` for the interceptor at the given index within the
   /// interceptor pipeline.
+  @inlinable
   internal init(
     for interceptor: AnyServerInterceptor<Request, Response>,
     atIndex index: Int,
     in pipeline: ServerInterceptorPipeline<Request, Response>
   ) {
     self.interceptor = interceptor
-    self.pipeline = pipeline
-    self.index = index
+    self._pipeline = pipeline
+    self._index = index
   }
 
   /// Forwards the request part to the next inbound interceptor in the pipeline, if there is one.
@@ -90,7 +96,7 @@ public struct ServerInterceptorContext<Request, Response> {
   /// - Parameter part: The request part to forward.
   /// - Important: This *must* to be called from the `eventLoop`.
   public func receive(_ part: GRPCServerRequestPart<Request>) {
-    self.nextInbound?.invokeReceive(part)
+    self._nextInbound?.invokeReceive(part)
   }
 
   /// Forwards the response part to the next outbound interceptor in the pipeline, if there is one.
@@ -103,7 +109,7 @@ public struct ServerInterceptorContext<Request, Response> {
     _ part: GRPCServerResponsePart<Response>,
     promise: EventLoopPromise<Void>?
   ) {
-    if let outbound = self.nextOutbound {
+    if let outbound = self._nextOutbound {
       outbound.invokeSend(part, promise: promise)
     } else {
       promise?.fail(GRPCError.AlreadyComplete())
@@ -112,11 +118,13 @@ public struct ServerInterceptorContext<Request, Response> {
 }
 
 extension ServerInterceptorContext {
+  @inlinable
   internal func invokeReceive(_ part: GRPCServerRequestPart<Request>) {
     self.eventLoop.assertInEventLoop()
     self.interceptor.receive(part, context: self)
   }
 
+  @inlinable
   internal func invokeSend(
     _ part: GRPCServerResponsePart<Response>,
     promise: EventLoopPromise<Void>?

@@ -29,21 +29,26 @@ public class BidirectionalStreamingCallHandler<
   RequestDeserializer: MessageDeserializer,
   ResponseSerializer: MessageSerializer
 >: _BaseCallHandler<RequestDeserializer, ResponseSerializer> {
-  private typealias Context = StreamingResponseCallContext<ResponsePayload>
-  private typealias Observer = EventLoopFuture<(StreamEvent<RequestPayload>) -> Void>
+  @usableFromInline
+  internal typealias _Context = StreamingResponseCallContext<ResponsePayload>
+  @usableFromInline
+  internal typealias _Observer = EventLoopFuture<(StreamEvent<RequestPayload>) -> Void>
 
-  private var state: State
+  @usableFromInline
+  internal var _callHandlerState: _CallHandlerState
 
   // See 'UnaryCallHandler.State'.
-  private enum State {
-    case requestIdleResponseIdle((Context) -> Observer)
-    case requestOpenResponseOpen(Context, Observer)
-    case requestClosedResponseOpen(Context)
+  @usableFromInline
+  internal enum _CallHandlerState {
+    case requestIdleResponseIdle((_Context) -> _Observer)
+    case requestOpenResponseOpen(_Context, _Observer)
+    case requestClosedResponseOpen(_Context)
     case requestClosedResponseClosed
   }
 
   // We ask for a future of type `EventObserver` to allow the framework user to e.g. asynchronously authenticate a call.
   // If authentication fails, they can simply fail the observer future, which causes the call to be terminated.
+  @inlinable
   internal init(
     serializer: ResponseSerializer,
     deserializer: RequestDeserializer,
@@ -52,7 +57,7 @@ public class BidirectionalStreamingCallHandler<
     eventObserverFactory: @escaping (StreamingResponseCallContext<ResponsePayload>)
       -> EventLoopFuture<(StreamEvent<RequestPayload>) -> Void>
   ) {
-    self.state = .requestIdleResponseIdle(eventObserverFactory)
+    self._callHandlerState = .requestIdleResponseIdle(eventObserverFactory)
     super.init(
       callHandlerContext: callHandlerContext,
       requestDeserializer: deserializer,
@@ -66,21 +71,21 @@ public class BidirectionalStreamingCallHandler<
     super.channelInactive(context: context)
 
     // Fail any remaining promise.
-    switch self.state {
+    switch self._callHandlerState {
     case .requestIdleResponseIdle,
          .requestClosedResponseClosed:
-      self.state = .requestClosedResponseClosed
+      self._callHandlerState = .requestClosedResponseClosed
 
     case let .requestOpenResponseOpen(context, _),
          let .requestClosedResponseOpen(context):
-      self.state = .requestClosedResponseClosed
+      self._callHandlerState = .requestClosedResponseClosed
       context.statusPromise.fail(GRPCError.AlreadyComplete())
     }
   }
 
   /// Handle an error from the event observer.
   private func handleObserverError(_ error: Error) {
-    switch self.state {
+    switch self._callHandlerState {
     case .requestIdleResponseIdle:
       preconditionFailure("Invalid state: request observer hasn't been created")
 
@@ -102,7 +107,7 @@ public class BidirectionalStreamingCallHandler<
 
   /// Handle a 'library' error, i.e. an error emanating from the `Channel`.
   private func handleLibraryError(_ error: Error) {
-    switch self.state {
+    switch self._callHandlerState {
     case .requestIdleResponseIdle,
          .requestOpenResponseOpen:
       // We'll never see end of stream, we'll close.
@@ -127,19 +132,19 @@ public class BidirectionalStreamingCallHandler<
   }
 
   override internal func observeHeaders(_ headers: HPACKHeaders) {
-    switch self.state {
+    switch self._callHandlerState {
     case let .requestIdleResponseIdle(factory):
       let context = _StreamingResponseCallContext<RequestPayload, ResponsePayload>(
         eventLoop: self.eventLoop,
         headers: headers,
         logger: self.logger,
-        userInfoRef: self.userInfoRef,
+        userInfoRef: self._userInfoRef,
         sendResponse: self.sendResponse(_:metadata:promise:)
       )
       let observer = factory(context)
 
       // Fully open. We'll send the response headers back in a moment.
-      self.state = .requestOpenResponseOpen(context, observer)
+      self._callHandlerState = .requestOpenResponseOpen(context, observer)
 
       // Register a failure callback for the observer failing.
       observer.whenFailure(self.handleObserverError(_:))
@@ -166,7 +171,7 @@ public class BidirectionalStreamingCallHandler<
   }
 
   override internal func observeRequest(_ message: RequestPayload) {
-    switch self.state {
+    switch self._callHandlerState {
     case .requestIdleResponseIdle:
       preconditionFailure("Invalid state: request received before headers")
 
@@ -182,12 +187,12 @@ public class BidirectionalStreamingCallHandler<
   }
 
   override internal func observeEnd() {
-    switch self.state {
+    switch self._callHandlerState {
     case .requestIdleResponseIdle:
       preconditionFailure("Invalid state: no request headers received")
 
     case let .requestOpenResponseOpen(context, observer):
-      self.state = .requestClosedResponseOpen(context)
+      self._callHandlerState = .requestClosedResponseOpen(context)
       observer.whenSuccess {
         $0(.end)
       }
@@ -205,7 +210,7 @@ public class BidirectionalStreamingCallHandler<
     metadata: MessageMetadata,
     promise: EventLoopPromise<Void>?
   ) {
-    switch self.state {
+    switch self._callHandlerState {
     case .requestIdleResponseIdle:
       preconditionFailure("Invalid state: can't send response before receiving headers and request")
 
@@ -221,14 +226,14 @@ public class BidirectionalStreamingCallHandler<
   }
 
   private func sendEnd(status: GRPCStatus, trailers: HPACKHeaders) {
-    switch self.state {
+    switch self._callHandlerState {
     case .requestIdleResponseIdle,
          .requestClosedResponseOpen:
-      self.state = .requestClosedResponseClosed
+      self._callHandlerState = .requestClosedResponseClosed
       self.sendResponsePartFromObserver(.end(status, trailers), promise: nil)
 
     case let .requestOpenResponseOpen(context, _):
-      self.state = .requestClosedResponseClosed
+      self._callHandlerState = .requestClosedResponseClosed
       self.sendResponsePartFromObserver(.end(status, trailers), promise: nil)
       // Fail the promise.
       context.statusPromise.fail(status)

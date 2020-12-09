@@ -22,6 +22,7 @@ public enum CallHandlerFactory {
   public typealias UnaryContext<Response> = UnaryResponseCallContext<Response>
   public typealias UnaryEventObserver<Request, Response> = (Request) -> EventLoopFuture<Response>
 
+  @inlinable
   public static func makeUnary<Request: Message, Response: Message>(
     callHandlerContext: CallHandlerContext,
     interceptors: [ServerInterceptor<Request, Response>] = [],
@@ -37,6 +38,7 @@ public enum CallHandlerFactory {
     )
   }
 
+  @inlinable
   public static func makeUnary<Request: GRPCPayload, Response: GRPCPayload>(
     callHandlerContext: CallHandlerContext,
     interceptors: [ServerInterceptor<Request, Response>] = [],
@@ -56,6 +58,7 @@ public enum CallHandlerFactory {
   public typealias ClientStreamingEventObserver<Request> =
     EventLoopFuture<(StreamEvent<Request>) -> Void>
 
+  @inlinable
   public static func makeClientStreaming<Request: Message, Response: Message>(
     callHandlerContext: CallHandlerContext,
     interceptors: [ServerInterceptor<Request, Response>] = [],
@@ -71,6 +74,7 @@ public enum CallHandlerFactory {
     )
   }
 
+  @inlinable
   public static func makeClientStreaming<Request: GRPCPayload, Response: GRPCPayload>(
     callHandlerContext: CallHandlerContext,
     interceptors: [ServerInterceptor<Request, Response>] = [],
@@ -92,6 +96,7 @@ public enum CallHandlerFactory {
   public typealias ServerStreamingContext<Response> = StreamingResponseCallContext<Response>
   public typealias ServerStreamingEventObserver<Request> = (Request) -> EventLoopFuture<GRPCStatus>
 
+  @inlinable
   public static func makeServerStreaming<Request: Message, Response: Message>(
     callHandlerContext: CallHandlerContext,
     interceptors: [ServerInterceptor<Request, Response>] = [],
@@ -107,6 +112,7 @@ public enum CallHandlerFactory {
     )
   }
 
+  @inlinable
   public static func makeServerStreaming<Request: GRPCPayload, Response: GRPCPayload>(
     callHandlerContext: CallHandlerContext,
     interceptors: [ServerInterceptor<Request, Response>] = [],
@@ -129,6 +135,7 @@ public enum CallHandlerFactory {
   public typealias BidirectionalStreamingEventObserver<Request> =
     EventLoopFuture<(StreamEvent<Request>) -> Void>
 
+  @inlinable
   public static func makeBidirectionalStreaming<Request: Message, Response: Message>(
     callHandlerContext: CallHandlerContext,
     interceptors: [ServerInterceptor<Request, Response>] = [],
@@ -147,6 +154,7 @@ public enum CallHandlerFactory {
     )
   }
 
+  @inlinable
   public static func makeBidirectionalStreaming<Request: GRPCPayload, Response: GRPCPayload>(
     callHandlerContext: CallHandlerContext,
     interceptors: [ServerInterceptor<Request, Response>] = [],

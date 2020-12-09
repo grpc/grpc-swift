@@ -40,10 +40,15 @@ public protocol CallHandlerProvider: AnyObject {
 // the context will get passed from generated code back into gRPC library code and all members should
 // be considered an implementation detail to the user.
 public struct CallHandlerContext {
+  @usableFromInline
   internal var errorDelegate: ServerErrorDelegate?
+  @usableFromInline
   internal var logger: Logger
+  @usableFromInline
   internal var encoding: ServerMessageEncoding
+  @usableFromInline
   internal var eventLoop: EventLoop
+  @usableFromInline
   internal var path: String
 }
 
