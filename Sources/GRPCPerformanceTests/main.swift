@@ -79,6 +79,12 @@ func runBenchmarks(spec: TestSpec) {
   )
 
   measureAndPrint(
+    description: "embedded_server_unary_10k_small_requests",
+    benchmark: EmbeddedServerUnaryBenchmark(count: 10000, text: smallRequest),
+    spec: spec
+  )
+
+  measureAndPrint(
     description: "percent_encode_decode_10k_status_messages",
     benchmark: PercentEncoding(iterations: 10000, requiresEncoding: true),
     spec: spec
