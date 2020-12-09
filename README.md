@@ -34,8 +34,7 @@ The remainder of this README refers to the 1.x version of gRPC Swift.
 gRPC Swift's platform support is identical to the [platform support of Swift
 NIO][swift-nio-platforms].
 
-Note that gRPC Swift uses NIO 2 and therefore requires Swift to be version 5.0
-or higher.
+Note that gRPC Swift uses NIO 2 and requires Swift to be version 5.1 or higher.
 
 ## Getting gRPC Swift
 
@@ -51,14 +50,14 @@ necessary targets:
 
 ```swift
 dependencies: [
-  .package(url: "https://github.com/grpc/grpc-swift.git", from: "1.0.0-alpha.20")
+  .package(url: "https://github.com/grpc/grpc-swift.git", from: "1.0.0-alpha.21")
 ]
 ```
 
 The syntax for target dependencies changed in Swift 5.2 and requires the package
 of each dependency to be specified.
 
-For Swift 5.2 (`swift-tools-version:5.2`):
+For Swift 5.2 (`swift-tools-version:5.2`) and later:
 
 ```swift
 .target(
@@ -67,7 +66,7 @@ For Swift 5.2 (`swift-tools-version:5.2`):
 )
 ```
 
-For Swift 5.0 (`swift-tools-version:5.0`) and 5.1 (`swift-tools-version:5.1`):
+For Swift 5.1 (`swift-tools-version:5.1`):
 
 ```swift
 .target(

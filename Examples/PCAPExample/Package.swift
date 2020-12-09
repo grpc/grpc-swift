@@ -1,4 +1,4 @@
-// swift-tools-version:5.0
+// swift-tools-version:5.1
 /*
  * Copyright 2020, gRPC Authors All rights reserved.
  *
@@ -14,8 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import PackageDescription
-
 import PackageDescription
 
 let package = Package(
