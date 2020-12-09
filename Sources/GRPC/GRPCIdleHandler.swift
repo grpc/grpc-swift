@@ -17,274 +17,178 @@ import Logging
 import NIO
 import NIOHTTP2
 
-internal class GRPCIdleHandler: ChannelInboundHandler {
+internal final class GRPCIdleHandler: ChannelInboundHandler {
   typealias InboundIn = HTTP2Frame
+  typealias OutboundOut = HTTP2Frame
 
   /// The amount of time to wait before closing the channel when there are no active streams.
   private let idleTimeout: TimeAmount
 
-  /// The number of active streams.
-  private var activeStreams = 0
-
-  /// The maximum number of streams we may create concurrently on this connection.
-  private var maxConcurrentStreams: Int?
-
-  /// The scheduled task which will close the channel.
-  private var scheduledIdle: Scheduled<Void>?
-
-  /// Client and server have slightly different behaviours; track which we are following.
-  private var mode: Mode
+  /// The mode we're operating in.
+  private let mode: Mode
 
   /// A logger.
   private let logger: Logger
+
+  private var context: ChannelHandlerContext?
 
   /// The mode of operation: the client tracks additional connection state in the connection
   /// manager.
   internal enum Mode {
     case client(ConnectionManager, HTTP2StreamMultiplexer)
     case server
+
+    var connectionManager: ConnectionManager? {
+      switch self {
+      case let .client(manager, _):
+        return manager
+      case .server:
+        return nil
+      }
+    }
   }
 
-  /// The current connection state.
-  private var state: State = .notReady
-
-  private enum State {
-    // We haven't marked the connection as "ready" yet.
-    case notReady
-
-    // The connection has been marked as "ready".
-    case ready
-
-    // We called `close` on the channel.
-    case closed
-  }
+  /// The current state.
+  private var stateMachine: GRPCIdleHandlerStateMachine
 
   init(mode: Mode, logger: Logger, idleTimeout: TimeAmount) {
     self.mode = mode
     self.idleTimeout = idleTimeout
     self.logger = logger
+
+    switch mode {
+    case .client:
+      self.stateMachine = .init(role: .client, logger: logger)
+    case .server:
+      self.stateMachine = .init(role: .server, logger: logger)
+    }
+  }
+
+  private func sendGoAway(lastStreamID streamID: HTTP2StreamID) {
+    guard let context = self.context else {
+      return
+    }
+
+    let frame = HTTP2Frame(
+      streamID: .rootStream,
+      payload: .goAway(lastStreamID: streamID, errorCode: .noError, opaqueData: nil)
+    )
+
+    context.writeAndFlush(self.wrapOutboundOut(frame), promise: nil)
+  }
+
+  private func perform(operations: GRPCIdleHandlerStateMachine.Operations) {
+    // Prod the connection manager.
+    if let event = operations.connectionManagerEvent, let manager = self.mode.connectionManager {
+      switch event {
+      case .idle:
+        manager.idle()
+      case .inactive:
+        manager.channelInactive()
+      case .ready:
+        manager.ready()
+      }
+    }
+
+    // Handle idle timeout creation/cancellation.
+    if let idleTask = operations.idleTask {
+      switch idleTask {
+      case let .cancel(task):
+        task.cancel()
+
+      case .schedule:
+        if self.idleTimeout != .nanoseconds(.max), let context = self.context {
+          let task = context.eventLoop.scheduleTask(in: self.idleTimeout) {
+            self.idleTimeoutFired()
+          }
+          self.perform(operations: self.stateMachine.scheduledIdleTimeoutTask(task))
+        }
+      }
+    }
+
+    // Send a GOAWAY frame.
+    if let streamID = operations.sendGoAwayWithLastPeerInitiatedStreamID {
+      let goAwayFrame = HTTP2Frame(
+        streamID: .rootStream,
+        payload: .goAway(lastStreamID: streamID, errorCode: .noError, opaqueData: nil)
+      )
+      self.context?.writeAndFlush(self.wrapOutboundOut(goAwayFrame), promise: nil)
+    }
+
+    // Close the channel, if necessary.
+    if operations.shouldCloseChannel {
+      self.context?.close(mode: .all, promise: nil)
+    }
+  }
+
+  private func idleTimeoutFired() {
+    self.perform(operations: self.stateMachine.idleTimeoutTaskFired())
+  }
+
+  func handlerAdded(context: ChannelHandlerContext) {
+    self.context = context
+  }
+
+  func handlerRemoved(context: ChannelHandlerContext) {
+    self.context = nil
   }
 
   func userInboundEventTriggered(context: ChannelHandlerContext, event: Any) {
-    switch self.state {
-    case .notReady, .ready:
-      if let created = event as? NIOHTTP2StreamCreatedEvent {
-        // We have a stream: don't go idle
-        self.scheduledIdle?.cancel()
-        self.scheduledIdle = nil
-        self.activeStreams += 1
-
-        self.logger.debug("HTTP2 stream created", metadata: [
-          MetadataKey.h2StreamID: "\(created.streamID)",
-          MetadataKey.h2ActiveStreams: "\(self.activeStreams)",
-        ])
-
-        if self.activeStreams == self.maxConcurrentStreams {
-          self.logger.warning("HTTP2 max concurrent stream limit reached", metadata: [
-            MetadataKey.h2ActiveStreams: "\(self.activeStreams)",
-          ])
-        }
-      } else if let closed = event as? StreamClosedEvent {
-        let droppingBelowMaxConcurrentStreamLimit = self.maxConcurrentStreams == self.activeStreams
-        self.activeStreams -= 1
-
-        self.logger.debug("HTTP2 stream closed", metadata: [
-          MetadataKey.h2StreamID: "\(closed.streamID)",
-          MetadataKey.h2ActiveStreams: "\(self.activeStreams)",
-        ])
-
-        if droppingBelowMaxConcurrentStreamLimit {
-          self.logger.notice(
-            "HTTP2 active stream count fell below max concurrent stream limit",
-            metadata: [MetadataKey.h2ActiveStreams: "\(self.activeStreams)"]
-          )
-        }
-
-        // No active streams: go idle soon.
-        if self.activeStreams == 0 {
-          self.scheduleIdleTimeout(context: context)
-        }
-      } else if event is ConnectionIdledEvent {
-        // Force idle (closing) because we received a `ConnectionIdledEvent` from a keepalive handler
-        self.idle(context: context, force: true)
-      }
-
-    case .closed:
-      ()
+    if let created = event as? NIOHTTP2StreamCreatedEvent {
+      self.perform(operations: self.stateMachine.streamCreated(withID: created.streamID))
+      context.fireUserInboundEventTriggered(event)
+    } else if let closed = event as? StreamClosedEvent {
+      self.perform(operations: self.stateMachine.streamClosed(withID: closed.streamID))
+      context.fireUserInboundEventTriggered(event)
+    } else if event is ConnectionIdledEvent {
+      self.perform(operations: self.stateMachine.shutdownNow())
+      // Swallow this event.
+    } else {
+      context.fireUserInboundEventTriggered(event)
     }
-
-    context.fireUserInboundEventTriggered(event)
   }
 
   func errorCaught(context: ChannelHandlerContext, error: Error) {
-    switch (self.mode, self.state) {
-    case let (.client(manager, _), .notReady),
-         let (.client(manager, _), .ready):
-      // We're most likely about to become inactive: let the manager know the reason why.
-      manager.channelError(error)
-
-    case (.client, .closed),
-         (.server, _):
-      ()
-    }
-
+    // No state machine action here.
+    self.mode.connectionManager?.channelError(error)
     context.fireErrorCaught(error)
   }
 
   func channelActive(context: ChannelHandlerContext) {
-    switch (self.mode, self.state) {
-    // The client should become active: we'll only schedule the idling when the channel
-    // becomes 'ready'.
-    case let (.client(manager, multiplexer), .notReady):
-      manager.channelActive(channel: context.channel, multiplexer: multiplexer)
-
-    case (.server, .notReady),
-         (_, .ready),
-         (_, .closed):
+    // No state machine action here.
+    switch self.mode {
+    case let .client(connectionManager, multiplexer):
+      connectionManager.channelActive(channel: context.channel, multiplexer: multiplexer)
+    case .server:
       ()
     }
-
     context.fireChannelActive()
   }
 
-  func handlerRemoved(context: ChannelHandlerContext) {
-    self.scheduledIdle?.cancel()
-    self.scheduledIdle = nil
-    self.state = .closed
-  }
-
   func channelInactive(context: ChannelHandlerContext) {
-    self.scheduledIdle?.cancel()
-    self.scheduledIdle = nil
-
-    switch (self.mode, self.state) {
-    case let (.client(manager, _), .notReady):
-      self.state = .closed
-      manager.channelInactive()
-
-    case let (.client(manager, _), .ready):
-      self.state = .closed
-
-      if self.activeStreams == 0 {
-        // We're ready and there are no active streams: we can treat this as the server idling our
-        // connection.
-        manager.idle()
-      } else {
-        manager.channelInactive()
-      }
-
-    case (.server, .notReady),
-         (.server, .ready),
-         (_, .closed):
-      self.state = .closed
-    }
-
+    self.perform(operations: self.stateMachine.channelInactive())
     context.fireChannelInactive()
   }
 
   func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     let frame = self.unwrapInboundIn(data)
 
-    if frame.streamID == .rootStream {
-      switch frame.payload {
-      case let .settings(.settings(settings)):
-        // Log any changes to HTTP/2 settings.
-        self.logger.debug(
-          "HTTP2 settings update",
-          metadata: Dictionary(settings.map {
-            ("\($0.parameter.loggingMetadataKey)", "\($0.value)")
-          }, uniquingKeysWith: { a, _ in a })
-        )
-
-        let maxConcurrentStreams = settings.last(where: { $0.parameter == .maxConcurrentStreams })
-        if let maxConcurrentStreams = maxConcurrentStreams?.value {
-          self.maxConcurrentStreams = maxConcurrentStreams
-        }
-
-        switch self.state {
-        case .notReady:
-          // This must be the initial settings frame, we can move to the ready state now.
-          self.state = .ready
-
-          switch self.mode {
-          case let .client(manager, _):
-            let remoteAddressDescription = context.channel.remoteAddress.map { "\($0)" } ?? "n/a"
-            manager.logger.info("gRPC connection ready", metadata: [
-              MetadataKey.remoteAddress: "\(remoteAddressDescription)",
-              MetadataKey.eventLoop: "\(context.eventLoop)",
-            ])
-
-            // Let the manager know we're ready.
-            manager.ready()
-
-          case .server:
-            ()
-          }
-
-          // Start the idle timeout.
-          self.scheduleIdleTimeout(context: context)
-
-        default:
-          ()
-        }
-
-      case .goAway:
-        switch self.state {
-        case .ready, .notReady:
-          self.idle(context: context)
-        case .closed:
-          ()
-        }
-
-      default:
-        // Ignore all other frame types.
-        ()
-      }
+    switch frame.payload {
+    case .goAway:
+      self.perform(operations: self.stateMachine.receiveGoAway())
+    case let .settings(.settings(settings)):
+      self.perform(operations: self.stateMachine.receiveSettings(settings))
+    default:
+      // We're not interested in other events.
+      ()
     }
 
     context.fireChannelRead(data)
   }
-
-  private func scheduleIdleTimeout(context: ChannelHandlerContext) {
-    guard self.activeStreams == 0, self.idleTimeout.nanoseconds != .max else {
-      return
-    }
-
-    self.scheduledIdle = context.eventLoop.scheduleTask(in: self.idleTimeout) {
-      self.idle(context: context)
-    }
-  }
-
-  private func idle(context: ChannelHandlerContext, force: Bool = false) {
-    // Don't idle if there are active streams unless we manually request
-    // example: keepalive handler sends a `ConnectionIdledEvent` event
-    guard self.activeStreams == 0 || force else {
-      return
-    }
-
-    switch self.state {
-    case .notReady, .ready:
-      self.state = .closed
-      switch self.mode {
-      case let .client(manager, _):
-        manager.idle()
-      case .server:
-        ()
-      }
-
-      self.logger.debug("Closing idle channel")
-      context.close(mode: .all, promise: nil)
-
-    // We need to guard against double closure here. We may go idle as a result of receiving a
-    // GOAWAY frame or because our scheduled idle timeout fired.
-    case .closed:
-      ()
-    }
-  }
 }
 
 extension HTTP2SettingsParameter {
-  fileprivate var loggingMetadataKey: String {
+  internal var loggingMetadataKey: String {
     switch self {
     case .headerTableSize:
       return "h2_settings_header_table_size"
