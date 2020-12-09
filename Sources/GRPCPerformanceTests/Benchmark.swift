@@ -50,7 +50,11 @@ func measureAndPrint(description: String, benchmark: Benchmark, spec: TestSpec) 
     guard filter.shouldRun(description) else {
       return
     }
+    #if CACHEGRIND
+    _ = measure(description, benchmark: benchmark, repeats: 1)
+    #else
     print(measure(description, benchmark: benchmark, repeats: spec.repeats))
+    #endif
   }
 }
 
@@ -66,11 +70,16 @@ func measure(_ description: String, benchmark: Benchmark, repeats: Int) -> Bench
     do {
       try benchmark.setUp()
 
+      #if !CACHEGRIND
       let start = DispatchTime.now().uptimeNanoseconds
+      #endif
       try benchmark.run()
+
+      #if !CACHEGRIND
       let end = DispatchTime.now().uptimeNanoseconds
 
       milliseconds.append((end - start) / 1_000_000)
+      #endif
     } catch {
       // If tearDown fails now then there's not a lot we can do!
       try? benchmark.tearDown()
