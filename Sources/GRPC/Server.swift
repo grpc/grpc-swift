@@ -16,6 +16,7 @@
 import Foundation
 import Logging
 import NIO
+import NIOExtras
 import NIOHTTP1
 import NIOHTTP2
 import NIOSSL
@@ -144,18 +145,33 @@ public final class Server {
   /// Starts a server with the given configuration. See `Server.Configuration` for the options
   /// available to configure the server.
   public static func start(configuration: Configuration) -> EventLoopFuture<Server> {
+    let quiescingHelper = ServerQuiescingHelper(group: configuration.eventLoopGroup)
+
     return self.makeBootstrap(configuration: configuration)
+      .serverChannelInitializer { channel in
+        channel.pipeline.addHandler(quiescingHelper.makeServerChannelHandler(channel: channel))
+      }
       .bind(to: configuration.target)
       .map { channel in
-        Server(channel: channel, errorDelegate: configuration.errorDelegate)
+        Server(
+          channel: channel,
+          quiescingHelper: quiescingHelper,
+          errorDelegate: configuration.errorDelegate
+        )
       }
   }
 
   public let channel: Channel
+  private let quiescingHelper: ServerQuiescingHelper
   private var errorDelegate: ServerErrorDelegate?
 
-  private init(channel: Channel, errorDelegate: ServerErrorDelegate?) {
+  private init(
+    channel: Channel,
+    quiescingHelper: ServerQuiescingHelper,
+    errorDelegate: ServerErrorDelegate?
+  ) {
     self.channel = channel
+    self.quiescingHelper = quiescingHelper
 
     // Maintain a strong reference to ensure it lives as long as the server.
     self.errorDelegate = errorDelegate
@@ -177,7 +193,26 @@ public final class Server {
     return self.channel.closeFuture
   }
 
-  /// Shut down the server; this should be called to avoid leaking resources.
+  /// Initiates a graceful shutdown. Existing RPCs may run to completion, any new RPCs or
+  /// connections will be rejected.
+  public func initiateGracefulShutdown(promise: EventLoopPromise<Void>?) {
+    self.quiescingHelper.initiateShutdown(promise: promise)
+  }
+
+  /// Initiates a graceful shutdown. Existing RPCs may run to completion, any new RPCs or
+  /// connections will be rejected.
+  public func initiateGracefulShutdown() -> EventLoopFuture<Void> {
+    let promise = self.channel.eventLoop.makePromise(of: Void.self)
+    self.initiateGracefulShutdown(promise: promise)
+    return promise.futureResult
+  }
+
+  /// Shutdown the server immediately. Active RPCs and connections will be terminated.
+  public func close(promise: EventLoopPromise<Void>?) {
+    self.channel.close(mode: .all, promise: promise)
+  }
+
+  /// Shutdown the server immediately. Active RPCs and connections will be terminated.
   public func close() -> EventLoopFuture<Void> {
     return self.channel.close(mode: .all)
   }

@@ -111,7 +111,7 @@ class GRPCIdleHandlerStateMachineTests: GRPCTestCase {
     // (3) Peer initiates shutdown, streams are open.
     do {
       let op2 = stateMachine.receiveGoAway()
-      op2.assertGoAway(streamID: .rootStream)
+      op2.assertNoGoAway()
       op2.assertShouldNotClose()
 
       // We become inactive.
@@ -271,7 +271,7 @@ class GRPCIdleHandlerStateMachineTests: GRPCTestCase {
 
     // Receive a GOAWAY.
     let op2 = stateMachine.receiveGoAway()
-    op2.assertGoAway(streamID: .rootStream)
+    op2.assertNoGoAway()
 
     // Initiate shutdown from our side: we've already sent GOAWAY and have a stream open, we don't
     // need to do anything.

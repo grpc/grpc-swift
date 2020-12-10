@@ -666,9 +666,9 @@ extension _BaseCallHandler {
 
     switch part {
     case let .metadata(headers):
-      // Only flush if we're streaming responses, if we're not streaming responses then we'll wait
-      // for the response and end before emitting the flush.
-      flush = self.callType.isStreamingResponses
+      // Only flush if we're not unary: if we're unary we'll wait for the response and end before
+      // emitting the flush.
+      flush = self.callType != .unary
       context.write(self.wrapOutboundOut(.metadata(headers)), promise: promise)
 
     case let .message(message, metadata):

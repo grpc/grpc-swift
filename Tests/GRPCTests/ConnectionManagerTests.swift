@@ -1007,6 +1007,8 @@ internal class RecordingConnectivityDelegate: ConnectivityStateDelegate {
   private let semaphore = DispatchSemaphore(value: 0)
   private var expectation: Expectation = .noExpectation
 
+  private let quiescingSemaphore = DispatchSemaphore(value: 0)
+
   private enum Expectation {
     /// We have no expectation of any changes. We'll just ignore any changes.
     case noExpectation
@@ -1062,6 +1064,12 @@ internal class RecordingConnectivityDelegate: ConnectivityStateDelegate {
     }
   }
 
+  func connectionStartedQuiescing() {
+    self.serialQueue.async {
+      self.quiescingSemaphore.signal()
+    }
+  }
+
   func expectChanges(_ count: Int, verify: @escaping ([Change]) -> Void) {
     self.serialQueue.async {
       self.expectation = .some(count: count, recorded: [], verify)
@@ -1088,6 +1096,16 @@ internal class RecordingConnectivityDelegate: ConnectivityStateDelegate {
         "Timed out before verifying \(self.expectation.count) change(s)",
         file: file, line: line
       )
+    }
+  }
+
+  func waitForQuiescing(timeout: DispatchTimeInterval) {
+    let result = self.quiescingSemaphore.wait(timeout: .now() + timeout)
+    switch result {
+    case .success:
+      ()
+    case .timedOut:
+      XCTFail("Timed out waiting for connection to start quiescing")
     }
   }
 }

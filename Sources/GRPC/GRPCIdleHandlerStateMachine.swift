@@ -114,6 +114,9 @@ struct GRPCIdleHandlerStateMachine {
     /// The number of open stream.
     var openStreams: Int
 
+    /// The last stream ID initiated by the remote peer.
+    var lastPeerInitiatedStreamID: HTTP2StreamID
+
     /// The maximum number of concurrent streams we are allowed to operate.
     var maxConcurrentStreams: Int
 
@@ -127,6 +130,7 @@ struct GRPCIdleHandlerStateMachine {
       self.role = state.role
       self.initiatedByUs = initiatedByUs
       self.openStreams = state.openStreams
+      self.lastPeerInitiatedStreamID = state.lastPeerInitiatedStreamID
       self.maxConcurrentStreams = state.maxConcurrentStreams
     }
   }
@@ -217,6 +221,7 @@ struct GRPCIdleHandlerStateMachine {
     case inactive
     case idle
     case ready
+    case quiescing
   }
 
   enum IdleTask {
@@ -290,6 +295,7 @@ struct GRPCIdleHandlerStateMachine {
         self.state = .quiescing(state)
       } else {
         self.state = .closing(.init(fromQuiescing: state))
+        operations.sendGoAwayFrame(lastPeerInitiatedStreamID: state.lastPeerInitiatedStreamID)
         operations.closeChannel()
       }
 
@@ -392,6 +398,7 @@ struct GRPCIdleHandlerStateMachine {
         //
         // It's okay if we haven't seen a SETTINGS frame at this point; we've initiated the shutdown
         // so making a connection is ready isn't necessary.
+        operations.notifyConnectionManager(about: .quiescing)
         self.state = .quiescing(.init(fromOperating: state, initiatedByUs: true))
       } else {
         // No open streams: send a GOAWAY frame and close the channel.
@@ -438,14 +445,13 @@ struct GRPCIdleHandlerStateMachine {
       // A SETTINGS frame MUST follow the connection preface. (RFC 7540 § 3.5)
       assert(state.hasSeenSettings)
 
-      // Send a GOAWAY frame in response.
-      operations.sendGoAwayFrame(lastPeerInitiatedStreamID: state.lastPeerInitiatedStreamID)
-
       if state.hasOpenStreams {
+        operations.notifyConnectionManager(about: .quiescing)
         self.state = .quiescing(.init(fromOperating: state, initiatedByUs: false))
       } else {
         // No open streams, we can close as well.
         self.state = .closing(.init(fromOperating: state))
+        operations.sendGoAwayFrame(lastPeerInitiatedStreamID: state.lastPeerInitiatedStreamID)
         operations.closeChannel()
       }
 
