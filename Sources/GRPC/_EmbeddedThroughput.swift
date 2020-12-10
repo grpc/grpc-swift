@@ -35,4 +35,20 @@ extension EmbeddedChannel {
       ),
     ])
   }
+
+  public func _configureForEmbeddedServerTest(
+    servicesByName serviceProviders: [Substring: CallHandlerProvider],
+    encoding: ServerMessageEncoding,
+    normalizeHeaders: Bool,
+    logger: Logger
+  ) -> EventLoopFuture<Void> {
+    let codec = HTTP2ToRawGRPCServerCodec(
+      servicesByName: serviceProviders,
+      encoding: encoding,
+      errorDelegate: nil,
+      normalizeHeaders: normalizeHeaders,
+      logger: logger
+    )
+    return self.pipeline.addHandler(codec)
+  }
 }
