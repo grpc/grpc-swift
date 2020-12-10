@@ -64,18 +64,6 @@ make_test_plugin() {
   echo -en 'travis_fold:end:make.test_plugin\\r'
 }
 
-make_check_linuxmain() {
-  echo -en 'travis_fold:start:make.test_generate_linuxmain\\r'
-  info "Validating LinuxMain is up-to-date"
-  if [ "$TRAVIS_OS_NAME" = "osx" ]; then
-    make test-generate-linuxmain
-    success "LinuxMain is up-to-date"
-  else
-    info "Not running on macOS, skipping LinuxMain validation"
-  fi
-  echo -en 'travis_fold:end:make.test_generate_linuxmain\\r'
-}
-
 make_project() {
   echo -en 'travis_fold:start:make.project\\r'
   info "Validating .xcodeproj can be generated"
@@ -196,7 +184,6 @@ elif $just_interop_tests; then
   run_interop_reconnect_test
 else
   make_all
-  make_check_linuxmain
   make_test $tsan
   make_test_plugin
   make_project
