@@ -29,12 +29,16 @@ public final class UnaryCallHandler<
   RequestDeserializer: MessageDeserializer,
   ResponseSerializer: MessageSerializer
 >: _BaseCallHandler<RequestDeserializer, ResponseSerializer> {
-  private typealias Context = UnaryResponseCallContext<ResponsePayload>
-  private typealias Observer = (RequestPayload) -> EventLoopFuture<ResponsePayload>
+  @usableFromInline
+  internal typealias _Context = UnaryResponseCallContext<ResponsePayload>
+  @usableFromInline
+  internal typealias _Observer = (RequestPayload) -> EventLoopFuture<ResponsePayload>
 
-  private var state: State
+  @usableFromInline
+  internal var _callHandlerState: _CallHandlerState
 
-  private enum State {
+  @usableFromInline
+  internal enum _CallHandlerState {
     // We don't have the following states (which we do have in the main state machine):
     // - 'requestOpenResponseIdle',
     // - 'requestClosedResponseIdle'
@@ -44,31 +48,33 @@ public final class UnaryCallHandler<
 
     /// Fully idle, we haven't seen the request headers yet and we haven't made an event observer
     /// yet.
-    case requestIdleResponseIdle((Context) -> Observer)
+    case requestIdleResponseIdle((_Context) -> _Observer)
 
     /// Received the request headers, created an observer and have sent back response headers.
     /// We may or may not have observer the request message yet.
-    case requestOpenResponseOpen(Context, ObserverState)
+    case requestOpenResponseOpen(_Context, ObserverState)
 
     /// Received the request headers, a message and the end of the request stream. The observer has
     /// been invoked but it hasn't yet finished processing the request.
     ///
     /// Note: we know we've received a message if we're in this state, if we had seen the request
     /// headers followed by end we'd fully close.
-    case requestClosedResponseOpen(Context)
+    case requestClosedResponseOpen(_Context)
 
     /// We're done.
     case requestClosedResponseClosed
 
     /// The state of the event observer.
+    @usableFromInline
     enum ObserverState {
       /// We have an event observer, but haven't yet received a request.
-      case notObserved(Observer)
+      case notObserved(_Observer)
       /// We've invoked the event observer with a request.
       case observed
     }
   }
 
+  @inlinable
   internal init(
     serializer: ResponseSerializer,
     deserializer: RequestDeserializer,
@@ -77,7 +83,7 @@ public final class UnaryCallHandler<
     eventObserverFactory: @escaping (UnaryResponseCallContext<ResponsePayload>)
       -> (RequestPayload) -> EventLoopFuture<ResponsePayload>
   ) {
-    self.state = .requestIdleResponseIdle(eventObserverFactory)
+    self._callHandlerState = .requestIdleResponseIdle(eventObserverFactory)
     super.init(
       callHandlerContext: callHandlerContext,
       requestDeserializer: deserializer,
@@ -91,21 +97,21 @@ public final class UnaryCallHandler<
     super.channelInactive(context: context)
 
     // Fail any remaining promise.
-    switch self.state {
+    switch self._callHandlerState {
     case .requestIdleResponseIdle,
          .requestClosedResponseClosed:
-      self.state = .requestClosedResponseClosed
+      self._callHandlerState = .requestClosedResponseClosed
 
     case let .requestOpenResponseOpen(context, _),
          let .requestClosedResponseOpen(context):
-      self.state = .requestClosedResponseClosed
+      self._callHandlerState = .requestClosedResponseClosed
       context.responsePromise.fail(GRPCError.AlreadyComplete())
     }
   }
 
   /// Handle an error from the event observer.
   private func handleObserverError(_ error: Error) {
-    switch self.state {
+    switch self._callHandlerState {
     case .requestIdleResponseIdle:
       preconditionFailure("Invalid state: request observer hasn't been created")
 
@@ -128,7 +134,7 @@ public final class UnaryCallHandler<
 
   /// Handle a 'library' error, i.e. an error emanating from the `Channel`.
   private func handleLibraryError(_ error: Error) {
-    switch self.state {
+    switch self._callHandlerState {
     case .requestIdleResponseIdle,
          .requestOpenResponseOpen(_, .notObserved):
       // We haven't seen a message, we'll send end to close the stream.
@@ -153,7 +159,7 @@ public final class UnaryCallHandler<
   }
 
   override internal func observeHeaders(_ headers: HPACKHeaders) {
-    switch self.state {
+    switch self._callHandlerState {
     case let .requestIdleResponseIdle(factory):
       // This allocates a promise, but the observer is provided with 'StatusOnlyCallContext' and
       // doesn't get access to the promise. The observer must return a response future instead
@@ -165,12 +171,12 @@ public final class UnaryCallHandler<
         eventLoop: self.eventLoop,
         headers: headers,
         logger: self.logger,
-        userInfoRef: self.userInfoRef
+        userInfoRef: self._userInfoRef
       )
       let observer = factory(context)
 
       // We're fully open now (we'll send the response headers back in a moment).
-      self.state = .requestOpenResponseOpen(context, .notObserved(observer))
+      self._callHandlerState = .requestOpenResponseOpen(context, .notObserved(observer))
 
       // Register callbacks for the response promise.
       context.responsePromise.futureResult.whenComplete { result in
@@ -194,7 +200,7 @@ public final class UnaryCallHandler<
   }
 
   override internal func observeRequest(_ message: RequestPayload) {
-    switch self.state {
+    switch self._callHandlerState {
     case .requestIdleResponseIdle:
       preconditionFailure("Invalid state: request received before headers")
 
@@ -207,7 +213,7 @@ public final class UnaryCallHandler<
         ()
 
       case let .notObserved(observer):
-        self.state = .requestOpenResponseOpen(context, .observed)
+        self._callHandlerState = .requestOpenResponseOpen(context, .observed)
         // Complete the promise with the observer block.
         context.responsePromise.completeWith(observer(message))
       }
@@ -219,7 +225,7 @@ public final class UnaryCallHandler<
   }
 
   override internal func observeEnd() {
-    switch self.state {
+    switch self._callHandlerState {
     case .requestIdleResponseIdle:
       preconditionFailure("Invalid state: no request headers received")
 
@@ -227,7 +233,7 @@ public final class UnaryCallHandler<
       switch request {
       case .observed:
         // Close the request stream.
-        self.state = .requestClosedResponseOpen(context)
+        self._callHandlerState = .requestClosedResponseOpen(context)
 
       case .notObserved:
         // We haven't received a request: this is an empty stream, the observer will never be
@@ -244,7 +250,7 @@ public final class UnaryCallHandler<
   // MARK: - Outbound
 
   private func sendResponse(_ message: ResponsePayload) {
-    switch self.state {
+    switch self._callHandlerState {
     case .requestIdleResponseIdle:
       preconditionFailure("Invalid state: can't send response before receiving headers and request")
 
@@ -253,7 +259,7 @@ public final class UnaryCallHandler<
 
     case let .requestOpenResponseOpen(context, .observed),
          let .requestClosedResponseOpen(context):
-      self.state = .requestClosedResponseClosed
+      self._callHandlerState = .requestClosedResponseClosed
       self.sendResponsePartFromObserver(
         .message(message, .init(compress: context.compressionEnabled, flush: false)),
         promise: nil
@@ -270,14 +276,14 @@ public final class UnaryCallHandler<
   }
 
   private func sendEnd(status: GRPCStatus, trailers: HPACKHeaders) {
-    switch self.state {
+    switch self._callHandlerState {
     case .requestIdleResponseIdle,
          .requestClosedResponseOpen:
-      self.state = .requestClosedResponseClosed
+      self._callHandlerState = .requestClosedResponseClosed
       self.sendResponsePartFromObserver(.end(status, trailers), promise: nil)
 
     case let .requestOpenResponseOpen(context, _):
-      self.state = .requestClosedResponseClosed
+      self._callHandlerState = .requestClosedResponseClosed
       self.sendResponsePartFromObserver(.end(status, trailers), promise: nil)
       // Fail the promise.
       context.responsePromise.fail(status)

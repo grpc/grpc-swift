@@ -20,22 +20,29 @@
 /// `Array.first` and `Array.last` will allocate: unfortunately this currently happens to be the
 /// case for the interceptor pipelines. Storing the `first` and `last` directly allows us to avoid
 /// this. See also: https://bugs.swift.org/browse/SR-11262.
+@usableFromInline
 internal struct InterceptorContextList<Element> {
   /// The first element, stored at `middle.startIndex - 1`.
+  @usableFromInline
   internal var first: Element
 
   /// The last element, stored at the `middle.endIndex`.
+  @usableFromInline
   internal var last: Element
 
   /// The other elements.
-  private var middle: [Element]
+  @usableFromInline
+  internal var _middle: [Element]
 
   /// The index of `first`
-  private let firstIndex: Int
+  @usableFromInline
+  internal let firstIndex: Int
 
   /// The index of `last`.
-  private let lastIndex: Int
+  @usableFromInline
+  internal let lastIndex: Int
 
+  @usableFromInline
   internal subscript(checked index: Int) -> Element? {
     switch index {
     case self.firstIndex:
@@ -43,13 +50,14 @@ internal struct InterceptorContextList<Element> {
     case self.lastIndex:
       return self.last
     default:
-      return self.middle[checked: index]
+      return self._middle[checked: index]
     }
   }
 
+  @inlinable
   internal init(first: Element, middle: [Element], last: Element) {
     self.first = first
-    self.middle = middle
+    self._middle = middle
     self.last = last
     self.firstIndex = middle.startIndex - 1
     self.lastIndex = middle.endIndex

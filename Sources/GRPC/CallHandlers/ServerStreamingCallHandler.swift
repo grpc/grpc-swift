@@ -28,24 +28,30 @@ public final class ServerStreamingCallHandler<
   RequestDeserializer: MessageDeserializer,
   ResponseSerializer: MessageSerializer
 >: _BaseCallHandler<RequestDeserializer, ResponseSerializer> {
-  private typealias Context = StreamingResponseCallContext<ResponsePayload>
-  private typealias Observer = (RequestPayload) -> EventLoopFuture<GRPCStatus>
+  @usableFromInline
+  internal typealias _Context = StreamingResponseCallContext<ResponsePayload>
+  @usableFromInline
+  internal typealias _Observer = (RequestPayload) -> EventLoopFuture<GRPCStatus>
 
-  private var state: State
+  @usableFromInline
+  internal var _callHandlerState: _CallHandlerState
 
   // See 'UnaryCallHandler.State'.
-  private enum State {
-    case requestIdleResponseIdle((Context) -> Observer)
-    case requestOpenResponseOpen(Context, ObserverState)
-    case requestClosedResponseOpen(Context)
+  @usableFromInline
+  internal enum _CallHandlerState {
+    case requestIdleResponseIdle((_Context) -> _Observer)
+    case requestOpenResponseOpen(_Context, ObserverState)
+    case requestClosedResponseOpen(_Context)
     case requestClosedResponseClosed
 
+    @usableFromInline
     enum ObserverState {
-      case notObserved(Observer)
+      case notObserved(_Observer)
       case observed
     }
   }
 
+  @inlinable
   internal init(
     serializer: ResponseSerializer,
     deserializer: RequestDeserializer,
@@ -54,7 +60,7 @@ public final class ServerStreamingCallHandler<
     eventObserverFactory: @escaping (StreamingResponseCallContext<ResponsePayload>)
       -> (RequestPayload) -> EventLoopFuture<GRPCStatus>
   ) {
-    self.state = .requestIdleResponseIdle(eventObserverFactory)
+    self._callHandlerState = .requestIdleResponseIdle(eventObserverFactory)
     super.init(
       callHandlerContext: callHandlerContext,
       requestDeserializer: deserializer,
@@ -68,21 +74,21 @@ public final class ServerStreamingCallHandler<
     super.channelInactive(context: context)
 
     // Fail any remaining promise.
-    switch self.state {
+    switch self._callHandlerState {
     case .requestIdleResponseIdle,
          .requestClosedResponseClosed:
-      self.state = .requestClosedResponseClosed
+      self._callHandlerState = .requestClosedResponseClosed
 
     case let .requestOpenResponseOpen(context, _),
          let .requestClosedResponseOpen(context):
-      self.state = .requestClosedResponseClosed
+      self._callHandlerState = .requestClosedResponseClosed
       context.statusPromise.fail(GRPCError.AlreadyComplete())
     }
   }
 
   /// Handle an error from the event observer.
   private func handleObserverError(_ error: Error) {
-    switch self.state {
+    switch self._callHandlerState {
     case .requestIdleResponseIdle:
       preconditionFailure("Invalid state: request observer hasn't been created")
 
@@ -107,7 +113,7 @@ public final class ServerStreamingCallHandler<
 
   /// Handle a 'library' error, i.e. an error emanating from the `Channel`.
   private func handleLibraryError(_ error: Error) {
-    switch self.state {
+    switch self._callHandlerState {
     case .requestIdleResponseIdle,
          .requestOpenResponseOpen(_, .notObserved):
       // We'll never see a request message: send end.
@@ -132,19 +138,19 @@ public final class ServerStreamingCallHandler<
   }
 
   override internal func observeHeaders(_ headers: HPACKHeaders) {
-    switch self.state {
+    switch self._callHandlerState {
     case let .requestIdleResponseIdle(factory):
       let context = _StreamingResponseCallContext<RequestPayload, ResponsePayload>(
         eventLoop: self.eventLoop,
         headers: headers,
         logger: self.logger,
-        userInfoRef: self.userInfoRef,
+        userInfoRef: self._userInfoRef,
         sendResponse: self.sendResponse(_:metadata:promise:)
       )
       let observer = factory(context)
 
       // Fully open. We'll send the response headers back in a moment.
-      self.state = .requestOpenResponseOpen(context, .notObserved(observer))
+      self._callHandlerState = .requestOpenResponseOpen(context, .notObserved(observer))
 
       // Register callbacks for the status promise.
       context.statusPromise.futureResult.whenComplete { result in
@@ -168,7 +174,7 @@ public final class ServerStreamingCallHandler<
   }
 
   override internal func observeRequest(_ message: RequestPayload) {
-    switch self.state {
+    switch self._callHandlerState {
     case .requestIdleResponseIdle:
       preconditionFailure("Invalid state: request received before headers")
 
@@ -181,7 +187,7 @@ public final class ServerStreamingCallHandler<
         ()
 
       case let .notObserved(observer):
-        self.state = .requestOpenResponseOpen(context, .observed)
+        self._callHandlerState = .requestOpenResponseOpen(context, .observed)
         // Complete the status promise with the observer block.
         context.statusPromise.completeWith(observer(message))
       }
@@ -193,7 +199,7 @@ public final class ServerStreamingCallHandler<
   }
 
   override internal func observeEnd() {
-    switch self.state {
+    switch self._callHandlerState {
     case .requestIdleResponseIdle:
       preconditionFailure("Invalid state: no request headers received")
 
@@ -201,7 +207,7 @@ public final class ServerStreamingCallHandler<
       switch request {
       case .observed:
         // Close the request stream.
-        self.state = .requestClosedResponseOpen(context)
+        self._callHandlerState = .requestClosedResponseOpen(context)
 
       case .notObserved:
         // We haven't received a request: this is an empty stream, the observer will never be
@@ -222,7 +228,7 @@ public final class ServerStreamingCallHandler<
     metadata: MessageMetadata,
     promise: EventLoopPromise<Void>?
   ) {
-    switch self.state {
+    switch self._callHandlerState {
     case .requestIdleResponseIdle:
       preconditionFailure("Invalid state: can't send response before receiving headers and request")
 
@@ -241,14 +247,14 @@ public final class ServerStreamingCallHandler<
   }
 
   private func sendEnd(status: GRPCStatus, trailers: HPACKHeaders) {
-    switch self.state {
+    switch self._callHandlerState {
     case .requestIdleResponseIdle,
          .requestClosedResponseOpen:
-      self.state = .requestClosedResponseClosed
+      self._callHandlerState = .requestClosedResponseClosed
       self.sendResponsePartFromObserver(.end(status, trailers), promise: nil)
 
     case let .requestOpenResponseOpen(context, _):
-      self.state = .requestClosedResponseClosed
+      self._callHandlerState = .requestClosedResponseClosed
       self.sendResponsePartFromObserver(.end(status, trailers), promise: nil)
       // Fail the promise.
       context.statusPromise.fail(status)
