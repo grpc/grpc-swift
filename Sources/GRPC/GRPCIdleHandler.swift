@@ -87,6 +87,8 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
         manager.channelInactive()
       case .ready:
         manager.ready()
+      case .quiescing:
+        manager.beginQuiescing()
       }
     }
 
@@ -140,6 +142,9 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
     } else if let closed = event as? StreamClosedEvent {
       self.perform(operations: self.stateMachine.streamClosed(withID: closed.streamID))
       context.fireUserInboundEventTriggered(event)
+    } else if event is ChannelShouldQuiesceEvent {
+      self.perform(operations: self.stateMachine.initiateGracefulShutdown())
+      // Swallow this event.
     } else if event is ConnectionIdledEvent {
       self.perform(operations: self.stateMachine.shutdownNow())
       // Swallow this event.

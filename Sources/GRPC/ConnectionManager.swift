@@ -676,6 +676,11 @@ internal class ConnectionManager {
       self.invalidState()
     }
   }
+
+  /// The connection has started quiescing: notify the connectivity monitor of this.
+  internal func beginQuiescing() {
+    self.monitor.beginQuiescing()
+  }
 }
 
 extension ConnectionManager {

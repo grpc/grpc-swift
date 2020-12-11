@@ -33,6 +33,8 @@ let package = Package(
     .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.8.0"),
     // Support for Network.framework where possible.
     .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.6.0"),
+    // Extra NIO stuff; quiescing helpers.
+    .package(url: "https://github.com/apple/swift-nio-extras.git", from: "1.4.0"),
 
     // Official SwiftProtobuf library, for [de]serializing data to send on the wire.
     .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.9.0"),
@@ -50,6 +52,7 @@ let package = Package(
         "NIOTransportServices",
         "NIOHTTP1",
         "NIOHTTP2",
+        "NIOExtras",
         "NIOSSL",
         "CGRPCZlib",
         "SwiftProtobuf",

@@ -152,6 +152,7 @@ def process_package(string):
     pod_mappings = {
         'swift-log': 'Logging',
         'swift-nio': 'SwiftNIO',
+        'swift-nio-extras': 'SwiftNIOExtras',
         'swift-nio-http2': 'SwiftNIOHTTP2',
         'swift-nio-ssl': 'SwiftNIOSSL',
         'swift-nio-transport-services': 'SwiftNIOTransportServices',

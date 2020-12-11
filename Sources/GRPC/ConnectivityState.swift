@@ -53,6 +53,19 @@ public protocol ConnectivityStateDelegate: AnyObject {
   /// - Parameter oldState: The old connectivity state.
   /// - Parameter newState: The new connectivity state.
   func connectivityStateDidChange(from oldState: ConnectivityState, to newState: ConnectivityState)
+
+  /// Called when the connection has started quiescing, that is, the connection is going away but
+  /// existing RPCs may continue to run.
+  ///
+  /// - Important: When this is called no new RPCs may be created until the connectivity state
+  ///   changes to 'idle' (the connection successfully quiesced) or 'transientFailure' (the
+  ///   connection was closed before quiescing completed). Starting RPCs before these state changes
+  ///   will lead to a connection error and the immediate failure of any outstanding RPCs.
+  func connectionStartedQuiescing()
+}
+
+extension ConnectivityStateDelegate {
+  public func connectionStartedQuiescing() {}
 }
 
 public class ConnectivityStateMonitor {
@@ -115,6 +128,14 @@ public class ConnectivityStateMonitor {
         if let delegate = self.delegate {
           delegate.connectivityStateDidChange(from: oldState, to: newState)
         }
+      }
+    }
+  }
+
+  internal func beginQuiescing() {
+    self.delegateCallbackQueue.async {
+      if let delegate = self.delegate {
+        delegate.connectionStartedQuiescing()
       }
     }
   }
