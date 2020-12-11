@@ -852,3 +852,22 @@ extension GRPCClientRequestPart {
     }
   }
 }
+
+// A wrapper for connection errors: we need to be able to preserve the underlying error as
+// well as extract a 'GRPCStatus' with code '.unavailable'.
+internal struct ConnectionFailure: Error, GRPCStatusTransformable, CustomStringConvertible {
+  /// The reason the connection failed.
+  var reason: Error
+
+  init(reason: Error) {
+    self.reason = reason
+  }
+
+  var description: String {
+    return String(describing: self.reason)
+  }
+
+  func makeGRPCStatus() -> GRPCStatus {
+    return GRPCStatus(code: .unavailable, message: String(describing: self.reason))
+  }
+}
