@@ -415,7 +415,7 @@ extension Channel {
   ) -> EventLoopFuture<Void> {
     // We add at most 8 handlers to the pipeline.
     var handlers: [ChannelHandler] = []
-    handlers.reserveCapacity(8)
+    handlers.reserveCapacity(7)
 
     #if canImport(Network)
     // This availability guard is arguably unnecessary, but we add it anyway.
@@ -449,15 +449,16 @@ extension Channel {
     )
 
     handlers.append(NIOHTTP2Handler(mode: .client))
-    handlers.append(GRPCClientKeepaliveHandler(configuration: connectionKeepalive))
     // The multiplexer is passed through the idle handler so it is only reported on
     // successful channel activation - with happy eyeballs multiple pipelines can
     // be constructed so it's not safe to report just yet.
     handlers.append(
       GRPCIdleHandler(
-        mode: .client(connectionManager, h2Multiplexer),
-        logger: logger,
-        idleTimeout: connectionIdleTimeout
+        connectionManager: connectionManager,
+        multiplexer: h2Multiplexer,
+        idleTimeout: connectionIdleTimeout,
+        keepalive: connectionKeepalive,
+        logger: logger
       )
     )
     handlers.append(h2Multiplexer)

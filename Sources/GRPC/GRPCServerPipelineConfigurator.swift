@@ -67,17 +67,12 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
     self.configuration = configuration
   }
 
-  /// Makes a gRPC Server keepalive handler.
-  private func makeKeepaliveHandler() -> GRPCServerKeepaliveHandler {
-    return .init(configuration: self.configuration.connectionKeepalive)
-  }
-
   /// Makes a gRPC idle handler for the server..
   private func makeIdleHandler() -> GRPCIdleHandler {
     return .init(
-      mode: .server,
-      logger: self.configuration.logger,
-      idleTimeout: self.configuration.connectionIdleTimeout
+      idleTimeout: self.configuration.connectionIdleTimeout,
+      keepalive: self.configuration.connectionKeepalive,
+      logger: self.configuration.logger
     )
   }
 
@@ -141,9 +136,8 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
     // We could use 'Channel.configureHTTP2Pipeline', but then we'd have to find the right handlers
     // to then insert our keepalive and idle handlers between. We can just add everything together.
     var handlers: [ChannelHandler] = []
-    handlers.reserveCapacity(4)
+    handlers.reserveCapacity(3)
     handlers.append(self.makeHTTP2Handler())
-    handlers.append(self.makeKeepaliveHandler())
     handlers.append(self.makeIdleHandler())
     handlers.append(self.makeHTTP2Multiplexer(for: context.channel))
 
