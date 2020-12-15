@@ -77,8 +77,8 @@ internal struct ClientTransportFactory<Request, Response> {
       multiplexer: multiplexer,
       scheme: scheme,
       authority: authority,
-      serializer: GRPCPayloadSerializer(),
-      deserializer: GRPCPayloadDeserializer(),
+      serializer: AnySerializer(wrapping: GRPCPayloadSerializer()),
+      deserializer: AnyDeserializer(wrapping: GRPCPayloadDeserializer()),
       errorDelegate: errorDelegate
     )
     return .init(http2)
@@ -87,11 +87,37 @@ internal struct ClientTransportFactory<Request, Response> {
   /// Make a factory for 'fake' transport.
   /// - Parameter fakeResponse: The fake response stream.
   /// - Returns: A factory for making and configuring fake transport.
-  internal static func fake(
+  internal static func fake<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
     _ fakeResponse: _FakeResponseStream<Request, Response>?,
     on eventLoop: EventLoop
   ) -> ClientTransportFactory<Request, Response> {
-    return .init(FakeClientTransportFactory(fakeResponse, on: eventLoop))
+    let factory = FakeClientTransportFactory(
+      fakeResponse,
+      on: eventLoop,
+      requestSerializer: ProtobufSerializer(),
+      requestDeserializer: ProtobufDeserializer(),
+      responseSerializer: ProtobufSerializer(),
+      responseDeserializer: ProtobufDeserializer()
+    )
+    return .init(factory)
+  }
+
+  /// Make a factory for 'fake' transport.
+  /// - Parameter fakeResponse: The fake response stream.
+  /// - Returns: A factory for making and configuring fake transport.
+  internal static func fake<Request: GRPCPayload, Response: GRPCPayload>(
+    _ fakeResponse: _FakeResponseStream<Request, Response>?,
+    on eventLoop: EventLoop
+  ) -> ClientTransportFactory<Request, Response> {
+    let factory = FakeClientTransportFactory(
+      fakeResponse,
+      on: eventLoop,
+      requestSerializer: GRPCPayloadSerializer(),
+      requestDeserializer: GRPCPayloadDeserializer(),
+      responseSerializer: GRPCPayloadSerializer(),
+      responseDeserializer: GRPCPayloadDeserializer()
+    )
+    return .init(factory)
   }
 
   /// Makes a configured `ClientTransport`.
@@ -103,7 +129,7 @@ internal struct ClientTransportFactory<Request, Response> {
   ///   - onError: A callback invoked when an error is received.
   ///   - onResponsePart: A closure called for each response part received.
   /// - Returns: A configured transport.
-  internal func makeConfiguredTransport<Request, Response>(
+  internal func makeConfiguredTransport(
     to path: String,
     for type: GRPCCallType,
     withOptions options: CallOptions,
@@ -151,8 +177,11 @@ private struct HTTP2ClientTransportFactory<Request, Response> {
   /// An error delegate.
   private var errorDelegate: ClientErrorDelegate?
 
-  /// A codec for serializing request messages and deserializing response parts.
-  private var codec: ChannelHandler
+  /// The request serializer.
+  private let serializer: AnySerializer<Request>
+
+  /// The response deserializer.
+  private let deserializer: AnyDeserializer<Response>
 
   fileprivate init<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
     multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
@@ -165,11 +194,12 @@ private struct HTTP2ClientTransportFactory<Request, Response> {
     self.multiplexer = multiplexer
     self.scheme = scheme
     self.authority = authority
-    self.codec = GRPCClientCodecHandler(serializer: serializer, deserializer: deserializer)
+    self.serializer = AnySerializer(wrapping: serializer)
+    self.deserializer = AnyDeserializer(wrapping: deserializer)
     self.errorDelegate = errorDelegate
   }
 
-  fileprivate func makeTransport<Request, Response>(
+  fileprivate func makeTransport(
     to path: String,
     for type: GRPCCallType,
     withOptions options: CallOptions,
@@ -181,6 +211,8 @@ private struct HTTP2ClientTransportFactory<Request, Response> {
       details: self.makeCallDetails(type: type, path: path, options: options),
       eventLoop: self.multiplexer.eventLoop,
       interceptors: interceptors,
+      serializer: self.serializer,
+      deserializer: self.deserializer,
       errorDelegate: self.errorDelegate,
       onError: onError,
       onResponsePart: onResponsePart
@@ -198,7 +230,6 @@ private struct HTTP2ClientTransportFactory<Request, Response> {
               callType: transport.callDetails.type,
               logger: transport.logger
             ),
-            self.codec,
             transport,
           ])
         }
@@ -233,15 +264,43 @@ private struct FakeClientTransportFactory<Request, Response> {
   /// stream be `nil`.
   private var eventLoop: EventLoop
 
-  fileprivate init(
+  /// The request serializer.
+  private let requestSerializer: AnySerializer<Request>
+
+  /// The response deserializer.
+  private let responseDeserializer: AnyDeserializer<Response>
+
+  /// A codec for deserializing requests and serializing responses.
+  private let codec: ChannelHandler
+
+  fileprivate init<
+    RequestSerializer: MessageSerializer,
+    RequestDeserializer: MessageDeserializer,
+    ResponseSerializer: MessageSerializer,
+    ResponseDeserializer: MessageDeserializer
+  >(
     _ fakeResponseStream: _FakeResponseStream<Request, Response>?,
-    on eventLoop: EventLoop
-  ) {
+    on eventLoop: EventLoop,
+    requestSerializer: RequestSerializer,
+    requestDeserializer: RequestDeserializer,
+    responseSerializer: ResponseSerializer,
+    responseDeserializer: ResponseDeserializer
+  ) where RequestSerializer.Input == Request,
+    RequestDeserializer.Output == Request,
+    ResponseSerializer.Input == Response,
+    ResponseDeserializer.Output == Response
+  {
     self.fakeResponseStream = fakeResponseStream
     self.eventLoop = eventLoop
+    self.requestSerializer = AnySerializer(wrapping: requestSerializer)
+    self.responseDeserializer = AnyDeserializer(wrapping: responseDeserializer)
+    self.codec = GRPCClientReverseCodecHandler(
+      serializer: responseSerializer,
+      deserializer: requestDeserializer
+    )
   }
 
-  fileprivate func makeTransport<Request, Response>(
+  fileprivate func makeTransport(
     to path: String,
     for type: GRPCCallType,
     withOptions options: CallOptions,
@@ -259,6 +318,8 @@ private struct FakeClientTransportFactory<Request, Response> {
       ),
       eventLoop: self.eventLoop,
       interceptors: interceptors,
+      serializer: self.requestSerializer,
+      deserializer: self.responseDeserializer,
       errorDelegate: nil,
       onError: onError,
       onResponsePart: onResponsePart
@@ -268,7 +329,7 @@ private struct FakeClientTransportFactory<Request, Response> {
   fileprivate func configure<Request, Response>(_ transport: ClientTransport<Request, Response>) {
     transport.configure { handler in
       if let fakeResponse = self.fakeResponseStream {
-        return fakeResponse.channel.pipeline.addHandler(handler).always { result in
+        return fakeResponse.channel.pipeline.addHandlers(self.codec, handler).always { result in
           switch result {
           case .success:
             fakeResponse.activate()

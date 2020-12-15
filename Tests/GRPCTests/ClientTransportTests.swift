@@ -52,6 +52,8 @@ class ClientTransportTests: GRPCTestCase {
       details: details ?? self.makeDetails(),
       eventLoop: self.eventLoop,
       interceptors: interceptors,
+      serializer: AnySerializer(wrapping: StringSerializer()),
+      deserializer: AnyDeserializer(wrapping: StringDeserializer()),
       errorDelegate: nil,
       onError: onError,
       onResponsePart: onResponsePart
@@ -61,6 +63,12 @@ class ClientTransportTests: GRPCTestCase {
   private func configureTransport(additionalHandlers handlers: [ChannelHandler] = []) {
     self.transport.configure {
       var handlers = handlers
+      handlers.append(
+        GRPCClientReverseCodecHandler(
+          serializer: StringSerializer(),
+          deserializer: StringDeserializer()
+        )
+      )
       handlers.append($0)
       return self.channel.pipeline.addHandlers(handlers)
     }
@@ -337,3 +345,20 @@ class WriteRecorder<Write>: ChannelOutboundHandler {
 }
 
 private struct DummyError: Error {}
+
+private struct StringSerializer: MessageSerializer {
+  typealias Input = String
+
+  func serialize(_ input: String, allocator: ByteBufferAllocator) throws -> ByteBuffer {
+    return allocator.buffer(string: input)
+  }
+}
+
+private struct StringDeserializer: MessageDeserializer {
+  typealias Output = String
+
+  func deserialize(byteBuffer: ByteBuffer) throws -> String {
+    var buffer = byteBuffer
+    return buffer.readString(length: buffer.readableBytes)!
+  }
+}

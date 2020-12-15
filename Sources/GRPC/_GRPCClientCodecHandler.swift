@@ -94,3 +94,83 @@ extension GRPCClientCodecHandler: ChannelOutboundHandler {
     }
   }
 }
+
+// MARK: Reverse Codec
+
+internal class GRPCClientReverseCodecHandler<
+  Serializer: MessageSerializer,
+  Deserializer: MessageDeserializer
+> {
+  /// The request serializer.
+  private let serializer: Serializer
+
+  /// The response deserializer.
+  private let deserializer: Deserializer
+
+  internal init(serializer: Serializer, deserializer: Deserializer) {
+    self.serializer = serializer
+    self.deserializer = deserializer
+  }
+}
+
+extension GRPCClientReverseCodecHandler: ChannelInboundHandler {
+  typealias InboundIn = _GRPCClientResponsePart<Serializer.Input>
+  typealias InboundOut = _RawGRPCClientResponsePart
+
+  internal func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+    switch self.unwrapInboundIn(data) {
+    case let .initialMetadata(headers):
+      context.fireChannelRead(self.wrapInboundOut(.initialMetadata(headers)))
+
+    case let .message(messageContext):
+      do {
+        let response = try self.serializer.serialize(
+          messageContext.message,
+          allocator: context.channel.allocator
+        )
+        context.fireChannelRead(
+          self.wrapInboundOut(.message(.init(response, compressed: messageContext.compressed)))
+        )
+      } catch {
+        context.fireErrorCaught(error)
+      }
+
+    case let .trailingMetadata(trailers):
+      context.fireChannelRead(self.wrapInboundOut(.trailingMetadata(trailers)))
+
+    case let .status(status):
+      context.fireChannelRead(self.wrapInboundOut(.status(status)))
+    }
+  }
+}
+
+extension GRPCClientReverseCodecHandler: ChannelOutboundHandler {
+  typealias OutboundIn = _RawGRPCClientRequestPart
+  typealias OutboundOut = _GRPCClientRequestPart<Deserializer.Output>
+
+  internal func write(
+    context: ChannelHandlerContext,
+    data: NIOAny,
+    promise: EventLoopPromise<Void>?
+  ) {
+    switch self.unwrapOutboundIn(data) {
+    case let .head(head):
+      context.write(self.wrapOutboundOut(.head(head)), promise: promise)
+
+    case let .message(message):
+      do {
+        let deserialized = try self.deserializer.deserialize(byteBuffer: message.message)
+        context.write(
+          self.wrapOutboundOut(.message(.init(deserialized, compressed: message.compressed))),
+          promise: promise
+        )
+      } catch {
+        promise?.fail(error)
+        context.fireErrorCaught(error)
+      }
+
+    case .end:
+      context.write(self.wrapOutboundOut(.end), promise: promise)
+    }
+  }
+}

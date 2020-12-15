@@ -125,3 +125,31 @@ public struct GRPCPayloadDeserializer<Message: GRPCPayload>: MessageDeserializer
     return try Message(serializedByteBuffer: &buffer)
   }
 }
+
+// MARK: - Any Serializer/Deserializer
+
+internal struct AnySerializer<Input>: MessageSerializer {
+  private let _serialize: (Input, ByteBufferAllocator) throws -> ByteBuffer
+
+  init<Serializer: MessageSerializer>(wrapping other: Serializer) where Serializer.Input == Input {
+    self._serialize = other.serialize(_:allocator:)
+  }
+
+  internal func serialize(_ input: Input, allocator: ByteBufferAllocator) throws -> ByteBuffer {
+    return try self._serialize(input, allocator)
+  }
+}
+
+internal struct AnyDeserializer<Output>: MessageDeserializer {
+  private let _deserialize: (ByteBuffer) throws -> Output
+
+  init<Deserializer: MessageDeserializer>(
+    wrapping other: Deserializer
+  ) where Deserializer.Output == Output {
+    self._deserialize = other.deserialize(byteBuffer:)
+  }
+
+  internal func deserialize(byteBuffer: ByteBuffer) throws -> Output {
+    return try self._deserialize(byteBuffer)
+  }
+}
