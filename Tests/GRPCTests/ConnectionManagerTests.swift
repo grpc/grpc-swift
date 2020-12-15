@@ -135,9 +135,11 @@ extension ConnectionManagerTests {
     )
     try channel.pipeline.addHandler(
       GRPCIdleHandler(
-        mode: .client(manager, h2mux),
-        logger: self.logger,
-        idleTimeout: .minutes(5)
+        connectionManager: manager,
+        multiplexer: h2mux,
+        idleTimeout: .minutes(5),
+        keepalive: .init(),
+        logger: self.logger
       )
     ).wait()
     channelPromise.succeed(channel)
@@ -187,9 +189,11 @@ extension ConnectionManagerTests {
     )
     try channel.pipeline.addHandler(
       GRPCIdleHandler(
-        mode: .client(manager, h2mux),
-        logger: self.logger,
-        idleTimeout: .minutes(5)
+        connectionManager: manager,
+        multiplexer: h2mux,
+        idleTimeout: .minutes(5),
+        keepalive: .init(),
+        logger: self.logger
       )
     ).wait()
     channelPromise.succeed(channel)
@@ -246,9 +250,11 @@ extension ConnectionManagerTests {
     )
     try channel.pipeline.addHandler(
       GRPCIdleHandler(
-        mode: .client(manager, h2mux),
-        logger: self.logger,
-        idleTimeout: .minutes(5)
+        connectionManager: manager,
+        multiplexer: h2mux,
+        idleTimeout: .minutes(5),
+        keepalive: .init(),
+        logger: self.logger
       )
     ).wait()
 
@@ -319,9 +325,11 @@ extension ConnectionManagerTests {
     )
     try channel.pipeline.addHandler(
       GRPCIdleHandler(
-        mode: .client(manager, h2mux),
-        logger: self.logger,
-        idleTimeout: .minutes(5)
+        connectionManager: manager,
+        multiplexer: h2mux,
+        idleTimeout: .minutes(5),
+        keepalive: .init(),
+        logger: self.logger
       )
     ).wait()
     channelPromise.succeed(channel)
@@ -389,9 +397,11 @@ extension ConnectionManagerTests {
     )
     try channel.pipeline.addHandler(
       GRPCIdleHandler(
-        mode: .client(manager, h2mux),
-        logger: self.logger,
-        idleTimeout: .minutes(5)
+        connectionManager: manager,
+        multiplexer: h2mux,
+        idleTimeout: .minutes(5),
+        keepalive: .init(),
+        logger: self.logger
       )
     ).wait()
     channelPromise.succeed(channel)
@@ -505,9 +515,11 @@ extension ConnectionManagerTests {
     )
     try channel.pipeline.addHandler(
       GRPCIdleHandler(
-        mode: .client(manager, h2mux),
-        logger: self.logger,
-        idleTimeout: .minutes(5)
+        connectionManager: manager,
+        multiplexer: h2mux,
+        idleTimeout: .minutes(5),
+        keepalive: .init(),
+        logger: self.logger
       )
     ).wait()
     channelPromise.succeed(channel)
@@ -578,9 +590,11 @@ extension ConnectionManagerTests {
     )
     try firstChannel.pipeline.addHandler(
       GRPCIdleHandler(
-        mode: .client(manager, h2mux),
-        logger: self.logger,
-        idleTimeout: .minutes(5)
+        connectionManager: manager,
+        multiplexer: h2mux,
+        idleTimeout: .minutes(5),
+        keepalive: .init(),
+        logger: self.logger
       )
     ).wait()
 
@@ -652,9 +666,11 @@ extension ConnectionManagerTests {
     )
     try firstChannel.pipeline.addHandler(
       GRPCIdleHandler(
-        mode: .client(manager, firstH2mux),
-        logger: self.logger,
-        idleTimeout: .minutes(5)
+        connectionManager: manager,
+        multiplexer: firstH2mux,
+        idleTimeout: .minutes(5),
+        keepalive: .init(),
+        logger: self.logger
       )
     ).wait()
     firstChannelPromise.succeed(firstChannel)
@@ -698,9 +714,11 @@ extension ConnectionManagerTests {
     )
     try secondChannel.pipeline.addHandler(
       GRPCIdleHandler(
-        mode: .client(manager, secondH2mux),
-        logger: self.logger,
-        idleTimeout: .minutes(5)
+        connectionManager: manager,
+        multiplexer: secondH2mux,
+        idleTimeout: .minutes(5),
+        keepalive: .init(),
+        logger: self.logger
       )
     ).wait()
     secondChannelPromise.succeed(secondChannel)
@@ -748,9 +766,11 @@ extension ConnectionManagerTests {
     )
     try channel.pipeline.addHandler(
       GRPCIdleHandler(
-        mode: .client(manager, h2mux),
-        logger: self.logger,
-        idleTimeout: .minutes(5)
+        connectionManager: manager,
+        multiplexer: h2mux,
+        idleTimeout: .minutes(5),
+        keepalive: .init(),
+        logger: self.logger
       )
     ).wait()
     channelPromise.succeed(channel)
@@ -905,9 +925,11 @@ extension ConnectionManagerTests {
     )
     XCTAssertNoThrow(try channel.pipeline.addHandlers([
       GRPCIdleHandler(
-        mode: .client(manager, h2mux),
-        logger: manager.logger,
-        idleTimeout: .minutes(5)
+        connectionManager: manager,
+        multiplexer: h2mux,
+        idleTimeout: .minutes(5),
+        keepalive: .init(),
+        logger: self.logger
       ),
     ]).wait())
     channelPromise.succeed(channel)
@@ -931,10 +953,6 @@ extension ConnectionManagerTests {
       self.loop.run()
       XCTAssertNoThrow(try shutdown.wait())
     }
-
-    // Fire a connection idled event, i.e. keepalive timeout has fired. This should be a no-op.
-    // Previously this would hit a precondition failure.
-    channel.pipeline.fireUserInboundEventTriggered(ConnectionIdledEvent())
   }
 
   func testCloseWithoutActiveRPCs() throws {
@@ -965,9 +983,11 @@ extension ConnectionManagerTests {
     )
     XCTAssertNoThrow(try channel.pipeline.addHandlers([
       GRPCIdleHandler(
-        mode: .client(manager, h2mux),
-        logger: manager.logger,
-        idleTimeout: .minutes(5)
+        connectionManager: manager,
+        multiplexer: h2mux,
+        idleTimeout: .minutes(5),
+        keepalive: .init(),
+        logger: self.logger
       ),
     ]).wait())
     channelPromise.succeed(channel)
