@@ -100,6 +100,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       headers: self.viableHeaders,
       eventLoop: self.eventLoop,
       errorDelegate: nil,
+      remoteAddress: nil,
       logger: self.logger
     )
 
@@ -169,6 +170,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       headers: self.viableHeaders,
       eventLoop: self.eventLoop,
       errorDelegate: nil,
+      remoteAddress: nil,
       logger: self.logger
     )
     assertThat(action, .is(.configure()))
@@ -179,7 +181,9 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
     let action = machine.receive(
       headers: self.makeHeaders(contentType: "application/json"),
       eventLoop: self.eventLoop,
-      errorDelegate: nil, logger: self.logger
+      errorDelegate: nil,
+      remoteAddress: nil,
+      logger: self.logger
     )
     assertThat(
       action,
@@ -193,6 +197,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       headers: self.makeHeaders(path: "/foo.Foo/Get"),
       eventLoop: self.eventLoop,
       errorDelegate: nil,
+      remoteAddress: nil,
       logger: self.logger
     )
     assertThat(action, .is(.write(.trailersOnly(code: .unimplemented), flush: true)))
@@ -204,6 +209,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       headers: self.makeHeaders(path: "/echo.Echo/Foo"),
       eventLoop: self.eventLoop,
       errorDelegate: nil,
+      remoteAddress: nil,
       logger: self.logger
     )
     assertThat(action, .is(.write(.trailersOnly(code: .unimplemented), flush: true)))
@@ -215,6 +221,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       headers: self.makeHeaders(path: "nope"),
       eventLoop: self.eventLoop,
       errorDelegate: nil,
+      remoteAddress: nil,
       logger: self.logger
     )
     assertThat(action, .is(.write(.trailersOnly(code: .unimplemented), flush: true)))
@@ -226,6 +233,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       headers: self.makeHeaders(encoding: .gzip),
       eventLoop: self.eventLoop,
       errorDelegate: nil,
+      remoteAddress: nil,
       logger: self.logger
     )
     assertThat(action, .is(.write(.trailersOnly(code: .unimplemented), flush: true)))
@@ -238,6 +246,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       headers: self.makeHeaders(contentType: "application/grpc", encoding: "gzip,identity"),
       eventLoop: self.eventLoop,
       errorDelegate: nil,
+      remoteAddress: nil,
       logger: self.logger
     )
     assertThat(action, .is(.write(.trailersOnly(code: .invalidArgument), flush: true)))
@@ -250,6 +259,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       headers: self.makeHeaders(contentType: "application/grpc", encoding: "foozip"),
       eventLoop: self.eventLoop,
       errorDelegate: nil,
+      remoteAddress: nil,
       logger: self.logger
     )
 
@@ -268,6 +278,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       headers: self.makeHeaders(encoding: .gzip),
       eventLoop: self.eventLoop,
       errorDelegate: nil,
+      remoteAddress: nil,
       logger: self.logger
     )
 
@@ -289,6 +300,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       headers: self.makeHeaders(encoding: .identity),
       eventLoop: self.eventLoop,
       errorDelegate: nil,
+      remoteAddress: nil,
       logger: self.logger
     )
 
@@ -302,6 +314,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       headers: self.makeHeaders(acceptEncoding: [.deflate]),
       eventLoop: self.eventLoop,
       errorDelegate: nil,
+      remoteAddress: nil,
       logger: self.logger
     )
 

@@ -111,6 +111,7 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelDuplexHandler {
         headers: payload.headers,
         eventLoop: context.eventLoop,
         errorDelegate: self.errorDelegate,
+        remoteAddress: context.channel.remoteAddress,
         logger: self.logger
       )
       self.act(on: action, with: context)
