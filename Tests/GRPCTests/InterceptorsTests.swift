@@ -161,6 +161,16 @@ private class HelloWorldClientInterceptorFactory:
   }
 }
 
+class RemoteAddressExistsInterceptor<Request, Response>: ServerInterceptor<Request, Response> {
+  override func receive(
+    _ part: GRPCServerRequestPart<Request>,
+    context: ServerInterceptorContext<Request, Response>
+  ) {
+    XCTAssertNotNil(context.remoteAddress)
+    super.receive(part, context: context)
+  }
+}
+
 class NotReallyAuthServerInterceptor<Request: Message, Response: Message>:
   ServerInterceptor<Request, Response> {
   override func receive(
@@ -188,7 +198,7 @@ class NotReallyAuthServerInterceptor<Request: Message, Response: Message>:
 class HelloWorldServerInterceptorFactory: Helloworld_GreeterServerInterceptorFactoryProtocol {
   func makeSayHelloInterceptors(
   ) -> [ServerInterceptor<Helloworld_HelloRequest, Helloworld_HelloReply>] {
-    return [NotReallyAuthServerInterceptor()]
+    return [RemoteAddressExistsInterceptor(), NotReallyAuthServerInterceptor()]
   }
 }
 

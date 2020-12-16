@@ -40,6 +40,7 @@ class ServerInterceptorPipelineTests: GRPCTestCase {
       eventLoop: self.embeddedEventLoop,
       path: path,
       callType: callType,
+      remoteAddress: nil,
       userInfoRef: Ref(UserInfo()),
       interceptors: interceptors,
       onRequestPart: onRequestPart,

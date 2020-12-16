@@ -278,6 +278,7 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
     headers: HPACKHeaders,
     eventLoop: EventLoop,
     errorDelegate: ServerErrorDelegate?,
+    remoteAddress: SocketAddress?,
     logger: Logger
   ) -> HTTP2ToRawGRPCStateMachine.StateAndAction {
     // Extract and validate the content type. If it's nil we need to close.
@@ -323,7 +324,8 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
       logger: logger,
       encoding: self.encoding,
       eventLoop: eventLoop,
-      path: path
+      path: path,
+      remoteAddress: remoteAddress
     )
 
     // We have a matching service, hopefully we have a provider for the method too.
@@ -883,6 +885,7 @@ extension HTTP2ToRawGRPCStateMachine {
     headers: HPACKHeaders,
     eventLoop: EventLoop,
     errorDelegate: ServerErrorDelegate?,
+    remoteAddress: SocketAddress?,
     logger: Logger
   ) -> Action {
     return self.withStateAvoidingCoWs { state in
@@ -890,6 +893,7 @@ extension HTTP2ToRawGRPCStateMachine {
         headers: headers,
         eventLoop: eventLoop,
         errorDelegate: errorDelegate,
+        remoteAddress: remoteAddress,
         logger: logger
       )
     }
@@ -977,6 +981,7 @@ extension HTTP2ToRawGRPCStateMachine.State {
     headers: HPACKHeaders,
     eventLoop: EventLoop,
     errorDelegate: ServerErrorDelegate?,
+    remoteAddress: SocketAddress?,
     logger: Logger
   ) -> HTTP2ToRawGRPCStateMachine.Action {
     switch self {
@@ -986,6 +991,7 @@ extension HTTP2ToRawGRPCStateMachine.State {
         headers: headers,
         eventLoop: eventLoop,
         errorDelegate: errorDelegate,
+        remoteAddress: remoteAddress,
         logger: logger
       )
       self = stateAndAction.state

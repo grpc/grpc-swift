@@ -61,6 +61,11 @@ public struct ServerInterceptorContext<Request, Response> {
     return self._pipeline.path
   }
 
+  /// The address of the remote peer.
+  public var remoteAddress: SocketAddress? {
+    return self._pipeline.remoteAddress
+  }
+
   /// A 'UserInfo' dictionary.
   ///
   /// - Important: While `UserInfo` has value-semantics, this property retrieves from, and sets a

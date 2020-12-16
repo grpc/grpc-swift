@@ -30,6 +30,10 @@ internal final class ServerInterceptorPipeline<Request, Response> {
   @usableFromInline
   internal let type: GRPCCallType
 
+  /// The remote peer's address.
+  @usableFromInline
+  internal let remoteAddress: SocketAddress?
+
   /// A logger.
   @usableFromInline
   internal let logger: Logger
@@ -96,6 +100,7 @@ internal final class ServerInterceptorPipeline<Request, Response> {
     eventLoop: EventLoop,
     path: String,
     callType: GRPCCallType,
+    remoteAddress: SocketAddress?,
     userInfoRef: Ref<UserInfo>,
     interceptors: [ServerInterceptor<Request, Response>],
     onRequestPart: @escaping (GRPCServerRequestPart<Request>) -> Void,
@@ -105,6 +110,7 @@ internal final class ServerInterceptorPipeline<Request, Response> {
     self.eventLoop = eventLoop
     self.path = path
     self.type = callType
+    self.remoteAddress = remoteAddress
     self.userInfoRef = userInfoRef
 
     // We need space for the head and tail as well as any user provided interceptors.

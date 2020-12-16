@@ -102,6 +102,7 @@ public class _BaseCallHandler<
       eventLoop: callHandlerContext.eventLoop,
       path: callHandlerContext.path,
       callType: callType,
+      remoteAddress: callHandlerContext.remoteAddress,
       userInfoRef: userInfoRef,
       interceptors: interceptors,
       onRequestPart: self._receiveRequestPartFromInterceptors(_:),

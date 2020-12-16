@@ -50,6 +50,8 @@ public struct CallHandlerContext {
   internal var eventLoop: EventLoop
   @usableFromInline
   internal var path: String
+  @usableFromInline
+  internal var remoteAddress: SocketAddress?
 }
 
 /// A call URI split into components.
