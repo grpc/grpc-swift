@@ -52,6 +52,12 @@ internal final class ClientTransport<Request, Response> {
   /// A buffer to store request parts and promises in before the channel has become active.
   private var writeBuffer = MarkedCircularBuffer<RequestAndPromise>(initialCapacity: 4)
 
+  /// The request serializer.
+  private let serializer: AnySerializer<Request>
+
+  /// The response deserializer.
+  private let deserializer: AnyDeserializer<Response>
+
   /// A request part and a promise.
   private struct RequestAndPromise {
     var request: GRPCClientRequestPart<Request>
@@ -102,12 +108,16 @@ internal final class ClientTransport<Request, Response> {
     details: CallDetails,
     eventLoop: EventLoop,
     interceptors: [ClientInterceptor<Request, Response>],
+    serializer: AnySerializer<Request>,
+    deserializer: AnyDeserializer<Response>,
     errorDelegate: ClientErrorDelegate?,
     onError: @escaping (Error) -> Void,
     onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) {
     self.eventLoop = eventLoop
     self.callDetails = details
+    self.serializer = serializer
+    self.deserializer = deserializer
     self._pipeline = ClientInterceptorPipeline(
       eventLoop: eventLoop,
       details: details,
@@ -236,10 +246,10 @@ extension ClientTransport {
 
 extension ClientTransport: ChannelInboundHandler {
   @usableFromInline
-  typealias InboundIn = _GRPCClientResponsePart<Response>
+  typealias InboundIn = _RawGRPCClientResponsePart
 
   @usableFromInline
-  typealias OutboundOut = _GRPCClientRequestPart<Request>
+  typealias OutboundOut = _RawGRPCClientRequestPart
 
   @usableFromInline
   func handlerAdded(context: ChannelHandlerContext) {
@@ -311,16 +321,32 @@ extension ClientTransport: ChannelInboundHandler {
     self.eventLoop.assertInEventLoop()
     let part = self.unwrapInboundIn(data)
 
-    let isEnd: Bool
     switch part {
-    case .initialMetadata, .message, .trailingMetadata:
-      isEnd = false
-    case .status:
-      isEnd = true
-    }
+    case let .initialMetadata(headers):
+      if self.state.channelRead(isEnd: false) {
+        self.forwardToInterceptors(.metadata(headers))
+      }
 
-    if self.state.channelRead(isEnd: isEnd) {
-      self.forwardToInterceptors(part)
+    case let .message(context):
+      do {
+        let message = try self.deserializer.deserialize(byteBuffer: context.message)
+        if self.state.channelRead(isEnd: false) {
+          self.forwardToInterceptors(.message(message))
+        }
+      } catch {
+        self.channelError(error)
+      }
+
+    case let .trailingMetadata(trailers):
+      // The `Channel` delivers trailers and `GRPCStatus` separately, we want to emit them together
+      // in the interceptor pipeline.
+      self.trailers = trailers
+
+    case let .status(status):
+      if self.state.channelRead(isEnd: true) {
+        self.forwardToInterceptors(.end(status, self.trailers ?? [:]))
+        self.trailers = nil
+      }
     }
 
     // (We're the end of the channel. No need to forward anything.)
@@ -769,8 +795,13 @@ extension ClientTransport {
       context.channel.write(self.wrapOutboundOut(.head(head)), promise: promise)
 
     case let .message(request, metadata):
-      let message = _MessageContext<Request>(request, compressed: metadata.compress)
-      context.channel.write(self.wrapOutboundOut(.message(message)), promise: promise)
+      do {
+        let bytes = try self.serializer.serialize(request, allocator: context.channel.allocator)
+        let message = _MessageContext<ByteBuffer>(bytes, compressed: metadata.compress)
+        context.channel.write(self.wrapOutboundOut(.message(message)), promise: promise)
+      } catch {
+        self.channelError(error)
+      }
 
     case .end:
       context.channel.write(self.wrapOutboundOut(.end), promise: promise)
@@ -783,24 +814,8 @@ extension ClientTransport {
 
   /// Forward the response part to the interceptor pipeline.
   /// - Parameter part: The response part to forward.
-  private func forwardToInterceptors(_ part: _GRPCClientResponsePart<Response>) {
-    switch part {
-    case let .initialMetadata(metadata):
-      self._pipeline?.receive(.metadata(metadata))
-
-    case let .message(context):
-      self._pipeline?.receive(.message(context.message))
-
-    case let .trailingMetadata(trailers):
-      // The `Channel` delivers trailers and `GRPCStatus`, we want to emit them together in the
-      // interceptor pipeline.
-      self.trailers = trailers
-
-    case let .status(status):
-      let trailers = self.trailers ?? [:]
-      self.trailers = nil
-      self._pipeline?.receive(.end(status, trailers))
-    }
+  private func forwardToInterceptors(_ part: GRPCClientResponsePart<Response>) {
+    self._pipeline?.receive(part)
   }
 
   /// Forward the error to the interceptor pipeline.

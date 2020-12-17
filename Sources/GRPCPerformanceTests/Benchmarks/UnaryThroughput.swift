@@ -54,7 +54,6 @@ class Unary: ServerProvidingBenchmark {
       let requests = (lowerBound ..< upperBound).map { _ in
         client.get(Echo_EchoRequest.with { $0.text = self.requestText }).response
       }
-
       try EventLoopFuture.andAllSucceed(requests, on: self.group.next()).wait()
     }
   }

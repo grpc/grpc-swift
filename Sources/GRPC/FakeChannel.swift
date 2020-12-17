@@ -99,7 +99,25 @@ public class FakeChannel: GRPCChannel {
     )
   }
 
-  private func _makeCall<Request, Response>(
+  private func _makeCall<Request: Message, Response: Message>(
+    path: String,
+    type: GRPCCallType,
+    callOptions: CallOptions,
+    interceptors: [ClientInterceptor<Request, Response>]
+  ) -> Call<Request, Response> {
+    let stream: _FakeResponseStream<Request, Response>? = self.dequeueResponseStream(forPath: path)
+    let eventLoop = stream?.channel.eventLoop ?? EmbeddedEventLoop()
+    return Call(
+      path: path,
+      type: type,
+      eventLoop: eventLoop,
+      options: callOptions,
+      interceptors: interceptors,
+      transportFactory: .fake(stream, on: eventLoop)
+    )
+  }
+
+  private func _makeCall<Request: GRPCPayload, Response: GRPCPayload>(
     path: String,
     type: GRPCCallType,
     callOptions: CallOptions,
