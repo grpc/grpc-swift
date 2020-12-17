@@ -104,7 +104,10 @@ func uniqueOutputFileName(
 
 func main() throws {
   // initialize responses
-  var response = Google_Protobuf_Compiler_CodeGeneratorResponse()
+  var response = Google_Protobuf_Compiler_CodeGeneratorResponse(
+    files: [],
+    supportedFeatures: [.proto3Optional]
+  )
 
   // read plugin input
   let rawRequest = try Stdin.readall()
