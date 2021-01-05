@@ -19,7 +19,7 @@ import NIO
 public struct ServerInterceptorContext<Request, Response> {
   /// The interceptor this context is for.
   @usableFromInline
-  internal let interceptor: AnyServerInterceptor<Request, Response>
+  internal let interceptor: ServerInterceptor<Request, Response>
 
   /// The pipeline this context is associated with.
   @usableFromInline
@@ -28,18 +28,6 @@ public struct ServerInterceptorContext<Request, Response> {
   /// The index of this context's interceptor within the pipeline.
   @usableFromInline
   internal let _index: Int
-
-  // The next context in the inbound direction, if one exists.
-  @inlinable
-  internal var _nextInbound: ServerInterceptorContext<Request, Response>? {
-    return self._pipeline.nextInboundContext(forIndex: self._index)
-  }
-
-  // The next context in the outbound direction, if one exists.
-  @inlinable
-  internal var _nextOutbound: ServerInterceptorContext<Request, Response>? {
-    return self._pipeline.nextOutboundContext(forIndex: self._index)
-  }
 
   /// The `EventLoop` this interceptor pipeline is being executed on.
   public var eventLoop: EventLoop {
@@ -87,7 +75,7 @@ public struct ServerInterceptorContext<Request, Response> {
   /// interceptor pipeline.
   @inlinable
   internal init(
-    for interceptor: AnyServerInterceptor<Request, Response>,
+    for interceptor: ServerInterceptor<Request, Response>,
     atIndex index: Int,
     in pipeline: ServerInterceptorPipeline<Request, Response>
   ) {
@@ -100,8 +88,9 @@ public struct ServerInterceptorContext<Request, Response> {
   ///
   /// - Parameter part: The request part to forward.
   /// - Important: This *must* to be called from the `eventLoop`.
+  @inlinable
   public func receive(_ part: GRPCServerRequestPart<Request>) {
-    self._nextInbound?.invokeReceive(part)
+    self._pipeline.invokeReceive(part, fromContextAtIndex: self._index)
   }
 
   /// Forwards the response part to the next outbound interceptor in the pipeline, if there is one.
@@ -110,31 +99,11 @@ public struct ServerInterceptorContext<Request, Response> {
   ///   - part: The response part to forward.
   ///   - promise: The promise the complete when the part has been written.
   /// - Important: This *must* to be called from the `eventLoop`.
+  @inlinable
   public func send(
     _ part: GRPCServerResponsePart<Response>,
     promise: EventLoopPromise<Void>?
   ) {
-    if let outbound = self._nextOutbound {
-      outbound.invokeSend(part, promise: promise)
-    } else {
-      promise?.fail(GRPCError.AlreadyComplete())
-    }
-  }
-}
-
-extension ServerInterceptorContext {
-  @inlinable
-  internal func invokeReceive(_ part: GRPCServerRequestPart<Request>) {
-    self.eventLoop.assertInEventLoop()
-    self.interceptor.receive(part, context: self)
-  }
-
-  @inlinable
-  internal func invokeSend(
-    _ part: GRPCServerResponsePart<Response>,
-    promise: EventLoopPromise<Void>?
-  ) {
-    self.eventLoop.assertInEventLoop()
-    self.interceptor.send(part, promise: promise, context: self)
+    self._pipeline.invokeSend(part, promise: promise, fromContextAtIndex: self._index)
   }
 }
