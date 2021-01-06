@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+@usableFromInline
 internal struct CallDetails {
   /// The type of the RPC, e.g. unary.
   internal var type: GRPCCallType
@@ -28,5 +29,6 @@ internal struct CallDetails {
   internal var scheme: String
 
   /// Call options provided by the user.
+  @usableFromInline
   internal var options: CallOptions
 }

@@ -83,6 +83,7 @@ public struct TimeLimit: Equatable, CustomStringConvertible {
 
 extension TimeLimit {
   /// Make a non-distant-future deadline from the give time limit.
+  @usableFromInline
   internal func makeDeadline() -> NIODeadline {
     switch self.wrapped {
     case .none:

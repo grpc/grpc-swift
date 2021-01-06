@@ -69,59 +69,69 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   internal let eventLoop: EventLoop
 
   /// The details of the call.
+  @usableFromInline
   internal let details: CallDetails
 
   /// A task for closing the RPC in case of a timeout.
-  private var scheduledClose: Scheduled<Void>?
-
-  /// The contexts associated with the interceptors stored in this pipeline. Context will be removed
-  /// once the RPC has completed. Contexts are ordered from outbound to inbound, that is, the tail
-  /// is first and the head is last.
-  private var contexts: InterceptorContextList<ClientInterceptorContext<Request, Response>>?
-
-  /// Returns the next context in the outbound direction for the context at the given index, if one
-  /// exists.
-  /// - Parameter index: The index of the `ClientInterceptorContext` which is requesting the next
-  ///   outbound context.
-  /// - Returns: The `ClientInterceptorContext` or `nil` if one does not exist.
-  internal func nextOutboundContext(
-    forIndex index: Int
-  ) -> ClientInterceptorContext<Request, Response>? {
-    return self.context(atIndex: index + 1)
-  }
-
-  /// Returns the next context in the inbound direction for the context at the given index, if one
-  /// exists.
-  /// - Parameter index: The index of the `ClientInterceptorContext` which is requesting the next
-  ///   inbound context.
-  /// - Returns: The `ClientInterceptorContext` or `nil` if one does not exist.
-  internal func nextInboundContext(
-    forIndex index: Int
-  ) -> ClientInterceptorContext<Request, Response>? {
-    return self.context(atIndex: index - 1)
-  }
-
-  /// Returns the context for the given index, if one exists.
-  /// - Parameter index: The index of the `ClientInterceptorContext` to return.
-  /// - Returns: The `ClientInterceptorContext` or `nil` if one does not exist for the given index.
-  private func context(atIndex index: Int) -> ClientInterceptorContext<Request, Response>? {
-    return self.contexts?[checked: index]
-  }
-
-  /// The context closest to the `NIO.Channel`, i.e. where inbound events originate. This will be
-  /// `nil` once the RPC has completed.
   @usableFromInline
-  internal var _head: ClientInterceptorContext<Request, Response>? {
-    return self.contexts?.last
-  }
+  internal var _scheduledClose: Scheduled<Void>?
 
-  /// The context closest to the application, i.e. where outbound events originate. This will be
-  /// `nil` once the RPC has completed.
   @usableFromInline
-  internal var _tail: ClientInterceptorContext<Request, Response>? {
-    return self.contexts?.first
+  internal let _errorDelegate: ClientErrorDelegate?
+
+  @usableFromInline
+  internal let _onError: (Error) -> Void
+
+  @usableFromInline
+  internal let _onCancel: (EventLoopPromise<Void>?) -> Void
+
+  @usableFromInline
+  internal let _onRequestPart: (GRPCClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void
+
+  @usableFromInline
+  internal let _onResponsePart: (GRPCClientResponsePart<Response>) -> Void
+
+  /// The index after the last user interceptor context index. (i.e. `_userContexts.endIndex`).
+  @usableFromInline
+  internal let _headIndex: Int
+
+  /// The index before the first user interceptor context index (always -1).
+  @usableFromInline
+  internal let _tailIndex: Int
+
+  @usableFromInline
+  internal var _userContexts: [ClientInterceptorContext<Request, Response>]
+
+  /// Whether the interceptor pipeline is still open. It becomes closed after an 'end' response
+  /// part has traversed the pipeline.
+  @usableFromInline
+  internal var _isOpen = true
+
+  /// The index of the next context on the inbound side of the context at the given index.
+  @inlinable
+  internal func _nextInboundIndex(after index: Int) -> Int {
+    // Unchecked arithmetic is okay here: our smallest inbound index is '_tailIndex' but we will
+    // never ask for the inbound index after the tail.
+    assert(self._indexIsValid(index))
+    return index &- 1
   }
 
+  /// The index of the next context on the outbound side of the context at the given index.
+  @inlinable
+  internal func _nextOutboundIndex(after index: Int) -> Int {
+    // Unchecked arithmetic is okay here: our greatest outbound index is '_headIndex' but we will
+    // never ask for the outbound index after the head.
+    assert(self._indexIsValid(index))
+    return index &+ 1
+  }
+
+  /// Returns true of the index is in the range `_tailIndex ... _headIndex`.
+  @inlinable
+  internal func _indexIsValid(_ index: Int) -> Bool {
+    return index >= self._tailIndex && index <= self._headIndex
+  }
+
+  @inlinable
   internal init(
     eventLoop: EventLoop,
     details: CallDetails,
@@ -134,17 +144,28 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   ) {
     self.eventLoop = eventLoop
     self.details = details
-    self.contexts = InterceptorContextList(
-      for: self,
-      interceptors: interceptors,
-      errorDelegate: errorDelegate,
-      onError: onError,
-      onCancel: onCancel,
-      onRequestPart: onRequestPart,
-      onResponsePart: onResponsePart
-    )
 
-    self.setupDeadline()
+    self._errorDelegate = errorDelegate
+    self._onError = onError
+    self._onCancel = onCancel
+    self._onRequestPart = onRequestPart
+    self._onResponsePart = onResponsePart
+
+    // The tail is before the interceptors.
+    self._tailIndex = -1
+    // The head is after the interceptors.
+    self._headIndex = interceptors.endIndex
+
+    // Make some contexts.
+    self._userContexts = []
+    self._userContexts.reserveCapacity(interceptors.count)
+
+    for index in 0 ..< interceptors.count {
+      let context = ClientInterceptorContext(for: interceptors[index], atIndex: index, in: self)
+      self._userContexts.append(context)
+    }
+
+    self._setupDeadline()
   }
 
   /// Emit a response part message into the interceptor pipeline.
@@ -153,9 +174,55 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   ///
   /// - Parameter part: The part to emit into the pipeline.
   /// - Important: This *must* to be called from the `eventLoop`.
+  @inlinable
   internal func receive(_ part: GRPCClientResponsePart<Response>) {
+    self.invokeReceive(part, fromContextAtIndex: self._headIndex)
+  }
+
+  /// Invoke receive on the appropriate context when called from the context at the given index.
+  @inlinable
+  internal func invokeReceive(
+    _ part: GRPCClientResponsePart<Response>,
+    fromContextAtIndex index: Int
+  ) {
+    self._invokeReceive(part, onContextAtIndex: self._nextInboundIndex(after: index))
+  }
+
+  /// Invoke receive on the context at the given index, if doing so is safe.
+  @inlinable
+  internal func _invokeReceive(
+    _ part: GRPCClientResponsePart<Response>,
+    onContextAtIndex index: Int
+  ) {
     self.eventLoop.assertInEventLoop()
-    self._head?.invokeReceive(part)
+    assert(self._indexIsValid(index))
+    guard self._isOpen else {
+      return
+    }
+
+    self._invokeReceive(part, onContextAtUncheckedIndex: index)
+  }
+
+  /// Invoke receive on the context at the given index, assuming that the index is valid and the
+  /// pipeline is still open.
+  @inlinable
+  internal func _invokeReceive(
+    _ part: GRPCClientResponsePart<Response>,
+    onContextAtUncheckedIndex index: Int
+  ) {
+    switch index {
+    case self._headIndex:
+      self._invokeReceive(part, onContextAtUncheckedIndex: self._nextInboundIndex(after: index))
+
+    case self._tailIndex:
+      if part.isEnd {
+        self.close()
+      }
+      self._onResponsePart(part)
+
+    default:
+      self._userContexts[index].invokeReceive(part)
+    }
   }
 
   /// Emit an error into the interceptor pipeline.
@@ -164,9 +231,70 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   ///
   /// - Parameter error: The error to emit.
   /// - Important: This *must* to be called from the `eventLoop`.
+  @inlinable
   internal func errorCaught(_ error: Error) {
+    self.invokeErrorCaught(error, fromContextAtIndex: self._headIndex)
+  }
+
+  /// Invoke `errorCaught` on the appropriate context when called from the context at the given
+  /// index.
+  @inlinable
+  internal func invokeErrorCaught(_ error: Error, fromContextAtIndex index: Int) {
+    self._invokeErrorCaught(error, onContextAtIndex: self._nextInboundIndex(after: index))
+  }
+
+  /// Invoke `errorCaught` on the context at the given index if that index exists and the pipeline
+  /// is still open.
+  @inlinable
+  internal func _invokeErrorCaught(_ error: Error, onContextAtIndex index: Int) {
     self.eventLoop.assertInEventLoop()
-    self._head?.invokeErrorCaught(error)
+    assert(self._indexIsValid(index))
+    guard self._isOpen else {
+      return
+    }
+    self._invokeErrorCaught(error, onContextAtUncheckedIndex: index)
+  }
+
+  /// Invoke `errorCaught` on the context at the given index assuming the index exists and the
+  /// pipeline is still open.
+  @inlinable
+  internal func _invokeErrorCaught(_ error: Error, onContextAtUncheckedIndex index: Int) {
+    switch index {
+    case self._headIndex:
+      self._invokeErrorCaught(error, onContextAtIndex: self._nextInboundIndex(after: index))
+
+    case self._tailIndex:
+      self._errorCaught(error)
+
+    default:
+      self._userContexts[index].invokeErrorCaught(error)
+    }
+  }
+
+  /// Handles a caught error which has traversed the interceptor pipeline.
+  @usableFromInline
+  internal func _errorCaught(_ error: Error) {
+    // We're about to complete, close the pipeline.
+    self.close()
+
+    var unwrappedError: Error
+
+    // Unwrap the error, if possible.
+    if let errorContext = error as? GRPCError.WithContext {
+      unwrappedError = errorContext.error
+      self._errorDelegate?.didCatchError(
+        errorContext.error,
+        logger: self.logger,
+        file: errorContext.file,
+        line: errorContext.line
+      )
+    } else {
+      unwrappedError = error
+      self._errorDelegate?.didCatchErrorWithoutContext(error, logger: self.logger)
+    }
+
+    // Emit the unwrapped error.
+    self._onError(unwrappedError)
   }
 
   /// Writes a request message into the interceptor pipeline.
@@ -179,12 +307,60 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   /// - Important: This *must* to be called from the `eventLoop`.
   @inlinable
   internal func send(_ part: GRPCClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
-    self.eventLoop.assertInEventLoop()
+    self.invokeSend(part, promise: promise, fromContextAtIndex: self._tailIndex)
+  }
 
-    if let tail = self._tail {
-      tail.invokeSend(part, promise: promise)
-    } else {
+  /// Invoke send on the appropriate context when called from the context at the given index.
+  @inlinable
+  internal func invokeSend(
+    _ part: GRPCClientRequestPart<Request>,
+    promise: EventLoopPromise<Void>?,
+    fromContextAtIndex index: Int
+  ) {
+    self._invokeSend(
+      part,
+      promise: promise,
+      onContextAtIndex: self._nextOutboundIndex(after: index)
+    )
+  }
+
+  /// Invoke send on the context at the given index, if it exists and the pipeline is still open.
+  @inlinable
+  internal func _invokeSend(
+    _ part: GRPCClientRequestPart<Request>,
+    promise: EventLoopPromise<Void>?,
+    onContextAtIndex index: Int
+  ) {
+    self.eventLoop.assertInEventLoop()
+    assert(self._indexIsValid(index))
+    guard self._isOpen else {
       promise?.fail(GRPCError.AlreadyComplete())
+      return
+    }
+    self._invokeSend(part, promise: promise, onContextAtUncheckedIndex: index)
+  }
+
+  /// Invoke send on the context at the given index assuming the index exists and the pipeline is
+  /// still open.
+  @inlinable
+  internal func _invokeSend(
+    _ part: GRPCClientRequestPart<Request>,
+    promise: EventLoopPromise<Void>?,
+    onContextAtUncheckedIndex index: Int
+  ) {
+    switch index {
+    case self._headIndex:
+      self._onRequestPart(part, promise)
+
+    case self._tailIndex:
+      self._invokeSend(
+        part,
+        promise: promise,
+        onContextAtUncheckedIndex: self._nextOutboundIndex(after: index)
+      )
+
+    default:
+      self._userContexts[index].invokeSend(part, promise: promise)
     }
   }
 
@@ -194,13 +370,52 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   ///
   /// - Parameter promise: A promise to complete when the cancellation request has been handled.
   /// - Important: This *must* to be called from the `eventLoop`.
+  @inlinable
   internal func cancel(promise: EventLoopPromise<Void>?) {
-    self.eventLoop.assertInEventLoop()
+    self.invokeCancel(promise: promise, fromContextAtIndex: self._tailIndex)
+  }
 
-    if let tail = self._tail {
-      tail.invokeCancel(promise: promise)
-    } else {
+  /// Invoke `cancel` on the appropriate context when called from the context at the given index.
+  @inlinable
+  internal func invokeCancel(promise: EventLoopPromise<Void>?, fromContextAtIndex index: Int) {
+    self._invokeCancel(promise: promise, onContextAtIndex: self._nextOutboundIndex(after: index))
+  }
+
+  /// Invoke `cancel` on the context at the given index if the index is valid and the pipeline is
+  /// still open.
+  @inlinable
+  internal func _invokeCancel(
+    promise: EventLoopPromise<Void>?,
+    onContextAtIndex index: Int
+  ) {
+    self.eventLoop.assertInEventLoop()
+    assert(self._indexIsValid(index))
+    guard self._isOpen else {
       promise?.fail(GRPCError.AlreadyComplete())
+      return
+    }
+    self._invokeCancel(promise: promise, onContextAtUncheckedIndex: index)
+  }
+
+  /// Invoke `cancel` on the context at the given index assuming the index is valid and the
+  /// pipeline is still open.
+  @inlinable
+  internal func _invokeCancel(
+    promise: EventLoopPromise<Void>?,
+    onContextAtUncheckedIndex index: Int
+  ) {
+    switch index {
+    case self._headIndex:
+      self._onCancel(promise)
+
+    case self._tailIndex:
+      self._invokeCancel(
+        promise: promise,
+        onContextAtUncheckedIndex: self._nextOutboundIndex(after: index)
+      )
+
+    default:
+      self._userContexts[index].invokeCancel(promise: promise)
     }
   }
 }
@@ -211,90 +426,71 @@ extension ClientInterceptorPipeline {
   /// Closes the pipeline. This should be called once, by the tail interceptor, to indicate that
   /// the RPC has completed.
   /// - Important: This *must* to be called from the `eventLoop`.
+  @inlinable
   internal func close() {
     self.eventLoop.assertInEventLoop()
-
-    // Grab the head, we'll use it to cancel the transport. This is most likely already closed,
-    // but there's nothing to stop an interceptor from emitting its own error and leaving the
-    // transport open.
-    let head = self._head
-    self.contexts = nil
+    self._isOpen = false
 
     // Cancel the timeout.
-    self.scheduledClose?.cancel()
-    self.scheduledClose = nil
+    self._scheduledClose?.cancel()
+    self._scheduledClose = nil
 
     // Cancel the transport.
-    head?.invokeCancel(promise: nil)
+    self._onCancel(nil)
   }
 
   /// Sets up a deadline for the pipeline.
-  private func setupDeadline() {
-    if self.eventLoop.inEventLoop {
-      self._setupDeadline()
-    } else {
-      self.eventLoop.execute {
-        self._setupDeadline()
+  @inlinable
+  internal func _setupDeadline() {
+    func setup() {
+      self.eventLoop.assertInEventLoop()
+
+      let timeLimit = self.details.options.timeLimit
+      let deadline = timeLimit.makeDeadline()
+
+      // There's no point scheduling this.
+      if deadline == .distantFuture {
+        return
+      }
+
+      self._scheduledClose = self.eventLoop.scheduleTask(deadline: deadline) {
+        // When the error hits the tail we'll call 'close()', this will cancel the transport if
+        // necessary.
+        self.errorCaught(GRPCError.RPCTimedOut(timeLimit))
       }
     }
-  }
 
-  /// Sets up a deadline for the pipeline.
-  /// - Important: This *must* to be called from the `eventLoop`.
-  private func _setupDeadline() {
-    self.eventLoop.assertInEventLoop()
-
-    let timeLimit = self.details.options.timeLimit
-    let deadline = timeLimit.makeDeadline()
-
-    // There's no point scheduling this.
-    if deadline == .distantFuture {
-      return
-    }
-
-    self.scheduledClose = self.eventLoop.scheduleTask(deadline: deadline) {
-      // When the error hits the tail we'll call 'close()', this will cancel the transport if
-      // necessary.
-      self.errorCaught(GRPCError.RPCTimedOut(timeLimit))
+    if self.eventLoop.inEventLoop {
+      setup()
+    } else {
+      self.eventLoop.execute {
+        setup()
+      }
     }
   }
 }
 
-private extension InterceptorContextList {
-  init<Request, Response>(
-    for pipeline: ClientInterceptorPipeline<Request, Response>,
-    interceptors: [ClientInterceptor<Request, Response>],
-    errorDelegate: ClientErrorDelegate?,
-    onError: @escaping (Error) -> Void,
-    onCancel: @escaping (EventLoopPromise<Void>?) -> Void,
-    onRequestPart: @escaping (GRPCClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void,
-    onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
-  ) where Element == ClientInterceptorContext<Request, Response> {
-    let middle = interceptors.enumerated().map { index, interceptor in
-      ClientInterceptorContext(
-        for: .userProvided(interceptor),
-        atIndex: index,
-        in: pipeline
-      )
-    }
+extension ClientInterceptorContext {
+  @inlinable
+  internal func invokeReceive(_ part: GRPCClientResponsePart<Response>) {
+    self.interceptor.receive(part, context: self)
+  }
 
-    let first = ClientInterceptorContext<Request, Response>(
-      for: .tail(
-        for: pipeline,
-        errorDelegate: errorDelegate,
-        onError: onError,
-        onResponsePart: onResponsePart
-      ),
-      atIndex: middle.startIndex - 1,
-      in: pipeline
-    )
+  @inlinable
+  internal func invokeSend(
+    _ part: GRPCClientRequestPart<Request>,
+    promise: EventLoopPromise<Void>?
+  ) {
+    self.interceptor.send(part, promise: promise, context: self)
+  }
 
-    let last = ClientInterceptorContext<Request, Response>(
-      for: .head(onCancel: onCancel, onRequestPart: onRequestPart),
-      atIndex: middle.endIndex,
-      in: pipeline
-    )
+  @inlinable
+  internal func invokeCancel(promise: EventLoopPromise<Void>?) {
+    self.interceptor.cancel(promise: promise, context: self)
+  }
 
-    self.init(first: first, middle: middle, last: last)
+  @inlinable
+  internal func invokeErrorCaught(_ error: Error) {
+    self.interceptor.errorCaught(error, context: self)
   }
 }
