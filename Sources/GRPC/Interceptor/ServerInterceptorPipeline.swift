@@ -70,13 +70,25 @@ internal final class ServerInterceptorPipeline<Request, Response> {
   /// The index of the next context on the inbound side of the context at the given index.
   @inlinable
   internal func _nextInboundIndex(after index: Int) -> Int {
+    // Unchecked arithmetic is okay here: our greatest inbound index is '_tailIndex' but we will
+    // never ask for the inbound index after the tail.
+    assert(self._indexIsValid(index))
     return index &+ 1
   }
 
   /// The index of the next context on the outbound side of the context at the given index.
   @inlinable
   internal func _nextOutboundIndex(after index: Int) -> Int {
+    // Unchecked arithmetic is okay here: our lowest outbound index is '_headIndex' but we will
+    // never ask for the outbound index after the head.
+    assert(self._indexIsValid(index))
     return index &- 1
+  }
+
+  /// Returns true of the index is in the range `_headIndex ... _tailIndex`.
+  @inlinable
+  internal func _indexIsValid(_ index: Int) -> Bool {
+    return self._headIndex <= index && index <= self._tailIndex
   }
 
   @inlinable
@@ -141,9 +153,7 @@ internal final class ServerInterceptorPipeline<Request, Response> {
     onContextAtIndex index: Int
   ) {
     self.eventLoop.assertInEventLoop()
-    assert(index >= self._headIndex)
-    assert(index <= self._tailIndex)
-
+    assert(self._indexIsValid(index))
     guard self._isOpen else {
       return
     }
@@ -171,7 +181,7 @@ internal final class ServerInterceptorPipeline<Request, Response> {
       self._onRequestPart(part)
 
     default:
-      self._userContexts[index].interceptor.receive(part, context: self._userContexts[index])
+      self._userContexts[index].invokeReceive(part)
     }
   }
 
@@ -209,13 +219,11 @@ internal final class ServerInterceptorPipeline<Request, Response> {
     onContextAtIndex index: Int
   ) {
     self.eventLoop.assertInEventLoop()
+    assert(self._indexIsValid(index))
     guard self._isOpen else {
       promise?.fail(GRPCError.AlreadyComplete())
       return
     }
-
-    assert(index >= self._headIndex)
-    assert(index <= self._tailIndex)
 
     self._invokeSend(uncheckedIndex: index, part, promise: promise)
   }
@@ -244,11 +252,7 @@ internal final class ServerInterceptorPipeline<Request, Response> {
       )
 
     default:
-      self._userContexts[index].interceptor.send(
-        part,
-        promise: promise,
-        context: self._userContexts[index]
-      )
+      self._userContexts[index].invokeSend(part, promise: promise)
     }
   }
 
@@ -258,5 +262,20 @@ internal final class ServerInterceptorPipeline<Request, Response> {
     self._isOpen = false
     // Each context hold a ref to the pipeline; break the retain cycle.
     self._userContexts.removeAll()
+  }
+}
+
+extension ServerInterceptorContext {
+  @inlinable
+  internal func invokeReceive(_ part: GRPCServerRequestPart<Request>) {
+    self.interceptor.receive(part, context: self)
+  }
+
+  @inlinable
+  internal func invokeSend(
+    _ part: GRPCServerResponsePart<Response>,
+    promise: EventLoopPromise<Void>?
+  ) {
+    self.interceptor.send(part, promise: promise, context: self)
   }
 }
