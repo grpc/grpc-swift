@@ -134,7 +134,7 @@ internal final class ServerInterceptorPipeline<Request, Response> {
   /// - Important: This *must* to be called from the `eventLoop`.
   @inlinable
   internal func receive(_ part: GRPCServerRequestPart<Request>) {
-    self._invokeReceive(part, onContextAtIndex: self._headIndex)
+    self.invokeReceive(part, fromContextAtIndex: self._headIndex)
   }
 
   /// Invoke receive on the appropriate context when called from the context at the given index.
@@ -193,7 +193,7 @@ internal final class ServerInterceptorPipeline<Request, Response> {
   /// - Important: This *must* to be called from the `eventLoop`.
   @inlinable
   internal func send(_ part: GRPCServerResponsePart<Response>, promise: EventLoopPromise<Void>?) {
-    self._invokeSend(part, promise: promise, onContextAtIndex: self._tailIndex)
+    self.invokeSend(part, promise: promise, fromContextAtIndex: self._tailIndex)
   }
 
   /// Invoke send on the appropriate context when called from the context at the given index.
