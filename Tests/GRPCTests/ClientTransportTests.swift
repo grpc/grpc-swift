@@ -346,7 +346,7 @@ class WriteRecorder<Write>: ChannelOutboundHandler {
 
 private struct DummyError: Error {}
 
-private struct StringSerializer: MessageSerializer {
+internal struct StringSerializer: MessageSerializer {
   typealias Input = String
 
   func serialize(_ input: String, allocator: ByteBufferAllocator) throws -> ByteBuffer {
@@ -354,11 +354,27 @@ private struct StringSerializer: MessageSerializer {
   }
 }
 
-private struct StringDeserializer: MessageDeserializer {
+internal struct StringDeserializer: MessageDeserializer {
   typealias Output = String
 
   func deserialize(byteBuffer: ByteBuffer) throws -> String {
     var buffer = byteBuffer
     return buffer.readString(length: buffer.readableBytes)!
+  }
+}
+
+internal struct ThrowingStringSerializer: MessageSerializer {
+  typealias Input = String
+
+  func serialize(_ input: String, allocator: ByteBufferAllocator) throws -> ByteBuffer {
+    throw DummyError()
+  }
+}
+
+internal struct ThrowingStringDeserializer: MessageDeserializer {
+  typealias Output = String
+
+  func deserialize(byteBuffer: ByteBuffer) throws -> String {
+    throw DummyError()
   }
 }

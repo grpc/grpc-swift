@@ -61,7 +61,8 @@ open class ServerCallContextBase: ServerCallContext {
   }
 
   /// A reference to an underlying `UserInfo`. We share this with the interceptors.
-  private let userInfoRef: Ref<UserInfo>
+  @usableFromInline
+  internal let userInfoRef: Ref<UserInfo>
 
   /// Metadata to return at the end of the RPC. If this is required it should be updated before
   /// the `responsePromise` or `statusPromise` is fulfilled.
@@ -76,6 +77,7 @@ open class ServerCallContextBase: ServerCallContext {
     self.init(eventLoop: eventLoop, headers: headers, logger: logger, userInfoRef: .init(userInfo))
   }
 
+  @inlinable
   internal init(
     eventLoop: EventLoop,
     headers: HPACKHeaders,

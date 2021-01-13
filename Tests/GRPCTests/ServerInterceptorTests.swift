@@ -46,7 +46,9 @@ class ServerInterceptorTests: GRPCTestCase {
       logger: self.serverLogger,
       encoding: .disabled,
       eventLoop: self.channel.eventLoop,
-      path: path
+      path: path,
+      responseWriter: NoOpResponseWriter(),
+      allocator: ByteBufferAllocator()
     )
   }
 

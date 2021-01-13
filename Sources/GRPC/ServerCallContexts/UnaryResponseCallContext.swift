@@ -44,6 +44,7 @@ open class UnaryResponseCallContext<ResponsePayload>: ServerCallContextBase, Sta
     self.init(eventLoop: eventLoop, headers: headers, logger: logger, userInfoRef: .init(userInfo))
   }
 
+  @inlinable
   override internal init(
     eventLoop: EventLoop,
     headers: HPACKHeaders,
