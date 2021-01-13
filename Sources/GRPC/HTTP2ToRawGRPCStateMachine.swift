@@ -279,7 +279,9 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
     eventLoop: EventLoop,
     errorDelegate: ServerErrorDelegate?,
     remoteAddress: SocketAddress?,
-    logger: Logger
+    logger: Logger,
+    allocator: ByteBufferAllocator,
+    responseWriter: GRPCServerResponseWriter
   ) -> HTTP2ToRawGRPCStateMachine.StateAndAction {
     // Extract and validate the content type. If it's nil we need to close.
     guard let contentType = self.extractContentType(from: headers) else {
@@ -325,7 +327,9 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
       encoding: self.encoding,
       eventLoop: eventLoop,
       path: path,
-      remoteAddress: remoteAddress
+      remoteAddress: remoteAddress,
+      responseWriter: responseWriter,
+      allocator: allocator
     )
 
     // We have a matching service, hopefully we have a provider for the method too.
@@ -886,7 +890,9 @@ extension HTTP2ToRawGRPCStateMachine {
     eventLoop: EventLoop,
     errorDelegate: ServerErrorDelegate?,
     remoteAddress: SocketAddress?,
-    logger: Logger
+    logger: Logger,
+    allocator: ByteBufferAllocator,
+    responseWriter: GRPCServerResponseWriter
   ) -> Action {
     return self.withStateAvoidingCoWs { state in
       state.receive(
@@ -894,7 +900,9 @@ extension HTTP2ToRawGRPCStateMachine {
         eventLoop: eventLoop,
         errorDelegate: errorDelegate,
         remoteAddress: remoteAddress,
-        logger: logger
+        logger: logger,
+        allocator: allocator,
+        responseWriter: responseWriter
       )
     }
   }
@@ -982,7 +990,9 @@ extension HTTP2ToRawGRPCStateMachine.State {
     eventLoop: EventLoop,
     errorDelegate: ServerErrorDelegate?,
     remoteAddress: SocketAddress?,
-    logger: Logger
+    logger: Logger,
+    allocator: ByteBufferAllocator,
+    responseWriter: GRPCServerResponseWriter
   ) -> HTTP2ToRawGRPCStateMachine.Action {
     switch self {
     // This is the only state in which we can receive headers. Everything else is invalid.
@@ -992,7 +1002,9 @@ extension HTTP2ToRawGRPCStateMachine.State {
         eventLoop: eventLoop,
         errorDelegate: errorDelegate,
         remoteAddress: remoteAddress,
-        logger: logger
+        logger: logger,
+        allocator: allocator,
+        responseWriter: responseWriter
       )
       self = stateAndAction.state
       return stateAndAction.action

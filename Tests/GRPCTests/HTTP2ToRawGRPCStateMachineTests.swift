@@ -101,7 +101,9 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       eventLoop: self.eventLoop,
       errorDelegate: nil,
       remoteAddress: nil,
-      logger: self.logger
+      logger: self.logger,
+      allocator: ByteBufferAllocator(),
+      responseWriter: NoOpResponseWriter()
     )
 
     assertThat(receiveHeadersAction, .is(.configure()))
@@ -171,7 +173,9 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       eventLoop: self.eventLoop,
       errorDelegate: nil,
       remoteAddress: nil,
-      logger: self.logger
+      logger: self.logger,
+      allocator: ByteBufferAllocator(),
+      responseWriter: NoOpResponseWriter()
     )
     assertThat(action, .is(.configure()))
   }
@@ -183,7 +187,9 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       eventLoop: self.eventLoop,
       errorDelegate: nil,
       remoteAddress: nil,
-      logger: self.logger
+      logger: self.logger,
+      allocator: ByteBufferAllocator(),
+      responseWriter: NoOpResponseWriter()
     )
     assertThat(
       action,
@@ -198,7 +204,9 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       eventLoop: self.eventLoop,
       errorDelegate: nil,
       remoteAddress: nil,
-      logger: self.logger
+      logger: self.logger,
+      allocator: ByteBufferAllocator(),
+      responseWriter: NoOpResponseWriter()
     )
     assertThat(action, .is(.write(.trailersOnly(code: .unimplemented), flush: true)))
   }
@@ -210,7 +218,9 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       eventLoop: self.eventLoop,
       errorDelegate: nil,
       remoteAddress: nil,
-      logger: self.logger
+      logger: self.logger,
+      allocator: ByteBufferAllocator(),
+      responseWriter: NoOpResponseWriter()
     )
     assertThat(action, .is(.write(.trailersOnly(code: .unimplemented), flush: true)))
   }
@@ -222,7 +232,9 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       eventLoop: self.eventLoop,
       errorDelegate: nil,
       remoteAddress: nil,
-      logger: self.logger
+      logger: self.logger,
+      allocator: ByteBufferAllocator(),
+      responseWriter: NoOpResponseWriter()
     )
     assertThat(action, .is(.write(.trailersOnly(code: .unimplemented), flush: true)))
   }
@@ -234,7 +246,9 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       eventLoop: self.eventLoop,
       errorDelegate: nil,
       remoteAddress: nil,
-      logger: self.logger
+      logger: self.logger,
+      allocator: ByteBufferAllocator(),
+      responseWriter: NoOpResponseWriter()
     )
     assertThat(action, .is(.write(.trailersOnly(code: .unimplemented), flush: true)))
   }
@@ -247,7 +261,9 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       eventLoop: self.eventLoop,
       errorDelegate: nil,
       remoteAddress: nil,
-      logger: self.logger
+      logger: self.logger,
+      allocator: ByteBufferAllocator(),
+      responseWriter: NoOpResponseWriter()
     )
     assertThat(action, .is(.write(.trailersOnly(code: .invalidArgument), flush: true)))
   }
@@ -260,7 +276,9 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       eventLoop: self.eventLoop,
       errorDelegate: nil,
       remoteAddress: nil,
-      logger: self.logger
+      logger: self.logger,
+      allocator: ByteBufferAllocator(),
+      responseWriter: NoOpResponseWriter()
     )
 
     assertThat(action, .is(.write(.trailersOnly(code: .unimplemented), flush: true)))
@@ -279,7 +297,9 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       eventLoop: self.eventLoop,
       errorDelegate: nil,
       remoteAddress: nil,
-      logger: self.logger
+      logger: self.logger,
+      allocator: ByteBufferAllocator(),
+      responseWriter: NoOpResponseWriter()
     )
 
     // This is expected: however, we also expect 'grpc-accept-encoding' to be in the response
@@ -301,7 +321,9 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       eventLoop: self.eventLoop,
       errorDelegate: nil,
       remoteAddress: nil,
-      logger: self.logger
+      logger: self.logger,
+      allocator: ByteBufferAllocator(),
+      responseWriter: NoOpResponseWriter()
     )
 
     assertThat(action, .is(.configure()))
@@ -315,7 +337,9 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       eventLoop: self.eventLoop,
       errorDelegate: nil,
       remoteAddress: nil,
-      logger: self.logger
+      logger: self.logger,
+      allocator: ByteBufferAllocator(),
+      responseWriter: NoOpResponseWriter()
     )
 
     // This is expected, but we need to check the value of 'grpc-encoding' in the response headers.
@@ -638,5 +662,23 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
 extension ServerMessageEncoding {
   fileprivate static func enabled(_ algorithms: CompressionAlgorithm...) -> ServerMessageEncoding {
     return .enabled(.init(enabledAlgorithms: algorithms, decompressionLimit: .absolute(.max)))
+  }
+}
+
+class NoOpResponseWriter: GRPCServerResponseWriter {
+  func sendMetadata(_ metadata: HPACKHeaders, promise: EventLoopPromise<Void>?) {
+    promise?.succeed(())
+  }
+
+  func sendMessage(
+    _ bytes: ByteBuffer,
+    metadata: MessageMetadata,
+    promise: EventLoopPromise<Void>?
+  ) {
+    promise?.succeed(())
+  }
+
+  func sendEnd(status: GRPCStatus, trailers: HPACKHeaders, promise: EventLoopPromise<Void>?) {
+    promise?.succeed(())
   }
 }

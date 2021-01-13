@@ -15,7 +15,9 @@
  */
 import Logging
 import NIO
+import NIOHPACK
 import NIOHTTP1
+import NIOHTTP2
 import SwiftProtobuf
 
 /// Processes individual gRPC messages and stream-close events on an HTTP2 channel.
@@ -34,6 +36,23 @@ public protocol CallHandlerProvider: AnyObject {
   /// method. Returns nil for methods not handled by this service.
   func handleMethod(_ methodName: Substring, callHandlerContext: CallHandlerContext)
     -> GRPCCallHandler?
+
+  /// Returns a call handler for the method with the given name, if this service provider implements
+  /// the given method. Returns `nil` if the method is not handled by this provider.
+  /// - Parameters:
+  ///   - name: The name of the method to handle.
+  ///   - context: An opaque context providing components to construct the handler with.
+  func handle(method name: Substring, context: CallHandlerContext) -> GRPCServerHandlerProtocol?
+}
+
+extension CallHandlerProvider {
+  // TODO: remove this once we've removed 'handleMethod(_:callHandlerContext:)'.
+  public func handle(
+    method name: Substring,
+    context: CallHandlerContext
+  ) -> GRPCServerHandlerProtocol? {
+    return nil
+  }
 }
 
 // This is public because it will be passed into generated code, all members are `internal` because
@@ -52,6 +71,10 @@ public struct CallHandlerContext {
   internal var path: String
   @usableFromInline
   internal var remoteAddress: SocketAddress?
+  @usableFromInline
+  internal var responseWriter: GRPCServerResponseWriter
+  @usableFromInline
+  internal var allocator: ByteBufferAllocator
 }
 
 /// A call URI split into components.
@@ -61,7 +84,7 @@ struct CallPath {
   /// The name of the method to call.
   var method: String.UTF8View.SubSequence
 
-  /// Charater used to split the path into components.
+  /// Character used to split the path into components.
   private let pathSplitDelimiter = UInt8(ascii: "/")
 
   /// Split a path into service and method.

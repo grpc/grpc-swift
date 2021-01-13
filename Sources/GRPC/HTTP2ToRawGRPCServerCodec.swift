@@ -18,7 +18,7 @@ import NIO
 import NIOHPACK
 import NIOHTTP2
 
-internal final class HTTP2ToRawGRPCServerCodec: ChannelDuplexHandler {
+internal final class HTTP2ToRawGRPCServerCodec: ChannelDuplexHandler, GRPCServerResponseWriter {
   typealias InboundIn = HTTP2Frame.FramePayload
   typealias InboundOut = GRPCServerRequestPart<ByteBuffer>
 
@@ -112,7 +112,9 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelDuplexHandler {
         eventLoop: context.eventLoop,
         errorDelegate: self.errorDelegate,
         remoteAddress: context.channel.remoteAddress,
-        logger: self.logger
+        logger: self.logger,
+        allocator: context.channel.allocator,
+        responseWriter: self
       )
       self.act(on: action, with: context)
 
@@ -161,5 +163,28 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelDuplexHandler {
     }
 
     self.act(on: action, with: context)
+  }
+
+  internal func sendMetadata(
+    _ metadata: HPACKHeaders,
+    promise: EventLoopPromise<Void>?
+  ) {
+    fatalError("TODO: not used yet")
+  }
+
+  internal func sendMessage(
+    _ bytes: ByteBuffer,
+    metadata: MessageMetadata,
+    promise: EventLoopPromise<Void>?
+  ) {
+    fatalError("TODO: not used yet")
+  }
+
+  internal func sendEnd(
+    status: GRPCStatus,
+    trailers: HPACKHeaders,
+    promise: EventLoopPromise<Void>?
+  ) {
+    fatalError("TODO: not used yet")
   }
 }
