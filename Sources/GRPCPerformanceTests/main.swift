@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import EchoImplementation
 import EchoModel
 import Foundation
 import GRPC
@@ -21,11 +20,11 @@ import Logging
 import NIO
 import NIOSSL
 
+let smallRequest = String(repeating: "x", count: 8)
+let largeRequest = String(repeating: "x", count: 1 << 16) // 65k
+
 // Add benchmarks here!
 func runBenchmarks(spec: TestSpec) {
-  let smallRequest = String(repeating: "x", count: 8)
-  let largeRequest = String(repeating: "x", count: 1 << 16) // 65k
-
   measureAndPrint(
     description: "unary_10k_small_requests",
     benchmark: Unary(requests: 10000, text: smallRequest),
@@ -80,7 +79,64 @@ func runBenchmarks(spec: TestSpec) {
 
   measureAndPrint(
     description: "embedded_server_unary_10k_small_requests",
-    benchmark: EmbeddedServerUnaryBenchmark(count: 10000, text: smallRequest),
+    benchmark: EmbeddedServerChildChannelBenchmark(
+      mode: .unary(rpcs: 10000),
+      text: smallRequest
+    ),
+    spec: spec
+  )
+
+  measureAndPrint(
+    description: "embedded_server_client_streaming_1_rpc_10k_small_requests",
+    benchmark: EmbeddedServerChildChannelBenchmark(
+      mode: .clientStreaming(rpcs: 1, requestsPerRPC: 10000),
+      text: smallRequest
+    ),
+    spec: spec
+  )
+
+  measureAndPrint(
+    description: "embedded_server_client_streaming_10k_rpcs_1_small_requests",
+    benchmark: EmbeddedServerChildChannelBenchmark(
+      mode: .clientStreaming(rpcs: 10000, requestsPerRPC: 1),
+      text: smallRequest
+    ),
+    spec: spec
+  )
+
+  measureAndPrint(
+    description: "embedded_server_server_streaming_1_rpc_10k_small_responses",
+    benchmark: EmbeddedServerChildChannelBenchmark(
+      mode: .serverStreaming(rpcs: 1, responsesPerRPC: 10000),
+      text: smallRequest
+    ),
+    spec: spec
+  )
+
+  measureAndPrint(
+    description: "embedded_server_server_streaming_10k_rpcs_1_small_response",
+    benchmark: EmbeddedServerChildChannelBenchmark(
+      mode: .serverStreaming(rpcs: 10000, responsesPerRPC: 1),
+      text: smallRequest
+    ),
+    spec: spec
+  )
+
+  measureAndPrint(
+    description: "embedded_server_bidi_1_rpc_10k_small_requests",
+    benchmark: EmbeddedServerChildChannelBenchmark(
+      mode: .bidirectional(rpcs: 1, requestsPerRPC: 10000),
+      text: smallRequest
+    ),
+    spec: spec
+  )
+
+  measureAndPrint(
+    description: "embedded_server_bidi_10k_rpcs_1_small_request",
+    benchmark: EmbeddedServerChildChannelBenchmark(
+      mode: .bidirectional(rpcs: 10000, requestsPerRPC: 1),
+      text: smallRequest
+    ),
     spec: spec
   )
 
