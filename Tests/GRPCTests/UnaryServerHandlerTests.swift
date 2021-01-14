@@ -18,6 +18,8 @@ import NIO
 import NIOHPACK
 import XCTest
 
+// MARK: - Utils
+
 final class ResponseRecorder: GRPCServerResponseWriter {
   var metadata: HPACKHeaders?
   var messages: [ByteBuffer] = []
@@ -48,11 +50,14 @@ final class ResponseRecorder: GRPCServerResponseWriter {
   }
 }
 
-class UnaryServerHandlerTests: GRPCTestCase {
-  let eventLoop = EmbeddedEventLoop()
-  let allocator = ByteBufferAllocator()
+protocol ServerHandlerTestCase: GRPCTestCase {
+  var eventLoop: EmbeddedEventLoop { get }
+  var allocator: ByteBufferAllocator { get }
+  var recorder: ResponseRecorder { get }
+}
 
-  private func makeCallHandlerContext(writer: GRPCServerResponseWriter) -> CallHandlerContext {
+extension ServerHandlerTestCase {
+  func makeCallHandlerContext() -> CallHandlerContext {
     return CallHandlerContext(
       errorDelegate: nil,
       logger: self.logger,
@@ -60,17 +65,24 @@ class UnaryServerHandlerTests: GRPCTestCase {
       eventLoop: self.eventLoop,
       path: "/ignored",
       remoteAddress: nil,
-      responseWriter: writer,
+      responseWriter: self.recorder,
       allocator: self.allocator
     )
   }
+}
+
+// MARK: - Unary
+
+class UnaryServerHandlerTests: GRPCTestCase, ServerHandlerTestCase {
+  let eventLoop = EmbeddedEventLoop()
+  let allocator = ByteBufferAllocator()
+  let recorder = ResponseRecorder()
 
   private func makeHandler(
-    writer: GRPCServerResponseWriter,
     function: @escaping (String, StatusOnlyCallContext) -> EventLoopFuture<String>
   ) -> UnaryServerHandler<StringSerializer, StringDeserializer> {
     return UnaryServerHandler(
-      context: self.makeCallHandlerContext(writer: writer),
+      context: self.makeCallHandlerContext(),
       requestDeserializer: StringDeserializer(),
       responseSerializer: StringSerializer(),
       interceptors: [],
@@ -101,26 +113,24 @@ class UnaryServerHandlerTests: GRPCTestCase {
   }
 
   func testHappyPath() {
-    let recorder = ResponseRecorder()
-    let handler = self.makeHandler(writer: recorder, function: self.echo(_:context:))
+    let handler = self.makeHandler(function: self.echo(_:context:))
 
     handler.receiveMetadata([:])
-    assertThat(recorder.metadata, .is([:]))
+    assertThat(self.recorder.metadata, .is([:]))
 
     let buffer = ByteBuffer(string: "hello")
     handler.receiveMessage(buffer)
     handler.receiveEnd()
     handler.finish()
 
-    assertThat(recorder.messages.first, .is(buffer))
-    assertThat(recorder.status, .notNil(.hasCode(.ok)))
-    assertThat(recorder.trailers, .is([:]))
+    assertThat(self.recorder.messages.first, .is(buffer))
+    assertThat(self.recorder.status, .notNil(.hasCode(.ok)))
+    assertThat(self.recorder.trailers, .is([:]))
   }
 
   func testThrowingDeserializer() {
-    let recorder = ResponseRecorder()
     let handler = UnaryServerHandler(
-      context: self.makeCallHandlerContext(writer: recorder),
+      context: self.makeCallHandlerContext(),
       requestDeserializer: ThrowingStringDeserializer(),
       responseSerializer: StringSerializer(),
       interceptors: [],
@@ -128,19 +138,18 @@ class UnaryServerHandlerTests: GRPCTestCase {
     )
 
     handler.receiveMetadata([:])
-    assertThat(recorder.metadata, .is([:]))
+    assertThat(self.recorder.metadata, .is([:]))
 
     let buffer = ByteBuffer(string: "hello")
     handler.receiveMessage(buffer)
 
-    assertThat(recorder.messages, .isEmpty())
-    assertThat(recorder.status, .notNil(.hasCode(.internalError)))
+    assertThat(self.recorder.messages, .isEmpty())
+    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
   }
 
   func testThrowingSerializer() {
-    let recorder = ResponseRecorder()
     let handler = UnaryServerHandler(
-      context: self.makeCallHandlerContext(writer: recorder),
+      context: self.makeCallHandlerContext(),
       requestDeserializer: StringDeserializer(),
       responseSerializer: ThrowingStringSerializer(),
       interceptors: [],
@@ -148,61 +157,57 @@ class UnaryServerHandlerTests: GRPCTestCase {
     )
 
     handler.receiveMetadata([:])
-    assertThat(recorder.metadata, .is([:]))
+    assertThat(self.recorder.metadata, .is([:]))
 
     let buffer = ByteBuffer(string: "hello")
     handler.receiveMessage(buffer)
     handler.receiveEnd()
 
-    assertThat(recorder.messages, .isEmpty())
-    assertThat(recorder.status, .notNil(.hasCode(.internalError)))
+    assertThat(self.recorder.messages, .isEmpty())
+    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
   }
 
   func testUserFunctionReturnsFailedFuture() {
-    let recorder = ResponseRecorder()
-    let handler = self.makeHandler(writer: recorder) { _, context in
+    let handler = self.makeHandler { _, context in
       return context.eventLoop.makeFailedFuture(GRPCStatus(code: .unavailable, message: ":("))
     }
 
     handler.receiveMetadata([:])
-    assertThat(recorder.metadata, .is([:]))
+    assertThat(self.recorder.metadata, .is([:]))
 
     let buffer = ByteBuffer(string: "hello")
     handler.receiveMessage(buffer)
 
-    assertThat(recorder.messages, .isEmpty())
-    assertThat(recorder.status, .notNil(.hasCode(.unavailable)))
-    assertThat(recorder.status?.message, .is(":("))
+    assertThat(self.recorder.messages, .isEmpty())
+    assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
+    assertThat(self.recorder.status?.message, .is(":("))
   }
 
   func testReceiveMessageBeforeHeaders() {
-    let recorder = ResponseRecorder()
-    let handler = self.makeHandler(writer: recorder, function: self.neverCalled(_:context:))
+    let handler = self.makeHandler(function: self.neverCalled(_:context:))
 
     handler.receiveMessage(ByteBuffer(string: "foo"))
-    assertThat(recorder.metadata, .is(.nil()))
-    assertThat(recorder.messages, .isEmpty())
-    assertThat(recorder.status, .notNil(.hasCode(.internalError)))
+    assertThat(self.recorder.metadata, .is(.nil()))
+    assertThat(self.recorder.messages, .isEmpty())
+    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
   }
 
   func testReceiveMultipleHeaders() {
-    let recorder = ResponseRecorder()
-    let handler = self.makeHandler(writer: recorder, function: self.neverCalled(_:context:))
+    let handler = self.makeHandler(function: self.neverCalled(_:context:))
 
     handler.receiveMetadata([:])
-    assertThat(recorder.metadata, .is([:]))
+    assertThat(self.recorder.metadata, .is([:]))
 
     handler.receiveMetadata([:])
-    assertThat(recorder.messages, .isEmpty())
-    assertThat(recorder.status, .notNil(.hasCode(.internalError)))
+    assertThat(self.recorder.messages, .isEmpty())
+    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
   }
 
   func testReceiveMultipleMessages() {
-    let recorder = ResponseRecorder()
-    let handler = self.makeHandler(writer: recorder, function: self.neverComplete(_:context:))
+    let handler = self.makeHandler(function: self.neverComplete(_:context:))
 
     handler.receiveMetadata([:])
-    assertThat(recorder.metadata, .is([:]))
+    assertThat(self.recorder.metadata, .is([:]))
 
     let buffer = ByteBuffer(string: "hello")
     handler.receiveMessage(buffer)
@@ -210,44 +215,264 @@ class UnaryServerHandlerTests: GRPCTestCase {
     // Send another message before the function completes.
     handler.receiveMessage(buffer)
 
-    assertThat(recorder.messages, .isEmpty())
-    assertThat(recorder.status, .notNil(.hasCode(.internalError)))
+    assertThat(self.recorder.messages, .isEmpty())
+    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
   }
 
   func testFinishBeforeStarting() {
-    let recorder = ResponseRecorder()
-    let handler = self.makeHandler(writer: recorder, function: self.neverCalled(_:context:))
+    let handler = self.makeHandler(function: self.neverCalled(_:context:))
 
     handler.finish()
-    assertThat(recorder.metadata, .is(.nil()))
-    assertThat(recorder.messages, .isEmpty())
-    assertThat(recorder.status, .is(.nil()))
-    assertThat(recorder.trailers, .is(.nil()))
+    assertThat(self.recorder.metadata, .is(.nil()))
+    assertThat(self.recorder.messages, .isEmpty())
+    assertThat(self.recorder.status, .is(.nil()))
+    assertThat(self.recorder.trailers, .is(.nil()))
   }
 
   func testFinishAfterHeaders() {
-    let recorder = ResponseRecorder()
-    let handler = self.makeHandler(writer: recorder, function: self.neverCalled(_:context:))
+    let handler = self.makeHandler(function: self.neverCalled(_:context:))
     handler.receiveMetadata([:])
-    assertThat(recorder.metadata, .is([:]))
+    assertThat(self.recorder.metadata, .is([:]))
 
     handler.finish()
 
-    assertThat(recorder.messages, .isEmpty())
-    assertThat(recorder.status, .notNil(.hasCode(.unavailable)))
-    assertThat(recorder.trailers, .is([:]))
+    assertThat(self.recorder.messages, .isEmpty())
+    assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
+    assertThat(self.recorder.trailers, .is([:]))
   }
 
   func testFinishAfterMessage() {
-    let recorder = ResponseRecorder()
-    let handler = self.makeHandler(writer: recorder, function: self.neverComplete(_:context:))
+    let handler = self.makeHandler(function: self.neverComplete(_:context:))
 
     handler.receiveMetadata([:])
     handler.receiveMessage(ByteBuffer(string: "hello"))
     handler.finish()
 
-    assertThat(recorder.messages, .isEmpty())
-    assertThat(recorder.status, .notNil(.hasCode(.unavailable)))
-    assertThat(recorder.trailers, .is([:]))
+    assertThat(self.recorder.messages, .isEmpty())
+    assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
+    assertThat(self.recorder.trailers, .is([:]))
+  }
+}
+
+// MARK: - Client Streaming
+
+class ClientStreamingServerHandlerTests: GRPCTestCase, ServerHandlerTestCase {
+  let eventLoop = EmbeddedEventLoop()
+  let allocator = ByteBufferAllocator()
+  let recorder = ResponseRecorder()
+
+  private func makeHandler(
+    observerFactory: @escaping (UnaryResponseCallContext<String>)
+      -> EventLoopFuture<(StreamEvent<String>) -> Void>
+  ) -> ClientStreamingServerHandler<StringSerializer, StringDeserializer> {
+    return ClientStreamingServerHandler(
+      context: self.makeCallHandlerContext(),
+      requestDeserializer: StringDeserializer(),
+      responseSerializer: StringSerializer(),
+      interceptors: [],
+      observerFactory: observerFactory
+    )
+  }
+
+  private func joinWithSpaces(
+    context: UnaryResponseCallContext<String>
+  ) -> EventLoopFuture<(StreamEvent<String>) -> Void> {
+    var messages: [String] = []
+    func onEvent(_ event: StreamEvent<String>) {
+      switch event {
+      case let .message(message):
+        messages.append(message)
+      case .end:
+        context.responsePromise.succeed(messages.joined(separator: " "))
+      }
+    }
+    return context.eventLoop.makeSucceededFuture(onEvent(_:))
+  }
+
+  private func neverReceivesMessage(
+    context: UnaryResponseCallContext<String>
+  ) -> EventLoopFuture<(StreamEvent<String>) -> Void> {
+    func onEvent(_ event: StreamEvent<String>) {
+      switch event {
+      case let .message(message):
+        XCTFail("Unexpected message: '\(message)'")
+      case .end:
+        context.responsePromise.succeed("")
+      }
+    }
+    return context.eventLoop.makeSucceededFuture(onEvent(_:))
+  }
+
+  private func neverCalled(
+    context: UnaryResponseCallContext<String>
+  ) -> EventLoopFuture<(StreamEvent<String>) -> Void> {
+    XCTFail("This observer factory should never be called")
+    return context.eventLoop.makeFailedFuture(GRPCStatus(code: .aborted, message: nil))
+  }
+
+  func testHappyPath() {
+    let handler = self.makeHandler(observerFactory: self.joinWithSpaces(context:))
+
+    handler.receiveMetadata([:])
+    assertThat(self.recorder.metadata, .is([:]))
+
+    handler.receiveMessage(ByteBuffer(string: "1"))
+    handler.receiveMessage(ByteBuffer(string: "2"))
+    handler.receiveMessage(ByteBuffer(string: "3"))
+    handler.receiveEnd()
+    handler.finish()
+
+    assertThat(self.recorder.messages.first, .is(ByteBuffer(string: "1 2 3")))
+    assertThat(self.recorder.status, .notNil(.hasCode(.ok)))
+    assertThat(self.recorder.trailers, .is([:]))
+  }
+
+  func testThrowingDeserializer() {
+    let handler = ClientStreamingServerHandler(
+      context: self.makeCallHandlerContext(),
+      requestDeserializer: ThrowingStringDeserializer(),
+      responseSerializer: StringSerializer(),
+      interceptors: [],
+      observerFactory: self.neverReceivesMessage(context:)
+    )
+
+    handler.receiveMetadata([:])
+    assertThat(self.recorder.metadata, .is([:]))
+
+    let buffer = ByteBuffer(string: "hello")
+    handler.receiveMessage(buffer)
+
+    assertThat(self.recorder.messages, .isEmpty())
+    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
+  }
+
+  func testThrowingSerializer() {
+    let handler = ClientStreamingServerHandler(
+      context: self.makeCallHandlerContext(),
+      requestDeserializer: StringDeserializer(),
+      responseSerializer: ThrowingStringSerializer(),
+      interceptors: [],
+      observerFactory: self.joinWithSpaces(context:)
+    )
+
+    handler.receiveMetadata([:])
+    assertThat(self.recorder.metadata, .is([:]))
+
+    let buffer = ByteBuffer(string: "hello")
+    handler.receiveMessage(buffer)
+    handler.receiveEnd()
+
+    assertThat(self.recorder.messages, .isEmpty())
+    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
+  }
+
+  func testObserverFactoryReturnsFailedFuture() {
+    let handler = self.makeHandler { context in
+      context.eventLoop.makeFailedFuture(GRPCStatus(code: .unavailable, message: ":("))
+    }
+
+    handler.receiveMetadata([:])
+    assertThat(self.recorder.messages, .isEmpty())
+    assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
+    assertThat(self.recorder.status?.message, .is(":("))
+  }
+
+  func testDelayedObserverFactory() {
+    let promise = self.eventLoop.makePromise(of: Void.self)
+    let handler = self.makeHandler { context in
+      return promise.futureResult.flatMap {
+        self.joinWithSpaces(context: context)
+      }
+    }
+
+    handler.receiveMetadata([:])
+    // Queue up some messages.
+    handler.receiveMessage(ByteBuffer(string: "1"))
+    handler.receiveMessage(ByteBuffer(string: "2"))
+    handler.receiveMessage(ByteBuffer(string: "3"))
+    // Succeed the observer block.
+    promise.succeed(())
+    // A few more messages.
+    handler.receiveMessage(ByteBuffer(string: "4"))
+    handler.receiveMessage(ByteBuffer(string: "5"))
+    handler.receiveEnd()
+
+    assertThat(self.recorder.messages.first, .is(ByteBuffer(string: "1 2 3 4 5")))
+    assertThat(self.recorder.status, .notNil(.hasCode(.ok)))
+  }
+
+  func testDelayedObserverFactoryAllMessagesBeforeSucceeding() {
+    let promise = self.eventLoop.makePromise(of: Void.self)
+    let handler = self.makeHandler { context in
+      return promise.futureResult.flatMap {
+        self.joinWithSpaces(context: context)
+      }
+    }
+
+    handler.receiveMetadata([:])
+    // Queue up some messages.
+    handler.receiveMessage(ByteBuffer(string: "1"))
+    handler.receiveMessage(ByteBuffer(string: "2"))
+    handler.receiveMessage(ByteBuffer(string: "3"))
+    handler.receiveEnd()
+    // Succeed the observer block.
+    promise.succeed(())
+
+    assertThat(self.recorder.messages.first, .is(ByteBuffer(string: "1 2 3")))
+    assertThat(self.recorder.status, .notNil(.hasCode(.ok)))
+  }
+
+  func testReceiveMessageBeforeHeaders() {
+    let handler = self.makeHandler(observerFactory: self.neverCalled(context:))
+
+    handler.receiveMessage(ByteBuffer(string: "foo"))
+    assertThat(self.recorder.metadata, .is(.nil()))
+    assertThat(self.recorder.messages, .isEmpty())
+    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
+  }
+
+  func testReceiveMultipleHeaders() {
+    let handler = self.makeHandler(observerFactory: self.neverReceivesMessage(context:))
+
+    handler.receiveMetadata([:])
+    assertThat(self.recorder.metadata, .is([:]))
+
+    handler.receiveMetadata([:])
+    assertThat(self.recorder.messages, .isEmpty())
+    assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
+  }
+
+  func testFinishBeforeStarting() {
+    let handler = self.makeHandler(observerFactory: self.neverCalled(context:))
+
+    handler.finish()
+    assertThat(self.recorder.metadata, .is(.nil()))
+    assertThat(self.recorder.messages, .isEmpty())
+    assertThat(self.recorder.status, .is(.nil()))
+    assertThat(self.recorder.trailers, .is(.nil()))
+  }
+
+  func testFinishAfterHeaders() {
+    let handler = self.makeHandler(observerFactory: self.joinWithSpaces(context:))
+    handler.receiveMetadata([:])
+    assertThat(self.recorder.metadata, .is([:]))
+
+    handler.finish()
+
+    assertThat(self.recorder.messages, .isEmpty())
+    assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
+    assertThat(self.recorder.trailers, .is([:]))
+  }
+
+  func testFinishAfterMessage() {
+    let handler = self.makeHandler(observerFactory: self.joinWithSpaces(context:))
+
+    handler.receiveMetadata([:])
+    handler.receiveMessage(ByteBuffer(string: "hello"))
+    handler.finish()
+
+    assertThat(self.recorder.messages, .isEmpty())
+    assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
+    assertThat(self.recorder.trailers, .is([:]))
   }
 }
