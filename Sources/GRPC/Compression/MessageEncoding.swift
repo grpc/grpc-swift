@@ -16,15 +16,18 @@
 
 /// Whether compression should be enabled for the message.
 public struct Compression: Hashable {
-  private enum Wrapped: Hashable {
+  @usableFromInline
+  internal enum _Wrapped: Hashable {
     case enabled
     case disabled
     case deferToCallDefault
   }
 
-  private var wrapped: Wrapped
-  private init(_ wrapped: Wrapped) {
-    self.wrapped = wrapped
+  @usableFromInline
+  internal var _wrapped: _Wrapped
+
+  private init(_ wrapped: _Wrapped) {
+    self._wrapped = wrapped
   }
 
   /// Enable compression. Note that this will be ignored if compression has not been enabled or is
@@ -40,8 +43,9 @@ public struct Compression: Hashable {
 }
 
 extension Compression {
+  @inlinable
   internal func isEnabled(callDefault: Bool) -> Bool {
-    switch self.wrapped {
+    switch self._wrapped {
     case .enabled:
       return callDefault
     case .disabled:
