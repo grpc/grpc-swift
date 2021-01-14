@@ -133,7 +133,6 @@ let package = Package(
       dependencies: [
         "GRPC",
         "EchoModel",
-        "EchoImplementation",
         "NIO",
         "NIOSSL",
       ]

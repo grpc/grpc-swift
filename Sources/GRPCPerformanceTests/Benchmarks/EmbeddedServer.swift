@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import EchoImplementation
 import EchoModel
 import GRPC
 import Logging
@@ -21,25 +20,60 @@ import NIO
 import NIOHPACK
 import NIOHTTP2
 
-final class EmbeddedServerUnaryBenchmark: Benchmark {
-  private let count: Int
+final class EmbeddedServerChildChannelBenchmark: Benchmark {
   private let text: String
   private let providers: [Substring: CallHandlerProvider]
   private let logger: Logger
+  private let mode: Mode
 
-  static let headersPayload = HTTP2Frame.FramePayload.headers(.init(headers: [
-    ":path": "/echo.Echo/Get",
-    ":method": "POST",
-    "content-type": "application/grpc",
-  ]))
+  enum Mode {
+    case unary(rpcs: Int)
+    case clientStreaming(rpcs: Int, requestsPerRPC: Int)
+    case serverStreaming(rpcs: Int, responsesPerRPC: Int)
+    case bidirectional(rpcs: Int, requestsPerRPC: Int)
 
+    var method: String {
+      switch self {
+      case .unary:
+        return "Get"
+      case .clientStreaming:
+        return "Collect"
+      case .serverStreaming:
+        return "Expand"
+      case .bidirectional:
+        return "Update"
+      }
+    }
+  }
+
+  static func makeHeadersPayload(method: String) -> HTTP2Frame.FramePayload {
+    return .headers(.init(headers: [
+      ":path": "/echo.Echo/\(method)",
+      ":method": "POST",
+      "content-type": "application/grpc",
+    ]))
+  }
+
+  private var headersPayload: HTTP2Frame.FramePayload!
   private var requestPayload: HTTP2Frame.FramePayload!
+  private var requestPayloadWithEndStream: HTTP2Frame.FramePayload!
 
-  init(count: Int, text: String) {
-    self.count = count
+  private func makeChannel() throws -> EmbeddedChannel {
+    let channel = EmbeddedChannel()
+    try channel._configureForEmbeddedServerTest(
+      servicesByName: self.providers,
+      encoding: .disabled,
+      normalizeHeaders: true,
+      logger: self.logger
+    ).wait()
+    return channel
+  }
+
+  init(mode: Mode, text: String) {
+    self.mode = mode
     self.text = text
 
-    let echo = EchoProvider()
+    let echo = MinimalEchoProvider()
     self.providers = [echo.serviceName: echo]
     self.logger = Logger(label: "noop") { _ in
       SwiftLogNoOpLogHandler()
@@ -48,33 +82,61 @@ final class EmbeddedServerUnaryBenchmark: Benchmark {
 
   func setUp() throws {
     var buffer = ByteBuffer()
-    let serialized = try Echo_EchoRequest.with { $0.text = self.text }.serializedData()
+    let requestText: String
+
+    switch self.mode {
+    case .unary, .clientStreaming, .bidirectional:
+      requestText = self.text
+    case let .serverStreaming(_, responsesPerRPC):
+      // For server streaming the request is split on spaces. We'll build up a request based on text
+      // and the number of responses we want.
+      var text = String()
+      text.reserveCapacity((self.text.count + 1) * responsesPerRPC)
+      for _ in 0 ..< responsesPerRPC {
+        text.append(self.text)
+        text.append(" ")
+      }
+      requestText = text
+    }
+
+    let serialized = try Echo_EchoRequest.with { $0.text = requestText }.serializedData()
     buffer.reserveCapacity(5 + serialized.count)
     buffer.writeInteger(UInt8(0)) // not compressed
     buffer.writeInteger(UInt32(serialized.count)) // length
     buffer.writeData(serialized)
-    self.requestPayload = .data(.init(data: .byteBuffer(buffer), endStream: true))
+
+    self.requestPayload = .data(.init(data: .byteBuffer(buffer), endStream: false))
+    self.requestPayloadWithEndStream = .data(.init(data: .byteBuffer(buffer), endStream: true))
+    self.headersPayload = Self.makeHeadersPayload(method: self.mode.method)
   }
 
   func tearDown() throws {}
 
   func run() throws {
-    for _ in 0 ..< self.count {
-      let channel = EmbeddedChannel()
-      try channel._configureForEmbeddedServerTest(
-        servicesByName: self.providers,
-        encoding: .disabled,
-        normalizeHeaders: true,
-        logger: self.logger
-      ).wait()
+    switch self.mode {
+    case let .unary(rpcs):
+      try self.run(rpcs: rpcs, requestsPerRPC: 1)
+    case let .clientStreaming(rpcs, requestsPerRPC):
+      try self.run(rpcs: rpcs, requestsPerRPC: requestsPerRPC)
+    case let .serverStreaming(rpcs, _):
+      try self.run(rpcs: rpcs, requestsPerRPC: 1)
+    case let .bidirectional(rpcs, requestsPerRPC):
+      try self.run(rpcs: rpcs, requestsPerRPC: requestsPerRPC)
+    }
+  }
 
-      try channel.writeInbound(Self.headersPayload)
-      try channel.writeInbound(self.requestPayload)
+  func run(rpcs: Int, requestsPerRPC: Int) throws {
+    for _ in 0 ..< rpcs {
+      let channel = try self.makeChannel()
+      try channel.writeInbound(self.headersPayload)
+      for _ in 0 ..< (requestsPerRPC - 1) {
+        try channel.writeInbound(self.requestPayload)
+      }
+      try channel.writeInbound(self.requestPayloadWithEndStream)
 
-      // headers, data, trailers
-      _ = try channel.readOutbound(as: HTTP2Frame.FramePayload.self)
-      _ = try channel.readOutbound(as: HTTP2Frame.FramePayload.self)
-      _ = try channel.readOutbound(as: HTTP2Frame.FramePayload.self)
+      while try channel.readOutbound(as: HTTP2Frame.FramePayload.self) != nil {
+        ()
+      }
     }
   }
 }
