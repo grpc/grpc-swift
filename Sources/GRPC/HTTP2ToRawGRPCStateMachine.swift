@@ -29,7 +29,8 @@ struct HTTP2ToRawGRPCStateMachine {
   /// will trigger a copy on write for its heap allocated data. Temporarily setting the `self.state`
   /// to `._modifying` allows us to avoid an extra reference to any heap allocated data and
   /// therefore avoid a copy on write.
-  private mutating func withStateAvoidingCoWs(_ body: (inout State) -> Action) -> Action {
+  @inlinable
+  internal mutating func withStateAvoidingCoWs<Action>(_ body: (inout State) -> Action) -> Action {
     var state: State = ._modifying
     swap(&self.state, &state)
     defer {
@@ -222,51 +223,47 @@ extension HTTP2ToRawGRPCStateMachine {
 }
 
 extension HTTP2ToRawGRPCStateMachine {
-  /// Actions to take as a result of interacting with the state machine.
-  enum Action {
-    /// No action is required.
-    case none
-
-    /// Configure the pipeline using the provided call handler.
-    case configure(GRPCCallHandler)
-
-    /// An error was caught, fire it down the pipeline.
-    case errorCaught(Error)
-
-    /// Forward the request headers to the next handler.
+  enum PipelineConfiguredAction {
+    /// Forward the given headers.
     case forwardHeaders(HPACKHeaders)
-
-    /// Forward the buffer to the next handler.
-    case forwardMessage(ByteBuffer)
-
-    /// Forward the buffer to the next handler and then send end stream.
-    case forwardMessageAndEnd(ByteBuffer)
-
-    /// Forward the request headers to the next handler then try reading request messages.
-    case forwardHeadersThenReadNextMessage(HPACKHeaders)
-
-    /// Forward the buffer to the next handler then try reading request messages.
-    case forwardMessageThenReadNextMessage(ByteBuffer)
-
-    /// Forward end of stream to the next handler.
-    case forwardEnd
-
-    /// Try to read a request message.
-    case readNextRequest
-
-    /// Write the frame to the channel, optionally insert an extra flush (i.e. if the state machine
-    /// is turning a request around rather than processing a response part).
-    case write(HTTP2Frame.FramePayload, EventLoopPromise<Void>?, flush: Bool)
-
-    /// Complete the promise with the given result.
-    case completePromise(EventLoopPromise<Void>?, Result<Void, Error>)
+    /// Forward the given headers and try reading the next message.
+    case forwardHeadersAndRead(HPACKHeaders)
   }
 
-  struct StateAndAction {
+  enum ReceiveHeadersAction {
+    /// Configure the pipeline with the given call handler.
+    case configurePipeline(GRPCCallHandler)
+    /// Reject the RPC by writing out the given headers and setting end-stream.
+    case rejectRPC(HPACKHeaders)
+  }
+
+  enum ReadNextMessageAction {
+    /// Do nothing.
+    case none
+    /// Forward the buffer.
+    case forwardMessage(ByteBuffer)
+    /// Forward the buffer and an 'end' of stream request part.
+    case forwardMessageAndEnd(ByteBuffer)
+    /// Forward the buffer and try reading the next message.
+    case forwardMessageThenReadNextMessage(ByteBuffer)
+    /// Forward the 'end' of stream request part.
+    case forwardEnd
+    /// Throw an error down the pipeline.
+    case errorCaught(Error)
+  }
+
+  struct StateAndReceiveHeadersAction {
     /// The next state.
     var state: State
     /// The action to take.
-    var action: Action
+    var action: ReceiveHeadersAction
+  }
+
+  struct StateAndReceiveDataAction {
+    /// The next state.
+    var state: State
+    /// Whether the caller should try reading the next message.
+    var tryReading: Bool
   }
 }
 
@@ -282,7 +279,7 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
     logger: Logger,
     allocator: ByteBufferAllocator,
     responseWriter: GRPCServerResponseWriter
-  ) -> HTTP2ToRawGRPCStateMachine.StateAndAction {
+  ) -> HTTP2ToRawGRPCStateMachine.StateAndReceiveHeadersAction {
     // Extract and validate the content type. If it's nil we need to close.
     guard let contentType = self.extractContentType(from: headers) else {
       return self.unsupportedContentType()
@@ -351,12 +348,12 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
 
     return .init(
       state: .requestOpenResponseIdle(requestOpenResponseIdle),
-      action: .configure(handler)
+      action: .configurePipeline(handler)
     )
   }
 
   /// The 'content-type' is not supported; close with status code 415.
-  private func unsupportedContentType() -> HTTP2ToRawGRPCStateMachine.StateAndAction {
+  private func unsupportedContentType() -> HTTP2ToRawGRPCStateMachine.StateAndReceiveHeadersAction {
     // From: https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md
     //
     //   If 'content-type' does not begin with "application/grpc", gRPC servers SHOULD respond
@@ -366,7 +363,7 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
     let trailers = HPACKHeaders([(":status", "415")])
     return .init(
       state: .requestClosedResponseClosed,
-      action: .write(.headers(.init(headers: trailers, endStream: true)), nil, flush: true)
+      action: .rejectRPC(trailers)
     )
   }
 
@@ -374,7 +371,7 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
   private func methodNotImplemented(
     _ path: String,
     contentType: ContentType
-  ) -> HTTP2ToRawGRPCStateMachine.StateAndAction {
+  ) -> HTTP2ToRawGRPCStateMachine.StateAndReceiveHeadersAction {
     let trailers = HTTP2ToRawGRPCStateMachine.makeResponseTrailersOnly(
       for: GRPCStatus(code: .unimplemented, message: "'\(path)' is not implemented"),
       contentType: contentType,
@@ -385,7 +382,7 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
 
     return .init(
       state: .requestClosedResponseClosed,
-      action: .write(.headers(.init(headers: trailers, endStream: true)), nil, flush: true)
+      action: .rejectRPC(trailers)
     )
   }
 
@@ -395,7 +392,7 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
     status: GRPCStatus,
     acceptableRequestEncoding: String?,
     contentType: ContentType
-  ) -> HTTP2ToRawGRPCStateMachine.StateAndAction {
+  ) -> HTTP2ToRawGRPCStateMachine.StateAndReceiveHeadersAction {
     let trailers = HTTP2ToRawGRPCStateMachine.makeResponseTrailersOnly(
       for: status,
       contentType: contentType,
@@ -406,7 +403,7 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
 
     return .init(
       state: .requestClosedResponseClosed,
-      action: .write(.headers(.init(headers: trailers, endStream: true)), nil, flush: true)
+      action: .rejectRPC(trailers)
     )
   }
 
@@ -552,39 +549,39 @@ extension HTTP2ToRawGRPCStateMachine.RequestOpenResponseIdleState {
   mutating func receive(
     buffer: inout ByteBuffer,
     endStream: Bool
-  ) -> HTTP2ToRawGRPCStateMachine.StateAndAction {
+  ) -> HTTP2ToRawGRPCStateMachine.StateAndReceiveDataAction {
     // Append the bytes to the reader.
     self.reader.append(buffer: &buffer)
 
     let state: HTTP2ToRawGRPCStateMachine.State
-    let action: HTTP2ToRawGRPCStateMachine.Action
+    let tryReading: Bool
 
     switch (self.configurationState.isConfigured, endStream) {
     case (true, true):
       /// Configured and end stream: read from the buffer, end will be sent as a result of draining
       /// the reader in the next state.
       state = .requestClosedResponseIdle(.init(from: self))
-      action = .readNextRequest
+      tryReading = true
 
     case (true, false):
       /// Configured but not end stream, just read from the buffer.
       state = .requestOpenResponseIdle(self)
-      action = .readNextRequest
+      tryReading = true
 
     case (false, true):
       // Not configured yet, but end of stream. Request stream is now closed but there's no point
       // reading yet.
       state = .requestClosedResponseIdle(.init(from: self))
-      action = .none
+      tryReading = false
 
     case (false, false):
       // Not configured yet, not end stream. No point reading a message yet since we don't have
       // anywhere to deliver it.
       state = .requestOpenResponseIdle(self)
-      action = .none
+      tryReading = false
     }
 
-    return .init(state: state, action: action)
+    return .init(state: state, tryReading: tryReading)
   }
 }
 
@@ -592,7 +589,7 @@ extension HTTP2ToRawGRPCStateMachine.RequestOpenResponseOpenState {
   mutating func receive(
     buffer: inout ByteBuffer,
     endStream: Bool
-  ) -> HTTP2ToRawGRPCStateMachine.StateAndAction {
+  ) -> HTTP2ToRawGRPCStateMachine.StateAndReceiveDataAction {
     self.reader.append(buffer: &buffer)
 
     let state: HTTP2ToRawGRPCStateMachine.State
@@ -605,48 +602,32 @@ extension HTTP2ToRawGRPCStateMachine.RequestOpenResponseOpenState {
       state = .requestOpenResponseOpen(self)
     }
 
-    return .init(state: state, action: .readNextRequest)
+    return .init(state: state, tryReading: true)
   }
 }
 
 // MARK: - Send Headers
 
 extension HTTP2ToRawGRPCStateMachine.RequestOpenResponseIdleState {
-  func send(
-    headers userProvidedHeaders: HPACKHeaders,
-    promise: EventLoopPromise<Void>?
-  ) -> HTTP2ToRawGRPCStateMachine.StateAndAction {
-    let headers = HTTP2ToRawGRPCStateMachine.makeResponseHeaders(
+  func send(headers userProvidedHeaders: HPACKHeaders) -> HPACKHeaders {
+    return HTTP2ToRawGRPCStateMachine.makeResponseHeaders(
       contentType: self.contentType,
       responseEncoding: self.responseEncoding,
       acceptableRequestEncoding: self.acceptEncoding,
       userProvidedHeaders: userProvidedHeaders,
       normalizeUserProvidedHeaders: self.normalizeHeaders
-    )
-
-    return .init(
-      state: .requestOpenResponseOpen(.init(from: self)),
-      action: .write(.headers(.init(headers: headers)), promise, flush: false)
     )
   }
 }
 
 extension HTTP2ToRawGRPCStateMachine.RequestClosedResponseIdleState {
-  func send(
-    headers userProvidedHeaders: HPACKHeaders,
-    promise: EventLoopPromise<Void>?
-  ) -> HTTP2ToRawGRPCStateMachine.StateAndAction {
-    let headers = HTTP2ToRawGRPCStateMachine.makeResponseHeaders(
+  func send(headers userProvidedHeaders: HPACKHeaders) -> HPACKHeaders {
+    return HTTP2ToRawGRPCStateMachine.makeResponseHeaders(
       contentType: self.contentType,
       responseEncoding: self.responseEncoding,
       acceptableRequestEncoding: self.acceptEncoding,
       userProvidedHeaders: userProvidedHeaders,
       normalizeUserProvidedHeaders: self.normalizeHeaders
-    )
-
-    return .init(
-      state: .requestClosedResponseOpen(.init(from: self)),
-      action: .write(.headers(.init(headers: headers)), promise, flush: false)
     )
   }
 }
@@ -658,14 +639,13 @@ extension HTTP2ToRawGRPCStateMachine {
     _ buffer: ByteBuffer,
     compress: Bool,
     allocator: ByteBufferAllocator,
-    promise: EventLoopPromise<Void>?,
     writer: LengthPrefixedMessageWriter
-  ) -> Action {
+  ) -> Result<ByteBuffer, Error> {
     do {
       let prefixed = try writer.write(buffer: buffer, allocator: allocator, compressed: compress)
-      return .write(.data(.init(data: .byteBuffer(prefixed))), promise, flush: false)
+      return .success(prefixed)
     } catch {
-      return .completePromise(promise, .failure(error))
+      return .failure(error)
     }
   }
 }
@@ -674,17 +654,14 @@ extension HTTP2ToRawGRPCStateMachine.RequestOpenResponseOpenState {
   func send(
     buffer: ByteBuffer,
     allocator: ByteBufferAllocator,
-    compress: Bool,
-    promise: EventLoopPromise<Void>?
-  ) -> HTTP2ToRawGRPCStateMachine.StateAndAction {
-    let action = HTTP2ToRawGRPCStateMachine.writeGRPCFramedMessage(
+    compress: Bool
+  ) -> Result<ByteBuffer, Error> {
+    return HTTP2ToRawGRPCStateMachine.writeGRPCFramedMessage(
       buffer,
       compress: compress,
       allocator: allocator,
-      promise: promise,
       writer: self.writer
     )
-    return .init(state: .requestOpenResponseOpen(self), action: action)
   }
 }
 
@@ -692,17 +669,14 @@ extension HTTP2ToRawGRPCStateMachine.RequestClosedResponseOpenState {
   func send(
     buffer: ByteBuffer,
     allocator: ByteBufferAllocator,
-    compress: Bool,
-    promise: EventLoopPromise<Void>?
-  ) -> HTTP2ToRawGRPCStateMachine.StateAndAction {
-    let action = HTTP2ToRawGRPCStateMachine.writeGRPCFramedMessage(
+    compress: Bool
+  ) -> Result<ByteBuffer, Error> {
+    return HTTP2ToRawGRPCStateMachine.writeGRPCFramedMessage(
       buffer,
       compress: compress,
       allocator: allocator,
-      promise: promise,
       writer: self.writer
     )
-    return .init(state: .requestClosedResponseOpen(self), action: action)
   }
 }
 
@@ -711,20 +685,14 @@ extension HTTP2ToRawGRPCStateMachine.RequestClosedResponseOpenState {
 extension HTTP2ToRawGRPCStateMachine.RequestOpenResponseIdleState {
   func send(
     status: GRPCStatus,
-    trailers userProvidedTrailers: HPACKHeaders,
-    promise: EventLoopPromise<Void>?
-  ) -> HTTP2ToRawGRPCStateMachine.StateAndAction {
-    let trailers = HTTP2ToRawGRPCStateMachine.makeResponseTrailersOnly(
+    trailers userProvidedTrailers: HPACKHeaders
+  ) -> HPACKHeaders {
+    return HTTP2ToRawGRPCStateMachine.makeResponseTrailersOnly(
       for: status,
       contentType: self.contentType,
       acceptableRequestEncoding: self.acceptEncoding,
       userProvidedHeaders: userProvidedTrailers,
       normalizeUserProvidedHeaders: self.normalizeHeaders
-    )
-
-    return .init(
-      state: .requestClosedResponseClosed,
-      action: .write(.headers(.init(headers: trailers, endStream: true)), promise, flush: false)
     )
   }
 }
@@ -732,20 +700,14 @@ extension HTTP2ToRawGRPCStateMachine.RequestOpenResponseIdleState {
 extension HTTP2ToRawGRPCStateMachine.RequestClosedResponseIdleState {
   func send(
     status: GRPCStatus,
-    trailers userProvidedTrailers: HPACKHeaders,
-    promise: EventLoopPromise<Void>?
-  ) -> HTTP2ToRawGRPCStateMachine.StateAndAction {
-    let trailers = HTTP2ToRawGRPCStateMachine.makeResponseTrailersOnly(
+    trailers userProvidedTrailers: HPACKHeaders
+  ) -> HPACKHeaders {
+    return HTTP2ToRawGRPCStateMachine.makeResponseTrailersOnly(
       for: status,
       contentType: self.contentType,
       acceptableRequestEncoding: self.acceptEncoding,
       userProvidedHeaders: userProvidedTrailers,
       normalizeUserProvidedHeaders: self.normalizeHeaders
-    )
-
-    return .init(
-      state: .requestClosedResponseClosed,
-      action: .write(.headers(.init(headers: trailers, endStream: true)), promise, flush: false)
     )
   }
 }
@@ -753,18 +715,12 @@ extension HTTP2ToRawGRPCStateMachine.RequestClosedResponseIdleState {
 extension HTTP2ToRawGRPCStateMachine.RequestClosedResponseOpenState {
   func send(
     status: GRPCStatus,
-    trailers userProvidedTrailers: HPACKHeaders,
-    promise: EventLoopPromise<Void>?
-  ) -> HTTP2ToRawGRPCStateMachine.StateAndAction {
-    let trailers = HTTP2ToRawGRPCStateMachine.makeResponseTrailers(
+    trailers userProvidedTrailers: HPACKHeaders
+  ) -> HPACKHeaders {
+    return HTTP2ToRawGRPCStateMachine.makeResponseTrailers(
       for: status,
       userProvidedHeaders: userProvidedTrailers,
       normalizeUserProvidedHeaders: true
-    )
-
-    return .init(
-      state: .requestClosedResponseClosed,
-      action: .write(.headers(.init(headers: trailers, endStream: true)), promise, flush: false)
     )
   }
 }
@@ -772,18 +728,12 @@ extension HTTP2ToRawGRPCStateMachine.RequestClosedResponseOpenState {
 extension HTTP2ToRawGRPCStateMachine.RequestOpenResponseOpenState {
   func send(
     status: GRPCStatus,
-    trailers userProvidedTrailers: HPACKHeaders,
-    promise: EventLoopPromise<Void>?
-  ) -> HTTP2ToRawGRPCStateMachine.StateAndAction {
-    let trailers = HTTP2ToRawGRPCStateMachine.makeResponseTrailers(
+    trailers userProvidedTrailers: HPACKHeaders
+  ) -> HPACKHeaders {
+    return HTTP2ToRawGRPCStateMachine.makeResponseTrailers(
       for: status,
       userProvidedHeaders: userProvidedTrailers,
       normalizeUserProvidedHeaders: true
-    )
-
-    return .init(
-      state: .requestClosedResponseClosed,
-      action: .write(.headers(.init(headers: trailers, endStream: true)), promise, flush: false)
     )
   }
 }
@@ -791,34 +741,30 @@ extension HTTP2ToRawGRPCStateMachine.RequestOpenResponseOpenState {
 // MARK: - Pipeline Configured
 
 extension HTTP2ToRawGRPCStateMachine.RequestOpenResponseIdleState {
-  mutating func pipelineConfigured() -> HTTP2ToRawGRPCStateMachine.StateAndAction {
+  mutating func pipelineConfigured() -> HTTP2ToRawGRPCStateMachine.PipelineConfiguredAction {
     let headers = self.configurationState.configured()
-    let action: HTTP2ToRawGRPCStateMachine.Action
+    let action: HTTP2ToRawGRPCStateMachine.PipelineConfiguredAction
 
     // If there are unprocessed bytes then we need to read messages as well.
     let hasUnprocessedBytes = self.reader.unprocessedBytes != 0
 
     if hasUnprocessedBytes {
       // If there are unprocessed bytes, we need to try to read after sending the metadata.
-      action = .forwardHeadersThenReadNextMessage(headers)
+      action = .forwardHeadersAndRead(headers)
     } else {
       // No unprocessed bytes; the reader is empty. Just send the metadata.
       action = .forwardHeaders(headers)
     }
 
-    return .init(state: .requestOpenResponseIdle(self), action: action)
+    return action
   }
 }
 
 extension HTTP2ToRawGRPCStateMachine.RequestClosedResponseIdleState {
-  mutating func pipelineConfigured() -> HTTP2ToRawGRPCStateMachine.StateAndAction {
+  mutating func pipelineConfigured() -> HTTP2ToRawGRPCStateMachine.PipelineConfiguredAction {
     let headers = self.configurationState.configured()
-
-    return .init(
-      state: .requestClosedResponseIdle(self),
-      // Since we're already closed, we need to forward the headers and start reading.
-      action: .forwardHeadersThenReadNextMessage(headers)
-    )
+    // Since we're already closed, we need to forward the headers and start reading.
+    return .forwardHeadersAndRead(headers)
   }
 }
 
@@ -828,7 +774,7 @@ extension HTTP2ToRawGRPCStateMachine {
   static func read(
     from reader: inout LengthPrefixedMessageReader,
     requestStreamClosed: Bool
-  ) -> HTTP2ToRawGRPCStateMachine.Action {
+  ) -> HTTP2ToRawGRPCStateMachine.ReadNextMessageAction {
     do {
       // Try to read a message.
       guard let buffer = try reader.nextMessage() else {
@@ -854,30 +800,26 @@ extension HTTP2ToRawGRPCStateMachine {
 }
 
 extension HTTP2ToRawGRPCStateMachine.RequestOpenResponseIdleState {
-  mutating func readNextRequest() -> HTTP2ToRawGRPCStateMachine.StateAndAction {
-    let action = HTTP2ToRawGRPCStateMachine.read(from: &self.reader, requestStreamClosed: false)
-    return .init(state: .requestOpenResponseIdle(self), action: action)
+  mutating func readNextRequest() -> HTTP2ToRawGRPCStateMachine.ReadNextMessageAction {
+    return HTTP2ToRawGRPCStateMachine.read(from: &self.reader, requestStreamClosed: false)
   }
 }
 
 extension HTTP2ToRawGRPCStateMachine.RequestOpenResponseOpenState {
-  mutating func readNextRequest() -> HTTP2ToRawGRPCStateMachine.StateAndAction {
-    let action = HTTP2ToRawGRPCStateMachine.read(from: &self.reader, requestStreamClosed: false)
-    return .init(state: .requestOpenResponseOpen(self), action: action)
+  mutating func readNextRequest() -> HTTP2ToRawGRPCStateMachine.ReadNextMessageAction {
+    return HTTP2ToRawGRPCStateMachine.read(from: &self.reader, requestStreamClosed: false)
   }
 }
 
 extension HTTP2ToRawGRPCStateMachine.RequestClosedResponseIdleState {
-  mutating func readNextRequest() -> HTTP2ToRawGRPCStateMachine.StateAndAction {
-    let action = HTTP2ToRawGRPCStateMachine.read(from: &self.reader, requestStreamClosed: true)
-    return .init(state: .requestClosedResponseIdle(self), action: action)
+  mutating func readNextRequest() -> HTTP2ToRawGRPCStateMachine.ReadNextMessageAction {
+    return HTTP2ToRawGRPCStateMachine.read(from: &self.reader, requestStreamClosed: true)
   }
 }
 
 extension HTTP2ToRawGRPCStateMachine.RequestClosedResponseOpenState {
-  mutating func readNextRequest() -> HTTP2ToRawGRPCStateMachine.StateAndAction {
-    let action = HTTP2ToRawGRPCStateMachine.read(from: &self.reader, requestStreamClosed: true)
-    return .init(state: .requestClosedResponseOpen(self), action: action)
+  mutating func readNextRequest() -> HTTP2ToRawGRPCStateMachine.ReadNextMessageAction {
+    return HTTP2ToRawGRPCStateMachine.read(from: &self.reader, requestStreamClosed: true)
   }
 }
 
@@ -893,7 +835,7 @@ extension HTTP2ToRawGRPCStateMachine {
     logger: Logger,
     allocator: ByteBufferAllocator,
     responseWriter: GRPCServerResponseWriter
-  ) -> Action {
+  ) -> ReceiveHeadersAction {
     return self.withStateAvoidingCoWs { state in
       state.receive(
         headers: headers,
@@ -908,51 +850,51 @@ extension HTTP2ToRawGRPCStateMachine {
   }
 
   /// Receive request buffer.
-  mutating func receive(buffer: inout ByteBuffer, endStream: Bool) -> Action {
+  /// - Parameters:
+  ///   - buffer: The received buffer.
+  ///   - endStream: Whether end stream was set.
+  /// - Returns: Returns whether the caller should try to read a message from the buffer.
+  mutating func receive(buffer: inout ByteBuffer, endStream: Bool) -> Bool {
     return self.withStateAvoidingCoWs { state in
       state.receive(buffer: &buffer, endStream: endStream)
     }
   }
 
   /// Send response headers.
-  mutating func send(headers: HPACKHeaders, promise: EventLoopPromise<Void>?) -> Action {
+  mutating func send(headers: HPACKHeaders) -> Result<HPACKHeaders, Error> {
     return self.withStateAvoidingCoWs { state in
-      state.send(headers: headers, promise: promise)
+      state.send(headers: headers)
     }
   }
 
   /// Send a response buffer.
-  mutating func send(
+  func send(
     buffer: ByteBuffer,
     allocator: ByteBufferAllocator,
-    compress: Bool,
-    promise: EventLoopPromise<Void>?
-  ) -> Action {
-    return self.withStateAvoidingCoWs { state in
-      state.send(buffer: buffer, allocator: allocator, compress: compress, promise: promise)
-    }
+    compress: Bool
+  ) -> Result<ByteBuffer, Error> {
+    return self.state.send(buffer: buffer, allocator: allocator, compress: compress)
   }
 
   /// Send status and trailers.
   mutating func send(
     status: GRPCStatus,
-    trailers: HPACKHeaders,
-    promise: EventLoopPromise<Void>?
-  ) -> Action {
+    trailers: HPACKHeaders
+  ) -> Result<HPACKHeaders, Error> {
     return self.withStateAvoidingCoWs { state in
-      state.send(status: status, trailers: trailers, promise: promise)
+      state.send(status: status, trailers: trailers)
     }
   }
 
   /// The pipeline has been configured with a service provider.
-  mutating func pipelineConfigured() -> Action {
+  mutating func pipelineConfigured() -> PipelineConfiguredAction {
     return self.withStateAvoidingCoWs { state in
       state.pipelineConfigured()
     }
   }
 
   /// Try to read a request message.
-  mutating func readNextRequest() -> Action {
+  mutating func readNextRequest() -> ReadNextMessageAction {
     return self.withStateAvoidingCoWs { state in
       state.readNextRequest()
     }
@@ -960,20 +902,20 @@ extension HTTP2ToRawGRPCStateMachine {
 }
 
 extension HTTP2ToRawGRPCStateMachine.State {
-  mutating func pipelineConfigured() -> HTTP2ToRawGRPCStateMachine.Action {
+  mutating func pipelineConfigured() -> HTTP2ToRawGRPCStateMachine.PipelineConfiguredAction {
     switch self {
     case .requestIdleResponseIdle:
       preconditionFailure("Invalid state: pipeline configured before receiving request headers")
 
     case var .requestOpenResponseIdle(state):
-      let stateAndAction = state.pipelineConfigured()
-      self = stateAndAction.state
-      return stateAndAction.action
+      let action = state.pipelineConfigured()
+      self = .requestOpenResponseIdle(state)
+      return action
 
     case var .requestClosedResponseIdle(state):
-      let stateAndAction = state.pipelineConfigured()
-      self = stateAndAction.state
-      return stateAndAction.action
+      let action = state.pipelineConfigured()
+      self = .requestClosedResponseIdle(state)
+      return action
 
     case .requestOpenResponseOpen,
          .requestClosedResponseOpen,
@@ -993,7 +935,7 @@ extension HTTP2ToRawGRPCStateMachine.State {
     logger: Logger,
     allocator: ByteBufferAllocator,
     responseWriter: GRPCServerResponseWriter
-  ) -> HTTP2ToRawGRPCStateMachine.Action {
+  ) -> HTTP2ToRawGRPCStateMachine.ReceiveHeadersAction {
     switch self {
     // This is the only state in which we can receive headers. Everything else is invalid.
     case let .requestIdleResponseIdle(state):
@@ -1023,8 +965,7 @@ extension HTTP2ToRawGRPCStateMachine.State {
   }
 
   /// Receive a buffer from the client.
-  mutating func receive(buffer: inout ByteBuffer, endStream: Bool) -> HTTP2ToRawGRPCStateMachine
-    .Action {
+  mutating func receive(buffer: inout ByteBuffer, endStream: Bool) -> Bool {
     switch self {
     case .requestIdleResponseIdle:
       /// This isn't allowed: we must receive the request headers first.
@@ -1033,12 +974,12 @@ extension HTTP2ToRawGRPCStateMachine.State {
     case var .requestOpenResponseIdle(state):
       let stateAndAction = state.receive(buffer: &buffer, endStream: endStream)
       self = stateAndAction.state
-      return stateAndAction.action
+      return stateAndAction.tryReading
 
     case var .requestOpenResponseOpen(state):
       let stateAndAction = state.receive(buffer: &buffer, endStream: endStream)
       self = stateAndAction.state
-      return stateAndAction.action
+      return stateAndAction.tryReading
 
     case .requestClosedResponseIdle,
          .requestClosedResponseOpen:
@@ -1046,37 +987,37 @@ extension HTTP2ToRawGRPCStateMachine.State {
 
     case .requestClosedResponseClosed:
       // This is okay: we could have closed before receiving end.
-      return .none
+      return false
 
     case ._modifying:
       preconditionFailure("Left in modifying state")
     }
   }
 
-  mutating func readNextRequest() -> HTTP2ToRawGRPCStateMachine.Action {
+  mutating func readNextRequest() -> HTTP2ToRawGRPCStateMachine.ReadNextMessageAction {
     switch self {
     case .requestIdleResponseIdle:
       preconditionFailure("Invalid state")
 
     case var .requestOpenResponseIdle(state):
-      let stateAndAction = state.readNextRequest()
-      self = stateAndAction.state
-      return stateAndAction.action
+      let action = state.readNextRequest()
+      self = .requestOpenResponseIdle(state)
+      return action
 
     case var .requestOpenResponseOpen(state):
-      let stateAndAction = state.readNextRequest()
-      self = stateAndAction.state
-      return stateAndAction.action
+      let action = state.readNextRequest()
+      self = .requestOpenResponseOpen(state)
+      return action
 
     case var .requestClosedResponseIdle(state):
-      let stateAndAction = state.readNextRequest()
-      self = stateAndAction.state
-      return stateAndAction.action
+      let action = state.readNextRequest()
+      self = .requestClosedResponseIdle(state)
+      return action
 
     case var .requestClosedResponseOpen(state):
-      let stateAndAction = state.readNextRequest()
-      self = stateAndAction.state
-      return stateAndAction.action
+      let action = state.readNextRequest()
+      self = .requestClosedResponseOpen(state)
+      return action
 
     case .requestClosedResponseClosed:
       return .none
@@ -1086,40 +1027,36 @@ extension HTTP2ToRawGRPCStateMachine.State {
     }
   }
 
-  mutating func send(
-    headers: HPACKHeaders,
-    promise: EventLoopPromise<Void>?
-  ) -> HTTP2ToRawGRPCStateMachine.Action {
+  mutating func send(headers: HPACKHeaders) -> Result<HPACKHeaders, Error> {
     switch self {
     case .requestIdleResponseIdle:
       preconditionFailure("Invalid state: the request stream isn't open")
 
     case let .requestOpenResponseIdle(state):
-      let stateAndAction = state.send(headers: headers, promise: promise)
-      self = stateAndAction.state
-      return stateAndAction.action
+      let headers = state.send(headers: headers)
+      self = .requestOpenResponseOpen(.init(from: state))
+      return .success(headers)
 
     case let .requestClosedResponseIdle(state):
-      let stateAndAction = state.send(headers: headers, promise: promise)
-      self = stateAndAction.state
-      return stateAndAction.action
+      let headers = state.send(headers: headers)
+      self = .requestClosedResponseOpen(.init(from: state))
+      return .success(headers)
 
     case .requestOpenResponseOpen,
          .requestClosedResponseOpen,
          .requestClosedResponseClosed:
-      return .completePromise(promise, .failure(GRPCError.AlreadyComplete()))
+      return .failure(GRPCError.AlreadyComplete())
 
     case ._modifying:
       preconditionFailure("Left in modifying state")
     }
   }
 
-  mutating func send(
+  func send(
     buffer: ByteBuffer,
     allocator: ByteBufferAllocator,
-    compress: Bool,
-    promise: EventLoopPromise<Void>?
-  ) -> HTTP2ToRawGRPCStateMachine.Action {
+    compress: Bool
+  ) -> Result<ByteBuffer, Error> {
     switch self {
     case .requestIdleResponseIdle:
       preconditionFailure("Invalid state: the request stream is still closed")
@@ -1127,30 +1064,24 @@ extension HTTP2ToRawGRPCStateMachine.State {
     case .requestOpenResponseIdle,
          .requestClosedResponseIdle:
       let error = GRPCError.InvalidState("Response headers must be sent before response message")
-      return .completePromise(promise, .failure(error))
+      return .failure(error)
 
     case let .requestOpenResponseOpen(state):
-      let stateAndAction = state.send(
+      return state.send(
         buffer: buffer,
         allocator: allocator,
-        compress: compress,
-        promise: promise
+        compress: compress
       )
-      self = stateAndAction.state
-      return stateAndAction.action
 
     case let .requestClosedResponseOpen(state):
-      let stateAndAction = state.send(
+      return state.send(
         buffer: buffer,
         allocator: allocator,
-        compress: compress,
-        promise: promise
+        compress: compress
       )
-      self = stateAndAction.state
-      return stateAndAction.action
 
     case .requestClosedResponseClosed:
-      return .completePromise(promise, .failure(GRPCError.AlreadyComplete()))
+      return .failure(GRPCError.AlreadyComplete())
 
     case ._modifying:
       preconditionFailure("Left in modifying state")
@@ -1159,35 +1090,30 @@ extension HTTP2ToRawGRPCStateMachine.State {
 
   mutating func send(
     status: GRPCStatus,
-    trailers: HPACKHeaders,
-    promise: EventLoopPromise<Void>?
-  ) -> HTTP2ToRawGRPCStateMachine.Action {
+    trailers: HPACKHeaders
+  ) -> Result<HPACKHeaders, Error> {
     switch self {
     case .requestIdleResponseIdle:
       preconditionFailure("Invalid state: the request stream is still closed")
 
     case let .requestOpenResponseIdle(state):
-      let stateAndAction = state.send(status: status, trailers: trailers, promise: promise)
-      self = stateAndAction.state
-      return stateAndAction.action
+      self = .requestClosedResponseClosed
+      return .success(state.send(status: status, trailers: trailers))
 
     case let .requestClosedResponseIdle(state):
-      let stateAndAction = state.send(status: status, trailers: trailers, promise: promise)
-      self = stateAndAction.state
-      return stateAndAction.action
+      self = .requestClosedResponseClosed
+      return .success(state.send(status: status, trailers: trailers))
 
     case let .requestOpenResponseOpen(state):
-      let stateAndAction = state.send(status: status, trailers: trailers, promise: promise)
-      self = stateAndAction.state
-      return stateAndAction.action
+      self = .requestClosedResponseClosed
+      return .success(state.send(status: status, trailers: trailers))
 
     case let .requestClosedResponseOpen(state):
-      let stateAndAction = state.send(status: status, trailers: trailers, promise: promise)
-      self = stateAndAction.state
-      return stateAndAction.action
+      self = .requestClosedResponseClosed
+      return .success(state.send(status: status, trailers: trailers))
 
     case .requestClosedResponseClosed:
-      return .completePromise(promise, .failure(GRPCError.AlreadyComplete()))
+      return .failure(GRPCError.AlreadyComplete())
 
     case ._modifying:
       preconditionFailure("Left in modifying state")

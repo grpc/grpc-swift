@@ -450,30 +450,24 @@ struct Matcher<Value> {
   static func trailersOnly(
     code: GRPCStatus.Code,
     contentType: String = "application/grpc"
-  ) -> Matcher<HTTP2Frame.FramePayload> {
-    return .headers(
-      .all(
-        .contains(":status", ["200"]),
-        .contains("content-type", [contentType]),
-        .contains("grpc-status", ["\(code.rawValue)"])
-      ),
-      endStream: true
+  ) -> Matcher<HPACKHeaders> {
+    return .all(
+      .contains(":status", ["200"]),
+      .contains("content-type", [contentType]),
+      .contains("grpc-status", ["\(code.rawValue)"])
     )
   }
 
-  static func trailers(code: GRPCStatus.Code, message: String) -> Matcher<HTTP2Frame.FramePayload> {
-    return .headers(
-      .all(
-        .contains("grpc-status", ["\(code.rawValue)"]),
-        .contains("grpc-message", [message])
-      ),
-      endStream: true
+  static func trailers(code: GRPCStatus.Code, message: String) -> Matcher<HPACKHeaders> {
+    return .all(
+      .contains("grpc-status", ["\(code.rawValue)"]),
+      .contains("grpc-message", [message])
     )
   }
 
   // MARK: HTTP2ToRawGRPCStateMachine.Action
 
-  static func errorCaught() -> Matcher<HTTP2ToRawGRPCStateMachine.Action> {
+  static func errorCaught() -> Matcher<HTTP2ToRawGRPCStateMachine.ReadNextMessageAction> {
     return .init { actual in
       switch actual {
       case .errorCaught:
@@ -484,42 +478,31 @@ struct Matcher<Value> {
     }
   }
 
-  static func none() -> Matcher<HTTP2ToRawGRPCStateMachine.Action> {
+  static func configure() -> Matcher<HTTP2ToRawGRPCStateMachine.ReceiveHeadersAction> {
     return .init { actual in
       switch actual {
-      case .none:
+      case .configurePipeline:
         return .match
       default:
-        return .noMatch(actual: "\(actual)", expected: "none")
+        return .noMatch(actual: "\(actual)", expected: "configurePipeline")
       }
     }
   }
 
-  static func configure() -> Matcher<HTTP2ToRawGRPCStateMachine.Action> {
+  static func rejectRPC(
+    _ matcher: Matcher<HPACKHeaders>? = nil
+  ) -> Matcher<HTTP2ToRawGRPCStateMachine.ReceiveHeadersAction> {
     return .init { actual in
       switch actual {
-      case .configure:
-        return .match
+      case let .rejectRPC(headers):
+        return matcher?.evaluate(headers) ?? .match
       default:
-        return .noMatch(actual: "\(actual)", expected: "configure")
+        return .noMatch(actual: "\(actual)", expected: "rejectRPC")
       }
     }
   }
 
-  static func completePromise(
-    with matcher: Matcher<Result<Void, Error>>? = nil
-  ) -> Matcher<HTTP2ToRawGRPCStateMachine.Action> {
-    return .init { actual in
-      switch actual {
-      case let .completePromise(_, result):
-        return matcher?.evaluate(result) ?? .match
-      default:
-        return .noMatch(actual: "\(actual)", expected: "completePromise")
-      }
-    }
-  }
-
-  static func forwardHeaders() -> Matcher<HTTP2ToRawGRPCStateMachine.Action> {
+  static func forwardHeaders() -> Matcher<HTTP2ToRawGRPCStateMachine.PipelineConfiguredAction> {
     return .init { actual in
       switch actual {
       case .forwardHeaders:
@@ -530,7 +513,18 @@ struct Matcher<Value> {
     }
   }
 
-  static func forwardMessage() -> Matcher<HTTP2ToRawGRPCStateMachine.Action> {
+  static func none() -> Matcher<HTTP2ToRawGRPCStateMachine.ReadNextMessageAction> {
+    return .init { actual in
+      switch actual {
+      case .none:
+        return .match
+      default:
+        return .noMatch(actual: "\(actual)", expected: "none")
+      }
+    }
+  }
+
+  static func forwardMessage() -> Matcher<HTTP2ToRawGRPCStateMachine.ReadNextMessageAction> {
     return .init { actual in
       switch actual {
       case .forwardMessage:
@@ -541,7 +535,7 @@ struct Matcher<Value> {
     }
   }
 
-  static func forwardEnd() -> Matcher<HTTP2ToRawGRPCStateMachine.Action> {
+  static func forwardEnd() -> Matcher<HTTP2ToRawGRPCStateMachine.ReadNextMessageAction> {
     return .init { actual in
       switch actual {
       case .forwardEnd:
@@ -552,7 +546,7 @@ struct Matcher<Value> {
     }
   }
 
-  static func forwardMessageAndEnd() -> Matcher<HTTP2ToRawGRPCStateMachine.Action> {
+  static func forwardMessageAndEnd() -> Matcher<HTTP2ToRawGRPCStateMachine.ReadNextMessageAction> {
     return .init { actual in
       switch actual {
       case .forwardMessageAndEnd:
@@ -563,53 +557,26 @@ struct Matcher<Value> {
     }
   }
 
-  static func forwardHeadersThenRead() -> Matcher<HTTP2ToRawGRPCStateMachine.Action> {
+  static func forwardHeadersThenRead()
+    -> Matcher<HTTP2ToRawGRPCStateMachine.PipelineConfiguredAction> {
     return .init { actual in
       switch actual {
-      case .forwardHeadersThenReadNextMessage:
+      case .forwardHeadersAndRead:
         return .match
       default:
-        return .noMatch(actual: "\(actual)", expected: "forwardHeadersThenReadNextMessage")
+        return .noMatch(actual: "\(actual)", expected: "forwardHeadersAndRead")
       }
     }
   }
 
-  static func forwardMessageThenRead() -> Matcher<HTTP2ToRawGRPCStateMachine.Action> {
+  static func forwardMessageThenRead()
+    -> Matcher<HTTP2ToRawGRPCStateMachine.ReadNextMessageAction> {
     return .init { actual in
       switch actual {
       case .forwardMessageThenReadNextMessage:
         return .match
       default:
         return .noMatch(actual: "\(actual)", expected: "forwardMessageThenReadNextMessage")
-      }
-    }
-  }
-
-  static func readNextRequest() -> Matcher<HTTP2ToRawGRPCStateMachine.Action> {
-    return .init { actual in
-      switch actual {
-      case .readNextRequest:
-        return .match
-      default:
-        return .noMatch(actual: "\(actual)", expected: "readNextRequest")
-      }
-    }
-  }
-
-  static func write(
-    _ matcher: Matcher<HTTP2Frame.FramePayload>? = nil,
-    flush: Bool = false
-  ) -> Matcher<HTTP2ToRawGRPCStateMachine.Action> {
-    return .init { actual in
-      switch actual {
-      case let .write(payload, _, insertFlush):
-        if flush == insertFlush {
-          return matcher.map { $0.evaluate(payload) } ?? .match
-        } else {
-          return .noMatch(actual: "write(_,_,\(insertFlush))", expected: "write(_,_,\(flush))")
-        }
-      default:
-        return .noMatch(actual: "\(actual)", expected: "write")
       }
     }
   }
