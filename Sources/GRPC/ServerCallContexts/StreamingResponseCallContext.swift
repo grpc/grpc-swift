@@ -40,6 +40,7 @@ open class StreamingResponseCallContext<ResponsePayload>: ServerCallContextBase 
     self.init(eventLoop: eventLoop, headers: headers, logger: logger, userInfoRef: .init(userInfo))
   }
 
+  @inlinable
   override internal init(
     eventLoop: EventLoop,
     headers: HPACKHeaders,
@@ -119,10 +120,13 @@ open class StreamingResponseCallContext<ResponsePayload>: ServerCallContextBase 
   }
 }
 
+@usableFromInline
 internal final class _StreamingResponseCallContext<Request, Response>:
   StreamingResponseCallContext<Response> {
-  private let _sendResponse: (Response, MessageMetadata, EventLoopPromise<Void>?) -> Void
+  @usableFromInline
+  internal let _sendResponse: (Response, MessageMetadata, EventLoopPromise<Void>?) -> Void
 
+  @inlinable
   internal init(
     eventLoop: EventLoop,
     headers: HPACKHeaders,
@@ -134,6 +138,7 @@ internal final class _StreamingResponseCallContext<Request, Response>:
     super.init(eventLoop: eventLoop, headers: headers, logger: logger, userInfoRef: userInfoRef)
   }
 
+  @inlinable
   override func sendResponse(
     _ message: Response,
     compression: Compression = .deferToCallDefault,
@@ -149,6 +154,7 @@ internal final class _StreamingResponseCallContext<Request, Response>:
     }
   }
 
+  @inlinable
   override func sendResponses<Messages: Sequence>(
     _ messages: Messages,
     compression: Compression = .deferToCallDefault,
@@ -163,7 +169,8 @@ internal final class _StreamingResponseCallContext<Request, Response>:
     }
   }
 
-  private func _sendResponses<Messages: Sequence>(
+  @inlinable
+  internal func _sendResponses<Messages: Sequence>(
     _ messages: Messages,
     compression: Compression,
     promise: EventLoopPromise<Void>?
