@@ -23,7 +23,6 @@ import XCTest
 class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
   typealias StateMachine = HTTP2ToRawGRPCStateMachine
   typealias State = StateMachine.State
-  typealias Action = StateMachine.Action
 
   // An event loop gets passed to any service handler that's created, we don't actually use it here.
   private var eventLoop: EventLoop {
@@ -120,13 +119,13 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       let configuredAction = machine.pipelineConfigured()
       assertThat(configuredAction, .is(.forwardHeaders()))
 
-      let sendHeadersAction = machine.send(headers: [:], promise: nil)
-      assertThat(sendHeadersAction, .is(.write(.headers())))
+      let sendHeadersAction = machine.send(headers: [:])
+      assertThat(sendHeadersAction, .is(.success()))
 
     case .requestClosedResponseIdle(pipelineConfigured: false):
       var emptyBuffer = ByteBuffer()
       let receiveEnd = machine.receive(buffer: &emptyBuffer, endStream: true)
-      assertThat(receiveEnd, .is(.none()))
+      assertThat(receiveEnd, .is(false))
 
     case .requestClosedResponseIdle(pipelineConfigured: true):
       let configuredAction = machine.pipelineConfigured()
@@ -134,7 +133,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
 
       var emptyBuffer = ByteBuffer()
       let receiveEnd = machine.receive(buffer: &emptyBuffer, endStream: true)
-      assertThat(receiveEnd, .is(.readNextRequest()))
+      assertThat(receiveEnd, .is(true))
 
     case .requestClosedResponseOpen:
       let configuredAction = machine.pipelineConfigured()
@@ -142,12 +141,12 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
 
       var emptyBuffer = ByteBuffer()
       let receiveEndAction = machine.receive(buffer: &emptyBuffer, endStream: true)
-      assertThat(receiveEndAction, .is(.readNextRequest()))
+      assertThat(receiveEndAction, .is(true))
       let readAction = machine.readNextRequest()
       assertThat(readAction, .is(.forwardEnd()))
 
-      let sendHeadersAction = machine.send(headers: [:], promise: nil)
-      assertThat(sendHeadersAction, .is(.write(.headers())))
+      let sendHeadersAction = machine.send(headers: [:])
+      assertThat(sendHeadersAction, .is(.success()))
     }
 
     return machine
@@ -191,10 +190,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       allocator: ByteBufferAllocator(),
       responseWriter: NoOpResponseWriter()
     )
-    assertThat(
-      action,
-      .is(.write(.headers(.contains(":status", ["415"]), endStream: true), flush: true))
-    )
+    assertThat(action, .is(.rejectRPC(.contains(":status", ["415"]))))
   }
 
   func testReceiveValidHeadersForUnknownService() {
@@ -208,7 +204,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       allocator: ByteBufferAllocator(),
       responseWriter: NoOpResponseWriter()
     )
-    assertThat(action, .is(.write(.trailersOnly(code: .unimplemented), flush: true)))
+    assertThat(action, .is(.rejectRPC(.trailersOnly(code: .unimplemented))))
   }
 
   func testReceiveValidHeadersForUnknownMethod() {
@@ -222,7 +218,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       allocator: ByteBufferAllocator(),
       responseWriter: NoOpResponseWriter()
     )
-    assertThat(action, .is(.write(.trailersOnly(code: .unimplemented), flush: true)))
+    assertThat(action, .is(.rejectRPC(.trailersOnly(code: .unimplemented))))
   }
 
   func testReceiveValidHeadersForInvalidPath() {
@@ -236,7 +232,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       allocator: ByteBufferAllocator(),
       responseWriter: NoOpResponseWriter()
     )
-    assertThat(action, .is(.write(.trailersOnly(code: .unimplemented), flush: true)))
+    assertThat(action, .is(.rejectRPC(.trailersOnly(code: .unimplemented))))
   }
 
   func testReceiveHeadersWithUnsupportedEncodingWhenCompressionIsDisabled() {
@@ -250,7 +246,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       allocator: ByteBufferAllocator(),
       responseWriter: NoOpResponseWriter()
     )
-    assertThat(action, .is(.write(.trailersOnly(code: .unimplemented), flush: true)))
+    assertThat(action, .is(.rejectRPC(.trailersOnly(code: .unimplemented))))
   }
 
   func testReceiveHeadersWithMultipleEncodings() {
@@ -265,7 +261,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       allocator: ByteBufferAllocator(),
       responseWriter: NoOpResponseWriter()
     )
-    assertThat(action, .is(.write(.trailersOnly(code: .invalidArgument), flush: true)))
+    assertThat(action, .is(.rejectRPC(.trailersOnly(code: .invalidArgument))))
   }
 
   func testReceiveHeadersWithUnsupportedEncodingWhenCompressionIsEnabled() {
@@ -281,10 +277,10 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       responseWriter: NoOpResponseWriter()
     )
 
-    assertThat(action, .is(.write(.trailersOnly(code: .unimplemented), flush: true)))
+    assertThat(action, .is(.rejectRPC(.trailersOnly(code: .unimplemented))))
     assertThat(
       action,
-      .is(.write(.headers(.contains("grpc-accept-encoding", ["deflate", "identity"])), flush: true))
+      .is(.rejectRPC(.contains("grpc-accept-encoding", ["deflate", "identity"])))
     )
   }
 
@@ -305,11 +301,11 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
     // This is expected: however, we also expect 'grpc-accept-encoding' to be in the response
     // metadata. Send back headers to test this.
     assertThat(action, .is(.configure()))
-    let sendAction = machine.send(headers: [:], promise: nil)
-    assertThat(sendAction, .write(.headers(.contains(
+    let sendAction = machine.send(headers: [:])
+    assertThat(sendAction, .success(.contains(
       "grpc-accept-encoding",
       ["deflate", "identity", "gzip"]
-    ))))
+    )))
   }
 
   func testReceiveHeadersWithIdentityCompressionWhenCompressionIsDisabled() {
@@ -344,8 +340,8 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
 
     // This is expected, but we need to check the value of 'grpc-encoding' in the response headers.
     assertThat(action, .is(.configure()))
-    let sendAction = machine.send(headers: [:], promise: nil)
-    assertThat(sendAction, .write(.headers(.contains("grpc-encoding", ["deflate"]))))
+    let sendAction = machine.send(headers: [:])
+    assertThat(sendAction, .success(.contains("grpc-encoding", ["deflate"])))
   }
 
   // MARK: Receive Data Tests
@@ -357,12 +353,12 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
     // Receive a request. The pipeline isn't configured so no action.
     var buffer1 = buffer
     let action1 = machine.receive(buffer: &buffer1, endStream: false)
-    assertThat(action1, .is(.none()))
+    assertThat(action1, .is(false))
 
     // Receive another request, still not configured so no action.
     var buffer2 = buffer
     let action2 = machine.receive(buffer: &buffer2, endStream: false)
-    assertThat(action2, .is(.none()))
+    assertThat(action2, .is(false))
 
     // Configure the pipeline. We'll have headers to forward and messages to read.
     let action3 = machine.pipelineConfigured()
@@ -380,7 +376,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
     // after receiving.
     var emptyBuffer = ByteBuffer()
     let action6 = machine.receive(buffer: &emptyBuffer, endStream: true)
-    assertThat(action6, .is(.readNextRequest()))
+    assertThat(action6, .is(true))
 
     // There's nothing in the reader to consume, but since we saw end stream we'll have to close.
     let action7 = machine.readNextRequest()
@@ -394,7 +390,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
     // Receive a request. The pipeline is configured, so we should try reading.
     var buffer1 = buffer
     let action1 = machine.receive(buffer: &buffer1, endStream: false)
-    assertThat(action1, .is(.readNextRequest()))
+    assertThat(action1, .is(true))
 
     // Read the message, consuming all bytes.
     let action2 = machine.readNextRequest()
@@ -406,13 +402,13 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
 
     // Not enough bytes to form a message, so read won't result in anything.
     let action4 = machine.receive(buffer: &buffer2, endStream: false)
-    assertThat(action4, .is(.readNextRequest()))
+    assertThat(action4, .is(true))
     let action5 = machine.readNextRequest()
     assertThat(action5, .is(.none()))
 
     // Now the rest of the message.
     let action6 = machine.receive(buffer: &buffer3, endStream: false)
-    assertThat(action6, .is(.readNextRequest()))
+    assertThat(action6, .is(true))
     let action7 = machine.readNextRequest()
     assertThat(action7, .is(.forwardMessage()))
 
@@ -420,7 +416,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
     // after receiving.
     var emptyBuffer = ByteBuffer()
     let action8 = machine.receive(buffer: &emptyBuffer, endStream: true)
-    assertThat(action8, .is(.readNextRequest()))
+    assertThat(action8, .is(true))
 
     // There's nothing in the reader to consume, but since we saw end stream we'll have to close.
     let action9 = machine.readNextRequest()
@@ -434,12 +430,12 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
     // No action: the pipeline isn't configured.
     var buffer1 = buffer
     let action1 = machine.receive(buffer: &buffer1, endStream: false)
-    assertThat(action1, .is(.none()))
+    assertThat(action1, .is(false))
 
     // Still no action.
     var buffer2 = buffer
     let action2 = machine.receive(buffer: &buffer2, endStream: true)
-    assertThat(action2, .is(.none()))
+    assertThat(action2, .is(false))
 
     // Configure the pipeline. We have headers to forward and messages to read.
     let action3 = machine.pipelineConfigured()
@@ -461,7 +457,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
     // Pipeline is configured, we should be able to read then forward the message.
     var buffer1 = buffer
     let action1 = machine.receive(buffer: &buffer1, endStream: false)
-    assertThat(action1, .is(.readNextRequest()))
+    assertThat(action1, .is(true))
     let action2 = machine.readNextRequest()
     assertThat(action2, .is(.forwardMessage()))
 
@@ -469,7 +465,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
     // Still no action.
     var buffer2 = buffer
     let action3 = machine.receive(buffer: &buffer2, endStream: true)
-    assertThat(action3, .is(.readNextRequest()))
+    assertThat(action3, .is(true))
     let action4 = machine.readNextRequest()
     assertThat(action4, .is(.forwardMessageAndEnd()))
   }
@@ -481,14 +477,14 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
     // Receive a message. We should read and forward it.
     var buffer1 = buffer
     let action1 = machine.receive(buffer: &buffer1, endStream: false)
-    assertThat(action1, .is(.readNextRequest()))
+    assertThat(action1, .is(true))
     let action2 = machine.readNextRequest()
     assertThat(action2, .is(.forwardMessage()))
 
     // Receive a message and end stream. We should read it then forward message and end.
     var buffer2 = buffer
     let action3 = machine.receive(buffer: &buffer2, endStream: true)
-    assertThat(action3, .is(.readNextRequest()))
+    assertThat(action3, .is(true))
     let action4 = machine.readNextRequest()
     assertThat(action4, .is(.forwardMessageAndEnd()))
   }
@@ -498,7 +494,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
     var buffer = self.makeLengthPrefixedBytes(1024, setCompressFlag: true)
 
     let action1 = machine.receive(buffer: &buffer, endStream: false)
-    assertThat(action1, .is(.readNextRequest()))
+    assertThat(action1, .is(true))
     let action2 = machine.readNextRequest()
     assertThat(action2, .is(.errorCaught()))
   }
@@ -508,15 +504,14 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
     // Close while the request stream is still open.
     let action1 = machine.send(
       status: GRPCStatus(code: .ok, message: "ok"),
-      trailers: [:],
-      promise: nil
+      trailers: [:]
     )
-    assertThat(action1, .is(.write(.trailers(code: .ok, message: "ok"))))
+    assertThat(action1, .is(.success(.trailers(code: .ok, message: "ok"))))
 
     // Now receive end of request stream: no action, we're closed.
     var emptyBuffer = ByteBuffer()
     let action2 = machine.receive(buffer: &emptyBuffer, endStream: true)
-    assertThat(action2, .is(.none()))
+    assertThat(action2, .is(false))
   }
 
   // MARK: Send Metadata Tests
@@ -526,11 +521,11 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
 
     // We tested most of the weird (request encoding, negotiating response encoding etc.) above.
     // We'll just validate more 'normal' things here.
-    let action1 = machine.send(headers: [:], promise: nil)
-    assertThat(action1, .is(.write(.headers(.contains(":status", ["200"])))))
+    let action1 = machine.send(headers: [:])
+    assertThat(action1, .is(.success(.contains(":status", ["200"]))))
 
-    let action2 = machine.send(headers: [:], promise: nil)
-    assertThat(action2, .is(.completePromise(with: .failure())))
+    let action2 = machine.send(headers: [:])
+    assertThat(action2, .is(.failure()))
   }
 
   func testSendMetadataRequestStreamClosed() {
@@ -538,34 +533,34 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
 
     var buffer = ByteBuffer()
     let action1 = machine.receive(buffer: &buffer, endStream: true)
-    assertThat(action1, .is(.readNextRequest()))
+    assertThat(action1, .is(true))
     let action2 = machine.readNextRequest()
     assertThat(action2, .is(.forwardEnd()))
 
     // Write some headers back.
-    let action3 = machine.send(headers: [:], promise: nil)
-    assertThat(action3, .is(.write(.headers(.contains(":status", ["200"])))))
+    let action3 = machine.send(headers: [:])
+    assertThat(action3, .is(.success(.contains(":status", ["200"]))))
   }
 
   func testSendMetadataWhenOpen() {
     var machine = self.makeStateMachine(state: .requestOpenResponseOpen)
 
     // Response stream is already open.
-    let action = machine.send(headers: [:], promise: nil)
-    assertThat(action, .is(.completePromise(with: .failure())))
+    let action = machine.send(headers: [:])
+    assertThat(action, .is(.failure()))
   }
 
   func testSendMetadataNormalizesUserProvidedMetadata() {
     var machine = self.makeStateMachine(state: .requestOpenResponseIdle(pipelineConfigured: true))
-    let action = machine.send(headers: ["FOO": "bar"], promise: nil)
-    assertThat(action, .is(.write(.headers(.contains(caseSensitive: "foo")))))
+    let action = machine.send(headers: ["FOO": "bar"])
+    assertThat(action, .success(.contains(caseSensitive: "foo")))
   }
 
   // MARK: Send Data Tests
 
   func testSendData() {
     for startingState in [DesiredState.requestOpenResponseOpen, .requestClosedResponseOpen] {
-      var machine = self.makeStateMachine(state: startingState)
+      let machine = self.makeStateMachine(state: startingState)
       let buffer = ByteBuffer(repeating: 0, count: 1024)
 
       // We should be able to do this multiple times.
@@ -573,10 +568,9 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
         let action = machine.send(
           buffer: buffer,
           allocator: self.allocator,
-          compress: false,
-          promise: nil
+          compress: false
         )
-        assertThat(action, .is(.write(.data(endStream: false))))
+        assertThat(action, .is(.success()))
       }
 
       // Set the compress flag, we're not setup to compress so the flag will just be ignored, we'll
@@ -584,41 +578,38 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       let action = machine.send(
         buffer: buffer,
         allocator: self.allocator,
-        compress: true,
-        promise: nil
+        compress: true
       )
-      assertThat(action, .is(.write(.data(endStream: false))))
+      assertThat(action, .is(.success()))
     }
   }
 
   func testSendDataAfterClose() {
     var machine = self.makeStateMachine(state: .requestClosedResponseOpen)
-    let action1 = machine.send(status: .ok, trailers: [:], promise: nil)
-    assertThat(action1, .is(.write(.headers(.contains("grpc-status", ["0"]), endStream: true))))
+    let action1 = machine.send(status: .ok, trailers: [:])
+    assertThat(action1, .is(.success(.contains("grpc-status", ["0"]))))
 
     // We're already closed, this should fail.
     let buffer = ByteBuffer(repeating: 0, count: 1024)
     let action2 = machine.send(
       buffer: buffer,
       allocator: self.allocator,
-      compress: false,
-      promise: nil
+      compress: false
     )
-    assertThat(action2, .is(.completePromise(with: .failure())))
+    assertThat(action2, .is(.failure()))
   }
 
   func testSendDataBeforeMetadata() {
-    var machine = self.makeStateMachine(state: .requestClosedResponseIdle(pipelineConfigured: true))
+    let machine = self.makeStateMachine(state: .requestClosedResponseIdle(pipelineConfigured: true))
 
     // Response stream is still idle, so this should fail.
     let buffer = ByteBuffer(repeating: 0, count: 1024)
     let action2 = machine.send(
       buffer: buffer,
       allocator: self.allocator,
-      compress: false,
-      promise: nil
+      compress: false
     )
-    assertThat(action2, .is(.completePromise(with: .failure())))
+    assertThat(action2, .is(.failure()))
   }
 
   // MARK: Send End
@@ -629,13 +620,13 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       DesiredState.requestClosedResponseIdle(pipelineConfigured: true),
     ] {
       var machine = self.makeStateMachine(state: state)
-      let action1 = machine.send(status: .ok, trailers: [:], promise: nil)
+      let action1 = machine.send(status: .ok, trailers: [:])
       // This'll be a trailers-only response.
-      assertThat(action1, .is(.write(.trailersOnly(code: .ok))))
+      assertThat(action1, .is(.success(.trailersOnly(code: .ok))))
 
       // Already closed.
-      let action2 = machine.send(status: .ok, trailers: [:], promise: nil)
-      assertThat(action2, .is(.completePromise(with: .failure())))
+      let action2 = machine.send(status: .ok, trailers: [:])
+      assertThat(action2, .is(.failure()))
     }
   }
 
@@ -647,14 +638,13 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       var machine = self.makeStateMachine(state: state)
       let action = machine.send(
         status: GRPCStatus(code: .ok, message: "ok"),
-        trailers: [:],
-        promise: nil
+        trailers: [:]
       )
-      assertThat(action, .is(.write(.trailers(code: .ok, message: "ok"))))
+      assertThat(action, .is(.success(.trailers(code: .ok, message: "ok"))))
 
       // Already closed.
-      let action2 = machine.send(status: .ok, trailers: [:], promise: nil)
-      assertThat(action2, .is(.completePromise(with: .failure())))
+      let action2 = machine.send(status: .ok, trailers: [:])
+      assertThat(action2, .is(.failure()))
     }
   }
 }

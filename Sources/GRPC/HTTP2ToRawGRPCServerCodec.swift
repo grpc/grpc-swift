@@ -28,6 +28,7 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelDuplexHandler, GRPCServer
   private var logger: Logger
   private var state: HTTP2ToRawGRPCStateMachine
   private let errorDelegate: ServerErrorDelegate?
+  private var context: ChannelHandlerContext!
 
   init(
     servicesByName: [Substring: CallHandlerProvider],
@@ -45,60 +46,49 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelDuplexHandler, GRPCServer
     )
   }
 
-  /// Called when the pipeline has finished configuring.
-  private func configured(context: ChannelHandlerContext) {
-    self.act(on: self.state.pipelineConfigured(), with: context)
+  func handlerAdded(context: ChannelHandlerContext) {
+    self.context = context
   }
 
-  /// Act on an action returned from the state machine.
-  private func act(
-    on action: HTTP2ToRawGRPCStateMachine.Action,
-    with context: ChannelHandlerContext
-  ) {
+  func handlerRemoved(context: ChannelHandlerContext) {
+    self.context = nil
+  }
+
+  /// Called when the pipeline has finished configuring.
+  private func configured() {
+    switch self.state.pipelineConfigured() {
+    case let .forwardHeaders(headers):
+      self.context.fireChannelRead(self.wrapInboundOut(.metadata(headers)))
+
+    case let .forwardHeadersAndRead(headers):
+      self.context.fireChannelRead(self.wrapInboundOut(.metadata(headers)))
+      self.tryReadingMessage()
+    }
+  }
+
+  /// Try to read a request message from the buffer.
+  private func tryReadingMessage() {
+    let action = self.state.readNextRequest()
     switch action {
     case .none:
       ()
 
-    case let .configure(handler):
-      context.channel.pipeline.addHandler(handler).whenSuccess {
-        self.configured(context: context)
-      }
-
-    case let .errorCaught(error):
-      context.fireErrorCaught(error)
-
-    case let .forwardHeaders(metadata):
-      context.fireChannelRead(self.wrapInboundOut(.metadata(metadata)))
-
     case let .forwardMessage(buffer):
-      context.fireChannelRead(self.wrapInboundOut(.message(buffer)))
+      self.context.fireChannelRead(self.wrapInboundOut(.message(buffer)))
 
     case let .forwardMessageAndEnd(buffer):
-      context.fireChannelRead(self.wrapInboundOut(.message(buffer)))
-      context.fireChannelRead(self.wrapInboundOut(.end))
-
-    case let .forwardHeadersThenReadNextMessage(metadata):
-      context.fireChannelRead(self.wrapInboundOut(.metadata(metadata)))
-      self.act(on: self.state.readNextRequest(), with: context)
+      self.context.fireChannelRead(self.wrapInboundOut(.message(buffer)))
+      self.context.fireChannelRead(self.wrapInboundOut(.end))
 
     case let .forwardMessageThenReadNextMessage(buffer):
-      context.fireChannelRead(self.wrapInboundOut(.message(buffer)))
-      self.act(on: self.state.readNextRequest(), with: context)
+      self.context.fireChannelRead(self.wrapInboundOut(.message(buffer)))
+      self.tryReadingMessage()
 
     case .forwardEnd:
-      context.fireChannelRead(self.wrapInboundOut(.end))
+      self.context.fireChannelRead(self.wrapInboundOut(.end))
 
-    case .readNextRequest:
-      self.act(on: self.state.readNextRequest(), with: context)
-
-    case let .write(part, promise, insertFlush):
-      context.write(self.wrapOutboundOut(part), promise: promise)
-      if insertFlush {
-        context.flush()
-      }
-
-    case let .completePromise(promise, result):
-      promise?.completeWith(result)
+    case let .errorCaught(error):
+      self.context.fireErrorCaught(error)
     }
   }
 
@@ -107,7 +97,7 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelDuplexHandler, GRPCServer
 
     switch payload {
     case let .headers(payload):
-      let action = self.state.receive(
+      let receiveHeaders = self.state.receive(
         headers: payload.headers,
         eventLoop: context.eventLoop,
         errorDelegate: self.errorDelegate,
@@ -116,13 +106,26 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelDuplexHandler, GRPCServer
         allocator: context.channel.allocator,
         responseWriter: self
       )
-      self.act(on: action, with: context)
+
+      switch receiveHeaders {
+      case let .configurePipeline(handler):
+        context.channel.pipeline.addHandler(handler).whenSuccess {
+          self.configured()
+        }
+
+      case let .rejectRPC(trailers):
+        // We're not handling this request: write headers and end stream.
+        let payload = HTTP2Frame.FramePayload.headers(.init(headers: trailers, endStream: true))
+        context.writeAndFlush(self.wrapOutboundOut(payload), promise: nil)
+      }
 
     case let .data(payload):
       switch payload.data {
       case var .byteBuffer(buffer):
-        let action = self.state.receive(buffer: &buffer, endStream: payload.endStream)
-        self.act(on: action, with: context)
+        let tryToRead = self.state.receive(buffer: &buffer, endStream: payload.endStream)
+        if tryToRead {
+          self.tryReadingMessage()
+        }
 
       case .fileRegion:
         preconditionFailure("Unexpected IOData.fileRegion")
@@ -144,25 +147,45 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelDuplexHandler, GRPCServer
 
   func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
     let responsePart = self.unwrapOutboundIn(data)
-    let action: HTTP2ToRawGRPCStateMachine.Action
 
     switch responsePart {
     case let .metadata(headers):
-      action = self.state.send(headers: headers, promise: promise)
+      switch self.state.send(headers: headers) {
+      case let .success(headers):
+        let payload = HTTP2Frame.FramePayload.headers(.init(headers: headers))
+        context.write(self.wrapOutboundOut(payload), promise: promise)
+
+      case let .failure(error):
+        promise?.fail(error)
+      }
 
     case let .message(buffer, metadata):
-      action = self.state.send(
+      let writeBuffer = self.state.send(
         buffer: buffer,
         allocator: context.channel.allocator,
-        compress: metadata.compress,
-        promise: promise
+        compress: metadata.compress
       )
 
-    case let .end(status, trailers):
-      action = self.state.send(status: status, trailers: trailers, promise: promise)
-    }
+      switch writeBuffer {
+      case let .success(buffer):
+        let payload = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer)))
+        context.write(self.wrapOutboundOut(payload), promise: promise)
 
-    self.act(on: action, with: context)
+      case let .failure(error):
+        promise?.fail(error)
+      }
+
+    case let .end(status, trailers):
+      switch self.state.send(status: status, trailers: trailers) {
+      case let .success(trailers):
+        // Always end stream for status and trailers.
+        let payload = HTTP2Frame.FramePayload.headers(.init(headers: trailers, endStream: true))
+        context.write(self.wrapOutboundOut(payload), promise: promise)
+
+      case let .failure(error):
+        promise?.fail(error)
+      }
+    }
   }
 
   internal func sendMetadata(
