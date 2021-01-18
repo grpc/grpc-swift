@@ -23,6 +23,7 @@ import XCTest
 final class ResponseRecorder: GRPCServerResponseWriter {
   var metadata: HPACKHeaders?
   var messages: [ByteBuffer] = []
+  var messageMetadata: [MessageMetadata] = []
   var status: GRPCStatus?
   var trailers: HPACKHeaders?
 
@@ -38,6 +39,7 @@ final class ResponseRecorder: GRPCServerResponseWriter {
     promise: EventLoopPromise<Void>?
   ) {
     self.messages.append(bytes)
+    self.messageMetadata.append(metadata)
     promise?.succeed(())
   }
 
@@ -57,11 +59,11 @@ protocol ServerHandlerTestCase: GRPCTestCase {
 }
 
 extension ServerHandlerTestCase {
-  func makeCallHandlerContext() -> CallHandlerContext {
+  func makeCallHandlerContext(encoding: ServerMessageEncoding = .disabled) -> CallHandlerContext {
     return CallHandlerContext(
       errorDelegate: nil,
       logger: self.logger,
-      encoding: .disabled,
+      encoding: encoding,
       eventLoop: self.eventLoop,
       path: "/ignored",
       remoteAddress: nil,
@@ -79,10 +81,11 @@ class UnaryServerHandlerTests: GRPCTestCase, ServerHandlerTestCase {
   let recorder = ResponseRecorder()
 
   private func makeHandler(
+    encoding: ServerMessageEncoding = .disabled,
     function: @escaping (String, StatusOnlyCallContext) -> EventLoopFuture<String>
   ) -> UnaryServerHandler<StringSerializer, StringDeserializer> {
     return UnaryServerHandler(
-      context: self.makeCallHandlerContext(),
+      context: self.makeCallHandlerContext(encoding: encoding),
       requestDeserializer: StringDeserializer(),
       responseSerializer: StringSerializer(),
       interceptors: [],
@@ -124,8 +127,39 @@ class UnaryServerHandlerTests: GRPCTestCase, ServerHandlerTestCase {
     handler.finish()
 
     assertThat(self.recorder.messages.first, .is(buffer))
+    assertThat(self.recorder.messageMetadata.first?.compress, .is(false))
     assertThat(self.recorder.status, .notNil(.hasCode(.ok)))
     assertThat(self.recorder.trailers, .is([:]))
+  }
+
+  func testHappyPathWithCompressionEnabled() {
+    let handler = self.makeHandler(
+      encoding: .enabled(.init(decompressionLimit: .absolute(.max))),
+      function: self.echo(_:context:)
+    )
+
+    handler.receiveMetadata([:])
+    let buffer = ByteBuffer(string: "hello")
+    handler.receiveMessage(buffer)
+
+    assertThat(self.recorder.messages.first, .is(buffer))
+    assertThat(self.recorder.messageMetadata.first?.compress, .is(true))
+  }
+
+  func testHappyPathWithCompressionEnabledButDisabledByCaller() {
+    let handler = self.makeHandler(
+      encoding: .enabled(.init(decompressionLimit: .absolute(.max)))
+    ) { request, context in
+      context.compressionEnabled = false
+      return self.echo(request, context: context)
+    }
+
+    handler.receiveMetadata([:])
+    let buffer = ByteBuffer(string: "hello")
+    handler.receiveMessage(buffer)
+
+    assertThat(self.recorder.messages.first, .is(buffer))
+    assertThat(self.recorder.messageMetadata.first?.compress, .is(false))
   }
 
   func testThrowingDeserializer() {
@@ -262,11 +296,12 @@ class ClientStreamingServerHandlerTests: GRPCTestCase, ServerHandlerTestCase {
   let recorder = ResponseRecorder()
 
   private func makeHandler(
+    encoding: ServerMessageEncoding = .disabled,
     observerFactory: @escaping (UnaryResponseCallContext<String>)
       -> EventLoopFuture<(StreamEvent<String>) -> Void>
   ) -> ClientStreamingServerHandler<StringSerializer, StringDeserializer> {
     return ClientStreamingServerHandler(
-      context: self.makeCallHandlerContext(),
+      context: self.makeCallHandlerContext(encoding: encoding),
       requestDeserializer: StringDeserializer(),
       responseSerializer: StringSerializer(),
       interceptors: [],
@@ -323,8 +358,43 @@ class ClientStreamingServerHandlerTests: GRPCTestCase, ServerHandlerTestCase {
     handler.finish()
 
     assertThat(self.recorder.messages.first, .is(ByteBuffer(string: "1 2 3")))
+    assertThat(self.recorder.messageMetadata.first?.compress, .is(false))
     assertThat(self.recorder.status, .notNil(.hasCode(.ok)))
     assertThat(self.recorder.trailers, .is([:]))
+  }
+
+  func testHappyPathWithCompressionEnabled() {
+    let handler = self.makeHandler(
+      encoding: .enabled(.init(decompressionLimit: .absolute(.max))),
+      observerFactory: self.joinWithSpaces(context:)
+    )
+
+    handler.receiveMetadata([:])
+    handler.receiveMessage(ByteBuffer(string: "1"))
+    handler.receiveMessage(ByteBuffer(string: "2"))
+    handler.receiveMessage(ByteBuffer(string: "3"))
+    handler.receiveEnd()
+
+    assertThat(self.recorder.messages.first, .is(ByteBuffer(string: "1 2 3")))
+    assertThat(self.recorder.messageMetadata.first?.compress, .is(true))
+  }
+
+  func testHappyPathWithCompressionEnabledButDisabledByCaller() {
+    let handler = self.makeHandler(
+      encoding: .enabled(.init(decompressionLimit: .absolute(.max)))
+    ) { context in
+      context.compressionEnabled = false
+      return self.joinWithSpaces(context: context)
+    }
+
+    handler.receiveMetadata([:])
+    handler.receiveMessage(ByteBuffer(string: "1"))
+    handler.receiveMessage(ByteBuffer(string: "2"))
+    handler.receiveMessage(ByteBuffer(string: "3"))
+    handler.receiveEnd()
+
+    assertThat(self.recorder.messages.first, .is(ByteBuffer(string: "1 2 3")))
+    assertThat(self.recorder.messageMetadata.first?.compress, .is(false))
   }
 
   func testThrowingDeserializer() {
@@ -483,11 +553,12 @@ class ServerStreamingServerHandlerTests: GRPCTestCase, ServerHandlerTestCase {
   let recorder = ResponseRecorder()
 
   private func makeHandler(
+    encoding: ServerMessageEncoding = .disabled,
     userFunction: @escaping (String, StreamingResponseCallContext<String>)
       -> EventLoopFuture<GRPCStatus>
   ) -> ServerStreamingServerHandler<StringSerializer, StringDeserializer> {
     return ServerStreamingServerHandler(
-      context: self.makeCallHandlerContext(),
+      context: self.makeCallHandlerContext(encoding: encoding),
       requestDeserializer: StringDeserializer(),
       responseSerializer: StringSerializer(),
       interceptors: [],
@@ -535,8 +606,39 @@ class ServerStreamingServerHandlerTests: GRPCTestCase, ServerHandlerTestCase {
       self.recorder.messages,
       .is([ByteBuffer(string: "a"), ByteBuffer(string: "b")])
     )
+    assertThat(self.recorder.messageMetadata.map { $0.compress }, .is([false, false]))
     assertThat(self.recorder.status, .notNil(.hasCode(.ok)))
     assertThat(self.recorder.trailers, .is([:]))
+  }
+
+  func testHappyPathWithCompressionEnabled() {
+    let handler = self.makeHandler(
+      encoding: .enabled(.init(decompressionLimit: .absolute(.max))),
+      userFunction: self.breakOnSpaces(_:context:)
+    )
+
+    handler.receiveMetadata([:])
+    handler.receiveMessage(ByteBuffer(string: "a"))
+    handler.receiveEnd()
+
+    assertThat(self.recorder.messages.first, .is(ByteBuffer(string: "a")))
+    assertThat(self.recorder.messageMetadata.first?.compress, .is(true))
+  }
+
+  func testHappyPathWithCompressionEnabledButDisabledByCaller() {
+    let handler = self.makeHandler(
+      encoding: .enabled(.init(decompressionLimit: .absolute(.max)))
+    ) { request, context in
+      context.compressionEnabled = false
+      return self.breakOnSpaces(request, context: context)
+    }
+
+    handler.receiveMetadata([:])
+    handler.receiveMessage(ByteBuffer(string: "a"))
+    handler.receiveEnd()
+
+    assertThat(self.recorder.messages.first, .is(ByteBuffer(string: "a")))
+    assertThat(self.recorder.messageMetadata.first?.compress, .is(false))
   }
 
   func testThrowingDeserializer() {
@@ -673,11 +775,12 @@ class BidirectionalStreamingServerHandlerTests: GRPCTestCase, ServerHandlerTestC
   let recorder = ResponseRecorder()
 
   private func makeHandler(
+    encoding: ServerMessageEncoding = .disabled,
     observerFactory: @escaping (StreamingResponseCallContext<String>)
       -> EventLoopFuture<(StreamEvent<String>) -> Void>
   ) -> BidirectionalStreamingServerHandler<StringSerializer, StringDeserializer> {
     return BidirectionalStreamingServerHandler(
-      context: self.makeCallHandlerContext(),
+      context: self.makeCallHandlerContext(encoding: encoding),
       requestDeserializer: StringDeserializer(),
       responseSerializer: StringSerializer(),
       interceptors: [],
@@ -736,8 +839,49 @@ class BidirectionalStreamingServerHandlerTests: GRPCTestCase, ServerHandlerTestC
       self.recorder.messages,
       .is([ByteBuffer(string: "1"), ByteBuffer(string: "2"), ByteBuffer(string: "3")])
     )
+    assertThat(self.recorder.messageMetadata.map { $0.compress }, .is([false, false, false]))
     assertThat(self.recorder.status, .notNil(.hasCode(.ok)))
     assertThat(self.recorder.trailers, .is([:]))
+  }
+
+  func testHappyPathWithCompressionEnabled() {
+    let handler = self.makeHandler(
+      encoding: .enabled(.init(decompressionLimit: .absolute(.max))),
+      observerFactory: self.echo(context:)
+    )
+
+    handler.receiveMetadata([:])
+    handler.receiveMessage(ByteBuffer(string: "1"))
+    handler.receiveMessage(ByteBuffer(string: "2"))
+    handler.receiveMessage(ByteBuffer(string: "3"))
+    handler.receiveEnd()
+
+    assertThat(
+      self.recorder.messages,
+      .is([ByteBuffer(string: "1"), ByteBuffer(string: "2"), ByteBuffer(string: "3")])
+    )
+    assertThat(self.recorder.messageMetadata.map { $0.compress }, .is([true, true, true]))
+  }
+
+  func testHappyPathWithCompressionEnabledButDisabledByCaller() {
+    let handler = self.makeHandler(
+      encoding: .enabled(.init(decompressionLimit: .absolute(.max)))
+    ) { context in
+      context.compressionEnabled = false
+      return self.echo(context: context)
+    }
+
+    handler.receiveMetadata([:])
+    handler.receiveMessage(ByteBuffer(string: "1"))
+    handler.receiveMessage(ByteBuffer(string: "2"))
+    handler.receiveMessage(ByteBuffer(string: "3"))
+    handler.receiveEnd()
+
+    assertThat(
+      self.recorder.messages,
+      .is([ByteBuffer(string: "1"), ByteBuffer(string: "2"), ByteBuffer(string: "3")])
+    )
+    assertThat(self.recorder.messageMetadata.map { $0.compress }, .is([false, false, false]))
   }
 
   func testThrowingDeserializer() {

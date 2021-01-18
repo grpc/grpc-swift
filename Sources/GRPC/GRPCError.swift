@@ -254,7 +254,7 @@ public enum GRPCError {
     public var message: String
 
     public init(_ message: String) {
-      self.message = message
+      self.message = "Invalid state: \(message)"
     }
 
     public var description: String {
@@ -262,7 +262,23 @@ public enum GRPCError {
     }
 
     public func makeGRPCStatus() -> GRPCStatus {
-      return GRPCStatus(code: .internalError, message: "Invalid state: \(self.message)")
+      return GRPCStatus(code: .internalError, message: self.message)
+    }
+  }
+
+  public struct ProtocolViolation: GRPCErrorProtocol {
+    public var message: String
+
+    public init(_ message: String) {
+      self.message = "Protocol violation: \(message)"
+    }
+
+    public var description: String {
+      return self.message
+    }
+
+    public func makeGRPCStatus() -> GRPCStatus {
+      return GRPCStatus(code: .internalError, message: self.message)
     }
   }
 }

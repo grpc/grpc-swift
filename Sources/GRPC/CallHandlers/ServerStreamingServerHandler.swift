@@ -119,16 +119,12 @@ public final class ServerStreamingServerHandler<
 
   @inlinable
   public func receiveError(_ error: Error) {
-    self._finish(error: error)
+    self.handleError(error)
+    self.finish()
   }
 
   @inlinable
   public func finish() {
-    self._finish(error: nil)
-  }
-
-  @inlinable
-  internal func _finish(error: Error?) {
     switch self.state {
     case .idle:
       self.interceptors = nil
@@ -136,8 +132,7 @@ public final class ServerStreamingServerHandler<
 
     case let .createdContext(context),
          let .invokedFunction(context):
-      let error = error ?? GRPCStatus(code: .unavailable, message: nil)
-      context.statusPromise.fail(error)
+      context.statusPromise.fail(GRPCStatus(code: .unavailable, message: nil))
 
     case .completed:
       self.interceptors = nil
@@ -154,8 +149,7 @@ public final class ServerStreamingServerHandler<
     case let .message(message):
       self.receiveInterceptedMessage(message)
     case .end:
-      // Ignored.
-      ()
+      self.receiveInterceptedEnd()
     }
   }
 
@@ -169,6 +163,7 @@ public final class ServerStreamingServerHandler<
         headers: headers,
         logger: self.context.logger,
         userInfoRef: self.userInfoRef,
+        compressionIsEnabled: self.context.encoding.isEnabled,
         sendResponse: self.interceptResponse(_:metadata:promise:)
       )
 
@@ -196,18 +191,34 @@ public final class ServerStreamingServerHandler<
   internal func receiveInterceptedMessage(_ request: Request) {
     switch self.state {
     case .idle:
-      self.handleError(
-        GRPCError.InvalidState("Protocol violation: message received before headers")
-      )
+      self.handleError(GRPCError.ProtocolViolation("Message received before headers"))
+
     case let .createdContext(context):
       self.state = .invokedFunction(context)
       // Complete the status promise with the function outcome.
       context.statusPromise.completeWith(self.userFunction(request, context))
+
     case .invokedFunction:
-      self.handleError(GRPCError.InvalidState("Protocol violation: already received message"))
+      let error = GRPCError.ProtocolViolation("Multiple messages received on server streaming RPC")
+      self.handleError(error)
+
     case .completed:
       // We received a message but we're already done: this may happen if we terminate the RPC
       // due to a channel error, for example.
+      ()
+    }
+  }
+
+  @inlinable
+  internal func receiveInterceptedEnd() {
+    switch self.state {
+    case .idle:
+      self.handleError(GRPCError.ProtocolViolation("End received before headers"))
+
+    case .createdContext:
+      self.handleError(GRPCError.ProtocolViolation("End received before message"))
+
+    case .invokedFunction, .completed:
       ()
     }
   }
@@ -244,20 +255,15 @@ public final class ServerStreamingServerHandler<
 
     case let .createdContext(context),
          let .invokedFunction(context):
-      self.state = .completed
 
       switch result {
       case let .success(status):
+        // We're sending end back, we're done.
+        self.state = .completed
         self.interceptors.send(.end(status, context.trailers), promise: nil)
 
       case let .failure(error):
-        let (status, trailers) = ServerErrorProcessor.processObserverError(
-          error,
-          headers: context.headers,
-          trailers: context.trailers,
-          delegate: self.context.errorDelegate
-        )
-        self.interceptors.send(.end(status, trailers), promise: nil)
+        self.handleError(error, thrownFromHandler: true)
       }
 
     case .completed:
@@ -277,7 +283,7 @@ public final class ServerStreamingServerHandler<
 
     case let .message(message, metadata):
       do {
-        let bytes = try self.serializer.serialize(message, allocator: ByteBufferAllocator())
+        let bytes = try self.serializer.serialize(message, allocator: self.context.allocator)
         self.context.responseWriter.sendMessage(bytes, metadata: metadata, promise: promise)
       } catch {
         // Serialization failed: fail the promise and send end.
@@ -296,9 +302,11 @@ public final class ServerStreamingServerHandler<
   }
 
   @inlinable
-  internal func handleError(_ error: Error) {
+  internal func handleError(_ error: Error, thrownFromHandler isHandlerError: Bool = false) {
     switch self.state {
     case .idle:
+      assert(!isHandlerError)
+      self.state = .completed
       // We don't have a promise to fail. Just send back end.
       let (status, trailers) = ServerErrorProcessor.processLibraryError(
         error,
@@ -308,6 +316,30 @@ public final class ServerStreamingServerHandler<
 
     case let .createdContext(context),
          let .invokedFunction(context):
+      // We don't have a promise to fail. Just send back end.
+      self.state = .completed
+
+      let status: GRPCStatus
+      let trailers: HPACKHeaders
+
+      if isHandlerError {
+        (status, trailers) = ServerErrorProcessor.processObserverError(
+          error,
+          headers: context.headers,
+          trailers: context.trailers,
+          delegate: self.context.errorDelegate
+        )
+      } else {
+        (status, trailers) = ServerErrorProcessor.processLibraryError(
+          error,
+          delegate: self.context.errorDelegate
+        )
+      }
+
+      self.interceptors.send(.end(status, trailers), promise: nil)
+      // We're already in the 'completed' state so failing the promise will be a no-op in the
+      // callback to 'userFunctionCompletedWithResult' (but we also need to avoid leaking the
+      // promise.)
       context.statusPromise.fail(error)
 
     case .completed:

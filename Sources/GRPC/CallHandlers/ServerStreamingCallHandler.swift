@@ -145,6 +145,7 @@ public final class ServerStreamingCallHandler<
         headers: headers,
         logger: self.logger,
         userInfoRef: self._userInfoRef,
+        compressionIsEnabled: self._callHandlerContext.encoding.isEnabled,
         sendResponse: self.sendResponse(_:metadata:promise:)
       )
       let observer = factory(context)
