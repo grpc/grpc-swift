@@ -19,6 +19,8 @@ import NIO
 
 // Implementation of the control service for communication with the driver process.
 class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {
+  let interceptors: Grpc_Testing_WorkerServiceServerInterceptorFactoryProtocol? = nil
+
   private let finishedPromise: EventLoopPromise<Void>
   private let serverPortOverride: Int?
 

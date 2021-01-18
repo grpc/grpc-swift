@@ -492,74 +492,73 @@ extension Grpc_Testing_TestServiceProvider {
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  public func handleMethod(
-    _ methodName: Substring,
-    callHandlerContext: CallHandlerContext
-  ) -> GRPCCallHandler? {
-    switch methodName {
+  public func handle(
+    method name: Substring,
+    context: CallHandlerContext
+  ) -> GRPCServerHandlerProtocol? {
+    switch name {
     case "EmptyCall":
-      return CallHandlerFactory.makeUnary(
-        callHandlerContext: callHandlerContext,
-        interceptors: self.interceptors?.makeEmptyCallInterceptors() ?? []
-      ) { context in
-        return { request in
-          self.emptyCall(request: request, context: context)
-        }
-      }
+      return UnaryServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_Empty>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_Empty>(),
+        interceptors: self.interceptors?.makeEmptyCallInterceptors() ?? [],
+        userFunction: self.emptyCall(request:context:)
+      )
 
     case "UnaryCall":
-      return CallHandlerFactory.makeUnary(
-        callHandlerContext: callHandlerContext,
-        interceptors: self.interceptors?.makeUnaryCallInterceptors() ?? []
-      ) { context in
-        return { request in
-          self.unaryCall(request: request, context: context)
-        }
-      }
+      return UnaryServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_SimpleRequest>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_SimpleResponse>(),
+        interceptors: self.interceptors?.makeUnaryCallInterceptors() ?? [],
+        userFunction: self.unaryCall(request:context:)
+      )
 
     case "CacheableUnaryCall":
-      return CallHandlerFactory.makeUnary(
-        callHandlerContext: callHandlerContext,
-        interceptors: self.interceptors?.makeCacheableUnaryCallInterceptors() ?? []
-      ) { context in
-        return { request in
-          self.cacheableUnaryCall(request: request, context: context)
-        }
-      }
+      return UnaryServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_SimpleRequest>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_SimpleResponse>(),
+        interceptors: self.interceptors?.makeCacheableUnaryCallInterceptors() ?? [],
+        userFunction: self.cacheableUnaryCall(request:context:)
+      )
 
     case "StreamingOutputCall":
-      return CallHandlerFactory.makeServerStreaming(
-        callHandlerContext: callHandlerContext,
-        interceptors: self.interceptors?.makeStreamingOutputCallInterceptors() ?? []
-      ) { context in
-        return { request in
-          self.streamingOutputCall(request: request, context: context)
-        }
-      }
+      return ServerStreamingServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_StreamingOutputCallRequest>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_StreamingOutputCallResponse>(),
+        interceptors: self.interceptors?.makeStreamingOutputCallInterceptors() ?? [],
+        userFunction: self.streamingOutputCall(request:context:)
+      )
 
     case "StreamingInputCall":
-      return CallHandlerFactory.makeClientStreaming(
-        callHandlerContext: callHandlerContext,
-        interceptors: self.interceptors?.makeStreamingInputCallInterceptors() ?? []
-      ) { context in
-        self.streamingInputCall(context: context)
-      }
+      return ClientStreamingServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_StreamingInputCallRequest>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_StreamingInputCallResponse>(),
+        interceptors: self.interceptors?.makeStreamingInputCallInterceptors() ?? [],
+        observerFactory: self.streamingInputCall(context:)
+      )
 
     case "FullDuplexCall":
-      return CallHandlerFactory.makeBidirectionalStreaming(
-        callHandlerContext: callHandlerContext,
-        interceptors: self.interceptors?.makeFullDuplexCallInterceptors() ?? []
-      ) { context in
-        self.fullDuplexCall(context: context)
-      }
+      return BidirectionalStreamingServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_StreamingOutputCallRequest>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_StreamingOutputCallResponse>(),
+        interceptors: self.interceptors?.makeFullDuplexCallInterceptors() ?? [],
+        observerFactory: self.fullDuplexCall(context:)
+      )
 
     case "HalfDuplexCall":
-      return CallHandlerFactory.makeBidirectionalStreaming(
-        callHandlerContext: callHandlerContext,
-        interceptors: self.interceptors?.makeHalfDuplexCallInterceptors() ?? []
-      ) { context in
-        self.halfDuplexCall(context: context)
-      }
+      return BidirectionalStreamingServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_StreamingOutputCallRequest>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_StreamingOutputCallResponse>(),
+        interceptors: self.interceptors?.makeHalfDuplexCallInterceptors() ?? [],
+        observerFactory: self.halfDuplexCall(context:)
+      )
 
     default:
       return nil
@@ -617,20 +616,19 @@ extension Grpc_Testing_UnimplementedServiceProvider {
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  public func handleMethod(
-    _ methodName: Substring,
-    callHandlerContext: CallHandlerContext
-  ) -> GRPCCallHandler? {
-    switch methodName {
+  public func handle(
+    method name: Substring,
+    context: CallHandlerContext
+  ) -> GRPCServerHandlerProtocol? {
+    switch name {
     case "UnimplementedCall":
-      return CallHandlerFactory.makeUnary(
-        callHandlerContext: callHandlerContext,
-        interceptors: self.interceptors?.makeUnimplementedCallInterceptors() ?? []
-      ) { context in
-        return { request in
-          self.unimplementedCall(request: request, context: context)
-        }
-      }
+      return UnaryServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_Empty>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_Empty>(),
+        interceptors: self.interceptors?.makeUnimplementedCallInterceptors() ?? [],
+        userFunction: self.unimplementedCall(request:context:)
+      )
 
     default:
       return nil
@@ -660,30 +658,28 @@ extension Grpc_Testing_ReconnectServiceProvider {
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  public func handleMethod(
-    _ methodName: Substring,
-    callHandlerContext: CallHandlerContext
-  ) -> GRPCCallHandler? {
-    switch methodName {
+  public func handle(
+    method name: Substring,
+    context: CallHandlerContext
+  ) -> GRPCServerHandlerProtocol? {
+    switch name {
     case "Start":
-      return CallHandlerFactory.makeUnary(
-        callHandlerContext: callHandlerContext,
-        interceptors: self.interceptors?.makeStartInterceptors() ?? []
-      ) { context in
-        return { request in
-          self.start(request: request, context: context)
-        }
-      }
+      return UnaryServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_ReconnectParams>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_Empty>(),
+        interceptors: self.interceptors?.makeStartInterceptors() ?? [],
+        userFunction: self.start(request:context:)
+      )
 
     case "Stop":
-      return CallHandlerFactory.makeUnary(
-        callHandlerContext: callHandlerContext,
-        interceptors: self.interceptors?.makeStopInterceptors() ?? []
-      ) { context in
-        return { request in
-          self.stop(request: request, context: context)
-        }
-      }
+      return UnaryServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_Empty>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_ReconnectInfo>(),
+        interceptors: self.interceptors?.makeStopInterceptors() ?? [],
+        userFunction: self.stop(request:context:)
+      )
 
     default:
       return nil

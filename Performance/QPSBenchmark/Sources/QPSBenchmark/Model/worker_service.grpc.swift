@@ -25,8 +25,11 @@ import NIO
 import SwiftProtobuf
 
 
-/// Usage: instantiate Grpc_Testing_WorkerServiceClient, then call methods of this protocol to make API calls.
+/// Usage: instantiate `Grpc_Testing_WorkerServiceClient`, then call methods of this protocol to make API calls.
 public protocol Grpc_Testing_WorkerServiceClientProtocol: GRPCClient {
+  var serviceName: String { get }
+  var interceptors: Grpc_Testing_WorkerServiceClientInterceptorFactoryProtocol? { get }
+
   func runServer(
     callOptions: CallOptions?,
     handler: @escaping (Grpc_Testing_ServerStatus) -> Void
@@ -46,10 +49,12 @@ public protocol Grpc_Testing_WorkerServiceClientProtocol: GRPCClient {
     _ request: Grpc_Testing_Void,
     callOptions: CallOptions?
   ) -> UnaryCall<Grpc_Testing_Void, Grpc_Testing_Void>
-
 }
 
 extension Grpc_Testing_WorkerServiceClientProtocol {
+  public var serviceName: String {
+    return "grpc.testing.WorkerService"
+  }
 
   /// Start server with specified workload.
   /// First request sent specifies the ServerConfig followed by ServerStatus
@@ -72,6 +77,7 @@ extension Grpc_Testing_WorkerServiceClientProtocol {
     return self.makeBidirectionalStreamingCall(
       path: "/grpc.testing.WorkerService/RunServer",
       callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeRunServerInterceptors() ?? [],
       handler: handler
     )
   }
@@ -97,6 +103,7 @@ extension Grpc_Testing_WorkerServiceClientProtocol {
     return self.makeBidirectionalStreamingCall(
       path: "/grpc.testing.WorkerService/RunClient",
       callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeRunClientInterceptors() ?? [],
       handler: handler
     )
   }
@@ -114,7 +121,8 @@ extension Grpc_Testing_WorkerServiceClientProtocol {
     return self.makeUnaryCall(
       path: "/grpc.testing.WorkerService/CoreCount",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeCoreCountInterceptors() ?? []
     )
   }
 
@@ -131,28 +139,53 @@ extension Grpc_Testing_WorkerServiceClientProtocol {
     return self.makeUnaryCall(
       path: "/grpc.testing.WorkerService/QuitWorker",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeQuitWorkerInterceptors() ?? []
     )
   }
+}
+
+public protocol Grpc_Testing_WorkerServiceClientInterceptorFactoryProtocol {
+
+  /// - Returns: Interceptors to use when invoking 'runServer'.
+  func makeRunServerInterceptors() -> [ClientInterceptor<Grpc_Testing_ServerArgs, Grpc_Testing_ServerStatus>]
+
+  /// - Returns: Interceptors to use when invoking 'runClient'.
+  func makeRunClientInterceptors() -> [ClientInterceptor<Grpc_Testing_ClientArgs, Grpc_Testing_ClientStatus>]
+
+  /// - Returns: Interceptors to use when invoking 'coreCount'.
+  func makeCoreCountInterceptors() -> [ClientInterceptor<Grpc_Testing_CoreRequest, Grpc_Testing_CoreResponse>]
+
+  /// - Returns: Interceptors to use when invoking 'quitWorker'.
+  func makeQuitWorkerInterceptors() -> [ClientInterceptor<Grpc_Testing_Void, Grpc_Testing_Void>]
 }
 
 public final class Grpc_Testing_WorkerServiceClient: Grpc_Testing_WorkerServiceClientProtocol {
   public let channel: GRPCChannel
   public var defaultCallOptions: CallOptions
+  public var interceptors: Grpc_Testing_WorkerServiceClientInterceptorFactoryProtocol?
 
   /// Creates a client for the grpc.testing.WorkerService service.
   ///
   /// - Parameters:
   ///   - channel: `GRPCChannel` to the service host.
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
-  public init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
+  ///   - interceptors: A factory providing interceptors for each RPC.
+  public init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Grpc_Testing_WorkerServiceClientInterceptorFactoryProtocol? = nil
+  ) {
     self.channel = channel
     self.defaultCallOptions = defaultCallOptions
+    self.interceptors = interceptors
   }
 }
 
 /// To build a server, implement a class that conforms to this protocol.
 public protocol Grpc_Testing_WorkerServiceProvider: CallHandlerProvider {
+  var interceptors: Grpc_Testing_WorkerServiceServerInterceptorFactoryProtocol? { get }
+
   /// Start server with specified workload.
   /// First request sent specifies the ServerConfig followed by ServerStatus
   /// response. After that, a "Mark" can be sent anytime to request the latest
@@ -160,6 +193,7 @@ public protocol Grpc_Testing_WorkerServiceProvider: CallHandlerProvider {
   /// and once the shutdown has finished, the OK status is sent to terminate
   /// this RPC.
   func runServer(context: StreamingResponseCallContext<Grpc_Testing_ServerStatus>) -> EventLoopFuture<(StreamEvent<Grpc_Testing_ServerArgs>) -> Void>
+
   /// Start client with specified workload.
   /// First request sent specifies the ClientConfig followed by ClientStatus
   /// response. After that, a "Mark" can be sent anytime to request the latest
@@ -167,8 +201,10 @@ public protocol Grpc_Testing_WorkerServiceProvider: CallHandlerProvider {
   /// and once the shutdown has finished, the OK status is sent to terminate
   /// this RPC.
   func runClient(context: StreamingResponseCallContext<Grpc_Testing_ClientStatus>) -> EventLoopFuture<(StreamEvent<Grpc_Testing_ClientArgs>) -> Void>
+
   /// Just return the core count - unary call
   func coreCount(request: Grpc_Testing_CoreRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Grpc_Testing_CoreResponse>
+
   /// Quit this worker
   func quitWorker(request: Grpc_Testing_Void, context: StatusOnlyCallContext) -> EventLoopFuture<Grpc_Testing_Void>
 }
@@ -178,34 +214,68 @@ extension Grpc_Testing_WorkerServiceProvider {
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  public func handleMethod(_ methodName: Substring, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
-    switch methodName {
+  public func handle(
+    method name: Substring,
+    context: CallHandlerContext
+  ) -> GRPCServerHandlerProtocol? {
+    switch name {
     case "RunServer":
-      return CallHandlerFactory.makeBidirectionalStreaming(callHandlerContext: callHandlerContext) { context in
-        return self.runServer(context: context)
-      }
+      return BidirectionalStreamingServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_ServerArgs>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_ServerStatus>(),
+        interceptors: self.interceptors?.makeRunServerInterceptors() ?? [],
+        observerFactory: self.runServer(context:)
+      )
 
     case "RunClient":
-      return CallHandlerFactory.makeBidirectionalStreaming(callHandlerContext: callHandlerContext) { context in
-        return self.runClient(context: context)
-      }
+      return BidirectionalStreamingServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_ClientArgs>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_ClientStatus>(),
+        interceptors: self.interceptors?.makeRunClientInterceptors() ?? [],
+        observerFactory: self.runClient(context:)
+      )
 
     case "CoreCount":
-      return CallHandlerFactory.makeUnary(callHandlerContext: callHandlerContext) { context in
-        return { request in
-          self.coreCount(request: request, context: context)
-        }
-      }
+      return UnaryServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_CoreRequest>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_CoreResponse>(),
+        interceptors: self.interceptors?.makeCoreCountInterceptors() ?? [],
+        userFunction: self.coreCount(request:context:)
+      )
 
     case "QuitWorker":
-      return CallHandlerFactory.makeUnary(callHandlerContext: callHandlerContext) { context in
-        return { request in
-          self.quitWorker(request: request, context: context)
-        }
-      }
+      return UnaryServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_Void>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_Void>(),
+        interceptors: self.interceptors?.makeQuitWorkerInterceptors() ?? [],
+        userFunction: self.quitWorker(request:context:)
+      )
 
-    default: return nil
+    default:
+      return nil
     }
   }
 }
 
+public protocol Grpc_Testing_WorkerServiceServerInterceptorFactoryProtocol {
+
+  /// - Returns: Interceptors to use when handling 'runServer'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeRunServerInterceptors() -> [ServerInterceptor<Grpc_Testing_ServerArgs, Grpc_Testing_ServerStatus>]
+
+  /// - Returns: Interceptors to use when handling 'runClient'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeRunClientInterceptors() -> [ServerInterceptor<Grpc_Testing_ClientArgs, Grpc_Testing_ClientStatus>]
+
+  /// - Returns: Interceptors to use when handling 'coreCount'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeCoreCountInterceptors() -> [ServerInterceptor<Grpc_Testing_CoreRequest, Grpc_Testing_CoreResponse>]
+
+  /// - Returns: Interceptors to use when handling 'quitWorker'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeQuitWorkerInterceptors() -> [ServerInterceptor<Grpc_Testing_Void, Grpc_Testing_Void>]
+}

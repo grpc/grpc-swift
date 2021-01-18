@@ -20,6 +20,8 @@ import NIO
 
 /// Implementation of asynchronous service for benchmarking.
 final class AsyncQPSServerImpl: Grpc_Testing_BenchmarkServiceProvider {
+  let interceptors: Grpc_Testing_BenchmarkServiceServerInterceptorFactoryProtocol? = nil
+
   /// One request followed by one response.
   /// The server returns the client payload as-is.
   func unaryCall(request: Grpc_Testing_SimpleRequest,

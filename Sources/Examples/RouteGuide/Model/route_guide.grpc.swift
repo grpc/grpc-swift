@@ -230,46 +230,46 @@ extension Routeguide_RouteGuideProvider {
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  public func handleMethod(
-    _ methodName: Substring,
-    callHandlerContext: CallHandlerContext
-  ) -> GRPCCallHandler? {
-    switch methodName {
+  public func handle(
+    method name: Substring,
+    context: CallHandlerContext
+  ) -> GRPCServerHandlerProtocol? {
+    switch name {
     case "GetFeature":
-      return CallHandlerFactory.makeUnary(
-        callHandlerContext: callHandlerContext,
-        interceptors: self.interceptors?.makeGetFeatureInterceptors() ?? []
-      ) { context in
-        return { request in
-          self.getFeature(request: request, context: context)
-        }
-      }
+      return UnaryServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Routeguide_Point>(),
+        responseSerializer: ProtobufSerializer<Routeguide_Feature>(),
+        interceptors: self.interceptors?.makeGetFeatureInterceptors() ?? [],
+        userFunction: self.getFeature(request:context:)
+      )
 
     case "ListFeatures":
-      return CallHandlerFactory.makeServerStreaming(
-        callHandlerContext: callHandlerContext,
-        interceptors: self.interceptors?.makeListFeaturesInterceptors() ?? []
-      ) { context in
-        return { request in
-          self.listFeatures(request: request, context: context)
-        }
-      }
+      return ServerStreamingServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Routeguide_Rectangle>(),
+        responseSerializer: ProtobufSerializer<Routeguide_Feature>(),
+        interceptors: self.interceptors?.makeListFeaturesInterceptors() ?? [],
+        userFunction: self.listFeatures(request:context:)
+      )
 
     case "RecordRoute":
-      return CallHandlerFactory.makeClientStreaming(
-        callHandlerContext: callHandlerContext,
-        interceptors: self.interceptors?.makeRecordRouteInterceptors() ?? []
-      ) { context in
-        self.recordRoute(context: context)
-      }
+      return ClientStreamingServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Routeguide_Point>(),
+        responseSerializer: ProtobufSerializer<Routeguide_RouteSummary>(),
+        interceptors: self.interceptors?.makeRecordRouteInterceptors() ?? [],
+        observerFactory: self.recordRoute(context:)
+      )
 
     case "RouteChat":
-      return CallHandlerFactory.makeBidirectionalStreaming(
-        callHandlerContext: callHandlerContext,
-        interceptors: self.interceptors?.makeRouteChatInterceptors() ?? []
-      ) { context in
-        self.routeChat(context: context)
-      }
+      return BidirectionalStreamingServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Routeguide_RouteNote>(),
+        responseSerializer: ProtobufSerializer<Routeguide_RouteNote>(),
+        interceptors: self.interceptors?.makeRouteChatInterceptors() ?? [],
+        observerFactory: self.routeChat(context:)
+      )
 
     default:
       return nil

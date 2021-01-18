@@ -105,20 +105,19 @@ extension Helloworld_GreeterProvider {
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  public func handleMethod(
-    _ methodName: Substring,
-    callHandlerContext: CallHandlerContext
-  ) -> GRPCCallHandler? {
-    switch methodName {
+  public func handle(
+    method name: Substring,
+    context: CallHandlerContext
+  ) -> GRPCServerHandlerProtocol? {
+    switch name {
     case "SayHello":
-      return CallHandlerFactory.makeUnary(
-        callHandlerContext: callHandlerContext,
-        interceptors: self.interceptors?.makeSayHelloInterceptors() ?? []
-      ) { context in
-        return { request in
-          self.sayHello(request: request, context: context)
-        }
-      }
+      return UnaryServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Helloworld_HelloRequest>(),
+        responseSerializer: ProtobufSerializer<Helloworld_HelloReply>(),
+        interceptors: self.interceptors?.makeSayHelloInterceptors() ?? [],
+        userFunction: self.sayHello(request:context:)
+      )
 
     default:
       return nil
