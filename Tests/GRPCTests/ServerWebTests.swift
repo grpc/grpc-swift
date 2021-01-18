@@ -96,7 +96,7 @@ extension ServerWebTests {
   func testUnaryWithoutRequestMessage() {
     let expectedData = self.gRPCWebTrailers(
       status: 13,
-      message: "Request stream cardinality violation"
+      message: "Protocol violation: End received before message"
     )
 
     let expectedResponse = expectedData.base64EncodedString()
