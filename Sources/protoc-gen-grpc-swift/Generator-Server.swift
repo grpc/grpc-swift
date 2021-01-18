@@ -78,15 +78,15 @@ extension Generator {
       )
       self.println("/// Returns nil for methods not handled by this service.")
       self.printFunction(
-        name: "handleMethod",
+        name: "handle",
         arguments: [
-          "_ methodName: Substring",
-          "callHandlerContext: CallHandlerContext",
+          "method name: Substring",
+          "context: CallHandlerContext",
         ],
-        returnType: "GRPCCallHandler?",
+        returnType: "GRPCServerHandlerProtocol?",
         access: self.access
       ) {
-        self.println("switch methodName {")
+        self.println("switch name {")
         for method in self.service.methods {
           self.method = method
           self.println("case \"\(method.name)\":")
@@ -95,38 +95,31 @@ extension Generator {
             let callHandlerType: String
             switch streamingType(method) {
             case .unary:
-              callHandlerType = "CallHandlerFactory.makeUnary"
+              callHandlerType = "UnaryServerHandler"
             case .serverStreaming:
-              callHandlerType = "CallHandlerFactory.makeServerStreaming"
+              callHandlerType = "ServerStreamingServerHandler"
             case .clientStreaming:
-              callHandlerType = "CallHandlerFactory.makeClientStreaming"
+              callHandlerType = "ClientStreamingServerHandler"
             case .bidirectionalStreaming:
-              callHandlerType = "CallHandlerFactory.makeBidirectionalStreaming"
+              callHandlerType = "BidirectionalStreamingServerHandler"
             }
 
             self.println("return \(callHandlerType)(")
             self.withIndentation {
-              self.println("callHandlerContext: callHandlerContext,")
+              self.println("context: context,")
+              self.println("requestDeserializer: ProtobufDeserializer<\(self.methodInputName)>(),")
+              self.println("responseSerializer: ProtobufSerializer<\(self.methodOutputName)>(),")
               self.println(
-                "interceptors: self.interceptors?.\(self.methodInterceptorFactoryName)() ?? []"
+                "interceptors: self.interceptors?.\(self.methodInterceptorFactoryName)() ?? [],"
               )
-            }
-            self.println(") { context in")
-            self.withIndentation {
-              switch streamingType(self.method) {
+              switch streamingType(method) {
               case .unary, .serverStreaming:
-                self.println("return { request in")
-                self.withIndentation {
-                  self.println(
-                    "self.\(self.methodFunctionName)(request: request, context: context)"
-                  )
-                }
-                self.println("}")
+                self.println("userFunction: self.\(self.methodFunctionName)(request:context:)")
               case .clientStreaming, .bidirectionalStreaming:
-                self.println("self.\(self.methodFunctionName)(context: context)")
+                self.println("observerFactory: self.\(self.methodFunctionName)(context:)")
               }
             }
-            self.println("}")
+            self.println(")")
           }
           self.println()
         }
