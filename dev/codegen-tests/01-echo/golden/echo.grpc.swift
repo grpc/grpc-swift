@@ -194,46 +194,46 @@ extension Echo_EchoProvider {
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  internal func handleMethod(
-    _ methodName: Substring,
-    callHandlerContext: CallHandlerContext
-  ) -> GRPCCallHandler? {
-    switch methodName {
+  internal func handle(
+    method name: Substring,
+    context: CallHandlerContext
+  ) -> GRPCServerHandlerProtocol? {
+    switch name {
     case "Get":
-      return CallHandlerFactory.makeUnary(
-        callHandlerContext: callHandlerContext,
-        interceptors: self.interceptors?.makeGetInterceptors() ?? []
-      ) { context in
-        return { request in
-          self.get(request: request, context: context)
-        }
-      }
+      return UnaryServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Echo_EchoRequest>(),
+        responseSerializer: ProtobufSerializer<Echo_EchoResponse>(),
+        interceptors: self.interceptors?.makeGetInterceptors() ?? [],
+        userFunction: self.get(request:context:)
+      )
 
     case "Expand":
-      return CallHandlerFactory.makeServerStreaming(
-        callHandlerContext: callHandlerContext,
-        interceptors: self.interceptors?.makeExpandInterceptors() ?? []
-      ) { context in
-        return { request in
-          self.expand(request: request, context: context)
-        }
-      }
+      return ServerStreamingServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Echo_EchoRequest>(),
+        responseSerializer: ProtobufSerializer<Echo_EchoResponse>(),
+        interceptors: self.interceptors?.makeExpandInterceptors() ?? [],
+        userFunction: self.expand(request:context:)
+      )
 
     case "Collect":
-      return CallHandlerFactory.makeClientStreaming(
-        callHandlerContext: callHandlerContext,
-        interceptors: self.interceptors?.makeCollectInterceptors() ?? []
-      ) { context in
-        self.collect(context: context)
-      }
+      return ClientStreamingServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Echo_EchoRequest>(),
+        responseSerializer: ProtobufSerializer<Echo_EchoResponse>(),
+        interceptors: self.interceptors?.makeCollectInterceptors() ?? [],
+        observerFactory: self.collect(context:)
+      )
 
     case "Update":
-      return CallHandlerFactory.makeBidirectionalStreaming(
-        callHandlerContext: callHandlerContext,
-        interceptors: self.interceptors?.makeUpdateInterceptors() ?? []
-      ) { context in
-        self.update(context: context)
-      }
+      return BidirectionalStreamingServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Echo_EchoRequest>(),
+        responseSerializer: ProtobufSerializer<Echo_EchoResponse>(),
+        interceptors: self.interceptors?.makeUpdateInterceptors() ?? [],
+        observerFactory: self.update(context:)
+      )
 
     default:
       return nil
