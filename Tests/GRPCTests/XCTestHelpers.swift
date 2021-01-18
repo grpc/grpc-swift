@@ -481,7 +481,7 @@ struct Matcher<Value> {
   static func configure() -> Matcher<HTTP2ToRawGRPCStateMachine.ReceiveHeadersAction> {
     return .init { actual in
       switch actual {
-      case .configurePipeline:
+      case .configureLegacy, .configure:
         return .match
       default:
         return .noMatch(actual: "\(actual)", expected: "configurePipeline")
