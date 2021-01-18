@@ -53,6 +53,14 @@ extension CallHandlerProvider {
   ) -> GRPCServerHandlerProtocol? {
     return nil
   }
+
+  // TODO: remove this once we've removed 'handleMethod(_:callHandlerContext:)'.
+  public func handleMethod(
+    _ methodName: Substring,
+    callHandlerContext: CallHandlerContext
+  ) -> GRPCCallHandler? {
+    return nil
+  }
 }
 
 // This is public because it will be passed into generated code, all members are `internal` because

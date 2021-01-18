@@ -22,15 +22,24 @@ import NIOHTTP1
 import SwiftProtobuf
 import XCTest
 
-class ServerInterceptorTests: GRPCTestCase {
-  private var channel: EmbeddedChannel!
-
-  override func setUp() {
-    super.setUp()
-    self.channel = EmbeddedChannel()
+extension GRPCServerHandlerProtocol {
+  fileprivate func receiveRequest(_ request: Echo_EchoRequest) {
+    let serializer = ProtobufSerializer<Echo_EchoRequest>()
+    do {
+      let buffer = try serializer.serialize(request, allocator: ByteBufferAllocator())
+      self.receiveMessage(buffer)
+    } catch {
+      XCTFail("Unexpected error: \(error)")
+    }
   }
+}
 
-  private func makeRecorder() -> RecordingServerInterceptor<Echo_EchoRequest, Echo_EchoResponse> {
+class ServerInterceptorTests: GRPCTestCase {
+  private let eventLoop = EmbeddedEventLoop()
+  private let recorder = ResponseRecorder()
+
+  private func makeRecordingInterceptor()
+    -> RecordingServerInterceptor<Echo_EchoRequest, Echo_EchoResponse> {
     return .init()
   }
 
@@ -45,9 +54,9 @@ class ServerInterceptorTests: GRPCTestCase {
       errorDelegate: nil,
       logger: self.serverLogger,
       encoding: .disabled,
-      eventLoop: self.channel.eventLoop,
+      eventLoop: self.eventLoop,
       path: path,
-      responseWriter: NoOpResponseWriter(),
+      responseWriter: self.recorder,
       allocator: ByteBufferAllocator()
     )
   }
@@ -62,215 +71,103 @@ class ServerInterceptorTests: GRPCTestCase {
   private func handleMethod(
     _ method: Substring,
     using provider: CallHandlerProvider
-  ) -> GRPCCallHandler? {
+  ) -> GRPCServerHandlerProtocol? {
     let path = "/\(provider.serviceName)/\(method)"
     let context = self.makeHandlerContext(for: path)
-    return provider.handleMethod(method, callHandlerContext: context)
+    return provider.handle(method: method, context: context)
   }
 
   fileprivate typealias ResponsePart = GRPCServerResponsePart<Echo_EchoResponse>
 
   func testPassThroughInterceptor() throws {
-    let recorder = self.makeRecorder()
-    let provider = self.echoProvider(interceptedBy: recorder)
+    let recordingInterceptor = self.makeRecordingInterceptor()
+    let provider = self.echoProvider(interceptedBy: recordingInterceptor)
 
     let handler = try assertNotNil(self.handleMethod("Get", using: provider))
-    assertThat(try self.channel.pipeline.addHandlers([Codec(), handler]).wait(), .doesNotThrow())
 
     // Send requests.
-    assertThat(try self.channel.writeInbound(self.request(.metadata([:]))), .doesNotThrow())
-    assertThat(
-      try self.channel.writeInbound(self.request(.message(.with { $0.text = "" }))),
-      .doesNotThrow()
-    )
-    assertThat(try self.channel.writeInbound(self.request(.end)), .doesNotThrow())
+    handler.receiveMetadata([:])
+    handler.receiveRequest(.with { $0.text = "" })
+    handler.receiveEnd()
 
     // Expect responses.
-    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.metadata()))
-    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.message()))
-    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.end()))
+    assertThat(self.recorder.metadata, .is(.notNil()))
+    assertThat(self.recorder.messages.count, .is(1))
+    assertThat(self.recorder.status, .is(.notNil()))
 
     // We expect 2 request parts: the provider responds before it sees end, that's fine.
-    assertThat(recorder.requestParts, .hasCount(2))
-    assertThat(recorder.requestParts[0], .is(.metadata()))
-    assertThat(recorder.requestParts[1], .is(.message()))
+    assertThat(recordingInterceptor.requestParts, .hasCount(2))
+    assertThat(recordingInterceptor.requestParts[0], .is(.metadata()))
+    assertThat(recordingInterceptor.requestParts[1], .is(.message()))
 
-    assertThat(recorder.responseParts, .hasCount(3))
-    assertThat(recorder.responseParts[0], .is(.metadata()))
-    assertThat(recorder.responseParts[1], .is(.message()))
-    assertThat(recorder.responseParts[2], .is(.end(status: .is(.ok))))
-  }
-
-  func _testExtraRequestPartsAreIgnored(
-    part: ExtraRequestPartEmitter.Part,
-    callType: GRPCCallType
-  ) throws {
-    let interceptor = ExtraRequestPartEmitter(repeat: part, times: 3)
-    let provider = self.echoProvider(interceptedBy: interceptor)
-
-    let method: Substring
-
-    switch callType {
-    case .unary:
-      method = "Get"
-    case .clientStreaming:
-      method = "Collect"
-    case .serverStreaming:
-      method = "Expand"
-    case .bidirectionalStreaming:
-      method = "Update"
-    }
-
-    let handler = try assertNotNil(self.handleMethod(method, using: provider))
-    assertThat(try self.channel.pipeline.addHandlers([Codec(), handler]).wait(), .doesNotThrow())
-
-    // Send the requests.
-    assertThat(try self.channel.writeInbound(self.request(.metadata([:]))), .doesNotThrow())
-    assertThat(try self.channel.writeInbound(self.request(.message(.init()))), .doesNotThrow())
-    assertThat(try self.channel.writeInbound(self.request(.end)), .doesNotThrow())
-
-    // Expect the responses.
-    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.metadata()))
-    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.message()))
-    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.end()))
-    // No more response parts.
-    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .is(.nil()))
-  }
-
-  func testExtraRequestMetadataIsIgnoredForUnary() throws {
-    try self._testExtraRequestPartsAreIgnored(part: .metadata, callType: .unary)
-  }
-
-  func testExtraRequestMessageIsIgnoredForUnary() throws {
-    try self._testExtraRequestPartsAreIgnored(part: .message, callType: .unary)
-  }
-
-  func testExtraRequestEndIsIgnoredForUnary() throws {
-    try self._testExtraRequestPartsAreIgnored(part: .end, callType: .unary)
-  }
-
-  func testExtraRequestMetadataIsIgnoredForClientStreaming() throws {
-    try self._testExtraRequestPartsAreIgnored(part: .metadata, callType: .clientStreaming)
-  }
-
-  func testExtraRequestEndIsIgnoredForClientStreaming() throws {
-    try self._testExtraRequestPartsAreIgnored(part: .end, callType: .clientStreaming)
-  }
-
-  func testExtraRequestMetadataIsIgnoredForServerStreaming() throws {
-    try self._testExtraRequestPartsAreIgnored(part: .metadata, callType: .serverStreaming)
-  }
-
-  func testExtraRequestMessageIsIgnoredForServerStreaming() throws {
-    try self._testExtraRequestPartsAreIgnored(part: .message, callType: .serverStreaming)
-  }
-
-  func testExtraRequestEndIsIgnoredForServerStreaming() throws {
-    try self._testExtraRequestPartsAreIgnored(part: .end, callType: .serverStreaming)
-  }
-
-  func testExtraRequestMetadataIsIgnoredForBidirectionalStreaming() throws {
-    try self._testExtraRequestPartsAreIgnored(part: .metadata, callType: .bidirectionalStreaming)
-  }
-
-  func testExtraRequestEndIsIgnoredForBidirectionalStreaming() throws {
-    try self._testExtraRequestPartsAreIgnored(part: .end, callType: .bidirectionalStreaming)
+    assertThat(recordingInterceptor.responseParts, .hasCount(3))
+    assertThat(recordingInterceptor.responseParts[0], .is(.metadata()))
+    assertThat(recordingInterceptor.responseParts[1], .is(.message()))
+    assertThat(recordingInterceptor.responseParts[2], .is(.end(status: .is(.ok))))
   }
 
   func testUnaryFromInterceptor() throws {
     let provider = EchoFromInterceptor()
     let handler = try assertNotNil(self.handleMethod("Get", using: provider))
-    assertThat(try self.channel.pipeline.addHandlers([Codec(), handler]).wait(), .doesNotThrow())
 
     // Send the requests.
-    assertThat(try self.channel.writeInbound(self.request(.metadata([:]))), .doesNotThrow())
-    assertThat(
-      try self.channel.writeInbound(self.request(.message(.init(text: "foo")))),
-      .doesNotThrow()
-    )
-    assertThat(try self.channel.writeInbound(self.request(.end)), .doesNotThrow())
+    handler.receiveMetadata([:])
+    handler.receiveRequest(.with { $0.text = "foo" })
+    handler.receiveEnd()
 
     // Get the responses.
-    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.metadata()))
-    assertThat(
-      try self.channel.readOutbound(as: ResponsePart.self),
-      .notNil(.message(.equalTo(.with { $0.text = "echo: foo" })))
-    )
-    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.end()))
+    assertThat(self.recorder.metadata, .is(.notNil()))
+    assertThat(self.recorder.messages.count, .is(1))
+    assertThat(self.recorder.status, .is(.notNil()))
   }
 
   func testClientStreamingFromInterceptor() throws {
     let provider = EchoFromInterceptor()
     let handler = try assertNotNil(self.handleMethod("Collect", using: provider))
-    assertThat(try self.channel.pipeline.addHandlers([Codec(), handler]).wait(), .doesNotThrow())
 
     // Send the requests.
-    assertThat(try self.channel.writeInbound(self.request(.metadata([:]))), .doesNotThrow())
+    handler.receiveMetadata([:])
     for text in ["a", "b", "c"] {
-      let message = self.request(.message(.init(text: text)))
-      assertThat(try self.channel.writeInbound(message), .doesNotThrow())
+      handler.receiveRequest(.with { $0.text = text })
     }
-    assertThat(try self.channel.writeInbound(self.request(.end)), .doesNotThrow())
+    handler.receiveEnd()
 
-    // Receive responses.
-    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.metadata()))
-    assertThat(
-      try self.channel.readOutbound(as: ResponsePart.self),
-      .notNil(.message(.equalTo(.with { $0.text = "echo: a b c" })))
-    )
-    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.end()))
+    // Get the responses.
+    assertThat(self.recorder.metadata, .is(.notNil()))
+    assertThat(self.recorder.messages.count, .is(1))
+    assertThat(self.recorder.status, .is(.notNil()))
   }
 
   func testServerStreamingFromInterceptor() throws {
     let provider = EchoFromInterceptor()
     let handler = try assertNotNil(self.handleMethod("Expand", using: provider))
-    assertThat(try self.channel.pipeline.addHandlers([Codec(), handler]).wait(), .doesNotThrow())
 
     // Send the requests.
-    assertThat(try self.channel.writeInbound(self.request(.metadata([:]))), .doesNotThrow())
-    assertThat(
-      try self.channel.writeInbound(self.request(.message(.with { $0.text = "a b c" }))),
-      .doesNotThrow()
-    )
-    assertThat(try self.channel.writeInbound(self.request(.end)), .doesNotThrow())
+    handler.receiveMetadata([:])
+    handler.receiveRequest(.with { $0.text = "a b c" })
+    handler.receiveEnd()
 
-    // Receive responses.
-    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.metadata()))
-    for text in ["a", "b", "c"] {
-      let expected = Echo_EchoResponse(text: "echo: " + text)
-      assertThat(
-        try self.channel.readOutbound(as: ResponsePart.self),
-        .notNil(.message(.equalTo(expected)))
-      )
-    }
-    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.end()))
+    // Get the responses.
+    assertThat(self.recorder.metadata, .is(.notNil()))
+    assertThat(self.recorder.messages.count, .is(3))
+    assertThat(self.recorder.status, .is(.notNil()))
   }
 
   func testBidirectionalStreamingFromInterceptor() throws {
     let provider = EchoFromInterceptor()
     let handler = try assertNotNil(self.handleMethod("Update", using: provider))
-    assertThat(try self.channel.pipeline.addHandlers([Codec(), handler]).wait(), .doesNotThrow())
 
     // Send the requests.
-    assertThat(try self.channel.writeInbound(self.request(.metadata([:]))), .doesNotThrow())
+    handler.receiveMetadata([:])
     for text in ["a", "b", "c"] {
-      assertThat(
-        try self.channel.writeInbound(self.request(.message(.init(text: text)))),
-        .doesNotThrow()
-      )
+      handler.receiveRequest(.with { $0.text = text })
     }
-    assertThat(try self.channel.writeInbound(self.request(.end)), .doesNotThrow())
+    handler.receiveEnd()
 
-    // Receive responses.
-    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.metadata()))
-    for text in ["a", "b", "c"] {
-      let expected = Echo_EchoResponse(text: "echo: " + text)
-      assertThat(
-        try self.channel.readOutbound(as: ResponsePart.self),
-        .notNil(.message(.equalTo(expected)))
-      )
-    }
-    assertThat(try self.channel.readOutbound(as: ResponsePart.self), .notNil(.end()))
+    // Get the responses.
+    assertThat(self.recorder.metadata, .is(.notNil()))
+    assertThat(self.recorder.messages.count, .is(3))
+    assertThat(self.recorder.status, .is(.notNil()))
   }
 }
 
