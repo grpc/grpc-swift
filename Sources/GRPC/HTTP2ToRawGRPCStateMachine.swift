@@ -232,7 +232,9 @@ extension HTTP2ToRawGRPCStateMachine {
 
   enum ReceiveHeadersAction {
     /// Configure the pipeline with the given call handler.
-    case configurePipeline(GRPCCallHandler)
+    case configureLegacy(GRPCCallHandler)
+    /// Configure the RPC to use the given server handler.
+    case configure(GRPCServerHandlerProtocol)
     /// Reject the RPC by writing out the given headers and setting end-stream.
     case rejectRPC(HPACKHeaders)
   }
@@ -331,25 +333,32 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
 
     // We have a matching service, hopefully we have a provider for the method too.
     let method = Substring(callPath.method)
-    guard let handler = service.handleMethod(method, callHandlerContext: context) else {
-      return self.methodNotImplemented(path, contentType: contentType)
+
+    func nextState() -> HTTP2ToRawGRPCStateMachine.RequestOpenResponseIdleState {
+      return HTTP2ToRawGRPCStateMachine.RequestOpenResponseIdleState(
+        reader: reader,
+        writer: writer,
+        contentType: contentType,
+        acceptEncoding: acceptableRequestEncoding,
+        responseEncoding: responseEncoding,
+        normalizeHeaders: self.normalizeHeaders,
+        configurationState: .configuring(headers)
+      )
     }
 
-    // Finally, on to the next state!
-    let requestOpenResponseIdle = HTTP2ToRawGRPCStateMachine.RequestOpenResponseIdleState(
-      reader: reader,
-      writer: writer,
-      contentType: contentType,
-      acceptEncoding: acceptableRequestEncoding,
-      responseEncoding: responseEncoding,
-      normalizeHeaders: self.normalizeHeaders,
-      configurationState: .configuring(headers)
-    )
-
-    return .init(
-      state: .requestOpenResponseIdle(requestOpenResponseIdle),
-      action: .configurePipeline(handler)
-    )
+    if let handler = service.handle(method: method, context: context) {
+      return .init(
+        state: .requestOpenResponseIdle(nextState()),
+        action: .configure(handler)
+      )
+    } else if let handler = service.handleMethod(method, callHandlerContext: context) {
+      return .init(
+        state: .requestOpenResponseIdle(nextState()),
+        action: .configureLegacy(handler)
+      )
+    } else {
+      return self.methodNotImplemented(path, contentType: contentType)
+    }
   }
 
   /// The 'content-type' is not supported; close with status code 415.

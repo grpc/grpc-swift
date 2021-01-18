@@ -30,6 +30,23 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelDuplexHandler, GRPCServer
   private let errorDelegate: ServerErrorDelegate?
   private var context: ChannelHandlerContext!
 
+  /// The mode we're operating in.
+  private var mode: Mode = .notConfigured
+
+  /// Whether we are currently reading data from the `Channel`. Should be set to `false` once a
+  /// burst of reading has completed.
+  private var isReading = false
+
+  /// Indicates whether a flush event is pending. If a flush is received while `isReading` is `true`
+  /// then it is held until the read completes in order to elide unnecessary flushes.
+  private var flushPending = false
+
+  private enum Mode {
+    case notConfigured
+    case legacy
+    case handler(GRPCServerHandlerProtocol)
+  }
+
   init(
     servicesByName: [Substring: CallHandlerProvider],
     encoding: ServerMessageEncoding,
@@ -46,53 +63,36 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelDuplexHandler, GRPCServer
     )
   }
 
-  func handlerAdded(context: ChannelHandlerContext) {
+  internal func handlerAdded(context: ChannelHandlerContext) {
     self.context = context
   }
 
-  func handlerRemoved(context: ChannelHandlerContext) {
+  internal func handlerRemoved(context: ChannelHandlerContext) {
     self.context = nil
   }
 
-  /// Called when the pipeline has finished configuring.
-  private func configured() {
-    switch self.state.pipelineConfigured() {
-    case let .forwardHeaders(headers):
-      self.context.fireChannelRead(self.wrapInboundOut(.metadata(headers)))
-
-    case let .forwardHeadersAndRead(headers):
-      self.context.fireChannelRead(self.wrapInboundOut(.metadata(headers)))
-      self.tryReadingMessage()
+  internal func errorCaught(context: ChannelHandlerContext, error: Error) {
+    switch self.mode {
+    case .notConfigured:
+      context.close(mode: .all, promise: nil)
+    case .legacy:
+      context.fireErrorCaught(error)
+    case let .handler(hander):
+      hander.receiveError(error)
     }
   }
 
-  /// Try to read a request message from the buffer.
-  private func tryReadingMessage() {
-    let action = self.state.readNextRequest()
-    switch action {
-    case .none:
-      ()
-
-    case let .forwardMessage(buffer):
-      self.context.fireChannelRead(self.wrapInboundOut(.message(buffer)))
-
-    case let .forwardMessageAndEnd(buffer):
-      self.context.fireChannelRead(self.wrapInboundOut(.message(buffer)))
-      self.context.fireChannelRead(self.wrapInboundOut(.end))
-
-    case let .forwardMessageThenReadNextMessage(buffer):
-      self.context.fireChannelRead(self.wrapInboundOut(.message(buffer)))
-      self.tryReadingMessage()
-
-    case .forwardEnd:
-      self.context.fireChannelRead(self.wrapInboundOut(.end))
-
-    case let .errorCaught(error):
-      self.context.fireErrorCaught(error)
+  internal func channelInactive(context: ChannelHandlerContext) {
+    switch self.mode {
+    case .notConfigured, .legacy:
+      context.fireChannelInactive()
+    case let .handler(handler):
+      handler.finish()
     }
   }
 
-  func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+  internal func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+    self.isReading = true
     let payload = self.unwrapInboundIn(data)
 
     switch payload {
@@ -108,10 +108,15 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelDuplexHandler, GRPCServer
       )
 
       switch receiveHeaders {
-      case let .configurePipeline(handler):
+      case let .configureLegacy(handler):
+        self.mode = .legacy
         context.channel.pipeline.addHandler(handler).whenSuccess {
           self.configured()
         }
+
+      case let .configure(handler):
+        self.mode = .handler(handler)
+        self.configured()
 
       case let .rejectRPC(trailers):
         // We're not handling this request: write headers and end stream.
@@ -145,62 +150,179 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelDuplexHandler, GRPCServer
     }
   }
 
-  func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+  internal func channelReadComplete(context: ChannelHandlerContext) {
+    self.isReading = false
+
+    if self.flushPending {
+      self.flushPending = false
+      context.flush()
+    }
+
+    context.fireChannelReadComplete()
+  }
+
+  internal func write(
+    context: ChannelHandlerContext,
+    data: NIOAny,
+    promise: EventLoopPromise<Void>?
+  ) {
     let responsePart = self.unwrapOutboundIn(data)
 
     switch responsePart {
     case let .metadata(headers):
-      switch self.state.send(headers: headers) {
-      case let .success(headers):
-        let payload = HTTP2Frame.FramePayload.headers(.init(headers: headers))
-        context.write(self.wrapOutboundOut(payload), promise: promise)
-
-      case let .failure(error):
-        promise?.fail(error)
-      }
+      self.sendMetadata(headers, promise: promise)
 
     case let .message(buffer, metadata):
-      let writeBuffer = self.state.send(
-        buffer: buffer,
-        allocator: context.channel.allocator,
-        compress: metadata.compress
-      )
-
-      switch writeBuffer {
-      case let .success(buffer):
-        let payload = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer)))
-        context.write(self.wrapOutboundOut(payload), promise: promise)
-
-      case let .failure(error):
-        promise?.fail(error)
-      }
+      self.sendMessage(buffer, metadata: metadata, promise: promise)
 
     case let .end(status, trailers):
-      switch self.state.send(status: status, trailers: trailers) {
-      case let .success(trailers):
-        // Always end stream for status and trailers.
-        let payload = HTTP2Frame.FramePayload.headers(.init(headers: trailers, endStream: true))
-        context.write(self.wrapOutboundOut(payload), promise: promise)
+      self.sendEnd(status: status, trailers: trailers, promise: promise)
+    }
+  }
 
-      case let .failure(error):
-        promise?.fail(error)
+  internal func flush(context: ChannelHandlerContext) {
+    if self.isReading {
+      // We're already reading; record the flush and emit it when the read completes.
+      self.flushPending = true
+    } else {
+      // Not reading: flush now.
+      context.flush()
+    }
+  }
+
+  /// Called when the pipeline has finished configuring.
+  private func configured() {
+    switch self.state.pipelineConfigured() {
+    case let .forwardHeaders(headers):
+      switch self.mode {
+      case .notConfigured:
+        preconditionFailure()
+      case .legacy:
+        self.context.fireChannelRead(self.wrapInboundOut(.metadata(headers)))
+      case let .handler(handler):
+        handler.receiveMetadata(headers)
+      }
+
+    case let .forwardHeadersAndRead(headers):
+      switch self.mode {
+      case .notConfigured:
+        preconditionFailure()
+      case .legacy:
+        self.context.fireChannelRead(self.wrapInboundOut(.metadata(headers)))
+      case let .handler(handler):
+        handler.receiveMetadata(headers)
+      }
+      self.tryReadingMessage()
+    }
+  }
+
+  /// Try to read a request message from the buffer.
+  private func tryReadingMessage() {
+    let action = self.state.readNextRequest()
+    switch action {
+    case .none:
+      ()
+
+    case let .forwardMessage(buffer):
+      switch self.mode {
+      case .notConfigured:
+        preconditionFailure()
+      case .legacy:
+        self.context.fireChannelRead(self.wrapInboundOut(.message(buffer)))
+      case let .handler(handler):
+        handler.receiveMessage(buffer)
+      }
+
+    case let .forwardMessageAndEnd(buffer):
+      switch self.mode {
+      case .notConfigured:
+        preconditionFailure()
+      case .legacy:
+        self.context.fireChannelRead(self.wrapInboundOut(.message(buffer)))
+        self.context.fireChannelRead(self.wrapInboundOut(.end))
+      case let .handler(handler):
+        handler.receiveMessage(buffer)
+        handler.receiveEnd()
+      }
+
+    case let .forwardMessageThenReadNextMessage(buffer):
+      switch self.mode {
+      case .notConfigured:
+        preconditionFailure()
+      case .legacy:
+        self.context.fireChannelRead(self.wrapInboundOut(.message(buffer)))
+      case let .handler(handler):
+        handler.receiveMessage(buffer)
+      }
+      self.tryReadingMessage()
+
+    case .forwardEnd:
+      switch self.mode {
+      case .notConfigured:
+        preconditionFailure()
+      case .legacy:
+        self.context.fireChannelRead(self.wrapInboundOut(.end))
+      case let .handler(handler):
+        handler.receiveEnd()
+      }
+
+    case let .errorCaught(error):
+      switch self.mode {
+      case .notConfigured:
+        preconditionFailure()
+      case .legacy:
+        self.context.fireErrorCaught(error)
+      case let .handler(handler):
+        handler.receiveError(error)
       }
     }
   }
 
   internal func sendMetadata(
-    _ metadata: HPACKHeaders,
+    _ headers: HPACKHeaders,
     promise: EventLoopPromise<Void>?
   ) {
-    fatalError("TODO: not used yet")
+    switch self.state.send(headers: headers) {
+    case let .success(headers):
+      let payload = HTTP2Frame.FramePayload.headers(.init(headers: headers))
+      self.context.write(self.wrapOutboundOut(payload), promise: promise)
+
+      if self.isReading {
+        self.flushPending = true
+      } else {
+        self.context.flush()
+      }
+
+    case let .failure(error):
+      promise?.fail(error)
+    }
   }
 
   internal func sendMessage(
-    _ bytes: ByteBuffer,
+    _ buffer: ByteBuffer,
     metadata: MessageMetadata,
     promise: EventLoopPromise<Void>?
   ) {
-    fatalError("TODO: not used yet")
+    let writeBuffer = self.state.send(
+      buffer: buffer,
+      allocator: self.context.channel.allocator,
+      compress: metadata.compress
+    )
+
+    switch writeBuffer {
+    case let .success(buffer):
+      let payload = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer)))
+      self.context.write(self.wrapOutboundOut(payload), promise: promise)
+
+      if self.isReading {
+        self.flushPending = true
+      } else {
+        self.context.flush()
+      }
+
+    case let .failure(error):
+      promise?.fail(error)
+    }
   }
 
   internal func sendEnd(
@@ -208,6 +330,20 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelDuplexHandler, GRPCServer
     trailers: HPACKHeaders,
     promise: EventLoopPromise<Void>?
   ) {
-    fatalError("TODO: not used yet")
+    switch self.state.send(status: status, trailers: trailers) {
+    case let .success(trailers):
+      // Always end stream for status and trailers.
+      let payload = HTTP2Frame.FramePayload.headers(.init(headers: trailers, endStream: true))
+      self.context.write(self.wrapOutboundOut(payload), promise: promise)
+
+      if self.isReading {
+        self.flushPending = true
+      } else {
+        self.context.flush()
+      }
+
+    case let .failure(error):
+      promise?.fail(error)
+    }
   }
 }
