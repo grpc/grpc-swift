@@ -25,8 +25,11 @@ import NIO
 import SwiftProtobuf
 
 
-/// Usage: instantiate Grpc_Testing_BenchmarkServiceClient, then call methods of this protocol to make API calls.
+/// Usage: instantiate `Grpc_Testing_BenchmarkServiceClient`, then call methods of this protocol to make API calls.
 public protocol Grpc_Testing_BenchmarkServiceClientProtocol: GRPCClient {
+  var serviceName: String { get }
+  var interceptors: Grpc_Testing_BenchmarkServiceClientInterceptorFactoryProtocol? { get }
+
   func unaryCall(
     _ request: Grpc_Testing_SimpleRequest,
     callOptions: CallOptions?
@@ -51,10 +54,12 @@ public protocol Grpc_Testing_BenchmarkServiceClientProtocol: GRPCClient {
     callOptions: CallOptions?,
     handler: @escaping (Grpc_Testing_SimpleResponse) -> Void
   ) -> BidirectionalStreamingCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>
-
 }
 
 extension Grpc_Testing_BenchmarkServiceClientProtocol {
+  public var serviceName: String {
+    return "grpc.testing.BenchmarkService"
+  }
 
   /// One request followed by one response.
   /// The server returns the client payload as-is.
@@ -70,7 +75,8 @@ extension Grpc_Testing_BenchmarkServiceClientProtocol {
     return self.makeUnaryCall(
       path: "/grpc.testing.BenchmarkService/UnaryCall",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeUnaryCallInterceptors() ?? []
     )
   }
 
@@ -92,6 +98,7 @@ extension Grpc_Testing_BenchmarkServiceClientProtocol {
     return self.makeBidirectionalStreamingCall(
       path: "/grpc.testing.BenchmarkService/StreamingCall",
       callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStreamingCallInterceptors() ?? [],
       handler: handler
     )
   }
@@ -110,7 +117,8 @@ extension Grpc_Testing_BenchmarkServiceClientProtocol {
   ) -> ClientStreamingCall<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse> {
     return self.makeClientStreamingCall(
       path: "/grpc.testing.BenchmarkService/StreamingFromClient",
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStreamingFromClientInterceptors() ?? []
     )
   }
 
@@ -131,6 +139,7 @@ extension Grpc_Testing_BenchmarkServiceClientProtocol {
       path: "/grpc.testing.BenchmarkService/StreamingFromServer",
       request: request,
       callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStreamingFromServerInterceptors() ?? [],
       handler: handler
     )
   }
@@ -152,41 +161,73 @@ extension Grpc_Testing_BenchmarkServiceClientProtocol {
     return self.makeBidirectionalStreamingCall(
       path: "/grpc.testing.BenchmarkService/StreamingBothWays",
       callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeStreamingBothWaysInterceptors() ?? [],
       handler: handler
     )
   }
 }
 
+public protocol Grpc_Testing_BenchmarkServiceClientInterceptorFactoryProtocol {
+
+  /// - Returns: Interceptors to use when invoking 'unaryCall'.
+  func makeUnaryCallInterceptors() -> [ClientInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]
+
+  /// - Returns: Interceptors to use when invoking 'streamingCall'.
+  func makeStreamingCallInterceptors() -> [ClientInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]
+
+  /// - Returns: Interceptors to use when invoking 'streamingFromClient'.
+  func makeStreamingFromClientInterceptors() -> [ClientInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]
+
+  /// - Returns: Interceptors to use when invoking 'streamingFromServer'.
+  func makeStreamingFromServerInterceptors() -> [ClientInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]
+
+  /// - Returns: Interceptors to use when invoking 'streamingBothWays'.
+  func makeStreamingBothWaysInterceptors() -> [ClientInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]
+}
+
 public final class Grpc_Testing_BenchmarkServiceClient: Grpc_Testing_BenchmarkServiceClientProtocol {
   public let channel: GRPCChannel
   public var defaultCallOptions: CallOptions
+  public var interceptors: Grpc_Testing_BenchmarkServiceClientInterceptorFactoryProtocol?
 
   /// Creates a client for the grpc.testing.BenchmarkService service.
   ///
   /// - Parameters:
   ///   - channel: `GRPCChannel` to the service host.
   ///   - defaultCallOptions: Options to use for each service call if the user doesn't provide them.
-  public init(channel: GRPCChannel, defaultCallOptions: CallOptions = CallOptions()) {
+  ///   - interceptors: A factory providing interceptors for each RPC.
+  public init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Grpc_Testing_BenchmarkServiceClientInterceptorFactoryProtocol? = nil
+  ) {
     self.channel = channel
     self.defaultCallOptions = defaultCallOptions
+    self.interceptors = interceptors
   }
 }
 
 /// To build a server, implement a class that conforms to this protocol.
 public protocol Grpc_Testing_BenchmarkServiceProvider: CallHandlerProvider {
+  var interceptors: Grpc_Testing_BenchmarkServiceServerInterceptorFactoryProtocol? { get }
+
   /// One request followed by one response.
   /// The server returns the client payload as-is.
   func unaryCall(request: Grpc_Testing_SimpleRequest, context: StatusOnlyCallContext) -> EventLoopFuture<Grpc_Testing_SimpleResponse>
+
   /// Repeated sequence of one request followed by one response.
   /// Should be called streaming ping-pong
   /// The server returns the client payload as-is on each response
   func streamingCall(context: StreamingResponseCallContext<Grpc_Testing_SimpleResponse>) -> EventLoopFuture<(StreamEvent<Grpc_Testing_SimpleRequest>) -> Void>
+
   /// Single-sided unbounded streaming from client to server
   /// The server returns the client payload as-is once the client does WritesDone
   func streamingFromClient(context: UnaryResponseCallContext<Grpc_Testing_SimpleResponse>) -> EventLoopFuture<(StreamEvent<Grpc_Testing_SimpleRequest>) -> Void>
+
   /// Single-sided unbounded streaming from server to client
   /// The server repeatedly returns the client payload as-is
   func streamingFromServer(request: Grpc_Testing_SimpleRequest, context: StreamingResponseCallContext<Grpc_Testing_SimpleResponse>) -> EventLoopFuture<GRPCStatus>
+
   /// Two-sided unbounded streaming between server to client
   /// Both sides send the content of their own choice to the other
   func streamingBothWays(context: StreamingResponseCallContext<Grpc_Testing_SimpleResponse>) -> EventLoopFuture<(StreamEvent<Grpc_Testing_SimpleRequest>) -> Void>
@@ -197,39 +238,81 @@ extension Grpc_Testing_BenchmarkServiceProvider {
 
   /// Determines, calls and returns the appropriate request handler, depending on the request's method.
   /// Returns nil for methods not handled by this service.
-  public func handleMethod(_ methodName: Substring, callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
-    switch methodName {
+  public func handle(
+    method name: Substring,
+    context: CallHandlerContext
+  ) -> GRPCServerHandlerProtocol? {
+    switch name {
     case "UnaryCall":
-      return CallHandlerFactory.makeUnary(callHandlerContext: callHandlerContext) { context in
-        return { request in
-          self.unaryCall(request: request, context: context)
-        }
-      }
+      return UnaryServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_SimpleRequest>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_SimpleResponse>(),
+        interceptors: self.interceptors?.makeUnaryCallInterceptors() ?? [],
+        userFunction: self.unaryCall(request:context:)
+      )
 
     case "StreamingCall":
-      return CallHandlerFactory.makeBidirectionalStreaming(callHandlerContext: callHandlerContext) { context in
-        return self.streamingCall(context: context)
-      }
+      return BidirectionalStreamingServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_SimpleRequest>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_SimpleResponse>(),
+        interceptors: self.interceptors?.makeStreamingCallInterceptors() ?? [],
+        observerFactory: self.streamingCall(context:)
+      )
 
     case "StreamingFromClient":
-      return CallHandlerFactory.makeClientStreaming(callHandlerContext: callHandlerContext) { context in
-        return self.streamingFromClient(context: context)
-      }
+      return ClientStreamingServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_SimpleRequest>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_SimpleResponse>(),
+        interceptors: self.interceptors?.makeStreamingFromClientInterceptors() ?? [],
+        observerFactory: self.streamingFromClient(context:)
+      )
 
     case "StreamingFromServer":
-      return CallHandlerFactory.makeServerStreaming(callHandlerContext: callHandlerContext) { context in
-        return { request in
-          self.streamingFromServer(request: request, context: context)
-        }
-      }
+      return ServerStreamingServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_SimpleRequest>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_SimpleResponse>(),
+        interceptors: self.interceptors?.makeStreamingFromServerInterceptors() ?? [],
+        userFunction: self.streamingFromServer(request:context:)
+      )
 
     case "StreamingBothWays":
-      return CallHandlerFactory.makeBidirectionalStreaming(callHandlerContext: callHandlerContext) { context in
-        return self.streamingBothWays(context: context)
-      }
+      return BidirectionalStreamingServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Grpc_Testing_SimpleRequest>(),
+        responseSerializer: ProtobufSerializer<Grpc_Testing_SimpleResponse>(),
+        interceptors: self.interceptors?.makeStreamingBothWaysInterceptors() ?? [],
+        observerFactory: self.streamingBothWays(context:)
+      )
 
-    default: return nil
+    default:
+      return nil
     }
   }
 }
 
+public protocol Grpc_Testing_BenchmarkServiceServerInterceptorFactoryProtocol {
+
+  /// - Returns: Interceptors to use when handling 'unaryCall'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeUnaryCallInterceptors() -> [ServerInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]
+
+  /// - Returns: Interceptors to use when handling 'streamingCall'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeStreamingCallInterceptors() -> [ServerInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]
+
+  /// - Returns: Interceptors to use when handling 'streamingFromClient'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeStreamingFromClientInterceptors() -> [ServerInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]
+
+  /// - Returns: Interceptors to use when handling 'streamingFromServer'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeStreamingFromServerInterceptors() -> [ServerInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]
+
+  /// - Returns: Interceptors to use when handling 'streamingBothWays'.
+  ///   Defaults to calling `self.makeInterceptors()`.
+  func makeStreamingBothWaysInterceptors() -> [ServerInterceptor<Grpc_Testing_SimpleRequest, Grpc_Testing_SimpleResponse>]
+}

@@ -164,7 +164,7 @@ private class CustomPayloadProvider: CallHandlerProvider {
 
   fileprivate func reverseString(
     request: StringPayload,
-    context: UnaryResponseCallContext<StringPayload>
+    context: StatusOnlyCallContext
   ) -> EventLoopFuture<StringPayload> {
     let reversed = StringPayload(message: String(request.message.reversed()))
     return context.eventLoop.makeSucceededFuture(reversed)
@@ -218,35 +218,43 @@ private class CustomPayloadProvider: CallHandlerProvider {
     })
   }
 
-  func handleMethod(_ methodName: Substring,
-                    callHandlerContext: CallHandlerContext) -> GRPCCallHandler? {
-    switch methodName {
+  func handle(method name: Substring, context: CallHandlerContext) -> GRPCServerHandlerProtocol? {
+    switch name {
     case "Reverse":
-      return CallHandlerFactory.makeUnary(callHandlerContext: callHandlerContext) { context in
-        { request in
-          self.reverseString(request: request, context: context)
-        }
-      }
+      return UnaryServerHandler(
+        context: context,
+        requestDeserializer: GRPCPayloadDeserializer<StringPayload>(),
+        responseSerializer: GRPCPayloadSerializer<StringPayload>(),
+        interceptors: [],
+        userFunction: self.reverseString(request:context:)
+      )
 
     case "ReverseThenJoin":
-      return CallHandlerFactory
-        .makeClientStreaming(callHandlerContext: callHandlerContext) { context in
-          self.reverseThenJoin(context: context)
-        }
+      return ClientStreamingServerHandler(
+        context: context,
+        requestDeserializer: GRPCPayloadDeserializer<StringPayload>(),
+        responseSerializer: GRPCPayloadSerializer<StringPayload>(),
+        interceptors: [],
+        observerFactory: self.reverseThenJoin(context:)
+      )
 
     case "ReverseThenSplit":
-      return CallHandlerFactory
-        .makeServerStreaming(callHandlerContext: callHandlerContext) { context in
-          { request in
-            self.reverseThenSplit(request: request, context: context)
-          }
-        }
+      return ServerStreamingServerHandler(
+        context: context,
+        requestDeserializer: GRPCPayloadDeserializer<StringPayload>(),
+        responseSerializer: GRPCPayloadSerializer<StringPayload>(),
+        interceptors: [],
+        userFunction: self.reverseThenSplit(request:context:)
+      )
 
     case "AddOneAndReverseMessage":
-      return CallHandlerFactory
-        .makeBidirectionalStreaming(callHandlerContext: callHandlerContext) { context in
-          self.addOneAndReverseMessage(context: context)
-        }
+      return BidirectionalStreamingServerHandler(
+        context: context,
+        requestDeserializer: GRPCPayloadDeserializer<CustomPayload>(),
+        responseSerializer: GRPCPayloadSerializer<CustomPayload>(),
+        interceptors: [],
+        observerFactory: self.addOneAndReverseMessage(context:)
+      )
 
     default:
       return nil
