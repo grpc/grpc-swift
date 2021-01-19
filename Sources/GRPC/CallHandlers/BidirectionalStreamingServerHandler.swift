@@ -122,16 +122,12 @@ public final class BidirectionalStreamingServerHandler<
 
   @inlinable
   public func receiveError(_ error: Error) {
-    self._finish(error: error)
+    self.handleError(error)
+    self.finish()
   }
 
   @inlinable
   public func finish() {
-    self._finish(error: nil)
-  }
-
-  @inlinable
-  internal func _finish(error: Error?) {
     switch self.state {
     case .idle:
       self.interceptors = nil
@@ -139,8 +135,7 @@ public final class BidirectionalStreamingServerHandler<
 
     case let .creatingObserver(context),
          let .observing(_, context):
-      let error = error ?? GRPCStatus(code: .unavailable, message: nil)
-      context.statusPromise.fail(error)
+      context.statusPromise.fail(GRPCStatus(code: .unavailable, message: nil))
 
     case .completed:
       self.interceptors = nil
@@ -171,6 +166,7 @@ public final class BidirectionalStreamingServerHandler<
         headers: headers,
         logger: self.context.logger,
         userInfoRef: self.userInfoRef,
+        compressionIsEnabled: self.context.encoding.isEnabled,
         sendResponse: self.interceptResponse(_:metadata:promise:)
       )
 
@@ -187,7 +183,7 @@ public final class BidirectionalStreamingServerHandler<
       self.observerFactory(context).whenComplete(self.userFunctionResolvedWithResult(_:))
 
     case .creatingObserver, .observing:
-      self.handleError(GRPCError.InvalidState("Protocol violation: already received headers"))
+      self.handleError(GRPCError.ProtocolViolation("Multiple header blocks received on RPC"))
 
     case .completed:
       // We may receive headers from the interceptor pipeline if we have already finished (i.e. due
@@ -201,9 +197,7 @@ public final class BidirectionalStreamingServerHandler<
   internal func receiveInterceptedMessage(_ request: Request) {
     switch self.state {
     case .idle:
-      self.handleError(
-        GRPCError.InvalidState("Protocol violation: message received before headers")
-      )
+      self.handleError(GRPCError.ProtocolViolation("Message received before headers"))
     case .creatingObserver:
       self.requestBuffer.append(.message(request))
     case let .observing(observer, _):
@@ -219,9 +213,7 @@ public final class BidirectionalStreamingServerHandler<
   internal func receiveInterceptedEnd() {
     switch self.state {
     case .idle:
-      self.handleError(
-        GRPCError.InvalidState("Protocol violation: end of stream received before headers")
-      )
+      self.handleError(GRPCError.ProtocolViolation("End of stream received before headers"))
     case .creatingObserver:
       self.requestBuffer.append(.end)
     case let .observing(observer, _):
@@ -255,7 +247,7 @@ public final class BidirectionalStreamingServerHandler<
         }
 
       case let .failure(error):
-        self.handleError(error)
+        self.handleError(error, thrownFromHandler: true)
       }
 
     case .completed:
@@ -296,16 +288,12 @@ public final class BidirectionalStreamingServerHandler<
     case let .creatingObserver(context), let .observing(_, context):
       switch result {
       case let .success(status):
+        // We're sending end back, we're done.
+        self.state = .completed
         self.interceptors.send(.end(status, context.trailers), promise: nil)
 
       case let .failure(error):
-        let (status, trailers) = ServerErrorProcessor.processObserverError(
-          error,
-          headers: context.headers,
-          trailers: context.trailers,
-          delegate: self.context.errorDelegate
-        )
-        self.interceptors.send(.end(status, trailers), promise: nil)
+        self.handleError(error, thrownFromHandler: true)
       }
 
     case .completed:
@@ -314,9 +302,11 @@ public final class BidirectionalStreamingServerHandler<
   }
 
   @inlinable
-  internal func handleError(_ error: Error) {
+  internal func handleError(_ error: Error, thrownFromHandler isHandlerError: Bool = false) {
     switch self.state {
     case .idle:
+      assert(!isHandlerError)
+      self.state = .completed
       // We don't have a promise to fail. Just send back end.
       let (status, trailers) = ServerErrorProcessor.processLibraryError(
         error,
@@ -324,10 +314,31 @@ public final class BidirectionalStreamingServerHandler<
       )
       self.interceptors.send(.end(status, trailers), promise: nil)
 
-    case let .creatingObserver(context):
-      context.statusPromise.fail(error)
+    case let .creatingObserver(context),
+         let .observing(_, context):
+      // We don't have a promise to fail. Just send back end.
+      self.state = .completed
 
-    case let .observing(_, context):
+      let status: GRPCStatus
+      let trailers: HPACKHeaders
+
+      if isHandlerError {
+        (status, trailers) = ServerErrorProcessor.processObserverError(
+          error,
+          headers: context.headers,
+          trailers: context.trailers,
+          delegate: self.context.errorDelegate
+        )
+      } else {
+        (status, trailers) = ServerErrorProcessor.processLibraryError(
+          error,
+          delegate: self.context.errorDelegate
+        )
+      }
+
+      self.interceptors.send(.end(status, trailers), promise: nil)
+      // We're already in the 'completed' state so failing the promise will be a no-op in the
+      // callback to 'userFunctionStatusResolved' (but we also need to avoid leaking the promise.)
       context.statusPromise.fail(error)
 
     case .completed:

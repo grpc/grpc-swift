@@ -115,6 +115,16 @@ extension ClientMessageEncoding {
 public enum ServerMessageEncoding {
   case enabled(Configuration)
   case disabled
+
+  @usableFromInline
+  internal var isEnabled: Bool {
+    switch self {
+    case .enabled:
+      return true
+    case .disabled:
+      return false
+    }
+  }
 }
 
 extension ServerMessageEncoding {

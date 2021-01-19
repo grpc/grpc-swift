@@ -126,16 +126,29 @@ internal final class _StreamingResponseCallContext<Request, Response>:
   @usableFromInline
   internal let _sendResponse: (Response, MessageMetadata, EventLoopPromise<Void>?) -> Void
 
+  @usableFromInline
+  internal let _compressionEnabledOnServer: Bool
+
   @inlinable
   internal init(
     eventLoop: EventLoop,
     headers: HPACKHeaders,
     logger: Logger,
     userInfoRef: Ref<UserInfo>,
+    compressionIsEnabled: Bool,
     sendResponse: @escaping (Response, MessageMetadata, EventLoopPromise<Void>?) -> Void
   ) {
     self._sendResponse = sendResponse
+    self._compressionEnabledOnServer = compressionIsEnabled
     super.init(eventLoop: eventLoop, headers: headers, logger: logger, userInfoRef: userInfoRef)
+  }
+
+  @inlinable
+  internal func shouldCompress(_ compression: Compression) -> Bool {
+    guard self._compressionEnabledOnServer else {
+      return false
+    }
+    return compression.isEnabled(callDefault: self.compressionEnabled)
   }
 
   @inlinable
@@ -144,11 +157,12 @@ internal final class _StreamingResponseCallContext<Request, Response>:
     compression: Compression = .deferToCallDefault,
     promise: EventLoopPromise<Void>?
   ) {
-    let compress = compression.isEnabled(callDefault: self.compressionEnabled)
     if self.eventLoop.inEventLoop {
+      let compress = self.shouldCompress(compression)
       self._sendResponse(message, .init(compress: compress, flush: true), promise)
     } else {
       self.eventLoop.execute {
+        let compress = self.shouldCompress(compression)
         self._sendResponse(message, .init(compress: compress, flush: true), promise)
       }
     }
@@ -175,7 +189,7 @@ internal final class _StreamingResponseCallContext<Request, Response>:
     compression: Compression,
     promise: EventLoopPromise<Void>?
   ) where Response == Messages.Element {
-    let compress = compression.isEnabled(callDefault: self.compressionEnabled)
+    let compress = self.shouldCompress(compression)
     var iterator = messages.makeIterator()
     var next = iterator.next()
 

@@ -117,16 +117,12 @@ public final class UnaryServerHandler<
 
   @inlinable
   public func receiveError(_ error: Error) {
-    self._finish(error: error)
+    self.handleError(error)
+    self.finish()
   }
 
   @inlinable
   public func finish() {
-    self._finish(error: nil)
-  }
-
-  @inlinable
-  internal func _finish(error: Error?) {
     switch self.state {
     case .idle:
       self.interceptors = nil
@@ -134,8 +130,7 @@ public final class UnaryServerHandler<
 
     case let .createdContext(context),
          let .invokedFunction(context):
-      let error = error ?? GRPCStatus(code: .unavailable, message: nil)
-      context.responsePromise.fail(error)
+      context.responsePromise.fail(GRPCStatus(code: .unavailable, message: nil))
 
     case .completed:
       self.interceptors = nil
@@ -152,8 +147,7 @@ public final class UnaryServerHandler<
     case let .message(message):
       self.receiveInterceptedMessage(message)
     case .end:
-      // Ignored.
-      ()
+      self.receiveInterceptedEnd()
     }
   }
 
@@ -179,7 +173,7 @@ public final class UnaryServerHandler<
       self.interceptors.send(.metadata([:]), promise: nil)
 
     case .createdContext, .invokedFunction:
-      self.handleError(GRPCError.InvalidState("Protocol violation: already received headers"))
+      self.handleError(GRPCError.ProtocolViolation("Multiple header blocks received on RPC"))
 
     case .completed:
       // We may receive headers from the interceptor pipeline if we have already finished (i.e. due
@@ -193,8 +187,7 @@ public final class UnaryServerHandler<
   internal func receiveInterceptedMessage(_ request: Request) {
     switch self.state {
     case .idle:
-      self
-        .handleError(GRPCError.InvalidState("Protocol violation: message received before headers"))
+      self.handleError(GRPCError.ProtocolViolation("Message received before headers"))
 
     case let .createdContext(context):
       // Happy path: execute the function; complete the promise with the result.
@@ -203,11 +196,25 @@ public final class UnaryServerHandler<
 
     case .invokedFunction:
       // The function's already been invoked with a message.
-      self.handleError(GRPCError.InvalidState("Protocol violation: already received message"))
+      self.handleError(GRPCError.ProtocolViolation("Multiple messages received on unary RPC"))
 
     case .completed:
       // We received a message but we're already done: this may happen if we terminate the RPC
       // due to a channel error, for example.
+      ()
+    }
+  }
+
+  @inlinable
+  internal func receiveInterceptedEnd() {
+    switch self.state {
+    case .idle:
+      self.handleError(GRPCError.ProtocolViolation("End received before headers"))
+
+    case .createdContext:
+      self.handleError(GRPCError.ProtocolViolation("End received before message"))
+
+    case .invokedFunction, .completed:
       ()
     }
   }
@@ -225,22 +232,21 @@ public final class UnaryServerHandler<
     // but before receiving a message.
     case let .createdContext(context),
          let .invokedFunction(context):
-      self.state = .completed
 
       switch result {
       case let .success(response):
-        let metadata = MessageMetadata(compress: false, flush: false)
+        // Complete, as we're sending 'end'.
+        self.state = .completed
+
+        // Compression depends on whether it's enabled on the server and the setting in the caller
+        // context.
+        let compress = self.context.encoding.isEnabled && context.compressionEnabled
+        let metadata = MessageMetadata(compress: compress, flush: false)
         self.interceptors.send(.message(response, metadata), promise: nil)
         self.interceptors.send(.end(context.responseStatus, context.trailers), promise: nil)
 
       case let .failure(error):
-        let (status, trailers) = ServerErrorProcessor.processObserverError(
-          error,
-          headers: context.headers,
-          trailers: context.trailers,
-          delegate: self.context.errorDelegate
-        )
-        self.interceptors.send(.end(status, trailers), promise: nil)
+        self.handleError(error, thrownFromHandler: true)
       }
 
     case .completed:
@@ -279,10 +285,12 @@ public final class UnaryServerHandler<
   }
 
   @inlinable
-  internal func handleError(_ error: Error) {
+  internal func handleError(_ error: Error, thrownFromHandler isHandlerError: Bool = false) {
     switch self.state {
     case .idle:
-      // We don't have a promise to fail. Just send end back.
+      assert(!isHandlerError)
+      self.state = .completed
+      // We don't have a promise to fail. Just send back end.
       let (status, trailers) = ServerErrorProcessor.processLibraryError(
         error,
         delegate: self.context.errorDelegate
@@ -291,6 +299,30 @@ public final class UnaryServerHandler<
 
     case let .createdContext(context),
          let .invokedFunction(context):
+      // We don't have a promise to fail. Just send back end.
+      self.state = .completed
+
+      let status: GRPCStatus
+      let trailers: HPACKHeaders
+
+      if isHandlerError {
+        (status, trailers) = ServerErrorProcessor.processObserverError(
+          error,
+          headers: context.headers,
+          trailers: context.trailers,
+          delegate: self.context.errorDelegate
+        )
+      } else {
+        (status, trailers) = ServerErrorProcessor.processLibraryError(
+          error,
+          delegate: self.context.errorDelegate
+        )
+      }
+
+      self.interceptors.send(.end(status, trailers), promise: nil)
+      // We're already in the 'completed' state so failing the promise will be a no-op in the
+      // callback to 'userFunctionCompletedWithResult' (but we also need to avoid leaking the
+      // promise.)
       context.responsePromise.fail(error)
 
     case .completed:
