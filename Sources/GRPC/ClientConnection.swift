@@ -312,6 +312,9 @@ extension ClientConnection {
       return self.tls == nil ? .http : .https
     }
 
+    /// A custom verification callback that allows completely overriding the certificate verification logic for this connection.
+    public var customVerificationCallback: NIOSSLCustomVerificationCallback?
+
     /// A logger for background information (such as connectivity state). A separate logger for
     /// requests may be provided in the `CallOptions`.
     ///
@@ -362,6 +365,7 @@ extension ClientConnection {
         label: "io.grpc",
         factory: { _ in SwiftLogNoOpLogHandler() }
       ),
+      customVerificationCallback: NIOSSLCustomVerificationCallback? = nil,
       debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)? = nil
     ) {
       self.target = target
@@ -411,7 +415,8 @@ extension Channel {
     connectionIdleTimeout: TimeAmount,
     errorDelegate: ClientErrorDelegate?,
     requiresZeroLengthWriteWorkaround: Bool,
-    logger: Logger
+    logger: Logger,
+    customVerificationCallback: NIOSSLCustomVerificationCallback?
   ) -> EventLoopFuture<Void> {
     // We add at most 8 handlers to the pipeline.
     var handlers: [ChannelHandler] = []
@@ -426,16 +431,31 @@ extension Channel {
     #endif
 
     if let tlsConfiguration = tlsConfiguration {
-      do {
-        let sslClientHandler = try NIOSSLClientHandler(
-          context: try NIOSSLContext(configuration: tlsConfiguration),
-          serverHostname: tlsServerHostname
-        )
-        handlers.append(sslClientHandler)
-        handlers.append(TLSVerificationHandler(logger: logger))
-      } catch {
-        return self.eventLoop.makeFailedFuture(error)
-      }
+        if let customVerificationCallback = customVerificationCallback {
+            do {
+                let sslClientHandler = try NIOSSLClientHandler(
+                    context: try NIOSSLContext(configuration: tlsConfiguration),
+                    serverHostname: tlsServerHostname,
+                    customVerificationCallback: customVerificationCallback
+                )
+                handlers.append(sslClientHandler)
+                handlers.append(TLSVerificationHandler(logger: logger))
+            } catch {
+                return self.eventLoop.makeFailedFuture(error)
+            }
+        } else {
+            do {
+                let sslClientHandler = try NIOSSLClientHandler(
+                    context: try NIOSSLContext(configuration: tlsConfiguration),
+                    serverHostname: tlsServerHostname
+                )
+                handlers.append(sslClientHandler)
+                handlers.append(TLSVerificationHandler(logger: logger))
+            } catch {
+                return self.eventLoop.makeFailedFuture(error)
+            }
+        }
+
     }
 
     // We could use 'configureHTTP2Pipeline' here, but we need to add a few handlers between the

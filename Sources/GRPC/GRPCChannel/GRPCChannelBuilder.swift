@@ -273,6 +273,16 @@ extension ClientConnection.Builder {
   }
 }
 
+extension ClientConnection.Builder {
+
+  /// A custom verification callback that allows completely overriding the certificate verification logic.
+  @discardableResult
+    public func withCustomVerification(callback: @escaping NIOSSLCustomVerificationCallback) -> Self {
+    self.configuration.customVerificationCallback = callback
+    return self
+  }
+}
+
 private extension Double {
   static func seconds(from amount: TimeAmount) -> Double {
     return Double(amount.nanoseconds) / 1_000_000_000
