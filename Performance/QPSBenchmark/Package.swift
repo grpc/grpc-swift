@@ -1,4 +1,4 @@
-// swift-tools-version:5.1
+// swift-tools-version:5.2
 /*
  * Copyright 2020, gRPC Authors All rights reserved.
  *
@@ -32,24 +32,37 @@ let package = Package(
       url: "https://github.com/swift-server/swift-service-lifecycle.git",
       from: "1.0.0-alpha"
     ),
-    .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.9.0"),
+    .package(
+      name: "SwiftProtobuf",
+      url: "https://github.com/apple/swift-protobuf.git",
+      from: "1.9.0"
+    ),
   ],
   targets: [
-    .target(name: "QPSBenchmark", dependencies: [
-      "GRPC",
-      "NIO",
-      "ArgumentParser",
-      "Logging",
-      "Lifecycle",
-      "SwiftProtobuf",
-      "BenchmarkUtils",
-    ]),
-    .target(name: "BenchmarkUtils", dependencies: [
-      "GRPC",
-    ]),
-    .testTarget(name: "BenchmarkUtilsTests", dependencies: [
-      "GRPC",
-      "BenchmarkUtils",
-    ]),
+    .target(
+      name: "QPSBenchmark",
+      dependencies: [
+        .product(name: "GRPC", package: "grpc-swift"),
+        .product(name: "NIO", package: "swift-nio"),
+        .product(name: "ArgumentParser", package: "swift-argument-parser"),
+        .product(name: "Logging", package: "swift-log"),
+        .product(name: "Lifecycle", package: "swift-service-lifecycle"),
+        .product(name: "SwiftProtobuf", package: "SwiftProtobuf"),
+        .target(name: "BenchmarkUtils"),
+      ]
+    ),
+    .target(
+      name: "BenchmarkUtils",
+      dependencies: [
+        .product(name: "GRPC", package: "grpc-swift"),
+      ]
+    ),
+    .testTarget(
+      name: "BenchmarkUtilsTests",
+      dependencies: [
+        .product(name: "GRPC", package: "grpc-swift"),
+        .target(name: "BenchmarkUtils"),
+      ]
+    ),
   ]
 )

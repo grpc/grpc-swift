@@ -41,10 +41,6 @@ jobs:
       script: ./.travis-script.sh
       env: SWIFT_VERSION=5.2.5
     - <<: *tests
-      name: "Unit Tests: Ubuntu 18.04 (Swift 5.1)"
-      script: ./.travis-script.sh
-      env: SWIFT_VERSION=5.1.5
-    - <<: *tests
       name: "Unit Tests: Xcode 12.2"
       os: osx
       osx_image: xcode12.2
@@ -65,9 +61,6 @@ jobs:
     - <<: *interop_tests
       name: "Interoperability Tests: Ubuntu 18.04 (Swift 5.2)"
       env: SWIFT_VERSION=5.2.5
-    - <<: *interop_tests
-      name: "Interoperability Tests: Ubuntu 18.04 (Swift 5.1)"
-      env: SWIFT_VERSION=5.1.5
     - <<: *interop_tests
       name: "Interoperability Tests: Xcode 12.2"
       os: osx
