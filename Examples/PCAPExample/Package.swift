@@ -1,4 +1,4 @@
-// swift-tools-version:5.1
+// swift-tools-version:5.2
 /*
  * Copyright 2020, gRPC Authors All rights reserved.
  *
@@ -23,6 +23,12 @@ let package = Package(
     .package(url: "https://github.com/apple/swift-nio-extras", from: "1.4.0"),
   ],
   targets: [
-    .target(name: "PCAPExample", dependencies: ["GRPC", "NIOExtras"]),
+    .target(
+      name: "PCAPExample",
+      dependencies: [
+        .product(name: "GRPC", package: "grpc-swift"),
+        .product(name: "NIOExtras", package: "swift-nio-extras"),
+      ]
+    ),
   ]
 )

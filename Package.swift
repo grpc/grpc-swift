@@ -1,4 +1,4 @@
-// swift-tools-version:5.1
+// swift-tools-version:5.2
 /*
  * Copyright 2017, gRPC Authors All rights reserved.
  *
@@ -37,7 +37,11 @@ let package = Package(
     .package(url: "https://github.com/apple/swift-nio-extras.git", from: "1.4.0"),
 
     // Official SwiftProtobuf library, for [de]serializing data to send on the wire.
-    .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.9.0"),
+    .package(
+      name: "SwiftProtobuf",
+      url: "https://github.com/apple/swift-protobuf.git",
+      from: "1.9.0"
+    ),
 
     // Logging API.
     .package(url: "https://github.com/apple/swift-log.git", from: "1.4.0"),
@@ -47,27 +51,27 @@ let package = Package(
     .target(
       name: "GRPC",
       dependencies: [
-        "NIO",
-        "NIOFoundationCompat",
-        "NIOTransportServices",
-        "NIOHTTP1",
-        "NIOHTTP2",
-        "NIOExtras",
-        "NIOSSL",
-        "CGRPCZlib",
-        "SwiftProtobuf",
-        "Logging",
+        .product(name: "NIO", package: "swift-nio"),
+        .product(name: "NIOFoundationCompat", package: "swift-nio"),
+        .product(name: "NIOTransportServices", package: "swift-nio-transport-services"),
+        .product(name: "NIOHTTP1", package: "swift-nio"),
+        .product(name: "NIOHTTP2", package: "swift-nio-http2"),
+        .product(name: "NIOExtras", package: "swift-nio-extras"),
+        .product(name: "NIOSSL", package: "swift-nio-ssl"),
+        .product(name: "SwiftProtobuf", package: "SwiftProtobuf"),
+        .product(name: "Logging", package: "swift-log"),
+        .target(name: "CGRPCZlib"),
       ]
     ), // and its tests.
     .testTarget(
       name: "GRPCTests",
       dependencies: [
-        "GRPC",
-        "EchoModel",
-        "EchoImplementation",
-        "GRPCSampleData",
-        "GRPCInteroperabilityTestsImplementation",
-        "HelloWorldModel",
+        .target(name: "GRPC"),
+        .target(name: "EchoModel"),
+        .target(name: "EchoImplementation"),
+        .target(name: "GRPCSampleData"),
+        .target(name: "GRPCInteroperabilityTestsImplementation"),
+        .target(name: "HelloWorldModel"),
       ]
     ),
 
@@ -82,9 +86,8 @@ let package = Package(
     .target(
       name: "protoc-gen-grpc-swift",
       dependencies: [
-        "SwiftProtobuf",
-        "SwiftProtobufPluginLibrary",
-        "protoc-gen-swift",
+        .product(name: "SwiftProtobuf", package: "SwiftProtobuf"),
+        .product(name: "SwiftProtobufPluginLibrary", package: "SwiftProtobuf"),
       ]
     ),
 
@@ -92,8 +95,8 @@ let package = Package(
     .target(
       name: "GRPCInteroperabilityTestsImplementation",
       dependencies: [
-        "GRPC",
-        "GRPCInteroperabilityTestModels",
+        .target(name: "GRPC"),
+        .target(name: "GRPCInteroperabilityTestModels"),
       ]
     ),
 
@@ -101,10 +104,10 @@ let package = Package(
     .target(
       name: "GRPCInteroperabilityTestModels",
       dependencies: [
-        "GRPC",
-        "NIO",
-        "NIOHTTP1",
-        "SwiftProtobuf",
+        .target(name: "GRPC"),
+        .product(name: "NIO", package: "swift-nio"),
+        .product(name: "NIOHTTP1", package: "swift-nio"),
+        .product(name: "SwiftProtobuf", package: "SwiftProtobuf"),
       ]
     ),
 
@@ -112,8 +115,7 @@ let package = Package(
     .target(
       name: "GRPCInteroperabilityTests",
       dependencies: [
-        "GRPCInteroperabilityTestsImplementation",
-        "Logging",
+        .target(name: "GRPCInteroperabilityTestsImplementation"),
       ]
     ),
 
@@ -121,9 +123,9 @@ let package = Package(
     .target(
       name: "GRPCConnectionBackoffInteropTest",
       dependencies: [
-        "GRPC",
-        "GRPCInteroperabilityTestModels",
-        "Logging",
+        .target(name: "GRPC"),
+        .target(name: "GRPCInteroperabilityTestModels"),
+        .product(name: "Logging", package: "swift-log"),
       ]
     ),
 
@@ -131,28 +133,29 @@ let package = Package(
     .target(
       name: "GRPCPerformanceTests",
       dependencies: [
-        "GRPC",
-        "EchoModel",
-        "NIO",
-        "NIOSSL",
+        .target(name: "GRPC"),
+        .target(name: "EchoModel"),
+        .product(name: "NIO", package: "swift-nio"),
       ]
     ),
 
     // Sample data, used in examples and tests.
     .target(
       name: "GRPCSampleData",
-      dependencies: ["NIOSSL"]
+      dependencies: [
+        .product(name: "NIOSSL", package: "swift-nio-ssl"),
+      ]
     ),
 
     // Echo example CLI.
     .target(
       name: "Echo",
       dependencies: [
-        "EchoModel",
-        "EchoImplementation",
-        "GRPC",
-        "GRPCSampleData",
-        "SwiftProtobuf",
+        .target(name: "EchoModel"),
+        .target(name: "EchoImplementation"),
+        .target(name: "GRPC"),
+        .target(name: "GRPCSampleData"),
+        .product(name: "SwiftProtobuf", package: "SwiftProtobuf"),
       ],
       path: "Sources/Examples/Echo/Runtime"
     ),
@@ -161,9 +164,9 @@ let package = Package(
     .target(
       name: "EchoImplementation",
       dependencies: [
-        "EchoModel",
-        "GRPC",
-        "SwiftProtobuf",
+        .target(name: "EchoModel"),
+        .target(name: "GRPC"),
+        .product(name: "SwiftProtobuf", package: "SwiftProtobuf"),
       ],
       path: "Sources/Examples/Echo/Implementation"
     ),
@@ -172,10 +175,9 @@ let package = Package(
     .target(
       name: "EchoModel",
       dependencies: [
-        "GRPC",
-        "NIO",
-        "NIOHTTP1",
-        "SwiftProtobuf",
+        .target(name: "GRPC"),
+        .product(name: "NIO", package: "swift-nio"),
+        .product(name: "SwiftProtobuf", package: "SwiftProtobuf"),
       ],
       path: "Sources/Examples/Echo/Model"
     ),
@@ -184,10 +186,9 @@ let package = Package(
     .target(
       name: "HelloWorldModel",
       dependencies: [
-        "GRPC",
-        "NIO",
-        "NIOHTTP1",
-        "SwiftProtobuf",
+        .target(name: "GRPC"),
+        .product(name: "NIO", package: "swift-nio"),
+        .product(name: "SwiftProtobuf", package: "SwiftProtobuf"),
       ],
       path: "Sources/Examples/HelloWorld/Model"
     ),
@@ -196,8 +197,8 @@ let package = Package(
     .target(
       name: "HelloWorldClient",
       dependencies: [
-        "GRPC",
-        "HelloWorldModel",
+        .target(name: "GRPC"),
+        .target(name: "HelloWorldModel"),
       ],
       path: "Sources/Examples/HelloWorld/Client"
     ),
@@ -206,9 +207,9 @@ let package = Package(
     .target(
       name: "HelloWorldServer",
       dependencies: [
-        "GRPC",
-        "NIO",
-        "HelloWorldModel",
+        .target(name: "GRPC"),
+        .product(name: "NIO", package: "swift-nio"),
+        .target(name: "HelloWorldModel"),
       ],
       path: "Sources/Examples/HelloWorld/Server"
     ),
@@ -217,10 +218,9 @@ let package = Package(
     .target(
       name: "RouteGuideModel",
       dependencies: [
-        "GRPC",
-        "NIO",
-        "NIOHTTP1",
-        "SwiftProtobuf",
+        .target(name: "GRPC"),
+        .product(name: "NIO", package: "swift-nio"),
+        .product(name: "SwiftProtobuf", package: "SwiftProtobuf"),
       ],
       path: "Sources/Examples/RouteGuide/Model"
     ),
@@ -229,8 +229,8 @@ let package = Package(
     .target(
       name: "RouteGuideClient",
       dependencies: [
-        "GRPC",
-        "RouteGuideModel",
+        .target(name: "GRPC"),
+        .target(name: "RouteGuideModel"),
       ],
       path: "Sources/Examples/RouteGuide/Client"
     ),
@@ -239,9 +239,9 @@ let package = Package(
     .target(
       name: "RouteGuideServer",
       dependencies: [
-        "GRPC",
-        "NIO",
-        "RouteGuideModel",
+        .target(name: "GRPC"),
+        .product(name: "NIO", package: "swift-nio"),
+        .target(name: "RouteGuideModel"),
       ],
       path: "Sources/Examples/RouteGuide/Server"
     ),

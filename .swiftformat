@@ -1,5 +1,5 @@
 # Language version.
---swiftversion 5.1
+--swiftversion 5.2
 
 # Ignore generated files.
 --exclude **/LinuxMain.swift,**/XCTestManifests.swift,**/*.grpc.swift,**/*.pb.swift
@@ -31,3 +31,6 @@
 # We used to support 5.0 and return is redundant in more places in 5.1: enabling
 # this rule creates a large (and unnecessary) diff.
 --disable redundantReturn
+
+# Don't prefer using key paths for trivial closures.
+--disable preferKeyPath
