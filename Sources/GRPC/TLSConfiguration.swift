@@ -68,6 +68,9 @@ extension ClientConnection.Configuration {
       }
     }
 
+    /// A custom verification callback that allows completely overriding the certificate verification logic for this connection.
+    public var customVerificationCallback: NIOSSLCustomVerificationCallback?
+
     /// TLS Configuration with suitable defaults for clients.
     ///
     /// This is a wrapper around `NIOSSL.TLSConfiguration` to restrict input to values which comply
@@ -83,12 +86,15 @@ extension ClientConnection.Configuration {
     ///     `.fullVerification`.
     /// - Parameter hostnameOverride: Value to use for TLS SNI extension; this must not be an IP
     ///     address, defaults to `nil`.
+    /// - Parameter customVerificationCallback: A callback to provide to override the certificate verification logic,
+    ///     defaults to `nil`.
     public init(
       certificateChain: [NIOSSLCertificateSource] = [],
       privateKey: NIOSSLPrivateKeySource? = nil,
       trustRoots: NIOSSLTrustRoots = .default,
       certificateVerification: CertificateVerification = .fullVerification,
-      hostnameOverride: String? = nil
+      hostnameOverride: String? = nil,
+      customVerificationCallback: NIOSSLCustomVerificationCallback? = nil
     ) {
       self.configuration = .forClient(
         minimumTLSVersion: .tlsv12,
@@ -99,6 +105,7 @@ extension ClientConnection.Configuration {
         applicationProtocols: GRPCApplicationProtocolIdentifier.client
       )
       self.hostnameOverride = hostnameOverride
+      self.customVerificationCallback = customVerificationCallback
     }
 
     /// Creates a TLS Configuration using the given `NIOSSL.TLSConfiguration`.

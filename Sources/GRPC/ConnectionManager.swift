@@ -854,7 +854,7 @@ extension ConnectionManager {
             hasTLS: self.configuration.tls != nil
           ),
           logger: self.logger,
-          customVerificationCallback: self.configuration.customVerificationCallback
+          customVerificationCallback: self.configuration.tls?.customVerificationCallback
         )
 
         // Run the debug initializer, if there is one.

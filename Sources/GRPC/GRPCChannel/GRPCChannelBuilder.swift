@@ -235,6 +235,16 @@ extension ClientConnection.Builder.Secure {
     self.tls.certificateVerification = certificateVerification
     return self
   }
+
+  /// A custom verification callback that allows completely overriding the certificate verification logic.
+  @discardableResult
+  public func withCustomVerificationCallback(
+    _ callback: @escaping NIOSSLCustomVerificationCallback
+  )
+    -> Self {
+    self.tls.customVerificationCallback = callback
+    return self
+  }
 }
 
 extension ClientConnection.Builder {
@@ -269,16 +279,6 @@ extension ClientConnection.Builder {
     _ debugChannelInitializer: @escaping (Channel) -> EventLoopFuture<Void>
   ) -> Self {
     self.configuration.debugChannelInitializer = debugChannelInitializer
-    return self
-  }
-}
-
-extension ClientConnection.Builder {
-
-  /// A custom verification callback that allows completely overriding the certificate verification logic.
-  @discardableResult
-    public func withCustomVerification(callback: @escaping NIOSSLCustomVerificationCallback) -> Self {
-    self.configuration.customVerificationCallback = callback
     return self
   }
 }
