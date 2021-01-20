@@ -180,4 +180,49 @@ class ClientTLSFailureTests: GRPCTestCase {
       XCTFail("Expected NIOSSLExtraError.failedToValidateHostname")
     }
   }
+
+  func testClientConnectionFailsWhenCertificateValidationDenied() throws {
+    let errorExpectation = self.expectation(description: "error")
+    // 2 errors: one for the failed handshake, and another for failing the ready-channel promise
+    // (because the handshake failed).
+    errorExpectation.expectedFulfillmentCount = 2
+
+    let tlsConfiguration = ClientConnection.Configuration.TLS(
+      certificateChain: [.certificate(SampleCertificate.client.certificate)],
+      privateKey: .privateKey(SamplePrivateKey.client),
+      trustRoots: .certificates([SampleCertificate.ca.certificate]),
+      hostnameOverride: SampleCertificate.server.commonName,
+      customVerificationCallback: { _, promise in
+        // The certificate validation is forced to fail
+        promise.fail(NIOSSLError.unableToValidateCertificate)
+      }
+    )
+
+    var configuration = self.makeClientConfiguration(tls: tlsConfiguration)
+    let errorRecorder = ErrorRecordingDelegate(expectation: errorExpectation)
+    configuration.errorDelegate = errorRecorder
+
+    let stateChangeDelegate = RecordingConnectivityDelegate()
+    stateChangeDelegate.expectChanges(2) { changes in
+      XCTAssertEqual(changes, [
+        Change(from: .idle, to: .connecting),
+        Change(from: .connecting, to: .shutdown),
+      ])
+    }
+    configuration.connectivityStateDelegate = stateChangeDelegate
+
+    // Start an RPC to trigger creating a channel.
+    let echo = Echo_EchoClient(channel: ClientConnection(configuration: configuration))
+    _ = echo.get(.with { $0.text = "foo" })
+
+    self.wait(for: [errorExpectation], timeout: self.defaultTestTimeout)
+    stateChangeDelegate.waitForExpectedChanges(timeout: .seconds(5))
+
+    if let nioSSLError = errorRecorder.errors.first as? NIOSSLError,
+      case .handshakeFailed(.sslError) = nioSSLError {
+      // Expected case.
+    } else {
+      XCTFail("Expected NIOSSLError.handshakeFailed(BoringSSL.sslError)")
+    }
+  }
 }
