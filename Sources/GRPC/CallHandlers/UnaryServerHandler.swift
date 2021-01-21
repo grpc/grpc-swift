@@ -262,7 +262,8 @@ public final class UnaryServerHandler<
   ) {
     switch part {
     case let .metadata(headers):
-      self.context.responseWriter.sendMetadata(headers, promise: promise)
+      // We can delay this flush until the end of the RPC.
+      self.context.responseWriter.sendMetadata(headers, flush: false, promise: promise)
 
     case let .message(message, metadata):
       do {

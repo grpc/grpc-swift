@@ -49,8 +49,9 @@ internal protocol GRPCServerResponseWriter {
   /// Send the initial response metadata.
   /// - Parameters:
   ///   - metadata: The user-provided metadata to send to the client.
+  ///   - flush: Whether a flush should be emitted after writing the metadata.
   ///   - promise: A promise to complete once the metadata has been handled.
-  func sendMetadata(_ metadata: HPACKHeaders, promise: EventLoopPromise<Void>?)
+  func sendMetadata(_ metadata: HPACKHeaders, flush: Bool, promise: EventLoopPromise<Void>?)
 
   /// Send the serialized bytes of a response message.
   /// - Parameters:

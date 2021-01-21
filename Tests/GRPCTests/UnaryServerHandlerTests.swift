@@ -27,7 +27,7 @@ final class ResponseRecorder: GRPCServerResponseWriter {
   var status: GRPCStatus?
   var trailers: HPACKHeaders?
 
-  func sendMetadata(_ metadata: HPACKHeaders, promise: EventLoopPromise<Void>?) {
+  func sendMetadata(_ metadata: HPACKHeaders, flush: Bool, promise: EventLoopPromise<Void>?) {
     XCTAssertNil(self.metadata)
     self.metadata = metadata
     promise?.succeed(())

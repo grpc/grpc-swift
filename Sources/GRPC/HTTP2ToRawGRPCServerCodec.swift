@@ -170,7 +170,9 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelDuplexHandler, GRPCServer
 
     switch responsePart {
     case let .metadata(headers):
-      self.sendMetadata(headers, promise: promise)
+      // We're in 'write' so we're using the old type of RPC handler which emits its own flushes,
+      // no need to emit an extra one.
+      self.sendMetadata(headers, flush: false, promise: promise)
 
     case let .message(buffer, metadata):
       self.sendMessage(buffer, metadata: metadata, promise: promise)
@@ -181,13 +183,7 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelDuplexHandler, GRPCServer
   }
 
   internal func flush(context: ChannelHandlerContext) {
-    if self.isReading {
-      // We're already reading; record the flush and emit it when the read completes.
-      self.flushPending = true
-    } else {
-      // Not reading: flush now.
-      context.flush()
-    }
+    self.markFlushPoint()
   }
 
   /// Called when the pipeline has finished configuring.
@@ -280,17 +276,15 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelDuplexHandler, GRPCServer
 
   internal func sendMetadata(
     _ headers: HPACKHeaders,
+    flush: Bool,
     promise: EventLoopPromise<Void>?
   ) {
     switch self.state.send(headers: headers) {
     case let .success(headers):
       let payload = HTTP2Frame.FramePayload.headers(.init(headers: headers))
       self.context.write(self.wrapOutboundOut(payload), promise: promise)
-
-      if self.isReading {
-        self.flushPending = true
-      } else {
-        self.context.flush()
+      if flush {
+        self.markFlushPoint()
       }
 
     case let .failure(error):
@@ -313,11 +307,8 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelDuplexHandler, GRPCServer
     case let .success(buffer):
       let payload = HTTP2Frame.FramePayload.data(.init(data: .byteBuffer(buffer)))
       self.context.write(self.wrapOutboundOut(payload), promise: promise)
-
-      if self.isReading {
-        self.flushPending = true
-      } else {
-        self.context.flush()
+      if metadata.flush {
+        self.markFlushPoint()
       }
 
     case let .failure(error):
@@ -335,15 +326,22 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelDuplexHandler, GRPCServer
       // Always end stream for status and trailers.
       let payload = HTTP2Frame.FramePayload.headers(.init(headers: trailers, endStream: true))
       self.context.write(self.wrapOutboundOut(payload), promise: promise)
-
-      if self.isReading {
-        self.flushPending = true
-      } else {
-        self.context.flush()
-      }
+      // We'll always flush on end.
+      self.markFlushPoint()
 
     case let .failure(error):
       promise?.fail(error)
+    }
+  }
+
+  /// Mark a flush as pending - to be emitted once the read completes - if we're currently reading,
+  /// or emit a flush now if we are not.
+  private func markFlushPoint() {
+    if self.isReading {
+      self.flushPending = true
+    } else {
+      self.flushPending = false
+      self.context.flush()
     }
   }
 }
