@@ -240,8 +240,7 @@ extension ClientConnection.Builder.Secure {
   @discardableResult
   public func withCustomVerificationCallback(
     _ callback: @escaping NIOSSLCustomVerificationCallback
-  )
-    -> Self {
+  ) -> Self {
     self.tls.customVerificationCallback = callback
     return self
   }
