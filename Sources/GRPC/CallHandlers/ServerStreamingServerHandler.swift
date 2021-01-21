@@ -279,7 +279,7 @@ public final class ServerStreamingServerHandler<
   ) {
     switch part {
     case let .metadata(headers):
-      self.context.responseWriter.sendMetadata(headers, promise: promise)
+      self.context.responseWriter.sendMetadata(headers, flush: true, promise: promise)
 
     case let .message(message, metadata):
       do {

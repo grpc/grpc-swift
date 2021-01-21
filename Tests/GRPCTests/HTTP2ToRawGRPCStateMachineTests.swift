@@ -656,7 +656,7 @@ extension ServerMessageEncoding {
 }
 
 class NoOpResponseWriter: GRPCServerResponseWriter {
-  func sendMetadata(_ metadata: HPACKHeaders, promise: EventLoopPromise<Void>?) {
+  func sendMetadata(_ metadata: HPACKHeaders, flush: Bool, promise: EventLoopPromise<Void>?) {
     promise?.succeed(())
   }
 
