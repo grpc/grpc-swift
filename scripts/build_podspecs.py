@@ -67,7 +67,7 @@ class Pod:
         podspec += indent + "s.homepage = 'https://www.grpc.io'\n"
         podspec += indent + "s.authors  = { 'The gRPC contributors' => \'grpc-packages@google.com' }\n\n"
 
-        podspec += indent + "s.swift_version = '5.1'\n"
+        podspec += indent + "s.swift_version = '5.2'\n"
         podspec += indent + "s.ios.deployment_target = '10.0'\n"
         podspec += indent + "s.osx.deployment_target = '10.12'\n"
         podspec += indent + "s.tvos.deployment_target = '10.0'\n"

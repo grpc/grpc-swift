@@ -2,13 +2,13 @@ Pod::Spec.new do |s|
 
     s.name = 'gRPC-Swift'
     s.module_name = 'GRPC'
-    s.version = '1.0.0-alpha.22'
+    s.version = '1.0.0-alpha.23'
     s.license = { :type => 'Apache 2.0', :file => 'LICENSE' }
     s.summary = 'Swift gRPC code generator plugin and runtime library'
     s.homepage = 'https://www.grpc.io'
     s.authors  = { 'The gRPC contributors' => 'grpc-packages@google.com' }
 
-    s.swift_version = '5.1'
+    s.swift_version = '5.2'
     s.ios.deployment_target = '10.0'
     s.osx.deployment_target = '10.12'
     s.tvos.deployment_target = '10.0'
