@@ -853,7 +853,8 @@ extension ConnectionManager {
             group: self.eventLoop,
             hasTLS: self.configuration.tls != nil
           ),
-          logger: self.logger
+          logger: self.logger,
+          customVerificationCallback: self.configuration.tls?.customVerificationCallback
         )
 
         // Run the debug initializer, if there is one.

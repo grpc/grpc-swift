@@ -411,7 +411,8 @@ extension Channel {
     connectionIdleTimeout: TimeAmount,
     errorDelegate: ClientErrorDelegate?,
     requiresZeroLengthWriteWorkaround: Bool,
-    logger: Logger
+    logger: Logger,
+    customVerificationCallback: NIOSSLCustomVerificationCallback?
   ) -> EventLoopFuture<Void> {
     // We add at most 8 handlers to the pipeline.
     var handlers: [ChannelHandler] = []
@@ -427,11 +428,20 @@ extension Channel {
 
     if let tlsConfiguration = tlsConfiguration {
       do {
-        let sslClientHandler = try NIOSSLClientHandler(
-          context: try NIOSSLContext(configuration: tlsConfiguration),
-          serverHostname: tlsServerHostname
-        )
-        handlers.append(sslClientHandler)
+        if let customVerificationCallback = customVerificationCallback {
+          let sslClientHandler = try NIOSSLClientHandler(
+            context: try NIOSSLContext(configuration: tlsConfiguration),
+            serverHostname: tlsServerHostname,
+            customVerificationCallback: customVerificationCallback
+          )
+          handlers.append(sslClientHandler)
+        } else {
+          let sslClientHandler = try NIOSSLClientHandler(
+            context: try NIOSSLContext(configuration: tlsConfiguration),
+            serverHostname: tlsServerHostname
+          )
+          handlers.append(sslClientHandler)
+        }
         handlers.append(TLSVerificationHandler(logger: logger))
       } catch {
         return self.eventLoop.makeFailedFuture(error)
