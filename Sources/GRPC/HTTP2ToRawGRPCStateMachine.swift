@@ -231,8 +231,6 @@ extension HTTP2ToRawGRPCStateMachine {
   }
 
   enum ReceiveHeadersAction {
-    /// Configure the pipeline with the given call handler.
-    case configureLegacy(GRPCCallHandler)
     /// Configure the RPC to use the given server handler.
     case configure(GRPCServerHandlerProtocol)
     /// Reject the RPC by writing out the given headers and setting end-stream.
@@ -334,8 +332,8 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
     // We have a matching service, hopefully we have a provider for the method too.
     let method = Substring(callPath.method)
 
-    func nextState() -> HTTP2ToRawGRPCStateMachine.RequestOpenResponseIdleState {
-      return HTTP2ToRawGRPCStateMachine.RequestOpenResponseIdleState(
+    if let handler = service.handle(method: method, context: context) {
+      let nextState = HTTP2ToRawGRPCStateMachine.RequestOpenResponseIdleState(
         reader: reader,
         writer: writer,
         contentType: contentType,
@@ -344,17 +342,10 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
         normalizeHeaders: self.normalizeHeaders,
         configurationState: .configuring(headers)
       )
-    }
 
-    if let handler = service.handle(method: method, context: context) {
       return .init(
-        state: .requestOpenResponseIdle(nextState()),
+        state: .requestOpenResponseIdle(nextState),
         action: .configure(handler)
-      )
-    } else if let handler = service.handleMethod(method, callHandlerContext: context) {
-      return .init(
-        state: .requestOpenResponseIdle(nextState()),
-        action: .configureLegacy(handler)
       )
     } else {
       return self.methodNotImplemented(path, contentType: contentType)
