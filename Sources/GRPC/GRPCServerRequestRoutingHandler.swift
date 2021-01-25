@@ -20,10 +20,7 @@ import NIOHTTP1
 import NIOHTTP2
 import SwiftProtobuf
 
-/// Processes individual gRPC messages and stream-close events on an HTTP2 channel.
-public protocol GRPCCallHandler: ChannelHandler {}
-
-/// Provides `GRPCCallHandler` objects for the methods on a particular service name.
+/// Provides `GRPCServerHandlerProtocol` objects for the methods on a particular service name.
 ///
 /// Implemented by the generated code.
 public protocol CallHandlerProvider: AnyObject {
@@ -32,35 +29,12 @@ public protocol CallHandlerProvider: AnyObject {
   /// - Example: "io.grpc.Echo.EchoService"
   var serviceName: Substring { get }
 
-  /// Determines, calls and returns the appropriate request handler (`GRPCCallHandler`), depending on the request's
-  /// method. Returns nil for methods not handled by this service.
-  func handleMethod(_ methodName: Substring, callHandlerContext: CallHandlerContext)
-    -> GRPCCallHandler?
-
   /// Returns a call handler for the method with the given name, if this service provider implements
   /// the given method. Returns `nil` if the method is not handled by this provider.
   /// - Parameters:
   ///   - name: The name of the method to handle.
   ///   - context: An opaque context providing components to construct the handler with.
   func handle(method name: Substring, context: CallHandlerContext) -> GRPCServerHandlerProtocol?
-}
-
-extension CallHandlerProvider {
-  // TODO: remove this once we've removed 'handleMethod(_:callHandlerContext:)'.
-  public func handle(
-    method name: Substring,
-    context: CallHandlerContext
-  ) -> GRPCServerHandlerProtocol? {
-    return nil
-  }
-
-  // TODO: remove this once we've removed 'handleMethod(_:callHandlerContext:)'.
-  public func handleMethod(
-    _ methodName: Substring,
-    callHandlerContext: CallHandlerContext
-  ) -> GRPCCallHandler? {
-    return nil
-  }
 }
 
 // This is public because it will be passed into generated code, all members are `internal` because

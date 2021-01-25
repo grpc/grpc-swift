@@ -54,12 +54,6 @@ open class UnaryResponseCallContext<ResponsePayload>: ServerCallContextBase, Sta
     self.responsePromise = eventLoop.makePromise()
     super.init(eventLoop: eventLoop, headers: headers, logger: logger, userInfoRef: userInfoRef)
   }
-
-  @available(*, deprecated, renamed: "init(eventLoop:headers:logger:userInfo:)")
-  override public init(eventLoop: EventLoop, request: HTTPRequestHead, logger: Logger) {
-    self.responsePromise = eventLoop.makePromise()
-    super.init(eventLoop: eventLoop, request: request, logger: logger)
-  }
 }
 
 /// Protocol variant of `UnaryResponseCallContext` that only exposes the `responseStatus` and `trailingMetadata`
@@ -74,94 +68,6 @@ open class UnaryResponseCallContext<ResponsePayload>: ServerCallContextBase, Sta
 public protocol StatusOnlyCallContext: ServerCallContext {
   var responseStatus: GRPCStatus { get set }
   var trailers: HPACKHeaders { get set }
-}
-
-extension StatusOnlyCallContext {
-  @available(*, deprecated, renamed: "trailers")
-  public var trailingMetadata: HTTPHeaders {
-    get {
-      return HTTPHeaders(self.trailers.map { ($0.name, $0.value) })
-    }
-    set {
-      self.trailers = HPACKHeaders(httpHeaders: newValue)
-    }
-  }
-}
-
-/// Concrete implementation of `UnaryResponseCallContext` used by our generated code.
-open class UnaryResponseCallContextImpl<ResponsePayload>: UnaryResponseCallContext<ResponsePayload> {
-  public let channel: Channel
-
-  /// - Parameters:
-  ///   - channel: The NIO channel the call is handled on.
-  ///   - headers: The headers provided with this call.
-  ///   - errorDelegate: Provides a means for transforming response promise failures to `GRPCStatusTransformable` before
-  ///     sending them to the client.
-  ///   - logger: A logger.
-  public init(
-    channel: Channel,
-    headers: HPACKHeaders,
-    errorDelegate: ServerErrorDelegate?,
-    logger: Logger
-  ) {
-    self.channel = channel
-    super.init(
-      eventLoop: channel.eventLoop,
-      headers: headers,
-      logger: logger,
-      userInfoRef: .init(UserInfo())
-    )
-
-    self.responsePromise.futureResult.whenComplete { [self, weak errorDelegate] result in
-      switch result {
-      case let .success(message):
-        self.handleResponse(message)
-
-      case let .failure(error):
-        self.handleError(error, delegate: errorDelegate)
-      }
-    }
-  }
-
-  /// Handle the response from the service provider.
-  private func handleResponse(_ response: ResponsePayload) {
-    self.channel.write(
-      self.wrap(.message(response, .init(compress: self.compressionEnabled, flush: false))),
-      promise: nil
-    )
-
-    self.channel.writeAndFlush(
-      self.wrap(.end(self.responseStatus, self.trailers)),
-      promise: nil
-    )
-  }
-
-  /// Handle an error from the service provider.
-  private func handleError(_ error: Error, delegate: ServerErrorDelegate?) {
-    let (status, trailers) = self.processObserverError(error, delegate: delegate)
-    self.channel.writeAndFlush(self.wrap(.end(status, trailers)), promise: nil)
-  }
-
-  /// Wrap the response part in a `NIOAny`. This is useful in order to avoid explicitly spelling
-  /// out `NIOAny(WrappedResponse(...))`.
-  private func wrap(_ response: WrappedResponse) -> NIOAny {
-    return NIOAny(response)
-  }
-
-  @available(*, deprecated, renamed: "init(channel:headers:errorDelegate:logger:)")
-  public convenience init(
-    channel: Channel,
-    request: HTTPRequestHead,
-    errorDelegate: ServerErrorDelegate?,
-    logger: Logger
-  ) {
-    self.init(
-      channel: channel,
-      headers: HPACKHeaders(httpHeaders: request.headers, normalizeHTTPHeaders: false),
-      errorDelegate: errorDelegate,
-      logger: logger
-    )
-  }
 }
 
 /// Concrete implementation of `UnaryResponseCallContext` used for testing.

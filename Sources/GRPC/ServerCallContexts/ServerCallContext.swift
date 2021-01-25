@@ -90,14 +90,6 @@ open class ServerCallContextBase: ServerCallContext {
     self.logger = logger
   }
 
-  @available(*, deprecated, renamed: "init(eventLoop:headers:logger:userInfo:)")
-  public init(eventLoop: EventLoop, request: HTTPRequestHead, logger: Logger) {
-    self.eventLoop = eventLoop
-    self.headers = HPACKHeaders(httpHeaders: request.headers, normalizeHTTPHeaders: false)
-    self.logger = logger
-    self.userInfoRef = .init(UserInfo())
-  }
-
   /// Processes an error, transforming it into a 'GRPCStatus' and any trailers to send to the peer.
   internal func processObserverError(
     _ error: Error,
