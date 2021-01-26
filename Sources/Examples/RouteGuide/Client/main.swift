@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import ArgumentParser
 import Foundation
 import GRPC
 import Logging
@@ -192,47 +193,46 @@ func loadFeatures() throws -> [Routeguide_Feature] {
   return try Routeguide_Feature.array(fromJSONUTF8Data: data)
 }
 
-func main(args: [String]) throws {
-  // arg0 (dropped) is the program name. We expect arg1 to be the port.
-  guard case let .some(port) = args.dropFirst(1).first.flatMap(Int.init) else {
-    print("Usage: \(args[0]) PORT")
-    exit(1)
+struct RouteGuide: ParsableCommand {
+  @Option(help: "The port to connect to")
+  var port: Int = 1234
+
+  func run() throws {
+    // Load the features.
+    let features = try loadFeatures()
+
+    let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    defer {
+      try? group.syncShutdownGracefully()
+    }
+
+    // Make a client, make sure we close it when we're done.
+    let routeGuide = makeClient(port: self.port, group: group)
+    defer {
+      try? routeGuide.channel.close().wait()
+    }
+
+    // Look for a valid feature.
+    getFeature(using: routeGuide, latitude: 409_146_138, longitude: -746_188_906)
+
+    // Look for a missing feature.
+    getFeature(using: routeGuide, latitude: 0, longitude: 0)
+
+    // Looking for features between 40, -75 and 42, -73.
+    listFeatures(
+      using: routeGuide,
+      lowLatitude: 400_000_000,
+      lowLongitude: -750_000_000,
+      highLatitude: 420_000_000,
+      highLongitude: -730_000_000
+    )
+
+    // Record a few randomly selected points from the features file.
+    recordRoute(using: routeGuide, features: features, featuresToVisit: 10)
+
+    // Send and receive some notes.
+    routeChat(using: routeGuide)
   }
-
-  // Load the features.
-  let features = try loadFeatures()
-
-  let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-  defer {
-    try? group.syncShutdownGracefully()
-  }
-
-  // Make a client, make sure we close it when we're done.
-  let routeGuide = makeClient(port: port, group: group)
-  defer {
-    try? routeGuide.channel.close().wait()
-  }
-
-  // Look for a valid feature.
-  getFeature(using: routeGuide, latitude: 409_146_138, longitude: -746_188_906)
-
-  // Look for a missing feature.
-  getFeature(using: routeGuide, latitude: 0, longitude: 0)
-
-  // Looking for features between 40, -75 and 42, -73.
-  listFeatures(
-    using: routeGuide,
-    lowLatitude: 400_000_000,
-    lowLongitude: -750_000_000,
-    highLatitude: 420_000_000,
-    highLongitude: -730_000_000
-  )
-
-  // Record a few randomly selected points from the features file.
-  recordRoute(using: routeGuide, features: features, featuresToVisit: 10)
-
-  // Send and receive some notes.
-  routeChat(using: routeGuide)
 }
 
-try main(args: CommandLine.arguments)
+RouteGuide.main()

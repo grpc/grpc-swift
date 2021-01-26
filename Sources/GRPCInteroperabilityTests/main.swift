@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import ArgumentParser
 import Foundation
 import GRPC
 import GRPCInteroperabilityTestsImplementation
@@ -90,122 +91,81 @@ func makeRunnableTest(name: String) throws -> InteroperabilityTest {
 
 // MARK: - Command line options and "main".
 
-func printUsageAndExit(program: String) -> Never {
-  print("""
-  Usage: \(program) COMMAND [OPTIONS...]
+struct InteroperabilityTests: ParsableCommand {
+  static var configuration = CommandConfiguration(
+    abstract: "gRPC Swift Interoperability Runner",
+    subcommands: [StartServer.self, RunTest.self, ListTests.self]
+  )
 
-  Commands:
-    start_server [--tls|--notls] PORT         Starts the interoperability test server.
+  struct StartServer: ParsableCommand {
+    static var configuration = CommandConfiguration(
+      abstract: "Start the gRPC Swift interoperability test server."
+    )
 
-    run_test [--tls|--notls] HOST PORT NAME   Run an interoperability test.
+    @Option(help: "The port to listen on for new connections")
+    var port: Int
 
-    list_tests                                List all interoperability test names.
-  """)
-  exit(1)
-}
+    @Flag(help: "Whether TLS should be used or not")
+    var tls = false
 
-enum Command {
-  case startServer(port: Int, useTLS: Bool)
-  case runTest(name: String, host: String, port: Int, useTLS: Bool)
-  case listTests
-
-  init?(from args: [String]) {
-    guard !args.isEmpty else {
-      return nil
-    }
-
-    var args = args
-    let command = args.removeFirst()
-    switch command {
-    case "start_server":
-      guard args.count == 1 || args.count == 2,
-        let port = args.popLast().flatMap(Int.init),
-        let useTLS = Command.parseTLSArg(args.popLast())
-      else {
-        return nil
+    func run() throws {
+      let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+      defer {
+        try! group.syncShutdownGracefully()
       }
-      self = .startServer(port: port, useTLS: useTLS)
 
-    case "run_test":
-      guard args.count == 3 || args.count == 4,
-        let name = args.popLast(),
-        let port = args.popLast().flatMap(Int.init),
-        let host = args.popLast(),
-        let useTLS = Command.parseTLSArg(args.popLast())
-      else {
-        return nil
-      }
-      self = .runTest(name: name, host: host, port: port, useTLS: useTLS)
-
-    case "list_tests":
-      self = .listTests
-
-    default:
-      return nil
-    }
-  }
-
-  private static func parseTLSArg(_ arg: String?) -> Bool? {
-    switch arg {
-    case .some("--tls"):
-      return true
-    case .none, .some("--notls"):
-      return false
-    default:
-      return nil
-    }
-  }
-}
-
-func main(args: [String]) {
-  let program = args.first ?? "GRPC Interoperability Tests"
-  guard let command = Command(from: .init(args.dropFirst())) else {
-    printUsageAndExit(program: program)
-  }
-
-  switch command {
-  case .listTests:
-    InteroperabilityTestCase.allCases.forEach {
-      print($0.name)
-    }
-
-  case let .startServer(port: port, useTLS: useTLS):
-    let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-    defer {
-      try! group.syncShutdownGracefully()
-    }
-
-    do {
       let server = try makeInteroperabilityTestServer(
-        port: port,
+        port: self.port,
         eventLoopGroup: group,
-        useTLS: useTLS
+        useTLS: self.tls
       ).wait()
       print("server started: \(server.channel.localAddress!)")
 
       // We never call close; run until we get killed.
       try server.onClose.wait()
-    } catch {
-      print("unable to start interoperability test server")
     }
+  }
 
-  case let .runTest(name: name, host: host, port: port, useTLS: useTLS):
-    let test: InteroperabilityTest
-    do {
-      test = try makeRunnableTest(name: name)
-    } catch {
-      print("\(error)")
-      exit(1)
+  struct RunTest: ParsableCommand {
+    static var configuration = CommandConfiguration(
+      abstract: "Runs a gRPC interoperability test using a gRPC Swift client."
+    )
+
+    @Flag(help: "Whether TLS should be used or not")
+    var tls = false
+
+    @Option(help: "The host the server is running on")
+    var host: String
+
+    @Option(help: "The port to connect to")
+    var port: Int
+
+    @Argument(help: "The name of the test to run")
+    var testName: String
+
+    func run() throws {
+      let test = try makeRunnableTest(name: self.testName)
+      try runTest(
+        test,
+        name: self.testName,
+        host: self.host,
+        port: self.port,
+        useTLS: self.tls
+      )
     }
+  }
 
-    do {
-      // Provide some basic configuration. Some tests may override this.
-      try runTest(test, name: name, host: host, port: port, useTLS: useTLS)
-    } catch {
-      print("Error running test: \(error)")
-      exit(1)
+  struct ListTests: ParsableCommand {
+    static var configuration = CommandConfiguration(
+      abstract: "List all interoperability test names."
+    )
+
+    func run() throws {
+      InteroperabilityTestCase.allCases.forEach {
+        print($0.name)
+      }
     }
   }
 }
 
-main(args: CommandLine.arguments)
+InteroperabilityTests.main()

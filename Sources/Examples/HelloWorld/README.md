@@ -14,21 +14,17 @@ To start the server run:
 swift run HelloWorldServer
 ```
 
-Note the port the server is listening on.
-
 ### Client
 
-To send a message to the server run the following, replacing `<PORT>` with the
-port the server is listening on:
+To send a message to the server run the following:
 
 ```sh
-swift run HelloWorldClient <PORT>
+swift run HelloWorldClient
 ```
 
 You may also greet a particular person (or dog). For example, to greet
-[PanCakes](https://grpc.io/blog/hello-pancakes/) on a server listening on port
-1234 run:
+[PanCakes](https://grpc.io/blog/hello-pancakes/) run:
 
 ```sh
-swift run HelloWorldClient 1234 "PanCakes"
+swift run HelloWorldClient PanCakes
 ```

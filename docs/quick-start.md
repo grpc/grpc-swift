@@ -41,14 +41,12 @@ From the `grpc-swift` directory:
 
    ```sh
    $ swift run HelloWorldServer
-   server started on port 52200
-   $ # Note: the port may be different on your machine.
    ```
 
 2. In another terminal, compile and run the client
 
    ```sh
-   $ swift run HelloWorldClient 52200
+   $ swift run HelloWorldClient
    Greeter received: Hello stranger!
    ```
 
@@ -201,14 +199,12 @@ Just like we did before, from the top level `grpc-swift` directory:
 
    ```sh
    $ swift run HelloWorldServer
-   server started on port 52416
-   $ # Note: the port may be different on your machine.
    ```
 
 2. In another terminal, compile and run the client
 
    ```sh
-   $ swift run HelloWorldClient 52416
+   $ swift run HelloWorldClient
    Greeter received: Hello stranger!
    Greeter received: Hello again stranger!
    ```
