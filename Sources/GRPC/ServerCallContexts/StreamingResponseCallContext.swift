@@ -51,12 +51,6 @@ open class StreamingResponseCallContext<ResponsePayload>: ServerCallContextBase 
     super.init(eventLoop: eventLoop, headers: headers, logger: logger, userInfoRef: userInfoRef)
   }
 
-  @available(*, deprecated, renamed: "init(eventLoop:path:headers:logger:userInfo:)")
-  override public init(eventLoop: EventLoop, request: HTTPRequestHead, logger: Logger) {
-    self.statusPromise = eventLoop.makePromise()
-    super.init(eventLoop: eventLoop, request: request, logger: logger)
-  }
-
   /// Send a response to the client.
   ///
   /// - Parameters:
@@ -198,102 +192,6 @@ internal final class _StreamingResponseCallContext<Request, Response>:
       // Attach the promise, if present, to the last message.
       let isLast = next == nil
       self._sendResponse(current, .init(compress: compress, flush: isLast), isLast ? promise : nil)
-    }
-  }
-}
-
-/// Concrete implementation of `StreamingResponseCallContext` used by our generated code.
-open class StreamingResponseCallContextImpl<ResponsePayload>: StreamingResponseCallContext<ResponsePayload> {
-  public let channel: Channel
-
-  /// - Parameters:
-  ///   - channel: The NIO channel the call is handled on.
-  ///   - headers: The headers provided with this call.
-  ///   - errorDelegate: Provides a means for transforming status promise failures to `GRPCStatusTransformable` before
-  ///     sending them to the client.
-  ///   - logger: A logger.
-  ///
-  ///     Note: `errorDelegate` is not called for status promise that are `succeeded` with a non-OK status.
-  public init(
-    channel: Channel,
-    headers: HPACKHeaders,
-    errorDelegate: ServerErrorDelegate?,
-    logger: Logger
-  ) {
-    self.channel = channel
-    super.init(
-      eventLoop: channel.eventLoop,
-      headers: headers,
-      logger: logger,
-      userInfoRef: Ref(UserInfo())
-    )
-
-    self.statusPromise.futureResult.whenComplete { result in
-      switch result {
-      case let .success(status):
-        self.channel.writeAndFlush(
-          self.wrap(.end(status, self.trailers)),
-          promise: nil
-        )
-
-      case let .failure(error):
-        let (status, trailers) = self.processObserverError(error, delegate: errorDelegate)
-        self.channel.writeAndFlush(self.wrap(.end(status, trailers)), promise: nil)
-      }
-    }
-  }
-
-  /// Wrap the response part in a `NIOAny`. This is useful in order to avoid explicitly spelling
-  /// out `NIOAny(WrappedResponse(...))`.
-  private func wrap(_ response: WrappedResponse) -> NIOAny {
-    return NIOAny(response)
-  }
-
-  @available(*, deprecated, renamed: "init(channel:headers:errorDelegate:logger:)")
-  public convenience init(
-    channel: Channel,
-    request: HTTPRequestHead,
-    errorDelegate: ServerErrorDelegate?,
-    logger: Logger
-  ) {
-    self.init(
-      channel: channel,
-      headers: HPACKHeaders(httpHeaders: request.headers, normalizeHTTPHeaders: false),
-      errorDelegate: errorDelegate,
-      logger: logger
-    )
-  }
-
-  override open func sendResponse(
-    _ message: ResponsePayload,
-    compression: Compression = .deferToCallDefault,
-    promise: EventLoopPromise<Void>?
-  ) {
-    let compress = compression.isEnabled(callDefault: self.compressionEnabled)
-    self.channel.write(
-      self.wrap(.message(message, .init(compress: compress, flush: true))),
-      promise: promise
-    )
-  }
-
-  override open func sendResponses<Messages: Sequence>(
-    _ messages: Messages,
-    compression: Compression = .deferToCallDefault,
-    promise: EventLoopPromise<Void>?
-  ) where ResponsePayload == Messages.Element {
-    let compress = compression.isEnabled(callDefault: self.compressionEnabled)
-
-    var iterator = messages.makeIterator()
-    var next = iterator.next()
-
-    while let current = next {
-      next = iterator.next()
-      // Attach the promise, if present, to the last message.
-      let isLast = next == nil
-      self.channel.write(
-        self.wrap(.message(current, .init(compress: compress, flush: isLast))),
-        promise: isLast ? promise : nil
-      )
     }
   }
 }
