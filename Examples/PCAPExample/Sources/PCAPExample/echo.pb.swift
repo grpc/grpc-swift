@@ -1,1 +1,0 @@
-../../../../Sources/Examples/Echo/Model/echo.pb.swift

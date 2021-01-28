@@ -257,5 +257,18 @@ let package = Package(
       ],
       path: "Sources/Examples/RouteGuide/Server"
     ),
+
+    // Client for the PacketCapture example
+    .target(
+      name: "PacketCapture",
+      dependencies: [
+        .target(name: "GRPC"),
+        .target(name: "EchoModel"),
+        .product(name: "NIO", package: "swift-nio"),
+        .product(name: "NIOExtras", package: "swift-nio-extras"),
+        .product(name: "ArgumentParser", package: "swift-argument-parser"),
+      ],
+      path: "Sources/Examples/PacketCapture"
+    ),
   ]
 )
