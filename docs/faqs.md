@@ -19,7 +19,7 @@ For the client:
 
 For the server:
 
-- `Server.Builder.withLogger` allows a `logger` to be specified. It is used a
+- `Server.Builder.withLogger` allows a `logger` to be specified. It is used as a
   root logger and is passed down to each accepted connection and in turn each
   RPC on a connection. The logger is made available in the `context` of each
   RPC handler.
