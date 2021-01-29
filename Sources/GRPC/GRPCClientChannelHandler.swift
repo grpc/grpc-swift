@@ -36,6 +36,7 @@ public enum _GRPCClientRequestPart<Request> {
 }
 
 /// As `_GRPCClientRequestPart` but messages are serialized.
+/// - Important: This is **NOT** part of the public API.
 public typealias _RawGRPCClientRequestPart = _GRPCClientRequestPart<ByteBuffer>
 
 /// A gRPC client response message part.
@@ -56,6 +57,7 @@ public enum _GRPCClientResponsePart<Response> {
 }
 
 /// As `_GRPCClientResponsePart` but messages are serialized.
+/// - Important: This is **NOT** part of the public API.
 public typealias _RawGRPCClientResponsePart = _GRPCClientResponsePart<ByteBuffer>
 
 /// - Important: This is **NOT** part of the public API. It is declared as
@@ -281,10 +283,7 @@ public enum GRPCCallType {
 ///   return channel.pipeline.addHandler(clientChannelHandler)
 /// }
 /// ```
-///
-/// - Important: This is **NOT** part of the public API. It is declared as
-///   `public` because it is used within performance tests.
-public final class _GRPCClientChannelHandler {
+internal final class GRPCClientChannelHandler {
   private let logger: Logger
   private var stateMachine: GRPCClientStateMachine
 
@@ -293,7 +292,7 @@ public final class _GRPCClientChannelHandler {
   /// - Parameters:
   ///   - callType: Type of RPC call being made.
   ///   - logger: Logger.
-  public init(callType: GRPCCallType, logger: Logger) {
+  internal init(callType: GRPCCallType, logger: Logger) {
     self.logger = logger
     switch callType {
     case .unary:
@@ -310,11 +309,11 @@ public final class _GRPCClientChannelHandler {
 
 // MARK: - GRPCClientChannelHandler: Inbound
 
-extension _GRPCClientChannelHandler: ChannelInboundHandler {
-  public typealias InboundIn = HTTP2Frame.FramePayload
-  public typealias InboundOut = _RawGRPCClientResponsePart
+extension GRPCClientChannelHandler: ChannelInboundHandler {
+  internal typealias InboundIn = HTTP2Frame.FramePayload
+  internal typealias InboundOut = _RawGRPCClientResponsePart
 
-  public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+  internal func channelRead(context: ChannelHandlerContext, data: NIOAny) {
     let payload = self.unwrapInboundIn(data)
     switch payload {
     case let .headers(content):
@@ -470,12 +469,15 @@ extension _GRPCClientChannelHandler: ChannelInboundHandler {
 
 // MARK: - GRPCClientChannelHandler: Outbound
 
-extension _GRPCClientChannelHandler: ChannelOutboundHandler {
-  public typealias OutboundIn = _RawGRPCClientRequestPart
-  public typealias OutboundOut = HTTP2Frame.FramePayload
+extension GRPCClientChannelHandler: ChannelOutboundHandler {
+  internal typealias OutboundIn = _RawGRPCClientRequestPart
+  internal typealias OutboundOut = HTTP2Frame.FramePayload
 
-  public func write(context: ChannelHandlerContext, data: NIOAny,
-                    promise: EventLoopPromise<Void>?) {
+  internal func write(
+    context: ChannelHandlerContext,
+    data: NIOAny,
+    promise: EventLoopPromise<Void>?
+  ) {
     switch self.unwrapOutboundIn(data) {
     case let .head(requestHead):
       // Feed the request into the state machine:

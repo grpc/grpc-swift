@@ -22,21 +22,31 @@ import NIOTLS
 import NIOTransportServices
 import SwiftProtobuf
 
-/// Provides a single, managed connection to a server.
+/// Provides a single, managed connection to a server which is guaranteed to always use the same
+/// `EventLoop`.
 ///
-/// The connection to the server is provided by a single channel which will attempt to reconnect
-/// to the server if the connection is dropped. This connection is guaranteed to always use the same
-/// event loop.
+/// The connection to the server is provided by a single channel which will attempt to reconnect to
+/// the server if the connection is dropped. When either the client or server detects that the
+/// connection has become idle -- that is, there are no outstanding RPCs and the idle timeout has
+/// passed (5 minutes, by default) -- the underlying channel will be closed. The client will not
+/// idle the connection if any RPC exists, even if there has been no activity on the RPC for the
+/// idle timeout. Long-lived, low activity RPCs may benefit from configuring keepalive (see
+/// `ClientConnectionKeepalive`) which periodically pings the server to ensure that the connection
+/// is not dropped. If the connection is idle a new channel will be created on-demand when the next
+/// RPC is made.
 ///
-/// The connection is initially setup with a handler to verify that TLS was established
-/// successfully (assuming TLS is being used).
+/// The state of the connection can be observed using a `ConnectivityStateDelegate`.
+///
+/// Since the connection is managed, and may potentially spend long periods of time waiting for a
+/// connection to come up (cellular connections, for example), different behaviors may be used when
+/// starting a call. The different behaviors are detailed in the `CallStartBehavior` documentation.
+///
+/// ### Channel Pipeline
+///
+/// The `NIO.ChannelPipeline` for the connection is configured as such:
 ///
 ///               ┌──────────────────────────┐
 ///               │  DelegatingErrorHandler  │
-///               └──────────▲───────────────┘
-///                HTTP2Frame│
-///               ┌──────────┴───────────────┐
-///               │ SettingsObservingHandler │
 ///               └──────────▲───────────────┘
 ///                HTTP2Frame│
 ///                          │                ⠇ ⠇   ⠇ ⠇
@@ -49,11 +59,11 @@ import SwiftProtobuf
 ///                        └─▲───────────────────────┬─┘
 ///                HTTP2Frame│                       │HTTP2Frame
 ///                        ┌─┴───────────────────────▼─┐
-///                        │       NIOHTTP2Handler     │
+///                        │       GRPCIdleHandler     │
 ///                        └─▲───────────────────────┬─┘
-///                ByteBuffer│                       │ByteBuffer
+///                HTTP2Frame│                       │HTTP2Frame
 ///                        ┌─┴───────────────────────▼─┐
-///                        │   TLSVerificationHandler  │
+///                        │       NIOHTTP2Handler     │
 ///                        └─▲───────────────────────┬─┘
 ///                ByteBuffer│                       │ByteBuffer
 ///                        ┌─┴───────────────────────▼─┐
@@ -62,15 +72,9 @@ import SwiftProtobuf
 ///                ByteBuffer│                       │ByteBuffer
 ///                          │                       ▼
 ///
-/// The `TLSVerificationHandler` observes the outcome of the SSL handshake and determines
-/// whether a `ClientConnection` should be returned to the user. In either eventuality, the
-/// handler removes itself from the pipeline once TLS has been verified. There is also a handler
-/// after the multiplexer for observing the initial settings frame, after which it determines that
-/// the connection state is `.ready` and removes itself from the channel. Finally there is a
-/// delegated error handler which uses the error delegate associated with this connection
-/// (see `DelegatingErrorHandler`).
-///
-/// See `BaseClientCall` for a description of the pipelines associated with each HTTP/2 stream.
+/// The 'GRPCIdleHandler' intercepts HTTP/2 frames and various events and is responsible for
+/// informing and controlling the state of the connection (idling and keepalive). The HTTP/2 streams
+/// are used to handle individual RPCs.
 public class ClientConnection {
   private let connectionManager: ConnectionManager
 
@@ -82,7 +86,10 @@ public class ClientConnection {
   /// The configuration for this client.
   internal let configuration: Configuration
 
+  /// The scheme of the URI for each RPC, i.e. 'http' or 'https'.
   internal let scheme: String
+
+  /// The authority of the URI for each RPC.
   internal let authority: String
 
   /// A monitor for the connectivity state.
@@ -264,7 +271,8 @@ public struct CallStartBehavior: Hashable {
 }
 
 extension ClientConnection {
-  /// The configuration for a connection.
+  /// Configuration for a `ClientConnection`. Users should prefer using one of the
+  /// `ClientConnection` builders: `ClientConnection.secure(_:)` or `ClientConnection.insecure(_:)`.
   public struct Configuration {
     /// The target to connect to.
     public var target: ConnectionTarget

@@ -56,13 +56,16 @@ extension Compression {
   }
 }
 
+/// Whether compression is enabled or disabled for a client.
 public enum ClientMessageEncoding {
+  /// Compression is enabled with the given configuration.
   case enabled(Configuration)
+  /// Compression is disabled.
   case disabled
 }
 
 extension ClientMessageEncoding {
-  var enabledForRequests: Bool {
+  internal var enabledForRequests: Bool {
     switch self {
     case let .enabled(configuration):
       return configuration.outbound != nil
@@ -112,8 +115,11 @@ extension ClientMessageEncoding {
   }
 }
 
+/// Whether compression is enabled or disabled on the server.
 public enum ServerMessageEncoding {
+  /// Compression is supported with this configuration.
   case enabled(Configuration)
+  /// Compression is not enabled. However, 'identity' compression is still supported.
   case disabled
 
   @usableFromInline

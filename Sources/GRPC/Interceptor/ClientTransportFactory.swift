@@ -226,7 +226,7 @@ private struct HTTP2ClientTransportFactory<Request, Response> {
 
         multiplexer.createStreamChannel(promise: streamPromise) { streamChannel in
           streamChannel.pipeline.addHandlers([
-            _GRPCClientChannelHandler(
+            GRPCClientChannelHandler(
               callType: transport.callDetails.type,
               logger: transport.logger
             ),

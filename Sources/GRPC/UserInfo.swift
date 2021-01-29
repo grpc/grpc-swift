@@ -17,6 +17,9 @@
 /// `UserInfo` is a dictionary for heterogeneously typed values with type safe access to the stored
 /// values.
 ///
+/// `UserInfo` is shared between server interceptor contexts and server handlers, this is on a
+/// per-RPC basis. `UserInfo` is *not* shared across a connection.
+///
 /// Values are keyed by a type conforming to the `UserInfo.Key` protocol. The protocol requires an
 /// `associatedtype`: the type of the value the key is paired with. A key can be created using a
 /// caseless `enum`, for example:
