@@ -38,8 +38,14 @@ class ServerWebTests: EchoTestCaseBase {
     return data
   }
 
-  private func gRPCWebTrailers(status: Int = 0, message: String = "OK") -> Data {
-    var data = "grpc-status: \(status)\r\ngrpc-message: \(message)".data(using: .utf8)!
+  private func gRPCWebTrailers(status: Int = 0, message: String? = nil) -> Data {
+    var data: Data
+    if let message = message {
+      data = "grpc-status: \(status)\r\ngrpc-message: \(message)".data(using: .utf8)!
+    } else {
+      data = "grpc-status: \(status)".data(using: .utf8)!
+    }
+
     // Add the gRPC prefix with the compression byte and the 4 length bytes.
     for i in 0 ..< 4 {
       data.insert(UInt8((data.count >> (i * 8)) & 0xFF), at: 0)

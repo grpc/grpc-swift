@@ -42,7 +42,7 @@ public struct GRPCStatus: Error {
   ///
   /// - Important: This should *not* be used when checking whether a returned status has an 'ok'
   ///   status code. Use `GRPCStatus.isOk` or check the code directly.
-  public static let ok = GRPCStatus(code: .ok, message: "OK")
+  public static let ok = GRPCStatus(code: .ok, message: nil)
   /// "Internal server error" status.
   public static let processingError = GRPCStatus(
     code: .internalError,
