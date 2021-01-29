@@ -13,28 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import ArgumentParser
 import GRPC
 import HelloWorldModel
 import Logging
 import NIO
 
-let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-defer {
-  try! group.syncShutdownGracefully()
+struct HelloWorld: ParsableCommand {
+  @Option(help: "The port to listen on for new connections")
+  var port = 1234
+
+  func run() throws {
+    let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    defer {
+      try! group.syncShutdownGracefully()
+    }
+
+    // Start the server and print its address once it has started.
+    let server = Server.insecure(group: group)
+      .withServiceProviders([GreeterProvider()])
+      .bind(host: "localhost", port: self.port)
+
+    server.map {
+      $0.channel.localAddress
+    }.whenSuccess { address in
+      print("server started on port \(address!.port!)")
+    }
+
+    // Wait on the server's `onClose` future to stop the program from exiting.
+    _ = try server.flatMap {
+      $0.onClose
+    }.wait()
+  }
 }
 
-// Start the server and print its address once it has started.
-let server = Server.insecure(group: group)
-  .withServiceProviders([GreeterProvider()])
-  .bind(host: "localhost", port: 0)
-
-server.map {
-  $0.channel.localAddress
-}.whenSuccess { address in
-  print("server started on port \(address!.port!)")
-}
-
-// Wait on the server's `onClose` future to stop the program from exiting.
-_ = try server.flatMap {
-  $0.onClose
-}.wait()
+HelloWorld.main()

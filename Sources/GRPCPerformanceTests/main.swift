@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import ArgumentParser
 import EchoModel
 import Foundation
 import GRPC
@@ -186,51 +187,28 @@ struct TestSpec {
   }
 }
 
-func usage(program: String) -> String {
-  return """
-  USAGE: \(program) [-alh] [BENCHMARK ...]
+struct PerformanceTests: ParsableCommand {
+  @Flag(name: .shortAndLong, help: "List all available tests")
+  var list: Bool = false
 
-  OPTIONS:
+  @Flag(name: .shortAndLong, help: "Run all tests")
+  var all: Bool = false
 
-    The following options are available:
+  @Argument(help: "The tests to run")
+  var tests: [String] = []
 
-    -a  Run all benchmarks. (Also: '--all')
+  func run() throws {
+    let spec: TestSpec
 
-    -l  List all benchmarks. (Also: '--list')
-
-    -h  Prints this message. (Also: '--help')
-  """
-}
-
-func main(args: [String]) {
-  // Quieten the logs.
-  LoggingSystem.bootstrap {
-    var handler = StreamLogHandler.standardOutput(label: $0)
-    handler.logLevel = .critical
-    return handler
-  }
-
-  let program = args.first!
-  let arg0 = args.dropFirst().first
-
-  switch arg0 {
-  case "-h", "--help":
-    print(usage(program: program))
-
-  case "-l", "--list":
-    runBenchmarks(spec: TestSpec(action: .list))
-
-  case "-a", "-all":
-    runBenchmarks(spec: TestSpec(action: .run(.all)))
-
-  default:
-    // This must be a list of benchmarks to run.
-    let tests = Array(args.dropFirst())
-    if tests.isEmpty {
-      print(usage(program: program))
+    if self.list {
+      spec = TestSpec(action: .list)
+    } else if self.all {
+      spec = TestSpec(action: .run(.all))
     } else {
-      runBenchmarks(spec: TestSpec(action: .run(.some(tests))))
+      spec = TestSpec(action: .run(.some(self.tests)))
     }
+
+    runBenchmarks(spec: spec)
   }
 }
 
@@ -239,4 +217,4 @@ assert({
   return true
 }())
 
-main(args: CommandLine.arguments)
+PerformanceTests.main()

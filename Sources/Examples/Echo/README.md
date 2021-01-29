@@ -9,42 +9,40 @@ There are three subdirectories:
 * `Implementation` containing the server implementation of the generated model,
 * `Runtime` containing a CLI for the server and client.
 
-## Running
-
 ### Server
 
-To start the server on a free port run:
+To start the server run:
 
 ```sh
-swift run Echo server 0
+swift run Echo server
 ```
 
-To start the server with TLS enabled on port 1234:
+By default the server listens on port 1234. The port may also be specified by
+passing the `--port` option. Other options may be found by running:
 
 ```sh
-swift run Echo server --tls 1234
+swift run Echo server --help
 ```
 
 ### Client
 
-To invoke the 'get' (unary) RPC with the message "Hello, World!" against a
-server listening on port 5678 run:
+To invoke the 'get' (unary) RPC with the message "Hello, World!" against the
+server:
 
 ```sh
-swift run Echo 5678 get "Hello, World!"
+swift run Echo client "Hello, World!"
 ```
 
-To invoke the 'update' (bidirectional streaming) RPC against a server with TLS
-enabled listening on port 1234 run:
+Different RPC types can be called using the `--rpc` flag (which defaults to
+'get'):
+- 'get': a unary RPC; one request and one response
+- 'collect': a client streaming RPC; multiple requests and one response
+- 'expand': a server streaming RPC; one request and multiple responses
+- 'update': a bidirectional streaming RPC; multiple requests and multiple
+  responses
+
+Additional options may be found by running:
 
 ```sh
-swift run Echo --tls 1234 update "Hello from the client!"
-```
-
-The client may also be run with an `--intercept` flag, this will print
-additional information about each RPC and is covered in more detail in the
-interceptors tutorial (in the `docs` directory of this project):
-
-```sh
-swift run Echo --tls --intercept 1234 get "Hello from the interceptors!"
+swift run Echo client --help
 ```

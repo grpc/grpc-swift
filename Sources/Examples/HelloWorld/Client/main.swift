@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import ArgumentParser
 import GRPC
 import HelloWorldModel
 import Logging
@@ -36,18 +37,14 @@ func greet(name: String?, client greeter: Helloworld_GreeterClient) {
   }
 }
 
-func main(args: [String]) {
-  // arg0 (dropped) is the program name. We expect arg1 to be the port, and arg2 (optional) to be
-  // the name sent in the request.
-  let arg1 = args.dropFirst(1).first
-  let arg2 = args.dropFirst(2).first
+struct HelloWorld: ParsableCommand {
+  @Option(help: "The port to connect to")
+  var port: Int = 1234
 
-  switch (arg1.flatMap(Int.init), arg2) {
-  case (.none, _):
-    print("Usage: PORT [NAME]")
-    exit(1)
+  @Argument(help: "The name to greet")
+  var name: String?
 
-  case let (.some(port), name):
+  func run() throws {
     // Setup an `EventLoopGroup` for the connection to run on.
     //
     // See: https://github.com/apple/swift-nio#eventloops-and-eventloopgroups
@@ -60,7 +57,7 @@ func main(args: [String]) {
 
     // Configure the channel, we're not using TLS so the connection is `insecure`.
     let channel = ClientConnection.insecure(group: group)
-      .connect(host: "localhost", port: port)
+      .connect(host: "localhost", port: self.port)
 
     // Close the connection when we're done with it.
     defer {
@@ -71,8 +68,8 @@ func main(args: [String]) {
     let greeter = Helloworld_GreeterClient(channel: channel)
 
     // Do the greeting.
-    greet(name: name, client: greeter)
+    greet(name: self.name, client: greeter)
   }
 }
 
-main(args: CommandLine.arguments)
+HelloWorld.main()

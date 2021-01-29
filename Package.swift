@@ -45,6 +45,10 @@ let package = Package(
 
     // Logging API.
     .package(url: "https://github.com/apple/swift-log.git", from: "1.4.0"),
+
+    // Argument parsering: only for internal targets (i.e. examples).
+    // swift-argument-parser only provides source compatability guarantees between minor version.
+    .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.3.0")),
   ],
   targets: [
     // The main GRPC module.
@@ -116,6 +120,7 @@ let package = Package(
       name: "GRPCInteroperabilityTests",
       dependencies: [
         .target(name: "GRPCInteroperabilityTestsImplementation"),
+        .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ]
     ),
 
@@ -126,6 +131,7 @@ let package = Package(
         .target(name: "GRPC"),
         .target(name: "GRPCInteroperabilityTestModels"),
         .product(name: "Logging", package: "swift-log"),
+        .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ]
     ),
 
@@ -136,6 +142,7 @@ let package = Package(
         .target(name: "GRPC"),
         .target(name: "EchoModel"),
         .product(name: "NIO", package: "swift-nio"),
+        .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ]
     ),
 
@@ -156,6 +163,7 @@ let package = Package(
         .target(name: "GRPC"),
         .target(name: "GRPCSampleData"),
         .product(name: "SwiftProtobuf", package: "SwiftProtobuf"),
+        .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ],
       path: "Sources/Examples/Echo/Runtime"
     ),
@@ -199,6 +207,7 @@ let package = Package(
       dependencies: [
         .target(name: "GRPC"),
         .target(name: "HelloWorldModel"),
+        .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ],
       path: "Sources/Examples/HelloWorld/Client"
     ),
@@ -210,6 +219,7 @@ let package = Package(
         .target(name: "GRPC"),
         .product(name: "NIO", package: "swift-nio"),
         .target(name: "HelloWorldModel"),
+        .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ],
       path: "Sources/Examples/HelloWorld/Server"
     ),
@@ -231,6 +241,7 @@ let package = Package(
       dependencies: [
         .target(name: "GRPC"),
         .target(name: "RouteGuideModel"),
+        .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ],
       path: "Sources/Examples/RouteGuide/Client"
     ),
@@ -242,6 +253,7 @@ let package = Package(
         .target(name: "GRPC"),
         .product(name: "NIO", package: "swift-nio"),
         .target(name: "RouteGuideModel"),
+        .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ],
       path: "Sources/Examples/RouteGuide/Server"
     ),

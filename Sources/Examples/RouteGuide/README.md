@@ -14,11 +14,10 @@ To start the server, from the root of this package run:
 $ swift run RouteGuideServer
 ```
 
-Once the server has started it will print out the port is listening on. This
-must be passed to the client.
+From another terminal, run the client:
 
 ```sh
-$ swift run RouteGuideClient <PORT>
+$ swift run RouteGuideClient
 ```
 
 ## Regenerating client and server code

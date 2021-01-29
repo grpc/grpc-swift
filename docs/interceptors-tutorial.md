@@ -251,16 +251,14 @@ it, from the root of your gRPC-Swift checkout start the Echo server on a free
 port by running:
 
 ```
-$ swift run Echo server 0
+$ swift run Echo server
 starting insecure server
-started server: [IPv6]::1/::1:51274
 ```
 
-Note the port that your server started on. In another terminal run the client
-without the interceptors with:
+In another terminal run the client without the interceptors with:
 
 ```
-$ swift run Echo client <PORT> get "Hello"
+$ swift run Echo client "Hello"
 get receieved: Swift echo get: Hello
 get completed with status: ok (0)
 ```
@@ -269,7 +267,7 @@ This calls the unary "Get" RPC and prints the response and status from the RPC.
 Let's run it with our interceptor enabled by adding the `--intercept` flag:
 
 ```
-$ swift run Echo client --intercept <PORT> get "Hello"
+$ swift run Echo client --intercept "Hello"
 > Starting '/echo.Echo/Get' RPC, headers: []
 > Sending request with text 'Hello'
 > Closing request stream
