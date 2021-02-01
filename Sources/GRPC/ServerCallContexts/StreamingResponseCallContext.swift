@@ -20,15 +20,15 @@ import NIOHPACK
 import NIOHTTP1
 import SwiftProtobuf
 
-/// Abstract base class exposing a method to send multiple messages over the wire and a promise for the final RPC status.
-///
-/// - When `statusPromise` is fulfilled, the call is closed and the provided status transmitted.
-/// - If `statusPromise` is failed and the error is of type `GRPCStatusTransformable`,
-///   the result of `error.asGRPCStatus()` will be returned to the client.
-/// - If `error.asGRPCStatus()` is not available, `GRPCStatus.processingError` is returned to the client.
+/// An abstract base class for a context provided to handlers for RPCs which may return multiple
+/// responses, i.e. server streaming and bidirectional streaming RPCs.
 open class StreamingResponseCallContext<ResponsePayload>: ServerCallContextBase {
-  typealias WrappedResponse = GRPCServerResponsePart<ResponsePayload>
-
+  /// A promise for the `GRPCStatus`, the end of the response stream. This must be completed by
+  /// bidirectional streaming RPC handlers to end the RPC.
+  ///
+  /// Note that while this is also present for server streaming RPCs, it is not necessary to
+  /// complete this promise: instead, an `EventLoopFuture<GRPCStatus>` must be returned from the
+  /// handler.
   public let statusPromise: EventLoopPromise<GRPCStatus>
 
   public convenience init(
@@ -114,6 +114,7 @@ open class StreamingResponseCallContext<ResponsePayload>: ServerCallContextBase 
   }
 }
 
+/// A concrete implementation of `StreamingResponseCallContext` used internally.
 @usableFromInline
 internal final class _StreamingResponseCallContext<Request, Response>:
   StreamingResponseCallContext<Response> {

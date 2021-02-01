@@ -20,19 +20,21 @@ import NIOHPACK
 import NIOHTTP1
 import SwiftProtobuf
 
-/// Abstract base class exposing a method that exposes a promise for the RPC response.
+/// A context provided to handlers for RPCs which return a single response, i.e. unary and client
+/// streaming RPCs.
 ///
-/// - When `responsePromise` is fulfilled, the call is closed and the provided response transmitted with status `responseStatus` (`.ok` by default).
-/// - If `statusPromise` is failed and the error is of type `GRPCStatusTransformable`,
-///   the result of `error.asGRPCStatus()` will be returned to the client.
-/// - If `error.asGRPCStatus()` is not available, `GRPCStatus.processingError` is returned to the client.
-///
-/// For unary calls, the response is not actually provided by fulfilling `responsePromise`, but instead by completing
-/// the future returned by `UnaryCallHandler.EventObserver`.
-open class UnaryResponseCallContext<ResponsePayload>: ServerCallContextBase, StatusOnlyCallContext {
-  typealias WrappedResponse = GRPCServerResponsePart<ResponsePayload>
+/// For client streaming RPCs the handler must complete the `responsePromise` to return the response
+/// to the client. Unary RPCs do complete the promise directly: they are provided an
+/// `StatusOnlyCallContext` view of this context where the `responsePromise` is not exposed. Instead
+/// they must return an `EventLoopFuture<Response>` from the method they are implementing.
+open class UnaryResponseCallContext<Response>: ServerCallContextBase, StatusOnlyCallContext {
+  /// A promise for a single response message. This must be completed to send a response back to the
+  /// client. If the promise is failed, the failure value will be converted to `GRPCStatus` and
+  /// used as the final status for the RPC.
+  public let responsePromise: EventLoopPromise<Response>
 
-  public let responsePromise: EventLoopPromise<ResponsePayload>
+  /// The status sent back to the client at the end of the RPC, providing the `responsePromise` was
+  /// completed successfully.
   public var responseStatus: GRPCStatus = .ok
 
   public convenience init(
@@ -59,18 +61,18 @@ open class UnaryResponseCallContext<ResponsePayload>: ServerCallContextBase, Sta
 /// Protocol variant of `UnaryResponseCallContext` that only exposes the `responseStatus` and `trailingMetadata`
 /// fields, but not `responsePromise`.
 ///
-/// Motivation: `UnaryCallHandler` already asks the call handler return an `EventLoopFuture<ResponsePayload>` which
-/// is automatically cascaded into `UnaryResponseCallContext.responsePromise`, so that promise does not (and should not)
-/// be fulfilled by the user.
-///
-/// We can use a protocol (instead of an abstract base class) here because removing the generic `responsePromise` field
-/// lets us avoid associated-type requirements on the protocol.
+/// We can use a protocol (instead of an abstract base class) here because removing the generic
+/// `responsePromise` field lets us avoid associated-type requirements on the protocol.
 public protocol StatusOnlyCallContext: ServerCallContext {
+  /// The status sent back to the client at the end of the RPC, providing the `responsePromise` was
+  /// completed successfully.
   var responseStatus: GRPCStatus { get set }
+
+  /// Metadata to return at the end of the RPC.
   var trailers: HPACKHeaders { get set }
 }
 
 /// Concrete implementation of `UnaryResponseCallContext` used for testing.
 ///
 /// Only provided to make it clear in tests that no "real" implementation is used.
-open class UnaryResponseCallContextTestStub<ResponsePayload>: UnaryResponseCallContext<ResponsePayload> {}
+open class UnaryResponseCallContextTestStub<Response>: UnaryResponseCallContext<Response> {}

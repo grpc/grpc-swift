@@ -166,8 +166,21 @@ extension GRPCClient {
 
 /// A client which has no generated stubs and may be used to create gRPC calls manually.
 /// See `GRPCClient` for details.
+///
+/// Example:
+///
+/// ```
+/// let client = AnyServiceClient(channel: channel)
+/// let rpc: UnaryCall<Request, Response> = client.makeUnaryCall(
+///   path: "/serviceName/methodName",
+///   request: .with { ... },
+/// }
+/// ```
 public final class AnyServiceClient: GRPCClient {
+  /// The gRPC channel over which RPCs are sent and received.
   public let channel: GRPCChannel
+
+  /// The default options passed to each RPC unless passed for each RPC.
   public var defaultCallOptions: CallOptions
 
   /// Creates a client which may be used to call any service.
