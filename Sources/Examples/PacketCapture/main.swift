@@ -13,27 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import ArgumentParser
 import Dispatch
+import EchoModel
 import GRPC
 import Logging
 import NIO
 import NIOExtras
-
-// Parse the command line args.
-var args = CommandLine.arguments
-guard args.count == 3, let port = Int(args[2]) else {
-  let usage = """
-  Usage: \(args[0]) SERVER_HOST SERVER_PORT
-
-  Note: you can start a server from the root of the gRPC Swift directory by running:
-
-    $ swift run Echo server 0
-  """
-  print(usage)
-  exit(1)
-}
-
-let host = args[1]
 
 // Create a logger.
 let logger = Logger(label: "gRPC PCAP Demo")
@@ -96,50 +82,59 @@ func addPCAPHandler(toChannel channel: Channel) -> EventLoopFuture<Void> {
   }
 }
 
-// Create an `EventLoopGroup`.
-let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-defer {
-  try! group.syncShutdownGracefully()
-}
+struct PCAP: ParsableCommand {
+  @Option(help: "The port to connect to")
+  var port = 1234
 
-// Create a channel.
-let channel = ClientConnection.insecure(group: group)
-  // Set the debug initializer: it will add a handler to each created channel to write a PCAP when
-  // the channel is closed.
-  .withDebugChannelInitializer(addPCAPHandler(toChannel:))
-  // We're connecting to our own server here; we'll disable connection re-establishment.
-  .withConnectionReestablishment(enabled: false)
-  // Connect!
-  .connect(host: host, port: port)
+  func run() throws {
+    // Create an `EventLoopGroup`.
+    let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    defer {
+      try! group.syncShutdownGracefully()
+    }
 
-// Create a client.
-let echo = Echo_EchoClient(channel: channel)
+    // Create a channel.
+    let channel = ClientConnection.insecure(group: group)
+      // Set the debug initializer: it will add a handler to each created channel to write a PCAP when
+      // the channel is closed.
+      .withDebugChannelInitializer(addPCAPHandler(toChannel:))
+      // We're connecting to our own server here; we'll disable connection re-establishment.
+      .withConnectionReestablishment(enabled: false)
+      // Connect!
+      .connect(host: "localhost", port: self.port)
 
-// Start an RPC.
-let update = echo.update { response in
-  logger.info("Received response '\(response.text)'")
-}
+    // Create a client.
+    let echo = Echo_EchoClient(channel: channel)
 
-// Send some requests.
-for text in ["foo", "bar", "baz", "thud", "grunt", "gorp"] {
-  update.sendMessage(.with { $0.text = text }).whenSuccess {
-    logger.info("Sent request '\(text)'")
+    // Start an RPC.
+    let update = echo.update { response in
+      logger.info("Received response '\(response.text)'")
+    }
+
+    // Send some requests.
+    for text in ["foo", "bar", "baz", "thud", "grunt", "gorp"] {
+      update.sendMessage(.with { $0.text = text }).whenSuccess {
+        logger.info("Sent request '\(text)'")
+      }
+    }
+
+    // Close the request stream.
+    update.sendEnd(promise: nil)
+
+    // Once the RPC finishes close the connection.
+    let closed = update.status.flatMap { status -> EventLoopFuture<Void> in
+      if status.isOk {
+        logger.info("✅ RPC completed successfully")
+      } else {
+        logger.error("💥 RPC failed with status '\(status)'")
+      }
+      logger.info("Closing channel")
+      return channel.close()
+    }
+
+    // Wait for the channel to be closed.
+    try closed.wait()
   }
 }
 
-// Close the request stream.
-update.sendEnd(promise: nil)
-
-// Once the RPC finishes close the connection.
-let closed = update.status.flatMap { status -> EventLoopFuture<Void> in
-  if status.isOk {
-    logger.info("✅ RPC completed successfully")
-  } else {
-    logger.error("💥 RPC failed with status '\(status)'")
-  }
-  logger.info("Closing channel")
-  return channel.close()
-}
-
-// Wait for the channel to be closed.
-try closed.wait()
+PCAP.main()

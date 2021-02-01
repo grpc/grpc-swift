@@ -13,18 +13,17 @@ tools like [Wireshark][wireshark] or `tcpdump`.
 
 ## Running the Example
 
-The example relies on the Echo server from the gRPC Swift repository. To start
-the server, from the **root of the gRPC repository** run:
+The example relies on the Echo server from a different example. To start the
+server run:
 
 ```sh
-$ swift run Echo server 0
+$ swift run Echo server
 ```
 
-Note the port printed by the server. In a separate shell, in **this** directory
-run:
+In a separate shell run:
 
 ```sh
-$ swift run PCAPExample localhost <SERVER_PORT>
+$ swift run PacketCapture
 ```
 
 Some logs should be emitted similar to below, including the path of the
