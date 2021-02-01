@@ -19,20 +19,28 @@ import json
 import random
 import string
 import argparse
+import subprocess
+import sys
 
-class Dependency:
-    def __init__(self, name, version='s.version.to_s', use_verbatim_version=True):
+
+class TargetDependency(object):
+    def __init__(self, name):
         self.name = name
-        self.version = version
-        self.use_verbatim_version = use_verbatim_version
 
-    def as_podspec(self):
-        indent='    '
+    def __str__(self):
+        return "s.dependency '{name}', s.version.to_s".format(name=self.name)
 
-        if self.use_verbatim_version:
-            return indent + "s.dependency '%s', %s\n" % (self.name, self.version)
 
-        return indent + "s.dependency '%s', '%s'\n" % (self.name, self.version)
+class ProductDependency(object):
+    def __init__(self, name, lower, upper):
+        self.name = name
+        self.lower = lower
+        self.upper = upper
+
+    def __str__(self):
+        return "s.dependency '{name}', '>= {lower}', '< {upper}'".format(
+                name=self.name, lower=self.lower, upper=self.upper)
+
 
 class Pod:
     def __init__(self, name, module_name, version, description, dependencies=None, is_plugins_pod=False):
@@ -40,15 +48,8 @@ class Pod:
         self.module_name = module_name
         self.version = version
         self.is_plugins_pod = is_plugins_pod
-
-        if dependencies is None:
-            dependencies = []
-
-        self.dependencies = dependencies
+        self.dependencies = dependencies if dependencies is not None else []
         self.description = description
-
-    def add_dependency(self, dependency):
-        self.dependencies.append(dependency)
 
     def as_podspec(self):
         print('\n')
@@ -83,16 +84,17 @@ class Pod:
             podspec += "\n" if len(self.dependencies) > 0 else ""
 
         for dep in self.dependencies:
-            podspec += dep.as_podspec()
+            podspec += indent + str(dep) + "\n"
 
         podspec += "\nend"
         return podspec
 
 class PodManager:
-    def __init__(self, directory, version, should_publish):
+    def __init__(self, directory, version, should_publish, package_dump):
         self.directory = directory
         self.version = version
         self.should_publish = should_publish
+        self.package_dump = package_dump
 
     def write(self, pod, contents):
         print('    Writing to %s/%s.podspec ' % (self.directory, pod))
@@ -100,24 +102,26 @@ class PodManager:
             podspec_file.write(contents)
 
     def publish(self, pod_name):
-        os.system('pod repo update')
+        subprocess.check_call(['pod', 'repo', 'update'])
         print('    Publishing %s.podspec' % (pod_name))
-        os.system('pod trunk push --synchronous %s/%s.podspec' % (self.directory, pod_name))
+        subprocess.check_call(['pod', 'trunk', 'push', '--synchronous',
+                               self.directory + '/' + pod_name])
 
     def build_pods(self):
         cgrpczlib_pod = Pod(
-            'CGRPCZlib',
+            self.pod_name_for_grpc_target('CGRPCZlib'),
             'CGRPCZlib',
             self.version,
-            'Compression library that provides in-memory compression and decompression functions'
+            'Compression library that provides in-memory compression and decompression functions',
+            dependencies=self.build_dependency_list('CGRPCZlib')
         )
 
         grpc_pod = Pod(
-            'gRPC-Swift',
+            self.pod_name_for_grpc_target('GRPC'),
             'GRPC',
             self.version,
             'Swift gRPC code generator plugin and runtime library',
-            get_grpc_deps()
+            dependencies=self.build_dependency_list('GRPC')
         )
 
         grpc_plugins_pod = Pod(
@@ -125,12 +129,9 @@ class PodManager:
             '',
             self.version,
             'Swift gRPC code generator plugin binaries',
-            [],
+            dependencies=[TargetDependency("gRPC-Swift")],
             is_plugins_pod=True
         )
-
-        grpc_pod.add_dependency(Dependency(cgrpczlib_pod.name))
-        grpc_plugins_pod.add_dependency(Dependency(grpc_pod.name))
 
         return [cgrpczlib_pod, grpc_pod, grpc_plugins_pod]
 
@@ -148,33 +149,91 @@ class PodManager:
             else:
                 print('    Skipping Publishing...')
 
-def process_package(string):
-    pod_mappings = {
-        'swift-log': 'Logging',
-        'swift-nio': 'SwiftNIO',
-        'swift-nio-extras': 'SwiftNIOExtras',
-        'swift-nio-http2': 'SwiftNIOHTTP2',
-        'swift-nio-ssl': 'SwiftNIOSSL',
-        'swift-nio-transport-services': 'SwiftNIOTransportServices',
-        'SwiftProtobuf': 'SwiftProtobuf'
-    }
 
-    return pod_mappings[string]
+    def pod_name_for_package(self, name):
+        """Return the CocoaPod name for a given Swift package."""
+        pod_mappings = {
+            'swift-log': 'Logging',
+            'swift-nio': 'SwiftNIO',
+            'swift-nio-extras': 'SwiftNIOExtras',
+            'swift-nio-http2': 'SwiftNIOHTTP2',
+            'swift-nio-ssl': 'SwiftNIOSSL',
+            'swift-nio-transport-services': 'SwiftNIOTransportServices',
+            'SwiftProtobuf': 'SwiftProtobuf'
+        }
+        return pod_mappings[name]
 
-def get_grpc_deps():
-    with open('Package.resolved') as package:
-        data = json.load(package)
 
-    deps = []
+    def pod_name_for_grpc_target(self, name):
+        """Return the CocoaPod name for a given gRPC Swift target."""
+        return {
+          'GRPC': 'gRPC-Swift',
+          'CGRPCZlib': 'CGRPCZlib'
+        }[name]
 
-    for obj in data['object']['pins']:
-        package = process_package(obj['package'])
-        version = obj['state']['version']
-        next_major_version = int(version.split('.')[0]) + 1
 
-        deps.append(Dependency(package, '\'>= {}\', \'< {}\''.format(version, next_major_version)))
+    def get_package_requirements(self, package_name):
+        """
+        Returns the lower and upper bound version requirements for a given
+        package dependency.
+        """
+        for dependency in self.package_dump['dependencies']:
+            if dependency['name'] == package_name:
+                # There should only be 1 range.
+                requirement = dependency['requirement']['range'][0]
+                return (requirement['lowerBound'], requirement['upperBound'])
 
-    return deps
+        # This shouldn't happen.
+        raise ValueError('Could not find package called', package_name)
+
+
+    def get_dependencies(self, target_name):
+        """
+        Returns a tuple of dependency lists for a given target.
+
+        The first entry is the list of product dependencies; dependencies on
+        products from other packages. The second entry is a list of target
+        dependencies, i.e. dependencies on other targets within the package.
+        """
+        for target in self.package_dump['targets']:
+            if target['name'] == target_name:
+                product_dependencies = set()
+                target_dependencies = []
+
+                for dependency in target['dependencies']:
+                    if 'product' in dependency:
+                        product_dependencies.add(dependency['product'][1])
+                    elif 'target' in dependency:
+                        target_dependencies.append(dependency['target'][0])
+                    else:
+                        raise ValueError('Unexpected dependency type:', dependency)
+
+                return (product_dependencies, target_dependencies)
+
+        # This shouldn't happen.
+        raise ValueError('Could not find dependency called', target_name)
+
+
+    def build_dependency_list(self, target_name):
+        """
+        Returns a list of dependencies for the given target.
+
+        Dependencies may be either 'TargetDependency' or 'ProductDependency'.
+        """
+        product, target = self.get_dependencies(target_name)
+        dependencies = []
+
+        for package_name in product:
+            (lower, upper) = self.get_package_requirements(package_name)
+            pod_name = self.pod_name_for_package(package_name)
+            dependencies.append(ProductDependency(pod_name, lower, upper))
+
+        for target_name in target:
+            pod_name = self.pod_name_for_grpc_target(target_name)
+            dependencies.append(TargetDependency(pod_name))
+
+        return dependencies
+
 
 def dir_path(path):
     if os.path.isdir(path):
@@ -206,7 +265,6 @@ def main():
     )
 
     parser.add_argument('version')
-
     args = parser.parse_args()
 
     should_publish = args.upload
@@ -217,7 +275,12 @@ def main():
     if not path:
         path = os.getcwd()
 
-    pod_manager = PodManager(path, version, should_publish)
+    print("Reading package description...")
+    lines = subprocess.check_output(["swift", "package", "dump-package"])
+    package_dump = json.loads(lines)
+    assert(package_dump["name"] == "grpc-swift")
+
+    pod_manager = PodManager(path, version, should_publish, package_dump)
     pod_manager.go(start_from)
 
     return 0
