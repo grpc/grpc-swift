@@ -74,6 +74,23 @@ The **FileNaming** option determines how generated source files should be named.
 The **ProtoPathModuleMappings** option allows module mappings to be specified.
 See the [SwiftProtobuf documentation][swift-protobuf-module-mappings].
 
+### KeepMethodCasing
+
+The **KeepMethodCasing** determines whether the casing of generated function
+names is kept.
+
+For example, for the following RPC definition:
+
+```proto
+rpc Foo(FooRequest) returns (FooRequest) {}
+```
+
+Will generate stubs named `foo` by default. However, in some cases this is not
+desired, and setting `KeepMethodCasing=true` will yield stubs named `Foo`.
+
+- **Possible values:** true, false
+- **Default value:** false
+
 ### GRPCModuleName
 
 The **GRPCModuleName** option allows the name of the gRPC Swift runtime module

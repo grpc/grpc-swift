@@ -101,6 +101,22 @@ ROUTE_GUIDE_GRPC=$(ROUTE_GUIDE_PROTO:.proto=.grpc.swift)
 .PHONY:
 generate-route-guide: ${ROUTE_GUIDE_PB} ${ROUTE_GUIDE_GRPC}
 
+NORMALIZATION_PROTO=Tests/GRPCTests/Codegen/Normalization/normalization.proto
+NORMALIZATION_PB=$(NORMALIZATION_PROTO:.proto=.pb.swift)
+NORMALIZATION_GRPC=$(NORMALIZATION_PROTO:.proto=.grpc.swift)
+
+# For normalization we'll explicitly keep the method casing.
+${NORMALIZATION_GRPC}: ${NORMALIZATION_PROTO} ${PROTOC_GEN_GRPC_SWIFT}
+	protoc $< \
+		--proto_path=$(dir $<) \
+		--plugin=${PROTOC_GEN_GRPC_SWIFT} \
+		--grpc-swift_opt=KeepMethodCasing=true \
+		--grpc-swift_out=$(dir $<)
+
+# Generates protobufs and gRPC client and server for the Route Guide example
+.PHONY:
+generate-normalization: ${NORMALIZATION_PB} ${NORMALIZATION_GRPC}
+
 ### Testing ####################################################################
 
 # Normal test suite.
