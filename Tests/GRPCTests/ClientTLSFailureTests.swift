@@ -19,19 +19,31 @@ import EchoModel
 import GRPCSampleData
 import Logging
 import NIO
+import NIOConcurrencyHelpers
 import NIOSSL
 import XCTest
 
 class ErrorRecordingDelegate: ClientErrorDelegate {
-  var errors: [Error] = []
+  private let lock: Lock
+  private var _errors: [Error] = []
+
+  internal var errors: [Error] {
+    return self.lock.withLock {
+      return self._errors
+    }
+  }
+
   var expectation: XCTestExpectation
 
   init(expectation: XCTestExpectation) {
     self.expectation = expectation
+    self.lock = Lock()
   }
 
   func didCatchError(_ error: Error, logger: Logger, file: StaticString, line: Int) {
-    self.errors.append(error)
+    self.lock.withLockVoid {
+      self._errors.append(error)
+    }
     self.expectation.fulfill()
   }
 }
