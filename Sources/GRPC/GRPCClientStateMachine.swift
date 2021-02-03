@@ -167,6 +167,9 @@ struct GRPCClientStateMachine {
     }
   }
 
+  /// The default user-agent string.
+  private static let userAgent = "grpc-swift-nio/\(Version.versionString)"
+
   /// Creates a state machine representing a gRPC client's request and response stream state.
   ///
   /// - Parameter requestArity: The expected number of messages on the request stream.
@@ -613,9 +616,8 @@ extension GRPCClientStateMachine.State {
     })
 
     // Add default user-agent value, if `customMetadata` didn't contain user-agent
-    if !headers.contains(name: "user-agent") {
-      // TODO: Add a more specific user-agent.
-      headers.add(name: "user-agent", value: "grpc-swift-nio")
+    if !customMetadata.contains(name: "user-agent") {
+      headers.add(name: "user-agent", value: GRPCClientStateMachine.userAgent)
     }
 
     return headers
