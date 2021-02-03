@@ -71,7 +71,11 @@ extension Generator {
 
   internal var methodFunctionName: String {
     let name = method.name
-    return name.prefix(1).lowercased() + name.dropFirst()
+    if self.options.keepMethodCasing {
+      return name
+    } else {
+      return name.prefix(1).lowercased() + name.dropFirst()
+    }
   }
 
   internal var methodInputName: String {

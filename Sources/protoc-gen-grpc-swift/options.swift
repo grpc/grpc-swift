@@ -55,6 +55,7 @@ final class GeneratorOptions {
   private(set) var generateServer = true
   private(set) var generateClient = true
   private(set) var generateTestClient = false
+  private(set) var keepMethodCasing = false
   private(set) var protoToModuleMappings = ProtoFileToModuleMappings()
   private(set) var fileNaming = FileNaming.FullPath
   private(set) var extraModuleImports: [String] = []
@@ -87,6 +88,13 @@ final class GeneratorOptions {
       case "TestClient":
         if let value = Bool(pair.value) {
           self.generateTestClient = value
+        } else {
+          throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
+        }
+
+      case "KeepMethodCasing":
+        if let value = Bool(pair.value) {
+          self.keepMethodCasing = value
         } else {
           throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }
