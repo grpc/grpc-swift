@@ -109,9 +109,20 @@ extension ClientConnection.Configuration {
     }
 
     /// Creates a TLS Configuration using the given `NIOSSL.TLSConfiguration`.
+    ///
+    /// - Note: If no ALPN tokens are set in `configuration.applicationProtocols` then "grpc-exp"
+    ///   and "h2" will be used.
+    /// - Parameters:
+    ///   - configuration: The `NIOSSL.TLSConfiguration` to base this configuration on.
+    ///   - hostnameOverride: The hostname override to use for the TLS SNI extension.
     public init(configuration: TLSConfiguration, hostnameOverride: String? = nil) {
       self.configuration = configuration
       self.hostnameOverride = hostnameOverride
+
+      // Set the ALPN tokens if none were set.
+      if self.configuration.applicationProtocols.isEmpty {
+        self.configuration.applicationProtocols = GRPCApplicationProtocolIdentifier.client
+      }
     }
   }
 }
@@ -202,9 +213,19 @@ extension Server.Configuration {
     }
 
     /// Creates a TLS Configuration using the given `NIOSSL.TLSConfiguration`.
+    /// - Note: If no ALPN tokens are set in `configuration.applicationProtocols` then the tokens
+    ///  "grpc-exp", "h2" and "http/1.1" will be used.
+    /// - Parameters:
+    ///   - configuration: The `NIOSSL.TLSConfiguration` to base this configuration on.
+    ///   - requireALPN: Whether ALPN is required.
     public init(configuration: TLSConfiguration, requireALPN: Bool = true) {
       self.configuration = configuration
       self.requireALPN = requireALPN
+
+      // Set the ALPN tokens if none were set.
+      if self.configuration.applicationProtocols.isEmpty {
+        self.configuration.applicationProtocols = GRPCApplicationProtocolIdentifier.server
+      }
     }
   }
 }
