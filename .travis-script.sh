@@ -111,8 +111,7 @@ run_interop_tests() {
     $BUILD_OUTPUT/GRPCInteroperabilityTests run-test \
       --host "localhost" \
       --port "$INTEROP_TEST_SERVER_PORT" \
-      "$test" \
-        2> "interop.$test.log"
+      "$test"
     success "PASSED $test"
   done
 
@@ -143,8 +142,7 @@ run_interop_reconnect_test() {
   # Run the test; logs are written to stderr, redirect them to a file.
   ${BUILD_OUTPUT}/GRPCConnectionBackoffInteropTest \
     --control-port ${INTEROP_TEST_SERVER_CONTROL_PORT} \
-    --retry-port ${INTEROP_TEST_SERVER_RETRY_PORT} \
-      2> "interop.connection_backoff.log"
+    --retry-port ${INTEROP_TEST_SERVER_RETRY_PORT}
   success "connection backoff interop test PASSED"
 
   info "Stopping C++ reconnect interop server"
