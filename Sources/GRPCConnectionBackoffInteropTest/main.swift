@@ -107,7 +107,12 @@ struct ConnectionBackoffInteropTest: ParsableCommand {
   var retryPort: Int
 
   func run() throws {
-    try runTest(controlPort: self.controlPort, retryPort: self.retryPort)
+    do {
+      try runTest(controlPort: self.controlPort, retryPort: self.retryPort)
+    } catch {
+      print("[\(Date())] Unexpected error: \(error)")
+      throw error
+    }
   }
 }
 
