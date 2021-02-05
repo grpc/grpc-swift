@@ -28,7 +28,7 @@ and other tutorials):
 
 ```sh
 $ # Clone the repository at the latest release to get the example code:
-$ git clone -b 1.0.0-alpha.20 https://github.com/grpc/grpc-swift
+$ git clone -b 1.0.0 https://github.com/grpc/grpc-swift
 $ # Navigate to the repository
 $ cd grpc-swift/
 ```

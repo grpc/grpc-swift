@@ -83,7 +83,7 @@ class Pod:
 
             podspec += "\n" if len(self.dependencies) > 0 else ""
 
-        for dep in self.dependencies:
+        for dep in sorted(self.dependencies, key=lambda x: x.name):
             podspec += indent + str(dep) + "\n"
 
         podspec += "\nend"
@@ -105,7 +105,7 @@ class PodManager:
         subprocess.check_call(['pod', 'repo', 'update'])
         print('    Publishing %s.podspec' % (pod_name))
         subprocess.check_call(['pod', 'trunk', 'push', '--synchronous',
-                               self.directory + '/' + pod_name])
+                               self.directory + '/' + pod_name + ".podspec"])
 
     def build_pods(self):
         cgrpczlib_pod = Pod(
