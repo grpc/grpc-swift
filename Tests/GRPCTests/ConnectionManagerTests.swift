@@ -1011,6 +1011,20 @@ extension ConnectionManagerTests {
       channel.pipeline.fireChannelInactive()
     }
   }
+
+  func testIdleErrorDoesNothing() throws {
+    let manager = ConnectionManager(configuration: self.defaultConfiguration, logger: self.logger)
+
+    // Dropping an error on this manager should be fine.
+    manager.channelError(DoomedChannelError())
+
+    // Shutting down is then safe.
+    try self.waitForStateChange(from: .idle, to: .shutdown) {
+      let shutdown = manager.shutdown()
+      self.loop.run()
+      XCTAssertNoThrow(try shutdown.wait())
+    }
+  }
 }
 
 internal struct Change: Hashable, CustomStringConvertible {
