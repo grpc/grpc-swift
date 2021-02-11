@@ -463,11 +463,13 @@ internal class ConnectionManager {
     self.eventLoop.preconditionInEventLoop()
 
     switch self.state {
-    // These cases are purposefully separated: some crash reporting services provide stack traces
-    // which don't include the precondition failure message (which contain the invalid state we were
-    // in). Keeping the cases separate allows us work out the state from the line number.
+    // Hitting an error in idle is a surprise, but not really something we do anything about. Either the
+    // error is channel fatal, in which case we'll see channelInactive soon (acceptable), or it's not,
+    // and future I/O will either fail fast or work. In either case, all we do is log this and move on.
     case .idle:
-      self.invalidState()
+      self.logger.warning("ignoring unexpected error in idle", metadata: [
+        MetadataKey.error: "\(error)",
+      ])
 
     case .connecting:
       self.invalidState()
