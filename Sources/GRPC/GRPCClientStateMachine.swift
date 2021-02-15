@@ -629,7 +629,12 @@ extension GRPCClientStateMachine.State {
     headers.add(name: ":path", value: path)
     headers.add(name: ":authority", value: host)
     headers.add(name: ":scheme", value: scheme)
-    headers.add(name: "content-type", value: "application/grpc")
+
+    // Default to application/grpc if there is no content-type present.
+    if !customMetadata.contains(name: "content-type") {
+      headers.add(name: "content-type", value: "application/grpc")
+    }
+
     // Used to detect incompatible proxies, part of the gRPC specification.
     headers.add(name: "te", value: "trailers")
 

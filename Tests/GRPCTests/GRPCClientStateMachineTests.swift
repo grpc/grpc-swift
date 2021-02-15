@@ -92,6 +92,58 @@ extension GRPCClientStateMachineTests {
     )).assertSuccess()
   }
 
+  func testSendingDefaultContentypeRequestHeader() {
+    var stateMachine = self
+      .makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
+    stateMachine.sendRequestHeaders(requestHead: .init(
+      method: "POST",
+      scheme: "http",
+      path: "/echo/Get",
+      host: "host",
+      deadline: .distantFuture,
+      customMetadata: [:],
+      encoding: .disabled
+    )).assertSuccess { headers in
+      XCTAssertEqual(headers.first(name: "content-type"), "application/grpc")
+    }
+  }
+
+  func testSendingProtoContentypeRequestHeader() {
+    let key = "content-type"
+    let value = "application/grpc+proto"
+    var stateMachine = self
+      .makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
+    stateMachine.sendRequestHeaders(requestHead: .init(
+      method: "POST",
+      scheme: "http",
+      path: "/echo/Get",
+      host: "host",
+      deadline: .distantFuture,
+      customMetadata: [key: value],
+      encoding: .disabled
+    )).assertSuccess { headers in
+      XCTAssertEqual(headers.first(name: key), value)
+    }
+  }
+
+  func testSendingFlatbufferContentypeRequestHeader() {
+    let key = "content-type"
+    let value = "application/grpc+flatbuffers"
+    var stateMachine = self
+      .makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
+    stateMachine.sendRequestHeaders(requestHead: .init(
+      method: "POST",
+      scheme: "http",
+      path: "/echo/Get",
+      host: "host",
+      deadline: .distantFuture,
+      customMetadata: [key: value],
+      encoding: .disabled
+    )).assertSuccess { headers in
+      XCTAssertEqual(headers.first(name: key), value)
+    }
+  }
+
   func testSendRequestHeadersFromClientActiveServerIdle() {
     self.doTestSendRequestHeadersFromInvalidState(.clientActiveServerIdle(
       writeState: .one(),
@@ -276,9 +328,14 @@ extension GRPCClientStateMachineTests {
     }
   }
 
-  func doTestReceiveResponseHeadersFromValidState(_ state: StateMachine.State) {
+  func doTestReceiveResponseHeadersFromValidState(
+    _ state: StateMachine.State,
+    contentType: String? = "application/grpc"
+  ) {
     var stateMachine = self.makeStateMachine(state)
-    stateMachine.receiveResponseHeaders(self.makeResponseHeaders()).assertSuccess()
+    stateMachine.receiveResponseHeaders(
+      self.makeResponseHeaders(contentType: contentType)
+    ).assertSuccess()
   }
 
   func testReceiveResponseHeadersFromIdle() {
@@ -300,6 +357,20 @@ extension GRPCClientStateMachineTests {
   func testReceiveResponseHeadersFromClientClosedServerIdle() {
     self.doTestReceiveResponseHeadersFromValidState(
       .clientClosedServerIdle(pendingReadState: .init(arity: .one, messageEncoding: .disabled))
+    )
+  }
+
+  func testReceiveProtoResponseHeadersFromClientClosedServerIdle() {
+    self.doTestReceiveResponseHeadersFromValidState(
+      .clientClosedServerIdle(pendingReadState: .init(arity: .one, messageEncoding: .disabled)),
+      contentType: "application/grpc+proto"
+    )
+  }
+
+  func testReceiveFlatbuffersResponseHeadersFromClientClosedServerIdle() {
+    self.doTestReceiveResponseHeadersFromValidState(
+      .clientClosedServerIdle(pendingReadState: .init(arity: .one, messageEncoding: .disabled)),
+      contentType: "application/grpc+flatbuffers"
     )
   }
 

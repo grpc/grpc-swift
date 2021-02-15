@@ -18,6 +18,7 @@
 // - https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md
 // - https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-WEB.md
 internal enum ContentType {
+  case flatbuffers
   case protobuf
   case webProtobuf
   case webTextProtobuf
@@ -36,6 +37,9 @@ internal enum ContentType {
          "application/grpc-web-text+proto":
       self = .webTextProtobuf
 
+    case "application/grpc+flatbuffers":
+      self = .flatbuffers
+
     default:
       return nil
     }
@@ -52,6 +56,9 @@ internal enum ContentType {
 
     case .webTextProtobuf:
       return "application/grpc-web-text+proto"
+
+    case .flatbuffers:
+      return "application/grpc+flatbuffers"
     }
   }
 
