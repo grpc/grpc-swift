@@ -425,6 +425,16 @@ extension GRPCClientChannelHandler: ChannelInboundHandler {
       MetadataKey.h2EndStream: "\(content.endStream)",
     ])
 
+    self.consumeBytes(from: &buffer, context: context)
+
+    // End stream is set; we don't usually expect this but can handle it in some situations.
+    if content.endStream, let status = self.stateMachine.receiveEndOfResponseStream() {
+      self.logger.warning("Unexpected end stream set on DATA frame")
+      context.fireChannelRead(self.wrapInboundOut(.status(status)))
+    }
+  }
+
+  private func consumeBytes(from buffer: inout ByteBuffer, context: ChannelHandlerContext) {
     // Do we have bytes to read? If there are no bytes to read then we can't do anything. This may
     // happen if the end-of-stream flag is not set on the trailing headers frame (i.e. the one
     // containing the gRPC status code) and an additional empty data frame is sent with the
