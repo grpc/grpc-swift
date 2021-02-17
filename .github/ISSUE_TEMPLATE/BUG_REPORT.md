@@ -18,8 +18,12 @@ Describe the bug as clearly and as concisely as you can. Without enough
 information, we will not be able to help you.
 
 Include the version of `grpc-swift` and `protoc-gen-grpc-swift` you are using
-(or the Podspec version if you are using CocoaPods) as well as the platform(s)
-on which you experienced the bug.
+(or the Podspec version if you are using CocoaPods), how you are building the
+code (eg. `swift build -c release`) as well as the platform(s) on which you
+experienced the bug.
+
+If the bug is a performance bug, please double check you are building in
+release mode.
 
 ### To reproduce
 
