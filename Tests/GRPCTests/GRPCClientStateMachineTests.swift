@@ -471,6 +471,45 @@ extension GRPCClientStateMachineTests {
       expected: .invalidState
     )
   }
+
+  private func doTestReceiveEndStreamOnDataWhenActive(_ state: StateMachine.State) throws {
+    var stateMachine = self.makeStateMachine(state)
+    let status = try assertNotNil(stateMachine.receiveEndOfResponseStream())
+    XCTAssertEqual(status.code, .internalError)
+  }
+
+  func testReceiveEndStreamOnDataClientActiveServerIdle() throws {
+    try self.doTestReceiveEndStreamOnDataWhenActive(
+      .clientActiveServerIdle(
+        writeState: .one(),
+        pendingReadState: .init(arity: .one, messageEncoding: .disabled)
+      )
+    )
+  }
+
+  func testReceiveEndStreamOnDataClientClosedServerIdle() throws {
+    try self.doTestReceiveEndStreamOnDataWhenActive(
+      .clientClosedServerIdle(pendingReadState: .init(arity: .one, messageEncoding: .disabled))
+    )
+  }
+
+  func testReceiveEndStreamOnDataClientActiveServerActive() throws {
+    try self.doTestReceiveEndStreamOnDataWhenActive(
+      .clientActiveServerActive(writeState: .one(), readState: .one())
+    )
+  }
+
+  func testReceiveEndStreamOnDataClientClosedServerActive() throws {
+    try self.doTestReceiveEndStreamOnDataWhenActive(
+      .clientClosedServerActive(readState: .one())
+    )
+  }
+
+  func testReceiveEndStreamOnDataWhenClosed() {
+    var stateMachine = self.makeStateMachine(.clientClosedServerClosed)
+    // Already closed, end stream is ignored.
+    XCTAssertNil(stateMachine.receiveEndOfResponseStream())
+  }
 }
 
 // MARK: - Basic RPC flow.
