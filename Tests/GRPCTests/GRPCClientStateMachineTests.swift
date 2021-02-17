@@ -78,6 +78,22 @@ extension GRPCClientStateMachineTests {
     }
   }
 
+  func doTestCustomContentType(_ contentType: ContentType) {
+    var stateMachine = self
+      .makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
+    stateMachine.sendRequestHeaders(requestHead: .init(
+      method: "POST",
+      scheme: "http",
+      path: "/echo/Get",
+      host: "host",
+      deadline: .distantFuture,
+      customMetadata: ["content-type": contentType.canonicalValue],
+      encoding: .disabled
+    )).assertSuccess { headers in
+      XCTAssertEqual(headers.first(name: "content-type"), contentType.canonicalValue)
+    }
+  }
+
   func testSendRequestHeadersFromIdle() {
     var stateMachine = self
       .makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
@@ -92,56 +108,16 @@ extension GRPCClientStateMachineTests {
     )).assertSuccess()
   }
 
-  func testSendingDefaultContentypeRequestHeader() {
-    var stateMachine = self
-      .makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
-    stateMachine.sendRequestHeaders(requestHead: .init(
-      method: "POST",
-      scheme: "http",
-      path: "/echo/Get",
-      host: "host",
-      deadline: .distantFuture,
-      customMetadata: [:],
-      encoding: .disabled
-    )).assertSuccess { headers in
-      XCTAssertEqual(headers.first(name: "content-type"), "application/grpc")
-    }
+  func testSendingDefaultContentTypeRequestHeader() {
+    self.doTestCustomContentType(.protobuf)
   }
 
-  func testSendingProtoContentypeRequestHeader() {
-    let key = "content-type"
-    let value = "application/grpc+proto"
-    var stateMachine = self
-      .makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
-    stateMachine.sendRequestHeaders(requestHead: .init(
-      method: "POST",
-      scheme: "http",
-      path: "/echo/Get",
-      host: "host",
-      deadline: .distantFuture,
-      customMetadata: [key: value],
-      encoding: .disabled
-    )).assertSuccess { headers in
-      XCTAssertEqual(headers.first(name: key), value)
-    }
+  func testSendingWebProtoContentTypeRequestHeader() {
+    self.doTestCustomContentType(.webProtobuf)
   }
 
-  func testSendingFlatbufferContentypeRequestHeader() {
-    let key = "content-type"
-    let value = "application/grpc+flatbuffers"
-    var stateMachine = self
-      .makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
-    stateMachine.sendRequestHeaders(requestHead: .init(
-      method: "POST",
-      scheme: "http",
-      path: "/echo/Get",
-      host: "host",
-      deadline: .distantFuture,
-      customMetadata: [key: value],
-      encoding: .disabled
-    )).assertSuccess { headers in
-      XCTAssertEqual(headers.first(name: key), value)
-    }
+  func testSendingFlatbufferContentTypeRequestHeader() {
+    self.doTestCustomContentType(.flatbuffers)
   }
 
   func testSendRequestHeadersFromClientActiveServerIdle() {
@@ -330,11 +306,11 @@ extension GRPCClientStateMachineTests {
 
   func doTestReceiveResponseHeadersFromValidState(
     _ state: StateMachine.State,
-    contentType: String? = "application/grpc"
+    contentType: ContentType? = .protobuf
   ) {
     var stateMachine = self.makeStateMachine(state)
     stateMachine.receiveResponseHeaders(
-      self.makeResponseHeaders(contentType: contentType)
+      self.makeResponseHeaders(contentType: contentType?.canonicalValue)
     ).assertSuccess()
   }
 
@@ -363,14 +339,14 @@ extension GRPCClientStateMachineTests {
   func testReceiveProtoResponseHeadersFromClientClosedServerIdle() {
     self.doTestReceiveResponseHeadersFromValidState(
       .clientClosedServerIdle(pendingReadState: .init(arity: .one, messageEncoding: .disabled)),
-      contentType: "application/grpc+proto"
+      contentType: .protobuf
     )
   }
 
   func testReceiveFlatbuffersResponseHeadersFromClientClosedServerIdle() {
     self.doTestReceiveResponseHeadersFromValidState(
       .clientClosedServerIdle(pendingReadState: .init(arity: .one, messageEncoding: .disabled)),
-      contentType: "application/grpc+flatbuffers"
+      contentType: .flatbuffers
     )
   }
 
