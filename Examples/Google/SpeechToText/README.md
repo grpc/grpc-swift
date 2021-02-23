@@ -10,6 +10,9 @@ This application demonstrates Bidirectional Streaming to convert streamed audio 
 * [Google Speech-To-Text API](https://cloud.google.com/speech-to-text)
 * [SnapKit](https://github.com/SnapKit/SnapKit)
 
+## Prerequisites
+Please be sure to perform the preliminary steps in [Examples/Google/README](../README.md), specifically enabling "Cloud Speech-to-Text API" from Machine Learning section
+
 ## Acquiring an API Key
 This project requires a Google Cloud API Key. Please [register](https://cloud.google.com/apis/docs/getting-started) and [create an API key](https://cloud.google.com/docs/authentication/api-keys) in order to consume the API.
 
