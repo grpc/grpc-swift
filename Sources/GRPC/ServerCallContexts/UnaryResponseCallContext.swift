@@ -35,7 +35,21 @@ open class UnaryResponseCallContext<Response>: ServerCallContextBase, StatusOnly
 
   /// The status sent back to the client at the end of the RPC, providing the `responsePromise` was
   /// completed successfully.
-  public var responseStatus: GRPCStatus = .ok
+  ///
+  /// - Important: This  *must* be accessed from the context's `eventLoop` in order to ensure
+  ///   thread-safety.
+  public var responseStatus: GRPCStatus {
+    get {
+      self.eventLoop.assertInEventLoop()
+      return self._responseStatus
+    }
+    set {
+      self.eventLoop.assertInEventLoop()
+      self._responseStatus = newValue
+    }
+  }
+
+  private var _responseStatus: GRPCStatus = .ok
 
   public convenience init(
     eventLoop: EventLoop,
