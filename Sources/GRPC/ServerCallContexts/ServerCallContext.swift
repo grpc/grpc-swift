@@ -54,17 +54,37 @@ open class ServerCallContextBase: ServerCallContext {
   /// Whether compression should be enabled for responses, defaulting to `true`. Note that for
   /// this value to take effect compression must have been enabled on the server and a compression
   /// algorithm must have been negotiated with the client.
-  public var compressionEnabled: Bool = true
+  ///
+  /// - Important: This  *must* be accessed from the context's `eventLoop` in order to ensure
+  ///   thread-safety.
+  public var compressionEnabled: Bool {
+    get {
+      self.eventLoop.assertInEventLoop()
+      return self._compressionEnabled
+    }
+    set {
+      self.eventLoop.assertInEventLoop()
+      self._compressionEnabled = newValue
+    }
+  }
 
+  private var _compressionEnabled: Bool = true
+
+  /// A `UserInfo` dictionary which is shared with the interceptor contexts for this RPC.
+  ///
   /// - Important: While `UserInfo` has value-semantics, this property retrieves from, and sets a
   ///   reference wrapped `UserInfo`. The contexts passed to interceptors provide the same
   ///   reference. As such this may be used as a mechanism to pass information between interceptors
   ///   and service providers.
+  /// - Important: This  *must* be accessed from the context's `eventLoop` in order to ensure
+  ///   thread-safety.
   public var userInfo: UserInfo {
     get {
+      self.eventLoop.assertInEventLoop()
       return self.userInfoRef.value
     }
     set {
+      self.eventLoop.assertInEventLoop()
       self.userInfoRef.value = newValue
     }
   }
@@ -75,7 +95,21 @@ open class ServerCallContextBase: ServerCallContext {
 
   /// Metadata to return at the end of the RPC. If this is required it should be updated before
   /// the `responsePromise` or `statusPromise` is fulfilled.
-  public var trailers = HPACKHeaders()
+  ///
+  /// - Important: This  *must* be accessed from the context's `eventLoop` in order to ensure
+  ///   thread-safety.
+  public var trailers: HPACKHeaders {
+    get {
+      self.eventLoop.assertInEventLoop()
+      return self._trailers
+    }
+    set {
+      self.eventLoop.assertInEventLoop()
+      self._trailers = newValue
+    }
+  }
+
+  private var _trailers: HPACKHeaders = [:]
 
   public convenience init(
     eventLoop: EventLoop,
