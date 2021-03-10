@@ -57,6 +57,8 @@ public struct CallHandlerContext {
   internal var responseWriter: GRPCServerResponseWriter
   @usableFromInline
   internal var allocator: ByteBufferAllocator
+  @usableFromInline
+  internal var closeFuture: EventLoopFuture<Void>
 }
 
 /// A call URI split into components.

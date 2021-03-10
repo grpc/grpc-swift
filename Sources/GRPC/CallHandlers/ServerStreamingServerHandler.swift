@@ -164,6 +164,7 @@ public final class ServerStreamingServerHandler<
         logger: self.context.logger,
         userInfoRef: self.userInfoRef,
         compressionIsEnabled: self.context.encoding.isEnabled,
+        closeFuture: self.context.closeFuture,
         sendResponse: self.interceptResponse(_:metadata:promise:)
       )
 

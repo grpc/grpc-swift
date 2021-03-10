@@ -57,7 +57,8 @@ class ServerInterceptorTests: GRPCTestCase {
       eventLoop: self.eventLoop,
       path: path,
       responseWriter: self.recorder,
-      allocator: ByteBufferAllocator()
+      allocator: ByteBufferAllocator(),
+      closeFuture: self.eventLoop.makeSucceededVoidFuture()
     )
   }
 

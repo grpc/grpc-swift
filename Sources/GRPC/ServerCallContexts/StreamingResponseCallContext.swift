@@ -31,13 +31,36 @@ open class StreamingResponseCallContext<ResponsePayload>: ServerCallContextBase 
   /// handler.
   public let statusPromise: EventLoopPromise<GRPCStatus>
 
+  @available(*, deprecated, renamed: "init(eventLoop:headers:logger:userInfo:closeFuture:)")
   public convenience init(
     eventLoop: EventLoop,
     headers: HPACKHeaders,
     logger: Logger,
     userInfo: UserInfo = UserInfo()
   ) {
-    self.init(eventLoop: eventLoop, headers: headers, logger: logger, userInfoRef: .init(userInfo))
+    self.init(
+      eventLoop: eventLoop,
+      headers: headers,
+      logger: logger,
+      userInfoRef: .init(userInfo),
+      closeFuture: eventLoop.makeFailedFuture(GRPCStatus.closeFutureNotImplemented)
+    )
+  }
+
+  public convenience init(
+    eventLoop: EventLoop,
+    headers: HPACKHeaders,
+    logger: Logger,
+    userInfo: UserInfo = UserInfo(),
+    closeFuture: EventLoopFuture<Void>
+  ) {
+    self.init(
+      eventLoop: eventLoop,
+      headers: headers,
+      logger: logger,
+      userInfoRef: .init(userInfo),
+      closeFuture: closeFuture
+    )
   }
 
   @inlinable
@@ -45,10 +68,17 @@ open class StreamingResponseCallContext<ResponsePayload>: ServerCallContextBase 
     eventLoop: EventLoop,
     headers: HPACKHeaders,
     logger: Logger,
-    userInfoRef: Ref<UserInfo>
+    userInfoRef: Ref<UserInfo>,
+    closeFuture: EventLoopFuture<Void>
   ) {
     self.statusPromise = eventLoop.makePromise()
-    super.init(eventLoop: eventLoop, headers: headers, logger: logger, userInfoRef: userInfoRef)
+    super.init(
+      eventLoop: eventLoop,
+      headers: headers,
+      logger: logger,
+      userInfoRef: userInfoRef,
+      closeFuture: closeFuture
+    )
   }
 
   /// Send a response to the client.
@@ -131,11 +161,18 @@ internal final class _StreamingResponseCallContext<Request, Response>:
     logger: Logger,
     userInfoRef: Ref<UserInfo>,
     compressionIsEnabled: Bool,
+    closeFuture: EventLoopFuture<Void>,
     sendResponse: @escaping (Response, MessageMetadata, EventLoopPromise<Void>?) -> Void
   ) {
     self._sendResponse = sendResponse
     self._compressionEnabledOnServer = compressionIsEnabled
-    super.init(eventLoop: eventLoop, headers: headers, logger: logger, userInfoRef: userInfoRef)
+    super.init(
+      eventLoop: eventLoop,
+      headers: headers,
+      logger: logger,
+      userInfoRef: userInfoRef,
+      closeFuture: closeFuture
+    )
   }
 
   @inlinable
