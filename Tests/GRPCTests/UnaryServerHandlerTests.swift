@@ -68,7 +68,8 @@ extension ServerHandlerTestCase {
       path: "/ignored",
       remoteAddress: nil,
       responseWriter: self.recorder,
-      allocator: self.allocator
+      allocator: self.allocator,
+      closeFuture: self.eventLoop.makeSucceededVoidFuture()
     )
   }
 }

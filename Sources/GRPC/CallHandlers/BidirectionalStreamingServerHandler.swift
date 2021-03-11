@@ -167,6 +167,7 @@ public final class BidirectionalStreamingServerHandler<
         logger: self.context.logger,
         userInfoRef: self.userInfoRef,
         compressionIsEnabled: self.context.encoding.isEnabled,
+        closeFuture: self.context.closeFuture,
         sendResponse: self.interceptResponse(_:metadata:promise:)
       )
 

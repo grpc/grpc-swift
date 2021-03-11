@@ -99,7 +99,8 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelInboundHandler, GRPCServe
         remoteAddress: context.channel.remoteAddress,
         logger: self.logger,
         allocator: context.channel.allocator,
-        responseWriter: self
+        responseWriter: self,
+        closeFuture: context.channel.closeFuture
       )
 
       switch receiveHeaders {

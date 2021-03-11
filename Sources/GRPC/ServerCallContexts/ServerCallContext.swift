@@ -38,6 +38,24 @@ public protocol ServerCallContext: AnyObject {
   /// this value to take effect compression must have been enabled on the server and a compression
   /// algorithm must have been negotiated with the client.
   var compressionEnabled: Bool { get set }
+
+  /// A future which completes when the call closes. This may be used to register callbacks which
+  /// free up resources used by the RPC.
+  var closeFuture: EventLoopFuture<Void> { get }
+}
+
+extension ServerCallContext {
+  // Default implementation to avoid breaking API.
+  public var closeFuture: EventLoopFuture<Void> {
+    return self.eventLoop.makeFailedFuture(GRPCStatus.closeFutureNotImplemented)
+  }
+}
+
+extension GRPCStatus {
+  internal static let closeFutureNotImplemented = GRPCStatus(
+    code: .unimplemented,
+    message: "This context type has not implemented support for a 'closeFuture'"
+  )
 }
 
 /// Base class providing data provided to the framework user for all server calls.
@@ -111,13 +129,40 @@ open class ServerCallContextBase: ServerCallContext {
 
   private var _trailers: HPACKHeaders = [:]
 
+  /// A future which completes when the call closes. This may be used to register callbacks which
+  /// free up resources used by the RPC.
+  public let closeFuture: EventLoopFuture<Void>
+
+  @available(*, deprecated, renamed: "init(eventLoop:headers:logger:userInfo:closeFuture:)")
   public convenience init(
     eventLoop: EventLoop,
     headers: HPACKHeaders,
     logger: Logger,
     userInfo: UserInfo = UserInfo()
   ) {
-    self.init(eventLoop: eventLoop, headers: headers, logger: logger, userInfoRef: .init(userInfo))
+    self.init(
+      eventLoop: eventLoop,
+      headers: headers,
+      logger: logger,
+      userInfoRef: .init(userInfo),
+      closeFuture: eventLoop.makeFailedFuture(GRPCStatus.closeFutureNotImplemented)
+    )
+  }
+
+  public convenience init(
+    eventLoop: EventLoop,
+    headers: HPACKHeaders,
+    logger: Logger,
+    userInfo: UserInfo = UserInfo(),
+    closeFuture: EventLoopFuture<Void>
+  ) {
+    self.init(
+      eventLoop: eventLoop,
+      headers: headers,
+      logger: logger,
+      userInfoRef: .init(userInfo),
+      closeFuture: closeFuture
+    )
   }
 
   @inlinable
@@ -125,11 +170,13 @@ open class ServerCallContextBase: ServerCallContext {
     eventLoop: EventLoop,
     headers: HPACKHeaders,
     logger: Logger,
-    userInfoRef: Ref<UserInfo>
+    userInfoRef: Ref<UserInfo>,
+    closeFuture: EventLoopFuture<Void>
   ) {
     self.eventLoop = eventLoop
     self.headers = headers
     self.userInfoRef = userInfoRef
     self.logger = logger
+    self.closeFuture = closeFuture
   }
 }

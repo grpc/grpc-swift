@@ -278,7 +278,8 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
     remoteAddress: SocketAddress?,
     logger: Logger,
     allocator: ByteBufferAllocator,
-    responseWriter: GRPCServerResponseWriter
+    responseWriter: GRPCServerResponseWriter,
+    closeFuture: EventLoopFuture<Void>
   ) -> HTTP2ToRawGRPCStateMachine.StateAndReceiveHeadersAction {
     // Extract and validate the content type. If it's nil we need to close.
     guard let contentType = self.extractContentType(from: headers) else {
@@ -326,7 +327,8 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
       path: path,
       remoteAddress: remoteAddress,
       responseWriter: responseWriter,
-      allocator: allocator
+      allocator: allocator,
+      closeFuture: closeFuture
     )
 
     // We have a matching service, hopefully we have a provider for the method too.
@@ -834,7 +836,8 @@ extension HTTP2ToRawGRPCStateMachine {
     remoteAddress: SocketAddress?,
     logger: Logger,
     allocator: ByteBufferAllocator,
-    responseWriter: GRPCServerResponseWriter
+    responseWriter: GRPCServerResponseWriter,
+    closeFuture: EventLoopFuture<Void>
   ) -> ReceiveHeadersAction {
     return self.withStateAvoidingCoWs { state in
       state.receive(
@@ -844,7 +847,8 @@ extension HTTP2ToRawGRPCStateMachine {
         remoteAddress: remoteAddress,
         logger: logger,
         allocator: allocator,
-        responseWriter: responseWriter
+        responseWriter: responseWriter,
+        closeFuture: closeFuture
       )
     }
   }
@@ -934,7 +938,8 @@ extension HTTP2ToRawGRPCStateMachine.State {
     remoteAddress: SocketAddress?,
     logger: Logger,
     allocator: ByteBufferAllocator,
-    responseWriter: GRPCServerResponseWriter
+    responseWriter: GRPCServerResponseWriter,
+    closeFuture: EventLoopFuture<Void>
   ) -> HTTP2ToRawGRPCStateMachine.ReceiveHeadersAction {
     switch self {
     // This is the only state in which we can receive headers. Everything else is invalid.
@@ -946,7 +951,8 @@ extension HTTP2ToRawGRPCStateMachine.State {
         remoteAddress: remoteAddress,
         logger: logger,
         allocator: allocator,
-        responseWriter: responseWriter
+        responseWriter: responseWriter,
+        closeFuture: closeFuture
       )
       self = stateAndAction.state
       return stateAndAction.action
