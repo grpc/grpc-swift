@@ -90,6 +90,8 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
       channel: channel,
       targetWindowSize: self.configuration.httpTargetWindowSize
     ) { stream in
+      // TODO: use sync options when NIO HTTP/2 support for them is released
+      // https://github.com/apple/swift-nio-http2/pull/283
       stream.getOption(HTTP2StreamChannelOptions.streamID).map { streamID -> Logger in
         logger[metadataKey: MetadataKey.h2StreamID] = "\(streamID)"
         return logger
@@ -135,16 +137,21 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
 
     // We could use 'Channel.configureHTTP2Pipeline', but then we'd have to find the right handlers
     // to then insert our keepalive and idle handlers between. We can just add everything together.
-    var handlers: [ChannelHandler] = []
-    handlers.reserveCapacity(3)
-    handlers.append(self.makeHTTP2Handler())
-    handlers.append(self.makeIdleHandler())
-    handlers.append(self.makeHTTP2Multiplexer(for: context.channel))
+    let result: Result<Void, Error>
 
-    // Now configure the pipeline with the handlers.
-    context.channel.pipeline.addHandlers(handlers).whenComplete { result in
-      self.configurationCompleted(result: result, context: context)
+    do {
+      // This is only ever called as a result of reading a user inbound event or reading inbound so
+      // we'll be on the right event loop and sync operations are fine.
+      let sync = context.pipeline.syncOperations
+      try sync.addHandler(self.makeHTTP2Handler())
+      try sync.addHandler(self.makeIdleHandler())
+      try sync.addHandler(self.makeHTTP2Multiplexer(for: context.channel))
+      result = .success(())
+    } catch {
+      result = .failure(error)
     }
+
+    self.configurationCompleted(result: result, context: context)
   }
 
   /// Configures the pipeline to handle gRPC-Web requests on an HTTP/1 connection.
@@ -152,16 +159,25 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
     // We're now configuring the pipeline.
     self.state = .configuring
 
-    context.pipeline.configureHTTPServerPipeline(withErrorHandling: true).flatMap {
-      context.pipeline.addHandlers([
-        WebCORSHandler(),
-        GRPCWebToHTTP2ServerCodec(scheme: self.configuration.tls == nil ? "http" : "https"),
-        // There's no need to normalize headers for HTTP/1.
-        self.makeHTTP2ToRawGRPCHandler(normalizeHeaders: false, logger: self.configuration.logger),
-      ])
-    }.whenComplete { result in
-      self.configurationCompleted(result: result, context: context)
+    let result: Result<Void, Error>
+    do {
+      // This is only ever called as a result of reading a user inbound event or reading inbound so
+      // we'll be on the right event loop and sync operations are fine.
+      let sync = context.pipeline.syncOperations
+      try sync.configureHTTPServerPipeline(withErrorHandling: true)
+      try sync.addHandler(WebCORSHandler())
+      let scheme = self.configuration.tls == nil ? "http" : "https"
+      try sync.addHandler(GRPCWebToHTTP2ServerCodec(scheme: scheme))
+      // There's no need to normalize headers for HTTP/1.
+      try sync.addHandler(
+        self.makeHTTP2ToRawGRPCHandler(normalizeHeaders: false, logger: self.configuration.logger)
+      )
+      result = .success(())
+    } catch {
+      result = .failure(error)
     }
+
+    self.configurationCompleted(result: result, context: context)
   }
 
   /// Attempts to determine the HTTP version from the buffer and then configure the pipeline

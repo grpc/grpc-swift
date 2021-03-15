@@ -225,13 +225,22 @@ private struct HTTP2ClientTransportFactory<Request, Response> {
         let streamPromise = self.multiplexer.eventLoop.makePromise(of: Channel.self)
 
         multiplexer.createStreamChannel(promise: streamPromise) { streamChannel in
-          streamChannel.pipeline.addHandlers([
-            GRPCClientChannelHandler(
+          // This initializer will always occur on the appropriate event loop, sync operations are
+          // fine here.
+          let syncOperations = streamChannel.pipeline.syncOperations
+
+          do {
+            let clientHandler = GRPCClientChannelHandler(
               callType: transport.callDetails.type,
               logger: transport.logger
-            ),
-            transport,
-          ])
+            )
+            try syncOperations.addHandler(clientHandler)
+            try syncOperations.addHandler(transport)
+          } catch {
+            return streamChannel.eventLoop.makeFailedFuture(error)
+          }
+
+          return streamChannel.eventLoop.makeSucceededVoidFuture()
         }
 
         // We don't need the stream, but we do need to know it was correctly configured.

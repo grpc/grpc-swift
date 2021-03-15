@@ -101,36 +101,33 @@ public final class Server {
         configuration.logger[metadataKey: MetadataKey.remoteAddress] = channel.remoteAddress
           .map { "\($0)" } ?? "n/a"
 
-        var configured: EventLoopFuture<Void>
-        let configurator = GRPCServerPipelineConfigurator(configuration: configuration)
-
-        if let tls = configuration.tls {
-          configured = channel.configureTLS(configuration: tls).flatMap {
-            channel.pipeline.addHandler(configurator)
+        do {
+          let sync = channel.pipeline.syncOperations
+          if let tls = configuration.tls {
+            try sync.configureTLS(configuration: tls)
           }
-        } else {
-          configured = channel.pipeline.addHandler(configurator)
+
+          // Configures the pipeline based on whether the connection uses TLS or not.
+          try sync.addHandler(GRPCServerPipelineConfigurator(configuration: configuration))
+
+          // Work around the zero length write issue, if needed.
+          let requiresZeroLengthWorkaround = PlatformSupport.requiresZeroLengthWriteWorkaround(
+            group: configuration.eventLoopGroup,
+            hasTLS: configuration.tls != nil
+          )
+          if requiresZeroLengthWorkaround,
+            #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
+            try sync.addHandler(NIOFilterEmptyWritesHandler())
+          }
+        } catch {
+          return channel.eventLoop.makeFailedFuture(error)
         }
 
-        // Work around the zero length write issue, if needed.
-        let requiresZeroLengthWorkaround = PlatformSupport.requiresZeroLengthWriteWorkaround(
-          group: configuration.eventLoopGroup,
-          hasTLS: configuration.tls != nil
-        )
-        if requiresZeroLengthWorkaround,
-          #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
-          configured = configured.flatMap {
-            channel.pipeline.addHandler(NIOFilterEmptyWritesHandler())
-          }
-        }
-
-        // Add the debug initializer, if there is one.
+        // Run the debug initializer, if there is one.
         if let debugAcceptedChannelInitializer = configuration.debugChannelInitializer {
-          return configured.flatMap {
-            debugAcceptedChannelInitializer(channel)
-          }
+          return debugAcceptedChannelInitializer(channel)
         } else {
-          return configured
+          return channel.eventLoop.makeSucceededVoidFuture()
         }
       }
 
@@ -337,19 +334,14 @@ extension Server {
   }
 }
 
-private extension Channel {
+extension ChannelPipeline.SynchronousOperations {
   /// Configure an SSL handler on the channel.
   ///
   /// - Parameters:
   ///   - configuration: The configuration to use when creating the handler.
-  /// - Returns: A future which will be succeeded when the pipeline has been configured.
-  func configureTLS(configuration: Server.Configuration.TLS) -> EventLoopFuture<Void> {
-    do {
-      let context = try NIOSSLContext(configuration: configuration.configuration)
-      return self.pipeline.addHandler(NIOSSLServerHandler(context: context))
-    } catch {
-      return self.pipeline.eventLoop.makeFailedFuture(error)
-    }
+  fileprivate func configureTLS(configuration: Server.Configuration.TLS) throws {
+    let context = try NIOSSLContext(configuration: configuration.configuration)
+    try self.addHandler(NIOSSLServerHandler(context: context))
   }
 }
 
