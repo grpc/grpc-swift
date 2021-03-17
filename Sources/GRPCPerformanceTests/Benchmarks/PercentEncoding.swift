@@ -38,7 +38,7 @@ class PercentEncoding: Benchmark {
 
   func tearDown() throws {}
 
-  func run() throws {
+  func run() throws -> Int {
     var totalLength: Int = 0
 
     for _ in 0 ..< self.iterations {
@@ -50,5 +50,7 @@ class PercentEncoding: Benchmark {
 
       totalLength += unmarshalled.count
     }
+
+    return totalLength
   }
 }

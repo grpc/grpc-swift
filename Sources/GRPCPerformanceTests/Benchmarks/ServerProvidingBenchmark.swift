@@ -41,7 +41,7 @@ class ServerProvidingBenchmark: Benchmark {
     try self.group.syncShutdownGracefully()
   }
 
-  func run() throws {
-    // no-op
+  func run() throws -> Int {
+    return 0
   }
 }

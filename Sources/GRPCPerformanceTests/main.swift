@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 import ArgumentParser
-import EchoModel
 import Foundation
 import GRPC
 import Logging

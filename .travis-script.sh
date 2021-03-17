@@ -56,6 +56,15 @@ make_test() {
   echo -en 'travis_fold:end:make.test\\r'
 }
 
+run_allocation_tests() {
+  echo -en 'travis_fold:start:allocation_tests\\r'
+
+  info "Running allocation counter tests"
+  ./Performance/allocations/test-allocation-counts.sh
+
+  echo -en 'travis_fold:end:allocation_tests\\r'
+}
+
 make_test_plugin() {
   echo -en 'travis_fold:start:make.test_plugin\\r'
   info "Validating protoc plugins on the Echo service"
@@ -152,10 +161,11 @@ run_interop_reconnect_test() {
 }
 
 just_sanity=false
+allocation_tests=false
 just_interop_tests=false
 tsan=false
 
-while getopts "sit" optname; do
+while getopts "sita" optname; do
   case $optname in
     s)
       just_sanity=true
@@ -165,6 +175,9 @@ while getopts "sit" optname; do
       ;;
     t)
       tsan=true
+      ;;
+    a)
+      allocation_tests=true
       ;;
     \?)
       echo "Uknown option $optname"
@@ -183,6 +196,9 @@ elif $just_interop_tests; then
 else
   make_all
   make_test $tsan
+  if $allocation_tests; then
+    run_allocation_tests
+  fi
   make_test_plugin
   make_project
 fi

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import EchoModel
 import GRPC
 import Logging
 import NIO
@@ -112,31 +111,38 @@ final class EmbeddedServerChildChannelBenchmark: Benchmark {
 
   func tearDown() throws {}
 
-  func run() throws {
+  func run() throws -> Int {
     switch self.mode {
     case let .unary(rpcs):
-      try self.run(rpcs: rpcs, requestsPerRPC: 1)
+      return try self.run(rpcs: rpcs, requestsPerRPC: 1)
     case let .clientStreaming(rpcs, requestsPerRPC):
-      try self.run(rpcs: rpcs, requestsPerRPC: requestsPerRPC)
+      return try self.run(rpcs: rpcs, requestsPerRPC: requestsPerRPC)
     case let .serverStreaming(rpcs, _):
-      try self.run(rpcs: rpcs, requestsPerRPC: 1)
+      return try self.run(rpcs: rpcs, requestsPerRPC: 1)
     case let .bidirectional(rpcs, requestsPerRPC):
-      try self.run(rpcs: rpcs, requestsPerRPC: requestsPerRPC)
+      return try self.run(rpcs: rpcs, requestsPerRPC: requestsPerRPC)
     }
   }
 
-  func run(rpcs: Int, requestsPerRPC: Int) throws {
+  func run(rpcs: Int, requestsPerRPC: Int) throws -> Int {
+    var messages = 0
     for _ in 0 ..< rpcs {
       let channel = try self.makeChannel()
       try channel.writeInbound(self.headersPayload)
       for _ in 0 ..< (requestsPerRPC - 1) {
+        messages += 1
         try channel.writeInbound(self.requestPayload)
       }
+      messages += 1
       try channel.writeInbound(self.requestPayloadWithEndStream)
 
       while try channel.readOutbound(as: HTTP2Frame.FramePayload.self) != nil {
         ()
       }
+
+      _ = try channel.finish()
     }
+
+    return messages
   }
 }
