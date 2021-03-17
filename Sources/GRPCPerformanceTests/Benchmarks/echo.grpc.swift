@@ -1,0 +1,1 @@
+../../Examples/Echo/Model/echo.grpc.swift

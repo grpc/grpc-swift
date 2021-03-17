@@ -1,5 +1,5 @@
 /*
- * Copyright 2019, gRPC Authors All rights reserved.
+ * Copyright 2021, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,18 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-protocol Benchmark: AnyObject {
-  func setUp() throws
-  func tearDown() throws
-  func run() throws -> Int
-}
-
-extension Benchmark {
-  func runOnce() throws -> Int {
-    try self.setUp()
-    let result = try self.run()
-    try self.tearDown()
-    return result
+func run(identifier: String) {
+  measure(identifier: identifier) {
+    let benchmark = EmbeddedServerChildChannelBenchmark(mode: .unary(rpcs: 1000), text: "")
+    return try! benchmark.runOnce()
   }
 }

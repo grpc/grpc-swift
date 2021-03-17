@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import EchoModel
 import struct Foundation.Data
 import GRPC
 import Logging
@@ -77,7 +76,9 @@ class EmbeddedClientThroughput: Benchmark {
 
   func tearDown() throws {}
 
-  func run() throws {
+  func run() throws -> Int {
+    var messages = 0
+
     for _ in 0 ..< self.requestCount {
       let channel = EmbeddedChannel()
 
@@ -93,12 +94,11 @@ class EmbeddedClientThroughput: Benchmark {
 
       // Write the request parts.
       try channel.writeOutbound(_GRPCClientRequestPart<Echo_EchoRequest>.head(self.requestHead))
-      try channel
-        .writeOutbound(
-          _GRPCClientRequestPart<Echo_EchoRequest>
-            .message(.init(self.request, compressed: false))
-        )
+      try channel.writeOutbound(
+        _GRPCClientRequestPart<Echo_EchoRequest>.message(.init(self.request, compressed: false))
+      )
       try channel.writeOutbound(_GRPCClientRequestPart<Echo_EchoRequest>.end)
+      messages += 1
 
       // Read out the request frames.
       var requestFrames = 0
@@ -140,5 +140,7 @@ class EmbeddedClientThroughput: Benchmark {
 
       precondition(responseParts == 4, "received \(responseParts) response parts")
     }
+
+    return messages
   }
 }

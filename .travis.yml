@@ -26,7 +26,7 @@ jobs:
       dist: bionic
       install: ./.travis-install.sh -f  # install swiftformat
       script: ./.travis-script.sh -s  # just sanity
-      env: SWIFT_VERSION=5.3.1
+      env: SWIFT_VERSION=5.3.3
     # Tests for each PR.
     - &tests
       stage: "Test"
@@ -34,12 +34,20 @@ jobs:
       os: linux
       dist: bionic
       install: ./.travis-install.sh -p  # install protoc
-      script: ./.travis-script.sh -t  # with tsan
-      env: SWIFT_VERSION=5.3.1
+      script: ./.travis-script.sh -t -a # tests with tsan, run allocation tests
+      env:
+        - SWIFT_VERSION=5.3.3
+        - MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests=113000
+        - MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request=68000
+        - MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request=64000
     - <<: *tests
       name: "Unit Tests: Ubuntu 18.04 (Swift 5.2)"
-      script: ./.travis-script.sh
-      env: SWIFT_VERSION=5.2.5
+      script: ./.travis-script.sh -a # run allocation tests
+      env:
+        - SWIFT_VERSION=5.2.5
+        - MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests=113000
+        - MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request=68000
+        - MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request=64000
     - <<: *tests
       name: "Unit Tests: Xcode 12.2"
       os: osx
@@ -57,7 +65,7 @@ jobs:
       dist: bionic
       install: ./.travis-install.sh -p -i # install protoc and interop server
       script: ./.travis-script.sh -i  # interop tests
-      env: SWIFT_VERSION=5.3.1
+      env: SWIFT_VERSION=5.3.3
     - <<: *interop_tests
       name: "Interoperability Tests: Ubuntu 18.04 (Swift 5.2)"
       env: SWIFT_VERSION=5.2.5

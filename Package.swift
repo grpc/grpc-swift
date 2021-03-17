@@ -140,7 +140,6 @@ let package = Package(
       name: "GRPCPerformanceTests",
       dependencies: [
         .target(name: "GRPC"),
-        .target(name: "EchoModel"),
         .product(name: "NIO", package: "swift-nio"),
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ]

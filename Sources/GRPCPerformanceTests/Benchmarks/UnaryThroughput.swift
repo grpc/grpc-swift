@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import EchoModel
 import Foundation
 import GRPC
 import NIO
@@ -44,7 +43,8 @@ class Unary: ServerProvidingBenchmark {
     self.client = .init(channel: channel)
   }
 
-  override func run() throws {
+  override func run() throws -> Int {
+    var messages = 0
     let batchSize = 100
 
     for lowerBound in stride(from: 0, to: self.requestCount, by: batchSize) {
@@ -53,8 +53,12 @@ class Unary: ServerProvidingBenchmark {
       let requests = (lowerBound ..< upperBound).map { _ in
         client.get(Echo_EchoRequest.with { $0.text = self.requestText }).response
       }
+
+      messages += requests.count
       try EventLoopFuture.andAllSucceed(requests, on: self.group.next()).wait()
     }
+
+    return messages
   }
 
   override func tearDown() throws {
@@ -73,17 +77,20 @@ class Bidi: Unary {
     super.init(requests: requests, text: text)
   }
 
-  override func run() throws {
+  override func run() throws -> Int {
+    var messages = 0
     let update = self.client.update { _ in }
 
     for _ in stride(from: 0, to: self.requestCount, by: self.batchSize) {
       let batch = (0 ..< self.batchSize).map { _ in
         Echo_EchoRequest.with { $0.text = self.requestText }
       }
+      messages += batch.count
       update.sendMessages(batch, promise: nil)
     }
     update.sendEnd(promise: nil)
 
     _ = try update.status.wait()
+    return messages
   }
 }
