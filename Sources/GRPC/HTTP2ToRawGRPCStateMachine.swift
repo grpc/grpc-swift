@@ -1201,6 +1201,13 @@ extension HTTP2ToRawGRPCStateMachine {
     userProvidedHeaders: HPACKHeaders,
     normalizeUserProvidedHeaders: Bool
   ) -> HPACKHeaders {
+    // Most RPCs should end with status code 'ok' (hopefully!), and if the user didn't provide any
+    // additional trailers, then we can use a pre-canned set of headers to avoid an extra
+    // allocation.
+    if status == .ok, userProvidedHeaders.isEmpty {
+      return Self.gRPCStatusOkTrailers
+    }
+
     // 2 because 'grpc-status' is required, we may also send back 'grpc-message'.
     let capacity = 2 + userProvidedHeaders.count
 
@@ -1220,6 +1227,10 @@ extension HTTP2ToRawGRPCStateMachine {
 
     return trailers
   }
+
+  private static let gRPCStatusOkTrailers: HPACKHeaders = [
+    GRPCHeaderName.statusCode: String(describing: GRPCStatus.Code.ok.rawValue),
+  ]
 }
 
 private extension HPACKHeaders {
