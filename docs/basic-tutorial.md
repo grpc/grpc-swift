@@ -162,10 +162,10 @@ Let's look at how to run the same command manually:
 ```sh
 $ protoc Sources/Examples/RouteGuide/Model/route_guide.proto \
     --proto_path=Sources/Examples/RouteGuide/Model \
-    --plugin=./.build/debug/protoc-gen-swift \
+    --plugin=./.build/release/protoc-gen-swift \
     --swift_opt=Visibility=Public \
     --swift_out=Sources/Examples/RouteGuide/Model \
-    --plugin=./.build/debug/protoc-gen-grpc-swift \
+    --plugin=./.build/release/protoc-gen-grpc-swift \
     --grpc-swift_opt=Visibility=Public \
     --grpc-swift_out=Sources/Examples/RouteGuide/Model
 ```
