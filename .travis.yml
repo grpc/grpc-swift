@@ -37,17 +37,17 @@ jobs:
       script: ./.travis-script.sh -t -a # tests with tsan, run allocation tests
       env:
         - SWIFT_VERSION=5.3.3
-        - MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests=113000
-        - MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request=68000
-        - MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request=64000
+        - MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests=112000
+        - MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request=67000
+        - MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request=63000
     - <<: *tests
       name: "Unit Tests: Ubuntu 18.04 (Swift 5.2)"
       script: ./.travis-script.sh -a # run allocation tests
       env:
         - SWIFT_VERSION=5.2.5
-        - MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests=113000
-        - MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request=68000
-        - MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request=64000
+        - MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests=112000
+        - MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request=67000
+        - MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request=63000
     - <<: *tests
       name: "Unit Tests: Xcode 12.2"
       os: osx
