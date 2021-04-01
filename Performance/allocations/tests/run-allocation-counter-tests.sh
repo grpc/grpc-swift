@@ -67,6 +67,7 @@ fi
   -p "$here/../../.." \
   -m GRPC \
   -t "$tmp_dir" \
+  -s "$here/shared/Common.swift" \
   -s "$here/shared/Benchmark.swift" \
   -s "$here/shared/echo.pb.swift" \
   -s "$here/shared/echo.grpc.swift" \
