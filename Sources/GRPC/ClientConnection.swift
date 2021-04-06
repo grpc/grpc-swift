@@ -152,11 +152,12 @@ extension ClientConnection: GRPCChannel {
     var options = callOptions
     self.populateLogger(in: &options)
     let multiplexer = self.getMultiplexer()
+    let eventLoop = callOptions.eventLoopPreference.exact ?? multiplexer.eventLoop
 
     return Call(
       path: path,
       type: type,
-      eventLoop: multiplexer.eventLoop,
+      eventLoop: eventLoop,
       options: options,
       interceptors: interceptors,
       transportFactory: .http2(
@@ -177,11 +178,12 @@ extension ClientConnection: GRPCChannel {
     var options = callOptions
     self.populateLogger(in: &options)
     let multiplexer = self.getMultiplexer()
+    let eventLoop = callOptions.eventLoopPreference.exact ?? multiplexer.eventLoop
 
     return Call(
       path: path,
       type: type,
-      eventLoop: multiplexer.eventLoop,
+      eventLoop: eventLoop,
       options: options,
       interceptors: interceptors,
       transportFactory: .http2(
