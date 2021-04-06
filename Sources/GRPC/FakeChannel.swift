@@ -113,7 +113,7 @@ public class FakeChannel: GRPCChannel {
       eventLoop: eventLoop,
       options: callOptions,
       interceptors: interceptors,
-      transportFactory: .fake(stream, on: eventLoop)
+      transportFactory: .fake(stream)
     )
   }
 
@@ -131,7 +131,7 @@ public class FakeChannel: GRPCChannel {
       eventLoop: eventLoop,
       options: callOptions,
       interceptors: interceptors,
-      transportFactory: .fake(stream, on: eventLoop)
+      transportFactory: .fake(stream)
     )
   }
 
