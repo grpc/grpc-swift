@@ -33,12 +33,12 @@ import NIOHTTP2
 ///
 /// ### Thread Safety
 ///
-/// This class is not thread safe. All methods **must** be executed on the transport's `eventLoop`.
+/// This class is not thread safe. All methods **must** be executed on the transport's `callEventLoop`.
 @usableFromInline
 internal final class ClientTransport<Request, Response> {
-  /// The `EventLoop` this transport is running on.
+  /// The `EventLoop` the call is running on. State must be accessed from this event loop.
   @usableFromInline
-  internal let eventLoop: EventLoop
+  internal let callEventLoop: EventLoop
 
   /// The current state of the transport.
   private var state: ClientTransportState = .idle
@@ -92,8 +92,8 @@ internal final class ClientTransport<Request, Response> {
   @usableFromInline
   internal var _pipeline: ClientInterceptorPipeline<Request, Response>?
 
-  /// The 'ChannelHandlerContext'.
-  private var context: ChannelHandlerContext?
+  /// The `NIO.Channel` used by the transport, if it is available.
+  private var channel: Channel?
 
   /// Our current state as logging metadata.
   private var stateForLogging: Logger.MetadataValue {
@@ -114,7 +114,7 @@ internal final class ClientTransport<Request, Response> {
     onError: @escaping (Error) -> Void,
     onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) {
-    self.eventLoop = eventLoop
+    self.callEventLoop = eventLoop
     self.callDetails = details
     self.serializer = serializer
     self.deserializer = deserializer
@@ -134,9 +134,9 @@ internal final class ClientTransport<Request, Response> {
 
   /// Configure the transport to communicate with the server.
   /// - Parameter configurator: A callback to invoke in order to configure this transport.
-  /// - Important: This *must* to be called from the `eventLoop`.
+  /// - Important: This *must* to be called from the `callEventLoop`.
   internal func configure(_ configurator: @escaping (ChannelHandler) -> EventLoopFuture<Void>) {
-    self.eventLoop.assertInEventLoop()
+    self.callEventLoop.assertInEventLoop()
     if self.state.configureTransport() {
       self.configure(using: configurator)
     }
@@ -146,10 +146,10 @@ internal final class ClientTransport<Request, Response> {
   /// - Parameters:
   ///   - part: The part to send.
   ///   - promise: A promise which will be completed when the request part has been handled.
-  /// - Important: This *must* to be called from the `eventLoop`.
+  /// - Important: This *must* to be called from the `callEventLoop`.
   @inlinable
   internal func send(_ part: GRPCClientRequestPart<Request>, promise: EventLoopPromise<Void>?) {
-    self.eventLoop.assertInEventLoop()
+    self.callEventLoop.assertInEventLoop()
     if let pipeline = self._pipeline {
       pipeline.send(part, promise: promise)
     } else {
@@ -161,7 +161,7 @@ internal final class ClientTransport<Request, Response> {
   /// - Parameter promise: A promise which will be completed when the cancellation attempt has
   ///   been handled.
   internal func cancel(promise: EventLoopPromise<Void>?) {
-    self.eventLoop.assertInEventLoop()
+    self.callEventLoop.assertInEventLoop()
     if let pipeline = self._pipeline {
       pipeline.cancel(promise: promise)
     } else {
@@ -170,21 +170,21 @@ internal final class ClientTransport<Request, Response> {
   }
 
   /// A request for the underlying `Channel`.
-  internal func channel() -> EventLoopFuture<Channel> {
-    self.eventLoop.assertInEventLoop()
+  internal func getChannel() -> EventLoopFuture<Channel> {
+    self.callEventLoop.assertInEventLoop()
 
     // Do we already have a promise?
     if let promise = self.channelPromise {
       return promise.futureResult
     } else {
       // Make and store the promise.
-      let promise = self.eventLoop.makePromise(of: Channel.self)
+      let promise = self.callEventLoop.makePromise(of: Channel.self)
       self.channelPromise = promise
 
       // Ask the state machine if we can have it.
       switch self.state.getChannel() {
       case .succeed:
-        if let channel = self.context?.channel {
+        if let channel = self.channel {
           promise.succeed(channel)
         }
 
@@ -207,17 +207,26 @@ extension ClientTransport {
   /// - Parameters:
   ///   - part: The request part to send.
   ///   - promise: A promise which will be completed when the part has been handled.
-  /// - Important: This *must* to be called from the `eventLoop`.
+  /// - Important: This *must* to be called from the `callEventLoop`.
   private func sendFromPipeline(
     _ part: GRPCClientRequestPart<Request>,
     promise: EventLoopPromise<Void>?
   ) {
-    self.eventLoop.assertInEventLoop()
+    self.callEventLoop.assertInEventLoop()
     switch self.state.send() {
     case .writeToBuffer:
       self.buffer(part, promise: promise)
+
     case .writeToChannel:
-      self.write(part, promise: promise, flush: self.shouldFlush(after: part))
+      // Banging the channel is okay here: we'll only be told to 'writeToChannel' if we're in the
+      // correct state, the requirements of that state are having an active `Channel`.
+      self.writeToChannel(
+        self.channel!,
+        part: part,
+        promise: promise,
+        flush: self.shouldFlush(after: part)
+      )
+
     case .alreadyComplete:
       promise?.fail(GRPCError.AlreadyComplete())
     }
@@ -225,15 +234,15 @@ extension ClientTransport {
 
   /// Attempt to cancel the RPC. Should only be called from the interceptor pipeline.
   /// - Parameter promise: A promise which will be completed when the cancellation has been handled.
-  /// - Important: This *must* to be called from the `eventLoop`.
+  /// - Important: This *must* to be called from the `callEventLoop`.
   private func cancelFromPipeline(promise: EventLoopPromise<Void>?) {
-    self.eventLoop.assertInEventLoop()
+    self.callEventLoop.assertInEventLoop()
 
     if self.state.cancel() {
       let error = GRPCError.RPCCancelledByClient()
       self.forwardErrorToInterceptors(error)
       self.failBufferedWrites(with: error)
-      self.context?.channel.close(mode: .all, promise: nil)
+      self.channel?.close(mode: .all, promise: nil)
       self.channelPromise?.fail(error)
       promise?.succeed(())
     } else {
@@ -252,56 +261,86 @@ extension ClientTransport: ChannelInboundHandler {
   typealias OutboundOut = _RawGRPCClientRequestPart
 
   @usableFromInline
-  func handlerAdded(context: ChannelHandlerContext) {
-    self.context = context
-  }
-
-  @usableFromInline
   internal func handlerRemoved(context: ChannelHandlerContext) {
-    self.eventLoop.assertInEventLoop()
-    self.context = nil
-    // Break the reference cycle.
-    self._pipeline = nil
-  }
-
-  internal func channelError(_ error: Error) {
-    self.eventLoop.assertInEventLoop()
-
-    switch self.state.channelError() {
-    case .doNothing:
-      ()
-    case .propagateError:
-      self.forwardErrorToInterceptors(error)
-      self.failBufferedWrites(with: error)
-
-    case .propagateErrorAndClose:
-      self.forwardErrorToInterceptors(error)
-      self.failBufferedWrites(with: error)
-      self.context?.close(mode: .all, promise: nil)
-    }
+    self.dropReferences()
   }
 
   @usableFromInline
   internal func errorCaught(context: ChannelHandlerContext, error: Error) {
-    self.channelError(error)
+    self.handleError(error)
   }
 
   @usableFromInline
   internal func channelActive(context: ChannelHandlerContext) {
-    self.eventLoop.assertInEventLoop()
-    self.logger.debug("activated stream channel", source: "GRPC")
-    if self.state.channelActive() {
-      self.unbuffer(to: context.channel)
-    } else {
-      context.close(mode: .all, promise: nil)
-    }
+    self.transportActivated(channel: context.channel)
   }
 
   @usableFromInline
   internal func channelInactive(context: ChannelHandlerContext) {
-    self.eventLoop.assertInEventLoop()
+    self.transportDeactivated()
+  }
 
-    switch self.state.channelInactive() {
+  @usableFromInline
+  internal func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+    switch self.unwrapInboundIn(data) {
+    case let .initialMetadata(headers):
+      self.receiveFromChannel(initialMetadata: headers)
+
+    case let .message(box):
+      self.receiveFromChannel(message: box.message)
+
+    case let .trailingMetadata(trailers):
+      self.receiveFromChannel(trailingMetadata: trailers)
+
+    case let .status(status):
+      self.receiveFromChannel(status: status)
+    }
+
+    // (We're the end of the channel. No need to forward anything.)
+  }
+}
+
+extension ClientTransport {
+  /// The `Channel` became active. Send out any buffered requests.
+  private func transportActivated(channel: Channel) {
+    if self.callEventLoop.inEventLoop {
+      self._transportActivated(channel: channel)
+    } else {
+      self.callEventLoop.execute {
+        self._transportActivated(channel: channel)
+      }
+    }
+  }
+
+  /// On-loop implementation of `transportActivated(channel:)`.
+  private func _transportActivated(channel: Channel) {
+    self.callEventLoop.assertInEventLoop()
+    self.logger.debug("activated stream channel", source: "GRPC")
+
+    if self.state.activate() {
+      self.channel = channel
+      self.unbuffer()
+    } else {
+      channel.close(mode: .all, promise: nil)
+    }
+  }
+
+  /// The `Channel` became inactive. Fail any buffered writes and forward an error to the
+  /// interceptor pipeline if necessary.
+  private func transportDeactivated() {
+    if self.callEventLoop.inEventLoop {
+      self._transportDeactivated()
+    } else {
+      self.callEventLoop.execute {
+        self._transportDeactivated()
+      }
+    }
+  }
+
+  /// On-loop implementation of `transportDeactivated()`.
+  private func _transportDeactivated() {
+    self.callEventLoop.assertInEventLoop()
+    switch self.state.deactivate() {
     case .doNothing:
       ()
 
@@ -316,40 +355,125 @@ extension ClientTransport: ChannelInboundHandler {
     }
   }
 
-  @usableFromInline
-  internal func channelRead(context: ChannelHandlerContext, data: NIOAny) {
-    self.eventLoop.assertInEventLoop()
-    let part = self.unwrapInboundIn(data)
-
-    switch part {
-    case let .initialMetadata(headers):
-      if self.state.channelRead(isEnd: false) {
-        self.forwardToInterceptors(.metadata(headers))
-      }
-
-    case let .message(context):
-      do {
-        let message = try self.deserializer.deserialize(byteBuffer: context.message)
-        if self.state.channelRead(isEnd: false) {
-          self.forwardToInterceptors(.message(message))
-        }
-      } catch {
-        self.channelError(error)
-      }
-
-    case let .trailingMetadata(trailers):
-      // The `Channel` delivers trailers and `GRPCStatus` separately, we want to emit them together
-      // in the interceptor pipeline.
-      self.trailers = trailers
-
-    case let .status(status):
-      if self.state.channelRead(isEnd: true) {
-        self.forwardToInterceptors(.end(status, self.trailers ?? [:]))
-        self.trailers = nil
+  /// Drops any references to the `Channel` and interceptor pipeline.
+  private func dropReferences() {
+    if self.callEventLoop.inEventLoop {
+      self.channel = nil
+      self._pipeline = nil
+    } else {
+      self.callEventLoop.execute {
+        self.channel = nil
+        self._pipeline = nil
       }
     }
+  }
 
-    // (We're the end of the channel. No need to forward anything.)
+  /// Handles an error caught in the pipeline or from elsewhere. The error may be forwarded to the
+  /// interceptor pipeline and any buffered writes will be failed. Any underlying `Channel` will
+  /// also be closed.
+  internal func handleError(_ error: Error) {
+    if self.callEventLoop.inEventLoop {
+      self._handleError(error)
+    } else {
+      self.callEventLoop.execute {
+        self._handleError(error)
+      }
+    }
+  }
+
+  /// On-loop implementation of `handleError(_:)`.
+  private func _handleError(_ error: Error) {
+    self.callEventLoop.assertInEventLoop()
+
+    switch self.state.handleError() {
+    case .doNothing:
+      ()
+
+    case .propagateError:
+      self.forwardErrorToInterceptors(error)
+      self.failBufferedWrites(with: error)
+
+    case .propagateErrorAndClose:
+      self.forwardErrorToInterceptors(error)
+      self.failBufferedWrites(with: error)
+      self.channel?.close(mode: .all, promise: nil)
+    }
+  }
+
+  /// Receive initial metadata from the `Channel`.
+  private func receiveFromChannel(initialMetadata headers: HPACKHeaders) {
+    if self.callEventLoop.inEventLoop {
+      self._receiveFromChannel(initialMetadata: headers)
+    } else {
+      self.callEventLoop.execute {
+        self._receiveFromChannel(initialMetadata: headers)
+      }
+    }
+  }
+
+  /// On-loop implementation of `receiveFromChannel(initialMetadata:)`.
+  private func _receiveFromChannel(initialMetadata headers: HPACKHeaders) {
+    self.callEventLoop.assertInEventLoop()
+    if self.state.channelRead(isEnd: false) {
+      self.forwardToInterceptors(.metadata(headers))
+    }
+  }
+
+  /// Receive response message bytes from the `Channel`.
+  private func receiveFromChannel(message buffer: ByteBuffer) {
+    if self.callEventLoop.inEventLoop {
+      self._receiveFromChannel(message: buffer)
+    } else {
+      self.callEventLoop.execute {
+        self._receiveFromChannel(message: buffer)
+      }
+    }
+  }
+
+  /// On-loop implementation of `receiveFromChannel(message:)`.
+  private func _receiveFromChannel(message buffer: ByteBuffer) {
+    self.callEventLoop.assertInEventLoop()
+    do {
+      let message = try self.deserializer.deserialize(byteBuffer: buffer)
+      if self.state.channelRead(isEnd: false) {
+        self.forwardToInterceptors(.message(message))
+      }
+    } catch {
+      self.handleError(error)
+    }
+  }
+
+  /// Receive trailing metadata from the `Channel`.
+  private func receiveFromChannel(trailingMetadata trailers: HPACKHeaders) {
+    // The `Channel` delivers trailers and `GRPCStatus` separately, we want to emit them together
+    // in the interceptor pipeline.
+    if self.callEventLoop.inEventLoop {
+      self.trailers = trailers
+    } else {
+      self.callEventLoop.execute {
+        self.trailers = trailers
+      }
+    }
+  }
+
+  /// Receive the final status from the `Channel`.
+  private func receiveFromChannel(status: GRPCStatus) {
+    if self.callEventLoop.inEventLoop {
+      self._receiveFromChannel(status: status)
+    } else {
+      self.callEventLoop.execute {
+        self._receiveFromChannel(status: status)
+      }
+    }
+  }
+
+  /// On-loop implementation of `receiveFromChannel(status:)`.
+  private func _receiveFromChannel(status: GRPCStatus) {
+    self.callEventLoop.assertInEventLoop()
+    if self.state.channelRead(isEnd: true) {
+      self.forwardToInterceptors(.end(status, self.trailers ?? [:]))
+      self.trailers = nil
+    }
   }
 }
 
@@ -533,7 +657,7 @@ extension ClientTransportState {
   }
 
   /// `channelActive` was invoked on the transport by the `Channel`.
-  mutating func channelActive() -> Bool {
+  mutating func activate() -> Bool {
     // The channel has become active: what now?
     switch self {
     case .idle:
@@ -565,7 +689,7 @@ extension ClientTransportState {
   }
 
   /// `channelInactive` was invoked on the transport by the `Channel`.
-  mutating func channelInactive() -> ChannelInactiveAction {
+  mutating func deactivate() -> ChannelInactiveAction {
     switch self {
     case .idle:
       // We can't become inactive before we've requested a `Channel`.
@@ -611,7 +735,7 @@ extension ClientTransportState {
     }
   }
 
-  enum ChannelErrorAction {
+  enum HandleErrorAction {
     /// Propagate the error to the interceptor pipeline and fail any buffered writes.
     case propagateError
     /// As above, but close the 'Channel' as well.
@@ -620,8 +744,8 @@ extension ClientTransportState {
     case doNothing
   }
 
-  /// We received an error from the `Channel`.
-  mutating func channelError() -> ChannelErrorAction {
+  /// An error was caught.
+  mutating func handleError() -> HandleErrorAction {
     switch self {
     case .idle:
       // The `Channel` can't error if it doesn't exist.
@@ -684,11 +808,13 @@ extension ClientTransport {
   /// Configures this transport with the `configurator`.
   private func configure(using configurator: (ChannelHandler) -> EventLoopFuture<Void>) {
     configurator(self).whenFailure { error in
+      // We might be on a different EL, but `handleError` will sort that out for us, so no need to
+      // hop.
       if error is GRPCStatus || error is GRPCStatusTransformable {
-        self.channelError(error)
+        self.handleError(error)
       } else {
         // Fallback to something which will mark the RPC as 'unavailable'.
-        self.channelError(ConnectionFailure(reason: error))
+        self.handleError(ConnectionFailure(reason: error))
       }
     }
   }
@@ -701,6 +827,7 @@ extension ClientTransport {
     _ part: GRPCClientRequestPart<Request>,
     promise: EventLoopPromise<Void>?
   ) {
+    self.callEventLoop.assertInEventLoop()
     self.logger.debug("buffering request part", metadata: [
       "request_part": "\(part.name)",
       "call_state": self.stateForLogging,
@@ -709,8 +836,13 @@ extension ClientTransport {
   }
 
   /// Writes any buffered request parts to the `Channel`.
-  /// - Parameter channel: The `Channel` to write any buffered request parts to.
-  private func unbuffer(to channel: Channel) {
+  private func unbuffer() {
+    self.callEventLoop.assertInEventLoop()
+
+    guard let channel = self.channel else {
+      return
+    }
+
     // Save any flushing until we're done writing.
     var shouldFlush = false
 
@@ -732,7 +864,7 @@ extension ClientTransport {
           shouldFlush = self.shouldFlush(after: write.request)
         }
 
-        self.write(write.request, promise: write.promise, flush: false)
+        self.writeToChannel(channel, part: write.request, promise: write.promise, flush: false)
       }
 
       // Okay, flush now.
@@ -775,52 +907,50 @@ extension ClientTransport {
 
   /// Write a request part to the `Channel`.
   /// - Parameters:
+  ///   - channel: The `Channel` to write `part` to.
   ///   - part: The request part to write.
-  ///   - channel: The `Channel` to write `part` in to.
   ///   - promise: A promise to complete once the write has been completed.
   ///   - flush: Whether to flush the `Channel` after writing.
-  private func write(
-    _ part: GRPCClientRequestPart<Request>,
+  private func writeToChannel(
+    _ channel: Channel,
+    part: GRPCClientRequestPart<Request>,
     promise: EventLoopPromise<Void>?,
     flush: Bool
   ) {
-    guard let context = self.context else {
-      promise?.fail(GRPCError.AlreadyComplete())
-      return
-    }
-
     switch part {
     case let .metadata(headers):
       let head = self.makeRequestHead(with: headers)
-      context.channel.write(self.wrapOutboundOut(.head(head)), promise: promise)
+      channel.write(self.wrapOutboundOut(.head(head)), promise: promise)
 
     case let .message(request, metadata):
       do {
-        let bytes = try self.serializer.serialize(request, allocator: context.channel.allocator)
+        let bytes = try self.serializer.serialize(request, allocator: channel.allocator)
         let message = _MessageContext<ByteBuffer>(bytes, compressed: metadata.compress)
-        context.channel.write(self.wrapOutboundOut(.message(message)), promise: promise)
+        channel.write(self.wrapOutboundOut(.message(message)), promise: promise)
       } catch {
-        self.channelError(error)
+        self.handleError(error)
       }
 
     case .end:
-      context.channel.write(self.wrapOutboundOut(.end), promise: promise)
+      channel.write(self.wrapOutboundOut(.end), promise: promise)
     }
 
     if flush {
-      context.channel.flush()
+      channel.flush()
     }
   }
 
   /// Forward the response part to the interceptor pipeline.
   /// - Parameter part: The response part to forward.
   private func forwardToInterceptors(_ part: GRPCClientResponsePart<Response>) {
+    self.callEventLoop.assertInEventLoop()
     self._pipeline?.receive(part)
   }
 
   /// Forward the error to the interceptor pipeline.
   /// - Parameter error: The error to forward.
   private func forwardErrorToInterceptors(_ error: Error) {
+    self.callEventLoop.assertInEventLoop()
     self._pipeline?.errorCaught(error)
   }
 }

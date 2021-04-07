@@ -271,6 +271,7 @@ extension Call {
         to: self.path,
         for: self.type,
         withOptions: self.options,
+        onEventLoop: self.eventLoop,
         interceptedBy: self.interceptors,
         onError: onError,
         onResponsePart: onResponsePart
@@ -334,7 +335,7 @@ extension Call {
 
     case let (.none, .invoked(transport)):
       // Just ask the transport.
-      return transport.channel()
+      return transport.getChannel()
     }
   }
 }
