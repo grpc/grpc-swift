@@ -67,29 +67,34 @@ extension ClientConnection.ChannelProvider: ConnectionManagerChannelProvider {
       .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
       .channelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
       .channelInitializer { channel in
-        let initialized = channel.configureGRPCClient(
-          httpTargetWindowSize: self.configuration.httpTargetWindowSize,
-          tlsConfiguration: self.configuration.tls?.configuration,
-          tlsServerHostname: serverHostname,
-          connectionManager: connectionManager,
-          connectionKeepalive: self.configuration.connectionKeepalive,
-          connectionIdleTimeout: self.configuration.connectionIdleTimeout,
-          errorDelegate: self.configuration.errorDelegate,
-          requiresZeroLengthWriteWorkaround: PlatformSupport.requiresZeroLengthWriteWorkaround(
-            group: eventLoop,
-            hasTLS: self.configuration.tls != nil
-          ),
-          logger: logger,
-          customVerificationCallback: self.configuration.tls?.customVerificationCallback
-        )
+        let sync = channel.pipeline.syncOperations
+
+        do {
+          try sync.configureGRPCClient(
+            channel: channel,
+            httpTargetWindowSize: self.configuration.httpTargetWindowSize,
+            tlsConfiguration: self.configuration.tls?.configuration,
+            tlsServerHostname: serverHostname,
+            connectionManager: connectionManager,
+            connectionKeepalive: self.configuration.connectionKeepalive,
+            connectionIdleTimeout: self.configuration.connectionIdleTimeout,
+            errorDelegate: self.configuration.errorDelegate,
+            requiresZeroLengthWriteWorkaround: PlatformSupport.requiresZeroLengthWriteWorkaround(
+              group: eventLoop,
+              hasTLS: self.configuration.tls != nil
+            ),
+            logger: logger,
+            customVerificationCallback: self.configuration.tls?.customVerificationCallback
+          )
+        } catch {
+          return channel.eventLoop.makeFailedFuture(error)
+        }
 
         // Run the debug initializer, if there is one.
         if let debugInitializer = self.configuration.debugChannelInitializer {
-          return initialized.flatMap {
-            debugInitializer(channel)
-          }
+          return debugInitializer(channel)
         } else {
-          return initialized
+          return channel.eventLoop.makeSucceededVoidFuture()
         }
       }
 

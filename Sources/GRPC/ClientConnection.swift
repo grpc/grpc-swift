@@ -411,8 +411,9 @@ extension ClientBootstrapProtocol {
   }
 }
 
-extension Channel {
-  func configureGRPCClient(
+extension ChannelPipeline.SynchronousOperations {
+  internal func configureGRPCClient(
+    channel: Channel,
     httpTargetWindowSize: Int,
     tlsConfiguration: TLSConfiguration?,
     tlsServerHostname: String?,
@@ -423,70 +424,61 @@ extension Channel {
     requiresZeroLengthWriteWorkaround: Bool,
     logger: Logger,
     customVerificationCallback: NIOSSLCustomVerificationCallback?
-  ) -> EventLoopFuture<Void> {
-    // We add at most 8 handlers to the pipeline.
-    var handlers: [ChannelHandler] = []
-    handlers.reserveCapacity(7)
-
+  ) throws {
     #if canImport(Network)
     // This availability guard is arguably unnecessary, but we add it anyway.
     if requiresZeroLengthWriteWorkaround,
       #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
-      handlers.append(NIOFilterEmptyWritesHandler())
+      try self.addHandler(NIOFilterEmptyWritesHandler())
     }
     #endif
 
     if let tlsConfiguration = tlsConfiguration {
-      do {
-        if let customVerificationCallback = customVerificationCallback {
-          let sslClientHandler = try NIOSSLClientHandler(
-            context: try NIOSSLContext(configuration: tlsConfiguration),
-            serverHostname: tlsServerHostname,
-            customVerificationCallback: customVerificationCallback
-          )
-          handlers.append(sslClientHandler)
-        } else {
-          let sslClientHandler = try NIOSSLClientHandler(
-            context: try NIOSSLContext(configuration: tlsConfiguration),
-            serverHostname: tlsServerHostname
-          )
-          handlers.append(sslClientHandler)
-        }
-        handlers.append(TLSVerificationHandler(logger: logger))
-      } catch {
-        return self.eventLoop.makeFailedFuture(error)
+      let sslClientHandler: NIOSSLClientHandler
+      if let customVerificationCallback = customVerificationCallback {
+        sslClientHandler = try NIOSSLClientHandler(
+          context: try NIOSSLContext(configuration: tlsConfiguration),
+          serverHostname: tlsServerHostname,
+          customVerificationCallback: customVerificationCallback
+        )
+      } else {
+        sslClientHandler = try NIOSSLClientHandler(
+          context: try NIOSSLContext(configuration: tlsConfiguration),
+          serverHostname: tlsServerHostname
+        )
       }
+      try self.addHandler(sslClientHandler)
+      try self.addHandler(TLSVerificationHandler(logger: logger))
     }
 
     // We could use 'configureHTTP2Pipeline' here, but we need to add a few handlers between the
     // two HTTP/2 handlers so we'll do it manually instead.
+    try self.addHandler(NIOHTTP2Handler(mode: .client))
 
     let h2Multiplexer = HTTP2StreamMultiplexer(
       mode: .client,
-      channel: self,
+      channel: channel,
       targetWindowSize: httpTargetWindowSize,
       inboundStreamInitializer: nil
     )
 
-    handlers.append(NIOHTTP2Handler(mode: .client))
     // The multiplexer is passed through the idle handler so it is only reported on
     // successful channel activation - with happy eyeballs multiple pipelines can
     // be constructed so it's not safe to report just yet.
-    handlers.append(
-      GRPCIdleHandler(
-        connectionManager: connectionManager,
-        multiplexer: h2Multiplexer,
-        idleTimeout: connectionIdleTimeout,
-        keepalive: connectionKeepalive,
-        logger: logger
-      )
-    )
-    handlers.append(h2Multiplexer)
-    handlers.append(DelegatingErrorHandler(logger: logger, delegate: errorDelegate))
+    try self.addHandler(GRPCIdleHandler(
+      connectionManager: connectionManager,
+      multiplexer: h2Multiplexer,
+      idleTimeout: connectionIdleTimeout,
+      keepalive: connectionKeepalive,
+      logger: logger
+    ))
 
-    return self.pipeline.addHandlers(handlers)
+    try self.addHandler(h2Multiplexer)
+    try self.addHandler(DelegatingErrorHandler(logger: logger, delegate: errorDelegate))
   }
+}
 
+extension Channel {
   func configureGRPCClient(
     errorDelegate: ClientErrorDelegate?,
     logger: Logger
