@@ -251,7 +251,7 @@ internal final class ConnectionManager {
   internal convenience init(configuration: ClientConnection.Configuration, logger: Logger) {
     self.init(
       configuration: configuration,
-      channelProvider: ClientConnection.ChannelProvider(configuration: configuration),
+      channelProvider: DefaultChannelProvider(configuration: configuration),
       logger: logger
     )
   }
@@ -297,7 +297,7 @@ internal final class ConnectionManager {
     )
   }
 
-  private init(
+  internal init(
     eventLoop: EventLoop,
     channelProvider: ConnectionManagerChannelProvider,
     callStartBehavior: CallStartBehavior.Behavior,

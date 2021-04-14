@@ -15,6 +15,7 @@
  */
 import Logging
 import NIO
+import NIOSSL
 
 internal protocol ConnectionManagerChannelProvider {
   /// Make an `EventLoopFuture<Channel>`.
@@ -32,36 +33,80 @@ internal protocol ConnectionManagerChannelProvider {
   ) -> EventLoopFuture<Channel>
 }
 
-extension ClientConnection {
-  internal struct ChannelProvider {
-    private var configuration: Configuration
+internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
+  internal var connectionTarget: ConnectionTarget
+  internal var connectionKeepalive: ClientConnectionKeepalive
+  internal var connectionIdleTimeout: TimeAmount
 
-    internal init(configuration: Configuration) {
-      self.configuration = configuration
-    }
+  internal var tlsConfiguration: Optional<TLSConfiguration>
+  internal var tlsHostnameOverride: Optional<String>
+  internal var tlsCustomVerificationCallback: Optional<NIOSSLCustomVerificationCallback>
+
+  internal var httpTargetWindowSize: Int
+
+  internal var errorDelegate: Optional<ClientErrorDelegate>
+  internal var debugChannelInitializer: Optional<(Channel) -> EventLoopFuture<Void>>
+
+  internal init(
+    connectionTarget: ConnectionTarget,
+    connectionKeepalive: ClientConnectionKeepalive,
+    connectionIdleTimeout: TimeAmount,
+    tlsConfiguration: TLSConfiguration?,
+    tlsHostnameOverride: String?,
+    tlsCustomVerificationCallback: NIOSSLCustomVerificationCallback?,
+    httpTargetWindowSize: Int,
+    errorDelegate: ClientErrorDelegate?,
+    debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)?
+  ) {
+    self.connectionTarget = connectionTarget
+    self.connectionKeepalive = connectionKeepalive
+    self.connectionIdleTimeout = connectionIdleTimeout
+
+    self.tlsConfiguration = tlsConfiguration
+    self.tlsHostnameOverride = tlsHostnameOverride
+    self.tlsCustomVerificationCallback = tlsCustomVerificationCallback
+
+    self.httpTargetWindowSize = httpTargetWindowSize
+
+    self.errorDelegate = errorDelegate
+    self.debugChannelInitializer = debugChannelInitializer
   }
-}
 
-extension ClientConnection.ChannelProvider: ConnectionManagerChannelProvider {
+  internal init(configuration: ClientConnection.Configuration) {
+    self.init(
+      connectionTarget: configuration.target,
+      connectionKeepalive: configuration.connectionKeepalive,
+      connectionIdleTimeout: configuration.connectionIdleTimeout,
+      tlsConfiguration: configuration.tls?.configuration,
+      tlsHostnameOverride: configuration.tls?.hostnameOverride,
+      tlsCustomVerificationCallback: configuration.tls?.customVerificationCallback,
+      httpTargetWindowSize: configuration.httpTargetWindowSize,
+      errorDelegate: configuration.errorDelegate,
+      debugChannelInitializer: configuration.debugChannelInitializer
+    )
+  }
+
+  private var serverHostname: String? {
+    let hostname = self.tlsHostnameOverride ?? self.connectionTarget.host
+    return hostname.isIPAddress ? nil : hostname
+  }
+
+  private var hasTLS: Bool {
+    return self.tlsConfiguration != nil
+  }
+
+  private func requiresZeroLengthWorkaround(eventLoop: EventLoop) -> Bool {
+    return PlatformSupport.requiresZeroLengthWriteWorkaround(group: eventLoop, hasTLS: self.hasTLS)
+  }
+
   internal func makeChannel(
     managedBy connectionManager: ConnectionManager,
     onEventLoop eventLoop: EventLoop,
     connectTimeout: TimeAmount?,
     logger: Logger
   ) -> EventLoopFuture<Channel> {
-    let serverHostname: String? = self.configuration.tls.flatMap { tls -> String? in
-      if let hostnameOverride = tls.hostnameOverride {
-        return hostnameOverride
-      } else {
-        return self.configuration.target.host
-      }
-    }.flatMap { hostname in
-      if hostname.isIPAddress {
-        return nil
-      } else {
-        return hostname
-      }
-    }
+    let hostname = self.serverHostname
+    let needsZeroLengthWriteWorkaround = self.requiresZeroLengthWorkaround(eventLoop: eventLoop)
 
     let bootstrap = PlatformSupport.makeClientBootstrap(group: eventLoop, logger: logger)
       .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
@@ -72,26 +117,23 @@ extension ClientConnection.ChannelProvider: ConnectionManagerChannelProvider {
         do {
           try sync.configureGRPCClient(
             channel: channel,
-            httpTargetWindowSize: self.configuration.httpTargetWindowSize,
-            tlsConfiguration: self.configuration.tls?.configuration,
-            tlsServerHostname: serverHostname,
+            httpTargetWindowSize: self.httpTargetWindowSize,
+            tlsConfiguration: self.tlsConfiguration,
+            tlsServerHostname: hostname,
             connectionManager: connectionManager,
-            connectionKeepalive: self.configuration.connectionKeepalive,
-            connectionIdleTimeout: self.configuration.connectionIdleTimeout,
-            errorDelegate: self.configuration.errorDelegate,
-            requiresZeroLengthWriteWorkaround: PlatformSupport.requiresZeroLengthWriteWorkaround(
-              group: eventLoop,
-              hasTLS: self.configuration.tls != nil
-            ),
+            connectionKeepalive: self.connectionKeepalive,
+            connectionIdleTimeout: self.connectionIdleTimeout,
+            errorDelegate: self.errorDelegate,
+            requiresZeroLengthWriteWorkaround: needsZeroLengthWriteWorkaround,
             logger: logger,
-            customVerificationCallback: self.configuration.tls?.customVerificationCallback
+            customVerificationCallback: self.tlsCustomVerificationCallback
           )
         } catch {
           return channel.eventLoop.makeFailedFuture(error)
         }
 
         // Run the debug initializer, if there is one.
-        if let debugInitializer = self.configuration.debugChannelInitializer {
+        if let debugInitializer = self.debugChannelInitializer {
           return debugInitializer(channel)
         } else {
           return channel.eventLoop.makeSucceededVoidFuture()
@@ -102,6 +144,6 @@ extension ClientConnection.ChannelProvider: ConnectionManagerChannelProvider {
       _ = bootstrap.connectTimeout(connectTimeout)
     }
 
-    return bootstrap.connect(to: self.configuration.target)
+    return bootstrap.connect(to: self.connectionTarget)
   }
 }
