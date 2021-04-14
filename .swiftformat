@@ -19,6 +19,9 @@
 # Don't indent #if blocks
 --ifdef no-indent
 
+# Don't turn Optional<Foo> into Foo?
+--shortoptionals except-properties
+
 # This rule doesn't always work as we'd expect: specifically when we return a
 # succeeded future whose type is a closure then that closure is incorrectly
 # treated as a trailing closure. This is relevant because the service provider
