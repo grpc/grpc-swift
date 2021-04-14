@@ -18,6 +18,9 @@ import Logging
 /// Wraps `Logger` to always provide the source as "GRPC".
 ///
 /// See https://github.com/apple/swift-log/issues/145 for rationale.
+///
+/// Note: as of https://github.com/apple/swift-log/pull/187 this is no longer require for
+/// Swift 5.3 and newer.
 internal struct GRPCLogger {
   private var logger: Logger
 

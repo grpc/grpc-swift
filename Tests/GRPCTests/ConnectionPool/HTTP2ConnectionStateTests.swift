@@ -54,11 +54,14 @@ final class HTTP2ConnectionStateTests: GRPCTestCase {
 
   func testIdleToConnected() {
     var state = self.makeHTTP2ConnectionState()
+    XCTAssertTrue(state.isIdle)
+
     state.willStartConnecting()
+    XCTAssertTrue(state.isConnecting)
     XCTAssertEqual(state.availableTokens, 0)
-    XCTAssertFalse(state.isIdle)
 
     state.connected(multiplexer: self.multiplexer)
+    XCTAssertTrue(state.isReady)
     // 100 is the default value
     XCTAssertEqual(state.availableTokens, 100)
 

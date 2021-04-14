@@ -27,6 +27,18 @@ internal struct HTTP2Connections {
     return self.connections.count
   }
 
+  internal var idleCount: Int {
+    return self.connections.values.reduce(0) { $0 + ($1.isIdle ? 1 : 0) }
+  }
+
+  internal var readyCount: Int {
+    return self.connections.values.reduce(0) { $0 + ($1.isReady ? 1 : 0) }
+  }
+
+  internal var connectingCount: Int {
+    return self.connections.values.reduce(0) { $0 + ($1.isConnecting ? 1 : 0) }
+  }
+
   /// The maximum number of connections which may be stored.
   private let capacity: Int
 
@@ -72,6 +84,11 @@ internal struct HTTP2Connections {
 
   // MARK: - Tokens
 
+  /// The total number of available tokens over all connections.
+  internal var availableTokens: Int {
+    return self.connections.values.reduce(0) { $0 + $1.availableTokens }
+  }
+
   /// Returns the number of tokens available for the connection with the given ID.
   ///
   /// Only active connections may have tokens available, idle connections or those actively
@@ -99,6 +116,11 @@ internal struct HTTP2Connections {
     fromConnectionWithID id: ObjectIdentifier
   ) -> (HTTP2StreamMultiplexer, borrowedTokens: Int) {
     return self.connections[id]!.borrowTokens(count)
+  }
+
+  /// The total number of borrowed tokens over all connections.
+  internal var borrowedTokens: Int {
+    return self.connections.values.reduce(0) { $0 + $1.borrowedTokens }
   }
 
   /// Return a single token to the connection with the given identifier.

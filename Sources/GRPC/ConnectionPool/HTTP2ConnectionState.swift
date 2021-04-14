@@ -32,6 +32,16 @@ internal struct HTTP2ConnectionState {
     return self.state.isIdle
   }
 
+  /// Indicates whether the pooled connection is ready.
+  internal var isReady: Bool {
+    return self.state.isReady
+  }
+
+  /// Indicates whether the pooled connection is connecting or backing off.
+  internal var isConnecting: Bool {
+    return self.state.isConnecting
+  }
+
   /// The number of tokens currently available for this connection. `availableTokens` must be
   /// greater than zero for `borrowTokens` to be called.
   ///
@@ -74,6 +84,26 @@ internal struct HTTP2ConnectionState {
       case .idle:
         return true
       case .connectingOrBackingOff, .ready:
+        return false
+      }
+    }
+
+    /// Whether the state is `ready`.
+    var isReady: Bool {
+      switch self {
+      case .ready:
+        return true
+      case .connectingOrBackingOff, .idle:
+        return false
+      }
+    }
+
+    /// Whether the state is `connectingOrBackingOff`.
+    var isConnecting: Bool {
+      switch self {
+      case .connectingOrBackingOff:
+        return true
+      case .idle, .ready:
         return false
       }
     }
@@ -250,8 +280,6 @@ internal struct HTTP2ConnectionState {
     case nothing
     /// Remove the connection from the pooled connections, it has been shutdown.
     case removeFromConnectionList
-    /// Check if any waiters exist for the connection.
-    case checkWaiters
     /// The connection dropped: ask for a new one.
     case startConnectingAgain
   }
