@@ -186,6 +186,9 @@ struct GRPCIdleHandlerStateMachine {
     /// Whether the channel should be closed.
     private(set) var shouldCloseChannel: Bool
 
+    /// The new value of 'SETTINGS_MAX_CONCURRENT_STREAMS'.
+    private(set) var maxConcurrentStreamsChange: Int?
+
     fileprivate static let none = Operations()
 
     fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
@@ -206,6 +209,10 @@ struct GRPCIdleHandlerStateMachine {
 
     fileprivate mutating func notifyConnectionManager(about event: ConnectionManagerEvent) {
       self.connectionManagerEvent = event
+    }
+
+    fileprivate mutating func maxConcurrentStreamsChanged(_ count: Int) {
+      self.maxConcurrentStreamsChange = count
     }
 
     private init() {
@@ -502,6 +509,7 @@ struct GRPCIdleHandlerStateMachine {
 
       // Update max concurrent streams.
       if let maxStreams = settings.last(where: { $0.parameter == .maxConcurrentStreams })?.value {
+        operations.maxConcurrentStreamsChanged(maxStreams)
         state.maxConcurrentStreams = maxStreams
       }
       self.state = .operating(state)
@@ -509,6 +517,7 @@ struct GRPCIdleHandlerStateMachine {
     case var .waitingToIdle(state):
       // Update max concurrent streams.
       if let maxStreams = settings.last(where: { $0.parameter == .maxConcurrentStreams })?.value {
+        operations.maxConcurrentStreamsChanged(maxStreams)
         state.maxConcurrentStreams = maxStreams
       }
       self.state = .waitingToIdle(state)
