@@ -74,6 +74,7 @@ public class ConnectivityStateMonitor {
 
   private let delegateLock = Lock()
   private var _delegate: ConnectivityStateDelegate?
+  private var _http2Delegate: HTTP2ConnectionDelegate?
   private let delegateCallbackQueue: DispatchQueue
 
   /// Creates a new connectivity state monitor.
@@ -82,7 +83,7 @@ public class ConnectivityStateMonitor {
   /// - Parameter queue: The `DispatchQueue` on which the delegate will be called.
   init(delegate: ConnectivityStateDelegate?, queue: DispatchQueue?) {
     self._delegate = delegate
-    self.delegateCallbackQueue = queue ?? DispatchQueue(label: "io.grpc.connectivity")
+    self.delegateCallbackQueue = DispatchQueue(label: "io.grpc.connectivity", target: queue)
   }
 
   /// The current state of connectivity.
@@ -105,7 +106,9 @@ public class ConnectivityStateMonitor {
       }
     }
   }
+}
 
+extension ConnectivityStateMonitor {
   internal func updateState(to newValue: ConnectivityState, logger: Logger) {
     let change: (ConnectivityState, ConnectivityState)? = self.stateLock.withLock {
       let oldValue = self._state
@@ -136,6 +139,37 @@ public class ConnectivityStateMonitor {
     self.delegateCallbackQueue.async {
       if let delegate = self.delegate {
         delegate.connectionStartedQuiescing()
+      }
+    }
+  }
+}
+
+extension ConnectivityStateMonitor: HTTP2ConnectionDelegate {
+  internal final var http2Delegate: HTTP2ConnectionDelegate? {
+    get {
+      return self.delegateLock.withLock {
+        return self._http2Delegate
+      }
+    }
+    set {
+      self.delegateLock.withLockVoid {
+        self._http2Delegate = newValue
+      }
+    }
+  }
+
+  internal final func streamClosed() {
+    if let delegate = self.http2Delegate {
+      self.delegateCallbackQueue.async {
+        delegate.streamClosed()
+      }
+    }
+  }
+
+  internal final func maxConcurrentStreamsChanged(_ maxConcurrentStreams: Int) {
+    if let delegate = self.http2Delegate {
+      self.delegateCallbackQueue.async {
+        delegate.maxConcurrentStreamsChanged(maxConcurrentStreams)
       }
     }
   }
