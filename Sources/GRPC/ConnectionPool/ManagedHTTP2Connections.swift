@@ -146,18 +146,17 @@ internal struct ManagedHTTP2Connections {
 
   /// Borrow tokens from the connection identified by `id`.
   ///
-  /// - Precondition: A connection must exist with the given `id`.
-  /// - Precondition: `count` must be greater than zero and must not exceed the tokens available for
-  ///     the connection.
   /// - Parameters:
   ///   - count: The number of tokens to borrow.
   ///   - id: The `id` of the connection to borrow tokens from.
-  /// - Returns: The connection's HTTP/2 multiplexer and the total number of tokens currently
-  ///    borrowed from the connection.
+  /// - Returns: The borrowed HTTP/2 multiplexer and the number of tokens which were borrowed (which
+  ///    may be less than `count`) and the total number of tokens which are currently being
+  ///    borrowed. Returns `nil` if no connection with identified by `id` exists or there are no
+  ///    available tokens on that connection.
   internal mutating func borrowTokens(
     _ count: Int,
     fromConnectionWithID id: ObjectIdentifier
-  ) -> (HTTP2StreamMultiplexer, borrowedTokens: Int) {
+  ) -> HTTP2ConnectionState.BorrowedTokens? {
     return self.connections.borrowTokens(count, fromConnectionWithID: id)
   }
 
@@ -166,7 +165,7 @@ internal struct ManagedHTTP2Connections {
   /// See also: `borrowTokens(_:fromConnectionWithID)`.
   internal mutating func borrowTokenFromConnection(
     withID id: ObjectIdentifier
-  ) -> (HTTP2StreamMultiplexer, borrowedTokens: Int) {
+  ) -> HTTP2ConnectionState.BorrowedTokens? {
     return self.borrowTokens(1, fromConnectionWithID: id)
   }
 

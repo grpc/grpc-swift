@@ -123,10 +123,10 @@ final class HTTP2ConnectionsTests: GRPCTestCase {
     XCTAssertEqual(connections.availableTokensForConnection(withID: connection.id), 100)
 
     // Borrow a token.
-    let (mux, borrowed) = connections.borrowTokens(1, fromConnectionWithID: connection.id)
+    let borrowed = connections.borrowTokens(1, fromConnectionWithID: connection.id)!
     // 1 token has been borrowed in total.
-    XCTAssertEqual(borrowed, 1)
-    XCTAssertTrue(mux === multiplexers[0])
+    XCTAssertEqual(borrowed.count, 1)
+    XCTAssertTrue(borrowed.multiplexer === multiplexers[0])
     XCTAssertEqual(connections.availableTokensForConnection(withID: connection.id), 99)
 
     // Return a token.

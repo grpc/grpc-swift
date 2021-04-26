@@ -114,8 +114,8 @@ internal struct HTTP2Connections {
   internal mutating func borrowTokens(
     _ count: Int,
     fromConnectionWithID id: ObjectIdentifier
-  ) -> (HTTP2StreamMultiplexer, borrowedTokens: Int) {
-    return self.connections[id]!.borrowTokens(count)
+  ) -> HTTP2ConnectionState.BorrowedTokens? {
+    return self.connections[id]?.borrowTokens(count)
   }
 
   /// The total number of borrowed tokens over all connections.

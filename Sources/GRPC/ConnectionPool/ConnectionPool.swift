@@ -257,10 +257,12 @@ internal final class ConnectionPool {
     }
 
     // Of all the usable connections, this one has the best token availability.
-    let (multiplexer, borrowed) = self.connections.borrowTokenFromConnection(withID: connectionID)
+    guard let borrowed = self.connections.borrowTokenFromConnection(withID: connectionID) else {
+      return nil
+    }
 
     // If more tokens have been used on this connection then we should spin up another one.
-    if borrowed >= self.nextConnectionThreshold {
+    if borrowed.totalBorrowCount >= self.nextConnectionThreshold {
       self._requestConnection()
     }
 
@@ -268,7 +270,7 @@ internal final class ConnectionPool {
       "pool.conn.id": "\(connectionID)",
     ])
 
-    return (multiplexer, eventLoop)
+    return (borrowed.multiplexer, eventLoop)
   }
 
   /// Request a multiplexer for a single use when one becomes available in the future.
@@ -557,12 +559,11 @@ internal final class ConnectionPool {
       return
     }
 
-    // Check this connection has available tokens.
-    guard let tokens = self.connections.availableTokensForConnection(withID: id), tokens > 0 else {
+    // Borrow a token.
+    guard let borrowed = self.connections.borrowTokenFromConnection(withID: id) else {
       return
     }
 
-    let (multiplexer, _) = self.connections.borrowTokenFromConnection(withID: id)
     let waiter = self.connectionWaiters.removeFirst()
 
     self.logger.trace("Providing a multiplexer to connection waiter", metadata: [
@@ -571,7 +572,7 @@ internal final class ConnectionPool {
       "pool.conn.id": "\(id)",
     ])
 
-    waiter.succeed(multiplexer)
+    waiter.succeed(borrowed.multiplexer)
   }
 
   /// Try to provide many waiters with multiplexers.
@@ -589,25 +590,25 @@ internal final class ConnectionPool {
     // waiters across connections.
     while let leastLoadedID = self.connections.connectionIDWithMostAvailableTokens(),
       self.connectionWaiters.count > 0 {
-      // Force unwrap is okay: the connection ID must exist.
-      let available = self.connections.availableTokensForConnection(withID: leastLoadedID)!
-      // Don't borrow more than is available or necessary.
-      let tokensToBorrow = min(self.connectionWaiters.count, available)
 
-      let (multiplexer, _) = self.connections.borrowTokens(
-        tokensToBorrow,
+      // We'll only borrow what's available.
+      guard let borrowed = self.connections.borrowTokens(
+        self.connectionWaiters.count,
         fromConnectionWithID: leastLoadedID
-      )
+      ) else {
+        // If `borrowed` is `nil` then there's nothing to borrow, we're done.
+        return
+      }
 
       // Okay, now vend out the multiplexer to a bunch of waiters.
-      for _ in 0 ..< tokensToBorrow {
+      for _ in 0 ..< borrowed.count {
         let waiter = self.connectionWaiters.removeFirst()
         self.logger.trace("Providing a multiplexer to connection waiter", metadata: [
           "pool.waiters.count": "\(self.connectionWaiters.count)",
           "pool.waiter.id": "\(waiter.id)",
           "pool.conn.id": "\(leastLoadedID)",
         ])
-        waiter.succeed(multiplexer)
+        waiter.succeed(borrowed.multiplexer)
       }
     }
   }

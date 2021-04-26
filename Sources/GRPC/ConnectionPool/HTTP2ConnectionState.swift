@@ -126,10 +126,10 @@ internal struct HTTP2ConnectionState {
       return self.tokenLimit - self.borrowedTokens
     }
 
-    internal mutating func borrowTokens(_ count: Int) -> (HTTP2StreamMultiplexer, Int) {
+    internal mutating func borrowTokens(_ count: Int) -> HTTP2StreamMultiplexer {
       self.borrowedTokens += count
       assert(self.borrowedTokens <= self.tokenLimit)
-      return (self.multiplexer, self.borrowedTokens)
+      return self.multiplexer
     }
 
     internal mutating func returnToken() {
@@ -151,28 +151,47 @@ internal struct HTTP2ConnectionState {
 
   // MARK: - Lease Management
 
-  /// Borrow tokens from the pooled connection.
+  internal struct BorrowedTokens {
+    /// The multiplexer on which `count` streams may be made.
+    internal var multiplexer: HTTP2StreamMultiplexer
+
+    /// The number of tokens which have just been borrowed.
+    internal var count: Int
+
+    /// The total number of tokens which have been borrowed.
+    internal var totalBorrowCount: Int
+  }
+
+  /// Borrow `count` tokens from the connection.
   ///
   /// Each borrowed token corresponds to the creation of one HTTP/2 stream using the multiplexer
   /// returned from this call. The caller must return each token once the stream is no longer
-  /// required using `returnToken(multiplexerID:)` where `multiplexerID` is the `ObjectIdentifier`
-  /// for the `HTTP2StreamMultiplexer` returned from this call.
+  /// required using `returnToken()`.
   ///
-  /// - Parameter tokensToBorrow: The number of tokens to borrow. This *must not*
-  ///     exceed `availableTokens`.
-  /// - Returns: A tuple of the `HTTP2StreamMultiplexer` on which streams should be created and
-  ///     total number of tokens which have been borrowed from this connection.
-  mutating func borrowTokens(_ tokensToBorrow: Int) -> (HTTP2StreamMultiplexer, Int) {
+  /// If `count` exceeds the number of tokens available on the connection then `availableTokens`
+  /// will be borrowed.
+  ///
+  /// - Parameter tokensToBorrow: The number of tokens to borrow.
+  /// - Returns: `BorrowedTokens` containing the multiplexer and actual number of tokens borrowed,
+  ///     or `nil` if no tokens were available.
+  mutating func borrowTokens(_ count: Int) -> BorrowedTokens? {
     switch self.state {
     case var .ready(ready):
-      let result = ready.borrowTokens(tokensToBorrow)
+      let borrowCount = min(count, ready.availableTokens)
+      guard borrowCount > 0 else {
+        return nil
+      }
+
+      let multiplexer = ready.borrowTokens(borrowCount)
       self.state = .ready(ready)
-      return result
+      return BorrowedTokens(
+        multiplexer: multiplexer,
+        count: borrowCount,
+        totalBorrowCount: ready.borrowedTokens
+      )
 
     case .idle, .connectingOrBackingOff:
-      // `availableTokens` is zero for these two states and a precondition for calling this function
-      // is that `tokensToBorrow` must not exceed the available tokens.
-      preconditionFailure()
+      return nil
     }
   }
 
