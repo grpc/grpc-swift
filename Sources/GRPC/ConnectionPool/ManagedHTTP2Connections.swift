@@ -132,18 +132,6 @@ internal struct ManagedHTTP2Connections {
     return self.connections.availableTokens
   }
 
-  /// Returns the number of tokens available for the connection with the given ID.
-  ///
-  /// Only active connections may have tokens available, idle connections or those actively
-  /// connecting have zero tokens available.
-  ///
-  /// - Parameter id: The ID of the connection to return the number of available tokens for.
-  /// - Returns: The number of tokens available for the connection identified by the given `id`
-  ///     or `nil` if no such connection exists.
-  internal func availableTokensForConnection(withID id: ObjectIdentifier) -> Int? {
-    return self.connections.availableTokensForConnection(withID: id)
-  }
-
   /// Borrow tokens from the connection identified by `id`.
   ///
   /// - Parameters:
@@ -214,6 +202,114 @@ internal struct ManagedHTTP2Connections {
     }
 
     return mostAvailableID
+  }
+
+  struct BorrowedToken {
+    /// The multiplexer to borrow a stream from.
+    var multiplexer: HTTP2StreamMultiplexer
+    /// The `EventLoop` of the `Channel` the `multiplexer` is on.
+    var eventLoop: EventLoop
+    /// The total number of tokens borrowed from the connection.
+    var totalBorrowCount: Int
+    /// The ID of the connection.
+    var id: ObjectIdentifier
+  }
+
+  /// Borrow a single token from the connection with the most available tokens.
+  ///
+  /// If a preferred event loop is specified then the connection with the most tokens available
+  /// using that event loop is used. If no connection using that event loop has tokens available
+  /// then the preference is ignored.
+  ///
+  /// - Parameter preferredEventLoop: The preferred `EventLoop` of the connection to borrow from.
+  internal mutating func borrowTokenFromConnectionWithMostAvailable(
+    preferredEventLoop: EventLoop?
+  ) -> BorrowedToken? {
+    guard let candidate = self.connectionWithMostAvailableTokens(
+      preferredEventLoop: preferredEventLoop
+    ) else {
+      return nil
+    }
+
+    guard let borrowed = self.connections.borrowTokens(1, fromConnectionWithID: candidate.id) else {
+      return nil
+    }
+
+    return BorrowedToken(
+      multiplexer: borrowed.multiplexer,
+      eventLoop: candidate.eventLoop,
+      totalBorrowCount: borrowed.totalBorrowCount,
+      id: candidate.id
+    )
+  }
+
+  private struct CandidateConnection {
+    var id: ObjectIdentifier
+    var availableTokens: Int
+    var eventLoop: EventLoop
+    var isPreferredEventLoop: Bool
+
+    mutating func update(
+      id: ObjectIdentifier,
+      availableTokens: Int,
+      eventLoop: EventLoop,
+      isPreferred: Bool
+    ) {
+      if self.isPreferredEventLoop {
+        // Already on the preferred event loop, only update if there are more tokens available.
+        if availableTokens > self.availableTokens {
+          self.availableTokens = availableTokens
+          self.id = id
+        } else {
+          // The current candidate is better.
+        }
+      } else if isPreferred {
+        // We're not on the preferred event loop, but we are now.
+        self.availableTokens = availableTokens
+        self.eventLoop = eventLoop
+        self.isPreferredEventLoop = true
+        self.id = id
+      } else if availableTokens > self.availableTokens {
+        // We've never seen the preferred event loop.
+        self.availableTokens = availableTokens
+        self.eventLoop = eventLoop
+        self.id = id
+      }
+    }
+  }
+
+  private func connectionWithMostAvailableTokens(
+    preferredEventLoop: EventLoop?
+  ) -> CandidateConnection? {
+    var candidate: CandidateConnection?
+
+    for (id, manager) in self.managers {
+      guard let availableTokens = self.connections.availableTokensForConnection(withID: id),
+        availableTokens > 0 else {
+        // No tokens available, move on.
+        continue
+      }
+
+      if candidate == nil {
+        // This is our candidate now.
+        candidate = CandidateConnection(
+          id: id,
+          availableTokens: availableTokens,
+          eventLoop: manager.eventLoop,
+          isPreferredEventLoop: manager.eventLoop === preferredEventLoop
+        )
+      } else {
+        // Update the candidate.
+        candidate!.update(
+          id: id,
+          availableTokens: availableTokens,
+          eventLoop: manager.eventLoop,
+          isPreferred: manager.eventLoop === preferredEventLoop
+        )
+      }
+    }
+
+    return candidate
   }
 
   /// Returns the identifier of the connection with the most available tokens.

@@ -25,14 +25,14 @@ import NIOHTTP2
 import XCTest
 
 final class ConnectionPoolTests: GRPCTestCase {
-  private let serverGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
+  private var serverGroup: MultiThreadedEventLoopGroup!
   private var server: Server!
   private var clientGroup: EventLoopGroup!
   private var pool: ConnectionPool!
 
   override func setUp() {
     super.setUp()
-
+    self.serverGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
     self.server = try! Server.insecure(group: self.serverGroup)
       .withLogger(self.serverLogger)
       .withServiceProviders([EchoProvider()])
@@ -65,6 +65,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     XCTAssertNoThrow(try self.server.close().wait())
     XCTAssertNoThrow(try self.clientGroup.syncShutdownGracefully())
     XCTAssertNoThrow(try self.serverGroup.syncShutdownGracefully())
+    super.tearDown()
   }
 
   func testShutdownIdlePool() {

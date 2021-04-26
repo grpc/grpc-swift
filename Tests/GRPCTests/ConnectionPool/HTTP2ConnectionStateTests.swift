@@ -89,9 +89,16 @@ final class HTTP2ConnectionStateTests: GRPCTestCase {
     XCTAssertEqual(state.borrowedTokens, 10)
     XCTAssertEqual(state.availableTokens, 0)
 
+    // Borrow when nothing is available.
+    XCTAssertNil(state.borrowTokens(1))
+
     state.returnToken()
     XCTAssertEqual(state.borrowedTokens, 9)
     XCTAssertEqual(state.availableTokens, 1)
+
+    // Borrow more than available.
+    let borrowed = state.borrowTokens(2)
+    XCTAssertEqual(borrowed?.count, 1)
   }
 
   func testConnectivityChanges() {

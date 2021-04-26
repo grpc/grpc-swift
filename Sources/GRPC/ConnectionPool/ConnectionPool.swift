@@ -241,23 +241,9 @@ internal final class ConnectionPool {
       return nil
     }
 
-    let eventLoop: EventLoop
-    let connectionID: ObjectIdentifier
-
-    if let preferredEventLoop = preferredEventLoop,
-      let id = self.connections.connectionIDWithMostAvailableTokens(on: preferredEventLoop) {
-      eventLoop = preferredEventLoop
-      connectionID = id
-    } else if let id = self.connections.connectionIDWithMostAvailableTokens() {
-      eventLoop = self.connections.eventLoopForConnection(withID: id)!
-      connectionID = id
-    } else {
-      // No connections available.
-      return nil
-    }
-
-    // Of all the usable connections, this one has the best token availability.
-    guard let borrowed = self.connections.borrowTokenFromConnection(withID: connectionID) else {
+    guard let borrowed = self.connections.borrowTokenFromConnectionWithMostAvailable(
+      preferredEventLoop: preferredEventLoop
+    ) else {
       return nil
     }
 
@@ -267,10 +253,10 @@ internal final class ConnectionPool {
     }
 
     self.logger.trace("Providing a multiplexer from available connection", metadata: [
-      "pool.conn.id": "\(connectionID)",
+      "pool.conn.id": "\(borrowed.id)",
     ])
 
-    return (borrowed.multiplexer, eventLoop)
+    return (borrowed.multiplexer, borrowed.eventLoop)
   }
 
   /// Request a multiplexer for a single use when one becomes available in the future.
