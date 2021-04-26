@@ -21,8 +21,7 @@ import NIOHTTP2
 
 /// A connection pool for connections speaking gRPC over HTTP/2.
 ///
-/// The connection pool offers callers with two ways of borrowing an `HTTP2StreamMultiplexer`. They
-/// are:
+/// The connection pool offers callers two ways of borrowing an `HTTP2StreamMultiplexer`. They are:
 ///
 ///   1. Asking the pool for the multiplexer of any already available connection (that is, actively
 ///      connected to a remote peer and has capacity to create one more HTTP/2 stream without
