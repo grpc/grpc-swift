@@ -28,15 +28,15 @@ internal struct HTTP2Connections {
   }
 
   internal var idleCount: Int {
-    return self.connections.values.reduce(0) { $0 + ($1.isIdle ? 1 : 0) }
+    return self.connections.values.reduce(0) { $0 &+ ($1.isIdle ? 1 : 0) }
   }
 
   internal var readyCount: Int {
-    return self.connections.values.reduce(0) { $0 + ($1.isReady ? 1 : 0) }
+    return self.connections.values.reduce(0) { $0 &+ ($1.isReady ? 1 : 0) }
   }
 
   internal var connectingCount: Int {
-    return self.connections.values.reduce(0) { $0 + ($1.isConnecting ? 1 : 0) }
+    return self.connections.values.reduce(0) { $0 &+ ($1.isConnecting ? 1 : 0) }
   }
 
   /// The maximum number of connections which may be stored.
