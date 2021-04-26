@@ -479,3 +479,14 @@ extension EventLoop {
     return completed.futureResult
   }
 }
+
+extension ConnectionPool {
+  internal func waitForMultiplexer(
+    eventLoop: EventLoop,
+    until deadline: NIODeadline? = nil
+  ) -> EventLoopFuture<HTTP2StreamMultiplexer> {
+    let promise = eventLoop.makePromise(of: HTTP2StreamMultiplexer.self)
+    self.waitForMultiplexer(promise: promise, until: deadline)
+    return promise.futureResult
+  }
+}

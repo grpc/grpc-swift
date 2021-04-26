@@ -276,24 +276,20 @@ internal final class ConnectionPool {
   /// Request a multiplexer for a single use when one becomes available in the future.
   ///
   /// - Parameters:
-  ///   - eventLoop: The `EventLoop` to be notified about the multiplexer on. The multiplexer which
-  ///       succeeds the returned `EventLoopFuture` may run on a different `EventLoop`.
+  ///   - promise: An `EventLoopPromise` for an `HTTP2StreamMultiplexer` to be completed by the
+  ///       pool when one becomes available.
   ///   - deadline: The deadline by which the returned `EventLoopFuture` will be failed if no
   ///       multiplexer has become available. If this is not provided then the deadline will be
   ///       `maximumConnectionWaitTime` from now.
-  /// - Returns: A future `HTTP2StreamMultiplexer`.
   internal func waitForMultiplexer(
-    eventLoop: EventLoop,
+    promise: EventLoopPromise<HTTP2StreamMultiplexer>,
     until deadline: NIODeadline? = nil
-  ) -> EventLoopFuture<HTTP2StreamMultiplexer> {
-    let promise = eventLoop.makePromise(of: HTTP2StreamMultiplexer.self)
+  ) {
     let actualDeadline = deadline ?? .now() + self.maximumConnectionWaitTime
 
     self.lock.withLockVoid {
       self._waitForMultiplexer(promise: promise, until: actualDeadline)
     }
-
-    return promise.futureResult
   }
 
   /// Lock-held implementation of `waitForMultiplexer(eventLoop:deadline:)`.
@@ -590,7 +586,6 @@ internal final class ConnectionPool {
     // waiters across connections.
     while let leastLoadedID = self.connections.connectionIDWithMostAvailableTokens(),
       self.connectionWaiters.count > 0 {
-
       // We'll only borrow what's available.
       guard let borrowed = self.connections.borrowTokens(
         self.connectionWaiters.count,
