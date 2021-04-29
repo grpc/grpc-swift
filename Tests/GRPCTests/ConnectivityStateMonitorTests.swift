@@ -43,35 +43,4 @@ class ConnectivityStateMonitorTests: GRPCTestCase {
 
     recorder.waitForExpectedChanges(timeout: .seconds(1))
   }
-
-  func testHTTP2Delegate() {
-    let http2Delegate = RecordingHTTP2Delegate()
-    let queue = DispatchQueue(label: "io.grpc.testing")
-    let monitor = ConnectivityStateMonitor(delegate: nil, queue: queue)
-    monitor.http2Delegate = http2Delegate
-
-    monitor.streamClosed()
-    monitor.streamClosed()
-    monitor.streamClosed()
-
-    monitor.maxConcurrentStreamsChanged(31)
-    monitor.maxConcurrentStreamsChanged(41)
-    monitor.maxConcurrentStreamsChanged(49)
-
-    XCTAssertEqual(queue.sync { http2Delegate.streamsClosed }, 3)
-    XCTAssertEqual(queue.sync { http2Delegate.maxConcurrentStreamsChanges }, [31, 41, 49])
-  }
-}
-
-internal final class RecordingHTTP2Delegate: HTTP2ConnectionDelegate {
-  private(set) var streamsClosed = 0
-  private(set) var maxConcurrentStreamsChanges: [Int] = []
-
-  internal func streamClosed() {
-    self.streamsClosed += 1
-  }
-
-  internal func maxConcurrentStreamsChanged(_ maxConcurrentStreams: Int) {
-    self.maxConcurrentStreamsChanges.append(maxConcurrentStreams)
-  }
 }
