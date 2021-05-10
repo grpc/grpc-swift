@@ -177,6 +177,9 @@ struct GRPCIdleHandlerStateMachine {
     /// An event to notify the connection manager about.
     private(set) var connectionManagerEvent: ConnectionManagerEvent?
 
+    /// The value of HTTP/2 SETTINGS_MAX_CONCURRENT_STREAMS changed.
+    private(set) var maxConcurrentStreamsChange: Int?
+
     /// An idle task, either scheduling or cancelling an idle timeout.
     private(set) var idleTask: IdleTask?
 
@@ -206,6 +209,10 @@ struct GRPCIdleHandlerStateMachine {
 
     fileprivate mutating func notifyConnectionManager(about event: ConnectionManagerEvent) {
       self.connectionManagerEvent = event
+    }
+
+    fileprivate mutating func maxConcurrentStreamsChanged(_ newValue: Int) {
+      self.maxConcurrentStreamsChange = newValue
     }
 
     private init() {
@@ -502,6 +509,7 @@ struct GRPCIdleHandlerStateMachine {
 
       // Update max concurrent streams.
       if let maxStreams = settings.last(where: { $0.parameter == .maxConcurrentStreams })?.value {
+        operations.maxConcurrentStreamsChanged(maxStreams)
         state.maxConcurrentStreams = maxStreams
       }
       self.state = .operating(state)
@@ -509,6 +517,7 @@ struct GRPCIdleHandlerStateMachine {
     case var .waitingToIdle(state):
       // Update max concurrent streams.
       if let maxStreams = settings.last(where: { $0.parameter == .maxConcurrentStreams })?.value {
+        operations.maxConcurrentStreamsChanged(maxStreams)
         state.maxConcurrentStreams = maxStreams
       }
       self.state = .waitingToIdle(state)

@@ -15,6 +15,7 @@
  */
 import EchoModel
 @testable import GRPC
+import Logging
 import NIO
 import NIOHTTP2
 import XCTest
@@ -22,20 +23,40 @@ import XCTest
 class ConnectionManagerTests: GRPCTestCase {
   private let loop = EmbeddedEventLoop()
   private let recorder = RecordingConnectivityDelegate()
+  private var monitor: ConnectivityStateMonitor!
 
   private var defaultConfiguration: ClientConnection.Configuration {
     return ClientConnection.Configuration(
       target: .unixDomainSocket("/ignored"),
       eventLoopGroup: self.loop,
-      connectivityStateDelegate: self.recorder,
+      connectivityStateDelegate: nil,
       connectionBackoff: nil,
       backgroundActivityLogger: self.clientLogger
     )
   }
 
+  override func setUp() {
+    super.setUp()
+    self.monitor = ConnectivityStateMonitor(delegate: self.recorder, queue: nil)
+  }
+
   override func tearDown() {
     XCTAssertNoThrow(try self.loop.syncShutdownGracefully())
     super.tearDown()
+  }
+
+  private func makeConnectionManager(
+    configuration config: ClientConnection.Configuration? = nil,
+    channelProvider: ((ConnectionManager, EventLoop) -> EventLoopFuture<Channel>)? = nil
+  ) -> ConnectionManager {
+    let configuration = config ?? self.defaultConfiguration
+
+    return ConnectionManager(
+      configuration: configuration,
+      channelProvider: channelProvider.map { HookedChannelProvider($0) },
+      connectivityDelegate: self.monitor,
+      logger: self.logger
+    )
   }
 
   private func waitForStateChange<Result>(
@@ -72,7 +93,7 @@ class ConnectionManagerTests: GRPCTestCase {
 
 extension ConnectionManagerTests {
   func testIdleShutdown() throws {
-    let manager = ConnectionManager(configuration: self.defaultConfiguration, logger: self.logger)
+    let manager = self.makeConnectionManager()
 
     try self.waitForStateChange(from: .idle, to: .shutdown) {
       let shutdown = manager.shutdown()
@@ -88,11 +109,8 @@ extension ConnectionManagerTests {
 
   func testConnectFromIdleFailsWithNoReconnect() {
     let channelPromise = self.loop.makePromise(of: Channel.self)
-    let manager = ConnectionManager.testingOnly(
-      configuration: self.defaultConfiguration,
-      logger: self.logger
-    ) {
-      channelPromise.futureResult
+    let manager = self.makeConnectionManager { _, _ in
+      return channelPromise.futureResult
     }
 
     let multiplexer: EventLoopFuture<HTTP2StreamMultiplexer> = self
@@ -113,11 +131,8 @@ extension ConnectionManagerTests {
 
   func testConnectAndDisconnect() throws {
     let channelPromise = self.loop.makePromise(of: Channel.self)
-    let manager = ConnectionManager.testingOnly(
-      configuration: self.defaultConfiguration,
-      logger: self.logger
-    ) {
-      channelPromise.futureResult
+    let manager = self.makeConnectionManager { _, _ in
+      return channelPromise.futureResult
     }
 
     // Start the connection.
@@ -165,11 +180,8 @@ extension ConnectionManagerTests {
 
   func testConnectAndIdle() throws {
     let channelPromise = self.loop.makePromise(of: Channel.self)
-    let manager = ConnectionManager.testingOnly(
-      configuration: self.defaultConfiguration,
-      logger: self.logger
-    ) {
-      channelPromise.futureResult
+    let manager = self.makeConnectionManager { _, _ in
+      return channelPromise.futureResult
     }
 
     // Start the connection.
@@ -226,11 +238,8 @@ extension ConnectionManagerTests {
 
   func testIdleTimeoutWhenThereAreActiveStreams() throws {
     let channelPromise = self.loop.makePromise(of: Channel.self)
-    let manager = ConnectionManager.testingOnly(
-      configuration: self.defaultConfiguration,
-      logger: self.logger
-    ) {
-      channelPromise.futureResult
+    let manager = self.makeConnectionManager { _, _ in
+      return channelPromise.futureResult
     }
 
     // Start the connection.
@@ -302,11 +311,8 @@ extension ConnectionManagerTests {
 
   func testConnectAndThenBecomeInactive() throws {
     let channelPromise = self.loop.makePromise(of: Channel.self)
-    let manager = ConnectionManager.testingOnly(
-      configuration: self.defaultConfiguration,
-      logger: self.logger
-    ) {
-      channelPromise.futureResult
+    let manager = self.makeConnectionManager { _, _ in
+      return channelPromise.futureResult
     }
 
     let readyChannelMux: EventLoopFuture<HTTP2StreamMultiplexer> = self
@@ -361,7 +367,7 @@ extension ConnectionManagerTests {
     var configuration = self.defaultConfiguration
     configuration.connectionBackoff = .oneSecondFixed
 
-    let manager = ConnectionManager.testingOnly(configuration: configuration, logger: self.logger) {
+    let manager = self.makeConnectionManager(configuration: configuration) { _, _ in
       guard let next = channelFutureIterator.next() else {
         XCTFail("Too many channels requested")
         return self.loop.makeFailedFuture(DoomedChannelError())
@@ -430,11 +436,8 @@ extension ConnectionManagerTests {
 
   func testShutdownWhileConnecting() throws {
     let channelPromise = self.loop.makePromise(of: Channel.self)
-    let manager = ConnectionManager.testingOnly(
-      configuration: self.defaultConfiguration,
-      logger: self.logger
-    ) {
-      channelPromise.futureResult
+    let manager = self.makeConnectionManager { _, _ in
+      return channelPromise.futureResult
     }
 
     let readyChannelMux: EventLoopFuture<HTTP2StreamMultiplexer> = self
@@ -465,7 +468,7 @@ extension ConnectionManagerTests {
     var configuration = self.defaultConfiguration
     configuration.connectionBackoff = .oneSecondFixed
 
-    let manager = ConnectionManager.testingOnly(configuration: configuration, logger: self.logger) {
+    let manager = self.makeConnectionManager(configuration: configuration) { _, _ in
       self.loop.makeFailedFuture(DoomedChannelError())
     }
 
@@ -492,11 +495,8 @@ extension ConnectionManagerTests {
 
   func testShutdownWhileActive() throws {
     let channelPromise = self.loop.makePromise(of: Channel.self)
-    let manager = ConnectionManager.testingOnly(
-      configuration: self.defaultConfiguration,
-      logger: self.logger
-    ) {
-      channelPromise.futureResult
+    let manager = self.makeConnectionManager { _, _ in
+      return channelPromise.futureResult
     }
 
     let readyChannelMux: EventLoopFuture<HTTP2StreamMultiplexer> = self
@@ -542,7 +542,7 @@ extension ConnectionManagerTests {
   }
 
   func testShutdownWhileShutdown() throws {
-    let manager = ConnectionManager(configuration: self.defaultConfiguration, logger: self.logger)
+    let manager = self.makeConnectionManager()
 
     try self.waitForStateChange(from: .idle, to: .shutdown) {
       let firstShutdown = manager.shutdown()
@@ -566,7 +566,7 @@ extension ConnectionManagerTests {
     ]
     var channelFutureIterator = channelFutures.makeIterator()
 
-    let manager = ConnectionManager.testingOnly(configuration: configuration, logger: self.logger) {
+    let manager = self.makeConnectionManager(configuration: configuration) { _, _ in
       guard let next = channelFutureIterator.next() else {
         XCTFail("Too many channels requested")
         return self.loop.makeFailedFuture(DoomedChannelError())
@@ -642,7 +642,7 @@ extension ConnectionManagerTests {
     ]
     var channelFutureIterator = channelFutures.makeIterator()
 
-    let manager = ConnectionManager.testingOnly(configuration: configuration, logger: self.logger) {
+    let manager = self.makeConnectionManager(configuration: configuration) { _, _ in
       guard let next = channelFutureIterator.next() else {
         XCTFail("Too many channels requested")
         return self.loop.makeFailedFuture(DoomedChannelError())
@@ -743,11 +743,8 @@ extension ConnectionManagerTests {
 
   func testGoAwayWhenReady() throws {
     let channelPromise = self.loop.makePromise(of: Channel.self)
-    let manager = ConnectionManager.testingOnly(
-      configuration: self.defaultConfiguration,
-      logger: self.logger
-    ) {
-      channelPromise.futureResult
+    let manager = self.makeConnectionManager { _, _ in
+      return channelPromise.futureResult
     }
 
     let readyChannelMux: EventLoopFuture<HTTP2StreamMultiplexer> = self
@@ -812,12 +809,14 @@ extension ConnectionManagerTests {
   func testDoomedOptimisticChannelFromIdle() {
     var configuration = self.defaultConfiguration
     configuration.callStartBehavior = .fastFailure
-    let manager = ConnectionManager.testingOnly(
+    let manager = ConnectionManager(
       configuration: configuration,
+      channelProvider: HookedChannelProvider { _, loop in
+        return loop.makeFailedFuture(DoomedChannelError())
+      },
+      connectivityDelegate: nil,
       logger: self.logger
-    ) {
-      self.loop.makeFailedFuture(DoomedChannelError())
-    }
+    )
     let candidate = manager.getHTTP2Multiplexer()
     self.loop.run()
     XCTAssertThrowsError(try candidate.wait())
@@ -827,11 +826,8 @@ extension ConnectionManagerTests {
     var configuration = self.defaultConfiguration
     configuration.callStartBehavior = .fastFailure
     let promise = self.loop.makePromise(of: Channel.self)
-    let manager = ConnectionManager.testingOnly(
-      configuration: configuration,
-      logger: self.logger
-    ) {
-      promise.futureResult
+    let manager = self.makeConnectionManager { _, _ in
+      return promise.futureResult
     }
 
     self.waitForStateChange(from: .idle, to: .connecting) {
@@ -855,7 +851,7 @@ extension ConnectionManagerTests {
     configuration.callStartBehavior = .fastFailure
     configuration.connectionBackoff = ConnectionBackoff()
 
-    let manager = ConnectionManager.testingOnly(configuration: configuration, logger: self.logger) {
+    let manager = self.makeConnectionManager(configuration: configuration) { _, _ in
       self.loop.makeFailedFuture(DoomedChannelError())
     }
 
@@ -880,11 +876,8 @@ extension ConnectionManagerTests {
   func testOptimisticChannelFromShutdown() throws {
     var configuration = self.defaultConfiguration
     configuration.callStartBehavior = .fastFailure
-    let manager = ConnectionManager.testingOnly(
-      configuration: configuration,
-      logger: self.logger
-    ) {
-      self.loop.makeFailedFuture(DoomedChannelError())
+    let manager = self.makeConnectionManager { _, _ in
+      return self.loop.makeFailedFuture(DoomedChannelError())
     }
 
     let shutdown = manager.shutdown()
@@ -899,11 +892,8 @@ extension ConnectionManagerTests {
 
   func testForceIdleAfterInactive() throws {
     let channelPromise = self.loop.makePromise(of: Channel.self)
-    let manager = ConnectionManager.testingOnly(
-      configuration: self.defaultConfiguration,
-      logger: self.logger
-    ) {
-      channelPromise.futureResult
+    let manager = self.makeConnectionManager { _, _ in
+      return channelPromise.futureResult
     }
 
     // Start the connection.
@@ -957,11 +947,8 @@ extension ConnectionManagerTests {
 
   func testCloseWithoutActiveRPCs() throws {
     let channelPromise = self.loop.makePromise(of: Channel.self)
-    let manager = ConnectionManager.testingOnly(
-      configuration: self.defaultConfiguration,
-      logger: self.logger
-    ) {
-      channelPromise.futureResult
+    let manager = self.makeConnectionManager { _, _ in
+      return channelPromise.futureResult
     }
 
     // Start the connection.
@@ -1013,7 +1000,7 @@ extension ConnectionManagerTests {
   }
 
   func testIdleErrorDoesNothing() throws {
-    let manager = ConnectionManager(configuration: self.defaultConfiguration, logger: self.logger)
+    let manager = self.makeConnectionManager()
 
     // Dropping an error on this manager should be fine.
     manager.channelError(DoomedChannelError())
@@ -1024,6 +1011,106 @@ extension ConnectionManagerTests {
       self.loop.run()
       XCTAssertNoThrow(try shutdown.wait())
     }
+  }
+
+  func testHTTP2Delegates() throws {
+    let channel = EmbeddedChannel(loop: self.loop)
+    defer {
+      XCTAssertNoThrow(try channel.finish())
+    }
+
+    let multiplexer = HTTP2StreamMultiplexer(
+      mode: .client,
+      channel: channel,
+      inboundStreamInitializer: nil
+    )
+
+    class HTTP2Delegate: ConnectionManagerHTTP2Delegate {
+      var streamsClosed = 0
+      var maxConcurrentStreams = 0
+
+      func streamClosed(_ connectionManager: ConnectionManager) {
+        self.streamsClosed += 1
+      }
+
+      func receivedSettingsMaxConcurrentStreams(
+        _ connectionManager: ConnectionManager,
+        maxConcurrentStreams: Int
+      ) {
+        self.maxConcurrentStreams = maxConcurrentStreams
+      }
+    }
+
+    let http2 = HTTP2Delegate()
+
+    let manager = ConnectionManager(
+      eventLoop: self.loop,
+      channelProvider: HookedChannelProvider { manager, eventLoop -> EventLoopFuture<Channel> in
+        let idleHandler = GRPCIdleHandler(
+          connectionManager: manager,
+          multiplexer: multiplexer,
+          idleTimeout: .minutes(5),
+          keepalive: ClientConnectionKeepalive(),
+          logger: self.logger
+        )
+
+        // We're going to cheat a bit by not putting the multiplexer in the channel. This allows
+        // us to just fire stream created/closed events into the channel.
+        do {
+          try channel.pipeline.syncOperations.addHandler(idleHandler)
+        } catch {
+          return eventLoop.makeFailedFuture(error)
+        }
+
+        return eventLoop.makeSucceededFuture(channel)
+      },
+      callStartBehavior: .waitsForConnectivity,
+      connectionBackoff: ConnectionBackoff(),
+      connectivityDelegate: nil,
+      http2Delegate: http2,
+      logger: self.logger
+    )
+
+    // Start connecting.
+    let futureMultiplexer = manager.getHTTP2Multiplexer()
+    self.loop.run()
+
+    // Do the actual connecting.
+    XCTAssertNoThrow(try channel.connect(to: SocketAddress(unixDomainSocketPath: "/ignored")))
+
+    // The channel isn't ready until it's seen a SETTINGS frame.
+
+    func makeSettingsFrame(maxConcurrentStreams: Int) -> HTTP2Frame {
+      let settings = [HTTP2Setting(parameter: .maxConcurrentStreams, value: maxConcurrentStreams)]
+      return HTTP2Frame(streamID: .rootStream, payload: .settings(.settings(settings)))
+    }
+    XCTAssertNoThrow(try channel.writeInbound(makeSettingsFrame(maxConcurrentStreams: 42)))
+
+    // We're ready now so the future multiplexer will resolve and we'll have seen an update to
+    // max concurrent streams.
+    XCTAssertNoThrow(try futureMultiplexer.wait())
+    XCTAssertEqual(http2.maxConcurrentStreams, 42)
+
+    XCTAssertNoThrow(try channel.writeInbound(makeSettingsFrame(maxConcurrentStreams: 13)))
+    XCTAssertEqual(http2.maxConcurrentStreams, 13)
+
+    // Open some streams.
+    for streamID in stride(from: HTTP2StreamID(1), to: HTTP2StreamID(9), by: 2) {
+      let streamCreated = NIOHTTP2StreamCreatedEvent(
+        streamID: streamID,
+        localInitialWindowSize: nil,
+        remoteInitialWindowSize: nil
+      )
+      channel.pipeline.fireUserInboundEventTriggered(streamCreated)
+    }
+
+    // ... and then close them.
+    for streamID in stride(from: HTTP2StreamID(1), to: HTTP2StreamID(9), by: 2) {
+      let streamClosed = StreamClosedEvent(streamID: streamID, reason: nil)
+      channel.pipeline.fireUserInboundEventTriggered(streamClosed)
+    }
+
+    XCTAssertEqual(http2.streamsClosed, 4)
   }
 }
 
@@ -1154,3 +1241,20 @@ private extension ConnectionBackoff {
 }
 
 private struct DoomedChannelError: Error {}
+
+internal struct HookedChannelProvider: ConnectionManagerChannelProvider {
+  internal var provider: (ConnectionManager, EventLoop) -> EventLoopFuture<Channel>
+
+  init(_ provider: @escaping (ConnectionManager, EventLoop) -> EventLoopFuture<Channel>) {
+    self.provider = provider
+  }
+
+  func makeChannel(
+    managedBy connectionManager: ConnectionManager,
+    onEventLoop eventLoop: EventLoop,
+    connectTimeout: TimeAmount?,
+    logger: Logger
+  ) -> EventLoopFuture<Channel> {
+    return self.provider(connectionManager, eventLoop)
+  }
+}

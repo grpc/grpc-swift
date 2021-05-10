@@ -176,29 +176,43 @@ internal final class ConnectionManager {
     }
   }
 
+  /// The last 'external' state we are in, a subset of the internal state.
+  private var externalState: ConnectivityState = .idle
+
+  /// Update the external state, potentially notifying a delegate about the change.
+  private func updateExternalState(to nextState: ConnectivityState) {
+    if self.externalState != nextState {
+      self.externalState = nextState
+      self.connectivityDelegate?.connectionStateDidChange(
+        self, from: self.externalState, to: nextState
+      )
+    }
+  }
+
+  /// Our current state.
   private var state: State {
     didSet {
       switch self.state {
       case .idle:
-        self.monitor.updateState(to: .idle, logger: self.logger)
+        self.updateExternalState(to: .idle)
         self.updateConnectionID()
 
       case .connecting:
-        self.monitor.updateState(to: .connecting, logger: self.logger)
+        self.updateExternalState(to: .connecting)
 
       // This is an internal state.
       case .active:
         ()
 
       case .ready:
-        self.monitor.updateState(to: .ready, logger: self.logger)
+        self.updateExternalState(to: .ready)
 
       case .transientFailure:
-        self.monitor.updateState(to: .transientFailure, logger: self.logger)
+        self.updateExternalState(to: .transientFailure)
         self.updateConnectionID()
 
       case .shutdown:
-        self.monitor.updateState(to: .shutdown, logger: self.logger)
+        self.updateExternalState(to: .shutdown)
       }
     }
   }
@@ -206,8 +220,11 @@ internal final class ConnectionManager {
   /// The `EventLoop` that the managed connection will run on.
   internal let eventLoop: EventLoop
 
-  /// A connectivity state monitor.
-  internal let monitor: ConnectivityStateMonitor
+  /// A delegate for connectivity changes. Executed on the `EventLoop`.
+  private var connectivityDelegate: ConnectionManagerConnectivityDelegate?
+
+  /// A delegate for HTTP/2 connection changes. Executed on the `EventLoop`.
+  private var http2Delegate: ConnectionManagerHTTP2Delegate?
 
   /// An `EventLoopFuture<Channel>` provider.
   private let channelProvider: ConnectionManagerChannelProvider
@@ -248,51 +265,19 @@ internal final class ConnectionManager {
     logger[metadataKey: MetadataKey.connectionID] = "\(self.connectionIDAndNumber)"
   }
 
-  internal convenience init(configuration: ClientConnection.Configuration, logger: Logger) {
-    self.init(
-      configuration: configuration,
-      channelProvider: DefaultChannelProvider(configuration: configuration),
-      logger: logger
-    )
-  }
-
-  /// Create a `ConnectionManager` for testing: uses the given `channelProvider` to create channels.
-  internal static func testingOnly(
+  internal convenience init(
     configuration: ClientConnection.Configuration,
-    logger: Logger,
-    channelProvider: @escaping () -> EventLoopFuture<Channel>
-  ) -> ConnectionManager {
-    struct Wrapper: ConnectionManagerChannelProvider {
-      var callback: () -> EventLoopFuture<Channel>
-      func makeChannel(
-        managedBy connectionManager: ConnectionManager,
-        onEventLoop eventLoop: EventLoop,
-        connectTimeout: TimeAmount?,
-        logger: Logger
-      ) -> EventLoopFuture<Channel> {
-        return self.callback().hop(to: eventLoop)
-      }
-    }
-
-    return ConnectionManager(
-      configuration: configuration,
-      channelProvider: Wrapper(callback: channelProvider),
-      logger: logger
-    )
-  }
-
-  private convenience init(
-    configuration: ClientConnection.Configuration,
-    channelProvider: ConnectionManagerChannelProvider,
+    channelProvider: ConnectionManagerChannelProvider? = nil,
+    connectivityDelegate: ConnectionManagerConnectivityDelegate?,
     logger: Logger
   ) {
     self.init(
       eventLoop: configuration.eventLoopGroup.next(),
-      channelProvider: channelProvider,
+      channelProvider: channelProvider ?? DefaultChannelProvider(configuration: configuration),
       callStartBehavior: configuration.callStartBehavior.wrapped,
       connectionBackoff: configuration.connectionBackoff,
-      connectivityStateDelegate: configuration.connectivityStateDelegate,
-      connectivityStateDelegateQueue: configuration.connectivityStateDelegateQueue,
+      connectivityDelegate: connectivityDelegate,
+      http2Delegate: nil,
       logger: logger
     )
   }
@@ -302,8 +287,8 @@ internal final class ConnectionManager {
     channelProvider: ConnectionManagerChannelProvider,
     callStartBehavior: CallStartBehavior.Behavior,
     connectionBackoff: ConnectionBackoff?,
-    connectivityStateDelegate: ConnectivityStateDelegate?,
-    connectivityStateDelegateQueue: DispatchQueue?,
+    connectivityDelegate: ConnectionManagerConnectivityDelegate?,
+    http2Delegate: ConnectionManagerHTTP2Delegate?,
     logger: Logger
   ) {
     // Setup the logger.
@@ -318,10 +303,8 @@ internal final class ConnectionManager {
     self.channelProvider = channelProvider
     self.callStartBehavior = callStartBehavior
     self.connectionBackoff = connectionBackoff
-    self.monitor = ConnectivityStateMonitor(
-      delegate: connectivityStateDelegate,
-      queue: connectivityStateDelegateQueue
-    )
+    self.connectivityDelegate = connectivityDelegate
+    self.http2Delegate = http2Delegate
 
     self.connectionID = connectionID
     self.channelNumber = channelNumber
@@ -727,9 +710,22 @@ internal final class ConnectionManager {
     }
   }
 
+  internal func streamClosed() {
+    self.eventLoop.assertInEventLoop()
+    self.http2Delegate?.streamClosed(self)
+  }
+
+  internal func maxConcurrentStreamsChanged(_ maxConcurrentStreams: Int) {
+    self.eventLoop.assertInEventLoop()
+    self.http2Delegate?.receivedSettingsMaxConcurrentStreams(
+      self, maxConcurrentStreams: maxConcurrentStreams
+    )
+  }
+
   /// The connection has started quiescing: notify the connectivity monitor of this.
   internal func beginQuiescing() {
-    self.monitor.beginQuiescing()
+    self.eventLoop.assertInEventLoop()
+    self.connectivityDelegate?.connectionIsQuiescing(self)
   }
 }
 

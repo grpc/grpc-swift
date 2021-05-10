@@ -93,9 +93,7 @@ public class ClientConnection {
   internal let authority: String
 
   /// A monitor for the connectivity state.
-  public var connectivity: ConnectivityStateMonitor {
-    return self.connectionManager.monitor
-  }
+  public let connectivity: ConnectivityStateMonitor
 
   /// The `EventLoop` this connection is using.
   public var eventLoop: EventLoop {
@@ -112,8 +110,16 @@ public class ClientConnection {
     self.configuration = configuration
     self.scheme = configuration.tls == nil ? "http" : "https"
     self.authority = configuration.tls?.hostnameOverride ?? configuration.target.host
+
+    let monitor = ConnectivityStateMonitor(
+      delegate: configuration.connectivityStateDelegate,
+      queue: configuration.connectivityStateDelegateQueue
+    )
+
+    self.connectivity = monitor
     self.connectionManager = ConnectionManager(
       configuration: configuration,
+      connectivityDelegate: monitor,
       logger: configuration.backgroundActivityLogger
     )
   }
