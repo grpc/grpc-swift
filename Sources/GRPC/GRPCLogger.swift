@@ -72,3 +72,9 @@ internal struct GRPCLogger {
     )
   }
 }
+
+extension Logger {
+  internal var wrapped: GRPCLogger {
+    return GRPCLogger(wrapping: self)
+  }
+}
