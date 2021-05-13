@@ -184,11 +184,51 @@ class GRPCWebToHTTP2ServerCodecTests: GRPCTestCase {
     let dataPayload: HTTP2Frame.FramePayload = .data(.init(data: .byteBuffer(.init())))
     assertThat(try channel.write(dataPayload).wait(), .throws())
   }
+
+  func testReceiveRequestHeadTwice() throws {
+    var state = GRPCWebToHTTP2ServerCodec.StateMachine(scheme: "http")
+    let allocator = ByteBufferAllocator()
+
+    let head = HTTPRequestHead(version: .http1_1, method: .POST, uri: "")
+    let action1 = state.processInbound(serverRequestPart: .head(head), allocator: allocator)
+    action1.assertFireChannelRead()
+
+    let action2 = state.processInbound(serverRequestPart: .head(head), allocator: allocator)
+    action2.assertError { error in
+      XCTAssertEqual(error as? GRPCWebToHTTP2CodecError, .unexpectedRequestHead)
+    }
+  }
 }
 
 extension ByteBuffer {
   fileprivate func base64Encoded() -> ByteBuffer {
     let data = self.getData(at: self.readerIndex, length: self.readableBytes)!
     return ByteBuffer(string: data.base64EncodedString())
+  }
+}
+
+extension GRPCWebToHTTP2ServerCodec.StateMachine.Action {
+  func assertFireChannelRead(
+    line: UInt = #line,
+    verify: (HTTP2Frame.FramePayload) -> Void = { _ in }
+  ) {
+    switch self {
+    case let .fireChannelRead(frame):
+      verify(frame)
+    default:
+      XCTFail("Expected '.fireChannelRead(_)' but got '\(self)'", line: line)
+    }
+  }
+
+  func assertError(
+    line: UInt = #line,
+    verify: (Error) -> Void = { _ in }
+  ) {
+    switch self {
+    case let .error(error):
+      verify(error)
+    default:
+      XCTFail("Expected '.error(_)' but got '\(self)'", line: line)
+    }
   }
 }

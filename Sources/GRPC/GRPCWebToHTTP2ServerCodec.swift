@@ -77,6 +77,9 @@ internal final class GRPCWebToHTTP2ServerCodec: ChannelDuplexHandler {
 
     case let .completePromise(promise, result):
       promise?.completeWith(result)
+
+    case let .error(error):
+      context.fireErrorCaught(error)
     }
   }
 }
@@ -86,7 +89,7 @@ extension GRPCWebToHTTP2ServerCodec {
     /// The current state.
     private var state: State
 
-    fileprivate init(scheme: String) {
+    internal init(scheme: String) {
       self.state = .idle(scheme: scheme)
     }
 
@@ -100,7 +103,7 @@ extension GRPCWebToHTTP2ServerCodec {
     }
 
     /// Process the inbound `HTTPServerRequestPart`.
-    fileprivate mutating func processInbound(
+    internal mutating func processInbound(
       serverRequestPart: HTTPServerRequestPart,
       allocator: ByteBufferAllocator
     ) -> Action {
@@ -110,7 +113,7 @@ extension GRPCWebToHTTP2ServerCodec {
     }
 
     /// Process the outbound `HTTP2Frame.FramePayload`.
-    fileprivate mutating func processOutbound(
+    internal mutating func processOutbound(
       framePayload: HTTP2Frame.FramePayload,
       promise: EventLoopPromise<Void>?,
       allocator: ByteBufferAllocator
@@ -121,11 +124,12 @@ extension GRPCWebToHTTP2ServerCodec {
     }
 
     /// An action to take as a result of interaction with the state machine.
-    fileprivate enum Action {
+    internal enum Action {
       case none
       case fireChannelRead(HTTP2Frame.FramePayload)
       case write(HTTPServerResponsePart, HTTPServerResponsePart?, EventLoopPromise<Void>?)
       case completePromise(EventLoopPromise<Void>?, Result<Void, Error>)
+      case error(Error)
     }
 
     fileprivate enum State {
@@ -251,7 +255,7 @@ extension GRPCWebToHTTP2ServerCodec.StateMachine.State {
       return .fireChannelRead(.headers(.init(headers: headers)))
 
     case .open, .closed:
-      preconditionFailure("Invalid state: already received request head")
+      return .error(GRPCWebToHTTP2CodecError.unexpectedRequestHead)
 
     case ._modifying:
       preconditionFailure("Left in modifying state")
@@ -426,6 +430,13 @@ extension GRPCWebToHTTP2ServerCodec.StateMachine.State {
       preconditionFailure("Left in modifying state")
     }
   }
+}
+
+// MARK: - Codec Errors
+
+internal enum GRPCWebToHTTP2CodecError: Error, Hashable {
+  /// The codec received more than one request head.
+  case unexpectedRequestHead
 }
 
 // MARK: - Helpers
