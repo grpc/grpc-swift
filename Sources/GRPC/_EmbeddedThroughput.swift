@@ -51,4 +51,10 @@ extension EmbeddedChannel {
     )
     return self.pipeline.addHandler(codec)
   }
+
+  public func _configureForServerFuzzing(configuration: Server.Configuration) throws {
+    let configurator = GRPCServerPipelineConfigurator(configuration: configuration)
+    // We're always on an `EmbeddedEventLoop`, this is fine.
+    try self.pipeline.syncOperations.addHandler(configurator)
+  }
 }
