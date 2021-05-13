@@ -19,7 +19,7 @@ let package = Package(
     .target(
       name: "EchoModel",
       dependencies: [
-        .product(name: "GRPC", package: "grpc-swift")
+        .product(name: "GRPC", package: "grpc-swift"),
       ]
     ),
     .target(
@@ -28,6 +28,6 @@ let package = Package(
         .product(name: "GRPC", package: "grpc-swift"),
         .target(name: "EchoModel"),
       ]
-    )
+    ),
   ]
 )
