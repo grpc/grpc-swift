@@ -20,7 +20,7 @@ import NIOHTTP2
 
 struct HTTP2ToRawGRPCStateMachine {
   /// The current state.
-  private var state: State
+  private var state: State = .requestIdleResponseIdle
 
   /// Temporarily sets `self.state` to `._modifying` before calling the provided block and setting
   /// `self.state` to the `State` modified by the block.
@@ -38,26 +38,12 @@ struct HTTP2ToRawGRPCStateMachine {
     }
     return body(&state)
   }
-
-  internal init(
-    services: [Substring: CallHandlerProvider],
-    encoding: ServerMessageEncoding,
-    normalizeHeaders: Bool = true
-  ) {
-    let state = RequestIdleResponseIdleState(
-      services: services,
-      encoding: encoding,
-      normalizeHeaders: normalizeHeaders
-    )
-
-    self.state = .requestIdleResponseIdle(state)
-  }
 }
 
 extension HTTP2ToRawGRPCStateMachine {
   enum State {
     // Both peers are idle. Nothing has happened to the stream.
-    case requestIdleResponseIdle(RequestIdleResponseIdleState)
+    case requestIdleResponseIdle
 
     // Received valid headers. Nothing has been sent in response.
     case requestOpenResponseIdle(RequestOpenResponseIdleState)
@@ -76,17 +62,6 @@ extension HTTP2ToRawGRPCStateMachine {
 
     // Not a real state. See 'withStateAvoidingCoWs'.
     case _modifying
-  }
-
-  struct RequestIdleResponseIdleState {
-    /// The service providers, keyed by service name.
-    var services: [Substring: CallHandlerProvider]
-
-    /// The encoding configuration for this server.
-    var encoding: ServerMessageEncoding
-
-    /// Whether to normalize user-provided metadata.
-    var normalizeHeaders: Bool
   }
 
   struct RequestOpenResponseIdleState {
@@ -270,8 +245,8 @@ extension HTTP2ToRawGRPCStateMachine {
 // MARK: Receive Headers
 
 // This is the only state in which we can receive headers.
-extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
-  func receive(
+extension HTTP2ToRawGRPCStateMachine.State {
+  private func _receive(
     headers: HPACKHeaders,
     eventLoop: EventLoop,
     errorDelegate: ServerErrorDelegate?,
@@ -279,7 +254,10 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
     logger: Logger,
     allocator: ByteBufferAllocator,
     responseWriter: GRPCServerResponseWriter,
-    closeFuture: EventLoopFuture<Void>
+    closeFuture: EventLoopFuture<Void>,
+    services: [Substring: CallHandlerProvider],
+    encoding: ServerMessageEncoding,
+    normalizeHeaders: Bool
   ) -> HTTP2ToRawGRPCStateMachine.StateAndReceiveHeadersAction {
     // Extract and validate the content type. If it's nil we need to close.
     guard let contentType = self.extractContentType(from: headers) else {
@@ -291,7 +269,7 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
     let reader: LengthPrefixedMessageReader
     let acceptableRequestEncoding: String?
 
-    switch self.extractRequestEncoding(from: headers) {
+    switch self.extractRequestEncoding(from: headers, encoding: encoding) {
     case let .valid(messageReader, acceptEncodingHeader):
       reader = messageReader
       acceptableRequestEncoding = acceptEncodingHeader
@@ -305,7 +283,7 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
     }
 
     // Figure out which encoding we should use for responses.
-    let (writer, responseEncoding) = self.extractResponseEncoding(from: headers)
+    let (writer, responseEncoding) = self.extractResponseEncoding(from: headers, encoding: encoding)
 
     // Parse the path, and create a call handler.
     guard let path = headers.first(name: ":path") else {
@@ -313,7 +291,7 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
     }
 
     guard let callPath = CallPath(requestURI: path),
-      let service = self.services[Substring(callPath.service)] else {
+      let service = services[Substring(callPath.service)] else {
       return self.methodNotImplemented(path, contentType: contentType)
     }
 
@@ -322,7 +300,7 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
     let context = CallHandlerContext(
       errorDelegate: errorDelegate,
       logger: logger,
-      encoding: self.encoding,
+      encoding: encoding,
       eventLoop: eventLoop,
       path: path,
       remoteAddress: remoteAddress,
@@ -341,7 +319,7 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
         contentType: contentType,
         acceptEncoding: acceptableRequestEncoding,
         responseEncoding: responseEncoding,
-        normalizeHeaders: self.normalizeHeaders,
+        normalizeHeaders: normalizeHeaders,
         configurationState: .configuring(headers)
       )
 
@@ -379,7 +357,7 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
       contentType: contentType,
       acceptableRequestEncoding: nil,
       userProvidedHeaders: nil,
-      normalizeUserProvidedHeaders: self.normalizeHeaders
+      normalizeUserProvidedHeaders: false
     )
 
     return .init(
@@ -400,7 +378,7 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
       contentType: contentType,
       acceptableRequestEncoding: acceptableRequestEncoding,
       userProvidedHeaders: nil,
-      normalizeUserProvidedHeaders: self.normalizeHeaders
+      normalizeUserProvidedHeaders: false
     )
 
     return .init(
@@ -461,7 +439,10 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
   /// - Returns: `RequestEncodingValidation`, either a message reader suitable for decoding requests
   ///   and an accept encoding response header if the request encoding was valid, or a pair of
   ///     `GRPCStatus` and trailers to close the RPC with.
-  private func extractRequestEncoding(from headers: HPACKHeaders) -> RequestEncodingValidation {
+  private func extractRequestEncoding(
+    from headers: HPACKHeaders,
+    encoding: ServerMessageEncoding
+  ) -> RequestEncodingValidation {
     let encodings = headers[canonicalForm: GRPCHeaderName.encoding]
 
     // Fail if there's more than one encoding header.
@@ -476,7 +457,7 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
     let encodingHeader = encodings.first
     let result: RequestEncodingValidation
 
-    let validator = MessageEncodingHeaderValidator(encoding: self.encoding)
+    let validator = MessageEncodingHeaderValidator(encoding: encoding)
 
     switch validator.validate(requestEncoding: encodingHeader) {
     case let .supported(algorithm, decompressionLimit, acceptEncoding):
@@ -514,12 +495,13 @@ extension HTTP2ToRawGRPCStateMachine.RequestIdleResponseIdleState {
   ///   - configuration: The encoding configuration for the server.
   /// - Returns: A message writer and the response encoding header to send back to the client.
   private func extractResponseEncoding(
-    from headers: HPACKHeaders
+    from headers: HPACKHeaders,
+    encoding: ServerMessageEncoding
   ) -> (LengthPrefixedMessageWriter, String?) {
     let writer: LengthPrefixedMessageWriter
     let responseEncoding: String?
 
-    switch self.encoding {
+    switch encoding {
     case let .enabled(configuration):
       // Extract the encodings acceptable to the client for response messages.
       let acceptableResponseEncoding = headers[canonicalForm: GRPCHeaderName.acceptEncoding]
@@ -837,7 +819,10 @@ extension HTTP2ToRawGRPCStateMachine {
     logger: Logger,
     allocator: ByteBufferAllocator,
     responseWriter: GRPCServerResponseWriter,
-    closeFuture: EventLoopFuture<Void>
+    closeFuture: EventLoopFuture<Void>,
+    services: [Substring: CallHandlerProvider],
+    encoding: ServerMessageEncoding,
+    normalizeHeaders: Bool
   ) -> ReceiveHeadersAction {
     return self.withStateAvoidingCoWs { state in
       state.receive(
@@ -848,7 +833,10 @@ extension HTTP2ToRawGRPCStateMachine {
         logger: logger,
         allocator: allocator,
         responseWriter: responseWriter,
-        closeFuture: closeFuture
+        closeFuture: closeFuture,
+        services: services,
+        encoding: encoding,
+        normalizeHeaders: normalizeHeaders
       )
     }
   }
@@ -939,12 +927,16 @@ extension HTTP2ToRawGRPCStateMachine.State {
     logger: Logger,
     allocator: ByteBufferAllocator,
     responseWriter: GRPCServerResponseWriter,
-    closeFuture: EventLoopFuture<Void>
+    closeFuture: EventLoopFuture<Void>,
+    services: [Substring: CallHandlerProvider],
+    encoding: ServerMessageEncoding,
+    normalizeHeaders: Bool
   ) -> HTTP2ToRawGRPCStateMachine.ReceiveHeadersAction {
     switch self {
-    // This is the only state in which we can receive headers. Everything else is invalid.
-    case let .requestIdleResponseIdle(state):
-      let stateAndAction = state.receive(
+    // These are the only states in which we can receive headers. Everything else is invalid.
+    case .requestIdleResponseIdle,
+         .requestClosedResponseClosed:
+      let stateAndAction = self._receive(
         headers: headers,
         eventLoop: eventLoop,
         errorDelegate: errorDelegate,
@@ -952,7 +944,10 @@ extension HTTP2ToRawGRPCStateMachine.State {
         logger: logger,
         allocator: allocator,
         responseWriter: responseWriter,
-        closeFuture: closeFuture
+        closeFuture: closeFuture,
+        services: services,
+        encoding: encoding,
+        normalizeHeaders: normalizeHeaders
       )
       self = stateAndAction.state
       return stateAndAction.action
@@ -961,9 +956,8 @@ extension HTTP2ToRawGRPCStateMachine.State {
     case .requestOpenResponseIdle,
          .requestOpenResponseOpen,
          .requestClosedResponseIdle,
-         .requestClosedResponseOpen,
-         .requestClosedResponseClosed:
-      preconditionFailure("Invalid state")
+         .requestClosedResponseOpen:
+      preconditionFailure("Invalid state: \(self)")
 
     case ._modifying:
       preconditionFailure("Left in modifying state")

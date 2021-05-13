@@ -93,7 +93,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
     encoding: ServerMessageEncoding = .disabled,
     state: DesiredState = .requestOpenResponseIdle(pipelineConfigured: true)
   ) -> StateMachine {
-    var machine = StateMachine(services: services ?? self.services, encoding: encoding)
+    var machine = StateMachine()
 
     let receiveHeadersAction = machine.receive(
       headers: self.viableHeaders,
@@ -103,7 +103,10 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       logger: self.logger,
       allocator: ByteBufferAllocator(),
       responseWriter: NoOpResponseWriter(),
-      closeFuture: self.eventLoop.makeSucceededVoidFuture()
+      closeFuture: self.eventLoop.makeSucceededVoidFuture(),
+      services: services ?? self.services,
+      encoding: encoding,
+      normalizeHeaders: true
     )
 
     assertThat(receiveHeadersAction, .is(.configure()))
@@ -167,7 +170,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
   // MARK: Receive Headers Tests
 
   func testReceiveValidHeaders() {
-    var machine = StateMachine(services: self.services, encoding: .disabled)
+    var machine = StateMachine()
     let action = machine.receive(
       headers: self.viableHeaders,
       eventLoop: self.eventLoop,
@@ -176,13 +179,16 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       logger: self.logger,
       allocator: ByteBufferAllocator(),
       responseWriter: NoOpResponseWriter(),
-      closeFuture: self.eventLoop.makeSucceededVoidFuture()
+      closeFuture: self.eventLoop.makeSucceededVoidFuture(),
+      services: self.services,
+      encoding: .disabled,
+      normalizeHeaders: false
     )
     assertThat(action, .is(.configure()))
   }
 
   func testReceiveInvalidContentType() {
-    var machine = StateMachine(services: self.services, encoding: .disabled)
+    var machine = StateMachine()
     let action = machine.receive(
       headers: self.makeHeaders(contentType: "application/json"),
       eventLoop: self.eventLoop,
@@ -191,13 +197,16 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       logger: self.logger,
       allocator: ByteBufferAllocator(),
       responseWriter: NoOpResponseWriter(),
-      closeFuture: self.eventLoop.makeSucceededVoidFuture()
+      closeFuture: self.eventLoop.makeSucceededVoidFuture(),
+      services: self.services,
+      encoding: .disabled,
+      normalizeHeaders: false
     )
     assertThat(action, .is(.rejectRPC(.contains(":status", ["415"]))))
   }
 
   func testReceiveValidHeadersForUnknownService() {
-    var machine = StateMachine(services: self.services, encoding: .disabled)
+    var machine = StateMachine()
     let action = machine.receive(
       headers: self.makeHeaders(path: "/foo.Foo/Get"),
       eventLoop: self.eventLoop,
@@ -206,13 +215,16 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       logger: self.logger,
       allocator: ByteBufferAllocator(),
       responseWriter: NoOpResponseWriter(),
-      closeFuture: self.eventLoop.makeSucceededVoidFuture()
+      closeFuture: self.eventLoop.makeSucceededVoidFuture(),
+      services: self.services,
+      encoding: .disabled,
+      normalizeHeaders: false
     )
     assertThat(action, .is(.rejectRPC(.trailersOnly(code: .unimplemented))))
   }
 
   func testReceiveValidHeadersForUnknownMethod() {
-    var machine = StateMachine(services: self.services, encoding: .disabled)
+    var machine = StateMachine()
     let action = machine.receive(
       headers: self.makeHeaders(path: "/echo.Echo/Foo"),
       eventLoop: self.eventLoop,
@@ -221,13 +233,16 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       logger: self.logger,
       allocator: ByteBufferAllocator(),
       responseWriter: NoOpResponseWriter(),
-      closeFuture: self.eventLoop.makeSucceededVoidFuture()
+      closeFuture: self.eventLoop.makeSucceededVoidFuture(),
+      services: self.services,
+      encoding: .disabled,
+      normalizeHeaders: false
     )
     assertThat(action, .is(.rejectRPC(.trailersOnly(code: .unimplemented))))
   }
 
   func testReceiveValidHeadersForInvalidPath() {
-    var machine = StateMachine(services: self.services, encoding: .disabled)
+    var machine = StateMachine()
     let action = machine.receive(
       headers: self.makeHeaders(path: "nope"),
       eventLoop: self.eventLoop,
@@ -236,13 +251,16 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       logger: self.logger,
       allocator: ByteBufferAllocator(),
       responseWriter: NoOpResponseWriter(),
-      closeFuture: self.eventLoop.makeSucceededVoidFuture()
+      closeFuture: self.eventLoop.makeSucceededVoidFuture(),
+      services: self.services,
+      encoding: .disabled,
+      normalizeHeaders: false
     )
     assertThat(action, .is(.rejectRPC(.trailersOnly(code: .unimplemented))))
   }
 
   func testReceiveHeadersWithUnsupportedEncodingWhenCompressionIsDisabled() {
-    var machine = StateMachine(services: self.services, encoding: .disabled)
+    var machine = StateMachine()
     let action = machine.receive(
       headers: self.makeHeaders(encoding: .gzip),
       eventLoop: self.eventLoop,
@@ -251,13 +269,16 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       logger: self.logger,
       allocator: ByteBufferAllocator(),
       responseWriter: NoOpResponseWriter(),
-      closeFuture: self.eventLoop.makeSucceededVoidFuture()
+      closeFuture: self.eventLoop.makeSucceededVoidFuture(),
+      services: self.services,
+      encoding: .disabled,
+      normalizeHeaders: false
     )
     assertThat(action, .is(.rejectRPC(.trailersOnly(code: .unimplemented))))
   }
 
   func testReceiveHeadersWithMultipleEncodings() {
-    var machine = StateMachine(services: self.services, encoding: .disabled)
+    var machine = StateMachine()
     // We can't have multiple encodings.
     let action = machine.receive(
       headers: self.makeHeaders(contentType: "application/grpc", encoding: "gzip,identity"),
@@ -267,13 +288,16 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       logger: self.logger,
       allocator: ByteBufferAllocator(),
       responseWriter: NoOpResponseWriter(),
-      closeFuture: self.eventLoop.makeSucceededVoidFuture()
+      closeFuture: self.eventLoop.makeSucceededVoidFuture(),
+      services: self.services,
+      encoding: .disabled,
+      normalizeHeaders: false
     )
     assertThat(action, .is(.rejectRPC(.trailersOnly(code: .invalidArgument))))
   }
 
   func testReceiveHeadersWithUnsupportedEncodingWhenCompressionIsEnabled() {
-    var machine = StateMachine(services: self.services, encoding: .enabled(.deflate, .identity))
+    var machine = StateMachine()
 
     let action = machine.receive(
       headers: self.makeHeaders(contentType: "application/grpc", encoding: "foozip"),
@@ -283,7 +307,10 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       logger: self.logger,
       allocator: ByteBufferAllocator(),
       responseWriter: NoOpResponseWriter(),
-      closeFuture: self.eventLoop.makeSucceededVoidFuture()
+      closeFuture: self.eventLoop.makeSucceededVoidFuture(),
+      services: self.services,
+      encoding: .enabled(.deflate, .identity),
+      normalizeHeaders: false
     )
 
     assertThat(action, .is(.rejectRPC(.trailersOnly(code: .unimplemented))))
@@ -294,7 +321,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
   }
 
   func testReceiveHeadersWithSupportedButNotAdvertisedEncoding() {
-    var machine = StateMachine(services: self.services, encoding: .enabled(.deflate, .identity))
+    var machine = StateMachine()
 
     // We didn't advertise gzip, but we do support it.
     let action = machine.receive(
@@ -305,7 +332,10 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       logger: self.logger,
       allocator: ByteBufferAllocator(),
       responseWriter: NoOpResponseWriter(),
-      closeFuture: self.eventLoop.makeSucceededVoidFuture()
+      closeFuture: self.eventLoop.makeSucceededVoidFuture(),
+      services: self.services,
+      encoding: .enabled(.deflate, .identity),
+      normalizeHeaders: false
     )
 
     // This is expected: however, we also expect 'grpc-accept-encoding' to be in the response
@@ -319,7 +349,7 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
   }
 
   func testReceiveHeadersWithIdentityCompressionWhenCompressionIsDisabled() {
-    var machine = StateMachine(services: self.services, encoding: .disabled)
+    var machine = StateMachine()
 
     // Identity is always supported, even if compression is disabled.
     let action = machine.receive(
@@ -330,14 +360,17 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       logger: self.logger,
       allocator: ByteBufferAllocator(),
       responseWriter: NoOpResponseWriter(),
-      closeFuture: self.eventLoop.makeSucceededVoidFuture()
+      closeFuture: self.eventLoop.makeSucceededVoidFuture(),
+      services: self.services,
+      encoding: .disabled,
+      normalizeHeaders: false
     )
 
     assertThat(action, .is(.configure()))
   }
 
   func testReceiveHeadersNegotiatesResponseEncoding() {
-    var machine = StateMachine(services: self.services, encoding: .enabled(.gzip, .deflate))
+    var machine = StateMachine()
 
     let action = machine.receive(
       headers: self.makeHeaders(acceptEncoding: [.deflate]),
@@ -347,7 +380,10 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       logger: self.logger,
       allocator: ByteBufferAllocator(),
       responseWriter: NoOpResponseWriter(),
-      closeFuture: self.eventLoop.makeSucceededVoidFuture()
+      closeFuture: self.eventLoop.makeSucceededVoidFuture(),
+      services: self.services,
+      encoding: .enabled(.gzip, .deflate),
+      normalizeHeaders: false
     )
 
     // This is expected, but we need to check the value of 'grpc-encoding' in the response headers.
