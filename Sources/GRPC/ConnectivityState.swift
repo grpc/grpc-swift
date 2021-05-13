@@ -82,7 +82,7 @@ public class ConnectivityStateMonitor {
   /// - Parameter queue: The `DispatchQueue` on which the delegate will be called.
   init(delegate: ConnectivityStateDelegate?, queue: DispatchQueue?) {
     self._delegate = delegate
-    self.delegateCallbackQueue = queue ?? DispatchQueue(label: "io.grpc.connectivity")
+    self.delegateCallbackQueue = DispatchQueue(label: "io.grpc.connectivity", target: queue)
   }
 
   /// The current state of connectivity.
@@ -138,5 +138,19 @@ public class ConnectivityStateMonitor {
         delegate.connectionStartedQuiescing()
       }
     }
+  }
+}
+
+extension ConnectivityStateMonitor: ConnectionManagerConnectivityDelegate {
+  internal func connectionStateDidChange(
+    _ connectionManager: ConnectionManager,
+    from oldState: ConnectivityState,
+    to newState: ConnectivityState
+  ) {
+    self.updateState(to: newState, logger: connectionManager.logger)
+  }
+
+  internal func connectionIsQuiescing(_ connectionManager: ConnectionManager) {
+    self.beginQuiescing()
   }
 }
