@@ -101,7 +101,7 @@ struct Echo: ParsableCommand {
         try! client.channel.close().wait()
       }
 
-      for _ in 0..<self.iterations {
+      for _ in 0 ..< self.iterations {
         callRPC(self.rpc, using: client, message: self.message)
       }
     }
