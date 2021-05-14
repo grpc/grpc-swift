@@ -81,8 +81,10 @@ extension ConnectionPool {
       self.availability?.return()
     }
 
-    /// Update the maximum concurrent streams available on the connection, marking is as available
-    /// if it was not previously available.
+    /// Update the maximum concurrent streams available on the connection, marking it as available
+    /// if it was not already.
+    ///
+    /// Returns the previous value for max concurrent streams if the connection was ready.
     internal mutating func updateMaxConcurrentStreams(_ maxConcurrentStreams: Int) -> Int? {
       if self.availability != nil {
         let oldValue = self.availability!.maxAvailable

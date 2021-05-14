@@ -340,6 +340,7 @@ internal final class ConnectionPool {
   private func computeStreamDemandAndCapacity() -> (demand: Int, capacity: Int) {
     let demand = self.sync.reservedStreams + self.sync.waiters
 
+    // TODO: make this cheaper by storing and incrementally updating the number of idle connections
     let capacity = self.connections.values.reduce(0) { sum, state in
       if state.manager.sync.isIdle {
         // Idle connection, no capacity.
