@@ -38,7 +38,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
   internal var connectionKeepalive: ClientConnectionKeepalive
   internal var connectionIdleTimeout: TimeAmount
 
-  internal var tlsConfiguration: Optional<TLSConfiguration>
+  internal var sslContext: Result<NIOSSLContext, Error>?
   internal var tlsHostnameOverride: Optional<String>
   internal var tlsCustomVerificationCallback: Optional<NIOSSLCustomVerificationCallback>
 
@@ -51,7 +51,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
     connectionTarget: ConnectionTarget,
     connectionKeepalive: ClientConnectionKeepalive,
     connectionIdleTimeout: TimeAmount,
-    tlsConfiguration: TLSConfiguration?,
+    sslContext: Result<NIOSSLContext, Error>?,
     tlsHostnameOverride: String?,
     tlsCustomVerificationCallback: NIOSSLCustomVerificationCallback?,
     httpTargetWindowSize: Int,
@@ -62,7 +62,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
     self.connectionKeepalive = connectionKeepalive
     self.connectionIdleTimeout = connectionIdleTimeout
 
-    self.tlsConfiguration = tlsConfiguration
+    self.sslContext = sslContext
     self.tlsHostnameOverride = tlsHostnameOverride
     self.tlsCustomVerificationCallback = tlsCustomVerificationCallback
 
@@ -73,11 +73,20 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
   }
 
   internal init(configuration: ClientConnection.Configuration) {
+    // Making a `NIOSSLContext` is expensive and we should only do it (at most) once per TLS
+    // configuration. We do it now and surface any error during channel creation (we're limited by
+    // our API in when we can throw any error).
+    let sslContext: Result<NIOSSLContext, Error>? = configuration.tls.map { tls in
+      return Result {
+        try NIOSSLContext(configuration: tls.configuration)
+      }
+    }
+
     self.init(
       connectionTarget: configuration.target,
       connectionKeepalive: configuration.connectionKeepalive,
       connectionIdleTimeout: configuration.connectionIdleTimeout,
-      tlsConfiguration: configuration.tls?.configuration,
+      sslContext: sslContext,
       tlsHostnameOverride: configuration.tls?.hostnameOverride,
       tlsCustomVerificationCallback: configuration.tls?.customVerificationCallback,
       httpTargetWindowSize: configuration.httpTargetWindowSize,
@@ -92,7 +101,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
   }
 
   private var hasTLS: Bool {
-    return self.tlsConfiguration != nil
+    return self.sslContext != nil
   }
 
   private func requiresZeroLengthWorkaround(eventLoop: EventLoop) -> Bool {
@@ -118,7 +127,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
           try sync.configureGRPCClient(
             channel: channel,
             httpTargetWindowSize: self.httpTargetWindowSize,
-            tlsConfiguration: self.tlsConfiguration,
+            sslContext: self.sslContext,
             tlsServerHostname: hostname,
             connectionManager: connectionManager,
             connectionKeepalive: self.connectionKeepalive,

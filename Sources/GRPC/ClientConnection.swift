@@ -421,7 +421,7 @@ extension ChannelPipeline.SynchronousOperations {
   internal func configureGRPCClient(
     channel: Channel,
     httpTargetWindowSize: Int,
-    tlsConfiguration: TLSConfiguration?,
+    sslContext: Result<NIOSSLContext, Error>?,
     tlsServerHostname: String?,
     connectionManager: ConnectionManager,
     connectionKeepalive: ClientConnectionKeepalive,
@@ -439,17 +439,17 @@ extension ChannelPipeline.SynchronousOperations {
     }
     #endif
 
-    if let tlsConfiguration = tlsConfiguration {
+    if let sslContext = try sslContext?.get() {
       let sslClientHandler: NIOSSLClientHandler
       if let customVerificationCallback = customVerificationCallback {
         sslClientHandler = try NIOSSLClientHandler(
-          context: try NIOSSLContext(configuration: tlsConfiguration),
+          context: sslContext,
           serverHostname: tlsServerHostname,
           customVerificationCallback: customVerificationCallback
         )
       } else {
         sslClientHandler = try NIOSSLClientHandler(
-          context: try NIOSSLContext(configuration: tlsConfiguration),
+          context: sslContext,
           serverHostname: tlsServerHostname
         )
       }
