@@ -59,6 +59,7 @@ final class ConnectionPoolTests: GRPCTestCase {
       eventLoop: self.eventLoop,
       maxWaiters: waiters,
       reservationLoadThreshold: reservationLoadThreshold,
+      assumedMaxConcurrentStreams: 100,
       channelProvider: channelProvider,
       streamLender: HookedStreamLender(
         onReturnStreams: onReservationReturned,
@@ -550,21 +551,12 @@ final class ConnectionPoolTests: GRPCTestCase {
     // demand=3, available=20, load=0.15; still one idle connection.
     XCTAssertEqual(pool.sync.idleConnections, 1)
 
-    let w4 = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
-      $0.eventLoop.makeSucceededVoidFuture()
-    }
-
-    // demand=4, available=20, load=0.2; no idle connections.
-    XCTAssertEqual(pool.sync.idleConnections, 0)
-
     // Connection the next channel
     self.eventLoop.run()
     controller.connectChannel(atIndex: 1)
     controller.sendSettingsToChannel(atIndex: 1, maxConcurrentStreams: maxConcurrentStreams)
 
     XCTAssertNoThrow(try w3.wait())
-    controller.openStreamInChannel(atIndex: 1)
-    XCTAssertNoThrow(try w4.wait())
     controller.openStreamInChannel(atIndex: 1)
   }
 
@@ -797,7 +789,7 @@ internal struct HookedStreamLender: StreamLender {
     self.onReturnStreams(count)
   }
 
-  internal func updateStreamCapacity(to max: Int, for pool: ConnectionPool) {
+  internal func increaseStreamCapacity(by max: Int, for pool: ConnectionPool) {
     self.onUpdateMaxAvailableStreams(max)
   }
 }

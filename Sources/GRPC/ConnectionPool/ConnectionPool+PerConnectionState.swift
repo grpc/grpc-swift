@@ -62,6 +62,12 @@ extension ConnectionPool {
       return self.availability?.available ?? 0
     }
 
+    /// The maximum number of concurrent streams which may be available for the connection, if it
+    /// is ready.
+    internal var maxAvailableStreams: Int? {
+      return self.availability?.maxAvailable
+    }
+
     /// Reserve a stream and return the stream multiplexer. Returns `nil` if it is not possible
     /// to reserve a stream.
     ///
@@ -75,16 +81,18 @@ extension ConnectionPool {
       self.availability?.return()
     }
 
-    internal mutating func updateMaxConcurrentStreams(_ maxConcurrentStreams: Int) {
-      self.availability?.maxAvailable = maxConcurrentStreams
-    }
-
-    /// Mark the connection as available for reservation.
-    internal mutating func available(maxConcurrentStreams: Int) {
-      assert(self.availability == nil)
-
-      self.availability = self.manager.sync.multiplexer.map {
-        StreamAvailability(multiplexer: $0, maxAvailable: maxConcurrentStreams)
+    /// Update the maximum concurrent streams available on the connection, marking is as available
+    /// if it was not previously available.
+    internal mutating func updateMaxConcurrentStreams(_ maxConcurrentStreams: Int) -> Int? {
+      if self.availability != nil {
+        let oldValue = self.availability!.maxAvailable
+        self.availability!.maxAvailable = maxConcurrentStreams
+        return oldValue
+      } else {
+        self.availability = self.manager.sync.multiplexer.map {
+          StreamAvailability(multiplexer: $0, maxAvailable: maxConcurrentStreams)
+        }
+        return nil
       }
     }
 

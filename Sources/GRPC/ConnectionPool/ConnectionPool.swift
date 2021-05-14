@@ -50,9 +50,9 @@ internal final class ConnectionPool {
   /// support).
   private let reservationLoadThreshold: Double
 
-  /// The maximum number of concurrent streams a connection can support. For simplicity, this
-  /// is _assumed_ to be the same for all connections in the pool.
-  private var maxConcurrentStreams: Int = 100
+  /// The assumed value for the maximum number of concurrent streams a connection can support. We
+  /// assume a connection will support this many streams until we know better.
+  private let assumedMaxConcurrentStreams: Int
 
   /// A queue of waiters which may or may not get a stream in the future.
   private var waiters: CircularBuffer<Waiter>
@@ -100,6 +100,7 @@ internal final class ConnectionPool {
     eventLoop: EventLoop,
     maxWaiters: Int,
     reservationLoadThreshold: Double,
+    assumedMaxConcurrentStreams: Int,
     channelProvider: ConnectionManagerChannelProvider,
     streamLender: StreamLender,
     logger: GRPCLogger,
@@ -110,6 +111,7 @@ internal final class ConnectionPool {
       "reservationLoadThreshold must be within the range 0.0 ... 1.0"
     )
     self.reservationLoadThreshold = reservationLoadThreshold
+    self.assumedMaxConcurrentStreams = assumedMaxConcurrentStreams
 
     self.connections = [:]
     self.maxWaiters = maxWaiters
@@ -336,18 +338,22 @@ internal final class ConnectionPool {
   ///
   /// - Returns: A tuple of the demand and capacity for streams.
   private func computeStreamDemandAndCapacity() -> (demand: Int, capacity: Int) {
-    // TODO: make this cheaper by storing and incrementally updating the number of idle connections
-    let nonIdleConnections = self.connections.values.reduce(0) { sum, state in
+    let demand = self.sync.reservedStreams + self.sync.waiters
+
+    let capacity = self.connections.values.reduce(0) { sum, state in
       if state.manager.sync.isIdle {
+        // Idle connection, no capacity.
         return sum
+      } else if let knownMaxAvailableStreams = state.maxAvailableStreams {
+        // A known value of max concurrent streams, i.e. the connection is active.
+        return sum + knownMaxAvailableStreams
       } else {
-        return sum &+ 1
+        // Not idle and no known value, the connection must be connecting so use our assumed value.
+        return sum + self.assumedMaxConcurrentStreams
       }
     }
 
-    let demand = self.sync.reservedStreams + self.sync.waiters
-
-    return (demand, nonIdleConnections * self.maxConcurrentStreams)
+    return (demand, capacity)
   }
 
   /// Returns whether the pool should start connecting an idle connection (if one exists).
@@ -470,10 +476,6 @@ extension ConnectionPool: ConnectionManagerConnectivityDelegate {
     to newState: ConnectivityState
   ) {
     switch (oldState, newState) {
-    case (.connecting, .ready):
-      // This is the only valid transition to ready.
-      self.connectionAvailable(manager.id)
-
     case (.ready, .transientFailure),
          (.ready, .idle),
          (.ready, .shutdown):
@@ -481,7 +483,7 @@ extension ConnectionPool: ConnectionManagerConnectivityDelegate {
       self.connectionUnavailable(manager.id)
 
     default:
-      // We're only interested in becoming 'ready' and no longer being 'ready'.
+      // We're only interested in connection drops.
       ()
     }
   }
@@ -505,20 +507,6 @@ extension ConnectionPool: ConnectionManagerConnectivityDelegate {
     // Note: we don't need to adjust the number of available streams as the number of connections
     // hasn't changed.
     self.streamLender.returnStreams(removed.reservedStreams, to: self)
-  }
-
-  /// A connection is now in the ready state, it can provide streams to waiters.
-  private func connectionAvailable(_ id: ConnectionManagerID) {
-    self.eventLoop.assertInEventLoop()
-    self.connections[id]?.available(maxConcurrentStreams: self.maxConcurrentStreams)
-
-    // A connection becoming ready is usually followed by an update to max concurrent streams.
-    // Instead of servicing waiters right now we'll do this in a jiffy, i.e. once we receive the
-    // update to max concurrent streams. This allows us to avoid succeeding too many waiters if max
-    // concurrent streams is lower than we previously assumed.
-    self.eventLoop.execute {
-      self.tryServiceWaiters()
-    }
   }
 
   /// A connection has become unavailable.
@@ -549,14 +537,25 @@ extension ConnectionPool: ConnectionManagerHTTP2Delegate {
     maxConcurrentStreams: Int
   ) {
     self.eventLoop.assertInEventLoop()
-    self.connections[manager.id]?.updateMaxConcurrentStreams(maxConcurrentStreams)
 
-    if maxConcurrentStreams != self.maxConcurrentStreams {
-      self.maxConcurrentStreams = maxConcurrentStreams
-      let maxAvailable = maxConcurrentStreams * self.connections.count
-      self.streamLender.updateStreamCapacity(to: maxAvailable, for: self)
-      self.tryServiceWaiters()
+    let previous = self.connections[manager.id]?.updateMaxConcurrentStreams(maxConcurrentStreams)
+    let delta: Int
+
+    if let previousValue = previous {
+      // There was a previous value of max concurrent streams, i.e. a change in value for an
+      // existing connection.
+      delta = maxConcurrentStreams - previousValue
+    } else {
+      // There was no previous value so this must be a new connection. We'll compare against our
+      // assumed default.
+      delta = maxConcurrentStreams - self.assumedMaxConcurrentStreams
     }
+
+    if delta != 0 {
+      self.streamLender.increaseStreamCapacity(by: delta, for: self)
+    }
+
+    self.tryServiceWaiters()
   }
 }
 

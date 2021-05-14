@@ -18,7 +18,6 @@ internal protocol StreamLender {
   /// `count` streams are being returned to the given `pool`.
   func returnStreams(_ count: Int, to pool: ConnectionPool)
 
-  /// Update the total number of streams which may be available at given time for `pool`
-  /// to `maximum`.
-  func updateStreamCapacity(to maximum: Int, for pool: ConnectionPool)
+  /// Update the total number of streams which may be available at given time for `pool` by `delta`.
+  func increaseStreamCapacity(by delta: Int, for pool: ConnectionPool)
 }
