@@ -295,7 +295,7 @@ internal final class ConnectionPool {
       return
     }
 
-    var waiter = Waiter(deadline: deadline, promise: promise, channelInitializer: initializer)
+    let waiter = Waiter(deadline: deadline, promise: promise, channelInitializer: initializer)
 
     // Fail the waiter and punt it from the queue when it times out. It's okay that we schedule the
     // timeout before appending it to the waiters, it wont run until the next event loop tick at the
@@ -451,7 +451,7 @@ internal final class ConnectionPool {
       self.connections.removeAll()
 
       // Fail the outstanding waiters.
-      while var waiter = self.waiters.popFirst() {
+      while let waiter = self.waiters.popFirst() {
         waiter.fail(ConnectionPoolError.shutdown)
       }
 
@@ -555,6 +555,7 @@ extension ConnectionPool: ConnectionManagerHTTP2Delegate {
       self.streamLender.increaseStreamCapacity(by: delta, for: self)
     }
 
+    // We always check, even if `delta` isn't greater than zero as this might be a new connection.
     self.tryServiceWaiters()
   }
 }
@@ -581,7 +582,7 @@ extension ConnectionPool {
         if let multiplexer = self.reserveStreamFromMostAvailableConnection() {
           // The waiter's deadline is in the future, and we have a suitable connection. Remove and
           // succeed the waiter.
-          var waiter = self.waiters.removeFirst()
+          let waiter = self.waiters.removeFirst()
           serviced &+= 1
           waiter.succeed(with: multiplexer)
         } else {

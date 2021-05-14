@@ -17,7 +17,7 @@ import NIO
 import NIOHTTP2
 
 extension ConnectionPool {
-  internal struct Waiter {
+  internal final class Waiter {
     /// A promise to complete with the initialized channel.
     private let promise: EventLoopPromise<Channel>
 
@@ -57,7 +57,7 @@ extension ConnectionPool {
     /// - Parameters:
     ///   - eventLoop: The `EventLoop` to run the timeout task on.
     ///   - body: The closure to execute when the timeout is fired.
-    internal mutating func scheduleTimeout(
+    internal func scheduleTimeout(
       on eventLoop: EventLoop,
       execute body: @escaping () -> Void
     ) {
@@ -72,14 +72,14 @@ extension ConnectionPool {
     }
 
     /// Succeed the waiter with the given multiplexer.
-    internal mutating func succeed(with multiplexer: HTTP2StreamMultiplexer) {
+    internal func succeed(with multiplexer: HTTP2StreamMultiplexer) {
       self.scheduledTimeout?.cancel()
       self.scheduledTimeout = nil
       multiplexer.createStreamChannel(promise: self.promise, self.channelInitializer)
     }
 
     /// Fail the waiter with `error`.
-    internal mutating func fail(_ error: Error) {
+    internal func fail(_ error: Error) {
       self.scheduledTimeout?.cancel()
       self.scheduledTimeout = nil
       self.promise.fail(error)
@@ -90,7 +90,7 @@ extension ConnectionPool {
       private let id: ObjectIdentifier
 
       fileprivate init(_ waiter: Waiter) {
-        self.id = ObjectIdentifier(waiter.channelFuture)
+        self.id = ObjectIdentifier(waiter)
       }
 
       internal var description: String {
