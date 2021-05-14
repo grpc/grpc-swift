@@ -79,6 +79,9 @@ struct Echo: ParsableCommand {
     @Option(help: "RPC to call ('get', 'collect', 'expand', 'update').")
     var rpc: RPC = .get
 
+    @Option(help: "How many RPCs to do.")
+    var iterations: Int = 1
+
     @Argument(help: "Message to echo")
     var message: String
 
@@ -98,7 +101,9 @@ struct Echo: ParsableCommand {
         try! client.channel.close().wait()
       }
 
-      callRPC(self.rpc, using: client, message: self.message)
+      for _ in 0 ..< self.iterations {
+        callRPC(self.rpc, using: client, message: self.message)
+      }
     }
   }
 }
