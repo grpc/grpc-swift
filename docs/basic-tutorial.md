@@ -473,7 +473,7 @@ use the `insecure` builder and specify the server address and port we want to
 connect to:
 
 ```swift
-let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+let group = PlatformSupport.makeEventLoopGroup(loopCount: 1)
 defer {
   try? group.syncShutdownGracefully()
 }

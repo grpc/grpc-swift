@@ -201,7 +201,7 @@ struct RouteGuide: ParsableCommand {
     // Load the features.
     let features = try loadFeatures()
 
-    let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    let group = PlatformSupport.makeEventLoopGroup(loopCount: 1)
     defer {
       try? group.syncShutdownGracefully()
     }
