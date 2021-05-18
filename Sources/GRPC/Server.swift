@@ -88,6 +88,15 @@ public final class Server {
       _ = bootstrap.serverChannelOption(ChannelOptions.backlog, value: 256)
     }
 
+    // Making a `NIOSSLContext` is expensive, we should only do it once per TLS configuration so
+    // we'll do it now, before accepting connections. Unfortunately our API isn't throwing so we'll
+    // only surface any error when initializing a child channel.
+    let sslContext: Result<NIOSSLContext, Error>? = configuration.tls.map { tls in
+      return Result {
+        try NIOSSLContext(configuration: tls.configuration)
+      }
+    }
+
     return bootstrap
       // Enable `SO_REUSEADDR` to avoid "address already in use" error.
       .serverChannelOption(
@@ -103,8 +112,8 @@ public final class Server {
 
         do {
           let sync = channel.pipeline.syncOperations
-          if let tls = configuration.tls {
-            try sync.configureTLS(configuration: tls)
+          if let sslContext = try sslContext?.get() {
+            try sync.addHandler(NIOSSLServerHandler(context: sslContext))
           }
 
           // Configures the pipeline based on whether the connection uses TLS or not.
@@ -331,17 +340,6 @@ extension Server {
       self.logger = logger
       self.debugChannelInitializer = debugChannelInitializer
     }
-  }
-}
-
-extension ChannelPipeline.SynchronousOperations {
-  /// Configure an SSL handler on the channel.
-  ///
-  /// - Parameters:
-  ///   - configuration: The configuration to use when creating the handler.
-  fileprivate func configureTLS(configuration: Server.Configuration.TLS) throws {
-    let context = try NIOSSLContext(configuration: configuration.configuration)
-    try self.addHandler(NIOSSLServerHandler(context: context))
   }
 }
 
