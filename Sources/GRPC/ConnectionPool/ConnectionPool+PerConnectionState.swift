@@ -43,6 +43,7 @@ extension ConnectionPool {
       /// Decrement the reserved streams by one.
       mutating func `return`() {
         self.reserved -= 1
+        assert(self.reserved >= 0)
       }
     }
 
@@ -86,9 +87,10 @@ extension ConnectionPool {
     ///
     /// Returns the previous value for max concurrent streams if the connection was ready.
     internal mutating func updateMaxConcurrentStreams(_ maxConcurrentStreams: Int) -> Int? {
-      if self.availability != nil {
-        let oldValue = self.availability!.maxAvailable
-        self.availability!.maxAvailable = maxConcurrentStreams
+      if var availability = self.availability {
+        var oldValue = maxConcurrentStreams
+        swap(&availability.maxAvailable, &oldValue)
+        self.availability = availability
         return oldValue
       } else {
         self.availability = self.manager.sync.multiplexer.map {
