@@ -182,10 +182,9 @@ internal final class ConnectionManager {
   /// Update the external state, potentially notifying a delegate about the change.
   private func updateExternalState(to nextState: ConnectivityState) {
     if self.externalState != nextState {
+      let oldState = self.externalState
       self.externalState = nextState
-      self.connectivityDelegate?.connectionStateDidChange(
-        self, from: self.externalState, to: nextState
-      )
+      self.connectivityDelegate?.connectionStateDidChange(self, from: oldState, to: nextState)
     }
   }
 
@@ -214,6 +213,29 @@ internal final class ConnectionManager {
       case .shutdown:
         self.updateExternalState(to: .shutdown)
       }
+    }
+  }
+
+  /// Returns whether the state is 'idle'.
+  private var isIdle: Bool {
+    self.eventLoop.assertInEventLoop()
+    switch self.state {
+    case .idle:
+      return true
+    case .connecting, .transientFailure, .active, .ready, .shutdown:
+      return false
+    }
+  }
+
+  /// Returns the `HTTP2StreamMultiplexer` from the 'ready' state or `nil` if it is not available.
+  private var multiplexer: HTTP2StreamMultiplexer? {
+    self.eventLoop.assertInEventLoop()
+    switch self.state {
+    case let .ready(state):
+      return state.multiplexer
+
+    case .idle, .connecting, .transientFailure, .active, .shutdown:
+      return nil
     }
   }
 
@@ -413,77 +435,85 @@ internal final class ConnectionManager {
 
   /// Shutdown any connection which exists. This is a request from the application.
   internal func shutdown() -> EventLoopFuture<Void> {
-    return self.eventLoop.flatSubmit {
-      self.logger.debug("shutting down connection", metadata: [
-        "connectivity_state": "\(self.state.label)",
-      ])
-      let shutdown: ShutdownState
+    if self.eventLoop.inEventLoop {
+      return self._shutdown()
+    } else {
+      return self.eventLoop.flatSubmit {
+        return self._shutdown()
+      }
+    }
+  }
 
-      switch self.state {
-      // We don't have a channel and we don't want one, easy!
-      case .idle:
-        shutdown = .shutdownByUser(closeFuture: self.eventLoop.makeSucceededFuture(()))
-        self.state = .shutdown(shutdown)
+  private func _shutdown() -> EventLoopFuture<Void> {
+    self.logger.debug("shutting down connection", metadata: [
+      "connectivity_state": "\(self.state.label)",
+    ])
+    let shutdown: ShutdownState
 
-      // We're mid-connection: the application doesn't have any 'ready' channels so we'll succeed
-      // the shutdown future and deal with any fallout from the connecting channel without the
-      // application knowing.
-      case let .connecting(state):
-        shutdown = .shutdownByUser(closeFuture: self.eventLoop.makeSucceededFuture(()))
-        self.state = .shutdown(shutdown)
+    switch self.state {
+    // We don't have a channel and we don't want one, easy!
+    case .idle:
+      shutdown = .shutdownByUser(closeFuture: self.eventLoop.makeSucceededFuture(()))
+      self.state = .shutdown(shutdown)
 
-        // Fail the ready channel mux promise: we're shutting down so even if we manage to successfully
-        // connect the application shouldn't have access to the channel or multiplexer.
-        state.readyChannelMuxPromise.fail(GRPCStatus(code: .unavailable, message: nil))
-        state.candidateMuxPromise.fail(GRPCStatus(code: .unavailable, message: nil))
-        // In case we do successfully connect, close immediately.
-        state.candidate.whenSuccess {
-          $0.close(mode: .all, promise: nil)
-        }
+    // We're mid-connection: the application doesn't have any 'ready' channels so we'll succeed
+    // the shutdown future and deal with any fallout from the connecting channel without the
+    // application knowing.
+    case let .connecting(state):
+      shutdown = .shutdownByUser(closeFuture: self.eventLoop.makeSucceededFuture(()))
+      self.state = .shutdown(shutdown)
 
-      // We have an active channel but the application doesn't know about it yet. We'll do the same
-      // as for `.connecting`.
-      case let .active(state):
-        shutdown = .shutdownByUser(closeFuture: self.eventLoop.makeSucceededFuture(()))
-        self.state = .shutdown(shutdown)
-
-        // Fail the ready channel mux promise: we're shutting down so even if we manage to successfully
-        // connect the application shouldn't have access to the channel or multiplexer.
-        state.readyChannelMuxPromise.fail(GRPCStatus(code: .unavailable, message: nil))
-        // We have a channel, close it.
-        state.candidate.close(mode: .all, promise: nil)
-
-      // The channel is up and running: the application could be using it. We can close it and
-      // return the `closeFuture`.
-      case let .ready(state):
-        shutdown = .shutdownByUser(closeFuture: state.channel.closeFuture)
-        self.state = .shutdown(shutdown)
-
-        // We have a channel, close it.
-        state.channel.close(mode: .all, promise: nil)
-
-      // Like `.connecting` and `.active` the application does not have a `.ready` channel. We'll
-      // do the same but also cancel any scheduled connection attempts and deal with any fallout
-      // if we cancelled too late.
-      case let .transientFailure(state):
-        shutdown = .shutdownByUser(closeFuture: self.eventLoop.makeSucceededFuture(()))
-        self.state = .shutdown(shutdown)
-
-        // Stop the creation of a new channel, if we can. If we can't then the task to
-        // `startConnecting()` will see our new `shutdown` state and ignore the request to connect.
-        state.scheduled.cancel()
-
-        // Fail the ready channel mux promise: we're shutting down so even if we manage to successfully
-        // connect the application shouldn't should have access to the channel.
-        state.readyChannelMuxPromise.fail(shutdown.reason)
-
-      // We're already shutdown; nothing to do.
-      case let .shutdown(state):
-        shutdown = state
+      // Fail the ready channel mux promise: we're shutting down so even if we manage to successfully
+      // connect the application shouldn't have access to the channel or multiplexer.
+      state.readyChannelMuxPromise.fail(GRPCStatus(code: .unavailable, message: nil))
+      state.candidateMuxPromise.fail(GRPCStatus(code: .unavailable, message: nil))
+      // In case we do successfully connect, close immediately.
+      state.candidate.whenSuccess {
+        $0.close(mode: .all, promise: nil)
       }
 
-      return shutdown.closeFuture
+    // We have an active channel but the application doesn't know about it yet. We'll do the same
+    // as for `.connecting`.
+    case let .active(state):
+      shutdown = .shutdownByUser(closeFuture: self.eventLoop.makeSucceededFuture(()))
+      self.state = .shutdown(shutdown)
+
+      // Fail the ready channel mux promise: we're shutting down so even if we manage to successfully
+      // connect the application shouldn't have access to the channel or multiplexer.
+      state.readyChannelMuxPromise.fail(GRPCStatus(code: .unavailable, message: nil))
+      // We have a channel, close it.
+      state.candidate.close(mode: .all, promise: nil)
+
+    // The channel is up and running: the application could be using it. We can close it and
+    // return the `closeFuture`.
+    case let .ready(state):
+      shutdown = .shutdownByUser(closeFuture: state.channel.closeFuture)
+      self.state = .shutdown(shutdown)
+
+      // We have a channel, close it.
+      state.channel.close(mode: .all, promise: nil)
+
+    // Like `.connecting` and `.active` the application does not have a `.ready` channel. We'll
+    // do the same but also cancel any scheduled connection attempts and deal with any fallout
+    // if we cancelled too late.
+    case let .transientFailure(state):
+      shutdown = .shutdownByUser(closeFuture: self.eventLoop.makeSucceededFuture(()))
+      self.state = .shutdown(shutdown)
+
+      // Stop the creation of a new channel, if we can. If we can't then the task to
+      // `startConnecting()` will see our new `shutdown` state and ignore the request to connect.
+      state.scheduled.cancel()
+
+      // Fail the ready channel mux promise: we're shutting down so even if we manage to successfully
+      // connect the application shouldn't should have access to the channel.
+      state.readyChannelMuxPromise.fail(shutdown.reason)
+
+    // We're already shutdown; nothing to do.
+    case let .shutdown(state):
+      shutdown = state
     }
+
+    return shutdown.closeFuture
   }
 
   // MARK: - State changes from the channel handler.
@@ -789,6 +819,7 @@ extension ConnectionManager {
   // Start establishing a connection: we can only do this from the `idle` and `transientFailure`
   // states. Must be called on the `EventLoop`.
   private func startConnecting() {
+    self.eventLoop.assertInEventLoop()
     switch self.state {
     case .idle:
       let iterator = self.connectionBackoff?.makeIterator()
@@ -857,6 +888,62 @@ extension ConnectionManager {
     )
 
     self.state = .connecting(connecting)
+  }
+}
+
+extension ConnectionManager {
+  /// Returns a synchronous view of the connection manager; each operation requires the caller to be
+  /// executing on the same `EventLoop` as the connection manager.
+  internal var sync: Sync {
+    return Sync(self)
+  }
+
+  internal struct Sync {
+    private let manager: ConnectionManager
+
+    fileprivate init(_ manager: ConnectionManager) {
+      self.manager = manager
+    }
+
+    /// A delegate for connectivity changes.
+    internal var connectivityDelegate: ConnectionManagerConnectivityDelegate? {
+      get {
+        self.manager.eventLoop.assertInEventLoop()
+        return self.manager.connectivityDelegate
+      }
+      nonmutating set {
+        self.manager.eventLoop.assertInEventLoop()
+        self.manager.connectivityDelegate = newValue
+      }
+    }
+
+    /// A delegate for HTTP/2 connection changes.
+    internal var http2Delegate: ConnectionManagerHTTP2Delegate? {
+      get {
+        self.manager.eventLoop.assertInEventLoop()
+        return self.manager.http2Delegate
+      }
+      nonmutating set {
+        self.manager.eventLoop.assertInEventLoop()
+        self.manager.http2Delegate = newValue
+      }
+    }
+
+    /// Returns `true` if the connection is in the idle state.
+    internal var isIdle: Bool {
+      return self.manager.isIdle
+    }
+
+    /// Returns the `multiplexer` from a connection in the `ready` state or `nil` if it is any
+    /// other state.
+    internal var multiplexer: HTTP2StreamMultiplexer? {
+      return self.manager.multiplexer
+    }
+
+    // Start establishing a connection. Must only be called when `isIdle` is `true`.
+    internal func startConnecting() {
+      self.manager.startConnecting()
+    }
   }
 }
 

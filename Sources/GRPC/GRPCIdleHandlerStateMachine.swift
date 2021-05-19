@@ -495,9 +495,11 @@ struct GRPCIdleHandlerStateMachine {
 
     switch self.state {
     case var .operating(state):
+      let hasSeenSettingsPreviously = state.hasSeenSettings
+
       // If we hadn't previously seen settings then we need to notify the client connection manager
       // that we're now ready.
-      if !state.hasSeenSettings {
+      if !hasSeenSettingsPreviously {
         operations.notifyConnectionManager(about: .ready)
         state.hasSeenSettings = true
 
@@ -511,7 +513,13 @@ struct GRPCIdleHandlerStateMachine {
       if let maxStreams = settings.last(where: { $0.parameter == .maxConcurrentStreams })?.value {
         operations.maxConcurrentStreamsChanged(maxStreams)
         state.maxConcurrentStreams = maxStreams
+      } else if !hasSeenSettingsPreviously {
+        // We hadn't seen settings before now and max concurrent streams wasn't set we should assume
+        // the default and emit an update.
+        operations.maxConcurrentStreamsChanged(100)
+        state.maxConcurrentStreams = 100
       }
+
       self.state = .operating(state)
 
     case var .waitingToIdle(state):
