@@ -47,12 +47,10 @@ for file in "$here/tests/"test_*.swift; do
 done
 
 # Run all the tests.
-"$here/tests/run-allocation-counter-tests.sh" -t "$tmp" > "$tmp/output"
+"$here/tests/run-allocation-counter-tests.sh" -t "$tmp" | tee "$tmp/output"
 
 # Dump some output from each, check for allocations.
 for test in "${all_tests[@]}"; do
-  cat "$tmp/output"  # helps debugging
-
   while read -r test_case; do
     test_case=${test_case#test_*}
     total_allocations=$(grep "^test_$test_case.total_allocations:" "$tmp/output" | cut -d: -f2 | sed 's/ //g')
