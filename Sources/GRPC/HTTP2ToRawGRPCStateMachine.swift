@@ -51,6 +51,10 @@ extension HTTP2ToRawGRPCStateMachine {
     // Received valid headers and request(s). Response headers have been sent.
     case requestOpenResponseOpen(RequestOpenResponseOpenState)
 
+    // Received valid headers and request(s) but not end of the request stream. Response stream has
+    // been closed.
+    case requestOpenResponseClosed
+
     // The request stream is closed. Nothing has been sent in response.
     case requestClosedResponseIdle(RequestClosedResponseIdleState)
 
@@ -217,8 +221,6 @@ extension HTTP2ToRawGRPCStateMachine {
     case none
     /// Forward the buffer.
     case forwardMessage(ByteBuffer)
-    /// Forward the buffer and an 'end' of stream request part.
-    case forwardMessageAndEnd(ByteBuffer)
     /// Forward the buffer and try reading the next message.
     case forwardMessageThenReadNextMessage(ByteBuffer)
     /// Forward the 'end' of stream request part.
@@ -237,8 +239,26 @@ extension HTTP2ToRawGRPCStateMachine {
   struct StateAndReceiveDataAction {
     /// The next state.
     var state: State
-    /// Whether the caller should try reading the next message.
-    var tryReading: Bool
+    /// The action to take
+    var action: ReceiveDataAction
+  }
+
+  enum ReceiveDataAction: Hashable {
+    /// Try to read the next message from the state machine.
+    case tryReading
+    /// Invoke 'finish' on the RPC handler.
+    case finishHandler
+    /// Do nothing.
+    case nothing
+  }
+
+  enum SendEndAction {
+    /// Send trailers to the client.
+    case sendTrailers(HPACKHeaders)
+    /// Send trailers to the client and invoke 'finish' on the RPC handler.
+    case sendTrailersAndFinish(HPACKHeaders)
+    /// Fail any promise associated with this send.
+    case failure(Error)
   }
 }
 
@@ -538,34 +558,34 @@ extension HTTP2ToRawGRPCStateMachine.RequestOpenResponseIdleState {
     self.reader.append(buffer: &buffer)
 
     let state: HTTP2ToRawGRPCStateMachine.State
-    let tryReading: Bool
+    let action: HTTP2ToRawGRPCStateMachine.ReceiveDataAction
 
     switch (self.configurationState.isConfigured, endStream) {
     case (true, true):
       /// Configured and end stream: read from the buffer, end will be sent as a result of draining
       /// the reader in the next state.
       state = .requestClosedResponseIdle(.init(from: self))
-      tryReading = true
+      action = .tryReading
 
     case (true, false):
       /// Configured but not end stream, just read from the buffer.
       state = .requestOpenResponseIdle(self)
-      tryReading = true
+      action = .tryReading
 
     case (false, true):
       // Not configured yet, but end of stream. Request stream is now closed but there's no point
       // reading yet.
       state = .requestClosedResponseIdle(.init(from: self))
-      tryReading = false
+      action = .nothing
 
     case (false, false):
       // Not configured yet, not end stream. No point reading a message yet since we don't have
       // anywhere to deliver it.
       state = .requestOpenResponseIdle(self)
-      tryReading = false
+      action = .nothing
     }
 
-    return .init(state: state, tryReading: tryReading)
+    return .init(state: state, action: action)
   }
 }
 
@@ -586,7 +606,7 @@ extension HTTP2ToRawGRPCStateMachine.RequestOpenResponseOpenState {
       state = .requestOpenResponseOpen(self)
     }
 
-    return .init(state: state, tryReading: true)
+    return .init(state: state, action: .tryReading)
   }
 }
 
@@ -760,23 +780,21 @@ extension HTTP2ToRawGRPCStateMachine {
     requestStreamClosed: Bool
   ) -> HTTP2ToRawGRPCStateMachine.ReadNextMessageAction {
     do {
-      // Try to read a message.
-      guard let buffer = try reader.nextMessage() else {
-        // We didn't read a message: if we're closed then there's no chance of receiving more bytes,
-        // just forward the end of stream. If we're not closed then we could receive more bytes so
-        // there's no need to take any action at this point.
-        return requestStreamClosed ? .forwardEnd : .none
+      if let buffer = try reader.nextMessage() {
+        if reader.unprocessedBytes > 0 || requestStreamClosed {
+          // Either there are unprocessed bytes or the request stream is now closed: deliver the
+          // message and then try to read. The subsequent read may be another message or it may
+          // be end stream.
+          return .forwardMessageThenReadNextMessage(buffer)
+        } else {
+          // Nothing left to process and the stream isn't closed yet, just forward the message.
+          return .forwardMessage(buffer)
+        }
+      } else if requestStreamClosed {
+        return .forwardEnd
+      } else {
+        return .none
       }
-
-      guard reader.unprocessedBytes == 0 else {
-        // There are still unprocessed bytes, continue reading.
-        return .forwardMessageThenReadNextMessage(buffer)
-      }
-
-      // If we're closed and there's nothing left to read, then we're done, forward the message and
-      // end of stream. If we're closed we could still receive more bytes (or end stream) so just
-      // forward the message.
-      return requestStreamClosed ? .forwardMessageAndEnd(buffer) : .forwardMessage(buffer)
     } catch {
       return .errorCaught(error)
     }
@@ -846,7 +864,7 @@ extension HTTP2ToRawGRPCStateMachine {
   ///   - buffer: The received buffer.
   ///   - endStream: Whether end stream was set.
   /// - Returns: Returns whether the caller should try to read a message from the buffer.
-  mutating func receive(buffer: inout ByteBuffer, endStream: Bool) -> Bool {
+  mutating func receive(buffer: inout ByteBuffer, endStream: Bool) -> ReceiveDataAction {
     return self.withStateAvoidingCoWs { state in
       state.receive(buffer: &buffer, endStream: endStream)
     }
@@ -872,7 +890,7 @@ extension HTTP2ToRawGRPCStateMachine {
   mutating func send(
     status: GRPCStatus,
     trailers: HPACKHeaders
-  ) -> Result<HPACKHeaders, Error> {
+  ) -> HTTP2ToRawGRPCStateMachine.SendEndAction {
     return self.withStateAvoidingCoWs { state in
       state.send(status: status, trailers: trailers)
     }
@@ -910,6 +928,7 @@ extension HTTP2ToRawGRPCStateMachine.State {
       return action
 
     case .requestOpenResponseOpen,
+         .requestOpenResponseClosed,
          .requestClosedResponseOpen,
          .requestClosedResponseClosed:
       preconditionFailure("Invalid state: response stream opened before pipeline was configured")
@@ -955,6 +974,7 @@ extension HTTP2ToRawGRPCStateMachine.State {
     // We can't receive headers in any of these states.
     case .requestOpenResponseIdle,
          .requestOpenResponseOpen,
+         .requestOpenResponseClosed,
          .requestClosedResponseIdle,
          .requestClosedResponseOpen:
       preconditionFailure("Invalid state: \(self)")
@@ -965,7 +985,10 @@ extension HTTP2ToRawGRPCStateMachine.State {
   }
 
   /// Receive a buffer from the client.
-  mutating func receive(buffer: inout ByteBuffer, endStream: Bool) -> Bool {
+  mutating func receive(
+    buffer: inout ByteBuffer,
+    endStream: Bool
+  ) -> HTTP2ToRawGRPCStateMachine.ReceiveDataAction {
     switch self {
     case .requestIdleResponseIdle:
       /// This isn't allowed: we must receive the request headers first.
@@ -974,20 +997,31 @@ extension HTTP2ToRawGRPCStateMachine.State {
     case var .requestOpenResponseIdle(state):
       let stateAndAction = state.receive(buffer: &buffer, endStream: endStream)
       self = stateAndAction.state
-      return stateAndAction.tryReading
+      return stateAndAction.action
 
     case var .requestOpenResponseOpen(state):
       let stateAndAction = state.receive(buffer: &buffer, endStream: endStream)
       self = stateAndAction.state
-      return stateAndAction.tryReading
+      return stateAndAction.action
 
     case .requestClosedResponseIdle,
          .requestClosedResponseOpen:
       preconditionFailure("Invalid state: the request stream is already closed")
 
+    case .requestOpenResponseClosed:
+      if endStream {
+        // Server has finish responding and this is the end of the request stream; we're done for
+        // this RPC now, finish the handler.
+        self = .requestClosedResponseClosed
+        return .finishHandler
+      } else {
+        // Server has finished responding but this isn't the end of the request stream; ignore the
+        // input, we need to wait for end stream before tearing down the handler.
+        return .nothing
+      }
+
     case .requestClosedResponseClosed:
-      // This is okay: we could have closed before receiving end.
-      return false
+      return .nothing
 
     case ._modifying:
       preconditionFailure("Left in modifying state")
@@ -1019,7 +1053,8 @@ extension HTTP2ToRawGRPCStateMachine.State {
       self = .requestClosedResponseOpen(state)
       return action
 
-    case .requestClosedResponseClosed:
+    case .requestOpenResponseClosed,
+         .requestClosedResponseClosed:
       return .none
 
     case ._modifying:
@@ -1043,6 +1078,7 @@ extension HTTP2ToRawGRPCStateMachine.State {
       return .success(headers)
 
     case .requestOpenResponseOpen,
+         .requestOpenResponseClosed,
          .requestClosedResponseOpen,
          .requestClosedResponseClosed:
       return .failure(GRPCError.AlreadyComplete())
@@ -1080,7 +1116,8 @@ extension HTTP2ToRawGRPCStateMachine.State {
         compress: compress
       )
 
-    case .requestClosedResponseClosed:
+    case .requestOpenResponseClosed,
+         .requestClosedResponseClosed:
       return .failure(GRPCError.AlreadyComplete())
 
     case ._modifying:
@@ -1091,28 +1128,29 @@ extension HTTP2ToRawGRPCStateMachine.State {
   mutating func send(
     status: GRPCStatus,
     trailers: HPACKHeaders
-  ) -> Result<HPACKHeaders, Error> {
+  ) -> HTTP2ToRawGRPCStateMachine.SendEndAction {
     switch self {
     case .requestIdleResponseIdle:
       preconditionFailure("Invalid state: the request stream is still closed")
 
     case let .requestOpenResponseIdle(state):
-      self = .requestClosedResponseClosed
-      return .success(state.send(status: status, trailers: trailers))
+      self = .requestOpenResponseClosed
+      return .sendTrailers(state.send(status: status, trailers: trailers))
 
     case let .requestClosedResponseIdle(state):
       self = .requestClosedResponseClosed
-      return .success(state.send(status: status, trailers: trailers))
+      return .sendTrailersAndFinish(state.send(status: status, trailers: trailers))
 
     case let .requestOpenResponseOpen(state):
-      self = .requestClosedResponseClosed
-      return .success(state.send(status: status, trailers: trailers))
+      self = .requestOpenResponseClosed
+      return .sendTrailers(state.send(status: status, trailers: trailers))
 
     case let .requestClosedResponseOpen(state):
       self = .requestClosedResponseClosed
-      return .success(state.send(status: status, trailers: trailers))
+      return .sendTrailersAndFinish(state.send(status: status, trailers: trailers))
 
-    case .requestClosedResponseClosed:
+    case .requestOpenResponseClosed,
+         .requestClosedResponseClosed:
       return .failure(GRPCError.AlreadyComplete())
 
     case ._modifying:

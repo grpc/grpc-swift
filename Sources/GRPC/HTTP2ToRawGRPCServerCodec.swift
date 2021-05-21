@@ -54,6 +54,16 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelInboundHandler, GRPCServe
         return false
       }
     }
+
+    mutating func tearDown() -> GRPCServerHandlerProtocol? {
+      switch self {
+      case .notConfigured:
+        return nil
+      case let .configured(handler):
+        self = .notConfigured
+        return handler
+      }
+    }
   }
 
   init(
@@ -90,11 +100,10 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelInboundHandler, GRPCServe
   }
 
   internal func channelInactive(context: ChannelHandlerContext) {
-    switch self.configurationState {
-    case .notConfigured:
-      context.fireChannelInactive()
-    case let .configured(handler):
+    if let handler = self.configurationState.tearDown() {
       handler.finish()
+    } else {
+      context.fireChannelInactive()
     }
   }
 
@@ -134,9 +143,17 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelInboundHandler, GRPCServe
     case let .data(payload):
       switch payload.data {
       case var .byteBuffer(buffer):
-        let tryToRead = self.state.receive(buffer: &buffer, endStream: payload.endStream)
-        if tryToRead {
+        let action = self.state.receive(buffer: &buffer, endStream: payload.endStream)
+        switch action {
+        case .tryReading:
           self.tryReadingMessage()
+
+        case .finishHandler:
+          let handler = self.configurationState.tearDown()
+          handler?.finish()
+
+        case .nothing:
+          ()
         }
 
       case .fileRegion:
@@ -203,15 +220,6 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelInboundHandler, GRPCServe
         preconditionFailure()
       case let .configured(handler):
         handler.receiveMessage(buffer)
-      }
-
-    case let .forwardMessageAndEnd(buffer):
-      switch self.configurationState {
-      case .notConfigured:
-        preconditionFailure()
-      case let .configured(handler):
-        handler.receiveMessage(buffer)
-        handler.receiveEnd()
       }
 
     case let .forwardMessageThenReadNextMessage(buffer):
@@ -289,19 +297,27 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelInboundHandler, GRPCServe
     promise: EventLoopPromise<Void>?
   ) {
     switch self.state.send(status: status, trailers: trailers) {
-    case let .success(trailers):
-      // Drop the request handler.
-      self.configurationState = .notConfigured
+    case let .sendTrailers(trailers):
+      self.sendTrailers(trailers, promise: promise)
 
-      // Always end stream for status and trailers.
-      let payload = HTTP2Frame.FramePayload.headers(.init(headers: trailers, endStream: true))
-      self.context.write(self.wrapOutboundOut(payload), promise: promise)
-      // We'll always flush on end.
-      self.markFlushPoint()
+    case let .sendTrailersAndFinish(trailers):
+      self.sendTrailers(trailers, promise: promise)
+
+      // 'finish' the handler.
+      let handler = self.configurationState.tearDown()
+      handler?.finish()
 
     case let .failure(error):
       promise?.fail(error)
     }
+  }
+
+  private func sendTrailers(_ trailers: HPACKHeaders, promise: EventLoopPromise<Void>?) {
+    // Always end stream for status and trailers.
+    let payload = HTTP2Frame.FramePayload.headers(.init(headers: trailers, endStream: true))
+    self.context.write(self.wrapOutboundOut(payload), promise: promise)
+    // We'll always flush on end.
+    self.markFlushPoint()
   }
 
   /// Mark a flush as pending - to be emitted once the read completes - if we're currently reading,

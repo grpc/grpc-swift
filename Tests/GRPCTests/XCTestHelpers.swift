@@ -319,6 +319,51 @@ struct Matcher<Value> {
     }
   }
 
+  static func sendTrailers(
+    _ matcher: Matcher<HPACKHeaders>? = nil
+  ) -> Matcher<HTTP2ToRawGRPCStateMachine.SendEndAction> {
+    return .init { actual in
+      switch actual {
+      case let .sendTrailers(trailers):
+        return matcher?.evaluate(trailers) ?? .match
+      case .sendTrailersAndFinish:
+        return .noMatch(actual: "sendTrailersAndFinish", expected: "sendTrailers")
+      case let .failure(error):
+        return .noMatch(actual: "\(error)", expected: "sendTrailers")
+      }
+    }
+  }
+
+  static func sendTrailersAndFinish(
+    _ matcher: Matcher<HPACKHeaders>? = nil
+  ) -> Matcher<HTTP2ToRawGRPCStateMachine.SendEndAction> {
+    return .init { actual in
+      switch actual {
+      case let .sendTrailersAndFinish(trailers):
+        return matcher?.evaluate(trailers) ?? .match
+      case .sendTrailers:
+        return .noMatch(actual: "sendTrailers", expected: "sendTrailersAndFinish")
+      case let .failure(error):
+        return .noMatch(actual: "\(error)", expected: "sendTrailersAndFinish")
+      }
+    }
+  }
+
+  static func failure(
+    _ matcher: Matcher<Error>? = nil
+  ) -> Matcher<HTTP2ToRawGRPCStateMachine.SendEndAction> {
+    return .init { actual in
+      switch actual {
+      case .sendTrailers:
+        return .noMatch(actual: "sendTrailers", expected: "failure")
+      case .sendTrailersAndFinish:
+        return .noMatch(actual: "sendTrailersAndFinish", expected: "failure")
+      case let .failure(error):
+        return matcher?.evaluate(error) ?? .match
+      }
+    }
+  }
+
   // MARK: HTTP/1
 
   static func head(
@@ -542,17 +587,6 @@ struct Matcher<Value> {
         return .match
       default:
         return .noMatch(actual: "\(actual)", expected: "forwardEnd")
-      }
-    }
-  }
-
-  static func forwardMessageAndEnd() -> Matcher<HTTP2ToRawGRPCStateMachine.ReadNextMessageAction> {
-    return .init { actual in
-      switch actual {
-      case .forwardMessageAndEnd:
-        return .match
-      default:
-        return .noMatch(actual: "\(actual)", expected: "forwardMessageAndEnd")
       }
     }
   }
