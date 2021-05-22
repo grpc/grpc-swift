@@ -166,10 +166,10 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
 
   // MARK: Receive Headers Tests
 
-  func testReceiveValidHeaders() {
+  func doTestReceiveHeadersWithContentType(_ contentType: ContentType) {
     var machine = StateMachine(services: self.services, encoding: .disabled)
     let action = machine.receive(
-      headers: self.viableHeaders,
+      headers: self.makeHeaders(contentType: contentType.canonicalValue),
       eventLoop: self.eventLoop,
       errorDelegate: nil,
       remoteAddress: nil,
@@ -179,6 +179,18 @@ class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {
       closeFuture: self.eventLoop.makeSucceededVoidFuture()
     )
     assertThat(action, .is(.configure()))
+  }
+
+  func testReceiveValidHeaders() {
+    self.doTestReceiveHeadersWithContentType(.protobuf)
+  }
+
+  func testReceiveValidWebProtoContentTypeHeaders() {
+    self.doTestReceiveHeadersWithContentType(.webProtobuf)
+  }
+
+  func testReceiveValidFlatbuffersContentTypeHeaders() {
+    self.doTestReceiveHeadersWithContentType(.flatbuffers)
   }
 
   func testReceiveInvalidContentType() {

@@ -78,6 +78,22 @@ extension GRPCClientStateMachineTests {
     }
   }
 
+  func doTestCustomContentType(_ contentType: ContentType) {
+    var stateMachine = self
+      .makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
+    stateMachine.sendRequestHeaders(requestHead: .init(
+      method: "POST",
+      scheme: "http",
+      path: "/echo/Get",
+      host: "host",
+      deadline: .distantFuture,
+      customMetadata: ["content-type": contentType.canonicalValue],
+      encoding: .disabled
+    )).assertSuccess { headers in
+      XCTAssertEqual(headers.first(name: "content-type"), contentType.canonicalValue)
+    }
+  }
+
   func testSendRequestHeadersFromIdle() {
     var stateMachine = self
       .makeStateMachine(.clientIdleServerIdle(pendingWriteState: .one(), readArity: .one))
@@ -90,6 +106,18 @@ extension GRPCClientStateMachineTests {
       customMetadata: [:],
       encoding: .disabled
     )).assertSuccess()
+  }
+
+  func testSendingDefaultContentTypeRequestHeader() {
+    self.doTestCustomContentType(.protobuf)
+  }
+
+  func testSendingWebProtoContentTypeRequestHeader() {
+    self.doTestCustomContentType(.webProtobuf)
+  }
+
+  func testSendingFlatbufferContentTypeRequestHeader() {
+    self.doTestCustomContentType(.flatbuffers)
   }
 
   func testSendRequestHeadersFromClientActiveServerIdle() {
@@ -276,9 +304,14 @@ extension GRPCClientStateMachineTests {
     }
   }
 
-  func doTestReceiveResponseHeadersFromValidState(_ state: StateMachine.State) {
+  func doTestReceiveResponseHeadersFromValidState(
+    _ state: StateMachine.State,
+    contentType: ContentType? = .protobuf
+  ) {
     var stateMachine = self.makeStateMachine(state)
-    stateMachine.receiveResponseHeaders(self.makeResponseHeaders()).assertSuccess()
+    stateMachine.receiveResponseHeaders(
+      self.makeResponseHeaders(contentType: contentType?.canonicalValue)
+    ).assertSuccess()
   }
 
   func testReceiveResponseHeadersFromIdle() {
@@ -300,6 +333,20 @@ extension GRPCClientStateMachineTests {
   func testReceiveResponseHeadersFromClientClosedServerIdle() {
     self.doTestReceiveResponseHeadersFromValidState(
       .clientClosedServerIdle(pendingReadState: .init(arity: .one, messageEncoding: .disabled))
+    )
+  }
+
+  func testReceiveProtoResponseHeadersFromClientClosedServerIdle() {
+    self.doTestReceiveResponseHeadersFromValidState(
+      .clientClosedServerIdle(pendingReadState: .init(arity: .one, messageEncoding: .disabled)),
+      contentType: .protobuf
+    )
+  }
+
+  func testReceiveFlatbuffersResponseHeadersFromClientClosedServerIdle() {
+    self.doTestReceiveResponseHeadersFromValidState(
+      .clientClosedServerIdle(pendingReadState: .init(arity: .one, messageEncoding: .disabled)),
+      contentType: .flatbuffers
     )
   }
 
