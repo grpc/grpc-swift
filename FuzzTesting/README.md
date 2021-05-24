@@ -24,3 +24,8 @@ xcrun --toolchain swift \
     -Xswiftc -sanitize=fuzzer,address \
     -Xswiftc -parse-as-library
 ```
+
+## Failures
+
+The `FailCases` directory contains fuzzing test input which previously caused
+failures in gRPC.
