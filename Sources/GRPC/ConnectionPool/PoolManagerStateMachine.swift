@@ -142,7 +142,7 @@ internal struct PoolManagerStateMachine {
   }
 
   /// Update the capacity for the given pool.
-  mutating func increaseStreamCapacity(by delta: Int, for pool: ConnectionPool) {
+  mutating func changeStreamCapacity(by delta: Int, for pool: ConnectionPool) {
     self.modifyingState { state in
       switch state {
       case var .active(active):

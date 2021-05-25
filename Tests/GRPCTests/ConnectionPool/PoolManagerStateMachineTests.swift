@@ -139,7 +139,7 @@ class PoolManagerStateMachineTests: GRPCTestCase {
     }
 
     // Update the capacity for one pool, this makes it relatively more available.
-    state.increaseStreamCapacity(by: 900, for: pools[4])
+    state.changeStreamCapacity(by: 900, for: pools[4])
     // pools[4] has a bunch more streams now:
     //     index:   0   1   2   3    4
     // available:  98  98  96  99  992

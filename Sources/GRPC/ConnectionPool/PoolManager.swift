@@ -248,9 +248,9 @@ extension PoolManager: StreamLender {
     }
   }
 
-  internal func increaseStreamCapacity(by delta: Int, for pool: ConnectionPool) {
+  internal func changeStreamCapacity(by delta: Int, for pool: ConnectionPool) {
     self.lock.withLockVoid {
-      self.state.increaseStreamCapacity(by: delta, for: pool)
+      self.state.changeStreamCapacity(by: delta, for: pool)
     }
   }
 }

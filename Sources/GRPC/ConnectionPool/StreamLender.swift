@@ -19,5 +19,5 @@ internal protocol StreamLender {
   func returnStreams(_ count: Int, to pool: ConnectionPool)
 
   /// Update the total number of streams which may be available at given time for `pool` by `delta`.
-  func increaseStreamCapacity(by delta: Int, for pool: ConnectionPool)
+  func changeStreamCapacity(by delta: Int, for pool: ConnectionPool)
 }

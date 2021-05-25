@@ -789,7 +789,7 @@ internal struct HookedStreamLender: StreamLender {
     self.onReturnStreams(count)
   }
 
-  internal func increaseStreamCapacity(by max: Int, for pool: ConnectionPool) {
+  internal func changeStreamCapacity(by max: Int, for pool: ConnectionPool) {
     self.onUpdateMaxAvailableStreams(max)
   }
 }
