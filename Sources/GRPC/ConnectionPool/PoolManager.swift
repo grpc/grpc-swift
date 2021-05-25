@@ -21,10 +21,10 @@ internal final class PoolManager {
   /// Configuration used for each connection pool.
   internal struct PerPoolConfiguration {
     /// The maximum number of connections per pool.
-    var connections: Int
+    var maxConnections: Int
 
     /// The maximum number of waiters per pool.
-    var maximumWaiters: Int
+    var maxWaiters: Int
 
     /// A load threshold in the range `0.0 ... 1.0` beyond which another connection will be started
     /// (assuming there is a connection available to start).
@@ -35,7 +35,7 @@ internal final class PoolManager {
 
     /// The assumed maximum number of streams concurrently available in the pool.
     var assumedStreamCapacity: Int {
-      return self.connections * self.assumedMaxConcurrentStreams
+      return self.maxConnections * self.assumedMaxConcurrentStreams
     }
 
     /// A `Channel` provider.
@@ -128,8 +128,8 @@ internal final class PoolManager {
 
     logger.debug("initializing connection pool manager", metadata: [
       Metadata.poolCount: "\(pools.count)",
-      Metadata.connectionsPerPool: "\(configuration.connections)",
-      Metadata.waitersPerPool: "\(configuration.maximumWaiters)",
+      Metadata.connectionsPerPool: "\(configuration.maxConnections)",
+      Metadata.waitersPerPool: "\(configuration.maxWaiters)",
     ])
 
     // The assumed maximum number of streams concurrently available in each pool.
@@ -142,7 +142,7 @@ internal final class PoolManager {
     }
 
     for pool in pools {
-      pool.initialize(connections: configuration.connections)
+      pool.initialize(connections: configuration.maxConnections)
     }
   }
 
@@ -162,7 +162,7 @@ internal final class PoolManager {
       // the pool is shutdown the per-pool state and in turn each connection pool will be dropped.
       // and we'll break the cycle.
       return ConnectionPool(
-        eventLoop: eventLoop, maxWaiters: configuration.maximumWaiters,
+        eventLoop: eventLoop, maxWaiters: configuration.maxWaiters,
         reservationLoadThreshold: configuration.loadThreshold,
         assumedMaxConcurrentStreams: configuration.assumedMaxConcurrentStreams,
         channelProvider: configuration.channelProvider,
