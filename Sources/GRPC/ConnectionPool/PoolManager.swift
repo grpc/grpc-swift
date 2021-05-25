@@ -162,7 +162,8 @@ internal final class PoolManager {
       // the pool is shutdown the per-pool state and in turn each connection pool will be dropped.
       // and we'll break the cycle.
       return ConnectionPool(
-        eventLoop: eventLoop, maxWaiters: configuration.maxWaiters,
+        eventLoop: eventLoop,
+        maxWaiters: configuration.maxWaiters,
         reservationLoadThreshold: configuration.loadThreshold,
         assumedMaxConcurrentStreams: configuration.assumedMaxConcurrentStreams,
         channelProvider: configuration.channelProvider,
