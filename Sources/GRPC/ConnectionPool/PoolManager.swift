@@ -175,6 +175,19 @@ internal final class PoolManager {
 
   // MARK: Stream Creation
 
+  /// A future for a `Channel` from a managed connection pool. The `eventLoop` indicates the loop
+  /// that the `Channel` is running on and therefore which event loop the RPC will use for its
+  /// transport.
+  internal struct PooledStreamChannel {
+    /// The future `Channel`.
+    var futureResult: EventLoopFuture<Channel>
+
+    /// The `EventLoop` that the `Channel` is using.
+    var eventLoop: EventLoop {
+      return self.futureResult.eventLoop
+    }
+  }
+
   /// Make a stream and initialize it.
   ///
   /// - Parameters:
@@ -188,8 +201,8 @@ internal final class PoolManager {
   ///       is passed then the returned `EventLoopFuture` will be failed.
   ///   - logger: A logger.
   ///   - initializer: A closure to initialize the `Channel` with.
-  /// - Returns: An `EventLoopFuture<Channel>` on the same `EventLoop` as the connection pool
-  ///     providing the `Channel`. The future will be failed if the pool manager has been shutdown,
+  /// - Returns: A `PoolStreamChannel` indicating the future channel and `EventLoop` as that the
+  ///     `Channel` is using. The future will be failed if the pool manager has been shutdown,
   ///     the deadline has passed before a stream was created or if the selected connection pool
   ///     is unable to create a stream (if there is too much demand on that pool, for example).
   internal func makeStream(
@@ -197,17 +210,19 @@ internal final class PoolManager {
     deadline: NIODeadline,
     logger: GRPCLogger,
     streamInitializer initializer: @escaping (Channel) -> EventLoopFuture<Void>
-  ) -> EventLoopFuture<Channel> {
+  ) -> PooledStreamChannel {
     let reservation = self.lock.withLock {
       self.state.reserveStream(preferringPoolOnEventLoop: preferredEventLoop)
     }
 
     switch reservation {
     case let .success(pool):
-      return pool.makeStream(deadline: deadline, logger: logger, initializer: initializer)
+      let channel = pool.makeStream(deadline: deadline, logger: logger, initializer: initializer)
+      return PooledStreamChannel(futureResult: channel)
 
     case let .failure(error):
-      return (preferredEventLoop ?? self.group.next()).makeFailedFuture(error)
+      let eventLoop = preferredEventLoop ?? self.group.next()
+      return PooledStreamChannel(futureResult: eventLoop.makeFailedFuture(error))
     }
   }
 
