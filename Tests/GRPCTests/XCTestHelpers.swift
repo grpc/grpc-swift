@@ -52,6 +52,7 @@ func assertNoThrow<Value>(
 
 // MARK: - Matchers.
 
+@inline(never)
 func assertThat<Value>(
   _ expression: @autoclosure @escaping () throws -> Value,
   _ matcher: Matcher<Value>,
