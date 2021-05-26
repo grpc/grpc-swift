@@ -52,6 +52,9 @@ func assertNoThrow<Value>(
 
 // MARK: - Matchers.
 
+// The Swift 5.2 compiler will crash when trying to
+// inline this function if the tests are running in
+// release mode.
 @inline(never)
 func assertThat<Value>(
   _ expression: @autoclosure @escaping () throws -> Value,
