@@ -55,6 +55,14 @@ class PoolManagerStateMachineTests: GRPCTestCase {
     return pools
   }
 
+  private func makeConnectionPoolKeys(
+    for pools: [ConnectionPool]
+  ) -> [PoolManager.ConnectionPoolKey] {
+    return pools.enumerated().map { index, pool in
+      return .init(index: .init(index), eventLoopID: pool.eventLoop.id)
+    }
+  }
+
   func testReserveStreamOnPreferredEventLoop() {
     let group = EmbeddedEventLoopGroup(loops: 5)
     defer {
@@ -62,14 +70,15 @@ class PoolManagerStateMachineTests: GRPCTestCase {
     }
 
     let pools = self.makeInitializedPools(group: group, connectionsPerPool: 1)
+    let keys = self.makeConnectionPoolKeys(for: pools)
     var state = PoolManagerStateMachine(
-      .active(.init(pools: pools, assumedMaxAvailableStreamsPerPool: 100))
+      .active(.init(poolKeys: keys, assumedMaxAvailableStreamsPerPool: 100))
     )
 
-    for (loop, pool) in zip(group.loops, pools) {
-      let reservePreferredLoop = state.reserveStream(preferringPoolOnEventLoop: loop)
+    for (index, loop) in group.loops.enumerated() {
+      let reservePreferredLoop = state.reserveStream(preferringPoolWithEventLoopID: loop.id)
       reservePreferredLoop.assertSuccess {
-        XCTAssert($0 === pool)
+        XCTAssertEqual($0, PoolManager.ConnectionPoolIndex(index))
       }
     }
   }
@@ -81,14 +90,15 @@ class PoolManagerStateMachineTests: GRPCTestCase {
     }
 
     let pools = self.makeInitializedPools(group: group, connectionsPerPool: 1)
+    let keys = self.makeConnectionPoolKeys(for: pools)
     var state = PoolManagerStateMachine(
-      .active(.init(pools: pools, assumedMaxAvailableStreamsPerPool: 100))
+      .active(.init(poolKeys: keys, assumedMaxAvailableStreamsPerPool: 100))
     )
 
     let anotherLoop = EmbeddedEventLoop()
-    let reservePreferredLoop = state.reserveStream(preferringPoolOnEventLoop: anotherLoop)
+    let reservePreferredLoop = state.reserveStream(preferringPoolWithEventLoopID: anotherLoop.id)
     reservePreferredLoop.assertSuccess {
-      XCTAssert($0.eventLoop !== anotherLoop)
+      XCTAssert((0 ..< pools.count).contains($0.value))
     }
   }
 
@@ -99,52 +109,55 @@ class PoolManagerStateMachineTests: GRPCTestCase {
     }
 
     let pools = self.makeInitializedPools(group: group, connectionsPerPool: 1)
+    let keys = self.makeConnectionPoolKeys(for: pools)
     var state = PoolManagerStateMachine(.inactive)
-    state.activate(pools: pools, assumingPerPoolCapacity: 100)
+    state.activatePools(keyedBy: keys, assumingPerPoolCapacity: 100)
 
     // Reserve some streams.
     for (index, loop) in group.loops.enumerated() {
       for _ in 0 ..< 2 * index {
-        state.reserveStream(preferringPoolOnEventLoop: loop).assertSuccess()
+        state.reserveStream(preferringPoolWithEventLoopID: loop.id).assertSuccess()
       }
     }
 
     // We expect pools[0] to be reserved.
     //     index:   0   1   2   3   4
     // available: 100  98  96  94  92
-    state.reserveStream(preferringPoolOnEventLoop: nil).assertSuccess { pool in
-      XCTAssert(pool === pools[0])
+    state.reserveStream(preferringPoolWithEventLoopID: nil).assertSuccess { poolIndex in
+      XCTAssertEqual(poolIndex.value, 0)
     }
 
     // We expect pools[0] to be reserved again.
     //     index:   0   1   2   3   4
     // available:  99  98  96  94  92
-    state.reserveStream(preferringPoolOnEventLoop: nil).assertSuccess { pool in
-      XCTAssert(pool === pools[0])
+    state.reserveStream(preferringPoolWithEventLoopID: nil).assertSuccess { poolIndex in
+      XCTAssertEqual(poolIndex.value, 0)
     }
 
     // Return some streams to pools[3].
-    state.returnStreams(5, to: pools[3])
+    state.returnStreams(5, toPoolOnEventLoopWithID: pools[3].eventLoop.id)
 
     // As we returned streams to pools[3] we expect this to be the current state:
     //     index:   0   1   2   3   4
     // available:  98  98  96  99  92
-    state.reserveStream(preferringPoolOnEventLoop: nil).assertSuccess { pool in
-      XCTAssert(pool === pools[3])
+    state.reserveStream(preferringPoolWithEventLoopID: nil).assertSuccess { poolIndex in
+      XCTAssertEqual(poolIndex.value, 3)
     }
 
     // Give an event loop preference for a pool which has more streams reserved.
-    state.reserveStream(preferringPoolOnEventLoop: pools[2].eventLoop).assertSuccess { pool in
-      XCTAssert(pool === pools[2])
+    state.reserveStream(
+      preferringPoolWithEventLoopID: pools[2].eventLoop.id
+    ).assertSuccess { poolIndex in
+      XCTAssertEqual(poolIndex.value, 2)
     }
 
     // Update the capacity for one pool, this makes it relatively more available.
-    state.changeStreamCapacity(by: 900, for: pools[4])
+    state.changeStreamCapacity(by: 900, forPoolOnEventLoopWithID: pools[4].eventLoop.id)
     // pools[4] has a bunch more streams now:
     //     index:   0   1   2   3    4
     // available:  98  98  96  99  992
-    state.reserveStream(preferringPoolOnEventLoop: nil).assertSuccess { pool in
-      XCTAssert(pool === pools[4])
+    state.reserveStream(preferringPoolWithEventLoopID: nil).assertSuccess { poolIndex in
+      XCTAssertEqual(poolIndex.value, 4)
     }
   }
 
@@ -155,17 +168,18 @@ class PoolManagerStateMachineTests: GRPCTestCase {
     }
 
     let pools = self.makeInitializedPools(group: group, connectionsPerPool: 1)
+    let keys = self.makeConnectionPoolKeys(for: pools)
     var state = PoolManagerStateMachine(
-      .active(.init(pools: pools, assumedMaxAvailableStreamsPerPool: 100))
+      .active(.init(poolKeys: keys, assumedMaxAvailableStreamsPerPool: 100))
     )
 
-    let reservePreferredLoop = state.reserveStream(preferringPoolOnEventLoop: nil)
+    let reservePreferredLoop = state.reserveStream(preferringPoolWithEventLoopID: nil)
     reservePreferredLoop.assertSuccess()
   }
 
   func testReserveStreamWhenInactive() {
     var state = PoolManagerStateMachine(.inactive)
-    let action = state.reserveStream(preferringPoolOnEventLoop: nil)
+    let action = state.reserveStream(preferringPoolWithEventLoopID: nil)
     action.assertFailure { error in
       XCTAssertEqual(error, .notInitialized)
     }
@@ -174,7 +188,7 @@ class PoolManagerStateMachineTests: GRPCTestCase {
   func testReserveStreamWhenShuttingDown() {
     let future = EmbeddedEventLoop().makeSucceededFuture(())
     var state = PoolManagerStateMachine(.shuttingDown(future))
-    let action = state.reserveStream(preferringPoolOnEventLoop: nil)
+    let action = state.reserveStream(preferringPoolWithEventLoopID: nil)
     action.assertFailure { error in
       XCTAssertEqual(error, .shutdown)
     }
@@ -182,7 +196,7 @@ class PoolManagerStateMachineTests: GRPCTestCase {
 
   func testReserveStreamWhenShutdown() {
     var state = PoolManagerStateMachine(.shutdown)
-    let action = state.reserveStream(preferringPoolOnEventLoop: nil)
+    let action = state.reserveStream(preferringPoolWithEventLoopID: nil)
     action.assertFailure { error in
       XCTAssertEqual(error, .shutdown)
     }
@@ -207,17 +221,15 @@ class PoolManagerStateMachineTests: GRPCTestCase {
     }
 
     let pools = self.makeInitializedPools(group: group, connectionsPerPool: 1)
+    let keys = self.makeConnectionPoolKeys(for: pools)
     var state = PoolManagerStateMachine(
-      .active(.init(pools: pools, assumedMaxAvailableStreamsPerPool: 100))
+      .active(.init(poolKeys: keys, assumedMaxAvailableStreamsPerPool: 100))
     )
 
     let promise = group.loops[0].makePromise(of: Void.self)
     promise.succeed(())
 
-    let action = state.shutdown(promise: promise)
-    action.assertShutdownPools {
-      XCTAssertEqual($0.count, pools.count)
-    }
+    state.shutdown(promise: promise).assertShutdownPools()
   }
 
   func testShutdownWhenShuttingDown() {
@@ -281,11 +293,10 @@ extension Result {
 extension PoolManagerStateMachine.ShutdownAction {
   internal func assertShutdownPools(
     file: StaticString = #file,
-    line: UInt = #line,
-    verify: ([ConnectionPool]) -> Void = { _ in }
+    line: UInt = #line
   ) {
-    if case let .shutdownPools(pools) = self {
-      verify(pools)
+    if case .shutdownPools = self {
+      ()
     } else {
       XCTFail("Expected '.shutdownPools' but got '\(self)'", file: file, line: line)
     }

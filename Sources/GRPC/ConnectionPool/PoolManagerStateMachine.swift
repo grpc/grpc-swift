@@ -34,14 +34,16 @@ internal struct PoolManagerStateMachine {
   internal struct ActiveState {
     internal var pools: [EventLoopID: PerPoolState]
 
-    internal init(pools: [ConnectionPool], assumedMaxAvailableStreamsPerPool: Int) {
-      self.pools = Dictionary(uniqueKeysWithValues: pools.map { pool in
-        let key = EventLoopID(pool.eventLoop)
+    internal init(
+      poolKeys: [PoolManager.ConnectionPoolKey],
+      assumedMaxAvailableStreamsPerPool: Int
+    ) {
+      self.pools = Dictionary(uniqueKeysWithValues: poolKeys.map { key in
         let value = PerPoolState(
-          pool: pool,
+          poolIndex: key.index,
           assumedMaxAvailableStreams: assumedMaxAvailableStreamsPerPool
         )
-        return (key, value)
+        return (key.eventLoopID, value)
       })
     }
   }
@@ -72,18 +74,18 @@ internal struct PoolManagerStateMachine {
   /// Activate the pool manager by providing an array of connection pools.
   ///
   /// - Parameters:
-  ///   - pools: The pools to activate the pool manager with.
+  ///   - keys: The index and `EventLoopID` of the pools.
   ///   - capacity: The *assumed* maximum number of streams concurrently available to a pool (that
   ///       is, the product of the assumed value of max concurrent streams and the number of
   ///       connections per pool).
-  internal mutating func activate(
-    pools: [ConnectionPool],
+  internal mutating func activatePools(
+    keyedBy keys: [PoolManager.ConnectionPoolKey],
     assumingPerPoolCapacity capacity: Int
   ) {
     self.modifyingState { state in
       switch state {
       case .inactive:
-        state = .active(.init(pools: pools, assumedMaxAvailableStreamsPerPool: capacity))
+        state = .active(.init(poolKeys: keys, assumedMaxAvailableStreamsPerPool: capacity))
 
       case .active, .shuttingDown, .shutdown, ._modifying:
         preconditionFailure()
@@ -93,23 +95,25 @@ internal struct PoolManagerStateMachine {
 
   /// Select and reserve a stream from a connection pool.
   mutating func reserveStream(
-    preferringPoolOnEventLoop eventLoop: EventLoop?
-  ) -> Result<ConnectionPool, PoolManagerError> {
+    preferringPoolWithEventLoopID eventLoopID: EventLoopID?
+  ) -> Result<PoolManager.ConnectionPoolIndex, PoolManagerError> {
     return self.modifyingState { state in
       switch state {
       case var .active(active):
-        let connectionPool: ConnectionPool
+        let connectionPoolIndex: PoolManager.ConnectionPoolIndex
 
-        if let pool = eventLoop.flatMap({ active.reserveStreamFromPool(runningOnEventLoop: $0) }) {
-          connectionPool = pool
+        if let index = eventLoopID.flatMap({ eventLoopID in
+          active.reserveStreamFromPool(onEventLoopWithID: eventLoopID)
+        }) {
+          connectionPoolIndex = index
         } else {
           // Nothing on the preferred event loop; fallback to the pool with the most available
           // streams.
-          connectionPool = active.reserveStreamFromPoolWithMostAvailableStreams()
+          connectionPoolIndex = active.reserveStreamFromPoolWithMostAvailableStreams()
         }
 
         state = .active(active)
-        return .success(connectionPool)
+        return .success(connectionPoolIndex)
 
       case .inactive:
         return .failure(.notInitialized)
@@ -124,11 +128,11 @@ internal struct PoolManagerStateMachine {
   }
 
   /// Return streams to the given pool.
-  mutating func returnStreams(_ count: Int, to pool: ConnectionPool) {
+  mutating func returnStreams(_ count: Int, toPoolOnEventLoopWithID eventLoopID: EventLoopID) {
     self.modifyingState { state in
       switch state {
       case var .active(active):
-        active.returnStreams(count, to: pool)
+        active.returnStreams(count, toPoolOnEventLoopWithID: eventLoopID)
         state = .active(active)
 
       case .shuttingDown, .shutdown:
@@ -142,11 +146,14 @@ internal struct PoolManagerStateMachine {
   }
 
   /// Update the capacity for the given pool.
-  mutating func changeStreamCapacity(by delta: Int, for pool: ConnectionPool) {
+  mutating func changeStreamCapacity(
+    by delta: Int,
+    forPoolOnEventLoopWithID eventLoopID: EventLoopID
+  ) {
     self.modifyingState { state in
       switch state {
       case var .active(active):
-        active.increaseMaxAvailableStreams(by: delta, for: pool)
+        active.increaseMaxAvailableStreams(by: delta, forPoolOnEventLoopWithID: eventLoopID)
         state = .active(active)
 
       case .shuttingDown, .shutdown:
@@ -160,7 +167,7 @@ internal struct PoolManagerStateMachine {
   }
 
   enum ShutdownAction {
-    case shutdownPools([ConnectionPool])
+    case shutdownPools
     case alreadyShutdown
     case alreadyShuttingDown(EventLoopFuture<Void>)
   }
@@ -172,9 +179,9 @@ internal struct PoolManagerStateMachine {
         state = .shutdown
         return .alreadyShutdown
 
-      case let .active(active):
+      case .active:
         state = .shuttingDown(promise.futureResult)
-        return .shutdownPools(active.pools.values.map { $0.pool })
+        return .shutdownPools
 
       case let .shuttingDown(future):
         return .alreadyShuttingDown(future)
@@ -202,11 +209,13 @@ internal struct PoolManagerStateMachine {
 }
 
 extension PoolManagerStateMachine.ActiveState {
-  mutating func reserveStreamFromPool(runningOnEventLoop eventLoop: EventLoop) -> ConnectionPool? {
-    return self.pools[EventLoopID(eventLoop)]?.reserveStream()
+  mutating func reserveStreamFromPool(
+    onEventLoopWithID eventLoopID: EventLoopID
+  ) -> PoolManager.ConnectionPoolIndex? {
+    return self.pools[eventLoopID]?.reserveStream()
   }
 
-  mutating func reserveStreamFromPoolWithMostAvailableStreams() -> ConnectionPool {
+  mutating func reserveStreamFromPoolWithMostAvailableStreams() -> PoolManager.ConnectionPoolIndex {
     // We don't allow pools to be empty (while active).
     assert(!self.pools.isEmpty)
 
@@ -228,11 +237,17 @@ extension PoolManagerStateMachine.ActiveState {
     return self.pools.values[mostAvailableIndex].reserveStream()
   }
 
-  mutating func returnStreams(_ count: Int, to pool: ConnectionPool) {
-    self.pools[EventLoopID(pool.eventLoop)]?.returnReservedStreams(count)
+  mutating func returnStreams(
+    _ count: Int,
+    toPoolOnEventLoopWithID eventLoopID: EventLoopID
+  ) {
+    self.pools[eventLoopID]?.returnReservedStreams(count)
   }
 
-  mutating func increaseMaxAvailableStreams(by delta: Int, for pool: ConnectionPool) {
-    self.pools[EventLoopID(pool.eventLoop)]?.maxAvailableStreams += delta
+  mutating func increaseMaxAvailableStreams(
+    by delta: Int,
+    forPoolOnEventLoopWithID eventLoopID: EventLoopID
+  ) {
+    self.pools[eventLoopID]?.maxAvailableStreams += delta
   }
 }

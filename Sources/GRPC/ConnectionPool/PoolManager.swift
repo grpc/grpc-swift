@@ -57,6 +57,7 @@ internal final class PoolManager {
   /// The current state of the pool manager, `lock` must be held when accessing or
   /// modifying `state`.
   private var state: PoolManagerStateMachine
+  private var pools: [ConnectionPool]
   private let lock = Lock()
 
   /// The `EventLoopGroup` providing `EventLoop`s for connection pools. Once initialized the manager
@@ -86,6 +87,7 @@ internal final class PoolManager {
 
   private init(group: EventLoopGroup) {
     self.state = PoolManagerStateMachine(.inactive)
+    self.pools = []
     self.group = group
 
     // The pool relies on the identity of each `EventLoop` in the `EventLoopGroup` being unique. In
@@ -124,10 +126,11 @@ internal final class PoolManager {
     var logger = logger
     logger[metadataKey: Metadata.id] = "\(ObjectIdentifier(self))"
 
-    let pools = self.makePools(perPoolConfiguration: configuration, logger: logger)
+    assert(self.pools.isEmpty)
+    self.pools = self.makePools(perPoolConfiguration: configuration, logger: logger)
 
     logger.debug("initializing connection pool manager", metadata: [
-      Metadata.poolCount: "\(pools.count)",
+      Metadata.poolCount: "\(self.pools.count)",
       Metadata.connectionsPerPool: "\(configuration.maxConnections)",
       Metadata.waitersPerPool: "\(configuration.maxWaiters)",
     ])
@@ -135,13 +138,22 @@ internal final class PoolManager {
     // The assumed maximum number of streams concurrently available in each pool.
     let assumedCapacity = configuration.assumedStreamCapacity
 
+    // The state machine stores the per-pool state keyed by the pools `EventLoopID` and tells the
+    // pool manager about which pool to use/operate via the pools index in `self.pools`.
+    let poolKeys = self.pools.enumerated().map { poolIndex, pool in
+      return ConnectionPoolKey(
+        index: ConnectionPoolIndex(poolIndex),
+        eventLoopID: pool.eventLoop.id
+      )
+    }
+
     self.lock.withLockVoid {
       // We'll blow up if we've already been initialized, that's fine, we don't allow callers to
       // call `initialize` directly.
-      self.state.activate(pools: pools, assumingPerPoolCapacity: assumedCapacity)
+      self.state.activatePools(keyedBy: poolKeys, assumingPerPoolCapacity: assumedCapacity)
     }
 
-    for pool in pools {
+    for pool in self.pools {
       pool.initialize(connections: configuration.maxConnections)
     }
   }
@@ -212,12 +224,18 @@ internal final class PoolManager {
     streamInitializer initializer: @escaping (Channel) -> EventLoopFuture<Void>
   ) -> PooledStreamChannel {
     let reservation = self.lock.withLock {
-      self.state.reserveStream(preferringPoolOnEventLoop: preferredEventLoop)
+      self.state.reserveStream(
+        preferringPoolWithEventLoopID: preferredEventLoop.map { EventLoopID($0) }
+      )
     }
 
     switch reservation {
-    case let .success(pool):
-      let channel = pool.makeStream(deadline: deadline, logger: logger, initializer: initializer)
+    case let .success(poolIndex):
+      let channel = self.pools[poolIndex.value].makeStream(
+        deadline: deadline,
+        logger: logger,
+        initializer: initializer
+      )
       return PooledStreamChannel(futureResult: channel)
 
     case let .failure(error):
@@ -230,20 +248,37 @@ internal final class PoolManager {
 
   /// Shutdown the pool manager and all connection pools it manages.
   internal func shutdown(promise: EventLoopPromise<Void>) {
-    let action = self.lock.withLock {
-      return self.state.shutdown(promise: promise)
-    }
+    let (action, pools): (PoolManagerStateMachine.ShutdownAction, [ConnectionPool]?) = self.lock
+      .withLock {
+        let action = self.state.shutdown(promise: promise)
 
-    switch action {
-    case let .shutdownPools(pools):
+        switch action {
+        case .shutdownPools:
+          // Clear out the pools; we need to shut them down.
+          let pools = self.pools
+          self.pools.removeAll()
+          return (action, pools)
+
+        case .alreadyShutdown, .alreadyShuttingDown:
+          return (action, nil)
+        }
+      }
+
+    switch (action, pools) {
+    case let (.shutdownPools, .some(pools)):
       promise.futureResult.whenComplete { _ in self.shutdownComplete() }
       EventLoopFuture.andAllSucceed(pools.map { $0.shutdown() }, promise: promise)
 
-    case let .alreadyShuttingDown(future):
+    case let (.alreadyShuttingDown(future), .none):
       promise.completeWith(future)
 
-    case .alreadyShutdown:
+    case (.alreadyShutdown, .none):
       promise.succeed(())
+
+    case (.shutdownPools, .none),
+         (.alreadyShuttingDown, .some),
+         (.alreadyShutdown, .some):
+      preconditionFailure()
     }
   }
 
@@ -259,13 +294,13 @@ internal final class PoolManager {
 extension PoolManager: StreamLender {
   internal func returnStreams(_ count: Int, to pool: ConnectionPool) {
     self.lock.withLockVoid {
-      self.state.returnStreams(count, to: pool)
+      self.state.returnStreams(count, toPoolOnEventLoopWithID: pool.eventLoop.id)
     }
   }
 
   internal func changeStreamCapacity(by delta: Int, for pool: ConnectionPool) {
     self.lock.withLockVoid {
-      self.state.changeStreamCapacity(by: delta, for: pool)
+      self.state.changeStreamCapacity(by: delta, forPoolOnEventLoopWithID: pool.eventLoop.id)
     }
   }
 }

@@ -16,21 +16,9 @@
 import NIO
 
 extension PoolManagerStateMachine.ActiveState {
-  internal struct EventLoopID: Hashable, CustomStringConvertible {
-    private let id: ObjectIdentifier
-
-    internal init(_ eventLoop: EventLoop) {
-      self.id = ObjectIdentifier(eventLoop)
-    }
-
-    internal var description: String {
-      return String(describing: self.id)
-    }
-  }
-
   internal struct PerPoolState {
-    /// A pool of connections using the same `EventLoop`.
-    internal var pool: ConnectionPool
+    /// The index of the connection pool associated with this state.
+    internal var poolIndex: PoolManager.ConnectionPoolIndex
 
     /// The number of streams reserved in the pool.
     internal private(set) var reservedStreams: Int
@@ -43,16 +31,16 @@ extension PoolManagerStateMachine.ActiveState {
       return self.maxAvailableStreams - self.reservedStreams
     }
 
-    init(pool: ConnectionPool, assumedMaxAvailableStreams: Int) {
-      self.pool = pool
+    init(poolIndex: PoolManager.ConnectionPoolIndex, assumedMaxAvailableStreams: Int) {
+      self.poolIndex = poolIndex
       self.reservedStreams = 0
       self.maxAvailableStreams = assumedMaxAvailableStreams
     }
 
     /// Reserve a stream and return the pool.
-    internal mutating func reserveStream() -> ConnectionPool {
+    internal mutating func reserveStream() -> PoolManager.ConnectionPoolIndex {
       self.reservedStreams += 1
-      return self.pool
+      return self.poolIndex
     }
 
     /// Return a reserved stream.
@@ -60,5 +48,41 @@ extension PoolManagerStateMachine.ActiveState {
       self.reservedStreams -= count
       assert(self.reservedStreams >= 0)
     }
+  }
+}
+
+extension PoolManager {
+  internal struct ConnectionPoolIndex: Hashable {
+    var value: Int
+
+    init(_ value: Int) {
+      self.value = value
+    }
+  }
+
+  internal struct ConnectionPoolKey: Hashable {
+    /// The index of the connection pool.
+    var index: ConnectionPoolIndex
+
+    /// The ID of the`EventLoop` the connection pool uses.
+    var eventLoopID: EventLoopID
+  }
+}
+
+internal struct EventLoopID: Hashable, CustomStringConvertible {
+  private let id: ObjectIdentifier
+
+  internal init(_ eventLoop: EventLoop) {
+    self.id = ObjectIdentifier(eventLoop)
+  }
+
+  internal var description: String {
+    return String(describing: self.id)
+  }
+}
+
+extension EventLoop {
+  internal var id: EventLoopID {
+    return EventLoopID(self)
   }
 }
