@@ -126,11 +126,10 @@ internal final class PoolManager {
     var logger = logger
     logger[metadataKey: Metadata.id] = "\(ObjectIdentifier(self))"
 
-    assert(self.pools.isEmpty)
-    self.pools = self.makePools(perPoolConfiguration: configuration, logger: logger)
+    let pools = self.makePools(perPoolConfiguration: configuration, logger: logger)
 
     logger.debug("initializing connection pool manager", metadata: [
-      Metadata.poolCount: "\(self.pools.count)",
+      Metadata.poolCount: "\(pools.count)",
       Metadata.connectionsPerPool: "\(configuration.maxConnections)",
       Metadata.waitersPerPool: "\(configuration.maxWaiters)",
     ])
@@ -140,20 +139,23 @@ internal final class PoolManager {
 
     // The state machine stores the per-pool state keyed by the pools `EventLoopID` and tells the
     // pool manager about which pool to use/operate via the pools index in `self.pools`.
-    let poolKeys = self.pools.enumerated().map { poolIndex, pool in
+    let poolKeys = pools.indices.map { index in
       return ConnectionPoolKey(
-        index: ConnectionPoolIndex(poolIndex),
-        eventLoopID: pool.eventLoop.id
+        index: ConnectionPoolIndex(index),
+        eventLoopID: pools[index].eventLoop.id
       )
     }
 
     self.lock.withLockVoid {
+      assert(self.pools.isEmpty)
+      self.pools = pools
+
       // We'll blow up if we've already been initialized, that's fine, we don't allow callers to
       // call `initialize` directly.
       self.state.activatePools(keyedBy: poolKeys, assumingPerPoolCapacity: assumedCapacity)
     }
 
-    for pool in self.pools {
+    for pool in pools {
       pool.initialize(connections: configuration.maxConnections)
     }
   }
@@ -223,19 +225,16 @@ internal final class PoolManager {
     logger: GRPCLogger,
     streamInitializer initializer: @escaping (Channel) -> EventLoopFuture<Void>
   ) -> PooledStreamChannel {
-    let reservation = self.lock.withLock {
-      self.state.reserveStream(
-        preferringPoolWithEventLoopID: preferredEventLoop.map { EventLoopID($0) }
-      )
+    let preferredEventLoopID = preferredEventLoop.map { EventLoopID($0) }
+    let reservedPool = self.lock.withLock {
+      return self.state.reserveStream(preferringPoolWithEventLoopID: preferredEventLoopID).map {
+        return self.pools[$0.value]
+      }
     }
 
-    switch reservation {
-    case let .success(poolIndex):
-      let channel = self.pools[poolIndex.value].makeStream(
-        deadline: deadline,
-        logger: logger,
-        initializer: initializer
-      )
+    switch reservedPool {
+    case let .success(pool):
+      let channel = pool.makeStream(deadline: deadline, logger: logger, initializer: initializer)
       return PooledStreamChannel(futureResult: channel)
 
     case let .failure(error):
@@ -256,7 +255,7 @@ internal final class PoolManager {
         case .shutdownPools:
           // Clear out the pools; we need to shut them down.
           let pools = self.pools
-          self.pools.removeAll()
+          self.pools.removeAll(keepingCapacity: true)
           return (action, pools)
 
         case .alreadyShutdown, .alreadyShuttingDown:
