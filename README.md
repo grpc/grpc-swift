@@ -146,6 +146,10 @@ The `docs` directory contains documentation, including:
 - Support for Apple Platforms and NIO Transport Services in
   [`docs/apple-platforms.md`][docs-apple]
 
+## Security
+
+Please see [SECURITY.md](SECURITY.md).
+
 ## License
 
 gRPC Swift is released under the same license as [gRPC][grpc], repeated in
