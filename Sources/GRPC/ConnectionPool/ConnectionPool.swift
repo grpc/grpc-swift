@@ -553,7 +553,7 @@ extension ConnectionPool: ConnectionManagerHTTP2Delegate {
     }
 
     if delta != 0 {
-      self.streamLender.increaseStreamCapacity(by: delta, for: self)
+      self.streamLender.changeStreamCapacity(by: delta, for: self)
     }
 
     // We always check, even if `delta` isn't greater than zero as this might be a new connection.

@@ -14,10 +14,6 @@
  * limitations under the License.
  */
 
-internal protocol StreamLender {
-  /// `count` streams are being returned to the given `pool`.
-  func returnStreams(_ count: Int, to pool: ConnectionPool)
-
-  /// Update the total number of streams which may be available at given time for `pool` by `delta`.
-  func changeStreamCapacity(by delta: Int, for pool: ConnectionPool)
+internal func debugOnly(_ body: () -> Void) {
+  assert({ body(); return true }())
 }
