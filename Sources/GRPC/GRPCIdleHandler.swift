@@ -36,9 +36,6 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
   /// The mode we're operating in.
   private let mode: Mode
 
-  /// A logger.
-  private let logger: Logger
-
   private var context: ChannelHandlerContext?
 
   /// The mode of operation: the client tracks additional connection state in the connection
@@ -78,7 +75,6 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
       maximumPingsWithoutData: configuration.maximumPingsWithoutData,
       minimumSentPingIntervalWithoutData: configuration.minimumSentPingIntervalWithoutData
     )
-    self.logger = logger
   }
 
   init(
@@ -99,7 +95,6 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
       minimumReceivedPingIntervalWithoutData: configuration.minimumReceivedPingIntervalWithoutData,
       maximumPingStrikes: configuration.maximumPingStrikes
     )
-    self.logger = logger
   }
 
   private func sendGoAway(lastStreamID streamID: HTTP2StreamID) {
@@ -245,6 +240,11 @@ internal final class GRPCIdleHandler: ChannelInboundHandler {
   }
 
   func channelActive(context: ChannelHandlerContext) {
+    self.stateMachine.logger.addIPAddressMetadata(
+      local: context.localAddress,
+      remote: context.remoteAddress
+    )
+
     // No state machine action here.
     switch self.mode {
     case let .client(connectionManager, multiplexer):

@@ -29,7 +29,10 @@ class GRPCStatusCodeTests: GRPCTestCase {
   override func setUp() {
     super.setUp()
 
-    let handler = GRPCClientChannelHandler(callType: .unary, logger: self.logger)
+    let handler = GRPCClientChannelHandler(
+      callType: .unary,
+      logger: GRPCLogger(wrapping: self.logger)
+    )
     self.channel = EmbeddedChannel(handler: handler)
   }
 

@@ -36,7 +36,7 @@ public struct ClientInterceptorContext<Request, Response> {
 
   /// A logger.
   public var logger: Logger {
-    return self._pipeline.logger
+    return self._pipeline.logger.unwrapped
   }
 
   /// The type of the RPC, e.g. "unary".

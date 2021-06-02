@@ -38,9 +38,11 @@ class ClientInterceptorPipelineTests: GRPCTestCase {
     onRequestPart: @escaping (GRPCClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void,
     onResponsePart: @escaping (GRPCClientResponsePart<Response>) -> Void
   ) -> ClientInterceptorPipeline<Request, Response> {
+    let callDetails = details ?? self.makeCallDetails()
     return ClientInterceptorPipeline(
       eventLoop: self.embeddedEventLoop,
-      details: details ?? self.makeCallDetails(),
+      details: callDetails,
+      logger: callDetails.options.logger.wrapped,
       interceptors: interceptors,
       errorDelegate: errorDelegate,
       onError: onError,

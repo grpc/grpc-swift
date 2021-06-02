@@ -60,9 +60,8 @@ import NIOHTTP2
 @usableFromInline
 internal final class ClientInterceptorPipeline<Request, Response> {
   /// A logger.
-  internal var logger: Logger {
-    return self.details.options.logger
-  }
+  @usableFromInline
+  internal var logger: GRPCLogger
 
   /// The `EventLoop` this RPC is being executed on.
   @usableFromInline
@@ -135,6 +134,7 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   internal init(
     eventLoop: EventLoop,
     details: CallDetails,
+    logger: GRPCLogger,
     interceptors: [ClientInterceptor<Request, Response>],
     errorDelegate: ClientErrorDelegate?,
     onError: @escaping (Error) -> Void,
@@ -144,6 +144,7 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   ) {
     self.eventLoop = eventLoop
     self.details = details
+    self.logger = logger
 
     self._errorDelegate = errorDelegate
     self._onError = onError
@@ -284,13 +285,13 @@ internal final class ClientInterceptorPipeline<Request, Response> {
       unwrappedError = errorContext.error
       self._errorDelegate?.didCatchError(
         errorContext.error,
-        logger: self.logger,
+        logger: self.logger.unwrapped,
         file: errorContext.file,
         line: errorContext.line
       )
     } else {
       unwrappedError = error
-      self._errorDelegate?.didCatchErrorWithoutContext(error, logger: self.logger)
+      self._errorDelegate?.didCatchErrorWithoutContext(error, logger: self.logger.unwrapped)
     }
 
     // Emit the unwrapped error.

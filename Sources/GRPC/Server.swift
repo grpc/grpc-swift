@@ -107,8 +107,10 @@ public final class Server {
       .childChannelInitializer { channel in
         var configuration = configuration
         configuration.logger[metadataKey: MetadataKey.connectionID] = "\(UUID().uuidString)"
-        configuration.logger[metadataKey: MetadataKey.remoteAddress] = channel.remoteAddress
-          .map { "\($0)" } ?? "n/a"
+        configuration.logger.addIPAddressMetadata(
+          local: channel.localAddress,
+          remote: channel.remoteAddress
+        )
 
         do {
           let sync = channel.pipeline.syncOperations

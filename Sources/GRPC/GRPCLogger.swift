@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 import Logging
+import NIO
 
 /// Wraps `Logger` to always provide the source as "GRPC".
 ///
 /// See https://github.com/apple/swift-log/issues/145 for rationale.
+@usableFromInline
 internal struct GRPCLogger {
   private var logger: Logger
 
@@ -70,6 +72,46 @@ internal struct GRPCLogger {
       function: function,
       line: line
     )
+  }
+
+  internal func notice(
+    _ message: @autoclosure () -> Logger.Message,
+    metadata: @autoclosure () -> Logger.Metadata? = nil,
+    file: String = #file,
+    function: String = #function,
+    line: UInt = #line
+  ) {
+    self.logger.notice(
+      message(),
+      metadata: metadata(),
+      source: "GRPC",
+      file: file,
+      function: function,
+      line: line
+    )
+  }
+
+  internal func warning(
+    _ message: @autoclosure () -> Logger.Message,
+    metadata: @autoclosure () -> Logger.Metadata? = nil,
+    file: String = #file,
+    function: String = #function,
+    line: UInt = #line
+  ) {
+    self.logger.warning(
+      message(),
+      metadata: metadata(),
+      source: "GRPC",
+      file: file,
+      function: function,
+      line: line
+    )
+  }
+}
+
+extension GRPCLogger {
+  internal mutating func addIPAddressMetadata(local: SocketAddress?, remote: SocketAddress?) {
+    self.logger.addIPAddressMetadata(local: local, remote: remote)
   }
 }
 
