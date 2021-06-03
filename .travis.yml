@@ -37,34 +37,34 @@ jobs:
       script: ./.travis-script.sh -t -a # tests with tsan, run allocation tests
       env:
         - SWIFT_VERSION=5.4
-        - MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests=513000
-        - MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request=225000
+        - MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests=515000
+        - MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request=227000
         - MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests=112000
         - MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request=67000
         - MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request=63000
-        - MAX_ALLOCS_ALLOWED_unary_1k_ping_pong=214000
+        - MAX_ALLOCS_ALLOWED_unary_1k_ping_pong=216000
     - <<: *tests
       name: "Unit Tests: Ubuntu 18.04 (Swift 5.3)"
       script: ./.travis-script.sh -t -a # test with tsan, run allocation tests
       env:
         - SWIFT_VERSION=5.3.3
-        - MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests=513000
-        - MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request=225000
+        - MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests=515000
+        - MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request=227000
         - MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests=112000
         - MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request=67000
         - MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request=63000
-        - MAX_ALLOCS_ALLOWED_unary_1k_ping_pong=214000
+        - MAX_ALLOCS_ALLOWED_unary_1k_ping_pong=216000
     - <<: *tests
       name: "Unit Tests: Ubuntu 18.04 (Swift 5.2)"
       script: ./.travis-script.sh -a # run allocation tests
       env:
         - SWIFT_VERSION=5.2.5
-        - MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests=524000
-        - MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request=227000
+        - MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests=526000
+        - MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request=229000
         - MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests=112000
         - MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request=67000
         - MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request=63000
-        - MAX_ALLOCS_ALLOWED_unary_1k_ping_pong=215000
+        - MAX_ALLOCS_ALLOWED_unary_1k_ping_pong=217000
     - <<: *tests
       name: "Unit Tests: Xcode 12.2"
       os: osx

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import Logging
+import NIO
 
 /// Keys for `Logger` metadata.
 enum MetadataKey {
@@ -21,7 +22,6 @@ enum MetadataKey {
   static let connectionID = "grpc_connection_id"
 
   static let eventLoop = "event_loop"
-  static let remoteAddress = "remote_address"
 
   static let h2StreamID = "h2_stream_id"
   static let h2ActiveStreams = "h2_active_streams"
@@ -31,4 +31,15 @@ enum MetadataKey {
   static let h2DataBytes = "h2_data_bytes"
 
   static let error = "error"
+}
+
+extension Logger {
+  internal mutating func addIPAddressMetadata(local: SocketAddress?, remote: SocketAddress?) {
+    if let local = local?.ipAddress {
+      self[metadataKey: "grpc.conn.addr_local"] = "\(local)"
+    }
+    if let remote = remote?.ipAddress {
+      self[metadataKey: "grpc.conn.addr_remote"] = "\(remote)"
+    }
+  }
 }

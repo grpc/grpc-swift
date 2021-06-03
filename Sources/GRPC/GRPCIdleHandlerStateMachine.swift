@@ -240,7 +240,7 @@ struct GRPCIdleHandlerStateMachine {
   private var state: State
 
   /// A logger.
-  private let logger: Logger
+  internal var logger: Logger
 
   /// Create a new state machine.
   init(role: Role, logger: Logger) {

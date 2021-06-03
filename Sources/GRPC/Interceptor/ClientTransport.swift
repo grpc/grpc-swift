@@ -68,9 +68,7 @@ internal final class ClientTransport<Request, Response> {
   internal let callDetails: CallDetails
 
   /// A logger.
-  internal var logger: Logger {
-    return self.callDetails.options.logger
-  }
+  internal var logger: GRPCLogger
 
   /// Is the call streaming requests?
   private var isStreamingRequests: Bool {
@@ -116,11 +114,14 @@ internal final class ClientTransport<Request, Response> {
   ) {
     self.callEventLoop = eventLoop
     self.callDetails = details
+    let logger = GRPCLogger(wrapping: details.options.logger)
+    self.logger = logger
     self.serializer = serializer
     self.deserializer = deserializer
     self._pipeline = ClientInterceptorPipeline(
       eventLoop: eventLoop,
       details: details,
+      logger: logger,
       interceptors: interceptors,
       errorDelegate: errorDelegate,
       onError: onError,
@@ -315,9 +316,12 @@ extension ClientTransport {
   /// On-loop implementation of `transportActivated(channel:)`.
   private func _transportActivated(channel: Channel) {
     self.callEventLoop.assertInEventLoop()
-    self.logger.debug("activated stream channel", source: "GRPC")
 
     if self.state.activate() {
+      self.logger.addIPAddressMetadata(local: channel.localAddress, remote: channel.remoteAddress)
+
+      self._pipeline?.logger = self.logger
+      self.logger.debug("activated stream channel")
       self.channel = channel
       self.unbuffer()
     } else {
@@ -831,7 +835,7 @@ extension ClientTransport {
     self.logger.debug("buffering request part", metadata: [
       "request_part": "\(part.name)",
       "call_state": self.stateForLogging,
-    ], source: "GRPC")
+    ])
     self.writeBuffer.append(.init(request: part, promise: promise))
   }
 
@@ -848,7 +852,7 @@ extension ClientTransport {
 
     self.logger.debug("unbuffering request parts", metadata: [
       "request_parts": "\(self.writeBuffer.count)",
-    ], source: "GRPC")
+    ])
 
     // Why the double loop? A promise completed as a result of the flush may enqueue more writes,
     // or causes us to change state (i.e. we may have to close). If we didn't loop around then we
@@ -858,7 +862,7 @@ extension ClientTransport {
       while let write = self.writeBuffer.popFirst() {
         self.logger.debug("unbuffering request part", metadata: [
           "request_part": "\(write.request.name)",
-        ], source: "GRPC")
+        ])
 
         if !shouldFlush {
           shouldFlush = self.shouldFlush(after: write.request)
@@ -875,13 +879,9 @@ extension ClientTransport {
     }
 
     if self.writeBuffer.isEmpty {
-      self.logger.debug("request buffer drained", source: "GRPC")
+      self.logger.debug("request buffer drained")
     } else {
-      self.logger.notice(
-        "unbuffering aborted",
-        metadata: ["call_state": self.stateForLogging],
-        source: "GRPC"
-      )
+      self.logger.notice("unbuffering aborted", metadata: ["call_state": self.stateForLogging])
     }
 
     // We're unbuffered. What now?
@@ -896,9 +896,7 @@ extension ClientTransport {
   /// Fails any promises that come with buffered writes with `error`.
   /// - Parameter error: The `Error` to fail promises with.
   private func failBufferedWrites(with error: Error) {
-    self.logger.debug("failing buffered writes", metadata: [
-      "call_state": self.stateForLogging,
-    ], source: "GRPC")
+    self.logger.debug("failing buffered writes", metadata: ["call_state": self.stateForLogging])
 
     while let write = self.writeBuffer.popFirst() {
       write.promise?.fail(error)

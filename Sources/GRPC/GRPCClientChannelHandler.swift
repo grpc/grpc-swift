@@ -284,7 +284,7 @@ public enum GRPCCallType {
 /// }
 /// ```
 internal final class GRPCClientChannelHandler {
-  private let logger: Logger
+  private let logger: GRPCLogger
   private var stateMachine: GRPCClientStateMachine
 
   /// Creates a new gRPC channel handler for clients to translate HTTP/2 frames to gRPC messages.
@@ -292,7 +292,7 @@ internal final class GRPCClientChannelHandler {
   /// - Parameters:
   ///   - callType: Type of RPC call being made.
   ///   - logger: Logger.
-  internal init(callType: GRPCCallType, logger: Logger) {
+  internal init(callType: GRPCCallType, logger: GRPCLogger) {
     self.logger = logger
     switch callType {
     case .unary:
