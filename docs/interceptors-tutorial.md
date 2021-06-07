@@ -291,6 +291,6 @@ It is important to note that interceptor functions are invoked on the
 `EventLoop` provided by the context and that implementations *must* respect this
 by invoking methods on the `context` from that `EventLoop`.
 
-[quick-start]: ../quick-start.md
-[basic-tutorial]: ../basic-tutorial.md
+[quick-start]: ./quick-start.md
+[basic-tutorial]: ./basic-tutorial.md
 [echo-example]: ../Sources/Examples/Echo
