@@ -41,7 +41,7 @@ extension ClientConnection {
     fileprivate init(group: EventLoopGroup) {
       // This is okay: the configuration is only consumed on a call to `connect` which sets the host
       // and port.
-      self.configuration = Configuration(target: .hostAndPort("", .max), eventLoopGroup: group)
+      self.configuration = .default(target: .hostAndPort("", .max), eventLoopGroup: group)
     }
 
     public func connect(host: String, port: Int) -> ClientConnection {

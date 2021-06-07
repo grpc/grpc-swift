@@ -26,13 +26,15 @@ class ConnectionManagerTests: GRPCTestCase {
   private var monitor: ConnectivityStateMonitor!
 
   private var defaultConfiguration: ClientConnection.Configuration {
-    return ClientConnection.Configuration(
+    var configuration = ClientConnection.Configuration.default(
       target: .unixDomainSocket("/ignored"),
-      eventLoopGroup: self.loop,
-      connectivityStateDelegate: nil,
-      connectionBackoff: nil,
-      backgroundActivityLogger: self.clientLogger
+      eventLoopGroup: self.loop
     )
+
+    configuration.connectionBackoff = nil
+    configuration.backgroundActivityLogger = self.clientLogger
+
+    return configuration
   }
 
   override func setUp() {

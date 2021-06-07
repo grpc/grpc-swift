@@ -71,14 +71,17 @@ class ClientTLSFailureTests: GRPCTestCase {
   func makeClientConfiguration(
     tls: ClientConnection.Configuration.TLS
   ) -> ClientConnection.Configuration {
-    return .init(
+    var configuration = ClientConnection.Configuration.default(
       target: .hostAndPort("localhost", self.port),
-      eventLoopGroup: self.clientEventLoopGroup,
-      tls: tls,
-      // No need to retry connecting.
-      connectionBackoff: nil,
-      backgroundActivityLogger: self.clientLogger
+      eventLoopGroup: self.clientEventLoopGroup
     )
+
+    configuration.tls = tls
+    // No need to retry connecting.
+    configuration.connectionBackoff = nil
+    configuration.backgroundActivityLogger = self.clientLogger
+
+    return configuration
   }
 
   func makeClientConnectionExpectation() -> XCTestExpectation {
