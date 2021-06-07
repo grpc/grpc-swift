@@ -290,14 +290,14 @@ extension ClientConnection {
 
     /// An error delegate which is called when errors are caught. Provided delegates **must not
     /// maintain a strong reference to this `ClientConnection`**. Doing so will cause a retain
-    /// cycle.
-    public var errorDelegate: ClientErrorDelegate?
+    /// cycle. Defaults to `LoggingClientErrorDelegate`.
+    public var errorDelegate: ClientErrorDelegate? = LoggingClientErrorDelegate.shared
 
-    /// A delegate which is called when the connectivity state is changed.
+    /// A delegate which is called when the connectivity state is changed. Defaults to `nil`.
     public var connectivityStateDelegate: ConnectivityStateDelegate?
 
     /// The `DispatchQueue` on which to call the connectivity state delegate. If a delegate is
-    /// provided but the queue is `nil` then one will be created by gRPC.
+    /// provided but the queue is `nil` then one will be created by gRPC. Defaults to `nil`.
     public var connectivityStateDelegateQueue: DispatchQueue?
 
     /// TLS configuration for this connection. `nil` if TLS is not desired.
@@ -305,23 +305,27 @@ extension ClientConnection {
 
     /// The connection backoff configuration. If no connection retrying is required then this should
     /// be `nil`.
-    public var connectionBackoff: ConnectionBackoff?
+    public var connectionBackoff: ConnectionBackoff? = ConnectionBackoff()
 
     /// The connection keepalive configuration.
-    public var connectionKeepalive: ClientConnectionKeepalive
+    public var connectionKeepalive = ClientConnectionKeepalive()
 
     /// The amount of time to wait before closing the connection. The idle timeout will start only
     /// if there are no RPCs in progress and will be cancelled as soon as any RPCs start.
     ///
     /// If a connection becomes idle, starting a new RPC will automatically create a new connection.
-    public var connectionIdleTimeout: TimeAmount
+    ///
+    /// Defaults to 30 minutes.
+    public var connectionIdleTimeout: TimeAmount = .minutes(30)
 
     /// The behavior used to determine when an RPC should start. That is, whether it should wait for
     /// an active connection or fail quickly if no connection is currently available.
-    public var callStartBehavior: CallStartBehavior
+    ///
+    /// Defaults to `waitsForConnectivity`.
+    public var callStartBehavior: CallStartBehavior = .waitsForConnectivity
 
-    /// The HTTP/2 flow control target window size.
-    public var httpTargetWindowSize: Int
+    /// The HTTP/2 flow control target window size. Defaults to 65535.
+    public var httpTargetWindowSize = 65535
 
     /// The HTTP protocol used for this connection.
     public var httpProtocol: HTTP2FramePayloadToHTTP1ClientCodec.HTTPProtocol {
@@ -332,7 +336,10 @@ extension ClientConnection {
     /// requests may be provided in the `CallOptions`.
     ///
     /// Defaults to a no-op logger.
-    public var backgroundActivityLogger: Logger
+    public var backgroundActivityLogger = Logger(
+      label: "io.grpc",
+      factory: { _ in SwiftLogNoOpLogHandler() }
+    )
 
     /// A channel initializer which will be run after gRPC has initialized each channel. This may be
     /// used to add additional handlers to the pipeline and is intended for debugging.
@@ -362,6 +369,7 @@ extension ClientConnection {
     ///     connectivity state). Defaults to a no-op logger.
     /// - Parameter debugChannelInitializer: A channel initializer will be called after gRPC has
     ///     initialized the channel. Defaults to `nil`.
+    @available(*, deprecated, renamed: "default(target:eventLoopGroup:)")
     public init(
       target: ConnectionTarget,
       eventLoopGroup: EventLoopGroup,
@@ -393,6 +401,25 @@ extension ClientConnection {
       self.httpTargetWindowSize = httpTargetWindowSize
       self.backgroundActivityLogger = backgroundActivityLogger
       self.debugChannelInitializer = debugChannelInitializer
+    }
+
+    private init(eventLoopGroup: EventLoopGroup, target: ConnectionTarget) {
+      self.eventLoopGroup = eventLoopGroup
+      self.target = target
+    }
+
+    /// Make a new configuration using default values.
+    ///
+    /// - Parameters:
+    ///   - target: The target to connect to.
+    ///   - eventLoopGroup: The `EventLoopGroup` providing an `EventLoop` for the connection to
+    ///       run on.
+    /// - Returns: A configuration with default values set.
+    public static func `default`(
+      target: ConnectionTarget,
+      eventLoopGroup: EventLoopGroup
+    ) -> Configuration {
+      return .init(eventLoopGroup: eventLoopGroup, target: target)
     }
   }
 }

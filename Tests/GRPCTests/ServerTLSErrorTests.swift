@@ -53,13 +53,16 @@ class ServerTLSErrorTests: GRPCTestCase {
     tls: ClientConnection.Configuration.TLS,
     port: Int
   ) -> ClientConnection.Configuration {
-    return .init(
+    var configuration = ClientConnection.Configuration.default(
       target: .hostAndPort("localhost", port),
-      eventLoopGroup: self.clientEventLoopGroup,
-      tls: tls,
-      // No need to retry connecting.
-      connectionBackoff: nil
+      eventLoopGroup: self.clientEventLoopGroup
     )
+
+    configuration.tls = tls
+    // No need to retry connecting.
+    configuration.connectionBackoff = nil
+
+    return configuration
   }
 
   func makeClientConnectionExpectation() -> XCTestExpectation {

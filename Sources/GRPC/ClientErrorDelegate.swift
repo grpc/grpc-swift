@@ -42,7 +42,10 @@ extension ClientErrorDelegate {
 }
 
 /// A `ClientErrorDelegate` which logs errors.
-public class LoggingClientErrorDelegate: ClientErrorDelegate {
+public final class LoggingClientErrorDelegate: ClientErrorDelegate {
+  /// A shared instance of this class.
+  public static let shared = LoggingClientErrorDelegate()
+
   public init() {}
 
   public func didCatchError(_ error: Error, logger: Logger, file: StaticString, line: Int) {

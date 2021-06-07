@@ -46,12 +46,13 @@ class GRPCServerPipelineConfiguratorTests: GRPCTestCase {
   private func setUp(tls: Bool, requireALPN: Bool = true) {
     self.channel = EmbeddedChannel()
 
-    var configuration = Server.Configuration(
+    var configuration = Server.Configuration.default(
       target: .unixDomainSocket("/ignored"),
       eventLoopGroup: self.channel.eventLoop,
-      serviceProviders: [],
-      logger: self.serverLogger
+      serviceProviders: []
     )
+
+    configuration.logger = self.serverLogger
 
     if tls {
       configuration.tls = .init(

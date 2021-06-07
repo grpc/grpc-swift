@@ -23,7 +23,7 @@ extension Server {
     private var maybeTLS: Server.Configuration.TLS? { return nil }
 
     fileprivate init(group: EventLoopGroup) {
-      self.configuration = Configuration(
+      self.configuration = .default(
         // This is okay: the configuration is only consumed on a call to `bind` which sets the host
         // and port.
         target: .hostAndPort("", .max),

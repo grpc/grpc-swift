@@ -258,11 +258,11 @@ extension Server {
     public var tls: TLS?
 
     /// The connection keepalive configuration.
-    public var connectionKeepalive: ServerConnectionKeepalive
+    public var connectionKeepalive = ServerConnectionKeepalive()
 
     /// The amount of time to wait before closing connections. The idle timeout will start only
     /// if there are no RPCs in progress and will be cancelled as soon as any RPCs start.
-    public var connectionIdleTimeout: TimeAmount
+    public var connectionIdleTimeout: TimeAmount = .nanoseconds(.max)
 
     /// The compression configuration for requests and responses.
     ///
@@ -272,15 +272,17 @@ extension Server {
     /// Compression may also be disabled at the message-level for streaming responses (i.e. server
     /// streaming and bidirectional streaming RPCs) by passing setting `compression` to `.disabled`
     /// in `sendResponse(_:compression)`.
-    public var messageEncoding: ServerMessageEncoding
+    ///
+    /// Defaults to `.disabled`.
+    public var messageEncoding: ServerMessageEncoding = .disabled
 
-    /// The HTTP/2 flow control target window size.
-    public var httpTargetWindowSize: Int
+    /// The HTTP/2 flow control target window size. Defaults to 65535.
+    public var httpTargetWindowSize: Int = 65535
 
     /// The root server logger. Accepted connections will branch from this logger and RPCs on
     /// each connection will use a logger branched from the connections logger. This logger is made
     /// available to service providers via `context`. Defaults to a no-op logger.
-    public var logger: Logger
+    public var logger = Logger(label: "io.grpc", factory: { _ in SwiftLogNoOpLogHandler() })
 
     /// A channel initializer which will be run after gRPC has initialized each accepted channel.
     /// This may be used to add additional handlers to the pipeline and is intended for debugging.
@@ -313,6 +315,7 @@ extension Server {
     ///   - logger: A logger. Defaults to a no-op logger.
     ///   - debugChannelInitializer: A channel initializer which will be called for each connection
     ///     the server accepts after gRPC has initialized the channel. Defaults to `nil`.
+    @available(*, deprecated, renamed: "default(target:eventLoopGroup:serviceProviders:)")
     public init(
       target: BindTarget,
       eventLoopGroup: EventLoopGroup,
@@ -341,6 +344,38 @@ extension Server {
       self.httpTargetWindowSize = httpTargetWindowSize
       self.logger = logger
       self.debugChannelInitializer = debugChannelInitializer
+    }
+
+    private init(
+      eventLoopGroup: EventLoopGroup,
+      target: BindTarget,
+      serviceProviders: [CallHandlerProvider]
+    ) {
+      self.eventLoopGroup = eventLoopGroup
+      self.target = target
+      self.serviceProvidersByName = Dictionary(uniqueKeysWithValues: serviceProviders.map {
+        ($0.serviceName, $0)
+      })
+    }
+
+    /// Make a new configuration using default values.
+    ///
+    /// - Parameters:
+    ///   - target: The target to bind to.
+    ///   - eventLoopGroup: The `EventLoopGroup` the server should run on.
+    ///   - serviceProviders: An array of `CallHandlerProvider`s which the server should use
+    ///       to handle requests.
+    /// - Returns: A configuration with default values set.
+    public static func `default`(
+      target: BindTarget,
+      eventLoopGroup: EventLoopGroup,
+      serviceProviders: [CallHandlerProvider]
+    ) -> Configuration {
+      return .init(
+        eventLoopGroup: eventLoopGroup,
+        target: target,
+        serviceProviders: serviceProviders
+      )
     }
   }
 }

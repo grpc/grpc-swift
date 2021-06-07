@@ -34,7 +34,7 @@ final class ServerFuzzingRegressionTests: GRPCTestCase {
       _ = try? channel.finish()
     }
 
-    let configuration = Server.Configuration(
+    let configuration = Server.Configuration.default(
       target: .unixDomainSocket("/ignored"),
       eventLoopGroup: channel.eventLoop,
       serviceProviders: [EchoProvider()]
