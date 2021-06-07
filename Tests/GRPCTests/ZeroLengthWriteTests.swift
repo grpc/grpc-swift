@@ -31,7 +31,7 @@ final class ZeroLengthWriteTests: GRPCTestCase {
     debugInitializer: @escaping (Channel) -> EventLoopFuture<Void>
   ) -> ClientConnection.Builder {
     if secure {
-      return ClientConnection.secure(group: group)
+      return ClientConnection.usingTLSBackedByNIOSSL(on: group)
         .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
         .withDebugChannelInitializer(debugInitializer)
     } else {
@@ -46,8 +46,8 @@ final class ZeroLengthWriteTests: GRPCTestCase {
     debugInitializer: @escaping (Channel) -> EventLoopFuture<Void>
   ) -> Server.Builder {
     if secure {
-      return Server.secure(
-        group: group,
+      return Server.usingTLSBackedByNIOSSL(
+        on: group,
         certificateChain: [SampleCertificate.server.certificate],
         privateKey: SamplePrivateKey.server
       ).withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))

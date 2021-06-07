@@ -16,6 +16,7 @@
 import Logging
 import NIO
 import NIOSSL
+import NIOTransportServices
 
 internal protocol ConnectionManagerChannelProvider {
   /// Make an `EventLoopFuture<Channel>`.
@@ -39,8 +40,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
   internal var connectionIdleTimeout: TimeAmount
 
   internal var sslContext: Result<NIOSSLContext, Error>?
-  internal var tlsHostnameOverride: Optional<String>
-  internal var tlsCustomVerificationCallback: Optional<NIOSSLCustomVerificationCallback>
+  internal var tlsConfiguration: GRPCTLSConfiguration?
 
   internal var httpTargetWindowSize: Int
 
@@ -52,8 +52,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
     connectionKeepalive: ClientConnectionKeepalive,
     connectionIdleTimeout: TimeAmount,
     sslContext: Result<NIOSSLContext, Error>?,
-    tlsHostnameOverride: String?,
-    tlsCustomVerificationCallback: NIOSSLCustomVerificationCallback?,
+    tlsConfiguration: GRPCTLSConfiguration?,
     httpTargetWindowSize: Int,
     errorDelegate: ClientErrorDelegate?,
     debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)?
@@ -63,8 +62,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
     self.connectionIdleTimeout = connectionIdleTimeout
 
     self.sslContext = sslContext
-    self.tlsHostnameOverride = tlsHostnameOverride
-    self.tlsCustomVerificationCallback = tlsCustomVerificationCallback
+    self.tlsConfiguration = tlsConfiguration
 
     self.httpTargetWindowSize = httpTargetWindowSize
 
@@ -76,10 +74,15 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
     // Making a `NIOSSLContext` is expensive and we should only do it (at most) once per TLS
     // configuration. We do it now and surface any error during channel creation (we're limited by
     // our API in when we can throw any error).
-    let sslContext: Result<NIOSSLContext, Error>? = configuration.tls.map { tls in
-      return Result {
-        try NIOSSLContext(configuration: tls.configuration)
-      }
+    //
+    // 'nil' means we're not using TLS, or we're using the Network.framework TLS backend. We'll
+    // check and apply the Network.framework TLS options when we create a bootstrap.
+    let sslContext: Result<NIOSSLContext, Error>?
+
+    do {
+      sslContext = try configuration.tlsConfiguration?.makeNIOSSLContext().map { .success($0) }
+    } catch {
+      sslContext = .failure(error)
     }
 
     self.init(
@@ -87,8 +90,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
       connectionKeepalive: configuration.connectionKeepalive,
       connectionIdleTimeout: configuration.connectionIdleTimeout,
       sslContext: sslContext,
-      tlsHostnameOverride: configuration.tls?.hostnameOverride,
-      tlsCustomVerificationCallback: configuration.tls?.customVerificationCallback,
+      tlsConfiguration: configuration.tlsConfiguration,
       httpTargetWindowSize: configuration.httpTargetWindowSize,
       errorDelegate: configuration.errorDelegate,
       debugChannelInitializer: configuration.debugChannelInitializer
@@ -96,12 +98,12 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
   }
 
   private var serverHostname: String? {
-    let hostname = self.tlsHostnameOverride ?? self.connectionTarget.host
+    let hostname = self.tlsConfiguration?.hostnameOverride ?? self.connectionTarget.host
     return hostname.isIPAddress ? nil : hostname
   }
 
   private var hasTLS: Bool {
-    return self.sslContext != nil
+    return self.tlsConfiguration != nil
   }
 
   private func requiresZeroLengthWorkaround(eventLoop: EventLoop) -> Bool {
@@ -117,25 +119,42 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
     let hostname = self.serverHostname
     let needsZeroLengthWriteWorkaround = self.requiresZeroLengthWorkaround(eventLoop: eventLoop)
 
-    let bootstrap = PlatformSupport.makeClientBootstrap(group: eventLoop, logger: logger)
+    let bootstrap = PlatformSupport.makeClientBootstrap(
+      group: eventLoop,
+      tlsConfiguration: self.tlsConfiguration,
+      logger: logger
+    )
+
+    _ = bootstrap
       .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
       .channelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
       .channelInitializer { channel in
         let sync = channel.pipeline.syncOperations
 
         do {
-          try sync.configureGRPCClient(
+          if needsZeroLengthWriteWorkaround {
+            try sync.addHandler(NIOFilterEmptyWritesHandler())
+          }
+
+          // We have a NIOSSL context to apply. If we're using TLS from NIOTS then the bootstrap
+          // will already have the TLS options applied.
+          if let sslContext = self.sslContext {
+            try sync.configureNIOSSLForGRPCClient(
+              sslContext: sslContext,
+              serverHostname: hostname,
+              customVerificationCallback: self.tlsConfiguration?.nioSSLCustomVerificationCallback,
+              logger: logger
+            )
+          }
+
+          try sync.configureHTTP2AndGRPCHandlersForGRPCClient(
             channel: channel,
-            httpTargetWindowSize: self.httpTargetWindowSize,
-            sslContext: self.sslContext,
-            tlsServerHostname: hostname,
             connectionManager: connectionManager,
             connectionKeepalive: self.connectionKeepalive,
             connectionIdleTimeout: self.connectionIdleTimeout,
+            httpTargetWindowSize: self.httpTargetWindowSize,
             errorDelegate: self.errorDelegate,
-            requiresZeroLengthWriteWorkaround: needsZeroLengthWriteWorkaround,
-            logger: logger,
-            customVerificationCallback: self.tlsCustomVerificationCallback
+            logger: logger
           )
         } catch {
           return channel.eventLoop.makeFailedFuture(error)

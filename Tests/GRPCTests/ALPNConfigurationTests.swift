@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import GRPC
+@testable import GRPC
 import NIOSSL
 import XCTest
 
@@ -27,31 +27,46 @@ class ALPNConfigurationTests: GRPCTestCase {
   }
 
   func testClientDefaultALPN() {
-    let config = ClientConnection.Configuration.TLS()
-    self.assertExpectedClientALPNTokens(in: config.configuration.applicationProtocols)
+    let config = GRPCTLSConfiguration.makeClientConfigurationBackedByNIOSSL()
+    self.assertExpectedClientALPNTokens(
+      in: config.nioConfiguration!.configuration.applicationProtocols
+    )
   }
 
   func testClientAddsTokensFromEmptyNIOSSLConfig() {
     let tlsConfig = TLSConfiguration.makeClientConfiguration()
     XCTAssertTrue(tlsConfig.applicationProtocols.isEmpty)
 
-    let config = ClientConnection.Configuration.TLS(configuration: tlsConfig)
+    let config = GRPCTLSConfiguration.makeClientConfigurationBackedByNIOSSL(
+      configuration: tlsConfig
+    )
+
     // Should now contain expected config.
-    self.assertExpectedClientALPNTokens(in: config.configuration.applicationProtocols)
+    self.assertExpectedClientALPNTokens(
+      in: config.nioConfiguration!.configuration.applicationProtocols
+    )
   }
 
   func testClientDoesNotOverrideNonEmptyNIOSSLConfig() {
     var tlsConfig = TLSConfiguration.makeClientConfiguration()
     tlsConfig.applicationProtocols = ["foo"]
 
-    let config = ClientConnection.Configuration.TLS(configuration: tlsConfig)
+    let config = GRPCTLSConfiguration.makeClientConfigurationBackedByNIOSSL(
+      configuration: tlsConfig
+    )
     // Should not be overridden.
-    XCTAssertEqual(config.configuration.applicationProtocols, ["foo"])
+    XCTAssertEqual(config.nioConfiguration!.configuration.applicationProtocols, ["foo"])
   }
 
   func testServerDefaultALPN() {
-    let config = Server.Configuration.TLS(certificateChain: [], privateKey: .file(""))
-    self.assertExpectedServerALPNTokens(in: config.configuration.applicationProtocols)
+    let config = GRPCTLSConfiguration.makeServerConfigurationBackedByNIOSSL(
+      certificateChain: [],
+      privateKey: .file("")
+    )
+
+    self.assertExpectedServerALPNTokens(
+      in: config.nioConfiguration!.configuration.applicationProtocols
+    )
   }
 
   func testServerAddsTokensFromEmptyNIOSSLConfig() {
@@ -61,9 +76,14 @@ class ALPNConfigurationTests: GRPCTestCase {
     )
     XCTAssertTrue(tlsConfig.applicationProtocols.isEmpty)
 
-    let config = Server.Configuration.TLS(configuration: tlsConfig)
+    let config = GRPCTLSConfiguration.makeServerConfigurationBackedByNIOSSL(
+      configuration: tlsConfig
+    )
+
     // Should now contain expected config.
-    self.assertExpectedServerALPNTokens(in: config.configuration.applicationProtocols)
+    self.assertExpectedServerALPNTokens(
+      in: config.nioConfiguration!.configuration.applicationProtocols
+    )
   }
 
   func testServerDoesNotOverrideNonEmptyNIOSSLConfig() {
@@ -73,8 +93,10 @@ class ALPNConfigurationTests: GRPCTestCase {
     )
     tlsConfig.applicationProtocols = ["foo"]
 
-    let config = ClientConnection.Configuration.TLS(configuration: tlsConfig)
+    let config = GRPCTLSConfiguration.makeServerConfigurationBackedByNIOSSL(
+      configuration: tlsConfig
+    )
     // Should not be overridden.
-    XCTAssertEqual(config.configuration.applicationProtocols, ["foo"])
+    XCTAssertEqual(config.nioConfiguration!.configuration.applicationProtocols, ["foo"])
   }
 }

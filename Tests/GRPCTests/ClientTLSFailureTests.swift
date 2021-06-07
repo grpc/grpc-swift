@@ -49,12 +49,12 @@ class ErrorRecordingDelegate: ClientErrorDelegate {
 }
 
 class ClientTLSFailureTests: GRPCTestCase {
-  let defaultServerTLSConfiguration = Server.Configuration.TLS(
+  let defaultServerTLSConfiguration = GRPCTLSConfiguration.makeServerConfigurationBackedByNIOSSL(
     certificateChain: [.certificate(SampleCertificate.server.certificate)],
     privateKey: .privateKey(SamplePrivateKey.server)
   )
 
-  let defaultClientTLSConfiguration = ClientConnection.Configuration.TLS(
+  let defaultClientTLSConfiguration = GRPCTLSConfiguration.makeClientConfigurationBackedByNIOSSL(
     certificateChain: [.certificate(SampleCertificate.client.certificate)],
     privateKey: .privateKey(SamplePrivateKey.client),
     trustRoots: .certificates([SampleCertificate.ca.certificate]),
@@ -69,14 +69,14 @@ class ClientTLSFailureTests: GRPCTestCase {
   var port: Int!
 
   func makeClientConfiguration(
-    tls: ClientConnection.Configuration.TLS
+    tls: GRPCTLSConfiguration
   ) -> ClientConnection.Configuration {
     var configuration = ClientConnection.Configuration.default(
       target: .hostAndPort("localhost", self.port),
       eventLoopGroup: self.clientEventLoopGroup
     )
 
-    configuration.tls = tls
+    configuration.tlsConfiguration = tls
     // No need to retry connecting.
     configuration.connectionBackoff = nil
     configuration.backgroundActivityLogger = self.clientLogger
@@ -93,8 +93,8 @@ class ClientTLSFailureTests: GRPCTestCase {
 
     self.serverEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 
-    self.server = try! Server.secure(
-      group: self.serverEventLoopGroup,
+    self.server = try! Server.usingTLSBackedByNIOSSL(
+      on: self.serverEventLoopGroup,
       certificateChain: [SampleCertificate.server.certificate],
       privateKey: SamplePrivateKey.server
     ).withServiceProviders([EchoProvider()])
@@ -129,7 +129,7 @@ class ClientTLSFailureTests: GRPCTestCase {
     errorExpectation.expectedFulfillmentCount = 2
 
     var tls = self.defaultClientTLSConfiguration
-    tls.trustRoots = .certificates([])
+    tls.updateNIOTrustRoots(to: .certificates([]))
     var configuration = self.makeClientConfiguration(tls: tls)
 
     let errorRecorder = ErrorRecordingDelegate(expectation: errorExpectation)
@@ -202,7 +202,7 @@ class ClientTLSFailureTests: GRPCTestCase {
     // (because the handshake failed).
     errorExpectation.expectedFulfillmentCount = 2
 
-    let tlsConfiguration = ClientConnection.Configuration.TLS(
+    let tlsConfiguration = GRPCTLSConfiguration.makeClientConfigurationBackedByNIOSSL(
       certificateChain: [.certificate(SampleCertificate.client.certificate)],
       privateKey: .privateKey(SamplePrivateKey.client),
       trustRoots: .certificates([SampleCertificate.ca.certificate]),

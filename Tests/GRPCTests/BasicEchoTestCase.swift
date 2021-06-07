@@ -71,11 +71,11 @@ class EchoTestCaseBase: GRPCTestCase {
       return ClientConnection.insecure(group: self.clientEventLoopGroup)
 
     case .anonymousClient:
-      return ClientConnection.secure(group: self.clientEventLoopGroup)
+      return ClientConnection.usingTLSBackedByNIOSSL(on: self.clientEventLoopGroup)
         .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
 
     case .mutualAuthentication:
-      return ClientConnection.secure(group: self.clientEventLoopGroup)
+      return ClientConnection.usingTLSBackedByNIOSSL(on: self.clientEventLoopGroup)
         .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
         .withTLS(certificateChain: [SampleCertificate.client.certificate])
         .withTLS(privateKey: SamplePrivateKey.client)
@@ -88,8 +88,8 @@ class EchoTestCaseBase: GRPCTestCase {
       return Server.insecure(group: self.serverEventLoopGroup)
 
     case .anonymousClient, .mutualAuthentication:
-      return Server.secure(
-        group: self.serverEventLoopGroup,
+      return Server.usingTLSBackedByNIOSSL(
+        on: self.serverEventLoopGroup,
         certificateChain: [SampleCertificate.server.certificate],
         privateKey: SamplePrivateKey.server
       ).withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
