@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-internal struct Version {
+internal enum Version {
   /// The major version.
   internal static let major = 1
 
   /// The minor version.
-  internal static let minor = 0
+  internal static let minor = 1
 
   /// The patch version.
   internal static let patch = 0
