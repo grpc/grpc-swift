@@ -183,7 +183,7 @@ service code and use the `protoc-gen-grpc-swift` plugin.
 
 First let's look at how we create a `RouteGuide` server. If you're only
 interested in creating gRPC clients, you can skip this section and go straight
-to [Creating the client](#client) (though you might find it interesting
+to [Creating the client](#creating-the-client) (though you might find it interesting
 anyway!).
 
 There are two parts to making our `RouteGuide` service do its job:
