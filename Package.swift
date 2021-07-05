@@ -18,6 +18,12 @@ import PackageDescription
 
 let package = Package(
   name: "grpc-swift",
+  platforms: [
+    .iOS(.v12),
+    .macOS(.v10_14),
+    .tvOS(.v12),
+    .watchOS(.v6)
+  ],
   products: [
     .library(name: "GRPC", targets: ["GRPC"]),
     .library(name: "CGRPCZlib", targets: ["CGRPCZlib"]),
