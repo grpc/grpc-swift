@@ -48,7 +48,7 @@ let package = Package(
 
     // Argument parsering: only for internal targets (i.e. examples).
     // swift-argument-parser only provides source compatability guarantees between minor version.
-    .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.3.0")),
+    .package(url: "https://github.com/apple/swift-argument-parser", "0.3.0" ..< "0.5.0"),
   ],
   targets: [
     // The main GRPC module.
