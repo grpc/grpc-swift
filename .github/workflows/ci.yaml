@@ -1,0 +1,85 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  preflight:
+    name: License Header and Formatting Checks
+    runs-on: ubuntu-latest
+    container:
+      image: swift
+    steps:
+    - uses: actions/checkout@v2
+    - name: "Formatting and License Headers check"
+      run: |
+        SWIFTFORMAT_VERSION=0.46.3
+        git clone --depth 1 --branch "$SWIFTFORMAT_VERSION" "https://github.com/nicklockwood/SwiftFormat" "$HOME/SwiftFormat"
+        swift build --package-path "$HOME/SwiftFormat" --product swiftformat
+        export PATH=$PATH:"$(swift build --package-path "$HOME/SwiftFormat" --show-bin-path)"
+        ./scripts/sanity.sh
+  unit-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: swift:5.4-focal
+            swift-test-flags: "--enable-test-discovery --sanitize=thread"
+          - image: swift:5.3-focal
+            swift-build-flags: "--enable-test-discovery"
+            swift-test-flags: "--enable-test-discovery"
+          - image: swift:5.2-bionic
+            swift-build-flags: "--enable-test-discovery"
+            swift-test-flags: "--enable-test-discovery"
+    name: Build and Test on ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ matrix.image }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: 🔧 Build
+      run: swift build ${{ matrix.swift-build-flags }}
+      timeout-minutes: 20
+    - name: 🧪 Test
+      run: swift test ${{ matrix.swift-test-flags }}
+      timeout-minutes: 20
+  performance-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: swift:5.4-focal
+            env:
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 515000
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 227000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 112000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 67000
+              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 63000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 216000
+          - image: swift:5.3-focal
+            env:
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 515000
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 227000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 112000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 67000
+              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 63000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 216000
+          - image: swift:5.2-bionic
+            env:
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_10_requests: 526000
+              MAX_ALLOCS_ALLOWED_bidi_1k_rpcs_1_request: 229000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_10_small_requests: 112000
+              MAX_ALLOCS_ALLOWED_embedded_server_bidi_1k_rpcs_1_small_request: 67000
+              MAX_ALLOCS_ALLOWED_embedded_server_unary_1k_rpcs_1_small_request: 63000
+              MAX_ALLOCS_ALLOWED_unary_1k_ping_pong: 217000
+    name: Performance Tests on ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ matrix.image }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: 🧮 Allocation Counting Tests
+      run: ./Performance/allocations/test-allocation-counts.sh
+      env: ${{ matrix.env }}
+      timeout-minutes: 20
