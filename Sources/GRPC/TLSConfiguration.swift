@@ -96,14 +96,15 @@ extension ClientConnection.Configuration {
       hostnameOverride: String? = nil,
       customVerificationCallback: NIOSSLCustomVerificationCallback? = nil
     ) {
-      self.configuration = .forClient(
-        minimumTLSVersion: .tlsv12,
-        certificateVerification: certificateVerification,
-        trustRoots: trustRoots,
-        certificateChain: certificateChain,
-        privateKey: privateKey,
-        applicationProtocols: GRPCApplicationProtocolIdentifier.client
-      )
+      var configuration = TLSConfiguration.makeClientConfiguration()
+      configuration.minimumTLSVersion = .tlsv12
+      configuration.certificateVerification = certificateVerification
+      configuration.trustRoots = trustRoots
+      configuration.certificateChain = certificateChain
+      configuration.privateKey = privateKey
+      configuration.applicationProtocols = GRPCApplicationProtocolIdentifier.client
+
+      self.configuration = configuration
       self.hostnameOverride = hostnameOverride
       self.customVerificationCallback = customVerificationCallback
     }
@@ -201,14 +202,16 @@ extension Server.Configuration {
       certificateVerification: CertificateVerification = .none,
       requireALPN: Bool = true
     ) {
-      self.configuration = .forServer(
+      var configuration = TLSConfiguration.makeServerConfiguration(
         certificateChain: certificateChain,
-        privateKey: privateKey,
-        minimumTLSVersion: .tlsv12,
-        certificateVerification: certificateVerification,
-        trustRoots: trustRoots,
-        applicationProtocols: GRPCApplicationProtocolIdentifier.server
+        privateKey: privateKey
       )
+      configuration.minimumTLSVersion = .tlsv12
+      configuration.certificateVerification = certificateVerification
+      configuration.trustRoots = trustRoots
+      configuration.applicationProtocols = GRPCApplicationProtocolIdentifier.server
+
+      self.configuration = configuration
       self.requireALPN = requireALPN
     }
 
