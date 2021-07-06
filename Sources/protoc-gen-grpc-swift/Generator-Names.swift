@@ -69,8 +69,7 @@ extension Generator {
     return nameForPackageServiceMethod(file, service, method) + "Call"
   }
 
-  internal let quotableFieldNames: Set<String> = {
-    () -> Set<String> in
+  internal let quotableFieldNames: Set<String> = { () -> Set<String> in
     var names: Set<String> = []
 
     names = names.union(swiftKeywordsUsedInDeclarations)
@@ -97,14 +96,13 @@ extension Generator {
     "Self", "throw", "throws", "true", "try"
   ]
 
-  internal let quotableFieldNames: Set<String> = {
-    () -> Set<String> in
+  internal let quotableFieldNames: Set<String> = { () -> Set<String> in
     var names: Set<String> = []
 
     names = names.union(swiftKeywordsUsedInDeclarations)
     names = names.union(swiftKeywordsUsedInStatements)
     names = names.union(swiftKeywordsUsedInExpressionsAndTypes)
-      return names
+    return names
   }()
 
   internal var methodFunctionName: String {
