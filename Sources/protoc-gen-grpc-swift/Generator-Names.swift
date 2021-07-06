@@ -32,6 +32,35 @@ internal func nameForPackageServiceMethod(_ file: FileDescriptor,
   return nameForPackageService(file, service) + method.name
 }
 
+fileprivate let swiftKeywordsUsedInDeclarations: Set<String> = [
+  "associatedtype", "class", "deinit", "enum", "extension",
+  "fileprivate", "func", "import", "init", "inout", "internal",
+  "let", "open", "operator", "private", "protocol", "public",
+  "static", "struct", "subscript", "typealias", "var"
+]
+
+fileprivate let swiftKeywordsUsedInStatements: Set<String> = [
+  "break", "case",
+  "continue", "default", "defer", "do", "else", "fallthrough",
+  "for", "guard", "if", "in", "repeat", "return", "switch", "where",
+  "while"
+]
+
+fileprivate let swiftKeywordsUsedInExpressionsAndTypes: Set<String> = [ 
+  "as",
+  "Any", "catch", "false", "is", "nil", "rethrows", "super", "self",
+  "Self", "throw", "throws", "true", "try"
+]
+
+fileprivate let quotableFieldNames: Set<String> = { () -> Set<String> in
+  var names: Set<String> = []
+
+  names = names.union(swiftKeywordsUsedInDeclarations)
+  names = names.union(swiftKeywordsUsedInStatements)
+  names = names.union(swiftKeywordsUsedInExpressionsAndTypes)
+  return names
+}()
+
 extension Generator {
   internal var access: String {
     return options.visibility.sourceSnippet
@@ -68,42 +97,6 @@ extension Generator {
   internal var callName: String {
     return nameForPackageServiceMethod(file, service, method) + "Call"
   }
-
-  internal let quotableFieldNames: Set<String> = { () -> Set<String> in
-    var names: Set<String> = []
-
-    names = names.union(swiftKeywordsUsedInDeclarations)
-    names = names.union(swiftKeywordsUsedInStatements)
-    names = names.union(swiftKeywordsUsedInExpressionsAndTypes)
-    return names
-  }()
-
-  internal let swiftKeywordsUsedInDeclarations: Set<String> = [
-    "associatedtype", "class", "deinit", "enum", "extension",
-    "fileprivate", "func", "import", "init", "inout", "internal",
-    "let", "open", "operator", "private", "protocol", "public",
-    "static", "struct", "subscript", "typealias", "var"
-  ]
-
-  internal let swiftKeywordsUsedInStatements: Set<String> = [ "break", "case",
-    "continue", "default", "defer", "do", "else", "fallthrough",
-    "for", "guard", "if", "in", "repeat", "return", "switch", "where",
-    "while"
-  ]
-
-  internal let swiftKeywordsUsedInExpressionsAndTypes: Set<String> = [ "as",
-    "Any", "catch", "false", "is", "nil", "rethrows", "super", "self",
-    "Self", "throw", "throws", "true", "try"
-  ]
-
-  internal let quotableFieldNames: Set<String> = { () -> Set<String> in
-    var names: Set<String> = []
-
-    names = names.union(swiftKeywordsUsedInDeclarations)
-    names = names.union(swiftKeywordsUsedInStatements)
-    names = names.union(swiftKeywordsUsedInExpressionsAndTypes)
-    return names
-  }()
 
   internal var methodFunctionName: String {
     var name = method.name
