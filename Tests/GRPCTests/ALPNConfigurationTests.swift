@@ -32,7 +32,7 @@ class ALPNConfigurationTests: GRPCTestCase {
   }
 
   func testClientAddsTokensFromEmptyNIOSSLConfig() {
-    let tlsConfig = TLSConfiguration.forClient()
+    let tlsConfig = TLSConfiguration.makeClientConfiguration()
     XCTAssertTrue(tlsConfig.applicationProtocols.isEmpty)
 
     let config = ClientConnection.Configuration.TLS(configuration: tlsConfig)
@@ -41,7 +41,8 @@ class ALPNConfigurationTests: GRPCTestCase {
   }
 
   func testClientDoesNotOverrideNonEmptyNIOSSLConfig() {
-    let tlsConfig = TLSConfiguration.forClient(applicationProtocols: ["foo"])
+    var tlsConfig = TLSConfiguration.makeClientConfiguration()
+    tlsConfig.applicationProtocols = ["foo"]
 
     let config = ClientConnection.Configuration.TLS(configuration: tlsConfig)
     // Should not be overridden.
@@ -54,7 +55,10 @@ class ALPNConfigurationTests: GRPCTestCase {
   }
 
   func testServerAddsTokensFromEmptyNIOSSLConfig() {
-    let tlsConfig = TLSConfiguration.forServer(certificateChain: [], privateKey: .file(""))
+    let tlsConfig = TLSConfiguration.makeServerConfiguration(
+      certificateChain: [],
+      privateKey: .file("")
+    )
     XCTAssertTrue(tlsConfig.applicationProtocols.isEmpty)
 
     let config = Server.Configuration.TLS(configuration: tlsConfig)
@@ -63,11 +67,11 @@ class ALPNConfigurationTests: GRPCTestCase {
   }
 
   func testServerDoesNotOverrideNonEmptyNIOSSLConfig() {
-    let tlsConfig = TLSConfiguration.forServer(
+    var tlsConfig = TLSConfiguration.makeServerConfiguration(
       certificateChain: [],
-      privateKey: .file(""),
-      applicationProtocols: ["foo"]
+      privateKey: .file("")
     )
+    tlsConfig.applicationProtocols = ["foo"]
 
     let config = ClientConnection.Configuration.TLS(configuration: tlsConfig)
     // Should not be overridden.
