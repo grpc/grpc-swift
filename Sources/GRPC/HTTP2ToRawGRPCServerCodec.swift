@@ -212,42 +212,55 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelInboundHandler, GRPCServe
 
   /// Try to read a request message from the buffer.
   private func tryReadingMessage() {
-    let action = self.state.readNextRequest(maxLength: self.maxReceiveMessageLength)
-    switch action {
-    case .none:
-      ()
+    // This while loop exists to break the recursion in `.forwardMessageThenReadNextMessage`.
+    // Almost all cases return directly out of the loop.
+    while true {
+      let action = self.state.readNextRequest(
+        maxLength: self.maxReceiveMessageLength
+      )
+      switch action {
+      case .none:
+        return
 
-    case let .forwardMessage(buffer):
-      switch self.configurationState {
-      case .notConfigured:
-        preconditionFailure()
-      case let .configured(handler):
-        handler.receiveMessage(buffer)
-      }
+      case let .forwardMessage(buffer):
+        switch self.configurationState {
+        case .notConfigured:
+          preconditionFailure()
+        case let .configured(handler):
+          handler.receiveMessage(buffer)
+        }
 
-    case let .forwardMessageThenReadNextMessage(buffer):
-      switch self.configurationState {
-      case .notConfigured:
-        preconditionFailure()
-      case let .configured(handler):
-        handler.receiveMessage(buffer)
-      }
-      self.tryReadingMessage()
+        return
 
-    case .forwardEnd:
-      switch self.configurationState {
-      case .notConfigured:
-        preconditionFailure()
-      case let .configured(handler):
-        handler.receiveEnd()
-      }
+      case let .forwardMessageThenReadNextMessage(buffer):
+        switch self.configurationState {
+        case .notConfigured:
+          preconditionFailure()
+        case let .configured(handler):
+          handler.receiveMessage(buffer)
+        }
 
-    case let .errorCaught(error):
-      switch self.configurationState {
-      case .notConfigured:
-        preconditionFailure()
-      case let .configured(handler):
-        handler.receiveError(error)
+        continue
+
+      case .forwardEnd:
+        switch self.configurationState {
+        case .notConfigured:
+          preconditionFailure()
+        case let .configured(handler):
+          handler.receiveEnd()
+        }
+
+        return
+
+      case let .errorCaught(error):
+        switch self.configurationState {
+        case .notConfigured:
+          preconditionFailure()
+        case let .configured(handler):
+          handler.receiveError(error)
+        }
+
+        return
       }
     }
   }

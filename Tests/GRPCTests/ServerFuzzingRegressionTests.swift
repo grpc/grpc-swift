@@ -67,4 +67,14 @@ final class ServerFuzzingRegressionTests: GRPCTestCase {
     let name = "clusterfuzz-testcase-minimized-ServerFuzzer-release-5077460227063808"
     XCTAssertNoThrow(try self.runTest(withInputNamed: name))
   }
+
+  func testFuzzCase_release_5134158417494016() {
+    let name = "clusterfuzz-testcase-minimized-ServerFuzzer-release-5134158417494016"
+    XCTAssertNoThrow(try self.runTest(withInputNamed: name))
+  }
+
+  func testFuzzCase_release_5448955772141568() {
+    let name = "clusterfuzz-testcase-minimized-ServerFuzzer-release-5448955772141568"
+    XCTAssertNoThrow(try self.runTest(withInputNamed: name))
+  }
 }
