@@ -140,7 +140,10 @@ enum ReadState {
   /// a message has been produced then subsequent calls will result in an error.
   ///
   /// - Parameter buffer: The buffer to read from.
-  mutating func readMessages(_ buffer: inout ByteBuffer) -> Result<[ByteBuffer], MessageReadError> {
+  mutating func readMessages(
+    _ buffer: inout ByteBuffer,
+    maxLength: Int
+  ) -> Result<[ByteBuffer], MessageReadError> {
     switch self {
     case .notReading:
       return .failure(.cardinalityViolation)
@@ -150,7 +153,7 @@ enum ReadState {
       var messages: [ByteBuffer] = []
 
       do {
-        while let serializedBytes = try reader.nextMessage() {
+        while let serializedBytes = try reader.nextMessage(maxLength: maxLength) {
           messages.append(serializedBytes)
         }
       } catch {

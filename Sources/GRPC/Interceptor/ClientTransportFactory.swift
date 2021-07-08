@@ -47,6 +47,7 @@ internal struct ClientTransportFactory<Request, Response> {
     multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
     authority: String,
     scheme: String,
+    maximumReceiveMessageLength: Int,
     errorDelegate: ClientErrorDelegate?
   ) -> ClientTransportFactory<Request, Response> {
     let http2 = HTTP2ClientTransportFactory<Request, Response>(
@@ -55,6 +56,7 @@ internal struct ClientTransportFactory<Request, Response> {
       authority: authority,
       serializer: ProtobufSerializer(),
       deserializer: ProtobufDeserializer(),
+      maximumReceiveMessageLength: maximumReceiveMessageLength,
       errorDelegate: errorDelegate
     )
     return .init(http2)
@@ -71,6 +73,7 @@ internal struct ClientTransportFactory<Request, Response> {
     multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
     authority: String,
     scheme: String,
+    maximumReceiveMessageLength: Int,
     errorDelegate: ClientErrorDelegate?
   ) -> ClientTransportFactory<Request, Response> {
     let http2 = HTTP2ClientTransportFactory<Request, Response>(
@@ -79,6 +82,7 @@ internal struct ClientTransportFactory<Request, Response> {
       authority: authority,
       serializer: AnySerializer(wrapping: GRPCPayloadSerializer()),
       deserializer: AnyDeserializer(wrapping: GRPCPayloadDeserializer()),
+      maximumReceiveMessageLength: maximumReceiveMessageLength,
       errorDelegate: errorDelegate
     )
     return .init(http2)
@@ -182,12 +186,16 @@ private struct HTTP2ClientTransportFactory<Request, Response> {
   /// The response deserializer.
   private let deserializer: AnyDeserializer<Response>
 
+  /// Maximum allowed length of a received message.
+  private let maximumReceiveMessageLength: Int
+
   fileprivate init<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
     multiplexer: EventLoopFuture<HTTP2StreamMultiplexer>,
     scheme: String,
     authority: String,
     serializer: Serializer,
     deserializer: Deserializer,
+    maximumReceiveMessageLength: Int,
     errorDelegate: ClientErrorDelegate?
   ) where Serializer.Input == Request, Deserializer.Output == Response {
     self.multiplexer = multiplexer
@@ -195,6 +203,7 @@ private struct HTTP2ClientTransportFactory<Request, Response> {
     self.authority = authority
     self.serializer = AnySerializer(wrapping: serializer)
     self.deserializer = AnyDeserializer(wrapping: deserializer)
+    self.maximumReceiveMessageLength = maximumReceiveMessageLength
     self.errorDelegate = errorDelegate
   }
 
@@ -232,6 +241,7 @@ private struct HTTP2ClientTransportFactory<Request, Response> {
           do {
             let clientHandler = GRPCClientChannelHandler(
               callType: transport.callDetails.type,
+              maximumReceiveMessageLength: self.maximumReceiveMessageLength,
               logger: transport.logger
             )
             try syncOperations.addHandler(clientHandler)

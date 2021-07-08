@@ -286,14 +286,21 @@ public enum GRPCCallType {
 internal final class GRPCClientChannelHandler {
   private let logger: GRPCLogger
   private var stateMachine: GRPCClientStateMachine
+  private let maximumReceiveMessageLength: Int
 
   /// Creates a new gRPC channel handler for clients to translate HTTP/2 frames to gRPC messages.
   ///
   /// - Parameters:
   ///   - callType: Type of RPC call being made.
+  ///   - maximumReceiveMessageLength: Maximum allowed length in bytes of a received message.
   ///   - logger: Logger.
-  internal init(callType: GRPCCallType, logger: GRPCLogger) {
+  internal init(
+    callType: GRPCCallType,
+    maximumReceiveMessageLength: Int,
+    logger: GRPCLogger
+  ) {
     self.logger = logger
+    self.maximumReceiveMessageLength = maximumReceiveMessageLength
     switch callType {
     case .unary:
       self.stateMachine = .init(requestArity: .one, responseArity: .one)
@@ -444,20 +451,22 @@ extension GRPCClientChannelHandler: ChannelInboundHandler {
     }
 
     // Feed the buffer into the state machine.
-    let result = self.stateMachine.receiveResponseBuffer(&buffer)
-      .mapError { error -> GRPCError.WithContext in
-        switch error {
-        case .cardinalityViolation:
-          return GRPCError.StreamCardinalityViolation.response.captureContext()
-        case .deserializationFailed, .leftOverBytes:
-          return GRPCError.DeserializationFailure().captureContext()
-        case let .decompressionLimitExceeded(compressedSize):
-          return GRPCError.DecompressionLimitExceeded(compressedSize: compressedSize)
-            .captureContext()
-        case .invalidState:
-          return GRPCError.InvalidState("parsing data as a response message").captureContext()
-        }
+    let result = self.stateMachine.receiveResponseBuffer(
+      &buffer,
+      maxMessageLength: self.maximumReceiveMessageLength
+    ).mapError { error -> GRPCError.WithContext in
+      switch error {
+      case .cardinalityViolation:
+        return GRPCError.StreamCardinalityViolation.response.captureContext()
+      case .deserializationFailed, .leftOverBytes:
+        return GRPCError.DeserializationFailure().captureContext()
+      case let .decompressionLimitExceeded(compressedSize):
+        return GRPCError.DecompressionLimitExceeded(compressedSize: compressedSize)
+          .captureContext()
+      case .invalidState:
+        return GRPCError.InvalidState("parsing data as a response message").captureContext()
       }
+    }
 
     // Did we get any messages?
     switch result {

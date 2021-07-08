@@ -777,10 +777,11 @@ extension HTTP2ToRawGRPCStateMachine.RequestClosedResponseIdleState {
 extension HTTP2ToRawGRPCStateMachine {
   static func read(
     from reader: inout LengthPrefixedMessageReader,
-    requestStreamClosed: Bool
+    requestStreamClosed: Bool,
+    maxLength: Int
   ) -> HTTP2ToRawGRPCStateMachine.ReadNextMessageAction {
     do {
-      if let buffer = try reader.nextMessage() {
+      if let buffer = try reader.nextMessage(maxLength: maxLength) {
         if reader.unprocessedBytes > 0 || requestStreamClosed {
           // Either there are unprocessed bytes or the request stream is now closed: deliver the
           // message and then try to read. The subsequent read may be another message or it may
@@ -802,26 +803,50 @@ extension HTTP2ToRawGRPCStateMachine {
 }
 
 extension HTTP2ToRawGRPCStateMachine.RequestOpenResponseIdleState {
-  mutating func readNextRequest() -> HTTP2ToRawGRPCStateMachine.ReadNextMessageAction {
-    return HTTP2ToRawGRPCStateMachine.read(from: &self.reader, requestStreamClosed: false)
+  mutating func readNextRequest(
+    maxLength: Int
+  ) -> HTTP2ToRawGRPCStateMachine.ReadNextMessageAction {
+    return HTTP2ToRawGRPCStateMachine.read(
+      from: &self.reader,
+      requestStreamClosed: false,
+      maxLength: maxLength
+    )
   }
 }
 
 extension HTTP2ToRawGRPCStateMachine.RequestOpenResponseOpenState {
-  mutating func readNextRequest() -> HTTP2ToRawGRPCStateMachine.ReadNextMessageAction {
-    return HTTP2ToRawGRPCStateMachine.read(from: &self.reader, requestStreamClosed: false)
+  mutating func readNextRequest(
+    maxLength: Int
+  ) -> HTTP2ToRawGRPCStateMachine.ReadNextMessageAction {
+    return HTTP2ToRawGRPCStateMachine.read(
+      from: &self.reader,
+      requestStreamClosed: false,
+      maxLength: maxLength
+    )
   }
 }
 
 extension HTTP2ToRawGRPCStateMachine.RequestClosedResponseIdleState {
-  mutating func readNextRequest() -> HTTP2ToRawGRPCStateMachine.ReadNextMessageAction {
-    return HTTP2ToRawGRPCStateMachine.read(from: &self.reader, requestStreamClosed: true)
+  mutating func readNextRequest(
+    maxLength: Int
+  ) -> HTTP2ToRawGRPCStateMachine.ReadNextMessageAction {
+    return HTTP2ToRawGRPCStateMachine.read(
+      from: &self.reader,
+      requestStreamClosed: true,
+      maxLength: maxLength
+    )
   }
 }
 
 extension HTTP2ToRawGRPCStateMachine.RequestClosedResponseOpenState {
-  mutating func readNextRequest() -> HTTP2ToRawGRPCStateMachine.ReadNextMessageAction {
-    return HTTP2ToRawGRPCStateMachine.read(from: &self.reader, requestStreamClosed: true)
+  mutating func readNextRequest(
+    maxLength: Int
+  ) -> HTTP2ToRawGRPCStateMachine.ReadNextMessageAction {
+    return HTTP2ToRawGRPCStateMachine.read(
+      from: &self.reader,
+      requestStreamClosed: true,
+      maxLength: maxLength
+    )
   }
 }
 
@@ -904,9 +929,9 @@ extension HTTP2ToRawGRPCStateMachine {
   }
 
   /// Try to read a request message.
-  mutating func readNextRequest() -> ReadNextMessageAction {
+  mutating func readNextRequest(maxLength: Int) -> ReadNextMessageAction {
     return self.withStateAvoidingCoWs { state in
-      state.readNextRequest()
+      state.readNextRequest(maxLength: maxLength)
     }
   }
 }
@@ -1028,28 +1053,30 @@ extension HTTP2ToRawGRPCStateMachine.State {
     }
   }
 
-  mutating func readNextRequest() -> HTTP2ToRawGRPCStateMachine.ReadNextMessageAction {
+  mutating func readNextRequest(
+    maxLength: Int
+  ) -> HTTP2ToRawGRPCStateMachine.ReadNextMessageAction {
     switch self {
     case .requestIdleResponseIdle:
       preconditionFailure("Invalid state")
 
     case var .requestOpenResponseIdle(state):
-      let action = state.readNextRequest()
+      let action = state.readNextRequest(maxLength: maxLength)
       self = .requestOpenResponseIdle(state)
       return action
 
     case var .requestOpenResponseOpen(state):
-      let action = state.readNextRequest()
+      let action = state.readNextRequest(maxLength: maxLength)
       self = .requestOpenResponseOpen(state)
       return action
 
     case var .requestClosedResponseIdle(state):
-      let action = state.readNextRequest()
+      let action = state.readNextRequest(maxLength: maxLength)
       self = .requestClosedResponseIdle(state)
       return action
 
     case var .requestClosedResponseOpen(state):
-      let action = state.readNextRequest()
+      let action = state.readNextRequest(maxLength: maxLength)
       self = .requestClosedResponseOpen(state)
       return action
 

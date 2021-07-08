@@ -106,6 +106,15 @@ extension Server.Builder {
     self.configuration.messageEncoding = encoding
     return self
   }
+
+  /// Sets the maximum message size in bytes the server may receive.
+  ///
+  /// - Precondition: `limit` must not be negative.
+  @discardableResult
+  public func withMaximumReceiveMessageLength(_ limit: Int) -> Self {
+    self.configuration.maximumReceiveMessageLength = limit
+    return self
+  }
 }
 
 extension Server.Builder.Secure {

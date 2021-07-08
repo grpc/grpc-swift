@@ -170,6 +170,7 @@ extension ClientConnection: GRPCChannel {
         multiplexer: multiplexer,
         authority: self.authority,
         scheme: self.scheme,
+        maximumReceiveMessageLength: self.configuration.maximumReceiveMessageLength,
         errorDelegate: self.configuration.errorDelegate
       )
     )
@@ -196,6 +197,7 @@ extension ClientConnection: GRPCChannel {
         multiplexer: multiplexer,
         authority: self.authority,
         scheme: self.scheme,
+        maximumReceiveMessageLength: self.configuration.maximumReceiveMessageLength,
         errorDelegate: self.configuration.errorDelegate
       )
     )
@@ -330,6 +332,13 @@ extension ClientConnection {
     /// The HTTP protocol used for this connection.
     public var httpProtocol: HTTP2FramePayloadToHTTP1ClientCodec.HTTPProtocol {
       return self.tls == nil ? .http : .https
+    }
+
+    /// The maximum size in bytes of a message which may be received from a server. Defaults to 4MB.
+    public var maximumReceiveMessageLength: Int = 4 * 1024 * 1024 {
+      willSet {
+        precondition(newValue >= 0, "maximumReceiveMessageLength must be positive")
+      }
     }
 
     /// A logger for background information (such as connectivity state). A separate logger for

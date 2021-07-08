@@ -337,7 +337,7 @@ extension GRPCClientStateMachineTests {
     let message = "Hello!"
     var buffer = try self.writeMessage(message)
 
-    stateMachine.receiveResponseBuffer(&buffer).assertFailure {
+    stateMachine.receiveResponseBuffer(&buffer, maxMessageLength: .max).assertFailure {
       XCTAssertEqual($0, expected)
     }
   }
@@ -348,7 +348,7 @@ extension GRPCClientStateMachineTests {
     let message = "Hello!"
     var buffer = try self.writeMessage(message)
 
-    stateMachine.receiveResponseBuffer(&buffer).assertSuccess { messages in
+    stateMachine.receiveResponseBuffer(&buffer, maxMessageLength: .max).assertSuccess { messages in
       XCTAssertEqual(messages, [ByteBuffer(string: message)])
     }
   }
@@ -554,7 +554,7 @@ extension GRPCClientStateMachineTests {
 
     // Receive a response.
     var buffer = try self.writeMessage("Hello!")
-    stateMachine.receiveResponseBuffer(&buffer).assertSuccess()
+    stateMachine.receiveResponseBuffer(&buffer, maxMessageLength: .max).assertSuccess()
 
     // Receive the status.
     stateMachine.receiveEndOfResponseStream(self.makeTrailers(status: .ok)).assertSuccess()
@@ -591,7 +591,7 @@ extension GRPCClientStateMachineTests {
 
     // Receive a response.
     var buffer = try self.writeMessage("Hello!")
-    stateMachine.receiveResponseBuffer(&buffer).assertSuccess()
+    stateMachine.receiveResponseBuffer(&buffer, maxMessageLength: .max).assertSuccess()
 
     // Receive the status.
     stateMachine.receiveEndOfResponseStream(self.makeTrailers(status: .ok)).assertSuccess()
@@ -624,12 +624,12 @@ extension GRPCClientStateMachineTests {
 
     // Receive a response.
     var firstBuffer = try self.writeMessage("1")
-    stateMachine.receiveResponseBuffer(&firstBuffer).assertSuccess()
+    stateMachine.receiveResponseBuffer(&firstBuffer, maxMessageLength: .max).assertSuccess()
 
     // Receive two responses in one buffer.
     var secondBuffer = try self.writeMessage("2")
     try self.writeMessage("3", into: &secondBuffer)
-    stateMachine.receiveResponseBuffer(&secondBuffer).assertSuccess()
+    stateMachine.receiveResponseBuffer(&secondBuffer, maxMessageLength: .max).assertSuccess()
 
     // Receive the status.
     stateMachine.receiveEndOfResponseStream(self.makeTrailers(status: .ok)).assertSuccess()
@@ -659,7 +659,7 @@ extension GRPCClientStateMachineTests {
 
     // Receive a response.
     var firstBuffer = try self.writeMessage("1")
-    stateMachine.receiveResponseBuffer(&firstBuffer).assertSuccess()
+    stateMachine.receiveResponseBuffer(&firstBuffer, maxMessageLength: .max).assertSuccess()
 
     // Send two more requests.
     stateMachine.sendRequest(ByteBuffer(string: "2"), compressed: false, allocator: self.allocator)
@@ -670,7 +670,7 @@ extension GRPCClientStateMachineTests {
     // Receive two responses in one buffer.
     var secondBuffer = try self.writeMessage("2")
     try self.writeMessage("3", into: &secondBuffer)
-    stateMachine.receiveResponseBuffer(&secondBuffer).assertSuccess()
+    stateMachine.receiveResponseBuffer(&secondBuffer, maxMessageLength: .max).assertSuccess()
 
     // Close the request stream.
     stateMachine.sendEndOfRequestStream().assertSuccess()
@@ -738,10 +738,10 @@ extension GRPCClientStateMachineTests {
 
       // One response is fine.
       var firstBuffer = try self.writeMessage("foo")
-      stateMachine.receiveResponseBuffer(&firstBuffer).assertSuccess()
+      stateMachine.receiveResponseBuffer(&firstBuffer, maxMessageLength: .max).assertSuccess()
 
       var secondBuffer = try self.writeMessage("bar")
-      stateMachine.receiveResponseBuffer(&secondBuffer).assertFailure {
+      stateMachine.receiveResponseBuffer(&secondBuffer, maxMessageLength: .max).assertFailure {
         XCTAssertEqual($0, .cardinalityViolation)
       }
     }
@@ -757,7 +757,7 @@ extension GRPCClientStateMachineTests {
       var other = try self.writeMessage("bar")
       buffer.writeBuffer(&other)
 
-      stateMachine.receiveResponseBuffer(&buffer).assertFailure {
+      stateMachine.receiveResponseBuffer(&buffer, maxMessageLength: .max).assertFailure {
         XCTAssertEqual($0, .cardinalityViolation)
       }
     }
@@ -1139,7 +1139,7 @@ class ReadStateTests: GRPCTestCase {
   func testReadWhenNoExpectedMessages() {
     var state: ReadState = .notReading
     var buffer = self.allocator.buffer(capacity: 0)
-    state.readMessages(&buffer).assertFailure {
+    state.readMessages(&buffer, maxLength: .max).assertFailure {
       XCTAssertEqual($0, .cardinalityViolation)
     }
     state.assertNotReading()
@@ -1155,7 +1155,7 @@ class ReadStateTests: GRPCTestCase {
     buffer.writeBytes(bytes)
 
     var state: ReadState = .one()
-    state.readMessages(&buffer).assertFailure {
+    state.readMessages(&buffer, maxLength: .max).assertFailure {
       XCTAssertEqual($0, .leftOverBytes)
     }
     state.assertNotReading()
@@ -1170,7 +1170,7 @@ class ReadStateTests: GRPCTestCase {
     buffer.writeBuffer(&second)
 
     var state: ReadState = .one()
-    state.readMessages(&buffer).assertFailure {
+    state.readMessages(&buffer, maxLength: .max).assertFailure {
       XCTAssertEqual($0, .cardinalityViolation)
     }
     state.assertNotReading()
@@ -1183,7 +1183,7 @@ class ReadStateTests: GRPCTestCase {
     var buffer = try writer.write(buffer: message, allocator: self.allocator)
 
     var state: ReadState = .one()
-    state.readMessages(&buffer).assertSuccess {
+    state.readMessages(&buffer, maxLength: .max).assertSuccess {
       XCTAssertEqual($0, [message])
     }
 
@@ -1198,7 +1198,7 @@ class ReadStateTests: GRPCTestCase {
     var buffer = try writer.write(buffer: message, allocator: self.allocator)
 
     var state: ReadState = .many()
-    state.readMessages(&buffer).assertSuccess {
+    state.readMessages(&buffer, maxLength: .max).assertSuccess {
       XCTAssertEqual($0, [message])
     }
 
@@ -1219,7 +1219,7 @@ class ReadStateTests: GRPCTestCase {
     first.writeBuffer(&third)
 
     var state: ReadState = .many()
-    state.readMessages(&first).assertSuccess {
+    state.readMessages(&first, maxLength: .max).assertSuccess {
       XCTAssertEqual($0, [message, message, message])
     }
 

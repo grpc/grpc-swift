@@ -256,6 +256,17 @@ extension ClientConnection.Builder {
 }
 
 extension ClientConnection.Builder {
+  /// Sets the maximum message size the client is permitted to receive in bytes.
+  ///
+  /// - Precondition: `limit` must not be negative.
+  @discardableResult
+  public func withMaximumReceiveMessageLength(_ limit: Int) -> Self {
+    self.configuration.maximumReceiveMessageLength = limit
+    return self
+  }
+}
+
+extension ClientConnection.Builder {
   /// Sets a logger to be used for background activity such as connection state changes. Defaults
   /// to a no-op logger if not explicitly set.
   ///

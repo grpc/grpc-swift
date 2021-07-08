@@ -30,6 +30,7 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelInboundHandler, GRPCServe
   private let servicesByName: [Substring: CallHandlerProvider]
   private let encoding: ServerMessageEncoding
   private let normalizeHeaders: Bool
+  private let maxReceiveMessageLength: Int
 
   /// The configuration state of the handler.
   private var configurationState: Configuration = .notConfigured
@@ -71,6 +72,7 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelInboundHandler, GRPCServe
     encoding: ServerMessageEncoding,
     errorDelegate: ServerErrorDelegate?,
     normalizeHeaders: Bool,
+    maximumReceiveMessageLength: Int,
     logger: Logger
   ) {
     self.logger = logger
@@ -78,6 +80,7 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelInboundHandler, GRPCServe
     self.servicesByName = servicesByName
     self.encoding = encoding
     self.normalizeHeaders = normalizeHeaders
+    self.maxReceiveMessageLength = maximumReceiveMessageLength
     self.state = HTTP2ToRawGRPCStateMachine()
   }
 
@@ -209,7 +212,7 @@ internal final class HTTP2ToRawGRPCServerCodec: ChannelInboundHandler, GRPCServe
 
   /// Try to read a request message from the buffer.
   private func tryReadingMessage() {
-    let action = self.state.readNextRequest()
+    let action = self.state.readNextRequest(maxLength: self.maxReceiveMessageLength)
     switch action {
     case .none:
       ()

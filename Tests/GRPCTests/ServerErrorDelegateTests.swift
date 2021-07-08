@@ -158,6 +158,7 @@ class ServerErrorDelegateTests: GRPCTestCase {
       encoding: .disabled,
       errorDelegate: self.errorDelegate,
       normalizeHeaders: true,
+      maximumReceiveMessageLength: .max,
       logger: self.logger
     )
 

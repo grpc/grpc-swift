@@ -70,6 +70,8 @@ class EmbeddedGRPCChannel: GRPCChannel {
         multiplexer: self.multiplexer,
         authority: self.authority,
         scheme: self.scheme,
+        // This is internal and only for testing, so max is fine here.
+        maximumReceiveMessageLength: .max,
         errorDelegate: self.errorDelegate
       )
     )
@@ -91,6 +93,8 @@ class EmbeddedGRPCChannel: GRPCChannel {
         multiplexer: self.multiplexer,
         authority: self.authority,
         scheme: self.scheme,
+        // This is internal and only for testing, so max is fine here.
+        maximumReceiveMessageLength: .max,
         errorDelegate: self.errorDelegate
       )
     )

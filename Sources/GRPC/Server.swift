@@ -276,6 +276,13 @@ extension Server {
     /// Defaults to `.disabled`.
     public var messageEncoding: ServerMessageEncoding = .disabled
 
+    /// The maximum size in bytes of a message which may be received from a client. Defaults to 4MB.
+    public var maximumReceiveMessageLength: Int = 4 * 1024 * 1024 {
+      willSet {
+        precondition(newValue >= 0, "maximumReceiveMessageLength must be positive")
+      }
+    }
+
     /// The HTTP/2 flow control target window size. Defaults to 65535.
     public var httpTargetWindowSize: Int = 65535
 

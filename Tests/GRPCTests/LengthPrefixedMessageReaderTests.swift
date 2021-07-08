@@ -271,3 +271,9 @@ class LengthPrefixedMessageReaderTests: GRPCTestCase {
     XCTAssertEqual(self.reader._consumedNonDiscardedBytes, 0)
   }
 }
+
+extension LengthPrefixedMessageReader {
+  fileprivate mutating func nextMessage() throws -> ByteBuffer? {
+    return try self.nextMessage(maxLength: .max)
+  }
+}

@@ -734,3 +734,9 @@ class NoOpResponseWriter: GRPCServerResponseWriter {
     promise?.succeed(())
   }
 }
+
+extension HTTP2ToRawGRPCStateMachine {
+  fileprivate mutating func readNextRequest() -> HTTP2ToRawGRPCStateMachine.ReadNextMessageAction {
+    return self.readNextRequest(maxLength: .max)
+  }
+}

@@ -314,10 +314,11 @@ struct GRPCClientStateMachine {
   ///
   /// - Parameter buffer: A buffer of bytes received from the server.
   mutating func receiveResponseBuffer(
-    _ buffer: inout ByteBuffer
+    _ buffer: inout ByteBuffer,
+    maxMessageLength: Int
   ) -> Result<[ByteBuffer], MessageReadError> {
     return self.withStateAvoidingCoWs { state in
-      state.receiveResponseBuffer(&buffer)
+      state.receiveResponseBuffer(&buffer, maxMessageLength: maxMessageLength)
     }
   }
 
@@ -514,17 +515,18 @@ extension GRPCClientStateMachine.State {
 
   /// See `GRPCClientStateMachine.receiveResponseBuffer(_:)`.
   mutating func receiveResponseBuffer(
-    _ buffer: inout ByteBuffer
+    _ buffer: inout ByteBuffer,
+    maxMessageLength: Int
   ) -> Result<[ByteBuffer], MessageReadError> {
     let result: Result<[ByteBuffer], MessageReadError>
 
     switch self {
     case var .clientClosedServerActive(readState):
-      result = readState.readMessages(&buffer)
+      result = readState.readMessages(&buffer, maxLength: maxMessageLength)
       self = .clientClosedServerActive(readState: readState)
 
     case .clientActiveServerActive(let writeState, var readState):
-      result = readState.readMessages(&buffer)
+      result = readState.readMessages(&buffer, maxLength: maxMessageLength)
       self = .clientActiveServerActive(writeState: writeState, readState: readState)
 
     case .clientIdleServerIdle,

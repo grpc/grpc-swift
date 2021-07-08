@@ -28,7 +28,11 @@ extension EmbeddedChannel {
     responseType: Response.Type = Response.self
   ) -> EventLoopFuture<Void> {
     return self.pipeline.addHandlers([
-      GRPCClientChannelHandler(callType: callType, logger: GRPCLogger(wrapping: logger)),
+      GRPCClientChannelHandler(
+        callType: callType,
+        maximumReceiveMessageLength: .max,
+        logger: GRPCLogger(wrapping: logger)
+      ),
       GRPCClientCodecHandler(
         serializer: ProtobufSerializer<Request>(),
         deserializer: ProtobufDeserializer<Response>()
@@ -47,6 +51,7 @@ extension EmbeddedChannel {
       encoding: encoding,
       errorDelegate: nil,
       normalizeHeaders: normalizeHeaders,
+      maximumReceiveMessageLength: .max,
       logger: logger
     )
     return self.pipeline.addHandler(codec)

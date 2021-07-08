@@ -35,6 +35,7 @@ class GRPCClientChannelHandlerTests: GRPCTestCase {
   func doTestDataFrameWithEndStream(dataContainsMessage: Bool) throws {
     let handler = GRPCClientChannelHandler(
       callType: .unary,
+      maximumReceiveMessageLength: .max,
       logger: GRPCLogger(wrapping: self.clientLogger)
     )
 

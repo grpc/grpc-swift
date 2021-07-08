@@ -67,7 +67,7 @@ internal struct LengthPrefixedMessageReader {
   internal enum ParseState {
     case expectingCompressedFlag
     case expectingMessageLength(compressed: Bool)
-    case expectingMessage(UInt32, compressed: Bool)
+    case expectingMessage(Int, compressed: Bool)
   }
 
   private var buffer: ByteBuffer!
@@ -127,14 +127,14 @@ internal struct LengthPrefixedMessageReader {
   /// - Returns: A buffer containing a message if one has been read, or `nil` if not enough
   ///   bytes have been consumed to return a message.
   /// - Throws: Throws an error if the compression algorithm is not supported.
-  internal mutating func nextMessage() throws -> ByteBuffer? {
-    switch try self.processNextState() {
+  internal mutating func nextMessage(maxLength: Int) throws -> ByteBuffer? {
+    switch try self.processNextState(maxLength: maxLength) {
     case .needMoreData:
       self.nilBufferIfPossible()
       return nil
 
     case .continue:
-      return try self.nextMessage()
+      return try self.nextMessage(maxLength: maxLength)
 
     case let .message(message):
       self.nilBufferIfPossible()
@@ -161,7 +161,7 @@ internal struct LengthPrefixedMessageReader {
     }
   }
 
-  private mutating func processNextState() throws -> ParseResult {
+  private mutating func processNextState(maxLength: Int) throws -> ParseResult {
     guard self.buffer != nil else {
       return .needMoreData
     }
@@ -180,14 +180,18 @@ internal struct LengthPrefixedMessageReader {
       self.state = .expectingMessageLength(compressed: isCompressionEnabled)
 
     case let .expectingMessageLength(compressed):
-      guard let messageLength: UInt32 = self.buffer.readInteger() else {
+      guard let messageLength = self.buffer.readInteger(as: UInt32.self).map(Int.init) else {
         return .needMoreData
       }
+
+      if messageLength > maxLength {
+        throw GRPCError.DeserializationFailure().captureContext()
+      }
+
       self.state = .expectingMessage(messageLength, compressed: compressed)
 
     case let .expectingMessage(length, compressed):
-      let signedLength: Int = numericCast(length)
-      guard var message = self.buffer.readSlice(length: signedLength) else {
+      guard var message = self.buffer.readSlice(length: length) else {
         return .needMoreData
       }
 
