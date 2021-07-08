@@ -32,27 +32,27 @@ internal func nameForPackageServiceMethod(_ file: FileDescriptor,
   return nameForPackageService(file, service) + method.name
 }
 
-fileprivate let swiftKeywordsUsedInDeclarations: Set<String> = [
+private let swiftKeywordsUsedInDeclarations: Set<String> = [
   "associatedtype", "class", "deinit", "enum", "extension",
   "fileprivate", "func", "import", "init", "inout", "internal",
   "let", "open", "operator", "private", "protocol", "public",
-  "static", "struct", "subscript", "typealias", "var"
+  "static", "struct", "subscript", "typealias", "var",
 ]
 
-fileprivate let swiftKeywordsUsedInStatements: Set<String> = [
+private let swiftKeywordsUsedInStatements: Set<String> = [
   "break", "case",
   "continue", "default", "defer", "do", "else", "fallthrough",
   "for", "guard", "if", "in", "repeat", "return", "switch", "where",
-  "while"
+  "while",
 ]
 
-fileprivate let swiftKeywordsUsedInExpressionsAndTypes: Set<String> = [ 
+private let swiftKeywordsUsedInExpressionsAndTypes: Set<String> = [
   "as",
   "Any", "catch", "false", "is", "nil", "rethrows", "super", "self",
-  "Self", "throw", "throws", "true", "try"
+  "Self", "throw", "throws", "true", "try",
 ]
 
-fileprivate let quotableFieldNames: Set<String> = { () -> Set<String> in
+private let quotableFieldNames: Set<String> = { () -> Set<String> in
   var names: Set<String> = []
 
   names = names.union(swiftKeywordsUsedInDeclarations)
@@ -104,7 +104,7 @@ extension Generator {
       name = name.prefix(1).lowercased() + name.dropFirst()
     }
 
-    return sanitize(fieldName: name)
+    return self.sanitize(fieldName: name)
   }
 
   internal func sanitize(fieldName string: String) -> String {
