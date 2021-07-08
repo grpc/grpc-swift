@@ -32,6 +32,35 @@ internal func nameForPackageServiceMethod(_ file: FileDescriptor,
   return nameForPackageService(file, service) + method.name
 }
 
+private let swiftKeywordsUsedInDeclarations: Set<String> = [
+  "associatedtype", "class", "deinit", "enum", "extension",
+  "fileprivate", "func", "import", "init", "inout", "internal",
+  "let", "open", "operator", "private", "protocol", "public",
+  "static", "struct", "subscript", "typealias", "var",
+]
+
+private let swiftKeywordsUsedInStatements: Set<String> = [
+  "break", "case",
+  "continue", "default", "defer", "do", "else", "fallthrough",
+  "for", "guard", "if", "in", "repeat", "return", "switch", "where",
+  "while",
+]
+
+private let swiftKeywordsUsedInExpressionsAndTypes: Set<String> = [
+  "as",
+  "Any", "catch", "false", "is", "nil", "rethrows", "super", "self",
+  "Self", "throw", "throws", "true", "try",
+]
+
+private let quotableFieldNames: Set<String> = { () -> Set<String> in
+  var names: Set<String> = []
+
+  names = names.union(swiftKeywordsUsedInDeclarations)
+  names = names.union(swiftKeywordsUsedInStatements)
+  names = names.union(swiftKeywordsUsedInExpressionsAndTypes)
+  return names
+}()
+
 extension Generator {
   internal var access: String {
     return options.visibility.sourceSnippet
@@ -70,12 +99,19 @@ extension Generator {
   }
 
   internal var methodFunctionName: String {
-    let name = method.name
-    if self.options.keepMethodCasing {
-      return name
-    } else {
-      return name.prefix(1).lowercased() + name.dropFirst()
+    var name = method.name
+    if !self.options.keepMethodCasing {
+      name = name.prefix(1).lowercased() + name.dropFirst()
     }
+
+    return self.sanitize(fieldName: name)
+  }
+
+  internal func sanitize(fieldName string: String) -> String {
+    if quotableFieldNames.contains(string) {
+      return "`\(string)`"
+    }
+    return string
   }
 
   internal var methodInputName: String {
