@@ -379,8 +379,20 @@ final class GRPCWebToHTTP2StateMachineTests: GRPCTestCase {
       allocator: self.allocator
     ).assertWrite()
 
-    state.processInbound(serverRequestPart: .body(.init()), allocator: self.allocator).assertNone()
-    state.processInbound(serverRequestPart: .end(nil), allocator: self.allocator).assertNone()
+    state.processInbound(
+      serverRequestPart: .body(ByteBuffer(string: "hello world")),
+      allocator: self.allocator
+    ).assertRead {
+      $0.assertData {
+        XCTAssertFalse($0.endStream)
+        $0.data.assertByteBuffer { buffer in
+          XCTAssertTrue(buffer.readableBytesView.elementsEqual("hello world".utf8))
+        }
+      }
+    }
+    state.processInbound(serverRequestPart: .end(nil), allocator: self.allocator).assertRead {
+      $0.assertEmptyDataWithEndStream()
+    }
   }
 
   func test_responsePartsAfterServerClosed() {
@@ -489,14 +501,14 @@ final class GRPCWebToHTTP2StateMachineTests: GRPCTestCase {
     // gRPC-Web, server closes immediately.
     sendRequestHead(&state, contentType: .webProtobuf).assertRead()
     sendResponseHeaders(&state, headers: [":status": "415"], endStream: true).assertWrite()
-    sendRequestBody(&state, buffer: .init(string: "hello")).assertNone()
-    sendRequestEnd(&state).assertNone()
+    sendRequestBody(&state, buffer: .init(string: "hello")).assertRead()
+    sendRequestEnd(&state).assertRead()
 
     // gRPC-Web text, server closes immediately.
     sendRequestHead(&state, contentType: .webTextProtobuf).assertRead()
     sendResponseHeaders(&state, headers: [":status": "415"], endStream: true).assertWrite()
-    sendRequestBody(&state, buffer: .init(string: "hello")).assertNone()
-    sendRequestEnd(&state).assertNone()
+    sendRequestBody(&state, buffer: .init(string: "hello")).assertRead()
+    sendRequestEnd(&state).assertRead()
   }
 }
 

@@ -1,0 +1,10 @@
+PUT /echo.Echo/Collect HTTP/1.1
+Content-Type:application/grpc
+transfer-encoding:cHUnked
+
+3
+ÿÿ 
+ÿ
+
+PUT * HTTP/1.1
+
