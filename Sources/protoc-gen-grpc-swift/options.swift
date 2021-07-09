@@ -60,6 +60,7 @@ final class GeneratorOptions {
   private(set) var fileNaming = FileNaming.FullPath
   private(set) var extraModuleImports: [String] = []
   private(set) var gRPCModuleName = "GRPC"
+  private(set) var swiftProtobufModuleName = "SwiftProtobuf"
 
   init(parameter: String?) throws {
     for pair in GeneratorOptions.parseParameter(string: parameter) {
@@ -128,6 +129,13 @@ final class GeneratorOptions {
       case "GRPCModuleName":
         if !pair.value.isEmpty {
           self.gRPCModuleName = pair.value
+        } else {
+          throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
+        }
+
+      case "SwiftProtobufModuleName":
+        if !pair.value.isEmpty {
+          self.swiftProtobufModuleName = pair.value
         } else {
           throw GenerationError.invalidParameterValue(name: pair.key, value: pair.value)
         }

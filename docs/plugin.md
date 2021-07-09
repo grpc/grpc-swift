@@ -100,6 +100,15 @@ to be specified. The value, if not specified, defaults to "GRPC".
 workaround for CocoaPods users who may end up with a transitive dependency on
 the gRPC core C library whose module name is also "GRPC".*
 
+### SwiftProtobufModuleName
+
+ The **SwiftProtobufModuleName** option allows the name of the SwiftProtobuf 
+ runtime module to be specified. The value, if not specified, defaults to 
+ "SwiftProtobuf".
+
+ *Note: most users will not need to use this option. Introduced to match 
+ the option that exists in [SwiftProtobuf][swift-protobuf-module-name].
+
 ## Specifying Options
 
 To pass extra parameters to the plugin, use a comma-separated parameter list
@@ -121,3 +130,4 @@ protoc <your proto> --grpc-swift_opt=Client=true,Server=false --grpc-swift_out=.
 [protocol-buffers]: https://developers.google.com/protocol-buffers/docs/overview
 [swift-protobuf-filenaming]: https://github.com/apple/swift-protobuf/blob/master/Documentation/PLUGIN.md#generation-option-filenaming---naming-of-generated-sources
 [swift-protobuf-module-mappings]: https://github.com/apple/swift-protobuf/blob/master/Documentation/PLUGIN.md#generation-option-protopathmodulemappings---swift-module-names-for-proto-paths
+[swift-protobuf-module-name]: https://github.com/apple/swift-protobuf/commit/9df381f72ff22062080d434e9c2f68e71ee44298#diff-1b08f0a80bd568509049d851b8d8af90d1f2db3cd8711eaba974b5380cd59bf3
