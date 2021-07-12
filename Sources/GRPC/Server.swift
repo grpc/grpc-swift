@@ -106,16 +106,19 @@ public final class Server {
         sslContext = .failure(error)
       }
 
-      // No SSL context means we must be using the Network.framework TLS stack.
+      // No SSL context means we must be using the Network.framework TLS stack (as
+      // `tlsConfiguration` was not `nil`).
       if sslContext == nil {
+        #if canImport(Network)
         if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *),
           let transportServicesBootstrap = bootstrap as? NIOTSListenerBootstrap {
           _ = transportServicesBootstrap.tlsOptions(from: tlsConfiguration)
-        } else {
-          // We must be using Network.framework (because we aren't using NIOSSL) but we don't have
-          // an a NIOTSListenerBootstrap available, something is very wrong.
-          preconditionFailure()
         }
+        #else
+        // We must be using Network.framework (because we aren't using NIOSSL) but we don't have
+        // an a NIOTSListenerBootstrap available, something is very wrong.
+        preconditionFailure()
+        #endif
       }
     } else {
       // No TLS configuration, no SSL context.
