@@ -49,8 +49,10 @@ public struct GRPCTLSConfiguration {
     switch self.backend {
     case let .nio(configuration):
       return configuration
+    #if canImport(Network)
     case .network:
       return nil
+    #endif
     }
   }
 
@@ -116,8 +118,10 @@ public struct GRPCTLSConfiguration {
       case let .nio(config):
         return config.requireALPN
 
+      #if canImport(Network)
       case .network:
         return true
+      #endif
       }
     }
     set {
@@ -126,8 +130,10 @@ public struct GRPCTLSConfiguration {
         config.requireALPN = newValue
         self.backend = .nio(config)
 
+      #if canImport(Network)
       case .network:
         ()
+      #endif
       }
     }
   }
@@ -318,8 +324,10 @@ extension GRPCTLSConfiguration {
     switch self.backend {
     case let .nio(configuration):
       return try NIOSSLContext(configuration: configuration.configuration)
+    #if canImport(Network)
     case .network:
       return nil
+    #endif
     }
   }
 
@@ -327,8 +335,10 @@ extension GRPCTLSConfiguration {
     switch self.backend {
     case let .nio(configuration):
       return configuration.customVerificationCallback
+    #if canImport(Network)
     case .network:
       return nil
+    #endif
     }
   }
 
@@ -371,8 +381,10 @@ extension GRPCTLSConfiguration {
     case var .nio(configuration):
       modify(&configuration)
       self.backend = .nio(configuration)
+    #if canImport(Network)
     case .network:
       preconditionFailure()
+    #endif
     }
   }
 }
@@ -582,7 +594,6 @@ extension GRPCTLSConfiguration {
     }
   }
 }
-#endif
 
 @available(macOS 10.14, iOS 12.0, watchOS 5.0, tvOS 12.0, *)
 extension NIOTSConnectionBootstrap {
@@ -601,3 +612,4 @@ extension NIOTSListenerBootstrap {
     return configuration.applyNetworkTLSOptions(to: self)
   }
 }
+#endif
