@@ -104,8 +104,21 @@ class PodManager:
     def publish(self, pod_name):
         subprocess.check_call(['pod', 'repo', 'update'])
         print('    Publishing %s.podspec' % (pod_name))
-        subprocess.check_call(['pod', 'trunk', 'push', '--synchronous',
-                               self.directory + '/' + pod_name + ".podspec"])
+
+        args = ['pod', 'trunk', 'push', '--synchronous']
+
+        # The gRPC-Swift pod emits warnings about redundant availability
+        # guards on watchOS. These are redundant for the Cocoapods where we set
+        # the deployment target for watchOS to watchOS 6. However they are
+        # required for SPM where the deployment target is lower (and we can't
+        # raise it without breaking all of our consumers). We'll allow warnings
+        # to work around this.
+        if pod_name == "gRPC-Swift":
+            args.append("--allow-warnings")
+
+        path_to_podspec = self.directory + '/' + pod_name + ".podspec"
+        args.append(path_to_podspec)
+        subprocess.check_call(args)
 
     def build_pods(self):
         cgrpczlib_pod = Pod(
