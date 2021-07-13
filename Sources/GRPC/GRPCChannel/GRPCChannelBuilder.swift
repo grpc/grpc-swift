@@ -289,6 +289,7 @@ extension ClientConnection.Builder.Secure {
   /// verification is enabled.
   ///
   /// - Note: May be used with the 'NIOSSL' and 'Network.framework' TLS backend.
+  /// - Note: `serverHostnameOverride` may not be `nil` when using the 'Network.framework' backend.
   @discardableResult
   public func withTLS(serverHostnameOverride: String?) -> Self {
     self.tls.hostnameOverride = serverHostnameOverride

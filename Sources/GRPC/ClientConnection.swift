@@ -303,6 +303,9 @@ extension ClientConnection {
     public var connectivityStateDelegateQueue: DispatchQueue?
 
     /// TLS configuration for this connection. `nil` if TLS is not desired.
+    ///
+    /// - Important: `tls` is deprecated; use `tlsConfiguration` or one of
+    ///   the `ClientConnection.withTLS` builder functions.
     @available(*, deprecated, renamed: "tlsConfiguration")
     public var tls: TLS? {
       get {

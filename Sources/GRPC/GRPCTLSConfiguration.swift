@@ -70,6 +70,8 @@ public struct GRPCTLSConfiguration {
   /// The server hostname override as used by the TLS SNI extension.
   ///
   /// This value is ignored when the configuration is used for a server.
+  ///
+  /// - Note: when using the Network.framework backend, this value may not be set to `nil`.
   internal var hostnameOverride: String? {
     get {
       switch self.backend {
@@ -97,6 +99,7 @@ public struct GRPCTLSConfiguration {
           } else {
             // We can't unset the value so error instead.
             fatalError("Can't unset hostname override when using Network.framework TLS backend.")
+            // FIXME: lazily set the value on the backend when applying the options.
           }
         } else {
           // We can only make the `.network` backend if we meet the above availability checks so
@@ -235,8 +238,6 @@ extension GRPCTLSConfiguration {
 
   /// Creates a gRPC TLS Configuration using the given `NIOSSL.TLSConfiguration`.
   ///
-  /// This gRPC TLS Configuration is only compatible with `MultiThreadedEventLoopGroup`.
-  ///
   /// - Note: If no ALPN tokens are set in `configuration.applicationProtocols` then "grpc-exp"
   ///   and "h2" will be used.
   /// - Parameters:
@@ -299,6 +300,14 @@ extension GRPCTLSConfiguration {
     )
   }
 
+  /// Creates a gRPC TLS Configuration suitable for servers using the given
+  /// `NIOSSL.TLSConfiguration`.
+  ///
+  /// - Note: If no ALPN tokens are set in `configuration.applicationProtocols` then "grpc-exp",
+  ///   "h2", and "http/1.1" will be used.
+  /// - Parameters:
+  ///   - configuration: The `NIOSSL.TLSConfiguration` to base this configuration on.
+  ///   - requiresALPN: Whether the server enforces ALPN. Defaults to `true`.
   public static func makeServerConfigurationBackedByNIOSSL(
     configuration: TLSConfiguration,
     requireALPN: Bool = true
@@ -411,8 +420,8 @@ extension GRPCTLSConfiguration {
     /// computed ones. To that end, we have to erase the type and then un-erase it. This is fairly silly.
     private var _options: Any
 
-    // This is set privately via `updateHostnameOverride(to:)` because we availability guards to
-    // update the value in the underlying options.
+    // This is set privately via `updateHostnameOverride(to:)` because we require availability
+    // guards to update the value in the underlying `sec_protocol_options`.
     internal private(set) var hostnameOverride: String?
 
     @available(macOS 10.14, iOS 12.0, watchOS 5.0, tvOS 12.0, *)

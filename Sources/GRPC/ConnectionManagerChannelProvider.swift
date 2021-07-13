@@ -35,11 +35,17 @@ internal protocol ConnectionManagerChannelProvider {
 }
 
 internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
+  enum TLSMode {
+    case configureWithNIOSSL(Result<NIOSSLContext, Error>)
+    case configureWithNetworkFramework
+    case disabled
+  }
+
   internal var connectionTarget: ConnectionTarget
   internal var connectionKeepalive: ClientConnectionKeepalive
   internal var connectionIdleTimeout: TimeAmount
 
-  internal var sslContext: Result<NIOSSLContext, Error>?
+  internal var tlsMode: TLSMode
   internal var tlsConfiguration: GRPCTLSConfiguration?
 
   internal var httpTargetWindowSize: Int
@@ -51,7 +57,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
     connectionTarget: ConnectionTarget,
     connectionKeepalive: ClientConnectionKeepalive,
     connectionIdleTimeout: TimeAmount,
-    sslContext: Result<NIOSSLContext, Error>?,
+    tlsMode: TLSMode,
     tlsConfiguration: GRPCTLSConfiguration?,
     httpTargetWindowSize: Int,
     errorDelegate: ClientErrorDelegate?,
@@ -61,7 +67,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
     self.connectionKeepalive = connectionKeepalive
     self.connectionIdleTimeout = connectionIdleTimeout
 
-    self.sslContext = sslContext
+    self.tlsMode = tlsMode
     self.tlsConfiguration = tlsConfiguration
 
     self.httpTargetWindowSize = httpTargetWindowSize
@@ -72,24 +78,27 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
 
   internal init(configuration: ClientConnection.Configuration) {
     // Making a `NIOSSLContext` is expensive and we should only do it (at most) once per TLS
-    // configuration. We do it now and surface any error during channel creation (we're limited by
-    // our API in when we can throw any error).
-    //
-    // 'nil' means we're not using TLS, or we're using the Network.framework TLS backend. We'll
-    // check and apply the Network.framework TLS options when we create a bootstrap.
-    let sslContext: Result<NIOSSLContext, Error>?
+    // configuration. We do it now and store it in our `tlsMode` and surface any error during
+    // channel creation (we're limited by our API in when we can throw any error).
+    let tlsMode: TLSMode
 
-    do {
-      sslContext = try configuration.tlsConfiguration?.makeNIOSSLContext().map { .success($0) }
-    } catch {
-      sslContext = .failure(error)
+    if let tlsConfiguration = configuration.tlsConfiguration {
+      if tlsConfiguration.isNetworkFrameworkTLSBackend {
+        tlsMode = .configureWithNetworkFramework
+      } else {
+        // The '!' is okay here, we have a `tlsConfiguration` (so we must be using TLS) and we know
+        // it's not backed by Network.framework, so it must be backed by NIOSSL.
+        tlsMode = .configureWithNIOSSL(Result { try tlsConfiguration.makeNIOSSLContext()! })
+      }
+    } else {
+      tlsMode = .disabled
     }
 
     self.init(
       connectionTarget: configuration.target,
       connectionKeepalive: configuration.connectionKeepalive,
       connectionIdleTimeout: configuration.connectionIdleTimeout,
-      sslContext: sslContext,
+      tlsMode: tlsMode,
       tlsConfiguration: configuration.tlsConfiguration,
       httpTargetWindowSize: configuration.httpTargetWindowSize,
       errorDelegate: configuration.errorDelegate,
@@ -119,13 +128,13 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
     let hostname = self.serverHostname
     let needsZeroLengthWriteWorkaround = self.requiresZeroLengthWorkaround(eventLoop: eventLoop)
 
-    let bootstrap = PlatformSupport.makeClientBootstrap(
+    var bootstrap = PlatformSupport.makeClientBootstrap(
       group: eventLoop,
       tlsConfiguration: self.tlsConfiguration,
       logger: logger
     )
 
-    _ = bootstrap
+    bootstrap = bootstrap
       .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
       .channelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
       .channelInitializer { channel in
@@ -138,13 +147,20 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
 
           // We have a NIOSSL context to apply. If we're using TLS from NIOTS then the bootstrap
           // will already have the TLS options applied.
-          if let sslContext = self.sslContext {
+          switch self.tlsMode {
+          case let .configureWithNIOSSL(sslContext):
             try sync.configureNIOSSLForGRPCClient(
               sslContext: sslContext,
               serverHostname: hostname,
               customVerificationCallback: self.tlsConfiguration?.nioSSLCustomVerificationCallback,
               logger: logger
             )
+
+          // Network.framework TLS configuration is applied when creating the bootstrap so is a
+          // no-op here.
+          case .configureWithNetworkFramework,
+               .disabled:
+            ()
           }
 
           try sync.configureHTTP2AndGRPCHandlersForGRPCClient(
