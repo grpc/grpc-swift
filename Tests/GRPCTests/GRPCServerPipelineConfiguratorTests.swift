@@ -55,7 +55,7 @@ class GRPCServerPipelineConfiguratorTests: GRPCTestCase {
     configuration.logger = self.serverLogger
 
     if tls {
-      configuration.tls = .init(
+      configuration.tlsConfiguration = .makeServerConfigurationBackedByNIOSSL(
         certificateChain: [],
         privateKey: .file("not used"),
         requireALPN: requireALPN

@@ -50,8 +50,8 @@ public func makeInteroperabilityTestServer(
     let serverCert = InteroperabilityTestCredentials.server1Certificate
     let serverKey = InteroperabilityTestCredentials.server1Key
 
-    builder = Server.secure(
-      group: eventLoopGroup,
+    builder = Server.usingTLSBackedByNIOSSL(
+      on: eventLoopGroup,
       certificateChain: [serverCert],
       privateKey: serverKey
     )

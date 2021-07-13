@@ -15,6 +15,7 @@
  */
 import Logging
 import NIO
+import NIOSSL
 import NIOTransportServices
 
 /// How a network implementation should be chosen.
@@ -62,6 +63,17 @@ public struct NetworkImplementation: Hashable {
 
   /// POSIX (NIO).
   public static let posix = NetworkImplementation(.posix)
+
+  internal static func matchingEventLoopGroup(_ group: EventLoopGroup) -> NetworkImplementation {
+    #if canImport(Network)
+    if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
+      if PlatformSupport.isTransportServicesEventLoopGroup(group) {
+        return .networkFramework
+      }
+    }
+    #endif
+    return .posix
+  }
 }
 
 extension NetworkPreference {
@@ -187,27 +199,50 @@ public enum PlatformSupport {
     logger.debug("making client bootstrap with event loop group of type \(type(of: group))")
     #if canImport(Network)
     if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
-      if let tsGroup = group as? NIOTSEventLoopGroup {
-        logger
-          .debug(
-            "Network.framework is available and the group is correctly typed, creating a NIOTSConnectionBootstrap"
-          )
-        return NIOTSConnectionBootstrap(group: tsGroup)
-      } else if let qosEventLoop = group as? QoSEventLoop {
-        logger
-          .debug(
-            "Network.framework is available and the group is correctly typed, creating a NIOTSConnectionBootstrap"
-          )
-        return NIOTSConnectionBootstrap(group: qosEventLoop)
-      }
-      logger
-        .debug(
-          "Network.framework is available but the group is not typed for NIOTS, falling back to ClientBootstrap"
+      if isTransportServicesEventLoopGroup(group) {
+        logger.debug(
+          "Network.framework is available and the EventLoopGroup is compatible with NIOTS, creating a NIOTSConnectionBootstrap"
         )
+        return NIOTSConnectionBootstrap(group: group)
+      } else {
+        logger.debug(
+          "Network.framework is available but the EventLoopGroup is not compatible with NIOTS, falling back to ClientBootstrap"
+        )
+      }
     }
     #endif
     logger.debug("creating a ClientBootstrap")
     return ClientBootstrap(group: group)
+  }
+
+  internal static func isTransportServicesEventLoopGroup(_ group: EventLoopGroup) -> Bool {
+    #if canImport(Network)
+    if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
+      return group is NIOTSEventLoopGroup || group is QoSEventLoop
+    }
+    #endif
+    return false
+  }
+
+  internal static func makeClientBootstrap(
+    group: EventLoopGroup,
+    tlsConfiguration: GRPCTLSConfiguration?,
+    logger: Logger
+  ) -> ClientBootstrapProtocol {
+    let bootstrap = self.makeClientBootstrap(group: group, logger: logger)
+
+    guard let tlsConfigruation = tlsConfiguration else {
+      return bootstrap
+    }
+
+    #if canImport(Network)
+    if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *),
+      let transportServicesBootstrap = bootstrap as? NIOTSConnectionBootstrap {
+      return transportServicesBootstrap.tlsOptions(from: tlsConfigruation)
+    }
+    #endif
+
+    return bootstrap
   }
 
   /// Makes a new server bootstrap using the given `EventLoopGroup`.
@@ -264,5 +299,54 @@ public enum PlatformSupport {
     #else
     return false
     #endif
+  }
+}
+
+extension GRPCTLSConfiguration {
+  /// Provides a `GRPCTLSConfiguration` suitable for the given network preference.
+  public static func makeClientDefault(
+    for networkPreference: NetworkPreference
+  ) -> GRPCTLSConfiguration {
+    switch networkPreference.implementation.wrapped {
+    case .networkFramework:
+      #if canImport(Network)
+      guard #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else {
+        // This is gated by the availability of `.networkFramework` so should never happen.
+        fatalError(".networkFramework is being used on an unsupported platform")
+      }
+
+      return .makeClientConfigurationBackedByNetworkFramework()
+      #else
+      fatalError(".networkFramework is being used on an unsupported platform")
+      #endif
+
+    case .posix:
+      return .makeClientConfigurationBackedByNIOSSL()
+    }
+  }
+}
+
+extension EventLoopGroup {
+  internal func isCompatible(with tlsConfiguration: GRPCTLSConfiguration) -> Bool {
+    let isTransportServicesGroup = PlatformSupport.isTransportServicesEventLoopGroup(self)
+    let isNetworkFrameworkTLSBackend = tlsConfiguration.isNetworkFrameworkTLSBackend
+    // If the group is from NIOTransportServices then we can use either the NIOSSL or the
+    // Network.framework TLS backend.
+    //
+    // If it isn't then we must not use the Network.Framework TLS backend.
+    return isTransportServicesGroup || !isNetworkFrameworkTLSBackend
+  }
+
+  internal func preconditionCompatible(
+    with tlsConfiguration: GRPCTLSConfiguration,
+    file: StaticString = #file,
+    line: UInt = #line
+  ) {
+    precondition(
+      self.isCompatible(with: tlsConfiguration),
+      "Unsupported 'EventLoopGroup' and 'GRPCLSConfiguration' pairing (Network.framework backed TLS configurations MUST use an EventLoopGroup from NIOTransportServices)",
+      file: file,
+      line: line
+    )
   }
 }

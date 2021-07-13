@@ -122,8 +122,8 @@ func startEchoServer(group: EventLoopGroup, port: Int, useTLS: Bool) throws {
       "SSL certificates are expired. Please submit an issue at https://github.com/grpc/grpc-swift."
     )
 
-    builder = Server.secure(
-      group: group,
+    builder = Server.usingTLSBackedByNIOSSL(
+      on: group,
       certificateChain: [serverCert.certificate],
       privateKey: SamplePrivateKey.server
     )
@@ -162,7 +162,7 @@ func makeClient(
       "SSL certificates are expired. Please submit an issue at https://github.com/grpc/grpc-swift."
     )
 
-    builder = ClientConnection.secure(group: group)
+    builder = ClientConnection.usingTLSBackedByNIOSSL(on: group)
       .withTLS(certificateChain: [clientCert.certificate])
       .withTLS(privateKey: SamplePrivateKey.client)
       .withTLS(trustRoots: .certificates([caCert.certificate]))

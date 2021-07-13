@@ -21,6 +21,9 @@ import NIOHTTP1
 import NIOHTTP2
 import NIOSSL
 import NIOTransportServices
+#if canImport(Network)
+import Network
+#endif
 
 /// Wrapper object to manage the lifecycle of a gRPC server.
 ///
@@ -91,10 +94,35 @@ public final class Server {
     // Making a `NIOSSLContext` is expensive, we should only do it once per TLS configuration so
     // we'll do it now, before accepting connections. Unfortunately our API isn't throwing so we'll
     // only surface any error when initializing a child channel.
-    let sslContext: Result<NIOSSLContext, Error>? = configuration.tls.map { tls in
-      return Result {
-        try NIOSSLContext(configuration: tls.configuration)
+    //
+    // 'nil' means we're not using TLS, or we're using the Network.framework TLS backend. If we're
+    // using the Network.framework TLS backend we'll apply the settings just below.
+    let sslContext: Result<NIOSSLContext, Error>?
+
+    if let tlsConfiguration = configuration.tlsConfiguration {
+      do {
+        sslContext = try configuration.tlsConfiguration?.makeNIOSSLContext().map { .success($0) }
+      } catch {
+        sslContext = .failure(error)
       }
+
+      // No SSL context means we must be using the Network.framework TLS stack (as
+      // `tlsConfiguration` was not `nil`).
+      if sslContext == nil {
+        #if canImport(Network)
+        if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *),
+          let transportServicesBootstrap = bootstrap as? NIOTSListenerBootstrap {
+          _ = transportServicesBootstrap.tlsOptions(from: tlsConfiguration)
+        }
+        #else
+        // We must be using Network.framework (because we aren't using NIOSSL) but we don't have
+        // an a NIOTSListenerBootstrap available, something is very wrong.
+        preconditionFailure()
+        #endif
+      }
+    } else {
+      // No TLS configuration, no SSL context.
+      sslContext = nil
     }
 
     return bootstrap
@@ -124,7 +152,7 @@ public final class Server {
           // Work around the zero length write issue, if needed.
           let requiresZeroLengthWorkaround = PlatformSupport.requiresZeroLengthWriteWorkaround(
             group: configuration.eventLoopGroup,
-            hasTLS: configuration.tls != nil
+            hasTLS: configuration.tlsConfiguration != nil
           )
           if requiresZeroLengthWorkaround,
             #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
@@ -255,7 +283,17 @@ extension Server {
     public var errorDelegate: ServerErrorDelegate?
 
     /// TLS configuration for this connection. `nil` if TLS is not desired.
-    public var tls: TLS?
+    @available(*, deprecated, renamed: "tlsConfiguration")
+    public var tls: TLS? {
+      get {
+        return self.tlsConfiguration?.asDeprecatedServerConfiguration
+      }
+      set {
+        self.tlsConfiguration = newValue.map { GRPCTLSConfiguration(transforming: $0) }
+      }
+    }
+
+    public var tlsConfiguration: GRPCTLSConfiguration?
 
     /// The connection keepalive configuration.
     public var connectionKeepalive = ServerConnectionKeepalive()
@@ -344,7 +382,7 @@ extension Server {
             .map { ($0.serviceName, $0) }
         )
       self.errorDelegate = errorDelegate
-      self.tls = tls
+      self.tlsConfiguration = tls.map { GRPCTLSConfiguration(transforming: $0) }
       self.connectionKeepalive = connectionKeepalive
       self.connectionIdleTimeout = connectionIdleTimeout
       self.messageEncoding = messageEncoding

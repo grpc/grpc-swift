@@ -27,7 +27,7 @@ public func makeInteroperabilityTestClientBuilder(
   if useTLS {
     // The CA certificate has a common name of "*.test.google.fr", use the following host override
     // so we can do full certificate verification.
-    builder = ClientConnection.secure(group: group)
+    builder = ClientConnection.usingTLSBackedByNIOSSL(on: group)
       .withTLS(trustRoots: .certificates([InteroperabilityTestCredentials.caCertificate]))
       .withTLS(serverHostnameOverride: "foo.test.google.fr")
   } else {

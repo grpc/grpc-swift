@@ -37,7 +37,7 @@ class ServerErrorRecordingDelegate: ServerErrorDelegate {
 }
 
 class ServerTLSErrorTests: GRPCTestCase {
-  let defaultClientTLSConfiguration = ClientConnection.Configuration.TLS(
+  let defaultClientTLSConfiguration = GRPCTLSConfiguration.makeClientConfigurationBackedByNIOSSL(
     certificateChain: [.certificate(SampleCertificate.client.certificate)],
     privateKey: .privateKey(SamplePrivateKey.client),
     trustRoots: .certificates([SampleCertificate.ca.certificate]),
@@ -50,7 +50,7 @@ class ServerTLSErrorTests: GRPCTestCase {
   var serverEventLoopGroup: EventLoopGroup!
 
   func makeClientConfiguration(
-    tls: ClientConnection.Configuration.TLS,
+    tls: GRPCTLSConfiguration,
     port: Int
   ) -> ClientConnection.Configuration {
     var configuration = ClientConnection.Configuration.default(
@@ -58,7 +58,7 @@ class ServerTLSErrorTests: GRPCTestCase {
       eventLoopGroup: self.clientEventLoopGroup
     )
 
-    configuration.tls = tls
+    configuration.tlsConfiguration = tls
     // No need to retry connecting.
     configuration.connectionBackoff = nil
 
@@ -88,8 +88,8 @@ class ServerTLSErrorTests: GRPCTestCase {
     let errorExpectation = self.expectation(description: "error")
     let errorDelegate = ServerErrorRecordingDelegate(expectation: errorExpectation)
 
-    let server = try! Server.secure(
-      group: self.serverEventLoopGroup,
+    let server = try! Server.usingTLSBackedByNIOSSL(
+      on: self.serverEventLoopGroup,
       certificateChain: [SampleCertificate.exampleServerWithExplicitCurve.certificate],
       privateKey: SamplePrivateKey.exampleServerWithExplicitCurve
     ).withServiceProviders([EchoProvider()])
@@ -103,7 +103,10 @@ class ServerTLSErrorTests: GRPCTestCase {
     let port = server.channel.localAddress!.port!
 
     var tls = self.defaultClientTLSConfiguration
-    tls.trustRoots = .certificates([SampleCertificate.exampleServerWithExplicitCurve.certificate])
+    tls.updateNIOTrustRoots(
+      to: .certificates([SampleCertificate.exampleServerWithExplicitCurve.certificate])
+    )
+
     var configuration = self.makeClientConfiguration(tls: tls, port: port)
 
     let stateChangeDelegate = RecordingConnectivityDelegate()

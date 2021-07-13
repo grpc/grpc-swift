@@ -108,8 +108,8 @@ public class ClientConnection {
   ///   with TLS, or `ClientConnection.insecure(group:)` to build a connection without TLS.
   public init(configuration: Configuration) {
     self.configuration = configuration
-    self.scheme = configuration.tls == nil ? "http" : "https"
-    self.authority = configuration.tls?.hostnameOverride ?? configuration.target.host
+    self.scheme = configuration.tlsConfiguration == nil ? "http" : "https"
+    self.authority = configuration.tlsConfiguration?.hostnameOverride ?? configuration.target.host
 
     let monitor = ConnectivityStateMonitor(
       delegate: configuration.connectivityStateDelegate,
@@ -303,7 +303,21 @@ extension ClientConnection {
     public var connectivityStateDelegateQueue: DispatchQueue?
 
     /// TLS configuration for this connection. `nil` if TLS is not desired.
-    public var tls: TLS?
+    ///
+    /// - Important: `tls` is deprecated; use `tlsConfiguration` or one of
+    ///   the `ClientConnection.withTLS` builder functions.
+    @available(*, deprecated, renamed: "tlsConfiguration")
+    public var tls: TLS? {
+      get {
+        return self.tlsConfiguration?.asDeprecatedClientConfiguration
+      }
+      set {
+        self.tlsConfiguration = newValue.map { .init(transforming: $0) }
+      }
+    }
+
+    /// TLS configuration for this connection. `nil` if TLS is not desired.
+    public var tlsConfiguration: GRPCTLSConfiguration?
 
     /// The connection backoff configuration. If no connection retrying is required then this should
     /// be `nil`.
@@ -331,7 +345,7 @@ extension ClientConnection {
 
     /// The HTTP protocol used for this connection.
     public var httpProtocol: HTTP2FramePayloadToHTTP1ClientCodec.HTTPProtocol {
-      return self.tls == nil ? .http : .https
+      return self.tlsConfiguration == nil ? .http : .https
     }
 
     /// The maximum size in bytes of a message which may be received from a server. Defaults to 4MB.
@@ -402,7 +416,7 @@ extension ClientConnection {
       self.errorDelegate = errorDelegate
       self.connectivityStateDelegate = connectivityStateDelegate
       self.connectivityStateDelegateQueue = connectivityStateDelegateQueue
-      self.tls = tls
+      self.tlsConfiguration = tls.map { GRPCTLSConfiguration(transforming: $0) }
       self.connectionBackoff = connectionBackoff
       self.connectionKeepalive = connectionKeepalive
       self.connectionIdleTimeout = connectionIdleTimeout
@@ -454,45 +468,41 @@ extension ClientBootstrapProtocol {
 }
 
 extension ChannelPipeline.SynchronousOperations {
-  internal func configureGRPCClient(
+  internal func configureNIOSSLForGRPCClient(
+    sslContext: Result<NIOSSLContext, Error>,
+    serverHostname: String?,
+    customVerificationCallback: NIOSSLCustomVerificationCallback?,
+    logger: Logger
+  ) throws {
+    let sslContext = try sslContext.get()
+    let sslClientHandler: NIOSSLClientHandler
+
+    if let customVerificationCallback = customVerificationCallback {
+      sslClientHandler = try NIOSSLClientHandler(
+        context: sslContext,
+        serverHostname: serverHostname,
+        customVerificationCallback: customVerificationCallback
+      )
+    } else {
+      sslClientHandler = try NIOSSLClientHandler(
+        context: sslContext,
+        serverHostname: serverHostname
+      )
+    }
+
+    try self.addHandler(sslClientHandler)
+    try self.addHandler(TLSVerificationHandler(logger: logger))
+  }
+
+  internal func configureHTTP2AndGRPCHandlersForGRPCClient(
     channel: Channel,
-    httpTargetWindowSize: Int,
-    sslContext: Result<NIOSSLContext, Error>?,
-    tlsServerHostname: String?,
     connectionManager: ConnectionManager,
     connectionKeepalive: ClientConnectionKeepalive,
     connectionIdleTimeout: TimeAmount,
+    httpTargetWindowSize: Int,
     errorDelegate: ClientErrorDelegate?,
-    requiresZeroLengthWriteWorkaround: Bool,
-    logger: Logger,
-    customVerificationCallback: NIOSSLCustomVerificationCallback?
+    logger: Logger
   ) throws {
-    #if canImport(Network)
-    // This availability guard is arguably unnecessary, but we add it anyway.
-    if requiresZeroLengthWriteWorkaround,
-      #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
-      try self.addHandler(NIOFilterEmptyWritesHandler())
-    }
-    #endif
-
-    if let sslContext = try sslContext?.get() {
-      let sslClientHandler: NIOSSLClientHandler
-      if let customVerificationCallback = customVerificationCallback {
-        sslClientHandler = try NIOSSLClientHandler(
-          context: sslContext,
-          serverHostname: tlsServerHostname,
-          customVerificationCallback: customVerificationCallback
-        )
-      } else {
-        sslClientHandler = try NIOSSLClientHandler(
-          context: sslContext,
-          serverHostname: tlsServerHostname
-        )
-      }
-      try self.addHandler(sslClientHandler)
-      try self.addHandler(TLSVerificationHandler(logger: logger))
-    }
-
     // We could use 'configureHTTP2Pipeline' here, but we need to add a few handlers between the
     // two HTTP/2 handlers so we'll do it manually instead.
     try self.addHandler(NIOHTTP2Handler(mode: .client))

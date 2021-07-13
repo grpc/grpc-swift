@@ -58,8 +58,8 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
     let cert = SampleCertificate.exampleServer.certificate
     let key = SamplePrivateKey.exampleServer
 
-    self.server = try Server.secure(
-      group: self.eventLoopGroup,
+    self.server = try Server.usingTLSBackedByNIOSSL(
+      on: self.eventLoopGroup,
       certificateChain: [cert],
       privateKey: key
     )
@@ -74,7 +74,7 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
       return
     }
 
-    self.connection = ClientConnection.secure(group: self.eventLoopGroup)
+    self.connection = ClientConnection.usingTLSBackedByNIOSSL(on: self.eventLoopGroup)
       .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
       .withTLS(serverHostnameOverride: "example.com")
       .withBackgroundActivityLogger(self.clientLogger)
@@ -88,8 +88,8 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
     let cert = SampleCertificate.server.certificate
     let key = SamplePrivateKey.server
 
-    self.server = try Server.secure(
-      group: self.eventLoopGroup,
+    self.server = try Server.usingTLSBackedByNIOSSL(
+      on: self.eventLoopGroup,
       certificateChain: [cert],
       privateKey: key
     )
@@ -104,7 +104,7 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
       return
     }
 
-    self.connection = ClientConnection.secure(group: self.eventLoopGroup)
+    self.connection = ClientConnection.usingTLSBackedByNIOSSL(on: self.eventLoopGroup)
       .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
       .withBackgroundActivityLogger(self.clientLogger)
       .connect(host: "localhost", port: port)
@@ -113,8 +113,8 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
   }
 
   func testTLSWithNoCertificateVerification() throws {
-    self.server = try Server.secure(
-      group: self.eventLoopGroup,
+    self.server = try Server.usingTLSBackedByNIOSSL(
+      on: self.eventLoopGroup,
       certificateChain: [SampleCertificate.server.certificate],
       privateKey: SamplePrivateKey.server
     )
@@ -128,7 +128,7 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
       return
     }
 
-    self.connection = ClientConnection.secure(group: self.eventLoopGroup)
+    self.connection = ClientConnection.usingTLSBackedByNIOSSL(on: self.eventLoopGroup)
       .withTLS(trustRoots: .certificates([]))
       .withTLS(certificateVerification: .none)
       .withBackgroundActivityLogger(self.clientLogger)
@@ -141,8 +141,8 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
     // This test validates that when suppled with a server hostname override, the client uses it
     // as the ":authority" pseudo-header.
 
-    self.server = try Server.secure(
-      group: self.eventLoopGroup,
+    self.server = try Server.usingTLSBackedByNIOSSL(
+      on: self.eventLoopGroup,
       certificateChain: [SampleCertificate.exampleServer.certificate],
       privateKey: SamplePrivateKey.exampleServer
     )
@@ -157,7 +157,7 @@ class ClientTLSHostnameOverrideTests: GRPCTestCase {
       return
     }
 
-    self.connection = ClientConnection.secure(group: self.eventLoopGroup)
+    self.connection = ClientConnection.usingTLSBackedByNIOSSL(on: self.eventLoopGroup)
       .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
       .withTLS(serverHostnameOverride: "example.com")
       .withBackgroundActivityLogger(self.clientLogger)

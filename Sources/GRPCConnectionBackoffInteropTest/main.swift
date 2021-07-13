@@ -59,7 +59,7 @@ func runTest(controlPort: Int, retryPort: Int) throws {
   //    proper backoffs. A convenient way to achieve this is to call 'Start' with a deadline of 540s.
   //    The rpc should fail with deadline exceeded.
   print("[\(Date())] Retry 'Start' call started")
-  let retryConnection = ClientConnection.secure(group: group)
+  let retryConnection = ClientConnection.usingTLSBackedByNIOSSL(on: group)
     .withConnectivityStateDelegate(PrintingConnectivityStateDelegate())
     .connect(host: "localhost", port: retryPort)
   let retryClient = Grpc_Testing_ReconnectServiceClient(

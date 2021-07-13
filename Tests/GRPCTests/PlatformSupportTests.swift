@@ -176,4 +176,57 @@ class PlatformSupportTests: GRPCTestCase {
     )
     #endif
   }
+
+  func testIsTransportServicesGroup() {
+    #if canImport(Network)
+    guard #available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else { return }
+
+    let tsGroup = NIOTSEventLoopGroup(loopCount: 1)
+    defer {
+      XCTAssertNoThrow(try tsGroup.syncShutdownGracefully())
+    }
+
+    XCTAssertTrue(PlatformSupport.isTransportServicesEventLoopGroup(tsGroup))
+    XCTAssertTrue(PlatformSupport.isTransportServicesEventLoopGroup(tsGroup.next()))
+
+    let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    defer {
+      XCTAssertNoThrow(try group.syncShutdownGracefully())
+    }
+
+    XCTAssertFalse(PlatformSupport.isTransportServicesEventLoopGroup(group))
+    XCTAssertFalse(PlatformSupport.isTransportServicesEventLoopGroup(group.next()))
+
+    #endif
+  }
+
+  func testIsTLSConfigruationCompatible() {
+    #if canImport(Network)
+    guard #available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else { return }
+
+    let nwConfiguration = GRPCTLSConfiguration.makeClientConfigurationBackedByNetworkFramework()
+    let nioSSLConfiguration = GRPCTLSConfiguration.makeClientConfigurationBackedByNIOSSL()
+
+    let tsGroup = NIOTSEventLoopGroup(loopCount: 1)
+    defer {
+      XCTAssertNoThrow(try tsGroup.syncShutdownGracefully())
+    }
+
+    XCTAssertTrue(tsGroup.isCompatible(with: nwConfiguration))
+    XCTAssertTrue(tsGroup.isCompatible(with: nioSSLConfiguration))
+    XCTAssertTrue(tsGroup.next().isCompatible(with: nwConfiguration))
+    XCTAssertTrue(tsGroup.next().isCompatible(with: nioSSLConfiguration))
+
+    let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    defer {
+      XCTAssertNoThrow(try group.syncShutdownGracefully())
+    }
+
+    XCTAssertFalse(group.isCompatible(with: nwConfiguration))
+    XCTAssertTrue(group.isCompatible(with: nioSSLConfiguration))
+    XCTAssertFalse(group.next().isCompatible(with: nwConfiguration))
+    XCTAssertTrue(group.next().isCompatible(with: nioSSLConfiguration))
+
+    #endif
+  }
 }
