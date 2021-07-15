@@ -150,6 +150,11 @@ extension ClientConnection.Builder {
       self.tls = tlsConfiguration
       super.init(group: group)
     }
+
+    /// Connect to `host` on port 443.
+    public func connect(host: String) -> ClientConnection {
+      return self.connect(host: host, port: 443)
+    }
   }
 }
 
