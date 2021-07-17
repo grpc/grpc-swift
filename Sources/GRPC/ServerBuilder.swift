@@ -86,6 +86,14 @@ extension Server.Builder {
 }
 
 extension Server.Builder {
+  @discardableResult
+  public func with(httpMaxConcurrentStreams: Int) -> Self {
+    self.configuration.httpMaxConcurrentStreams = httpMaxConcurrentStreams
+    return self
+  }
+}
+
+extension Server.Builder {
   /// The amount of time to wait before closing connections. The idle timeout will start only
   /// if there are no RPCs in progress and will be cancelled as soon as any RPCs start. Unless a
   /// an idle timeout it set connections will not be idled by default.

@@ -16,6 +16,7 @@
 import Foundation
 import Logging
 import NIO
+import NIOHPACK
 import NIOHTTP2
 import NIOSSL
 import NIOTLS
@@ -343,6 +344,8 @@ extension ClientConnection {
     /// The HTTP/2 flow control target window size. Defaults to 65535.
     public var httpTargetWindowSize = 65535
 
+    public var httpMaxConcurrentStreams: Int = 100
+
     /// The HTTP protocol used for this connection.
     public var httpProtocol: HTTP2FramePayloadToHTTP1ClientCodec.HTTPProtocol {
       return self.tlsConfiguration == nil ? .http : .https
@@ -405,6 +408,7 @@ extension ClientConnection {
       connectionIdleTimeout: TimeAmount = .minutes(30),
       callStartBehavior: CallStartBehavior = .waitsForConnectivity,
       httpTargetWindowSize: Int = 65535,
+      httpMaxConcurrentStreams: Int = 100,
       backgroundActivityLogger: Logger = Logger(
         label: "io.grpc",
         factory: { _ in SwiftLogNoOpLogHandler() }
@@ -424,6 +428,7 @@ extension ClientConnection {
       self.httpTargetWindowSize = httpTargetWindowSize
       self.backgroundActivityLogger = backgroundActivityLogger
       self.debugChannelInitializer = debugChannelInitializer
+      self.httpMaxConcurrentStreams = httpMaxConcurrentStreams
     }
 
     private init(eventLoopGroup: EventLoopGroup, target: ConnectionTarget) {
@@ -501,11 +506,17 @@ extension ChannelPipeline.SynchronousOperations {
     connectionIdleTimeout: TimeAmount,
     httpTargetWindowSize: Int,
     errorDelegate: ClientErrorDelegate?,
-    logger: Logger
+    logger: Logger,
+    maxConcurrentStreams: Int
   ) throws {
+    let initialSettings: HTTP2Settings = [
+      HTTP2Setting(parameter: .maxConcurrentStreams, value: maxConcurrentStreams),
+      HTTP2Setting(parameter: .maxHeaderListSize, value: HPACKDecoder.defaultMaxHeaderListSize),
+    ]
+
     // We could use 'configureHTTP2Pipeline' here, but we need to add a few handlers between the
     // two HTTP/2 handlers so we'll do it manually instead.
-    try self.addHandler(NIOHTTP2Handler(mode: .client))
+    try self.addHandler(NIOHTTP2Handler(mode: .client, initialSettings: initialSettings))
 
     let h2Multiplexer = HTTP2StreamMultiplexer(
       mode: .client,

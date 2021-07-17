@@ -15,6 +15,7 @@
  */
 import Logging
 import NIO
+import NIOHPACK
 import NIOHTTP1
 import NIOHTTP2
 import NIOTLS
@@ -78,7 +79,19 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
 
   /// Makes an HTTP/2 handler.
   private func makeHTTP2Handler() -> NIOHTTP2Handler {
-    return .init(mode: .server)
+    return .init(
+      mode: .server,
+      initialSettings: [
+        HTTP2Setting(
+          parameter: .maxConcurrentStreams,
+          value: self.configuration.httpMaxConcurrentStreams
+        ),
+        HTTP2Setting(
+          parameter: .maxHeaderListSize,
+          value: HPACKDecoder.defaultMaxHeaderListSize
+        ),
+      ]
+    )
   }
 
   /// Makes an HTTP/2 multiplexer suitable handling gRPC requests.
