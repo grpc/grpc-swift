@@ -49,7 +49,6 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
   internal var tlsConfiguration: GRPCTLSConfiguration?
 
   internal var httpTargetWindowSize: Int
-  internal var httpMaxConcurrentStreams: Int
 
   internal var errorDelegate: Optional<ClientErrorDelegate>
   internal var debugChannelInitializer: Optional<(Channel) -> EventLoopFuture<Void>>
@@ -61,7 +60,6 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
     tlsMode: TLSMode,
     tlsConfiguration: GRPCTLSConfiguration?,
     httpTargetWindowSize: Int,
-    httpMaxConcurrentStreams: Int,
     errorDelegate: ClientErrorDelegate?,
     debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)?
   ) {
@@ -73,7 +71,6 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
     self.tlsConfiguration = tlsConfiguration
 
     self.httpTargetWindowSize = httpTargetWindowSize
-    self.httpMaxConcurrentStreams = httpMaxConcurrentStreams
 
     self.errorDelegate = errorDelegate
     self.debugChannelInitializer = debugChannelInitializer
@@ -104,7 +101,6 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
       tlsMode: tlsMode,
       tlsConfiguration: configuration.tlsConfiguration,
       httpTargetWindowSize: configuration.httpTargetWindowSize,
-      httpMaxConcurrentStreams: configuration.httpMaxConcurrentStreams,
       errorDelegate: configuration.errorDelegate,
       debugChannelInitializer: configuration.debugChannelInitializer
     )
@@ -174,8 +170,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
             connectionIdleTimeout: self.connectionIdleTimeout,
             httpTargetWindowSize: self.httpTargetWindowSize,
             errorDelegate: self.errorDelegate,
-            logger: logger,
-            maxConcurrentStreams: self.httpMaxConcurrentStreams
+            logger: logger
           )
         } catch {
           return channel.eventLoop.makeFailedFuture(error)
