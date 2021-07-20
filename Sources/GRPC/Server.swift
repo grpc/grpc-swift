@@ -324,6 +324,13 @@ extension Server {
     /// The HTTP/2 flow control target window size. Defaults to 65535.
     public var httpTargetWindowSize: Int = 65535
 
+    /// The HTTP/2 max number of concurrent streams. Defaults to 100. Must be non-negative.
+    public var httpMaxConcurrentStreams: Int = 100 {
+      willSet {
+        precondition(newValue >= 0, "httpMaxConcurrentStreams must be non-negative")
+      }
+    }
+
     /// The root server logger. Accepted connections will branch from this logger and RPCs on
     /// each connection will use a logger branched from the connections logger. This logger is made
     /// available to service providers via `context`. Defaults to a no-op logger.

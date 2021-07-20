@@ -161,6 +161,14 @@ extension Server.Builder {
 }
 
 extension Server.Builder {
+  @discardableResult
+  public func withHTTPMaxConcurrentStreams(_ httpMaxConcurrentStreams: Int) -> Self {
+    self.configuration.httpMaxConcurrentStreams = httpMaxConcurrentStreams
+    return self
+  }
+}
+
+extension Server.Builder {
   /// Sets the root server logger. Accepted connections will branch from this logger and RPCs on
   /// each connection will use a logger branched from the connections logger. This logger is made
   /// available to service providers via `context`. Defaults to a no-op logger.
