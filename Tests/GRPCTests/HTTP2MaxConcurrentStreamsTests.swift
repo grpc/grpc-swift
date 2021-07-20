@@ -32,6 +32,7 @@ class HTTP2MaxConcurrentStreamsTests: GRPCTestCase {
 
   func testHTTP2MaxConcurrentStreamsSetting() {
     let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
+    defer { XCTAssertNoThrow(try eventLoopGroup.syncShutdownGracefully()) }
 
     let server = try! Server.insecure(group: eventLoopGroup)
       .withLogger(self.serverLogger)
@@ -40,9 +41,13 @@ class HTTP2MaxConcurrentStreamsTests: GRPCTestCase {
       .bind(host: "localhost", port: 0)
       .wait()
 
+    defer { XCTAssertNoThrow(try server.initiateGracefulShutdown().wait()) }
+
     let clientConnection = ClientConnection.insecure(group: eventLoopGroup)
       .withBackgroundActivityLogger(self.clientLogger)
       .connect(host: "localhost", port: server.channel.localAddress!.port!)
+
+    defer { XCTAssertNoThrow(try clientConnection.close().wait()) }
 
     let echoClient = Echo_EchoClient(
       channel: clientConnection,
