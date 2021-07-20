@@ -347,6 +347,12 @@ private final class EmbeddedEventLoopGroup: EventLoopGroup {
     return EventLoopIterator(self.loops)
   }
 
+  internal func _preconditionSafeToSyncShutdown(file: StaticString, line: UInt) {
+    // It's fine to sync shutdown on an `EmbeddedEventLoop`, so it's fine to sync shutdown on
+    // a group of them.
+    return
+  }
+
   internal func shutdownGracefully(queue: DispatchQueue, _ callback: @escaping (Error?) -> Void) {
     var shutdownError: Error?
 
