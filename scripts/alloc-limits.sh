@@ -30,5 +30,5 @@
 grep 'test_.*\.total_allocations: ' \
   | sed 's/^test_/MAX_ALLOCS_ALLOWED_/' \
   | sed 's/.total_allocations://' \
-  | awk '{ print $1 "=" ((int($2 / 1000) + 1) * 1000) }' \
+  | awk '{ print "              " $1 ": " ((int($2 / 1000) + 1) * 1000) }' \
   | sort
