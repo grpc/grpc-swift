@@ -103,18 +103,22 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
       channel: channel,
       targetWindowSize: self.configuration.httpTargetWindowSize
     ) { stream in
-      // TODO: use sync options when NIO HTTP/2 support for them is released
-      // https://github.com/apple/swift-nio-http2/pull/283
-      stream.getOption(HTTP2StreamChannelOptions.streamID).map { streamID -> Logger in
-        logger[metadataKey: MetadataKey.h2StreamID] = "\(streamID)"
-        return logger
-      }.recover { _ in
-        logger[metadataKey: MetadataKey.h2StreamID] = "<unknown>"
-        return logger
-      }.flatMap { logger in
+      // Sync options were added to the HTTP/2 stream channel in 1.17.0 (we require at least this)
+      // so this shouldn't be `nil`, but it's not a problem if it is.
+      let http2StreamID = try? stream.syncOptions?.getOption(HTTP2StreamChannelOptions.streamID)
+      let streamID = http2StreamID.map { streamID in
+        return String(Int(streamID))
+      } ?? "<unknown>"
+
+      logger[metadataKey: MetadataKey.h2StreamID] = "\(streamID)"
+
+      do {
         // TODO: provide user configuration for header normalization.
         let handler = self.makeHTTP2ToRawGRPCHandler(normalizeHeaders: true, logger: logger)
-        return stream.pipeline.addHandler(handler)
+        try stream.pipeline.syncOperations.addHandler(handler)
+        return stream.eventLoop.makeSucceededVoidFuture()
+      } catch {
+        return stream.eventLoop.makeFailedFuture(error)
       }
     }
   }
