@@ -4,13 +4,13 @@ gRPC Swift offers two TLS 'backends'. A 'NIOSSL' backend and a 'Network.framewor
 
 The NIOSSL backend is available on Darwin and Linux and delegates to SwiftNIO SSL. The
 Network.framework backend is available on recent Darwin platforms (macOS 10.14+, iOS 12+, tvOS 12+,
-and watchOS 5+) and uses the TLS implementation provided by Network.framework. Moreover, the
+and watchOS 6+) and uses the TLS implementation provided by Network.framework. Moreover, the
 Network.framework backend is only compatible with clients and servers using the `EventLoopGroup`
 provided by SwiftNIO Transport Services, `NIOTSEventLoopGroup`.
 
 |                             | NIOSSL backend                                       | Network.framework backend                   |
 |-----------------------------|------------------------------------------------------|---------------------------------------------|
-| Platform Availability       | Darwin and Linux                                     | macOS 10.14+, iOS 12+, tvOS 12+, watchOS 5+ |
+| Platform Availability       | Darwin and Linux                                     | macOS 10.14+, iOS 12+, tvOS 12+, watchOS 6+ |
 | Compatible `EventLoopGroup` | `MultiThreadedEventLoopGroup`, `NIOTSEventLoopGroup` | `NIOTSEventLoopGroup`                       |
 
 Note that on supported Darwin platforms users should the prefer using `NIOTSEventLoopGroup` and the

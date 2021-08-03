@@ -25,7 +25,7 @@ import NIOTransportServices
 import Security
 import XCTest
 
-@available(macOS 10.14, iOS 12.0, watchOS 5.0, tvOS 12.0, *)
+@available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
 final class GRPCNetworkFrameworkTests: GRPCTestCase {
   private var server: Server!
   private var client: ClientConnection!
