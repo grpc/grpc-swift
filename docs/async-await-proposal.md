@@ -455,6 +455,17 @@ where RequestStream: AsyncSequence, RequestStream.Element == Echo_EchoRequest
 Unfortunately this isn't currently supported by `AsyncSequence`, but it _has_
 been called out as a [possible future enhancement][opaque-asyncsequence].
 
+### Backpressure
+
+This proposal makes no attempt to implement backpressure, which is also not
+handled by the existing implementation.  However the API should not prevent
+implementing backpressure in the future.
+
+Since the `GRPCAsyncStream` of responses is wrapping [`AsyncStream`][SE-0314],
+it may be able to offer backpressure by making use of its `init(unfolding:)`, or
+`AsyncResponseStreamWriter.sendResponse(_:)` could block when the buffer is
+full.
+
 [SE-0296]: https://github.com/apple/swift-evolution/blob/main/proposals/0296-async-await.md
 [SE-0298]: https://github.com/apple/swift-evolution/blob/main/proposals/0298-asyncsequence.md
 [SE-0310]: https://github.com/apple/swift-evolution/blob/main/proposals/0310-effectful-readonly-properties.md
