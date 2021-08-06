@@ -93,7 +93,7 @@ public struct GRPCTLSConfiguration {
 
       #if canImport(Network)
       case var .network(config):
-        if #available(macOS 10.14, iOS 12.0, watchOS 5.0, tvOS 12.0, *) {
+        if #available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *) {
           if let hostnameOverride = newValue {
             config.updateHostnameOverride(to: hostnameOverride)
           } else {
@@ -403,7 +403,7 @@ extension GRPCTLSConfiguration {
 #if canImport(Network)
 extension GRPCTLSConfiguration {
   internal struct NetworkConfiguration {
-    @available(macOS 10.14, iOS 12.0, watchOS 5.0, tvOS 12.0, *)
+    @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
     internal var options: NWProtocolTLS.Options {
       get {
         return self._options as! NWProtocolTLS.Options
@@ -424,13 +424,13 @@ extension GRPCTLSConfiguration {
     // guards to update the value in the underlying `sec_protocol_options`.
     internal private(set) var hostnameOverride: String?
 
-    @available(macOS 10.14, iOS 12.0, watchOS 5.0, tvOS 12.0, *)
+    @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
     init(options: NWProtocolTLS.Options, hostnameOverride: String?) {
       self._options = options
       self.hostnameOverride = hostnameOverride
     }
 
-    @available(macOS 10.14, iOS 12.0, watchOS 5.0, tvOS 12.0, *)
+    @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
     internal mutating func updateHostnameOverride(to hostnameOverride: String) {
       self.hostnameOverride = hostnameOverride
       sec_protocol_options_set_tls_server_name(
@@ -440,7 +440,7 @@ extension GRPCTLSConfiguration {
     }
   }
 
-  @available(macOS 10.14, iOS 12.0, watchOS 5.0, tvOS 12.0, *)
+  @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
   public static func makeClientConfigurationBackedByNetworkFramework(
     identity: SecIdentity? = nil,
     hostnameOverride: String? = nil,
@@ -489,7 +489,7 @@ extension GRPCTLSConfiguration {
     )
   }
 
-  @available(macOS 10.14, iOS 12.0, watchOS 5.0, tvOS 12.0, *)
+  @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
   public static func makeClientConfigurationBackedByNetworkFramework(
     options: NWProtocolTLS.Options,
     hostnameOverride: String? = nil
@@ -498,7 +498,7 @@ extension GRPCTLSConfiguration {
     return GRPCTLSConfiguration(backend: .network(network))
   }
 
-  @available(macOS 10.14, iOS 12.0, watchOS 5.0, tvOS 12.0, *)
+  @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
   public static func makeServerConfigurationBackedByNetworkFramework(
     identity: SecIdentity
   ) -> GRPCTLSConfiguration {
@@ -525,7 +525,7 @@ extension GRPCTLSConfiguration {
     return GRPCTLSConfiguration.makeServerConfigurationBackedByNetworkFramework(options: options)
   }
 
-  @available(macOS 10.14, iOS 12.0, watchOS 5.0, tvOS 12.0, *)
+  @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
   public static func makeServerConfigurationBackedByNetworkFramework(
     options: NWProtocolTLS.Options
   ) -> GRPCTLSConfiguration {
@@ -533,7 +533,7 @@ extension GRPCTLSConfiguration {
     return GRPCTLSConfiguration(backend: .network(network))
   }
 
-  @available(macOS 10.14, iOS 12.0, watchOS 5.0, tvOS 12.0, *)
+  @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
   internal mutating func updateNetworkLocalIdentity(to identity: SecIdentity) {
     self.modifyingNetworkConfiguration {
       sec_protocol_options_set_local_identity(
@@ -543,7 +543,7 @@ extension GRPCTLSConfiguration {
     }
   }
 
-  @available(macOS 10.14, iOS 12.0, watchOS 5.0, tvOS 12.0, *)
+  @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
   internal mutating func updateNetworkVerifyCallbackWithQueue(
     callback: @escaping sec_protocol_verify_t,
     queue: DispatchQueue
@@ -573,7 +573,7 @@ extension GRPCTLSConfiguration {
 
 #if canImport(Network)
 extension GRPCTLSConfiguration {
-  @available(macOS 10.14, iOS 12.0, watchOS 5.0, tvOS 12.0, *)
+  @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
   internal func applyNetworkTLSOptions(
     to bootstrap: NIOTSConnectionBootstrap
   ) -> NIOTSConnectionBootstrap {
@@ -588,7 +588,7 @@ extension GRPCTLSConfiguration {
     }
   }
 
-  @available(macOS 10.14, iOS 12.0, watchOS 5.0, tvOS 12.0, *)
+  @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
   internal func applyNetworkTLSOptions(
     to bootstrap: NIOTSListenerBootstrap
   ) -> NIOTSListenerBootstrap {
@@ -604,7 +604,7 @@ extension GRPCTLSConfiguration {
   }
 }
 
-@available(macOS 10.14, iOS 12.0, watchOS 5.0, tvOS 12.0, *)
+@available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
 extension NIOTSConnectionBootstrap {
   internal func tlsOptions(
     from configuration: GRPCTLSConfiguration
@@ -613,7 +613,7 @@ extension NIOTSConnectionBootstrap {
   }
 }
 
-@available(macOS 10.14, iOS 12.0, watchOS 5.0, tvOS 12.0, *)
+@available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
 extension NIOTSListenerBootstrap {
   internal func tlsOptions(
     from configuration: GRPCTLSConfiguration

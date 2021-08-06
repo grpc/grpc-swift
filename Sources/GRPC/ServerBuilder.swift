@@ -240,7 +240,7 @@ extension Server {
   /// Returns a `Server` builder configured with the 'Network.framework' TLS backend.
   ///
   /// This builder must use a `NIOTSEventLoopGroup`.
-  @available(macOS 10.14, iOS 12.0, watchOS 5.0, tvOS 12.0, *)
+  @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
   public static func usingTLSBackedByNetworkFramework(
     on group: EventLoopGroup,
     with identity: SecIdentity

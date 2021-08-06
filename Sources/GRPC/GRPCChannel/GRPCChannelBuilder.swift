@@ -42,7 +42,7 @@ extension ClientConnection {
   ///
   /// gRPC Swift offers two TLS 'backends'. The 'NIOSSL' backend is available on Darwin and Linux
   /// platforms and delegates to SwiftNIO SSL. On recent Darwin platforms (macOS 10.14+, iOS 12+,
-  /// tvOS 12+, and watchOS 5+) the 'Network.framework' backend is available. The two backends have
+  /// tvOS 12+, and watchOS 6+) the 'Network.framework' backend is available. The two backends have
   /// a number of incompatible configuration options and users are responsible for selecting the
   /// appropriate APIs. The TLS configuration options on the builder document which backends they
   /// support.
@@ -85,7 +85,7 @@ extension ClientConnection {
   ///
   /// - Parameter group: The `EventLoopGroup` use for the connection.
   /// - Returns: A builder for a connection using the Network.framework TLS backend.
-  @available(macOS 10.14, iOS 12.0, watchOS 5.0, tvOS 12.0, *)
+  @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
   public static func usingTLSBackedByNetworkFramework(
     on group: EventLoopGroup
   ) -> ClientConnection.Builder.Secure {
@@ -365,7 +365,7 @@ extension ClientConnection.Builder.Secure {
   ///
   /// - Note: May only be used with the 'Network.framework' TLS backend.
   @discardableResult
-  @available(macOS 10.14, iOS 12.0, watchOS 5.0, tvOS 12.0, *)
+  @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
   public func withTLS(localIdentity: SecIdentity) -> Self {
     self.tls.updateNetworkLocalIdentity(to: localIdentity)
     return self
@@ -375,7 +375,7 @@ extension ClientConnection.Builder.Secure {
   ///
   /// - Note: May only be used with the 'Network.framework' TLS backend.
   @discardableResult
-  @available(macOS 10.14, iOS 12.0, watchOS 5.0, tvOS 12.0, *)
+  @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
   public func withTLSHandshakeVerificationCallback(
     on queue: DispatchQueue,
     verificationCallback callback: @escaping sec_protocol_verify_t
