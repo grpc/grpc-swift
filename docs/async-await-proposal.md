@@ -436,7 +436,27 @@ async/await language constructs), they provide throwing APIs to access the final
 metadata for the RPC. We could consider doing the same and have not ruled it
 out.
 
+### Opaque return type for response streams
+
+It would be nice if we didn't have to return the `GRPCAsyncStream` wrapper type
+for server-streaming RPCs. Ideally we would be able to declare an opaque return
+type with a constraint on its associated type. This would make the return type of
+server-streaming calls more symmetric with the inputs to client-streaming calls.
+For example, the bidirectional API could be defined as follows:
+
+```swift
+func update<RequestStream>(
+  requests: RequestStream,
+  callOptions: CallOptions? = nil
+) -> some AsyncSequence where Element == Echo_EchoResponse
+where RequestStream: AsyncSequence, RequestStream.Element == Echo_EchoRequest
+```
+
+Unfortunately this isn't currently supported by `AsyncSequence`, but it _has_
+been called out as a [possible future enhancement][opaque-asyncsequence].
+
 [SE-0296]: https://github.com/apple/swift-evolution/blob/main/proposals/0296-async-await.md
 [SE-0298]: https://github.com/apple/swift-evolution/blob/main/proposals/0298-asyncsequence.md
 [SE-0310]: https://github.com/apple/swift-evolution/blob/main/proposals/0310-effectful-readonly-properties.md
 [SE-0314]: https://github.com/apple/swift-evolution/blob/main/proposals/0314-async-stream.md
+[opaque-asyncsequence]: https://github.com/apple/swift-evolution/blob/0c2f85b3/proposals/0298-asyncsequence.md#opaque-types
