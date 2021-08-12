@@ -37,6 +37,11 @@ public struct BidirectionalStreamingCall<
     return self.call.options
   }
 
+  /// The path used to make the RPC.
+  public var path: String {
+    return self.call.path
+  }
+
   /// The `Channel` used to transport messages for this RPC.
   public var subchannel: EventLoopFuture<Channel> {
     return self.call.channel

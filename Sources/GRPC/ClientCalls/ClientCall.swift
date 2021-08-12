@@ -33,6 +33,9 @@ public protocol ClientCall {
   /// The options used to make the RPC.
   var options: CallOptions { get }
 
+  /// The path used to make the RPC.
+  var path: String { get }
+
   /// HTTP/2 stream that requests and responses are sent and received on.
   var subchannel: EventLoopFuture<Channel> { get }
 
