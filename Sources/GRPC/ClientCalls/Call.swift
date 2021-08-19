@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import Logging
-import NIO
+import NIOCore
 import NIOHPACK
 import NIOHTTP2
 import protocol SwiftProtobuf.Message

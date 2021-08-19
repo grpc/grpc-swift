@@ -15,7 +15,7 @@
  */
 @testable import GRPC
 import Logging
-import NIO
+import NIOCore
 import XCTest
 
 class LengthPrefixedMessageReaderTests: GRPCTestCase {

@@ -16,8 +16,9 @@
 import EchoImplementation
 import EchoModel
 import GRPC
-import NIO
 import NIOConcurrencyHelpers
+import NIOCore
+import NIOPosix
 import XCTest
 
 final class ServerOnCloseTests: GRPCTestCase {

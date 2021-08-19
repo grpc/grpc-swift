@@ -15,7 +15,7 @@
  */
 import Foundation
 import Logging
-import NIO
+import NIOCore
 import NIOSSL
 import NIOTLS
 

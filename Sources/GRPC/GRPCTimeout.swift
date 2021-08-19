@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import Dispatch
-import NIO
+import NIOCore
 
 /// A timeout for a gRPC call.
 ///

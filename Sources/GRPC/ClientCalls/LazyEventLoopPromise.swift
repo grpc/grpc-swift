@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import NIO
 import NIOConcurrencyHelpers
+import NIOCore
 
 extension EventLoop {
   internal func makeLazyPromise<Value>(of: Value.Type = Value.self) -> LazyEventLoopPromise<Value> {

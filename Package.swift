@@ -26,13 +26,13 @@ let package = Package(
   dependencies: [
     // GRPC dependencies:
     // Main SwiftNIO package
-    .package(url: "https://github.com/apple/swift-nio.git", from: "2.28.0"),
+    .package(url: "https://github.com/apple/swift-nio.git", from: "2.32.0"),
     // HTTP2 via SwiftNIO
-    .package(url: "https://github.com/apple/swift-nio-http2.git", from: "1.17.0"),
+    .package(url: "https://github.com/apple/swift-nio-http2.git", from: "1.18.2"),
     // TLS via SwiftNIO
     .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.14.0"),
     // Support for Network.framework where possible.
-    .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.6.0"),
+    .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.11.1"),
     // Extra NIO stuff; quiescing helpers.
     .package(url: "https://github.com/apple/swift-nio-extras.git", from: "1.4.0"),
 
@@ -46,8 +46,8 @@ let package = Package(
     // Logging API.
     .package(url: "https://github.com/apple/swift-log.git", from: "1.4.0"),
 
-    // Argument parsering: only for internal targets (i.e. examples).
-    // swift-argument-parser only provides source compatability guarantees between minor version.
+    // Argument parsing: only for internal targets (i.e. examples).
+    // swift-argument-parser only provides source compatibility guarantees between minor version.
     .package(url: "https://github.com/apple/swift-argument-parser", "0.3.0" ..< "0.5.0"),
   ],
   targets: [
@@ -56,6 +56,9 @@ let package = Package(
       name: "GRPC",
       dependencies: [
         .product(name: "NIO", package: "swift-nio"),
+        .product(name: "NIOCore", package: "swift-nio"),
+        .product(name: "NIOPosix", package: "swift-nio"),
+        .product(name: "NIOEmbedded", package: "swift-nio"),
         .product(name: "NIOFoundationCompat", package: "swift-nio"),
         .product(name: "NIOTransportServices", package: "swift-nio-transport-services"),
         .product(name: "NIOHTTP1", package: "swift-nio"),
@@ -76,6 +79,9 @@ let package = Package(
         .target(name: "GRPCSampleData"),
         .target(name: "GRPCInteroperabilityTestsImplementation"),
         .target(name: "HelloWorldModel"),
+        .product(name: "NIOCore", package: "swift-nio"),
+        .product(name: "NIOPosix", package: "swift-nio"),
+        .product(name: "NIOEmbedded", package: "swift-nio"),
       ]
     ),
 

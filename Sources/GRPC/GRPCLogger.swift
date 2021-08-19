@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import Logging
-import NIO
+import NIOCore
 
 /// Wraps `Logger` to always provide the source as "GRPC".
 ///

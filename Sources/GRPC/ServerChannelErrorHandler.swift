@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import NIO
+import NIOCore
 
 /// A handler that passes errors thrown into the server channel to the server error delegate.
 ///

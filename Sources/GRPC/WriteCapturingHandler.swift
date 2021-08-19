@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import NIO
+import NIOCore
 
 /// A handler which redirects all writes into a callback until the `.end` part is seen, after which
 /// all writes will be failed.

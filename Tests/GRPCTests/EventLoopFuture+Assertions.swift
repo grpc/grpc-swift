@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import Foundation
-import NIO
+import NIOCore
 import XCTest
 
 extension EventLoopFuture where Value: Equatable {

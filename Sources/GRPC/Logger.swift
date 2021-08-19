@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import Logging
-import NIO
+import NIOCore
 
 /// Keys for `Logger` metadata.
 enum MetadataKey {

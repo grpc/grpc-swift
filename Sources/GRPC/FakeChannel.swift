@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 import Logging
-import NIO
+import NIOCore
+import NIOEmbedded
 import SwiftProtobuf
 
 /// A fake channel for use with generated test clients.

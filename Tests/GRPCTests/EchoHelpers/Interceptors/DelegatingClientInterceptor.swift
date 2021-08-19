@@ -15,7 +15,7 @@
  */
 import EchoModel
 import GRPC
-import NIO
+import NIOCore
 import SwiftProtobuf
 
 /// A client interceptor which delegates the implementation of `send` and `receive` to callbacks.

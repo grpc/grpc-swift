@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import struct Foundation.Data
-import NIO
+import NIOCore
 import NIOHPACK
 import NIOHTTP1
 import NIOHTTP2

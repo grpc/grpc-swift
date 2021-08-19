@@ -15,10 +15,11 @@
  */
 import Foundation
 import Logging
-import NIO
+import NIOCore
 import NIOExtras
 import NIOHTTP1
 import NIOHTTP2
+import NIOPosix
 import NIOSSL
 import NIOTransportServices
 #if canImport(Network)

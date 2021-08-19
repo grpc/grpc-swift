@@ -18,8 +18,9 @@ import EchoModel
 @testable import GRPC
 import GRPCSampleData
 import Logging
-import NIO
 import NIOConcurrencyHelpers
+import NIOCore
+import NIOPosix
 import NIOSSL
 import XCTest
 

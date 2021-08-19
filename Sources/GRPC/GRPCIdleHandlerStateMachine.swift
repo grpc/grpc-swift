@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import Logging
-import NIO
+import NIOCore
 import NIOHTTP2
 
 /// Holds state for the 'GRPCIdleHandler', this isn't really just the idleness of the connection,

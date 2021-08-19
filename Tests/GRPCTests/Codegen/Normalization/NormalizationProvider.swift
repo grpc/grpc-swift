@@ -15,7 +15,7 @@
  */
 
 import GRPC
-import NIO
+import NIOCore
 import SwiftProtobuf
 
 final class NormalizationProvider: Normalization_NormalizationProvider {

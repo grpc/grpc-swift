@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import Foundation
-import NIO
+import NIOCore
 
 internal struct LengthPrefixedMessageWriter {
   static let metadataLength = 5

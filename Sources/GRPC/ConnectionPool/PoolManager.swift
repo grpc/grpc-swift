@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 import Logging
-import NIO
 import NIOConcurrencyHelpers
+import NIOCore
 
 internal final class PoolManager {
   /// Configuration used for each connection pool.

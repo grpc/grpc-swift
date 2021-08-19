@@ -15,7 +15,7 @@
  */
 import Foundation
 import Logging
-import NIO
+import NIOCore
 import NIOHTTP2
 import NIOSSL
 import NIOTLS

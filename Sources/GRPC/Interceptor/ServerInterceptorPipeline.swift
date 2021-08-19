@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import Logging
-import NIO
+import NIOCore
 
 @usableFromInline
 internal final class ServerInterceptorPipeline<Request, Response> {
