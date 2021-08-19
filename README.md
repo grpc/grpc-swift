@@ -1,6 +1,6 @@
-[![Build Status](https://travis-ci.org/grpc/grpc-swift.svg?branch=main)](https://travis-ci.org/grpc/grpc-swift)
-[![sswg:sandbox|94x20](https://img.shields.io/badge/sswg-sandbox-lightgrey.svg)](https://github.com/swift-server/sswg/blob/master/process/incubation.md#sandbox-level)
+[![CI](https://img.shields.io/github/workflow/status/grpc/grpc-swift/CI?event=push)](https://github.com/grpc/grpc-swift/actions/workflows/ci.yaml)
 [![Latest Version](https://img.shields.io/github/v/release/grpc/grpc-swift?include_prereleases&sort=semver)](https://img.shields.io/github/v/release/grpc/grpc-swift?include_prereleases&sort=semver)
+[![sswg:graduated|104x20](https://img.shields.io/badge/sswg-graduated-green.svg)](https://github.com/swift-server/sswg/blob/main/process/incubation.md#graduated-level)
 
 # gRPC Swift
 
