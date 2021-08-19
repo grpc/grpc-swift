@@ -15,7 +15,7 @@
  */
 import EchoModel
 import GRPC
-import NIO
+import NIOCore
 
 /// An `Echo_EchoProvider` which always returns failed future for each RPC.
 class FailingEchoProvider: Echo_EchoProvider {

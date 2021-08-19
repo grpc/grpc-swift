@@ -17,7 +17,7 @@ import EchoModel
 import Foundation
 @testable import GRPC
 import Logging
-import NIO
+import NIOCore
 import NIOHPACK
 import NIOHTTP1
 import SwiftProtobuf

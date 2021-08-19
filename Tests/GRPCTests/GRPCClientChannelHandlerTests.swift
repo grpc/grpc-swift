@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 @testable import GRPC
-import NIO
+import NIOCore
+import NIOEmbedded
 import NIOHPACK
 import NIOHTTP2
 import XCTest

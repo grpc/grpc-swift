@@ -16,8 +16,9 @@
 import EchoImplementation
 import EchoModel
 import GRPC
-import NIO
+import NIOCore
 import NIOHPACK
+import NIOPosix
 import XCTest
 
 class MessageCompressionTests: GRPCTestCase {

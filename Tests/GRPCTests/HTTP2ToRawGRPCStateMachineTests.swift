@@ -15,9 +15,11 @@
  */
 import EchoImplementation
 @testable import GRPC
-import NIO
+import NIOCore
+import NIOEmbedded
 import NIOHPACK
 import NIOHTTP2
+import NIOPosix
 import XCTest
 
 class HTTP2ToRawGRPCStateMachineTests: GRPCTestCase {

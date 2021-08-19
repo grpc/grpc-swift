@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 @testable import GRPC
-import NIO
 import NIOConcurrencyHelpers
+import NIOCore
+import NIOEmbedded
 import XCTest
 
 class PoolManagerStateMachineTests: GRPCTestCase {

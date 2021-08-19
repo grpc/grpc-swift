@@ -15,7 +15,7 @@
  */
 import CGRPCZlib
 import struct Foundation.Data
-import NIO
+import NIOCore
 
 /// Provides minimally configurable wrappers around zlib's compression and decompression
 /// functionality.

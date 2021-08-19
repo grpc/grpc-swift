@@ -16,7 +16,8 @@
 import EchoImplementation
 import EchoModel
 import GRPC
-import NIO
+import NIOCore
+import NIOPosix
 import XCTest
 
 /// An example model using a generated client for the 'Echo' service.

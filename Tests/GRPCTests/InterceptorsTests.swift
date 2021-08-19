@@ -17,8 +17,9 @@ import EchoImplementation
 import EchoModel
 import GRPC
 import HelloWorldModel
-import NIO
+import NIOCore
 import NIOHPACK
+import NIOPosix
 import SwiftProtobuf
 import XCTest
 

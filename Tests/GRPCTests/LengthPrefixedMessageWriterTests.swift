@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 @testable import GRPC
-import NIO
+import NIOCore
 import XCTest
 
 class LengthPrefixedMessageWriterTests: GRPCTestCase {

@@ -15,7 +15,7 @@
  */
 import Dispatch
 import Logging
-import NIO
+import NIOCore
 import NIOSSL
 
 #if canImport(Security)

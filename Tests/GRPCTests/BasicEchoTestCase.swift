@@ -19,7 +19,7 @@ import EchoModel
 import Foundation
 import GRPC
 import GRPCSampleData
-import NIO
+import NIOCore
 import NIOSSL
 import XCTest
 

@@ -15,7 +15,7 @@
  */
 import Foundation
 import Logging
-import NIO
+import NIOCore
 import NIOSSL
 
 /// A channel handler which allows caught errors to be passed to a `ClientErrorDelegate`. This

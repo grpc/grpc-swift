@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import Foundation
-import NIO
+import NIOCore
 import NIOHTTP1
 import NIOHTTP2
 

@@ -16,7 +16,8 @@
 import EchoModel
 import Foundation
 @testable import GRPC
-import NIO
+import NIOCore
+import NIOEmbedded
 import XCTest
 
 class ClientTimeoutTests: GRPCTestCase {
