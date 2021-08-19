@@ -17,8 +17,9 @@ import EchoImplementation
 import EchoModel
 import Foundation
 import GRPC
-import NIO
 import NIOConcurrencyHelpers
+import NIOCore
+import NIOPosix
 import XCTest
 
 class ClientConnectionBackoffTests: GRPCTestCase {

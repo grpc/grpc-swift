@@ -15,7 +15,7 @@
  */
 
 @testable import GRPC
-import NIO
+import NIOCore
 import NIOHPACK
 import NIOHTTP1
 import NIOHTTP2

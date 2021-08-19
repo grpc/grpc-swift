@@ -16,8 +16,9 @@
 import EchoImplementation
 import EchoModel
 @testable import GRPC
-import NIO
+import NIOCore
 import NIOHTTP2
+import NIOPosix
 import XCTest
 
 class HTTP2MaxConcurrentStreamsTests: GRPCTestCase {

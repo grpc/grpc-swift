@@ -16,9 +16,10 @@
 import EchoImplementation
 import EchoModel
 @testable import GRPC
-import NIO
+import NIOCore
 import NIOHPACK
 import NIOHTTP1
+import NIOPosix
 import XCTest
 
 class EchoMetadataValidator: Echo_EchoProvider {

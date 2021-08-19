@@ -15,7 +15,8 @@
  */
 
 import GRPC
-import NIO
+import NIOCore
+import NIOPosix
 import XCTest
 
 /// These tests validate that:

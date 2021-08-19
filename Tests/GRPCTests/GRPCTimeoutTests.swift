@@ -16,7 +16,7 @@
 import Dispatch
 import Foundation
 @testable import GRPC
-import NIO
+import NIOCore
 import XCTest
 
 class GRPCTimeoutTests: GRPCTestCase {

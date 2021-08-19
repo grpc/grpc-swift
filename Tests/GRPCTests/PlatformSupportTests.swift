@@ -15,7 +15,8 @@
  */
 import Foundation
 @testable import GRPC
-import NIO
+import NIOCore
+import NIOPosix
 import NIOTransportServices
 import XCTest
 

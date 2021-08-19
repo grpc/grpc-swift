@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import Logging
-import NIO
+import NIOCore
 
 public struct ServerInterceptorContext<Request, Response> {
   /// The interceptor this context is for.

@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 import GRPC
-import NIO
+import NIOCore
+import NIOPosix
 import XCTest
 
 // These tests demonstrate how to use gRPC to create a service provider using your own payload type,

@@ -16,7 +16,7 @@
 import EchoImplementation
 import EchoModel
 import GRPC
-import NIO
+import NIOCore
 import XCTest
 
 class FakeResponseStreamExampleTests: GRPCTestCase {

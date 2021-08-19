@@ -19,7 +19,7 @@ import FoundationNetworking
 #endif
 import EchoModel
 @testable import GRPC
-import NIO
+import NIOCore
 import XCTest
 
 // Only test Unary and ServerStreaming, as ClientStreaming is not

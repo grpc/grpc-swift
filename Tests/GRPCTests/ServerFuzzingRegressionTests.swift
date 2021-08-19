@@ -17,7 +17,8 @@ import EchoImplementation
 import struct Foundation.Data
 import struct Foundation.URL
 import GRPC
-import NIO
+import NIOCore
+import NIOEmbedded
 import XCTest
 
 final class ServerFuzzingRegressionTests: GRPCTestCase {
