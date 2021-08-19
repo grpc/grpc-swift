@@ -17,7 +17,7 @@ import Dispatch
 import EchoModel
 import Foundation
 @testable import GRPC
-import NIO
+import NIOCore
 import NIOHTTP1
 import NIOHTTP2
 import XCTest

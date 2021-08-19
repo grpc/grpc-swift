@@ -16,7 +16,8 @@
 import EchoModel
 @testable import GRPC
 import Logging
-import NIO
+import NIOCore
+import NIOEmbedded
 import NIOHTTP2
 import XCTest
 

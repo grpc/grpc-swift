@@ -16,7 +16,8 @@
 import EchoImplementation
 import EchoModel
 import GRPC
-import NIO
+import NIOCore
+import NIOPosix
 import XCTest
 
 class ServerQuiescingTests: GRPCTestCase {

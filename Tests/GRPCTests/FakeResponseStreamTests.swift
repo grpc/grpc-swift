@@ -15,7 +15,8 @@
  */
 import EchoModel
 @testable import GRPC
-import NIO
+import NIOCore
+import NIOEmbedded
 import NIOHPACK
 import XCTest
 

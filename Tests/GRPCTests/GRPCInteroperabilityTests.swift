@@ -16,7 +16,8 @@
 import Foundation
 import GRPC
 import GRPCInteroperabilityTestsImplementation
-import NIO
+import NIOCore
+import NIOPosix
 import XCTest
 
 /// These are the gRPC interoperability tests running on the NIO client and server.

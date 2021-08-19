@@ -16,7 +16,7 @@
 import EchoModel
 import Foundation
 import GRPC
-import NIO
+import NIOCore
 import XCTest
 
 class ImmediatelyFailingEchoProvider: Echo_EchoProvider {

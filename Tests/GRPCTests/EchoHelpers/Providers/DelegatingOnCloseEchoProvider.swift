@@ -15,7 +15,7 @@
  */
 import EchoModel
 import GRPC
-import NIO
+import NIOCore
 
 /// An `Echo_EchoProvider` which sets `onClose` for each RPC and then calls a delegate to provide
 /// the RPC implementation.

@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 @testable import GRPC
-import NIO
+import NIOCore
+import NIOEmbedded
 import XCTest
 
 class LazyEventLoopPromiseTests: GRPCTestCase {

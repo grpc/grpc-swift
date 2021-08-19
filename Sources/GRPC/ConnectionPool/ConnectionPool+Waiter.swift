@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import NIO
+import NIOCore
 import NIOHTTP2
 
 extension ConnectionPool {

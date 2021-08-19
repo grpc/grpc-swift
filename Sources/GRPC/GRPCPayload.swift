@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import NIO
+import NIOCore
 
 /// A data type which may be serialized into and out from a `ByteBuffer` in order to be sent between
 /// gRPC peers.

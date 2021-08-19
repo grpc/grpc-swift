@@ -15,7 +15,8 @@
  */
 import struct Foundation.Data
 @testable import GRPC
-import NIO
+import NIOCore
+import NIOEmbedded
 import NIOHPACK
 import NIOHTTP1
 import NIOHTTP2

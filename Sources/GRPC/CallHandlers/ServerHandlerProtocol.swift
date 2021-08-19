@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import NIO
+import NIOCore
 import NIOHPACK
 
 /// This protocol lays out the inbound interface between the gRPC module and generated server code.

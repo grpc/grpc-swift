@@ -18,7 +18,8 @@ import EchoModel
 @testable import GRPC
 import GRPCSampleData
 import Logging
-import NIO
+import NIOCore
+import NIOPosix
 import NIOSSL
 import XCTest
 
