@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import _NIOConcurrency
 import Logging
 import NIOCore
 import NIOHPACK
 import NIOHTTP2
-import _NIOConcurrency
 
 #if compiler(>=5.5)
 
@@ -75,7 +75,7 @@ public struct AsyncBidirectionalStreamingCall<
     self.call = call
     // Initialise `responseParts` with an empty response handler because we
     // provide the responses as an AsyncSequence in `responseStream`.
-    self.responseParts = StreamingResponseParts(on: call.eventLoop) {_ in}
+    self.responseParts = StreamingResponseParts(on: call.eventLoop) { _ in }
 
     // Call and StreamingResponseParts are reference types so we grab a
     // referecence to them here to avoid capturing mutable self in the  closure
@@ -98,8 +98,8 @@ public struct AsyncBidirectionalStreamingCall<
         responseParts.handle(responsePart)
         switch responsePart {
         case let .message(response): continuation.yield(response)
-        case .metadata(_): break
-        case .end(_, _): continuation.finish()
+        case .metadata: break
+        case .end: continuation.finish()
         }
       }
     }
@@ -109,7 +109,7 @@ public struct AsyncBidirectionalStreamingCall<
   /// We expose this as the only non-private initializer so that the caller
   /// knows that invocation is part of initialisation.
   internal static func makeAndInvoke(call: Call<RequestPayload, ResponsePayload>) -> Self {
-    Self.init(call: call)
+    Self(call: call)
   }
 
   // MARK: - Requests

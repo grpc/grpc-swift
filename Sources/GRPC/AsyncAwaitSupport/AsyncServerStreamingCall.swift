@@ -74,7 +74,7 @@ public struct AsyncServerStreamingCall<RequestPayload, ResponsePayload>: AsyncCl
     self.call = call
     // Initialise `responseParts` with an empty response handler because we
     // provide the responses as an AsyncSequence in `responseStream`.
-    self.responseParts = StreamingResponseParts(on: call.eventLoop) {_ in}
+    self.responseParts = StreamingResponseParts(on: call.eventLoop) { _ in }
 
     // Call and StreamingResponseParts are reference types so we grab a
     // referecence to them here to avoid capturing mutable self in the  closure
@@ -89,19 +89,20 @@ public struct AsyncServerStreamingCall<RequestPayload, ResponsePayload>: AsyncCl
     // implementation that supports yielding values from outside the closure.
     let call = self.call
     let responseParts = self.responseParts
-    self.responseStream = GRPCAsyncStream(AsyncThrowingStream(ResponsePayload.self) { continuation in
-      call.invokeUnaryRequest(request) { error in
-        responseParts.handleError(error)
-        continuation.finish(throwing: error)
-      } onResponsePart: { responsePart in
-        responseParts.handle(responsePart)
-        switch responsePart {
-        case let .message(response): continuation.yield(response)
-        case .metadata(_): break
-        case .end(_, _): continuation.finish()
+    self
+      .responseStream = GRPCAsyncStream(AsyncThrowingStream(ResponsePayload.self) { continuation in
+        call.invokeUnaryRequest(request) { error in
+          responseParts.handleError(error)
+          continuation.finish(throwing: error)
+        } onResponsePart: { responsePart in
+          responseParts.handle(responsePart)
+          switch responsePart {
+          case let .message(response): continuation.yield(response)
+          case .metadata: break
+          case .end: continuation.finish()
+          }
         }
-      }
-    })
+      })
   }
 
   /// We expose this as the only non-private initializer so that the caller
@@ -110,7 +111,7 @@ public struct AsyncServerStreamingCall<RequestPayload, ResponsePayload>: AsyncCl
     call: Call<RequestPayload, ResponsePayload>,
     _ request: RequestPayload
   ) -> Self {
-    Self.init(call: call, request)
+    Self(call: call, request)
   }
 }
 

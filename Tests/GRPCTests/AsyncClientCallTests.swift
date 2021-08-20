@@ -77,10 +77,11 @@ class AsyncClientCallTests: GRPCTestCase {
 
   func testAsyncClientStreamingCall() throws { XCTAsyncTest {
     let channel = try self.setUpServerAndChannel()
-    let collect: AsyncClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse> = channel.makeAsyncClientStreamingCall(
-      path: "/echo.Echo/Collect",
-      callOptions: .init()
-    )
+    let collect: AsyncClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse> = channel
+      .makeAsyncClientStreamingCall(
+        path: "/echo.Echo/Collect",
+        callOptions: .init()
+      )
 
     for word in ["boyle", "jeffers", "holt"] {
       try await collect.sendMessage(.with { $0.text = word })
@@ -93,11 +94,12 @@ class AsyncClientCallTests: GRPCTestCase {
 
   func testAsyncServerStreamingCall() throws { XCTAsyncTest {
     let channel = try self.setUpServerAndChannel()
-    let expand: AsyncServerStreamingCall<Echo_EchoRequest, Echo_EchoResponse> = channel.makeAsyncServerStreamingCall(
-      path: "/echo.Echo/Expand",
-      request: .with { $0.text = "boyle jeffers holt" },
-      callOptions: .init()
-    )
+    let expand: AsyncServerStreamingCall<Echo_EchoRequest, Echo_EchoResponse> = channel
+      .makeAsyncServerStreamingCall(
+        path: "/echo.Echo/Expand",
+        request: .with { $0.text = "boyle jeffers holt" },
+        callOptions: .init()
+      )
 
     var numResponses = 0
     for try await _ in expand.responseStream {
@@ -109,10 +111,11 @@ class AsyncClientCallTests: GRPCTestCase {
 
   func testAsyncBidirectionalStreamingCall() throws { XCTAsyncTest {
     let channel = try self.setUpServerAndChannel()
-    let update: AsyncBidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> = channel.makeAsyncBidirectionalStreamingCall(
-      path: "/echo.Echo/Update",
-      callOptions: .init()
-    )
+    let update: AsyncBidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> = channel
+      .makeAsyncBidirectionalStreamingCall(
+        path: "/echo.Echo/Update",
+        callOptions: .init()
+      )
 
     for word in ["boyle", "jeffers", "holt"] {
       try await update.sendMessage(.with { $0.text = word })
@@ -127,13 +130,13 @@ class AsyncClientCallTests: GRPCTestCase {
     await assertThat(await update.status, .hasCode(.ok))
   } }
 
-
   func testAsyncBidirectionalStreamingCall_InterleavedRequestsAndResponses() throws { XCTAsyncTest {
     let channel = try self.setUpServerAndChannel()
-    let update: AsyncBidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> = channel.makeAsyncBidirectionalStreamingCall(
-      path: "/echo.Echo/Update",
-      callOptions: .init()
-    )
+    let update: AsyncBidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> = channel
+      .makeAsyncBidirectionalStreamingCall(
+        path: "/echo.Echo/Update",
+        callOptions: .init()
+      )
 
     // Spin up a task to send the requests with a delay before each one
     Task {
@@ -142,7 +145,7 @@ class AsyncClientCallTests: GRPCTestCase {
         try await Task.sleep(nanoseconds: UInt64(delay.nanoseconds))
         try await update.sendMessage(.with { $0.text = word })
       }
-        try await Task.sleep(nanoseconds: UInt64(delay.nanoseconds))
+      try await Task.sleep(nanoseconds: UInt64(delay.nanoseconds))
       try await update.sendEnd()
     }
 
@@ -156,12 +159,13 @@ class AsyncClientCallTests: GRPCTestCase {
     await assertThat(await update.status, .hasCode(.ok))
   } }
 
-  func testAsyncBidirectionalStreamingCall_ConcurrentTasksForRequestsAndResponses() throws { XCTAsyncTest {
+  func testAsyncBidirectionalStreamingCall_ConcurrentTasks() throws { XCTAsyncTest {
     let channel = try self.setUpServerAndChannel()
-    let update: AsyncBidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> = channel.makeAsyncBidirectionalStreamingCall(
-      path: "/echo.Echo/Update",
-      callOptions: .init()
-    )
+    let update: AsyncBidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> = channel
+      .makeAsyncBidirectionalStreamingCall(
+        path: "/echo.Echo/Update",
+        callOptions: .init()
+      )
 
     actor TestResults {
       static var numResponses = 0
@@ -169,7 +173,7 @@ class AsyncClientCallTests: GRPCTestCase {
     }
 
     // Send the requests and get responses in separate concurrent tasks and await the group.
-    let _ = await withThrowingTaskGroup(of: Void.self) { taskGroup in
+    _ = await withThrowingTaskGroup(of: Void.self) { taskGroup in
       // Send requests in a task, sleeping in between, then send end.
       taskGroup.addTask {
         let delay = TimeAmount.milliseconds(500)
@@ -209,7 +213,7 @@ public extension XCTestCase {
     timeout: TimeInterval = 3,
     file: StaticString = #file,
     line: Int = #line,
-    operation: @escaping () async throws -> ()
+    operation: @escaping () async throws -> Void
   ) {
     let expectation = self.expectation(description: expectationDescription)
     Task {
@@ -217,7 +221,7 @@ public extension XCTestCase {
         try await operation()
       } catch {
         XCTFail("Error thrown while executing async function @ \(file):\(line): \(error)")
-        Thread.callStackSymbols.forEach{print($0)}
+        Thread.callStackSymbols.forEach { print($0) }
       }
       expectation.fulfill()
     }

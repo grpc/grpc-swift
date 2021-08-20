@@ -22,7 +22,10 @@ import NIOHTTP2
 
 /// Async-await variant of `ClientStreamingCall`.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-public struct AsyncClientStreamingCall<RequestPayload, ResponsePayload>: AsyncStreamingRequestClientCall,
+public struct AsyncClientStreamingCall<
+  RequestPayload,
+  ResponsePayload
+>: AsyncStreamingRequestClientCall,
   AsyncUnaryResponseClientCall {
   private let call: Call<RequestPayload, ResponsePayload>
   private let responseParts: UnaryResponseParts<ResponsePayload>
