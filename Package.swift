@@ -60,6 +60,7 @@ let package = Package(
         .product(name: "NIOPosix", package: "swift-nio"),
         .product(name: "NIOEmbedded", package: "swift-nio"),
         .product(name: "NIOFoundationCompat", package: "swift-nio"),
+        .product(name: "NIOTLS", package: "swift-nio"),
         .product(name: "NIOTransportServices", package: "swift-nio-transport-services"),
         .product(name: "NIOHTTP1", package: "swift-nio"),
         .product(name: "NIOHTTP2", package: "swift-nio-http2"),
