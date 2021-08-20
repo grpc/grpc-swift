@@ -39,6 +39,7 @@ public struct AsyncUnaryCall<RequestPayload, ResponsePayload>: AsyncUnaryRespons
 
   /// The `Channel` used to transport messages for this RPC.
   public var subchannel: Channel {
+    // swiftformat:disable:next redundantGet
     get async throws {
       try await self.call.channel.get()
     }
@@ -53,6 +54,7 @@ public struct AsyncUnaryCall<RequestPayload, ResponsePayload>: AsyncUnaryRespons
 
   /// The initial metadata returned from the server.
   public var initialMetadata: HPACKHeaders {
+    // swiftformat:disable:next redundantGet
     get async throws {
       try await self.responseParts.initialMetadata.get()
     }
@@ -63,6 +65,7 @@ public struct AsyncUnaryCall<RequestPayload, ResponsePayload>: AsyncUnaryRespons
   ///
   /// Callers should rely on the `status` of the call for the canonical outcome.
   public var response: ResponsePayload {
+    // swiftformat:disable:next redundantGet
     get async throws {
       try await self.responseParts.response.get()
     }
@@ -70,6 +73,7 @@ public struct AsyncUnaryCall<RequestPayload, ResponsePayload>: AsyncUnaryRespons
 
   /// The trailing metadata returned from the server.
   public var trailingMetadata: HPACKHeaders {
+    // swiftformat:disable:next redundantGet
     get async throws {
       try await self.responseParts.trailingMetadata.get()
     }
@@ -77,6 +81,7 @@ public struct AsyncUnaryCall<RequestPayload, ResponsePayload>: AsyncUnaryRespons
 
   /// The final status of the the RPC.
   public var status: GRPCStatus {
+    // swiftformat:disable:next redundantGet
     get async {
       // force-try because this future will _always_ be fulfilled with success.
       try! await self.responseParts.status.get()

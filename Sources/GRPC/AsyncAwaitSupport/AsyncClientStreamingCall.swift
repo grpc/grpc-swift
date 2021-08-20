@@ -37,6 +37,7 @@ public struct AsyncClientStreamingCall<
 
   /// The `Channel` used to transport messages for this RPC.
   public var subchannel: Channel {
+    // swiftformat:disable:next redundantGet
     get async throws {
       try await self.call.channel.get()
     }
@@ -51,6 +52,7 @@ public struct AsyncClientStreamingCall<
 
   /// The initial metadata returned from the server.
   public var initialMetadata: HPACKHeaders {
+    // swiftformat:disable:next redundantGet
     get async throws {
       try await self.responseParts.initialMetadata.get()
     }
@@ -58,6 +60,7 @@ public struct AsyncClientStreamingCall<
 
   /// The response returned by the server.
   public var response: ResponsePayload {
+    // swiftformat:disable:next redundantGet
     get async throws {
       try await self.responseParts.response.get()
     }
@@ -65,6 +68,7 @@ public struct AsyncClientStreamingCall<
 
   /// The trailing metadata returned from the server.
   public var trailingMetadata: HPACKHeaders {
+    // swiftformat:disable:next redundantGet
     get async throws {
       try await self.responseParts.trailingMetadata.get()
     }
@@ -72,6 +76,7 @@ public struct AsyncClientStreamingCall<
 
   /// The final status of the the RPC.
   public var status: GRPCStatus {
+    // swiftformat:disable:next redundantGet
     get async {
       try! await self.responseParts.status.get()
     }
