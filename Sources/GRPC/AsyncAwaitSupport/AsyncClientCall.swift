@@ -20,7 +20,10 @@ import NIOHTTP1
 import NIOHTTP2
 import SwiftProtobuf
 
+#if compiler(>=5.5)
+
 /// Base protocol for an async client call to a gRPC service.
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 public protocol AsyncClientCall {
   /// The type of the request message for the call.
   associatedtype RequestPayload
@@ -57,6 +60,7 @@ public protocol AsyncClientCall {
 }
 
 /// A `ClientCall` with request streaming; i.e. client-streaming and bidirectional-streaming.
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 public protocol AsyncStreamingRequestClientCall: AsyncClientCall {
   /// Sends a message to the service.
   ///
@@ -88,6 +92,7 @@ public protocol AsyncStreamingRequestClientCall: AsyncClientCall {
 }
 
 /// A `ClientCall` with a unary response; i.e. unary and client-streaming.
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 public protocol AsyncUnaryResponseClientCall: AsyncClientCall {
   /// The response message returned from the service if the call is successful. This may be failed
   /// if the call encounters an error.
@@ -95,3 +100,5 @@ public protocol AsyncUnaryResponseClientCall: AsyncClientCall {
   /// Callers should rely on the `status` of the call for the canonical outcome.
   var response: ResponsePayload { get async throws }
 }
+
+#endif
