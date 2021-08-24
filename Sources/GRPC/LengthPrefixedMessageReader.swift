@@ -185,7 +185,10 @@ internal struct LengthPrefixedMessageReader {
       }
 
       if messageLength > maxLength {
-        throw GRPCError.DeserializationFailure().captureContext()
+        throw GRPCError.PayloadLengthLimitExceeded(
+          actualLength: messageLength,
+          limit: maxLength
+        ).captureContext()
       }
 
       self.state = .expectingMessage(messageLength, compressed: compressed)

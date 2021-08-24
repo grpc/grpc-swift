@@ -70,7 +70,7 @@ final class GRPCMessageLengthLimitTests: GRPCTestCase {
 
     let get = self.echo.get(self.makeRequest(minimumLength: 1024))
     XCTAssertThrowsError(try get.response.wait())
-    XCTAssertEqual(try get.status.map { $0.code }.wait(), .internalError)
+    XCTAssertEqual(try get.status.map { $0.code }.wait(), .resourceExhausted)
   }
 
   func testServerRejectsLongClientStreamingRequest() throws {
@@ -83,7 +83,7 @@ final class GRPCMessageLengthLimitTests: GRPCTestCase {
     // (No need to send end, the server is going to close the RPC because the message was too long.)
 
     XCTAssertThrowsError(try collect.response.wait())
-    XCTAssertEqual(try collect.status.map { $0.code }.wait(), .internalError)
+    XCTAssertEqual(try collect.status.map { $0.code }.wait(), .resourceExhausted)
   }
 
   func testServerRejectsLongServerStreamingRequest() throws {
@@ -94,7 +94,7 @@ final class GRPCMessageLengthLimitTests: GRPCTestCase {
       XCTFail("Unexpected response")
     }
 
-    XCTAssertEqual(try expand.status.map { $0.code }.wait(), .internalError)
+    XCTAssertEqual(try expand.status.map { $0.code }.wait(), .resourceExhausted)
   }
 
   func testServerRejectsLongBidirectionalStreamingRequest() throws {
@@ -107,7 +107,7 @@ final class GRPCMessageLengthLimitTests: GRPCTestCase {
     XCTAssertNoThrow(try update.sendMessage(self.makeRequest(minimumLength: 1024)).wait())
     // (No need to send end, the server is going to close the RPC because the message was too long.)
 
-    XCTAssertEqual(try update.status.map { $0.code }.wait(), .internalError)
+    XCTAssertEqual(try update.status.map { $0.code }.wait(), .resourceExhausted)
   }
 
   func testClientRejectsLongUnaryResponse() throws {
@@ -117,7 +117,7 @@ final class GRPCMessageLengthLimitTests: GRPCTestCase {
 
     let get = self.echo.get(.with { $0.text = String(repeating: "x", count: 1024) })
     XCTAssertThrowsError(try get.response.wait())
-    XCTAssertEqual(try get.status.map { $0.code }.wait(), .internalError)
+    XCTAssertEqual(try get.status.map { $0.code }.wait(), .resourceExhausted)
   }
 
   func testClientRejectsLongClientStreamingResponse() throws {
@@ -130,7 +130,7 @@ final class GRPCMessageLengthLimitTests: GRPCTestCase {
     XCTAssertNoThrow(try collect.sendEnd().wait())
 
     XCTAssertThrowsError(try collect.response.wait())
-    XCTAssertEqual(try collect.status.map { $0.code }.wait(), .internalError)
+    XCTAssertEqual(try collect.status.map { $0.code }.wait(), .resourceExhausted)
   }
 
   func testClientRejectsLongServerStreamingRequest() throws {
@@ -143,7 +143,7 @@ final class GRPCMessageLengthLimitTests: GRPCTestCase {
       XCTFail("Unexpected response")
     }
 
-    XCTAssertEqual(try expand.status.map { $0.code }.wait(), .internalError)
+    XCTAssertEqual(try expand.status.map { $0.code }.wait(), .resourceExhausted)
   }
 
   func testClientRejectsLongServerBidirectionalStreamingResponse() throws {
@@ -157,6 +157,6 @@ final class GRPCMessageLengthLimitTests: GRPCTestCase {
     // (No need to send end, the client will close the RPC when it receives a response which is too
     // long.
 
-    XCTAssertEqual(try update.status.map { $0.code }.wait(), .internalError)
+    XCTAssertEqual(try update.status.map { $0.code }.wait(), .resourceExhausted)
   }
 }
