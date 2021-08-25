@@ -708,9 +708,10 @@ extension XCTestCase {
   /// - NOTE: Implementation currently in progress: https://github.com/apple/swift-corelibs-xctest/pull/326
   func XCTAsyncTest(
     expectationDescription: String = "Async operation",
-    timeout: TimeInterval = 3,
-    file: StaticString = #file,
-    line: Int = #line,
+    timeout: TimeInterval = 30,
+    file: StaticString = #filePath,
+    line: UInt = #line,
+    function: StaticString = #function,
     operation: @escaping () async throws -> Void
   ) {
     let expectation = self.expectation(description: expectationDescription)
@@ -718,7 +719,7 @@ extension XCTestCase {
       do {
         try await operation()
       } catch {
-        XCTFail("Error thrown while executing async function @ \(file):\(line): \(error)")
+        XCTFail("Error thrown while executing \(function): \(error)", file: file, line: line)
         Thread.callStackSymbols.forEach { print($0) }
       }
       expectation.fulfill()
