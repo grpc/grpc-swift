@@ -37,14 +37,6 @@ public struct AsyncUnaryCall<RequestPayload, ResponsePayload>: AsyncUnaryRespons
     self.call.options
   }
 
-  /// The `Channel` used to transport messages for this RPC.
-  public var subchannel: Channel {
-    // swiftformat:disable:next redundantGet
-    get async throws {
-      try await self.call.channel.get()
-    }
-  }
-
   /// Cancel this RPC if it hasn't already completed.
   public func cancel() async throws {
     try await self.call.cancel().get()

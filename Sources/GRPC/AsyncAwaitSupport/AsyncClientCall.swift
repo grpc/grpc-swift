@@ -33,9 +33,6 @@ public protocol AsyncClientCall {
   /// The options used to make the RPC.
   var options: CallOptions { get }
 
-  /// HTTP/2 stream that requests and responses are sent and received on.
-  var subchannel: Channel { get async throws }
-
   /// Initial response metadata.
   var initialMetadata: HPACKHeaders { get async throws }
 
