@@ -134,21 +134,16 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
         callOptions: .init()
       )
 
-    // Spin up a task to send the requests with a delay before each one
-    Task {
-      let delay = TimeAmount.milliseconds(500)
-      for word in ["foo", "bar", "baz"] {
-        try await Task.sleep(nanoseconds: UInt64(delay.nanoseconds))
-        try await update.sendMessage(.with { $0.text = word })
-      }
-      try await Task.sleep(nanoseconds: UInt64(delay.nanoseconds))
-      try await update.sendEnd()
+    var responseStreamIterator = update.responses.makeAsyncIterator()
+    for word in ["boyle", "jeffers", "holt"] {
+      try await update.sendMessage(.with { $0.text = word })
+      await assertThat(try await responseStreamIterator.next(), .is(.notNil()))
     }
 
-    // ...and then wait on the responses...
-    let numResponses = try await update.responses.map { _ in 1 }.reduce(0, (+))
+    try await update.sendEnd()
 
-    await assertThat(numResponses, .is(.equalTo(3)))
+    await assertThat(try await responseStreamIterator.next(), .is(.nil()))
+
     await assertThat(await update.status, .hasCode(.ok))
   } }
 
@@ -167,15 +162,12 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
 
     // Send the requests and get responses in separate concurrent tasks and await the group.
     _ = await withThrowingTaskGroup(of: Void.self) { taskGroup in
-      // Send requests in a task, sleeping in between, then send end.
+      // Send requests, then end, in a task.
       taskGroup.addTask {
-        let delay = TimeAmount.milliseconds(500)
         for word in ["boyle", "jeffers", "holt"] {
-          try await Task.sleep(nanoseconds: UInt64(delay.nanoseconds))
           try await update.sendMessage(.with { $0.text = word })
           TestResults.numRequests += 1
         }
-        try await Task.sleep(nanoseconds: UInt64(delay.nanoseconds))
         try await update.sendEnd()
       }
       // Get responses in a separate task.
