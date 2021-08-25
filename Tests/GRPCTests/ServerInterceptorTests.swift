@@ -37,7 +37,12 @@ extension GRPCServerHandlerProtocol {
 
 class ServerInterceptorTests: GRPCTestCase {
   private let eventLoop = EmbeddedEventLoop()
-  private let recorder = ResponseRecorder()
+  private var recorder: ResponseRecorder!
+
+  override func setUp() {
+    super.setUp()
+    self.recorder = ResponseRecorder(eventLoop: self.eventLoop)
+  }
 
   private func makeRecordingInterceptor()
     -> RecordingServerInterceptor<Echo_EchoRequest, Echo_EchoResponse> {

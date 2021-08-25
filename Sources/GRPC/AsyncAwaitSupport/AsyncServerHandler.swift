@@ -1,0 +1,518 @@
+/*
+ * Copyright 2021, gRPC Authors All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import _NIOConcurrency
+import Logging
+import NIOCore
+import NIOHPACK
+
+#if compiler(>=5.5)
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+public final class AsyncServerHandler<
+  Serializer: MessageSerializer,
+  Deserializer: MessageDeserializer
+>: GRPCServerHandlerProtocol {
+  public typealias Request = Deserializer.Output
+  public typealias Response = Serializer.Input
+
+  /// A response serializer.
+  @usableFromInline
+  internal let serializer: Serializer
+
+  /// A request deserializer.
+  @usableFromInline
+  internal let deserializer: Deserializer
+
+  /// A pipeline of user provided interceptors.
+  @usableFromInline
+  internal var interceptors: ServerInterceptorPipeline<Request, Response>!
+
+  /// The context required in order create the function.
+  @usableFromInline
+  internal let context: CallHandlerContext
+
+  /// A reference to a `UserInfo`.
+  @usableFromInline
+  internal let userInfoRef: Ref<UserInfo>
+
+  /// The user provided function to execute.
+  @usableFromInline
+  internal let observer: (
+    GRPCAsyncStream<Request>,
+    AsyncResponseStreamWriter<Response>,
+    AsyncServerCallContext
+  ) async throws -> Void
+
+  /// The state of the handler.
+  @usableFromInline
+  internal var state: State = .idle
+
+  /// The task used to run the async user function.
+  @usableFromInline
+  internal var task: Task<Void, Never>? = nil
+
+  @usableFromInline
+  internal enum State {
+    /// No headers have been received.
+    case idle
+    /// Headers have been received, a context and request stream has been created and passed to the
+    /// user handler. The `StreamEvent` handler here pokes requests into the request stream which
+    /// is being consumed by the user handler.
+    case observing((StreamEvent<Request>) -> Void, _StreamingResponseCallContext<Request, Response>)
+    /// The handler has completed.
+    case completed
+  }
+
+  @inlinable
+  public init(
+    context: CallHandlerContext,
+    requestDeserializer: Deserializer,
+    responseSerializer: Serializer,
+    interceptors: [ServerInterceptor<Request, Response>],
+    observer: @escaping @Sendable(
+      GRPCAsyncStream<Request>,
+      AsyncResponseStreamWriter<Response>,
+      AsyncServerCallContext
+    ) async throws -> Void
+  ) {
+    self.serializer = responseSerializer
+    self.deserializer = requestDeserializer
+    self.context = context
+    self.observer = observer
+
+    let userInfoRef = Ref(UserInfo())
+    self.userInfoRef = userInfoRef
+
+    self.interceptors = ServerInterceptorPipeline(
+      logger: context.logger,
+      eventLoop: context.eventLoop,
+      path: context.path,
+      callType: .bidirectionalStreaming,
+      remoteAddress: context.remoteAddress,
+      userInfoRef: userInfoRef,
+      interceptors: interceptors,
+      onRequestPart: self.receiveInterceptedPart(_:),
+      onResponsePart: self.sendInterceptedPart(_:promise:)
+    )
+  }
+
+  // MARK: - Public API: gRPC to Handler
+
+  @inlinable
+  public func receiveMetadata(_ headers: HPACKHeaders) {
+    self.interceptors.receive(.metadata(headers))
+  }
+
+  @inlinable
+  public func receiveMessage(_ bytes: ByteBuffer) {
+    do {
+      let message = try self.deserializer.deserialize(byteBuffer: bytes)
+      self.interceptors.receive(.message(message))
+    } catch {
+      self.handleError(error)
+    }
+  }
+
+  @inlinable
+  public func receiveEnd() {
+    self.interceptors.receive(.end)
+  }
+
+  @inlinable
+  public func receiveError(_ error: Error) {
+    self.handleError(error)
+    self.finish()
+  }
+
+  @inlinable
+  public func finish() {
+    switch self.state {
+    case .idle:
+      self.interceptors = nil
+      self.state = .completed
+
+    case let .observing(_, context):
+      context.statusPromise.fail(GRPCStatus(code: .unavailable, message: nil))
+
+    case .completed:
+      self.interceptors = nil
+    }
+  }
+
+  // MARK: - Interceptors to User Function
+
+  @inlinable
+  internal func receiveInterceptedPart(_ part: GRPCServerRequestPart<Request>) {
+    switch part {
+    case let .metadata(headers):
+      self.receiveInterceptedMetadata(headers)
+    case let .message(message):
+      self.receiveInterceptedMessage(message)
+    case .end:
+      self.receiveInterceptedEnd()
+    }
+  }
+
+  @inlinable
+  internal func receiveInterceptedMetadata(_ headers: HPACKHeaders) {
+    switch self.state {
+    case .idle:
+      // Make a context to invoke the user handler with.
+      //
+      // The user function accepts a protocol-type of `AsyncServerCallContext`.
+      // For now we use `_StreamingResponseCallContext` but we will move to a dedicated concrete type soon.
+      //
+      // TODO: Update to use dedicated `AsyncServerCallContext` type.
+      let context = _StreamingResponseCallContext<Request, Response>(
+        eventLoop: self.context.eventLoop,
+        headers: headers,
+        logger: self.context.logger,
+        userInfoRef: self.userInfoRef,
+        compressionIsEnabled: self.context.encoding.isEnabled,
+        closeFuture: self.context.closeFuture,
+        sendResponse: self.interceptResponse(_:metadata:promise:)
+      )
+
+      // Create a request stream to pass to the user function and capture the
+      // handler in the updated state to allow us to produce more results.
+      let requestStream = GRPCAsyncStream<Request>(AsyncThrowingStream { continuation in
+        self.state = .observing({ streamEvent in
+          switch streamEvent {
+          case let .message(request): continuation.yield(request)
+          case .end: continuation.finish()
+          }
+        }, context)
+      })
+
+      // Create a writer that the user function can use to pass back responses.
+      let responseStreamWriter = AsyncResponseStreamWriter(
+        context: context,
+        compressionIsEnabled: self.context.encoding.isEnabled,
+        sendResponse: self.interceptResponse(_:metadata:)
+      )
+
+      // Send response headers back via the interceptors.
+      self.interceptors.send(.metadata([:]), promise: nil)
+
+      // Register callbacks on the status future.
+      context.statusPromise.futureResult.whenComplete(self.userFunctionStatusResolved(_:))
+
+      // Spin up a task to call the async user handler.
+      self.task = context.statusPromise.completeWithTask {
+        // Check for cancellation before calling the user function.
+        // This could be the case if the RPC has been cancelled or had an error before this task
+        // has been scheduled.
+        guard !Task.isCancelled else {
+          throw CancellationError()
+        }
+
+        // Call the user function.
+        try await self.observer(requestStream, responseStreamWriter, context)
+
+        // Check for cancellation after the user function has returned so we don't return OK in the
+        // event the RPC was cancelled. This is probably overkill because the `handleError(_:)`
+        // will also fail the `statusPromise`.
+        guard !Task.isCancelled else {
+          throw CancellationError()
+        }
+
+        // Returning here completes the `statusPromise` and the `userFunctionStatusResolved(_:)`
+        // completion handler will take care of handling errors and moving the state machine along.
+        return .ok
+      }
+
+    case .observing:
+      self.handleError(GRPCError.ProtocolViolation("Multiple header blocks received on RPC"))
+
+    case .completed:
+      // We may receive headers from the interceptor pipeline if we have already finished (i.e. due
+      // to an error or otherwise) and an interceptor doing some async work later emitting headers.
+      // Dropping them is fine.
+      ()
+    }
+  }
+
+  @inlinable
+  internal func receiveInterceptedMessage(_ request: Request) {
+    switch self.state {
+    case .idle:
+      self.handleError(GRPCError.ProtocolViolation("Message received before headers"))
+    case let .observing(observer, _):
+      observer(.message(request))
+    case .completed:
+      // We received a message but we're already done: this may happen if we terminate the RPC
+      // due to a channel error, for example.
+      ()
+    }
+  }
+
+  @inlinable
+  internal func receiveInterceptedEnd() {
+    switch self.state {
+    case .idle:
+      self.handleError(GRPCError.ProtocolViolation("End of stream received before headers"))
+    case let .observing(observer, _):
+      observer(.end)
+    case .completed:
+      // We received a message but we're already done: this may happen if we terminate the RPC
+      // due to a channel error, for example.
+      ()
+    }
+  }
+
+  // MARK: - User Function To Interceptors
+
+  @inlinable
+  internal func interceptResponse(
+    _ response: Response,
+    metadata: MessageMetadata,
+    promise: EventLoopPromise<Void>?
+  ) {
+    self.context.eventLoop.assertInEventLoop()
+    switch self.state {
+    case .idle:
+      // The observer block can't send responses if it doesn't exist!
+      preconditionFailure()
+
+    case .observing:
+      self.interceptors.send(.message(response, metadata), promise: promise)
+
+    case .completed:
+      promise?.fail(GRPCError.AlreadyComplete())
+    }
+  }
+
+  @inlinable
+  internal func userFunctionStatusResolved(_ result: Result<GRPCStatus, Error>) {
+    switch self.state {
+    case .idle:
+      // The promise can't fail before we create it.
+      preconditionFailure()
+
+    case let .observing(_, context):
+      switch result {
+      case let .success(status):
+        // We're sending end back, we're done.
+        self.state = .completed
+        self.interceptors.send(.end(status, context.trailers), promise: nil)
+
+      case let .failure(error):
+        self.handleError(error, thrownFromHandler: true)
+      }
+
+    case .completed:
+      ()
+    }
+  }
+
+  @inlinable
+  internal func handleError(_ error: Error, thrownFromHandler isHandlerError: Bool = false) {
+    switch self.state {
+    case .idle:
+      assert(!isHandlerError)
+      self.state = .completed
+      // We don't have a promise to fail. Just send back end.
+      let (status, trailers) = ServerErrorProcessor.processLibraryError(
+        error,
+        delegate: self.context.errorDelegate
+      )
+      self.interceptors.send(.end(status, trailers), promise: nil)
+
+    case let .observing(_, context):
+      // We don't have a promise to fail. Just send back end.
+      self.state = .completed
+
+      let status: GRPCStatus
+      let trailers: HPACKHeaders
+
+      if isHandlerError {
+        (status, trailers) = ServerErrorProcessor.processObserverError(
+          error,
+          headers: context.headers,
+          trailers: context.trailers,
+          delegate: self.context.errorDelegate
+        )
+      } else {
+        (status, trailers) = ServerErrorProcessor.processLibraryError(
+          error,
+          delegate: self.context.errorDelegate
+        )
+      }
+
+      self.interceptors.send(.end(status, trailers), promise: nil)
+      // We're already in the 'completed' state so failing the promise will be a no-op in the
+      // callback to 'userFunctionStatusResolved' (but we also need to avoid leaking the promise.)
+      context.statusPromise.fail(error)
+
+      // If we have an async task, then cancel it (requires cooperative user function).
+      //
+      // NOTE: This line used to be before we explicitly fail the status promise but it was exaserbating a race condition and causing crashes. See https://bugs.swift.org/browse/SR-15108.
+      if let task = self.task {
+        task.cancel()
+      }
+
+    case .completed:
+      ()
+    }
+  }
+
+  @inlinable
+  internal func sendInterceptedPart(
+    _ part: GRPCServerResponsePart<Response>,
+    promise: EventLoopPromise<Void>?
+  ) {
+    switch part {
+    case let .metadata(headers):
+      self.context.responseWriter.sendMetadata(headers, flush: true, promise: promise)
+
+    case let .message(message, metadata):
+      do {
+        let bytes = try self.serializer.serialize(message, allocator: ByteBufferAllocator())
+        self.context.responseWriter.sendMessage(bytes, metadata: metadata, promise: promise)
+      } catch {
+        // Serialization failed: fail the promise and send end.
+        promise?.fail(error)
+        let (status, trailers) = ServerErrorProcessor.processLibraryError(
+          error,
+          delegate: self.context.errorDelegate
+        )
+        // Loop back via the interceptors.
+        self.interceptors.send(.end(status, trailers), promise: nil)
+      }
+
+    case let .end(status, trailers):
+      self.context.responseWriter.sendEnd(status: status, trailers: trailers, promise: promise)
+    }
+  }
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+extension AsyncServerHandler {
+  /// Async-await wrapper for `interceptResponse(_:metadata:promise:)`.
+  ///
+  /// This will take care of ensuring it executes on the right event loop.
+  @inlinable
+  internal func interceptResponse(
+    _ response: Response,
+    metadata: MessageMetadata
+  ) async throws {
+    let promise = self.context.eventLoop.makePromise(of: Void.self)
+    if self.context.eventLoop.inEventLoop {
+      self.interceptResponse(response, metadata: metadata, promise: promise)
+    } else {
+      self.context.eventLoop.execute {
+        self.interceptResponse(response, metadata: metadata, promise: promise)
+      }
+    }
+    try await promise.futureResult.get()
+  }
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+extension AsyncServerHandler {
+  @inlinable
+  public convenience init(
+    context: CallHandlerContext,
+    requestDeserializer: Deserializer,
+    responseSerializer: Serializer,
+    interceptors: [ServerInterceptor<Request, Response>],
+    wrapping unary: @escaping @Sendable(Request, AsyncServerCallContext) async throws -> Response
+  ) {
+    self.init(
+      context: context,
+      requestDeserializer: requestDeserializer,
+      responseSerializer: responseSerializer,
+      interceptors: interceptors,
+      observer: { requestStream, responseStreamWriter, context in
+        for try await request in requestStream.prefix(1) {
+          let response = try await unary(request, context)
+          try await responseStreamWriter.sendResponse(response)
+        }
+      }
+    )
+  }
+
+  @inlinable
+  public convenience init(
+    context: CallHandlerContext,
+    requestDeserializer: Deserializer,
+    responseSerializer: Serializer,
+    interceptors: [ServerInterceptor<Request, Response>],
+    wrapping clientStreaming: @escaping @Sendable(
+      GRPCAsyncStream<Request>,
+      AsyncServerCallContext
+    ) async throws -> Response
+  ) {
+    self.init(
+      context: context,
+      requestDeserializer: requestDeserializer,
+      responseSerializer: responseSerializer,
+      interceptors: interceptors,
+      observer: { requestStream, responseStreamWriter, context in
+        let response = try await clientStreaming(requestStream, context)
+        try await responseStreamWriter.sendResponse(response)
+      }
+    )
+  }
+
+  @inlinable
+  public convenience init(
+    context: CallHandlerContext,
+    requestDeserializer: Deserializer,
+    responseSerializer: Serializer,
+    interceptors: [ServerInterceptor<Request, Response>],
+    wrapping serverStreaming: @escaping @Sendable(
+      Request,
+      AsyncResponseStreamWriter<Response>,
+      AsyncServerCallContext
+    ) async throws -> Void
+  ) {
+    self.init(
+      context: context,
+      requestDeserializer: requestDeserializer,
+      responseSerializer: responseSerializer,
+      interceptors: interceptors,
+      observer: { requestStream, responseStreamWriter, context in
+        for try await request in requestStream.prefix(1) {
+          try await serverStreaming(request, responseStreamWriter, context)
+        }
+      }
+    )
+  }
+
+  @inlinable
+  public convenience init(
+    context: CallHandlerContext,
+    requestDeserializer: Deserializer,
+    responseSerializer: Serializer,
+    interceptors: [ServerInterceptor<Request, Response>],
+    wrapping bidirectional: @escaping @Sendable(
+      GRPCAsyncStream<Request>,
+      AsyncResponseStreamWriter<Response>,
+      AsyncServerCallContext
+    ) async throws -> Void
+  ) {
+    self.init(
+      context: context,
+      requestDeserializer: requestDeserializer,
+      responseSerializer: responseSerializer,
+      interceptors: interceptors,
+      observer: bidirectional
+    )
+  }
+}
+
+#endif
