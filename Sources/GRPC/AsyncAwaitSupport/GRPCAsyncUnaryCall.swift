@@ -28,7 +28,7 @@ import SwiftProtobuf
 /// Note: while this object is a `struct`, its implementation delegates to `Call`. It therefore
 /// has reference semantics.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-public struct AsyncUnaryCall<RequestPayload, ResponsePayload>: AsyncUnaryResponseClientCall {
+public struct GRPCAsyncUnaryCall<RequestPayload, ResponsePayload>: AsyncUnaryResponseClientCall {
   private let call: Call<RequestPayload, ResponsePayload>
   private let responseParts: UnaryResponseParts<ResponsePayload>
 

@@ -23,7 +23,7 @@ import XCTest
 #if compiler(>=5.5)
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-class AsyncClientCallTests: GRPCTestCase {
+class GRPCAsyncClientCallTests: GRPCTestCase {
   private var group: MultiThreadedEventLoopGroup?
   private var server: Server?
   private var channel: ClientConnection?
@@ -65,7 +65,7 @@ class AsyncClientCallTests: GRPCTestCase {
 
   func testAsyncUnaryCall() throws { XCTAsyncTest {
     let channel = try self.setUpServerAndChannel()
-    let get: AsyncUnaryCall<Echo_EchoRequest, Echo_EchoResponse> = channel.makeAsyncUnaryCall(
+    let get: GRPCAsyncUnaryCall<Echo_EchoRequest, Echo_EchoResponse> = channel.makeAsyncUnaryCall(
       path: "/echo.Echo/Get",
       request: .with { $0.text = "get" },
       callOptions: .init()
@@ -77,7 +77,7 @@ class AsyncClientCallTests: GRPCTestCase {
 
   func testAsyncClientStreamingCall() throws { XCTAsyncTest {
     let channel = try self.setUpServerAndChannel()
-    let collect: AsyncClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse> = channel
+    let collect: GRPCAsyncClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse> = channel
       .makeAsyncClientStreamingCall(
         path: "/echo.Echo/Collect",
         callOptions: .init()
@@ -94,7 +94,7 @@ class AsyncClientCallTests: GRPCTestCase {
 
   func testAsyncServerStreamingCall() throws { XCTAsyncTest {
     let channel = try self.setUpServerAndChannel()
-    let expand: AsyncServerStreamingCall<Echo_EchoRequest, Echo_EchoResponse> = channel
+    let expand: GRPCAsyncServerStreamingCall<Echo_EchoRequest, Echo_EchoResponse> = channel
       .makeAsyncServerStreamingCall(
         path: "/echo.Echo/Expand",
         request: .with { $0.text = "boyle jeffers holt" },
@@ -111,7 +111,7 @@ class AsyncClientCallTests: GRPCTestCase {
 
   func testAsyncBidirectionalStreamingCall() throws { XCTAsyncTest {
     let channel = try self.setUpServerAndChannel()
-    let update: AsyncBidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> = channel
+    let update: GRPCAsyncBidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> = channel
       .makeAsyncBidirectionalStreamingCall(
         path: "/echo.Echo/Update",
         callOptions: .init()
@@ -132,7 +132,7 @@ class AsyncClientCallTests: GRPCTestCase {
 
   func testAsyncBidirectionalStreamingCall_InterleavedRequestsAndResponses() throws { XCTAsyncTest {
     let channel = try self.setUpServerAndChannel()
-    let update: AsyncBidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> = channel
+    let update: GRPCAsyncBidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> = channel
       .makeAsyncBidirectionalStreamingCall(
         path: "/echo.Echo/Update",
         callOptions: .init()
@@ -161,7 +161,7 @@ class AsyncClientCallTests: GRPCTestCase {
 
   func testAsyncBidirectionalStreamingCall_ConcurrentTasks() throws { XCTAsyncTest {
     let channel = try self.setUpServerAndChannel()
-    let update: AsyncBidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> = channel
+    let update: GRPCAsyncBidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> = channel
       .makeAsyncBidirectionalStreamingCall(
         path: "/echo.Echo/Update",
         callOptions: .init()

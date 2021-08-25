@@ -27,7 +27,7 @@ extension GRPCClient {
     callOptions: CallOptions? = nil,
     interceptors: [ClientInterceptor<Request, Response>] = [],
     responseType: Response.Type = Response.self
-  ) -> AsyncUnaryCall<Request, Response> {
+  ) -> GRPCAsyncUnaryCall<Request, Response> {
     return self.channel.makeAsyncUnaryCall(
       path: path,
       request: request,
@@ -42,7 +42,7 @@ extension GRPCClient {
     callOptions: CallOptions? = nil,
     interceptors: [ClientInterceptor<Request, Response>] = [],
     responseType: Response.Type = Response.self
-  ) -> AsyncUnaryCall<Request, Response> {
+  ) -> GRPCAsyncUnaryCall<Request, Response> {
     return self.channel.makeAsyncUnaryCall(
       path: path,
       request: request,
@@ -60,7 +60,7 @@ extension GRPCClient {
     callOptions: CallOptions? = nil,
     interceptors: [ClientInterceptor<Request, Response>] = [],
     responseType: Response.Type = Response.self
-  ) -> AsyncServerStreamingCall<Request, Response> {
+  ) -> GRPCAsyncServerStreamingCall<Request, Response> {
     return self.channel.makeAsyncServerStreamingCall(
       path: path,
       request: request,
@@ -75,7 +75,7 @@ extension GRPCClient {
     callOptions: CallOptions? = nil,
     interceptors: [ClientInterceptor<Request, Response>] = [],
     responseType: Response.Type = Response.self
-  ) -> AsyncServerStreamingCall<Request, Response> {
+  ) -> GRPCAsyncServerStreamingCall<Request, Response> {
     return self.channel.makeAsyncServerStreamingCall(
       path: path,
       request: request,
@@ -93,7 +93,7 @@ extension GRPCClient {
     interceptors: [ClientInterceptor<Request, Response>] = [],
     requestType: Request.Type = Request.self,
     responseType: Response.Type = Response.self
-  ) -> AsyncClientStreamingCall<Request, Response> {
+  ) -> GRPCAsyncClientStreamingCall<Request, Response> {
     return self.channel.makeAsyncClientStreamingCall(
       path: path,
       callOptions: callOptions ?? self.defaultCallOptions,
@@ -107,7 +107,7 @@ extension GRPCClient {
     interceptors: [ClientInterceptor<Request, Response>] = [],
     requestType: Request.Type = Request.self,
     responseType: Response.Type = Response.self
-  ) -> AsyncClientStreamingCall<Request, Response> {
+  ) -> GRPCAsyncClientStreamingCall<Request, Response> {
     return self.channel.makeAsyncClientStreamingCall(
       path: path,
       callOptions: callOptions ?? self.defaultCallOptions,
@@ -124,7 +124,7 @@ extension GRPCClient {
     interceptors: [ClientInterceptor<Request, Response>] = [],
     requestType: Request.Type = Request.self,
     responseType: Response.Type = Response.self
-  ) -> AsyncBidirectionalStreamingCall<Request, Response> {
+  ) -> GRPCAsyncBidirectionalStreamingCall<Request, Response> {
     return self.channel.makeAsyncBidirectionalStreamingCall(
       path: path,
       callOptions: callOptions ?? self.defaultCallOptions,
@@ -141,7 +141,7 @@ extension GRPCClient {
     interceptors: [ClientInterceptor<Request, Response>] = [],
     requestType: Request.Type = Request.self,
     responseType: Response.Type = Response.self
-  ) -> AsyncBidirectionalStreamingCall<Request, Response> {
+  ) -> GRPCAsyncBidirectionalStreamingCall<Request, Response> {
     return self.channel.makeAsyncBidirectionalStreamingCall(
       path: path,
       callOptions: callOptions ?? self.defaultCallOptions,

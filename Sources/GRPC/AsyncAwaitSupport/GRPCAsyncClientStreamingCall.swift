@@ -22,7 +22,7 @@ import NIOHTTP2
 
 /// Async-await variant of `ClientStreamingCall`.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-public struct AsyncClientStreamingCall<
+public struct GRPCAsyncClientStreamingCall<
   RequestPayload,
   ResponsePayload
 >: AsyncStreamingRequestClientCall,

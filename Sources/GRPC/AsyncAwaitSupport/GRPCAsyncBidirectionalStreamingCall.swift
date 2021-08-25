@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import _NIOConcurrency
 import Logging
 import NIOCore
 import NIOHPACK
@@ -20,9 +21,12 @@ import NIOHTTP2
 
 #if compiler(>=5.5)
 
-/// Async-await variant of `ServerStreamingCall`.
+/// Async-await variant of BidirectionalStreamingCall.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-public struct AsyncServerStreamingCall<RequestPayload, ResponsePayload>: AsyncClientCall {
+public struct GRPCAsyncBidirectionalStreamingCall<
+  RequestPayload,
+  ResponsePayload
+>: AsyncStreamingRequestClientCall {
   private let call: Call<RequestPayload, ResponsePayload>
   private let responseParts: StreamingResponseParts<ResponsePayload>
   public let responseStream: GRPCAsyncStream<ResponsePayload>
@@ -63,10 +67,7 @@ public struct AsyncServerStreamingCall<RequestPayload, ResponsePayload>: AsyncCl
     }
   }
 
-  private init(
-    call: Call<RequestPayload, ResponsePayload>,
-    _ request: RequestPayload
-  ) {
+  private init(call: Call<RequestPayload, ResponsePayload>) {
     self.call = call
     // Initialise `responseParts` with an empty response handler because we
     // provide the responses as an AsyncSequence in `responseStream`.
@@ -85,29 +86,72 @@ public struct AsyncServerStreamingCall<RequestPayload, ResponsePayload>: AsyncCl
     // implementation that supports yielding values from outside the closure.
     let call = self.call
     let responseParts = self.responseParts
-    self
-      .responseStream = GRPCAsyncStream(AsyncThrowingStream(ResponsePayload.self) { continuation in
-        call.invokeUnaryRequest(request) { error in
-          responseParts.handleError(error)
-          continuation.finish(throwing: error)
-        } onResponsePart: { responsePart in
-          responseParts.handle(responsePart)
-          switch responsePart {
-          case let .message(response): continuation.yield(response)
-          case .metadata: break
-          case .end: continuation.finish()
-          }
+    let responseStream = AsyncThrowingStream(ResponsePayload.self) { continuation in
+      call.invokeStreamingRequests { error in
+        responseParts.handleError(error)
+        continuation.finish(throwing: error)
+      } onResponsePart: { responsePart in
+        responseParts.handle(responsePart)
+        switch responsePart {
+        case let .message(response): continuation.yield(response)
+        case .metadata: break
+        case .end: continuation.finish()
         }
-      })
+      }
+    }
+    self.responseStream = .init(responseStream)
   }
 
   /// We expose this as the only non-private initializer so that the caller
   /// knows that invocation is part of initialisation.
-  internal static func makeAndInvoke(
-    call: Call<RequestPayload, ResponsePayload>,
-    _ request: RequestPayload
-  ) -> Self {
-    Self(call: call, request)
+  internal static func makeAndInvoke(call: Call<RequestPayload, ResponsePayload>) -> Self {
+    Self(call: call)
+  }
+
+  // MARK: - Requests
+
+  /// Sends a message to the service.
+  ///
+  /// - Important: Callers must terminate the stream of messages by calling `sendEnd()`.
+  ///
+  /// - Parameters:
+  ///   - message: The message to send.
+  ///   - compression: Whether compression should be used for this message. Ignored if compression
+  ///     was not enabled for the RPC.
+  public func sendMessage(
+    _ message: RequestPayload,
+    compression: Compression = .deferToCallDefault
+  ) async throws {
+    let compress = self.call.compress(compression)
+    let promise = self.call.eventLoop.makePromise(of: Void.self)
+    self.call.send(.message(message, .init(compress: compress, flush: true)), promise: promise)
+    try await promise.futureResult.get()
+  }
+
+  /// Sends a sequence of messages to the service.
+  ///
+  /// - Important: Callers must terminate the stream of messages by calling `sendEnd()`.
+  ///
+  /// - Parameters:
+  ///   - messages: The sequence of messages to send.
+  ///   - compression: Whether compression should be used for this message. Ignored if compression
+  ///     was not enabled for the RPC.
+  public func sendMessages<S>(
+    _ messages: S,
+    compression: Compression = .deferToCallDefault
+  ) async throws where S: Sequence, S.Element == RequestPayload {
+    let promise = self.call.eventLoop.makePromise(of: Void.self)
+    self.call.sendMessages(messages, compression: compression, promise: promise)
+    try await promise.futureResult.get()
+  }
+
+  /// Terminates a stream of messages sent to the service.
+  ///
+  /// - Important: This should only ever be called once.
+  public func sendEnd() async throws {
+    let promise = self.call.eventLoop.makePromise(of: Void.self)
+    self.call.send(.end, promise: promise)
+    try await promise.futureResult.get()
   }
 }
 

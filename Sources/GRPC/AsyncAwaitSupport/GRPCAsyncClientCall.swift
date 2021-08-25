@@ -24,7 +24,7 @@ import SwiftProtobuf
 
 /// Base protocol for an async client call to a gRPC service.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-public protocol AsyncClientCall {
+public protocol GRPCAsyncClientCall {
   /// The type of the request message for the call.
   associatedtype RequestPayload
   /// The type of the response message for the call.
@@ -58,7 +58,7 @@ public protocol AsyncClientCall {
 
 /// A `ClientCall` with request streaming; i.e. client-streaming and bidirectional-streaming.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-public protocol AsyncStreamingRequestClientCall: AsyncClientCall {
+public protocol AsyncStreamingRequestClientCall: GRPCAsyncClientCall {
   /// Sends a message to the service.
   ///
   /// - Important: Callers must terminate the stream of messages by calling `sendEnd()` or `sendEnd(promise:)`.
@@ -90,7 +90,7 @@ public protocol AsyncStreamingRequestClientCall: AsyncClientCall {
 
 /// A `ClientCall` with a unary response; i.e. unary and client-streaming.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-public protocol AsyncUnaryResponseClientCall: AsyncClientCall {
+public protocol AsyncUnaryResponseClientCall: GRPCAsyncClientCall {
   /// The response message returned from the service if the call is successful. This may be failed
   /// if the call encounters an error.
   ///
