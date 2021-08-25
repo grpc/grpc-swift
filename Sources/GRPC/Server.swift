@@ -322,9 +322,9 @@ extension Server {
       }
     }
 
-    /// The HTTP/2 flow control target window size. Defaults to 65535. Values are clamped between
+    /// The HTTP/2 flow control target window size. Defaults to 8MB. Values are clamped between
     /// 1 and 2^31-1 inclusive.
-    public var httpTargetWindowSize = 65535 {
+    public var httpTargetWindowSize = 8 * 1024 * 1024 {
       didSet {
         self.httpTargetWindowSize = self.httpTargetWindowSize.clamped(to: 1 ... Int(Int32.max))
       }
@@ -391,7 +391,7 @@ extension Server {
       connectionKeepalive: ServerConnectionKeepalive = ServerConnectionKeepalive(),
       connectionIdleTimeout: TimeAmount = .nanoseconds(.max),
       messageEncoding: ServerMessageEncoding = .disabled,
-      httpTargetWindowSize: Int = 65535,
+      httpTargetWindowSize: Int = 8 * 1024 * 1024,
       logger: Logger = Logger(label: "io.grpc", factory: { _ in SwiftLogNoOpLogHandler() }),
       debugChannelInitializer: ((Channel) -> EventLoopFuture<Void>)? = nil
     ) {
