@@ -29,7 +29,7 @@ public struct GRPCAsyncBidirectionalStreamingCall<
 >: AsyncStreamingRequestClientCall {
   private let call: Call<RequestPayload, ResponsePayload>
   private let responseParts: StreamingResponseParts<ResponsePayload>
-  public let responseStream: GRPCAsyncStream<ResponsePayload>
+  public let responses: GRPCAsyncStream<ResponsePayload>
 
   /// The options used to make the RPC.
   public var options: CallOptions {
@@ -102,7 +102,7 @@ public struct GRPCAsyncBidirectionalStreamingCall<
         }
       }
     }
-    self.responseStream = .init(responseStream)
+    self.responses = .init(responseStream)
   }
 
   /// We expose this as the only non-private initializer so that the caller

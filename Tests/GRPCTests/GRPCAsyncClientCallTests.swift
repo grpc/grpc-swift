@@ -102,7 +102,7 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
       )
 
     var numResponses = 0
-    for try await _ in expand.responseStream {
+    for try await _ in expand.responses {
       numResponses += 1
     }
     await assertThat(numResponses, .is(.equalTo(3)))
@@ -123,7 +123,7 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
     try await update.sendEnd()
 
     var numResponses = 0
-    for try await _ in update.responseStream {
+    for try await _ in update.responses {
       numResponses += 1
     }
     await assertThat(numResponses, .is(.equalTo(3)))
@@ -151,7 +151,7 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
 
     // ...and then wait on the responses...
     var numResponses = 0
-    for try await _ in update.responseStream {
+    for try await _ in update.responses {
       numResponses += 1
     }
 
@@ -187,7 +187,7 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
       }
       // Get responses in a separate task.
       taskGroup.addTask {
-        for try await _ in update.responseStream {
+        for try await _ in update.responses {
           TestResults.numResponses += 1
         }
       }
