@@ -101,10 +101,8 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
         callOptions: .init()
       )
 
-    var numResponses = 0
-    for try await _ in expand.responses {
-      numResponses += 1
-    }
+    let numResponses = try await expand.responses.map { _ in 1 }.reduce(0, (+))
+
     await assertThat(numResponses, .is(.equalTo(3)))
     await assertThat(await expand.status, .hasCode(.ok))
   } }
@@ -122,10 +120,8 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
     }
     try await update.sendEnd()
 
-    var numResponses = 0
-    for try await _ in update.responses {
-      numResponses += 1
-    }
+    let numResponses = try await update.responses.map { _ in 1 }.reduce(0, (+))
+
     await assertThat(numResponses, .is(.equalTo(3)))
     await assertThat(await update.status, .hasCode(.ok))
   } }
@@ -150,10 +146,7 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
     }
 
     // ...and then wait on the responses...
-    var numResponses = 0
-    for try await _ in update.responses {
-      numResponses += 1
-    }
+    let numResponses = try await update.responses.map { _ in 1 }.reduce(0, (+))
 
     await assertThat(numResponses, .is(.equalTo(3)))
     await assertThat(await update.status, .hasCode(.ok))
