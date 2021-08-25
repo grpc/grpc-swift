@@ -93,9 +93,12 @@ public struct GRPCAsyncBidirectionalStreamingCall<
       } onResponsePart: { responsePart in
         responseParts.handle(responsePart)
         switch responsePart {
-        case let .message(response): continuation.yield(response)
-        case .metadata: break
-        case .end: continuation.finish()
+        case let .message(response):
+          continuation.yield(response)
+        case .metadata:
+          break
+        case .end:
+          continuation.finish()
         }
       }
     }
