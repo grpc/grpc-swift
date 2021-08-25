@@ -128,6 +128,7 @@ public struct GRPCAsyncBidirectionalStreamingCall<
     let compress = self.call.compress(compression)
     let promise = self.call.eventLoop.makePromise(of: Void.self)
     self.call.send(.message(message, .init(compress: compress, flush: true)), promise: promise)
+    // TODO: This waits for the message to be written to the socket. We should probably just wait for it to be written to the channel?
     try await promise.futureResult.get()
   }
 
