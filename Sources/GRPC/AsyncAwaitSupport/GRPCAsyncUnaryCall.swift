@@ -28,9 +28,9 @@ import SwiftProtobuf
 /// Note: while this object is a `struct`, its implementation delegates to `Call`. It therefore
 /// has reference semantics.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-public struct GRPCAsyncUnaryCall<RequestPayload, ResponsePayload>: AsyncUnaryResponseClientCall {
-  private let call: Call<RequestPayload, ResponsePayload>
-  private let responseParts: UnaryResponseParts<ResponsePayload>
+public struct GRPCAsyncUnaryCall<Request, Response>: AsyncUnaryResponseClientCall {
+  private let call: Call<Request, Response>
+  private let responseParts: UnaryResponseParts<Response>
 
   /// The options used to make the RPC.
   public var options: CallOptions {
@@ -56,7 +56,7 @@ public struct GRPCAsyncUnaryCall<RequestPayload, ResponsePayload>: AsyncUnaryRes
   /// if the call encounters an error.
   ///
   /// Callers should rely on the `status` of the call for the canonical outcome.
-  public var response: ResponsePayload {
+  public var response: Response {
     // swiftformat:disable:next redundantGet
     get async throws {
       try await self.responseParts.response.get()
@@ -80,12 +80,12 @@ public struct GRPCAsyncUnaryCall<RequestPayload, ResponsePayload>: AsyncUnaryRes
     }
   }
 
-  internal init(call: Call<RequestPayload, ResponsePayload>) {
+  internal init(call: Call<Request, Response>) {
     self.call = call
     self.responseParts = UnaryResponseParts(on: call.eventLoop)
   }
 
-  internal func invoke(_ request: RequestPayload) {
+  internal func invoke(_ request: Request) {
     self.call.invokeUnaryRequest(
       request,
       onError: self.responseParts.handleError(_:),

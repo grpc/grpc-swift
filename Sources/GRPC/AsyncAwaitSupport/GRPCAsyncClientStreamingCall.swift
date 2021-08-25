@@ -23,12 +23,12 @@ import NIOHTTP2
 /// Async-await variant of `ClientStreamingCall`.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 public struct GRPCAsyncClientStreamingCall<
-  RequestPayload,
-  ResponsePayload
+  Request,
+  Response
 >: AsyncStreamingRequestClientCall,
   AsyncUnaryResponseClientCall {
-  private let call: Call<RequestPayload, ResponsePayload>
-  private let responseParts: UnaryResponseParts<ResponsePayload>
+  private let call: Call<Request, Response>
+  private let responseParts: UnaryResponseParts<Response>
 
   /// The options used to make the RPC.
   public var options: CallOptions {
@@ -51,7 +51,7 @@ public struct GRPCAsyncClientStreamingCall<
   }
 
   /// The response returned by the server.
-  public var response: ResponsePayload {
+  public var response: Response {
     // swiftformat:disable:next redundantGet
     get async throws {
       try await self.responseParts.response.get()
@@ -74,7 +74,7 @@ public struct GRPCAsyncClientStreamingCall<
     }
   }
 
-  internal init(call: Call<RequestPayload, ResponsePayload>) {
+  internal init(call: Call<Request, Response>) {
     self.call = call
     self.responseParts = UnaryResponseParts(on: call.eventLoop)
   }
@@ -97,7 +97,7 @@ public struct GRPCAsyncClientStreamingCall<
   ///   - compression: Whether compression should be used for this message. Ignored if compression
   ///     was not enabled for the RPC.
   public func sendMessage(
-    _ message: RequestPayload,
+    _ message: Request,
     compression: Compression = .deferToCallDefault
   ) async throws {
     let compress = self.call.compress(compression)
@@ -118,7 +118,7 @@ public struct GRPCAsyncClientStreamingCall<
   public func sendMessages<S>(
     _ messages: S,
     compression: Compression = .deferToCallDefault
-  ) async throws where S: Sequence, S.Element == RequestPayload {
+  ) async throws where S: Sequence, S.Element == Request {
     let promise = self.call.eventLoop.makePromise(of: Void.self)
     self.call.sendMessages(messages, compression: compression, promise: promise)
     try await promise.futureResult.get()

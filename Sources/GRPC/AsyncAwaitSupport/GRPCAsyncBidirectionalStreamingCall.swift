@@ -24,12 +24,12 @@ import NIOHTTP2
 /// Async-await variant of BidirectionalStreamingCall.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 public struct GRPCAsyncBidirectionalStreamingCall<
-  RequestPayload,
-  ResponsePayload
+  Request,
+  Response
 >: AsyncStreamingRequestClientCall {
-  private let call: Call<RequestPayload, ResponsePayload>
-  private let responseParts: StreamingResponseParts<ResponsePayload>
-  public let responses: GRPCAsyncStream<ResponsePayload>
+  private let call: Call<Request, Response>
+  private let responseParts: StreamingResponseParts<Response>
+  public let responses: GRPCAsyncStream<Response>
 
   /// The options used to make the RPC.
   public var options: CallOptions {
@@ -67,7 +67,7 @@ public struct GRPCAsyncBidirectionalStreamingCall<
     }
   }
 
-  private init(call: Call<RequestPayload, ResponsePayload>) {
+  private init(call: Call<Request, Response>) {
     self.call = call
     // Initialise `responseParts` with an empty response handler because we
     // provide the responses as an AsyncSequence in `responseStream`.
@@ -86,7 +86,7 @@ public struct GRPCAsyncBidirectionalStreamingCall<
     // implementation that supports yielding values from outside the closure.
     let call = self.call
     let responseParts = self.responseParts
-    let responseStream = AsyncThrowingStream(ResponsePayload.self) { continuation in
+    let responseStream = AsyncThrowingStream(Response.self) { continuation in
       call.invokeStreamingRequests { error in
         responseParts.handleError(error)
         continuation.finish(throwing: error)
@@ -107,7 +107,7 @@ public struct GRPCAsyncBidirectionalStreamingCall<
 
   /// We expose this as the only non-private initializer so that the caller
   /// knows that invocation is part of initialisation.
-  internal static func makeAndInvoke(call: Call<RequestPayload, ResponsePayload>) -> Self {
+  internal static func makeAndInvoke(call: Call<Request, Response>) -> Self {
     Self(call: call)
   }
 
@@ -122,7 +122,7 @@ public struct GRPCAsyncBidirectionalStreamingCall<
   ///   - compression: Whether compression should be used for this message. Ignored if compression
   ///     was not enabled for the RPC.
   public func sendMessage(
-    _ message: RequestPayload,
+    _ message: Request,
     compression: Compression = .deferToCallDefault
   ) async throws {
     let compress = self.call.compress(compression)
@@ -143,7 +143,7 @@ public struct GRPCAsyncBidirectionalStreamingCall<
   public func sendMessages<S>(
     _ messages: S,
     compression: Compression = .deferToCallDefault
-  ) async throws where S: Sequence, S.Element == RequestPayload {
+  ) async throws where S: Sequence, S.Element == Request {
     let promise = self.call.eventLoop.makePromise(of: Void.self)
     self.call.sendMessages(messages, compression: compression, promise: promise)
     try await promise.futureResult.get()

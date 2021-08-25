@@ -26,9 +26,9 @@ import SwiftProtobuf
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 public protocol GRPCAsyncClientCall {
   /// The type of the request message for the call.
-  associatedtype RequestPayload
+  associatedtype Request
   /// The type of the response message for the call.
-  associatedtype ResponsePayload
+  associatedtype Response
 
   /// The options used to make the RPC.
   var options: CallOptions { get }
@@ -68,7 +68,7 @@ public protocol AsyncStreamingRequestClientCall: GRPCAsyncClientCall {
   ///   - compression: Whether compression should be used for this message. Ignored if compression
   ///     was not enabled for the RPC.
   /// - Returns: A future which will be fullfilled when the message has been sent.
-  func sendMessage(_ message: RequestPayload, compression: Compression) async throws
+  func sendMessage(_ message: Request, compression: Compression) async throws
 
   /// Sends a sequence of messages to the service.
   ///
@@ -79,7 +79,7 @@ public protocol AsyncStreamingRequestClientCall: GRPCAsyncClientCall {
   ///   - compression: Whether compression should be used for this message. Ignored if compression
   ///     was not enabled for the RPC.
   func sendMessages<S: Sequence>(_ messages: S, compression: Compression) async throws
-    where S.Element == RequestPayload
+    where S.Element == Request
 
   /// Terminates a stream of messages sent to the service.
   ///
@@ -95,7 +95,7 @@ public protocol AsyncUnaryResponseClientCall: GRPCAsyncClientCall {
   /// if the call encounters an error.
   ///
   /// Callers should rely on the `status` of the call for the canonical outcome.
-  var response: ResponsePayload { get async throws }
+  var response: Response { get async throws }
 }
 
 #endif

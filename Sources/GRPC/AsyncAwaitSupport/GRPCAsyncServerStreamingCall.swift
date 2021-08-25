@@ -22,10 +22,10 @@ import NIOHTTP2
 
 /// Async-await variant of `ServerStreamingCall`.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-public struct GRPCAsyncServerStreamingCall<RequestPayload, ResponsePayload>: GRPCAsyncClientCall {
-  private let call: Call<RequestPayload, ResponsePayload>
-  private let responseParts: StreamingResponseParts<ResponsePayload>
-  public let responses: GRPCAsyncStream<ResponsePayload>
+public struct GRPCAsyncServerStreamingCall<Request, Response>: GRPCAsyncClientCall {
+  private let call: Call<Request, Response>
+  private let responseParts: StreamingResponseParts<Response>
+  public let responses: GRPCAsyncStream<Response>
 
   /// The options used to make the RPC.
   public var options: CallOptions {
@@ -64,8 +64,8 @@ public struct GRPCAsyncServerStreamingCall<RequestPayload, ResponsePayload>: GRP
   }
 
   private init(
-    call: Call<RequestPayload, ResponsePayload>,
-    _ request: RequestPayload
+    call: Call<Request, Response>,
+    _ request: Request
   ) {
     self.call = call
     // Initialise `responseParts` with an empty response handler because we
@@ -86,7 +86,7 @@ public struct GRPCAsyncServerStreamingCall<RequestPayload, ResponsePayload>: GRP
     let call = self.call
     let responseParts = self.responseParts
     self
-      .responses = GRPCAsyncStream(AsyncThrowingStream(ResponsePayload.self) { continuation in
+      .responses = GRPCAsyncStream(AsyncThrowingStream(Response.self) { continuation in
         call.invokeUnaryRequest(request) { error in
           responseParts.handleError(error)
           continuation.finish(throwing: error)
@@ -107,8 +107,8 @@ public struct GRPCAsyncServerStreamingCall<RequestPayload, ResponsePayload>: GRP
   /// We expose this as the only non-private initializer so that the caller
   /// knows that invocation is part of initialisation.
   internal static func makeAndInvoke(
-    call: Call<RequestPayload, ResponsePayload>,
-    _ request: RequestPayload
+    call: Call<Request, Response>,
+    _ request: Request
   ) -> Self {
     Self(call: call, request)
   }
