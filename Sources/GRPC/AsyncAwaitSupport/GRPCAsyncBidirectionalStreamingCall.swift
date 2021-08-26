@@ -26,6 +26,8 @@ import NIOHTTP2
 public struct GRPCAsyncBidirectionalStreamingCall<Request, Response> {
   private let call: Call<Request, Response>
   private let responseParts: StreamingResponseParts<Response>
+
+  /// The stream of responses from the server.
   public let responses: GRPCAsyncResponseStream<Response>
 
   /// The options used to make the RPC.
@@ -49,6 +51,8 @@ public struct GRPCAsyncBidirectionalStreamingCall<Request, Response> {
   }
 
   /// The trailing metadata returned from the server.
+  ///
+  /// - Important: Awaiting this property will suspend until the responses have been consumed.
   public var trailingMetadata: HPACKHeaders {
     // swiftformat:disable:next redundantGet
     get async throws {
@@ -57,9 +61,12 @@ public struct GRPCAsyncBidirectionalStreamingCall<Request, Response> {
   }
 
   /// The final status of the the RPC.
+  ///
+  /// - Important: Awaiting this property will suspend until the responses have been consumed.
   public var status: GRPCStatus {
     // swiftformat:disable:next redundantGet
     get async {
+      // force-try acceptable because any error is encapsulated in a successful GRPCStatus future.
       try! await self.responseParts.status.get()
     }
   }

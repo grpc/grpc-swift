@@ -52,7 +52,7 @@ public struct GRPCAsyncUnaryCall<Request, Response> {
     }
   }
 
-  /// The response message returned from the service if the call is successful. This may be failed
+  /// The response message returned from the service if the call is successful. This may be throw
   /// if the call encounters an error.
   ///
   /// Callers should rely on the `status` of the call for the canonical outcome.
@@ -64,6 +64,8 @@ public struct GRPCAsyncUnaryCall<Request, Response> {
   }
 
   /// The trailing metadata returned from the server.
+  ///
+  /// - Important: Awaiting this property will suspend until the responses have been consumed.
   public var trailingMetadata: HPACKHeaders {
     // swiftformat:disable:next redundantGet
     get async throws {
@@ -72,10 +74,12 @@ public struct GRPCAsyncUnaryCall<Request, Response> {
   }
 
   /// The final status of the the RPC.
+  ///
+  /// - Important: Awaiting this property will suspend until the responses have been consumed.
   public var status: GRPCStatus {
     // swiftformat:disable:next redundantGet
     get async {
-      // force-try because this future will _always_ be fulfilled with success.
+      // force-try acceptable because any error is encapsulated in a successful GRPCStatus future.
       try! await self.responseParts.status.get()
     }
   }

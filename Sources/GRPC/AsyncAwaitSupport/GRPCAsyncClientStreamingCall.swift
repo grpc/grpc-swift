@@ -55,6 +55,8 @@ public struct GRPCAsyncClientStreamingCall<Request, Response> {
   }
 
   /// The trailing metadata returned from the server.
+  ///
+  /// - Important: Awaiting this property will suspend until the responses have been consumed.
   public var trailingMetadata: HPACKHeaders {
     // swiftformat:disable:next redundantGet
     get async throws {
@@ -63,9 +65,12 @@ public struct GRPCAsyncClientStreamingCall<Request, Response> {
   }
 
   /// The final status of the the RPC.
+  ///
+  /// - Important: Awaiting this property will suspend until the responses have been consumed.
   public var status: GRPCStatus {
     // swiftformat:disable:next redundantGet
     get async {
+      // force-try acceptable because any error is encapsulated in a successful GRPCStatus future.
       try! await self.responseParts.status.get()
     }
   }
