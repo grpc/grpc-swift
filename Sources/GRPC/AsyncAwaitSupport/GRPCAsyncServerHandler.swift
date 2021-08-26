@@ -429,7 +429,8 @@ extension GRPCAsyncServerHandler {
     requestDeserializer: Deserializer,
     responseSerializer: Serializer,
     interceptors: [ServerInterceptor<Request, Response>],
-    wrapping unary: @escaping @Sendable(Request, GRPCAsyncServerCallContext) async throws -> Response
+    wrapping unary: @escaping @Sendable(Request, GRPCAsyncServerCallContext) async throws
+      -> Response
   ) {
     self.init(
       context: context,
