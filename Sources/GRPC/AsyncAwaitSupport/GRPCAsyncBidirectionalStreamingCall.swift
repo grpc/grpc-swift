@@ -29,7 +29,7 @@ public struct GRPCAsyncBidirectionalStreamingCall<
 >: AsyncStreamingRequestClientCall {
   private let call: Call<Request, Response>
   private let responseParts: StreamingResponseParts<Response>
-  public let responses: GRPCAsyncStream<Response>
+  public let responses: GRPCAsyncRequestStream<Response>
 
   /// The options used to make the RPC.
   public var options: CallOptions {
