@@ -26,7 +26,7 @@ import NIOHTTP2
 public struct GRPCAsyncBidirectionalStreamingCall<Request, Response> {
   private let call: Call<Request, Response>
   private let responseParts: StreamingResponseParts<Response>
-  public let responses: GRPCAsyncRequestStream<Response>
+  public let responses: GRPCAsyncResponseStream<Response>
 
   /// The options used to make the RPC.
   public var options: CallOptions {

@@ -25,7 +25,7 @@ import NIOHTTP2
 public struct GRPCAsyncServerStreamingCall<Request, Response> {
   private let call: Call<Request, Response>
   private let responseParts: StreamingResponseParts<Response>
-  public let responses: GRPCAsyncRequestStream<Response>
+  public let responses: GRPCAsyncResponseStream<Response>
 
   /// The options used to make the RPC.
   public var options: CallOptions {
@@ -86,7 +86,7 @@ public struct GRPCAsyncServerStreamingCall<Request, Response> {
     let call = self.call
     let responseParts = self.responseParts
     self
-      .responses = GRPCAsyncRequestStream(AsyncThrowingStream(Response.self) { continuation in
+      .responses = GRPCAsyncResponseStream(AsyncThrowingStream(Response.self) { continuation in
         call.invokeUnaryRequest(request) { error in
           responseParts.handleError(error)
           continuation.finish(throwing: error)

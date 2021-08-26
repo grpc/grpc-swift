@@ -18,7 +18,7 @@
 /// This is currently a wrapper around AsyncThrowingStream because we want to be
 /// able to swap out the implementation for something else in the future.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-public struct GRPCAsyncRequestStream<Element>: AsyncSequence {
+public struct GRPCAsyncResponseStream<Element>: AsyncSequence {
   @usableFromInline
   internal typealias WrappedStream = AsyncThrowingStream<Element, Error>
 
