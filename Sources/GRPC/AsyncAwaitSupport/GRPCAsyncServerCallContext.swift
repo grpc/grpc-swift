@@ -20,7 +20,7 @@ import NIOHPACK
 
 /// A context provided to RPC handlers.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-public protocol AsyncServerCallContext /* Do we want this to be an actor? */ {
+public protocol GRPCAsyncServerCallContext /* Do we want this to be an actor? */ {
   /// Request headers for this request.
   var headers: HPACKHeaders { get }
 
@@ -43,6 +43,6 @@ public protocol AsyncServerCallContext /* Do we want this to be an actor? */ {
 /// The intention is that we will provide a new concrete implementation of `AsyncServerCallContext`
 /// that is independent of the existing `ServerCallContext` family of classes. But for now we just
 /// provide a view over the existing ones to get us going.
-extension ServerCallContextBase: AsyncServerCallContext {}
+extension ServerCallContextBase: GRPCAsyncServerCallContext {}
 
 #endif

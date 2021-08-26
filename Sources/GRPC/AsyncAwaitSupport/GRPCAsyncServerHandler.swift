@@ -21,7 +21,7 @@ import NIOHPACK
 #if compiler(>=5.5)
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-public final class AsyncServerHandler<
+public final class GRPCAsyncServerHandler<
   Serializer: MessageSerializer,
   Deserializer: MessageDeserializer
 >: GRPCServerHandlerProtocol {
@@ -52,8 +52,8 @@ public final class AsyncServerHandler<
   @usableFromInline
   internal let observer: (
     GRPCAsyncStream<Request>,
-    AsyncResponseStreamWriter<Response>,
-    AsyncServerCallContext
+    GRPCAsyncResponseStreamWriter<Response>,
+    GRPCAsyncServerCallContext
   ) async throws -> Void
 
   /// The state of the handler.
@@ -84,8 +84,8 @@ public final class AsyncServerHandler<
     interceptors: [ServerInterceptor<Request, Response>],
     observer: @escaping @Sendable(
       GRPCAsyncStream<Request>,
-      AsyncResponseStreamWriter<Response>,
-      AsyncServerCallContext
+      GRPCAsyncResponseStreamWriter<Response>,
+      GRPCAsyncServerCallContext
     ) async throws -> Void
   ) {
     self.serializer = responseSerializer
@@ -198,7 +198,7 @@ public final class AsyncServerHandler<
       })
 
       // Create a writer that the user function can use to pass back responses.
-      let responseStreamWriter = AsyncResponseStreamWriter(
+      let responseStreamWriter = GRPCAsyncResponseStreamWriter(
         context: context,
         compressionIsEnabled: self.context.encoding.isEnabled,
         sendResponse: self.interceptResponse(_:metadata:)
@@ -400,7 +400,7 @@ public final class AsyncServerHandler<
 }
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-extension AsyncServerHandler {
+extension GRPCAsyncServerHandler {
   /// Async-await wrapper for `interceptResponse(_:metadata:promise:)`.
   ///
   /// This will take care of ensuring it executes on the right event loop.
@@ -422,14 +422,14 @@ extension AsyncServerHandler {
 }
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-extension AsyncServerHandler {
+extension GRPCAsyncServerHandler {
   @inlinable
   public convenience init(
     context: CallHandlerContext,
     requestDeserializer: Deserializer,
     responseSerializer: Serializer,
     interceptors: [ServerInterceptor<Request, Response>],
-    wrapping unary: @escaping @Sendable(Request, AsyncServerCallContext) async throws -> Response
+    wrapping unary: @escaping @Sendable(Request, GRPCAsyncServerCallContext) async throws -> Response
   ) {
     self.init(
       context: context,
@@ -453,7 +453,7 @@ extension AsyncServerHandler {
     interceptors: [ServerInterceptor<Request, Response>],
     wrapping clientStreaming: @escaping @Sendable(
       GRPCAsyncStream<Request>,
-      AsyncServerCallContext
+      GRPCAsyncServerCallContext
     ) async throws -> Response
   ) {
     self.init(
@@ -476,8 +476,8 @@ extension AsyncServerHandler {
     interceptors: [ServerInterceptor<Request, Response>],
     wrapping serverStreaming: @escaping @Sendable(
       Request,
-      AsyncResponseStreamWriter<Response>,
-      AsyncServerCallContext
+      GRPCAsyncResponseStreamWriter<Response>,
+      GRPCAsyncServerCallContext
     ) async throws -> Void
   ) {
     self.init(
@@ -501,8 +501,8 @@ extension AsyncServerHandler {
     interceptors: [ServerInterceptor<Request, Response>],
     wrapping bidirectional: @escaping @Sendable(
       GRPCAsyncStream<Request>,
-      AsyncResponseStreamWriter<Response>,
-      AsyncServerCallContext
+      GRPCAsyncResponseStreamWriter<Response>,
+      GRPCAsyncServerCallContext
     ) async throws -> Void
   ) {
     self.init(

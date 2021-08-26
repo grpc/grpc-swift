@@ -29,11 +29,11 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     encoding: ServerMessageEncoding = .disabled,
     observer: @escaping @Sendable(
       GRPCAsyncStream<String>,
-      AsyncResponseStreamWriter<String>,
-      AsyncServerCallContext
+      GRPCAsyncResponseStreamWriter<String>,
+      GRPCAsyncServerCallContext
     ) async throws -> Void
-  ) -> AsyncServerHandler<StringSerializer, StringDeserializer> {
-    return AsyncServerHandler(
+  ) -> GRPCAsyncServerHandler<StringSerializer, StringDeserializer> {
+    return GRPCAsyncServerHandler(
       context: self.makeCallHandlerContext(encoding: encoding),
       requestDeserializer: StringDeserializer(),
       responseSerializer: StringSerializer(),
@@ -44,8 +44,8 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
   @Sendable private func echo(
     requests: GRPCAsyncStream<String>,
-    responseStreamWriter: AsyncResponseStreamWriter<String>,
-    context: AsyncServerCallContext
+    responseStreamWriter: GRPCAsyncResponseStreamWriter<String>,
+    context: GRPCAsyncServerCallContext
   ) async throws {
     for try await message in requests {
       try await responseStreamWriter.sendResponse(message)
@@ -54,8 +54,8 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
   @Sendable private func neverReceivesMessage(
     requests: GRPCAsyncStream<String>,
-    responseStreamWriter: AsyncResponseStreamWriter<String>,
-    context: AsyncServerCallContext
+    responseStreamWriter: GRPCAsyncResponseStreamWriter<String>,
+    context: GRPCAsyncServerCallContext
   ) async throws {
     for try await message in requests {
       XCTFail("Unexpected message: '\(message)'")
@@ -64,8 +64,8 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
   @Sendable private func neverCalled(
     requests: GRPCAsyncStream<String>,
-    responseStreamWriter: AsyncResponseStreamWriter<String>,
-    context: AsyncServerCallContext
+    responseStreamWriter: GRPCAsyncResponseStreamWriter<String>,
+    context: GRPCAsyncServerCallContext
   ) async throws {
     XCTFail("This observer should never be called")
   }
@@ -159,7 +159,7 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
   } }
 
   func testThrowingDeserializer() { XCTAsyncTest {
-    let handler = AsyncServerHandler(
+    let handler = GRPCAsyncServerHandler(
       context: self.makeCallHandlerContext(),
       requestDeserializer: ThrowingStringDeserializer(),
       responseSerializer: StringSerializer(),
@@ -185,7 +185,7 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
   } }
 
   func testThrowingSerializer() { XCTAsyncTest {
-    let handler = AsyncServerHandler(
+    let handler = GRPCAsyncServerHandler(
       context: self.makeCallHandlerContext(),
       requestDeserializer: StringDeserializer(),
       responseSerializer: ThrowingStringSerializer(),

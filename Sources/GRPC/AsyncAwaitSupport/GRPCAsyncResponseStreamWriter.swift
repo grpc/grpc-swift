@@ -20,12 +20,12 @@
 ///
 /// NOTE: This will be replaced by a pausible writer that is currently being worked on in parallel.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-public struct AsyncResponseStreamWriter<ResponsePayload> {
+public struct GRPCAsyncResponseStreamWriter<Response> {
   @usableFromInline
-  internal let _context: AsyncServerCallContext
+  internal let _context: GRPCAsyncServerCallContext
 
   @usableFromInline
-  internal let _sendResponse: (ResponsePayload, MessageMetadata) async throws -> Void
+  internal let _sendResponse: (Response, MessageMetadata) async throws -> Void
 
   @usableFromInline
   internal let _compressionEnabledOnServer: Bool
@@ -35,9 +35,9 @@ public struct AsyncResponseStreamWriter<ResponsePayload> {
   // - Important: the `sendResponse` closure must be thread-safe.
   @inlinable
   internal init(
-    context: AsyncServerCallContext,
+    context: GRPCAsyncServerCallContext,
     compressionIsEnabled: Bool,
-    sendResponse: @escaping (ResponsePayload, MessageMetadata) async throws -> Void
+    sendResponse: @escaping (Response, MessageMetadata) async throws -> Void
   ) {
     self._context = context
     self._compressionEnabledOnServer = compressionIsEnabled
@@ -54,7 +54,7 @@ public struct AsyncResponseStreamWriter<ResponsePayload> {
 
   @inlinable
   public func sendResponse(
-    _ response: ResponsePayload,
+    _ response: Response,
     compression: Compression = .deferToCallDefault
   ) async throws {
     let compress = self.shouldCompress(compression)
