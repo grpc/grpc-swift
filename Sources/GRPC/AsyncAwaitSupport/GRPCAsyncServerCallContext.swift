@@ -20,7 +20,7 @@ import NIOHPACK
 
 /// A context provided to RPC handlers.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-public protocol GRPCAsyncServerCallContext /* Do we want this to be an actor? */ {
+public protocol GRPCAsyncServerCallContext {
   /// Request headers for this request.
   var headers: HPACKHeaders { get }
 
