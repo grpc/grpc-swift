@@ -35,16 +35,15 @@ extension GRPCChannel {
     callOptions: CallOptions,
     interceptors: [ClientInterceptor<Request, Response>] = []
   ) -> GRPCAsyncUnaryCall<Request, Response> {
-    let unary: GRPCAsyncUnaryCall<Request, Response> = GRPCAsyncUnaryCall(
+    return GRPCAsyncUnaryCall.makeAndInvoke(
       call: self.makeCall(
         path: path,
         type: .unary,
         callOptions: callOptions,
         interceptors: interceptors
-      )
+      ),
+      request
     )
-    unary.invoke(request)
-    return unary
   }
 
   /// Make a unary gRPC call.
@@ -60,16 +59,15 @@ extension GRPCChannel {
     callOptions: CallOptions,
     interceptors: [ClientInterceptor<Request, Response>] = []
   ) -> GRPCAsyncUnaryCall<Request, Response> {
-    let rpc: GRPCAsyncUnaryCall<Request, Response> = GRPCAsyncUnaryCall(
+    return GRPCAsyncUnaryCall.makeAndInvoke(
       call: self.makeCall(
         path: path,
         type: .unary,
         callOptions: callOptions,
         interceptors: interceptors
-      )
+      ),
+      request
     )
-    rpc.invoke(request)
-    return rpc
   }
 
   /// Makes a client-streaming gRPC call.
@@ -83,7 +81,7 @@ extension GRPCChannel {
     callOptions: CallOptions,
     interceptors: [ClientInterceptor<Request, Response>] = []
   ) -> GRPCAsyncClientStreamingCall<Request, Response> {
-    let rpc: GRPCAsyncClientStreamingCall<Request, Response> = GRPCAsyncClientStreamingCall(
+    return GRPCAsyncClientStreamingCall.makeAndInvoke(
       call: self.makeCall(
         path: path,
         type: .clientStreaming,
@@ -91,8 +89,6 @@ extension GRPCChannel {
         interceptors: interceptors
       )
     )
-    rpc.invoke()
-    return rpc
   }
 
   /// Makes a client-streaming gRPC call.
@@ -106,7 +102,7 @@ extension GRPCChannel {
     callOptions: CallOptions,
     interceptors: [ClientInterceptor<Request, Response>] = []
   ) -> GRPCAsyncClientStreamingCall<Request, Response> {
-    let rpc: GRPCAsyncClientStreamingCall<Request, Response> = GRPCAsyncClientStreamingCall(
+    return GRPCAsyncClientStreamingCall.makeAndInvoke(
       call: self.makeCall(
         path: path,
         type: .clientStreaming,
@@ -114,8 +110,6 @@ extension GRPCChannel {
         interceptors: interceptors
       )
     )
-    rpc.invoke()
-    return rpc
   }
 
   /// Make a server-streaming gRPC call.

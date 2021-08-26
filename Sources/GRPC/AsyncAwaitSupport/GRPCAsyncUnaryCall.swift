@@ -80,17 +80,26 @@ public struct GRPCAsyncUnaryCall<Request, Response>: AsyncUnaryResponseClientCal
     }
   }
 
-  internal init(call: Call<Request, Response>) {
+  private init(
+    call: Call<Request, Response>,
+    _ request: Request
+  ) {
     self.call = call
     self.responseParts = UnaryResponseParts(on: call.eventLoop)
-  }
-
-  internal func invoke(_ request: Request) {
     self.call.invokeUnaryRequest(
       request,
       onError: self.responseParts.handleError(_:),
       onResponsePart: self.responseParts.handle(_:)
     )
+  }
+
+  /// We expose this as the only non-private initializer so that the caller
+  /// knows that invocation is part of initialisation.
+  internal static func makeAndInvoke(
+    call: Call<Request, Response>,
+    _ request: Request
+  ) -> Self {
+    Self(call: call, request)
   }
 }
 

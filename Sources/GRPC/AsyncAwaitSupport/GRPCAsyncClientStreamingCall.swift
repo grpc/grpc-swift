@@ -74,16 +74,19 @@ public struct GRPCAsyncClientStreamingCall<
     }
   }
 
-  internal init(call: Call<Request, Response>) {
+  private init(call: Call<Request, Response>) {
     self.call = call
     self.responseParts = UnaryResponseParts(on: call.eventLoop)
-  }
-
-  internal func invoke() {
     self.call.invokeStreamingRequests(
       onError: self.responseParts.handleError(_:),
       onResponsePart: self.responseParts.handle(_:)
     )
+  }
+
+  /// We expose this as the only non-private initializer so that the caller
+  /// knows that invocation is part of initialisation.
+  internal static func makeAndInvoke(call: Call<Request, Response>) -> Self {
+    Self(call: call)
   }
 
   // MARK: - Requests
