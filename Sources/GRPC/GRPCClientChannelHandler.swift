@@ -463,6 +463,8 @@ extension GRPCClientChannelHandler: ChannelInboundHandler {
       case let .decompressionLimitExceeded(compressedSize):
         return GRPCError.DecompressionLimitExceeded(compressedSize: compressedSize)
           .captureContext()
+      case let .lengthExceedsLimit(underlyingError):
+        return underlyingError.captureContext()
       case .invalidState:
         return GRPCError.InvalidState("parsing data as a response message").captureContext()
       }

@@ -158,12 +158,15 @@ enum ReadState {
         }
       } catch {
         self = .notReading
-        if let grpcError = error as? GRPCError.WithContext,
-          let limitExceeded = grpcError.error as? GRPCError.DecompressionLimitExceeded {
-          return .failure(.decompressionLimitExceeded(limitExceeded.compressedSize))
-        } else {
-          return .failure(.deserializationFailed)
+        if let grpcError = error as? GRPCError.WithContext {
+          if let compressionLimit = grpcError.error as? GRPCError.DecompressionLimitExceeded {
+            return .failure(.decompressionLimitExceeded(compressionLimit.compressedSize))
+          } else if let lengthLimit = grpcError.error as? GRPCError.PayloadLengthLimitExceeded {
+            return .failure(.lengthExceedsLimit(lengthLimit))
+          }
         }
+
+        return .failure(.deserializationFailed)
       }
 
       // We need to validate the number of messages we decoded. Zero is fine because the payload may
@@ -208,6 +211,9 @@ enum MessageReadError: Error, Equatable {
 
   /// The limit for decompression was exceeded.
   case decompressionLimitExceeded(Int)
+
+  /// The length of the message exceeded the permitted maximum length.
+  case lengthExceedsLimit(GRPCError.PayloadLengthLimitExceeded)
 
   /// An invalid state was encountered. This is a serious implementation error.
   case invalidState

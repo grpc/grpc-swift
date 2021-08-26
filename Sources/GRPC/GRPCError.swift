@@ -92,6 +92,19 @@ public enum GRPCError {
     }
   }
 
+  /// The length of the received payload was longer than is permitted.
+  public struct PayloadLengthLimitExceeded: GRPCErrorProtocol {
+    public let description: String
+
+    public init(actualLength length: Int, limit: Int) {
+      self.description = "Payload length exceeds limit (\(length) > \(limit))"
+    }
+
+    public func makeGRPCStatus() -> GRPCStatus {
+      return GRPCStatus(code: .resourceExhausted, message: self.description)
+    }
+  }
+
   /// It was not possible to compress or decompress a message with zlib.
   public struct ZlibCompressionFailure: GRPCErrorProtocol {
     var code: Int32
