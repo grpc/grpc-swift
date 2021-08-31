@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#if compiler(>=5.5)
+
 import Foundation
 import Logging
 import NIOCore
@@ -20,8 +22,6 @@ import NIOHPACK
 import NIOHTTP1
 import NIOHTTP2
 import SwiftProtobuf
-
-#if compiler(>=5.5)
 
 /// A unary gRPC call. The request is sent on initialization.
 ///
