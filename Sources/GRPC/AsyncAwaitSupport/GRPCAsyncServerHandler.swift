@@ -20,7 +20,132 @@ import NIOCore
 import NIOHPACK
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-public final class GRPCAsyncServerHandler<
+public struct GRPCAsyncServerHandler<
+  Serializer: MessageSerializer,
+  Deserializer: MessageDeserializer
+>: GRPCServerHandlerProtocol {
+  internal let _handler: _GRPCAsyncServerHandler<Serializer, Deserializer>
+
+  public func receiveMetadata(_ metadata: HPACKHeaders) {
+    self._handler.receiveMetadata(metadata)
+  }
+
+  public func receiveMessage(_ bytes: ByteBuffer) {
+    self._handler.receiveMessage(bytes)
+  }
+
+  public func receiveEnd() {
+    self._handler.receiveEnd()
+  }
+
+  public func receiveError(_ error: Error) {
+    self._handler.receiveError(error)
+  }
+
+  public func finish() {
+    self._handler.finish()
+  }
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+extension GRPCAsyncServerHandler {
+  public typealias Request = Deserializer.Output
+  public typealias Response = Serializer.Input
+
+  // TOOD: Does this need to be @inlinable (doing so would make _handler @usableFromInline and would this make it part of the ABI?)
+  public init(
+    context: CallHandlerContext,
+    requestDeserializer: Deserializer,
+    responseSerializer: Serializer,
+    interceptors: [ServerInterceptor<Request, Response>],
+    wrapping unary: @escaping @Sendable(Request, GRPCAsyncServerCallContext) async throws
+      -> Response
+  ) {
+    self._handler = .init(
+      context: context,
+      requestDeserializer: requestDeserializer,
+      responseSerializer: responseSerializer,
+      interceptors: interceptors,
+      userHandler: { requestStream, responseStreamWriter, context in
+        guard let request = try await requestStream.prefix(1).first(where: { _ in true }) else {
+          throw GRPCError.ProtocolViolation("Unary RPC requires request")
+        }
+        let response = try await unary(request, context)
+        try await responseStreamWriter.send(response)
+      }
+    )
+  }
+
+  public init(
+    context: CallHandlerContext,
+    requestDeserializer: Deserializer,
+    responseSerializer: Serializer,
+    interceptors: [ServerInterceptor<Request, Response>],
+    wrapping clientStreaming: @escaping @Sendable(
+      GRPCAsyncRequestStream<Request>,
+      GRPCAsyncServerCallContext
+    ) async throws -> Response
+  ) {
+    self._handler = .init(
+      context: context,
+      requestDeserializer: requestDeserializer,
+      responseSerializer: responseSerializer,
+      interceptors: interceptors,
+      userHandler: { requestStream, responseStreamWriter, context in
+        let response = try await clientStreaming(requestStream, context)
+        try await responseStreamWriter.send(response)
+      }
+    )
+  }
+
+  public init(
+    context: CallHandlerContext,
+    requestDeserializer: Deserializer,
+    responseSerializer: Serializer,
+    interceptors: [ServerInterceptor<Request, Response>],
+    wrapping serverStreaming: @escaping @Sendable(
+      Request,
+      GRPCAsyncResponseStreamWriter<Response>,
+      GRPCAsyncServerCallContext
+    ) async throws -> Void
+  ) {
+    self._handler = .init(
+      context: context,
+      requestDeserializer: requestDeserializer,
+      responseSerializer: responseSerializer,
+      interceptors: interceptors,
+      userHandler: { requestStream, responseStreamWriter, context in
+        guard let request = try await requestStream.prefix(1).first(where: { _ in true }) else {
+          throw GRPCError.ProtocolViolation("Unary RPC requires request")
+        }
+        try await serverStreaming(request, responseStreamWriter, context)
+      }
+    )
+  }
+
+  public init(
+    context: CallHandlerContext,
+    requestDeserializer: Deserializer,
+    responseSerializer: Serializer,
+    interceptors: [ServerInterceptor<Request, Response>],
+    wrapping bidirectional: @escaping @Sendable(
+      GRPCAsyncRequestStream<Request>,
+      GRPCAsyncResponseStreamWriter<Response>,
+      GRPCAsyncServerCallContext
+    ) async throws -> Void
+  ) {
+    self._handler = .init(
+      context: context,
+      requestDeserializer: requestDeserializer,
+      responseSerializer: responseSerializer,
+      interceptors: interceptors,
+      userHandler: bidirectional
+    )
+  }
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+internal final class _GRPCAsyncServerHandler<
   Serializer: MessageSerializer,
   Deserializer: MessageDeserializer
 >: GRPCServerHandlerProtocol {
@@ -120,15 +245,15 @@ public final class GRPCAsyncServerHandler<
     )
   }
 
-  // MARK: - Public API: gRPC to Handler
+  // MARK: - GRPCServerHandlerProtocol conformance
 
   @inlinable
-  public func receiveMetadata(_ headers: HPACKHeaders) {
+  internal func receiveMetadata(_ headers: HPACKHeaders) {
     self.interceptors.receive(.metadata(headers))
   }
 
   @inlinable
-  public func receiveMessage(_ bytes: ByteBuffer) {
+  internal func receiveMessage(_ bytes: ByteBuffer) {
     do {
       let message = try self.deserializer.deserialize(byteBuffer: bytes)
       self.interceptors.receive(.message(message))
@@ -138,18 +263,18 @@ public final class GRPCAsyncServerHandler<
   }
 
   @inlinable
-  public func receiveEnd() {
+  internal func receiveEnd() {
     self.interceptors.receive(.end)
   }
 
   @inlinable
-  public func receiveError(_ error: Error) {
+  internal func receiveError(_ error: Error) {
     self.handleError(error)
     self.finish()
   }
 
   @inlinable
-  public func finish() {
+  internal func finish() {
     switch self.state {
     case .idle:
       self.interceptors = nil
@@ -408,7 +533,7 @@ public final class GRPCAsyncServerHandler<
 }
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-extension GRPCAsyncServerHandler {
+extension _GRPCAsyncServerHandler {
   /// Async-await wrapper for `interceptResponse(_:metadata:promise:)`.
   ///
   /// This will take care of ensuring it executes on the right event loop.
@@ -426,103 +551,6 @@ extension GRPCAsyncServerHandler {
       }
     }
     try await promise.futureResult.get()
-  }
-}
-
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-extension GRPCAsyncServerHandler {
-  @inlinable
-  public convenience init(
-    context: CallHandlerContext,
-    requestDeserializer: Deserializer,
-    responseSerializer: Serializer,
-    interceptors: [ServerInterceptor<Request, Response>],
-    wrapping unary: @escaping @Sendable(Request, GRPCAsyncServerCallContext) async throws
-      -> Response
-  ) {
-    self.init(
-      context: context,
-      requestDeserializer: requestDeserializer,
-      responseSerializer: responseSerializer,
-      interceptors: interceptors,
-      userHandler: { requestStream, responseStreamWriter, context in
-        guard let request = try await requestStream.prefix(1).first(where: { _ in true }) else {
-          throw GRPCError.ProtocolViolation("Unary RPC requires request")
-        }
-        let response = try await unary(request, context)
-        try await responseStreamWriter.send(response)
-      }
-    )
-  }
-
-  @inlinable
-  public convenience init(
-    context: CallHandlerContext,
-    requestDeserializer: Deserializer,
-    responseSerializer: Serializer,
-    interceptors: [ServerInterceptor<Request, Response>],
-    wrapping clientStreaming: @escaping @Sendable(
-      GRPCAsyncRequestStream<Request>,
-      GRPCAsyncServerCallContext
-    ) async throws -> Response
-  ) {
-    self.init(
-      context: context,
-      requestDeserializer: requestDeserializer,
-      responseSerializer: responseSerializer,
-      interceptors: interceptors,
-      userHandler: { requestStream, responseStreamWriter, context in
-        let response = try await clientStreaming(requestStream, context)
-        try await responseStreamWriter.send(response)
-      }
-    )
-  }
-
-  @inlinable
-  public convenience init(
-    context: CallHandlerContext,
-    requestDeserializer: Deserializer,
-    responseSerializer: Serializer,
-    interceptors: [ServerInterceptor<Request, Response>],
-    wrapping serverStreaming: @escaping @Sendable(
-      Request,
-      GRPCAsyncResponseStreamWriter<Response>,
-      GRPCAsyncServerCallContext
-    ) async throws -> Void
-  ) {
-    self.init(
-      context: context,
-      requestDeserializer: requestDeserializer,
-      responseSerializer: responseSerializer,
-      interceptors: interceptors,
-      userHandler: { requestStream, responseStreamWriter, context in
-        guard let request = try await requestStream.prefix(1).first(where: { _ in true }) else {
-          throw GRPCError.ProtocolViolation("Unary RPC requires request")
-        }
-        try await serverStreaming(request, responseStreamWriter, context)
-      }
-    )
-  }
-
-  @inlinable
-  public convenience init(
-    context: CallHandlerContext,
-    requestDeserializer: Deserializer,
-    responseSerializer: Serializer,
-    interceptors: [ServerInterceptor<Request, Response>],
-    wrapping bidirectional: @escaping @Sendable(
-      GRPCAsyncRequestStream<Request>,
-      GRPCAsyncResponseStreamWriter<Response>,
-      GRPCAsyncServerCallContext
-    ) async throws -> Void
-  ) {
-    self.init(
-      context: context,
-      requestDeserializer: requestDeserializer,
-      responseSerializer: responseSerializer,
-      interceptors: interceptors,
-      userHandler: bidirectional
-    )
   }
 }
 
