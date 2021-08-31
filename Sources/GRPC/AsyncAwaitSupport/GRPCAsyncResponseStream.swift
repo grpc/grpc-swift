@@ -30,7 +30,7 @@ public struct GRPCAsyncResponseStream<Element>: AsyncSequence {
     self.stream = stream
   }
 
-  __consuming public func makeAsyncIterator() -> Iterator {
+  public func makeAsyncIterator() -> Iterator {
     Self.AsyncIterator(self.stream)
   }
 
