@@ -25,23 +25,23 @@ public struct GRPCAsyncResponseStreamWriter<Response> {
   internal let _context: GRPCAsyncServerCallContext
 
   @usableFromInline
-  internal let _sendResponse: (Response, MessageMetadata) async throws -> Void
+  internal let _send: (Response, MessageMetadata) async throws -> Void
 
   @usableFromInline
   internal let _compressionEnabledOnServer: Bool
 
   // Create a new AsyncResponseStreamWriter.
   //
-  // - Important: the `sendResponse` closure must be thread-safe.
+  // - Important: the `send` closure must be thread-safe.
   @inlinable
   internal init(
     context: GRPCAsyncServerCallContext,
     compressionIsEnabled: Bool,
-    sendResponse: @escaping (Response, MessageMetadata) async throws -> Void
+    send: @escaping (Response, MessageMetadata) async throws -> Void
   ) {
     self._context = context
     self._compressionEnabledOnServer = compressionIsEnabled
-    self._sendResponse = sendResponse
+    self._send = send
   }
 
   @inlinable
@@ -53,12 +53,12 @@ public struct GRPCAsyncResponseStreamWriter<Response> {
   }
 
   @inlinable
-  public func sendResponse(
+  public func send(
     _ response: Response,
     compression: Compression = .deferToCallDefault
   ) async throws {
     let compress = self.shouldCompress(compression)
-    try await self._sendResponse(response, .init(compress: compress, flush: true))
+    try await self._send(response, .init(compress: compress, flush: true))
   }
 }
 

@@ -48,7 +48,7 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     context: GRPCAsyncServerCallContext
   ) async throws {
     for try await message in requests {
-      try await responseStreamWriter.sendResponse(message)
+      try await responseStreamWriter.send(message)
     }
   }
 

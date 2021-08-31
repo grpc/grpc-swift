@@ -210,7 +210,7 @@ public final class GRPCAsyncServerHandler<
       let responseStreamWriter = GRPCAsyncResponseStreamWriter(
         context: context,
         compressionIsEnabled: self.context.encoding.isEnabled,
-        sendResponse: self.interceptResponse(_:metadata:)
+        send: self.interceptResponse(_:metadata:)
       )
 
       // Send response headers back via the interceptors.
@@ -449,7 +449,7 @@ extension GRPCAsyncServerHandler {
       observer: { requestStream, responseStreamWriter, context in
         for try await request in requestStream.prefix(1) {
           let response = try await unary(request, context)
-          try await responseStreamWriter.sendResponse(response)
+          try await responseStreamWriter.send(response)
         }
       }
     )
@@ -473,7 +473,7 @@ extension GRPCAsyncServerHandler {
       interceptors: interceptors,
       observer: { requestStream, responseStreamWriter, context in
         let response = try await clientStreaming(requestStream, context)
-        try await responseStreamWriter.sendResponse(response)
+        try await responseStreamWriter.send(response)
       }
     )
   }
