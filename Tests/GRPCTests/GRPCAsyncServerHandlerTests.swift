@@ -17,8 +17,6 @@
 
 @testable import GRPC
 import NIOCore
-import NIOEmbedded
-import NIOHPACK
 import XCTest
 
 // MARK: - Tests

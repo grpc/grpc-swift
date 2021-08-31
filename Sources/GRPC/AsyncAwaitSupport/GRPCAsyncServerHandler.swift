@@ -16,7 +16,6 @@
 #if compiler(>=5.5)
 
 import _NIOConcurrency
-import Logging
 import NIOCore
 import NIOHPACK
 
