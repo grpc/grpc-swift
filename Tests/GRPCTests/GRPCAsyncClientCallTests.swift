@@ -18,6 +18,7 @@
 import EchoImplementation
 import EchoModel
 @testable import GRPC
+import NIOHPACK
 import NIOPosix
 import XCTest
 
@@ -26,6 +27,15 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
   private var group: MultiThreadedEventLoopGroup?
   private var server: Server?
   private var channel: ClientConnection?
+
+  private static let OKInitialMetadata = HPACKHeaders([
+    (":status", "200"),
+    ("content-type", "application/grpc"),
+  ])
+
+  private static let OKTrailingMetadata = HPACKHeaders([
+    ("grpc-status", "0"),
+  ])
 
   private func setUpServerAndChannel() throws -> ClientConnection {
     let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
@@ -66,12 +76,15 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
     let channel = try self.setUpServerAndChannel()
     let get: GRPCAsyncUnaryCall<Echo_EchoRequest, Echo_EchoResponse> = channel.makeAsyncUnaryCall(
       path: "/echo.Echo/Get",
-      request: .with { $0.text = "get" },
+      request: .with { $0.text = "holt" },
       callOptions: .init()
     )
 
+    await assertThat(try await get.initialMetadata, .is(.equalTo(Self.OKInitialMetadata)))
     await assertThat(try await get.response, .doesNotThrow())
+    await assertThat(try await get.trailingMetadata, .is(.equalTo(Self.OKTrailingMetadata)))
     await assertThat(await get.status, .hasCode(.ok))
+    print(try await get.trailingMetadata)
   } }
 
   func testAsyncClientStreamingCall() throws { XCTAsyncTest {
@@ -87,7 +100,9 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
     }
     try await collect.sendEnd()
 
+    await assertThat(try await collect.initialMetadata, .is(.equalTo(Self.OKInitialMetadata)))
     await assertThat(try await collect.response, .doesNotThrow())
+    await assertThat(try await collect.trailingMetadata, .is(.equalTo(Self.OKTrailingMetadata)))
     await assertThat(await collect.status, .hasCode(.ok))
   } }
 
@@ -100,9 +115,12 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
         callOptions: .init()
       )
 
+    await assertThat(try await expand.initialMetadata, .is(.equalTo(Self.OKInitialMetadata)))
+
     let numResponses = try await expand.responses.map { _ in 1 }.reduce(0, +)
 
     await assertThat(numResponses, .is(.equalTo(3)))
+    await assertThat(try await expand.trailingMetadata, .is(.equalTo(Self.OKTrailingMetadata)))
     await assertThat(await expand.status, .hasCode(.ok))
   } }
 
@@ -122,6 +140,7 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
     let numResponses = try await update.responses.map { _ in 1 }.reduce(0, +)
 
     await assertThat(numResponses, .is(.equalTo(3)))
+    await assertThat(try await update.trailingMetadata, .is(.equalTo(Self.OKTrailingMetadata)))
     await assertThat(await update.status, .hasCode(.ok))
   } }
 
@@ -133,6 +152,8 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
         callOptions: .init()
       )
 
+    await assertThat(try await update.initialMetadata, .is(.equalTo(Self.OKInitialMetadata)))
+
     var responseStreamIterator = update.responses.makeAsyncIterator()
     for word in ["boyle", "jeffers", "holt"] {
       try await update.sendMessage(.with { $0.text = word })
@@ -143,6 +164,7 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
 
     await assertThat(try await responseStreamIterator.next(), .is(.nil()))
 
+    await assertThat(try await update.trailingMetadata, .is(.equalTo(Self.OKTrailingMetadata)))
     await assertThat(await update.status, .hasCode(.ok))
   } }
 
@@ -153,6 +175,8 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
         path: "/echo.Echo/Update",
         callOptions: .init()
       )
+
+    await assertThat(try await update.initialMetadata, .is(.equalTo(Self.OKInitialMetadata)))
 
     actor TestResults {
       static var numResponses = 0
@@ -178,6 +202,7 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
     }
     await assertThat(TestResults.numRequests, .is(.equalTo(3)))
     await assertThat(TestResults.numResponses, .is(.equalTo(3)))
+    await assertThat(try await update.trailingMetadata, .is(.equalTo(Self.OKTrailingMetadata)))
     await assertThat(await update.status, .hasCode(.ok))
   } }
 }
