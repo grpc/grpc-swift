@@ -26,7 +26,7 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
   private func makeHandler(
     encoding: ServerMessageEncoding = .disabled,
     observer: @escaping @Sendable(
-      GRPCAsyncStream<String>,
+      GRPCAsyncRequestStream<String>,
       GRPCAsyncResponseStreamWriter<String>,
       GRPCAsyncServerCallContext
     ) async throws -> Void
@@ -41,7 +41,7 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   @Sendable private func echo(
-    requests: GRPCAsyncStream<String>,
+    requests: GRPCAsyncRequestStream<String>,
     responseStreamWriter: GRPCAsyncResponseStreamWriter<String>,
     context: GRPCAsyncServerCallContext
   ) async throws {
@@ -51,7 +51,7 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   @Sendable private func neverReceivesMessage(
-    requests: GRPCAsyncStream<String>,
+    requests: GRPCAsyncRequestStream<String>,
     responseStreamWriter: GRPCAsyncResponseStreamWriter<String>,
     context: GRPCAsyncServerCallContext
   ) async throws {
@@ -61,7 +61,7 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
   }
 
   @Sendable private func neverCalled(
-    requests: GRPCAsyncStream<String>,
+    requests: GRPCAsyncRequestStream<String>,
     responseStreamWriter: GRPCAsyncResponseStreamWriter<String>,
     context: GRPCAsyncServerCallContext
   ) async throws {

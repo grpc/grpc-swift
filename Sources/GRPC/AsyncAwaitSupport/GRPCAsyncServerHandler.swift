@@ -50,7 +50,7 @@ public final class GRPCAsyncServerHandler<
   /// The user provided function to execute.
   @usableFromInline
   internal let observer: (
-    GRPCAsyncStream<Request>,
+    GRPCAsyncRequestStream<Request>,
     GRPCAsyncResponseStreamWriter<Response>,
     GRPCAsyncServerCallContext
   ) async throws -> Void
@@ -94,7 +94,7 @@ public final class GRPCAsyncServerHandler<
     responseSerializer: Serializer,
     interceptors: [ServerInterceptor<Request, Response>],
     observer: @escaping @Sendable(
-      GRPCAsyncStream<Request>,
+      GRPCAsyncRequestStream<Request>,
       GRPCAsyncResponseStreamWriter<Response>,
       GRPCAsyncServerCallContext
     ) async throws -> Void
@@ -192,7 +192,7 @@ public final class GRPCAsyncServerHandler<
 
       // Create a request stream to pass to the user function and capture the
       // handler in the updated state to allow us to produce more results.
-      let requestStream = GRPCAsyncStream<Request>(AsyncThrowingStream { continuation in
+      let requestStream = GRPCAsyncRequestStream<Request>(AsyncThrowingStream { continuation in
         self.state = .observing(
           { streamEvent in
             switch streamEvent {
@@ -462,7 +462,7 @@ extension GRPCAsyncServerHandler {
     responseSerializer: Serializer,
     interceptors: [ServerInterceptor<Request, Response>],
     wrapping clientStreaming: @escaping @Sendable(
-      GRPCAsyncStream<Request>,
+      GRPCAsyncRequestStream<Request>,
       GRPCAsyncServerCallContext
     ) async throws -> Response
   ) {
@@ -511,7 +511,7 @@ extension GRPCAsyncServerHandler {
     responseSerializer: Serializer,
     interceptors: [ServerInterceptor<Request, Response>],
     wrapping bidirectional: @escaping @Sendable(
-      GRPCAsyncStream<Request>,
+      GRPCAsyncRequestStream<Request>,
       GRPCAsyncResponseStreamWriter<Response>,
       GRPCAsyncServerCallContext
     ) async throws -> Void
