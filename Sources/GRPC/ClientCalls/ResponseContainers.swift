@@ -73,7 +73,7 @@ internal class UnaryResponseParts<Response> {
 
     case let .end(status, trailers):
       // In case of a "Trailers-Only" RPC (i.e. just the trailers and status), fail the initial
-      // metadata and trailers.
+      // metadata and status.
       self.initialMetadataPromise.fail(status)
       self.responsePromise.fail(status)
 
