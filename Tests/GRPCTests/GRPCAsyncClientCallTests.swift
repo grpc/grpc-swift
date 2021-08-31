@@ -63,18 +63,6 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
     super.tearDown()
   }
 
-  func testAsyncUnaryCall2() throws { XCTAsyncTest {
-    let channel = try self.setUpServerAndChannel()
-    let get: GRPCAsyncUnaryCall<Echo_EchoRequest, Echo_EchoResponse> = channel.makeAsyncUnaryCall(
-      path: "/echo.Echo/Get",
-      request: .with { $0.text = "get" },
-      callOptions: .init()
-    )
-
-    await assertThat(try await get.response, .doesNotThrow())
-    await assertThat(await get.status, .hasCode(.ok))
-  } }
-
   func testAsyncUnaryCall() throws { XCTAsyncTest {
     let channel = try self.setUpServerAndChannel()
     let get: GRPCAsyncUnaryCall<Echo_EchoRequest, Echo_EchoResponse> = channel.makeAsyncUnaryCall(
