@@ -17,30 +17,40 @@
 
 /// An ``AsyncSequence`` adapter for a ``PassthroughMessageSource``.`
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@usableFromInline
 internal struct PassthroughMessageSequence<Element, Failure: Error>: AsyncSequence {
+  @usableFromInline
   internal typealias Element = Element
+
+  @usableFromInline
   internal typealias AsyncIterator = Iterator
 
   /// The source of messages in the sequence.
-  private let source: PassthroughMessageSource<Element, Failure>
+  @usableFromInline
+  internal let _source: PassthroughMessageSource<Element, Failure>
 
+  @usableFromInline
   internal func makeAsyncIterator() -> Iterator {
-    return Iterator(storage: self.source)
+    return Iterator(storage: self._source)
   }
 
+  @usableFromInline
   internal init(consuming source: PassthroughMessageSource<Element, Failure>) {
-    self.source = source
+    self._source = source
   }
 
+  @usableFromInline
   internal struct Iterator: AsyncIteratorProtocol {
-    private let storage: PassthroughMessageSource<Element, Failure>
+    @usableFromInline
+    internal let _storage: PassthroughMessageSource<Element, Failure>
 
     fileprivate init(storage: PassthroughMessageSource<Element, Failure>) {
-      self.storage = storage
+      self._storage = storage
     }
 
+    @inlinable
     internal func next() async throws -> Element? {
-      return try await self.storage.consumeNextElement()
+      return try await self._storage.consumeNextElement()
     }
   }
 }

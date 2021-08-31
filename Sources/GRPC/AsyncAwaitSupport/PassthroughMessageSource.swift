@@ -28,35 +28,43 @@ import NIOCore
 /// The source must be finished exactly once by calling ``finish()`` or ``finish(throwing:)`` to
 /// indicate that the sequence should end with an error.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@usableFromInline
 internal final class PassthroughMessageSource<Element, Failure: Error> {
-  private typealias ContinuationResult = Result<Element?, Error>
+  @usableFromInline
+  internal typealias _ContinuationResult = Result<Element?, Error>
 
   /// All state in this class must be accessed via the lock.
   ///
   /// - Important: We use a `class` with a lock rather than an `actor` as we must guarantee that
   ///   calls to ``yield(_:)`` are not reordered.
-  private let lock: Lock
+  @usableFromInline
+  internal let _lock: Lock
 
   /// A queue of elements which may be consumed as soon as there is demand.
-  private var continuationResults: CircularBuffer<ContinuationResult>
+  @usableFromInline
+  internal var _continuationResults: CircularBuffer<_ContinuationResult>
 
   /// A continuation which will be resumed in the future. The continuation must be `nil`
   /// if ``continuationResults`` is not empty.
-  private var continuation: Optional<CheckedContinuation<Element?, Error>>
+  @usableFromInline
+  internal var _continuation: Optional<CheckedContinuation<Element?, Error>>
 
   /// True if a terminal continuation result (`.success(nil)` or `.failure()`) has been seen.
   /// No more values may be enqueued to `continuationResults` if this is `true`.
-  private var isTerminated: Bool
+  @usableFromInline
+  internal var _isTerminated: Bool
 
+  @usableFromInline
   internal init(initialBufferCapacity: Int = 16) {
-    self.lock = Lock()
-    self.continuationResults = CircularBuffer(initialCapacity: initialBufferCapacity)
-    self.continuation = nil
-    self.isTerminated = false
+    self._lock = Lock()
+    self._continuationResults = CircularBuffer(initialCapacity: initialBufferCapacity)
+    self._continuation = nil
+    self._isTerminated = false
   }
 
   // MARK: - Append / Yield
 
+  @usableFromInline
   internal enum YieldResult: Hashable {
     /// The value was accepted. The `queueDepth` indicates how many elements are waiting to be
     /// consumed.
@@ -68,17 +76,20 @@ internal final class PassthroughMessageSource<Element, Failure: Error> {
     case dropped
   }
 
+  @inlinable
   internal func yield(_ element: Element) -> YieldResult {
-    let continuationResult: ContinuationResult = .success(element)
-    return self.yield(continuationResult, isTerminator: false)
+    let continuationResult: _ContinuationResult = .success(element)
+    return self._yield(continuationResult, isTerminator: false)
   }
 
+  @inlinable
   internal func finish(throwing error: Failure? = nil) -> YieldResult {
-    let continuationResult: ContinuationResult = error.map { .failure($0) } ?? .success(nil)
-    return self.yield(continuationResult, isTerminator: true)
+    let continuationResult: _ContinuationResult = error.map { .failure($0) } ?? .success(nil)
+    return self._yield(continuationResult, isTerminator: true)
   }
 
-  private enum _YieldResult {
+  @usableFromInline
+  internal enum _YieldResult {
     /// The sequence has already been terminated; drop the element.
     case alreadyTerminated
     /// The element was added to the queue to be consumed later.
@@ -88,10 +99,25 @@ internal final class PassthroughMessageSource<Element, Failure: Error> {
     case resume(CheckedContinuation<Element?, Error>)
   }
 
-  private func yield(_ continuationResult: ContinuationResult, isTerminator: Bool) -> YieldResult {
-    let yieldResult: YieldResult
+  @inlinable
+  internal func _yield(
+    _ continuationResult: _ContinuationResult, isTerminator: Bool
+  ) -> YieldResult {
+    let result: _YieldResult = self._lock.withLock {
+      if self._isTerminated {
+        return .alreadyTerminated
+      } else if let continuation = self._continuation {
+        self._continuation = nil
+        return .resume(continuation)
+      } else {
+        self._isTerminated = isTerminator
+        self._continuationResults.append(continuationResult)
+        return .queued(self._continuationResults.count)
+      }
+    }
 
-    switch self._yield(continuationResult, isTerminator: isTerminator) {
+    let yieldResult: YieldResult
+    switch result {
     case let .queued(size):
       yieldResult = .accepted(queueDepth: size)
     case let .resume(continuation):
@@ -105,40 +131,24 @@ internal final class PassthroughMessageSource<Element, Failure: Error> {
     return yieldResult
   }
 
-  private func _yield(
-    _ continuationResult: ContinuationResult,
-    isTerminator: Bool
-  ) -> _YieldResult {
-    return self.lock.withLock {
-      if self.isTerminated {
-        return .alreadyTerminated
-      } else if let continuation = self.continuation {
-        self.continuation = nil
-        return .resume(continuation)
-      } else {
-        self.isTerminated = isTerminator
-        self.continuationResults.append(continuationResult)
-        return .queued(self.continuationResults.count)
-      }
-    }
-  }
-
   // MARK: - Next
 
+  @inlinable
   internal func consumeNextElement() async throws -> Element? {
     return try await withCheckedThrowingContinuation {
-      self.consumeNextElement(continuation: $0)
+      self._consumeNextElement(continuation: $0)
     }
   }
 
-  private func consumeNextElement(continuation: CheckedContinuation<Element?, Error>) {
-    let continuationResult: ContinuationResult? = self.lock.withLock {
-      if let nextResult = self.continuationResults.popFirst() {
+  @inlinable
+  internal func _consumeNextElement(continuation: CheckedContinuation<Element?, Error>) {
+    let continuationResult: _ContinuationResult? = self._lock.withLock {
+      if let nextResult = self._continuationResults.popFirst() {
         return nextResult
       } else {
         // Nothing buffered and not terminated yet: save the continuation for later.
-        assert(self.continuation == nil)
-        self.continuation = continuation
+        assert(self._continuation == nil)
+        self._continuation = continuation
         return nil
       }
     }
