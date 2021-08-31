@@ -178,10 +178,7 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
 
     await assertThat(try await update.initialMetadata, .is(.equalTo(Self.OKInitialMetadata)))
 
-    actor TestResults {
-      static var numResponses = 0
-      static var numRequests = 0
-    }
+    let counter = RequestResponseCounter()
 
     // Send the requests and get responses in separate concurrent tasks and await the group.
     _ = await withThrowingTaskGroup(of: Void.self) { taskGroup in
@@ -189,22 +186,39 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
       taskGroup.addTask {
         for word in ["boyle", "jeffers", "holt"] {
           try await update.sendMessage(.with { $0.text = word })
-          TestResults.numRequests += 1
+          await counter.incrementRequests()
         }
         try await update.sendEnd()
       }
       // Get responses in a separate task.
       taskGroup.addTask {
         for try await _ in update.responses {
-          TestResults.numResponses += 1
+          await counter.incrementResponses()
         }
       }
     }
-    await assertThat(TestResults.numRequests, .is(.equalTo(3)))
-    await assertThat(TestResults.numResponses, .is(.equalTo(3)))
+
+    await assertThat(await counter.numRequests, .is(.equalTo(3)))
+    await assertThat(await counter.numResponses, .is(.equalTo(3)))
     await assertThat(try await update.trailingMetadata, .is(.equalTo(Self.OKTrailingMetadata)))
     await assertThat(await update.status, .hasCode(.ok))
   } }
+}
+
+// Workaround https://bugs.swift.org/browse/SR-15070 (compiler crashes when defining a class/actor
+// in an async context).
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+fileprivate actor RequestResponseCounter {
+  var numResponses = 0
+  var numRequests = 0
+
+  func incrementResponses() async {
+    self.numResponses += 1
+  }
+
+  func incrementRequests() async {
+    self.numRequests += 1
+  }
 }
 
 #endif
