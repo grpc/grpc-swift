@@ -36,7 +36,7 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
       requestDeserializer: StringDeserializer(),
       responseSerializer: StringSerializer(),
       interceptors: [],
-      observer: observer
+      userHandler: observer
     )
   }
 
@@ -161,7 +161,7 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
       requestDeserializer: ThrowingStringDeserializer(),
       responseSerializer: StringSerializer(),
       interceptors: [],
-      observer: self.neverReceivesMessage(requests:responseStreamWriter:context:)
+      userHandler: self.neverReceivesMessage(requests:responseStreamWriter:context:)
     )
 
     handler.receiveMetadata([:])
@@ -187,7 +187,7 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
       requestDeserializer: StringDeserializer(),
       responseSerializer: ThrowingStringSerializer(),
       interceptors: [],
-      observer: self.echo(requests:responseStreamWriter:context:)
+      userHandler: self.echo(requests:responseStreamWriter:context:)
     )
 
     handler.receiveMetadata([:])

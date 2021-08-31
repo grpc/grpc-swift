@@ -49,7 +49,7 @@ public final class GRPCAsyncServerHandler<
 
   /// The user provided function to execute.
   @usableFromInline
-  internal let observer: (
+  internal let userHandler: (
     GRPCAsyncRequestStream<Request>,
     GRPCAsyncResponseStreamWriter<Response>,
     GRPCAsyncServerCallContext
@@ -67,18 +67,18 @@ public final class GRPCAsyncServerHandler<
   internal enum State {
     /// No headers have been received.
     case idle
-    /// Headers have been received, a context and request stream has been created and passed to the
-    /// user handler.
+    /// Headers have been received, a context and request stream has been created, and an async
+    /// `Task` has been created to execute the user handler.
     ///
-    /// The `StreamEvent` handler here pokes requests into the request stream which is being
-    /// consumed by the user handler.
+    /// The `StreamEvent` handler pokes requests into the request stream which is being consumed by
+    /// the user handler.
     ///
     /// The `GRPCAsyncServerContext` is a reference to the context that was passed to the user
     /// handler.
     ///
-    /// The promise is used to bridge the NIO and async-await worlds and is used to trigger the
-    /// completion handler when the async `Task` executing the user handler has finished.
-    case observing(
+    /// The `EventLoopPromise` bridges the NIO and async-await worlds and is fulfilled by the async
+    /// `Task` that runs the user handler.
+    case active(
       (StreamEvent<Request>) -> Void,
       GRPCAsyncServerCallContext,
       EventLoopPromise<GRPCStatus>
@@ -93,7 +93,7 @@ public final class GRPCAsyncServerHandler<
     requestDeserializer: Deserializer,
     responseSerializer: Serializer,
     interceptors: [ServerInterceptor<Request, Response>],
-    observer: @escaping @Sendable(
+    userHandler: @escaping @Sendable(
       GRPCAsyncRequestStream<Request>,
       GRPCAsyncResponseStreamWriter<Response>,
       GRPCAsyncServerCallContext
@@ -102,7 +102,7 @@ public final class GRPCAsyncServerHandler<
     self.serializer = responseSerializer
     self.deserializer = requestDeserializer
     self.context = context
-    self.observer = observer
+    self.userHandler = userHandler
 
     let userInfoRef = Ref(UserInfo())
     self.userInfoRef = userInfoRef
@@ -155,7 +155,7 @@ public final class GRPCAsyncServerHandler<
       self.interceptors = nil
       self.state = .completed
 
-    case let .observing(_, _, statusPromise):
+    case let .active(_, _, statusPromise):
       statusPromise.fail(GRPCStatus(code: .unavailable, message: nil))
 
     case .completed:
@@ -193,7 +193,7 @@ public final class GRPCAsyncServerHandler<
       // Create a request stream to pass to the user function and capture the
       // handler in the updated state to allow us to produce more results.
       let requestStream = GRPCAsyncRequestStream<Request>(AsyncThrowingStream { continuation in
-        self.state = .observing(
+        self.state = .active(
           { streamEvent in
             switch streamEvent {
             case let .message(request): continuation.yield(request)
@@ -228,7 +228,7 @@ public final class GRPCAsyncServerHandler<
         }
 
         // Call the user function.
-        try await self.observer(requestStream, responseStreamWriter, context)
+        try await self.userHandler(requestStream, responseStreamWriter, context)
 
         // Check for cancellation after the user function has returned so we don't return OK in the
         // event the RPC was cancelled. This is probably overkill because the `handleError(_:)`
@@ -242,7 +242,7 @@ public final class GRPCAsyncServerHandler<
         return .ok
       }
 
-    case .observing:
+    case .active:
       self.handleError(GRPCError.ProtocolViolation("Multiple header blocks received on RPC"))
 
     case .completed:
@@ -258,7 +258,7 @@ public final class GRPCAsyncServerHandler<
     switch self.state {
     case .idle:
       self.handleError(GRPCError.ProtocolViolation("Message received before headers"))
-    case let .observing(observer, _, _):
+    case let .active(observer, _, _):
       observer(.message(request))
     case .completed:
       // We received a message but we're already done: this may happen if we terminate the RPC
@@ -272,7 +272,7 @@ public final class GRPCAsyncServerHandler<
     switch self.state {
     case .idle:
       self.handleError(GRPCError.ProtocolViolation("End of stream received before headers"))
-    case let .observing(observer, _, _):
+    case let .active(observer, _, _):
       observer(.end)
     case .completed:
       // We received a message but we're already done: this may happen if we terminate the RPC
@@ -295,7 +295,7 @@ public final class GRPCAsyncServerHandler<
       // The observer block can't send responses if it doesn't exist!
       preconditionFailure()
 
-    case .observing:
+    case .active:
       self.interceptors.send(.message(response, metadata), promise: promise)
 
     case .completed:
@@ -310,7 +310,7 @@ public final class GRPCAsyncServerHandler<
       // The promise can't fail before we create it.
       preconditionFailure()
 
-    case let .observing(_, context, _):
+    case let .active(_, context, _):
       switch result {
       case let .success(status):
         // We're sending end back, we're done.
@@ -339,7 +339,7 @@ public final class GRPCAsyncServerHandler<
       )
       self.interceptors.send(.end(status, trailers), promise: nil)
 
-    case let .observing(_, context, statusPromise):
+    case let .active(_, context, statusPromise):
       // We don't have a promise to fail. Just send back end.
       self.state = .completed
 
@@ -445,7 +445,7 @@ extension GRPCAsyncServerHandler {
       requestDeserializer: requestDeserializer,
       responseSerializer: responseSerializer,
       interceptors: interceptors,
-      observer: { requestStream, responseStreamWriter, context in
+      userHandler: { requestStream, responseStreamWriter, context in
         guard let request = try await requestStream.prefix(1).first(where: { _ in true }) else {
           throw GRPCError.ProtocolViolation("Unary RPC requires request")
         }
@@ -471,7 +471,7 @@ extension GRPCAsyncServerHandler {
       requestDeserializer: requestDeserializer,
       responseSerializer: responseSerializer,
       interceptors: interceptors,
-      observer: { requestStream, responseStreamWriter, context in
+      userHandler: { requestStream, responseStreamWriter, context in
         let response = try await clientStreaming(requestStream, context)
         try await responseStreamWriter.send(response)
       }
@@ -495,7 +495,7 @@ extension GRPCAsyncServerHandler {
       requestDeserializer: requestDeserializer,
       responseSerializer: responseSerializer,
       interceptors: interceptors,
-      observer: { requestStream, responseStreamWriter, context in
+      userHandler: { requestStream, responseStreamWriter, context in
         guard let request = try await requestStream.prefix(1).first(where: { _ in true }) else {
           throw GRPCError.ProtocolViolation("Unary RPC requires request")
         }
@@ -521,7 +521,7 @@ extension GRPCAsyncServerHandler {
       requestDeserializer: requestDeserializer,
       responseSerializer: responseSerializer,
       interceptors: interceptors,
-      observer: bidirectional
+      userHandler: bidirectional
     )
   }
 }
