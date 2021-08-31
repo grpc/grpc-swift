@@ -18,7 +18,6 @@
 import EchoImplementation
 import EchoModel
 @testable import GRPC
-import NIOCore
 import NIOPosix
 import XCTest
 

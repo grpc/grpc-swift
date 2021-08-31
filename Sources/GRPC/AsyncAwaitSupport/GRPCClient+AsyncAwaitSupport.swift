@@ -15,13 +15,11 @@
  */
 #if compiler(>=5.5)
 
-import NIOCore
-import NIOHTTP2
 import SwiftProtobuf
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 extension GRPCClient {
-  public func makeAsyncUnaryCall<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
+  public func makeAsyncUnaryCall<Request: Message, Response: Message>(
     path: String,
     request: Request,
     callOptions: CallOptions? = nil,

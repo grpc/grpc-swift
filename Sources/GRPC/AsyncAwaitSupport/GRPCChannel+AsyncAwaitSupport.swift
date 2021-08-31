@@ -15,9 +15,6 @@
  */
 #if compiler(>=5.5)
 
-import NIOCore
-import NIOHTTP2
-import NIOSSL
 import SwiftProtobuf
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
