@@ -24,6 +24,7 @@ public struct GRPCAsyncServerHandler<
   Serializer: MessageSerializer,
   Deserializer: MessageDeserializer
 >: GRPCServerHandlerProtocol {
+  @usableFromInline
   internal let _handler: _GRPCAsyncServerHandler<Serializer, Deserializer>
 
   public func receiveMetadata(_ metadata: HPACKHeaders) {
@@ -52,7 +53,7 @@ extension GRPCAsyncServerHandler {
   public typealias Request = Deserializer.Output
   public typealias Response = Serializer.Input
 
-  // TOOD: Does this need to be @inlinable (doing so would make _handler @usableFromInline and would this make it part of the ABI?)
+  @inlinable
   public init(
     context: CallHandlerContext,
     requestDeserializer: Deserializer,
@@ -76,6 +77,7 @@ extension GRPCAsyncServerHandler {
     )
   }
 
+  @inlinable
   public init(
     context: CallHandlerContext,
     requestDeserializer: Deserializer,
@@ -98,6 +100,7 @@ extension GRPCAsyncServerHandler {
     )
   }
 
+  @inlinable
   public init(
     context: CallHandlerContext,
     requestDeserializer: Deserializer,
@@ -123,6 +126,7 @@ extension GRPCAsyncServerHandler {
     )
   }
 
+  @inlinable
   public init(
     context: CallHandlerContext,
     requestDeserializer: Deserializer,
@@ -145,12 +149,15 @@ extension GRPCAsyncServerHandler {
 }
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@usableFromInline
 internal final class _GRPCAsyncServerHandler<
   Serializer: MessageSerializer,
   Deserializer: MessageDeserializer
 >: GRPCServerHandlerProtocol {
-  public typealias Request = Deserializer.Output
-  public typealias Response = Serializer.Input
+  @usableFromInline
+  internal typealias Request = Deserializer.Output
+  @usableFromInline
+  internal typealias Response = Serializer.Input
 
   /// A response serializer.
   @usableFromInline
