@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#if compiler(>=5.5)
+
 @testable import GRPC
 import NIOCore
 import NIOEmbedded
 import NIOHPACK
 import XCTest
-
-#if compiler(>=5.5)
 
 // MARK: - Tests
 

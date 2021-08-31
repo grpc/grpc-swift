@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#if compiler(>=5.5)
+
 import _NIOConcurrency
 import Logging
 import NIOCore
 import NIOHPACK
-
-#if compiler(>=5.5)
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 public final class GRPCAsyncServerHandler<
