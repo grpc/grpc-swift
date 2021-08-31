@@ -289,7 +289,7 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
   func testHandlerThrowsGRPCStatusOK() { XCTAsyncTest {
     // Create a user function that immediately throws GRPCStatus.ok.
-    let handler = self.makeHandler { requests, responseStreamWriter, context in
+    let handler = self.makeHandler { _, _, _ in
       throw GRPCStatus.ok
     }
 
