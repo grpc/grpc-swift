@@ -69,9 +69,21 @@ public final class GRPCAsyncServerHandler<
     /// No headers have been received.
     case idle
     /// Headers have been received, a context and request stream has been created and passed to the
-    /// user handler. The `StreamEvent` handler here pokes requests into the request stream which
-    /// is being consumed by the user handler.
-    case observing((StreamEvent<Request>) -> Void, _StreamingResponseCallContext<Request, Response>)
+    /// user handler.
+    ///
+    /// The `StreamEvent` handler here pokes requests into the request stream which is being
+    /// consumed by the user handler.
+    ///
+    /// The `GRPCAsyncServerContext` is a reference to the context that was passed to the user
+    /// handler.
+    ///
+    /// The promise is used to bridge the NIO and async-await worlds and is used to trigger the
+    /// completion handler when the async `Task` executing the user handler has finished.
+    case observing(
+      (StreamEvent<Request>) -> Void,
+      GRPCAsyncServerCallContext,
+      EventLoopPromise<GRPCStatus>
+    )
     /// The handler has completed.
     case completed
   }
@@ -144,8 +156,8 @@ public final class GRPCAsyncServerHandler<
       self.interceptors = nil
       self.state = .completed
 
-    case let .observing(_, context):
-      context.statusPromise.fail(GRPCStatus(code: .unavailable, message: nil))
+    case let .observing(_, _, statusPromise):
+      statusPromise.fail(GRPCStatus(code: .unavailable, message: nil))
 
     case .completed:
       self.interceptors = nil
@@ -170,31 +182,28 @@ public final class GRPCAsyncServerHandler<
   internal func receiveInterceptedMetadata(_ headers: HPACKHeaders) {
     switch self.state {
     case .idle:
+      let statusPromise: EventLoopPromise<GRPCStatus> = context.eventLoop.makePromise()
+
       // Make a context to invoke the user handler with.
-      //
-      // The user function accepts a protocol-type of `AsyncServerCallContext`.
-      // For now we use `_StreamingResponseCallContext` but we will move to a dedicated concrete type soon.
-      //
-      // TODO: Update to use dedicated `AsyncServerCallContext` type.
-      let context = _StreamingResponseCallContext<Request, Response>(
-        eventLoop: self.context.eventLoop,
+      let context = GRPCAsyncServerCallContext(
         headers: headers,
         logger: self.context.logger,
-        userInfoRef: self.userInfoRef,
-        compressionIsEnabled: self.context.encoding.isEnabled,
-        closeFuture: self.context.closeFuture,
-        sendResponse: self.interceptResponse(_:metadata:promise:)
+        userInfoRef: self.userInfoRef
       )
 
       // Create a request stream to pass to the user function and capture the
       // handler in the updated state to allow us to produce more results.
       let requestStream = GRPCAsyncStream<Request>(AsyncThrowingStream { continuation in
-        self.state = .observing({ streamEvent in
-          switch streamEvent {
-          case let .message(request): continuation.yield(request)
-          case .end: continuation.finish()
-          }
-        }, context)
+        self.state = .observing(
+          { streamEvent in
+            switch streamEvent {
+            case let .message(request): continuation.yield(request)
+            case .end: continuation.finish()
+            }
+          },
+          context,
+          statusPromise
+        )
       })
 
       // Create a writer that the user function can use to pass back responses.
@@ -208,10 +217,10 @@ public final class GRPCAsyncServerHandler<
       self.interceptors.send(.metadata([:]), promise: nil)
 
       // Register callbacks on the status future.
-      context.statusPromise.futureResult.whenComplete(self.userFunctionStatusResolved(_:))
+      statusPromise.futureResult.whenComplete(self.userFunctionStatusResolved(_:))
 
       // Spin up a task to call the async user handler.
-      self.task = context.statusPromise.completeWithTask {
+      self.task = statusPromise.completeWithTask {
         // Check for cancellation before calling the user function.
         // This could be the case if the RPC has been cancelled or had an error before this task
         // has been scheduled.
@@ -250,7 +259,7 @@ public final class GRPCAsyncServerHandler<
     switch self.state {
     case .idle:
       self.handleError(GRPCError.ProtocolViolation("Message received before headers"))
-    case let .observing(observer, _):
+    case let .observing(observer, _, _):
       observer(.message(request))
     case .completed:
       // We received a message but we're already done: this may happen if we terminate the RPC
@@ -264,7 +273,7 @@ public final class GRPCAsyncServerHandler<
     switch self.state {
     case .idle:
       self.handleError(GRPCError.ProtocolViolation("End of stream received before headers"))
-    case let .observing(observer, _):
+    case let .observing(observer, _, _):
       observer(.end)
     case .completed:
       // We received a message but we're already done: this may happen if we terminate the RPC
@@ -302,7 +311,7 @@ public final class GRPCAsyncServerHandler<
       // The promise can't fail before we create it.
       preconditionFailure()
 
-    case let .observing(_, context):
+    case let .observing(_, context, _):
       switch result {
       case let .success(status):
         // We're sending end back, we're done.
@@ -331,7 +340,7 @@ public final class GRPCAsyncServerHandler<
       )
       self.interceptors.send(.end(status, trailers), promise: nil)
 
-    case let .observing(_, context):
+    case let .observing(_, context, statusPromise):
       // We don't have a promise to fail. Just send back end.
       self.state = .completed
 
@@ -355,7 +364,7 @@ public final class GRPCAsyncServerHandler<
       self.interceptors.send(.end(status, trailers), promise: nil)
       // We're already in the 'completed' state so failing the promise will be a no-op in the
       // callback to 'userFunctionStatusResolved' (but we also need to avoid leaking the promise.)
-      context.statusPromise.fail(error)
+      statusPromise.fail(error)
 
       // If we have an async task, then cancel it (requires cooperative user function).
       //

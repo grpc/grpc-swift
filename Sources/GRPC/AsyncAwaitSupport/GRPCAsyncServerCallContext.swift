@@ -14,35 +14,89 @@
  * limitations under the License.
  */
 import Logging
+import NIOConcurrencyHelpers
 import NIOHPACK
 
 #if compiler(>=5.5)
 
-/// A context provided to RPC handlers.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-public protocol GRPCAsyncServerCallContext {
-  /// Request headers for this request.
-  var headers: HPACKHeaders { get }
+public final class GRPCAsyncServerCallContext {
+  private let lock = Lock()
 
-  /// A 'UserInfo' dictionary which is shared with the interceptor contexts for this RPC.
-  var userInfo: UserInfo { get set }
+  /// Request headers for this request.
+  public let headers: HPACKHeaders
 
   /// The logger used for this call.
-  var logger: Logger { get }
+  public let logger: Logger
 
   /// Whether compression should be enabled for responses, defaulting to `true`. Note that for
   /// this value to take effect compression must have been enabled on the server and a compression
   /// algorithm must have been negotiated with the client.
-  var compressionEnabled: Bool { get set }
+  public var compressionEnabled: Bool {
+    get { self.lock.withLock {
+      self._compressionEnabled
+    } }
+    set { self.lock.withLock {
+      self._compressionEnabled = newValue
+    } }
+  }
+
+  private var _compressionEnabled: Bool = true
+
+  /// A `UserInfo` dictionary which is shared with the interceptor contexts for this RPC.
+  ///
+  /// - Important: While `UserInfo` has value-semantics, this property retrieves from, and sets a
+  ///   reference wrapped `UserInfo`. The contexts passed to interceptors provide the same
+  ///   reference. As such this may be used as a mechanism to pass information between interceptors
+  ///   and service providers.
+  public var userInfo: UserInfo {
+    get { self.lock.withLock {
+      self.userInfoRef.value
+    } }
+    set { self.lock.withLock {
+      self.userInfoRef.value = newValue
+    } }
+  }
+
+  /// A reference to an underlying `UserInfo`. We share this with the interceptors.
+  @usableFromInline
+  internal let userInfoRef: Ref<UserInfo>
 
   /// Metadata to return at the end of the RPC. If this is required it should be updated before
-  /// returning from the handler.
-  var trailers: HPACKHeaders { get set }
-}
+  /// the `responsePromise` or `statusPromise` is fulfilled.
+  public var trailers: HPACKHeaders {
+    get { self.lock.withLock {
+      return self._trailers
+    } }
+    set { self.lock.withLock {
+      self._trailers = newValue
+    } }
+  }
 
-/// The intention is that we will provide a new concrete implementation of `AsyncServerCallContext`
-/// that is independent of the existing `ServerCallContext` family of classes. But for now we just
-/// provide a view over the existing ones to get us going.
-extension ServerCallContextBase: GRPCAsyncServerCallContext {}
+  private var _trailers: HPACKHeaders = [:]
+
+  public convenience init(
+    headers: HPACKHeaders,
+    logger: Logger,
+    userInfo: UserInfo = UserInfo()
+  ) {
+    self.init(
+      headers: headers,
+      logger: logger,
+      userInfoRef: .init(userInfo)
+    )
+  }
+
+  @inlinable
+  internal init(
+    headers: HPACKHeaders,
+    logger: Logger,
+    userInfoRef: Ref<UserInfo>
+  ) {
+    self.headers = headers
+    self.userInfoRef = userInfoRef
+    self.logger = logger
+  }
+}
 
 #endif

@@ -123,7 +123,6 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     let handler = self.makeHandler(
       encoding: .enabled(.init(decompressionLimit: .absolute(.max)))
     ) { requests, responseStreamWriter, context in
-      var context = context
       context.compressionEnabled = false
       return try await self.echo(
         requests: requests,
