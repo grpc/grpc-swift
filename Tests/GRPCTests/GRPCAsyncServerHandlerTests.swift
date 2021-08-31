@@ -286,6 +286,22 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     await assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
     await assertThat(self.recorder.trailers, .is([:]))
   } }
+
+  func testHandlerThrowsGRPCStatusOK() { XCTAsyncTest {
+    // Create a user function that immediately throws GRPCStatus.ok.
+    let handler = self.makeHandler { requests, responseStreamWriter, context in
+      throw GRPCStatus.ok
+    }
+
+    // Send some metadata to trigger the creation of the async task with the user function.
+    handler.receiveMetadata([:])
+
+    // Wait for user handler to finish (it's gonna throw immediately).
+    await assertThat(await handler.task?.value, .notNil())
+
+    // Check the status is OK.
+    await assertThat(self.recorder.status, .notNil(.hasCode(.ok)))
+  } }
 }
 
 #endif
