@@ -75,18 +75,6 @@ public final class GRPCAsyncServerCallContext {
 
   private var _trailers: HPACKHeaders = [:]
 
-  public convenience init(
-    headers: HPACKHeaders,
-    logger: Logger,
-    userInfo: UserInfo = UserInfo()
-  ) {
-    self.init(
-      headers: headers,
-      logger: logger,
-      userInfoRef: .init(userInfo)
-    )
-  }
-
   @inlinable
   internal init(
     headers: HPACKHeaders,
