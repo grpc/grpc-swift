@@ -30,8 +30,8 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
       GRPCAsyncResponseStreamWriter<String>,
       GRPCAsyncServerCallContext
     ) async throws -> Void
-  ) -> _GRPCAsyncServerHandler<StringSerializer, StringDeserializer> {
-    return _GRPCAsyncServerHandler(
+  ) -> AsyncServerHandler<StringSerializer, StringDeserializer> {
+    return AsyncServerHandler(
       context: self.makeCallHandlerContext(encoding: encoding),
       requestDeserializer: StringDeserializer(),
       responseSerializer: StringSerializer(),
@@ -156,7 +156,7 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
   } }
 
   func testThrowingDeserializer() { XCTAsyncTest {
-    let handler = _GRPCAsyncServerHandler(
+    let handler = AsyncServerHandler(
       context: self.makeCallHandlerContext(),
       requestDeserializer: ThrowingStringDeserializer(),
       responseSerializer: StringSerializer(),
@@ -182,7 +182,7 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
   } }
 
   func testThrowingSerializer() { XCTAsyncTest {
-    let handler = _GRPCAsyncServerHandler(
+    let handler = AsyncServerHandler(
       context: self.makeCallHandlerContext(),
       requestDeserializer: StringDeserializer(),
       responseSerializer: ThrowingStringSerializer(),

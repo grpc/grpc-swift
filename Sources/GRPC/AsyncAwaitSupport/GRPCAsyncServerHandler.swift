@@ -25,7 +25,7 @@ public struct GRPCAsyncServerHandler<
   Deserializer: MessageDeserializer
 >: GRPCServerHandlerProtocol {
   @usableFromInline
-  internal let _handler: _GRPCAsyncServerHandler<Serializer, Deserializer>
+  internal let _handler: AsyncServerHandler<Serializer, Deserializer>
 
   public func receiveMetadata(_ metadata: HPACKHeaders) {
     self._handler.receiveMetadata(metadata)
@@ -152,7 +152,7 @@ extension GRPCAsyncServerHandler {
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 @usableFromInline
-internal final class _GRPCAsyncServerHandler<
+internal final class AsyncServerHandler<
   Serializer: MessageSerializer,
   Deserializer: MessageDeserializer
 >: GRPCServerHandlerProtocol {
@@ -542,7 +542,7 @@ internal final class _GRPCAsyncServerHandler<
 }
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-extension _GRPCAsyncServerHandler {
+extension AsyncServerHandler {
   /// Async-await wrapper for `interceptResponse(_:metadata:promise:)`.
   ///
   /// This will take care of ensuring it executes on the right event loop.
