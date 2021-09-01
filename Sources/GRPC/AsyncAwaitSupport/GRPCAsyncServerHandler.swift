@@ -68,8 +68,9 @@ extension GRPCAsyncServerHandler {
       responseSerializer: responseSerializer,
       interceptors: interceptors,
       userHandler: { requestStream, responseStreamWriter, context in
-        guard let request = try await requestStream.prefix(1).first(where: { _ in true }) else {
-          throw GRPCError.ProtocolViolation("Unary RPC requires request")
+        var iterator = requestStream.makeAsyncIterator()
+        guard let request = try await iterator.next(), try await iterator.next() == nil else {
+          throw GRPCError.ProtocolViolation("Unary RPC expects exactly one request")
         }
         let response = try await unary(request, context)
         try await responseStreamWriter.send(response)
@@ -118,8 +119,9 @@ extension GRPCAsyncServerHandler {
       responseSerializer: responseSerializer,
       interceptors: interceptors,
       userHandler: { requestStream, responseStreamWriter, context in
-        guard let request = try await requestStream.prefix(1).first(where: { _ in true }) else {
-          throw GRPCError.ProtocolViolation("Unary RPC requires request")
+        var iterator = requestStream.makeAsyncIterator()
+        guard let request = try await iterator.next(), try await iterator.next() == nil else {
+          throw GRPCError.ProtocolViolation("Server-streaming RPC expects exactly one request")
         }
         try await serverStreaming(request, responseStreamWriter, context)
       }
