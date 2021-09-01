@@ -21,25 +21,25 @@
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 public struct GRPCAsyncRequestStream<Element>: AsyncSequence {
   @usableFromInline
-  internal typealias WrappedStream = AsyncThrowingStream<Element, Error>
+  internal typealias _WrappedStream = AsyncThrowingStream<Element, Error>
 
   @usableFromInline
-  internal let stream: WrappedStream
+  internal let _stream: _WrappedStream
 
   @inlinable
-  internal init(_ stream: WrappedStream) {
-    self.stream = stream
+  internal init(_ stream: _WrappedStream) {
+    self._stream = stream
   }
 
   public func makeAsyncIterator() -> Iterator {
-    Self.AsyncIterator(self.stream)
+    Self.AsyncIterator(self._stream)
   }
 
   public struct Iterator: AsyncIteratorProtocol {
     @usableFromInline
-    internal var iterator: WrappedStream.AsyncIterator
+    internal var iterator: _WrappedStream.AsyncIterator
 
-    fileprivate init(_ stream: WrappedStream) {
+    fileprivate init(_ stream: _WrappedStream) {
       self.iterator = stream.makeAsyncIterator()
     }
 
