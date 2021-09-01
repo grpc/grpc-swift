@@ -27,7 +27,17 @@ public final class GRPCAsyncServerCallContext {
   public let headers: HPACKHeaders
 
   /// The logger used for this call.
-  public let logger: Logger
+  public var logger: Logger {
+    get { self.lock.withLock {
+      self._logger
+    } }
+    set { self.lock.withLock {
+      self._logger = newValue
+    } }
+  }
+
+  @usableFromInline
+  internal var _logger: Logger
 
   /// Whether compression should be enabled for responses, defaulting to `true`. Note that for
   /// this value to take effect compression must have been enabled on the server and a compression
@@ -83,7 +93,7 @@ public final class GRPCAsyncServerCallContext {
   ) {
     self.headers = headers
     self.userInfoRef = userInfoRef
-    self.logger = logger
+    self._logger = logger
   }
 }
 
