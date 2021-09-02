@@ -21,7 +21,7 @@
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 public struct GRPCAsyncRequestStream<Element>: AsyncSequence {
   @usableFromInline
-  internal typealias _WrappedStream = AsyncThrowingStream<Element, Error>
+  internal typealias _WrappedStream = PassthroughMessageSequence<Element, Error>
 
   @usableFromInline
   internal let _stream: _WrappedStream

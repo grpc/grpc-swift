@@ -17,27 +17,48 @@
 #if compiler(>=5.5)
 
 /// Writer for server-streaming RPC handlers to provide responses.
-///
-/// NOTE: This will be replaced by a pausible writer that is currently being worked on in parallel.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 public struct GRPCAsyncResponseStreamWriter<Response> {
+  @usableFromInline
+  internal typealias Delegate = AsyncResponseStreamWriterDelegate<Response>
+
+  @usableFromInline
+  internal let _asyncWriter: AsyncWriter<Delegate>
+
+  @inlinable
+  internal init(wrapping asyncWriter: AsyncWriter<Delegate>) {
+    self._asyncWriter = asyncWriter
+  }
+
+  @inlinable
+  public func send(
+    _ response: Response,
+    compression: Compression = .deferToCallDefault
+  ) async throws {
+    try await _asyncWriter.write((response, compression))
+  }
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+@usableFromInline
+internal final class AsyncResponseStreamWriterDelegate<Response>: AsyncWriterDelegate {
   @usableFromInline
   internal let _context: GRPCAsyncServerCallContext
 
   @usableFromInline
-  internal let _send: (Response, MessageMetadata) async throws -> Void
+  internal let _send: (Response, MessageMetadata) -> Void
 
   @usableFromInline
   internal let _compressionEnabledOnServer: Bool
 
-  // Create a new AsyncResponseStreamWriter.
+  // Create a new AsyncResponseStreamWriterDelegate.
   //
   // - Important: the `send` closure must be thread-safe.
   @inlinable
   internal init(
     context: GRPCAsyncServerCallContext,
     compressionIsEnabled: Bool,
-    send: @escaping (Response, MessageMetadata) async throws -> Void
+    send: @escaping (Response, MessageMetadata) -> Void
   ) {
     self._context = context
     self._compressionEnabledOnServer = compressionIsEnabled
@@ -53,12 +74,25 @@ public struct GRPCAsyncResponseStreamWriter<Response> {
   }
 
   @inlinable
-  public func send(
+  internal func send(
     _ response: Response,
     compression: Compression = .deferToCallDefault
-  ) async throws {
+  ) {
     let compress = self.shouldCompress(compression)
-    try await self._send(response, .init(compress: compress, flush: true))
+    self._send(response, .init(compress: compress, flush: true))
+  }
+
+  // MARK: - AsyncWriterDelegate conformance.
+
+  @inlinable
+  internal func write(_ response: (Response, Compression)) {
+    self.send(response.0, compression: response.1)
+  }
+
+  @inlinable
+  internal func writeEnd(_ end: Void) {
+    // meh.
+    // TODO: is this where will move the state on to completed somehow?
   }
 }
 

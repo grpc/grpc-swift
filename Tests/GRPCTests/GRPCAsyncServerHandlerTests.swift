@@ -303,6 +303,37 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     await assertThat(self.recorder.status, .notNil(.hasCode(.unknown)))
   } }
 
-}
+  // TODO: We should be consistent about where we put the tasks... maybe even use a task group to simplify cancellation (unless they both go in the enum state which might be better).
 
+  func testResponseStreamDrain() { XCTAsyncTest {
+    // Set up echo handler.
+    let handler = self.makeHandler(
+      observer: self.echo(requests:responseStreamWriter:context:)
+    )
+
+    // Send some metadata to trigger the creation of the async task with the user function.
+    handler.receiveMetadata([:])
+
+    // Send two requests and end, pausing the writer in the middle.
+    switch handler.state {
+    case let .active(_, _, responseStreamWriter, _):
+      handler.receiveMessage(ByteBuffer(string: "diaz"))
+      await responseStreamWriter._asyncWriter.toggleWritability()
+      handler.receiveMessage(ByteBuffer(string: "santiago"))
+      handler.receiveEnd()
+      await responseStreamWriter._asyncWriter.toggleWritability()
+      await handler.task?.value
+    default:
+      XCTFail("Unexpected handler state: \(handler.state)")
+    }
+
+    handler.finish()
+
+    await assertThat(self.recorder.messages, .is([
+      ByteBuffer(string: "diaz"),
+      ByteBuffer(string: "santiago"),
+    ]))
+    await assertThat(self.recorder.status, .notNil(.hasCode(.ok)))
+  } }
+}
 #endif
