@@ -362,7 +362,18 @@ internal final class AsyncServerHandler<
         }
 
         // Call the user function.
-        try await self.userHandler(requestStream, responseStreamWriter, context)
+        do {
+          try await self.userHandler(requestStream, responseStreamWriter, context)
+        } catch {
+          // Throwing GRPCStatus.ok is considered to be invalid.
+          if (error as? GRPCStatus)?.isOk ?? false {
+            throw GRPCStatus(
+              code: .unknown,
+              message: "Handler threw GRPCStatus error with code .ok"
+            )
+          }
+          throw error
+        }
 
         // Check for cancellation after the user function has returned so we don't return OK in the
         // event the RPC was cancelled. This is probably overkill because the `handleError(_:)`

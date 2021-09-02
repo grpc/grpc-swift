@@ -287,7 +287,7 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     await assertThat(self.recorder.trailers, .is([:]))
   } }
 
-  func testHandlerThrowsGRPCStatusOK() { XCTAsyncTest {
+  func testHandlerThrowsGRPCStatusOKResultsInUnknownStatus() { XCTAsyncTest {
     // Create a user function that immediately throws GRPCStatus.ok.
     let handler = self.makeHandler { _, _, _ in
       throw GRPCStatus.ok
@@ -299,9 +299,10 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     // Wait for user handler to finish (it's gonna throw immediately).
     await assertThat(await handler.task?.value, .notNil())
 
-    // Check the status is OK.
-    await assertThat(self.recorder.status, .notNil(.hasCode(.ok)))
+    // Check the status is `.unknown`.
+    await assertThat(self.recorder.status, .notNil(.hasCode(.unknown)))
   } }
+
 }
 
 #endif
