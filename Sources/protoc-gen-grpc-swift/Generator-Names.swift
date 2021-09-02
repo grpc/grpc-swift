@@ -74,8 +74,16 @@ extension Generator {
     return nameForPackageService(file, service) + "Provider"
   }
 
+  internal var asyncProviderName: String {
+    return nameForPackageService(file, service) + "AsyncProvider"
+  }
+
   internal var clientClassName: String {
     return nameForPackageService(file, service) + "Client"
+  }
+
+  internal var asyncClientClassName: String {
+    return nameForPackageService(file, service) + "AsyncClient"
   }
 
   internal var testClientClassName: String {
@@ -84,6 +92,10 @@ extension Generator {
 
   internal var clientProtocolName: String {
     return nameForPackageService(file, service) + "ClientProtocol"
+  }
+
+  internal var asyncClientProtocolName: String {
+    return nameForPackageService(file, service) + "AsyncClientProtocol"
   }
 
   internal var clientInterceptorProtocolName: String {

@@ -61,6 +61,52 @@ class Generator {
     self.outdent()
   }
 
+  internal enum Braces {
+    case none
+    case curly
+    case round
+
+    var open: String {
+      switch self {
+      case .none:
+        return ""
+      case .curly:
+        return "{"
+      case .round:
+        return "("
+      }
+    }
+
+    var close: String {
+      switch self {
+      case .none:
+        return ""
+      case .curly:
+        return "}"
+      case .round:
+        return ")"
+      }
+    }
+  }
+
+  internal func withIndentation(
+    _ header: String,
+    braces: Braces,
+    _ body: () -> Void
+  ) {
+    let spaceBeforeOpeningBrace: Bool
+    switch braces {
+    case .curly:
+      spaceBeforeOpeningBrace = true
+    case .round, .none:
+      spaceBeforeOpeningBrace = false
+    }
+
+    self.println(header + "\(spaceBeforeOpeningBrace ? " " : "")" + "\(braces.open)")
+    self.withIndentation(body: body)
+    self.println(braces.close)
+  }
+
   private func printMain() {
     self.printer.print("""
     //
@@ -111,11 +157,23 @@ class Generator {
     }
     self.println()
 
-    if self.options.generateServer {
+    if self.options.generateServer || self.options.generateAsyncServer {
       for service in self.file.services {
         self.service = service
         printServer()
       }
     }
+  }
+
+  func printAvailabilityForAsyncAwait() {
+    self.println("@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)")
+  }
+
+  func printIfCompilerGuardForAsyncAwait() {
+    self.println("#if compiler(>=5.5)")
+  }
+
+  func printEndCompilerGuardForAsyncAwait() {
+    self.println("#endif // compiler(>=5.5)")
   }
 }
