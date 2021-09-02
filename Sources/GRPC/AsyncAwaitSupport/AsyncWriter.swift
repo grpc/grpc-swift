@@ -29,69 +29,7 @@ import NIOCore
 /// may suspend if the writer has been paused.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 @usableFromInline
-internal struct AsyncWriter<Delegate: AsyncWriterDelegate> {
-  @usableFromInline
-  internal typealias Element = Delegate.Element
-
-  @usableFromInline
-  internal typealias End = Delegate.End
-
-  @usableFromInline
-  internal let _storage: AsyncWriterStorage<Delegate>
-
-  @inlinable
-  internal init(maxPendingElements: Int = 16, maxWritesBeforeYield: Int = 5, delegate: Delegate) {
-    self._storage = AsyncWriterStorage(
-      maxPendingElements: maxPendingElements,
-      maxWritesBeforeYield: maxWritesBeforeYield,
-      delegate: delegate
-    )
-  }
-
-  /// Toggles whether the writer is writable or not. The writer is initially writable.
-  ///
-  /// If the writer becomes writable then it may resume writes to the delegate. If it becomes
-  /// unwritable then calls to `write` may suspend until the writability changes again.
-  ///
-  /// This API does not offer explicit control over the writability state so the caller must ensure
-  /// calls to this function correspond with changes in writability. The reason for this is that the
-  /// underlying type is an `actor` and updating its state is therefore asynchronous. However,
-  /// this functions is not called from an asynchronous context so it is not possible to `await`
-  /// state updates to complete. Instead, changing the state on the underlying type is via
-  /// a `nonisolated` function on the `actor` which spawns a new task. If this or a similar API
-  /// allowed the writability to be explicitly set then calls to that API are not guaranteed to be
-  /// ordered which may lead to deadlock.
-  @usableFromInline
-  internal func toggleWritability() {
-    self._storage.toggleWritability()
-  }
-
-  /// As ``toggleWritability`` but `async` -- intended for testing only.
-  internal func testingOnly_toggleWritability() async {
-    await self._storage._toggleWritability()
-  }
-
-  /// Write an `element`.
-  ///
-  /// The call may be suspend if the writer is paused.
-  ///
-  /// Throws: ``AyncWriterError`` if the writer has already been finished or too many write tasks
-  ///   have been suspended.
-  @inlinable
-  internal func write(_ element: Element) async throws {
-    try await self._storage.write(element)
-  }
-
-  /// Write the final element
-  @inlinable
-  internal func finish(_ end: End) async throws {
-    try await self._storage.finish(end)
-  }
-}
-
-@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
-@usableFromInline
-internal final actor AsyncWriterStorage<Delegate: AsyncWriterDelegate> {
+internal final actor AsyncWriter<Delegate: AsyncWriterDelegate> {
   @usableFromInline
   internal typealias Element = Delegate.Element
 
@@ -182,8 +120,8 @@ internal final actor AsyncWriterStorage<Delegate: AsyncWriterDelegate> {
 
   @inlinable
   internal init(
-    maxPendingElements: Int,
-    maxWritesBeforeYield: Int,
+    maxPendingElements: Int = 16,
+    maxWritesBeforeYield: Int = 5,
     delegate: Delegate
   ) {
     self._maxPendingElements = maxPendingElements
@@ -202,15 +140,29 @@ internal final actor AsyncWriterStorage<Delegate: AsyncWriterDelegate> {
     }
   }
 
+  /// As ``toggleWritability()`` but executed asynchronously.
   @usableFromInline
-  internal nonisolated func toggleWritability() {
+  internal nonisolated func toggleWritabilityAsynchronously() {
     Task {
-      await self._toggleWritability()
+      await self.toggleWritability()
     }
   }
 
+  /// Toggles whether the writer is writable or not. The writer is initially writable.
+  ///
+  /// If the writer becomes writable then it may resume writes to the delegate. If it becomes
+  /// unwritable then calls to `write` may suspend until the writability changes again.
+  ///
+  /// This API does not offer explicit control over the writability state so the caller must ensure
+  /// calls to this function correspond with changes in writability. The reason for this is that the
+  /// underlying type is an `actor` and updating its state is therefore asynchronous. However,
+  /// this functions is not called from an asynchronous context so it is not possible to `await`
+  /// state updates to complete. Instead, changing the state is via a `nonisolated` function on
+  /// the `actor` which spawns a new task. If this or a similar API allowed the writability to be
+  /// explicitly set then calls to that API are not guaranteed to be ordered which may lead to
+  /// deadlock.
   @usableFromInline
-  internal func _toggleWritability() async {
+  internal func toggleWritability() async {
     if self._isPaused {
       self._isPaused = false
       await self.resumeWriting()
@@ -244,6 +196,53 @@ internal final actor AsyncWriterStorage<Delegate: AsyncWriterDelegate> {
     }
   }
 
+  /// As ``cancel()`` but executed asynchronously.
+  @usableFromInline
+  internal nonisolated func cancelAsynchronously() {
+    Task {
+      await self.cancel()
+    }
+  }
+
+  /// Cancel all pending writes.
+  ///
+  /// Any pending writes will be dropped and their continuations will be resumed with
+  /// a `CancellationError`. Any writes after cancellation has completed will also fail.
+  @usableFromInline
+  internal func cancel() {
+    // If there's an end we should fail that last.
+    let pendingEnd: PendingEnd?
+
+    // Mark our state as completed before resuming any continuations (any future writes should fail
+    // immediately).
+    switch self._completionState {
+    case .incomplete:
+      pendingEnd = nil
+      self._completionState = .completed
+
+    case let .pending(pending):
+      pendingEnd = pending
+      self._completionState = .completed
+
+    case .completed:
+      pendingEnd = nil
+    }
+
+    let cancellationError = CancellationError()
+
+    while let pending = self._pendingElements.popFirst() {
+      pending.continuation.resume(throwing: cancellationError)
+    }
+
+    pendingEnd?.continuation.resume(throwing: cancellationError)
+  }
+
+  /// Write an `element`.
+  ///
+  /// The call may be suspend if the writer is paused.
+  ///
+  /// Throws: ``AsyncWriterError`` if the writer has already been finished or too many write tasks
+  ///   have been suspended.
   @inlinable
   internal func write(_ element: Element) async throws {
     try await withCheckedThrowingContinuation { continuation in
@@ -271,6 +270,7 @@ internal final actor AsyncWriterStorage<Delegate: AsyncWriterDelegate> {
     }
   }
 
+  /// Write the final element
   @inlinable
   internal func finish(_ end: End) async throws {
     try await withCheckedThrowingContinuation { continuation in

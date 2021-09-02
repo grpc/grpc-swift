@@ -42,13 +42,13 @@ internal class AsyncWriterTests: GRPCTestCase {
       let writer = AsyncWriter(delegate: delegate)
 
       // pause
-      await writer.testingOnly_toggleWritability()
+      await writer.toggleWritability()
 
       async let written1: Void = writer.write("wunch")
       XCTAssert(delegate.elements.isEmpty)
 
       // resume
-      await writer.testingOnly_toggleWritability()
+      await writer.toggleWritability()
       try await written1
       XCTAssertEqual(delegate.elements, ["wunch"])
 
@@ -64,14 +64,14 @@ internal class AsyncWriterTests: GRPCTestCase {
       let writer = AsyncWriter(maxPendingElements: 0, delegate: delegate)
 
       // pause
-      await writer.testingOnly_toggleWritability()
+      await writer.toggleWritability()
 
       await XCTAssertThrowsError(try await writer.write("pontiac")) { error in
         XCTAssertEqual(error as? AsyncWriterError, .tooManyPendingWrites)
       }
 
       // resume (we must finish the writer.)
-      await writer.testingOnly_toggleWritability()
+      await writer.toggleWritability()
       try await writer.finish(0)
       XCTAssertEqual(delegate.end, 0)
       XCTAssertTrue(delegate.elements.isEmpty)
@@ -117,13 +117,13 @@ internal class AsyncWriterTests: GRPCTestCase {
       let writer = AsyncWriter(delegate: delegate)
 
       // Pause.
-      await writer.testingOnly_toggleWritability()
+      await writer.toggleWritability()
 
       async let finished: Void = writer.finish(42)
       XCTAssertNil(delegate.end)
 
       // Resume.
-      await writer.testingOnly_toggleWritability()
+      await writer.toggleWritability()
       try await finished
 
       XCTAssertEqual(delegate.end, 42)
@@ -136,7 +136,7 @@ internal class AsyncWriterTests: GRPCTestCase {
       let writer = AsyncWriter(delegate: delegate)
 
       // Pause.
-      await writer.testingOnly_toggleWritability()
+      await writer.toggleWritability()
 
       // We want to test that when a finish has suspended that another task calling finish results
       // in an `AsyncWriterError.alreadyFinished` error.
@@ -153,7 +153,7 @@ internal class AsyncWriterTests: GRPCTestCase {
           } catch {
             XCTAssertEqual(error as? AsyncWriterError, .alreadyFinished)
             // Resume.
-            await writer.testingOnly_toggleWritability()
+            await writer.toggleWritability()
           }
         }
 
@@ -163,7 +163,7 @@ internal class AsyncWriterTests: GRPCTestCase {
           } catch {
             XCTAssertEqual(error as? AsyncWriterError, .alreadyFinished)
             // Resume.
-            await writer.testingOnly_toggleWritability()
+            await writer.toggleWritability()
           }
         }
       }
@@ -172,6 +172,95 @@ internal class AsyncWriterTests: GRPCTestCase {
       await XCTAssertThrowsError(try await writer.finish(3)) { error in
         XCTAssertEqual(error as? AsyncWriterError, .alreadyFinished)
       }
+    }
+  }
+
+  func testCancellationForPendingWrite() {
+    XCTAsyncTest {
+      let delegate = CollectingDelegate<String, Int>()
+      let writer = AsyncWriter(delegate: delegate)
+
+      // Pause.
+      await writer.toggleWritability()
+
+      async let pendingWrite: Void = writer.write("foo")
+
+      await writer.cancel()
+
+      do {
+        try await pendingWrite
+        XCTFail("Expected to throw an error.")
+      } catch is CancellationError {
+        // Cancellation is fine: we cancelled while the write was pending.
+        ()
+      } catch let error as AsyncWriterError {
+        // Already finish is also fine: we cancelled before the write was enqueued.
+        XCTAssertEqual(error, .alreadyFinished)
+      } catch {
+        XCTFail("Unexpected error: \(error)")
+      }
+
+      await XCTAssertThrowsError(try await writer.write("bar")) { error in
+        XCTAssertEqual(error as? AsyncWriterError, .alreadyFinished)
+      }
+
+      XCTAssertTrue(delegate.elements.isEmpty)
+      XCTAssertNil(delegate.end)
+    }
+  }
+
+  func testCancellationForPendingFinish() {
+    XCTAsyncTest {
+      let delegate = CollectingDelegate<String, Int>()
+      let writer = AsyncWriter(delegate: delegate)
+
+      // Pause.
+      await writer.toggleWritability()
+
+      async let pendingWrite: Void = writer.finish(42)
+
+      await writer.cancel()
+
+      do {
+        try await pendingWrite
+        XCTFail("Expected to throw an error.")
+      } catch is CancellationError {
+        // Cancellation is fine: we cancelled while the write was pending.
+        ()
+      } catch let error as AsyncWriterError {
+        // Already finish is also fine: we cancelled before the write was enqueued.
+        XCTAssertEqual(error, .alreadyFinished)
+      } catch {
+        XCTFail("Unexpected error: \(error)")
+      }
+
+      await XCTAssertThrowsError(try await writer.finish(42)) { error in
+        XCTAssertEqual(error as? AsyncWriterError, .alreadyFinished)
+      }
+
+      XCTAssertTrue(delegate.elements.isEmpty)
+      XCTAssertNil(delegate.end)
+    }
+  }
+
+  func testMultipleCancellations() {
+    XCTAsyncTest {
+      let delegate = CollectingDelegate<String, Int>()
+      let writer = AsyncWriter(delegate: delegate)
+
+      await writer.cancel()
+      await XCTAssertThrowsError(try await writer.write("1")) { error in
+        XCTAssertEqual(error as? AsyncWriterError, .alreadyFinished)
+      }
+
+      // Fine, no need to throw. Nothing should change.
+      await writer.cancel()
+      await XCTAssertThrowsError(try await writer.write("2")) { error in
+        XCTAssertEqual(error as? AsyncWriterError, .alreadyFinished)
+      }
+
+      XCTAssertTrue(delegate.elements.isEmpty)
+      XCTAssertNil(delegate.end)
     }
   }
 }
