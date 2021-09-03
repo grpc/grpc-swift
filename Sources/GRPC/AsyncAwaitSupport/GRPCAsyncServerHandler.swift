@@ -386,13 +386,16 @@ internal final class AsyncServerHandler<
       let requestStream = GRPCAsyncRequestStream(.init(consuming: requestStreamSource))
 
       // TODO: In future use `AsyncWriter.init(maxPendingElements:maxWritesBeforeYield:delegate:)`?
-      let responseStreamWriter = GRPCAsyncResponseStreamWriter(wrapping: AsyncWriter(delegate: AsyncResponseStreamWriterDelegate(
-        context: context,
-        compressionIsEnabled: self.context.encoding.isEnabled,
-        send: { response, metadata in
-          self.interceptResponse(response, metadata: metadata, promise: nil)
-        }
-      )))
+      let responseStreamWriter =
+        GRPCAsyncResponseStreamWriter(
+          wrapping: AsyncWriter(delegate: AsyncResponseStreamWriterDelegate(
+            context: context,
+            compressionIsEnabled: self.context.encoding.isEnabled,
+            send: { response, metadata in
+              self.interceptResponse(response, metadata: metadata, promise: nil)
+            }
+          ))
+        )
 
       // Set the state to active and bundle in all the associated data.
       self.state = .active(requestStreamSource, context, responseStreamWriter, userHandlerPromise)
@@ -540,7 +543,8 @@ internal final class AsyncServerHandler<
         // The user handler is done but there may be pending writes in the response stream writer.
 
         // Create a promise to hang a callback off when the response stream is drained.
-        let responseStreamDrainedPromise: EventLoopPromise<GRPCStatus> = self.context.eventLoop.makePromise()
+        let responseStreamDrainedPromise: EventLoopPromise<GRPCStatus> = self.context.eventLoop
+          .makePromise()
 
         // Register callback for the response stream being drained.
         responseStreamDrainedPromise.futureResult.whenComplete(self.responseStreamDrained(_:))
@@ -644,7 +648,7 @@ internal final class AsyncServerHandler<
       // NOTE: This line used to be before we explicitly fail the status promise but it was exaserbating a race condition and causing crashes. See https://bugs.swift.org/browse/SR-15108.
       self.userHandlerTask?.cancel()
 
-    case .finishingSuccessfully(_, _, _):
+    case .finishingSuccessfully:
       self.responseStreamDrainTask?.cancel()
 
     case .completed:

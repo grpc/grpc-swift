@@ -35,7 +35,7 @@ public struct GRPCAsyncResponseStreamWriter<Response> {
     _ response: Response,
     compression: Compression = .deferToCallDefault
   ) async throws {
-    try await _asyncWriter.write((response, compression))
+    try await self._asyncWriter.write((response, compression))
   }
 }
 
