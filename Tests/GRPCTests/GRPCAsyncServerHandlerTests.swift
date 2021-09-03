@@ -81,8 +81,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     handler.receiveMessage(ByteBuffer(string: "3"))
     handler.receiveEnd()
 
-    // Wait for user handler to finish.
-    await handler.task?.value
+    // Wait for tasks to finish.
+    await handler.userHandlerTask?.value
+    await handler.responseStreamDrainTask?.value
 
     handler.finish()
 
@@ -107,8 +108,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     handler.receiveMessage(ByteBuffer(string: "3"))
     handler.receiveEnd()
 
-    // Wait for user handler to finish.
-    await handler.task?.value
+    // Wait for tasks to finish.
+    await handler.userHandlerTask?.value
+    await handler.responseStreamDrainTask?.value
 
     await assertThat(
       self.recorder.messages,
@@ -135,8 +137,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     handler.receiveMessage(ByteBuffer(string: "3"))
     handler.receiveEnd()
 
-    // Wait for user handler to finish.
-    await handler.task?.value
+    // Wait for tasks to finish.
+    await handler.userHandlerTask?.value
+    await handler.responseStreamDrainTask?.value
 
     await assertThat(
       self.recorder.messages,
@@ -148,11 +151,11 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
   func testTaskOnlyCreatedAfterHeaders() { XCTAsyncTest {
     let handler = self.makeHandler(observer: self.echo(requests:responseStreamWriter:context:))
 
-    await assertThat(handler.task, .is(.nil()))
+    await assertThat(handler.userHandlerTask, .is(.nil()))
 
     handler.receiveMetadata([:])
 
-    await assertThat(handler.task, .is(.notNil()))
+    await assertThat(handler.userHandlerTask, .is(.notNil()))
   } }
 
   func testThrowingDeserializer() { XCTAsyncTest {
@@ -174,8 +177,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     let buffer = ByteBuffer(string: "hello")
     handler.receiveMessage(buffer)
 
-    // Wait for user handler to finish.
-    await handler.task?.value
+    // Wait for tasks to finish.
+    await handler.userHandlerTask?.value
+    await handler.responseStreamDrainTask?.value
 
     await assertThat(self.recorder.messages, .isEmpty())
     await assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
@@ -197,8 +201,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     handler.receiveMessage(buffer)
     handler.receiveEnd()
 
-    // Wait for user handler to finish.
-    await handler.task?.value
+    // Wait for tasks to finish.
+    await handler.userHandlerTask?.value
+    await handler.responseStreamDrainTask?.value
 
     await assertThat(self.recorder.messages, .isEmpty())
     await assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
@@ -210,7 +215,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
     handler.receiveMessage(ByteBuffer(string: "foo"))
 
-    await handler.task?.value
+    // Wait for tasks to finish.
+    await handler.userHandlerTask?.value
+    await handler.responseStreamDrainTask?.value
 
     await assertThat(self.recorder.metadata, .is(.nil()))
     await assertThat(self.recorder.messages, .isEmpty())
@@ -231,8 +238,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
     handler.receiveMetadata([:])
 
-    // Wait for user handler to finish.
-    await handler.task?.value
+    // Wait for tasks to finish.
+    await handler.userHandlerTask?.value
+    await handler.responseStreamDrainTask?.value
 
     await assertThat(self.recorder.messages, .isEmpty())
     await assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
@@ -260,8 +268,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
     handler.finish()
 
-    // Wait for user handler to finish.
-    await handler.task?.value
+    // Wait for tasks to finish.
+    await handler.userHandlerTask?.value
+    await handler.responseStreamDrainTask?.value
 
     await assertThat(self.recorder.messages, .isEmpty())
     await assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
@@ -279,8 +288,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
     handler.finish()
 
-    // Wait for user handler to finish.
-    await handler.task?.value
+    // Wait for tasks to finish.
+    await handler.userHandlerTask?.value
+    await handler.responseStreamDrainTask?.value
 
     await assertThat(self.recorder.messages.first, .is(ByteBuffer(string: "hello")))
     await assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
@@ -297,7 +307,7 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     handler.receiveMetadata([:])
 
     // Wait for user handler to finish (it's gonna throw immediately).
-    await assertThat(await handler.task?.value, .notNil())
+    await assertThat(await handler.userHandlerTask?.value, .notNil())
 
     // Check the status is `.unknown`.
     await assertThat(self.recorder.status, .notNil(.hasCode(.unknown)))
@@ -316,18 +326,21 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
     // Send two requests and end, pausing the writer in the middle.
     switch handler.state {
-    case let .active(_, _, responseStreamWriter, _):
+    case let .active(_, _, responseStreamWriter, promise):
       handler.receiveMessage(ByteBuffer(string: "diaz"))
       await responseStreamWriter._asyncWriter.toggleWritability()
       handler.receiveMessage(ByteBuffer(string: "santiago"))
       handler.receiveEnd()
       await responseStreamWriter._asyncWriter.toggleWritability()
-      await handler.task?.value
+      await handler.userHandlerTask?.value
+      _ = try await promise.futureResult.get()
     default:
       XCTFail("Unexpected handler state: \(handler.state)")
     }
 
     handler.finish()
+
+    await assertThat(handler.responseStreamDrainTask, .notNil())
 
     await assertThat(self.recorder.messages, .is([
       ByteBuffer(string: "diaz"),

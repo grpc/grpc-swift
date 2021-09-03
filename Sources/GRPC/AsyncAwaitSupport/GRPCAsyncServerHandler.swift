@@ -195,11 +195,15 @@ internal final class AsyncServerHandler<
 
   /// The task used to run the async user function.
   ///
-  /// - TODO: Should this be part of the associated metadata in the `State` enum? Doing so would
-  /// make testing a bit cumbersome since a bunch of tests await this task finishing. Shoving it in
-  /// the enum.
+  /// - TODO: I'd like it if this was part of the assoc data for the .active state but doing so may introduce a race condition.
   @usableFromInline
-  internal var task: Task<Void, Never>? = nil
+  internal var userHandlerTask: Task<Void, Never>? = nil
+
+  /// The task used to drain the response stream writer after the user function has completed.
+  ///
+  /// - TODO: I'd like it if this was part of the assoc data for the .finishingSuccessfully state but doing so may introduce a race condition.
+  @usableFromInline
+  internal var responseStreamDrainTask: Task<Void, Never>? = nil
 
   @usableFromInline
   internal enum State {
@@ -250,9 +254,6 @@ internal final class AsyncServerHandler<
     /// handler has completed that have yet to be written. While in this state we will await the
     /// writer flushing its responses before sending `.end` to the stream.
     ///
-    /// - The `Task` is used to drain the response stream writer. It is stashed here so that we can
-    /// cancel it in the event of an error.
-    ///
     /// - The `EventLoopPromise` bridges the NIO and async-await worlds. It is the mechanism that we
     /// use to run a callback when the response stream has been flushed. It is fulfilled with the
     /// result of the async `Task` executing the user handler using `completeWithTask(_:)`.
@@ -264,7 +265,6 @@ internal final class AsyncServerHandler<
     case finishingSuccessfully(
       GRPCAsyncServerCallContext,
       GRPCAsyncResponseStreamWriter<Response>,
-      Task<Void, Never>,
       EventLoopPromise<GRPCStatus>
     )
 
@@ -341,10 +341,10 @@ internal final class AsyncServerHandler<
       self.state = .completed
 
     case .active:
-      self.task?.cancel()
+      self.userHandlerTask?.cancel()
 
-    case let .finishingSuccessfully(_, _, task, _):
-      task.cancel()
+    case .finishingSuccessfully:
+      self.responseStreamDrainTask?.cancel()
 
     case .completed:
       self.interceptors = nil
@@ -404,7 +404,7 @@ internal final class AsyncServerHandler<
       self.interceptors.send(.metadata([:]), promise: nil)
 
       // Spin up a task to call the async user handler.
-      self.task = userHandlerPromise.completeWithTask {
+      self.userHandlerTask = userHandlerPromise.completeWithTask {
         try await withTaskCancellationHandler {
           do {
             // Call the user function.
@@ -545,7 +545,7 @@ internal final class AsyncServerHandler<
         // Register callback for the response stream being drained.
         responseStreamDrainedPromise.futureResult.whenComplete(self.responseStreamDrained(_:))
 
-        let responseStreamDrainTask = responseStreamDrainedPromise.completeWithTask {
+        self.responseStreamDrainTask = responseStreamDrainedPromise.completeWithTask {
           try await withTaskCancellationHandler {
             // Await the writer finish.
             try await responseStreamWriter._asyncWriter.finish(())
@@ -561,7 +561,6 @@ internal final class AsyncServerHandler<
         self.state = .finishingSuccessfully(
           context,
           responseStreamWriter,
-          responseStreamDrainTask,
           responseStreamDrainedPromise
         )
 
@@ -587,7 +586,7 @@ internal final class AsyncServerHandler<
     case .active:
       preconditionFailure()
 
-    case let .finishingSuccessfully(context, _, _, _):
+    case let .finishingSuccessfully(context, _, _):
       switch result {
       case let .success(status):
         // Now we have drained the response stream writer from the user handler we can send end.
@@ -643,11 +642,10 @@ internal final class AsyncServerHandler<
       // which it is reading and give the user handler an opportunity to cleanup.
       //
       // NOTE: This line used to be before we explicitly fail the status promise but it was exaserbating a race condition and causing crashes. See https://bugs.swift.org/browse/SR-15108.
-      self.task?.cancel()
+      self.userHandlerTask?.cancel()
 
-    case let .finishingSuccessfully(_, _, responseStreamWriterDrainTask, _):
-      self.task?.cancel()
-      responseStreamWriterDrainTask.cancel()
+    case .finishingSuccessfully(_, _, _):
+      self.responseStreamDrainTask?.cancel()
 
     case .completed:
       ()
