@@ -574,7 +574,6 @@ internal final class AsyncServerHandler<
     case .idle:
       assert(!isHandlerError)
       self.state = .completed
-      // We don't have a promise to fail. Just send back end.
       let (status, trailers) = ServerErrorProcessor.processLibraryError(
         error,
         delegate: self.context.errorDelegate
@@ -582,8 +581,11 @@ internal final class AsyncServerHandler<
       self.interceptors.send(.end(status, trailers), promise: nil)
 
     case let .active(_, context, _, _):
-      // We don't have a promise to fail. Just send back end.
       self.state = .completed
+
+      // If we have an async task, then cancel it, which will terminate the request stream from
+      // which it is reading and give the user handler an opportunity to cleanup.
+      self.userHandlerTask?.cancel()
 
       let status: GRPCStatus
       let trailers: HPACKHeaders
@@ -604,12 +606,6 @@ internal final class AsyncServerHandler<
 
       // TODO: This doesn't go via the user handler task.
       self.interceptors.send(.end(status, trailers), promise: nil)
-
-      // If we have an async task, then cancel it, which will terminate the request stream from
-      // which it is reading and give the user handler an opportunity to cleanup.
-      //
-      // NOTE: This line used to be before we explicitly fail the status promise but it was exaserbating a race condition and causing crashes. See https://bugs.swift.org/browse/SR-15108.
-      self.userHandlerTask?.cancel()
 
     case .completed:
       ()
