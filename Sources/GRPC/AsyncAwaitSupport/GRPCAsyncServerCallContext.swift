@@ -19,6 +19,17 @@ import Logging
 import NIOConcurrencyHelpers
 import NIOHPACK
 
+// We use a `class` here because we do not want copy-on-write semantics. The instance that the async
+// handler holds must not diverge from the instance the implementor of the RPC holds. They hold these
+// instances on different threads (EventLoop vs Task).
+//
+// We considered wrapping this in a `struct` and pass it `inout` to the RPC. This would communicate
+// explicitly that it stores mutable state. However, without copy-on-write semantics, this could
+// make for a surprising API.
+//
+// We also considered an `actor` but that felt clunky at the point of use since adopters would need
+// to `await` the retrieval of a logger or the updating of the trailers and each would requrie a
+// promise to glue the NIO and async-await paradigms in the handler.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 public final class GRPCAsyncServerCallContext {
   private let lock = Lock()
