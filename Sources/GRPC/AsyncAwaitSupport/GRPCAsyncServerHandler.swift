@@ -193,7 +193,7 @@ internal final class AsyncServerHandler<
   @usableFromInline
   internal var state: State = .idle
 
-  /// The task used to run the async user function.
+  /// The task used to run the async user handler.
   ///
   /// - TODO: I'd like it if this was part of the assoc data for the .active state but doing so may introduce a race condition.
   @usableFromInline
@@ -348,7 +348,7 @@ internal final class AsyncServerHandler<
       // Create a promise to hang a callback off when the user handler completes.
       let userHandlerPromise: EventLoopPromise<GRPCStatus> = self.context.eventLoop.makePromise()
 
-      // Create a request stream from our stream source to pass to the user function.
+      // Create a request stream from our stream source to pass to the user handler.
       let requestStream = GRPCAsyncRequestStream(.init(consuming: requestStreamSource))
 
       // TODO: In future use `AsyncWriter.init(maxPendingElements:maxWritesBeforeYield:delegate:)`?
@@ -379,7 +379,7 @@ internal final class AsyncServerHandler<
           do {
             // When the user handler completes we invalidate the request stream source.
             defer { requestStreamSource.finish() }
-            // Call the user function.
+            // Call the user handler.
             try await self.userHandler(requestStream, responseStreamWriter, context)
           } catch let status as GRPCStatus where status.isOk {
             // The user handler throwing `GRPCStatus.ok` is considered to be invalid.
