@@ -357,9 +357,7 @@ internal final class AsyncServerHandler<
           wrapping: AsyncWriter(delegate: AsyncResponseStreamWriterDelegate(
             context: context,
             compressionIsEnabled: self.context.encoding.isEnabled,
-            send: { response, metadata in
-              self.interceptResponse(response, metadata: metadata, promise: nil)
-            },
+            send: self.interceptResponse(_:metadata:),
             finish: self.responseStreamDrained(_:)
           ))
         )
@@ -490,11 +488,7 @@ internal final class AsyncServerHandler<
   // MARK: - User Function To Interceptors
 
   @inlinable
-  internal func _interceptResponse(
-    _ response: Response,
-    metadata: MessageMetadata,
-    promise: EventLoopPromise<Void>?
-  ) {
+  internal func _interceptResponse(_ response: Response, metadata: MessageMetadata) {
     self.context.eventLoop.assertInEventLoop()
     switch self.state {
     case .idle:
@@ -502,24 +496,21 @@ internal final class AsyncServerHandler<
       preconditionFailure()
 
     case .active:
-      self.interceptors.send(.message(response, metadata), promise: promise)
+      self.interceptors.send(.message(response, metadata), promise: nil)
 
     case .completed:
-      promise?.fail(GRPCError.AlreadyComplete())
+      /// If we are in the completed state then the async writer delegate must have terminated.
+      preconditionFailure()
     }
   }
 
   @inlinable
-  internal func interceptResponse(
-    _ response: Response,
-    metadata: MessageMetadata,
-    promise: EventLoopPromise<Void>?
-  ) {
+  internal func interceptResponse(_ response: Response, metadata: MessageMetadata) {
     if self.context.eventLoop.inEventLoop {
-      self._interceptResponse(response, metadata: metadata, promise: promise)
+      self._interceptResponse(response, metadata: metadata)
     } else {
       self.context.eventLoop.execute {
-        self._interceptResponse(response, metadata: metadata, promise: promise)
+        self._interceptResponse(response, metadata: metadata)
       }
     }
   }
