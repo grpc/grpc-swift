@@ -31,6 +31,7 @@ public struct GRPCAsyncRequestStream<Element>: AsyncSequence {
     self._stream = stream
   }
 
+  @inlinable
   public func makeAsyncIterator() -> Iterator {
     Self.AsyncIterator(self._stream)
   }
@@ -39,7 +40,8 @@ public struct GRPCAsyncRequestStream<Element>: AsyncSequence {
     @usableFromInline
     internal var iterator: _WrappedStream.AsyncIterator
 
-    fileprivate init(_ stream: _WrappedStream) {
+    @usableFromInline
+    internal init(_ stream: _WrappedStream) {
       self.iterator = stream.makeAsyncIterator()
     }
 

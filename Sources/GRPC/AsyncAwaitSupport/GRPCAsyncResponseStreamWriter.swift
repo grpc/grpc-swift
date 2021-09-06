@@ -20,6 +20,9 @@
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 public struct GRPCAsyncResponseStreamWriter<Response> {
   @usableFromInline
+  internal typealias Element = (Response, Compression)
+
+  @usableFromInline
   internal typealias Delegate = AsyncResponseStreamWriterDelegate<Response>
 
   @usableFromInline
@@ -43,6 +46,12 @@ public struct GRPCAsyncResponseStreamWriter<Response> {
 @usableFromInline
 internal final class AsyncResponseStreamWriterDelegate<Response>: AsyncWriterDelegate {
   @usableFromInline
+  internal typealias Element = (Response, Compression)
+
+  @usableFromInline
+  internal typealias End = GRPCStatus
+
+  @usableFromInline
   internal let _context: GRPCAsyncServerCallContext
 
   @usableFromInline
@@ -57,7 +66,6 @@ internal final class AsyncResponseStreamWriterDelegate<Response>: AsyncWriterDel
   // Create a new AsyncResponseStreamWriterDelegate.
   //
   // - Important: the `send` and `finish` closures must be thread-safe.
-  // - TODO: Should these closures just be marked with `@Sendable`?
   @inlinable
   internal init(
     context: GRPCAsyncServerCallContext,
@@ -91,8 +99,8 @@ internal final class AsyncResponseStreamWriterDelegate<Response>: AsyncWriterDel
   // MARK: - AsyncWriterDelegate conformance.
 
   @inlinable
-  internal func write(_ response: (Response, Compression)) {
-    self._send(response.0, compression: response.1)
+  internal func write(_ element: (Response, Compression)) {
+    self._send(element.0, compression: element.1)
   }
 
   @inlinable
