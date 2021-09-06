@@ -217,19 +217,19 @@ internal final class AsyncServerHandler<
     ///
     /// - The `GRPCAsyncResponseStreamWriter` is the response stream writer that is being written to
     /// by the user handler. Because this is pausable, it may contain responses after the user
-    /// handler has completed that have yet to be written. We need to keep hold of this so we can
-    /// propagate it to the next state which waits for these pending responses to be written before
-    /// sending `.end` on the interceptors.
+    /// handler has completed that have yet to be written. However we will remain in the `.active`
+    /// state until the response stream writer has completed.
     ///
     /// - The `EventLoopPromise` bridges the NIO and async-await worlds. It is the mechanism that we
     /// use to run a callback when the user handler has completed. The promise is not passed to the
     /// user handler directly. Instead it is fulfilled with the result of the async `Task` executing
     /// the user handler using `completeWithTask(_:)`.
     ///
-    /// - TODO: It shouldn't really be necessary to stash the `EventLoopPromise` in this enum value.
-    /// Specifically it is never used anywhere when this enum value is accessed. It is here only to
-    /// retain a reference since `completeWithTask(_:)` seems to not capture `self` as expected and
-    /// results in a segfault when the callback is executed.
+    /// - TODO: It shouldn't really be necessary to stash the `GRPCAsyncResponseStreamWriter` or the
+    /// `EventLoopPromise` in this enum value. Specifically they are never used anywhere when this
+    /// enum value is accessed. However, if we do not store them here then the tests periodically
+    /// segfault. This appears to be an bug in Swift and/or NIO since these should both have been
+    /// captured by `completeWithTask(_:)`.
     case active(
       PassthroughMessageSource<Request, Error>,
       GRPCAsyncServerCallContext,
