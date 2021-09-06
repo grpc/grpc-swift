@@ -371,6 +371,7 @@ internal final class AsyncServerHandler<
       userHandlerPromise.futureResult.whenComplete(self.userHandlerCompleted(_:))
 
       // Send response headers back via the interceptors.
+      // TODO: In future we may want to defer this until the first response is available from the user handler which will allow the user to set the response headers via the context.
       self.interceptors.send(.metadata([:]), promise: nil)
 
       // Spin up a task to call the async user handler.
