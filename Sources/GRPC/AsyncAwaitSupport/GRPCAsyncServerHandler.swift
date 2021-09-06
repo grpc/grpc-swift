@@ -490,7 +490,7 @@ internal final class AsyncServerHandler<
   // MARK: - User Function To Interceptors
 
   @inlinable
-  internal func interceptResponse(
+  internal func _interceptResponse(
     _ response: Response,
     metadata: MessageMetadata,
     promise: EventLoopPromise<Void>?
@@ -506,6 +506,21 @@ internal final class AsyncServerHandler<
 
     case .completed:
       promise?.fail(GRPCError.AlreadyComplete())
+    }
+  }
+
+  @inlinable
+  internal func interceptResponse(
+    _ response: Response,
+    metadata: MessageMetadata,
+    promise: EventLoopPromise<Void>?
+  ) {
+    if self.context.eventLoop.inEventLoop {
+      self._interceptResponse(response, metadata: metadata, promise: promise)
+    } else {
+      self.context.eventLoop.execute {
+        self._interceptResponse(response, metadata: metadata, promise: promise)
+      }
     }
   }
 
@@ -535,7 +550,8 @@ internal final class AsyncServerHandler<
   }
 
   @inlinable
-  internal func responseStreamDrained(_ status: GRPCStatus) {
+  internal func _responseStreamDrained(_ status: GRPCStatus) {
+    self.context.eventLoop.assertInEventLoop()
     switch self.state {
     case .idle:
       preconditionFailure()
@@ -547,6 +563,17 @@ internal final class AsyncServerHandler<
 
     case .completed:
       ()
+    }
+  }
+
+  @inlinable
+  internal func responseStreamDrained(_ status: GRPCStatus) {
+    if self.context.eventLoop.inEventLoop {
+      self._responseStreamDrained(status)
+    } else {
+      self.context.eventLoop.execute {
+        self._responseStreamDrained(status)
+      }
     }
   }
 
