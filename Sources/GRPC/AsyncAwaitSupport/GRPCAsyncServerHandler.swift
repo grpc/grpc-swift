@@ -384,14 +384,13 @@ internal final class AsyncServerHandler<
             try await self.userHandler(requestStream, responseStreamWriter, context)
           } catch let status as GRPCStatus where status.isOk {
             // The user handler throwing `GRPCStatus.ok` is considered to be invalid.
-            responseStreamWriter.asyncWriter.cancelAsynchronously()
+            await responseStreamWriter.asyncWriter.cancel()
             throw GRPCStatus(
               code: .unknown,
               message: "Handler threw GRPCStatus error with code .ok"
             )
           } catch {
-            // TODO: Should we be instead doing `finish(throwing: error)`?
-            responseStreamWriter.asyncWriter.cancelAsynchronously()
+            await responseStreamWriter.asyncWriter.cancel()
             throw error
           }
           // Wait for the response stream writer to finish writing its responses.
