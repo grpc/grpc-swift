@@ -23,11 +23,11 @@ public struct GRPCAsyncResponseStreamWriter<Response> {
   internal typealias Delegate = AsyncResponseStreamWriterDelegate<Response>
 
   @usableFromInline
-  internal let _asyncWriter: AsyncWriter<Delegate>
+  internal let asyncWriter: AsyncWriter<Delegate>
 
   @inlinable
   internal init(wrapping asyncWriter: AsyncWriter<Delegate>) {
-    self._asyncWriter = asyncWriter
+    self.asyncWriter = asyncWriter
   }
 
   @inlinable
@@ -35,7 +35,7 @@ public struct GRPCAsyncResponseStreamWriter<Response> {
     _ response: Response,
     compression: Compression = .deferToCallDefault
   ) async throws {
-    try await self._asyncWriter.write((response, compression))
+    try await self.asyncWriter.write((response, compression))
   }
 }
 
@@ -49,24 +49,30 @@ internal final class AsyncResponseStreamWriterDelegate<Response>: AsyncWriterDel
   internal let _send: (Response, MessageMetadata) -> Void
 
   @usableFromInline
+  internal let _finish: (GRPCStatus) -> Void
+
+  @usableFromInline
   internal let _compressionEnabledOnServer: Bool
 
   // Create a new AsyncResponseStreamWriterDelegate.
   //
-  // - Important: the `send` closure must be thread-safe.
+  // - Important: the `send` and `finish` closures must be thread-safe.
+  // - TODO: Should these closures just be marked with `@Sendable`?
   @inlinable
   internal init(
     context: GRPCAsyncServerCallContext,
     compressionIsEnabled: Bool,
-    send: @escaping (Response, MessageMetadata) -> Void
+    send: @escaping (Response, MessageMetadata) -> Void,
+    finish: @escaping (GRPCStatus) -> Void
   ) {
     self._context = context
     self._compressionEnabledOnServer = compressionIsEnabled
     self._send = send
+    self._finish = finish
   }
 
   @inlinable
-  internal func shouldCompress(_ compression: Compression) -> Bool {
+  internal func _shouldCompress(_ compression: Compression) -> Bool {
     guard self._compressionEnabledOnServer else {
       return false
     }
@@ -74,11 +80,11 @@ internal final class AsyncResponseStreamWriterDelegate<Response>: AsyncWriterDel
   }
 
   @inlinable
-  internal func send(
+  internal func _send(
     _ response: Response,
     compression: Compression = .deferToCallDefault
   ) {
-    let compress = self.shouldCompress(compression)
+    let compress = self._shouldCompress(compression)
     self._send(response, .init(compress: compress, flush: true))
   }
 
@@ -86,13 +92,12 @@ internal final class AsyncResponseStreamWriterDelegate<Response>: AsyncWriterDel
 
   @inlinable
   internal func write(_ response: (Response, Compression)) {
-    self.send(response.0, compression: response.1)
+    self._send(response.0, compression: response.1)
   }
 
   @inlinable
-  internal func writeEnd(_ end: Void) {
-    // meh.
-    // TODO: is this where will move the state on to completed somehow?
+  internal func writeEnd(_ end: GRPCStatus) {
+    self._finish(end)
   }
 }
 

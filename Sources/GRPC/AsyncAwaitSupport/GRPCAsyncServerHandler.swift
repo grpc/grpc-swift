@@ -199,12 +199,6 @@ internal final class AsyncServerHandler<
   @usableFromInline
   internal var userHandlerTask: Task<Void, Never>? = nil
 
-  /// The task used to drain the response stream writer after the user function has completed.
-  ///
-  /// - TODO: I'd like it if this was part of the assoc data for the .finishingSuccessfully state but doing so may introduce a race condition.
-  @usableFromInline
-  internal var responseStreamDrainTask: Task<Void, Never>? = nil
-
   @usableFromInline
   internal enum State {
     /// No headers have been received.
@@ -238,31 +232,6 @@ internal final class AsyncServerHandler<
     /// results in a segfault when the callback is executed.
     case active(
       PassthroughMessageSource<Request, Error>,
-      GRPCAsyncServerCallContext,
-      GRPCAsyncResponseStreamWriter<Response>,
-      EventLoopPromise<GRPCStatus>
-    )
-
-    /// The user handler has completed successfully but the writer still has pending responses.
-    ///
-    /// - The `GRPCAsyncServerContext` is a reference to the context that was passed to the user
-    /// handler. It needs to be propagated through until this state so we can access the trailers
-    /// set by the user handler when sending end back to the client.
-    ///
-    /// - The `GRPCAsyncResponseStreamWriter` is the response stream writer that was written to
-    /// by the user handler. Because this is pausable, it may contain responses now the user
-    /// handler has completed that have yet to be written. While in this state we will await the
-    /// writer flushing its responses before sending `.end` to the stream.
-    ///
-    /// - The `EventLoopPromise` bridges the NIO and async-await worlds. It is the mechanism that we
-    /// use to run a callback when the response stream has been flushed. It is fulfilled with the
-    /// result of the async `Task` executing the user handler using `completeWithTask(_:)`.
-    ///
-    /// - TODO: Similar to `.active`, it shouldn't really be necessary to stash the
-    /// `EventLoopPromise` in this enum value. Specifically it is never used anywhere when this enum
-    /// value is accessed. It is here only to retain a reference since `completeWithTask(_:)`seems
-    /// to not capture `self` as expected and results in a segfault when the callback is executed.
-    case finishingSuccessfully(
       GRPCAsyncServerCallContext,
       GRPCAsyncResponseStreamWriter<Response>,
       EventLoopPromise<GRPCStatus>
@@ -343,9 +312,6 @@ internal final class AsyncServerHandler<
     case .active:
       self.userHandlerTask?.cancel()
 
-    case .finishingSuccessfully:
-      self.responseStreamDrainTask?.cancel()
-
     case .completed:
       self.interceptors = nil
     }
@@ -393,7 +359,8 @@ internal final class AsyncServerHandler<
             compressionIsEnabled: self.context.encoding.isEnabled,
             send: { response, metadata in
               self.interceptResponse(response, metadata: metadata, promise: nil)
-            }
+            },
+            finish: self.responseStreamDrained(_:)
           ))
         )
 
@@ -408,21 +375,28 @@ internal final class AsyncServerHandler<
 
       // Spin up a task to call the async user handler.
       self.userHandlerTask = userHandlerPromise.completeWithTask {
-        try await withTaskCancellationHandler {
+        return try await withTaskCancellationHandler {
           do {
+            // When the user handler completes we invalidate the request stream source.
+            defer { requestStreamSource.finish() }
             // Call the user function.
             try await self.userHandler(requestStream, responseStreamWriter, context)
+          } catch let status as GRPCStatus where status.isOk {
+            // The user handler throwing `GRPCStatus.ok` is considered to be invalid.
+            responseStreamWriter.asyncWriter.cancelAsynchronously()
+            throw GRPCStatus(
+              code: .unknown,
+              message: "Handler threw GRPCStatus error with code .ok"
+            )
           } catch {
-            responseStreamWriter._asyncWriter.cancelAsynchronously()
-            // Throwing GRPCStatus.ok is considered to be invalid.
-            if (error as? GRPCStatus)?.isOk ?? false {
-              throw GRPCStatus(
-                code: .unknown,
-                message: "Handler threw GRPCStatus error with code .ok"
-              )
-            }
+            // TODO: Should we be instead doing `finish(throwing: error)`?
+            responseStreamWriter.asyncWriter.cancelAsynchronously()
             throw error
           }
+          // Wait for the response stream writer to finish writing its responses.
+          try await responseStreamWriter.asyncWriter.finish(.ok)
+          // TODO: Do we need to have this task return a value at all now we are using the writer?
+          return .ok
         } onCancel: {
           /// The task being cancelled from outside is the signal to this task that an error has
           /// occured and we should abort the user handler.
@@ -452,12 +426,12 @@ internal final class AsyncServerHandler<
           /// document that user handlers should always rethrow `CacellationError` if handled, after
           /// optional cleanup.
           requestStreamSource.finish(throwing: CancellationError())
-          responseStreamWriter._asyncWriter.cancelAsynchronously()
+          /// Cancel the writer here to drop any pending responses.
+          responseStreamWriter.asyncWriter.cancelAsynchronously()
         }
-        return .ok
       }
 
-    case .active, .finishingSuccessfully:
+    case .active:
       self.handleError(GRPCError.ProtocolViolation("Multiple header blocks received on RPC"))
 
     case .completed:
@@ -474,10 +448,17 @@ internal final class AsyncServerHandler<
     case .idle:
       self.handleError(GRPCError.ProtocolViolation("Message received before headers"))
     case let .active(requestStreamSource, _, _, _):
-      // TODO: Handle YieldResult from `yield()`
-      requestStreamSource.yield(request)
-    case .finishingSuccessfully:
-      self.handleError(GRPCError.ProtocolViolation("Message received after end of stream"))
+      switch requestStreamSource.yield(request) {
+      case .accepted(queueDepth: _):
+        // TODO: In future we will potentially issue a read request to the channel based on the value of `queueDepth`.
+        break
+      case .dropped:
+        /// If we are in the `.active` state then we have yet to encounter an error. Therefore
+        /// if the request stream source has already terminated then it must have been the result of
+        /// receiving `.end`. Therefore this `.message` must have been sent by the client after it
+        /// sent `.end`, which is a protocol violation.
+        self.handleError(GRPCError.ProtocolViolation("Message received after end of stream"))
+      }
     case .completed:
       // We received a message but we're already done: this may happen if we terminate the RPC
       // due to a channel error, for example.
@@ -491,10 +472,16 @@ internal final class AsyncServerHandler<
     case .idle:
       self.handleError(GRPCError.ProtocolViolation("End of stream received before headers"))
     case let .active(requestStreamSource, _, _, _):
-      // TODO: Handle YieldResult from `finish()`
-      requestStreamSource.finish()
-    case .finishingSuccessfully:
-      self.handleError(GRPCError.ProtocolViolation("Multiple end of stream blocks received on RPC"))
+      switch requestStreamSource.finish() {
+      case .accepted(queueDepth: _):
+        break
+      case .dropped:
+        /// If we are in the `.active` state then we have yet to encounter an error. Therefore
+        /// if the request stream source has already terminated then it must have been the result of
+        /// receiving `.end`. Therefore this `.end` must have been sent by the client after it
+        /// already sent `.end`, which is a protocol violation.
+        self.handleError(GRPCError.ProtocolViolation("Message duplicate end of stream"))
+      }
     case .completed:
       // We received a message but we're already done: this may happen if we terminate the RPC
       // due to a channel error, for example.
@@ -519,12 +506,6 @@ internal final class AsyncServerHandler<
     case .active:
       self.interceptors.send(.message(response, metadata), promise: promise)
 
-    case .finishingSuccessfully:
-      // TODO: Add test for this...
-      // The user handler cannot send responses once it has finished.
-      // ... or can it? (is this called from the delegate?)
-      preconditionFailure()
-
     case .completed:
       promise?.fail(GRPCError.AlreadyComplete())
     }
@@ -537,44 +518,18 @@ internal final class AsyncServerHandler<
       // The user handler cannot complete before it is invoked.
       preconditionFailure()
 
-    case let .active(_, context, responseStreamWriter, _):
+    case .active:
       switch result {
-      case let .success(status):
-        // The user handler is done but there may be pending writes in the response stream writer.
-
-        // Create a promise to hang a callback off when the response stream is drained.
-        let responseStreamDrainedPromise: EventLoopPromise<GRPCStatus> = self.context.eventLoop
-          .makePromise()
-
-        // Register callback for the response stream being drained.
-        responseStreamDrainedPromise.futureResult.whenComplete(self.responseStreamDrained(_:))
-
-        self.responseStreamDrainTask = responseStreamDrainedPromise.completeWithTask {
-          try await withTaskCancellationHandler {
-            // Await the writer finish.
-            try await responseStreamWriter._asyncWriter.finish(())
-            // Return the original status from the user handler.
-            return status
-          } onCancel: {
-            // If this task gets cancelled we should just cancel the writer.
-            responseStreamWriter._asyncWriter.cancelAsynchronously()
-          }
-        }
-
-        // Move the state machine along.
-        self.state = .finishingSuccessfully(
-          context,
-          responseStreamWriter,
-          responseStreamDrainedPromise
-        )
+      case .success:
+        /// The user handler has completed successfully.
+        /// We don't take any action here; the state transition and termination of the message
+        /// stream happen when the response stream has drained, in the response stream writer
+        /// delegate callback, `responseStreamDrained(_:)`.
+        break
 
       case let .failure(error):
         self.handleError(error, thrownFromHandler: true)
       }
-
-    case .finishingSuccessfully:
-      // This is a transient state from _within_ the async task executing the user function.
-      preconditionFailure()
 
     case .completed:
       ()
@@ -582,24 +537,15 @@ internal final class AsyncServerHandler<
   }
 
   @inlinable
-  internal func responseStreamDrained(_ result: Result<GRPCStatus, Error>) {
+  internal func responseStreamDrained(_ status: GRPCStatus) {
     switch self.state {
     case .idle:
       preconditionFailure()
 
-    case .active:
-      preconditionFailure()
-
-    case let .finishingSuccessfully(context, _, _):
-      switch result {
-      case let .success(status):
-        // Now we have drained the response stream writer from the user handler we can send end.
-        self.state = .completed
-        self.interceptors.send(.end(status, context.trailers), promise: nil)
-
-      case let .failure(error):
-        self.handleError(error, thrownFromHandler: false)
-      }
+    case let .active(_, context, _, _):
+      // Now we have drained the response stream writer from the user handler we can send end.
+      self.state = .completed
+      self.interceptors.send(.end(status, context.trailers), promise: nil)
 
     case .completed:
       ()
@@ -640,6 +586,7 @@ internal final class AsyncServerHandler<
         )
       }
 
+      // TODO: This doesn't go via the user handler task.
       self.interceptors.send(.end(status, trailers), promise: nil)
 
       // If we have an async task, then cancel it, which will terminate the request stream from
@@ -647,9 +594,6 @@ internal final class AsyncServerHandler<
       //
       // NOTE: This line used to be before we explicitly fail the status promise but it was exaserbating a race condition and causing crashes. See https://bugs.swift.org/browse/SR-15108.
       self.userHandlerTask?.cancel()
-
-    case .finishingSuccessfully:
-      self.responseStreamDrainTask?.cancel()
 
     case .completed:
       ()

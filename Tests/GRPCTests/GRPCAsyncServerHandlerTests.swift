@@ -83,7 +83,6 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
     // Wait for tasks to finish.
     await handler.userHandlerTask?.value
-    await handler.responseStreamDrainTask?.value
 
     handler.finish()
 
@@ -110,7 +109,6 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
     // Wait for tasks to finish.
     await handler.userHandlerTask?.value
-    await handler.responseStreamDrainTask?.value
 
     await assertThat(
       self.recorder.messages,
@@ -139,7 +137,6 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
     // Wait for tasks to finish.
     await handler.userHandlerTask?.value
-    await handler.responseStreamDrainTask?.value
 
     await assertThat(
       self.recorder.messages,
@@ -179,7 +176,6 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
     // Wait for tasks to finish.
     await handler.userHandlerTask?.value
-    await handler.responseStreamDrainTask?.value
 
     await assertThat(self.recorder.messages, .isEmpty())
     await assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
@@ -203,7 +199,6 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
     // Wait for tasks to finish.
     await handler.userHandlerTask?.value
-    await handler.responseStreamDrainTask?.value
 
     await assertThat(self.recorder.messages, .isEmpty())
     await assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
@@ -217,7 +212,6 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
     // Wait for tasks to finish.
     await handler.userHandlerTask?.value
-    await handler.responseStreamDrainTask?.value
 
     await assertThat(self.recorder.metadata, .is(.nil()))
     await assertThat(self.recorder.messages, .isEmpty())
@@ -240,7 +234,6 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
     // Wait for tasks to finish.
     await handler.userHandlerTask?.value
-    await handler.responseStreamDrainTask?.value
 
     await assertThat(self.recorder.messages, .isEmpty())
     await assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
@@ -270,7 +263,6 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
     // Wait for tasks to finish.
     await handler.userHandlerTask?.value
-    await handler.responseStreamDrainTask?.value
 
     await assertThat(self.recorder.messages, .isEmpty())
     await assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
@@ -290,7 +282,6 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
     // Wait for tasks to finish.
     await handler.userHandlerTask?.value
-    await handler.responseStreamDrainTask?.value
 
     await assertThat(self.recorder.messages.first, .is(ByteBuffer(string: "hello")))
     await assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
@@ -328,10 +319,10 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     switch handler.state {
     case let .active(_, _, responseStreamWriter, promise):
       handler.receiveMessage(ByteBuffer(string: "diaz"))
-      await responseStreamWriter._asyncWriter.toggleWritability()
+      await responseStreamWriter.asyncWriter.toggleWritability()
       handler.receiveMessage(ByteBuffer(string: "santiago"))
       handler.receiveEnd()
-      await responseStreamWriter._asyncWriter.toggleWritability()
+      await responseStreamWriter.asyncWriter.toggleWritability()
       await handler.userHandlerTask?.value
       _ = try await promise.futureResult.get()
     default:
@@ -339,8 +330,6 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     }
 
     handler.finish()
-
-    await assertThat(handler.responseStreamDrainTask, .notNil())
 
     await assertThat(self.recorder.messages, .is([
       ByteBuffer(string: "diaz"),
