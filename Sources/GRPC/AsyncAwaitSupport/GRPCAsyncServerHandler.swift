@@ -234,7 +234,7 @@ internal final class AsyncServerHandler<
       PassthroughMessageSource<Request, Error>,
       GRPCAsyncServerCallContext,
       GRPCAsyncResponseStreamWriter<Response>,
-      EventLoopPromise<GRPCStatus>
+      EventLoopPromise<Void>
     )
 
     /// The handler has completed.
@@ -346,7 +346,7 @@ internal final class AsyncServerHandler<
       let requestStreamSource = PassthroughMessageSource<Request, Error>()
 
       // Create a promise to hang a callback off when the user handler completes.
-      let userHandlerPromise: EventLoopPromise<GRPCStatus> = self.context.eventLoop.makePromise()
+      let userHandlerPromise: EventLoopPromise<Void> = self.context.eventLoop.makePromise()
 
       // Create a request stream from our stream source to pass to the user handler.
       let requestStream = GRPCAsyncRequestStream(.init(consuming: requestStreamSource))
@@ -396,8 +396,6 @@ internal final class AsyncServerHandler<
           }
           // Wait for the response stream writer to finish writing its responses.
           try await responseStreamWriter.asyncWriter.finish(.ok)
-          // TODO: Do we need to have this task return a value at all now we are using the writer?
-          return .ok
         } onCancel: {
           /// The task being cancelled from outside is the signal to this task that an error has
           /// occured and we should abort the user handler.
@@ -513,7 +511,7 @@ internal final class AsyncServerHandler<
   }
 
   @inlinable
-  internal func userHandlerCompleted(_ result: Result<GRPCStatus, Error>) {
+  internal func userHandlerCompleted(_ result: Result<Void, Error>) {
     switch self.state {
     case .idle:
       // The user handler cannot complete before it is invoked.
