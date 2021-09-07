@@ -339,7 +339,7 @@ public final class BidirectionalStreamingServerHandler<
 
       self.interceptors.send(.end(status, trailers), promise: nil)
       // We're already in the 'completed' state so failing the promise will be a no-op in the
-      // callback to 'userFunctionStatusResolved' (but we also need to avoid leaking the promise.)
+      // callback to 'userHandlerCompleted' (but we also need to avoid leaking the promise.)
       context.statusPromise.fail(error)
 
     case .completed:

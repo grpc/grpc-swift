@@ -32,6 +32,7 @@ final class ResponseRecorder: GRPCServerResponseWriter {
     XCTAssertNil(self.metadata)
     self.metadata = metadata
     promise?.succeed(())
+    self.recordedMetadataPromise.succeed(())
   }
 
   func sendMessage(
@@ -42,6 +43,7 @@ final class ResponseRecorder: GRPCServerResponseWriter {
     self.messages.append(bytes)
     self.messageMetadata.append(metadata)
     promise?.succeed(())
+    self.recordedMessagePromise.succeed(())
   }
 
   func sendEnd(status: GRPCStatus, trailers: HPACKHeaders, promise: EventLoopPromise<Void>?) {
@@ -50,16 +52,37 @@ final class ResponseRecorder: GRPCServerResponseWriter {
     self.status = status
     self.trailers = trailers
     promise?.succeed(())
+    self.recordedEndPromise.succeed(())
+  }
+
+  var recordedMetadataPromise: EventLoopPromise<Void>
+  var recordedMessagePromise: EventLoopPromise<Void>
+  var recordedEndPromise: EventLoopPromise<Void>
+
+  init(eventLoop: EventLoop) {
+    self.recordedMetadataPromise = eventLoop.makePromise()
+    self.recordedMessagePromise = eventLoop.makePromise()
+    self.recordedEndPromise = eventLoop.makePromise()
+  }
+
+  deinit {
+    struct RecordedDidNotIntercept: Error {}
+    self.recordedMetadataPromise.fail(RecordedDidNotIntercept())
+    self.recordedMessagePromise.fail(RecordedDidNotIntercept())
+    self.recordedEndPromise.fail(RecordedDidNotIntercept())
   }
 }
 
-protocol ServerHandlerTestCase: GRPCTestCase {
-  var eventLoop: EmbeddedEventLoop { get }
-  var allocator: ByteBufferAllocator { get }
-  var recorder: ResponseRecorder { get }
-}
+class ServerHandlerTestCaseBase: GRPCTestCase {
+  let eventLoop = EmbeddedEventLoop()
+  let allocator = ByteBufferAllocator()
+  var recorder: ResponseRecorder!
 
-extension ServerHandlerTestCase {
+  override func setUp() {
+    super.setUp()
+    self.recorder = ResponseRecorder(eventLoop: self.eventLoop)
+  }
+
   func makeCallHandlerContext(encoding: ServerMessageEncoding = .disabled) -> CallHandlerContext {
     return CallHandlerContext(
       errorDelegate: nil,
@@ -77,11 +100,7 @@ extension ServerHandlerTestCase {
 
 // MARK: - Unary
 
-class UnaryServerHandlerTests: GRPCTestCase, ServerHandlerTestCase {
-  let eventLoop = EmbeddedEventLoop()
-  let allocator = ByteBufferAllocator()
-  let recorder = ResponseRecorder()
-
+class UnaryServerHandlerTests: ServerHandlerTestCaseBase {
   private func makeHandler(
     encoding: ServerMessageEncoding = .disabled,
     function: @escaping (String, StatusOnlyCallContext) -> EventLoopFuture<String>
@@ -292,11 +311,7 @@ class UnaryServerHandlerTests: GRPCTestCase, ServerHandlerTestCase {
 
 // MARK: - Client Streaming
 
-class ClientStreamingServerHandlerTests: GRPCTestCase, ServerHandlerTestCase {
-  let eventLoop = EmbeddedEventLoop()
-  let allocator = ByteBufferAllocator()
-  let recorder = ResponseRecorder()
-
+class ClientStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   private func makeHandler(
     encoding: ServerMessageEncoding = .disabled,
     observerFactory: @escaping (UnaryResponseCallContext<String>)
@@ -549,11 +564,7 @@ class ClientStreamingServerHandlerTests: GRPCTestCase, ServerHandlerTestCase {
   }
 }
 
-class ServerStreamingServerHandlerTests: GRPCTestCase, ServerHandlerTestCase {
-  let eventLoop = EmbeddedEventLoop()
-  let allocator = ByteBufferAllocator()
-  let recorder = ResponseRecorder()
-
+class ServerStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   private func makeHandler(
     encoding: ServerMessageEncoding = .disabled,
     userFunction: @escaping (String, StreamingResponseCallContext<String>)
@@ -771,11 +782,7 @@ class ServerStreamingServerHandlerTests: GRPCTestCase, ServerHandlerTestCase {
 
 // MARK: - Bidirectional Streaming
 
-class BidirectionalStreamingServerHandlerTests: GRPCTestCase, ServerHandlerTestCase {
-  let eventLoop = EmbeddedEventLoop()
-  let allocator = ByteBufferAllocator()
-  let recorder = ResponseRecorder()
-
+class BidirectionalStreamingServerHandlerTests: ServerHandlerTestCaseBase {
   private func makeHandler(
     encoding: ServerMessageEncoding = .disabled,
     observerFactory: @escaping (StreamingResponseCallContext<String>)
