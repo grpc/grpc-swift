@@ -388,7 +388,7 @@ extension ClientConnection.Builder.Secure {
 
 extension ClientConnection.Builder {
   /// Sets the HTTP/2 flow control target window size. Defaults to 65,535 if not explicitly set.
-  /// Values are clamped between 0 and 2^31-1 inclusive.
+  /// Values are clamped between 1 and 2^31-1 inclusive.
   @discardableResult
   public func withHTTPTargetWindowSize(_ httpTargetWindowSize: Int) -> Self {
     self.configuration.httpTargetWindowSize = httpTargetWindowSize

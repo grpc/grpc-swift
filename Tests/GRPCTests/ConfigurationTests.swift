@@ -65,7 +65,7 @@ final class ConfigurationTests: GRPCTestCase {
     self.doTestHTTPMaxFrameSizeIsClamped(for: self.serverDefaults)
   }
 
-  private let targetWindowSizeMinimum = 0
+  private let targetWindowSizeMinimum = 1
   private let targetWindowSizeMaximum = Int(Int32.max)
 
   private func doTestHTTPTargetWindowSizeIsClamped(for configuration: HasHTTP2Configuration) {

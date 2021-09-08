@@ -342,10 +342,10 @@ extension ClientConnection {
     public var callStartBehavior: CallStartBehavior = .waitsForConnectivity
 
     /// The HTTP/2 flow control target window size. Defaults to 65535. Values are clamped between
-    /// 0 and 2^31-1 inclusive.
+    /// 1 and 2^31-1 inclusive.
     public var httpTargetWindowSize = 65535 {
       didSet {
-        self.httpTargetWindowSize = self.httpTargetWindowSize.clamped(to: 0 ... Int(Int32.max))
+        self.httpTargetWindowSize = self.httpTargetWindowSize.clamped(to: 1 ... Int(Int32.max))
       }
     }
 
