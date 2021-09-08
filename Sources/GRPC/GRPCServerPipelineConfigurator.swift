@@ -90,6 +90,10 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
           parameter: .maxHeaderListSize,
           value: HPACKDecoder.defaultMaxHeaderListSize
         ),
+        HTTP2Setting(
+          parameter: .maxFrameSize,
+          value: self.configuration.httpMaxFrameSize
+        ),
       ]
     )
   }

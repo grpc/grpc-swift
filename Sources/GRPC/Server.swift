@@ -332,6 +332,14 @@ extension Server {
       }
     }
 
+    /// The HTTP/2 max frame size. Defaults to 16384. Value is clamped between 2^14 and 2^24-1
+    /// octets inclusive (the minimum and maximum allowable values - HTTP/2 RFC 7540 4.2).
+    public var httpMaxFrameSize: Int = 16384 {
+      didSet(httpMaxFrameSize) {
+        self.httpMaxFrameSize = httpMaxFrameSize.clamped(to: 16384 ... 16_777_215)
+      }
+    }
+
     /// The root server logger. Accepted connections will branch from this logger and RPCs on
     /// each connection will use a logger branched from the connections logger. This logger is made
     /// available to service providers via `context`. Defaults to a no-op logger.
@@ -445,5 +453,11 @@ private extension ServerBootstrapProtocol {
     case let .socketAddress(address):
       return self.bind(to: address)
     }
+  }
+}
+
+extension Comparable {
+  fileprivate func clamped(to range: ClosedRange<Self>) -> Self {
+    return min(max(self, range.lowerBound), range.upperBound)
   }
 }
