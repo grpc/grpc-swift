@@ -388,9 +388,22 @@ extension ClientConnection.Builder.Secure {
 
 extension ClientConnection.Builder {
   /// Sets the HTTP/2 flow control target window size. Defaults to 65,535 if not explicitly set.
+  /// Values are clamped between 1 and 2^31-1 inclusive.
   @discardableResult
   public func withHTTPTargetWindowSize(_ httpTargetWindowSize: Int) -> Self {
     self.configuration.httpTargetWindowSize = httpTargetWindowSize
+    return self
+  }
+
+  /// Sets the maximum size of an HTTP/2 frame in bytes which the client is willing to receive from
+  /// the server. Defaults to 16384. Value are clamped between 2^14 and 2^24-1 octets inclusive
+  /// (the minimum and maximum permitted values per RFC 7540 § 4.2).
+  ///
+  /// Raising this value may lower CPU usage for large message at the cost of increasing head of
+  /// line blocking for small messages.
+  @discardableResult
+  public func withHTTPMaxFrameSize(_ httpMaxFrameSize: Int) -> Self {
+    self.configuration.httpMaxFrameSize = httpMaxFrameSize
     return self
   }
 }

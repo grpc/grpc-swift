@@ -322,8 +322,13 @@ extension Server {
       }
     }
 
-    /// The HTTP/2 flow control target window size. Defaults to 65535.
-    public var httpTargetWindowSize: Int = 65535
+    /// The HTTP/2 flow control target window size. Defaults to 65535. Values are clamped between
+    /// 1 and 2^31-1 inclusive.
+    public var httpTargetWindowSize = 65535 {
+      didSet {
+        self.httpTargetWindowSize = self.httpTargetWindowSize.clamped(to: 1 ... Int(Int32.max))
+      }
+    }
 
     /// The HTTP/2 max number of concurrent streams. Defaults to 100. Must be non-negative.
     public var httpMaxConcurrentStreams: Int = 100 {
@@ -335,8 +340,8 @@ extension Server {
     /// The HTTP/2 max frame size. Defaults to 16384. Value is clamped between 2^14 and 2^24-1
     /// octets inclusive (the minimum and maximum allowable values - HTTP/2 RFC 7540 4.2).
     public var httpMaxFrameSize: Int = 16384 {
-      didSet(httpMaxFrameSize) {
-        self.httpMaxFrameSize = httpMaxFrameSize.clamped(to: 16384 ... 16_777_215)
+      didSet {
+        self.httpMaxFrameSize = self.httpMaxFrameSize.clamped(to: 16384 ... 16_777_215)
       }
     }
 
@@ -457,7 +462,7 @@ private extension ServerBootstrapProtocol {
 }
 
 extension Comparable {
-  fileprivate func clamped(to range: ClosedRange<Self>) -> Self {
+  internal func clamped(to range: ClosedRange<Self>) -> Self {
     return min(max(self, range.lowerBound), range.upperBound)
   }
 }
