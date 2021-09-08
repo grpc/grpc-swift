@@ -94,6 +94,10 @@ final class GRPCServerPipelineConfigurator: ChannelInboundHandler, RemovableChan
           parameter: .maxFrameSize,
           value: self.configuration.httpMaxFrameSize
         ),
+        HTTP2Setting(
+          parameter: .initialWindowSize,
+          value: self.configuration.httpTargetWindowSize
+        ),
       ]
     )
   }
