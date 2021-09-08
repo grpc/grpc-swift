@@ -520,8 +520,9 @@ extension ChannelPipeline.SynchronousOperations {
   ) throws {
     let initialSettings = [
       // As per the default settings for swift-nio-http2:
-      HTTP2Setting(parameter: .maxConcurrentStreams, value: 100),
       HTTP2Setting(parameter: .maxHeaderListSize, value: HPACKDecoder.defaultMaxHeaderListSize),
+      // We never expect (or allow) server initiated streams.
+      HTTP2Setting(parameter: .maxConcurrentStreams, value: 0),
       // As configured by the user.
       HTTP2Setting(parameter: .maxFrameSize, value: httpMaxFrameSize),
       HTTP2Setting(parameter: .initialWindowSize, value: httpTargetWindowSize),
