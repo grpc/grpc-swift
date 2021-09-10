@@ -30,6 +30,18 @@ extension Generator {
       self.printServiceClientImplementation()
     }
 
+    if self.options.generateAsyncClient {
+      self.println()
+      self.printIfCompilerGuardForAsyncAwait()
+      self.printAsyncServiceClientProtocol()
+      self.println()
+      self.printAsyncClientProtocolExtension()
+      self.println()
+      self.printAsyncServiceClientImplementation()
+      self.println()
+      self.printEndCompilerGuardForAsyncAwait()
+    }
+
     if self.options.generateTestClient {
       self.println()
       self.printTestClient()
@@ -41,19 +53,39 @@ extension Generator {
     arguments: [String],
     returnType: String?,
     access: String? = nil,
+    sendable: Bool = false,
+    async: Bool = false,
+    throws: Bool = false,
+    genericWhereClause: String? = nil,
     bodyBuilder: (() -> Void)?
   ) {
     // Add a space after access, if it exists.
-    let accessOrEmpty = access.map { $0 + " " } ?? ""
-    let `return` = returnType.map { "-> " + $0 } ?? ""
+    let functionHead = (access.map { $0 + " " } ?? "") + (sendable ? "@Sendable " : "")
+    let `return` = returnType.map { " -> " + $0 } ?? ""
+    let genericWhere = genericWhereClause.map { " " + $0 } ?? ""
+
+    let asyncThrows: String
+    switch (async, `throws`) {
+    case (true, true):
+      asyncThrows = " async throws"
+    case (true, false):
+      asyncThrows = " async"
+    case (false, true):
+      asyncThrows = " throws"
+    case (false, false):
+      asyncThrows = ""
+    }
 
     let hasBody = bodyBuilder != nil
 
     if arguments.isEmpty {
       // Don't bother splitting across multiple lines if there are no arguments.
-      self.println("\(accessOrEmpty)func \(name)() \(`return`)", newline: !hasBody)
+      self.println(
+        "\(functionHead)func \(name)()\(asyncThrows)\(`return`)\(genericWhere)",
+        newline: !hasBody
+      )
     } else {
-      self.println("\(accessOrEmpty)func \(name)(")
+      self.println("\(functionHead)func \(name)(")
       self.withIndentation {
         // Add a comma after each argument except the last.
         arguments.forEach(beforeLast: {
@@ -62,7 +94,7 @@ extension Generator {
           self.println($0)
         })
       }
-      self.println(") \(`return`)", newline: !hasBody)
+      self.println(")\(asyncThrows)\(`return`)\(genericWhere)", newline: !hasBody)
     }
 
     if let bodyBuilder = bodyBuilder {
