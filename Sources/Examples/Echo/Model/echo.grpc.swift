@@ -172,6 +172,101 @@ public final class Echo_EchoClient: Echo_EchoClientProtocol {
   }
 }
 
+#if compiler(>=5.5)
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+public protocol Echo_EchoAsyncClientProtocol: GRPCClient {
+  var serviceName: String { get }
+  var interceptors: Echo_EchoClientInterceptorFactoryProtocol? { get }
+
+  func makeGetCall(
+    _ request: Echo_EchoRequest,
+    callOptions: CallOptions?
+  ) -> GRPCAsyncUnaryCall<Echo_EchoRequest, Echo_EchoResponse>
+
+  func makeExpandCall(
+    _ request: Echo_EchoRequest,
+    callOptions: CallOptions?
+  ) -> GRPCAsyncServerStreamingCall<Echo_EchoRequest, Echo_EchoResponse>
+
+  func makeCollectCall(
+    callOptions: CallOptions?
+  ) -> GRPCAsyncClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse>
+
+  func makeUpdateCall(
+    callOptions: CallOptions?
+  ) -> GRPCAsyncBidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse>
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+extension Echo_EchoAsyncClientProtocol {
+  public var serviceName: String {
+    return "echo.Echo"
+  }
+
+  public var interceptors: Echo_EchoClientInterceptorFactoryProtocol? {
+    return nil
+  }
+
+  public func makeGetCall(
+    _ request: Echo_EchoRequest,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncUnaryCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return self.makeAsyncUnaryCall(
+      path: "/echo.Echo/Get",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func makeExpandCall(
+    _ request: Echo_EchoRequest,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncServerStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return self.makeAsyncServerStreamingCall(
+      path: "/echo.Echo/Expand",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func makeCollectCall(
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return self.makeAsyncClientStreamingCall(
+      path: "/echo.Echo/Collect",
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func makeUpdateCall(
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncBidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
+    return self.makeAsyncBidirectionalStreamingCall(
+      path: "/echo.Echo/Update",
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+public struct Echo_EchoAsyncClient: Echo_EchoAsyncClientProtocol {
+  public var channel: GRPCChannel
+  public var defaultCallOptions: CallOptions
+  public var interceptors: Echo_EchoClientInterceptorFactoryProtocol?
+
+  public init(
+    channel: GRPCChannel,
+    defaultCallOptions: CallOptions = CallOptions(),
+    interceptors: Echo_EchoClientInterceptorFactoryProtocol? = nil
+  ) {
+    self.channel = channel
+    self.defaultCallOptions = defaultCallOptions
+    self.interceptors = interceptors
+  }
+}
+
+#endif // compiler(>=5.5)
+
 public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
   private let fakeChannel: FakeChannel
   public var defaultCallOptions: CallOptions
@@ -204,7 +299,7 @@ public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
   public func enqueueGetResponse(
     _ response: Echo_EchoResponse,
     _ requestHandler: @escaping (FakeRequestPart<Echo_EchoRequest>) -> () = { _ in }
-  )  {
+  ) {
     let stream = self.makeGetResponseStream(requestHandler)
     // This is the only operation on the stream; try! is fine.
     try! stream.sendMessage(response)
@@ -228,7 +323,7 @@ public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
   public func enqueueExpandResponses(
     _ responses: [Echo_EchoResponse],
     _ requestHandler: @escaping (FakeRequestPart<Echo_EchoRequest>) -> () = { _ in }
-  )  {
+  ) {
     let stream = self.makeExpandResponseStream(requestHandler)
     // These are the only operation on the stream; try! is fine.
     responses.forEach { try! stream.sendMessage($0) }
@@ -253,7 +348,7 @@ public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
   public func enqueueCollectResponse(
     _ response: Echo_EchoResponse,
     _ requestHandler: @escaping (FakeRequestPart<Echo_EchoRequest>) -> () = { _ in }
-  )  {
+  ) {
     let stream = self.makeCollectResponseStream(requestHandler)
     // This is the only operation on the stream; try! is fine.
     try! stream.sendMessage(response)
@@ -277,7 +372,7 @@ public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
   public func enqueueUpdateResponses(
     _ responses: [Echo_EchoResponse],
     _ requestHandler: @escaping (FakeRequestPart<Echo_EchoRequest>) -> () = { _ in }
-  )  {
+  ) {
     let stream = self.makeUpdateResponseStream(requestHandler)
     // These are the only operation on the stream; try! is fine.
     responses.forEach { try! stream.sendMessage($0) }
@@ -377,3 +472,97 @@ public protocol Echo_EchoServerInterceptorFactoryProtocol {
   ///   Defaults to calling `self.makeInterceptors()`.
   func makeUpdateInterceptors() -> [ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
 }
+
+#if compiler(>=5.5)
+
+/// To implement a server, implement an object which conforms to this protocol.
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+public protocol Echo_EchoAsyncProvider: CallHandlerProvider {
+  var interceptors: Echo_EchoServerInterceptorFactoryProtocol? { get }
+
+  /// Immediately returns an echo of a request.
+  @Sendable func get(
+    request: Echo_EchoRequest,
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Echo_EchoResponse
+
+  /// Splits a request into words and returns each word in a stream of messages.
+  @Sendable func expand(
+    request: Echo_EchoRequest,
+    responseStream: GRPCAsyncResponseStreamWriter<Echo_EchoResponse>,
+    context: GRPCAsyncServerCallContext
+  ) async throws
+
+  /// Collects a stream of messages and returns them concatenated when the caller closes.
+  @Sendable func collect(
+    requests: GRPCAsyncRequestStream<Echo_EchoRequest>,
+    context: GRPCAsyncServerCallContext
+  ) async throws -> Echo_EchoResponse
+
+  /// Streams back messages as they are received in an input stream.
+  @Sendable func update(
+    requests: GRPCAsyncRequestStream<Echo_EchoRequest>,
+    responseStream: GRPCAsyncResponseStreamWriter<Echo_EchoResponse>,
+    context: GRPCAsyncServerCallContext
+  ) async throws
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+extension Echo_EchoAsyncProvider {
+  public var serviceName: Substring {
+    return "echo.Echo"
+  }
+
+  public var interceptors: Echo_EchoServerInterceptorFactoryProtocol? {
+    return nil
+  }
+
+  public func handle(
+    method name: Substring,
+    context: CallHandlerContext
+  ) -> GRPCServerHandlerProtocol? {
+    switch name {
+    case "Get":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Echo_EchoRequest>(),
+        responseSerializer: ProtobufSerializer<Echo_EchoResponse>(),
+        interceptors: self.interceptors?.makeGetInterceptors() ?? [],
+        wrapping: self.get(request:context:)
+      )
+
+    case "Expand":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Echo_EchoRequest>(),
+        responseSerializer: ProtobufSerializer<Echo_EchoResponse>(),
+        interceptors: self.interceptors?.makeExpandInterceptors() ?? [],
+        wrapping: self.expand(request:responseStream:context:)
+      )
+
+    case "Collect":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Echo_EchoRequest>(),
+        responseSerializer: ProtobufSerializer<Echo_EchoResponse>(),
+        interceptors: self.interceptors?.makeCollectInterceptors() ?? [],
+        wrapping: self.collect(requests:context:)
+      )
+
+    case "Update":
+      return GRPCAsyncServerHandler(
+        context: context,
+        requestDeserializer: ProtobufDeserializer<Echo_EchoRequest>(),
+        responseSerializer: ProtobufSerializer<Echo_EchoResponse>(),
+        interceptors: self.interceptors?.makeUpdateInterceptors() ?? [],
+        wrapping: self.update(requests:responseStream:context:)
+      )
+
+    default:
+      return nil
+    }
+  }
+}
+
+#endif // compiler(>=5.5)
+
