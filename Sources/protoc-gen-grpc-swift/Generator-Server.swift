@@ -19,11 +19,31 @@ import SwiftProtobufPluginLibrary
 
 extension Generator {
   internal func printServer() {
-    self.printServerProtocol()
-    self.println()
-    self.printServerProtocolExtension()
-    self.println()
-    self.printServerInterceptorFactoryProtocol()
+    if self.options.generateServer {
+      self.printServerProtocol()
+      self.println()
+      self.printServerProtocolExtension()
+      self.println()
+      self.printServerInterceptorFactoryProtocol()
+      self.println()
+    }
+
+    if self.options.generateAsyncServer {
+      self.printIfCompilerGuardForAsyncAwait()
+      self.println()
+      self.printServerProtocolAsyncAwait()
+      self.println()
+      self.printServerProtocolExtensionAsyncAwait()
+      self.println()
+      self.printEndCompilerGuardForAsyncAwait()
+      self.println()
+    }
+
+    // If we generate only the async server we need to print the interceptor factory protocol (as
+    // it is used by both).
+    if self.options.generateAsyncServer, !self.options.generateServer {
+      self.printServerInterceptorFactoryProtocol()
+    }
   }
 
   private func printServerProtocol() {
