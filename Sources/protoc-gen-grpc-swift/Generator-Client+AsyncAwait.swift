@@ -130,6 +130,159 @@ extension Generator {
   }
 }
 
+// MARK: - Client protocol extension: Safe call wrappers.
+
+extension Generator {
+  internal func printAsyncClientProtocolSafeWrappersExtension() {
+    self.printAvailabilityForAsyncAwait()
+    self.withIndentation("extension \(self.asyncClientProtocolName)", braces: .curly) {
+
+      // 'Safe' calls.
+      for (i, method) in self.service.methods.enumerated() {
+        if i > 0 {
+          self.println()
+        }
+        self.method = method
+
+        let rpcType = streamingType(self.method)
+        let responseStreamType = "GRPCAsyncResponseStream"
+
+        switch rpcType {
+        case .unary:
+          self.printFunction(
+            name: self.methodFunctionName,
+            arguments: [
+              "_ request: \(self.methodInputName)",
+              "callOptions: \(Types.clientCallOptions)? = nil",
+            ],
+            returnType: self.methodOutputName,
+            access: self.access,
+            async: true,
+            throws: true
+          ) {
+            self.withIndentation("return try await self.make\(self.method.name)Call", braces: .round, newline: false) {
+              self.println("request,")
+              self.println("callOptions: callOptions")
+            }
+            self.println(".response")
+          }
+        case .serverStreaming:
+          self.printFunction(
+            name: self.methodFunctionName,
+            arguments: [
+              "_ request: \(self.methodInputName)",
+              "callOptions: \(Types.clientCallOptions)? = nil",
+            ],
+            returnType: "\(responseStreamType)<\(self.methodOutputName)>",
+            access: self.access
+          ) {
+            self.withIndentation("return self.make\(self.method.name)Call", braces: .round, newline: false) {
+              self.println("request,")
+              self.println("callOptions: callOptions")
+            }
+            self.println(".responses")
+          }
+        case .clientStreaming:
+          self.printFunction(
+            name: "\(self.methodFunctionName)<RequestStream>",
+            arguments: [
+              "requests: RequestStream",
+              "callOptions: \(Types.clientCallOptions)? = nil",
+            ],
+            returnType: self.methodOutputName,
+            access: self.access,
+            async: true,
+            throws: true,
+            genericWhereClause: "where RequestStream: AsyncSequence, RequestStream.Element == \(self.methodInputName)"
+          ) {
+            self.withIndentation("let call = self.make\(self.method.name)Call", braces: .round) {
+              self.println("callOptions: callOptions")
+            }
+            self.withIndentation(
+              "return try await withTaskCancellationHandler",
+              braces: .curly,
+              newline: false
+            ) {
+              self.println("try Task.checkCancellation()")
+              self.withIndentation(
+                "for try await request in requests",
+                braces: .curly
+              ) {
+                self.println("try Task.checkCancellation()")
+                self.println("try await call.sendMessage(request)")
+              }
+              self.println("try Task.checkCancellation()")
+              self.println("try await call.sendEnd()")
+              self.println("try Task.checkCancellation()")
+              self.println("return try await call.response")
+            }
+            self.withIndentation(
+              " onCancel:",
+              braces: .curly
+            ) {
+              self.withIndentation(
+                "Task.detached",
+                braces: .curly
+              ) {
+                self.println("try await call.cancel()")
+              }
+            }
+          }
+
+        case .bidirectionalStreaming:
+          self.printFunction(
+            name: "\(self.methodFunctionName)<RequestStream>",
+            arguments: [
+              "requests: RequestStream",
+              "callOptions: \(Types.clientCallOptions)? = nil",
+            ],
+            returnType: "\(responseStreamType)<\(self.methodOutputName)>",
+            access: self.access,
+            genericWhereClause: "where RequestStream: AsyncSequence, RequestStream.Element == \(self.methodInputName)"
+          ) {
+            self.withIndentation("let call = self.make\(self.method.name)Call", braces: .round) {
+              self.println("callOptions: callOptions")
+            }
+            self.withIndentation(
+              "Task",
+              braces: .curly
+            ) {
+              self.withIndentation(
+                "try await withTaskCancellationHandler",
+                braces: .curly,
+                newline: false
+              ) {
+                self.println("try Task.checkCancellation()")
+                self.withIndentation(
+                  "for try await request in requests",
+                  braces: .curly
+                ) {
+                  self.println("try Task.checkCancellation()")
+                  self.println("try await call.sendMessage(request)")
+                }
+                self.println("try Task.checkCancellation()")
+                self.println("try await call.sendEnd()")
+              }
+              self.withIndentation(
+                " onCancel:",
+                braces: .curly
+              ) {
+                self.withIndentation(
+                  "Task.detached",
+                  braces: .curly
+                ) {
+                  self.println("try await call.cancel()")
+                }
+              }
+            }
+            self.println("return call.responses")
+          }
+        }
+      }
+    }
+  }
+}
+
 // MARK: - Client protocol implementation
 
 extension Generator {

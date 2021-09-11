@@ -249,6 +249,78 @@ extension Echo_EchoAsyncClientProtocol {
 }
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+extension Echo_EchoAsyncClientProtocol {
+  public func get(
+    _ request: Echo_EchoRequest,
+    callOptions: CallOptions? = nil
+  ) async throws -> Echo_EchoResponse {
+    return try await self.makeGetCall(
+      request,
+      callOptions: callOptions
+    ).response
+  }
+
+  public func expand(
+    _ request: Echo_EchoRequest,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Echo_EchoResponse> {
+    return self.makeExpandCall(
+      request,
+      callOptions: callOptions
+    ).responses
+  }
+
+  public func collect<RequestStream>(
+    requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) async throws -> Echo_EchoResponse where RequestStream: AsyncSequence, RequestStream.Element == Echo_EchoRequest {
+    let call = self.makeCollectCall(
+      callOptions: callOptions
+    )
+    return try await withTaskCancellationHandler {
+      try Task.checkCancellation()
+      for try await request in requests {
+        try Task.checkCancellation()
+        try await call.sendMessage(request)
+      }
+      try Task.checkCancellation()
+      try await call.sendEnd()
+      try Task.checkCancellation()
+      return try await call.response
+    } onCancel: {
+      Task.detached {
+        try await call.cancel()
+      }
+    }
+  }
+
+  public func update<RequestStream>(
+    requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Echo_EchoResponse> where RequestStream: AsyncSequence, RequestStream.Element == Echo_EchoRequest {
+    let call = self.makeUpdateCall(
+      callOptions: callOptions
+    )
+    Task {
+      try await withTaskCancellationHandler {
+        try Task.checkCancellation()
+        for try await request in requests {
+          try Task.checkCancellation()
+          try await call.sendMessage(request)
+        }
+        try Task.checkCancellation()
+        try await call.sendEnd()
+      } onCancel: {
+        Task.detached {
+          try await call.cancel()
+        }
+      }
+    }
+    return call.responses
+  }
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 public struct Echo_EchoAsyncClient: Echo_EchoAsyncClientProtocol {
   public var channel: GRPCChannel
   public var defaultCallOptions: CallOptions
