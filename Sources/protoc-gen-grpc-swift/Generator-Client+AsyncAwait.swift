@@ -136,7 +136,6 @@ extension Generator {
   internal func printAsyncClientProtocolSafeWrappersExtension() {
     self.printAvailabilityForAsyncAwait()
     self.withIndentation("extension \(self.asyncClientProtocolName)", braces: .curly) {
-
       // 'Safe' calls.
       for (i, method) in self.service.methods.enumerated() {
         if i > 0 {
@@ -160,7 +159,11 @@ extension Generator {
             async: true,
             throws: true
           ) {
-            self.withIndentation("return try await self.make\(self.method.name)Call", braces: .round, newline: false) {
+            self.withIndentation(
+              "return try await self.make\(self.method.name)Call",
+              braces: .round,
+              newline: false
+            ) {
               self.println("request,")
               self.println("callOptions: callOptions")
             }
@@ -176,7 +179,11 @@ extension Generator {
             returnType: "\(responseStreamType)<\(self.methodOutputName)>",
             access: self.access
           ) {
-            self.withIndentation("return self.make\(self.method.name)Call", braces: .round, newline: false) {
+            self.withIndentation(
+              "return self.make\(self.method.name)Call",
+              braces: .round,
+              newline: false
+            ) {
               self.println("request,")
               self.println("callOptions: callOptions")
             }
