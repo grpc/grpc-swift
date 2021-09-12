@@ -230,7 +230,18 @@ internal final class AsyncServerHandler<
     /// enum value is accessed. However, if we do not store them here then the tests periodically
     /// segfault. This appears to be an bug in Swift and/or NIO since these should both have been
     /// captured by `completeWithTask(_:)`.
-    case active(
+    case activeAwaitingFirstResponse(
+      PassthroughMessageSource<Request, Error>,
+      GRPCAsyncServerCallContext,
+      GRPCAsyncResponseStreamWriter<Response>,
+      EventLoopPromise<Void>
+    )
+
+    /// We have received the first response from the user handler via the writer and have sent the
+    /// response headers back to the client via the interceptors.
+    ///
+    /// The associated data in this state is the same as in `.activeAwaitingFirstResponse`.
+    case activeAwaitingSubsequentResponses(
       PassthroughMessageSource<Request, Error>,
       GRPCAsyncServerCallContext,
       GRPCAsyncResponseStreamWriter<Response>,
@@ -309,7 +320,7 @@ internal final class AsyncServerHandler<
       self.interceptors = nil
       self.state = .completed
 
-    case .active:
+    case .activeAwaitingFirstResponse, .activeAwaitingSubsequentResponses:
       self.userHandlerTask?.cancel()
 
     case .completed:
@@ -363,14 +374,15 @@ internal final class AsyncServerHandler<
         )
 
       // Set the state to active and bundle in all the associated data.
-      self.state = .active(requestStreamSource, context, responseStreamWriter, userHandlerPromise)
+      self.state = .activeAwaitingFirstResponse(
+        requestStreamSource,
+        context,
+        responseStreamWriter,
+        userHandlerPromise
+      )
 
       // Register callback for the completion of the user handler.
       userHandlerPromise.futureResult.whenComplete(self.userHandlerCompleted(_:))
-
-      // Send response headers back via the interceptors.
-      // TODO: In future we may want to defer this until the first response is available from the user handler which will allow the user to set the response headers via the context.
-      self.interceptors.send(.metadata([:]), promise: nil)
 
       // Spin up a task to call the async user handler.
       self.userHandlerTask = userHandlerPromise.completeWithTask {
@@ -427,7 +439,7 @@ internal final class AsyncServerHandler<
         }
       }
 
-    case .active:
+    case .activeAwaitingFirstResponse, .activeAwaitingSubsequentResponses:
       self.handleError(GRPCError.ProtocolViolation("Multiple header blocks received on RPC"))
 
     case .completed:
@@ -443,7 +455,9 @@ internal final class AsyncServerHandler<
     switch self.state {
     case .idle:
       self.handleError(GRPCError.ProtocolViolation("Message received before headers"))
-    case let .active(requestStreamSource, _, _, _):
+    case
+      let .activeAwaitingFirstResponse(requestStreamSource, _, _, _),
+      let .activeAwaitingSubsequentResponses(requestStreamSource, _, _, _):
       switch requestStreamSource.yield(request) {
       case .accepted(queueDepth: _):
         // TODO: In future we will potentially issue a read request to the channel based on the value of `queueDepth`.
@@ -467,7 +481,9 @@ internal final class AsyncServerHandler<
     switch self.state {
     case .idle:
       self.handleError(GRPCError.ProtocolViolation("End of stream received before headers"))
-    case let .active(requestStreamSource, _, _, _):
+    case
+      let .activeAwaitingFirstResponse(requestStreamSource, _, _, _),
+      let .activeAwaitingSubsequentResponses(requestStreamSource, _, _, _):
       switch requestStreamSource.finish() {
       case .accepted(queueDepth: _):
         break
@@ -495,7 +511,24 @@ internal final class AsyncServerHandler<
       // The user handler cannot send responses before it has been invoked.
       preconditionFailure()
 
-    case .active:
+    case let .activeAwaitingFirstResponse(
+      requestStreamSource,
+      context,
+      responseStreamWriter,
+      promise
+    ):
+      self.state = .activeAwaitingSubsequentResponses(
+        requestStreamSource,
+        context,
+        responseStreamWriter,
+        promise
+      )
+      // Send response headers back via the interceptors.
+      self.interceptors.send(.metadata(context.responseHeaders), promise: nil)
+      fallthrough
+
+    case .activeAwaitingSubsequentResponses:
+      // Send the response back via the interceptors.
       self.interceptors.send(.message(response, metadata), promise: nil)
 
     case .completed:
@@ -522,7 +555,7 @@ internal final class AsyncServerHandler<
       // The user handler cannot complete before it is invoked.
       preconditionFailure()
 
-    case .active:
+    case .activeAwaitingFirstResponse, .activeAwaitingSubsequentResponses:
       switch result {
       case .success:
         /// The user handler has completed successfully.
@@ -547,10 +580,12 @@ internal final class AsyncServerHandler<
     case .idle:
       preconditionFailure()
 
-    case let .active(_, context, _, _):
+    case
+      let .activeAwaitingFirstResponse(_, context, _, _),
+      let .activeAwaitingSubsequentResponses(_, context, _, _):
       // Now we have drained the response stream writer from the user handler we can send end.
       self.state = .completed
-      self.interceptors.send(.end(status, context.trailers), promise: nil)
+      self.interceptors.send(.end(status, context.responseTrailers), promise: nil)
 
     case .completed:
       ()
@@ -580,7 +615,9 @@ internal final class AsyncServerHandler<
       )
       self.interceptors.send(.end(status, trailers), promise: nil)
 
-    case let .active(_, context, _, _):
+    case
+      let .activeAwaitingFirstResponse(_, context, _, _),
+      let .activeAwaitingSubsequentResponses(_, context, _, _):
       self.state = .completed
 
       // If we have an async task, then cancel it, which will terminate the request stream from
@@ -593,8 +630,8 @@ internal final class AsyncServerHandler<
       if isHandlerError {
         (status, trailers) = ServerErrorProcessor.processObserverError(
           error,
-          headers: context.headers,
-          trailers: context.trailers,
+          headers: context.requestHeaders,
+          trailers: context.responseTrailers,
           delegate: self.context.errorDelegate
         )
       } else {

@@ -35,7 +35,7 @@ public final class GRPCAsyncServerCallContext {
   private let lock = Lock()
 
   /// Request headers for this request.
-  public let headers: HPACKHeaders
+  public let requestHeaders: HPACKHeaders
 
   /// The logger used for this call.
   public var logger: Logger {
@@ -83,18 +83,34 @@ public final class GRPCAsyncServerCallContext {
   @usableFromInline
   internal let userInfoRef: Ref<UserInfo>
 
-  /// Metadata to return at the end of the RPC. If this is required it should be updated before
-  /// the `responsePromise` or `statusPromise` is fulfilled.
-  public var trailers: HPACKHeaders {
+  /// Metadata to return at the start of the RPC.
+  ///
+  /// If this is required it should be updated before the first response is sent via the response
+  /// stream writer.
+  public var responseHeaders: HPACKHeaders {
     get { self.lock.withLock {
-      return self._trailers
+      return self._responseHeaders
     } }
     set { self.lock.withLock {
-      self._trailers = newValue
+      self._responseHeaders = newValue
     } }
   }
 
-  private var _trailers: HPACKHeaders = [:]
+  private var _responseHeaders: HPACKHeaders = [:]
+
+  /// Metadata to return at the end of the RPC.
+  ///
+  /// If this is required it should be updated before returning from the handler.
+  public var responseTrailers: HPACKHeaders {
+    get { self.lock.withLock {
+      return self._responseTrailers
+    } }
+    set { self.lock.withLock {
+      self._responseTrailers = newValue
+    } }
+  }
+
+  private var _responseTrailers: HPACKHeaders = [:]
 
   @inlinable
   internal init(
@@ -102,7 +118,7 @@ public final class GRPCAsyncServerCallContext {
     logger: Logger,
     userInfoRef: Ref<UserInfo>
   ) {
-    self.headers = headers
+    self.requestHeaders = headers
     self.userInfoRef = userInfoRef
     self._logger = logger
   }

@@ -145,6 +145,38 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     await assertThat(self.recorder.messageMetadata.map { $0.compress }, .is([false, false, false]))
   } }
 
+  func testResponseHeadersAndTrailersSentFromContext() { XCTAsyncTest {
+    let handler = self.makeHandler { _, responseStreamWriter, context in
+      context.responseHeaders = ["pontiac": "bandit"]
+      try await responseStreamWriter.send("1")
+      context.responseTrailers = ["disco": "strangler"]
+    }
+    handler.receiveMetadata([:])
+    handler.receiveEnd()
+
+    // Wait for tasks to finish.
+    await handler.userHandlerTask?.value
+
+    await assertThat(self.recorder.metadata, .is(["pontiac": "bandit"]))
+    await assertThat(self.recorder.trailers, .is(["disco": "strangler"]))
+  } }
+
+  func testResponseHeadersDroppedIfSetAfterFirstResponse() { XCTAsyncTest {
+    let handler = self.makeHandler { _, responseStreamWriter, context in
+      try await responseStreamWriter.send("1")
+      context.responseHeaders = ["pontiac": "bandit"]
+      context.responseTrailers = ["disco": "strangler"]
+    }
+    handler.receiveMetadata([:])
+    handler.receiveEnd()
+
+    // Wait for tasks to finish.
+    await handler.userHandlerTask?.value
+
+    await assertThat(self.recorder.metadata, .is([:]))
+    await assertThat(self.recorder.trailers, .is(["disco": "strangler"]))
+  } }
+
   func testTaskOnlyCreatedAfterHeaders() { XCTAsyncTest {
     let handler = self.makeHandler(observer: self.echo(requests:responseStreamWriter:context:))
 
@@ -317,7 +349,7 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
     // Send two requests and end, pausing the writer in the middle.
     switch handler.state {
-    case let .active(_, _, responseStreamWriter, promise):
+    case let .activeAwaitingFirstResponse(_, _, responseStreamWriter, promise):
       handler.receiveMessage(ByteBuffer(string: "diaz"))
       await responseStreamWriter.asyncWriter.toggleWritability()
       handler.receiveMessage(ByteBuffer(string: "santiago"))
