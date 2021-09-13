@@ -148,4 +148,194 @@ extension GRPCClient {
   }
 }
 
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+extension GRPCClient {
+  public func performAsyncUnaryCall<Request: Message, Response: Message>(
+    path: String,
+    request: Request,
+    callOptions: CallOptions? = nil,
+    interceptors: [ClientInterceptor<Request, Response>] = []
+  ) async throws -> Response {
+    return try await self.channel.makeAsyncUnaryCall(
+      path: path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: interceptors
+    ).response
+  }
+
+  public func performAsyncUnaryCall<Request: GRPCPayload, Response: GRPCPayload>(
+    path: String,
+    request: Request,
+    callOptions: CallOptions? = nil,
+    interceptors: [ClientInterceptor<Request, Response>] = []
+  ) async throws -> Response {
+    return try await self.channel.makeAsyncUnaryCall(
+      path: path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: interceptors
+    ).response
+  }
+
+  public func performAsyncServerStreamingCall<
+    Request: SwiftProtobuf.Message,
+    Response: SwiftProtobuf.Message
+  >(
+    path: String,
+    request: Request,
+    callOptions: CallOptions? = nil,
+    interceptors: [ClientInterceptor<Request, Response>] = []
+  ) -> GRPCAsyncResponseStream<Response> {
+    return self.channel.makeAsyncServerStreamingCall(
+      path: path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: interceptors
+    ).responses
+  }
+
+  public func performAsyncServerStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
+    path: String,
+    request: Request,
+    callOptions: CallOptions? = nil,
+    interceptors: [ClientInterceptor<Request, Response>] = []
+  ) -> GRPCAsyncResponseStream<Response> {
+    return self.channel.makeAsyncServerStreamingCall(
+      path: path,
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: interceptors
+    ).responses
+  }
+
+  public func performAsyncClientStreamingCall<
+    Request: SwiftProtobuf.Message,
+    Response: SwiftProtobuf.Message,
+    RequestStream
+  >(
+    path: String,
+    requests: RequestStream,
+    callOptions: CallOptions? = nil,
+    interceptors: [ClientInterceptor<Request, Response>] = []
+  ) async throws -> Response
+  where RequestStream: AsyncSequence, RequestStream.Element == Request {
+    let call = self.channel.makeAsyncClientStreamingCall(
+      path: path,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: interceptors
+    )
+    return try await self.perform(call, requests)
+  }
+
+  public func performAsyncClientStreamingCall<
+    Request: GRPCPayload,
+    Response: GRPCPayload,
+    RequestStream
+  >(
+    path: String,
+    requests: RequestStream,
+    callOptions: CallOptions? = nil,
+    interceptors: [ClientInterceptor<Request, Response>] = []
+  ) async throws -> Response
+  where RequestStream: AsyncSequence, RequestStream.Element == Request {
+    let call = self.channel.makeAsyncClientStreamingCall(
+      path: path,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: interceptors
+    )
+    return try await self.perform(call, requests)
+  }
+
+  public func performAsyncBidirectionalStreamingCall<
+    Request: SwiftProtobuf.Message,
+    Response: SwiftProtobuf.Message,
+    RequestStream: AsyncSequence
+  >(
+    path: String,
+    requests: RequestStream,
+    callOptions: CallOptions? = nil,
+    interceptors: [ClientInterceptor<Request, Response>] = []
+  ) -> GRPCAsyncResponseStream<Response>
+  where RequestStream.Element == Request {
+    let call = self.channel.makeAsyncBidirectionalStreamingCall(
+        path: path,
+        callOptions: callOptions ?? self.defaultCallOptions,
+        interceptors: interceptors
+    )
+    return self.perform(call, requests)
+  }
+
+  public func performAsyncBidirectionalStreamingCall<
+    Request: GRPCPayload,
+    Response: GRPCPayload,
+    RequestStream: AsyncSequence
+  >(
+    path: String,
+    requests: RequestStream,
+    callOptions: CallOptions? = nil,
+    interceptors: [ClientInterceptor<Request, Response>] = []
+  ) -> GRPCAsyncResponseStream<Response>
+  where RequestStream.Element == Request {
+    let call = self.channel.makeAsyncBidirectionalStreamingCall(
+        path: path,
+        callOptions: callOptions ?? self.defaultCallOptions,
+        interceptors: interceptors
+    )
+    return self.perform(call, requests)
+  }
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+extension GRPCClient {
+  @inlinable
+  internal func perform<Request, Response, RequestStream>(
+    _ call:  GRPCAsyncClientStreamingCall<Request, Response>,
+    _ requests: RequestStream
+  )
+  async throws -> Response
+  where RequestStream: AsyncSequence, RequestStream.Element == Request {
+    return try await withTaskCancellationHandler {
+      try Task.checkCancellation()
+      for try await request in requests {
+        try Task.checkCancellation()
+        try await call.sendMessage(request)
+      }
+      try Task.checkCancellation()
+      try await call.sendEnd()
+      try Task.checkCancellation()
+      return try await call.response
+    } onCancel: {
+      Task.detached {
+        try await call.cancel()
+      }
+    }
+  }
+
+  @inlinable
+  internal func perform<Request, Response, RequestStream>(
+    _ call:  GRPCAsyncBidirectionalStreamingCall<Request, Response>,
+    _ requests: RequestStream
+  )
+  -> GRPCAsyncResponseStream<Response>
+  where RequestStream: AsyncSequence, RequestStream.Element == Request {
+    Task {
+      try await withTaskCancellationHandler {
+        try Task.checkCancellation()
+        for try await request in requests {
+          try Task.checkCancellation()
+          try await call.sendMessage(request)
+        }
+        try Task.checkCancellation()
+        try await call.sendEnd()
+      } onCancel: {
+        Task.detached {
+          try await call.cancel()
+        }
+      }
+    }
+    return call.responses
+  }
+}
+
 #endif
