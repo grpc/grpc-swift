@@ -92,7 +92,6 @@ class Generator {
   internal func withIndentation(
     _ header: String,
     braces: Braces,
-    newline: Bool = true,
     _ body: () -> Void
   ) {
     let spaceBeforeOpeningBrace: Bool
@@ -105,7 +104,7 @@ class Generator {
 
     self.println(header + "\(spaceBeforeOpeningBrace ? " " : "")" + "\(braces.open)")
     self.withIndentation(body: body)
-    self.println(braces.close, newline: newline)
+    self.println(braces.close)
   }
 
   private func printMain() {

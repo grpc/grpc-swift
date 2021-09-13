@@ -144,6 +144,7 @@ extension Generator {
         self.method = method
 
         let rpcType = streamingType(self.method)
+        let callTypeWithoutPrefix = Types.call(for: rpcType, withGRPCPrefix: false)
         let responseStreamType = "GRPCAsyncResponseStream"
 
         switch rpcType {
@@ -160,15 +161,15 @@ extension Generator {
             throws: true
           ) {
             self.withIndentation(
-              "return try await self.make\(self.method.name)Call",
-              braces: .round,
-              newline: false
+              "return try await self.perform\(callTypeWithoutPrefix)",
+              braces: .round
             ) {
-              self.println("request,")
-              self.println("callOptions: callOptions")
+              self.println("path: \(self.methodPath),")
+              self.println("request: request,")
+              self.println("callOptions: callOptions ?? self.defaultCallOptions")
             }
-            self.println(".response")
           }
+
         case .serverStreaming:
           self.printFunction(
             name: self.methodFunctionName,
@@ -180,15 +181,15 @@ extension Generator {
             access: self.access
           ) {
             self.withIndentation(
-              "return self.make\(self.method.name)Call",
-              braces: .round,
-              newline: false
+              "return self.perform\(callTypeWithoutPrefix)",
+              braces: .round
             ) {
-              self.println("request,")
-              self.println("callOptions: callOptions")
+              self.println("path: \(self.methodPath),")
+              self.println("request: request,")
+              self.println("callOptions: callOptions ?? self.defaultCallOptions")
             }
-            self.println(".responses")
           }
+
         case .clientStreaming:
           self.printFunction(
             name: "\(self.methodFunctionName)<RequestStream>",
@@ -202,37 +203,13 @@ extension Generator {
             throws: true,
             genericWhereClause: "where RequestStream: AsyncSequence, RequestStream.Element == \(self.methodInputName)"
           ) {
-            self.withIndentation("let call = self.make\(self.method.name)Call", braces: .round) {
-              self.println("callOptions: callOptions")
-            }
             self.withIndentation(
-              "return try await withTaskCancellationHandler",
-              braces: .curly,
-              newline: false
+              "return try await self.perform\(callTypeWithoutPrefix)",
+              braces: .round
             ) {
-              self.println("try Task.checkCancellation()")
-              self.withIndentation(
-                "for try await request in requests",
-                braces: .curly
-              ) {
-                self.println("try Task.checkCancellation()")
-                self.println("try await call.sendMessage(request)")
-              }
-              self.println("try Task.checkCancellation()")
-              self.println("try await call.sendEnd()")
-              self.println("try Task.checkCancellation()")
-              self.println("return try await call.response")
-            }
-            self.withIndentation(
-              " onCancel:",
-              braces: .curly
-            ) {
-              self.withIndentation(
-                "Task.detached",
-                braces: .curly
-              ) {
-                self.println("try await call.cancel()")
-              }
+              self.println("path: \(self.methodPath),")
+              self.println("requests: requests,")
+              self.println("callOptions: callOptions ?? self.defaultCallOptions")
             }
           }
 
@@ -247,42 +224,14 @@ extension Generator {
             access: self.access,
             genericWhereClause: "where RequestStream: AsyncSequence, RequestStream.Element == \(self.methodInputName)"
           ) {
-            self.withIndentation("let call = self.make\(self.method.name)Call", braces: .round) {
-              self.println("callOptions: callOptions")
-            }
             self.withIndentation(
-              "Task",
-              braces: .curly
+              "return self.perform\(callTypeWithoutPrefix)",
+              braces: .round
             ) {
-              self.withIndentation(
-                "try await withTaskCancellationHandler",
-                braces: .curly,
-                newline: false
-              ) {
-                self.println("try Task.checkCancellation()")
-                self.withIndentation(
-                  "for try await request in requests",
-                  braces: .curly
-                ) {
-                  self.println("try Task.checkCancellation()")
-                  self.println("try await call.sendMessage(request)")
-                }
-                self.println("try Task.checkCancellation()")
-                self.println("try await call.sendEnd()")
-              }
-              self.withIndentation(
-                " onCancel:",
-                braces: .curly
-              ) {
-                self.withIndentation(
-                  "Task.detached",
-                  braces: .curly
-                ) {
-                  self.println("try await call.cancel()")
-                }
-              }
+              self.println("path: \(self.methodPath),")
+              self.println("requests: requests,")
+              self.println("callOptions: callOptions ?? self.defaultCallOptions")
             }
-            self.println("return call.responses")
           }
         }
       }

@@ -254,69 +254,44 @@ extension Echo_EchoAsyncClientProtocol {
     _ request: Echo_EchoRequest,
     callOptions: CallOptions? = nil
   ) async throws -> Echo_EchoResponse {
-    return try await self.makeGetCall(
-      request,
-      callOptions: callOptions
-    ).response
+    return try await self.performAsyncUnaryCall(
+      path: "/echo.Echo/Get",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
   }
 
   public func expand(
     _ request: Echo_EchoRequest,
     callOptions: CallOptions? = nil
   ) -> GRPCAsyncResponseStream<Echo_EchoResponse> {
-    return self.makeExpandCall(
-      request,
-      callOptions: callOptions
-    ).responses
+    return self.performAsyncServerStreamingCall(
+      path: "/echo.Echo/Expand",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
   }
 
   public func collect<RequestStream>(
     requests: RequestStream,
     callOptions: CallOptions? = nil
   ) async throws -> Echo_EchoResponse where RequestStream: AsyncSequence, RequestStream.Element == Echo_EchoRequest {
-    let call = self.makeCollectCall(
-      callOptions: callOptions
+    return try await self.performAsyncClientStreamingCall(
+      path: "/echo.Echo/Collect",
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions
     )
-    return try await withTaskCancellationHandler {
-      try Task.checkCancellation()
-      for try await request in requests {
-        try Task.checkCancellation()
-        try await call.sendMessage(request)
-      }
-      try Task.checkCancellation()
-      try await call.sendEnd()
-      try Task.checkCancellation()
-      return try await call.response
-    } onCancel: {
-      Task.detached {
-        try await call.cancel()
-      }
-    }
   }
 
   public func update<RequestStream>(
     requests: RequestStream,
     callOptions: CallOptions? = nil
   ) -> GRPCAsyncResponseStream<Echo_EchoResponse> where RequestStream: AsyncSequence, RequestStream.Element == Echo_EchoRequest {
-    let call = self.makeUpdateCall(
-      callOptions: callOptions
+    return self.performAsyncBidirectionalStreamingCall(
+      path: "/echo.Echo/Update",
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions
     )
-    Task {
-      try await withTaskCancellationHandler {
-        try Task.checkCancellation()
-        for try await request in requests {
-          try Task.checkCancellation()
-          try await call.sendMessage(request)
-        }
-        try Task.checkCancellation()
-        try await call.sendEnd()
-      } onCancel: {
-        Task.detached {
-          try await call.cancel()
-        }
-      }
-    }
-    return call.responses
   }
 }
 
