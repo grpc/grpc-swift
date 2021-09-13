@@ -576,7 +576,10 @@ internal final class AsyncServerHandler<
     case let .active(activeState):
       // Now we have drained the response stream writer from the user handler we can send end.
       self.state = .completed
-      self.interceptors.send(.end(status, activeState.context.trailingResponseMetadata), promise: nil)
+      self.interceptors.send(
+        .end(status, activeState.context.trailingResponseMetadata),
+        promise: nil
+      )
 
     case .completed:
       ()
