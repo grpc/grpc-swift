@@ -233,7 +233,7 @@ extension GRPCClient {
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: interceptors
     )
-    return try await self.perform(call, requests)
+    return try await self.perform(call, with: requests)
   }
 
   public func performAsyncClientStreamingCall<
@@ -254,7 +254,7 @@ extension GRPCClient {
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: interceptors
     )
-    return try await self.perform(call, requests)
+    return try await self.perform(call, with: requests)
   }
 
   public func performAsyncClientStreamingCall<
@@ -275,7 +275,7 @@ extension GRPCClient {
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: interceptors
     )
-    return try await self.perform(call, AsyncStream(wrapping: requests))
+    return try await self.perform(call, with: AsyncStream(wrapping: requests))
   }
 
   public func performAsyncClientStreamingCall<
@@ -296,7 +296,7 @@ extension GRPCClient {
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: interceptors
     )
-    return try await self.perform(call, AsyncStream(wrapping: requests))
+    return try await self.perform(call, with: AsyncStream(wrapping: requests))
   }
 
   public func performAsyncBidirectionalStreamingCall<
@@ -317,7 +317,7 @@ extension GRPCClient {
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: interceptors
     )
-    return self.perform(call, requests)
+    return self.perform(call, with: requests)
   }
 
   public func performAsyncBidirectionalStreamingCall<
@@ -338,7 +338,7 @@ extension GRPCClient {
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: interceptors
     )
-    return self.perform(call, requests)
+    return self.perform(call, with: requests)
   }
 
   public func performAsyncBidirectionalStreamingCall<
@@ -359,7 +359,7 @@ extension GRPCClient {
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: interceptors
     )
-    return self.perform(call, AsyncStream(wrapping: requests))
+    return self.perform(call, with: AsyncStream(wrapping: requests))
   }
 
   public func performAsyncBidirectionalStreamingCall<
@@ -380,7 +380,7 @@ extension GRPCClient {
       callOptions: callOptions ?? self.defaultCallOptions,
       interceptors: interceptors
     )
-    return self.perform(call, AsyncStream(wrapping: requests))
+    return self.perform(call, with: AsyncStream(wrapping: requests))
   }
 }
 
@@ -389,7 +389,7 @@ extension GRPCClient {
   @inlinable
   internal func perform<Request, Response, RequestStream>(
     _ call: GRPCAsyncClientStreamingCall<Request, Response>,
-    _ requests: RequestStream
+    with requests: RequestStream
   )
   async throws -> Response
     where RequestStream: AsyncSequence, RequestStream.Element == Request {
@@ -423,7 +423,7 @@ extension GRPCClient {
   @inlinable
   internal func perform<Request, Response, RequestStream>(
     _ call: GRPCAsyncBidirectionalStreamingCall<Request, Response>,
-    _ requests: RequestStream
+    with requests: RequestStream
   )
     -> GRPCAsyncResponseStream<Response>
     where RequestStream: AsyncSequence, RequestStream.Element == Request {
