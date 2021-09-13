@@ -247,6 +247,44 @@ extension GRPCClient {
     return try await self.perform(call, requests)
   }
 
+  public func performAsyncClientStreamingCall<
+    Request: SwiftProtobuf.Message,
+    Response: SwiftProtobuf.Message,
+    RequestStream
+  >(
+    path: String,
+    requests: RequestStream,
+    callOptions: CallOptions? = nil,
+    interceptors: [ClientInterceptor<Request, Response>] = []
+  ) async throws -> Response
+    where RequestStream: Sequence, RequestStream.Element == Request {
+    let call = self.channel.makeAsyncClientStreamingCall(
+      path: path,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: interceptors
+    )
+    return try await self.perform(call, AsyncStream(wrapping: requests))
+  }
+
+  public func performAsyncClientStreamingCall<
+    Request: GRPCPayload,
+    Response: GRPCPayload,
+    RequestStream
+  >(
+    path: String,
+    requests: RequestStream,
+    callOptions: CallOptions? = nil,
+    interceptors: [ClientInterceptor<Request, Response>] = []
+  ) async throws -> Response
+    where RequestStream: Sequence, RequestStream.Element == Request {
+    let call = self.channel.makeAsyncClientStreamingCall(
+      path: path,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: interceptors
+    )
+    return try await self.perform(call, AsyncStream(wrapping: requests))
+  }
+
   public func performAsyncBidirectionalStreamingCall<
     Request: SwiftProtobuf.Message,
     Response: SwiftProtobuf.Message,
@@ -283,6 +321,44 @@ extension GRPCClient {
       interceptors: interceptors
     )
     return self.perform(call, requests)
+  }
+
+  public func performAsyncBidirectionalStreamingCall<
+    Request: SwiftProtobuf.Message,
+    Response: SwiftProtobuf.Message,
+    RequestStream: Sequence
+  >(
+    path: String,
+    requests: RequestStream,
+    callOptions: CallOptions? = nil,
+    interceptors: [ClientInterceptor<Request, Response>] = []
+  ) -> GRPCAsyncResponseStream<Response>
+    where RequestStream.Element == Request {
+    let call = self.channel.makeAsyncBidirectionalStreamingCall(
+      path: path,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: interceptors
+    )
+    return self.perform(call, AsyncStream(wrapping: requests))
+  }
+
+  public func performAsyncBidirectionalStreamingCall<
+    Request: GRPCPayload,
+    Response: GRPCPayload,
+    RequestStream: Sequence
+  >(
+    path: String,
+    requests: RequestStream,
+    callOptions: CallOptions? = nil,
+    interceptors: [ClientInterceptor<Request, Response>] = []
+  ) -> GRPCAsyncResponseStream<Response>
+    where RequestStream.Element == Request {
+    let call = self.channel.makeAsyncBidirectionalStreamingCall(
+      path: path,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: interceptors
+    )
+    return self.perform(call, AsyncStream(wrapping: requests))
   }
 }
 
@@ -345,6 +421,19 @@ extension GRPCClient {
       }
     }
     return call.responses
+  }
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+extension AsyncStream {
+  fileprivate init<T>(wrapping sequence: T) where T: Sequence, T.Element == Element {
+    self.init { continuation in
+      var iterator = sequence.makeIterator()
+      while let value = iterator.next() {
+        continuation.yield(value)
+      }
+      continuation.finish()
+    }
   }
 }
 
