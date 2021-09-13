@@ -148,13 +148,16 @@ extension GRPCClient {
   }
 }
 
+// MARK: - "Simple, but safe" wrappers.
+
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 extension GRPCClient {
   public func performAsyncUnaryCall<Request: Message, Response: Message>(
     path: String,
     request: Request,
     callOptions: CallOptions? = nil,
-    interceptors: [ClientInterceptor<Request, Response>] = []
+    interceptors: [ClientInterceptor<Request, Response>] = [],
+    responseType: Response.Type = Response.self
   ) async throws -> Response {
     return try await self.channel.makeAsyncUnaryCall(
       path: path,
@@ -168,7 +171,8 @@ extension GRPCClient {
     path: String,
     request: Request,
     callOptions: CallOptions? = nil,
-    interceptors: [ClientInterceptor<Request, Response>] = []
+    interceptors: [ClientInterceptor<Request, Response>] = [],
+    responseType: Response.Type = Response.self
   ) async throws -> Response {
     return try await self.channel.makeAsyncUnaryCall(
       path: path,
@@ -185,7 +189,8 @@ extension GRPCClient {
     path: String,
     request: Request,
     callOptions: CallOptions? = nil,
-    interceptors: [ClientInterceptor<Request, Response>] = []
+    interceptors: [ClientInterceptor<Request, Response>] = [],
+    responseType: Response.Type = Response.self
   ) -> GRPCAsyncResponseStream<Response> {
     return self.channel.makeAsyncServerStreamingCall(
       path: path,
@@ -199,7 +204,8 @@ extension GRPCClient {
     path: String,
     request: Request,
     callOptions: CallOptions? = nil,
-    interceptors: [ClientInterceptor<Request, Response>] = []
+    interceptors: [ClientInterceptor<Request, Response>] = [],
+    responseType: Response.Type = Response.self
   ) -> GRPCAsyncResponseStream<Response> {
     return self.channel.makeAsyncServerStreamingCall(
       path: path,
@@ -217,7 +223,9 @@ extension GRPCClient {
     path: String,
     requests: RequestStream,
     callOptions: CallOptions? = nil,
-    interceptors: [ClientInterceptor<Request, Response>] = []
+    interceptors: [ClientInterceptor<Request, Response>] = [],
+    requestType: Request.Type = Request.self,
+    responseType: Response.Type = Response.self
   ) async throws -> Response
     where RequestStream: AsyncSequence, RequestStream.Element == Request {
     let call = self.channel.makeAsyncClientStreamingCall(
@@ -236,7 +244,9 @@ extension GRPCClient {
     path: String,
     requests: RequestStream,
     callOptions: CallOptions? = nil,
-    interceptors: [ClientInterceptor<Request, Response>] = []
+    interceptors: [ClientInterceptor<Request, Response>] = [],
+    requestType: Request.Type = Request.self,
+    responseType: Response.Type = Response.self
   ) async throws -> Response
     where RequestStream: AsyncSequence, RequestStream.Element == Request {
     let call = self.channel.makeAsyncClientStreamingCall(
@@ -255,7 +265,9 @@ extension GRPCClient {
     path: String,
     requests: RequestStream,
     callOptions: CallOptions? = nil,
-    interceptors: [ClientInterceptor<Request, Response>] = []
+    interceptors: [ClientInterceptor<Request, Response>] = [],
+    requestType: Request.Type = Request.self,
+    responseType: Response.Type = Response.self
   ) async throws -> Response
     where RequestStream: Sequence, RequestStream.Element == Request {
     let call = self.channel.makeAsyncClientStreamingCall(
@@ -274,7 +286,9 @@ extension GRPCClient {
     path: String,
     requests: RequestStream,
     callOptions: CallOptions? = nil,
-    interceptors: [ClientInterceptor<Request, Response>] = []
+    interceptors: [ClientInterceptor<Request, Response>] = [],
+    requestType: Request.Type = Request.self,
+    responseType: Response.Type = Response.self
   ) async throws -> Response
     where RequestStream: Sequence, RequestStream.Element == Request {
     let call = self.channel.makeAsyncClientStreamingCall(
@@ -293,7 +307,9 @@ extension GRPCClient {
     path: String,
     requests: RequestStream,
     callOptions: CallOptions? = nil,
-    interceptors: [ClientInterceptor<Request, Response>] = []
+    interceptors: [ClientInterceptor<Request, Response>] = [],
+    requestType: Request.Type = Request.self,
+    responseType: Response.Type = Response.self
   ) -> GRPCAsyncResponseStream<Response>
     where RequestStream.Element == Request {
     let call = self.channel.makeAsyncBidirectionalStreamingCall(
@@ -312,7 +328,9 @@ extension GRPCClient {
     path: String,
     requests: RequestStream,
     callOptions: CallOptions? = nil,
-    interceptors: [ClientInterceptor<Request, Response>] = []
+    interceptors: [ClientInterceptor<Request, Response>] = [],
+    requestType: Request.Type = Request.self,
+    responseType: Response.Type = Response.self
   ) -> GRPCAsyncResponseStream<Response>
     where RequestStream.Element == Request {
     let call = self.channel.makeAsyncBidirectionalStreamingCall(
@@ -331,7 +349,9 @@ extension GRPCClient {
     path: String,
     requests: RequestStream,
     callOptions: CallOptions? = nil,
-    interceptors: [ClientInterceptor<Request, Response>] = []
+    interceptors: [ClientInterceptor<Request, Response>] = [],
+    requestType: Request.Type = Request.self,
+    responseType: Response.Type = Response.self
   ) -> GRPCAsyncResponseStream<Response>
     where RequestStream.Element == Request {
     let call = self.channel.makeAsyncBidirectionalStreamingCall(
@@ -350,7 +370,9 @@ extension GRPCClient {
     path: String,
     requests: RequestStream,
     callOptions: CallOptions? = nil,
-    interceptors: [ClientInterceptor<Request, Response>] = []
+    interceptors: [ClientInterceptor<Request, Response>] = [],
+    requestType: Request.Type = Request.self,
+    responseType: Response.Type = Response.self
   ) -> GRPCAsyncResponseStream<Response>
     where RequestStream.Element == Request {
     let call = self.channel.makeAsyncBidirectionalStreamingCall(
