@@ -295,7 +295,8 @@ extension GRPCClient {
   )
   async throws -> Response
     where RequestStream: AsyncSequence, RequestStream.Element == Request {
-    return try await withTaskCancellationHandler {
+    // We use a detached task because we use cancellation to signal early, but successful exit.
+    let requestsTask = Task.detached {
       try Task.checkCancellation()
       for try await request in requests {
         try Task.checkCancellation()
@@ -304,8 +305,17 @@ extension GRPCClient {
       try Task.checkCancellation()
       try await call.sendEnd()
       try Task.checkCancellation()
-      return try await call.response
+    }
+    return try await withTaskCancellationHandler {
+      // Await the response, which may come before the request stream is exhausted.
+      let response = try await call.response
+      // If we have a response, we can stop sending requests.
+      requestsTask.cancel()
+      // Return the response.
+      return response
     } onCancel: {
+      requestsTask.cancel()
+      // If this outer task is cancelled then we should also cancel the RPC.
       Task.detached {
         try await call.cancel()
       }
