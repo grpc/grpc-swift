@@ -34,8 +34,8 @@ import NIOHPACK
 public final class GRPCAsyncServerCallContext {
   private let lock = Lock()
 
-  /// Request headers for this request.
-  public let requestHeaders: HPACKHeaders
+  /// Metadata for this request.
+  public let requestMetadata: HPACKHeaders
 
   /// The logger used for this call.
   public var logger: Logger {
@@ -85,32 +85,32 @@ public final class GRPCAsyncServerCallContext {
 
   /// Metadata to return at the start of the RPC.
   ///
-  /// If this is required it should be updated before the first response is sent via the response
-  /// stream writer.
-  public var responseHeaders: HPACKHeaders {
+  /// - Important: If this is required it should be updated _before_ the first response is sent via
+  /// the response stream writer. Any updates made after the first response will be ignored.
+  public var initialResponseMetadata: HPACKHeaders {
     get { self.lock.withLock {
-      return self._responseHeaders
+      return self._initialResponseMetadata
     } }
     set { self.lock.withLock {
-      self._responseHeaders = newValue
+      self._initialResponseMetadata = newValue
     } }
   }
 
-  private var _responseHeaders: HPACKHeaders = [:]
+  private var _initialResponseMetadata: HPACKHeaders = [:]
 
   /// Metadata to return at the end of the RPC.
   ///
   /// If this is required it should be updated before returning from the handler.
-  public var responseTrailers: HPACKHeaders {
+  public var trailingResponseMetadata: HPACKHeaders {
     get { self.lock.withLock {
-      return self._responseTrailers
+      return self._trailingResponseMetadata
     } }
     set { self.lock.withLock {
-      self._responseTrailers = newValue
+      self._trailingResponseMetadata = newValue
     } }
   }
 
-  private var _responseTrailers: HPACKHeaders = [:]
+  private var _trailingResponseMetadata: HPACKHeaders = [:]
 
   @inlinable
   internal init(
@@ -118,7 +118,7 @@ public final class GRPCAsyncServerCallContext {
     logger: Logger,
     userInfoRef: Ref<UserInfo>
   ) {
-    self.requestHeaders = headers
+    self.requestMetadata = headers
     self.userInfoRef = userInfoRef
     self._logger = logger
   }

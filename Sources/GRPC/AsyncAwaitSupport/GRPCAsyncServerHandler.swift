@@ -519,7 +519,7 @@ internal final class AsyncServerHandler<
         activeState.haveSentResponseHeaders = true
         self.state = .active(activeState)
         // Send response headers back via the interceptors.
-        self.interceptors.send(.metadata(activeState.context.responseHeaders), promise: nil)
+        self.interceptors.send(.metadata(activeState.context.initialResponseMetadata), promise: nil)
       }
       // Send the response back via the interceptors.
       self.interceptors.send(.message(response, metadata), promise: nil)
@@ -576,7 +576,7 @@ internal final class AsyncServerHandler<
     case let .active(activeState):
       // Now we have drained the response stream writer from the user handler we can send end.
       self.state = .completed
-      self.interceptors.send(.end(status, activeState.context.responseTrailers), promise: nil)
+      self.interceptors.send(.end(status, activeState.context.trailingResponseMetadata), promise: nil)
 
     case .completed:
       ()
@@ -619,8 +619,8 @@ internal final class AsyncServerHandler<
       if isHandlerError {
         (status, trailers) = ServerErrorProcessor.processObserverError(
           error,
-          headers: activeState.context.requestHeaders,
-          trailers: activeState.context.responseTrailers,
+          headers: activeState.context.requestMetadata,
+          trailers: activeState.context.trailingResponseMetadata,
           delegate: self.context.errorDelegate
         )
       } else {

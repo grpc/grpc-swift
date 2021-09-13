@@ -146,9 +146,9 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
   func testResponseHeadersAndTrailersSentFromContext() { XCTAsyncTest {
     let handler = self.makeHandler { _, responseStreamWriter, context in
-      context.responseHeaders = ["pontiac": "bandit"]
+      context.initialResponseMetadata = ["pontiac": "bandit"]
       try await responseStreamWriter.send("1")
-      context.responseTrailers = ["disco": "strangler"]
+      context.trailingResponseMetadata = ["disco": "strangler"]
     }
     handler.receiveMetadata([:])
     handler.receiveEnd()
@@ -163,8 +163,8 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
   func testResponseHeadersDroppedIfSetAfterFirstResponse() { XCTAsyncTest {
     let handler = self.makeHandler { _, responseStreamWriter, context in
       try await responseStreamWriter.send("1")
-      context.responseHeaders = ["pontiac": "bandit"]
-      context.responseTrailers = ["disco": "strangler"]
+      context.initialResponseMetadata = ["pontiac": "bandit"]
+      context.trailingResponseMetadata = ["disco": "strangler"]
     }
     handler.receiveMetadata([:])
     handler.receiveEnd()
