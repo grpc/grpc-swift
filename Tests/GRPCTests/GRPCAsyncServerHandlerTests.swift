@@ -328,14 +328,14 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
     // Send two requests and end, pausing the writer in the middle.
     switch handler.state {
-    case let .activeAwaitingFirstResponse(_, _, responseStreamWriter, promise):
+    case let .active(activeState):
       handler.receiveMessage(ByteBuffer(string: "diaz"))
-      await responseStreamWriter.asyncWriter.toggleWritability()
+      await activeState.responseStreamWriter.asyncWriter.toggleWritability()
       handler.receiveMessage(ByteBuffer(string: "santiago"))
       handler.receiveEnd()
-      await responseStreamWriter.asyncWriter.toggleWritability()
+      await activeState.responseStreamWriter.asyncWriter.toggleWritability()
       await handler.userHandlerTask?.value
-      _ = try await promise.futureResult.get()
+      _ = try await activeState._userHandlerPromise.futureResult.get()
     default:
       XCTFail("Unexpected handler state: \(handler.state)")
     }

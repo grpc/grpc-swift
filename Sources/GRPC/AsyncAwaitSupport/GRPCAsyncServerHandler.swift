@@ -222,6 +222,10 @@ internal final class AsyncServerHandler<
       @usableFromInline
       let responseStreamWriter: GRPCAsyncResponseStreamWriter<Response>
 
+      /// The response headers have been sent back to the client via the interceptors.
+      @usableFromInline
+      var haveSentResponseHeaders: Bool = false
+
       /// The promise we are using to bridge the NIO and async-await worlds.
       ///
       /// It is the mechanism that we use to run a callback when the user handler has completed.
@@ -232,8 +236,6 @@ internal final class AsyncServerHandler<
       /// never used anywhere when the `.active` enum value is accessed. However, if we do not store
       /// it here then the tests periodically segfault. This appears to be a reference counting bug
       /// in Swift and/or NIO since it should have been captured by `completeWithTask(_:)`.
-      /// TODO: remove usableFromInline
-      @usableFromInline
       let _userHandlerPromise: EventLoopPromise<Void>
 
       @usableFromInline
@@ -251,11 +253,7 @@ internal final class AsyncServerHandler<
     }
 
     /// Headers have been received and an async `Task` has been created to execute the user handler.
-    case activeAwaitingFirstResponse(ActiveState)
-
-    /// We have received the first response from the user handler via the writer and have sent the
-    /// response headers back to the client via the interceptors.
-    case activeAwaitingSubsequentResponses(ActiveState)
+    case active(ActiveState)
 
     /// The handler has completed.
     case completed
@@ -329,7 +327,7 @@ internal final class AsyncServerHandler<
       self.interceptors = nil
       self.state = .completed
 
-    case .activeAwaitingFirstResponse, .activeAwaitingSubsequentResponses:
+    case .active:
       self.userHandlerTask?.cancel()
 
     case .completed:
@@ -383,7 +381,7 @@ internal final class AsyncServerHandler<
         )
 
       // Set the state to active and bundle in all the associated data.
-      self.state = .activeAwaitingFirstResponse(.init(
+      self.state = .active(.init(
         requestStreamSource: requestStreamSource,
         context: context,
         responseStreamWriter: responseStreamWriter,
@@ -448,7 +446,7 @@ internal final class AsyncServerHandler<
         }
       }
 
-    case .activeAwaitingFirstResponse, .activeAwaitingSubsequentResponses:
+    case .active:
       self.handleError(GRPCError.ProtocolViolation("Multiple header blocks received on RPC"))
 
     case .completed:
@@ -464,10 +462,8 @@ internal final class AsyncServerHandler<
     switch self.state {
     case .idle:
       self.handleError(GRPCError.ProtocolViolation("Message received before headers"))
-    case
-      let .activeAwaitingFirstResponse(state),
-      let .activeAwaitingSubsequentResponses(state):
-      switch state.requestStreamSource.yield(request) {
+    case let .active(activeState):
+      switch activeState.requestStreamSource.yield(request) {
       case .accepted(queueDepth: _):
         // TODO: In future we will potentially issue a read request to the channel based on the value of `queueDepth`.
         break
@@ -490,10 +486,8 @@ internal final class AsyncServerHandler<
     switch self.state {
     case .idle:
       self.handleError(GRPCError.ProtocolViolation("End of stream received before headers"))
-    case
-      let .activeAwaitingFirstResponse(state),
-      let .activeAwaitingSubsequentResponses(state):
-      switch state.requestStreamSource.finish() {
+    case let .active(activeState):
+      switch activeState.requestStreamSource.finish() {
       case .accepted(queueDepth: _):
         break
       case .dropped:
@@ -520,18 +514,13 @@ internal final class AsyncServerHandler<
       // The user handler cannot send responses before it has been invoked.
       preconditionFailure()
 
-    case let .activeAwaitingFirstResponse(state):
-      self.state = .activeAwaitingSubsequentResponses(.init(
-        requestStreamSource: state.requestStreamSource,
-        context: state.context,
-        responseStreamWriter: state.responseStreamWriter,
-        userHandlerPromise: state._userHandlerPromise
-      ))
-      // Send response headers back via the interceptors.
-      self.interceptors.send(.metadata(state.context.responseHeaders), promise: nil)
-      fallthrough
-
-    case .activeAwaitingSubsequentResponses:
+    case var .active(activeState):
+      if !activeState.haveSentResponseHeaders {
+        activeState.haveSentResponseHeaders = true
+        self.state = .active(activeState)
+        // Send response headers back via the interceptors.
+        self.interceptors.send(.metadata(activeState.context.responseHeaders), promise: nil)
+      }
       // Send the response back via the interceptors.
       self.interceptors.send(.message(response, metadata), promise: nil)
 
@@ -559,7 +548,7 @@ internal final class AsyncServerHandler<
       // The user handler cannot complete before it is invoked.
       preconditionFailure()
 
-    case .activeAwaitingFirstResponse, .activeAwaitingSubsequentResponses:
+    case .active:
       switch result {
       case .success:
         /// The user handler has completed successfully.
@@ -584,12 +573,10 @@ internal final class AsyncServerHandler<
     case .idle:
       preconditionFailure()
 
-    case
-      let .activeAwaitingFirstResponse(state),
-      let .activeAwaitingSubsequentResponses(state):
+    case let .active(activeState):
       // Now we have drained the response stream writer from the user handler we can send end.
       self.state = .completed
-      self.interceptors.send(.end(status, state.context.responseTrailers), promise: nil)
+      self.interceptors.send(.end(status, activeState.context.responseTrailers), promise: nil)
 
     case .completed:
       ()
@@ -619,9 +606,7 @@ internal final class AsyncServerHandler<
       )
       self.interceptors.send(.end(status, trailers), promise: nil)
 
-    case
-      let .activeAwaitingFirstResponse(state),
-      let .activeAwaitingSubsequentResponses(state):
+    case let .active(activeState):
       self.state = .completed
 
       // If we have an async task, then cancel it, which will terminate the request stream from
@@ -634,8 +619,8 @@ internal final class AsyncServerHandler<
       if isHandlerError {
         (status, trailers) = ServerErrorProcessor.processObserverError(
           error,
-          headers: state.context.requestHeaders,
-          trailers: state.context.responseTrailers,
+          headers: activeState.context.requestHeaders,
+          trailers: activeState.context.responseTrailers,
           delegate: self.context.errorDelegate
         )
       } else {
