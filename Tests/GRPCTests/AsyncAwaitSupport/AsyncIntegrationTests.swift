@@ -132,6 +132,9 @@ final class AsyncIntegrationTests: GRPCTestCase {
 
       try await update.sendEnd()
 
+      // This isn't right after we make the call as servers are not guaranteed to send metadata back
+      // immediately. Concretely, we don't send initial metadata back until the first response
+      // message is sent by the server.
       let initialMetadata = try await update.initialMetadata
       initialMetadata.assertFirst("200", forName: ":status")
 
