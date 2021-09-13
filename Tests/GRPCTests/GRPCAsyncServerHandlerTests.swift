@@ -241,7 +241,6 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     await assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
   } }
 
-  // TODO: Running this 1000 times shows up a segfault in NIO event loop group.
   func testReceiveMultipleHeaders() { XCTAsyncTest {
     let handler = self
       .makeHandler(observer: self.neverReceivesMessage(requests:responseStreamWriter:context:))
@@ -317,8 +316,6 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     // Check the status is `.unknown`.
     await assertThat(self.recorder.status, .notNil(.hasCode(.unknown)))
   } }
-
-  // TODO: We should be consistent about where we put the tasks... maybe even use a task group to simplify cancellation (unless they both go in the enum state which might be better).
 
   func testResponseStreamDrain() { XCTAsyncTest {
     // Set up echo handler.
