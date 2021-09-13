@@ -47,8 +47,7 @@ let package = Package(
     .package(url: "https://github.com/apple/swift-log.git", from: "1.4.0"),
 
     // Argument parsing: only for internal targets (i.e. examples).
-    // swift-argument-parser only provides source compatibility guarantees between minor version.
-    .package(url: "https://github.com/apple/swift-argument-parser", "0.3.0" ..< "0.5.0"),
+    .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.0.0"),
   ],
   targets: [
     // The main GRPC module.
