@@ -390,8 +390,7 @@ extension GRPCClient {
   internal func perform<Request, Response, RequestStream>(
     _ call: GRPCAsyncClientStreamingCall<Request, Response>,
     with requests: RequestStream
-  )
-  async throws -> Response
+  ) async throws -> Response
     where RequestStream: AsyncSequence, RequestStream.Element == Request {
     // We use a detached task because we use cancellation to signal early, but successful exit.
     let requestsTask = Task.detached {
