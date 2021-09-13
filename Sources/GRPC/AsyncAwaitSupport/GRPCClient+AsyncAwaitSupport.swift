@@ -219,7 +219,7 @@ extension GRPCClient {
     callOptions: CallOptions? = nil,
     interceptors: [ClientInterceptor<Request, Response>] = []
   ) async throws -> Response
-  where RequestStream: AsyncSequence, RequestStream.Element == Request {
+    where RequestStream: AsyncSequence, RequestStream.Element == Request {
     let call = self.channel.makeAsyncClientStreamingCall(
       path: path,
       callOptions: callOptions ?? self.defaultCallOptions,
@@ -238,7 +238,7 @@ extension GRPCClient {
     callOptions: CallOptions? = nil,
     interceptors: [ClientInterceptor<Request, Response>] = []
   ) async throws -> Response
-  where RequestStream: AsyncSequence, RequestStream.Element == Request {
+    where RequestStream: AsyncSequence, RequestStream.Element == Request {
     let call = self.channel.makeAsyncClientStreamingCall(
       path: path,
       callOptions: callOptions ?? self.defaultCallOptions,
@@ -257,11 +257,11 @@ extension GRPCClient {
     callOptions: CallOptions? = nil,
     interceptors: [ClientInterceptor<Request, Response>] = []
   ) -> GRPCAsyncResponseStream<Response>
-  where RequestStream.Element == Request {
+    where RequestStream.Element == Request {
     let call = self.channel.makeAsyncBidirectionalStreamingCall(
-        path: path,
-        callOptions: callOptions ?? self.defaultCallOptions,
-        interceptors: interceptors
+      path: path,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: interceptors
     )
     return self.perform(call, requests)
   }
@@ -276,11 +276,11 @@ extension GRPCClient {
     callOptions: CallOptions? = nil,
     interceptors: [ClientInterceptor<Request, Response>] = []
   ) -> GRPCAsyncResponseStream<Response>
-  where RequestStream.Element == Request {
+    where RequestStream.Element == Request {
     let call = self.channel.makeAsyncBidirectionalStreamingCall(
-        path: path,
-        callOptions: callOptions ?? self.defaultCallOptions,
-        interceptors: interceptors
+      path: path,
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: interceptors
     )
     return self.perform(call, requests)
   }
@@ -290,11 +290,11 @@ extension GRPCClient {
 extension GRPCClient {
   @inlinable
   internal func perform<Request, Response, RequestStream>(
-    _ call:  GRPCAsyncClientStreamingCall<Request, Response>,
+    _ call: GRPCAsyncClientStreamingCall<Request, Response>,
     _ requests: RequestStream
   )
   async throws -> Response
-  where RequestStream: AsyncSequence, RequestStream.Element == Request {
+    where RequestStream: AsyncSequence, RequestStream.Element == Request {
     return try await withTaskCancellationHandler {
       try Task.checkCancellation()
       for try await request in requests {
@@ -314,11 +314,11 @@ extension GRPCClient {
 
   @inlinable
   internal func perform<Request, Response, RequestStream>(
-    _ call:  GRPCAsyncBidirectionalStreamingCall<Request, Response>,
+    _ call: GRPCAsyncBidirectionalStreamingCall<Request, Response>,
     _ requests: RequestStream
   )
-  -> GRPCAsyncResponseStream<Response>
-  where RequestStream: AsyncSequence, RequestStream.Element == Request {
+    -> GRPCAsyncResponseStream<Response>
+    where RequestStream: AsyncSequence, RequestStream.Element == Request {
     Task {
       try await withTaskCancellationHandler {
         try Task.checkCancellation()
