@@ -74,8 +74,6 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     )
 
     handler.receiveMetadata([:])
-    await assertThat(self.recorder.metadata, .is([:]))
-
     handler.receiveMessage(ByteBuffer(string: "1"))
     handler.receiveMessage(ByteBuffer(string: "2"))
     handler.receiveMessage(ByteBuffer(string: "3"))
@@ -86,6 +84,7 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
     handler.finish()
 
+    await assertThat(self.recorder.metadata, .is([:]))
     await assertThat(
       self.recorder.messages,
       .is([ByteBuffer(string: "1"), ByteBuffer(string: "2"), ByteBuffer(string: "3")])
@@ -180,11 +179,11 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
   func testTaskOnlyCreatedAfterHeaders() { XCTAsyncTest {
     let handler = self.makeHandler(observer: self.echo(requests:responseStreamWriter:context:))
 
-    await assertThat(handler.userHandlerTask, .is(.nil()))
+    await assertThat(handler.userHandlerTask, .nil())
 
     handler.receiveMetadata([:])
 
-    await assertThat(handler.userHandlerTask, .is(.notNil()))
+    await assertThat(handler.userHandlerTask, .notNil())
   } }
 
   func testThrowingDeserializer() { XCTAsyncTest {
@@ -197,18 +196,12 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     )
 
     handler.receiveMetadata([:])
-
-    // Wait for the async user function to have processed the metadata.
-    try self.recorder.recordedMetadataPromise.futureResult.wait()
-
-    await assertThat(self.recorder.metadata, .is([:]))
-
-    let buffer = ByteBuffer(string: "hello")
-    handler.receiveMessage(buffer)
+    handler.receiveMessage(ByteBuffer(string: "hello"))
 
     // Wait for tasks to finish.
     await handler.userHandlerTask?.value
 
+    await assertThat(self.recorder.metadata, .nil())
     await assertThat(self.recorder.messages, .isEmpty())
     await assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
   } }
@@ -223,15 +216,13 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     )
 
     handler.receiveMetadata([:])
-    await assertThat(self.recorder.metadata, .is([:]))
-
-    let buffer = ByteBuffer(string: "hello")
-    handler.receiveMessage(buffer)
+    handler.receiveMessage(ByteBuffer(string: "hello"))
     handler.receiveEnd()
 
     // Wait for tasks to finish.
     await handler.userHandlerTask?.value
 
+    await assertThat(self.recorder.metadata, .is([:]))
     await assertThat(self.recorder.messages, .isEmpty())
     await assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
   } }
@@ -245,7 +236,7 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     // Wait for tasks to finish.
     await handler.userHandlerTask?.value
 
-    await assertThat(self.recorder.metadata, .is(.nil()))
+    await assertThat(self.recorder.metadata, .nil())
     await assertThat(self.recorder.messages, .isEmpty())
     await assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
   } }
@@ -256,17 +247,12 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
       .makeHandler(observer: self.neverReceivesMessage(requests:responseStreamWriter:context:))
 
     handler.receiveMetadata([:])
-
-    // Wait for the async user function to have processed the metadata.
-    try self.recorder.recordedMetadataPromise.futureResult.wait()
-
-    await assertThat(self.recorder.metadata, .is([:]))
-
     handler.receiveMetadata([:])
 
     // Wait for tasks to finish.
     await handler.userHandlerTask?.value
 
+    await assertThat(self.recorder.metadata, .nil())
     await assertThat(self.recorder.messages, .isEmpty())
     await assertThat(self.recorder.status, .notNil(.hasCode(.internalError)))
   } }
@@ -276,26 +262,22 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
       .makeHandler(observer: self.neverCalled(requests:responseStreamWriter:context:))
 
     handler.finish()
-    await assertThat(self.recorder.metadata, .is(.nil()))
+    await assertThat(self.recorder.metadata, .nil())
     await assertThat(self.recorder.messages, .isEmpty())
-    await assertThat(self.recorder.status, .is(.nil()))
-    await assertThat(self.recorder.trailers, .is(.nil()))
+    await assertThat(self.recorder.status, .nil())
+    await assertThat(self.recorder.trailers, .nil())
   } }
 
   func testFinishAfterHeaders() { XCTAsyncTest {
     let handler = self.makeHandler(observer: self.echo(requests:responseStreamWriter:context:))
+
     handler.receiveMetadata([:])
-
-    // Wait for the async user function to have processed the metadata.
-    try self.recorder.recordedMetadataPromise.futureResult.wait()
-
-    await assertThat(self.recorder.metadata, .is([:]))
-
     handler.finish()
 
     // Wait for tasks to finish.
     await handler.userHandlerTask?.value
 
+    await assertThat(self.recorder.metadata, .nil())
     await assertThat(self.recorder.messages, .isEmpty())
     await assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
     await assertThat(self.recorder.trailers, .is([:]))
