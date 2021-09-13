@@ -39,6 +39,8 @@ public struct GRPCAsyncUnaryCall<Request, Response> {
   // MARK: - Response Parts
 
   /// The initial metadata returned from the server.
+  ///
+  /// - Important: The initial metadata will only be available when the response has been received.
   public var initialMetadata: HPACKHeaders {
     // swiftformat:disable:next redundantGet
     get async throws {

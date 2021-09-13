@@ -40,6 +40,10 @@ public struct GRPCAsyncBidirectionalStreamingCall<Request, Response> {
   // MARK: - Response Parts
 
   /// The initial metadata returned from the server.
+  ///
+  /// - Important: The initial metadata will only be available when the first response has been
+  /// received. However, it is not necessary for the response to have been consumed before reading
+  /// this property.
   public var initialMetadata: HPACKHeaders {
     // swiftformat:disable:next redundantGet
     get async throws {
