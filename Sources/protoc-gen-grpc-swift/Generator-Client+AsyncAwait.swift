@@ -145,7 +145,7 @@ extension Generator {
 
         let rpcType = streamingType(self.method)
         let callTypeWithoutPrefix = Types.call(for: rpcType, withGRPCPrefix: false)
-        let responseStreamType = "GRPCAsyncResponseStream"
+        let responseStreamType = Types.responseStream(of: self.methodOutputName)
 
         switch rpcType {
         case .unary:
@@ -177,7 +177,7 @@ extension Generator {
               "_ request: \(self.methodInputName)",
               "callOptions: \(Types.clientCallOptions)? = nil",
             ],
-            returnType: "\(responseStreamType)<\(self.methodOutputName)>",
+            returnType: "\(responseStreamType)",
             access: self.access
           ) {
             self.withIndentation(
@@ -223,7 +223,7 @@ extension Generator {
                 "requests: RequestStream",
                 "callOptions: \(Types.clientCallOptions)? = nil",
               ],
-              returnType: "\(responseStreamType)<\(self.methodOutputName)>",
+              returnType: "\(responseStreamType)",
               access: self.access,
               genericWhereClause: "where RequestStream: \(sequenceProtocol), RequestStream.Element == \(self.methodInputName)"
             ) {
