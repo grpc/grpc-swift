@@ -15,7 +15,6 @@
  */
 import NIOCore
 import NIOHTTP2
-import NIOSSL
 import SwiftProtobuf
 
 public protocol GRPCChannel {
