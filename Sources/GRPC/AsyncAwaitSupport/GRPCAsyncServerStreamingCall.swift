@@ -89,30 +89,17 @@ public struct GRPCAsyncServerStreamingCall<Request, Response> {
   ) -> Self {
     let asyncCall = Self(call: call)
 
-    asyncCall.call.invokeUnaryRequest(request) { error in
-      asyncCall.responseParts.handleError(error)
-      asyncCall.responseSource.finish(throwing: error)
-    } onResponsePart: { responsePart in
-      // Handle the metadata, trailers and status.
-      asyncCall.responseParts.handle(responsePart)
-
-      // Handle the response messages and status.
-      switch responsePart {
-      case .metadata:
-        ()
-
-      case let .message(response):
-        // TODO: when we support backpressure we will need to stop ignoring the return value.
-        _ = asyncCall.responseSource.yield(response)
-
-      case let .end(status, _):
-        if status.isOk {
-          asyncCall.responseSource.finish()
-        } else {
-          asyncCall.responseSource.finish(throwing: status)
-        }
-      }
-    }
+    asyncCall.call.invokeUnaryRequest(
+      request,
+      onError: { error in
+        asyncCall.responseParts.handleError(error)
+        asyncCall.responseSource.finish(throwing: error)
+      },
+      onResponsePart: AsyncCall.makeResponsePartHandler(
+        responseParts: asyncCall.responseParts,
+        responseSource: asyncCall.responseSource
+      )
+    )
 
     return asyncCall
   }

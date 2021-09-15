@@ -88,12 +88,30 @@ public struct GRPCAsyncBidirectionalStreamingCall<Request, Response> {
   internal static func makeAndInvoke(call: Call<Request, Response>) -> Self {
     let asyncCall = Self(call: call)
 
-    asyncCall.call.invokeStreamingRequests { error in
-      asyncCall.responseParts.handleError(error)
-      asyncCall.responseSource.finish(throwing: error)
-    } onResponsePart: { responsePart in
+    asyncCall.call.invokeStreamingRequests(
+      onError: { error in
+        asyncCall.responseParts.handleError(error)
+        asyncCall.responseSource.finish(throwing: error)
+      },
+      onResponsePart: AsyncCall.makeResponsePartHandler(
+        responseParts: asyncCall.responseParts,
+        responseSource: asyncCall.responseSource
+      )
+    )
+
+    return asyncCall
+  }
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+internal enum AsyncCall {
+  internal static func makeResponsePartHandler<Response>(
+    responseParts: StreamingResponseParts<Response>,
+    responseSource: PassthroughMessageSource<Response, Error>
+  ) -> (GRPCClientResponsePart<Response>) -> Void {
+    return { responsePart in
       // Handle the metadata, trailers and status.
-      asyncCall.responseParts.handle(responsePart)
+      responseParts.handle(responsePart)
 
       // Handle the response messages and status.
       switch responsePart {
@@ -102,18 +120,16 @@ public struct GRPCAsyncBidirectionalStreamingCall<Request, Response> {
 
       case let .message(response):
         // TODO: when we support backpressure we will need to stop ignoring the return value.
-        _ = asyncCall.responseSource.yield(response)
+        _ = responseSource.yield(response)
 
       case let .end(status, _):
         if status.isOk {
-          asyncCall.responseSource.finish()
+          responseSource.finish()
         } else {
-          asyncCall.responseSource.finish(throwing: status)
+          responseSource.finish(throwing: status)
         }
       }
     }
-
-    return asyncCall
   }
 }
 
