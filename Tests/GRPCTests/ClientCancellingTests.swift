@@ -27,7 +27,7 @@ class ClientCancellingTests: EchoTestCaseBase {
     call.cancel(promise: nil)
 
     call.response.whenFailure { error in
-      XCTAssertTrue(error is GRPCError.RPCCancelledByClient)
+      XCTAssertEqual((error as? GRPCStatus)?.code, .cancelled)
       responseReceived.fulfill()
     }
 
@@ -47,7 +47,7 @@ class ClientCancellingTests: EchoTestCaseBase {
     call.cancel(promise: nil)
 
     call.response.whenFailure { error in
-      XCTAssertTrue(error is GRPCError.RPCCancelledByClient)
+      XCTAssertEqual((error as? GRPCStatus)?.code, .cancelled)
       responseReceived.fulfill()
     }
 

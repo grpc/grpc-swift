@@ -197,11 +197,7 @@ class ClientCallTests: GRPCTestCase {
     // Cancellation should succeed.
     assertThat(try get.cancel().wait(), .doesNotThrow())
 
-    // The status promise will fail.
-    assertThat(
-      try promise.futureResult.wait(),
-      .throws(.instanceOf(GRPCError.RPCCancelledByClient.self))
-    )
+    assertThat(try promise.futureResult.wait(), .hasCode(.cancelled))
 
     // Cancellation should now fail, we've already cancelled.
     assertThat(try get.cancel().wait(), .throws(.instanceOf(GRPCError.AlreadyComplete.self)))
