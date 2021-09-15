@@ -447,6 +447,10 @@ extension GRPCClient {
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 extension AsyncStream {
+  /// Create an `AsyncStream` from a regular (non-async) `Sequence`.
+  ///
+  /// - Note: This is just here to avoid duplicating the above two `perform(_:with:)` functions
+  ///         for `Sequence`.
   fileprivate init<T>(wrapping sequence: T) where T: Sequence, T.Element == Element {
     self.init { continuation in
       var iterator = sequence.makeIterator()
