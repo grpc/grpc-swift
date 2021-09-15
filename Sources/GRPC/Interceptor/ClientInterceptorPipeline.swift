@@ -79,16 +79,16 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   internal let _errorDelegate: ClientErrorDelegate?
 
   @usableFromInline
-  internal var _onError: (Error) -> Void
+  internal var _onError: ((Error) -> Void)?
 
   @usableFromInline
-  internal var _onCancel: (EventLoopPromise<Void>?) -> Void
+  internal var _onCancel: ((EventLoopPromise<Void>?) -> Void)?
 
   @usableFromInline
-  internal var _onRequestPart: (GRPCClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void
+  internal var _onRequestPart: ((GRPCClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void)?
 
   @usableFromInline
-  internal var _onResponsePart: (GRPCClientResponsePart<Response>) -> Void
+  internal var _onResponsePart: ((GRPCClientResponsePart<Response>) -> Void)?
 
   /// The index after the last user interceptor context index. (i.e. `_userContexts.endIndex`).
   @usableFromInline
@@ -219,10 +219,10 @@ internal final class ClientInterceptorPipeline<Request, Response> {
       if part.isEnd {
         // Update our state before handling the response part.
         self._isOpen = false
-        self._onResponsePart(part)
+        self._onResponsePart?(part)
         self.close()
       } else {
-        self._onResponsePart(part)
+        self._onResponsePart?(part)
       }
 
     default:
@@ -279,6 +279,7 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   /// Handles a caught error which has traversed the interceptor pipeline.
   @usableFromInline
   internal func _errorCaught(_ error: Error) {
+    // We're about to call out to an error handler: update our state first.
     self._isOpen = false
     var unwrappedError: Error
 
@@ -297,7 +298,7 @@ internal final class ClientInterceptorPipeline<Request, Response> {
     }
 
     // Emit the unwrapped error.
-    self._onError(unwrappedError)
+    self._onError?(unwrappedError)
 
     // Close the pipeline.
     self.close()
@@ -356,7 +357,7 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   ) {
     switch index {
     case self._headIndex:
-      self._onRequestPart(part, promise)
+      self._onRequestPart?(part, promise)
 
     case self._tailIndex:
       self._invokeSend(
@@ -412,7 +413,7 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   ) {
     switch index {
     case self._headIndex:
-      self._onCancel(promise)
+      self._onCancel?(promise)
 
     case self._tailIndex:
       self._invokeCancel(
@@ -442,14 +443,14 @@ extension ClientInterceptorPipeline {
     self._scheduledClose = nil
 
     // Cancel the transport.
-    self._onCancel(nil)
+    self._onCancel?(nil)
 
     // `ClientTransport` holds a reference to us and references to itself via these callbacks. Break
     // these references now by replacing the callbacks.
-    self._onError = { _ in }
-    self._onCancel = { _ in }
-    self._onRequestPart = { _, _ in }
-    self._onResponsePart = { _ in }
+    self._onError = nil
+    self._onCancel = nil
+    self._onRequestPart = nil
+    self._onResponsePart = nil
   }
 
   /// Sets up a deadline for the pipeline.
