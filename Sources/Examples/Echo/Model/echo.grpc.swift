@@ -273,7 +273,7 @@ extension Echo_EchoAsyncClientProtocol {
   }
 
   public func collect<RequestStream>(
-    requests: RequestStream,
+    _ requests: RequestStream,
     callOptions: CallOptions? = nil
   ) async throws -> Echo_EchoResponse where RequestStream: Sequence, RequestStream.Element == Echo_EchoRequest {
     return try await self.performAsyncClientStreamingCall(
@@ -283,7 +283,7 @@ extension Echo_EchoAsyncClientProtocol {
     )
   }
   public func collect<RequestStream>(
-    requests: RequestStream,
+    _ requests: RequestStream,
     callOptions: CallOptions? = nil
   ) async throws -> Echo_EchoResponse where RequestStream: AsyncSequence, RequestStream.Element == Echo_EchoRequest {
     return try await self.performAsyncClientStreamingCall(
@@ -294,7 +294,7 @@ extension Echo_EchoAsyncClientProtocol {
   }
 
   public func update<RequestStream>(
-    requests: RequestStream,
+    _ requests: RequestStream,
     callOptions: CallOptions? = nil
   ) -> GRPCAsyncResponseStream<Echo_EchoResponse> where RequestStream: Sequence, RequestStream.Element == Echo_EchoRequest {
     return self.performAsyncBidirectionalStreamingCall(
@@ -304,7 +304,7 @@ extension Echo_EchoAsyncClientProtocol {
     )
   }
   public func update<RequestStream>(
-    requests: RequestStream,
+    _ requests: RequestStream,
     callOptions: CallOptions? = nil
   ) -> GRPCAsyncResponseStream<Echo_EchoResponse> where RequestStream: AsyncSequence, RequestStream.Element == Echo_EchoRequest {
     return self.performAsyncBidirectionalStreamingCall(

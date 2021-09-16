@@ -130,13 +130,12 @@ extension Generator {
   }
 }
 
-// MARK: - Client protocol extension: Safe call wrappers.
+// MARK: - Client protocol extension: "Simple, but safe" call wrappers.
 
 extension Generator {
   internal func printAsyncClientProtocolSafeWrappersExtension() {
     self.printAvailabilityForAsyncAwait()
     self.withIndentation("extension \(self.asyncClientProtocolName)", braces: .curly) {
-      // 'Safe' calls.
       for (i, method) in self.service.methods.enumerated() {
         if i > 0 {
           self.println()
@@ -145,96 +144,43 @@ extension Generator {
 
         let rpcType = streamingType(self.method)
         let callTypeWithoutPrefix = Types.call(for: rpcType, withGRPCPrefix: false)
-        let responseStreamType = Types.responseStream(of: self.methodOutputName)
 
-        switch rpcType {
-        case .unary:
+        let streamsResponses = [.serverStreaming, .bidirectionalStreaming].contains(rpcType)
+        let streamsRequests = [.clientStreaming, .bidirectionalStreaming].contains(rpcType)
+
+        let sequenceProtocols = streamsRequests ? ["Sequence", "AsyncSequence"] : [nil]
+
+        for sequenceProtocol in sequenceProtocols {
+          let functionName = streamsRequests
+            ? "\(self.methodFunctionName)<RequestStream>"
+            : self.methodFunctionName
+          let requestParamName = streamsRequests ? "requests" : "request"
+          let requestParamType = streamsRequests ? "RequestStream" : self.methodInputName
+          let returnType = streamsResponses
+            ? Types.responseStream(of: self.methodOutputName)
+            : self.methodOutputName
+          let maybeWhereClause = sequenceProtocol.map {
+            "where RequestStream: \($0), RequestStream.Element == \(self.methodInputName)"
+          }
           self.printFunction(
-            name: self.methodFunctionName,
+            name: functionName,
             arguments: [
-              "_ request: \(self.methodInputName)",
+              "_ \(requestParamName): \(requestParamType)",
               "callOptions: \(Types.clientCallOptions)? = nil",
             ],
-            returnType: self.methodOutputName,
+            returnType: returnType,
             access: self.access,
-            async: true,
-            throws: true
+            async: !streamsResponses,
+            throws: !streamsResponses,
+            genericWhereClause: maybeWhereClause
           ) {
             self.withIndentation(
-              "return try await self.perform\(callTypeWithoutPrefix)",
+              "return\(!streamsResponses ? " try await" : "") self.perform\(callTypeWithoutPrefix)",
               braces: .round
             ) {
               self.println("path: \(self.methodPath),")
-              self.println("request: request,")
+              self.println("\(requestParamName): \(requestParamName),")
               self.println("callOptions: callOptions ?? self.defaultCallOptions")
-            }
-          }
-
-        case .serverStreaming:
-          self.printFunction(
-            name: self.methodFunctionName,
-            arguments: [
-              "_ request: \(self.methodInputName)",
-              "callOptions: \(Types.clientCallOptions)? = nil",
-            ],
-            returnType: "\(responseStreamType)",
-            access: self.access
-          ) {
-            self.withIndentation(
-              "return self.perform\(callTypeWithoutPrefix)",
-              braces: .round
-            ) {
-              self.println("path: \(self.methodPath),")
-              self.println("request: request,")
-              self.println("callOptions: callOptions ?? self.defaultCallOptions")
-            }
-          }
-
-        case .clientStreaming:
-          for sequenceProtocol in ["Sequence", "AsyncSequence"] {
-            self.printFunction(
-              name: "\(self.methodFunctionName)<RequestStream>",
-              arguments: [
-                "requests: RequestStream",
-                "callOptions: \(Types.clientCallOptions)? = nil",
-              ],
-              returnType: self.methodOutputName,
-              access: self.access,
-              async: true,
-              throws: true,
-              genericWhereClause: "where RequestStream: \(sequenceProtocol), RequestStream.Element == \(self.methodInputName)"
-            ) {
-              self.withIndentation(
-                "return try await self.perform\(callTypeWithoutPrefix)",
-                braces: .round
-              ) {
-                self.println("path: \(self.methodPath),")
-                self.println("requests: requests,")
-                self.println("callOptions: callOptions ?? self.defaultCallOptions")
-              }
-            }
-          }
-
-        case .bidirectionalStreaming:
-          for sequenceProtocol in ["Sequence", "AsyncSequence"] {
-            self.printFunction(
-              name: "\(self.methodFunctionName)<RequestStream>",
-              arguments: [
-                "requests: RequestStream",
-                "callOptions: \(Types.clientCallOptions)? = nil",
-              ],
-              returnType: "\(responseStreamType)",
-              access: self.access,
-              genericWhereClause: "where RequestStream: \(sequenceProtocol), RequestStream.Element == \(self.methodInputName)"
-            ) {
-              self.withIndentation(
-                "return self.perform\(callTypeWithoutPrefix)",
-                braces: .round
-              ) {
-                self.println("path: \(self.methodPath),")
-                self.println("requests: requests,")
-                self.println("callOptions: callOptions ?? self.defaultCallOptions")
-              }
             }
           }
         }
