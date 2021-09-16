@@ -22,6 +22,7 @@ import NIOHPACK
 public struct GRPCAsyncServerStreamingCall<Request, Response> {
   private let call: Call<Request, Response>
   private let responseParts: StreamingResponseParts<Response>
+  private let responseSource: PassthroughMessageSource<Response, Error>
 
   /// The stream of responses from the server.
   public let responses: GRPCAsyncResponseStream<Response>
@@ -71,45 +72,13 @@ public struct GRPCAsyncServerStreamingCall<Request, Response> {
     }
   }
 
-  private init(
-    call: Call<Request, Response>,
-    _ request: Request
-  ) {
+  private init(call: Call<Request, Response>) {
     self.call = call
-    // Initialise `responseParts` with an empty response handler because we
-    // provide the responses as an AsyncSequence in `responseStream`.
+    // We ignore messages in the closure and instead feed them into the response source when we
+    // invoke the `call`.
     self.responseParts = StreamingResponseParts(on: call.eventLoop) { _ in }
-
-    // Call and StreamingResponseParts are reference types so we grab a
-    // referecence to them here to avoid capturing mutable self in the  closure
-    // passed to the AsyncThrowingStream initializer.
-    //
-    // The alternative would be to declare the responseStream as:
-    // ```
-    // public private(set) var responseStream: AsyncThrowingStream<ResponsePayload>!
-    // ```
-    //
-    // UPDATE: Additionally we expect to replace this soon with an AsyncSequence
-    // implementation that supports yielding values from outside the closure.
-    let call = self.call
-    let responseParts = self.responseParts
-    self
-      .responses = GRPCAsyncResponseStream(AsyncThrowingStream(Response.self) { continuation in
-        call.invokeUnaryRequest(request) { error in
-          responseParts.handleError(error)
-          continuation.finish(throwing: error)
-        } onResponsePart: { responsePart in
-          responseParts.handle(responsePart)
-          switch responsePart {
-          case let .message(response):
-            continuation.yield(response)
-          case .metadata:
-            break
-          case .end:
-            continuation.finish()
-          }
-        }
-      })
+    self.responseSource = PassthroughMessageSource<Response, Error>()
+    self.responses = .init(PassthroughMessageSequence(consuming: self.responseSource))
   }
 
   /// We expose this as the only non-private initializer so that the caller
@@ -118,7 +87,21 @@ public struct GRPCAsyncServerStreamingCall<Request, Response> {
     call: Call<Request, Response>,
     _ request: Request
   ) -> Self {
-    Self(call: call, request)
+    let asyncCall = Self(call: call)
+
+    asyncCall.call.invokeUnaryRequest(
+      request,
+      onError: { error in
+        asyncCall.responseParts.handleError(error)
+        asyncCall.responseSource.finish(throwing: error)
+      },
+      onResponsePart: AsyncCall.makeResponsePartHandler(
+        responseParts: asyncCall.responseParts,
+        responseSource: asyncCall.responseSource
+      )
+    )
+
+    return asyncCall
   }
 }
 
