@@ -85,8 +85,8 @@ internal final class ClientTransport<Request, Response> {
   // trailers here and only forward them when we receive the status.
   private var trailers: HPACKHeaders?
 
-  /// The interceptor pipeline connected to this transport. This must be set to `nil` when removed
-  /// from the `ChannelPipeline` in order to break reference cycles.
+  /// The interceptor pipeline connected to this transport. The pipeline also holds references
+  /// to `self` which are dropped when the interceptor pipeline is closed.
   @usableFromInline
   internal var _pipeline: ClientInterceptorPipeline<Request, Response>?
 
@@ -118,6 +118,7 @@ internal final class ClientTransport<Request, Response> {
     self.logger = logger
     self.serializer = serializer
     self.deserializer = deserializer
+    // The references to self held by the pipeline are dropped when it is closed.
     self._pipeline = ClientInterceptorPipeline(
       eventLoop: eventLoop,
       details: details,
@@ -241,7 +242,8 @@ extension ClientTransport {
 
     if self.state.cancel() {
       let error = GRPCError.RPCCancelledByClient()
-      self.forwardErrorToInterceptors(error)
+      let status = error.makeGRPCStatus()
+      self.forwardToInterceptors(.end(status, [:]))
       self.failBufferedWrites(with: error)
       self.channel?.close(mode: .all, promise: nil)
       self.channelPromise?.fail(error)
@@ -363,11 +365,9 @@ extension ClientTransport {
   private func dropReferences() {
     if self.callEventLoop.inEventLoop {
       self.channel = nil
-      self._pipeline = nil
     } else {
       self.callEventLoop.execute {
         self.channel = nil
-        self._pipeline = nil
       }
     }
   }
