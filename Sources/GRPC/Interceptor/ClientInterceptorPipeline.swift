@@ -79,16 +79,16 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   internal let _errorDelegate: ClientErrorDelegate?
 
   @usableFromInline
-  internal var _onError: ((Error) -> Void)?
+  internal private(set) var _onError: ((Error) -> Void)?
 
   @usableFromInline
-  internal var _onCancel: ((EventLoopPromise<Void>?) -> Void)?
+  internal private(set) var _onCancel: ((EventLoopPromise<Void>?) -> Void)?
 
   @usableFromInline
-  internal var _onRequestPart: ((GRPCClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void)?
+  internal private(set) var _onRequestPart: ((GRPCClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void)?
 
   @usableFromInline
-  internal var _onResponsePart: ((GRPCClientResponsePart<Response>) -> Void)?
+  internal private(set) var _onResponsePart: ((GRPCClientResponsePart<Response>) -> Void)?
 
   /// The index after the last user interceptor context index. (i.e. `_userContexts.endIndex`).
   @usableFromInline
