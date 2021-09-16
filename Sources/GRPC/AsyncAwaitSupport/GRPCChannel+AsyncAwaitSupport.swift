@@ -26,7 +26,7 @@ extension GRPCChannel {
   ///   - request: The request to send.
   ///   - callOptions: Options for the RPC.
   ///   - interceptors: A list of interceptors to intercept the request and response stream with.
-  public func makeAsyncUnaryCall<Request: Message, Response: Message>(
+  internal func makeAsyncUnaryCall<Request: Message, Response: Message>(
     path: String,
     request: Request,
     callOptions: CallOptions,
@@ -50,7 +50,7 @@ extension GRPCChannel {
   ///   - request: The request to send.
   ///   - callOptions: Options for the RPC.
   ///   - interceptors: A list of interceptors to intercept the request and response stream with.
-  public func makeAsyncUnaryCall<Request: GRPCPayload, Response: GRPCPayload>(
+  internal func makeAsyncUnaryCall<Request: GRPCPayload, Response: GRPCPayload>(
     path: String,
     request: Request,
     callOptions: CallOptions,
@@ -73,7 +73,7 @@ extension GRPCChannel {
   ///   - path: Path of the RPC, e.g. "/echo.Echo/Get"
   ///   - callOptions: Options for the RPC.
   ///   - interceptors: A list of interceptors to intercept the request and response stream with.
-  public func makeAsyncClientStreamingCall<Request: Message, Response: Message>(
+  internal func makeAsyncClientStreamingCall<Request: Message, Response: Message>(
     path: String,
     callOptions: CallOptions,
     interceptors: [ClientInterceptor<Request, Response>] = []
@@ -94,7 +94,7 @@ extension GRPCChannel {
   ///   - path: Path of the RPC, e.g. "/echo.Echo/Get"
   ///   - callOptions: Options for the RPC.
   ///   - interceptors: A list of interceptors to intercept the request and response stream with.
-  public func makeAsyncClientStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
+  internal func makeAsyncClientStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
     path: String,
     callOptions: CallOptions,
     interceptors: [ClientInterceptor<Request, Response>] = []
@@ -116,7 +116,7 @@ extension GRPCChannel {
   ///   - request: The request to send.
   ///   - callOptions: Options for the RPC.
   ///   - interceptors: A list of interceptors to intercept the request and response stream with.
-  public func makeAsyncServerStreamingCall<Request: Message, Response: Message>(
+  internal func makeAsyncServerStreamingCall<Request: Message, Response: Message>(
     path: String,
     request: Request,
     callOptions: CallOptions,
@@ -140,7 +140,7 @@ extension GRPCChannel {
   ///   - request: The request to send.
   ///   - callOptions: Options for the RPC.
   ///   - interceptors: A list of interceptors to intercept the request and response stream with.
-  public func makeAsyncServerStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
+  internal func makeAsyncServerStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
     path: String,
     request: Request,
     callOptions: CallOptions,
@@ -163,7 +163,7 @@ extension GRPCChannel {
   ///   - path: Path of the RPC, e.g. "/echo.Echo/Get"
   ///   - callOptions: Options for the RPC.
   ///   - interceptors: A list of interceptors to intercept the request and response stream with.
-  public func makeAsyncBidirectionalStreamingCall<Request: Message, Response: Message>(
+  internal func makeAsyncBidirectionalStreamingCall<Request: Message, Response: Message>(
     path: String,
     callOptions: CallOptions,
     interceptors: [ClientInterceptor<Request, Response>] = []
@@ -184,7 +184,7 @@ extension GRPCChannel {
   ///   - path: Path of the RPC, e.g. "/echo.Echo/Get"
   ///   - callOptions: Options for the RPC.
   ///   - interceptors: A list of interceptors to intercept the request and response stream with.
-  public func makeAsyncBidirectionalStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
+  internal func makeAsyncBidirectionalStreamingCall<Request: GRPCPayload, Response: GRPCPayload>(
     path: String,
     callOptions: CallOptions,
     interceptors: [ClientInterceptor<Request, Response>] = []

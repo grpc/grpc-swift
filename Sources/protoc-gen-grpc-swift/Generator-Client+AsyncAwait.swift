@@ -130,6 +130,66 @@ extension Generator {
   }
 }
 
+// MARK: - Client protocol extension: "Simple, but safe" call wrappers.
+
+extension Generator {
+  internal func printAsyncClientProtocolSafeWrappersExtension() {
+    self.printAvailabilityForAsyncAwait()
+    self.withIndentation("extension \(self.asyncClientProtocolName)", braces: .curly) {
+      for (i, method) in self.service.methods.enumerated() {
+        self.method = method
+
+        let rpcType = streamingType(self.method)
+        let callTypeWithoutPrefix = Types.call(for: rpcType, withGRPCPrefix: false)
+
+        let streamsResponses = [.serverStreaming, .bidirectionalStreaming].contains(rpcType)
+        let streamsRequests = [.clientStreaming, .bidirectionalStreaming].contains(rpcType)
+
+        let sequenceProtocols = streamsRequests ? ["Sequence", "AsyncSequence"] : [nil]
+
+        for (j, sequenceProtocol) in sequenceProtocols.enumerated() {
+          // Print a new line if this is not the first function in the extension.
+          if i > 0 || j > 0 {
+            self.println()
+          }
+          let functionName = streamsRequests
+            ? "\(self.methodFunctionName)<RequestStream>"
+            : self.methodFunctionName
+          let requestParamName = streamsRequests ? "requests" : "request"
+          let requestParamType = streamsRequests ? "RequestStream" : self.methodInputName
+          let returnType = streamsResponses
+            ? Types.responseStream(of: self.methodOutputName)
+            : self.methodOutputName
+          let maybeWhereClause = sequenceProtocol.map {
+            "where RequestStream: \($0), RequestStream.Element == \(self.methodInputName)"
+          }
+          self.printFunction(
+            name: functionName,
+            arguments: [
+              "_ \(requestParamName): \(requestParamType)",
+              "callOptions: \(Types.clientCallOptions)? = nil",
+            ],
+            returnType: returnType,
+            access: self.access,
+            async: !streamsResponses,
+            throws: !streamsResponses,
+            genericWhereClause: maybeWhereClause
+          ) {
+            self.withIndentation(
+              "return\(!streamsResponses ? " try await" : "") self.perform\(callTypeWithoutPrefix)",
+              braces: .round
+            ) {
+              self.println("path: \(self.methodPath),")
+              self.println("\(requestParamName): \(requestParamName),")
+              self.println("callOptions: callOptions ?? self.defaultCallOptions")
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 // MARK: - Client protocol implementation
 
 extension Generator {

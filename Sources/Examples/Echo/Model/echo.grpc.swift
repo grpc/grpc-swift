@@ -249,6 +249,75 @@ extension Echo_EchoAsyncClientProtocol {
 }
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+extension Echo_EchoAsyncClientProtocol {
+  public func get(
+    _ request: Echo_EchoRequest,
+    callOptions: CallOptions? = nil
+  ) async throws -> Echo_EchoResponse {
+    return try await self.performAsyncUnaryCall(
+      path: "/echo.Echo/Get",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func expand(
+    _ request: Echo_EchoRequest,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Echo_EchoResponse> {
+    return self.performAsyncServerStreamingCall(
+      path: "/echo.Echo/Expand",
+      request: request,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func collect<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) async throws -> Echo_EchoResponse where RequestStream: Sequence, RequestStream.Element == Echo_EchoRequest {
+    return try await self.performAsyncClientStreamingCall(
+      path: "/echo.Echo/Collect",
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func collect<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) async throws -> Echo_EchoResponse where RequestStream: AsyncSequence, RequestStream.Element == Echo_EchoRequest {
+    return try await self.performAsyncClientStreamingCall(
+      path: "/echo.Echo/Collect",
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func update<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Echo_EchoResponse> where RequestStream: Sequence, RequestStream.Element == Echo_EchoRequest {
+    return self.performAsyncBidirectionalStreamingCall(
+      path: "/echo.Echo/Update",
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+
+  public func update<RequestStream>(
+    _ requests: RequestStream,
+    callOptions: CallOptions? = nil
+  ) -> GRPCAsyncResponseStream<Echo_EchoResponse> where RequestStream: AsyncSequence, RequestStream.Element == Echo_EchoRequest {
+    return self.performAsyncBidirectionalStreamingCall(
+      path: "/echo.Echo/Update",
+      requests: requests,
+      callOptions: callOptions ?? self.defaultCallOptions
+    )
+  }
+}
+
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 public struct Echo_EchoAsyncClient: Echo_EchoAsyncClientProtocol {
   public var channel: GRPCChannel
   public var defaultCallOptions: CallOptions
