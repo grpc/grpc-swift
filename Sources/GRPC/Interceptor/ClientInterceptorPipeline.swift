@@ -432,7 +432,7 @@ internal final class ClientInterceptorPipeline<Request, Response> {
 
 extension ClientInterceptorPipeline {
   /// Closes the pipeline. This should be called once, by the tail interceptor, to indicate that
-  /// the RPC has completed.
+  /// the RPC has completed. If this is not called, we will leak.
   /// - Important: This *must* to be called from the `eventLoop`.
   @inlinable
   internal func close() {
