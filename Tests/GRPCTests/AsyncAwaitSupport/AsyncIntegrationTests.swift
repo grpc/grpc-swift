@@ -73,6 +73,13 @@ final class AsyncIntegrationTests: GRPCTestCase {
     }
   }
 
+  func testUnaryWrapper() {
+    XCTAsyncTest {
+      let response = try await self.echo.get(.with { $0.text = "hello" })
+      XCTAssertEqual(response.text, "Swift echo get: hello")
+    }
+  }
+
   func testClientStreaming() {
     XCTAsyncTest {
       let collect = self.echo.makeCollectCall()
@@ -96,6 +103,19 @@ final class AsyncIntegrationTests: GRPCTestCase {
     }
   }
 
+  func testClientStreamingWrapper() {
+    XCTAsyncTest {
+      let requests: [Echo_EchoRequest] = [
+        .with { $0.text = "boyle" },
+        .with { $0.text = "jeffers" },
+        .with { $0.text = "holt" },
+      ]
+
+      let response = try await self.echo.collect(requests)
+      XCTAssertEqual(response.text, "Swift echo collect: boyle jeffers holt")
+    }
+  }
+
   func testServerStreaming() {
     XCTAsyncTest {
       let expand = self.echo.makeExpandCall(.with { $0.text = "boyle jeffers holt" })
@@ -103,8 +123,8 @@ final class AsyncIntegrationTests: GRPCTestCase {
       let initialMetadata = try await expand.initialMetadata
       initialMetadata.assertFirst("200", forName: ":status")
 
-      let respones = try await expand.responses.map { $0.text }.collect()
-      XCTAssertEqual(respones, [
+      let responses = try await expand.responses.map { $0.text }.collect()
+      XCTAssertEqual(responses, [
         "Swift echo expand (0): boyle",
         "Swift echo expand (1): jeffers",
         "Swift echo expand (2): holt",
@@ -115,6 +135,18 @@ final class AsyncIntegrationTests: GRPCTestCase {
 
       let status = await expand.status
       XCTAssertTrue(status.isOk)
+    }
+  }
+
+  func testServerStreamingWrapper() {
+    XCTAsyncTest {
+      let responseStream = self.echo.expand(.with { $0.text = "boyle jeffers holt" })
+      let responses = try await responseStream.map { $0.text }.collect()
+      XCTAssertEqual(responses, [
+        "Swift echo expand (0): boyle",
+        "Swift echo expand (1): jeffers",
+        "Swift echo expand (2): holt",
+      ])
     }
   }
 
@@ -143,6 +175,24 @@ final class AsyncIntegrationTests: GRPCTestCase {
 
       let status = await update.status
       XCTAssertTrue(status.isOk)
+    }
+  }
+
+  func testBidirectionalStreamingWrapper() {
+    XCTAsyncTest {
+      let requests: [Echo_EchoRequest] = [
+        .with { $0.text = "boyle" },
+        .with { $0.text = "jeffers" },
+        .with { $0.text = "holt" },
+      ]
+
+      let responseStream = self.echo.update(requests)
+      let responses = try await responseStream.map { $0.text }.collect()
+      XCTAssertEqual(responses, [
+        "Swift echo update (0): boyle",
+        "Swift echo update (1): jeffers",
+        "Swift echo update (2): holt",
+      ])
     }
   }
 }
