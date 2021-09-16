@@ -48,6 +48,22 @@ protocol.
 - **Possible values:** true, false
 - **Default value:** true
 
+### ExperimentalAsyncServer
+
+The **ExperimentalAsyncServer** option determines whether async/await style
+server code is generated. See also [README.md](../README.md).
+
+- **Possible values:** true, false
+- **Default value:** false
+
+### ExperimentalAsyncClient
+
+The **ExperimentalAsyncClient** option determines whether async/await style
+client code is generated. See also [README.md](../README.md).
+
+- **Possible values:** true, false
+- **Default value:** false
+
 ### TestClient
 
 The **TestClient** option determines whether test client code is generated.
@@ -102,11 +118,11 @@ the gRPC core C library whose module name is also "GRPC".*
 
 ### SwiftProtobufModuleName
 
- The **SwiftProtobufModuleName** option allows the name of the SwiftProtobuf 
- runtime module to be specified. The value, if not specified, defaults to 
+ The **SwiftProtobufModuleName** option allows the name of the SwiftProtobuf
+ runtime module to be specified. The value, if not specified, defaults to
  "SwiftProtobuf".
 
- *Note: most users will not need to use this option. Introduced to match 
+ *Note: most users will not need to use this option. Introduced to match
  the option that exists in [SwiftProtobuf][swift-protobuf-module-name].
 
 ## Specifying Options
