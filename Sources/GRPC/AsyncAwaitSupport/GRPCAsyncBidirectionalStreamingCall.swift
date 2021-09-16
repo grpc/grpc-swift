@@ -15,7 +15,6 @@
  */
 #if compiler(>=5.5)
 
-import _NIOConcurrency
 import NIOHPACK
 
 /// Async-await variant of BidirectionalStreamingCall.
@@ -23,6 +22,10 @@ import NIOHPACK
 public struct GRPCAsyncBidirectionalStreamingCall<Request, Response> {
   private let call: Call<Request, Response>
   private let responseParts: StreamingResponseParts<Response>
+  private let responseSource: PassthroughMessageSource<Response, Error>
+
+  /// A request stream writer for sending messages to the server.
+  public let requestStream: GRPCAsyncRequestStreamWriter<Request>
 
   /// The stream of responses from the server.
   public let responses: GRPCAsyncResponseStream<Response>
@@ -74,93 +77,59 @@ public struct GRPCAsyncBidirectionalStreamingCall<Request, Response> {
 
   private init(call: Call<Request, Response>) {
     self.call = call
-    // Initialise `responseParts` with an empty response handler because we
-    // provide the responses as an AsyncSequence in `responseStream`.
     self.responseParts = StreamingResponseParts(on: call.eventLoop) { _ in }
-
-    // Call and StreamingResponseParts are reference types so we grab a
-    // referecence to them here to avoid capturing mutable self in the  closure
-    // passed to the AsyncThrowingStream initializer.
-    //
-    // The alternative would be to declare the responseStream as:
-    // ```
-    // public private(set) var responseStream: AsyncThrowingStream<ResponsePayload>!
-    // ```
-    //
-    // UPDATE: Additionally we expect to replace this soon with an AsyncSequence
-    // implementation that supports yielding values from outside the closure.
-    let call = self.call
-    let responseParts = self.responseParts
-    let responseStream = AsyncThrowingStream(Response.self) { continuation in
-      call.invokeStreamingRequests { error in
-        responseParts.handleError(error)
-        continuation.finish(throwing: error)
-      } onResponsePart: { responsePart in
-        responseParts.handle(responsePart)
-        switch responsePart {
-        case let .message(response):
-          continuation.yield(response)
-        case .metadata:
-          break
-        case .end:
-          continuation.finish()
-        }
-      }
-    }
-    self.responses = .init(responseStream)
+    self.responseSource = PassthroughMessageSource<Response, Error>()
+    self.responses = .init(PassthroughMessageSequence(consuming: self.responseSource))
+    self.requestStream = call.makeRequestStreamWriter()
   }
 
   /// We expose this as the only non-private initializer so that the caller
   /// knows that invocation is part of initialisation.
   internal static func makeAndInvoke(call: Call<Request, Response>) -> Self {
-    Self(call: call)
+    let asyncCall = Self(call: call)
+
+    asyncCall.call.invokeStreamingRequests(
+      onError: { error in
+        asyncCall.responseParts.handleError(error)
+        asyncCall.responseSource.finish(throwing: error)
+      },
+      onResponsePart: AsyncCall.makeResponsePartHandler(
+        responseParts: asyncCall.responseParts,
+        responseSource: asyncCall.responseSource
+      )
+    )
+
+    return asyncCall
   }
+}
 
-  // MARK: - Requests
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+internal enum AsyncCall {
+  internal static func makeResponsePartHandler<Response>(
+    responseParts: StreamingResponseParts<Response>,
+    responseSource: PassthroughMessageSource<Response, Error>
+  ) -> (GRPCClientResponsePart<Response>) -> Void {
+    return { responsePart in
+      // Handle the metadata, trailers and status.
+      responseParts.handle(responsePart)
 
-  /// Sends a message to the service.
-  ///
-  /// - Important: Callers must terminate the stream of messages by calling `sendEnd()`.
-  ///
-  /// - Parameters:
-  ///   - message: The message to send.
-  ///   - compression: Whether compression should be used for this message. Ignored if compression
-  ///     was not enabled for the RPC.
-  public func sendMessage(
-    _ message: Request,
-    compression: Compression = .deferToCallDefault
-  ) async throws {
-    let compress = self.call.compress(compression)
-    let promise = self.call.eventLoop.makePromise(of: Void.self)
-    self.call.send(.message(message, .init(compress: compress, flush: true)), promise: promise)
-    // TODO: This waits for the message to be written to the socket. We should probably just wait for it to be written to the channel?
-    try await promise.futureResult.get()
-  }
+      // Handle the response messages and status.
+      switch responsePart {
+      case .metadata:
+        ()
 
-  /// Sends a sequence of messages to the service.
-  ///
-  /// - Important: Callers must terminate the stream of messages by calling `sendEnd()`.
-  ///
-  /// - Parameters:
-  ///   - messages: The sequence of messages to send.
-  ///   - compression: Whether compression should be used for this message. Ignored if compression
-  ///     was not enabled for the RPC.
-  public func sendMessages<S>(
-    _ messages: S,
-    compression: Compression = .deferToCallDefault
-  ) async throws where S: Sequence, S.Element == Request {
-    let promise = self.call.eventLoop.makePromise(of: Void.self)
-    self.call.sendMessages(messages, compression: compression, promise: promise)
-    try await promise.futureResult.get()
-  }
+      case let .message(response):
+        // TODO: when we support backpressure we will need to stop ignoring the return value.
+        _ = responseSource.yield(response)
 
-  /// Terminates a stream of messages sent to the service.
-  ///
-  /// - Important: This should only ever be called once.
-  public func sendEnd() async throws {
-    let promise = self.call.eventLoop.makePromise(of: Void.self)
-    self.call.send(.end, promise: promise)
-    try await promise.futureResult.get()
+      case let .end(status, _):
+        if status.isOk {
+          responseSource.finish()
+        } else {
+          responseSource.finish(throwing: status)
+        }
+      }
+    }
   }
 }
 

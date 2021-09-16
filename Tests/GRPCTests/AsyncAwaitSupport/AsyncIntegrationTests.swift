@@ -77,10 +77,10 @@ final class AsyncIntegrationTests: GRPCTestCase {
     XCTAsyncTest {
       let collect = self.echo.makeCollectCall()
 
-      try await collect.sendMessage(.with { $0.text = "boyle" })
-      try await collect.sendMessage(.with { $0.text = "jeffers" })
-      try await collect.sendMessage(.with { $0.text = "holt" })
-      try await collect.sendEnd()
+      try await collect.requestStream.send(.with { $0.text = "boyle" })
+      try await collect.requestStream.send(.with { $0.text = "jeffers" })
+      try await collect.requestStream.send(.with { $0.text = "holt" })
+      try await collect.requestStream.finish()
 
       let initialMetadata = try await collect.initialMetadata
       initialMetadata.assertFirst("200", forName: ":status")
@@ -125,12 +125,12 @@ final class AsyncIntegrationTests: GRPCTestCase {
       var responseIterator = update.responses.map { $0.text }.makeAsyncIterator()
 
       for (i, name) in ["boyle", "jeffers", "holt"].enumerated() {
-        try await update.sendMessage(.with { $0.text = name })
+        try await update.requestStream.send(.with { $0.text = name })
         let response = try await responseIterator.next()
         XCTAssertEqual(response, "Swift echo update (\(i)): \(name)")
       }
 
-      try await update.sendEnd()
+      try await update.requestStream.finish()
 
       // This isn't right after we make the call as servers are not guaranteed to send metadata back
       // immediately. Concretely, we don't send initial metadata back until the first response

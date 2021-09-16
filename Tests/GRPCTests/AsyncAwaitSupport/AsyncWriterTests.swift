@@ -67,7 +67,7 @@ internal class AsyncWriterTests: GRPCTestCase {
       await writer.toggleWritability()
 
       await XCTAssertThrowsError(try await writer.write("pontiac")) { error in
-        XCTAssertEqual(error as? AsyncWriterError, .tooManyPendingWrites)
+        XCTAssertEqual(error as? GRPCAsyncWriterError, .tooManyPendingWrites)
       }
 
       // resume (we must finish the writer.)
@@ -87,7 +87,7 @@ internal class AsyncWriterTests: GRPCTestCase {
       XCTAssertEqual(delegate.end, 0)
 
       await XCTAssertThrowsError(try await writer.write("cheddar")) { error in
-        XCTAssertEqual(error as? AsyncWriterError, .alreadyFinished)
+        XCTAssertEqual(error as? GRPCAsyncWriterError, .alreadyFinished)
       }
 
       XCTAssertTrue(delegate.elements.isEmpty)
@@ -103,7 +103,7 @@ internal class AsyncWriterTests: GRPCTestCase {
       XCTAssertEqual(delegate.end, 0)
 
       await XCTAssertThrowsError(try await writer.finish(1)) { error in
-        XCTAssertEqual(error as? AsyncWriterError, .alreadyFinished)
+        XCTAssertEqual(error as? GRPCAsyncWriterError, .alreadyFinished)
       }
 
       // Still 0.
@@ -151,7 +151,7 @@ internal class AsyncWriterTests: GRPCTestCase {
           do {
             try await writer.finish(1)
           } catch {
-            XCTAssertEqual(error as? AsyncWriterError, .alreadyFinished)
+            XCTAssertEqual(error as? GRPCAsyncWriterError, .alreadyFinished)
             // Resume.
             await writer.toggleWritability()
           }
@@ -161,7 +161,7 @@ internal class AsyncWriterTests: GRPCTestCase {
           do {
             try await writer.finish(2)
           } catch {
-            XCTAssertEqual(error as? AsyncWriterError, .alreadyFinished)
+            XCTAssertEqual(error as? GRPCAsyncWriterError, .alreadyFinished)
             // Resume.
             await writer.toggleWritability()
           }
@@ -170,7 +170,7 @@ internal class AsyncWriterTests: GRPCTestCase {
 
       // We should definitely be finished by this point.
       await XCTAssertThrowsError(try await writer.finish(3)) { error in
-        XCTAssertEqual(error as? AsyncWriterError, .alreadyFinished)
+        XCTAssertEqual(error as? GRPCAsyncWriterError, .alreadyFinished)
       }
     }
   }
@@ -193,7 +193,7 @@ internal class AsyncWriterTests: GRPCTestCase {
       } catch is CancellationError {
         // Cancellation is fine: we cancelled while the write was pending.
         ()
-      } catch let error as AsyncWriterError {
+      } catch let error as GRPCAsyncWriterError {
         // Already finish is also fine: we cancelled before the write was enqueued.
         XCTAssertEqual(error, .alreadyFinished)
       } catch {
@@ -201,7 +201,7 @@ internal class AsyncWriterTests: GRPCTestCase {
       }
 
       await XCTAssertThrowsError(try await writer.write("bar")) { error in
-        XCTAssertEqual(error as? AsyncWriterError, .alreadyFinished)
+        XCTAssertEqual(error as? GRPCAsyncWriterError, .alreadyFinished)
       }
 
       XCTAssertTrue(delegate.elements.isEmpty)
@@ -227,7 +227,7 @@ internal class AsyncWriterTests: GRPCTestCase {
       } catch is CancellationError {
         // Cancellation is fine: we cancelled while the write was pending.
         ()
-      } catch let error as AsyncWriterError {
+      } catch let error as GRPCAsyncWriterError {
         // Already finish is also fine: we cancelled before the write was enqueued.
         XCTAssertEqual(error, .alreadyFinished)
       } catch {
@@ -235,7 +235,7 @@ internal class AsyncWriterTests: GRPCTestCase {
       }
 
       await XCTAssertThrowsError(try await writer.finish(42)) { error in
-        XCTAssertEqual(error as? AsyncWriterError, .alreadyFinished)
+        XCTAssertEqual(error as? GRPCAsyncWriterError, .alreadyFinished)
       }
 
       XCTAssertTrue(delegate.elements.isEmpty)
@@ -250,13 +250,13 @@ internal class AsyncWriterTests: GRPCTestCase {
 
       await writer.cancel()
       await XCTAssertThrowsError(try await writer.write("1")) { error in
-        XCTAssertEqual(error as? AsyncWriterError, .alreadyFinished)
+        XCTAssertEqual(error as? GRPCAsyncWriterError, .alreadyFinished)
       }
 
       // Fine, no need to throw. Nothing should change.
       await writer.cancel()
       await XCTAssertThrowsError(try await writer.write("2")) { error in
-        XCTAssertEqual(error as? AsyncWriterError, .alreadyFinished)
+        XCTAssertEqual(error as? GRPCAsyncWriterError, .alreadyFinished)
       }
 
       XCTAssertTrue(delegate.elements.isEmpty)

@@ -23,6 +23,9 @@ public struct GRPCAsyncClientStreamingCall<Request, Response> {
   private let call: Call<Request, Response>
   private let responseParts: UnaryResponseParts<Response>
 
+  /// A request stream writer for sending messages to the server.
+  public let requestStream: GRPCAsyncRequestStreamWriter<Request>
+
   /// The options used to make the RPC.
   public var options: CallOptions {
     return self.call.options
@@ -81,59 +84,13 @@ public struct GRPCAsyncClientStreamingCall<Request, Response> {
       onError: self.responseParts.handleError(_:),
       onResponsePart: self.responseParts.handle(_:)
     )
+    self.requestStream = call.makeRequestStreamWriter()
   }
 
   /// We expose this as the only non-private initializer so that the caller
   /// knows that invocation is part of initialisation.
   internal static func makeAndInvoke(call: Call<Request, Response>) -> Self {
     Self(call: call)
-  }
-
-  // MARK: - Requests
-
-  /// Sends a message to the service.
-  ///
-  /// - Important: Callers must terminate the stream of messages by calling `sendEnd()`.
-  ///
-  /// - Parameters:
-  ///   - message: The message to send.
-  ///   - compression: Whether compression should be used for this message. Ignored if compression
-  ///     was not enabled for the RPC.
-  public func sendMessage(
-    _ message: Request,
-    compression: Compression = .deferToCallDefault
-  ) async throws {
-    let compress = self.call.compress(compression)
-    let promise = self.call.eventLoop.makePromise(of: Void.self)
-    self.call.send(.message(message, .init(compress: compress, flush: true)), promise: promise)
-    // TODO: This waits for the message to be written to the socket. We should probably just wait for it to be written to the channel?
-    try await promise.futureResult.get()
-  }
-
-  /// Sends a sequence of messages to the service.
-  ///
-  /// - Important: Callers must terminate the stream of messages by calling `sendEnd()`.
-  ///
-  /// - Parameters:
-  ///   - messages: The sequence of messages to send.
-  ///   - compression: Whether compression should be used for this message. Ignored if compression
-  ///     was not enabled for the RPC.
-  public func sendMessages<S>(
-    _ messages: S,
-    compression: Compression = .deferToCallDefault
-  ) async throws where S: Sequence, S.Element == Request {
-    let promise = self.call.eventLoop.makePromise(of: Void.self)
-    self.call.sendMessages(messages, compression: compression, promise: promise)
-    try await promise.futureResult.get()
-  }
-
-  /// Terminates a stream of messages sent to the service.
-  ///
-  /// - Important: This should only ever be called once.
-  public func sendEnd() async throws {
-    let promise = self.call.eventLoop.makePromise(of: Void.self)
-    self.call.send(.end, promise: promise)
-    try await promise.futureResult.get()
   }
 }
 
