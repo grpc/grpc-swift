@@ -239,7 +239,7 @@ internal final actor AsyncWriter<Delegate: AsyncWriterDelegate> {
   ///
   /// The call may be suspend if the writer is paused.
   ///
-  /// Throws: ``AsyncWriterError`` if the writer has already been finished or too many write tasks
+  /// Throws: ``GRPCAsyncWriterError`` if the writer has already been finished or too many write tasks
   ///   have been suspended.
   @inlinable
   internal func write(_ element: Element) async throws {
@@ -256,7 +256,7 @@ internal final actor AsyncWriter<Delegate: AsyncWriterDelegate> {
     // - error (the writer is complete or the queue is full).
 
     if self._completionState.isPendingOrCompleted {
-      continuation.resume(throwing: AsyncWriterError.alreadyFinished)
+      continuation.resume(throwing: GRPCAsyncWriterError.alreadyFinished)
     } else if !self._isPaused, self._pendingElements.isEmpty {
       self._delegate.write(element)
       continuation.resume()
@@ -264,7 +264,7 @@ internal final actor AsyncWriter<Delegate: AsyncWriterDelegate> {
       // The continuation will be resumed later.
       self._pendingElements.append(PendingElement(element, continuation: continuation))
     } else {
-      continuation.resume(throwing: AsyncWriterError.tooManyPendingWrites)
+      continuation.resume(throwing: GRPCAsyncWriterError.tooManyPendingWrites)
     }
   }
 
@@ -279,7 +279,7 @@ internal final actor AsyncWriter<Delegate: AsyncWriterDelegate> {
   @inlinable
   internal func _finish(_ end: End, continuation: CheckedContinuation<Void, Error>) {
     if self._completionState.isPendingOrCompleted {
-      continuation.resume(throwing: AsyncWriterError.alreadyFinished)
+      continuation.resume(throwing: GRPCAsyncWriterError.alreadyFinished)
     } else if !self._isPaused, self._pendingElements.isEmpty {
       self._completionState = .completed
       self._delegate.writeEnd(end)
@@ -291,10 +291,35 @@ internal final actor AsyncWriter<Delegate: AsyncWriterDelegate> {
   }
 }
 
-@usableFromInline
-internal enum AsyncWriterError: Error, Hashable {
-  case tooManyPendingWrites
-  case alreadyFinished
+@available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+extension AsyncWriter where End == Void {
+  @inlinable
+  internal func finish() async throws {
+    try await self.finish(())
+  }
+}
+
+public struct GRPCAsyncWriterError: Error, Hashable {
+  private let wrapped: Wrapped
+
+  @usableFromInline
+  internal enum Wrapped {
+    case tooManyPendingWrites
+    case alreadyFinished
+  }
+
+  @usableFromInline
+  internal init(_ wrapped: Wrapped) {
+    self.wrapped = wrapped
+  }
+
+  /// There are too many writes pending. This may occur when too many Tasks are writing
+  /// concurrently.
+  public static let tooManyPendingWrites = Self(.tooManyPendingWrites)
+
+  /// The writer has already finished. This may occur when the RPC completes prematurely, or when
+  /// a user calls finish more than once.
+  public static let alreadyFinished = Self(.alreadyFinished)
 }
 
 @usableFromInline
