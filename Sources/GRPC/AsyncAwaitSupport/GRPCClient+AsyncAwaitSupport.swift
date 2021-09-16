@@ -397,10 +397,10 @@ extension GRPCClient {
       try Task.checkCancellation()
       for try await request in requests {
         try Task.checkCancellation()
-        try await call.sendMessage(request)
+        try await call.requestStream.send(request)
       }
       try Task.checkCancellation()
-      try await call.sendEnd()
+      try await call.requestStream.finish()
       try Task.checkCancellation()
     }
     return try await withTaskCancellationHandler {
@@ -431,10 +431,10 @@ extension GRPCClient {
         try Task.checkCancellation()
         for try await request in requests {
           try Task.checkCancellation()
-          try await call.sendMessage(request)
+          try await call.requestStream.send(request)
         }
         try Task.checkCancellation()
-        try await call.sendEnd()
+        try await call.requestStream.finish()
       } onCancel: {
         Task.detached {
           try await call.cancel()
