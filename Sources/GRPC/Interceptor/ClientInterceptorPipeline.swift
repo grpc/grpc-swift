@@ -85,7 +85,8 @@ internal final class ClientInterceptorPipeline<Request, Response> {
   internal private(set) var _onCancel: ((EventLoopPromise<Void>?) -> Void)?
 
   @usableFromInline
-  internal private(set) var _onRequestPart: ((GRPCClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void)?
+  internal private(set) var _onRequestPart:
+    ((GRPCClientRequestPart<Request>, EventLoopPromise<Void>?) -> Void)?
 
   @usableFromInline
   internal private(set) var _onResponsePart: ((GRPCClientResponsePart<Response>) -> Void)?
