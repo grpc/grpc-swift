@@ -96,9 +96,9 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
       )
 
     for word in ["boyle", "jeffers", "holt"] {
-      try await collect.sendMessage(.with { $0.text = word })
+      try await collect.requestStream.send(.with { $0.text = word })
     }
-    try await collect.sendEnd()
+    try await collect.requestStream.finish()
 
     await assertThat(try await collect.initialMetadata, .is(.equalTo(Self.OKInitialMetadata)))
     await assertThat(try await collect.response, .doesNotThrow())
@@ -133,9 +133,9 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
       )
 
     for word in ["boyle", "jeffers", "holt"] {
-      try await update.sendMessage(.with { $0.text = word })
+      try await update.requestStream.send(.with { $0.text = word })
     }
-    try await update.sendEnd()
+    try await update.requestStream.finish()
 
     let numResponses = try await update.responses.map { _ in 1 }.reduce(0, +)
 
@@ -156,11 +156,11 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
 
     var responseStreamIterator = update.responses.makeAsyncIterator()
     for word in ["boyle", "jeffers", "holt"] {
-      try await update.sendMessage(.with { $0.text = word })
+      try await update.requestStream.send(.with { $0.text = word })
       await assertThat(try await responseStreamIterator.next(), .is(.notNil()))
     }
 
-    try await update.sendEnd()
+    try await update.requestStream.finish()
 
     await assertThat(try await responseStreamIterator.next(), .is(.nil()))
 
@@ -185,10 +185,10 @@ class GRPCAsyncClientCallTests: GRPCTestCase {
       // Send requests, then end, in a task.
       taskGroup.addTask {
         for word in ["boyle", "jeffers", "holt"] {
-          try await update.sendMessage(.with { $0.text = word })
+          try await update.requestStream.send(.with { $0.text = word })
           await counter.incrementRequests()
         }
-        try await update.sendEnd()
+        try await update.requestStream.finish()
       }
       // Get responses in a separate task.
       taskGroup.addTask {
