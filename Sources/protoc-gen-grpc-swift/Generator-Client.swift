@@ -37,6 +37,8 @@ extension Generator {
       self.println()
       self.printAsyncClientProtocolExtension()
       self.println()
+      self.printAsyncClientProtocolSafeWrappersExtension()
+      self.println()
       self.printAsyncServiceClientImplementation()
       self.println()
       self.printEndCompilerGuardForAsyncAwait()
