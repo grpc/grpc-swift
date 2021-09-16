@@ -137,9 +137,6 @@ extension Generator {
     self.printAvailabilityForAsyncAwait()
     self.withIndentation("extension \(self.asyncClientProtocolName)", braces: .curly) {
       for (i, method) in self.service.methods.enumerated() {
-        if i > 0 {
-          self.println()
-        }
         self.method = method
 
         let rpcType = streamingType(self.method)
@@ -150,7 +147,11 @@ extension Generator {
 
         let sequenceProtocols = streamsRequests ? ["Sequence", "AsyncSequence"] : [nil]
 
-        for sequenceProtocol in sequenceProtocols {
+        for (j, sequenceProtocol) in sequenceProtocols.enumerated() {
+          // Print a new line if this is not the first function in the extension.
+          if i > 0 || j > 0 {
+            self.println()
+          }
           let functionName = streamsRequests
             ? "\(self.methodFunctionName)<RequestStream>"
             : self.methodFunctionName

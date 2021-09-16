@@ -282,6 +282,7 @@ extension Echo_EchoAsyncClientProtocol {
       callOptions: callOptions ?? self.defaultCallOptions
     )
   }
+
   public func collect<RequestStream>(
     _ requests: RequestStream,
     callOptions: CallOptions? = nil
@@ -303,6 +304,7 @@ extension Echo_EchoAsyncClientProtocol {
       callOptions: callOptions ?? self.defaultCallOptions
     )
   }
+
   public func update<RequestStream>(
     _ requests: RequestStream,
     callOptions: CallOptions? = nil
