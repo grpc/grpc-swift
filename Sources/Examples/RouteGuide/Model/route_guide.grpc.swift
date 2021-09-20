@@ -295,3 +295,4 @@ public protocol Routeguide_RouteGuideServerInterceptorFactoryProtocol {
   ///   Defaults to calling `self.makeInterceptors()`.
   func makeRouteChatInterceptors() -> [ServerInterceptor<Routeguide_RouteNote, Routeguide_RouteNote>]
 }
+

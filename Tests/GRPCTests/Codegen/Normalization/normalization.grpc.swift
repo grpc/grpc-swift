@@ -425,3 +425,4 @@ internal protocol Normalization_NormalizationServerInterceptorFactoryProtocol {
   ///   Defaults to calling `self.makeInterceptors()`.
   func makebidirectionalStreamingInterceptors() -> [ServerInterceptor<SwiftProtobuf.Google_Protobuf_Empty, Normalization_FunctionName>]
 }
+
