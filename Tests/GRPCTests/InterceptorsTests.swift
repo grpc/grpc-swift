@@ -335,7 +335,7 @@ class EchoReverseInterceptor: ClientInterceptor<Echo_EchoRequest, Echo_EchoRespo
   }
 }
 
-private class ReversingInterceptors: Echo_EchoClientInterceptorFactoryProtocol {
+class ReversingInterceptors: Echo_EchoClientInterceptorFactoryProtocol {
   // This interceptor is stateless, let's just share it.
   private let interceptors = [EchoReverseInterceptor()]
 
