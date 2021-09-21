@@ -81,7 +81,6 @@ class InterceptorsAsyncTests: GRPCTestCase {
   func testMakingUnaryCall() { XCTAsyncTest {
     let call = self.echo.makeGetCall(.with { $0.text = "hello" })
     await assertThat(try await call.response, .is(.with { $0.text = "hello :teg ohce tfiwS" }))
-    await assertThat(await call.status, .hasCode(.ok))
   } }
   
   func testClientStreamingSequence() { XCTAsyncTest {
