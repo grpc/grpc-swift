@@ -172,7 +172,7 @@ public final class Echo_EchoClient: Echo_EchoClientProtocol {
   }
 }
 
-#if compiler(>=5.5)
+#if compiler(>=5.5) && canImport(_Concurrency)
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 public protocol Echo_EchoAsyncClientProtocol: GRPCClient {
   var serviceName: String { get }
@@ -334,7 +334,7 @@ public struct Echo_EchoAsyncClient: Echo_EchoAsyncClientProtocol {
   }
 }
 
-#endif // compiler(>=5.5)
+#endif // compiler(>=5.5) && canImport(_Concurrency)
 
 public final class Echo_EchoTestClient: Echo_EchoClientProtocol {
   private let fakeChannel: FakeChannel
@@ -542,7 +542,7 @@ public protocol Echo_EchoServerInterceptorFactoryProtocol {
   func makeUpdateInterceptors() -> [ServerInterceptor<Echo_EchoRequest, Echo_EchoResponse>]
 }
 
-#if compiler(>=5.5)
+#if compiler(>=5.5) && canImport(_Concurrency)
 
 /// To implement a server, implement an object which conforms to this protocol.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
@@ -633,5 +633,5 @@ extension Echo_EchoAsyncProvider {
   }
 }
 
-#endif // compiler(>=5.5)
+#endif // compiler(>=5.5) && canImport(_Concurrency)
 

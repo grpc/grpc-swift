@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#if compiler(>=5.5)
+#if compiler(>=5.5) && canImport(_Concurrency)
 
 /// Writer for server-streaming RPC handlers to provide responses.
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)

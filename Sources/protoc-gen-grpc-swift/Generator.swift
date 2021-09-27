@@ -170,10 +170,10 @@ class Generator {
   }
 
   func printIfCompilerGuardForAsyncAwait() {
-    self.println("#if compiler(>=5.5)")
+    self.println("#if compiler(>=5.5) && canImport(_Concurrency)")
   }
 
   func printEndCompilerGuardForAsyncAwait() {
-    self.println("#endif // compiler(>=5.5)")
+    self.println("#endif // compiler(>=5.5) && canImport(_Concurrency)")
   }
 }
