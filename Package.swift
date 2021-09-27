@@ -26,7 +26,7 @@ let package = Package(
   dependencies: [
     // GRPC dependencies:
     // Main SwiftNIO package
-    .package(url: "https://github.com/apple/swift-nio.git", from: "2.32.0"),
+    .package(url: "https://github.com/apple/swift-nio.git", from: "2.33.0"),
     // HTTP2 via SwiftNIO
     .package(url: "https://github.com/apple/swift-nio-http2.git", from: "1.18.2"),
     // TLS via SwiftNIO
@@ -60,7 +60,6 @@ let package = Package(
         .product(name: "NIOEmbedded", package: "swift-nio"),
         .product(name: "NIOFoundationCompat", package: "swift-nio"),
         .product(name: "NIOTLS", package: "swift-nio"),
-        .product(name: "_NIOConcurrency", package: "swift-nio"),
         .product(name: "NIOTransportServices", package: "swift-nio-transport-services"),
         .product(name: "NIOHTTP1", package: "swift-nio"),
         .product(name: "NIOHTTP2", package: "swift-nio-http2"),

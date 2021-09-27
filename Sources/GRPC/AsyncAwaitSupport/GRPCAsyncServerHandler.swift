@@ -15,7 +15,6 @@
  */
 #if compiler(>=5.5)
 
-import _NIOConcurrency
 import NIOCore
 import NIOHPACK
 
