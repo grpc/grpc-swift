@@ -119,7 +119,7 @@ public class ConnectivityStateMonitor {
     }
 
     if let (oldState, newState) = change {
-      logger.info("connectivity state change", metadata: [
+      logger.debug("connectivity state change", metadata: [
         "old_state": "\(oldState)",
         "new_state": "\(newState)",
       ])
