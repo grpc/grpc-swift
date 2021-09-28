@@ -49,7 +49,7 @@ class InterceptorsAsyncTests: GRPCTestCase {
       .connect(host: "127.0.0.1", port: server.channel.localAddress!.port!)
 
     self.connection = connection
-    
+
     self.echo = Echo_EchoAsyncClient(
       channel: connection,
       defaultCallOptions: CallOptions(logger: self.clientLogger),
@@ -70,26 +70,26 @@ class InterceptorsAsyncTests: GRPCTestCase {
 
     super.tearDown()
   }
-  
+
   func testUnaryCall() { XCTAsyncTest {
     let get = try await self.echo.get(.with { $0.text = "hello" })
     await assertThat(get, .is(.with { $0.text = "hello :teg ohce tfiwS" }))
   } }
-  
+
   func testMakingUnaryCall() { XCTAsyncTest {
     let call = self.echo.makeGetCall(.with { $0.text = "hello" })
     await assertThat(try await call.response, .is(.with { $0.text = "hello :teg ohce tfiwS" }))
   } }
-  
+
   func testClientStreamingSequence() { XCTAsyncTest {
     let requests = ["1 2", "3 4"].map { item in
       Echo_EchoRequest.with { $0.text = item }
     }
     let response = try await self.echo.collect(requests, callOptions: .init())
-    
+
     await assertThat(response, .is(.with { $0.text = "3 4 1 2 :tcelloc ohce tfiwS" }))
   } }
-  
+
   func testClientStreamingAsyncSequence() { XCTAsyncTest {
     let stream = AsyncStream<Echo_EchoRequest> { continuation in
       continuation.yield(.with { $0.text = "1 2" })
@@ -97,17 +97,20 @@ class InterceptorsAsyncTests: GRPCTestCase {
       continuation.finish()
     }
     let response = try await self.echo.collect(stream, callOptions: .init())
-    
+
     await assertThat(response, .is(.with { $0.text = "3 4 1 2 :tcelloc ohce tfiwS" }))
   } }
-  
+
   func testMakingCallClientStreaming() { XCTAsyncTest {
     let call = self.echo.makeCollectCall(callOptions: .init())
     try await call.requestStream.send(.with { $0.text = "1 2" })
     try await call.requestStream.send(.with { $0.text = "3 4" })
     try await call.requestStream.finish()
-    
-    await assertThat(try await call.response, .is(.with { $0.text = "3 4 1 2 :tcelloc ohce tfiwS" }))
+
+    await assertThat(
+      try await call.response,
+      .is(.with { $0.text = "3 4 1 2 :tcelloc ohce tfiwS" })
+    )
   } }
 
   func testServerStreaming() { XCTAsyncTest {
@@ -117,7 +120,7 @@ class InterceptorsAsyncTests: GRPCTestCase {
       await assertThat(response, .is(.with { $0.text = "hello :)0( dnapxe ohce tfiwS" }))
     }
   } }
-  
+
   func testMakingCallServerStreaming() { XCTAsyncTest {
     let call = self.echo.makeExpandCall(.with { $0.text = "hello" }, callOptions: .init())
     for try await response in call.responses {
@@ -125,13 +128,13 @@ class InterceptorsAsyncTests: GRPCTestCase {
       await assertThat(response, .is(.with { $0.text = "hello :)0( dnapxe ohce tfiwS" }))
     }
   } }
-  
+
   func testBidirectionalStreaming() { XCTAsyncTest {
     let requests = ["1 2", "3 4"].map { item in
       Echo_EchoRequest.with { $0.text = item }
     }
     let responses = self.echo.update(requests, callOptions: .init())
-    
+
     var count = 0
     for try await response in responses {
       switch count {
@@ -145,13 +148,13 @@ class InterceptorsAsyncTests: GRPCTestCase {
       count += 1
     }
   } }
-  
+
   func testMakingCallBidirectionalStreaming() { XCTAsyncTest {
     let call = self.echo.makeUpdateCall(callOptions: .init())
     try await call.requestStream.send(.with { $0.text = "1 2" })
     try await call.requestStream.send(.with { $0.text = "3 4" })
     try await call.requestStream.finish()
-    
+
     var count = 0
     for try await response in call.responses {
       switch count {
@@ -165,7 +168,6 @@ class InterceptorsAsyncTests: GRPCTestCase {
       count += 1
     }
   } }
-  
 }
 
 #endif
