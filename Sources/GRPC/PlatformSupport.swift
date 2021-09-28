@@ -303,7 +303,37 @@ public enum PlatformSupport {
   }
 }
 
+extension PlatformSupport {
+  /// Make an `EventLoopGroup` which is compatible with the given TLS configuration/
+  ///
+  /// - Parameters:
+  ///   - configuration: The configuration to make a compatible `EventLoopGroup` for.
+  ///   - loopCount: The number of loops the `EventLoopGroup` should have.
+  /// - Returns: An `EventLoopGroup` compatible with the given `configuration`.
+  public static func makeEventLoopGroup(
+    compatibleWith configuration: GRPCTLSConfiguration,
+    loopCount: Int
+  ) -> EventLoopGroup {
+    #if canImport(Network)
+    if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) {
+      if configuration.isNetworkFrameworkTLSBackend {
+        return NIOTSEventLoopGroup(loopCount: loopCount)
+      }
+    }
+    #endif
+    return MultiThreadedEventLoopGroup(numberOfThreads: loopCount)
+  }
+}
+
 extension GRPCTLSConfiguration {
+  /// Provides a `GRPCTLSConfiguration` suitable for the given `EventLoopGroup`.
+  public static func makeClientDefault(
+    compatibleWith eventLoopGroup: EventLoopGroup
+  ) -> GRPCTLSConfiguration {
+    let networkImplementation: NetworkImplementation = .matchingEventLoopGroup(eventLoopGroup)
+    return GRPCTLSConfiguration.makeClientDefault(for: .userDefined(networkImplementation))
+  }
+
   /// Provides a `GRPCTLSConfiguration` suitable for the given network preference.
   public static func makeClientDefault(
     for networkPreference: NetworkPreference

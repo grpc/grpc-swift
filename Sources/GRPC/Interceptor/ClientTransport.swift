@@ -269,6 +269,13 @@ extension ClientTransport: ChannelInboundHandler {
   }
 
   @usableFromInline
+  internal func handlerAdded(context: ChannelHandlerContext) {
+    if context.channel.isActive {
+      self.transportActivated(channel: context.channel)
+    }
+  }
+
+  @usableFromInline
   internal func errorCaught(context: ChannelHandlerContext, error: Error) {
     self.handleError(error)
   }
@@ -319,15 +326,19 @@ extension ClientTransport {
   private func _transportActivated(channel: Channel) {
     self.callEventLoop.assertInEventLoop()
 
-    if self.state.activate() {
+    switch self.state.activate() {
+    case .unbuffer:
       self.logger.addIPAddressMetadata(local: channel.localAddress, remote: channel.remoteAddress)
-
       self._pipeline?.logger = self.logger
       self.logger.debug("activated stream channel")
       self.channel = channel
       self.unbuffer()
-    } else {
+
+    case .close:
       channel.close(mode: .all, promise: nil)
+
+    case .doNothing:
+      ()
     }
   }
 
@@ -660,8 +671,14 @@ extension ClientTransportState {
     }
   }
 
+  enum ActivateAction {
+    case unbuffer
+    case close
+    case doNothing
+  }
+
   /// `channelActive` was invoked on the transport by the `Channel`.
-  mutating func activate() -> Bool {
+  mutating func activate() -> ActivateAction {
     // The channel has become active: what now?
     switch self {
     case .idle:
@@ -669,14 +686,15 @@ extension ClientTransportState {
 
     case .awaitingTransport:
       self = .activatingTransport
-      return true
+      return .unbuffer
 
     case .activatingTransport, .active:
-      preconditionFailure("Invalid state: stream is already active")
+      // Already activated.
+      return .doNothing
 
     case .closing:
       // We remain in closing: we only transition to closed on 'channelInactive'.
-      return false
+      return .close
 
     case .closed:
       preconditionFailure("Invalid state: stream is already inactive")

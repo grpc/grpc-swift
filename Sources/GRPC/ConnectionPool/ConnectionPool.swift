@@ -659,3 +659,27 @@ internal enum ConnectionPoolError: Error {
   /// The deadline for creating a stream has passed.
   case deadlineExceeded
 }
+
+extension ConnectionPoolError: GRPCStatusTransformable {
+  internal func makeGRPCStatus() -> GRPCStatus {
+    switch self {
+    case .shutdown:
+      return GRPCStatus(
+        code: .unavailable,
+        message: "The connection pool is shutdown"
+      )
+
+    case .tooManyWaiters:
+      return GRPCStatus(
+        code: .resourceExhausted,
+        message: "The connection pool has no capacity for new RPCs or RPC waiters"
+      )
+
+    case .deadlineExceeded:
+      return GRPCStatus(
+        code: .deadlineExceeded,
+        message: "Timed out waiting for an HTTP/2 stream from the connection pool"
+      )
+    }
+  }
+}

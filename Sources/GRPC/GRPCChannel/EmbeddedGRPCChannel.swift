@@ -68,7 +68,7 @@ class EmbeddedGRPCChannel: GRPCChannel {
       options: callOptions,
       interceptors: interceptors,
       transportFactory: .http2(
-        multiplexer: self.multiplexer,
+        channel: self.makeStreamChannel(),
         authority: self.authority,
         scheme: self.scheme,
         // This is internal and only for testing, so max is fine here.
@@ -91,7 +91,7 @@ class EmbeddedGRPCChannel: GRPCChannel {
       options: callOptions,
       interceptors: interceptors,
       transportFactory: .http2(
-        multiplexer: self.multiplexer,
+        channel: self.makeStreamChannel(),
         authority: self.authority,
         scheme: self.scheme,
         // This is internal and only for testing, so max is fine here.
@@ -99,5 +99,15 @@ class EmbeddedGRPCChannel: GRPCChannel {
         errorDelegate: self.errorDelegate
       )
     )
+  }
+
+  private func makeStreamChannel() -> EventLoopFuture<Channel> {
+    let promise = self.eventLoop.makePromise(of: Channel.self)
+    self.multiplexer.whenSuccess {
+      $0.createStreamChannel(promise: promise) {
+        $0.eventLoop.makeSucceededVoidFuture()
+      }
+    }
+    return promise.futureResult
   }
 }
