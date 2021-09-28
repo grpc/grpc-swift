@@ -20,6 +20,10 @@ import NIOPosix
 import NIOTransportServices
 import XCTest
 
+#if canImport(Network)
+import Network
+#endif
+
 class PlatformSupportTests: GRPCTestCase {
   var group: EventLoopGroup!
 
@@ -227,6 +231,29 @@ class PlatformSupportTests: GRPCTestCase {
     XCTAssertTrue(group.isCompatible(with: nioSSLConfiguration))
     XCTAssertFalse(group.next().isCompatible(with: nwConfiguration))
     XCTAssertTrue(group.next().isCompatible(with: nioSSLConfiguration))
+
+    #endif
+  }
+
+  func testMakeCompatibleEventLoopGroupForNIOSSL() {
+    let configuration = GRPCTLSConfiguration.makeClientConfigurationBackedByNIOSSL()
+    let group = PlatformSupport.makeEventLoopGroup(compatibleWith: configuration, loopCount: 1)
+    XCTAssertNoThrow(try group.syncShutdownGracefully())
+    XCTAssert(group is MultiThreadedEventLoopGroup)
+  }
+
+  func testMakeCompatibleEventLoopGroupForNetworkFramework() {
+    #if canImport(Network)
+    guard #available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else { return }
+
+    let options = NWProtocolTLS.Options()
+    let configuration = GRPCTLSConfiguration.makeClientConfigurationBackedByNetworkFramework(
+      options: options
+    )
+
+    let group = PlatformSupport.makeEventLoopGroup(compatibleWith: configuration, loopCount: 1)
+    XCTAssertNoThrow(try group.syncShutdownGracefully())
+    XCTAssert(group is NIOTSEventLoopGroup)
 
     #endif
   }

@@ -161,6 +161,13 @@ extension ClientConnection: GRPCChannel {
     let multiplexer = self.getMultiplexer()
     let eventLoop = callOptions.eventLoopPreference.exact ?? multiplexer.eventLoop
 
+    // This should be on the same event loop as the multiplexer (i.e. the event loop of the
+    // underlying `Channel`.
+    let channel = multiplexer.eventLoop.makePromise(of: Channel.self)
+    multiplexer.whenComplete {
+      ClientConnection.makeStreamChannel(using: $0, promise: channel)
+    }
+
     return Call(
       path: path,
       type: type,
@@ -168,7 +175,7 @@ extension ClientConnection: GRPCChannel {
       options: options,
       interceptors: interceptors,
       transportFactory: .http2(
-        multiplexer: multiplexer,
+        channel: channel.futureResult,
         authority: self.authority,
         scheme: self.scheme,
         maximumReceiveMessageLength: self.configuration.maximumReceiveMessageLength,
@@ -188,6 +195,13 @@ extension ClientConnection: GRPCChannel {
     let multiplexer = self.getMultiplexer()
     let eventLoop = callOptions.eventLoopPreference.exact ?? multiplexer.eventLoop
 
+    // This should be on the same event loop as the multiplexer (i.e. the event loop of the
+    // underlying `Channel`.
+    let channel = multiplexer.eventLoop.makePromise(of: Channel.self)
+    multiplexer.whenComplete {
+      ClientConnection.makeStreamChannel(using: $0, promise: channel)
+    }
+
     return Call(
       path: path,
       type: type,
@@ -195,13 +209,27 @@ extension ClientConnection: GRPCChannel {
       options: options,
       interceptors: interceptors,
       transportFactory: .http2(
-        multiplexer: multiplexer,
+        channel: channel.futureResult,
         authority: self.authority,
         scheme: self.scheme,
         maximumReceiveMessageLength: self.configuration.maximumReceiveMessageLength,
         errorDelegate: self.configuration.errorDelegate
       )
     )
+  }
+
+  private static func makeStreamChannel(
+    using result: Result<HTTP2StreamMultiplexer, Error>,
+    promise: EventLoopPromise<Channel>
+  ) {
+    switch result {
+    case let .success(multiplexer):
+      multiplexer.createStreamChannel(promise: promise) {
+        $0.eventLoop.makeSucceededVoidFuture()
+      }
+    case let .failure(error):
+      promise.fail(error)
+    }
   }
 }
 
@@ -218,6 +246,11 @@ public struct ConnectionTarget {
   internal var wrapped: Wrapped
   private init(_ wrapped: Wrapped) {
     self.wrapped = wrapped
+  }
+
+  /// The host and port. The port is 443 by default.
+  public static func host(_ host: String, port: Int = 443) -> ConnectionTarget {
+    return ConnectionTarget(.hostAndPort(host, port))
   }
 
   /// The host and port.
