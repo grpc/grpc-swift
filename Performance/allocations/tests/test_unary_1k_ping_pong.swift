@@ -34,13 +34,20 @@ class UnaryPingPongBenchmark: Benchmark {
   ) {
     self.rpcs = rpcs
     self.request = .with { $0.text = request }
-    self.clientInterceptors = clientInterceptors > 0 ? makeEchoClientInterceptors(count: clientInterceptors) : nil
-    self.serverInterceptors = serverInterceptors > 0 ? makeEchoServerInterceptors(count: serverInterceptors) : nil
+    self.clientInterceptors = clientInterceptors > 0
+      ? makeEchoClientInterceptors(count: clientInterceptors)
+      : nil
+    self.serverInterceptors = serverInterceptors > 0
+      ? makeEchoServerInterceptors(count: serverInterceptors)
+      : nil
   }
 
   func setUp() throws {
     self.group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-    self.server = try makeEchoServer(group: self.group, interceptors: self.serverInterceptors).wait()
+    self.server = try makeEchoServer(
+      group: self.group,
+      interceptors: self.serverInterceptors
+    ).wait()
     self.client = makeClientConnection(
       group: self.group,
       port: self.server.channel.localAddress!.port!
