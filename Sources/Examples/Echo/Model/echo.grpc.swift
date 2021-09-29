@@ -214,7 +214,8 @@ extension Echo_EchoAsyncClientProtocol {
     return self.makeAsyncUnaryCall(
       path: "/echo.Echo/Get",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeGetInterceptors() ?? []
     )
   }
 
@@ -225,7 +226,8 @@ extension Echo_EchoAsyncClientProtocol {
     return self.makeAsyncServerStreamingCall(
       path: "/echo.Echo/Expand",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeExpandInterceptors() ?? []
     )
   }
 
@@ -234,7 +236,8 @@ extension Echo_EchoAsyncClientProtocol {
   ) -> GRPCAsyncClientStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
     return self.makeAsyncClientStreamingCall(
       path: "/echo.Echo/Collect",
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeCollectInterceptors() ?? []
     )
   }
 
@@ -243,7 +246,8 @@ extension Echo_EchoAsyncClientProtocol {
   ) -> GRPCAsyncBidirectionalStreamingCall<Echo_EchoRequest, Echo_EchoResponse> {
     return self.makeAsyncBidirectionalStreamingCall(
       path: "/echo.Echo/Update",
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeUpdateInterceptors() ?? []
     )
   }
 }
@@ -257,7 +261,8 @@ extension Echo_EchoAsyncClientProtocol {
     return try await self.performAsyncUnaryCall(
       path: "/echo.Echo/Get",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeGetInterceptors() ?? []
     )
   }
 
@@ -268,7 +273,8 @@ extension Echo_EchoAsyncClientProtocol {
     return self.performAsyncServerStreamingCall(
       path: "/echo.Echo/Expand",
       request: request,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeExpandInterceptors() ?? []
     )
   }
 
@@ -279,7 +285,8 @@ extension Echo_EchoAsyncClientProtocol {
     return try await self.performAsyncClientStreamingCall(
       path: "/echo.Echo/Collect",
       requests: requests,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeCollectInterceptors() ?? []
     )
   }
 
@@ -290,7 +297,8 @@ extension Echo_EchoAsyncClientProtocol {
     return try await self.performAsyncClientStreamingCall(
       path: "/echo.Echo/Collect",
       requests: requests,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeCollectInterceptors() ?? []
     )
   }
 
@@ -301,7 +309,8 @@ extension Echo_EchoAsyncClientProtocol {
     return self.performAsyncBidirectionalStreamingCall(
       path: "/echo.Echo/Update",
       requests: requests,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeUpdateInterceptors() ?? []
     )
   }
 
@@ -312,7 +321,8 @@ extension Echo_EchoAsyncClientProtocol {
     return self.performAsyncBidirectionalStreamingCall(
       path: "/echo.Echo/Update",
       requests: requests,
-      callOptions: callOptions ?? self.defaultCallOptions
+      callOptions: callOptions ?? self.defaultCallOptions,
+      interceptors: self.interceptors?.makeUpdateInterceptors() ?? []
     )
   }
 }

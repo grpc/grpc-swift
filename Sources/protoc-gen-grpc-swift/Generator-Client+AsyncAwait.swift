@@ -108,7 +108,10 @@ extension Generator {
             self.withIndentation("return self.make\(callTypeWithoutPrefix)", braces: .round) {
               self.println("path: \(self.methodPath),")
               self.println("request: request,")
-              self.println("callOptions: callOptions ?? self.defaultCallOptions")
+              self.println("callOptions: callOptions ?? self.defaultCallOptions,")
+              self.println(
+                "interceptors: self.interceptors?.\(self.methodInterceptorFactoryName)() ?? []"
+              )
             }
           }
 
@@ -121,7 +124,10 @@ extension Generator {
           ) {
             self.withIndentation("return self.make\(callTypeWithoutPrefix)", braces: .round) {
               self.println("path: \(self.methodPath),")
-              self.println("callOptions: callOptions ?? self.defaultCallOptions")
+              self.println("callOptions: callOptions ?? self.defaultCallOptions,")
+              self.println(
+                "interceptors: self.interceptors?.\(self.methodInterceptorFactoryName)() ?? []"
+              )
             }
           }
         }
@@ -181,7 +187,10 @@ extension Generator {
             ) {
               self.println("path: \(self.methodPath),")
               self.println("\(requestParamName): \(requestParamName),")
-              self.println("callOptions: callOptions ?? self.defaultCallOptions")
+              self.println("callOptions: callOptions ?? self.defaultCallOptions,")
+              self.println(
+                "interceptors: self.interceptors?.\(self.methodInterceptorFactoryName)() ?? []"
+              )
             }
           }
         }

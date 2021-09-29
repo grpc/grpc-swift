@@ -131,3 +131,4 @@ public protocol Helloworld_GreeterServerInterceptorFactoryProtocol {
   ///   Defaults to calling `self.makeInterceptors()`.
   func makeSayHelloInterceptors() -> [ServerInterceptor<Helloworld_HelloRequest, Helloworld_HelloReply>]
 }
+
