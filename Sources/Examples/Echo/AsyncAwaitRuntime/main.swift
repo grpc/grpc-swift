@@ -213,8 +213,8 @@ func echoCollect(client: Echo_EchoAsyncClient, message: String) async throws {
   let messages = message.components(separatedBy: " ").map { part in
     Echo_EchoRequest.with { $0.text = part }
   }
-  async let response = client.collect(messages)
-  print("collect received: \(try await response.text)")
+  let response = try await client.collect(messages)
+  print("collect received: \(response.text)")
 }
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
