@@ -443,6 +443,9 @@ extension ClientInterceptorPipeline {
     self._scheduledClose?.cancel()
     self._scheduledClose = nil
 
+    // Drop the contexts since they reference us.
+    self._userContexts.removeAll()
+
     // Cancel the transport.
     self._onCancel?(nil)
 

@@ -23,15 +23,31 @@ class UnaryPingPongBenchmark: Benchmark {
   private var group: EventLoopGroup!
   private var server: Server!
   private var client: ClientConnection!
+  private let clientInterceptors: Echo_EchoClientInterceptorFactoryProtocol?
+  private let serverInterceptors: Echo_EchoServerInterceptorFactoryProtocol?
 
-  init(rpcs: Int, request: String) {
+  init(
+    rpcs: Int,
+    request: String,
+    clientInterceptors: Int = 0,
+    serverInterceptors: Int = 0
+  ) {
     self.rpcs = rpcs
     self.request = .with { $0.text = request }
+    self.clientInterceptors = clientInterceptors > 0
+      ? makeEchoClientInterceptors(count: clientInterceptors)
+      : nil
+    self.serverInterceptors = serverInterceptors > 0
+      ? makeEchoServerInterceptors(count: serverInterceptors)
+      : nil
   }
 
   func setUp() throws {
     self.group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-    self.server = try makeEchoServer(group: self.group).wait()
+    self.server = try makeEchoServer(
+      group: self.group,
+      interceptors: self.serverInterceptors
+    ).wait()
     self.client = makeClientConnection(
       group: self.group,
       port: self.server.channel.localAddress!.port!
@@ -45,7 +61,7 @@ class UnaryPingPongBenchmark: Benchmark {
   }
 
   func run() throws -> Int {
-    let echo = Echo_EchoClient(channel: self.client)
+    let echo = Echo_EchoClient(channel: self.client, interceptors: self.clientInterceptors)
     var responseLength = 0
 
     for _ in 0 ..< self.rpcs {
@@ -61,6 +77,16 @@ class UnaryPingPongBenchmark: Benchmark {
 func run(identifier: String) {
   measure(identifier: identifier) {
     let benchmark = UnaryPingPongBenchmark(rpcs: 1000, request: "")
+    return try! benchmark.runOnce()
+  }
+
+  measure(identifier: identifier + "_interceptors_server") {
+    let benchmark = UnaryPingPongBenchmark(rpcs: 1000, request: "", serverInterceptors: 5)
+    return try! benchmark.runOnce()
+  }
+
+  measure(identifier: identifier + "_interceptors_client") {
+    let benchmark = UnaryPingPongBenchmark(rpcs: 1000, request: "", clientInterceptors: 5)
     return try! benchmark.runOnce()
   }
 }
