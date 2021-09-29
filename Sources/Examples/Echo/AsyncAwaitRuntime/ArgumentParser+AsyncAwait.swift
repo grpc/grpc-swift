@@ -17,7 +17,7 @@
 /// NOTE: This file should be removed when the `async` branch of `swift-argument-parser` has been
 ///       released: https://github.com/apple/swift-argument-parser/tree/async
 
-#if compiler(>=5.5)
+#if compiler(>=5.5) && canImport(_Concurrency)
 
 import ArgumentParser
 
