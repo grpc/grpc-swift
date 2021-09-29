@@ -1,0 +1,14 @@
+Bump version number to VERSION
+
+Motivation:
+
+We plan on tagging a release soon.
+
+Modifications:
+
+- Bump the version to VERSION
+
+Result:
+
+The version in the default user-agent string will match the released
+version.
