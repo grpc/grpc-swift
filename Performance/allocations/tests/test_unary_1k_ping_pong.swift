@@ -80,12 +80,12 @@ func run(identifier: String) {
     return try! benchmark.runOnce()
   }
 
-  measure(identifier: identifier + "_interceptors:server") {
+  measure(identifier: identifier + "_interceptors_server") {
     let benchmark = UnaryPingPongBenchmark(rpcs: 1000, request: "", serverInterceptors: 5)
     return try! benchmark.runOnce()
   }
 
-  measure(identifier: identifier + "_interceptors:client") {
+  measure(identifier: identifier + "_interceptors_client") {
     let benchmark = UnaryPingPongBenchmark(rpcs: 1000, request: "", clientInterceptors: 5)
     return try! benchmark.runOnce()
   }
