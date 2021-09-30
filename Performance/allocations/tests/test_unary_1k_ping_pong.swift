@@ -19,21 +19,24 @@ import NIO
 class UnaryPingPongBenchmark: Benchmark {
   let rpcs: Int
   let request: Echo_EchoRequest
+  let channelKind: ChannelKind
 
   private var group: EventLoopGroup!
   private var server: Server!
-  private var client: ClientConnection!
+  private var channel: GRPCChannel!
   private let clientInterceptors: Echo_EchoClientInterceptorFactoryProtocol?
   private let serverInterceptors: Echo_EchoServerInterceptorFactoryProtocol?
 
   init(
     rpcs: Int,
     request: String,
+    channelKind: ChannelKind,
     clientInterceptors: Int = 0,
     serverInterceptors: Int = 0
   ) {
     self.rpcs = rpcs
     self.request = .with { $0.text = request }
+    self.channelKind = channelKind
     self.clientInterceptors = clientInterceptors > 0
       ? makeEchoClientInterceptors(count: clientInterceptors)
       : nil
@@ -48,20 +51,20 @@ class UnaryPingPongBenchmark: Benchmark {
       group: self.group,
       interceptors: self.serverInterceptors
     ).wait()
-    self.client = makeClientConnection(
+    self.channel = self.channelKind.makeChannel(
       group: self.group,
       port: self.server.channel.localAddress!.port!
     )
   }
 
   func tearDown() throws {
-    try self.client.close().wait()
+    try self.channel.close().wait()
     try self.server.close().wait()
     try self.group.syncShutdownGracefully()
   }
 
   func run() throws -> Int {
-    let echo = Echo_EchoClient(channel: self.client, interceptors: self.clientInterceptors)
+    let echo = Echo_EchoClient(channel: self.channel, interceptors: self.clientInterceptors)
     var responseLength = 0
 
     for _ in 0 ..< self.rpcs {
@@ -76,17 +79,32 @@ class UnaryPingPongBenchmark: Benchmark {
 
 func run(identifier: String) {
   measure(identifier: identifier) {
-    let benchmark = UnaryPingPongBenchmark(rpcs: 1000, request: "")
+    let benchmark = UnaryPingPongBenchmark(rpcs: 1000, request: "", channelKind: .clientConnection)
+    return try! benchmark.runOnce()
+  }
+
+  measure(identifier: identifier + "_channelpool") {
+    let benchmark = UnaryPingPongBenchmark(rpcs: 1000, request: "", channelKind: .pooledChannel)
     return try! benchmark.runOnce()
   }
 
   measure(identifier: identifier + "_interceptors_server") {
-    let benchmark = UnaryPingPongBenchmark(rpcs: 1000, request: "", serverInterceptors: 5)
+    let benchmark = UnaryPingPongBenchmark(
+      rpcs: 1000,
+      request: "",
+      channelKind: .clientConnection,
+      serverInterceptors: 5
+    )
     return try! benchmark.runOnce()
   }
 
   measure(identifier: identifier + "_interceptors_client") {
-    let benchmark = UnaryPingPongBenchmark(rpcs: 1000, request: "", clientInterceptors: 5)
+    let benchmark = UnaryPingPongBenchmark(
+      rpcs: 1000,
+      request: "",
+      channelKind: .clientConnection,
+      clientInterceptors: 5
+    )
     return try! benchmark.runOnce()
   }
 }

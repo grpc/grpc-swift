@@ -36,6 +36,38 @@ func makeClientConnection(
     .connect(host: host, port: port)
 }
 
+func makedPooledChannel(
+  group: EventLoopGroup,
+  host: String = "127.0.0.1",
+  port: Int
+) -> GRPCChannel {
+  // 'try!' is fine -- errors are only throw if constructing an SSL context
+  // fails.
+  return try! GRPCChannelPool.with(
+    target: .host(host, port: port),
+    transportSecurity: .plaintext,
+    eventLoopGroup: group
+  )
+}
+
+enum ChannelKind: Hashable {
+  case pooledChannel
+  case clientConnection
+
+  func makeChannel(
+    group: EventLoopGroup,
+    host: String = "127.0.0.1",
+    port: Int
+  ) -> GRPCChannel {
+    switch self {
+    case .pooledChannel:
+      return makedPooledChannel(group: group, host: host, port: port)
+    case .clientConnection:
+      return makeClientConnection(group: group, host: host, port: port)
+    }
+  }
+}
+
 func makeEchoClientInterceptors(count: Int) -> Echo_EchoClientInterceptorFactoryProtocol? {
   let factory = EchoClientInterceptors()
   for _ in 0 ..< count {

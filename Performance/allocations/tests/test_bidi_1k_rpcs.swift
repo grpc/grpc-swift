@@ -21,34 +21,36 @@ class BidiPingPongBenchmark: Benchmark {
   let rpcs: Int
   let requests: Int
   let request: Echo_EchoRequest
+  let channelKind: ChannelKind
 
   private var group: EventLoopGroup!
   private var server: Server!
-  private var client: ClientConnection!
+  private var channel: GRPCChannel!
 
-  init(rpcs: Int, requests: Int, request: String) {
+  init(rpcs: Int, requests: Int, request: String, channelKind: ChannelKind) {
     self.rpcs = rpcs
     self.requests = requests
     self.request = .with { $0.text = request }
+    self.channelKind = channelKind
   }
 
   func setUp() throws {
     self.group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     self.server = try makeEchoServer(group: self.group).wait()
-    self.client = makeClientConnection(
+    self.channel = self.channelKind.makeChannel(
       group: self.group,
       port: self.server.channel.localAddress!.port!
     )
   }
 
   func tearDown() throws {
-    try self.client.close().wait()
+    try self.channel.close().wait()
     try self.server.close().wait()
     try self.group.syncShutdownGracefully()
   }
 
   func run() throws -> Int {
-    let echo = Echo_EchoClient(channel: self.client)
+    let echo = Echo_EchoClient(channel: self.channel)
     var statusCodeSum = 0
 
     // We'll use this semaphore to make sure we're ping-ponging request-response
@@ -79,12 +81,42 @@ class BidiPingPongBenchmark: Benchmark {
 
 func run(identifier: String) {
   measure(identifier: identifier + "_10_requests") {
-    let benchmark = BidiPingPongBenchmark(rpcs: 1000, requests: 10, request: "")
+    let benchmark = BidiPingPongBenchmark(
+      rpcs: 1000,
+      requests: 10,
+      request: "",
+      channelKind: .clientConnection
+    )
+    return try! benchmark.runOnce()
+  }
+
+  measure(identifier: identifier + "_10_requests_channelpool") {
+    let benchmark = BidiPingPongBenchmark(
+      rpcs: 1000,
+      requests: 10,
+      request: "",
+      channelKind: .pooledChannel
+    )
     return try! benchmark.runOnce()
   }
 
   measure(identifier: identifier + "_1_request") {
-    let benchmark = BidiPingPongBenchmark(rpcs: 1000, requests: 1, request: "")
+    let benchmark = BidiPingPongBenchmark(
+      rpcs: 1000,
+      requests: 1,
+      request: "",
+      channelKind: .clientConnection
+    )
+    return try! benchmark.runOnce()
+  }
+
+  measure(identifier: identifier + "_1_request_channelpool") {
+    let benchmark = BidiPingPongBenchmark(
+      rpcs: 1000,
+      requests: 1,
+      request: "",
+      channelKind: .pooledChannel
+    )
     return try! benchmark.runOnce()
   }
 }
