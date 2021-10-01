@@ -174,6 +174,20 @@ let package = Package(
       path: "Sources/Examples/Echo/Runtime"
     ),
 
+    // Echo example CLI using async-await API.
+    .target(
+      name: "AsyncAwaitEcho",
+      dependencies: [
+        .target(name: "EchoModel"),
+        .target(name: "EchoImplementation"),
+        .target(name: "GRPC"),
+        .target(name: "GRPCSampleData"),
+        .product(name: "SwiftProtobuf", package: "SwiftProtobuf"),
+        .product(name: "ArgumentParser", package: "swift-argument-parser"),
+      ],
+      path: "Sources/Examples/Echo/AsyncAwaitRuntime"
+    ),
+
     // Echo example service implementation.
     .target(
       name: "EchoImplementation",
