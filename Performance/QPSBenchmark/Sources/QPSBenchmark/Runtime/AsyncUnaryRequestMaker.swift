@@ -16,7 +16,7 @@
 
 import GRPC
 import Logging
-import NIO
+import NIOCore
 
 /// Makes unary requests to the server and records performance statistics.
 final class AsyncUnaryRequestMaker: RequestMaker {

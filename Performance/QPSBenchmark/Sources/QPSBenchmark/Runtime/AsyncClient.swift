@@ -18,7 +18,9 @@ import BenchmarkUtils
 import Foundation
 import GRPC
 import Logging
-import NIO
+import NIOConcurrencyHelpers
+import NIOCore
+import NIOPosix
 
 /// Client to make a series of asynchronous calls.
 final class AsyncQPSClient<RequestMakerType: RequestMaker>: QPSClient {

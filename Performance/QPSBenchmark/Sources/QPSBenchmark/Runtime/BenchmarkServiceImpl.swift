@@ -16,7 +16,7 @@
 
 import Foundation
 import GRPC
-import NIO
+import NIOCore
 
 /// Implementation of asynchronous service for benchmarking.
 final class AsyncQPSServerImpl: Grpc_Testing_BenchmarkServiceProvider {

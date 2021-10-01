@@ -15,7 +15,7 @@
  */
 
 import GRPC
-import NIO
+import NIOCore
 
 /// Pair of host and port.
 struct HostAndPort {

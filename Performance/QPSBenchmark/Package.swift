@@ -22,12 +22,11 @@ let package = Package(
   products: [
     .executable(name: "QPSBenchmark", targets: ["QPSBenchmark"]),
   ],
-
   dependencies: [
     .package(path: "../../"),
-    .package(url: "https://github.com/apple/swift-nio.git", from: "2.22.0"),
+    .package(url: "https://github.com/apple/swift-nio.git", from: "2.32.0"),
     .package(url: "https://github.com/apple/swift-log.git", from: "1.4.0"),
-    .package(url: "https://github.com/apple/swift-argument-parser.git", from: "0.3.0"),
+    .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.0.0"),
     .package(
       url: "https://github.com/swift-server/swift-service-lifecycle.git",
       from: "1.0.0-alpha"
@@ -43,7 +42,9 @@ let package = Package(
       name: "QPSBenchmark",
       dependencies: [
         .product(name: "GRPC", package: "grpc-swift"),
-        .product(name: "NIO", package: "swift-nio"),
+        .product(name: "NIOCore", package: "swift-nio"),
+        .product(name: "NIOPosix", package: "swift-nio"),
+        .product(name: "NIOConcurrencyHelpers", package: "swift-nio"),
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
         .product(name: "Logging", package: "swift-log"),
         .product(name: "Lifecycle", package: "swift-service-lifecycle"),

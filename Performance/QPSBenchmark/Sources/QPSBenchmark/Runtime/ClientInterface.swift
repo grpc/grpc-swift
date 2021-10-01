@@ -15,7 +15,7 @@
  */
 
 import GRPC
-import NIO
+import NIOCore
 
 /// Protocol which clients must implement.
 protocol QPSClient {
