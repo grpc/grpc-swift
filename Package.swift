@@ -284,6 +284,23 @@ extension Target {
     path: "Sources/Examples/Echo/Runtime"
   )
 
+  static let echoAsync: Target = .target(
+    name: "AsyncAwaitEcho",
+    dependencies: [
+      .grpc,
+      .echoModel,
+      .echoImplementation,
+      .grpcSampleData,
+      .nioCore,
+      .nioPosix,
+      .logging,
+      .argumentParser,
+    ].appending(
+      .nioSSL, if: includeNIOSSL
+    ),
+    path: "Sources/Examples/Echo/AsyncAwaitRuntime"
+  )
+
   static let helloWorldModel: Target = .target(
     name: "HelloWorldModel",
     dependencies: [
@@ -416,6 +433,7 @@ let package = Package(
     .echoModel,
     .echoImplementation,
     .echo,
+    .echoAsync,
     .helloWorldModel,
     .helloWorldClient,
     .helloWorldServer,
