@@ -204,8 +204,8 @@ func callRPC(_ rpc: RPC, using client: Echo_EchoAsyncClient, message: String) as
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
 func echoGet(client: Echo_EchoAsyncClient, message: String) async throws {
-  async let response = client.get(.with { $0.text = message })
-  print("get received: \(try await response.text)")
+  let response = try await client.get(.with { $0.text = message })
+  print("get received: \(response.text)")
 }
 
 @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
