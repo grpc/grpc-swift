@@ -15,7 +15,7 @@
  */
 
 import GRPC
-import NIO
+import NIOCore
 
 // Implementation of the control service for communication with the driver process.
 class WorkerServiceImpl: Grpc_Testing_WorkerServiceProvider {

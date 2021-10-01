@@ -17,7 +17,8 @@
 import Foundation
 import GRPC
 import Logging
-import NIO
+import NIOCore
+import NIOPosix
 
 /// Server setup for asynchronous requests.
 final class AsyncQPSServer: QPSServer {

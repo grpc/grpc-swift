@@ -15,7 +15,7 @@
  */
 
 import GRPC
-import NIO
+import NIOCore
 
 /// Interface server types must implement.
 protocol QPSServer {

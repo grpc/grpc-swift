@@ -16,7 +16,7 @@
 
 import GRPC
 import Logging
-import NIO
+import NIOCore
 
 /// Implement to provide a method of making requests to a server from a client.
 protocol RequestMaker {

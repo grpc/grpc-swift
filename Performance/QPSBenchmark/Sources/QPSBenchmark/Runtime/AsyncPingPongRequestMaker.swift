@@ -17,7 +17,7 @@
 import Foundation
 import GRPC
 import Logging
-import NIO
+import NIOCore
 
 /// Makes streaming requests and listens to responses ping-pong style.
 /// Iterations can be limited by config.
