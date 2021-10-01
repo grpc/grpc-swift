@@ -17,14 +17,6 @@
 import GRPC
 import NIOCore
 
-/// Pair of host and port.
-struct HostAndPort {
-  /// The name of a host.
-  var host: String
-  /// A port on that host.
-  var port: Int
-}
-
 extension Grpc_Testing_ClientConfig {
   /// Work out how many theads to use - defaulting to core count if not specified.
   /// - returns: The number of threads to use.
@@ -34,14 +26,14 @@ extension Grpc_Testing_ClientConfig {
 
   /// Get the server targets parsed into a useful format.
   /// - returns: Server targets as hosts and ports.
-  func parsedServerTargets() throws -> [HostAndPort] {
+  func parsedServerTargets() throws -> [ConnectionTarget] {
     let serverTargets = self.serverTargets
     return try serverTargets.map { target in
       if let splitIndex = target.lastIndex(of: ":") {
         let host = target[..<splitIndex]
         let portString = target[(target.index(after: splitIndex))...]
         if let port = Int(portString) {
-          return HostAndPort(host: String(host), port: port)
+          return ConnectionTarget.host(String(host), port: port)
         }
       }
       throw GRPCStatus(code: .invalidArgument, message: "Server targets could not be parsed")
