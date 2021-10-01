@@ -17,29 +17,52 @@ import Logging
 import NIOConcurrencyHelpers
 import NIOCore
 
+@usableFromInline
 internal final class PoolManager {
   /// Configuration used for each connection pool.
+  @usableFromInline
   internal struct PerPoolConfiguration {
     /// The maximum number of connections per pool.
+    @usableFromInline
     var maxConnections: Int
 
     /// The maximum number of waiters per pool.
+    @usableFromInline
     var maxWaiters: Int
 
     /// A load threshold in the range `0.0 ... 1.0` beyond which another connection will be started
     /// (assuming there is a connection available to start).
+    @usableFromInline
     var loadThreshold: Double
 
     /// The assumed value of HTTP/2 'SETTINGS_MAX_CONCURRENT_STREAMS'.
-    var assumedMaxConcurrentStreams: Int = 100
+    @usableFromInline
+    var assumedMaxConcurrentStreams: Int
 
     /// The assumed maximum number of streams concurrently available in the pool.
+    @usableFromInline
     var assumedStreamCapacity: Int {
       return self.maxConnections * self.assumedMaxConcurrentStreams
     }
 
     /// A `Channel` provider.
+    @usableFromInline
     var channelProvider: DefaultChannelProvider
+
+    @usableFromInline
+    internal init(
+      maxConnections: Int,
+      maxWaiters: Int,
+      loadThreshold: Double,
+      assumedMaxConcurrentStreams: Int = 100,
+      channelProvider: DefaultChannelProvider
+    ) {
+      self.maxConnections = maxConnections
+      self.maxWaiters = maxWaiters
+      self.loadThreshold = loadThreshold
+      self.assumedMaxConcurrentStreams = assumedMaxConcurrentStreams
+      self.channelProvider = channelProvider
+    }
   }
 
   /// Logging metadata keys
@@ -56,13 +79,19 @@ internal final class PoolManager {
 
   /// The current state of the pool manager, `lock` must be held when accessing or
   /// modifying `state`.
-  private var state: PoolManagerStateMachine
-  private var pools: [ConnectionPool]
-  private let lock = Lock()
+  @usableFromInline
+  internal var _state: PoolManagerStateMachine
+
+  @usableFromInline
+  internal var _pools: [ConnectionPool]
+
+  @usableFromInline
+  internal let lock = Lock()
 
   /// The `EventLoopGroup` providing `EventLoop`s for connection pools. Once initialized the manager
   /// will hold as many pools as there are loops in this `EventLoopGroup`.
-  private let group: EventLoopGroup
+  @usableFromInline
+  internal let group: EventLoopGroup
 
   /// Make a new pool manager and initialize it.
   ///
@@ -75,19 +104,21 @@ internal final class PoolManager {
   ///   - perPoolConfiguration: Configuration used by each connection pool managed by the manager.
   ///   - logger: A logger.
   /// - Returns: An initialized pool manager.
+  @usableFromInline
   internal static func makeInitializedPoolManager(
     using group: EventLoopGroup,
     perPoolConfiguration: PerPoolConfiguration,
     logger: GRPCLogger
   ) -> PoolManager {
-    let manager = PoolManager(group: group)
+    let manager = PoolManager(privateButUsableFromInline_group: group)
     manager.initialize(perPoolConfiguration: perPoolConfiguration, logger: logger)
     return manager
   }
 
-  private init(group: EventLoopGroup) {
-    self.state = PoolManagerStateMachine(.inactive)
-    self.pools = []
+  @usableFromInline
+  internal init(privateButUsableFromInline_group group: EventLoopGroup) {
+    self._state = PoolManagerStateMachine(.inactive)
+    self._pools = []
     self.group = group
 
     // The pool relies on the identity of each `EventLoop` in the `EventLoopGroup` being unique. In
@@ -106,7 +137,7 @@ internal final class PoolManager {
   deinit {
     self.lock.withLockVoid {
       assert(
-        self.state.isShutdownOrShuttingDown,
+        self._state.isShutdownOrShuttingDown,
         "The pool manager (\(ObjectIdentifier(self))) must be shutdown before going out of scope."
       )
     }
@@ -147,12 +178,12 @@ internal final class PoolManager {
     }
 
     self.lock.withLockVoid {
-      assert(self.pools.isEmpty)
-      self.pools = pools
+      assert(self._pools.isEmpty)
+      self._pools = pools
 
       // We'll blow up if we've already been initialized, that's fine, we don't allow callers to
       // call `initialize` directly.
-      self.state.activatePools(keyedBy: poolKeys, assumingPerPoolCapacity: assumedCapacity)
+      self._state.activatePools(keyedBy: poolKeys, assumingPerPoolCapacity: assumedCapacity)
     }
 
     for pool in pools {
@@ -192,11 +223,19 @@ internal final class PoolManager {
   /// A future for a `Channel` from a managed connection pool. The `eventLoop` indicates the loop
   /// that the `Channel` is running on and therefore which event loop the RPC will use for its
   /// transport.
+  @usableFromInline
   internal struct PooledStreamChannel {
+    @inlinable
+    internal init(futureResult: EventLoopFuture<Channel>) {
+      self.futureResult = futureResult
+    }
+
     /// The future `Channel`.
+    @usableFromInline
     var futureResult: EventLoopFuture<Channel>
 
     /// The `EventLoop` that the `Channel` is using.
+    @usableFromInline
     var eventLoop: EventLoop {
       return self.futureResult.eventLoop
     }
@@ -219,6 +258,7 @@ internal final class PoolManager {
   ///     `Channel` is using. The future will be failed if the pool manager has been shutdown,
   ///     the deadline has passed before a stream was created or if the selected connection pool
   ///     is unable to create a stream (if there is too much demand on that pool, for example).
+  @inlinable
   internal func makeStream(
     preferredEventLoop: EventLoop?,
     deadline: NIODeadline,
@@ -227,8 +267,8 @@ internal final class PoolManager {
   ) -> PooledStreamChannel {
     let preferredEventLoopID = preferredEventLoop.map { EventLoopID($0) }
     let reservedPool = self.lock.withLock {
-      return self.state.reserveStream(preferringPoolWithEventLoopID: preferredEventLoopID).map {
-        return self.pools[$0.value]
+      return self._state.reserveStream(preferringPoolWithEventLoopID: preferredEventLoopID).map {
+        return self._pools[$0.value]
       }
     }
 
@@ -246,16 +286,17 @@ internal final class PoolManager {
   // MARK: Shutdown
 
   /// Shutdown the pool manager and all connection pools it manages.
+  @usableFromInline
   internal func shutdown(promise: EventLoopPromise<Void>) {
     let (action, pools): (PoolManagerStateMachine.ShutdownAction, [ConnectionPool]?) = self.lock
       .withLock {
-        let action = self.state.shutdown(promise: promise)
+        let action = self._state.shutdown(promise: promise)
 
         switch action {
         case .shutdownPools:
           // Clear out the pools; we need to shut them down.
-          let pools = self.pools
-          self.pools.removeAll(keepingCapacity: true)
+          let pools = self._pools
+          self._pools.removeAll(keepingCapacity: true)
           return (action, pools)
 
         case .alreadyShutdown, .alreadyShuttingDown:
@@ -283,7 +324,7 @@ internal final class PoolManager {
 
   private func shutdownComplete() {
     self.lock.withLockVoid {
-      self.state.shutdownComplete()
+      self._state.shutdownComplete()
     }
   }
 }
@@ -291,19 +332,22 @@ internal final class PoolManager {
 // MARK: - Connection Pool to Pool Manager
 
 extension PoolManager: StreamLender {
+  @usableFromInline
   internal func returnStreams(_ count: Int, to pool: ConnectionPool) {
     self.lock.withLockVoid {
-      self.state.returnStreams(count, toPoolOnEventLoopWithID: pool.eventLoop.id)
+      self._state.returnStreams(count, toPoolOnEventLoopWithID: pool.eventLoop.id)
     }
   }
 
+  @usableFromInline
   internal func changeStreamCapacity(by delta: Int, for pool: ConnectionPool) {
     self.lock.withLockVoid {
-      self.state.changeStreamCapacity(by: delta, forPoolOnEventLoopWithID: pool.eventLoop.id)
+      self._state.changeStreamCapacity(by: delta, forPoolOnEventLoopWithID: pool.eventLoop.id)
     }
   }
 }
 
+@usableFromInline
 internal enum PoolManagerError: Error {
   /// The pool manager has not been initialized yet.
   case notInitialized

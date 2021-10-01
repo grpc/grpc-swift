@@ -23,7 +23,8 @@ internal struct ClientTransportFactory<Request, Response> {
   /// The underlying transport factory.
   private var factory: Factory<Request, Response>
 
-  private enum Factory<Request, Response> {
+  @usableFromInline
+  internal enum Factory<Request, Response> {
     case http2(HTTP2ClientTransportFactory<Request, Response>)
     case fake(FakeClientTransportFactory<Request, Response>)
   }
@@ -43,6 +44,7 @@ internal struct ClientTransportFactory<Request, Response> {
   ///   - scheme: The value of the ":scheme" pseudo header.
   ///   - errorDelegate: A client error delegate.
   /// - Returns: A factory for making and configuring HTTP/2 based transport.
+  @usableFromInline
   internal static func http2<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
     channel: EventLoopFuture<Channel>,
     authority: String,
@@ -69,6 +71,7 @@ internal struct ClientTransportFactory<Request, Response> {
   ///   - scheme: The value of the ":scheme" pseudo header.
   ///   - errorDelegate: A client error delegate.
   /// - Returns: A factory for making and configuring HTTP/2 based transport.
+  @usableFromInline
   internal static func http2<Request: GRPCPayload, Response: GRPCPayload>(
     channel: EventLoopFuture<Channel>,
     authority: String,
@@ -91,6 +94,7 @@ internal struct ClientTransportFactory<Request, Response> {
   /// Make a factory for 'fake' transport.
   /// - Parameter fakeResponse: The fake response stream.
   /// - Returns: A factory for making and configuring fake transport.
+  @usableFromInline
   internal static func fake<Request: SwiftProtobuf.Message, Response: SwiftProtobuf.Message>(
     _ fakeResponse: _FakeResponseStream<Request, Response>?
   ) -> ClientTransportFactory<Request, Response> {
@@ -107,6 +111,7 @@ internal struct ClientTransportFactory<Request, Response> {
   /// Make a factory for 'fake' transport.
   /// - Parameter fakeResponse: The fake response stream.
   /// - Returns: A factory for making and configuring fake transport.
+  @usableFromInline
   internal static func fake<Request: GRPCPayload, Response: GRPCPayload>(
     _ fakeResponse: _FakeResponseStream<Request, Response>?
   ) -> ClientTransportFactory<Request, Response> {
@@ -167,7 +172,8 @@ internal struct ClientTransportFactory<Request, Response> {
   }
 }
 
-private struct HTTP2ClientTransportFactory<Request, Response> {
+@usableFromInline
+internal struct HTTP2ClientTransportFactory<Request, Response> {
   /// The multiplexer providing an HTTP/2 stream for the call.
   private var streamChannel: EventLoopFuture<Channel>
 
@@ -189,7 +195,8 @@ private struct HTTP2ClientTransportFactory<Request, Response> {
   /// Maximum allowed length of a received message.
   private let maximumReceiveMessageLength: Int
 
-  fileprivate init<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
+  @usableFromInline
+  internal init<Serializer: MessageSerializer, Deserializer: MessageDeserializer>(
     streamChannel: EventLoopFuture<Channel>,
     scheme: String,
     authority: String,
@@ -263,7 +270,8 @@ private struct HTTP2ClientTransportFactory<Request, Response> {
   }
 }
 
-private struct FakeClientTransportFactory<Request, Response> {
+@usableFromInline
+internal struct FakeClientTransportFactory<Request, Response> {
   /// The fake response stream for the call. This can be `nil` if the user did not correctly
   /// configure their client. The result will be a transport which immediately fails.
   private var fakeResponseStream: _FakeResponseStream<Request, Response>?
@@ -277,7 +285,8 @@ private struct FakeClientTransportFactory<Request, Response> {
   /// A codec for deserializing requests and serializing responses.
   private let codec: ChannelHandler
 
-  fileprivate init<
+  @usableFromInline
+  internal init<
     RequestSerializer: MessageSerializer,
     RequestDeserializer: MessageDeserializer,
     ResponseSerializer: MessageSerializer,

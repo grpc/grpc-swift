@@ -268,6 +268,7 @@ public struct ConnectionTarget {
     return ConnectionTarget(.socketAddress(address))
   }
 
+  @usableFromInline
   var host: String {
     switch self.wrapped {
     case let .hostAndPort(host, _):

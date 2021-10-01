@@ -17,38 +17,46 @@ import NIOCore
 import NIOHTTP2
 
 extension ConnectionPool {
+  @usableFromInline
   internal final class Waiter {
     /// A promise to complete with the initialized channel.
-    private let promise: EventLoopPromise<Channel>
+    @usableFromInline
+    internal let _promise: EventLoopPromise<Channel>
 
-    fileprivate var channelFuture: EventLoopFuture<Channel> {
-      return self.promise.futureResult
+    @usableFromInline
+    internal var _channelFuture: EventLoopFuture<Channel> {
+      return self._promise.futureResult
     }
 
     /// The channel initializer.
-    private let channelInitializer: (Channel) -> EventLoopFuture<Void>
+    @usableFromInline
+    internal let _channelInitializer: (Channel) -> EventLoopFuture<Void>
 
     /// The deadline at which the timeout is scheduled.
-    private let deadline: NIODeadline
+    @usableFromInline
+    internal let _deadline: NIODeadline
 
     /// A scheduled task which fails the stream promise should the pool not provide
     /// a stream in time.
-    private var scheduledTimeout: Scheduled<Void>?
+    @usableFromInline
+    internal var _scheduledTimeout: Scheduled<Void>?
 
     /// An identifier for this waiter.
+    @usableFromInline
     internal var id: ID {
       return ID(self)
     }
 
+    @usableFromInline
     internal init(
       deadline: NIODeadline,
       promise: EventLoopPromise<Channel>,
       channelInitializer: @escaping (Channel) -> EventLoopFuture<Void>
     ) {
-      self.deadline = deadline
-      self.promise = promise
-      self.channelInitializer = channelInitializer
-      self.scheduledTimeout = nil
+      self._deadline = deadline
+      self._promise = promise
+      self._channelInitializer = channelInitializer
+      self._scheduledTimeout = nil
     }
 
     /// Schedule a timeout for this waiter. This task will be cancelled when the waiter is
@@ -57,44 +65,52 @@ extension ConnectionPool {
     /// - Parameters:
     ///   - eventLoop: The `EventLoop` to run the timeout task on.
     ///   - body: The closure to execute when the timeout is fired.
+    @usableFromInline
     internal func scheduleTimeout(
       on eventLoop: EventLoop,
       execute body: @escaping () -> Void
     ) {
-      assert(self.scheduledTimeout == nil)
-      eventLoop.scheduleTask(deadline: self.deadline, body)
+      assert(self._scheduledTimeout == nil)
+      eventLoop.scheduleTask(deadline: self._deadline, body)
     }
 
     /// Returns a boolean value indicating whether the deadline for this waiter occurs after the
     /// given deadline.
+    @usableFromInline
     internal func deadlineIsAfter(_ other: NIODeadline) -> Bool {
-      return self.deadline > other
+      return self._deadline > other
     }
 
     /// Succeed the waiter with the given multiplexer.
+    @usableFromInline
     internal func succeed(with multiplexer: HTTP2StreamMultiplexer) {
-      self.scheduledTimeout?.cancel()
-      self.scheduledTimeout = nil
-      multiplexer.createStreamChannel(promise: self.promise, self.channelInitializer)
+      self._scheduledTimeout?.cancel()
+      self._scheduledTimeout = nil
+      multiplexer.createStreamChannel(promise: self._promise, self._channelInitializer)
     }
 
     /// Fail the waiter with `error`.
+    @usableFromInline
     internal func fail(_ error: Error) {
-      self.scheduledTimeout?.cancel()
-      self.scheduledTimeout = nil
-      self.promise.fail(error)
+      self._scheduledTimeout?.cancel()
+      self._scheduledTimeout = nil
+      self._promise.fail(error)
     }
 
     /// The ID of a waiter.
+    @usableFromInline
     internal struct ID: Hashable, CustomStringConvertible {
-      private let id: ObjectIdentifier
+      @usableFromInline
+      internal let _id: ObjectIdentifier
 
-      fileprivate init(_ waiter: Waiter) {
-        self.id = ObjectIdentifier(waiter)
+      @usableFromInline
+      internal init(_ waiter: Waiter) {
+        self._id = ObjectIdentifier(waiter)
       }
 
+      @usableFromInline
       internal var description: String {
-        return String(describing: self.id)
+        return String(describing: self._id)
       }
     }
   }
