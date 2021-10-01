@@ -8,8 +8,8 @@ can use `AnyServiceClient`. For example, to call the "SayHello" RPC on the
 [Greeter][helloworld-source] service you can do the following:
 
 ```swift
-let connection = ... // get a ClientConnection
-let anyService = AnyServiceClient(connection: connection)
+let channel = ... // get a GRPCChannel
+let anyService = AnyServiceClient(channel: channel)
 
 let sayHello = anyService.makeUnaryCall(
   path: "/helloworld.Greeter/SayHello",

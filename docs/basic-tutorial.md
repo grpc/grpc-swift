@@ -469,8 +469,8 @@ To call service methods, we first need to create a *stub*. All generated Swift
 stubs are *non-blocking/asynchronous*.
 
 First we need to create a gRPC channel for our stub, we're not using TLS so we
-use the `insecure` builder and specify the server address and port we want to
-connect to:
+use the `.plaintext` security transport and specify the server address and port
+we want to connect to:
 
 ```swift
 let group = PlatformSupport.makeEventLoopGroup(loopCount: 1)
@@ -478,8 +478,11 @@ defer {
   try? group.syncShutdownGracefully()
 }
 
-let channel = ClientConnection.insecure(group: group)
-  .connect(host: "localhost", port: port)
+let channel = try GRPCChannelPool.with(
+  target: .host("localhost", port: port),
+  transportSecurity: .plaintext,
+  eventLoopGroup: group
+)
 
 let client = Routeguide_RouteGuideClient(channel: channel)
 ```
