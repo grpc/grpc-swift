@@ -19,6 +19,7 @@ import NIOConcurrencyHelpers
 import NIOCore
 import NIOHTTP2
 
+@usableFromInline
 internal final class ConnectionManager {
   internal enum Reconnect {
     case none

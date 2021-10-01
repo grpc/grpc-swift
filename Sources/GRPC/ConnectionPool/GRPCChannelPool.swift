@@ -61,6 +61,7 @@ public enum GRPCChannelPool {
   ///     using the ``GRPCChannelPool/Configuration/TransportSecurity-swift.struct/plaintext``
   ///     transport security.
   /// - Returns: A ``GRPCChannel``.
+  @inlinable
   public static func with(
     target: ConnectionTarget,
     transportSecurity: GRPCChannelPool.Configuration.TransportSecurity,
@@ -87,7 +88,8 @@ public enum GRPCChannelPool {
 
 extension GRPCChannelPool {
   public struct Configuration {
-    private init(
+    @inlinable
+    internal init(
       target: ConnectionTarget,
       transportSecurity: TransportSecurity,
       eventLoopGroup: EventLoopGroup
@@ -108,6 +110,7 @@ extension GRPCChannelPool {
     ///       `eventLoopGroup` must be compatible with the value
     ///   - eventLoopGroup: The `EventLoopGroup` to run connections on.
     ///   - configure: A closure which may be used to modify defaulted configuration.
+    @inlinable
     public static func with(
       target: ConnectionTarget,
       transportSecurity: TransportSecurity,
@@ -214,6 +217,7 @@ extension GRPCChannelPool.Configuration {
     /// Default HTTP/2 configuration.
     public static let defaults = HTTP2()
 
+    @inlinable
     public static func with(_ configure: (inout HTTP2) -> Void) -> HTTP2 {
       var configuration = Self.defaults
       configure(&configuration)
@@ -243,6 +247,7 @@ extension GRPCChannelPool.Configuration {
     /// Default connection pool configuration.
     public static let defaults = ConnectionPool()
 
+    @inlinable
     public static func with(_ configure: (inout ConnectionPool) -> Void) -> ConnectionPool {
       var configuration = Self.defaults
       configure(&configuration)

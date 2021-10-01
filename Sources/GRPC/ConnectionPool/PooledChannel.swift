@@ -19,15 +19,21 @@ import NIOHTTP2
 import NIOSSL
 import SwiftProtobuf
 
+@usableFromInline
 internal final class PooledChannel: GRPCChannel {
-  private let configuration: GRPCChannelPool.Configuration
-  private let pool: PoolManager
-  private let authority: String
-  private let scheme: String
+  @usableFromInline
+  internal let _configuration: GRPCChannelPool.Configuration
+  @usableFromInline
+  internal let _pool: PoolManager
+  @usableFromInline
+  internal let _authority: String
+  @usableFromInline
+  internal let _scheme: String
 
+  @inlinable
   internal init(configuration: GRPCChannelPool.Configuration) throws {
-    self.configuration = configuration
-    self.authority = configuration.target.host
+    self._configuration = configuration
+    self._authority = configuration.target.host
 
     let tlsMode: DefaultChannelProvider.TLSMode
     let scheme: String
@@ -45,7 +51,7 @@ internal final class PooledChannel: GRPCChannel {
       tlsMode = .disabled
     }
 
-    self.scheme = scheme
+    self._scheme = scheme
 
     let provider = DefaultChannelProvider(
       connectionTarget: configuration.target,
@@ -59,7 +65,7 @@ internal final class PooledChannel: GRPCChannel {
       debugChannelInitializer: configuration.debugChannelInitializer
     )
 
-    self.pool = PoolManager.makeInitializedPoolManager(
+    self._pool = PoolManager.makeInitializedPoolManager(
       using: configuration.eventLoopGroup,
       perPoolConfiguration: .init(
         maxConnections: configuration.connectionPool.connectionsPerEventLoop,
@@ -72,14 +78,15 @@ internal final class PooledChannel: GRPCChannel {
     )
   }
 
-  private func makeStreamChannel(
+  @inlinable
+  internal func _makeStreamChannel(
     callOptions: CallOptions
   ) -> (EventLoopFuture<Channel>, EventLoop) {
     let preferredEventLoop = callOptions.eventLoopPreference.exact
-    let connectionWaitDeadline = NIODeadline.now() + self.configuration.connectionPool.maxWaitTime
+    let connectionWaitDeadline = NIODeadline.now() + self._configuration.connectionPool.maxWaitTime
     let deadline = min(callOptions.timeLimit.makeDeadline(), connectionWaitDeadline)
 
-    let streamChannel = self.pool.makeStream(
+    let streamChannel = self._pool.makeStream(
       preferredEventLoop: preferredEventLoop,
       deadline: deadline,
       logger: GRPCLogger(wrapping: callOptions.logger)
@@ -92,13 +99,14 @@ internal final class PooledChannel: GRPCChannel {
 
   // MARK: GRPCChannel conformance
 
+  @inlinable
   internal func makeCall<Request, Response>(
     path: String,
     type: GRPCCallType,
     callOptions: CallOptions,
     interceptors: [ClientInterceptor<Request, Response>]
   ) -> Call<Request, Response> where Request: Message, Response: Message {
-    let (stream, eventLoop) = self.makeStreamChannel(callOptions: callOptions)
+    let (stream, eventLoop) = self._makeStreamChannel(callOptions: callOptions)
 
     return Call(
       path: path,
@@ -108,21 +116,22 @@ internal final class PooledChannel: GRPCChannel {
       interceptors: interceptors,
       transportFactory: .http2(
         channel: stream,
-        authority: self.authority,
-        scheme: self.scheme,
-        maximumReceiveMessageLength: self.configuration.maximumReceiveMessageLength,
-        errorDelegate: self.configuration.errorDelegate
+        authority: self._authority,
+        scheme: self._scheme,
+        maximumReceiveMessageLength: self._configuration.maximumReceiveMessageLength,
+        errorDelegate: self._configuration.errorDelegate
       )
     )
   }
 
+  @inlinable
   internal func makeCall<Request, Response>(
     path: String,
     type: GRPCCallType,
     callOptions: CallOptions,
     interceptors: [ClientInterceptor<Request, Response>]
   ) -> Call<Request, Response> where Request: GRPCPayload, Response: GRPCPayload {
-    let (stream, eventLoop) = self.makeStreamChannel(callOptions: callOptions)
+    let (stream, eventLoop) = self._makeStreamChannel(callOptions: callOptions)
 
     return Call(
       path: path,
@@ -132,21 +141,23 @@ internal final class PooledChannel: GRPCChannel {
       interceptors: interceptors,
       transportFactory: .http2(
         channel: stream,
-        authority: self.authority,
-        scheme: self.scheme,
-        maximumReceiveMessageLength: self.configuration.maximumReceiveMessageLength,
-        errorDelegate: self.configuration.errorDelegate
+        authority: self._authority,
+        scheme: self._scheme,
+        maximumReceiveMessageLength: self._configuration.maximumReceiveMessageLength,
+        errorDelegate: self._configuration.errorDelegate
       )
     )
   }
 
+  @inlinable
   internal func close(promise: EventLoopPromise<Void>) {
-    self.pool.shutdown(promise: promise)
+    self._pool.shutdown(promise: promise)
   }
 
+  @inlinable
   internal func close() -> EventLoopFuture<Void> {
-    let promise = self.configuration.eventLoopGroup.next().makePromise(of: Void.self)
-    self.pool.shutdown(promise: promise)
+    let promise = self._configuration.eventLoopGroup.next().makePromise(of: Void.self)
+    self._pool.shutdown(promise: promise)
     return promise.futureResult
   }
 }

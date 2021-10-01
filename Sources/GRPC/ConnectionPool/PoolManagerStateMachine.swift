@@ -15,14 +15,18 @@
  */
 import NIOCore
 
+@usableFromInline
 internal struct PoolManagerStateMachine {
   /// The current state.
-  private var state: State
+  @usableFromInline
+  internal var state: State
 
+  @usableFromInline
   internal init(_ state: State) {
     self.state = state
   }
 
+  @usableFromInline
   internal enum State {
     case inactive
     case active(ActiveState)
@@ -31,9 +35,12 @@ internal struct PoolManagerStateMachine {
     case _modifying
   }
 
+  @usableFromInline
   internal struct ActiveState {
+    @usableFromInline
     internal var pools: [EventLoopID: PerPoolState]
 
+    @usableFromInline
     internal init(
       poolKeys: [PoolManager.ConnectionPoolKey],
       assumedMaxAvailableStreamsPerPool: Int
@@ -50,7 +57,8 @@ internal struct PoolManagerStateMachine {
 
   /// Temporarily sets `self.state` to `._modifying` before calling the provided closure and setting
   /// `self.state` to the `State` modified by the closure.
-  private mutating func modifyingState<Result>(_ modify: (inout State) -> Result) -> Result {
+  @inlinable
+  internal mutating func modifyingState<Result>(_ modify: (inout State) -> Result) -> Result {
     var state = State._modifying
     swap(&self.state, &state)
     defer {
@@ -60,6 +68,7 @@ internal struct PoolManagerStateMachine {
   }
 
   /// Returns whether the pool is shutdown or in the process of shutting down.
+  @usableFromInline
   internal var isShutdownOrShuttingDown: Bool {
     switch self.state {
     case .shuttingDown, .shutdown:
@@ -78,6 +87,7 @@ internal struct PoolManagerStateMachine {
   ///   - capacity: The *assumed* maximum number of streams concurrently available to a pool (that
   ///       is, the product of the assumed value of max concurrent streams and the number of
   ///       connections per pool).
+  @usableFromInline
   internal mutating func activatePools(
     keyedBy keys: [PoolManager.ConnectionPoolKey],
     assumingPerPoolCapacity capacity: Int
@@ -94,6 +104,7 @@ internal struct PoolManagerStateMachine {
   }
 
   /// Select and reserve a stream from a connection pool.
+  @inlinable
   mutating func reserveStream(
     preferringPoolWithEventLoopID eventLoopID: EventLoopID?
   ) -> Result<PoolManager.ConnectionPoolIndex, PoolManagerError> {
@@ -209,12 +220,14 @@ internal struct PoolManagerStateMachine {
 }
 
 extension PoolManagerStateMachine.ActiveState {
+  @usableFromInline
   mutating func reserveStreamFromPool(
     onEventLoopWithID eventLoopID: EventLoopID
   ) -> PoolManager.ConnectionPoolIndex? {
     return self.pools[eventLoopID]?.reserveStream()
   }
 
+  @usableFromInline
   mutating func reserveStreamFromPoolWithMostAvailableStreams() -> PoolManager.ConnectionPoolIndex {
     // We don't allow pools to be empty (while active).
     assert(!self.pools.isEmpty)
