@@ -35,6 +35,21 @@ internal final class ConnectionPool {
   @usableFromInline
   internal var _state: State = .active
 
+  /// The most recent connection error we have observed.
+  ///
+  /// This error is used to provide additional context to failed waiters. A waiter may, for example,
+  /// timeout because the pool is busy, or because no connection can be established because of an
+  /// underlying connection error. In the latter case it's useful for the caller to know why the
+  /// connection is failing at the RPC layer.
+  ///
+  /// This value is cleared when a connection becomes 'available'. That is, when we receive an
+  /// http/2 SETTINGS frame.
+  ///
+  /// This value is set whenever an underlying connection transitions to the transient failure state
+  /// or to the idle state and has an associated error.
+  @usableFromInline
+  internal var _mostRecentError: Error? = nil
+
   /// Connection managers and their stream availability state keyed by the ID of the connection
   /// manager.
   ///
@@ -326,7 +341,7 @@ internal final class ConnectionPool {
       logger.trace("connection pool has too many waiters", metadata: [
         Metadata.waitersMax: "\(self.maxWaiters)",
       ])
-      promise.fail(ConnectionPoolError.tooManyWaiters)
+      promise.fail(ConnectionPoolError.tooManyWaiters(connectionError: self._mostRecentError))
       return
     }
 
@@ -336,7 +351,8 @@ internal final class ConnectionPool {
     // timeout before appending it to the waiters, it wont run until the next event loop tick at the
     // earliest (even if the deadline has already passed).
     waiter.scheduleTimeout(on: self.eventLoop) {
-      waiter.fail(ConnectionPoolError.deadlineExceeded)
+      waiter.fail(ConnectionPoolError.deadlineExceeded(connectionError: self._mostRecentError))
+
       if let index = self.waiters.firstIndex(where: { $0.id == waiter.id }) {
         self.waiters.remove(at: index)
 
@@ -512,20 +528,35 @@ internal final class ConnectionPool {
 }
 
 extension ConnectionPool: ConnectionManagerConnectivityDelegate {
+  // We're interested in a few different situations here:
+  //
+  // 1. The connection was usable ('ready') and is no longer usable (either it became idle or
+  //    encountered an error. If this happens we need to notify any connections of the change as
+  //    they may no longer be used for new RPCs.
+  // 2. The connection was not usable but moved to a different unusable state. If this happens and
+  //    we know the cause of the state transition (i.e. the error) then we need to update our most
+  //    recent error with the error. This information is used when failing waiters to provide some
+  //    context as to why they may be failing.
   func connectionStateDidChange(
     _ manager: ConnectionManager,
-    from oldState: ConnectivityState,
-    to newState: ConnectivityState
+    from oldState: _ConnectivityState,
+    to newState: _ConnectivityState
   ) {
     switch (oldState, newState) {
-    case (.ready, .transientFailure),
-         (.ready, .idle),
-         (.ready, .shutdown):
-      // The connection is no longer available.
+    case let (.ready, .transientFailure(error)),
+         let (.ready, .idle(.some(error))):
+      self.updateMostRecentError(error)
       self.connectionUnavailable(manager.id)
 
+    case (.ready, .idle(.none)),
+         (.ready, .shutdown):
+      self.connectionUnavailable(manager.id)
+
+    case let (_, .transientFailure(error)),
+         let (_, .idle(.some(error))):
+      self.updateMostRecentError(error)
+
     default:
-      // We're only interested in connection drops.
       ()
     }
   }
@@ -549,6 +580,13 @@ extension ConnectionPool: ConnectionManagerConnectivityDelegate {
     // Note: we don't need to adjust the number of available streams as the number of connections
     // hasn't changed.
     self.streamLender.returnStreams(removed.reservedStreams, to: self)
+  }
+
+  private func updateMostRecentError(_ error: Error) {
+    self.eventLoop.assertInEventLoop()
+    // Update the last known error if there is one. We will use it to provide some context to
+    // waiters which may fail.
+    self._mostRecentError = error
   }
 
   /// A connection has become unavailable.
@@ -579,6 +617,9 @@ extension ConnectionPool: ConnectionManagerHTTP2Delegate {
     maxConcurrentStreams: Int
   ) {
     self.eventLoop.assertInEventLoop()
+
+    // If we received a SETTINGS update then a connection is okay: drop the last known error.
+    self._mostRecentError = nil
 
     let previous = self._connections[manager.id]?.updateMaxConcurrentStreams(maxConcurrentStreams)
     let delta: Int
@@ -696,10 +737,10 @@ internal enum ConnectionPoolError: Error {
   case shutdown
 
   /// There are too many waiters in the pool.
-  case tooManyWaiters
+  case tooManyWaiters(connectionError: Error?)
 
   /// The deadline for creating a stream has passed.
-  case deadlineExceeded
+  case deadlineExceeded(connectionError: Error?)
 }
 
 extension ConnectionPoolError: GRPCStatusTransformable {
@@ -712,16 +753,18 @@ extension ConnectionPoolError: GRPCStatusTransformable {
         message: "The connection pool is shutdown"
       )
 
-    case .tooManyWaiters:
+    case let .tooManyWaiters(error):
       return GRPCStatus(
         code: .resourceExhausted,
-        message: "The connection pool has no capacity for new RPCs or RPC waiters"
+        message: "The connection pool has no capacity for new RPCs or RPC waiters",
+        cause: error
       )
 
-    case .deadlineExceeded:
+    case let .deadlineExceeded(error):
       return GRPCStatus(
         code: .deadlineExceeded,
-        message: "Timed out waiting for an HTTP/2 stream from the connection pool"
+        message: "Timed out waiting for an HTTP/2 stream from the connection pool",
+        cause: error
       )
     }
   }
