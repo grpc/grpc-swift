@@ -73,4 +73,5 @@ fi
   -s "$here/shared/echo.grpc.swift" \
   -s "$here/shared/MinimalEchoProvider.swift" \
   -s "$here/shared/EmbeddedServer.swift" \
+  -s "$here/shared/BidiTest.swift" \
   "${tests_to_run[@]}"
