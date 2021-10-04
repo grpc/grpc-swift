@@ -43,10 +43,6 @@ class BidiPingPongBenchmark: Benchmark {
       port: self.server.channel.localAddress!.port!
     )
     self.echo = Echo_EchoClient(channel: self.channel)
-
-    // Do 1 RPC as warm up.
-    let get = self.echo.get(self.request)
-    _ = try get.status.wait()
   }
 
   func tearDown() throws {

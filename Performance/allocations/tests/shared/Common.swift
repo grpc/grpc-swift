@@ -16,6 +16,19 @@
 import GRPC
 import NIO
 
+extension Benchmark {
+  func run(identifier: String) {
+    try! self.setUp()
+    defer {
+      try! self.tearDown()
+    }
+
+    measure(identifier: identifier) {
+      return try! self.run()
+    }
+  }
+}
+
 func makeEchoServer(
   group: EventLoopGroup,
   host: String = "127.0.0.1",

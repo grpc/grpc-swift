@@ -15,13 +15,12 @@
  */
 
 func run(identifier: String) {
-  measure(identifier: identifier) {
-    let benchmark = BidiPingPongBenchmark(
-      rpcs: 1000,
-      requests: 1,
-      request: "",
-      channelKind: .pooledChannel
-    )
-    return try! benchmark.runOnce()
-  }
+  let benchmark = BidiPingPongBenchmark(
+    rpcs: 1000,
+    requests: 1,
+    request: "",
+    channelKind: .pooledChannel
+  )
+
+  benchmark.run(identifier: identifier)
 }
