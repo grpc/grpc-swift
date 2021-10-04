@@ -26,6 +26,7 @@ class BidiPingPongBenchmark: Benchmark {
   private var group: EventLoopGroup!
   private var server: Server!
   private var channel: GRPCChannel!
+  private var echo: Echo_EchoClient!
 
   init(rpcs: Int, requests: Int, request: String, channelKind: ChannelKind) {
     self.rpcs = rpcs
@@ -41,6 +42,11 @@ class BidiPingPongBenchmark: Benchmark {
       group: self.group,
       port: self.server.channel.localAddress!.port!
     )
+    self.echo = Echo_EchoClient(channel: self.channel)
+
+    // Do 1 RPC as warm up.
+    let get = self.echo.get(self.request)
+    _ = try get.status.wait()
   }
 
   func tearDown() throws {
@@ -50,7 +56,6 @@ class BidiPingPongBenchmark: Benchmark {
   }
 
   func run() throws -> Int {
-    let echo = Echo_EchoClient(channel: self.channel)
     var statusCodeSum = 0
 
     // We'll use this semaphore to make sure we're ping-ponging request-response
@@ -59,7 +64,7 @@ class BidiPingPongBenchmark: Benchmark {
     let waiter = DispatchSemaphore(value: 1)
 
     for _ in 0 ..< self.rpcs {
-      let update = echo.update { _ in
+      let update = self.echo.update { _ in
         waiter.signal()
       }
 
