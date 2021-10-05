@@ -52,6 +52,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     waiters: Int = 1000,
     reservationLoadThreshold: Double = 0.9,
     now: @escaping () -> NIODeadline = { .now() },
+    connectionBackoff: ConnectionBackoff = ConnectionBackoff(),
     onReservationReturned: @escaping (Int) -> Void = { _ in },
     onMaximumReservationsChange: @escaping (Int) -> Void = { _ in },
     channelProvider: ConnectionManagerChannelProvider
@@ -61,6 +62,7 @@ final class ConnectionPoolTests: GRPCTestCase {
       maxWaiters: waiters,
       reservationLoadThreshold: reservationLoadThreshold,
       assumedMaxConcurrentStreams: 100,
+      connectionBackoff: connectionBackoff,
       channelProvider: channelProvider,
       streamLender: HookedStreamLender(
         onReturnStreams: onReservationReturned,
@@ -85,6 +87,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     waiters: Int = 1000,
     reservationLoadThreshold: Double = 0.9,
     now: @escaping () -> NIODeadline = { .now() },
+    connectionBackoff: ConnectionBackoff = ConnectionBackoff(),
     onReservationReturned: @escaping (Int) -> Void = { _ in },
     onMaximumReservationsChange: @escaping (Int) -> Void = { _ in }
   ) -> (ConnectionPool, ChannelController) {
@@ -93,6 +96,7 @@ final class ConnectionPoolTests: GRPCTestCase {
       waiters: waiters,
       reservationLoadThreshold: reservationLoadThreshold,
       now: now,
+      connectionBackoff: connectionBackoff,
       onReservationReturned: onReservationReturned,
       onMaximumReservationsChange: onMaximumReservationsChange,
       channelProvider: controller
@@ -630,6 +634,71 @@ final class ConnectionPoolTests: GRPCTestCase {
     XCTAssertEqual(reservationsReturned, [1, 1])
     XCTAssertEqual(pool.sync.reservedStreams, 0)
     XCTAssertEqual(pool.sync.availableStreams, 100)
+  }
+
+  func testBackoffIsUsedForReconnections() {
+    // Fix backoff to always be 1 second.
+    let backoff = ConnectionBackoff(
+      initialBackoff: 1.0,
+      maximumBackoff: 1.0,
+      multiplier: 1.0,
+      jitter: 0.0
+    )
+
+    let (pool, controller) = self.setUpPoolAndController(connectionBackoff: backoff)
+    pool.initialize(connections: 1)
+    XCTAssertEqual(pool.sync.connections, 1)
+
+    let w1 = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+      $0.eventLoop.makeSucceededVoidFuture()
+    }
+    // Start creating the channel.
+    self.eventLoop.run()
+
+    // Make the connection 'ready'.
+    controller.connectChannel(atIndex: 0)
+    controller.sendSettingsToChannel(atIndex: 0)
+    self.eventLoop.run()
+    XCTAssertNoThrow(try w1.wait())
+    controller.openStreamInChannel(atIndex: 0)
+
+    // Close the connection. It should hit the transient failure state.
+    controller.fireChannelInactiveForChannel(atIndex: 0)
+    // Now nothing is available in the pool.
+    XCTAssertEqual(pool.sync.waiters, 0)
+    XCTAssertEqual(pool.sync.availableStreams, 0)
+    XCTAssertEqual(pool.sync.reservedStreams, 0)
+    XCTAssertEqual(pool.sync.idleConnections, 0)
+
+    // Enqueue two waiters. One to time out before the reconnect happens.
+    let w2 = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+      $0.eventLoop.makeSucceededVoidFuture()
+    }
+
+    let w3 = pool.makeStream(
+      deadline: .uptimeNanoseconds(UInt64(TimeAmount.milliseconds(500).nanoseconds)),
+      logger: self.logger.wrapped
+    ) {
+      $0.eventLoop.makeSucceededVoidFuture()
+    }
+
+    XCTAssertEqual(pool.sync.waiters, 2)
+
+    // Time out w3.
+    self.eventLoop.advanceTime(by: .milliseconds(500))
+    XCTAssertThrowsError(try w3.wait())
+    XCTAssertEqual(pool.sync.waiters, 1)
+
+    // Wait a little more for the backoff to pass. The controller should now have a second channel.
+    self.eventLoop.advanceTime(by: .milliseconds(500))
+    XCTAssertEqual(controller.count, 2)
+
+    // Start up the next channel.
+    controller.connectChannel(atIndex: 1)
+    controller.sendSettingsToChannel(atIndex: 1)
+    self.eventLoop.run()
+    XCTAssertNoThrow(try w2.wait())
+    controller.openStreamInChannel(atIndex: 1)
   }
 }
 

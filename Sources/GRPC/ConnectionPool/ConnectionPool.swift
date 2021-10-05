@@ -70,6 +70,10 @@ internal final class ConnectionPool {
   @usableFromInline
   internal let maxWaiters: Int
 
+  /// Configuration for backoff between subsequence connection attempts.
+  @usableFromInline
+  internal let connectionBackoff: ConnectionBackoff
+
   /// Provides a channel factory to the `ConnectionManager`.
   @usableFromInline
   internal let channelProvider: ConnectionManagerChannelProvider
@@ -125,6 +129,7 @@ internal final class ConnectionPool {
     maxWaiters: Int,
     reservationLoadThreshold: Double,
     assumedMaxConcurrentStreams: Int,
+    connectionBackoff: ConnectionBackoff,
     channelProvider: ConnectionManagerChannelProvider,
     streamLender: StreamLender,
     logger: GRPCLogger,
@@ -142,6 +147,7 @@ internal final class ConnectionPool {
     self.waiters = CircularBuffer(initialCapacity: 16)
 
     self.eventLoop = eventLoop
+    self.connectionBackoff = connectionBackoff
     self.channelProvider = channelProvider
     self.streamLender = streamLender
     self.logger = logger
@@ -165,7 +171,7 @@ internal final class ConnectionPool {
       eventLoop: self.eventLoop,
       channelProvider: self.channelProvider,
       callStartBehavior: .waitsForConnectivity,
-      connectionBackoff: ConnectionBackoff(),
+      connectionBackoff: self.connectionBackoff,
       connectivityDelegate: self,
       http2Delegate: self,
       logger: self.logger.unwrapped

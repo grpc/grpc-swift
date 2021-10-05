@@ -72,6 +72,7 @@ internal final class PooledChannel: GRPCChannel {
         maxWaiters: configuration.connectionPool.maxWaitersPerEventLoop,
         loadThreshold: configuration.connectionPool.reservationLoadThreshold,
         assumedMaxConcurrentStreams: 100,
+        connectionBackoff: configuration.connectionBackoff,
         channelProvider: provider
       ),
       logger: configuration.backgroundActivityLogger.wrapped

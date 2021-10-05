@@ -25,6 +25,7 @@ class PoolManagerStateMachineTests: GRPCTestCase {
     maxWaiters: Int = 100,
     maxConcurrentStreams: Int = 100,
     loadThreshold: Double = 0.9,
+    connectionBackoff: ConnectionBackoff = ConnectionBackoff(),
     makeChannel: @escaping (ConnectionManager, EventLoop) -> EventLoopFuture<Channel>
   ) -> ConnectionPool {
     return ConnectionPool(
@@ -32,6 +33,7 @@ class PoolManagerStateMachineTests: GRPCTestCase {
       maxWaiters: maxWaiters,
       reservationLoadThreshold: loadThreshold,
       assumedMaxConcurrentStreams: maxConcurrentStreams,
+      connectionBackoff: connectionBackoff,
       channelProvider: HookedChannelProvider(makeChannel),
       streamLender: HookedStreamLender(
         onReturnStreams: { _ in },
