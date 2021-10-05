@@ -45,6 +45,9 @@ internal final class PoolManager {
       return self.maxConnections * self.assumedMaxConcurrentStreams
     }
 
+    @usableFromInline
+    var connectionBackoff: ConnectionBackoff
+
     /// A `Channel` provider.
     @usableFromInline
     var channelProvider: DefaultChannelProvider
@@ -55,12 +58,14 @@ internal final class PoolManager {
       maxWaiters: Int,
       loadThreshold: Double,
       assumedMaxConcurrentStreams: Int = 100,
+      connectionBackoff: ConnectionBackoff,
       channelProvider: DefaultChannelProvider
     ) {
       self.maxConnections = maxConnections
       self.maxWaiters = maxWaiters
       self.loadThreshold = loadThreshold
       self.assumedMaxConcurrentStreams = assumedMaxConcurrentStreams
+      self.connectionBackoff = connectionBackoff
       self.channelProvider = channelProvider
     }
   }
@@ -211,6 +216,7 @@ internal final class PoolManager {
         maxWaiters: configuration.maxWaiters,
         reservationLoadThreshold: configuration.loadThreshold,
         assumedMaxConcurrentStreams: configuration.assumedMaxConcurrentStreams,
+        connectionBackoff: configuration.connectionBackoff,
         channelProvider: configuration.channelProvider,
         streamLender: self,
         logger: logger
