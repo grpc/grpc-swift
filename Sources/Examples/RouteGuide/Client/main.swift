@@ -21,9 +21,12 @@ import NIO
 import RouteGuideModel
 
 /// Makes a `RouteGuide` client for a service hosted on "localhost" and listening on the given port.
-func makeClient(port: Int, group: EventLoopGroup) -> Routeguide_RouteGuideClient {
-  let channel = ClientConnection.insecure(group: group)
-    .connect(host: "localhost", port: port)
+func makeClient(port: Int, group: EventLoopGroup) throws -> Routeguide_RouteGuideClient {
+  let channel = try GRPCChannelPool.with(
+    target: .host("localhost", port: port),
+    transportSecurity: .plaintext,
+    eventLoopGroup: group
+  )
 
   return Routeguide_RouteGuideClient(channel: channel)
 }
@@ -207,7 +210,7 @@ struct RouteGuide: ParsableCommand {
     }
 
     // Make a client, make sure we close it when we're done.
-    let routeGuide = makeClient(port: self.port, group: group)
+    let routeGuide = try makeClient(port: self.port, group: group)
     defer {
       try? routeGuide.channel.close().wait()
     }

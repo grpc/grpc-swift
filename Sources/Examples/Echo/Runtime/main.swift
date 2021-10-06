@@ -91,7 +91,7 @@ struct Echo: ParsableCommand {
         try! group.syncShutdownGracefully()
       }
 
-      let client = makeClient(
+      let client = try makeClient(
         group: group,
         port: self.port,
         useTLS: self.tls,
@@ -150,8 +150,8 @@ func makeClient(
   port: Int,
   useTLS: Bool,
   useInterceptor: Bool
-) -> Echo_EchoClient {
-  let builder: ClientConnection.Builder
+) throws -> Echo_EchoClient {
+  let security: GRPCChannelPool.Configuration.TransportSecurity
 
   if useTLS {
     // We're using some self-signed certs here: check they aren't expired.
@@ -162,19 +162,25 @@ func makeClient(
       "SSL certificates are expired. Please submit an issue at https://github.com/grpc/grpc-swift."
     )
 
-    builder = ClientConnection.usingTLSBackedByNIOSSL(on: group)
-      .withTLS(certificateChain: [clientCert.certificate])
-      .withTLS(privateKey: SamplePrivateKey.client)
-      .withTLS(trustRoots: .certificates([caCert.certificate]))
+    let tlsConfiguration = GRPCTLSConfiguration.makeServerConfigurationBackedByNIOSSL(
+      certificateChain: [.certificate(clientCert.certificate)],
+      privateKey: .privateKey(SamplePrivateKey.client),
+      trustRoots: .certificates([caCert.certificate])
+    )
+
+    security = .tls(tlsConfiguration)
   } else {
-    builder = ClientConnection.insecure(group: group)
+    security = .plaintext
   }
 
-  // Start the connection and create the client:
-  let connection = builder.connect(host: "localhost", port: port)
+  let channel = try GRPCChannelPool.with(
+    target: .host("localhost", port: port),
+    transportSecurity: security,
+    eventLoopGroup: group
+  )
 
   return Echo_EchoClient(
-    channel: connection,
+    channel: channel,
     interceptors: useInterceptor ? ExampleClientInterceptorFactory() : nil
   )
 }

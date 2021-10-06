@@ -56,8 +56,11 @@ struct HelloWorld: ParsableCommand {
     }
 
     // Configure the channel, we're not using TLS so the connection is `insecure`.
-    let channel = ClientConnection.insecure(group: group)
-      .connect(host: "localhost", port: self.port)
+    let channel = try GRPCChannelPool.with(
+      target: .host("localhost", port: self.port),
+      transportSecurity: .plaintext,
+      eventLoopGroup: group
+    )
 
     // Close the connection when we're done with it.
     defer {
