@@ -23,8 +23,8 @@ internal protocol ConnectionManagerConnectivityDelegate {
   ///   - newState: The current `ConnectivityState`.
   func connectionStateDidChange(
     _ connectionManager: ConnectionManager,
-    from oldState: ConnectivityState,
-    to newState: ConnectivityState
+    from oldState: _ConnectivityState,
+    to newState: _ConnectivityState
   )
 
   /// The connection is quiescing.
@@ -50,4 +50,45 @@ internal protocol ConnectionManagerHTTP2Delegate {
     _ connectionManager: ConnectionManager,
     maxConcurrentStreams: Int
   )
+}
+
+// This mirrors `ConnectivityState` (which is public API) but adds `Error` as associated data
+// to a few cases.
+internal enum _ConnectivityState {
+  case idle(Error?)
+  case connecting
+  case ready
+  case transientFailure(Error)
+  case shutdown
+
+  /// Returns whether this state is the same as the other state (ignoring any associated data).
+  internal func isSameState(as other: _ConnectivityState) -> Bool {
+    switch (self, other) {
+    case (.idle, .idle),
+         (.connecting, .connecting),
+         (.ready, .ready),
+         (.transientFailure, .transientFailure),
+         (.shutdown, .shutdown):
+      return true
+    default:
+      return false
+    }
+  }
+}
+
+extension ConnectivityState {
+  internal init(_ state: _ConnectivityState) {
+    switch state {
+    case .idle:
+      self = .idle
+    case .connecting:
+      self = .connecting
+    case .ready:
+      self = .ready
+    case .transientFailure:
+      self = .transientFailure
+    case .shutdown:
+      self = .shutdown
+    }
+  }
 }

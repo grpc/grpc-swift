@@ -77,7 +77,7 @@ class GRPCStatusTests: GRPCTestCase {
     // No message/cause, so uses the nil backing storage.
     XCTAssertEqual(status.testingOnly_storageObjectIdentifier, nilStorageID)
 
-    status.cause = ConnectionPoolError.tooManyWaiters
+    status.cause = ConnectionPoolError.tooManyWaiters(connectionError: nil)
     let storageID = status.testingOnly_storageObjectIdentifier
     XCTAssertNotEqual(storageID, nilStorageID)
     XCTAssert(status.cause is ConnectionPoolError)

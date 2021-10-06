@@ -150,7 +150,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     }
 
     XCTAssertThrowsError(try stream.wait()) { error in
-      XCTAssertEqual(error as? ConnectionPoolError, .shutdown)
+      XCTAssert((error as? ConnectionPoolError).isShutdown)
     }
   }
 
@@ -171,14 +171,14 @@ final class ConnectionPoolTests: GRPCTestCase {
     }
 
     XCTAssertThrowsError(try tooManyWaiters.wait()) { error in
-      XCTAssertEqual(error as? ConnectionPoolError, .tooManyWaiters)
+      XCTAssert((error as? ConnectionPoolError).isTooManyWaiters)
     }
 
     XCTAssertNoThrow(try pool.shutdown().wait())
     // All 'waiting' futures will be failed by the shutdown promise.
     for waiter in waiting {
       XCTAssertThrowsError(try waiter.wait()) { error in
-        XCTAssertEqual(error as? ConnectionPoolError, .shutdown)
+        XCTAssert((error as? ConnectionPoolError).isShutdown)
       }
     }
   }
@@ -195,7 +195,7 @@ final class ConnectionPoolTests: GRPCTestCase {
 
     self.eventLoop.advanceTime(to: .uptimeNanoseconds(10))
     XCTAssertThrowsError(try waiter.wait()) { error in
-      XCTAssertEqual(error as? ConnectionPoolError, .deadlineExceeded)
+      XCTAssert((error as? ConnectionPoolError).isDeadlineExceeded)
     }
 
     XCTAssertEqual(pool.sync.waiters, 0)
@@ -215,7 +215,7 @@ final class ConnectionPoolTests: GRPCTestCase {
 
     self.eventLoop.run()
     XCTAssertThrowsError(try waiter.wait()) { error in
-      XCTAssertEqual(error as? ConnectionPoolError, .deadlineExceeded)
+      XCTAssert((error as? ConnectionPoolError).isDeadlineExceeded)
     }
 
     XCTAssertEqual(pool.sync.waiters, 0)
@@ -348,7 +348,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     XCTAssertNoThrow(try shutdown.wait())
     for waiter in others {
       XCTAssertThrowsError(try waiter.wait()) { error in
-        XCTAssertEqual(error as? ConnectionPoolError, .shutdown)
+        XCTAssert((error as? ConnectionPoolError).isShutdown)
       }
     }
   }
@@ -493,7 +493,7 @@ final class ConnectionPoolTests: GRPCTestCase {
     // We need to advance the time to fire the timeout to fail the waiter.
     self.eventLoop.advanceTime(to: .uptimeNanoseconds(10))
     XCTAssertThrowsError(try waiter1.wait()) { error in
-      XCTAssertEqual(error as? ConnectionPoolError, .deadlineExceeded)
+      XCTAssert((error as? ConnectionPoolError).isDeadlineExceeded)
     }
 
     self.eventLoop.run()
@@ -700,6 +700,152 @@ final class ConnectionPoolTests: GRPCTestCase {
     XCTAssertNoThrow(try w2.wait())
     controller.openStreamInChannel(atIndex: 1)
   }
+
+  func testFailedWaiterWithError() throws {
+    // We want to check a few things in this test:
+    //
+    // 1. When an active channel throws an error that any waiter in the connection pool which has
+    //    its deadline exceeded or any waiter which exceeds the waiter limit fails with an error
+    //    which includes the underlying channel error.
+    // 2. When a reconnect happens and the pool is just busy, no underlying error is passed through
+    //    to failing waiters.
+
+    // Fix backoff to always be 1 second. This is necessary to figure out timings later on when
+    // we try to establish a new connection.
+    let backoff = ConnectionBackoff(
+      initialBackoff: 1.0,
+      maximumBackoff: 1.0,
+      multiplier: 1.0,
+      jitter: 0.0
+    )
+
+    let (pool, controller) = self.setUpPoolAndController(waiters: 10, connectionBackoff: backoff)
+    pool.initialize(connections: 1)
+
+    // First we'll create two streams which will fail for different reasons.
+    // - w1 will fail because of a timeout (no channel came up before the waiters own deadline
+    //   passed but no connection has previously failed)
+    // - w2 will fail because of a timeout but after the underlying channel has failed to connect so
+    //   should have that additional failure information.
+    let w1 = pool.makeStream(deadline: .uptimeNanoseconds(10), logger: self.logger.wrapped) {
+      $0.eventLoop.makeSucceededVoidFuture()
+    }
+
+    let w2 = pool.makeStream(deadline: .uptimeNanoseconds(20), logger: self.logger.wrapped) {
+      $0.eventLoop.makeSucceededVoidFuture()
+    }
+
+    // Start creating the channel.
+    self.eventLoop.run()
+    XCTAssertEqual(controller.count, 1)
+
+    // Fire up the connection.
+    controller.connectChannel(atIndex: 0)
+
+    // Advance time to fail the w1.
+    self.eventLoop.advanceTime(to: .uptimeNanoseconds(10))
+
+    XCTAssertThrowsError(try w1.wait()) { error in
+      switch error as? ConnectionPoolError {
+      case .some(.deadlineExceeded(.none)):
+        // Deadline exceeded but no underlying error, as expected.
+        ()
+      default:
+        XCTFail("Expected ConnectionPoolError.deadlineExceeded(.none) but got \(error)")
+      }
+    }
+
+    // Now fail the connection and timeout w2.
+    struct DummyError: Error {}
+    controller.throwError(DummyError(), inChannelAtIndex: 0)
+    controller.fireChannelInactiveForChannel(atIndex: 0)
+    self.eventLoop.advanceTime(to: .uptimeNanoseconds(20))
+
+    XCTAssertThrowsError(try w2.wait()) { error in
+      switch error as? ConnectionPoolError {
+      case let .some(.deadlineExceeded(.some(wrappedError))):
+        // Deadline exceeded and we have the underlying error.
+        XCTAssert(wrappedError is DummyError)
+      default:
+        XCTFail("Expected ConnectionPoolError.deadlineExceeded(.some) but got \(error)")
+      }
+    }
+
+    // For the next part of the test we want to validate that when a new channel is created after
+    // the backoff period passes that no additional errors are attached when the pool is just busy
+    // but otherwise operational.
+    //
+    // To do this we'll create a bunch of waiters. These will be succeeded when the new connection
+    // comes up and, importantly, use up all available streams on that connection.
+    //
+    // We'll then enqueue enough waiters to fill the waiter queue. We'll then validate that one more
+    // waiter trips over the queue limit but does not include the connection error we saw earlier.
+    // We'll then timeout the waiters in the queue and validate the same thing.
+
+    // These streams should succeed when the new connection is up. We'll limit the connection to 10
+    // streams when we bring it up.
+    let streams = (0 ..< 10).map { _ in
+      pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+        $0.eventLoop.makeSucceededVoidFuture()
+      }
+    }
+
+    // The connection is backing off; advance time to create another channel.
+    XCTAssertEqual(controller.count, 1)
+    self.eventLoop.advanceTime(by: .seconds(1))
+    XCTAssertEqual(controller.count, 2)
+    controller.connectChannel(atIndex: 1)
+    controller.sendSettingsToChannel(atIndex: 1, maxConcurrentStreams: 10)
+    self.eventLoop.run()
+
+    // Make sure the streams are succeeded.
+    for stream in streams {
+      XCTAssertNoThrow(try stream.wait())
+      controller.openStreamInChannel(atIndex: 1)
+    }
+
+    // All streams should be reserved.
+    XCTAssertEqual(pool.sync.availableStreams, 0)
+    XCTAssertEqual(pool.sync.reservedStreams, 10)
+    XCTAssertEqual(pool.sync.waiters, 0)
+
+    // We configured the pool to allow for 10 waiters, so let's enqueue that many which will time
+    // out at a known point in time.
+    let now = NIODeadline.now()
+    self.eventLoop.advanceTime(to: now)
+    let waiters = (0 ..< 10).map { _ in
+      pool.makeStream(deadline: now + .seconds(1), logger: self.logger.wrapped) {
+        $0.eventLoop.makeSucceededVoidFuture()
+      }
+    }
+
+    // This is one waiter more than is allowed so it should hit too-many-waiters. We don't expect
+    // an inner error though, the connection is just busy.
+    let tooManyWaiters = pool.makeStream(deadline: .distantFuture, logger: self.logger.wrapped) {
+      $0.eventLoop.makeSucceededVoidFuture()
+    }
+    XCTAssertThrowsError(try tooManyWaiters.wait()) { error in
+      switch error as? ConnectionPoolError {
+      case .some(.tooManyWaiters(.none)):
+        ()
+      default:
+        XCTFail("Expected ConnectionPoolError.tooManyWaiters(.none) but got \(error)")
+      }
+    }
+
+    // Finally, timeout the remaining waiters. Again, no inner error, the connection is just busy.
+    self.eventLoop.advanceTime(by: .seconds(1))
+    for waiter in waiters {
+      XCTAssertThrowsError(try waiter.wait()) { error in
+        switch error as? ConnectionPoolError {
+        case .some(.deadlineExceeded(.none)):
+          ()
+        default:
+          XCTFail("Expected ConnectionPoolError.deadlineExceeded(.none) but got \(error)")
+        }
+      }
+    }
+  }
 }
 
 // MARK: - Helpers
@@ -861,5 +1007,34 @@ internal struct HookedStreamLender: StreamLender {
 
   internal func changeStreamCapacity(by max: Int, for pool: ConnectionPool) {
     self.onUpdateMaxAvailableStreams(max)
+  }
+}
+
+extension Optional where Wrapped == ConnectionPoolError {
+  internal var isTooManyWaiters: Bool {
+    switch self {
+    case .some(.tooManyWaiters):
+      return true
+    case .some(.deadlineExceeded), .some(.shutdown), .none:
+      return false
+    }
+  }
+
+  internal var isDeadlineExceeded: Bool {
+    switch self {
+    case .some(.deadlineExceeded):
+      return true
+    case .some(.tooManyWaiters), .some(.shutdown), .none:
+      return false
+    }
+  }
+
+  internal var isShutdown: Bool {
+    switch self {
+    case .some(.shutdown):
+      return true
+    case .some(.tooManyWaiters), .some(.deadlineExceeded), .none:
+      return false
+    }
   }
 }

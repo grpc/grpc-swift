@@ -19,6 +19,7 @@ import GRPC
 import GRPCSampleData
 import NIO
 import NIOConcurrencyHelpers
+import NIOSSL
 import XCTest
 
 final class GRPCChannelPoolTests: GRPCTestCase {
@@ -380,5 +381,56 @@ final class GRPCChannelPoolTests: GRPCTestCase {
     let timedOutOnOwnDeadline = self.echo.get(.with { $0.text = "" }, callOptions: options)
 
     XCTAssertEqual(try timedOutOnOwnDeadline.status.wait().code, .deadlineExceeded)
+  }
+
+  func testTLSFailuresAreClearerAtTheRPCLevel() throws {
+    // Mix and match TLS.
+    self.configureEventLoopGroup(threads: 1)
+    self.startServer(withTLS: false)
+    self.startChannel(withTLS: true) {
+      $0.connectionPool.maxWaitersPerEventLoop = 10
+    }
+
+    // We can't guarantee an error happens within a certain time limit, so if we don't see what we
+    // expect we'll loop until a given deadline passes.
+    let testDeadline = NIODeadline.now() + .seconds(5)
+    var seenError = false
+    while testDeadline > .now() {
+      let options = CallOptions(timeLimit: .deadline(.now() + .milliseconds(50)))
+      let get = self.echo.get(.with { $0.text = "foo" }, callOptions: options)
+
+      let status = try get.status.wait()
+      XCTAssertEqual(status.code, .deadlineExceeded)
+
+      if let cause = status.cause, cause is NIOSSLError {
+        // What we expect.
+        seenError = true
+        break
+      } else {
+        // Try again.
+        continue
+      }
+    }
+    XCTAssert(seenError)
+
+    // Now queue up a bunch of RPCs to fill up the waiter queue. We don't care about the outcome
+    // of these. (They'll fail when we tear down the pool at the end of the test.)
+    _ = (0 ..< 10).map { i -> UnaryCall<Echo_EchoRequest, Echo_EchoResponse> in
+      let options = CallOptions(timeLimit: .deadline(.distantFuture))
+      return self.echo.get(.with { $0.text = String(describing: i) }, callOptions: options)
+    }
+
+    // Queue up one more.
+    let options = CallOptions(timeLimit: .deadline(.distantFuture))
+    let tooManyWaiters = self.echo.get(.with { $0.text = "foo" }, callOptions: options)
+
+    let status = try tooManyWaiters.status.wait()
+    XCTAssertEqual(status.code, .resourceExhausted)
+
+    if let cause = status.cause {
+      XCTAssert(cause is NIOSSLError)
+    } else {
+      XCTFail("Status message did not contain a possible cause: '\(status.message ?? "nil")'")
+    }
   }
 }
