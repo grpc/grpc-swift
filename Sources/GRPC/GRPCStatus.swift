@@ -23,7 +23,7 @@ public struct GRPCStatus: Error {
   /// Storage for message/cause. In the happy case ('ok') there will not be a message or cause
   /// and this will reference a static storage containing nil values. Making it optional makes the
   /// setters for message and cause a little messy.
-  private var storage: Storage = .makeStorage(message: nil, cause: nil)
+  private var storage: Storage
 
   /// The status code of the RPC.
   public var code: Code
