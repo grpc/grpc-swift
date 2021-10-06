@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import GRPC
+@testable import GRPC
 import XCTest
 
 class GRPCStatusTests: GRPCTestCase {
@@ -49,5 +49,55 @@ class GRPCStatusTests: GRPCTestCase {
       "failed precondition (9): invalid state",
       String(describing: GRPCStatus(code: .failedPrecondition, message: "invalid state"))
     )
+  }
+
+  func testCoWSemanticsModifyingMessage() {
+    let nilStorageID = GRPCStatus.ok.testingOnly_storageObjectIdentifier
+    var status = GRPCStatus(code: .resourceExhausted)
+
+    // No message/cause, so uses the nil backing storage.
+    XCTAssertEqual(status.testingOnly_storageObjectIdentifier, nilStorageID)
+
+    status.message = "no longer using the nil backing storage"
+    let storageID = status.testingOnly_storageObjectIdentifier
+    XCTAssertNotEqual(storageID, nilStorageID)
+    XCTAssertEqual(status.message, "no longer using the nil backing storage")
+
+    // The storage of status should be uniquely ref'd, so setting message to nil should not change
+    // the backing storage (even if the nil storage could now be used).
+    status.message = nil
+    XCTAssertEqual(status.testingOnly_storageObjectIdentifier, storageID)
+    XCTAssertNil(status.message)
+  }
+
+  func testCoWSemanticsModifyingCause() {
+    let nilStorageID = GRPCStatus.ok.testingOnly_storageObjectIdentifier
+    var status = GRPCStatus(code: .cancelled)
+
+    // No message/cause, so uses the nil backing storage.
+    XCTAssertEqual(status.testingOnly_storageObjectIdentifier, nilStorageID)
+
+    status.cause = ConnectionPoolError.tooManyWaiters
+    let storageID = status.testingOnly_storageObjectIdentifier
+    XCTAssertNotEqual(storageID, nilStorageID)
+    XCTAssert(status.cause is ConnectionPoolError)
+
+    // The storage of status should be uniquely ref'd, so setting cause to nil should not change
+    // the backing storage (even if the nil storage could now be used).
+    status.cause = nil
+    XCTAssertEqual(status.testingOnly_storageObjectIdentifier, storageID)
+    XCTAssertNil(status.cause)
+  }
+
+  func testStatusesWithNoMessageOrCauseShareBackingStorage() {
+    let validStatusCodes = (0 ... 16)
+    let statuses: [GRPCStatus] = validStatusCodes.map { code in
+      // 0...16 are all valid, '!' is fine.
+      let code = GRPCStatus.Code(rawValue: code)!
+      return GRPCStatus(code: code)
+    }
+
+    let storageIDs = Set(statuses.map { $0.testingOnly_storageObjectIdentifier })
+    XCTAssertEqual(storageIDs.count, 1)
   }
 }
