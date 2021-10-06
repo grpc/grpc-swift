@@ -108,7 +108,7 @@ final class GRPCChannelPoolTests: GRPCTestCase {
     self.startChannel(withTLS: tls) {
       // We'll allow any number of waiters since we immediately fire off a bunch of RPCs and don't
       // want to bounce off the limit as we wait for a connection to come up.
-      $0.connectionPool.maxWaitersPerEventLoop = 1000
+      $0.connectionPool.maxWaitersPerEventLoop = .max
     }
   }
 
