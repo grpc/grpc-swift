@@ -278,8 +278,8 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
 
     await assertThat(self.recorder.metadata, .nil())
     await assertThat(self.recorder.messages, .isEmpty())
-    await assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
-    await assertThat(self.recorder.trailers, .is([:]))
+    await assertThat(self.recorder.status, .nil())
+    await assertThat(self.recorder.trailers, .nil())
   } }
 
   func testFinishAfterMessage() { XCTAsyncTest {
@@ -292,6 +292,38 @@ class AsyncServerHandlerTests: ServerHandlerTestCaseBase {
     try self.recorder.recordedMessagePromise.futureResult.wait()
 
     handler.finish()
+
+    // Wait for tasks to finish.
+    await handler.userHandlerTask?.value
+
+    await assertThat(self.recorder.messages.first, .is(ByteBuffer(string: "hello")))
+    await assertThat(self.recorder.status, .nil())
+    await assertThat(self.recorder.trailers, .nil())
+  } }
+
+  func testErrorAfterHeaders() { XCTAsyncTest {
+    let handler = self.makeHandler(observer: self.echo(requests:responseStreamWriter:context:))
+
+    handler.receiveMetadata([:])
+    handler.receiveError(CancellationError())
+
+    // Wait for tasks to finish.
+    await handler.userHandlerTask?.value
+
+    await assertThat(self.recorder.status, .notNil(.hasCode(.unavailable)))
+    await assertThat(self.recorder.trailers, .is([:]))
+  } }
+
+  func testErrorAfterMessage() { XCTAsyncTest {
+    let handler = self.makeHandler(observer: self.echo(requests:responseStreamWriter:context:))
+
+    handler.receiveMetadata([:])
+    handler.receiveMessage(ByteBuffer(string: "hello"))
+
+    // Wait for the async user function to have processed the message.
+    try self.recorder.recordedMessagePromise.futureResult.wait()
+
+    handler.receiveError(CancellationError())
 
     // Wait for tasks to finish.
     await handler.userHandlerTask?.value
