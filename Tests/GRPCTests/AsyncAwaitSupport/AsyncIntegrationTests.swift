@@ -202,7 +202,7 @@ final class AsyncIntegrationTests: GRPCTestCase {
       try await update.requestStream.send(.with { $0.text = "hello" })
       _ = try await update.responses.first(where: { _ in true })
       XCTAssertNoThrow(try self.server.close().wait())
-      self.server = nil  // So that tearDown() does not call close() again.
+      self.server = nil // So that tearDown() does not call close() again.
       try await update.requestStream.finish()
     }
   }
