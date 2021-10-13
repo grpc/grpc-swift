@@ -328,6 +328,7 @@ internal final class AsyncServerHandler<
 
     case .active:
       self.state = .completed
+      self.interceptors = nil
       self.userHandlerTask?.cancel()
 
     case .completed:
