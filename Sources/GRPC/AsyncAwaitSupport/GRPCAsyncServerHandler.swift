@@ -327,6 +327,8 @@ internal final class AsyncServerHandler<
       self.state = .completed
 
     case .active:
+      self.state = .completed
+      self.interceptors = nil
       self.userHandlerTask?.cancel()
 
     case .completed:
@@ -524,8 +526,10 @@ internal final class AsyncServerHandler<
       self.interceptors.send(.message(response, metadata), promise: nil)
 
     case .completed:
-      /// If we are in the completed state then the async writer delegate must have terminated.
-      preconditionFailure()
+      /// If we are in the completed state then the async writer delegate will have been cancelled,
+      /// however the cancellation is asynchronous so there's a chance that we receive this callback
+      /// after that has happened. We can drop the response.
+      ()
     }
   }
 
