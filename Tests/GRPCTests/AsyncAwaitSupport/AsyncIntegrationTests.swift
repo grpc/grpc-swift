@@ -49,9 +49,9 @@ final class AsyncIntegrationTests: GRPCTestCase {
   }
 
   override func tearDown() {
-    XCTAssertNoThrow(try self.client.close().wait())
-    XCTAssertNoThrow(try self.server.close().wait())
-    XCTAssertNoThrow(try self.group.syncShutdownGracefully())
+    XCTAssertNoThrow(try self.client?.close().wait())
+    XCTAssertNoThrow(try self.server?.close().wait())
+    XCTAssertNoThrow(try self.group?.syncShutdownGracefully())
     super.tearDown()
   }
 
@@ -193,6 +193,17 @@ final class AsyncIntegrationTests: GRPCTestCase {
         "Swift echo update (1): jeffers",
         "Swift echo update (2): holt",
       ])
+    }
+  }
+
+  func testServerCloseAfterMessage() {
+    XCTAsyncTest {
+      let update = self.echo.makeUpdateCall()
+      try await update.requestStream.send(.with { $0.text = "hello" })
+      _ = try await update.responses.first(where: { _ in true })
+      XCTAssertNoThrow(try self.server.close().wait())
+      self.server = nil // So that tearDown() does not call close() again.
+      try await update.requestStream.finish()
     }
   }
 }
