@@ -65,8 +65,36 @@ public protocol GRPCChannel {
     interceptors: [ClientInterceptor<Request, Response>]
   ) -> Call<Request, Response>
 
-  /// Close the channel, and any connections associated with it.
+  /// Close the channel, and any connections associated with it. Any ongoing RPCs may fail.
+  ///
+  /// - Returns: Returns a future which will be resolved when shutdown has completed.
   func close() -> EventLoopFuture<Void>
+
+  /// Close the channel, and any connections associated with it. Any ongoing RPCs may fail.
+  ///
+  /// - Parameter promise: A promise which will be completed when shutdown has completed.
+  func close(promise: EventLoopPromise<Void>)
+
+  /// Attempt to gracefully shutdown the channel. New RPCs will be failed immediately and existing
+  /// RPCs may continue to run until they complete.
+  ///
+  /// - Parameters:
+  ///   - deadline: A point in time by which the graceful shutdown must have completed. If the
+  ///       deadline passes and RPCs are still active then the connection will be closed forcefully
+  ///       and any remaining in-flight RPCs may be failed.
+  ///   - promise: A promise which will be completed when shutdown has completed.
+  func closeGracefully(deadline: NIODeadline, promise: EventLoopPromise<Void>)
+}
+
+// Default implementations to avoid breaking API. Implementations provided by GRPC override these.
+extension GRPCChannel {
+  public func close(promise: EventLoopPromise<Void>) {
+    promise.completeWith(self.close())
+  }
+
+  public func closeGracefully(deadline: NIODeadline, promise: EventLoopPromise<Void>) {
+    promise.completeWith(self.close())
+  }
 }
 
 extension GRPCChannel {

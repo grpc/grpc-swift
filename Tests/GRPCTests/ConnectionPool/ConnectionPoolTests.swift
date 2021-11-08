@@ -848,6 +848,13 @@ final class ConnectionPoolTests: GRPCTestCase {
   }
 }
 
+extension ConnectionPool {
+  // For backwards compatibility, to avoid large diffs in these tests.
+  fileprivate func shutdown() -> EventLoopFuture<Void> {
+    return self.shutdown(mode: .forceful)
+  }
+}
+
 // MARK: - Helpers
 
 internal final class ChannelController {

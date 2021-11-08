@@ -245,14 +245,17 @@ internal final class ConnectionPool {
   ///
   /// Existing waiters will be failed and all underlying connections will be shutdown. Subsequent
   /// calls to `makeStream` will be failed immediately.
-  internal func shutdown() -> EventLoopFuture<Void> {
+  ///
+  /// - Parameter mode: The mode to use when shutting down.
+  /// - Returns: A future indicated when shutdown has been completed.
+  internal func shutdown(mode: ConnectionManager.ShutdownMode) -> EventLoopFuture<Void> {
     let promise = self.eventLoop.makePromise(of: Void.self)
 
     if self.eventLoop.inEventLoop {
-      self._shutdown(promise: promise)
+      self._shutdown(mode: mode, promise: promise)
     } else {
       self.eventLoop.execute {
-        self._shutdown(promise: promise)
+        self._shutdown(mode: mode, promise: promise)
       }
     }
 
@@ -484,11 +487,11 @@ internal final class ConnectionPool {
     }
   }
 
-  /// See `shutdown()`.
+  /// See `shutdown(mode:)`.
   ///
   /// - Parameter promise: A `promise` to complete when the pool has been shutdown.
   @usableFromInline
-  internal func _shutdown(promise: EventLoopPromise<Void>) {
+  internal func _shutdown(mode: ConnectionManager.ShutdownMode, promise: EventLoopPromise<Void>) {
     self.eventLoop.assertInEventLoop()
 
     switch self._state {
@@ -503,10 +506,12 @@ internal final class ConnectionPool {
       }
 
       // Shutdown all the connections and remove them from the pool.
-      let allShutdown: [EventLoopFuture<Void>] = self._connections.values.map {
-        return $0.manager.shutdown()
-      }
+      let connections = self._connections
       self._connections.removeAll()
+
+      let allShutdown = connections.values.map {
+        $0.manager.shutdown(mode: mode)
+      }
 
       // Fail the outstanding waiters.
       while let waiter = self.waiters.popFirst() {

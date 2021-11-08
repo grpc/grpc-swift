@@ -435,71 +435,126 @@ internal final class ConnectionManager {
     return muxFuture
   }
 
-  /// Shutdown any connection which exists. This is a request from the application.
-  internal func shutdown() -> EventLoopFuture<Void> {
+  @usableFromInline
+  internal enum ShutdownMode {
+    /// Closes the underlying channel without waiting for existing RPCs to complete.
+    case forceful
+    /// Allows running RPCs to run their course before closing the underlying channel. No new
+    /// streams may be created.
+    case graceful(NIODeadline)
+  }
+
+  /// Shutdown the underlying connection.
+  ///
+  /// - Note: Initiating a `forceful` shutdown after a `graceful` shutdown has no effect.
+  internal func shutdown(mode: ShutdownMode) -> EventLoopFuture<Void> {
+    let promise = self.eventLoop.makePromise(of: Void.self)
+    self.shutdown(mode: mode, promise: promise)
+    return promise.futureResult
+  }
+
+  /// Shutdown the underlying connection.
+  ///
+  /// - Note: Initiating a `forceful` shutdown after a `graceful` shutdown has no effect.
+  internal func shutdown(mode: ShutdownMode, promise: EventLoopPromise<Void>) {
     if self.eventLoop.inEventLoop {
-      return self._shutdown()
+      self._shutdown(mode: mode, promise: promise)
     } else {
-      return self.eventLoop.flatSubmit {
-        return self._shutdown()
+      self.eventLoop.execute {
+        self._shutdown(mode: mode, promise: promise)
       }
     }
   }
 
-  private func _shutdown() -> EventLoopFuture<Void> {
+  private func _shutdown(mode: ShutdownMode, promise: EventLoopPromise<Void>) {
     self.logger.debug("shutting down connection", metadata: [
       "connectivity_state": "\(self.state.label)",
+      "shutdown.mode": "\(mode)",
     ])
-    let shutdown: ShutdownState
 
     switch self.state {
     // We don't have a channel and we don't want one, easy!
     case .idle:
-      shutdown = .shutdownByUser(closeFuture: self.eventLoop.makeSucceededFuture(()))
+      let shutdown: ShutdownState = .shutdownByUser(closeFuture: promise.futureResult)
       self.state = .shutdown(shutdown)
+      promise.succeed(())
 
     // We're mid-connection: the application doesn't have any 'ready' channels so we'll succeed
     // the shutdown future and deal with any fallout from the connecting channel without the
     // application knowing.
     case let .connecting(state):
-      shutdown = .shutdownByUser(closeFuture: self.eventLoop.makeSucceededFuture(()))
+      let shutdown: ShutdownState = .shutdownByUser(closeFuture: promise.futureResult)
       self.state = .shutdown(shutdown)
 
       // Fail the ready channel mux promise: we're shutting down so even if we manage to successfully
       // connect the application shouldn't have access to the channel or multiplexer.
       state.readyChannelMuxPromise.fail(GRPCStatus(code: .unavailable, message: nil))
       state.candidateMuxPromise.fail(GRPCStatus(code: .unavailable, message: nil))
-      // In case we do successfully connect, close immediately.
-      state.candidate.whenSuccess {
-        $0.close(mode: .all, promise: nil)
+
+      // Complete the shutdown promise when the connection attempt has completed.
+      state.candidate.whenComplete {
+        switch $0 {
+        case let .success(channel):
+          // In case we do successfully connect, close immediately.
+          channel.close(mode: .all, promise: nil)
+          promise.completeWith(channel.closeFuture.recoveringFromUncleanShutdown())
+
+        case .failure:
+          // We failed to connect, that's fine we still shutdown successfully.
+          promise.succeed(())
+        }
       }
 
     // We have an active channel but the application doesn't know about it yet. We'll do the same
     // as for `.connecting`.
     case let .active(state):
-      shutdown = .shutdownByUser(closeFuture: self.eventLoop.makeSucceededFuture(()))
+      let shutdown: ShutdownState = .shutdownByUser(closeFuture: promise.futureResult)
       self.state = .shutdown(shutdown)
 
       // Fail the ready channel mux promise: we're shutting down so even if we manage to successfully
       // connect the application shouldn't have access to the channel or multiplexer.
       state.readyChannelMuxPromise.fail(GRPCStatus(code: .unavailable, message: nil))
-      // We have a channel, close it.
+      // We have a channel, close it. We only create streams in the ready state so there's no need
+      // to quiesce here.
       state.candidate.close(mode: .all, promise: nil)
+      promise.completeWith(state.candidate.closeFuture.recoveringFromUncleanShutdown())
 
     // The channel is up and running: the application could be using it. We can close it and
     // return the `closeFuture`.
     case let .ready(state):
-      shutdown = .shutdownByUser(closeFuture: state.channel.closeFuture)
+      let shutdown: ShutdownState = .shutdownByUser(closeFuture: promise.futureResult)
       self.state = .shutdown(shutdown)
 
-      // We have a channel, close it.
-      state.channel.close(mode: .all, promise: nil)
+      switch mode {
+      case .forceful:
+        // We have a channel, close it.
+        state.channel.close(mode: .all, promise: nil)
+
+      case let .graceful(deadline):
+        // If we don't close by the deadline forcibly close the channel.
+        let scheduledForceClose = state.channel.eventLoop.scheduleTask(deadline: deadline) {
+          self.logger.info("shutdown timer expired, forcibly closing connection")
+          state.channel.close(mode: .all, promise: nil)
+        }
+
+        // Cancel the force close if we close normally first.
+        state.channel.closeFuture.whenComplete { _ in
+          scheduledForceClose.cancel()
+        }
+
+        // Tell the channel to quiesce. It will be picked up by the idle handler which will close
+        // the channel when all streams have been closed.
+        state.channel.pipeline.fireUserInboundEventTriggered(ChannelShouldQuiesceEvent())
+      }
+
+      // Complete the promise when we eventually close.
+      promise.completeWith(state.channel.closeFuture.recoveringFromUncleanShutdown())
 
     // Like `.connecting` and `.active` the application does not have a `.ready` channel. We'll
     // do the same but also cancel any scheduled connection attempts and deal with any fallout
     // if we cancelled too late.
     case let .transientFailure(state):
-      shutdown = .shutdownByUser(closeFuture: self.eventLoop.makeSucceededFuture(()))
+      let shutdown: ShutdownState = .shutdownByUser(closeFuture: promise.futureResult)
       self.state = .shutdown(shutdown)
 
       // Stop the creation of a new channel, if we can. If we can't then the task to
@@ -510,12 +565,13 @@ internal final class ConnectionManager {
       // connect the application shouldn't should have access to the channel.
       state.readyChannelMuxPromise.fail(shutdown.reason)
 
-    // We're already shutdown; nothing to do.
-    case let .shutdown(state):
-      shutdown = state
-    }
+      // No active channel, so complete the shutdown promise now.
+      promise.succeed(())
 
-    return shutdown.closeFuture
+    // We're already shutdown; there's nothing to do.
+    case let .shutdown(state):
+      promise.completeWith(state.closeFuture)
+    }
   }
 
   // MARK: - State changes from the channel handler.

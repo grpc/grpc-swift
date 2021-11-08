@@ -125,9 +125,32 @@ public class ClientConnection {
     )
   }
 
-  /// Closes the connection to the server.
+  /// Close the channel, and any connections associated with it. Any ongoing RPCs may fail.
+  ///
+  /// - Returns: Returns a future which will be resolved when shutdown has completed.
   public func close() -> EventLoopFuture<Void> {
-    return self.connectionManager.shutdown()
+    let promise = self.eventLoop.makePromise(of: Void.self)
+    self.close(promise: promise)
+    return promise.futureResult
+  }
+
+  /// Close the channel, and any connections associated with it. Any ongoing RPCs may fail.
+  ///
+  /// - Parameter promise: A promise which will be completed when shutdown has completed.
+  public func close(promise: EventLoopPromise<Void>) {
+    self.connectionManager.shutdown(mode: .forceful, promise: promise)
+  }
+
+  /// Attempt to gracefully shutdown the channel. New RPCs will be failed immediately and existing
+  /// RPCs may continue to run until they complete.
+  ///
+  /// - Parameters:
+  ///   - deadline: A point in time by which the graceful shutdown must have completed. If the
+  ///       deadline passes and RPCs are still active then the connection will be closed forcefully
+  ///       and any remaining in-flight RPCs may be failed.
+  ///   - promise: A promise which will be completed when shutdown has completed.
+  public func closeGracefully(deadline: NIODeadline, promise: EventLoopPromise<Void>) {
+    return self.connectionManager.shutdown(mode: .graceful(deadline), promise: promise)
   }
 
   /// Populates the logger in `options` and appends a request ID header to the metadata, if

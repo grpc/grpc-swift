@@ -293,7 +293,7 @@ internal final class PoolManager {
 
   /// Shutdown the pool manager and all connection pools it manages.
   @usableFromInline
-  internal func shutdown(promise: EventLoopPromise<Void>) {
+  internal func shutdown(mode: ConnectionManager.ShutdownMode, promise: EventLoopPromise<Void>) {
     let (action, pools): (PoolManagerStateMachine.ShutdownAction, [ConnectionPool]?) = self.lock
       .withLock {
         let action = self._state.shutdown(promise: promise)
@@ -313,7 +313,7 @@ internal final class PoolManager {
     switch (action, pools) {
     case let (.shutdownPools, .some(pools)):
       promise.futureResult.whenComplete { _ in self.shutdownComplete() }
-      EventLoopFuture.andAllSucceed(pools.map { $0.shutdown() }, promise: promise)
+      EventLoopFuture.andAllSucceed(pools.map { $0.shutdown(mode: mode) }, promise: promise)
 
     case let (.alreadyShuttingDown(future), .none):
       promise.completeWith(future)
