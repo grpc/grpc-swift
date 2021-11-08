@@ -1034,6 +1034,10 @@ internal struct ConnectionFailure: Error, GRPCStatusTransformable, CustomStringC
   }
 
   func makeGRPCStatus() -> GRPCStatus {
-    return GRPCStatus(code: .unavailable, message: String(describing: self.reason))
+    return GRPCStatus(
+      code: .unavailable,
+      message: String(describing: self.reason),
+      cause: self.reason
+    )
   }
 }
