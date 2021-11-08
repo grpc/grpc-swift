@@ -48,7 +48,7 @@ public enum GRPCError {
     public init() {}
 
     public func makeGRPCStatus() -> GRPCStatus {
-      return GRPCStatus(code: .cancelled, message: self.description)
+      return GRPCStatus(code: .cancelled, message: self.description, cause: self)
     }
   }
 
@@ -66,7 +66,7 @@ public enum GRPCError {
     }
 
     public func makeGRPCStatus() -> GRPCStatus {
-      return GRPCStatus(code: .deadlineExceeded, message: self.description)
+      return GRPCStatus(code: .deadlineExceeded, message: self.description, cause: self)
     }
   }
 
@@ -77,7 +77,7 @@ public enum GRPCError {
     public init() {}
 
     public func makeGRPCStatus() -> GRPCStatus {
-      return GRPCStatus(code: .internalError, message: self.description)
+      return GRPCStatus(code: .internalError, message: self.description, cause: self)
     }
   }
 
@@ -88,7 +88,7 @@ public enum GRPCError {
     public init() {}
 
     public func makeGRPCStatus() -> GRPCStatus {
-      return GRPCStatus(code: .internalError, message: self.description)
+      return GRPCStatus(code: .internalError, message: self.description, cause: self)
     }
   }
 
@@ -101,7 +101,7 @@ public enum GRPCError {
     }
 
     public func makeGRPCStatus() -> GRPCStatus {
-      return GRPCStatus(code: .resourceExhausted, message: self.description)
+      return GRPCStatus(code: .resourceExhausted, message: self.description, cause: self)
     }
   }
 
@@ -124,7 +124,7 @@ public enum GRPCError {
     }
 
     public func makeGRPCStatus() -> GRPCStatus {
-      return GRPCStatus(code: .internalError, message: self.description)
+      return GRPCStatus(code: .internalError, message: self.description, cause: self)
     }
   }
 
@@ -142,7 +142,7 @@ public enum GRPCError {
     }
 
     public func makeGRPCStatus() -> GRPCStatus {
-      return GRPCStatus(code: .resourceExhausted, message: nil)
+      return GRPCStatus(code: .resourceExhausted, message: nil, cause: self)
     }
   }
 
@@ -153,7 +153,7 @@ public enum GRPCError {
     public init() {}
 
     public func makeGRPCStatus() -> GRPCStatus {
-      return GRPCStatus(code: .internalError, message: self.description)
+      return GRPCStatus(code: .internalError, message: self.description, cause: self)
     }
   }
 
@@ -164,7 +164,7 @@ public enum GRPCError {
     public init() {}
 
     public func makeGRPCStatus() -> GRPCStatus {
-      return GRPCStatus(code: .unimplemented, message: self.description)
+      return GRPCStatus(code: .unimplemented, message: self.description, cause: self)
     }
   }
 
@@ -184,7 +184,7 @@ public enum GRPCError {
     }
 
     public func makeGRPCStatus() -> GRPCStatus {
-      return GRPCStatus(code: .internalError, message: self.description)
+      return GRPCStatus(code: .internalError, message: self.description, cause: self)
     }
   }
 
@@ -206,7 +206,7 @@ public enum GRPCError {
     }
 
     public func makeGRPCStatus() -> GRPCStatus {
-      return GRPCStatus(code: .internalError, message: self.description)
+      return GRPCStatus(code: .internalError, message: self.description, cause: self)
     }
   }
 
@@ -228,7 +228,11 @@ public enum GRPCError {
     }
 
     public func makeGRPCStatus() -> GRPCStatus {
-      return GRPCStatus(code: .init(httpStatus: self.status), message: self.description)
+      return GRPCStatus(
+        code: .init(httpStatus: self.status),
+        message: self.description,
+        cause: self
+      )
     }
   }
 
@@ -258,7 +262,7 @@ public enum GRPCError {
     public init() {}
 
     public func makeGRPCStatus() -> GRPCStatus {
-      return GRPCStatus(code: .unavailable, message: self.description)
+      return GRPCStatus(code: .unavailable, message: self.description, cause: self)
     }
   }
 
@@ -275,7 +279,7 @@ public enum GRPCError {
     }
 
     public func makeGRPCStatus() -> GRPCStatus {
-      return GRPCStatus(code: .internalError, message: self.message)
+      return GRPCStatus(code: .internalError, message: self.message, cause: self)
     }
   }
 
@@ -291,7 +295,7 @@ public enum GRPCError {
     }
 
     public func makeGRPCStatus() -> GRPCStatus {
-      return GRPCStatus(code: .internalError, message: self.message)
+      return GRPCStatus(code: .internalError, message: self.message, cause: self)
     }
   }
 }
