@@ -61,6 +61,7 @@ class MutualTLSTests: GRPCTestCase {
       serviceProviders: [EchoProvider()]
     )
     serverConfiguration.tlsConfiguration = serverTLSConfiguration
+    serverConfiguration.logger = self.serverLogger
     let serverErrorExpectation = self.expectation(description: "server error")
     serverErrorExpectation.isInverted = expectedOutcome != .serverError
     serverErrorExpectation.assertForOverFulfill = false
