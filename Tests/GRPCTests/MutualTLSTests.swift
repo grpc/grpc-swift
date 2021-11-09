@@ -31,16 +31,33 @@ class MutualTLSTests: GRPCTestCase {
     case clientError
   }
 
+  var clientEventLoopGroup: EventLoopGroup!
+  var serverEventLoopGroup: EventLoopGroup!
+
+  override func setUp() {
+    super.setUp()
+    self.serverEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    self.clientEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+  }
+
+  override func tearDown() {
+    XCTAssertNoThrow(try self.clientEventLoopGroup.syncShutdownGracefully())
+    self.clientEventLoopGroup = nil
+
+    XCTAssertNoThrow(try self.serverEventLoopGroup.syncShutdownGracefully())
+    self.serverEventLoopGroup = nil
+    super.tearDown()
+  }
+
   func performTestWith(
     _ serverTLSConfiguration: GRPCTLSConfiguration?,
     _ clientTLSConfiguration: GRPCTLSConfiguration?,
     expect expectedOutcome: ExpectedOutcome
   ) throws {
     // Setup the server.
-    let serverEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     var serverConfiguration = Server.Configuration.default(
       target: .hostAndPort("localhost", 0),
-      eventLoopGroup: serverEventLoopGroup,
+      eventLoopGroup: self.serverEventLoopGroup,
       serviceProviders: [EchoProvider()]
     )
     serverConfiguration.tlsConfiguration = serverTLSConfiguration
@@ -54,7 +71,6 @@ class MutualTLSTests: GRPCTestCase {
     let port = server.channel.localAddress!.port!
 
     // Setup the client.
-    let clientEventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     var clientConfiguration = ClientConnection.Configuration.default(
       target: .hostAndPort("localhost", port),
       eventLoopGroup: clientEventLoopGroup
