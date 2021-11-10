@@ -16,7 +16,9 @@
 import GRPC
 import Logging
 import NIOCore
+#if canImport(NIOSSL)
 import NIOSSL
+#endif
 
 /// Makes a server for gRPC interoperability testing.
 ///
@@ -41,10 +43,7 @@ public func makeInteroperabilityTestServer(
   let builder: Server.Builder
 
   if useTLS {
-    print(
-      "Using the gRPC interop testing CA for TLS; clients should expect the host to be '*.test.google.fr'"
-    )
-
+    #if canImport(NIOSSL)
     let caCert = InteroperabilityTestCredentials.caCertificate
     let serverCert = InteroperabilityTestCredentials.server1Certificate
     let serverKey = InteroperabilityTestCredentials.server1Key
@@ -55,6 +54,9 @@ public func makeInteroperabilityTestServer(
       privateKey: serverKey
     )
     .withTLS(trustRoots: .certificates([caCert]))
+    #else
+    fatalError("'useTLS: true' passed to \(#function) but NIOSSL is not available")
+    #endif // canImport(NIOSSL)
   } else {
     builder = Server.insecure(group: eventLoopGroup)
   }

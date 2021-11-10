@@ -13,41 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#if canImport(NIOSSL)
 import EchoImplementation
 import EchoModel
 @testable import GRPC
 import GRPCSampleData
-import Logging
-import NIOConcurrencyHelpers
 import NIOCore
 import NIOPosix
 import NIOSSL
 import XCTest
-
-class ErrorRecordingDelegate: ClientErrorDelegate {
-  private let lock: Lock
-  private var _errors: [Error] = []
-
-  internal var errors: [Error] {
-    return self.lock.withLock {
-      return self._errors
-    }
-  }
-
-  var expectation: XCTestExpectation
-
-  init(expectation: XCTestExpectation) {
-    self.expectation = expectation
-    self.lock = Lock()
-  }
-
-  func didCatchError(_ error: Error, logger: Logger, file: StaticString, line: Int) {
-    self.lock.withLockVoid {
-      self._errors.append(error)
-    }
-    self.expectation.fulfill()
-  }
-}
 
 class ClientTLSFailureTests: GRPCTestCase {
   let defaultServerTLSConfiguration = GRPCTLSConfiguration.makeServerConfigurationBackedByNIOSSL(
@@ -242,3 +216,5 @@ class ClientTLSFailureTests: GRPCTestCase {
     }
   }
 }
+
+#endif // canImport(NIOSSL)

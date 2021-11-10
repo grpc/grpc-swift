@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#if canImport(NIOSSL)
 #if canImport(Network)
 import Dispatch
 import EchoImplementation
@@ -202,3 +203,4 @@ final class GRPCNetworkFrameworkTests: GRPCTestCase {
 }
 
 #endif // canImport(Network)
+#endif // canImport(NIOSSL)

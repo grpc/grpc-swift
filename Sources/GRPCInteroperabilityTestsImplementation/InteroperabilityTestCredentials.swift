@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#if canImport(NIOSSL)
 import NIOSSL
 
 /// Contains credentials used for the gRPC interoperability tests.
@@ -105,3 +106,4 @@ public struct InteroperabilityTestCredentials {
   -----END PRIVATE KEY-----
   """
 }
+#endif // canImport(NIOSSL)

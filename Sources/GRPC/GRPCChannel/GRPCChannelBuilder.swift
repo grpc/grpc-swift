@@ -16,25 +16,11 @@
 import Dispatch
 import Logging
 import NIOCore
-import NIOSSL
-
-#if canImport(Security)
-import Security
-#endif
 
 extension ClientConnection {
   /// Returns an insecure `ClientConnection` builder which is *not configured with TLS*.
   public static func insecure(group: EventLoopGroup) -> ClientConnection.Builder {
     return Builder(group: group)
-  }
-
-  /// Returns a `ClientConnection` builder configured with TLS.
-  @available(
-    *, deprecated,
-    message: "Use one of 'usingPlatformAppropriateTLS(for:)', 'usingTLSBackedByNIOSSL(on:)' or 'usingTLSBackedByNetworkFramework(on:)' or 'usingTLS(on:with:)'"
-  )
-  public static func secure(group: EventLoopGroup) -> ClientConnection.Builder.Secure {
-    return ClientConnection.usingTLSBackedByNIOSSL(on: group)
   }
 
   /// Returns a `ClientConnection` builder configured with a TLS backend appropriate for the
@@ -63,42 +49,6 @@ extension ClientConnection {
       tlsConfiguration: .makeClientDefault(for: networkPreference)
     )
   }
-
-  /// Returns a `ClientConnection` builder configured with the 'NIOSSL' TLS backend.
-  ///
-  /// This builder may use either a `MultiThreadedEventLoopGroup` or a `NIOTSEventLoopGroup` (or an
-  /// `EventLoop` from either group).
-  ///
-  /// - Parameter group: The `EventLoopGroup` use for the connection.
-  /// - Returns: A builder for a connection using the NIOSSL TLS backend.
-  public static func usingTLSBackedByNIOSSL(
-    on group: EventLoopGroup
-  ) -> ClientConnection.Builder.Secure {
-    return Builder.Secure(group: group, tlsConfiguration: .makeClientConfigurationBackedByNIOSSL())
-  }
-
-  #if canImport(Network)
-  /// Returns a `ClientConnection` builder configured with the Network.framework TLS backend.
-  ///
-  /// This builder must use a `NIOTSEventLoopGroup` (or an `EventLoop` from a
-  /// `NIOTSEventLoopGroup`).
-  ///
-  /// - Parameter group: The `EventLoopGroup` use for the connection.
-  /// - Returns: A builder for a connection using the Network.framework TLS backend.
-  @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
-  public static func usingTLSBackedByNetworkFramework(
-    on group: EventLoopGroup
-  ) -> ClientConnection.Builder.Secure {
-    precondition(
-      PlatformSupport.isTransportServicesEventLoopGroup(group),
-      "'\(#function)' requires 'group' to be a 'NIOTransportServices.NIOTSEventLoopGroup' or 'NIOTransportServices.QoSEventLoop' (but was '\(type(of: group))'"
-    )
-    return Builder.Secure(
-      group: group,
-      tlsConfiguration: .makeClientConfigurationBackedByNetworkFramework()
-    )
-  }
-  #endif
 
   /// Returns a `ClientConnection` builder configured with the TLS backend appropriate for the
   /// provided configuration and `EventLoopGroup`.
@@ -301,90 +251,6 @@ extension ClientConnection.Builder.Secure {
     return self
   }
 }
-
-// MARK: - NIOSSL TLS backend options
-
-extension ClientConnection.Builder.Secure {
-  /// Sets the sources of certificates to offer during negotiation. No certificates are offered
-  /// during negotiation by default.
-  ///
-  /// - Note: May only be used with the 'NIOSSL' TLS backend.
-  @discardableResult
-  public func withTLS(certificateChain: [NIOSSLCertificate]) -> Self {
-    self.tls.updateNIOCertificateChain(to: certificateChain)
-    return self
-  }
-
-  /// Sets the private key associated with the leaf certificate.
-  ///
-  /// - Note: May only be used with the 'NIOSSL' TLS backend.
-  @discardableResult
-  public func withTLS(privateKey: NIOSSLPrivateKey) -> Self {
-    self.tls.updateNIOPrivateKey(to: privateKey)
-    return self
-  }
-
-  /// Sets the trust roots to use to validate certificates. This only needs to be provided if you
-  /// intend to validate certificates. Defaults to the system provided trust store (`.default`) if
-  /// not set.
-  ///
-  /// - Note: May only be used with the 'NIOSSL' TLS backend.
-  @discardableResult
-  public func withTLS(trustRoots: NIOSSLTrustRoots) -> Self {
-    self.tls.updateNIOTrustRoots(to: trustRoots)
-    return self
-  }
-
-  /// Whether to verify remote certificates. Defaults to `.fullVerification` if not otherwise
-  /// configured.
-  ///
-  /// - Note: May only be used with the 'NIOSSL' TLS backend.
-  @discardableResult
-  public func withTLS(certificateVerification: CertificateVerification) -> Self {
-    self.tls.updateNIOCertificateVerification(to: certificateVerification)
-    return self
-  }
-
-  /// A custom verification callback that allows completely overriding the certificate verification logic.
-  ///
-  /// - Note: May only be used with the 'NIOSSL' TLS backend.
-  @discardableResult
-  public func withTLSCustomVerificationCallback(
-    _ callback: @escaping NIOSSLCustomVerificationCallback
-  ) -> Self {
-    self.tls.updateNIOCustomVerificationCallback(to: callback)
-    return self
-  }
-}
-
-// MARK: - Network.framework TLS backend options
-
-#if canImport(Network)
-extension ClientConnection.Builder.Secure {
-  /// Update the local identity.
-  ///
-  /// - Note: May only be used with the 'Network.framework' TLS backend.
-  @discardableResult
-  @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
-  public func withTLS(localIdentity: SecIdentity) -> Self {
-    self.tls.updateNetworkLocalIdentity(to: localIdentity)
-    return self
-  }
-
-  /// Update the callback used to verify a trust object during a TLS handshake.
-  ///
-  /// - Note: May only be used with the 'Network.framework' TLS backend.
-  @discardableResult
-  @available(macOS 10.14, iOS 12.0, watchOS 6.0, tvOS 12.0, *)
-  public func withTLSHandshakeVerificationCallback(
-    on queue: DispatchQueue,
-    verificationCallback callback: @escaping sec_protocol_verify_t
-  ) -> Self {
-    self.tls.updateNetworkVerifyCallbackWithQueue(callback: callback, queue: queue)
-    return self
-  }
-}
-#endif
 
 extension ClientConnection.Builder {
   /// Sets the HTTP/2 flow control target window size. Defaults to 8MB if not explicitly set.

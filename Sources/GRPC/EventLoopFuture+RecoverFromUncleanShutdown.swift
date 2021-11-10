@@ -14,24 +14,17 @@
  * limitations under the License.
  */
 import NIOCore
-#if canImport(NIOSSL)
-import NIOSSL
-#endif
 
 extension EventLoopFuture where Value == Void {
   internal func recoveringFromUncleanShutdown() -> EventLoopFuture<Void> {
-    #if canImport(NIOSSL)
     // We can ignore unclean shutdown since gRPC is self-terminated and therefore not prone to
     // truncation attacks.
     return self.flatMapErrorThrowing { error in
-      if let sslError = error as? NIOSSLError, sslError == .uncleanShutdown {
-        ()
+      if error.isNIOSSLUncleanShutdown {
+        return ()
       } else {
         throw error
       }
     }
-    #else
-    return self
-    #endif
   }
 }

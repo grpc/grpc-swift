@@ -20,7 +20,9 @@ import NIOExtras
 import NIOHTTP1
 import NIOHTTP2
 import NIOPosix
+#if canImport(NIOSSL)
 import NIOSSL
+#endif
 import NIOTransportServices
 #if canImport(Network)
 import Network
@@ -92,6 +94,7 @@ public final class Server {
       _ = bootstrap.serverChannelOption(ChannelOptions.backlog, value: 256)
     }
 
+    #if canImport(NIOSSL)
     // Making a `NIOSSLContext` is expensive, we should only do it once per TLS configuration so
     // we'll do it now, before accepting connections. Unfortunately our API isn't throwing so we'll
     // only surface any error when initializing a child channel.
@@ -102,29 +105,25 @@ public final class Server {
 
     if let tlsConfiguration = configuration.tlsConfiguration {
       do {
-        sslContext = try configuration.tlsConfiguration?.makeNIOSSLContext().map { .success($0) }
+        sslContext = try tlsConfiguration.makeNIOSSLContext().map { .success($0) }
       } catch {
         sslContext = .failure(error)
       }
 
-      // No SSL context means we must be using the Network.framework TLS stack (as
-      // `tlsConfiguration` was not `nil`).
-      if sslContext == nil {
-        #if canImport(Network)
-        if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *),
-          let transportServicesBootstrap = bootstrap as? NIOTSListenerBootstrap {
-          _ = transportServicesBootstrap.tlsOptions(from: tlsConfiguration)
-        }
-        #else
-        // We must be using Network.framework (because we aren't using NIOSSL) but we don't have
-        // an a NIOTSListenerBootstrap available, something is very wrong.
-        preconditionFailure()
-        #endif
-      }
     } else {
       // No TLS configuration, no SSL context.
       sslContext = nil
     }
+    #endif // canImport(NIOSSL)
+
+    #if canImport(Network)
+    if let tlsConfiguration = configuration.tlsConfiguration {
+      if #available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *),
+        let transportServicesBootstrap = bootstrap as? NIOTSListenerBootstrap {
+        _ = transportServicesBootstrap.tlsOptions(from: tlsConfiguration)
+      }
+    }
+    #endif // canImport(Network)
 
     return bootstrap
       // Enable `SO_REUSEADDR` to avoid "address already in use" error.
@@ -143,9 +142,11 @@ public final class Server {
 
         do {
           let sync = channel.pipeline.syncOperations
+          #if canImport(NIOSSL)
           if let sslContext = try sslContext?.get() {
             try sync.addHandler(NIOSSLServerHandler(context: sslContext))
           }
+          #endif // canImport(NIOSSL)
 
           // Configures the pipeline based on whether the connection uses TLS or not.
           try sync.addHandler(GRPCServerPipelineConfigurator(configuration: configuration))
@@ -283,6 +284,7 @@ extension Server {
     /// maintain a strong reference to this `Server`**. Doing so will cause a retain cycle.
     public var errorDelegate: ServerErrorDelegate?
 
+    #if canImport(NIOSSL)
     /// TLS configuration for this connection. `nil` if TLS is not desired.
     @available(*, deprecated, renamed: "tlsConfiguration")
     public var tls: TLS? {
@@ -293,6 +295,7 @@ extension Server {
         self.tlsConfiguration = newValue.map { GRPCTLSConfiguration(transforming: $0) }
       }
     }
+    #endif // canImport(NIOSSL)
 
     public var tlsConfiguration: GRPCTLSConfiguration?
 
@@ -364,6 +367,7 @@ extension Server {
     /// the need to recalculate this dictionary each time we receive an rpc.
     internal var serviceProvidersByName: [Substring: CallHandlerProvider]
 
+    #if canImport(NIOSSL)
     /// Create a `Configuration` with some pre-defined defaults.
     ///
     /// - Parameters:
@@ -411,6 +415,7 @@ extension Server {
       self.logger = logger
       self.debugChannelInitializer = debugChannelInitializer
     }
+    #endif // canImport(NIOSSL)
 
     private init(
       eventLoopGroup: EventLoopGroup,

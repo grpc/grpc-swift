@@ -16,7 +16,9 @@
 import Logging
 import NIOCore
 import NIOPosix
+#if canImport(NIOSSL)
 import NIOSSL
+#endif
 import NIOTransportServices
 
 @usableFromInline
@@ -40,7 +42,9 @@ internal protocol ConnectionManagerChannelProvider {
 internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
   @usableFromInline
   enum TLSMode {
+    #if canImport(NIOSSL)
     case configureWithNIOSSL(Result<NIOSSLContext, Error>)
+    #endif // canImport(NIOSSL)
     case configureWithNetworkFramework
     case disabled
   }
@@ -103,9 +107,15 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
       if tlsConfiguration.isNetworkFrameworkTLSBackend {
         tlsMode = .configureWithNetworkFramework
       } else {
+        #if canImport(NIOSSL)
         // The '!' is okay here, we have a `tlsConfiguration` (so we must be using TLS) and we know
         // it's not backed by Network.framework, so it must be backed by NIOSSL.
         tlsMode = .configureWithNIOSSL(Result { try tlsConfiguration.makeNIOSSLContext()! })
+        #else
+        // TLS is configured, and we aren't using a Network.framework TLS backend, so we must be
+        // using NIOSSL, so we must be able to import it.
+        fatalError()
+        #endif // canImport(NIOSSL)
       }
     } else {
       tlsMode = .disabled
@@ -167,6 +177,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
           // We have a NIOSSL context to apply. If we're using TLS from NIOTS then the bootstrap
           // will already have the TLS options applied.
           switch self.tlsMode {
+          #if canImport(NIOSSL)
           case let .configureWithNIOSSL(sslContext):
             try sync.configureNIOSSLForGRPCClient(
               sslContext: sslContext,
@@ -174,6 +185,7 @@ internal struct DefaultChannelProvider: ConnectionManagerChannelProvider {
               customVerificationCallback: self.tlsConfiguration?.nioSSLCustomVerificationCallback,
               logger: logger
             )
+          #endif // canImport(NIOSSL)
 
           // Network.framework TLS configuration is applied when creating the bootstrap so is a
           // no-op here.

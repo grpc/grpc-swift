@@ -16,7 +16,9 @@
 import Logging
 import NIOCore
 import NIOHTTP2
+#if canImport(NIOSSL)
 import NIOSSL
+#endif
 import SwiftProtobuf
 
 @usableFromInline
@@ -40,12 +42,35 @@ internal final class PooledChannel: GRPCChannel {
 
     if let tlsConfiguration = configuration.transportSecurity.tlsConfiguration {
       scheme = "https"
+      #if canImport(NIOSSL)
       if let sslContext = try tlsConfiguration.makeNIOSSLContext() {
         tlsMode = .configureWithNIOSSL(.success(sslContext))
       } else {
-        // No SSL context means we're using Network.framework.
+        #if canImport(Network)
+        // - TLS is configured
+        // - NIOSSL is available but we aren't using it
+        // - Network.framework is available, we MUST be using that.
         tlsMode = .configureWithNetworkFramework
+        #else
+        // - TLS is configured
+        // - NIOSSL is available but we aren't using it
+        // - Network.framework is not available
+        // NIOSSL or Network.framework must be available as TLS is configured.
+        fatalError()
+        #endif
       }
+      #elseif canImport(Network)
+      // - TLS is configured
+      // - NIOSSL is not available
+      // - Network.framework is available, we MUST be using that.
+      tlsMode = .configureWithNetworkFramework
+      #else
+      // - TLS is configured
+      // - NIOSSL is not available
+      // - Network.framework is not available
+      // NIOSSL or Network.framework must be available as TLS is configured.
+      fatalError()
+      #endif // canImport(NIOSSL)
     } else {
       scheme = "http"
       tlsMode = .disabled

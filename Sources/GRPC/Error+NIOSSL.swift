@@ -1,5 +1,5 @@
 /*
- * Copyright 2019, gRPC Authors All rights reserved.
+ * Copyright 2021, gRPC Authors All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 #if canImport(NIOSSL)
-import Foundation
-import GRPCSampleData
-import XCTest
+import NIOSSL
+#endif
 
-extension SampleCertificate {
-  func assertNotExpired(file: StaticString = #file, line: UInt = #line) {
-    XCTAssertFalse(
-      self.isExpired,
-      "Certificate expired at \(self.notAfter)",
-      // swiftformat:disable:next redundantParens
-      file: (file),
-      line: line
-    )
+extension Error {
+  internal var isNIOSSLUncleanShutdown: Bool {
+    #if canImport(NIOSSL)
+    if let sslError = self as? NIOSSLError {
+      return sslError == .uncleanShutdown
+    } else {
+      return false
+    }
+    #else
+    return false
+    #endif
   }
 }
-#endif // canImport(NIOSSL)

@@ -89,3 +89,27 @@ jobs:
       run: ./Performance/allocations/test-allocation-counts.sh
       env: ${{ matrix.env }}
       timeout-minutes: 20
+  integration-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: swift:5.4-focal
+          - image: swift:5.3-focal
+          - image: swift:5.2-bionic
+    name: Integration Tests on ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ matrix.image }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build without NIOSSL
+      run: swift build
+      env:
+        GRPC_NO_NIO_SSL: 1
+      timeout-minutes: 20
+    - name: Test without NIOSSL
+      run: swift test --enable-test-discovery
+      env:
+        GRPC_NO_NIO_SSL: 1
+      timeout-minutes: 20

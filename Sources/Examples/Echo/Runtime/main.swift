@@ -21,7 +21,9 @@ import GRPCSampleData
 import Logging
 import NIOCore
 import NIOPosix
+#if canImport(NIOSSL)
 import NIOSSL
+#endif
 
 // MARK: - Argument parsing
 
@@ -114,6 +116,7 @@ func startEchoServer(group: EventLoopGroup, port: Int, useTLS: Bool) throws {
   let builder: Server.Builder
 
   if useTLS {
+    #if canImport(NIOSSL)
     // We're using some self-signed certs here: check they aren't expired.
     let caCert = SampleCertificate.ca
     let serverCert = SampleCertificate.server
@@ -129,6 +132,9 @@ func startEchoServer(group: EventLoopGroup, port: Int, useTLS: Bool) throws {
     )
     .withTLS(trustRoots: .certificates([caCert.certificate]))
     print("starting secure server")
+    #else
+    fatalError("'useTLS: true' passed to \(#function) but NIOSSL is not available")
+    #endif // canImport(NIOSSL)
   } else {
     print("starting insecure server")
     builder = Server.insecure(group: group)
@@ -154,6 +160,7 @@ func makeClient(
   let security: GRPCChannelPool.Configuration.TransportSecurity
 
   if useTLS {
+    #if canImport(NIOSSL)
     // We're using some self-signed certs here: check they aren't expired.
     let caCert = SampleCertificate.ca
     let clientCert = SampleCertificate.client
@@ -169,6 +176,9 @@ func makeClient(
     )
 
     security = .tls(tlsConfiguration)
+    #else
+    fatalError("'useTLS: true' passed to \(#function) but NIOSSL is not available")
+    #endif // canImport(NIOSSL)
   } else {
     security = .plaintext
   }

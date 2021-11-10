@@ -207,6 +207,7 @@ class PlatformSupportTests: GRPCTestCase {
 
   func testIsTLSConfigruationCompatible() {
     #if canImport(Network)
+    #if canImport(NIOSSL)
     guard #available(macOS 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *) else { return }
 
     let nwConfiguration = GRPCTLSConfiguration.makeClientConfigurationBackedByNetworkFramework()
@@ -231,15 +232,17 @@ class PlatformSupportTests: GRPCTestCase {
     XCTAssertTrue(group.isCompatible(with: nioSSLConfiguration))
     XCTAssertFalse(group.next().isCompatible(with: nwConfiguration))
     XCTAssertTrue(group.next().isCompatible(with: nioSSLConfiguration))
-
+    #endif
     #endif
   }
 
   func testMakeCompatibleEventLoopGroupForNIOSSL() {
+    #if canImport(NIOSSL)
     let configuration = GRPCTLSConfiguration.makeClientConfigurationBackedByNIOSSL()
     let group = PlatformSupport.makeEventLoopGroup(compatibleWith: configuration, loopCount: 1)
     XCTAssertNoThrow(try group.syncShutdownGracefully())
     XCTAssert(group is MultiThreadedEventLoopGroup)
+    #endif
   }
 
   func testMakeCompatibleEventLoopGroupForNetworkFramework() {

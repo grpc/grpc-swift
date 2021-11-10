@@ -254,6 +254,7 @@ class FunctionalTestsInsecureTransport: EchoTestCaseBase {
   }
 }
 
+#if canImport(NIOSSL)
 class FunctionalTestsAnonymousClient: FunctionalTestsInsecureTransport {
   override var transportSecurity: TransportSecurity {
     return .anonymousClient
@@ -265,6 +266,7 @@ class FunctionalTestsMutualAuthentication: FunctionalTestsInsecureTransport {
     return .mutualAuthentication
   }
 }
+#endif // canImport(NIOSSL)
 
 // MARK: - Variants using NIO TS and Network.framework
 
@@ -356,6 +358,7 @@ class FunctionalTestsInsecureTransportNIOTS: FunctionalTestsInsecureTransport {
   }
 }
 
+#if canImport(NIOSSL)
 @available(OSX 10.14, iOS 12.0, tvOS 12.0, watchOS 6.0, *)
 class FunctionalTestsAnonymousClientNIOTS: FunctionalTestsInsecureTransportNIOTS {
   override var transportSecurity: TransportSecurity {
@@ -369,3 +372,4 @@ class FunctionalTestsMutualAuthenticationNIOTS: FunctionalTestsInsecureTransport
     return .mutualAuthentication
   }
 }
+#endif // canImport(NIOSSL)

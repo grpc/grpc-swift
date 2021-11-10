@@ -56,17 +56,22 @@ class GRPCServerPipelineConfiguratorTests: GRPCTestCase {
     configuration.logger = self.serverLogger
 
     if tls {
+      #if canImport(NIOSSL)
       configuration.tlsConfiguration = .makeServerConfigurationBackedByNIOSSL(
         certificateChain: [],
         privateKey: .file("not used"),
         requireALPN: requireALPN
       )
+      #else
+      fatalError("TLS enabled for a test when NIOSSL is not available")
+      #endif
     }
 
     let handler = GRPCServerPipelineConfigurator(configuration: configuration)
     assertThat(try self.channel.pipeline.addHandler(handler).wait(), .doesNotThrow())
   }
 
+  #if canImport(NIOSSL)
   func testHTTP2SetupViaALPN() {
     self.setUp(tls: true, requireALPN: true)
     let event = TLSUserEvent.handshakeCompleted(negotiatedProtocol: "h2")
@@ -120,6 +125,7 @@ class GRPCServerPipelineConfiguratorTests: GRPCTestCase {
     self.assertConfigurator(isPresent: false)
     self.assertHTTP2Handler(isPresent: true)
   }
+  #endif // canImport(NIOSSL)
 
   func testHTTP2SetupViaBytes() {
     self.setUp(tls: false)
@@ -172,6 +178,7 @@ class GRPCServerPipelineConfiguratorTests: GRPCTestCase {
     }
   }
 
+  #if canImport(NIOSSL)
   func testALPNIsPreferredOverBytes() throws {
     self.setUp(tls: true, requireALPN: true)
 
@@ -209,4 +216,5 @@ class GRPCServerPipelineConfiguratorTests: GRPCTestCase {
     self.assertConfigurator(isPresent: false)
     self.assertHTTP2Handler(isPresent: true)
   }
+  #endif // canImport(NIOSSL)
 }

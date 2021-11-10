@@ -20,7 +20,9 @@ import Foundation
 import GRPC
 import GRPCSampleData
 import NIOCore
+#if canImport(NIOSSL)
 import NIOSSL
+#endif
 import XCTest
 
 extension Echo_EchoRequest {
@@ -71,14 +73,22 @@ class EchoTestCaseBase: GRPCTestCase {
       return ClientConnection.insecure(group: self.clientEventLoopGroup)
 
     case .anonymousClient:
+      #if canImport(NIOSSL)
       return ClientConnection.usingTLSBackedByNIOSSL(on: self.clientEventLoopGroup)
         .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
+      #else
+      fatalError("NIOSSL must be imported to use TLS")
+      #endif
 
     case .mutualAuthentication:
+      #if canImport(NIOSSL)
       return ClientConnection.usingTLSBackedByNIOSSL(on: self.clientEventLoopGroup)
         .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
         .withTLS(certificateChain: [SampleCertificate.client.certificate])
         .withTLS(privateKey: SamplePrivateKey.client)
+      #else
+      fatalError("NIOSSL must be imported to use TLS")
+      #endif
     }
   }
 
@@ -88,13 +98,18 @@ class EchoTestCaseBase: GRPCTestCase {
       return Server.insecure(group: self.serverEventLoopGroup)
 
     case .anonymousClient:
+      #if canImport(NIOSSL)
       return Server.usingTLSBackedByNIOSSL(
         on: self.serverEventLoopGroup,
         certificateChain: [SampleCertificate.server.certificate],
         privateKey: SamplePrivateKey.server
       ).withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
+      #else
+      fatalError("NIOSSL must be imported to use TLS")
+      #endif
 
     case .mutualAuthentication:
+      #if canImport(NIOSSL)
       return Server.usingTLSBackedByNIOSSL(
         on: self.serverEventLoopGroup,
         certificateChain: [SampleCertificate.server.certificate],
@@ -102,6 +117,9 @@ class EchoTestCaseBase: GRPCTestCase {
       )
       .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
       .withTLS(certificateVerification: .noHostnameVerification)
+      #else
+      fatalError("NIOSSL must be imported to use TLS")
+      #endif
     }
   }
 
