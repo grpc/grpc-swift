@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Foundation
+import struct Foundation.Date
 import NIOSSL
 
 /// Wraps `NIOSSLCertificate` to provide the certificate common name and expiry date.
