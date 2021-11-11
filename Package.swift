@@ -146,7 +146,10 @@ let package = Package(
       name: "GRPCPerformanceTests",
       dependencies: [
         .target(name: "GRPC"),
-        .product(name: "NIO", package: "swift-nio"),
+        .product(name: "NIOCore", package: "swift-nio"),
+        .product(name: "NIOEmbedded", package: "swift-nio"),
+        .product(name: "NIOPosix", package: "swift-nio"),
+        .product(name: "NIOHTTP2", package: "swift-nio-http2"),
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ]
     ),
