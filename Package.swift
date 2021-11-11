@@ -121,7 +121,6 @@ let package = Package(
       dependencies: [
         .target(name: "GRPC"),
         .product(name: "NIO", package: "swift-nio"),
-        .product(name: "NIOHTTP1", package: "swift-nio"),
         .product(name: "SwiftProtobuf", package: "SwiftProtobuf"),
       ]
     ),
