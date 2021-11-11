@@ -451,10 +451,13 @@ extension ConnectionManagerTests {
       }
 
     // Now shutdown.
-    try self.waitForStateChange(from: .connecting, to: .shutdown) {
+    let shutdownFuture: EventLoopFuture<Void> = self.waitForStateChange(
+      from: .connecting,
+      to: .shutdown
+    ) {
       let shutdown = manager.shutdown()
       self.loop.run()
-      XCTAssertNoThrow(try shutdown.wait())
+      return shutdown
     }
 
     // The multiplexer we were requesting should fail.
@@ -465,6 +468,7 @@ extension ConnectionManagerTests {
     let channel = try channelPromise.futureResult.wait()
     self.loop.run()
     XCTAssertNoThrow(try channel.closeFuture.wait())
+    XCTAssertNoThrow(try shutdownFuture.wait())
   }
 
   func testShutdownWhileTransientFailure() throws {
@@ -1259,5 +1263,12 @@ internal struct HookedChannelProvider: ConnectionManagerChannelProvider {
     logger: Logger
   ) -> EventLoopFuture<Channel> {
     return self.provider(connectionManager, eventLoop)
+  }
+}
+
+extension ConnectionManager {
+  // For backwards compatibility, to avoid large diffs in these tests.
+  fileprivate func shutdown() -> EventLoopFuture<Void> {
+    return self.shutdown(mode: .forceful)
   }
 }

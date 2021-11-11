@@ -266,9 +266,15 @@ struct GRPCIdleHandlerStateMachine {
       self.state = .operating(operating)
       operations.cancelIdleTask(state.idleTask)
 
-    case .quiescing:
-      // Streams can't be created if we're quiescing.
-      preconditionFailure()
+    case var .quiescing(state):
+      precondition(state.initiatedByUs)
+      precondition(state.role == .client)
+      // If we're a client and we initiated shutdown then it's possible for streams to be created in
+      // the quiescing state as there's a delay between stream channels (i.e. `HTTP2StreamChannel`)
+      // being created and us being notified about their creation (via a user event fired by
+      // the `HTTP2Handler`).
+      state.openStreams += 1
+      self.state = .quiescing(state)
 
     case .closing, .closed:
       ()
@@ -397,19 +403,25 @@ struct GRPCIdleHandlerStateMachine {
 
     switch self.state {
     case let .operating(state):
-      // Send a GOAWAY frame.
-      operations.sendGoAwayFrame(lastPeerInitiatedStreamID: state.lastPeerInitiatedStreamID)
-
       if state.hasOpenStreams {
         // There are open streams: send a GOAWAY frame and wait for the stream count to reach zero.
         //
         // It's okay if we haven't seen a SETTINGS frame at this point; we've initiated the shutdown
         // so making a connection is ready isn't necessary.
         operations.notifyConnectionManager(about: .quiescing)
+
+        // TODO: we should ratchet down the last initiated stream after 1-RTT.
+        //
+        // As a client we will just stop initiating streams.
+        if state.role == .server {
+          operations.sendGoAwayFrame(lastPeerInitiatedStreamID: state.lastPeerInitiatedStreamID)
+        }
+
         self.state = .quiescing(.init(fromOperating: state, initiatedByUs: true))
       } else {
         // No open streams: send a GOAWAY frame and close the channel.
         self.state = .closing(.init(fromOperating: state))
+        operations.sendGoAwayFrame(lastPeerInitiatedStreamID: state.lastPeerInitiatedStreamID)
         operations.closeChannel()
       }
 

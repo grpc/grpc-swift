@@ -124,7 +124,6 @@ class GRPCIdleHandlerStateMachineTests: GRPCTestCase {
     stateMachine = streamOpenStateMachine
     do {
       let op2 = stateMachine.initiateGracefulShutdown()
-      op2.assertGoAway(streamID: .rootStream)
       op2.assertShouldNotClose()
 
       // We become inactive.
@@ -217,7 +216,6 @@ class GRPCIdleHandlerStateMachineTests: GRPCTestCase {
 
     // Initiate shutdown.
     let op2 = stateMachine.initiateGracefulShutdown()
-    op2.assertGoAway(streamID: .rootStream)
     op2.assertShouldNotClose()
 
     // Receive a GOAWAY; no change.
@@ -329,8 +327,7 @@ class GRPCIdleHandlerStateMachineTests: GRPCTestCase {
     let op2 = stateMachine.streamCreated(withID: 1)
     op2.assertDoNothing()
     // Start shutting down.
-    let op3 = stateMachine.initiateGracefulShutdown()
-    op3.assertGoAway(streamID: .rootStream)
+    _ = stateMachine.initiateGracefulShutdown()
     // Schedule an idle timeout task: we're quiescing, so cancel the task.
     let op4 = stateMachine.scheduledIdleTimeoutTask(self.makeNoOpScheduled())
     op4.assertCancelIdleTimeout()
@@ -433,11 +430,10 @@ class GRPCIdleHandlerStateMachineTests: GRPCTestCase {
 
     // Initiate shutdown.
     let op3 = stateMachine.initiateGracefulShutdown()
-    op3.assertGoAway(streamID: .rootStream)
+    op3.assertNoGoAway()
 
     // Shutdown now.
     let op4 = stateMachine.shutdownNow()
-    op4.assertNoGoAway() // already sent.
     op4.assertShouldClose()
   }
 

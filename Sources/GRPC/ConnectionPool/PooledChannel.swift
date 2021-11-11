@@ -152,13 +152,18 @@ internal final class PooledChannel: GRPCChannel {
 
   @inlinable
   internal func close(promise: EventLoopPromise<Void>) {
-    self._pool.shutdown(promise: promise)
+    self._pool.shutdown(mode: .forceful, promise: promise)
   }
 
   @inlinable
   internal func close() -> EventLoopFuture<Void> {
     let promise = self._configuration.eventLoopGroup.next().makePromise(of: Void.self)
-    self._pool.shutdown(promise: promise)
+    self.close(promise: promise)
     return promise.futureResult
+  }
+
+  @usableFromInline
+  internal func closeGracefully(deadline: NIODeadline, promise: EventLoopPromise<Void>) {
+    self._pool.shutdown(mode: .graceful(deadline), promise: promise)
   }
 }
