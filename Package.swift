@@ -294,8 +294,10 @@ let package = Package(
       dependencies: [
         .target(name: "GRPC"),
         .target(name: "EchoModel"),
-        .product(name: "NIO", package: "swift-nio"),
+        .product(name: "NIOCore", package: "swift-nio"),
+        .product(name: "NIOPosix", package: "swift-nio"),
         .product(name: "NIOExtras", package: "swift-nio-extras"),
+        .product(name: "Logging", package: "swift-log"),
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ],
       path: "Sources/Examples/PacketCapture"

@@ -18,8 +18,9 @@ import Dispatch
 import EchoModel
 import GRPC
 import Logging
-import NIO
+import NIOCore
 import NIOExtras
+import NIOPosix
 
 // Create a logger.
 let logger = Logger(label: "gRPC PCAP Demo")
