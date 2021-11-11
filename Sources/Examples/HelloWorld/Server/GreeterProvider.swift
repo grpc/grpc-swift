@@ -15,7 +15,7 @@
  */
 import GRPC
 import HelloWorldModel
-import NIO
+import NIOCore
 
 class GreeterProvider: Helloworld_GreeterProvider {
   var interceptors: Helloworld_GreeterServerInterceptorFactoryProtocol?

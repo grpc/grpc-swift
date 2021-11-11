@@ -16,8 +16,8 @@
 import ArgumentParser
 import GRPC
 import HelloWorldModel
-import Logging
-import NIO
+import NIOCore
+import NIOPosix
 
 struct HelloWorld: ParsableCommand {
   @Option(help: "The port to listen on for new connections")
