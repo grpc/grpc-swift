@@ -107,6 +107,11 @@ let package = Package(
       dependencies: [
         .target(name: "GRPC"),
         .target(name: "GRPCInteroperabilityTestModels"),
+        .product(name: "NIOCore", package: "swift-nio"),
+        .product(name: "NIOPosix", package: "swift-nio"),
+        .product(name: "NIOHTTP2", package: "swift-nio-http2"),
+        .product(name: "NIOSSL", package: "swift-nio-ssl"),
+        .product(name: "Logging", package: "swift-log"),
       ]
     ),
 

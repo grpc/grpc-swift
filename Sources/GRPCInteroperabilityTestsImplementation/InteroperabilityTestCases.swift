@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Foundation
+import Dispatch
+import struct Foundation.Data
 import GRPC
 import GRPCInteroperabilityTestModels
 import NIOHPACK
-import NIOHTTP1
 
 /// This test verifies that implementations support zero-size messages. Ideally, client
 /// implementations would verify that the request and response were zero bytes serialized, but
