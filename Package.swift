@@ -267,6 +267,8 @@ let package = Package(
       dependencies: [
         .target(name: "GRPC"),
         .target(name: "RouteGuideModel"),
+        .product(name: "NIOCore", package: "swift-nio"),
+        .product(name: "NIOPosix", package: "swift-nio"),
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ],
       path: "Sources/Examples/RouteGuide/Client"

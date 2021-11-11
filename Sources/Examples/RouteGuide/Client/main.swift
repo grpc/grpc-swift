@@ -16,8 +16,8 @@
 import ArgumentParser
 import Foundation
 import GRPC
-import Logging
-import NIO
+import NIOCore
+import NIOPosix
 import RouteGuideModel
 
 /// Makes a `RouteGuide` client for a service hosted on "localhost" and listening on the given port.
