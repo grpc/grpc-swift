@@ -125,7 +125,11 @@ let package = Package(
     .target(
       name: "GRPCInteroperabilityTests",
       dependencies: [
+        .target(name: "GRPC"),
         .target(name: "GRPCInteroperabilityTestsImplementation"),
+        .product(name: "NIOCore", package: "swift-nio"),
+        .product(name: "NIOPosix", package: "swift-nio"),
+        .product(name: "Logging", package: "swift-log"),
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ]
     ),
