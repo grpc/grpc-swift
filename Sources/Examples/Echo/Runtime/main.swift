@@ -16,11 +16,11 @@
 import ArgumentParser
 import EchoImplementation
 import EchoModel
-import Foundation
 import GRPC
 import GRPCSampleData
 import Logging
-import NIO
+import NIOCore
+import NIOPosix
 import NIOSSL
 
 // MARK: - Argument parsing
