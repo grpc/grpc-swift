@@ -15,8 +15,8 @@
  */
 import Foundation
 import GRPC
-import NIO
 import NIOConcurrencyHelpers
+import NIOCore
 import RouteGuideModel
 
 class RouteGuideProvider: Routeguide_RouteGuideProvider {

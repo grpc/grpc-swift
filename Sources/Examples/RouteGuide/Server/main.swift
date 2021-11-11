@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 import ArgumentParser
-import Foundation
+import struct Foundation.Data
+import struct Foundation.URL
 import GRPC
-import Logging
-import NIO
+import NIOCore
+import NIOPosix
 import RouteGuideModel
-import SwiftProtobuf
 
 /// Loads the features from `route_guide_db.json`, assumed to be in the directory above this file.
 func loadFeatures() throws -> [Routeguide_Feature] {
