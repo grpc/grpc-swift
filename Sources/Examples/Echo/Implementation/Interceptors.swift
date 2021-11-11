@@ -15,7 +15,7 @@
  */
 import EchoModel
 import GRPC
-import NIO
+import NIOCore
 
 // All client interceptors derive from the 'ClientInterceptor' base class. We know the request and
 // response types for all Echo RPCs are the same: so we'll use them concretely here, allowing us

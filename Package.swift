@@ -192,6 +192,8 @@ let package = Package(
       dependencies: [
         .target(name: "EchoModel"),
         .target(name: "GRPC"),
+        .product(name: "NIOCore", package: "swift-nio"),
+        .product(name: "NIOHTTP2", package: "swift-nio-http2"),
         .product(name: "SwiftProtobuf", package: "SwiftProtobuf"),
       ],
       path: "Sources/Examples/Echo/Implementation"
