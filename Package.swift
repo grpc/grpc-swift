@@ -80,8 +80,14 @@ let package = Package(
         .target(name: "GRPCInteroperabilityTestsImplementation"),
         .target(name: "HelloWorldModel"),
         .product(name: "NIOCore", package: "swift-nio"),
+        .product(name: "NIOConcurrencyHelpers", package: "swift-nio"),
         .product(name: "NIOPosix", package: "swift-nio"),
+        .product(name: "NIOTLS", package: "swift-nio"),
+        .product(name: "NIOHTTP1", package: "swift-nio"),
+        .product(name: "NIOHTTP2", package: "swift-nio-http2"),
         .product(name: "NIOEmbedded", package: "swift-nio"),
+        .product(name: "NIOTransportServices", package: "swift-nio-transport-services"),
+        .product(name: "Logging", package: "swift-log"),
       ]
     ),
 
