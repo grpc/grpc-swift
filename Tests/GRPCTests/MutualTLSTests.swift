@@ -17,22 +17,22 @@ import EchoImplementation
 import EchoModel
 @testable import GRPC
 import GRPCSampleData
-import Logging
-import NIOConcurrencyHelpers
 import NIOCore
 import NIOPosix
 import NIOSSL
 import XCTest
 
 class MutualTLSTests: GRPCTestCase {
-  enum ExpectedOutcome {
-    case success
-    case serverError
-    case clientError
+  enum ExpectedClientError {
+    case handshakeError
+    case alertCertRequired
+    case dropped
   }
 
   var clientEventLoopGroup: EventLoopGroup!
   var serverEventLoopGroup: EventLoopGroup!
+  var channel: GRPCChannel?
+  var server: Server?
 
   override func setUp() {
     super.setUp()
@@ -41,18 +41,18 @@ class MutualTLSTests: GRPCTestCase {
   }
 
   override func tearDown() {
+    XCTAssertNoThrow(try self.channel?.close().wait())
+    XCTAssertNoThrow(try self.server?.close().wait())
     XCTAssertNoThrow(try self.clientEventLoopGroup.syncShutdownGracefully())
-    self.clientEventLoopGroup = nil
-
     XCTAssertNoThrow(try self.serverEventLoopGroup.syncShutdownGracefully())
-    self.serverEventLoopGroup = nil
     super.tearDown()
   }
 
   func performTestWith(
     _ serverTLSConfiguration: GRPCTLSConfiguration?,
     _ clientTLSConfiguration: GRPCTLSConfiguration?,
-    expect expectedOutcome: ExpectedOutcome
+    expectServerHandshakeError: Bool,
+    expectedClientError: ExpectedClientError?
   ) throws {
     // Setup the server.
     var serverConfiguration = Server.Configuration.default(
@@ -63,13 +63,14 @@ class MutualTLSTests: GRPCTestCase {
     serverConfiguration.tlsConfiguration = serverTLSConfiguration
     serverConfiguration.logger = self.serverLogger
     let serverErrorExpectation = self.expectation(description: "server error")
-    serverErrorExpectation.isInverted = expectedOutcome != .serverError
+    serverErrorExpectation.isInverted = !expectServerHandshakeError
     serverErrorExpectation.assertForOverFulfill = false
     let serverErrorDelegate = ServerErrorRecordingDelegate(expectation: serverErrorExpectation)
     serverConfiguration.errorDelegate = serverErrorDelegate
 
-    let server = try! Server.start(configuration: serverConfiguration).wait()
-    let port = server.channel.localAddress!.port!
+    self.server = try! Server.start(configuration: serverConfiguration).wait()
+
+    let port = server!.channel.localAddress!.port!
 
     // Setup the client.
     var clientConfiguration = ClientConnection.Configuration.default(
@@ -80,12 +81,13 @@ class MutualTLSTests: GRPCTestCase {
     clientConfiguration.connectionBackoff = nil
     clientConfiguration.backgroundActivityLogger = self.clientLogger
     let clientErrorExpectation = self.expectation(description: "client error")
-    clientErrorExpectation.isInverted = expectedOutcome == .success
+    clientErrorExpectation.isInverted = expectedClientError == nil
     clientErrorExpectation.assertForOverFulfill = false
     let clientErrorDelegate = ErrorRecordingDelegate(expectation: clientErrorExpectation)
     clientConfiguration.errorDelegate = clientErrorDelegate
 
-    let client = Echo_EchoClient(channel: ClientConnection(configuration: clientConfiguration))
+    self.channel = ClientConnection(configuration: clientConfiguration)
+    let client = Echo_EchoClient(channel: channel!)
 
     // Make the call.
     let call = client.get(.with { $0.text = "mumble" })
@@ -93,64 +95,158 @@ class MutualTLSTests: GRPCTestCase {
     // Wait for side effects.
     self.wait(for: [clientErrorExpectation, serverErrorExpectation], timeout: 1)
 
-    switch expectedOutcome {
-    case .success:
-      // Verify no errors.
-      XCTAssert(serverErrorDelegate.errors.isEmpty)
-      XCTAssert(clientErrorDelegate.errors.isEmpty)
+    if !expectServerHandshakeError {
+      XCTAssert(serverErrorDelegate.errors.isEmpty, "Unexpected server errors: \(serverErrorDelegate.errors)")
+    } else if case .handshakeFailed = serverErrorDelegate.errors.first as? NIOSSLError {
+      // This is the expected error.
+    } else {
+      XCTFail("Expected NIOSSLError.handshakeFailed, actual error(s): \(serverErrorDelegate.errors)")
+    }
+
+    switch expectedClientError {
+    case .none:
+      XCTAssert(clientErrorDelegate.errors.isEmpty, "Unexpected client errors: \(clientErrorDelegate.errors)")
+    case .some(.handshakeError):
+      if case .handshakeFailed = clientErrorDelegate.errors.first as? NIOSSLError {
+        // This is the expected error.
+      } else {
+        XCTFail("Expected NIOSSLError.handshakeFailed, actual error(s): \(clientErrorDelegate.errors)")
+      }
+    case .some(.alertCertRequired):
+      if let error = clientErrorDelegate.errors.first, error is BoringSSLError {
+        // This is the expected error when client receives TLSV1_ALERT_CERTIFICATE_REQUIRED.
+      } else {
+        XCTFail("Expected BoringSSLError, actual error(s): \(clientErrorDelegate.errors)")
+      }
+    case .some(.dropped):
+      if let error = clientErrorDelegate.errors.first as? GRPCStatus, error.code == .unavailable {
+        // This is the expected error when client closes the connection.
+      } else {
+        XCTFail("Expected BoringSSLError, actual error(s): \(clientErrorDelegate.errors)")
+      }
+    }
+
+    if !expectServerHandshakeError && expectedClientError == nil {
       // Verify response.
       let response = try call.response.wait()
       XCTAssertEqual(response.text, "Swift echo get: mumble")
       let status = try call.status.wait()
       XCTAssertEqual(status.code, .ok)
-    case .serverError:
-      // Verify handshake error.
-      guard case .handshakeFailed = serverErrorDelegate.errors.first as? NIOSSLError else {
-        XCTFail("Expected NIOSSLError.handshakeFailed")
-        return
-      }
-    case .clientError:
-      // Verify handshake error.
-      guard case .handshakeFailed = clientErrorDelegate.errors.first as? NIOSSLError else {
-        XCTFail("Expected NIOSSLError.handshakeFailed")
-        return
-      }
     }
   }
 
-  func test_ValidClientAndServerCerts_Success() throws {
+  func test_trustedClientAndServerCerts_success() throws {
     let serverTLSConfiguration = GRPCTLSConfiguration.makeServerConfigurationBackedByNIOSSL(
       certificateChain: [.certificate(SampleCertificate.server.certificate)],
       privateKey: .privateKey(SamplePrivateKey.server),
-      trustRoots: .certificates([SampleCertificate.ca.certificate]),
+      trustRoots: .certificates([
+        SampleCertificate.ca.certificate,
+        SampleCertificate.otherCA.certificate,
+      ]),
       certificateVerification: .noHostnameVerification
     )
     let clientTLSConfiguration = GRPCTLSConfiguration.makeClientConfigurationBackedByNIOSSL(
-      certificateChain: [.certificate(SampleCertificate.client.certificate)],
+      certificateChain: [.certificate(SampleCertificate.clientSignedByOtherCA.certificate)],
       privateKey: .privateKey(SamplePrivateKey.client),
-      trustRoots: .certificates([SampleCertificate.ca.certificate]),
+      trustRoots: .certificates([
+        SampleCertificate.ca.certificate,
+        SampleCertificate.otherCA.certificate,
+      ]),
       certificateVerification: .fullVerification
     )
-    try self.performTestWith(serverTLSConfiguration, clientTLSConfiguration, expect: .success)
-  }
-
-  func test_noServerCert_ClientError() throws {
-    let clientTLSConfiguration = GRPCTLSConfiguration.makeClientConfigurationBackedByNIOSSL(
-      certificateChain: [.certificate(SampleCertificate.client.certificate)],
-      privateKey: .privateKey(SamplePrivateKey.client),
-      trustRoots: .certificates([SampleCertificate.ca.certificate]),
-      certificateVerification: .fullVerification
+    try self.performTestWith(
+      serverTLSConfiguration,
+      clientTLSConfiguration,
+      expectServerHandshakeError: false,
+      expectedClientError: nil
     )
-    try self.performTestWith(nil, clientTLSConfiguration, expect: .clientError)
   }
 
-  func test_noClientCert_ServerError() throws {
+  func test_untrustedServerCert_clientError() throws {
     let serverTLSConfiguration = GRPCTLSConfiguration.makeServerConfigurationBackedByNIOSSL(
       certificateChain: [.certificate(SampleCertificate.server.certificate)],
       privateKey: .privateKey(SamplePrivateKey.server),
-      trustRoots: .certificates([SampleCertificate.ca.certificate]),
+      trustRoots: .certificates([
+        SampleCertificate.ca.certificate,
+        SampleCertificate.otherCA.certificate,
+      ]),
       certificateVerification: .noHostnameVerification
     )
-    try self.performTestWith(serverTLSConfiguration, nil, expect: .serverError)
+    let clientTLSConfiguration = GRPCTLSConfiguration.makeClientConfigurationBackedByNIOSSL(
+      certificateChain: [.certificate(SampleCertificate.clientSignedByOtherCA.certificate)],
+      privateKey: .privateKey(SamplePrivateKey.client),
+      trustRoots: .certificates([
+        SampleCertificate.otherCA.certificate,
+      ]),
+      certificateVerification: .fullVerification
+    )
+    try self.performTestWith(
+      serverTLSConfiguration,
+      clientTLSConfiguration,
+      expectServerHandshakeError: true,
+      expectedClientError: .handshakeError
+    )
+  }
+
+  func test_untrustedClientCert_serverError() throws {
+    let serverTLSConfiguration = GRPCTLSConfiguration.makeServerConfigurationBackedByNIOSSL(
+      certificateChain: [.certificate(SampleCertificate.server.certificate)],
+      privateKey: .privateKey(SamplePrivateKey.server),
+      trustRoots: .certificates([
+        SampleCertificate.ca.certificate,
+      ]),
+      certificateVerification: .noHostnameVerification
+    )
+    let clientTLSConfiguration = GRPCTLSConfiguration.makeClientConfigurationBackedByNIOSSL(
+      certificateChain: [.certificate(SampleCertificate.clientSignedByOtherCA.certificate)],
+      privateKey: .privateKey(SamplePrivateKey.client),
+      trustRoots: .certificates([
+        SampleCertificate.ca.certificate,
+        SampleCertificate.otherCA.certificate,
+      ]),
+      certificateVerification: .fullVerification
+    )
+    try self.performTestWith(
+      serverTLSConfiguration,
+      clientTLSConfiguration,
+      expectServerHandshakeError: true,
+      expectedClientError: .alertCertRequired
+    )
+  }
+
+  func test_plaintextServer_clientError() throws {
+    let clientTLSConfiguration = GRPCTLSConfiguration.makeClientConfigurationBackedByNIOSSL(
+      certificateChain: [.certificate(SampleCertificate.clientSignedByOtherCA.certificate)],
+      privateKey: .privateKey(SamplePrivateKey.client),
+      trustRoots: .certificates([
+        SampleCertificate.ca.certificate,
+        SampleCertificate.otherCA.certificate,
+      ]),
+      certificateVerification: .fullVerification
+    )
+    try self.performTestWith(
+      nil,
+      clientTLSConfiguration,
+      expectServerHandshakeError: false,
+      expectedClientError: .handshakeError
+    )
+  }
+
+  func test_plaintextClient_serverError() throws {
+    let serverTLSConfiguration = GRPCTLSConfiguration.makeServerConfigurationBackedByNIOSSL(
+      certificateChain: [.certificate(SampleCertificate.server.certificate)],
+      privateKey: .privateKey(SamplePrivateKey.server),
+      trustRoots: .certificates([
+        SampleCertificate.ca.certificate,
+        SampleCertificate.otherCA.certificate,
+      ]),
+      certificateVerification: .noHostnameVerification
+    )
+    try self.performTestWith(
+      serverTLSConfiguration,
+      nil,
+      expectServerHandshakeError: true,
+      expectedClientError: .dropped
+    )
   }
 }
