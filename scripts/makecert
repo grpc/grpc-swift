@@ -7,31 +7,41 @@
 #
 # https://github.com/grpc/grpc-java/tree/master/examples
 #
-SIZE=2048
 
-CN_CA=foo
-CN_SERVER=example.com
-CN_CLIENT=localhost
+set -euo pipefail
+
+SIZE=2048
 
 # CA
 openssl genrsa -out ca.key $SIZE
-openssl req -new -x509 -days 365 -key ca.key -out ca.crt -subj "/CN=${CN_CA}"
+openssl req -new -x509 -days 365 -key ca.key -out ca.crt -subj "/CN=some-ca"
 
-# Server
-openssl genrsa -out server.key $SIZE
-openssl req -new -key server.key -out server.csr -subj "/CN=${CN_SERVER}"
-openssl x509 -req -days 365 -in server.csr -CA ca.crt -CAkey ca.key -set_serial 01 -out server.crt
+# Other CA
+openssl genrsa -out other-ca.key $SIZE
+openssl req -new -x509 -days 365 -key other-ca.key -out other-ca.crt -subj "/CN=some-other-ca"
 
-# Client
+# Server certs (localhost)
+openssl genrsa -out server-localhost.key $SIZE
+openssl req -new -key server-localhost.key -out server-localhost.csr -subj "/CN=localhost"
+openssl x509 -req -days 365 -in server-localhost.csr -CA ca.crt -CAkey ca.key -set_serial 01 -out server-localhost.crt
+openssl x509 -req -days 365 -in server-localhost.csr -CA other-ca.crt -CAkey other-ca.key -set_serial 01 -out server-localhost-other-ca.crt
+
+# Server certs (example.com)
+openssl genrsa -out server-example.com.key $SIZE
+openssl req -new -key server-example.com.key -out server-example.com.csr -subj "/CN=example.com"
+openssl x509 -req -days 365 -in server-example.com.csr -CA ca.crt -CAkey ca.key -set_serial 01 -out server-example.com.crt
+
+# Client certs (localhost)
 openssl genrsa -out client.key $SIZE
-openssl req -new -key client.key -out client.csr -subj "/CN=${CN_CLIENT}"
+openssl req -new -key client.key -out client.csr -subj "/CN=localhost"
 openssl x509 -req -days 365 -in client.csr -CA ca.crt -CAkey ca.key -set_serial 01 -out client.crt
+openssl x509 -req -days 365 -in client.csr -CA other-ca.crt -CAkey other-ca.key -set_serial 01 -out client-other-ca.crt
 
 # netty only supports PKCS8 keys. openssl is used to convert from PKCS1 to PKCS8
 # http://netty.io/wiki/sslcontextbuilder-and-private-key.html
 openssl pkcs8 -topk8 -nocrypt -in client.key -out client.pem
-openssl pkcs8 -topk8 -nocrypt -in server.key -out server.pem
+openssl pkcs8 -topk8 -nocrypt -in server-example.com.key -out server.pem
 
 # Server cert with explicit EC parameters (not supported)
-openssl ecparam -name prime256v1 -genkey -param_enc explicit -out server-explicit.key
-openssl req -new -x509 -days 365 -key server-explicit.key -out server-explicit.crt -subj "/CN=${CN_SERVER}"
+openssl ecparam -name prime256v1 -genkey -param_enc explicit -out server-explicit-ec.key
+openssl req -new -x509 -days 365 -key server-explicit-ec.key -out server-explicit-ec.crt -subj "/CN=example.com"

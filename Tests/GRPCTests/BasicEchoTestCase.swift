@@ -87,12 +87,21 @@ class EchoTestCaseBase: GRPCTestCase {
     case .none:
       return Server.insecure(group: self.serverEventLoopGroup)
 
-    case .anonymousClient, .mutualAuthentication:
+    case .anonymousClient:
       return Server.usingTLSBackedByNIOSSL(
         on: self.serverEventLoopGroup,
         certificateChain: [SampleCertificate.server.certificate],
         privateKey: SamplePrivateKey.server
       ).withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
+
+    case .mutualAuthentication:
+      return Server.usingTLSBackedByNIOSSL(
+        on: self.serverEventLoopGroup,
+        certificateChain: [SampleCertificate.server.certificate],
+        privateKey: SamplePrivateKey.server
+      )
+      .withTLS(trustRoots: .certificates([SampleCertificate.ca.certificate]))
+      .withTLS(certificateVerification: .noHostnameVerification)
     }
   }
 
