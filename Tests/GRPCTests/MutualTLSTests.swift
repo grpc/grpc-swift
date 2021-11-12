@@ -100,7 +100,7 @@ class MutualTLSTests: GRPCTestCase {
     let call = client.get(.with { $0.text = "mumble" })
 
     // Wait for side effects.
-    self.wait(for: [clientErrorExpectation, serverErrorExpectation], timeout: 1)
+    self.wait(for: [clientErrorExpectation, serverErrorExpectation], timeout: 10)
 
     if !expectServerHandshakeError {
       XCTAssert(
